@@ -12,7 +12,7 @@ phone width but **not exact** overall:
 - WebKit misses P1 at 356-2877 px. D1 traces this to st6-rb2's persistent slots: E is identical to F at rest, and S
   differs too. It is a st6-rb2 / best-build matter.
 - WebKit costs about 2.4 more carousel layouts per slide.
-- P5 misses by 0.016 px.
+- P5 misses on 8 quantities by up to 0.018 px.
 Not landable on P-087; the route is the lead's.
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
@@ -621,7 +621,7 @@ load-state.
 - WebKit misses P1. The difference is not F's: build E carries it identically, so it comes with st6-rb2's persistent
   slots (D1).
 - WebKit costs about 2.4 more carousel-rooted layouts per slide (P4 Sim miss).
-- P5 misses by 0.016 px (ops and lead ruling).
+- P5 misses on 8 quantities by up to 0.018 px (ops and lead ruling).
 - F cannot land on this ticket.
 
 **Run record.** Every hold exited 0.
@@ -643,12 +643,12 @@ load-state.
 | P2 Chrome phone (C3 re-run) | **MISS by the registered rule**; A~A2 0. See below |
 | P2 WebKit lens (W1) | **MISS.** lens n8 = natural n8 at every t, A/A 0 |
 | P3 Chrome (C1) | **HIT.** F~E max L.w 0.064, N.xr 0.072, N.w 0.051, all else ≤ 0.047 px / 0.0016, inside E~E2/F~F2 + 0.05; end offset -22/-2 in all 6 slides of every arm |
-| P3 Sim (W2, shape.mjs) | **F hit, F2 out (ruling needed).** Medians F~E L.w 0.030, V.x0 0.023, V.x1 0.057, F1.xr 0.059 against limits 0.120/0.084/0.162/0.144. F2~E 0.294/0.162/0.568/0.597. F~F2 medians 0.158/0.103/0.099/0.144. Maxima and end offsets inside |
+| P3 Sim (W2, shape.mjs) | **HIT as registered (F~E); noise-limited: F~F2 and F2~E exceed the median limits** (ops ruling: the decider is F~E; F2 enters only the maxima clause through max(E~E2, F~F2); F2~E is not a registered quantity). Medians F~E L.w 0.030, V.x0 0.023, V.x1 0.057, F1.xr 0.059 against limits 0.120/0.084/0.162/0.144. F2~E 0.294/0.162/0.568/0.597. F~F2 medians 0.158/0.103/0.099/0.144. Maxima and end offsets inside |
 | P4 Chrome (C1) | **HIT.** 5 slides each. Layout E 68, E2 68, F 68, F2 69. UpdateLayoutTree 306 in all. Paint per slide 192/178/192/182. Writes per slide 2 class + 5 src in all |
 | P4 Sim (W2) | **MISS.** Carousel-rooted layouts per slide E 6.0, E2 6.2, F 8.4, F2 8.4 (limit 5.0-7.2). View-rooted per frame F 0.78/0.77 ≤ 0.83 (hit). Totals: layouts E 265/265, F 274/275; paints E 217/220, F 272/277 |
-| P5 (C2) | **MISS by 0.016 px.** Scene `paused` away in all arms; pz F~A 0 = A~A2 0; return series A~F L.w 10.248 vs A~A2 10.232 |
+| P5 (C2) | **MISS on 8 quantities by up to 0.018 px.** Scene `paused` away in all arms; pz F~A 0 = A~A2 0. Return series A~F vs A~A2: L.w 10.248 vs 10.232, L.o 0.2123 vs 0.2113, L.s 0.1375 vs 0.1374, F1/F2/F3.xr 5.078 vs 5.063, N.xr 9.230 vs 9.212, N.w 8.303 vs 8.297, N.s 0.2595 vs 0.2593 (ops re-score identical). A~F2 inside or equal on every quantity |
 | P6a Chrome 1440 (C4 + re-run) | **Undecided, to the lead.** A/A-limited at every point (A~A2 2715 at t 0, then 136-183, max shade 23-96; the re-run repeats it). A~F 1024-1809 (max 57-67) |
-| P6a WebKit iPad (W3, 1032 CSS px, DPR 2) | **MISS.** F~base 470-2012; base~base2 0; but F~F2 248-1440 (687 at rest) |
+| P6a WebKit iPad (W3, 1032 CSS px, DPR 2) | **MISS** against base~base2 0. F~base 470-2012; F's own load-to-load spread F~F2 248-1440 (687 at rest) |
 | P6b Chrome 1440 (C5 re-run) | **MISS by the registered rule** (the same 5/7 relations as at phone width); A~A2 rel 0; lens A/A-limited |
 
 **P2 Chrome in detail.** No relation that involves the leaver differs, and `overLead` is empty in A and F at every t.
