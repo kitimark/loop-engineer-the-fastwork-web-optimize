@@ -6,7 +6,9 @@
 **Owner:** `fix-carousel-leaver` (lead, 2026-10-03, user T-042 #10-#11: ruled a bug, OBSERVED in Chrome only).
 **Status:** P-086 results in (2026-10-03). (1) Chrome hit; (1) Sim mixed (the registered scorer is weak in the Sim);
 (2) **miss**: a paint-order difference in the first 50 ms of every slide, cause found; (3) hit; (4) Chrome hit, Sim carousel-rooted
-just under its range. Build E is **not** offered as exact. A z-order follow-up build needs a new registration (lead).
+just under its range. Build E is **not** offered as exact (T3).
+**Now:** P-087 registered (build F = E + `z-index: 1` on the sliding leader), probes smoke-tested with A/A 0 in
+Chrome and WebKit; F not yet served or measured.
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (`.is-sliding` rules and `@keyframes avatars-exit`).
@@ -242,6 +244,8 @@ n8 / any / max per t (device px; crop 337x121):
   - area: 120 CSS px² at t = 0, then 53, 24 and 9;
   - edge or fill: fill (the overlap lens, about 8 x 20 CSS px: which face is on top);
   - static or moving: moving (the first 50 ms of every slide, every 1.02 s), 0 at rest.
+  - So E itself is **T3** (memory illusion-must-be-pixel-identical, PR-010 wide): max shade 229 is beyond T2's fill
+    limit of 64, and the difference is moving. E could only ship through a user proposal (ops result read, 757a59e).
 
 ### (3) Scene paused, Chrome hold 4b: HIT
 
@@ -281,7 +285,9 @@ n8 / any / max per t (device px; crop 337x121):
 | E | 6 | 293 | 221 | 45 | 36.8 / 7.5 |
 | E2 | 5 | 283 | 225 | 37 | 45.0 / 7.4 |
 
-- View-rooted per slide E - S = -10.4 / -2.2, inside ≤ 0.3. HIT.
+- View-rooted per slide E - S = -10.4 / -2.2, inside ≤ 0.3. HIT. The -10.4 is partly the slide count (E had 6 slides
+  in its window, S 5): the window totals are E 221 / E2 225 against S 236, and per frame E 0.75 / E2 0.80 against S
+  0.76 (ops result read, 757a59e). View-rooted layouts are frame-driven, so per slide overstates the gap.
 - View-rooted layouts (430x775) come in 75-80 % of all frames in **every** arm: base 0.80, S 0.76, E 0.75, E2 0.80 per
   frame. Something other than the carousel drives them (OBSERVED, cause not traced here). S has no extra view layouts
   tied to the leaver's motion: its per-frame rate is the lowest but one, so there are no S extras to place.
@@ -302,6 +308,206 @@ n8 / any / max per t (device px; crop 337x121):
   writes. In the Sim it adds about 7.4 carousel-rooted layouts per slide and no view-rooted layouts. Both are inside or
   near the registered bounds. It still gives back the per-frame layout st6 removed, and the lead decides whether that
   needs a user proposal.
+
+## P-087 registration: build F (written before F is served or measured; id from mgmt-ops-10, lead decision "(a)")
+
+**Build F** = E + one declaration, `z-index: 1`, on `.start-selling-avatars.is-carousel.is-sliding img.st5-lead`
+(with a comment). JS unchanged (st6-rb2's).
+
+| build | `nodes/2.DyWL8TcE.js` | `assets/2.gBuqKVzi.css` | snapshot |
+|---|---|---|---|
+| **F** | `7bf7c4657d21` (= st6-rb2) | `a984ae7b7715` | `<scratchpad>/carousel-leaver/snap/F1` (`chmod a-w`) |
+
+The CSS hash is of the text this section specifies. F1 was built by copying `snap/E1` and replacing the CSS with the
+overlay's; it was not served before this commit.
+
+**Why it should work.** Flex items honour `z-index` with `position: static`. CSS Flexbox 1 §4.3 "Flex Item Z-Ordering"
+says "z-index values other than auto create a stacking context even if position is static". That is CONFIRMED
+(https://www.w3.org/TR/css-flexbox-1/#painting). While the slide runs, the leaver therefore paints at stack level 1 of
+its nearest ancestor stacking context, after every level-0 item there, follower 1 included. When the slide ends
+(`.is-sliding` removed at the swap) it goes back to level 0.
+
+**The risk P2 checks.** Level 1 also lifts the leaver over anything else at level 0 in that context that overlaps it
+and that the baseline paints over it: the scene overlay, the next slot, or an ancestor's later sibling. The carousel's
+`overflow: hidden` clips the leaver to the carousel box, so only nodes that overlap that box can be affected.
+
+**Probes** (committed with this section; sha256, first 12):
+
+| file | sha | what |
+|---|---|---|
+| `probe/hold87.sh` | `832803b059d0` | Chrome hold: 4 servers (A, S, E1, F1 snapshots), served hashes, then `clp.mjs` or `pord.mjs` over the given arms; deletes its Chrome profiles |
+| `probe/pord.mjs` | `6ea2ecb7461f` | Chrome paint order: DOMSnapshot paint-order relations + forced-opaque lens crops, per t (below) |
+| `probe/simcrop.mjs` | `26f548f2dcfe` | WebKit (Simulator) frozen crops: `Page.snapshotRect`, natural and forced-opaque lens, per t |
+| `probe/png.mjs` | `52d21ec3f1d5` | PNG decode/encode/crop and the pair metric (n8, any, max), the same as clp.mjs's |
+| `probe/clp.mjs` | `37b9e94812fa` | unchanged from P-086 (series, counts, pixels, paused) |
+| `probe/simclp.mjs` | `56c422d5cfbc` | unchanged from P-086 (Sim Timeline layout roots + rAF series) |
+| `probe/score.mjs` | `fdbcae16946d` | unchanged (registered scorer, same frame index after slide start) |
+| `probe/shape.mjs` | `10520d556eba` | P-086's post-hoc equal-scale scorer, **registered here** as P3's Sim decider |
+| `probe/pairs.mjs` | `8a246b42bcf6` | unchanged (score.mjs over pairs) |
+
+**Runs** (each a shared-lane hold, `--max-seconds 300`; position as the P-086 amendment, the carousel centred at 0.5 vh):
+
+| run | command | arms | for |
+|---|---|---|---|
+| C1 | `hold87.sh clp series,counts <out>/c1` (probe) | A, E, F, E2, F2 | P3 Chrome, P4 Chrome |
+| C2 | `hold87.sh clp pixels,paused <out>/c2` (probe) | A, S, F, A2, F2 | P1 Chrome, P5 |
+| C3 | `hold87.sh pord - <out>/c3` (probe) | A, S, F, A2, F2 | P2 Chrome |
+| W1 | `sim.mjs session --functional -- simcrop.mjs <out>/w1` (simulator) | base, S, F, base2, F2 | P1 WebKit, P2 WebKit |
+| W2 | `sim.mjs session --functional -- simclp.mjs <out>/w2` (simulator) | base, E, F, E2, F2 | P3 Sim, P4 Sim |
+
+`<out>` = `out/carousel-leaver/p87`. Raw files stay there (gitignored).
+
+**Probe details fixed by the smoke runs** (baseline-only arms, A/A2 and base/base2; neither F, E nor S was served):
+- *Smoke 1* found two probe faults, both repaired before this commit:
+  - Chrome `pord`: hero columns in the header and a card in `#people` (paint order 200-264) overlap the carousel box
+    and were listed as "over the leaver", though they cannot be seen there.
+    - Repair: a page-side `VIS` filter. It keeps an element only if it can paint inside the carousel box: effective
+      opacity > 0, `visibility: visible`, and a box that is still non-empty after clipping by every ancestor with
+      `overflow` ≠ visible or `contain: paint` (up to a fixed ancestor).
+    - **`rel` (VIS-filtered) decides P2-Chrome.** `relAll` (every overlapping node) is reported next to it and decides
+      nothing.
+  - WebKit `simcrop`: `Page.snapshotRect` was not repeatable right after a change. The A/A n8 reached 3435 px, and one
+      lens shot had every face missing (OBSERVED in our setup; cause unknown: async image decode or low-quality
+      interpolation are candidates).
+    - Repair: **settled snapshots**. Snapshots are taken 250 ms apart until two in a row are pixel-identical, at most 8
+      tries, and the settled one is kept. An arm with a shot that never settles is VOID.
+  - Both probes **re-hold after the swap**: they run the held callbacks, then set `__hold = true` again. `post` and
+    `post300` therefore show the swapped state, not the next slide. Settling makes WebKit's `post300` later than 300
+    ms. These two points compare F against the baseline arm only, not against a time. clp.mjs is unchanged from P-086,
+    so its C2 `post300` can still be A/A-limited.
+- *Smoke 2* (the committed probes):
+  - Chrome: A~A2 `rel` differ 0 at every t and post, and lens n8 0 at every t.
+    - VIS keeps 18 of 28 overlapping nodes.
+    - In A, `overLead` is empty at every t and post: nothing visible paints over the baseline's leaver. `F1 | L` = -1:
+      follower 1 paints under the leaver.
+    - The sticky `SECTION[2]` subtree (z-index 1-4, paint order 8-22) overlaps the box but paints under the leaver
+      (170).
+  - WebKit: base~base2 nat n8 0 at all 13 points (0-220, post, post300) and lens n8 0 at all 11 t. Every shot settled
+    in 2-3 tries. Both arms caught the same leaver at the same rect (339x123 device px), with the same leaver state at
+    t 0 and 220.
+
+**Void rules** (P-086's, carried over):
+- Served hashes are checked first. A mismatch with the tables voids the hold (`served.txt`; simcrop and simclp check in
+  code).
+- `inView` false voids that arm in every mode. A crop outside the capture throws VOID.
+- A Sim arm whose Timeline fails (W2) is VOID, with no retry.
+- A blank crop is VOID: clp voids its pixel step, simcrop and pord void the arm.
+- A probe crash voids the run.
+- A void arm that a prediction needs (its A/A pair, F, or the positive control) voids that prediction's run. Each run may
+  be re-run once; a second void goes to the lead.
+
+**Interval named for every prediction.** "The slide" = the frozen t grid 0, 17, 33, 50, 67, 83, 100, 133, 167, 200,
+220 ms from the slide's first rAF, plus `post` (two rAFs after the swap) and `post300` (300 ms later). For series it is
+every sliding frame plus the swap frame.
+
+### P1: pixels 0 px against the baseline at every t, Chrome and WebKit
+
+- **Chrome** (C2, clp pixels mode as registered for P-086; crop = carousel border box ± 4 CSS px from a full-viewport
+  capture; metric n8 = pixels with any channel difference > 8).
+  - Point: F~A n8 = 0 and F2~A n8 = 0 at every t, post and post300, with A~A2 n8 = 0.
+  - Interval: F~A n8 ≤ A~A2 n8 at the same t, with no allowance. A t where A~A2 > 0 is listed as "A/A-limited" (P-086
+    post300: A2 was already in its next slide).
+  - Positive control: S~A n8 > 0 at t = 0 (paint order) and at 17-200 (P-086).
+  - Falsifier: F~A or F2~A n8 above A~A2 at any t. P(hit) 0.8.
+- **WebKit** (W1, simcrop `nat-*`).
+  - Crop: `Page.snapshotRect` of the carousel border box ± 4 CSS px (viewport coordinates, rounded out to whole CSS
+    px), at the Simulator's device scale. Each arm computes its own rect, so the rects are compared too.
+  - WebKit paints this in software (`snapshotFrameRect`) through the same RenderLayer z-order lists that order its
+    composited layers. That the composited screen shows the same order is an inference, UNRESOLVED; a screen capture
+    would settle it. `backdrop-filter` is not drawn, in every arm alike (`research/architecture/safari-inspector-probing.md`
+    §0.3).
+  - Freeze: as clp.mjs, with the setTimeout wrapper installed after load (the rotator calls `window.setTimeout` at run
+    time, JS ~L11575).
+  - A/A = base vs base2: a second page load in the same Sim hold, taken the same way.
+  - Point: F~base n8 = 0 and F2~base n8 = 0 at every t, post and post300, with base~base2 n8 = 0.
+  - Interval and A/A-limited rule as Chrome.
+  - Positive control: S~base n8 > 0 at some t in 0-200.
+  - Falsifier: F~base or F2~base above the A/A at any t. P(hit) 0.6 (WebKit's snapshot of paused animations is untried
+    here, and its border snaps to 0.67/0.33 px).
+
+### P2: paint order over the whole slide (follower, scene overlay, next slot, anything overlapping)
+
+- **Chrome, decides for Chrome** (C3, `pord.mjs` relations).
+  - At every t and post, `DOMSnapshot.captureSnapshot({ includePaintOrder: true })` gives each layout node a global
+    paint-order index.
+  - Nodes taken: every node whose box overlaps the carousel's border box, whose own opacity is not 0, and that passes
+    the page-side `VIS` filter (above; it decides through `rel`, while `relAll` without VIS is only reported). Carousel imgs
+    are keyed by role (L, F1-F3, N while the slide runs; P0-P4 after it). Other nodes are keyed by DOM path.
+  - For every pair with at least one carousel img, whose two boxes overlap each other, the relation is
+    sign(paint order a - paint order b).
+  - Point: F~A and F2~A have 0 differing relations at every t and post. `overLead` (the nodes painted over the leaver)
+    is the same set in F as in A.
+  - A/A: A~A2 must have 0 differing relations. If it doesn't, the method is noisy and P2-Chrome is VOID (to the lead).
+  - Positive control: S~A differs at t = 0 on `F1 | L` (S: follower over the leaver, A: under).
+  - Falsifier: any relation in F that differs from A. P(hit) 0.85.
+- **WebKit, decides for WebKit; Chrome cross-check** (W1 and C3 `lens-*` crops).
+  - At every t the leaver is forced opaque (inline `opacity: 0.999 !important`, which outranks the animation per CSS
+    Cascade 5 §6.1, CONFIRMED: https://drafts.csswg.org/css-cascade-5/#cascade-origin). The leaver's whole area then
+    shows at full strength in every lens where it overlaps something. The crop is taken, then the inline value is
+    removed.
+  - The same forcing in every arm. In the baseline the leaver is already a stacking context there (its running
+    transform), so the forcing changes no stacking.
+  - Point: F~base lens n8 = 0 at every t (WebKit), F~A lens n8 = 0 (Chrome). The A/A (base~base2, A~A2) lens n8 = 0.
+  - Positive control: S~base (S~A) lens n8 > 0 at t = 0.
+  - Falsifier: F above the A/A at any t. P(hit) WebKit 0.65, Chrome 0.85.
+
+### P3: motion unchanged from E (L, F1-F3, N: xr, w, o, s)
+
+- **Chrome** (C1, `pairs.mjs` / score.mjs, the registered P-086 scorer, ref E).
+  - Point: F~E max |Δ| ≤ 0.05 px (xr, w) and ≤ 0.003 (o, s) for every role.
+  - Interval: F~E max ≤ max(E~E2, F~F2) max + 0.05 px / + 0.003.
+  - A slide whose first frame shows the leaver not yet animating in one arm only (P-086's late start: L.w = 32 at frame
+    1) is listed and dropped from the max, mechanically.
+  - End offset: slot 1 ends at rest - 22 and snaps -2 at the swap in F, as in A and E.
+  - Falsifier: any role or quantity outside the interval, or a missing end offset. P(hit) 0.9.
+- **Sim** (W2 series, `shape.mjs` at equal leaver scale, ref E; the frame-index scorer is uninformative in the Sim,
+  P-086).
+  - Point/interval: F~E medians of L.w, V.x0, V.x1 and F1.xr ≤ E~E2 median + 0.05 px. Maxima ≤ max(E~E2, F~F2) max
+    + 0.5 px (rAF phase).
+  - End offset per slide within E's range ± 0.05 px.
+  - Falsifier: any of these out. P(hit) 0.8.
+
+### P4: cost no more than E
+
+The P-086 lesson decides the units. Slide-driven events are normalised per slide inside each arm's window: slides = the
+MutationObserver slide starts in that window. Frame-driven events are compared as window totals over equal windows, or
+per frame. Totals are always quoted next to the per-slide numbers.
+- **Chrome** (C1 counts, 5.1 s trace window, ref E and E2).
+  - `Layout` per slide: F within [min(E, E2) - 1, max(E, E2) + 1].
+  - DOM writes per slide: F = E exactly (same JS).
+  - `UpdateLayoutTree` (frame-driven), window totals: F within [min(E, E2) - 3, max(E, E2) + 3].
+  - `Paint` per slide: F within [min(E, E2) - 10, max(E, E2) + 10]. P-086's E/E2 spread was about 10 per slide; a
+    restack at the slide's start and end may add one paint each.
+  - P(hit) 0.8.
+- **Sim** (W2, 6 s Timeline, ref E and E2).
+  - Carousel-rooted layouts per slide: F within [min(E, E2) - 1, max(E, E2) + 1].
+  - View-rooted layouts (frame-driven), per frame: F ≤ max(E, E2) + 0.03. Totals and per-slide numbers are quoted.
+  - P(hit) 0.6.
+
+### P5: scene paused (C2 paused mode, as P-086 (3))
+
+The scene reads `paused` away in every arm. The return series F~A is within A~A2 (score.mjs). The `pz` crop F~A n8 ≤
+A~A2. P(hit) 0.85.
+
+### Decisions (if X then Y)
+
+- **P1-P5 all hit:** F is offered as the exact build, T1: 0 px against the baseline in Chrome and WebKit, A/A 0.
+  - I regenerate `patch.diff` (baseline-relative: st6-rb2 + F) and `delta-vs-st6rb2.diff` (F's CSS on st6-rb2), run
+    `npm run test:unit`, commit, and send the lead a land request; a fix-reviewer follows.
+  - **F landing also removes the same paint-order difference from st6-rb2 and best-build.** carousel-leaver joins
+    best-build as one `COMPONENTS` `delta:` line (`fixes/best-build/README.md` "Adding one"), so best-build gets the fix
+    through that line. st6-rb2 on its own keeps the difference (F-191).
+- **P1 miss with P2 hit:** the remaining difference is not paint order. I find its cause (data first, `n8box.mjs`) and
+  report it to the lead. Any new build needs a new P-id.
+- **P2 miss** (F lifts the leaver over something the baseline paints over it): F is not offered. I report which node, at
+  which t and in which engine. A repair (for example `isolation: isolate` on the carousel, so level 1 stays inside it)
+  is a new registration.
+- **P3 miss:** I report the motion difference; F is not offered until it is explained.
+- **P4 miss with P1-P3 and P5 hit:** F is exact but costs more than E. It goes to the lead with the numbers (exact vs
+  cheap); the lead decides whether that becomes a user proposal.
+- **Chrome hits, WebKit misses** (P1 or P2): F is not offered as exact. I report the WebKit difference with its five
+  tier numbers (PR-010 wide) to the lead.
+- **Void:** the rules above, one re-run, then the lead.
 
 ## Deliverables
 
