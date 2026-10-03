@@ -226,6 +226,26 @@ load1 up to 81-91): the frozen frames don't depend on it, the Timeline windows a
 - Rate cross-check: 0.001 matched (max delta 1 at 0.45 of the bracket); rate 1 inconclusive (brackets of 305-311 ms
   under the load, best max delta 121): to repeat in a quiet Simulator.
 
+**Session B1 on C8/V9** (`out/cd-roll-ca/simpx/simpx-2026-10-03T10-54-38-590Z.json`; fade50, carry + two, 98 shots per
+arm, A/A; no rate check; Sim background mean 42 %, load1 up to 72):
+
+| | A/A | V9 vs C8 |
+|---|---|---|
+| shots differing | 48 of 98, max delta 1 | 94 of 98; max delta 6 (carry), 5 (two); at rest ≤ 1 |
+| digit place / rects | 0 / 0 | ≤ 0.017 px / ≤ 0.01648 px (1 shot ≥ 1/64, the interpolation offset), 0 unmatched |
+| shared startTime | | 103 / 103 |
+| layers rest, rest + 2 s, mid-roll | 14 / 0.329 MB; carry mid 15 / 0.352 | equal in every census |
+| roll end (A vs B) | | carry 73 px delta 1 (A vs A2 0); two 0 px; last keyframe vs inline 0 px, 0 left, rects 0 |
+
+The Sim end pairs that differ (wrap in A, carry in B1) show the very same 73 px: 42 at css x 260-299 and 31 at
+x 160-209 from the timer's left. Both spots toggle in the unchanged page too: C8 vs C8-again has the 260-299 spot in
+most frames and the exact 31-px 160-209 pattern in 1 of 49 (B1) and 2 of 45 (A) frame pairs. A 1-shade toggle of the
+page itself, not the cancel (OBSERVED, Simulator).
+
+**Parked** by the lead after B1 (user order: fixes 1-3 first; the Simulator queue is their bottleneck). Resumes on the
+landed cd-strip base: B2 (step), C (hero pass), sim-counts, sim-hide, the Chrome hold (comp-check, h60, hide-check,
+`fix.mjs check`, T-034 widths), then review round 4.
+
 ## WebKit frames, layers and Timeline (round 4, Simulator; OBSERVED, Simulator, in our setup) (strip-rw, history)
 
 `simpx.mjs` (this folder), fw-sim 15 Pro Max, iOS 18.7 Mobile Safari, shared lane, `sim.mjs session --functional`,
@@ -529,7 +549,7 @@ end and the spring's start value)
 design delta from cd-roll-ca-4 (strip-rw): no __crTops (no top writes); the animations override cd-strip's inline rest
 transforms, cancel() at the finish reveals them (last keyframe = rest transform)
 checks on tc: roll end (Chrome end-check 8 rolls, Sim wrap/wrapUp): last keyframe = inline rest, 0 px; A vs B within A/A; session A
-(fade50 wrap,wrapUp + A/A): V9 vs C8 max delta 6, state <= 0.017 px, rects <= 0.01636 px, 0 unmatched, layers equal; rest of the counted set PENDING
+(fade50 wrap,wrapUp + A/A) and B1 (carry,two): V9 vs C8 max delta 6, state <= 0.017 px, rects <= 0.01648 px, 0 unmatched, layers equal; PARKED: rest of the counted set PENDING
 memory/layers (Simulator, fade50, session A): 84 layers, 14 backed, 0.329 MB at rest and rest+2s, C8 = V9; mid-roll equal
 debug hooks: none
 ```

@@ -1960,7 +1960,7 @@
   },
   "pending": [
    "review round 4 (lead spawns it with session A data)",
-   "session B1 carry,two and B2 step at fade50 + A/A on C8/V9; session C hero pass + A/A",
+   "session B2 step at fade50 + A/A on C8/V9; session C hero pass + A/A",
    "sim-counts frozen 2 reps C8,V9; sim-hide C8/V9 3 cycles",
    "Chrome hold: comp-check C8/V9 (Paint per roll), h60 roll-probe, hide-check, fix.mjs check --on cd-strip",
    "frozen-frame identity at c375 (DPR 3 touch) and c1440 (DPR 1) mid-roll + live resize across 400 mid-roll (T-034)",
@@ -2108,7 +2108,92 @@
      ]
     }
    },
-   "costLineTc": "extra backed cell at rest: not seen on tc (V9 14 / 0.329 MB = C8, at rest and rest+2s, 1 run); on rw 2 of 4 runs (OBSERVED)"
-  }
+   "costLineTc": "extra backed cell at rest: not seen on tc (V9 14 / 0.329 MB = C8, at rest and rest+2s, 1 run); on rw 2 of 4 runs (OBSERVED)",
+   "sessionB1_C8_V9": {
+    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-54-38-590Z.json",
+    "log": "out/cd-roll-ca/simpx-countB1-tc.log",
+    "pass": "fade50",
+    "scenarios": [
+     "carry",
+     "two"
+    ],
+    "shots": 98,
+    "simQuiet": "skipped (ps failed); SIM_BACKGROUND mean 42 % max 142 %, load1 max 72; SIMPX_RATES empty (no rate check)",
+    "aa": {
+     "differ": 48,
+     "maxDelta": 1,
+     "state": 0,
+     "rects": 0
+    },
+    "v": {
+     "differ": 94,
+     "maxDelta": {
+      "carry": 6,
+      "two": 5
+     },
+     "stateMaxPx": 0.017,
+     "rectMaxPx": 0.01648,
+     "rectOverLayoutUnit": 1,
+     "unmatched": 0,
+     "sharedStart": "103/103",
+     "restMaxDelta": 1
+    },
+    "layers": {
+     "restC": [
+      14,
+      0.329
+     ],
+     "restV": [
+      14,
+      0.329
+     ],
+     "rest2sC": [
+      14,
+      0.329
+     ],
+     "rest2sV": [
+      14,
+      0.329
+     ],
+     "midEqual": true
+    },
+    "rollEndSim": {
+     "carry": {
+      "digits": 3,
+      "cells": 22,
+      "kfInlineMaxPx": 0,
+      "animsLeft": 0,
+      "AvsB": [
+       73,
+       1
+      ],
+      "AvsA2": [
+       0,
+       0
+      ],
+      "rectAB": 0,
+      "stateABpx": 0
+     },
+     "two": {
+      "digits": 2,
+      "cells": 15,
+      "kfInlineMaxPx": 0,
+      "animsLeft": 0,
+      "AvsB": [
+       0,
+       0
+      ],
+      "AvsA2": [
+       0,
+       0
+      ],
+      "rectAB": 0,
+      "stateABpx": 0
+     }
+    }
+   },
+   "rollEndSimSpots": "The Sim end pairs that differ (session A wrap, B1 carry) show the same 73 px, delta 1: 42 px at css x 260-299 and 31 px at x 160-209 from the timer left. Both spots also toggle in the unchanged page: C8 vs C8-again shows the 260-299 spot in most frames and the exact 31-px x 160-209 pattern in 1 of 49 (B1) and 2 of 45 (A) frame pairs. So a page-own 1-shade toggle, not the cancel (OBSERVED, Simulator)."
+  },
+  "status": "parked by the lead (2026-10-03 ~10:50Z, user order: fixes 1-3 first, Simulator queue); resumes on the landed cd-strip base: B2, C, sim-counts, sim-hide, Chrome hold, then review round 4"
  }
 }
