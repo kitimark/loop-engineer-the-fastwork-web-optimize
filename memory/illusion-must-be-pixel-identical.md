@@ -35,5 +35,14 @@ fill, static or moving. Anything beyond T2 (T3), and any difference that shows o
 see feel), is a proposal to the user. Write-up: `research/pixel-tolerance/README.md`.
 **Why:** the user chose the wide numbers over the recommended standard ones; frozen-frame numbers still cannot judge
 motion, so motion-only differences stay with the user.
+**Reading (lead, 2026-10-03, after de-pixel-rule's and mgmt-ops-10's wording checks):**
+- Share and area count only the pixels that differ by more than 8 levels beyond the A-against-A mask, as in
+  `research/pixel-tolerance/README.md`. The largest shade covers every pixel.
+- Motion: moving content is T2 only when every sampled frame meets the numbers and the part stays within 1 device
+  pixel. A difference that exists only while moving and is gone at rest, or that changes how something moves (path,
+  timing, a new jump, a crop), is a proposal. The stricter reading wins.
+- Checked at phone width plus one desktop width, and at the DPRs the technique depends on.
+- Photos are not special-cased: a photo difference within the T2 numbers passes. The user accepted that risk with
+  option "wide" (R5 hero cards admitted).
 
 Related: [perception-tests-touch-ab](perception-tests-touch-ab.md), [proposal-decision-is-the-spec](proposal-decision-is-the-spec.md).
