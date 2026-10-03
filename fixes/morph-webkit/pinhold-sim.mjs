@@ -25,7 +25,24 @@ const ARMDEF = {
   C: { overlays: [join(SNAP, 'aw1-10e-3e2f599a1632')], js: '3e2f599a1632', css: 'c6aad94b455f' },
   V: { overlays: [join(SNAP, 'mw10e-arm-scope-c-c6d3590576a7'), join(SNAP, 'aw1-10e-3e2f599a1632')], js: 'c6d3590576a7', css: 'c6aad94b455f' },
   D: { overlays: [join(SNAP, 'mw10e-arm-scope-d-999c4497f37e'), join(SNAP, 'aw1-10e-3e2f599a1632')], js: '999c4497f37e', css: 'c6aad94b455f' },
+  // F-165 attribution pair, arm B: D's JS, aw1-10e's CSS plus only cdwc's P-017 panel-face rule (st6-rb2 CSS 11931-11938)
+  B: { overlays: [join(SNAP, 'mw10e-arm-scope-d-p017css-5dc6e8e37388'), join(SNAP, 'mw10e-arm-scope-d-999c4497f37e'), join(SNAP, 'aw1-10e-3e2f599a1632')], js: '999c4497f37e', css: '5dc6e8e37388' },
 };
+// Panel clock layer census at the pin, after the Timeline window (F-165): composited layers whose node is a digit face of
+// the morph panel's clock, and WebKit's compositing reasons for the first one.
+const PANELFACE = '.start-selling-morph-panel .waitlist-closing-countdown .face';
+async function panelLayers(c) {
+  await c.send('LayerTree.enable');
+  try {
+    const root = (await c.send('DOM.getDocument')).root.nodeId;
+    const fn = new Set((await c.send('DOM.querySelectorAll', { nodeId: root, selector: PANELFACE })).nodeIds);
+    const L = (await c.send('LayerTree.layersForNode', { nodeId: root })).layers || [];
+    const F = L.filter((l) => fn.has(l.nodeId));
+    const reasons = F[0] ? await c.send('LayerTree.reasonsForCompositingLayer', { layerId: F[0].layerId }).then((x) => Object.keys(x.compositingReasons || {}).filter((k) => x.compositingReasons[k]).join(',')).catch((e) => 'error ' + (e.message || JSON.stringify(e))) : null;
+    const wc = await c.evaluate(`(() => { const f = document.querySelector(${JSON.stringify(PANELFACE)}); return f ? getComputedStyle(f).willChange : null; })()`);
+    return { faceNodes: fn.size, faceLayers: F.length, layers: L.length, reasons, faceWillChange: wc };
+  } finally { await c.send('LayerTree.disable').catch(() => {}); }
+}
 const ARMS = (process.argv[2] || 'V,C').split(',');
 const SCRIPT = join(WT, 'fixes/morph-webkit/gestures', process.argv[3] || 'pin-hold-v1.json');
 const sha = (b) => createHash('sha256').update(b).digest('hex');
@@ -61,9 +78,13 @@ const INSTALL = `(() => {
 
 const ms = (r) => (r.endTime != null && r.startTime != null ? (r.endTime - r.startTime) * 1000 : 0);
 function summarize(records) {
-  const types = {}, js = {}; let frames = 0, frameMs = 0;
+  const types = {}, js = {}; let frames = 0, frameMs = 0, digitPaints = 0, fullFaceComposites = 0;
+  // digit-face-sized Paint clips (< 25 px wide, 30-45 px tall; F-165) and Composites carrying >= 70 of them
+  const digit = (q) => { if (!q) return false; const xs = [q[0], q[2], q[4], q[6]], ys = [q[1], q[3], q[5], q[7]]; const w = Math.max(...xs) - Math.min(...xs), h = Math.max(...ys) - Math.min(...ys); return w < 25 && h > 30 && h < 45; };
   const walk = (r) => {
     const t = types[r.type] ||= { n: 0, ms: 0 }; t.n++; t.ms += ms(r);
+    if (r.type === 'Paint' && digit(r.data?.clip)) digitPaints++;
+    if (r.type === 'Composite' && (r.children || []).filter((p) => p.type === 'Paint' && digit(p.data?.clip)).length >= 70) fullFaceComposites++;
     if (['FunctionCall', 'FireAnimationFrame', 'TimerFire', 'EventDispatch', 'ObserverCallback'].includes(r.type)) {
       const d = r.data || {}; const loc = r.type === 'EventDispatch' ? d.type : `${(d.scriptName || '').split('/').pop()}:${d.scriptLine ?? ''}${d.callbackType ? ' ' + d.callbackType : ''}`;
       const k = `${r.type} ${loc}`; const j = js[k] ||= { n: 0, ms: 0 }; j.n++; j.ms += ms(r);
@@ -72,7 +93,7 @@ function summarize(records) {
   };
   for (const r of records) { if (r.type === 'RenderingFrame') { frames++; frameMs += ms(r); } walk(r); }
   const round = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1].n - a[1].n).map(([k, v]) => [k, { n: v.n, ms: Math.round(v.ms * 10) / 10 }]));
-  return { renderingFrames: frames, renderingFrameMs: Math.round(frameMs), types: round(types), js: round(js) };
+  return { renderingFrames: frames, renderingFrameMs: Math.round(frameMs), digitPaints, fullFaceComposites, types: round(types), js: round(js) };
 }
 
 const res = { tool: 'fix-nav-morph pinhold-sim', note: 'Simulator: counts only (F-084)', startedAt: new Date().toISOString(), order: ARMS, runs: [] };
@@ -117,12 +138,14 @@ for (const arm of ARMS) {
         raf: P.raf, timeouts: P.to, scrollTo: P.scrollTo, scrollEvents: P.scrollEv, mutations: P.mut };
       run.timeline = summarize(recs);
       await c.send('Timeline.disable').catch(() => {});
+      run.panelClock = await panelLayers(c).catch((e) => ({ error: String(e.message || e) }));
+      console.log(`${arm} panel clock at pin: ${JSON.stringify(run.panelClock)}`);
       console.log(`${arm} at pin: before ${JSON.stringify(run.before)}`);
       console.log(`${arm} idle 4 s: frames ${run.idle.frames} gt34 ${run.idle.gt34} gt50 ${run.idle.gt50} max ${run.idle.maxDt} m ${run.idle.mRange} y ${run.idle.yRange} scrollTo ${P.scrollTo} scrollEv ${P.scrollEv}`);
       console.log(`  raf ${JSON.stringify(P.raf).slice(0, 600)}`);
       console.log(`  timeouts ${JSON.stringify(P.to).slice(0, 400)}`);
       console.log(`  mutations ${JSON.stringify(P.mut).slice(0, 600)}`);
-      console.log(`  timeline frames ${run.timeline.renderingFrames} types ${JSON.stringify(run.timeline.types).slice(0, 700)}`);
+      console.log(`  timeline frames ${run.timeline.renderingFrames} digitPaints ${run.timeline.digitPaints} fullFaceComposites ${run.timeline.fullFaceComposites} types ${JSON.stringify(run.timeline.types).slice(0, 700)}`);
       console.log(`  js ${JSON.stringify(run.timeline.js).slice(0, 700)}`);
     } catch (e) { run.error = String(e.message || e); console.error(arm, e.message); }
     finally { c.close(); }

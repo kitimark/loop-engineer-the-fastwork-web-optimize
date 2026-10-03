@@ -531,6 +531,24 @@ the user's line (st6-rb2) and the wave-2 stack do not.
   - If the lead wants both questions answered, the one-rule B goes first.
 - **Before phone time:** a Simulator functional check of B (shared lane): 0 panel clock layers at the pin, the same
   v1c pin exposure (9 pushes, end pushes prevented), and pixels at the pin equal to A apart from the countdown phase.
+  - **Done for B, 10-03 07:2xZ** (one normal 300 s Simulator hold, `pinhold-sim.mjs B arm-scope-touch-v1c.json`;
+    counts only, Simulator ms never count, F-084). Arm B is served from the immutable copy
+    `out/snapshots/mw10e-arm-scope-d-p017css-5dc6e8e37388`, then D's and aw1-10e's copies.
+    - Panel clock at the pin (LayerTree census, new `panelLayers()` in `pinhold-sim.mjs`): 84 `.face` nodes under
+      `.start-selling-morph-panel .waitlist-closing-countdown`, **0 of them composited**, computed will-change
+      `auto`; 37 layers in the page.
+    - v1c exposure equal to D's Simulator run (`v1c-count.mjs`):
+      - program 0653995a35be; settle y 5216 (low bin; D 5216);
+      - 9 pushes to `end`, 438/438 prevented (D 440/440);
+      - end pushes 37/37, 38/38 (D 38/38, 38/38);
+      - no abort, 0 errors.
+    - Timeline over 4 s held at the pin: 85 digit paints, **0 full face composites** (Composites with ≥ 70 digit
+      clips); frames gt50 0.
+    - Not done yet:
+      - The same census on A/D. The D run (v1c-h3) predates `panelLayers()`, so the 80 for A rests on the CSS read
+        and on P-071's face repaints (OBSERVED).
+      - The pin pixel compare A vs B.
+      - Both are one more Simulator hold, after the P-073 block, so it does not load the Mac during counted runs.
 - **Driver and phone:** G, v1c (0653995a35be), Timeline on (`Page.disable` -> `Page.enable` -> `Timeline.start`), a
   cool phone (start ≤ 38.6 °C, the P-071 range, so heat is not a variable), Low Power Mode off, n = 2 per arm in the
   order A B B A, each in the runner's own hold, parked between runs.
