@@ -5,7 +5,9 @@
 //   node tools/lock.mjs acquire iphone --owner <topic> [--ttl 900] [--wait 0] [--url https://lan:5231/] [--note "..."]
 //       --url host `lan` (or `lan-host`): this Mac's LAN address, kept as given and resolved by the phone tools at run time
 //       (lib/lan.mjs, `node tools/lan.mjs`; it changes on a Wi-Fi reconnect, I-073); acquire checks that it resolves now
-//   node tools/lock.mjs renew   iphone --owner <topic> [--ttl 900]
+//   node tools/lock.mjs renew   iphone --owner <topic> [--ttl 900] [--no-shorten]
+//       sets the expiry to now + ttl; --no-shorten (an automatic renew, e.g. iphone.mjs run before every run) keeps a
+//       later expiry the owner set (I-091). A re-entrant acquire by the same owner never shortens a live lease either.
 //   node tools/lock.mjs doing   iphone --owner <topic> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear
 //       acquire|renew|run take the same as --doing "<plain line>" [--for X] [--eta-min N] (I-060): what the hold is for,
 //       in plain words, shown on the progress page's "Right now" (lib/hold-job.mjs; nothing personal, Hard rule 12)
@@ -347,7 +349,7 @@ async function main() {
     console.log(`BUSY ${resource}: ${who}${res.why ? ` (${res.why})` : ''}. You ("${owner}") are #${res.position} in the queue; run acquire again within ${shared ? '60 s' : '10 min'} to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
     return 3;
   }
-  if (cmd === 'renew') { const h = await renew(resource, { owner, ttlSec: Number(opt('ttl', 900)) }); keepAwake(resource, h); if (meta.job) await describeHold(resource, { owner, job: meta.job }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
+  if (cmd === 'renew') { const ttlSec = Number(opt('ttl', 900)), h = await renew(resource, { owner, ttlSec, noShorten: flag('no-shorten') }); keepAwake(resource, h); if (meta.job) await describeHold(resource, { owner, job: meta.job }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.kept ? ` (kept: already held longer than --ttl ${ttlSec} s)` : ''}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
   if (cmd === 'release') {
     const h = await release(resource, { owner, force: flag('force'), shared });
     if (h?.sharedReader) { console.log(`RELEASED ${resource} (shared reader "${h.owner}"${h.closed ? '; the group closed' : ''})`); return 0; }

@@ -95,6 +95,44 @@ test('renew extends only your own live lease', async () => {
   await assert.rejects(L.renew(R, { owner: 'a', ttlSec: 60 }), /not held by "a"/);
 });
 
+test('I-091: a noShorten renew (iphone.mjs run before every run) never shortens a longer live lease; a plain renew still sets now + ttl', async () => {
+  await L.tryAcquire(R, { owner: 'a', kind: 'lease', ttlSec: 1800 }); // the owner set a 30-min lease on purpose
+  const long = Date.parse(L.status(R).holder.expiresAt);
+  const rn = await L.renew(R, { owner: 'a', ttlSec: 900, noShorten: true }); // the run needs only 900 s
+  assert.equal(Date.parse(rn.expiresAt), long, `kept the longer expiry (${rn.expiresAt})`);
+  assert.equal(Date.parse(L.status(R).holder.expiresAt), long, 'and wrote it so');
+  // a run that needs more than is left still extends it
+  const ext = await L.renew(R, { owner: 'a', ttlSec: 2400, noShorten: true });
+  assert.ok(Date.parse(ext.expiresAt) - Date.now() > 2390000, `extended to now + 2400 s (${ext.expiresAt})`);
+  // an explicit renew from the owner keeps its semantics: the new expiry is now + ttl, shorter or not
+  const plain = await L.renew(R, { owner: 'a', ttlSec: 600 });
+  assert.ok(Math.abs(Date.parse(plain.expiresAt) - Date.now() - 600000) < 5000, `plain renew: now + 600 s (${plain.expiresAt})`);
+  // still only your own live lease, and never a short job
+  await assert.rejects(L.renew(R, { owner: 'b', ttlSec: 60, noShorten: true }), /not held by "b"/);
+});
+
+test('I-091: a re-entrant acquire by the same owner never shortens its live lease; the chrome-measure cap still applies', async () => {
+  await L.tryAcquire(R, { owner: 'a', kind: 'lease', ttlSec: 1800 });
+  const long = Date.parse(L.status(R).holder.expiresAt);
+  const re = await L.tryAcquire(R, { owner: 'a', kind: 'lease', ttlSec: 900, meta: { job: { text: 'next run' } } });
+  assert.equal(re.reentrant, true);
+  assert.equal(Date.parse(re.holder.expiresAt), long, `re-entry kept the longer expiry (${re.holder.expiresAt})`);
+  assert.equal(Date.parse(L.status(R).holder.expiresAt), long);
+  assert.deepEqual(L.status(R).holder.meta.job, { text: 'next run' }, 'the job description is still refreshed');
+  const up = await L.tryAcquire(R, { owner: 'a', kind: 'lease', ttlSec: 3600 });
+  assert.ok(Date.parse(up.holder.expiresAt) - Date.now() > 3590000, 're-entry with a longer ttl still extends it');
+  await L.release(R, { owner: 'a' });
+  // chrome-measure: keeping the expiry never passes acquiredAt + maxHoldSec
+  const CMR = 'chrome-measure', { maxHoldSec } = L.LEASE_POLICY[CMR];
+  await L.tryAcquire(CMR, { owner: 'a', kind: 'lease', ttlSec: 900 });
+  const cm = Date.parse(L.status(CMR).holder.expiresAt);
+  const cre = await L.tryAcquire(CMR, { owner: 'a', kind: 'lease', ttlSec: 300 });
+  assert.equal(Date.parse(cre.holder.expiresAt), cm, 'a shorter re-entry keeps the chrome-measure lease too');
+  const cmax = await L.tryAcquire(CMR, { owner: 'a', kind: 'lease', ttlSec: maxHoldSec });
+  assert.ok(Date.parse(cmax.holder.expiresAt) <= Date.parse(cmax.holder.acquiredAt) + maxHoldSec * 1000, 'within the cap');
+  await L.release(CMR, { owner: 'a' });
+});
+
 test('stale process holder (dead pid) is replaced and recorded in last-stale.json', async () => {
   const pid = deadPid();
   await L.tryAcquire(R, { owner: 'crashed', kind: 'process', pid });
