@@ -1,7 +1,7 @@
 {
  "topic": "cd-roll-ca",
  "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
- "date": "2026-10-03T03:09:27.187Z",
+ "date": "2026-10-03T03:21:54.468Z",
  "config": {
   "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
   "stackedOn": "cd-strip (arm b) on st6-rb2",
@@ -1578,9 +1578,12 @@
      "maxPendingAtShow": 1,
      "hiddenRolls": 0,
      "gapRolls": 0,
-     "maxStartErrPx": 0,
-     "maxFirstFrameErrPx": 0,
-     "errors": 0
+     "errors": 0,
+     "perCycleModelNotValidOnWebKit": {
+      "note": "round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain",
+      "maxStartErrPx": 0,
+      "maxFirstFrameErrPx": 0
+     }
     }
    },
    "V3": {
@@ -1597,13 +1600,17 @@
      "maxPendingAtShow": 1,
      "hiddenRolls": 16,
      "gapRolls": 16,
-     "maxStartErrPx": 1.33,
-     "maxFirstFrameErrPx": 36,
-     "errors": 0
+     "errors": 0,
+     "perCycleModelNotValidOnWebKit": {
+      "note": "round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain",
+      "maxStartErrPx": 1.33,
+      "maxFirstFrameErrPx": 36
+     }
     }
    }
   },
-  "summaryColumnsNotValid": "maxStartErrPx / maxFirstFrameErrPx in the summaries are the round-2 per-cycle model (no pre-visible frame, no snaps): not valid on WebKit; use chain",
+  "summaryColumnsNotValid": "summary.perCycleModelNotValidOnWebKit (maxStartErrPx / maxFirstFrameErrPx) is the round-2 per-cycle model (no pre-visible frame, no snaps): not valid on WebKit; use chain",
+  "review": "review-cd-roll-ca round 3: PASS with nits (nit 1 README line on the watch re-arming per hidden frame, nit 2 legacy fields renamed, nit 3 wording kept as a time lead)",
   "chain": {
    "frames": 829,
    "targetChanges": 36,

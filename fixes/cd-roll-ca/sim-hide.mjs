@@ -174,12 +174,20 @@ function chain(log) {
     frames: F.length, targetChanges: log.inl.length, maxErrPx: { visible: mx(by('visible')), firstSecondAfterShow: mx(by('first 1 s after show')), hidden: mx(by('hidden')) }, worstAfterShow: worst(by('first 1 s after show')), worstVisible: worst(by('visible')) };
 }
 
+// the round-2 per-cycle model (no pre-visible frame, no snaps): kept under a name nobody quotes as a result; use chain
+const legacy = (per) => ({ perCycleModelNotValidOnWebKit: {
+  note: 'round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain',
+  maxStartErrPx: Math.max(0, ...per.flatMap((p) => (p.startValueVsHeld || []).map((x) => x.err))),
+  maxFirstFrameErrPx: Math.max(0, ...per.flatMap((p) => (p.firstFrameAfterShow || []).map((x) => x.errPx))),
+} });
+
 // --analyze <file>: recompute per/summary/chain from a saved run (the raw log is kept verbatim), rewrite the file
 if (ANALYZE) {
   const d = JSON.parse(readFileSync(ANALYZE, 'utf8'));
   for (const [arm, r] of Object.entries(d.arms)) {
     r.per = analyze(r.log);
     r.chain = arm === 'C' ? null : chain(r.log);
+    if (r.summary) { delete r.summary.maxStartErrPx; delete r.summary.maxFirstFrameErrPx; Object.assign(r.summary, legacy(r.per)); }
     console.log(arm, 'chain', JSON.stringify(r.chain && { startValue: { ...r.chain.startValue, notVisible: undefined }, maxErrPx: r.chain.maxErrPx }));
   }
   d.reanalyzedAt = new Date().toISOString();
@@ -228,9 +236,8 @@ for (const arm of ARMS) {
       maxPendingWhileHidden: Math.max(0, ...per.map((p) => p.pending?.maxWhileHidden ?? 0)),
       maxPendingAtShow: Math.max(0, ...per.map((p) => p.pending?.atShow ?? 0)),
       hiddenRolls: per.reduce((a, p) => a + (p.hiddenRolls || 0), 0), gapRolls: per.reduce((a, p) => a + (p.gapRolls || 0), 0),
-      maxStartErrPx: Math.max(0, ...per.flatMap((p) => (p.startValueVsHeld || []).map((x) => x.err))),
-      maxFirstFrameErrPx: Math.max(0, ...per.flatMap((p) => (p.firstFrameAfterShow || []).map((x) => x.errPx))),
       errors: log.errors.length,
+      ...legacy(per),
     };
     const fullChain = arm === 'C' ? null : chain(log);
     res.arms[arm] = { url, servedHash, inject: inj, ua, steps, summary, per, chain: fullChain, log };

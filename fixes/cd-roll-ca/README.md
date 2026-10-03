@@ -7,7 +7,7 @@
 (B1 fixed in code, B2/B3 in text); round 2 PASS with three nits, answered (audit of the first hide analysis,
 forced-roll parity, served hashes); WebKit hidden-page check run in the Simulator found a difference from Chrome on
 return from an app switch; round 3 build `2af461dc…` fixes it (lead's order: a roll's "ran a frame" flag and a hide
-watch); Chrome hide check, one 60 Hz probe and the Simulator check re-run on it; review round 3 (hide code only) pending.
+watch); Chrome hide check, one 60 Hz probe and the Simulator check re-run on it; review round 3 (hide code only): PASS with nits, nits applied.
 To rebuild on cd-strip's landed patch.
 **Stage:** F (build card); D signed by the lead, fast path, 2026-10-03 01:35Z; V = the user's blind watched comparison
 (no touch; ticket rev 2 held by the lead)
@@ -276,8 +276,8 @@ with a new analysis (`chain`, below), C and V3, 3 cycles each (hidden 7.2-9.3 s)
   settled it replays the original over the logged frames exactly as the bundle does: every change of a digit's target
   (seen by a MutationObserver on the strip's inline style, which also catches snaps) restarts `GE` from the current
   value with velocity 0, and each logged frame steps it; the build's value is the strip's computed transform at the
-  same frame. It replaces the round-2 per-cycle columns: `maxStartErrPx` 1.33 and `maxFirstFrameErrPx` 36 px in the
-  script's summary are that old model (no pre-visible frame, no snaps) and are not valid on WebKit.
+  same frame. It replaces the round-2 per-cycle columns: their 1.33 / 36 px for V3 are that old model (no pre-visible
+  frame, no snaps), not valid on WebKit; the script now files them under `summary.perCycleModelNotValidOnWebKit`.
 - Event order unchanged (all 6 cycles): rAF stops 382-528 ms before the hidden event, `document.timeline.currentTime`
   in it is 331-471 ms after the last frame; one frame runs 28-63 ms before the visible event, now in every cycle.
 - The 19-24 px gap-roll starts are gone (a) and the show-tick snap is gone (b): after the show the build rolls on
@@ -364,6 +364,10 @@ switch; not on the phone).
   checks (on cd-strip's landed patch, before review sign-off): Simulator frozen frames at 10/30/50/70/90 % of a roll,
   incl. a 9→0 wrap and a multi-digit carry (no blank or partial cell vs C); Timeline Paint records per roll, V vs C;
   plus the Chrome hide-check, sim-hide (3 cycles per arm) and an h60 probe again.
+- `__crWatch` re-arms on every frame that runs while `document.hidden` is true. An engine that kept running frames for
+  a hidden page would turn it into a per-frame rAF for as long as the page stays hidden (cheap, nothing drawn). Neither
+  engine did here: Chrome ran 0 frames while hidden, WebKit (Simulator) 1 frame just before the visible event
+  (OBSERVED, review round 3 nit 1).
 - Hidden page on WebKit: the residual above (≤ ~1.4 px here, bounded by the 0.3-0.5 s between WebKit's last frame and
   its hidden event) stays; the real phone's event order is UNRESOLVED (not checked on the device).
 - The one-shot rAF per roll is a main-thread callback (cheap, no style write); WebKit "0 countdown rAF at rest"
