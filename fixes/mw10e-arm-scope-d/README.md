@@ -502,6 +502,63 @@ our setup, cause unknown):
 - **n.** At most 3 counted per arm: a mechanism and regression check, not a gain block. Nothing from it goes to the
   user as fact without the attribution run.
 
+## P-073 result (block done 10-03 08:35Z, iphone-runner): INCONCLUSIVE, row 5, no landing on this block
+
+Scored with `p073-score.mjs` 30c16ec042c8: iphone-runner's run, then fix-nav-morph's own re-run from the same manifest.
+The two outputs match. Files in `p073/`:
+- `manifest.json` (as run; its paths are relative to the runner's gitignored `out/p073/`);
+- `score.txt`, `score.json`.
+
+Record sha256 prefixes:
+
+| arm | run 1 | run 2 | run 3 | top-up 1 | top-up 2 | top-up 3 | warm-up |
+|---|---|---|---|---|---|---|---|
+| C | c9f976d2c144 | cdd46faf1d2e | ec864bd6b1be | | | | 46f35e4b7480 |
+| V | 35071a361eeb | d4327ef3d3a1 | 5a79a399b69f | 3a12e4737901 | 6a59994e74fa | 69d71174b284 | 5d0ae502f92f |
+| D | 575249eea523 | b50925869ac4 | f70f1c003eef | | | | 534f2d7a2bc1 |
+
+- **Block.** Order C V D / V D C / D C V, then the V top-up (3 runs). Both sentinels PASS. 12 counted runs, 0 voids.
+  Every run:
+  - started at 40.29-40.89 °C, held+ext (80 % limit), Low Power Mode off;
+  - idle phase 59.0-60 fps;
+  - made 9 + 2 pushes with 100 % of pin touchmoves prevented.
+- **No counted run collapsed in any arm.** Each run's lowest 2 s window was its first after pin arrival
+  (46-51.5 fps); every later window ran at about 60, apart from a few D1 windows at 46-58.5.
+- **Settle.** 5220 (high) in 9 of 12 runs. Low only in D3 5215, C3 5215 and V3 5216. Per arm: C 1/2, D 1/2,
+  V 1/5 (low/high).
+- **Decision, row 5.** V was clean with fewer than 2 low-bin counted runs after 3 top-up runs. So the positive
+  control was not in condition: inconclusive, to the lead, no landing on this block. Readings:
+  - all-runs: C 0/3, V 0/3, D 0/3, all clean;
+  - low-bin: 0/1 in every arm ("not enough");
+  - sustained-only: clean in every arm;
+  - no settle-sensitive or rule-sensitive flags.
+- **OBSERVED, cause unknown: the hot-held condition did not reproduce.**
+  - V3 repeated P-036 V1's condition as far as we record it, and stayed clean (2311 of 2317 frames at y 5216 after
+    the pin):
+    - same V build, v1-identical ops, full 9-push exposure;
+    - low settle (5216 vs 5215);
+    - 40.79 °C start (P-036 V1: 40.29);
+    - same charge state, held+ext at 80 %;
+    - innerHeight 815 throughout.
+  - So neither the settle bin nor heat nor the charge state, as recorded, separates P-036's collapsed V1/V2 from
+    P-073's clean runs.
+  - Recorded differences from P-036:
+    - P-036 V1 ran right after C1 in the same hold, unparked;
+    - P-036 V2 started at 42.59 °C after a 6-min unparked dwell, outside this band;
+    - P-036 ran beside Mac load1 20-53.
+- **Uncounted warm-ups** (cold first load on each fresh port; outside the verdict; same scorer on a scratch
+  manifest):
+  - P-073: wC clean; wV degraded but not collapsed (windows 45.5-59); **wD collapsed, transient**: degraded
+    38-57 fps across the pin, then 29.5 / 24 / 29.5 from 48 s after pin arrival, settle 5220, start 39.79 °C.
+  - P-071 (gesture pin-hold-v2): wC clean; wV dips to 31 and 27.5, no collapse; **wD collapsed, sustained** from pin
+    arrival (10.5-46.5 fps, settle 5230). The phone was cool: battery reads 36.59 before and 37.59 after, ~14-22 min
+    apart, so no exact run temperature.
+  - P-036: wC clean; wV did not reach the pin exposure.
+  - So D's cold first load collapsed at the pin in both blocks that had a D warm-up (2 of 2), on a cool and a
+    warm phone, in the high bin. V's and C's warm-ups never did (0 of 3 each, one V incomplete).
+  - This is n = 2, uncounted and not pre-registered. OBSERVED in our setup, cause unknown. It is the one place
+    where D, and not V, shows a B1-like collapse.
+
 ## Proposed attribution item after P-073: the panel clock's face layers (F-165; proposal, not registered)
 
 Asked by the lead (07:0xZ). An uncounted attribution pair at the pin, not a gain block; the lead fits it into the phone

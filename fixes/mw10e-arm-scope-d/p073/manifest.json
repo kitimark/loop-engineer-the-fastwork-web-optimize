@@ -1,0 +1,125 @@
+{
+ "batt": "batt.jsonl",
+ "runs": [
+  {
+   "arm": "C",
+   "file": "gesture-p073-C1.json",
+   "topup": false,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": "beside a shared group"
+  },
+  {
+   "arm": "V",
+   "file": "gesture-p073-V1.json",
+   "topup": false,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "D",
+   "file": "gesture-p073-D1.json",
+   "topup": false,
+   "start": "cooled",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "V",
+   "file": "gesture-p073-V2.json",
+   "topup": false,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "D",
+   "file": "gesture-p073-D2.json",
+   "topup": false,
+   "start": "cooled",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "C",
+   "file": "gesture-p073-C2.json",
+   "topup": false,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "D",
+   "file": "gesture-p073-D3.json",
+   "topup": false,
+   "start": "cooled",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "C",
+   "file": "gesture-p073-C3.json",
+   "topup": false,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "V",
+   "file": "gesture-p073-V3.json",
+   "topup": false,
+   "start": "cooled",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "V",
+   "file": "gesture-p073-V4t.json",
+   "topup": true,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "V",
+   "file": "gesture-p073-V5t.json",
+   "topup": true,
+   "start": "direct",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  },
+  {
+   "arm": "V",
+   "file": "gesture-p073-V6t.json",
+   "topup": true,
+   "start": "cooled",
+   "lpm": false,
+   "sentinelVoid": false,
+   "thermal": false,
+   "note": ""
+  }
+ ]
+}
