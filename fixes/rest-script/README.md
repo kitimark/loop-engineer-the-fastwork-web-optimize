@@ -778,6 +778,39 @@ Desk tests (scratch, not committed):
 | `t2aux.mjs` | 57a8090cddc2 | beeec0e6975a |
 | `chainJ.sh` | 751ec0244095 | 6cbe3fc2a4a0 |
 
+### P-089 Chrome chain, first run (`chainJ.sh chrome`, 2026-10-03 21:16-21:37Z)
+
+Every hold's `HASHES` line equals the chain-start line (option A hashes above); logs in `out/rest-script/chainJ/`.
+
+| hold | result |
+|---|---|
+| chrome-430r | OK, PMSET OK. **Leg scored:** COVERAGE OK, REST-QUIET agree (rest T2, quiet T2), MASK OK |
+| chrome-1440-rec try 1 | **HOLD VOID**: rc 124, no EXIT 0, PMSET VOID (Maintenance Sleep 21:17:39Z, DarkWake 21:32:57Z). Excluded everywhere; a re-run, not a strike (lead) |
+| chrome-1440-rec try 2, chrome-1440-rep | OK, PMSET OK. **Leg VOID: coverage**, intoview record shot `since.resizeMs` 386.8 < 1500 (12/12 moving present) |
+| chrome-1440r | OK, PMSET OK. **Leg VOID: coverage**, intoview record shot `since.resizeMs` 490.5 < 1500 |
+
+**Keep-awake note.** From about 21:33:40Z to 21:36Z the holds (chrome-1440-rec try 2 and the start of chrome-1440-rep)
+ran under a `caffeinate -i -s` assertion that I attached to the chain. C-024 does not cover Chrome pixel holds; the
+lead killed it at about 21:36Z. pmset was clean in those windows, so the holds are valid.
+
+**Why the 1440 intoview shots void (OBSERVED in our setup, cause unknown).** At 1440 the slots' border boxes keep
+changing for about 0.7-0.8 s after the intoview jump, in both arms and with or without reduced motion. In
+fix-w1440r the row top eases from 435.1 to 425.19 px over about 800 ms, with slot size changes until 26810 ms. The
+freeze at 26073.7 ms holds only the row's own animations and timers, so with SETTLE = 1200 ms the capture lands about
+0.5 s after the last change:
+
+| record | `since.resizeMs` |
+|---|---|
+| fix-w1440 | 386.8 |
+| st6-w1440 | 325.5 |
+| fix-w1440r | 490.5 |
+| st6-w1440r | 492.7 |
+
+At 430r there is no such change (`resizeMs` 24296). The `endMs` values (3913 / null) show it is not a slide end. It
+looks like an eased transform on an ancestor of the row at desktop width (not checked). It is the same in both arms
+and on every run, so a plain re-run would void again. The intoview replays (2500 ms settle) pass (1947 / 16773 ms).
+The next step is the lead's call, through mgmt-ops-10.
+
 ## Why it lags
 
 Not a scroll-jank fix: a heat (rest work) fix, user T-029. Four small pieces of script keep the main thread busy
