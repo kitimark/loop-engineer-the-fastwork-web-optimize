@@ -336,7 +336,7 @@ and that the baseline paints over it: the scene overlay, the next slot, or an an
 | file | sha | what |
 |---|---|---|
 | `probe/hold87.sh` | `d87b8f1c3d43` | Chrome hold: 4 servers (A, S, E1, F1 snapshots), served hashes, then `clp.mjs` or `pord.mjs` over the given arms; deletes its Chrome profiles; optional 5th argument `view` (C4/C5) |
-| `probe/pord.mjs` | `b81ea4a401d0` | Chrome paint order: DOMSnapshot paint-order relations + forced-opaque lens crops, per t (below); `--view` and the `VARIANT` line (C5) |
+| `probe/pord.mjs` | `492e7980cb65` | Chrome paint order: DOMSnapshot paint-order relations + forced-opaque lens crops, per t (below); `--view` and the `VARIANT` line (C5); repair 1 (below): variant judged after centring (was `b81ea4a401d0`) |
 | `probe/simcrop.mjs` | `26f548f2dcfe` | WebKit (Simulator) frozen crops: `Page.snapshotRect`, natural and forced-opaque lens, per t |
 | `probe/png.mjs` | `52d21ec3f1d5` | PNG decode/encode/crop and the pair metric (n8, any, max), the same as clp.mjs's |
 | `probe/clp.mjs` | `07120dcca1ef` | P-086's (`37b9e94812fa`) plus `--view WxHxDPR[d]` only (default `430x932x3`, the P-086 setting; `d` = desktop: `mobile: false`, no touch emulation) |
@@ -551,6 +551,21 @@ query, so the sliding variant is expected at desktop width too. The checks below
 - **Chrome hits, WebKit misses** (P1 or P2): F is not offered as exact. I report the WebKit difference with its five
   tier numbers (PR-010 wide) to the lead.
 - **Void:** the rules above, one re-run, then the lead.
+
+## P-087 probe repair 1 (written before re-running C3/C5)
+
+- **C3 and C5 are VOID, a probe fault.** Both ran (18:30:49-18:32:21Z and 18:33:39-18:35:21Z, no sleep inside either
+  span), but every arm exited `NOT-VARIANT` before any slide was caught, so they produced no data.
+  - Cause: pord's `VARIANT` check ran before the centring. Until `#people`'s section is scrolled into view, the card
+    is hidden by `.start-selling-future:not(.is-visible) > .start-selling-future-card { visibility: hidden }` (CSS
+    L2393-2394). That holds at 430 and at 1440 alike, and in every arm, the baseline included.
+  - The P6 variant rule was written for a carousel that is hidden *at this width*. It caught the scroll-reveal instead.
+- **Repair** (pord.mjs `492e7980cb65`, replacing `b81ea4a401d0`):
+  - Before the centring, only the carousel element must exist; centring needs it. This is logged as `variant0`.
+  - The full check (display, visibility, size) runs after the centring, next to `inView`.
+  - Nothing else changed. The P2 method, VIS, the lens and the relations are byte-identical.
+- C3 and C5 are re-run once each with the repaired probe (the void rule's one re-run). A second void goes to the lead.
+- Data already taken (C1, C2, C4, W1-W3) does not use pord and is unaffected.
 
 ## Deliverables
 

@@ -137,9 +137,13 @@ if (ARMS.length) {
       await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HOLD });
       await gotoAndSettle(page, arm.url, { quietMs: 1500, maxMs: 45000 }); await sleep(1000);
       const center = `(() => { const c = ${CAR}; const r = c.getBoundingClientRect(); window.scrollBy({ top: r.top + r.height / 2 - 0.5 * innerHeight, behavior: 'instant' }); const q = c.getBoundingClientRect(); return { y: scrollY, carTop: q.top, carBottom: q.bottom, vh: innerHeight, inView: q.top >= 0 && q.bottom <= innerHeight }; })()`;
-      R.variant = JSON.parse(await page.eval(VARIANT)); console.log(arm.k, 'variant', JSON.stringify(R.variant));
-      if (!R.variant.exists || R.variant.display === 'none' || R.variant.visibility !== 'visible' || !(R.variant.w > 0 && R.variant.h > 0)) { R.void = 'NOT-VARIANT: no visible carousel at this width'; console.log(arm.k, R.void); save(); await page.close(); continue; }
+      // repair 1 (C3/C5 void, 2026-10-03): the variant is judged after centring; before it the section is scroll-revealed
+      // later and reads visibility hidden at every width. Before centring only existence is required (centring needs it).
+      R.variant0 = JSON.parse(await page.eval(VARIANT)); console.log(arm.k, 'variant before centring', JSON.stringify(R.variant0));
+      if (!R.variant0.exists) { R.void = 'NOT-VARIANT: no carousel element at this width'; console.log(arm.k, R.void); save(); await page.close(); continue; }
       R.pos = await page.eval(center); await sleep(1500); R.pos2 = await page.eval(center); await sleep(600);
+      R.variant = JSON.parse(await page.eval(VARIANT)); console.log(arm.k, 'variant', JSON.stringify(R.variant));
+      if (R.variant.display === 'none' || R.variant.visibility !== 'visible' || !(R.variant.w > 0 && R.variant.h > 0)) { R.void = 'NOT-VARIANT: no visible carousel at this width'; console.log(arm.k, R.void); save(); await page.close(); continue; }
       if (!R.pos2.inView) { R.void = 'VOID: carousel not in view'; console.log(arm.k, R.void); save(); await page.close(); continue; }
       const c = await page.eval(CATCH(TARGET, 25000), { timeout: 35000 });
       R.catch = c; console.log(arm.k, 'catch', JSON.stringify(c));
