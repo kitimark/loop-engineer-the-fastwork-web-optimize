@@ -23,7 +23,7 @@ const CLOCKS = (process.argv[3] || 'hero,panel').split(',');
 const OUT = join(WT, 'out/cd-strip'); mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const BASE = resolveTree('site-pretty');
-const DIRS = { orig: null, st6rb2: join(WT, 'fixes/st6-rb2/overlay'), strip: join(WT, 'fixes/cd-strip/overlay'), 'strip-a': join(WT, 'fixes/cd-strip--a/overlay'), 'strip-cl': join(WT, 'out/cd-strip/snap/strip-cl'), 'strip-rb': join(WT, 'out/cd-strip/snap/strip-rb') };
+const DIRS = { orig: null, st6rb2: join(WT, 'fixes/st6-rb2/overlay'), strip: join(WT, 'fixes/cd-strip/overlay'), 'strip-a': join(WT, 'fixes/cd-strip--a/overlay'), 'strip-cl': join(WT, 'out/cd-strip/snap/strip-cl'), 'strip-rb': join(WT, 'out/cd-strip/snap/strip-rb'), 'strip-9b2f': join(WT, 'out/cd-strip/snap/strip-9b2f'), 'strip-tw': join(WT, 'out/cd-strip/snap/strip-tw'), 'strip-tc': join(WT, 'out/cd-strip/snap/strip-tc') };
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const log = (...a) => console.log(...a);
 const fileOf = (arm, f) => (DIRS[arm] && existsSync(join(DIRS[arm], f)) ? join(DIRS[arm], f) : join(BASE, f));
@@ -50,7 +50,8 @@ async function openPage(cdp, inject) {
     if (m.method === 'Runtime.exceptionThrown') page.errors.push((m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).split('\n')[0]);
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') page.errors.push(`console: ${m.params.args.map((a) => a.value ?? a.description).join(' ')}`.slice(0, 300));
   });
-  await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 3, mobile: true });
+  // review r2: other widths / device pixel ratios via env VW, VH, DPR (default 430x932 DPR 3, mobile)
+  await page.send('Emulation.setDeviceMetricsOverride', { width: Number(process.env.VW || 430), height: Number(process.env.VH || 932), deviceScaleFactor: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== '0' });
   await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
   await page.send('Page.addScriptToEvaluateOnNewDocument', { source: inject });
@@ -87,9 +88,10 @@ function pngPixels(buf) {
 function pxDiff(a, b) {
   const A = pngPixels(a), B = pngPixels(b);
   if (A.w !== B.w || A.h !== B.h) return { sizeMismatch: [A.w, A.h, B.w, B.h] };
-  let n = 0, max = 0;
-  for (let i = 0; i < A.px.length; i += A.bpp) { let d = 0; for (let c = 0; c < 3; c++) d = Math.max(d, Math.abs(A.px[i + c] - B.px[i + c])); if (d) n++; max = Math.max(max, d); }
-  return { w: A.w, h: A.h, diffPixels: n, maxChannelDelta: max };
+  let n = 0, max = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (let i = 0; i < A.px.length; i += A.bpp) { let d = 0; for (let c = 0; c < 3; c++) d = Math.max(d, Math.abs(A.px[i + c] - B.px[i + c]));
+    if (d) { n++; const p = i / A.bpp, x = p % A.w, y = (p - x) / A.w; x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } max = Math.max(max, d); }
+  return { w: A.w, h: A.h, diffPixels: n, maxChannelDelta: max, ...(n ? { bbox: [x0, y0, x1, y1] } : {}) }; // bbox in shot px
 }
 function colours(b64) { const A = pngPixels(Buffer.from(b64, 'base64')); const s = new Set(); for (let i = 0; i < A.px.length && s.size < 40; i += A.bpp) s.add(A.px.readUIntBE(i, 3)); return s.size; }
 const R = (d, h, m, s) => d * 86400 + h * 3600 + m * 60 + s;
@@ -111,13 +113,17 @@ const POSITIONS = `(() => { const H = document.documentElement.scrollHeight, vh 
 const TIMER = { hero: `document.querySelector('.hero-copy [role=timer]')`, panel: `document.querySelector('.start-selling-morph-panel [role=timer]')` };
 // review round 1 (B2): the hero clock at partial exit opacity (scrolled to a fraction of vh) and the panel clock mid-tween
 // (--morph set by hand on the element that carries it, after the driven open; scale 0.96-1 and blur follow it)
-TIMER.herofade = TIMER.hero; TIMER.panelmid = TIMER.panel;
-const VARIANTS = { hero: [null], panel: [null], herofade: [0.25, 0.5, 0.75, 0.9], panelmid: [0.25, 0.5, 0.75] };
+TIMER.herofade = TIMER.hero; TIMER.panelmid = TIMER.panel; TIMER.heroresize = TIMER.hero;
+// heroresize (de-breakpoints, T-034): load at VW/VH/DPR, then change the viewport live to each of env RESIZE
+// ("375x812x3,1440x900x1x0": w x h x dpr [x mobile 0/1]) in turn, back at the top, then the short scenarios (cell size c
+// changes with the breakpoint: 31 / 36 / 52 px; the strip must follow it without a reload)
+const RESIZE = (process.env.RESIZE || '375x812x3,1440x900x1x0').split(',');
+const VARIANTS = { hero: [null], panel: [null], herofade: process.env.FADES ? process.env.FADES.split(',').map(Number) : [0.25, 0.5, 0.75, 0.9], panelmid: [0.25, 0.5, 0.75], heroresize: RESIZE };
 const EXTRA_SCEN = [0, 2, 6]; // one step down, ones wrap + tens, two changes mid-roll; 60 Hz only in the extra passes
 // what the digits show: per digit, the faces/cells inside the cell (|offset| < 1 cell) as digit@offset px (3 decimals)
 const STATE = (which) => `(() => { const t = ${TIMER[which]}; if (!t) return null; return [...t.querySelectorAll('.digit.svelte-1quva9c')].map((d) => { const h = d.offsetHeight; let v;
     const st = d.querySelector('.strip.svelte-1quva9c');
-    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); v = [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, parseFloat(c.style.top) + (c.parentElement === st ? 0 : parseFloat(c.parentElement.style.top) || 0) + T]); }
+    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); const ty = (x) => Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(x.style.transform) || [])[1] || 0); v = [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, (parseFloat(c.style.top) || 0) + ty(c) + (c.parentElement === st ? 0 : (parseFloat(c.parentElement.style.top) || 0) + ty(c.parentElement)) + T]); }
     else v = [...d.querySelectorAll('.face.svelte-1quva9c')].map((f) => [f.textContent, Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(f.style.transform) || [])[1])]);
     return v.filter(([, y]) => Math.abs(y) < h - 0.001).map(([t, y]) => t + '@' + (Object.is(+y.toFixed(3), -0) ? 0 : +y.toFixed(3)).toFixed(3)).sort().join(' '); }).join(' | '); })()`;
 const OPACITY = (which) => `(() => { let op = 1; for (let e = ${TIMER[which]}; e && e.nodeType === 1; e = e.parentElement) op *= +getComputedStyle(e).opacity; return op; })()`;
@@ -125,6 +131,9 @@ const OPACITY = (which) => `(() => { let op = 1; for (let e = ${TIMER[which]}; e
 async function run(cdp, arm, url, dir, range) {
   const page = await openPage(cdp, freeze(range));
   await gotoAndSettle(page, url, { quietMs: 2000 }); await sleep(2500);
+  // env SETTLE=<ms>: wait longer after load (desktop widths: the whole clock still moved by a sub-pixel between runs at
+  // 2.5 s even with FREEZE=1, G14b 08-54Z; after a live resize, later in the page's life, it did not)
+  if (process.env.SETTLE) await sleep(Number(process.env.SETTLE));
   const shots = {}, state = {}, frames = {}, firstVisible = {}, info = {};
   const twoFrames = 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 20))))';
   const go = (y) => page.eval(`(window.scrollTo({ top: ${y}, behavior: 'instant' }), ${twoFrames})`);
@@ -149,8 +158,22 @@ async function run(cdp, arm, url, dir, range) {
       info.panelAnimCensus = await page.eval(`(() => { const m = {}; for (const x of document.getAnimations()) { const t = x.effect && x.effect.target; const k = [x.constructor.name, x.animationName || x.transitionProperty || x.id || '', t ? (t.tagName + '.' + String(t.className && t.className.baseVal !== undefined ? t.className.baseVal : t.className).split(' ').slice(0, 2).join('.')) : '-', x.playState].join(' '); m[k] = (m[k] || 0) + 1; } return m; })()`);
       info.panelAnims = await page.eval(`(() => { const a = document.getAnimations(); for (const x of a) { x.pause(); x.currentTime = 0; } return a.length; })()`);
       await pause(300); info.panelReady = true;
-    } else if (which === 'herofade') { await go(Math.round(variant * pos.heroExit)); await pause(300); }
+    } else if (which === 'herofade') { await go(Math.round(variant * pos.heroExit)); await pause(300);
+      // the hero scene's state here (scene-pause rule, review round 2 B1) and the strip/cell/face will-change
+      info[vkey + ' scene'] = await page.eval(`(() => { const s = document.querySelector('.hero-copy') && document.querySelector('.hero-copy').closest('[data-start-selling-scene]'); const d = document.querySelector('.hero-copy .strip.svelte-1quva9c, .hero-copy .face.svelte-1quva9c'); const c = document.querySelector('.hero-copy .cell.svelte-1quva9c'); return [s && s.getAttribute('data-start-selling-scene'), s && s.getAttribute('data-start-selling-render'), d && getComputedStyle(d).willChange, c && getComputedStyle(c).willChange].join(' '); })()`); }
     else if (which === 'hero') await go(0);
+    else if (which === 'heroresize') {
+      const [w, h, dpr, mob] = String(variant).split('x').map(Number);
+      await page.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: dpr, mobile: mob !== 0 });
+      await pause(1500); await go(0); await pause(800);
+      info[vkey + ' cell'] = await page.eval(`(() => { const t = ${TIMER.hero}; const d = t && t.querySelector('.digit.svelte-1quva9c'); return d ? [innerWidth, devicePixelRatio, d.offsetHeight] : null; })()`);
+    }
+    // env FREEZE=1: also pause the page's CSS/WAAPI animations at t=0 for the hero passes (desktop widths: animated
+    // backdrop inside the clock's crop made even the A/A differ in 214 of 259 shots, G14 08-27Z)
+    if (process.env.FREEZE === '1' && (which === 'hero' || which === 'herofade' || which === 'heroresize')) {
+      info[vkey + ' frozen'] = await page.eval(`(() => { const a = document.getAnimations(); for (const x of a) { x.pause(); x.currentTime = 0; } return a.length; })()`);
+      await pause(300);
+    }
     if (which === 'panelmid') {
       // the open, frozen panel: set m by hand on the element that carries --morph, let any transition finish, freeze again
       info[vkey + ' set'] = await page.eval(`(() => { const e = [...document.querySelectorAll('*')].find((x) => x.style.getPropertyValue('--morph') !== ''); if (!e) return null; e.style.setProperty('--morph', '${variant}'); return e.className.toString().slice(0, 60); })()`);
@@ -163,7 +186,7 @@ async function run(cdp, arm, url, dir, range) {
     if (!info[vkey].present) { log(arm, vkey, 'timer not found'); continue; }
     clip = await page.eval(`(() => { const r = ${TIMER[which]}.getBoundingClientRect(); return { x: r.left + scrollX - 4, y: r.top + scrollY - 4, width: r.width + 8, height: r.height + 8, scale: 1 }; })()`);
     info[vkey].clip = clip;
-    const fname = variant === null ? which : `${which}${Math.round(variant * 100)}`;
+    const fname = variant === null ? which : typeof variant === 'string' ? `${which}${variant}` : `${which}${Math.round(variant * 100)}`;
     const shot = async (key, file) => {
       await page.eval(twoFrames);
       const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
@@ -218,17 +241,20 @@ async function run(cdp, arm, url, dir, range) {
   return { arm, shots, state, frames, firstVisible, info, errors };
 }
 
-const order = [...ARMS, ARMS[0]];
+// env ORDER=a,b,c,a,c,b,a: an explicit interleaved run order (arms may repeat; run i is labelled <arm>-r<i>), and every
+// pair of runs is compared (not only run 0 vs the rest); without it: ARMS then ARMS[0] again (the A/A)
+const ORDER = process.env.ORDER ? process.env.ORDER.split(',') : null;
+const order = ORDER || [...ARMS, ARMS[0]];
 const servers = {}, ranges = {}, served = {};
 for (const arm of ARMS) { ranges[arm] = cdRange(arm); servers[arm] = await server(arm, DIRS[arm]); served[arm] = { js: sha(fileOf(arm, NODE)), css: sha(fileOf(arm, CSS)) }; }
 const ch = await launchChrome({ port: 0, profileDir: join(OUT, 'chrome-profile-pixels') });
 const cdp = await CDP.connect(ch.wsUrl);
 await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
-const res = { arms: ARMS, clocks: CLOCKS, ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
+const res = { arms: ARMS, clocks: CLOCKS, viewport: { w: Number(process.env.VW || 430), h: Number(process.env.VH || 932), dpr: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== "0" }, ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
 const dir = join(OUT, `pixels-${STAMP}`); mkdirSync(dir, { recursive: true });
 const got = [];
 try {
-  for (let i = 0; i < order.length; i++) { const arm = order[i]; got.push(await run(cdp, arm + (i === order.length - 1 ? '-again' : ''), servers[arm].url, dir, ranges[arm])); res.load1.push(loadavg()[0]); }
+  for (let i = 0; i < order.length; i++) { const arm = order[i]; got.push(await run(cdp, ORDER ? `${arm}-r${i}` : arm + (i === order.length - 1 ? '-again' : ''), servers[arm].url, dir, ranges[arm])); res.load1.push(loadavg()[0]); }
 } finally { cdp.close(); await ch.close(); for (const s of Object.values(servers)) s.p.kill(); }
 const cmp = (x, y) => {
   const shots = Object.keys(x.shots).map((k) => ({ key: k, sameState: x.state[k] === y.state[k], ...(x.state[k] === y.state[k] ? {} : { states: [x.state[k], y.state[k]] }),
@@ -242,6 +268,8 @@ res.blankShots = Object.entries(got[0].shots).filter(([, s]) => colours(s) < 2).
 res.info = got.map((g) => [g.arm, g.info]); res.errors = got.map((g) => [g.arm, g.errors]);
 res.compare = {};
 for (let i = 1; i < got.length; i++) res.compare[`${got[0].arm} vs ${got[i].arm}`] = cmp(got[0], got[i]);
+if (ORDER) for (let i = 1; i < got.length; i++) for (let j = i + 1; j < got.length; j++) res.compare[`${got[i].arm} vs ${got[j].arm}`] = cmp(got[i], got[j]);
+res.order = order;
 res.endedAt = new Date().toISOString();
 const f = join(OUT, `pixels-${STAMP}.json`); writeFileSync(f, JSON.stringify(res, null, 1));
 for (const [k, v] of Object.entries(res.compare)) log(k, ': shots', v.shots, 'px-differ', v.shotsDifferPx, 'state-differ', v.shotsDifferState, '| frames', v.frames, 'state-differ', v.framesDifferState, '| firstVisible', v.firstVisible, 'differ', v.firstVisibleDiffer.length,

@@ -66,7 +66,7 @@ const TIMER = { hero: `document.querySelector('.hero-copy [role=timer]')`, panel
 TIMER.panelmid = TIMER.panel; TIMER.fade50 = TIMER.fade50x = TIMER.fadehunt = TIMER.fade90 = TIMER.herostatic = TIMER.variants = TIMER.hero;
 const STATE = (which) => `(() => { const t = ${TIMER[which]}; if (!t) return null; return [...t.querySelectorAll('.digit.svelte-1quva9c')].map((d) => { const h = d.offsetHeight; let v;
     const st = d.querySelector('.strip.svelte-1quva9c');
-    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); v = [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, parseFloat(c.style.top) + (c.parentElement === st ? 0 : parseFloat(c.parentElement.style.top) || 0) + T]); }
+    if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); const ty = (x) => Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(x.style.transform) || [])[1] || 0); v = [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, (parseFloat(c.style.top) || 0) + ty(c) + (c.parentElement === st ? 0 : (parseFloat(c.parentElement.style.top) || 0) + ty(c.parentElement)) + T]); }
     else v = [...d.querySelectorAll('.face.svelte-1quva9c')].map((f) => [f.textContent, Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(f.style.transform) || [])[1])]);
     return v.filter(([, y]) => Math.abs(y) < h - 0.001).map(([t, y]) => t + '@' + (Object.is(+y.toFixed(3), -0) ? 0 : +y.toFixed(3)).toFixed(3)).sort().join(' '); }).join(' | '); })()`;
 
@@ -309,6 +309,9 @@ const cmp = (x, y) => {
 out.info = got.map((g) => [g.arm, g.served, g.info]);
 out.compare = {};
 for (let i = 1; i < got.length; i++) out.compare[`${got[0].arm} vs ${got[i].arm}`] = cmp(got[0], got[i]);
+// rev 2: every test arm against the second control run too (the last arm, the A/A): a spot that differs from both
+// control runs is the build's; one that differs from one control only is that control run's own variation
+for (let i = 1; i < got.length - 1; i++) out.compare[`${got[i].arm} vs ${got.at(-1).arm} (second control)`] = cmp(got[i], got.at(-1));
 out.endedAt = new Date().toISOString();
 const f = join(OUT, `simpx-${STAMP}.json`); writeFileSync(f, JSON.stringify(out, null, 1));
 for (const [k, v] of Object.entries(out.compare)) console.log('SIMPX', k, ': shots', v.shots, 'px-differ', v.differ, 'state-differ', v.stateDiffer, JSON.stringify(v.rows.slice(0, 6).map((r) => [r.key, r.diffPixels, r.maxDelta])));

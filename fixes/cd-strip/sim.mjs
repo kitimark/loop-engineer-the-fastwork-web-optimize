@@ -28,7 +28,7 @@ const WIN = 4000;
 const sha = (b) => createHash('sha256').update(b).digest('hex');
 const DIGITSEL = '.face.svelte-1quva9c, .strip.svelte-1quva9c, .cell.svelte-1quva9c';
 const HEROSEL = '.hero-copy [role=timer] .face.svelte-1quva9c, .hero-copy [role=timer] .strip.svelte-1quva9c, .hero-copy [role=timer] .cell.svelte-1quva9c';
-// SIM_PHASES (default top,morph): top = idle rolls at y 0; scroll = one scroll out of the hero and back (F-142 re-entry); morph = the pin
+// SIM_PHASES (default top,morph): top = idle rolls at y 0; scroll = one scroll out of the hero and back (F-142 re-entry); band = the hero scene paused but rendered (review r2 B1); morph = the pin
 const PHASES = (process.env.SIM_PHASES || 'top,morph').split(',');
 
 const INSTALL = `(() => {
@@ -149,6 +149,27 @@ async function sequence(c) {
       heroBacked: [before.heroBacked, mid.heroBacked, after.heroBacked], heroMemoryMB: [before.heroMemoryMB, mid.heroMemoryMB, after.heroMemoryMB],
       heroPaintsLT: ltDelta(before, after).heroPaints, digitPaintsLT: ltDelta(before, after).digitPaints };
     console.log('scroll', JSON.stringify(res.scroll));
+  }
+  // 1c. band (review round 2, B1): the hero-track scene paused but still rendered (scroll-engine's scene gate at 1 vh,
+  // its re-skip at 1.75 vh): hero clock layers there, with the scene's state read from the DOM. The page is walked
+  // down in 250 px steps so the scroll engine sees the motion.
+  if (PHASES.includes('band')) {
+    const SC = `document.querySelector('.hero-copy')?.closest('[data-start-selling-scene]')`;
+    res.band = [];
+    for (const f of [1.2, 1.4, 1.6, 2.2]) {
+      await ev("(scrollTo({ top: 0, behavior: 'instant' }), 0)"); await sleep(1000);
+      const y = await ev(`(() => { const s = ${SC}; return s ? Math.round(scrollY + s.getBoundingClientRect().bottom + ${f} * innerHeight) : -1; })()`);
+      if (y < 0) { res.band.push({ at: f, error: 'no hero scene element' }); continue; }
+      for (let i = 0; i < 200; i++) { const d = await ev(`(() => { const d = ${y} - scrollY; if (Math.abs(d) > 1) scrollBy({ top: Math.sign(d) * Math.min(Math.abs(d), 250), behavior: 'instant' }); return Math.abs(d); })()`); if (d <= 1) break; await sleep(60); }
+      await sleep(1500);
+      const st = await ev(`JSON.stringify((() => { const s = ${SC}; const c = document.querySelector('.hero-copy .cell.svelte-1quva9c, .hero-copy .face.svelte-1quva9c');
+        return { y: Math.round(scrollY), bottomVh: Math.round((s.getBoundingClientRect().bottom / innerHeight) * 100) / 100, scene: s.dataset.startSellingScene ?? null,
+          render: s.dataset.startSellingRender ?? null, cv: getComputedStyle(s).contentVisibility, digitWillChange: c ? getComputedStyle(c).willChange : null }; })())`);
+      const l = await layers(c);
+      res.band.push({ at: f, ...JSON.parse(st), heroLayers: l.heroIds.length, heroBacked: l.heroBacked, heroMemoryMB: l.heroMemoryMB, digitLayers: l.digitLayers, layers: l.layers, memoryMB: MB(l.memory) });
+    }
+    await ev("(scrollTo({ top: 0, behavior: 'instant' }), 0)"); await sleep(1000);
+    console.log('band', JSON.stringify(res.band));
   }
   if (!PHASES.includes('morph')) { await c.send('Timeline.disable').catch(() => {}); return res; }
   // 2. morph
