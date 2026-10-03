@@ -9,6 +9,21 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **08:1xZ-b main 5589164 (my batch) landed.**
+  - **P-075 re-read PASS** (arch-isolated-measure 5eade1e, judge.mjs **73679603afcd**, verified). The family verdict
+    needs min(2, judged builds) misses: Chrome 2 of 3, Sim 2 of 2. AA is flagged one-mode or UNKNOWN. noise-sensitive
+    is set on misses only. The H9 reading is in, and void or hash-mismatch records are dropped.
+    - Disclosure, logged: per-load counts had scrolled by in the Chrome slot log before the rev. The scorer had not been
+      run, and every change was requested by ops before any data and maps to the prereg text.
+    - Nit, not blocking: repeat the AA flag on the family line.
+  - **Second open lead promise to the user (T-029 #25/#26):** check macOS Safari/WebKit as a heat-free source for the
+    cost card: fidelity vs the Sim, automation, 430 px / DPR 3. arch-isolated-measure does it after the pilot and
+    cost-card §6, and the plan goes to the lead first. Installing STP or Playwright browsers is a user decision.
+  - **F-166 posted** (pitfall, lanes): a non-timing job queued as a plain normal `run` sits at the host CPU gate and
+    blocks shared readers. This hit hero-exit at 08:03Z with 4 readers behind it. Use `--no-timing` (> 300 s or Mac
+    alone) or `--shared --weight simulator|probe` (≤ 300 s).
+  - P-073: counted run 6 of 9 at 08:09Z (iphone-runner, eta ~09:09Z).
+
 - **08:1xZ main 86c6798 (my P-075 batch) landed.**
   - **Open lead promise to the user (T-029 #23 / #24):** the user wants fixes judged by rendering complexity, element
     by element, using the phone less. The lead promised a per-fix **"rendering cost card"** built from Chrome and the
