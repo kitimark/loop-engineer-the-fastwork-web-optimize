@@ -16,7 +16,7 @@ const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const SNAP = join(WT, 'out/snapshots');
 const BUILDS = {
-  C: { dir: join(SNAP, 'f3a-st6rb2'), js: '7bf7c4657d21', css: 'f523598b2a24' },
+  C: { dir: join(SNAP, 'c-7bf7c4657d21'), js: '7bf7c4657d21', css: 'f523598b2a24' },
   M: { dir: join(SNAP, 'mi-7c61fe7d0662'), js: '7c61fe7d0662', css: 'f523598b2a24' },
 };
 const argv = process.argv.slice(2);

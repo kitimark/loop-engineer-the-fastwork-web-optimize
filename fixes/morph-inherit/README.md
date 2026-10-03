@@ -39,7 +39,7 @@ time a header class flipped. Status: OBSERVED, in our setup, cause unknown.
   `is-expanded` flip (m > 0.92), then pops in.
 - Chrome was right all along. Its frozen frames of C match the corrected build (gate b).
 
-Minimal page (`fixes/nav-morph/inherit-mini.html`, no Fastwork code; Simulator, `inherit-mini-sim.mjs`). A child with
+Minimal page (`gates/inherit-mini.html`, no Fastwork code; Simulator, `gates/inherit-mini-sim.mjs`). A child with
 `--r: inherit` of a registered `inherits: false` property never follows its parent in any of these cases:
 - an inline write;
 - an inline write plus an ordinary non-inherited inline change;
@@ -75,12 +75,12 @@ Why inline writes rather than dropping `inherits: false` (the lead's preference)
 ## Gates (2026-10-03; Simulator and Chrome shared slots; counts and pixels only)
 
 (a) WebKit (Simulator).
-- User path (`fixes/nav-morph/inherit-scroll-sim.mjs B,C,M`, `out/f3r/inherit-scroll-2026-10-03T13-55-05-096Z`):
+- User path (`gates/inherit-scroll-sim.mjs B,C,M`, `out/f3r/inherit-scroll-2026-10-03T13-55-05-096Z`):
   - fixed C = baseline at rest, open + 2 s (m = 1) and closed + 2 s, for every child's `--morph`, x and opacity, and
     the earn box. Table above.
   - At open + 0.25 s every child equals the header's live value (0.742). The baseline does the same. The m values
     differ because that sample is not frozen.
-- Frozen frames: `reveal-sim-frames.mjs B,M,B2`, `out/f3r/simframes-2026-10-03T13-56-07-077Z`. The builds are the
+- Frozen frames: `gates/reveal-sim-frames.mjs B,M,B2`, `out/f3r/simframes-2026-10-03T13-56-07-077Z`. The builds are the
   baseline + hook (bhook a0945967a4fb), and fixed C + hook (mhook d9898e0a2e15), at m 0 / 0.1 / 0.25 / 0.5 / 0.75 / 0.9
   / 1 / 0.
   - The children's state (`--morph`, x, opacity) is identical to the baseline at every m.
@@ -90,7 +90,7 @@ Why inline writes rather than dropping `inherits: false` (the lead's preference)
       anti-aliasing of the panel clock under the panel's scale. It is a C-vs-baseline difference, not part of this
       fix: in Chrome, fixed C vs C is 0 px there.
 
-(b) Chrome (headless 430x932 DPR 3), `reveal-frames.mjs --builds C,M,C2`,
+(b) Chrome (headless 430x932 DPR 3), `gates/reveal-frames.mjs --builds C,M,C2`,
 `out/f3r/frames-2026-10-03T14-00-03-524Z`:
 - fixed C vs C is 0 px at m 0.1, 0.75, 0.9 and 1, and max 1 at 0.25 and 0.5. The A/A is max 1 there too.
 - At m 0, 0.002 and the final 0, the only changes are in the platform noise band y 225.7-228. The A/A shows up to 141
@@ -105,7 +105,7 @@ Why inline writes rather than dropping `inherits: false` (the lead's preference)
 | elements restyled (sum of elementCount) | 6348, 6329 | 5929, 6056 |
 | layouts | 384, 380 | 383, 381 |
 
-| WebKit (Simulator), `tween-paint-sim.mjs C,M`, per tween frame, 2 cycles | C | fixed C |
+| WebKit (Simulator), `gates/tween-paint-sim.mjs C,M`, per tween frame, 2 cycles | C | fixed C |
 |---|---|---|
 | style recalcs, open / close | 3.0-3.1 / 3.0 | 3.0-3.1 / 3.0-3.1 |
 | layouts, open / close | 2.0 / 2.0 | 3.0-3.1 / 2.6-2.7 |
@@ -131,11 +131,23 @@ What the fix costs:
 - Builds that stack on st6-rb2 (cd-strip, cd-roll-ca, countdown-faces, platform-idle, hero-exit-threaded) carry the
   same defect in the morph region until this lands under them.
 
-## Tools (in this directory and `fixes/nav-morph/`)
+## Tools (this directory; self-contained)
 
-- `build.mjs`: the snapshot copies (mi, mhook, bhook).
-- `restyle-chrome.mjs`: Chrome counts.
-- `fixes/nav-morph/inherit-probe-sim.mjs`: driver reads.
-- `inherit-scroll-sim.mjs`: user path, B / C / M.
-- `inherit-mini.html` / `.js`, `inherit-mini-sim.mjs`: minimal page.
-- `reveal-sim-frames.mjs` / `reveal-frames.mjs` / `reveal-diff.py --ref`: frozen frames.
+Run `node fixes/morph-inherit/build.mjs` first. It makes every snapshot the gates read (out/snapshots/: mi, c, mhook,
+chook, bhook) from the baseline plus `patch.diff` (or the overlay when present) and `delta-vs-st6rb2.diff`, and
+refuses any build whose hashes differ from the ones measured. Each gate script's header has its run command.
+
+- `build.mjs`: the snapshot copies.
+- `restyle-chrome.mjs`: gate (c), Chrome counts.
+- `gates/inherit-probe-sim.mjs`: driver reads, C / M.
+- `gates/inherit-scroll-sim.mjs`: gate (a), user path, B / C / M.
+- `gates/inherit-mini.html` / `.js`, `gates/inherit-mini-sim.mjs`: minimal page.
+- `gates/reveal-sim-frames.mjs` (gate a) / `gates/reveal-frames.mjs` (gate b) / `gates/reveal-diff.py --ref`: frozen
+  frames.
+- `gates/tween-paint-sim.mjs` C / M, `gates/tween-paint-read.mjs`: gate (c), WebKit counts.
+
+Provenance: the data above were taken with the same scripts in `fixes/nav-morph/` (fix-nav-morph's F3 branch, commit
+28c36e2), which also carried F3 #4 prototype arms; the copies here drop those arms and write to `out/morph-inherit/`.
+The out/f3r and out/f3a data dirs, and the C snapshot dirs those runs read (f3a-st6rb2 / st6-rb2-7bf7c4657d21,
+f3r-chook-f6f254402209), are byte-identical to `build.mjs`'s c-7bf7c4657d21 and chook-f6f254402209 (checked with
+cmp, 2026-10-03).

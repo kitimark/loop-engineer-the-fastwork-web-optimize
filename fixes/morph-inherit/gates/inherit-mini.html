@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>F-183 minimal: explicit inherit of a registered non-inheriting custom property</title>
+<!-- fix-nav-morph, F-183 decisive local check. No Fastwork code. Each case: a parent whose --x changes, a child (and
+     a grandchild through a wrapper that also inherits) with `--x: inherit`; window.__run() steps the parent's value
+     and reads the children's computed value after a forced style read and after two rAFs. -->
+<style>
+@property --r { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --ri { syntax: "<number>"; inherits: true; initial-value: 0; }
+.kid-r, .wrap-r { --r: inherit; }
+.kid-ri { --ri: inherit; }
+.kid-u { --u: inherit; }
+.p-cls.v1 { --r: 0.5; }
+.p-cls.v2 { --r: 0.9; }
+.kid-r { width: calc(10px + 100px * var(--r)); height: 4px; background: #333; }
+</style>
+<div id="A" class="p"><div class="kid-r" id="A1"></div><div class="wrap-r"><div class="kid-r" id="A2"></div></div></div>
+<div id="B" class="p"><div class="kid-r" id="B1"></div></div>
+<div id="C" class="p p-cls"><div class="kid-r" id="C1"></div></div>
+<div id="D" class="p"><div class="kid-ri" id="D1"></div></div>
+<div id="E" class="p"><div class="kid-u" id="E1"></div></div>
+<script src="f183-mini.js"></script>
