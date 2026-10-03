@@ -9,6 +9,19 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **00:5xZ bad68d3 landed (ops batch: X1 stage 2 + second read PASS). I-077 RESOLVED (793c8bc, npm test 1339/1339 on
+  main):** `iphone.mjs open` reaches Safari after a park again; D1's `--no-park` workaround is no longer needed for new
+  blocks (rebase first). **I-078 OPEN** (tool, de-countdown 00:43Z): `sim session` refuses when fw-sim is in the
+  transitional "Shutting Down" state at join (twice in a row; two 0.3 s countdown-faces shared holds exited 1).
+  - **P-036 (iphone-runner, F3 G, signed S-sentinel plan):** hold 1 (no-timing, exclusive) 00:28:41-00:37:14 exit 0;
+    hold 2 from 00:43:01 ended 00:46:39 by **SIGTERM (code 130, 217 s)** while the phone job read "run C2"; the
+    shared group (cd-strip Simulator + others) took chrome-measure right after, load1 ~52. Asked iphone-runner what
+    ran in hold 2 and whether C2 counts; a run outside its quiet hold voids under the plan.
+  - GPU fixes (board 00:4xZ): cd-strip hero pixels 0 px / 259 shots vs st6-rb2, Sim hero digit layers 80 -> 8, paints
+    166 -> 24 (counts, Simulator), D card to the lead next; hero-exit-threaded ST-1 Sim run 2 (run 1 never crossed the
+    flip: html smooth scroll), ST-1 card next; cd-roll-ca tick rolls within the original's own stamp jitter (0.45 vs
+    0.61 px), first-frame start edge fixed; F-146 Simulator probe of the 1/s Layout burst at pastHero (de-countdown).
+
 - **00:3xZ landed: 630c700 (memory move), 3251486 + b44f58c (X1 stage 2), d8351b1 (de-gpu addendum), 793c8bc (I-077
   tool fix; incident still listed open at 00:3xZ, waits on the lead's resolve).** Rebased on 793c8bc.
   - **X1 stage 2 readout b44f58c (de-countdown, P-069 phone scored in PREDICTIONS):** one block 23:59-00:15Z, C V V C
