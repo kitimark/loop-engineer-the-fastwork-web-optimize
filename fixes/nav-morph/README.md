@@ -15,24 +15,6 @@ Tools: `tween-paint-sim.mjs`, `tween-paint-read.mjs`, `tween-paint-sim2.mjs`; da
 V = C in every row (within ±1 paint). The Simulator's counts match the phone's P-079 attribution (hold ~4.1, open ~15,
 close 13.4-13.7 paints per frame).
 
-**Caveat, added 2026-10-03 (F-183): these counts were measured on a morph whose children were stale (WebKit).** In
-the Simulator, C's nav children never follow the header's `--morph` during a tween. Affected: nav bar, logo, actions,
-earn button and the panel. The cause is scene-scope R4b: `@property --morph { inherits: false }` plus
-`--morph: inherit` on those children. They re-resolve only when a header class flips:
-- the logo stays at the left;
-- "Join waitlist" stays visible at m = 1;
-- the panel's fade is frozen at the value from the `is-morphing` flip (~0.08, so opacity ~0), then jumps at the
-  `is-expanded` flip (m > 0.92).
-
-The plain baseline animates all of them. The control (`inherit-scroll-sim.mjs`, user path, a push past the end) shows:
-- baseline at m = 1: children `--morph` 1, logo x 169, earn width 0;
-- C at m = 1: children `--morph` 0, logo x 43, earn width 110.
-
-So the table below counts C's broken morph, not the motion the baseline shows. "The nav bar (logo moves)" below is
-really the bar's box. P-079 (phone) is affected the same way: the iPhone read by iphone-runner on 2026-10-03 (55922
-st6-rb2, 55926 strip-tc) shows children 0, logo x 43, earn width 110 and panel 0.924. Status OBSERVED, cause unknown;
-the reference is UNRESOLVED. The correction is `fixes/morph-inherit/`.
-
 | phase | paints / frame | layouts / frame | style recalcs / frame |
 |---|---|---|---|
 | hold m=0 / m=1 | 4.3 / 4.5 | 1.2 / 1.4 | 2.0 / 2.4 |
@@ -79,36 +61,6 @@ Lead's decision (2026-10-03): #4 now, as a console proposal for the user (drafte
 prediction registered until the user decides). (c) is on hold until platform-idle lands; then re-count the m=1 hold and
 open-tween paints on top of it (Simulator, shared slot, counts only) and build (c) only if it still saves real work,
 as a less-work fix (cost card + short phone no-worse check, the a11y/focus change in its card).
-
-(c) recount, 2026-10-03, after platform-idle (501d9f7) and morph-inherit landed. The recount ran on main's build
-(decided): P = mi + platform-idle, `mpi-65052c4a3902` / `e0f92804c521`; `pi-de29ff8aa622` is the same platform-idle
-build without morph-inherit and matches 501d9f7. Builds come from `c-recount-build.mjs`; the control M is
-morph-inherit alone (`mi-7c61fe7d0662`). Simulator, shared slot, counts only, ms never judged.
-- Tween side (`c-recount-tween.mjs`, out/nav-morph/c-recount-tween-2026-10-03T15-02-07-432Z.json, read with
-  `fixes/morph-inherit/gates/tween-paint-read.mjs`):
-  - In the 1.39 s m = 1 hold span, the platform card painted 168 times on M and 0 on P; the artboard 82 on M and 0 on P.
-  - Hold paints per frame: m1 4.5 → 0.8, m0 4.7 → 1.0.
-  - Open tween: 16.5 → 12.4-12.6 paints per frame. Close tween: 13.7-13.8 → 9.6-9.8.
-  - On P, the platform layers that still paint in a tween span are only the fade's start and end (card 3, section 2,
-    artboard 2). What still paints at m = 1 is mostly the panel clock (20x38) and the language switch (73x36).
-- Hold side (`c-recount-hold.mjs`, out/nav-morph/c-recount-hold-2026-10-03T15-10-05-976Z.json): the m = 1 hold, about
-  73 frames per window, Timeline paints.
-
-  | window | M | P |
-  |---|---|---|
-  | control | 463 | 46 |
-  | `visibility: hidden` | 53 | 51 |
-  | control 2 | 423 | 53 |
-
-  On P the only layer that paints is the panel centre (46-53, the clock); card and artboard paint 0 with or without
-  `visibility: hidden`. Layouts per window: 47-54 on P, 136-159 on M.
-- Verdict: on main's build (c) has nothing left to save (P: 46 → 51 paints, within the window-to-window spread), so
-  (c) is not built (lead, 2026-10-03). Platform-idle already stopped these invisible repaints. Its accessibility and
-  focus caveat is moot.
-
-#4 (composited reveal) moved to fix-morph-gpu as N2 (lead, 2026-10-03). The prototype (untracked
-`fixes/f3-reveal/overlay`, JS 1a3c97afd47b / CSS 383fe4166c68 on st6-rb2) and the `reveal-*` tools were handed over.
-fix-nav-morph keeps the arm scope (pretty 12951-13089) and morph-inherit's `__mkW` writer.
 
 Platform claims for this card:
 - "Safari doesn't animate clip-path on the compositor": CONFIRMED. WebKit `Source/WebCore/css/CSSProperties.json` at
