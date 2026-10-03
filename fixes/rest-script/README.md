@@ -99,7 +99,13 @@ data was read** (the runs themselves were already queued or running; their outpu
 Widths: 375, 430, 768 (touch), 1024, 1440, and 430 with reduced motion (Chrome). Simulator: its 430-wide iPhone.
 Chrome positions at 430: y 0, 932, 1864, 2300, 2796, 3728, 4660, `fee` and `pain` centred.
 
-### Registration v2 (P-078 rev 2, overlay a5286ebc4cb6), before any v2 data
+### Registration v2 (P-078 rev 2 = **P-080** in the index, overlay a5286ebc4cb6), before any v2 data
+
+**Phone condition added (user T-039 B, via the lead and mgmt-ops-10, 10:20Z; before any phone run):** the phone
+no-worse check runs at real thermal Serious: `xctrace` Thermal State at the start and the end of every hold must read
+Serious with Is Induced = No, otherwise the hold is re-run; the timer-grid median and the battery °C are logged per
+run; stop at 44 °C or Critical. B is an experiment: on a blocker the lead switches to A (Fair/Nominal start, the same
+gate). The numeric bound above is unchanged.
 
 The first scored census (768, post-registration, v1 overlay bf8ffd4ef7a3) gave a **MORE** under the registered rule:
 at the `near` position y 2500, rAF callbacks 0/0 (C1/C2) vs 3, 4 (V), floor 2. Cause: v1 requested one rAF per slide
