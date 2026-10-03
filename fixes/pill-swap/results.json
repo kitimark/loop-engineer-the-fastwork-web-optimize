@@ -1,0 +1,747 @@
+{
+ "topic": "pill-swap",
+ "kind": "counts only (no timing; user deferral), R/I/D stages",
+ "base": "st6-rb2",
+ "arms": {
+  "base": {
+   "what": "committed baseline",
+   "snapshot": "b1789284481295-4ad4a84a"
+  },
+  "st6": {
+   "what": "st6-rb2 overlay, rebuilt from fixes/st6-rb2/patch.diff",
+   "js": "7bf7c4657d21",
+   "css": "f523598b2a24"
+  },
+  "norot": {
+   "what": "diagnostic ablation: st6-rb2 with the rotator loop off (JS 11589 `if (!e.matches && false)`), never a fix",
+   "js": "254d910e3813",
+   "css": "f523598b2a24"
+  }
+ },
+ "simulator": {
+  "note": "fw-sim 15 Pro Max, Mobile Safari 430x775, functional shared-lane sessions; 4 s Timeline per position after 2 s settle; Simulator ms never count (F-084): heavy = Layout record > 3 ms is a structure label only",
+  "run1": {
+   "file": "out/pill-swap/sim/simprobe-2026-10-03T01-10-34-085Z.json",
+   "base": {
+    "top": {
+     "scrollY": 0,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 105
+     },
+     "layouts": 225,
+     "viewRooted": 160,
+     "heavyOver3ms": 21,
+     "heavyByRoot": {
+      "430x775": 21
+     },
+     "rotatorAttributed": 7,
+     "rotatorAttributedViewRooted": 7,
+     "rotatorAttributedHeavy": 7,
+     "rotatorRoots": [
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775"
+     ]
+    },
+    "y300": {
+     "scrollY": 300,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 120
+     },
+     "layouts": 194,
+     "viewRooted": 160,
+     "heavyOver3ms": 43,
+     "heavyByRoot": {
+      "430x775": 43
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 8,
+     "rotatorAttributedHeavy": 8,
+     "rotatorRoots": [
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775"
+     ]
+    },
+    "y600": {
+     "scrollY": 600,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 120
+     },
+     "layouts": 207,
+     "viewRooted": 172,
+     "heavyOver3ms": 44,
+     "heavyByRoot": {
+      "430x775": 44
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 8,
+     "rotatorAttributedHeavy": 8,
+     "rotatorRoots": [
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775"
+     ]
+    },
+    "y900": {
+     "scrollY": 900,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 120
+     },
+     "layouts": 202,
+     "viewRooted": 160,
+     "heavyOver3ms": 30,
+     "heavyByRoot": {
+      "430x775": 30
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 7,
+     "rotatorAttributedHeavy": 7,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775"
+     ]
+    },
+    "pastHero": {
+     "scrollY": 2560,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 120
+     },
+     "layouts": 220,
+     "viewRooted": 124,
+     "heavyOver3ms": 47,
+     "heavyByRoot": {
+      "430x775": 47
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 8,
+     "rotatorAttributedHeavy": 8,
+     "rotatorRoots": [
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775"
+     ]
+    },
+    "pill": {
+     "scrollY": 1714,
+     "avatarsInView": true,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 120
+     },
+     "layouts": 239,
+     "viewRooted": 171,
+     "heavyOver3ms": 25,
+     "heavyByRoot": {
+      "430x775": 25
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 8,
+     "rotatorAttributedHeavy": 8,
+     "rotatorRoots": [
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775",
+      "430x775"
+     ]
+    }
+   },
+   "st6": {
+    "top": {
+     "scrollY": 0,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 158,
+     "viewRooted": 148,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 1,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "398x52",
+      "104x32",
+      "398x52",
+      "104x32",
+      "430x775",
+      "104x32",
+      "398x52",
+      "104x32"
+     ]
+    },
+    "y300": {
+     "scrollY": 300,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 154,
+     "viewRooted": 147,
+     "heavyOver3ms": 15,
+     "heavyByRoot": {
+      "430x775": 15
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 4,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32"
+     ]
+    },
+    "y600": {
+     "scrollY": 600,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "class": 7,
+       "src": 15
+      },
+      "childList": 0
+     },
+     "layouts": 163,
+     "viewRooted": 156,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 7,
+     "rotatorAttributedViewRooted": 4,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775"
+     ]
+    },
+    "y900": {
+     "scrollY": 900,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "src": 20,
+       "class": 8
+      },
+      "childList": 0
+     },
+     "layouts": 169,
+     "viewRooted": 161,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 7,
+     "rotatorAttributedViewRooted": 3,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32"
+     ]
+    },
+    "pastHero": {
+     "scrollY": 2560,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 51,
+     "viewRooted": 44,
+     "heavyOver3ms": 1,
+     "heavyByRoot": {
+      "430x775": 1
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 5,
+     "rotatorAttributedHeavy": 1,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "430x775",
+      "430x775",
+      "104x32"
+     ]
+    },
+    "pill": {
+     "scrollY": 1714,
+     "avatarsInView": true,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 195,
+     "viewRooted": 187,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 4,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32"
+     ]
+    }
+   }
+  },
+  "run2": {
+   "file": "out/pill-swap/sim/simprobe-2026-10-03T01-24-18-482Z.json",
+   "st6": {
+    "y300": {
+     "scrollY": 300,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 151,
+     "viewRooted": 143,
+     "heavyOver3ms": 15,
+     "heavyByRoot": {
+      "430x775": 15
+     },
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 4,
+     "rotatorAttributedHeavy": 1,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32"
+     ]
+    },
+    "pastHero": {
+     "scrollY": 2560,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 52,
+     "viewRooted": 44,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 4,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32"
+     ]
+    },
+    "pill": {
+     "scrollY": 1714,
+     "avatarsInView": true,
+     "avatarMutations": {
+      "attr": {
+       "class": 8,
+       "src": 20
+      },
+      "childList": 0
+     },
+     "layouts": 195,
+     "viewRooted": 187,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 8,
+     "rotatorAttributedViewRooted": 4,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": [
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32",
+      "430x775",
+      "104x32"
+     ]
+    }
+   },
+   "norot": {
+    "y300": {
+     "scrollY": 300,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 0
+     },
+     "layouts": 146,
+     "viewRooted": 142,
+     "heavyOver3ms": 14,
+     "heavyByRoot": {
+      "430x775": 14
+     },
+     "rotatorAttributed": 0,
+     "rotatorAttributedViewRooted": 0,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": []
+    },
+    "pastHero": {
+     "scrollY": 2560,
+     "avatarsInView": false,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 0
+     },
+     "layouts": 48,
+     "viewRooted": 44,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 0,
+     "rotatorAttributedViewRooted": 0,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": []
+    },
+    "pill": {
+     "scrollY": 1714,
+     "avatarsInView": true,
+     "avatarMutations": {
+      "attr": {},
+      "childList": 0
+     },
+     "layouts": 191,
+     "viewRooted": 187,
+     "heavyOver3ms": 0,
+     "heavyByRoot": {},
+     "rotatorAttributed": 0,
+     "rotatorAttributedViewRooted": 0,
+     "rotatorAttributedHeavy": 0,
+     "rotatorRoots": []
+    }
+   }
+  }
+ },
+ "chrome": {
+  "note": "headed Chrome mobile 430x932 DPR3 touch, CPU 6x, 4 s trace per position after 1.5 s settle, shared lane (probe weight); counts only",
+  "file": "out/pill-swap/chrome/counts-2026-10-03T01-20-12-108Z.json",
+  "browser": "Chrome/154.0.8037.97",
+  "load1": [
+   3.77099609375,
+   8.47802734375,
+   7.67236328125,
+   6.2451171875
+  ],
+  "base": {
+   "top": {
+    "scrollY": 0,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 150
+    },
+    "layouts": 192,
+    "layoutObjects": 2445,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 465,
+    "elementsStyled": 6341,
+    "paints": 1174
+   },
+   "y300": {
+    "scrollY": 300,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 150
+    },
+    "layouts": 246,
+    "layoutObjects": 3348,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 442,
+    "elementsStyled": 6450,
+    "paints": 915
+   },
+   "pastHero": {
+    "scrollY": 2982,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 135
+    },
+    "layouts": 78,
+    "layoutObjects": 886,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 401,
+    "elementsStyled": 10213,
+    "paints": 995
+   },
+   "pill": {
+    "scrollY": 1714,
+    "avatarsInView": true,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 120
+    },
+    "layouts": 182,
+    "layoutObjects": 2296,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 386,
+    "elementsStyled": 7741,
+    "paints": 1118
+   }
+  },
+  "st6": {
+   "top": {
+    "scrollY": 0,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {
+      "class": 8,
+      "src": 20
+     },
+     "childList": 0
+    },
+    "layouts": 10,
+    "layoutObjects": 159,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 4,
+    "avatarInvalidatedLayoutObjects": 51,
+    "avatarLayoutInvalidationReasons": {
+     "Size changed": 11
+    },
+    "styleRecalcs": 322,
+    "elementsStyled": 2798,
+    "paints": 884
+   },
+   "y300": {
+    "scrollY": 300,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {
+      "class": 8,
+      "src": 20
+     },
+     "childList": 0
+    },
+    "layouts": 109,
+    "layoutObjects": 1362,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 3,
+    "avatarInvalidatedLayoutObjects": 39,
+    "avatarLayoutInvalidationReasons": {
+     "Size changed": 9
+    },
+    "styleRecalcs": 412,
+    "elementsStyled": 3864,
+    "paints": 975
+   },
+   "pastHero": {
+    "scrollY": 2982,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {
+      "src": 20,
+      "class": 8
+     },
+     "childList": 0
+    },
+    "layouts": 4,
+    "layoutObjects": 51,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 4,
+    "avatarInvalidatedLayoutObjects": 51,
+    "avatarLayoutInvalidationReasons": {
+     "Size changed": 11
+    },
+    "styleRecalcs": 40,
+    "elementsStyled": 426,
+    "paints": 40
+   },
+   "pill": {
+    "scrollY": 1714,
+    "avatarsInView": true,
+    "avatarMutations": {
+     "attr": {
+      "class": 8,
+      "src": 20
+     },
+     "childList": 0
+    },
+    "layouts": 9,
+    "layoutObjects": 148,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 4,
+    "avatarInvalidatedLayoutObjects": 51,
+    "avatarLayoutInvalidationReasons": {
+     "Size changed": 11
+    },
+    "styleRecalcs": 281,
+    "elementsStyled": 3672,
+    "paints": 1043
+   }
+  },
+  "norot": {
+   "top": {
+    "scrollY": 0,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 0
+    },
+    "layouts": 5,
+    "layoutObjects": 97,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 322,
+    "elementsStyled": 2244,
+    "paints": 895
+   },
+   "y300": {
+    "scrollY": 300,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 0
+    },
+    "layouts": 104,
+    "layoutObjects": 1292,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 399,
+    "elementsStyled": 3194,
+    "paints": 1026
+   },
+   "pastHero": {
+    "scrollY": 2982,
+    "avatarsInView": false,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 0
+    },
+    "layouts": 0,
+    "layoutObjects": 0,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 12,
+    "elementsStyled": 120,
+    "paints": 9
+   },
+   "pill": {
+    "scrollY": 1714,
+    "avatarsInView": true,
+    "avatarMutations": {
+     "attr": {},
+     "childList": 0
+    },
+    "layouts": 5,
+    "layoutObjects": 97,
+    "layoutsOver50Objects": 0,
+    "avatarInvalidatedLayouts": 0,
+    "avatarInvalidatedLayoutObjects": 0,
+    "avatarLayoutInvalidationReasons": {},
+    "styleRecalcs": 330,
+    "elementsStyled": 3939,
+    "paints": 1294
+   }
+  }
+ },
+ "verdict": "premise refuted on the base: st6-rb2 (via rotator-st6) already has no avatar template swap and no heavy layout from the rotator; residual rotator cost = 2 light layouts per tick (WebKit: a 104x32 subtree layout + a view-rooted one with almost nothing dirty, 0.1-0.7 Sim ms; Chrome: 3-4 layouts / 4 s, ~13 objects each). No patch."
+}
