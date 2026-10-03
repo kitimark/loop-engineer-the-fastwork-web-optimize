@@ -400,6 +400,10 @@ has the phone record's schema plus `meta.device: "simulator"` and `meta.sim`.
 | `sim.mjs wda build\|start\|stop` | WDA for the Simulator: separate DerivedData (`$FW_WDA_HOME/DerivedData-sim`), `-destination 'platform=iOS Simulator,id=<udid>'`, `CODE_SIGNING_ALLOWED=NO` (no team, no Apple ID); start with `TEST_RUNNER_USE_PORT=8101` (never 8100, the phone's), no iproxy; gesture runs get `FW_WDA_URL=http://127.0.0.1:8101` | build inside a normal hold (xcodebuild, minutes of CPU) |
 | `sim.mjs status` | device, booted?, proxy pid/ports, WDA-sim pid, config (UDIDs masked) | none |
 | `sim.mjs doctor` | a booted fw-sim with no live session = leak: say so, `--fix` shuts it down | none |
+| `sim.mjs session … --reduce-motion on\|off` (I-100, 0b082d16) | sets the Simulator's Reduce Motion (Settings > Accessibility > Motion; `simctl spawn defaults com.apple.Accessibility ReduceMotionEnabled`, `tools/lib/sim-motion.mjs`) after Safari is terminated and before it launches; restores the value it found at session end (also after a failed `<cmd>` or a signal; after a SIGKILL, `<state>/sim/reduce-motion.json` is restored at the next boot of that device; `status`/`doctor` show it, `doctor --fix` restores it). Recorded in the session record and `meta.sim.reduceMotion`. Every `open` in the session checks the page's `prefers-reduced-motion` agrees (`REDUCE_MOTION page reduce\|no-preference …`), else it fails | any session (functional or timed) |
+| `sim.mjs reduce-motion` | inside a session: prints the setting and the last opened page's `prefers-reduced-motion`; exit 0 when both match the session's `--reduce-motion` (or it set none), 3 when not; read-only | inside a session |
+
+The two reduce-motion rows were added after I-100 landed (mgmt-ops-10, docs only; source of truth: the header of `tools/sim.mjs`). Use them for any WebKit reduced-motion leg (PR-010 T2 "reduced motion exact"); before I-100, WebKit reduced-motion legs were UNRESOLVED (T-034 §4).
 
 **Proxy (Hard rules 9 and 12; the lead's requirements):**
 - Socket: `lsof -aUc launchd_sim -Fn`, the name ending `com.apple.webinspectord_sim.socket`, only after Safari runs.
