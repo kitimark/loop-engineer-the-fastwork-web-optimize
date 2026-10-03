@@ -3,12 +3,16 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** landing build for F3 (lead 15:0xZ). The code is token-identical to `mw10e-arm-scope`; only comments
-changed. Measured evidence is in `fixes/mw10e-arm-scope/README.md` and `results.json`. P-036 (G), F and review run on
-this build.
+**Status:** superseded as the landing build by `fixes/mw10e-arm-scope-d/` (review-f3-arm-scope round 1, B2: touch
+gaps mid-tween and at m = 1). This folder stays as the build P-036 measured. The code is token-identical to
+`mw10e-arm-scope`; only comments changed. Measured evidence is in `fixes/mw10e-arm-scope/README.md` and
+`results.json`.
 **Topic:** morph-webkit / nav-morph (owner fix-nav-morph). The full history (`fixes/morph-webkit/README.md`) is on the
 working branch `worktree-agent-a277ea00c8773c1ea`, which is not part of this landing.
-**Base:** stacked on `aw1-10e` (`node tools/fix.mjs apply mw10e-arm-scope-c --on aw1-10e`). JS only.
+**Base:** stacked on `aw1-10e` (`node tools/fix.mjs apply mw10e-arm-scope-c --on aw1-10e`). JS only. **`aw1-10e` is
+not on `main`**: its folder and overlay exist only on the working branch above (and in worktrees), so this patch
+does not apply to the main baseline on its own. Landing F3 needs `aw1-10e` landed first, or the patch re-cut on
+`main`'s nav code; that is the lead's call.
 
 ## What changed vs mw10e-arm-scope
 
@@ -18,7 +22,9 @@ The two patch comments are reworded to what the sources support:
 - **New wording:**
   - the window wheel listener triggers a full style rebuild only when the set of event-region types changes
     (WebKit source, arch-claims, tag 7624.4.5);
-  - touch event regions are compiled out on iOS before WebKit 7625;
+  - touch event regions are compiled out on iOS before WebKit 7625 (CONFIRMED by source: `ENABLE_TOUCH_EVENT_REGIONS`
+    is 0 on iOS through tag 7624.4.5, PlatformEnable.h 26.6 l.656-658, and 1 from 7625, PlatformEnableCocoa.h main
+    l.919-920; `research/architecture/claims-audit.md` W5/W6);
   - the ~100 ms frame follows the listener add (observed);
   - which listener costs it is unresolved (F-062).
 
@@ -68,8 +74,9 @@ results, so only counts are given here.
   | Z2 | 4/4 | 4/4 |
   | Z3 | 3/3 | 3/3 |
 
-  - Simulator only: OBSERVED. It matches the source note above: touch event regions are compiled out on iOS before
-    WebKit 7625.
+  - Simulator only: OBSERVED, in our setup. It fits the source note above (CONFIRMED: touch event regions are
+    compiled out on iOS through WebKit 7624.4.5, PlatformEnable.h 26.6 l.656-658, claims-audit W5/W6). That the
+    missing regions are why every touch dispatches cancelably is our reading, not a cited mechanism (UNRESOLVED).
   - So V's non-passive touchmove on #platform and the nav, armed at load, makes every touch on the page dispatch
     cancelably, not only touches on those subtrees.
   - The P-036 row's zone premise ("Z1: no non-passive listener under the finger in either arm"; "Z2: V none") holds
@@ -146,9 +153,9 @@ no gesture record is committed (N1).
   or phone fault). It is void and kept apart; the re-run kept the order.
 - **The runner's deviations, all disclosed in its run log:**
   - **Heat:** Safari sat unparked for ~6 min between holds 1 and 2, so V2 ran on the hottest phone of the block
-    (42.6 to 43.3 °C). Every other counted run ran at 38.7-40.7 °C.
-  - **Mac load:** V2 and V4 started at load1 20 and 26. Those were decaying averages left by an earlier group of
-    shared jobs; load1 was 2.3-4.5 inside the holds.
+    (42.6 to 43.3 °C). Every other counted run ran at 38.7-41.2 °C (V1 ended at 41.2 °C).
+  - **Mac load:** V2 and V4 started at load1 18.6 and 8.8 (the records' `meta.mac.start`). Those were decaying
+    averages left by an earlier group of shared jobs; load1 was 2.3-4.5 inside the holds.
 
 **Registered metric:** median touch-to-scroll per zone per run, in ms.
 
@@ -161,17 +168,22 @@ no gesture record is committed (N1).
 - No zone is SEPARATED-WORSE, BETTER or FLAGGED. In no zone are one arm's runs all above the other's.
 - Without V2, the hot run, Z1 is still overlap: V 190-192.5 against C 192.5-201, which touch at 192.5. Every other
   zone is unchanged.
-- The ~190 ms level is the same in both arms. It is the G driver's touch-down-to-first-scroll path, not the page.
+- The ~190 ms level is the same in both arms. Our reading is that it is mostly the G driver's
+  touch-down-to-first-scroll path rather than the page (OBSERVED, in our setup, cause unknown: no driver-only
+  baseline was measured).
 
 **Info only, not part of the card**
 - **First touchmove cancelable** (share of zone strokes, every run): Z1 C 0/4 vs V 4/4; Z2 and Z3 all strokes in
   both arms. The phone shows the same dispatch effect as the Simulator check above (OBSERVED, in our setup).
-- **No cost from that cancelable dispatch in Z1.** Queue delay (median per run) is 14.5-17 ms in C and 15-17 ms in
-  V. Z1 touch-to-scroll is not higher in V.
+- **No cost from that cancelable dispatch in Z1 was detected at this block's resolution** (OBSERVED, n = 4 per
+  arm). Queue delay (median per run) is 14.5-17 ms in C and 15-17 ms in V, and Z1 touch-to-scroll is not higher in
+  V. Every stroke starts from a settled page, so a busy main thread (a touch during load or during momentum) is not
+  covered.
 - So the pre-data expectation that Z1 might be FLAGGED or WORSE did not happen in this block.
 - **Frames during Z1 strokes (dt > 50 ms per run):** C 2, 1, 3, 2; V 1, 16, 3, 2.
-  - V2's 16 is the hot run: 42.6-43.3 °C after the unparked gap, and that run took ~2.5 min against ~1.1-1.7 for
-    the others. The other three V runs sit inside C's range.
+  - V2's 16 coincides with the hot run: 42.6-43.3 °C after the unparked gap, and that run took ~2.5 min against
+    ~1.1-1.9 min for the others (V1 1.9, C4 1.8). Heat as the cause is our reading, not shown (OBSERVED, cause
+    unknown). The other three V runs sit inside C's range.
   - This is a G run, so the counts compare only on ms thresholds (F-071).
   - dt > 34 ms: C 15, 10, 13, 15; V 10, 22, 14, 13.
 

@@ -1,0 +1,27 @@
+{
+  "name": "pin-hold-v2",
+  "version": 2,
+  "screen": [430, 932],
+  "about": "B1 (review-f3-arm-scope, fix-nav-morph): reproduce P-036's capped end. Transit strokes (P-036's still profile, 480 px / 700 ms, hold 150) from the top until atEnd or 24 passes: when the morph pins the page at y 5215 (5 px short of the end) the loop keeps pushing into the pin like P-036's capped runs (10 passes there), then the page idles 8 s at the pin. v2 (lead, round 2): then two close/open cycles at the pin (a 240 px / 500 ms down stroke closes the morph; 2 s later a 240 px / 500 ms up stroke reopens it; 2 s pause after each), so the frames where D arms and disarms its window touch listeners can be read beside C and V.",
+  "params": { "x": 215, "transitPx": 480, "transitMs": 700 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": 3000 },
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 24, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "mark", "name": "end" },
+    { "type": "pause", "ms": 8000 },
+    { "type": "mark", "name": "cycle" },
+    { "type": "repeat", "times": 2, "steps": [
+      { "type": "until", "cond": "y>=4000", "timeoutMs": 2000 },
+      { "type": "stroke", "dir": "down", "px": 240, "ms": 500, "profile": "minjerk" },
+      { "type": "pause", "ms": 2000 },
+      { "type": "stroke", "dir": "up", "px": 240, "ms": 500, "profile": "minjerk" },
+      { "type": "pause", "ms": 2000 }
+    ] }
+  ]
+}

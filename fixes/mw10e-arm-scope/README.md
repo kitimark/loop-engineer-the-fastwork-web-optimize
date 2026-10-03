@@ -58,8 +58,10 @@ on the working branch `worktree-agent-a277ea00c8773c1ea`, which is not part of t
 - **No visual change:**
   - screenshot diff vs aw1-10e is 0.13 / 0 / 0 % (top / middle / bottom, phase noise);
   - the morph reaches 1 in 5/5 runs on both sides;
-  - a11y and hit tests are identical (`probe-results/arm-scope-check.json`).
-- **Behaviour check** (`touch-check.mjs`):
+  - a11y and hit tests are identical (`fixes/morph-webkit/probe-results/arm-scope-check.json` on the working
+    branch `worktree-agent-a277ea00c8773c1ea`; not part of this landing).
+- **Behaviour check** (`fixes/morph-webkit/touch-check.mjs`, on the same working branch; superseded for the
+  mid-morph cases by `fixes/morph-webkit/touch-gap-check.mjs`, which lands with `mw10e-arm-scope-d`):
   - At the end of the page #platform spans the whole viewport, so a morph touch starts on #platform or on the nav.
   - A 240 px upward swipe reaches morph 1 from y≈699 and from y≈88, as in base.
 
@@ -104,7 +106,10 @@ unknown). They do not block F3 (lead).
 | morph: fps / frames >50 ms | 112.8 / 0 | 112.9 / 0 | 0 | within noise |
 | idle: fps / frames >34 ms | 119.7 / 0 | 119.5 / 0 | 0 | within noise |
 
-- Chrome does not reproduce the WebKit edge frame. That is expected: the mechanism is WebKit's event-region rebuild.
+- Chrome does not reproduce the WebKit edge frame. Which listener costs it on the phone is UNRESOLVED (F-062): the
+  WebKit source confirms a full style rebuild on a window wheel listener add only when the set of event-region types
+  changes (claims-audit W5/W6), and touch regions are compiled out on iOS 26.6, so the event-region rebuild is a
+  candidate, not a shown mechanism.
 - So the Chrome A/B is a no-regression check only, and passes.
 
 ## Risks, conflicts, follow-ups
@@ -119,9 +124,16 @@ unknown). They do not block F3 (lead).
     original makes every stroke wait.
   - Strokes that start on the nav (screen y < 68) are outside G's safe zone. Only F covers them.
 - **Behaviour.** A morph touch that starts outside #platform and the header at the end zone would not drive the morph.
-  At the measured geometry #platform covers the viewport there. Other viewports (desktop touch, landscape) are not
-  checked.
-- **Desktop wheel** is unchanged (window listener). Reduced motion: not measured.
+  #platform covers the viewport there only below m 0.5225: above it `S()` makes #platform `pointer-events: none`, and
+  the header leaves the lower part of the screen mid-tween and 12 px margins at m = 1 uncovered. Found by
+  review-f3-arm-scope (B2) and fixed in `mw10e-arm-scope-d` (window touch listeners while the morph is active).
+  Other viewports (desktop touch, landscape) are not checked.
+- **Desktop wheel is not unchanged** (review-f3-arm-scope round 1). The window `wheel` listener (`passive: false`) is
+  now armed from page load, not at the IO edge, so desktop wheel scrolling waits on the main thread on the whole page,
+  not only in the end zone. CONFIRMED as a mechanism: https://developer.chrome.com/blog/scrolling-intervention-2
+  (Chrome 73: root-target wheel listeners are passive by default; an explicit `{passive: false}` blocks scrolling).
+  Not measured: the CDP ack proxy does not discriminate (`fixes/mw10e-arm-scope-d/README.md` Risks). It stays a
+  stated risk in the land card. Reduced motion: not measured.
 - **Code comment before landing.** The patch comment says "every wheel/touch listener add/remove on the window
   invalidates the … ROOT style" and argues a touch region (F-055, REFUTED on 26.6). It must be reworded to the
   source wording before landing: wheel only, on a change of the region-type set; the listener add is the observed

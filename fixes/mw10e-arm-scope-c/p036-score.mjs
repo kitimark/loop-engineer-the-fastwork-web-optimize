@@ -99,7 +99,10 @@ const runs = [], sents = [];
 for (const a of args) {
   const m = /^([CVS]):(.+)$/.exec(a); if (!m) continue;
   const doc = JSON.parse(readFileSync(m[2], 'utf8'));
-  if (m[1] === 'S') { if (doc.program?.hash) sents.push(sentinel(doc, m[2])); else { const st = doc.meta?.sentinel; console.log(`S ${m[2]}: S-driver sentinel (amendment 4084772): ${st ? `${st.criterion}: bottom ${st.value?.bottom} scroll ${st.value?.scroll} -> ${st.pass ? 'pass' : 'FAIL'}` : 'no meta.sentinel (INVALID)'}`); } }
+  if (m[1] === 'S') {
+    if (doc.program?.hash) sents.push(sentinel(doc, m[2]));
+    else { const st = doc.meta?.sentinel; sents.push({ file: m[2], label: doc.meta?.label, date: doc.meta?.date, driver: 'S', criterion: st?.criterion ?? null, bottom: st?.value?.bottom ?? null, scroll: st?.value?.scroll ?? null, pass: !!st?.pass, invalid: !st }); }
+  }
   else runs.push({ arm: m[1], ...scoreRun(doc, m[2]) });
 }
 const zones = {};
@@ -109,9 +112,17 @@ for (const z of Object.keys(ZONES)) {
   zones[z] = { C: c, V: v, medianC: r1(median(c)), medianV: r1(median(v)), ...verdict(c, v) };
 }
 const pass = Object.values(zones).every((z) => z.verdict !== 'SEPARATED-WORSE') && Object.values(zones).every((z) => !z.verdict.startsWith('n/a'));
-const out = { prediction: 'P-036', scriptHash: HASH, sentinelHash: SENT_HASH, sentinels: sents, runs: runs.map(({ strokesMs, ...r }) => ({ ...r, strokesMs })), zones, cardPart: pass ? 'PASS (no zone SEPARATED-WORSE)' : Object.values(zones).some((z) => z.verdict === 'SEPARATED-WORSE') ? 'FAIL (a zone SEPARATED-WORSE)' : 'INCOMPLETE' };
+// Sentinels are part of the card part (review-f3-arm-scope round 1): no sentinel -> INCOMPLETE; a failing or invalid
+// sentinel -> VOID (the registered rule voids the counted runs since the last passing sentinel; the scorer does not
+// order runs in time, so any failure voids the card part and the owner re-scores the runs the rule keeps).
+const sentFail = sents.filter((s) => !s.pass);
+const zoneCard = pass ? 'PASS (no zone SEPARATED-WORSE)' : Object.values(zones).some((z) => z.verdict === 'SEPARATED-WORSE') ? 'FAIL (a zone SEPARATED-WORSE)' : 'INCOMPLETE';
+const cardPart = !sents.length ? `INCOMPLETE (no sentinel passed in; zones: ${zoneCard})` : sentFail.length ? `VOID (${sentFail.length} sentinel(s) failed or invalid; zones: ${zoneCard})` : zoneCard;
+const out = { prediction: 'P-036', scriptHash: HASH, sentinelHash: SENT_HASH, sentinels: sents, runs: runs.map(({ strokesMs, ...r }) => ({ ...r, strokesMs })), zones, cardPart };
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(out, null, 1));
-for (const s of sents) console.log(`sentinel ${s.label}: hash ${s.hash}${s.hashOk ? '' : ' (WRONG)'} moving ${s.movingFrames} p50 ${s.p50} p95 ${s.p95} -> ${s.pass ? 'pass' : 'FAIL'}`);
+for (const s of sents) console.log(s.driver === 'S'
+  ? `sentinel ${s.label ?? s.file}: S-driver (amendment 4084772) ${s.invalid ? 'no meta.sentinel (INVALID)' : `${s.criterion}: bottom ${s.bottom} scroll ${s.scroll}`} -> ${s.pass ? 'pass' : 'FAIL'}`
+  : `sentinel ${s.label}: hash ${s.hash}${s.hashOk ? '' : ' (WRONG)'} moving ${s.movingFrames} p50 ${s.p50} p95 ${s.p95} -> ${s.pass ? 'pass' : 'FAIL'}`);
 for (const r of runs) console.log(`${r.arm} ${r.label}: ${r.valid ? 'valid' : 'VOID ' + r.voids.join('; ')} | z1 ${r.medianMs.z1} z2 ${r.medianMs.z2} z3 ${r.medianMs.z3} ms${r.notes.length ? ' | ' + r.notes.length + ' note(s)' : ''}`);
 for (const [z, s] of Object.entries(zones)) console.log(`${z}: C [${s.C}] V [${s.V}] med C ${s.medianC} V ${s.medianV} -> ${s.verdict}${s.deltaMs != null ? ` (V-C ${s.deltaMs} ms)` : ''}`);
 console.log(`card part: ${out.cardPart}`);
