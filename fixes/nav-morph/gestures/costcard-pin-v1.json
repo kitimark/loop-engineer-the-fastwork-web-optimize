@@ -1,0 +1,33 @@
+{
+  "name": "costcard-pin-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "F3 cost card, Simulator part (fix-nav-morph; user T-035 #8, isolated-measurement README §6). Counts only. From a fresh load: 3 s idle, fling strokes to the end of the page (until atEnd), settle; then the events the card cuts at its own marks: 'start' (one up stroke at the end: the stroke that starts the morph), 'push-1' (the first pin push after the load), 'push-n' x8 (pushes 2-9), 'hold' (4 s idle at the pin), 'end'. Pin pushes are v1c's end push (up 240 px, 500 ms, minjerk).",
+  "params": { "x": 215, "flingPx": 520, "flingMs": 250, "pushPx": 240, "pushMs": 500 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": 3000 },
+    { "type": "mark", "name": "approach" },
+    { "type": "repeat", "times": 24, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": 900 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "start" },
+    { "type": "stroke", "dir": "up", "px": "$pushPx", "ms": "$pushMs", "profile": "minjerk" },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "push-1" },
+    { "type": "stroke", "dir": "up", "px": "$pushPx", "ms": "$pushMs", "profile": "minjerk" },
+    { "type": "pause", "ms": 600 },
+    { "type": "repeat", "times": 8, "steps": [
+      { "type": "mark", "name": "push-n" },
+      { "type": "stroke", "dir": "up", "px": "$pushPx", "ms": "$pushMs", "profile": "minjerk" },
+      { "type": "pause", "ms": 600 }
+    ] },
+    { "type": "mark", "name": "hold" },
+    { "type": "pause", "ms": 4000 },
+    { "type": "mark", "name": "end" }
+  ]
+}
