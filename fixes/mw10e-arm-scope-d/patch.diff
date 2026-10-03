@@ -1,0 +1,59 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13285,7 +13285,7 @@
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if ((__twOn(), (w = t), z(b, !0), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -13315,6 +13315,10 @@
+         c = e.touches[0]?.clientY ?? 0;
+       },
+       M = (e) => {
++        // mw10e-arm-scope-d (B2): one touchmove can reach M twice while the morph's window listener is armed (window
++        // capture first, then #platform / the nav); only the first call acts.
++        if (e.__fwMorphSeen) return;
++        e.__fwMorphSeen = !0;
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+         ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
+@@ -13342,7 +13346,27 @@
+             (t.removeEventListener(`touchstart`, j, !0), t.removeEventListener(`touchmove`, M, !0));
+           }),
+           (__tt = []));
++        __twOff();
++      },
++      // mw10e-arm-scope-d (B2, review-f3-arm-scope): once the morph runs, #platform turns pointer-events:none
++      // (m > 0.5225) and the nav does not cover the whole viewport (the lower part mid-tween, the 12 px margins at
++      // m = 1), so a touch there reached no morph listener: no preventDefault (the page scrolled against the pin) and
++      // no reversal. While the morph is active (C()), the touch listeners are on the window as well, as in the
++      // original; before the morph starts only #platform and the nav carry them (F3). Armed by E() (any morph
++      // target), disarmed by I() once C() is false (end of the spring) and by P() on teardown.
++      __tw = !1,
++      __twOn = () => {
++        __tw ||
++          ((__tw = !0),
++          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
++          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
+       },
++      __twOff = () => {
++        __tw &&
++          ((__tw = !1),
++          window.removeEventListener(`touchstart`, j, !0),
++          window.removeEventListener(`touchmove`, M, !0));
++      },
+       // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
+       // #platform entered the 200% zone (IO below) and removed them when it left. That add is followed by the
+       // ~100 ms iPhone frame at y~1960 (observed). In WebKit's source a window wheel listener triggers a full
+@@ -13353,7 +13377,7 @@
+       // (u || C()).
+       // armed once at setup (page load), before any scroll.
+       I = () => {
+-        N();
++        (N(), C() || __twOff());
+       },
+       L = () => {
+         (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));

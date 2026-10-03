@@ -817,3 +817,16 @@ took 33 ms at the same point.
 - **dvh:** stays parked. Nothing here points at it.
 - **Decisive next check:** a G-driver release of st6-rb2 vs st6-rb2 minus `__osb`, with innerHeight and morph logged
   per frame (`--inject`). Board F-151.
+
+## F3 round 2 (review-f3-arm-scope B1/B2), 2026-10-03
+
+- B2 fix: `fixes/mw10e-arm-scope-d/` (JS 999c4497f37e): window touch listeners while the morph is active.
+  - Probe: `touch-gap-check.mjs` (Chrome, shared lane).
+  - V fails both gap cases: the edge at m = 1, and below the nav mid-tween at m 0.525. In each, nothing was
+    prevented, the page scrolled 20 px and the morph did not reverse.
+  - D matches C in every case.
+- B1, end-pin collapse: `pinhold-sim.mjs` + `gestures/pin-hold-v1.json` (Simulator G, counts only).
+  - The Simulator reproduces the capped state but no collapse in either arm. The page-side rAF, timer, scrollTo and
+    mutation counts and the Timeline record counts at the pin are the same for V and C.
+  - Chrome pin counts are the same for C, V and D.
+  - UNRESOLVED; phone ticket in `fixes/mw10e-arm-scope-d/README.md`.
