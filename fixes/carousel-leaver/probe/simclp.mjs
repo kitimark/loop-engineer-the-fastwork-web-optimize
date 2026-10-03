@@ -76,11 +76,12 @@ for (const arm of ARMS) {
     await sleep(4000);
     // run 3: the carousel itself at mid-view (runs 1-2 put #future-heading there, which left the carousel below the view)
     const geo = JSON.parse(await ev(`JSON.stringify((() => { const c = ${CAR}; const r = c.getBoundingClientRect(); window.scrollBy({ top: r.top + r.height / 2 - 0.5 * innerHeight, behavior: 'instant' }); const q = c.getBoundingClientRect(); return { vh: innerHeight, y: scrollY, carTop: q.top, inView: q.top >= 0 && q.bottom <= innerHeight }; })())`));
+    if (!geo.inView) { res.arms[arm.k] = { served, geo, void: 'VOID: carousel not in view' }; console.log(`${arm.k} VOID: carousel not in view ${JSON.stringify(geo)}`); try { c.close(); } catch {} continue; }
     await sleep(2500);
     // sim run 1 (15:2xZ): the 2nd arm's Timeline.start timed out (15 s) and killed the run. Now a Timeline failure is
     // recorded (timelineError), the tab is re-opened once and Timeline retried; the series window runs either way.
     let recs = [], mo = null, a = { frames: 0, layouts: 0, view: 0, viewGe10: 0, car: 0, byRoot: {}, recalcStyles: 0, paints: 0, composites: 0, viewList: [] }, tlErr = null, c2 = c;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 1; attempt++) { // run 3: no retry on a re-opened tab (it would not be centred): a failure voids the arm
       try {
         if (attempt) { try { c2.close(); } catch {} c2 = await openTab(`localhost:${s.port}`); }
         c2.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
@@ -95,7 +96,7 @@ for (const arm of ARMS) {
         a = analyze(recs, geo.vh); tlErr = null; break;
       } catch (e) { tlErr = String(e.message || e).slice(0, 160); console.log(`${arm.k} timeline attempt ${attempt + 1} failed: ${tlErr}`); try { await c2.evaluate(MO_STOP); } catch {} }
     }
-    if (tlErr) { try { c2.close(); } catch {} c2 = await openTab(`localhost:${s.port}`); }
+    if (tlErr) { res.arms[arm.k] = { served, geo, void: `VOID: Timeline failed: ${tlErr}` }; console.log(`${arm.k} VOID: Timeline failed`); try { c2.close(); } catch {} continue; }
     const ev2 = (e) => c2.evaluate(e);
     await sleep(500);
     // series: wip evaluate has no awaitPromise; park the result on window and poll
@@ -108,4 +109,5 @@ for (const arm of ARMS) {
   } finally { p.kill(); }
   writeFileSync(join(OUT, 'simclp.json'), JSON.stringify(res, null, 1));
 }
+writeFileSync(join(OUT, 'simclp.json'), JSON.stringify(res, null, 1));
 console.log('EXIT-OK');

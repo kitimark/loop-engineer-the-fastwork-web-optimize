@@ -138,6 +138,12 @@ sample 2.5 s, shot `pz` right after the return series.
   carousel. Rects, opacity, scale and Layout and DOM-write counts are still taken from the live animation. Paint counts
   are not about the carousel at all, and the Sim view-rooted layout counts may differ in view. These runs are reported
   as "off-screen" data only. Every check is re-run with repair (b), and the in-view runs decide.
+- **Amendment (lead OK, ops PASS with conditions): position = the carousel centred at 0.5 vh, border box fully in view.**
+  Void rules added: an arm whose carousel is not in view is VOID in every mode. In Chrome, series and counts record
+  `pos.inView`, and pixel and `pz` shots throw VOID when the crop falls outside the viewport capture. In the Sim,
+  `simclp.mjs` checks this in code. A Sim arm whose Timeline fails is VOID: there is no retry, because a re-opened tab
+  would not be centred. Holds 4a and 4b ran on clp.mjs `37b9e94812fa` before ops' conditions reached me. Their
+  recorded `inView` is true for every arm, and no crop fell outside the capture.
 - The crop region (border box ± 4 CSS px), the n8 metric, the t grid and every interval stay as registered. Only the
   capture method and the scroll position change. Hold 3 was the one re-run the rules allow, so the re-runs with (b)
   wait for the lead's OK (a second void goes to the lead).
