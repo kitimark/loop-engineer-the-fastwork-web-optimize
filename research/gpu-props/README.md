@@ -250,14 +250,15 @@ sweep (style every frame) plus the glint (paint every frame). Everything else at
 
 countdown-faces (main 24b7db4): 3 faces per digit instead of 10 (80 → 24 face layers), no state writes while the
 clock can't be seen, 0 px difference over 295 frozen frames. Open point: on WebKit the digit layers repaint 1-8 %
-more often at the top (C 127/129, V 137/130 per 4 s) in 2 of 4 sessions, and C's face layers repaint too, cause
-unknown.
+more often at the top (C 127/129, V 137/130 per 4 s, LayerTree paintCount) in 2 of 4 sessions, and C's face
+layers repaint too, cause unknown. (Later: those paintCount totals are probably a census artefact; see the update
+below.)
 
 Checked ideas, each against a reference:
 
 | idea | finding | status |
 |---|---|---|
-| WebKit repaints a face layer that rolls back into the cell | yes: a composited layer outside its clip loses its backing store and repaints on re-entry (`GraphicsLayerCA.cpp` l.3034-3058 → `PlatformCALayerCocoa.mm` l.728-739). It explains repaint-on-entry and the equal face memory (0.4 MB for 80 and 24 faces). By count (1-2 faces enter per tick) it does **not** explain all 127-137 repaints per 4 s | mechanism CONFIRMED; share of the count UNRESOLVED (decisive check: Simulator LayerTree paintCount per face per roll) |
+| WebKit repaints a face layer that rolls back into the cell | yes: a composited layer outside its clip loses its backing store and repaints on re-entry (`GraphicsLayerCA.cpp` l.3034-3058 → `PlatformCALayerCocoa.mm` l.728-739). It explains repaint-on-entry and the equal face memory (0.4 MB for 80 and 24 faces). The 127-137 face repaints per 4 s from X1's LayerTree paintCount are probably a census artefact (fix-cd-strip, Simulator: paintCount deltas are the same whether two censuses are 117 ms or 4 s apart); Timeline Paint records give 13 hero-clock Paints per 4 s on st6-rb2 | mechanism CONFIRMED; real count OBSERVED (Simulator Timeline, 2 sessions) |
 | 3-slot faces change text once per roll | a text change in a composited layer repaints it; that is the measured +1-8 % | OBSERVED (countdown-faces X1), consistent with source |
 | **transform-only roll on a pre-rendered strip** (one layer per digit, "0123456789" + a second "0", translated by `-(v mod 10)·h`) | same screen position for every face as `KE` gives: face `k` sits at `(k − v)·h` modulo 10 cells, the 11th cell covers the 9→0 wrap; the cell height `h` is the spacer's integer `offsetHeight`, so at DPR 3 every cell starts on a whole device pixel and each glyph rasterizes at the same subpixel phase as in its own face layer; the fractional translate is the same as the face's | identical **by construction** (geometry); raster identity to be shown by countdown-faces' frozen-frame harness. The strip always intersects the clip, so WebKit never detaches it, and its content never changes: **0 text repaints, 0 entry repaints** |
 | WAAPI/CSS animation of the roll (compositor in both engines) | `transform` with keyword `linear` between sampled keyframes is accelerated in both (no `steps()`, no `linear()` with points: KeyframeEffect.cpp l.1926-1968); the 1 Hz tick then costs one main frame instead of ~30. But the original's path depends on which frames it gets (60 vs 120 Hz differ by 3.3 px, countdown-faces chain.mjs), while an animation is a fixed function of time: it can match a 60 Hz path within ≈0.08 px with 240 Hz samples (spring ω = √(280/0.3) ≈ 30.6 rad/s, error ≤ a·Δt²/8), never "what the original computes for this frame sequence" | CONFIRMED engine side; **not pixel-identical** by countdown-faces' own standard: user decision |
@@ -275,9 +276,16 @@ Update from de-countdown after X1 stage 2 closed (0ab7f40):
 - countdown-faces (a)'s 3 slots showed no measurable cost on the phone (row 1 not separated). No G2/G4 variant was
   in the arms.
 - Agreed with fix-cd-strip: the strip replaces (a) and keeps the hidden skip (b).
-- F-146 (OBSERVED, cause unknown): at pastHero, the hidden-skip build shows a bigger once-a-second Layout burst
-  (42-61 ms in a single frame vs 30-39 ms), even though it does 38 % less total work. The G2 owner should count
-  Layout records per tick at pastHero with and without (b).
+- F-146: on the phone at pastHero, the hidden-skip build shows a bigger once-a-second Layout burst (42-61 ms in a
+  single frame vs 30-39 ms), even though it does 38 % less total work. de-countdown traced it on the Simulator
+  (bcb8ef5). The burst is the community-pill avatar template swap (JS 11415-11447): a full-viewport Layout twice a
+  second, the same in both arms. countdown-faces adds no write or invalidation while hidden. Why the same layouts
+  run longer on the phone in the (b) build is UNRESOLVED (CPU-clock hypothesis, plan 8529d59). The swap itself is
+  now fix-pill-swap's topic.
+- fix-cd-strip (Simulator): the 127-137 face repaints per 4 s quoted from X1 are probably an artefact of the
+  LayerTree census. paintCount deltas are equal for censuses 117 ms or 4 s apart: st6-rb2 176/176/172, cd-strip
+  24/24/24. Timeline Paint records give 13 hero-clock Paints per 4 s on st6-rb2 and 0 with cd-strip (OBSERVED,
+  2 sessions). So G2's gain at the hero clock is small; its main case is the morph panel clock.
 
 ## 5. Ranking
 
@@ -286,7 +294,7 @@ pin), then main-thread frames at rest (F-132: a needed main frame costs the full
 
 | rank | brief | removes | where it matters | identical | engine risk |
 |---|---|---|---|---|---|
-| F1 | G2 cd-strip | WebKit digit repaints (hero clock 127-137 per 4 s; the panel clock's per-frame repaint during the morph) and 16 of 24 face layers | top window + morph pin | by construction | memory up on WebKit (whole strip backed); panel needs layered strips (cdwc coupling) |
+| F1 | G2 cd-strip | WebKit digit repaints (hero clock 13 Paint records per 4 s → 0, Simulator; the panel clock's per-frame repaint during the morph) and 16 of 24 face layers | top window + morph pin | by construction | memory up on WebKit (whole strip backed); panel needs layered strips (cdwc coupling) |
 | F2 | S1 hero-exit-threaded | per-frame JS + hero-subtree restyle for y 0-855 | top window | as a function of scroll position (phone parity measured) | the unexplained +11 ms at the y≈700 flip: Timeline split first |
 | F3 | G4 cd-roll-ca | ~30 rAF callbacks per second per clock while it rolls | top window + morph pin | no (frame-sequence dependent) | low; the user decides |
 | I1 | G1 glint-ca | per-frame SMIL paint in the secure visual | platform tail at rest | by construction | WebKit mask + animated child: UNRESOLVED |
@@ -393,8 +401,9 @@ Order by rank: G2 (F1), S1 (F2), G4 (F3), G1 (I1), G3 (I2); the text below keeps
   `will-change: auto`). st6-rb2 does **not** include countdown-faces (no `__cdSlots` in its JS): stack on
   st6-rb2 + countdown-faces if that lands first and replace its 3-slot faces with the strip, keeping its hidden
   skip (b) as is; otherwise on st6-rb2 alone.
-- **Why it lags:** WebKit repaints the hero's face layers 127-137 times per 4 s at the top (countdown-faces X1,
-  OBSERVED). Part of that is CONFIRMED by source: a face that leaves the clip loses its backing store and repaints
+- **Why it lags:** WebKit repaints the hero clock's digits at the top: 13 Paint records per 4 s on st6-rb2 in a
+  Simulator Timeline (fix-cd-strip, 2 sessions, OBSERVED; the 127-137 per 4 s first quoted here from X1's LayerTree
+  paintCount is probably a census artefact, see section 4). The mechanism is CONFIRMED by source: a face that leaves the clip loses its backing store and repaints
   when it rolls back in (F-142); countdown-faces' slot text changes add 1-8 %. In the morph, the post-mortem
   (`research/design-engineering/postmortem-morph.md` §0.3, §1b, build g Timeline) named the panel clock's digit
   repaints as the Composite term of the slow morph frames; st6-rb2's cdwc made those faces unlayered, so each spring
@@ -412,7 +421,8 @@ Order by rank: G2 (F1), S1 (F2), G4 (F3), G1 (I1), G3 (I2); the text below keeps
 - **Expected (falsifiable):**
   - Chrome LayerTree: hero face layers 80 (or 24 with countdown-faces) → 8 strip layers.
   - WebKit Simulator (countdown-faces' `x1.mjs`/`sim-counts.mjs`, `--lt`): face/strip layer repaints at the top ≤ 8
-    per 4 s (first paint only) against 127-137; digit-sized Paints ≤ 4.
+    per 4 s (first paint only); hero-clock Paint records in a Timeline 13 → 0 per 4 s (fix-cd-strip measured 0 on
+    its build, Simulator). Count Paint records in a Timeline, not LayerTree paintCount deltas (census artefact).
   - countdown-faces' frozen-frame harness (`probe.mjs pixels`, 295 shots, 60 and 120 Hz, resume cases): 0 px.
   - Morph (phone or Simulator Timeline with the morph driver `__fwMorphDrive`, counts only): Paint records inside
     the panel's clock rect per spring frame → 0 with arm (a); layer count in the panel +8.
