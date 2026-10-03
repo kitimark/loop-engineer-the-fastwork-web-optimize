@@ -1,7 +1,7 @@
 {
  "topic": "cd-roll-ca",
  "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
- "date": "2026-10-03T02:17:12.113Z",
+ "date": "2026-10-03T02:42:04.506Z",
  "config": {
   "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
   "stackedOn": "cd-strip (arm b) on st6-rb2",
@@ -25,11 +25,14 @@
    "fixes/cd-roll-ca/roll-probe.mjs",
    "fixes/cd-roll-ca/comp-check.mjs",
    "fixes/cd-roll-ca/sim-counts.mjs",
-   "fixes/cd-roll-ca/hide-check.mjs"
+   "fixes/cd-roll-ca/hide-check.mjs",
+   "fixes/cd-roll-ca/hide-audit.mjs",
+   "fixes/cd-roll-ca/sim-hide.mjs",
+   "fixes/cd-roll-ca/sim-gaps.mjs"
   ],
   "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build"
  },
- "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll within 0.15 px of the original's ideal 60 Hz frames and 0.64 px on the same jittery stamps at CPU 1x (the original's own stamp-jitter variation on regular frames up to 0.80 px); at 120 Hz (and, modelled, 80 Hz or after a late first frame) the build keeps the regular 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted); hidden tab (real, Chrome): pending rAF callbacks <= 2 like C (round 1: one more per hidden tick), start value on show = held value, first frame after show within 0.27 px of the original model",
+ "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll on normal ticks within 0.15 px of the original's ideal 60 Hz frames and 0.64 px on the same jittery stamps at CPU 1x (the original's own stamp-jitter variation on regular frames up to 0.80 px); forced (random-phase) rolls up to 0.84 px vs the ideal 60 Hz original (p95 0.036) and 0.30 px on the same stamps (its own 0.55 px); at 120 Hz (and, modelled, 80 Hz or after a late first frame) the build keeps the regular 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted); hidden tab (real, Chrome): pending rAF callbacks <= 2 like C (round 1: one more per hidden tick), start value on show = held value, first frame after show within 0.27 px of the original model; WebKit Simulator hidden page (app switch): no pile-up, 0 errors, but rAF stops ~0.4 s before the hidden event and resumes one frame before the visible event, so the start value at the show differs by up to 23.8 px and one show tick snapped instead of rolling (fix proposed, not in this build)",
  "chromeCounts": {
   "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
   "base_frozen": {
@@ -898,7 +901,34 @@
   }
  },
  "hiddenTab": {
-  "note": "hide-check.mjs: headed Chrome, a second tab activated for ~3 s, 4 cycles; pending = wrapped requestAnimationFrame callbacks (logger excluded); OBSERVED, Chrome only",
+  "note": "hide-check.mjs: headed Chrome, a second tab activated for ~3 s, 4 cycles; pending = wrapped requestAnimationFrame callbacks (logger excluded); OBSERVED, Chrome",
+  "servedHashes": {
+   "source": "out/cd-roll-ca/hold5.log lines 17-18 (serve-snap.sh: curl | shasum of the served bodies, x-mirror-source overlay); the hide JSONs predate the servedHash field",
+   "C": {
+    "js": "358cd8ae16b9",
+    "css": "ce6beca745a0"
+   },
+   "V": {
+    "js": "673b110d118c",
+    "css": "ce6beca745a0"
+   },
+   "V0": {
+    "js": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
+    "source": "shasum of out/cd-roll-ca/v0/_app/immutable/nodes/2.DyWL8TcE.js"
+   }
+  },
+  "firstAnalysisAudit": {
+   "firstReported": {
+    "V0": 108,
+    "V": 247.918
+   },
+   "second": {
+    "V0": 3.293,
+    "V": 0.274
+   },
+   "bug": "the first analysis compared the first frame after the show with the last roll started while hidden (now < show event) and ignored the show-tick roll that cD starts on the show visibilitychange, after the show event and before the first frame; the second takes the latest roll started before the first frame callback",
+   "rawUnchanged": "--analyze copies log verbatim; fixes/cd-roll-ca/hide-audit.mjs reruns both selections on the saved raw logs and prints 108 / 247.918 and 3.293 / 0.274"
+  },
   "C": {
    "servedHash": {},
    "summary": {
@@ -1233,6 +1263,67 @@
    ]
   }
  },
+ "hiddenPageWebKitSim": {
+  "note": "sim-hide.mjs, iOS Simulator fw-sim 15 Pro Max, iOS 18.7 Mobile Safari, Safari to the background by launching Settings and back (simctl), 3 cycles per arm, y 0; OBSERVED, Simulator, cause unknown",
+  "raw": "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
+  "how": "Safari to the background by launching Settings, back by launching Safari (simctl launch)",
+  "arms": {
+   "C": {
+    "servedHash": {
+     "/_app/immutable/nodes/2.DyWL8TcE.js": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
+     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+    },
+    "summary": {
+     "hideEvents": 3,
+     "showEvents": 3,
+     "framesWhileHidden": 2,
+     "timerSamplesWhileHidden": 27,
+     "maxPendingWhileHidden": 2,
+     "maxPendingAtShow": 2,
+     "hiddenRolls": 0,
+     "gapRolls": 0,
+     "maxStartErrPx": 0,
+     "maxFirstFrameErrPx": 0,
+     "errors": 0
+    }
+   },
+   "V": {
+    "servedHash": {
+     "/_app/immutable/nodes/2.DyWL8TcE.js": "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5",
+     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+    },
+    "summary": {
+     "hideEvents": 3,
+     "showEvents": 3,
+     "framesWhileHidden": 2,
+     "timerSamplesWhileHidden": 32,
+     "maxPendingWhileHidden": 3,
+     "maxPendingAtShow": 3,
+     "hiddenRolls": 14,
+     "gapRolls": 16,
+     "maxStartErrPx": 23.791,
+     "maxFirstFrameErrPx": 36,
+     "errors": 0
+    }
+   }
+  },
+  "sameAsChrome": "pending rAF callbacks do not grow with hidden ticks (V at most one per rolling digit, max 3 when 3 digits rolled at the hide; C 2); 0 errors; ticks continue while hidden (~every 2 s)",
+  "differsFromChrome": {
+   "eventOrder": "rAF callbacks stop 365-545 ms before visibilitychange(hidden); document.timeline.currentTime read in that event is 318-492 ms after the last rAF frame; in 4 of 6 cycles a frame runs 25-31 ms before visibilitychange(visible) (sim-gaps.mjs)",
+   "startValueVsOriginalHeldPx": {
+    "V_cycle0": 3.94,
+    "V_cycle1": 19.257,
+    "V_cycle2": 23.791
+   },
+   "firstFrameAfterShowVsOriginalPx": {
+    "V_cycle0": "build snaps 1 -> 0 without a roll (original -16.3 px into its roll at that frame)",
+    "V_cycle1": 8.379,
+    "V_cycle2": 11.722
+   },
+   "simHideFirstFrameColumn": "its 36 px for V cycle 0 is not valid on WebKit (no snap ticks, no pre-event frame in its model)",
+   "proposedFix": "(a) the start-frame rAF marks its roll as having run a frame; a roll with no frame holds at its start while hidden; (b) the hide handler requests one rAF that ends __crNoFrames at the first frame after the hide. Not in build 673b110d; decision with the lead and the reviewer"
+  }
+ },
  "pathCostPerTick": {
   "medianMs": 0.04,
   "p95Ms": 0.073,
@@ -1255,6 +1346,7 @@
   "out/cd-roll-ca/sim-counts-*.json",
   "out/cd-roll-ca/probe-build-h60d.json",
   "out/cd-roll-ca/probe-build-headed2.json",
-  "out/cd-roll-ca/hide-{C,V0,V}.json"
+  "out/cd-roll-ca/hide-{C,V0,V}.json",
+  "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json"
  ]
 }
