@@ -47,6 +47,13 @@
 // as on the phone (OBSERVED: one new pid per safari-restart / devicectl restart).
 // --resources=<file> (incident I-052): the page's Resource Timing entries (a JSON array, read at each request) for the
 // expression of tools/lib/sim.mjs RESOURCES_JS, answered as {origin, entries}.
+// WebKit Timeline (incident I-079; F-047, research/architecture/safari-inspector-probing.md finding 1), per inspector
+// connection: Page.enable (re)starts that connection's stopwatch; Timeline.start emits Timeline.recordingStarted, then a
+// RenderingFrame record every 16 ms, and a TimeStamp record {data: {message: name}} for each performance.mark(name)
+// (the page clock converted to the stopwatch, like didPerformanceMark), all with startTime/endTime in stopwatch seconds
+// (0 while no Page.enable was sent: the never-started stopwatch); Timeline.stop emits Timeline.recordingStopped. Each
+// command is logged as {tl: method, gen, docOffsetMs} (docOffsetMs: Timeline ms minus page ms on this document, for
+// Page.enable) so tests can check the sequence after every reload and the sync pair.
 import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import http from 'node:http';
 import vm from 'node:vm';
@@ -128,7 +135,7 @@ function newDocument() {
     scrollY: 0, innerWidth: WIDTH, innerHeight: 775,
     document: { documentElement: { scrollHeight: DOC_H }, readyState: 'complete', get title() { return tab.title; }, get visibilityState() { return hidden ? 'hidden' : 'visible'; } },
     location: { get href() { return tab.url; }, reload: () => { setTimeout(() => { tab.gen++; doc = newDocument(); log({ reloaded: tab.url, gen: tab.gen }); }, 100); } },
-    performance: { now: () => performance.now() - t0, mark: () => {} },
+    performance: { now: () => performance.now() - t0, mark: (name) => { const startTime = performance.now() - t0; for (const f of markHooks) f(String(name), t0 + startTime); return { name: String(name), startTime }; } },
     requestAnimationFrame: (cb) => { raf.push(cb); return raf.length; },
     addEventListener: (type, fn, o) => listeners.push({ type, fn, passive: typeof o === 'object' && !!o.passive, capture: typeof o === 'object' ? !!o.capture : !!o }),
     scrollTo: (x, y) => { win.scrollY = Math.max(0, Math.min(maxY(win), typeof x === 'object' ? x.top : y)); },
@@ -139,8 +146,9 @@ function newDocument() {
   const timer = setInterval(() => { const q = raf; raf = []; const t = performance.now() - t0; q.forEach((cb) => { try { cb(t); } catch {} }); if (doc?.win !== win) clearInterval(timer); }, 16);
   timer.unref?.();
   if (process.argv.includes('--prevent-at-end')) listeners.push({ type: 'touchmove', fn: (e) => { if (win.scrollY >= maxY(win) - 2) e.preventDefault(); }, passive: false, capture: false });
-  return { win, ctx, listeners };
+  return { win, ctx, listeners, t0 };
 }
+const markHooks = new Set(); // I-079: the recording connections' TimeStamp emitters
 const maxY = (w) => DOC_H - w.innerHeight;
 function dispatch(type, { touches, clientY }) {
   const e = { type, cancelable: type !== 'touchcancel', defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY }], timeStamp: doc.win.performance.now() };
@@ -265,11 +273,30 @@ server.on('upgrade', (req, sock) => {
   const isTwin = req.url === '/devtools/page/6'; // I-077
   const targetId = isTwin ? 'twin-1' : `page-${tab.gen}`; // target ids change on every navigation, like iOS
   send({ method: 'Target.targetCreated', params: { targetInfo: { targetId, type: 'page' } } });
+  // I-079: this connection's inspector agents (Page stopwatch, Timeline recording)
+  const tl = { origin: null, timer: null, hook: null };
+  const sw = (abs) => (tl.origin === null ? 0 : (abs - tl.origin) / 1000);
+  const event = (method, params) => send({ method: 'Target.dispatchMessageFromTarget', params: { targetId, message: JSON.stringify({ method, params }) } });
+  const stopTl = () => { clearInterval(tl.timer); tl.timer = null; if (tl.hook) markHooks.delete(tl.hook); tl.hook = null; };
+  sock.on('close', stopTl);
+  const timelineCmd = (method) => {
+    if (method === 'Page.enable') tl.origin = performance.now();
+    log({ tl: method, gen: tab.gen, ...(method === 'Page.enable' && doc ? { docOffsetMs: doc.t0 - tl.origin } : {}) });
+    if (method === 'Timeline.start' && !tl.timer) {
+      event('Timeline.recordingStarted', { startTime: sw(performance.now()) });
+      tl.timer = setInterval(() => { const a = sw(performance.now()); event('Timeline.eventRecorded', { record: { startTime: a, endTime: a + 0.002, data: {}, children: [{ startTime: a, endTime: a + 0.001, data: {}, type: 'Layout' }], type: 'RenderingFrame' } }); }, 16);
+      tl.timer.unref?.();
+      tl.hook = (name, abs) => event('Timeline.eventRecorded', { record: { startTime: sw(abs), data: { message: name }, type: 'TimeStamp' } });
+      markHooks.add(tl.hook);
+    }
+    if (method === 'Timeline.stop' && tl.timer) { stopTl(); setTimeout(() => event('Timeline.recordingStopped', { endTime: sw(performance.now()) }), 30); }
+  };
   const handle = async (msg) => {
     if (msg.method !== 'Target.sendMessageToTarget') return send({ id: msg.id, result: {} });
     send({ id: msg.id, result: {} });
     const inner = JSON.parse(msg.params.message);
     let result = {};
+    if (/^(Page\.(enable|disable)|Timeline\.)/.test(inner.method) && !isTwin) timelineCmd(inner.method);
     if (inner.method === 'Runtime.evaluate') {
       const v = isTwin ? twinEvaluate(inner.params.expression) : await evaluate(inner.params.expression);
       log({ evaluate: inner.params.expression.slice(0, 160), sha256: createHash('sha256').update(inner.params.expression).digest('hex') });

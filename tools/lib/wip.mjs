@@ -260,6 +260,28 @@ export async function findParkedTab({ port = Number(process.env.FW_IPHONE_PORT |
   return v.tab ? { tab: v.tab, appId: app } : v;
 }
 
+// WebKit Timeline with real times (incident I-079; F-047, research/architecture/safari-inspector-probing.md finding 1):
+// a record's startTime/endTime come from the inspector's stopwatch, which only Page.enable on the PAGE target starts
+// (InspectorPageAgent::enable: reset(); start()), so a connection that did not send it gets all-0 times; the sequence
+// goes to every new connection (a reload or navigation is a new target), and every Page.enable restarts the stopwatch
+// (a new time base). maxCallStackDepth 1 is the cheapest stack (<= 0 falls back to 5). Only the Timeline instrument.
+export const TIMELINE_START = Object.freeze([['Page.disable', {}], ['Page.enable', {}], ['Timeline.enable', {}], ['Timeline.setInstruments', { instruments: ['Timeline'] }], ['Timeline.start', { maxCallStackDepth: 1 }]]);
+// The sync pair: performance.mark(name) arrives as a Timeline TimeStamp record {data: {message: name}} whose time is
+// converted from the mark's own time (didPerformanceMark), so the mark's startTime (page clock, performance.now()) and
+// that record's startTime (stopwatch seconds) name the same instant: Timeline ms = page ms + (syncTL * 1000 - syncT).
+export const timelineSyncJs = (name) => `(() => { const t = performance.now(); let m = null; try { m = performance.mark(${JSON.stringify(name)}); } catch (e) {} return m && typeof m.startTime === 'number' ? m.startTime : t; })()`;
+/** startTime (s) of the TimeStamp record for mark `name` anywhere in `recs` (records nest in children), or null. */
+export function findTimeStamp(recs, name) {
+  const stack = [...(recs || [])];
+  while (stack.length) {
+    const r = stack.pop();
+    if (!r) continue;
+    if (r.type === 'TimeStamp' && r.data && r.data.message === name && typeof r.startTime === 'number') return r.startTime;
+    if (Array.isArray(r.children)) stack.push(...r.children);
+  }
+  return null;
+}
+
 // Run an async in-page expression that returns a Promise: stash the result on window, then poll.
 export async function runAsync(c, expr, {pollMs = 2000, timeoutMs = 180000, key = '__iphRes'} = {}) {
   await c.evaluate(`window.${key} = undefined; Promise.resolve(${expr}).then(v => { window.${key} = JSON.stringify({ok: v}); }, e => { window.${key} = JSON.stringify({err: String(e && e.stack || e)}); }); 'started'`);

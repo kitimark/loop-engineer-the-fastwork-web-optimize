@@ -2,7 +2,8 @@
 // Strokes go to WebDriverAgent (tools/lib/wda.mjs, real OS-level touches); everything else goes over the
 // WebKit Inspector Protocol (tools/lib/wip.mjs): the recorder (tools/lib/gesture-rec.mjs), marks, `until`
 // polls and the pull-to-refresh check, reloads, and optionally an in-page logger (--inject, on this same
-// connection) or the morph logger (--morph-log, a separate process with its own connection: I-038). NEW MEASUREMENT CODE (a new
+// connection) or the morph logger (--morph-log, a separate process with its own connection: I-038), and optionally a
+// WebKit Timeline recording on this same connection (--timeline, I-079: timelineRecorder). NEW MEASUREMENT CODE (a new
 // stimulus, research/architecture/finger-simulation.md): gesture numbers compare only with gesture numbers of
 // the same script hash, never with `iphone.mjs scroll` or finger runs.
 //
@@ -18,7 +19,7 @@ import { resolve, dirname, join, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { openTab, safariTab, sleep } from './wip.mjs';
+import { openTab, safariTab, sleep, TIMELINE_START, timelineSyncJs, findTimeStamp } from './wip.mjs';
 import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
 import { status as wdaStatus, createSession, SAFARI, SESSION_SETTINGS } from './wda.mjs';
@@ -62,17 +63,21 @@ export function toolVersion(root = REPO, { morphLog, inject, toolFiles = TOOL_FI
  *  recorded twice). `evaluate` (--inject's expressions, unknown code) reconnects first but is never retried. The
  *  in-page recorder lives in the document, so a reconnect loses nothing. Every reconnect is listed in
  *  `page.reconnects` [{at, code, during}] (saved as run.reconnects). `port`: the proxy's tab port (default
- *  wip.mjs's, the phone's; the Simulator session's for sim.mjs gesture). */
+ *  wip.mjs's, the phone's; the Simulator session's for sim.mjs gesture).
+ *  `page.onConnection` (null unless set before connect()): awaited with every new connection to the tab (the first
+ *  connect, each reload's, each I-038 reconnect), before it is used: --timeline (I-079) re-sends its Timeline start on it. */
 export function wipPage({ appId = null, port = null, match = () => true, log = (s) => console.error(s) } = {}) {
   const o = { ...(appId ? { appId } : {}), ...(port ? { port } : {}) };
   let c = null, host = null;
   const reconnects = [];
+  const hooked = async (conn) => { if (page.onConnection) await page.onConnection(conn); };
   const live = async (during) => { // the proxy closed it (not we): reconnect to the same tab
     if (!c || !c.closed || c.closed.self) return c;
     const was = c.closed;
     log(`inspector connection closed by the proxy (code ${was.code}) before ${during}: reconnecting (I-038)`);
     c = await openTab(host, o);
     reconnects.push({ at: new Date().toISOString(), code: was.code, during });
+    await hooked(c);
     return c;
   };
   const call = async (expr, during, { retry = true } = {}) => {
@@ -85,9 +90,11 @@ export function wipPage({ appId = null, port = null, match = () => true, log = (
   };
   const page = {
     reconnects,
+    onConnection: null,
     async connect() {
       c = await openTab(match, o);
       host = new URL(await c.evaluate('location.href')).host;
+      await hooked(c);
       return page;
     },
     async state() {
@@ -112,6 +119,7 @@ export function wipPage({ appId = null, port = null, match = () => true, log = (
         if (i > 60) throw new Error('reload: the new document never became ready');
         await sleep(150);
       }
+      await hooked(c);
     },
     close: () => c?.close(),
   };
@@ -119,13 +127,15 @@ export function wipPage({ appId = null, port = null, match = () => true, log = (
 }
 
 class Abort extends Error {}
+const repoRel = (f) => (f.startsWith(REPO + '/') ? f.slice(REPO.length + 1) : f);
 const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kind === 'atTop' ? s.y <= 0 : cond.kind === 'yGte' ? s.y >= cond.y : false);
 
 /**
  * Execute a compiled program. `wda`: a session from wda.mjs createSession (actions()); `page`: wipPage();
  * `check()`: throws to abort (lease lost, signal); `morph`: optional {install(seg), read(seg)}; `inject`: optional
  * loadInject() result, evaluated through page.evaluate on the run's own connection (its reads land in res.inject,
- * which exists only then, and with morph: true also in res.morph).
+ * which exists only then, and with morph: true also in res.morph); `timeline`: optional timelineRecorder() (--timeline,
+ * I-079), begun after each segment's installs and finished before its recorder read (res.timeline exists only then).
  * Resolves with {strokes, segments, untils, reloads, loops, morph, errors, aborted}; never loses the
  * recorded data: on an error it still reads the recorder and returns what it has (aborted = the reason).
  *
@@ -136,10 +146,11 @@ const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kin
  * that differ by < 1 px (waiting up to `stillTimeoutMs` for momentum to end), both >= the stroke's pull guard
  * (a page still coasting toward the top would otherwise pass a one-sample check and reach 0 mid-stroke).
  */
-export async function runProgram(prog, { wda, page, check = () => {}, morph = null, inject = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
+export async function runProgram(prog, { wda, page, check = () => {}, morph = null, inject = null, timeline = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
   const screenW = prog.screen?.[0] ?? 430;
   const res = { strokes: [], segments: [], untils: [], reloads: [], loops: [], morph: [], errors: [], aborted: null };
   if (inject) res.inject = [];
+  if (timeline) res.timeline = []; // --timeline (I-079): timelineRecorder(); one entry per segment
   let seg = null;
   const sync = async () => { const s = await page.state(); if (seg) seg.sync.push([s.macBefore, s.pageT, s.macAfter]); return s; };
   const openSeg = async () => {
@@ -147,12 +158,19 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
     seg = { index: res.segments.length, sync: [], startWall: new Date().toISOString() };
     if (morph) { try { await morph.install(seg.index); } catch (e) { res.errors.push(`morph-log install: ${e.message}`); } }
     if (inject) { try { await page.evaluate(inject.install(seg.index)); } catch (e) { res.errors.push(`inject install: ${e.message || JSON.stringify(e)}`); } }
+    if (timeline) { try { await timeline.begin(seg.index); } catch (e) { res.errors.push(`timeline start: ${e.message || JSON.stringify(e)}`); } }
     return sync();
   };
   const closeSeg = async () => {
     if (!seg) return;
     const s = seg; seg = null;
     try { await page.state().then((x) => s.sync.push([x.macBefore, x.pageT, x.macAfter])); } catch {}
+    if (timeline) { // before the recorder read, so the reads are not recorded
+      try {
+        const t = await timeline.finish();
+        if (t) { res.timeline.push(t); for (const e of t.errors) res.errors.push(`timeline seg ${t.seg}: ${e}`); }
+      } catch (e) { res.errors.push(`timeline stop: ${e.message || JSON.stringify(e)}`); }
+    }
     let buf = null;
     try { buf = await page.read(); } catch (e) { res.errors.push(`recorder read: ${e.message}`); }
     res.segments.push({ ...(buf || { frames: [], touches: [], marks: [] }), sync: s.sync, startWall: s.startWall });
@@ -294,6 +312,99 @@ export async function loadInject(file, { label = 'run' } = {}) {
   return { file: f, name: typeof m.name === 'string' ? m.name : basename(f).replace(/\.m?js$/, ''), morph: m.morph === true, install: expr('install'), read: expr('read') };
 }
 
+/**
+ * `--timeline <out.json>` (incident I-079): a WebKit Timeline recording on the run's OWN inspector connection (one
+ * client per page, I-038), for attribution: which records (style, layout, paint, composite, script) fall in which frame.
+ * Per segment (page load): begin() sends wip.mjs TIMELINE_START (Page.disable, Page.enable, Timeline.enable,
+ * setInstruments [Timeline], Timeline.start depth 1; F-047) on the current connection, then a sync mark; every new
+ * connection while a segment is open (an I-038 reconnect) gets the sequence again (wipPage onConnection): a new
+ * stopwatch, a new time base, a new "epoch" with its own sync mark. A reload closes the segment first, and the next
+ * segment's begin() arms the reloaded page's connection. finish() takes an end mark, sends Timeline.stop, waits for
+ * Timeline.recordingStopped (stopWaitMs) plus drainMs, and writes the segment's file: segment 0 at `file`, segment i
+ * at <file without .json>-seg<i>.json, in the format of the existing readers (iphone-runner's ssan.mjs, srwin-sim.mjs,
+ * pacing-v3-load.mjs): {syncT, syncTL, recs} with Timeline ms = page ms + (syncTL * 1000 - syncT) = page ms + offsetMs,
+ * the page clock being the gesture recorder's (performance.now(); its frames and run.segments[].sync). Also: kind
+ * 'gesture-timeline', seg, offsetMs, end {syncT, syncTL, offsetMs} (the end mark, on the last epoch's base: a drift
+ * check), stopped, protocol, startWall, errors, and only after a reconnect `epochs` [{syncT, syncTL, offsetMs, recs,
+ * errors}] for epochs 1.. (their records stay on their own base, NOT in the top-level recs: a reader that knows only
+ * {syncT, syncTL, recs} sees epoch 0 alone, correctly aligned). The file goes through lanSafeText (stack urls carry
+ * the mirror's LAN host; Hard rule 12). finish() returns {seg, file, records, syncT, syncTL, offsetMs, end, epochs,
+ * stopped, errors} for run.timeline.
+ */
+export function timelineRecorder({ file, stopWaitMs = 3000, drainMs = 500, log = (s) => console.error(s) }) {
+  let conn = null, active = null;
+  const errText = (e) => e?.message || JSON.stringify(e);
+  const segFile = (i) => (i === 0 ? file : file.replace(/(\.json)?$/i, `-seg${i}.json`));
+  const off = (t, tl) => (typeof t === 'number' && typeof tl === 'number' ? tl * 1000 - t : null);
+  async function arm(c) {
+    const k = active.epochs.length;
+    const ep = { recs: [], syncName: `fwtl-s${active.seg}-e${k}`, syncT: null, errors: [], live: true, stopped: false, conn: c };
+    active.epochs.push(ep);
+    c.on((m) => {
+      if (!ep.live) return;
+      if (m.method === 'Timeline.eventRecorded' && m.params?.record) ep.recs.push(m.params.record);
+      else if (m.method === 'Timeline.recordingStopped') ep.stopped = true;
+    });
+    for (const [method, params] of TIMELINE_START) { try { await c.send(method, params); } catch (e) { ep.errors.push(`${method}: ${errText(e)}`); } }
+    try { ep.syncT = await c.evaluate(timelineSyncJs(ep.syncName)); } catch (e) { ep.errors.push(`sync mark: ${errText(e)}`); }
+  }
+  const rec = {
+    file, segFile,
+    async onConnection(c) {
+      conn = c;
+      if (!active) return;
+      log(`timeline: a new inspector connection in segment ${active.seg}: Timeline start re-sent on it (epoch ${active.epochs.length}, a new time base)`);
+      await arm(c);
+    },
+    async begin(seg) {
+      active = { seg, epochs: [], startWall: new Date().toISOString() };
+      if (conn) await arm(conn);
+    },
+    async finish() {
+      const a = active;
+      if (!a) return null;
+      active = null;
+      const errors = [];
+      const last = a.epochs.at(-1);
+      let end = null;
+      if (last) {
+        const c = last.conn, endName = `fwtl-s${a.seg}-end`;
+        let endT = null;
+        try { endT = await c.evaluate(timelineSyncJs(endName)); } catch (e) { errors.push(`end mark: ${errText(e)}`); }
+        try { await c.send('Timeline.stop'); } catch (e) { errors.push(`Timeline.stop: ${errText(e)}`); }
+        const t0 = Date.now();
+        while (!last.stopped && !c.closed && Date.now() - t0 < stopWaitMs) await sleep(50);
+        await sleep(drainMs);
+        const tl = endT === null ? null : findTimeStamp(last.recs, endName);
+        end = { syncT: endT, syncTL: tl, offsetMs: off(endT, tl) };
+        if (endT !== null && tl === null) errors.push('the end mark\'s TimeStamp record was not recorded');
+      } else errors.push('no inspector connection to record on');
+      for (const ep of a.epochs) ep.live = false;
+      const epochs = a.epochs.map((ep, k) => {
+        const syncTL = ep.syncT === null ? null : findTimeStamp(ep.recs, ep.syncName);
+        const e = [...ep.errors];
+        if (!ep.recs.length) e.push('no Timeline records');
+        else if (syncTL === null) e.push('the sync mark\'s TimeStamp record was not recorded: these records can\'t be aligned to the page clock');
+        return { syncT: ep.syncT, syncTL, offsetMs: off(ep.syncT, syncTL), recs: ep.recs, errors: k ? e.map((x) => `epoch ${k}: ${x}`) : e };
+      });
+      const e0 = epochs[0] || { syncT: null, syncTL: null, offsetMs: null, recs: [], errors: [] };
+      const allErrors = [...epochs.flatMap((e) => e.errors), ...errors];
+      const doc = {
+        kind: 'gesture-timeline', version: 1, seg: a.seg, syncT: e0.syncT, syncTL: e0.syncTL, offsetMs: e0.offsetMs, recs: e0.recs, end,
+        stopped: last ? last.stopped : false, protocol: TIMELINE_START, startWall: a.startWall,
+        clock: 'syncT: page performance.now() ms (the gesture recorder\'s clock); syncTL: Timeline seconds (stopwatch from Page.enable); Timeline ms = page ms + offsetMs',
+        errors: allErrors,
+        ...(epochs.length > 1 ? { epochs: epochs.slice(1).map(({ errors: _, ...e }) => e) } : {}),
+      };
+      const f = segFile(a.seg);
+      try { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, lanSafeText(JSON.stringify(doc))); } catch (e) { allErrors.push(`write ${f}: ${e.message}`); }
+      if (epochs.length > 1) log(`timeline: segment ${a.seg} has ${epochs.length} epochs (reconnects): ${f}'s top-level recs are epoch 0's, the rest are in its epochs[]`);
+      return { seg: a.seg, file: f, records: e0.recs.length, syncT: e0.syncT, syncTL: e0.syncTL, offsetMs: e0.offsetMs, end, epochs: epochs.length, stopped: doc.stopped, errors: allErrors };
+    },
+  };
+  return rec;
+}
+
 /** `--morph-log <path to morph-log.mjs>`: install after each recorder install, read before each segment ends. */
 function morphHook(script, { owner, label, outBase }) {
   const run = (args) => {
@@ -377,13 +488,16 @@ export async function gestureCmd({ log = console.log, ...args }) {
 }
 
 async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null,
-  usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--out file] [--dry-run]' }) {
+  usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--timeline <out.json>] [--out file] [--dry-run]' }) {
   if (!arg) throw new Error(`usage: ${usage}`);
   const file = resolve(arg);
   const script = JSON.parse(readFileSync(file, 'utf8'));
   const prog = compileScript(script, { params: cliParams(argv) });
   if (opt('inject') && opt('morph-log')) throw new Error('--inject and --morph-log both feed run.morph: pass one (--inject runs on this connection, I-038)');
   const inject = opt('inject') ? await loadInject(opt('inject'), { label: opt('label', 'run') }) : null; // before WDA or the page are touched
+  const tlFile = opt('timeline'); // I-079
+  if (argv.some((a) => a === '--timeline' || a.startsWith('--timeline=')) && (!tlFile || tlFile.startsWith('--'))) throw new Error('--timeline wants a file: --timeline <out.json>');
+  if (tlFile && opt('morph-log')) throw new Error('--timeline and --morph-log: pass one (morph-log\'s own inspector connection takes the tab and restarts the Timeline stopwatch, I-038; an in-page logger goes in --inject, on this connection)');
   const head = `${prog.name} v${prog.version} hash ${prog.hash.slice(0, 12)} params ${JSON.stringify(prog.params)}: ${prog.strokes.length} strokes, ~${Math.round(prog.estMs / 1000)} s`;
   if (flag('dry-run')) {
     log(head);
@@ -413,6 +527,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   const ts = Date.now();
   const out = resolve(REPO, opt('out', join('out', tg.outDir, `${owner}-gesture-${label}-${ts}.json`)));
   mkdirSync(dirname(out), { recursive: true });
+  const timeline = tlFile ? timelineRecorder({ file: resolve(tlFile), log }) : null;
   let res;
   const stop = { reason: null };
   const onSig = (sig) => { stop.reason = `stopped by ${sig}`; };
@@ -420,15 +535,18 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   try {
     const front = await session.activeApp();
     if (front?.bundleId !== SAFARI) throw new Error(`refusing: ${scrub(front?.bundleId || 'an unknown app')} is in front, not Safari. Bring Safari to the front (${tg.wdaHint} activates it)`);
-    page = await wipPage({ appId: front.pid ? `PID:${front.pid}` : null, port }).connect(); // the proxy names apps by pid (I-037)
+    page = wipPage({ appId: front.pid ? `PID:${front.pid}` : null, port }); // the proxy names apps by pid (I-037)
+    if (timeline) page.onConnection = timeline.onConnection; // I-079: on every connection, the first one included
+    await page.connect();
     log(`GESTURE ${head} on ${await page.href()}`);
+    if (timeline) log(`NOTE: --timeline records a WebKit Timeline on this run's inspector connection (meta.timeline): compare it only with Timeline-on runs (a Timeline block, protocol v2 §5.2) or use it as an attribution run; never mix it with Timeline-off counted runs (§5.5). Files: ${timeline.file} (segment 0), ${timeline.segFile(1)} ... after each reload`);
     const morphLog = opt('morph-log');
     if (morphLog && !existsSync(morphLog)) throw new Error(`--morph-log ${morphLog}: no such file`);
     if (morphLog) log('warning: --morph-log runs a separate process with its own inspector connection per segment, which takes the tab from this run\'s connection (the proxy allows one per page, I-038): the run reconnects (run.reconnects), but prefer --inject <logger.mjs>, which runs on this connection');
     res = await runProgram(prog, {
       wda: session, page,
       morph: morphLog ? morphHook(resolve(morphLog), { owner, label, outBase: out.replace(/\.json$/, '') }) : null,
-      inject,
+      inject, timeline,
       check: () => { if (stop.reason) throw new Abort(stop.reason); const why = tg.lost(); if (why) throw new Abort(why); },
     });
   } finally {
@@ -439,7 +557,9 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   }
   const doc = {
     meta: { kind: 'gesture', owner, label, date: new Date(ts).toISOString(), device: tg.device, tool: toolVersion(REPO, { morphLog: opt('morph-log'), inject: opt('inject'), toolFiles: tg.toolFiles }),
-      wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null, settings: settingsEcho(session.settings) }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file, ...(await tg.extra()) },
+      wda: { ref: readConfig().ref || WDA_REF, build: st.build?.version ?? null, os: st.os?.version ?? null, settings: settingsEcho(session.settings) }, script: file.startsWith(REPO) ? file.slice(REPO.length + 1) : file,
+      ...(timeline ? { timeline: { file: repoRel(timeline.file), segFiles: '<file without .json>-seg<i>.json for segment i >= 1', protocol: TIMELINE_START, sync: 'performance.mark -> Timeline TimeStamp; Timeline ms = page ms + offsetMs' } } : {}), // I-079
+      ...(await tg.extra()) },
     program: { name: prog.name, version: prog.version, compiler: prog.compiler, hash: prog.hash, params: prog.params, estMs: prog.estMs, strokes: prog.strokes },
     run: res,
   };
@@ -447,9 +567,11 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   res.errors = res.errors.map(saved);
   if (res.aborted) res.aborted = saved(res.aborted);
   if (res.inject) res.inject = JSON.parse(lanSafeText(JSON.stringify(res.inject))); // a logger's values may carry the page's href
+  if (res.timeline) res.timeline = res.timeline.map((t) => ({ ...t, file: repoRel(t.file), errors: t.errors.map(saved) })); // I-079
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
   log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
+  for (const t of res.timeline || []) log(`timeline seg ${t.seg}: ${t.records} records, offset ${t.offsetMs === null ? 'UNKNOWN' : `${t.offsetMs.toFixed(3)} ms`}${t.epochs > 1 ? `, ${t.epochs} epochs` : ''}${t.errors.length ? `, ${t.errors.length} errors` : ''} -> ${t.file}`); // I-079
   log(`saved ${out}`);
   if (res.aborted) throw new Error(`gesture run aborted: ${res.aborted} (partial data saved in ${out})`);
   return 0;

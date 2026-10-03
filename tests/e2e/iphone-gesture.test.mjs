@@ -397,6 +397,76 @@ test('--inject (I-038): the logger runs on the run\'s own connection after each 
   assert.equal(actionsCalls(phone.wda()).length, 2);
   // the logger's code is part of the tool version, like --morph-log's
   assert.deepEqual(doc.meta.tool.inject, { file: 'tests/fixtures/fake-inject.mjs', sha: sha16(readFileSync(join(FIX, 'fake-inject.mjs'))) });
+  // no --timeline (I-079): no Page or Timeline command sent, no timeline keys in the record
+  assert.ok(!phone.wip().some((e) => e.tl), 'no Timeline command');
+  assert.ok(!('timeline' in doc.run) && !('timeline' in doc.meta));
+  assert.doesNotMatch(r.out, /--timeline/);
+});
+
+test('--timeline (I-079): WebKit Timeline on the run\'s own connection, re-armed after every reload; one file per page load with the sync pair to the recorder\'s clock', async () => {
+  const phone = await fakePhone();
+  lock('acquire', 'iphone', '--owner', 'me');
+  const out = join(phone.dir, 'tl-run.json'), tlOut = join(phone.dir, 'tl.json');
+  const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'mark', name: 'mid' }, { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'tl', '--out', out, '--timeline', tlOut, '--inject', join(FIX, 'fake-inject.mjs')],
+    { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /NOTE: --timeline records a WebKit Timeline on this run's inspector connection \(meta\.timeline\): compare it only with Timeline-on runs \(a Timeline block, protocol v2 §5\.2\) or use it as an attribution run; never mix it with Timeline-off counted runs \(§5\.5\)/);
+  const doc = JSON.parse(readFileSync(out, 'utf8'));
+  assert.deepEqual(doc.run.errors, []);
+  assert.equal(doc.run.aborted, null);
+  assert.equal(actionsCalls(phone.wda()).length, 2);
+  assert.deepEqual(doc.meta.timeline.protocol.map((x) => x[0]), ['Page.disable', 'Page.enable', 'Timeline.enable', 'Timeline.setInstruments', 'Timeline.start']);
+  assert.equal(doc.meta.timeline.file, tlOut);
+  assert.ok(doc.run.segments.length === 2 && doc.run.inject.length === 2, 'the recorder and --inject still run');
+  // the sequence went to each page load's own connection (a reload is a new document, a new target) and was stopped at
+  // the segment's end; the connection before the script's first reload got nothing (no segment open on it)
+  const cmds = phone.wip().filter((e) => e.tl);
+  const gens = [...new Set(cmds.map((e) => e.gen))];
+  assert.equal(gens.length, 2, JSON.stringify(cmds));
+  for (const g of gens) assert.deepEqual(cmds.filter((e) => e.gen === g).map((e) => e.tl), ['Page.disable', 'Page.enable', 'Timeline.enable', 'Timeline.setInstruments', 'Timeline.start', 'Timeline.stop']);
+  // one file per segment: the first at --timeline, then <base>-seg<i>.json; the existing readers' {syncT, syncTL, recs}
+  const files = [tlOut, join(phone.dir, 'tl-seg1.json')];
+  assert.deepEqual(doc.run.timeline.map((t) => [t.seg, t.file]), [[0, files[0]], [1, files[1]]]);
+  files.forEach((f, i) => {
+    const tl = JSON.parse(readFileSync(f, 'utf8'));
+    assert.equal(tl.kind, 'gesture-timeline');
+    assert.equal(tl.seg, i);
+    assert.deepEqual(tl.errors, []);
+    assert.equal(tl.stopped, true, 'Timeline.recordingStopped seen');
+    assert.ok(!('epochs' in tl), 'no reconnect: one epoch');
+    const frames = tl.recs.filter((x) => x.type === 'RenderingFrame');
+    assert.ok(frames.length > 10 && frames.every((x) => x.startTime > 0), 'records with stopwatch times (Page.enable sent)');
+    assert.equal(doc.run.timeline[i].records, tl.recs.length);
+    // the sync pair: syncT on the page clock (the recorder's), syncTL the mark's TimeStamp record; TL ms = page ms + offsetMs
+    assert.ok(tl.syncT > 0 && tl.syncTL > 0);
+    assert.ok(Math.abs(tl.offsetMs - (tl.syncTL * 1000 - tl.syncT)) < 1e-6);
+    const enable = cmds.filter((e) => e.tl === 'Page.enable')[i];
+    assert.ok(Math.abs(tl.offsetMs - enable.docOffsetMs) < 0.01, `offset ${tl.offsetMs} vs the fake's ${enable.docOffsetMs}`);
+    assert.ok(tl.end && Math.abs(tl.end.offsetMs - tl.offsetMs) < 0.01, 'the end mark agrees (no drift)');
+    assert.ok(tl.end.syncT > tl.syncT);
+    assert.equal(doc.run.timeline[i].offsetMs, tl.offsetMs);
+    // the Timeline records line up with the segment's recorder frames on the page clock
+    const pf = doc.run.segments[i].frames.map((x) => x[0]);
+    const tf = frames.map((x) => x.startTime * 1000 - tl.offsetMs);
+    assert.ok(Math.min(...tf) < Math.max(...pf) && Math.max(...tf) > Math.min(...pf), `timeline ${Math.min(...tf)}..${Math.max(...tf)} vs frames ${Math.min(...pf)}..${Math.max(...pf)}`);
+    assert.ok(tf.every((t) => t >= tl.syncT - 1 && t <= tl.end.syncT + 50), 'records between the start mark and the stop sent right after the end mark');
+  });
+});
+
+test('--timeline (I-079) is refused with --morph-log or without a file, before WDA or the page are touched', async () => {
+  const phone = await fakePhone();
+  lock('acquire', 'iphone', '--owner', 'me');
+  const f = scriptFile([{ type: 'reload' }, S({})]);
+  const run = (...extra) => nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'x.json'), ...extra], { env: phone.env, timeout: 30000 });
+  let r = await run('--timeline', join(phone.dir, 'tl.json'), '--morph-log', join(FIX, 'fake-morph-log.mjs'));
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /--timeline and --morph-log: pass one/);
+  r = await run('--timeline');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /--timeline wants a file: --timeline <out\.json>/);
+  assert.deepEqual(phone.wda(), [], 'no WDA call');
+  assert.ok(!phone.wip().some((e) => e.tl), 'no Timeline command');
+  assert.ok(!existsSync(join(phone.dir, 'x.json')));
 });
 
 test('--inject is refused with --morph-log, and a missing or malformed logger is refused, before WDA or the page are touched (I-038)', async () => {

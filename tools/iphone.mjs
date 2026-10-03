@@ -25,7 +25,10 @@
 //   node tools/iphone.mjs wda status | build --owner <topic> | start --owner <topic> | stop   # tools/lib/wda-runner.mjs
 //   node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <topic> [--label l]
 //        [--variant asPerformed|slow] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>]
-//        [--dry-run]   # tools/lib/gesture-run.mjs; --inject runs an in-page logger on the run's own connection (I-038)
+//        [--timeline <out.json>] [--dry-run]   # tools/lib/gesture-run.mjs; --inject runs an in-page logger on the run's
+//        # own connection (I-038); --timeline records a WebKit Timeline there too, re-armed per page load (Page.disable,
+//        # Page.enable, Timeline.start; F-047), one {syncT, syncTL, recs} file per segment (I-079): attribution runs or
+//        # Timeline blocks only, never mixed with Timeline-off counted runs (protocol v2 §5.2, §5.5)
 //   node tools/iphone.mjs safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30]
 //        # quit + relaunch Safari (WDA apps endpoints, else devicectl --terminate-existing), open U if given, wait
 //        # until the proxy lists a page that answers Runtime.evaluate; prints SAFARI_RESTARTED (tools/lib/safari-restart.mjs)
@@ -67,7 +70,7 @@ import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every'];
+const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
