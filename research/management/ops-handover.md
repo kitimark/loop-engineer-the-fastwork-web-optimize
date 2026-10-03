@@ -9,6 +9,26 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **02:5xZ a02c915 landed (ff). P-071 card (fix-nav-morph, F3 B1 pin-hold) second read: NEEDS-FIX.**
+  - **P-071** (bb33c14 on worktree-agent-a277ea00c8773c1ea; pre-data): C aw1-10e 3e2f599a1632 / V F3 c6d3590576a7 /
+    D mw10e-arm-scope-d 999c4497f37e, CSS c6aad94b455f; G pin-hold-v2 2d3a97b742cf (transit to atEnd, 8 s idle at
+    the pin, 2 close/open cycles); C V D / V D C / D C V, warm-up per port, own no-timing hold, Timeline off, attribution
+    after; metrics: collapse per run (2 consecutive 2 s windows < 30 fps) + arm/disarm window frames (phone ms
+    thresholds, twins). Predicted: C 0 collapses (~90 %), V >= 2/3 (~55 %) or 0/3 (~30 %); given V collapses, D 0
+    (~50 %). Decisions: V yes/D no and D windows not separated-worse -> short P-036 on D -> F swipe; D collapses ->
+    build E (Sim + Chrome review first); D arm frame separated-worse -> lead with Timeline; V never -> B1 stays
+    UNRESOLVED, no second block. **Ops asked for:** (1) S sentinel on C at open and end (P-036 rule, void + cooling +
+    stop rule); (2) arm-level collapse rule, incl. V or D at exactly 1 of 3; (3) unit for separated-worse (per-run max
+    n=3 vs per-cycle n=6) and which twins decide; (4) Low Power Mode recorded off, a run with it on void. Card under the
+    id P-071 in the README + ledger row on the owner's branch; ops re-reads the amended sha before iphone-runner starts.
+  - **cd-roll-ca review round 2 PASS with nits** (a57444b, V JS 673b110d); lead holds the sign-off until the hide-check
+    re-analysis (108/247.9 -> 3.29/0.27 px) is explained; waits on cd-strip.
+  - **cd-strip step 4:** remainder variant dropped; the suspect is the backing size (only the visible cell and per-cell
+    layers both give 0 px); a size sweep runs, then a cost table to the lead. Chrome: identical except at hero fade 0.9
+    (delta 1, beyond A/A, 7 shots); PROGRESS line narrowed accordingly.
+  - **Phone order (lead):** P-068 H2 straight after H1 (one sitting) -> F3 B1 pin-hold P-071 (~03:30Z) -> cd-roll-ca
+    blind test once cd-strip has landed.
+
 - **02:3xZ a265420 landed (ff). F3 B2 fixed, B1 unresolved; cd-strip WebKit hero-pixel delta; P-068 H1 F, A, B done.**
   - Lead moved iphone-runner to chrome-measure #1 (audited) so the P-068 H1 segments stay back-to-back (fix-nav-morph
     next); each segment runs in its own exclusive `--no-timing` hold (README line 92), never beside a shared group. I-077

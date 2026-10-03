@@ -74,7 +74,7 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "In Chrome the top looks identical, but on the phone simulator the edges of the hero digits come out a shade lighter. fix-cd-strip looks for a variant that is exactly identical; if none exists, you get the options to choose from. Then the review and the wave-2 phone run.",
+   "next": "In Chrome the top looks identical except one hero fade step; on the phone simulator the hero digit edges come out a shade lighter. fix-cd-strip tests layer sizes for an exactly identical variant; if none exists, you get the options. Then review and the wave-2 phone run.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-070", "what": "wave-2 phone run: hero clock redraws gone, no new slow frames", "result": "" }],
    "details": [
