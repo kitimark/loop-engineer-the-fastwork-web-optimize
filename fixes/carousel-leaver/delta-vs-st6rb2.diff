@@ -1,0 +1,45 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2957,14 +2957,14 @@
+ }
+ .start-selling-avatars.is-carousel.is-sliding img.st5-lead {
+   animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
+-}
+-.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
+-  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
+ }
++/* carousel-leaver: the leaver runs the site's own layout keyframes again (width, flex-basis, margin-right,
++   border-width shrink, as in the baseline), so it is the same narrowing bordered ellipse and the followers move
++   by reflow exactly as in the baseline, including the 2 px they keep at the end (the leaver's border-box floor,
++   2 x 1px border) and the snap back at the swap. The 5 persistent slots, their layers and the no-flip rest
++   values (st6) stay; only the 5th slot animates its pop. */
+ .start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
+-  animation:
+-    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
+-    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++  animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
+ }
+ @keyframes avatars-shift {
+   0% {
+@@ -2977,14 +2977,17 @@
+ @keyframes avatars-exit {
+   0% {
+     opacity: 0.999;
+-    translate: 0;
+-    clip-path: ellipse(16px 16px at 50% 50%);
++    flex-basis: 32px;
++    width: 32px;
++    margin-right: -8px;
+     transform: scale(1);
+   }
+   to {
+     opacity: 0;
+-    translate: -16px;
+-    clip-path: ellipse(0px 16px at 50% 50%);
++    border-width: 0;
++    flex-basis: 0;
++    width: 0;
++    margin-right: 0;
+     transform: scale(0.35);
+   }
+ }
