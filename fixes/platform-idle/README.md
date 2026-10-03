@@ -291,6 +291,51 @@ lead runs the phone no-worse check.
   timers. So the "other animations keep frames running" assumption behind making RenderingFrame a guard does not hold at
   this stop on a clean run. It held only in the exploratory run, which was contaminated (see "Simulator (exploratory)").
 
+## Phone no-worse block and the scroll-start check
+
+**Phone block** (iphone-runner, condition B, hold h121509; scored by ops):
+- The registered rule passes: V's worst run has 2 frames > 50 ms, against C's best of 1 plus a margin of 1. Bottom fps is
+  59.7 against 60.2 minus 2.
+- Both ±4 ms twins fail, so the result is threshold-sensitive. The extra frame is V1's scroll-onset frame: 64 ms, ending
+  at y 0.
+- The onset is the 2-3 frames in which the first smooth `scrollBy` starts. It adds up to about the same in every run:
+  C1 8+45+41 = 94 ms, V1 64+31 = 95, V2 17+39+43 = 99, C2 9+41+37 = 87. V1 split the same onset into one long frame
+  instead of two medium ones.
+
+**Does V do anything different at scroll start? No.** This was the lead's question, answered from code and from counts.
+- *Code.* Both of this build's changes run only through IntersectionObservers on elements of the #platform section, which
+  sits about 4,500 px below the viewport at y 0-100. Nothing listens to scroll. Line refs are in the overlay files:
+  - JS, NM effect (`2.DyWL8TcE.js` 12448-12478): the glint's `.is-active` (`v`) is set 1 s after an IO callback with
+    ratio ≥ 0.35 (thresholds 0 / 0.35 / 0.6, lines 12463-12468). The `<animate>` begin is removed (12452-12455).
+  - JS 12493-12518: the glint span is appended once, at mount, and `.is-active` is toggled through `U(...)`.
+  - The sweep pause is st6-rb2's PMsweepGate (3974-3992, unchanged): an IO toggles `[data-sweep-paused]`, and the titles
+    start paused.
+  - CSS (`2.gBuqKVzi.css`): the glint animates only under `.is-active` (6910-6998). The band `::after` is paused by
+    `[data-sweep-paused]` (11293-11347). The reduced-motion selector is at 7374-7375.
+- *Simulator counts* (`tools/startcount-sim.mjs`, sha256/12 dceb7825b766; exploratory, no timing):
+  - It mimics the S driver: load, 8 s settle, then `scrollBy({top: 250, behavior: 'smooth'})` every 300 ms.
+  - Timeline segments: pre = the last 1 s of idle, s1 = the first 300 ms of scroll (y 0 → 233), s2 = the next 300 ms.
+  - Order C1 V1 V2 C2; served hashes match the card.
+
+  | load | s1 RF / RS / L / P / Composite | s1 FC / EventDispatch / ObserverCallback | s2 RF / RS / L / P |
+  |---|---|---|---|
+  | C1 | 12 / 27 / 16 / 66 / 12 | 79 / 34 / 25 | 19 / 40 / 17 / 19 |
+  | V1 | 13 / 26 / 16 / 67 / 12 | 78 / 34 / 24 | 20 / 43 / 18 / 19 |
+  | V2 | 13 / 27 / 15 / 65 / 12 | 79 / 34 / 25 | 19 / 40 / 17 / 19 |
+  | C2 | 12 / 21 / 20 / 68 / 12 | 64 / 24 / 20 | 19 / 53 / 19 / 22 |
+
+  - The scrollY per frame in s1 is the same in every load: 0, 0, 0, 2, 17, 82, 125, …
+  - DOM mutations and animation events in s1 and s2: no key appears in V and not in C. The only differences are
+    C-only: accent and hero-orbit phase events.
+  - The s1 paint rects are in the hero area in both arms, and none are in #platform.
+- *The one structural difference* is present from load, not at scroll start:
+  - At the top of the page, WebKit keeps 17 composited layers in #platform for V, against 0 for C. In the whole document
+    that is 145 layers against 128.
+  - All of them have backing memory 0, so nothing is painted or stored for them while they are off-screen.
+  - They come from the paused `::after` band animations: WebKit keeps a layer for a paused transform animation, and its
+    ancestors become composited too. This is OBSERVED in our setup.
+  - The s1 Composite count is the same in both arms (12).
+
 ## Exploratory counts (not judged)
 
 Chrome comp-census (research/gpu-props/tools/comp-census.mjs, `--idle 2000 --settle 2000 --ablate`), per 2 s.
