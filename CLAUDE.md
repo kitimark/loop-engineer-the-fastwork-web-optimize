@@ -513,7 +513,7 @@ chrome-measure together: `node tools/lock.mjs run chrome-measure --shared --weig
 -- <cmd>` (N <= 300, killed at N like `--short`; weights: check, probe, bench-mech, test-chrome-fn 1, npm-test 2,
 simulator 3; the group fits the lead's cap, 3). A reader joins a running group while it fits, load1 <= 16 and no
 exclusive waiter is queued; exclusive holds (timing, `--short`, `--no-timing`) wait for the group and go first after it,
-but never before a reader queued ahead of them, and a reader queued 10 min goes before any exclusive (I-049).
+but never before a reader queued ahead of them, and a reader queued 10 min goes before any exclusive (I-049) except one the lead moved (I-097).
 Nothing timed starts inside a `--shared` command (verify.mjs, fix.mjs ab, bench gain/calibrate/reconfirm, a normal or
 `--short` run, `iphone.mjs scroll|record|run|gesture` refuse; they also refuse a `--shared` flag, exit 2); a nested
 `--shared` job re-enters its slot. Simulator mechanism checks: `node tools/lock.mjs run chrome-measure --shared --weight
@@ -523,6 +523,7 @@ exclusive `--short` job.
 
 ```sh
 node tools/lock.mjs status                                   # who holds what, who is queued
+node tools/lock.mjs leave chrome-measure --owner <you>       # drop your waiting entries (stop the waiting process first)
 node tools/lock.mjs run chrome-measure --shared --weight 2 --max-seconds 300 --owner <topic> -- npm test   # functional, shared
 # Chrome: automatic. verify.mjs / fix.mjs ab wait for chrome-measure and release on exit or crash.
 # iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://lan:<port>/ or the twin's http://lan:<twin>/):

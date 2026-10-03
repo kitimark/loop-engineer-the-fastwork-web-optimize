@@ -70,7 +70,8 @@ future rw2.
    - capacity: Σweight + weight ≤ `SHARED_CAP` and `os.loadavg()[0]` ≤ `SHARED_JOIN_LOAD` (§2), **and**
    - writer preference: no exclusive waiter is in the queue (any entry without `shared`, old code's included,
      fresh or not, within the 10 min queue TTL), **or** this reader is in the opening batch (its queue entry's
-     `since` ≤ `group.openedAt` and now ≤ `openedAt + 30 s`).
+     `since` ≤ `group.openedAt` and now ≤ `openedAt + 30 s`), except when an exclusive waiter the lead moved is
+     ahead (I-097): then no join, not even the batch.
    Otherwise queue.
 6. No holder: `nextIndex` as today. Reader entries are short entries, so the short lane, the drain budget, I-030's
    gate pass window and lead moves apply to them unchanged. If this reader is served next (or is the first short
@@ -333,7 +334,9 @@ Rule now (`nextIndex`, test-first in tests/unit/lock-shared.test.mjs "I-049"):
   closes joins to a running group; it does not reorder the queue. Earlier exclusive waiters still go first after a
   group, and readers still pass later normal waiters through the short lane, as before.
 - **Age bound.** A reader queued `readerMaxWaitSec` (600 s) goes before any exclusive waiter at the next hand-over.
-- A lead move (`movedBy`) of an exclusive waiter ahead still wins over FIFO; the age bound comes before it.
+- A lead move (`movedBy`) of an exclusive waiter ahead of the short-lane entries wins over FIFO and over the age
+  bound (I-097, 6deb294); such a waiter also closes joins for the opening batch, so a running group only drains and
+  the moved hold goes next.
 - **Head-of-line (amends N4).** Seen live: with the group at weight 3/4, the head reader fwreskip (w3) could not join,
   and test-chrome-fn (w1, waiting since 22:30Z) behind it could not either. Now a reader that fits may join past fresh
   readers ahead that do not fit now, as long as each of them has waited less than `readerBypassSec` (300 s). After
