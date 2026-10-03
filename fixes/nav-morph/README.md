@@ -158,12 +158,12 @@ then the lead.
 
 Status: ops second read PASS on db908c97 (scorer 8595714c83f9); the lead approved it as the ticket. After that, the
 scorer got one cosmetic fix: the block-void summary now prints "VOID (fewer than 3 of 4 C runs pass)". Final scorer
-hash ad0037856fa5, re-run on the fixture below with identical scores. Registration with mgmt-ops-10 (P-090 or later)
+hash ad0037856fa5, re-run on the fixture below with identical scores. Registration with mgmt-ops-10 (P-091 or later)
 only after T-052 lifts the I-098 pause; phone queue slot behind P-088.
 
 ```
-TICKET f3-edge-residual · prediction id: assigned at registration after T-052 lifts the timing pause (P-090 or later;
-  P-089 is rest-script's)
+TICKET f3-edge-residual · prediction id: assigned at registration after T-052 lifts the timing pause (P-091 or later;
+  P-089 is rest-script's, P-090 fix-carousel-leaver's G)
 arms (fixes/best-build/gates/arms.mjs PIN; sha256/12 as served, JS _app/immutable/nodes/2.DyWL8TcE.js /
   CSS _app/immutable/assets/2.gBuqKVzi.css):
   V = best build N, out/snapshots/best-65052c4a3902 (fixes/best-build/build.mjs --snapshot), JS 65052c4a3902 /
