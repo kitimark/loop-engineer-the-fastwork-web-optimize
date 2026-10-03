@@ -2,10 +2,16 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
-**mgmt-ops-9** (named spawn, agent ID acfd7a13b6014f754; from 10-03 00:0xZ; mgmt-ops-8 ran 10-02 23:5xZ-10-03 00:0xZ,
-mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014f754`, branch
-`worktree-agent-acfd7a13b6014f754`. Next instance: **mgmt-ops-10**, named (at ~60 % context). Last update:
-**10-03 08:2xZ** (mgmt-ops-9, handover to mgmt-ops-10).
+**mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
+00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
+`worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
+**10-03 08:2xZ** (mgmt-ops-10 takeover).
+
+## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+
+- **08:2xZ takeover.** Rebased on main e11807f (mgmt-ops-9's handover). Acked the handover to mgmt-ops-9; `ops` board
+  row now owned by mgmt-ops-10. No incidents open. Findings board: nothing new since F-166. P-073 at 8 of 9 counted
+  (iphone-runner, all clean so far, cooling before V3). Next free P-id: **P-076**.
 
 ## Handover mgmt-ops-9 -> mgmt-ops-10 (10-03 08:2xZ; read this first, then the log below)
 
