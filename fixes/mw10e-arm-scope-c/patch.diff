@@ -1,0 +1,74 @@
+# fastwork mirror fix: mw10e-arm-scope-c
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply mw10e-arm-scope-c --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13307,7 +13307,7 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+         k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
+       },
+@@ -13319,22 +13319,41 @@
+           n = c - t;
+         ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
+       },
++      // mw10e-arm-scope (F3): the touch listeners go on #platform and the nav header instead of the window, so only
++      // those two subtrees are touch-listener targets. At the end of the page #platform fills >= 45 % of the
++      // viewport (O()) and the expanding header covers the rest as m grows, so the morph's touches start on one of
++      // them. wheel stays on the window (desktop wheel over any part of the page still drives the morph). All of
++      // them are armed once at setup, never at the IO edge.
++      __tt = [],
+       N = () => {
+         d ||
+           ((d = !0),
+           window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
++            (t.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
++              t.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          }));
+       },
+       P = () => {
+         d &&
+           ((d = !1),
+           window.removeEventListener(`wheel`, A, !0),
+-          window.removeEventListener(`touchstart`, j, !0),
+-          window.removeEventListener(`touchmove`, M, !0));
++          __tt.forEach((t) => {
++            (t.removeEventListener(`touchstart`, j, !0), t.removeEventListener(`touchmove`, M, !0));
++          }),
++          (__tt = []));
+       },
++      // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
++      // #platform entered the 200% zone (IO below) and removed them when it left. That add is followed by the
++      // ~100 ms iPhone frame at y~1960 (observed). In WebKit's source a window wheel listener triggers a full
++      // style rebuild only when the set of event-region types changes (first wheel listener, first non-passive
++      // one, removal of the last); touch event regions are compiled out on iOS before WebKit 7625. Which listener
++      // costs the frame on the device is unresolved. They are now never removed while the effect lives, and the
++      // zone gate moved into the handlers (k(): `u`), so they act exactly when the original had them attached
++      // (u || C()).
++      // armed once at setup (page load), before any scroll.
+       I = () => {
+-        u || C() ? N() : P();
++        N();
+       },
+       L = () => {
+         (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
+@@ -13348,7 +13367,7 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
+-    (R && te && te.observe(R), _(), m());
++    (R && te && te.observe(R), _(), m(), N());
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
