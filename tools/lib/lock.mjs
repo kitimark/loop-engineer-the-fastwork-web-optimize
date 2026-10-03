@@ -716,8 +716,9 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h, reentrant: true, inherited: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
     }
     if (same) {
-      // re-entrant for the same owner: refresh the TTL (and a new job description, I-060)
-      if (ttlSec && !h.short) h.expiresAt = new Date(Math.min(now + ttlSec * 1000, capMs(r, h))).toISOString();
+      // re-entrant for the same owner: refresh the TTL (and a new job description, I-060); never shorten the live
+      // lease (I-091: a longer lease the owner set on purpose went stale while it waited), within the cap
+      if (ttlSec && !h.short) h.expiresAt = new Date(Math.min(Math.max(now + ttlSec * 1000, Date.parse(h.expiresAt) || 0), capMs(r, h))).toISOString();
       if (meta?.job) h.meta = { ...(h.meta || {}), job: meta.job };
       writeJson(holderFile(r), h);
       return { ok: true, holder: h, reentrant: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
@@ -966,17 +967,22 @@ export async function describeHold(r, { owner, job, run, runPid = process.pid, n
   });
 }
 
-/** Extend a lease. */
-export async function renew(r, { owner, ttlSec }) {
+/**
+ * Extend a lease to now + ttlSec (clamped to the cap). An explicit renew sets exactly that, shorter or not; `noShorten`
+ * (an automatic renew: `lock.mjs renew --no-shorten`, which iphone.mjs run passes before every run) keeps a later
+ * expiry the owner set (I-091) and returns {kept: true} then.
+ */
+export async function renew(r, { owner, ttlSec, noShorten = false }) {
   checkName(r);
   return withGuard(r, () => {
     const h = readJson(holderFile(r), null);
     if (!h || h.owner !== owner || staleReason(h)) throw new Error(`${r} is not held by "${owner}"${h ? ` (holder: ${h.owner}${staleReason(h) ? ', stale' : ''})` : ''}`);
     if (h.short) throw new Error(`${r} is held by "${owner}" as a short job (max ${h.maxSec} s); a short job cannot be renewed`);
-    const want = Date.now() + ttlSec * 1000, cap = capMs(r, h);
-    h.expiresAt = new Date(Math.min(want, cap)).toISOString();
+    const want = Date.now() + ttlSec * 1000, cap = capMs(r, h), cur = Date.parse(h.expiresAt) || 0;
+    const kept = noShorten && cur >= Math.min(want, cap);
+    h.expiresAt = new Date(kept ? Math.min(cur, cap) : Math.min(want, cap)).toISOString();
     writeJson(holderFile(r), h);
-    return want > cap ? { ...h, capped: true } : h;
+    return { ...h, ...(want > cap ? { capped: true } : {}), ...(kept ? { kept: true } : {}) };
   });
 }
 

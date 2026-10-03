@@ -46,6 +46,12 @@ test('acquire / busy / status / renew / release exit codes and messages', () => 
   assert.equal(rn.code, 0);
   assert.match(rn.stdout, /^RENEWED iphone for "topic-a"/);
   assert.equal(lock('renew', 'iphone', '--owner', 'topic-b').code, 1);
+  // I-091: --no-shorten (what iphone.mjs run passes) keeps the 1200 s lease; a plain renew still sets now + ttl
+  const exp1200 = holder('iphone').expiresAt;
+  const ns = lock('renew', 'iphone', '--owner', 'topic-a', '--ttl', '900', '--no-shorten');
+  assert.equal(ns.code, 0, ns.out);
+  assert.match(ns.stdout, /^RENEWED iphone for "topic-a" until .* \(kept: already held longer than --ttl 900 s\)/m);
+  assert.equal(holder('iphone').expiresAt, exp1200);
 
   const bad = lock('release', 'iphone', '--owner', 'topic-b');
   assert.equal(bad.code, 1);

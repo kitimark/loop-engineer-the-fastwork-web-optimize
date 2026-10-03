@@ -257,9 +257,10 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;
   if (!target) {
     // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs; the Mac stays awake
-    // through iphone.mjs's own assertion (I-070, lib/awake.mjs keepAwakeFor), not the iphone lease
+    // through iphone.mjs's own assertion (I-070, lib/awake.mjs keepAwakeFor), not the iphone lease. --no-shorten: a
+    // longer lease the owner set on purpose is kept (I-091: it was cut to now + 900 s and went stale in a queue wait)
     const ttl = Math.max(900, Math.ceil(need / 1000) + 60);
-    const rn = spawnSync(process.execPath, [join(REPO, 'tools', 'lock.mjs'), 'renew', 'iphone', '--owner', owner, '--ttl', String(ttl)], { encoding: 'utf8', timeout: 30000 });
+    const rn = spawnSync(process.execPath, [join(REPO, 'tools', 'lock.mjs'), 'renew', 'iphone', '--owner', owner, '--ttl', String(ttl), '--no-shorten'], { encoding: 'utf8', timeout: 30000 });
     if (rn.status !== 0) throw new Error(`could not renew the iphone lease: ${(rn.stderr || rn.stdout || '').trim()}`);
   } else await target.renew?.(need);
   const tabs = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();

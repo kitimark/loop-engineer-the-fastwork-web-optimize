@@ -139,9 +139,14 @@ test('run --driver scroll and --driver morph: phases to the bottom; morph tweens
   assert.equal(j.meta.label, 'run');
   assert.deepEqual(Object.keys(j.marks), ['idle', 'scroll', 'bottom']);
   assert.deepEqual(j.driverResult, { maxY: 685, finalY: 685 });
+  // I-091: the owner renews to a longer lease on purpose; the next run's own renew must not shorten it to now + 900 s
+  assert.equal(node(LOCK, ['renew', 'iphone', '--owner', 'me', '--ttl', '3000'], { env: phone.env }).code, 0);
+  const longLease = Date.parse(JSON.parse(node(LOCK, ['status', 'iphone', '--json'], { env: phone.env }).stdout)[0].holder.expiresAt);
   out = join(dir, 'm.json');
   r = await run(['--driver', 'morph', '--owner', 'me', '--settle', '0', '--hold', '150', '--cycles', '2', '--label', 'morph', '--y-source', 'raf-legacy', '--out', out], { ...phone.env, FW_IDEVICEDIAGNOSTICS: join(dir, 'no-such-idevicediagnostics') });
   assert.equal(r.code, 0, r.out);
+  const kept = JSON.parse(node(LOCK, ['status', 'iphone', '--json'], { env: phone.env }).stdout)[0].holder.expiresAt;
+  assert.equal(Date.parse(kept), longLease, `the run kept the owner's longer lease (I-091): ${kept}`);
   assert.match(r.stdout, /^ {2}tween from m=0: first dts /m);
   assert.match(r.stdout, /^ {2}morph: moving \d+fr p50 /m);
   j = JSON.parse(readFileSync(out, 'utf8'));
