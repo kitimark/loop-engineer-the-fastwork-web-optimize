@@ -76,6 +76,7 @@ function summarize(records) {
 }
 
 const res = { tool: 'fix-nav-morph pinhold-sim', note: 'Simulator: counts only (F-084)', startedAt: new Date().toISOString(), order: ARMS, runs: [] };
+const f = join(OUT, `pinhold-${res.startedAt.replace(/[:.]/g, '-')}.json`);
 for (const arm of ARMS) {
   const def = ARMDEF[arm]; const st = join(OUT, `serve-${arm}.json`); rmSync(st, { force: true });
   const args = [join(WT, 'tools/serve.mjs'), '--root', BASE, '--overlay', def.overlays.join(','), '--port', '0', '--quiet', '--no-cache', '--state', st, '--vendors=local', '--latency', '150'];
@@ -88,10 +89,11 @@ for (const arm of ARMS) {
     if (js !== def.js || css !== def.css) { console.error(`VOID ${arm}: serves ${js} / ${css}`); process.exitCode = 3; continue; }
     execFileSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'open', url], { stdio: ['ignore', 'ignore', 'inherit'] });
     await sleep(4000);
-    const g = spawnSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'gesture', SCRIPT, '--label', `pinhold-${arm}`], { encoding: 'utf8', timeout: 150000 });
+    const g = spawnSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'gesture', SCRIPT, '--label', `pinhold-${arm}`], { encoding: 'utf8', timeout: 240000 });
     const gOut = (g.stdout || '') + (g.stderr || '');
     const saved = /saved (\S+)/.exec(gOut)?.[1] ?? null;
-    const run = { arm, served: { js, css }, gesture: { status: g.status, saved, tail: gOut.split('\n').filter((l) => /loops|aborted|pin|error/i.test(l)).slice(0, 12) } };
+    const run = { arm, served: { js, css }, gesture: { status: g.status, saved, tail: gOut.split('\n').filter((l) => /loops|aborted|pin|error/i.test(l)).slice(0, 12), last: g.status ? gOut.trim().split('\n').slice(-4) : undefined } };
+    if (g.status) console.log(`${arm} gesture failed: ${run.gesture.last.join(' | ').slice(0, 400)}`);
     console.log(`${arm} gesture exit ${g.status} saved ${saved}`);
     await sleep(1000);
     const c = await openTab(`localhost:${s.port}`);
@@ -125,7 +127,7 @@ for (const arm of ARMS) {
     } catch (e) { run.error = String(e.message || e); console.error(arm, e.message); }
     finally { c.close(); }
     res.runs.push(run);
+    writeFileSync(f, JSON.stringify(res, null, 1)); // after every arm, so a hold that ends early keeps what ran (P-073 v1c check)
   } finally { p.kill(); }
 }
-const f = join(OUT, `pinhold-${res.startedAt.replace(/[:.]/g, '-')}.json`);
 writeFileSync(f, JSON.stringify(res, null, 1)); console.log('wrote', f);

@@ -1,0 +1,71 @@
+{
+  "name": "arm-scope-touch-v1c",
+  "version": 1,
+  "derivedFrom": "arm-scope-touch-v1 (d72ee13644cc)",
+  "screen": [430, 932],
+  "about": "P-073 (fix-nav-morph; lead + review-f3-arm-scope, B1 hot-held): arm-scope-touch-v1 with one change, the forced cap. In v1 the last transit loop (10 passes) stops when atEnd is true; in P-036 the page settled either at y 5215-5216 (atEnd false, the loop ran all 10 passes into the pin: capped) or at 5220-5222 (atEnd true after 1 pass: uncapped), with the same approach (start y 4833-4846) in both. v1c drops that until, so the loop always runs its 10 passes: every run gets P-036 capped runs' pin exposure (10 transit passes, then settled, then the 2 end pushes). Everything before and after that loop is v1, step for step.",
+  "params": {
+    "x": 215,
+    "idleMs": 3000,
+    "zonePx": 280,
+    "zoneMs": 600,
+    "transitPx": 480,
+    "transitMs": 700,
+    "endY": 5000
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "z1" },
+    { "type": "repeat", "times": 4, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$zonePx", "ms": "$zoneMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 10, "until": "y>=2100", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "z2" },
+    { "type": "repeat", "times": 4, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$zonePx", "ms": "$zoneMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 10, "until": "y>=3800", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "z3" },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$zonePx", "ms": "$zoneMs", "profile": "minjerk" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 700 }
+    ] },
+
+    { "type": "mark", "name": "transit" },
+    { "type": "repeat", "times": 10, "steps": [
+      { "type": "stroke", "dir": "up", "px": "$transitPx", "ms": "$transitMs", "profile": "still", "holdMs": 150 },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+
+    { "type": "mark", "name": "end" },
+    { "type": "repeat", "times": 2, "steps": [
+      { "type": "stroke", "dir": "up", "px": 240, "ms": 500, "profile": "minjerk" },
+      { "type": "pause", "ms": 1500 }
+    ] }
+  ]
+}
