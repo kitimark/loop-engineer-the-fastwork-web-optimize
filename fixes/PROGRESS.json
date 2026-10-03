@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T10:45:00Z",
+ "updatedAt": "2026-10-03T12:05:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T12:05:00Z", "text": "The countdown digit strips (strip-tc) passed their phone check at the phone's real \"Serious\" heat state: no new slow frames, and much less clock redrawing. Your finger test is next." },
   { "at": "2026-10-03T10:40:00Z", "text": "You asked for a pixel-tolerance rule; a proposal is being drafted for you (T-042). Until you decide, the rule stays: pixel-identical, or your OK for each fix." },
   { "at": "2026-10-03T10:31:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) does far less work at rest in Chrome and the Simulator, and you accepted its look (PR-009, option \"both\"). Next: a short phone check that it is no worse, after the strips' test." },
   { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B, as a trial): phone tests run with the phone in its real \"Serious\" heat state, checked at each run's start and end, stopping at 44 °C. If the phone won't hold it, we switch to cool starts (A), as you approved." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-02T22:45:00Z", "text": "The accent word test is done: on its own the word draws smoothly, so the slow frames there come from the rest of the page, and the word keeps today's drawing. Next on the phone: the carousel fix (st6), then F3, then the heat test (Fastwork vs apple.com, about 2 hours)." },
   { "at": "2026-10-02T22:35:00Z", "text": "New goal, if your assumption holds: a heat test (P-068) compares how warm Fastwork and apple.com make the phone. If Fastwork heats it more, less work at rest becomes a goal next to smooth scrolling. Every fix now reports its work at rest." },
   { "at": "2026-10-02T22:20:00Z", "text": "The scroll-size fix (fwreskip) is dropped: on the phone it gave no gain (0 slow frames with and without it). At your request two more fixes get a phone timing test: the avatar carousel fix (st6) and F3 (touch listeners set up once). They run after the word-alone test." },
-  { "at": "2026-10-02T21:45:00Z", "text": "The phone is back. Its screen recorder passed its first run with the camera light off. The scroll-size test (G2) starts again after the Wi-Fi change; the word-alone test of the hero's accent word comes next." },
-  { "at": "2026-10-02T15:20:00Z", "text": "You chose to park the scroll-size fix (fwreskip) and test it again when the phone is back. The image-size fix is dropped: with more Simulator sessions, the memory it seemed to save turned out to be inside the normal variation, so no saving could be shown." }
+  { "at": "2026-10-02T21:45:00Z", "text": "The phone is back. Its screen recorder passed its first run with the camera light off. The scroll-size test (G2) starts again after the Wi-Fi change; the word-alone test of the hero's accent word comes next." }
  ],
  "items": [
   {
@@ -74,9 +74,9 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "You chose the strip-tc version (09:31). Next: a phone check with your finger test, after the hero fix's phone trace; it lands after both.",
+   "next": "The phone check passed with the phone at its real \"Serious\" heat state: no new slow frames, and the clock redraws far less when you scroll back to the top. Next: your finger test (blind swipe A/B), after the idle-animation check.",
    "owner": "fix-cd-strip",
-   "checks": [{ "id": "P-072", "what": "wave-2 phone run of the strips: no new slow frames (prediction waits for your new decision)", "result": "" }],
+   "checks": [{ "id": "P-079", "what": "phone block of strip-tc at the phone's real \"Serious\" heat state: no new slow frames, less clock redrawing", "result": "Yes: slow frames over 50 ms the same as without it (at the top and with the menu pinned); clock repaints in the first second back at the top 21 vs 54; 16 vs 48 clock layers kept in memory. One layout count could not be fully decided but cannot have failed." }],
    "details": [
     "de-gpu T-030 brief 1 (research/gpu-props/README.md section 6, 41563ad): removes WebKit digit repaints in the hero and morph-panel clocks; risk about 2 MB more memory per clock in WebKit; the morph gain needs the panel strips on their own layers (cdwc rule owner's OK).",
     "Lead approved fix-cd-strip's D proposal (10-03 00:2xZ): the strip replaces countdown-faces (a), (b) stays. Stacks on F3 (fix-nav-morph sent its nodes/2 line range).",
