@@ -3,8 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** built; D card P-077 pre-registered (this commit), pre-registered runs not yet made
-**Stage:** D (card P-077 sent; lead's signature pending)
+**Status:** P-077 pre-registered runs made and scored: **PASS in Chrome and in the Simulator** (less-work gate met). Pixels
+are not identical, so the user decides the look (proposal posted by this topic); the phone no-worse check is the lead's,
+after the user's choice.
+**Stage:** F/V (D card P-077 signed by the lead; results below)
 **Gate:** less-work landing rule (user T-029 #30, `memory/less-work-landing-rule.md`): fewer work counts on the full page
 in Chrome and the Simulator, plus one short phone no-worse check. The pixel-identical rule still applies, and both parts
 miss it by a few LSB (see "Pixels"), so the look goes to the user as a proposal (draft below, for the lead to post).
@@ -83,9 +85,9 @@ Served A/B (st6-rb2 vs this build) frozen frames in Chrome. Animations were paus
 
 Title: "Platform section: glint and colour sweep on the GPU (looks almost the same)".
 - What it saves: at the bottom of the page, the platform tail stops making the page redraw at rest.
-  - Chrome counts per 2 s (exploratory): style 120 → 8, main frames 120 → 8, paints 240 → 32.
-  - Simulator (exploratory): style 238 → 125, layouts 128 → 14, paints 472 → 2.
-  - The pre-registered P-077 numbers replace these once they are run.
+  - P-077 (pre-registered), page bottom at rest, per sweep cycle (4 s): Chrome style 240 → 8, paints ~481 → ~33;
+    Simulator style ~478 → 8, layouts ~237 → 8, paints ~952 → 4. Rendering frames in the Sim ~240 → 8-12.
+  - (Exploratory numbers earlier in this README are superseded.)
 - What changes on screen (frozen frames, same moment, side by side):
   - the colour sweep inside the four titles sits up to a third of a device pixel off. That is at most 9 of 255 on phones
     and up to 23 on wide desktop.
@@ -213,6 +215,67 @@ reported.
 **Which runs are pre-registered.** Only the P-077 runs listed above, made after this commit. Everything else in this
 README is exploratory: the comp-census runs, probe8 pixels, and the `simpi` Simulator runs.
 
+## P-077 results (pre-registered runs, scored)
+
+**Outcome: PASS + PASS.** The less-work gate is met in both engines. Next: the user decides the look (proposal), then the
+lead runs the phone no-worse check.
+- Pre-registration commit: 72d4ee1 (rebased from f5390bc; the same `fixes/platform-idle/` content). Scorer
+  `tools/score.mjs` e86a19940a07, harness hashes as in the card.
+- Summary: `results.json` (scored counts, per-load windows, checks, layer census). Raw records stay local in
+  `out/platform-idle/pre/` (`chrome.json`, `sim.json`, `score.json`).
+- Valid loads: Chrome C1 V1 B1 (hold 1) and V2 C2 (hold 2); Sim C1 V1 (session 1) and V2 C2 (session 2). No VOID loads.
+  Every load's served hashes match the card.
+- Deviation, reported as the card asks: the first attempt at Sim session 2 was killed before it ran. It was still queued
+  for the lock when my Bash job hit its 30-min default limit, and no records were written. It was re-run with the same
+  command and the same order (V2 C2).
+- Mac load1 was high (about 40-70) during the Sim sessions because of other agents. These are counts, not timing.
+
+**Chrome** (Chrome 154, headless, 430×932 DPR 3, CPU 1x). Counts per 20 s window, as C1/C2 | V1/V2 | B:
+
+| stop | count | C (st6-rb2) | V (this build) | B (baseline) | per sweep cycle C → V |
+|---|---|---|---|---|---|
+| 5346 (primary) | UpdateLayoutTree, judged | 1200/1200 | **40/40** | 1200 | 240 → 8 |
+| 5346 | PrePaint, judged | 1200/1200 | **40/40** | 1200 | 240 → 8 |
+| 5346 | Paint, judged | 2404/2409 | **163/169** | 2413 | ~481 → ~33 |
+| 5346 | Layout / Layerize, guards | 0 / 1200 | 0 / 40 | 0 / 1200 | |
+| 5346 | FunctionCall / BeginFrame / DrawFrame, reported | 120 / 1200 / 1200 | 120 / 1200 / 1200 | 2552 / 1200 / 1200 | |
+| 4660 (no-worse only) | UpdateLayoutTree | 1200/1200 | 1200/1201 | 1200 | |
+| 4660 | PrePaint | 1201/1201 | 1201/1202 | 1201 | |
+| 4660 | Paint | 6230/6222 | **3829/3825** | 2767 | ~1245 → ~765 |
+| 4660 | Layout / Layerize | 193 / 1200 | 193 / 1200-1201 | 193 / 1200 | |
+
+- At the bottom, the per-glint-cycle (5 s) numbers are: style 300 → 10, paints ~602 → ~41.
+- At y 4660 other content in view keeps its own per-frame loop (the agents typing and accent), so style and frames stay at
+  one per frame in both arms. The paints still drop by about 40 %. The baseline paints less there than st6-rb2 (2767 vs
+  ~6226). That is st6-rb2's own change and not this topic's.
+- BeginFrame and DrawFrame stay at 1200 at the bottom in V. A running compositor animation keeps the compositor drawing,
+  which the card expected.
+
+**Simulator** (iOS 18.7 Simulator Safari, 430×775 DPR 3). Counts per 20 s window, as C1/C2 | V1/V2:
+
+| stop | count | C (st6-rb2) | V (this build) | per sweep cycle C → V |
+|---|---|---|---|---|
+| bottom (primary) | RecalculateStyles, judged | 2386/2390 | **40/40** | ~478 → 8 |
+| bottom | Layout, judged | 1185/1189 | **40/40** | ~237 → 8 |
+| bottom | Paint, judged | 4758/4760 | **20/20** | ~952 → 4 |
+| bottom | RenderingFrame / Composite, guards | 1199-1200 / 1200 | 41-60 / 41-60 | ~240 → 8-12 |
+| bottom | FunctionCall / TimerFire / rAF, reported | 40 / 40 / 0 | 40 / 40 / 0 | |
+| y 4660 | RecalculateStyles | 2378/2388 | **514/583** | ~477 → ~110 |
+| y 4660 | Layout | 1360/1360 | **400/400** | 272 → 80 |
+| y 4660 | Paint | 3813/3849 | **315/328** | ~766 → ~64 |
+| y 4660 | RenderingFrame / Composite | 1190-1198 / 1191-1199 | 666-723 / 666-723 | |
+| y 4660 | FunctionCall / TimerFire | 259-260 / 228-229 | 260 / 229 | |
+
+- Platform-section layers, paintCount growth over 5 s, at the bottom stop:
+  - C has 9 layers, and 2 of them repaint every frame (the card and a stage artboard).
+  - V has 26 layers, and 0 of them repaint.
+- V's compositing reasons include `animation`, `maskWithCompositedDescendants` and `clipsCompositingDescendants`, the same
+  as the exploratory run. This is the decisive local check for claims (b) and (c), passed twice more: OBSERVED in our
+  setup (accelerated, no repaint). They stay UNRESOLVED in the reference sense.
+- At the bottom, WebKit now goes almost fully idle in V: about 2-3 rendering frames per second, from the page's 1 Hz
+  timers. So the "other animations keep frames running" assumption behind making RenderingFrame a guard does not hold at
+  this stop on a clean run. It held only in the exploratory run, which was contaminated (see "Simulator (exploratory)").
+
 ## Exploratory counts (not judged)
 
 Chrome comp-census (research/gpu-props/tools/comp-census.mjs, `--idle 2000 --settle 2000 --ablate`), per 2 s.
@@ -245,6 +308,11 @@ At y 4660 the a1/a2 windows vary with the agents-typing loop's phase (later wind
 | dash centred (y 4894) | 232 / 129 / 613 / 117 / 116 | 155 / 48 / 35 / 121 / 122 |
 | "Earn" centred (y 4712) | 224 / 133 / 618 / 111 / 111 | 172 / 72 / 68 / 121 / 121 |
 
+- **Contaminated, superseded by P-077.** Before the counts, simpi's pixel part had called `play()` on every animation in
+  the page. That also resumed animations the page had paused by itself: scene-scope and off-screen pauses. So the
+  "platform-idle" column above keeps about one style recalc and one rendering frame per frame. The pre-registered
+  `simcount.mjs` does not touch animations, and at the bottom it reads 4 style recalcs and 4-6 rendering frames per 2 s
+  for this build. The bullets below describe the contaminated run.
 - One RecalculateStyles per frame stays in both arms, and rendering frames run every frame.
   - Both arms list running page animations outside the platform tail: morph columns, hero orbit, scroll float, vinyl,
     three-frame. These are full-page frame drivers that this fix does not touch.

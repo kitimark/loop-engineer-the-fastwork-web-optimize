@@ -1,0 +1,1912 @@
+{
+ "topic": "platform-idle",
+ "card": "P-077",
+ "kind": "less-work counts (no timing claim)",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "base": "st6-rb2",
+  "preRegistration": "72d4ee1 (rebased from f5390bc, same fixes/platform-idle content)",
+  "arms": {
+   "C": "st6-rb2 overlay (control)",
+   "V": "platform-idle overlay (build)",
+   "B": "baseline (context, not judged)"
+  },
+  "tools": {
+   "scorer": "fixes/platform-idle/tools/score.mjs e86a19940a07",
+   "chrome": "fixes/platform-idle/tools/idlecount.mjs f32c668d360b via run-chrome.sh 24b706e6c2b5",
+   "sim": "fixes/platform-idle/tools/simcount.mjs 2797612a0347"
+  },
+  "chrome": {
+   "browser": "Chrome/154.0.8037.97",
+   "viewport": "430x932 DPR 3 mobile+touch, headless, CPU 1x",
+   "stops": [
+    4660,
+    5346
+   ],
+   "settleMs": 3000,
+   "windowMs": 20000
+  },
+  "sim": {
+   "ua": "iPhone OS 18_7 Simulator Safari",
+   "viewport": "430x775 DPR 3",
+   "stops": [
+    "y4660",
+    "bottom"
+   ],
+   "settleMs": 3000,
+   "windowMs": 20000
+  }
+ },
+ "outcome": "PASS: less-work gate met in both engines; next the short phone no-worse check (lead) and the pixel proposal (user)",
+ "verdicts": {
+  "chrome": "PASS",
+  "sim": "PASS"
+ },
+ "score": {
+  "chrome": {
+   "loads": {
+    "C": 2,
+    "V": 2,
+    "B": 1
+   },
+   "voids": [],
+   "stops": {
+    "primary": {
+     "stop": 5346,
+     "counts": {
+      "styleRecalcs": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "prePaints": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "paints": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        2404,
+        2409
+       ],
+       "V": [
+        163,
+        169
+       ],
+       "B": [
+        2413
+       ],
+       "perSweepCycle": {
+        "C": [
+         480.8,
+         481.8
+        ],
+        "V": [
+         32.6,
+         33.8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         601,
+         602.25
+        ],
+        "V": [
+         40.75,
+         42.25
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "layouts": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        0,
+        0
+       ],
+       "V": [
+        0,
+        0
+       ],
+       "B": [
+        0
+       ],
+       "perSweepCycle": {
+        "C": [
+         0,
+         0
+        ],
+        "V": [
+         0,
+         0
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         0,
+         0
+        ],
+        "V": [
+         0,
+         0
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "layerizes": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "functionCalls": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        120,
+        120
+       ],
+       "V": [
+        120,
+        120
+       ],
+       "B": [
+        2552
+       ],
+       "perSweepCycle": {
+        "C": [
+         24,
+         24
+        ],
+        "V": [
+         24,
+         24
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         30,
+         30
+        ],
+        "V": [
+         30,
+         30
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "beginFrames": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        1200,
+        1200
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         240,
+         240
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         300,
+         300
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "drawFrames": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        1200,
+        1200
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         240,
+         240
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         300,
+         300
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      }
+     }
+    },
+    "secondary": {
+     "stop": 4660,
+     "counts": {
+      "styleRecalcs": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        1200,
+        1201
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         240,
+         240.2
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         300,
+         300.25
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "prePaints": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        1201,
+        1201
+       ],
+       "V": [
+        1201,
+        1202
+       ],
+       "B": [
+        1201
+       ],
+       "perSweepCycle": {
+        "C": [
+         240.2,
+         240.2
+        ],
+        "V": [
+         240.2,
+         240.4
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300.25,
+         300.25
+        ],
+        "V": [
+         300.25,
+         300.5
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "paints": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        6230,
+        6222
+       ],
+       "V": [
+        3829,
+        3825
+       ],
+       "B": [
+        2767
+       ],
+       "perSweepCycle": {
+        "C": [
+         1246,
+         1244.4
+        ],
+        "V": [
+         765.8,
+         765
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         1557.5,
+         1555.5
+        ],
+        "V": [
+         957.25,
+         956.25
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "layouts": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        193,
+        193
+       ],
+       "V": [
+        193,
+        193
+       ],
+       "B": [
+        193
+       ],
+       "perSweepCycle": {
+        "C": [
+         38.6,
+         38.6
+        ],
+        "V": [
+         38.6,
+         38.6
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         48.25,
+         48.25
+        ],
+        "V": [
+         48.25,
+         48.25
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "layerizes": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        1200,
+        1201
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         240,
+         240.2
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         300,
+         300.25
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "functionCalls": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        636,
+        648
+       ],
+       "V": [
+        648,
+        642
+       ],
+       "B": [
+        3202
+       ],
+       "perSweepCycle": {
+        "C": [
+         127.2,
+         129.6
+        ],
+        "V": [
+         129.6,
+         128.4
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         159,
+         162
+        ],
+        "V": [
+         162,
+         160.5
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "beginFrames": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        1200,
+        1201
+       ],
+       "V": [
+        1200,
+        1201
+       ],
+       "B": [
+        1200
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240.2
+        ],
+        "V": [
+         240,
+         240.2
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300.25
+        ],
+        "V": [
+         300,
+         300.25
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "drawFrames": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        1201,
+        1201
+       ],
+       "B": [
+        1199
+       ],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         240.2,
+         240.2
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         300.25,
+         300.25
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      }
+     }
+    }
+   },
+   "primaryLower": true,
+   "noWorse": true,
+   "verdict": "PASS"
+  },
+  "sim": {
+   "loads": {
+    "C": 2,
+    "V": 2,
+    "B": 0
+   },
+   "voids": [],
+   "stops": {
+    "primary": {
+     "stop": "bottom",
+     "counts": {
+      "styleRecalcs": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        2386,
+        2390
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         477.2,
+         478
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         596.5,
+         597.5
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "layouts": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        1185,
+        1189
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         237,
+         237.8
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         296.25,
+         297.25
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "paints": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        4758,
+        4760
+       ],
+       "V": [
+        20,
+        20
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         951.6,
+         952
+        ],
+        "V": [
+         4,
+         4
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         1189.5,
+         1190
+        ],
+        "V": [
+         5,
+         5
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "renderingFrames": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        1199,
+        1200
+       ],
+       "V": [
+        41,
+        60
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         239.8,
+         240
+        ],
+        "V": [
+         8.2,
+         12
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         299.75,
+         300
+        ],
+        "V": [
+         10.25,
+         15
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "composites": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        1200,
+        1200
+       ],
+       "V": [
+        41,
+        60
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         240,
+         240
+        ],
+        "V": [
+         8.2,
+         12
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         300,
+         300
+        ],
+        "V": [
+         10.25,
+         15
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "functionCalls": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        40,
+        40
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         8,
+         8
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         10,
+         10
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "timerFires": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        40,
+        40
+       ],
+       "V": [
+        40,
+        40
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         8,
+         8
+        ],
+        "V": [
+         8,
+         8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         10,
+         10
+        ],
+        "V": [
+         10,
+         10
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "rafs": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        0,
+        0
+       ],
+       "V": [
+        0,
+        0
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         0,
+         0
+        ],
+        "V": [
+         0,
+         0
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         0,
+         0
+        ],
+        "V": [
+         0,
+         0
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      }
+     }
+    },
+    "secondary": {
+     "stop": "y4660",
+     "counts": {
+      "styleRecalcs": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        2378,
+        2388
+       ],
+       "V": [
+        514,
+        583
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         475.6,
+         477.6
+        ],
+        "V": [
+         102.8,
+         116.6
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         594.5,
+         597
+        ],
+        "V": [
+         128.5,
+         145.75
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "layouts": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        1360,
+        1360
+       ],
+       "V": [
+        400,
+        400
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         272,
+         272
+        ],
+        "V": [
+         80,
+         80
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         340,
+         340
+        ],
+        "V": [
+         100,
+         100
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "paints": {
+       "judged": true,
+       "guarded": true,
+       "C": [
+        3813,
+        3849
+       ],
+       "V": [
+        315,
+        328
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         762.6,
+         769.8
+        ],
+        "V": [
+         63,
+         65.6
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         953.25,
+         962.25
+        ],
+        "V": [
+         78.75,
+         82
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "renderingFrames": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        1190,
+        1198
+       ],
+       "V": [
+        666,
+        723
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         238,
+         239.6
+        ],
+        "V": [
+         133.2,
+         144.6
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         297.5,
+         299.5
+        ],
+        "V": [
+         166.5,
+         180.75
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "composites": {
+       "judged": false,
+       "guarded": true,
+       "C": [
+        1191,
+        1199
+       ],
+       "V": [
+        666,
+        723
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         238.2,
+         239.8
+        ],
+        "V": [
+         133.2,
+         144.6
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         297.75,
+         299.75
+        ],
+        "V": [
+         166.5,
+         180.75
+        ]
+       },
+       "lower": true,
+       "noWorse": true
+      },
+      "functionCalls": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        259,
+        260
+       ],
+       "V": [
+        260,
+        260
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         51.8,
+         52
+        ],
+        "V": [
+         52,
+         52
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         64.75,
+         65
+        ],
+        "V": [
+         65,
+         65
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "timerFires": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        228,
+        229
+       ],
+       "V": [
+        229,
+        229
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         45.6,
+         45.8
+        ],
+        "V": [
+         45.8,
+         45.8
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         57,
+         57.25
+        ],
+        "V": [
+         57.25,
+         57.25
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      },
+      "rafs": {
+       "judged": false,
+       "guarded": false,
+       "C": [
+        0,
+        0
+       ],
+       "V": [
+        0,
+        0
+       ],
+       "B": [],
+       "perSweepCycle": {
+        "C": [
+         0,
+         0
+        ],
+        "V": [
+         0,
+         0
+        ]
+       },
+       "perGlintCycle": {
+        "C": [
+         0,
+         0
+        ],
+        "V": [
+         0,
+         0
+        ]
+       },
+       "lower": false,
+       "noWorse": true
+      }
+     }
+    }
+   },
+   "primaryLower": true,
+   "noWorse": true,
+   "verdict": "PASS"
+  }
+ },
+ "loads": {
+  "chrome": [
+   {
+    "arm": "C",
+    "rep": 1,
+    "mode": "full",
+    "engine": "chrome",
+    "startedAt": "2026-10-03T09:22:36.742Z",
+    "served": {
+     "js": "7bf7c4657d21",
+     "css": "f523598b2a24"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": 4660,
+      "ms": 20003,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1201,
+      "paints": 6230,
+      "layouts": 193,
+      "layerizes": 1200,
+      "functionCalls": 636,
+      "beginFrames": 1200,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-cred-marquee-left",
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": 5346,
+      "ms": 20003,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1200,
+      "paints": 2404,
+      "layouts": 0,
+      "layerizes": 1200,
+      "functionCalls": 120,
+      "beginFrames": 1200,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 3,
+       "sweepPaused": 1,
+       "running": [
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "arm": "V",
+    "rep": 1,
+    "mode": "full",
+    "engine": "chrome",
+    "startedAt": "2026-10-03T09:23:34.407Z",
+    "served": {
+     "js": "de29ff8aa622",
+     "css": "d67d599ab034"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": 4660,
+      "ms": 20002,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1201,
+      "paints": 3829,
+      "layouts": 193,
+      "layerizes": 1200,
+      "functionCalls": 648,
+      "beginFrames": 1200,
+      "drawFrames": 1201,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-cred-marquee-left",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": 5346,
+      "ms": 20002,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 40,
+      "prePaints": 40,
+      "paints": 163,
+      "layouts": 0,
+      "layerizes": 40,
+      "functionCalls": 120,
+      "beginFrames": 1200,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 3,
+       "sweepPaused": 1,
+       "running": [
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-sweep-band::after"
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "arm": "B",
+    "rep": 1,
+    "mode": "full",
+    "engine": "chrome",
+    "startedAt": "2026-10-03T09:24:30.635Z",
+    "served": {
+     "js": "4606120cf392",
+     "css": "27776f3d4138"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": 4660,
+      "ms": 20002,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1201,
+      "paints": 2767,
+      "layouts": 193,
+      "layerizes": 1200,
+      "functionCalls": 3202,
+      "beginFrames": 1200,
+      "drawFrames": 1199,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 0,
+       "running": [
+        "start-selling-platform-cred-marquee-left",
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": 5346,
+      "ms": 20002,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1200,
+      "paints": 2413,
+      "layouts": 0,
+      "layerizes": 1200,
+      "functionCalls": 2552,
+      "beginFrames": 1200,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 3,
+       "sweepPaused": 0,
+       "running": [
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "arm": "V",
+    "rep": 2,
+    "mode": "full",
+    "engine": "chrome",
+    "startedAt": "2026-10-03T09:31:22.863Z",
+    "served": {
+     "js": "de29ff8aa622",
+     "css": "d67d599ab034"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": 4660,
+      "ms": 20006,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1201,
+      "prePaints": 1202,
+      "paints": 3825,
+      "layouts": 193,
+      "layerizes": 1201,
+      "functionCalls": 642,
+      "beginFrames": 1201,
+      "drawFrames": 1201,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-cred-marquee-left",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": 5346,
+      "ms": 20002,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 40,
+      "prePaints": 40,
+      "paints": 169,
+      "layouts": 0,
+      "layerizes": 40,
+      "functionCalls": 120,
+      "beginFrames": 1200,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 3,
+       "sweepPaused": 1,
+       "running": [
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-sweep-band::after"
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "arm": "C",
+    "rep": 2,
+    "mode": "full",
+    "engine": "chrome",
+    "startedAt": "2026-10-03T09:32:19.800Z",
+    "served": {
+     "js": "7bf7c4657d21",
+     "css": "f523598b2a24"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": 4660,
+      "ms": 20002,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1201,
+      "paints": 6222,
+      "layouts": 193,
+      "layerizes": 1200,
+      "functionCalls": 648,
+      "beginFrames": 1201,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-cred-marquee-left",
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": 5346,
+      "ms": 20001,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 1200,
+      "prePaints": 1200,
+      "paints": 2409,
+      "layouts": 0,
+      "layerizes": 1200,
+      "functionCalls": 120,
+      "beginFrames": 1200,
+      "drawFrames": 1200,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 3,
+       "sweepPaused": 1,
+       "running": [
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     }
+    ]
+   }
+  ],
+  "sim": [
+   {
+    "arm": "C",
+    "rep": 1,
+    "mode": "full",
+    "engine": "sim",
+    "startedAt": "2026-10-03T09:46:37.539Z",
+    "served": {
+     "js": "7bf7c4657d21",
+     "css": "f523598b2a24"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": "y4660",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 2378,
+      "paints": 3813,
+      "layouts": 1360,
+      "functionCalls": 259,
+      "renderingFrames": 1190,
+      "composites": 1191,
+      "timerFires": 228,
+      "rafs": 0,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 1,
+       "sweepPaused": 3,
+       "running": [
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": "bottom",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 2386,
+      "paints": 4758,
+      "layouts": 1185,
+      "functionCalls": 40,
+      "renderingFrames": 1199,
+      "composites": 1200,
+      "timerFires": 40,
+      "rafs": 0,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     }
+    ],
+    "layers": {
+     "count": 9,
+     "repainting5s": 2,
+     "reasons": [
+      "clipsCompositingDescendants",
+      "filterWithCompositedDescendants",
+      "willChange"
+     ]
+    }
+   },
+   {
+    "arm": "V",
+    "rep": 1,
+    "mode": "full",
+    "engine": "sim",
+    "startedAt": "2026-10-03T09:47:37.216Z",
+    "served": {
+     "js": "de29ff8aa622",
+     "css": "d67d599ab034"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": "y4660",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 514,
+      "paints": 315,
+      "layouts": 400,
+      "functionCalls": 260,
+      "renderingFrames": 666,
+      "composites": 666,
+      "timerFires": 229,
+      "rafs": 0,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 1,
+       "sweepPaused": 3,
+       "running": [
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": "bottom",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 40,
+      "paints": 20,
+      "layouts": 40,
+      "functionCalls": 40,
+      "renderingFrames": 41,
+      "composites": 41,
+      "timerFires": 40,
+      "rafs": 0,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-sweep-band::after"
+       ]
+      }
+     }
+    ],
+    "layers": {
+     "count": 26,
+     "repainting5s": 0,
+     "reasons": [
+      "animation",
+      "clipsCompositingDescendants",
+      "filterWithCompositedDescendants",
+      "maskWithCompositedDescendants",
+      "overlap",
+      "stacking",
+      "transformWithCompositedDescendants",
+      "willChange"
+     ]
+    }
+   },
+   {
+    "arm": "V",
+    "rep": 2,
+    "mode": "full",
+    "engine": "sim",
+    "startedAt": "2026-10-03T10:16:41.190Z",
+    "served": {
+     "js": "de29ff8aa622",
+     "css": "d67d599ab034"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": "y4660",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 583,
+      "paints": 328,
+      "layouts": 400,
+      "functionCalls": 260,
+      "renderingFrames": 723,
+      "composites": 723,
+      "timerFires": 229,
+      "rafs": 0,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 1,
+       "sweepPaused": 3,
+       "running": [
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": "bottom",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 40,
+      "paints": 20,
+      "layouts": 40,
+      "functionCalls": 40,
+      "renderingFrames": 60,
+      "composites": 60,
+      "timerFires": 40,
+      "rafs": 0,
+      "check": {
+       "glintActive": 2,
+       "smilAnimate": 0,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-pi-glint-left",
+        "start-selling-platform-pi-glint-right",
+        "start-selling-platform-pi-sweep-band::after",
+        "start-selling-platform-pi-sweep-band::after"
+       ]
+      }
+     }
+    ],
+    "layers": {
+     "count": 26,
+     "repainting5s": 0,
+     "reasons": [
+      "animation",
+      "clipsCompositingDescendants",
+      "filterWithCompositedDescendants",
+      "maskWithCompositedDescendants",
+      "overlap",
+      "stacking",
+      "transformWithCompositedDescendants",
+      "willChange"
+     ]
+    }
+   },
+   {
+    "arm": "C",
+    "rep": 2,
+    "mode": "full",
+    "engine": "sim",
+    "startedAt": "2026-10-03T10:17:40.946Z",
+    "served": {
+     "js": "7bf7c4657d21",
+     "css": "f523598b2a24"
+    },
+    "void": null,
+    "windows": [
+     {
+      "kind": "idle",
+      "stop": "y4660",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 2388,
+      "paints": 3849,
+      "layouts": 1360,
+      "functionCalls": 260,
+      "renderingFrames": 1198,
+      "composites": 1199,
+      "timerFires": 229,
+      "rafs": 0,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 1,
+       "sweepPaused": 3,
+       "running": [
+        "start-selling-agents-ask-caret::after",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     },
+     {
+      "kind": "idle",
+      "stop": "bottom",
+      "ms": 20000,
+      "sweepCycles": 5,
+      "glintCycles": 4,
+      "styleRecalcs": 2390,
+      "paints": 4760,
+      "layouts": 1189,
+      "functionCalls": 40,
+      "renderingFrames": 1200,
+      "composites": 1200,
+      "timerFires": 40,
+      "rafs": 0,
+      "check": {
+       "glintActive": 0,
+       "smilAnimate": 4,
+       "sweepTitlesInView": 2,
+       "sweepPaused": 2,
+       "running": [
+        "start-selling-platform-i-doc-sweep",
+        "start-selling-platform-i-doc-sweep"
+       ]
+      }
+     }
+    ],
+    "layers": {
+     "count": 9,
+     "repainting5s": 2,
+     "reasons": [
+      "clipsCompositingDescendants",
+      "filterWithCompositedDescendants",
+      "willChange"
+     ]
+    }
+   }
+  ]
+ },
+ "notes": [
+  "Counts only, per 20 s window (5 sweep cycles, 4 glint cycles); no timing or smoothness claim.",
+  "No measurement code changed (no tools/ edits); the harnesses are topic-local in fixes/platform-idle/tools/.",
+  "Sim session 2, first attempt: killed while still queued for the lock (my Bash job hit its 30-min default limit) before any load ran; no records were written. Re-run with the same command and order (V2 C2).",
+  "Mac load1 was high during the Sim sessions (other agents); counts are not timing, recorded for completeness.",
+  "Chrome V at y4660 keeps ~1200 style/prepaint per 20 s: other content in view there (agents typing / accent loops) runs its own per-frame loop; by the card that stop is no-worse only.",
+  "Pixels are NOT identical (WebKit dash edge up to 17/255 the whole time the glint is mounted; glint edges up to 64/255 Chrome and 33/255 WebKit while passing; sweep up to 23/255): landing needs the user proposal (option A) per the illusion rule."
+ ]
+}
