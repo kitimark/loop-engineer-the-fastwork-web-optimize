@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T05:15:00Z",
+ "updatedAt": "2026-10-03T05:50:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T05:50:00Z", "text": "The menu fix (F3) made the pinned menu no worse in 9 robot-finger phone runs. The original's stall at the end of the page didn't show up this time, so whether the fix cures it is still open. One odd run of the landing version is being traced." },
   { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." },
   { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." },
   { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T19:55:00Z", "text": "Style fix recorded on the phone: the section switch does less work, but the same work shows up one frame later further down, so nothing is saved yet. Next: find out why it moved." },
   { "at": "2026-10-01T19:31:00Z", "text": "Your decision: timing tests are on hold. The team now finds out what work the page does and how often (Chrome call tree, style and layout counts, layers) and records Safari's layout and drawing work. The phone is only used for those recordings." },
   { "at": "2026-10-01T19:28:00Z", "text": "Carousel fix (st5) tested on the phone: the picture swap no longer re-lays out the page, but the start of each slide still does about half the time. Hitches at rest fell by more than half. Next step is the lead's call." },
-  { "at": "2026-10-01T19:16:00Z", "text": "New work, the user's second priority: look for cheaper ways to draw effects that look the same, and show each one to the user to accept or reject." },
-  { "at": "2026-10-01T19:12:00Z", "text": "Two small items (the endless sweep animations and the image sizes) are parked until the bigger style fixes have phone results, so effort stays on the largest slow frames." }
+  { "at": "2026-10-01T19:16:00Z", "text": "New work, the user's second priority: look for cheaper ways to draw effects that look the same, and show each one to the user to accept or reject." }
  ],
  "items": [
   {
@@ -74,7 +74,7 @@
     "text": "not built yet"
    },
    "gate": "Looks identical at every scroll position (identical by design, checked), then a phone test and an independent review.",
-   "next": "One refinement first: the chosen version made more style changes while the menu opens and at the end of the page, so a wrapper now makes one change per step. Three short checks, a new prediction before any phone data, then the review and the wave-2 phone run.",
+   "next": "A tiny difference remains in both strip versions: while the hero fades, some digit edges come out one shade off, more often than in repeat checks of the original. You will get a choice: land it with that difference, or park it. The new prediction waits for your answer.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-072", "what": "wave-2 phone run of the chosen version: no new slow frames (prediction being written before any data)", "result": "" }],
    "details": [
@@ -83,7 +83,8 @@
     "F-153 (fix-cd-strip, coupling): cd-strip supersedes countdown-faces (a) and illusion-digit-layers for the countdown; countdown-faces (b), the hidden-skip gate, must be rebuilt on cd-strip by de-countdown after cd-strip lands, on the lead's order (planned stack st6-rb2 -> cd-strip -> cd-roll-ca -> (b), 77c9f75). cdwc's panel .face rule matches nothing after cd-strip (arm b ships its own .strip will-change: auto retarget). __cdStripY is periodic: a strip driver keeps offsets in [0, 9].",
     "Step 4 (10-03 02:3x-03:2xZ): remainder variant dropped; suspect was the backing size (visible cell only and per-cell layers both give 0 px in the Simulator). Lead: pick strip + cell layers if its last pixel rows pass. Chrome: identical except hero fade 0.9 (delta 1, beyond A/A, 7 shots).",
     "Lead 10-03 04:4xZ: picked strip-rb (identical on all rows); idle-paint gain withdrawn; gains = re-entry Paint, backing MB, style writes. P-070 superseded before data (build changed strip-cl -> strip-rb, lead 04:4xZ; text unchanged, kept in the ledger); fix-cd-strip registers P-072 for strip-rb before any wave-2 or phone data.",
-    "Lead 10-03 05:1xZ: strip-rw = strip-rb + a wrapper, one write per m change (strip-rb raised style writes at mid/end pin); 3-gap check plan (one Sim job per P-071 cooling gap); P-072 re-registered against strip-rw's card before data."
+    "Lead 10-03 05:1xZ: strip-rw = strip-rb + a wrapper, one write per m change (strip-rb raised style writes at mid/end pin); 3-gap check plan (one Sim job per P-071 cooling gap); P-072 re-registered against strip-rw's card before data.",
+    "Lead 05:4xZ: the fade50 delta-1 digit class shows in both strip builds (strip-rb, strip-rw) above the A/A rate; goes to the user as a proposal (land with the residual or park) once its card is done; P-072 waits for that decision."
    ]
   },
   {
@@ -175,12 +176,13 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "The missed-touch case is fixed in a new build. The possible slowdown when the page holds at the end did not show on the computer, so it gets a robot-finger check on the phone, running now, then a short repeat of the touch test. Your swipe test waits until then.",
+   "next": "9 robot-finger runs: the pinned menu is no worse with F3. The original's stall at the end didn't show up, so whether F3 cures it is still open. One odd run of the landing version is being traced; then fix-nav-morph rules on landing, and your swipe test follows.",
 
    "owner": "fix-nav-morph",
    "checks": [
     { "id": "P-022", "what": "scripted phone block: is the y≈1960 frame gone?", "result": "yes, 4 of 4 runs" },
-    { "id": "P-036", "what": "robot-finger touch-to-scroll test", "result": "passed: no part of the page starts scrolling later with F3 (about 190 ms in both, 8 of 8 runs valid, both heat checks passed)" }
+    { "id": "P-036", "what": "robot-finger touch-to-scroll test", "result": "passed: no part of the page starts scrolling later with F3 (about 190 ms in both, 8 of 8 runs valid, both heat checks passed)" },
+    { "id": "P-071", "what": "robot-finger test holding the menu pinned at the end", "result": "no worse with F3 in 9 runs; the original's stall did not show up, so the cure is still open; one odd run being traced" }
    ],
    "details": [
     "Build mw10e-arm-scope-c (JS c6d3590576a7, comment-only re-cut of 7b0d62225545): touchstart passive + touchmove non-passive on #platform and the nav header, wheel on window, all once at setup.",
@@ -189,7 +191,9 @@
     "Strokes that start on the nav header are not covered by the robot test: only your finger test checks them.",
     "Review round 1 (review-f3-arm-scope, 10-03 01:4xZ): CHANGES REQUIRED. B1 (OBSERVED, cause unknown): V-only frame-rate drop at the end pin when the run settles at y 5215 (2/2 V vs 0/5 C). B2: touch-coverage gap mid-tween and at m=1, where the morph does not reverse. P-036 card part stands (scorer rerun identical, PASS without V2).",
     "B1/B2 outcome (fix-nav-morph 909747c, 10-03 02:2xZ): B2 fixed in build mw10e-arm-scope-d (JS 999c4497f37e; window touch listeners while the morph is active; Chrome gap cases V fail, C and D pass). B1 UNRESOLVED: Simulator G pin repro and Chrome pin counts show no collapse and no arm difference; phone ticket G pin-hold C/V/D + Timeline after P-068; D then needs a short P-036 confirmation before landing.",
-    "P-036 G block 10-03 00:28-01:10Z (iphone-runner; scored by fix-nav-morph 6fb21b2, ops second read PASS): median touch-to-scroll C / V Z1 196.8 / 192, Z2 193 / 194.5, Z3 189 / 189 ms, every zone overlap; S-open 60 / 58.9, S-end 60.2 / 57.1 fps PASS; C2 re-run in place (void first try); V2 hot (42.6-43.3 C); Z1 dt>50 per run C 2,1,3,2 vs V 1,16,3,2 (16 = the hot run), OBSERVED, G driver."
+    "P-036 G block 10-03 00:28-01:10Z (iphone-runner; scored by fix-nav-morph 6fb21b2, ops second read PASS): median touch-to-scroll C / V Z1 196.8 / 192, Z2 193 / 194.5, Z3 189 / 189 ms, every zone overlap; S-open 60 / 58.9, S-end 60.2 / 57.1 fps PASS; C2 re-run in place (void first try); V2 hot (42.6-43.3 C); Z1 dt>50 per run C 2,1,3,2 vs V 1,16,3,2 (16 = the hot run), OBSERVED, G driver.",
+    "P-071 G pin-hold-v2 block 10-03 03:59-05:37Z (iphone-runner; lead-scored 05:5xZ): valid (S-open PASS, LOAD>8 flag at stamp; S-end 60.2/57.6; LPM off; 0 errors). Pin collapse C 1/3 (C3, cycle phase 3 s after touchend, not a pin collapse; outside the rule, a miss on 'C clean ~90 %'), V 0/3, D 0/3: B1 not reproduced in the control, cure UNRESOLVED, no second block without a new question; V and D add no pin collapse. OBSERVED, G driver.",
+    "P-071 card units (per-run max dt over 2 cycles, n=3v3): arm C 70/64/74, V 68/64/69, D 70/98/66; disarm C 32/33/35, V 33/34/35, D 35/85/39: no separated-worse (twins 46/54 same). ~60 % prediction missed on its second half (D2 c2 disarm 85 ms). D2 outlier (arm 98 ms, 11 frames > 50): attribution before D lands. Exploratory only, not a gain: arm >50 C 10/11/14 vs V 8/7/9, threshold-sensitive. Scorer a90e807d4296 second-read by mgmt-ops-9, re-run byte-identical (score f8e231d4b617)."
    ]
   },
   {
@@ -538,8 +542,9 @@
   }
  ],
  "upcoming": [
+  { "title": "Your choice on the countdown digit strips: land with a tiny fade difference, or park", "when": "once fix-cd-strip's write-up of the difference is done", "item": "cd-strip" },
   { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "postponed: the review found two things to check first (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after one odd robot-finger run is traced and fix-nav-morph rules on landing (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {

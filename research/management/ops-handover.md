@@ -9,6 +9,36 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **05:5xZ P-071 block done and scored (official, lead 05:5xZ); scorer second read PASS.**
+  - Block 03:59-05:37Z, valid: S-open PASS 60.2/57.9 (LOAD>8 flag at stamp), S-end PASS 60.2/57.6; LPM off (C-027,
+    idle rAF 59 Hz every run); battery 78-79 % held; 0 errors; every counted run and sentinel in its own
+    `--no-timing` hold. Deviation: the chain hit Bash's 2 h cap at 05:34Z in the cooling gate after V3; S-end
+    re-issued by hand in its own hold; no run affected.
+  - **Official verdict:** V clean 0/3, D clean 0/3; C 1/3 (C3, cycle phase, 2 windows 27.5/25 fps 3 s after a
+    touchend with no touch and the morph closed; recovered after the up stroke) is outside the decision rule and a
+    miss on "C clean ~90 %". Card units (per-run max dt): arm C 70/64/74, V 68/64/69, D 70/98/66; disarm C 32/33/35,
+    V 33/34/35, D 35/85/39: no separated-worse anywhere. The ~60 % prediction missed on its second half (D2 c2 disarm
+    85 ms, the only disarm frame > 50 in any arm). **B1 UNRESOLVED under pin-hold-v2; no second block without a new
+    question.** D2 outlier goes to Timeline attribution before D lands. The lead's arm >50 counts (C 10/11/14 vs V
+    8/7/9) are exploratory only, not pre-registered, threshold-sensitive, never a gain.
+  - **Scorer second read (ops): PASS.** `out/iphone-runner/p071-score.mjs` a90e807d4296 matches card b88f100: pin
+    arrival = first frame y >= 5200; 2 s windows from pin arrival, collapse = 2 consecutive < 30 fps; strokes after
+    mark `cycle`, up = arm [first touchmove −50, lift +500], down = disarm [lift +400, lift +1200]; twins >46/>54,
+    >30/>38, near bands (30,38]/(46,54]; per-run max taken over the 2 strokes of a kind. Re-run on the 9 gesture files
+    (sha12 match iphone-runner's table; GESTURE_HASH 2d3a97b742cf47c6): output byte-identical to score-p071.json
+    f8e231d4b617.
+  - PROGRESS: 05:50Z change line (lead's plain words), F3 `next`, P-071 check, details, upcoming swipe "after one
+    odd run is traced". The P-071 row lives on fix-nav-morph's branch: it fills measured/in?/lesson there.
+  - Next: Timeline attribution (iphone-runner, `gesture --timeline` after rebase on df55321): V at the pin
+    (reference), D's cycle phase, C's cycle phase (C3). P-071 row filled by fix-nav-morph (97abb52 on its working
+    branch, f5c2b48 on fix/f3-arm-scope; README f342e2b, 54adbdd); ratio median D/C 1.00 arm max, 1.06 disarm max.
+    The V/L ruling is the lead's: the card has no V-clean + D-clean branch.
+  - **cd-strip (lead 05:4xZ):** the fade50 delta-1 digit class shows in both strip builds above the A/A rate; it goes
+    to the user as a proposal (land with the residual or park) once its card is done; P-072 waits for that decision.
+    PROGRESS `next` + an upcoming "your choice" entry.
+  - **I-080** open (tool, lead): a shared-lane group leaves `chrome-measure.last-grant.json` marked short after it
+    ends (doctor: last-grant-short-outlived); ts-i080 on it.
+
 - **05:1xZ 7f00616 landed. cd-strip -> strip-rw; hero-exit frozen frames explained; P-071 on its last counted run.**
   - **cd-strip** builds **strip-rw** (strip-rb + a wrapper, one write per m change; strip-rb raised style writes at
     mid/end pin); 3-gap check plan (one Sim job per P-071 cooling gap); **P-072 re-registered against strip-rw's card
