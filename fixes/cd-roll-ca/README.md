@@ -3,27 +3,28 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (counts and positions only; timing A/Bs deferred, user 2026-10-02); review round 1 answered
-(B1 fixed in code, B2/B3 in text); round 2 PASS with three nits, answered (audit of the first hide analysis,
-forced-roll parity, served hashes); WebKit hidden-page check run in the Simulator found a difference from Chrome on
-return from an app switch; round 3 build `2af461dc…` fixes it (lead's order: a roll's "ran a frame" flag and a hide
-watch); Chrome hide check, one 60 Hz probe and the Simulator check re-run on it; review round 3 (hide code only): PASS with nits, nits applied.
-To rebuild on cd-strip's landed patch.
+**Status:** round 4, "cells-only" on fix-cd-strip's strip-rw (lead, 2026-10-03 04:4xZ and 05:1xZ). Measured on
+cd-strip's strip-rw **dev** build (JS `5e37af69bcc4…`); the counted set waits for cd-strip's final verified hash.
+Rounds 1-3 (one animation per strip, on st6-rb2) passed review (round 3 PASS, `2af461dc…`); their sections are kept
+below as history, labelled.
 **Stage:** F (build card); D signed by the lead, fast path, 2026-10-03 01:35Z; V = the user's blind watched comparison
 (no touch; ticket rev 2 held by the lead)
 **Device class / gate:** render-bound / main-thread script removal; gate = counts (no timing now) + the user's watched
 blind comparison
 **Driver(s) behind the claims:** Chrome CDP traces at y 0 (headless, 60 Hz; headed for 120 Hz), WebKit iOS Simulator
-Timeline counts and a hidden-page check (app switch). No phone runs.
+Timeline counts, frozen and running screenshots, layer census, and a hidden-page check (app switch). No phone runs.
 **Prediction:** counts only (below); no `fixes/PREDICTIONS.md` row while timing is deferred
 **Topic:** `research/gpu-props/README.md` G4 (user decision T-030 #10, "do cd-roll-ca as highest priority as well")
-**Stacked on:** `fix-cd-strip` (arm b) on `st6-rb2`: base `_app/immutable/nodes/2.DyWL8TcE.js` sha256 `358cd8ae16b9…`
-(header of `patch.diff`); rebuild with `node tools/fix.mjs apply cd-strip --on st6-rb2 --reset` then
-`node tools/fix.mjs apply cd-roll-ca --on cd-strip`. The cd-strip patch is not committed here (its owner's deliverable).
-**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only: new helpers after `__cdStripY` (`__crPath`, `__crAt`,
-`__crClock`, `__crWatch`, a module-level `visibilitychange` listener), and in `$E` (the digit) the spring effect and the strip
-snippet. Built overlay sha256 `2af461dc50ad…` (round 3; round 2 `673b110d118c…`, round 1 `9ac52b08bc32…`). Served
-from the immutable snapshot copies `out/cd-roll-ca/snap/{C,V,V3}` (V = round 2, V3 = round 3) (hashes in `HASHES.txt`, one-command server `out/cd-roll-ca/serve-snap.sh`).
+**Stacked on:** `fix-cd-strip` strip-rw (its patch on st6-rb2): base `_app/immutable/nodes/2.DyWL8TcE.js` sha256
+`5e37af69bcc4…`, CSS `9b2f89ea58bd…` (cd-strip `patch.diff` `48bc7adf7f03…`, dev build); rebuild with
+`node tools/fix.mjs apply cd-strip --on st6-rb2 --reset` then `node tools/fix.mjs apply cd-roll-ca --on cd-strip`.
+The cd-strip patch is not committed here (its owner's deliverable).
+**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only (the CSS is cd-strip's, unchanged): new helpers after
+`__cdStripM` (`__crPath`, `__crAt`, `__crClock`, `__crWatch`, `__crCells`, a module-level `visibilitychange`
+listener), and in `$E` (the digit) the spring effect, `__crTops`/`__crStop`/`__crPlay`, and in the strip snippet `g`
+only the replay effect, `__crEl = w` and cd-strip's cell-top effect routed through `__crTops`. Built overlay sha256
+`73dff152e454…` (V6). Served from immutable snapshot copies `out/cd-roll-ca/snap/{C5,V6}` (hashes in `HASHES.txt`;
+earlier C, V, V3, C4, V4, V5), one-command server `out/cd-roll-ca/serve-snap.sh`.
 
 ## Why it lags
 
@@ -32,66 +33,109 @@ substeps, stiffness 280, damping 18, mass 0.3) for ~0.45-0.57 s after every targ
 `translateY` every frame. The 1 Hz tick therefore costs ~30 rAF callbacks plus a style recalc per frame for half of
 every second, forever, in the hero clock (and in the panel clock when it is active). Measured at y 0 (4 s windows):
 Chrome 108 countdown rAF callbacks, WebKit Simulator 105-108 (`out/cd-roll-ca/comp-check-base-p2.json`,
-`out/cd-roll-ca/sim-counts-*.json`).
+`out/cd-roll-ca/sim-counts-*.json`); on cd-strip strip-rb, 6 s: 162 (`comp-check-C4-p2.json`).
 
 ## What changed
 
-At each target change the hero digit computes the path the original would show at 60 Hz and plays it as ONE Web
-Animation on the strip (`strip.animate(keyframes, { duration, easing: 'linear', fill: 'backwards' })`,
-`startTime` = the change time). No per-frame script; the base inline transform is set to the target at once, so the
-animation needs no forwards fill.
+At each target change the hero digit computes the path the original would show at 60 Hz and plays it as Web
+Animations on the compositor: one animation per cell the roll moves, keyword easing `linear` between the path's
+points, all with the same keyframe offsets and the same `startTime` (the change time). No per-frame script.
 
-- **The path (`__crPath`).** The original's displayed value at time x after a change, on a 60 Hz display whose frame
-  lands exactly at x, is `GE(x mod T)` followed by whole 60 Hz frames (T = 16.667 ms). That function is exact at every
-  60 Hz frame of any phase and continuous; on [kT, kT+16] it is a quadratic in the phase, so it is sampled from 33
-  phase lanes (0-16 ms, 0.5 ms apart) with as many points per segment as keep linear interpolation within 5e-4 cell,
-  plus a point at every whole frame. 144 keyframes for a one-step roll, 343 for 0→9; durations 433-567 ms. All
-  values stay in [0, 9], so the strip mapping (`__cdStripY`) needs no wrap handling (the 9→0 wrap is a path from 9
-  down to 0, exactly as the original's spring goes). The brief's 240 Hz uniform grid was 0.23 px (one step) / 2.07 px
-  (0→9) off; this grid is ≤ 0.019 px (offline check against the original's chain, all 100 from/to pairs).
-- **Mid-roll change.** The new roll starts from the running path's value at the current animation clock
-  (`__crAt` at `document.timeline.currentTime`, the frame the original last showed), velocity 0, like the original.
-- **First frame.** When the change lands after a frame began but before its rAF callbacks, the original's first
-  callback steps nothing (`GE(o − n)` with o < n) and restarts its clock at that frame's stamp. One rAF per roll
-  (never per frame) moves the animation's `startTime` to that stamp. Without it, random-phase changes were off by up
-  to 4.5 px in the first frames.
-- **Hidden tab.** A module-level `visibilitychange` listener records when the page was hidden
-  (`document.timeline.currentTime` at the hide, else `performance.now()`); while no frames run, the "current value"
-  is the path at that time (what the original's frozen rAF shows). Round 3: a roll none of whose frames has run yet
-  (its start-frame rAF sets `ran`) is held at its start, hidden or not, since the original's spring only moves in a
-  frame; and one pending callback (`__crWatch`, re-armed on every visibilitychange, its id kept so hides never stack)
-  ends the hold at the first frame after a hide: a frame that runs while still hidden (WebKit runs one before the
-  visible event, OBSERVED, Simulator) becomes the new held time and the watch goes on, the first visible frame ends
-  the hold. The start-frame rAF of a roll is cancelled by
-  `__crStop` (review round 1, B1): cD's 1 s interval keeps ticking in a hidden tab, and without the cancel every hidden
-  tick left one more pending callback holding its path and Animation (the original keeps at most one per digit).
-- **Off-screen.** Unchanged gate from countdown-idle-raf: when the clock is off-screen or inactive the digit snaps
-  (`__crStop()` cancels any running roll first).
-- **Hero only.** The panel clock (`.countdown.inverse`) keeps the original rAF spring. Its strips are painted
-  unlayered (st6-rb2 `cdwc`), and a running compositor animation would layer them: other glyph rasterisation
-  (fix-cd-strip: 67 of 169 panel shots differ for layered strips) and whole-strip repaints while the morph scales the
-  panel (Simulator). The panel is active only at the morph, never at the top of the page.
-- **Fallback.** No strip yet, no `Element.animate`, or a path that does not end in [0, 9]: the original rAF spring.
-- **Edge cases (by reading the code, not probed).** A digit removed mid-roll (`$E` unmounts): its Animation goes with
-  the detached strip; the one pending start-frame callback fires once and only touches that roll's own object. A new
-  cell height after a roll finished: `__crPlay` re-creates the finished roll's animation at its old `startTime`, so
-  it is already finished and shows the inline target (one throwaway animation per resize, no visible change).
-- **Script cost per tick.** Building the path is the only new per-tick script: `__crPath` median 0.040 ms, p95
-  0.073 ms per call (0.035 ms for a one-step roll), offline in Node 24 on this Mac under load (OBSERVED, a CPU
-  micro-benchmark, not a page timing; scratch `pathcost.mjs`, all 90 from/to pairs × 20).
+**The strip (cd-strip strip-rw, not changed here).** `strip > span.cdwrap > 11 cells` (0-9 and a second 0 for the
+9→0 wrap). At rest: cell k at `top: k*c`, the uncomposited wrapper at `top: -M*c` with `M = __cdStripM(v)` = the
+whole cell nearest v, and the strip layer at `translateY(__cdStripY(v,c) + M*c)` (0 at an integer v). Each cell is its
+own layer (CSS); only cells near the clip are backed. c is the spacer's integer `offsetHeight`.
+
+**The roll (cells-only).** Layout can't move inside a compositor animation, so the roll moves cells, never the strip:
+- `__crCells(K)`: the cells within 1.5 cells of any point of the path (its whole range included). Cells farther away
+  keep their rest top and stay at least 1.5 cells outside the clip throughout.
+- At the start (`__crPlay`), each moved cell k gets `top: M*c` with M = `__cdStripM(target)`: with cd-strip's wrapper
+  at `-M*c` that is 0 from the strip layer, so the cell's own transform is its whole offset,
+  `translateY(k*c + __cdStripY(n,c))` = `(k − n)*c` along the path n. Only the offset that cell shows, never two large
+  offsets that cancel in the layer tree (the reason cd-strip moved to the wrapper). The strip layer stays at 0 (the
+  target is the integer the inline transform already shows), and a cell's last keyframe is its rest place.
+- The wrapper is cd-strip's: the roll never writes it (its effect sets `-M*c` from the target when the target
+  changes, in the same effect flush as the roll's start, before the next frame). `top M*c` plus the wrapper's `-M*c` cancel in layout exactly, since c
+  and M are integers.
+- At the end (the first animation's `onfinish` → `__crStop`), the animations are cancelled and the moved cells go
+  back to `top k*c` in the same task (no frame in between). `__crTops` writes only the tops that change.
+- `fill: both`: a frame before `startTime` shows the start, the end holds the rest place until the finish handler.
+
+**The path (`__crPath`, unchanged since round 1).** The original's displayed value at time x after a change, on a
+60 Hz display whose frame lands exactly at x, is `GE(x mod T)` followed by whole 60 Hz frames (T = 16.667 ms). On
+[kT, kT+16] that is a quadratic in the phase, so it is sampled from 33 phase lanes (0-16 ms, 0.5 ms apart) with as many
+points per segment as keep linear interpolation within 5e-4 cell (capped at 32 per frame), plus a point at every whole
+frame. 144 keyframes for a one-step roll, 343 for 0→9 (median 232 over the 90 from/to pairs); durations 433-567 ms.
+All values stay in [0, 9] (the 9→0 wrap is a path from 9 down to 0, as the original's spring goes).
+- Interpolation error vs the original's chain, offline, all 90 pairs every 0.25 ms, c = 36 px: max 0.0189 px (first
+  frame of 9→0, where the spring curves most and the 32-per-frame cap binds), mean 0.0054 px.
+- Tighter tolerance (lead, 2026-10-03 ~05:40Z: "if 1e-4 costs only a few more keyframes, do it"): 1e-4 gives 268 /
+  520 keyframes (one step / 0→9, +86 % / +52 %) and the same max 0.0189 px (mean 0.0018 px); 65 lanes (0.25 ms) at
+  1e-4: max 0.0166 px for up to 712 keyframes. Not cheap and the max barely moves: kept at 5e-4 (scratch `tol.mjs`).
+- Seen in the Simulator: 0.002-0.015 px between V and C at the same state over a whole wrap (section "WebKit frames"),
+  inside that bound.
+
+**Start value, first frame, gaps.**
+- Mid-roll change: the new roll starts from the running path's value at the current animation clock (`__crAt` at
+  `document.timeline.currentTime`, the frame the original last showed), velocity 0, like the original.
+- First frame: when the change lands after a frame began but before its rAF callbacks, the original's first callback
+  steps nothing (`GE(o − n)` with o < n) and restarts its clock at that frame's stamp. One rAF per roll (never per
+  frame) moves every animation's `startTime` to that stamp. It also sets the roll's `ran` flag (see Hidden tab).
+- Gap re-key (round 4, V5): when that first frame comes more than one 60 Hz frame after the change (a hidden tab, a long
+  task), the original makes one `GE` call over the whole gap, whose substeps come in another order than the path's.
+  The same callback then re-keys the roll from that frame: start state = what `GE` gives over the gap (value and
+  velocity), new path from there (`__crPath(value, target, velocity)`), new `t0` = the frame; if `GE` is already done,
+  the roll ends. Once per roll, only after such a gap.
+
+**Hidden tab (round 3, unchanged).** A module-level `visibilitychange` listener records the hide time
+(`document.timeline.currentTime`, else `performance.now()`); while no frames run, the current value is the path at
+that time. A roll none of whose frames has run (`ran` false) holds at its start. One pending callback (`__crWatch`,
+re-armed on every `visibilitychange`, never stacked) ends the hold at the first frame after a hide; a frame that runs
+while still hidden (WebKit, OBSERVED, Simulator) becomes the new held time. `__crStop` cancels the start-frame rAF, so
+at most one pending callback per digit, like the original.
+
+**Gates (unchanged).** Off-screen or reduced motion: snap (`__crStop()` first). Hero only: the panel clock
+(`.countdown.inverse`) keeps the original rAF spring (its strips are painted unlayered, a compositor animation would
+layer them). Fallback to the original spring: no strip yet, no `Element.animate`, or a path that does not end in
+[0, 9].
+
+**Edge cases (by reading the code, not probed).** A digit removed mid-roll: its animations go with the detached cells;
+the pending start-frame callback fires once and touches only that roll's object. A new cell height mid-roll:
+`__crPlay` re-creates the animations at the same `t0` and rewrites the moved cells' tops with the new c.
+
+**Script cost per tick.** `__crPath` median 0.040 ms, p95 0.073 ms per call (0.035 ms one step), offline in Node 24
+(OBSERVED, a CPU micro-benchmark, not a page timing; scratch `pathcost.mjs`). Per roll, in addition: up to 11 top
+writes at the start and at the end (only the moved cells, typically 3-4 for one step, 11 for 0→9), and one
+`animate()` per moved cell.
 
 What is visually identical and what is not: the roll follows the original's 60 Hz path (numbers below). On a
 120 Hz display the original takes another path (it is frame-rate dependent); the build keeps the 60 Hz one.
 
 ## Why that is faster
 
-The per-frame rAF callback and the per-frame inline style write disappear; the compositor runs the transform. Main
-thread per roll: one style recalc at the change and one rAF callback (the start fix); in Chrome the roll adds no
-main frames while it runs (table below).
+The per-frame rAF callback and the per-frame inline style write disappear; the compositor runs the transforms. Main
+thread per roll: the change's own recalc, one rAF callback (the start fix), and the top writes at the start and end
+(one layout each). In Chrome the roll adds few main frames while it runs (table below).
 
 ## Before / after (counts, no timing)
 
-Chrome 154, headless, 430x932 DPR 3 mobile, y 0, 4 s, every other animation frozen (`comp-check.mjs --pause-others 2`:
+**Round 4 (cells-only).** Chrome 154, headless, 430x932 DPR 3 mobile, y 0, **6 s**, every other animation frozen
+(`comp-check.mjs --pause-others 2`), `out/cd-roll-ca/comp-check-{C4,V5,V6}-p2.json` (hold10, hold11):
+
+| per 6 s at y 0 | C4 = cd-strip strip-rb (`56c07524…`) | V5 = cells-only on strip-rb (`a33a8f9f…`) | V6 = cells-only on strip-rw (`73dff152…`) |
+|---|---|---|---|
+| countdown rAF callbacks | 162 | 7 | 8 |
+| UpdateLayoutTree | 159 | 79 | 73 |
+| main frames (BeginMainThreadFrame) | 170 | 91 | 82 |
+| main frames per 400 ms, in a roll / outside | 24 / 3.4 | 8.7 / 4.3 | 7 / 4.6 |
+| Layout / Paint | 23 / 47 | 30 / 49 | 30 / 67 |
+| strip animations (trace: composited / failed / no decision) | - | 34 (0 / 0 / 34) | 40 (0 / 0 / 40) |
+
+PENDING (counted set on cd-strip's final hash): the same run on C = strip-rw, so V6's Layout/Paint compare with its
+own base (C4 is strip-rb; V6's +18 Paint vs V5 is not attributed yet: the strip-rw wrapper, the top writes, or
+noise). The roll's top writes add one layout at the start and one at the end of each roll (6 rolls here).
+
+**Rounds 1-3 (one animation per strip, history).** Chrome 154, headless, 430x932 DPR 3 mobile, y 0, 4 s, every other animation frozen (`comp-check.mjs --pause-others 2`:
 CSS `animation-play-state: paused` on everything but the strips, and other `Element.animate()` calls start paused),
 `out/cd-roll-ca/comp-check-{base,build}-p2.json`:
 
@@ -129,6 +173,53 @@ callbacks and their script go. Running strip animations ≈ half the samples, at
 rolling digit. That WebKit runs them as Core Animation animations rests on the brief's CONFIRMED
 `KeyframeEffect::canBeAccelerated` reading (keyword `linear`, transform only); the halved rendering updates agree.
 
+## WebKit frames, layers and Timeline (round 4, Simulator; OBSERVED, Simulator, in our setup)
+
+`simpx.mjs` (this folder), fw-sim 15 Pro Max, iOS 18.7 Mobile Safari, shared lane, `sim.mjs session --functional`,
+arms served from the snapshot copies (bodies hashed by the script). The page is frozen by a shim that makes the
+countdown's `Date.now`, `performance.now`, `document.timeline.currentTime` and rAF virtual, so both arms are stepped
+to the same virtual 60 Hz frames of the same roll. Per frame: C is drawn by its rAF spring at that frame; V is shown
+**paused** at the same virtual time, then **running** at playback rate 1e-6 from it (the compositor drives it; n read
+before and after the shot). Compared: the digits' state (n), every visible cell's rect relative to its digit, and the
+pixels in the clock box; A/A on C gives the noise floor. Layer census (`LayerTree`, with compositing reasons),
+Timeline counts per 1 s.
+
+Debug runs on the strip-rw **dev** build (C5 `5e37af69…` vs V6 `73dff152…`, fade50 = the hero at its 50 % fade, the
+9→0 wrap of the seconds' ones with the tens carrying; 46 shots per arm):
+
+| | run 1 (`simpx-2026-10-03T05-38-01-209Z.json`) | run 2 (`…05-50-33-557Z.json`) |
+|---|---|---|
+| A/A C5 vs C5 | state 0, rects 0, max pixel delta 1 (18 of 46 shots) | (skipped) |
+| V6 vs C5, state | ≤ 0.015 px | 0.002-0.015 px on rolling frames, 0 at rest |
+| V6 vs C5, cell rects (all visible cells) | max 0.010 px | max 0.0151 px; 0 shots ≥ 1/64 px; 0 unmatched cells |
+| V6 vs C5, pixels | frame 1: 236 px, max delta 4 | frame 1: 236 px (97 > 1), max 4, bbox css x 315.7-343.7, y 21.3-42.3 from the timer: the two rolling seconds digits; rolling frames max 2-5; rest frames max 1 |
+| shared startTime per digit (VCHECK) | 4 / 4 | 39 / 39 rolls |
+| layers, rest / mid paused / mid running | 84, 0.329 MB, 77 cell layers, 14 backed (same in C5) | same |
+| compositing reasons of the rolling cells | | `animation,stacking,willChange` in V6 paused and running; never `animation` in C5 |
+| Timeline per 1 s mid-roll, V6 paused / running 1e-6 | | RenderingFrame 49 / 50, RecalculateStyles 54 / 55, Layout 52 / 31, Paint 55 / 34, FireAnimationFrame 0 / 0 |
+
+- Blank or late cells (the F-142 check): none. Every cell inside the clip has a matching rect in V (0 unmatched) in
+  every paused and running shot, including the frames where cells cross the clip edge mid-roll, and the backed-layer
+  count does not change mid-roll.
+- LayoutUnit (lead: "on a high M (a 9…) the visible cell's position equals cd-strip's rest position to the
+  LayoutUnit"): the wrap passes M = 9 → 0; max rect offset 0.0151 px < 1/64 px over all 46 shots. c is an integer
+  here, so `top M*c` and the wrapper's `-M*c` cancel exactly.
+- The pixel differences are the path's interpolation offset (≤ 0.019 px offline, 0.002-0.015 px measured) on
+  antialiased glyph edges at fade50: a 0.015 px shift moving an edge pixel by 4-5 levels fits that contrast. It is
+  V-only by construction (both arms share cd-strip's strip). cd-strip's own delta-1 glyph-edge class (seconds' ones,
+  mid-roll at fade50) cancels in this V-vs-C comparison; PENDING: the counted set reports it per arm.
+- On the compositor at rate 1e-6 (OBSERVED, Simulator): running adds no recalc and no script per frame vs paused (54
+  vs 55 recalcs per 1 s; 0 rAF), layers unchanged, reason `animation` present. The page recalcs in every frame in both
+  arms (C5 frozen: 60 frames, 63 recalcs per 1 s), from other content, so "frames with a recalc" does not separate
+  the arms; paused vs running does.
+- Rate cross-check (does the compositor at a real rate draw what the main thread draws at some time inside the
+  bracket of the shot): rate 1e-3: best paused match max delta 2 (A/A 1) at 0.39 of the bracket. Rate 1: not matched
+  in run 2 (the shot took 304 ms, n moved 5.3 → 9.0; the search's finest step, 9.6 ms ≈ 4 px, missed the basin);
+  PENDING run 3 with a search down to 0.05 ms. The one-frame CA lead stays UNRESOLVED.
+
+PENDING (counted set on cd-strip's final hash): wrap, wrapUp, carry, two, step at fade50 plus a hero pass, with A/A;
+sim-counts frozen, 2 reps; sim-hide C/V 3 cycles; Paint records per roll.
+
 ## Position identity (the user's rule: within the original's own frame-to-frame variation)
 
 `roll-probe.mjs` records in Chrome, per rAF, the translateY Chrome computes for every strip (for a Web Animation this
@@ -139,6 +230,7 @@ plus a synthetic `visibilitychange`, so the countdown ticks at a random phase, o
 
 | run | frames | B vs A: normal ticks max / p95 | forced (random phase) max / p95 | start value diff max | original's own stamp jitter (A on real stamps vs ideal 60 Hz) max / p95 |
 |---|---|---|---|---|---|
+| **round 4, V6 `73dff152…`** (cells-only on strip-rw dev), headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60-V6.json`, hold11; base fit on C5 `probe-base-h60-C5.json`: 22 rolls, 0 px) | 2405 | 0.254 / 0.017 px (vs ideal-60 Hz original 0.065) | 0.241 / 0.020 px (vs ideal-60 Hz original 0.211) | 0.017 px | ticks 0.27 px, forced 0.27 px |
 | **round 3 build `2af461dc…`**, headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60e.json`, served hash in `hold7.log`) | 2405 | 0.236 / 0.021 px (vs ideal-60 Hz original 0.082 / 0.014) | 0.104 / 0.016 px (vs ideal-60 Hz original 0.222 / 0.033) | 0.016 px | ticks 0.32 / 0.029 px, forced 0.23 / 0.035 px |
 | **round 2 build `673b110d…`**, headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60d.json`, served hash logged) | 2405 | 0.643 / 0.025 px (vs ideal-60 Hz original 0.152 / 0.014) | 0.295 / 0.020 px (vs ideal-60 Hz original 0.843 / 0.036) | 0.006 px | ticks 0.80 / 0.029 px, forced 0.55 / 0.043 px |
 | **round 2 build**, headed, display 120 Hz, 30 s, 12 jumps (`probe-build-headed2.json`) | 3604 | 29.6 / 3.2 px | 21.5 / 4.0 px | 0.20 px | n/a |
@@ -196,6 +288,7 @@ C JS `358cd8ae16b9…`, V JS `673b110d118c…`, CSS `ce6beca745a0…` both, `x-m
 | V0, round 1 (`9ac52b08…`) | 3 (= hidden ticks) | 4 | 0.40 px | 3.29 px | 0 |
 | V, round 2 (`673b110d…`) | 2 | 2 | 0.000 px | 0.27 px | 0 |
 | **V3, round 3 (`2af461dc…`)**, `hide-V3.json` (servedHash in the file; `hold7.log`) | 3 | 3 | 0.000 px | 0.21 px | 0 |
+| **V6, round 4 (`73dff152…`, cells-only on strip-rw dev)**, `hide-V6.json` (hold11), 13 hidden rolls | 3 | 3 | 0.000 px | 0.008 px | 0 |
 
 - V0 kept one more pending callback per hidden tick (3 ticks in 3 s here), each holding its path and Animation, so a
   tab left hidden for hours would pile them up at whatever rate Chrome lets the 1 s interval run in the background
@@ -327,7 +420,20 @@ fast path: "countdown rAF callbacks 108 → 4 per 4 s (one per roll), by code ($
 ```
 
 ```
-BUILD cd-roll-ca-3 (round 3; round 2 cd-roll-ca-2 673b110d…, round 1 cd-roll-ca-1 9ac52b08…) on cd-strip(b) on st6-rb2 · overlay fixes/cd-roll-ca/overlay
+BUILD cd-roll-ca-4 (round 4, cells-only) on cd-strip strip-rw (DEV build JS 5e37af69bcc4…, CSS 9b2f89ea58bd…) · overlay fixes/cd-roll-ca/overlay
+served hashes: nodes/2.DyWL8TcE.js 73dff152e454… (V6), CSS 9b2f89ea58bd… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C5,V6}
+checks (dev base): Chrome comp-check V6 (rAF 8 / 6 s, 40 animations), roll-probe h60 V6 + base fit C5 (0 px), hide-check
+V6 (0 errors, 0 px start, 0.008 px first frame), fix.mjs check --on cd-strip mobile: morph both, 0 errors, 0 4xx,
+1558 elements both, pixel diff top 0.19 / middle 0 / bottom 0 %; Simulator simpx debug runs 1-2 (wrap at fade50:
+rects ≤ 0.0151 px, 0 unmatched, layers equal, reason animation, no added recalc running)
+PENDING on cd-strip's final hash: counted simpx set + A/A, sim-counts, sim-hide C/V 3 cycles, Chrome comp-check C/V,
+h60, hide-check, fix.mjs check
+memory/layers (Simulator, fade50): 84 layers, 0.329 MB, 77 cell layers, 14 backed, at rest and mid-roll, same as C
+debug hooks: none
+```
+
+```
+BUILD cd-roll-ca-3 (round 3, history; round 2 cd-roll-ca-2 673b110d…, round 1 cd-roll-ca-1 9ac52b08…) on cd-strip(b) on st6-rb2 · overlay fixes/cd-roll-ca/overlay
 served hashes: nodes/2.DyWL8TcE.js 2af461dc50ad… (round 3; sha256 of the served body logged by serve-snap, hide-check
 and sim-hide), CSS ce6beca745a0… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C,V,V3}
 round 3 checks: Chrome hide-check V3 (0 errors), roll-probe h60e, Simulator sim-hide C/V3 (0 errors);
@@ -358,12 +464,12 @@ switch; not on the phone).
   `__crPath` works in digit values and maps to px only through `__cdStripY(v, c)` with the measured cell `c`, so a
   new pitch or offset inside `__cdStripY` carries over; a different mapping (non-linear, or not via `__cdStripY`)
   or other strip markup needs this patch re-applied, the snapshot V rebuilt and the probes re-run.
-- cd-strip will probably land with one compositing layer per cell (`.cell{will-change:transform}`, only cells near
-  the clip backed; JS and `__cdStripY` unchanged, fix-cd-strip and the lead, 2026-10-03). Risk for this fix: the
-  strip moves by a Core Animation animation, so a cell entering the clip mid-roll could show blank or late. Rebuild
-  checks (on cd-strip's landed patch, before review sign-off): Simulator frozen frames at 10/30/50/70/90 % of a roll,
-  incl. a 9→0 wrap and a multi-digit carry (no blank or partial cell vs C); Timeline Paint records per roll, V vs C;
-  plus the Chrome hide-check, sim-hide (3 cycles per arm) and an h60 probe again.
+- cd-strip lands with one compositing layer per cell and the uncomposited wrapper (strip-rw). The roll moves cells,
+  not the strip, so a cell entering the clip mid-roll could show blank or late (F-142): not seen on the dev build in
+  the Simulator (0 unmatched cells in all paused and running shots of a wrap; layers and backing unchanged mid-roll).
+  The counted set re-checks it on the final hash.
+- Couples to cd-strip's `__cdStripM`, the wrapper's `-M*c` and the cell-top effect (routed through `__crTops`): a change
+  to the strip's geometry there needs this patch re-applied and the probes re-run.
 - `__crWatch` re-arms on every frame that runs while `document.hidden` is true. An engine that kept running frames for
   a hidden page would turn it into a per-frame rAF for as long as the page stays hidden (cheap, nothing drawn). Neither
   engine did here: Chrome ran 0 frames while hidden, WebKit (Simulator) 1 frame just before the visible event
@@ -372,5 +478,6 @@ switch; not on the phone).
   its hidden event) stays; the real phone's event order is UNRESOLVED (not checked on the device).
 - The one-shot rAF per roll is a main-thread callback (cheap, no style write); WebKit "0 countdown rAF at rest"
   holds, "at roll start" it is 1.
-- Tools: `roll-probe.mjs`, `comp-check.mjs`, `sim-counts.mjs`, `hide-check.mjs` are topic-local probes in this folder (not in
-  `tools/`); no measurement code was changed.
+- Tools: `roll-probe.mjs`, `comp-check.mjs`, `sim-counts.mjs`, `hide-check.mjs`, `sim-hide.mjs`, `simpx.mjs` and
+  `strip-read.mjs` (strip geometry for strip-rb and strip-rw) are topic-local probes in this folder (not in `tools/`);
+  no measurement code was changed.

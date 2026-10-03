@@ -62,7 +62,7 @@ try {
     includedCategories: ['devtools.timeline', 'blink.animations', 'disabled-by-default-devtools.timeline.frame', '__metadata'] }, transferMode: 'ReportEvents' });
   const t0 = await page.eval('performance.now()');
   await sleep(seconds * 1000);
-  const strips = await page.eval(`[...document.querySelectorAll('[role=timer]')].map((t) => ({ inverse: t.classList.contains('inverse'), anims: [...t.querySelectorAll('.strip')].reduce((n, s) => n + s.getAnimations().length, 0) }))`);
+  const strips = await page.eval(`[...document.querySelectorAll('[role=timer]')].map((t) => ({ inverse: t.classList.contains('inverse'), anims: [...t.querySelectorAll('.strip')].reduce((n, s) => n + s.getAnimations({ subtree: true }).length, 0) }))`);
   const running = await page.eval(`document.getAnimations().filter((a) => a.playState === 'running').map((a) => { const t = a.effect && a.effect.target;
     return { type: a.constructor.name, name: a.animationName || a.transitionProperty || a.id || '', target: t ? t.tagName.toLowerCase() + '.' + String(t.className?.baseVal ?? t.className).split(' ').slice(0, 2).join('.') : null }; })`);
   await page.send('Tracing.end');
@@ -85,10 +85,11 @@ try {
     if (d.unsupportedProperties) r.unsupported.push(...d.unsupportedProperties);
     if (e.ph === 'e') open.delete(id);
   }
-  const stripInst = inst.filter((r) => /strip/.test(r.node || ''));
+  // the build on strip-rb animates the cells of a strip (several per roll, one start time): match both
+  const stripInst = inst.filter((r) => /\b(strip|cell)\b/.test(r.node || ''));
   // main frames per 400 ms inside roll windows (first 400 ms after a strip animation begins) vs outside them
   const bmf = events.filter((e) => e.name === 'BeginMainThreadFrame').map((e) => e.ts).sort((a, b) => a - b);
-  const rollTs = stripInst.map((r) => r.ts);
+  const rollTs = stripInst.map((r) => r.ts).sort((a, b) => a - b).filter((t, i, a) => i === 0 || t - a[i - 1] > 20e3); // one start per roll
   // base arm has no strip animations: use countdown rAF starts (first FireAnimationFrame running countdown code after a gap)
   const cdFafTs = fafs.filter((f) => cdCalls.some((c) => c.tid === f.tid && c.ts >= f.ts && c.ts <= f.ts + (f.dur || 0))).map((f) => f.ts).sort((a, b) => a - b);
   const rollStarts = rollTs.length ? rollTs : cdFafTs.filter((t, i) => i === 0 || t - cdFafTs[i - 1] > 200e3);
@@ -107,7 +108,7 @@ try {
       noDecision: stripInst.filter((r) => !r.cf.length).length },
     frameSplit, otherAnimationInstances: inst.length - stripInst.length, clocksAtEnd: strips, runningAtEnd: running, traceEvents: events.length, t0,
     timerFire: cnt('TimerFire'), styleElements: events.filter((e) => e.name === 'UpdateLayoutTree').reduce((n, e) => n + (e.args?.elementCount || e.args?.data?.elementCount || 0), 0),
-    otherAnimNodes: Object.entries(inst.filter((r) => !/strip/.test(r.node || '')).reduce((m, r) => ((m[r.node || '?'] = (m[r.node || '?'] || 0) + 1), m), {})),
+    otherAnimNodes: Object.entries(inst.filter((r) => !/\b(strip|cell)\b/.test(r.node || '')).reduce((m, r) => ((m[r.node || '?'] = (m[r.node || '?'] || 0) + 1), m), {})),
   };
 } finally {
   await page.close(); cdp.close(); await chrome.close();

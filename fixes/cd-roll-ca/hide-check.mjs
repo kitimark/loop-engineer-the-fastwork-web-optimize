@@ -13,6 +13,7 @@
 //
 //   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner fix-cd-roll-ca -- \
 //     node fixes/cd-roll-ca/hide-check.mjs --state out/serve-x.json --arm V --out out/cd-roll-ca/hide-V.json
+import { READ } from './strip-read.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,17 +40,20 @@ const INJECT = `(() => {
   window.cancelAnimationFrame = function (id) { P.delete(id); return cq(id); };
   const L = window.__hc = { frames: [], vis: [], samples: [], anims: [], rec: false };
   const hero = () => [...document.querySelectorAll('[role=timer]:not(.inverse) .digit > .strip')];
-  const tyOf = (s) => { const m = getComputedStyle(s).transform; if (!m || m === 'none') return 0; const v = m.match(/matrix(3d)?\\(([^)]+)\\)/); if (!v) return NaN; const p = v[2].split(',').map(Number); return v[1] ? p[13] : p[5]; };
-  const pxOf = (t) => { const m = /translateY\\((-?[\\d.e+-]+)px\\)/.exec(t || ''); return m ? Number(m[1]) : NaN; };
-  const cell = (s) => parseFloat(s.children[1]?.style.top) || 0;
+${READ}
   const ani = Element.prototype.animate;
+  // strip-rb build: one Animation per moved cell, created in one task; one record per strip and task, its values as
+  // the strip-equivalent offset (cell j's keyframe minus j*c); cells = how many cells that roll animates
+  const recBy = new Map();
   Element.prototype.animate = function (k, o) {
-    const a = ani.call(this, k, o);
-    if (L.rec && this.matches?.('[role=timer]:not(.inverse) .digit > .strip')) {
-      const i = hero().indexOf(this);
-      const rec = { i, now: performance.now(), hidden: document.hidden, from: pxOf(k[0]?.transform), to: pxOf(k[k.length - 1]?.transform), c: cell(this), n: k.length, dur: o?.duration };
-      L.anims.push(rec);
-      queueMicrotask(() => { rec.startTime = a.startTime; });
+    const a = ani.call(this, k, o), s = stripOf(this);
+    if (L.rec && this.matches?.('[role=timer]:not(.inverse) .digit > .strip .cell')) {
+      const r0 = recBy.get(s);
+      if (r0) { r0.cells++; return a; }
+      const c = cell(s), j = cellsOf(s).indexOf(this);
+      const rec = { i: hero().indexOf(s), now: performance.now(), hidden: document.hidden, from: pxOf(k[0]?.transform) - j * c, to: pxOf(k[k.length - 1]?.transform) - j * c, c, n: k.length, dur: o?.duration, cells: 1 };
+      L.anims.push(rec); recBy.set(s, rec);
+      queueMicrotask(() => { rec.startTime = a.startTime; recBy.delete(s); });
     }
     return a;
   };
@@ -153,7 +157,13 @@ const per = cyc.map((c, k) => {
       const c = last.c, held = -preF.ty[i] / c, to = -last.to / c, t0 = last.startTime ?? last.now;
       const o = GE({ value: held, velocity: 0 }, to, postF.t - t0);
       const exp = -(((o.state.value % 10) + 10) % 10) * c;
-      first.push({ i, rollAt: last.hidden ? 'hidden tick' : 'show tick', dtMs: r3(postF.t - t0), build: r3(postF.ty[i]), originalModel: r3(exp), errPx: r3(Math.abs(postF.ty[i] - exp)) });
+      // V5+: a first frame more than one 60 Hz frame after the change re-keys the roll in the build's own rAF callback
+      // of that frame (new animations, startTime = the frame's stamp, first keyframe = GE's state there). The logger's
+      // callback runs before it in that frame (registered before the hide), so it reads the old animations; the frame
+      // is drawn after every callback, from the re-keyed animations at their offset 0, i.e. their first keyframe
+      const rk = log.anims.find((x) => x.i === i && x.startTime != null && Math.abs(x.startTime - postF.t) < 0.01 && x.now > last.now);
+      const shown = rk ? rk.from : postF.ty[i];
+      first.push({ i, rollAt: last.hidden ? 'hidden tick' : 'show tick', dtMs: r3(postF.t - t0), build: r3(shown), ...(rk ? { rekeyed: true, loggerRead: r3(postF.ty[i]) } : {}), originalModel: r3(exp), errPx: r3(Math.abs(shown - exp)) });
     }
   }
   return {

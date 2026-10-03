@@ -14,6 +14,7 @@
 //
 // Run inside a shared-lane hold (functional, times nothing):
 //   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner cd-roll-ca -- sh -c '...'
+import { READ } from './strip-read.mjs';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,21 +42,25 @@ const INJECT = `(() => {
   const realNow = Date.now.bind(Date); window.__crOff = 0; Date.now = () => realNow() + window.__crOff;
   const L = window.__crLog = { frames: [], rolls: [], strips: 0, rec: false };
   const seen = new WeakMap();
-  const tyOf = (s) => { const m = getComputedStyle(s).transform; if (!m || m === 'none') return 0; const v = m.match(/matrix(3d)?\\(([^)]+)\\)/); if (!v) return NaN; const p = v[2].split(',').map(Number); return v[1] ? p[13] : p[5]; };
-  const pxOf = (t) => { const m = /translateY\\((-?[\\d.e+-]+)px\\)/.exec(t || ''); return m ? Number(m[1]) : NaN; };
+${READ}
   const step = (t) => {
     if (L.rec) {
       const cb = performance.now(), ss = [...document.querySelectorAll('.digit > .strip')];
       const row = { t, cb, tl: document.timeline.currentTime, d: [] };
       ss.forEach((s, i) => {
         const clock = s.closest('[role=timer]'); const ci = [...document.querySelectorAll('[role=timer]')].indexOf(clock);
-        const c = parseFloat(s.children[1]?.style.top) || 0; const inline = pxOf(s.style.transform);
+        const c = cell(s); const inline = inlOf(s);
         row.d.push([i, ci, c, tyOf(s), inline]);
-        for (const a of s.getAnimations()) {
+        // strip-rb build: a roll is one Animation per moved cell (same keyframe offsets, same startTime); record it
+        // once, its values as the strip-equivalent offset (cell k's keyframe minus k*c)
+        let rec = null;
+        cellsOf(s).forEach((el, j) => { for (const a of el.getAnimations()) {
           if (seen.has(a)) continue; seen.set(a, 1);
+          if (rec && rec.t0 === a.startTime) { rec.cells++; continue; }
           const k = a.effect.getKeyframes();
-          L.rolls.push({ i, ci, c, t0: a.startTime, from: pxOf(k[0].transform), to: pxOf(k[k.length - 1].transform), n: k.length, dur: a.effect.getTiming().duration, seenAt: t, seenCb: cb });
-        }
+          rec = { i, ci, c, t0: a.startTime, from: pxOf(k[0].transform) - j * c, to: pxOf(k[k.length - 1].transform) - j * c, n: k.length, dur: a.effect.getTiming().duration, seenAt: t, seenCb: cb, cells: 1 };
+          L.rolls.push(rec);
+        } });
       });
       L.frames.push(row);
     }

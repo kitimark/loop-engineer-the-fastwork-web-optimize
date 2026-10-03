@@ -10,6 +10,7 @@
 // Run as the command of a FUNCTIONAL Simulator session, in the shared lane:
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-cd-roll-ca -- \
 //     node tools/sim.mjs session --functional --owner fix-cd-roll-ca -- node fixes/cd-roll-ca/sim-hide.mjs [C,V] [cycles] [hideMs]
+import { READ } from './strip-read.mjs';
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -43,26 +44,38 @@ const INJECT = `(() => {
   addEventListener('error', (e) => L.errors.push(String(e.message || e)));
   addEventListener('unhandledrejection', (e) => L.errors.push('rejection: ' + String(e.reason)));
   const hero = () => [...document.querySelectorAll('[role=timer]:not(.inverse) .digit > .strip')];
-  const tyOf = (s) => { const m = getComputedStyle(s).transform; if (!m || m === 'none') return 0; const v = m.match(/matrix(3d)?\\(([^)]+)\\)/); if (!v) return NaN; const p = v[2].split(',').map(Number); return v[1] ? p[13] : p[5]; };
-  const pxOf = (t) => { const m = /translateY\\((-?[\\d.e+-]+)px\\)/.exec(t || ''); return m ? Number(m[1]) : NaN; };
-  const cell = (s) => parseFloat(s.children[1]?.style.top) || 0;
+${READ}
   const ani = Element.prototype.animate;
+  // strip-rb build: one Animation per moved cell, created in one task; one record per strip and task, its values as
+  // the strip-equivalent offset (cell j's keyframe minus j*c); cells = how many cells that roll animates
+  const recBy = new Map();
   Element.prototype.animate = function (k, o) {
-    const a = ani.call(this, k, o);
-    if (L.rec && this.matches?.('[role=timer]:not(.inverse) .digit > .strip')) {
-      const rec = { i: hero().indexOf(this), now: performance.now(), hidden: document.hidden, from: pxOf(k[0]?.transform), to: pxOf(k[k.length - 1]?.transform), c: cell(this), n: k.length, dur: o?.duration };
-      L.anims.push(rec);
-      queueMicrotask(() => { rec.startTime = a.startTime; });
+    const a = ani.call(this, k, o), s = stripOf(this);
+    if (L.rec && this.matches?.('[role=timer]:not(.inverse) .digit > .strip .cell')) {
+      const r0 = recBy.get(s);
+      if (r0) { r0.cells++; return a; }
+      const c = cell(s), j = cellsOf(s).indexOf(this);
+      const rec = { i: hero().indexOf(s), now: performance.now(), hidden: document.hidden, from: pxOf(k[0]?.transform) - j * c, to: pxOf(k[k.length - 1]?.transform) - j * c, c, n: k.length, dur: o?.duration, cells: 1 };
+      L.anims.push(rec); recBy.set(s, rec); L.addInl(rec.i, s, rec.to);
+      queueMicrotask(() => { rec.startTime = a.startTime; recBy.delete(s); });
     }
     return a;
   };
-  // round 3: every change of a hero strip's inline transform = a target change (the build writes the target there;
-  // snaps included); used by the full-chain model of the original (chain() below). In C it also changes per frame.
+  // every target change, for the full-chain model of the original (chain() below): a roll start (the animate hook adds
+  // it, px = the roll's target) or, on strip-rb, a style write to a strip or its cells while no cell animates (a snap:
+  // the code wrote the new value as tops + strip transform). Repeats of the last value per digit are dropped (a roll's
+  // end hands the cells back to the same target). In C the spring also writes per frame.
   L.inl = [];
+  const lastPx = new Map();
+  L.addInl = (i, s, px) => { const lp = lastPx.get(i); if (lp !== undefined && Math.abs(lp - px) < 0.5) return; lastPx.set(i, px); L.inl.push({ i, now: performance.now(), hidden: document.hidden, px, c: cell(s) }); };
   new MutationObserver((ms) => {
     if (!L.rec) return;
-    const now = performance.now(), hs = hero();
-    for (const m of ms) { const i = hs.indexOf(m.target); if (i >= 0) L.inl.push({ i, now, hidden: document.hidden, px: pxOf(m.target.style.transform), c: cell(m.target) }); }
+    const hs = hero(), done = new Set();
+    for (const m of ms) {
+      const s = stripOf(m.target); const i = hs.indexOf(s);
+      if (i < 0 || done.has(i)) continue; done.add(i);
+      if (!rollingOf(s)) L.addInl(i, s, inlOf(s));
+    }
   }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['style'] });
   document.addEventListener('visibilitychange', () => {
     if (!L.rec) return;
@@ -105,7 +118,13 @@ function analyze(log) {
       const c = last.c, held = -preF.ty[i] / c, to = -last.to / c, t0 = last.startTime ?? last.now;
       const o = GE({ value: held, velocity: 0 }, to, postF.t - t0);
       const exp = -(((o.state.value % 10) + 10) % 10) * c;
-      first.push({ i, rollAt: last.hidden ? 'hidden tick' : 'show tick', dtMs: r3(postF.t - t0), build: r3(postF.ty[i]), originalModel: r3(exp), errPx: r3(Math.abs(postF.ty[i] - exp)) });
+      // V5+: a first frame more than one 60 Hz frame after the change re-keys the roll in the build's own rAF callback
+      // of that frame (new animations, startTime = the frame's stamp, first keyframe = GE's state there). The logger's
+      // callback runs before it in that frame (registered before the hide), so it reads the old animations; the frame
+      // is drawn after every callback, from the re-keyed animations at their offset 0, i.e. their first keyframe
+      const rk = log.anims.find((x) => x.i === i && x.startTime != null && Math.abs(x.startTime - postF.t) < 0.01 && x.now > last.now);
+      const shown = rk ? rk.from : postF.ty[i];
+      first.push({ i, rollAt: last.hidden ? 'hidden tick' : 'show tick', dtMs: r3(postF.t - t0), build: r3(shown), ...(rk ? { rekeyed: true, loggerRead: r3(postF.ty[i]) } : {}), originalModel: r3(exp), errPx: r3(Math.abs(shown - exp)) });
     }
     return {
       k, hiddenVs: h.vs, hiddenMs: r3(s.now - h.now), framesWhileHidden: F.filter((f) => f.cb > h.now && f.cb < s.now).length,
@@ -186,7 +205,7 @@ if (ANALYZE) {
   const d = JSON.parse(readFileSync(ANALYZE, 'utf8'));
   for (const [arm, r] of Object.entries(d.arms)) {
     r.per = analyze(r.log);
-    r.chain = arm === 'C' ? null : chain(r.log);
+    r.chain = /^C/.test(arm) ? null : chain(r.log);
     if (r.summary) { delete r.summary.maxStartErrPx; delete r.summary.maxFirstFrameErrPx; Object.assign(r.summary, legacy(r.per)); }
     console.log(arm, 'chain', JSON.stringify(r.chain && { startValue: { ...r.chain.startValue, notVisible: undefined }, maxErrPx: r.chain.maxErrPx }));
   }
@@ -239,7 +258,7 @@ for (const arm of ARMS) {
       errors: log.errors.length,
       ...legacy(per),
     };
-    const fullChain = arm === 'C' ? null : chain(log);
+    const fullChain = /^C/.test(arm) ? null : chain(log);
     res.arms[arm] = { url, servedHash, inject: inj, ua, steps, summary, per, chain: fullChain, log };
     console.log(arm, JSON.stringify(servedHash['/_app/immutable/nodes/2.DyWL8TcE.js']?.slice(0, 12)), JSON.stringify(summary));
     if (fullChain) console.log(arm, 'chain', JSON.stringify(fullChain));
