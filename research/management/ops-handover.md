@@ -9,6 +9,11 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **09:4xZ main b85af11** (my batch, rebased by the lead onto arch-isolated-measure's branch at 30d4c7f).
+  - **I-083 opened, and ts-costcard spawned** (toolsmith, named, worktree). It builds `tools/costcard.mjs` from README
+    §6; the first consumer is fix-nav-morph's F3 records. Added to the peer directory.
+  - The user has the plain-words pilot, cost card and Mac Safari answers (T-029 #27). Both open lead promises are
+    delivered; the cost card itself now tracks under I-083.
 - **09:3xZ open lead promises (handover item 5): both now have a deliverable on arch-isolated-measure's branch.**
   - (a) The rendering cost card design is README §6 (f6614fa; §6.2 updated at 30a710b). Building it is a toolsmith
     job in `tools/` (§6.4: event-aligned window from judge-tick, Paint-clip area, Chrome layer memory, Animation
@@ -2251,11 +2256,11 @@ between tool calls.
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
 
-| address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9) |
+| address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
-| `mgmt-ops-10` (named; spawned by the lead after 10-03 08:2xZ) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive once spawned; message "mgmt-ops-10". mgmt-ops-9 (acfd7a13b6014f754) ends after mgmt-ops-10 acks the handover; mgmt-ops-8 and earlier are RETIRED |
-| `fix-nav-morph` (name) | f3-arm-scope (F3, D build; P-071 done, P-073 signed and running), panel-clock attribution pair (F-165), cdwc (parked) | alive (10-03 08:2xZ): waits on iphone-runner's P-073 block |
+| `mgmt-ops-10` (named; spawned by the lead after 10-03 08:2xZ) | ops hub: handover, land batches, PREDICTIONS P-ids, PROGRESS.json, ticket second reads | alive (from 10-03 08:2xZ). mgmt-ops-9 (acfd7a13b6014f754) ENDED after the ack; mgmt-ops-8 and earlier are RETIRED. Next: mgmt-ops-11 at ~60 % context |
+| `fix-nav-morph` (name) | f3-arm-scope (F3, D build; P-071 done, P-073 signed and running), panel-clock attribution pair (F-165), cdwc (parked) | alive (10-03 09:4xZ): P-073 done (row 5, inconclusive, da0ef39); F3 waits on the cost card with a cold-first-pin row (lead), no phone block until it reports |
 | `de-gpu` (ae7885a4cf83f8d7b) | T-030 GPU/compositor-only CSS (research/gpu-props/, 41563ad, F-145) | done 10-03 00:1xZ |
 | `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); PR-008 on hold, rev 2 after G12-G14 | alive (10-03 08:2xZ) |
 | `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation (T-030 F2); review NEEDS-FIX fixes, then P-074 ticket | alive (10-03 08:2xZ) |
@@ -2263,14 +2268,15 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-platform-idle` (name; new 10-03 07:2xZ) | heat goal (T-029, P-068: Fastwork warms the phone ~5x apple.com): glint-ca + sweep-exact, unparked | alive |
 | `map-rest-script` (name; new 10-03 07:2xZ) | heat goal: read-only map of the middle-section script work at rest | alive |
 | `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | done: cd966b7 landed |
-| `arch-isolated-measure` (name; ID a41fb01cae3b26082) | T-029 isolated measurement and heat plan (1ed2419); countdown isolation pilot P-075 | alive |
+| `arch-isolated-measure` (name; ID a41fb01cae3b26082) | T-029 isolated measurement and heat plan (1ed2419); P-075 pilot and P-076 per-tick check done (landed 30d4c7f); cost card design README §6, Mac WebKit desk research §7 | alive (10-03 09:4xZ) |
+| `ts-costcard` (name; new 10-03 09:4xZ, toolsmith, worktree) | I-083: builds `tools/costcard.mjs` from isolated-measurement README §6 (event-aligned window, Paint-clip area, Chrome layer memory, Animation failure reasons, md writer, tests); first consumer: fix-nav-morph's F3 records | alive |
 | `ts-i082` (name) | I-082: Sim sessions in the Simulator's background CPU storm (fix 7e28dce on main, resolve pending) | alive |
 | `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | done: dropped at D (9df12de, 10-03 01:3xZ) |
 | `ts-i078` (name) | I-078: `sim session` refuses while fw-sim is "Shutting Down" (workaround: wait, retry) | done: I-078 resolved 84a0982 |
 | `arch-memory` (name) | T-032: agent memory into the project (proposal cfe3693, waits on the user's two OKs) | alive (10-03 00:2xZ) |
 | `fix-nav-morph` ID | a277ea00c8773c1ea; also takes the morph panel dvh height after P-036 | – |
 | ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | done: I-077 resolved 793c8bc (10-03 00:5xZ) |
-| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger | alive (10-03 08:2xZ): runs P-073 (counted run 6 of 9 at 08:09Z); P-074 (hero-exit) after it, once its ticket passes |
+| `iphone-runner` (a7696771bf38f1229) | phone blocks, sentinels, logger | alive (10-03 09:4xZ): P-073 done 08:35Z, idle; P-074 (hero-exit) next once its ticket passes (ops re-read + review-hero-exit ACCEPT) |
 | `fix-scroll-engine` (a1722cf5058e25591) | fwreskip (PR-005 posted, waits on the user); hero-carousel (parked) | alive |
 | `de-illusion-style` (afc7d9fff1fcc6154) | illusion-proposals / word-alone (P-065, PR-004): Sim counts, 1 % pixel cause, Chrome call tree | alive (phone part on hold) |
 | `fix-image-size` (new 12:0xZ; ID af756241c686d490e) | image-size: P-066 falsified (no detectable saving), dropped; null write-up 909464c | done |
