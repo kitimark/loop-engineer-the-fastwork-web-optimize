@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T08:45:00Z",
+ "updatedAt": "2026-10-03T09:00:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
   { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." },
   { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." },
   { "at": "2026-10-03T06:53:00Z", "text": "You chose to land the countdown digit strips, with the tiny fade difference. The review found one small style fix first: in one scroll band the new clock kept its layers where today's page drops them. That fix is being re-checked, then a last review and landing." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-02T10:45:00Z", "text": "New 'Best build' view: what today's best build (st6-rb) contains, what each fix gained on the phone, and what was tried and not applied, with the reason." },
   { "at": "2026-10-01T20:35:00Z", "text": "Carousel: the cause of the remaining layout is found. A build that avoids it (st6) removed it in 35 of 36 slide starts on the phone recording; it waits for timing tests to resume." },
   { "at": "2026-10-01T20:20:00Z", "text": "Second style recording: one extra layout at the section switch can be removed, but another whole-page layout stays; the team is hunting its trigger before any fix is timed." },
-  { "at": "2026-10-01T20:08:00Z", "text": "Four cheaper look-alike proposals are ready for you to accept or reject; two more are coming. Your questions now have one thread per topic in the console." },
-  { "at": "2026-10-01T19:55:00Z", "text": "Style fix recorded on the phone: the section switch does less work, but the same work shows up one frame later further down, so nothing is saved yet. Next: find out why it moved." }
+  { "at": "2026-10-01T20:08:00Z", "text": "Four cheaper look-alike proposals are ready for you to accept or reject; two more are coming. Your questions now have one thread per topic in the console." }
  ],
  "items": [
   {
@@ -181,16 +181,16 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "The odd run is traced: the same kind of slow frame shows up in every version, including the original, so it does not come from F3's code. The warm-phone test (40-41 °C) is approved and starts next on the phone; then the confirmation and your swipe test.",
+   "next": "The warm-phone test couldn't reproduce the hitch, even with the old code: all three versions stayed smooth in all 12 runs. The next step is being decided.",
 
    "owner": "fix-nav-morph",
    "checks": [
     { "id": "P-022", "what": "scripted phone block: is the y≈1960 frame gone?", "result": "yes, 4 of 4 runs" },
     { "id": "P-036", "what": "robot-finger touch-to-scroll test", "result": "passed: no part of the page starts scrolling later with F3 (about 190 ms in both, 8 of 8 runs valid, both heat checks passed)" },
-    { "id": "P-071", "what": "robot-finger test holding the menu pinned at the end", "result": "no worse with F3 in 9 runs; the original's stall did not show up, so the cure is still open; one odd run being traced" }
+    { "id": "P-071", "what": "robot-finger test holding the menu pinned at the end", "result": "no worse with F3 in 9 runs; the original's stall did not show up, so the cure is still open; one odd run being traced" },
+    { "id": "P-073", "what": "warm-phone robot-finger test, menu pinned at the end (40-41 °C)", "result": "no hitch in any version in 12 runs, the original included, so it couldn't show whether F3 cures it; inconclusive" }
    ],
    "details": [
-    "Build mw10e-arm-scope-c (JS c6d3590576a7, comment-only re-cut of 7b0d62225545): touchstart passive + touchmove non-passive on #platform and the nav header, wheel on window, all once at setup.",
     "P-022 block B: edge frame (y 1940-2010) C 106-118 ms vs F3 none > 34 ms in 4/4; dt>50 in y 1700-2200 1/1/1/1 vs 0/0/0/0 (threshold-sensitive, the 46 ms twin overlaps); scroll dt>50 C 2/1/2/3 vs 1/0/0/1.",
     "Chrome regression A/B within noise on every row, 0 errors/404s, 0.13 % pixel diff.",
     "Strokes that start on the nav header are not covered by the robot test: only your finger test checks them.",
@@ -201,7 +201,8 @@
     "P-071 card units (per-run max dt over 2 cycles, n=3v3): arm C 70/64/74, V 68/64/69, D 70/98/66; disarm C 32/33/35, V 33/34/35, D 35/85/39: no separated-worse (twins 46/54 same). ~60 % prediction missed on its second half (D2 c2 disarm 85 ms). D2 outlier (arm 98 ms, 11 frames > 50): attribution before D lands. Exploratory only, not a gain: arm >50 C 10/11/14 vs V 8/7/9, threshold-sensitive. Scorer a90e807d4296 second-read by mgmt-ops-9, re-run byte-identical (score f8e231d4b617).",
     "Lead ruling 10-03 06:0xZ: D proceeds on its own merit, gated on (1) the D2 Timeline attribution not naming D's listener add/remove or other D changes and (2) a hot-held block P-073 (40-41 °C at each run start, arm-scope-touch-v1, after the attribution chain; card by fix-nav-morph 9dfca7f, ops second read NEEDS-FIX: D not-enough row, heat ceiling, charge state, C/V/D scope to confirm). P-036 confirmation on D and the F swipe wait for both gates.",
     "D2 gate signed (lead 06:4xZ) on fix-nav-morph's reading of iphone-runner's Timeline runs tD1-3/tC/tV (gesture --timeline, n=1 per arm, 3 for D; OBSERVED): no long frame names D's listener add/remove (event dispatch < 1 ms per frame); every >50 ms frame is one Composite with ~91-94 Paint children in every arm; Paint inside is ~1-2 ms, the rest of the Composite time UNRESOLVED. C3's collapse fits the down-stroke dip seen in all arms. D's land gate is now P-073 alone.",
-    "P-073 rev 2 (fix-nav-morph 38cd056): driver v1c 0653995a35be (forced cap; Simulator V/D/C 9 pin pushes, all prevented; settle 5212/5216/5220), settle bins low/high scored apart, budget 14 runs / 100 min. Second read mgmt-ops-9 07:1xZ NEEDS-FIX; rev 2.1 2746920 folds the points in (reading rule for n = 2, rows 1-8, scorer p073-score.mjs d4854dd7061f); re-read PASS with one scorer guard (V needs 3 counted runs outside the top-up) re-hashed before the first counted run (done: 4ece74c, scorer 30c16ec042c8, verified by ops); lead signed 07:2xZ."
+    "P-073 rev 2 (fix-nav-morph 38cd056): driver v1c 0653995a35be (forced cap; Simulator V/D/C 9 pin pushes, all prevented; settle 5212/5216/5220), settle bins low/high scored apart, budget 14 runs / 100 min. Second read mgmt-ops-9 07:1xZ NEEDS-FIX; rev 2.1 2746920 folds the points in (reading rule for n = 2, rows 1-8, scorer p073-score.mjs d4854dd7061f); re-read PASS with one scorer guard (V needs 3 counted runs outside the top-up) re-hashed before the first counted run (done: 4ece74c, scorer 30c16ec042c8, verified by ops); lead signed 07:2xZ.",
+    "P-073 (iphone-runner, 07:40-08:35Z, G v1c 0653995a35be, scorer 30c16ec042c8; OBSERVED): 12 counted (9 + 3 V top-up), 0 void, sentinels PASS (60/58.1). No collapse in any arm, min 2 s window 46-51.5 fps. Settle low/high C 1/2, V 1/5, D 1/2: row 5, V not in condition, inconclusive, no landing on this block. Ops second read PASS (re-scored from the manifest, byte-identical). Next step: the lead, on fix-nav-morph's options."
    ]
   },
   {
@@ -553,7 +554,7 @@
   { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "after one more countdown check (per clock tick), then the design" },
   { "title": "Your new decision on the countdown digit strips (corrected proposal)", "when": "after one more check of the strips", "item": "cd-strip" },
   { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the warm-phone test (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "once the next step for F3 is decided (the warm-phone test was inconclusive)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {

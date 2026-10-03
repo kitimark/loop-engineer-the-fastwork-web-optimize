@@ -9,6 +9,44 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **09:0xZ P-075 data commit f6614fa** (arch-isolated-measure; README §4.4, `p075-data/`, P-076 PREDICTIONS row).
+  - Ops re-ran judge.mjs 73679603afcd on p075-data: judge.json is byte-identical (36a24aa02ea3).
+  - Chrome: countdownCalls family FAIL, 3 of 3; style, layout and paint PASS. Style is labelled low-power (tol 185),
+    and V7-C6's H9 label is printed with the owner's post-hoc reading marked as such.
+  - Sim (4th slot; the first slot was voided by a harness bug): family PASS on all six counts. V7-C6 misses
+    RenderingFrame, RecalculateStyles and Composite (H9), 1 of 2 judged each, so no Sim family FAIL. Per the
+    single-miss rule those cost-card rows take FULL. The owner's post-hoc reading: frame-driven counts from FULL.
+  - AA flags: none.
+  - P-076: slots running. In our setup the trace FunctionCall lineNumber is 1-based (fires1 holds the fires, fires0
+    is empty), OBSERVED.
+- **09:0xZ P-073 result: row 5, INCONCLUSIVE (V not in condition). Ops second read PASS.** iphone-runner ran
+  07:40-08:35Z, files in its worktree's `out/p073/` (local only).
+  - Ops re-ran iphone-runner's scorer copy (sha256 30c16ec042c8, verified) on its manifest: txt and json are
+    byte-identical to score-final.txt and score-p073.json.
+  - Row walk: D 3 counted, 0 collapses (rows 1-2 pass); C 3 counted, clean (rows 3-4 pass); V clean 0/3 with 1 low-bin
+    run, so the top-up ran (runs 10-12, after the Latin square, 3 of max 3), all 3 high, so V low-bin stays 1 → row 5.
+  - Order C V D / V D C / D C V as carded. Start temps 40.29-40.89 °C, max 41.59, read ages ≤ 5.1 s, charge held+ext
+    in all 12, idle 59.0-60.0 fps, prevented 100 % everywhere. Flags: none from the scorer.
+  - Ops notes for the next design (not decision-changing): (a) all three low-bin runs were runs 7-9 (08:14-08:22Z),
+    one per arm, and every other run settled at 5220, so the bin looks time-clustered rather than random per run
+    (compare F-164); (b) the start method is confounded with arm (C all direct, D all cooled, V mixed); (c) D run 3
+    has the only mid-run dips (58.5 53.5 57 46 ... 50.5), well above 30; (d) every run but the first warm-up ran beside
+    shared groups (load1 up to 92.9), per the lead's rule.
+  - Prediction check: the card gave "V not in condition" ~45 % and V clean ~35 %; the modal V outcome (collapse ~50 %)
+    did not happen. fix-nav-morph fills the measured columns in its row.
+  - PROGRESS f3-arm-scope: next, P-073 check, detail, change line and upcoming updated in plain words. Next step: the
+    lead, on fix-nav-morph's options.
+- **09:0xZ P-076 registered at 1032787** (pre-data). The capped-slot rule is in: a partial file is scored as it is
+  and the readout says "partial slot". The 1-based fire-line note is in. The comment-only revisions are hash-verified:
+  tick-probe 967461d775ec, tick-hold a344a6351f45; judge-tick b84f4156010c is unchanged. The Chrome slots may queue.
+  When the readout comes, ops second-reads it against judge-tick b84f4156010c.
+- **08:5xZ P-076 re-read PASS at 930ee63** (arch-isolated-measure). Hashes verified: judge-tick **b84f4156010c**,
+  tick-probe d30b38cc15be, tick-hold 3e8c1e4dce2c, run-tick 1c2ebd25142f. The probe was read line by line. The
+  must-fix and nits 2-6 are done, and the vs-C pairs are dropped.
+  - Owed before the first slot: a one-line rule for a slot that hits its 300 s cap (18 loads at ≥ ~13 s each; the
+    probe writes `partial: true`). Ops suggested taking the partial file as it is, with "partial slot" printed.
+  - Nits: stale comments (a "4 s trace", 4 screenshots, the old file names). With a 1-based trace, fires0 lands on
+    `ne(() => {`, and a re-run there VOIDs as ambiguous, which is safe.
 - **08:4xZ P-075 Chrome readout** (arch-isolated-measure; judge.mjs 73679603afcd). The commit holding the scrubbed
   data and judge.json is owed after the Sim slot; the first Sim slot was voided by a harness bug and a 4th slot
   replaces it.
