@@ -387,8 +387,9 @@ The fixes remove (B − X) / (B − F) = 61 % (H1) and 32 % (H2) of B's excess o
 - **D2: H1-3B was pre-warmed inside its hold.** It ran 3 uncounted W cycles on B, from 35.39 to 36.59 °C. Its idle
   slope is 0.82 against H2-2B's 0.26, so the H1 B slope is likely inflated. Even so, both verdicts hold on H2 alone,
   and they hold if H1's B is replaced by H2's 0.40: B − A would be +0.345 and B − X +0.208.
-- **D1: H1-2A started at 36.00 °C,** inside the window. A low start biases its corrected slope upward, which works
-  against "Fastwork heats more".
+- **D1: H1-2A started at 36.00 °C,** inside the window. A low start biases the raw slope upward. The 37.0 °C
+  correction removes the modelled part of that bias, and whatever bias is left raises A, which works against
+  "Fastwork heats more".
 - **D3: two holds started at Mac load1 23 and 26.8, both decaying.** The metric is phone-only, so this is flagged, not
   voided.
 - **D4: B and X ran 4 cycles, F and A ran 5.** The ticket fixes time, not cycles. Fewer scroll cycles on the Fastwork
