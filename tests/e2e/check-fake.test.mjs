@@ -162,3 +162,31 @@ test('--max-seconds: a page that hangs stops the job at the budget (exit 124), l
   const started = s.log().find((l) => l.method === '(started)');
   assert.equal(existsSync(started.params.profile), false);
 });
+
+// I-095: the temp profile is removed by lib/cdp.mjs also when the job is stopped by a signal (check.mjs's own handler
+// exits 130); --keep-profile keeps it for debugging, with its marker file
+test('SIGTERM mid-job: exit 130, Chrome gone, profile removed, lock released (I-095)', async () => {
+  const s = setup('sigterm', { FAKE_CHROME_HANG_AT: 'Page.navigate' });
+  const { spawn } = await import('node:child_process');
+  const p = spawn(process.execPath, [CHECK(), ...s.args(`ok=${ok}`, '--no-screens')], { cwd: repo.main, env: { ...process.env, ...s.env }, stdio: 'ignore' });
+  let started;
+  for (let i = 0; i < 200 && !(started = s.log().find((l) => l.method === 'Page.navigate')); i++) await new Promise((r) => setTimeout(r, 50));
+  assert.ok(started, 'reached the navigation');
+  const prof = s.log().find((l) => l.method === '(started)').params.profile;
+  assert.ok(existsSync(join(prof, '.fw-temp-profile.json')), 'the marker while running');
+  const code = await new Promise((res) => { p.on('exit', (c) => res(c)); p.kill('SIGTERM'); });
+  assert.equal(code, 130);
+  assert.equal(existsSync(prof), false, 'profile removed');
+  const chromePid = s.log().find((l) => l.method === '(started)').pid;
+  assert.throws(() => process.kill(chromePid, 0), /ESRCH/, 'Chrome gone');
+  assert.equal(holder(join(s.d, 'state')), null);
+});
+
+test('--keep-profile keeps the temp profile (marker inside) for debugging (I-095)', async () => {
+  const s = setup('keep');
+  const r = await run(s, `ok=${ok}`, '--no-screens', '--keep-profile');
+  assert.equal(r.code, 0, r.out);
+  const prof = s.log().find((l) => l.method === '(started)').params.profile;
+  assert.equal(existsSync(prof), true, 'kept');
+  assert.match(r.stderr, /keeping the temp profile/);
+});

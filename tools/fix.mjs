@@ -55,6 +55,7 @@ import { describeHostState } from './lib/host.mjs';
 import { layerScales, PAINT_SCALE_TAG } from './lib/paint-rects.mjs';
 import { servedGet } from './lib/served-get.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag, isSparse } from './lib/baseline.mjs';
+import { lowSpaceWarning, freeSpace, fmtSize } from './lib/space.mjs'; // I-095
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -129,8 +130,11 @@ function doctor() {
     ['worktree copy of snapshot', !isLinkedWorktree() ? '(main checkout)' : isSparse() ? 'no (sparse checkout)' : existsSync(join(REPO, 'site')) ? 'yes (own copy; node tools/baseline.mjs sparse drops it)' : 'no'],
     ['serve --port auto starts at', autoPortBase()],
     ['lock dir', join(sharedStateDir(), 'locks')],
+    ['free disk space', (() => { try { return fmtSize(freeSpace(REPO).freeBytes); } catch { return '(unknown)'; } })()],
   ];
   for (const [k, v] of lines) console.log(`${k.padEnd(28)} ${v}`);
+  const space = lowSpaceWarning(REPO); // I-095
+  if (space) console.log(space);
   if (!bs.ok) console.log(bs.message);
   console.log('locks:');
   for (const s of allStatus()) console.log(`  ${s.resource.padEnd(15)} ${s.holder ? (s.stale ? 'stale ' : '') + 'held by ' + s.holder.owner : 'free'}${s.queue.length ? ` (${s.queue.length} queued)` : ''}`);

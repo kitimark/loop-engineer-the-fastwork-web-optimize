@@ -3,7 +3,9 @@
 // Design and the headed-vs-headless evidence: research/architecture/headless-functional.md (ts-headless, 2026-10-02).
 //
 //   node tools/check.mjs <label>=<url>... [--viewport mobile|desktop|both] [--no-screens] [--probe <name>=<js expr>]...
-//        [--out out/check/<stamp>] [--result file.json] [--owner name] [--max-seconds 300] [--screen-dpr 2]
+//        [--out out/check/<stamp>] [--result file.json] [--owner name] [--max-seconds 300] [--screen-dpr 2] [--keep-profile]
+//   Its temp Chrome profile (out/chrome-fn/<owner>-<pid>-<hex>) is removed when the job ends, also on an error or a
+//   signal (lib/cdp.mjs, I-095); --keep-profile (or FW_KEEP_PROFILE=1) keeps it for debugging.
 //
 // Per target and viewport, in a fresh isolated context of ONE headless Chrome (unthrottled):
 //   load + settle, verify.mjs's state probe (the same expression), a DOM fingerprint (element count, tag.class tokens),
@@ -27,7 +29,7 @@
 // no frame, fps, LoAF or duration field (job.seconds is the tool's own run time).
 // Exit: 0 ok, 1 a functional failure (a page error, a target that did not scroll to the bottom, no nav in the state
 // probe), 2 usage, 3 the baseline is not the pinned snapshot, 124 the lock budget ran out.
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, resolve, relative, dirname } from 'node:path';
 import { launchChrome, CDP, gotoAndSettle, sleep, screenInfoArg, headedUA, tempProfileDir, HEADLESS_SCREEN } from './lib/cdp.mjs';
 import { REPO, checkoutId } from './lib/paths.mjs';
@@ -40,7 +42,7 @@ const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.star
 const opts = (n) => argv.flatMap((a, i) => (a === `--${n}` ? [argv[i + 1]] : a.startsWith(`--${n}=`) ? [a.slice(n.length + 3)] : []));
 const flag = (n) => argv.includes(`--${n}`);
 const die = (msg, code = 2) => { console.error(msg); process.exit(code); };
-const USAGE = 'usage: node tools/check.mjs <label>=<url>... [--viewport mobile|desktop|both] [--no-screens] [--probe name=expr]... [--out dir] [--result file.json] [--owner name] [--max-seconds 300] [--screen-dpr 2]';
+const USAGE = 'usage: node tools/check.mjs <label>=<url>... [--viewport mobile|desktop|both] [--no-screens] [--probe name=expr]... [--out dir] [--result file.json] [--owner name] [--max-seconds 300] [--screen-dpr 2] [--keep-profile]';
 
 const targets = argv.filter((a, i) => /^[\w-]+=https?:\/\//.test(a) && !(i > 0 && VALUED.includes(argv[i - 1]))).map((a) => { const i = a.indexOf('='); return { label: a.slice(0, i), url: a.slice(i + 1) }; });
 if (!targets.length) die(USAGE);
@@ -195,10 +197,9 @@ async function main() {
     setTimeout(() => { console.error(`check.mjs: the lock budget of ${MAX_SEC} s ran out: stopping (fewer targets, --viewport, or --no-screens)`); process.exit(124); }, Math.max(1, MAX_SEC - 3) * 1000).unref();
   }
   mkdirSync(OUT, { recursive: true });
+  // its own temp profile: lib/cdp.mjs removes it at close, at exit and on a signal (I-095); --keep-profile keeps it
   const profileDir = tempProfileDir(join(REPO, 'out', 'chrome-fn'), OWNER);
-  const dropProfile = () => { try { rmSync(profileDir, { recursive: true, force: true, maxRetries: 3 }); } catch {} };
-  const ch = await launchChrome({ port: 0, profileDir, headless: true, args: [SCREEN.arg] });
-  process.on('exit', dropProfile); // after lib/cdp.mjs's kill of the browser tree (registered first)
+  const ch = await launchChrome({ port: 0, profileDir, headless: true, args: [SCREEN.arg], ...(flag('keep-profile') ? { keepProfile: true } : {}) });
   const userAgent = ch.userAgent ? headedUA(ch.userAgent) : null;
   const results = [], diffs = [];
   let cdp;
@@ -220,7 +221,7 @@ async function main() {
         }
       }
     }
-  } finally { cdp?.close(); await ch.close(); dropProfile(); lock.release(); }
+  } finally { cdp?.close(); await ch.close(); lock.release(); }
 
   const failures = results.flatMap((r) => r.failures.map((f) => `${r.viewport} ${r.label}: ${f}`));
   const out = {

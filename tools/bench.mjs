@@ -8,7 +8,8 @@
 //        Tier A: exact in-page counters + parity snapshots during an unthrottled, stepped scroll, headless.
 //        Its headless Chrome sees the page a headed one does (ts-headless): the UA override (HeadlessChrome/ -> Chrome/)
 //        and the pinned screen 1512x982 DPR 2, recorded as chromeMode / uaOverride / screenInfo / mechPage in every
-//        record; records from before that (no mechPage) are not comparable with newer ones. Its own temp profile.
+//        record; records from before that (no mechPage) are not comparable with newer ones. Its own temp profile,
+//        removed when the job ends, also on an error or a signal (I-095); --keep-profile keeps it for debugging.
 //        Baseline side: site-pretty (or <o>); patched side: the overlay rebuilt from the committed
 //        fixes/<topic>/patch.diff into out/bench/overlays/ (--live: fixes/<topic>/overlay as it is now;
 //        --experiment: that row's variant diff, checked against the row's expected outcome).
@@ -285,12 +286,11 @@ async function runMech(cdp, plans, sides, repeat, log, sessions = {}, { userAgen
  */
 async function launchMech(owner) {
   const profileDir = tempProfileDir(join(REPO, 'out', 'chrome-fn'), owner);
-  const drop = () => { try { rmSync(profileDir, { recursive: true, force: true, maxRetries: 3 }); } catch {} };
   const arg = screenInfoArg();
-  const ch = await launchChrome({ port: 0, profileDir, headless: true, args: [arg] });
-  process.on('exit', drop);
+  // lib/cdp.mjs removes the temp profile at close, at exit and on a signal (I-095); --keep-profile keeps it
+  const ch = await launchChrome({ port: 0, profileDir, headless: true, args: [arg], ...(flag('keep-profile') ? { keepProfile: true } : {}) });
   const userAgent = ch.userAgent ? headedUA(ch.userAgent) : null;
-  return { ch, userAgent, close: async () => { await ch.close(); drop(); }, page: { chromeMode: 'headless', uaOverride: userAgent, screenInfo: { ...HEADLESS_SCREEN, arg }, mechPage: 'headed-equivalent' } };
+  return { ch, userAgent, close: async () => { await ch.close(); }, page: { chromeMode: 'headless', uaOverride: userAgent, screenInfo: { ...HEADLESS_SCREEN, arg }, mechPage: 'headed-equivalent' } };
 }
 const lockMode = (l) => l.mode ?? (l.reentrant ? 'reentrant' : 'short');
 

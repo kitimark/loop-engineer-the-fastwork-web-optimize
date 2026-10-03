@@ -140,6 +140,8 @@ import { describeHold } from './lib/lock.mjs';
 import { warmLine, warmSummary } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 import { resolveLanUrl } from './lib/lan.mjs';
+import { lowSpaceWarning } from './lib/space.mjs'; // I-095: free-space warning in status
+import { fileURLToPath } from 'node:url';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -226,10 +228,13 @@ async function main() {
     const procs = awakeProcesses(); // I-070: phone parts and Sim sessions keeping the Mac awake themselves
     // review-i063: the simulator entry carries the warm device (simWarm: lib/sim-warm.mjs warmSummary) when there is one
     const withWarm = (s) => { const w = s.resource === 'simulator' ? warmSummary() : null; return w ? { ...s, simWarm: w } : s; };
-    if (flag('json')) { console.log(JSON.stringify(list.map((s) => withWarm(GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}), awake: s.holder && !s.stale ? holdAwake(s.resource, s.holder) : null, awakeProcesses: procs } : s)), null, 1)); return 0; }
+    // I-095: a WARNING line when the disk holding the repo has under 10 GB free ($FW_SPACE_WARN_GB); stderr with --json
+    const space = lowSpaceWarning(fileURLToPath(new URL('..', import.meta.url))); // the disk of this checkout (statfs, no spawn)
+    if (flag('json')) { console.log(JSON.stringify(list.map((s) => withWarm(GATED[s.resource] ? { ...s, ...(host ? { host } : {}), ...(laneInUse(s) ? { sharedLane: sharedSwitch(s.resource) } : {}), awake: s.holder && !s.stale ? holdAwake(s.resource, s.holder) : null, awakeProcesses: procs } : s)), null, 1)); if (space) console.error(space); return 0; }
     for (const s of list) console.log(fmt(s));
     if (!resource || GATED[resource]) for (const l of awakeLines(procs)) console.log(l);
     if (host) console.log(hostLine(host, list));
+    if (space) console.log(space);
     return 0;
   }
   if (cmd === 'doctor') {

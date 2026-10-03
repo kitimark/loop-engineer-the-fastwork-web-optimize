@@ -1,7 +1,7 @@
 // Minimal Chrome DevTools Protocol client (Node >= 22: built-in fetch + WebSocket).
 // No dependencies. Used by tools/mirror.mjs --crawl and tools/verify.mjs.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -56,9 +56,73 @@ export function screenInfoArg({ width = HEADLESS_SCREEN.width, height = HEADLESS
 export const isHeadlessUA = (ua) => /\bHeadlessChrome\//.test(String(ua || ''));
 /** The UA a headed Chrome of the same build sends (what the page should see in a functional check). */
 export const headedUA = (ua) => String(ua || '').replace(/\bHeadlessChrome\//g, 'Chrome/');
-/** A fresh, unique profile dir under `base` for one job (several functional jobs run at once in the shared lane). */
+/**
+ * A fresh, unique profile dir under `base` for one job (several functional jobs run at once in the shared lane).
+ * The path is reserved for this process: launchChrome() creates it, records it as this process's own throwaway profile
+ * (a marker file inside, TEMP_PROFILE_MARKER) and removes it when the run ends (I-095, see "Throwaway profiles" below).
+ */
 export function tempProfileDir(base, owner = 'job') {
-  return join(base, `${String(owner).replace(/[^\w.-]+/g, '_').slice(0, 40)}-${process.pid}-${randomBytes(4).toString('hex')}`);
+  const dir = join(base, `${String(owner).replace(/[^\w.-]+/g, '_').slice(0, 40)}-${process.pid}-${randomBytes(4).toString('hex')}`);
+  RESERVED.add(dir);
+  return dir;
+}
+
+// ---- Throwaway profiles (I-095: 157 leftover profiles, ~13 GB, filled the disk) ------------------------------------
+// A tempProfileDir() profile is ~75-155 MB (mostly components Chrome downloads into every fresh profile). Tools and
+// probes removed it only after a clean finish, so a run stopped by the lock's max-seconds SIGTERM, Ctrl-C or an error
+// left it behind. Now launchChrome() owns it: the dir must not exist (or be empty) when launchChrome creates it; it is
+// recorded here and in a marker file, and removed (Chrome's process tree killed first) at close(), at process exit
+// (an uncaught error included) and on SIGINT / SIGTERM / SIGHUP (when nothing else handles the signal, this process
+// then exits 128+n; when something does, e.g. the lock library or check.mjs, that handler exits and the exit hook
+// removes it). Only a path recorded at its creation by this process is ever removed, never by name pattern.
+// A SIGKILL can't be caught: such a leftover keeps its marker (a dead pid), and `node tools/space.mjs report` lists it.
+// Persistent profiles (verify.mjs's out/chrome-verify-profile, bench's out/chrome-bench-profile) are never touched.
+// FW_KEEP_PROFILE=1 (or launchChrome({keepProfile: true})) keeps the profile for debugging.
+export const TEMP_PROFILE_MARKER = '.fw-temp-profile.json';
+const RESERVED = new Set(); // paths handed out by tempProfileDir() in this process
+const OWNED = new Map(); // dir -> {}: created by this process (recorded at creation), removed when its run ends
+const SIGNALS = { SIGHUP: 1, SIGINT: 2, SIGTERM: 15 };
+const keepWanted = () => process.env.FW_KEEP_PROFILE === '1';
+/** Throwaway profile dirs this process created and has not removed yet. */
+export const ownedTempProfiles = () => [...OWNED.keys()];
+
+function sleepSync(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
+/** Wait (synchronously, for 'exit' hooks) until none of `pids` runs any more; zombies count as gone (they write nothing). */
+function waitGoneSync(pids, ms = 2000) {
+  for (let t = 0; t < ms; t += 50) {
+    const out = spawnSync('ps', ['-o', 'pid=,stat=', '-p', pids.join(',')], { encoding: 'utf8', timeout: 2000 }).stdout || '';
+    if (!out.split('\n').some((l) => /^\s*\d+\s+[^Z\s]/.test(l))) return true;
+    sleepSync(50);
+  }
+  return false;
+}
+/** Remove one owned profile (sync). Returns true when it is gone. */
+function removeOwned(dir) {
+  if (!OWNED.has(dir)) return false;
+  OWNED.delete(dir);
+  if (!OWNED.size) for (const s of Object.keys(SIGNALS)) process.off(s, onSignal);
+  try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); } catch {}
+  if (existsSync(dir)) { sleepSync(200); try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {} }
+  return !existsSync(dir);
+}
+function onSignal(sig) {
+  // another listener (the lock library, check.mjs) owns the exit; our 'exit' hook still removes the profile
+  if (process.listenerCount(sig) > 1) return;
+  process.exit(128 + SIGNALS[sig]);
+}
+/** Claim `dir` as this process's throwaway profile when it was reserved by tempProfileDir() and is new (or empty). */
+function claimTempProfile(dir, keep) {
+  if (!RESERVED.has(dir) || keep) return false;
+  RESERVED.delete(dir);
+  let fresh = !existsSync(dir);
+  if (!fresh) { try { fresh = readdirSync(dir).length === 0; } catch { fresh = false; } }
+  if (!fresh) return false;
+  mkdirSync(dir, { recursive: true });
+  const tool = process.argv[1] ? process.argv[1].split('/').slice(-3).join('/') : null;
+  writeFileSync(join(dir, TEMP_PROFILE_MARKER), JSON.stringify({ schema: 'fw-temp-profile/1', dir, pid: process.pid, ppid: process.ppid, createdAt: new Date().toISOString(), tool }) + '\n');
+  if (!OWNED.size) for (const s of Object.keys(SIGNALS)) process.on(s, onSignal);
+  OWNED.set(dir, {});
+  return true;
 }
 
 /**
@@ -67,7 +131,9 @@ export function tempProfileDir(base, owner = 'job') {
  * parallel worktrees never collide. A profile dir can only be used by one Chrome at a time.
  * `args`: extra command-line switches (before the start URL); none by default, so a default launch is unchanged.
  */
-export async function launchChrome({ port = 9333, profileDir, headless = false, windowSize = '1440,900', args: extraArgs = [] } = {}) {
+export async function launchChrome({ port = 9333, profileDir, headless = false, windowSize = '1440,900', args: extraArgs = [], keepProfile = keepWanted() } = {}) {
+  const temp = claimTempProfile(profileDir, keepProfile);
+  if (!temp && keepProfile && RESERVED.has(profileDir)) { RESERVED.delete(profileDir); console.error(`launchChrome: keeping the temp profile ${profileDir} (FW_KEEP_PROFILE=1 / keepProfile)`); }
   mkdirSync(profileDir, { recursive: true });
   const activePortFile = join(profileDir, 'DevToolsActivePort');
   rmSync(activePortFile, { force: true });
@@ -93,7 +159,8 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
   // Registered at once, not after the DevTools port is up: a signal during the launch (verify now launches
   // after its host recheck, I-023) must not orphan the browser either. The whole process tree: a browser
   // SIGKILLed while it is still starting leaves its helpers (GPU, network, renderers) running.
-  const killOnExit = () => killTree(proc.pid);
+  // I-095: a throwaway profile goes with it, once the tree is gone (an 'exit' hook runs synchronously)
+  const killOnExit = () => { const pids = killTree(proc.pid); if (temp && OWNED.has(profileDir)) { waitGoneSync(pids.slice(1)); removeOwned(profileDir); } };
   process.on('exit', killOnExit);
   let version;
   let exited = false;
@@ -105,7 +172,7 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
     } catch {}
     await sleep(100);
   }
-  if (!version) { process.off('exit', killOnExit); proc.kill(); throw new Error(`Chrome did not open a DevTools port (${port || 'auto'})${exited ? ': it exited at once — is another Chrome already using profile ' + profileDir + '?' : ''}`); }
+  if (!version) { process.off('exit', killOnExit); if (temp) killOnExit(); else proc.kill(); throw new Error(`Chrome did not open a DevTools port (${port || 'auto'})${exited ? ': it exited at once — is another Chrome already using profile ' + profileDir + '?' : ''}`); }
   return {
     proc,
     port,
@@ -126,7 +193,11 @@ export async function launchChrome({ port = 9333, profileDir, headless = false, 
         try { proc.kill('SIGTERM'); } catch {}
         for (let t = 0; t < graceMs && !exited; t += 50) await sleep(50);
         if (!exited) { killTree(proc.pid); for (let t = 0; t < 3000 && !exited; t += 50) await sleep(50); }
-      } finally { process.off('exit', killOnExit); }
+      } finally {
+        process.off('exit', killOnExit);
+        // I-095: the browser is gone; its helpers may take a moment longer (removeOwned retries)
+        if (temp && OWNED.has(profileDir)) { if (!exited) killOnExit(); else removeOwned(profileDir); }
+      }
     },
   };
 }
