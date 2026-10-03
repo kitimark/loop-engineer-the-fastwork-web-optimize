@@ -295,7 +295,7 @@ async function threadsPage({ hash, list = [], thread = null, replied = null }) {
   new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', 'localStorage', 'FileReader', js)(
     { addEventListener() {} }, document, location, fetch, () => 0, () => 0, () => 0, undefined, FileReader);
   for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
-  return { ids, calls };
+  return { ids, calls, $: document.getElementById };
 }
 
 test('I-084 threads page: "Your reply goes to: lead, <assignees>" by the reply box, a "to:" chip per thread, the confirmation names them', async () => {
@@ -321,6 +321,35 @@ test('I-084 threads page: "Your reply goes to: lead, <assignees>" by the reply b
   // no assignee: the reply box says lead
   const q = await threadsPage({ hash: `#${u.id}`, thread: T.pageThread(T.getThread(u.id)) });
   assert.equal(q.ids['reply-to'].textContent, 'Your reply goes to: lead');
+});
+
+test('T-050 threads page: the recipients line names who listens, else "the lead"; the "For the lead" tick goes with the message', async () => {
+  const t = await userThread('Nav morph lag');
+  await T.assign(t.id, { by: 'lead', to: 'fix-nav-morph' });
+  const on = () => ({ listening: true, how: 'waiting' }), off = () => ({ listening: false, how: '' });
+  const view = T.pageThread(T.getThread(t.id), on);
+  assert.deepEqual(view.toState.map((x) => [x.name, x.listening]), [['lead', true], ['fix-nav-morph', true]]);
+  const p = await threadsPage({ hash: `#${t.id}`, thread: view, replied: view });
+  assert.equal(p.ids['reply-to'].textContent, 'Your reply goes to: fix-nav-morph (listening); the lead if no answer in 10 min');
+  assert.match(readFileSync(join(TOOLS, 'lib', 'threads-page.html'), 'utf8'), /id="new-lead">[^<]*For the lead[\s\S]*id="reply-lead">[^<]*For the lead/);
+  p.ids['reply-lead'].checked = true;
+  for (const f of p.ids['reply-lead'].listeners.change) f();
+  assert.equal(p.ids['reply-to'].textContent, 'Your reply goes to: fix-nav-morph (listening) and the lead');
+  p.ids['reply-text'].value = 'Decide B please';
+  p.ids['reply-form'].requestSubmit();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(p.calls.filter((c) => c.url.endsWith('/reply')).map((c) => JSON.parse(c.init.body)), [{ text: 'Decide B please', forLead: true }]);
+  assert.equal(p.ids.toast.textContent, 'Sent to fix-nav-morph (listening) and the lead.');
+  assert.equal(p.ids['reply-lead'].checked, false, 'the tick is per message');
+  // nobody listening: the lead
+  const q = await threadsPage({ hash: `#${t.id}`, thread: T.pageThread(T.getThread(t.id), off) });
+  assert.equal(q.ids['reply-to'].textContent, 'Your reply goes to: the lead');
+  // a new thread with the tick
+  const n = await threadsPage({ hash: '', list: [], replied: view });
+  n.$('new-title').value = 'Q'; n.$('new-text').value = 'x'; n.$('new-lead').checked = true;
+  n.$('new-form').requestSubmit();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  assert.equal(JSON.parse(n.calls.find((c) => c.url === '/api/threads' && c.init?.method === 'POST').init.body).forLead, true);
 });
 
 // ---- I-089 (user PR-009 note): images in threads ------------------------------------------------------------------

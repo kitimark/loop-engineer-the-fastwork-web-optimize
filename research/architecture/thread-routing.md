@@ -166,3 +166,11 @@ Files:
    - Test 10: the desk's `assign --to <owner>` is refused when the owner is not listening; allowed when it is.
 5. **Sequencing:** the toolsmith starts after ts-proposal-talk's console work (T-043/T-048) lands: the files overlap
    (`console-threads.mjs`, `console-server.mjs`, the threads page).
+6. **The lead's topic map (user T-051, lead decision 2026-10-03; arch-thread-routing).** The lead names who answers a
+   topic's threads: `thread topic set <tag> --owner <agent> --by lead` (`--clear` removes, `thread topic list` shows
+   each owner's listening state); stored in `threads/topics.json`, names only. The router tries, in order: (1) the
+   comment's item owner (status row owner, step author, proposal author), (2) the lead's topic map, (3) the topic's
+   status-board owner, (4) the desk, (5) nobody, which wakes the lead's `--triage` wait at once. It skips every agent
+   that is not listening, the map's owner included, and never routes to the lead or the user. Tests:
+   `tests/unit/thread-routing.test.mjs` (the map owner wins over the status-board owner; a map owner who is not
+   listening falls through to the status-board owner).

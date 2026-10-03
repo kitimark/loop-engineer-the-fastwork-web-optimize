@@ -93,6 +93,21 @@
 //        # the text may be left out. Captions are scrubbed like the text; no path or host is stored. The user can
 //        # attach images on the page too; `thread wait` and `thread show` print them as [image 1: <file> "caption"].
 //   node tools/console.mjs thread assign <id> --to <agent>[,<agent>] --by lead [--remove]
+//        # T-050: the desk may assign too (--by <desk>), only to an agent that is listening, and never --remove.
+// Routing (user T-050/T-051, research/architecture/thread-routing.md): a user message in a thread with no listening
+// assignee goes to the first LISTENING one of: the comment's item owner (status row, step author, proposal author),
+// the lead's topic map, the topic's status-board owner, the desk (history: router assign "<agent> (<why>)"). Listening
+// = a live `thread wait --as <agent>`, or a read or reply in a thread within 5 min. The lead never gets routed to.
+//   node tools/console.mjs thread wait --as lead --triage [--timeout 3600] [--json]
+//        # the lead's wait: wakes only for a thread nobody listening owns, a message ticked "For the lead" (marked
+//        # "(for the lead)"), an escalation, a user message unanswered for 10 min, and proposal decisions; each
+//        # thread printed as TRIAGE <id> "title": <why> plus its NEW messages. Without --triage: every message.
+//   node tools/console.mjs thread escalate <id> --by <owner|desk> --note "what the lead must decide"
+//   node tools/console.mjs thread desk show | desk set <agent> --by lead | desk set --clear --by lead
+//        # the desk counts only while it is listening (`thread wait --as <desk>` armed); otherwise the lead is the desk
+//   node tools/console.mjs thread topic list | topic set <tag> --owner <agent> --by lead | topic set <tag> --clear --by lead
+//        # T-051: who answers a topic's threads, before the status-board owner; skipped while that agent is not listening
+//   `thread list` and `thread show` print each assignee as "fix-x (listening)" or "fix-x (not listening)".
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
 // Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
@@ -115,10 +130,11 @@ import { autoPortBase } from './lib/paths.mjs';
 import { currentView, renderText, readProgress } from './lib/progress.mjs';
 import { currentStatusView, renderText as statusText } from './lib/status.mjs';
 import * as TH from './lib/console-threads.mjs';
+import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk, topic map
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -192,9 +208,10 @@ async function thread() {
     let items = TH.listThreads();
     if (!flag('all')) items = items.filter((t) => t.status !== 'closed');
     if (flag('unread')) items = items.filter((t) => TH.unreadFor(t, as()).length);
-    if (flag('json')) { console.log(JSON.stringify(items.map((t) => ({ ...TH.summary(t), ...(as() && { unreadFor: TH.unreadFor(t, as()).length }) })), null, 1)); return 0; }
+    const ls = RT.listeningState({ threads: TH.listThreads() }); // T-050: who of the assignees is listening
+    if (flag('json')) { console.log(JSON.stringify(items.map((t) => ({ ...TH.summary(t, TH.USER, ls), ...(as() && { unreadFor: TH.unreadFor(t, as()).length }) })), null, 1)); return 0; }
     if (!items.length) console.log(flag('unread') ? `no threads with unread user messages for ${as()}` : 'no threads');
-    for (const t of items) console.log(TH.threadLine(t, as()));
+    for (const t of items) console.log(TH.threadLine(t, as(), ls));
     return 0;
   }
   if (sub === 'new') {
@@ -203,7 +220,7 @@ async function thread() {
     return 0;
   }
   if (sub === 'wait') {
-    const w = TH.threadWaitCondition({ as: as(), thread: opt('thread') });
+    const w = TH.threadWaitCondition({ as: as(), thread: opt('thread'), triage: flag('triage') });
     const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
     if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
     // I-045: without --thread the wait also wakes on proposal decision events (a decision, an undo, a changed decision):
@@ -221,7 +238,7 @@ async function thread() {
     };
     const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
     const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
-    startWait({ tool: 'console.mjs thread wait', owner: w.reader, what: `a user reply ${opt('thread') ? `in ${opt('thread')}` : 'in a console thread'}${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
+    startWait({ tool: 'console.mjs thread wait', owner: w.reader, what: w.triage ? 'a thread that needs the lead (triage) or a proposal decision' : `a user reply ${opt('thread') ? `in ${opt('thread')}` : 'in a console thread'}${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
     const r = await pollUntil(check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
     if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }
@@ -236,11 +253,36 @@ async function thread() {
       for (const t of news) console.log(TH.newsText(t, w.reader));
       for (const e of ev) console.log(PR.proposalNewsText(e));
       const parts = [];
-      if (news.length) parts.push(`${news.reduce((n, t) => n + t.messages.length, 0)} new message(s) in ${news.map((t) => t.id).join(', ')}`);
+      if (news.length && w.triage) parts.push(`${news.length} thread(s) need the lead (${news.map((t) => t.id).join(', ')}), ${news.reduce((n, t) => n + t.messages.length, 0)} message(s)`);
+      else if (news.length) parts.push(`${news.reduce((n, t) => n + t.messages.length, 0)} new message(s) in ${news.map((t) => t.id).join(', ')}`);
       if (ev.length) parts.push(`${ev.length} proposal decision event(s) in ${[...new Set(ev.map((e) => e.id))].join(', ')}`);
-      console.log(`MET ${w.what}: ${parts.join('; ')} (after ${r.waitedSec} s); marked read for ${w.reader}. Re-arm: node tools/console.mjs thread wait --as ${w.reader}`);
+      console.log(`MET ${w.what}: ${parts.join('; ')} (after ${r.waitedSec} s); marked read for ${w.reader}. Re-arm: node tools/console.mjs thread wait --as ${w.reader}${w.triage ? ' --triage' : ''}`);
     }
     return EXIT.met;
+  }
+  if (sub === 'desk') { // T-050 decision 4: the desk counts only while it is listening
+    if (idArg === 'show' || idArg === undefined) { console.log(`desk: ${RT.deskText({ threads: TH.listThreads() })}`); return 0; }
+    if (idArg !== 'set') throw new Error('usage: thread desk show | thread desk set <agent> --by lead | thread desk set --clear --by lead');
+    const agent = flag('clear') ? null : pos[3];
+    if (!flag('clear') && !agent) throw new Error('thread desk set <agent> --by lead (or --clear)');
+    await RT.setDesk({ agent, by: by() });
+    console.log(agent ? `DESK ${agent}: ${RT.deskText({ threads: TH.listThreads() })}` : 'DESK cleared: the lead is the desk');
+    return 0;
+  }
+  if (sub === 'topic') { // T-051: the lead's topic -> owner map, read by the router before the status board
+    if (idArg === 'list' || idArg === undefined) {
+      const m = RT.getTopics();
+      const ls = RT.listeningState({ threads: TH.listThreads() });
+      if (flag('json')) { console.log(JSON.stringify(m, null, 1)); return 0; }
+      if (!Object.keys(m).length) console.log('no topic owners set (threads route by the status board)');
+      for (const [k, v] of Object.entries(m)) console.log(`${k} -> ${v.owner} (${ls(v.owner).listening ? 'listening' : 'not listening'}); set by the lead at ${v.at}`);
+      return 0;
+    }
+    if (idArg !== 'set' || !pos[3]) throw new Error('usage: thread topic list | thread topic set <tag> --owner <agent> --by lead | thread topic set <tag> --clear --by lead');
+    if (!flag('clear') && !opt('owner')) throw new Error('thread topic set <tag> --owner <agent> --by lead (or --clear)');
+    await RT.setTopicOwner(pos[3], { owner: flag('clear') ? null : opt('owner'), by: by() });
+    console.log(flag('clear') ? `TOPIC ${pos[3]} cleared` : `TOPIC ${pos[3]} -> ${opt('owner')}`);
+    return 0;
   }
   if (!idArg) throw new Error(`usage: node tools/console.mjs thread ${sub} <id> … (see the header of tools/console.mjs)`);
   const id = TH.parseThreadId(idArg);
@@ -248,7 +290,7 @@ async function thread() {
     let t = TH.getThread(id);
     if (as() && as() !== TH.USER) { await TH.markRead(id, as()); t = TH.getThread(id); }
     if (flag('json')) { console.log(JSON.stringify(t, null, 1)); return 0; }
-    console.log(TH.threadLine(t, as()));
+    console.log(TH.threadLine(t, as(), RT.listeningState({ threads: TH.listThreads() })));
     if (t.anchor) console.log(`  ${TH.anchorLine(t.anchor)}`); // I-090: a comment names its item
     for (const m of t.messages) {
       console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''} at ${m.at}:`);
@@ -266,6 +308,11 @@ async function thread() {
   if (sub === 'assign') {
     const r = await TH.assign(id, { by: by(), to: opt('to'), remove: flag('remove') });
     console.log(`${flag('remove') ? 'UNASSIGNED' : 'ASSIGNED'} ${id}: ${r.thread.assignees.join(', ') || '(nobody: only the lead)'}`);
+    return 0;
+  }
+  if (sub === 'escalate') { // T-050: an owner or the desk hands a decision to the lead
+    const r = await TH.escalate(id, { by: by(), note: opt('note') });
+    console.log(`ESCALATED ${id}: the lead's triage wait wakes on it${scrubNote(r.scrubbed)}`);
     return 0;
   }
   if (sub === 'close' || sub === 'reopen') {

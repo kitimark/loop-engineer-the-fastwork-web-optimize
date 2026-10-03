@@ -25,8 +25,10 @@
 //   GET  /api/threads/<T-id>     {thread} (messages; no agents' read marks, no history)
 //   GET  /api/thread-feed        the badge / notification model (console-threads.mjs feedView: ids, sanitized titles,
 //                                counts); also pushed as `event: threads` on /api/events
-//   POST /api/threads            {title, text, topic?, images?}: the user starts a thread
-//   POST /api/threads/<T-id>/<act>  act = reply {text, images?} | read {n} | close | reopen  (the user, from the page)
+//   POST /api/threads            {title, text, topic?, images?, forLead?}: the user starts a thread
+//   POST /api/threads/<T-id>/<act>  act = reply {text, images?, forLead?} | read {n} | close | reopen  (the user, from the page)
+//                                T-050: forLead true = the "For the lead" tick (the lead's triage wait wakes at once);
+//                                summaries and threads carry toState [{name, listening, how}] and backstopMin (10)
 //                                images (I-089): [{data: base64, caption?}], sniffed and limited in console-threads.mjs;
 //                                these two POSTs take up to THREAD_BODY_MAX bytes, every other one 64 KB
 //   GET  /thread-media/<T-id>/<name>  a thread's image (m4-1.png), from the store only: strict names, and only a name
@@ -75,6 +77,7 @@ import { currentView, readWriteup } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
 import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, threadState, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER, threadMediaFile, LIMITS as THREAD_LIMITS } from './console-threads.mjs';
+import { listeningState } from './thread-routing.mjs';
 import { PAGES as COMMENT_PAGES, normAnchor, commentTitle, markersFor } from './console-comments.mjs';
 import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
 import { createLiveServers, measuringNow } from './live.mjs';
@@ -358,21 +361,28 @@ function readJsonBody(req, max = 64 * 1024) {
 /** I-089: a new thread or a reply may carry images (base64, a third more than their bytes) next to 64 KB of text. */
 export const THREAD_BODY_MAX = Math.ceil(THREAD_LIMITS.pageImageBytes * 4 / 3) + 64 * 1024 + THREAD_LIMITS.images * 1024;
 const THREAD_ACTIONS = {
-  reply: (id, b) => replyUser(id, { text: b.text, images: b.images }),
+  reply: (id, b) => replyUser(id, { text: b.text, images: b.images, forLead: b.forLead === true }),
   read: (id, b) => markRead(id, USER, b.n),
   close: (id) => setStatus(id, { status: 'closed', fromPage: true }),
   reopen: (id) => setStatus(id, { status: 'open', fromPage: true }),
 };
+
+/** T-050: (agent) -> {listening, how}, from live thread waits and the last 5 min of thread activity. */
+const listening = (threads = listThreads()) => { try { return listeningState({ threads }); } catch { return null; } };
 
 /** The thread routes; returns true when it answered. */
 async function threadRoute(req, res, u, port, feed) {
   const p = u.pathname;
   if (req.method === 'GET' && (p === '/threads' || p === '/threads.html')) { send(res, 200, withMenu(threadsPage(), 'threads'), 'text/html; charset=utf-8'); return true; }
   if (req.method === 'GET' && p === '/api/thread-feed') { send(res, 200, feed ? feed.currentThreads() : threadFeedView()); return true; }
-  if (req.method === 'GET' && p === '/api/threads') { send(res, 200, { now: iso(), threads: listThreads().map((t) => threadSummary(t)).sort(pageOrder) }); return true; }
+  if (req.method === 'GET' && p === '/api/threads') {
+    const all = listThreads(), ls = listening(all); // T-050: who reads each thread, listening or not
+    send(res, 200, { now: iso(), threads: all.map((t) => threadSummary(t, USER, ls)).sort(pageOrder) });
+    return true;
+  }
   const one = p.match(/^\/api\/threads\/(T-\d{1,6})$/);
   if (req.method === 'GET' && one) {
-    try { send(res, 200, { thread: pageThread(getThread(one[1])) }); } catch (e) { send(res, 404, { error: e.message }); }
+    try { send(res, 200, { thread: pageThread(getThread(one[1]), listening()) }); } catch (e) { send(res, 404, { error: e.message }); }
     return true;
   }
   const media = p.match(/^\/thread-media\/(T-\d{1,6})\/([A-Za-z0-9.-]{1,40})$/);
@@ -397,7 +407,7 @@ async function threadRoute(req, res, u, port, feed) {
       const anchor = normAnchor(b.body.anchor), text = b.body.text;
       const route = talkRoute(anchor); // T-048: a comment on a proposal goes to its author too (and the lead)
       const r = await createThread({ title: commentTitle(anchor, typeof text === 'string' ? text : ''), text, anchor, fromPage: true, ...(route?.to.length && { routeTo: route.to, routeNote: route.note }) });
-      send(res, 200, { thread: pageThread(r.thread) });
+      send(res, 200, { thread: pageThread(r.thread, listening()) });
     } catch (e) { send(res, 409, { error: e.message }); }
     return true;
   }
@@ -410,8 +420,8 @@ async function threadRoute(req, res, u, port, feed) {
     const b = await readJsonBody(req, !act || act[2] === 'reply' ? THREAD_BODY_MAX : undefined);
     if (b.error) { send(res, b.status, { error: b.error }); return true; }
     try {
-      const r = act ? await fn(act[1], b.body) : await createThread({ title: b.body.title, text: b.body.text, topic: b.body.topic, images: b.body.images, fromPage: true });
-      send(res, 200, { thread: pageThread(r.thread) });
+      const r = act ? await fn(act[1], b.body) : await createThread({ title: b.body.title, text: b.body.text, topic: b.body.topic, images: b.body.images, forLead: b.body.forLead === true, fromPage: true });
+      send(res, 200, { thread: pageThread(r.thread, listening()) });
     } catch (e) { send(res, /^no thread /.test(e.message) ? 404 : 409, { error: e.message }); }
     return true;
   }

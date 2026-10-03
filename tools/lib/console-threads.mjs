@@ -12,6 +12,8 @@
 //
 // A thread: {id, title, topic?, status: open|closed, createdBy, createdAt, updatedAt, rev, assignees: [agent],
 //   messages: [{n, at, by: 'user'|agent, text, ask?, images?}], reads: {user: n, <agent>: n}, history: [{at, who, action, note?}]}
+//   T-050 adds readsAt: {<agent>: iso} (last read or write: listening), triaged: [n] (printed by a triage wake past the
+//   lead's mark) and histSeen: {lead: i} (history index up to which the lead has seen escalations); forLead on a message.
 // Images (I-089, user PR-009 note): a message may carry up to LIMITS.images pictures, `images: [{name, caption?, w?, h?,
 //   bytes}]`, stored next to the thread as threads/T-003/m<n>-<i>.<ext> (n = the message, i = 1…). Agents attach them
 //   with `thread new|reply --image <path> [--caption "…"]`, the user from the page. Each one is sniffed by its first
@@ -38,6 +40,7 @@ import { PERSONAL, sanitize } from './progress.mjs';
 import { redact } from './redact.mjs';
 import { sniffMedia, sniffBytes, MEDIA_TYPES, LIMITS as PROPOSAL_LIMITS } from './proposal.mjs';
 import { normAnchor, anchorView, itemText as anchorItemText, plainLine } from './console-comments.mjs';
+import { routeOwner, routeContext, listeningState, listeningFn, getDesk, LISTEN_MIN, TRIAGE_ESCALATE_MIN } from './thread-routing.mjs'; // T-050
 
 export const STATUSES = ['open', 'closed'];
 export const STATES = ['open', 'waiting-on-you', 'answered', 'closed'];
@@ -252,24 +255,28 @@ export function unreadFor(t, reader) {
 }
 
 /** The list row the page and `thread list` show (no reads of agents, no history). */
-export function summary(t, reader = USER) {
+export function summary(t, reader = USER, ls = null) {
   const m = last(t);
   const agentMsgs = t.messages.filter(isAgentMsg);
+  const to = recipients(LEAD, t.assignees || []);
   return {
+    // T-050: with a listening test (thread-routing.mjs listeningState), who of them is listening now, and the lead's
+    // backstop: the page says "fix-x (listening); the lead if no answer in 10 min", or "the lead"
+    ...(typeof ls === 'function' && { toState: to.map((n) => (n === LEAD ? { name: n, listening: true, how: 'lead' } : { name: n, ...ls(n) })), backstopMin: TRIAGE_ESCALATE_MIN }),
     id: t.id, title: t.title, topic: t.topic, status: t.status, state: threadState(t), createdBy: t.createdBy,
     createdAt: t.createdAt, count: t.messages.length, unread: unreadFor(t, reader).length,
     lastAt: m ? m.at : t.createdAt, lastBy: m ? m.by : t.createdBy,
     lastAgentN: agentMsgs.length ? agentMsgs[agentMsgs.length - 1].n : 0,
     assignees: [...t.assignees],
     // I-084: who reads the user's reply: the lead always (it reads every thread), then the assignees
-    to: recipients(LEAD, t.assignees || []),
+    to,
     ...(t.anchor && { anchor: anchorView(t.anchor) }), // I-090: a comment's item, with the link back
   };
 }
 
 /** The full thread for the page: messages, the user's read mark; no agents' read marks or history. */
-export function pageThread(t) {
-  return { ...summary(t, USER), messages: t.messages.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.ask && { ask: true }), ...(m.images?.length && { images: pageImages(t, m) }) })), readUser: t.reads?.user || 0, updatedAt: t.updatedAt };
+export function pageThread(t, ls = null) {
+  return { ...summary(t, USER, ls), messages: t.messages.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.ask && { ask: true }), ...(m.images?.length && { images: pageImages(t, m) }) })), readUser: t.reads?.user || 0, updatedAt: t.updatedAt };
 }
 
 /** Sort for the page: the user's unread or waiting-on-you first, then open before closed, then newest activity. */
@@ -353,13 +360,46 @@ async function change(id, fn) {
   });
 }
 
-function addMessage(t, by, text, now, ask, images = []) {
+function addMessage(t, by, text, now, ask, images = [], { forLead = false } = {}) {
   if (t.messages.length >= LIMITS.messages) throw new Error(`${t.id} has ${LIMITS.messages} messages: start a new thread`);
   const n = (last(t)?.n || 0) + 1;
   const stored = storeImages(t.id, n, images); // I-089: before the message, so a failed copy stores nothing
-  t.messages.push({ n, at: now, by, text, ...(ask && { ask: true }), ...(stored.length && { images: stored }) });
+  t.messages.push({ n, at: now, by, text, ...(ask && { ask: true }), ...(stored.length && { images: stored }), ...(forLead && by === USER && { forLead: true }) });
   t.reads[by] = n; // the writer has seen everything up to its own message
+  if (by !== USER) (t.readsAt ||= {})[by] = now; // T-050: an agent that writes is listening (thread-routing.mjs)
+  if (by === LEAD) seenHistory(t, t.history.length); // the lead who writes has seen the escalations so far
   return n;
+}
+
+/** T-050: the lead's escalation mark, a history index (not a time: an escalation in the same ms as a read must count). */
+function seenHistory(t, upTo) {
+  const v = Math.min(t.history.length, Math.max(0, Math.floor(Number(upTo)) || 0));
+  (t.histSeen ||= {})[LEAD] = Math.max(t.histSeen[LEAD] || 0, v);
+}
+
+// ---- T-050 routing (thread-routing.mjs): a user message goes to a listening owner --------------------------
+
+/** The router's context with a listening test, read before taking the guard; null when it can't be read. */
+async function routing() {
+  try { return { ...(await routeContext()), listening: listeningFn({ threads: listThreads() }) }; } catch { return null; }
+}
+/**
+ * When no assignee of `t` is listening: assign the first listening owner (routeOwner) and record it as
+ * {who: 'router', action: 'assign', note: "<agent> (<why>)"}; former assignees stay. Nobody: the lead's triage wakes.
+ */
+function route(t, now, rc) {
+  if (!rc) return null;
+  try {
+    if (t.assignees.some((a) => rc.listening(a))) return null;
+    const r = routeOwner(t, rc);
+    if (!r) return null;
+    if (!t.assignees.includes(r.owner)) {
+      if (t.assignees.length >= LIMITS.assignees) return null;
+      t.assignees.push(r.owner);
+    }
+    t.history.push({ at: now, who: 'router', action: 'assign', note: scrubAgentText(oneLine(`${r.owner} (${r.why})`)).text.slice(0, LIMITS.note) });
+    return r;
+  } catch { return null; }
 }
 
 /**
@@ -370,7 +410,7 @@ function addMessage(t, by, text, now, ask, images = []) {
  * comment is handed to at once, e.g. a proposal's author (history: who "console", action assign, `routeNote`).
  * Returns {thread, scrubbed}.
  */
-export async function createThread({ by, title, text, topic, ask, to, images, anchor, routeTo, routeNote, fromPage = false }) {
+export async function createThread({ by, title, text, topic, ask, to, images, anchor, routeTo, routeNote, forLead = false, fromPage = false }) {
   if (anchor != null && !fromPage) throw new Error('only the user\'s comments carry an anchor (the Comment box on a console page)');
   if (routeTo != null && !fromPage) throw new Error('routeTo is for the user\'s comments; agents assign with --to');
   const who = fromPage ? USER : needAgent(by);
@@ -389,6 +429,7 @@ export async function createThread({ by, title, text, topic, ask, to, images, an
     for (const k of [...a.scrubbed, ...b.scrubbed]) scrubbed.add(k);
   }
   const tp = normTopic(topic);
+  const rc = fromPage ? await routing() : null; // T-050
   return withGuard(GUARD, () => {
     mkdirSync(threadsDir(), { recursive: true });
     const now = iso();
@@ -397,7 +438,8 @@ export async function createThread({ by, title, text, topic, ask, to, images, an
       createdAt: now, updatedAt: now, rev: 1, assignees, messages: [], reads: {}, history: [],
     };
     if (assignees.length) t.history.push({ at: now, who: fromPage ? 'console' : who, action: 'assign', note: fromPage && routeNote ? `${assignees.join(',')} (${oneLine(routeNote).slice(0, LIMITS.note)})` : assignees.join(',') });
-    addMessage(t, who, body, now, !fromPage && !!ask, img.items);
+    addMessage(t, who, body, now, !fromPage && !!ask, img.items, { forLead: fromPage && !!forLead });
+    if (fromPage) route(t, now, rc); // T-050: no listening assignee -> the first listening owner
     writeJson(fileOf(t.id), t);
     return { thread: t, scrubbed: [...scrubbed] };
   });
@@ -421,22 +463,47 @@ export async function replyAgent(id, { by, text, ask = false, images }) {
 }
 
 /** The user's message from the page (as typed); a closed thread opens again. `images`: [{data: base64, caption?}] (I-089). */
-export async function replyUser(id, { text, images }) {
+export async function replyUser(id, { text, images, forLead = false }) {
   const img = prepareImages(images, { agent: false });
   const body = needText(text, 'the message', LIMITS.text, { optional: img.items.length > 0 });
+  const rc = await routing(); // T-050
   return change(id, (t, now) => {
     if (t.status === 'closed') { t.status = 'open'; t.history.push({ at: now, who: USER, action: 'reopen' }); }
-    return { n: addMessage(t, USER, body, now, false, img.items) };
+    const n = addMessage(t, USER, body, now, false, img.items, { forLead: !!forLead });
+    route(t, now, rc);
+    return { n };
   });
 }
 
-/** Move `reader`'s read mark to `n` (never backwards; at most the last message). */
-export async function markRead(id, reader, n) {
+/**
+ * T-050: an owner (an assignee) or the desk hands a decision to the lead: history {action: 'escalate', note}
+ * (scrubbed); the lead's `thread wait --as lead --triage` wakes on it once.
+ */
+export async function escalate(id, { by, note }) {
+  const who = needAgent(by);
+  if (who === LEAD) throw new Error('the lead decides: escalate is for a thread\'s owner or the desk');
+  const { text, scrubbed } = scrubAgentText(oneLine(needText(note, 'the note (what the lead must decide)', LIMITS.note)));
+  const desk = getDesk()?.agent;
+  return change(id, (t, now) => {
+    if (!sees(t, who) && who !== desk) throw new Error(`${who} is not assigned to ${t.id} and is not the desk: only its owner or the desk escalates`);
+    t.history.push({ at: now, who, action: 'escalate', note: text });
+    (t.readsAt ||= {})[who] = now; // an agent that escalates is listening
+    return { scrubbed };
+  });
+}
+
+/**
+ * Move `reader`'s read mark to `n` (never backwards; at most the last message). For the lead also the escalation mark
+ * (histSeen.lead): to `histTo` (a triage wake passes what it printed), else the whole history (the lead read the thread).
+ */
+export async function markRead(id, reader, n, { histTo } = {}) {
   const r = reader === USER ? USER : needAgent(reader, '--as <agent>');
-  return change(id, (t) => {
+  return change(id, (t, now) => {
     const top = last(t)?.n || 0;
     const v = n === undefined ? top : Math.min(top, Math.max(0, Math.floor(Number(n)) || 0));
     t.reads[r] = Math.max(t.reads[r] || 0, v);
+    if (r !== USER) (t.readsAt ||= {})[r] = now; // T-050: a reader is listening
+    if (r === LEAD) seenHistory(t, histTo ?? t.history.length);
     return { read: t.reads[r] };
   });
 }
@@ -444,8 +511,16 @@ export async function markRead(id, reader, n) {
 /** Hand the thread to agents (their `thread wait --as <agent>` wakes on it), or take it back (remove). */
 export async function assign(id, { to, by, remove = false }) {
   const who = needAgent(by);
-  if (who !== LEAD) throw new Error(`only the lead assigns threads (--by lead), not ${who}`);
   const names = agentList(to, true);
+  if (who !== LEAD) {
+    // T-050 decision 2: the desk may hand a thread on, only to an owner who is listening
+    const desk = getDesk()?.agent;
+    if (who !== desk) throw new Error(`only the lead${desk ? ` or the desk (${desk})` : ''} assigns threads (--by lead), not ${who}`);
+    if (remove) throw new Error('only the lead removes assignees');
+    const ls = listeningFn({ threads: listThreads() });
+    const deaf = names.filter((n) => !ls(n));
+    if (deaf.length) throw new Error(`${deaf.join(', ')} ${deaf.length > 1 ? 'are' : 'is'} not listening (no thread wait armed, no read or reply in ${LISTEN_MIN} min): escalate to the lead instead (node tools/console.mjs thread escalate <id> --by ${who} --note "…")`);
+  }
   return change(id, (t, now) => {
     if (remove) t.assignees = t.assignees.filter((a) => !names.includes(a));
     else for (const n of names) if (!t.assignees.includes(n)) t.assignees.push(n);
@@ -474,8 +549,13 @@ export async function setStatus(id, { status, by, note, fromPage = false }) {
  * unread user message in a thread it sees (with --thread: that thread, followed or not); never when that thread is
  * closed. detail: [{id, title, topic, messages: [{n, at, by, text}]}] (JSON). After MET the caller runs commitWait.
  */
-export function threadWaitCondition({ as, thread } = {}) {
+export function threadWaitCondition({ as, thread, triage = false, now } = {}) {
   const reader = needAgent(as, '--as <agent>');
+  if (triage) {
+    if (reader !== LEAD) throw new Error('--triage is the lead\'s wait (--as lead); an owner waits with thread wait --as <you>');
+    if (thread !== undefined) throw new Error('--triage watches every thread: leave out --thread');
+    return triageCondition(now);
+  }
   const tid = thread !== undefined ? parseThreadId(thread) : undefined;
   if (tid) getThread(tid); // exists?
   const what = `threads ${tid || 'all'} for ${reader}`;
@@ -494,9 +574,74 @@ export function threadWaitCondition({ as, thread } = {}) {
   return { what, reader, check };
 }
 
+/**
+ * T-050: `thread wait --as lead --triage`: met for a thread when, after the lead's read mark, (a) a user message has no
+ * agent reply and no assignee is listening, (b) a user message is marked "for the lead" (forLead), (c) an escalation
+ * comes after the lead's escalation mark (histSeen.lead, a history index), or (d) a user message is TRIAGE_ESCALATE_MIN old
+ * with no agent reply after it while an owner listens. A news item adds `why` (one line per reason) and `markTo`: the
+ * lead's mark moves past what was printed but stays before a message whose 10 min are still running; `printed` (the n of
+ * each printed message) goes to t.triaged on commit, so a message printed past the mark wakes the lead only once;
+ * `histTo` (the history length seen) moves the escalation mark, so an escalation made after the check still wakes.
+ * `now`: () => ms, for tests.
+ */
+function triageCondition(nowFn) {
+  const what = 'threads that need the lead (triage)';
+  const check = () => {
+    const now = nowFn ? nowFn() : Date.now();
+    const ts = listThreads();
+    const ls = listeningState({ now, threads: ts });
+    const news = [];
+    for (const t of ts) {
+      const mark = t.reads?.[LEAD] || 0;
+      const histSeen = t.histSeen?.[LEAD] || 0;
+      const owners = t.assignees.filter((a) => ls(a).listening);
+      const why = [], msgs = [];
+      let pending = Infinity;
+      const printed = new Set(t.triaged || []); // printed by an earlier triage wake while an older timer still ran
+      for (const m of t.messages) {
+        if (m.by !== USER || m.n <= mark || printed.has(m.n)) continue;
+        const answered = t.messages.some((x) => x.n > m.n && x.by !== USER);
+        let r = null;
+        if (m.forLead) r = 'for the lead';
+        else if (answered) continue;
+        else if (!owners.length) r = t.assignees.length ? `nobody listening (assigned: ${t.assignees.join(', ')})` : 'nobody listening';
+        else if (now - Date.parse(m.at) >= TRIAGE_ESCALATE_MIN * 60000) r = `unanswered ${TRIAGE_ESCALATE_MIN} min (owner: ${owners.join(', ')})`;
+        if (!r) { pending = Math.min(pending, m.n); continue; }
+        msgs.push(m);
+        why.push(`#${m.n} ${r}`);
+      }
+      const hist = t.history || [];
+      for (let i = histSeen; i < hist.length; i++) if (hist[i].action === 'escalate') why.push(`escalated by ${hist[i].who}: ${hist[i].note}`);
+      if (!why.length) continue;
+      const top = msgs.length ? Math.max(...msgs.map((m) => m.n)) : mark;
+      news.push({
+        id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), ...(t.anchor && { anchor: anchorView(t.anchor) }), state: threadState(t), why,
+        messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.forLead && { forLead: true }), ...(m.images?.length && { images: fileImages(t, m) }) })),
+        markTo: Math.max(mark, Math.min(top, pending - 1)),
+        printed: msgs.map((m) => m.n),
+        histTo: hist.length,
+      });
+    }
+    if (news.length) return { met: true, state: `${news.length} thread(s) need the lead`, detail: JSON.stringify(news) };
+    return { met: false, state: `${ts.length} thread(s), nothing for the lead` };
+  };
+  return { what, reader: LEAD, check, triage: true };
+}
+
 /** After a MET wait: move the reader's marks past what was printed (later messages stay unread). */
 export async function commitWait(reader, news) {
-  for (const t of news) await markRead(t.id, reader, Math.max(...t.messages.map((m) => m.n)));
+  for (const t of news) {
+    await markRead(t.id, reader, t.markTo ?? (t.messages.length ? Math.max(...t.messages.map((m) => m.n)) : 0), { histTo: t.histTo });
+    // T-050 triage: messages printed past the mark (a "for the lead" message after one whose 10 min still run) are
+    // remembered in t.triaged until the lead's mark passes them, so each wakes the lead once
+    if (reader === LEAD && Array.isArray(t.printed)) {
+      await change(t.id, (x) => {
+        const m = x.reads?.[LEAD] || 0;
+        const keep = [...new Set([...(x.triaged || []), ...t.printed])].filter((n) => Number.isInteger(n) && n > m).sort((a, b) => a - b);
+        if (keep.length) x.triaged = keep; else delete x.triaged;
+      });
+    }
+  }
 }
 
 /** I-090: one line naming a comment's item: `(comment on PR-009 option both, shot 2 (/proposals#PR-009): "the quote")`. */
@@ -508,8 +653,9 @@ export function anchorLine(a) {
 /** The NEW block `thread wait` prints for one thread. */
 export function newsText(t, reader) {
   const L = [];
+  if (t.why?.length) L.push(`TRIAGE ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''}: ${t.why.map(oneLine).join('; ')}`); // T-050
   for (const m of t.messages) {
-    L.push(`NEW ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''} #${m.n} by ${m.by} at ${m.at}:`);
+    L.push(`NEW ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''} #${m.n} by ${m.by}${m.forLead ? ' (for the lead)' : ''} at ${m.at}:`);
     if (m === t.messages[0] && t.anchor) L.push(`  ${anchorLine(t.anchor)}`); // I-090: what the comment is about
     if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) L.push(`  ${l}`);
     (m.images || []).forEach((x, i) => L.push(`  ${imagesLine(x, i)}`)); // I-089: the user's pictures, to open with Read
@@ -519,8 +665,10 @@ export function newsText(t, reader) {
 }
 
 /** One line for `thread list`. */
-export function threadLine(t, reader) {
+export function threadLine(t, reader, ls = null) {
   const s = summary(t, reader || USER);
   const unread = reader ? unreadFor(t, reader).length : 0;
-  return `${t.id}  [${s.state}]  ${s.count} msg${unread ? `, ${unread} unread` : ''}  last ${s.lastAt.slice(0, 16)}Z by ${s.lastBy}${t.topic ? `  [${t.topic}]` : ''}${t.assignees.length ? `  -> ${t.assignees.join(',')}` : ''}: ${oneLine(t.title)}`;
+  // T-050 (`thread list`): each assignee's listening state
+  const who = t.assignees.map((a) => (ls ? `${a} (${ls(a).listening ? 'listening' : 'not listening'})` : a)).join(',');
+  return `${t.id}  [${s.state}]  ${s.count} msg${unread ? `, ${unread} unread` : ''}  last ${s.lastAt.slice(0, 16)}Z by ${s.lastBy}${t.topic ? `  [${t.topic}]` : ''}${t.assignees.length ? `  -> ${who}` : ''}: ${oneLine(t.title)}`;
 }

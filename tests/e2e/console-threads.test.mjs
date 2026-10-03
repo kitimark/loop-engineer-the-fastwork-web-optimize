@@ -369,3 +369,30 @@ test('I-090: POST /api/comments starts a thread with the anchor; the lead\'s thr
   assert.equal((await userPost('/api/comments', { anchor, text: 'again' }, { origin: `http://localhost:${port}` })).status, 200, 'its own origin is fine');
   assert.equal((await req('/api/comments?page=status')).json.items['status:cd-strip'].count, 2);
 });
+
+// ---- T-050 (user): routing, listening, the "For the lead" tick ----------------------------------------------------
+test('T-050: the API names who listens (toState, backstopMin); a message ticked "For the lead" wakes `thread wait --as lead --triage`; desk and topic CLI', async () => {
+  const c = await userPost('/api/threads', { title: 'Routing check', text: 'First', forLead: true });
+  const id = c.json.thread.id;
+  assert.deepEqual(c.json.thread.toState, [{ name: 'lead', listening: true, how: 'lead' }]);
+  assert.equal(cli('thread', 'assign', id, '--to', 'fix-gone', '--by', 'lead').code, 0);
+  const row = (await req('/api/threads')).json.threads.find((t) => t.id === id);
+  assert.deepEqual(row.toState.map((x) => [x.name, x.listening]), [['lead', true], ['fix-gone', false]]);
+  assert.equal(row.backstopMin, 10);
+  const w = await cliAsync('thread', 'wait', '--as', 'lead', '--triage', '--timeout', '20', '--quiet');
+  assert.equal(w.code, 0, w.stderr);
+  assert.match(w.stdout, new RegExp(`TRIAGE ${id} "Routing check": #1 for the lead`));
+  assert.match(w.stdout, new RegExp(`NEW ${id} "Routing check" #1 by user \\(for the lead\\) at `));
+  assert.match(w.stdout, /Re-arm: node tools\/console\.mjs thread wait --as lead --triage/);
+  const r = await userPost(`/api/threads/${id}/reply`, { text: 'Second', forLead: true });
+  assert.equal(r.status, 200);
+  assert.equal(JSON.parse(readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8')).messages[1].forLead, true);
+  assert.match(cli('thread', 'list').stdout, new RegExp(`${id} .*-> fix-gone \\(not listening\\): Routing check`));
+  // desk and topic map: the lead only
+  assert.equal(cli('thread', 'desk', 'set', 'desk-a', '--by', 'fix-gone').code, 1);
+  assert.match(cli('thread', 'desk', 'set', 'desk-a', '--by', 'lead').stdout, /^DESK desk-a: desk-a, not listening: the lead is the desk/);
+  assert.match(cli('thread', 'topic', 'set', 'hero-exit', '--owner', 'fix-h', '--by', 'lead').stdout, /^TOPIC hero-exit -> fix-h/);
+  assert.match(cli('thread', 'topic', 'list').stdout, /^hero-exit -> fix-h \(not listening\)/);
+  assert.match(cli('thread', 'escalate', id, '--by', 'fix-gone', '--note', 'needs a decision').stdout, new RegExp(`^ESCALATED ${id}`));
+  assert.match(cli('thread', 'desk', 'set', '--clear', '--by', 'lead').stdout, /^DESK cleared/);
+});

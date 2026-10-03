@@ -9,7 +9,9 @@
 /* The user console's Threads page (ts-console-threads): one conversation per topic. Every text is rendered with
    textContent (never as HTML); only http://localhost / 127.0.0.1 links become links. Nothing loads from outside.
    I-089: a message's images load only from this server's /thread-media/ store; the user's own images are read in the
-   browser (data: previews) and sent with the message as base64, nowhere else. */
+   browser (data: previews) and sent with the message as base64, nowhere else.
+   T-050: the recipients line names who listens ("fix-x (listening); the lead if no answer in 10 min", else "the
+   lead"), and a "For the lead" tick on both forms sends forLead (the lead's triage wait wakes at once). */
 :root {
   --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
   --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
@@ -89,6 +91,8 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
 .mtext a { color: var(--accent); }
 .to { font-size: 14px; color: var(--muted); margin: 8px 0 0; overflow-wrap: anywhere; }
 .to b { color: var(--ink); font-weight: 650; }
+.tick { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+.tick input { width: 18px; height: 18px; margin: 0; }
 /* I-089: images under a message (thumbnails, open full size), the composer's attachments, the full-size view */
 .mimgs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 .mimgs figure, .pending figure { margin: 0; max-width: 220px; }
@@ -135,6 +139,7 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
         <div class="pending" id="new-imgs"></div>
         <input type="file" id="new-file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
         <p class="to" id="new-to">Your question goes to: <b>lead</b></p>
+        <label class="tick"><input type="checkbox" id="new-lead"> For the lead (a decision, a priority, start or stop something, the phone)</label>
         <div class="row"><button type="button" class="quiet" id="new-add" title="PNG, JPEG, GIF or WebP; up to 6, 20 MB together. You can also paste or drop them.">Add images</button><span class="hint">Ctrl/⌘+Enter sends. The lead reads it and replies or hands it to the agent on that topic.</span><span class="sp"></span><button class="primary" type="submit" id="new-send">Start thread</button></div>
       </form>
     </details>
@@ -154,6 +159,7 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
       <div class="pending" id="reply-imgs"></div>
       <input type="file" id="reply-file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
       <p class="to" id="reply-to">Your reply goes to: <b>lead</b></p>
+      <label class="tick"><input type="checkbox" id="reply-lead"> For the lead (a decision, a priority, start or stop something, the phone)</label>
       <div class="row"><button type="button" class="quiet" id="tv-close">Close thread</button><button type="button" class="quiet" id="reply-add" title="PNG, JPEG, GIF or WebP; up to 6, 20 MB together. You can also paste or drop them.">Add images</button><span class="sp"></span><span class="hint">Ctrl/⌘+Enter sends</span><button class="primary" type="submit" id="reply-send">Send</button></div>
     </form>
   </section>
@@ -180,8 +186,16 @@ function ago(iso) {
 }
 function who(by) { return by === 'user' ? 'You' : by; }
 /** I-084 (user T-038): who reads the user's reply: the lead always, then the assignees; 'lead' when the list is missing. */
-function toNames(t) { return (t && t.to && t.to.length ? t.to : ['lead']).join(', '); }
-function setTo(id, label, t) { var p = $(id); p.replaceChildren(document.createTextNode(label), el('b', null, toNames(t))); }
+function toNames(t, forLead) {
+  // T-050: with toState, name only who listens; the lead is the 10-min backstop, or the reader when nobody listens
+  if (t && t.toState) {
+    var on = t.toState.filter(function (x) { return x.name !== 'lead' && x.listening; }).map(function (x) { return x.name + ' (listening)'; });
+    if (!on.length) return 'the lead';
+    return on.join(', ') + (forLead ? ' and the lead' : '; the lead if no answer in ' + (t.backstopMin || 10) + ' min');
+  }
+  return (t && t.to && t.to.length ? t.to : ['lead']).join(', ');
+}
+function setTo(id, label, t) { var p = $(id); p.replaceChildren(document.createTextNode(label), el('b', null, toNames(t, $(id === 'new-to' ? 'new-lead' : 'reply-lead').checked))); }
 var STATE = { open: 'waiting for the agents', answered: 'answered', 'waiting-on-you': 'waiting on you', closed: 'closed' };
 
 /** Text with only localhost links made clickable; everything else as text. */
@@ -408,23 +422,26 @@ $('new-form').addEventListener('submit', function (e) {
   if (stillReading('new')) return toast('Still reading the images, a moment.');
   busy = true; $('new-send').disabled = true;
   var topic = $('new-topic').value.trim();
-  api('POST', '/api/threads', { title: $('new-title').value, text: $('new-text').value, topic: topic || undefined, images: imagesBody('new') }).then(function (j) {
+  var forLead = $('new-lead').checked;
+  api('POST', '/api/threads', { title: $('new-title').value, text: $('new-text').value, topic: topic || undefined, images: imagesBody('new'), forLead: forLead || undefined }).then(function (j) {
     store('thread-draft-new-title', null); store('thread-draft-new', null);
-    $('new-title').value = ''; $('new-text').value = ''; $('new-topic').value = ''; clearPending('new');
+    $('new-title').value = ''; $('new-text').value = ''; $('new-topic').value = ''; clearPending('new'); $('new-lead').checked = false;
     location.hash = j.thread.id;
-    toast('Sent to ' + toNames(j.thread) + '.');
+    toast('Sent to ' + toNames(j.thread, forLead) + '.');
   }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('new-send').disabled = false; });
 });
+$('reply-lead').addEventListener('change', function () { if (curThread) setTo('reply-to', 'Your reply goes to: ', curThread); });
 $('reply-form').addEventListener('submit', function (e) {
   e.preventDefault();
   if (busy || !current) return;
   if (stillReading('reply')) return toast('Still reading the images, a moment.');
   busy = true; $('reply-send').disabled = true;
   var id = current;
-  api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value, images: imagesBody('reply') }).then(function (j) {
-    store('thread-draft-' + id, null); $('reply-text').value = ''; clearPending('reply');
+  var forLead = $('reply-lead').checked;
+  api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value, images: imagesBody('reply'), forLead: forLead || undefined }).then(function (j) {
+    store('thread-draft-' + id, null); $('reply-text').value = ''; clearPending('reply'); $('reply-lead').checked = false;
     renderThread(j.thread);
-    toast('Sent to ' + toNames(j.thread) + '.');
+    toast('Sent to ' + toNames(j.thread, forLead) + '.');
     var last = $('tv-msgs').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest' });
   }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('reply-send').disabled = false; });
 });
