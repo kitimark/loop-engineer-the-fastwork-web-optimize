@@ -30,6 +30,7 @@ import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, isGroup, slotIn, timedInSlotRefusal, SHARED_LANE } from './lock.mjs';
 import { redact } from './redact.mjs';
 import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, keeperRetryMs, SIM_MJS } from './sim-warm.mjs';
+import * as BG from './sim-background.mjs';
 
 export const SIM_NAME = 'fw-sim 15 Pro Max';
 export const DEVICE_TYPE = 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max';
@@ -61,6 +62,8 @@ export const iwdpCfgFile = () => file('iwdp.cfg');
 export const sessionFile = () => file('session.json');
 const pidFile = (name) => file(`${name}.pid.json`);
 export const logFile = (name) => file(`${name}.log`);
+/** I-082: the Simulator's background CPU, one JSON line per settle / window / summary, every session ({session, owner, kind}). */
+export const backgroundFile = () => file('background.jsonl');
 function ensureDir() { mkdirSync(simDir(), { recursive: true, mode: 0o700 }); }
 const readJson = (f, d = null) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 function writePrivate(f, text) { ensureDir(); writeFileSync(f, text, { mode: 0o600 }); chmodSync(f, 0o600); }
@@ -840,6 +843,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   const gate = holdGate(undefined, undefined, { owner, functional, what: functional ? 'a functional Simulator session' : undefined });
   if (!gate.ok) throw new Error(`refusing sim session: ${gate.reason}`);
   const p = ports();
+  const bgCfg = BG.config(); // I-082: a bad FW_SIM_SETTLE_SEC / FW_SIM_BG_* refuses before anything boots
   const cfg = readConfig();
   if (!cfg.udid) throw new Error('no Simulator configured: node tools/sim.mjs setup');
   const dev = findDevice(cfg);
@@ -897,7 +901,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   const handlers = ['SIGINT', 'SIGTERM', 'SIGHUP'].map((s) => [s, onSig(s)]);
   for (const [s, h] of handlers) process.on(s, h);
   const state = { appOpened: false, wdaStarted: false, ready: false };
-  let code = 1;
+  let code = 1, mon = null;
   try {
     log(`sim session ${id} (owner ${owner}, window ${window}${functional ? `, functional, lock mode ${gate.mode}` : ''}): ${warm ? `reusing the booted ${SIM_NAME} (I-063: idle ${rec.boot.idleSec} s, session ${rec.boot.sessionsOnBoot} on this boot)` : `booting ${SIM_NAME}${rec.boot.afterWarm ? ' (a timing session cold-boots: the warm device was shut down first, I-063)' : ''}`}`);
     if (warm) { await stopOne('wda', () => {}); await stopOne('proxy', () => {}); } // none normally: the last session stopped them
@@ -910,7 +914,17 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     await startProxy({ owner, session: id, log });
     if (tip) { rec.tipDismissed = await tip({ udid: cfg.udid, state, log }); writePrivate(sessionFile(), JSON.stringify(rec, null, 1)); }
     if (interrupted) throw new Error(`interrupted by ${interrupted}`);
-    const env = { ...process.env, FW_SIM_SESSION: id, FW_SIM_PORT: String(p.tabs), FW_IPHONE_PORT: String(p.tabs), FW_SIM_DEVICE_PORT: String(p.list), FW_SIM_WDA_PORT: String(p.wda), FW_SIM_UDID: cfg.udid, ...(functional ? { FW_SIM_FUNCTIONAL: '1' } : {}) };
+    // I-082: wait (bounded) for the Simulator's own background CPU to settle, then record it during the command, so its
+    // counts carry the context (tools/lib/sim-background.mjs; read-only, nothing in the Simulator is stopped)
+    const cmdRoom = Number.isFinite(gate.endsAt) ? (gate.endsAt - Date.now() - cleanupMs) / 1000 : Infinity;
+    const settled = await BG.settle({ maxSec: Math.max(0, Math.min(bgCfg.settleSec, Math.floor(cmdRoom * 0.25))), limitPct: bgCfg.limitPct, abort: ac.signal });
+    rec.background = { settle: settled, limitPct: bgCfg.limitPct, everySec: bgCfg.everySec, file: 'sim/background.jsonl' };
+    writePrivate(sessionFile(), JSON.stringify(rec, null, 1));
+    log(BG.settleLine(settled));
+    BG.appendJsonl(backgroundFile(), { session: id, owner, kind: 'settle', boot: rec.boot?.mode ?? null, at: new Date().toISOString(), ...settled });
+    if (interrupted) throw new Error(`interrupted by ${interrupted}`);
+    mon = BG.monitor({ everySec: bgCfg.everySec, limitPct: bgCfg.limitPct, onWindow: (w) => BG.appendJsonl(backgroundFile(), { session: id, owner, kind: 'window', ...w }) });
+    const env = { ...process.env, FW_SIM_SESSION: id, FW_SIM_BACKGROUND_LOG: backgroundFile(), FW_SIM_PORT: String(p.tabs), FW_IPHONE_PORT: String(p.tabs), FW_SIM_DEVICE_PORT: String(p.list), FW_SIM_WDA_PORT: String(p.wda), FW_SIM_UDID: cfg.udid, ...(functional ? { FW_SIM_FUNCTIONAL: '1' } : {}) };
     const timeoutMs = Number.isFinite(gate.endsAt) ? Math.max(1000, gate.endsAt - Date.now() - cleanupMs) : 0;
     log(`SIM_READY tabs :${p.tabs}; running: ${scrub([cmd, ...args].join(' '))}${timeoutMs ? ` (stopped after ${Math.round(timeoutMs / 1000)} s, before your hold ends)` : ''}`);
     const ids = knownIds();
@@ -925,6 +939,9 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     throw e;
   } finally {
     const clog = (s) => log(`cleanup: ${scrub(s)}`);
+    if (mon) { // I-082: the background during the command, before cleanup changes it
+      try { const sum = mon.stop(); log(BG.summaryLine(sum)); const { windows, ...rest } = sum; BG.appendJsonl(backgroundFile(), { session: id, owner, kind: 'summary', at: new Date().toISOString(), code, interrupted, ...rest }); } catch (e) { clog(`background summary failed: ${e.message}`); }
+    }
     try { const w = pidInfo('wda'); if (w && w.session === id) await stopOne('wda', clog); } catch (e) { clog(`wda stop failed: ${e.message}`); }
     try { await stopOne('proxy', clog); } catch (e) { clog(`proxy stop failed: ${e.message}`); }
     // I-063: a functional session that got to its command and ended without a signal keeps fw-sim booted for the next

@@ -31,6 +31,15 @@
 //        The next functional session takes the warm device over (same device, type and runtime; else refused): no
 //        boot; Safari quit, its HTTP cache emptied, relaunched, proxy restarted. A timing session never starts warm: it
 //        shuts the warm device down and cold-boots (meta.sim boot.afterWarm), and always shuts down at its end.
+//        I-082: before <cmd>, every session waits (at most FW_SIM_SETTLE_SEC, default 45, and a quarter of the time its
+//        command has) until the Simulator's own background CPU (its launchd_sim tree minus Safari / WebKit / WDA) is at or
+//        below FW_SIM_BG_LIMIT_PCT (default 60 % of one core), and prints SIM_QUIET settled|NOT settled (never fails);
+//        during <cmd> it reads that background every FW_SIM_BG_EVERY_SEC (10; 0 = off) and prints SIM_BACKGROUND (mean,
+//        max, busy windows, busiest processes) at the end. Every reading goes to <state>/sim/background.jsonl (one line
+//        per settle / window / summary, with the session id; $FW_SIM_BACKGROUND_LOG names it for <cmd>), and the settle
+//        reading to meta.sim.background of scroll / record / run / gesture records. Read-only: nothing in the Simulator
+//        is stopped (tools/lib/sim-background.mjs).
+//   node tools/sim.mjs background [--seconds 3]               one reading of the Simulator's background CPU now (read-only)
 //   node tools/sim.mjs shutdown [--warm-only --reason r --by b]  now (--warm-only: only a warm device, under the
 //        simulator lock: verify.mjs / bench gain / quiet phone runs call it before timing, I-063)
 //   # inside a session (its <cmd>, e.g. sh -c '...'):
@@ -72,7 +81,7 @@ const VALUED = ['--owner', '--out', '--label', '--seconds', '--window', '--runti
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs setup [--runtime r] | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] -- <cmd> | open <url> | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   if (cmd === 'setup') { S.setup({ runtime: opt('runtime', null), log }); return 0; }
@@ -80,6 +89,17 @@ async function main() {
   if (cmd === 'doctor') return S.doctor({ fix: flag('fix'), log });
   if (cmd === 'session') keepAwakeFor(`sim.mjs session${flag('functional') ? ' --functional' : ''} (${opt('owner', process.env.FW_LOCK_OWNER)})`); // I-070: a Sim session measures (memory counts too): caffeinate -i -s -w <this pid>
   if (cmd === 'session') return S.session({ owner: opt('owner', process.env.FW_LOCK_OWNER), window: opt('window', 'shown'), cmd: rest[0], args: rest.slice(1), log, err, functional: flag('functional') });
+  if (cmd === 'background') {
+    // I-082: read-only, any time (one ps per end of the window)
+    const BG = await import('./lib/sim-background.mjs');
+    const a = BG.psSnapshot();
+    if (!a) { err('could not read the process table (ps)'); return 1; }
+    await new Promise((r) => setTimeout(r, 1000 * Number(opt('seconds', 3))));
+    const w = BG.between(a, BG.psSnapshot(), { n: 5 });
+    if (!w?.sims) { log('SIM_BACKGROUND no Simulator runs (no launchd_sim)'); return 0; }
+    log(`SIM_BACKGROUND ${BG.describe(w, (await import('node:os')).default.loadavg()[0])}; host-side Simulator services ${Math.round(w.hostSimPct)} %${w.sims > 1 ? `; ${w.sims} Simulators run` : ''}`);
+    return 0;
+  }
   if (cmd === 'keeper') return S.keeper({ id: arg, log }); // I-063: started detached by a session that kept fw-sim booted
   if (cmd === 'shutdown' && flag('warm-only')) {
     // I-063: only the warm device (warm.json), under the simulator lock, never a live session's: the timed tools' backstop

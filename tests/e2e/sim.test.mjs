@@ -142,6 +142,64 @@ test('session: boot, proxy with the mode-600 config file (phones at -1), <cmd> w
   cleanedUp();
 });
 
+test('I-082 session: before <cmd> it waits (bounded) for the Simulator\'s background CPU to settle and says so; during <cmd> it records it; every reading in sim/background.jsonl (mode 600) with the session id; read-only, the command runs either way', async () => {
+  const udid = setup();
+  const table = join(dir, 'ps.json');
+  const ps = wrapper('ps', FX('fake-sim-tools.mjs'), ['ps']);
+  // the Sim's launchd_sim tree: SleepWidgetExtension at a full core, searchd 30 %, the log relay, the page; a host node outside it
+  const rows = (widget) => [{ pid: 1, ppid: 0, command: 'launchd', pct: 0 }, { pid: 50, ppid: 1, command: 'node', pct: 300 }, { pid: 100, ppid: 1, command: 'launchd_sim', pct: 0 },
+    { pid: 101, ppid: 100, command: 'SleepWidgetExtension', pct: widget }, { pid: 102, ppid: 100, command: 'searchd', pct: 30 }, { pid: 103, ppid: 100, command: 'com.apple.WebKit.WebContent', pct: 90 },
+    { pid: 104, ppid: 100, command: 'diagnosticd', pct: 40 }];
+  const out = join(dir, 'child.json');
+  const cmd = childJs(`setTimeout(() => require('fs').writeFileSync(${JSON.stringify(out)}, JSON.stringify({ log: process.env.FW_SIM_BACKGROUND_LOG, session: JSON.parse(require('fs').readFileSync(${JSON.stringify(join(env.FW_STATE_DIR, 'sim', 'session.json'))}, 'utf8')) })), 1500)`);
+  const e = { ...env, FW_PS: ps, FAKE_PS_TABLE: table, FW_SIM_SETTLE_SEC: '5', FW_SIM_BG_EVERY_SEC: '0.4' };
+
+  writeFileSync(table, JSON.stringify({ t0: Date.now() - 1000, rows: rows(100) }));
+  let r = await inHold(cmd, { e });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /SIM_QUIET NOT settled after [3-6] s \(limit 60 % of a core, max 5 s\): sim background 1[0-6]\d % of a core \(SleepWidgetExtension \d+ %, searchd \d+ %\), page \d+ %, render 0 %, log [3-5]\d %/, 'busy: waited at most FW_SIM_SETTLE_SEC, then ran the command anyway');
+  assert.ok(r.stdout.indexOf('SIM_QUIET') < r.stdout.indexOf('SIM_READY'), 'the settle comes before the command');
+  assert.match(r.stdout, /SIM_BACKGROUND \d+ windows of 0\.4 s: sim background mean 1[0-6]\d %, max 1\d\d % of a core; \d+ window\(s\) above 60 %; busiest over the command: SleepWidgetExtension \d+ %, searchd \d+ %; means: page \d+ %, render 0 %, log [3-5]\d %/);
+  let c = JSON.parse(readFileSync(out, 'utf8'));
+  const bgFile = join(simDir(), 'background.jsonl');
+  assert.equal(c.log, bgFile, '<cmd> gets FW_SIM_BACKGROUND_LOG');
+  assert.equal(c.session.background.settle.settled, false);
+  assert.equal(c.session.background.settle.last.top[0].command, 'SleepWidgetExtension');
+  assert.equal(statSync(bgFile).mode & 0o777, 0o600);
+  let recs = lines(bgFile);
+  const id = c.session.id;
+  assert.deepEqual([...new Set(recs.map((x) => x.kind))], ['settle', 'window', 'summary']);
+  assert.ok(recs.every((x) => x.session === id && x.owner === 'me'));
+  assert.equal(recs.at(-1).code, 0);
+  assert.ok(recs.filter((x) => x.kind === 'window').every((x) => x.bgPct > 60 && x.top[0].command === 'SleepWidgetExtension'));
+  noIds(r.out + readFileSync(bgFile, 'utf8'), udid);
+  cleanedUp();
+
+  // quiet: one window and on (the background below the limit), same records
+  writeFileSync(table, JSON.stringify({ t0: Date.now() - 1000, rows: rows(0) }));
+  r = await inHold(cmd, { e });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /SIM_QUIET settled after [3-4] s \(limit 60 % of a core, max 5 s\): sim background [2-4]\d % of a core \(searchd \d+ %/);
+  c = JSON.parse(readFileSync(out, 'utf8'));
+  assert.equal(c.session.background.settle.settled, true);
+  assert.equal(c.session.background.settle.windows.length, 1);
+  recs = lines(bgFile);
+  assert.ok(recs.some((x) => x.session === c.session.id && x.kind === 'summary'), 'appended, the first session\'s lines kept');
+  assert.ok(recs.some((x) => x.session === id));
+
+  // FW_SIM_SETTLE_SEC=0 and FW_SIM_BG_EVERY_SEC=0: one reading only, no monitor
+  writeFileSync(table, JSON.stringify({ t0: Date.now() - 1000, rows: rows(100) }));
+  r = await inHold(cmd, { e: { ...e, FW_SIM_SETTLE_SEC: '0', FW_SIM_BG_EVERY_SEC: '0' } });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /SIM_QUIET NOT settled after [0-4] s \(limit 60 % of a core, max 0 s\)/);
+  assert.match(r.stdout, /SIM_BACKGROUND skipped \(FW_SIM_BG_EVERY_SEC=0\)/);
+  // without FW_PS a test never reads the real ps (a real Simulator someone booted must not slow a test down)
+  r = await inHold(cmd);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /SIM_QUIET skipped \(a test process without FW_PS\)/);
+  assert.match(r.stdout, /SIM_BACKGROUND skipped \(a test process without FW_PS\)/);
+});
+
 test('I-052 session: Safari\'s HTTP caches (WebKit NetworkCache, fsCachedData) are emptied after boot, before Safari launches; website data, tabs and other apps untouched; recorded in the session; a container lookup failure refuses the session', async () => {
   const udid = setup();
   const app = join(dir, 'Devices', udid, 'data', 'Containers', 'Data', 'Application', '0F0F0F0F-0000-4000-8000-000000000001');

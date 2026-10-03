@@ -9,6 +9,9 @@
 //   osascript  `application "Simulator" is running` -> true/false; `quit app "Simulator"` (I-078: with
 //              $FAKE_SIMAPP_QUIT_SHUTDOWN_MS=N every Booted device in $FAKE_SIMCTL_STATE goes "Shutting Down" and reaches
 //              Shutdown N ms later, as when Simulator.app shuts its devices down on quit, after the quit returns).
+//   ps         `ps -A -o pid=,ppid=,time=,comm=` (I-082, $FW_PS): the processes of $FAKE_PS_TABLE ({t0: epoch ms, rows:
+//              [{pid, ppid, command, pct}]}), each with CPU time pct % of one core since t0, comm a full path like the
+//              real one's (the tools take its basename).
 // Every call appends {tool, argv} to $FAKE_SIMTOOLS_LOG. All ids are made up.
 import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs';
 
@@ -41,4 +44,9 @@ if (tool === 'lsof') {
       writeFileSync(process.env.FAKE_SIMCTL_STATE, JSON.stringify(st, null, 1));
     }
   }
+} else if (tool === 'ps') {
+  const t = JSON.parse(readFileSync(process.env.FAKE_PS_TABLE, 'utf8'));
+  const el = Math.max(0, (Date.now() - t.t0) / 1000);
+  const time = (sec) => `${Math.floor(sec / 60)}:${(sec % 60).toFixed(2).padStart(5, '0')}`;
+  for (const r of t.rows) console.log(`${String(r.pid).padStart(5)} ${String(r.ppid).padStart(5)} ${time((r.pct / 100) * el).padStart(10)} /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/usr/libexec/${r.command}`);
 } else { console.error(`fake-sim-tools: unknown tool ${tool}`); process.exit(2); }

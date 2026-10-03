@@ -226,6 +226,9 @@ test('simMeta: device "simulator", runtime / Xcode / window / tip / ports / host
   assert.equal(m.safariCache, null, 'I-052: a session record without the field (from before the fix): null, not "cleared"');
   const c = { cleared: true, removedMB: { NetworkCache: 4, fsCachedData: 0 } };
   assert.deepEqual(simMeta({ safariCache: c }).safariCache, c, 'I-052: every Simulator record says whether Safari\'s HTTP cache was emptied at boot');
+  assert.equal(m.background, null, 'I-082: a session from before the fix has no background reading');
+  const settle = { settled: false, waitedSec: 45, limitPct: 60, last: { bgPct: 130, top: [{ command: 'SleepWidgetExtension', kind: 'background', cpuPct: 100 }] } };
+  assert.deepEqual(simMeta({ background: { settle, limitPct: 60 } }).background, settle, 'I-082: every Simulator record carries the Sim\'s background CPU when its command started');
 });
 
 test('I-052 fetchReport: transferSize > 0 network, 0 with a body cache, cross-origin / missing fields unknown; the server log\'s GETs; exit codes', () => {
