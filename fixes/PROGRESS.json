@@ -104,7 +104,7 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position (an earlier version matched the original on your phone); first explain why that version made one frame about 11 ms slower where the hero ends.",
-   "next": "The independent review asked for a few small code changes (a one-frame flash, a resting filter value, two listener details). After them and a Simulator check, a phone trace of where the hero ends (P-074), which reads where the work happens, not timing.",
+   "next": "The small code changes from the review are in, and the phone trace plan (P-074) passed the ops check except one line: it must say the phone starts warm. Next: that line, the reviewer's OK, then the phone trace of where the hero work happens (not timing).",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [

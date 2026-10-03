@@ -9,6 +9,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 09:0xZ **P-074 re-read at b93db07** (fix-hero-exit-threaded, review round 3): hashes checked on the snapshot files (V JS d48d224adcd4 / CSS 55ba45f138c9, C 7bf7c4657d21 / f523598b2a24, scorer 1d1fc26908f1, gesture e3f31872b82f), --fn lines checked on both snapshots, all round-2 must-fixes resolved. One wording fix owed: the ticket must name the start band 38-40 °C and one start method (T-029 #30); ops checks only that line. Row P-074 registered in PREDICTIONS.md (pre-data). Phone GO = that line + review-hero-exit ACCEPT. fix-rest-script will name the less-work rule as its D gate and ask for a P-id (next free P-078).
 - **10:1xZ P-077 assigned** to fix-platform-idle (G1 glint + G3 sweep on st6-rb2). Its D card is gated by the
   less-work rule.
   - Chrome frozen frames are not pixel-identical: sweep gradient phase ≤ 23 LSB; glint ≤ 64 LSB on AA edge rows in
