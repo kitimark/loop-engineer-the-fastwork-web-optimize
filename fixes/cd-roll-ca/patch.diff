@@ -3,11 +3,11 @@
 # STACKED on fixes/cd-strip/overlay: apply cd-strip first, then this patch on top of it
 # rebuild the overlay with: node tools/fix.mjs apply cd-roll-ca --on cd-strip
 # contains excerpts of Fastwork's code: local branches only, never push
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4036,6 +4036,93 @@
+@@ -4036,6 +4036,92 @@
    layer: the same geometry as -n*c + k*c without two large offsets that cancel in the layer tree (with them, WebKit's
    glyph edges differed from the faces' under the hero's fade; observed)*/
    __cdStripM = (v) => Math.round(((v % 10) + 10) % 10),
@@ -78,13 +78,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    let x = document.timeline?.currentTime;
 +    return typeof x == `number` && x >= t0 && x <= now ? x : now;
 +  },
-+  /*cd-roll-ca: the cells a roll along path K moves, and their keyframes. On strip-rw (cd-strip) a digit at rest has
-+  its strip at 0, the wrapper at top -M*c (M = __cdStripM(target), cd-strip's effect) and cell k at top k*c, so cell k
-+  sits (k - M)*c from the strip layer. Layout can't move inside a compositor animation, so during a roll every cell
-+  that comes within 1.5 cells of the clip gets top M*c (with the wrapper, 0 from the strip layer) and its own transform
-+  (k - n)*c = k*c + __cdStripY(n, c): only the offset that cell shows, never two large offsets that cancel; the strip
-+  stays at 0 and a cell's last keyframe is its rest place. Cells farther away keep their rest top, at least 1.5 cells
-+  out. The wrapper is cd-strip's: the roll never writes it*/
++  /*cd-roll-ca: the cells a roll along path K moves, and their keyframes. On strip-tc (cd-strip) a digit at rest has
++  its strip at 0 and cell k at translateY((k - M)*c) (M = __cdStripM(target), cd-strip's effect, which runs at the target
++  change): its rest place. During a roll every cell that comes within 1.5 cells of the clip gets a Web Animation on that
++  same transform, (k - n)*c = k*c + __cdStripY(n, c) at value n, which overrides the inline rest transform while it
++  runs; the strip stays at 0 and a cell's last keyframe is its rest place. Cells farther away keep their rest
++  transform, at least 1.5 cells out. The roll writes no top, no wrapper and no inline transform*/
 +  __crCells = (K) => {
 +    let r = [];
 +    for (let k = 0; k < 11; k++) {
@@ -101,38 +100,28 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    QE = h(
      `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
    );
-@@ -4045,15 +4132,101 @@
+@@ -4045,15 +4131,89 @@
      a = N(I(o(() => s(i)))),
      c = N(0),
      /*countdown-idle-raf: false while the countdown is off-screen*/
 -    __cdAnimate = R(() => r.animate !== !1);
 +    __cdAnimate = R(() => r.animate !== !1),
 +    /*cd-roll-ca: the strip's wrapper (set when it mounts; its children are the cells) and the running roll {K: path,
-+    t0, M: __cdStripM(target), cells: the cells it moves, A: their Animations, F: the start-frame callback, ran}*/
++    t0, cells: the cells it moves, A: their Animations, F: the start-frame callback, ran}*/
 +    __crEl = null,
 +    __crRoll = null,
-+    /*cd-roll-ca: cell tops: M*c for the cells the running roll moves (0 from the strip layer with the wrapper at
-+    -M*c; their animations place them), else cd-strip's rest tops k*c. Writes only the tops that change*/
-+    __crTops = (C) => {
-+      let Q = __crRoll;
-+      if (__crEl && C > 0)
-+        for (let t = 0; t < 11; t++) {
-+          let y = `${Q && Q.A && Q.cells.includes(t) ? Q.M * C : t * C}px`;
-+          __crEl.children[t].style.top !== y && (__crEl.children[t].style.top = y);
-+        }
-+    },
-+    /*cd-roll-ca: end the roll; its cells go back to cd-strip's rest tops in the same task (no frame in between)*/
++    /*cd-roll-ca: end the roll; cancelling its animations shows cd-strip's rest transforms again (no frame in between)*/
 +    __crStop = () => {
 +      let Q = __crRoll;
 +      if (!Q) return;
 +      __crRoll = null;
 +      cancelAnimationFrame(Q.F);
-+      Q.A && (Q.A.forEach((x) => x.cancel()), __crTops(o(() => s(c))));
++      Q.A && Q.A.forEach((x) => x.cancel());
 +    },
 +    /*cd-roll-ca: (re)start the roll's animations at its own t0 (a restart for a new cell height continues in place).
 +    Keyword easing linear between the points (composited in Chrome and WebKit). All cells of a roll get the same
 +    keyframe offsets and the same startTime. fill both: a frame before t0 shows the start, and the end holds the rest
-+    place until the finish handler hands the cells back to their tops*/
++    place until the finish handler cancels them*/
 +    __crPlay = (C) => {
 +      let Q = __crRoll;
 +      if (!Q || !__crEl || !(C > 0)) return;
@@ -148,8 +137,6 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        return A;
 +      });
 +      Q.A[0].onfinish = () => Q === __crRoll && __crStop();
-+      Q.M = __cdStripM(K[K.length - 1][1]);
-+      __crTops(C);
 +    };
    b(() => {
      let e = s(i);
@@ -205,19 +192,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = performance.now(),
        r = window.requestAnimationFrame(function i(o) {
          let s = GE(t, e, o - n);
-@@ -4068,10 +4241,14 @@
+@@ -4068,6 +4228,9 @@
        var r = __cdStripT(),
          w = r.firstChild;
        let o;
 +      /*cd-roll-ca: the roll animates this strip's cells; a new cell height re-keys a running roll at the same t0*/
 +      __crEl = w;
 +      l((e) => __crPlay(e), [() => s(c)]);
-       (l((e) => {
-         /*cd-strip: cell k at top k*c px (c = the spacer's integer offsetHeight, as the original's face offsets use);
-         re-runs only when c changes*/
--        for (let t = 0; t < 11; t++) w.children[t].style.top = `${t * e}px`;
-+        /*cd-roll-ca: through __crTops, so the cells a running roll moves keep top M*c*/
-+        __crTops(e);
-       }, [() => s(c)]),
-         l((e, m) => {
-           /*cd-strip: the wrapper at -m*c px, m = __cdStripM(v); re-runs only when c or m changes (one write)*/
+       (l((e, m) => {
+         /*cd-strip: cell k moved (k - m)*c px by its own transform, as the original moves each face (c = the spacer's
+         integer offsetHeight, m = __cdStripM(v)); no top writes, so nothing moves in layout (a top write is a layout

@@ -4,20 +4,20 @@
  "date": "2026-10-03T07:45:24Z",
  "config": {
   "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
-  "stackedOn": "cd-strip strip-rw (patch 1f3c26a16563, review round 2 CSS) on st6-rb2",
-  "baseJsSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
-  "buildJsSha256": "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec",
+  "stackedOn": "cd-strip strip-tc (accepted PR-008 rev 2, 2026-10-03 09:31Z) on st6-rb2",
+  "baseJsSha256": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
+  "buildJsSha256": "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3",
   "chrome": "Chrome/154.0.8037.97, 430x932 DPR 3 mobile, CPU 1x, served --vendors=local --latency 150 via fix.mjs serve",
   "webkit": "iOS Simulator fw-sim 15 Pro Max, Mobile Safari, Timeline counts (never times, F-084)",
   "buildJsSha256Round2": "673b110d118c",
   "buildJsSha256Round1": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
   "snapshots": {
-   "dir": "out/cd-roll-ca/snap/{C6,V7} (C6 = cd-strip final, V7 = C6 + this build); dev base C5/V6 (CSS 9b2f89ea58bd)",
+   "dir": "out/cd-roll-ca/snap/{C8,V9} (C8 = cd-strip strip-tc, V9 = C8 + this build); earlier C6/V7 on strip-rw (config.stripRw)",
    "hashes": [
-    "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5  C6/_app/immutable/nodes/2.DyWL8TcE.js",
-    "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  C6/_app/immutable/assets/2.gBuqKVzi.css",
-    "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec  V7/_app/immutable/nodes/2.DyWL8TcE.js",
-    "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  V7/_app/immutable/assets/2.gBuqKVzi.css"
+    "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16  C8/_app/immutable/nodes/2.DyWL8TcE.js",
+    "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d  C8/_app/immutable/assets/2.gBuqKVzi.css",
+    "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3  V9/_app/immutable/nodes/2.DyWL8TcE.js",
+    "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d  V9/_app/immutable/assets/2.gBuqKVzi.css"
    ]
   },
   "measurementCodeChanged": false,
@@ -48,10 +48,26 @@
     "serve": "sh out/cd-roll-ca/serve-snap.sh"
    }
   },
-  "baseCssSha256": "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe",
-  "patchDiffBaseSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5"
+  "baseCssSha256": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d",
+  "patchDiffBaseSha256": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
+  "stripRw": {
+   "stackedOn": "cd-strip strip-rw (patch 1f3c26a16563, review round 2 CSS) on st6-rb2",
+   "baseJsSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
+   "baseCssSha256": "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe",
+   "buildJsSha256": "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec",
+   "patchDiffBaseSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
+   "snapshots": {
+    "dir": "out/cd-roll-ca/snap/{C6,V7} (C6 = cd-strip final, V7 = C6 + this build); dev base C5/V6 (CSS 9b2f89ea58bd)",
+    "hashes": [
+     "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5  C6/_app/immutable/nodes/2.DyWL8TcE.js",
+     "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  C6/_app/immutable/assets/2.gBuqKVzi.css",
+     "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec  V7/_app/immutable/nodes/2.DyWL8TcE.js",
+     "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  V7/_app/immutable/assets/2.gBuqKVzi.css"
+    ]
+   }
+  }
  },
- "verdict": "round 4 (cells-only on strip-rw), counts only: Chrome countdown rAF 162 -> 8 per 6 s at y 0 (others frozen), WebKit Sim frames match C to <= 0.0151 px cell rects (0 >= 1/64, 0 unmatched), pixel max delta 5 on rolling digits (path interpolation <= 0.019 px), layers equal mid-roll; +1 backed cell (+0.023 MB) at rest in 2 of 4 Sim runs (OBSERVED); rest of the counted set PENDING (cd-strip PR-008 rev 2)",
+ "verdict": "round 4 rebuilt on strip-tc (V9, no __crTops; review round 4 on the delta, then the counted set from session A on C8/V9); all round-4 measurements so far are on strip-rw (C5/V6, C6/V7): Chrome countdown rAF 162 -> 8 per 6 s at y 0 (others frozen), WebKit Sim frames match C to <= 0.0151 px cell rects (0 >= 1/64, 0 unmatched), pixel max delta 5 on rolling digits (path interpolation <= 0.019 px), layers equal mid-roll; +1 backed cell (+0.023 MB) at rest in 2 of 4 Sim runs (OBSERVED); rest of the counted set PENDING (cd-strip PR-008 rev 2)",
  "chromeCounts": {
   "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
   "base_frozen": {
@@ -1943,6 +1959,7 @@
    "costLine": "+1 backed cell (+0.023 MB) at rest in V in 2 of 4 Sim runs (seconds ones cell 2, ~0.1 s after a roll); persistence not checked yet; OBSERVED"
   },
   "pending": [
+   "review round 4 on the tc delta (no one-frame jump at the roll end, Chrome + Sim frozen frames), then all items below on C8/V9 from session A",
    "simpx carry,two,step fade50 + hero pass with A/A",
    "sim-counts frozen 2 reps",
    "sim-hide C6/V7 3 cycles",
@@ -1950,6 +1967,8 @@
    "Chrome comp-check C6/V7, h60, hide-check, fix.mjs check on C6/V7",
    "rest census +2 s",
    "frozen-frame identity at c375 (DPR 3 touch) and c1440 (DPR 1) mid-roll + live resize across 400 mid-roll (T-034)"
-  ]
+  ],
+  "measuredOn": "strip-rw (C5/V6 dev, C6/V7); none yet on strip-tc (C8/V9)",
+  "tcDelta": "no __crTops: the roll writes no top; per-cell animations override cd-strip tc inline rest transforms (k-M)*c, cancel() at finish reveals them (last keyframe = rest transform)"
  }
 }

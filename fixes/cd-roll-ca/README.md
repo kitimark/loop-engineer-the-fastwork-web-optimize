@@ -3,11 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** round 4, "cells-only" on fix-cd-strip's strip-rw (lead, 2026-10-03 04:4xZ and 05:1xZ). Dev-base checks
-on strip-rw JS `5e37af69…` + CSS `9b2f89ea…` (C5/V6); counted session A on cd-strip's review-round-2 base (CSS
-`40078cb2…`, C6/V7); the rest of the counted set waits for cd-strip's PR-008 rev 2 (its base may change again).
-Rounds 1-3 (one animation per strip, on st6-rb2) passed review (round 3 PASS, `2af461dc…`); their sections are kept
-below as history, labelled.
+**Status:** round 4, "cells-only", now on fix-cd-strip's **strip-tc** (the user accepted PR-008 rev 2, option
+land-strip-tc, 2026-10-03 09:31Z): build V9 = C8 + this fix, JS `582d120c…`; a design delta from the strip-rw build
+(no `__crTops`), so review round 4 on the delta comes before the counted set (lead). Everything measured so far ran on
+strip-rw: dev base C5/V6 (CSS `9b2f89ea…`) and counted session A on C6/V7 (CSS `40078cb2…`); those sections are kept,
+labelled strip-rw. Rounds 1-3 (one animation per strip, on st6-rb2) passed review (round 3 PASS, `2af461dc…`); their
+sections are kept below as history, labelled.
 **Stage:** F (build card); D signed by the lead, fast path, 2026-10-03 01:35Z; V = the user's blind watched comparison
 (no touch; ticket rev 2 held by the lead)
 **Device class / gate:** render-bound / main-thread script removal; gate = counts (no timing now) + the user's watched
@@ -16,17 +17,19 @@ blind comparison
 Timeline counts, frozen and running screenshots, layer census, and a hidden-page check (app switch). No phone runs.
 **Prediction:** counts only (below); no `fixes/PREDICTIONS.md` row while timing is deferred
 **Topic:** `research/gpu-props/README.md` G4 (user decision T-030 #10, "do cd-roll-ca as highest priority as well")
-**Stacked on:** `fix-cd-strip` strip-rw (its patch on st6-rb2): base `_app/immutable/nodes/2.DyWL8TcE.js` sha256
-`5e37af69bcc4…`, CSS `40078cb2d9cf…` (cd-strip `patch.diff` `1f3c26a16563…`; the dev build had CSS `9b2f89ea58bd…`,
-patch `48bc7adf7f03…`, same JS); rebuild with
+**Stacked on:** `fix-cd-strip` strip-tc (its patch on st6-rb2, accepted PR-008 rev 2): base
+`_app/immutable/nodes/2.DyWL8TcE.js` sha256 `6fa0e1e8a221…`, CSS `982a747d9263…` (strip-rw, history: JS `5e37af69bcc4…`,
+CSS `40078cb2d9cf…`, cd-strip patch `1f3c26a16563…`; dev CSS `9b2f89ea58bd…`); rebuild with
 `node tools/fix.mjs apply cd-strip --on st6-rb2 --reset` then `node tools/fix.mjs apply cd-roll-ca --on cd-strip`.
 The cd-strip patch is not committed here (its owner's deliverable).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only (the CSS is cd-strip's, unchanged): new helpers after
 `__cdStripM` (`__crPath`, `__crAt`, `__crClock`, `__crWatch`, `__crCells`, a module-level `visibilitychange`
-listener), and in `$E` (the digit) the spring effect, `__crTops`/`__crStop`/`__crPlay`, and in the strip snippet `g`
-only the replay effect, `__crEl = w` and cd-strip's cell-top effect routed through `__crTops`. Built overlay sha256
-`73dff152e454…` (V6 = V7). Served from immutable snapshot copies `out/cd-roll-ca/snap/{C6,V7}` (hashes in
-`HASHES.txt`; earlier C, V, V3, C4, V4, V5, C5, V6), one-command server `out/cd-roll-ca/serve-snap.sh`.
+listener), and in `$E` (the digit) the spring effect, `__crStop`/`__crPlay`, and in the strip snippet `g` only the
+replay effect and `__crEl = w`; cd-strip's code is untouched (the diff against strip-tc is insertions plus two
+one-line edits in `$E`). Built overlay sha256 `582d120c9f8f…` (V9; on strip-rw it was `73dff152e454…`, V6 = V7, which
+also routed cd-strip's cell-top effect through `__crTops`). Served from immutable snapshot copies
+`out/cd-roll-ca/snap/{C8,V9}` (hashes in `HASHES.txt`; earlier C, V, V3, C4, V4, V5, C5, V6, C6, V7), one-command
+server `out/cd-roll-ca/serve-snap.sh` (`ARMS="C8 V9"`).
 
 ## Why it lags
 
@@ -43,25 +46,28 @@ At each target change the hero digit computes the path the original would show a
 Animations on the compositor: one animation per cell the roll moves, keyword easing `linear` between the path's
 points, all with the same keyframe offsets and the same `startTime` (the change time). No per-frame script.
 
-**The strip (cd-strip strip-rw, not changed here).** `strip > span.cdwrap > 11 cells` (0-9 and a second 0 for the
-9→0 wrap). At rest: cell k at `top: k*c`, the uncomposited wrapper at `top: -M*c` with `M = __cdStripM(v)` = the
-whole cell nearest v, and the strip layer at `translateY(__cdStripY(v,c) + M*c)` (0 at an integer v). Each cell is its
-own layer (CSS); only cells near the clip are backed. c is the spacer's integer `offsetHeight`.
+**The strip (cd-strip strip-tc, not changed here).** `strip > span.cdwrap > 11 cells` (0-9 and a second 0 for the
+9→0 wrap). At rest: every cell at `top: 0`, cell k at `translateY((k − M)*c)` with `M = __cdStripM(v)` = the whole
+cell nearest v (one cd-strip effect on [c, M], 11 writes when either changes), the wrapper never moves, and the strip
+layer at `translateY(__cdStripY(v,c) + M*c)` (0 at an integer v). Each cell is its own layer (CSS); only cells near
+the clip are backed. c is the spacer's integer `offsetHeight`.
 
-**The roll (cells-only).** Layout can't move inside a compositor animation, so the roll moves cells, never the strip:
+**The roll (cells-only).** The roll moves cells, never the strip:
 - `__crCells(K)`: the cells within 1.5 cells of any point of the path (its whole range included). Cells farther away
-  keep their rest top and stay at least 1.5 cells outside the clip throughout.
-- At the start (`__crPlay`), each moved cell k gets `top: M*c` with M = `__cdStripM(target)`: with cd-strip's wrapper
-  at `-M*c` that is 0 from the strip layer, so the cell's own transform is its whole offset,
-  `translateY(k*c + __cdStripY(n,c))` = `(k − n)*c` along the path n. Only the offset that cell shows, never two large
-  offsets that cancel in the layer tree (the reason cd-strip moved to the wrapper). The strip layer stays at 0 (the
-  target is the integer the inline transform already shows), and a cell's last keyframe is its rest place.
-- The wrapper is cd-strip's: the roll never writes it (its effect sets `-M*c` from the target when the target
-  changes, in the same effect flush as the roll's start, before the next frame). `top M*c` plus the wrapper's `-M*c` cancel in layout exactly, since c
-  and M are integers.
-- At the end (the first animation's `onfinish` → `__crStop`), the animations are cancelled and the moved cells go
-  back to `top k*c` in the same task (no frame in between). `__crTops` writes only the tops that change.
+  keep their rest transform and stay at least 1.5 cells outside the clip throughout.
+- At the start (`__crPlay`), each moved cell k gets a Web Animation on its own transform,
+  `translateY(k*c + __cdStripY(n,c))` = `(k − n)*c` along the path n. A running animation overrides the cell's inline
+  transform (cd-strip's rest place, written by its effect when the target changes, in the same effect flush as the
+  roll's start, before the next frame). Only the offset that cell shows, never two large offsets that cancel. The strip
+  layer stays at 0 (the target is the integer the inline transform already shows), and a cell's last keyframe equals
+  its rest transform `(k − M)*c`.
+- At the end (the first animation's `onfinish` → `__crStop`), the animations are cancelled, which shows the inline
+  rest transform again; the last keyframe and the rest transform are the same value, so nothing moves (to check in
+  review round 4: no one-frame jump at the roll end, Chrome and Sim frozen frames).
+- The roll writes no `top`, no wrapper and no inline transform: no layout and no layout shift.
 - `fill: both`: a frame before `startTime` shows the start, the end holds the rest place until the finish handler.
+- On strip-rw (C6/V7, history) the wrapper sat at `top: -M*c` and cell k at `top: k*c`, so the roll also set the moved
+  cells' `top` to `M*c` for its duration (`__crTops`, restored in the finish task); that is gone on tc.
 
 **The path (`__crPath`, unchanged since round 1).** The original's displayed value at time x after a change, on a
 60 Hz display whose frame lands exactly at x, is `GE(x mod T)` followed by whole 60 Hz frames (T = 16.667 ms). On
@@ -471,7 +477,20 @@ fast path: "countdown rAF callbacks 108 → 4 per 4 s (one per roll), by code ($
 ```
 
 ```
-BUILD cd-roll-ca-4 (round 4, cells-only) on cd-strip strip-rw (DEV build JS 5e37af69bcc4…, CSS 9b2f89ea58bd…) · overlay fixes/cd-roll-ca/overlay
+BUILD cd-roll-ca-4tc (round 4, cells-only) on cd-strip strip-tc (accepted PR-008 rev 2; JS 6fa0e1e8a221…, CSS 982a747d9263…) · overlay fixes/cd-roll-ca/overlay
+served hashes: nodes/2.DyWL8TcE.js 582d120c9f8f… (V9), CSS 982a747d9263… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C8,V9}
+patch.diff: base-sha256 6fa0e1e8a221…, +165 -2 lines (insertions; the two '-' lines are $E's `__cdAnimate` declaration
+end and the spring's start value)
+design delta from cd-roll-ca-4 (strip-rw): no __crTops (no top writes); the animations override cd-strip's inline rest
+transforms, cancel() at the finish reveals them (last keyframe = rest transform)
+checks: none yet on tc (lead: review round 4 on the delta first, including no one-frame jump at the roll end, Chrome
+and Sim frozen frames); then the counted set from session A on C8/V9
+memory/layers: PENDING on tc (strip-tc control, cd-strip S2: 16-17 backed hero cells, 0.39-0.42 MB, one transient +1)
+debug hooks: none
+```
+
+```
+BUILD cd-roll-ca-4 (round 4, cells-only, history: strip-rw, not the landing base) on cd-strip strip-rw (DEV build JS 5e37af69bcc4…, CSS 9b2f89ea58bd…) · overlay fixes/cd-roll-ca/overlay
 served hashes: nodes/2.DyWL8TcE.js 73dff152e454… (V6), CSS 9b2f89ea58bd… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C5,V6}
 checks (dev base): Chrome comp-check V6 (rAF 8 / 6 s, 40 animations), roll-probe h60 V6 + base fit C5 (0 px), hide-check
 V6 (0 errors, 0 px start, 0.008 px first frame), fix.mjs check --on cd-strip mobile: morph both, 0 errors, 0 4xx,
@@ -515,12 +534,13 @@ switch; not on the phone).
   `__crPath` works in digit values and maps to px only through `__cdStripY(v, c)` with the measured cell `c`, so a
   new pitch or offset inside `__cdStripY` carries over; a different mapping (non-linear, or not via `__cdStripY`)
   or other strip markup needs this patch re-applied, the snapshot V rebuilt and the probes re-run.
-- cd-strip lands with one compositing layer per cell and the uncomposited wrapper (strip-rw). The roll moves cells,
-  not the strip, so a cell entering the clip mid-roll could show blank or late (F-142): not seen on the dev build in
-  the Simulator (0 unmatched cells in all paused and running shots of a wrap; layers and backing unchanged mid-roll).
-  The counted set re-checks it on the final hash.
-- Couples to cd-strip's `__cdStripM`, the wrapper's `-M*c` and the cell-top effect (routed through `__crTops`): a change
-  to the strip's geometry there needs this patch re-applied and the probes re-run.
+- cd-strip lands with one compositing layer per cell, cells moved by their own transform (strip-tc). The roll moves
+  cells, not the strip, so a cell entering the clip mid-roll could show blank or late (F-142): not seen on strip-rw in
+  the Simulator (0 unmatched cells in all paused and running shots; layers and backing unchanged mid-roll). The
+  counted set re-checks it on C8/V9.
+- Couples to cd-strip's `__cdStripM`, `__cdStripY` and its cell-transform effect on [c, M] (the roll's last keyframe
+  must equal that effect's rest transform `(k − M)*c`): a change to the strip's geometry there needs this patch
+  re-applied and the probes re-run. (On strip-rw it also coupled to the wrapper's `-M*c` and the cell-top effect.)
 - `__crWatch` re-arms on every frame that runs while `document.hidden` is true. An engine that kept running frames for
   a hidden page would turn it into a per-frame rAF for as long as the page stays hidden (cheap, nothing drawn). Neither
   engine did here: Chrome ran 0 frames while hidden, WebKit (Simulator) 1 frame just before the visible event

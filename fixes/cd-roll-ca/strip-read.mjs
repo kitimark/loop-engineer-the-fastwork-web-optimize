@@ -1,6 +1,8 @@
 // cd-roll-ca probes: read a countdown digit's value from the page, for cd-strip's strips and for the cd-roll-ca build
 // on them. strip-rb: cell k at top (k - m)*c directly in the strip. strip-rw: an uncomposited wrapper span.cdwrap at top
-// -m*c inside the strip, cell k at top k*c inside it. Both: strip transform -(n - m)*c. During a cd-roll-ca roll the
+// -m*c inside the strip, cell k at top k*c inside it. strip-tc (landing base): the wrapper unmoved (top 0), every cell
+// at top 0 with its own inline transform (k - m)*c (read by the same sum: tops 0, inline transforms counted). All three:
+// strip transform -(n - m)*c. On tc a cd-roll-ca roll's animation overrides the moved cells' inline transform. During a cd-roll-ca roll the
 // moved cells carry their own transform (k - n)*c and a top that makes them sit 0 from the strip layer (rb: top 0; rw:
 // top m*c, with the wrapper at -m*c), the strip at 0. Cell k's place in the clip is its top + the wrapper's top + its own
 // transform + the strip transform; the cell nearest the clip gives n = k - place / c. The probes keep their old record
