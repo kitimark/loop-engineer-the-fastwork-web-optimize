@@ -10,8 +10,18 @@
   "measurementCodeChanged": false
  },
  "servedSha256Prefix": {
-  "st6rb2": { "js": "7bf7c4657d21", "css": "f523598b2a24" },
-  "V": { "js": "416e4a2ed34f", "css": "fc83846a8755" }
+  "st6rb2": {
+   "js": "7bf7c4657d21",
+   "css": "f523598b2a24"
+  },
+  "V": {
+   "js": "301ec740291b",
+   "css": "55ba45f138c9"
+  },
+  "V_66d2abe": {
+   "js": "416e4a2ed34f",
+   "css": "fc83846a8755"
+  }
  },
  "arms": {
   "C": "control: st6-rb2 overlay (JS writer s sets --exit-opacity per rAF, one frame late)",
@@ -20,48 +30,246 @@
  },
  "simulator": {
   "scrollStepped12px_y368_884": {
-   "layoutRecords": { "C": [241, 247], "V": [175, 196] },
-   "recalcStyles": { "C": [199, 203], "V": [163, 146] }
+   "layoutRecords": {
+    "C": [
+     241,
+     247
+    ],
+    "V": [
+     175,
+     196
+    ]
+   },
+   "recalcStyles": {
+    "C": [
+     199,
+     203
+    ],
+    "V": [
+     163,
+     146
+    ]
+   }
   },
   "scrollPhase_y356_884": {
-   "fullHeroRepaintFrames": { "C": 21, "V": 0 },
-   "paintMpx": { "C": 20.2, "V": 6.8, "note": "-66 %" },
-   "stackedOnCdStrip_cb45b05_paintMpx": { "C": 12.7, "V": 10.3, "note": "the rest is the #people reveal" }
+   "fullHeroRepaintFrames": {
+    "C": 21,
+    "V": 0
+   },
+   "paintMpx": {
+    "C": 20.2,
+    "V": 6.8,
+    "note": "-66 %"
+   },
+   "stackedOnCdStrip_cb45b05_paintMpx": {
+    "C": 12.7,
+    "V": 10.3,
+    "note": "the rest is the #people reveal"
+   }
   },
-  "layers": { "C": 128, "V": 134, "note": "extra: orbit-cards b, d, e, hero-copy, scroll-cue, scroll-float (the compositor-animated elements)" },
-  "layerMemoryMB": { "C": 122, "V": 112, "stacked_C": 123, "stacked_V": 112 },
-  "accentPaintsAtRest5s_timersOn_y0_y300_y884": { "C": [193, 202, 192], "V": [189, 207, 189], "note": "1.02x at y300; 1.40x before the rest hold" },
-  "accentPaintsFinalBuild_fin17": { "C": [192, 206, 185], "V": [190, 207, 185] },
+  "layers": {
+   "C": 128,
+   "V": 134,
+   "note": "extra: orbit-cards b, d, e, hero-copy, scroll-cue, scroll-float (the compositor-animated elements)"
+  },
+  "layerMemoryMB": {
+   "C": 122,
+   "V": 112,
+   "stacked_C": 123,
+   "stacked_V": 112
+  },
+  "accentPaintsAtRest5s_timersOn_y0_y300_y884": {
+   "C": [
+    193,
+    202,
+    192
+   ],
+   "V": [
+    189,
+    207,
+    189
+   ],
+   "note": "1.02x at y300; 1.40x before the rest hold"
+  },
+  "accentPaintsFinalBuild_fin17": {
+   "C": [
+    192,
+    206,
+    185
+   ],
+   "V": [
+    190,
+    207,
+    185
+   ]
+  },
   "otherPaintsIn5sWindow_y884": {
-   "raw": ["out/hext/acc18-acc.json", "out/hext/acc19-acc.json", "out/hext/fin17/acc.json"],
-   "arrivingFromY300": { "C": [15, 9, 10, 13], "C2": [10], "V": [35, 30, 30, 29], "sessions": ["sim10", "sim13", "fin17", "acc19"] },
-   "arrivingFromY600": { "C": [12], "C2": [16], "V": [14], "sessions": ["acc18"] },
-   "note": "R4: one-off single repaints (1-2 each) of V's composited deck cards at their off-screen scatter positions plus the next section's card grid (C paints that grid at y1000); window starts 1.5 s after the jump and after a LayerTree.layersForNode census (F-149), so part may be the census, UNRESOLVED"
+   "raw": [
+    "out/hext/acc18-acc.json",
+    "out/hext/acc19-acc.json",
+    "out/hext/fin17/acc.json"
+   ],
+   "arrivingFromY300": {
+    "C": [
+     15,
+     9,
+     10,
+     13
+    ],
+    "C2": [
+     10
+    ],
+    "V": [
+     35,
+     30,
+     30,
+     29
+    ],
+    "sessions": [
+     "sim10",
+     "sim13",
+     "fin17",
+     "acc19"
+    ]
+   },
+   "arrivingFromY600": {
+    "C": [
+     12
+    ],
+    "C2": [
+     16
+    ],
+    "V": [
+     14
+    ],
+    "sessions": [
+     "acc18"
+    ]
+   },
+   "note": "R4: one-off single repaints (1-2 each) of V's composited deck cards at their off-screen scatter positions plus the next section's card grid (C paints that grid at y1000); window starts 1.5 s after the jump and after a LayerTree.layersForNode census (F-149), so part may be the census, UNRESOLVED",
+   "noCensus_acc20": {
+    "y0_y300_y884": {
+     "C": [
+      23,
+      31,
+      13
+     ],
+     "C2": [
+      18,
+      29,
+      17
+     ],
+     "V": [
+      14,
+      38,
+      13
+     ]
+    },
+    "note": "R4 was a census artifact (F-149 class)"
+   }
   },
-  "recalcsAtRest4s_timersCleared_y0_y300": { "C": ["0", "29-33"], "V": ["0", "31-35"] },
-  "handOverCost_sim13": { "drop": "V S2 L0 P0 vs neighbours S1 L0 P0", "readdArmed": "V S2 L0 P0 vs neighbours S1 L0 P0", "readdUnarmed_heSc_sc16": "V S2 L3 P2 vs C's own scroll frame S2 L3 P3" }
+  "recalcsAtRest4s_timersCleared_y0_y300": {
+   "C": [
+    "0",
+    "29-33"
+   ],
+   "V": [
+    "0",
+    "31-35"
+   ]
+  },
+  "handOverCost_sim13": {
+   "drop": "V S2 L0 P0 vs neighbours S1 L0 P0",
+   "readdArmed": "V S2 L0 P0 vs neighbours S1 L0 P0",
+   "readdUnarmed_heSc_sc16": "V S2 L3 P2 vs C's own scroll frame S2 L3 P3"
+  }
  },
  "pixels": {
   "simulatorPositions": {
-   "y0": { "V_vs_C": "2498 px max 112 (cue)", "C2_vs_C": "2494 px max 106", "verdict": "within A/A (R0)" },
-   "y171_y466_y570": { "V_vs_C": "0 px outside countdown digits", "verdict": "identical" },
-   "y285_y300": { "V_vs_C": "~1.2k px max 1", "verdict": "R1: equals C's own difference between its rest frame and its first post-scroll frame at the same values (630+537 px max 1, C and C2)" },
-   "y114_y228_deckEdge": { "V_vs_C": "~200 px per side max 11, 1 of 3 sessions", "verdict": "R2: C clipped the card-corner shadow hard in that session, V smooth; other sessions 0 px" }
+   "y0": {
+    "V_vs_C": "2498 px max 112 (cue)",
+    "C2_vs_C": "2494 px max 106",
+    "verdict": "within A/A (R0)"
+   },
+   "y171_y466_y570": {
+    "V_vs_C": "0 px outside countdown digits",
+    "verdict": "identical"
+   },
+   "y285_y300": {
+    "V_vs_C": "~1.2k px max 1",
+    "verdict": "R1: equals C's own difference between its rest frame and its first post-scroll frame at the same values (630+537 px max 1, C and C2)"
+   },
+   "y114_y228_deckEdge": {
+    "V_vs_C": "~200 px per side max 11, 1 of 3 sessions",
+    "verdict": "R2: C clipped the card-corner shadow hard in that session, V smooth; other sessions 0 px"
+   }
   },
   "handOverFrozenFrames": {
-   "raw": ["out/hext/frz15/frzshot.json", "out/hext/sc16/frzshot.json"],
+   "raw": [
+    "out/hext/frz15/frzshot.json",
+    "out/hext/sc16/frzshot.json"
+   ],
    "drop": "0 px vs C's frame with the same y300 values (+1 px max 1); same vs C2",
    "readdArmed": "0 px vs C one frame later; vs C2 ~120 px max 1 (same bits as C2 vs C)",
    "settled_y306": "0 px",
    "readdUnarmed_beforeHeSc": "51k px max 26 for one frame (was R3)",
    "readdUnarmed_withHeSc": "0 px vs C one frame later, from y300->306 and y0->6 (R3 removed)",
    "C_ownFirstScrollFrame": "stale: ~510k px vs its next frame, cards up to 212 levels",
-   "finalBuild_fin17": { "raw": "out/hext/fin17/frzshot.json", "result": "drop, armed and unarmed re-add and the frame after each: 0 px vs C one frame later; still pairs 0 px; other differences only countdown digits, status-bar clock and the title's rotating word (timer phase: C on a word, V between words; in frz15 both between words and 0 px there)" }
+   "finalBuild_fin17": {
+    "raw": "out/hext/fin17/frzshot.json",
+    "result": "drop, armed and unarmed re-add and the frame after each: 0 px vs C one frame later; still pairs 0 px; other differences only countdown digits, status-bar clock and the title's rotating word (timer phase: C on a word, V between words; in frz15 both between words and 0 px there)"
+   }
   },
   "chromeParity": {
-   "par11": { "positions": 28, "viewports": ["mobile", "phone", "desktop"], "styleDiffs": 0, "maxLevel": { "mobile": [254, 255], "phone": [21, 21], "desktop": [137, 137] }, "note": "[V, A/A]; 7 points where V exceeded the single A/A sample" },
-   "par12": { "raw": "out/hext/par12/parity-1791006324866.json", "positions": [50, 700, 767, 800, 839, 909, 982], "aaArms": 3, "styleDiffs": 0, "maxLevelAboveAA": 0, "pxAboveAARange": 1, "pxAboveNote": "desktop y50 V 73970 vs A/A 50686-73231, max 18 = A/A 18" },
-   "par13": { "raw": "out/hext/par13/parity-1791010060102.json", "point": "desktop y50", "states": "A/A arms split into {C,C3,C4} and {C2} (285k px, max 135, orbit cards); V in C2's state", "V_vs_C2": "22k px max 7, speckle on one rotated photo card (CSS x1080-1440, y660-900) + ~7k px max <=7", "inStateAA": "C3 vs C 21.7k px max 4, C4 vs C 37 px max 4", "status": "open, OBSERVED (one A/A sample of C2's state)" },
+   "par11": {
+    "positions": 28,
+    "viewports": [
+     "mobile",
+     "phone",
+     "desktop"
+    ],
+    "styleDiffs": 0,
+    "maxLevel": {
+     "mobile": [
+      254,
+      255
+     ],
+     "phone": [
+      21,
+      21
+     ],
+     "desktop": [
+      137,
+      137
+     ]
+    },
+    "note": "[V, A/A]; 7 points where V exceeded the single A/A sample"
+   },
+   "par12": {
+    "raw": "out/hext/par12/parity-1791006324866.json",
+    "positions": [
+     50,
+     700,
+     767,
+     800,
+     839,
+     909,
+     982
+    ],
+    "aaArms": 3,
+    "styleDiffs": 0,
+    "maxLevelAboveAA": 0,
+    "pxAboveAARange": 1,
+    "pxAboveNote": "desktop y50 V 73970 vs A/A 50686-73231, max 18 = A/A 18"
+   },
+   "par13": {
+    "raw": "out/hext/par13/parity-1791010060102.json",
+    "point": "desktop y50",
+    "states": "A/A arms split into {C,C3,C4} and {C2} (285k px, max 135, orbit cards); V in C2's state",
+    "V_vs_C2": "22k px max 7, speckle on one rotated photo card (CSS x1080-1440, y660-900) + ~7k px max <=7",
+    "inStateAA": "C3 vs C 21.7k px max 4, C4 vs C 37 px max 4",
+    "status": "open, OBSERVED (one A/A sample of C2's state)"
+   },
    "verdict": "Chrome computes C's styles (gate false, style diffs 0); max level within A/A at 21/21 points, pixel count at 20/21; desktop y50 photo-card speckle open (C1)"
   }
  },
@@ -70,13 +278,43 @@
   "R2": "deck-edge card shadow ~200 px per side max 11 in sessions where C clips hard; V smooth",
   "R0": "y0 cue, within A/A",
   "R3": "removed by heSc",
-  "R4": "cost only: one-off +15-20 paint records at rest just past the hero end after a jump from y300 (none from y600); off-screen deck-card layers + earlier paint of the next section's cards; part may be the census",
-  "C1": "Chrome desktop y50: V vs same-state A/A 22k px max 7 on one photo card vs in-state A/A max 4; OBSERVED, open"
+  "R4": "removed: the y884 paint burst came from the LayerTree census (acc20 without it: V 13 = C 13, C2 17)",
+  "C1": "closed: Chrome desktop y50 within the six-arm A/A spread (par14: V vs same state 4.9k px max 3; same-state A/A up to 7.3k px max 7, same hero-copy box)"
  },
- "verdict": "mechanism win on the Simulator (no per-frame JS writer; full-hero repaints 21 -> 0, paint Mpx -66 %, layouts -25 %); pixel-identical except R1 (C-vs-C variation) and R2 (C session-dependent clip), plus R4 (one-off paint burst past the end, cost only) and C1 (Chrome desktop y50 speckle, open), for the user decision; no phone run, no timing number",
+ "verdict": "mechanism win on the Simulator (no per-frame JS writer; full-hero repaints 21 -> 0, paint Mpx -66 %, layouts -25 %); pixel-identical except R1 (C-vs-C variation) and R2 (C session-dependent clip), for the user decision; R4 and C1 closed; review round 2 checks pass (toolbar, hand-over, jump; switch frame: no flash in V, probe could not reproduce it in 66d2abe either); no phone run, no timing number",
  "regressions": {
   "layers": "+6 compositing layers, layer memory -10 MB",
   "handOver": "+1 style recalc at the drop and at the armed re-add, 0 layout, 0 paint",
-  "functionalCheck": "fix.mjs check not run on this build"
+  "functionalCheck": "fix.mjs check ok on 301ec740291b (mobile, desktop)"
+ },
+ "reviewRound2": {
+  "build": {
+   "js": "301ec740291b",
+   "css": "55ba45f138c9"
+  },
+  "changes": [
+   "heHold: switch frame in d() keeps an inline --exit-opacity = s() for the pending frame, refreshed next rAF, removed one frame later",
+   "at-rest filter: baseline rules (blur(0px)) instead of filter: none",
+   "heTf: class write only on state change",
+   "heSc: event.target === document, arms the rest timer"
+  ],
+  "item1_switchFrame_reloadScrolled_r2f": "restore that re-creates the animations at y300 (r2h): V vs C digits only; V0 (66d2abe) vs C also clean, so the Simulator probe does not reproduce the predicted flash; heHold kept as a guard (OBSERVED). Reload-while-scrolled (r2f/r2g) not captured: d() switched before a watcher attached",
+  "item1_syntheticPageshow_r2b": "V vs C: browser chrome, clock and digits only; V0 equally clean (p() and d() in one task: probe cannot show the flash)",
+  "item2_collapsedToolbar_r2e": "innerHeight 815: V copy opacity = C = 1 - p at y150/230/300/500/700/840",
+  "item3_topCrossing_r2c": {
+   "V_firstFrame": "S1 L2 P55",
+   "C_perStep": "S1 L1 P54",
+   "V_laterSteps": "P0-1",
+   "note": "phone .scroll-float none -> blur(0.009px) flip costs no extra paint vs C"
+  },
+  "item4_handOver_r2a": "drop, settle: 0 px outside clock/digits; re-add: V frozen frame = C settled y306 frame (C draws the scroll one update later)",
+  "item4_y0_r2d": "V vs C = C2 vs C (title accent phase, digits); r2b card-band diff was C session state",
+  "item6_jump_r2b": "V vs C browser chrome only; V0 (66d2abe) vs C second frame 460k px",
+  "chromeParity_par15": "style diffs 0 at 9/9; max level within A/A at 8/9; mobile y909 V 7.1k px max 53 = the C2-vs-C whole-frame state pattern seen at y895; mobile y895 re-sample V 1.9k px max 1 (A/A up to 6.1k max 53)",
+  "functionalCheck": "fix.mjs check mobile + desktop ok (morph reached, 0 errors, 0 4xx, screenshot diff <= 0.12 %; +174 elements are st6-rb2s)",
+  "untested": [
+   "desktop Safari / iPad (>600 px)",
+   "Safari 26.0-26.3"
+  ]
  }
 }

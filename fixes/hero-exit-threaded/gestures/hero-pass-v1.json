@@ -1,0 +1,33 @@
+{
+  "name": "hero-pass-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "hero-exit-threaded attribution (Timeline; no gain verdict): slow finger drags (~130 px/s, finger on the glass, no momentum) from the top through the hero exit and past its end, then back. The first drag passes y~50 slowly; each 1 s rest after a drag covers V's hand-over (heRest drops .he-tf 300 ms after the last scroll and holds an inline transform); the second drag crosses the hero end (~y 884); the two down drags re-enter the exit from below and end near the top.",
+  "params": { "x": 215, "idleMs": 3000, "dragPx": 560, "dragMs": 4458, "restMs": 1000 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": "$idleMs" },
+    { "type": "mark", "name": "drag1" },
+    { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "mark", "name": "rest1" },
+    { "type": "pause", "ms": "$restMs" },
+    { "type": "mark", "name": "drag2" },
+    { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "mark", "name": "rest2" },
+    { "type": "pause", "ms": "$restMs" },
+    { "type": "mark", "name": "back1" },
+    { "type": "stroke", "dir": "down", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "mark", "name": "rest3" },
+    { "type": "pause", "ms": "$restMs" },
+    { "type": "mark", "name": "back2" },
+    { "type": "stroke", "dir": "down", "px": 480, "ms": 3800, "profile": "drag" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "mark", "name": "rest4" },
+    { "type": "pause", "ms": 2000 },
+    { "type": "mark", "name": "end" }
+  ]
+}

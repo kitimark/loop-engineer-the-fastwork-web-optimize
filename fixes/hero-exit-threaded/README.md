@@ -4,8 +4,9 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured by mechanism and pixels (no timing: timing A/Bs deferred, user 2026-10-02). Not ready to land:
-the residuals in "Options" need the user's decision, and the phone attribution slot (Timeline on, W driver) has
-not run.
+the residuals in "Options" need the user's decision, and the phone Timeline attribution block (P-074, driver G,
+gesture `gestures/hero-pass-v1.json`) has not run. Review round 2 (review-hero-exit, NEEDS-FIX on 66d2abe) is
+answered in "Review round 2" below.
 **Stage:** V (build card below). D: ST-1 accepted by the lead 2026-10-03 01:17Z as "partly LOCATED" (H2a and H2c
 not supported on the Simulator; H2b Composite open, phone slot).
 **Device class / gate:** WebKit-only build (Safari / iOS). Chrome, Firefox and other engines run the baseline
@@ -18,8 +19,9 @@ code (gate below). Evidence: Simulator counts and frozen-frame pixels, Chrome pa
 `patch.diff` is against the baseline snapshot, so it carries st6-rb2's changes too. Apply on the st6-rb2 overlay.
 **Files touched (delta over st6-rb2):**
 - `/_app/immutable/nodes/2.DyWL8TcE.js`: the hero `ne(() => …)` effect (overlay lines ~4383-4625). New helpers
-  `heCss`, `heTf`, `heRest`, `heOn`, `heTS`, `heTE`, `heWK`, `hePE`, `heWrap`, `heArm`, `heSync`. Mode switch in `d()`
-  and `p()`, the `dE` callback, cleanup.
+  `heCss`, `heTf`, `heRest`, `heOn`, `heTS`, `heTE`, `heWK`, `heSc`, `hePE`, `heWrap`, `heHold`, `heArm`, `heSync`.
+  Mode switch in `d()` and `p()`, the `dE` callback, cleanup.
+- `fixes/hero-exit-threaded/gestures/hero-pass-v1.json`: the WDA gesture of the phone attribution block (P-074).
 - `/_app/immutable/assets/2.gBuqKVzi.css`: one new `@supports (animation-timeline: view()) and (animation-range:
   contain 0% contain 100%)` block after the hero rules (overlay lines ~2158-2320).
 
@@ -59,9 +61,15 @@ heCss = `GestureEvent` in window &&
 
 - **Why this picks WebKit.** `GestureEvent` is a WebKit-only interface: Safari 9+, iOS Safari 2+, no Chrome, Edge
   or Firefox version. CONFIRMED by MDN browser-compat-data `api/GestureEvent.json`.
-- **iOS.** Every iOS browser is WebKit, so all of them get the CSS path when they support view timelines.
+- **iOS.** iOS browsers on WebKit (all of them outside the EU, and those that keep WebKit inside it) expose
+  `GestureEvent`, so they get the CSS path when they support view timelines. Since iOS 17.4, browsers in the EU may
+  ship another engine; those have no `GestureEvent` and keep the baseline writer (CONFIRMED: Apple, "Using
+  alternative browser engines in the European Union", developer.apple.com/support/alternative-browser-engines).
 - **Feature test.** The `CSS.supports` half requires view timelines with named ranges (Safari 26+; threaded on
   the compositor from Safari 26.4, WebKit blog post 17862, cited in the brief §0.3).
+- **Untested slice: Safari 26.0-26.3.** The gate admits it, but there scroll-driven animations are updated on the
+  main thread, not threaded, and their pending-frame behaviour may differ. Every WebKit result below is from iOS
+  26.5 (Simulator) or 26.6.1 (phone).
 - **What other engines get.**
   - Chrome / Edge / Opera (Blink) and Firefox (Gecko, no `GestureEvent`): the baseline writer, unchanged.
   - Older Safari (no view timelines): the baseline writer.
@@ -80,15 +88,21 @@ heCss = `GestureEvent` in window &&
    - past the end, where the copy is at opacity 0;
    - at rest (item 3).
 2. **Pre-arm.** A newly added scroll-driven animation is pending for one frame: WebKit drew the copy unshifted in
-   the frame the class arrived. So `.he-tf` is armed before the scroll:
+   the frame the class arrived (Simulator, OBSERVED). Partly backed by source: on the threaded-animations path
+   WebKit's `KeyframeEffect::canBeAccelerated` requires `!animation->pending()` (WebKit main,
+   `Source/WebCore/animation/KeyframeEffect.cpp`, read by review-hero-exit 2026-10-03); the one-frame length is
+   ours. So `.he-tf` is armed before the scroll:
    - on `touchstart` (the drag starts only after the touch slop);
    - on `wheel` and `keydown` (disarmed after 600 ms if the page stays at the top).
 
    A scroll with none of these (programmatic, scrollbar drag, find-in-page, status-bar tap) is caught by `heSc`
-   (idea: lead). The `scroll` event fires before that frame's rendering update, so the handler writes the inline
-   shift for the current `scrollY` (the rest-hold formula, from `scrollY`, no layout read) and adds `.he-tf`. The
-   animation's pending frame then draws the correct shift. Without it, that first frame drew the copy shift one
-   frame stale (residual R3, removed; see the hand-over table).
+   (idea: lead). The `scroll` event fires before that frame's rendering update (CONFIRMED: HTML Standard, "update
+   the rendering": "run the scroll steps" comes before "run the animation frame callbacks" and the style/layout
+   update), so the handler writes the inline shift for the current `scrollY` (the rest-hold formula, from
+   `scrollY`, no layout read), adds `.he-tf` and arms the rest timer. The animation's pending frame then draws
+   the correct shift. Without it, that first frame drew the copy shift one frame stale (residual R3, removed; see
+   the hand-over table). `heSc` listens on `window` in the capture phase, which also sees inner scrollers' scroll
+   events, so it acts only on the document's own (`event.target === document`).
 3. **Rest hold (`heRest`).** 300 ms after the last scroll frame, with no finger down, the JS drops `.he-tf` and
    holds the copy's baseline shift as an inline `transform`. It uses the baseline formula: `translate(-50%,
    p * -8px)` on phones, `translateY(p * -10px)` on desktop. When a scroll re-adds the class, the animation
@@ -105,11 +119,25 @@ heCss = `GestureEvent` in window &&
 5. **Pointer events.** An IntersectionObserver whose top rootMargin is C's threshold `0.05 * track height + 0.95 *
    innerHeight` in px. It is re-armed on `resize`, because the toolbar changes `innerHeight`. Simulator y805-855:
    C, C2 and V all switch between y812 and y813.
-6. **Blur.** Blur is its own animation from `blur(0.009px)`, and at rest the filter is `none` like the baseline.
-   Past the end it keeps `blur(18px)` (fill forwards), like the baseline.
+6. **Blur.** Blur is its own animation from `blur(0.009px)`. Past the end it keeps `blur(18px)` (fill forwards),
+   like the baseline. At rest at the top no blur animation is active, and the filter is the baseline's own rule:
+   `blur(0px)` on the desktop copy and cue and on the phone cue (the baseline computes `blur(calc(... *
+   var(--exit-scatter) * 18px))` there, 0 at the top), none on the phone copy. Commit 66d2abe forced `filter:
+   none` there instead, which differed from the baseline and flipped none → blur on every scroll from the top
+   (review round 2, fixed). One flip stays: the phone's `.scroll-float`, which carries the cue's blur in V and has
+   no filter in the baseline, goes from none to `blur(0.009px)` at the top crossing. Its frame cost is in "Review
+   round 2" below.
+7. **Switch frame (`heHold`).** The exit animations are created when `.he-css` arrives in `d()`, so they are
+   pending in that first frame and the base values show. In the baseline the base values follow the inline
+   `--exit-opacity`, so `d()` writes it once for the current scroll position (`s()`), keeps it through the first
+   frame, refreshes it in the next rAF and removes it one frame later. A mid-hero switch then draws the exited
+   hero, not the un-exited one: desktop Safari / iPad when `d()` fires 1.82 s after load while the page is
+   already scrolled, a bfcache `pageshow` mid-hero, a restored scroll position. Without it (66d2abe) that frame
+   showed the hero at full opacity, cards in place (review round 2, item 1).
 
 The `dE` registration stays (the scene pause and render deferral are its side effects). In CSS mode its callback
-does only `heTf()`: a `scrollY` read, plus a class write when the state changes.
+does only `heTf()`: a `scrollY` read, plus a class write when the state changes (`classList.contains` first; 66d2abe
+called `add` on every scroll frame).
 
 ## Why that is faster
 
@@ -117,28 +145,51 @@ On WebKit the exit no longer needs the main thread per frame. The animations fol
 compositor (threaded scroll-driven animations, Safari 26.4+, CONFIRMED in the brief §0.3). The JS rect read, the
 custom-property write and the hero-subtree restyle are gone.
 
-Simulator counts (OBSERVED, Simulator ms never count, F-084):
+Simulator counts (OBSERVED, Simulator ms never count, F-084). The build column says which V each row measured:
+"ST-1" = the D-stage build (before the rest hold and `heSc`), "rest" = with the rest hold, before `heSc`,
+"416e" = the build of commit 66d2abe (JS `416e4a2ed34f`, CSS `fc83846a8755`). The review-round-2 build (below) changes
+only the switch frame in `d()`, the at-rest filter value, and two listener guards; it is not re-counted here.
 
-| | C (st6-rb2) | V | note |
-|---|---|---|---|
-| Layout records, 12 px stepped scroll y368→884 (2 runs) | 241 / 247 | 175 / 196 | ST-1 card |
-| RecalculateStyles, same | 199 / 203 | 163 / 146 | |
-| full-hero repaints, scroll phase y356→884 | 21 frames, 20.2 Mpx | 0, 6.8 Mpx total (-66 %) | |
-| stacked on cd-strip (cb45b05) | 12.7 Mpx | 10.3 Mpx | the rest is the #people reveal |
-| compositing layers | 128 | 134 | orbit-cards b, d, e, hero-copy, scroll-cue, scroll-float |
-| layer memory | 122 MB | 112 MB | stacked: 123 vs 112 |
-| accent paints at rest, 5 s, timers on (y0 / y300 / y884) | 193 / 202 / 192 | 189 / 207 / 189 | 1.02x at y300 (1.40x before the rest hold) |
-| same, final build (fin17) | 192 / 206 / 185 | 190 / 207 / 185 | |
-| all other paints in the 5 s window at y884, arriving from y300 (sim10, sim13, fin17, acc19) | 15 / 9 / 10 / 13 (C2 10) | 35 / 30 / 30 / 29 | **R4**: a one-off burst, not a rate (below) |
-| same, arriving from y600 (acc18) | 12 (C2 16) | 14 | no burst |
+| | build | C (st6-rb2) | V | note |
+|---|---|---|---|---|
+| Layout records, 12 px stepped scroll y368→884 (2 runs) | ST-1 | 241 / 247 | 175 / 196 | ST-1 card |
+| RecalculateStyles, same | ST-1 | 199 / 203 | 163 / 146 | |
+| full-hero repaints, scroll phase y356→884 | ST-1 | 21 frames, 20.2 Mpx | 0, 6.8 Mpx total (-66 %) | |
+| stacked on cd-strip (cb45b05) | ST-1 | 12.7 Mpx | 10.3 Mpx | the rest is the #people reveal |
+| compositing layers | ST-1 | 128 | 134 | orbit-cards b, d, e, hero-copy, scroll-cue, scroll-float |
+| layer memory | ST-1 | 122 MB | 112 MB | stacked: 123 vs 112 |
+| style recalcs at rest, timers cleared, 4 s (y0 / y300) | rest | 0 / 29-33 | 0 / 31-35 | |
+| all other paints in the 5 s window at y884, arriving from y300, with a LayerTree census before the window (sim10, sim13, fin17, acc19) | rest, 416e | 15 / 9 / 10 / 13 (C2 10) | 35 / 30 / 30 / 29 | caused by the census (next row) |
+| same, **no LayerTree census** (acc20; y0 / y300 / y884) | 416e | 23 / 31 / 13 (C2 18 / 29 / 17) | 14 / 38 / 13 | y884: V = C; was R4, removed |
+| same, arriving from y600 (acc18) | 416e | 12 (C2 16) | 14 | no burst |
 
-R4 located (acc19, paint rects): V's extra paints at y884 are single paints (1-2 each in the window) of the
-deck cards at their scattered, off-screen end positions (x -251/-246 and 514/562, which only V draws as their own
-composited layers) and of the next section's card grid below the viewport (C paints the same grid rects once it
-reaches y1000, acc18). Arriving at y884 from y600 there was no burst. The window starts 1.5 s after the jump and
-after a `LayerTree.layersForNode` census, which F-149 found can itself cause paints, so part of the burst may be the
-census (UNRESOLVED; the decisive check is the same run with no LayerTree census).
-| style recalcs at rest, timers cleared, 4 s (y0 / y300) | 0 / 29-33 | 0 / 31-35 | |
+Accent census (the title's script accent, 5 s at rest, timers on): accent paints / frames with 2+ accent paints.
+The paint total is bimodal in C itself (C y884: 302/70 in sim10 and 290/64 in acc19, 185-199/15 in the other runs),
+so totals alone don't separate builds. The 2+ frames do: V with `.he-tf` left on at rest (before the rest hold) has
+109-129 of them; every other run, C or V, has 9-26 (except C's own 64-70 above).
+
+| run | build | C y0 / y300 / y884 | V y0 / y300 / y884 | C2 |
+|---|---|---|---|---|
+| sim6 | before rest hold | - / 264/20 / 283/21 | - / 387/129 / 399/127 | |
+| sim7 | before rest hold | 244/15 / 242/16 / - | 351/118 / 343/112 / - | |
+| sim10 | before rest hold | 247/15 / 241/17 / 302/70 | 245/15 / 338/110 / 299/70 | |
+| sim13 | rest | 193/15 / 202/12 / 192/15 | 189/15 / 207/12 / 189/15 | |
+| fin17 | 416e | 192/15 / 206/11 / 185/15 | 190/15 / 207/11 / 185/15 | |
+| acc18 (y600 / y884 / y1000) | 416e | 213/13 / 199/15 / 208/13 | 187/17 / 232/10 / 186/16 | 189/15 / 227/12 / 187/16 |
+| acc19 | 416e | 240/11 / 187/16 / 290/64 | 188/17 / 211/11 / 184/15 | 194/14 / 197/12 / 193/15 |
+| acc20 (no census) | 416e | 183/15 / 217/10 / 187/16 | 196/26 / 221/9 / 187/16 | 203/13 / 191/12 / 195/15 |
+
+R4 (an extra paint burst at y884) came from the census, not from V. With a census, V's extra paints at y884 were
+single paints (1-2 each in the window) of two things (acc19, paint rects):
+- the deck cards at their scattered, off-screen end positions (x -251/-246 and 514/562, which only V draws as their
+  own composited layers);
+- the next section's card grid below the viewport (C paints the same grid rects once it reaches y1000, acc18).
+
+That window started 1.5 s after the jump, right after a `LayerTree.layersForNode` census. Run acc20 repeated the
+same sequence (y0 → y300 → y884, C, C2 and V in one Simulator session) **without** the census: at y884 V has 13
+other paints, C 13 and C2 17. The burst is gone, so it came from the census (F-149: a layer census can itself cause
+paints; OBSERVED in our setup, here for V's extra composited layers). Arriving at y300 from y0, V has 38 other
+paints vs C 31 and C2 29 (one session, not followed up; the accent counts at y300 are 221 vs 217 / 191).
 
 The extra layers are the elements the compositor now animates. The phone gain is not measured (timing deferred).
 The brief's earlier phone run of v2 (aw1-10e base, n = 3) had the y≈50 frame 48 → 35 ms.
@@ -160,9 +211,10 @@ mobile 430x932, phone 430x775, desktop 1440x900, 28 scroll positions each.
   | phone | 21 | 21 |
   | desktop | 137 | 137 |
 
-- At 7 points, V exceeded that point's single A/A sample; at many others the A/A exceeded V. Run par12 re-sampled
-  those 7 positions (y50, 700, 767, 800, 839, 909, 982; all 3 viewports) with three A/A arms (C2, C3, C4 = st6-rb2,
-  each vs C):
+- At 8 points, V exceeded that point's single A/A sample; at many others the A/A exceeded V. Run par12 re-sampled
+  7 of those positions (y50, 700, 767, 800, 839, 909, 982; all 3 viewports) with three A/A arms (C2, C3, C4 =
+  st6-rb2, each vs C). The 8th, mobile y895 (V 7,037 px max 11 vs A/A 0 px), was missed there and is re-sampled in
+  par15 (review round 2):
   - computed-style differences: 0 at every point;
   - max level: V never above the highest A/A arm at the same point (21 of 21); at 2 points (desktop y700 29,
     y982 1) V equals the highest A/A arm and exceeds a lower one;
@@ -179,9 +231,23 @@ mobile 430x932, phone 430x775, desktop 1440x900, 28 scroll positions each.
       only one A/A sample of C2's state. On Chrome V computes the same styles as C (style diffs 0; no V rule
       matches), so only timing (load, larger CSS/JS files) can differ; it looks like resampling noise of a rotated
       image at a sub-pixel position. Re-shooting with more A/A arms would settle it.
-  - So the par11 excesses fall inside the A/A spread once it has three samples: Chrome parity is 0 within A/A
-    by max level at 21 of 21 points, and by pixel count at 20 of 21. The exception is desktop y50: a 7-level
-    speckle on one photo card vs the same-state A/A, open and OBSERVED (above).
+    - Run par14 re-shot desktop y50 with six A/A arms (C, C2-C6, all st6-rb2) and V, PNGs saved (scratchpad
+      `pairmat.mjs`, `clusters.mjs`):
+      - The A/A arms again fall into two whole-frame states, {C, C2, C5} and {C3, C4, C6}, ~285k px apart
+        (max 135). V falls in {C3, C4, C6}.
+      - V vs each arm of its state: 4,927 / 4,907 / 4,966 px, max 3. All of it lies in one box, the hero copy
+        ([440,200]-[1000,720] CSS px): faint outlines of the copy's text, countdown boxes and buttons. Only at 20x
+        amplification is anything visible. Plus 34 px max 1 below the buttons.
+      - In-state A/A: {C3, C4, C6} 35-103 px, max 2-3. {C, C2, C5} 4,089-7,303 px, max 3-7, in the same hero-copy
+        box with the same outline pattern (C2 vs C 7,292 px, max 7; crops `par14-crop-V-C3.png`,
+        `par14-crop-C2-C.png`, gitignored `out/hext/`).
+      - par13's photo-card speckle does not recur: V vs its state has 0 px at CSS x 1080-1440, y 660-900.
+      - So V's diff at desktop y50 is the kind of diff A/A arms in one state show among themselves, at a lower level
+        than the highest such A/A pair (V max 3 vs 7; V 4.9k px vs 7.3k px). C1 is closed: within A/A (OBSERVED,
+        cause of the copy-outline variation unknown; it occurs between identical builds).
+  - So the par11 excesses fall inside the A/A spread once it has enough samples: Chrome parity is 0 within A/A
+    by max level at 21 of 21 points. By pixel count it is within A/A at 20 of 21 in par12; the 21st point,
+    desktop y50, is within the six-arm A/A spread in par14.
 
 **WebKit (iOS 26.5 Simulator, frozen frames, timers cleared, document-timeline animations paused).** C and C2 are
 both st6-rb2 (A/A); V is this build; VT is V with a finger down (touchstart) during the shot.
@@ -244,6 +310,29 @@ Each hand-over costs +1 style recalc, 0 layout, 0 paint.
 | from rest at y300 → 306 | whole frame one frame stale | copy shift one frame stale (0.056 px), cards/opacity current: **matches C** in timing, 51k px max 26 in pixels | first frame exact: 0 px vs C one frame later |
 | armed (touchstart) | whole frame one frame late | first frame exact (y6 -0.056142 px, opacity 0.992982) | same |
 
+### Review round 2 (review-hero-exit NEEDS-FIX on 66d2abe; build JS `301ec740291b`, CSS `55ba45f138c9`)
+
+Code changes: `heHold` (mechanism 7), the at-rest filter back to the baseline's rules (mechanism 6), `heTf` writes a
+class only when its state changes, `heSc` checks `event.target` and arms the rest timer (mechanism 2). Checks on this
+build (Simulator iOS 26.5 functional sessions unless named; scratchpad `rev2.mjs`, `tb.mjs`, `rl.mjs`; frozen frames as
+above, title word synced to the same drawn word in every arm before timers are cleared):
+
+| item | check (run) | result |
+|---|---|---|
+| 1 switch frame mid-hero | restore at rest y300 that re-creates the animations: drop `he-css`, two frames, then `pageshow` (persisted) → `p()` + `d()`; freeze the frame after `d()` (r2h, arms C, V, V0 = 66d2abe) | V vs C: countdown digits only (V holds `--exit-opacity` 0.649 inline in that frame, as designed). **V0 vs C is also clean** (digits, clock): on the Simulator the new animations' pending frame did not show base values here, so the probe does not reproduce the flash the review predicted; `heHold` stays as a guard (it is what the review's source reading, `canBeAccelerated` / `pending()`, calls for). OBSERVED |
+| 1 (other probes) | synthetic `pageshow` without dropping the class (r2b); reload while scrolled (r2f, r2g) | r2b: V = V0 = C (no animation is re-created when `p()` and `d()` run in one task). Reload: `d()` had already switched (`he-css` on 0.9 s after the reload, while Safari was still restoring the scroll, y121) before a watcher could attach; a bootstrap-script watcher did not fire. Not captured |
+| 2 collapsed toolbar | WDA collapse stroke (innerHeight 775 → 815), then y150 / 230 / 300 / 500 / 700 / 840 (r2e) | V's copy opacity = C's = `1 - p` with innerHeight 815 at all 6 points (difference ≤ 1e-6) |
+| 3 filter at rest | top crossing y0 → 6 → 12, Timeline records per frame, timers cleared (r2c) | the one remaining flip (phone `.scroll-float`, none → `blur(0.009px)`) costs nothing extra: V's first frame from the top S1 L2 P55 vs C's per-step frame S1 L1 P54; V's later steps P0-1, C repaints P54 on every step |
+| 4 hand-over frames, same word | drop, armed and unarmed re-add, settle at y300/306 (r2a) | drop and settle: 0 px outside clock and digits. Re-add: V's frozen frame = C's own settled y306 frame (0 px outside the digits); C's frozen frame there is still its y300 frame (= C's drop frame, ±1 level), as in frz14: C draws the scroll one update later |
+| 4 (y0) | settled y0, C, C2, V (r2d) | V vs C = C2 vs C: the title accent phase and the digits only. r2b's extra card-band diff at y0 (V and V0 both vs C, max 45) was C's own session state: none in r2d |
+| 5 accent census | acc20 (above) | R4 removed |
+| 6 jump back into the hero | from rest at y3000, `scrollTo(300)`: first and second frame (r2b) | V vs C: browser chrome only (clock, back button). V0 (66d2abe) vs C, second frame: 460k px |
+| Chrome parity, new build | par15: mobile, phone, desktop × y50 / 895 / 909; C, C2-C4, V | computed-style diffs 0 everywhere. Max level within the A/A arms at 8 of 9 points. Mobile y909: V 7,110 px max 53, A/A there ≤ 919 px max 1; the same 53-level whole-frame pattern (same box) is C2 vs C at y895, i.e. the two Chrome raster states seen in par13/par14; Chrome runs C's code path in V (gate false). The y895 re-sample owed from par11: V 1,947 px max 1, within (C2 6,142 px max 53) |
+| functional | `fix.mjs check --viewport both` (headless Chrome) | ok: morph reached, 0 errors, 0 4xx; screenshot diff 0-0.12 %. The +174 elements are st6-rb2's (start-selling morph, st5 images), not this topic |
+
+Still untested: desktop Safari and iPad (viewport > 600 px: the Simulator is a phone, so the desktop CSS rules and the
+desktop `heRest` formula have computed-value parity only); Safari 26.0-26.3 (gate slice above).
+
 ## Options (residuals beyond A/A, for the user)
 
 | id | where | pixels / levels | how long it shows | cause | options |
@@ -252,8 +341,8 @@ Each hand-over costs +1 style recalc, 0 layout, 0 paint.
 | R2 | y114-228, the screen-edge deck cards (x 0-90 and 1200-1290, y ~2100-2190 device px) | ~200 px per side, max 11 | while resting in y114-228, in sessions where C clips | fact: in 1 of 3 Simulator sessions C (and C2) drew the card-corner shadow clipped hard to an axis-aligned box, and V drew it smooth. In the other 2 sessions C was smooth and V vs C = 0 | (a) accept: V is identical to C's smooth state; (b) reproduce C's clip in V (not attempted: it is C's own session-dependent state) |
 | ~~R3~~ | removed by `heSc`: the unarmed first frame (was 51k px, max 26, one frame) | 0 px vs C one frame later (sc16) | | | |
 | R0 | y0 cue | 2498 px max 112 vs C | at the top | within A/A (C2 vs C 2494 px max 106; bimodal cue state across sessions) | none needed |
-| R4 (cost, not pixels) | at rest just past the hero end (y884), after a jump from y300 | 0 px; +15-20 paint records once (V 29-35 vs C 9-15 non-accent paints in the 5 s window, 4 sessions); none arriving from y600 | once per arrival, not per frame | single repaints of V's composited deck cards at their off-screen scatter positions and an earlier paint of the next section's cards; part may be the LayerTree census (UNRESOLVED) | (a) accept (one-off, off-screen layers); (b) drop the deck cards' layers past the end (a class toggle like `.he-tf`; untested, it would add a style change at the end) |
-| C1 (Chrome) | desktop y50 | V vs same-state C2: 22k px max 7, speckle on one rotated photo card | at that frozen position | Chrome computes the same styles in V; only timing differs. In-state A/A max is 4 (one sample of that state). OBSERVED | (a) re-shoot with more A/A arms in C2's state |
+| ~~R4~~ | removed: the extra paint burst at y884 came from the LayerTree census (acc20 without it: V 13 = C 13, C2 17) | | | | |
+| ~~C1~~ | closed: desktop y50 on Chrome is within the six-arm A/A spread (par14: V vs same state max 3, 4.9k px; same-state A/A up to max 7, 7.3k px, same hero-copy box) | | | | |
 
 ## Cards (protocol v2)
 
@@ -269,19 +358,20 @@ Each hand-over costs +1 style recalc, 0 layout, 0 paint.
   references and their order; the span has no role.
 - Memory and layers: see the counts table.
 
-**Phone ticket (not run yet).**
-- Driver: W.
-- Order: C V V C, with an uncounted warm-up per arm port.
-- Timeline on: the flip pair, the y≈50 frame, the hand-over frames.
-- Builds: from immutable snapshot copies, with sha256 hashes as in `results.json`.
-- To be requested from mgmt-ops-9 once the lead agrees on the residuals.
+**Phone ticket P-074 (not run yet; a Timeline attribution block, not a gain block).**
+- Driver: G, gesture `gestures/hero-pass-v1.json` (two drags up through the hero with rests, two drags back).
+- Order: one uncounted warm-up per arm port, a Timeline-OFF sentinel, then C V V C with Timeline on, end sentinel.
+- Scored by mechanism, not time: share of moving hero-band frames that run the JS writer `s` (C) / none (V), the
+  hand-over frames (touchstart, rest drop) against C's same-phase frames, the y≈50 frame. Scorer, ranges and void
+  rules are registered in `fixes/PREDICTIONS.md` before any data.
+- Builds: immutable snapshot copies of this build (JS `301ec740291b`, CSS `55ba45f138c9`) and st6-rb2.
 
 **Scenarios not run:**
 - (idle after scroll is covered: the rest hold, Simulator counts and frozen frames above);
-- reload while scrolled;
+- reload while scrolled: tried (r2f, r2g), not captured, `d()` switches about 0.9 s after the reload, before a watcher can attach (item 1 above);
 - early input during the desktop entrance: the JS path runs until `d()`, by design;
 - scroll up: covered by the parity positions, not by a motion run;
-- toolbar resize: `heArm` re-arms on `resize`, but not measured;
+- toolbar resize: values checked with the toolbar collapsed (r2e, equal to C), the resize moment itself not captured;
 - rubber band;
 - desktop Safari pixels: the Simulator is a phone, and Chrome takes the baseline path, so the desktop CSS rules
   are verified only by computed values in earlier parity, not by WebKit pixels;

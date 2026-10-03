@@ -71,12 +71,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .hero-track.svelte-1p2vpne {
    background: #fff;
    height: 200vh;
-@@ -2122,6 +2153,165 @@
-     top: 83.3333%;
-     left: auto;
+@@ -2124,6 +2155,164 @@
      right: -45px;
-+  }
-+}
+   }
+ }
 +/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
 +   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
 +   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
@@ -85,7 +83,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +   --exit-opacity; desktop entrance: keyframes must not reference the entrance's animated --entered /
 +   --copy-in). Every other engine keeps the baseline writer and none of these rules apply.
 +   Every exit animation starts at contain 0.05% (s) with fill forwards, so at rest at the top of the page
-+   none is active and the hero is drawn exactly as in the baseline (filter none, the base values). The
++   none is active and the hero is drawn exactly as in the baseline (the baseline's own rules: blur(0px) on
++   the copy and the cue, no filter on the float). For the first frame after .he-css arrives (the new
++   animations are pending) the JS keeps the baseline's inline --exit-opacity, so the base values are the
++   exited ones there too. The
 +   `from` keyframes are the baseline value at s (a + (b - a) * s), so inside the range the value is the
 +   baseline's a + (b - a) * p.
 +   The copy's shift is a separate transform animation, present only with .he-tf (JS: scrolled past the
@@ -97,7 +98,8 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +   (Simulator, OBSERVED).
 +   On phones the scroll cue's own entrance animates --copy-in (in its opacity and transform), so its exit
 +   (fade, shift, blur) runs on its only child, .scroll-float (blur on the cue itself over a composited
-+   child drew a wider halo in WebKit), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
++   child drew a wider halo in WebKit; the cue keeps the baseline rule, blur(0px) once the JS no longer
++   writes --exit-opacity), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
 +   around the float's two children in CSS mode (one layer for both, as the baseline's float): an element
 +   with both the infinite bob and scroll-driven animations made WebKit recalculate style every frame at
 +   rest, and the bob on the two children separately drew the cue 1-2 levels off (Simulator, OBSERVED).
@@ -175,7 +177,6 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +        animation-range: contain 0.05% contain 100%;
 +      }
 +      .hero-track.he-css .is-ring-splash-done .hero-copy.svelte-1p2vpne {
-+        filter: none;
 +        animation:
 +          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
 +          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
@@ -191,7 +192,6 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%, contain 0.05% contain 100%;
 +      }
 +      .hero-track.he-css .is-ring-splash-done .scroll-cue.svelte-1p2vpne {
-+        filter: none;
 +        animation:
 +          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
 +          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
@@ -217,9 +217,6 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +        animation-timeline: --hero-exit, --hero-exit;
 +        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
 +      }
-+      .hero-track.he-css .scroll-cue.svelte-1p2vpne {
-+        filter: none;
-+      }
 +      .hero-track.he-css .scroll-float.svelte-1p2vpne {
 +        animation:
 +          1ms linear forwards svelte-1p2vpne-hero-exit-fade-up,
@@ -234,10 +231,12 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +        animation-play-state: paused !important;
 +      }
 +    }
-   }
- }
++  }
++}
  @media (prefers-reduced-motion: reduce) {
-@@ -2398,19 +2588,33 @@
+   .hero-track.svelte-1p2vpne {
+     height: auto;
+@@ -2398,19 +2587,33 @@
    transition:
      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
@@ -273,7 +272,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  }
  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
    transform: scale(var(--future-shrink-scale));
-@@ -2884,21 +3088,62 @@
+@@ -2884,21 +3087,62 @@
  }
  .start-selling-avatars.is-carousel img.is-enter {
    animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
@@ -344,7 +343,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform: scale(0.35);
    }
  }
-@@ -2908,7 +3153,7 @@
+@@ -2908,7 +3152,7 @@
      transform: scale(0.35);
    }
    to {
@@ -353,7 +352,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform: scale(1);
    }
  }
-@@ -5799,6 +6044,10 @@
+@@ -5799,6 +6043,10 @@
      animation: none;
    }
  }
@@ -364,7 +363,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  @keyframes start-selling-platform-i-doc-sweep {
    0% {
      background-position: 100%;
-@@ -6513,16 +6762,24 @@
+@@ -6513,16 +6761,24 @@
    opacity: 0;
  }
  .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
@@ -392,7 +391,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -7509,21 +7766,23 @@
+@@ -7509,21 +7765,23 @@
    opacity: 0;
  }
  .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
@@ -420,7 +419,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11751,11 +12010,71 @@
+@@ -11751,11 +12009,71 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -494,7 +493,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +12087,26 @@
+@@ -11768,3 +12086,26 @@
      scroll-behavior: auto;
    }
  }
@@ -566,7 +565,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    break;
 +  }
 +  fwKick();
- }
++}
 +// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
 +// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
 +// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
@@ -594,7 +593,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
 +    }, 500);
 +  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
-+}
+ }
  function aE() {
 -  nE ||
 +  (fwBoot(), nE) ||
@@ -808,7 +807,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,10 +3947,49 @@
+@@ -3782,9 +3947,48 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -831,7 +830,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
 +  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
 +    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
- }
++}
 +// layout-animations: the four gradient row titles sweep background-position forever (repaint every
 +// frame); the engine pauses them only per section (±1 viewport), so also pause each title while it is
 +// off-screen.
@@ -854,10 +853,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
-+}
+ }
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
- function GE(e, t, n, r = UE) {
 @@ -3824,10 +4028,13 @@
    D(r, !0);
    let i = R(() => qE(r.value, r.place)),
@@ -884,16 +882,16 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ),
              f(n, i));
          },
-@@ -3893,6 +4101,9 @@
-         },
+@@ -3894,6 +4102,9 @@
          get place() {
            return s(n);
-+        },
+         },
 +        get animate() {
 +          return t.animate;
-         },
++        },
        });
      },
+   ),
 @@ -3920,6 +4131,9 @@
    let a = C(r, `inverse`, 3, !1),
      o = R(WT),
@@ -939,7 +937,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            });
          },
          p = (e) => {
-@@ -4160,6 +4388,101 @@
+@@ -4160,6 +4388,108 @@
        i = 0,
        a = 0,
        o = !1,
@@ -986,12 +984,17 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      heTouch = 0,
 +      heT = 0,
 +      heR = 0,
++      heK = 0,
 +      heTf = () => {
-+        let e = window.scrollY;
++        let e = window.scrollY,
++          hc;
 +        e >= heEnd || (e <= heTop && !heTouch)
-+          ? (b.classList.remove(`he-tf`), x.querySelector(`.hero-copy`)?.style.removeProperty(`transform`))
++          ? (b.classList.contains(`he-tf`) && b.classList.remove(`he-tf`),
++            (hc = x.querySelector(`.hero-copy`)) && hc.style.transform && hc.style.removeProperty(`transform`))
 +          : e > heTop &&
-+            (b.classList.add(`he-tf`), window.clearTimeout(heR), (heR = window.setTimeout(heRest, 300)));
++            (b.classList.contains(`he-tf`) || b.classList.add(`he-tf`),
++            window.clearTimeout(heR),
++            (heR = window.setTimeout(heRest, 300)));
 +      },
 +      heRest = () => {
 +        if (((heR = 0), !heMode || heTouch || e.matches)) return;
@@ -1017,8 +1020,8 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      heWK = () => {
 +        (heOn(), window.clearTimeout(heT), (heT = window.setTimeout(() => heMode && heTf(), 600)));
 +      },
-+      heSc = () => {
-+        if (!heMode || e.matches || b.classList.contains(`he-tf`)) return;
++      heSc = (ev) => {
++        if (ev.target !== document || !heMode || e.matches || b.classList.contains(`he-tf`)) return;
 +        let y = window.scrollY;
 +        if (y <= heTop || y >= heEnd) return;
 +        let hn = Math.max(1, heEnd - heTop),
@@ -1026,7 +1029,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          hc = x.querySelector(`.hero-copy`);
 +        hc &&
 +          ((hc.style.transform = t.matches ? `translate(-50%, ${hs * -8}px)` : `translateY(${hs * -10}px)`),
-+          b.classList.add(`he-tf`));
++          b.classList.add(`he-tf`),
++          window.clearTimeout(heR),
++          (heR = window.setTimeout(heRest, 300)));
 +      },
 +      hePE = () => {
 +        x.style.pointerEvents = heIn || e.matches ? `` : `none`;
@@ -1041,7 +1046,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        s = () => {
          if (((i = 0), e.matches)) {
            (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
-@@ -4181,7 +4504,16 @@
+@@ -4181,8 +4511,32 @@
            window.clearTimeout(r),
            (r = 0),
            C.classList.add(`is-splash-done`),
@@ -1051,15 +1056,31 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +            ((heMode = !0),
 +            i && window.cancelAnimationFrame(i),
 +            (i = 0),
-+            x.style.removeProperty(`--exit-opacity`),
++            s(),
 +            heWrap(),
 +            heTf(),
 +            b.classList.add(`he-css`),
-+            hePE()));
++            hePE(),
++            heHold(++heK)));
        },
++      // The new exit animations are pending for their first frame, which draws the base values: keep the
++      // baseline's inline --exit-opacity (written by s() for the current scroll) through that frame, so a
++      // mid-hero switch (desktop/iPad after the entrance, pageshow, restored scroll) draws the exited hero;
++      // refresh it in the next frame, then drop it (the animations override the base values once running).
++      heHold = (k) =>
++        window.requestAnimationFrame(() => {
++          k === heK &&
++            heMode &&
++            (s(),
++            hePE(),
++            window.requestAnimationFrame(() => {
++              k === heK && heMode && x.style.removeProperty(`--exit-opacity`);
++            }));
++        }),
        f = (e) => {
          let t = e - a,
-@@ -4205,6 +4537,12 @@
+           r = O(t),
+@@ -4205,6 +4559,12 @@
            window.clearTimeout(r),
            (r = 0),
            (o = !1),
@@ -1072,7 +1093,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            C.classList.add(`is-preparing`),
            x.classList.add(`is-preparing`),
            C.classList.remove(`is-splash-done`, `is-expanding`),
-@@ -4236,15 +4574,63 @@
+@@ -4236,15 +4596,63 @@
        t.matches && d();
      };
      (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
@@ -1138,7 +1159,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            g());
        }
      );
-@@ -4726,6 +5112,10 @@
+@@ -4726,6 +5134,10 @@
          ((O = null), z(E, null));
        },
        d = () => {
@@ -1149,7 +1170,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          let e = document.querySelector(`.commission-card`);
          e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
        };
-@@ -10776,11 +11166,14 @@
+@@ -10776,11 +11188,14 @@
      let t = ie(e);
      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
    }
@@ -1166,7 +1187,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    function le() {
      let e = window.innerHeight * 1.45,
-@@ -11249,7 +11642,7 @@
+@@ -11249,7 +11664,7 @@
  }
  g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
  var dM = h(
@@ -1175,7 +1196,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,6 +11687,10 @@
+@@ -11294,6 +11709,10 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -1186,7 +1207,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = [],
        r = [],
        i = 0,
-@@ -11312,6 +11709,10 @@
+@@ -11312,6 +11731,10 @@
          if (g) {
            let t = T(g.getBoundingClientRect(), window.innerHeight),
              n = e.matches ? +(t >= 0.5) : w(t);
@@ -1197,7 +1218,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            ((o += (n - o) * (e.matches ? 1 : 0.22)),
              Math.abs(n - o) < 8e-4 && (o = n),
              h.style.setProperty(`--future-shrink`, String(o)),
-@@ -11360,6 +11761,7 @@
+@@ -11360,6 +11783,7 @@
      return (
        e.addEventListener(`change`, u),
        t.addEventListener(`change`, u),
@@ -1205,7 +1226,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        _(),
        l(),
        () => {
-@@ -11367,7 +11769,11 @@
+@@ -11367,7 +11791,11 @@
          for (let e of r) e();
          ((r.length = 0), i && window.cancelAnimationFrame(i));
          for (let e of n) window.clearTimeout(e);
@@ -1218,7 +1239,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -11419,11 +11825,15 @@
+@@ -11419,11 +11847,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -1237,7 +1258,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        ),
          f(e, t));
      },
-@@ -11443,7 +11853,7 @@
+@@ -11443,7 +11875,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -1246,7 +1267,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(me));
    var ve = V(me, 2),
-@@ -12433,21 +12843,28 @@
+@@ -12433,21 +12865,28 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -1277,7 +1298,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      };
    });
    var h = WM();
-@@ -12652,6 +13069,7 @@
+@@ -12652,6 +13091,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -1285,7 +1306,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, i));
      },
    ),
-@@ -12952,17 +13370,27 @@
+@@ -12952,17 +13392,27 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -1319,7 +1340,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12999,7 +13427,7 @@
+@@ -12999,7 +13449,7 @@
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
      let _ = () => {
          (z(v, ee(), !0), z(g, F(), !0));
@@ -1328,7 +1349,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13445,20 @@
+@@ -13017,13 +13467,20 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -1351,7 +1372,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +13480,9 @@
+@@ -13045,9 +13502,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -1363,7 +1384,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +13490,56 @@
+@@ -13055,27 +13512,56 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -1427,7 +1448,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +13550,38 @@
+@@ -13086,7 +13572,38 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -1467,13 +1488,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13099,6 +13594,41 @@
-           ne(),
-           e.removeEventListener(`change`, m),
-           t.removeEventListener(`change`, m));
-+      }
-+    );
-+  });
+@@ -13102,6 +13619,41 @@
+       }
+     );
+   });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -1506,10 +1524,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-       }
-     );
-   });
-@@ -13140,7 +13670,7 @@
++      }
++    );
++  });
+   var I = uN();
+   let L, te;
+   var B = e(I),
+@@ -13140,7 +13692,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -1518,7 +1539,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +13687,13 @@
+@@ -13157,7 +13709,13 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -1533,7 +1554,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +13729,8 @@
+@@ -13193,7 +13751,8 @@
          M(w),
          M(a),
          l(() => {
@@ -1543,7 +1564,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +13747,7 @@
+@@ -13210,7 +13769,7 @@
          f(n, a));
      };
    (m(W, (e) => {
