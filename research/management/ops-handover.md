@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-03 21:0xZ** (mgmt-ops-10).
+**10-03 21:3xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,9 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 21:1xZ Lead check-in: P-089 Chrome not started at 21:14Z (rest-script sat in a 10-min thread wait; OK re-sent). rest-script: chainJ.sh chrome started about 21:17Z (430r, 1440, 1440r; shared lane, --max-seconds 300, pmset per hold) -> out/rest-script/chainJ/chrome.out. Ops waits on its EXIT line, then does the Chrome result read. Digest sent 21:15Z.
+- 21:3xZ Note: npm run test:unit took about 16 min wall (835/0) while the Chrome chain ran; normally ~5 s. Watch, not an incident yet.
+- 21:0xZ Landed 4bb26c19. Lead adds to the P-089 Chrome result read: confirm every Chrome hold ran in the shared lane (no timing; holds.log weight 2, --shared) and pmset was clean per hold, as for the Sim legs.
 - 21:0xZ Landed 34b59994. Lead: P-089 Chrome need not wait for fix-morph-gpu (its re-runs wait on PR-012, not queued; FIFO if they queue later). rest-script README condition at 99c26adb (README only; Chrome verdict = worst over quiet, intoview, moving; rest excluded; intoview VOID = one re-run). Ops re-checked all 10 tool hashes at 99c26adb and live: unchanged. OK sent: chainJ.sh chrome may queue; no tools/ edits until its scoring ends.
 - 20:5xZ **P-089 Simulator result read PASS + option A diff read PASS (one wording condition).** Sim chains (be00187f) ran 13/13 holds first try under the 931d7ee6 hashes (hash files before/after both chains identical); ops re-score from raw with the registered t2score/t2aux reproduces every tier. fw-sim rest T2 / quiet T0; fw-ipad rest+quiet T0; reduced motion all T0/T1; coverage 12/12, MASK OK (fw-sim far-0/intoview/smooth-100 are T1 only under the mask, unmasked still T2: noted to the lead). The fw-ipad repst6 hold and carousel leg (b) shared fw-ipad in sequence (lock serialized: 20:38:33-20:40:19 vs 20:40:25-), no overlap. Option A 19ac898b: hashes in PREDICTIONS P-089; condition: README states the Chrome verdict excludes rest. Chrome holds may queue after that line and fix-morph-gpu's re-runs.
 - 20:5xZ Landed 276e98e7. **PR-013 published** by the lead (rev 4 = rev 3 at 44711176 + the L1530 nit): avatar slider keep-st6 (recommended) / match-original; Simulator screen-crop pairs (phone rest, reduced motion, iPad; base vs base2 for B); "Try it" on A; B cost row "expected, not measured on the original code". Board: carousel-leaver waiting on user PR-013; fix-carousel-leaver owns the follow-up. PROGRESS hero-carousel next + change entry updated.
