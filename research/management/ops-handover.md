@@ -9,6 +9,55 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **01:4xZ F3 review CHANGES REQUIRED; pill-swap DROPPED; I-078 RESOLVED; P-068 running.** Rebased on main 9df12de
+  (4fb3098: de-heat's P-068 system-power amendment, pre-data: PowerTelemetryData logged, reported descriptively,
+  verdicts unchanged, scorer 1ca63e2b4d11; both ledger rows kept).
+  - **F3 (f3-arm-scope): review-f3-arm-scope on fix/f3-arm-scope 846427e: CHANGES REQUIRED.** P-036's card part stands
+    (scorer rerun identical, PASS also without V2). B1 (OBSERVED, cause unknown): a V-only frame-rate collapse at the
+    end pin when the run settles at y 5215 (5-21 fps idle vs C 52-60; 2/2 V vs 0/5 C). B2: touch-coverage gap
+    mid-tween and at m=1, where the morph does not reverse. **F3 does not land; the user's F swipe is postponed.**
+    fix-nav-morph committed the scorer on fix/f3-arm-scope 846427e (fixes/mw10e-arm-scope-c/p036-score.mjs; records in
+    iphone-runner's out/p036/). Lead decision: no user phone step while P-068's timed holds run (user-steps-first
+    applies only once a step is posted); the F3 swipe is batched with cd-roll-ca's if ready.
+  - **pill-swap: D NOT PRESENT, dropped (9df12de, lead).** F-146/F-148's avatar template swap was measured on the plain
+    baseline; st6-rb2 already contains rotator-st6, which removed it (Sim 0 heavy rotator layouts at every position;
+    Chrome pastHero ~4 light layouts per 4 s). No fix built. The 01:00Z PROGRESS line is corrected (on the best build an
+    earlier fix already removed the swap); item pill-swap dropped; ledger note added (no card was made).
+  - **I-078 RESOLVED** (84a0982, npm test on main 1343/1343). Relayed to the Simulator users (fix-cd-strip,
+    fix-cd-roll-ca, fix-pill-swap, fix-hero-exit-threaded, fix-nav-morph): `git rebase main` between steps, no
+    re-measure.
+  - **cd-strip review round 1: CHANGES REQUIRED** (code fine): WebKit Sim pixel parity, more Chrome scenarios, README
+    fixes, idle-triple counts.
+  - **P-068** running: iphone-runner's no-timing hold from 01:16Z (warm-ups F A B X, then cooling for H1).
+  - PROGRESS: 01:15Z line corrected (robot-finger test passed, review found a possible slowdown at the end hold and a
+    missed-touch case, swipe postponed, heat test now); F3 item next + review detail; upcoming F3 swipe postponed;
+    01:00Z line corrected; pill-swap dropped; cd-strip next (review round 1). Ledger: P-036 review note, pill-swap note.
+
+- **01:2xZ P-036 SCORED: card part PASS (fix-nav-morph 6fb21b2; ops second read PASS).** Landed since 4e29fd5: 9b7454d
+  (de-countdown caveat: X1 layersForNode paintCount deltas may count the census itself; Timeline digit-Paint counts
+  and the stage-2 decision unaffected), 2998720 (de-gpu G2 correction: Timeline 13 -> 0 per 4 s; the lead told the user
+  in T-030 #12), 84a0982 (I-078 tool fix).
+  - **P-036** (G, 00:28-01:10Z, signed amendment 4084772, iphone-runner; C aw1-10e 3e2f599a1632 vs V F3 c6d3590576a7,
+    CSS c6aad94b455f, script d72ee13644cc): median touch-to-scroll C / V Z1 196.8 / 192 (-4.7), Z2 193 / 194.5 (+1.5),
+    Z3 189 / 189 (0) ms, every zone overlap (Z1 still overlap without the hot V2: V 190-192.5 vs C 192.5-201). 8/8
+    valid; S-open 60 / 58.9 fps (38.9 °C), S-end 60.2 / 57.1 (40.7 °C) PASS. Deviations disclosed: V2 hot (42.6-43.3
+    °C, Safari unparked ~6 min between holds 1 and 2), V2/V4 started at decaying load1 20-26 (2.3-4.5 inside holds), C2
+    re-run in place. Info only: first touchmove cancelable Z1 C 0/4 vs V 4/4 (OBSERVED), no cost (queue delay 14.5-17
+    vs 15-17 ms); Z1 dt>50 per run C 2,1,3,2 vs V 1,16,3,2 (16 = hot V2). **Ops second read:** per-run medians recomputed
+    from the README table (derived numbers only; no gesture record committed, N1): all six zone medians and the overlap
+    verdicts match; decision follows the registered rule. P-036 ledger row filled (Z1/Z2/Z3 in, card part PASS).
+    **Next under the rule: the F part (user console blind swipe of F3, incl. strokes from the nav header), then an
+    independent review, then landing.** fix-nav-morph's land-request contents went to the lead (branch
+    worktree-agent-a277ea00c8773c1ea rebased on 2998720, 6fb21b2 … bc4b3fa); the console F step needs the lead's word.
+  - **cd-strip:** D signed by the lead (fast path, no gain claim); review-cd-strip reviews tip cb45b05 (2d35411 fix,
+    2a7163d P-070 card, cb45b05 id confirmed). **P-070 assigned by ops** (no other branch claims it); next free id
+    **P-071**. Arm (b) unlayered: hero 0/259 shots differ, panel 1/169 (= A/A noise); Sim hero-clock paints 13 -> 0 per
+    4 s, clock layers 80 -> 8, clock memory 1.18 -> 2.10 MB (OBSERVED, 2 sessions). Arm (a) layered rejected (67/169
+    panel shots differ).
+  - Phone: iphone-runner goes to P-068 next (cooling + rebase first); scorer iphone-runner, ops second read.
+  - PROGRESS: change line 01:15Z (F3 robot-finger test passed; blind swipe + review next; then the heat test); F3 item
+    next/check/details; upcoming F3 swipe "next for F3"; cd-strip next + P-070 check.
+
 - **01:0xZ 7bc3d42 landed; bcb8ef5 + 8529d59 landed (de-countdown): F-146 EXPLAINED, countdown-faces clear for wave 2.**
   - **F-146:** the 1/s pastHero Layout burst is the community-pill avatar template swap (JS 11415-11447), a
     full-viewport Layout twice a second, identical in every arm; the PoC adds no write or invalidation while hidden
@@ -1727,8 +1776,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); coordinates with de-countdown | alive (10-03 00:2xZ) |
 | `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation, ST-1 split first (T-030 F2, user priority #1) | alive (10-03 00:2xZ) |
 | `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10, user priority #1) | alive (10-03 00:2xZ) |
-| `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | alive (10-03 01:0xZ) |
-| `ts-i078` (name) | I-078: `sim session` refuses while fw-sim is "Shutting Down" (workaround: wait, retry) | alive (10-03 01:0xZ) |
+| `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | done: dropped at D (9df12de, 10-03 01:3xZ) |
+| `ts-i078` (name) | I-078: `sim session` refuses while fw-sim is "Shutting Down" (workaround: wait, retry) | done: I-078 resolved 84a0982 |
 | `arch-memory` (name) | T-032: agent memory into the project (proposal cfe3693, waits on the user's two OKs) | alive (10-03 00:2xZ) |
 | `fix-nav-morph` ID | a277ea00c8773c1ea; also takes the morph panel dvh height after P-036 | – |
 | ts-i077 (UNNAMED: agent ID a46d520fdb1912d3c; the name does not resolve) | I-077 (open after park), talks to the lead | done: I-077 resolved 793c8bc (10-03 00:5xZ) |
