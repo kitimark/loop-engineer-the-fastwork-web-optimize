@@ -22,7 +22,8 @@ const CYCLES = Number(process.argv[3] || 3);
 const HIDE_MS = Number(process.argv[4] || 10000);
 const SHOW_MS = 3000;
 const UDID = process.env.FW_SIM_UDID;
-if (!UDID) { console.error('FW_SIM_UDID not set: run inside `sim.mjs session`'); process.exit(1); }
+const ANALYZE = process.argv[2] === '--analyze' ? process.argv[3] : null;
+if (!UDID && !ANALYZE) { console.error('FW_SIM_UDID not set: run inside `sim.mjs session`'); process.exit(1); }
 const OUT = join(WT, 'out/cd-roll-ca');
 mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -55,6 +56,14 @@ const INJECT = `(() => {
     }
     return a;
   };
+  // round 3: every change of a hero strip's inline transform = a target change (the build writes the target there;
+  // snaps included); used by the full-chain model of the original (chain() below). In C it also changes per frame.
+  L.inl = [];
+  new MutationObserver((ms) => {
+    if (!L.rec) return;
+    const now = performance.now(), hs = hero();
+    for (const m of ms) { const i = hs.indexOf(m.target); if (i >= 0) L.inl.push({ i, now, hidden: document.hidden, px: pxOf(m.target.style.transform), c: cell(m.target) }); }
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['style'] });
   document.addEventListener('visibilitychange', () => {
     if (!L.rec) return;
     L.vis.push({ now: performance.now(), hidden: document.hidden, vs: document.visibilityState, tl: document.timeline.currentTime, pending: P.size, ty: hero().map(tyOf) });
@@ -108,6 +117,76 @@ function analyze(log) {
   });
 }
 
+// round 3: the original's full chain per digit over the logged events (the roll-probe method): every target change
+// (inline transform, snaps included) restarts its spring from its current value with velocity 0 at that time, and every
+// logged frame (all frames: the logger's own rAF runs each one, hidden or not) steps it GE(stamp - n). The build's
+// computed translateY is compared with it at every frame. Only for arms whose inline transform holds the target
+// (V, V3), not for C (its inline transform is the spring value).
+function chain(log) {
+  if (!log.inl) return null;
+  // start at the first frame where every hero digit is at rest on a whole cell (the model needs no spring state there)
+  const settled = (f) => f.ty.every((ty, i) => { const v = -ty / (f.c[i] || 1); return Math.abs(v - Math.round(v)) < 1e-3; });
+  const F = log.frames.slice(Math.max(0, log.frames.findIndex(settled))), V = log.vis, n0 = F[0];
+  if (!n0) return null;
+  const st = n0.ty.map((ty, i) => ({ value: -ty / (n0.c[i] || 1), velocity: 0, n: 0, target: -ty / (n0.c[i] || 1), active: false }));
+  const ev = [...F.map((f) => ({ at: f.cb, f })), ...log.inl.filter((x) => x.now >= n0.cb).map((x) => ({ at: x.now, x }))].sort((a, b) => a.at - b.at);
+  const shows = V.filter((v) => !v.hidden).map((v) => v.now), hides = V.filter((v) => v.hidden).map((v) => v.now);
+  const rows = [], starts = [];
+  const phaseAt = (at) => {
+    const lastShow = shows.filter((x) => x <= at).pop(), lastHide = hides.filter((x) => x <= at).pop();
+    if (lastHide !== undefined && (lastShow === undefined || lastShow < lastHide)) return 'hidden';
+    if (lastShow !== undefined && at - lastShow < 50) return 'show tick';
+    return lastShow !== undefined && at - lastShow < 1000 ? 'first 1 s after show' : 'visible';
+  };
+  for (const e of ev) {
+    if (e.x) {
+      const s = st[e.x.i], c = e.x.c || 1, to = -e.x.px / c;
+      if (!s || !Number.isFinite(to) || Math.abs(to - s.target) < 1e-9) continue;
+      // start value: what the original shows at this tick (its a) vs the build's first keyframe (or a snap: then the
+      // original must already be at the target, else it rolls and the build doesn't). Independent of when WebKit
+      // samples the animation (getComputedStyle runs about one frame ahead of the rAF stamp in the Simulator).
+      // the MutationObserver runs after all digits' effects of a tick: the roll is the latest animate() of this digit
+      // in the 30 ms before the inline change
+      const a = (log.anims || []).filter((r) => r.i === e.x.i && r.now <= e.x.now + 0.5 && r.now > e.x.now - 30).pop();
+      const mPx = -((((s.value % 10) + 10) % 10) * c);
+      const ref = a ? a.from : e.x.px;
+      let err = Math.abs(ref - mPx); err = Math.min(err, Math.abs(err - 10 * c));
+      starts.push({ i: e.x.i, now: Math.round(e.x.now * 10) / 10, phase: phaseAt(e.x.now), kind: a ? 'roll' : 'snap', originalPx: Math.round(mPx * 1000) / 1000, buildPx: Math.round(ref * 1000) / 1000, errPx: Math.round(err * 1000) / 1000 });
+      s.target = to; s.velocity = 0; s.n = e.x.now; s.active = true;
+      continue;
+    }
+    const f = e.f;
+    f.ty.forEach((ty, i) => {
+      const s = st[i]; if (!s) return;
+      if (s.active) { const o = GE({ value: s.value, velocity: s.velocity }, s.target, f.t - s.n); s.n = f.t; s.value = o.state.value; s.velocity = o.state.velocity; s.active = !o.done; }
+      const c = f.c[i] || 1, model = -((((s.value % 10) + 10) % 10) * c);
+      let err = Math.abs(ty - model); err = Math.min(err, Math.abs(err - 10 * c));
+      const ph = phaseAt(f.cb), phase = ph === 'show tick' ? 'first 1 s after show' : ph;
+      rows.push({ i, t: f.t, phase, build: Math.round(ty * 1000) / 1000, model: Math.round(model * 1000) / 1000, err });
+    });
+  }
+  const by = (p) => rows.filter((r) => r.phase === p);
+  const mx = (a) => (a.length ? Math.round(Math.max(...a.map((r) => r.err)) * 1000) / 1000 : null);
+  const worst = (a) => [...a].sort((x, y) => y.err - x.err).slice(0, 5).map((r) => ({ ...r, err: Math.round(r.err * 1000) / 1000 }));
+  const sm = (p) => mx(starts.filter((r) => r.phase === p).map((r) => ({ err: r.errPx })));
+  return {
+    startValue: { note: 'per target change: the original\'s value at the tick vs the build\'s roll start (or, for a snap, the target)', maxErrPx: { visible: sm('visible'), hidden: sm('hidden'), showTick: sm('show tick'), firstSecondAfterShow: sm('first 1 s after show') }, snaps: starts.filter((r) => r.kind === 'snap').length, missedRolls: starts.filter((r) => r.kind === 'snap' && r.errPx > 0.01).length, notVisible: starts.filter((r) => r.phase !== 'visible') },
+    frames: F.length, targetChanges: log.inl.length, maxErrPx: { visible: mx(by('visible')), firstSecondAfterShow: mx(by('first 1 s after show')), hidden: mx(by('hidden')) }, worstAfterShow: worst(by('first 1 s after show')), worstVisible: worst(by('visible')) };
+}
+
+// --analyze <file>: recompute per/summary/chain from a saved run (the raw log is kept verbatim), rewrite the file
+if (ANALYZE) {
+  const d = JSON.parse(readFileSync(ANALYZE, 'utf8'));
+  for (const [arm, r] of Object.entries(d.arms)) {
+    r.per = analyze(r.log);
+    r.chain = arm === 'C' ? null : chain(r.log);
+    console.log(arm, 'chain', JSON.stringify(r.chain && { startValue: { ...r.chain.startValue, notVisible: undefined }, maxErrPx: r.chain.maxErrPx }));
+  }
+  d.reanalyzedAt = new Date().toISOString();
+  writeFileSync(ANALYZE, JSON.stringify(d, null, 1));
+  process.exit(0);
+}
+
 const res = { tool: 'fixes/cd-roll-ca/sim-hide.mjs', cycles: CYCLES, hideMs: HIDE_MS, showMs: SHOW_MS, how: 'Safari to the background by launching Settings, back by launching Safari (simctl launch)', startedAt: new Date().toISOString(), arms: {} };
 for (const arm of ARMS) {
   const s = await server(arm);
@@ -153,8 +232,10 @@ for (const arm of ARMS) {
       maxFirstFrameErrPx: Math.max(0, ...per.flatMap((p) => (p.firstFrameAfterShow || []).map((x) => x.errPx))),
       errors: log.errors.length,
     };
-    res.arms[arm] = { url, servedHash, inject: inj, ua, steps, summary, per, log };
+    const fullChain = arm === 'C' ? null : chain(log);
+    res.arms[arm] = { url, servedHash, inject: inj, ua, steps, summary, per, chain: fullChain, log };
     console.log(arm, JSON.stringify(servedHash['/_app/immutable/nodes/2.DyWL8TcE.js']?.slice(0, 12)), JSON.stringify(summary));
+    if (fullChain) console.log(arm, 'chain', JSON.stringify(fullChain));
     console.log(arm, 'per', JSON.stringify(per.map(({ k, hiddenVs, hiddenMs, framesWhileHidden, rollingAtHide, timerSamplesWhileHidden, pending, hiddenRolls, gapRolls, firstFrameAfterShow }) => ({ k, hiddenVs, hiddenMs, framesWhileHidden, rollingAtHide, timerSamplesWhileHidden, pending, hiddenRolls, gapRolls, firstFrameAfterShow }))));
     c.close();
   } finally { s.p.kill(); }

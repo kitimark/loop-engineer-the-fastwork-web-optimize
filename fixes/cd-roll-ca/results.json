@@ -1,22 +1,25 @@
 {
  "topic": "cd-roll-ca",
  "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
- "date": "2026-10-03T02:42:04.506Z",
+ "date": "2026-10-03T03:09:27.187Z",
  "config": {
   "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
   "stackedOn": "cd-strip (arm b) on st6-rb2",
   "baseJsSha256": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
-  "buildJsSha256": "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5",
+  "buildJsSha256": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
   "chrome": "Chrome/154.0.8037.97, 430x932 DPR 3 mobile, CPU 1x, served --vendors=local --latency 150 via fix.mjs serve",
   "webkit": "iOS Simulator fw-sim 15 Pro Max, Mobile Safari, Timeline counts (never times, F-084)",
+  "buildJsSha256Round2": "673b110d118c",
   "buildJsSha256Round1": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
   "snapshots": {
-   "dir": "out/cd-roll-ca/snap/{C,V}",
+   "dir": "out/cd-roll-ca/snap/{C,V,V3} (V = round 2, V3 = round 3)",
    "hashes": [
     "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830  C/_app/immutable/nodes/2.DyWL8TcE.js",
     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  C/_app/immutable/assets/2.gBuqKVzi.css",
     "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5  V/_app/immutable/nodes/2.DyWL8TcE.js",
-    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css"
+    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css",
+    "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b  V3/_app/immutable/nodes/2.DyWL8TcE.js",
+    "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V3/_app/immutable/assets/2.gBuqKVzi.css"
    ],
    "serve": "sh out/cd-roll-ca/serve-snap.sh"
   },
@@ -30,9 +33,9 @@
    "fixes/cd-roll-ca/sim-hide.mjs",
    "fixes/cd-roll-ca/sim-gaps.mjs"
   ],
-  "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build"
+  "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build; round 3 2af461dc (ran flag + __crWatch, roll clock only): hide-check V3, h60e, sim-hide C/V3; fix.mjs check not re-run for round 3"
  },
- "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll on normal ticks within 0.15 px of the original's ideal 60 Hz frames and 0.64 px on the same jittery stamps at CPU 1x (the original's own stamp-jitter variation on regular frames up to 0.80 px); forced (random-phase) rolls up to 0.84 px vs the ideal 60 Hz original (p95 0.036) and 0.30 px on the same stamps (its own 0.55 px); at 120 Hz (and, modelled, 80 Hz or after a late first frame) the build keeps the regular 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted); hidden tab (real, Chrome): pending rAF callbacks <= 2 like C (round 1: one more per hidden tick), start value on show = held value, first frame after show within 0.27 px of the original model; WebKit Simulator hidden page (app switch): no pile-up, 0 errors, but rAF stops ~0.4 s before the hidden event and resumes one frame before the visible event, so the start value at the show differs by up to 23.8 px and one show tick snapped instead of rolling (fix proposed, not in this build)",
+ "verdict": "countdown rAF callbacks 108 -> 4 per 4 s at y 0 (Chrome) and 107-110 -> 4-5 (WebKit Sim); hero roll on normal ticks within 0.15 px of the original's ideal 60 Hz frames and 0.64 px on the same jittery stamps at CPU 1x (the original's own stamp-jitter variation on regular frames up to 0.80 px); forced (random-phase) rolls up to 0.84 px vs the ideal 60 Hz original (p95 0.036) and 0.30 px on the same stamps (its own 0.55 px); at 120 Hz (and, modelled, 80 Hz or after a late first frame) the build keeps the regular 60 Hz path (27.7 px max vs the original at 120 Hz, known and user-accepted); hidden tab (real, Chrome): pending rAF callbacks <= 2 like C (round 1: one more per hidden tick), start value on show = held value, first frame after show within 0.27 px of the original model; WebKit Simulator hidden page (app switch): no pile-up, 0 errors, but rAF stops ~0.4 s before the hidden event and resumes one frame before the visible event, so round 2 started gap rolls up to 23.8 px off and one show tick snapped instead of rolling; round 3 (2af461dc: a roll holds at its start until its start frame ran; a hide watch rAF ends the no-frames state at the first frame after the hide, also the pre-visible one) fixes both: tick starts within 1.39 px of the original, frame-wise within 2.02 px over the first second after the show, no snapped show tick; residual (OBSERVED, Simulator): a roll whose frames ran before WebKit stopped rAF is held at the hidden event's timeline time, 0.88 / 1.39 px from the original's last-frame value, snapped (not rolled) at the show; Chrome round 3: start 0 px, first frame after show 0.21 px, pending <= 3 (2 digits + the watch); normal ticks unchanged (h60e: 0.08 px vs ideal, 0.24 px on the same stamps, own jitter 0.32 px)",
  "chromeCounts": {
   "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
   "base_frozen": {
@@ -887,6 +890,104 @@
     }
    ]
   },
+  "headless60_round3": {
+   "mode": "build",
+   "headless": true,
+   "cpu": 1,
+   "browser": "Chrome/154.0.8037.97",
+   "frames": 2405,
+   "frameDtMedianMs": 16.7,
+   "frameDtP95Ms": 16.7,
+   "rolls": 84,
+   "keyframesMax": 343,
+   "errTickRolls": {
+    "n": 1146,
+    "maxPx": 0.2359,
+    "p95Px": 0.0211,
+    "p99Px": 0.1101
+   },
+   "errForcedRolls": {
+    "n": 1374,
+    "maxPx": 0.1043,
+    "p95Px": 0.0156,
+    "p99Px": 0.0443
+   },
+   "startValueDiffPx": {
+    "n": 84,
+    "maxPx": 0.0156,
+    "p95Px": 0.0049,
+    "p99Px": 0.0156
+   },
+   "origJitterTickPx": {
+    "n": 1146,
+    "maxPx": 0.3175,
+    "p95Px": 0.0287,
+    "p99Px": 0.1311
+   },
+   "origJitterForcedPx": {
+    "n": 1374,
+    "maxPx": 0.2343,
+    "p95Px": 0.0346,
+    "p99Px": 0.1107
+   },
+   "errVsIdeal60TickPx": {
+    "n": 1146,
+    "maxPx": 0.0815,
+    "p95Px": 0.0144,
+    "p99Px": 0.0251
+   },
+   "errVsIdeal60ForcedPx": {
+    "n": 1374,
+    "maxPx": 0.2224,
+    "p95Px": 0.0328,
+    "p99Px": 0.1097
+   },
+   "startValueDiffForcedPx": {
+    "n": 46,
+    "maxPx": 0.008,
+    "p95Px": 0.0048,
+    "p99Px": 0.008
+   },
+   "worstRolls": [
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.2359
+    },
+    {
+     "i": 15,
+     "from": 0.0028,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.2303
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.1926
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.124
+    },
+    {
+     "i": 15,
+     "from": 0,
+     "to": 9,
+     "forced": false,
+     "maxPx": 0.1179
+    }
+   ],
+   "servedHash": "2af461dc50ad (hold7.log, serve-snap.sh)",
+   "raw": "out/cd-roll-ca/probe-build-h60e.json"
+  },
   "offlineModel": {
    "gridVsOriginal60HzMaxPx": {
     "oneStep": 0.0167,
@@ -1261,6 +1362,140 @@
      ]
     }
    ]
+  },
+  "V3_round3": {
+   "servedHash": {
+    "/_app/immutable/nodes/2.DyWL8TcE.js": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+    "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+   },
+   "summary": {
+    "hiddenConfirmed": true,
+    "framesWhileHidden": 0,
+    "maxPendingWhileHidden": 3,
+    "maxPendingAtShow": 3,
+    "hiddenRolls": 15,
+    "maxStartErrPx": 0,
+    "maxFirstFrameErrPx": 0.207,
+    "errors": 0
+   },
+   "per": [
+    {
+     "k": 0,
+     "hiddenMs": 3019.6,
+     "framesWhileHidden": 0,
+     "rollingAtHide": true,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 3,
+      "atShow": 3,
+      "after1s": 0
+     },
+     "hiddenRolls": 4,
+     "gapRolls": 4,
+     "firstFrameAfterShow": [
+      {
+       "i": 6,
+       "rollAt": "hidden tick",
+       "dtMs": 214.1,
+       "build": -36.748,
+       "originalModel": -36.738,
+       "errPx": 0.009
+      },
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 213,
+       "build": -318.533,
+       "originalModel": -318.74,
+       "errPx": 0.207
+      }
+     ]
+    },
+    {
+     "k": 1,
+     "hiddenMs": 3067.5,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 2,
+      "atShow": 2,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 3,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 297.1,
+       "build": -108.657,
+       "originalModel": -108.652,
+       "errPx": 0.005
+      }
+     ]
+    },
+    {
+     "k": 2,
+     "hiddenMs": 3024.3,
+     "framesWhileHidden": 0,
+     "rollingAtHide": false,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 3,
+      "atShow": 3,
+      "after1s": 0
+     },
+     "hiddenRolls": 5,
+     "gapRolls": 5,
+     "firstFrameAfterShow": [
+      {
+       "i": 6,
+       "rollAt": "hidden tick",
+       "dtMs": 2004.1,
+       "build": 0,
+       "originalModel": 0,
+       "errPx": 0
+      },
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 4.8,
+       "build": -40.657,
+       "originalModel": -40.645,
+       "errPx": 0.012
+      }
+     ]
+    },
+    {
+     "k": 3,
+     "hiddenMs": 3015.3,
+     "framesWhileHidden": 0,
+     "rollingAtHide": true,
+     "pending": {
+      "beforeHide": 0,
+      "atHide": 0,
+      "maxWhileHidden": 2,
+      "atShow": 2,
+      "after1s": 0
+     },
+     "hiddenRolls": 3,
+     "gapRolls": 3,
+     "firstFrameAfterShow": [
+      {
+       "i": 7,
+       "rollAt": "hidden tick",
+       "dtMs": 204.1,
+       "build": -38.815,
+       "originalModel": -38.695,
+       "errPx": 0.12
+      }
+     ]
+    }
+   ]
   }
  },
  "hiddenPageWebKitSim": {
@@ -1321,8 +1556,159 @@
     "V_cycle2": 11.722
    },
    "simHideFirstFrameColumn": "its 36 px for V cycle 0 is not valid on WebKit (no snap ticks, no pre-event frame in its model)",
-   "proposedFix": "(a) the start-frame rAF marks its roll as having run a frame; a roll with no frame holds at its start while hidden; (b) the hide handler requests one rAF that ends __crNoFrames at the first frame after the hide. Not in build 673b110d; decision with the lead and the reviewer"
+   "proposedFix": "(a) the start-frame rAF marks its roll as having run a frame; a roll with no frame holds at its start while hidden; (b) the hide handler requests one rAF that ends __crNoFrames at the first frame after the hide. Not in build 673b110d; folded into round 3 2af461dc on the lead's order (see hiddenPageWebKitSimRound3)"
   }
+ },
+ "hiddenPageWebKitSimRound3": {
+  "note": "same Simulator and script as round 2, arms C and V3 (2af461dc), 3 cycles each; analysed with the chain model (sim-hide.mjs --analyze): the original GE chain replayed over the logged frames, every target change (MutationObserver on the strip style, snaps included) restarts it from the current value with velocity 0; OBSERVED, Simulator, cause unknown",
+  "raw": "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json",
+  "how": "Safari to the background by launching Settings, back by launching Safari (simctl launch)",
+  "arms": {
+   "C": {
+    "servedHash": {
+     "/_app/immutable/nodes/2.DyWL8TcE.js": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
+     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+    },
+    "summary": {
+     "hideEvents": 3,
+     "showEvents": 3,
+     "framesWhileHidden": 3,
+     "timerSamplesWhileHidden": 28,
+     "maxPendingWhileHidden": 3,
+     "maxPendingAtShow": 1,
+     "hiddenRolls": 0,
+     "gapRolls": 0,
+     "maxStartErrPx": 0,
+     "maxFirstFrameErrPx": 0,
+     "errors": 0
+    }
+   },
+   "V3": {
+    "servedHash": {
+     "/_app/immutable/nodes/2.DyWL8TcE.js": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+    },
+    "summary": {
+     "hideEvents": 3,
+     "showEvents": 3,
+     "framesWhileHidden": 3,
+     "timerSamplesWhileHidden": 30,
+     "maxPendingWhileHidden": 4,
+     "maxPendingAtShow": 1,
+     "hiddenRolls": 16,
+     "gapRolls": 16,
+     "maxStartErrPx": 1.33,
+     "maxFirstFrameErrPx": 36,
+     "errors": 0
+    }
+   }
+  },
+  "summaryColumnsNotValid": "maxStartErrPx / maxFirstFrameErrPx in the summaries are the round-2 per-cycle model (no pre-visible frame, no snaps): not valid on WebKit; use chain",
+  "chain": {
+   "frames": 829,
+   "targetChanges": 36,
+   "startValueMaxErrPx": {
+    "visible": 1.39,
+    "hidden": 1.39,
+    "showTick": null,
+    "firstSecondAfterShow": 0
+   },
+   "snaps": 3,
+   "missedRolls": 2,
+   "frameWiseMaxErrPx": {
+    "visible": 23.225,
+    "firstSecondAfterShow": 2.016,
+    "hidden": 1.39
+   },
+   "worstAfterShow": [
+    {
+     "i": 7,
+     "t": 33350,
+     "phase": "first 1 s after show",
+     "build": -243.398,
+     "model": -245.414,
+     "err": 2.016
+    },
+    {
+     "i": 7,
+     "t": 47483,
+     "phase": "first 1 s after show",
+     "build": -99.027,
+     "model": -100.44,
+     "err": 1.413
+    },
+    {
+     "i": 7,
+     "t": 19666,
+     "phase": "first 1 s after show",
+     "build": -31.934,
+     "model": -33.278,
+     "err": 1.344
+    },
+    {
+     "i": 7,
+     "t": 47516,
+     "phase": "first 1 s after show",
+     "build": -86.714,
+     "model": -87.614,
+     "err": 0.9
+    },
+    {
+     "i": 7,
+     "t": 47500,
+     "phase": "first 1 s after show",
+     "build": -92.092,
+     "model": -92.884,
+     "err": 0.792
+    }
+   ],
+   "worstVisible": [
+    {
+     "i": 7,
+     "t": 20683,
+     "phase": "visible",
+     "build": -112.084,
+     "model": -88.858,
+     "err": 23.225
+    },
+    {
+     "i": 7,
+     "t": 20700,
+     "phase": "visible",
+     "build": -165.141,
+     "model": -151.707,
+     "err": 13.434
+    },
+    {
+     "i": 7,
+     "t": 20716,
+     "phase": "visible",
+     "build": -205.112,
+     "model": -195.205,
+     "err": 9.907
+    },
+    {
+     "i": 7,
+     "t": 20666,
+     "phase": "visible",
+     "build": -14.818,
+     "model": -7.56,
+     "err": 7.258
+    },
+    {
+     "i": 7,
+     "t": 34350,
+     "phase": "visible",
+     "build": -208.44,
+     "model": -212.64,
+     "err": 4.2
+    }
+   ]
+  },
+  "eventOrder": "rAF stops 382-528 ms before visibilitychange(hidden); timeline time in it 331-471 ms after the last frame; one frame 28-63 ms before visibilitychange(visible) in all 6 cycles (sim-gaps.mjs)",
+  "residual": "rolls whose first frames ran before rAF stopped: held 0.876 px (cycle 0) and 1.39 px (cycle 1) from the original's last-frame value, snapped to the target at the show where the original rolls them; bound: the part of a roll that plays in the 0.3-0.5 s between the last frame and the hidden event; needs a per-frame script to close, documented (review round 2)",
+  "visibleSamplingLead": "not hide-related: getComputedStyle in the rAF callback reads the CA transform 0.5-5.5 ms ahead of the rAF stamp (median 1.5, p90 4 ms, n 56), up to 23.2 px frame-wise in the fastest part of a 0->9 roll (29 px in round 2); OBSERVED, relates to the UNRESOLVED presentation-time item",
+  "phoneEventOrder": "UNRESOLVED (not run on the device)"
  },
  "pathCostPerTick": {
   "medianMs": 0.04,
@@ -1347,6 +1733,9 @@
   "out/cd-roll-ca/probe-build-h60d.json",
   "out/cd-roll-ca/probe-build-headed2.json",
   "out/cd-roll-ca/hide-{C,V0,V}.json",
-  "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json"
+  "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
+  "out/cd-roll-ca/hide-V3.json",
+  "out/cd-roll-ca/probe-build-h60e.json",
+  "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json"
  ]
 }

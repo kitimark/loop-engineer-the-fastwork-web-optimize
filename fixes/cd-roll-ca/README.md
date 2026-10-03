@@ -5,8 +5,10 @@
 
 **Status:** measured (counts and positions only; timing A/Bs deferred, user 2026-10-02); review round 1 answered
 (B1 fixed in code, B2/B3 in text); round 2 PASS with three nits, answered (audit of the first hide analysis,
-forced-roll parity, served hashes); WebKit hidden-page check run in the Simulator: one difference from Chrome, fix
-proposed (section "WebKit, iOS Simulator")
+forced-roll parity, served hashes); WebKit hidden-page check run in the Simulator found a difference from Chrome on
+return from an app switch; round 3 build `2af461dc…` fixes it (lead's order: a roll's "ran a frame" flag and a hide
+watch); Chrome hide check, one 60 Hz probe and the Simulator check re-run on it; review round 3 (hide code only) pending.
+To rebuild on cd-strip's landed patch.
 **Stage:** F (build card); D signed by the lead, fast path, 2026-10-03 01:35Z; V = the user's blind watched comparison
 (no touch; ticket rev 2 held by the lead)
 **Device class / gate:** render-bound / main-thread script removal; gate = counts (no timing now) + the user's watched
@@ -19,9 +21,9 @@ Timeline counts and a hidden-page check (app switch). No phone runs.
 (header of `patch.diff`); rebuild with `node tools/fix.mjs apply cd-strip --on st6-rb2 --reset` then
 `node tools/fix.mjs apply cd-roll-ca --on cd-strip`. The cd-strip patch is not committed here (its owner's deliverable).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only: new helpers after `__cdStripY` (`__crPath`, `__crAt`,
-`__crClock`, a module-level `visibilitychange` listener), and in `$E` (the digit) the spring effect and the strip
-snippet. Built overlay sha256 `673b110d118c…` (round 2; round 1 reviewed `9ac52b08bc32…`). Served from the immutable
-snapshot copies `out/cd-roll-ca/snap/{C,V}` (hashes in `HASHES.txt`, one-command server `out/cd-roll-ca/serve-snap.sh`).
+`__crClock`, `__crWatch`, a module-level `visibilitychange` listener), and in `$E` (the digit) the spring effect and the strip
+snippet. Built overlay sha256 `2af461dc50ad…` (round 3; round 2 `673b110d118c…`, round 1 `9ac52b08bc32…`). Served
+from the immutable snapshot copies `out/cd-roll-ca/snap/{C,V,V3}` (V = round 2, V3 = round 3) (hashes in `HASHES.txt`, one-command server `out/cd-roll-ca/serve-snap.sh`).
 
 ## Why it lags
 
@@ -55,7 +57,12 @@ animation needs no forwards fill.
   to 4.5 px in the first frames.
 - **Hidden tab.** A module-level `visibilitychange` listener records when the page was hidden
   (`document.timeline.currentTime` at the hide, else `performance.now()`); while no frames run, the "current value"
-  is the path at that time (what the original's frozen rAF shows). The start-frame rAF of a roll is cancelled by
+  is the path at that time (what the original's frozen rAF shows). Round 3: a roll none of whose frames has run yet
+  (its start-frame rAF sets `ran`) is held at its start, hidden or not, since the original's spring only moves in a
+  frame; and one pending callback (`__crWatch`, re-armed on every visibilitychange, its id kept so hides never stack)
+  ends the hold at the first frame after a hide: a frame that runs while still hidden (WebKit runs one before the
+  visible event, OBSERVED, Simulator) becomes the new held time and the watch goes on, the first visible frame ends
+  the hold. The start-frame rAF of a roll is cancelled by
   `__crStop` (review round 1, B1): cD's 1 s interval keeps ticking in a hidden tab, and without the cancel every hidden
   tick left one more pending callback holding its path and Animation (the original keeps at most one per digit).
 - **Off-screen.** Unchanged gate from countdown-idle-raf: when the clock is off-screen or inactive the digit snaps
@@ -132,6 +139,7 @@ plus a synthetic `visibilitychange`, so the countdown ticks at a random phase, o
 
 | run | frames | B vs A: normal ticks max / p95 | forced (random phase) max / p95 | start value diff max | original's own stamp jitter (A on real stamps vs ideal 60 Hz) max / p95 |
 |---|---|---|---|---|---|
+| **round 3 build `2af461dc…`**, headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60e.json`, served hash in `hold7.log`) | 2405 | 0.236 / 0.021 px (vs ideal-60 Hz original 0.082 / 0.014) | 0.104 / 0.016 px (vs ideal-60 Hz original 0.222 / 0.033) | 0.016 px | ticks 0.32 / 0.029 px, forced 0.23 / 0.035 px |
 | **round 2 build `673b110d…`**, headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60d.json`, served hash logged) | 2405 | 0.643 / 0.025 px (vs ideal-60 Hz original 0.152 / 0.014) | 0.295 / 0.020 px (vs ideal-60 Hz original 0.843 / 0.036) | 0.006 px | ticks 0.80 / 0.029 px, forced 0.55 / 0.043 px |
 | **round 2 build**, headed, display 120 Hz, 30 s, 12 jumps (`probe-build-headed2.json`) | 3604 | 29.6 / 3.2 px | 21.5 / 4.0 px | 0.20 px | n/a |
 | earlier build (before hero-only), headless 60 Hz, 40 s, 16 jumps (`probe-build-h60b.json`) | 2405 | 0.133 / 0.015 px | 0.145 / 0.021 px | 0.007 px | 0.61 / 0.026 px |
@@ -147,8 +155,10 @@ plus a synthetic `visibilitychange`, so the countdown ticks at a random phase, o
   inside its own frame-to-frame variation. On forced rolls (a change at a random phase, often mid-roll, 1370 frames;
   the clock never does this by itself, only `Date.now` jumps and a show do) the build is up to 0.84 px off the ideal
   60 Hz original (p95 0.036, p99 0.139 px; `errVsIdeal60ForcedPx`) but within 0.30 px of the original on the same
-  stamps; the original's own forced-roll jitter, same stamps vs ideal, is 0.55 px (`origJitterForcedPx`). The round 2
-  rows are the final build; the "earlier build" rows predate the hero-only gate and the round 2 change (no change to
+  stamps; the original's own forced-roll jitter, same stamps vs ideal, is 0.55 px (`origJitterForcedPx`). Round 3
+  (`h60e`, the final build) touches only the hidden-page clock: normal ticks 0.08 px vs ideal and 0.24 px on the same
+  stamps (its own jitter 0.32 px this run), forced 0.22 / 0.10 px (own 0.23 px). The round 2
+  rows are the build before; the "earlier build" rows predate the hero-only gate and the round 2 change (no change to
   the hero's path between them). Scope (OBSERVED, Chrome,
   regular 60 Hz frames at CPU 1x): the 0.61 px is the original's variation on regular frames only. Off that regime
   the original moves much more by itself: at 80 Hz it is 2.7 px (one step) / 24.7 px (0→9) off its 60 Hz path, and a
@@ -185,6 +195,7 @@ C JS `358cd8ae16b9…`, V JS `673b110d118c…`, CSS `ce6beca745a0…` both, `x-m
 | C, cd-strip (`358cd8ae…`) | 2 | 2 | (rAF spring) | (is the original) | 0 |
 | V0, round 1 (`9ac52b08…`) | 3 (= hidden ticks) | 4 | 0.40 px | 3.29 px | 0 |
 | V, round 2 (`673b110d…`) | 2 | 2 | 0.000 px | 0.27 px | 0 |
+| **V3, round 3 (`2af461dc…`)**, `hide-V3.json` (servedHash in the file; `hold7.log`) | 3 | 3 | 0.000 px | 0.21 px | 0 |
 
 - V0 kept one more pending callback per hidden tick (3 ticks in 3 s here), each holding its path and Animation, so a
   tab left hidden for hours would pile them up at whatever rate Chrome lets the 1 s interval run in the background
@@ -208,6 +219,11 @@ C JS `358cd8ae16b9…`, V JS `673b110d118c…`, CSS `ce6beca745a0…` both, `x-m
   `performance.now()` hide time (above). Both analyses run on the same raw samples: `hide-audit.mjs` reruns the old
   and the new selection on the saved `hide-V0.json` / `hide-V.json` and prints 108 / 247.918 (first) and 3.293 /
   0.274 px (second) per arm, row by row.
+- Round 3 (V3: the per-roll `ran` flag and the hide watch `__crWatch`, below) keeps Chrome's numbers: 0 px at the
+  gap-roll start, ≤ 0.21 px at the first frame after the show, 4 cycles (2 mid-roll), 0 frames while hidden, 0 errors.
+  The pending count is one more than V because the watch itself is one pending callback (3 = 2 rolling digits + the
+  watch; it is re-armed, never added, on every `visibilitychange`, so it can't pile up). In Chrome the first frame
+  after a hide comes after the visible event, so the watch changes nothing there.
 - OBSERVED, Chrome, in our setup. WebKit: see the Simulator row below.
 
 ### WebKit, iOS Simulator (OBSERVED, Simulator, counts and positions only)
@@ -238,13 +254,47 @@ and the show (all 6 cycles, both arms):
   target) and snaps to 0 without a roll. (`sim-hide.mjs`'s own first-frame column says 36 px there: it models only
   ticks that started an animation and has no pre-event frame, so that cell is not valid on WebKit; the 8.4 / 11.7 px
   of cycles 1 and 2 are, show-tick rolls with dt 43 / 38 ms.)
-- What the user sees: only on return from another app, the first ~0.4 s of the clock's roll start up to ~24 px (2/3
-  of a cell) off the original, or one digit snaps instead of rolling. Proposed fix (not in this build, sent to the
-  lead and the reviewer): (a) the one-shot start-frame rAF marks its roll as having run a frame, and a roll with no
-  frame holds at its start while hidden (closes the 19-24 px); (b) the hide handler requests one rAF that ends
-  `__crNoFrames` at the first frame after the hide, whichever side of the visible event it lands on (closes the
-  snap; in Chrome that frame comes after the event, as now). Residual: a roll whose first frames ran before rAF
-  stopped is still held at the timeline time (3.9 px here; at most the part of a roll that plays in ~0.5 s).
+- What the user saw with round 2: only on return from another app, the first ~0.4 s of the clock's roll started up to
+  ~24 px (2/3 of a cell) off the original, or one digit snapped instead of rolling. Fixed in round 3 (next).
+
+**Round 3 (`2af461dc…`, the lead's order: fold the fix in).** (a) The one-shot start-frame rAF sets the roll's `ran`
+flag (also when its stamp is not before `t0`); a roll whose start frame has not run reads its clock at `t0`, i.e. holds
+at its start, like the original whose spring has not stepped. (b) `__crWatch`: on every `visibilitychange` one rAF is
+requested (the previous request cancelled, its id kept, so hides never stack callbacks); if that frame runs while
+`document.hidden` is still true (WebKit's pre-visible frame) it records the frame stamp as the hold time and re-arms,
+otherwise it ends `__crNoFrames`. The guard is on the frame having run, not on the event. Same Simulator, same script
+with a new analysis (`chain`, below), C and V3, 3 cycles each (hidden 7.2-9.3 s), raw
+`out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json` (served bodies hashed: C JS `358cd8ae…`, V3 JS `2af461dc…`, CSS
+`ce6beca7…` both), 0 errors in both arms.
+
+| arm | pending rAF while hidden, max | at the show | target changes (rolls + snaps) / frames | tick start: original's value vs the build's roll start, max (visible / hidden / first 1 s after the show) | frame-wise, first 1 s after the show, max | errors |
+|---|---|---|---|---|---|---|
+| C | 3 | 1 | (rAF spring) | (is the original) | (is the original) | 0 |
+| V3 `2af461dc…` | 4 (3 rolling digits + the watch) | 1 | 36 / 829 | 1.39 / 1.39 / 0 px | 2.02 px | 0 |
+
+- The `chain` model (`sim-hide.mjs`, re-run offline with `--analyze`): from the first frame where every digit is
+  settled it replays the original over the logged frames exactly as the bundle does: every change of a digit's target
+  (seen by a MutationObserver on the strip's inline style, which also catches snaps) restarts `GE` from the current
+  value with velocity 0, and each logged frame steps it; the build's value is the strip's computed transform at the
+  same frame. It replaces the round-2 per-cycle columns: `maxStartErrPx` 1.33 and `maxFirstFrameErrPx` 36 px in the
+  script's summary are that old model (no pre-visible frame, no snaps) and are not valid on WebKit.
+- Event order unchanged (all 6 cycles): rAF stops 382-528 ms before the hidden event, `document.timeline.currentTime`
+  in it is 331-471 ms after the last frame; one frame runs 28-63 ms before the visible event, now in every cycle.
+- The 19-24 px gap-roll starts are gone (a) and the show-tick snap is gone (b): after the show the build rolls on
+  every tick, max 2.02 px off the original over the first second (round 2, table above, older per-cycle model: 8.4 / 11.7 px and a 16.3 px skipped roll).
+- **Residual (OBSERVED, Simulator):** a roll whose first frames ran before WebKit stopped rAF is held by the build at
+  `document.timeline.currentTime` of the hidden event, by the original at its last frame, ~0.33-0.47 s earlier. Here:
+  0.876 px (cycle 0) and 1.39 px (cycle 1) at every hidden tick of that cycle; on the show the build snaps those 0.9 /
+  1.4 px to the target (counted as 3 "snaps", 2 of them with a distance, `missedRolls` 2) where the original rolls
+  them. Bound: at most the part of a roll that plays in that 0.3-0.5 s window (round 2 had one at 3.9 px). It can't
+  be closed without a per-frame script (the build would have to know the last frame before rAF stopped, which only a
+  rAF running every frame can know); the reviewer agreed to document it.
+- Not hide-related, seen by the same model (OBSERVED, Simulator, in our setup, cause unknown): frame-wise in normal
+  visible rolls the build is up to 23.2 px off the model in the fastest part of a 0→9 roll (`worstVisible`, 13.4 / 9.9
+  px on the next frames; 29 px in round 2's log). Read with `getComputedStyle` in the rAF callback, WebKit's value of
+  a Core Animation transform runs 0.5-5.5 ms ahead of the rAF stamp (median 1.5 ms, p90 4 ms, n 56 rolls): the
+  computed style is sampled at a later time than the stamp the model uses. This is the UNRESOLVED presentation-time
+  item in "Position identity" seen from the main thread; it is no position error of the hide code.
 - OBSERVED in the Simulator, in our setup, cause unknown; the event order on the iPhone was not checked (no phone in
   this task). References not checked yet: WebKit's rAF throttling and `DocumentTimeline` update while the page goes
   to the background (UNRESOLVED; decisive local check: the same script on the phone with the `iphone` lease).
@@ -277,13 +327,16 @@ fast path: "countdown rAF callbacks 108 → 4 per 4 s (one per roll), by code ($
 ```
 
 ```
-BUILD cd-roll-ca-2 (round 2; round 1 was cd-roll-ca-1, 9ac52b08…) on cd-strip(b) on st6-rb2 · overlay fixes/cd-roll-ca/overlay
-served hashes: nodes/2.DyWL8TcE.js 673b110d118c… (round 2; sha256 of the served body logged by roll-probe and
-hide-check, and by fix.mjs check), CSS ce6beca745a0… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C,V}
-functional: fix.mjs check --on cd-strip, mobile: morph reached, 0 errors, 0 4xx, 1543 elements both; pixel diff top
+BUILD cd-roll-ca-3 (round 3; round 2 cd-roll-ca-2 673b110d…, round 1 cd-roll-ca-1 9ac52b08…) on cd-strip(b) on st6-rb2 · overlay fixes/cd-roll-ca/overlay
+served hashes: nodes/2.DyWL8TcE.js 2af461dc50ad… (round 3; sha256 of the served body logged by serve-snap, hide-check
+and sim-hide), CSS ce6beca745a0… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C,V,V3}
+round 3 checks: Chrome hide-check V3 (0 errors), roll-probe h60e, Simulator sim-hide C/V3 (0 errors);
+fix.mjs check not re-run for round 3 (the change is in the roll clock only: hidden page, and before a roll's first frame; it runs again on the rebuild on cd-strip's landed patch)
+functional (round 2): fix.mjs check --on cd-strip, mobile: morph reached, 0 errors, 0 4xx, 1543 elements both; pixel diff top
 0.14 / middle 0.01 / bottom 0.51 % (bottom: the gradient accent words "Secure"/"Organized" in another colour phase,
 looked at; the countdown is not in that shot)
-parity: hero roll on normal ticks within 0.15 px of the original's ideal 60 Hz frames, 0.64 px on the same jittery stamps (its own jitter 0.80 px); forced (random-phase) rolls up to 0.84 px vs ideal, 0.30 px on the same stamps (its own 0.55 px); panel unchanged (original spring)
+parity (round 3, h60e): normal ticks 0.08 px vs ideal, 0.24 px same stamps (own jitter 0.32); forced 0.22 / 0.10 px (own 0.23); hidden page: Chrome 0 px start / 0.21 px first frame, WebKit Sim 1.39 px residual, 2.02 px first second after the show
+parity (round 2): hero roll on normal ticks within 0.15 px of the original's ideal 60 Hz frames, 0.64 px on the same jittery stamps (its own jitter 0.80 px); forced (random-phase) rolls up to 0.84 px vs ideal, 0.30 px on the same stamps (its own 0.55 px); panel unchanged (original spring)
 a11y diff: n/a (aria-hidden digits; aria-label unchanged)
 mechanism delta: countdown rAF 108 → 4 / 4 s; main frames during rolls = outside rolls
 idle triple: y 0 above; mid-page: clock off-screen → snap, unchanged from st6-rb2; at the pin: panel = original
@@ -293,7 +346,7 @@ debug hooks: none
 ```
 
 **Scenarios not run:** phone (any driver), reduced motion (unchanged code path: snap), panel at the morph (unchanged
-code path: original spring). Real tab hide/show: run in round 2 (section "Hidden tab, for real": Chrome, and WebKit in the Simulator via an app
+code path: original spring). Real tab hide/show: run in rounds 2 and 3 (section "Hidden tab, for real": Chrome, and WebKit in the Simulator via an app
 switch; not on the phone).
 
 ## Risks, conflicts, follow-ups
@@ -305,6 +358,14 @@ switch; not on the phone).
   `__crPath` works in digit values and maps to px only through `__cdStripY(v, c)` with the measured cell `c`, so a
   new pitch or offset inside `__cdStripY` carries over; a different mapping (non-linear, or not via `__cdStripY`)
   or other strip markup needs this patch re-applied, the snapshot V rebuilt and the probes re-run.
+- cd-strip will probably land with one compositing layer per cell (`.cell{will-change:transform}`, only cells near
+  the clip backed; JS and `__cdStripY` unchanged, fix-cd-strip and the lead, 2026-10-03). Risk for this fix: the
+  strip moves by a Core Animation animation, so a cell entering the clip mid-roll could show blank or late. Rebuild
+  checks (on cd-strip's landed patch, before review sign-off): Simulator frozen frames at 10/30/50/70/90 % of a roll,
+  incl. a 9→0 wrap and a multi-digit carry (no blank or partial cell vs C); Timeline Paint records per roll, V vs C;
+  plus the Chrome hide-check, sim-hide (3 cycles per arm) and an h60 probe again.
+- Hidden page on WebKit: the residual above (≤ ~1.4 px here, bounded by the 0.3-0.5 s between WebKit's last frame and
+  its hidden event) stays; the real phone's event order is UNRESOLVED (not checked on the device).
 - The one-shot rAF per roll is a main-thread callback (cheap, no style write); WebKit "0 countdown rAF at rest"
   holds, "at roll start" it is 1.
 - Tools: `roll-probe.mjs`, `comp-check.mjs`, `sim-counts.mjs`, `hide-check.mjs` are topic-local probes in this folder (not in

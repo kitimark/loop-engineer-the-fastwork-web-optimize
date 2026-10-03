@@ -7,7 +7,7 @@
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4030,6 +4030,61 @@
+@@ -4030,6 +4030,72 @@
    ),
    /*cd-strip: the strip's offset in px for spring value v and cell height c (the one place that maps value to offset)*/
    __cdStripY = (v, c) => -((((v % 10) + 10) % 10) * c),
@@ -50,18 +50,29 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  registered before any countdown mounts, so these listeners run before the countdown's own visibilitychange tick*/
 +  __crHideAt = null,
 +  __crNoFrames = typeof document < `u` && document.hidden,
++  /*cd-roll-ca: one pending callback (never more) watches for the first frame after a hide or a show. WebKit can run a
++  frame before the visible event (OBSERVED, Simulator): the original's spring moves in it, so a frame that runs while
++  still hidden becomes the new held time and the watch goes on; the first frame while visible ends the hold*/
++  __crHideRaf = 0,
++  __crWatch = () => {
++    cancelAnimationFrame(__crHideRaf);
++    __crHideRaf = requestAnimationFrame((t) => {
++      __crHideRaf = 0;
++      document.hidden ? ((__crHideAt = t), __crWatch()) : (__crNoFrames = !1);
++    });
++  },
 +  __crVis =
 +    typeof document < `u` &&
 +    document.addEventListener(`visibilitychange`, () => {
-+      document.hidden
-+        ? ((__crHideAt = typeof document.timeline?.currentTime == `number` ? document.timeline.currentTime : performance.now()),
-+          (__crNoFrames = !0))
-+        : requestAnimationFrame(() => {
-+            document.hidden || (__crNoFrames = !1);
-+          });
++      document.hidden &&
++        ((__crHideAt = typeof document.timeline?.currentTime == `number` ? document.timeline.currentTime : performance.now()),
++        (__crNoFrames = !0));
++      __crWatch();
 +    }),
-+  /*cd-roll-ca: the time of the last frame the original would have run for a roll started at t0, seen at now*/
-+  __crClock = (t0, now) => {
++  /*cd-roll-ca: the time of the last frame the original would have run for a roll started at t0, seen at now; a roll
++  none of whose frames has run yet (ran false) is still at its start in the original, hidden or not*/
++  __crClock = (t0, now, ran) => {
++    if (!ran) return t0;
 +    if (__crNoFrames) return __crHideAt === null || __crHideAt < t0 ? t0 : Math.min(now, __crHideAt);
 +    let x = document.timeline?.currentTime;
 +    return typeof x == `number` && x >= t0 && x <= now ? x : now;
@@ -69,7 +80,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    QE = h(
      `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
    );
-@@ -4039,15 +4094,64 @@
+@@ -4039,15 +4105,64 @@
      a = N(I(o(() => s(i)))),
      c = N(0),
      /*countdown-idle-raf: false while the countdown is off-screen*/
@@ -108,7 +119,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 -    let t = { value: o(() => s(a)), velocity: 0 },
 +    /*cd-roll-ca: start value = what the original shows now: the running roll's path at its last frame, else a*/
 +    let __crNow = performance.now(),
-+      __crFrom = __crRoll ? __crAt(__crRoll.K, __crClock(__crRoll.t0, __crNow) - __crRoll.t0) : o(() => s(a)),
++      __crFrom = __crRoll ? __crAt(__crRoll.K, __crClock(__crRoll.t0, __crNow, __crRoll.ran) - __crRoll.t0) : o(() => s(a)),
 +      /*hero clock only: the panel clock (.countdown.inverse) paints its strips unlayered, and a running compositor
 +        animation would layer them (other glyph rasterisation, whole-strip repaints while the morph scales it)*/
 +      __crK =
@@ -124,7 +135,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        let R0 = __crRoll;
 +        /*at most one pending callback per digit, like the original: __crStop cancels it (a hidden tab keeps ticking)*/
 +        R0.F = requestAnimationFrame((t) => {
-+          R0 === __crRoll && t < R0.t0 && ((R0.t0 = t), R0.A && (R0.A.startTime = t));
++          R0 === __crRoll && ((R0.ran = !0), t < R0.t0 && ((R0.t0 = t), R0.A && (R0.A.startTime = t)));
 +        });
 +      }
 +      z(a, e, !0);
@@ -136,7 +147,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = performance.now(),
        r = window.requestAnimationFrame(function i(o) {
          let s = GE(t, e, o - n);
-@@ -4061,6 +4165,9 @@
+@@ -4061,6 +4176,9 @@
      g = (n) => {
        var r = __cdStripT();
        let o;
