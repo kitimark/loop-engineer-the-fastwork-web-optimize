@@ -130,7 +130,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // state lives in fwX/fwS and is mirrored into x/S (the 5 slot srcs and .is-sliding) only while the avatar row
 +      // is within half a viewport of the screen (fwIO). Coming near, the current state is written before the row
 +      // can be seen; a slide in progress resumes at the phase the original shows in that frame: fwStart() is the
-+      // start of the slide's first frame (away: the start time of an empty zero-length animation started with the
++      // start of the slide's first frame (away: the start time of an empty 1 ms animation started with the
 +      // slide, fwClk; near: the slide's own animations), and the resumed slide's CSS animations get it, set in the
 +      // frame that first shows them (a microtask after Svelte's flush, before style/paint). The original's
 +      // animations start at that frame's time, or one frame later when the compositor starts them late (Chrome);
@@ -156,13 +156,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        ((fwX = v), fwNear && z(x, v));
 +      },
 +      fwSetS = (v) => {
-+        // far away: an empty zero-length animation is started with the slide; the engine gives it the start time the
-+        // slide's own animations would get (the frame that starts it), read only on a resume (fwStart), so no script
-+        // runs per slide. Near: the DOM runs the slide, and its real start time is read when the row goes away
-+        // mid-slide (fwNearChange).
++        // far away: an empty 1 ms animation is started with the slide; its start time is the frame after this task,
++        // like the slide's own animations (a zero-length one got the frame before in Chrome, a long one is sampled
++        // every frame), read only on a resume (fwStart), so no script runs per slide. Near: the DOM runs the slide,
++        // and its real start time is read when the row goes away mid-slide (fwNearChange).
 +        (v &&
 +          !fwS &&
-+          ((fwF0 = 0), (fwClk = null), fwNear || ((fwClk = new Animation(new KeyframeEffect(null, null, 0), document.timeline)), fwClk.play())),
++          ((fwF0 = 0), (fwClk = null), fwNear || ((fwClk = new Animation(new KeyframeEffect(null, null, 1), document.timeline)), fwClk.play())),
 +          (fwS = v),
 +          fwNear && z(S, v));
 +      },

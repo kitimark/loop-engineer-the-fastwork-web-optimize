@@ -4,10 +4,10 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** draft (registration committed; data and verdicts follow in later commits)
-**Stage:** F; D card registered below (P-078 → P-080 → P-083, v3 current)
+**Stage:** F; D card registered below (P-078 → P-080 → P-083 → P-084, v4 current, last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
-**Base:** `--on st6-rb2`; served overlay `_app/immutable/nodes/2.DyWL8TcE.js` sha256 `6c09e47961ba…` (v3; v1 bf8ffd4ef7a3, v2 a5286ebc4cb6)
+**Base:** `--on st6-rb2`; served overlay `_app/immutable/nodes/2.DyWL8TcE.js` sha256 `520d5f1139c7…` (v4; v1 bf8ffd4ef7a3, v2 a5286ebc4cb6, v3 6c09e47961ba)
 **Topic:** see `fixes/TOPICS.md` (rest-script), user T-029 heat goal, P-068
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`: `mM` (#people avatar rotator), `JT` (commission count-up),
 `hD` (pain notes interval), `EM` (profile count-up). Out of scope and untouched: `HE` (hero accent word), the
@@ -175,6 +175,78 @@ e6821c987249 (refuses any overlay but 6c09e47961ba): Chrome identity 430, census
 Simulator identity st6/fix + replays, Simulator census reps 1 and 2. Outputs `ident3`, `items3`, `ic4`, `sim3`,
 `simcen3`.
 
+### Registration v4 (**P-084**; overlay 520d5f1139c7), before any v4 data
+
+**P-083 (v3) missed identity** at Chrome 430 (ident3, analyse.mjs 03b2df89340e, reproduced by mgmt-ops-10): 6 of 27
+visible slides matched neither F1 nor F2. In every case the resumed slide ran exactly one frame (16.6-16.7 ms) ahead
+of st6's F1, and the frozen shot smooth-40 differed by 427 px (max channel delta 5) against an A/A of 0. Re-entry,
+reload and back were clean. The v3 census at 430 (ic4) had no MORE: at far y2796 rAF callbacks and code calls were
+SAME, and main frames 31→13, style 31→13, layouts 4→0 and paints 37/36→3/0 were SAVE. These v3 results are
+pre-registration checks only.
+
+**Lead's terms (12:4xZ):** option (a), a "current" clock animation, with its start frame checked in Chrome and the
+Simulator first. **v4 is the last iteration: an identity miss (any non-zero pixel delta beyond the A/A) or any MORE
+parks rest-script, and the cause goes to the lead. No v5.**
+
+**Pre-registration checks (mechanism only, not claims; `out/rest-script/startprobe/`).** These were run on the v3
+page, row far, one shared hold each. The start time is given relative to F1 (the first frame after the task that
+plays the clock), in frames.
+
+- Probes: startprobe.mjs (p1 3092131705f5; p2/p3 f867f3dadaea, `--forms`) and costprobe.mjs ea49d612ad88.
+- Conditions, 4-5 reps each: idle, a rAF loop like the recorder, and the loop plus `getAnimations()` in the task.
+
+| clock form | Chrome start | Sim start | Chrome cost, 3 plays in 3 s at y2796 (main frames; none = 9) |
+|---|---|---|---|
+| targetless 0 ms (v3) | −1 (F0) in 26/27 | 0 in 25/27, 2 at −0.06/−0.12 | 12, 12 |
+| row-targeted 0 ms | −1 in 15/15 | 0 in 14/15, 1 at −0.41 | not run |
+| targetless 1 ms (**v4**) | 0 in 12/12 | 0 in 11/12, 1 at −0.06 (1 ms) | 13, 14 |
+| targetless 2 ms | 0 in 12/12 | not run | not run |
+| targetless 220 ms | 0 in 27/27 | 0 in 25/27, 2 at −0.06 | 53, 51 |
+| row-targeted 220 ms | 0 in 15/15 | 0 in 14/15, 1 at −0.12 | not run |
+
+The 220 ms forms are sampled every frame while running, about 13 extra main frames per slide. That would turn the
+far SAVE into a MORE (C makes 31 per 2 s at y2796), so v4 takes the 1 ms form. Sub-frame Sim offsets of 1-2 ms
+(−0.06/−0.12 frame) appear in every form, including the original page's own timing granularity. They are left to the
+identity trials and the pixel A/A, as registered.
+
+**Change (one place):** in `fwSetS`, the far-slide clock is `new KeyframeEffect(null, null, 1)` instead of
+`(null, null, 0)`. Everything else is as in v3: no rAF, read lazily on a resume, `fwF0` wins, and teardown cancels it.
+
+**Start-time claim (research plan done, see the card):**
+- Spec: Web Animations 1 §4.5.8 step 12, the pending play task: "Let ready time be the time value of the timeline
+  associated with animation at the moment when animation became ready". §4.5.6 makes readiness UA-defined
+  ("completed any setup required to begin the playback ... including rendering the first frame"). So a start in the
+  previous frame (F0) for an effect with nothing to render is allowed. **CONFIRMED** that the spec leaves the frame
+  to the UA.
+- WebKit (github.com/WebKit/WebKit main, `Source/WebCore/animation/WebAnimation.cpp`): `runPendingPlayTask` takes
+  `readyTime = m_pendingStartTime`, else the timeline's `currentTime()`, and it runs from `tick()` →
+  `maybeMarkAsReady()` in the next animation update. That fits F1 for every form on the Sim. Line numbers are not
+  pinned: main at 2026-10-03.
+- Chromium (`third_party/blink/renderer/core/animation/pending_animations.cc`, `PendingAnimations::Update`): main-thread
+  animations get `NotifyReady(TimelineInternal()->CurrentTime())`. The path that gives a zero-length effect the
+  previous frame's time was not found in `animation.cc` / `document_animations.cc`. So "Chrome starts a zero-length
+  targetless or row-targeted effect at F0 and a ≥ 1 ms one at F1" stays **OBSERVED in our setup, cause unknown**. The
+  v4 identity trials are its decisive check.
+
+**Predictions (unchanged in kind):**
+- Identity: 0 mismatches in every engine and width, pixels within the A/A (0.85 Chrome, 0.7 Sim).
+- Far positions: SAVE on main frames, style recalcs and paints; rAF callbacks and code calls SAME (0.8).
+- Near and paused: as in v2.
+
+Probes, classes, the pooled rule, the decisions and the phone bound are as registered (tocard v2 05daca3beb58, probe
+hashes as in v2).
+
+**Run list:** chainI.sh 574b8dae658f (refuses any overlay but 520d5f1139c7), decisive checks first:
+- Chrome identity 430; census 430 + 430r;
+- Sim identity st6, fix, replays fix, replays A/A;
+- Chrome identity 1024, 375, 768, 1440, 430r + items 430/1024; pain sequences + rocount;
+- census 375 + 768, 1024 + 1440;
+- Sim toolbar count; Sim census reps 1 and 2.
+
+Outputs go to `ident4`, `items4`, `ic5`, `sim4`, `simcen4`. One process note: stopping a chain while its next hold
+had just started a Sim session leaked that session (SIGTERM mid-setup). It was cleaned with `sim.mjs doctor --fix`
+(12:57Z), and no other session was affected.
+
 ## Why it lags
 
 Not a scroll-jank fix: a heat (rest work) fix, user T-029. Four small pieces of script keep the main thread busy
@@ -202,7 +274,7 @@ All changes are in `/_app/immutable/nodes/2.DyWL8TcE.js`, on top of st6-rb2.
   ResizeObserver on `<html>`, both using the row's cached document box. A slide in progress resumes at the
   original's phase: its CSS animations get `startTime` = the slide's real start. When the row was near, that is
   the slide's own animations, read when it leaves. When the row was far, it is the start time of an empty
-  zero-length Web Animation played with the slide (v3; no script runs per slide). When the scene pauses, the
+  1 ms Web Animation played with the slide (v4; no script runs per slide). When the scene pauses, the
   frozen state is written at once.
 - `JT`: the 18 → 0 % tween skips the state write in frames where the shown (rounded) text is unchanged.
 - `hD`: the interval is not armed while `(max-width: 860px)` matches. Crossing above 860 px resumes it on the
