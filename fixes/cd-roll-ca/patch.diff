@@ -3,25 +3,26 @@
 # STACKED on fixes/cd-strip/overlay: apply cd-strip first, then this patch on top of it
 # rebuild the overlay with: node tools/fix.mjs apply cd-roll-ca --on cd-strip
 # contains excerpts of Fastwork's code: local branches only, never push
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4030,6 +4030,72 @@
-   ),
-   /*cd-strip: the strip's offset in px for spring value v and cell height c (the one place that maps value to offset)*/
-   __cdStripY = (v, c) => -((((v % 10) + 10) % 10) * c),
-+  /*cd-roll-ca: the roll as one Web Animation per digit instead of a rAF spring. __crPath(from, to) returns [ms, value]
+@@ -4036,6 +4036,93 @@
+   layer: the same geometry as -n*c + k*c without two large offsets that cancel in the layer tree (with them, WebKit's
+   glyph edges differed from the faces' under the hero's fade; observed)*/
+   __cdStripM = (v) => Math.round(((v % 10) + 10) % 10),
++  /*cd-roll-ca: the roll as Web Animations (one per cell it moves, below) instead of a rAF spring. __crPath(from, to) returns [ms, value]
 +  points of the path the original shows at 60 Hz: the value at time x after the target change is what its rAF chain
 +  (first step GE(x mod T), then whole 60 Hz frames) shows at a frame landing exactly at x. On [kT, kT+16] that is a
 +  quadratic in the phase, so it is sampled from 33 phase lanes (0..16 ms, 0.5 ms apart) with as many points as keep
 +  linear interpolation within 5e-4 cell, plus a point at every whole frame. Ends at the frame where every lane is
-+  done (GE snaps to the target). null when it can't end on the target (the caller keeps the rAF spring).*/
-+  __crPath = (f, t) => {
++  done (GE snaps to the target). null when it can't end on the target (the caller keeps the rAF spring). u: the start
++  velocity (0 at a target change; the state after a gap's first frame, see the start-frame callback in $E)*/
++  __crPath = (f, t, u = 0) => {
 +    let T = 1e3 / 60,
 +      L = [],
 +      K = [[0, f]];
-+    for (let j = 0; j <= 32; j++) L.push(GE({ value: f, velocity: 0 }, t, j / 2));
++    for (let j = 0; j <= 32; j++) L.push(GE({ value: f, velocity: u }, t, j / 2));
 +    for (let k = 0; k < 600; k++) {
 +      let v = L.map((x) => x.state.value),
 +        q = Math.abs(v[0] - 2 * v[16] + v[32]) / 128,
@@ -77,36 +78,78 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    let x = document.timeline?.currentTime;
 +    return typeof x == `number` && x >= t0 && x <= now ? x : now;
 +  },
++  /*cd-roll-ca: the cells a roll along path K moves, and their keyframes. On strip-rw (cd-strip) a digit at rest has
++  its strip at 0, the wrapper at top -M*c (M = __cdStripM(target), cd-strip's effect) and cell k at top k*c, so cell k
++  sits (k - M)*c from the strip layer. Layout can't move inside a compositor animation, so during a roll every cell
++  that comes within 1.5 cells of the clip gets top M*c (with the wrapper, 0 from the strip layer) and its own transform
++  (k - n)*c = k*c + __cdStripY(n, c): only the offset that cell shows, never two large offsets that cancel; the strip
++  stays at 0 and a cell's last keyframe is its rest place. Cells farther away keep their rest top, at least 1.5 cells
++  out. The wrapper is cd-strip's: the roll never writes it*/
++  __crCells = (K) => {
++    let r = [];
++    for (let k = 0; k < 11; k++) {
++      let near = !1;
++      for (let j = 0; j < K.length && !near; j++) {
++        let a = K[j][1],
++          b = K[j + 1] ? K[j + 1][1] : a;
++        near = (Math.min(a, b) <= k && k <= Math.max(a, b)) || Math.min(Math.abs(k - a), Math.abs(k - b)) < 1.5;
++      }
++      near && r.push(k);
++    }
++    return r;
++  },
    QE = h(
      `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
    );
-@@ -4039,15 +4105,64 @@
+@@ -4045,15 +4132,101 @@
      a = N(I(o(() => s(i)))),
      c = N(0),
      /*countdown-idle-raf: false while the countdown is off-screen*/
 -    __cdAnimate = R(() => r.animate !== !1);
 +    __cdAnimate = R(() => r.animate !== !1),
-+    /*cd-roll-ca: the strip (set when it mounts) and the running roll {K: path, t0, A: its Animation}*/
++    /*cd-roll-ca: the strip's wrapper (set when it mounts; its children are the cells) and the running roll {K: path,
++    t0, M: __cdStripM(target), cells: the cells it moves, A: their Animations, F: the start-frame callback, ran}*/
 +    __crEl = null,
 +    __crRoll = null,
-+    __crStop = () => {
-+      __crRoll && (__crRoll.A?.cancel(), cancelAnimationFrame(__crRoll.F), (__crRoll = null));
++    /*cd-roll-ca: cell tops: M*c for the cells the running roll moves (0 from the strip layer with the wrapper at
++    -M*c; their animations place them), else cd-strip's rest tops k*c. Writes only the tops that change*/
++    __crTops = (C) => {
++      let Q = __crRoll;
++      if (__crEl && C > 0)
++        for (let t = 0; t < 11; t++) {
++          let y = `${Q && Q.A && Q.cells.includes(t) ? Q.M * C : t * C}px`;
++          __crEl.children[t].style.top !== y && (__crEl.children[t].style.top = y);
++        }
 +    },
-+    /*cd-roll-ca: (re)start the roll's animation at its own t0 (so a restart for a new cell height continues in place).
-+    Keyword easing linear between the points: composited in Chrome and WebKit (no steps(), no linear() with points);
-+    the strip's inline transform already holds the target, so the end needs no fill; fill backwards covers a frame
-+    whose time is before t0*/
++    /*cd-roll-ca: end the roll; its cells go back to cd-strip's rest tops in the same task (no frame in between)*/
++    __crStop = () => {
++      let Q = __crRoll;
++      if (!Q) return;
++      __crRoll = null;
++      cancelAnimationFrame(Q.F);
++      Q.A && (Q.A.forEach((x) => x.cancel()), __crTops(o(() => s(c))));
++    },
++    /*cd-roll-ca: (re)start the roll's animations at its own t0 (a restart for a new cell height continues in place).
++    Keyword easing linear between the points (composited in Chrome and WebKit). All cells of a roll get the same
++    keyframe offsets and the same startTime. fill both: a frame before t0 shows the start, and the end holds the rest
++    place until the finish handler hands the cells back to their tops*/
 +    __crPlay = (C) => {
 +      let Q = __crRoll;
 +      if (!Q || !__crEl || !(C > 0)) return;
-+      Q.A?.cancel();
++      Q.A && Q.A.forEach((x) => x.cancel());
 +      let K = Q.K,
 +        d = K[K.length - 1][0];
-+      Q.A = __crEl.animate(
-+        K.map(([x, v]) => ({ offset: x / d, transform: `translateY(${__cdStripY(v, C)}px)` })),
-+        { duration: d, easing: `linear`, fill: `backwards` },
-+      );
-+      Q.A.startTime = Q.t0;
++      Q.A = Q.cells.map((k) => {
++        let A = __crEl.children[k].animate(
++          K.map(([x, v]) => ({ offset: x / d, transform: `translateY(${k * C + __cdStripY(v, C)}px)` })),
++          { duration: d, easing: `linear`, fill: `both` },
++        );
++        A.startTime = Q.t0;
++        return A;
++      });
++      Q.A[0].onfinish = () => Q === __crRoll && __crStop();
++      Q.M = __cdStripM(K[K.length - 1][1]);
++      __crTops(C);
 +    };
    b(() => {
      let e = s(i);
@@ -120,7 +163,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    /*cd-roll-ca: start value = what the original shows now: the running roll's path at its last frame, else a*/
 +    let __crNow = performance.now(),
 +      __crFrom = __crRoll ? __crAt(__crRoll.K, __crClock(__crRoll.t0, __crNow, __crRoll.ran) - __crRoll.t0) : o(() => s(a)),
-+      /*hero clock only: the panel clock (.countdown.inverse) paints its strips unlayered, and a running compositor
++      /*hero clock only: the panel clock (.countdown.inverse) paints its cells unlayered, and a running compositor
 +        animation would layer them (other glyph rasterisation, whole-strip repaints while the morph scales it)*/
 +      __crK =
 +        __crEl && typeof __crEl.animate == `function` && __crFrom !== e && !__crEl.closest(`.inverse`)
@@ -128,14 +171,29 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          : null;
 +    __crStop();
 +    if (__crK || (__crEl && __crFrom === e)) {
-+      __crK && ((__crRoll = { K: __crK, t0: __crNow }), __crPlay(o(() => s(c))));
++      __crK && ((__crRoll = { K: __crK, t0: __crNow, cells: __crCells(__crK) }), __crPlay(o(() => s(c))));
 +      /*cd-roll-ca: the original's clock starts at its first frame's stamp when that frame began before the change
-+        (GE(o - n) with o < n steps nothing and sets n = o); one rAF per roll moves the start there, never per frame*/
++        (GE(o - n) with o < n steps nothing and sets n = o); one rAF per roll moves the start there, never per frame.
++        It also marks the roll as having run a frame (see __crClock)*/
 +      if (__crK) {
 +        let R0 = __crRoll;
-+        /*at most one pending callback per digit, like the original: __crStop cancels it (a hidden tab keeps ticking)*/
++        /*at most one pending callback per digit, like the original: __crStop cancels it (a hidden tab keeps ticking).
++          A first frame more than one 60 Hz frame after the change (a hidden tab, a long task) is one GE call over the
++          whole gap in the original, whose substeps come in another order than the path's (GE(x mod T), then whole
++          frames): the roll is re-keyed from that frame, with the state GE gives there as its start, so it shows what
++          the original shows. Once per roll, only after such a gap*/
 +        R0.F = requestAnimationFrame((t) => {
-+          R0 === __crRoll && ((R0.ran = !0), t < R0.t0 && ((R0.t0 = t), R0.A && (R0.A.startTime = t)));
++          if (R0 !== __crRoll) return;
++          R0.ran = !0;
++          if (t < R0.t0) {
++            R0.t0 = t;
++            R0.A && R0.A.forEach((x) => (x.startTime = t));
++          } else if (t - R0.t0 > 1e3 / 60) {
++            let E = R0.K[R0.K.length - 1][1],
++              G = GE({ value: R0.K[0][1], velocity: 0 }, E, t - R0.t0),
++              K = G.done ? null : __crPath(G.state.value, E, G.state.velocity);
++            K ? ((R0.K = K), (R0.t0 = t), (R0.cells = __crCells(K)), __crPlay(o(() => s(c)))) : G.done && __crStop();
++          }
 +        });
 +      }
 +      z(a, e, !0);
@@ -147,13 +205,19 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = performance.now(),
        r = window.requestAnimationFrame(function i(o) {
          let s = GE(t, e, o - n);
-@@ -4061,6 +4176,9 @@
-     g = (n) => {
-       var r = __cdStripT();
+@@ -4068,10 +4241,14 @@
+       var r = __cdStripT(),
+         w = r.firstChild;
        let o;
-+      /*cd-roll-ca: the roll animates this strip; a new cell height re-keys a running roll at the same t0*/
-+      __crEl = r;
++      /*cd-roll-ca: the roll animates this strip's cells; a new cell height re-keys a running roll at the same t0*/
++      __crEl = w;
 +      l((e) => __crPlay(e), [() => s(c)]);
        (l((e) => {
-         /*cd-strip: cell k at k*c px (c = the spacer's integer offsetHeight, as the original's face offsets use)*/
-         for (let t = 0; t < 11; t++) r.children[t].style.top = `${t * e}px`;
+         /*cd-strip: cell k at top k*c px (c = the spacer's integer offsetHeight, as the original's face offsets use);
+         re-runs only when c changes*/
+-        for (let t = 0; t < 11; t++) w.children[t].style.top = `${t * e}px`;
++        /*cd-roll-ca: through __crTops, so the cells a running roll moves keep top M*c*/
++        __crTops(e);
+       }, [() => s(c)]),
+         l((e, m) => {
+           /*cd-strip: the wrapper at -m*c px, m = __cdStripM(v); re-runs only when c or m changes (one write)*/

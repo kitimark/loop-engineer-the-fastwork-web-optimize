@@ -217,8 +217,55 @@ Debug runs on the strip-rw **dev** build (C5 `5e37af69…` vs V6 `73dff152…`, 
   in run 2 (the shot took 304 ms, n moved 5.3 → 9.0; the search's finest step, 9.6 ms ≈ 4 px, missed the basin);
   PENDING run 3 with a search down to 0.05 ms. The one-frame CA lead stays UNRESOLVED.
 
-PENDING (counted set on cd-strip's final hash): wrap, wrapUp, carry, two, step at fade50 plus a hero pass, with A/A;
-sim-counts frozen, 2 reps; sim-hide C/V 3 cycles; Paint records per roll.
+Debug run 3 (`…06-36-24-336Z.json`), rate 1 with the finer search (9-point levels down to < 0.05 ms): two shots,
+brackets 292 / 320 ms; best paused match max delta 4 (sum 770) and 1 (39 px, A/A level), at 0.51 / 0.53 of the
+bracket. At a real rate the compositor draws what the main thread's timeline gives at a time inside the shot's read
+bracket, near its middle; a ~300 ms bracket can't resolve a one-frame lead (UNRESOLVED, as before). Same run: one more
+backed cell in V6 at rest (seconds' ones cell 2, 0.352 vs 0.329 MB); not repeated in session A below.
+
+**First-build data** (counted session A on the old strip-rw hash C5 `5e37af69…` / V6 `73dff152…`; the counted set
+was stopped after it because cd-strip changes its CSS in review round 2, `simpx-2026-10-03T06-47-53-243Z.json`), fade50,
+wrap and wrapUp, 90 shots per arm:
+
+| | A/A C5 vs C5 | V6 vs C5 |
+|---|---|---|
+| state / cell rects | 0 / 0 | ≤ 0.015 px / ≤ 0.0151 px, 0 ≥ 1/64, 0 unmatched |
+| shots differing / max delta | 34 / 1 | 82 / 5 |
+| in cd-strip's residual band (css x 361-374): shots > 1 (wrap, wrapUp), max | 0, 0 | 34, 34, max 5 |
+| outside it: shots > 1, max | 0, 0 | 25, 32, max 5 (the other rolling digit) |
+| layers rest / wrap mid / wrapUp mid | 14 / 14 / 15 backed (0.329 / 0.329 / 0.352 MB) | same (paused and running) |
+| shared startTime | | 79 / 79 rolls |
+
+The V-vs-C differences are V-only by construction (same strip in both arms) and come from the path's interpolation
+offset; they are no larger inside cd-strip's band than outside it. cd-strip's own class is in both arms and cancels
+(A/A max 1). The extra backed cell mid-wrapUp is in C5 too: not a V cost. Timeline per 1 s mid-roll swings within one
+arm (C5 vs C5-again: 40 vs 28 frames on wrap), so only V paused vs running is read: no added recalc running, 0 rAF.
+
+**Counted set, session A** on cd-strip's review-round-2 base (C6 = JS `5e37af69…` + CSS `40078cb2…`, patch
+`1f3c26a1…`; V7 = JS `73dff152…` + the same CSS), `simpx-2026-10-03T07-10-10-961Z.json`, fade50, wrap and wrapUp, 90
+shots per arm, plus the paused-scene census (`SIMPX_PAUSED=1`). Valid as long as cd-strip's base stays (its rev 2 is
+open, lead 2026-10-03 ~07:10Z):
+
+| | A/A C6 vs C6 | V7 vs C6 |
+|---|---|---|
+| state / cell rects | 0 / 0 | ≤ 0.015 px / ≤ 0.0151 px, 0 ≥ 1/64, 0 unmatched |
+| shots differing / max delta | 36 / 1 | 87 / 5 (rolling digits only, as in session A on the old base) |
+| shared startTime | | 79 / 79 rolls |
+| layers rest | 14 backed, 0.329 MB | **15 backed, 0.352 MB** (seconds' ones cell 2) |
+| layers wrap mid / wrapUp mid | 14 / 15 backed (0.329 / 0.352 MB) | same, paused and running |
+| paused scene (y 2560, scene paused, render active, after a tick) | will-change auto, 0 cell animations, 0 backed cell layers, 0 MB | same |
+
+- Paused scene: cd-strip's scene-pause rule (`.strip`/`.cell` will-change auto) unlayers V's cells as it does C's:
+  the clock rolls only within 64 px of the viewport (countdown-idle-raf), else it snaps and `__crStop` cancels the
+  animations; the scene pauses only beyond 100 % of the viewport. OBSERVED, Simulator.
+- **Cost line (OBSERVED, Simulator):** one more backed cell at rest in V, +0.023 MB, in 2 of 4 runs (debug run 3, this
+  session; not in debug run 2 or old-base session A), always seconds' ones cell 2, which the roll just handed back
+  (census ~0.1 s after the roll was finished). Persistence not checked yet: the probe now takes a second rest census 2 s
+  later (next session).
+
+PENDING (rest of the counted set, after cd-strip's rev 2 is decided): carry, two, step at fade50 and a hero pass,
+with A/A; sim-counts frozen, 2 reps; sim-hide C/V 3 cycles; Paint records per roll; Chrome comp-check C/V, h60,
+hide-check, fix.mjs check.
 
 ## Position identity (the user's rule: within the original's own frame-to-frame variation)
 

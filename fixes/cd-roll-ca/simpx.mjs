@@ -16,7 +16,7 @@
 // (floor(n), a cell entering or leaving the clip), plus 10/30/50/70/90 % of the roll and frames 20/25/30/35. Every
 // arm is shot at those frames. LayerTree (cell/strip layer count, backing MB, per-cell memory) at rest and mid-roll.
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner cd-roll-ca -- \
-//     node tools/sim.mjs session --functional --owner cd-roll-ca -- node fixes/cd-roll-ca/simpx.mjs C5,V6 fade50 wrap
+//     node tools/sim.mjs session --functional --owner cd-roll-ca -- node fixes/cd-roll-ca/simpx.mjs C6,V7 fade50 wrap
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -28,7 +28,7 @@ const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const SNAP = join(WT, 'out/cd-roll-ca/snap');
-const ARMS = (process.argv[2] || 'C5,V6').split(',');
+const ARMS = (process.argv[2] || 'C6,V7').split(',');
 const PASSES = (process.argv[3] || 'fade50').split(',');
 const SCENS = (process.argv[4] || 'wrap').split(',');
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -103,6 +103,7 @@ const SCROLL = { hero: 0, fade50: 0.5, fade25: 0.25, fade75: 0.75 };
 // rates for the real-time cross-check (SIMPX_RATES, comma list; '' = none); SIMPX_NOAA=1 skips the A/A arm
 const RATES = (process.env.SIMPX_RATES ?? '0.001,1,1').split(',').filter(Boolean).map(Number);
 const RATE_STEP = Number(process.env.SIMPX_RATE_STEP || 0.05);
+const RES = (process.env.SIMPX_RES || '334,347').split(',').map(Number);
 
 function png(buf) {
   if (buf.readUInt32BE(12) !== 0x49484452) throw new Error('not a PNG');
@@ -223,7 +224,9 @@ async function run(c, arm, range, isV, first) {
       }
       const plan = FRAMES[id]; if (!plan) throw new Error('no frame plan for ' + id);
       await settle(r0);
-      if (sk === SCENS[0]) res.layers[`${pass} rest`] = await heroLayers(c);
+      // rest census ~0.1 s after the settle (a V roll was just finished and its cells handed back), and again 2 s later
+      // (does a backing kept from the roll stay?)
+      if (sk === SCENS[0]) { res.layers[`${pass} rest`] = await heroLayers(c); await sleep(2000); res.layers[`${pass} rest+2s`] = await heroLayers(c); }
       const G = T + 1e5; await tick(G + FR / 3, r1);
       const mid = plan.frames.reduce((b, f) => (Math.abs(f - plan.rollFrames / 2) < Math.abs(b - plan.rollFrames / 2) ? f : b), plan.frames[0]);
       let k = 0;
@@ -282,6 +285,19 @@ async function run(c, arm, range, isV, first) {
       }
     }
   }
+  // SIMPX_PAUSED=1: scroll until the hero clock's scene is paused (cd-strip's scene-pause rule sets will-change: auto on
+  // .strip/.cell there), make the clock tick once (a step frame after it) and take the census: scene/render attributes,
+  // the cells' computed will-change, running cell animations (V: 0 expected, the off-screen gate snaps) and layers
+  if (process.env.SIMPX_PAUSED === '1') {
+    const pos = await ev(`(() => { const el = ${TIMER}.closest('[data-start-selling-scene]'); if (!el) return null; const r = el.getBoundingClientRect(); return { y: Math.round(scrollY + r.bottom + innerHeight * 1.2), max: document.documentElement.scrollHeight - innerHeight }; })()`);
+    if (!pos) res.paused = { error: 'no scene element around the hero clock' };
+    else {
+      await ev(`(scrollTo({ top: ${Math.min(pos.y, pos.max)}, behavior: 'instant' }), 0)`); await sleep(2500);
+      T += 1e6; await tick(T, SCEN.step[1]); await step(T + FR); await sleep(40); T += 1e6; await tick(T, SCEN.step[2]); await step(T + FR); await sleep(80);
+      const st = await ev(`(() => { const el = ${TIMER}.closest('[data-start-selling-scene]'); const cells = [...${TIMER}.querySelectorAll('.digit > .strip .cell')]; return { y: scrollY, scene: el.getAttribute('data-start-selling-scene'), render: el.getAttribute('data-start-selling-render'), cellWillChange: [...new Set(cells.map((x) => getComputedStyle(x).willChange))], cellAnimations: cells.reduce((a, x) => a + x.getAnimations().length, 0) }; })()`);
+      res.paused = { ...st, layers: await heroLayers(c) };
+    }
+  }
   res.info.cdHits = await ev('window.__cdHits');
   return res;
 }
@@ -316,15 +332,18 @@ const cmp = (x, y) => {
   const rows = Object.keys(x.shots).map((k) => { const a = x.shots[k], b = y.shots[k]; if (!b) return { key: k, missing: true };
     if (a.length !== b.length) return { key: k, sizeMismatch: [a.length, b.length] };
     // bbox of pixels differing by more than 1, in CSS px from the crop's top left (the crop starts 4 css px before the timer)
-    const W = x.box.w, S = x.box.s; let n = 0, o1 = 0, max = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    // RES: cd-strip's residual glyph-edge class (seconds' ones, css x 361-374 on the page = 334-347 from the timer's
+    // left, SIMPX_RES "a,b"): pixels over 1 inside it (over1Res, maxRes) are reported apart from the rest (over1Out, maxOut)
+    const W = x.box.w, S = x.box.s; let n = 0, o1 = 0, max = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1, oR = 0, mR = 0, mO = 0;
     for (let i = 0; i < a.length; i += 3) { const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])); if (d) n++; if (d > max) max = d;
+      { const cx = ((i / 3) % W) / S - 4, inR = cx >= RES[0] && cx <= RES[1]; if (inR) { if (d > mR) mR = d; if (d > 1) oR++; } else if (d > mO) mO = d; }
       if (d > 1) { o1++; const p = i / 3, px = p % W, py = Math.floor(p / W); if (px < x0) x0 = px; if (py < y0) y0 = py; if (px > x1) x1 = px; if (py > y1) y1 = py; } }
     const bbox = o1 ? [x0, y0, x1, y1].map((v) => +(v / S - 4).toFixed(1)) : null;
     const sa = x.state[k] || [], sb = y.state[k] || []; const dpx = Math.max(0, ...sa.map((v, j) => Math.abs(v - sb[j])));
     // layout: per digit, cells present in both at the same k; max |y diff|; cells in one only count as unmatched
     let rpx = 0, unmatched = 0; const ra = x.rects[k] || [], rb = y.rects[k] || [];
     ra.forEach((A, j) => { const B = new Map((rb[j] || []).map(([q, v]) => [q, v])); for (const [q, v] of A) { if (B.has(q)) rpx = Math.max(rpx, Math.abs(v - B.get(q))); else unmatched++; B.delete(q); } unmatched += B.size; });
-    return { key: k, statePx: +dpx.toFixed(3), rectPx: +rpx.toFixed(5), rectUnmatched: unmatched, diffPixels: n, over1: o1, bboxCss: bbox, maxDelta: max }; });
+    return { key: k, statePx: +dpx.toFixed(3), rectPx: +rpx.toFixed(5), rectUnmatched: unmatched, diffPixels: n, over1: o1, bboxCss: bbox, maxDelta: max, over1Res: oR, maxRes: mR, over1Out: o1 - oR, maxOut: mO }; });
   return { shots: rows.length, differ: rows.filter((r) => r.diffPixels || r.missing || r.sizeMismatch).length, stateOver0p01px: rows.filter((r) => r.statePx > 0.01).length,
     rectMaxPx: Math.max(0, ...rows.map((r) => r.rectPx || 0)), rectOverLayoutUnit: rows.filter((r) => r.rectPx >= 1 / 64).length, rectUnmatched: rows.reduce((a, r) => a + (r.rectUnmatched || 0), 0),
     rows: rows.filter((r) => r.diffPixels || r.missing || r.sizeMismatch || r.statePx > 0.01 || r.rectPx >= 1 / 64 || r.rectUnmatched) };
@@ -342,6 +361,7 @@ out.rects = Object.fromEntries(got.map((g) => [g.arm, g.rects]));
 out.tl = Object.fromEntries(got.map((g) => [g.arm, g.tl]));
 out.rate = Object.fromEntries(got.filter((g) => g.isV).map((g) => [g.arm, g.rate]));
 out.v = Object.fromEntries(got.filter((g) => g.isV).map((g) => [g.arm, { check: vcheck(g), perFrame: g.v }]));
+out.paused = Object.fromEntries(got.filter((g) => g.paused).map((g) => [g.arm, g.paused]));
 out.compare = {};
 for (let i = 1; i < got.length; i++) out.compare[`${got[0].arm} vs ${got[i].arm}`] = cmp(got[0], got[i]);
 out.endedAt = new Date().toISOString();
@@ -352,4 +372,5 @@ for (const [k, v] of Object.entries(out.layers)) console.log('LAYERS', k, JSON.s
 for (const [k, v] of Object.entries(out.tl)) console.log('TL', k, JSON.stringify(v));
 for (const [k, v] of Object.entries(out.rate)) console.log('RATE', k, JSON.stringify(v.map((r) => (r.error ? r : { rate: r.rate, digit: r.digit, bracket: r.bracket, nBracket: r.nBracket, best: { ct: r.best.ct, n: r.best.n, sum: r.best.sum, px: r.best.px, mx: r.best.mx }, bestRelBracket: r.bestRelBracket, shots: r.tried.length }))));
 for (const [k, v] of Object.entries(out.layers)) for (const [x, y] of Object.entries(v)) if (y.reasons) console.log('REASONS', k, x, JSON.stringify(y.reasons));
+for (const [k, v] of Object.entries(out.paused)) console.log('PAUSED', k, JSON.stringify({ ...v, layers: v.layers && (v.layers.error ? v.layers : { n: v.layers.n, MB: v.layers.memoryMB, cellLayers: v.layers.cells?.length, cellsWithBacking: v.layers.cells?.filter((q) => q[2] > 0).length }) }));
 console.log('wrote', f);
