@@ -18,7 +18,8 @@ user's finger test before landing (lead, T-029 #30), queued after P-074.
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
 **Driver(s) behind the claims:** Simulator Timeline + LayerTree (counts only), Chrome and Simulator frozen-frame pixel
 harnesses, idle triple (headless Chrome, counts; Layout and RecalcStyle counts from CDP `Performance.getMetrics`)
-**Prediction:** a new row by mgmt-ops-10 against the strip-tc build card, superseding P-072 (registered for an earlier
+**Prediction:** **P-079** (mgmt-ops-10, 10-03 09:4xZ, on its branch, lands ~10:00Z) against the strip-tc build card
+and the PHONE TICKET below (hashes checked by ops on the snapshot files), superseding P-072 (registered for an earlier
 build), before any phone data. P-070 (written 01:12Z
 for arm (b)) is **superseded before data: build changed (strip-cl → strip-rb → strip-rw, lead 04:4xZ and 05:0xZ)**;
 its text stays unchanged.
@@ -639,7 +640,7 @@ idle census (Chrome, G11 + G16, 5 s windows): clock layout shifts 0 (9 top, 6 mi
   0.001126 per 5 s in every build); LayoutCount/s top 1.8-2.2 vs 1.6-2.2, mid 1 vs 1, end 0 vs 0; RecalcStyleCount/s
   equal; inline style writes/s top 50.4-75.8 vs 58.4-78, mid 22-26.4 vs 6-11.2, end 22-30.8 vs 6-7.2 (the 11-cell
   write per m change, every tick while off-screen); Chrome layers 137-142 vs 126
-prediction: a new row (mgmt-ops-10) against this card, superseding P-072, before any phone data; phone block after
+prediction: P-079 (mgmt-ops-10) against this card, superseding P-072, before any phone data; phone block after
   P-074 (warm start 38-40 °C, one start method), then the user's finger test
 debug hooks: none added (st6-rb2's __fwMorphDrive is inherited)
 ```
@@ -731,6 +732,37 @@ falsified if: re-entry V >= 38 or V >= C; backed layers V > 20; any visible digi
 decisions: hit -> strip-rw stays wave 2's base for cd-roll-ca; re-entry or backing missed -> back to the code (the
   cell layers behave differently on the phone); frames or pin Layout worse -> skip the wrapper write while the clock is
   hidden (re-top on the first visible frame) or drop cd-strip from the wave
+```
+
+```
+PHONE TICKET cd-strip strip-tc · prediction P-079 (mgmt-ops-10; supersedes P-072 before data) · 2026-10-03
+build: V = strip-tc on st6-rb2, JS 6fa0e1e8a221, CSS 982a747d9263, patch.diff 4f2ff4eb9afa; served from the immutable
+  copy out/cd-strip/snap/strip-tc (fix-cd-strip worktree)
+control: C = st6-rb2, JS 7bf7c4657d21, CSS f523598b2a24; copy out/cd-strip/snap/st6rb2 (same base, mirror snapshot
+  b1789284481295-4ad4a84a)
+question: on the phone, does strip-tc keep the Simulator's mechanism (fewer clock repaints on re-entry, a third of the
+  clock backing) without new slow frames at the top or at the morph pin?
+ports: two, one per arm, each served from its copy (serve.mjs --root <copy> --port auto, plain http twin per I-003);
+  one uncounted warm-up load per port (A3/U5)
+start: battery 38-40 °C at the block start, one start method for every run (T-029 #30); temperature and charging
+  state recorded per run (A4); Low Power Mode runs dropped
+block (driver W, Timeline on in counted runs): warm-up C, warm-up V, Timeline-OFF sentinel (C), counted C V V C C V V C
+  (n = 4 per arm), end sentinel (C, Timeline off); sentinel rule as CLAUDE.md "Phone blocks" (bottom >= 58 fps,
+  scroll >= 44 fps)
+attribution (after the end sentinel, uncounted for frames): per arm, in order C V C V V C: LayerTree census at the top
+  (hero clock layers, backed, MB), one scroll to 3 viewports and back (clock Paint records in the first 1 s at the top),
+  and one m = 1 pin hold via __fwMorphDrive (M driver; Layout records per hold): 3 holds per arm (the "2 of 3 holds"
+  gate), 3 re-entries per arm (median per arm)
+aggregation: frames > 50 and > 34 counted per run in the top window and the pin window (±4 ms twins); "rise by >= 2
+  per run" = median of V's 4 per-run counts minus median of C's 4 >= 2, in either window; Layout per 4 s at the top:
+  per counted run, V - C as the difference of the arm medians; re-entry and backing: arm medians over the attribution
+  runs
+decisions (P-079): hit -> strip-tc stays the base for cd-roll-ca, then the user's finger test; re-entry or backing
+  missed -> back to the code; frames or pin Layout worse -> gate the 11 cell writes while the clock is hidden (own
+  count check) or drop cd-strip from the wave
+finger test: after the block, on the console (blind swipe A/B C vs V, lead/console protocol)
+minutes: ~35 (2 warm-ups ~3, 2 sentinels ~3, 8 counted ~14, attribution 6 cycles ~12, park and cool-down ~3)
+queue: after P-074 (lead 09:3xZ)
 ```
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize ·
