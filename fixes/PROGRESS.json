@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T19:00:00Z", "text": "Planning only while the Mac sleep question (T-052) is open: the hero and avatar-slider picture checks run first; a re-check of the sharper 1440 hero photos with reduce motion is queued; the middle-of-page slow-frame test is drafted and waits for timing to resume." },
   { "at": "2026-10-03T18:40:00Z", "text": "End-of-page animation phone check (P-085) passed: today's build is no worse than the original there; in that run it had far fewer slow frames (the whole build against the original, one test, not one fix alone)." },
   { "at": "2026-10-03T18:10:00Z", "text": "Partly paused: the Mac keeps going to sleep (I-098). Timing measurements and phone tests wait for your answer in T-052 about keeping it awake; picture and count checks and tests run again, re-run if a sleep hits them. Your swipe test on the phone (C-035) still works." },
   { "at": "2026-10-03T16:30:00Z", "text": "Hero phone test (P-081): the new hero ending removes almost all of the per-frame script work and is no worse on slow frames, but restarting it after you pause mid-hero costs more than the original. Two cheaper restarts are being built and checked next (P-088)." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." },
   { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." },
   { "at": "2026-10-03T06:53:00Z", "text": "You chose to land the countdown digit strips, with the tiny fade difference. The review found one small style fix first: in one scroll band the new clock kept its layers where today's page drops them. That fix is being re-checked, then a last review and landing." },
-  { "at": "2026-10-03T05:50:00Z", "text": "The menu fix (F3) made the pinned menu no worse in 9 robot-finger phone runs. The original's stall at the end of the page didn't show up this time, so whether the fix cures it is still open. One odd run of the landing version is being traced." },
-  { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." }
+  { "at": "2026-10-03T05:50:00Z", "text": "The menu fix (F3) made the pinned menu no worse in 9 robot-finger phone runs. The original's stall at the end of the page didn't show up this time, so whether the fix cures it is still open. One odd run of the landing version is being traced." }
  ],
  "items": [
   {
@@ -186,7 +186,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "The drawing-cost check is done: one version did more work and is parked, and the other only changes the touch handling in a thin strip at the screen edges, which a finger test can't reach, so it would feel the same as today. Dropped as a speed fix; a new idea for the menu is being planned.",
+   "next": "arm-scope in build via st6-rb2 (y≈1960 listener-add frame removed); no further live arm; open: residual 40-49 ms edge frames (no Timeline yet), B1 end-pin collapse UNRESOLVED (P-036 only); replan owed by lead. Edge-frame ticket drafted, waits for T-052.",
 
    "owner": "fix-nav-morph",
    "checks": [
