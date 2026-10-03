@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T00:25:00Z",
+ "updatedAt": "2026-10-03T00:36:00Z",
  "updatedBy": "mgmt-ops-9",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And, if the heat test (P-068) shows Fastwork heats the phone more than apple.com, less work at rest so the phone stays cooler.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T00:30:00Z", "text": "Countdown timing test on the phone done, 8 runs valid: at the top the new countdown is no slower than the original, so the full fix stays; past the hero it does about 40 % less work. Open: past the hero it still shows a few more long frames; de-countdown traces why. Now: the F3 robot-finger test." },
   { "at": "2026-10-03T00:12:00Z", "text": "GPU study done (T-030): most lag left is at the hero ending and the people cards; the toolbar resize is small. Three fixes now run at top priority: countdown digits as sliding strips, the hero ending off the main thread, and the GPU countdown roll (your call; you judge it blind)." },
   { "at": "2026-10-02T23:58:00Z", "text": "The F3 robot-finger test has a new plan, signed by the lead before any data: the check page that never passed under the robot finger is replaced by the usual scripted heat check. Phone order: the countdown timing test now, then the F3 robot-finger test, then the heat test." },
   { "at": "2026-10-02T23:50:00Z", "text": "The F3 robot-finger test stopped again before any counted run: the phone's check page was not smooth even on a cool phone, so this is not heat. It waits until fix-nav-morph finds the cause. The countdown timing test runs now, then the heat test." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-01T19:03:00Z", "text": "Your two ideas checked: complex CSS is not the cause; the cost is how many elements each change touches. The images use more memory than needed but cost nothing per frame. Seven ranked fixes follow, scene-scope first." },
   { "at": "2026-10-01T18:54:00Z", "text": "A fix for slow style recalculation is being built (fix-scene-scope): it narrows how the page pauses its hidden scenes. After a Chrome check it goes to the phone next." },
   { "at": "2026-10-01T18:33:00Z", "text": "Your decision: style recalculation is now the top priority. The phone first records where style time goes in A and B; the robot-finger check and the other tests follow." },
-  { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." },
-  { "at": "2026-10-01T17:59:00Z", "text": "Cause found for the blinking small profiles: each time the carousel swaps a picture in or out, the whole page re-lays out (P14 on the phone). A fix that keeps the pictures in place is next, right after your sitting." }
+  { "at": "2026-10-01T18:31:00Z", "text": "Your sitting: on the hero and at the end of the page, the best build felt quite a bit smoother than the original. Your idea that style recalculation causes the lag is now being checked by a new helper." }
  ],
  "items": [
   {
@@ -146,7 +146,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "The robot-finger test P-036 runs again after the countdown timing test, with a new signed plan: the check page that never passed under the robot finger is replaced by the usual scripted heat check on the old build, before and during the test. Nothing else in the test changes.",
+   "next": "The robot-finger test P-036 is running now (from 00:16), with a new signed plan: the check page that never passed under the robot finger is replaced by the usual scripted heat check on the old build, before and during the test. Nothing else in the test changes.",
    "owner": "fix-nav-morph",
    "checks": [
     { "id": "P-022", "what": "scripted phone block: is the y≈1960 frame gone?", "result": "yes, 4 of 4 runs" },
@@ -506,8 +506,7 @@
  ],
  "upcoming": [
   { "title": "Blind swipe test of the GPU countdown roll (cd-roll-ca)", "when": "once it is built on top of the digit strips (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
-  { "title": "Short phone timing test of the countdown fix on its own", "when": "now, then the F3 robot-finger test, then the heat test (you chose this, T-024 #8)", "item": "countdown-ca" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036, which runs after the countdown timing test (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
+  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the robot-finger test P-036, running now (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
   { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {

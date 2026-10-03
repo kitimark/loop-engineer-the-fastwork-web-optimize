@@ -9,6 +9,31 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **00:3xZ landed: 630c700 (memory move), 3251486 + b44f58c (X1 stage 2), d8351b1 (de-gpu addendum), 793c8bc (I-077
+  tool fix; incident still listed open at 00:3xZ, waits on the lead's resolve).** Rebased on 793c8bc.
+  - **X1 stage 2 readout b44f58c (de-countdown, P-069 phone scored in PREDICTIONS):** one block 23:59-00:15Z, C V V C
+    C V V C, 8/8 valid (4 ticks per window, hashes match, LPM off, no inspector), heat checks open 60/53.2, end 60/52
+    PASS, no run in the C-027 settings window. Row 1 top L+P+C C 1028.9-1065.4 / V 1013.7-1100.6 ms, median V - C
+    -19.2, **not separated -> "full" stays, X1 closes** (no pause-only offer). Row 2 pastHero S+L+P+C C 877.5-1053.8 /
+    V 619.1-645.8, **V separated below, V/C 0.62 -> (b) confirmed on the device.** Row 3 resume not separated; frames
+    > 50 at top not V-only. P-069 phone: row 1 in, |median diff| < 4 out (19), row 2 in, frames > 50 0-1 out,
+    falsifier not met. **Open F-146** (post-hoc, OBSERVED, cause unknown): at pastHero at rest V has more long frames
+    though less total work; the lead wants it explained before wave 2; de-countdown runs a Simulator `--lt` session.
+    D1 3251486 = the I-077 workaround (mechanics only, accepted pre-count). Ops second read of b44f58c (README "Stage 2
+    readout" + x1-stage2.json vs the P-069 card): PENDING, next batch.
+  - **d8351b1:** de-gpu's gpu-props addendum (section 4: X1 stage 2 outcome and F-146); de-gpu's tip was a628a6c.
+  - **630c700 memory move (user OK both, T-032 #7):** `memory/` (README index + 15 scrubbed notes), imported by
+    CLAUDE.md (`@memory/README.md`); Serena rules/project_overview are pointers; the auto-memory folder stays with a
+    pointer header until a fresh session confirms the import. **The import works only in a FRESH session:** agents
+    spawned in this session still see the old CLAUDE.md, so tell every peer you message to read `memory/README.md` by
+    hand. Only the lead adds or edits notes; send the lead what should be remembered.
+  - **P-068 scorer named (lead):** iphone-runner runs `heat.mjs score` (d1ec5c5345f7) after H1+H2 and sends ops the
+    verdict; ops second-reads, then the conditional heat goal line becomes firm or is dropped.
+  - Load spike: shared group (cd-strip + hero-exit-threaded Simulator) vs P-036 exclusive holds; the lead watches it
+    (load1 ~29 at 00:3xZ, from 53).
+  - PROGRESS: change line 00:30Z (countdown phone test: full stays, about 40 % less work past the hero, F-146 open),
+    upcoming countdown test removed, F3 P-036 marked running (item next + upcoming).
+
 - **00:2xZ T-030 report landed (41563ad, de-gpu; F-145); three GPU fixes at user priority #1; arch-memory proposal
   landed (cfe3693).** Rebased on main cfe3693.
   - **de-gpu T-030 (done):** lag left in st6-rb2, C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px
