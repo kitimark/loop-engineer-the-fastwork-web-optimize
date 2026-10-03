@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T20:50:00Z", "text": "Your choice on the avatar slider (proposal PR-013): keep the cheaper slider, which removes the slow frames at rest, or match the original exactly. The still faces differ slightly and are not exact with reduce motion on, and the leaving face moves differently." },
   { "at": "2026-10-03T19:45:00Z", "text": "The sharper hero photos at 1440 px with reduce motion turned out to be within the original page's own range (the original sometimes keeps a soft first picture); closed unless you object in T-053." },
   { "at": "2026-10-03T19:25:00Z", "text": "The avatar slider fix (carousel-leaver) is not exact on Safari, and the check found the landed slider build itself draws the resting profile pictures slightly differently on Safari; one bounded attempt to make it exact comes next. The hero restart test (P-088) is ready for when timing resumes." },
   { "at": "2026-10-03T19:00:00Z", "text": "Planning only while the Mac sleep question (T-052) is open: the hero and avatar-slider picture checks run first; a re-check of the sharper 1440 hero photos with reduce motion is queued; the middle-of-page slow-frame test is drafted and waits for timing to resume." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T09:13:00Z", "text": "Superseded: the heat-reading trial's \"no change under Serious\" doesn't hold. A later check found the phone really in its \"Serious\" heat state at a 38-40 °C start, so its \"normal\" runs were likely Serious too." },
   { "at": "2026-10-03T08:52:00Z", "text": "You accepted all five suggestions: fixes that make the page do less work can land on work counts plus one short phone no-worse check (the top three smoothness fixes keep the phone and your finger test); phone checks start warm, 38-40 °C." },
   { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
-  { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." },
-  { "at": "2026-10-03T07:01:00Z", "text": "You disconnected the iPhone at 07:01 and reconnected it at 07:09; phone tests carry on." }
+  { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." }
  ],
  "items": [
   {
@@ -344,7 +344,7 @@
    "stage": "L",
    "fixes": "The small rotating profile pictures near the top (the 'blinking small profiles' you noticed) cost a 25-30 ms whole-page layout about once a second, even when you are not scrolling.",
    "gate": "Passed: S7 on the phone (P-067), at rest at the top, with every run separated and the scroll guard held.",
-   "next": "Landed; P-067 stands. Its landing pixel check was Chrome only (st6-rb2 README rows 57-60), so its WebKit pixel status is OPEN: on Safari the resting profile pictures differ slightly (F-198). fix-carousel-leaver tries an exact fix (two attempts), else a proposal to you.",
+   "next": "Landed; P-067 stands. On Safari the resting profile pictures differ slightly (F-198), and no exact fix was found, so it is your choice now: proposal PR-013, keep this cheaper slider (recommended) or match the original exactly and give the saving back.",
    "owner": "fix-scroll-engine with de-pm-hero",
    "checks": [ { "id": "P-067", "what": "phone test S7: fewer slow frames at rest at the top with st6, on today's best build?", "result": "Yes: 0 slow frames over 34 ms in every run with it vs 22, 19, 27, 24 without; carousel ticks with a slow frame 0 of 152 vs 103 of 152; scrolling not worse (OBSERVED, 6571b62)." }, { "id": "P-025", "what": "P14: does keeping the pictures mounted stop the whole-page layout?", "result": "Yes. With the pictures kept in place, the whole-page layout at each tick was gone in 65 of 67 ticks (scripted scroll, OBSERVED). A layout boundary around the section removed the hitches over 50 ms at rest (11 to 0) but kept most frames over 34 ms; each layout got cheaper, not by half." }, { "id": "P-039", "what": "st5 phone test: does the real fix also stop the whole-page layout?", "result": "Partly. The picture swap no longer re-lays out the page (1 of 31 ticks), but the start of each slide still does in 15 of 33 ticks. At rest, hitches over 34 ms fell from 70 to 29 in 40 s, and over 50 ms from 4 to 0 (OBSERVED)." }, { "id": "P-044", "what": "phone recording: does the no-flip build (st6) stop the layout at the slide start?", "result": "Yes: 1 of 36 slide starts re-laid out the page, against 24 of 35 for st5 and every one for the original (OBSERVED)." } ],
    "details": [

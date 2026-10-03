@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-03 20:4xZ** (mgmt-ops-10).
+**10-03 20:5xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 20:5xZ Landed 276e98e7. **PR-013 published** by the lead (rev 4 = rev 3 at 44711176 + the L1530 nit): avatar slider keep-st6 (recommended) / match-original; Simulator screen-crop pairs (phone rest, reduced motion, iPad; base vs base2 for B); "Try it" on A; B cost row "expected, not measured on the original code". Board: carousel-leaver waiting on user PR-013; fix-carousel-leaver owns the follow-up. PROGRESS hero-carousel next + change entry updated.
 - 20:4xZ P-090 AMENDMENT 1 results + draft rev 3 (44711176) read PASS, sent to the lead to publish. Re-scored both legs from raw with tierq c36772776b4a: exact. (a) reduced motion NOT exact (S~base 1761 vs A/A 1260; S face 1 outside A/A), T2 static holds; (b) iPad 1032 DPR 2 within T2 static, not mask-dependent. Base loads differ under reduced motion (OBSERVED). Rev 3 applies the lead flags (a)-(c); one wording nit ("never" -> "did not in two loads"). Predictions scored in PREDICTIONS P-090.
 - 20:3xZ P-090 read + carousel proposal draft rev 2 (6070bf5c, README L1406-1459) sent to the lead together. Rulings (a)-(d) applied. Three wording flags left for the lead: Chrome "0 px" is n8 0 but A~S any 3360 px max 3 (A~A2 4292 max 5, re-computed from h4b raw), and the frames are just after a slide, not rest; "within near-identical" is phone width only until legs (a)/(b); option B "19-27 come back" is inferred from S7 C. Lead queue order relayed: amendment leg (a) running since 20:36Z, (b) next, between rest-script holds. Lead accepted the three flags; rev 3 (flags + leg results) comes to ops for a read, then sha + read to the lead, who publishes.
 - 20:3xZ Landed 5d90b4d7. Lead number rulings for the carousel draft: (a) 71/71->1/36 only for st6-rb2 if the slider code is shown unchanged from aw1-10e, else name aw1-10e / "an earlier build with the same slider change" / drop; (b) screen share 0.0315 % plus per-face max 69.9 beside the 126 sum; (c) 19-27->0 labelled "scripted scroll test, 4 runs each, one session, OBSERVED"; (d) st5-lead disclosed, St/So/Sw VOID, conclusion on Sv + Hold B. Forwarded. P-090 AMENDMENT 1 read PASS (87d9e925; hashes in PREDICTIONS) with 3 run conditions (matchMedia VOID from the recorded field, screen share reported, first iPad boot timeout not a strike); legs may queue after rest-script. Carousel draft rev 1 still flagged (0.04 % of view, aw1-10e wording, 19-27 label, cites VOID Sw 605/48 in option B, unsourced "Chrome 0 px at rest", motion sources): rev 2 requested; read + draft go to the lead together.
