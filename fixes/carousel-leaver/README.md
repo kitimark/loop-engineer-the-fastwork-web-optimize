@@ -1194,8 +1194,10 @@ from it are worded that way and stay OBSERVED in our setup until a source refere
     - st6's leader rule wins over the appended `img:not(.st5-next)` rule there.
     - Sv's will-change override did apply to it (auto).
   - By item 3's text, **St, So and Sw are VOID**.
-  - The conclusion rests on the valid arms plus Hold B: S and Sv don't match base on screen (1137 and 998 px), so
-    no candidate follows. Hold B confirms base~S on screen (1137 px, max 50).
+  - The conclusion rests on Sv plus Hold B:
+    - Sv (valid) does not match base on screen (998 px, max 48), and neither does S (1137 px, max 50).
+    - Hold B repeats base~S on screen (1137 px, max 50).
+    - So no candidate follows. St, So and Sw are not cited for it.
   - The leaver is invisible at rest (opacity 0, collapsed), so it likely adds 0 px. OBSERVED.
   - Base's slots are none / 1 / auto.
   - The St, So and Sw numbers below are kept as description only.
@@ -1400,6 +1402,61 @@ served from the same read-only snapshots as Hold A, and simquiet checks the hash
   proposal, with (a)'s five numbers added.
 - If (a) is exact and (b) meets T2, the static part is T2 on WebKit. Chrome is unchanged, and only the motion
   difference goes to the user.
+
+### Proposal draft rev 2 (for the lead to publish; leg results filled in after amendment 1 runs)
+
+**Avatar slider: keep the cheaper slider, or match the original exactly?**
+
+The avatar slider under "Start selling" (5 small faces, one slides out about once a second) was rebuilt in "st6-rb2"
+so that it does less work. It looks almost the same, but not exactly. Please choose.
+
+**Option A: keep st6-rb2.**
+- The saving stays.
+  - **Fewer page-wide layouts.** Page-wide layouts at the slider's slide starts happen in about 1 of 36 slides
+    instead of every slide.
+    - Measured on an earlier build (aw1-10e) with and without the same slider change: phone Safari Timeline, the
+      slider on screen at rest, one session, 2026-10-01 (`fixes/rotator-st6/README.md` L37-46).
+    - It counts layouts, not slow frames.
+  - **No slow frames at rest.** On the iPhone 15 Pro Max, at rest at the top of the page: 0 frames slower than 34 ms
+    per 20 s, instead of 19-27 without the change.
+    - Scripted scroll test, 4 runs each, one session, OBSERVED (phone block S7, 2026-10-02,
+      `fixes/st6-rb2/README.md` "S7 result").
+    - Measured before our "phone checks start warm" rule.
+- **At rest, the faces differ slightly in shade.**
+  - On the iPhone Simulator's own screen (430 CSS px wide, rendered by the Mac's GPU, not the real phone): largest
+    shade 50 of 255, fill.
+  - The area is 126 CSS px² over 4 faces, with the largest face at 70 CSS px². That is about 0.03 % of the screen
+    (0.0315 %).
+  - Two loads of the original differ by 0 px.
+  - This is within our "near-identical" numbers for a still picture (P-090, `fixes/carousel-leaver/README.md`).
+  - A software snapshot of the same state shows max 81. It is OBSERVED and not what the screen shows.
+  - With reduced motion on: [leg (a)].
+  - At iPad width: [leg (b)].
+- **In Chrome at phone width** (DPR 3, frozen crops after a slide, P-086 hold 4b, `fixes/carousel-leaver/README.md`
+  L241-249): 0 px against the original at rest, with an A/A of 0 px. At 1440 wide, Chrome's own load-to-load noise
+  was too large to judge (README "Results (P-087)").
+- **In motion it looks different.** These are moving-only differences, so they are your call; numbers can't approve
+  them.
+  - The leaving face is cropped and slides left, where the original narrows in place.
+  - The original ends each slide with the other faces snapping back 2 px; st6-rb2 has no snap. Chrome measurement:
+    `research/pixel-tolerance/README.md` §6 L184-185.
+  - The 4th face changes shade slightly as it moves into place: largest shade 45, 457 device px on one face, on the
+    Simulator's screen. That is P-090 Hold B, OBSERVED, cause unknown; the original shows 0 px there.
+
+**Option B: match the original exactly, giving the saving back.**
+- The exact match is the original slider code itself.
+- The page-wide layouts at slide starts and the 19-27 slower frames per 20 s at rest come back.
+- A halfway build (st6-rb2 with the original's resting values and a narrowing leaver) was not built or tested. Whether
+  it would be exact is unknown.
+
+**Recommendation.** A. The at-rest saving is measured on the phone, while the still-picture difference is within our
+near-identical numbers on screen. The motion differences are small but real, and only you can judge them.
+
+**Statuses.**
+- The WebKit image-quality mechanism is CONFIRMED in source (ImageQualityController.cpp @789c0d1be2b7).
+- That it explains our snapshot numbers is OBSERVED, checked with pinned-quality builds.
+- That it does not show on the Simulator's screen from 328 ms after a slide is OBSERVED. The source is the Hold B
+  burst, one slide.
 
 ## Deliverables
 
