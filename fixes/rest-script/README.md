@@ -3,8 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft (registration committed; data and verdicts follow in later commits)
-**Stage:** F; D card registered below (P-078 → P-080 → P-083 → P-084, v4 current, last iteration)
+**Status:** **parked** (2026-10-03 13:3xZ): v4 (P-084, the last iteration) missed pixel identity on the WebKit
+Simulator; see "v4 result: parked" below. Not for landing.
+**Stage:** F, stopped; D card registered below (P-078 → P-080 → P-083 → P-084, v4 last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
 **Base:** `--on st6-rb2`; served overlay `_app/immutable/nodes/2.DyWL8TcE.js` sha256 `520d5f1139c7…` (v4; v1 bf8ffd4ef7a3, v2 a5286ebc4cb6, v3 6c09e47961ba)
@@ -247,6 +248,47 @@ Outputs go to `ident4`, `items4`, `ic5`, `sim4`, `simcen4`. One process note: st
 had just started a Sim session leaked that session (SIGTERM mid-setup). It was cleaned with `sim.mjs doctor --fix`
 (12:57Z), and no other session was affected.
 
+### v4 result: parked (P-084 park rule)
+
+**Chrome (passes).**
+- Identity at 430 (`ident4`, analyse.mjs 03b2df89340e): 0 mismatches. 27 slides: F1 24, F2 2, both 1; 7 mid-entries,
+  all F1. All 20 frozen shots 0/0, A/A 0/0. Widths 1024 and 375 ran; they were not scored after the park.
+- Census at 430 (`ic5`, tocard 05daca3beb58): no MORE.
+  - Far y2796: main frames and style recalcs SAVE (31/32 → 17/17), layouts SAVE (4 → 0), paints SAVE (34/39 → 0/3);
+    rAF callbacks and code calls SAME.
+  - Paused (3728, fee, pain): SAVE on main frames, style, rAF and code.
+  - Near: SAME.
+- Census at 430r: all SAME.
+- mgmt-ops-10 reproduced both byte for byte.
+
+**WebKit Simulator (misses).**
+- `sim4`, the registered scorer analyse.mjs 03b2df89340e: `node analyse.mjs --st6 sim4/st6-s4.json --fix sim4/fix-s4.json
+  --fixreplay sim4/rep-fix-s4.json --st6replay sim4/rep-st6-s4.json --out sim4/analysis-s4.json`.
+- Frozen shot "rest" (y1715, row at top 339, x 0, same five srcs, no running animations, same rect in both arms):
+  fix vs st6 replay = **5131 device px, max channel delta 49, against an A/A of 0/0**. That is a pixel delta beyond the A/A.
+- Cross-check, outside the registered scorer: shot against shot, row crop at y = 177 + 3·top, x 140-520.
+  - The fix's rest and intoview shots differ from st6's by 5131 and 5133 px (max 49), and only on the **4th avatar**
+    (`photographer/avatar.jpg`).
+  - far-0 is 0/0. Hash is 0/0.
+  - Four st6 renders of the same state are pixel-equal on the row: the sim3 st6 shot, the sim4 st6 shot, the st6
+    replay of the fix's states, and the st6 replay. So this is no replay artifact, and no run-to-run variance shows
+    in st6.
+  - The fix draws that avatar sharper: Laplacian variance 1010 vs 962, same mean colour (159.5). This looks like a
+    different image resampling.
+- Cause, **OBSERVED in our setup, cause unknown**. A candidate: while the row was far, v4 played no slide on the
+  avatar elements, only the empty clock. So the 4th avatar never ran the slide's scale/pop animation before it was
+  shown. WebKit may draw an image that was animated differently afterwards: a decoded-image size kept from the
+  scaled draw, or a backing layer left over. Neither was checked.
+- The other Sim checks: WebKit logpoints never fired (logpointCheck 0, events 0), so the per-frame model check and the
+  smooth/jump/outin trials did not run. That is a harness defect of simrot.mjs on this Simulator.
+- Not run after the park: Chrome identity at 768/1440/430r, items, pain sequences, the 375/768/1024/1440 census, the
+  Sim toolbar count and the Sim census. chainI was stopped between two Chrome holds (after ident-375), with no Sim
+  session open.
+
+Per P-084 ("v4 misses identity → park, the cause to the lead, no v5"), rest-script is parked. The overlay
+(520d5f1139c7) and `patch.diff` stay as the record. The far-row SAVE in Chrome is real, but v4 is not pixel-identical
+in WebKit.
+
 ## Why it lags
 
 Not a scroll-jank fix: a heat (rest work) fix, user T-029. Four small pieces of script keep the main thread busy
@@ -283,4 +325,4 @@ All changes are in `/_app/immutable/nodes/2.DyWL8TcE.js`, on top of st6-rb2.
 
 ## Cards (protocol v2)
 
-(to follow)
+None: parked at F under P-084 (see "v4 result: parked"). The D card is the registration above.
