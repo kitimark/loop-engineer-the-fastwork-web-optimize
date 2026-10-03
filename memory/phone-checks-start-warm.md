@@ -6,7 +6,9 @@ audience: every agent
 since: 2026-10-03
 ---
 
-**Rule (user decision, T-039 #19-#20, 2026-10-03 10:06Z: option B; replaces the 38-40 °C band of T-029 #30).**
+**Rule (user decision, T-039 #19-#21, 2026-10-03 10:06-10:08Z: option B, as an experiment; replaces the 38-40 °C band of
+T-029 #30).** If B hits a blocker (e.g. the state won't hold at Serious, or holds keep failing the gate), the lead reports it
+in T-039 and rolls back to option A: each block starts only at Fair/Nominal (same xctrace gate), battery °C recorded.
 - Phone tests run at the phone's **real thermal Serious state** (warmed by the page / pre-warm, not by Xcode).
   Every hold reads the state with Xcode's command-line recorder (`xctrace`, Thermal State instrument, ~40 s,
   nothing installed) at its start and end; a hold counts only when both say Serious with Is Induced = No, else it
