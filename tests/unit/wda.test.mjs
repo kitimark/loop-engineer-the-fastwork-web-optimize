@@ -161,3 +161,27 @@ test('I-087 orientation: Simulator only. A session marked simulator on a non-810
   await fs.close();
   assert.ok(!f.calls.some((c) => c.forbidden));
 });
+
+test('I-094 a call marked simulator never leaves the Mac for a non-WDA-sim base: POST /session, /status and every other path are refused before fetch, so the phone\'s WDA on :8100 never sees a Simulator session', async () => {
+  const real = globalThis.fetch;
+  const sent = [];
+  globalThis.fetch = async (url) => { sent.push(String(url)); throw new Error('fetch must not be called'); };
+  try {
+    for (const base of ['http://127.0.0.1:8100', 'http://localhost:8100/', 'http://127.0.0.1', 'not a url']) {
+      await assert.rejects(createSession({ base, simulator: true }), (e) => e instanceof WdaError && /is not a WDA-sim address \(port 8100 is the phone's\)/.test(e.message), base);
+      await assert.rejects(status({ base, simulator: true }), (e) => e instanceof WdaError && /port 8100 is the phone's/.test(e.message), base);
+      await assert.rejects(request('DELETE', '/session/ABC', undefined, { base, simulator: true }), (e) => e instanceof WdaError && /port 8100 is the phone's/.test(e.message), base);
+    }
+    const saved = process.env.FW_WDA_URL;
+    delete process.env.FW_WDA_URL;
+    try {
+      await assert.rejects(createSession({ simulator: true }), /port 8100 is the phone's/, 'the default base is the phone\'s');
+    } finally { if (saved !== undefined) process.env.FW_WDA_URL = saved; }
+    assert.deepEqual(sent, [], 'no request sent');
+  } finally { globalThis.fetch = real; }
+  // a marked call to a WDA-sim port still goes out
+  const w = await fake();
+  const s = await createSession({ base: w.url, simulator: true });
+  await s.close();
+  assert.ok(w.calls.some((c) => c.method === 'POST' && c.path === '/session'));
+});

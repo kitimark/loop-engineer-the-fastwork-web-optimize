@@ -472,3 +472,17 @@ test('I-087 sim-orient: orient() rotates through a WDA-sim session marked simula
     assert.equal(w.calls.length, n, 'nothing sent');
   } finally { await w.close(); }
 });
+
+test('I-094 sim-orient: orient() on the phone\'s WDA port (or a base with no port) is refused before any request, whether or not something listens on :8100', async () => {
+  const { orient } = await import('../../tools/lib/sim-orient.mjs');
+  const real = globalThis.fetch;
+  const sent = [];
+  // as if the phone's WDA runner (iproxy) were up on :8100 and reset the connection
+  globalThis.fetch = async (url) => { sent.push(String(url)); throw Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNRESET' } }); };
+  try {
+    for (const base of ['http://127.0.0.1:8100', 'http://localhost:8100', 'http://127.0.0.1']) {
+      for (const want of ['portrait', 'landscape']) await assert.rejects(orient(want, { base, settleMs: 0 }), /is not a WDA-sim address \(port 8100 is the phone's\)/, `${want} on ${base}`);
+    }
+    assert.deepEqual(sent, [], 'no request reached any WDA (not even POST /session)');
+  } finally { globalThis.fetch = real; }
+});

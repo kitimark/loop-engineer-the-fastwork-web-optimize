@@ -17,7 +17,9 @@
 //   GET|POST /session/:id/orientation              SIMULATOR ONLY (incident I-087): read / set PORTRAIT or LANDSCAPE
 //                                                  (FBOrientationCommands.m, XCUIDevice orientation); refused unless
 //                                                  the caller passes {simulator: true} AND the base is not the phone's
-//                                                  WDA port 8100 (iproxy), so the physical iPhone is never rotated
+//                                                  WDA port 8100 (iproxy), so the physical iPhone is never rotated;
+//                                                  any call marked {simulator: true} (POST /session too) goes only
+//                                                  to such a non-8100 base (I-094)
 // Never /source, element lookups or screenshots: an accessibility snapshot of Safari costs phone CPU while
 // we measure it. request() allows exactly the calls above (ALLOWED, method + path) and refuses anything else
 // before any HTTP traffic, so a new WDA call is a deliberate edit here, not an accident.
@@ -67,6 +69,9 @@ export class WdaError extends Error {
  * Throws WdaError on a non-2xx status, a W3C error body, a refused connection or a timeout.
  */
 export async function request(method, path, body, { base = WDA_URL(), timeoutMs = 15000, simulator = false } = {}) {
+  // I-094: a call marked simulator (POST /session included) never goes to a base that is not WDA-sim's, so the
+  // phone's WDA on :8100 never even sees a Simulator session; refused before any HTTP, like the rotation itself.
+  if (simulator === true && !simulatorBase(base)) throw new WdaError(`wda.mjs sends a Simulator call (${method} ${redact(String(path))}) only to a Simulator's WDA (I-087/I-094: the physical iPhone is never rotated or touched through the Simulator path; ${redact(String(base))} is not a WDA-sim address (port ${PHONE_WDA_PORT} is the phone's))`, { path });
   if (simOnly(method, path) && !(simulator === true && simulatorBase(base))) throw new WdaError(`wda.mjs calls ${method} ${redact(String(path))} only on a Simulator's WDA (I-087: the physical iPhone is never rotated; ${simulator === true ? `${redact(String(base))} is not a WDA-sim address (port ${PHONE_WDA_PORT} is the phone's)` : 'this target is not marked simulator'})`, { path });
   if (!allowed(method, path, { simulator })) throw new WdaError(`wda.mjs never calls ${method} ${redact(String(path))}: not in its allowlist (no accessibility snapshots, element lookups or screenshots while measuring)`, { path });
   let res, text;
