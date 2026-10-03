@@ -449,7 +449,7 @@ was dropped when the user accepted rev 1. It is the land candidate.
   |---|---|---|---|---|---|---|
   | Sim iPhone 15 Pro Max, portrait | yes | yes | 430x932 (430) | yes | true / **on** | true / **on** (unchanged) |
   | Sim iPad Pro 13 (M5), full screen | yes | yes | 1032x1376 (1032) | no (1032) | true / off | **false** / off |
-  | Sim iPad, window ≤ 600 px | | | | | **UNRESOLVED**: sim.mjs has no window resize | see the residual below |
+  | Sim iPad, window ≤ 600 px | | | | | **UNRESOLVED**: sim.mjs has no window resize | residual R2-iPad-AFP below |
   | Chrome 154 desktop 1440x900 | no | no | 1512x982 | no | false / off | false / off |
   | Chrome 154 phone emulation 430x932, touch | no | yes | 430x932 | yes | false / off | false / off |
   | Chrome, phone + touch + `GestureEvent` stub | stub | yes | 430x932 | yes | true / on | true / on |
@@ -468,20 +468,23 @@ was dropped when the user accepted rev 1. It is the land candidate.
   - With a mouse or trackpad, Mac Safari and iPad windows 600 CSS px wide or less now take C's path, the original
     behaviour, so there is no pixel risk. On the Mac the touch term is false. On an iPad in normal browsing,
     `screen` is the display, whose short side is ≥ 744, so the screen term is false.
-  - **One configuration is still open: an iPad Private Browsing window 600 CSS px wide or less, used by finger only.**
+  - **Named residual R2-iPad-AFP (the lead's ruling, 2026-10-04): an iPad Private Browsing window 600 CSS px wide
+    or less, used by finger only.** It stays open by decision; R2 lands with it recorded here.
     - Private Browsing applies Advanced Fingerprinting Protection, which fixes the screen size to the viewport.
       Reference: WebKit blog "Private Browsing 2.0" (webkit.org/blog/14795): "The screen size is fixed to the values
       of `innerWidth` and `innerHeight`."
     - In WebKit source (main 5d643104e491), `WebPageIOS.mm` lines 4641-4644 return the viewport's
       `minimumLayoutSize()` on a non-phone idiom. So `screen` would report the window's size, ≤ 600.
     - With a finger only, the touch term is true too, so R2's gate can be true there.
-    - Status: CONFIRMED from the reference and the source. Not run: the Simulator cannot open a narrow iPad window
-      (UNRESOLVED locally).
-    - The rare case is an iPad, in Private Browsing, in Split View or Slide Over, with no trackpad. There it runs the
-      phone path, which the phone checks covered at 430 px (OBSERVED, not checked on an iPad).
-    - To close it, R2 could add an iPhone-only term (for example `/iPhone|iPod/.test(navigator.userAgent)`). The
-      safe direction: an iPhone set to "Request Desktop Website" would fall back to C's path. That is the lead's
-      call; not done here.
+    - Screen-size mechanism: CONFIRMED from the reference and the source. Not run: the Simulator cannot open a
+      narrow iPad window (UNRESOLVED locally).
+    - The case is narrow: it needs all three of Private Browsing, a Split View or Slide Over window, and no pointer
+      device (no trackpad or mouse).
+    - What that window runs is assumed to be iPhone-class WebKit at phone width with touch, the path the Simulator
+      phone set checks at 430 px. That equivalence is an assumption: OBSERVED reasoning, not measured on an iPad.
+    - No user-agent check (the lead's ruling). UA sniffing is brittle, and it would add a second gate to keep right.
+    - Closes when an iPad narrow-window Simulator check becomes possible (for example a `sim.mjs resize`) and shows
+      the CSS path within T2 there.
   - Phones keep the gate true, so the path P-081 and P-088 measure does not change.
 
 ## F round 9: go-live from rest (arms N and Fb; I-098 eased, non-timing jobs only)
@@ -563,7 +566,7 @@ scroll-driven animations (`animation-timeline: view()` with `animation-range`), 
 - **Fb's landing gate (stated in P-088): the gate narrowed to touch phones.** If Fb is the arm that goes to V, its
   land candidate adds `matchMedia('(hover: none) and (pointer: coarse)')` and a screen short side of 600 CSS px or less
   to `heCss`, so iPad and Mac WebKit take C's path. This is the same narrowing R2 carries; R2's truth table and its
-  one open case (an iPad Private Browsing window ≤ 600 px, used by finger only) apply to it.
+  named residual R2-iPad-AFP (an iPad Private Browsing window ≤ 600 px, used by finger only) apply to it.
   - That is a new build, so it gets a new P-id: the Simulator pixel set (px10, px12) and rc again, plus a short phone
     no-worse check.
   - It is not done before P-088: on the iPhone the narrowed gate is true, so P-088 measures the same path, and a
