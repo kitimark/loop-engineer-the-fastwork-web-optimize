@@ -37,10 +37,11 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .sizer.svelte-1fn2go6 {
    visibility: hidden;
    width: 100%;
-@@ -1520,6 +1526,31 @@
+@@ -1519,7 +1525,32 @@
+   syntax: "<angle>";
    inherits: false;
    initial-value: 0deg;
- }
++}
 +/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
 +   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
 +   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
@@ -56,7 +57,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  syntax: "<number>";
 +  inherits: false;
 +  initial-value: 0;
-+}
+ }
 +.start-selling-top-nav-bar,
 +.start-selling-top-nav-logo,
 +.start-selling-top-nav-actions,
@@ -102,18 +103,17 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
  }
  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
-@@ -2883,11 +2928,55 @@
-   animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
+@@ -2884,10 +2929,57 @@
  }
  .start-selling-avatars.is-carousel img.is-enter {
-+  animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
+   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
 +}
 +/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
 +   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
 +   advance (32px - 8px overlap) with the same easing, via the independent translate property */
 +.start-selling-avatars.is-carousel img.is-exit ~ img {
 +  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
-+}
+ }
 +.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
 +  animation:
 +    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
@@ -135,6 +135,9 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +}
 +.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
 +  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
++  /* carousel-leaver F: every st6 slot is a stacking context (will-change, scale(1), opacity .999), so tree order put
++     the first follower over the leaver; the baseline's leaver (the only one animating) paints over it */
++  z-index: 1;
 +}
 +/* carousel-leaver: the leaver runs the site's own layout keyframes again (width, flex-basis, margin-right,
 +   border-width shrink, as in the baseline), so it is the same narrowing bordered ellipse and the followers move
@@ -142,7 +145,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +   2 x 1px border) and the snap back at the swap. The 5 persistent slots, their layers and the no-flip rest
 +   values (st6) stay; only the 5th slot animates its pop. */
 +.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
-   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++  animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
 +}
 +@keyframes avatars-shift {
 +  0% {
@@ -151,7 +154,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  to {
 +    translate: -24px;
 +  }
- }
++}
  @keyframes avatars-exit {
    0% {
 -    opacity: 1;
@@ -159,7 +162,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      flex-basis: 32px;
      width: 32px;
      margin-right: -8px;
-@@ -2908,7 +2997,7 @@
+@@ -2908,7 +3000,7 @@
      transform: scale(0.35);
    }
    to {
@@ -168,18 +171,18 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform: scale(1);
    }
  }
-@@ -5799,6 +5888,10 @@
+@@ -5798,6 +5890,10 @@
+     background-image: none;
      animation: none;
    }
- }
++}
 +/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
 +.start-selling-platform [data-sweep-paused] {
 +  animation-play-state: paused !important;
-+}
+ }
  @keyframes start-selling-platform-i-doc-sweep {
    0% {
-     background-position: 100%;
-@@ -6513,16 +6606,24 @@
+@@ -6513,16 +6609,24 @@
    opacity: 0;
  }
  .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
@@ -207,7 +210,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -7509,21 +7610,23 @@
+@@ -7509,21 +7613,23 @@
    opacity: 0;
  }
  .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
@@ -235,7 +238,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11751,11 +11854,71 @@
+@@ -11751,11 +11857,71 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -309,7 +312,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +11931,26 @@
+@@ -11768,3 +11934,26 @@
      scroll-behavior: auto;
    }
  }

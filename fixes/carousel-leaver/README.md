@@ -7,8 +7,13 @@
 **Status:** P-086 results in (2026-10-03). (1) Chrome hit; (1) Sim mixed (the registered scorer is weak in the Sim);
 (2) **miss**: a paint-order difference in the first 50 ms of every slide, cause found; (3) hit; (4) Chrome hit, Sim carousel-rooted
 just under its range. Build E is **not** offered as exact (T3).
-**Now:** P-087 registered (build F = E + `z-index: 1` on the sliding leader), probes smoke-tested with A/A 0 in
-Chrome and WebKit; F not yet served or measured.
+**Now:** P-087 results in (2026-10-03). Build F (E + `z-index: 1` on the sliding leader) is pixel-exact in Chrome at
+phone width but **not exact** overall:
+- WebKit misses P1 at 356-2877 px. D1 traces this to st6-rb2's persistent slots: E is identical to F at rest, and S
+  differs too. It is a st6-rb2 / best-build matter.
+- WebKit costs about 2.4 more carousel layouts per slide.
+- P5 misses by 0.016 px.
+Not landable on P-087; the route is the lead's.
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (`.is-sliding` rules and `@keyframes avatars-exit`).
@@ -609,8 +614,86 @@ load-state.
   and the lead decides the route.
 - If E~base is 0 and F~base is not, F's `z-index` causes it.
 
+## Results (P-087, measured 2026-10-03 18:26-19:01Z)
+
+**Verdict: F is not exact.**
+- Chrome at phone width is pixel-exact: P1 is 0 px at every point, with the A/A 0.
+- WebKit misses P1. The difference is not F's: build E carries it identically, so it comes with st6-rb2's persistent
+  slots (D1).
+- WebKit costs about 2.4 more carousel-rooted layouts per slide (P4 Sim miss).
+- P5 misses by 0.016 px (ops and lead ruling).
+- F cannot land on this ticket.
+
+**Run record.** Every hold exited 0.
+- Spans: C1 18:26:38-18:28:15, C2 18:28:22-18:30:43, W1 18:35:27-18:40:44, W2 18:40:50-18:46:29, W3 18:46:35-18:51:48.
+- Re-runs: C3 18:52:05-18:53:11, C5 18:53:17-18:54:19, C4 18:54:25-18:55:29.
+- Diagnostic: D1a 18:55:42-18:58:24, D1b 18:58:30-19:01:37.
+- The first C3/C5 (18:30:49, 18:33:39) are void: probe repair 1.
+- The last pmset sleep or dark-wake entries are 17:41:47Z and 17:57:12Z, before every span (I-098), so no hold overlaps a
+  sleep. The log is in `out/carousel-leaver/p87/blocklog.txt`.
+- Served hashes match the tables in every Chrome hold (`c*/served.txt`) and in the Sim arms (in code): A
+  `4606120cf392`/`27776f3d4138`, S `7bf7c4657d21`/`f523598b2a24`, E `7bf7c4657d21`/`9c12648e24e1`, F
+  `7bf7c4657d21`/`a984ae7b7715`.
+- Every arm was in view, caught a slide, and had no blank or unsettled shot.
+
+| prediction | result |
+|---|---|
+| P1 Chrome phone (C2) | **HIT.** F~A and F2~A n8 0 at all 13 points; A~A2 0 everywhere (post300 too); A~S 1043-18366 at t 0-200 |
+| P1 WebKit phone (W1) | **MISS.** F~base n8 2877 (t 0), 905-1263 (17-100), 356 (133-167), 0 (200), 356 (220/post/post300); max shade 141-157; base~base2 0, F~F2 0 |
+| P2 Chrome phone (C3 re-run) | **MISS by the registered rule**; A~A2 0. See below |
+| P2 WebKit lens (W1) | **MISS.** lens n8 = natural n8 at every t, A/A 0 |
+| P3 Chrome (C1) | **HIT.** F~E max L.w 0.064, N.xr 0.072, N.w 0.051, all else ≤ 0.047 px / 0.0016, inside E~E2/F~F2 + 0.05; end offset -22/-2 in all 6 slides of every arm |
+| P3 Sim (W2, shape.mjs) | **F hit, F2 out (ruling needed).** Medians F~E L.w 0.030, V.x0 0.023, V.x1 0.057, F1.xr 0.059 against limits 0.120/0.084/0.162/0.144. F2~E 0.294/0.162/0.568/0.597. F~F2 medians 0.158/0.103/0.099/0.144. Maxima and end offsets inside |
+| P4 Chrome (C1) | **HIT.** 5 slides each. Layout E 68, E2 68, F 68, F2 69. UpdateLayoutTree 306 in all. Paint per slide 192/178/192/182. Writes per slide 2 class + 5 src in all |
+| P4 Sim (W2) | **MISS.** Carousel-rooted layouts per slide E 6.0, E2 6.2, F 8.4, F2 8.4 (limit 5.0-7.2). View-rooted per frame F 0.78/0.77 ≤ 0.83 (hit). Totals: layouts E 265/265, F 274/275; paints E 217/220, F 272/277 |
+| P5 (C2) | **MISS by 0.016 px.** Scene `paused` away in all arms; pz F~A 0 = A~A2 0; return series A~F L.w 10.248 vs A~A2 10.232 |
+| P6a Chrome 1440 (C4 + re-run) | **Undecided, to the lead.** A/A-limited at every point (A~A2 2715 at t 0, then 136-183, max shade 23-96; the re-run repeats it). A~F 1024-1809 (max 57-67) |
+| P6a WebKit iPad (W3, 1032 CSS px, DPR 2) | **MISS.** F~base 470-2012; base~base2 0; but F~F2 248-1440 (687 at rest) |
+| P6b Chrome 1440 (C5 re-run) | **MISS by the registered rule** (the same 5/7 relations as at phone width); A~A2 rel 0; lens A/A-limited |
+
+**P2 Chrome in detail.** No relation that involves the leaver differs, and `overLead` is empty in A and F at every t.
+- The 5 differing pairs (7 at post) are the container | F1-F3 and F1 | F2 | F3: A = 0 (the same paint-order index) and
+  F = -1.
+  - In A the followers and the carousel are not stacking contexts, so DOMSnapshot gives them one shared index (169).
+  - In F every st6 slot is a stacking context with its own index, in tree order. That is the same visual order as
+    the baseline's tree order.
+- There is no sign flip (+1 vs -1) anywhere, and C2's pixels are 0. By the registered falsifier ("any relation in F that
+  differs from A"), it is still a miss.
+
+**P5 note** (post hoc, OBSERVED, does not change the verdict). In A's return series the leaver starts one frame late:
+slide 1 still has L.w 32 at t 16, while A2 and A's slide 2 start at t 17. This fits F-175 (a CSS animation started by a
+class change begins at frame 1 or 2). It sets every A-side maximum: A2~F is 0.034 and A2~F2 0.025.
+
+### D1 (describes only): the WebKit difference comes with st6-rb2's slots, not with F
+
+Sim fw-sim, phone width, DPR 3. Each arm loaded twice: base~base2, E~E2 and S~S2 are 0 at rest. The five numbers come from
+`tier.mjs`; share = n8 beyond the A/A as a share of the Sim viewport's 2,999,250 device px.
+
+| row | t 0 (moving) | t 100 (moving) | post (static, at rest) |
+|---|---|---|---|
+| E~base | max 231, 0.118 %, fill | max 179, 0.064 %, fill | **max 179, 0.029 % (862 px), fill**: 80/2/12/1 CSS px² per face |
+| F~base | max 168, 0.086 %, fill | = E~base | **= E~base (862 px, identical)** |
+| S~base | max 230, 0.052 %, fill (49 % edge) | max 156, 0.135 %, fill | **max 157, 0.110 % (3303 px), fill**: 133/97/46/91 CSS px² per face (includes S's 2 px end offset) |
+
+- **E~F**: 1069, 492, 206, 59 and 17 px at t 0-67, then 0. This is F's z-index acting in WebKit, in the overlap lens,
+  during the leaver's opaque part. At t 0 it reduces the difference from the baseline: 3541 → 2572 px.
+- **Where E~base lies at rest.** One face's image content is outlined as if shifted by a sub-pixel amount; another face
+  shows vertical column stripes, a resampling-phase pattern. E's layout geometry equals the baseline's (P-086), so this is
+  how the persistent slot layers (will-change, `scale(1)`, `opacity .999`) draw the face images, compared with the
+  baseline's plain imgs at fractional x (58.266 + 24k CSS px). OBSERVED, cause unknown.
+- **Reading.** st6-rb2, and therefore best-build, differs from the baseline in WebKit even at rest: about 862 px, max
+  shade 179, fill, static. That is beyond T2's fill limit of 64, so it is T3. F neither adds nor removes it. The route is
+  the lead's (a st6-rb2 follow-up or a user proposal).
+- **Desktop and iPad** (DPR 2) look different again:
+  - Two loads of one build differ: iPad F~F2 687 at rest; Chrome 1440 A~A2 up to 2715, on one face.
+  - That fits de-breakpoints' load-state finding (image arrival vs first raster, OBSERVED, UNRESOLVED).
+  - Chrome 1440 at rest: A~S 1689 and A~F 1616, while S~F is 39. st6-rb2 differs there too, and F adds nothing.
+
 ## Deliverables
 
-- `patch.diff`: baseline-relative, st6-rb2 + E (CSS and st6-rb2's JS).
-- `delta-vs-st6rb2.diff`: E's CSS change on top of st6-rb2 only (for wi-best-build). It does not include the z-order fix
-  above.
+- `patch.diff`: baseline-relative, st6-rb2 + **F** (CSS `a984ae7b7715` and st6-rb2's JS `7bf7c4657d21`), regenerated
+  after P-087.
+- `delta-vs-st6rb2.diff`: F's CSS change on top of st6-rb2 only (for wi-best-build): E's layout keyframes plus the
+  `z-index: 1` line.
+- Build E's versions of both are in commit 5914e37 (P-086).
+- Neither is offered for landing: P-087 found F not exact. The route is the lead's.

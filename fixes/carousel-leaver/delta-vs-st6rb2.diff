@@ -1,12 +1,15 @@
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -2957,14 +2957,14 @@
+@@ -2957,14 +2957,17 @@
  }
  .start-selling-avatars.is-carousel.is-sliding img.st5-lead {
    animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
 -}
 -.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
 -  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++  /* carousel-leaver F: every st6 slot is a stacking context (will-change, scale(1), opacity .999), so tree order put
++     the first follower over the leaver; the baseline's leaver (the only one animating) paints over it */
++  z-index: 1;
  }
 +/* carousel-leaver: the leaver runs the site's own layout keyframes again (width, flex-basis, margin-right,
 +   border-width shrink, as in the baseline), so it is the same narrowing bordered ellipse and the followers move
@@ -21,7 +24,7 @@
  }
  @keyframes avatars-shift {
    0% {
-@@ -2977,14 +2977,17 @@
+@@ -2977,14 +2980,17 @@
  @keyframes avatars-exit {
    0% {
      opacity: 0.999;
