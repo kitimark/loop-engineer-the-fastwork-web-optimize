@@ -24,9 +24,10 @@ const SNAP = join(WT, 'out/snapshots');
 const ARMDEF = {
   C: { overlays: [join(SNAP, 'aw1-10e-3e2f599a1632')], js: '3e2f599a1632', css: 'c6aad94b455f' },
   V: { overlays: [join(SNAP, 'mw10e-arm-scope-c-c6d3590576a7'), join(SNAP, 'aw1-10e-3e2f599a1632')], js: 'c6d3590576a7', css: 'c6aad94b455f' },
+  D: { overlays: [join(SNAP, 'mw10e-arm-scope-d-999c4497f37e'), join(SNAP, 'aw1-10e-3e2f599a1632')], js: '999c4497f37e', css: 'c6aad94b455f' },
 };
 const ARMS = (process.argv[2] || 'V,C').split(',');
-const SCRIPT = join(WT, 'fixes/morph-webkit/gestures/pin-hold-v1.json');
+const SCRIPT = join(WT, 'fixes/morph-webkit/gestures', process.argv[3] || 'pin-hold-v1.json');
 const sha = (b) => createHash('sha256').update(b).digest('hex');
 const BASE = resolveTree('site-pretty');
 

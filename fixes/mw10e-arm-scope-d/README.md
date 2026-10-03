@@ -38,7 +38,7 @@ scrolls against the pin, and a down-swipe there does not reverse the morph.
   preventDefault repeats).
 - The desktop wheel listener is unchanged: on the window, armed at load (see Risks).
 
-## Behaviour check: Chrome, B2 cases (n = 1 per case per build)
+## Behaviour check: Chrome, B2 cases (n = 1 per case per build; OBSERVED, a single run each, no spread)
 
 Probe: `fixes/morph-webkit/touch-gap-check.mjs`, shared lane. Setup: 430x932 DPR 1, CDP touch, scrolled to the end
 (y 5345), an up-swipe on #platform at (215, 600) starts the morph, then a down-swipe of 12 moves x 20 px. Prevented and
@@ -62,8 +62,8 @@ D matches C in every case. V fails in both gap cases, as the reviewer predicted.
   - In V1 the collapse starts ~600 ms after a pin stroke's touchend. dt climbs over ~1 s (42, 100, 117, 123, 162, 232,
     245 ms), then stays at ~200 ms through every later stroke and the idle, ~50 s.
   - V2 is collapsed from its arrival at the pin.
-  - The collapse shows in every capped V run (2/2) and in none of the capped C runs (0/3: C2, C4 and wC hold
-    52-60 fps).
+  - The collapse shows in every capped V run (2/2) and in none of the capped C records (0/5: C2, C4, wC, attempt-1's
+    wC and the voided C1 hold 52-60 fps). n is small: 2 V records against 5 C records, one device, one evening.
   - The RUNLOG note fits a page that keeps working after the run: the unparked V1 page heated the phone 41.2 → 42.6 °C in 6 min.
 - **Simulator** (`fixes/morph-webkit/pinhold-sim.mjs`, WDA-sim G driver, `gestures/pin-hold-v1.json`; counts only, F-084):
   - Both arms reach the capped state: y 5213, m = 1, `is-morphing is-expanded`, #platform pointer-events none, 24
@@ -81,7 +81,8 @@ D matches C in every case. V fails in both gap cases, as the reviewer predicted.
 - **Status: UNRESOLVED.** Neither the Simulator nor Chrome reproduces it. The page-side JS and style/layout counts at
   the pin do not differ between the arms. What remains is device-side work that our counts cannot see, for example
   WebKit's handling of element-target touch listeners while the morph is active, compositing, or the UI process.
-  - The decisive check is the phone ticket: G pin-hold on C, V and D, with Timeline on the collapsed state.
+  - The decisive check is the phone ticket: G pin-hold-v2 on C, V and D, with Timeline on the collapsed state and on
+    the frames where D arms and disarms its window listeners.
   - D changes the listener state at the pin: the window carries the touch listeners again, as in C, while the element
     ones stay. If the cause is the element-only listener set, D may fix B1 as well. That is untested.
   - If D still collapses, the next variant removes the element listeners while the window ones are armed, so the
@@ -98,14 +99,28 @@ D matches C in every case. V fails in both gap cases, as the reviewer predicted.
   - The Chrome probe could not separate the builds. During a 400 ms main-thread busy period, the CDP
     `Input.dispatchMouseEvent` round trip was 352-372 ms in C, V and D alike, although C has no wheel listener at the
     top of the page. So the CDP ack waits for the main thread anyway, and it is no proxy.
-  - The risk stands as stated (desktop only, no phone effect). Option, not built: re-arm the wheel at the zone edge,
-    only where `(any-hover: hover), (any-pointer: fine)` matches.
-- **The window add at morph start** happens mid-gesture at the pin, which C never did: C added its window listeners
-  at the zone edge. The cost on the phone is unknown, and the phone ticket measures it.
+  - The risk stands as stated (desktop only, no phone effect) and goes into the land card.
+  - Option, not built and untested (a follow-up, not a blocker, per the lead): keep the wheel listener off at load
+    and arm it as aw1-10e did, at the 200 % zone edge, but only where `matchMedia('(any-hover: hover), (any-pointer:
+    fine)')` matches, so a touch-only phone never carries it and a desktop carries it only near the end. It would
+    need its own Chrome wheel check (a real wheel, not the CDP ack, which does not discriminate) and a reading of
+    what a hybrid touch laptop does with it.
+- **Listener churn on every morph cycle.** D adds the two window touch listeners when the morph starts (E's
+  changed-target branch, mid-gesture) and removes them when the spring is back at 0 (`I()` with `C()` false). So
+  every open/close cycle at the end of the page changes the window's touch listener set twice. C never did this: it
+  added its window listeners once at the zone edge and kept them inside the zone. What one add or remove costs on
+  the phone is unknown (WebKit may have to update the UI process's touch event regions, cause and cost
+  UNRESOLVED). Per X1, a window touch listener change needs a phone segment card, so the phone ticket times both
+  the morph-start frame (arm) and the morph-end frame (disarm), C vs D, with Timeline (gesture `pin-hold-v2`: two
+  close/open cycles at the pin).
 
 ## What needs re-measuring (D is a new landing build; P-036 covers only -c)
 
-1. The B1 phone ticket: G pin-hold, C / V / D, Timeline on the pinned state, then the idle triple at the pin.
+1. The B1 phone ticket (approved under the T-027 #5 F3 exception, after P-068 H2): G `pin-hold-v2`, C / V / D,
+   Timeline on V (and on D if D collapses), the idle triple at the pin, and the frames around each morph start and
+   end on D (arm/disarm) with dt and Timeline records, C and V side by side. Decision rule (lead): V collapses and D
+   does not → D is the candidate → item 2 → F swipe. D collapses → build E (window-only listeners during the morph);
+   no phone time until E passes the Simulator and a Chrome review.
 2. P-036's card part transfers by argument: pre-morph D is byte-for-byte F3's listener set, and the zone strokes never
    arm the window. A confirmation run of P-036 on D (≥2 V-arm runs against C) is the honest minimum before landing.
 3. The F swipe stays postponed until 1 and 2 are done.
