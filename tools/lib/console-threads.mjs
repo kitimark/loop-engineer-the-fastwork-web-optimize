@@ -24,7 +24,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
-import { consoleDir } from './console.mjs';
+import { consoleDir, recipients } from './console.mjs';
 import { PERSONAL, sanitize } from './progress.mjs';
 import { redact } from './redact.mjs';
 
@@ -140,6 +140,8 @@ export function summary(t, reader = USER) {
     lastAt: m ? m.at : t.createdAt, lastBy: m ? m.by : t.createdBy,
     lastAgentN: agentMsgs.length ? agentMsgs[agentMsgs.length - 1].n : 0,
     assignees: [...t.assignees],
+    // I-084: who reads the user's reply: the lead always (it reads every thread), then the assignees
+    to: recipients(LEAD, t.assignees || []),
   };
 }
 

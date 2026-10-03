@@ -246,3 +246,77 @@ test('threads-page.html: its inline script compiles, renders text only (no inner
   assert.match(html, /<!--console-menu-->/);
   assert.ok(!/(src|href)=["'](https?:)?\/\//.test(html), 'no external src/href');
 });
+
+// ---- I-084 (user T-038): the reply box and the list say who gets the user's message ---------------------------------
+
+test('I-084 summary.to: the lead always, then the assignees; names only', async () => {
+  const t = await userThread();
+  assert.deepEqual(T.summary(t).to, ['lead']);
+  await T.assign(t.id, { by: 'lead', to: 'fix-nav-morph,ts-i084' });
+  assert.deepEqual(T.summary(T.getThread(t.id)).to, ['lead', 'fix-nav-morph', 'ts-i084']);
+  assert.deepEqual(T.pageThread(T.getThread(t.id)).to, ['lead', 'fix-nav-morph', 'ts-i084'], 'the page\'s thread view too');
+  assert.deepEqual(T.summary({ ...T.getThread(t.id), assignees: ['someone@example.invalid'] }).to, ['lead'], 'a hand-edited unsafe name is not shown');
+});
+
+/** threads-page.html on a tiny fake DOM (no browser): elements by id are created on first use. */
+async function threadsPage({ hash, list = [], thread = null, replied = null }) {
+  class N {
+    constructor(tag, text) { this.tagName = tag; this.children = []; this.listeners = {}; this._t = text ?? ''; this.hidden = false; this.className = ''; this.value = ''; this.disabled = false; this.attrs = {}; }
+    get textContent() { return this._t + this.children.map((c) => c.textContent).join(''); }
+    set textContent(v) { this._t = String(v); this.children = []; }
+    get lastElementChild() { return this.children.at(-1) || null; }
+    setAttribute(k, v) { this.attrs[k] = String(v); }
+    addEventListener(e, f) { (this.listeners[e] ||= []).push(f); }
+    appendChild(c) { this.children.push(c); return c; }
+    replaceChildren(...c) { this._t = ''; this.children = c; }
+    scrollIntoView() {} focus() {} requestSubmit() { for (const f of this.listeners.submit || []) f({ preventDefault() {} }); }
+    all() { return this.children.flatMap((c) => [c, ...c.all()]); }
+  }
+  const html = readFileSync(join(TOOLS, 'lib', 'threads-page.html'), 'utf8');
+  const js = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const ids = {};
+  // the static markup of the two "goes to" lines (the script rewrites the reply one per thread)
+  for (const m of html.matchAll(/<p class="to" id="([a-z-]+)">([^<]*)<b>([^<]*)<\/b><\/p>/g)) { ids[m[1]] = new N('p', m[2]); ids[m[1]].appendChild(new N('b', m[3])); }
+  const document = {
+    getElementById: (i) => (ids[i] ||= new N('div')), createElement: (t) => new N(t), createTextNode: (t) => new N('#text', t),
+    addEventListener() {}, visibilityState: 'visible',
+  };
+  const calls = [];
+  const res = (j) => ({ ok: true, status: 200, json: async () => j });
+  const fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (init?.method === 'POST') return res({ thread: replied || thread });
+    if (url === '/api/threads') return res({ now: new Date().toISOString(), threads: list });
+    return res({ thread });
+  };
+  const location = { hash };
+  new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', 'localStorage', js)(
+    { addEventListener() {} }, document, location, fetch, () => 0, () => 0, () => 0, undefined);
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  return { ids, calls };
+}
+
+test('I-084 threads page: "Your reply goes to: lead, <assignees>" by the reply box, a "to:" chip per thread, the confirmation names them', async () => {
+  const t = await userThread('Nav morph lag');
+  await T.assign(t.id, { by: 'lead', to: 'fix-nav-morph' });
+  const view = T.pageThread(T.getThread(t.id));
+  const after = T.pageThread((await T.replyUser(t.id, { text: 'Any news?' })).thread);
+  const p = await threadsPage({ hash: `#${t.id}`, thread: view, replied: after });
+  assert.equal(p.ids['reply-to'].textContent, 'Your reply goes to: lead, fix-nav-morph');
+  assert.equal(p.ids['new-to'].textContent, 'Your question goes to: lead', 'a new thread goes to the lead');
+  p.ids['reply-text'].value = 'Any news?';
+  p.ids['reply-form'].requestSubmit();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(p.calls.filter((c) => c.url.endsWith('/reply')).map((c) => JSON.parse(c.init.body)), [{ text: 'Any news?' }]);
+  assert.equal(p.ids.toast.textContent, 'Sent to lead, fix-nav-morph.');
+  // the list: every row carries its recipients, the lead alone when nobody is assigned; a summary without `to` says lead
+  const u = await userThread('Second question');
+  const rows = [T.summary(T.getThread(t.id)), T.summary(T.getThread(u.id))];
+  const legacy = { ...rows[1], id: 'T-099' }; delete legacy.to;
+  const l = await threadsPage({ hash: '', list: [...rows, legacy] });
+  const chips = l.ids.threads.all().filter((n) => n.className === 'chip to-chip').map((n) => n.textContent);
+  assert.deepEqual(chips, ['to: lead, fix-nav-morph', 'to: lead', 'to: lead']);
+  // no assignee: the reply box says lead
+  const q = await threadsPage({ hash: `#${u.id}`, thread: T.pageThread(T.getThread(u.id)) });
+  assert.equal(q.ids['reply-to'].textContent, 'Your reply goes to: lead');
+});

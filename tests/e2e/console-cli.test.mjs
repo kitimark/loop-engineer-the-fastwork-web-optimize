@@ -235,6 +235,24 @@ test('I-059 B Start over: the page\'s restart wakes the runner\'s waits (exit 5 
   assert.deepEqual((({ action, by, attempts }) => ({ action, by, attempts }))(JSON.parse(r2.stdout)), { action: 'redo', by: 'iphone-runner', attempts: [2] });
 });
 
+test('I-084 post --topic: the page data names who gets the answer (to, topic), the click\'s reply too, show says it; a bad topic exits 1', async () => {
+  const id = postedId(cli('post', '--by', 'fix-hero-exit-threaded', '--kind', 'question', '--title', 'Smoother now?', '--topic', 'hero-exit-threaded'));
+  const view = (await req('/api/steps')).json.steps.find((s) => s.id === id);
+  assert.deepEqual([view.to, view.topic], [['fix-hero-exit-threaded'], 'hero-exit-threaded']);
+  assert.equal((await click(id, 'start')).status, 200);
+  const ans = await click(id, 'answer', { value: 'yes' });
+  assert.equal(ans.status, 200);
+  assert.deepEqual(ans.json.step.to, ['fix-hero-exit-threaded'], 'the page\'s confirmation reads it from the reply');
+  const show = cli('show', id);
+  assert.equal(show.code, 0, show.out);
+  assert.match(show.stdout, /^ {2}answers go to: fix-hero-exit-threaded \(topic hero-exit-threaded\)$/m);
+  const plain = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'question', '--title', 'No topic'));
+  assert.match(cli('show', plain).stdout, /^ {2}answers go to: iphone-runner$/m);
+  const bad = cli('post', '--by', 'x', '--kind', 'question', '--title', 'Q', '--topic', 'Not a topic!');
+  assert.equal(bad.code, 1, bad.out);
+  assert.match(bad.stderr, /--topic must be a status \/ PROGRESS id/);
+});
+
 test('stopping the server removes server.json; url then reports no server (exit 3)', async () => {
   const s2state = tempDir('fw-console-e2e2-');
   const e2 = { FW_STATE_DIR: s2state };

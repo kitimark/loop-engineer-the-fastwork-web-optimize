@@ -446,3 +446,47 @@ test('console-notify: waitingView carries the waiting proposals; a new proposal 
     assert.deepEqual(fired, [`proposal ${p.id}`]);
   } finally { feed.close(); }
 });
+
+// ---- I-084 (user T-038): the decision box says who receives the decision -----------------------------------------
+
+/** proposals-page.html's decisionBlock and renderList on a tiny fake DOM (the page's own script; fetch never answers). */
+function proposalsPage() {
+  class N {
+    constructor(tag, text) { this.tagName = tag; this.children = []; this.listeners = {}; this._t = text ?? ''; this.attrs = {}; this.className = ''; this.style = {}; }
+    get textContent() { return this._t + this.children.map((c) => c.textContent).join(''); }
+    set textContent(v) { this._t = String(v); this.children = []; }
+    get firstChild() { return this.children[0] || null; }
+    setAttribute(k, v) { this.attrs[k] = String(v); }
+    getAttribute(k) { return this.attrs[k] ?? null; }
+    addEventListener(e, f) { (this.listeners[e] ||= []).push(f); }
+    appendChild(c) { this.children.push(c); return c; }
+    replaceChildren(...c) { this._t = ''; this.children = c; }
+    all() { return this.children.flatMap((c) => [c, ...c.all()]); }
+  }
+  const html = readFileSync(new URL('../../tools/lib/proposals-page.html', import.meta.url), 'utf8');
+  const js = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
+  const ids = {};
+  const document = { getElementById: (i) => (ids[i] ||= new N('div')), createElement: (t) => new N(t), createTextNode: (t) => new N('#text', t), querySelector: () => null };
+  const api = new Function('window', 'document', 'location', 'fetch', 'setInterval', `${js}\nreturn { decisionBlock: decisionBlock, renderList: renderList };`)(
+    { addEventListener() {} }, document, { hash: '' }, () => new Promise(() => {}), () => 0);
+  return { ...api, ids };
+}
+const toLines = (n) => n.all().filter((x) => x.attrs['data-to'] === '1').map((x) => x.textContent);
+
+test('I-084 proposals: publicView and the page list carry `to` (the author, then the lead); the decision box names them; fallback "lead"', async () => {
+  const { proposal } = await P.postProposal({ by: 'de-hero', raw: sample(), baseDir: dir });
+  const v = P.publicView(P.get(proposal.id));
+  assert.deepEqual(v.to, ['de-hero', 'lead']);
+  assert.deepEqual(P.pageProposals().find((x) => x.id === proposal.id).to, ['de-hero', 'lead']);
+  assert.deepEqual(P.decisionRecipients({ by: 'someone@example.invalid' }), ['lead'], 'names only');
+  assert.deepEqual(P.decisionRecipients({ by: 'lead' }), ['lead'], 'no repeat');
+  const page = proposalsPage();
+  assert.deepEqual(toLines(page.decisionBlock(v)), ['Your decision goes to: de-hero, lead'], 'before the decision, under the buttons');
+  const decided = P.publicView(await P.decide(proposal.id, { value: 'accept', notes: 'fine', rev: v.rev }));
+  assert.deepEqual(toLines(page.decisionBlock(decided)), ['Your decision went to: de-hero, lead'], 'after it: the confirmation names them');
+  const legacy = { ...v }; delete legacy.to;
+  assert.deepEqual(toLines(page.decisionBlock(legacy)), ['Your decision goes to: lead'], 'a view without `to` never shows a blank');
+  page.renderList(P.pageProposals());
+  const row = page.ids.list.all().find((x) => x.className === 'm' && x.textContent.startsWith(proposal.id));
+  assert.match(row.textContent, / · to: de-hero, lead$/);
+});

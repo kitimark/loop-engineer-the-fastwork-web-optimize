@@ -84,6 +84,8 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
 .mhead b { color: var(--ink); }
 .mtext { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
 .mtext a { color: var(--accent); }
+.to { font-size: 14px; color: var(--muted); margin: 8px 0 0; overflow-wrap: anywhere; }
+.to b { color: var(--ink); font-weight: 650; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px; max-width: calc(100% - 32px); }
 @media (max-width: 520px) { ol.msgs li.you { margin-left: 16px; } ol.msgs li.agent { margin-right: 16px; } }
 </style>
@@ -107,6 +109,7 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
         <textarea id="new-text" maxlength="8000" required></textarea>
         <label class="small" for="new-topic">Status item (optional, e.g. hero-exit)</label>
         <input type="text" id="new-topic" maxlength="41" pattern="[a-z0-9][a-z0-9-]{0,40}">
+        <p class="to" id="new-to">Your question goes to: <b>lead</b></p>
         <div class="row"><span class="hint">Ctrl/⌘+Enter sends. The lead reads it and replies or hands it to the agent on that topic.</span><span class="sp"></span><button class="primary" type="submit" id="new-send">Start thread</button></div>
       </form>
     </details>
@@ -122,6 +125,7 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
     <form class="card" id="reply-form" autocomplete="off">
       <label class="small" for="reply-text" id="reply-label">Your reply</label>
       <textarea id="reply-text" maxlength="8000" required></textarea>
+      <p class="to" id="reply-to">Your reply goes to: <b>lead</b></p>
       <div class="row"><button type="button" class="quiet" id="tv-close">Close thread</button><span class="sp"></span><span class="hint">Ctrl/⌘+Enter sends</span><button class="primary" type="submit" id="reply-send">Send</button></div>
     </form>
   </section>
@@ -146,6 +150,9 @@ function ago(iso) {
   return new Date(iso).toLocaleDateString();
 }
 function who(by) { return by === 'user' ? 'You' : by; }
+/** I-084 (user T-038): who reads the user's reply: the lead always, then the assignees; 'lead' when the list is missing. */
+function toNames(t) { return (t && t.to && t.to.length ? t.to : ['lead']).join(', '); }
+function setTo(id, label, t) { var p = $(id); p.replaceChildren(document.createTextNode(label), el('b', null, toNames(t))); }
 var STATE = { open: 'waiting for the agents', answered: 'answered', 'waiting-on-you': 'waiting on you', closed: 'closed' };
 
 /** Text with only localhost links made clickable; everything else as text. */
@@ -182,7 +189,7 @@ function row(t) {
   if (t.topic) m.appendChild(el('span', 'chip', t.topic));
   m.appendChild(el('span', null, ago(t.lastAt) + ', ' + who(t.lastBy)));
   m.appendChild(el('span', null, t.count + (t.count === 1 ? ' message' : ' messages')));
-  if (t.assignees && t.assignees.length) m.appendChild(el('span', null, '→ ' + t.assignees.join(', ')));
+  m.appendChild(el('span', 'chip to-chip', 'to: ' + toNames(t))); // I-084: who got the user's messages
   a.appendChild(m); li.appendChild(a);
   return li;
 }
@@ -226,6 +233,7 @@ function renderThread(t) {
   });
   $('tv-close').textContent = t.status === 'closed' ? 'Reopen thread' : 'Close thread';
   $('reply-label').textContent = t.status === 'closed' ? 'Write to reopen it' : 'Your reply';
+  setTo('reply-to', 'Your reply goes to: ', t);
   markRead();
 }
 function loadThread(id, scroll) {
@@ -275,6 +283,7 @@ $('new-form').addEventListener('submit', function (e) {
     store('thread-draft-new-title', null); store('thread-draft-new', null);
     $('new-title').value = ''; $('new-text').value = ''; $('new-topic').value = '';
     location.hash = j.thread.id;
+    toast('Sent to ' + toNames(j.thread) + '.');
   }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('new-send').disabled = false; });
 });
 $('reply-form').addEventListener('submit', function (e) {
@@ -284,6 +293,7 @@ $('reply-form').addEventListener('submit', function (e) {
   api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value }).then(function (j) {
     store('thread-draft-' + id, null); $('reply-text').value = '';
     renderThread(j.thread);
+    toast('Sent to ' + toNames(j.thread) + '.');
     var last = $('tv-msgs').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest' });
   }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('reply-send').disabled = false; });
 });

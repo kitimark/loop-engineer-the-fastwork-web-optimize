@@ -85,6 +85,8 @@ h2.section { font-size: 16px; color: var(--muted); font-weight: 600; margin: 36p
 .done-list .ans { font-weight: 650; }
 .done-list .t { flex: 1 1 260px; }
 .done-list .who, .done-list .when { color: var(--muted); font-size: 13px; }
+.to { margin: 12px 0 0; font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+.to b { color: var(--ink); font-weight: 650; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px; max-width: calc(100% - 32px); }
 </style>
 </head>
@@ -143,6 +145,12 @@ function toast(t) {
   clearTimeout(toast.t); toast.t = setTimeout(function () { x.hidden = true; }, 6000);
 }
 
+// ---- who gets the answer (I-084, user T-038): the agent that posted the step; 'lead' when the name is missing ----
+function toNames(s) { return (s && s.to && s.to.length ? s.to : ['lead']).join(', '); }
+function toText(s) { return toNames(s) + (s && s.topic ? ' (topic ' + s.topic + ')' : ''); }
+function recipientLine(s) { return el('p', { class: 'to', 'data-to': '1' }, 'Your answer goes to: ', el('b', { text: toText(s) })); }
+var SENT = { answer: 'Answer sent to ', done: 'Done, sent to ', skip: 'Skipped; told ' };
+
 // ---- server ----
 function load() {
   return fetch('/api/steps', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
@@ -159,7 +167,7 @@ function act(id, action, body, btn) {
   pending = true;
   if (btn) btn.disabled = true;
   fetch('/api/steps/' + id + '/' + action, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body || {}) })
-    .then(function (r) { return r.json().then(function (j) { if (!r.ok) toast(j.error || ('HTTP ' + r.status)); }); })
+    .then(function (r) { return r.json().then(function (j) { if (!r.ok) toast(j.error || ('HTTP ' + r.status)); else if (SENT[action]) toast(SENT[action] + toText(j.step) + '.'); }); })
     .catch(function (e) { toast('Could not reach the console server: ' + e.message); })
     .then(function () { pending = false; if (body && body.notes !== undefined) delete drafts[id]; sig = ''; return load(); });
 }
@@ -280,6 +288,7 @@ function openCard(s, first) {
     body = el('div', { class: 'panel' }, b);
   } else if (s.status === 'pending' || s.phase === 'part') body = partPanel(s, s.status === 'pending' ? 0 : s.cur);
   else body = answerPanel(s);
+  body.appendChild(recipientLine(s)); // I-084: next to the Start / Done / answer controls
   var skip = el('button', { class: 'quiet', type: 'button', onclick: function () { act(s.id, 'skip', { notes: notes(s) }, skip); } }, 'Skip / not now');
   // I-059: "Start over" (two taps): every part again; the agent resets the phone first
   var overBtn = null, overAsk = null;
@@ -321,7 +330,8 @@ function render() {
     list.appendChild(el('li', null,
       el('span', { class: 'ans', text: s.status === 'skipped' ? 'skipped' : (r.value === undefined ? '' : String(r.value)) }),
       el('span', { class: 't' }, s.title, r.notes ? el('span', { class: 'who', text: ' — ' + r.notes }) : null),
-      el('span', { class: 'who', text: s.id + ' · ' + s.by }),
+      el('span', { class: 'who', text: s.id }),
+      el('span', { class: 'who to-chip', text: 'to: ' + toNames(s) }),
       el('span', { class: 'when', text: ago(s.updatedAt) }), bring));
   });
   tick();

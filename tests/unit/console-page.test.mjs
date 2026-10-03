@@ -31,7 +31,7 @@ class Node {
 }
 
 /** Render `steps` (publicViews) with the page's script; returns the "open" container. */
-async function renderPage(steps) {
+async function renderPage(steps, { postStep } = {}) {
   const ids = {};
   for (const i of ['open', 'done', 'done-h', 'conn', 'toast']) ids[i] = new Node('div');
   const document = {
@@ -42,12 +42,14 @@ async function renderPage(steps) {
     activeElement: null,
   };
   const calls = [];
-  const fetch = async (url, init) => { calls.push({ url, init }); return { ok: true, json: async () => ({ now: new Date().toISOString(), steps }) }; };
+  // a POST answers {step} like the server (postStep: the step after the click); every GET the steps
+  const fetch = async (url, init) => { calls.push({ url, init }); return { ok: true, json: async () => (init?.method === 'POST' && postStep ? { step: postStep } : { now: new Date().toISOString(), steps }) }; };
   const noop = () => 0;
   new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', JS)(
     {}, document, { hash: '' }, fetch, noop, noop, noop);
   await settle();
   ids.open.calls = calls;
+  ids.open.ids = ids;
   return ids.open;
 }
 const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r)); };
@@ -127,4 +129,54 @@ test('I-085: answer buttons without --scale show no "null" text (DOM append() tu
   assert.match(open.textContent, /\(optional, choose before your pick\)/, 'with --scale the label and the scale still show');
   assert.deepEqual(buttons(open).slice(0, 3), ['1', '2', '3']);
   assert.doesNotMatch(open.textContent, /null|undefined/);
+});
+
+// ---- I-084 (user T-038): every answer panel says who receives the answer ------------------------------------------
+const toLines = (root) => root.all().filter((n) => n.attrs['data-to'] === '1').map((n) => n.textContent);
+
+test('I-084: question, action and swipe pair: "Your answer goes to: <poster> (topic …)" in the panel, at every phase', async () => {
+  const q = await C.post({ by: 'fix-hero-exit-threaded', kind: 'question', title: 'Did it feel smoother?', topic: 'hero-exit-threaded' });
+  let open = await renderPage([C.publicView(C.get(q.id))]);
+  assert.deepEqual(toLines(open), ['Your answer goes to: fix-hero-exit-threaded (topic hero-exit-threaded)'], 'pending: next to Start');
+  await C.start(q.id);
+  open = await renderPage([C.publicView(C.get(q.id))]);
+  assert.deepEqual(toLines(open), ['Your answer goes to: fix-hero-exit-threaded (topic hero-exit-threaded)'], 'next to the yes / no buttons');
+  assert.deepEqual(buttons(open).slice(0, 2), ['yes', 'no']);
+
+  const a = await C.post({ by: 'fix-nav-morph', kind: 'action', title: 'Finger scroll' });
+  await C.start(a.id, { part: 1 });
+  open = await renderPage([C.publicView(C.get(a.id))]);
+  assert.deepEqual(toLines(open), ['Your answer goes to: fix-nav-morph'], 'next to Done; no topic, no brackets');
+
+  const p = await C.post({ by: 'iphone-runner', kind: 'swipe-pair', title: 'Pair', url: 'http://a.invalid/', url2: 'http://b.invalid/', topic: 'pill-swap' });
+  for (const part of [1, 2]) { await C.ack(p.id, { by: 'iphone-runner', part, state: 'ready' }); await C.start(p.id, { part }); await C.done(p.id, { part }); }
+  open = await renderPage([C.publicView(C.get(p.id))]);
+  assert.deepEqual(buttons(open).slice(0, 3), ['1', '2', 'same']);
+  assert.deepEqual(toLines(open), ['Your answer goes to: iphone-runner (topic pill-swap)'], 'next to the pick');
+  assert.ok(!/invalid/.test(toLines(open)[0]), 'names only, never a URL');
+});
+
+test('I-084: the confirmation after a click names the recipient; the finished list has a "to:" chip; a nameless step says "lead"', async () => {
+  const q = await C.post({ by: 'fix-hero-exit-threaded', kind: 'question', title: 'Smoother?', topic: 'hero-exit-threaded' });
+  await C.start(q.id);
+  const after = C.publicView(await C.answer(q.id, { value: 'yes' }));
+  const open = await renderPage([C.publicView(C.get(q.id))].map((v) => ({ ...v, status: 'active', phase: 'answer', result: undefined })), { postStep: after });
+  tap(open, 'yes');
+  await settle();
+  assert.equal(open.ids.toast.textContent, 'Answer sent to fix-hero-exit-threaded (topic hero-exit-threaded).');
+  assert.equal(open.ids.toast.hidden, false);
+  // the finished list (the trace back): "to: <agent>" per answered step
+  const page = await renderPage([C.publicView(C.get(q.id))]);
+  const chips = page.ids.done.all().filter((n) => n.className === 'who to-chip').map((n) => n.textContent);
+  assert.deepEqual(chips, ['to: fix-hero-exit-threaded']);
+  // fallback: a record without a usable poster name, and a view from before I-084 (no `to` at all)
+  const v = C.publicView({ ...C.get(q.id), by: '', status: 'pending', result: undefined });
+  assert.deepEqual(v.to, ['lead']);
+  let p2 = await renderPage([{ ...v, topic: undefined }]);
+  assert.deepEqual(toLines(p2), ['Your answer goes to: lead']);
+  const legacy = { ...v }; delete legacy.to; delete legacy.topic;
+  p2 = await renderPage([legacy]);
+  assert.deepEqual(toLines(p2), ['Your answer goes to: lead'], 'never blank');
+  p2 = await renderPage([{ ...legacy, status: 'answered', result: { value: 'no' } }]);
+  assert.deepEqual(p2.ids.done.all().filter((n) => n.className === 'who to-chip').map((n) => n.textContent), ['to: lead']);
 });

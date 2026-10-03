@@ -44,7 +44,7 @@
 // redact.mjs; localhost URLs are kept) and the scrubs are reported. The page renders text as text, never HTML.
 import { mkdirSync, readFileSync, statSync, openSync, readSync, closeSync, copyFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, extname } from 'node:path';
-import { consoleDir } from './console.mjs';
+import { consoleDir, recipients } from './console.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { sanitize, PERSONAL } from './progress.mjs';
@@ -1056,6 +1056,7 @@ export function publicView(p) {
   const c = p.compare || {};
   return {
     id: p.id, by: p.by, title: p.title, area: p.area, topic: p.topic, thread: p.thread, state: p.state, rev: p.rev,
+    to: decisionRecipients(p), // I-084
     problem: p.problem, idea: p.idea, looksSame: p.looksSame, visualDiff: p.visualDiff, gain: p.gain, risk: p.risk,
     ...(viewLive(p.live) && { live: viewLive(p.live) }),
     compare: {
@@ -1077,10 +1078,13 @@ export function publicView(p) {
   };
 }
 
+/** I-084: who receives the user's decision: the proposal's author, and the lead (it acts on every decision). */
+export const decisionRecipients = (p) => recipients(p.by, 'lead');
+
 /** The list on the page: the proposals the user sees (not drafts, not withdrawn), waiting first. */
 export function pageProposals() {
   return listProposals().filter((p) => p.state !== 'draft').map((p) => ({
-    id: p.id, by: p.by, title: p.title, area: p.area, state: p.state, rev: p.rev,
+    id: p.id, by: p.by, title: p.title, area: p.area, state: p.state, rev: p.rev, to: decisionRecipients(p), // I-084
     decision: p.decision ? { value: p.decision.value, at: p.decision.at, ...(p.decision.option && { option: p.decision.option }) } : null,
     shots: (p.compare?.shots || []).length, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
     ...(p.options?.length && { options: p.options.length }),

@@ -383,3 +383,32 @@ test('I-059 userTurn: no reminder while a runner-ended part runs; the Start befo
   await C.start(u.id, { part: 1 });
   assert.equal(userTurn(C.get(u.id)), true, 'a user-ended part: Done is the user\'s (unchanged)');
 });
+
+// ---- I-084 (user T-038): who receives the user's answer ----------------------------------------------------------
+
+test('I-084 recipients: plain agent names in order, no repeats; never an address, e-mail, host or id; "lead" when none is left', () => {
+  assert.deepEqual(C.recipients('fix-hero-exit-threaded'), ['fix-hero-exit-threaded']);
+  assert.deepEqual(C.recipients('lead', ['fix-nav-morph', 'lead', 'ts-i084']), ['lead', 'fix-nav-morph', 'ts-i084']);
+  for (const bad of [undefined, null, '', '  ', 42, 'someone@example.invalid', '192.168.77.12', 'my-mac.local', 'box.lan',
+    '00008130-001234567890ABCD', 'http://x.invalid/', '/Users/someone', 'two words', 'ABCDE12345'])
+    assert.deepEqual(C.recipients(bad), ['lead'], `fallback for ${JSON.stringify(bad)}`);
+  assert.deepEqual(C.recipients('someone@example.invalid', 'de-hero'), ['de-hero'], 'only the unsafe name goes');
+  assert.equal(C.RECIPIENT_FALLBACK, 'lead');
+});
+
+test('I-084 steps: publicView names the poster as the recipient (and the topic); every kind; old and nameless records fall back to "lead"', async () => {
+  const q = await C.post({ by: 'fix-hero-exit-threaded', kind: 'question', title: 'Q', topic: 'Hero-Exit-Threaded' });
+  assert.equal(C.get(q.id).topic, 'hero-exit-threaded', 'stored lower-cased');
+  assert.deepEqual([C.publicView(C.get(q.id)).to, C.publicView(C.get(q.id)).topic], [['fix-hero-exit-threaded'], 'hero-exit-threaded']);
+  const a = await C.post({ by: 'iphone-runner', kind: 'action', title: 'A' });
+  assert.deepEqual([C.publicView(a).to, C.publicView(a).topic], [['iphone-runner'], undefined]);
+  assert.ok(!('topic' in C.get(a.id)), 'no topic key without --topic (the store format is unchanged)');
+  const p = await pair({ topic: 'nav-morph' });
+  assert.deepEqual([C.publicView(p).to, C.publicView(p).topic], [['iphone-runner'], 'nav-morph']);
+  await assert.rejects(C.post({ by: 'x', kind: 'question', title: 'Q', topic: 'bad topic!' }), /--topic must be a status \/ PROGRESS id/);
+  // a record from before I-084, and one whose poster name is missing or unsafe
+  const old = C.get(q.id); delete old.topic; old.by = '';
+  assert.deepEqual([C.publicView(old).to, C.publicView(old).topic], [['lead'], undefined]);
+  assert.deepEqual(C.publicView({ ...old, by: 'someone@example.invalid' }).to, ['lead']);
+  assert.equal(C.publicView({ ...old, topic: '../x' }).topic, undefined, 'a hand-edited topic that is no id is not shown');
+});

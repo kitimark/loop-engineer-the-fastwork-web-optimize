@@ -115,6 +115,8 @@ button.btn:disabled { opacity: .55; cursor: not-allowed; }
 .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
 .choices { display: flex; gap: 8px; flex-wrap: wrap; }
 textarea { width: 100%; min-height: 90px; font: inherit; font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); margin: 10px 0 8px; }
+.to { font-size: 14px; color: var(--muted); margin: 10px 0 0; overflow-wrap: anywhere; }
+.to b { color: var(--ink); font-weight: 650; }
 .err { color: var(--bad); font-weight: 600; margin: 6px 0 0; }
 .empty { color: var(--muted); }
 details.hist { margin-top: 14px; font-size: 14px; }
@@ -216,7 +218,7 @@ function renderList(items) {
       : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) });
     var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id }, chip,
       el('span', { class: 't', text: p.title }),
-      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') }));
+      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') + ' · to: ' + toNames(p) }));
     return a;
   }
   box.appendChild(el('h2', { class: 'section', text: 'Waiting for you (' + waiting.length + ')' }));
@@ -331,6 +333,9 @@ function post(id, act, body) {
   return fetch('/api/proposals/' + id + '/' + act, { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify(body) })
     .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
 }
+/** I-084 (user T-038): who receives the decision: the proposal's author and the lead; 'lead' when the list is missing. */
+function toNames(p) { return (p && p.to && p.to.length ? p.to : ['lead']).join(', '); }
+function toLine(label, p) { return el('p', { class: 'to', 'data-to': '1' }, label, el('b', { text: toNames(p) })); }
 function optionOf(p, name) { return (p.options || []).filter(function (o) { return o.name === name; })[0] || null; }
 function optLabel(p, name) { var o = optionOf(p, name); return o ? o.label || o.name : name; }
 function decisionBlock(p) {
@@ -350,6 +355,7 @@ function decisionBlock(p) {
       undo.disabled = true;
       post(p.id, 'undo', { rev: p.rev }).then(function () { detailSig = ''; load(); }).catch(function (e) { err.textContent = e.message; undo.disabled = false; if (/on hold|revised/.test(e.message)) { detailSig = ''; load(); } });
     });
+    box.appendChild(toLine('Your decision went to: ', p)); // I-084: the confirmation names who got it
     box.appendChild(el('div', { class: 'choices', style: 'margin-top:10px' }, undo));
     box.appendChild(err);
     return box;
@@ -404,6 +410,7 @@ function decisionBlock(p) {
     box.appendChild(ta);
     box.appendChild(el('div', { class: 'choices' }, send));
   } else box.appendChild(el('p', { class: 'hint', text: opts.length ? 'Pick one; Accept then asks which option. You can add notes before you send it.' : 'Pick one; you can add notes before you send it.' }));
+  box.appendChild(toLine('Your decision goes to: ', p)); // I-084
   box.appendChild(err);
   return box;
 }

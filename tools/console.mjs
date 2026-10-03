@@ -22,6 +22,7 @@
 //        [--instructions "<1-2 plain sentences>"] [--url <url>] [--url2 <url>] [--options a,b,c | --yesno | --text]
 //        [--record] [--gate] [--no-record] [--no-gate] [--show-url | --hide-url] [--parts '<json array>'] [--meta '<json>']
 //        [--scale 1-5 [--scale-label "How different did they feel?"]]   # an optional rating next to the pick
+//        [--topic <status id>]   # I-084: the page shows "Your answer goes to: <agent> (topic <id>)"
 //        [--runner-ends N[,M]|all]   # I-059: parts YOU end (ack --part N --state done), not the user; also per part
 //        #   "ends":"runner" in --parts. The page shows no Done there, only "Running, please wait; this ends by itself"
 //        #   with your latest --message, and refuses a user Done (403). E.g. a phone run that cycles versions by itself.
@@ -97,7 +98,7 @@
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir, attemptOf, EXIT_REDO } from './lib/console.mjs';
+import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir, attemptOf, EXIT_REDO, recipients } from './lib/console.mjs';
 import { runningServer, startServer } from './lib/console-server.mjs';
 import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
@@ -124,6 +125,7 @@ async function serverUrl() {
 
 function show(s) {
   const L = [line(s)];
+  L.push(`  answers go to: ${recipients(s.by).join(', ')}${s.topic ? ` (topic ${s.topic})` : ''}`); // I-084: as the page says
   if (s.instructions) L.push(`  instructions: ${s.instructions}`);
   if (s.url) L.push(`  url: ${s.url}${s.showUrl === false ? ' (hidden on the page)' : ''}`);
   s.parts.forEach((p, i) => L.push(`  part ${i + 1} ${p.label}: ${p.state}${p.gate ? ' gated' : ''}${p.record ? ' recorded' : ''}${p.ends === 'runner' ? ' runner-ends' : ''}${attemptOf(p) > 1 ? ` attempt ${attemptOf(p)}` : ''}${p.url ? ` ${p.url}` : ''}${p.message ? ` — "${p.message}"` : ''}`));
@@ -274,7 +276,7 @@ async function main() {
       by: by(), kind: opt('kind'), title: opt('title'), instructions: opt('instructions'), url: opt('url'), url2: opt('url2'),
       options: opt('options'), yesno: flag('yesno'), text: flag('text'), record: tri('record', 'no-record'), gate: tri('gate', 'no-gate'),
       showUrl: tri('show-url', 'hide-url'), parts, meta: opt('meta'), scale: opt('scale'), scaleLabel: opt('scale-label'),
-      runnerEnds: opt('runner-ends'),
+      runnerEnds: opt('runner-ends'), topic: opt('topic'),
     });
     console.log(`POSTED ${s.id}: ${s.title}`);
     const u = await serverUrl();

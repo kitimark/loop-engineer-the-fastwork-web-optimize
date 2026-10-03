@@ -208,3 +208,16 @@ test('thread POSTs: localhost Host, x-console, same Origin, JSON body under 64 K
   const x = await userPost('/api/threads', { title: '<img src=x onerror=alert(1)>', text: '<script>alert(1)</script>' });
   assert.equal(x.json.thread.title, '<img src=x onerror=alert(1)>');
 });
+
+test('I-084: the list, the thread and the reply\'s answer name who reads the user\'s messages: the lead, then the assignees', async () => {
+  const c = await userPost('/api/threads', { title: 'Who gets this?', text: 'Trace me' });
+  const id = c.json.thread.id;
+  assert.deepEqual(c.json.thread.to, ['lead'], 'a new thread: the lead');
+  assert.equal(cli('thread', 'assign', id, '--to', 'fix-nav-morph', '--by', 'lead').code, 0);
+  assert.deepEqual((await req('/api/threads')).json.threads.find((t) => t.id === id).to, ['lead', 'fix-nav-morph']);
+  assert.deepEqual((await req(`/api/threads/${id}`)).json.thread.to, ['lead', 'fix-nav-morph']);
+  const r = await userPost(`/api/threads/${id}/reply`, { text: 'More' });
+  assert.deepEqual(r.json.thread.to, ['lead', 'fix-nav-morph'], 'the page\'s "Sent to …" reads it from here');
+  const page = await req('/threads');
+  assert.match(page.text, /id="reply-to"/);
+});

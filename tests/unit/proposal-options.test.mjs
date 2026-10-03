@@ -311,8 +311,10 @@ test('backward compatible: a stored single-option proposal from the pre-I-053 to
   const p = P.get(id);
   assert.equal(P.line(p), re(want.line));
   assert.equal(P.showText(p).replace(P.mediaDir(id), '<MEDIA>'), re(want.show));
-  assert.deepEqual(JSON.parse(JSON.stringify(P.publicView(p))), re(want.view), 'what the page gets, byte for byte');
-  assert.deepEqual(JSON.parse(JSON.stringify(P.pageProposals().filter((x) => x.id === id))), re(want.page));
+  // I-084 (intended): the views gain `to` (who receives the decision: the author and the lead), derived, never stored
+  const to = ['de-fixture', 'lead'];
+  assert.deepEqual(JSON.parse(JSON.stringify(P.publicView(p))), { ...re(want.view), to }, 'what the page gets, byte for byte');
+  assert.deepEqual(JSON.parse(JSON.stringify(P.pageProposals().filter((x) => x.id === id))), re(want.page).map((x) => ({ ...x, to })));
   assert.deepEqual(P.decisionEvents(p).map(P.proposalNewsText), re(want.news), 'the PROPOSAL lines');
   // events and wait details only gain option: null (and wasOption: null), nothing else changes
   assert.deepEqual(P.decisionEvents(p), re(want.events).map((e) => ({ ...e, option: null, wasOption: null })));

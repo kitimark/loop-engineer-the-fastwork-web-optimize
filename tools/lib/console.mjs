@@ -37,6 +37,7 @@ import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso, clip } from './store.mjs';
 import { resolveLanUrl } from './lan.mjs';
+import { sanitize } from './progress.mjs';
 
 export const KINDS = ['question', 'choice', 'action', 'swipe-pair'];
 export const STATUSES = ['pending', 'active', 'answered', 'skipped', 'cancelled'];
@@ -119,6 +120,41 @@ export function parseScale(v, label) {
   return { min, max, label: text(label, 120) || `How sure / how different? (${min} = barely, ${max} = very)` };
 }
 
+// ---- who receives the user's answer (I-084, user T-038) ------------------------------------------------
+
+/** The name shown when no agent name is known: the lead reads everything. */
+export const RECIPIENT_FALLBACK = 'lead';
+const AGENT_NAME = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/;
+const HOST_LIKE = /\.(local|lan|home|internal|localdomain|com|net|org|io|dev|app)$/i;
+
+/** True for a plain agent name (fix-hero-exit, lead, ts-i084) that is safe to show: never an address, e-mail, host or id. */
+export function isAgentName(n) {
+  if (typeof n !== 'string' || !AGENT_NAME.test(n) || HOST_LIKE.test(n)) return false;
+  return sanitize(n, 64) === n; // nothing personal-shaped in it (URL, IP, e-mail, device id, home path)
+}
+
+/**
+ * Who receives an answer, for the console pages: the given names that are plain agent names (Hard rule 12: names only),
+ * in order, without repeats; ['lead'] when none is left, never empty. Takes names and arrays of names.
+ */
+export function recipients(...names) {
+  const out = [];
+  for (const n of names.flat()) {
+    const s = typeof n === 'string' ? n.trim() : '';
+    if (isAgentName(s) && !out.includes(s)) out.push(s);
+  }
+  return out.length ? out : [RECIPIENT_FALLBACK];
+}
+
+const TOPIC_RE = /^[a-z0-9][a-z0-9-]{0,40}$/;
+/** An optional step topic (--topic hero-exit-threaded, a status / PROGRESS id): lower-cased; refused when malformed. */
+function normTopic(t) {
+  if (t == null || t === '' || t === false) return undefined;
+  const v = String(t).trim().toLowerCase();
+  if (!TOPIC_RE.test(v)) throw new Error(`--topic must be a status / PROGRESS id like hero-exit (got ${String(t).slice(0, 50)})`);
+  return v;
+}
+
 /** Agent-private data kept with the step (e.g. a blind A/B key): never sent to the page; returned by show/wait. */
 function normMeta(m) {
   if (m == null || m === '') return undefined;
@@ -131,7 +167,7 @@ function normMeta(m) {
 
 /**
  * Build a new step from a post. {by, kind, title, instructions, url, url2, parts, options, yesno, text,
- * record, gate, showUrl}. Kind defaults:
+ * record, gate, showUrl, topic}. Kind defaults (topic, I-084: optional, shown on the page with the recipient):
  *   question    no parts; answer yes/no (or --options / --text)
  *   choice      no parts; answer buttons (--options required)
  *   action      one part (url optional); Done finishes it, or answer buttons when --options are given
@@ -171,6 +207,7 @@ export function buildStep(p) {
   return {
     id: undefined,
     by: String(p.by).slice(0, 80),
+    ...(normTopic(p.topic) && { topic: normTopic(p.topic) }), // I-084: optional; steps from before have none
     kind,
     title: text(p.title, 200),
     instructions: text(p.instructions, 1200),
@@ -523,6 +560,8 @@ export function publicView(s) {
   const show = s.showUrl !== false;
   return {
     id: s.id, by: s.by, kind: s.kind, title: s.title, instructions: s.instructions,
+    // I-084: who gets the user's answer (the poster; 'lead' when the name is missing) and the step's topic, if any
+    to: recipients(s.by), topic: s.topic && TOPIC_RE.test(s.topic) ? s.topic : undefined,
     url: show ? s.url : undefined,
     status: s.status, phase: phase(s), cur: s.cur, rev: s.rev, epoch: epochOf(s),
     answer: s.answer,
