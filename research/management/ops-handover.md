@@ -2,11 +2,32 @@
 
 Living state file (LEAD.md "Rules from mgmt-lead iteration 2"): the next mgmt-ops restarts from it (about every 2 h
 or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the day-to-day". Current instance:
-**mgmt-ops-7** (from 10-02 09:13Z; mgmt-ops-6 ran 10-01 17:28Z-10-02 09:12Z, mgmt-ops-5 11:26-17:28Z), worktree
-`.claude/worktrees/mgmt-ops-2` (sparse, on the snapshot), branch `mgmt-ops/docs-2`. Next instance: **mgmt-ops-8** (at
-~60 % context). Last update: **10-02 09:1xZ** (mgmt-ops-7).
+**mgmt-ops-8** (from 10-02 23:5xZ; mgmt-ops-7 ran 10-02 09:13Z-23:5xZ, mgmt-ops-6 10-01 17:28Z-10-02 09:12Z), worktree
+`.claude/worktrees/agent-ace57ef63584bdfb6`, branch `worktree-agent-ace57ef63584bdfb6`. Next instance: **mgmt-ops-9**
+(at ~60 % context). Last update: **10-02 23:5xZ** (mgmt-ops-8).
 
-## mgmt-ops-7 log (10-02, newest first; START HERE for mgmt-ops-8 follows when mgmt-ops-7 hands over)
+## mgmt-ops-8 log (from 10-02 23:5xZ, newest first; START HERE)
+
+- **23:5xZ mgmt-ops-8 took over** from mgmt-ops-7 (pinned to another agent's worktree by a peer's message; can't
+  commit). Worktree `.claude/worktrees/agent-ace57ef63584bdfb6`, branch `worktree-agent-ace57ef63584bdfb6`, from main
+  4647b27 (f8aa122: I-076 + I-072 resolved, npm test ~163 s at --test-concurrency=6). mgmt-ops-7's scratchpad drafts
+  (mgmt-ops/mk2358.py, batch texts) were read, not run (the permission check had refused the script); the texts were
+  applied by hand.
+- **23:5xZ P-036 sentinel amendment 4084772 (rebased a4b1790, worktree-agent-a277ea00c8773c1ea) SIGNED (lead 23:58Z,
+  pre-data); ops read OK.** The hero-none G heat check is dropped (failed 3/3 at any temperature and Mac load; G
+  cadence clusters fit F-071; OBSERVED, cause unknown) for the standard S sentinel on C (own port, uncounted; bottom
+  >= 58, scroll >= 44 fps) after the warm-ups and after C4; a failing sentinel voids since the last pass, cooling §5.3,
+  stop rule on the S sentinel. All else unchanged (d72ee13644cc, C V V C C V V C, ms scoring, quiet Mac). UPDATE on the
+  P-036 row. Phone order: X1 stage 2 (de-countdown holds the phone; user lift T-024 #8) → P-036 (iphone-runner, own
+  quiet hold) → P-068 H1 then H2 (user C-027 "all set" 23:51:53Z: phone settings in place). Open: T-031 #3 wave-2
+  timing lift once wave 2 is built; de-gpu (T-030) top priority, incl. the toolbar-resize lead.
+  PROGRESS: f3-arm-scope next + P-036 check (new signed plan, runs after the countdown test), upcoming order (X1 stage
+  2 → P-036 → heat), user line 23:58Z (oldest change entry dropped, 30 max).
+- **23:5xZ docs (lead GO, I-076 f8aa122):** lane doc §2 npm-test line (concurrency 6, ~160-164 s, ~1.75 cores mean,
+  bursts up to 6; weight 2 and 300 s unchanged); postmortem 2026-09-30 fix (b) marked superseded (concurrency raised to
+  6). CLAUDE.md figures ("~60 CPU-s", "195-220 s wall") are the lead's to update.
+
+## mgmt-ops-7 log (10-02, newest first)
 
 - **23:4xZ (b) df0e21f landed (2259bf1 + df0e21f; scrub OK). P-036 re-run STOPPED under the stop rule:** the hero-none
   heat check failed on a cool phone (37.5 °C) and a quiet Mac (load 4.8), inside iphone-runner's own hold: p95 29-30 ms,

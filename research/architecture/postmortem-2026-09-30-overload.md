@@ -162,6 +162,11 @@ Priorities: P0 = before the next measurement that counts; P1 = this wave; P2 = n
 - Follow-ons: the documented `--max-seconds 120` in `CLAUDE.md` still fits; `SHORT_DRAIN_SEC = 300` drains
   4 suites instead of ~7. Accept that, or raise the drain to 360 s. Don't raise concurrency to win it back:
   the lane is exclusive with measurement anyway.
+- **Superseded 2026-10-03 (I-076, f8aa122, lead GO): concurrency raised to 6.** The suite had grown to ~1331 tests
+  and took 285-299 s of wall time at 3, against the shared lane's 300 s cap. It waits on fake real-time phases,
+  timers and polls far more than it computes, so at 6 it takes ~160-164 s with the same CPU time (280-290 CPU-s),
+  about 1.75 cores on average with bursts up to 6 cores. npm test keeps weight 2 and `--max-seconds 300` in the
+  shared lane, which keeps it away from timing holds.
 
 ### (c) A separate `cpu-heavy` semaphore for tests? Not now. Lead decision, P3 to revisit
 
@@ -245,7 +250,7 @@ adding a resource. The gate (a) provides the global view the semaphore would hav
 | a | host-quiet admission gate in `lock.mjs` (CPU ticks ≤ 20 %, load1 ≤ 6, pressure normal; 600 s cap then a stained grant; short lane exempt) | toolsmith | P0 |
 | d | per-run host record, `loadInvalid`/`contaminated` in verify + ab, recheck before each run | toolsmith (measurement code: reviewer + test:chrome) | P0 |
 | e1-3 | exception budget/expiry, quiet windows for heavy experiments, actor budget; tag this evening's results as contaminated; re-measure A/A in a quiet window | lead | P0 |
-| b | `--test-concurrency=3` (~60-70 s per suite) | toolsmith | P1 |
+| b | `--test-concurrency=3` (~60-70 s per suite; superseded 2026-10-03: 6, I-076) | toolsmith | P1 |
 | e4 | pre-commit hook runs `npm test` through the short lane | lead + user approval, toolsmith for the test | P1 |
 | 4 | host line in `lock.mjs status`, gate-timeout alerts (below) | toolsmith | P1 |
 | f | `lock.mjs doctor --procs`, `serve.mjs --exit-with-parent` | toolsmith | P2 |

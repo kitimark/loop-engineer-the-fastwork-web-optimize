@@ -102,6 +102,9 @@ dead pid is pruned at the next acquire.
 - `SHARED_CAP = 4` weight units at most (8 cores, 16 GB); *as built after review:* the default cap is **3** (`SHARED_LANE.defaultCap`, lead decision 2026-10-02: three Chrome agents in parallel), the switch's `--cap` sets 1..4. `--weight N` (1..4, default 1) is declared by the caller.
   Proposed: headless check, DOM probe, functional test:chrome file, `bench mech` = 1; `npm test` = 2
   (`--test-concurrency=3`, ~60 CPU-s, bursts to 3 cores); Simulator session = 3.
+  *Changed by I-076 (f8aa122, 2026-10-03, lead GO):* `npm test` now runs at `--test-concurrency=6`: ~160-164 s of
+  wall time (was 285-299 s at 3, too close to the 300 s cap), 280-290 CPU-s, about **1.75 cores on average, bursts up
+  to 6 cores** (was ~0.94 cores, bursts to 3). Its weight stays 2 and `--max-seconds` stays 300; no lock-policy change.
 - A join (not the opener) also needs `load1 ≤ SHARED_JOIN_LOAD` (*as built after review:* default **2x the cpu count**, 16 here, the switch's `--join-load L` overrides it; lead decision: while timing is deferred the load gate matters only for timing jobs, which stay exclusive). This is a cheap synchronous
   read, so it adds no sampling window inside the guard. load1 lags, so the weight cap is the hard bound.
   *Changed by I-051 (§12):* a join now needs CPU busy ≤ `--join-busy` (default 75 %), sampled over the reader's own
