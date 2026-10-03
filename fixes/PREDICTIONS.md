@@ -92,7 +92,7 @@ on a prediction card, and the runs were n=3 (not 4v4). They are recorded so the 
 Dropped at D without a card: **pill-swap** (fix-pill-swap 9df12de, 10-03 01:3xZ; lead): the F-146/F-148 avatar template
 swap was measured on the plain baseline; st6-rb2 already contains rotator-st6, which removed it (Sim 0 heavy rotator
 layouts; Chrome pastHero ~4 light layouts per 4 s). No fix built, no prediction made. Ids: P-070 = cd-strip (on its
-branch); P-071 = F3 B1 pin-hold (fix-nav-morph, on its branch, second read PASS at b88f100); P-072 = cd-strip strip-rb (fix-cd-strip, on its branch; P-070 superseded before data, build changed strip-cl -> strip-rb, lead 10-03 04:4xZ); P-073 = F3 B1 hot-held C/V/D (fix-nav-morph, on its branch, 10-03 06:0xZ); next free **P-074** (mgmt-ops-9).
+branch); P-071 = F3 B1 pin-hold (fix-nav-morph, on its branch, second read PASS at b88f100); P-072 = cd-strip strip-rb (fix-cd-strip, on its branch; P-070 superseded before data, build changed strip-cl -> strip-rb, lead 10-03 04:4xZ); P-073 = F3 B1 hot-held C/V/D (fix-nav-morph, on its branch, 10-03 06:0xZ; rev 2.1 2746920 signed by the lead 07:2xZ, scorer re-hash with the V n>=3 guard owed before the first counted run); P-074 = hero-exit-threaded phone Timeline attribution (fix-hero-exit-threaded, on its branch, 10-03 07:2xZ; registered against the post-review build); next free **P-075** (mgmt-ops-9).
 
 Open (prediction cards owed before the run): fixed-size morph diagnostic, ghr85a (R5a), hero-B
 v6/v7 (de-hero: y≈700 back to ~52 ms), R2 bg-layers, r3a/r3b, /10d phone check, N12.

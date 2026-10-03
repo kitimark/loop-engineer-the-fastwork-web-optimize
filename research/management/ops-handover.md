@@ -9,6 +9,51 @@ mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-acfd7a13b6014
 
 ## mgmt-ops-9 log (from 10-03 00:0xZ, newest first; START HERE)
 
+- **07:2xZ main 7e28dce (I-082 fix: Sim sessions ran in the Simulator's own background CPU storm; npm test running,
+  resolve pending) on 25fcad2 (my 06:5xZ batch).**
+  - **Phone:** the user disconnected it at 07:01Z (T-033) and reconnected it at 07:09Z (T-033 #4/#5). The lead released
+    the lease.
+  - **P-073 SIGNED (lead 07:2xZ) on rev 2.1 2746920** (fix-nav-morph).
+    - Path: rev 2 38cd056, then ops NEEDS-FIX, then rev 2.1. It adds the reading rule for n = 2 / n ≤ 1, rows 1-8 (D,
+      then C, then V), bins low ≤ 5216 / high ≥ 5217, prevented pooled over the 9 pin pushes, charge state in P-068
+      form, and the lead's V top-up (≤ 3 extra V runs, low-bin reading only).
+    - Scorer `fixes/morph-webkit/p073-score.mjs` d4854dd7061f (hash verified by ops). Ops re-read: card PASS. The
+      scorer gives a verdict at n = 2 in the all-runs reading, so V with 2 counted runs and no top-up could reach row
+      6/7 where the card says row 8.
+    - **Condition of the signature:** a `V.counted >= 3` guard on rows 6-7 outside the top-up, re-hashed into the card
+      and the ledger before the first counted run. Ops checks that diff.
+    - Nits sent: the start read's age; a manifest field for an iOS thermal notice; a charge-state tie goes to the lead.
+    - iphone-runner has the GO; fix-nav-morph sends the ticket. The ledger branch only adds the P-071 and P-073 rows
+      since a02c915, so it rebases cleanly.
+  - **P-074 = hero-exit-threaded's phone Timeline attribution block** (attribution, not gain; lead GO 07:09Z).
+    review-hero-exit came back NEEDS-FIX with code changes: a pending-frame flash in d(), filter none vs blur(0px) at
+    rest, two listener nits. So the ticket is on hold until the new build hashes and their Sim checks.
+    - Same gesture hero-pass-v1 c414f67158e33da3; same control st6-rb2.
+    - Ops asked for: the scorer and its hash, the n = 2 read rule, how hand-over frames are located, what "matching
+      frames" means in C, and the void rules.
+    - Next free **P-075**.
+  - **cd-strip back to the user.** The user accepted PR-008 land-strip at 06:52:53Z; the lead holds that acceptance
+    and nothing lands on it.
+    - G7: a Chrome delta-1 class at 0.9 fade (13-83 px; PR-008 said "Chrome shows nothing"), and 4-5 layout-shift
+      deliveries per 5 s vs 2 for the faces, sources unrecorded.
+    - G8: 2 vs 2 entries and the same CLS 0.0011 in both arms, all from h1.
+    - PR-008 rev 2 comes after G9, possibly with a CLS-free third option, and the user decides again. P-072 waits.
+      cd-roll-ca pauses queuing.
+  - **T-030 #19** (the user wants better proposal handling): ts-proposal-hold is building proposal hold/unhold and a
+    "stale: re-decide" state on revise.
+  - **Heat goal (T-029, P-068: Fastwork warms the phone ~5x apple.com):** new agents fix-platform-idle (glint-ca +
+    sweep-exact, unparked) and map-rest-script (read-only map of the middle-section script work at rest). Both are in
+    the peer directory, with ts-proposal-hold and ts-i082.
+  - **fix-nav-morph 628d1a3:** the 80-layer panel clock exists only on the baseline/F3 line, not on st6-rb2 or wave 2.
+    A one-rule attribution pair is proposed for after P-073 (F-165; not registered).
+  - **hero-exit-threaded:** final card 66d2abe, review NEEDS-FIX (above).
+  - PROGRESS:
+    - Change lines 07:01Z (phone away and back) and 07:20Z (strip choice on hold).
+    - F3 `next`: the warm-phone test is approved and starts next. The detail records rev 2.1 and the signature.
+    - hero-exit `next`: review fixes, then a Sim check, then P-074.
+    - cd-strip `next`, P-072 check, detail, and an upcoming "your new decision" item.
+    - cd-roll-ca `next`: waits for the strips decision.
+
 - **06:5xZ main 158f77c (my 76fd3db) on 1fb0b49 (I-081 fix: an exclusive short grant left its last-grant record on
   an idle lock; the lead resolves I-081 after npm test).**
   - **F3 D2 gate SIGNED (lead 06:4xZ)** on fix-nav-morph's reading of iphone-runner's Timeline runs tD1-3/tC/tV
@@ -2001,6 +2046,10 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); coordinates with de-countdown | alive (10-03 00:2xZ) |
 | `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation, ST-1 split first (T-030 F2, user priority #1) | alive (10-03 00:2xZ) |
 | `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10, user priority #1) | alive (10-03 00:2xZ) |
+| `fix-platform-idle` (name; new 10-03 07:2xZ) | heat goal (T-029, P-068: Fastwork warms the phone ~5x apple.com): glint-ca + sweep-exact, unparked | alive |
+| `map-rest-script` (name; new 10-03 07:2xZ) | heat goal: read-only map of the middle-section script work at rest | alive |
+| `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | alive |
+| `ts-i082` (name) | I-082: Sim sessions in the Simulator's background CPU storm (fix 7e28dce on main, resolve pending) | alive |
 | `fix-pill-swap` (name) | pill-swap: community-pill avatar template swap, full-viewport Layout 2/s at pastHero (JS 11415-11447; from F-146), on st6-rb2 | done: dropped at D (9df12de, 10-03 01:3xZ) |
 | `ts-i078` (name) | I-078: `sim session` refuses while fw-sim is "Shutting Down" (workaround: wait, retry) | done: I-078 resolved 84a0982 |
 | `arch-memory` (name) | T-032: agent memory into the project (proposal cfe3693, waits on the user's two OKs) | alive (10-03 00:2xZ) |
