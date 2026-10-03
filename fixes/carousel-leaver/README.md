@@ -21,6 +21,13 @@ Not landable on P-087; the route is the lead's.
   never enters it.
 - At quiet rest, what remains is 523 px at max 81 from st6's no-flip slot values.
 - Options went to the lead (section "D4 result"). The exact option conflicts with st6's saving.
+**P-090, G attempt 1 (describes only), done 2026-10-03 20:22Z. No candidate; nothing built.**
+- Hold A: no single slot value is the culprit. Only giving back all of st6's values comes near base, which is option B.
+- Hold B, on the Sim's screen:
+  - base shows no Low-quality window from 328 ms after a slide starts;
+  - at quiet rest, st6-rb2 differs from base by max 50, fill, 126 CSS px². Those are T2's static numbers; the
+    snapshot gives max 81.
+- To the lead as a proposal draft.
 **Base:** st6-rb2 (`fixes/st6-rb2/patch.diff`, JS `7bf7c4657d21`, CSS `f523598b2a24`). Deliverables: `patch.diff`
 (baseline-relative) and `delta-vs-st6rb2.diff` (for wi-best-build).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (`.is-sliding` rules and `@keyframes avatars-exit`).
@@ -1143,6 +1150,129 @@ Neither predicts max 81 by itself.
 
 **Scope.** "On screen" means the Simulator's composited frame (rendered on the Mac's GPU), not the iPhone's. Claims
 from it are worded that way and stay OBSERVED in our setup until a source reference backs them.
+
+### Hold A result (2026-10-03 20:17:18-20:19:08Z, one hold, exit 0)
+
+**Validity.**
+- pmset: the last Sleep/DarkWake was at 17:57Z, before the window, so the hold is valid.
+- The served hashes match the table above. Every arm caught the graphic-designer slide and reported reduced motion
+  false.
+- Screenshots are 1290x2796. The locator found the carousel at dx 162, dy 1282 in every arm (SAD 1.3-1.9 per px).
+- VOID rule (addendum 1 item 3), from `slots`, every slot except `.st5-next`: every override applied, so no arm is
+  VOID.
+
+  | arm | transform | opacity | will-change |
+  |---|---|---|---|
+  | S | matrix(1,…) | 0.999 | `transform, translate, opacity` |
+  | St | none | 0.999 | `transform, translate, opacity` |
+  | So | matrix(1,…) | 1 | `transform, translate, opacity` |
+  | Sv | matrix(1,…) | 0.999 | auto |
+  | Sw | none | 1 | auto |
+
+  Base's slots are none / 1 / auto.
+
+**Five numbers** (tierq, ref base, A/A base~base2 = 0 px, max 0 in both kinds; CSS px² per face, faces 0-3 left to
+right; every line is the unmasked count, since the A/A is 0):
+
+| arm | on screen (`scrc`) | snapshot (`nat`) |
+|---|---|---|
+| S | max 50, n8 1137, 0.0379 %, faces 2.7/38.6/15.2/69.9, fill (25 % edge) | max 81, n8 540, 0.0180 %, faces 0/50.4/9.6/0, fill (40 % edge) |
+| St | the same as S | the same as S |
+| So | the same as S | max 81, n8 539, the same faces as S |
+| Sv | max 48, n8 998, 0.0333 %, faces 0/40.0/7.3/63.6, fill (17 % edge) | the same as S |
+| Sw | max 48, n8 605, 0.0202 %, faces 0/0/3.7/63.6, fill (5 % edge) | max 14, n8 17, 0.0006 %, faces 0/0/1.9/0, fill |
+
+Against S on screen: S~St n8 0 (max 1), S~So 0 (max 0), S~Sv 249 (max 18), S~Sw 583 (max 50).
+
+**Reading, as registered:**
+- **On screen: none match.** Every arm has base~X n8 > 0 = the A/A. Under the decision table, the slot values don't
+  explain the on-screen difference and no candidate follows. Part 2 does not run.
+- **Snapshot:** neither St nor So alone changes anything (both equal S). Only Sw, all three values reverted, comes
+  near base (17 px, max 14). So it is a combination, not either value alone.
+- **Predictions:** "S matches base on screen" (0.25) did not happen. "Exactly one of St / So matches in the snapshot"
+  (0.6) did not happen.
+
+**What the per-face split shows** (OBSERVED in our setup; this is description, not a new test):
+- On screen, face 3 (x 130, the photographer) carries 63.6-69.9 CSS px² in every arm, Sw included. At quiet rest that
+  face is the `.st5-next` slot: matrix(1,…), opacity 0.999 and st6's will-change in every S arm, against base's
+  `is-enter` img with none / 1 / auto.
+- The registration assumed `.st5-next` is hidden at rest ("St/So/Sw keep `.st5-next`'s start state"), so no arm reverted
+  it. That assumption was wrong: after a swap, `.st5-next` is the visible fourth face.
+- On faces 0-2, the on-screen difference shrinks as st6's values are given back:
+  - face 0 goes with will-change (Sv);
+  - face 1 needs transform and opacity reverted as well (Sw);
+  - face 2 drops to 3.7 CSS px² in Sw.
+- So nothing short of giving back all three of st6's values (Sw, and the same for `.st5-next`, untested) comes near
+  base on screen. That is option B, not a cheap no-flip value.
+- Keeping either half of the no-flip pair (St keeps opacity 0.999, So keeps scale(1)) changes nothing, on screen or in
+  the snapshot. The lead asked for a no-flip value of a single culprit property; no single culprit exists to give one.
+- Not run: an arm with `.st5-next` reverted too (Sw plus the next slot). It would need its own registration, and it
+  is still option B.
+
+### Hold B result (2026-10-03 20:21:13-20:22:28Z, one hold, exit 0)
+
+**Validity.**
+- pmset: the last Sleep/DarkWake was at 17:57Z, so the hold is valid.
+- Served hashes match: base and base2 `4606120cf392`/`27776f3d4138`, S `7bf7c4657d21`/`f523598b2a24`, Bs
+  `4606120cf392`/`f4a78b36b2af`.
+- Every arm caught the graphic-designer slide. Each burst took 25 shots with none failed. Each simctl shot takes
+  175-240 ms from start to exit, and the capture instant lies somewhere in that window.
+- Burst timelines, in ms from the burst start (the last slide end is relative to that slide's start):
+
+  | arm | slide 1 start | slide 1 end | slide 2 start |
+  |---|---|---|---|
+  | base | 820 | 1041 (221) | 1842 |
+  | S | 809 | 1025 (216) | 1825 |
+
+- Only slide 1 can be scored: the reference crops are from before it, so after slide 2 every face is one slot further
+  on.
+
+**Quiet pairs on screen** (tierq, A/A base~base2 = 0):
+- base~S: max 50, 1137 px. That is Hold A again, to the pixel.
+- base~Bs: max 92, 1824 px, 0.0608 %, fill. So the on-screen capture can tell Low quality from Default.
+
+**Bursts** (screenfaces, inner discs of rest slots 0-2; n8/max per slot, slide 1):
+
+| arm | shot window in ms after slide 1 starts | result |
+|---|---|---|
+| base | #08-#10 (13-403) | all discs differ (4686 px), matching neither base nor Bs; this is the slide's last frames before the swap |
+| base | #11 (328-515), #12 (433-613), #13 (537-717): whole inside 220-720 | **match base** (0/3, 0/0, 0/0); against Bs 409/169/360, max 80 |
+| base | #14 (642-819), straddles 720 | matches base (listed, not scored) |
+| base | #15 (746-926), #16 (851-1030): whole after 720 | match base |
+| S | #09-#16 (133-1037) | slots 0-1 match S (0/7, 0/0); **slot 2 differs: 457 px, max 45**, the same in every shot |
+
+**Reading, as registered:**
+- **The expectation is falsified.** There are 3 whole base shots in 220-720 ms, which is ≥ 2, so the result is
+  conclusive. All 3 match base at Default, 0 px, and none matches Bs. Prediction 0.55 did not happen.
+- **What the Sim's screen shows** (OBSERVED in our setup, cause unknown):
+  - From 328 ms after a slide starts, base's faces on screen are its quiet-rest Default pixels.
+  - The slide-time Low-quality state that D4 measured with `snapshotRect` is not visible on screen in these shots.
+  - Whether it shows on screen before 328 ms (220-328, while the swap lands) is not covered: no whole shot falls there.
+- So the lead's premise "base drops to Low, st6-rb2 stays Default" holds for the snapshot path. It is not seen on the
+  composited screen. UNRESOLVED: why. The source-reasoned look in D4 ("faces at Default for only the last ~300 ms of
+  each cycle") is not what the Sim's screen shows.
+- **S's own slot 2.** The face that was the visible `.st5-next` before the slide (the photographer) paints differently
+  once it becomes an ordinary slot: 457 px, max 45, constant from 133 ms on.
+  - In base, the same face at the same two positions is 0 px.
+  - It is the same face-3 term as in Hold A (`.st5-next` with st6's values against base's `is-enter`). It shows up
+    here as a step at each slide, within S itself. OBSERVED, cause unknown.
+
+**Five numbers on screen, at quiet rest, S against base** (Simulator, phone width, DPR 3):
+- largest shade 50;
+- 0.0379 % of the screen beyond the A/A (0);
+- 126 CSS px² (2.7/38.6/15.2/69.9 per face);
+- fill (25 % edge);
+- static.
+
+These are within T2's static numbers (fill ≤ 64, ≤ 0.5 %, ≤ 2,000 CSS px per element). The snapshot path gives 540
+px, max 81, which is beyond them. The bar registered for P-090 is the on-screen one. Whether the on-screen or the
+snapshot number governs a T2 check is a method question for the lead and ops.
+
+Static T2 is not the whole of T2. Still open:
+- reduced motion exact (not run; S keeps its slot values without slides, so the rest difference would likely stay);
+- the leaver's motion within 1 device px of the original at every frame. That is the original bug: crop and
+  translate instead of the narrowing ellipse, and no 2 px end snap. It is motion-only, so it goes to the user;
+- desktop width and DPR 2.
 
 ## Deliverables
 
