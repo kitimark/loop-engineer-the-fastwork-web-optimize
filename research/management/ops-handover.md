@@ -9,6 +9,12 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **10:1xZ P-077 assigned** to fix-platform-idle (G1 glint + G3 sweep on st6-rb2). Its D card is gated by the
+  less-work rule.
+  - Chrome frozen frames are not pixel-identical: sweep gradient phase ≤ 23 LSB; glint ≤ 64 LSB on AA edge rows in
+    visible phases. So it goes to the user as a proposal (illusion rule).
+  - Reduced motion is identical at all 9 viewports.
+  - Next: Chrome comp-census (3 arms), then Sim pixels, Timeline and LayerTree. Next free **P-078**.
 - **10:0xZ user accepted all 5 recommendations (T-029 #30, 08:52Z).** Memory notes are on main 03fb95e:
   `memory/less-work-landing-rule.md` and `memory/phone-checks-start-warm.md`.
   - (1) "Less work" fixes land on cost-card counts (per event, frame-driven counts from the full page) plus one short
