@@ -15,8 +15,8 @@ Every agent:
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
-- [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at 38-40 °C, stay smooth under Xcode Serious and from a 42-44 °C start
-- [Phone checks start warm](phone-checks-start-warm.md): start at 38-40 °C, one start method per block; LPM runs dropped, not tested; no countdown-only test page
+- [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at real Serious, stay smooth from a 42-44 °C start and under Xcode-induced Serious
+- [Phone checks start warm](phone-checks-start-warm.md): tests run at real thermal Serious (xctrace gate per hold, ceiling 44 °C/Critical), Fair no-worse check at the end; LPM runs dropped; no countdown-only test page
 
 Lead:
 - [Agent spawn names](agent-spawn-names.md): every spawn gets `name: <role>-<topic>`; check the first spawn after each compaction
