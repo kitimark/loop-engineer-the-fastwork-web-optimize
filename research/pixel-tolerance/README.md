@@ -170,3 +170,19 @@ research/breakpoints). Whether a given level is visible is for the user's eyes (
 **Which case did the user feel?** The sharper hero photos at 1440 with reduced motion (rm1440, st6-rb2): shown at 1:1
 as the first pair of option A. Try it per option: A serves st6-rb2 (cannot show it in the 430-wide frame; needs a wide
 window with Reduce motion), B serves PR-009 (platform-idle), C serves hero-exit-threaded (WebKit only).
+
+## 6. Rev 3 of PR-010 (user decision on rev 2, 2026-10-03 14:41Z): the avatar slider in the Try-it panels
+
+User note: "I was see the animation of user carousel both of option B and C is not animate the same. it is intention of this proposa ? let's investigate".
+Answer: not intended; two causes, one of them real (st6-rb2).
+
+Probe (one approved shared-lane Chrome hold; 430x932 DPR 3 mobile; rAF samples of rects and computed styles of `#people .start-selling-avatars.is-carousel img`,
+6 s at three scroll positions, scene `active` throughout; arms: baseline, st6-rb2 overlay, platform-idle overlay, baseline again). All OBSERVED, Chrome only.
+
+- **Timing (phase).** Tick period 1016-1020 ms in every arm. Phase differs even baseline vs baseline (slides start at 0/918/1934 ms in one load, 699/1716/2732 ms in the other: about 0.7 s apart). Two iframes are never in step.
+- **Real difference, leaving face only, first ~100 ms of the 220 ms slide.** Baseline (`2.DyWL8TcE.js` ~L11346-11365, keyed 4/5-img block, `.is-exit`): the leaver shrinks in layout (width 32 to 0.7 px, flex-basis, margin) with scale 1 to 0.35 and opacity 1 to 0: a narrow sliver in place (at 50 ms about 9.6 px wide box, opacity 0.46, x 60.9).
+  st6-rb2 (rotator-st6 / st5 / st6 / layout-animations: persistent 5 slots `st5-lead`/`st5-next`, `.is-sliding`, `avatars-shift` keyframe; `fixes/st6-rb2/patch.diff`): the leaver keeps its 32 px box, is cropped by `clip-path: ellipse` (radius 16 to 0) and translates left up to 16 px with the same scale/opacity curve (at 50 ms about 20.8 px box, clip about 14.8 px, opacity 0.46, x 55.3).
+  Followers and the entering face match the baseline to about 0.1 px in x and 0.002 in opacity/scale at every frame (same 220 ms, same easing). The baseline ends each slide with a 2 px snap of the followers (60.3 to 58.3 px); st6-rb2 has none.
+- **Where it comes from.** platform-idle and hero-exit-threaded patches contain the same carousel code as st6-rb2 (they are stacked on it), so B in options B and C carries it; A (plain baseline) does not. Not tested: the scene `paused` case (scene-scope coupling).
+- **Earlier checks missed it** because the st6-rb2 pixel check compares frozen frames at rest ("0 px on the avatar imgs"), not mid-slide.
+- Rev 3 text: answers the note, states what B carries in each option; A = `fixes/morph-inherit/patch.diff` as the base waits for I-093.
