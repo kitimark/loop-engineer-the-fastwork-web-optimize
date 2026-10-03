@@ -282,7 +282,7 @@ node id), so the mapping is by geometry and count:
   only), and why some morph frames repaint all 80 faces and others none. The decisive check is proposed below
   ("Proposed attribution item after P-073").
 
-## P-073 prediction card: B1 hot-held, C / V / D under arm-scope-touch-v1c (rev 2; registered before any phone data)
+## P-073 prediction card: B1 hot-held, C / V / D under arm-scope-touch-v1c (rev 2.1; registered before any phone data)
 
 Asked by the lead after review round 2 (05:5xZ): P-071 ran at 37.1-38.6 °C, and P-036's V-only collapses ran at
 40.3-43.3 °C under another script. This block asks one question: **does V collapse at the capped pin when the phone
@@ -295,6 +295,18 @@ is at 40-41 °C, and does D?** Second read: mgmt-ops-9 and review-f3-arm-scope; 
 - Added: mgmt-ops-9's points (fewer than 3 counted runs in D, or in C/V; heat ceiling; charge state; scope C/V/D),
   and the reviewer's nits (D-collapse row first, temperature at pin arrival, a flag on any collapse outside the
   verdict).
+
+**Rev 2.1** (second reads of rev 2: review-f3-arm-scope PASS with nits, mgmt-ops-9 NEEDS-FIX; lead 07:1xZ):
+- Settle bins at the lead's edge (low ≤ 5216, high ≥ 5217), with no gap.
+- The V top-up, verbatim from the lead, plus its two lines from the reviewer. The positive-control row is placed
+  above clean/clean.
+- Settle bin and start method reported per run and per arm.
+- The ≥ 90 % prevented rule is pooled over the 9 pin pushes and scored in both bins.
+- The reading rule for n = 2 and n ≤ 1.
+- C rows between the D rows and the V rows.
+- The scorer named with its hash.
+- Charge state between runs, in P-068's form.
+- The prediction wording fixed; Simulator settle points kept out of the phone predictions.
 
 **What the P-036 records already say** (desk check of iphone-runner's gesture records, no device time; OBSERVED, in
 our setup, cause unknown):
@@ -350,7 +362,8 @@ our setup, cause unknown):
 - **Counted run (rev 2).** A run counts when all of these hold:
   - it reaches the pin (a frame at y ≥ 5200);
   - it makes the full exposure: 9 pushes between pin arrival and the `end` mark, then the 2 end pushes;
-  - the pin pushes are prevented, ≥ 90 % of their touchmoves (P-036's collapsed V1 and V2 had every pin touchmove
+  - the pin pushes are prevented, ≥ 90 % of their touchmoves pooled (summed) over all 9 pin pushes of the run (not per push), and scored
+    the same in both settle bins, so a high-bin run cannot pass while the pin leaks (P-036's collapsed V1 and V2 had every pin touchmove
     prevented, 34-47 per push, so this rule cannot drop a collapsed run);
   - the script ends without an abort or WDA error.
 
@@ -359,11 +372,26 @@ our setup, cause unknown):
 - **Settle point (registered; lead 07:0xZ).** v1c cannot choose where the page settles. The Simulator settled at
   5212 (V), 5216 (D) and 5220 (C); P-036 settled capped runs at 5215-5216 and uncapped ones at 5220-5222; P-071 at 5212-5219.
   - Every counted run records its settle y: the scrollY of the last frame before the `end` mark.
-  - Runs are binned **low (5212-5219)** or **high (≥ 5220)**. Every P-036 collapse came from the low bin.
-  - Score each arm twice: on all its counted runs (the verdict), and on its low-bin runs only, by the same arm rule.
-  - If an arm's verdict differs between the two readings, the result is **settle-sensitive** and goes to the lead
-    with both readings, like a rule-sensitive one.
-  - Settle counts per arm (low / high) are reported in the result table.
+  - **Bins (rev 2.1): low ≤ 5216, high ≥ 5217**, the lead's edge (07:1xZ). There is no gap and nothing unbinned
+    (mgmt-ops-9 nit a). Every P-036 value falls in the same bin under this edge and under rev 2's 5219/5220: capped
+    5215-5216, uncapped 5220-5222. Every P-036 collapse came from the low bin.
+  - Score each arm twice by the reading rule (below): on its counted Latin-square runs (the verdict), and on its
+    low-bin counted runs only.
+  - If both readings are verdicts and they differ, the result is **settle-sensitive**. It goes to the lead with both
+    readings, like a rule-sensitive one.
+  - The settle y and bin of every counted run are reported per arm, in the result table and in the decision line,
+    with the counts per arm (low / high) and each run's start method (direct / cooled / warmed).
+  - **V top-up (lead, verbatim, 07:1xZ):** "If V is clean with fewer than 2 low-bin (≤5216) counted runs: V top-up,
+    extra V runs (same rules, sentinel, cooling) until V has 2 low-bin counted runs, at most 3 extra runs and within
+    the block's time budget. If V is still short: positive control not in condition → inconclusive → lead, no landing
+    on this block."
+    - (lead, from review-f3-arm-scope) Top-up runs are V-only. They run after the Latin-square order, in the same
+      start band (40.0-41.0 °C), with the same end sentinel. They are used only as the positive control and never
+      pooled into a C or D comparison.
+    - (lead, from review-f3-arm-scope) If the budget runs out mid top-up, the result is inconclusive, not clean/clean.
+    - Scoring: top-up runs enter only V's low-bin reading. V's all-runs reading keeps its first 3 counted runs. After a
+      top-up, the decision table reads V by its low-bin reading; that differs from the all-runs "clean" whenever it is
+      not clean, so it carries the settle-sensitive flag to the lead.
 - **Order.** Rotated Latin square C V D / V D C / D C V, n = 3 counted per arm, 9 counted runs. One uncounted
   warm-up per arm's port first (it may be cold; P-071's wD).
 - **Budget (rev 2, from v1c's cap rate).**
@@ -390,8 +418,12 @@ our setup, cause unknown):
     stays on the start read.
   - **Heat ceiling (device safety; mgmt-ops-9).** At ≥ 42.5 °C on any battery read, or on any iOS thermal notice:
     park at once, void the run, and cool with `wait.mjs phone-temp --below 41.0` before going on.
-  - **Charge state** (held or charging, as in P-068 `heat.mjs`) is recorded per run and kept the same for every arm;
-    a run whose charge state changed during the run is void.
+  - **Charge state** (held or charging, as in P-068 `heat.mjs`) is recorded per run, from the battery read at the run's
+    start and end.
+    - A run whose charge state changed during the run is void.
+    - Between runs, P-068's form (mgmt-ops-9 nit c): a verdict needs every counted run in one state. If the state
+      switches between runs (e.g. the 80 % charge limit is reached mid-block), the runs in the minority state are void
+      and re-run in place.
   - **P-036's unparked dwell is not reproduced on purpose.** V1 collapsed with no dwell before it (C1 then V1 in
     one hold, 40.29 °C), so the dwell is not needed for the collapse; heat is the variable here, and it is brought in
     the same way for every arm, on a page that is no arm. Safari is parked after every run.
@@ -404,8 +436,13 @@ our setup, cause unknown):
   and scroll ≥ 44 fps. Cooling to 38 °C would leave the band, so a failing sentinel voids every run since the last pass
   and **stops the block** (no cool-and-restart); the lead decides on a re-run.
 - **Metric, collapse (as P-071).** Per counted run, from pin arrival (the first frame at y ≥ 5200) to the end of the
-  run, fps in consecutive 2 s windows. A run is **collapsed** when 2 consecutive windows are under 30 fps. An arm
-  **collapses** at ≥ 2 of 3, is **clean** at 0 of 3, and 1 of 3 is inconclusive.
+  run, fps in consecutive 2 s windows. A run is **collapsed** when 2 consecutive windows are under 30 fps.
+  - **Reading rule (rev 2.1, mgmt-ops-9 must-fix 1),** the same for every arm and every reading (all runs, low bin,
+    sustained-only). On n runs:
+    - n = 3: collapses at ≥ 2 of 3, clean at 0 of 3, inconclusive at 1 of 3;
+    - n = 2: collapses at 2 of 2, clean at 0 of 2, inconclusive at 1 of 2;
+    - n ≤ 1: "not enough".
+    - Low-bin readings use at most the first 3 low-bin counted runs.
   - **Told apart from a dip like P-071's C3**, as a second reading: a collapsed run is also tagged **sustained** when
     ≥ 50 % of its windows are under 30 fps (P-036 V1 27 of 29, V2 35 of 35; P-071 C3 2 of 36), else **transient**.
     The decision uses the P-071 rule. If an arm's verdict changes when only sustained runs count, the result is
@@ -421,29 +458,42 @@ our setup, cause unknown):
   - D: any counted D run collapsed ~20 %. Given V collapses: D clean ~60 %.
   - All 9 counted runs inside the budget ~80 % (rev 1: ~65 % with v1's cap rates; heat handling is the main risk now).
   - Settle points. The approach is the same as v1's, so P-036's settle rates should carry over: low bin = P-036's
-    cap rate, V 2 of 8 and C 5 of 7 (the Simulator gave 2 of 3 low). Predictions:
-    - V has ≥ 2 counted runs in the low bin ~35 %. Otherwise V's low-bin reading is "not enough", and only the
-      all-runs verdict stands for V.
+    cap rate, V 2 of 8 and C 5 of 7 (Simulator settle points are a mechanism check under host load and are not used
+    as phone expectations). Predictions:
+    - V has ≥ 2 low-bin runs among its first 3 counted runs ~35 %; with the top-up ~55 %. So "V not in condition"
+      (void, inconclusive) is ~45 % likely: this block can easily end without a positive control.
     - At least one arm settle-sensitive ~25 %.
-    - Given V collapses on all runs, its high-bin runs collapse too ~55 %: heat plus exposure suffice, not the settle
-      point.
-- **Decision (lead, registered before data; read top to bottom, the first matching row wins).**
+    - (card only, not in the ledger row) Given V's all-runs verdict is "collapses" and V has ≥ 1 high-bin counted
+      run: every high-bin V run collapsed ~55 % (heat plus exposure would suffice, not the settle point).
+- **Decision (lead, registered before data; read top to bottom, the first matching row wins).** Rev 2.1 (mgmt-ops-9
+  must-fix 2): the C rows sit between the D rows and the V rows. A C problem goes to the lead before any V row can
+  fire, but never overrides a D row's "no landing".
 
-  | V | D | reading |
-  |---|---|---|
-  | any | any counted run collapsed | F3 does not land as is (next: build E, window-only touch listeners during the morph; Simulator and Chrome review before any phone time) |
-  | any | fewer than 3 counted runs | inconclusive, to the lead, no landing |
-  | collapses | clean | D fixes B1: on to the P-036 confirmation on D, then the F swipe, then the land request (with the D2 gate) |
-  | clean | clean | heat does not reproduce B1 under this script; B1 stays UNRESOLVED; landing with B1 as a disclosed risk is the lead's call |
-  | inconclusive (1 of 3) or fewer than 3 counted runs | clean | V's comparison is void (no positive control); to the lead, no build decision |
+  | # | C | V | D | reading |
+  |---|---|---|---|---|
+  | 1 | any | any | any counted run collapsed | F3 does not land as is (next: build E, window-only touch listeners during the morph; Simulator and Chrome review before any phone time) |
+  | 2 | any | any | fewer than 3 counted runs | inconclusive, to the lead, no landing |
+  | 3 | fewer than 3 counted runs | any | clean | C comparison void (no control): to the lead with what V and D show, no automatic row |
+  | 4 | collapses (≥ 2 of 3) | any | clean | the collapse is not V-specific: B1 is re-framed with the lead, no automatic row |
+  | 5 | clean or inconclusive | clean, with fewer than 2 low-bin counted runs after the top-up (or the budget ran out mid top-up) | clean | positive control not in condition: inconclusive, to the lead, no landing on this block |
+  | 6 | clean or inconclusive | collapses | clean | D fixes B1: on to the P-036 confirmation on D, then the F swipe, then the land request (with the D2 gate) |
+  | 7 | clean or inconclusive | clean | clean | heat does not reproduce B1 under this script; B1 stays UNRESOLVED; landing with B1 as a disclosed risk is the lead's call |
+  | 8 | clean or inconclusive | inconclusive (1 of 3) or fewer than 3 counted runs | clean | V's comparison is void (no positive control); to the lead, no build decision |
 
-  - C with fewer than 3 counted runs: the C comparison is void (no control); to the lead with whatever V and D show.
-  - C collapses (≥ 2 of 3): the collapse is not V-specific; B1 is re-framed with the lead.
-  - A rule-sensitive verdict goes to the lead with both readings.
+  - In rows 5-8, V is read by its all-runs reading, or by its low-bin reading after a top-up (see "V top-up").
+  - A rule-sensitive or settle-sensitive arm goes to the lead with both readings, beside the row that matched. The
+    lead decides; the row is not applied by itself.
+- **Scorer (rev 2.1, mgmt-ops-9 must-fix 3):** `fixes/morph-webkit/p073-score.mjs`, sha256 prefix d4854dd7061f,
+  committed with this card. It reads a manifest (records in block order, top-up marks, start method, Low Power
+  Mode, sentinel voids) and the runner's battery log, and computes everything above per run: validity, settle y and
+  bin, pin pushes and end pushes, pooled prevented share, idle fps, temperatures at start / pin arrival / end,
+  charge state, the windows, collapse, sustained/transient, onset. Per arm it gives the three readings and the
+  flags, and it prints the matching row. Dry-run on the three Simulator records: settle and push counts equal
+  `v1c-count.mjs`'s. mgmt-ops-9 second-reads it before the block.
   - **A void run that collapses** (any arm; listed, never in the verdict) is flagged to the lead explicitly, with its
     void reason. This is the rev 2 form of rev 1's "uncapped hot run" flag: v1c cannot end uncapped, so a short
     exposure now shows up as a void.
-  - **A collapse in the high settle bin (≥ 5220)** is flagged to the lead too. Every P-036 collapse settled low.
+  - **A collapse in the high settle bin (≥ 5217)** is flagged to the lead too. Every P-036 collapse settled low.
 - **n.** At most 3 counted per arm: a mechanism and regression check, not a gain block. Nothing from it goes to the
   user as fact without the attribution run.
 
