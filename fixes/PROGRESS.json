@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-03T16:30:00Z", "text": "Hero phone test (P-081): the new hero ending removes almost all of the per-frame script work and is no worse on slow frames, but restarting it after you pause mid-hero costs more than the original. Two cheaper restarts are being built and checked next (P-088)." },
   { "at": "2026-10-03T16:00:00Z", "text": "You disconnected the iPhone (T-047): all phone tests are paused until you reconnect it. Then the hero test runs first, then the end-of-page check, then your countdown finger test." },
   { "at": "2026-10-03T15:48:02Z", "text": "Today's best build now has every landed fix in one piece (base plus the idle-animation and menu display fixes). It is the \"before\" side of every Try-it and finger test from now on." },
   { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T05:50:00Z", "text": "The menu fix (F3) made the pinned menu no worse in 9 robot-finger phone runs. The original's stall at the end of the page didn't show up this time, so whether the fix cures it is still open. One odd run of the landing version is being traced." },
   { "at": "2026-10-03T04:45:00Z", "text": "Countdown digit strips: the chosen version matches the original exactly in every picture check. One earlier hope is withdrawn: it does not save drawing while the page sits still. Its gains are less redrawing when the clock comes back into view, less graphics memory and fewer style changes." },
   { "at": "2026-10-03T03:45:00Z", "text": "Heat test done, both sessions agree: Fastwork warms the phone clearly more than apple.com, which stays close to an empty page. Today's best build already cools it without the countdown fix (roughly a third to three-fifths of the extra heat gone; a rough figure). Less work at rest is now a firm goal." },
-  { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." },
-  { "at": "2026-10-03T01:00:00Z", "text": "Explained: the extra long frames past the hero in the countdown test come from the avatar pill swapping its picture, the same with or without the countdown fix, so that fix is clear for wave 2. On today's best build an earlier fix already removed that swap." }
+  { "at": "2026-10-03T01:15:00Z", "text": "The F3 robot-finger test passed, but the review found a possible slowdown when the page holds at the end, and a case where a touch is missed. Both are checked before your F3 swipe test, which is postponed. The heat test runs now." }
  ],
  "items": [
   {
@@ -105,7 +105,7 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
-   "next": "Top priority (your T-046). You accepted its look (PR-011, both items). It now waits only for its phone test (P-081, first in the phone queue) and then your finger test, once the iPhone is back.",
+   "next": "Top priority (your T-046). Its phone test (P-081) showed it does the scrolling work it should, but restarting the animation after you stop and scroll again costs more than the original. Next: a cheaper restart (two options, P-088), then its phone test and your finger test.",
    "owner": "fix-hero-exit-threaded",
    "checks": [],
    "details": [
@@ -114,7 +114,8 @@
     "Lead 10-03 03:2xZ: Chrome path gated to WebKit only (approved); WebKit residual -> A/A, then a hunt, then user options; accent paints at 1.5x block its phone ticket.",
     "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted.",
     "P-081 ticket d4f1f63: F build (JS 8e43f3792dbf, CSS cc74cd980e72) vs st6-rb2, G hero-pass-v1, C F F C n = 2, T-039 B gate per hold, scoreF 32ed5f4e81f9 + framesF 40d0d302c3f1; ops second read PASS 14:0xZ. Band y 1..780, clear of the page-end morph.",
-    "PR-010 wide 15:21Z; PR-011 rev 1 ACCEPTED (accept-both) 15:23:14Z (no rev 2). Tiers for the record (e5bc982, Sim A/A): item 1 passes every T2 number (max 17 on edges, 0.059 % over 8 levels) but is motion-only, so the user's call; item 2 R6 = T3 (max 88 is an edge level, but 1.6 % of screen and 3,894 CSS px at any level, photo detail, motion-only). Both moot: accepted."
+    "PR-010 wide 15:21Z; PR-011 rev 1 ACCEPTED (accept-both) 15:23:14Z (no rev 2). Tiers for the record (e5bc982, Sim A/A): item 1 passes every T2 number (max 17 on edges, 0.059 % over 8 levels) but is motion-only, so the user's call; item 2 R6 = T3 (max 88 is an edge level, but 1.6 % of screen and 3,894 CSS px at any level, photo detail, motion-only). Both moot: accepted.",
+    "P-081 RESULT f23b583 (ops read PASS, re-scored byte-identical): writer share F 0.014-0.017 vs C 0.76-0.77, band frames no-worse; b-fm MISS (go-live from a rest at y548 repaints, P 9-19 vs 2-5); b-ts load-sensitive. Back to F: P-088 round 9, arms keep-layers / no in-band park, Sim go-live-from-rest case first."
    ]
   },
   {
