@@ -76,6 +76,10 @@ export function tempProfileDir(base, owner = 'job') {
 // then exits 128+n; when something does, e.g. the lock library or check.mjs, that handler exits and the exit hook
 // removes it). Only a path recorded at its creation by this process is ever removed, never by name pattern.
 // A SIGKILL can't be caught: such a leftover keeps its marker (a dead pid), and `node tools/space.mjs report` lists it.
+// That path is still common (review-i095 A): a stopped shared or short `lock.mjs run` (Ctrl-C or a signal to the run
+// itself) sends its command SIGKILL right after the signal (tools/lock.mjs, the run's signal handler), so the profile
+// still leaks there; only its --max-seconds stop (SIGTERM, SIGKILL 3 s later) and a normal hold's stop leave time for
+// this cleanup. A kill -9 of the tool or of Chrome's parent leaks it too.
 // Persistent profiles (verify.mjs's out/chrome-verify-profile, bench's out/chrome-bench-profile) are never touched.
 // FW_KEEP_PROFILE=1 (or launchChrome({keepProfile: true})) keeps the profile for debugging.
 export const TEMP_PROFILE_MARKER = '.fw-temp-profile.json';

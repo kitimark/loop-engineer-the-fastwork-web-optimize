@@ -5,13 +5,17 @@
 // Categories:
 //   profiles   Chrome profile dirs (a "Local State" file or the marker of lib/cdp.mjs) under every checkout's out/, the
 //              session scratch folders and the OS temp dir. kind: temp (tempProfileDir name or marker; removed by
-//              lib/cdp.mjs since I-095 unless SIGKILLed), probe (another probe's own profile dir), reused (a tool's
+//              lib/cdp.mjs since I-095 except after a SIGKILL), probe (a research probe's fixed-name profile, which
+//              the probe may reuse: status "probe", listed apart, not counted as leftover), reused (a tool's
 //              persistent profile: verify.mjs's chrome-verify-profile records its field-trial state in every result,
-//              bench and mirror reuse theirs: listed, never suggested while their checkout is active). In use = a
-//              running process names it in --user-data-dir, or its marker's pid still runs.
-//   worktrees  out/ of every linked worktree: finished when its branch has no commit that main lacks (merged, or never
-//              committed) or its board row (status.mjs) is done / landed / dropped / parked. A busy one (a process runs
-//              in it) or one written to in the last --idle-hours is marked "check".
+//              bench and mirror reuse theirs: listed, never suggested). A profile in the OS temp dir without our marker
+//              may be another app's: status "not-ours", not counted. In use = a running process names it in
+//              --user-data-dir, or its marker's pid still runs.
+//   worktrees  out/ of every linked worktree: finished when its branch landed (it made commits of its own, per its
+//              reflog, and main has all of them) or every board row of its topics (status.mjs) is done / landed /
+//              dropped; a parked row keeps it active (it may resume), and so does a branch that never committed (its
+//              out/ may be the only copy of its work). A busy one (a process runs in it) or one written to in the last
+//              --idle-hours is marked "check".
 //   scratch    the entries of each Claude Code session scratchpad of this project (one folder per agent, by convention).
 //   evidence   must-keep files listed by evidence manifests (fixes/<topic>/evidence.json, research/**/evidence.json in any
 //              checkout), with sizes, missing files and the per-topic cap. A candidate that contains evidence says so.
@@ -19,6 +23,7 @@ import { existsSync, readdirSync, readFileSync, statfsSync, lstatSync, realpathS
 import { join, resolve, relative, dirname, basename, isAbsolute, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir, userInfo } from 'node:os';
+import { status as lockStatus, isGroup, parseHeld } from './lock.mjs';
 
 export const GiB = 1024 ** 3;
 export const DEFAULT_WARN_GB = 10;
@@ -27,7 +32,7 @@ export const DEFAULT_CAP_MB = 200;
 export const TEMP_PROFILE_MARKER = '.fw-temp-profile.json'; // = lib/cdp.mjs TEMP_PROFILE_MARKER (no import: cdp is measurement code)
 export const REUSED_PROFILES = new Set(['chrome-verify-profile', 'chrome-bench-profile', 'chrome-crawl-profile']);
 const TEMP_NAME = /-\d+-[0-9a-f]{8}$/; // lib/cdp.mjs tempProfileDir(): <owner>-<pid>-<8 hex>
-const FINISHED_STATES = new Set(['done', 'landed', 'dropped', 'parked']);
+const FINISHED_STATES = new Set(['done', 'landed', 'dropped']); // review-i095 (C): parked is not finished, it may resume
 
 /** The free-space threshold in GB ($FW_SPACE_WARN_GB, default 10; 0 = never warn). */
 export function warnGb(env = process.env) {
@@ -49,6 +54,28 @@ export function lowSpaceWarning(path, env = process.env) {
     if (freeBytes >= lim * GiB) return null;
     return `WARNING: low disk space: ${fmtSize(freeBytes)} free on this disk (under ${lim} GB). Leftover Chrome profiles and old out/ folders: node tools/space.mjs report (read-only; you decide what to delete)`;
   } catch { return null; }
+}
+
+// ---- not beside someone's hold (review-i095 B) -------------------------------------------------------------------
+/** The hold to run the report in: it waits its FIFO turn and keeps the report's load off everyone's measurements. */
+export const SPACE_HOLD_CMD = 'node tools/lock.mjs run chrome-measure --owner <you> --no-timing --max-seconds 600 -- node tools/space.mjs report';
+/**
+ * Why `space.mjs report` may not run now, or null. It runs du over tens of GB plus ps, lsof and git for every worktree
+ * (~30 s of disk and CPU load), so it refuses beside anyone else's exclusive normal hold on chrome-measure: a timing hold
+ * (an A/B, verify, bench) or a no-timing hold (a build, or a phone part that wants a quiet Mac). It passes on a free or
+ * stale lock, a shared (functional) group, an exclusive short-lane job, and the caller's own hold (FW_LOCK_HELD names
+ * the holder's token: `lock.mjs run` exports it to its command, e.g. SPACE_HOLD_CMD). `st`: status('chrome-measure').
+ */
+export function spaceRunRefusal({ st, env = process.env } = {}) {
+  const h = st?.holder;
+  if (!h || st.stale || isGroup(h) || h.functional || h.short) return null;
+  if (h.token && parseHeld(env.FW_LOCK_HELD)['chrome-measure'] === h.token) return null;
+  return `WAIT: chrome-measure is held by "${h.owner}" (${h.noTiming ? 'a no-timing hold: a build, or a phone part that wants a quiet Mac' : 'a timing hold, e.g. an A/B'}). This report runs du over tens of GB plus ps, lsof and git for every worktree, which would load the Mac under that hold. Retry after it ends, or run it in its own hold, which waits its turn:\n  ${SPACE_HOLD_CMD}`;
+}
+/** spaceRunRefusal on the live lock state (null when the lock state can't be read). */
+export function spaceRunRefusalNow(env = process.env) {
+  let st; try { st = lockStatus('chrome-measure'); } catch { return null; }
+  return spaceRunRefusal({ st, env });
 }
 
 // ---- helpers ----------------------------------------------------------------------------------------------
@@ -161,6 +188,12 @@ function worktreeTopics(w, mainRoot, mainRef) {
   }
   return [...t];
 }
+/** Commits the branch made itself, per its reflog ("commit", "commit (amend)", "cherry-pick" entries; 0 without a reflog). */
+export function ownCommits(mainRoot, branch) {
+  if (!branch) return 0;
+  const out = git(mainRoot, 'reflog', 'show', '--format=%gs', `refs/heads/${branch}`, '--');
+  return out ? out.split('\n').filter((l) => /^(commit( \([a-z]+\))?|cherry-pick):/.test(l)).length : 0;
+}
 function boardRowsFor(topics, rows) {
   const keys = new Set(topics.flatMap((t) => [t, `fix-${t}`]));
   return rows.filter((r) => keys.has(r.id) || keys.has(r.owner) || (r.aliases || []).some((a) => keys.has(a)));
@@ -243,7 +276,8 @@ export function buildReport(opts) {
   const outRoots = wts.map((w) => join(w.path, 'out')).filter(isDir);
   const profileRoots = [...outRoots, ...scratchRoots];
   const profDirs = [...new Set(profileRoots.flatMap((r) => findProfiles(r)))];
-  if (tmpRoot && isDir(tmpRoot)) { let es = []; try { es = readdirSync(tmpRoot); } catch {} for (const e of es) { const d = join(tmpRoot, e); if (isDir(d) && isChromeProfile(d) && !profDirs.includes(d)) profDirs.push(d); } }
+  const inTmp = new Set();
+  if (tmpRoot && isDir(tmpRoot)) { let es = []; try { es = readdirSync(tmpRoot); } catch {} for (const e of es) { const d = join(tmpRoot, e); if (isDir(d) && isChromeProfile(d) && !profDirs.includes(d)) { profDirs.push(d); inTmp.add(d); } } }
 
   const wtOut = wts.filter((w) => !w.main).map((w) => ({ w, out: join(w.path, 'out') })).filter((x) => isDir(x.out));
   const mainOut = join(mainRoot, 'out');
@@ -257,8 +291,11 @@ export function buildReport(opts) {
     const use = profileInUse(d, procs, udd);
     const kind = profileKind(d);
     const ev = evidenceIn(d).length;
-    const status = use ? 'in-use' : ev || isEvidence(d) ? 'keep-evidence' : kind === 'reused' ? 'reused' : 'leftover';
-    return { path: d, kind, bytes: sizes.get(d) || 0, inUse: use, status, note: use ? `pid ${use.pid} (${use.how})` : kind === 'reused' ? 'a tool reuses it on purpose (verify records its field-trial state)' : '' };
+    const marked = existsSync(join(d, TEMP_PROFILE_MARKER));
+    const status = use ? 'in-use' : ev || isEvidence(d) ? 'keep-evidence' : kind === 'reused' ? 'reused' : inTmp.has(d) && !marked ? 'not-ours' : kind === 'probe' ? 'probe' : 'leftover';
+    const note = use ? `pid ${use.pid} (${use.how})` : status === 'reused' ? 'a tool reuses it on purpose (verify records its field-trial state)'
+      : status === 'not-ours' ? 'in the OS temp dir without our marker: may be another app\'s; not counted' : status === 'probe' ? 'a research probe\'s fixed-name profile: the probe may reuse it; ask its owner' : '';
+    return { path: d, kind, bytes: sizes.get(d) || 0, inUse: use, status, note };
   }).sort((a, b) => b.bytes - a.bytes);
 
   const worktreesOut = wtOut.map(({ w, out }) => {
@@ -267,17 +304,18 @@ export function buildReport(opts) {
     const board = boardRowsFor(topics, rows).map((r) => ({ id: r.id, state: r.state, owner: r.owner }));
     const boardFinished = board.length > 0 && board.every((r) => FINISHED_STATES.has(r.state));
     const boardActive = board.some((r) => !FINISHED_STATES.has(r.state));
-    const merged = ahead === 0;
+    const own = ownCommits(mainRoot, w.branch);
+    const merged = ahead === 0 && own > 0; // review-i095 (C): a branch that never committed has not landed
     const busyPids = [...cwds.filter((c) => inside(c.cwd, w.path)).map((c) => c.pid), ...procs.filter((p) => p.pid !== process.pid && p.command.includes(w.path + sep)).map((p) => p.pid)].filter((p) => p !== process.pid);
     const lastWrite = newestMtime(out);
     const recent = now - lastWrite < idleMs;
     const finished = (merged || boardFinished) && !boardActive;
     const ev = evidenceIn(out);
-    const why = [merged ? 'branch has nothing main lacks' : `${ahead ?? '?'} commit(s) not on main`, board.length ? `board: ${board.map((r) => `${r.id} ${r.state}`).join(', ')}` : 'no board row found', `last write ${Math.round((now - lastWrite) / 360e3) / 10} h ago`];
+    const why = [merged ? 'landed: its commits are on main' : ahead === 0 ? 'no commit of its own (its out/ may be the only copy of its work)' : `${ahead ?? '?'} commit(s) not on main`, board.length ? `board: ${board.map((r) => `${r.id} ${r.state}`).join(', ')}` : 'no board row found', `last write ${Math.round((now - lastWrite) / 360e3) / 10} h ago`];
     if (busyPids.length) why.push(`busy: ${[...new Set(busyPids)].length} process(es) run in it`);
     if (ev.length) why.push(`holds ${ev.length} evidence file(s): keep those`);
     const status = !finished ? 'active' : busyPids.length || recent ? 'check' : ev.length ? 'keep-evidence' : 'finished';
-    return { path: w.path, out, branch: w.branch, ahead, topics, board, bytes: sizes.get(out) || 0, lastWrite: lastWrite ? new Date(lastWrite).toISOString() : null, busy: [...new Set(busyPids)], evidence: ev.length, status, note: why.join('; ') };
+    return { path: w.path, out, branch: w.branch, ahead, ownCommits: own, merged, topics, board, bytes: sizes.get(out) || 0, lastWrite: lastWrite ? new Date(lastWrite).toISOString() : null, busy: [...new Set(busyPids)], evidence: ev.length, status, note: why.join('; ') };
   }).sort((a, b) => b.bytes - a.bytes);
 
   // a scratch folder is named after its agent (CLAUDE.md "Scratch files go in <scratchpad>/<your-topic>/"): its board
@@ -308,6 +346,7 @@ export function buildReport(opts) {
     evidence: { manifests, items: evItems },
     totals: {
       leftoverProfiles: sum(profiles.filter((p) => p.status === 'leftover')), inUseProfiles: sum(profiles.filter((p) => p.status === 'in-use')), reusedProfiles: sum(profiles.filter((p) => p.status === 'reused')),
+      probeProfiles: sum(profiles.filter((p) => p.status === 'probe')), notOursProfiles: sum(profiles.filter((p) => p.status === 'not-ours')),
       finishedWorktreeOut: sum(worktreesOut.filter((w) => w.status === 'finished')), checkWorktreeOut: sum(worktreesOut.filter((w) => w.status === 'check' || w.status === 'keep-evidence')), activeWorktreeOut: sum(worktreesOut.filter((w) => w.status === 'active')),
       scratchIdle: sum(scratch.filter((s) => s.status === 'idle')), scratchOther: sum(scratch.filter((s) => s.status !== 'idle')), evidence: manifests.reduce((s, m) => s + m.bytes, 0),
     },
@@ -322,15 +361,21 @@ export function renderText(r, { top = 12 } = {}) {
   L.push(`SPACE REPORT ${r.createdAt.slice(0, 16)}Z  (read-only: nothing was deleted or moved)`);
   if (r.free) L.push(`free space: ${fmtSize(r.free.freeBytes)} of ${fmtSize(r.free.totalBytes)} on this disk${r.warnGb && r.free.freeBytes < r.warnGb * GiB ? `   WARNING: under ${r.warnGb} GB` : ''}`);
   const t = r.totals;
-  L.push('', `1. Throwaway Chrome profiles no process uses: ${r.profiles.filter((p) => p.status === 'leftover').length} = ${fmtSize(t.leftoverProfiles)}`);
-  L.push(`   (also: ${r.profiles.filter((p) => p.status === 'in-use').length} in use = ${fmtSize(t.inUseProfiles)}, never touch; ${r.profiles.filter((p) => p.status === 'reused').length} reused tool profiles = ${fmtSize(t.reusedProfiles)}, keep while their checkout is active)`);
-  const groups = new Map();
-  for (const p of r.profiles.filter((x) => x.status === 'leftover')) { const g = dirname(p.path); const e = groups.get(g) || { n: 0, bytes: 0 }; e.n++; e.bytes += p.bytes; groups.set(g, e); }
-  for (const [g, e] of [...groups].sort((a, b) => b[1].bytes - a[1].bytes).slice(0, top)) L.push(`   ${pad(fmtSize(e.bytes), 8)}  ${pad(e.n, 4)} in ${rel(r, g)}/`);
-  if (groups.size > top) L.push(`   ... ${groups.size - top} more folder(s) in the list file`);
+  const n = (s) => r.profiles.filter((p) => p.status === s).length;
+  const byFolder = (status) => {
+    const groups = new Map();
+    for (const p of r.profiles.filter((x) => x.status === status)) { const g = dirname(p.path); const e = groups.get(g) || { n: 0, bytes: 0 }; e.n++; e.bytes += p.bytes; groups.set(g, e); }
+    for (const [g, e] of [...groups].sort((a, b) => b[1].bytes - a[1].bytes).slice(0, top)) L.push(`   ${pad(fmtSize(e.bytes), 8)}  ${pad(e.n, 4)} in ${rel(r, g)}/`);
+    if (groups.size > top) L.push(`   ... ${groups.size - top} more folder(s) in the list file`);
+  };
+  L.push('', `1. Throwaway Chrome profiles (temp names or our marker) no process uses: ${n('leftover')} = ${fmtSize(t.leftoverProfiles)}`);
+  L.push(`   (also: ${n('in-use')} in use = ${fmtSize(t.inUseProfiles)}, never touch; ${n('reused')} reused tool profiles = ${fmtSize(t.reusedProfiles)}, keep; ${n('not-ours')} in the OS temp dir without our marker = ${fmtSize(t.notOursProfiles)}, may be another app's, not counted)`);
+  byFolder('leftover');
+  L.push(`   research-probe profiles (fixed names; the probe may reuse them, ask its owner): ${n('probe')} = ${fmtSize(t.probeProfiles)}`);
+  byFolder('probe');
   for (const p of r.profiles.filter((x) => x.status === 'in-use' || x.status === 'keep-evidence')) L.push(`   ${pad(fmtSize(p.bytes), 8)}  ${p.status.toUpperCase()}  ${rel(r, p.path)}  ${p.note}`);
   const fin = r.worktrees.filter((w) => w.status === 'finished'), chk = r.worktrees.filter((w) => w.status === 'check' || w.status === 'keep-evidence'), act = r.worktrees.filter((w) => w.status === 'active');
-  L.push('', `2. out/ of finished worktrees (branch merged or board row done/landed/dropped/parked): ${fin.length} = ${fmtSize(t.finishedWorktreeOut)}`);
+  L.push('', `2. out/ of finished worktrees (branch landed on main, or board rows done/landed/dropped; parked counts as active): ${fin.length} = ${fmtSize(t.finishedWorktreeOut)}`);
   for (const w of fin.slice(0, top)) L.push(`   ${pad(fmtSize(w.bytes), 8)}  ${rel(r, w.out)}  ${w.branch || ''}: ${w.note}`);
   if (fin.length > top) L.push(`   ... ${fin.length - top} more in the list file`);
   L.push(`   check first (finished, but busy, written to recently or holding evidence): ${chk.length} = ${fmtSize(t.checkWorktreeOut)}`);

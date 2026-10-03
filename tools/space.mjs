@@ -11,11 +11,15 @@
 // --list writes every path with its category and status (TSV) for review. --scratch replaces the scratch roots found
 // by default (/private/tmp/claude-<uid>/<this project>/<session>/scratchpad). Classification: tools/lib/space.mjs.
 //
+// It refuses (exit 3, WAIT) beside anyone else's exclusive normal hold on chrome-measure (a timing A/B, a build, a phone
+// part that wants a quiet Mac): its du, ps, lsof and git load the Mac for ~30 s. Run it inside your own hold, which
+// waits its turn: node tools/lock.mjs run chrome-measure --owner <you> --no-timing --max-seconds 600 -- node tools/space.mjs report
+//
 // Paths in the output are local (this Mac only): never paste them into a committed file (CLAUDE.md Hard rule 12).
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { mainCheckout } from './lib/paths.mjs';
-import { buildReport, renderText, renderList } from './lib/space.mjs';
+import { buildReport, renderText, renderList, spaceRunRefusalNow } from './lib/space.mjs';
 import { list as boardRows } from './lib/status.mjs';
 
 const argv = process.argv.slice(2);
@@ -36,6 +40,9 @@ const idleHours = Number(opt('idle-hours', 2));
 if (!(idleHours >= 0)) die('--idle-hours must be a number >= 0');
 const top = Number(opt('top', 12));
 if (!(Number.isInteger(top) && top > 0)) die('--top must be a positive integer');
+
+const busy = spaceRunRefusalNow();
+if (busy) { console.error(busy); process.exit(3); }
 
 let rows = [];
 try { rows = boardRows(); } catch {}
