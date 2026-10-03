@@ -88,6 +88,93 @@ D matches C in every case. V fails in both gap cases, as the reviewer predicted.
   - If D still collapses, the next variant removes the element listeners while the window ones are armed, so the
     listener set during the morph is exactly C's.
 
+## P-071 prediction card: B1 G pin-hold, C / V / D (registered before any phone data)
+
+Second read: mgmt-ops-9. Round 1 was NEEDS-FIX (sentinel, arm-level rule, unit, Low Power Mode); this is the amended
+card.
+
+- **Builds.** Snapshot b1789284481295-4ad4a84a, CSS c6aad94b455f in every arm. All three are served from the immutable
+  copies in `out/snapshots/` on the working branch, over plain http as in P-036.
+  - C = `aw1-10e` (JS 3e2f599a1632).
+  - V = F3 `mw10e-arm-scope-c` (JS c6d3590576a7).
+  - D = this build (JS 999c4497f37e).
+- **Driver.** G, `fixes/morph-webkit/gestures/pin-hold-v2.json`, GESTURE_HASH 2d3a97b742cf. The script:
+  - transit strokes until `atEnd` or 24 passes;
+  - 8 s idle at the pin;
+  - mark `cycle`, then two close/open cycles: down 240 px / 500 ms, 2 s, up 240 px / 500 ms, 2 s.
+- **Block.**
+  - The runner's own `--no-timing` hold. One uncounted warm-up per arm's port.
+  - Up to 9 counted runs in the order C V D / V D C / D C V, Timeline off.
+  - Safari is parked after every run, with `wait.mjs phone-temp --below auto` between runs.
+- **Sentinel** (the signed P-036 rule):
+  - The standard S sentinel (`iphone.mjs scroll`) runs on C, on its own port, uncounted: once after the warm-ups and
+    once at the block end. It passes with bottom ≥ 58 fps and scroll ≥ 44 fps.
+  - A failing sentinel voids every counted run since the last pass. The phone then cools per §5.3: 0.5 °C below the
+    last passing sentinel, 38 °C if none today, at most 10 min.
+  - If the sentinel fails again on a cool phone and a quiet Mac, the block stops.
+- **Low Power Mode** is recorded for every run. A run with it on is void, because 30 Hz would read as a collapse.
+- **Attribution, after the end sentinel.** Timeline runs (`Page.disable` → `Page.enable` → `Timeline.start`) on:
+  - V at the pin;
+  - D's cycle phase;
+  - D's pin, if D collapses.
+- **Metric 1, collapse.**
+  - Per run, from pin arrival (the first frame at y ≥ 5200) to the end of the run, fps in consecutive 2 s windows.
+  - A run is **collapsed** when 2 consecutive windows are under 30 fps.
+  - An arm **collapses** when ≥ 2 of 3 valid runs collapse, and is **clean** at 0 of 3. **1 of 3 is inconclusive.**
+- **Metric 2, arm/disarm frames** (cycle phase; phone ms thresholds only, G run, F-071):
+  - The arm window runs from the up stroke's first touchmove −50 ms to +250 ms.
+  - The disarm window runs from the down stroke's lift +400 ms to +1200 ms, when the spring reaches 0 and D removes
+    its window listeners.
+  - The unit is **the per-run max dt over that run's 2 windows of a kind**, so n = 3 vs 3, arm and disarm separately.
+    Also reported: dt > 50 / > 34 counts with the ±4 ms twins and the near bands.
+  - **Separated-worse:** every D run max > every C run max AND median(D) − median(C) ≥ 16.7 ms.
+  - The verdict is read at > 50 ms with the twins 46 and 54. When a twin's verdict differs, the verdict is
+    "threshold-sensitive".
+- **Baseline.** P-036 (OBSERVED): the collapse appeared in V 2/2 and C 0/5. The Simulator (pin-hold-v1) and Chrome do
+  not reproduce it.
+- **Terms.** The mechanism is unknown (UNRESOLVED).
+  - D restores C's window touch listeners during the morph. If B1 comes from the element-only listener set, D fixes it.
+  - D's add and remove on every cycle could cost a frame like P-011's ~100 ms IO-edge frame. The WebKit source says a
+    style rebuild comes only from a change in the event-region type set, and touch regions are compiled out on iOS
+    26.6 (claims-audit W5/W6). So the add may be free there (UNRESOLVED on the device).
+- **Predictions.**
+  - C clean: ~90 %.
+  - V collapses ~55 %, clean ~30 %, inconclusive ~15 %.
+  - D, if V collapses: clean ~50 %, collapses ~40 %, inconclusive ~10 %.
+  - Arm/disarm: D not separated-worse than C, with no D-only frame > 50 ms, ~60 %. A 50-110 ms frame at D's arm in
+    most cycles, ~35 %.
+- **Decision.**
+  - V collapses, D is clean, and D's windows are not separated-worse → D is the candidate. Next comes the short
+    P-036 confirmation on D (≥ 2 V runs vs C, arm-scope-touch-v1), then the F swipe.
+  - D collapses → build E (window-only touch listeners while the morph is active). No phone time until E passes the
+    Simulator and a Chrome review.
+  - D is clean but its arm or disarm window is separated-worse → back to the lead with the Timeline attribution. There
+    is no automatic fallback, because arming at the zone edge brings back P-011's edge frame.
+  - V or D inconclusive (1 of 3) → report to the lead; no build decision.
+  - V clean → B1 is not reproduced under this script and stays UNRESOLVED. Report to the lead and the reviewer. No
+    second block without a new question.
+- **n.** At most 3 runs per arm. This is a mechanism and regression check, not a gain block. Nothing from it goes to
+  the user as fact without the Timeline attribution.
+
+## Review round 1, non-blocking items: where each went
+
+- Desktop wheel armed from load: CONFIRMED risk, stated in Risks below and in `fixes/mw10e-arm-scope/README.md`; not
+  measurable with the CDP ack proxy.
+- OBSERVED wording: `fixes/mw10e-arm-scope/README.md` (event-region rebuild now a candidate, F-062 UNRESOLVED) and
+  `fixes/mw10e-arm-scope-c/README.md` (the ~190 ms level, "none detected at this block's resolution", V2's 16 frames,
+  and the iOS touch-region note with its source lines, claims-audit W5/W6).
+- Slips in `fixes/mw10e-arm-scope-c/README.md`: 38.7-41.2 °C (V1 ended at 41.2), V1 1.9 and C4 1.8 min, load1 18.6
+  (V2) and 8.8 (V4).
+- Sentinels: `fixes/mw10e-arm-scope-c/p036-score.mjs` now puts them in `sentinels` and `cardPart` (no sentinel →
+  INCOMPLETE, a failed one → VOID). Re-run on the P-036 records: both sentinels pass, zones unchanged, card part PASS.
+- Header ref `T`: **not in this build.** The touch target is still `document.querySelector('header.start-selling-top-nav')`
+  at setup. `T` is the component's `bind:this` ref to the same element (JS ~13565-13570), so the swap is one
+  expression and behaviour-identical, but it changes the JS hash, and D's hash is the one in the phone ticket. It goes
+  into the build that lands after the phone answers (D's successor or E), with a token diff shown here.
+- Dangling refs: `touch-check.mjs` and `probe-results/` are now named as working-branch files; `touch-gap-check.mjs`,
+  `pinhold-sim.mjs` and the pin-hold gestures land with this folder.
+- `aw1-10e` is not on `main`: stated in the header here and in `fixes/mw10e-arm-scope-c/README.md`.
+
 ## Risks
 
 - **Desktop wheel, armed at load (from F3, unchanged here).** A window `wheel` listener with `{passive: false}`
