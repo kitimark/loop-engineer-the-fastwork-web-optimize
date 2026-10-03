@@ -353,6 +353,36 @@ layouts and 74-88 paints per window in Chrome.
   pauses its animations but not its JS, and its work is counted in both modes. This affects the C6 − S and V7 − C6
   rows of both P-075 and P-076.
 
+### 4.5 P-076 readout: countdown calls per countdown second (2026-10-03)
+
+Pre-registration `p076-prereg.md`, registered at 1032787 before any data. The scorer is `judge-tick.mjs` b84f4156010c and
+the probe `tick-probe.mjs` 967461d775ec. Data and scorer output are in `p076-data/`; re-running
+`node judge-tick.mjs p076-data` reproduces `judge-tick.json` byte for byte.
+
+**How it ran.** Two shared-lane probe slots on new loads, 18 loads each. Neither slot was partial and no load was VOID.
+- Every served JS hash matched.
+- Every load found its interval fires, T matched in every load, and every FRZ clock check showed changes.
+- The fires sat at the callback's line + 1 in every load: the trace's FunctionCall line numbers are 1-based in our
+  setup (OBSERVED).
+
+**Verdict: family PASS, 0 of 3 judged pairs missed.** AA 0.3 calls per second, with no flag.
+
+| Pair | dFULL | dFRZ | diff | tol | Verdict |
+|---|---|---|---|---|---|
+| Vf − C | −0.3 | 0.0 | 0.3 | 2.0 | PASS |
+| C6 − S | −0.2 | 0.0 | 0.2 | 2.0 | PASS |
+| V7 − C6 | −24.5 | −25.0 | 0.5 | 3.8 | PASS |
+
+- Per countdown second, every pre-cd-roll-ca build runs about 27-29 countdown calls in both modes. V7 runs 4, which is
+  cd-roll-ca's own effect.
+- The tolerance is the 2-count floor, about 7 % of the C value, so this pass is not low-power.
+- Per-second values inside one load show the multi-digit rolls directly: about 60 calls in a second with a tens roll,
+  and 83-95 in one with more digits, against 27-29 otherwise. That is the post-hoc reading of P-075's per-window FAIL,
+  now tested before the data: the window caught a varying number of multi-digit rolls.
+- **What it decides** (pre-registered): the cost card takes script per event for this family from FRZ, and per-event
+  cutting is the card's default for event-driven script counts (§6.2).
+- P-075's per-window FAIL stays as recorded.
+
 ## 5. Open questions for the user (plain words)
 
 1. When a fix's benefit is "the page does less work", is this enough to land it? The proof would be fewer work
@@ -395,16 +425,17 @@ contains whole events (§6.3).
 - **Layout and Paint counts** come from FRZ too, with a FULL row beside them for context.
   - They passed for every judged pair in both engines. That is P-075's answer to the §2.4 open item.
   - One Chrome paint pair passed exactly on its tolerance.
-- **The element's own script calls** (field 5) come from FRZ only if P-076 passes: calls per countdown second, cut at
-  the element's own events. Otherwise they come from FULL. P-075's per-window count failed as a family.
+- **The element's own script calls** (field 5) come from FRZ, counted per event, cut at the element's own events.
+  P-076 passed for the countdown family (§4.5), and P-075's per-window count failed. A new family uses FULL until its
+  own FULL-vs-FRZ check passes.
 - **Frame-driven counts come from the FULL page**: rendering frames, style recalcs per frame, composites, main frames,
   Layerize, PrePaint, IO per frame.
   - P-075's Sim V7 − C6 shows why: moving the countdown roll to the compositor saved about 59 frames per window with
     the rest frozen, but about 20 on the full page, where other animations keep frames running (§4.4).
   - So these counts are never attributed to the element alone (H9). The card prints them as "the page around it".
 - **Event-driven counts must be normalised per event, never per window.** In P-075, the countdown's own FunctionCalls
-  per 4 s window varied 108-215 between page loads of the *same* build. That FAIL stands. Our reading, still post hoc,
-  is that the count depends on how many rolls a window catches. P-076 tests that reading.
+  per 4 s window varied 108-215 between page loads of the *same* build. That FAIL stands. P-076, cut per countdown
+  second on new loads, passed: the window caught a varying number of multi-digit rolls (§4.5).
 
 ### 6.3 One command, two outputs
 

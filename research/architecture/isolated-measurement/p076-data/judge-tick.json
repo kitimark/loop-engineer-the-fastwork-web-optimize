@@ -1,0 +1,2394 @@
+{
+ "AA": 0.3333333333333357,
+ "aaFlag": "",
+ "rows": [
+  {
+   "b": "Vf",
+   "ctrl": "C",
+   "judged": true,
+   "fullB": [
+    27,
+    28,
+    27
+   ],
+   "fullC": [
+    27,
+    28,
+    28
+   ],
+   "frzB": [
+    28,
+    28,
+    28
+   ],
+   "frzC": [
+    28,
+    28,
+    28
+   ],
+   "dFULL": -0.3333333333333357,
+   "dFRZ": 0,
+   "AA": 0.3333333333333357,
+   "tol": 2,
+   "diff": 0.3333333333333357,
+   "pass": true,
+   "noiseSensitive": false
+  },
+  {
+   "b": "C6",
+   "ctrl": "S",
+   "judged": true,
+   "fullB": [
+    28,
+    28.5,
+    29
+   ],
+   "fullC": [
+    29,
+    28,
+    29
+   ],
+   "frzB": [
+    29,
+    29,
+    29
+   ],
+   "frzC": [
+    29,
+    29,
+    29
+   ],
+   "dFULL": -0.16666666666666785,
+   "dFRZ": 0,
+   "AA": 0.3333333333333357,
+   "tol": 2,
+   "diff": 0.16666666666666785,
+   "pass": true,
+   "noiseSensitive": false
+  },
+  {
+   "b": "V7",
+   "ctrl": "C6",
+   "judged": true,
+   "fullB": [
+    4,
+    4,
+    4
+   ],
+   "fullC": [
+    28,
+    28.5,
+    29
+   ],
+   "frzB": [
+    4,
+    4,
+    4
+   ],
+   "frzC": [
+    29,
+    29,
+    29
+   ],
+   "dFULL": -24.5,
+   "dFRZ": -25,
+   "AA": 0.3333333333333357,
+   "tol": 3.75,
+   "diff": 0.5,
+   "pass": true,
+   "noiseSensitive": false
+  }
+ ],
+ "miss": [],
+ "scorable": 3,
+ "family": "PASS",
+ "voids": [],
+ "loads": [
+  {
+   "rep": 1,
+   "build": "C",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591262051230,
+    591263051320,
+    591264051320,
+    591265051503,
+    591266051968,
+    591267051078
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 4302,
+    "layout": 174,
+    "prePaint": 360,
+    "paint": 648,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 220,
+    "countdownCalls": 226,
+    "timerFire": 23
+   },
+   "perSecond": 27,
+   "meanPerSecond": 39.8,
+   "seconds": [
+    91,
+    27,
+    27,
+    27,
+    27
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "C2",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591275431997,
+    591276431702,
+    591277431892,
+    591278431955,
+    591279432043,
+    591280431040
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 3742,
+    "layout": 180,
+    "prePaint": 360,
+    "paint": 661,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 162,
+    "countdownCalls": 168,
+    "timerFire": 23
+   },
+   "perSecond": 28,
+   "meanPerSecond": 28,
+   "seconds": [
+    28,
+    28,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "Vf",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3972,
+   "fires0": [],
+   "fires1": [
+    591287696546,
+    591288696547,
+    591289696300,
+    591290696254,
+    591291696171,
+    591292696656
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 2516,
+    "layout": 174,
+    "prePaint": 360,
+    "paint": 672,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 189,
+    "countdownCalls": 195,
+    "timerFire": 23
+   },
+   "perSecond": 27,
+   "meanPerSecond": 27,
+   "seconds": [
+    27,
+    27,
+    27,
+    27,
+    27
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "S",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4145,
+   "fires0": [],
+   "fires1": [
+    591301604569,
+    591302201642,
+    591302603968,
+    591303201384,
+    591303604009,
+    591304201233,
+    591304604414,
+    591305201903,
+    591305604061,
+    591306200859,
+    591306604623,
+    591307201518
+   ],
+   "counts": {
+    "mainFrames": 300,
+    "updateLayoutTree": 300,
+    "styleElements": 2589,
+    "layout": 11,
+    "prePaint": 300,
+    "paint": 889,
+    "layerize": 300,
+    "io": 600,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 208,
+    "timerFire": 31
+   },
+   "perSecond": 29,
+   "meanPerSecond": 35.8,
+   "seconds": [
+    29,
+    63,
+    63,
+    29,
+    29,
+    29,
+    29,
+    29,
+    29,
+    29
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "C6",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4156,
+   "fires0": [],
+   "fires1": [
+    591315622918,
+    591315749089,
+    591316623944,
+    591316750389,
+    591317623785,
+    591317749834,
+    591318623615,
+    591318749619,
+    591319623998,
+    591319750154,
+    591320623538,
+    591320749320
+   ],
+   "counts": {
+    "mainFrames": 297,
+    "updateLayoutTree": 297,
+    "styleElements": 2292,
+    "layout": 22,
+    "prePaint": 297,
+    "paint": 902,
+    "layerize": 297,
+    "io": 594,
+    "fireAnimationFrame": 157,
+    "countdownCalls": 169,
+    "timerFire": 29
+   },
+   "perSecond": 28,
+   "meanPerSecond": 28,
+   "seconds": [
+    28,
+    28,
+    28,
+    28,
+    28,
+    28,
+    28,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "V7",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4333,
+   "fires0": [],
+   "fires1": [
+    591327671723,
+    591328350173,
+    591328671296,
+    591329350297,
+    591329671479,
+    591330350287,
+    591330671535,
+    591331349997,
+    591331670690,
+    591332350292,
+    591332671252,
+    591333349397
+   ],
+   "counts": {
+    "mainFrames": 250,
+    "updateLayoutTree": 250,
+    "styleElements": 2666,
+    "layout": 30,
+    "prePaint": 250,
+    "paint": 880,
+    "layerize": 250,
+    "io": 500,
+    "fireAnimationFrame": 7,
+    "countdownCalls": 26,
+    "timerFire": 30
+   },
+   "perSecond": 4,
+   "meanPerSecond": 4.2,
+   "seconds": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    6
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "C",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591338161890,
+    591339163097,
+    591340162344,
+    591341162269,
+    591342162287,
+    591343162053
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 4074,
+    "layout": 173,
+    "prePaint": 360,
+    "paint": 658,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 202,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.8,
+   "seconds": [
+    28,
+    28,
+    28,
+    28,
+    62
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "C2",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591348476941,
+    591349476687,
+    591350476801,
+    591351477239,
+    591352477357,
+    591353477651
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 4019,
+    "layout": 174,
+    "prePaint": 360,
+    "paint": 656,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 189,
+    "countdownCalls": 195,
+    "timerFire": 24
+   },
+   "perSecond": 27,
+   "meanPerSecond": 33.6,
+   "seconds": [
+    27,
+    27,
+    27,
+    27,
+    60
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "Vf",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3972,
+   "fires0": [],
+   "fires1": [
+    591358806327,
+    591359806780,
+    591360807013,
+    591361806741,
+    591362807067,
+    591363805874
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 2527,
+    "layout": 173,
+    "prePaint": 360,
+    "paint": 680,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 202,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.8,
+   "seconds": [
+    28,
+    28,
+    28,
+    28,
+    62
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "S",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4145,
+   "fires0": [],
+   "fires1": [
+    591370059206,
+    591370164731,
+    591371058989,
+    591371164731,
+    591372059104,
+    591372164901,
+    591373059163,
+    591373164555,
+    591374059809,
+    591374164258,
+    591375059202,
+    591375164926
+   ],
+   "counts": {
+    "mainFrames": 296,
+    "updateLayoutTree": 296,
+    "styleElements": 2549,
+    "layout": 12,
+    "prePaint": 296,
+    "paint": 859,
+    "layerize": 296,
+    "io": 592,
+    "fireAnimationFrame": 189,
+    "countdownCalls": 201,
+    "timerFire": 30
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.6,
+   "seconds": [
+    28,
+    28,
+    28,
+    34,
+    61,
+    55,
+    28,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "C6",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4156,
+   "fires0": [],
+   "fires1": [
+    591380431784,
+    591380518231,
+    591381431462,
+    591381519125,
+    591382432721,
+    591382518352,
+    591383431471,
+    591383519050,
+    591384432474,
+    591384518533,
+    591385432417,
+    591385518627
+   ],
+   "counts": {
+    "mainFrames": 296,
+    "updateLayoutTree": 296,
+    "styleElements": 2362,
+    "layout": 30,
+    "prePaint": 296,
+    "paint": 899,
+    "layerize": 296,
+    "io": 592,
+    "fireAnimationFrame": 222,
+    "countdownCalls": 234,
+    "timerFire": 30
+   },
+   "perSecond": 28.5,
+   "meanPerSecond": 41.1,
+   "seconds": [
+    29,
+    28,
+    28,
+    38,
+    92,
+    83,
+    29,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "V7",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4333,
+   "fires0": [],
+   "fires1": [
+    591390681293,
+    591390762602,
+    591391680814,
+    591391761738,
+    591392680528,
+    591392762246,
+    591393680880,
+    591393762401,
+    591394680754,
+    591394762444,
+    591395680432,
+    591395761679
+   ],
+   "counts": {
+    "mainFrames": 249,
+    "updateLayoutTree": 249,
+    "styleElements": 2657,
+    "layout": 30,
+    "prePaint": 249,
+    "paint": 886,
+    "layerize": 249,
+    "io": 498,
+    "fireAnimationFrame": 7,
+    "countdownCalls": 26,
+    "timerFire": 30
+   },
+   "perSecond": 4,
+   "meanPerSecond": 4.4,
+   "seconds": [
+    4,
+    4,
+    4,
+    5,
+    6,
+    5,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "C",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591400867563,
+    591401868012,
+    591402868045,
+    591403868200,
+    591404867061,
+    591405867974
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 4081,
+    "layout": 174,
+    "prePaint": 360,
+    "paint": 658,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 202,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.8,
+   "seconds": [
+    28,
+    28,
+    62,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "C2",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591411364636,
+    591412364400,
+    591413364465,
+    591414364666,
+    591415364347,
+    591416364667
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 4019,
+    "layout": 174,
+    "prePaint": 360,
+    "paint": 656,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 189,
+    "countdownCalls": 195,
+    "timerFire": 24
+   },
+   "perSecond": 27,
+   "meanPerSecond": 33.6,
+   "seconds": [
+    27,
+    60,
+    27,
+    27,
+    27
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "Vf",
+   "mode": "full",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 1,
+   "tickLine0": 3972,
+   "fires0": [],
+   "fires1": [
+    591421472948,
+    591422472485,
+    591423472533,
+    591424472947,
+    591425472647,
+    591426472822
+   ],
+   "counts": {
+    "mainFrames": 360,
+    "updateLayoutTree": 360,
+    "styleElements": 2523,
+    "layout": 175,
+    "prePaint": 360,
+    "paint": 680,
+    "layerize": 360,
+    "io": 720,
+    "fireAnimationFrame": 189,
+    "countdownCalls": 195,
+    "timerFire": 24
+   },
+   "perSecond": 27,
+   "meanPerSecond": 33.6,
+   "seconds": [
+    27,
+    60,
+    27,
+    27,
+    27
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "S",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4145,
+   "fires0": [],
+   "fires1": [
+    591431867527,
+    591431978669,
+    591432867981,
+    591432978132,
+    591433868421,
+    591433978050,
+    591434868277,
+    591434978718,
+    591435867375,
+    591435978649,
+    591436867750,
+    591436977771
+   ],
+   "counts": {
+    "mainFrames": 298,
+    "updateLayoutTree": 298,
+    "styleElements": 2568,
+    "layout": 10,
+    "prePaint": 298,
+    "paint": 859,
+    "layerize": 298,
+    "io": 596,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 208,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 35.8,
+   "seconds": [
+    29,
+    36,
+    63,
+    56,
+    29,
+    29,
+    29,
+    29,
+    29,
+    29
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "C6",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4156,
+   "fires0": [],
+   "fires1": [
+    591442214964,
+    591442294337,
+    591443214877,
+    591443294301,
+    591444214915,
+    591444295568,
+    591445214903,
+    591445295018,
+    591446214981,
+    591446294497,
+    591447216320,
+    591447295076
+   ],
+   "counts": {
+    "mainFrames": 305,
+    "updateLayoutTree": 305,
+    "styleElements": 2414,
+    "layout": 27,
+    "prePaint": 305,
+    "paint": 903,
+    "layerize": 305,
+    "io": 610,
+    "fireAnimationFrame": 226,
+    "countdownCalls": 238,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 40.9,
+   "seconds": [
+    95,
+    85,
+    29,
+    29,
+    29,
+    29,
+    29,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "V7",
+   "mode": "full",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": null,
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 0,
+   "timers": 2,
+   "tickLine0": 4333,
+   "fires0": [],
+   "fires1": [
+    591452715220,
+    591452804371,
+    591453714706,
+    591453804023,
+    591454715026,
+    591454803525,
+    591455714663,
+    591455803595,
+    591456715125,
+    591456803828,
+    591457714375,
+    591457804458
+   ],
+   "counts": {
+    "mainFrames": 252,
+    "updateLayoutTree": 252,
+    "styleElements": 2460,
+    "layout": 30,
+    "prePaint": 252,
+    "paint": 881,
+    "layerize": 252,
+    "io": 504,
+    "fireAnimationFrame": 7,
+    "countdownCalls": 26,
+    "timerFire": 30
+   },
+   "perSecond": 4,
+   "meanPerSecond": 4.3,
+   "seconds": [
+    6,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 15,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591503085196,
+    591504083700,
+    591505084093,
+    591506085066,
+    591507084370,
+    591508083986
+   ],
+   "counts": {
+    "mainFrames": 246,
+    "updateLayoutTree": 235,
+    "styleElements": 2634,
+    "layout": 116,
+    "prePaint": 246,
+    "paint": 221,
+    "layerize": 246,
+    "io": 492,
+    "fireAnimationFrame": 247,
+    "countdownCalls": 253,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 27.6,
+   "seconds": [
+    28,
+    28,
+    27,
+    28,
+    27
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "C2",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 15,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591517324022,
+    591518324382,
+    591519324387,
+    591520324830,
+    591521323966,
+    591522324162
+   ],
+   "counts": {
+    "mainFrames": 238,
+    "updateLayoutTree": 229,
+    "styleElements": 2089,
+    "layout": 114,
+    "prePaint": 238,
+    "paint": 209,
+    "layerize": 238,
+    "io": 476,
+    "fireAnimationFrame": 194,
+    "countdownCalls": 200,
+    "timerFire": 23
+   },
+   "perSecond": 28,
+   "meanPerSecond": 28,
+   "seconds": [
+    28,
+    28,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "Vf",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3972,
+   "fires0": [],
+   "fires1": [
+    591532244410,
+    591533245691,
+    591534245952,
+    591535245547,
+    591536245203,
+    591537245167
+   ],
+   "counts": {
+    "mainFrames": 246,
+    "updateLayoutTree": 236,
+    "styleElements": 593,
+    "layout": 122,
+    "prePaint": 246,
+    "paint": 228,
+    "layerize": 246,
+    "io": 492,
+    "fireAnimationFrame": 193,
+    "countdownCalls": 199,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.4,
+   "seconds": [
+    61,
+    28,
+    28,
+    27,
+    28
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "S",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4145,
+   "fires0": [],
+   "fires1": [
+    591547500226,
+    591548310683,
+    591548499618,
+    591549310315,
+    591549499624,
+    591550310283,
+    591550500040,
+    591551310908,
+    591551500061,
+    591552310477,
+    591552500021,
+    591553310745
+   ],
+   "counts": {
+    "mainFrames": 198,
+    "updateLayoutTree": 177,
+    "styleElements": 534,
+    "layout": 10,
+    "prePaint": 198,
+    "paint": 39,
+    "layerize": 198,
+    "io": 396,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 208,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 32.4,
+   "seconds": [
+    29,
+    29,
+    29,
+    29,
+    29,
+    29,
+    29,
+    29,
+    29,
+    63
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "C6",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 18,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4156,
+   "fires0": [],
+   "fires1": [
+    591563090572,
+    591563578468,
+    591564090575,
+    591564578546,
+    591565090806,
+    591565578506,
+    591566090756,
+    591566577420,
+    591567089947,
+    591567578417,
+    591568090645,
+    591568579051
+   ],
+   "counts": {
+    "mainFrames": 185,
+    "updateLayoutTree": 169,
+    "styleElements": 276,
+    "layout": 23,
+    "prePaint": 185,
+    "paint": 59,
+    "layerize": 185,
+    "io": 370,
+    "fireAnimationFrame": 162,
+    "countdownCalls": 174,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 28.6,
+   "seconds": [
+    29,
+    29,
+    29,
+    28,
+    28,
+    29,
+    29,
+    28,
+    28,
+    29
+   ]
+  },
+  {
+   "rep": 1,
+   "build": "V7",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 22,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4333,
+   "fires0": [],
+   "fires1": [
+    591578240088,
+    591579187228,
+    591579239757,
+    591580187223,
+    591580240421,
+    591581186847,
+    591581240188,
+    591582187325,
+    591582240257,
+    591583186584,
+    591583239947,
+    591584186982
+   ],
+   "counts": {
+    "mainFrames": 75,
+    "updateLayoutTree": 63,
+    "styleElements": 445,
+    "layout": 29,
+    "prePaint": 75,
+    "paint": 61,
+    "layerize": 75,
+    "io": 150,
+    "fireAnimationFrame": 7,
+    "countdownCalls": 26,
+    "timerFire": 29
+   },
+   "perSecond": 4,
+   "meanPerSecond": 4.4,
+   "seconds": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    6,
+    6,
+    4
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591590990191,
+    591591990403,
+    591592989284,
+    591593990008,
+    591594989996,
+    591595989621
+   ],
+   "counts": {
+    "mainFrames": 242,
+    "updateLayoutTree": 231,
+    "styleElements": 2120,
+    "layout": 115,
+    "prePaint": 242,
+    "paint": 208,
+    "layerize": 242,
+    "io": 484,
+    "fireAnimationFrame": 195,
+    "countdownCalls": 201,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.8,
+   "seconds": [
+    28,
+    28,
+    62,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "C2",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591603292391,
+    591604292848,
+    591605292962,
+    591606292813,
+    591607291861,
+    591608292139
+   ],
+   "counts": {
+    "mainFrames": 239,
+    "updateLayoutTree": 228,
+    "styleElements": 1768,
+    "layout": 115,
+    "prePaint": 239,
+    "paint": 209,
+    "layerize": 239,
+    "io": 478,
+    "fireAnimationFrame": 161,
+    "countdownCalls": 167,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 27.6,
+   "seconds": [
+    27,
+    28,
+    28,
+    27,
+    28
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "Vf",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3972,
+   "fires0": [],
+   "fires1": [
+    591615684051,
+    591616684893,
+    591617684731,
+    591618684416,
+    591619685621,
+    591620684395
+   ],
+   "counts": {
+    "mainFrames": 238,
+    "updateLayoutTree": 228,
+    "styleElements": 518,
+    "layout": 119,
+    "prePaint": 238,
+    "paint": 219,
+    "layerize": 238,
+    "io": 476,
+    "fireAnimationFrame": 159,
+    "countdownCalls": 165,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 27.6,
+   "seconds": [
+    27,
+    28,
+    28,
+    27,
+    28
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "S",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4145,
+   "fires0": [],
+   "fires1": [
+    591628039049,
+    591628142274,
+    591629039640,
+    591629143344,
+    591630039052,
+    591630143310,
+    591631039397,
+    591631143090,
+    591632039731,
+    591632143156,
+    591633038519,
+    591633143317
+   ],
+   "counts": {
+    "mainFrames": 186,
+    "updateLayoutTree": 171,
+    "styleElements": 532,
+    "layout": 10,
+    "prePaint": 186,
+    "paint": 37,
+    "layerize": 186,
+    "io": 372,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 208,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 35.7,
+   "seconds": [
+    29,
+    29,
+    29,
+    29,
+    29,
+    28,
+    29,
+    37,
+    63,
+    55
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "C6",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4156,
+   "fires0": [],
+   "fires1": [
+    591640337865,
+    591640432057,
+    591641338903,
+    591641431661,
+    591642338309,
+    591642432305,
+    591643338472,
+    591643432345,
+    591644338314,
+    591644432134,
+    591645338019,
+    591645432014
+   ],
+   "counts": {
+    "mainFrames": 186,
+    "updateLayoutTree": 172,
+    "styleElements": 318,
+    "layout": 27,
+    "prePaint": 186,
+    "paint": 74,
+    "layerize": 186,
+    "io": 372,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 208,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 35.7,
+   "seconds": [
+    29,
+    29,
+    29,
+    36,
+    63,
+    55,
+    29,
+    29,
+    29,
+    29
+   ]
+  },
+  {
+   "rep": 2,
+   "build": "V7",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4333,
+   "fires0": [],
+   "fires1": [
+    591652618051,
+    591652714183,
+    591653617977,
+    591653714944,
+    591654618092,
+    591654714890,
+    591655617377,
+    591655714281,
+    591656617917,
+    591656714387,
+    591657617199,
+    591657713971
+   ],
+   "counts": {
+    "mainFrames": 78,
+    "updateLayoutTree": 67,
+    "styleElements": 480,
+    "layout": 29,
+    "prePaint": 78,
+    "paint": 62,
+    "layerize": 78,
+    "io": 156,
+    "fireAnimationFrame": 7,
+    "countdownCalls": 26,
+    "timerFire": 30
+   },
+   "perSecond": 4,
+   "meanPerSecond": 4.3,
+   "seconds": [
+    6,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "C",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591664910584,
+    591665911615,
+    591666911467,
+    591667910755,
+    591668911090,
+    591669912118
+   ],
+   "counts": {
+    "mainFrames": 239,
+    "updateLayoutTree": 229,
+    "styleElements": 1760,
+    "layout": 115,
+    "prePaint": 239,
+    "paint": 208,
+    "layerize": 238,
+    "io": 477,
+    "fireAnimationFrame": 160,
+    "countdownCalls": 166,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 27.6,
+   "seconds": [
+    27,
+    28,
+    28,
+    27,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "C2",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    3983
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3931,
+   "fires0": [],
+   "fires1": [
+    591677298593,
+    591678298545,
+    591679299093,
+    591680298371,
+    591681298694,
+    591682299609
+   ],
+   "counts": {
+    "mainFrames": 238,
+    "updateLayoutTree": 228,
+    "styleElements": 2388,
+    "layout": 115,
+    "prePaint": 238,
+    "paint": 209,
+    "layerize": 238,
+    "io": 476,
+    "fireAnimationFrame": 227,
+    "countdownCalls": 233,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 28,
+   "seconds": [
+    28,
+    28,
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "Vf",
+   "mode": "freeze",
+   "pick": {
+    "timers": 1,
+    "visible": 1,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 56
+   },
+   "freeze": {
+    "paused": 13,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3789,
+    4027
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 1,
+   "tickLine0": 3972,
+   "fires0": [],
+   "fires1": [
+    591689675186,
+    591690675642,
+    591691674075,
+    591692675033,
+    591693675648,
+    591694674489
+   ],
+   "counts": {
+    "mainFrames": 247,
+    "updateLayoutTree": 237,
+    "styleElements": 596,
+    "layout": 121,
+    "prePaint": 247,
+    "paint": 228,
+    "layerize": 247,
+    "io": 494,
+    "fireAnimationFrame": 195,
+    "countdownCalls": 201,
+    "timerFire": 24
+   },
+   "perSecond": 28,
+   "meanPerSecond": 34.8,
+   "seconds": [
+    28,
+    28,
+    28,
+    62,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "S",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 112
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4211
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4145,
+   "fires0": [],
+   "fires1": [
+    591701978959,
+    591702054476,
+    591702979186,
+    591703054258,
+    591703979108,
+    591704054393,
+    591704979413,
+    591705054004,
+    591705978820,
+    591706054147,
+    591706979120,
+    591707054752
+   ],
+   "counts": {
+    "mainFrames": 185,
+    "updateLayoutTree": 170,
+    "styleElements": 532,
+    "layout": 11,
+    "prePaint": 185,
+    "paint": 39,
+    "layerize": 185,
+    "io": 370,
+    "fireAnimationFrame": 196,
+    "countdownCalls": 208,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 35.7,
+   "seconds": [
+    29,
+    35,
+    63,
+    57,
+    29,
+    28,
+    29,
+    30,
+    29,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "C6",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4222
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4156,
+   "fires0": [],
+   "fires1": [
+    591714220541,
+    591714304863,
+    591715220202,
+    591715304694,
+    591716221035,
+    591716304924,
+    591717220681,
+    591717303829,
+    591718220475,
+    591718304840,
+    591719224148,
+    591719303830
+   ],
+   "counts": {
+    "mainFrames": 177,
+    "updateLayoutTree": 163,
+    "styleElements": 274,
+    "layout": 23,
+    "prePaint": 177,
+    "paint": 59,
+    "layerize": 177,
+    "io": 354,
+    "fireAnimationFrame": 160,
+    "countdownCalls": 172,
+    "timerFire": 30
+   },
+   "perSecond": 29,
+   "meanPerSecond": 28.7,
+   "seconds": [
+    29,
+    29,
+    29,
+    29,
+    29,
+    28,
+    28,
+    29,
+    29,
+    28
+   ]
+  },
+  {
+   "rep": 3,
+   "build": "V7",
+   "mode": "freeze",
+   "pick": {
+    "timers": 2,
+    "visible": 2,
+    "inHero": true,
+    "rect": {
+     "x": 27,
+     "y": 396.765625,
+     "w": 376,
+     "h": 88
+    },
+    "keepNodes": 136
+   },
+   "freeze": {
+    "paused": 16,
+    "keptRunning": 0,
+    "smil": 0
+   },
+   "countdownRange1Based": [
+    3993,
+    4399
+   ],
+   "countdownScreenChanges": 2,
+   "timers": 2,
+   "tickLine0": 4333,
+   "fires0": [],
+   "fires1": [
+    591726459910,
+    591726554933,
+    591727460529,
+    591727555020,
+    591728459691,
+    591728554970,
+    591729459940,
+    591729554453,
+    591730460042,
+    591730554334,
+    591731458910,
+    591731555014
+   ],
+   "counts": {
+    "mainFrames": 77,
+    "updateLayoutTree": 66,
+    "styleElements": 349,
+    "layout": 28,
+    "prePaint": 77,
+    "paint": 59,
+    "layerize": 77,
+    "io": 154,
+    "fireAnimationFrame": 6,
+    "countdownCalls": 24,
+    "timerFire": 30
+   },
+   "perSecond": 4,
+   "meanPerSecond": 4,
+   "seconds": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  }
+ ]
+}
