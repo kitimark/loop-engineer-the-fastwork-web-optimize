@@ -33,7 +33,7 @@ test('package.json has the test scripts and the hook setup', () => {
   // ts-lock-share: the functional chrome files alone, as one reader of the shared lane; never a timing file
   assert.match(s['test:chrome:fn'], /^node tools\/lock\.mjs run chrome-measure --shared --max-seconds 300 --weight test-chrome-fn --owner test-chrome-fn -- node --test /);
   assert.doesNotMatch(s['test:chrome:fn'], /verify\.chrome|fix-ab\.chrome|host-real\.chrome|tests\/chrome\/\*/);
-  for (const f of ['vendor-shim', 'bench', 'check']) assert.match(s['test:chrome:fn'], new RegExp(`tests/chrome/${f}\\.chrome\\.test\\.mjs`), `${f}.chrome is functional`);
+  for (const f of ['vendor-shim', 'bench', 'check', 'costcard']) assert.match(s['test:chrome:fn'], new RegExp(`tests/chrome/${f}\\.chrome\\.test\\.mjs`), `${f}.chrome is functional`);
   // postmortem 2026-09-30 fix (b) capped it at 3; I-076 (lead GO): 6, the suite waits on timers far more than it computes
   // (c3: 299 s wall, c6: 160 s, both ~280 CPU-s), so the wall time stays well under the shared lane's 300 s kill
   assert.match(s.test, /--test-concurrency=6 /, 'I-076');
