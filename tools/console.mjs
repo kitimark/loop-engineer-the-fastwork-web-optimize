@@ -83,10 +83,15 @@
 //        # accepted final again …`, `… decision stale (was accepted on rev 1): re-decide on rev 2, revised by …`.
 //   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
 //   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
-//   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask]
+//   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask] [--image <path> [--caption "…"]]…
 //        # the lead always; others only when assigned ("ask the lead to assign you"). --ask: you need an answer from
 //        # the user (the thread shows "waiting on you"). Prints REPLIED T-003 #4 and anything that was scrubbed.
-//   node tools/console.mjs thread new --by lead --title "…" --text "…"|--file <f> [--topic <status id>] [--to <agent>] [--ask]
+//   node tools/console.mjs thread new --by lead --title "…" --text "…"|--file <f> [--topic <status id>] [--to <agent>] [--ask] [--image …]
+//        # I-089 images: --image <path> repeats (at most 6 per message); a --caption belongs to the --image before it.
+//        # PNG, JPEG, GIF or WebP by content (not by name), at most 15 MB each, copied as is into the local store
+//        # (<console>/threads/T-003/m4-1.png); the page shows them as thumbnails that open full size. With an image
+//        # the text may be left out. Captions are scrubbed like the text; no path or host is stored. The user can
+//        # attach images on the page too; `thread wait` and `thread show` print them as [image 1: <file> "caption"].
 //   node tools/console.mjs thread assign <id> --to <agent>[,<agent>] --by lead [--remove]
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
 //
@@ -109,7 +114,7 @@ import * as TH from './lib/console-threads.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -174,6 +179,8 @@ async function thread() {
     if (f !== undefined) return readFileSync(f, 'utf8');
     return opt('text');
   };
+  const images = () => TH.parseImageArgs(argv); // I-089
+  const imgNote = (k) => (k ? ` with ${k} image${k === 1 ? '' : 's'}` : '');
   const scrubNote = (sc) => (sc && sc.length ? `\nscrubbed before storing (Hard rule 12): ${sc.join(', ')}` : '');
   if (!sub || sub === 'help') { console.log('see the header of tools/console.mjs (Threads)'); return sub ? 0 : EXIT.usage; }
   if (sub === 'list') {
@@ -187,8 +194,8 @@ async function thread() {
     return 0;
   }
   if (sub === 'new') {
-    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask') });
-    console.log(`STARTED ${r.thread.id}: ${r.thread.title}${r.thread.assignees.length ? ` (assigned: ${r.thread.assignees.join(', ')})` : ''}${scrubNote(r.scrubbed)}`);
+    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask'), images: images() });
+    console.log(`STARTED ${r.thread.id}: ${r.thread.title}${r.thread.assignees.length ? ` (assigned: ${r.thread.assignees.join(', ')})` : ''}${imgNote(r.thread.messages[0].images?.length)}${scrubNote(r.scrubbed)}`);
     return 0;
   }
   if (sub === 'wait') {
@@ -240,14 +247,15 @@ async function thread() {
     console.log(TH.threadLine(t, as()));
     for (const m of t.messages) {
       console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''} at ${m.at}:`);
-      for (const l of String(m.text).split('\n')) console.log(`    ${l}`);
+      if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) console.log(`    ${l}`);
+      for (const l of TH.imageLines(t, m)) console.log(`    ${l}`); // I-089
     }
     for (const h of t.history) console.log(`  ${h.at} ${h.who} ${h.action}${h.note ? `: ${h.note}` : ''}`);
     return 0;
   }
   if (sub === 'reply') {
-    const r = await TH.replyAgent(id, { by: by(), text: textArg(), ask: flag('ask') });
-    console.log(`REPLIED ${id} #${r.n}${flag('ask') ? ' (waiting on the user)' : ''}${scrubNote(r.scrubbed)}`);
+    const r = await TH.replyAgent(id, { by: by(), text: textArg(), ask: flag('ask'), images: images() });
+    console.log(`REPLIED ${id} #${r.n}${imgNote(r.images)}${flag('ask') ? ' (waiting on the user)' : ''}${scrubNote(r.scrubbed)}`);
     return 0;
   }
   if (sub === 'assign') {

@@ -11,6 +11,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import http from 'node:http';
 import { tempDir, node, nodeAsync, tool, startProc, request, sleep } from '../helpers.mjs';
+import { THREAD_BODY_MAX } from '../../tools/lib/console-server.mjs';
 
 const CON = tool('console.mjs');
 let state, env, srv, base, notifyLog;
@@ -185,7 +186,7 @@ test('assign: only the lead; the assignee wakes on the backlog; a non-assignee i
   assert.match(byUser.stderr, /"user" writes only from the console page/);
 });
 
-test('thread POSTs: localhost Host, x-console, same Origin, JSON body under 64 KB; bad ids and actions', async () => {
+test('thread POSTs: localhost Host, x-console, same Origin, JSON body under 64 KB (a new thread or a reply: room for images, I-089); bad ids and actions', async () => {
   const port = new URL(base).port;
   assert.equal((await req('/api/threads', { headers: { host: `evil.invalid:${port}` } })).status, 421);
   assert.equal((await req('/threads', { headers: { host: `evil.invalid:${port}` } })).status, 421);
@@ -195,8 +196,17 @@ test('thread POSTs: localhost Host, x-console, same Origin, JSON body under 64 K
   assert.equal((await userPost('/api/threads/T-001/reply', { text: 'x' }, { origin: 'null' })).status, 403);
   const okOrigin = await userPost('/api/threads', { title: 'Same origin', text: 'ok' }, { origin: `http://localhost:${port}` });
   assert.equal(okOrigin.status, 200, okOrigin.text);
-  const big = await req('/api/threads', { method: 'POST', headers: { 'x-console': '1' }, raw: JSON.stringify({ title: 't', text: 'x'.repeat(70 * 1024) }) });
+  // I-089: a new thread and a reply carry images (base64), so they take up to THREAD_BODY_MAX (~27 MB); every other
+  // POST keeps 64 KB. Text alone is still held to 8000 chars by the store (409).
+  const big = await req('/api/threads/T-001/read', { method: 'POST', headers: { 'x-console': '1' }, raw: JSON.stringify({ n: 1, pad: 'x'.repeat(70 * 1024) }) });
   assert.equal(big.status, 413);
+  assert.match(big.json.error, /64 KB max/);
+  const longText = await req('/api/threads', { method: 'POST', headers: { 'x-console': '1' }, raw: JSON.stringify({ title: 't', text: 'x'.repeat(70 * 1024) }) });
+  assert.equal(longText.status, 409);
+  assert.match(longText.json.error, /too long/);
+  const huge = await req('/api/threads', { method: 'POST', headers: { 'x-console': '1' }, raw: JSON.stringify({ title: 't', text: 'x', images: [{ data: 'A'.repeat(THREAD_BODY_MAX) }] }) });
+  assert.equal(huge.status, 413);
+  assert.match(huge.json.error, /body too large \(\d+ MB max\)/);
   assert.equal((await req('/api/threads', { method: 'POST', headers: { 'x-console': '1' }, raw: '[1]' })).status, 400);
   assert.equal((await req('/api/threads', { method: 'POST', headers: { 'x-console': '1' }, raw: 'nope' })).status, 400);
   assert.equal((await userPost('/api/threads', { title: '', text: 'x' })).status, 409);
@@ -221,3 +231,84 @@ test('I-084: the list, the thread and the reply\'s answer name who reads the use
   const page = await req('/threads');
   assert.match(page.text, /id="reply-to"/);
 });
+
+// ---- I-089 (user PR-009 note): images in threads ------------------------------------------------------------------
+const pngBytes = (w = 1170, h = 2532) => { const b = Buffer.alloc(64); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b); b.write('IHDR', 12, 'latin1'); b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20); return b; };
+const jpgBytes = () => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(60, 7)]);
+
+test('I-089 CLI: thread new|reply --image <path> [--caption "…"] stores the images; the page API lists them; /thread-media serves only those', async () => {
+  const d = tempDir('fw-thread-img-e2e-');
+  const png = join(d, 'hero shot.png'); writeFileSync(png, pngBytes());
+  const jpg = join(d, 'end.jpg'); writeFileSync(jpg, jpgBytes());
+  const fake = join(d, 'fake.png'); writeFileSync(fake, 'just text');
+  const s = cli('thread', 'new', '--by', 'lead', '--title', 'Pictures', '--image', jpg, '--caption', 'end of page');
+  assert.equal(s.code, 0, s.out);
+  const id = /^STARTED (T-\d+): Pictures with 1 image$/m.exec(s.stdout)?.[1];
+  assert.ok(id, s.stdout);
+  const r = cli('thread', 'reply', id, '--by', 'lead', '--text', 'Two shots', '--image', png, '--caption', 'hero at 192.168.77.12', '--image', jpg, '--ask');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, new RegExp(`^REPLIED ${id} #2 with 2 images \\(waiting on the user\\)$`, 'm'));
+  assert.match(r.stdout, /scrubbed before storing \(Hard rule 12\): ip address/);
+  const dir = join(state, 'console', 'threads', id);
+  assert.deepEqual(readFileSync(join(dir, 'm2-1.png')), pngBytes());
+  assert.ok(existsSync(join(dir, 'm2-2.jpg')) && existsSync(join(dir, 'm1-1.jpg')));
+  const stored = readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8');
+  assert.ok(!stored.includes(d) && !stored.includes('hero shot') && !stored.includes('192.168.77.12'), 'no source path or LAN address in the store');
+  // refused: not an image by content, a caption with no image, too many; nothing changes
+  const bad = cli('thread', 'reply', id, '--by', 'lead', '--text', 'x', '--image', fake);
+  assert.equal(bad.code, 1, bad.out);
+  assert.match(bad.stderr, /fake\.png: not a PNG, JPEG, WebP or GIF image/);
+  const orphan = cli('thread', 'reply', id, '--by', 'lead', '--caption', 'what?', '--text', 'x');
+  assert.equal(orphan.code, 1);
+  assert.match(orphan.stderr, /--caption belongs to the --image before it/);
+  const seven = cli('thread', 'reply', id, '--by', 'lead', ...Array.from({ length: 7 }, () => ['--image', png]).flat());
+  assert.equal(seven.code, 1);
+  assert.match(seven.stderr, /at most 6 images per message/);
+  assert.equal(readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8'), stored, 'unchanged');
+  // thread show prints the files under the text
+  const sh = cli('thread', 'show', id);
+  assert.match(sh.stdout, new RegExp(`#2 lead \\(asks the user\\) at \\S+:\\n {4}Two shots\\n {4}\\[image 1: .*m2-1\\.png "hero at <ip address>"\\]\\n {4}\\[image 2: .*m2-2\\.jpg\\]`));
+  assert.match(sh.stdout, /#1 lead at \S+:\n {4}\[image 1: .*m1-1\.jpg "end of page"\]/, 'an image-only message prints no empty line');
+  // the page API and the media route
+  const tj = (await req(`/api/threads/${id}`)).json.thread;
+  assert.deepEqual(tj.messages[1].images, [
+    { url: `/thread-media/${id}/m2-1.png`, name: 'm2-1.png', caption: 'hero at <ip address>', w: 1170, h: 2532 },
+    { url: `/thread-media/${id}/m2-2.jpg`, name: 'm2-2.jpg' },
+  ]);
+  const img = await req(`/thread-media/${id}/m2-1.png`);
+  assert.equal(img.status, 200);
+  assert.equal(img.headers['content-type'], 'image/png');
+  assert.equal(img.headers['x-content-type-options'], 'nosniff');
+  assert.deepEqual(img.body, pngBytes());
+  writeFileSync(join(dir, 'm7-1.png'), pngBytes()); // in the folder, but no message carries it
+  for (const p of [`/thread-media/${id}/m7-1.png`, `/thread-media/${id}/..%2f${id}.json`, `/thread-media/${id}/../${id}.json`, `/thread-media/${id}/${id}.json`, '/thread-media/T-999/m2-1.png', `/thread-media/${id}/m2-1.svg`]) {
+    assert.equal((await req(p)).status, 404, p);
+  }
+  const port = new URL(base).port;
+  assert.equal((await req(`/thread-media/${id}/m2-1.png`, { headers: { host: `evil.invalid:${port}` } })).status, 421, 'localhost only');
+});
+
+test('I-089 page: the user sends images with a reply or a new thread; sniffed and size-checked; the lead\'s thread wait prints the files', async () => {
+  const c = await userPost('/api/threads', { title: 'My screenshot', text: '', images: [{ data: pngBytes(400, 300).toString('base64'), caption: 'my phone' }] });
+  assert.equal(c.status, 200, c.text);
+  const id = c.json.thread.id;
+  assert.deepEqual(c.json.thread.messages[0].images, [{ url: `/thread-media/${id}/m1-1.png`, name: 'm1-1.png', caption: 'my phone', w: 400, h: 300 }]);
+  assert.equal((await req(`/thread-media/${id}/m1-1.png`)).status, 200);
+  const w = cliAsync('thread', 'wait', '--as', 'lead', '--timeout', '30', '--quiet');
+  await sleep(300);
+  const rp = await userPost(`/api/threads/${id}/reply`, { text: 'and the end', images: [{ data: jpgBytes().toString('base64') }] });
+  assert.equal(rp.status, 200, rp.text);
+  const out = await w;
+  assert.equal(out.code, 0, out.out);
+  const dir = join(state, 'console', 'threads', id);
+  assert.ok(out.stdout.includes(`[image 1: ${join(dir, 'm1-1.png')} "my phone"]`), out.stdout);
+  assert.match(out.stdout, new RegExp(`#2 by user at \\S+:\\n {2}and the end\\n {2}\\[image 1: .*${id}/m2-1\\.jpg\\]`));
+  // refused: not an image by content, bad base64, a video; the guards stay
+  const svg = await userPost(`/api/threads/${id}/reply`, { text: 'x', images: [{ data: Buffer.from('<svg onload=alert(1)>').toString('base64') }] });
+  assert.equal(svg.status, 409);
+  assert.match(svg.json.error, /not a PNG, JPEG, WebP or GIF image/);
+  assert.equal((await userPost(`/api/threads/${id}/reply`, { text: 'x', images: [{ data: '%%%' }] })).status, 409);
+  assert.equal((await req(`/api/threads/${id}/reply`, { method: 'POST', body: { text: 'x', images: [{ data: pngBytes().toString('base64') }] } })).status, 403, 'no x-console');
+  assert.equal(T_count(id), 2, 'nothing stored by the refused posts');
+});
+const T_count = (id) => JSON.parse(readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8')).messages.length;

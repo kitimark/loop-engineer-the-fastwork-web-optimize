@@ -7,7 +7,9 @@
 <link rel="stylesheet" href="/console-nav.css">
 <style>
 /* The user console's Threads page (ts-console-threads): one conversation per topic. Every text is rendered with
-   textContent (never as HTML); only http://localhost / 127.0.0.1 links become links. Nothing loads from outside. */
+   textContent (never as HTML); only http://localhost / 127.0.0.1 links become links. Nothing loads from outside.
+   I-089: a message's images load only from this server's /thread-media/ store; the user's own images are read in the
+   browser (data: previews) and sent with the message as base64, nowhere else. */
 :root {
   --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
   --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
@@ -86,6 +88,21 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
 .mtext a { color: var(--accent); }
 .to { font-size: 14px; color: var(--muted); margin: 8px 0 0; overflow-wrap: anywhere; }
 .to b { color: var(--ink); font-weight: 650; }
+/* I-089: images under a message (thumbnails, open full size), the composer's attachments, the full-size view */
+.mimgs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.mimgs figure, .pending figure { margin: 0; max-width: 220px; }
+.mimgs a.thumb { display: block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--bg); line-height: 0; }
+.mimgs img { display: block; max-width: 220px; max-height: 220px; width: auto; height: auto; object-fit: contain; }
+.mimgs figcaption, .pending figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
+.pending { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.pending:empty { display: none; }
+.pending img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; border: 1px solid var(--line); }
+.pending input[type=text] { font-size: 14px; padding: 6px 8px; margin-top: 4px; }
+.pending button { min-height: 32px; padding: 2px 10px; font-size: 13px; margin-top: 4px; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; z-index: 20; cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: calc(100% - 60px); object-fit: contain; }
+.lightbox p { color: #fff; margin: 0; font-size: 15px; text-align: center; }
+.lightbox a { color: #cfdcff; font-size: 14px; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px; max-width: calc(100% - 32px); }
 @media (max-width: 520px) { ol.msgs li.you { margin-left: 16px; } ol.msgs li.agent { margin-right: 16px; } }
 </style>
@@ -109,8 +126,10 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
         <textarea id="new-text" maxlength="8000" required></textarea>
         <label class="small" for="new-topic">Status item (optional, e.g. hero-exit)</label>
         <input type="text" id="new-topic" maxlength="41" pattern="[a-z0-9][a-z0-9-]{0,40}">
+        <div class="pending" id="new-imgs"></div>
+        <input type="file" id="new-file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
         <p class="to" id="new-to">Your question goes to: <b>lead</b></p>
-        <div class="row"><span class="hint">Ctrl/⌘+Enter sends. The lead reads it and replies or hands it to the agent on that topic.</span><span class="sp"></span><button class="primary" type="submit" id="new-send">Start thread</button></div>
+        <div class="row"><button type="button" class="quiet" id="new-add" title="PNG, JPEG, GIF or WebP; up to 6, 20 MB together. You can also paste or drop them.">Add images</button><span class="hint">Ctrl/⌘+Enter sends. The lead reads it and replies or hands it to the agent on that topic.</span><span class="sp"></span><button class="primary" type="submit" id="new-send">Start thread</button></div>
       </form>
     </details>
     <ul class="threads" id="threads"></ul>
@@ -125,11 +144,14 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
     <form class="card" id="reply-form" autocomplete="off">
       <label class="small" for="reply-text" id="reply-label">Your reply</label>
       <textarea id="reply-text" maxlength="8000" required></textarea>
+      <div class="pending" id="reply-imgs"></div>
+      <input type="file" id="reply-file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
       <p class="to" id="reply-to">Your reply goes to: <b>lead</b></p>
-      <div class="row"><button type="button" class="quiet" id="tv-close">Close thread</button><span class="sp"></span><span class="hint">Ctrl/⌘+Enter sends</span><button class="primary" type="submit" id="reply-send">Send</button></div>
+      <div class="row"><button type="button" class="quiet" id="tv-close">Close thread</button><button type="button" class="quiet" id="reply-add" title="PNG, JPEG, GIF or WebP; up to 6, 20 MB together. You can also paste or drop them.">Add images</button><span class="sp"></span><span class="hint">Ctrl/⌘+Enter sends</span><button class="primary" type="submit" id="reply-send">Send</button></div>
     </form>
   </section>
 </div>
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-label="Image, full size"><img id="lb-img" alt=""><p id="lb-cap"></p><a id="lb-open" target="_blank" rel="noreferrer">Open in a new tab</a></div>
 <div class="toast" id="toast" hidden></div>
 <script src="/console-nav.js"></script>
 <script>
@@ -228,7 +250,8 @@ function renderThread(t) {
     var tm = el('span', null, ago(x.at)); tm.title = x.at; h.appendChild(tm);
     if (x.ask) h.appendChild(el('span', 'pill waiting-on-you', 'asks you'));
     li.appendChild(h);
-    var p = el('p', 'mtext'); richText(p, x.text); li.appendChild(p);
+    if (x.text || !x.images) { var p = el('p', 'mtext'); richText(p, x.text); li.appendChild(p); }
+    if (x.images && x.images.length) li.appendChild(images(x.images));
     ol.appendChild(li);
   });
   $('tv-close').textContent = t.status === 'closed' ? 'Reopen thread' : 'Close thread';
@@ -253,12 +276,93 @@ function markRead() {
   api('POST', '/api/threads/' + t.id + '/read', { n: n }).catch(function () {});
 }
 
+// ---- images (I-089): thumbnails that open full size; the composer's attachments ----
+var IMG_URL = /^\/thread-media\/T-\d{1,6}\/m\d{1,3}-[1-9]\.(?:png|jpg|gif|webp)$/;
+var IMG_TYPE = /^image\/(?:png|jpeg|gif|webp)$/;
+var MAX_IMAGES = 6, MAX_IMAGE = 15 * 1024 * 1024, MAX_TOTAL = 20 * 1024 * 1024;
+function images(list) {
+  var box = el('div', 'mimgs');
+  list.forEach(function (im, i) {
+    if (!IMG_URL.test(String(im.url))) return; // only the console's own store
+    var f = el('figure'), a = el('a', 'thumb'), img = el('img');
+    a.href = im.url; a.target = '_blank'; a.rel = 'noreferrer';
+    img.src = im.url; img.alt = im.caption || ('Image ' + (i + 1)); img.loading = 'lazy';
+    if (im.w && im.h) { img.width = im.w; img.height = im.h; }
+    a.title = 'Open full size';
+    a.addEventListener('click', function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); openImage(im); });
+    a.appendChild(img); f.appendChild(a);
+    if (im.caption) f.appendChild(el('figcaption', null, im.caption));
+    box.appendChild(f);
+  });
+  return box;
+}
+function openImage(im) {
+  $('lb-img').src = im.url; $('lb-img').alt = im.caption || 'Image';
+  $('lb-cap').textContent = im.caption || ''; $('lb-open').href = im.url;
+  $('lightbox').hidden = false;
+}
+function closeImage() { $('lightbox').hidden = true; $('lb-img').src = ''; }
+$('lightbox').addEventListener('click', function (e) { if (e.target !== $('lb-open')) closeImage(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('lightbox').hidden) closeImage(); });
+
+/** Images the user is about to send, per form: [{name, size, data (a data: URL), caption}]. Not kept as drafts. */
+var pending = { 'new': [], reply: [] };
+var TEXT = { 'new': 'new-text', reply: 'reply-text' };
+function pendingBytes(which) { return pending[which].reduce(function (n, p) { return n + p.size; }, 0); }
+function addFiles(which, files) {
+  Array.prototype.forEach.call(files || [], function (f) {
+    if (!IMG_TYPE.test(f.type)) return toast((f.name || 'That file') + ': only PNG, JPEG, GIF or WebP images.');
+    if (pending[which].length >= MAX_IMAGES) return toast('At most ' + MAX_IMAGES + ' images per message.');
+    if (f.size > MAX_IMAGE) return toast((f.name || 'That image') + ' is over 15 MB.');
+    if (pendingBytes(which) + f.size > MAX_TOTAL) return toast('The images may be 20 MB together.');
+    var item = { name: f.name || 'image', size: f.size, data: '', caption: '' };
+    pending[which].push(item);
+    var r = new FileReader();
+    r.onload = function () { item.data = String(r.result); renderPending(which); };
+    r.onerror = function () { pending[which] = pending[which].filter(function (p) { return p !== item; }); toast('Could not read ' + item.name + '.'); renderPending(which); };
+    r.readAsDataURL(f);
+  });
+  renderPending(which);
+}
+function renderPending(which) {
+  var box = $(which + '-imgs'); box.replaceChildren();
+  pending[which].forEach(function (p) {
+    var f = el('figure');
+    if (p.data) { var img = el('img'); img.src = p.data; img.alt = p.name; f.appendChild(img); } else f.appendChild(el('span', 'hint', 'reading…'));
+    var c = el('input'); c.type = 'text'; c.maxLength = 160; c.placeholder = 'Caption (optional)'; c.value = p.caption;
+    c.addEventListener('input', function () { p.caption = c.value; });
+    var x = el('button', null, 'Remove'); x.type = 'button';
+    x.addEventListener('click', function () { pending[which] = pending[which].filter(function (q) { return q !== p; }); renderPending(which); });
+    var cap = el('figcaption'); cap.appendChild(c); cap.appendChild(x); f.appendChild(cap);
+    box.appendChild(f);
+  });
+  $(TEXT[which]).required = !pending[which].length; // an image alone is a message
+}
+/** The images part of a POST body: base64 without the data: prefix; undefined when there are none. */
+function imagesBody(which) {
+  if (!pending[which].length) return undefined;
+  return pending[which].map(function (p) { var b = { data: p.data.slice(p.data.indexOf(',') + 1) }; if (p.caption.trim()) b.caption = p.caption.trim(); return b; });
+}
+function stillReading(which) { return pending[which].some(function (p) { return !p.data; }); }
+function clearPending(which) { pending[which] = []; renderPending(which); }
+['new', 'reply'].forEach(function (which) {
+  var input = $(which + '-file'), form = $(which === 'new' ? 'new-form' : 'reply-form');
+  $(which + '-add').addEventListener('click', function () { input.click(); });
+  input.addEventListener('change', function () { addFiles(which, input.files); input.value = ''; });
+  $(TEXT[which]).addEventListener('paste', function (e) {
+    var files = e.clipboardData && e.clipboardData.files;
+    if (files && files.length) { e.preventDefault(); addFiles(which, files); }
+  });
+  form.addEventListener('dragover', function (e) { e.preventDefault(); });
+  form.addEventListener('drop', function (e) { if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); addFiles(which, e.dataTransfer.files); } });
+});
+
 // ---- views ----
 function show(id) {
   current = id && TID.test(id) ? id : null;
   $('list-view').hidden = !!current; $('thread-view').hidden = !current;
   if (current) {
-    curThread = null;
+    curThread = null; clearPending('reply');
     $('reply-text').value = store('thread-draft-' + current) || '';
     loadThread(current, true);
   } else { listSig = ''; loadList(); }
@@ -277,21 +381,25 @@ $('new-text').addEventListener('input', function () { store('thread-draft-new', 
 $('reply-text').addEventListener('input', function () { if (current) store('thread-draft-' + current, this.value); });
 $('new-form').addEventListener('submit', function (e) {
   e.preventDefault();
-  if (busy) return; busy = true; $('new-send').disabled = true;
+  if (busy) return;
+  if (stillReading('new')) return toast('Still reading the images, a moment.');
+  busy = true; $('new-send').disabled = true;
   var topic = $('new-topic').value.trim();
-  api('POST', '/api/threads', { title: $('new-title').value, text: $('new-text').value, topic: topic || undefined }).then(function (j) {
+  api('POST', '/api/threads', { title: $('new-title').value, text: $('new-text').value, topic: topic || undefined, images: imagesBody('new') }).then(function (j) {
     store('thread-draft-new-title', null); store('thread-draft-new', null);
-    $('new-title').value = ''; $('new-text').value = ''; $('new-topic').value = '';
+    $('new-title').value = ''; $('new-text').value = ''; $('new-topic').value = ''; clearPending('new');
     location.hash = j.thread.id;
     toast('Sent to ' + toNames(j.thread) + '.');
   }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('new-send').disabled = false; });
 });
 $('reply-form').addEventListener('submit', function (e) {
   e.preventDefault();
-  if (busy || !current) return; busy = true; $('reply-send').disabled = true;
+  if (busy || !current) return;
+  if (stillReading('reply')) return toast('Still reading the images, a moment.');
+  busy = true; $('reply-send').disabled = true;
   var id = current;
-  api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value }).then(function (j) {
-    store('thread-draft-' + id, null); $('reply-text').value = '';
+  api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value, images: imagesBody('reply') }).then(function (j) {
+    store('thread-draft-' + id, null); $('reply-text').value = ''; clearPending('reply');
     renderThread(j.thread);
     toast('Sent to ' + toNames(j.thread) + '.');
     var last = $('tv-msgs').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest' });

@@ -11,7 +11,13 @@
 // reaches the page, the event feed or a notification (Hard rule 12).
 //
 // A thread: {id, title, topic?, status: open|closed, createdBy, createdAt, updatedAt, rev, assignees: [agent],
-//   messages: [{n, at, by: 'user'|agent, text, ask?}], reads: {user: n, <agent>: n}, history: [{at, who, action, note?}]}
+//   messages: [{n, at, by: 'user'|agent, text, ask?, images?}], reads: {user: n, <agent>: n}, history: [{at, who, action, note?}]}
+// Images (I-089, user PR-009 note): a message may carry up to LIMITS.images pictures, `images: [{name, caption?, w?, h?,
+//   bytes}]`, stored next to the thread as threads/T-003/m<n>-<i>.<ext> (n = the message, i = 1…). Agents attach them
+//   with `thread new|reply --image <path> [--caption "…"]`, the user from the page. Each one is sniffed by its first
+//   bytes (proposal.mjs sniffBytes: PNG, JPEG, GIF, WebP; never by name), held to LIMITS.imageBytes, and copied as is
+//   (nothing stripped). The stored metadata holds only the generated name, the caption (an agent's scrubbed), size and
+//   pixel size: no source path, host or device id. A message without images is stored and shown exactly as before.
 // Derived (never stored):
 //   state   closed | waiting-on-you (last message: an agent's, with ask) | answered (last: an agent's) | open (last: the user's)
 //   unread  for the user: agents' messages after reads.user; for an agent: the user's messages after reads[agent],
@@ -20,17 +26,20 @@
 //           Each reader has its own mark: the lead's wait never moves an assignee's, nor the other way round.
 // Who writes (lead decision 2026-10-02): the lead starts threads (`thread new`, optionally --to <agent>) and may
 // always reply; other agents reply only in threads assigned to them ("ask the lead to assign you").
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, copyFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { join, extname } from 'node:path';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { consoleDir, recipients } from './console.mjs';
 import { PERSONAL, sanitize } from './progress.mjs';
 import { redact } from './redact.mjs';
+import { sniffMedia, sniffBytes, MEDIA_TYPES, LIMITS as PROPOSAL_LIMITS } from './proposal.mjs';
 
 export const STATUSES = ['open', 'closed'];
 export const STATES = ['open', 'waiting-on-you', 'answered', 'closed'];
-export const LIMITS = Object.freeze({ title: 160, text: 8000, messages: 500, assignees: 8, note: 300 });
+// images: per message; imageBytes: per image (the proposals' screenshot limit); pageImageBytes: all images of one
+// message sent from the page together (they travel base64 in the JSON body, see console-server.mjs)
+export const LIMITS = Object.freeze({ title: 160, text: 8000, messages: 500, assignees: 8, note: 300, images: 6, caption: 160, imageBytes: PROPOSAL_LIMITS.imageBytes, pageImageBytes: 20 * 1024 * 1024 });
 export const USER = 'user';
 export const LEAD = 'lead';
 const GUARD = 'console-threads';
@@ -40,6 +49,10 @@ export const TID = /^T-\d{1,6}$/;
 
 export const threadsDir = () => join(consoleDir(), 'threads');
 const fileOf = (id) => join(threadsDir(), `${id}.json`);
+/** A thread's images: threads/T-003/ next to threads/T-003.json (I-089). */
+export const threadMediaDir = (id) => join(threadsDir(), id);
+/** Stored image names: m<message>-<index>.<ext>; what the server may serve (no path, no traversal). */
+export const IMAGE_NAME = /^m\d{1,3}-[1-9]\.(?:png|jpg|gif|webp)$/;
 
 /** "3", "t-3", "T-003" -> "T-003". */
 export const parseThreadId = idParser('T', 'thread');
@@ -80,8 +93,9 @@ export function scrubAgentText(s) {
   return { text: t, scrubbed: [...scrubbed] };
 }
 
-function needText(v, what, max) {
+function needText(v, what, max, { optional = false } = {}) {
   const t = clean(v);
+  if (!t && optional) return '';
   if (!t) throw new Error(`${what} is empty`);
   if (t.length > max) throw new Error(`${what} is too long (${t.length} > ${max} chars)`);
   return t;
@@ -104,6 +118,109 @@ function normTopic(t) {
   if (!TOPIC.test(s)) throw new Error(`--topic must be a status / PROGRESS id like hero-exit (got ${String(t).slice(0, 50)})`);
   return s;
 }
+
+// ---- images (I-089) ----------------------------------------------------------------------------------
+
+const B64 = /^[A-Za-z0-9+/]*={0,2}$/;
+
+/**
+ * Check a message's images before anything is written: `list` = [{file, caption?}] (an agent, the CLI) or
+ * [{data: base64 string, caption?}] (the user, the page). Sniffed by content (PNG, JPEG, GIF, WebP), at most
+ * LIMITS.imageBytes each, LIMITS.images per message; from the page also LIMITS.pageImageBytes together.
+ * `agent`: captions are scrubbed (scrubAgentText) and only files are accepted; the user's captions are kept as typed.
+ * Returns {items: [{file?|bytes?, info, caption?}], scrubbed: [kinds]}. Throws with the reason; nothing is stored.
+ */
+export function prepareImages(list, { agent = true } = {}) {
+  if (list == null) return { items: [], scrubbed: [] };
+  if (!Array.isArray(list)) throw new Error('images must be a list');
+  if (list.length > LIMITS.images) throw new Error(`at most ${LIMITS.images} images per message (got ${list.length})`);
+  const scrubbed = new Set();
+  let total = 0;
+  const lim = { imageBytes: LIMITS.imageBytes, videoBytes: Infinity }; // a video is refused below, by kind
+  const items = list.map((x, i) => {
+    const label = `image ${i + 1}`;
+    if (!x || typeof x !== 'object') throw new Error(`${label}: not an image`);
+    let info, src;
+    if (agent) {
+      if (typeof x.file !== 'string' || !x.file) throw new Error(`${label}: --image <path> is required`);
+      info = sniffMedia(x.file, lim);
+      src = { file: x.file };
+    } else {
+      if (typeof x.data !== 'string' || !x.data || x.data.length % 4 === 1 || !B64.test(x.data)) throw new Error(`${label}: the image data is not base64`);
+      const bytes = Buffer.from(x.data, 'base64');
+      info = sniffBytes(bytes.subarray(0, 32), bytes.length, label, lim);
+      total += bytes.length;
+      src = { bytes };
+    }
+    if (info.kind !== 'image') throw new Error(`${label}${src.file ? ` (${src.file})` : ''}: a video; only PNG, JPEG, GIF or WebP images go into a thread`);
+    let caption = x.caption == null ? '' : oneLine(clean(x.caption));
+    if (caption.length > LIMITS.caption) throw new Error(`${label}: the caption is too long (${caption.length} > ${LIMITS.caption} chars)`);
+    if (caption && agent) { const r = scrubAgentText(caption); caption = r.text; for (const k of r.scrubbed) scrubbed.add(k); }
+    return { ...src, info, ...(caption && { caption }) };
+  });
+  if (!agent && total > LIMITS.pageImageBytes) throw new Error(`the images are ${(total / 1048576).toFixed(1)} MB together, over the ${LIMITS.pageImageBytes / 1048576} MB limit per message`);
+  return { items, scrubbed: [...scrubbed] };
+}
+
+/**
+ * `--image <path> [--caption "…"]`, repeated, from a CLI argv (`--image=<path>` and `--caption=<text>` too): a
+ * --caption belongs to the --image right before it. Returns [{file, caption?}] in order. Throws on a --caption with no
+ * image before it, a second --caption for one image, or a flag without its value.
+ */
+export function parseImageArgs(argv) {
+  const out = [];
+  for (let i = 0; i < argv.length; i++) {
+    const m = /^--(image|caption)(?:=([\s\S]*))?$/.exec(argv[i]);
+    if (!m) continue;
+    let v = m[2];
+    if (v === undefined) { v = argv[i + 1]; i++; }
+    if (v === undefined || (m[2] === undefined && /^--/.test(v))) throw new Error(`--${m[1]} needs a value`);
+    if (m[1] === 'image') { if (!v) throw new Error('--image needs a path'); out.push({ file: v }); continue; }
+    const img = out.at(-1);
+    if (!img) throw new Error('--caption belongs to the --image before it: give --image <path> first');
+    if (img.caption !== undefined) throw new Error(`--image ${img.file} has two --caption flags`);
+    img.caption = v;
+  }
+  return out;
+}
+
+/** Write prepared images for message `n` into threads/<id>/; returns their metadata (names only, no source path). */
+function storeImages(id, n, items) {
+  if (!items.length) return [];
+  const dir = threadMediaDir(id);
+  mkdirSync(dir, { recursive: true });
+  const written = [];
+  try {
+    return items.map((x, i) => {
+      const name = `m${n}-${i + 1}.${x.info.ext}`;
+      const f = join(dir, name);
+      written.push(f);
+      if (x.bytes) writeFileSync(f, x.bytes); else copyFileSync(x.file, f);
+      return { name, ...(x.caption && { caption: x.caption }), ...(x.info.width && { w: x.info.width, h: x.info.height }), bytes: x.info.size };
+    });
+  } catch (e) {
+    for (const f of written) rmSync(f, { force: true });
+    throw e;
+  }
+}
+
+/** The stored file for GET /thread-media/<T-id>/<name>, or null (bad id or name, a name no message carries, missing). */
+export function threadMediaFile(id, name) {
+  if (!TID.test(String(id)) || !IMAGE_NAME.test(String(name))) return null;
+  let t;
+  try { t = getThread(id); } catch { return null; }
+  if (t.id !== id || !t.messages.some((m) => (m.images || []).some((x) => x.name === name))) return null;
+  const f = join(threadMediaDir(t.id), name);
+  return existsSync(f) ? { file: f, type: MEDIA_TYPES[extname(name).slice(1)] } : null;
+}
+
+/** A message's images for the page: the URL it loads them from, caption, pixel size. */
+const pageImages = (t, m) => m.images.map((x) => ({ url: `/thread-media/${t.id}/${x.name}`, name: x.name, ...(x.caption && { caption: x.caption }), ...(x.w && { w: x.w, h: x.h }) }));
+/** A message's images for an agent's terminal (thread wait, thread show): the local file, to open with Read. */
+const fileImages = (t, m) => m.images.map((x) => ({ file: join(threadMediaDir(t.id), x.name), ...(x.caption && { caption: x.caption }) }));
+const imagesLine = (x, i) => `[image ${i + 1}: ${x.file}${x.caption ? ` "${x.caption}"` : ''}]`;
+/** The image lines `thread show` prints under a message's text. */
+export function imageLines(t, m) { return m.images?.length ? fileImages(t, m).map(imagesLine) : []; }
 
 // ---- derived views -----------------------------------------------------------------------------------
 
@@ -147,7 +264,7 @@ export function summary(t, reader = USER) {
 
 /** The full thread for the page: messages, the user's read mark; no agents' read marks or history. */
 export function pageThread(t) {
-  return { ...summary(t, USER), messages: t.messages.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.ask && { ask: true }) })), readUser: t.reads?.user || 0, updatedAt: t.updatedAt };
+  return { ...summary(t, USER), messages: t.messages.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.ask && { ask: true }), ...(m.images?.length && { images: pageImages(t, m) }) })), readUser: t.reads?.user || 0, updatedAt: t.updatedAt };
 }
 
 /** Sort for the page: the user's unread or waiting-on-you first, then open before closed, then newest activity. */
@@ -231,26 +348,29 @@ async function change(id, fn) {
   });
 }
 
-function addMessage(t, by, text, now, ask) {
+function addMessage(t, by, text, now, ask, images = []) {
   if (t.messages.length >= LIMITS.messages) throw new Error(`${t.id} has ${LIMITS.messages} messages: start a new thread`);
   const n = (last(t)?.n || 0) + 1;
-  t.messages.push({ n, at: now, by, text, ...(ask && { ask: true }) });
+  const stored = storeImages(t.id, n, images); // I-089: before the message, so a failed copy stores nothing
+  t.messages.push({ n, at: now, by, text, ...(ask && { ask: true }), ...(stored.length && { images: stored }) });
   t.reads[by] = n; // the writer has seen everything up to its own message
   return n;
 }
 
 /**
  * A new thread. From the page: {title, text, topic, fromPage: true} (the user's text as typed). From the lead:
- * {by: 'lead', title, text, topic, ask, to} (scrubbed; `to`: agents to assign at once). Returns {thread, scrubbed}.
+ * {by: 'lead', title, text, topic, ask, to} (scrubbed; `to`: agents to assign at once). `images` (I-089): see
+ * prepareImages; with images the first message's text may be empty. Returns {thread, scrubbed}.
  */
-export async function createThread({ by, title, text, topic, ask, to, fromPage = false }) {
+export async function createThread({ by, title, text, topic, ask, to, images, fromPage = false }) {
   const who = fromPage ? USER : needAgent(by);
   if (!fromPage && who !== LEAD) throw new Error(`only the lead starts threads (--by lead); ${who}: ask the lead to start one and assign you`);
   const assignees = fromPage ? [] : agentList(to, false);
   if (assignees.length > LIMITS.assignees) throw new Error(`at most ${LIMITS.assignees} assignees`);
   let ttl = needText(title, 'the title', LIMITS.title).replace(/\s+/g, ' ');
-  let body = needText(text, 'the first message', LIMITS.text);
-  const scrubbed = new Set();
+  const img = prepareImages(images, { agent: !fromPage });
+  let body = needText(text, 'the first message', LIMITS.text, { optional: img.items.length > 0 });
+  const scrubbed = new Set(img.scrubbed);
   if (!fromPage) {
     const a = scrubAgentText(ttl), b = scrubAgentText(body);
     ttl = a.text; body = b.text;
@@ -265,30 +385,36 @@ export async function createThread({ by, title, text, topic, ask, to, fromPage =
       createdAt: now, updatedAt: now, rev: 1, assignees, messages: [], reads: {}, history: [],
     };
     if (assignees.length) t.history.push({ at: now, who, action: 'assign', note: assignees.join(',') });
-    addMessage(t, who, body, now, !fromPage && !!ask);
+    addMessage(t, who, body, now, !fromPage && !!ask, img.items);
     writeJson(fileOf(t.id), t);
     return { thread: t, scrubbed: [...scrubbed] };
   });
 }
 
-/** An agent's reply (scrubbed). `ask`: the reply asks the user something (state waiting-on-you). Refused on a closed thread. */
-export async function replyAgent(id, { by, text, ask = false }) {
+/**
+ * An agent's reply (scrubbed). `ask`: the reply asks the user something (state waiting-on-you). Refused on a closed
+ * thread. `images` (I-089): [{file, caption?}]; with images the text may be empty.
+ */
+export async function replyAgent(id, { by, text, ask = false, images }) {
   const who = needAgent(by);
-  const raw = needText(text, 'the reply', LIMITS.text);
-  const { text: body, scrubbed } = scrubAgentText(raw);
+  const img = prepareImages(images, { agent: true });
+  const raw = needText(text, 'the reply', LIMITS.text, { optional: img.items.length > 0 });
+  const { text: body, scrubbed: sc } = scrubAgentText(raw);
+  const scrubbed = [...new Set([...sc, ...img.scrubbed])];
   return change(id, (t, now) => {
     if (!sees(t, who)) throw new Error(`${who} is not assigned to ${t.id}${t.assignees.length ? ` (assigned: ${t.assignees.join(', ')})` : ''}: ask the lead to assign you (node tools/console.mjs thread assign ${t.id} --to ${who} --by lead)`);
     if (t.status === 'closed') throw new Error(`${t.id} is closed: node tools/console.mjs thread reopen ${t.id} --by ${who} first`);
-    return { n: addMessage(t, who, body, now, !!ask), scrubbed };
+    return { n: addMessage(t, who, body, now, !!ask, img.items), scrubbed, images: img.items.length };
   });
 }
 
-/** The user's message from the page (as typed); a closed thread opens again. */
-export async function replyUser(id, { text }) {
-  const body = needText(text, 'the message', LIMITS.text);
+/** The user's message from the page (as typed); a closed thread opens again. `images`: [{data: base64, caption?}] (I-089). */
+export async function replyUser(id, { text, images }) {
+  const img = prepareImages(images, { agent: false });
+  const body = needText(text, 'the message', LIMITS.text, { optional: img.items.length > 0 });
   return change(id, (t, now) => {
     if (t.status === 'closed') { t.status = 'open'; t.history.push({ at: now, who: USER, action: 'reopen' }); }
-    return { n: addMessage(t, USER, body, now, false) };
+    return { n: addMessage(t, USER, body, now, false, img.items) };
   });
 }
 
@@ -347,7 +473,7 @@ export function threadWaitCondition({ as, thread } = {}) {
     for (const t of ts) {
       const mark = t.reads?.[reader] || 0;
       const msgs = tid ? t.messages.filter((m) => m.by === USER && m.n > mark) : unreadFor(t, reader);
-      if (msgs.length) news.push({ id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), state: threadState(t), messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text })) });
+      if (msgs.length) news.push({ id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), state: threadState(t), messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.images?.length && { images: fileImages(t, m) }) })) });
     }
     if (news.length) return { met: true, state: `${news.length} thread(s) with news`, detail: JSON.stringify(news) };
     if (tid && ts[0].status === 'closed') return { met: false, state: 'closed', never: `${tid} was closed` };
@@ -366,9 +492,10 @@ export function newsText(t, reader) {
   const L = [];
   for (const m of t.messages) {
     L.push(`NEW ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''} #${m.n} by ${m.by} at ${m.at}:`);
-    for (const l of String(m.text).split('\n')) L.push(`  ${l}`);
+    if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) L.push(`  ${l}`);
+    (m.images || []).forEach((x, i) => L.push(`  ${imagesLine(x, i)}`)); // I-089: the user's pictures, to open with Read
   }
-  L.push(`  reply: node tools/console.mjs thread reply ${t.id} --by ${reader} --text "…" [--ask]   (or --file <f>)`);
+  L.push(`  reply: node tools/console.mjs thread reply ${t.id} --by ${reader} --text "…" [--ask]   (or --file <f>; images: --image <png|jpg|gif|webp> [--caption "…"], up to ${LIMITS.images})`);
   return L.join('\n');
 }
 

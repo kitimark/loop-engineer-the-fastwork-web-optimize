@@ -194,14 +194,14 @@ export function loadProposalFile(file) {
 
 // ---- media -------------------------------------------------------------------------------------------
 
-/** What a file is, by its first bytes (never by its name): {kind: image|video, ext, size, width?, height?}. */
-export function sniffMedia(file) {
-  let st;
-  try { st = statSync(file); } catch { throw new Error(`no such file: ${file}`); }
-  if (!st.isFile()) throw new Error(`not a file: ${file}`);
+/**
+ * What bytes are, by their first 32 (never by a name or a MIME type): {kind: image|video, ext, size, width?, height?}.
+ * `head`: the first bytes; `size`: the whole size; `label`: what the errors call it. Also used for thread images
+ * (console-threads.mjs, I-089), with their own size limit.
+ */
+export function sniffBytes(head, size, label, limits = LIMITS) {
   const b = Buffer.alloc(32);
-  const fd = openSync(file, 'r');
-  try { readSync(fd, b, 0, 32, 0); } finally { closeSync(fd); }
+  Buffer.from(head.buffer, head.byteOffset, Math.min(32, head.length)).copy(b);
   const asc = (i, n) => b.toString('latin1', i, i + n);
   let kind, ext, width, height;
   if (b[0] === 0x89 && asc(1, 3) === 'PNG') { kind = 'image'; ext = 'png'; if (asc(12, 4) === 'IHDR') { width = b.readUInt32BE(16); height = b.readUInt32BE(20); } }
@@ -210,10 +210,21 @@ export function sniffMedia(file) {
   else if (asc(0, 4) === 'RIFF' && asc(8, 4) === 'WEBP') { kind = 'image'; ext = 'webp'; }
   else if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) { kind = 'video'; ext = 'webm'; }
   else if (['ftyp', 'moov', 'mdat', 'wide', 'free'].includes(asc(4, 4))) { kind = 'video'; ext = asc(4, 4) === 'ftyp' && asc(8, 4) === 'qt  ' ? 'mov' : asc(4, 4) === 'ftyp' ? 'mp4' : 'mov'; }
-  else throw new Error(`${file}: not a PNG, JPEG, WebP or GIF image, nor an MP4, MOV or WebM video`);
-  const max = kind === 'image' ? LIMITS.imageBytes : LIMITS.videoBytes;
-  if (st.size > max) throw new Error(`${file}: ${(st.size / 1048576).toFixed(1)} MB is over the ${max / 1048576} MB limit for a ${kind === 'image' ? 'screenshot' : 'video'}`);
-  return { kind, ext, size: st.size, ...(width && { width, height }) };
+  else throw new Error(`${label}: not a PNG, JPEG, WebP or GIF image, nor an MP4, MOV or WebM video`);
+  const max = kind === 'image' ? limits.imageBytes : limits.videoBytes;
+  if (size > max) throw new Error(`${label}: ${(size / 1048576).toFixed(1)} MB is over the ${max / 1048576} MB limit for a ${kind === 'image' ? 'screenshot' : 'video'}`);
+  return { kind, ext, size, ...(width && { width, height }) };
+}
+
+/** What a file is, by its first bytes (never by its name): {kind: image|video, ext, size, width?, height?}. */
+export function sniffMedia(file, limits = LIMITS) {
+  let st;
+  try { st = statSync(file); } catch { throw new Error(`no such file: ${file}`); }
+  if (!st.isFile()) throw new Error(`not a file: ${file}`);
+  const b = Buffer.alloc(32);
+  const fd = openSync(file, 'r');
+  try { readSync(fd, b, 0, 32, 0); } finally { closeSync(fd); }
+  return sniffBytes(b, st.size, file, limits);
 }
 
 /** Stored media names: what the server may serve (no path, no traversal). */

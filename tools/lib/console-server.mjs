@@ -25,8 +25,12 @@
 //   GET  /api/threads/<T-id>     {thread} (messages; no agents' read marks, no history)
 //   GET  /api/thread-feed        the badge / notification model (console-threads.mjs feedView: ids, sanitized titles,
 //                                counts); also pushed as `event: threads` on /api/events
-//   POST /api/threads            {title, text, topic?}: the user starts a thread
-//   POST /api/threads/<T-id>/<act>  act = reply {text} | read {n} | close | reopen  (the user, from the page)
+//   POST /api/threads            {title, text, topic?, images?}: the user starts a thread
+//   POST /api/threads/<T-id>/<act>  act = reply {text, images?} | read {n} | close | reopen  (the user, from the page)
+//                                images (I-089): [{data: base64, caption?}], sniffed and limited in console-threads.mjs;
+//                                these two POSTs take up to THREAD_BODY_MAX bytes, every other one 64 KB
+//   GET  /thread-media/<T-id>/<name>  a thread's image (m4-1.png), from the store only: strict names, and only a name
+//                                one of the thread's messages carries (console-threads.mjs threadMediaFile)
 //   Thread POSTs: like the step POSTs (localhost Host, x-console: 1), plus an Origin, when sent, must be this server's
 //   localhost origin, and a body over 64 KB gets 413.
 //   GET  /proposals              the proposals page (tools/lib/proposals-page.html, ts-proposals): PoCs to compare and decide
@@ -58,7 +62,7 @@ import { writeJson, readJson, iso } from './store.mjs';
 import { currentView, readWriteup } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
-import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER } from './console-threads.mjs';
+import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER, threadMediaFile, LIMITS as THREAD_LIMITS } from './console-threads.mjs';
 import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
 import { createLiveServers, measuringNow } from './live.mjs';
 import { statSync, createReadStream } from 'node:fs';
@@ -312,7 +316,7 @@ function readJsonBody(req, max = 64 * 1024) {
     req.on('data', (c) => { n += c.length; if (n > max) over = true; else chunks.push(c); });
     req.on('error', () => resolve({ status: 400, error: 'request error' }));
     req.on('end', () => {
-      if (over) return resolve({ status: 413, error: 'body too large (64 KB max)' });
+      if (over) return resolve({ status: 413, error: `body too large (${max >= 1048576 ? `${Math.round(max / 1048576)} MB` : `${Math.round(max / 1024)} KB`} max)` });
       const raw = Buffer.concat(chunks).toString('utf8');
       if (!raw) return resolve({ body: {} });
       try { const b = JSON.parse(raw); return resolve(b && typeof b === 'object' && !Array.isArray(b) ? { body: b } : { status: 400, error: 'body is not a JSON object' }); } catch { return resolve({ status: 400, error: 'body is not JSON' }); }
@@ -320,8 +324,10 @@ function readJsonBody(req, max = 64 * 1024) {
   });
 }
 
+/** I-089: a new thread or a reply may carry images (base64, a third more than their bytes) next to 64 KB of text. */
+export const THREAD_BODY_MAX = Math.ceil(THREAD_LIMITS.pageImageBytes * 4 / 3) + 64 * 1024 + THREAD_LIMITS.images * 1024;
 const THREAD_ACTIONS = {
-  reply: (id, b) => replyUser(id, { text: b.text }),
+  reply: (id, b) => replyUser(id, { text: b.text, images: b.images }),
   read: (id, b) => markRead(id, USER, b.n),
   close: (id) => setStatus(id, { status: 'closed', fromPage: true }),
   reopen: (id) => setStatus(id, { status: 'open', fromPage: true }),
@@ -338,16 +344,22 @@ async function threadRoute(req, res, u, port, feed) {
     try { send(res, 200, { thread: pageThread(getThread(one[1])) }); } catch (e) { send(res, 404, { error: e.message }); }
     return true;
   }
+  const media = p.match(/^\/thread-media\/(T-\d{1,6})\/([A-Za-z0-9.-]{1,40})$/);
+  if (req.method === 'GET' && media) {
+    const f = threadMediaFile(media[1], media[2]);
+    if (!f) send(res, 404, { error: 'not found' }); else sendMedia(req, res, f);
+    return true;
+  }
   const act = p.match(/^\/api\/threads\/(T-\d{1,6})\/([a-z]+)$/);
   if (req.method === 'POST' && (p === '/api/threads' || act)) {
     const refused = threadPostRefusal(req, port);
     if (refused) { send(res, 403, { error: refused }); return true; }
     const fn = act ? THREAD_ACTIONS[act[2]] : null;
     if (act && !fn) { send(res, 404, { error: `unknown action ${act[2]}` }); return true; }
-    const b = await readJsonBody(req);
+    const b = await readJsonBody(req, !act || act[2] === 'reply' ? THREAD_BODY_MAX : undefined);
     if (b.error) { send(res, b.status, { error: b.error }); return true; }
     try {
-      const r = act ? await fn(act[1], b.body) : await createThread({ title: b.body.title, text: b.body.text, topic: b.body.topic, fromPage: true });
+      const r = act ? await fn(act[1], b.body) : await createThread({ title: b.body.title, text: b.body.text, topic: b.body.topic, images: b.body.images, fromPage: true });
       send(res, 200, { thread: pageThread(r.thread) });
     } catch (e) { send(res, /^no thread /.test(e.message) ? 404 : 409, { error: e.message }); }
     return true;

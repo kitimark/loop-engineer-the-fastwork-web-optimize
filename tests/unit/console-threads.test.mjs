@@ -7,7 +7,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, readdirSync, truncateSync } from 'node:fs';
 import { tempDir, TOOLS } from '../helpers.mjs';
 
 const T = await import('../../tools/lib/console-threads.mjs');
@@ -290,8 +290,10 @@ async function threadsPage({ hash, list = [], thread = null, replied = null }) {
     return res({ thread });
   };
   const location = { hash };
-  new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', 'localStorage', js)(
-    { addEventListener() {} }, document, location, fetch, () => 0, () => 0, () => 0, undefined);
+  // I-089: the composer reads the user's files with FileReader (data: previews); a fake that answers at once
+  class FileReader { readAsDataURL(f) { this.result = `data:${f.type};base64,${Buffer.from(f.bytes).toString('base64')}`; setImmediate(() => this.onload && this.onload()); } }
+  new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', 'localStorage', 'FileReader', js)(
+    { addEventListener() {} }, document, location, fetch, () => 0, () => 0, () => 0, undefined, FileReader);
   for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
   return { ids, calls };
 }
@@ -319,4 +321,200 @@ test('I-084 threads page: "Your reply goes to: lead, <assignees>" by the reply b
   // no assignee: the reply box says lead
   const q = await threadsPage({ hash: `#${u.id}`, thread: T.pageThread(T.getThread(u.id)) });
   assert.equal(q.ids['reply-to'].textContent, 'Your reply goes to: lead');
+});
+
+// ---- I-089 (user PR-009 note): images in threads ------------------------------------------------------------------
+// Fake images: a PNG header with an IHDR (pixel size), a JPEG start; non-images by content whatever their name.
+const pngBytes = (w = 1170, h = 2532) => { const b = Buffer.alloc(64); Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b); b.write('IHDR', 12, 'latin1'); b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20); return b; };
+const jpgBytes = () => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(60, 7)]);
+function imgFiles() {
+  const d = tempDir('fw-thread-img-');
+  const f = (name, bytes) => { const p = join(d, name); writeFileSync(p, bytes); return p; };
+  return {
+    dir: d,
+    png: f('phone shot.png', pngBytes()), jpg: f('b.jpeg', jpgBytes()),
+    fakePng: f('not-really.png', Buffer.from('hello, I am text\n')),
+    video: f('clip.png', Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(40)])),
+  };
+}
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+test('I-089 parseImageArgs: --image repeats, a --caption belongs to the --image before it; = forms; misuse refused', () => {
+  assert.deepEqual(T.parseImageArgs(['thread', 'reply', 'T-1', '--by', 'lead', '--text', 'x']), []);
+  assert.deepEqual(T.parseImageArgs(['--image', 'a.png', '--caption', 'hero at 0 s', '--text', 'x', '--image=b.jpg', '--image', 'c.png', '--caption=end, phone']),
+    [{ file: 'a.png', caption: 'hero at 0 s' }, { file: 'b.jpg' }, { file: 'c.png', caption: 'end, phone' }]);
+  assert.throws(() => T.parseImageArgs(['--caption', 'orphan', '--image', 'a.png']), /--caption belongs to the --image before it/);
+  assert.throws(() => T.parseImageArgs(['--image', 'a.png', '--caption', 'one', '--caption', 'two']), /two --caption flags/);
+  assert.throws(() => T.parseImageArgs(['--image']), /--image needs a value/);
+  assert.throws(() => T.parseImageArgs(['--image', '--ask']), /--image needs a value/);
+  assert.throws(() => T.parseImageArgs(['--image=']), /--image needs a path/);
+});
+
+test('I-089 store: an agent reply with images -> threads/T-001/m2-1.png, m2-2.jpg; metadata names only (no source path); captions scrubbed', async () => {
+  const f = imgFiles();
+  const t = await userThread();
+  const r = await T.replyAgent(t.id, { by: 'lead', text: 'Here is the phone at 0 s.', images: [{ file: f.png, caption: 'hero, phone at 192.168.77.12' }, { file: f.jpg }] });
+  assert.equal(r.n, 2);
+  assert.equal(r.images, 2);
+  assert.deepEqual(r.scrubbed, ['ip address'], 'the caption scrub is reported');
+  const dir = join(state, 'console', 'threads', 'T-001');
+  assert.equal(T.threadMediaDir('T-001'), dir);
+  assert.deepEqual(readdirSync(dir).sort(), ['m2-1.png', 'm2-2.jpg']);
+  assert.deepEqual(readFileSync(join(dir, 'm2-1.png')), pngBytes(), 'copied byte for byte (nothing stripped)');
+  const raw = readFileSync(join(state, 'console', 'threads', 'T-001.json'), 'utf8');
+  const m = JSON.parse(raw).messages[1];
+  assert.deepEqual(m.images, [{ name: 'm2-1.png', caption: 'hero, phone at <ip address>', w: 1170, h: 2532, bytes: 64 }, { name: 'm2-2.jpg', bytes: 64 }]);
+  const mj = JSON.stringify(m);
+  assert.ok(!raw.includes(f.dir) && !raw.includes('phone shot') && !mj.includes('192.168.77.12'), 'no source path, file name or LAN address stored');
+  // the page view: URLs into the store; the files for an agent's terminal
+  const v = T.pageThread(T.getThread(t.id));
+  assert.deepEqual(v.messages[1].images, [
+    { url: '/thread-media/T-001/m2-1.png', name: 'm2-1.png', caption: 'hero, phone at <ip address>', w: 1170, h: 2532 },
+    { url: '/thread-media/T-001/m2-2.jpg', name: 'm2-2.jpg' },
+  ]);
+  const cur = T.getThread(t.id);
+  assert.deepEqual(T.imageLines(cur, cur.messages[1]), [`[image 1: ${join(dir, 'm2-1.png')} "hero, phone at <ip address>"]`, `[image 2: ${join(dir, 'm2-2.jpg')}]`]);
+  assert.deepEqual(T.imageLines(cur, cur.messages[0]), []);
+  // the lead starts a thread with an image and no text
+  const n = await T.createThread({ by: 'lead', title: 'Look at this', images: [{ file: f.jpg, caption: 'end' }] });
+  assert.equal(n.thread.messages[0].text, '');
+  assert.deepEqual(n.thread.messages[0].images, [{ name: 'm1-1.jpg', caption: 'end', bytes: 64 }]);
+  assert.ok(existsSync(join(state, 'console', 'threads', 'T-002', 'm1-1.jpg')));
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: ' ' }), /the reply is empty/, 'no images: the text is still required');
+});
+
+test('I-089 sniffing: refused by content (text named .png, a video), over 15 MB, more than 6, a bad caption; nothing stored', async () => {
+  const f = imgFiles();
+  const t = await userThread();
+  const before = readFileSync(join(state, 'console', 'threads', 'T-001.json'), 'utf8');
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: 'x', images: [{ file: f.png }, { file: f.fakePng }] }), /not-really\.png: not a PNG, JPEG, WebP or GIF image/);
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: 'x', images: [{ file: f.video }] }), /image 1 \(.*clip\.png\): a video; only PNG, JPEG, GIF or WebP images/);
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: 'x', images: [{ file: join(f.dir, 'missing.png') }] }), /no such file/);
+  const big = join(f.dir, 'big.png'); writeFileSync(big, pngBytes()); truncateSync(big, 15 * 1024 * 1024 + 1);
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: 'x', images: [{ file: big }] }), /over the 15 MB limit/);
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: 'x', images: Array.from({ length: 7 }, () => ({ file: f.png })) }), /at most 6 images per message \(got 7\)/);
+  await assert.rejects(T.replyAgent(t.id, { by: 'lead', text: 'x', images: [{ file: f.png, caption: 'c'.repeat(161) }] }), /caption is too long/);
+  await assert.rejects(T.replyAgent(t.id, { by: 'fix-other', text: 'x', images: [{ file: f.png }] }), /not assigned/);
+  assert.equal(readFileSync(join(state, 'console', 'threads', 'T-001.json'), 'utf8'), before, 'the thread is unchanged');
+  assert.ok(!existsSync(join(state, 'console', 'threads', 'T-001')), 'no image directory');
+  assert.equal(T.prepareImages(undefined).items.length, 0);
+});
+
+test('I-089 backward compatible: a message without images is stored and shown with exactly the old fields', async () => {
+  const t = await userThread('Plain', 'just text');
+  await T.replyAgent(t.id, { by: 'lead', text: 'plain reply', ask: true });
+  await T.replyUser(t.id, { text: 'ok' });
+  const raw = JSON.parse(readFileSync(join(state, 'console', 'threads', 'T-001.json'), 'utf8'));
+  const keys = [['n', 'at', 'by', 'text'], ['n', 'at', 'by', 'text', 'ask'], ['n', 'at', 'by', 'text']];
+  assert.deepEqual(raw.messages.map((m) => Object.keys(m)), keys);
+  assert.deepEqual(T.pageThread(T.getThread(t.id)).messages.map((m) => Object.keys(m)), keys);
+  assert.ok(!existsSync(T.threadMediaDir(t.id)));
+  const w = T.threadWaitCondition({ as: 'lead' }).check();
+  const news = JSON.parse(w.detail)[0];
+  assert.deepEqual(news.messages.map((m) => Object.keys(m)), [['n', 'at', 'by', 'text']], 'the lead read #1 when it replied');
+  assert.match(T.newsText(news, 'lead'), /^NEW T-001 "Plain" #3 by user at \S+:\n  ok\n  reply: /);
+});
+
+test('I-089 the user\'s images from the page: base64, sniffed, 20 MB together; kept as typed; thread wait prints the files', async () => {
+  const t = await userThread();
+  const png = pngBytes(400, 300).toString('base64');
+  const r = await T.replyUser(t.id, { text: '', images: [{ data: png, caption: 'my phone at 192.168.77.12' }, { data: jpgBytes().toString('base64') }] });
+  assert.equal(r.n, 2);
+  const m = T.getThread(t.id).messages[1];
+  assert.deepEqual(m.images, [{ name: 'm2-1.png', caption: 'my phone at 192.168.77.12', w: 400, h: 300, bytes: 64 }, { name: 'm2-2.jpg', bytes: 64 }], 'the user\'s caption as typed (local store)');
+  assert.equal(m.text, '');
+  await assert.rejects(T.replyUser(t.id, { text: 'x', images: [{ data: Buffer.from('<svg onload=alert(1)>').toString('base64') }] }), /image 1: not a PNG, JPEG/);
+  await assert.rejects(T.replyUser(t.id, { text: 'x', images: [{ data: 'not base64!' }] }), /image 1: the image data is not base64/);
+  await assert.rejects(T.replyUser(t.id, { text: 'x', images: [{ file: '/etc/hosts' }] }), /the image data is not base64/, 'the page never names a file');
+  await assert.rejects(T.replyUser(t.id, { text: 'x', images: 'm2-1.png' }), /images must be a list/);
+  const eleven = Buffer.concat([pngBytes(), Buffer.alloc(11 * 1024 * 1024)]).toString('base64');
+  await assert.rejects(T.replyUser(t.id, { text: 'x', images: [{ data: eleven }, { data: eleven }] }), /together, over the 20 MB limit/);
+  await assert.rejects(T.replyUser(t.id, { text: '' }), /the message is empty/);
+  const n = await T.createThread({ title: 'Screenshot', text: '', images: [{ data: png }], fromPage: true });
+  assert.deepEqual(n.thread.messages[0].images.map((x) => x.name), ['m1-1.png']);
+  // the lead's wake: the files to open with Read, under the text
+  const w = T.threadWaitCondition({ as: 'lead' }).check();
+  const news = JSON.parse(w.detail);
+  const dir = join(state, 'console', 'threads', 'T-001');
+  assert.deepEqual(news[0].messages[1].images, [{ file: join(dir, 'm2-1.png'), caption: 'my phone at 192.168.77.12' }, { file: join(dir, 'm2-2.jpg') }]);
+  const txt = T.newsText(news[0], 'lead');
+  assert.match(txt, new RegExp(`#2 by user at \\S+:\\n  \\[image 1: ${esc(join(dir, 'm2-1.png'))} "my phone at 192\\.168\\.77\\.12"\\]\\n  \\[image 2: ${esc(join(dir, 'm2-2.jpg'))}\\]\\n`));
+  assert.match(txt, /--image <png\|jpg\|gif\|webp> \[--caption "…"\], up to 6/);
+});
+
+test('I-089 threadMediaFile: only stored names a message carries; traversal, unknown names and ids refused', async () => {
+  const f = imgFiles();
+  const t = await userThread();
+  await T.replyAgent(t.id, { by: 'lead', text: 'x', images: [{ file: f.png }] });
+  assert.deepEqual(T.threadMediaFile('T-001', 'm2-1.png'), { file: join(state, 'console', 'threads', 'T-001', 'm2-1.png'), type: 'image/png' });
+  writeFileSync(join(state, 'console', 'threads', 'T-001', 'm9-1.png'), pngBytes()); // on disk, but no message carries it
+  for (const [id, name] of [['T-001', 'm9-1.png'], ['T-001', '../T-001.json'], ['T-001', 'm2-1.png/..'], ['T-001', 'T-001.json'], ['T-1', 'm2-1.png'],
+    ['T-002', 'm2-1.png'], ['../T-001', 'm2-1.png'], ['T-001', 'm2-1.svg'], ['T-001', 'M2-1.png'], ['T-001', '']]) {
+    assert.equal(T.threadMediaFile(id, name), null, `${id} ${name}`);
+  }
+});
+
+test('I-089 threads page: images under the message as thumbnails with captions, open full size in place; none for a text message', async () => {
+  const f = imgFiles();
+  const t = await userThread();
+  await T.replyAgent(t.id, { by: 'lead', text: 'Two shots', images: [{ file: f.png, caption: 'hero at 0 s' }, { file: f.jpg }] });
+  await T.replyAgent(t.id, { by: 'lead', images: [{ file: f.jpg, caption: 'only a picture' }] });
+  const view = T.pageThread(T.getThread(t.id));
+  view.messages.push({ n: 9, at: view.messages[0].at, by: 'lead', text: 'evil', images: [{ url: 'https://evil.invalid/x.png', caption: 'outside' }] });
+  const p = await threadsPage({ hash: `#${t.id}`, thread: view });
+  const lis = p.ids['tv-msgs'].children;
+  const imgsOf = (li) => li.all().filter((n) => n.tagName === 'img');
+  assert.equal(imgsOf(lis[0]).length, 0, 'the user\'s text message: no images');
+  assert.ok(!lis[0].all().some((n) => n.className === 'mimgs'));
+  assert.deepEqual(imgsOf(lis[1]).map((n) => [n.src, n.alt, n.width, n.height]), [['/thread-media/T-001/m2-1.png', 'hero at 0 s', 1170, 2532], ['/thread-media/T-001/m2-2.jpg', 'Image 2', undefined, undefined]]);
+  assert.deepEqual(lis[1].all().filter((n) => n.tagName === 'figcaption').map((n) => n.textContent), ['hero at 0 s']);
+  assert.equal(lis[1].all().find((n) => n.className === 'mtext').textContent, 'Two shots');
+  assert.ok(!lis[2].all().some((n) => n.className === 'mtext'), 'an image-only message has no empty text line');
+  assert.equal(imgsOf(lis[2]).length, 1);
+  assert.equal(imgsOf(lis[3]).length, 0, 'a URL outside the store is never loaded');
+  const a = lis[1].all().find((n) => n.className === 'thumb');
+  assert.equal(a.href, '/thread-media/T-001/m2-1.png'); assert.equal(a.target, '_blank');
+  let prevented = false;
+  for (const fn of a.listeners.click) fn({ preventDefault() { prevented = true; } });
+  assert.ok(prevented);
+  assert.equal(p.ids.lightbox.hidden, false);
+  assert.equal(p.ids['lb-img'].src, '/thread-media/T-001/m2-1.png');
+  assert.equal(p.ids['lb-cap'].textContent, 'hero at 0 s');
+  for (const fn of p.ids.lightbox.listeners.click) fn({ target: p.ids.lightbox });
+  assert.equal(p.ids.lightbox.hidden, true, 'a click closes it');
+});
+
+test('I-089 threads page: the user attaches images (type, count and size checked), captions them, and they go with the reply as base64', async () => {
+  const t = await userThread();
+  const view = T.pageThread(T.getThread(t.id));
+  const p = await threadsPage({ hash: `#${t.id}`, thread: view, replied: view });
+  const file = (name, type, bytes) => ({ name, type, size: bytes.length, bytes });
+  const input = p.ids['reply-file'];
+  input.files = [file('a.png', 'image/png', pngBytes()), file('notes.svg', 'image/svg+xml', Buffer.from('<svg/>'))];
+  for (const fn of input.listeners.change) fn();
+  assert.match(p.ids.toast.textContent, /notes\.svg: only PNG, JPEG, GIF or WebP images/);
+  for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
+  const box = p.ids['reply-imgs'];
+  assert.equal(box.children.length, 1);
+  assert.equal(p.ids['reply-text'].required, false, 'an image alone is a message');
+  const cap = box.all().find((n) => n.tagName === 'input');
+  cap.value = 'my phone'; for (const fn of cap.listeners.input) fn();
+  input.files = [file('big.jpg', 'image/jpeg', { length: 16 * 1024 * 1024 })];
+  for (const fn of input.listeners.change) fn();
+  assert.match(p.ids.toast.textContent, /big\.jpg is over 15 MB/);
+  p.ids['reply-text'].value = '';
+  p.ids['reply-form'].requestSubmit();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  const sent = p.calls.filter((c) => c.url.endsWith('/reply')).map((c) => JSON.parse(c.init.body));
+  assert.deepEqual(sent, [{ text: '', images: [{ data: pngBytes().toString('base64'), caption: 'my phone' }] }]);
+  assert.equal(box.children.length, 0, 'sent: the attachments are cleared');
+  assert.equal(p.ids['reply-text'].required, true);
+  // the server takes what the page sends
+  const r = await T.replyUser(t.id, sent[0]);
+  assert.deepEqual(T.getThread(t.id).messages[r.n - 1].images, [{ name: 'm2-1.png', caption: 'my phone', w: 1170, h: 2532, bytes: 64 }]);
+  // a message without attachments sends no images key (the old body)
+  p.ids['reply-text'].value = 'plain';
+  p.ids['reply-form'].requestSubmit();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(p.calls.filter((c) => c.url.endsWith('/reply')).map((c) => JSON.parse(c.init.body)).at(-1), { text: 'plain' });
 });
