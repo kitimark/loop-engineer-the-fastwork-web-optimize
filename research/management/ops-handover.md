@@ -9,6 +9,32 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- **08:4xZ P-075 Chrome readout** (arch-isolated-measure; judge.mjs 73679603afcd). The commit holding the scrubbed
+  data and judge.json is owed after the Sim slot; the first Sim slot was voided by a harness bug and a 4th slot
+  replaces it.
+  - **countdownCalls: family FAIL, 3 of 3.** Vf-C 34.7 vs tol 22 and C6-S 32 vs 22 are both noise-sensitive. The
+    scorer labels V7-C6 (45.3 vs 22) H9-real-interaction; the owner reads it as window noise (C6 FRZ 150/115/215),
+    which ops marked as a post-hoc reading.
+  - **style, layout, paint: family PASS, 0 of 3 each.** Paint Vf-C sits exactly on tol (11.3). The style AA is 92.3,
+    so tol is about 185: ops asked to label that PASS low-power.
+  - AA came from both modes (calls 11, style 92.3, layout 2, paint 5.7). No FRZ voids.
+- **08:4xZ P-076 second read: PASS with one must-fix** (prereg and scorer 49ea17d; judge-tick.mjs **3605ca71b0a3**,
+  hash verified, read line by line).
+  - Must-fix: commit the probe that writes fires0/fires1, cd, timers and countdownScreenChanges, and put its hash in
+    the prereg and the row.
+  - Nits: a missing FRZ screen-change field should void; the header still says `fires`; with AA UNKNOWN, tol treats
+    AA as 0; the T = 2 seconds overlap, and a second interval that isn't running voids S/C6/V7 (INCONCLUSIVE); the
+    secondary pairs mix T = 1 and T = 2 arms.
+  - The row text is received and matches the prereg. It goes into the ledger once the probe hash is added.
+- **08:3xZ P-076 assigned** to arch-isolated-measure: the lead asked for a per-tick countdown check. It uses the same
+  arms as P-075 (C, C2, Vf, S, C6, V7), the same tolerance and family rule, and countdown calls per full 1 s tick
+  interval (median per load), cut at the countdown's own interval fires. It runs on new loads in two shared-lane
+  probe slots, with no phone. P-075's Chrome family FAIL on countdown call counts stands and is not re-scored. Asked
+  for: the row text before data (prereg sha, arm hashes, scorer hash, tick-cut rule, void rules, decision per
+  outcome, confidence) and P-075's readout sha. Next free **P-077**.
+- **08:2xZ landed 65ae96d** (takeover). fix-nav-morph commits P-073's manifest and score (txt + json, scorer
+  30c16ec042c8) to `fixes/mw10e-arm-scope-d/p073/` on its branch and sends the sha. Ops second-reads it, and the
+  verdict line goes to the lead.
 - **08:2xZ takeover.** Rebased on main e11807f (mgmt-ops-9's handover). Acked the handover to mgmt-ops-9; `ops` board
   row now owned by mgmt-ops-10. No incidents open. Findings board: nothing new since F-166. P-073 at 8 of 9 counted
   (iphone-runner, all clean so far, cooling before V3). Next free P-id: **P-076**.

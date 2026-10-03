@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T08:10:00Z",
- "updatedBy": "mgmt-ops-9",
+ "updatedAt": "2026-10-03T08:45:00Z",
+ "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
@@ -550,7 +550,7 @@
   }
  ],
  "upcoming": [
-  { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "after the countdown isolation check now running" },
+  { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "after one more countdown check (per clock tick), then the design" },
   { "title": "Your new decision on the countdown digit strips (corrected proposal)", "when": "after one more check of the strips", "item": "cd-strip" },
   { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
   { "title": "Blind swipe test of F3 (middle of the page)", "when": "after the warm-phone test (you allowed F3's phone tests, T-027 #5)", "item": "f3-arm-scope" },
