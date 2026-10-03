@@ -521,6 +521,33 @@ export async function settleDevice(udid, { maxSec = transitionWaitSec(), pollMs 
   }
   return { from, state, waitedSec: Math.round((Date.now() - t0) / 1000), settled: !isTransitional(state) };
 }
+/** I-088: how long a session / doctor waits for a Booted device with no live session to shut down by itself before it
+ *  calls it a leak (FW_SIM_LEAK_WAIT_SEC, default 30; 0 = no wait). */
+export function leakWaitSec(env = process.env) {
+  const v = env.FW_SIM_LEAK_WAIT_SEC;
+  if (v === undefined || v === '') return 30;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) throw new Error(`FW_SIM_LEAK_WAIT_SEC must be a number of seconds >= 0 (got ${v})`);
+  return n;
+}
+/**
+ * I-088: a device that reads Booted (or in transition) with no live session may be the last session's, whose shutdown
+ * is still under way: e.g. its process was stopped mid-cleanup after `simctl shutdown` started, so the simulator lock
+ * went to the next session 0.5 s later while CoreSimulator still listed the device as Booted. Polls (only reads the
+ * state; never boots, shuts down or kills) until it reads Shutdown or is gone, `stop()` returns true, or maxSec passes.
+ * Returns {from, state, waitedSec, shutdown}.
+ */
+export async function waitForShutdown(udid, { maxSec = leakWaitSec(), pollMs = 500, abort, stop = () => false } = {}) {
+  const t0 = Date.now();
+  const from = deviceState(udid);
+  let state = from;
+  const down = (x) => x === 'Shutdown' || x === null;
+  while (!down(state) && Date.now() - t0 < maxSec * 1000 && !abort?.aborted && !stop()) {
+    await sleep(Math.min(pollMs, Math.max(0, maxSec * 1000 - (Date.now() - t0))));
+    state = deviceState(udid);
+  }
+  return { from, state, waitedSec: Math.round((Date.now() - t0) / 1000), shutdown: down(state) };
+}
 /**
  * The device `status`, `doctor` and a plain `shutdown` look at when no --device / $FW_SIM_DEVICE names one (I-087): the
  * live session's; else a configured device that is not shut down (the warm one first); else the warm record's; else fw-sim.
@@ -687,13 +714,26 @@ export async function doctor({ fix = false, log = console.log, lockWaitSec = 60 
 }
 async function doctorRun({ fix, log }) {
   const cfg = readConfig();
-  const live = liveSession();
+  const leakSec = leakWaitSec(); // I-088: a bad FW_SIM_LEAK_WAIT_SEC refuses at once
+  let live = liveSession();
   let dev = cfg.udid ? findDevice(cfg) : null;
   if (fix && !live && isTransitional(dev?.state)) {
     // I-078: a shutdown or boot in progress ends by itself: --fix waits for it (bounded) and judges the state it ends in
     const from = dev.state, s = await settleDevice(dev.udid);
     log(`waited ${s.waitedSec} s for ${device().name} to finish ${from} (${s.settled ? `now ${s.state ?? 'gone'}` : `still ${s.state}`}; I-078)`);
     dev = findDevice(cfg);
+  }
+  if (!live && dev?.state === 'Booted') {
+    // I-088: Booted with no live session and not the kept warm device: the last session's shutdown may still be under
+    // way (its process stopped mid-cleanup); wait for it (bounded, FW_SIM_LEAK_WAIT_SEC) before calling it a LEAK
+    const w0 = readWarm();
+    const keptNow = w0 && !w0.shutdownFailed && w0.udid === dev.udid && pidInfo('keeper')?.ours;
+    if (!keptNow) {
+      const s = await waitForShutdown(dev.udid, { maxSec: leakSec, stop: () => !!liveSession() });
+      if (s.waitedSec > 0 || s.shutdown) log(`waited ${s.waitedSec} s for ${device().name} (Booted with no live session) to shut down by itself (${s.shutdown ? `now ${s.state ?? 'gone'}` : `still ${s.state}`}; I-088)`);
+      live = liveSession();
+      dev = findDevice(cfg);
+    }
   }
   const moving = !live && isTransitional(dev?.state); // I-078: in transition, not (yet) a leak; nothing to shut down
   // I-087: a warm record (and its keeper) of ANOTHER device is that device's business: doctor --device <it> checks it
@@ -910,6 +950,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
   if (!gate.ok) throw new Error(`refusing sim session: ${gate.reason}`);
   const p = ports();
   const bgCfg = BG.config(); // I-082: a bad FW_SIM_SETTLE_SEC / FW_SIM_BG_* refuses before anything boots
+  const leakSec = leakWaitSec(); // I-088: so does a bad FW_SIM_LEAK_WAIT_SEC
   let cfg = readConfig();
   // I-087: a device other than fw-sim is created at its first session (simctl create; no boot, nothing downloaded)
   const onDemand = !cfg.udid && device().key !== DEFAULT_DEVICE;
@@ -938,6 +979,14 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
       const s = await settleDevice(now.udid, { maxSec });
       if (!s.settled) throw new Error(`refusing: ${device().name} is still ${s.state} after waiting ${s.waitedSec} s for it to finish (I-078; a shutdown or boot that does not end: node tools/sim.mjs doctor)`);
       err(`sim session: waited ${s.waitedSec} s for ${device().name} to finish ${now.state} (now ${s.state ?? 'gone'}; I-078)`);
+      now = findDevice(cfg);
+    }
+    if (now && now.state !== 'Shutdown' && warmMismatch(readWarm(), now, cfg)) {
+      // I-088: Booted with no live session and no warm record of it: the last session's shutdown may still be under way
+      // (its process stopped mid-cleanup); wait for it (bounded, inside this hold's budget) before calling it a leak
+      const room = Number.isFinite(gate.endsAt) ? Math.floor((gate.endsAt - Date.now() - cleanupMs) / 1000) - 60 : Infinity;
+      const s = await waitForShutdown(now.udid, { maxSec: Math.max(0, Math.min(leakSec, room)) });
+      if (s.waitedSec > 0 || s.shutdown) err(`sim session: ${device().name} was ${s.from} with no live session; waited ${s.waitedSec} s for a shutdown in progress (${s.shutdown ? `now ${s.state ?? 'gone'}` : `still ${s.state}`}; I-088)`);
       now = findDevice(cfg);
     }
     let w = readWarm();

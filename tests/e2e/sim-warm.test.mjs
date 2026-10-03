@@ -40,7 +40,7 @@ beforeEach(async () => {
     FAKE_SIMCTL_STATE: join(dir, 'simctl.json'), FAKE_SIMCTL_LOG: join(dir, 'simctl.jsonl'), FAKE_IWDP_LOG: join(dir, 'iwdp.jsonl'), FAKE_SIMTOOLS_LOG: join(dir, 'tools.jsonl'),
     FAKE_MACAPP_STATE: join(dir, 'app'), FAKE_IDEVICE_IDS: PHONE, FAKE_IWDP_PHONES: PHONE,
     FW_SIM_DEVICE_PORT: String(await freePort()), FW_SIM_PORT: String(await freePort()), FW_SIM_WDA_PORT: String(await freePort()),
-    FW_SIM_IDLE_SEC: '300', FW_SIM_KEEPER_POLL_MS: '150',
+    FW_SIM_IDLE_SEC: '300', FW_SIM_KEEPER_POLL_MS: '150', FW_SIM_LEAK_WAIT_SEC: '1', // I-088: these LEAKs stay Booted; 1 s, not 30
   };
 });
 // never leave a keeper behind (it would exit by itself once the temp dir is gone)
