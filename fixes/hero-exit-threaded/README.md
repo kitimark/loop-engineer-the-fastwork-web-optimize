@@ -1033,8 +1033,37 @@ the P-095 flags, served files hash-checked. The user saw no build names until th
   A and B alike, starts with 1-2 frames of 29-46 ms and has 2-6 frames > 34 ms and 0-1 > 50 ms in its first second
   (A: 6/0, 4/0; B: 4/1, 3/0, 3/0, 3/0, 2/0, 2/0). The catch page 2 had the longest first frame (46 ms in attempt 2,
   40-44 in attempt 1) followed by a back-to-back frame (2 ms). Swipe length and speed differ per part, so these do
-  not compare as an A/B number. OBSERVED, one finger per part, cause unknown. Simulator counts for the first scroll
-  after load: below when measured.
+  not compare as an A/B number. OBSERVED, one finger per part, cause unknown. Simulator counts below.
+
+### First scroll after load, Simulator work counts (A vs B-R2, 2026-10-04 07:38-07:43Z)
+
+Scratch `firstscroll.mjs` in one shared-lane Simulator session (fw-sim iPhone 15 Pro Max, functional, counts only:
+Simulator ms are not judged, F-084). Arms A, B, B2, A2, each a fresh load on its own server and origin, served hashes
+checked (A 65052c4a3902 / e0f92804c521, B 8018ce062d30 / 71b65c667720; `he-on` true on B, false on A). Per load:
+load complete + 3 s, then one Timeline record: idle 1 s, move1 (scrollTo +12 px every 50 ms, 0 -> 240), rest 2 s, move2
+(240 -> 480), rest 2 s, move3 (480 -> 240). Records binned by `console.timeStamp` markers; each move split into its
+first 200 ms and the rest. Output `out/hext/firstscroll-2026-10-04T07-42-33-842Z/firstscroll.json`.
+
+| window | count | A / A2 | B / B2 |
+|---|---|---|---|
+| move1 (first scroll after load), first 200 ms | paints | 68 / 62 | 62 / 61 |
+| move1, first 200 ms | style recalcs, layouts | 9, 13 / 8, 12 | 9, 12 / 9, 12 |
+| move1, rest (~1 s) | paints | 121 / 141 | 185 / 186 |
+| move1, rest | style recalcs, layouts | 76, 66 / 81, 84 | 64, 74 / 57, 77 |
+| move1, rest | rAF fires, function calls | 113, 180 / 131, 203 | 87, 176 / 81, 172 |
+| move2 (after a 2 s rest), first 200 ms | paints | 10 / 15 | 28 / 23 |
+| move3 (after a 2 s rest), first 200 ms | paints | 30 / 31 | 46 / 41 |
+| move2, rest / move3, rest | paints | 92, 105 / 102, 147 | 105, 103 / 124, 104 |
+
+- **The first scroll after load starts with a paint burst on both builds**: 61-68 paints in its first 200 ms, against
+  10-46 at later move starts. A and B are equal there (OBSERVED, Simulator, cause unknown; newly exposed content being
+  painted for the first time is the likely reading, not checked).
+- **B paints more in the rest of the first scroll**: 185-186 vs 121-141 (about +50, both loads), with fewer rAF fires
+  and style recalcs. Later moves: B's first 200 ms paints more (23-46 vs 10-31), the same pattern as P-095's named
+  residual (b) (first move after a rest), while the rest of later moves is equal. OBSERVED, Simulator, cause unknown.
+- **Read for the catch note:** the start-of-scroll lag the user felt on catch page 2 (B) matches a cost both builds pay
+  (the first-scroll paint burst), plus B's extra first-scroll paints. These are counts, not time; the phone finger
+  recordings show no A/B difference in the first second (above). No phone run is asked for; the lead decides.
 
 ## What changed
 
