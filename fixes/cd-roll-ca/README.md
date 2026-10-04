@@ -1102,6 +1102,18 @@ calibration (R6): P(all of P1-P5 pass) = 0.45. Miss branches: P1 miss 0.10 (the 
   gate); P3 miss 0.15 (cdwc repaint at the tween edges); P4 T0 miss 0.05; P5 miss 0.10 (hand-off writes the target,
   not the current value). P1 point estimate: V panel rAF callbacks per 4 s = 4 (one per roll start), 80 % interval
   2-12; C reference 100-130 per 4 s.
+rev 3 (ops N1-N4, 10-04 09:0xZ; still before any build or data):
+N1 a pair (same square position) with C or C2 invalid is dropped; the spread is computed over the valid pairs, at
+  least 4, otherwise that measure is VOID.
+N2 the calibration branches are exclusive outcomes: the first failing prediction in the order P1, P2, P3, P4, P5;
+  P(all pass) 0.45 + 0.10 + 0.15 + 0.15 + 0.05 + 0.10 = 1.
+N3 platform scope: P1 passes on Chrome (430x932 DPR 3) alone; the Simulator rAF and RecalculateStyles counts are
+  descriptive. P2 needs both platforms (the census in Chrome and the Simulator); P3 is Simulator-only; P4 T0 needs
+  both, T2 Simulator only (Chrome mid-roll descriptive, as in rev 1).
+N4 P5: every valid rep's first tween start (Chrome and Simulator), pass = the maximum jump over all of them <= 0.5 CSS
+  px. P4: per arm and platform, one rest shot (m = 1, between rolls) and one reduced-motion shot per rep, taken at
+  the rep's end after the P1 windows (same square position, so 6 + 6 per arm and platform).
+Timeline: WebKit Timeline is on in every Simulator arm and rep (protocol §5.2), since P1 (descriptive) and P3 read it.
 ```
 
 ## Risks, conflicts, follow-ups
