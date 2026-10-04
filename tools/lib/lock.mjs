@@ -7,6 +7,8 @@
 //   <git-common-dir>/fastwork-mirror/locks/<resource>.json         current holder
 //   <git-common-dir>/fastwork-mirror/locks/<resource>.queue.json   FIFO of waiters
 //   <git-common-dir>/fastwork-mirror/locks/<resource>.guard/       short mutex around every read-modify-write
+//   <git-common-dir>/fastwork-mirror/locks/<resource>.last-release.json   who left the holder file last, and when (I-105:
+//     tools/idle.mjs reads how long a lock has stood free; written on release, a process hold's end, the last reader)
 //
 // Two kinds of holder:
 //   - process: held by a running process (pid). Stale as soon as that pid is gone (crash-safe), or
@@ -123,6 +125,19 @@ const holderFile = (r) => join(lockDir(), `${r}.json`);
 const queueFile = (r) => join(lockDir(), `${r}.queue.json`);
 const guardDir = (r) => join(lockDir(), `${r}.guard`);
 const lastGrantFile = (r) => join(lockDir(), `${r}.last-grant.json`);
+const lastReleaseFile = (r) => join(lockDir(), `${r}.last-release.json`);
+/**
+ * I-105: record that holder `h` left the holder file of `r` at `now` ({owner, token, kind, acquiredAt, at, how}), so the
+ * idle alarm knows since when the lock stands free (a lease release left no trace before). Best effort: a failed write
+ * never fails the release. Old lock code does not write it; readers check it against the last grant.
+ */
+function noteRelease(r, h, how, now = Date.now()) {
+  try { writeJson(lastReleaseFile(r), { owner: h?.owner ?? null, token: h?.token ?? null, kind: h?.kind ?? null, acquiredAt: h?.acquiredAt ?? null, at: iso(now), how }); } catch {}
+}
+/** The last release record of `r` (noteRelease), or null. */
+export const lastRelease = (r) => (checkName(r), readJson(lastReleaseFile(r), null));
+/** The last grant record of `r` ({owner, short, at, token, …}), or null. */
+export const lastGrant = (r) => (checkName(r), readJson(lastGrantFile(r), null));
 export const SHORT_MAX_SEC = 300;
 const SHORT_QUEUE_TTL_SEC = 60;
 // a run of back-to-back short jobs ends within this (I-011: 300 s; I-020: 900 s, so a hand-over drains all
@@ -484,7 +499,7 @@ function removeReader(r, token, now = Date.now()) {
   const reader = h.readers.find((x) => x.token === token);
   if (!reader) return null;
   const rest = h.readers.filter((x) => x.token !== token);
-  if (!rest.length) { try { unlinkSync(holderFile(r)); } catch {} endGroupGrant(r, h, now); return { closed: true, group: h, reader }; }
+  if (!rest.length) { try { unlinkSync(holderFile(r)); } catch {} noteRelease(r, h, `last reader "${reader.owner}" left`, now); endGroupGrant(r, h, now); return { closed: true, group: h, reader }; }
   const g = groupWith(h, rest);
   writeJson(holderFile(r), g);
   return { closed: false, group: g, reader };
@@ -923,6 +938,7 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
       if (!shared) {
         if (!force) throw new Error(`${r} is held by the shared group (readers ${readerList(h)}), not by "${owner}": a lease reader leaves with release --shared (node tools/lock.mjs release ${r} --shared --owner <it>), a process reader when its process ends (--force removes the whole group: only if those readers are really gone)`);
         unlinkSync(holderFile(r));
+        noteRelease(r, h, 'release --force (shared group)');
         endGroupGrant(r, h);
         return h;
       }
@@ -937,6 +953,7 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
     }
     if (!force && h.owner !== owner) throw new Error(`${r} is held by "${h.owner}", not "${owner}" (use --force only if that holder is really gone)`);
     unlinkSync(holderFile(r));
+    noteRelease(r, h, force && h.owner !== owner ? 'release --force' : 'release');
     endShortGrant(r, h);
     return h;
   });
@@ -1096,7 +1113,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       const rel = () => {
         if (done) return; done = true;
         // synchronous best effort (also used from the 'exit' handler)
-        const drop = () => { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token) { unlinkSync(holderFile(r)); return h; } return null; };
+        const drop = () => { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token) { unlinkSync(holderFile(r)); noteRelease(r, h, 'process hold ended'); return h; } return null; };
         // a short hold leaves under the guard, so its last-grant record can go with it (I-081); if the guard is not
         // reached in time, the holder goes as before and the record ends at its window (doctor: last-grant-short-outlived)
         const guarded = res.holder.short && withGuardSync(r, () => { try { const h = drop(); if (h) endShortGrant(r, h); } catch {} return true; });

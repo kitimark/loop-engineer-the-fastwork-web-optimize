@@ -545,6 +545,14 @@ node tools/lock.mjs renew iphone --owner <topic> --ttl 900                   # i
 node tools/lock.mjs release iphone --owner <topic>
 ```
 
+- **Idle alarm** (I-105, user T-058): `node tools/idle.mjs check [--phone-min 5] [--chrome-min 10]` at every
+  check-in (lead, ops): exit 3 and an `IDLE <lock>: … free for N min … while work waits: <owners>` line when the iPhone
+  lease (default 5 min) or chrome-measure (10 min) has had no holder for longer while waiters are queued or a status
+  row in state `waiting` waits on it (`--waiting-on phone|chrome`, or its wait text or note names phone/iPhone, or
+  Chrome/measure/lock; never a wait on the user or an incident); exit 0 otherwise. The lead keeps
+  `nohup node tools/idle.mjs watch --by lead --interval 60 > out/idle-watch.log 2>&1 &` running (polls >= 30 s): one
+  console thread per idle period, assigned to the desk and the waiting owners, closed when the slot is taken. Only
+  reads the locks; rules in `tools/lib/idle.mjs`.
 - Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
   Never edit the lock JSON by hand.
 - **Say what a hold is for** (I-060, the progress page's "Right now"): `acquire|renew|run` take `--doing "<plain line>"
