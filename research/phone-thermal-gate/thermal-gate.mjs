@@ -27,7 +27,7 @@ import { join } from 'node:path';
 import { readConfig } from '../../tools/lib/wda-runner.mjs';
 import { batteryInfo } from '../../tools/lib/iphone-run.mjs';
 import { openTab, runAsync } from '../../tools/lib/wip.mjs';
-import { gateVerdict } from './verdict.mjs';
+import { gateVerdict, parseThermalRows } from './verdict.mjs';
 
 const a = process.argv.slice(2);
 const opt = (k, d = null) => { const i = a.indexOf(`--${k}`); return i >= 0 ? a[i + 1] : d; };
@@ -54,13 +54,9 @@ else {
   const ex = xc(['export', '--input', TR, '--xpath', '/trace-toc/run[@number="1"]/data/table[@schema="device-thermal-state-intervals"]']);
   if (ex.code !== 0) err = `xctrace export exit ${ex.code}`;
   else {
-    // columns: start, duration, end, thermal-state, track-label, is-induced, narrative
-    const rs = ex.out.split('<row').slice(1).map((r) => [...r.matchAll(/fmt="([^"]*)"/g)].map((m) => m[1]));
-    rows = rs.length;
-    const last = rs[rs.length - 1] || [];
-    state = last.find((v) => /^(Nominal|Fair|Serious|Critical)$/.test(v)) || null;
-    induced = last.find((v) => /^(Yes|No)$/.test(v)) || null;
-    if (rs.some((f) => f.find((v) => /^(Nominal|Fair|Serious|Critical)$/.test(v)) !== state)) err = `state changed during the read (${rs.length} rows)`;
+    // columns: start, duration, end, thermal-state, track-label, is-induced, narrative; refs resolved, Current + Induced
+    // tracks under Xcode's condition (parseThermalRows in verdict.mjs, fixture fixtures/induced-serious-2rows.xml)
+    ({ state, induced, rows, err } = parseThermalRows(ex.out));
   }
 }
 rmSync(TR, { recursive: true, force: true });

@@ -77,7 +77,17 @@ available; every ticket names its profile and blocks of different profiles never
   Real Serious (induced No) exits 7, a Nominal or Fair read exits 2, Critical or the battery ceiling exits 3. The timer grid
   is recorded and not judged (whether an induced Serious also moves WebKit's timers is UNRESOLVED, see the decisive check
   below). Each record in `gates.jsonl` and the `GATE` line carry `profile`: `xcode-serious`, `real-serious` or `real-fair`.
-- Verdict logic: `verdict.mjs`; self-test (no device): `node research/phone-thermal-gate/selftest.mjs` (16 cases).
+- Verdict logic: `verdict.mjs`; self-test (no device): `node research/phone-thermal-gate/selftest.mjs` (29 cases).
+- Parsing (`parseThermalRows`, 2026-10-04, iphone-runner): under the condition xctrace writes two rows per interval, track
+  "Current" (Serious, is-induced No) and track "Induced" (is-induced Yes) whose time and state cells are `ref=` to the first
+  row's ids (`fixtures/induced-serious-2rows.xml`, the captured export, no identifiers). The first parser read the last
+  row's `fmt` values only, got state null and exited 1 ("state changed during the read (2 rows)") on every induced read
+  (decisive check ON, 22:07-22:09Z). Now refs resolve, state comes from the Current track, induced = Yes when any row says
+  so, and an unresolvable cell is an error. `diag-rows.mjs [--raw]` prints one read's rows (device id redacted).
+  First live read after the fix (22:16Z): `state Serious induced Yes ... timer 30 ms (grid30 1) -> PASS`, i.e. WebKit's
+  timer alignment also moved under the induced condition (one read, OBSERVED).
+- Decisive check result (F-251, OBSERVED, n=3 per arm): CPU loop not slowed; a sustained GPU animation ran at the speed
+  the condition-off run reached only once it had heated into real Serious (~25-35 % slower than a cool phone).
 - Hold shape under xcode-serious: no pre-warm; the gate once at the start and once at the end of the hold; the one uncounted
   load warm-up per arm port stays (A3/U5: first-load costs, not heat). The condition is on the Mac side (Xcode > Window >
   Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start) and is torn down when the phone
