@@ -22,7 +22,7 @@ const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/
 const OUT = join(WT, 'out/morph-gpu/rev2'); mkdirSync(OUT, { recursive: true });
 const SNAP = join(WT, 'out/snapshots');
 const hashOf = (dir, f) => createHash('sha256').update(readFileSync(join(dir, f))).digest('hex').slice(0, 12);
-const dirs = { M: join(SNAP, 'best-65052c4a3902'), A: join(SNAP, 'rv2a-ef9d1c9d5fca') };
+const dirs = { M: join(SNAP, 'best-65052c4a3902'), A: join(SNAP, 'rv2a-ef9d1c9d5fca'), R: join(SNAP, 'fd-e4c80db5e0a8') };
 const ARMDEF = Object.fromEntries(Object.entries(dirs).map(([k, d]) => [k, { dir: d, js: hashOf(d, NODE), css: hashOf(d, CSS) }]));
 const ARMS = (process.argv[2] || 'M,A').split(',');
 const BASE = resolveTree('site-pretty');
@@ -31,6 +31,7 @@ const startedAt = new Date().toISOString(), tag = startedAt.replace(/[:.]/g, '-'
 const area = (c) => (Math.max(c[0], c[2], c[4], c[6]) - Math.min(c[0], c[2], c[4], c[6])) * (Math.max(c[1], c[3], c[5], c[7]) - Math.min(c[1], c[3], c[5], c[7]));
 
 const HDR = `document.querySelector('header.start-selling-top-nav')`;
+const PLAT = `document.querySelector('.start-selling-platform')`;
 const STEPS = {
   cls: [`${HDR}.classList.add('is-morphing')`, `${HDR}.classList.remove('is-morphing')`],
   var: [`(window.__ocV = [${HDR}, ...${HDR}.querySelectorAll('[style*="--morph"]')].map((e) => [e, e.style.getPropertyValue('--morph')]), window.__ocV.forEach(([e]) => e.style.setProperty('--morph', '0.001')))`,
@@ -41,6 +42,13 @@ const STEPS = {
   // overscroll-behavior-y
   fade: [`document.querySelector('.start-selling-platform').style.setProperty('--morph-fade', '0.99')`, `document.querySelector('.start-selling-platform').style.setProperty('--morph-fade', '1')`],
   osb: [`document.documentElement.style.overscrollBehaviorY = 'none'`, `document.documentElement.style.overscrollBehaviorY = ''`],
+  // run 3 (design of the fade fix): which half of the fade repaints, and whether a state set ahead of the push avoids it.
+  // A token `k+` applies only the first half (stays on), `k-` only the second.
+  op: [`${PLAT}.style.opacity = '0.99'`, `${PLAT}.style.opacity = ''`],
+  blur: [`${PLAT}.style.filter = 'blur(0.12px)'`, `${PLAT}.style.filter = ''`],
+  wc: [`${PLAT}.style.willChange = 'filter, opacity'`, `${PLAT}.style.willChange = ''`],
+  pre: [`${PLAT}.style.setProperty('--morph-fade', '0.9999')`, `${PLAT}.style.setProperty('--morph-fade', '1')`],
+  fadeP: [`${PLAT}.style.setProperty('--morph-fade', '0.99')`, `${PLAT}.style.setProperty('--morph-fade', '0.9999')`],
 };
 const ORDER = process.argv[3] ? process.argv[3].split(',') : null;
 
@@ -49,7 +57,7 @@ function frameStats(recs, aTL, bTL) {
   for (const r of recs) {
     if (r.type !== 'RenderingFrame') continue;
     const t = r.startTime * 1000; if (t < aTL || t >= bTL) continue;
-    const o = { at: +(t - aTL).toFixed(1), paints: 0, kpx: 0, styles: 0, layouts: 0, composites: 0 };
+    const o = { at: +(t - aTL).toFixed(1), dur: +((r.endTime - r.startTime) * 1000).toFixed(0), paints: 0, kpx: 0, styles: 0, layouts: 0, composites: 0 };
     const walk = (x) => {
       if (x.type === 'Paint') { o.paints++; if (x.data?.clip) o.kpx += area(x.data.clip) / 1e3; }
       if (x.type === 'RecalculateStyles') o.styles++;
@@ -59,7 +67,7 @@ function frameStats(recs, aTL, bTL) {
     };
     walk(r); o.kpx = Math.round(o.kpx); frames.push(o);
   }
-  return { first: frames[0] || null, nFrames: frames.length, paints: frames.reduce((s, f) => s + f.paints, 0), kpx: frames.reduce((s, f) => s + f.kpx, 0) };
+  return { first: frames[0] || null, max: frames.reduce((m, f) => (!m || f.paints > m.paints ? f : m), null), nFrames: frames.length, paints: frames.reduce((s, f) => s + f.paints, 0), kpx: frames.reduce((s, f) => s + f.kpx, 0) };
 }
 
 for (const arm of ARMS) {
@@ -121,8 +129,10 @@ for (const arm of ARMS) {
     run.drives = [await drive(1, 'warm-up')];
     await sleep(800);
     const order = ORDER || ['cls', 'var', 'cls', 'var', ...(await c.evaluate(`!!document.querySelector('.fw-rv-glass') || /data-fw-rv/.test([...document.styleSheets].map((s) => { try { return [...s.cssRules].map((r) => r.cssText).join(''); } catch { return ''; } }).join(''))`) ? ['rv', 'rv'] : [])];
-    for (const k of order) {
-      for (const [dir, expr] of [['on', STEPS[k][0]], ['off', STEPS[k][1]]]) {
+    for (const tok of order) {
+      const k = tok.replace(/[+-]$/, ''), half = tok.slice(k.length);
+      const parts = [['on', STEPS[k][0]], ['off', STEPS[k][1]]].filter(([d]) => !half || (half === '+' ? d === 'on' : d === 'off'));
+      for (const [dir, expr] of parts) {
         const a = await layers();
         await sleep(150);
         const tg = await c.evaluate(`(() => { ${expr}; return performance.now(); })()`);
@@ -140,11 +150,11 @@ for (const arm of ARMS) {
     const syncTL = findTimeStamp(recs, 'oc-sync');
     if (syncTL == null) throw new Error('no sync');
     const off = syncTL * 1000 - syncT, tl = (x) => x + off;
-    for (const sp of run.steps) sp.tl = frameStats(recs, tl(sp.tg), tl(sp.tg + 400));
-    for (const d of run.drives) for (const o of d.opens) o.tl = frameStats(recs, tl(o.prevT) - 2, tl(o.t + 200));
+    for (const sp of run.steps) sp.tl = frameStats(recs, tl(sp.tg) - 17, tl(sp.tg + 400));
+    for (const d of run.drives) for (const o of d.opens) o.tl = frameStats(recs, tl(o.prevT) - 17, tl(o.t + 200));
     writeFileSync(join(OUT, `tl-oc-${arm}-${tag}.json`), JSON.stringify({ offsetMs: off, recs }));
-    for (const d of run.drives) for (const o of d.opens) console.log(arm, 'drive', d.label, 'open dt', o.dt, 'first', JSON.stringify(o.tl.first), 'sum', o.tl.paints, o.tl.kpx);
-    for (const sp of run.steps) console.log(arm, sp.k, sp.dir, 'first', JSON.stringify(sp.tl.first), 'sum', sp.tl.paints, sp.tl.kpx, 'layers', sp.layers.nBefore, '->', sp.layers.nAfter, 'painted', sp.layers.painted.length, JSON.stringify(sp.layers.painted.slice(0, 8).map((x) => `${x.layer}${x.isNew ? '*' : ''}:${x.d}`)), 'gone', JSON.stringify(sp.layers.gone.slice(0, 5)));
+    for (const d of run.drives) for (const o of d.opens) console.log(arm, 'drive', d.label, 'open dt', o.dt, 'first', JSON.stringify(o.tl.first), 'max', JSON.stringify(o.tl.max), 'sum', o.tl.paints, o.tl.kpx);
+    for (const sp of run.steps) console.log(arm, sp.k, sp.dir, "max", JSON.stringify(sp.tl.max), 'sum', sp.tl.paints, sp.tl.kpx, 'layers', sp.layers.nBefore, '->', sp.layers.nAfter, 'painted', sp.layers.painted.length, JSON.stringify(sp.layers.painted.slice(0, 8).map((x) => `${x.layer}${x.isNew ? '*' : ''}:${x.d}`)), 'gone', JSON.stringify(sp.layers.gone.slice(0, 5)));
   } catch (e) { run.error = String(e.stack || e.message || e); console.log(arm, 'error', run.error); }
   finally { try { c?.close(); } catch {} p.kill(); rmSync(st, { force: true }); writeFileSync(f, JSON.stringify(run, null, 1)); console.log('wrote', f); }
 }

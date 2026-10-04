@@ -888,6 +888,96 @@ pixel-identical:
 Before any of these, the WebKit side (why a 0 → non-zero blur or opacity < 1 repaints the subtree, while later
 changes don't) goes through the claims process.
 
+### Design check (run 4, best-build, 2026-10-04 12:59Z; lead ruling: `#platform`'s fade is this topic's)
+
+`rev2/open-cause-sim.mjs M op,blur,wc+,fade,fade,wc-,pre+,fadeP,fadeP,pre-`: same method as above, each write applied
+at m = 0 from a plain task. "Max frame" is the frame with the most paints in [change − 17 ms, change + 400 ms].
+OBSERVED in our setup; cause in WebKit unknown.
+
+| write on `#platform`, applied alone | max frame paints / kpx | platform layers repainted |
+|---|---|---|
+| `opacity` 1 → 0.99 (inline, fade untouched) / back | 19 / 1049, both ways | 15-16 |
+| `filter: blur(0.12px)` (inline) / back | 0 / 0 | 0-1 (the morph-centre, 1 kpx) |
+| `will-change: filter, opacity` on | 0 / 0 | 0 (layer count stays 50) |
+| `--morph-fade` 1 → 0.99 / back, with that will-change on | 19 / 1049, both ways, twice | 15 |
+| will-change off again | 5 / 983 | document 3, platform 2 |
+| `--morph-fade` 1 → 0.9999 (pre-set) / back to 1 | 19 / 1049 each way | 16 |
+| `--morph-fade` 0.9999 ↔ 0.99 (while pre-set) | 0-1 / ≤ 1, four switches | 0-1 (morph-centre) |
+
+So the cost belongs to the **opacity half**: opacity leaving or returning to exactly 1. The blur half is free.
+Pre-promoting with `will-change` does not help. Below 1, moving the opacity only re-composites.
+
+**Why: CONFIRMED (WebKit source).** WebKit's style diff asks for a full layout when opacity crosses the
+opaque/non-opaque line, with a FIXME saying a simplified layout is not safe there yet:
+- `if (a.opacity.isOpaque() != b.opacity.isOpaque()) { … return true; }`, in the layout check of
+  `Source/WebCore/style/StyleDifference.cpp`, line 214 at WebKit commit `edfe75292ddb` (2026-10-02).
+- Any other opacity change only marks the `Opacity` context-sensitive property (line 576-577), so a composited layer
+  just re-composites.
+- `hasFilters()` is compared the same way (line 223). `blur(0px)` already counts as a filter, which is why the
+  blur half is free.
+- Our data agree: the 1 ↔ 0.99 frames carry `layouts: 1`, while blur and 0.9999 ↔ 0.99 carry `layouts: 0`, or
+  1 with a single 1 kpx paint.
+- That the Simulator's Safari carries the same rule is OBSERVED (consistent with the counts); the line is long-standing.
+
+**Rev 3 design (exact build, not a proposal if the pixel check holds):** `opacity: min(var(--morph-fade), 0.9999)`
+on `.start-selling-platform` (CSS 5479, one line; `rev3/build.mjs`, snapshot `fd-e4c80db5e0a8`, best-build JS
+`65052c4a3902` unchanged, CSS `e4c80db5e0a8`; `rev3/delta.diff`).
+- Every morph value below 0.9999 is unchanged.
+- At rest the section is drawn at 0.9999 instead of 1, under 0.03 of a level.
+- The page loads in that state, so the open and close never cross 1.
+
+**Rev 3 counts** (Simulator, 2026-10-04 13:14Z; `open-cause-sim.mjs M,R fade,fade`; one session; driver M; window
+prevT − 17 ms. Frames listed with `out/morph-gpu/rev2/open-window.mjs`.)
+
+| | best-build (M) | rev 3 (R, fd) |
+|---|---|---|
+| warm open, first frame (2nd and 3rd open) | 29 / 1490 kpx, both | **10 / 446 and 10 / 443** |
+| warm open, next frames to +320 ms | 9-14 each | 10-15 each (the same earn/panel work) |
+| sum over the open window | 101-108 / 6.9-7.6 Mpx | 78-82 / 5.2-5.7 Mpx |
+| end of the close (back to m = 0) | 22 / 1076, 64 ms frame | none above 7 paints |
+| `--morph-fade` 1 ↔ 0.99 toggled alone at m = 0 | 19 / 1049, four times | 0-1 / ≤ 1, four times |
+| **cold first open** (first push after load) | 32 / 2150 | **32 / 2160, unchanged** |
+
+- Rev 3 removes the fade's share (19 rects, ~1.05 Mpx) from every warm open and from every close.
+- The cold first open keeps its 32 rects: 4 layouts and 430x512 tile-sized rects over y 4608-5690. That is separate
+  first-time work, not the fade (R never crosses 1). Not yet attributed; next for this topic.
+
+Owed before it is called same-look:
+- the PR-010 still-pixel check (Simulator and Chrome, best against fd, whole-page stops);
+- the open-frame counts in the Simulator (driver M, best against fd);
+- a scroll-through check that the always-below-1 section costs nothing extra at rest.
+
+## v7's y 4365 pixel point under `#platform` (mgmt-ops-10 request, 2026-10-04 13:09Z; still pixels, no timing)
+
+**Result: not reproduced.** The earlier 16 css px² (wave-v7 run 11-38-42) is a per-load state that every build takes.
+
+**Setup.**
+- Harness: `fixes/v7-best/gates/px-sim.mjs` sha256/12 `1b911a2344ef` and `pxlib.mjs` `2bf3dd947191`, unchanged, as
+  on main dccc727c (sent to mgmt-ops-10 before the run).
+- Builds: copied from wave-v7's `out/v7-best/snap`; all served hashes match.
+- One Simulator session, two passes: A V A2 V2, then the dir map `A=P,V=V`. Order deviation accepted pre-data.
+
+**Scores at y 4365.**
+
+| pass | X~V beyond A/A | X2~V2 | consistent | X/X over 8 | V/V over 8 |
+|---|---|---|---|---|---|
+| 1: v6 (A) vs v7 | 0 | 0 | 0 (max 0) | 5.27 % (browser strip, css 0-59 only) | 0.006 % |
+| 2: best + rest-script (P) vs v7 | 2 | 0 | 0 (max 7) | 5.26 % (same strip) | 0.064 % |
+
+**Why the earlier cluster looked like a build difference.**
+- In pass 1, V~V2 differs at css y 648-654 / 706-711 (216 px): the earlier cluster's exact pixels (82 px at
+  640-656, max 197).
+- A = V there and A2 = V2 there, so both builds take both states.
+- The earlier run's loads happened to split by build. Under the N1 rule the stop is unstable, and it is not a v7 change.
+- Neighbour stops 3875 and 4856 are consistent 0 in both passes.
+
+**What toggles there: OBSERVED, cause unknown.** Likely a transition that the harness's freeze skips; unconfirmed.
+- Pass 2's V~V2 band at css 704-713, where P matches both V and V2, fits an in-between phase.
+- Every build also shows a per-load band at css 166-187 (~22 device px), in both passes.
+
+mgmt-ops-10's second read (re-scored from the PNGs with main's pxlib) AGREES. The item is closed; no further v7 check
+is needed.
+
 ## G check before landing: a fling into the end, C against A (registration; written before any phone data)
 
 **Skipped (2026-10-04):** P-098 found O1.f1 WORSE, so under ops N2 rev 2 is not land-eligible and P-099 did not run.

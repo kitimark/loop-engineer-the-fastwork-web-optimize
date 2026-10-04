@@ -1,0 +1,13 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 20:00:45
++++ b/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 20:00:45
+@@ -5476,7 +5476,9 @@
+   box-sizing: border-box;
+   color: #151a23;
+   filter: blur(calc((1 - var(--morph-fade)) * 12px));
+-  opacity: var(--morph-fade);
++  /* [morph-gpu rev 3] never exactly 1: in WebKit (Simulator, OBSERVED) opacity leaving 1 repaints the whole section
++     on the open's first frame (19 paints, 1.05 Mpx); below 1 the fade only re-composites. 0.9999 is < 0.03 of a level. */
++  opacity: min(var(--morph-fade), 0.9999);
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
