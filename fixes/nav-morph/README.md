@@ -401,23 +401,29 @@ Files (gitignored, they hold LAN addresses: never commit or quote them):
 - `out/nav-morph/edge/`: score.json, score.txt, span.json.
 - They are listed in `evidence.json`.
 
-## Draft ticket (rules frozen before data): F3 crossing-frame count check, C vs V (fix-nav-morph, 2026-10-04)
+## Draft ticket P-096 (rules frozen before data): F3 crossing-frame count check, C vs V (fix-nav-morph, 2026-10-04)
 
 This follows the lead's ruling (c) after P-091. Counts only: no ms is judged in either engine. Shared lane, no phone.
-Status: DRAFT. It is sent to mgmt-ops-10 and the lead for a read, and no data is taken before their OK. The rules
-below are fixed by the commit that adds this section.
+Status: DRAFT rev 2.
+- Rev 1 was e2f2512d. Rev 2 answers mgmt-ops-10's read R1-R6.
+- The lead approved rev 1's design pending ops' read.
+- No data is taken before ops re-reads rev 2 and the lead gives the OK.
+- The rules below are fixed by the commit that adds this revision.
 
 **Question.** On the frame where #platform crosses the arm's IO edge, and the two frames after it, how many elements
 are restyled and laid out, C vs V? In V, does the style work come from the writes the crossing triggers on the
 pre-mounted panel?
-- V's crossing writes are both in `ue()` of the best build:
-  - `a.inert = !(b || E)` plus the scene and aria attributes, JS 13576-13588;
-  - each column image's `src` and `height` writes, JS 13517-13519.
+- V's crossing writes are both in `ue()` of the best build, file `_app/immutable/nodes/2.DyWL8TcE.js` at sha256/12
+  65052c4a3902 (`out/snapshots/best-65052c4a3902/`):
+  - `a.inert = !(b || E)` plus the scene and aria attributes, lines 13576-13588;
+  - each column image's `src` and `height` writes, lines 13517-13519.
 - In C, the crossing mounts the whole panel instead.
 
 **Arms.**
-- C = plain baseline B (JS 4606120cf392 / CSS 27776f3d4138, IO callback 13083:13).
-- V = best build N, `out/snapshots/best-65052c4a3902` (JS 65052c4a3902 / CSS e0f92804c521, IO callback 13378:13).
+- C = plain baseline B: `site-pretty/_app/immutable/nodes/2.DyWL8TcE.js` at 4606120cf392 (IO callback line 13083:13)
+  and `site-pretty/_app/immutable/assets/2.gBuqKVzi.css` at 27776f3d4138.
+- V = best build N, `out/snapshots/best-65052c4a3902`: the same JS path at 65052c4a3902 (IO callback line 13378:13)
+  and the same CSS path at e0f92804c521.
 - C2 = a second C server, the A/A pair.
 - Servers: `serve.mjs --root site-pretty [--overlay <snapshot>] --port 0 --https --vendors=local --latency 150 --no-cache`.
   The served JS and CSS hashes are checked before each load.
@@ -438,7 +444,8 @@ pre-mounted panel?
 - Per frame, counted between BeginMainThreadFrame events:
   - R = the sum of UpdateLayoutTree `elementCount`;
   - L = the sum of Layout `dirtyObjects` (and the number of Layout events);
-  - the style and layout invalidation-tracking events, grouped by their top JS frame (url:line) and reason.
+  - the style and layout invalidation-tracking events, grouped by reason and by the JS frames of their stack
+    (url:line, every frame, not only the top one).
 - 3 reps per arm. Rep orders: C V C2, then V C2 C, then C2 C V.
 - Run: `lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner fix-nav-morph`, one rep per slot.
 
@@ -450,6 +457,10 @@ pre-mounted panel?
 - WebKit gives no element count, so the size of the restyle set from an attribute write is the descendant count of
   its target at write time (`querySelectorAll('*').length`, read once the run ends). That is an upper bound, so it is
   descriptive only.
+- **The Simulator decides nothing about volume (R2).** A RecalculateStyles record mid-scroll is close to certain, and
+  V's code writes at the crossing by design, so a Simulator H1 could not fail. Its record counts per frame are
+  descriptive. Its one rule is a mechanism check (M below): do the same writes land in the same window in WebKit?
+  That keeps the Chrome counts relevant to the phone. STYLE rests on Chrome H1 and H2.
 - 3 reps per arm, same orders. Simulator ms are never judged (F-084).
 
 **Validity** (per load, then per rep). A load is void when any of these holds:
@@ -462,32 +473,51 @@ A Chrome rep is also void when C vs C2 window R differs by more than max(10 %, 5
 reps per engine. Otherwise that engine is VOID and the result is UNRESOLVED.
 
 **Rules, per engine on the median of valid reps.**
-- **H1 (crossing style burst in V).**
-  - Chrome: V's window R (3 frames) ≥ 3 × the reference expectation, i.e. ≥ 9 × V's median per-frame R in the
-    reference band.
-  - Simulator: the census shows V's `inert` flip and at least one image `src` write in k = 0..+1, and the Timeline has
-    at least one RecalculateStyles record in the frame after the first of them.
-- **H2 (V's style is the crossing's writes, Chrome only).** At least 50 % of V's style invalidation-tracking events in
-  the window have a top JS frame in JS 13517-13519 or 13576-13588. If the invalidation-tracking events do not appear
-  at all in this Chrome build, H2 is UNRESOLVED and the report says so. That claim is then checked against the
-  Chromium source before it is written up.
+- **H1 (crossing style burst in V, Chrome).** V's window R (3 frames) ≥ max(9 × V's median per-frame R in the
+  reference band, 100 elements).
+  - Why the floor of 100 (R1): it is about the panel subtree, about twice the A/A floor of 50.
+  - The panel template (`lN`, JS 65052c4a3902 line 13127) has 29 elements. The three column tracks with their images
+    and the countdown component come on top. That is about 60-150 elements, estimated from the code, not counted.
+  - A burst smaller than one panel's worth of restyle cannot be the style the crossing writes cause.
+- **H2 (V's style is the crossing's writes, Chrome).** At least 50 % of V's style invalidation-tracking events in the
+  window carry, anywhere in their JS stack, a frame in the V file above at lines 13517-13519 or 13576-13588 (R3).
+  - Any frame counts, so a write through the Svelte attribute helper (`k`, in a shared chunk) still counts through
+    its caller in `ue()`.
+  - If no invalidation-tracking event in the window has a JS stack, or the events do not appear at all in this
+    Chrome build, H2 is UNRESOLVED and the report says so. That claim is then checked against the Chromium source
+    before it is written up.
+- **M (mechanism, Simulator).** In V, the census shows the panel's `inert` flip and at least one image `src` write in
+  k = 0..+1. If M fails, the Chrome result does not carry to WebKit: the decision is UNRESOLVED whatever H1 and H2 say.
 - **Descriptive only** (decides nothing):
   - C vs V window R and L, frame by frame;
+  - Simulator RecalculateStyles, Layout and Paint records per frame, window vs band, C vs V;
   - C's Layout per frame for k = +3..+8 (the P-091 post-hoc C run);
   - the census tallies by attribute.
 
 **Decision.**
-- **STYLE holds** = H1 in both engines and H2 true. Then candidate F is built:
+- **STYLE holds** = Chrome H1 and H2 true, and Simulator M true. Then candidate F is built:
   - the `inert` lift and the `src` writes are moved off the crossing frame (planned: write the image `src` at the
     idle mount, and lift `inert` on a later frame while the panel is still invisible);
-  - F gets its own cost card, which is new rules frozen before its data;
+  - F gets its own cost card, which is new rules frozen before its data. The lead asked that card to include a
+    focus and accessibility check: no focusable element reachable while the panel is invisible, and the same tab
+    order once it shows;
   - F then joins the phone queue as a new ticket after P-094.
-- **STYLE fails** = H1 false in Chrome, or H2 false. F is not built, and the residual goes back to the lead as a
+- **STYLE fails** = H1 false, or H2 false (with M true). F is not built, and the residual goes back to the lead as a
   phone-only OBSERVED cost (cause unknown).
-- **Engines disagree, or H2 is UNRESOLVED with H1 true in both** = UNRESOLVED. The lead decides whether F is still
-  worth a cost card.
+- **UNRESOLVED** = M false, or H2 UNRESOLVED with H1 true, or the Chrome engine VOID. The lead decides whether F is
+  still worth a cost card.
 
 **Tools to write before any data** (in `fixes/nav-morph/`, no tools/ change): `crossing-chrome.mjs`,
-`crossing-sim.mjs` and `crossing-read.mjs`. One dry run on C alone checks the scripts work. The dry run is not
-counted and is not read for R or L: it checks only that the crossing is found, the census logs and the
-invalidation-tracking events appear.
+`crossing-sim.mjs` and `crossing-read.mjs`.
+- One dry run on C alone checks the scripts work. It is not counted and is not read for R, L or H2. It checks only
+  that the crossing is found, the census logs, and invalidation-tracking events with stacks appear.
+- **Freeze (R5).** After the dry run and before rep 1, the three tools are committed and their sha256/12 is added
+  below in a commit of its own. mgmt-ops-10 re-hashes them at the result read; any later change is a deviation.
+  - Tool hashes: (filled in by the freeze commit).
+
+**Prediction (R6, fix-nav-morph, before any data).**
+- P(STYLE holds) 0.45, P(STYLE fails) 0.40, P(UNRESOLVED) 0.15.
+- V's Chrome window R (median of valid reps): point 400 elements, 80 % interval [100, 2000].
+- H2 share: point 0.5, 80 % interval [0.15, 0.9].
+- Why: P-091's post-hoc reading points at style in V's crossing frames. But the crossing also flips `b` for the
+  header's other effects, so part of the style could come from outside `ue()`.
