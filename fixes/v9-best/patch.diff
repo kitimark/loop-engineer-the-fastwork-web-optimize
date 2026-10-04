@@ -25,13 +25,10 @@
        },
        S = (e, t, r, a, o) =>
          new Promise((s) => {
-@@ -2456,6 +2458,39 @@
-               }
-               let s = Math.min(1, (i - u) / a);
-               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
-+            };
-+          n = window.requestAnimationFrame(d);
-+        }),
+@@ -2459,6 +2461,39 @@
+             };
+           n = window.requestAnimationFrame(d);
+         }),
 +      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
 +      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
 +      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
@@ -62,9 +59,12 @@
 +                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
 +                  }, w))
 +                : (n = window.requestAnimationFrame(d));
-             };
-           n = window.requestAnimationFrame(d);
-         }),
++            };
++          n = window.requestAnimationFrame(d);
++        }),
+       E = async (e) => (
+         z(y, !0),
+         z(v, !1),
 @@ -2486,7 +2521,7 @@
              (z(b, e, !0), z(C, e / 100));
            })) ||
@@ -160,7 +160,7 @@
            }
          });
        }));
-@@ -2710,7 +2794,90 @@
+@@ -2710,8 +2794,91 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -173,7 +173,7 @@
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
-+}
+ }
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -249,9 +249,10 @@
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
  function lE(e) {
    let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2923,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -390,6 +391,11 @@
 -          Math.abs(h - r) < 8e-4 && (r = h),
 -          c.style.setProperty(`--commission-enter-shrink`, String(n)),
 -          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
+-          z(g, o.top < i * 0.995 && f > 0.04, !0),
+-          z(v, p > 0.04),
+-          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
+-          j(),
+-          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
 +        // compact: CSS forces --commission-shrink-scale:1 / radius 0 and hides the runway, so the eased
 +        // values are invisible; snap them (no easing loop) and skip the --commission-* writes.
 +        (k
@@ -398,11 +404,7 @@
 +            (r += (h - r) * (e.matches ? 1 : 0.22)),
 +            Math.abs(m - n) < 8e-4 && (n = m),
 +            Math.abs(h - r) < 8e-4 && (r = h)),
-           z(g, o.top < i * 0.995 && f > 0.04, !0),
--          z(v, p > 0.04),
--          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
--          j(),
--          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
++          z(g, o.top < i * 0.995 && f > 0.04, !0),
 +          z(v, p > 0.04));
 +        // writes only when the value changed (same values as before, no redundant style mutations)
 +        let _ve = String(n),
@@ -477,7 +479,7 @@
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,9 +4077,48 @@
+@@ -3782,10 +4077,49 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -489,7 +491,7 @@
      }),
      f(t, d),
      H());
-+}
+ }
 +function HEflip(d, dw) {
 +  if (typeof d.animate != `function`) return;
 +  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
@@ -523,9 +525,10 @@
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
- }
++}
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
+ function GE(e, t, n, r = UE) {
 @@ -3815,8 +4149,148 @@
    return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
  }
@@ -1216,24 +1219,23 @@
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5520,28 @@
+@@ -4689,12 +5520,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
--      n = () => {
--        F &&= (window.clearInterval(F), 0);
 +      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
 +      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
 +      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
 +      fwOn = !1,
 +      fwT0 = 0,
-+      n = () => {
+       n = () => {
+-        F &&= (window.clearInterval(F), 0);
 +        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
        },
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1245,9 +1247,10 @@
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5574,15 @@
          ((O = null), z(E, null));
        },
@@ -1509,21 +1512,20 @@
              Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
          }
          let r = document.querySelector(`.pain`);
-@@ -11325,8 +12303,13 @@
+@@ -11325,7 +12303,12 @@
          }
        },
        u = () => {
 -        i ||= window.requestAnimationFrame(l);
 +        (fwCheck(), (i ||= window.requestAnimationFrame(l)));
-       },
++      },
 +      // [scroll-cb-phone, carried onto v8] the gate skips only the job's rAF; rest-script's jump check (fwCheck: a
 +      // cached box, no layout read) still runs on every scroll/resize frame, as it does in v8
 +      scbU = () => {
 +        ((scbPoke = !0), !scbOff || scbDirty || scbG.near() ? u() : fwCheck());
-+      },
+       },
        f = (e) =>
          new Promise((t) => {
-           let r = window.setTimeout(() => {
 @@ -11337,37 +12320,67 @@
          }),
        p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
@@ -1817,17 +1819,32 @@
          f(n, i));
      },
    ),
-@@ -12945,6 +14000,9 @@
+@@ -12879,7 +13934,7 @@
+     `<div class="start-selling-morph-panel"><div class="start-selling-morph-backdrop" aria-hidden="true"></div> <div class="start-selling-morph-veil" aria-hidden="true"></div> <div class="start-selling-morph-center"><p class="start-selling-morph-title"> </p> <div class="waitlist-closing-countdown svelte-1dcozpm"><!></div> <div class="start-selling-morph-cta-stack svelte-1dcozpm"><button class="start-selling-morph-cta" type="button"><svg class="solar solar-bell-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M18.7491 9.70957V9.00496C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00496V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z" stroke="currentColor"/><path d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19" stroke="currentColor" stroke-linecap="round"/></svg> </button> <a class="start-selling-morph-cta-rsvp" href="https://f.fastwork.co/demoday" target="_blank" rel="noopener" data-selenium="start-selling.header.link.demo-day"><svg class="solar solar-calendar-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor"/><path d="M7 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M2.5 9H21.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 13H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17.0234H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.0234H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.0234H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> </a></div></div> <footer class="start-selling-morph-footer"><p> </p> <div class="start-selling-morph-footer-end"><p> </p> <span class="start-selling-morph-grad" aria-hidden="true"></span> <a href="https://fastwork.com/privacy"> </a></div></footer></div>`,
+   ),
+   uN = h(
+-    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"> </button></div></div> <!></header>`,
++    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"><span class="start-selling-top-nav-earn-box svelte-1dcozpm"> </span></button></div></div> <!></header>`,
+   );
+ function dN(n, r) {
+   D(r, !0);
+@@ -12944,7 +13999,14 @@
+     x = N(0),
      w = 0,
      T,
-     E = R(() => s(x) > 0.001),
+-    E = R(() => s(x) > 0.001),
++    // nav-earn rev 3 (F-243): was `> 0.001`. The morph tween (ZM, ease-out cubic over 680 ms) ends on exactly its
++    // target, but on the close it spends its last ~68 ms between 0.001 and 0, where the bar's :not(.is-morphing)
++    // width / background transitions came back on and restarted about 5 times for sub-pixel changes. `> 0` keeps
++    // .is-morphing (transition: none) until the tween's done frame sets 0.
++    E = R(() => s(x) > 0),
 +    /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
 +    JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
 +    __cdPanelShown = R(() => JM(s(x)) > 0.08),
      O = R(() => !s(p) && !s(E)),
      A = R(() => s(O) || s(x) > 0.55);
    function j(e) {
-@@ -12952,17 +14010,27 @@
+@@ -12952,17 +14014,115 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -1848,12 +1865,100 @@
 +    for (let r of document.elementsFromPoint(t, n))
 +      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
 +    return j(null);
-   }
++  }
 +  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
 +  let __navEls = {};
 +  function __navEl(e) {
 +    let t = __navEls[e];
 +    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
++  }
++  // nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button's original reveal and hide, drawn without layout.
++  // The button and the gap before it keep their full size in the layout (CSS). When the button's state changes
++  // (shown <-> hidden: the hero pill at the top, .is-earn-hidden at the end of the page), one Web Animation per
++  // element plays the original's geometry, sampled from its own formula: width w(e) = min(label + 2P * e, M * e)
++  // (P padding, M max-width), gap G * e (at the top only; at the end of the page the original closed the gap with
++  // --morph, kept in CSS), e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, started at the original's
++  // trigger (hero progress 0.72 at the top; morph 0.2 going in and 0 coming back at the end of the page, which is
++  // when the original's per-frame restarted transitions settle into one). Animated: translate (button, language
++  // switch) and clip-path (the pill box), nothing that needs layout. A reversal mid-way starts from the current
++  // point and takes the shortened time a reversed CSS transition takes. Sizes come from a ResizeObserver (W, P, M,
++  // G), never read at the flip, so the flip forces no layout. No script runs per frame.
++  let __ewOn = null,
++    __ewPill = null,
++    __ewA = null,
++    __ewRO = null,
++    __ewWr = null,
++    __ewW = 0,
++    __ewP = 24,
++    __ewM = 176,
++    __ewG = 8,
++    __ehV = !1;
++  const __ewBz = ((x1, y1, x2, y2) => {
++    let X = (t) => ((1 + 3 * x1 - 3 * x2) * t * t + (3 * x2 - 6 * x1) * t + 3 * x1) * t,
++      Y = (t) => ((1 + 3 * y1 - 3 * y2) * t * t + (3 * y2 - 6 * y1) * t + 3 * y1) * t;
++    return (x) => {
++      if (x <= 0) return 0;
++      if (x >= 1) return 1;
++      let lo = 0,
++        hi = 1,
++        t = x;
++      for (let i = 0; i < 30; i++) {
++        let v = X(t);
++        if (Math.abs(v - x) < 1e-6) break;
++        v < x ? (lo = t) : (hi = t);
++        t = (lo + hi) / 2;
++      }
++      return Y(t);
++    };
++  })(0.33, 0, 0.2, 1);
++  function __ewWrap() {
++    return __ewWr?.isConnected ? __ewWr : (__ewWr = ie?.querySelector(`:scope > .start-selling-language-switch-wrap`));
+   }
++  function __ewMeasure() {
++    if (!oe?.isConnected) return;
++    let w = oe.offsetWidth;
++    ((__ewM = parseFloat(getComputedStyle(oe).maxWidth) || w),
++      (__ewP = parseFloat(getComputedStyle(__ewBox).paddingLeft) || 0),
++      (__ewG = parseFloat(getComputedStyle(ie).columnGap) || 0));
++    w !== __ewW && ((__ewW = w), ie.style.setProperty(`--earn-w`, `${w}px`));
++  }
++  // .is-earn-hidden: on at morph >= 0.2 (where the original's width / opacity targets reach 0), off at morph 0
++  function __ewEh(m) {
++    return (__ehV = m >= 0.2 ? !0 : m <= 0 ? !1 : __ehV);
++  }
++  function __ewGo(on, pill) {
++    (!__ewRO && typeof ResizeObserver == `function` && oe && ((__ewRO = new ResizeObserver(__ewMeasure)), __ewRO.observe(oe)));
++    let was = __ewPill;
++    __ewPill = pill;
++    if (__ewOn === on) return;
++    let first = __ewOn === null,
++      e0 = on ? 0 : 1;
++    __ewOn = on;
++    if (__ewA) {
++      let t = __ewA.a[0]?.currentTime;
++      (t != null && t < __ewA.d && (e0 = __ewA.e0 + (__ewA.e1 - __ewA.e0) * __ewBz(t / __ewA.d)),
++        __ewA.a.forEach((t) => t.cancel()),
++        (__ewA = null));
++    }
++    let e1 = on ? 1 : 0,
++      d = 680 * Math.abs(e1 - e0),
++      wr = __ewWrap(),
++      W = __ewW;
++    if (first || !W || d < 1 || !oe.animate || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches) return;
++    let gap = pill || was,
++      kb = [],
++      kx = [],
++      kw = [];
++    for (let i = 0; i <= 24; i++) {
++      let e = e0 + (e1 - e0) * __ewBz(i / 24),
++        w = Math.min(W - 2 * __ewP * (1 - e), __ewM * e),
++        X = (W - w) / 2;
++      (kb.push({ translate: `${X}px 0` }),
++        kx.push({ clipPath: `inset(0px ${X}px round 999px)` }),
++        kw.push({ translate: `${W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
++    }
++    let o = { duration: d, easing: `linear` };
++    __ewA = { e0, e1, d, a: [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)].filter(Boolean) };
 +  }
    function ee() {
 -    let e = document.querySelector(`.start-selling-profile-sticky`);
@@ -1861,7 +1966,7 @@
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12999,7 +14067,7 @@
+@@ -12999,7 +14159,7 @@
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
      let _ = () => {
          (z(v, ee(), !0), z(g, F(), !0));
@@ -1870,7 +1975,7 @@
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +14085,179 @@
+@@ -13017,13 +14177,179 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2052,7 +2157,7 @@
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14279,9 @@
+@@ -13045,9 +14371,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2064,7 +2169,7 @@
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14289,58 @@
+@@ -13055,27 +14381,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2130,7 +2235,7 @@
        },
        R = y(),
        te = R
-@@ -13086,7 +14351,60 @@
+@@ -13086,7 +14443,60 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2192,7 +2297,7 @@
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,6 +14413,11 @@
+@@ -13095,10 +14505,50 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -2204,10 +2309,10 @@
            P(),
            ne(),
            e.removeEventListener(`change`, m),
-@@ -13102,6 +14425,41 @@
-       }
-     );
-   });
+           t.removeEventListener(`change`, m));
++      }
++    );
++  });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -2240,16 +2345,19 @@
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-+      }
-+    );
-+  });
-   var I = uN();
-   let L, te;
-   var B = e(I),
-@@ -13118,10 +14476,24 @@
+       }
+     );
+   });
+@@ -13116,12 +14566,28 @@
+     },
+   });
    var oe = V(ae, 2),
-     le = e(oe, !0);
-   (M(oe), M(ie), M(B));
+-    le = e(oe, !0);
+-  (M(oe), M(ie), M(B));
++    // nav-earn rev 3: the label sits in .start-selling-top-nav-earn-box (the dark pill), see __ew below
++    __ewBox = e(oe),
++    le = e(__ewBox, !0);
++  (M(__ewBox), M(oe), M(ie), M(B));
 +  // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
 +  // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
 +  // children when only the header's value changes, so they kept the value from the last class flip (logo not
@@ -2261,7 +2369,7 @@
 +    __mkW = (v) => {
 +      if (v === __mkV) return;
 +      __mkV = v;
-+      for (let t of [B, re, ie, oe, __mkP]) t && t.style.setProperty(`--morph`, v);
++      for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
 +    };
    var W = V(B, 2),
      ue = (n) => {
@@ -2271,7 +2379,7 @@
        (_(
          u,
          21,
-@@ -13140,7 +14512,7 @@
+@@ -13140,7 +14606,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2280,7 +2388,7 @@
                }),
                  f(e, n));
              },
-@@ -13157,7 +14529,16 @@
+@@ -13157,7 +14623,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2298,7 +2406,7 @@
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14574,8 @@
+@@ -13193,7 +14668,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2308,7 +2416,7 @@
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14592,7 @@
+@@ -13210,7 +14686,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2317,8 +2425,13 @@
    }),
      M(I),
      P(
-@@ -13232,6 +14614,7 @@
+@@ -13229,9 +14705,12 @@
+           "is-locale-open": s(y),
+           "is-scroll-hidden": s(v) && !s(E),
+           "is-profile-sticky-hidden": s(v) && !s(E),
++          "is-earn-hidden": __ewEh(s(x)),
          })),
++          __ewGo(!s(O) && !__ehV, s(O)),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),
 +          __mkW(e[`--morph`]),
@@ -2370,13 +2483,14 @@
    border-radius: 999px;
    flex-direction: column;
    height: 100%;
-@@ -1227,9 +1237,8 @@
+@@ -1226,10 +1236,9 @@
+   font-style: normal;
    position: relative;
    overflow: visible;
- }
+-}
 -.script-accent.is-drawing-in.svelte-1fn2go6 {
 -  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
--}
+ }
 +/* layout-animations: no width transition (0.9s of h1 layout per cycle); the width now changes at once
 +   and the neighbouring words slide with a transform animation (JS HE, same duration and easing) */
  .sizer.svelte-1fn2go6 {
@@ -2460,22 +2574,19 @@
  @keyframes svelte-1fn2go6-idle-0 {
    0%,
    33.32% {
-@@ -1410,9 +1465,36 @@
-   justify-content: center;
-   align-items: center;
-   display: flex;
-+  position: absolute;
-+  inset: 0;
-+}
+@@ -1413,6 +1468,33 @@
+   position: absolute;
+   inset: 0;
+ }
 +/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; inside it an uncomposited wrapper of
 +   the same box at top -m*c, and each cell is a face's box placed at top k*c in the wrapper (both set by the script),
 +   its glyph centred the same way */
 +.strip.svelte-1quva9c {
 +  will-change: transform;
 +  display: block;
-   position: absolute;
-   inset: 0;
- }
++  position: absolute;
++  inset: 0;
++}
 +.cdwrap.svelte-1quva9c {
 +  display: block;
 +  position: absolute;
@@ -2529,10 +2640,12 @@
  }
  .hero-track.svelte-1p2vpne {
    background: #fff;
-@@ -2124,6 +2231,136 @@
+@@ -2122,7 +2229,137 @@
+     top: 83.3333%;
+     left: auto;
      right: -45px;
-   }
- }
++  }
++}
 +/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
 +   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
 +   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
@@ -2594,7 +2707,7 @@
 +    to {
 +      opacity: 0;
 +    }
-+  }
+   }
 +  @keyframes svelte-1p2vpne-hero-exit-fade-up {
 +    from {
 +      opacity: 0.9995;
@@ -2662,10 +2775,9 @@
 +      }
 +    }
 +  }
-+}
+ }
  @media (prefers-reduced-motion: reduce) {
    .hero-track.svelte-1p2vpne {
-     height: auto;
 @@ -2385,6 +2622,10 @@
    display: flex;
    position: relative;
@@ -2677,17 +2789,15 @@
  }
  .start-selling-future.is-future-shrinking > .start-selling-future-card {
    transform: scale(var(--future-shrink-scale));
-@@ -2398,24 +2639,52 @@
-   transition:
-     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+@@ -2400,22 +2641,50 @@
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-+    visibility 0s linear 1.6s;
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-     visibility 0s linear 1.6s;
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
    transform: translateY(48px);
  }
  .start-selling-future.is-visible > .start-selling-future-card {
@@ -2705,11 +2815,11 @@
    transition:
      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
  }
  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
    transform: scale(var(--future-shrink-scale));
@@ -2732,10 +2842,11 @@
  .start-selling-future-header {
    z-index: 10;
    text-align: center;
-@@ -2885,20 +3154,61 @@
+@@ -2884,21 +3153,62 @@
+ }
  .start-selling-avatars.is-carousel img.is-enter {
    animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
- }
++}
 +/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
 +   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
 +   advance (32px - 8px overlap) with the same easing, via the independent translate property */
@@ -2746,7 +2857,7 @@
 +  animation:
 +    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
 +    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
-+}
+ }
 +/* st5: 5 persistent slots. Every slot keeps its own layer for the page's life (no layer gain/loss when the
 +   slide starts or ends); the 5th waits at the pop's start state; .is-sliding (toggled by the rotator) runs the
 +   same keyframes, easings and duration as the keyed version */
@@ -2861,7 +2972,7 @@
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -6809,8 +7133,95 @@
+@@ -6809,9 +7133,96 @@
    opacity: 0;
  }
  .start-selling-platform-secure-network-dash-highlight.is-active {
@@ -2887,7 +2998,7 @@
 +.start-selling-platform-secure-network-dash-glint.is-active {
    opacity: 1;
    transition: opacity 0.2s;
-+}
+ }
 +.start-selling-platform-secure-network-dash-glint {
 +  pointer-events: none;
 +  width: 94px;
@@ -2954,9 +3065,10 @@
 +  to {
 +    transform: translateX(-199.03515625px);
 +  }
- }
++}
  .start-selling-platform-secure-network-face {
    box-sizing: border-box;
+   object-fit: cover;
 @@ -7186,7 +7597,8 @@
      transform: translate(-50%, -50%);
      animation: none !important;
@@ -2995,10 +3107,11 @@
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11102,7 +11516,65 @@
+@@ -11101,8 +11515,66 @@
+     -webkit-background-clip: text;
      background-clip: text;
      animation: 4s linear infinite start-selling-platform-i-doc-sweep;
-   }
++  }
 +  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
 +     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
 +     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
@@ -3018,7 +3131,7 @@
 +    position: relative;
 +    -webkit-mask-image: linear-gradient(#000, #000);
 +    -webkit-mask-clip: text;
-+  }
+   }
 +  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc::after,
 +  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn::after,
 +  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure::after,
@@ -3061,7 +3174,146 @@
  .start-selling-language-switch-wrap.svelte-1lc7nmb {
    z-index: 2;
    position: relative;
-@@ -11751,11 +12223,74 @@
+@@ -11437,7 +11909,9 @@
+ }
+ .start-selling-top-nav-actions.svelte-1dcozpm {
+   align-items: center;
+-  gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
++  /* nav-earn rev 3: the gap is reserved like the Join button's width (see the rev 3 block below); its closing at the
++     top and at the end of the page is drawn by moving the language switch instead */
++  gap: 8px;
+   opacity: 1;
+   pointer-events: auto;
+   flex: none;
+@@ -11477,21 +11951,80 @@
+ .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+   --earn-out: clamp(0, calc(var(--morph) / 0.2), 1);
+   --nav-earn-mask: linear-gradient(90deg, #000 0 46%, transparent 58%);
+-  --earn-layout: calc(var(--nav-expand) * (1 - var(--earn-out)));
+   isolation: isolate;
+   min-width: 0;
+-  max-width: calc(var(--earn-layout) * 11rem);
+-  padding-inline: calc(var(--earn-layout) * 24px);
+-  opacity: calc((1 - var(--earn-out)) * var(--nav-expand));
++  max-width: 11rem;
++  padding: 0;
++  background: none;
++  opacity: 1;
+   filter: blur(calc(var(--earn-out) * 10px));
+   pointer-events: none;
+   transform: translateY(calc(var(--earn-out) * -8px));
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
++}
++/* nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button keeps its full width in the layout at all times, and
++   so does the 8px gap before it. Its original look (the dark pill growing from the right edge over 0.68 s with the
++   language switch sliding over, and shrinking back the same way) is drawn without layout: the dark pill and the
++   label sit in .start-selling-top-nav-earn-box, clipped to the original's width at that moment (clip-path) and moved
++   to its centre (translate on the button), and the language switch is moved by the width and gap the original would
++   not have had yet (translate). The nav script starts those three as one Web Animation per change of state (shown
++   <-> hidden), sampled from the original's own formula: width min(label + 2 * padding * e, max-width * e), gap
++   8px * e, e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, and a reversal mid-way takes the
++   shortened time a reversed CSS transition takes. Opacity keeps the original's transitions on one class flip:
++   0.32 s after 0.12 s when it appears and at the end of the page, 0.2 s when it goes back into the hero pill.
++   The mask sweep and the sheen are the original's, unchanged. Hidden states below match the animations' end. */
++.start-selling-top-nav-earn-box.svelte-1dcozpm {
++  box-sizing: border-box;
++  flex: none;
++  justify-content: center;
++  align-items: center;
++  height: 100%;
++  padding-inline: 24px;
++  background: #131922;
++  border-radius: 999px;
++  display: inline-flex;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  opacity: 0;
++  translate: 50% 0;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++  clip-path: inset(0 50% round 999px);
++}
++.start-selling-top-nav-actions.svelte-1dcozpm > .start-selling-language-switch-wrap {
++  --morph: inherit;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: calc(var(--earn-w, 0px) + 8px) 0;
++}
++/* at the end of the page the original closed the gap with --morph (no timer) and the width on its timer */
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm:not(.is-hero-pill)
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: var(--earn-w, 0px) 0;
++}
++.start-selling-top-nav.is-morphing.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 8px));
++}
++@media (width<=640px) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    translate: calc(var(--earn-w, 0px) + 4px) 0;
++  }
++  .start-selling-top-nav.is-morphing.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 4px));
++  }
+ }
+ .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill, .is-morphing)
+   .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+@@ -11499,10 +12032,7 @@
+ }
+ .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: none;
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1),
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1);
+   -webkit-mask-image: none;
+   mask-image: none;
+ }
+@@ -11579,10 +12109,10 @@
+     scale: 0.75;
+   }
+   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+-    transform-origin: 50%;
++    transform-origin: calc(50% * var(--morph));
+   }
+   .start-selling-top-nav-actions.svelte-1dcozpm {
+-    gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
++    gap: 4px;
+   }
+   .start-selling-top-nav-btn.svelte-1dcozpm {
+     height: 36px;
+@@ -11592,9 +12122,11 @@
+     line-height: 20px;
+   }
+   .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+-    max-width: calc(var(--earn-layout) * 9.5rem);
+-    padding-inline: calc(var(--earn-layout) * 16px);
++    max-width: 9.5rem;
+   }
++  .start-selling-top-nav-earn-box.svelte-1dcozpm {
++    padding-inline: 16px;
++  }
+ }
+ @media (prefers-reduced-motion: reduce) {
+   .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
+@@ -11751,11 +12283,74 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -3138,7 +3390,7 @@
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +12303,53 @@
+@@ -11768,3 +12363,53 @@
      scroll-behavior: auto;
    }
  }

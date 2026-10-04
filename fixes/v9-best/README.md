@@ -3,13 +3,14 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** step 3 built (v8 + menu swipe rev 7c + double-drive + scroll-cb via a carry over double-drive; both owners
-reviewed the carry). Step 2 passed the function check; step 3's function and look checks are queued. Double-drive's
+**Status:** step 4 built (v8 + menu swipe rev 7c + double-drive + scroll-cb via a carry over double-drive + PR-021 Join
+button rev 3, user-accepted). Step 2 passed the function check; step 4's function and look checks are queued (step 3's
+were stopped for them). Double-drive's
 desktop rest-offset probe found no change (the fee pill's time phase), so its delta stands. Not timed (memory
 `defer-timing-focus-call-tree.md`). The phone no-worse check follows the less-work rule (memory `less-work-landing-rule.md`).
 **Integrator:** int-v8 (wave-integrator), from 2026-10-05. Board row `v9-best`, lead priority #2, user T-159 #9.
-**Build:** `patch.diff` is baseline-relative over 2 files: step 3, JS `25dc3025f1a0…`, CSS `40037dc99f11…` (patch.diff
-d31272fd8831). Baseline snapshot `b1789284481295-4ad4a84a`.
+**Build:** `patch.diff` is baseline-relative over 2 files: step 4, JS `de237379b556…`, CSS `e1359ab9994a…` (patch.diff
+883b6f86b90f). Baseline snapshot `b1789284481295-4ad4a84a`.
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` and `/_app/immutable/assets/2.gBuqKVzi.css`, nothing else.
 
 ## Components (each a delta on v8 3e3e94cb6e9f / f836404b3728)
@@ -20,7 +21,7 @@ d31272fd8831). Baseline snapshot `b1789284481295-4ad4a84a`.
 | 2 | double-drive (future + commission cards, T-157; commit 96293d29) | **in** (owner's desktop rest-offset probe: no change) | `fixes/double-drive/delta.diff` baae6114cd65 | 3076c5a8c9a3 / 2f7197880ffd |
 | 3 | scroll-cb alone (split check ebee20a5: v8 + scroll-cb = v8 in Simulator nav parity) | **in** (carry reviewed OK by fix-scroll-cb and fix-double-drive) | `fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff` 3abcd7008e61; carry `scroll-cb-on-v8dd.diff` 7b4a7ee04d85 | 4c48e372ecdd / f836404b3728; v8 + dd + carry bf40f48acd24 / 2f7197880ffd |
 | - | nav-hit-cache | out (when it comes in: its delta plus a glue component for rev 7c's on-dark microtask, fix-nav-morph's glue-ms7c.diff 5d63660a9e62; option (a), agreed 2026-10-05; the delta is the 1-context-line form patch-on-v8-u1.diff 7b5f3947b465, the same changes, because rev 7c's 3-line context meets nav's inserted lines, so the order is fixed: 7c, then nav, then glue; on step 3: nav cf3425e169f0, + glue c211d557e357, per fix-nav-morph): the split puts the Simulator nav-pill lag on it; waits for fix-scroll-cb's task-mode check and fix-nav-morph's real-gesture case | | |
-| 4 | PR-021 Join button rev 3 (fix-nav-earn, cb3c052c) | waits: the user's accept. Pre-check: its delta applies to v9 step 3 with line offsets only (JS 6, CSS 5 hunks offset; v9 + rev 3 = de237379b556 / e1359ab9994a) | `fixes/nav-earn/delta.diff` f214ed00081f | 8df0a9eb3ec7 / 29bade2fe964 |
+| 4 | PR-021 Join button rev 3 (fix-nav-earn, cb3c052c) | **in** (user accepted rev 3, final). Pre-check: its delta applies to v9 step 3 with line offsets only (JS 6, CSS 5 hunks offset; v9 + rev 3 = de237379b556 / e1359ab9994a) | `fixes/nav-earn/delta.diff` f214ed00081f | 8df0a9eb3ec7 / 29bade2fe964 |
 | 5 | toolbar-resize (P-115) | waits: its Simulator check | | |
 | 6 | morph-close-peak, the menu-close repaint (fix-morph-gpu) | waits: its owner | | |
 
@@ -71,6 +72,9 @@ With two or more components, the script also checks:
   The same picture as step 1: the added element is rev 7c's `div.fw-ms-end` (plus its `html.fw-ms` class and the
   accent's per-load state), and the mobile middle/bottom shots sit at different page positions. Double-drive adds no
   error, 404 or element. Its look checks were stopped for step 3's (the same checks on `out/v9/snap-25dc3025f1a0`, queued).
+- **Step 4 (+ PR-021 rev 3), built 2026-10-04 ~21:55Z:** v9 = de237379b556 / e1359ab9994a (patch.diff 883b6f86b90f),
+  12 legal orders the same bytes, v9 minus each of the 4 components = v8 + the others (v9 - earn = step 3), node --check ok.
+  Function and look checks on `out/v9/snap-de237379b556`: queued.
 - **Step 3 (+ scroll-cb), built 2026-10-04 ~21:45Z** (v9 = 25dc3025f1a0 / 40037dc99f11, patch.diff d31272fd8831). Its commission-job hunks (v8 JS 3289-3337) overlap
   double-drive's: both declare after `_ch`, and double-drive rewrote the rAF line scroll-cb uses as context. `build.mjs`
   now takes a `carry` (the component re-based on v8 + the component it overlaps, used whenever that one is in the set

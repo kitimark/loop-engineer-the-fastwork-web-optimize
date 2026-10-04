@@ -38,6 +38,9 @@ export const COMPONENTS = [
     // its commission-job hunks overlap double-drive's (both declare after `_ch`; dd rewrote the rAF line scb uses as
     // context): with dd in the set, the carry (scb on v8 + dd, the same changed lines, both texts kept) is applied instead
     carry: { over: 'dd', delta: 'fixes/v9-best/scroll-cb-on-v8dd.diff', file: '7b4a7ee04d85', expect: exp('bf40f48acd24', '2f7197880ffd') } },
+  { name: 'PR-021 Join button rev 3 (nav-earn; user accepted rev 3, final; fix-nav-earn cb3c052c)', key: 'earn',
+    rev: 'cb3c052c2cb806042026156b946cd39cf518e3bf', delta: 'fixes/nav-earn/delta.diff', file: 'f214ed00081f',
+    expect: exp('8df0a9eb3ec7', '29bade2fe964') },
 ];
 // v9 as pinned after the last component change (null: not pinned yet).
 export const V9_EXPECT = null;
