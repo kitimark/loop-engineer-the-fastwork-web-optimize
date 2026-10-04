@@ -385,11 +385,13 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
   `sleep`/`until`/`for … sleep` loop**: run it with Bash `run_in_background` and keep working (Claude Code wakes you
   when it exits); with nothing else to do, run it in the foreground with `--timeout 580` and rerun on TIMEOUT. Every
-  wait prints one line, exit 0 MET, 3 TIMEOUT, 4 NEVER, 1 usage (c4a1ee2):
+  wait prints one line, exit 0 MET, 3 TIMEOUT, 4 NEVER, 1 usage (c4a1ee2). Pass `--owner <you>` (or set `$FW_AGENT`)
+  to every `wait.mjs` and `lock.mjs wait`: without it the wait still runs, prints a NOTE, and the board shows it as
+  "owner unknown" (I-108):
   - a job's line: `node tools/wait.mjs file <log> --match '^EXIT' --pid <pid>` (a plain background job needs no wait);
   - your server: `node tools/wait.mjs serve out/serve-<topic>.json` (prints `MIRROR_URL=…`); a URL: `wait.mjs url <u>`;
   - locks, read-only: `node tools/lock.mjs wait chrome-measure --until mine|free|idle|released-by:<o>|'position<=N'
-    [--owner <you>] [--for S]` (to get your turn use `run` or `acquire --wait`); a quiet window for CPU work:
+    --owner <you> [--for S] [--reason "…"]` (to get your turn use `run` or `acquire --wait`); a quiet window for CPU work:
     `--until idle --for 120`;
   - main: `node tools/wait.mjs git --path <p> | --grep '<subject re>' | --contains <sha>`; a process: `wait.mjs pid
     <pid>`; phone cooling: `wait.mjs phone-temp --below auto` (never a fixed `wait.mjs time`, user T-016); `incident.mjs wait <id>`; `finding.mjs wait --as <you>`.
