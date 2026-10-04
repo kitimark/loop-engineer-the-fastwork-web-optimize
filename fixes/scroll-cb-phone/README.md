@@ -641,8 +641,46 @@ only: forced style/layout by the JS line on top of the stack, for fwCheck's line
 - Reported (lead): Chrome forced style/layout at fwCheck's lines (C 12122-12123, V 12211-12212), per step, C vs V. The
   Simulator records no stacks (Timeline maxCallStackDepth 0), so it gives no line.
 
+## P-117 N2 result (2026-10-04 20:34-20:57Z, pins as above; `n2.log` starts with the PIN line)
+
+Card 7e command on `out/scroll-cb-phone/n2` (`score.json`); parity also without the v4 noise loads
+(`score-no-v4-noise.json`, same verdicts). C = v8, V = v8 + nav-hit-cache + scroll-cb. All 8 loads valid, 0 page errors.
+
+| leg | side rAF / step C -> V | side rects / step | judged | Paint d (tol) | other guards | parity |
+|---|---|---|---|---|---|---|
+| Chrome `phone` | 2.483 -> 0.655 | 3.881 -> 1.562 | PASS | +0.008 (0.344) | PASS (forced layout 0.264 -> 0.127, forced style 0.825 -> 0.255, FireAnimationFrame 6.34 -> 4.51) | PASS, 0 diffs |
+| Simulator | 2.269 -> 0.521 | 3.527 -> 1.254 | PASS | paints +0.042 (0.05) | PASS (forced layouts 2.500 -> 2.088, layouts 3.716 -> 3.538) | **FAIL**, 6 diffs beyond A/A per V load |
+
+**The Simulator parity failure is on the nav only** (`.start-selling-top-nav`); every scroll-cb element flips on the same
+step as in C (0 diffs). Nav class changes per load (driver step):
+
+| load | pill off | on-dark | off | on-dark | off | on-dark | off | pill on |
+|---|---|---|---|---|---|---|---|---|
+| C1, C2 | 62 | 215 | 292 | 412 | 641 | 761 | 838 | 991 |
+| V1 | **64** | 215 | 292 | 412 | 641 | **762** | 838 | **993** |
+| V2 | **64** | 215 | **293** | 412 | 641 | 761 | 838 | **993** |
+
+Both `is-hero-pill` flips are 2 steps (20 px) late in both V loads; two `is-on-dark` flips are 1 step late once each.
+`is-hero-pill` comes from `p` in the nav (`O = !s(p) && !s(E)`), which v8 sets from a live `getBoundingClientRect` of
+the hero track (C line 13902, `i / r >= 0.72`) and nav-hit-cache sets from cached geometry (V line 14199,
+`n - t.t >= 0.72 * i` with `__nsGeo.track`, `__nsY`, `__nsVh`). So the lag points at nav-hit-cache's cached pill
+gate in WebKit, not at scroll-cb: OBSERVED, in our setup, not shown (this block has no v8 + nav-hit-cache arm).
+Chrome shows no lag. A stale `__nsVh` (the Simulator's toolbar changes `innerHeight` while scrolling) is one candidate.
+
+`fwCheck` (lead's question), Chrome `forcedByLine`, per load: v8 0 at its lines (12120-12126); V 52 forced style +
+0-1 forced layout at line 12212. In v8 the future job's own `getBoundingClientRect` (line 12152, 236-238 forced style
+per load) flushes first in the frame; in V the gate skips that job, so `fwCheck`'s read pays the flush. Future
+section (mM) forced style per load: 238 -> 146-147 with `fwCheck` kept.
+
+**N2 verdict:** scroll-cb's counts carry to v8 (judged and every guard pass on both legs, its own elements' parity 0),
+but the combined V fails the card's parity in the Simulator, on the nav. Not landable in P-117 as built until the nav
+lag is attributed: decisive check = one Simulator hold with v8 + nav-hit-cache alone and v8 + scroll-cb alone.
+
 ## Risks, conflicts, follow-ups
 
+- Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
+  scroll/resize frame (its `scrollY`/`innerHeight` reads flush style and layout when dirty). Skipping it while the gate
+  is closed changes rest-script's jump check, so it needs rest-script's owner; a separate change with its own card.
 - Up to 12 extra IntersectionObservers on phones (commission 4, future 6, platform 2). Their cost is not in these counts
   (see 5); the phone no-worse check is where it would show.
 - The residual above (stale `poke` + sudden non-scroll layout shift) is not exercised by the driver.
