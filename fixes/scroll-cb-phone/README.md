@@ -773,6 +773,27 @@ script except for:
 
 Arms, `build.mjs` d190003298c5, simcount 45175dbac676, loads and reading are unchanged.
 
+**v9 step 3 result: PASS.** Run 22:47-22:56Z; PIN line run-v9b.sh 39cc2ff54946 / build.mjs d190003298c5 / simcount
+45175dbac676 / driver raf. All 4 loads are valid and the served hashes match. Score:
+`out/scroll-cb-phone/v9/score.json` 73976d346b15.
+
+| per step (Simulator) | C = v9 step 2 | V = v9 step 3 | d | tol / verdict |
+|---|---|---|---|---|
+| side rAF | 2.097 | 0.451 | -1.646 | below PASS |
+| side getBoundingClientRect | 3.186 | 1.086 | -2.100 | below PASS |
+| styleRecalcs | 1.398 | 1.398 | 0 | 0.05 PASS |
+| layouts | 3.858 | 3.865 | +0.008 | 0.059 PASS |
+| forcedLayouts | 2.569 | 2.569 | 0 | 0.05 PASS |
+| paints | 6.980 | 6.973 | -0.007 | 0.05 PASS |
+| renderingFrames | 0.924 | 0.915 | -0.009 | 0.05 PASS |
+
+- **Parity: PASS.** C2 vs C1 is 0 diffs (A/A); V1 and V2 vs C1 are 0 diffs each, with geometry 0.
+- **Deferral sizes:** every V deferral size is one of C's.
+- **On v9, scroll-cb is exact on its own.** The same rAF-step driver showed 6 diffs per V load on v8 + nav-hit-cache;
+  all of those were nav-hit-cache's, and v9 has no nav-hit-cache.
+- **Context:** the Simulator background ran above 60 % of a core in 6 of 23 windows (load1 max 86, I-082). The counts are
+  per step and C/V equal, so the comparison stands.
+
 ## Risks, conflicts, follow-ups
 
 - Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
