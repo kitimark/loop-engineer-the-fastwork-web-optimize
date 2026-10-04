@@ -4,7 +4,7 @@
 // panel closes: the console and its frames stay on this Mac. For the phone,
 //   node tools/console.mjs proposal phone <id> [--option <name>]          (proposal-cli.mjs)
 // starts (or reuses) one tools/serve.mjs per build on the Wi-Fi: plain http (I-003: no certificate warning on the
-// phone), --vendors=local like the panel, --port auto (5200-5999, never 5173), host 0.0.0.0, detached, until
+// phone), --vendors=local like the panel, --port fresh (6100-6398, I-131; never 5173), host 0.0.0.0, detached, until
 //   node tools/console.mjs proposal phone <id> [--option <name>] --stop
 // A build is the plain baseline (A without an A patch) or the baseline + one stored live patch (by blob), so one server
 // serves every proposal that shows the same build. Only the mirror's pages go on the Wi-Fi; the console itself never
@@ -88,7 +88,11 @@ export async function upServer(b, { probe = mirrorInfo } = {}) {
   const st = readState(b);
   const port = Number(st?.port), pid = Number(st?.pid);
   if (!Number.isInteger(port) || port < 1 || port > 65535 || !pidAlive(pid)) return null;
-  return serves(await probe(port), b) ? { port, pid } : null;
+  const info = await probe(port);
+  if (!serves(info, b)) return null;
+  // I-131: a server started before the fix replays production's `immutable` headers and sits on a pre-I-131 port
+  // (/__mirror/info has no `cache` field): it serves the build, but startPhoneServers replaces it
+  return info.cache ? { port, pid } : { port, pid, preI131: true };
 }
 
 /**
@@ -119,7 +123,7 @@ async function spawnServe(b, extra, { serveScript, host, startTimeoutMs }) {
   const fd = openSync(errFile(b), 'w');
   let proc;
   try {
-    proc = spawn(process.execPath, [serveScript, '--root', b.base, ...extra, '--vendors=local', '--port', 'auto', '--host', host, '--quiet', '--state', sf],
+    proc = spawn(process.execPath, [serveScript, '--root', b.base, ...extra, '--vendors=local', '--port', 'fresh', '--host', host, '--quiet', '--state', sf],
       { cwd: REPO, detached: true, stdio: ['ignore', 'ignore', fd] });
   } finally { closeSync(fd); }
   let exited = null;
@@ -148,7 +152,8 @@ export async function startPhoneServers(live, { serveScript = join(REPO, 'tools'
   for (const side of ['a', 'b']) {
     const b = builds[side];
     const up = await upServer(b, { probe });
-    if (up) { out[side] = { ...up, lan: phoneLink(up.port), reused: true }; continue; }
+    if (up && !up.preI131) { out[side] = { ...up, lan: phoneLink(up.port), reused: true }; continue; }
+    if (up) await stopBuild(b, { probe, waitMs: 5000 }); // I-131: restart it with no-cache headers on a fresh port
     const extra = b.blob ? ['--overlay', buildLiveOverlay(b.blob)] : [];
     const s = await spawnServe(b, extra, { serveScript, host, startTimeoutMs });
     out[side] = { ...s, lan: phoneLink(s.port), reused: false };

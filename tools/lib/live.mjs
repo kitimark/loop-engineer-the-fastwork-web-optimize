@@ -7,7 +7,8 @@
 //   <console>/live/patches/<blob>.diff     the patch as committed
 //   <console>/live/overlays/<blob>/        the overlay it builds (baseline files + the patch, built once; never site/)
 // The console (createLiveServers) starts two tools/serve.mjs children lazily, on the first panel open: A = the baseline,
-// B = the baseline + that overlay; both on 127.0.0.1, --port auto (5200-5999, never 5173), --vendors=local, plain http,
+// B = the baseline + that overlay; both on 127.0.0.1, --port fresh (6100-6398, I-131: no browser holds a pre-I-131 immutable
+// copy of another build there; never 5173), --vendors=local, plain http,
 // --frame-ancestors <the console's origins>. It reuses them, restarts B for another patch, and kills them (only its
 // own children) after `idleMs` (10 min) without a panel open (the page pings every minute while it is open) and when
 // the console exits. measuringNow(): a timing hold on chrome-measure (the panel shows a note; it never blocks).
@@ -210,7 +211,7 @@ export function createLiveServers({ origins, idleMs = idleFromEnv(), sweepMs, se
     return k.exited.then(() => clearTimeout(t));
   }
   function start(role, key, extra) {
-    const args = [serveScript, ...extra, '--vendors=local', '--port', 'auto', '--host', '127.0.0.1', '--quiet', '--frame-ancestors', origins.join(',')];
+    const args = [serveScript, ...extra, '--vendors=local', '--port', 'fresh', '--host', '127.0.0.1', '--quiet', '--frame-ancestors', origins.join(',')];
     const proc = spawn(process.execPath, args, { cwd: REPO, stdio: ['ignore', 'pipe', 'pipe'] });
     const k = { proc, key, url: null };
     k.exited = new Promise((r) => proc.once('exit', () => { if (kids.get(role) === k) kids.delete(role); r(); }));

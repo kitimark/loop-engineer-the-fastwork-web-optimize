@@ -29,7 +29,13 @@ test('real baseline: served byte-identically (site/), vendor scripts from site/ 
   const j = await request(s.url + js.slice(1));
   assert.equal(sha256(j.body), m.files[js].sha256, js);
   assert.equal(j.headers['content-type'], m.files[js].type);
-  assert.equal(j.headers['cache-control'], m.files[js].cacheControl);
+  // I-131: a recorded header that grants freshness (immutable, max-age > 0) is not replayed (no-cache + ETag);
+  // the recorded value rides along in x-mirror-prod-cache-control
+  const { mirrorCacheControl } = await import(join(TOOLS, 'lib/cache-control.mjs'));
+  const recorded = m.files[js].cacheControl;
+  const want = mirrorCacheControl(recorded);
+  assert.equal(j.headers['cache-control'], want);
+  assert.equal(j.headers['x-mirror-prod-cache-control'], want === recorded ? undefined : recorded);
   assert.doesNotMatch(doc.headers['content-security-policy'], /https?:\/\/|\*\./, 'CSP egress fence');
 
   const vendor = Object.entries(m.vendors || {})[0];
