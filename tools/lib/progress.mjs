@@ -526,6 +526,8 @@ export async function gatherLive() {
   // I-108 (3): what a row's wait or branch points at, to mark rows whose news is over ("may be out of date")
   try { live.refs = await refsLive(); } catch (e) { live.errors.push(`refs: ${e.message}`); }
   try { live.git = gitLive(); } catch (e) { live.errors.push(`git: ${e.message}`); }
+  // I-152 (PR-020 N9): agents whose run ended with a hand-back (names and times only, from Claude Code's transcripts)
+  try { live.ended = Object.fromEntries((await import('./transcripts.mjs')).endedNow()); } catch (e) { live.errors.push(`transcripts: ${e.message}`); }
   return live;
 }
 

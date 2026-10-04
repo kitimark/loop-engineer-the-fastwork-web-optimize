@@ -802,9 +802,22 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   const lab = deriveLabel(it, { live, ctx, now }); // T-124/T-125
   const { derived, flags, over, liveWait } = derive(it, live, byId, now, route);
   const ageMin = minutes(it.updatedAt || it.createdAt, now);
-  const canStale = ['working', 'waiting', 'queued'].includes(st.group);
   const s = (x, n) => (x == null ? null : sanitize(x, n));
-  const waiting = it.waitingOn ? { kind: it.waitingOn.kind, target: s(it.waitingOn.target, 80), text: s(it.waitingOn.text, LIMITS.wait), plain: waitingPlain(it.waitingOn) } : null;
+  // I-152 (PR-020 N9): a ready-to-land or reviewing row whose work is on main derives itself as landed (from git): it is
+  // finished at read time, with its Progress label when the item is landed, else "landed on main (from git)"
+  const fromGit = LANDING_STATES.has(it.state) && branchOnMain(it, live)
+    ? { sha: it.branch.landHead, at: live.git?.shaAt?.[it.branch.landHead] || null, branch: s(it.branch.name, 120) } : null;
+  const pItem = fromGit && lab.progress ? ctx?.byId?.get(lab.progress) : null;
+  const gitText = fromGit ? (pItem && progressLanded(pItem, ctx) ? progressLabel(pItem, ctx) : 'landed on main (from git)') : null;
+  const group = fromGit ? 'finished' : st.group;
+  const canStale = ['working', 'waiting', 'queued'].includes(group);
+  // I-152 (PR-020 N9): the owner's run ended with a hand-back (Claude Code transcript, transcripts.mjs): an active row
+  // says so; parked and finished rows are normal without their owner; an owner with a live wait (e.g. a persistent
+  // `thread wait --monitor` after its turn's hand-back) is still reachable and not flagged
+  const endRec = canStale && it.owner ? live.ended?.[it.owner] : null;
+  const ownerWaits = !!endRec?.ended && (live.waits || []).some((w) => w && w.owner === it.owner);
+  const ownerEnded = endRec?.ended && !ownerWaits ? { at: typeof endRec.at === 'string' ? endRec.at : null } : null;
+  const waiting = fromGit ? null : it.waitingOn ? { kind: it.waitingOn.kind, target: s(it.waitingOn.target, 80), text: s(it.waitingOn.text, LIMITS.wait), plain: waitingPlain(it.waitingOn) } : null;
   // I-145 (PR-020 N1): the event that ended the owner's wait (the user answered, decided, skipped; the thread closed)
   // overrides the older self-report at read time: the row leaves WAITING ON YOU and says what happened
   const ans = waiting && canStale ? waitAnswered(it, live, now) : null;
@@ -814,13 +827,14 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     owner: s(it.owner, 80), aliases: (it.aliases || []).map((a) => s(a, 80)), progress: it.progress || null, refs: (it.refs || []).map((r) => s(r, 20)),
     progressItems: progressMatches(it, ctx ? ctx.items : progress), // I-104: links to /progress#<id>, only to items that exist
     priority: Number.isInteger(it.priority) ? it.priority : null,
-    state: it.state, statePlain: lab.plain || statePlain(it.state, st, waiting), group: st.group, groupLabel: GROUPS[st.group] || st.group,
+    state: it.state, statePlain: gitText || lab.plain || statePlain(it.state, st, waiting), group, groupLabel: GROUPS[group] || group,
+    landedFromGit: fromGit, ownerEnded,
     // T-124/T-125: one label with the PROGRESS item ("in v7, owner testing", "closed, no fix"), what contradicts it, and
     // a parked row's way back (resumeOn, "ready to resume", "needs review"); alerts = the red lines on /status
     // T-130/T-135: the one line the pages show for the state: the label (a parked row: label · its reason · its way
     // back); null = the row's own state words
-    stateText: lab.plain && (it.state === 'parked' || st.group === 'finished') ? lab.plain : lab.label,
-    label: lab.label, labelOf: lab.progress, labelHow: lab.how, mismatch: lab.mismatch, resume: lab.resume, needsReview: lab.needsReview,
+    stateText: gitText || (lab.plain && (it.state === 'parked' || st.group === 'finished') ? lab.plain : lab.label),
+    label: gitText || lab.label, labelOf: lab.progress, labelHow: lab.how, mismatch: lab.mismatch, resume: lab.resume, needsReview: lab.needsReview,
     alerts: [...lab.mismatch.map((m) => `does not match: ${m}`), ...(lab.resume?.ready ? [`ready to resume: ${lab.resume.ready}`] : []), ...(lab.needsReview ? [lab.needsReview] : [])],
     // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
     stateSince: it.stateSince || null, stateForMin: minutes(st.group === 'waiting' ? waitSince(it) : it.stateSince, now),
@@ -831,7 +845,8 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     // I-108 (3): "may be out of date", with the reasons: no update for staleAfterMin (unless a live wait shows it is
     // current), or what it reports is over (its work is on main, its wait is answered or decided: overFlags)
     ...(() => {
-      const why = canStale ? [...(!liveWait && ageMin !== null && ageMin > staleAfterMin ? [`not updated for ${forText(ageMin)}`] : []), ...over] : [];
+      const ended = ownerEnded ? [`owner ended: ${s(it.owner, 80)} handed back its report${ownerEnded.at && !Number.isNaN(Date.parse(ownerEnded.at)) ? ` at ${hhmm(ownerEnded.at)}` : ''}; the lead resumes it with SendMessage or updates the row`] : [];
+      const why = canStale ? [...ended, ...(!liveWait && ageMin !== null && ageMin > staleAfterMin ? [`not updated for ${forText(ageMin)}`] : []), ...over] : [];
       return { stale: why.length > 0, staleWhy: why };
     })(),
   };

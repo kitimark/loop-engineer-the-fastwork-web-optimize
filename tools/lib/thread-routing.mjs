@@ -1,7 +1,9 @@
 // Thread routing (user T-050, 2026-10-03; design research/architecture/thread-routing.md §4-§5 and "Decisions"; T-051:
 // the lead's topic -> owner map). A user message goes to someone who is listening, and the lead wakes only when needed:
 //   - listening(agent): a live `console.mjs thread wait` of that agent in the waits registry (waits.mjs), or the agent
-//     read (readsAt) or wrote in a thread within LISTEN_MIN (5) minutes.
+//     read (readsAt) or wrote in a thread within LISTEN_MIN (5) minutes. A live wait always listens; an agent whose run
+//     ended with a hand-back (I-152 N9, transcripts.mjs) loses only the 5-min rule (a persistent Monitor listener
+//     keeps a handed-back agent listening).
 //   - routeOwner(t, ctx), pure: the first LISTENING candidate of (1) the comment anchor's owner (status row owner, step
 //     author, proposal author), (2) the lead's topic map (thread topic set), (3) the topic's status-board owner, (4) the
 //     desk; else null (nobody: the lead's triage wait wakes at once). The lead and the user are never candidates.
@@ -17,6 +19,7 @@ import { withGuard } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { consoleDir } from './console.mjs';
 import { listWaits } from './waits.mjs';
+import { endedNow } from './transcripts.mjs';
 
 export const LISTEN_MIN = 5;
 export const TRIAGE_ESCALATE_MIN = 10;
@@ -58,13 +61,19 @@ export function lastSeen(threads = []) {
  * "active <n> min ago" (read or wrote within LISTEN_MIN), or "" (not listening). opts: {now, waits (listWaits()
  * records), threads}.
  */
-export function listeningState({ now = Date.now(), waits, threads = [] } = {}) {
+export function listeningState({ now = Date.now(), waits, threads = [], ended } = {}) {
   const ws = waits ?? listWaits({ now });
+  // I-152 (PR-020 N9): an owner whose run ended with a hand-back is not listening by the 5-min read/write rule; a live
+  // wait (pid alive: listWaits drops dead ones) still listens, ended or not: background agents hand back at the end of
+  // every turn and keep a persistent `thread wait --monitor` that wakes them (the lead, 2026-10-04)
+  let gone;
+  try { gone = ended ?? new Set(endedNow({ now }).keys()); } catch { gone = new Set(); }
   const waiting = new Set(ws.filter((w) => w && w.tool === WAIT_TOOL).map((w) => w.owner));
   const seen = lastSeen(threads);
   return (agent) => {
     if (!agent || agent === USER) return { listening: false, how: '' };
     if (waiting.has(agent)) return { listening: true, how: 'waiting' };
+    if (gone.has(agent)) return { listening: false, how: 'owner ended' };
     const at = seen.get(agent);
     if (at !== undefined && now - at <= LISTEN_MIN * 60000) return { listening: true, how: `active ${Math.max(0, Math.round((now - at) / 60000))} min ago` };
     return { listening: false, how: '' };

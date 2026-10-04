@@ -505,24 +505,29 @@ test('I-108: "may be out of date": 45 min without an update, work already on mai
   const by = Object.fromEntries(v.items.map((x) => [x.id, x]));
   const why = (id) => by[id].staleWhy;
   assert.deepEqual(why('old'), ['not updated for 46 min']);
-  assert.deepEqual(why('landed-rtl'), ['its work is on main (branch worktree-a), but the row says ready-to-land: landed?']);
-  assert.deepEqual(why('landed-by-name'), ['its work is on main (branch worktree-b), but the row says reviewing: landed?']);
+  // I-152 (PR-020 N9): a ready-to-land or reviewing row whose work is on main derives itself as landed (from git): it
+  // is finished, not "may be out of date" (it used to say "...: landed?" and wait for the lead's write)
+  for (const id of ['landed-rtl', 'landed-by-name']) {
+    assert.equal(by[id].group, 'finished', id);
+    assert.equal(by[id].stateText, 'landed on main (from git)', id);
+    assert.equal(by[id].landedFromGit.branch, id === 'landed-rtl' ? 'worktree-a' : 'worktree-b');
+  }
   assert.deepEqual(why('on-step'), ['it waits on C-004, which is already answered']);
   assert.deepEqual(why('on-pr'), ['it waits on PR-014, which is already decided (accepted)']);
   assert.deepEqual(why('on-thread'), ['it waits on T-031, where the user has already answered']);
-  for (const id of ['fresh', 'old-parked', 'landed-waiting', 'landed-testing', 'landed-ops', 'not-landed', 'no-commits', 'done-landed', 'on-step-open', 'on-thread-asked', 'on-thread-old-reply']) {
+  for (const id of ['fresh', 'old-parked', 'landed-rtl', 'landed-by-name', 'landed-waiting', 'landed-testing', 'landed-ops', 'not-landed', 'no-commits', 'done-landed', 'on-step-open', 'on-thread-asked', 'on-thread-old-reply']) {
     assert.equal(by[id].stale, false, id);
     assert.deepEqual(why(id), [], id);
   }
-  for (const id of ['old', 'landed-rtl', 'landed-by-name', 'on-step', 'on-pr', 'on-thread']) assert.equal(by[id].stale, true, id);
-  assert.equal(v.counts.stale, 6);
+  for (const id of ['old', 'on-step', 'on-pr', 'on-thread']) assert.equal(by[id].stale, true, id);
+  assert.equal(v.counts.stale, 4);
   const t = S.renderText(v);
   assert.match(t, /stale after 45 min without an update/);
-  assert.match(t, /6 may be out of date/);
+  assert.match(t, /4 may be out of date/);
   assert.match(t, /\(MAY BE OUT OF DATE: it waits on PR-014, which is already decided \(accepted\)\)/);
   const st = S.staleText(v);
-  assert.match(st, /^6 rows may be out of date \(stale after 45 min without an update\):\n/);
-  assert.match(st, /\n {2}landed-rtl {2}owner o-landed-rtl, ready-to-land, updated 5 min ago: its work is on main \(branch worktree-a\), but the row says ready-to-land: landed\?\n/);
+  assert.match(st, /^4 rows may be out of date \(stale after 45 min without an update\):\n/);
+  assert.doesNotMatch(st, /landed-rtl/);
   assert.equal(S.staleText(S.buildStatusView({ items: [items[0]], live, now })), 'no row looks out of date (stale after 45 min without an update)');
   // no live sources (refs, git): nothing guessed
   const bare = S.buildStatusView({ items, live: {}, now });

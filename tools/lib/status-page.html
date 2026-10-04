@@ -207,7 +207,7 @@ function row(v) {
   (v.also || []).forEach(function (a) { wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Also: ' }), 'row ' + a.id + ' (' + a.owner + ', ' + ago(a.ageMin) + ')' + (a.note ? ': ' + a.note : ''))); });
   var upd = el('td', { class: 'upd', 'data-label': 'Updated' }, el('div', { text: ago(v.ageMin) }),
     v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain' }, 'by ', agentLink(v.updatedBy)) : null,
-    v.stale ? el('div', { class: 'stale', title: (v.staleWhy && v.staleWhy.length ? v.staleWhy.join('; ') : 'no update for more than ' + dur(last.staleAfterMin)), text: 'may be out of date' }) : null);
+    v.stale ? el('div', { class: 'stale', title: (v.staleWhy && v.staleWhy.length ? v.staleWhy.join('; ') : 'no update for more than ' + dur(last.staleAfterMin)), text: v.ownerEnded ? 'owner ended' : 'may be out of date' }) : null); // I-152 N9
   return el('tr', { class: v.alerts && v.alerts.length ? 'has-alert' : null, 'data-item': v.id, 'data-anchor': SLUG.test(v.id) ? 'status:' + v.id : null, 'data-anchor-label': v.title }, // I-090
     el('td', { class: 'prio', 'data-label': 'Priority' }, pr), wk, st,
     el('td', { 'data-label': 'Waiting on' }, waitChips(v)),
