@@ -232,3 +232,37 @@ scripted into a run), and our runs under it showed no slowdown, so keep treating
 > iphone-runner at 10:02Z (Serious, Is Induced = No, at 38-40 °C battery), so reading works (OBSERVED on our phone). The
 > 4-run "no slowdown under Serious" trial most likely compared real Serious with real Serious. The test condition is
 > now the user's option B (real Serious, xctrace gate per hold; `memory/phone-checks-start-warm.md`), not 38-40 °C.
+
+## Addendum (I-186, 2026-10-05): could a tool start Xcode's Thermal State condition by UI scripting?
+
+Desk research by ts-phone-profile for mgmt-devices. Nothing was run: no osascript, no System Events, no Accessibility or
+Automation use (the user has granted neither), no phone. Two Apple pages and one support page read with WebFetch; no
+personal data in any request. Background: the I-186 tools now refuse a run whose phone is not in its profile (exit 8) and
+post one console step asking the tester to switch the condition in Xcode; the question is whether a tool could do it.
+
+- CONFIRMED (Xcode help "Enable a device condition (iOS)", https://help.apple.com/xcode/mac/current/en.lproj/devdf21fe239.html):
+  the only documented way is Xcode's UI: Window > Devices and Simulators > Devices, select the device, under Device
+  Conditions choose the Condition and Profile pop-ups, click Start; Stop there or from the phone's status bar. It lasts
+  "until you stop the device condition or disconnect the device from Xcode". No command-line or scripting interface is named.
+- CONFIRMED (Mac Automation Scripting Guide, "Automating the User Interface",
+  https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/AutomatetheUserInterface.html):
+  UI scripting goes through System Events (Processes Suite) and the accessibility frameworks; "By default, accessibility
+  control of apps is disabled ... the user must manually enable it on an app-by-app (including script apps) basis", with
+  admin credentials. So the process running the script (the terminal app or Claude Code's host) needs the Accessibility
+  grant (System Settings > Privacy & Security > Accessibility, https://support.apple.com/guide/mac-help/mh43185/mac), and
+  that grant lets it drive the whole Mac UI, not only Xcode.
+- CONFIRMED (NSAppleEventsUsageDescription, macOS 10.14+,
+  https://developer.apple.com/documentation/bundleresources/information-property-list/nsappleeventsusagedescription):
+  sending Apple events to another app (System Events) is a second, separate consent (Automation). Two user grants, both broad.
+- UNRESOLVED: the accessibility names and hierarchy of Xcode's Device Conditions slice (Condition/Profile pop-ups,
+  Start/Stop). Apple documents none; the nib `DVTiPhoneConditionInducersSliceViewController.nib` (OBSERVED above) suggests
+  plain AppKit controls, but the path would be Xcode-version-specific and the guide promises no stability. Decisive local
+  check (the user's, not done): an Accessibility Inspector dump of that window.
+- Risks (inferred): the script must select the device by its name in the left column (a device name is personal data: never
+  in a committed file, Hard rule 12); it takes focus while the user works; a mis-click starts the wrong profile silently
+  (the I-186 gate would catch it at the next read, exit 8, so it would not go unnoticed).
+- Alternatives: Apple-documented, none besides the UI (`devicectl` 518.33 has no condition command; `xctrace` only reads,
+  sections above). Not Apple-documented: pymobiledevice3 `developer dvt condition set` (third party, Q2; its condition ends
+  with its session) or the private DTConditionInducerService. Neither is an allowed tool today.
+- Recommendation: keep the human step (I-186's console action step, "leave it on"), checked at every hold's start and end.
+  Automation, if ever wanted, is the user's decision; the narrower route is the DVT service, not a whole-UI Accessibility grant.
