@@ -1341,6 +1341,40 @@ queue: after fix-morph-gpu's P-098/P-099 (ops calls the turn), then `node tools/
   --ttl 900 --url <B's twin> --wait 3600`, renewed between holds
 ```
 
+### P-102 block log, part 1 (2026-10-04 11:42-12:09Z; OBSERVED, iPhone 15 Pro Max, Safari, driver W, Timeline off)
+
+```
+servers: ARMS="B V9 VK" serve-snap.sh 11:41Z, fresh OS ports, served JS B 4606120c / V9 582d120c / VK b43fe790, CSS
+  982a747d on V9 and VK (all as HASHES.txt); serve.mjs 2ee439a95856 (I-131 code); scorer k-score.mjs 771820466f84
+H1 try 1 11:42:53Z  start 34.1 C Nominal; 4 pre-warm runs on B (34.1 -> 35.7 C), gate still too cool -> VOID (exit 5),
+                    no counted run
+extra pre-warm (lead 11:5xZ: warm OUTSIDE the Mac hold, additive, uncounted): 12 iphone.mjs scroll runs on B
+                    11:49-11:55Z, no chrome-measure hold, 36.0 -> 39.2 C (log out/cd-roll-ca/pk/prewarm/)
+H1 try 2 11:56:21Z  prewarm1, start gate PASS (Serious, induced No, 39.79 -> 39.89 C, timer grid 30 ms), wC wV C1 V2,
+                    end gate PASS (40.09), PMSET OK -> VALID (its k-H1-prewarm1 files replaced try 1's; try 1's
+                    prewarm2-4 files remain)
+H2 12:01:11Z        prewarm1, start gate PASS (40.29 -> 40.09), V3 C4 C5 V6, end gate PASS (40.19), PMSET OK -> VALID
+H3 12:05:52Z        prewarm1, start gate PASS (40.39 -> 40.19), V7 C8, end gate PASS (40.09), PMSET OK -> VALID
+park 12:09Z; lease released for T-113 (lead order); P-100 not started
+score (k-score.mjs, top window = P-079's):
+  run   arm  start C  top >50 (>46/>54)  top >34 (>30/>38)  sentinel bottom/scroll fps  status
+  C1    V9   40.09    0 (0/0)            5 (6/3)            58.7 / 58.8                valid
+  V2    VK   40.19    0 (0/0)            3 (3/2)                                       valid
+  V3    VK   40.09    0 (0/0)            3 (4/2)                                       valid
+  C4    V9   40.09    2 (2/0)            4 (7/3)            58.7 / 58.1                valid
+  C5    V9   40.19    0 (1/0)            4 (9/3)            58.3 / 58.5                valid
+  V6    VK   40.19    0 (0/0)            3 (3/1)                                       void (C8's sentinel)
+  V7    VK   40.19    0 (2/0)            4 (5/3)                                       void (C8's sentinel)
+  C8    V9   40.19    0 (1/0)            3 (3/3)            50.5 / 58.7                void, sentinel failed
+  verdict: not enough (C 3 valid, V 2; need 3 each). Per the ticket: one extra quartet (C V V C), one hold.
+C8's sentinel (OBSERVED in our setup, cause unknown): in the bottom phase (3.0 s) the frames ran at ~16.7 ms for
+  ~0.56 s, then at 30-33 ms (the 30 Hz rhythm) to the run's end, 45 frames; not one stall. Same heat state as the
+  passing sentinels (end gate Serious, induced No, 40.09 C), served hashes and marks OK, Mac quiet (no shared jobs,
+  load1 3.1). Low Power Mode is not flagged, but the record reads the setting as "unknown", so LPM is not ruled out.
+  The extra hold starts from the same warm band (39.8-40.4 C), pre-warmed outside the Mac hold (lead 12:1xZ).
+descriptive (no gate; void runs left out): VK's valid top-window > 50 counts 0, 0; V9's 0, 2, 0.
+```
+
 ```
 PHONE TICKET P-100 cd-roll-ca · display-rate diagnostic for F-212 (ops-assigned, mgmt-ops-10; registered before any data)
 question (F-212): WebKit asks Core Animation for 80-120 Hz on every CA animation it creates (PlatformCAAnimationRemote.mm
