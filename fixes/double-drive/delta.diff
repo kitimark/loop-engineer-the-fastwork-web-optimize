@@ -1,6 +1,6 @@
 # fastwork mirror fix: double-drive
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# STACKED on fixes/dd-v8base/overlay: apply dd-v8base first, then this patch on top of it
+# STACKED on v8 (fixes/v8-best/patch.diff; base-sha256 below); fixes/dd-v8base/overlay is a local copy of v8 overlay
 # rebuild the overlay with: node tools/fix.mjs apply double-drive --on dd-v8base
 # contains excerpts of Fastwork's code: local branches only, never push
 # base-sha256 _app/immutable/assets/2.gBuqKVzi.css f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43
@@ -68,33 +68,52 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -3289,6 +3289,7 @@
+@@ -3289,6 +3289,8 @@
        _ce, // last written --commission-enter-shrink
        _cs, // last written --commission-shrink
        _ch, // last written runway height
 +      _co, // [double-drive] last written --fw-co-w (the card's transform-origin weight)
++      _cw, // [double-drive] eased origin weight
        a = () => {
          t = 0;
          let k = _cq.some((e) => e.matches);
-@@ -3315,10 +3316,19 @@
+@@ -3315,12 +3317,24 @@
          // writes only when the value changed (same values as before, no redundant style mutations)
          let _ve = String(n),
            _vs = String(Math.max(n, r)),
 -          _vh = k || e.matches ? `` : `${i * 0.06}px`;
 +          _vh = k || e.matches ? `` : `${i * 0.06}px`,
-+          // [double-drive] transform-origin weight (0 top, 1 bottom) from the eased values themselves, so it changes
-+          // only while the scale it applies to is ~1, or blends while both shrinks ease: no one-frame origin jump. The
-+          // class rule it replaces (bottom = .shrinking:not(.entering)) switched while r still eased (scale ~0.96,
-+          // a 20-27 px jump scrolling up). 0.004672 = w(0.04), the classes' threshold, so at rest (n = w(f),
-+          // r = w(p)) the weight is 1 exactly when p > 0.04 and f <= 0.04: the class state where the card is visible.
-+          _vR = Math.max(0, r - 0.004672),
-+          _vN = Math.max(0, n - 0.004672),
-+          _vo = _vR > 0 ? String(_vR / (_vN + _vR)) : `0`;
++          // [double-drive] transform-origin weight (0 top, 1 bottom). The class rule it replaces (bottom =
++          // .shrinking:not(.entering)) switched while r still eased (scale ~0.96, a 20-27 px jump scrolling up).
++          // Target: the same rule on the eased values (0.004672 = w(0.04), the classes' threshold), so at rest
++          // (n = w(f), r = w(p)) it is exactly the class state, and scrolling up it stays 1 until r is back at ~0
++          // (scale ~1). Where the target still flips under a real scale (entering toggling during the exit shrink)
++          // the weight eases there over a few frames like n and r instead of jumping. Reduced motion (n, r are 0/1
++          // steps there) takes the class rule itself and snaps.
++          _wt = (e.matches ? p > 0.04 && !(o.top < i * 0.995 && f > 0.04) : r > 0.004672 && !(n > 0.004672)) ? 1 : 0;
++        ((_cw = _cw === void 0 || e.matches || k ? _wt : _cw + (_wt - _cw) * 0.22),
++          Math.abs(_wt - _cw) < 1e-3 && (_cw = _wt));
++        let _vo = String(_cw);
          (k ||
            (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
 -          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
 +          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs)),
 +          _vo !== _co && u.style.setProperty(`--fw-co-w`, (_co = _vo))),
            _vh !== _ch && (d.style.height = _ch = _vh),
-           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
+-          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
++          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4 || _cw !== _wt) && (t = window.requestAnimationFrame(a)));
        },
+       o = () => {
+         t ||= window.requestAnimationFrame(a);
+@@ -12163,7 +12177,10 @@
+           ((o += (n - o) * (e.matches ? 1 : 0.22)),
+             Math.abs(n - o) < 8e-4 && (o = n),
+             h.style.setProperty(`--future-shrink`, String(o)),
+-            z(b, t > 0.04),
++            // [double-drive] keep .is-future-shrinking while the eased value is still above the class's threshold
++            // (0.004672 = w(0.04)), so a fast scroll up drops it only once the card is back at scale ~1 instead of
++            // handing a 0.96 scale to the 0.9 s transition. At rest o = w(t), so the class is t > 0.04 as before.
++            z(b, t > 0.04 || o > 0.004672),
+             Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
+         }
+         let r = document.querySelector(`.pain`);
