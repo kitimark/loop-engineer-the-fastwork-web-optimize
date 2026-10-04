@@ -128,6 +128,204 @@
    "why": "(c) recount hold side run record cited in README (m = 1 hold paints per window)",
    "kind": "result",
    "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C1.json",
+   "why": "P-091 counted run C1 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C1.json",
+   "why": "P-091 counted run C1 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V1.json",
+   "why": "P-091 counted run V1 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V1.json",
+   "why": "P-091 counted run V1 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V2.json",
+   "why": "P-091 counted run V2 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V2.json",
+   "why": "P-091 counted run V2 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C2.json",
+   "why": "P-091 counted run C2 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C2.json",
+   "why": "P-091 counted run C2 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C3.json",
+   "why": "P-091 counted run C3 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C3.json",
+   "why": "P-091 counted run C3 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V3.json",
+   "why": "P-091 counted run V3 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V3.json",
+   "why": "P-091 counted run V3 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V4.json",
+   "why": "P-091 counted run V4 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V4.json",
+   "why": "P-091 counted run V4 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C4.json",
+   "why": "P-091 counted run C4 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C4.json",
+   "why": "P-091 counted run C4 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/p091-S-1.json",
+   "why": "P-091 heat sentinel S1 (PASS)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/p091-S-2.json",
+   "why": "P-091 heat sentinel S2 (PASS)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/holds.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gates.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/runs.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/progress.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/batt.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/RUNLOG.txt",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/served.txt",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/gesture-p091-C4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/gesture-p091-V4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/p091-S-2-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/tl-p091-C4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/tl-p091-V4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/edge/score.json",
+   "why": "P-091 frozen scorer output (score.*) and the post-hoc edge-span reading (span.json)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/edge/score.txt",
+   "why": "P-091 frozen scorer output (score.*) and the post-hoc edge-span reading (span.json)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/edge/span.json",
+   "why": "P-091 frozen scorer output (score.*) and the post-hoc edge-span reading (span.json)",
+   "kind": "result",
+   "for": "README.md P-091 result"
   }
  ]
 }

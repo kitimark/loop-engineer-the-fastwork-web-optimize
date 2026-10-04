@@ -298,3 +298,105 @@ decision: VOID (>34 CLOSE, >30 CLOSE, >38 CLOSE)
 
 **B1 (end-pin collapse): deferred by the lead.** B1 stays UNRESOLVED. The Simulator counts check is dropped and needs
 no hold now. A B1 end-pin M hold will be a separate ticket later.
+
+## P-091 result: F3 residual edge frames (iPhone, 2026-10-04 04:00-05:16Z)
+
+**Registered verdict: VOID** (frozen scorer `edge-score.mjs` ad0037856fa5: control 2/4 C runs pass, the ticket needs
+3). The lead ruled (05:2xZ) that the VOID stands. The reading further down is post-hoc and exploratory, not a re-score.
+
+**Block as run.**
+- Arms C (plain baseline B, 4606120cf392 / 27776f3d4138) and V (best build N, 65052c4a3902 / e0f92804c521), as
+  ticketed.
+- Driver G, `arm-scope-touch-v1c.json` 012758d97fe1 (gesture program hash 0653995a35be in every run).
+- Timeline on in every counted run. Condition T-039 B, with gates `thermal-gate.mjs` 4604218c4041.
+- Runner: `out/nav-morph/p091/p091.mjs`, adapted from iphone-runner's p088.mjs. Servers `serve091.mjs`; served
+  hashes were checked at both warm-ups (`served.txt`, all ok).
+- Order C1 V1 V2 C2 C3 V3 V4 C4, 8 counted, no in-place re-runs. Sentinels S1 PASS (bottom 60, scroll 52.9) and S2
+  PASS (60.2 / 52.6). Every hold's sleep check (I-098) was clean.
+
+| hold | start gate | end gate | steps | state |
+|---|---|---|---|---|
+| h040657 | Serious 40.19 °C (try 3) | Serious 40.29 | wC failed: WDA not running (ECONNREFUSED) | VALID, no step counted |
+| h041713 | Serious 40.89 | Serious 42.39 | wC wV S1 C1 V1 (stopped at a V2 marker, see deviations) | VALID |
+| h043142 | Serious 42.09 | Serious 42.0 | V2 C2 C3 V3 | VALID |
+| h044740 | Serious 42.19 | **Critical** 42.89 | V4 C4 S2 | GATE-FAIL, strike 1; files in `void/` |
+| h050416 | Serious 39.59 (try 2) | Serious 41.59 | V4 C4 S2 | VALID |
+
+**Runner deviations** (logged in RUNLOG; none is scored, none is a new attempt).
+- Holds were 900 s, the lead's condition-B rule, where the ticket says "3 holds ≤ 10 min".
+- Early pre-warm under the iPhone lease while the hold queued (T-058 hand-over rule). The ticketed pre-warm and start
+  gate inside each hold were unchanged.
+- The runner budgeted 75 s per G run; real runs took about 130 s. In h041713 a stop marker made the hold end after V1,
+  so the end gate fit inside 900 s. From h043142 on, the budget was 140 s. (I-112)
+- After h044740's Critical end gate, the phone cooled under the lease to 41.09 °C (`wait.mjs phone-temp --below
+  41.5`) before V4 C4 S2 ran again, on the lead's ruling.
+
+**Scorer output** (`out/nav-morph/edge/score.txt`, `score.json`; window frames > 34 only, abridged):
+
+| run | crossing y | edge > 34 (> 30, > 38) | run score | control check |
+|---|---|---|---|---|
+| C1 | 2006 | 13 (13, 13) | style | PASS (280 ms @0) |
+| V1 | 1920 | 6 (6, 6) | unmatched | |
+| V2 | 1783 | 1 (4, 1) | outside | |
+| C2 | 1854 | 8 (9, 8) | unmatched | FAIL (93 ms @0, unmatched) |
+| C3 | 1966 | 12 (12, 12) | script | PASS (230 ms @0) |
+| V3 | 1752 | 7 (8, 4) | style | |
+| V4 | 1775 | 0 (2, 0) | none | |
+| C4 | 1854 | 6 (7, 6) | unmatched | FAIL (94 ms @0, unmatched) |
+
+`control 2/4 pass -> VOID (fewer than 3 of 4 C runs pass)`, `decision: VOID (>34 SPLIT, >30 SPLIT, >38 SPLIT)`.
+
+- The prediction (STYLE P 0.4; edge frames per V run: point 1, interval [0, 2]) was not tested: the block is void.
+- Descriptive only: V's edge frames per run were 6, 1, 7, 0, against C's 13, 8, 12, 6. V had fewer in every C/V pair
+  of the order. That count is outside the ticket's decision.
+
+**Why the control failed: RenderingFrame matching** (OBSERVED, in our setup, cause unknown).
+- The scorer matches each edge frame to the RenderingFrame record that contains the previous rAF stamp. In C2 and C4
+  the longest window frame has no such record ("unmatched"), so its share of style plus the Composite record can't be
+  computed, and the check fails.
+- In these Timelines, part of the rendering update is recorded outside any RenderingFrame:
+  - a top-level RecalculateStyles with its Layout (68-77 ms in V1's crossing frames);
+  - then top-level FireAnimationFrame and the IO ObserverCallback;
+  - then a Composite record with the RenderingFrame nested inside it.
+- Counts per file (`fixes/nav-morph/rf-nesting.mjs`):
+
+  | Timelines | rAF records outside a RenderingFrame | RenderingFrames nested in a Composite |
+  |---|---|---|
+  | P-091 runs | 2-9 % (168-802 per run) | 33-119 per run |
+  | P-081 (G, Serious) | 7 % | 75 |
+  | 10-01 S fixtures (e-tc1, e-tc2, e-ta1) | 0.5-1.2 % | 1-4 |
+
+- The outside records cluster in the long frames. The fixture that supported "the rAF stamp lies inside a
+  RenderingFrame" (e-tc2) was an S run, so driver and heat are confounded.
+- **Research plan** (claim stays OBSERVED until done; read-only `gh`, never plain curl, no personal data):
+  1. `gh api repos/WebKit/WebKit/contents/Source/WebCore/inspector/agents/InspectorTimelineAgent.cpp?ref=main`: how a
+     RenderingFrame record opens and closes (run-loop observers, the frame begin and end orders) and how it relates to
+     willComposite/didComposite.
+  2. The RunLoopObserver well-known orders (`Source/WebCore/platform/RunLoopObserver.h` or its current path, found
+     with `gh search code`), and where the rendering update runs relative to them (`Page::updateRendering`, the
+     rendering update scheduler).
+  3. `gh api "repos/WebKit/WebKit/commits?path=<agent path>"` for recent changes, and a bugs.webkit.org search for
+     "RenderingFrame" Timeline nesting.
+  4. The decisive local check: a Fair (not Serious) G run with Timeline on C, or the same gesture in the Simulator
+     (records only, no timing), counted with rf-nesting.mjs. If the outside share stays at 2-9 %, the cause is the
+     driver or the long frames, not the heat.
+
+**Post-hoc reading, exploratory** (written after the data; it decides nothing).
+- `fixes/nav-morph/edge-span.mjs` drops the RenderingFrame matching. It splits each edge frame's own interval (from
+  the previous rAF stamp to this one) by the deepest record at each 0.1 ms, using the scorer's bucket names.
+- Output: `out/nav-morph/edge/span.json`.
+- **V** (14 edge frames): style owns 13, one is split.
+  - V1: 65-166 ms of style per frame in 5 frames at the crossing, with near-zero Layout outside style.
+  - V2 and V3: 15-58 ms of style.
+- **C** (39 edge frames): layout 21, style 9, split 9.
+  - C1 and C3 have a run of 46-69 ms frames after the crossing, each about 33-42 ms of Layout.
+  - V has no such run.
+- So, as a reading only: V's residual looks like style recalculation at and right after the IO edge. That is the
+  ticket's STYLE row (the `inert` lift and the `src` writes on the pre-mounted panel are the candidates). C's extra
+  frames are a per-frame Layout run that V does not have.
+- None of this is a verdict. It needs a pre-registered block, or the lead's ruling on how to use it.
+
+Files (gitignored, they hold LAN addresses: never commit or quote them):
+- `out/nav-morph/p091/`: gesture-/tl- files, runs/holds/gates/progress jsonl, RUNLOG, served.txt, void/.
+- `out/nav-morph/edge/`: score.json, score.txt, span.json.
+- They are listed in `evidence.json`.
