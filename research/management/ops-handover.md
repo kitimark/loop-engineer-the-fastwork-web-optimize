@@ -42,6 +42,14 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-118 scorer second read (int-v8 bb68123d = main 97bbd4ad): PASS. This meets the signature's S2
+  (cd720fb7).**
+  - Hashes: score.mjs 652bba12f6a3, selftest.mjs f2823168094f, P-105 base b9a29ffcc7bb unchanged.
+  - Pins: the C and V pins match out/pdd/snap/HASHES.txt to all 64 hex digits.
+  - Code: the diff against P-117's scorer is names and the V pin only.
+  - Self-test re-run: 29 OK, 0 failed (S d -1, GM d 0, no new cluster).
+  - Sent to the lead, iphone-runner, mgmt-devices, int-v8 and fix-double-drive.
+  - Open: fix-double-drive must commit the ticket's scorer lines (dfbac7327abe on disk). Card: p118-double-drive-phone-no-worse.md, "Ops scorer read".
 - 10-05 **P-117 split check (fix-scroll-cb, ebee20a5; Simulator, C1 N1 S1 S2 N2 C2): AGREE. The N2 nav failure is
   nav-hit-cache's, under the rAF-step driver.**
   - Pins: c151589d (21:04:16Z) pre-registered run-split.sh 7c0eeb5de3b3, build.mjs ef50f44d629e and simcount

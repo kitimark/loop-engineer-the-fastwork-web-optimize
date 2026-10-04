@@ -90,3 +90,30 @@ roles v3 R3), with:
   not counted, the ticket gets new pins, ops' disk check and a new signature before any counted run.
 - **S2 scoring waits on ops' second read of the scorer** (running and recording do not).
 - **S3** no change to the layout: S H1/H2 + G part M H3, sentinels and gates as P-105; one block, the sequential rule.
+
+## Ops scorer read (int-v8's commit bb68123d, 2026-10-05 04:25+07, on its branch): PASS
+
+| file | sha256/12 on disk | result |
+|---|---|---|
+| fixes/double-drive/phone/p118/score.mjs | 652bba12f6a3 | as named in the ticket |
+| fixes/double-drive/phone/p118/selftest.mjs | f2823168094f | as named in the ticket; re-run by ops: 29 OK, 0 failed, "all OK" |
+| fixes/v7-best/phone/score.mjs (imported) | b9a29ffcc7bb | P-105's scorer, unchanged |
+
+- **Diff against P-117's score.mjs (23cfb35e5516):** header comments, the names (P117 → P118, scoreS117 → scoreS118,
+  scoreP117 → scoreP118, `checkOk(log, cfg = P118)`) and the V pin only. No logic change; P-117's code already checks
+  each arm's CSS against that arm's own pin, which V (own CSS) needs.
+- **The scorer's pins match the snapshot on disk in full** (out/pdd/snap/HASHES.txt, all 64 hex digits): C JS
+  3e3e94cb6e9f / CSS f836404b3728, V JS 3076c5a8c9a3 / CSS 2f7197880ffd. The served check's B pin (4606120cf392 /
+  27776f3d4138) matches serve.sh's `check` case.
+- **Check logs line up:** hold.sh writes `p118-<H>-check-<item>.log` before every item; the scorer reads the newest
+  `*-check-<item>.log` beside each run file and matches serve.sh's line `<A> pid … port … served JS <j> CSS <c> ok`.
+- **Self-test on P-105's records:** S gate d −1 at > 50 (no-worse), GM gate d 0 with no new cluster at > 50
+  (no-worse), both equal to P-105's own scorer run directly; block no-worse, threshold-sensitive (GM new cluster at
+  > 46, 3250-3499; none at > 54), as P-105 read. The synthetic cases void a run that serves another V, V's JS with C's
+  CSS, or C for V; void G runs with no check log or a wrong hash; void runs since a failed sentinel; and report
+  > 100 ms frames.
+- **On main:** the scorer landed as 97bbd4ad; main's score.mjs, selftest.mjs and P-105's scorer hash as in the table.
+- **Open, for the lead (not blocking scoring):** the ticket's scorer lines are on fix-double-drive's disk (TICKET.md
+  dfbac7327abe) but not committed (its branch has 6bfd511f9a89, and the ticket is not on main yet). The signature's
+  S1 stands: if the at-rest probe changes V, this read is void with the arms until the new pins are read.
+- Status: **scorer second read PASS; the signature's S2 condition is met, P-118's data may be scored with this scorer.**
