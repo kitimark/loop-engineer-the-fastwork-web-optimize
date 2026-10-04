@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T08:21:00Z",
+ "updatedAt": "2026-10-04T08:36:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T08:35:00Z", "text": "Menu fix (F3): one swipe step fewer. The frame logs of your first pair already show the build without F3 doing worse in both orders, so the repeat with the order swapped is dropped. Only a hidden check pair is left, after the avatar-row and countdown-roll phone checks." },
   { "at": "2026-10-04T06:14:00Z", "text": "The end-of-page morph on the graphics chip passed its phone check (P-092) as not worse: no new slow frames. But the first frame of each morph is about 7 ms longer (62 vs 55 ms), so it stays out of the next best build until a revised version fixes that. Phone now: your menu-fix swipe test." },
   { "at": "2026-10-04T05:41:00Z", "text": "The hero's slimmer version (R2) passed its phone check (P-095) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. Next is your blind swipe test of it." },
   { "at": "2026-10-04T05:40:00Z", "text": "Your new order (T-073): GPU fixes first. Phone: hero check (P-095, running), end-of-page morph (P-092), your blind swipe test of the menu fix, countdown roll (P-093), resting avatar row (P-094). A GPU preview build with the three GPU fixes is being put together for you to try." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
   { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
   { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." },
-  { "at": "2026-10-03T12:55:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) passed its short phone check at the phone's real \"Serious\" heat state: no worse. One run had a slightly longer first scroll frame, which the fix does not touch." },
-  { "at": "2026-10-03T12:20:00Z", "text": "The menu fix (F3) is dropped as a speed fix: what it changes sits in a thin strip at the screen edges, so on the phone it would feel the same as today. A new idea for the menu is being planned." }
+  { "at": "2026-10-03T12:55:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) passed its short phone check at the phone's real \"Serious\" heat state: no worse. One run had a slightly longer first scroll frame, which the fix does not touch." }
  ],
  "items": [
   {
@@ -185,7 +185,7 @@
    ],
    "felt": { "answer": "better", "text": "provisional, one pair (C-042): you picked the best build over the plain page, difference 4 of 5; the best build came second, on a warmer phone" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "Not landing on one pair. Next are two swipe steps in one phone slot: the same pair with the best build first this time, then a hidden check pair. It runs after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087.",
+   "next": "One more swipe step: a hidden check pair. The swapped-order repeat is dropped: the frame logs of your first pair show the build without F3 worse in both orders. It runs after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -685,7 +685,7 @@
   }
  ],
  "upcoming": [
-  { "title": "Two more blind swipe steps for the menu fix (F3): the same pair in the other order, then a hidden check pair", "when": "after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087", "item": "f3-arm-scope" },
+  { "title": "One more blind swipe step for the menu fix (F3): a hidden check pair", "when": "after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087", "item": "f3-arm-scope" },
   { "title": "Milestone 2: the same checks from a hot 42-44 °C start and with Xcode's \"Serious\" heat state on (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
   { "title": "Full phone timing run of the best build against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
