@@ -773,7 +773,8 @@ script except for:
 
 Arms, `build.mjs` d190003298c5, simcount 45175dbac676, loads and reading are unchanged.
 
-**v9 step 3 result: PASS.** Run 22:47-22:56Z; PIN line run-v9b.sh 39cc2ff54946 / build.mjs d190003298c5 / simcount
+**v9 step 3 result: PASS.** Hold 22:53:52-22:58:15Z (263 s, after P-118 H3; holds.log, and v9b.log "acquired after
+937 s" from 22:38:14Z; an earlier version of this line said 22:47-22:56Z); PIN line run-v9b.sh 39cc2ff54946 / build.mjs d190003298c5 / simcount
 45175dbac676 / driver raf. All 4 loads are valid and the served hashes match. Score:
 `out/scroll-cb-phone/v9/score.json` 73976d346b15.
 
