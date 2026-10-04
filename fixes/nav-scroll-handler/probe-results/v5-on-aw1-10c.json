@@ -1,0 +1,231 @@
+{
+ "date": "2026-10-01T06:43:56.066Z",
+ "baseOverlay": "<worktree>/fixes/aw1-10c/overlay",
+ "fixOverlay": "<scratchpad>/nav-scroll-handler/fix-full",
+ "regions": {
+  "base": [
+   13204,
+   13349
+  ],
+  "fix": [
+   13204,
+   13470
+  ]
+ },
+ "count": [
+  {
+   "label": "base",
+   "vp": "mobile",
+   "frames": 260,
+   "scroll": {
+    "y": 5345,
+    "max": 5345,
+    "n": 223
+   },
+   "all": {
+    "gcs": 223,
+    "rect": 1411,
+    "efp": 223
+   },
+   "nav": {
+    "gcs": 223,
+    "rect": 446,
+    "efp": 223
+   },
+   "allPerFrame": {
+    "gcs": 0.86,
+    "rect": 5.43,
+    "efp": 0.86
+   },
+   "navPerFrame": {
+    "gcs": 0.86,
+    "rect": 1.72,
+    "efp": 0.86
+   },
+   "layoutPerFrame": 0.47,
+   "recalcPerFrame": 1.32,
+   "layoutMs": 11,
+   "recalcMs": 118,
+   "scriptMs": 152,
+   "errors": []
+  },
+  {
+   "label": "fix",
+   "vp": "mobile",
+   "frames": 260,
+   "scroll": {
+    "y": 5345,
+    "max": 5345,
+    "n": 223
+   },
+   "all": {
+    "rect": 1188,
+    "efp": 223
+   },
+   "nav": {
+    "rect": 223,
+    "efp": 223
+   },
+   "allPerFrame": {
+    "rect": 4.57,
+    "efp": 0.86
+   },
+   "navPerFrame": {
+    "rect": 0.86,
+    "efp": 0.86
+   },
+   "layoutPerFrame": 0.47,
+   "recalcPerFrame": 1.28,
+   "layoutMs": 11,
+   "recalcMs": 121,
+   "scriptMs": 158,
+   "errors": []
+  },
+  {
+   "label": "base",
+   "vp": "desktop",
+   "frames": 389,
+   "scroll": {
+    "y": 8448,
+    "max": 8448,
+    "n": 352
+   },
+   "all": {
+    "gcs": 352,
+    "rect": 2697,
+    "efp": 352
+   },
+   "nav": {
+    "gcs": 352,
+    "rect": 1408,
+    "efp": 352
+   },
+   "allPerFrame": {
+    "gcs": 0.9,
+    "rect": 6.93,
+    "efp": 0.9
+   },
+   "navPerFrame": {
+    "gcs": 0.9,
+    "rect": 3.62,
+    "efp": 0.9
+   },
+   "layoutPerFrame": 0.58,
+   "recalcPerFrame": 2.16,
+   "layoutMs": 103,
+   "recalcMs": 260,
+   "scriptMs": 211,
+   "errors": []
+  },
+  {
+   "label": "fix",
+   "vp": "desktop",
+   "frames": 389,
+   "scroll": {
+    "y": 8448,
+    "max": 8448,
+    "n": 352
+   },
+   "all": {
+    "rect": 2112,
+    "gcs": 1,
+    "efp": 352
+   },
+   "nav": {
+    "rect": 823,
+    "gcs": 1,
+    "efp": 352
+   },
+   "allPerFrame": {
+    "rect": 5.43,
+    "gcs": 0,
+    "efp": 0.9
+   },
+   "navPerFrame": {
+    "rect": 2.12,
+    "gcs": 0,
+    "efp": 0.9
+   },
+   "layoutPerFrame": 0.58,
+   "recalcPerFrame": 2.05,
+   "layoutMs": 99,
+   "recalcMs": 266,
+   "scriptMs": 207,
+   "errors": []
+  }
+ ],
+ "parity": {
+  "mobile": {
+   "steps": 124,
+   "maxY": [
+    5345,
+    5345
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 8,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "desktop": {
+   "steps": 168,
+   "maxY": [
+    8448,
+    8448
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 12,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "mobile-shift": {
+   "steps": 130,
+   "maxY": [
+    5645,
+    5645
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 8,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "desktop-rtl": {
+   "steps": 168,
+   "maxY": [
+    8448,
+    8448
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 12,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  },
+  "mobile-rtl": {
+   "steps": 124,
+   "maxY": [
+    5345,
+    5345
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "baseStateChanges": 8,
+   "errors": {
+    "base": [],
+    "fix": []
+   }
+  }
+ },
+ "wallMs": 106022,
+ "monoMs": 106022
+}
