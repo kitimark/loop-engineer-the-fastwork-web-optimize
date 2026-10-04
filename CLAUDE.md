@@ -427,7 +427,7 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   - your server: `node tools/wait.mjs serve out/serve-<topic>.json` (prints `MIRROR_URL=…`); a URL: `wait.mjs url <u>`;
   - locks, read-only: `node tools/lock.mjs wait chrome-measure --until mine|free|idle|released-by:<o>|'position<=N'
     --owner <you> [--for S] [--reason "…"]` (to get your turn use `run` or `acquire --wait`); a quiet window for CPU work:
-    `--until idle --for 120`;
+    `--until idle --for 120`; `--until mine` ends as soon as the lock is yours, `--for` is ignored there (I-165);
   - main: `node tools/wait.mjs git --path <p> | --grep '<subject re>' | --contains <sha>`; a process: `wait.mjs pid
     <pid>`; phone cooling: `wait.mjs phone-temp --below auto` (never a fixed `wait.mjs time`, user T-016); `incident.mjs wait <id>`; `finding.mjs wait --as <you>`.
   - A peer's reply has no command: wait on what the reply is about, or do other work.
@@ -595,7 +595,9 @@ node tools/lock.mjs release iphone --owner <topic>
   while `node tools/lock.mjs run iphone --owner <you> -- <cmd>` runs under its lease (wrap phone-side work that is no
   phone run in it: xctrace thermal gate, pre-warm). Not ready yet (pre-data read, cooling)? Don't take the lease:
   queue with `node tools/lock.mjs acquire iphone --owner <you> --not-ready` (keeps your place, never served, exit 3;
-  re-run within 10 min) and acquire without the flag when your part can start.
+  re-run within 10 min) and acquire without the flag when your part can start. I-165: a lease holder whose only process
+  on the lease is a `lock.mjs wait iphone` for over 2 min is `STUCK iphone: …` (an alarm, waiters or not); a holder whose
+  own console step waits for the user's Start (its part loading or ready) is a user wait, not idle.
 - Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
   Never edit the lock JSON by hand.
 - **Say what a hold is for** (I-060, the progress page's "Right now"): `acquire|renew|run` take `--doing "<plain line>"

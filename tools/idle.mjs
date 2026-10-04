@@ -25,7 +25,7 @@
 // runner (a gated part not ready, a recorded part started without "recording") with no change for more than --step-min
 // minutes (default 2): `STUCK C-037: part 1 (attempt 2) waits on fix-nav-morph for 10 min (…)`, exit 3 in check, one
 // thread per stuck period to the step's owner and the desk (--by lead), ENDED / CLOSED when the step moves on.
-import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, readState } from './lib/idle.mjs';
+import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, notifyLine, readState } from './lib/idle.mjs';
 import { createThread, setStatus } from './lib/console-threads.mjs';
 import { getDesk } from './lib/thread-routing.mjs';
 import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
@@ -67,7 +67,7 @@ async function pass({ by, min, log, quietOk, watching = false }) {
     }
     if (a.alarm ? (res.news || !quietOk) : !quietOk) log(`${lineFor(a)}${a.alarm && res.thread ? ` [posted in ${res.thread}]` : ''}`);
     // I-155: whom a new alarm concerns, one line each (their /status rows carry a red alert while it stands)
-    if (a.alarm && res.news) for (const n of addressees(a)) log(`NOTIFY ${n}: ${n === a.holder && a.heldIdle ? 'you hold the iPhone lease with no phone run' : `${RESOURCES[a.resource]?.short || a.resource} ${a.heldIdle ? `held by ${a.holder} unused` : 'free'}`} for ${a.freeMin} min while ${n === a.holder && a.heldIdle ? 'others wait' : 'you wait'} (status board alert; I-155)`);
+    if (a.alarm && res.news) for (const n of addressees(a)) log(notifyLine(a, n));
     if (!res.post) {
       if (a.alarm && res.news && !lead) log(`NOT POSTED ${a.resource}: posting needs --by lead (only the lead starts threads); the lead's watch posts it`);
       continue;

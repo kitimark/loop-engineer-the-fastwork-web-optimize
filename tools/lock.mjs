@@ -175,7 +175,7 @@ import { RUN_PROFILES_ENV, removeRunProfiles } from './lib/cdp.mjs'; // I-106: t
 import { doctor, repair, moveWaiter, leaveQueue, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { wrapsPhoneRun } from './lib/disk.mjs';
-import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
+import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, lockHoldSec, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { describeHold } from './lib/lock.mjs';
 import { warmLine, warmSummary } from './lib/sim-warm.mjs';
@@ -623,7 +623,8 @@ async function waitCmd() {
   if (waitOwner(owner) === UNKNOWN) console.error(NO_OWNER_NOTE);
   const cond = parseLockCondition(opt('until'), owner);
   const sec = (n, d) => { const v = opt(n); if (v === undefined) return d; const x = parseSec(v); if (!(x >= 0)) throw new Error(`--${n} must be a number of seconds (or 10m, 2h), got ${v}`); return x; };
-  const timeoutSec = sec('timeout', 3600), holdSec = sec('for', 0);
+  const timeoutSec = sec('timeout', 3600), hs = lockHoldSec(cond, sec('for', 0), owner), holdSec = hs.holdSec;
+  if (hs.note) console.error(hs.note); // I-165: --until mine --for N kept the lease idle N s after it was already yours
   status(resource); // a bad resource name fails here, before the first poll
   const what = `${resource} ${lockConditionText(cond)}`;
   const onChange = flag('quiet') ? undefined : (state, s) => console.error(`[lock wait ${new Date().toISOString().slice(11, 19)}Z +${s}s] ${resource} ${state}`);

@@ -362,6 +362,17 @@ export function lockConditionMet(cond, st) {
   return { met, state, detail: state };
 }
 
+/**
+ * I-165: the --for that applies to `cond`. A hold of your own (mine, or held-by:<--owner>) does not end by itself, so
+ * waiting for it to stay met only idles the device: such a wait ends as soon as it is met. Returns {holdSec, note}.
+ */
+export function lockHoldSec(cond, holdSec, owner) {
+  if (holdSec > 0 && cond?.kind === 'held-by' && owner && cond.owner === owner) {
+    return { holdSec: 0, note: `NOTE --for ${holdSec} is ignored with --until mine (held-by:${owner}): a hold of your own does not end by itself, so this wait ends as soon as it is yours (I-165). For a quiet window use --until idle --for N.` };
+  }
+  return { holdSec, note: null };
+}
+
 /** The --until spec as text, for the result line. */
 export function lockConditionText(c) {
   return c.kind === 'position' ? `"${c.owner}" at position <= ${c.n}` : c.owner ? `${c.kind} "${c.owner}"` : c.kind;

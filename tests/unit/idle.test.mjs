@@ -391,8 +391,9 @@ test('I-125 assess: the holder\'s phone step the user is on (ready, started, rec
     assert.deepEqual([a.held, a.heldIdle, a.alarm, a.freeMin], [true, false, false, 0], JSON.stringify(s.parts));
     assert.match(D.lineFor(a), /^OK iphone: held by fix-nav-morph; the user's step C-038 by fix-nav-morph \((pending|active), part \d\/2 \w+\) is on the phone \(a user wait, not idle\)$/);
   }
-  // not a user wait: the runner still preparing a pending step, a step of someone else, a closed step, a non-phone step
-  for (const s of [step('pending', ['loading', 'waiting']), step('pending', ['waiting', 'waiting']), step('active', ['ready', 'waiting'], { by: 'iphone-runner' }),
+  // not a user wait: a pending step not prepared yet, a step of someone else, a closed step, a non-phone step past Start
+  // (I-165: a pending step whose part is loading now waits for the user's Start, tests/unit/self-wait.test.mjs)
+  for (const s of [step('pending', ['waiting', 'waiting']), step('active', ['ready', 'waiting'], { by: 'iphone-runner' }),
     step('answered', ['done', 'done']), step('active', ['started'], { kind: 'action', parts: [{ state: 'started' }] })]) {
     const a = A([s]);
     assert.deepEqual([a.heldIdle, a.alarm], [true, true], JSON.stringify(s));
