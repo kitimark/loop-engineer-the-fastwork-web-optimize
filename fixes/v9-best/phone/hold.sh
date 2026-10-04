@@ -5,7 +5,10 @@
 # (P-105's flick scripts, byte for byte). The served check before every item, the park after every G run, the gates and
 # the sleep check are P-118's, unchanged. Profile xcode-serious (user T-162 #3): no heat pre-warm; the start and end
 # gates run thermal-gate.mjs --accept-induced (PASS = Serious AND induced by Xcode, battery < 44 C, not Critical).
-# Committed before any phone data. Refuses to run until the lead registered the ticket (TICKET=P-<id> in the env).
+# Committed before any phone data. Refuses to run until the lead registered the ticket (TICKET=P-120 in the env).
+# Checkout: int-v8's worktree (.claude/worktrees/agent-a068af37646232e05): the runner calls this file by its path there;
+# it cds to that checkout, reads out/pv9/snap/serve-*.json and runs serve.sh check there. The PIN line at each hold
+# start names the checkout, its HEAD and the sha256/12 of every script and pinned tool (ops gap G1).
 # Runs under the iphone lease held by the runner (RUNNER, default iphone-runner), INSIDE the runner's exclusive no-timing
 # hold, so no shared job runs beside it:
 #   TICKET=P-<id> node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 \
@@ -45,6 +48,12 @@ CU=$(node tools/lan.mjs --url --port "$(port C)") || exit 2
 VU=$(node tools/lan.mjs --url --port "$(port V)") || exit 2
 T0=$(date +%s)
 echo "HOLD $H ($TICKET) start $(date -u +%FT%TZ) items $*"
+# PIN line (ops gap G1): sha256/12 of every script and pinned tool this hold uses, the snapshot's HASHES.txt, the checkout
+pins() { for f in "$@"; do printf ' %s=%s' "$f" "$(shasum -a 256 "$f" | cut -c1-12)"; done; }
+echo "PIN $H $TICKET profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
+  fixes/v9-best/phone/hold.sh fixes/v9-best/phone/serve.sh fixes/v9-best/phone/score.mjs fixes/v8-best/phone/score.mjs \
+  research/phone-thermal-gate/thermal-gate.mjs research/phone-thermal-gate/verdict.mjs fixes/rest-script/tools/pmcheck.mjs \
+  $G/flick-middle-v1.json $G/flick-end-v1.json $S/HASHES.txt)"
 node tools/lock.mjs status 2>&1 | grep '^chrome-measure' | sed 's/checkout .*//'
 gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "pv9-$H-$1" --expect serious --max-c 44 --accept-induced --url "$B"; }
 SR="--driver scroll --probe std --owner $R --block $TICKET"
