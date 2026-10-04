@@ -1,6 +1,7 @@
 // I-152 (PR-020 N9): which agents ended their run with a hand-back, read from Claude Code's own subagent transcripts, so
-// the board shows "owner ended" and the thread router stops counting their recent reads, without anyone writing it; an
-// owner with a live wait (a persistent Monitor listener) stays listening and unflagged. Read-only.
+// the board shows "owner ended" without anyone writing it (unless the owner has a live, attached wait). A board hint
+// only: the thread router does not use it (I-163, the lead's ruling: an agent between turns hands back while its own
+// background work runs, and keeps listening); orphan waits come from the process tree (proctree.mjs). Read-only.
 //
 // The format belongs to Claude Code and may change (OBSERVED in our setup, Claude Code 2.1.x, 2026-10-04):
 //   ~/.claude/projects/<slug of the main checkout>/<session>/subagents/agent-<id>.meta.json  {name, agentType, ...}

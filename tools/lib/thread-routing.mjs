@@ -1,25 +1,28 @@
 // Thread routing (user T-050, 2026-10-03; design research/architecture/thread-routing.md §4-§5 and "Decisions"; T-051:
 // the lead's topic -> owner map). A user message goes to someone who is listening, and the lead wakes only when needed:
 //   - listening(agent): a live `console.mjs thread wait` of that agent in the waits registry (waits.mjs), or the agent
-//     read (readsAt) or wrote in a thread within LISTEN_MIN (5) minutes. A live wait always listens; an agent whose run
-//     ended with a hand-back (I-152 N9, transcripts.mjs) loses only the 5-min rule (a persistent Monitor listener
-//     keeps a handed-back agent listening).
+//     read (readsAt) or wrote in a thread within LISTEN_MIN (5) minutes. I-163 (+ I-137): a wait whose parent chain no
+//     longer reaches a live Claude Code process (proctree.mjs) is an "orphan wait": not listening, and its owner loses
+//     the 5-min rule too. The lead is exempt. A hand-back in the transcript (transcripts.mjs) is a board hint only.
 //   - routeOwner(t, ctx), pure: the first LISTENING candidate of (1) the comment anchor's owner (status row owner, step
 //     author, proposal author), (2) the lead's topic map (thread topic set), (3) the topic's status-board owner, (4) the
 //     desk; else null (nobody: the lead's triage wait wakes at once). The lead and the user are never candidates.
 //   - the desk: threads/desk.json {agent, setBy, at}, set by the lead only; it counts only while it is listening
 //     (otherwise the lead is the desk). The desk may assign a thread, only to a listening owner (console-threads assign).
 //   - the topic map: threads/topics.json {<status id or topic tag>: {owner, setBy, at}}, set by the lead only.
-// console-threads.mjs calls the router on every user message whose thread has no listening assignee; the lead's
+//   - busy(agent) (I-164, user T-147): a status row it owns is implementing/testing/measuring, or it holds
+//     chrome-measure or the iphone lease; the router passes busy listeners over (they get the message as a non-waking
+//     FYI) and the lead's triage counts only free owners. See busyState below.
+// console-threads.mjs calls the router on every user message whose thread has no free listening assignee; the lead's
 // `thread wait --as lead --triage` (threadWaitCondition) uses listening() and TRIAGE_ESCALATE_MIN.
 // Names only (agent ids, status ids); no user text is stored here.
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { withGuard } from './lock.mjs';
+import { withGuard, status as lockStatus, isGroup, liveReaders } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { consoleDir } from './console.mjs';
 import { listWaits } from './waits.mjs';
-import { endedNow } from './transcripts.mjs';
+import { attachedNow } from './proctree.mjs';
 
 export const LISTEN_MIN = 5;
 export const TRIAGE_ESCALATE_MIN = 10;
@@ -57,23 +60,27 @@ export function lastSeen(threads = []) {
 }
 
 /**
- * A listening test for many agents at once: (agent) -> {listening, how} where how is "waiting" (a live thread wait),
- * "active <n> min ago" (read or wrote within LISTEN_MIN), or "" (not listening). opts: {now, waits (listWaits()
- * records), threads}.
+ * A listening test for many agents at once: (agent) -> {listening, how} where how is "waiting" (a live thread wait
+ * attached to a Claude Code session), "active <n> min ago" (read or wrote within LISTEN_MIN), "owner ended (orphan
+ * wait)" (I-163: its only thread waits are orphans), or "" (not listening). opts: {now, waits (listWaits() records),
+ * threads, attached ((pid) -> boolean; default proctree.mjs attachedNow(); null = every live wait is attached)}.
  */
-export function listeningState({ now = Date.now(), waits, threads = [], ended } = {}) {
+export function listeningState({ now = Date.now(), waits, threads = [], attached } = {}) {
   const ws = waits ?? listWaits({ now });
-  // I-152 (PR-020 N9): an owner whose run ended with a hand-back is not listening by the 5-min read/write rule; a live
-  // wait (pid alive: listWaits drops dead ones) still listens, ended or not: background agents hand back at the end of
-  // every turn and keep a persistent `thread wait --monitor` that wakes them (the lead, 2026-10-04)
-  let gone;
-  try { gone = ended ?? new Set(endedNow({ now }).keys()); } catch { gone = new Set(); }
-  const waiting = new Set(ws.filter((w) => w && w.tool === WAIT_TOOL).map((w) => w.owner));
+  // I-163 (+ I-137), the lead's ruling: a live wait (pid alive: listWaits drops dead ones) listens only while its parent
+  // chain reaches a live Claude Code process. The desk's `thread wait --monitor` outlived the task that started it and
+  // T-146 sat 2.5 min routed to it. An orphan wait is no listener, and its owner loses the 5-min read/write rule too
+  // (its listener died: I-137); the router moves on (routeOwner). The lead is exempt. A run's hand-back (transcripts.mjs)
+  // is a board hint only: an agent between turns hands back while its own background work runs, and must keep listening.
+  let att = attached;
+  if (att === undefined) { try { att = attachedNow({ now }); } catch { att = null; } }
+  const waiting = new Set(), orphan = new Set();
+  for (const w of ws) if (w && w.tool === WAIT_TOOL) (!att || att(Number(w.pid)) ? waiting : orphan).add(w.owner);
   const seen = lastSeen(threads);
   return (agent) => {
     if (!agent || agent === USER) return { listening: false, how: '' };
     if (waiting.has(agent)) return { listening: true, how: 'waiting' };
-    if (gone.has(agent)) return { listening: false, how: 'owner ended' };
+    if (agent !== LEAD && orphan.has(agent)) return { listening: false, how: 'owner ended (orphan wait)' };
     const at = seen.get(agent);
     if (at !== undefined && now - at <= LISTEN_MIN * 60000) return { listening: true, how: `active ${Math.max(0, Math.round((now - at) / 60000))} min ago` };
     return { listening: false, how: '' };
@@ -81,6 +88,62 @@ export function listeningState({ now = Date.now(), waits, threads = [], ended } 
 }
 /** (agent) -> boolean, see listeningState. */
 export function listeningFn(opts) { const s = listeningState(opts); return (a) => s(a).listening; }
+
+// ---- busy (I-164, user T-147, memory/busy-workers-answer-later.md) --------------------------------------------
+// A worker in its own step is not pulled off it by a user question: the router skips a busy owner for the next free
+// listener (console-threads route), the message is a non-waking FYI for it (`later`) that wakes its listener once the
+// step ends, and the lead's triage counts only free owners. Busy: a status row it owns is implementing, testing or
+// measuring, or it holds chrome-measure or the iphone lease (under its own name or one of its rows' ids or aliases;
+// a shared-lane reader counts too). The lead is never busy.
+export const BUSY_STATES = Object.freeze(['implementing', 'testing', 'measuring']);
+export const BUSY_LOCKS = Object.freeze(['chrome-measure', 'iphone']);
+const BUSY_CACHE_MS = 5000;
+
+/** The live holders of BUSY_LOCKS: [{resource, owner}] (a shared group: each live reader). Never throws. */
+export function lockHolders({ now = Date.now(), statusFn = lockStatus } = {}) {
+  const out = [];
+  for (const r of BUSY_LOCKS) {
+    try {
+      const st = statusFn(r);
+      const h = st?.holder;
+      if (!h || st.stale) continue;
+      if (isGroup(h)) { for (const x of liveReaders(h, now)) if (x?.owner) out.push({ resource: r, owner: x.owner }); }
+      else if (h.owner) out.push({ resource: r, owner: h.owner });
+    } catch {}
+  }
+  return out;
+}
+
+/** (agent) -> {busy, why} (pure). statusRows: status board rows; holders: lockHolders(). */
+export function busyState({ statusRows = [], holders = [] } = {}) {
+  return (agent) => {
+    if (!agent || agent === LEAD || agent === USER) return { busy: false, why: '' };
+    const own = statusRows.filter((x) => x && x.owner === agent);
+    const r = own.find((x) => BUSY_STATES.includes(x.state));
+    if (r) return { busy: true, why: `${r.id} ${r.state}` };
+    const names = new Set([agent, ...own.flatMap((x) => [x.id, ...(x.aliases || [])])]);
+    const h = holders.find((x) => names.has(x.owner));
+    return h ? { busy: true, why: `holds ${h.resource}` } : { busy: false, why: '' };
+  };
+}
+
+/**
+ * A busy test read from the stores (open status rows, lock holders): returns ({now}) -> busyState, re-read at most every
+ * BUSY_CACHE_MS (a thread wait polls every 0.5-2 s). Never throws; unreadable stores count as nobody busy.
+ */
+export async function loadBusy() {
+  let S = null;
+  try { S = await import('./status.mjs'); } catch {}
+  let cache = null;
+  return ({ now = Date.now() } = {}) => {
+    if (!cache || Math.abs(now - cache.at) >= BUSY_CACHE_MS) {
+      let statusRows = [];
+      try { statusRows = S ? S.list({ all: false }) : []; } catch {}
+      cache = { at: now, fn: busyState({ statusRows, holders: lockHolders({ now }) }) };
+    }
+    return cache.fn;
+  };
+}
 
 // ---- desk and topic map (lead only) --------------------------------------------------------------------------
 

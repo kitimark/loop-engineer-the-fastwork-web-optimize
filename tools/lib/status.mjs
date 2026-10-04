@@ -814,11 +814,14 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   const group = fromGit ? 'finished' : st.group;
   const canStale = ['working', 'waiting', 'queued'].includes(group);
   // I-152 (PR-020 N9): the owner's run ended with a hand-back (Claude Code transcript, transcripts.mjs): an active row
-  // says so; parked and finished rows are normal without their owner; an owner with a live wait (e.g. a persistent
-  // `thread wait --monitor` after its turn's hand-back) is still reachable and not flagged
+  // says so unless the owner has a live, attached wait (an agent between turns hands back while its own background work
+  // runs); parked and finished rows are normal without their owner. I-163: a wait of the owner's that no Claude Code
+  // process runs any more (live.waits[].orphan, proctree.mjs) reaches nobody: "owner ended (orphan wait)"
+  const ownWaits = canStale && it.owner ? (live.waits || []).filter((w) => w && w.owner === it.owner) : [];
+  const orphanWait = ownWaits.some((w) => w.orphan);
   const endRec = canStale && it.owner ? live.ended?.[it.owner] : null;
-  const ownerWaits = !!endRec?.ended && (live.waits || []).some((w) => w && w.owner === it.owner);
-  const ownerEnded = endRec?.ended && !ownerWaits ? { at: typeof endRec.at === 'string' ? endRec.at : null } : null;
+  const handedBack = !!endRec?.ended && !ownWaits.some((w) => !w.orphan);
+  const ownerEnded = handedBack || orphanWait ? { at: handedBack && typeof endRec.at === 'string' ? endRec.at : null, ...(orphanWait ? { orphanWait: true } : {}) } : null;
   const waiting = fromGit ? null : it.waitingOn ? { kind: it.waitingOn.kind, target: s(it.waitingOn.target, 80), text: s(it.waitingOn.text, LIMITS.wait), plain: waitingPlain(it.waitingOn) } : null;
   // I-145 (PR-020 N1): the event that ended the owner's wait (the user answered, decided, skipped; the thread closed)
   // overrides the older self-report at read time: the row leaves WAITING ON YOU and says what happened
@@ -847,7 +850,10 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     // I-108 (3): "may be out of date", with the reasons: no update for staleAfterMin (unless a live wait shows it is
     // current), or what it reports is over (its work is on main, its wait is answered or decided: overFlags)
     ...(() => {
-      const ended = ownerEnded ? [`owner ended: ${s(it.owner, 80)} handed back its report${ownerEnded.at && !Number.isNaN(Date.parse(ownerEnded.at)) ? ` at ${hhmm(ownerEnded.at)}` : ''}; the lead resumes it with SendMessage or updates the row`] : [];
+      const at = ownerEnded?.at && !Number.isNaN(Date.parse(ownerEnded.at)) ? ` at ${hhmm(ownerEnded.at)}` : '';
+      const ended = !ownerEnded ? [] : ownerEnded.orphanWait
+        ? [`owner ended (orphan wait): a wait of ${s(it.owner, 80)} runs with no Claude Code session above it, so nobody reads it${at ? `; it handed back its report${at}` : ''}; the lead resumes it with SendMessage or updates the row`]
+        : [`owner ended: ${s(it.owner, 80)} handed back its report${at}; the lead resumes it with SendMessage or updates the row`];
       const why = canStale ? [...ended, ...(!liveWait && ageMin !== null && ageMin > staleAfterMin ? [`not updated for ${forText(ageMin)}`] : []), ...over] : [];
       return { stale: why.length > 0, staleWhy: why };
     })(),

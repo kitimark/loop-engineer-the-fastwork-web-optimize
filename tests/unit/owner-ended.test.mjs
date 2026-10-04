@@ -2,8 +2,11 @@
 // (a) a ready-to-land or reviewing row whose work is on main reads "landed on main (from git)" (or its Progress label)
 //     and is finished: no lead write needed.
 // (b) an owner whose Claude Code transcript ended with a successful hand-back (SubagentHandback) is "owner ended": an
-//     active row says so (may be out of date) unless the owner has a live wait, and the thread router counts it as
-//     listening only through a live wait (not the 5-min read rule).
+//     active row says so (may be out of date) unless the owner has a live, attached wait: a board hint only, the router
+//     does not use it (I-163, the lead's ruling: agents between turns hand back while their own work runs).
+// (c) I-163 (+ I-137): a wait whose parent chain no longer reaches a live Claude Code process (proctree.mjs) is an
+//     orphan: the board says "owner ended (orphan wait)", and the router does not count its owner as listening, by the
+//     wait or by the 5-min read rule; the lead is exempt.
 // The transcript format belongs to Claude Code (OBSERVED, 2.1.x): fixtures here copy its shape, nothing real is read
 // ($FW_STATE_DIR set: transcriptsDir() is null unless $FW_TRANSCRIPTS_DIR names a dir).
 import { test, beforeEach } from 'node:test';
@@ -105,17 +108,26 @@ test('I-152 N9 (b): an active row whose owner ended with a hand-back says "owner
   assert.equal(by.work.stale, true);
   assert.equal(by.wait.ownerEnded.at, '2026-10-04T15:50:00Z');
   for (const id of ['park', 'fin', 'alive']) { assert.equal(by[id].ownerEnded, null, id); assert.deepEqual(by[id].staleWhy, [], id); }
-  // the lead's fix: an ended owner with a live wait (a persistent Monitor listener) is not flagged; a dead wait is no
-  // live wait (listWaits drops it before the board sees it)
-  const v2 = S.buildStatusView({ items, live: { ...live, waits: [{ tool: 'console.mjs thread wait', owner: 'fix-work', what: 'x', since: ago(5), listener: true, pid: process.pid }] }, now: NOW });
+  // an ended owner with a live, attached wait (an agent between turns, its Monitor listener running) is not flagged
+  const lw = (owner, extra = {}) => ({ tool: 'console.mjs thread wait', owner, what: 'x', since: ago(5), listener: true, pid: process.pid, ...extra });
+  const v2 = S.buildStatusView({ items, live: { ...live, waits: [lw('fix-work')] }, now: NOW });
   const w2 = v2.items.find((x) => x.id === 'work');
-  assert.equal(w2.ownerEnded, null, 'ended + live wait: no flag');
+  assert.equal(w2.ownerEnded, null, 'ended + attached wait: no flag');
   assert.deepEqual(w2.staleWhy, []);
   assert.equal(v2.items.find((x) => x.id === 'wait').ownerEnded.at, '2026-10-04T15:50:00Z', 'another owner stays flagged');
+  // I-163: an orphan wait (gatherLive marks it from the process tree) is flagged, ended or not
+  const v3 = S.buildStatusView({ items, live: { ...live, waits: [lw('fix-work', { orphan: true }), lw('fix-alive', { orphan: true })] }, now: NOW });
+  const by3 = Object.fromEntries(v3.items.map((x) => [x.id, x]));
+  assert.deepEqual(by3.work.ownerEnded, { at: '2026-10-04T15:42:10Z', orphanWait: true });
+  assert.deepEqual(by3.work.staleWhy, ['owner ended (orphan wait): a wait of fix-work runs with no Claude Code session above it, so nobody reads it; it handed back its report at 15:42Z; the lead resumes it with SendMessage or updates the row']);
+  assert.deepEqual(by3.alive.ownerEnded, { at: null, orphanWait: true }, 'no hand-back, but its only wait is an orphan');
+  assert.deepEqual(by3.alive.staleWhy, ['owner ended (orphan wait): a wait of fix-alive runs with no Claude Code session above it, so nobody reads it; the lead resumes it with SendMessage or updates the row']);
+  const v4 = S.buildStatusView({ items, live: { ...live, waits: [lw('fix-work', { orphan: true }), lw('fix-work')] }, now: NOW });
+  assert.deepEqual(v4.items.find((x) => x.id === 'work').ownerEnded, { at: null, orphanWait: true }, 'an orphan beside an attached wait: flagged, no hand-back time');
   assert.match(S.staleText(v), /owner ended: fix-work handed back/);
   // the /status page names it on the row, not only in the "may be out of date" tooltip
   const page = readFileSync(new URL('../../tools/lib/status-page.html', import.meta.url), 'utf8');
-  assert.match(page, /v\.ownerEnded \? 'owner ended' : 'may be out of date'/);
+  assert.match(page, /v\.ownerEnded \? \(v\.ownerEnded\.orphanWait \? 'owner ended \(orphan wait\)' : 'owner ended'\) : 'may be out of date'/);
 });
 
 test('I-152 N9: test runs never read the machine\'s transcripts (cleanEnv turns them off)', () => {
@@ -123,19 +135,99 @@ test('I-152 N9: test runs never read the machine\'s transcripts (cleanEnv turns 
   assert.equal(TR.transcriptsDir({ env: cleanEnv(), mainCheckout: '/a' }), null);
 });
 
-test('I-152 N9 (b): the router: a live wait always listens, ended or not; "ended" cancels only the 5-min recency rule and a dead wait', async () => {
+test('I-163 (+ I-137): the router: an orphan wait is no listener and costs its owner the 5-min rule; the lead is exempt; a hand-back alone changes nothing; the router moves on', async () => {
   const W = await import('../../tools/lib/waits.mjs');
   const dead = spawnSync(process.execPath, ['-e', '0']).pid; // a pid that has exited
-  // the lead's case: mgmt-desk-2 hands back at the end of every turn but keeps a live `thread wait --monitor`
-  W.startWait({ tool: RT.WAIT_TOOL, owner: 'desk-live', what: 'x', timeoutSec: 600, listener: true, onExit: false });
-  W.startWait({ tool: RT.WAIT_TOOL, owner: 'desk-dead', what: 'x', timeoutSec: 600, listener: true, pid: dead, onExit: false });
+  const live = [];
+  const at = (owner, pid = process.pid) => live.push(W.startWait({ tool: RT.WAIT_TOOL, owner, what: 'x', timeoutSec: 600, listener: true, pid, onExit: false }));
+  at('desk-orphan'); at('desk-dead', dead); at('fix-live'); at('lead'); at('fix-both'); at('fix-both');
+  // every live record has this process's pid; which ones are orphans is injected per record (pid -> attached)
+  const ORPHAN = 999001;
+  const recs = W.listWaits();
+  const orphanIds = new Set([...recs.filter((w) => w.owner === 'desk-orphan' || w.owner === 'lead'), recs.find((w) => w.owner === 'fix-both')].map((w) => w.id));
+  const waits = recs.map((w) => (orphanIds.has(w.id) ? { ...w, pid: ORPHAN } : w));
+  const attached = (pid) => pid !== ORPHAN;
   const recent = new Date(Date.now() - 60000).toISOString();
-  const threads = [{ id: 'T-001', readsAt: { 'fix-recent': recent, 'fix-recent-ended': recent }, messages: [] }];
-  const ls = RT.listeningState({ threads, ended: new Set(['desk-live', 'desk-dead', 'fix-recent-ended']) });
-  assert.deepEqual(ls('desk-live'), { listening: true, how: 'waiting' }, 'ended + live wait = listening');
-  assert.deepEqual(ls('desk-dead'), { listening: false, how: 'owner ended' }, 'ended + dead wait = not listening');
-  assert.deepEqual(ls('fix-recent-ended'), { listening: false, how: 'owner ended' }, 'ended cancels the 5-min read rule');
-  assert.equal(ls('fix-recent').listening, true, 'not ended: the 5-min rule as before');
-  // default: the ended set from the transcripts (none in a test: $FW_STATE_DIR)
-  assert.equal(RT.listeningState({ waits: [], threads })('fix-recent-ended').listening, true);
+  const threads = [{ id: 'T-001', readsAt: { 'fix-recent': recent, 'desk-orphan': recent, lead: recent }, messages: [] }];
+  const ls = RT.listeningState({ threads, waits, attached });
+  assert.deepEqual(ls('desk-orphan'), { listening: false, how: 'owner ended (orphan wait)' }, 'orphan wait + a read 1 min ago (I-137): not listening');
+  assert.deepEqual(ls('desk-dead'), { listening: false, how: '' }, 'a dead wait is no wait');
+  assert.deepEqual(ls('fix-live'), { listening: true, how: 'waiting' });
+  assert.deepEqual(ls('fix-both'), { listening: true, how: 'waiting' }, 'one attached wait is enough');
+  assert.deepEqual(ls('lead'), { listening: true, how: 'active 1 min ago' }, 'the lead is exempt from the orphan rule');
+  assert.equal(ls('fix-recent').listening, true, 'no wait at all: the 5-min rule as before');
+  // the router moves on: the desk with an orphan wait is skipped for the next listening candidate, or nobody (lead)
+  const t = { id: 'T-146', anchor: { page: 'status', item: 'status:orphan-row' } };
+  const statusRows = [{ id: 'orphan-row', owner: 'desk-orphan' }];
+  const L = RT.listeningFn({ threads, waits, attached });
+  assert.equal(RT.routeOwner(t, { statusRows, desk: 'desk-orphan', listening: L }), null, 'only the orphan: nobody, the lead triages');
+  assert.equal(RT.routeOwner(t, { statusRows, desk: 'fix-live', listening: L })?.owner, 'fix-live', 'next listener: the desk');
+  // the lead's ruling: a hand-back in the transcript is no routing rule (an agent between turns keeps listening)
+  process.env.FW_TRANSCRIPTS_DIR = tempDir('fw-tr-');
+  const sub = join(process.env.FW_TRANSCRIPTS_DIR, 's1', 'subagents');
+  mkdirSync(sub, { recursive: true });
+  writeFileSync(join(sub, 'agent-x.meta.json'), JSON.stringify({ name: 'fix-recent' }));
+  writeFileSync(join(sub, 'agent-x.jsonl'), jsonl(use('h', 'SubagentHandback'), result('h', true)));
+  TR.clearCache();
+  assert.equal(TR.endedNow().get('fix-recent')?.ended, true, 'the fixture is an ended transcript');
+  assert.equal(RT.listeningState({ threads, waits: [] })('fix-recent').listening, true, 'handed back: still listening by its read');
+  // default attachment test in a test state dir: off (every live wait attached), like the transcripts
+  assert.deepEqual(RT.listeningState({ threads, waits })('desk-orphan'), { listening: true, how: 'waiting' });
+  for (const w of live) w.end();
+});
+
+test('I-163: proctree: parse ps, walk the parent chain to a Claude Code process; off in a test state dir unless FW_PROC_TREE=on', async () => {
+  const P = await import('../../tools/lib/proctree.mjs');
+  const table = P.parsePs([
+    '    1     0 /sbin/launchd',
+    '  700     1 /Applications/iTerm.app/Contents/MacOS/iTerm2',
+    ' 7457   700 claude',
+    ' 7500   700 node /opt/x/node_modules/@anthropic-ai/claude-code/cli.js --resume',
+    '14831  7457 /bin/zsh -c node tools/console.mjs thread wait --as lead',
+    '14833 14831 node tools/console.mjs thread wait --as lead',
+    '14900  7500 node tools/console.mjs thread wait --as fix-x',
+    '15056     1 node tools/console.mjs thread wait --as mgmt-desk-2 --monitor',
+    '16000   700 /bin/zsh',
+    '16001 16000 node tools/x.mjs --reason claude',
+    '',
+    'garbage line',
+  ].join('\n'));
+  assert.deepEqual(table.get(14833), { ppid: 14831, claude: false });
+  assert.equal(table.get(7457).claude, true, 'the native binary');
+  assert.equal(table.get(7500).claude, true, 'node running the claude-code package');
+  assert.equal(table.get(16001).claude, false, '"claude" as an argument is not Claude Code');
+  assert.equal(P.attachedTo(14833, table), true, 'node <- zsh <- claude');
+  assert.equal(P.attachedTo(14900, table), true);
+  assert.equal(P.attachedTo(15056, table), false, 'reparented to launchd: the desk case');
+  assert.equal(P.attachedTo(16001, table), false, 'a terminal shell, no Claude Code above');
+  assert.equal(P.attachedTo(424242, table), false, 'not in the table');
+  assert.equal(P.procCheckOn({ FW_STATE_DIR: '/t' }), false);
+  assert.equal(P.procCheckOn({ FW_STATE_DIR: '/t', FW_PROC_TREE: 'on' }), true);
+  assert.equal(P.procCheckOn({ FW_PROC_TREE: 'off' }), false);
+  assert.equal(P.procCheckOn({}), true);
+  assert.equal(P.attachedNow({ env: { FW_STATE_DIR: '/t' } }), null, 'off: no check (every live wait attached)');
+  assert.equal(P.attachedNow({ table })(15056), false, 'an injected table is always used');
+  assert.equal(P.procTable({ run: () => { throw new Error('no ps'); } }), null, 'ps fails: null, never throws');
+});
+
+test('I-163: a nohup\'d thread wait whose shell exits is reparented to launchd and reads as an orphan (real ps)', async () => {
+  const P = await import('../../tools/lib/proctree.mjs');
+  const tool = new URL('../../tools/console.mjs', import.meta.url).pathname;
+  const env = { ...cleanEnv(), FW_STATE_DIR: process.env.FW_STATE_DIR };
+  const r = spawnSync('sh', ['-c', `nohup "${process.execPath}" "${tool}" thread wait --as desk-nohup --monitor --timeout 30 >/dev/null 2>&1 & echo $!`], { env, encoding: 'utf8' });
+  const pid = Number(r.stdout.trim());
+  assert.ok(pid > 1, `started: ${r.stdout} ${r.stderr}`);
+  try {
+    const W = await import('../../tools/lib/waits.mjs');
+    let w;
+    for (let i = 0; i < 100 && !w; i++) { w = W.listWaits().find((x) => x.owner === 'desk-nohup'); if (!w) await new Promise((res) => setTimeout(res, 100)); }
+    assert.ok(w, 'the wait registered');
+    assert.equal(w.pid, pid);
+    const table = P.procTable();
+    assert.ok(table, 'ps runs');
+    assert.equal(table.get(pid)?.ppid, 1, 'reparented to launchd once its shell exited (macOS)');
+    assert.equal(P.attachedTo(pid, table), false);
+    assert.equal(P.attachedNow({ env: { FW_PROC_TREE: 'on', FW_STATE_DIR: '/t' }, now: Date.now() + 1e9 })(pid), false, 'the live check agrees');
+    assert.deepEqual(RT.listeningState({ threads: [], attached: (p) => P.attachedTo(p, table) })('desk-nohup'), { listening: false, how: 'owner ended (orphan wait)' });
+  } finally { try { process.kill(pid); } catch {} }
 });

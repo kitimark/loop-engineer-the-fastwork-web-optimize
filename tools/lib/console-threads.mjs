@@ -52,7 +52,7 @@ import { redact } from './redact.mjs';
 import { lanAddress } from './lan.mjs';
 import { sniffMedia, sniffBytes, MEDIA_TYPES, LIMITS as PROPOSAL_LIMITS } from './proposal.mjs';
 import { normAnchor, anchorView, itemText as anchorItemText, plainLine } from './console-comments.mjs';
-import { routeOwner, routeContext, listeningState, listeningFn, getDesk, LISTEN_MIN, TRIAGE_ESCALATE_MIN } from './thread-routing.mjs'; // T-050
+import { routeOwner, routeContext, listeningState, listeningFn, getDesk, loadBusy, LISTEN_MIN, TRIAGE_ESCALATE_MIN } from './thread-routing.mjs'; // T-050, I-164
 import { titleSimilar } from './finding.mjs'; // T-024 #13: the same cheap word-overlap check as `finding.mjs post`
 
 export const STATUSES = ['open', 'closed'];
@@ -463,25 +463,44 @@ function seenHistory(t, upTo) {
 
 // ---- T-050 routing (thread-routing.mjs): a user message goes to a listening owner --------------------------
 
-/** The router's context with a listening test, read before taking the guard; null when it can't be read. */
+/** The router's context with a listening and a busy test (I-164), read before taking the guard; null when it can't be read. */
 async function routing() {
-  try { return { ...(await routeContext()), listening: listeningFn({ threads: listThreads() }) }; } catch { return null; }
+  try { return { ...(await routeContext()), listening: listeningFn({ threads: listThreads() }), busy: (await loadBusy())() }; } catch { return null; }
+}
+/** I-164: the agent whose question the user's message `m` answers (the agent message right before it has --ask), or null. */
+function askedBy(t, m) {
+  for (let i = t.messages.indexOf(m) - 1; i >= 0; i--) {
+    const x = t.messages[i];
+    if (x.by === USER) return null;
+    return x.ask ? x.by : null;
+  }
+  return null;
 }
 /**
- * When no assignee of `t` is listening: assign the first listening owner (routeOwner) and record it as
- * {who: 'router', action: 'assign', note: "<agent> (<why>)"}; former assignees stay. Nobody: the lead's triage wakes.
+ * The user's message `m` (the thread's last) just arrived. I-164: a busy assignee (thread-routing busyState) gets it as a
+ * non-waking FYI (m.later: its listener wakes on it once its step ends), unless it answers that assignee's own question.
+ * When no assignee is listening and free: assign the first listening, free owner (routeOwner) and record it as
+ * {who: 'router', action: 'assign', note: "<agent> (<why>[; <busy> busy: <why>])"}; former assignees stay. Nobody: the
+ * lead's triage wakes.
  */
 function route(t, now, rc) {
   if (!rc) return null;
   try {
-    if (t.assignees.some((a) => rc.listening(a))) return null;
-    const r = routeOwner(t, rc);
+    const m = t.messages.at(-1);
+    const asked = m ? askedBy(t, m) : null;
+    const busyWhy = new Map();
+    for (const a of t.assignees) { const b = rc.busy ? rc.busy(a) : null; if (b?.busy && a !== asked) busyWhy.set(a, b.why); }
+    if (m && m.by === USER && busyWhy.size) m.later = [...busyWhy.keys()];
+    const free = (a) => rc.listening(a) && !busyWhy.has(a) && !(a !== asked && rc.busy?.(a)?.busy);
+    if (t.assignees.some(free)) return null;
+    const r = routeOwner(t, { ...rc, listening: free });
     if (!r) return null;
     if (!t.assignees.includes(r.owner)) {
       if (t.assignees.length >= LIMITS.assignees) return null;
       t.assignees.push(r.owner);
     }
-    t.history.push({ at: now, who: 'router', action: 'assign', note: scrubAgentText(oneLine(`${r.owner} (${r.why})`)).text.slice(0, LIMITS.note) });
+    const why = [r.why, ...[...busyWhy].map(([a, w]) => `${a} busy: ${w}`)].join('; ');
+    t.history.push({ at: now, who: 'router', action: 'assign', note: scrubAgentText(oneLine(`${r.owner} (${why})`)).text.slice(0, LIMITS.note) });
     return r;
   } catch { return null; }
 }
@@ -826,12 +845,12 @@ export function similarThread({ title, topic }, threads = listThreads()) {
  * unread user message in a thread it sees (with --thread: that thread, followed or not); never when that thread is
  * closed. detail: [{id, title, topic, messages: [{n, at, by, text}]}] (JSON). After MET the caller runs commitWait.
  */
-export function threadWaitCondition({ as, thread, triage = false, now } = {}) {
+export function threadWaitCondition({ as, thread, triage = false, now, busy = null } = {}) {
   const reader = needAgent(as, '--as <agent>');
   if (triage) {
     if (reader !== LEAD) throw new Error('--triage is the lead\'s wait (--as lead); an owner waits with thread wait --as <you>');
     if (thread !== undefined) throw new Error('--triage watches every thread: leave out --thread');
-    return triageCondition(now);
+    return triageCondition(now, busy);
   }
   const tid = thread !== undefined ? parseThreadId(thread) : undefined;
   if (tid) getThread(tid); // exists?
@@ -840,10 +859,15 @@ export function threadWaitCondition({ as, thread, triage = false, now } = {}) {
     const ts = tid ? [getThread(tid)] : listThreads();
     if (tid && ts[0].merged) return { met: false, state: 'merged', never: `${tid} was merged into ${ts[0].merged.into}: wait on that one (or without --thread)` };
     const news = [];
+    let busyNow;
+    const fyi = (m) => !tid && Array.isArray(m.later) && m.later.includes(reader);
+    // I-164: a listener (no --thread) does not wake on an FYI while its reader is busy; any other message brings the
+    // FYIs along (the read mark moves past them). `busy`: thread-routing loadBusy() (none given: FYIs wake as before)
+    const quiet = (m) => fyi(m) && !!busy && (busyNow ||= busy())(reader).busy;
     for (const t of ts) {
       const mark = t.reads?.[reader] || 0;
       const msgs = tid ? t.messages.filter((m) => m.by === USER && m.n > mark) : unreadFor(t, reader);
-      if (msgs.length) news.push({ id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), ...(t.anchor && { anchor: anchorView(t.anchor) }), state: threadState(t), messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.via && { via: m.via }), ...(m.images?.length && { images: fileImages(t, m) }) })) });
+      if (msgs.length && !msgs.every(quiet)) news.push({ id: t.id, title: t.title, ...(t.topic && { topic: t.topic }), ...(t.anchor && { anchor: anchorView(t.anchor) }), state: threadState(t), messages: msgs.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(fyi(m) && { fyi: true }), ...(m.via && { via: m.via }), ...(m.images?.length && { images: fileImages(t, m) }) })) });
     }
     if (news.length) return { met: true, state: `${news.length} thread(s) with news`, detail: JSON.stringify(news) };
     if (tid && ts[0].status === 'closed') return { met: false, state: 'closed', never: `${tid} was closed` };
@@ -862,17 +886,20 @@ export function threadWaitCondition({ as, thread, triage = false, now } = {}) {
  * `histTo` (the history length seen) moves the escalation mark, so an escalation made after the check still wakes.
  * `now`: () => ms, for tests.
  */
-function triageCondition(nowFn) {
+function triageCondition(nowFn, busy = null) {
   const what = 'threads that need the lead (triage)';
   const check = () => {
     const now = nowFn ? nowFn() : Date.now();
     const ts = listThreads();
     const ls = listeningState({ now, threads: ts });
+    const bs = busy ? busy({ now }) : null; // I-164: a busy owner is not the one to answer
     const news = [];
     for (const t of ts) {
       const mark = t.reads?.[LEAD] || 0;
       const histSeen = t.histSeen?.[LEAD] || 0;
-      const owners = t.assignees.filter((a) => ls(a).listening);
+      const heard = t.assignees.filter((a) => ls(a).listening);
+      const busyOnes = bs ? heard.filter((a) => bs(a).busy) : [];
+      const owners = heard.filter((a) => !busyOnes.includes(a));
       const why = [], msgs = [];
       let pending = Infinity;
       const printed = new Set(t.triaged || []); // printed by an earlier triage wake while an older timer still ran
@@ -882,8 +909,13 @@ function triageCondition(nowFn) {
         let r = null;
         if (m.forLead) r = 'for the lead';
         else if (answered) continue;
-        else if (!owners.length) r = t.assignees.length ? `nobody listening (assigned: ${t.assignees.join(', ')})` : 'nobody listening';
-        else if (now - Date.parse(m.at) >= TRIAGE_ESCALATE_MIN * 60000) r = `unanswered ${TRIAGE_ESCALATE_MIN} min (owner: ${owners.join(', ')})`;
+        else {
+          // I-164: a busy owner still answers the user's reply to its own question (--ask)
+          const asked = busyOnes.length ? askedBy(t, m) : null;
+          const mine = busyOnes.includes(asked) ? [...owners, asked] : owners;
+          if (!mine.length) r = busyOnes.length ? `nobody free (${busyOnes.map((a) => `${a} busy: ${bs(a).why}`).join('; ')})` : t.assignees.length ? `nobody listening (assigned: ${t.assignees.join(', ')})` : 'nobody listening';
+          else if (now - Date.parse(m.at) >= TRIAGE_ESCALATE_MIN * 60000) r = `unanswered ${TRIAGE_ESCALATE_MIN} min (owner: ${mine.join(', ')})`;
+        }
         if (!r) { pending = Math.min(pending, m.n); continue; }
         msgs.push(m);
         why.push(`#${m.n} ${r}`);
@@ -928,12 +960,15 @@ export function anchorLine(a) {
   return `(comment on ${anchorItemText(v)}${v.url ? ` (${v.url})` : ''}${v.quote ? `: "${plainLine(v.quote)}"` : ''})`;
 }
 
+/** I-164: how a wake names an FYI (a user message sent while the reader was busy; the router gave it to the desk or the lead). */
+export const FYI_TEXT = 'FYI: sent while you were busy; the desk or the lead answered';
+
 /** The NEW block `thread wait` prints for one thread. */
 export function newsText(t, reader) {
   const L = [];
   if (t.why?.length) L.push(`TRIAGE ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''}: ${t.why.map(oneLine).join('; ')}`); // T-050
   for (const m of t.messages) {
-    L.push(`NEW ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''} #${m.n} by ${m.by}${m.forLead ? ' (for the lead)' : ''}${m.via ? ` (written in ${m.via}, merged here)` : ''} at ${m.at}:`);
+    L.push(`NEW ${t.id} "${oneLine(t.title)}"${t.topic ? ` [${t.topic}]` : ''} #${m.n} by ${m.by}${m.forLead ? ' (for the lead)' : ''}${m.fyi ? ` (${FYI_TEXT})` : ''}${m.via ? ` (written in ${m.via}, merged here)` : ''} at ${m.at}:`);
     if (m === t.messages[0] && t.anchor) L.push(`  ${anchorLine(t.anchor)}`); // I-090: what the comment is about
     if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) L.push(`  ${l}`);
     (m.images || []).forEach((x, i) => L.push(`  ${imagesLine(x, i)}`)); // I-089: the user's pictures, to open with Read
@@ -960,7 +995,7 @@ export function wakeLines(t) {
   }
   const kind = t.why?.length ? 'triage' : 'new';
   const L = (t.messages || []).map((m) => {
-    const why = reason.get(m.n) || (m.forLead ? 'for the lead' : '');
+    const why = reason.get(m.n) || (m.forLead ? 'for the lead' : m.fyi ? FYI_TEXT : '');
     const imgs = m.images?.length ? `[${m.images.length} image${m.images.length > 1 ? 's' : ''}]` : '';
     const text = [oneLine(m.text), imgs].filter(Boolean).join(' ');
     return `WAKE ${kind} ${t.id} #${m.n} by ${oneLine(m.by)}${why ? ` (${why})` : ''}: ${wakeShort(text)}`;

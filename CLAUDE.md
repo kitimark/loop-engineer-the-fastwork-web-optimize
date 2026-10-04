@@ -375,7 +375,8 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   fixes/PROGRESS.json or are ready to resume (red on /status); the lead runs `status.mjs sync --by lead` after landing.
   Read-time, no writes (I-152): a ready-to-land row whose branch head is on main reads "landed on main (from git)";
   an active row whose owner's run ended with a hand-back says "owner ended" (from Claude Code's transcripts, OBSERVED
-  format) unless it has a live wait, and the thread router counts it as listening only through a live wait.
+  format) unless it has a live wait; a wait whose parent chain no longer reaches a live Claude Code process (its shell
+  or Monitor task is gone) reads "owner ended (orphan wait)" (I-163, `tools/lib/proctree.mjs`).
 - **Threads** (`console.mjs thread`, console `/threads`): the user's questions, one thread per topic. The lead keeps
   `node tools/console.mjs thread wait --as lead --triage --timeout 3600` armed in the background (re-arm after each
   wake). It wakes only for a message nobody listening owns, one the user ticked "For the lead", an escalation, a user
@@ -385,7 +386,11 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   `thread wait --as <you>` armed**: the router (T-050) gives a user message whose assignees are not listening to the
   first listening one of the commented item's owner, the lead's topic map (`thread topic set <tag> --owner <agent>
   --by lead`), the status-board owner, the desk (`thread desk set <agent> --by lead`); listening = a live thread wait,
-  or a read or reply in the last 5 min. Answer in the thread, not in chat; hand a decision to the lead with
+  or a read or reply in the last 5 min; an orphan wait counts for neither (I-163; the lead exempt), a transcript's
+  hand-back is no routing rule (agents between turns keep listening). A **busy** owner (a status row implementing,
+  testing or measuring, or holding chrome-measure/iphone; I-164, memory "busy-workers-answer-later") is skipped: the
+  message goes to the next free listener or the lead, and reaches the owner as a non-waking FYI that wakes its listener
+  once its step ends; the user's answer to its own `--ask` and proposal decisions still wake it. Answer in the thread, not in chat; hand a decision to the lead with
   `thread escalate <id> --by <you> --note "…"`. Questions on a proposal (T-048) reach its author: `proposal talk <id>`
   shows them, `thread reply` answers. Others are refused. The user's thread text is printed as typed: never copy it
   into committed files unscrubbed (Hard rule 12). For phone links in a thread write `http://lan:<port>/` (never the

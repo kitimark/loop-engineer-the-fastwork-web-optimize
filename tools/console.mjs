@@ -377,7 +377,7 @@ async function thread() {
     return 0;
   }
   if (sub === 'wait') {
-    const w = TH.threadWaitCondition({ as: as(), thread: opt('thread'), triage: flag('triage') });
+    const w = TH.threadWaitCondition({ as: as(), thread: opt('thread'), triage: flag('triage'), busy: await RT.loadBusy() }); // I-164: busy owners
     const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
     if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
     // I-045: without --thread the wait also wakes on proposal decision events (a decision, an undo, a changed decision):
