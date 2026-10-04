@@ -9,7 +9,7 @@ import { test, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, tool, freePort, startServe, startProc, request, TESTS } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, freePort, startServe, startProc, request, sleep, TESTS } from '../helpers.mjs';
 import { makeFixtureHome } from '../fixtures/baseline.mjs';
 
 const IPHONE = tool('iphone.mjs'), LOCK = tool('lock.mjs');
@@ -339,6 +339,60 @@ test('I-060: a phone run marks the lease with what it runs (from --label, or --d
   r = iphone('scroll', '--owner', 'me', '--label', 'patched');
   assert.equal(r.code, 1, r.out);
   assert.equal(leaseFile().meta.run, undefined);
+});
+
+// I-141 (C-045 / C-046: a 45 s finger recording lost whole when its one final read timed out)
+async function recordWith(control, { seconds = 4, after = 1500, extra = [] } = {}) {
+  const phone = await fakePhone(['--page']);
+  node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env });
+  const out = join(tempDir('fw-iphone-out-'), 'rec.json');
+  const p = await startProc(process.execPath, [IPHONE, 'record', '--owner', 'me', '--seconds', String(seconds), '--poll', '1', '--out', out, ...extra],
+    { env: { ...phone.env, FW_RECORD_READ_MS: '800' }, ready: (s) => /^RECORDING/m.test(s), timeout: 30000 });
+  procs.push(p);
+  await sleep(after);
+  if (control) assert.equal((await request(`http://127.0.0.1:${phone.port}${control}`)).text, 'ok');
+  const x = await p.exited;
+  return { code: x.code, out: p.stdout() + p.stderr(), stdout: p.stdout(), rec: existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : null, phone };
+}
+
+test('I-141: record polls (--poll 1) and saves; a page that stops answering and leaves the tab list ends as PARTIAL (exit 6) with the frames so far and a diag', async () => {
+  const r = await recordWith('/__fake/stall?ms=30000&unlist=1');
+  assert.equal(r.code, 6, r.out);
+  assert.match(r.stdout, /^PARTIAL saved \S+rec\.json: a poll \d+(\.\d)? s into the run failed \(Runtime\.evaluate timed out after 800ms/m);
+  assert.equal(r.rec.partial, true);
+  assert.ok(r.rec.frames.length > 20, `frames up to the last poll: ${r.rec.frames.length}`);
+  assert.ok(r.rec.stream.polls >= 1);
+  assert.deepEqual(r.rec.summary.all.frames, r.rec.frames.length, 'the summary covers the partial frames');
+  assert.equal(r.rec.meta.owner, 'me');
+  const [d] = r.rec.diag;
+  assert.equal(d.phase, 'poll');
+  assert.deepEqual(d.tabs, [], 'the proxy listed no tab');
+  assert.equal(d.reconnect.ok, false);
+  assert.match(d.reconnect.error, /BLOCKED: cannot reach Safari tab/);
+});
+
+test('I-141: the tab navigated away (a link): its target is destroyed; one reconnect sees the new page without the logger; PARTIAL with where it went', async () => {
+  const r = await recordWith(`/__fake/navigate?url=${encodeURIComponent('http://127.0.0.1:9/next')}`);
+  assert.equal(r.code, 6, r.out);
+  assert.equal(r.rec.partial, true);
+  assert.ok(r.rec.targetEvents.some((e) => e.event === 'targetDestroyed'), JSON.stringify(r.rec.targetEvents));
+  const [d] = r.rec.diag;
+  assert.deepEqual([d.reconnect.ok, d.reconnect.href, d.reconnect.logger, d.reconnect.sameDocument], [true, 'http://127.0.0.1:9/next', false, false]);
+  assert.match(r.rec.reason, /after a reconnect the tab shows http:\/\/127\.0\.0\.1:9\/next \(visible\) without this run's logger/);
+});
+
+test('I-141: a short stall: the failed poll reconnects once, finds the logger and the run goes on (recovered, exit 0, the final read is whole)', async () => {
+  const r = await recordWith('/__fake/stall?ms=2000', { seconds: 6 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^saved \S+rec\.json$/m);
+  assert.equal(r.rec.partial, undefined);
+  assert.equal(r.rec.recovered, true);
+  assert.equal(r.rec.diag.length, 1);
+  assert.equal(r.rec.diag[0].reconnect.sameDocument, true);
+  assert.ok(r.rec.frames.length > 200, `every frame of the run: ${r.rec.frames.length}`);
+  assert.equal(r.rec.stop, true, 'the old final read\'s record');
+  const evs = r.phone.events().filter((e) => e.evaluate && e.evaluate.includes('window.__fr.stop = true'));
+  assert.equal(evs.length, 1, 'one final read');
 });
 
 test('I-070 (C-024): scroll / record / run / gesture keep the Mac awake for their own lifetime (caffeinate -i -s -w <own pid>), gone after; status, open, park, a dry-run gesture and a refused run (no lease) do not', async () => {

@@ -15,6 +15,13 @@
 //   node tools/iphone.mjs record --owner <topic> [--seconds 25] [--label finger-patched]   # human scrolls meanwhile
 //        # in the background with output to a log; `node tools/wait.mjs file <log> --match '^RECORDING' --pid <pid>`
 //        # exits the moment it records (tell the lead then), NEVER (exit 4) if record failed first
+//        # I-141 (C-045/C-046: a 45 s recording lost whole when its one final read timed out): [--poll 5] copies the new
+//        # frames every 5 s (0.2 Hz; 1-60, 0 = no polls) and rewrites the file each time as `partial: true` (in progress);
+//        # the final read is unchanged and authoritative. A failed read records `diag` (error, proxy close, Target
+//        # events, the tab list LAN-safe) and reconnects ONCE to the recording's host (location.href, visibilityState,
+//        # logger still there?); logger there: it goes on (`recovered`); else it writes the frames so far with
+//        # `partial: true, reason` and prints `PARTIAL saved <file>: <reason>`, exit 6. MEASUREMENT CODE: the polls are
+//        # new in-page work (lib/iphone-record.mjs); --poll 0 reproduces the old sequence. FW_RECORD_READ_MS: read timeout.
 //   node tools/iphone.mjs park --owner <topic>                    # Safari to about:blank: after every block (I-047)
 //   node tools/iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]   # battery log (I-075; no lease, no page):
 //        # one JSON line per idevicediagnostics read (BATTERY_KEYS only), every --every s for --seconds (lib/iphone-battery.mjs)
@@ -62,7 +69,7 @@
 //   node tools/iphone.mjs run --driver scroll|window|morph --probe std --owner <topic> [--label l] ...   (run --help)
 // one reload + settle + driver run with the standard probe (per-frame log, uncapped mutation counts by type,
 // crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
 import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold } from './lib/lock.mjs';
@@ -71,13 +78,16 @@ import { runnerRefusal } from './lib/phone-step.mjs';
 import { parseJob, phoneRunText } from './lib/hold-job.mjs';
 import { basename, extname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
-import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord } from './lib/iphone-url.mjs';
+import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord, lanSafeText } from './lib/iphone-url.mjs';
 import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
+import { RECORD_JS, recordSummary, recordRun, parsePoll, EXIT_PARTIAL } from './lib/iphone-record.mjs';
+
+let exitCode = 0; // I-141: record exits 6 PARTIAL when it saved only part of a run
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--ignore-step', '--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every'];
+const VALUED = ['--ignore-step', '--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every', '--poll'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -289,24 +299,25 @@ async function main() {
     const owner = leaseAndMark();
     const mac = measureGuard(owner);
     const secs = Number(opt('seconds', 25));
-    const c = await openTab(() => true);
-    await c.evaluate(`(() => { const r = window.__fr = {frames: [], href: location.href, vw: innerWidth, vh0: innerHeight}; let last = performance.now();
-      const loop = (t) => { r.frames.push([Math.round(t * 10) / 10, Math.round((t - last) * 10) / 10, Math.round(scrollY), innerHeight]); last = t; if (!r.stop) requestAnimationFrame(loop); };
-      requestAnimationFrame(loop); return 'ok'; })()`);
-    console.log(`RECORDING ${secs} s on ${await c.evaluate('location.href')} - the human should scroll now (top to bottom, then push past the end)`);
-    await sleep(secs * 1000);
-    const res = JSON.parse(await c.evaluate('(() => { window.__fr.stop = true; return JSON.stringify(window.__fr); })()'));
-    c.close();
-    const moving = res.frames.filter((f, i) => i > 0 && f[2] !== res.frames[i - 1][2]).map((f) => f[1]);
-    const all = res.frames.map((f) => f[1]);
-    const sum = (f) => ({ frames: f.length, gt20: f.filter((x) => x > 20).length, gt34: f.filter((x) => x > 34).length, gt50: f.filter((x) => x > 50).length, gt100: f.filter((x) => x > 100).length, max: Math.max(0, ...f) });
-    res.summary = { all: sum(all), whileScrollYChanges: sum(moving), innerHeightChanges: new Set(res.frames.map((f) => f[3])).size - 1 };
-    res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', 'finger'), seconds: secs, date: new Date().toISOString() };
-    res.mac = phoneMacRecord(mac); // I-056: shared jobs and load1 on the Mac at start and end
+    const pollSec = parsePoll(opt('poll')); // I-141: save as it goes (lib/iphone-record.mjs); 0 = the old single final read
     const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-${opt('label', 'finger')}-${Date.now()}.json`)));
     mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)
-    console.log(JSON.stringify(res.summary, null, 1));
+    const save = async (res) => { // the record as the old code built it; atomic, so a reader never sees half a file
+      res.summary = recordSummary(res);
+      res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', 'finger'), seconds: secs, date: new Date().toISOString() };
+      res.mac = phoneMacRecord(mac); // I-056: shared jobs and load1 on the Mac at start and end
+      writeFileSync(`${out}.${process.pid}.tmp`, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)
+      renameSync(`${out}.${process.pid}.tmp`, out);
+    };
+    const c = await openTab(() => true);
+    await c.evaluate(RECORD_JS);
+    const href = await c.evaluate('location.href');
+    console.log(`RECORDING ${secs} s on ${href} - the human should scroll now (top to bottom, then push past the end)`);
+    const readMs = Number(process.env.FW_RECORD_READ_MS || 15000);
+    const r = await recordRun({ c, seconds: secs, href, pollSec, readMs, save, sleep, listTabs: tabs, reconnect: (host) => openTab(host, { tries: 2 }) });
+    await save(r.rec);
+    console.log(JSON.stringify(r.rec.summary, null, 1));
+    if (r.partial) { exitCode = EXIT_PARTIAL; console.log(`PARTIAL saved ${out}: ${lanSafeText(r.reason)} (${r.rec.frames.length} frames; diag in the file; incident I-141)`); return; }
     console.log(`saved ${out}`);
     return;
   }
@@ -330,6 +341,6 @@ async function main() {
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
-main().then(async () => { await clearMark(); process.exit(0); }, async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });
+main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });
