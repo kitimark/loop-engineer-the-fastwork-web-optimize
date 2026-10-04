@@ -136,6 +136,18 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
 
 ### Snap (WebKit and the spec)
 
+- **User review of rev 3 (2026-10-04, changes requested).** With B on the phone, every flick on the whole page coasted
+  much less. The cause is CONFIRMED in WebKit's source (main 63c4e68):
+  - `RemoteScrollingCoordinatorProxyIOS::shouldSetScrollViewDecelerationRateFast()` is true as soon as the root
+    scrolling node has any snap offsets (RemoteScrollingCoordinatorProxyIOS.mm l.645-648, 676-683);
+  - WKWebViewIOS.mm then sets `UIScrollViewDecelerationRateFast` on the page's scroll view.
+  - So the root `scroll-snap-type` (with any snap point) costs momentum on the whole page, not only at the end
+    (finding posted, pitfall).
+- The user also saw the half-open rest (below) and wants the page to decide, open or closed, while the follow-the-finger
+  opening stays.
+- Rev 4 plan: no root snapping. On scrollend with 0 < p < 1, script settles to the nearer end, taking the last scroll
+  direction into account. Check with the G driver (WDA flicks, slow drags, release half open) before the user sees it.
+
 - Proximity is UA-defined in the spec: "the scroll container may snap … at the discretion of the UA" (CSS Scroll Snap
   1, `scroll-snap-type: proximity`, https://drafts.csswg.org/css-scroll-snap-1/). The spec also says programmatic
   scrolls such as `scrollTo()` are snapped.
