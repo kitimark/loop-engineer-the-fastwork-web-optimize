@@ -10,6 +10,9 @@
 //   C  v8-best (3e3e94cb6e9f / f836404b3728), V  v8 + nav-hit-cache + scroll-cb carried by int-v8 (e8d8323f674b / f836404b3728),
 //   read-only copies in out/snapshots/{v8,nsc}-<js>; `node fixes/scroll-cb-phone/build.mjs --import-v8 <int-v8 out/nsc/snap>`
 //   copies them in after checking every file's full sha256 against V8_FULL below.
+// SCB_SET=v9 (int-v8's v9 step 3 check): C = v9 step 2 (v8 + rev 7c + double-drive, no scroll-cb; ab6f1062aaeb /
+//   40037dc99f11), V = v9 step 3 (C + scroll-cb-on-v8dd.diff 7b4a7ee04d85; 25dc3025f1a0 / 40037dc99f11);
+//   `--import-v9 <int-v8 out/v9/snap-ab6f1062aaeb/V> <int-v8 out/v9/snap-25dc3025f1a0/V>`.
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -38,6 +41,12 @@ const V8_FULL = {
   S: { [JS]: '4c48e372ecdd6cdf93c25f6b0adc2617c77ab0ed71b4be823bd37492db591dec', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
 };
 const V8_DIR = { C: join(SNAP, 'v8-3e3e94cb6e9f'), V: join(SNAP, 'nsc-e8d8323f674b'), N: join(SNAP, 'nav-fd3688901f50'), S: join(SNAP, 'scbv8-4c48e372ecdd') };
+const V9_CSS = '40037dc99f115b89b63114f6a95ea8401a7f938f6e4307057dfd52dcf8ab0b79';
+const V9_FULL = {
+  C: { [JS]: 'ab6f1062aaeb03b4f3b71056e9c0bf17379b1bd7568fc9e26b73eb2d7bc44964', [CSS]: V9_CSS },
+  V: { [JS]: '25dc3025f1a0ca5b3313ab3fa8dadebeb898903473f10f145d67ac7c254a8205', [CSS]: V9_CSS },
+};
+const V9_DIR = { C: join(SNAP, 'v9s2-ab6f1062aaeb'), V: join(SNAP, 'v9s3-25dc3025f1a0') };
 const full = (b) => createHash('sha256').update(b).digest('hex');
 
 function v8Arms(log) {
@@ -52,6 +61,30 @@ function v8Arms(log) {
   }
   for (const [k, a] of Object.entries(arms)) log(`${k.padEnd(3)} js ${a.js} css ${a.css}  ${a.dir.replace(WT + '/', '')}  (SCB_SET=v8)`);
   return arms;
+}
+
+function v9Arms(log) {
+  const arms = {};
+  for (const k of Object.keys(V9_DIR)) {
+    for (const f of FILES) {
+      if (!existsSync(join(V9_DIR[k], f))) throw new Error(`${V9_DIR[k]}: missing ${f}; run --import-v9 <step2 dir> <step3 dir>`);
+      if (full(read(V9_DIR[k], f)) !== V9_FULL[k][f]) throw new Error(`${V9_DIR[k]}/${f}: not the pinned v9 arm ${k}`);
+    }
+    arms[k] = { dir: V9_DIR[k], js: V9_FULL[k][JS].slice(0, 12), css: V9_FULL[k][CSS].slice(0, 12) };
+  }
+  for (const [k, a] of Object.entries(arms)) log(`${k.padEnd(3)} js ${a.js} css ${a.css}  ${a.dir.replace(WT + '/', '')}  (SCB_SET=v9)`);
+  return arms;
+}
+
+function importV9(c, v) {
+  for (const [k, src] of [['C', c], ['V', v]]) {
+    const tree = {};
+    for (const f of FILES) {
+      tree[f] = read(src, f);
+      if (full(tree[f]) !== V9_FULL[k][f]) throw new Error(`${src}/${f}: sha256 ${full(tree[f])}, pinned ${V9_FULL[k][f]}`);
+    }
+    writeSnap(V9_DIR[k].split('/').pop(), tree);
+  }
 }
 
 // --import-arm N|S <js file>: the split arms, the JS as built (sha256-checked) + v8's CSS
@@ -92,7 +125,8 @@ function writeSnap(name, tree) {
 export function build({ quiet = false, expect = true } = {}) {
   const log = (...a) => quiet || console.log(...a);
   if (process.env.SCB_SET === 'v8') return v8Arms(log);
-  if (process.env.SCB_SET && process.env.SCB_SET !== 'best') throw new Error(`SCB_SET=${process.env.SCB_SET}: best or v8`);
+  if (process.env.SCB_SET === 'v9') return v9Arms(log);
+  if (process.env.SCB_SET && process.env.SCB_SET !== 'best') throw new Error(`SCB_SET=${process.env.SCB_SET}: best, v8 or v9`);
   if (!existsSync(join(C_DIR, JS))) throw new Error('best build snapshot missing: run node fixes/best-build/build.mjs --snapshot');
   const c = Object.fromEntries(FILES.map((f) => [f, read(C_DIR, f)]));
   if ([sha(c[JS]), sha(c[CSS])].join() !== PIN.C.join()) throw new Error(`C at ${C_DIR}: not the pinned best build`);
@@ -127,6 +161,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--diff')) regenDiff();
   const iv = process.argv.indexOf('--import-v8');
   if (iv > 0) importV8(process.argv[iv + 1]);
+  const i9 = process.argv.indexOf('--import-v9');
+  if (i9 > 0) importV9(process.argv[i9 + 1], process.argv[i9 + 2]);
   const ia = process.argv.indexOf('--import-arm');
   if (ia > 0) importArm(process.argv[ia + 1], process.argv[ia + 2]);
   build({ expect: !process.argv.includes('--no-expect') });

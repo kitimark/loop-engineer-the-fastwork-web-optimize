@@ -721,6 +721,50 @@ pins first), `build.mjs` ef50f44d629e. Reading: nav class-change steps per load 
 the N2/split lag is the rAF-step driver's (F-239), and the combined build passes parity under input-ordered scrolling;
 still late = a nav-hit-cache lag under input-ordered scrolling, for fix-nav-morph. scroll-cb's own elements are read too.
 
+**Task-mode result (21:16-21:31Z, PIN line run-task.sh 7b46b06cb798 / build.mjs ef50f44d629e / simcount 45175dbac676 /
+driver task; all 6 loads valid, served hashes match; `out/scroll-cb-phone/task/`).**
+
+- **The task driver jitters by ±1 step:** C2 vs C1 (both v8) = 20 diffs, and every element moves by one step somewhere.
+  The scorer therefore calls parity VOID (A/A 20 > N_vp 5). Under this driver, step-level parity cannot be read tighter
+  than ±1 step.
+- **The hero-pill flips show no nav-hit-cache lag:** off / on at C 63/992, 62/992; N 62/992, 63/991; V 62/991, 63/992.
+  All of these are inside v8's own spread. The rAF-mode lag (N2, split) does not appear when scrolls are ordered like
+  input. That fits F-239 (the rAF-step driver's artefact; OBSERVED, in our setup).
+- **scroll-cb's elements** (commission, future) are on C's steps within the same ±1 spread. The counts repeat rAF mode:
+  side rAF 2.270 -> 0.522, rects 3.527 -> 1.255. Guards all pass; renderingFrames d +0.050 = its tolerance 0.05.
+- **Two one-step flickers occur only in builds with nav-hit-cache (OBSERVED, cause unknown; for fix-nav-morph):**
+
+  | flicker | loads with it | loads without it |
+  |---|---|---|
+  | `.pain` `is-pain-dark` off, on, off at steps 964-966 (on the way up; v8 code line 12172, rule `top <= 0.5`) | N1, N2, V1 | C1, C2, V2; all 10 rAF-mode loads |
+  | nav `is-on-dark` drops for one step (413) and returns at 414 | V2 | the other 5 |
+
+  - The pain flicker is in N, which has no scroll-cb, so it is not scroll-cb's.
+  - The pain rule is a sub-pixel threshold, so a 1 px layout or scroll difference at that step is enough to flip it.
+
+## v9 step 3 count check (int-v8; pre-registered before any v9 load)
+
+int-v8 carried scroll-cb onto v8 + double-drive: `scroll-cb-on-v8dd.diff` 7b4a7ee04d85.
+- I reviewed it and rebuilt it here: v8 + dd delta baae6114cd65 = 3076c5a8c9a3, plus the carry = bf40f48acd24 /
+  2f7197880ffd.
+- Its +/- lines are the same multiset as `scroll-cb-on-v8.diff` 3abcd7008e61.
+- dd snaps its eased values under compact, so the gate cuts none of dd's easing frames.
+
+Arms (`SCB_SET=v9`, `build.mjs` d190003298c5, every file full-sha256-checked; imported from int-v8's read-only
+`out/v9/snap-*/V`):
+- C = v9 step 2 (v8 + rev 7c + double-drive, no scroll-cb): ab6f1062aaeb / 40037dc99f11.
+- V = v9 step 3 (C + the carry): 25dc3025f1a0 / 40037dc99f11.
+
+The run is one exclusive `--no-timing` Simulator hold with loads C1 V1 V2 C2. It uses the rAF driver, as in N2
+(simcount 45175dbac676), and `out/scroll-cb-phone/run-v9.sh` 92a72e6078ee, which prints its pins first.
+
+Reading, scored with `score-p108.mjs --aa-extra out/scroll-cb-phone/empty-aa`:
+- Side rAF and rects per step drop as on v8.
+- The guards pass.
+- Parity: V's class and deferral changes are on C's steps beyond A/A. v9 has no nav-hit-cache, so no nav lag is expected
+  under this driver.
+- Double-drive is provisional until its y 6000 probe. A new dd delta means new arms and a re-run.
+
 ## Risks, conflicts, follow-ups
 
 - Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
