@@ -1,0 +1,204 @@
+{
+ "topic": "gpu-preview",
+ "kind": "functional check",
+ "chromeMode": "headless",
+ "createdAt": "2026-10-04T05:45:28.768Z",
+ "git": {
+  "branch": "worktree-agent-a74be29a9cd8fc0a6",
+  "head": "cc9464da"
+ },
+ "config": {
+  "viewport": "both",
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty + fixes/best-build/overlay",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": "best-build",
+  "browser": "Chrome/154.0.8037.97",
+  "uaOverride": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "screenInfo": {
+   "width": 1512,
+   "height": 982,
+   "dpr": 2,
+   "arg": "--screen-info={0,0 3024x1964 devicePixelRatio=2}"
+  },
+  "lock": {
+   "mode": "reentrant-shared",
+   "weight": 1,
+   "maxSec": 300
+  }
+ },
+ "note": "functional only (headless Chrome): no timing; screenshot diffs compare headless with headless (research/architecture/headless-functional.md). Never a gain verdict: that is fix.mjs ab.",
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "source": "overlay",
+   "sha256": "d0f1017e692ddf242a004cfbc67d97ca0c11db416f5191ec17c355b6b7166725"
+  },
+  {
+   "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+   "source": "overlay",
+   "sha256": "c0c8ad4e36cb956808bf17986edbd66aab15457fdddf0660215418b81d16389b"
+  }
+ ],
+ "verdict": "ok",
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "newFailures": [],
+  "byViewport": {
+   "mobile": {
+    "newErrors": [],
+    "fixedErrors": [],
+    "errorsBothSides": [],
+    "new404s": [],
+    "newFailures": [],
+    "morphReached": {
+     "baseline": true,
+     "patched": true
+    },
+    "screenshotDiffPct": {
+     "top": 0.11,
+     "middle": 0,
+     "bottom": 0.22
+    },
+    "domDiff": {
+     "elements": {
+      "baseline": 1532,
+      "patched": 1580
+     },
+     "added": [
+      "span.cdwrap",
+      "span.cell",
+      "span.strip"
+     ],
+     "removed": []
+    }
+   },
+   "desktop": {
+    "newErrors": [],
+    "fixedErrors": [],
+    "errorsBothSides": [],
+    "new404s": [],
+    "newFailures": [],
+    "morphReached": {
+     "baseline": true,
+     "patched": true
+    },
+    "screenshotDiffPct": {
+     "top": 0.11,
+     "middle": 0,
+     "bottom": 0
+    },
+    "domDiff": {
+     "elements": {
+      "baseline": 1375,
+      "patched": 1423
+     },
+     "added": [
+      "span.cdwrap",
+      "span.cell",
+      "span.strip"
+     ],
+     "removed": []
+    }
+   }
+  }
+ },
+ "pages": [
+  {
+   "label": "base",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1532,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/mobile-base-top.png",
+    "middle": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/mobile-base-middle.png",
+    "bottom": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/mobile-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1580,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/mobile-fix-top.png",
+    "middle": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/mobile-fix-middle.png",
+    "bottom": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/mobile-fix-bottom.png"
+   }
+  },
+  {
+   "label": "base",
+   "viewport": "desktop",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1375,
+   "walk": {
+    "y": 8448,
+    "maxY": 8448,
+    "h": 9348,
+    "steps": 29
+   },
+   "shots": {
+    "top": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/desktop-base-top.png",
+    "middle": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/desktop-base-middle.png",
+    "bottom": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/desktop-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "desktop",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1423,
+   "walk": {
+    "y": 8448,
+    "maxY": 8448,
+    "h": 9348,
+    "steps": 29
+   },
+   "shots": {
+    "top": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/desktop-fix-top.png",
+    "middle": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/desktop-fix-middle.png",
+    "bottom": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/desktop-fix-bottom.png"
+   }
+  }
+ ],
+ "raw": "out/check/gpu-preview/2026-10-04T05-43-16-627Z/check-raw.json"
+}
