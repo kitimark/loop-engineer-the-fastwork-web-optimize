@@ -1032,6 +1032,43 @@ of it is built or measured as a variant.
 - The combined CSS differs in 3 hunks. None touches the strip, cdwrap or cell rules.
 - No conflict to name in the land request.
 
+## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
+
+```
+TICKET P-097 cd-roll-ca panel clock roll · less-work item (lead 10-03 12:2xZ, F3 handoff #1 in fixes/nav-morph/README.md
+  "Handoff"); id from mgmt-ops-10 (e51b686c, 10-04 07:2xZ). Registered here before any build or data; second read: ops.
+status: NOT STARTED. Starts only after cd-roll-ca (V9) lands; stacks on the landed sha (`fix.mjs combine --on`), its own
+  branch. countdown-faces (b) is a separate item on the same base; whichever starts second rebases on the first.
+build V10 = V9 + the panel clock (`.start-selling-morph-panel .waitlist-closing-countdown`, `.countdown.inverse`) on the
+  same per-cell Web Animations roll, gated to m in {0, 1} (no morph tween running). While 0 < m < 1 the panel keeps the
+  original rAF spring. A roll running when a tween starts is handed to the spring at its current value (one write, no
+  restart). Hero code path unchanged. Hashes (JS, CSS, patch) go into this ticket as an addendum before the first run.
+control: C = V9 as landed (panel on the spring); A/A = C vs C2 (a second load of C) for every count and pixel rule.
+why the gate: layered rolling cells repaint whole when the resizing panel moves them by a sub-pixel offset (the cdwc
+  mechanism, RenderLayerBacking, CONFIRMED in fixes/nav-morph/README.md), so a roll overlapping a tween could make
+  tween frames worse. The panel clock's layering is fix-nav-morph's cdwc rule: fix-nav-morph is told before any edit.
+no timing: counts and pixels only (memory "defer timing"); Chrome in shared probe slots, Simulator in shared
+  simulator slots. The less-work rule's short phone no-worse check is a separate ticket (new P-id) after P1-P5 pass.
+predictions (each scored C vs V against the C/C2 A/A):
+  P1 less work at the hold (m = 1, panel up, 4 s windows, Chrome 430x932 DPR 3): panel-countdown rAF callbacks
+     V <= 10 % of C (C expected ~100-130 per 4 s: ~30/s for half of each second, fix-nav-morph); style recalcs V < C.
+  P2 the m-gate holds: in a scripted pass through the morph tween (Chrome and Simulator), 0 running panel-cell
+     Web Animations in every frame with 0 < m < 1 (getAnimations census per frame), and panel rAF counts in tween
+     windows within C +/- the A/A spread.
+  P3 tween frames no worse (Simulator, WebKit Timeline counts): Paint records per tween frame V <= C + A/A; layer
+     count and backing during the tween V = C (any extra backed cell is reported, F-201).
+  P4 pixels: at rest (m = 1, between rolls) and with reduced motion: exact (T0) vs C in Chrome and the Simulator;
+     mid-roll frames at the hold: within T2 (PR-010 wide numbers: fill 64, edge 128, 0.5 %) in the Simulator; Chrome
+     mid-roll frames are reported with the five numbers (the hero showed edge 222, so a Chrome T2 miss is expected and
+     goes to the user as part of the panel's motion-difference decision, not as a pass).
+  P5 hand-off at tween start: the panel digit position jumps <= 0.5 CSS px in the first spring frame (roll-probe).
+outcome: all of P1-P5 -> a D card plus the user's decision (PR-017's land decision covers the hero clock only; the
+  panel needs a rev or a new proposal with Try-it). P1 miss -> dropped (no less work). P2/P3 miss -> fix the gate once,
+  re-register; a second miss parks the item. P4 T0 miss -> stop, report to the lead.
+voids: served JS/CSS hash != addendum; BASELINE-<STATE> other than ok; A/A over the P4 thresholds (the run is
+  A/A-limited and goes to the lead); countdown expiry 2026-11-02 05:00Z inside a run.
+```
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at
