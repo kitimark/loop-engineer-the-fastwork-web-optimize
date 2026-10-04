@@ -25,6 +25,16 @@ and Claude Code's safety check rightly blocks it (I-012). Use `lock.mjs doctor` 
 (dry-run by default, audited in `locks/audit.log`) and `incident.mjs`. If no subcommand covers the case,
 open an incident and have a toolsmith add one rather than editing the file.
 
+## The issue loop (user T-154 #11, 2026-10-04): the lead's first job in every user thread
+
+Every issue the user raises (a lag, a wrong display, a wait, an alarm, a tool or an agent misbehaving) gets the four
+steps of memory `lead-owns-issue-loop`, and the first answer reports all four under these names:
+**Cause** (from our records, logs, board and transcripts; never ask the user what data can show), **Which cases**
+(what is and is not hit, with numbers), **Workaround** (done now), **Long-term fix** (incident and toolsmith, a memory
+rule, or a role change, with its owner and id). Explaining the current state is not an answer to a raised problem. An
+area that keeps producing issues gets an owner agent (memory `lead-delegates-areas-measures`); the lead still answers
+with the four parts and names that owner.
+
 ## The loop
 
 ```mermaid
