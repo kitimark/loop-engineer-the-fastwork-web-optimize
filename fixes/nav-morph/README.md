@@ -639,3 +639,28 @@ Only frames where scrollY changed are counted. Script: `out/nav-morph/swipe/bin-
     restart;
   - V moved less in C-042 (280 vs 571 moving frames), so the per-100 column is the fair one.
 - Lead ruling: these logs settle the order question, so the BA swipe step is dropped. One hidden catch pair remains.
+
+## F3 hidden catch pair (C-044, 2026-10-04 09:30-09:42Z, lead ruling)
+
+- **Design.** The same build on both pages, picked by coin `crypto.randomInt(2)=1` → **V on both pages**, served on a
+  fresh port (I-131 interim rule) with `--no-cache`. Served hashes were checked before posting: JS 65052c4a3902, CSS
+  e0f92804c521. The arm stayed hidden until the answer. The correct answer is "same".
+- **Result: pass.** The user answered **"same"** (scale 2). The catch pair does not show a false preference, so C-042's
+  V pick stands as a real difference.
+- **The user's note (paraphrased).** They were not sure what to watch, and asked for more detail on the target in the
+  next blind test. They watched the nav bar and the hero card. The hero card still felt laggy, and the nav bar felt the
+  same on both pages.
+- **Logs (same bins as the two-order table, counted attempt 3).** frames > 50 ms:
+
+| C-044 (V / V) | F3 crossing | end of page | all, per 100 moving frames |
+|---|---|---|---|
+| page 1 / page 2 | 0 / 1 | 0 / 0 | 3.4 / 3.1 |
+
+- These numbers match C-042's V (3.9 per 100). V's remaining long frames sit at scrollY 0-1000 (26 of 49 in
+  500-750). That is the hero section, not the F3 crossing, which agrees with the user's "hero card still lags". The
+  hero card is outside F3's scope (it belongs to hero-exit-threaded).
+- **Start overs.** The user restarted twice (09:32:52Z and 09:35:22Z), each time about 5 s after pressing Done on page
+  2 and before answering. All six recordings are complete: each one scrolled to the bottom (max scrollY about 5270-5300)
+  with 3-9 direction turns. The recordings show no failed run. Together with the note, this reads as the user swiping
+  again to compare two pages that felt the same, which is expected on a catch pair. On attempt 3, page 1's recorder
+  started 61 s after Start (my delay; tries 1-2 took 13-19 s), and page 2's took 11 s.
