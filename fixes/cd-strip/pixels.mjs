@@ -54,6 +54,8 @@ async function openPage(cdp, inject) {
   await page.send('Emulation.setDeviceMetricsOverride', { width: Number(process.env.VW || 430), height: Number(process.env.VH || 932), deviceScaleFactor: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== '0' });
   await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+  // env RM=1 (PR-010 T2 "reduced motion exact", lead 2026-10-04): emulate prefers-reduced-motion: reduce in every arm
+  if (process.env.RM === '1') await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await page.send('Page.addScriptToEvaluateOnNewDocument', { source: inject });
   await page.send('Page.bringToFront');
   return page;
@@ -144,6 +146,8 @@ async function run(cdp, arm, url, dir, range) {
   let T = 5e6;
   const settle = async (r) => { T += 1e6; await tick(T, r); await step(T + 1e4); await pause(30); await step(T + 2e4); await pause(30); };
   const pos = await page.eval(POSITIONS); info.pos = pos;
+  info.reducedMotion = await page.eval(`matchMedia('(prefers-reduced-motion: reduce)').matches`);
+  if (process.env.RM === '1' && info.reducedMotion !== true) throw new Error(arm + ': RM=1 but the page does not match prefers-reduced-motion: reduce');
   for (const which of CLOCKS) for (const variant of VARIANTS[which]) {
     let clip;
     const vkey = variant === null ? which : `${which} v=${variant}`;
@@ -250,7 +254,7 @@ for (const arm of ARMS) { ranges[arm] = cdRange(arm); servers[arm] = await serve
 const ch = await launchChrome({ port: 0, profileDir: join(OUT, 'chrome-profile-pixels') });
 const cdp = await CDP.connect(ch.wsUrl);
 await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
-const res = { arms: ARMS, clocks: CLOCKS, viewport: { w: Number(process.env.VW || 430), h: Number(process.env.VH || 932), dpr: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== "0" }, ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
+const res = { arms: ARMS, clocks: CLOCKS, viewport: { w: Number(process.env.VW || 430), h: Number(process.env.VH || 932), dpr: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== "0" }, reducedMotion: process.env.RM === '1', ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
 const dir = join(OUT, `pixels-${STAMP}`); mkdirSync(dir, { recursive: true });
 const got = [];
 try {

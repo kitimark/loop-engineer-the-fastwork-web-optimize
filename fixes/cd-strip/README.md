@@ -17,8 +17,12 @@ user's finger test before landing (lead, T-029 #30). **Phone block P-079 done at
 layers; pin Layout not enough by the n rule, falsifier unreachable; ops second read PASS; the pin rows are void for
 the morph region after morph-inherit landed, the top, re-entry and backing results stand); section "Phone block P-079".
 **Finger swipe A/B (C-035): the user picked the control (st6-rb2), low confidence**; V's recordings show more > 50 ms
-frames at the hero in both tries (uncontrolled, fixed page order); section "Finger swipe A/B". Landing: the lead's decision.
-**Stage:** V (BUILD card strip-tc below; review round 3 ACCEPT-WITH-NOTES; phone block P-079 hit; finger test next). D: LOCATED, signed by the lead on the fast path
+frames at the hero in both tries (uncontrolled, fixed page order); section "Finger swipe A/B". **Lands on cost counts
+under the less-work rule (user T-055 #2, lead ruling T-055 #4)**: both versions feel smooth and hard to tell apart, keep
+the one that does less work; no more A/B; section "Finger A/B C-035 and the T-055 decision". **Reduced motion
+exact** in Chrome (0 of 575) and the Simulator (0 of 29); section "Reduced motion exact".
+**Stage:** L under the less-work rule (T-055; BUILD card strip-tc below; review round 3 ACCEPT-WITH-NOTES; phone block
+P-079 hit; finger A/B C-035 done, OBSERVED only). D: LOCATED, signed by the lead on the fast path
 (2026-10-03 01:1xZ, no gain claim: the frame effect is measured only in the phone block, so no segment card now)
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
 **Driver(s) behind the claims:** Simulator Timeline + LayerTree (counts only), Chrome and Simulator frozen-frame pixel
@@ -891,6 +895,42 @@ counts compare only within this pair):
 - This disagrees in direction with the scripted P-079 top window (W, no difference: median gt50 +0.5), and it is the
   first sign against strip-tc at the hero. Landing is the lead's decision.
 
+## Reduced motion exact (PR-010 T2 condition; lead 2026-10-04, 02:57-03:06Z)
+
+Frozen frames with prefers-reduced-motion: reduce, st6-rb2 vs strip-tc vs st6-rb2 again (A/A) in the same run, from
+the served, hash-checked bytes (st6-rb2 JS `7bf7c4657d21` CSS `f523598b2a24`; strip-tc JS `6fa0e1e8a221` CSS
+`982a747d9263`). Shared lane, counts only. Every arm's page read `matchMedia('(prefers-reduced-motion: reduce)')` true
+(the harnesses now record it and stop if it is false: `pixels.mjs` env `RM=1` sets CDP `Emulation.setEmulatedMedia`;
+`simpx.mjs` env `SIMPX_RM=1` checks a `sim.mjs session --reduce-motion on` session, I-100).
+
+| engine | passes | shots | strip-tc vs st6-rb2 | A/A | raw |
+|---|---|---|---|---|---|
+| Chrome 430x932@3 | hero (60 + 120 Hz, resume) + panel (m = 1) | 428 | **0** | 2: the panel background class (delta 1, 16059 px) | `out/cd-strip/pixels-2026-10-04T02-57-19-314Z.json` |
+| Chrome | herofade 0.25/0.5/0.75/0.9 + panelmid 0.25/0.5/0.75 | 147 (42 blank in every arm, see below) | **0** | 0 | `pixels-2026-10-04T03-01-02-897Z.json` |
+| Simulator (WebKit) | hero + panel (m = 1) + panelmid (m = 0.5) | 29 | **0** | 0 (and strip-tc vs the A/A arm 0) | `out/cd-strip/simpx/simpx-2026-10-04T03-04-06-648Z.json` |
+
+- **Verdict: exact** (T0 under reduced motion) in both engines, so the PR-010 T2 condition "reduced motion exact" holds.
+- Under reduced motion the hero clock does not fade on exit: its opacity stays 1 and it scrolls away with the page. So the
+  0.75 / 0.9 "fade" shots in Chrome are blank (the clock is above the viewport), in every arm alike, and the
+  Simulator's fade90 pass stopped "clock off screen" in every arm (RM3, `simpx-2026-10-04T03-01-41-632Z.json`, no
+  shots). It was re-run without the fade passes (RM3b, the row above). Chrome's fade 0.25 / 0.5 shots (clock fully
+  opaque, scrolled) are in the 0. Panel at m < 1: no blur under reduced motion (filter none), opacity as with motion.
+- Harness edits for this check, in `fixes/cd-strip/pixels.mjs` and `simpx.mjs` only: the reduced-motion switch and the
+  recorded media flag; nothing else changed. Scripts and logs: `out/cd-strip/rm1.sh`/`rm2.sh`/`rm3.sh` and `.log`
+  files (`rm3b.log` holds the re-run).
+
+## Finger A/B C-035 and the T-055 decision
+
+- The user (T-055 #2, 2026-10-04 02:53Z, paraphrased): both countdowns already feel smooth and are hard to tell apart;
+  keep the version that does less work and stop the A/Bs. The lead's ruling (T-055 #4): strip-tc lands on cost counts
+  (`memory/less-work-landing-rule.md`, 6a01e287).
+- The C-035 numbers above stay OBSERVED and confounded (C always first, V's swipes longer, no thermal read). They
+  are recorded, not used as the landing basis.
+- Landing basis: the cost counts (P-079 re-entry clock repaint 53.5 → 21, clock backing 48 → 16 layers; per-tick face
+  rebuild gone, section "What changed") plus P-079's no-worse top window (top frames no worse at real thermal Serious;
+  ops second read PASS).
+- Not run, by the ruling: no counterbalanced finger re-run, no G block.
+
 ## Next
 
 - Done: the user accepted PR-008 rev 2, land-strip-tc (09:31:49Z, final); strip-tc ported into the overlay, `patch.diff`
@@ -901,7 +941,10 @@ counts compare only within this pair):
 - Done since: ops' line check and GO (fdb3145; ports line 99d4914); attr079 Simulator retest on both arms (hash
   unchanged); phone block P-079 under B, hit (section "Phone block P-079"); ops second read PASS (row 9ab03c1).
 - Done since: the finger swipe A/B, C-035 (re-run of C-033): the user picked the control, low confidence.
-- Next: the lead's landing decision.
+- Done since: T-055, lands on cost counts under the less-work rule (section "Finger A/B C-035 and the T-055 decision").
+- Done since: reduced motion exact in Chrome and the Simulator (section "Reduced motion exact"); land request sent.
+- Next: the lead lands; then fix-cd-roll-ca and de-countdown restack on the landed sha (cd-roll-ca, then
+  countdown-faces, same T-055 basis).
 - Phone: the frame effect is measured only in the P-079 block (D was signed on the fast path with no gain claim, so no
   separate phone segment card now).
 - P-032 (fix-nav-morph) is re-registered on the strip build after the D card.

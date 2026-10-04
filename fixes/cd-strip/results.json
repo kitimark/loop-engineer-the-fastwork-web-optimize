@@ -704,5 +704,54 @@
    }
   },
   "note": "driver F, n = 1 session per arm per try; V higher > 50 ms per 1000 scrolling frames in both tries (18.7 vs 9.6, 8.3 vs 6.7), slow frames in the hero/countdown region; OBSERVED; confounds: fixed page order (C first), swipe counts differ, no thermal read; landing is the lead decision"
+ },
+ "landingBasis": {
+  "decision": "T-055 #2 (user, 2026-10-04T02:53Z) and T-055 #4 (lead ruling): lands on cost counts under the less-work rule (memory/less-work-landing-rule.md, 6a01e287); no more finger A/B",
+  "counts": "P-079 re-entry clock repaint 53.5 -> 21, clock backing 48 -> 16 layers; per-tick face rebuild gone",
+  "noWorse": "P-079 top window no worse at real thermal Serious (ops second read PASS)",
+  "fingerC035": "OBSERVED and confounded (fixed order, longer V swipes, no thermal read); recorded, not the landing basis",
+  "stage": "L (less-work rule, T-055); reduced motion exact (reducedMotionExact)"
+ },
+ "reducedMotionExact": {
+  "when": "2026-10-04T02:57Z-03:06Z",
+  "why": "PR-010 rev 3 T2 condition \"reduced motion exact\" (lead, before the land request)",
+  "served": {
+   "st6rb2": {
+    "js": "7bf7c4657d21",
+    "css": "f523598b2a24"
+   },
+   "stripTc": {
+    "js": "6fa0e1e8a221",
+    "css": "982a747d9263"
+   }
+  },
+  "chrome": {
+   "emulation": "Emulation.setEmulatedMedia prefers-reduced-motion: reduce (pixels.mjs RM=1)",
+   "heroPanel": {
+    "shots": 428,
+    "differ": 0,
+    "aa": "2 (panel background class, delta 1, 16059 px)",
+    "raw": "out/cd-strip/pixels-2026-10-04T02-57-19-314Z.json"
+   },
+   "fadePanelmid": {
+    "shots": 147,
+    "blankInEveryArm": 42,
+    "differ": 0,
+    "aa": 0,
+    "raw": "out/cd-strip/pixels-2026-10-04T03-01-02-897Z.json"
+   }
+  },
+  "simulator": {
+   "setting": "sim.mjs session --reduce-motion on (I-100), page matched reduce",
+   "heroPanelPanelmid": {
+    "shots": 29,
+    "differ": 0,
+    "aa": 0,
+    "raw": "out/cd-strip/simpx/simpx-2026-10-04T03-04-06-648Z.json"
+   },
+   "voidRun": "simpx-2026-10-04T03-01-41-632Z.json: fade90 clock off screen in every arm (no fade under reduced motion), no shots"
+  },
+  "verdict": "exact (T0) under reduced motion in both engines",
+  "note": "under reduced motion the hero clock does not fade on exit (opacity 1, scrolls away), so the 0.75/0.9 fade shots are blank in every arm; harness edits limited to the reduced-motion switch and flag"
  }
 }

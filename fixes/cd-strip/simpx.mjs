@@ -126,6 +126,9 @@ async function run(c, arm, range) {
   let T = 5e6;
   const settle = async (r) => { T += 1e6; await tick(T, r); await step(T + 1e4); await sleep(40); await step(T + 2e4); await sleep(40); };
   res.info.freeze = await ev(freeze(range));
+  // the page's prefers-reduced-motion (a session with --reduce-motion on|off sets the Simulator's setting, I-100)
+  res.info.reducedMotion = await ev(`matchMedia('(prefers-reduced-motion: reduce)').matches`);
+  if (process.env.SIMPX_RM === '1' && res.info.reducedMotion !== true) throw new Error(arm + ': SIMPX_RM=1 but the page does not match prefers-reduced-motion: reduce');
   const FR = 1000 / 60;
   for (const pass of PASSES) {
     if (pass === 'hero' || pass === 'herostatic' || pass === 'variants') { await ev("(scrollTo({ top: 0, behavior: 'instant' }), 0)"); await sleep(1500); }
