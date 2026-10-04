@@ -16,7 +16,8 @@ the full-page rows in Chrome and the Simulator) + the pixel tier T2 for frozen f
 decision on the motion-only difference (proposal PR-017, see "User decisions on the motion difference")
 **Driver(s) behind the claims:** Chrome CDP traces at y 0 (headless, 60 Hz; headed for 120 Hz), WebKit iOS Simulator
 Timeline counts, frozen and running screenshots, layer census, and a hidden-page check (app switch). Phone: P-093
-(driver W), not run yet.
+(driver W), run 2026-10-04: hit (dt > 50 median +1 per run, falsifier +2; every V run had 1-2 such frames, no C run
+did; see "P-093 result").
 **Prediction:** P-093 (registered with mgmt-ops-10 before any phone data; ticket below): top-window dt > 50, median V
 − median C < 2 = hit, P(hit) 0.85. Counts are by code (no timing prediction).
 **Topic:** `research/gpu-props/README.md` G4 (user decision T-030 #10, "do cd-roll-ca as highest priority as well")
@@ -687,8 +688,8 @@ Reading: #10 asked for the fix to be built. The acceptance of the motion differe
 (`memory/less-work-landing-rule.md`). Neither is an explicit acceptance of a motion difference. So these items go to
 the user as a proposal (land / park; Try-it A = C8, B = V9), lead 2026-10-04: **PR-017** (posted 2026-10-04; rev 2
 adds the Simulator full-page row and the at-rest memory line; rev 3 (review round 5) corrects the 120 Hz row, labels
-the 60 Hz numbers as Chrome's, adds the WebKit first-frame lead and the status words; recommended: land; decision
-pending):
+the 60 Hz numbers as Chrome's, adds the WebKit first-frame lead and the status words; rev 4 lists the Arc-safe Try-it
+links; recommended: land; decided: accepted, land, 09:11Z, see below):
 
 | what differs | how much | when |
 |---|---|---|
@@ -701,6 +702,12 @@ pending):
 
 Memory cost in PR-017 is labelled "Cost in the iPhone Simulator (OBSERVED, in our setup, cause unknown; not checked on
 the phone)".
+
+**Decision: ACCEPTED, option land** (PR-017 rev 4, user, 2026-10-04 09:11:18Z). Rev 4 was a text-only change listing
+plain local Try-it links (T-085: the console Try-it pages showed 00:00:00:00 in Arc, cause under I-131). The user's note
+says the proposed page looked noticeably smoother and asks the team for more research. That research card is T-096
+(lead + mgmt-ops-10), registered before data under "Research card T-096". The note is the user's impression on a
+desktop Try-it page, not a measured gain: OBSERVED by the user, not traced.
 
 ## Hidden tab, for real (review round 1, B1)
 
@@ -976,6 +983,38 @@ queue: phone-queue place 4 (lead); ops calls the turn, then `node tools/lock.mjs
   --ttl 900 --url <B's twin> --wait 3600`, renewed between holds
 ```
 
+### P-093 result (2026-10-04 08:43-09:10Z; OBSERVED, iPhone 15 Pro Max, Safari, driver W, Timeline off)
+
+```
+BLOCK LOG P-093 · lease 08:36:06Z-09:10Z (cd-roll-ca) · scorer 57856e3f (as ticketed) · out/cd-roll-ca/p093/score.json
+extra: one uncounted pre-warm on B at 08:43Z (p093-pre0) beside a shared group, lead-approved (not in the ticket; no counted run)
+H1 08:46:33Z  prewarm1, start gate PASS (Serious, induced No, 40.79 °C), wC wV C1 V2, end gate PASS (40.89), PMSET OK -> VALID
+H2 08:52:04Z  prewarm1, start gate PASS (40.89->40.19), V3 C4 C5 V6, end gate PASS, PMSET OK -> VALID
+H3 09:06:35Z  start gate PASS (40.59->40.5), V7 C8, end gate PASS (40.39), PMSET OK -> VALID; Safari parked
+void runs: none; every C sentinel passed; no LPM
+ports (I-131, lead 09:1xZ: "unverified", not invalid): B 5419, C8 5420, V9 5421 (serve-snap, production cache headers,
+  started 08:16Z / 08:16Z / ~08:41Z); whether a port served another build earlier today is for ts-i131's audit. C8 and V9
+  serve the same CSS (982a747d), so a stale CSS can't separate the arms; the JS path differs per arm.
+```
+
+| top window (idle 8 s + W through the hero) | C1 | C4 | C5 | C8 | V2 | V3 | V6 | V7 | median V − C |
+|---|---|---|---|---|---|---|---|---|---|
+| dt > 50 | 0 | 0 | 0 | 0 | 1 | 1 | 2 | 1 | **+1** (gate: FALSIFIED at ≥ 2) |
+| dt > 46 / > 54 (twins) | 0/0 | 0/0 | 1/0 | 0/0 | 1/0 | 1/0 | 2/2 | 1/0 | +1 / 0 |
+| dt > 34 | 2 | 2 | 2 | 2 | 3 | 5 | 4 | 4 | +2 (band [-1, +1]: out, reported) |
+| dt > 30 / > 38 | 3/1 | 2/2 | 3/2 | 3/1 | 3/2 | 8/3 | 7/3 | 4/2 | +2.5 / +1 |
+
+- **Verdict: hit** (no-worse by the registered gate): dt > 50 rises by 1 frame per run (median), under the falsifier of 2;
+  the > 54 twin rises by 0 and the > 46 twin by 1, both hit, so the verdict is not threshold-sensitive.
+- **Reported, not a gate:** the direction is consistent. Every V run has 1-2 frames over 50 ms in the top window and no C
+  run has one (C5 has one 47 ms frame, > 46 twin only). Of V's five, three are in the near band (51, 51, 53 ms); V6 has 111 ms and 77 ms at
+  the start of the W scroll (t+8.90 s, t+8.98 s). Two of them (V2 t+2.9 s, V7 t+5.0 s) fall in the idle phase, while
+  the clock rolls at rest. The > 34 band is +2, outside [-1, +1].
+  Cause unknown (Timeline off: no attribution). The registered first suspect is the per-roll animation creation on the
+  main thread at the tick (the ticket's FALSIFIED row). The Simulator's extra digit images (PR-017 risk line) are a
+  second candidate. Both are untested hypotheses.
+- Idle window (descriptive): V − C dt > 50 +0.5, dt > 34 +1.
+
 ```
 BUILD cd-roll-ca-4 (round 4, cells-only, history: strip-rw, not the landing base) on cd-strip strip-rw (DEV build JS 5e37af69bcc4…, CSS 9b2f89ea58bd…) · overlay fixes/cd-roll-ca/overlay
 served hashes: nodes/2.DyWL8TcE.js 73dff152e454… (V6), CSS 9b2f89ea58bd… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C5,V6}
@@ -1031,6 +1070,45 @@ of it is built or measured as a variant.
   countdown.
 - The combined CSS differs in 3 hunks. None touches the strip, cdwrap or cell rules.
 - No conflict to name in the land request.
+
+## Research card T-096: why the accepted page feels smoother (registered before any data)
+
+```
+CARD T-096 cd-roll-ca research · counts only (memory "defer timing") · lead approved T-096 #3 (09:13Z) · second read: ops
+status: NOT STARTED. Starts after PR-017 (cd-roll-ca) lands; no iPhone time; Chrome in shared probe slots
+  (--shared --weight probe), the Simulator in shared simulator slots.
+question: the user found the PR-017 B page (V9) noticeably smoother than A (C8). Our cost card says the countdown's own
+  script fell from 23-26 calls per roll to 1, yet the whole page's Simulator work barely changed (203-223 page updates
+  per 4 s on both builds). What per-frame work differs between A and B while digits roll, and while scrolling?
+hypotheses (untested guesses until counted):
+  H1 (lead's addition) on B the digits move in frames with no main-thread frame (compositor-only updates); on A every
+     digit move needs a main-thread frame (rAF spring, style, paint, commit).
+  H2 on A the spring's ~30 rAF/s for half of each second puts extra main-thread frames next to scroll frames, and those
+     sometimes miss or arrive late (A's > 34 rows, P-093: B had more > 50 frames on the phone, so H2 may not be what the
+     user felt; recorded either way).
+  H3 nothing per frame differs beyond the countdown's own script; what the user saw was a page or build difference (stale
+     files, I-131), ruled in or out by step 1.
+step 1 build identity: 5422 = C8 copy, 5423 = V9 copy: crawl-diff of the whole static graph against the snapshot copies
+  (scratch crawl-diff.mjs, committed with the addendum) and the served JS/CSS hashes; after I-131 lands, also the cache
+  headers. Any mismatch -> H3 confirmed, stop, report.
+step 2 Chrome (430x932 DPR 3, headless, 60 Hz as the cost card; arms A, B, A2 = a second server on the A copy; 3 loads
+  each, A B A2 / B A2 A / A2 A B): per load, window R = 8 s at y 0 (clock rolling), window S = a scripted scroll through
+  the hero (the W path, 3 s). Per window, counted from one CDP trace (devtools.timeline, cc, viz categories):
+  frames presented; BeginMainFrame count; frames with a compositor update and no BeginMainFrame (H1's count);
+  rAF callbacks (all, and the countdown's, tagged); UpdateLayoutTree, Layout, Paint, Commit events; frames whose
+  main-thread part was dropped or late (PipelineReporter states). A/A spread = max |A - A2| per count.
+step 3 Simulator (WebKit Timeline on in every arm): RenderingFrame records, script/style/layout/paint/composite
+  records per window. WebKit runs a CSS/Web animation in Core Animation; those frames leave no Timeline record, so H1
+  shows in the Simulator only as fewer RenderingFrame records per roll on B (stated before data, not a gap).
+counts per window (R and S): B - A per count, against the A/A spread. Outcome: H1 holds when B's compositor-only
+  frames per roll > 0 and A's = 0 (within A/A), and B's BeginMainFrame per roll falls by more than the spread; H2 is
+  reported from window S (main-thread frames next to scroll frames, A vs B); H3 from step 1.
+deliverable: one plain list per window of what changed per frame; if one item stands out, it names which other
+  animations (hero, top-bar morph, end-of-page morph) to try next (T-096 item 2, a new card).
+calibration: P(H1 holds) 0.8; P(H2 shows a difference over the spread in S) 0.4; P(H3) 0.05.
+tools: crawl-diff.mjs, a trace counter t096-count.mjs and the existing Simulator Timeline reader; hashes frozen in an
+  addendum here before the first load.
+```
 
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
 

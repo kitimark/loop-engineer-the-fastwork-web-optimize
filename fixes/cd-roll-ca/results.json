@@ -3293,5 +3293,79 @@
         "posted": "2026-10-04"
       }
     }
+  },
+  "p093": {
+    "ticket": "P-093 (README \"PHONE TICKET P-093\"), driver W, Timeline off, iPhone 15 Pro Max Safari, real thermal Serious",
+    "when": "2026-10-04 08:46-09:10Z",
+    "holds": {
+      "H1": "VALID",
+      "H2": "VALID",
+      "H3": "VALID"
+    },
+    "scorerSha256": "57856e3f530ae49f2ecb7c0397c887d75c315c82daf895eedb1ce36d4744dc37",
+    "verdict": "hit",
+    "framesTop": {
+      "nC": 4,
+      "nV": 4,
+      "delta": {
+        "gt50": 1,
+        "gt46": 1,
+        "gt54": 0,
+        "gt34": 2,
+        "gt30": 2.5,
+        "gt38": 1
+      },
+      "gt50": "hit",
+      "thresholdSensitive": false,
+      "gt34band": "out of [-1, +1]",
+      "gt34twins": [
+        "out",
+        "in"
+      ],
+      "verdict": "hit"
+    },
+    "perRunTopGt50": {
+      "C1": 0,
+      "C4": 0,
+      "C5": 0,
+      "C8": 0,
+      "V2": 1,
+      "V3": 1,
+      "V6": 2,
+      "V7": 1
+    },
+    "note": "hit by the registered gate (+1 < 2); reported: every V run had 1-2 top-window frames > 50 ms, no C run did (near band 51/51/53 ms; V6 111 and 77 ms at the W scroll start); > 34 band +2 (out of [-1,+1], not a falsifier); cause unknown (Timeline off). Ports B 5419, C8 5420, V9 5421: unverified for I-131 (immutable cache on reused ports), audit by ts-i131.",
+    "idleDescriptive": {
+      "delta": {
+        "gt50": 0.5,
+        "gt46": 0.5,
+        "gt54": 0,
+        "gt34": 1,
+        "gt30": 1,
+        "gt38": 1
+      },
+      "note": "descriptive, no gate"
+    },
+    "runFiles": [
+      "out/cd-roll-ca/p093/p093-wC-H1.json",
+      "out/cd-roll-ca/p093/p093-wV-H1.json",
+      "out/cd-roll-ca/p093/crca-C1.json",
+      "out/cd-roll-ca/p093/crca-V2.json",
+      "out/cd-roll-ca/p093/crca-V3.json",
+      "out/cd-roll-ca/p093/crca-C4.json",
+      "out/cd-roll-ca/p093/crca-C5.json",
+      "out/cd-roll-ca/p093/crca-V6.json",
+      "out/cd-roll-ca/p093/crca-V7.json",
+      "out/cd-roll-ca/p093/crca-C8.json"
+    ],
+    "ports": {
+      "B": 5419,
+      "C8": 5420,
+      "V9": 5421,
+      "status": "unverified until ts-i131 I-131 audit"
+    }
+  },
+  "decision": {
+    "PR017": "accepted, option land, rev 4, 2026-10-04T09:11:18Z (user; note: proposed page significantly smoother, asks for more research -> T-096)"
   }
 }
