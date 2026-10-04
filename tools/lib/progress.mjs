@@ -244,18 +244,33 @@ export function readProgress(file = progressFile()) {
 /**
  * fixes/PREDICTIONS.md rows -> Map id -> {id, result}. `result` is the "in?" cell (bold marks stripped),
  * '' while the row has none. Columns: id · author · date · build · driver · metric · predicted · measured · in? ·
- * ratio · lesson; counted from the start (the free-text cells hold no " | ").
+ * ratio · lesson. A column separator is a pipe with whitespace, a row end or another pipe on both sides, so an empty
+ * cell stays empty (I-116: a split on " | " read "| |" as "|") and `|V - S0|` or `\|` stay cell text (P-056a, P-069).
+ * A row with more cells than the header has a stray " | " in a free-text cell (P-024, P-038, P-090): it is read from
+ * its end (in? is the third cell from the end), so only a stray separator in the lesson can still shift it.
  */
 export function parseLedger(text) {
   const rows = new Map();
+  let ncols = 11, inAt = 8;
   for (const line of String(text || '').split('\n')) {
-    const m = line.match(/^\|\s*(P-\d{3}[a-z]?)\s*\|/);
+    const cells = ledgerCells(line);
+    if (!cells?.length) continue;
+    if (/^id$/i.test(cells[0]) && cells.some((c) => /^in\?$/i.test(c))) { ncols = cells.length; inAt = cells.findIndex((c) => /^in\?$/i.test(c)); continue; }
+    const m = cells[0].match(/^(P-\d{3}[a-z]?)$/);
     if (!m) continue;
-    const cells = line.split(' | ');
-    const inCell = (cells[8] ?? '').replace(/\*\*/g, '').trim();
-    rows.set(m[1], { id: m[1], result: inCell });
+    const at = cells.length > ncols ? cells.length - (ncols - inAt) : inAt;
+    rows.set(m[1], { id: m[1], result: (cells[at] ?? '').replace(/\*\*/g, '').trim() });
   }
   return rows;
+}
+
+/** The trimmed cells of a markdown table row (outer pipes dropped; a pipe touching text is text), or null. */
+function ledgerCells(line) {
+  const t = line.trim();
+  if (!t.startsWith('|')) return null;
+  const parts = t.split(/(?<=^|\s|\|)\|(?=\s|$|\|)/);
+  if (parts[parts.length - 1].trim() === '') parts.pop();
+  return parts.slice(1).map((c) => c.trim());
 }
 
 export function readLedger(file = ledgerFile()) {

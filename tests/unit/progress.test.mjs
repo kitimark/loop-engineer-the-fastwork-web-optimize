@@ -118,6 +118,48 @@ test('parseLedger: the "in?" cell per row, bold stripped, empty while no result'
   assert.equal(P.parseLedger('').size, 0);
 });
 
+// I-116: rows were split on ' | ', so an empty cell ('| |') read as '|' and a stray ' | ' inside a free-text cell shifted
+// every later cell (P-090: predicted; P-091: measured): the Best build page showed false "new result"s. Cells are now
+// split on unescaped pipes, and a row with more cells than the header is read from its end (in?, ratio, lesson).
+test('I-116 parseLedger: empty cells stay empty; stray " | " in predicted or measured, |abs| bars and escaped \\| pipes do not shift "in?"', () => {
+  const H = LEDGER.split('\n').slice(0, 2);
+  const rows = [
+    '| P-092 | fix-morph-gpu | 10-04 | V vs C | M | f50 | point 0 | pending | | | |',
+    '| P-093 | a | d | b | G | m | p | | | | |',
+    '| P-090 | fix-carousel-leaver | 10-03 | split | Sim | X matches base | Hold A: P(S matches base) 0.25; exactly | one) 0.6 | 10-03 20:22Z Hold A on screen S~base 1137 px | on screen: P(S matches) 0.25 -> MISS; Hold B 0.55 -> HIT |  | ops result read: re-scored from raw |',
+    '| P-091 | fix-nav-morph | 10-04 | V vs C | G | owner of edge frames | STYLE 0.4 | 8 counted runs C1 V1 | V2 C2 C3 V3 | V4 C4 from VALID holds | **VOID** | n/a | the scorer was wrong |',
+    '| P-056c | x | 10-02 | C vs V | a | b | \\|V - S0\\| <= A/A + 17 ms | q40x | (a) **FAIL** as written | – | lesson |',
+    '| P-094 | x | 10-04 | b | d | m | p | measured | **MISS** | 0.5 | a lesson with a | pipe in it |',
+    '| P-056a | x | 10-02 | C vs V | a | b | (c2) |V - S0| <= 250 ms | V built | (c1) **miss** strict; (c2) |V - S0| <= 17 ms: hit | – | lesson |',
+    '| P-069 | x | 10-02 | V vs C | s | m | median V - median C |< 4 ms| | Sim stage 1 | Sim: faces in; |median diff| < 4 out | | |',
+    '| P-095 | x | 10-04 | b | d | m | p | pending ||| |',
+  ];
+  const m = P.parseLedger([...H, ...rows].join('\n'));
+  assert.equal(m.get('P-092').result, '', 'pending, empty in? cell');
+  assert.equal(m.get('P-093').result, '', 'all trailing cells empty');
+  assert.equal(m.get('P-090').result, 'on screen: P(S matches) 0.25 -> MISS; Hold B 0.55 -> HIT', 'stray pipe in predicted');
+  assert.equal(m.get('P-091').result, 'VOID', 'two stray pipes in measured');
+  assert.equal(m.get('P-056c').result, '(a) FAIL as written', 'escaped pipes are cell text');
+  // a stray pipe after "in?" (in the lesson) cannot be told from one before it: read from the end, as documented
+  assert.equal(m.get('P-094').result, '0.5');
+  // a pipe that touches text is text (absolute-value bars), in any cell, the in? cell too
+  assert.equal(m.get('P-056a').result, '(c1) miss strict; (c2) |V - S0| <= 17 ms: hit');
+  assert.equal(m.get('P-069').result, 'Sim: faces in; |median diff| < 4 out');
+  assert.equal(m.get('P-095').result, '', '"||" is an empty cell too');
+  for (const id of ['P-092', 'P-093', 'P-095']) {
+    const v = P.buildView({ progress: { ...sample(), items: [{ id: 'x', title: 'X', area: 'hero', state: 'testing', stage: 'V', checks: [{ id, what: 'w' }] }] }, ledger: m, live: {}, now: NOW });
+    assert.equal(v.summary.newResults, 0, `${id}: no false "new result"`);
+  }
+});
+
+test('I-116 parseLedger on fixes/PREDICTIONS.md: no result is a bare pipe or holds a column separator; P-090/P-091 read their in? cells', () => {
+  const m = P.parseLedger(readFileSync(join(REPO, 'fixes', 'PREDICTIONS.md'), 'utf8'));
+  assert.ok(m.size > 50);
+  for (const [id, r] of m) assert.doesNotMatch(r.result, /(^|\s)\|(\s|$)/, `${id}: a column separator in the result`);
+  if (m.has('P-090')) assert.match(m.get('P-090').result, /MISS|HIT/);
+  if (m.has('P-091')) assert.match(m.get('P-091').result, /^(VOID|HIT|MISS|n\/a|)/);
+});
+
 test('buildView: new ledger results are flagged, curated results win, sections, staleness, last 5 changes', () => {
   const v = P.buildView({ progress: sample(), ledger: P.parseLedger(LEDGER), live: {}, now: NOW });
   const testing = v.sections.find((s) => s.key === 'testing').items;
