@@ -416,14 +416,17 @@ export function waitSince(it) {
 
 /**
  * I-108 (3): what makes an active row look over, from the live sources (never guessed without them):
- * live.git {mainShas, merged}: the owner's branch work (landHead, recorded by set) is on main, the row not landed;
+ * live.git {mainShas, merged}: the owner's branch work (landHead, recorded by set) is on main while the row says
+ *   ready-to-land or reviewing (LANDING_STATES; a working or waiting row with landed commits is normal: fix owners
+ *   land notes and tickets mid-work, the lead's I-108 follow-up);
  * live.refs {steps: {id: status}, proposals: {id: state}, threads: {id: {status, lastBy, lastAt}}}: the step,
  * proposal or thread its --waiting-on names is already answered, decided or closed.
  */
+const LANDING_STATES = new Set(['ready-to-land', 'reviewing']);
 export function overFlags(it, live = {}) {
   const out = [];
   const b = it.branch;
-  if (b?.landHead && live.git && (asSet(live.git.mainShas).has(b.landHead) || asSet(live.git.merged).has(b.name))) {
+  if (LANDING_STATES.has(it.state) && b?.landHead && live.git && (asSet(live.git.mainShas).has(b.landHead) || asSet(live.git.merged).has(b.name))) {
     out.push(`its work is on main (branch ${sanitize(b.name, 120)}), but the row says ${it.state}: landed?`);
   }
   const w = it.waitingOn;

@@ -25,8 +25,9 @@
 //   node tools/status.mjs list [--all] [--state s] [--kind k] [--owner a] [--json]   # priority order; --all adds finished
 //   node tools/status.mjs show <id> [--json]                # one item with live waits and history
 //   node tools/status.mjs stale [--json]                    # rows that may be out of date, each with why (I-108):
-//        # no update for 45 min (no live wait), its branch's work already on main but the row not landed (`set` by the
-//        # owner records the branch of the checkout it runs in), or it waits on a C-/PR-/T- id already answered/decided
+//        # no update for 45 min (no live wait), a ready-to-land or reviewing row whose branch's work is already on main
+//        # (`set` by the owner records the branch of the checkout it runs in; a working or waiting row with landed
+//        # commits is normal), or it waits on a C-/PR-/T- id already answered/decided
 // Lead:
 //   node tools/status.mjs priority <id> <1..99|none> --by lead [--note "<why>"]   # 1 = first; refused for anyone else
 //   node tools/status.mjs seed --by <agent> [--file <seed.json>] [--apply]        # active PROGRESS fix items + a seed

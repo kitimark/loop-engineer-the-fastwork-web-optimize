@@ -474,7 +474,11 @@ test('I-108: "may be out of date": 45 min without an update, work already on mai
     mk('old', 'implementing', 46),
     mk('old-parked', 'parked', 300),
     mk('landed-rtl', 'ready-to-land', 5, { waitingOn: { kind: 'lead', text: 'land request' }, branch: { name: 'worktree-a', landHead: A } }),
-    mk('landed-by-name', 'testing', 5, { branch: { name: 'worktree-b', landHead: B } }),
+    mk('landed-by-name', 'reviewing', 5, { branch: { name: 'worktree-b', landHead: B } }),
+    // the lead's follow-up: a working or waiting row whose branch landed (notes, a phone ticket) is normal, no "landed?"
+    mk('landed-waiting', 'waiting', 5, { waitingOn: { kind: 'phone' }, branch: { name: 'worktree-a', landHead: A } }),
+    mk('landed-testing', 'testing', 5, { branch: { name: 'worktree-b', landHead: B } }),
+    mk('landed-ops', 'coordinating', 5, { branch: { name: 'worktree-a', landHead: A } }), // an ongoing ops row (user T-075)
     mk('not-landed', 'testing', 5, { branch: { name: 'worktree-c', landHead: C } }),
     mk('no-commits', 'testing', 5, { branch: { name: 'worktree-d' } }),
     mk('done-landed', 'landed', 5, { branch: { name: 'worktree-a', landHead: A } }),
@@ -498,11 +502,11 @@ test('I-108: "may be out of date": 45 min without an update, work already on mai
   const why = (id) => by[id].staleWhy;
   assert.deepEqual(why('old'), ['not updated for 46 min']);
   assert.deepEqual(why('landed-rtl'), ['its work is on main (branch worktree-a), but the row says ready-to-land: landed?']);
-  assert.deepEqual(why('landed-by-name'), ['its work is on main (branch worktree-b), but the row says testing: landed?']);
+  assert.deepEqual(why('landed-by-name'), ['its work is on main (branch worktree-b), but the row says reviewing: landed?']);
   assert.deepEqual(why('on-step'), ['it waits on C-004, which is already answered']);
   assert.deepEqual(why('on-pr'), ['it waits on PR-014, which is already decided (accepted)']);
   assert.deepEqual(why('on-thread'), ['it waits on T-031, where the user has already answered']);
-  for (const id of ['fresh', 'old-parked', 'not-landed', 'no-commits', 'done-landed', 'on-step-open', 'on-thread-asked', 'on-thread-old-reply']) {
+  for (const id of ['fresh', 'old-parked', 'landed-waiting', 'landed-testing', 'landed-ops', 'not-landed', 'no-commits', 'done-landed', 'on-step-open', 'on-thread-asked', 'on-thread-old-reply']) {
     assert.equal(by[id].stale, false, id);
     assert.deepEqual(why(id), [], id);
   }
@@ -576,12 +580,13 @@ test('I-108: refsLive and gitLive feed the board the ids, states and main', asyn
   assert.equal(live.mainShas.length, 1);
   assert.ok(live.merged.includes('main') && live.merged.includes('landed-b'));
   assert.ok(!live.merged.includes('open-b'));
-  const row = { id: 'x', owner: 'fix-x', state: 'testing', branch: { name: 'open-b', landHead: tip } };
+  const row = { id: 'x', owner: 'fix-x', state: 'ready-to-land', branch: { name: 'open-b', landHead: tip } };
   assert.deepEqual(S.overFlags(row, { git: live }), []);
   g(d, 'checkout', '-q', 'main');
   g(d, 'merge', '-q', '--ff-only', 'open-b');
   assert.deepEqual(P.gitLive(d, { maxAgeMs: 60000 }), live, 'cached within maxAgeMs');
-  assert.deepEqual(S.overFlags(row, { git: P.gitLive(d, { maxAgeMs: 0 }) }), ['its work is on main (branch open-b), but the row says testing: landed?']);
+  assert.deepEqual(S.overFlags(row, { git: P.gitLive(d, { maxAgeMs: 0 }) }), ['its work is on main (branch open-b), but the row says ready-to-land: landed?']);
+  assert.deepEqual(S.overFlags({ ...row, state: 'measuring' }, { git: P.gitLive(d, { maxAgeMs: 0 }) }), [], 'a working row with landed commits is normal');
   assert.throws(() => P.gitLive(tempDir('fw-status-nogit-'), { maxAgeMs: 0 }), /failed/);
 });
 
