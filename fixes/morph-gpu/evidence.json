@@ -1,0 +1,139 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "morph-gpu",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/morph-gpu/proposal",
+      "why": "the 14 shots PR-012 rev 1 shows (Chrome and Simulator m 0.5 / 0.99, diffs, A/A at 0.99)",
+      "kind": "frames",
+      "for": "proposal.json",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/tween-paint-2026-10-03T16-32-21-273Z.json",
+      "why": "Simulator paint counts per morph frame (12.3 -> 2.3 paints, 1.1M -> 37k css px): the gain, D card row 1, F-195",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/morph-gpu/tl-M-2026-10-03T16-32-21-273Z.json",
+      "why": "Simulator LayerTree timeline behind the paint counts, control arm",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/morph-gpu/tl-R-2026-10-03T16-32-21-273Z.json",
+      "why": "Simulator LayerTree timeline behind the paint counts, reveal arm",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/morph-gpu/tween-paint-read-1.json",
+      "why": "paint-rect read of the tween (README \"Why that is faster\")",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/restyle-chrome-2026-10-03T18-11-59-624Z.json",
+      "why": "Chrome per-phase counts table (README \"Desktop and Chrome counts\"), I-098 re-run",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/morph-gpu/restyle-chrome-2026-10-03T19-25-14-368Z.json",
+      "why": "Chrome counts, confirmation re-run (equal within 0.1)",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/morph-gpu/restyle-chrome-2026-10-04T02-59-03-837Z.json",
+      "why": "Chrome counts, post-acceptance re-run",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-03T16-31-40-782Z",
+      "why": "decisive Simulator check for the stale clip at m 1 (D card platform claim, README \"Stale clip\")",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-03T16-57-35-003Z",
+      "why": "Simulator stale-clip variants and the late toggle (README \"Stale clip\", m 1 rest R-18)",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T18-09-59-062Z",
+      "why": "Chrome stepped switch-off frames behind the PR-010 pixel numbers (I-098 re-run; README \"Pixels\", \"Stale clip\")",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T18-11-13-876Z",
+      "why": "desktop frames: 0 beyond A/A (README \"Desktop and Chrome counts\")",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T16-58-45-896Z",
+      "why": "Chrome motion frames k1/k3 and the m 1 variant numbers (README \"Pixels\")",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-03T16-09-06-602Z/simframes.json",
+      "why": "record of the Simulator motion frames k5/k7 (README \"Pixels\"); PNGs not kept (cap), rebuilt by gates/sim-frames.mjs",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-03T17-17-22-105Z/simframes.json",
+      "why": "record of the Simulator stepped switch-off (README \"Pixels\", k14); PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T18-15-06-547Z/frames.json",
+      "why": "record of the reduced-motion Chrome frames (README \"Risks\"); PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T19-23-15-219Z/frames.json",
+      "why": "record of the confirmation stepped re-run (EN-label flip, F-199); PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T19-24-30-786Z/frames.json",
+      "why": "record of the confirmation desktop re-run; PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T02-57-00-303Z/frames.json",
+      "why": "record of the post-acceptance stepped re-run; PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T02-58-18-635Z/frames.json",
+      "why": "record of the post-acceptance desktop re-run; PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-03T15-27-09-865Z/frames.json",
+      "why": "record of the earlier R frames showing the EN-label flip (F-199); PNGs not kept (cap)",
+      "kind": "result",
+      "for": "README.md"
+    }
+  ]
+}
