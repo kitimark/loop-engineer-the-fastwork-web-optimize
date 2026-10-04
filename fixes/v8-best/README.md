@@ -536,3 +536,16 @@ Conditions:
 3. NEITHER: int-v8 reports before any further block (accent exact, morph rev 3 left); at most 2 blocks per question.
 4. Attribution only: no landing basis. The v7 -> v8 switch still needs the lead's ruling on P-111 (Mtweens + G-H)
    after P-112 and P-113.
+
+## Lead ruling on P-112 (2026-10-04 16:3xZ)
+
+- P-112's registered question (is morph rev 3 the cause of P-111's longer close start?) is answered by its falsifier:
+  close.f1 d −0.5, close.f3 d 0 → **rev 3 is NOT THE CAUSE**. The scorer's literal "CAUSE" comes from a different key,
+  O1.f2 (+2.5 ms), carried by one run (+2.0 without it, at the rule's edge) and −2 for v8 in P-111: recorded as a
+  single-run, unreplicated flag, not a rev 3 cost.
+- Rev 3 brings warm opens 23-35 ms faster and tight (O2.f1 64.5 → 35.5, O3.f1 70 → 35.5). **Rev 3 stays in v8.**
+- P-111's close WORSE is open: P-112 ran on a quiet Mac (load1 2-6), P-111's M leg at 13-140 beside shared jobs.
+  Cross-block values don't compare, so no conclusion from 26.5/62 vs 30.5/63.5. After P-113, int-v8 tickets ONE confirm
+  block (P-114): v7 against the v8 composition the lead picks after P-113, M leg + G part H, run inside an exclusive
+  `--no-timing` chrome-measure hold so no shared job loads the Mac. It is the second and last block on the v8-vs-v7
+  close question (sequential rule §5.3); its verdict decides the v7 -> v8 switch.
