@@ -49,7 +49,7 @@
     for (var i = 0; i < threads.length; i++) {
       var t = threads[i];
       seen[t.id] = t.lastAgentN;
-      if (!seeded || !(t.unread > 0)) continue;
+      if (!seeded || !(t.unread > 0) || t.state === 'closed') continue; // T-089: a closed thread never notifies
       if (!Object.prototype.hasOwnProperty.call(prev, t.id)) events.push({ kind: 'thread', thread: t });
       else if (t.lastAgentN > prev[t.id]) events.push({ kind: 'reply', thread: t });
     }

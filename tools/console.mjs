@@ -121,6 +121,20 @@
 //        # T-051: who answers a topic's threads, before the status-board owner; skipped while that agent is not listening
 //   `thread list` and `thread show` print each assignee as "fix-x (listening)" or "fix-x (not listening)".
 //   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
+// One topic, one thread (user T-024 #13, 2026-10-04): merge a duplicate into the thread that keeps the topic.
+//   node tools/console.mjs thread merge <dup> --into <keep> --by <agent> [--note "…"]
+//        # closes <dup> (the page shows "Merged into T-keep" with a link), links both threads (stored in both); prints
+//        # MERGED T-dup into T-keep. --into a merged thread resolves to its final kept thread; a <dup> that already took
+//        # in others passes them on to <keep> (no chains). Refused: a self-merge, an unknown id, a thread already merged
+//        # (unmerge it first), a cycle. The lead, the desk, or an agent assigned to both threads.
+//        # A user message written later in <dup> is stored in <keep> (marked "written in T-dup"): the kept thread's
+//        # owner's wait wakes and the router (T-050) routes it as a message on <keep>; <dup> stays closed.
+//   node tools/console.mjs thread unmerge <dup> --by <agent>                # undo: links dropped, reopened if the merge closed it
+//   node tools/console.mjs thread relate <a> <b> --by <agent> [--remove]    # same area, not a duplicate: linked both ways
+//   `thread list` names "merged into T-x" and a kept thread's "merged here: …; related: …"; `--all` lists the merged
+//   ones (closed); `thread show` prints one line per linked thread. The page hides merged threads unless ticked.
+//   `thread new` refuses a thread like an open one: the same --topic, or a title with the same content words (the
+//   check of `finding.mjs post`): prints SIMILAR T-xxx (<why>): <title>, starts nothing (exit 1); --force starts it.
 //
 // Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
 //   node tools/console.mjs proposal post|list|show|revise|live|phone|publish|withdraw|decide|wait|hold|unhold|talk …   (header of tools/lib/proposal-cli.mjs)
@@ -151,7 +165,7 @@ import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk,
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch', '--into'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -232,7 +246,12 @@ async function thread() {
     return 0;
   }
   if (sub === 'new') {
-    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask'), images: images() });
+    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask'), images: images(), checkSimilar: !flag('force') });
+    if (r.similar) { // T-024 #13: one topic, one thread
+      console.log(`SIMILAR ${r.similar.id} (${r.why}) [${TH.threadState(r.similar)}]: ${TH.oneLine(r.similar.title)}`);
+      console.log(`  nothing started: write there (thread reply ${r.similar.id} --by ${by()} …), or start it anyway with --force`);
+      return 1;
+    }
     console.log(`STARTED ${r.thread.id}: ${r.thread.title}${r.thread.assignees.length ? ` (assigned: ${r.thread.assignees.join(', ')})` : ''}${imgNote(r.thread.messages[0].images?.length)}${scrubNote(r.scrubbed)}`);
     return 0;
   }
@@ -310,8 +329,9 @@ async function thread() {
     if (flag('json')) { console.log(JSON.stringify(t, null, 1)); return 0; }
     console.log(TH.threadLine(t, as(), RT.listeningState({ threads: TH.listThreads() })));
     if (t.anchor) console.log(`  ${TH.anchorLine(t.anchor)}`); // I-090: a comment names its item
+    for (const l of TH.relatedLines(t)) console.log(`  ${l}`); // T-024 #13: merged and related threads
     for (const m of t.messages) {
-      console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''} at ${m.at}:`);
+      console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''}${m.via ? ` (written in ${m.via})` : ''} at ${m.at}:`);
       if (m.text || !m.images?.length) for (const l of String(m.text).split('\n')) console.log(`    ${l}`);
       for (const l of TH.imageLines(t, m)) console.log(`    ${l}`); // I-089
     }
@@ -331,6 +351,22 @@ async function thread() {
   if (sub === 'escalate') { // T-050: an owner or the desk hands a decision to the lead
     const r = await TH.escalate(id, { by: by(), note: opt('note') });
     console.log(`ESCALATED ${id}: the lead's triage wait wakes on it${scrubNote(r.scrubbed)}`);
+    return 0;
+  }
+  if (sub === 'merge') { // T-024 #13
+    const r = await TH.mergeThread(id, { into: opt('into'), by: by(), note: opt('note') });
+    console.log(`MERGED ${id} into ${r.into}${r.resolved ? ` (${r.resolved} is merged into ${r.into})` : ''}${r.moved.length ? `; moved along: ${r.moved.join(', ')}` : ''}`);
+    return 0;
+  }
+  if (sub === 'unmerge') {
+    const r = await TH.unmergeThread(id, { by: by() });
+    console.log(`UNMERGED ${id} from ${r.from}${r.reopened ? ' (reopened)' : ''}; messages written in ${id} after the merge stay in ${r.from}`);
+    return 0;
+  }
+  if (sub === 'relate') {
+    if (!pos[3]) throw new Error('usage: thread relate <a> <b> --by <agent> [--remove]');
+    const r = await TH.relateThreads(id, pos[3], { by: by(), remove: flag('remove') });
+    console.log(`${flag('remove') ? 'UNRELATED' : 'RELATED'} ${r.a} ${r.b}`);
     return 0;
   }
   if (sub === 'close' || sub === 'reopen') {

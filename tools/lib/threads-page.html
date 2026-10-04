@@ -13,7 +13,10 @@
    I-089: a message's images load only from this server's /thread-media/ store; the user's own images are read in the
    browser (data: previews) and sent with the message as base64, nowhere else.
    T-050: the recipients line names who listens ("fix-x (listening); the lead if no answer in 10 min", else "the
-   lead"), and a "For the lead" tick on both forms sends forLead (the lead's triage wait wakes at once). */
+   lead"), and a "For the lead" tick on both forms sends forLead (the lead's triage wait wakes at once).
+   T-024 #13 (one topic, one thread): a kept thread lists its related threads (merged here or related, with state); a
+   merged one shows "Merged into T-xxx" at the top, has no reopen button, and a reply written in it is stored in the
+   kept thread by the server (the page then goes there); the list hides merged threads unless "Show merged" is ticked. */
 :root {
   --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
   --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
@@ -72,6 +75,7 @@ a.trow.news { border: 2px solid var(--accent); }
 .pill.answered { background: var(--ok-soft); color: var(--ok); }
 .pill.waiting-on-you { background: var(--warn-soft); color: var(--warn); font-weight: 650; }
 .pill.closed { background: var(--bg); color: var(--muted); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); } /* T-089: a closed thread's unread */
 .unread { display: inline-block; min-width: 22px; padding: 0 7px; border-radius: 999px; background: #c62f2f; color: #fff; font-size: 13px; font-weight: 700; line-height: 22px; text-align: center; }
 .chip { font-size: 13px; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line); }
 a.chip { color: var(--accent); text-decoration: none; }
@@ -118,6 +122,13 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
 .anchor .what { font-size: 13px; color: var(--muted); }
 .anchor .what a { margin-left: 8px; }
 .anchor q { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+/* T-024 #13: merged and related threads */
+.merged-banner { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); border-left: 4px solid var(--warn); overflow-wrap: anywhere; }
+.merged-banner a, .related a, .mhead a { color: var(--accent); }
+.related { margin: 12px 0 4px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.related h3 { font-size: 14px; color: var(--muted); font-weight: 600; margin: 0 0 6px; }
+.related ul { list-style: none; margin: 0; padding: 0; }
+.related li { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 3px 0; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -147,14 +158,17 @@ ol.msgs li.ask { border-left: 4px solid var(--warn); }
       </form>
     </details>
     <ul class="threads" id="threads"></ul>
+    <label class="tick" id="merged-box" hidden><input type="checkbox" id="show-merged"> <span id="merged-sum">Show merged threads</span></label>
     <details class="closed" id="closed-box" hidden><summary id="closed-sum">Closed</summary><ul class="threads" id="closed"></ul></details>
   </section>
 
   <section id="thread-view" hidden>
     <div class="back"><a href="#" id="back">← All threads</a></div>
+    <div class="merged-banner" id="tv-merged" hidden></div>
     <h2 id="tv-title"></h2>
     <div class="meta" id="tv-meta"></div>
     <div class="anchor" id="tv-anchor" hidden></div>
+    <div class="related" id="tv-related" hidden></div>
     <ol class="msgs" id="tv-msgs"></ol>
     <form class="card" id="reply-form" autocomplete="off" data-no-comment>
       <label class="small" for="reply-text" id="reply-label">Your reply</label>
@@ -206,7 +220,8 @@ function toNames(t, forLead) {
   return (t && t.to && t.to.length ? t.to : ['lead']).join(', ');
 }
 function setTo(id, label, t) { var p = $(id); p.replaceChildren(document.createTextNode(label), el('b', null, toNames(t, $(id === 'new-to' ? 'new-lead' : 'reply-lead').checked))); }
-var STATE = { open: 'waiting for the agents', answered: 'answered', 'waiting-on-you': 'waiting on you', closed: 'closed' };
+var STATE = { open: 'waiting for the agents', answered: 'answered', 'waiting-on-you': 'waiting on you', closed: 'closed', missing: 'not found' };
+var LINK = { merged: 'merged here', 'merged-into': 'merged into', related: 'related' }; // T-024 #13
 
 /** I-119: a phone link's address, as the server resolved it at view time: http(s)://<IPv4>:<port>[/?#…], nothing else. */
 var LAN_HREF = /^https?:\/\/\d{1,3}(?:\.\d{1,3}){3}:\d{1,5}(?:[\/?#][A-Za-z0-9\-._~%\/?#=&+]*)?$/;
@@ -253,16 +268,24 @@ function api(method, path, body) {
 
 // ---- list ----
 function row(t) {
-  var li = el('li'), a = el('a', 'trow' + (t.unread || t.state === 'waiting-on-you' ? ' news' : ''));
+  var closed = t.status === 'closed'; // T-089: a closed thread is not news; its unread replies get a quiet dot
+  var li = el('li'), a = el('a', 'trow' + (!closed && (t.unread || t.state === 'waiting-on-you') ? ' news' : ''));
   if (TID.test(t.id)) { li.setAttribute('data-anchor', 'thread:' + t.id); li.setAttribute('data-anchor-label', t.title); } // I-096
   a.href = '#' + t.id;
   a.appendChild(el('div', 't', t.title));
   var m = el('div', 'meta');
   m.appendChild(el('span', 'pill ' + t.state, STATE[t.state] || t.state));
-  if (t.unread) m.appendChild(el('span', 'unread', String(t.unread)));
+  if (t.unread && !closed) m.appendChild(el('span', 'unread', String(t.unread)));
+  if (t.unread && closed) { var d = el('span', 'dot'); d.title = t.unread + ' unread (closed thread)'; m.appendChild(d); }
   m.appendChild(el('span', null, t.id));
   if (t.topic) m.appendChild(el('span', 'chip', t.topic));
   if (t.anchor) m.appendChild(el('span', 'chip', 'comment on ' + t.anchor.itemText)); // I-090
+  // T-024 #13: where a merged thread went; how many a kept thread took in, and its related ones
+  if (t.mergedInto && TID.test(t.mergedInto)) m.appendChild(el('span', 'chip', 'merged into ' + t.mergedInto));
+  var rel = Array.isArray(t.related) ? t.related : [];
+  var nm = rel.filter(function (r) { return r.kind === 'merged'; }).length, nr = rel.filter(function (r) { return r.kind === 'related'; }).length;
+  if (nm) m.appendChild(el('span', 'chip', '+' + nm + ' merged'));
+  if (nr) m.appendChild(el('span', 'chip', nr + ' related'));
   m.appendChild(el('span', null, ago(t.lastAt) + ', ' + who(t.lastBy)));
   m.appendChild(el('span', null, t.count + (t.count === 1 ? ' message' : ' messages')));
   m.appendChild(el('span', 'chip to-chip', 'to: ' + toNames(t))); // I-084: who got the user's messages
@@ -271,10 +294,16 @@ function row(t) {
 }
 function loadList() {
   return api('GET', '/api/threads').then(function (j) {
-    var sig = JSON.stringify(j.threads);
+    var showMerged = !!$('show-merged').checked;
+    var sig = JSON.stringify(j.threads) + showMerged;
     if (sig === listSig) return; listSig = sig;
-    var open = j.threads.filter(function (t) { return t.status !== 'closed'; });
-    var closed = j.threads.filter(function (t) { return t.status === 'closed'; });
+    // T-024 #13: merged threads are hidden unless "Show merged threads" is ticked
+    var merged = j.threads.filter(function (t) { return !!t.mergedInto; });
+    $('merged-box').hidden = !merged.length;
+    $('merged-sum').textContent = 'Show merged threads (' + merged.length + ')';
+    var shown = showMerged ? j.threads : j.threads.filter(function (t) { return !t.mergedInto; });
+    var open = shown.filter(function (t) { return t.status !== 'closed'; });
+    var closed = shown.filter(function (t) { return t.status === 'closed'; });
     var ul = $('threads'); ul.replaceChildren();
     if (!open.length) { var e = el('li', 'empty'); e.appendChild(el('b', null, 'No open threads')); e.appendChild(document.createTextNode('Start one above: one topic per thread.')); ul.appendChild(e); }
     open.forEach(function (t) { ul.appendChild(row(t)); });
@@ -313,6 +342,7 @@ function renderThread(t) {
     m.appendChild(hb);
   }
   renderAnchor(t.anchor);
+  renderMerged(t); renderRelated(t);
   var ol = $('tv-msgs'); ol.replaceChildren();
   t.messages.forEach(function (x) {
     var li = el('li', (x.by === 'user' ? 'you' : 'agent') + (x.by !== 'user' && x.n > t.readUser ? ' new' : '') + (x.ask ? ' ask' : ''));
@@ -321,15 +351,44 @@ function renderThread(t) {
     var h = el('div', 'mhead'), hb2 = el('b'); hb2.appendChild(agentLink(x.by)); h.appendChild(hb2);
     var tm = el('span', null, ago(x.at)); tm.title = x.at; h.appendChild(tm);
     if (x.ask) h.appendChild(el('span', 'pill waiting-on-you', 'asks you'));
+    if (x.via && TID.test(x.via)) { var vs = el('span', null, 'written in '); vs.appendChild(threadLink(x.via, x.via)); h.appendChild(vs); } // T-024 #13
     li.appendChild(h);
     if (x.text || !x.images) { var p = el('p', 'mtext'); richText(p, x.text, x.lan); li.appendChild(p); }
     if (x.images && x.images.length) li.appendChild(images(x.images));
     ol.appendChild(li);
   });
   $('tv-close').textContent = t.status === 'closed' ? 'Reopen thread' : 'Close thread';
-  $('reply-label').textContent = t.status === 'closed' ? 'Write to reopen it' : 'Your reply';
+  $('tv-close').hidden = !!t.into; // T-024 #13: a merged thread is reopened by the lead (unmerge), not here
+  $('reply-label').textContent = t.into ? 'Your reply goes to ' + t.into.id + ' (this thread was merged into it)' : t.status === 'closed' ? 'Write to reopen it' : 'Your reply';
   setTo('reply-to', 'Your reply goes to: ', t);
   markRead();
+}
+// T-024 #13: merged and related threads
+function threadLink(id, text) { var a = el('a', null, text); a.href = '#' + id; return a; }
+function renderMerged(t) {
+  var b = $('tv-merged'); b.replaceChildren();
+  var to = t.into && TID.test(t.into.id) ? t.into : null;
+  b.hidden = !to;
+  if (!to) return;
+  b.appendChild(document.createTextNode('Merged into '));
+  b.appendChild(threadLink(to.id, to.id + ': ' + to.title));
+  b.appendChild(document.createTextNode(' (' + (STATE[to.state] || to.state) + '). The topic goes on there; a reply written here goes there too.'));
+}
+function renderRelated(t) {
+  var box = $('tv-related'); box.replaceChildren();
+  var list = (Array.isArray(t.related) ? t.related : []).filter(function (r) { return r && TID.test(r.id) && LINK[r.kind] && r.kind !== 'merged-into'; });
+  box.hidden = !list.length;
+  if (!list.length) return;
+  box.appendChild(el('h3', null, 'Related threads'));
+  var ul = el('ul');
+  list.forEach(function (r) {
+    var li = el('li');
+    li.appendChild(threadLink(r.id, r.id + ' ' + r.title));
+    li.appendChild(el('span', 'pill', LINK[r.kind]));
+    li.appendChild(el('span', 'pill ' + r.state, STATE[r.state] || r.state));
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
 }
 function loadThread(id, scroll) {
   return api('GET', '/api/threads/' + id).then(function (j) {
@@ -465,6 +524,8 @@ $('new-form').addEventListener('submit', function (e) {
     toast('Sent to ' + toNames(j.thread, forLead) + '.');
   }).catch(function (e) { toast(e.message); }).then(function () { busy = false; $('new-send').disabled = false; });
 });
+$('show-merged').checked = store('threads-show-merged') === '1';
+$('show-merged').addEventListener('change', function () { store('threads-show-merged', $('show-merged').checked ? '1' : null); listSig = ''; loadList(); });
 $('reply-lead').addEventListener('change', function () { if (curThread) setTo('reply-to', 'Your reply goes to: ', curThread); });
 $('reply-form').addEventListener('submit', function (e) {
   e.preventDefault();
@@ -475,6 +536,11 @@ $('reply-form').addEventListener('submit', function (e) {
   var forLead = $('reply-lead').checked;
   api('POST', '/api/threads/' + id + '/reply', { text: $('reply-text').value, images: imagesBody('reply'), forLead: forLead || undefined }).then(function (j) {
     store('thread-draft-' + id, null); $('reply-text').value = ''; clearPending('reply'); $('reply-lead').checked = false;
+    if (j.thread.id !== id && TID.test(j.thread.id)) { // T-024 #13: written in a merged thread, stored in the kept one
+      toast('Sent in ' + j.thread.id + ' (this thread was merged into it) to ' + toNames(j.thread, forLead) + '.');
+      location.hash = j.thread.id;
+      return;
+    }
     renderThread(j.thread);
     toast('Sent to ' + toNames(j.thread, forLead) + '.');
     var last = $('tv-msgs').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest' });

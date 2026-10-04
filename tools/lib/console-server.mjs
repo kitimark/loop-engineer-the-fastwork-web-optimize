@@ -34,6 +34,8 @@
 //                                counts); also pushed as `event: threads` on /api/events
 //   POST /api/threads            {title, text, topic?, images?, forLead?}: the user starts a thread
 //   POST /api/threads/<T-id>/<act>  act = reply {text, images?, forLead?} | read {n} | close | reopen  (the user, from the page)
+//                                T-024 #13: a reply in a merged thread is stored in its kept thread (the answer is that
+//                                thread); reopen of a merged thread is refused (409, "merged into T-xxx")
 //                                T-050: forLead true = the "For the lead" tick (the lead's triage wait wakes at once);
 //                                summaries and threads carry toState [{name, listening, how}] and backstopMin (10)
 //                                images (I-089): [{data: base64, caption?}], sniffed and limited in console-threads.mjs;

@@ -210,6 +210,9 @@ const CASES = [
   { name: 'a reply the user already read (other tab): nothing', state: { seeded: true, seen: { 'T-001': 1 } }, threads: [row('T-001', 2, 0)], events: [] },
   { name: 'a thread the lead started', state: { seeded: true, seen: {} }, threads: [row('T-002', 1, 1)], events: [['thread', 'T-002']] },
   { name: 'a thread the user started: nothing', state: { seeded: true, seen: {} }, threads: [row('T-003', 0, 0)], events: [] },
+  // T-089: a closed thread (an idle alarm the lead closed, a merged duplicate) never notifies
+  { name: 'a reply in a closed thread: nothing', state: { seeded: true, seen: { 'T-004': 1 } }, threads: [{ ...row('T-004', 2, 1), state: 'closed' }], events: [] },
+  { name: 'a closed thread not seen before: nothing', state: { seeded: true, seen: {} }, threads: [{ ...row('T-005', 2, 2), state: 'closed' }], events: [] },
 ];
 
 function navCore() {
@@ -295,7 +298,7 @@ async function threadsPage({ hash, list = [], thread = null, replied = null }) {
   new Function('window', 'document', 'location', 'fetch', 'setInterval', 'setTimeout', 'clearTimeout', 'localStorage', 'FileReader', js)(
     { addEventListener() {} }, document, location, fetch, () => 0, () => 0, () => 0, undefined, FileReader);
   for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
-  return { ids, calls, $: document.getElementById };
+  return { ids, calls, $: document.getElementById, location };
 }
 
 test('I-084 threads page: "Your reply goes to: lead, <assignees>" by the reply box, a "to:" chip per thread, the confirmation names them', async () => {
@@ -664,4 +667,113 @@ test('I-119 threads page: a lan link opens the address resolved at view time; un
   // a listed href that is not an http(s) URL is not linked either
   const evil = await threadsPage({ hash: `#${n.thread.id}`, thread: { ...view, messages: view.messages.map((m) => ({ ...m, lan: [{ text: 'http://lan:5231/x', href: 'javascript:alert(1)' }] })) } });
   assert.ok(!evil.ids['tv-msgs'].children[0].all().some((x) => x.tagName === 'a' && /^javascript:/.test(x.href)));
+});
+
+// ---- T-024 #13: merged and related threads on the page --------------------------------------------------------------
+
+test('T-024 #13 threads page: a kept thread lists its related threads (link, title, merged or related, state); a merged one shows "Merged into" with a link and no reopen', async () => {
+  const keep = await userThread('Countdown clock');
+  const dup = await userThread('Countdown swipe test');
+  const rel = await userThread('Countdown roll on the GPU');
+  await T.mergeThread(dup.id, { into: keep.id, by: 'lead' });
+  await T.relateThreads(keep.id, rel.id, { by: 'lead' });
+  const lan = { lan: () => null };
+  const p = await threadsPage({ hash: `#${keep.id}`, thread: T.pageThread(T.getThread(keep.id), null, lan) });
+  assert.equal(p.ids['tv-related'].hidden, false);
+  assert.equal(p.ids['tv-merged'].hidden, true, 'no banner on the kept thread');
+  const links = p.ids['tv-related'].all().filter((n) => n.tagName === 'a');
+  assert.deepEqual(links.map((a) => [a.href, a.textContent]), [[`#${dup.id}`, `${dup.id} Countdown swipe test`], [`#${rel.id}`, `${rel.id} Countdown roll on the GPU`]]);
+  const txt = p.ids['tv-related'].textContent;
+  assert.match(txt, /^Related threads/);
+  assert.match(txt, /merged here/);
+  assert.match(txt, /related/);
+  assert.match(txt, /closed/);
+  // the merged thread: a banner with a link, no reopen button, the reply goes to the kept thread
+  const d = await threadsPage({ hash: `#${dup.id}`, thread: T.pageThread(T.getThread(dup.id), null, lan), replied: T.pageThread(T.getThread(keep.id), null, lan) });
+  assert.equal(d.ids['tv-merged'].hidden, false);
+  assert.match(d.ids['tv-merged'].textContent, new RegExp(`^Merged into ${keep.id}: Countdown clock`));
+  const bl = d.ids['tv-merged'].all().find((n) => n.tagName === 'a');
+  assert.equal(bl.href, `#${keep.id}`);
+  assert.equal(d.ids['tv-close'].hidden, true, 'a merged thread is not reopened from here');
+  assert.match(d.ids['reply-label'].textContent, new RegExp(`goes to ${keep.id}`));
+  // a reply written here: the server stores it in the kept thread and answers with it; the page goes there
+  d.ids['reply-text'].value = 'Any news?';
+  d.ids['reply-form'].requestSubmit();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  assert.equal(d.calls.filter((c) => c.url === `/api/threads/${dup.id}/reply`).length, 1);
+  assert.equal(d.location.hash, keep.id);
+  assert.match(d.ids.toast.textContent, new RegExp(`in ${keep.id}`));
+  // a plain thread: neither block
+  const q = await threadsPage({ hash: `#${rel.id}`, thread: T.pageThread(T.getThread(rel.id), null, lan) });
+  assert.equal(q.ids['tv-merged'].hidden, true);
+  assert.equal(q.ids['tv-close'].hidden, false);
+});
+
+test('T-024 #13 threads page: a message written in a merged thread says so in the kept thread', async () => {
+  const keep = await userThread('Keep'), dup = await userThread('Dup');
+  await T.mergeThread(dup.id, { into: keep.id, by: 'lead' });
+  await T.replyUser(dup.id, { text: 'hello' });
+  const p = await threadsPage({ hash: `#${keep.id}`, thread: T.pageThread(T.getThread(keep.id), null, { lan: () => null }) });
+  const last = p.ids['tv-msgs'].children.at(-1);
+  assert.match(last.textContent, new RegExp(`written in ${dup.id}`));
+});
+
+test('T-024 #13 threads page: the list hides merged threads by default; a toggle shows them; a kept thread says how many were merged', async () => {
+  const keep = await userThread('Keep'), dup = await userThread('Dup'), other = await userThread('Other');
+  await T.mergeThread(dup.id, { into: keep.id, by: 'lead' });
+  const rows = [keep, dup, other].map((t) => T.summary(T.getThread(t.id)));
+  const p = await threadsPage({ hash: '', list: rows });
+  const shown = () => [...p.ids.threads.all(), ...p.ids.closed.all()].filter((n) => n.tagName === 'a').map((a) => a.href);
+  assert.deepEqual(shown().sort(), [`#${keep.id}`, `#${other.id}`]);
+  assert.equal(p.ids['merged-box'].hidden, false);
+  assert.match(p.ids['merged-sum'].textContent, /Show merged threads \(1\)/);
+  assert.ok(p.ids.threads.all().some((n) => n.textContent === '+1 merged'), 'the kept row names its merged threads');
+  p.ids['show-merged'].checked = true;
+  for (const f of p.ids['show-merged'].listeners.change) f();
+  for (let i = 0; i < 10; i++) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(shown().sort(), [`#${keep.id}`, `#${dup.id}`, `#${other.id}`]);
+  assert.ok(p.ids.closed.all().some((n) => n.textContent === `merged into ${keep.id}`));
+  // no merged thread: no toggle
+  const q = await threadsPage({ hash: '', list: [T.summary(T.getThread(other.id))] });
+  assert.equal(q.ids['merged-box'].hidden, true);
+});
+
+// ---- T-089 (user): the Threads badge showed 1 with nothing unseen: a closed idle-alarm thread with 2 unread replies ----
+
+test('T-089 feedView: a closed thread with unread replies or a question adds nothing to the badge, unread or your-turn counts', async () => {
+  const a = await userThread('Open one');
+  const alarm = (await T.createThread({ by: 'lead', title: 'iPhone held, unused for 5 min', text: 'alarm' })).thread;
+  await T.replyAgent(alarm.id, { by: 'lead', text: 'still idle', ask: true });
+  assert.deepEqual([T.feedView().badge, T.feedView().unread, T.feedView().yourTurn], [1, 1, 1], 'open: counted');
+  await T.setStatus(alarm.id, { status: 'closed', by: 'lead', note: 'slot taken' });
+  const f = T.feedView();
+  assert.deepEqual([f.badge, f.unread, f.yourTurn], [0, 0, 0], 'closed: not counted');
+  assert.equal(f.threads.find((r) => r.id === alarm.id).unread, 2, 'the row still carries its unread count');
+  await T.replyAgent(a.id, { by: 'lead', text: 'answer' });
+  assert.equal(T.feedView().badge, 1);
+  // the server's desktop notifier: no event for a closed thread, also when it gets new replies
+  const w = [];
+  const watch = T.threadWatcher({ notify: (t, k) => w.push(`${k} ${t.id}`) });
+  watch(T.feedView().threads);
+  await T.setStatus(alarm.id, { status: 'open', by: 'lead' });
+  await T.replyAgent(alarm.id, { by: 'lead', text: 'again' });
+  await T.setStatus(alarm.id, { status: 'closed', by: 'lead' });
+  watch(T.feedView().threads);
+  assert.deepEqual(w, []);
+  // a user reply in a closed thread still reopens it (and in a merged one goes to the kept thread, T-024 #13)
+  assert.equal((await T.replyUser(alarm.id, { text: 'ok' })).thread.status, 'open');
+});
+
+test('T-089 threads page: a closed thread with unread replies has a quiet dot in the list, no red count, no highlight', async () => {
+  const t = (await T.createThread({ by: 'lead', title: 'Alarm', text: 'x' })).thread;
+  await T.setStatus(t.id, { status: 'closed', by: 'lead' });
+  const o = (await T.createThread({ by: 'lead', title: 'Open', text: 'y' })).thread;
+  const p = await threadsPage({ hash: '', list: [T.summary(T.getThread(t.id)), T.summary(T.getThread(o.id))] });
+  const closedRow = p.ids.closed.all().find((n) => n.tagName === 'a');
+  assert.equal(closedRow.className, 'trow');
+  assert.ok(closedRow.all().some((n) => n.className === 'dot'));
+  assert.ok(!closedRow.all().some((n) => n.className === 'unread'));
+  const openRow = p.ids.threads.all().find((n) => n.tagName === 'a');
+  assert.equal(openRow.className, 'trow news');
+  assert.ok(openRow.all().some((n) => n.className === 'unread'));
 });

@@ -420,3 +420,58 @@ test('I-119: thread new|reply keep http://lan:<port>/ as written (no IP stored);
   assert.doesNotMatch(show.stdout, /192\.168\./);
   assert.doesNotMatch(readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8'), /\b\d{1,3}(?:\.\d{1,3}){3}\b/, 'viewing stored nothing');
 });
+
+// ---- T-024 #13 (user, 2026-10-04): one topic, one thread: merge, relate, unmerge, SIMILAR on thread new ----------------
+
+test('T-024 #13 CLI: thread new SIMILAR (topic or close title) unless --force; merge/relate/unmerge; list and show print the links; a reply in a merged thread lands in the kept one', async () => {
+  const started = (r) => r.stdout.match(/^STARTED (T-\d+)/m)[1];
+  const keep = started(cli('thread', 'new', '--by', 'lead', '--title', 'Countdown clock re-renders all digits', '--text', 'x', '--topic', 'cd-strip'));
+  // prevention: same topic, or a close title -> SIMILAR, nothing started (exit 1); --force starts it
+  const s1 = cli('thread', 'new', '--by', 'lead', '--title', 'Something else', '--text', 'y', '--topic', 'cd-strip');
+  assert.equal(s1.code, 1);
+  assert.match(s1.stdout, new RegExp(`^SIMILAR ${keep} \\(same topic cd-strip\\)`, 'm'));
+  const s2 = cli('thread', 'new', '--by', 'lead', '--title', 'Countdown clock re-renders the digits', '--text', 'y');
+  assert.equal(s2.code, 1);
+  assert.match(s2.stdout, new RegExp(`^SIMILAR ${keep} \\(similar title\\)`, 'm'));
+  const dup = started(cli('thread', 'new', '--by', 'lead', '--title', 'Countdown clock re-renders the digits', '--text', 'y', '--force'));
+  const rel = started(cli('thread', 'new', '--by', 'lead', '--title', 'Roll on the graphics chip', '--text', 'z'));
+  // merge, refusals
+  const self = cli('thread', 'merge', dup, '--into', dup, '--by', 'lead');
+  assert.equal(self.code, 1);
+  assert.match(self.stderr, /into itself/);
+  assert.equal(cli('thread', 'merge', dup, '--into', 'T-999', '--by', 'lead').code, 1);
+  const m = cli('thread', 'merge', dup, '--into', keep, '--by', 'lead', '--note', 'one thread per topic');
+  assert.equal(m.code, 0, m.stderr);
+  assert.match(m.stdout, new RegExp(`^MERGED ${dup} into ${keep}`, 'm'));
+  const r = cli('thread', 'relate', keep, rel, '--by', 'lead');
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stdout, new RegExp(`^RELATED ${keep} ${rel}`, 'm'));
+  // list: merged threads are closed (hidden by default); --all names where they went; the kept line lists its links
+  const list = cli('thread', 'list').stdout;
+  assert.doesNotMatch(list, new RegExp(`^${dup} `, 'm'));
+  assert.match(list, new RegExp(`^${keep} .*merged here: ${dup}; related: ${rel}: Countdown clock`, 'm'));
+  assert.match(cli('thread', 'list', '--all').stdout, new RegExp(`^${dup} .*merged into ${keep}: `, 'm'));
+  const showKeep = cli('thread', 'show', keep).stdout;
+  assert.match(showKeep, new RegExp(`^  merged here: ${dup} \\[closed\\] Countdown clock re-renders the digits$`, 'm'));
+  assert.match(showKeep, new RegExp(`^  related: ${rel} \\[answered\\] Roll on the graphics chip$`, 'm'));
+  assert.match(cli('thread', 'show', dup).stdout, new RegExp(`^  merged into: ${keep} \\[answered\\]`, 'm'));
+  const json = JSON.parse(cli('thread', 'list', '--all', '--json').stdout);
+  assert.equal(json.find((t) => t.id === dup).mergedInto, keep);
+  // the page API: the summary and the thread carry the links; a user reply in the merged thread is stored in the kept one
+  assert.equal((await req('/api/threads')).json.threads.find((t) => t.id === dup).mergedInto, keep);
+  assert.deepEqual((await req(`/api/threads/${dup}`)).json.thread.into, { id: keep, title: 'Countdown clock re-renders all digits', state: 'answered' });
+  const up = await userPost(`/api/threads/${dup}/reply`, { text: 'Still here?' });
+  assert.equal(up.status, 200);
+  assert.equal(up.json.thread.id, keep);
+  assert.equal(up.json.thread.messages.at(-1).via, dup);
+  assert.match(cli('thread', 'show', keep).stdout, new RegExp(`#\\d+ user \\(written in ${dup}\\) at `));
+  const reopen = await userPost(`/api/threads/${dup}/reopen`, {});
+  assert.equal(reopen.status, 409);
+  assert.match(reopen.json.error, new RegExp(`merged into ${keep}`));
+  // unmerge undoes it (reopens the thread the merge closed)
+  const u = cli('thread', 'unmerge', dup, '--by', 'lead');
+  assert.equal(u.code, 0, u.stderr);
+  assert.match(u.stdout, new RegExp(`^UNMERGED ${dup} from ${keep} \\(reopened\\)`, 'm'));
+  assert.equal(cli('thread', 'relate', keep, rel, '--by', 'lead', '--remove').code, 0);
+  assert.doesNotMatch(cli('thread', 'list').stdout, new RegExp(`^${keep} .*(merged|related)`, 'm'));
+});
