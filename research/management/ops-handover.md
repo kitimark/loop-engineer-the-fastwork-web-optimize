@@ -42,6 +42,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 08:0xZ Landed: ops bd29c3e1, I-124 disk guard 62d1f2f8. More merges, on the lead's go:
+  - heat: T-039 closed into T-029;
+  - breakpoints: T-040, T-053, T-063 closed into T-034.
+
+  Each canonical thread got a merge note. **ts-threads** (spawned 07:57Z) adds `thread merge <dup> --into <keep>`, relate and unmerge, a Related box and a Merged banner, routing to the kept thread, and a SIMILAR check on `thread new`. After it lands it backfills these manual merges. Until then the desk merges by hand: self-assign, `close --note "Merged into …"`, then a note in the kept thread.
+
+  fix-hero-exit-threaded:
+  - land request for its README commits e0040db3 and 25bc2488 (first-swipe trace: the countdown digit redraw is about 40 of 61 paints in the first 200 ms, OBSERVED, Simulator);
+  - the morph proposal waits on fix-nav-morph's setter and gate.
+
 - 10-04 07:5xZ The lead landed the ops commits as e5a1c2df (not waiting for ts-i118: v6 is both last and flagged). **Countdown rulings (lead):**
   1. cd-strip goes into the next best build. cd-roll-ca joins it if the user lands PR-017; if PR-017 is parked, cd-strip goes alone. The build runs after P-093 and the PR-017 decision. A wave integrator (wi-countdown) builds B-R2 + cd-strip [+ cd-roll-ca] with the identity check, Chrome functional + census, Simulator pixels and one phone no-worse check. The result becomes **v7**.
   2. countdown-faces (b), hide while unseen: owned by fix-cd-roll-ca after cd-roll-ca lands, on top of it, in its own branch. Nobody starts it before then.
