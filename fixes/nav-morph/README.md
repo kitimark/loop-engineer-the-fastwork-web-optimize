@@ -158,12 +158,12 @@ then the lead.
 
 Status: ops second read PASS on db908c97 (scorer 8595714c83f9); the lead approved it as the ticket. After that, the
 scorer got one cosmetic fix: the block-void summary now prints "VOID (fewer than 3 of 4 C runs pass)". Final scorer
-hash ad0037856fa5, re-run on the fixture below with identical scores. Registration with mgmt-ops-10 (P-091 or later)
-only after T-052 lifts the I-098 pause; phone queue slot behind P-088.
+hash ad0037856fa5, re-run on the fixture below with identical scores. Registered by mgmt-ops-10 as **P-091**
+(re-hashed at 6e9d5e33); phone queue: second, after P-088 and before P-092.
 
 ```
-TICKET f3-edge-residual · prediction id: assigned at registration after T-052 lifts the timing pause (P-091 or later;
-  P-089 is rest-script's, P-090 fix-carousel-leaver's G)
+TICKET f3-edge-residual · prediction id P-091 (registered by mgmt-ops-10; P-089 is rest-script's, P-090
+  fix-carousel-leaver's G)
 arms (fixes/best-build/gates/arms.mjs PIN; sha256/12 as served, JS _app/immutable/nodes/2.DyWL8TcE.js /
   CSS _app/immutable/assets/2.gBuqKVzi.css):
   V = best build N, out/snapshots/best-65052c4a3902 (fixes/best-build/build.mjs --snapshot), JS 65052c4a3902 /
@@ -199,6 +199,9 @@ expected minutes: ~45 (3 holds <= 10 min each + gates; cooling by phone-temp onl
   A, reported in T-039 (the lead's switch, recorded in the block log)."
 - A start read that fails before any run, with no step taken and no files written ("state changed during the read"),
   is not a strike (ops ruling on P-085 h165958, the lead agreed).
+- One start method: pre-warm on the plain baseline page (B, the C arm's server), the same way before every hold.
+  [Amendment before any data, registered as P-091 by mgmt-ops-10: the lead's P-073 ruling; it is not a new attempt.]
+- I-098 rules: a hold that spans a Mac sleep is VOID and re-run; after 2 sleep-VOIDs in a row, park.
 
 **How a run is scored** (edge-score.mjs; the rules are in its header, summarised here):
 - **Crossing.** The IO `ObserverCallback` whose `FunctionCall` child is the arm's callback line (V 13378:13, C
