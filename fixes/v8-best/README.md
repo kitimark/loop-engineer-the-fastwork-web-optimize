@@ -476,6 +476,62 @@ predictions (before data):
 minutes: ~16 (1 hold).
 ```
 
+## P-113 result (2026-10-04 16:3xZ-16:5xZ, iphone-runner; scored by int-v8): NOT REPRODUCED
+
+Hold H1 VALID (iphone-runner): all 14 items exited 0, after 1 pre-warm run. Thermal gate Serious at the start (39.4 °C)
+and the end (40.2 °C); pmcheck OK. Both heat sentinels passed (sCo, sCc), and every G run is valid. Scorer
+`score.mjs` 0daf43f6df58 (base 26d944bf93e2), output out/p113/score.json (sha256 e8591855…).
+
+Band = bins 9-11, scrollY 2250-2999. "Max" is the largest moving frame in the band, in ms. A cluster is present at
+> k ms when ≥ 2 of an arm's 3 runs have a frame > k in the same band bin.
+
+| arm | band max per run | median | > 50 | > 46 | > 54 | runs with a > 50 frame in bin 9 |
+|---|---|---|---|---|---|---|
+| C = v8 | 50 / 52 / 49 | 50 | absent | present | absent | 1 of 3 (gHC2 52 @ 2456) |
+| F = v8 − faces − glue | 48 / 52 / 50 | 50 | absent | present | absent | 1 of 3 (gHF2 52 @ 2435) |
+| R = v8 with V9 for K | 52 / 50 / 48 | 50 | absent | present | absent | 1 of 3 (gHR1 52 @ 2487) |
+
+- **Block verdict: NOT REPRODUCED.** v8 (C) has no > 50 cluster in the band, so there is nothing to attribute.
+- **Threshold-sensitive.** At > 46 the cluster is present in all three arms: removing faces + glue, or putting V9 back
+  for K, leaves it in place, so both twin verdicts read NOT THE CAUSE. At > 54 nothing is present in any arm.
+- **The three arms look the same.** Each has the same band-max median (50 ms) and exactly one run with a single > 50
+  frame in bin 9.
+- Moving > 50 counts per run (gate rows, reported only):
+
+  | arm | > 50 per run |
+  |---|---|
+  | C | 7 / 8 / 9 |
+  | F | 6 / 12 / 4 |
+  | R | 9 / 7 / 10 |
+
+  Count gate against C: F −2 and R +1, both no-worse.
+- The uncounted warm-up wgR had one 57 ms frame at 2703. Warm-ups don't count, and there is one per arm port.
+
+Mac load1 per run (`mac.start`/`mac.end`). Quiet throughout. A shared job ("ts-board", weight 2) ran beside some runs,
+at load1 3.2-5.5.
+
+| part | load1 |
+|---|---|
+| C runs | 2.8-4.1 |
+| F runs | 2.1-3.2 |
+| R runs | 2.8-4.7 |
+| warm-ups | 3.2-4.6 |
+| sentinels | 3.2-4.4 |
+
+Predictions check:
+
+| prediction | P | outcome |
+|---|---|---|
+| C reproduces | 0.6 | missed |
+| faces + glue CAUSE | 0.55 | not reached |
+| K CAUSE | 0.15 | not reached |
+| sentinels pass first try | 0.8 | hit |
+
+Consequence (lead's pre-data rule): no further block on this question. P-111's G part H WORSE (the new 2500-2749
+cluster) stands as **threshold-sensitive and unreplicated**. On a quiet Mac, v8's band frames sit at the 50 ms line
+(max 48-52 ms), whether faces, the glue and K are in or out. Cross-block values don't compare, and P-113 had no v7 arm.
+The v8-vs-v7 question goes to the lead's single confirm block, P-114 (v7 against the composition the lead picks).
+
 ## Reproduce
 
 ```sh
