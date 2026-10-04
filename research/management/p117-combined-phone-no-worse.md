@@ -141,3 +141,32 @@ int-v8, branch worktree-agent-a068af37646232e05 @ 833fb29e (not landed yet). sha
   - p117/score.mjs, its self-test on P-105's records, and their hashes (int-v8);
   - fix-nav-morph's VA audit on V e8d8323f674b, with the N1 case.
 - **Servers** start at block time from int-v8's snapshot, not before. Ports go to the runner by message.
+
+## Scorer filled in by int-v8 (2026-10-05, before data)
+
+Committed at 10e19597. Hashes are sha256/12.
+
+| item | hash |
+|---|---|
+| fixes/v8-best/phone/p117/score.mjs | 23cfb35e5516 |
+| fixes/v8-best/phone/p117/selftest.mjs | ee670bf1474e |
+| imported P-105 scorer fixes/v7-best/phone/score.mjs (unchanged; refused if changed) | b9a29ffcc7bb |
+
+- **Self-test: 25/25 OK.**
+  - It ran P-105's own records with P-105's arms: S from H1r and H2, and GM from H5, with sC-H5-open as sCo and sC-H5 as sCc.
+  - S: d −1 at > 50 (+0.5 at > 46, −0.5 at > 54), no-worse.
+  - GM: d 0 at > 50 (+1 at > 46, 0 at > 54), no new cluster, no-worse.
+  - Both gate objects are byte-identical to P-105's scoreBlock run directly on the same items.
+  - GM's cluster rule is threshold-sensitive on that data: at > 46 there is a new cluster at 3250-3499. This is as in P-105.
+- **How the served check gets the arm hashes.**
+  - S: the record's meta.served is checked against P-117's C and V, using P-105's prefix rule. P-105's own "served not arm" void is replaced, because it checks v6/v7. All other voids stay.
+  - G: the hold's check log must have ok lines for B, C and V. Their JS/CSS must match B 4606120cf392 / 27776f3d4138, C 3e3e94cb6e9f / f836404b3728 and V e8d8323f674b / f836404b3728. A failing log goes to P-105's scoreG with WRONG added, so scoreG voids the run with its own reason.
+- **Block verdict order (the lead's ruling, 2026-10-05): WORSE first, then insufficient, then no-worse.**
+  - This is P-114's order. It differs from P-105's scoreBlock, which puts insufficient first.
+  - A WORSE gate or a NEW CLUSTER is never hidden behind an insufficient leg.
+- **Card checks.**
+  - V − scroll-cb = fd3688901f50.
+  - V − nav-hit-cache = 4c48e372ecdd.
+  - V adds no window.* debug hook (C and V both have only __fwMD and __fwMorphDrive), and has no VA audit hook.
+  - `__nsForce = !0` is nav-hit-cache's own internal let, unchanged from P-107's V.
+- **fwCheck kept (the lead's ruling, 2026-10-05).** fix-scroll-cb's N2 re-count measures V with fwCheck in.
