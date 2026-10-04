@@ -580,6 +580,13 @@ iPhone protocol on top of the lease:
    The user can "Start over" a started step (two taps): every part runs again with a new attempt, your waits exit 5
    `REDO` (reset the phone, wait for the new Start; `wait --until redo` in the background during a long part); label
    files with the `attempt` in the MET JSON and pass `ack --attempt N` so a late ack from an old try is refused.
+   One phone step at a time (I-123, memory "one-phone-step-at-a-time"): post a swipe-pair, `--record` or `--phone`
+   step only while you hold the iphone lease and no other phone step is open (`post` refuses otherwise; the lead is
+   exempt). From part 1 keep `wait <id> --until redo` armed in the background; re-arm a wait with `--epoch <last epoch
+   you saw>` (a wait armed after a missed Start over exits 5 REDO at once). While your step is on the phone the lock
+   keeps your lease up to 10 min past expiry (`lock.mjs status`: KEPT); renew anyway. `iphone.mjs` refuses (WAIT)
+   while another agent's step is on the phone (`--ignore-step <id>` only for an abandoned step); `idle.mjs check`
+   prints STUCK when a step waits on its runner > 2 min (`--step-min`), and the lead's watch posts one thread.
 4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
    navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
    no hand-made retry loops).
