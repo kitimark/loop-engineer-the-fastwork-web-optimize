@@ -661,9 +661,11 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
   `--max-seconds` fits into while you neither hold nor queue for chrome-measure, or after the block. The warm
   Simulator's keeper shuts it down when the lease holder's `--no-timing` hold is held or queued, not only for a timing hold.
 - **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
-  (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
-  until the battery temperature is at or below the last passing sentinel's minus 0.5 °C, 38 if none today
-  (`wait.mjs phone-temp --below <°C>`), at most 10 min; the sentinel still decides validity; then the block restarts. **Timeline blocks** (every counted run captures Timeline): the sentinel is one
+  (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; under a real-heat
+  profile the phone cools until the battery temperature is at or below the last passing sentinel's minus 0.5 °C, 38 if
+  none today (`wait.mjs phone-temp --below <°C>`), at most 10 min; under `xcode-serious` (the default since user T-162 #3,
+  memory "phone-checks-start-warm") there is no heat pre-warm and no cooling wait; the sentinel still decides validity;
+  then the block restarts. Every ticket names its profile; profiles never pool (ops-handover "Phone ticket profile"). **Timeline blocks** (every counted run captures Timeline): the sentinel is one
   uncounted Timeline-OFF control run after the warm-up(s) and one at the block end (only the end one if Timeline-on
   control data already meets both criteria, bottom ≥58 and scroll ≥44); counted runs keep Timeline on in every arm
   and are judged within the block; attribution runs come after the end sentinel (protocol §5.2, 441f15f).
