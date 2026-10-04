@@ -152,6 +152,12 @@
             "command": "node",
             "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/git-guard.mjs"],
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/fg-guard.mjs"],
+            "timeout": 10
           }
         ]
       }

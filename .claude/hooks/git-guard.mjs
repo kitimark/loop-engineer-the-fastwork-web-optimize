@@ -220,6 +220,7 @@ export function splitCommands(src, depth = 0) {
     if (c === ';' || c === '|' || c === '(' || c === ')') { endCmd(); i++; continue; }
     if (c === '&') {
       if (src[i + 1] === '>') { endWord(); i += 2; if (src[i] === '>') i++; dropNext = true; continue; } // &> file
+      if (src[i + 1] !== '&' && src[i - 1] !== '&' && src[i - 1] !== '|') cur.bg = true; // `cmd &`: a background job (fg-guard)
       endCmd(); i++; continue;
     }
     if (c === '>' || c === '<') {
@@ -268,10 +269,14 @@ function envWord(w, findings) {
 const KEYWORDS = new Set(['!', 'if', 'then', 'else', 'elif', 'do', 'while', 'until', '{', '}', 'exec', 'nocorrect', 'noglob', 'builtin']);
 const base = (p) => p.slice(p.lastIndexOf('/') + 1);
 
-/** Strip assignments, keywords and wrappers. Returns { argv, envCfg } or null (not an invocation). */
-function unwrap(words, findings) {
+/**
+ * Strip assignments, keywords and wrappers. Returns { argv, envCfg } or null (not an invocation).
+ * onLayer(words), when given, sees each layer before it is stripped (fg-guard: `caffeinate ...`, `node lock.mjs run ... --`).
+ */
+export function unwrap(words, findings, onLayer) {
   let w = words.slice();
   for (let guard = 0; guard < 32 && w.length; guard++) {
+    if (onLayer) onLayer(w);
     const h = w[0];
     if (ASSIGN.test(h)) { envWord(h, findings); w.shift(); continue; }
     if (KEYWORDS.has(h)) { w.shift(); continue; }
