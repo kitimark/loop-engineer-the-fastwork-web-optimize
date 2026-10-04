@@ -1,0 +1,133 @@
+{
+ "schema": "fw-evidence/1",
+ "topic": "nav-morph",
+ "capMB": 200,
+ "items": [
+  {
+   "path": "out/costcard/h1.json",
+   "why": "Chrome cost-card run records (hold 1) behind the counts in costcard.md / costcard.json sources.chrome",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/h2.json",
+   "why": "Chrome cost-card run records (hold 2) behind the counts in costcard.md / costcard.json sources.chrome",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/costcard-sim-r1-2026-10-03T10-08-58-021Z-cut.json",
+   "why": "Simulator cost-card session record (per-load counts) behind costcard.md / costcard.json sources.sim",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/costcard-sim-r2-2026-10-03T10-27-52-181Z-cut.json",
+   "why": "Simulator cost-card session record (per-load counts) behind costcard.md / costcard.json sources.sim",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/costcard-sim-r3-2026-10-03T11-44-59-449Z-cut.json",
+   "why": "Simulator cost-card session record (per-load counts) behind costcard.md / costcard.json sources.sim",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/covermap-2026-10-03T12-10-06-844Z.json",
+   "why": "touch-listener coverage map cited in costcard.md (raw output)",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/f3a/tl-C-2026-10-03T12-40-43-928Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-C-2026-10-03T13-17-41-361Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-C-2026-10-03T14-01-10-919Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-M-2026-10-03T14-01-10-919Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-P-2026-10-03T13-17-41-361Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-V-2026-10-03T12-40-43-928Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint-2026-10-03T12-40-43-928Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint-2026-10-03T13-17-41-361Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint-2026-10-03T14-01-10-919Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint2-2026-10-03T12-50-58-311Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/read1.json",
+   "why": "tween-paint-read output for the 12:40Z A step 1 run (README 'A, step 1')",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/c-recount-tween-2026-10-03T15-02-07-432Z.json",
+   "why": "(c) recount tween side run record cited in README (paint counts M vs P)",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/tl-M-2026-10-03T15-02-07-432Z.json",
+   "why": "Timeline (arm M) behind the (c) recount tween paint counts",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/tl-P-2026-10-03T15-02-07-432Z.json",
+   "why": "Timeline (arm P) behind the (c) recount tween paint counts",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/c-recount-hold-2026-10-03T15-10-05-976Z.json",
+   "why": "(c) recount hold side run record cited in README (m = 1 hold paints per window)",
+   "kind": "result",
+   "for": "README.md"
+  }
+ ]
+}
