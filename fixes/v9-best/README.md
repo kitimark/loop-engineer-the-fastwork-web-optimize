@@ -94,37 +94,42 @@ With two or more components, the script also checks:
 ## Phone no-worse ticket (DRAFT, less-work rule; not registered, no id yet)
 
 Draft for the lead and mgmt-devices so the phone has a job ready. It is registered only after the lead's pre-data
-read, once the set is stable. The hashes below are step 2: rev 7c + double-drive, with double-drive's last two checks
-(Simulator pixels set 2, desktop commission recheck) still pending.
+read, once the set is stable. The hashes below are step 4: rev 7c + double-drive + scroll-cb (carry) + PR-021 rev 3
+(JS de237379b556 / CSS e1359ab9994a); they change whenever a component is added (nav-hit-cache, toolbar-resize,
+morph-close-peak), so the ticket is registered on the final set. Profile (user T-162 #3, mgmt-devices): xcode-serious.
 
 ```
 PHONE TICKET P-<lead> v9-best · less-work no-worse check (v8 C vs v9 V; the legs the two parts touch)
   · runner iphone-runner · verdict owner int-v8 · registered before any phone data; no counted run before the lead's
   pre-data read
-build: V = v9 = fixes/v9-best/patch.diff (v8 + PR-018 rev 7c + double-drive), served
-  JS ab6f1062aaeb03b4f3b71056e9c0bf17379b1bd7568fc9e26b73eb2d7bc44964,
-  CSS 40037dc99f115b89b63114f6a95ea8401a7f938f6e4307057dfd52dcf8ab0b79
+build: V = v9 = fixes/v9-best/patch.diff (v8 + PR-018 rev 7c + double-drive + scroll-cb + PR-021 rev 3; step 4,
+  provisional until the set is final), served JS de237379b556 (full sha256 in out/v9/snap-de237379b556/HASHES.txt),
+  CSS e1359ab9994a
 control: C = v8 = fixes/v8-best/patch.diff, JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16,
   CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43. Mirror snapshot b1789284481295-4ad4a84a.
-copies: out/v9/snap-ab6f1062aaeb/{A = C, V} in int-v8's worktree (fixes/v9-best/build.mjs, strict applier, order and
+copies: out/v9/snap-de237379b556/{A = C, V} in int-v8's worktree (fixes/v9-best/build.mjs, strict applier, order and
   reversal identities), read-only, HASHES.txt (full sha256 as above). B = plain baseline 4606120cf392 / 27776f3d4138.
-question: at real thermal Serious, does v9 add slow frames over v8 (a) in the menu morph's open/close at the page end
+question: under the xcode-serious profile, does v9 add slow frames over v8 (a) in the menu morph's open/close at the page end
   (rev 7c changes how a swipe commits the morph), (b) in fast flicks through the middle of the page (people, pain,
   commission: double-drive's commission card), (c) in fast flicks into the page end (start-selling: double-drive's
   future card, and rev 7c's swipe rule)? No-worse only. Landing basis: identity checks, function check, frozen
   pixels and work counts in this README; rev 7c's user finger A/B (C-052) is its own landing basis.
-ports, thermal gate, start method, sleep check: as P-111/P-117 (serve.mjs --port 0 --latency 150 --vendors=local,
-  plain http; served-hash check before every item, exit 4 on a wrong one; thermal-gate.mjs --expect serious --max-c 44
-  at the start and end of every hold; pre-warm on B with S runs, at most 4; pmcheck.mjs). A hold counts only if both
-  reads PASS; else VOID, re-run once with the same items. Ports go to the runner by message.
+profile: xcode-serious = Xcode Device Conditions Serious, Is Induced = Yes. No heat pre-warm. Gate once at the start and
+  once at the end of every hold with thermal-gate.mjs --accept-induced (mgmt-devices, 8e4eacbb); keep the one uncounted
+  load warm-up per arm port (A3/U5). xcode-serious blocks never pool with real-heat blocks: P-118 is real heat, so v9
+  data and P-118 data do not pool. A decisive check (does induced Serious slow the chip like real heat?) runs first and
+  belongs to iphone-runner; if induced slows nothing, one real-heat confirmation block for the final best build is added later.
+ports, start method, sleep check: as P-111/P-117 (serve.mjs --port 0 --latency 150 --vendors=local, plain http;
+  served-hash check before every item, exit 4 on a wrong one; pmcheck.mjs). A hold counts only if both gate reads PASS;
+  else VOID, re-run once with the same items. Ports go to the runner by message.
 holds (each <= 10 min, inside the runner's exclusive no-timing chrome-measure hold):
   M leg  H1: wC wV mC1 mV2 mV3 mC4 · H2: mC5 mV6 mV7 mC8
   G leg  H3: sC gMC1 gMV1 gMV2 gMC2 gMC3 gMV3 sC · H4: the same for E (gEC/gEV)
   then iphone.mjs park; int-v8 stops the servers.
 M leg (driver M, P-098's, as P-111): hold 2000 ms, cycles 3 (6 tweens at max scrollY), C V V C C V V C, n = 4 per arm;
-  every counted C M run is a heat sentinel (held m=1 p95 <= 18 ms). wC/wV: one uncounted warm-up per arm port.
+  every counted C M run is a validity sentinel (held m=1 p95 <= 18 ms; a sentinel check, not a heat pre-warm). wC/wV: one uncounted warm-up per arm port.
 G leg (driver G, P-105's scripts byte for byte): M flick-middle-v1.json 0f97205f1d42, E flick-end-v1.json
-  93a1cf7bb091; 3 runs per arm C V V C C V; sC S runs on C open and close each G hold (heat sentinels, uncounted).
+  93a1cf7bb091; 3 runs per arm C V V C C V; sC S runs on C open and close each G hold (validity sentinels, uncounted).
 scorer: P-111's fixes/v8-best/phone/score.mjs imported unchanged (sha refused if changed), arms re-pinned to C = v8,
   V = v9 (P-117's pattern); self-test on P-111's own records must give P-111's Mmoving, Mtweens, GM, GE gates.
   Gates: Mmoving (> 50 WORSE when d > +1, > 34 when d > +2), Mtweens (O1.f1-f3, close.f1/f3 WORSE when d > +2 ms),
@@ -132,5 +137,5 @@ scorer: P-111's fixes/v8-best/phone/score.mjs imported unchanged (sha refused if
   when a twin's verdict differs. Fewer than 3 valid runs per arm (per part): insufficient.
 verdict: WORSE if any gate is WORSE or has a NEW cluster; else insufficient if any is; else no-worse (P-114's order).
   WORSE -> int-v8 splits by the reversal builds (v9 - rev 7c, v9 - double-drive) and reports to the lead.
-minutes: ~50 (4 holds + pre-warm and gates).
+minutes: ~45 (4 holds + gates, no pre-warm).
 ```
