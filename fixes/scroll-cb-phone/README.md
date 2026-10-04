@@ -548,6 +548,31 @@ rAF and rects, Simulator side rAF and rects. `desk`: |V mean − C mean| ≤ 0.0
 - No new V is needed. P-108 judges the Simulator Paint guard by the item 6 rule from its own 4 C loads.
 - Parity in this run: V1 and V2 vs C1 0 diffs, C2 vs C1 0, including the new `geom` entries.
 
+## P-108 result
+
+Ops pre-data read: FAIL at 4354a187 (one VOID limit for all viewports), PASS at 23940497 (N_vp frozen per viewport).
+Harness pins re-checked before the first load: all six match item 2.
+
+**Chrome** (`out/scroll-cb-phone/run-p108-chrome.sh`, 20 shared probe holds, 40 loads, 0 page errors, equal step
+counts per viewport; JS C 65052c4a3902 / V 27f23f6a3878, CSS e0f92804c521; scored with the item 7e command):
+
+| viewport | judged (C mean → V mean, per step) | judged | Paint V−C (tol) | other guards | max C-vs-C1 (N_vp) | parity beyond A/A (geom) |
+|---|---|---|---|---|---|---|
+| `phone` | side rAF 2.482 → 0.655, rects 3.881 → 1.564 | PASS (below every C) | +0.043 (0.112) | PASS | 0 (5) | 0 / 0 / 0 / 0 (0) |
+| `phone775` | side rAF 2.310 → 0.568, rects 3.597 → 1.355 | PASS | −0.071 (0.297) | PASS | 0 (5) | 0 / 0 / 0 / 0 (0) |
+| `desk` | side rAF 2.398 = 2.398, rects 3.659 = 3.659 | PASS (equal) | +0.001 (0.05) | PASS | 0 (19) | 0 / 0 / 0 / 0 (0) |
+| `desk900` | AE rAF 0.447 → 0.230, rects 0.894 → 0.460 | PASS | +0.010 (0.114) | PASS | 0 (5) | 0 / 0 / 0 / 0 (0) |
+| `resize` | side rAF 2.611 → 0.767, rects 4.084 → 1.708 (reported) | report | −0.038 (0.05) | PASS | 1 (9) | 0 / 0 / 0 / 0 (0) |
+
+- FireAnimationFrame per step drops by about 1.8 at `phone`, `phone775` and `resize`, and by 0.23 at `desk900`.
+- No viewport is VOID. Deferral sizes: every V value is one C wrote, except `resize` V3's commission 1202.97 px. That
+  value appears in the noise run's C3; V3's one diff is the same step-1215 `geom` entry this block's C3 differs on
+  (A/A), so `geom` beyond A/A is 0 and item 7(c) passes it.
+- Chrome legs: PASS.
+
+**Simulator and pixels:** pending. They run in exclusive `--no-timing` holds in the gap after P-112 (lead, I-160):
+`out/scroll-cb-phone/run-p108-sim.sh`.
+
 ## Risks, conflicts, follow-ups
 
 - Up to 12 extra IntersectionObservers on phones (commission 4, future 6, platform 2). Their cost is not in these counts
