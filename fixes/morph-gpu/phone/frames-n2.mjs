@@ -29,8 +29,9 @@
 // probe saw no m; tween starts in the probe frames != 2 x cycles.
 // Counted runs carry --arm C / V, so iphone.mjs judges every counted C run as an M heat sentinel (tools/lib/iphone-run.mjs:
 // meta.sentinel, held m=1 p95 <= 18 ms). Protocol v2 §5.2: a failing control voids every run since the last passing one;
-// this scorer applies that in the order the files are passed (block order): a C run with meta.sentinel.pass === false
-// voids itself and every counted run after the previous passing C run. The block's S-driver sentinels (start / end)
+// this scorer applies that in the order the files are passed (block order): a C run whose meta.sentinel.pass is not
+// true (false = a fail; a missing sentinel or pass null = not judged, treated as a fail, P-092 R1) voids itself and
+// every counted run after the previous passing C run. The block's S-driver sentinels (start / end)
 // are judged by iphone.mjs and the runner, not here.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -85,8 +86,10 @@ for (const r of runs) {
 }
 { let since = []; // protocol v2 §5.2 sentinel rule, in block order
   for (const x of out.runs) { since.push(x);
-    if (x.arm === 'C' && x.sentinel && x.sentinel.pass === true) since = [];
-    else if (x.arm === 'C' && x.sentinel && x.sentinel.pass === false) { for (const y of since) y.void.push(`sentinel fail at C pos ${x.pos} (${JSON.stringify(x.sentinel.value)})`); since = []; } } }
+    if (x.arm !== 'C') continue;
+    if (x.sentinel?.pass === true) { since = []; continue; }
+    const why = !x.sentinel ? 'no meta.sentinel (null)' : x.sentinel.pass === false ? `fail ${JSON.stringify(x.sentinel.value)}` : `pass ${x.sentinel.pass} (not judged${x.sentinel.note ? ': ' + x.sentinel.note : ''})`;
+    for (const y of since) y.void.push(`M sentinel not passed at C pos ${x.pos}: ${why}`); since = []; } }
 const valid = out.runs.filter((x) => !x.void.length && x.moving);
 const arms = [...new Set(valid.map((x) => x.arm))];
 out.arms = {};

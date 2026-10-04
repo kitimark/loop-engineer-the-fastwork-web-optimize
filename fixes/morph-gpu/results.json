@@ -277,7 +277,7 @@
   },
   "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/.",
   "phoneBlock": {
-    "status": "registered, before any phone data; timing paused under I-098 until the user answers T-052; prediction id and ops second read from mgmt-ops-10 pending",
+    "status": "registered before any phone data; ops second read R1-R3 + pre-warm ruling answered, awaiting the ops re-read; timing paused under I-098 until the user answers T-052",
     "question": "At real thermal Serious under driver M at the page end, does V show no more long moving frames than C?",
     "kind": "no-worse check under the less-work rule (not top-3: no finger test)",
     "builds": {
@@ -294,21 +294,23 @@
     },
     "driver": "M (iphone.mjs run --driver morph --probe std, hold 2000 ms, cycles 3)",
     "order": "C V V C C V V C, n = 4 per arm; one uncounted warm-up per arm port",
-    "condition": "T-039 B: thermal-gate.mjs 4604218c4041 at start and end of each hold, 44 C / Critical ceiling, one pre-warm method on C, LPM dropped",
+    "condition": "T-039 B: thermal-gate.mjs 4604218c4041 at start and end of each hold (on the plain-baseline port), 44 C / Critical ceiling, one pre-warm method on the plain baseline page for every arm (lead ruling, P-073 lesson), LPM dropped",
     "scorer": {
       "file": "fixes/morph-gpu/phone/frames-n2.mjs",
-      "sha256": "fad6d7eadcb4",
+      "sha256": "f3a50b8ec2dd",
+      "supersedes": "fad6d7eadcb4 (a C run with no sentinel or pass null was not voided; ops R1)",
       "derivedFrom": "fixes/morph-inherit/p085/frames-p085.mjs 385eb00f1564"
     },
     "predictions": {
-      "f50": "0, <= +1, P 0.85",
-      "f34": "0, <= +2, P 0.85",
+      "f50": "0, no-worse at <= +1, WORSE above +1, P 0.85",
+      "f34": "0, no-worse at <= +2, WORSE above +2, P 0.85",
       "better": "no, P 0.95 (C at the floor: P-085 mi moving >50 1,0,0,1)",
       "wdt": "0 ms, |d| <= 1, P 0.7",
       "sentM": "pass, P 0.8",
       "sent": "pass, P 0.75"
     },
-    "decisions": "no-worse (or better) on f50 and f34, not threshold-sensitive, drive no-worse -> land request; WORSE -> lead, no land request; threshold-sensitive or drive WORSE -> lead, no verdict; insufficient/void -> re-run once, second void -> lead",
-    "expectedMinutes": "30 (25-45)"
+    "decisions": "no-worse (or better) on f50 and f34, not threshold-sensitive, drive no-worse -> land request; WORSE -> lead, no land request; threshold-sensitive (moving or drive scope) or drive WORSE -> lead, no verdict; insufficient/void -> re-run once, second void -> lead",
+    "expectedMinutes": "30 (25-45)",
+    "id": "P-092"
   }
 }

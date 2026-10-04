@@ -296,8 +296,8 @@ toolbar resize · rubber band · reduced motion in the Simulator or on the phone
 
 PR-012 rev 1's gain row 5 ("Smoothness on the iPhone, pending, UNRESOLVED"). A short no-worse check under the less-work
 rule (`memory/less-work-landing-rule.md`; N2 is not one of the top three, so no finger test), not a gain block. Timing:
-paused under I-098 until the user answers T-052. The prediction id and the ops second read come from mgmt-ops-10
-before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran clean.
+paused under I-098 until the user answers T-052. Prediction id **P-092** (mgmt-ops-10); this text answers the ops
+second read (R1-R3 and the pre-warm ruling) and goes back to ops for one re-read before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran clean.
 - **Question (one).** On the iPhone at real thermal Serious, under the morph driver M at the page end, does the reveal
   (V) show no more long moving frames than today's best build (C)?
 - **Builds** (immutable snapshot copies, `node fixes/morph-gpu/build.mjs`; without the overlay it rebuilds V from
@@ -311,17 +311,20 @@ before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran cl
   - Checkout and who runs it: the lead's call (P-085 ran on main with the runner's lease). The builds need only this
     branch's `fixes/morph-gpu/` and `fixes/best-build/`.
 - **Servers and ports**, one per arm: `node tools/serve.mjs --root site-pretty --overlay out/snapshots/<snapshot>
-  --port 0 --https --vendors=local --latency 150 --no-cache --state out/morph-gpu/phone/serve-<arm>.json`. The phone
-  loads the plain http twin (I-003). Ports go in the block log, never 5173; no LAN address in any committed file.
+  --port 0 --https --vendors=local --latency 150 --no-cache --state out/morph-gpu/phone/serve-<arm>.json`, plus one
+  plain-baseline server for the pre-warm and the gate reads (the same command without `--overlay`, state
+  `serve-base.json`; no run is counted on it). The phone loads the plain http twin (I-003). Ports go in the block log, never 5173; no LAN address in any committed file.
 - **Driver M.** `iphone.mjs run --driver morph --probe std` with the defaults hold 2000 ms and cycles 3: 6 tweens per
   run through `E(1)` / `E(0)` at the page's max scrollY. The phone is 430 px wide, so the reveal is on in V
   (`width <= 640px`).
 - **Condition** T-039 B (`memory/phone-checks-start-warm.md`), as P-085:
   - Real thermal Serious. Every hold runs `research/phone-thermal-gate/thermal-gate.mjs` (sha256 `4604218c4041`,
-    `--expect serious --max-c 44 --url http://lan:<twin C>/`) at its start and end; a hold counts only when both reads
+    `--expect serious --max-c 44 --url http://lan:<twin base>/`) at its start and end; a hold counts only when both reads
     say Serious with Is Induced = No, else it is re-run. Stop at 44 °C battery or Critical; cool before the next hold.
   - Two gate strikes (two gate-failed holds) → roll back to A (the lead's switch, in T-039 and the block log).
-  - One start method: pre-warm on C's port the same way before every hold.
+  - One start method: pre-warm on the plain baseline page (the base port) the same way before every hold and for
+    every arm, as `memory/phone-checks-start-warm.md` says and P-085 did (the lead's ruling via ops on P-092, the P-073
+    lesson: the start method must not confound the arm; the first draft said C's port).
   - Logged per run: battery °C, charging state, the timer-grid median. A Low Power Mode run is dropped and re-run.
   - Phone parts run inside the runner's own `lock.mjs run chrome-measure --no-timing --max-seconds 600` hold, with the
     `iphone` lease (I-056); `iphone.mjs open <twin URL>` before every run.
@@ -331,17 +334,19 @@ before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran cl
   --block N2 --arm C|V --pos <1-8> --build best-65052c4a3902|rv-372b99478871 --label n2-<arm>-<pos>`.
   - Arm C is the control, so iphone.mjs judges every counted C run as the M heat sentinel (held m = 1 p95 ≤ 18 ms,
     `tools/lib/iphone-run.mjs`). P-085's mi arm (best-build minus platform-idle) held 17 ms in 4 of 4 runs at Serious.
-    The protocol rule applies (§5.2): a failing C run voids every counted run since the last passing one. If ops
-    prefers P-085's way (a non-C control letter, no M sentinel on counted runs), the scorer's arm letter is the only
-    change.
+    The protocol rule applies (§5.2): a C run that does not pass voids itself and every counted run since the last
+    passing one. Not passing = `pass` false (a fail), or no `meta.sentinel` / `pass` null (not judged), which counts as
+    a fail (ops R1). Ops accepted arm C as the M sentinel (P-092 second read).
 - **Sentinel** (as P-085): an uncounted `iphone.mjs run --driver scroll --probe std --arm C --heat-sentinel` on C's
   port, bottom ≥ 58 fps and scroll ≥ 44 fps, in H1 and H3. A failing start sentinel: no counted run starts; cool,
   restart. A failing end sentinel voids every counted run; cool, re-run the counted part once.
 - **Void run** (`phone/frames-n2.mjs`'s rules): a driver error, not driver M, a warm-up, Low Power Mode, served js/css
-  not the arm's build, no drive mark, no m seen by the probe, a tween-start count ≠ 6, a failing C sentinel (above).
+  not the arm's build, no drive mark, no m seen by the probe, a tween-start count ≠ 6, a C run whose M sentinel did not
+  pass (false, null or missing; above).
   One in-place re-run; a second void at one position voids the block. Files from a hold that failed either gate read
   are never passed to the scorer (the block log lists them as excluded).
-- **Scorer**, committed before data: `phone/frames-n2.mjs`, sha256 `fad6d7eadcb4`, every valid counted run passed in
+- **Scorer**, committed before data: `phone/frames-n2.mjs`, sha256 `f3a50b8ec2dd` (ops R1; first registered as
+  `fad6d7eadcb4`, which let a C run with no sentinel or `pass` null through unjudged), every valid counted run passed in
   block order. P-085's `frames-p085.mjs` (`385eb00f1564`) with: arms C / V, the protocol sentinel-void rule, a
   'better' verdict, a minimum of 3 valid runs per arm, and the A6 reports.
   - Scopes: 'moving' is scored (a frame whose m differs from the previous or next frame's m); 'drive' and 'held1'
@@ -354,7 +359,8 @@ before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran cl
     ([0,100) [100,250) [250,500) [500,∞) ms: n, >34, >50).
   - Pre-registration check only (synthetic files with known counts, order C V V C C V V C): better (d −6 / −24),
     equal (0 / 0, no-worse), worse (+6 / +6, WORSE), and a void case (a failing C at pos 4 voided pos 2-4; a wrong
-    served js voided pos 7; C 3 / V 1 valid → insufficient). All as expected. No driver-M phone run of C or V exists
+    served js voided pos 7; C 3 / V 1 valid → insufficient), and a null-sentinel case (C pos 4 with no sentinel voided
+    pos 2-4, C pos 8 with `pass` null voided pos 6-8; C 2 / V 0 valid → insufficient). All as expected. No driver-M phone run of C or V exists
     to re-score.
 - **Predictions**, as falsifiers, P(hit) before data. The points come from P-085's mi arm at Serious (the same
   driver; mi = best-build minus platform-idle): moving > 50 per run 1, 0, 0, 1, > 34 1, 0, 1, 1, held m=1 p95 17 ms.
@@ -363,8 +369,8 @@ before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran cl
 
   | # | prediction | point | interval (falsified outside) | P(hit) |
   |---|---|---|---|---|
-  | f50 | moving dt > 50, V − C (arm medians) | 0 (C ~0.5) | ≤ +1 (WORSE at ≥ +2); twins >46/>54 the same bound | 0.85 |
-  | f34 | moving dt > 34, V − C | 0 (C ~1) | ≤ +2 (WORSE at ≥ +3); twins >30/>38 the same bound | 0.85 |
+  | f50 | moving dt > 50, V − C (arm medians) | 0 (C ~0.5) | ≤ +1 (WORSE above +1, as the scorer: medians of 4 can be half-integers); twins >46/>54 the same bound | 0.85 |
+  | f34 | moving dt > 34, V − C | 0 (C ~1) | ≤ +2 (WORSE above +2); twins >30/>38 the same bound | 0.85 |
   | better | 'better' on f50 or f34 | no | a 'better' verdict falsifies the floor reading | 0.95 |
   | wdt | \|Δm\|-weighted dt, V − C (reported) | 0 ms | \|d\| ≤ 1 ms | 0.7 |
   | sentM | every counted C run passes held m = 1 p95 ≤ 18 ms | pass | one fail costs a cool and the voided runs | 0.8 |
@@ -376,7 +382,8 @@ before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran cl
     reported as a phone smoothness result on top; it changes no landing step.
   - **f50 or f34 WORSE (moving scope):** to the lead, with the slow moving frames per run (dt @ m) and the A6 profile.
     No land request. The lead decides: drop, or a new rev to the user (e.g. the reveal only on the close tween).
-  - **Threshold-sensitive f50 or f34:** to the lead, with no verdict. No land request until the lead rules.
+  - **Threshold-sensitive f50 or f34, in the moving or the drive scope** (a twin's verdict differs, ops R3): to the
+    lead, with no verdict. No land request until the lead rules.
   - **Drive-scope WORSE with moving no-worse:** to the lead (frames outside the tweens), no verdict on the fix; no land
     request until the lead rules.
   - **Insufficient / block void:** no claim. Cool and re-run the counted part once; a second void goes to the lead.
