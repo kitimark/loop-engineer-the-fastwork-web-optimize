@@ -1174,6 +1174,164 @@ not that card's registered count.
     has no CSS switch (`allowsBackingStoreDetaching` is set only for fixed-position layers, RenderLayerBacking.cpp
     l.1159-1185), so it would mean a larger clip, which changes pixels.
 
+## K: fewer keyframes, same path (PR-017 follow-up rev; lead go 2026-10-04 ~10:0xZ)
+
+Lead: "K: yes, build it now as the PR-017 follow-up rev (exact by construction). Use the same gates: roll-probe, simpx,
+A/A, plus Simulator counts showing keyframes per tick and the backing-burst count, C9 vs K." Here C9 is V9 (the landed
+cd-roll-ca) and K is the build **VK** = V9 + K: JS `b43fe790c20c…`, CSS `982a747d9263…` (cd-strip's, unchanged). The
+immutable copy is `out/cd-roll-ca/snap/VK`, with its hashes in `HASHES.txt`. Only `__crPath`, `__crAt`, the new `__crQ`
+and `__crPlay`'s keyframe mapping change; everything else in V9 is byte-identical.
+
+**What changed.**
+- A path point is now `[ms, value, Q]`. When Q is set, the segment that starts at the point is the exact quadratic
+  `v0 + (v1 - v0)*(2Q s + (1 - 2Q) s^2)`, where s is the segment's time fraction.
+- `__crPlay` writes Q as that keyframe's `easing: cubic-bezier(1/3, 2Q/3, 2/3, 1/3 + 2Q/3)`. With x controls 1/3 and
+  2/3, x(s) = s exactly, and the y controls are the degree-elevated quadratic's.
+- Why it is exact: one Euler step of p ms is quadratic in p, and the whole frames after it are affine in the state.
+  So on [kT, kT+16] the original's value is one quadratic in the phase. On (kT+16, (k+1)T] (a 16 ms step, then one of
+  p - 16 ms) it is another.
+- A frame whose 33 lanes fit one monotone quadratic to 1e-9 cell becomes 2 keyframes (one per piece) instead of up to 33.
+  Three extra lanes at 16 + (T-16)*j/4 check the tail piece.
+- Frames that don't fit keep V9's dense points. Those are the last frames, where lanes snap to the target at different
+  phases (a jump under 0.001 cell).
+- Monotone means 0 <= Q <= 1, so both y controls are in [0, 1].
+  - Core Animation clips out-of-range y only for an animation-wide cubic (GraphicsLayerCA.cpp l.1231-1236, WebKit main
+    f61e4bfbb6a7). Here every y is in range anyway.
+  - Per-keyframe cubic-bezier keeps the animation acceleratable. `linear()` with points or `steps()` would not:
+    `KeyframeEffect::canBeAccelerated` l.2015-2021 under USE(CA), CONFIRMED.
+  - Threaded time-based animations, the path that could take `linear()`, are off in every Safari release branch
+    arch-gpu-lessons checked (UnifiedWebPreferences.yaml `ThreadedTimeBasedAnimationsEnabled`); iOS 26.6's branch is
+    UNRESOLVED.
+- Precision: CA casts the control points to float (`toCAMediaTimingFunction`, PlatformCAAnimationCocoa.mm l.141-145,
+  per arch-gpu-lessons). So on the device "exact" means within float32, about 1e-5 px on these spans.
+
+**Offline check** (scratch `kover.cjs`, which extracts the overlay's own `GE`, `__crQ`, `__crPath` and `__crAt` text):
+- Scope: all 90 one-step rolls (from != to, 0-9), plus re-keys after a first frame 25, 40 and 90 ms late.
+- Error vs the original's path (`GE(x mod T)`, then whole frames, with the original's done-snap):
+  - up to the first dense segment: max 7.1e-15 cell;
+  - overall: max 4.71e-4 cell (V9: 5.25e-4), in the snap frames only.
+- Every Q is in [0, 1]. No path came back null.
+
+| keyframes per cell per roll | V9 | VK (K) |
+|---|---|---|
+| one digit (1 -> 0) | 144 | 52 |
+| long (0 -> 9) | 343 | 66 |
+| all 90 rolls, total (mean) | 20,992 (233) | 5,272 (58.6) |
+
+- arch-gpu-lessons modelled the same independently: 55-69 per cell per roll, every y in range, and no exact form with
+  fewer keyframes. Adjacent pieces are different quadratics with a kink between them. Smooth sparse forms are 1.15 px
+  (one step) to 11.8 px (0 -> 9) off.
+
+**Gates (results added as they come; OBSERVED, in our setup):**
+- Chrome: `roll-probe.mjs --mode build` h60 on VK (V9's final-row arguments: 40 s, 16 jumps, seed 11) and
+  `comp-check.mjs --pause-others 2` on VK. Script `out/cd-roll-ca/k1-chrome.sh`, shared probe slot. Pending.
+- Simulator: `sim-rollstart.mjs V9,VK 2`. It gives keyframes per tick (getAnimations), the f1-f3 cell paints (the
+  backing burst) and layerTreeDidChange per tick, in a shared simulator slot. Pending.
+- Simulator frozen frames: `simpx.mjs C8,VK hero wrap,carry`, the session C setup (A/A on C8). Pending.
+
+```
+PHONE TICKET K cd-roll-ca VK · less-work no-worse check (lead 2026-10-04 ~10:0xZ: "Before data: register the phone part
+  with ops as a less-work no-worse ticket. If P-100 settles the display-rate question first, fold its result into K's
+  ticket.") · ops id: pending (registered with mgmt-ops-10 at this text's commit, before any phone data)
+build: V = VK = V9 + K, JS b43fe790c20c8fbdc6a9a8693a2f39ddc82d75b231cef68df0562cbb245cdd4c, CSS 982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d;
+  immutable copy out/cd-roll-ca/snap/VK
+control: C = V9 = cd-strip strip-tc + cd-roll-ca (landed, series ends 0eb4a101), JS 582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3,
+  the same CSS; copy out/cd-roll-ca/snap/V9; mirror snapshot b1789284481295-4ad4a84a
+question: on the phone at real thermal Serious, does K (the same path in 4x fewer keyframes) add slow frames at the top of
+  the page compared with V9? No-worse only; the landing basis is the counts (keyframes per tick, Simulator f1-f3 cell
+  paints) and the pixel gates above. Descriptive: whether V9's hero roll-start frames over 50 ms (P-093) shrink.
+ports: three fresh servers (I-131 interim rule: OS-assigned ports, never one that served another build today):
+  `ARMS="B V9 VK" sh fixes/cd-roll-ca/phone/serve-snap.sh` (sha256 f70ef125ead3; plain http per I-003; it checks the copies
+  against HASHES.txt and the served hashes). One uncounted warm-up load per arm port (A3/U5).
+thermal gate, start method, sleep check: as P-093, unchanged (thermal-gate.mjs 4604218c4041 at the start and end of every
+  hold, real Serious, Is Induced = No, ceiling 44 °C/Critical; pre-warm on B, at most 4 runs; pmcheck.mjs d36bd7437b7c).
+holds (T2): `node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900 --owner cd-roll-ca --doing "K phone hold
+  Hn" -- env BLK=<ops id> caffeinate -i -s sh fixes/cd-roll-ca/phone/k-hold.sh Hn <items>`, with the iphone lease held by
+  cd-roll-ca. k-hold.sh (sha256 b7f9519712e3) is hold.sh with only the arms, the block id, the output folder
+  (out/cd-roll-ca/pk) and the labels changed. Its last line is "HOLD Hn VALID" or "HOLD Hn VOID <why>".
+  H1: wC wV C1 V2 · H2: V3 C4 C5 V6 · H3: V7 C8; then `iphone.mjs park`
+block (driver W, Timeline OFF): as P-093. Warm-up C, warm-up V, counted C V V C C V V C (n = 4 per arm), --idle 8 --hold
+  2 --sentinel 3. Every counted C run (V9) is the heat sentinel; a failing one voids the runs since the last pass, at most
+  one extra quartet.
+scorer: fixes/cd-roll-ca/phone/k-score.mjs, sha256 771820466f845597ac98e3164e11cfe60c00138f471080fdffc68ccf00056c59. It is
+  P-093's score.mjs (rev 2, 57856e3f) with only the header, the usage line and the expected hashes changed (V = VK,
+  C = V9). Checked before data on P-093's own files: V9 files as C score, and a C8 file passed as V is void (served not
+  arm V). The same windows (top, idle) and the same gate.
+gate (no-worse), top window: median of VK's valid runs minus median of V9's, dt > 50 (twins > 46, > 54): FALSIFIED when it
+  rises by >= 2; a twin with another verdict marks it threshold-sensitive; dt > 34 (twins > 30, > 38) judged against
+  [-1, +1], reported, not a falsifier; >= 3 valid runs per arm, else "not enough"
+decision rows: hit -> K goes to the user as the PR-017 follow-up rev (exact path, so no new motion decision; the
+  Try-it pages show V9 and VK); FALSIFIED -> K does not ship, back to the code, the lead decides; not enough after the
+  extra quartet -> the lead decides
+predictions (calibration, not a gate): P(hit) 0.9 (the same path and the same layers, 4x fewer keyframes; only the
+  keyframe count changes). Descriptive: P(VK's median top-window dt > 50 is below V9's) 0.45. P-093 had V9 at a median
+  of 1 per run (C8 0). The backing burst stays in K, so V9's extra frames may not all go.
+P-100 fold-in: if P-100 (display-rate diagnostic, separate ticket below) settles the display-rate question before this
+  block runs, its result is added here as a note before data, without changing the gate.
+minutes: ~25 (range 20-40), as P-093
+queue: after fix-morph-gpu's P-098/P-099 (ops calls the turn), then `node tools/lock.mjs acquire iphone --owner cd-roll-ca
+  --ttl 900 --url <B's twin> --wait 3600`, renewed between holds
+```
+
+```
+PHONE TICKET P-100 cd-roll-ca · display-rate diagnostic for F-212 (ops-assigned, mgmt-ops-10; registered before any data)
+question (F-212): WebKit asks Core Animation for 80-120 Hz on every CA animation it creates (PlatformCAAnimationRemote.mm
+  l.609-613, CAFrameRateRangeMake(80, 120, 120), 273122@main; CONFIRMED in source by arch-gpu-lessons). Does the phone
+  honour it? While a CA-run digit roll plays, are frames shown faster than 60 Hz, and is a rAF-driven roll (the
+  original's way) not? Second (arch-gpu-lessons): does a PAUSED animation keep the panel at the high rate (a paused
+  animation stays on the layer at speed 0, GraphicsLayerCA.cpp l.1258-1272, and keeps the request, l.583/l.609-612)?
+  Descriptive: the real page at y 0, V9 vs C8. Device timing is not judged; rates and counts only.
+instrument: Xcode's 'Display', 'Core Animation FPS' and 'Thermal State' instruments on the device (xcrun xctrace record
+  --device <from the WDA runner config, never printed> --all-processes, 20 s per record; installs nothing; no Web
+  Inspector attached while recording, so no Timeline in the same run). Tables read (schemas from the installed
+  Instruments packages, checked before data): displayed-surfaces-interval (each surface shown: start, duration, display),
+  display-vsyncs-interval (the panel's vsyncs), core-animation-fps-estimate (fps per period),
+  device-thermal-state-intervals. Battery °C at the start and end of each record (idevicediagnostics).
+arms (all at y 0, the page at rest, no scrolling; synthetic page fixes/cd-roll-ca/phone/p100.html, sha256 9a61187b418d,
+  copy out/cd-roll-ca/snap/P100, one countdown-like digit with cd-strip's cell layers and nothing else):
+  quiet  = p100.html?m=quiet: the digit never moves (no animation, no rAF after load)
+  ca     = ?m=ca: every 1 s a one-step roll as V9 plays it (V9's __crPath, literal; Web Animations on the near cells,
+           easing linear, fill both, cancelled at the end)
+  paused = ?m=paused: the same animations created once, paused at time 0 and left on the cells
+  raf    = ?m=raf: every 1 s the same roll by the original's rAF spring (GE, literal), one inline write per frame
+  V9, C8 = the real page at y 0 (all its animations running), from the snapshot copies
+  p100-check.mjs (sha256 ded4935a6e19) checks each synthetic mode in Chrome before the hold (quiet: 0 animations and
+  0 writes; ca: running animations; paused: all paused; raf: 0 animations, > 20 writes; no errors).
+holds: one hold after the K block (same lease if ops agrees, else its own turn after fix-morph-gpu's P-098/P-099):
+  `ARMS="B P100 V9 C8" sh fixes/cd-roll-ca/phone/serve-snap.sh` (fresh ports, I-131; sha256 f70ef125ead3), then
+  `node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900 --owner cd-roll-ca --doing "P-100 display-rate
+  hold H1" -- caffeinate -i -s sh fixes/cd-roll-ca/phone/p100-hold.sh H1 quiet ca paused raf V9 C8 C8 V9 raf paused ca
+  quiet` (p100-hold.sh sha256 bab745eaaf91; per item: iphone.mjs open, then p100-rec.mjs sha256 c54490cd317c with
+  p100-lib.mjs sha256 0abdda183659: 5 s settle, 20 s record). A thermal read (thermal-gate.mjs 4604218c4041) at the start
+  and the end is RECORDED, not a gate: any state counts and is reported per record; the hold is VOID only at the
+  ceiling (44 °C / Critical), with no thermal read, or on a Mac sleep (pmcheck). Low Power Mode caps the display at
+  60 Hz: the start read's exit 6 (timer grid at 30 ms below Serious) voids the hold; at Serious the grid can't tell
+  LPM apart (reported as such). n = 2
+  records per arm, ABCDEF FEDCBA order.
+scorer: fixes/cd-roll-ca/phone/p100-score.mjs, sha256 1afa5dbc7566b12ccf4f230c4d74363d69e01b6e8acc754483045612bb96053e,
+  checked before data on synthetic records (RAISED/KEPT, NOT RAISED AT SERIOUS/NOT KEPT, NOT RAISED at Fair, a void
+  record -> not enough). Per record: fastPerSec = displayed-surface gaps < 12.5 ms (faster than 80 Hz) per second;
+  vsync <12.5 share. An arm needs >= 2 valid records.
+outcomes (fixed before data):
+  O1 RAISED when med fastPerSec(ca) >= 10, >= 5 x max(med fastPerSec(raf), 1), and med fastPerSec(quiet) <= 2;
+     NOT RAISED when med fastPerSec(ca) <= 2 (read "NOT RAISED AT SERIOUS" when every record was at Serious); else UNCLEAR
+  O2 KEPT when med vsync<12.5(paused) >= 0.5 and med vsync<12.5(quiet) <= 0.1; NOT KEPT when paused's <= 0.1; else
+     UNCLEAR ("no vsync table" when the device trace has none)
+  O3 descriptive: V9 vs C8 fastPerSec and surfaces per second, with the ratio
+predictions (calibration): P(O1 RAISED) 0.55; P(raf's med fastPerSec <= 2) 0.9; P(O2 KEPT) 0.4; P(O3 V9/C8 fast ratio
+  >= 2) 0.5; P(the thermal state is Serious in every record, when run right after the K block) 0.8
+decisions: O1 RAISED -> F-212 becomes OBSERVED on the device (CONFIRMED in source already): the accepted page's rolls are
+  shown faster than 60 Hz, a candidate for the "B feels smoother" report (T-096: added as H5, counted there; K keeps
+  it, the same CA path). It also goes to fix-accent-ca and fix-morph-gpu: every CA animation costs high-rate frames
+  while it runs. NOT RAISED (at Fair, or at Serious with a Fair re-run agreeing) -> F-212's rate request is not
+  honoured for these rolls in our setup; T-096 keeps H1 (compositor-only frames) as the lead candidate. NOT RAISED AT
+  SERIOUS -> one more hold at Fair (memory "phone checks start warm": the Fair check comes at the end), the lead
+  decides when. O2 KEPT -> a finding for fix-accent-ca (its idle loop keeps animations on the layers): cancel, don't
+  pause. UNCLEAR -> reported, no second block unless the lead asks.
+fold into K: if P-100 settles O1 before the K block runs, the K ticket gets a note (no gate change); if not, no change.
+minutes: ~12 (12 records x ~45 s + 2 thermal reads)
+```
+
 ## Research card T-096: why the accepted page feels smoother (registered before any data)
 
 ```
