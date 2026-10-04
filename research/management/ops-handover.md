@@ -72,6 +72,25 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-119 pre-data read (fix-toolbar-resize 67baa0a0, README "Prediction P-119"): PASS with notes N1-N4.**
+  - Checked:
+    - The 6 pins on disk equal the commit blobs.
+    - SELFTEST PASS re-run by ops.
+    - score-p119's ENTER, MID and SPLIT code matches the card text.
+    - R1-R7 are all answered; the R7 gate line is verbatim.
+    - R4 is CONFIRMED for WebKit main 6cf979a79f7b with cited lines, and UNRESOLVED for shipped iOS with a named local
+      check (cva catch-up k).
+  - N1: P-115's reading put the showcase off screen in flick-hero, but the self-test shows it in view at y 660-1653
+    (4 of cva's 38 frames). The result must report each arm's primary frames split by the IO state (in view / off
+    screen), descriptive only. "Skip is the mechanism" is read only for the off-screen frames.
+  - N2: every arm, C included, now carries an IO on the showcase, unlike P-115. P-119's ratios compare within P-119;
+    the C level against P-115 is reported as a read.
+  - N3: the MID metric was found post hoc in P-115's data, so only P-119's data can confirm it. P-115 is never cited as
+    support.
+  - N4: entering now uses flick-hero only, and its real event count is unknown (the self-test used synthetic events). If
+    the cva runs are ENTER-THIN, the entering question stays open and a flick-middle hold needs its own P-id and pins.
+    It is not added after the data.
+  - PREDICTIONS row updated with the pins, the order and the predictions.
 - 10-05 **P-118 H2: VALID, 4 of 4 met.** Gates Serious with induced Yes (34.4-34.7 C); the same servers as H1, so no new warm-up is owed; served hashes ok; pmset clean. H3 is queued.
 - 10-05 **P-118 H1 (iphone-runner): VALID, xcode-serious checks 4 of 4 met.**
   - The PIN line matches the validated pins.
