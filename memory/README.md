@@ -22,6 +22,7 @@ Every agent:
 - [One phone step at a time](one-phone-step-at-a-time.md): only the lease holder posts a phone step, one open at a time, after the user says ready; the lead sets the order; renew 2 min early, arm `--until redo`
 - [Answer format](answer-format.md): every answer to the user: answer first, short plain bullets, codes explained, numbers in small tables, ~10 lines, "What you need to do" last
 - [Trace before asking](trace-before-asking.md): a reported lag or bug is traced from our recordings, logs and probes first; ask the user only what no data can answer
+- [Busy workers answer later](busy-workers-answer-later.md): never pull a busy worker off its work for a user question; a helper answers now, the worker may reply later
 
 Lead:
 - [Agent spawn names](agent-spawn-names.md): every spawn gets `name: <role>-<topic>`; check the first spawn after each compaction
