@@ -1077,11 +1077,110 @@ of it is built or measured as a variant.
 - The combined CSS differs in 3 hunks. None touches the strip, cdwrap or cell rules.
 - No conflict to name in the land request.
 
+## Roll-start trace: P-093's V frames over 50 ms (lead task, 2026-10-04 09:2xZ)
+
+The lead's task: every P-093 V run had 1-2 frames over 50 ms in the top window, and no C run had any. Trace that frame,
+Simulator first, with no gain block. Two sources so far: the P-093 phone records, re-read, and one Simulator Timeline
+probe. The probe ran at 09:41Z, before H4 was added to card T-096 below, so its counts are descriptive input to H4 and
+not that card's registered count.
+
+**1. Phone, P-093 re-read (OBSERVED, iPhone 15 Pro Max, driver W, Timeline off; scratch tickphase/tickclass).**
+- How it was read:
+  - Every countdown tick shows in the probe's per-frame mutation record as a `data-value` change.
+  - The clocks tick in pairs, about 100 ms apart. The first change of a pair is taken to be the hero clock and the
+    second the panel. That is inferred, not checked directly: the probe does not name the element. Only V's first
+    change ever coincides with a slow frame.
+- Where the slow frames fall: V's top-window frames over 46 ms are the frame that carries a hero tick (relative frame 0).
+  - V2 #172 at 51 ms, V7 #299 at 53 ms, V6 #526 at 77 ms; V6 #47 was 39 ms.
+- Carry ticks (2+ digits change, so the ones digit makes the long 0 -> 9 roll):
+  - Idle at y 0, V: 3 of 3 slow (39, 51, 53 ms).
+  - C: 0 of 3.
+- Ordinary one-digit ticks, idle:
+
+| dt of a one-digit tick frame, idle | C | V |
+|---|---|---|
+| frames over 20 ms | 0 of 59 | 12 of 54 |
+| frames over 30 ms | 0 | 3 (31-33 ms) |
+
+- The frames after a tick (relative +1 to +3) are equal in C and V.
+- So the extra frame is the roll's start frame, and its size grows with the roll.
+
+**2. Simulator, Timeline on (OBSERVED, Simulator, counts only; F-084).**
+- Run: `fixes/cd-roll-ca/sim-rollstart.mjs` (sha256 01351e5432105da0…), C8 and V9 snapshot copies, hash-checked.
+  - Fresh OS-assigned ports per arm (C8 52366, V9 52177; I-131).
+  - 2 reps per arm, 21 s windows at y 0, shared simulator slot.
+  - Output `out/cd-roll-ca/rollstart/rollstart-2026-10-04T09-43-01-614Z.json` (4f8660bc284862ef…), log
+    `out/cd-roll-ca/rollstart-run1.log`.
+  - Sim background mean 41 %, max 81 % of a core (I-082 context).
+- Method:
+  - A MutationObserver marks each hero tick with `console.timeStamp`.
+  - "Tick frame" is the RenderingFrame that holds the mark; f1 is the frame after it.
+
+| per hero tick | C8 long roll (n 5) | V9 long roll (n 4) | C8 one-digit (n 37) | V9 one-digit (n 37) |
+|---|---|---|---|---|
+| Web Animations started | 0 | 12, 22, 15, 13 | 0 | 3-5 (mostly 4) |
+| keyframes in them (total) | 0 | 1899, 6295, 4349, 1980 | 0 | 432-895 (mostly 576) |
+| cell-sized paints in f1 | 2, 3, 1, 4, 4 | **6, 15, 1, 7** | 0-2 | 0-2 |
+| cell-sized paints f1-f3 | 5, 9, 7, 8, 8 | 6, 17, 3, 9 | 0-5 | 0-4 |
+| RecalculateStyles in the tick frame | 0-1 | 1-2 | 0-1 | 1-2 |
+| layer tree changes per tick | 0 | 0 | 0 | 0 |
+
+- No layer is created or destroyed per roll. layerTreeDidChange fired once per load and never per tick, and the earlier
+  census shows constant layer counts: 77 cell layers at rest and mid-roll. The cells are already layers (cd-strip's CSS).
+  So promote/demote per roll (arch-gpu-lessons' C7) does not apply here (OBSERVED, Simulator).
+- What does change: backing stores. All cells of a roll get a backing store in its first frame, where C8 gives them
+  one frame at a time as each cell enters the clip.
+  - Long roll: up to 15 cell paints in one frame against C8's 1-4.
+  - Total paints over 3 frames are similar in both arms.
+- Why (CONFIRMED, WebKit source, main f61e4bfbb6a7, 2026-10-04; logic present since 2017-18, e.g. bcfdebc481 "Remove
+  completed animations from GraphicsLayer, thus avoiding excessive backing store allocation"):
+  - While an accelerated transform animation runs or is about to run, `RenderLayerBacking::updateAnimationExtent`
+    (RenderLayerBacking.cpp l.1647-1659) sets the layer's animation extent to the bounds over the whole animation.
+  - `GraphicsLayerCA::setVisibleAndCoverageRects` (GraphicsLayerCA.cpp l.1924-1932) tests that extent against the
+    coverage rect.
+  - `updateCoverage` (l.3088-3091) then requires a backing store.
+  - So every cell whose path crosses the clip is backed from the roll's first frame.
+- The second new cost is keyframe volume.
+  - A one-digit roll is 144 keyframes per cell; a long 0 -> 9 roll is 343. `__crPath` keeps every 60 Hz phase within
+    5e-4 cell, using up to 33 points per frame.
+  - So each tick creates 576 keyframes, and a carry 1.9k-6.3k.
+  - WebKit resolves one full style per keyframe (`KeyframeEffect::updateBlendingKeyframes`, KeyframeEffect.cpp
+    l.1249-1271, `styleForKeyframe`). It also computes a transform for every keyframe style to get the animation extent
+    (`computeExtentOfTransformAnimation`, l.2597 on). That source is CONFIRMED.
+  - The per-keyframe cost on the phone is UNRESOLVED (no device timing yet).
+
+**Reading (OBSERVED inference, not yet tested on the device):**
+- On the phone, one-digit ticks have the keyframe cost and no paint burst, and they are already slower in V (12 of 54
+  over 20 ms vs 0 of 59).
+- Carry ticks have both costs at about 7x the keyframes, and they reach 39-53 ms.
+- That points first at keyframe volume (style resolution and extent per keyframe, then the commit to the UI process),
+  with the backing burst second. Which one dominates on the device is the open question.
+- The decisive check is one phone attribution run with Timeline on (protocol §5.2): durations of the tick frame's
+  RecalculateStyles and FunctionCall records vs f1's Paint and Composite records at carry ticks, V9 against C8.
+  It goes through ops, registered before any data.
+- Cheap-fix candidates. Each must be pixel-identical and checked with the existing pixel gates (roll-probe h60, simpx,
+  Chrome and Simulator A/A):
+  - (K) Fewer keyframes, exact. Within each 60 Hz frame the original's value is a quadratic in the frame phase
+    (one semi-implicit Euler step, then affine whole frames). One keyframe per frame with a `cubic-bezier(1/3, y1,
+    2/3, y2)` easing gives exactly that quadratic (x(t) = t, the degree-elevated quadratic), plus one linear keyframe
+    for the 0.67 ms tail.
+    - Keyframes per roll: 144 -> 54 one-digit, 343 -> 68 long. Frames where lanes snap at different times keep today's
+      dense points.
+    - Per tick: 576 -> about 220. Per carry: about 1.9k-6.3k -> about 0.5k-1.5k.
+  - (W) Per-cell windows. Animate a far cell only while it is within 1.5 cells of the clip (fill none outside; its rest
+    place is outside the clip then), so a long roll's cells carry only their own stretch of the path.
+    - The backing burst probably stays: an "about to run" delayed animation still counts for the extent (to check).
+  - Pre-promoting the cells at rest is not a fix here: they are already layers. Keeping their backing stores at rest
+    has no CSS switch (`allowsBackingStoreDetaching` is set only for fixed-position layers, RenderLayerBacking.cpp
+    l.1159-1185), so it would mean a larger clip, which changes pixels.
+
 ## Research card T-096: why the accepted page feels smoother (registered before any data)
 
 ```
 CARD T-096 cd-roll-ca research · counts only (memory "defer timing") · lead approved T-096 #3 (09:13Z) · second read: ops
-status: NOT STARTED. Starts after PR-017 (cd-roll-ca) lands; no iPhone time; Chrome in shared probe slots
+rev 2 (ops second read, R1-R4; text before the card's own data; H4's Simulator input above ran at 09:41Z as the lead's
+  trace task and is named as such, not counted here)
+status: NOT STARTED (steps 1-3). Starts after PR-017 (cd-roll-ca) lands (landed 0eb4a101); no iPhone time; Chrome in shared probe slots
   (--shared --weight probe), the Simulator in shared simulator slots.
 question: the user found the PR-017 B page (V9) noticeably smoother than A (C8). Our cost card says the countdown's own
   script fell from 23-26 calls per roll to 1, yet the whole page's Simulator work barely changed (203-223 page updates
@@ -1094,24 +1193,43 @@ hypotheses (untested guesses until counted):
      user felt; recorded either way).
   H3 nothing per frame differs beyond the countdown's own script; what the user saw was a page or build difference (stale
      files, I-131), ruled in or out by step 1.
-step 1 build identity: 5422 = C8 copy, 5423 = V9 copy: crawl-diff of the whole static graph against the snapshot copies
-  (scratch crawl-diff.mjs, committed with the addendum) and the served JS/CSS hashes; after I-131 lands, also the cache
-  headers. Any mismatch -> H3 confirmed, stop, report.
+  H4 (R1, the lead's trace task; P-093: V3 51 ms at y 999, V6 111 + 77 ms at the W scroll start, V2 51 ms and V7 53 ms
+     idle at y 0) on B a roll start costs one longer frame, from starting the per-cell animations at the tick (style per
+     keyframe, animation extent, backing stores, commit), where A spreads its work over rAF frames.
+step 1 build identity: 5422 = C8 copy, 5423 = V9 copy (the user's PR-017 pages): crawl-diff of the whole static graph
+  against the snapshot copies (scratch crawl-diff.mjs, committed with the addendum) and the served JS/CSS hashes, plus
+  the cache headers as served (R4: I-131's fix, no-cache + ETag, is NOT landed at this text; recorded either way, with
+  whether it is landed at run time). Any mismatch -> H3 confirmed, stop, report. Ports (R4): 5422/5423 are checked
+  against ts-i131's audit method (no other build served on them today); steps 2-3 never use them: each arm gets its own
+  fresh server on an OS-assigned port, hash-checked, no-cache (as sim-rollstart.mjs).
 step 2 Chrome (430x932 DPR 3, headless, 60 Hz as the cost card; arms A, B, A2 = a second server on the A copy; 3 loads
   each, A B A2 / B A2 A / A2 A B): per load, window R = 8 s at y 0 (clock rolling), window S = a scripted scroll through
   the hero (the W path, 3 s). Per window, counted from one CDP trace (devtools.timeline, cc, viz categories):
   frames presented; BeginMainFrame count; frames with a compositor update and no BeginMainFrame (H1's count);
-  rAF callbacks (all, and the countdown's, tagged); UpdateLayoutTree, Layout, Paint, Commit events; frames whose
-  main-thread part was dropped or late (PipelineReporter states). A/A spread = max |A - A2| per count.
+  rAF callbacks (all, and the countdown's, tagged); countdown FunctionCalls per frame (arch-gpu-lessons C3: PipelineReporter's
+  has_main_animation is page-wide, so the per-element signal is the countdown's own calls, as its held.mjs);
+  UpdateLayoutTree, Layout, Paint, Commit events; frames whose main-thread part was dropped or late (PipelineReporter
+  states). H4 per roll start (both windows): in the frame where the animations start, Commit and layer-tree update
+  events, layers created or destroyed per roll, main-thread events in that frame (counts and types).
 step 3 Simulator (WebKit Timeline on in every arm): RenderingFrame records, script/style/layout/paint/composite
-  records per window. WebKit runs a CSS/Web animation in Core Animation; those frames leave no Timeline record, so H1
-  shows in the Simulator only as fewer RenderingFrame records per roll on B (stated before data, not a gap).
-counts per window (R and S): B - A per count, against the A/A spread. Outcome: H1 holds when B's compositor-only
-  frames per roll > 0 and A's = 0 (within A/A), and B's BeginMainFrame per roll falls by more than the spread; H2 is
-  reported from window S (main-thread frames next to scroll frames, A vs B); H3 from step 1.
+  records per window; H4: the RenderingFrame holding the roll start (marked by a console.timeStamp from a hero
+  MutationObserver) and the next one, with their child record types and counts (no ms judged, F-084).
+  Platform claim (R2): WebKit runs an accelerated CSS/Web animation as a Core Animation animation in the UI process, and
+  the web process does not tick it while it runs, so those frames leave no web-process Timeline record. CONFIRMED by
+  arch-gpu-lessons (research/gpu-lessons/README.md §1.2: KeyframeEffect.cpp ticksContinuouslyWhileActive l.2672-2677;
+  PlatformCAAnimationRemote.mm). H1's Simulator reading depends on it: H1 shows there only as fewer RenderingFrame
+  records per roll on B (stated before data, not a gap).
+statistic (R3): per count and window, d = med(B) - med(A) over the 3 loads per arm; spread s = max over the 3 load
+  positions of |A_i - A2_i|; a difference counts only when |d| > s (both printed).
+outcome: H1 holds when B's compositor-only frames per roll > 0 and A's = 0 (within s), and B's BeginMainFrame per
+  roll falls by more than s; H2 is reported from window S (main-thread frames next to scroll frames, A vs B); H3 from
+  step 1; H4 holds when B has work at the roll start that A lacks (record types or counts in that frame), beyond s.
+  If H4 holds and its cost split stays open, one phone attribution ticket (Timeline on, protocol §5.2), registered
+  through ops before any data, asks which part dominates on the device.
 deliverable: one plain list per window of what changed per frame; if one item stands out, it names which other
   animations (hero, top-bar morph, end-of-page morph) to try next (T-096 item 2, a new card).
-calibration: P(H1 holds) 0.8; P(H2 shows a difference over the spread in S) 0.4; P(H3) 0.05.
+calibration: P(H1 holds) 0.8; P(H2 shows a difference over the spread in S) 0.4; P(H3) 0.05; P(H4 holds) 0.85 (set
+  after the lead's trace data in the section above was seen; it is not a blind prior).
 tools: crawl-diff.mjs, a trace counter t096-count.mjs and the existing Simulator Timeline reader; hashes frozen in an
   addendum here before the first load.
 ```
