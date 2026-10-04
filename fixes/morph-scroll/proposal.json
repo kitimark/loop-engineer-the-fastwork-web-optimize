@@ -9,7 +9,8 @@
   "visualDiff": [
     "Motion: the morph follows your scroll position, not a 680 ms spring. Scroll halfway and the panel is halfway open.",
     "Half-open rest is possible: Safari snaps a 'proximity' point only within 0.3 of the screen height (WebKit source, CONFIRMED), so a rest between about 30 % and 70 % open stays there. Option if you want it: settle to the nearer end when the finger lets go (not built).",
-    "Safari only, T3 (beyond the wide pixel rule by share, not by shade): wherever the last section (#platform, the 'start selling' block) is on screen, its text and edges sit about 1 device pixel (1/3 CSS px) higher. Closed rest at the end: 0.89 % of the screen over 8 shades, max shade 77. One screen before the end: 0.57 %, max 78. A vs A: 0. The box position is identical to 1/64 px; WebKit gives every sticky box its own GPU layer (source CONFIRMED), and that this layer causes the shift is OBSERVED.",
+    "Safari only, T3 (over the wide rule by share, not by shade): wherever the last section (#platform) is on screen, its text and edges sit about 1 device pixel (1/3 CSS px) higher. Closed at the end: 0.89 % of the screen over 8 shades, max 77. One screen before: 0.57 %, max 78. Base vs base: 0.",
+    "Why (Safari): the box position is identical to 1/64 px. WebKit gives every sticky box its own GPU layer (WebKit source, CONFIRMED); that this layer causes the 1 px shift is OBSERVED, cause unknown.",
     "Safari, panel covering the section (m 0.25 to 1): equal to the base apart from the countdown, which also differs base vs base (max shade 224 in both).",
     "Chrome: within the base-vs-base noise at every morph value, except the EN language label at the top right (about 300 device px, also seen base vs base in a second run).",
     "The page is one screen longer on phones.",
