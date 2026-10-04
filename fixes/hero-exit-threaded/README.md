@@ -1000,6 +1000,11 @@ after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
   - Near bands: near34 C 37, V 22; near50 C 3, V 2.
   - Per moving frame, V has fewer style, layout and paint-area units (S 1.68-1.72 vs 2.33-2.41; Ppx 55-70 k vs
     165-174 k).
+  - Touch-to-scroll latency, driver G (`touchToScrollMs`, 4 touches per run): C median 286 ms, V 283 ms, n = 12 each
+    (`p095t2s.mjs`). This is the objective finger-to-pixel pairing for the swipe A/B; the absolute value includes WDA's
+    own pipeline.
+  - Re-score: ops (mgmt-ops-10) re-ran both scorers on the raw files; outputs are identical and all 12 input hashes
+    match (ledger closed HIT, main 2445a893).
 - **(b) lines.** These are R2's named residuals from P-081, the same pattern as there.
   - touchstart: in, all 9.
   - first-move 1: in.
