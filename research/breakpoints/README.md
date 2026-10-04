@@ -206,8 +206,13 @@ classified by a sharpness score (mean |Laplacian| of luminance over the card rec
 
 | load | images arrive | baseline (B) | st6-rb2 (S) |
 |---|---|---|---|
-| first load per server (cold, the server's first response) | ~3 s | sharp 18.8 / 15.7: 5 of 5 | sharp: 5 of 5 |
-| later loads (fast: ~40-70 ms), incl. browser cache off (`NOCACHE=1`) and hero photos held 1.5 s by CDP Fetch (`IMGDELAY=1500`) | 0.05-1.8 s | soft 15.0 / 12.7: 10 of 10 | sharp: 7 of 9; in between (17.0-17.4 / 15.0-15.6): 2 of 9 |
+| first load per server (cold, the server's first response) | ~3 s | sharp 18.8 / 15.7: 4 of 4 | sharp: 4 of 4 |
+| later loads (fast: ~40-70 ms), incl. browser cache off (`NOCACHE=1`) and hero photos held 1.5 s by CDP Fetch (`IMGDELAY=1500`) | 0.05-1.8 s | soft 15.0-15.3 / 12.7: 9 of 9 | sharp: 7 of 9; in between (17.0-17.4 / 15.0-15.6): 2 of 9 |
+
+Counted set (recounted 2026-10-04 from `sharp[]` in `loads.json`, top shot; the first version of this table said 5 of 5
+and 10 of 10, a miscount): the 26 loads of rr2-rr5. Adding rr10's 5 loads (§3.2.2, "top" shot before the repaint):
+B cold sharp 5 of 5, S cold sharp 5 of 5, B fast soft 11 of 11, S fast sharp 8 of 10 and in between 2 of 10. The
+traced loads (rr6, rr7, rr9) are left out: rr9's `LayerTree.enable` made its fast B sharp (observer effect, §3.2.2).
 
 The two renderings are stable classes:
 - B's soft loads are identical to each other (0 px over 8).
@@ -297,7 +302,10 @@ number):
   - Before: fast B is soft 2 of 2 (sharpness 15.0); cold B, cold S and fast S are sharp (18.8).
   - After: all five loads are sharp (18.83).
   - S fast vs B fast after the repaint: largest shade 19, 4 CSS px² over 8 levels (card 2), 0 % of the frame. Before
-    the repaint, the same pair was 3.041 % (39,415 px², max 118), matching rr5.
+    the repaint, the same pair was 3.041 % (39,415 px², max 118), matching rr5. Both from `tolrep.mjs` (RR=rr10, X =
+    load 1 B fast, Y = load 4 S fast, A/A = load 2 B fast; pixels over 8 levels where the A/A is 8 or less, countdown
+    masked); load 2 as X with load 1 as A/A gives the same. The raw class matrix of `probe-loads.mjs` (39,418 and
+    39,636) has no A/A exclusion and compares against the class representative, load 3 (S cold).
   - B fast vs B cold after the repaint: largest shade 4, 0 px².
 - Reading (OBSERVED, in our setup):
   - The soft picture is the early raster of the cards' first paint, which the baseline never repaints on a fast load.
@@ -332,6 +340,22 @@ same A/A definition as rr5: B fast vs B fast):
 - Without reduced motion, st6-rb2 at 1440 is within A/A on fast and cold loads: at most 6 CSS px² beyond the A/A,
   0 % of the frame, no fill. The rm1440 difference is specific to reduced motion: the orbit cards are static there,
   and nothing repaints them on a fast baseline load.
+
+**4. The best build N (2026-10-04, for the T-053 proposal).** N is best-65052c4a3902 (st6-rb2 + platform-idle +
+morph-inherit; built with `fixes/best-build/build.mjs --out out/breakpoints/snap/best-N`, JS 65052c4a3902, CSS
+e0f92804c521). Two shared probe holds (hold27, hold28), nothing timed, no sleep or wake in `pmset -g log`.
+- Frames (rr11, `probe-loads.mjs REPAINT=1`, rm1440, ORDER B,B,B,N,N,N): the original was sharp cold (18.82) and
+  soft on both fast loads (15.005); N was sharp cold and on both fast loads (18.814). After the invisible repaint
+  all six are sharp (18.83).
+- `tolrep.mjs` (RR=rr11, X = load 1 B fast, A/A = load 2 B fast): N fast (load 4, and load 5 alike) is 3.052 %
+  beyond the A/A (39,549 px², max 118, card6 11,983 px², 0 % flat), the same as st6-rb2's rr5 pair. After the
+  repaint: 4 px², max 19. N cold vs B cold: 4 px², max 19.
+- Census (census-N, rm1440): N rest L0 / R8 / P118 / 129 layers, scroll L23 / R229 / P397 (241 frames), errors 0;
+  the original's two loads: rest L0 / R4 / P0 and P97 / 102 layers (the first load's rest window caught 0 paint
+  events, cause not checked), scroll L43 and L42 / R733 and R728 / P675 and P663.
+- So N behaves as st6-rb2 here: a quick reload ends sharp. Load classes over every probe-loads run at rm1440
+  (rr2-rr5, rr10, rr11): the original sharp cold 6 of 6, soft fast 13 of 13; st6-rb2 sharp cold 5 of 5, fast sharp
+  8 of 10 and in between 2 of 10; N sharp cold 1 of 1, fast sharp 2 of 2.
 
 ### 3.3 Render and layout counts per width (census)
 
