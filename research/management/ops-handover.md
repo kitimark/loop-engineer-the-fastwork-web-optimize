@@ -42,6 +42,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 13:2xZ **P-106 re-read PASS** (card d97873ef, scorer 4b7fca760270).
+  - The scorer re-run on the v7 t113 data gives hero 104/114 and end 5/83, matching the card.
+  - Notes: N1 vt and js need a WebKit proof the arm acts; N2 a cv NOT-CONFIRMED does not void the H arms; N3 page height per arm; N4 frames near the y 3250 boundary in C-E.
+  - Ledger row added. Second read owed when the block data lands.
+- 10-04 13:2xZ **Sim y 4365 closed: second read AGREE, case (c) NOT REPRODUCED.** This closes the 12:4xZ open item.
+  - fix-morph-gpu ran two passes in one Sim session: A V A2 V2, then P V P2 V2. All 8 served hashes match, the harness is unchanged, and there is no VOID.
+  - I re-scored from the PNGs with `gates/pxlib.mjs`: consistent is 0 at 3875, 4365 and 4856 in both passes.
+  - At 4365 the old cluster rows (css y 648-653, 705-713) differ V vs V2 and A vs A2 in pass 1, yet A~V and A2~V2 are 0 there. So the state is per load and both builds take it both ways. The old run's loads split by build by chance.
+  - Pass 2: V vs V2 differ at 704-713, while P matches both V and V2 there (an in-between phase).
+  - Also a small per-load band at css 166-187 in every build.
+  - Reading: not a v7 change. The per-load toggle under section#platform is OBSERVED, cause unknown (a transition is likely; unconfirmed).
+- 10-04 13:0xZ **toolbar-resize ablation pre-data read: FAIL (fixable), P-106 assigned.**
+  - Served hashes on ports 5286-5292 match the ticket, and each arm changes one thing against v7.
+  - Missing: the committed card with predictions and win rules, a frozen scorer, the Timeline-OFF sentinels, cv's matched control, and the per-arm mechanism checks.
+  - Lead ruling: the 20-run attribution block is granted, judged by counts (largest Layout per toolbar frame and the layout count, split at y 3250, each arm vs its neighbouring C runs). The block is void if the C hero-zone median moves more than 30 % from the first C to the last C. cv gets one matched C run on flick-end-v1. Mechanism checks are per arm in Chrome before the phone; the WebKit cq --orbit-u check comes before V. Re-read on their commit.
+  - Next free id: **P-107**.
 - 10-04 12:4xZ **After the usage pause (lead list of 7, 12:2xZ).**
   - PROGRESS refresh for T-112 #3 landed: b3bb7818, then bb29d345 (cdwc and re-keep-op landed). t113 now carries the toolbar finding, and the `toolbar-resize` row links to it.
   - fix-nav-morph has the P-101 verdict and the lead's ruling: T-107 button trace first, then P-104, the rev 2 card. P-104 is reserved for it.
