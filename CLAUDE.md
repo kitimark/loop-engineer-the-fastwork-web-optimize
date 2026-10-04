@@ -389,7 +389,9 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
   `sleep`/`until`/`for … sleep` loop**: run it with Bash `run_in_background` and keep working (Claude Code wakes you
   when it exits); with nothing else to do, still run it in the background with a long `--timeout` (thread waits 3500)
-  and end your turn: a foreground `--timeout 580` rerun costs a full model turn every 10 min (user T-109). Every
+  and end your turn: a foreground `--timeout 580` rerun costs a full model turn every 10 min (user T-109). A thread
+  listener runs as ONE persistent Claude Code `Monitor` (a shell loop around `thread wait --as <you> --timeout 3500`
+  that prints only the TRIAGE/NEW lines and the message text), so a message wakes you without a re-arm step. Every
   wait prints one line, exit 0 MET, 3 TIMEOUT, 4 NEVER, 1 usage (c4a1ee2). Pass `--owner <you>` (or set `$FW_AGENT`)
   to every `wait.mjs` and `lock.mjs wait`: without it the wait still runs, prints a NOTE, and the board shows it as
   "owner unknown" (I-108):
