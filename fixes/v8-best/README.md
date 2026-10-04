@@ -474,3 +474,25 @@ accepted: a WORSE verdict sends int-v8 to the reversal builds, it does not drop 
 C = v8 − morph rev 3 (CSS 7eda63cc7015, byte-identical to accent-ca-v7's independently built CSS: a clean reversal),
 V = v8. M leg only, P-111's driver, scorer (26d944bf93e2, refused if changed), sentinels and heat gates; warm-up per
 port; C V V C C V V C over 2 holds; falsifier and verdict words fixed before data. OK. Runs right after P-111 H8.
+
+## P-113 lead pre-data read (2026-10-04 16:2xZ, before any P-113 data): PASS
+
+Read against protocol v2 (§5 blocks) and P-111's frozen scorer:
+- One question (which v8 part brings the G part H cluster at scrollY 2500-2749), one named control (C = v8), arms that
+  each remove exactly one suspect on the same base; identity proven by build.mjs (F − (V9 -> K) and R − glue − faces
+  both equal accent-ca-v7 + morph rev 3). 3 arms in a rotated Latin square (C F R · F R C · R C F), 9 counted runs,
+  one uncounted warm-up per arm port, opening and closing sentinels under separate labels (the P-111 overwrite is fixed).
+- Scorer 0daf43f6df58 imports P-111's scorer pinned at 26d944bf93e2; band, "present" rule, twins (46/54) and
+  falsifier are fixed before data; predictions recorded.
+- Mac load: P-111's H6 C and V runs had equal load1 (6-14), so load is not the explanation; P-113 runs with no
+  Simulator session beside it (I-160): Simulator work in the queue takes exclusive holds, which make phone runs WAIT.
+
+Conditions:
+1. Order: right after P-112, before P-105 H3-H6 (v8 is priority #1). Simulator gap holds (fix-toolbar-resize, then
+   fix-scroll-cb) go after P-113 if its servers are ready when P-112 ends, otherwise in the gap before it.
+2. NOT REPRODUCED (C without the cluster): no further block on this question now. P-111's G-H WORSE then stands as
+   "threshold-sensitive, not reproduced in a second block", and the lead weighs it with Mtweens when ruling what
+   stays in v8 (asking the user if it is close).
+3. NEITHER: int-v8 reports before any further block (accent exact, morph rev 3 left); at most 2 blocks per question.
+4. Attribution only: no landing basis. The v7 -> v8 switch still needs the lead's ruling on P-111 (Mtweens + G-H)
+   after P-112 and P-113.
