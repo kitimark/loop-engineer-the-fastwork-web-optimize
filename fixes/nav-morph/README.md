@@ -577,3 +577,43 @@ a JS stack; Simulator k0 114 of 189 frames, census logging). The amendment below
 - H2 share: point 0.5, 80 % interval [0.15, 0.9].
 - Why: P-091's post-hoc reading points at style in V's crossing frames. But the crossing also flips `b` for the
   header's other effects, so part of the style could come from outside `ue()`.
+
+## Result P-096 (2026-10-04, frozen tools at cff9db05, read by `crossing-read.mjs` 1b8afaea066e): STYLE fails
+
+All 9 loads are valid in each engine. The A/A check passed in every rep (C vs C2 window R differs by 33, 3 and 22,
+tolerance about 71). The line base is 1 in every run, and H2 is not base-sensitive. No measurement tool changed between
+rep 1 and rep 3. The raw files stay in `out/nav-morph/p096/` (`chrome-r*-*.json`, `sim-r*-*.json`, `read.json`).
+
+| Chrome, median of 3 valid reps | C (plain B) | V (best build) |
+|---|---|---|
+| window R (elements restyled, k0..k0+2) | 704 | 107 |
+| window L (layout dirty objects) | 455 | 49 |
+| frame k0 R / L | 332 / 374 | 17 / 0 |
+| frame k0+1 R / L | 191 / 39 | 72 / 22 |
+| reference band median R per frame | 180 | 15 |
+| H2 share (style invalidations with a stack frame in `ue()` crossing lines) | 0 | 0.23 |
+
+- **H1 false.** V's window R is 107, below the threshold max(9 × 15, 100) = 135. The crossing in V restyles about 55
+  more elements than three plain frames would, spread over k0+1. No panel-sized burst occurs.
+- **H2 false.** About 23 % of V's style invalidations in the window come from the crossing writes in `ue()` (the inert
+  lift and the image `src` writes). The rest come from elsewhere.
+- **M true.** In all 3 V reps, the Simulator census shows the `inert` flip and 21 image `src` writes in k0..k0+1.
+  So the same writes land in the same window in WebKit.
+- **Decision: STYLE fails.** Per the frozen rules, candidate F (moving `inert` and `src` off the crossing frame) is not
+  built. The phone residual at the crossing goes back to the lead as a phone-only cost, OBSERVED, cause unknown.
+- **Descriptive (decides nothing).** V removes about 85 % of the crossing frames' style and about 90 % of their layout,
+  compared with C. The panel mount (C's k0: R 332, L 374) is gone from the crossing in V.
+- **Prediction vs result.** P(STYLE fails) was 0.40. V's window R was predicted at 400 [100, 2000] and came in at 107,
+  at the low edge. The H2 share was predicted at 0.5 [0.15, 0.9] and came in at 0.23.
+
+## F3 blind swipe (C-042, 2026-10-04, user step under the lead's ruling after P-091)
+
+- **Result.** One blind pair, page 1 = C (plain B), page 2 = V (best build), by coin `crypto.randomInt(2)=0`. The user
+  picked **page 2 (V)**, with a difference of 4 on a 1-5 scale.
+- **The user's note (paraphrased).** Page 1 felt laggy at the end-of-section morph while the phone felt hot. Page 2
+  was smoother. They were not sure whether some lag on page 2 near the end of the page came from heat after page 1.
+- **Conditions.** No xctrace gate, because it was a user step. Battery 39.5 °C at the start and 40.0 °C at the end.
+  The user restarted twice. The counted pass ran C then V.
+- **Limits.** This is one pair only, with no BA order and no catch pair. V always came second, on a warmer phone,
+  which works against V. There was no S2 sentinel (the lead's ruling). Earlier tries C-037 and C-041 were skipped
+  after slow Start-over handling (I-123) and count as nothing.
