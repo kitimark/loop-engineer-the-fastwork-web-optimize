@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -207,6 +207,79 @@ ALLOW.push(
   'node tools/lock.mjs status',
   'node tools/lock.mjs run chrome-measure --owner t',
 );
+
+// I-115 (user T-071): GitHub is read with the logged-in gh CLI; plain curl/wget to GitHub hosts asks the user
+// (unauthenticated fetches hit GitHub's rate limit). localhost, other hosts and gh itself are untouched.
+const GITHUB_ASK = [
+  'curl https://github.com/WebKit/WebKit/blob/main/Source/WebCore/page/FrameView.cpp',
+  'curl -sL https://api.github.com/repos/WebKit/WebKit/commits/abc123',
+  'curl -s https://raw.githubusercontent.com/sveltejs/svelte/main/README.md',
+  'curl -L -o x.zip https://codeload.github.com/sveltejs/svelte/zip/refs/heads/main',
+  'curl https://gist.github.com/someone/0123abcd',
+  'curl -s raw.githubusercontent.com/sveltejs/svelte/main/README.md',
+  'curl -s HTTPS://GitHub.com/x/y',
+  'curl --url https://api.github.com/rate_limit',
+  'curl --url=https://api.github.com/rate_limit',
+  'curl -H "Accept: application/json" https://user@api.github.com:443/repos/a/b',
+  '/usr/bin/curl https://github.com/a/b',
+  'wget https://raw.githubusercontent.com/a/b/main/c.js',
+  'wget -qO- https://github.com/a/b',
+  "sh -c 'curl -s https://raw.githubusercontent.com/a/b/main/c.js'",
+  'bash -lc "cd /tmp && wget https://github.com/a/b"',
+  'curl -s https://api.github.com/repos/a/b | jq .',
+  'echo start && curl https://github.com/a/b && echo done',
+  'git status; curl -s https://github.com/a/b > out.html',
+  'echo $(curl -s https://api.github.com/x)',
+  'timeout 30 curl https://github.com/a/b',
+  'cat ids.txt | xargs -n1 curl -s https://api.github.com/x',
+  'node tools/lock.mjs run chrome-measure --owner t -- curl -s https://raw.githubusercontent.com/a/b/main/c.js',
+  "node tools/lock.mjs run chrome-measure --owner t --shared --weight 1 -- sh -c 'curl -s https://api.github.com/x | head'",
+  'curl -s http://localhost:5200/ https://github.com/a/b',
+];
+const GITHUB_ALLOW = [
+  'curl -sk https://localhost:5200/_app/immutable/nodes/2.DyWL8TcE.js',
+  'curl -sk -D - -o /dev/null https://localhost:5201/',
+  'curl -s http://127.0.0.1:9222/json',
+  'curl -s https://developer.mozilla.org/en-US/docs/Web/API/Element/scroll',
+  'curl -s https://notgithub.com/a https://github.com.example.org/b',
+  'wget https://webkit.org/blog/',
+  'gh api repos/WebKit/WebKit/contents/Source/WebCore/page/FrameView.cpp?ref=abc123',
+  'gh api repos/sveltejs/svelte/commits/abc123',
+  'gh search code "scrollend" --repo WebKit/WebKit',
+  'gh issue view 1 --repo sveltejs/svelte',
+  'echo "curl https://github.com/a/b"',
+  'grep -rn "raw.githubusercontent.com" memory/',
+  'git remote -v',
+];
+for (const c of GITHUB_ASK) {
+  test(`ask (I-115 curl/wget to GitHub): ${JSON.stringify(c)}`, () => {
+    const r = runHook(bash(c));
+    assert.equal(r.decision, 'ask');
+    const reason = JSON.parse(r.stdout).hookSpecificOutput.permissionDecisionReason;
+    assert.match(reason, /gh CLI/);
+    assert.match(reason, /memory\/github-via-gh\.md/);
+    assert.match(reason, /T-071/);
+    assert.match(reason, /gh api repos\/<o>\/<r>\/contents\/<path>\?ref=<sha>/);
+  });
+}
+for (const c of GITHUB_ALLOW) test(`allow (I-115 not GitHub, or gh): ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'allow'));
+test('I-115: an unparseable command that curls GitHub asks; one that curls elsewhere stays allowed', () => {
+  assert.equal(runHook(bash('curl -s "https://raw.githubusercontent.com/a/b/main/c.js')).decision, 'ask');
+  assert.equal(runHook(bash('curl -s "https://localhost:5200/')).decision, 'allow');
+});
+// existing gh publishing denies are not loosened, and a deny still wins over the GitHub ask
+DENY.push(
+  'gh repo create me/mirror --private',
+  'gh gist create notes.md',
+  'curl -s https://api.github.com/x && git push',
+);
+test('I-115: settings.json asks before WebFetch to GitHub; gh publishing stays denied', () => {
+  const { ask = [], deny = [] } = JSON.parse(readFileSync(join(ROOT, '.claude', 'settings.json'), 'utf8')).permissions;
+  for (const d of ['github.com', 'api.github.com', 'raw.githubusercontent.com', 'codeload.github.com', 'gist.github.com']) {
+    assert.ok(ask.includes(`WebFetch(domain:${d})`), d);
+  }
+  for (const r of ['Bash(gh repo create *)', 'Bash(gh pr create *)', 'Bash(gh pr merge *)', 'Bash(gh gist create *)']) assert.ok(deny.includes(r), r);
+});
 
 for (const c of DENY) test(`deny: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'deny'));
 for (const c of ALLOW) test(`allow: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'allow'));

@@ -57,7 +57,13 @@
       "Edit(/tools/ioscap.mjs)",
       "Edit(/.claude/worktrees/*/tools/ioscap.mjs)",
       "Edit(/tools/lib/ioscap.mjs)",
-      "Edit(/.claude/worktrees/*/tools/lib/ioscap.mjs)"
+      "Edit(/.claude/worktrees/*/tools/lib/ioscap.mjs)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:codeload.github.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:gist.githubusercontent.com)"
     ],
     "deny": [
       "mcp__chrome-devtools__performance_start_trace",

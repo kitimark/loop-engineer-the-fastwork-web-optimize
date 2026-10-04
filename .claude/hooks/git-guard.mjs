@@ -14,6 +14,7 @@
 //     setting FW_BASELINE_UPDATE / FW_BASELINE_ALLOW_MODIFIED (VAR=..., export, env): the user's decision
 //     to commit a new baseline snapshot or to measure a modified one (CLAUDE.md Hard rules 3-4)
 //     node tools/ioscap.mjs record --first-run (the run that shows the macOS Camera prompt, incident I-062)
+//     curl/wget to github.com, its subdomains or *.githubusercontent.com: read GitHub with gh (incident I-115, user T-071)
 //   deny, recording routes other than tools/ioscap.mjs (incident I-062, user T-018/T-019): QuickTime Player
 //     (osascript, open), system_profiler SPCameraDataType (or a full report), ffmpeg -f avfoundation, imagesnap,
 //     screencapture -v/-V/-g/-G, inline swift/python/ruby/perl/osascript scripts using the capture APIs,
@@ -540,8 +541,30 @@ function analyzeCmd(cmd, ctx, findings, depth) {
   }
   if (prog === 'git') analyzeGit(argv, ctx, findings, depth);
   else if (prog === 'gh') analyzeGh(argv, findings);
+  else if (prog === 'curl' || prog === 'wget') analyzeFetch(prog, argv, findings);
   else analyzeCapture(prog, argv, cmd, ctx, findings);
 }
+
+// ---------------------------------------------------------------- GitHub through gh (incident I-115, user T-071)
+// Agents fetched GitHub with unauthenticated curl and hit its rate limit; the logged-in gh CLI has a far higher
+// one. curl/wget naming a GitHub host (github.com and its subdomains, *.githubusercontent.com) asks the user.
+// Known limits: a URL that reaches curl only at run time (a variable, stdin of xargs, curl -K/--config, wget -i)
+// is not seen; WebFetch is covered by ask rules in .claude/settings.json, not here.
+const GH_HOW = 'Use the gh CLI for GitHub (memory/github-via-gh.md, user T-071): gh api repos/<o>/<r>/contents/<path>?ref=<sha>';
+const GITHUB_HOST = /(^|\.)(github\.com|githubusercontent\.com)$/;
+/** The host of a URL-like word (scheme optional, as curl/wget accept), lower-cased; null when it has none. */
+function urlHost(word) {
+  const m = /^(?:[a-z][a-z0-9+.-]*:\/\/)?(?:[^/@\s]*@)?(\[[^\]]*\]|[^/:?#\s@]+)/i.exec(word);
+  return m ? m[1].toLowerCase().replace(/\.$/, '') : null;
+}
+const isGithubUrl = (word) => GITHUB_HOST.test(urlHost(word) ?? '');
+function analyzeFetch(prog, argv, findings) {
+  const words = argv.slice(1).map((a) => (/^--url=/.test(a) ? a.slice(6) : a));
+  const hit = words.find((a) => !a.startsWith('-') && isGithubUrl(a));
+  if (hit) findings.push(ask(`\`${prog}\` to ${urlHost(hit)}: ${GH_HOW}`));
+}
+// Raw-text form, used only when the command could not be parsed.
+const looksGithubFetch = (text) => /\b(curl|wget)\b/.test(text) && /(^|[\s'"=/@.])(github\.com|[a-z0-9-]+\.github\.com|[a-z0-9-]+\.githubusercontent\.com)\b/i.test(text);
 
 // ---------------------------------------------------------------- recording routes (incident I-062)
 // The user banned camera access (T-018: QuickTime's New Movie Recording opened the Mac's camera before the
@@ -736,7 +759,8 @@ async function main() {
     res = analyze(command, { cwd: input.cwd });
   } catch (e) {
     if (looksGuarded(command)) block(`git-guard could not parse this command (${e.message}) and it mentions a guarded git/gh operation (merge/pull/push). Rewrite it as a plain command without nested quoting. ${HOW}`);
-    process.exit(0);
+    if (looksGithubFetch(command)) res = ask(`could not parse this command (${e.message}) and it seems to curl/wget GitHub. ${GH_HOW}`);
+    else process.exit(0);
   }
   if (res.decision === 'deny') block(`git-guard: ${res.reason}`);
   if (res.decision === 'ask') {
