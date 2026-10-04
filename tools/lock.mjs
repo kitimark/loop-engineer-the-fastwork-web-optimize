@@ -44,7 +44,8 @@
 // back to back, all of them, while the run fits 900 s, SHORT_DRAIN_SEC (I-020); then a normal waiter; a normal
 // waiter the lead moved ahead of short jobs goes before them). The hold ends at N s: `run` kills the command (and its children), waits up to 1.5 s until they are gone (I-099), and
 // exits 124; a short lease just expires (it cannot be renewed). Keep polling while you wait (`run`
-// and `acquire --wait` do): a short queue place is dropped after 60 s without a retry.
+// and `acquire --wait` do): a short `run` waiter's place is dropped after 60 s without a retry; an `acquire` waiter
+// (short or shared too) keeps it for 10 min (I-113), and a hand-over skips it while it is not polling.
 // I-106: after such a hard kill (max-seconds, or a signal past its 3 s grace; also --shared), `run` removes the throwaway
 // Chrome profiles (lib/cdp.mjs tempProfileDir) its killed tree left: its command gets FW_RUN_PROFILES=<per-run list>,
 // each profile made in the tree is listed there, and only a listed folder whose marker names a killed process of the
@@ -377,7 +378,7 @@ async function main() {
     const hh = res.holder;
     const who = hh ? (isGroup(hh) ? `shared by ${(hh.readers || []).map((x) => `"${x.owner}"`).join(', ')} until ${hh.expiresAt}` : `held by "${hh.owner}" since ${hh.acquiredAt}${hh.expiresAt ? ' until ' + hh.expiresAt : ''}`)
       : res.gated ? `free, but the host is not quiet (${res.gate.reasons.join(', ')}; waiting since ${res.gate.since}, granted anyway after ${THRESHOLDS.gateMaxWaitSec} s)` : `free, but "${res.next}" is next`;
-    console.log(`BUSY ${resource}: ${who}${res.why ? ` (${res.why})` : ''}. You ("${owner}") are #${res.position} in the queue; run acquire again within ${shared ? '60 s' : '10 min'} to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
+    console.log(`BUSY ${resource}: ${who}${res.why ? ` (${res.why})` : ''}. You ("${owner}") are #${res.position} in the queue; run acquire again within 10 min to keep your place (a hand-over serves waiters that keep polling, e.g. with --wait; one not seen for 30 s is skipped but keeps its place).`);
     return 3;
   }
   if (cmd === 'renew') { const ttlSec = Number(opt('ttl', 900)), h = await renew(resource, { owner, ttlSec, noShorten: flag('no-shorten') }); keepAwake(resource, h); if (meta.job) await describeHold(resource, { owner, job: meta.job }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.kept ? ` (kept: already held longer than --ttl ${ttlSec} s)` : ''}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }

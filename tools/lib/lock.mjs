@@ -32,8 +32,10 @@
 // nobody queued takes its record along, I-081), so shorts
 // can't starve the queue: a waiting normal job is delayed by at most SHORT_DRAIN_SEC. A short holder expires at acquiredAt + maxSec
 // (no --ttl, re-acquire or renew stretches it); `lock.mjs run --short` also kills its command then.
-// A short waiter must keep polling: its queue entry is dropped after SHORT_QUEUE_TTL_SEC without a
-// refresh, so a short job that stopped waiting never holds up the hand-over.
+// A short process waiter (`lock.mjs run --short|--shared`) must keep polling: its queue entry is dropped after
+// SHORT_QUEUE_TTL_SEC without a refresh, so a short job that stopped waiting never holds up the hand-over. A lease waiter
+// (`lock.mjs acquire`, short or shared too) keeps its place for queueTtlSec like any lease (I-113); while it is not
+// polling a hand-over skips it.
 //
 // Re-entry. The same owner re-enters its own lease (any pid) or its own process lock (same pid). A
 // descendant process re-enters its ancestor's hold through FW_LOCK_HELD=<resource>:<token>[,...], which
@@ -541,6 +543,12 @@ function pruneGroup(r, h, now, by) {
 /** Queue entry `w` is this shared waiter's: the same owner and process (a process waiter) or checkout (a lease). */
 const sameWaiter = (w, owner, kind, pid) => w.owner === owner && (kind === 'process' ? w.kind === 'process' && w.pid === pid : w.kind !== 'process' && w.checkout === REPO);
 
+/** The first short-lane entry seen within HANDOVER_FRESH_SEC (or the caller's): a lease waiter that is not polling keeps
+ * its place but does not hold the polling short jobs back at a gate-held head (I-113). -1 when there is none. */
+function firstShortSeen(q, now, caller) {
+  return q.findIndex((w) => w.short && (w.owner === caller || now - Date.parse(w.lastSeen) <= HANDOVER_FRESH_SEC * 1000));
+}
+
 function pruneQueue(q, now = Date.now(), queueTtlSec = 600) {
   return q.filter((w) => now - Date.parse(w.lastSeen) < (w.queueTtlSec ?? queueTtlSec) * 1000 && (!w.pid || w.kind !== 'process' || pidAlive(w.pid)));
 }
@@ -708,9 +716,11 @@ export async function tryAcquire(r, opts) {
     const shortMax = shared ? Math.max(SHORT_MAX_SEC, jobMax) : SHORT_MAX_SEC;
     if (!(maxSec > 0 && maxSec <= shortMax)) throw new Error(`a short job needs --max-seconds between 1 and ${shortMax} (got ${maxSec})`);
     ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
-    queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
+    if (kind === 'process') queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
   }
-  if (lane) queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC); // a reader polls like a short job
+  // a process reader polls like a short job; a lease waiter (`lock.mjs acquire`, re-run after exit 3) keeps its place
+  // for the normal queue TTL, short or shared (I-113): a hand-over skips it while it is not polling (I-020)
+  if (lane && kind === 'process') queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
   const pol = !short && !lane && kind === 'lease' && LEASE_POLICY[r];
   if (pol) {
     if (ttlSec > pol.maxHoldSec) throw new Error(`a ${r} lease is capped at ${pol.maxHoldSec} s (asked --ttl ${ttlSec}); measure inside one process hold instead: node tools/lock.mjs run ${r} --owner <topic> -- sh -c '<ab && probe>' (I-020)`);
@@ -767,7 +777,7 @@ export async function tryAcquire(r, opts) {
     const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
     // (not one the lead moved, and only early in its gate wait: gateHolding, I-030)
-    const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
+    const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner));
     let gateRec;
     if (!h && headOk && GATED[r] && !short && !noTiming && host !== undefined) {
       const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
@@ -910,7 +920,7 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
   const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
   const afterGroup = !!seen.shared;
   // the opener is the waiter served next (readers in queue order, N4), or the first short-lane entry past a gate-held head
-  const headOk = q.length === 0 || mine === ni || (!afterGroup && GATED[r] && gateHolding(q[ni], now, T) && mine === q.findIndex((w) => w.short));
+  const headOk = q.length === 0 || mine === ni || (!afterGroup && GATED[r] && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner));
   if (!headOk) return wait(`"${q[ni].owner}" is served first`);
   const x = reader();
   const g = groupWith({ resource: r, owner: GROUP_OWNER, kind: 'lease', token: randomBytes(6).toString('hex'), checkout: REPO, host: os.hostname(), acquiredAt: iso(now), openedAt: iso(now), meta: {}, short: true, maxSec: SHARED_LANE.maxSec, shared: true, format: SHARED_FORMAT }, [x]);

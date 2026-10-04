@@ -1009,3 +1009,52 @@ test('N5/N6: timedInSlotRefusal refuses a timed tool whenever FW_LOCK_SHARED nam
   const a = await rd('fn');
   assert.match(L.timedInSlotRefusal('x', { FW_LOCK_SHARED: L.sharedEnv(R, a.reader.token, '') }), /slot of "fn"/);
 });
+
+// I-113: a lease waiter (`lock.mjs acquire`, exit 3 BUSY) that re-runs keeps its place and its "since" for the normal
+// queue TTL (10 min), shared and short ones too (they had 60 s: ts-i103's shared entry from 04:03:44Z reappeared at the
+// back as 04:34:49Z after its owner waited with `lock.mjs wait`). Process waiters still drop with their process.
+test('I-113: a shared lease waiter that re-runs after 90 s keeps its place and its since; the hand-over still skips it while it is not polling', async () => {
+  await on({ cap: 4 });
+  const t0 = Date.now();
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', ttlSec: 1200, now: t0 })).ok, true, 'an exclusive lease holds the lock');
+  const lease = (owner, at, o = {}) => L.tryAcquire(R, { owner, kind: 'lease', shared: true, weight: 2, maxSec: 300, load1: 0, ncpu: 8, now: at, ...o });
+  const first = await lease('ts-a', t0 + 1000);
+  assert.equal(first.position, 1);
+  const since = first.queue[0].since;
+  assert.equal((await lease('ts-b', t0 + 10000)).position, 2);
+  // ts-a stops polling (exit 3, then a `lock.mjs wait`); ts-b keeps polling past the old 60 s window
+  for (const s of [40, 70, 85]) assert.equal((await lease('ts-b', t0 + s * 1000)).position, 2, `ts-b at +${s} s stays behind ts-a`);
+  const again = await lease('ts-a', t0 + 90000);
+  assert.equal(again.position, 1, 'the re-run keeps its place');
+  assert.equal(again.queue[0].since, since, 'and its original since');
+  // still dropped once it is not seen for the normal queue TTL (10 min)
+  assert.equal((await lease('ts-b', t0 + 90000 + 601000)).position, 1, 'gone after 10 min unseen');
+});
+
+test('I-113: a short lease waiter (and a shared one with the switch off) keeps its place across a 90 s gap; process waiters keep the 60 s window', async () => {
+  const t0 = Date.now();
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', ttlSec: 600, now: t0 })).ok, true);
+  const sh = (owner, at, o = {}) => L.tryAcquire(R, { owner, kind: 'lease', short: true, maxSec: 120, now: at, ...o });
+  assert.equal((await sh('s-a', t0 + 1000)).position, 1);
+  assert.equal((await L.tryAcquire(R, { owner: 'sw-off', kind: 'lease', shared: true, weight: 1, maxSec: 120, now: t0 + 2000 })).position, 2, 'switch off: a short entry');
+  const pid = livePid();
+  assert.equal((await L.tryAcquire(R, { owner: 'p-run', kind: 'process', pid, short: true, maxSec: 120, now: t0 + 3000 })).position, 3);
+  assert.equal((await sh('s-b', t0 + 4000)).position, 4);
+  for (const s of [40, 70, 85]) await sh('s-b', t0 + s * 1000);
+  const q = L.status(R).queue;
+  assert.deepEqual(q.map((w) => w.owner), ['s-a', 'sw-off', 's-b'], 'the leases stay; the process waiter that stopped polling for 60 s is gone');
+  assert.equal(q[0].queueTtlSec, 600);
+  assert.equal((await sh('s-a', t0 + 90000)).position, 1, 'the short lease re-run keeps its place');
+});
+
+test('I-113: a short lease entry that is not polling does not stop a polling short job from passing a gate-held head writer', async () => {
+  const now = Date.now(), iso = (t) => new Date(t).toISOString();
+  mkdirSync(join(state, 'locks'), { recursive: true });
+  // the head writer is held by its host gate right now (fresh gate record, early in its gate wait): short jobs may pass it
+  const writer = { owner: 'ab', kind: 'lease', checkout: REPO, since: iso(now - 20000), lastSeen: iso(now), queueTtlSec: 600, gate: { since: iso(now - 5000), at: iso(now - 1000), quiet: false, reasons: ['cpu'] } };
+  const idle = { owner: 'idle-short', kind: 'lease', checkout: REPO, since: iso(now - 15000), lastSeen: iso(now - 85000), queueTtlSec: 600, short: true, maxSec: 120 };
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([writer, idle]));
+  const r = await L.tryAcquire(R, { owner: 'npm-y', kind: 'lease', short: true, maxSec: 120, now });
+  assert.equal(r.ok, true, 'the polling short job passes; the unseen one keeps its place');
+  assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['ab', 'idle-short']);
+});
