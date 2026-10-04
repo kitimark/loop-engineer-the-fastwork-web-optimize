@@ -42,6 +42,15 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-118 registered: double-drive phone no-worse check (v8 vs v8 + double-drive), at mgmt-devices' request for the lead.**
+  - Card: research/management/p118-double-drive-phone-no-worse.md. Ticket draft: fixes/double-drive/phone/TICKET.md
+    (fix-double-drive's worktree), P-117's shape: S n = 4 and G part M n = 3, three exclusive no-timing holds.
+  - Ops checked the pins on disk: C 3e3e94cb6e9f / f836404b3728, V 3076c5a8c9a3 / 2f7197880ffd (V has its own CSS),
+    delta.diff baae6114cd65. All match.
+  - Gaps before the lead's read: no P-118 scorer (P-117's pins its own V and a shared CSS), no hold.sh, P-<ops>
+    placeholders, pins provisional until the Simulator pixel set 2 ends (any V change voids the signature), future-card
+    y range vs G part M, and the order note (V does not depend on P-117).
+  - The ticket itself is not edited by ops. Next free: **P-119**.
 - 10-05 **P-117 N2 result (fix-scroll-cb, 01daa38f): AGREE, Simulator parity FAIL on the nav. P-117 is on hold (lead,
   c7d165b7).**
   - The pins in n2.log's PIN line match the files on disk: run-n2.sh d2b816cd392a, build.mjs c486a52e5710, scb-probe
@@ -238,7 +247,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
     P-107 nav-hit-cache successor (fix-nav-morph, registered 10-05) · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
     P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
-    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize) · P-116 v8 GH attribution (int-v8 + iphone-runner, ticket drafted by ops, the lead's read; registered 10-05) · P-117 combined phone no-worse v8 + nav-hit-cache + scroll-cb (int-v8 + iphone-runner, card by ops, the lead's read; registered 10-05). **Next free: P-118.**
+    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize) · P-116 v8 GH attribution (int-v8 + iphone-runner, ticket drafted by ops, the lead's read; registered 10-05) · P-117 combined phone no-worse v8 + nav-hit-cache + scroll-cb (int-v8 + iphone-runner, card by ops, the lead's read; registered 10-05). · P-118 double-drive phone no-worse v8 vs v8 + double-drive (fix-double-drive + iphone-runner, card by ops, the lead's read; registered 10-05). **Next free: P-119.**
   - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
     listens on 6400. It fails after the I-157 fix too, so `npm run test:unit` is red for everyone (1 of 1042).
   - P-100 H1r result: AGREE. O1 RAISED, O2 not enough (paused n 1), O3 1.00 descriptive, all Fair. Ledger row filled.
