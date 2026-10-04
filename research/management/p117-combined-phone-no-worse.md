@@ -240,3 +240,31 @@ arms pinned before data. A fixed V gets new pins and a new signature.
 - **The lead's ruling (2026-10-05, after this read): the hold stays.** The task-mode check clears the lag (OBSERVED,
   F-239), but parity is VOID under that driver, and two flickers appear only with nav-hit-cache. nav-hit-cache enters
   v9 only after fix-nav-morph rules on the flickers and one valid parity read passes.
+
+## Ops read: momentum case (fix-nav-morph d5d12629 on branch nav-hit-cache, 2026-10-05): numbers AGREE
+
+Read from `fixes/nav-hit-cache/p117/sim-momentum.json` at d5d12629 (Simulator, counts only, F-084). The fields match the
+owner's report:
+- both loads served VA js eb2089b858ab / css f836404b3728;
+- scroll events per frame never exceed 1. Moving frames with no scroll event:
+
+  | load | glide | touch |
+  |---|---|---|
+  | 1 | 42 / 499 | 2 / 44 |
+  | 2 | 34 / 552 | 3 / 49 |
+
+- per-load audit: lag 1, mismatches theme / sticky / pill 0 / 0 / 0, inSync 0 / 0 / 0;
+- scripted audit on load 1:
+
+  | mode | steps | lag | theme | sticky | pill |
+  |---|---|---|---|---|---|
+  | task | 1051 | 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+  | raf | 1052 | 1050 | 1 / 0 | 0 / 0 | 2 / 0 |
+
+  In raf mode the second figure of each pair is 0. That fits the owner's statement that every raf-mode mismatch falls in a
+  lag frame (report only).
+
+What this read is not:
+- Ops checked the summary fields, not the frame files.
+- "WebKit skips the scroll event in some moving frames" stays OBSERVED (Simulator, cause unknown, no reference yet).
+- The .pain flicker verdict waits on the queued 12-load flicker-sim. The P-117 hold stays (the lead's ruling, c7bfe59a).

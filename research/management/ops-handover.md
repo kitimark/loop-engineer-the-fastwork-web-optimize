@@ -72,6 +72,10 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-117 momentum case (fix-nav-morph d5d12629, branch nav-hit-cache): numbers AGREE** with sim-momentum.json
+  (summary fields only). Lag 1 per load; mismatches 0/0/0. Moving frames with no scroll event: glide 42/499 and 34/552.
+  Scripted task mode: lag 0, mismatches 0/0/0. The missing scroll events stay OBSERVED. The .pain flicker verdict
+  waits on flicker-sim. The hold stays. Card: p117-combined-phone-no-worse.md.
 - 10-05 **P-118 pinned hold.sh vs xcode-serious: FAIL on 2 of 4, before H1 (lead's ask after eae96f01).**
   hold.sh 58d285cb0094 still pre-warms (up to 4 S runs on B before the start gate) and calls the gate without
   `--accept-induced` (an induced Serious exits 4, so H1 would void at its start gate). Warm-ups per arm port and the
