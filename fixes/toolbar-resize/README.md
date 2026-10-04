@@ -391,7 +391,8 @@ REPLICA true, DRIFT 0.012 (C-H1 -> C-H4), VOID false; INJECT-GATE all applied; n
 - **Cost: the showcase.** Not rendering `.start-selling-future-showcase` (904 px, the profile deck) removes the
   toolbar-step Layout (0.032), as #people did in P-109 (0.049). Header and pill: NONE. Prediction (ps LOCATES or PARTIAL
   ~70 %) held.
-- **Trigger: no single renderer.** nav, pain and nav+pain are all NONE; P-106 `sticky` (hero only, phone) was NONE; only nvc
+- **Trigger: no single renderer.** nav, pain and nav+pain are all NONE (Simulator); P-106 `sticky` (hero only) was NONE
+  on the phone, not in the Simulator (two platforms combined here); only nvc
   (hero + nav + pain together) located in P-109. Reading (OBSERVED, in our setup, mechanism UNRESOLVED): the step's layout
   happens while any viewport-constrained renderer is present, so removing a subset changes nothing. That fits S3 (every
   viewport-constrained object is marked for layout on a layout-viewport change) but S3 does not say why the showcase is laid
@@ -401,13 +402,51 @@ REPLICA true, DRIFT 0.012 (C-H1 -> C-H4), VOID false; INJECT-GATE all applied; n
   resolution. Whether that invalidation reaches the showcase's layout is UNRESOLVED; decisive local check: an `svh` arm that
   pins the card's min-height to its measured px (look-identical in portrait), same driver and scorer.
 - Every call is indicative (one run per arm). Only a phone G run feeds F.
+- **ps-H1 frame count (ops N1):** ps-H1 had 45 moving hero frames, the other runs 12-16 (cheaper steps give more frames per
+  toolbar move), so its median covers a different frame set. The call does not rest on that: in-style Layouts fell from
+  11-13 to 3. The phone G check reports n per run.
+- Ops second read: AGREE (mgmt-ops-10, b7daeac0).
 
 ### Next (plan; needs an ops read)
 
-- P-112 (Simulator, same driver/gate/scorer): `svh` (card min-height pinned to px), `csl` (`contain: layout` on the
+- P-114 (was written P-112 here; P-112/P-113 are int-v8's) (Simulator, same driver/gate/scorer): `svh` (card min-height pinned to px), `csl` (`contain: layout` on the
   showcase; look-identical if no descendant overflows to the card), and `cva` (`content-visibility: auto` +
   `contain-intrinsic-block-size: auto 904px` on the showcase; helps only while it is off screen). Whichever locates and is
   look-identical goes to a look check (pixel-identical rule) and a phone G check, after v8's P-111.
+
+## Prediction P-114: candidate forms for the showcase cost (Simulator, registered before data)
+
+Lead (message, after P-110): yes; one exclusive `--no-timing` Simulator hold, <= 10 min, after the phone work (iphone-runner
+opens the gap). Mechanism and candidate screening only; a candidate that locates still needs a look check and a phone G check.
+
+- **Question.** P-110: the toolbar-step Layout is spent in `#people .start-selling-future-showcase`. Which change that
+  keeps the look removes it?
+- **Arms** (all on the v7 server, CSS `308f0da70c3a`, JS `8c90da217745`; applied in the page by `p114-inject.mjs`,
+  sha256/12 `7af8f35ab1bc`, after each load and before the Timeline starts, like P-110):
+  - `svh`: `.start-selling-future-card { min-height: <its own computed px> }` (replaces `100svh`, CSS l.3522, width <= 860px;
+    the small viewport height is constant while the toolbar moves, so the look is the same in portrait). Tests the S5 lead.
+  - `csl`: `contain: layout` on the showcase.
+  - `cva`: `content-visibility: auto; contain-intrinsic-block-size: auto <its measured px>` on the showcase (skips it only
+    while it is off screen).
+  - C = v7 with the same injection and no change.
+- **Order (one hold):** C:H1 svh:H1 csl:H1 C:H2 cva:H1 C:H3. Driver `sim-bisect114.mjs` (sha256/12 `5770b78c9c13`, a copy of
+  sim-bisect110 with the arm list, inject file and folder changed). If the budget stop drops steps, they run in one more
+  hold as `C:H4 <dropped arms> C:H5`, same scorer and gate, and the result says so.
+- **Applied-arm gate (frozen, as P-110 C1):** `check-inject114.mjs` (sha256/12 `3dd6b17ecfb9`) runs before the scorer. An arm
+  counts only when `applied: true`, its rule is in `css`, and: svh, `measured.cardMinH` is a px value > 0; csl, the computed
+  `contain` includes `layout`; cva, `measured.showcaseH > 0` and the computed `content-visibility` is `auto`. Otherwise
+  INSUFFICIENT (never NONE), with the inject record reported. C runs need arm `none`.
+- **Scorer and filters:** unchanged, `score-bisect.mjs` `cb6f0c97b81b` (LOCATES <= 0.30, PARTIAL <= 0.70, NONE, GEOMETRY > 2 px,
+  replication gate, VOID at 30 % drift). Each gate line is reported next to its call, with n per run. One run per arm:
+  indicative.
+- **Predictions:** svh LOCATES ~35 % (NONE ~55 %). csl LOCATES ~35 %, PARTIAL ~20 %. cva PARTIAL ~40 %, NONE ~45 % (the
+  showcase is on screen for much of the hero zone, y ~250-1900).
+- **Reading.**
+  - svh LOCATES: the viewport-unit invalidation (S5) drives it; the fix is a px min-height set once (resize listener for
+    rotation); look check, then phone G.
+  - csl LOCATES: layout containment on the showcase isolates it; look check (pixel-identical rule), then phone G.
+  - cva LOCATES or PARTIAL: helps while off screen only; stacks with v7's far re-skip; look check, then phone G.
+  - All NONE: the cost is inside the showcase and needs its own split (profile deck children).
 
 ## Scenarios not run
 
