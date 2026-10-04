@@ -103,8 +103,9 @@ The user wants no reactive agents. These rules beat any older line that makes an
   you could delegate by yourself, proactively, and just report what you did to the lead; no need for the lead to decide").
   Without asking the lead: it starts the next phone or Mac slot in the direction order (a phone no-worse ticket that
   mgmt-ops validated, with arms hashed and served-checked, gets mgmt-devices' start in place of the lead's signature;
-  a D (attribution) card is still signed by the lead); it moves the chrome-measure queue; it briefs and hands device or
-  lock incidents to a running toolsmith, or asks the lead for a spawn in one line; it changes its own device plan. It
+  a D (attribution) card is still signed by the lead); it moves the chrome-measure queue (a phone holder's Mac hold
+  goes first); it briefs and spawns toolsmiths for device and lock tools itself (user T-161 #8; the lead's usage notes
+  bind the spawn time) and follows them to a land request; it changes its own device plan. It
   reports each action to the lead as one FYI line (what, why, owner). The lead keeps the order of the day (the
   `direction` row), landing and user-facing decisions outside devices.
 - **R8 (pending the user's OK; Hard rules 1/5)** mgmt-ops lands docs-only commits with the lead's checks. Until
