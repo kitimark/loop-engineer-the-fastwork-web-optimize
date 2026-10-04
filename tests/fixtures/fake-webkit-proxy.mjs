@@ -81,7 +81,15 @@ async function load(url) {
   log({ navigated: url, warning: tab.warning, title: tab.title });
 }
 
+// I-141 (iphone.mjs record's lost finger recordings): GET /__fake/stall?ms=N[&unlist=1] makes every Runtime.evaluate
+// on the tab answer only after N ms (a page that does not answer, as on the phone at 12:44Z); with unlist=1 /json also
+// lists no tab meanwhile (a locked phone or Safari in the background). GET /__fake/navigate?url=U loads U in the tab as
+// a new document (the page model's window.__fr is gone) and destroys the old target: each open connection gets
+// Target.targetDestroyed and never an answer again (a new connection gets the new target), like a link the user tapped.
+let stall = { until: 0, unlist: false };
+const conns = new Set();
 async function evaluate(expr) {
+  if (Date.now() < stall.until) { log({ stalled: expr.slice(0, 40) }); await sleep(stall.until - Date.now()); }
   const nav = expr.match(/location\.href = ("[^"]*")/);
   if (nav) { const u = JSON.parse(nav[1]); log({ navigate: u }); setTimeout(() => load(u), 50); return 'ok'; }
   if (expr.includes('/__mirror/info')) {
@@ -244,8 +252,23 @@ const server = http.createServer((req, res) => {
     onApp(q.get('kind'), { url: q.get('url') });
     return res.end('ok');
   }
+  if (req.url.startsWith('/__fake/stall?')) { // I-141
+    const q = new URL(req.url, 'http://x').searchParams;
+    stall = { until: Date.now() + Number(q.get('ms') || 0), unlist: q.get('unlist') === '1' };
+    log({ stall: Number(q.get('ms') || 0), unlist: stall.unlist });
+    return res.end('ok');
+  }
+  if (req.url.startsWith('/__fake/navigate?')) { // I-141
+    const u = new URL(req.url, 'http://x').searchParams.get('url');
+    Object.assign(tab, { url: u, title: 'next page' }); tab.gen++;
+    if (PAGE) doc = newDocument();
+    for (const c of conns) { if (!c.dead) { c.dead = true; c.send({ method: 'Target.targetDestroyed', params: { targetId: c.targetId } }); } }
+    log({ fakeNavigated: u, gen: tab.gen });
+    return res.end('ok');
+  }
   if (req.url === '/json') {
     res.setHeader('content-type', 'application/json');
+    if (stall.unlist && Date.now() < stall.until) return res.end('[]');
     if (!tab.alive) return res.end(JSON.stringify(BLANK_VIEW ? [{ url: 'about:blank', title: '', webSocketDebuggerUrl: `ws://127.0.0.1:${server.address().port}/devtools/page/2`, appId: 'PID:1304' }] : []));
     const ws = (n) => `ws://127.0.0.1:${server.address().port}/devtools/page/${n}`;
     const safari = { url: tab.url, title: tab.title, webSocketDebuggerUrl: ws(1), appId: `PID:${safariPid}` };
@@ -273,6 +296,8 @@ server.on('upgrade', (req, sock) => {
   const isTwin = req.url === '/devtools/page/6'; // I-077
   const targetId = isTwin ? 'twin-1' : `page-${tab.gen}`; // target ids change on every navigation, like iOS
   send({ method: 'Target.targetCreated', params: { targetInfo: { targetId, type: 'page' } } });
+  const conn = { targetId, send, dead: false }; // I-141: /__fake/navigate destroys this target
+  if (!isTwin) { conns.add(conn); sock.on('close', () => conns.delete(conn)); }
   // I-079: this connection's inspector agents (Page stopwatch, Timeline recording)
   const tl = { origin: null, timer: null, hook: null };
   const sw = (abs) => (tl.origin === null ? 0 : (abs - tl.origin) / 1000);
@@ -294,6 +319,7 @@ server.on('upgrade', (req, sock) => {
   const handle = async (msg) => {
     if (msg.method !== 'Target.sendMessageToTarget') return send({ id: msg.id, result: {} });
     send({ id: msg.id, result: {} });
+    if (conn.dead) { log({ deadTarget: targetId }); return; } // I-141: a destroyed target never answers
     const inner = JSON.parse(msg.params.message);
     let result = {};
     if (/^(Page\.(enable|disable)|Timeline\.)/.test(inner.method) && !isTwin) timelineCmd(inner.method);

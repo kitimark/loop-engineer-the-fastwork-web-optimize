@@ -75,7 +75,9 @@ test('tools/iphone.mjs: scroll and record write their result files through lanSa
   const src = readFileSync(new URL('../../tools/iphone.mjs', import.meta.url), 'utf8');
   const writes = src.match(/writeFileSync\([^\n]*/g) || [];
   assert.equal(writes.length, 2, 'scroll and record are the only writers in iphone.mjs (run writes through iphone-run finish)');
-  for (const w of writes) assert.match(w, /^writeFileSync\(out, JSON\.stringify\(lanSafeRecord\(res\)\)\)/, w);
+  // record writes atomically (a temp file renamed onto out) since it saves as it goes (I-141)
+  for (const w of writes) assert.match(w, /^writeFileSync\((out|`\$\{out\}\.\$\{process\.pid\}\.tmp`), JSON\.stringify\(lanSafeRecord\(res\)\)\)/, w);
+  assert.ok(src.includes('renameSync(`${out}.${process.pid}.tmp`, out);'), 'the temp file becomes out');
 });
 
 test('lanSafeText (review-t1a N1): every LAN url and bare LAN host in free text becomes lan-host; the rest stays', () => {

@@ -23,6 +23,11 @@
 //   - requireLease refuses while another owner's console step is on the phone (I-123 d: lib/phone-step.mjs runnerRefusal,
 //     --ignore-step), after the lease check and before anything touches Safari; it measures nothing (RUNNER_GUARD).
 // The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
+// One intended MEASUREMENT-CODE change (incident I-141, 2026-10-04): `record` runs through lib/iphone-record.mjs
+// (recordRun), which polls the logger every --poll s (default 5 s, 0.2 Hz; 0 = none) and saves as it goes, then does the
+// old final read; a failed read gets a diag and one reconnect. The in-page logger (RECORD_JS), the final read
+// (RECORD_STOP_JS) and the summary (recordSummary) stay the 2226d51 ones, byte for byte: pinned below (RECORD_PINS) and
+// equal to tools/lib/sim-scroll.mjs's copies. So the record block is pinned as it is now, no longer against 2226d51.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -84,16 +89,17 @@ const OPEN_PARKED = ['\n    if (await openParked(url, target, info)) return; // 
 const CHANGES = {
   scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, ''], MARK, LEASE_URL],
   open: [OPEN_LAN, OPEN_PARKED],
-  record: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [GUARD, ''], [MAC, ''], MARK],
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
 const RUNNER_GUARD = "\n  // I-123: never touch the phone under another owner's console step that is on it (begun, not over); the Simulator is\n  // not the phone. --ignore-step C-NNN: a step its owner left behind, named on purpose.\n  const busy = process.env.FW_SIM_SESSION ? null : runnerRefusal({ owner, ignore: opt('ignore-step') });\n  if (busy) throw new Error(busy);";
 const PINS_BEFORE_I123 = { requireLease: '138ba8339515624d' }; // = 2226d51
-const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49', status: '28dd691408056316', open: 'dabba5b174193021' };
+const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', status: '28dd691408056316', open: 'dabba5b174193021' }; // record: 'f8dea07e65914d49' until I-141
+/** I-141: the 2226d51 logger and stop expressions (as the record block held them before I-141), now in lib/iphone-record.mjs. */
+const RECORD_PINS = { RECORD_JS: '8d5ee37294abb430', RECORD_STOP_JS: 'b24a0eac1e12cfb5' };
 
 const PINS = {
   requireLease: 'c3fe5c3908d05b4b', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: 'ea6efe52e87761be', record: 'a22ece491910c1cb', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard)
+  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: 'ea6efe52e87761be', record: '53258b1f26b31e01', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-141: record through lib/iphone-record.mjs)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with
@@ -109,12 +115,15 @@ test('sim-scroll.mjs: PROBE, summarize, the record logger and its summary are th
   assert.equal(sha(block(sim, 'function summarize(res) {', '}')), PINS.summarize);
   const rec = block(phone, "  if (cmd === 'record') {", '  }');
   const m = await import('../../tools/lib/sim-scroll.mjs');
-  assert.ok(rec.includes(`await c.evaluate(\`${m.RECORD_JS}\`);`), 'RECORD_JS is the phone\'s logger expression');
-  assert.ok(rec.includes(`await c.evaluate('${m.RECORD_STOP_JS}')`), 'RECORD_STOP_JS is the phone\'s stop expression');
-  const fn = block(sim, 'function recordSummary(res) {', '}').split('\n').map((l) => l.trim());
-  const phoneLines = rec.split('\n').map((l) => l.trim());
-  for (const l of fn.slice(1, 4)) assert.ok(phoneLines.includes(l), `record summary line: ${l}`);
-  assert.ok(phoneLines.includes(fn[4].replace(/^return /, 'res.summary = ')), 'the summary object is the phone\'s');
+  const R = await import('../../tools/lib/iphone-record.mjs'); // I-141: the phone's logger lives there now
+  const lib = readFileSync(join(TOOLS, 'lib', 'iphone-record.mjs'), 'utf8');
+  assert.equal(R.RECORD_JS, m.RECORD_JS, 'RECORD_JS is the phone\'s logger expression');
+  assert.equal(R.RECORD_STOP_JS, m.RECORD_STOP_JS, 'RECORD_STOP_JS is the phone\'s stop expression');
+  assert.deepEqual({ RECORD_JS: sha(R.RECORD_JS), RECORD_STOP_JS: sha(R.RECORD_STOP_JS) }, RECORD_PINS, 'the 2226d51 logger and stop read, unchanged');
+  assert.ok(rec.includes('await c.evaluate(RECORD_JS);'), 'record installs the logger expression as it is');
+  assert.ok(lib.includes('await c.evaluate(RECORD_STOP_JS, \'page\', readMs)'), 'the final read is the stop expression');
+  assert.ok(rec.includes('res.summary = recordSummary(res);'), 'the summary is recordSummary');
+  assert.equal(block(lib, 'function recordSummary(res) {', '}'), block(sim, 'function recordSummary(res) {', '}'), 'recordSummary is the Simulator\'s copy, byte for byte');
   // scrollCmd's sequence is the phone's scroll block's: reload from the top, 2.5 s, readyState, 8 s, probe, 1.5 s polls
   const simScroll = block(sim, 'export async function scrollCmd(', '}').split('\n').map((l) => l.trim());
   const phoneScroll = block(phone, "  if (cmd === 'scroll') {", '  }').split('\n').map((l) => l.trim());
