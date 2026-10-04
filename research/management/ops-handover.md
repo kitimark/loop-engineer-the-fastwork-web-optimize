@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 06:1xZ** (mgmt-ops-10).
+**10-04 06:2xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 06:2xZ Lead landed I-116 00dcb450 (the P-090 ledger misparse is fixed; two-space empty cells stay the convention), I-112 a5f3bdc5 (WDA check, GESTURE_BUDGET_S), docs cc47d0fc, 1be73acb (ops). cd-roll-ca safe-to-delete list: T-049 #19. **Hand-over watch, new pattern:** a queued phone waiter whose agent task shows completed has an orphaned lease request (iphone-runner and fix-rest-script ended their turns; the lead resumed both). At each hand-over check, confirm the next holder's agent is still running; if not, tell the lead. **Unit-test failures:** capture the name with `node --test ... 2>&1 | grep -B2 'not ok'`.
 - 10-04 06:1xZ Lead landed 51c98146. P-096 C1 hold confirmed: no rep until the freeze text and crossing-read.mjs agree and ops re-reads; a code change means a new crossing-read hash in the freeze commit. morph-gpu land request waits on **review-morph-gpu** (never had a fix review). **Disk:** about 10 GB free, falling about 1 GB per 10 min; the lead asked the user in T-049 to delete the listed folders and asked cd-roll-ca to write less. Desk answers that touch disk point to **T-049 #18**.
 - 10-04 06:1xZ **P-092 closed** (ledger HIT, ops re-score identical; landed a41ac6d0). Lead ruling: PASS as no-worse, no gain claimed; tween-start +7 ms (V 60-64 vs C 54-56) is a real cost: morph-gpu lands as a record, stays in the GPU preview, NOT in the next best build; rev 2 (clip layer prepared before the tween) gets a ticket, falsifier V <= C + 2 ms, ops pre-data read. Desk wording: "not worse", never "fewer frames over 34 ms" for P-092. **P-096 freeze read** (d0ff57bd, tool hashes match): CHANGES C1 (line-base rule: text says fixed base 1 + only-other-base = UNRESOLVED; crossing-read detects the base per run); no rep before the re-read PASS. I-120 -> ts-i115 after I-116.
 - 10-04 06:0xZ Lead landed 7d067b1a (I-114 resolved: shared npm-test is now `--weight npm-test --max-seconds 480`), b410fc25 (I-108 follow-up: "landed?" only on ready-to-land/reviewing rows; T-075 answered) and 4ec58d83 (ops). T-076: the six Try-it LAN links went to the user as console step **C-036** (one part per version, `http://lan:<port>/` resolved when shown). **Desk rule (lead): never put addresses in threads, not even as host:port text;** the thread scrubber hides them on purpose (Hard rule 12), so LAN links go in a console step. **I-119** (open, low priority, unowned): an improvement, not a bug. A thread reply should be able to carry an `http://lan:<port>/` link, stored as "lan" and resolved only when shown, like steps. T-077 #5: explained "parked".
