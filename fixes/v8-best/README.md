@@ -211,3 +211,18 @@ node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300
 node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner <you> -- \
   node tools/sim.mjs session --functional --owner <you> -- node fixes/v8-best/gates/px-sim.mjs <ys>
 ```
+
+### P-111 lead pre-data read (2026-10-04 15:2xZ, before any P-111 phone data): PASS
+
+Read by the lead in place of mgmt-ops-10 (parked for usage). Checked against protocol v2 §5 and the memory notes:
+- Arms, hashes, copies and ports: V = v8 (JS 3e3e94cb6e9f / CSS f836404b3728, glue included), C = v7; served-hash
+  check before every item; plain http; the baseline page only for pre-warm and gates. OK.
+- Heat (phone-checks-start-warm): Serious start, 44 °C/Critical ceiling, gate per hold, sentinels per leg chained. OK.
+- Blocks: one warm-up per arm port, C V V C order, ≤ 9 counted runs per block, at most one extra hold per leg. OK.
+- Thresholds: phone ms forms with ±4 ms twins, threshold-sensitive marked, no k forms; G new-cluster rule as ruled. OK.
+- W rest at y 2700: past countdown-faces' pastHero (~2560 Chrome geometry) on either side of the ~77 px phone offset. OK.
+- Gesture budgets 150 s = max(150, 3x estimate). OK.
+Conditions: (1) v8 lands as the best build only with this verdict AND the open Chrome items explained (desktop element
+count 1424 -> 1423; mobile bottom screenshot diff 0.46 %, just above the 0.4 % phase band). (2) Phone order: P-111
+runs before P-105 H3-H6; the runner may run one P-105 hold while it waits for nothing else. (3) The overall P 0.4 is
+accepted: a WORSE verdict sends int-v8 to the reversal builds, it does not drop v8.
