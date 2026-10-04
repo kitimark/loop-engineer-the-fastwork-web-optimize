@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **nav-hit-cache answers ops notes A and B (fix-nav-morph, 9377b70d on branch nav-hit-cache; flicker gate draft with int-v8):**
+  - A: the phone gate logs scrollY at every rendered frame. A blink counts against V only when the step-back rates per arm match (within x1.5, or both <= 0.5 per 1000 moving frames); otherwise the result is INCONCLUSIVE. The hard G1 gate (V monotone blinks = 0) stands.
+  - B: U1 + glue on step 4 give V 76073ef54064 / VA e6323dbf83d3. Task-mode parity (5 cases) is queued in the shared lane; the result comes to ops and int-v8. Data for the second read is unchanged: p117/flicker-{1,2}.json (0d4b83ec), rule `flick` in flicker-sim.mjs.
+- 10-05 **P-120 after int-v8's rebase (lead S1):** the registering commit 745c7d46 is now 4c734e05, and the look-check commit 305e9ace is now 63904a76, which sits on top of main.
+  - fixes/v9-best/phone/ blobs are identical at 745c7d46 and 63904a76: hold.sh 6ad4ff81188e, score.mjs 10edeb07dd09, selftest.mjs 25a4e6882c7a, serve.sh 31b06ea7ad77. The diff of fixes/v9-best is empty for 745c7d46..4c734e05 and for 305e9ace..63904a76.
+  - Result read: the PIN lines must show head 63904a76; every other pin is as listed in the entry below.
 - 10-05 **P-120 registering commit re-check (int-v8 745c7d46): PASS, G1-G7 closed;** PREDICTIONS row filled from its predictions.
   - hold.sh blob 6ad4ff81188e = disk, sha256/12 49797e76c299, sh -n ok; serve/score/selftest unchanged from 5bd7eb4d; SELFTEST OK 15;
     HASHES.txt 46c5a6e38b7a; still no out/pv9/runs. Split H3a/H3b, H4a/H4b pre-stated.
