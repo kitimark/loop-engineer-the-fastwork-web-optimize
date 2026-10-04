@@ -4,9 +4,9 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** step 4 built (v8 + menu swipe rev 7c + double-drive + scroll-cb via a carry over double-drive + PR-021 Join
-button rev 3, user-accepted). Step 2 passed the function check; step 4's function and look checks are queued (step 3's
-were stopped for them). Double-drive's
-desktop rest-offset probe found no change (the fee pill's time phase), so its delta stands. Not timed (memory
+button rev 3, user-accepted). Steps 2 and 4 passed the function check; step 3 passed fix-scroll-cb's Simulator count
+check; step 4's look checks are running. Double-drive is final and phone-cleared (P-118 NO-WORSE). Phone scripts for
+the v9 ticket are in `phone/` (draft, arms = step 4). Not timed (memory
 `defer-timing-focus-call-tree.md`). The phone no-worse check follows the less-work rule (memory `less-work-landing-rule.md`).
 **Integrator:** int-v8 (wave-integrator), from 2026-10-05. Board row `v9-best`, lead priority #2, user T-159 #9.
 **Build:** `patch.diff` is baseline-relative over 2 files: step 4, JS `de237379b556…`, CSS `e1359ab9994a…` (patch.diff
@@ -74,7 +74,16 @@ With two or more components, the script also checks:
   error, 404 or element. Its look checks were stopped for step 3's (the same checks on `out/v9/snap-25dc3025f1a0`, queued).
 - **Step 4 (+ PR-021 rev 3), built 2026-10-04 ~21:55Z:** v9 = de237379b556 / e1359ab9994a (patch.diff 883b6f86b90f),
   12 legal orders the same bytes, v9 minus each of the 4 components = v8 + the others (v9 - earn = step 3), node --check ok.
-  Function and look checks on `out/v9/snap-de237379b556`: queued.
+  **Function check 2026-10-04 22:30Z: CHECK OK** (`out/v9/check-s4.json`; served overlay JS de237379b556… / CSS
+  e1359ab9994a…):
+
+  | viewport | errors | 4xx | morph reached | elements v8 → v9 | screenshot diff % (top / middle / bottom) |
+  |---|---|---|---|---|---|
+  | mobile 430 (touch) | 0 | 0 | yes / yes | 1581 → 1581 | 0.17 / 46.61 / 71.53 |
+  | desktop | 0 | 0 | yes / yes | 1423 → 1423 | 0.12 / 0 / 0 |
+
+  The same picture as step 2 (v8's count is the per-load accent state, 1580 or 1581; the exact count is dom-count's).
+  Look checks on `out/v9/snap-de237379b556`: running.
 - **Step 3 (+ scroll-cb), built 2026-10-04 ~21:45Z** (v9 = 25dc3025f1a0 / 40037dc99f11, patch.diff d31272fd8831). Its commission-job hunks (v8 JS 3289-3337) overlap
   double-drive's: both declare after `_ch`, and double-drive rewrote the rAF line scroll-cb uses as context. `build.mjs`
   now takes a `carry` (the component re-based on v8 + the component it overlaps, used whenever that one is in the set
@@ -84,6 +93,10 @@ With two or more components, the script also checks:
   and back). Semantics (int-v8's reading; both owners confirmed, fix-scroll-cb reproduced the bytes): scroll-cb's gate acts only on the compact path,
   where double-drive snaps its weight (`_cw = _wt`), and off compact the gate is off, so neither changes the other's
   frames.
+  **Simulator count check (fix-scroll-cb, d8660568, score.json 73976d346b15): PASS.** Step 2 (ab6f1062aaeb) vs step 3
+  (25dc3025f1a0), loads C1 V1 V2 C2, rAF driver, scored with P-108: per step side rAF 2.097 → 0.451, side rects
+  3.186 → 1.086, layouts 3.858 → 3.865, renderingFrames 0.924 → 0.915; all 5 guards pass (largest: layouts +0.008,
+  tolerance 0.059); parity C2 vs C1 0 diffs, V1 and V2 vs C1 0 diffs each (geometry 0, deferral sizes equal).
 - Look checks use `fixes/v9-best/gates/`, copies of v8's gates with A = v8 and V = v9 (`V9_SNAP=out/v9/snap-<js12>`):
   - `px-chrome.mjs` at phone width and desktop;
   - `dom-count.mjs`;
@@ -97,6 +110,9 @@ Draft for the lead and mgmt-devices so the phone has a job ready. It is register
 read, once the set is stable. The hashes below are step 4: rev 7c + double-drive + scroll-cb (carry) + PR-021 rev 3
 (JS de237379b556 / CSS e1359ab9994a); they change whenever a component is added (nav-hit-cache, toolbar-resize,
 morph-close-peak), so the ticket is registered on the final set. Profile (user T-162 #3, mgmt-devices): xcode-serious.
+Open for the lead's sign: mgmt-devices asked (2026-10-04 ~22:55Z, phone free) to run the block on step 4 now rather than
+wait. If so, step 4's arms are the ticket's, and a component added later gets its own no-worse question on v9-final vs
+step 4 (a later ticket); the scripts re-pin in one commit before any data either way.
 
 ```
 PHONE TICKET P-<lead> v9-best · less-work no-worse check (v8 C vs v9 V; the legs the two parts touch)
@@ -131,14 +147,21 @@ ports, start method, sleep check: as P-111/P-117 (serve.mjs --port 0 --latency 1
   else VOID, re-run once with the same items. Ports go to the runner by message.
 holds (each <= 10 min, inside the runner's exclusive no-timing chrome-measure hold):
   M leg  H1: wC wV mC1 mV2 mV3 mC4 · H2: mC5 mV6 mV7 mC8
-  G leg  H3: sC gMC1 gMV1 gMV2 gMC2 gMC3 gMV3 sC · H4: the same for E (gEC/gEV)
+  G leg  H3: sCo wgMC wgMV gMC1 gMV1 gMV2 gMC2 gMC3 gMV3 sCc · H4: sCo wgEC wgEV gEC1 gEV1 gEV2 gEC2 gEC3 gEV3 sCc
+  (P-118's G-hold layout: sentinels apart per hold, one uncounted G warm-up per arm port)
   then iphone.mjs park; int-v8 stops the servers.
 M leg (driver M, P-098's, as P-111): hold 2000 ms, cycles 3 (6 tweens at max scrollY), C V V C C V V C, n = 4 per arm;
   every counted C M run is a validity sentinel (held m=1 p95 <= 18 ms; a sentinel check, not a heat pre-warm). wC/wV: one uncounted warm-up per arm port.
 G leg (driver G, P-105's scripts byte for byte): M flick-middle-v1.json 0f97205f1d42, E flick-end-v1.json
-  93a1cf7bb091; 3 runs per arm C V V C C V; sC S runs on C open and close each G hold (validity sentinels, uncounted).
-scorer: P-111's fixes/v8-best/phone/score.mjs imported unchanged (sha refused if changed), arms re-pinned to C = v8,
-  V = v9 (P-117's pattern); self-test on P-111's own records must give P-111's Mmoving, Mtweens, GM, GE gates.
+  93a1cf7bb091; 3 runs per arm C V V C C V; sCo / sCc S runs on C open and close each G hold (validity sentinels, uncounted).
+scripts (committed before data): fixes/v9-best/phone/serve.sh fc643888a9bc (copies out/v9/snap-de237379b556 to
+  out/pv9/snap, read-only, pin-checked), hold.sh ff6e9250d637 (P-118's hold.sh with this ticket's legs; refuses without
+  TICKET=P-<id>, so nothing runs before registration), score.mjs 963f476c877a, selftest.mjs f3a2247ac577.
+scorer: P-111's fixes/v8-best/phone/score.mjs (26d944bf93e2) imported unchanged (sha refused if changed), its EXPECT
+  re-pinned in place to C = v8, V = v9 (P-117's pattern); sCo/sCc scored as P-111's sC, warm-ups skipped; the block
+  verdict gates only Mmoving, Mtweens, GM, GE. Self-test: SELFTEST OK 15 checks (P-111's own records re-scored with
+  P-111's pins give exactly P-111's Mmoving, Mtweens, GM, GE gates and run voids; under the v9 pins the same records
+  are void as "served not arm"; item mapping).
   Gates: Mmoving (> 50 WORSE when d > +1, > 34 when d > +2), Mtweens (O1.f1-f3, close.f1/f3 WORSE when d > +2 ms),
   GM and GE (> 50 WORSE when d > +2; any NEW 250 px cluster fails). Twins > 46 / > 54 reported; threshold-sensitive
   when a twin's verdict differs. Fewer than 3 valid runs per arm (per part): insufficient.
