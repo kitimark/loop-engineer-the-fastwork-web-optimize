@@ -199,8 +199,12 @@ function itemCard(it, compact) {
   card.appendChild(el('div', { class: 'meta' },
     el('span', { class: 'chip', text: it.areaLabel }),
     it.attention ? el('span', { class: 'chip bad', text: 'new result' }) : null,
-    it.status ? el('a', { class: 'chip' + (it.status.stale ? ' warn' : ''), href: '/status#' + encodeURIComponent(it.status.id), title: it.status.plain + (it.status.waits.length ? ' · ' + it.status.waits.join(' · ') : ''), text: 'now: ' + it.status.state + (it.status.waits.length ? ' · ' + it.status.waits[0] : '') }) : null,
+    it.status ? el('a', { class: 'chip' + (it.status.stale ? ' warn' : ''), href: '/status#' + encodeURIComponent(it.status.id), title: 'Status row ' + it.status.id + ': ' + it.status.plain + (it.status.waits.length ? ' · ' + it.status.waits.join(' · ') : ''), text: 'now: ' + it.status.state + (it.status.waits.length ? ' · ' + it.status.waits[0] : '') }) : null,
     it.owner ? el('span', { text: 'owner: ' + it.owner }) : null));
+  // I-104 (user T-057): the other Status rows that belong to this item (the server names only rows on the board)
+  if (it.status && it.status.also) it.status.also.forEach(function (x) {
+    card.lastChild.appendChild(el('a', { class: 'chip', href: '/status#' + encodeURIComponent(x.id), title: 'Status row ' + x.id + ': ' + x.title, text: 'also: ' + x.title }));
+  });
   card.appendChild(el('h3', { text: it.title }));
   if (!compact) {
     card.appendChild(stageRow(it));

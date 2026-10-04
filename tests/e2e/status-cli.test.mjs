@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, tool, startProc, request } from '../helpers.mjs';
+import { loadPage } from '../fixtures/page-dom.mjs';
 
 const ST = tool('status.mjs');
 const CON = tool('console.mjs');
@@ -131,4 +132,42 @@ test('the progress page carries each linked workstream\'s live state (chip data 
   assert.match(page.text, /href: '\/status#' \+ encodeURIComponent\(it\.status\.id\)/);
   const t = node(CON, ['progress'], { env });
   assert.match(t.stdout, /now: measuring \(measuring it on Chrome or the phone\); waiting on the Chrome slot: Timeline A\/B \[status board: style-recalc\]/);
+});
+
+// I-104 (user T-057 on /status#cd-roll-ca: "Can we link this row to each progress?"): rows link to their Progress
+// items and the items link back, found by the owner's link, the same id or a P-id both name; never a link to nothing.
+test('I-104: Status rows link to their Progress items and back (same id without --progress, a shared P-id); no match, no link', async () => {
+  const pf = env.FW_PROGRESS_FILE;
+  const more = { ...progress, items: [...progress.items, { id: 'cd-roll-ca', title: 'Countdown roll', area: 'end', state: 'testing', stage: 'V', owner: 'fix-cd-roll-ca', checks: [{ id: 'P-036', what: 'roll position' }] }] };
+  writeFileSync(pf, JSON.stringify(more));
+  try {
+    assert.equal(st('set', 'cd-roll-ca', '--by', 'fix-cd-roll-ca', '--kind', 'fix', '--title', 'Countdown roll row', '--state', 'measuring').code, 0);
+    assert.equal(st('set', 'panel', '--by', 'fix-nav-morph', '--kind', 'fix', '--title', 'Panel check', '--state', 'testing', '--refs', 'P-036').code, 0);
+    assert.equal(st('set', 'lost', '--by', 'fix-x', '--kind', 'fix', '--title', 'Points nowhere', '--state', 'testing', '--progress', 'no-such-item').code, 0);
+    const v = JSON.parse((await request(new URL('api/status', base).href)).text);
+    const by = Object.fromEntries(v.items.map((x) => [x.id, x.progressItems]));
+    assert.deepEqual(by['cd-roll-ca'], [{ id: 'cd-roll-ca', title: 'Countdown roll', how: 'same id' }]);
+    assert.deepEqual(by.panel, [{ id: 'cd-roll-ca', title: 'Countdown roll', how: 'both name P-036' }]);
+    assert.deepEqual(by['style-recalc'], [{ id: 'style-recalc', title: 'Style recalc', how: 'linked by its owner' }]);
+    assert.deepEqual(by.lost, [], 'a --progress to an item that is not there: no link');
+    assert.deepEqual(by['ts-x'], []);
+    const pv = JSON.parse((await request(new URL('api/progress', base).href)).text);
+    const it = pv.sections.flatMap((s) => s.items).find((i) => i.id === 'cd-roll-ca');
+    assert.equal(it.status.id, 'cd-roll-ca', 'the item links back to its own row');
+    assert.deepEqual(it.status.also, [{ id: 'panel', title: 'Panel check' }]);
+    // the pages, rendered: real links, both ways
+    const sp = await loadPage(base, '/status');
+    const hrefs = (doc, re) => doc.querySelectorAll('a').map((a) => a.getAttribute('href')).filter((h) => re.test(h || ''));
+    const rowLinks = (id) => hrefs(sp.document.querySelector(`tr[data-item="${id}"]`), /^\/progress/);
+    assert.deepEqual(rowLinks('cd-roll-ca'), ['/progress#cd-roll-ca']);
+    assert.deepEqual(rowLinks('panel'), ['/progress#cd-roll-ca']);
+    assert.deepEqual(rowLinks('lost'), [], 'no broken link');
+    assert.deepEqual(rowLinks('ts-x'), []);
+    assert.match(sp.document.querySelector('tr[data-item="cd-roll-ca"]').textContent, /Progress: Countdown roll/);
+    const pp = await loadPage(base, '/progress');
+    const card = pp.document.querySelector('section[data-item="cd-roll-ca"]');
+    assert.deepEqual(hrefs(card, /^\/status#/), ['/status#cd-roll-ca', '/status#panel']);
+    for (const h of hrefs(pp.document.documentElement, /^\/status#/)) assert.ok(v.items.some((x) => `/status#${x.id}` === h), `${h} is a row on the board`);
+    for (const h of hrefs(sp.document.documentElement, /^\/progress#/)) assert.ok(more.items.some((x) => `/progress#${x.id}` === h), `${h} is a Progress item`);
+  } finally { writeFileSync(pf, JSON.stringify(progress)); }
 });

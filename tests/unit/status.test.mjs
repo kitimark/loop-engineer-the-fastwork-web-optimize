@@ -584,3 +584,48 @@ test('I-108: refsLive and gitLive feed the board the ids, states and main', asyn
   assert.deepEqual(S.overFlags(row, { git: P.gitLive(d, { maxAgeMs: 0 }) }), ['its work is on main (branch open-b), but the row says testing: landed?']);
   assert.throws(() => P.gitLive(tempDir('fw-status-nogit-'), { maxAgeMs: 0 }), /failed/);
 });
+
+// ---- I-104 (user T-057): links between Status rows and Progress items, both ways ----
+const PROG = [
+  { id: 'cd-roll-ca', title: 'Countdown roll', checks: [] },
+  { id: 'f3-arm-scope', title: 'F3 arm scope', checks: [{ id: 'P-036' }, { id: 'P-071' }] },
+  { id: 'cdwc', title: 'Countdown will-change', checks: [{ id: 'P-032' }], best: [{ ref: 'P-029' }] },
+  { id: 'scene-scope', title: 'Scene scope', checks: [] },
+  { id: 'hero-carousel', title: 'Hero carousel', checks: [] },
+];
+
+test('progressMatches (I-104): the owner\'s link, the same id, an alias, a P-id both name; only items that exist; none for the rest', () => {
+  const m = (row) => S.progressMatches(row, PROG).map((x) => `${x.id} (${x.how})`);
+  assert.deepEqual(m({ id: 'cd-roll-ca' }), ['cd-roll-ca (same id)'], 'no --progress set: the same id still links (T-057\'s row)');
+  assert.deepEqual(m({ id: 'st5', progress: 'hero-carousel' }), ['hero-carousel (linked by its owner)']);
+  assert.deepEqual(m({ id: 'style-recalc', aliases: ['scene-scope'] }), ['scene-scope (same topic)']);
+  assert.deepEqual(m({ id: 'panel', refs: ['P-071', 'I-042'] }), ['f3-arm-scope (both name P-071)']);
+  assert.deepEqual(m({ id: 'old', refs: ['P-029'] }), ['cdwc (both name P-029)'], 'a best[] ref counts too');
+  assert.deepEqual(m({ id: 'cdwc', progress: 'cdwc', refs: ['P-032'] }), ['cdwc (linked by its owner)'], 'one link per item, the strongest reason');
+  assert.deepEqual(m({ id: 'gone', progress: 'no-such-item' }), [], 'never a link to an item that is not there');
+  assert.deepEqual(m({ id: 'ts-i104', owner: 'fix-nav-morph' }), [], 'no match, no link (an owner alone is not a match)');
+  assert.deepEqual(S.progressMatches({ id: 'cd-roll-ca' }, null), [], 'progress unknown: no links');
+  const two = S.progressMatches({ id: 'cdwc', refs: ['P-036'] }, PROG);
+  assert.deepEqual(two.map((x) => x.id), ['cdwc', 'f3-arm-scope'], 'every matching item, strongest first');
+  assert.deepEqual(two[0], { id: 'cdwc', title: 'Countdown will-change', how: 'same id' });
+});
+
+test('buildStatusView (I-104): each row carries its Progress items; progressLinks maps each item back to its best row, the others as "also"', () => {
+  const now = Date.now(), at = new Date(now).toISOString();
+  const row = (id, extra = {}) => ({ id, title: id, kind: 'fix', owner: 'fix-a', state: 'measuring', updatedAt: at, ...extra });
+  const items = [row('cd-roll-ca'), row('panel', { refs: ['P-036'], priority: 1 }), row('f3-arm-scope', { state: 'waiting' }), row('lonely')];
+  const v = S.buildStatusView({ items, live: {}, now, progress: PROG });
+  const by = Object.fromEntries(v.items.map((x) => [x.id, x.progressItems]));
+  assert.deepEqual(by['cd-roll-ca'], [{ id: 'cd-roll-ca', title: 'Countdown roll', how: 'same id' }]);
+  assert.deepEqual(by.panel.map((x) => x.id), ['f3-arm-scope']);
+  assert.deepEqual(by.lonely, []);
+  const links = S.progressLinks(v);
+  assert.equal(links.get('cd-roll-ca').id, 'cd-roll-ca');
+  assert.equal(links.get('f3-arm-scope').id, 'f3-arm-scope', 'the same id beats a shared P-id, even on a higher-priority row');
+  assert.deepEqual(links.get('f3-arm-scope').also, [{ id: 'panel', title: 'panel' }]);
+  assert.ok(!('also' in links.get('cd-roll-ca')), 'no "also" when one row links');
+  assert.equal(links.has('cdwc'), false, 'no row, no link');
+  // without the progress items: no links at all, never a guessed one
+  const bare = S.buildStatusView({ items, live: {}, now });
+  assert.ok(bare.items.every((x) => Array.isArray(x.progressItems) && x.progressItems.length === 0));
+});

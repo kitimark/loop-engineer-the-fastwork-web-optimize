@@ -597,7 +597,7 @@ export async function currentView({ now = Date.now() } = {}) {
   let statusLinks = new Map(), board = null;
   try {
     const S = await import('./status.mjs');
-    const sv = S.buildStatusView({ items: S.list(), live, now });
+    const sv = S.buildStatusView({ items: S.list(), live, now, progress: data?.items || null }); // I-104: rows found by id, alias, P-id too
     statusLinks = S.progressLinks(sv);
     board = sv.items;
   } catch (e) { live.errors.push(`status board: ${e.message}`); }

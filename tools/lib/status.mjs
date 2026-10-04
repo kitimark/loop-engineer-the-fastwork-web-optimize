@@ -29,7 +29,7 @@ import { join } from 'node:path';
 import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
-import { findPersonal, sanitize, gatherLive } from './progress.mjs';
+import { findPersonal, sanitize, gatherLive, readProgress } from './progress.mjs';
 import { waitPlain, isListener, listenPlain, ownerText } from './waits.mjs';
 
 export const SCHEMA = 'fw-status/1';
@@ -462,7 +462,36 @@ export function statePlain(state, st = STATES[state] || { plain: state }, waitin
   return waiting?.plain ? `waiting for: ${waiting.plain}` : 'waiting (reason not given)';
 }
 
-export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin(), route = null } = {}) {
+// ---- I-104 (user T-057: "hard to see which progress this row came from"): rows <-> Progress items --------------
+
+const MATCH_RANK = ['linked by its owner', 'same id', 'same topic'];
+/**
+ * The Progress items (fixes/PROGRESS.json items) a status row belongs to, strongest reason first, one entry per item:
+ * the row's own `progress` link ("linked by its owner"), an item with the row's id ("same id") or one of its aliases
+ * ("same topic"), an item whose checks or best numbers name a P-id the row's refs name ("both name P-036"). Only items
+ * that exist: no Progress data, or no match, gives no link. The owner alone is no match (one agent owns many items).
+ */
+export function progressMatches(row, progressItems) {
+  if (!Array.isArray(progressItems)) return [];
+  const byId = new Map(progressItems.filter((p) => p && typeof p.id === 'string').map((p) => [p.id, p]));
+  const out = new Map();
+  const put = (id, how) => { const p = byId.get(id); if (p && !out.has(id)) out.set(id, { id, title: sanitize(p.title || id, LIMITS.title), how }); };
+  if (row.progress) put(row.progress, MATCH_RANK[0]);
+  put(row.id, MATCH_RANK[1]);
+  for (const a of row.aliases || []) put(a, MATCH_RANK[2]);
+  const refs = (row.refs || []).filter((r) => /^P-\d{1,6}$/.test(r));
+  if (refs.length) {
+    for (const p of byId.values()) {
+      const named = new Set([...(p.checks || []).map((c) => c && c.id), ...(p.best || []).map((b) => b && b.ref)]);
+      const r = refs.find((x) => named.has(x));
+      if (r) put(p.id, `both name ${r}`);
+    }
+  }
+  return [...out.values()];
+}
+const matchRank = (how) => { const i = MATCH_RANK.indexOf(how); return i < 0 ? MATCH_RANK.length : i; };
+
+export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin(), route = null, progress = null } = {}) {
   const st = STATES[it.state] || { group: 'working', plain: it.state };
   const { derived, flags, over, liveWait } = derive(it, live, byId, now, route);
   const ageMin = minutes(it.updatedAt || it.createdAt, now);
@@ -472,6 +501,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   return {
     id: it.id, title: s(it.title, LIMITS.title), kind: it.kind, kindLabel: KINDS[it.kind] || it.kind,
     owner: s(it.owner, 80), aliases: (it.aliases || []).map((a) => s(a, 80)), progress: it.progress || null, refs: (it.refs || []).map((r) => s(r, 20)),
+    progressItems: progressMatches(it, progress), // I-104: links to /progress#<id>, only to items that exist
     priority: Number.isInteger(it.priority) ? it.priority : null,
     state: it.state, statePlain: statePlain(it.state, st, waiting), group: st.group, groupLabel: GROUPS[st.group] || st.group,
     // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
@@ -499,10 +529,10 @@ export function compareViews(a, b) {
 }
 
 /** The board: pure, every input passed in. */
-export function buildStatusView({ items = [], live = {}, now = Date.now(), staleAfterMin = staleMin() } = {}) {
+export function buildStatusView({ items = [], live = {}, now = Date.now(), staleAfterMin = staleMin(), progress = null } = {}) {
   const byId = new Map(items.map((i) => [i.id, i]));
   const route = liveRouter(items);
-  const views = items.map((it) => itemView(it, { live, byId, now, staleAfterMin, route })).sort(compareViews);
+  const views = items.map((it) => itemView(it, { live, byId, now, staleAfterMin, route, progress })).sort(compareViews);
   const counts = { total: views.length, stale: 0, waitingOnYou: 0 };
   for (const g of GROUP_ORDER) counts[g] = 0;
   for (const v of views) { counts[v.group] = (counts[v.group] || 0) + 1; if (v.stale) counts.stale++; if (v.waitingOnYou) counts.waitingOnYou++; }
@@ -521,19 +551,42 @@ export function buildStatusView({ items = [], live = {}, now = Date.now(), stale
   };
 }
 
-export async function currentStatusView({ now = Date.now(), live } = {}) {
-  return buildStatusView({ items: list(), live: live || (await gatherLive()), now });
+/** The Progress items for the links (I-104), or null when PROGRESS.json can't be read (then no links). */
+export function progressItems() {
+  try { const { data } = readProgress(); return Array.isArray(data?.items) ? data.items : null; } catch { return null; }
 }
 
-/** For /progress: progress item id -> a short live status of the workstream linked to it ({id, state, plain, waits}). */
+export async function currentStatusView({ now = Date.now(), live } = {}) {
+  return buildStatusView({ items: list(), live: live || (await gatherLive()), now, progress: progressItems() });
+}
+
+/**
+ * For /progress: progress item id -> a short live status of the workstream linked to it ({id, state, plain, waits},
+ * plus `also: [{id, title}]` when more rows link to it). I-104: the rows' progressItems (the owner's link, the same id,
+ * an alias, a shared P-id); the strongest reason wins, then the board's order.
+ */
 export function progressLinks(view) {
-  const m = new Map();
+  const rows = new Map();
   for (const v of view.items) {
-    if (!v.progress || m.has(v.progress)) continue;
-    m.set(v.progress, {
+    // the owner's own link counts even when the board was built without the Progress items: /progress looks it up by
+    // its own item ids, so it is never a link to nothing
+    const links = [...(v.progressItems || [])];
+    if (v.progress && !links.some((l) => l.id === v.progress)) links.unshift({ id: v.progress, how: MATCH_RANK[0] });
+    for (const l of links) {
+      if (!rows.has(l.id)) rows.set(l.id, []);
+      rows.get(l.id).push({ v, rank: matchRank(l.how) });
+    }
+  }
+  const m = new Map();
+  for (const [id, list] of rows) {
+    const [best, ...rest] = list.sort((a, b) => a.rank - b.rank); // stable: the board's order within a rank
+    const v = best.v;
+    const link = {
       id: v.id, state: v.state, plain: v.statePlain, stale: v.stale,
       waits: [...(v.waiting ? [`waiting on ${v.waiting.plain}`] : []), ...v.derived.filter((d) => d.kind !== 'listen').map((d) => d.plain)], // I-108: a listener is no wait
-    });
+    };
+    if (rest.length) link.also = rest.map((r) => ({ id: r.v.id, title: r.v.title }));
+    m.set(id, link);
   }
   return m;
 }

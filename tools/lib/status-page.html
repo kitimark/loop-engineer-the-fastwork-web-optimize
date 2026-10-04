@@ -65,6 +65,7 @@ td.prio { width: 56px; }
 .chip.live { background: var(--ok-soft); }
 .chip.self { background: var(--warn-soft); }
 .chip.wait { background: transparent; border: 1px dashed var(--line); }
+.plinks a.plink { font-size: 13px; font-weight: 600; color: var(--accent); padding: 2px 0; } /* I-104: to the Progress item */
 .line { font-size: 14px; margin-top: 2px; }
 .line b { color: var(--muted); font-weight: 600; }
 .st { font-weight: 650; }
@@ -168,8 +169,14 @@ function row(v) {
   var pr = v.priority ? el('span', { class: 'pr' + (v.priority === 1 ? ' p1' : ''), title: 'priority, set by the lead', text: '#' + v.priority }) : el('span', { class: 'pr none', title: 'not ranked yet', text: '–' });
   var wk = el('td', { class: 'wk', 'data-label': 'Workstream', 'data-comment-slot': true },
     el('div', { class: 'title', text: v.title }),
-    el('div', { class: 'meta' }, el('span', { class: 'chip k', text: v.kindLabel }), el('span', { text: v.id }),
-      v.progress && SLUG.test(v.progress) ? el('a', { href: '/progress#' + v.progress, text: 'fix progress' }) : null));
+    el('div', { class: 'meta' }, el('span', { class: 'chip k', text: v.kindLabel }), el('span', { text: v.id })));
+  // I-104 (user T-057): the Progress items this row belongs to (the server only names items that exist)
+  var pl = (v.progressItems || []).filter(function (p) { return SLUG.test(p.id); });
+  if (pl.length) {
+    var plLine = el('div', { class: 'meta plinks' });
+    pl.forEach(function (p) { plLine.appendChild(el('a', { class: 'plink', href: '/progress#' + encodeURIComponent(p.id), title: 'Progress item ' + p.id + ' (' + p.how + ')', text: 'Progress: ' + p.title })); });
+    wk.appendChild(plLine);
+  }
   if (v.note) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Now: ' }), v.note));
   if (v.next) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Next: ' }), v.next));
   v.flags.forEach(function (f) { wk.appendChild(el('div', { class: 'flag', text: f })); });
