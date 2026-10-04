@@ -3,8 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft (ablation registered, not yet run)
-**Stage:** I (card below) → D pending the ablation block
+**Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
+**Stage:** D proposed: LOCATED (rendered subtrees relayout on every toolbar step), awaiting the lead's signature
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -144,6 +144,72 @@ Scorer: `fixes/toolbar-resize/score-tr.mjs <folder>` (ops C2), sha256/12 **`4b7f
 - `vt` and `js` act only on WebKit or on height-only resizes. The driver checks their served hashes
   (JS `86086110616c`, `b338adb5e776`) before every hold.
 - Arm deltas vs v7: `fixes/toolbar-resize/arms.diff`.
+
+## D card: P-106 ablation result (attribution, counts)
+
+Block: test iPhone, G driver `flick-hero-v1` / `flick-end-v1` with Timeline, served bytes checked before every hold.
+21 counted runs plus 1 aborted (`dvh:H1`: Runtime.evaluate timeout, re-run as `dvh:H3`; the scorer lists it as thin).
+- Sentinels (S, Timeline off): C:S1 58 / 60 fps, C:S2 59 / 60 fps (scroll / bottom), both PASS.
+- C drift (hero median largest Layout, C-H1 → C-H7): 13.29 → 13.23 ms (0.5 %). Not VOID.
+- Thermal: Serious at 10 of 12 gates. Hold 1 ended Fair and hold 2 started Fair (`FAIL too cool`; the driver stopped
+  only on the 44 °C ceiling, code 3, not on a too-cool FAIL). That hold's runs `dvh:H1` (aborted), `vt:H1`, `C:H3`,
+  `cv:E1` and `C:E1` began at Fair. Their values match the other holds.
+- Scorer `score-tr.mjs` (sha 4b7fca760270) on `out/toolbar-resize/phone`. Output: `results.json`.
+
+| arm | heavy fraction, hero zone, run 1 / 2 | neighbouring C mean | in-style heavy frames | median largest Layout (ms) | call |
+|---|---|---|---|---|---|
+| sticky | 0.912 / 0.925 | 0.968 | all | 13.6 / 13.3 | NONE |
+| cq | 1.000 / 0.939 | 0.968 | 0 / 1 (C: all) | 13.8 / 13.7 | NONE |
+| dvh | 0.907 / 1.000 | 0.976 | all | 12.7 / 13.5 | NONE |
+| vt | 1.000 / 1.000 | 0.978 | all | 13.0 / 13.5 | NONE |
+| js | 0.967 / 1.000 | 0.977 | all | 13.1 / 12.9 | NONE |
+| C (7 H runs) | 0.933-1.000 | | all | 12.6-14.0 | |
+| cv, end zone | 1.000 / 1.000 (12/12, 13/13 frames) | C-E 0 / 0 (0/32, 0/34) | all | 13.8 / 13.8 | CONFIRMS |
+
+All calls hold with heavy at 4 or 6 ms (`thresholdSensitive: false`).
+
+**Predictions vs outcome:**
+- cq WIN (~70 %): wrong. cq removed the style interleaving (the hero's RecalculateStyles went from ~13.5 ms to 0.8 ms),
+  but the Layout stayed ~13.7 ms; it now runs on its own instead of inside style. The query containers decide *where*
+  the relayout runs, not what it costs.
+- sticky WIN (~25 %): NONE. Taking the hero out of the viewport-constrained set changes nothing.
+- dvh, vt, js NONE: as predicted. js stayed within C ± 0.20.
+- cv CONFIRMS: as predicted. With render deferral off, the end zone pays the same ~13.8 ms per toolbar step. cv keeps
+  *everything* rendered, the hero and #people included, so this does not separate "the hero/#people subtrees relayout
+  whenever they are rendered" from "every rendered subtree relayouts".
+
+**Mechanism notes (ops N1-N4; `mech-tr.mjs`):**
+- vt acted on WebKit. C runs the CSS-path scroll handler `heSc` (JS 4675, ~500 calls per run); vt runs the JS writer
+  `s` (JS 4710 in the vt build, ~300 per run) instead.
+- js acted. The resize listeners are the wrappers `trzR` (JS 2760) and `heArmW` (4829) instead of `rE` (2702) and
+  `heArm` (4807). On C the whole resize path costs 1.6-1.9 ms per run (16-24 dispatches), with no Layout and no call
+  ≥ 0.5 ms, so JS resize handling could not explain 13 ms per step anyway.
+- N3, page height: 5999 → 6035 px in every arm, sticky included. The y split stays raw y 3250.
+- N4: both C-E runs are 0 in the end zone, so there is no split-edge effect.
+
+**D verdict proposed: LOCATED.**
+- On each toolbar step (a new layout-viewport height), WebKit runs a ~13 ms layout whenever the hero track and #people
+  are rendered (not skipped by `content-visibility`), wherever the viewport is. Whether only those subtrees or all
+  rendered content is laid out is open (cv cannot tell).
+- It is not one of the listed properties: dvh units, the hero view timeline, JS resize handlers, the sticky hero as
+  a viewport-constrained object, or the deck query containers (which only move it).
+- v7's far re-skip (`content-visibility: auto` back on sections far above the viewport) is what makes the page end
+  cheap. Turn it off and the end pays too.
+- Status: OBSERVED in our setup. Why a height-only layout-viewport change dirties the whole rendered tree is
+  UNRESOLVED. In WebKit source, `setLayoutViewportOverrideRect` marks only viewport-constrained renderers and
+  viewport-unit styles, and `RenderView::layout` relayouts children only when the view size changes. The Timeline's
+  layout root stays 430x775.
+
+**Next step (planned, not run):**
+1. Read the WebKit source for what a layout-viewport height step dirties beyond the above: iOS `WebPage` dynamic
+   viewport updates, `LocalFrameView::setLayoutViewportOverrideRect` callers, the `RenderView` size versus
+   `layoutSize` on iOS, and percent and viewport-relative heights up the chain.
+2. A subtree bisect on the phone (mechanism arms). First, force-skip only #people, then only the hero track, at
+   hero-zone y (cv hidden: a mechanism-only look change). Then halves inside the guilty one. It answers "which subtree,
+   and is the cost ∝ rendered nodes or one specific box?".
+3. A less-work candidate already follows from the cv result: re-skip the hero track and #people sooner (a smaller
+   far-re-skip distance), or skip them while the toolbar is moving. Any such change is a look-alike that must be
+   pixel-identical (the skipped sections are off screen).
 
 ## Scenarios not run
 
