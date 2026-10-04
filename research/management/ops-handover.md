@@ -42,6 +42,23 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-117 N2 result (fix-scroll-cb, 01daa38f): AGREE, Simulator parity FAIL on the nav. P-117 is on hold (lead,
+  c7d165b7).**
+  - The pins in n2.log's PIN line match the files on disk: run-n2.sh d2b816cd392a, build.mjs c486a52e5710, scb-probe
+    b88e92e68e46, simcount 4374051b37a0, score-p108 4cf547f88a3b. Every load served its arm's JS/CSS. Order: C1 V1
+    V2 C2, phone first, then the Simulator.
+  - Ops re-ran the card's 7e command. The output equals the owner's score.json byte for byte.
+  - Phone (Chrome): judged PASS (rAF 2.483 -> 0.655, rects 3.881 -> 1.562). All guards PASS; Paint d +0.008 against a
+    tolerance of 0.344. Parity is 0.
+  - Simulator: judged PASS (rAF 2.269 -> 0.521, rects 3.527 -> 1.254). Guards PASS; paints d +0.042 against the floor
+    tolerance of 0.05, with C's spread at 0.001.
+  - Simulator parity FAILS: 6 diffs beyond A/A in each V load, all on the nav's state classes (is-hero-chrome-ready,
+    is-on-dark), and 0 geometry diffs. C2 vs C1 is 0.
+  - Added context: P-107 checked nav-hit-cache's parity in Chrome only (probe.mjs, 5 cases). Its Simulator leg was
+    counts only. So N2 is the first Simulator class-parity check of nav-hit-cache. The N arm of the lead's split check
+    (C N S S N C) is that check for nav-hit-cache alone.
+- 10-05 **P-116 landed as 2c02fa73. The lead's ruling: no block 2. The hero-exit cost goes to fix-toolbar-resize's
+  showcase line (P-115). Note 1 accepted: "threshold-sensitive" applies to Y's class only.**
 - 10-05 **P-116 result (int-v8, 09c1db2d on worktree-agent-a068af37646232e05, not landed): AGREE, NOT LOCATED.**
   - Pins were committed at 9e67e2ca (19:42Z), before the first counted run (20:24Z). The scorer on disk is
     6c5dbcfac85e and imports b9a29ffcc7bb.
