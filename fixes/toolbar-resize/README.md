@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D proposed: LOCATED (rendered subtrees relayout on every toolbar step), awaiting the lead's signature
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 Simulator subtree bisect registered
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -236,6 +236,39 @@ the source cited. How the steps add up to 13 ms on this page stays OBSERVED.
 - The sticky arm took the hero out of S3 and changed nothing.
 - dvh (S4) and the deck query containers (S6-S8) only change where or whether style runs, not the ~13 ms Layout.
 - So none of S2-S8 alone names what the 13 ms Layout lays out. P-109 bisects by subtree.
+
+## Prediction P-109: Simulator subtree bisect (registered before data)
+
+Lead (14:02Z): Simulator, shared slots at weight simulator, no phone, one hold where possible. This is a mechanism
+attribution: Simulator times are compared only within the session against interleaved C runs, never as a gain (F-084).
+
+- **Arms** (v7 + one appended CSS rule; served CSS sha256/12; the arm deltas are appended to `arms.diff`):
+  - `nvc`, `9c3d7e989f94`: no viewport-constrained renderers in the hero zone (`.hero` relative, top-nav absolute,
+    `.pain-sticky` relative). Tests S2/S3 as a whole.
+  - `skh`, `e18da8bba027`: `section.hero-track { content-visibility: hidden }` (hero never rendered).
+  - `skp`, `1372e7d11604`: `section#people { content-visibility: hidden }`.
+  - `ch`, `496c6ec41688`: fix idea (a), `.hero { contain: size layout style }`. The hero has an explicit height
+    (100svh, min 680px), so size containment keeps its box.
+  - All four are mechanism-only (look changes allowed) except `ch`, which must be look-identical if it ever goes to F.
+- **Order** (one hold, 285 s budget): C:H1 skh:H1 skp:H1 C:H2 nvc:H1 ch:H1 C:H3. The driver
+  (`sim-bisect.mjs`) stops before a step when < 45 s are left; an arm without a later C uses the C before it.
+- **Scorer:** `score-bisect.mjs`, sha256/12 `be444733d18d` (filters frozen in its header). On the phone's C-H1 / cq-H1 /
+  C-H2 it reproduces P-106: cq ratio 1.04 NONE, replica true.
+- **Metric:** per run, the median largest Layout over toolbar-moving frames (strictly between the run's two toolbar
+  heights) at y < 3250. Ratio = arm / mean of the neighbouring C runs.
+- **Calls:** LOCATES ratio ≤ 0.30; PARTIAL ≤ 0.70; NONE otherwise; INSUFFICIENT with < 8 moving hero frames. One run
+  per arm, so every call is indicative. Any arm that feeds a fix gets a phone G check before F.
+- **Replication gate:** every C run has ≥ 8 moving hero frames, and ≥ half of them hold a Layout ≥ 0.5 ms nested in
+  RecalculateStyles (the phone signature). Otherwise NO-REPLICA: the Simulator does not reproduce, and the bisect
+  moves to the phone with a new ticket.
+- **VOID:** C medians drift > 30 % first → last.
+- **Predictions:** replica ~70 %. skh LOCATES ~45 % (PARTIAL ~35 %). skp PARTIAL ~45 % (NONE ~40 %). nvc NONE ~60 %.
+  ch NONE ~55 % (LOCATES or PARTIAL ~45 %).
+- **Reading:**
+  - skh LOCATES and skp NONE: the cost is the hero subtree.
+  - skh and skp both PARTIAL: the cost scales with rendered content.
+  - nvc LOCATES: the S3 path through the top-nav or `.pain-sticky` (the hero alone was ruled out by P-106 sticky).
+  - ch LOCATES or PARTIAL: fix idea (a) goes to a look check and a phone G check.
 
 ## Scenarios not run
 

@@ -187,3 +187,39 @@ diff --color -ru fixes/v7-best/overlay/_app/immutable/nodes/2.DyWL8TcE.js fixes/
              e.removeEventListener(`change`, heSync),
              heEv.forEach(([e, t]) => window.removeEventListener(e, t, heL)),
              window.clearTimeout(heR)),
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--b-nvc/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 21:01:00
+@@ -12270,3 +12270,6 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
++
++/* toolbar-resize--b-nvc: P-109 MECHANISM ARM, no viewport-constrained renderers in the hero zone */
++.hero.svelte-1p2vpne{position:relative!important}.start-selling-top-nav{position:absolute!important}.pain-sticky{position:relative!important}
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--b-skh/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 21:01:00
+@@ -12270,3 +12270,6 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
++
++/* toolbar-resize--b-skh: P-109 MECHANISM ARM, hero track never rendered */
++section.hero-track{content-visibility:hidden!important}
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--b-skp/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 21:01:00
+@@ -12270,3 +12270,6 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
++
++/* toolbar-resize--b-skp: P-109 MECHANISM ARM, #people never rendered */
++section#people{content-visibility:hidden!important}
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--b-ch/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 21:01:00
+@@ -12270,3 +12270,6 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
++
++/* toolbar-resize--b-ch: P-109 candidate (a), the sticky hero contains size and layout (explicit height 100svh, min 680px) */
++.hero.svelte-1p2vpne{contain:size layout style}
