@@ -26,6 +26,7 @@
     { "path": "out/breakpoints/rr9", "why": "README 3.2.2 item 1: Skia command logs (sampling kLinear + mip kLinear in every load) and the observer-effect frames", "kind": "result", "fastworkDerived": true },
     { "path": "out/breakpoints/rr10/loads.json", "why": "README 3.2.2 repaint check and the 39,415 px² pair (tolrep RR=rr10 1 4 2)", "kind": "result" },
     { "path": "out/breakpoints/rr10/png", "why": "frames behind README 3.2.2 repaint check", "kind": "frames", "fastworkDerived": true },
-    { "path": "out/breakpoints/census/sweep-census.json", "why": "README 3.3 census table, all 15 configs", "kind": "result" }
+    { "path": "out/breakpoints/census/sweep-census.json", "why": "README 3.3 census table, all 15 configs", "kind": "result" },
+    { "path": "fixes/bp-vp980/overlay/index.html", "why": "README 3.6: the test-only viewport width=980 overlay every arm of the WebKit wide-branch check was served with (sha256 f33aff732654; fixes/bp-vp980/README.md)", "kind": "overlay", "fastworkDerived": true }
   ]
 }

@@ -357,6 +357,9 @@ e0f92804c521). Two shared probe holds (hold27, hold28), nothing timed, no sleep 
   (rr2-rr5, rr10, rr11): the original sharp cold 6 of 6, soft fast 13 of 13; st6-rb2 sharp cold 5 of 5, fast sharp
   8 of 10 and in between 2 of 10; N sharp cold 1 of 1, fast sharp 2 of 2.
 
+**Decision (PR-015, user, 2026-10-04 04:05Z): accepted, option "keep".** The best build's sharp hero photos at 1440
+with reduced motion stay as they are; no code change. The rm1440 difference is closed (T-053).
+
 ### 3.3 Render and layout counts per width (census)
 
 Counts only, no timing; one load per arm; `sweep.mjs census`. "rest" = 4 s at the top after load, "scroll" = a rAF scroll to the end at vh/40 per frame, "end" = 1.5 s at rest at the end. L / R = LayoutCount / RecalcStyleCount deltas (Performance.getMetrics), P = trace Paint events, lay = LayerTree size. F3 cover = 8x12 hit-test grid at the end: cells on #platform / on the nav. Finished for all 15 configs: 9 at first, then the 6 the lead had parked (2026-10-04, below the table).
