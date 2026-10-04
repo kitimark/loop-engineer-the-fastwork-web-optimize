@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T10:10:00Z",
- "updatedBy": "mgmt-ops-10",
+ "updatedAt": "2026-10-04T11:19:00Z",
+ "updatedBy": "mgmt-desk-1",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T11:19:00Z", "text": "The end-of-page menu animation's version 2 failed its first phone check (P-098): the menu's first frames when it opens got 4.5-6.5 ms slower, although closing got faster. It stays out, and the next best build (v7) goes ahead without it. The second check (P-099) was not needed." },
   { "at": "2026-10-04T09:55:00Z", "text": "The countdown roll on the graphics chip has landed. You chose to let the next best build (v7) wait for the end-of-page menu animation: it goes in if its two phone checks, running now, pass." },
   { "at": "2026-10-04T09:25:00Z", "text": "The countdown roll on the graphics chip passed its phone check (P-093) and you accepted it. It lands next and joins the next best build. Each new-build run had 1-2 slow frames the old one did not (still inside the allowed range); the research in T-096 looks at that too." },
   { "at": "2026-10-04T08:45:00Z", "text": "The resting avatar row passed its phone check (P-094) at the phone's real heat state: no new slow frames (over 50 ms: 0 in both). It lands and joins the next best build with the countdown fixes." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T15:23:14Z", "text": "You accepted the hero change (PR-011, both items) under your new pixel rule; the avatar slider is looked into separately. Next for the hero: its phone test (P-081) and your finger test, once the iPhone is back." },
   { "at": "2026-10-03T15:21:00Z", "text": "You accepted the wide pixel rule (PR-010): a fix that differs only in edge pixels or tiny shade steps, within set limits checked in Chrome and the Simulator, lands without asking you; anything bigger, or seen only in motion, still comes to you. Open fixes are being re-checked against it." },
   { "at": "2026-10-03T15:05:00Z", "text": "The Try-it panels you used for the pixel rule and the hero change compared against the original page, so they also showed earlier changes; a tool fix lets each option show only its own change. Revised proposals follow." },
-  { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
-  { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." }
+  { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." }
  ],
  "items": [
   {
@@ -658,12 +658,13 @@
    "fixes": "When you push past the end of the page, the bottom panel's grow-and-fade runs as an animation on the graphics chip instead of script every frame.",
    "felt": { "answer": "not-yet", "text": "not tried by you yet" },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-092).",
-   "next": "Version 2 prepares the clipping layer before the morph starts. Its two phone checks run now: the first opening (P-098), then a fast flick into the page end (P-099). If both pass, it goes into v7 (your choice in T-030); if not, v7 goes out without it.",
+   "next": "Version 2 (the clipping layer prepared before the morph) failed its first phone check: the menu's first frames when it opens got 4.5-6.5 ms slower, though closing got faster. It stays out, and v7 goes out without it (your choice in T-030). What happens next with this fix is the lead's decision.",
    "owner": "fix-morph-gpu",
-   "checks": [ { "id": "P-092", "what": "short phone check: no new slow frames during the end-of-page morph", "result": "Not worse: at the phone's real heat state, no new slow frames during the morph (over 50 ms: 2 vs 2 per run; over 34 ms within the normal range). Cost: the first frame of each morph is about 7 ms longer (60-64 vs 54-56 ms, in all 8 runs). 8 of 8 runs valid; ops re-score identical." }, { "id": "P-098", "what": "short phone check: the first opening of the end menu no more than 2 ms longer than today's best build", "result": "running now" }, { "id": "P-099", "what": "phone check with a real flick into the page end (the case where the preparation may not have run)", "result": "waiting for P-098" } ],
+   "checks": [ { "id": "P-092", "what": "short phone check: no new slow frames during the end-of-page morph", "result": "Not worse: at the phone's real heat state, no new slow frames during the morph (over 50 ms: 2 vs 2 per run; over 34 ms within the normal range). Cost: the first frame of each morph is about 7 ms longer (60-64 vs 54-56 ms, in all 8 runs). 8 of 8 runs valid; ops re-score identical." }, { "id": "P-098", "what": "short phone check: the first opening of the end menu no more than 2 ms longer than today's best build", "result": "Worse at the open start (done): the first frames of the opening were 4.5-6.5 ms longer than today's best build on every run of version 2; closing got 8-22 ms faster. Version 2 stays out. Ops re-score agrees." }, { "id": "P-099", "what": "phone check with a real flick into the page end (the case where the preparation may not have run)", "result": "Skipped (not needed): it was to run only if P-098 passed." } ],
    "details": [
     "P-092 registered 10-04 03:1xZ (55064128, frames-n2 f3a50b8ec2dd), N2 reveal, PR-012 row 5.",
-    "P-092 result 10-04 05:39-06:06Z (bce1eb48): 3 holds valid at Serious, S1/S2 pass, M sentinel 4/4; moving >50 d 0, >34 d -2, no-worse, not threshold-sensitive; drive >34 d -3.5 threshold-sensitive, no gain claimed. Lead ruling 06:1xZ: PASS as no-worse; tween-start cost +7 ms (V 60-64 vs C 54-56, 8/8) is real, so morph-gpu lands as a record, stays in the GPU preview only; rev 2 (clip layer prepared before the tween) gets a ticket with falsifier V <= C + 2 ms."
+    "P-092 result 10-04 05:39-06:06Z (bce1eb48): 3 holds valid at Serious, S1/S2 pass, M sentinel 4/4; moving >50 d 0, >34 d -2, no-worse, not threshold-sensitive; drive >34 d -3.5 threshold-sensitive, no gain claimed. Lead ruling 06:1xZ: PASS as no-worse; tween-start cost +7 ms (V 60-64 vs C 54-56, 8/8) is real, so morph-gpu lands as a record, stays in the GPU preview only; rev 2 (clip layer prepared before the tween) gets a ticket with falsifier V <= C + 2 ms.",
+    "P-098 result 10-04 11:1xZ (mgmt-ops-10 second read agrees): open-start first frames V +4.5 to +6.5 ms vs C on every V run, falsifier met, rev 2 stays out (registered decision); close 8-22 ms faster. P-099 skipped per ticket. v7 ships without morph-gpu (lead T-030 #32, choice A)."
    ]
   },
   {
@@ -702,7 +703,7 @@
  "build": {
   "name": "Best build v6 (8018ce06): the earlier best build plus the hero fade on the GPU",
   "since": "2026-10-04T07:33:52Z",
-  "summary": "Every landed fix in one build: best build 65052c4a plus the hero fade on the GPU. It is the A side of Try-it and finger tests. Next, v7: the countdown strips and roll, the resting avatar row, and the end-of-page menu animation if its phone checks pass. Its numbers: see the version list below.",
+  "summary": "Every landed fix in one build: best build 65052c4a plus the hero fade on the GPU. It is the A side of Try-it and finger tests. Next, v7: the countdown strips and roll and the resting avatar row (the end-of-page menu animation stays out: phone check failed). Numbers: see the version list below.",
   "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "platform-idle", "morph-inherit", "hero-exit-threaded"],
   "combined": [
   ]
