@@ -1661,6 +1661,37 @@ link to K (P-102): K writes the same spring as fewer quadratic keyframes; whethe
   shrinks with the keyframe count is not tested here (not registered).
 ```
 
+### T-096 write-up (closed 2026-10-04 ~13:50Z)
+
+```
+CLOSED T-096 · steps 1-3 done (step 1 adapted, addendum; step 2 27051a21; step 3 0f2d4129) · counts only · lead
+  13:4xZ: no new card and no phone attribution ticket now
+question: what per-frame work differs between A (C8) and B (V9, the page the user found smoother)?
+what changed per frame, at y 0 (rolling clock):
+  - B runs fewer main-thread frames: Chrome 316 vs 384 per 8 s (s 6), the Simulator 1051 vs 1126 RenderingFrames per
+    21 s (s 13), about 3.6 fewer per roll; the frames drawn are the same (480 per 8 s in Chrome).
+  - B has more frames with no main-thread stage in Chrome: 164 vs 97 per 8 s (s 20); A is not at 0.
+  - The countdown's own rAF and calls are gone on B (as the cost card).
+  - At each roll start B does one extra style pass in WebKit (40 vs 18 per 21 ticks, s 5; layout the same), the per-cell
+    animations starting (576 keyframes per tick); Chrome shows no roll-start difference.
+  - The second frame after a tick paints less on B in WebKit (cell-sized paints 10 vs 18 per 21 ticks, s 5).
+what changed per frame while scrolling through the hero (Chrome): nothing beyond the spread except the countdown's rAF.
+hypotheses: H1 not held as worded (direction seen in Chrome and the Simulator; A is not at 0); H2 no difference;
+  H3 not found in what could be checked, and a cache-linked effect cannot be reproduced (N2); H4 held in WebKit, not
+  in Chrome.
+calibration tally: P(H1) 0.8 -> miss; P(H2 differs) 0.4 -> no; P(H3) 0.05 -> no; P(H4) 0.85 out of the tally (set
+  after the lead's trace data).
+plain reading: B takes main-thread work off most of the countdown's frames, and the frames left are no more work per
+  frame, except a style pass at each roll start in WebKit. That fits "B looks smoother at the top" without proving it
+  (no timing, memory "defer timing").
+open items (no card, no ticket now, lead 13:4xZ):
+  O1 which part of B's extra roll-start style pass costs time on the device (keyframe count, animation start,
+     backing); a phone attribution ticket (Timeline on, protocol §5.2) would answer it.
+  O2 whether K (fewer quadratic keyframes, P-102) shrinks that pass; not registered, not counted.
+item 2 (which other animations next): the main-thread frames that stay at y 0 with no rAF (F-229, Chrome and WebKit;
+  F-227) are the subject of fix-hero-exit-threaded and fix-toolbar-resize; left to them (lead).
+```
+
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
 
 ```
