@@ -191,12 +191,8 @@ test('T-079: /build shows Versions oldest first (improvement, result vs the prev
   };
   const pf = join(st, 'PROGRESS.json'); writeFileSync(pf, JSON.stringify(pv));
   const e = { FW_STATE_DIR: st, FW_PROGRESS_FILE: pf, FW_PREDICTIONS_FILE: join(st, 'none.md'), FW_LAN_ADDRESS: '10.9.8.7' };
-  // the page's first /api/progress can take longer than loadPage's settle (it probes the Try-it ports): wait for the cards
-  const loadBuild = async (url) => {
-    const pg = await loadPage(url, '/build');
-    for (let i = 0; i < 40 && !pg.document.querySelectorAll('li').some((x) => x.getAttribute('data-version')); i++) await pg.settle(100);
-    return pg;
-  };
+  // the page's first /api/progress can take a while (it probes the Try-it ports): loadPage waits for it (I-132)
+  const loadBuild = (url) => loadPage(url, '/build');
   const s = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env: e, ready: (x) => { const m = x.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
   try {
     assert.deepEqual(node(CON, ['progress', '--check', '--file', pf], { env: e }).code, 0);

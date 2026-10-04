@@ -53,7 +53,7 @@ test('the user asks under a proposal; the author is woken, reads it with proposa
   ask.value = 'What does 412 mean here?';
   p.fire(ask, 'input');
   p.fire([...talk.querySelectorAll('button')].find((b) => b.textContent === 'Ask'), 'click');
-  await p.settle(300);
+  await p.settle();
   const sent = p.calls.find((c) => c.init?.method === 'POST' && String(c.url).endsWith('/api/comments'));
   assert.ok(sent, 'posted to /api/comments');
   assert.deepEqual(JSON.parse(sent.init.body).anchor, { page: 'proposals', item: 'PR-001', label: 'Hero glow as a pre-rendered image' });
@@ -87,7 +87,7 @@ test('the user asks under a proposal; the author is woken, reads it with proposa
   const ta = box.querySelector('textarea.talk-in');
   ta.value = 'Thanks, and on the phone?';
   p.fire([...box.querySelectorAll('button')].find((b) => b.textContent === 'Send'), 'click');
-  await p.settle(300);
+  await p.settle();
   v = (await json('/api/proposals/PR-001/talk')).talk;
   assert.deepEqual(v.threads[0].messages.map((m) => m.by), ['user', 'de-hero', 'user']);
   assert.equal(v.threads[0].messages[2].text, 'Thanks, and on the phone?');
@@ -108,7 +108,7 @@ test('a Comment on a section of the proposal goes to the author too, with the se
   assert.equal(box.querySelector('.cmt-to').textContent, 'Your comment goes to: de-hero, lead');
   box.querySelector('textarea').value = 'Is 38 measured?';
   p.fire(box.querySelector('.cmt-send'), 'click');
-  await p.settle(300);
+  await p.settle();
   const v = (await json('/api/proposals/PR-001/talk')).talk;
   const t = v.threads.find((x) => x.anchor?.item === 'PR-001/section:gain');
   assert.ok(t, 'a thread on the section');
