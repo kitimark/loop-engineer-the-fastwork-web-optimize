@@ -185,6 +185,37 @@ is reported.
 - *Counts not lower:* report it as the measured outcome, look at which trigger keeps the test on (a per-trigger tally in
   an exploratory VA run), and re-ticket. No retuning against this card's data.
 
+## P-101 results, Chrome counts (owner's reading; ops re-scores from `p101/`)
+
+Chrome mobile and desktop are done, 4 valid loads each (C1 V1 V2 C2). Served hashes match the card; no page errors.
+Parity (3 holds) and the Simulator were queued after them. They were stopped before they started, for the lead's usage
+pause (10-04 ~11:25Z), and still owe their data.
+
+| per scroll step (10 px) | mobile C | mobile V | desktop C | desktop V | judged / guard | result |
+|---|---|---|---|---|---|---|
+| PrePaint, total | 2.234 / 2.211 | 1.882 / 1.871 | 1.811 / 1.818 | 1.693 / 1.688 | judged, lower | lower, separated (predicted −0.4 to −0.95: **miss**, −0.35 / −0.12) |
+| Layout, forced | 0.381 / 0.385 | 0.385 / 0.391 | 0.353 / 0.349 | 0.356 / 0.351 | judged, lower | **not lower** (+0.005 / +0.003) |
+| nav elementsFromPoint | 0.998 / 0.998 | 0.643 / 0.641 | 0.999 / 0.999 | 0.673 / 0.675 | judged, lower | lower (V predicted 0.03 to 0.5: **miss**) |
+| nav getComputedStyle | 0.998 / 0.998 | 0 / 0 | 0.999 / 0.999 | 0.001 / 0 | judged, lower | lower (hit) |
+| Layout, total | 0.452 / 0.456 | 0.456 / 0.462 | 0.399 / 0.396 | 0.402 / 0.398 | guard, ≤ C + 0.05 | holds |
+| UpdateLayoutTree, total | 1.372 / 1.402 | 1.368 / 1.402 | 1.587 / 1.595 | 1.593 / 1.600 | guard | holds |
+| Paint, total | 4.090 / 4.067 | 3.916 / 4.071 | 2.517 / 2.507 | 2.418 / 2.521 | guard | holds |
+| PrePaint, forced (reported) | 0.998 / 0.998 | 0.643 / 0.641 | 0.664 / 0.664 | 0.510 / 0.514 | – | – |
+| nav rects (reported) | 1.996 | 1.286 / 1.282 | 3.995 | 2.664 / 2.651 | – | – |
+
+**Reading (owner's; ops scores it).** P-101 does not pass as registered: forced Layout per step is not lower on either
+viewport.
+- The nav hit test did not cause those forced layouts. In C, the other scroll callbacks' rect reads had already brought
+  layout up to date before `F()` ran, so skipping `F()` removes a forced style and pre-paint pass but no layout. The C
+  interval for forced Layout (0.9 to 2.5) was also too high (smoke: 0.38).
+- What V does cut, with every V load below every C load:
+  - one pre-paint pass in about a third of all scroll frames: −0.35 per step on mobile, −0.12 on desktop;
+  - every per-frame getComputedStyle;
+  - a third to a half of the nav's rect reads.
+- V still runs the real hit test in 64-67 % of steps, far above the 3-50 % predicted. Some trigger stays on for long
+  stretches: a long moving zone, or a transition that restarts every frame. The card's next step for "counts not
+  lower" is an exploratory per-trigger tally (a VA-like hook) and a re-ticket. That is paused for the usage pause.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
