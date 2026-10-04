@@ -20,8 +20,10 @@ when: after the iPhone is back (I-173 USB lost) and after PR-018 rev 7b's phone 
 arms (3, all on v8; CSS v8's f836404b3728 unless a removal changes CSS, then that arm's own CSS):
   C = v8-best: JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16
   X = v8 minus the countdown group (cd-strip + cd-roll-ca K + countdown-faces + glue-heup), i.e. v8 with v6's countdown:
-      JS <int-v8 fills, full sha256> / CSS <…>
-  Y = v8 minus rest-script v4: JS <int-v8 fills> / CSS <…>
+      JS 65d72981246f820cf70b74b926ac1243be5d09e370a1b9739a7246eb499070a3
+      CSS 4c9a9b4fc7bf432c41b7bb3832558658d6f6b8b405c40da6821e2e7b24a5698a (own CSS: cd-strip changes the CSS)
+  Y = v8 minus rest-script v4: JS 528c09e97de66010d1f75395f765c6a625f51fb4602cc1cdf1e38a237c6f67cd
+      CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43 (v8's; rest-script is JS only)
   why groups: K is a delta on the cd-strip build, faces sits on strip + K and the glue on faces x hero R2, so "v8
   minus cd-strip" alone is not a build. The countdown group comes out whole. Splitting it (strip vs K) is block 2, only
   if X is CAUSE.
@@ -95,3 +97,66 @@ Open items before the read (int-v8):
 4. If reversing the group from v8 does not apply cleanly, build X forward instead: v6 + rest + accent exact + morph
    rev 3. These are the same intended bytes; say which way was used. v8 with V9 for K (P-113's R) is not a substitute
    for X, because V9 is v7's own roll and the group stays in.
+
+## Pins (int-v8, 2026-10-05, before any P-116 data)
+
+All four open items are done; files in `fixes/v8-best/phone/p116/`, committed together with this section.
+
+1. **Arms**, `node fixes/v8-best/phone/p116/build.mjs` (best-build's strict applier, no fuzz; refuses on any failure,
+   writes nothing then; `--dry` checks only). Copies `out/p116/snap/{C,X,Y}` in int-v8's worktree, read-only, with
+   HASHES.txt (full sha256 per file; HASHES.txt itself 435424487a8b).
+
+   | arm | JS (sha256) | CSS (sha256) |
+   |---|---|---|
+   | C = v8-best | 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16 | f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43 |
+   | X = v8 minus the countdown group | 65d72981246f820cf70b74b926ac1243be5d09e370a1b9739a7246eb499070a3 | 4c9a9b4fc7bf432c41b7bb3832558658d6f6b8b405c40da6821e2e7b24a5698a |
+   | Y = v8 minus rest-script v4 | 528c09e97de66010d1f75395f765c6a625f51fb4602cc1cdf1e38a237c6f67cd | f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43 |
+
+   - **Which way (item 4): by reversal.** X = C − glue − faces' − K − strip, and Y = C − rest, both apply strictly.
+     The forward builds give the same bytes and are checked too: X = v6 + rest + accent exact + morph rev 3, and
+     Y = best + hero, strip, K, faces', accent, morph, glue (no rest).
+   - **Identities, all pass:** 10 inputs equal their owners' builds (st6-rb2, best-build, v6, cd-strip, cd-roll-ca K,
+     rest-script v4, v7-best, accent exact, morph rev 3, v8 patch.diff); the forward v8 = C; X + strip + K + faces' +
+     glue = C; Y + rest = C; X − rest − accent − morph = v6 byte for byte (8018ce062d30 / 71b65c667720); three
+     different JS; Y's CSS = v8's; node --check on X and Y.
+   - **X's CSS is its own** (cd-strip changes the CSS), as the arms line allows.
+   - Components are derived as in `fixes/v8-best/check.mjs`: strip, K and rest as build differences, the other five
+     from their committed delta files.
+2. **Scorer** `score.mjs`, and its self-test `selftest.mjs`.
+   - It imports P-105's scorer unchanged (b9a29ffcc7bb…, full sha pinned in the file; it refuses if that file changed):
+     scoreG, applySentinel, gate, median.
+   - P-116's own parts:
+     - The items.
+     - The served check's arm lines: B, C, X and Y must all be "ok". P-105's scoreG looks for B, C and V lines, so a
+       log that passes P-116's check is handed to it as a B/C/V "ok" log. A log that fails is handed over unchanged,
+       plus WRONG, and scoreG voids that run with its own reason.
+     - The S sentinels on C (pass feeds P-105's chain).
+     - The class and block rules above, and the reported-only lines.
+   - The self-test passes 23/23:
+     - Unit and synthetic-block checks: COUNTDOWN / REST / SPLIT, a missing or WRONG check log voids, a failing closing
+       sentinel voids the hold, frames > 100 ms counted.
+     - **The ticket's check on P-105's own G-H records** (H4: sC-H4-open, gHC1 to gHC3, gHV1 to gHV3, sC-H4; copies in
+       int-v8's `out/p105/runs`, input sha256s printed). It gives d = +3 at > 50, +3 at > 46 and +1 at > 54 (C 7/7/8,
+       V 10/9/10), the same deltas as P-105's scorer run directly.
+3. **serve.sh / hold.sh**, P-114's with three arms and labels `p116-*`:
+   - serve.sh serves B, C, X and Y. Its `snap` mode runs build.mjs.
+   - hold.sh drops P-114's M items. Its items are sCo/sCc, wgC/wgX/wgY and gH[CXY]<n>. Sentinel labels are
+     `p116-sCo-<H>` / `p116-sCc-<H>`, so they no longer overwrite each other.
+   - Its G line, S sentinel line, gates and sleep check are P-114's, unchanged.
+   - Dry serve on 2026-10-04 at 19:40Z, in a shared slot, with no phone:
+     - B, C, X and Y each served their pinned JS/CSS, "ok" on both the start check and `check`.
+     - The servers were then stopped.
+   - Hold length, estimated from P-114's H3 (7 items, 349 s; G runs about 32 s apart):
+     - H1 (11 items): about 480 s.
+     - H2 (8 items): about 380 s.
+     - Both are under the 600 s hold.
+
+| file | sha256 (12) |
+|---|---|
+| fixes/v8-best/phone/p116/build.mjs | 29e2c92c23db |
+| fixes/v8-best/phone/p116/serve.sh | 1f0c0d4ba825 |
+| fixes/v8-best/phone/p116/hold.sh | b25c8fc83e6f |
+| fixes/v8-best/phone/p116/score.mjs | 6c5dbcfac85e |
+| fixes/v8-best/phone/p116/selftest.mjs | 0f6b57150ef4 |
+| fixes/v7-best/phone/score.mjs (P-105's, imported) | b9a29ffcc7bb |
+| fixes/v8-best/phone/g/flick-hero-v1.json | 6ae05e12ace9 |
