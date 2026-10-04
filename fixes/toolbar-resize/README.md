@@ -419,6 +419,9 @@ REPLICA true, DRIFT 0.012 (C-H1 -> C-H4), VOID false; INJECT-GATE all applied; n
 Lead (message, after P-110): yes; one exclusive `--no-timing` Simulator hold, <= 10 min, after the phone work (iphone-runner
 opens the gap). Mechanism and candidate screening only; a candidate that locates still needs a look check and a phone G check.
 
+- **Hold kind (correction, no data taken):** the Simulator gestures need a normal exclusive hold, not `--no-timing` (`sim.mjs`
+  refuses scroll/record/run/gesture in a no-timing hold). My first P-115 hold (2026-10-04 21:54Z) was queued `--no-timing`: all six
+  steps refused, no run, no data (log kept in `out/`, gitignored); it is rerun as a normal hold with the same steps.
 - **Amended before data (lead, 2026-10-04 19:2xZ): C = v8** (`fixes/v8-best`, landed 743295de; JS `3e3e94cb6e9f`, CSS
   `f836404b3728`, rebuilt here with `fix.mjs apply v8-best`, hashes checked). Nothing else changes: same arms, order, inject
   file (`0cc373b2594d`), gate (`126f46d31f3c`), scorer (`cb6f0c97b81b`) and predictions. v7 to v8 does not touch the tested
