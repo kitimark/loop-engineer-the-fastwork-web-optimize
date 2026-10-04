@@ -9,7 +9,7 @@
 **Device class / gate:** less-work fix (memory `less-work-landing-rule`): Chrome + Simulator work counts, then one short
 phone no-worse check
 **Driver(s) behind the claims:** Chrome scripted scroll (counts only), Simulator scripted scroll (counts only)
-**Prediction:** `fixes/PREDICTIONS.md` P-<pending, asked of mgmt-ops-10> (the D card below)
+**Prediction:** `fixes/PREDICTIONS.md` P-101 (the D card below)
 **Source:** frame audit §5 item 1 (`research/design-engineering/frame-audit.md`, user T-100); carries N12 v5
 (`fixes/nav-scroll-handler/`, never landed) forward onto the best build, with v5's 1 s hot timer replaced
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, the nav component only (`dN`): `F()`'s neighbour
@@ -79,7 +79,7 @@ parity part below checks it in every cached frame against the real hit test.
   future `is-visible`). They keep those flips in the same frame and the same order, and they tell me before any timing
   change.
 
-## D card P-<pending> (pre-registered; committed before its data)
+## D card P-101 (pre-registered; committed before its data)
 
 **Question.** During a scripted scroll from the top to the bottom of the full page, does V make Chrome do fewer
 pre-paint passes and fewer forced layouts per scroll frame than C? Does it do no more work in the Simulator? Does it
@@ -164,8 +164,8 @@ is reported.
 | Chrome PrePaint per step, mobile and desktop | 1.8 to 2.3 | C minus 0.4 to 0.95 |
 | Chrome forced Layout per step | 0.9 to 2.5 | C minus 0.3 to 1.0 |
 | Chrome forced PrePaint per step | 0.9 to 1.1 | 0.03 to 0.5 |
-| nav `elementsFromPoint` per step | 1.0 | 0.03 to 0.5 (= the share of steps that still test) |
-| nav `getComputedStyle` per step | 1.0 | 0 (only at re-measures, under 0.02) |
+| nav `elementsFromPoint` per step | 0.95 to 1.05 | 0.03 to 0.5 (= the share of steps that still test) |
+| nav `getComputedStyle` per step | 0.95 to 1.05 | 0 (only at re-measures, under 0.02) |
 | Chrome Layout / UpdateLayoutTree / Paint per step, total | as measured | within ±0.05 of C |
 | Sim forced Layout per step | 0 to 1.2 | 0 to C (no prediction on the size: UNRESOLVED) |
 | Sim RecalculateStyles / Layout / RenderingFrame per step | as measured | within ±0.05 of C |
@@ -176,6 +176,9 @@ is reported.
   request with `patch.diff` (against the baseline, via `node tools/fix.mjs diff`).
 - *Parity fails:* not landable. Fix the trigger that missed (the audit names the scrollY and the answer), re-ticket, and
   re-run all parts.
+- *Judged Chrome counts lower, but a guard or the Sim is worse (V mean > C mean + 0.05 per step):* not landable as a
+  less-work fix. Report it as measured, find what moved (for example in an exploratory VA run), and re-ticket. No
+  retuning on this card's data.
 - *Counts not lower:* report it as the measured outcome, look at which trigger keeps the test on (a per-trigger tally in
   an exploratory VA run), and re-ticket. No retuning against this card's data.
 
