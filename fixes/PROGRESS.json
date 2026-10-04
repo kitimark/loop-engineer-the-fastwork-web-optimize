@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T06:10:00Z",
+ "updatedAt": "2026-10-04T05:43:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,7 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
-  { "at": "2026-10-04T06:05:00Z", "text": "The hero's slimmer version (R2) passed its phone check (P-095) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. Next is your blind swipe test of it." },
+  { "at": "2026-10-04T05:41:00Z", "text": "The hero's slimmer version (R2) passed its phone check (P-095) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. Next is your blind swipe test of it." },
   { "at": "2026-10-04T05:40:00Z", "text": "Your new order (T-073): GPU fixes first. Phone: hero check (P-095, running), end-of-page morph (P-092), your blind swipe test of the menu fix, countdown roll (P-093), resting avatar row (P-094). A GPU preview build with the three GPU fixes is being put together for you to try." },
   { "at": "2026-10-04T05:30:00Z", "text": "The menu-edge measurement (P-091) ended without an answer (VOID): its fixed scoring rule could not read 2 of the 4 reference runs. The lead ruled that the menu fix (F3) lands on its earlier phone evidence plus your blind swipe test, which comes right after the hero check on the phone." },
   { "at": "2026-10-04T05:10:00Z", "text": "The menu-edge measurement (P-091) has 6 of its 9 runs. The phone got too hot at the end of the third hold, so its last 3 runs did not count; they are running again now. If the phone gets too hot again, the measurement closes on the 6 runs it has." },
