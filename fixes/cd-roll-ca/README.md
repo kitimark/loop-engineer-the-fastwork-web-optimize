@@ -555,7 +555,7 @@ debug hooks: none
 ```
 
 ```
-PHONE TICKET cd-roll-ca V9 · less-work no-worse check (lead 2026-10-04 03:3xZ; T-055 waived only the finger A/B) · prediction P-id from mgmt-ops-10 (registered before any phone data)
+PHONE TICKET P-093 cd-roll-ca V9 · less-work no-worse check (lead 2026-10-04 03:3xZ; T-055 waived only the finger A/B) · P-093 from mgmt-ops-10 (read 1 on 48c6b554: CHANGES S1, T1-T3; this is rev 2, registered before any phone data)
 build: V = V9 = cd-strip strip-tc + cd-roll-ca, JS 582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3,
   CSS 982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d, patch.diff d48095cc16ff (--on cd-strip);
   immutable copy out/cd-roll-ca/snap/V9 (fix-cd-roll-ca worktree)
@@ -564,28 +564,47 @@ control: C = C8 = cd-strip strip-tc (landed on main 5d1ca102), JS 6fa0e1e8a221cc
 question: on the phone at real thermal Serious, does moving the hero clock's roll from the rAF spring to Web Animations
   add slow frames at the top of the page (the clock rolling at rest, then the W window through the hero)? No-worse only;
   the landing basis is the cost counts (countdown rAF callbacks ~108 -> ~4 per 4 s, by code).
-ports: two, one per arm: `ARMS="C8 V9" sh out/cd-roll-ca/serve-snap.sh` (serve.mjs --root site-pretty --overlay <copy>
-  --port auto --latency 150 --vendors=local, plain http per I-003; it checks the copies against HASHES.txt and the served
-  JS/CSS hashes, and prints the phone URLs); one uncounted warm-up load per port (A3/U5)
+ports: three: `ARMS="B C8 V9" sh out/cd-roll-ca/serve-snap.sh` (serve.mjs --root site-pretty [--overlay <copy>]
+  --port auto --latency 150 --vendors=local, plain http per I-003; B = the plain baseline page, no overlay, the pre-warm
+  and gate-timer page, no counted run on it; it checks the copies against HASHES.txt and the served JS/CSS hashes, and
+  prints the phone URLs); one uncounted warm-up load per arm port (A3/U5)
 thermal gate (P-079's condition B; memory "phone checks start warm"): real thermal Serious, `node
-  research/phone-thermal-gate/thermal-gate.mjs --owner cd-roll-ca --expect serious` (sha256 4604218c4041) at the start and
-  the end of every phone hold; a hold counts only if both reads PASS (Serious, Is Induced = No), else it is re-run.
-  Ceiling 44 °C or Critical (stop, cool). Holds back to back. Timer-grid median and battery °C logged per hold. Low Power
-  Mode runs dropped. One start method for every run. The later Fair no-worse check is not part of this block.
-block (driver W, Timeline OFF; ~15-20 min): warm-up C, warm-up V, counted C V V C C V V C (n = 4 per arm), each
-  `node tools/iphone.mjs run --driver window --probe std --owner cd-roll-ca --arm C|V --block <P-id> --run <n>
-  --label crca-<arm><n> --to 2400 --idle 8 --hold 2 --sentinel 3` (warm-ups with --warmup), after `iphone.mjs open
-  <the arm's URL>`; --idle 8 (P-079 had 4): 8 s of the clock rolling at y 0 per run, so ~8 rolls per run in the
-  window. Every counted C run is the heat sentinel (bottom >= 58 fps and scroll >= 44 fps, meta.sentinel): a failing
-  C run voids every run since the last passing one; voided runs are re-run in the same order, at most one extra
-  C V V C quartet; then park Safari (`iphone.mjs park`)
-scorer: fixes/cd-roll-ca/phone/score.mjs, sha256 f697000e77e48e6f20af9b48c8f65ba4d26fd7c720067f27efd89c00d798595b,
-  committed before any phone data; run as `node fixes/cd-roll-ca/phone/score.mjs <arm>:<file> ... --json <out>` with
-  every block file in block order (warm-ups skipped, void runs reported and dropped). Files of a hold that fails the
-  thermal gate are left out of the call and listed with their two gate reads in the block log (as P-079). Checked
-  before data on a synthetic block built from a real P-079 W file (all equal -> hit; V +3 frames > 50 per run ->
-  FALSIFIED; V +1 -> hit; a failing C sentinel voids the runs since the last pass -> not enough; LPM and a wrong served
-  hash -> void). Windows, fixed before data:
+  research/phone-thermal-gate/thermal-gate.mjs --owner cd-roll-ca --expect serious --max-c 44 --url http://lan:<twin B>/`
+  (sha256 4604218c4041) at the start and the end of every phone hold; a hold counts only if both reads PASS (Serious,
+  Is Induced = No), else it is VOID and re-run. Ceiling 44 °C or Critical (stop, cool). Every gate failure goes to the
+  lead; two gate-failed holds (not necessarily in a row) -> roll back to condition A, reported in T-039 (the lead's
+  switch). Holds back to back. Timer-grid median and battery °C logged per hold. Low Power Mode runs dropped. The later
+  Fair no-worse check is not part of this block.
+start method (one for every hold and every arm; the lead's ruling after P-073): pre-warm on B. One uncounted W run on
+  B (`--warmup`, no --arm), then the start gate; while the gate says too cool (exit 2), another W run on B and another
+  read, at most 4 pre-warm runs; any other start-gate failure, or still too cool after 4, ends the hold with no counted
+  run (reported; a hold that ran no counted run is not a strike unless the lead rules otherwise, as h165958 in P-085)
+holds (T2): every phone part runs inside its own `node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900
+  --owner cd-roll-ca --doing "P-093 hold Hn" -- caffeinate -i -s sh fixes/cd-roll-ca/phone/hold.sh Hn <items>` with the
+  iphone lease held by cd-roll-ca (I-056; 900 s under the lead's condition-B rule, as P-088 and P-092; caffeinate -i -s
+  inside the hold only, C-024). hold.sh (sha256 6bd99cf3909e, committed with this ticket) runs: pre-warm + start gate,
+  the items in order (`iphone.mjs open <arm twin>` then `iphone.mjs run`, each run parks Safari), the end gate, then the
+  I-098 sleep check `node fixes/rest-script/tools/pmcheck.mjs <hold start> <hold end>` (sha256 d36bd7437b7c, on main:
+  a pmset Sleep, DarkWake or Maintenance line within 5 s of the hold, or an unreadable log, makes the hold VOID). A
+  VOID hold (gate or sleep) is re-run as a new hold with the same items; after 2 sleep-VOIDs in a row, park and report
+  to the lead. Its last line is "HOLD Hn VALID" or "HOLD Hn VOID <why>".
+  H1: wC wV C1 V2 · H2: V3 C4 C5 V6 · H3: V7 C8; then `iphone.mjs park`
+block (driver W, Timeline OFF): warm-up C, warm-up V, counted C V V C C V V C (block positions 1-8, n = 4 per arm),
+  each `node tools/iphone.mjs run --driver window --probe std --owner cd-roll-ca --block P-093 --arm C|V --run <n>
+  --label crca-<arm><n> --to 2400 --idle 8 --hold 2 --sentinel 3` (warm-ups with --warmup); --idle 8 (P-079 had 4):
+  8 s of the clock rolling at y 0 per run, so ~8 rolls per run in the window. Every counted C run is the heat
+  sentinel (bottom >= 58 fps and scroll >= 44 fps, meta.sentinel): a failing C run voids every run since the last
+  passing one; voided runs are re-run in the same order, at most one extra C V V C quartet (one more hold)
+scorer: fixes/cd-roll-ca/phone/score.mjs, sha256 57856e3f530ae49f2ecb7c0397c887d75c315c82daf895eedb1ce36d4744dc37
+  (rev 2; rev 1 f697000e77e4 skipped the sentinel of a C run already void for another reason, ops S1), committed
+  before any phone data; run as `node fixes/cd-roll-ca/phone/score.mjs <arm>:<file> ... --json <out>` with every
+  counted file of the VALID holds in block order (warm-ups skipped, void runs reported and dropped). Files of a VOID
+  hold are left out of the call and listed with their gate reads and pmcheck line in the block log (as P-079). The
+  sentinel of every counted C run is judged whatever its other voids: pass resets, anything else voids back to the
+  last pass. Checked before data on a synthetic block built from a real P-079 W file (all equal -> hit; V +3 frames
+  > 50 per run -> FALSIFIED; V +1 -> hit; a failing C sentinel voids the runs since the last pass -> not enough; LPM
+  and a wrong served hash -> void; a C run with a wrong hash AND a failing sentinel still voids back to the last pass;
+  an LPM C run with a passing sentinel is void itself but resets). Windows, fixed before data:
   top frames: a W run's frames with t in [marks.idle start, marks.scroll end) and yEnd < 1000 (P-079's window)
   idle frames: t in [marks.idle start, marks.idle end) (descriptive, no gate)
 gate (no-worse), top window: median of V's valid runs minus median of C's, dt > 50 (twins > 46, > 54): FALSIFIED when
@@ -596,9 +615,10 @@ decision rows: hit -> cd-roll-ca lands on the less-work basis (cost counts + thi
   lead decides; not enough after the extra quartet -> the lead decides (re-block once, or land on the counts alone)
 confidence (rough, for calibration, not a gate): P(hit) 0.85 (Simulator: same layers, no extra backing, roll on the
   compositor; the phone's CA path is not measured; P-079's top window was no-worse with the rAF spring)
-minutes: ~15-20 plus the thermal reads (2 warm-ups ~2, 8 counted ~10, park and overhead ~3)
+minutes: ~25 (range 20-40): 3 holds, each pre-warm 1-4 runs (~1.2 min each) + 2 gate reads (~1.5 min) + its items
+  (2 warm-ups ~2.5, 8 counted ~10); more if the phone starts cool
 queue: phone-queue place 4 (lead); ops calls the turn, then `node tools/lock.mjs acquire iphone --owner cd-roll-ca
-  --ttl 900 --url <V's URL> --wait 3600`
+  --ttl 900 --url <B's twin> --wait 3600`, renewed between holds
 ```
 
 ```

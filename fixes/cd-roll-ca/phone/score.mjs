@@ -18,7 +18,8 @@
 //   reported, not a falsifier. Needs >= 3 valid runs per arm, else "not enough".
 // Void (dropped, reported): meta.error; served JS/CSS not the arm's; Low Power Mode (settings.lowPowerMode true or
 //   lowPowerSuspect); no idle/scroll marks; a C run whose heat sentinel fails or has no data voids itself and every run
-//   since the last passing C run (block order).
+//   since the last passing C run (block order); every counted C run's sentinel is judged, also when the run is void
+//   for another reason.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -54,15 +55,17 @@ export function scoreW(j, arm) {
   }
   return { arm, label: m.label, warmup: !!m.warmup, void: v, sentinel: m.sentinel ?? null, tempStart: m.battery?.start?.temperatureC ?? null, charging: m.battery?.start?.IsCharging ?? null, top, idle };
 }
-// sentinel voiding in block order: a failing C voids itself and every run since the last passing C
+// sentinel voiding in block order: the sentinel of EVERY counted C run is judged, whatever its other voids (a
+// served-mismatch or LPM C run still says how hot the phone was; mgmt-ops-10's P-093 read S1, the P-092 fix): pass ===
+// true resets; anything else (false, no data) voids that C run and every run since the last passing C
 export function applySentinel(list, passOf) {
   let since = [];
   for (const r of list) {
     since.push(r);
-    if (r.void.length || r.arm !== 'C') continue;
+    if (r.arm !== 'C') continue;
     const p = passOf(r);
     if (p === true) { since = []; continue; }
-    for (const x of since) if (!x.void.length || x === r) x.void.push(x === r ? `sentinel ${p === false ? 'failed' : 'no data'}` : `voided by failing sentinel ${r.label}`);
+    for (const x of since) x.void.push(x === r ? `sentinel ${p === false ? 'failed' : 'no data'}` : `voided by failing sentinel ${r.label}`);
     since = [];
   }
 }
