@@ -712,11 +712,57 @@ Strict apply (`patch -F 0`; every build below passes `node --check`):
 - **Order:** 7c, then nav (U1), then glue. 7c's own delta does not apply strictly on top of nav, so nav cannot go in
   first.
 - **Parity on nhcms (9138732704f2, VA f325bf009cd6):** `probe.mjs parity --base v8ms`, all 5 cases. The records go in
-  `v9prep/parity-{1,2}.json`; result pending.
+  `v9prep/parity-{1,2}.json` (22:28Z and 23:01Z, shared probe slots). **PASS:** in all 5 cases, task mode at 10 and
+  40 px has 0 lag frames and 0 theme / sticky / pill mismatches. Raf mode (report only) has pill 2 per run, all in lag
+  frames (inSync 0), and theme 0. Every load served f325bf009cd6 / 659b02f7169d; no page errors. The mobile cases now
+  take 1256 / 1316 steps (1070 / 1130 on v8), because rev 7c makes the page longer and the scroll covers its end screen both ways. That is the extra case the
+  PR-018 note above asks for, and it covers the glue.
 
 ## Flicker triage (fix-scroll-cb's task-driver check, 26777ce0)
 
-Pending: a C (v8) vs N (v8 + nav-hit-cache) Simulator check, `flicker-sim.mjs`, 12 loads in ABBA order.
+fix-scroll-cb's task-driver Simulator check saw two one-step flickers, and only in builds with nav-hit-cache:
+`.pain` is-pain-dark went off, on, off at steps 964-966 (N1, N2, V1), and the nav's is-on-dark went on, off, on at
+412-414 (V2).
+
+**Verdict: neither flicker comes from nav-hit-cache.** Both come from the scroll position the page sees stepping
+back by one step, which also happens in v8 alone. OBSERVED in our setup; why WebKit's scroll position steps back
+under a one-way driver is unknown.
+
+**Check.** `flicker-sim.mjs`: C = v8 (3e3e94cb6e9f) against N = v8 + nav-hit-cache (fd3688901f50, the same N as
+fix-scroll-cb's), both CSS f836404b3728. Served hashes were checked on every load. Simulator, functional shared
+slots at 22:29Z and 23:05Z, the task driver. A MutationObserver logs every `.pain` and nav class change with the live
+scrollY, the `.pain` document offset, scrollHeight and the section geometry. Two slots ran out at 300 s (exit 124),
+so 7 loads finished of the 12 planned. Records: `p117/flicker-{1,2}.json`.
+
+| load | .pain flicker | nav flicker | live scrollY at the flicker's three flips |
+|---|---|---|---|
+| C1 | - | steps 215-217 | 2150, 2140, 2170 |
+| N1 | - | - | |
+| N2 | - | - | |
+| N4 | steps 89-91 (way down) | - | 890, 880, 900 |
+| C4 | - | steps 760-762 | 2910, 2920, 2910 |
+| C5 | - | - | |
+| N5 | - | - | |
+
+- **The same flicker shows in v8 alone.** Here the nav flicker came up in 2 of 3 C loads and 0 of 4 N loads.
+  fix-scroll-cb saw it in 1 of 2 V loads and 0 of 2 C loads.
+- **What drives every flicker.** In all three, the live scrollY moved back by one step although the driver only
+  moves one way. The class then followed the scroll position back: the page's rules answered correctly for the
+  position they saw.
+- **The patch moves no layout.** `.pain`'s document offset (1407.72) and scrollHeight (6035) are identical at
+  every flip of every load, C and N alike.
+- **The patch never writes `.pain`.** Its class comes from the v8 future job (line 12172, `rect.top <= 0.5`), which
+  nav-hit-cache does not touch.
+- **The nav flip lands where the cached answer comes from.** Every theme value the cache writes is either F() from
+  that frame or the last F() result. A carried value can only delay a change; it cannot make a new one. So an
+  on/off/on flip is F() itself answering for the position it saw.
+- **The WebKit per-frame audit agrees.** On V (Simulator, task driver) it found 0 theme / sticky / pill
+  mismatches; see the momentum section above.
+- **Counts.** Pooled with fix-scroll-cb's loads, the `.pain` flicker appeared in 4 of 9 nav-hit-cache loads and
+  0 of 5 v8 loads. Fisher's exact test gives p = 0.13, so the split is not significant. The mechanism above (a
+  backward scroll step) also shows in C.
+- **Rule for later parity.** A one-step flicker at a threshold is driver jitter, as P-108's v8-vs-v8 diffs already
+  showed (20 of them). Judge single steps only together with the live scrollY at the flip.
 
 ## Smoke (not scored)
 
