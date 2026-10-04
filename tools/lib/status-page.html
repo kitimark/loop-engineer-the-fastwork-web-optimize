@@ -193,6 +193,7 @@ function row(v) {
   }
   if (v.note) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Now: ' }), v.note));
   if (v.next) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Next: ' }), v.next));
+  if (v.deaf) wk.appendChild(el('div', { class: 'flag', title: 'inside a long command: user questions go to the desk or the lead until it returns (I-169)', text: v.deaf }));
   v.flags.forEach(function (f) { wk.appendChild(el('div', { class: 'flag', text: f })); });
   // T-124/T-125: red until fixed: the row contradicts Progress, its way back happened, or it sits parked with none
   (v.alerts || []).forEach(function (a) { wk.appendChild(el('div', {}, el('span', { class: 'alert', title: 'status.mjs check lists these; the lead fixes landings with status.mjs sync', text: a }))); });

@@ -376,7 +376,8 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   Read-time, no writes (I-152): a ready-to-land row whose branch head is on main reads "landed on main (from git)";
   an active row whose owner's run ended with a hand-back says "owner ended" (from Claude Code's transcripts, OBSERVED
   format) unless it has a live wait; a wait whose parent chain no longer reaches a live Claude Code process (its shell
-  or Monitor task is gone) reads "owner ended (orphan wait)" (I-163, `tools/lib/proctree.mjs`).
+  or Monitor task is gone) reads "owner ended (orphan wait)" (I-163, `tools/lib/proctree.mjs`); an owner inside one
+  foreground tool call for more than 30 s reads "deaf: in <command, 40 chars> for N min" (I-169).
 - **Threads** (`console.mjs thread`, console `/threads`): the user's questions, one thread per topic. The lead keeps
   `node tools/console.mjs thread wait --as lead --triage --timeout 3600` armed in the background (re-arm after each
   wake). It wakes only for a message nobody listening owns, one the user ticked "For the lead", an escalation, a user
@@ -387,8 +388,11 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   first listening one of the commented item's owner, the lead's topic map (`thread topic set <tag> --owner <agent>
   --by lead`), the status-board owner, the desk (`thread desk set <agent> --by lead`); listening = a live thread wait,
   or a read or reply in the last 5 min; an orphan wait counts for neither (I-163; the lead exempt), a transcript's
-  hand-back is no routing rule (agents between turns keep listening). A **busy** owner (a status row implementing,
-  testing or measuring, or holding chrome-measure/iphone; I-164, memory "busy-workers-answer-later") is skipped: the
+  hand-back is no routing rule (agents between turns keep listening). An owner whose transcript shows it inside a
+  foreground tool call for more than 30 s (not a background Bash or Monitor; OBSERVED format, unparsable = the rules
+  before) is **deaf**: not listening, live wait or not, and busy (I-169, `tools/lib/transcripts.mjs`; the lead exempt);
+  run long commands in the background. A **busy** owner (a status row implementing,
+  testing or measuring, or holding chrome-measure/iphone, or deaf; I-164, memory "busy-workers-answer-later") is skipped: the
   message goes to the next free listener or the lead, and reaches the owner as a non-waking FYI that wakes its listener
   once its step ends; the user's answer to its own `--ask` and proposal decisions still wake it. Answer in the thread, not in chat; hand a decision to the lead with
   `thread escalate <id> --by <you> --note "…"`. Questions on a proposal (T-048) reach its author: `proposal talk <id>`

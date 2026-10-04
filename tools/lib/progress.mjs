@@ -530,6 +530,8 @@ export async function gatherLive() {
   try { live.git = gitLive(); } catch (e) { live.errors.push(`git: ${e.message}`); }
   // I-152 (PR-020 N9): agents whose run ended with a hand-back (names and times only, from Claude Code's transcripts)
   try { live.ended = Object.fromEntries((await import('./transcripts.mjs')).endedNow()); } catch (e) { live.errors.push(`transcripts: ${e.message}`); }
+  // I-169: agents inside a foreground tool call for more than 30 s (name -> {tool, cmd, since, min})
+  try { live.deaf = Object.fromEntries((await import('./transcripts.mjs')).deafNow()); } catch (e) { live.errors.push(`transcripts: ${e.message}`); }
   return live;
 }
 

@@ -10,8 +10,10 @@
 //   - the desk: threads/desk.json {agent, setBy, at}, set by the lead only; it counts only while it is listening
 //     (otherwise the lead is the desk). The desk may assign a thread, only to a listening owner (console-threads assign).
 //   - the topic map: threads/topics.json {<status id or topic tag>: {owner, setBy, at}}, set by the lead only.
-//   - busy(agent) (I-164, user T-147): a status row it owns is implementing/testing/measuring, or it holds
-//     chrome-measure or the iphone lease; the router passes busy listeners over (they get the message as a non-waking
+//   - deaf(agent) (I-169, user T-152 #3): inside a foreground tool call for more than 30 s (its transcript): not
+//     listening, live wait or not, and busy below.
+//   - busy(agent) (I-164, user T-147): a status row it owns is implementing/testing/measuring, it holds
+//     chrome-measure or the iphone lease, or it is deaf; the router passes busy listeners over (they get the message as a non-waking
 //     FYI) and the lead's triage counts only free owners. See busyState below.
 // console-threads.mjs calls the router on every user message whose thread has no free listening assignee; the lead's
 // `thread wait --as lead --triage` (threadWaitCondition) uses listening() and TRIAGE_ESCALATE_MIN.
@@ -23,6 +25,7 @@ import { writeJson, readJson, iso } from './store.mjs';
 import { consoleDir } from './console.mjs';
 import { listWaits } from './waits.mjs';
 import { attachedNow } from './proctree.mjs';
+import { deafNow, deafText } from './transcripts.mjs';
 
 export const LISTEN_MIN = 5;
 export const TRIAGE_ESCALATE_MIN = 10;
@@ -65,8 +68,12 @@ export function lastSeen(threads = []) {
  * wait)" (I-163: its only thread waits are orphans), or "" (not listening). opts: {now, waits (listWaits() records),
  * threads, attached ((pid) -> boolean; default proctree.mjs attachedNow(); null = every live wait is attached)}.
  */
-export function listeningState({ now = Date.now(), waits, threads = [], attached } = {}) {
+export function listeningState({ now = Date.now(), waits, threads = [], attached, deaf } = {}) {
   const ws = waits ?? listWaits({ now });
+  // I-169 (user T-152 #3): an owner inside a foreground tool call for more than 30 s (its transcript, transcripts.mjs
+  // deafNow) hears nothing until the call returns, its live waits included: "deaf". The lead is exempt.
+  let dn = deaf;
+  if (dn === undefined) { try { dn = deafNow({ now }); } catch { dn = null; } }
   // I-163 (+ I-137), the lead's ruling: a live wait (pid alive: listWaits drops dead ones) listens only while its parent
   // chain reaches a live Claude Code process. The desk's `thread wait --monitor` outlived the task that started it and
   // T-146 sat 2.5 min routed to it. An orphan wait is no listener, and its owner loses the 5-min read/write rule too
@@ -79,6 +86,7 @@ export function listeningState({ now = Date.now(), waits, threads = [], attached
   const seen = lastSeen(threads);
   return (agent) => {
     if (!agent || agent === USER) return { listening: false, how: '' };
+    if (agent !== LEAD && dn?.get?.(agent)) return { listening: false, how: deafText(dn.get(agent)) };
     if (waiting.has(agent)) return { listening: true, how: 'waiting' };
     if (agent !== LEAD && orphan.has(agent)) return { listening: false, how: 'owner ended (orphan wait)' };
     const at = seen.get(agent);
@@ -114,10 +122,12 @@ export function lockHolders({ now = Date.now(), statusFn = lockStatus } = {}) {
   return out;
 }
 
-/** (agent) -> {busy, why} (pure). statusRows: status board rows; holders: lockHolders(). */
-export function busyState({ statusRows = [], holders = [] } = {}) {
+/** (agent) -> {busy, why} (pure). statusRows: status board rows; holders: lockHolders(); deaf: deafNow() (I-169). */
+export function busyState({ statusRows = [], holders = [], deaf = null } = {}) {
   return (agent) => {
     if (!agent || agent === LEAD || agent === USER) return { busy: false, why: '' };
+    const d = deaf?.get?.(agent);
+    if (d) return { busy: true, why: deafText(d) }; // I-169: inside a long foreground call
     const own = statusRows.filter((x) => x && x.owner === agent);
     const r = own.find((x) => BUSY_STATES.includes(x.state));
     if (r) return { busy: true, why: `${r.id} ${r.state}` };
@@ -139,7 +149,9 @@ export async function loadBusy() {
     if (!cache || Math.abs(now - cache.at) >= BUSY_CACHE_MS) {
       let statusRows = [];
       try { statusRows = S ? S.list({ all: false }) : []; } catch {}
-      cache = { at: now, fn: busyState({ statusRows, holders: lockHolders({ now }) }) };
+      let deaf = null;
+      try { deaf = deafNow({ now }); } catch {}
+      cache = { at: now, fn: busyState({ statusRows, holders: lockHolders({ now }), deaf }) };
     }
     return cache.fn;
   };

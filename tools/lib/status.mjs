@@ -821,6 +821,10 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   const orphanWait = ownWaits.some((w) => w.orphan);
   const endRec = canStale && it.owner ? live.ended?.[it.owner] : null;
   const handedBack = !!endRec?.ended && !ownWaits.some((w) => !w.orphan);
+  // I-169 (user T-152 #3): the owner is inside a foreground tool call for more than 30 s (live.deaf, transcripts.mjs):
+  // user questions go to the desk or the lead until it returns (thread-routing busy)
+  const deafRec = canStale && it.owner ? live.deaf?.[it.owner] : null;
+  const deaf = deafRec && typeof deafRec === 'object' ? s(`deaf: in ${deafRec.cmd} for ${deafRec.min >= 1 ? `${deafRec.min} min` : 'under 1 min'}`, 120) : null;
   const ownerEnded = handedBack || orphanWait ? { at: handedBack && typeof endRec.at === 'string' ? endRec.at : null, ...(orphanWait ? { orphanWait: true } : {}) } : null;
   const waiting = fromGit ? null : it.waitingOn ? { kind: it.waitingOn.kind, target: s(it.waitingOn.target, 80), text: s(it.waitingOn.text, LIMITS.wait), plain: waitingPlain(it.waitingOn) } : null;
   // I-145 (PR-020 N1): the event that ended the owner's wait (the user answered, decided, skipped; the thread closed)
@@ -833,7 +837,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     progressItems: progressMatches(it, ctx ? ctx.items : progress), // I-104: links to /progress#<id>, only to items that exist
     priority: Number.isInteger(it.priority) ? it.priority : null,
     state: it.state, statePlain: gitText || lab.plain || statePlain(it.state, st, waiting), group, groupLabel: GROUPS[group] || group,
-    landedFromGit: fromGit, ownerEnded,
+    landedFromGit: fromGit, ownerEnded, deaf,
     // T-124/T-125: one label with the PROGRESS item ("in v7, owner testing", "closed, no fix"), what contradicts it, and
     // a parked row's way back (resumeOn, "ready to resume", "needs review"); alerts = the red lines on /status
     // T-130/T-135: the one line the pages show for the state: the label (a parked row: label · its reason · its way
@@ -999,6 +1003,7 @@ export function itemText(v) {
   if (v.waiting?.answered) L.push(`      wait over: ${v.waiting.plain} (the row says: waiting on ${v.waiting.reported})`); // I-145
   else if (v.waiting) L.push(`      waiting on: ${v.waiting.plain}`);
   for (const d of v.derived) L.push(`      now: ${d.plain}`);
+  if (v.deaf) L.push(`      ${v.deaf} (user questions go to the desk or the lead until it returns)`); // I-169
   for (const f of v.flags) L.push(`      ! ${f}`);
   if (v.note) L.push(`      note: ${v.note}`);
   if (v.next) L.push(`      next: ${v.next}`);
