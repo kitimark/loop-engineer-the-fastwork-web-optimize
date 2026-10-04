@@ -887,6 +887,17 @@ after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
   - **Pre-block condition:** the Simulator hero check pxbr2 (frozen frames at rest, y 0 / 300 / 548; arms R2, B-R2, and
     R2 again on its own server as the A/A) shows B-R2 vs R2 at 0 px beyond the A/A in the hero. Its result is added
     here before the block starts; a failure stops P-095 and goes to the lead.
+  - **pxbr2 result (2026-10-04 04:29-04:31Z, shared Simulator slot, no Mac Sleep/DarkWake in it): PASS.**
+    - Every differing cluster of B-R2 vs R2 lies in a box where the A/A (R2b vs R2) differs too:
+      - the status-bar clock [160,40]-[320,120] (2,499 px in both);
+      - the countdown minutes cell [760,1320]-[840,1400] (1,535 / 1,631 / 1,618 px in both);
+      - the countdown seconds cell [1000,1320]-[1160,1400].
+    - The seconds cell counts B 2,763 / 2,893 / 2,873 px vs the A/A's 2,586 / 2,752 / 2,734. Those pixel counts depend
+      on which digit ticked between captures.
+    - B-R2 vs R2b, captured right beside it, differs only in the seconds cell (2,418 / 2,606 / 2,565 px). The second
+      shots (Bb vs R2bb) are identical.
+    - Outside those cells: 0 px (40 px clusters, min delta 1). The track is `he-on` in all three arms.
+    - Files: `out/hext/pxbr2/`; analysis `pxbr2-an.sh` (diff2 / clusters, as px13).
 - **Servers:** one per arm, P-088's flags (`--overlay <copy> --port 0 --https --vendors=local --latency 150 --no-cache`),
   plain http twins for the phone (I-003), ports in the block log, never 5173. The plain baseline page is the pre-warm
   and gate-timer page (no counted run). One uncounted warm-up load per arm port.
