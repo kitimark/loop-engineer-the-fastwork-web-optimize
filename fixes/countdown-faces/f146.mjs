@@ -20,6 +20,9 @@ const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js';
 const HASH = { base: '4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5', poc: '638b8e03e81ce0f9732b346eeb5aa4e3d804158a7609d1cd918b6f5f222401ad' };
+// (b) on the C stack: arms C and V from out/countdown-faces/snap/<arm> (hashes.json; JS checked as before)
+const SNAPS = join(WT, 'out/countdown-faces/snap');
+if (existsSync(join(SNAPS, 'hashes.json'))) for (const [k, v] of Object.entries(JSON.parse(readFileSync(join(SNAPS, 'hashes.json'), 'utf8')))) HASH[k] = v.js;
 const OUT = join(WT, 'out/countdown-faces/f146');
 const ARMS = (process.argv[2] || 'base,poc').split(',');
 const sha = (b) => createHash('sha256').update(b).digest('hex');
@@ -65,7 +68,7 @@ function analyze(records, t0) {
 
 mkdirSync(OUT, { recursive: true });
 const BASE = resolveTree('site-pretty');
-const SNAP = { poc: join(WT, 'out/countdown-faces/snap-x1/poc') };
+const SNAP = { poc: join(WT, 'out/countdown-faces/snap-x1/poc'), C: join(SNAPS, 'C'), V: join(SNAPS, 'V') };
 const res = { tool: 'f146', note: 'Simulator: counts and attribution only, ms never count (F-084)', startedAt: new Date().toISOString(), arms: {} };
 for (const arm of ARMS) {
   const st = join(OUT, `serve-sim-${arm}.json`); rmSync(st, { force: true });

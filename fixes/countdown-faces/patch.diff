@@ -1,156 +1,180 @@
 # fastwork mirror fix: countdown-faces
 # baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# rebuild the overlay with: node tools/fix.mjs apply countdown-faces
+# STACKED on fixes/cd-roll-ca/overlay: apply cd-roll-ca first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply countdown-faces --on cd-roll-ca
 # contains excerpts of Fastwork's code: local branches only, never push
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3d70edb5bf313f112167da2db0fb5166c60c205927f9f606a9156b5cda3ff32d
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -3805,6 +3805,17 @@
-   let n = ((t % 10) + 10) % 10,
-     r = (10 + e - n) % 10;
-   return r > 5 ? r - 10 : r;
-+}
-+/*countdown-faces: slot k shows the face at cell position p = round(v)-1..round(v)+1 with p = k (mod 3), so the
-+two faces that can be inside the cell (floor(v), ceil(v)) always have a slot. Its digit is p mod 10 and its offset is
-+KE(digit, v), the same number the original face of that digit gets. Offsets are parked at +-1 cell: .digit has
-+overflow:hidden, so a face >= 1 cell away shows nothing, as at rest, where the original puts the neighbours at +-1.*/
-+function __cdSlotFace(e, t) {
-+  let n = Math.round(t),
-+    r = n - 1 + ((((e - n + 1) % 3) + 3) % 3),
-+    i = ((r % 10) + 10) % 10,
-+    a = KE(i, t);
-+  return [i, a < -1 ? -1 : a > 1 ? 1 : a];
- }
- function qE(e, t) {
-   return Math.floor(Math.abs(Math.floor(e)) / t) % 10;
-@@ -3816,6 +3827,12 @@
+@@ -4019,6 +4019,10 @@
+   return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
  }
  var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
-   XE = Array.from({ length: 10 }, (e, t) => t),
-+  /*countdown-faces: 3 face slots per digit instead of 10 (current, next, one spare for the roll)*/
-+  __cdSlots = [0, 1, 2],
 +  /*countdown-faces: the hero component (fD) shadows N/z/s with its own locals; it reaches state/set/get through these*/
 +  __cdState = N,
 +  __cdSet = z,
 +  __cdGet = s,
+   XE = Array.from({ length: 10 }, (e, t) => t),
    ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
-   QE = h(
-     `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
-@@ -3824,21 +3841,35 @@
-   D(r, !0);
-   let i = R(() => qE(r.value, r.place)),
-     a = N(I(o(() => s(i)))),
--    c = N(0);
-+    c = N(0),
-+    /*countdown-faces: false while the countdown can't be seen (faded out, scrolled away, mounted at opacity 0)*/
-+    __cdLive = R(() => r.animate !== !1),
-+    /*countdown-faces: the spring's current value while the digit is out of sight (null while `a` holds it)*/
-+    __cdV = null;
+   /*cd-strip: one static strip per digit, cells 0-9 and a second 0 (the 9 -> 0 wrap), each cell its own layer (CSS).
+@@ -4132,6 +4136,11 @@
+     c = N(0),
+     /*countdown-idle-raf: false while the countdown is off-screen*/
+     __cdAnimate = R(() => r.animate !== !1),
++    /*countdown-faces: false only while the call site knows the clock is painted fully transparent (the hero at
++    --exit-opacity 0, the panel at opacity 0), written in the same frame as that opacity*/
++    __cdShown = R(() => r.shown !== !1),
++    /*countdown-faces: true while `a` is held (not written) because the clock is neither animated nor shown*/
++    __cdHeld = !1,
+     /*cd-roll-ca: the strip's wrapper (set when it mounts; its children are the cells) and the running roll {K: path,
+     t0, cells: the cells it moves, A: their Animations, F: the start-frame callback, ran}*/
+     __crEl = null,
+@@ -4166,9 +4175,18 @@
+     };
    b(() => {
      let e = s(i);
-     if (YE.current) {
--      z(a, e, !0);
-+      (z(a, e, !0), (__cdV = null));
+-    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
+-    if (YE.current || !s(__cdAnimate)) {
++    /*countdown-faces: off-screen (or inactive) and painted transparent: hold. No state write, so no strip transform
++    write and no style recalc per tick; any running roll stops (its cells show cd-strip's rest place, unseen)*/
++    if (!YE.current && !s(__cdAnimate) && !s(__cdShown)) {
+       __crStop();
++      __cdHeld = !0;
++      return;
++    }
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion. countdown-faces: also the first run
++    after a hold (back on screen, or shown again), so the show frame has the target, as the per-tick snap gives*/
++    if (YE.current || !s(__cdAnimate) || __cdHeld) {
++      __cdHeld = !1;
++      __crStop();
+       z(a, e, !0);
        return;
      }
--    let t = { value: o(() => s(a)), velocity: 0 },
-+    /*countdown-faces: the original's spring, frame for frame (same rAF frames, same steps, same start value); out of
-+    sight it only computes: no state write, so no Svelte flush, no face style writes, no style recalc*/
-+    let t = { value: __cdV ?? o(() => s(a)), velocity: 0 },
-       n = performance.now(),
--      r = window.requestAnimationFrame(function i(o) {
--        let s = GE(t, e, o - n);
--        ((n = o), (t = s.state), z(a, t.value, !0), s.done || (r = window.requestAnimationFrame(i)));
-+      r = window.requestAnimationFrame(function i(__o) {
-+        let l = GE(t, e, __o - n);
-+        ((n = __o), (t = l.state));
-+        o(() => s(__cdLive)) ? (z(a, t.value, !0), (__cdV = null)) : (__cdV = t.value);
-+        l.done || (r = window.requestAnimationFrame(i));
-       });
-     return () => window.cancelAnimationFrame(r);
-   });
-+  /*countdown-faces: back in sight: show the spring's current value at once. The hero's exit function and the panel's
-+  morph spring run inside a frame (rAF), so this lands in the frame that shows the clock again; if the spring's own
-+  callback for that frame runs later in it, that callback writes the frame's value*/
-+  b(() => {
-+    s(__cdLive) && __cdV !== null && (z(a, __cdV, !0), (__cdV = null));
-+  });
-   var u = QE(),
-     d = e(u),
-     h = V(d, 2),
-@@ -3848,7 +3879,7 @@
-       (_(
-         i,
-         16,
--        () => XE,
-+        () => __cdSlots,
-         (e) => e,
-         (n, r) => {
-           var i = ZE();
-@@ -3856,10 +3887,13 @@
-           var u = e(i, !0);
-           (M(i),
-             l(
--              (e) => {
--                ((o = S(i, ``, o, e)), t(u, r));
-+              (e, d) => {
-+                ((o = S(i, ``, o, e)), t(u, d));
-               },
--              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
-+              [
-+                () => ({ transform: `translateY(${__cdSlotFace(r, s(a))[1] * s(c)}px)` }),
-+                () => __cdSlotFace(r, s(a))[0],
-+              ],
-             ),
-             f(n, i));
+@@ -4276,6 +4294,9 @@
+         get animate() {
+           return t.animate;
          },
-@@ -3894,6 +3928,9 @@
-         get place() {
-           return s(n);
-         },
-+        get animate() {
-+          return t.animate;
++        get shown() {
++          return t.shown;
 +        },
        });
      },
    ),
-@@ -3920,6 +3957,10 @@
-   let a = C(r, `inverse`, 3, !1),
-     o = R(WT),
-     c = N(null),
-+    /*countdown-faces: the digits roll only while the call site shows the clock (optional `active` prop: the hero
-+    passes "not faded out and near the viewport", the morph panel "not at opacity 0"). A background tab needs no
-+    gate: the browser runs no rAF callbacks there, so the original already rolls nothing (and keeps its look on return)*/
-+    __cdLive = R(() => r.active !== !1),
-     u = R(() => (s(c) === null ? null : rD(s(c)))),
+@@ -4305,7 +4326,55 @@
+     __cdVisible = N(!0),
+     /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
+     __cdActive = R(() => r.active !== !1),
+-    u = R(() => (s(c) === null ? null : rD(s(c)))),
++    /*countdown-faces: optional `shown` prop from the call site, false only while the clock is painted at opacity 0,
++    set in the frame that paints it*/
++    __cdShown = R(() => r.shown !== !1),
++    /*countdown-faces: the clock ticks only while a digit of it may be painted: on screen and active (it animates), or
++    shown (opacity > 0). Exactly when no digit is held in $E. Otherwise the interval is stopped: no timer fire, no
++    state write, no frame*/
++    __cdLive = R(() => (s(__cdVisible) && s(__cdActive)) || s(__cdShown)),
++    /*countdown-faces: the interval's phase (the original's k-th fire is due at __cdT0 + k s), its tick, timers*/
++    __cdT0 = 0,
++    __cdTick = null,
++    __cdTimer = 0,
++    __cdWait = 0,
++    __cdSlow = 0,
++    __cdStop = () => {
++      (window.clearTimeout(__cdWait),
++        window.clearInterval(__cdTimer),
++        window.clearInterval(__cdSlow),
++        (__cdWait = __cdTimer = __cdSlow = 0));
++    },
++    /*countdown-faces: while stopped, keep the timer's aria-label (and data-value) honest for a screen reader's virtual
++    cursor at low cost: the value of the original's last fire, once per 60 s and on focusin. The held digits are not
++    written ($E holds them), so this changes two attributes and nothing on screen*/
++    __cdRead = () => {
++      __cdTick && !__cdTimer && !__cdWait && z(c, __cdT0 + Math.floor((Date.now() - __cdT0) / 1e3) * 1e3, !0);
++    },
++    __cdPause = () => {
++      (__cdStop(), __cdTick && (__cdSlow = window.setInterval(__cdRead, 6e4)));
++    },
++    /*countdown-faces: back to live: the next fire at the original's phase, then every second as before*/
++    __cdGo = () => {
++      if (!__cdTick || __cdWait || __cdTimer) return;
++      (window.clearInterval(__cdSlow), (__cdSlow = 0));
++      let n = Date.now();
++      __cdWait = window.setTimeout(
++        () => {
++          ((__cdWait = 0), __cdTick(), (__cdTimer = window.setInterval(__cdTick, 1e3)));
++        },
++        __cdT0 + (Math.floor((n - __cdT0) / 1e3) + 1) * 1e3 - n,
++      );
++    },
++    /*countdown-faces: while live the clock reads the time of the original's last fire if the stored time is older (it
++    is only after a stop): the digits the original shows now, in the same update that makes the clock live again, so
++    the first painted frame already has them and nothing rolls through the skipped seconds. Between fires c is newer*/
++    u = R(() => {
++      let v = s(c);
++      return v === null
++        ? null
++        : rD(s(__cdLive) ? Math.max(v, __cdT0 + Math.floor((Date.now() - __cdT0) / 1e3) * 1e3) : v);
++    }),
      d = R(() => s(o).waitlist.units),
      p = R(
-@@ -3958,6 +3999,9 @@
-               return s(u)[i];
+       () =>
+@@ -4318,8 +4387,8 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3),
+-      /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++    ((__cdT0 = Date.now()), (__cdTick = e), s(__cdLive) ? (__cdTimer = window.setInterval(e, 1e3)) : __cdPause());
++    let /*countdown-idle-raf: digits spring only while the countdown is on screen*/
+       __cdIo =
+         typeof IntersectionObserver == `function`
+           ? new IntersectionObserver(
+@@ -4331,11 +4400,20 @@
+           : null;
+     return (
+       __cdIo?.observe(h),
++      h.addEventListener(`focusin`, __cdRead),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
++        (__cdStop(),
++          (__cdTick = null),
++          __cdIo?.disconnect(),
++          h.removeEventListener(`focusin`, __cdRead),
++          document.removeEventListener(`visibilitychange`, e));
+       }
+     );
++  });
++  /*countdown-faces: stop the interval when the clock goes out of sight, restart it at its phase when it comes back*/
++  b(() => {
++    s(__cdLive) ? __cdGo() : __cdPause();
+   });
+   var h = sD();
+   let g;
+@@ -4357,6 +4435,9 @@
+             get animate() {
+               return s(__cdVisible) && s(__cdActive);
              },
-             padStart: i > 0,
-+            get animate() {
-+              return s(__cdLive);
++            get shown() {
++              return s(__cdShown);
 +            },
            });
          },
          p = (e) => {
-@@ -4026,7 +4070,12 @@
+@@ -4425,7 +4506,11 @@
          ),
          f(n, i));
      },
 -    o = R(WT);
 +    o = R(WT),
-+    /*countdown-faces: false while the hero countdown can't be seen: --exit-opacity is 0 (.hero-copy, which holds the
-+    countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))) or div.hero (x, the element the exit callback
-+    writes --exit-opacity on) is more than one viewport away (the lead of apple.com's play ranges). Set in the exit callback below, in the same frame as the scroll, so the
-+    first frame that shows the clock again already has the right digits*/
++    /*countdown-faces: false only while the hero countdown is painted fully transparent: --exit-opacity 0 on div.hero
++    (x; .hero-copy, which holds the countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))). Set in the
++    exit callback below, next to that write, so the frame that paints the clock again already has the target*/
 +    __cdHeroShown = __cdState(!0);
    function c(e) {
      return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
    }
-@@ -4162,13 +4211,16 @@
+@@ -4561,13 +4646,15 @@
        o = !1,
        s = () => {
          if (((i = 0), e.matches)) {
@@ -160,42 +184,44 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          }
          let t = b.getBoundingClientRect(),
            n = Math.max(1, t.height - window.innerHeight),
--          r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
+           r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
 -        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
-+          r = 1 - Math.min(n, Math.max(0, -t.top)) / n,
-+          __q = x.getBoundingClientRect();
 +        (x.style.setProperty(`--exit-opacity`, String(r)),
 +          (x.style.pointerEvents = r < 0.05 ? `none` : ``),
-+          __cdSet(__cdHeroShown, r > 0 && __q.bottom > -window.innerHeight && __q.top < 2 * window.innerHeight));
++          __cdSet(__cdHeroShown, r > 0));
        },
        c = () => {
          i ||= window.requestAnimationFrame(s);
-@@ -4330,7 +4382,11 @@
+@@ -4729,7 +4816,11 @@
      be = e(ye, !0);
    (M(ye), M(W));
    var xe = V(W, 2);
 -  cD(xe, {});
 +  cD(xe, {
-+    get active() {
++    get shown() {
 +      return __cdGet(__cdHeroShown);
 +    },
 +  });
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -13157,7 +13213,14 @@
-         m = e(p, !0);
-       M(p);
-       var h = V(p, 2);
--      (cD(e(h), { inverse: !0 }), M(h));
-+      (cD(e(h), {
-+        inverse: !0,
-+        /*countdown-faces: .start-selling-morph-panel has opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph = JM(x)*/
-+        get active() {
-+          return s(x) > 0.08;
+@@ -13376,6 +13467,9 @@
+     w = 0,
+     T,
+     E = R(() => s(x) > 0.001),
++    /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
++    JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
++    __cdPanelShown = R(() => JM(s(x)) > 0.08),
+     O = R(() => !s(p) && !s(E)),
+     A = R(() => s(O) || s(x) > 0.55);
+   function j(e) {
+@@ -13719,6 +13813,9 @@
+         get active() {
+           return s(E);
+         },
++        get shown() {
++          return s(__cdPanelShown);
 +        },
-+      }),
-+        M(h));
+       }),
+         M(h));
        var g = V(h, 2),
-         v = e(g),
-         __ctaBellC = e(v),

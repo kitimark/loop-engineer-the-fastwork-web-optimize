@@ -1539,5 +1539,264 @@
    "startedAt": "2026-10-02T15:49:11.823Z",
    "note": "faces arm from an EARLIER build (countdown range end 4038, not 4055)"
   }
+ },
+ "bOnC": {
+  "date": "2026-10-04",
+  "kind": "counts + frozen-frame pixels (Chrome and Simulator); no timing run, no phone block (lead's order)",
+  "stack": "C = main + morph-inherit + cd-strip strip-tc + cd-roll-ca; V = C + this patch.diff (made --on cd-roll-ca)",
+  "served": {
+   "C": {
+    "js": "3d70edb5bf313f112167da2db0fb5166c60c205927f9f606a9156b5cda3ff32d",
+    "css": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d"
+   },
+   "V": {
+    "js": "9c098e608a0f9625ed88990bfea45f74c9408b1993881f7fb24a3b69f9dde125",
+    "css": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d"
+   },
+   "superseded": {
+    "V1 (hold only)": "7a8489e3bd48f3117c05dd6c1d2635708c608a609015254b45d176eb48f3b2a7",
+    "V2 (+ stopped interval, no 60 s label refresh)": "e0d7420d4183e37e79899a38b76097bfde0cded784674ea391f0bc3c1943e258"
+   }
+  },
+  "config": {
+   "chrome": "mobile 430x932 DPR3 touch, CPU 6x, serve --vendors=local --https --latency 150 --no-cache on fresh ports (I-131), shared lane",
+   "sim": "iPhone 15 Pro Max Simulator, functional session, shared lane",
+   "baselineSnapshot": "b1789284481295-4ad4a84a"
+  },
+  "pixels": {
+   "chrome": {
+    "hold+show (V1)": {
+     "file": "out/countdown-faces/pixels-2026-10-04T09-47-10-365Z.json",
+     "hiddenWrites4s": {
+      "C": "44-66 cell@style",
+      "V": 0
+     },
+     "panelShowFirstVisible": "settled target in all arms"
+    },
+    "frozen frames (V1)": {
+     "file": "out/countdown-faces/pixels-2026-10-04T09-53-06-442Z.json",
+     "shots": 428,
+     "VvsC_px": 4,
+     "AA_px": 1,
+     "stateDiffer": 0
+    },
+    "hold (V)": {
+     "file": "out/countdown-faces/pixels-2026-10-04T10-27-36-488Z.json",
+     "hiddenMutations4s": {
+      "V": 0
+     }
+    },
+    "resume+hero/panel (V)": {
+     "file": "out/countdown-faces/pixels-2026-10-04T10-37-27-991Z.json",
+     "shots": 428,
+     "VvsC_px": 1,
+     "stateDiffer": 0,
+     "heroResumeLagSeconds": {
+      "C": [
+       0,
+       1
+      ],
+      "V": [
+       0,
+       1
+      ]
+     }
+    },
+    "RM hero+panel": {
+     "file": "out/countdown-faces/pixels-2026-10-04T10-52-30-802Z.json",
+     "shots": 428,
+     "VvsC_px": 5,
+     "AA_px": 0,
+     "stateDiffer": 0,
+     "class": "panel shade 16059 device px, max 1/255"
+    },
+    "RM panel C,V,V,C": {
+     "file": "out/countdown-faces/pixels-2026-10-04T11-23-39-240Z.json",
+     "shotsPerPair": 169,
+     "CV_px": [
+      4,
+      4,
+      4,
+      2
+     ],
+     "CC_px": 4,
+     "VV_px": 4,
+     "verdict": "panel shade class is A/A noise (OBSERVED in our setup, Chrome panel raster, cause unknown)"
+    },
+    "herofade+panelmid": {
+     "file": "out/countdown-faces/pixels-2026-10-04T11-26-18-141Z.json",
+     "shots": 168,
+     "VvsC_px": 13,
+     "AA_px": 16,
+     "VonlyShots": 0
+    },
+    "RM herofade+panelmid": {
+     "file": "out/countdown-faces/pixels-2026-10-04T11-31-57-699Z.json",
+     "shots": 168,
+     "VvsC_px": 0,
+     "AA_px": 1
+    }
+   },
+   "sim": {
+    "normal": {
+     "file": "out/countdown-faces/simpx/simpx-2026-10-04T11-54-23-716Z.json",
+     "shots": 29,
+     "VvsC_px": 0,
+     "AA_px": 0
+    },
+    "reduceMotion": {
+     "file": "out/countdown-faces/simpx/simpx-2026-10-04T11-52-08-620Z.json",
+     "shots": 29,
+     "VvsC_px": 0,
+     "AA_px": 0
+    }
+   },
+   "tier": "T0 on the Simulator; T1 on Chrome (largest shade 1, 0 % beyond A/A, 0 CSS px, fill, static)"
+  },
+  "costCard": {
+   "unit": "per 1 s of the page at rest, median over loads; pairs are [C, V]",
+   "cards": "out/countdown-faces/cc/costcard-{top,pastHero,end}.md",
+   "top": {
+    "n": [
+     2,
+     2
+    ],
+    "timerFires": [
+     5,
+     4
+    ],
+    "mainFrames": [
+     50.5,
+     48.5
+    ],
+    "styleRecalcs": [
+     50.5,
+     48.5
+    ],
+    "elementsRestyled": [
+     436,
+     402
+    ],
+    "scriptCalls": [
+     15,
+     11
+    ],
+    "paints": [
+     173,
+     174
+    ]
+   },
+   "pastHero": {
+    "n": [
+     3,
+     3
+    ],
+    "timerFires": [
+     4,
+     2
+    ],
+    "mainFrames": [
+     8,
+     6
+    ],
+    "styleRecalcs": [
+     8,
+     6
+    ],
+    "elementsRestyled": [
+     108,
+     67
+    ],
+    "scriptCalls": [
+     10,
+     4
+    ],
+    "paints": [
+     11,
+     9
+    ],
+    "mainFramesPer6sRange": {
+     "C": [
+      48,
+      49
+     ],
+     "V": [
+      37,
+      39
+     ]
+    }
+   },
+   "end": {
+    "n": [
+     2,
+     2
+    ],
+    "timerFires": [
+     2,
+     0
+    ],
+    "mainFrames": [
+     60,
+     60
+    ],
+    "styleRecalcs": [
+     60,
+     60
+    ],
+    "elementsRestyled": [
+     407,
+     390
+    ],
+    "scriptCalls": [
+     6,
+     0
+    ],
+    "paints": [
+     121,
+     120
+    ]
+   },
+   "slowLabelRefresh": "<= 1 timer fire per 60 s per stopped clock (two attributes, off screen); not visible in a 6 s window"
+  },
+  "sim": {
+   "f146 pastHero": {
+    "file": "out/countdown-faces/f146/f146-2026-10-04T11-41-12-894Z.json",
+    "mutations4s": {
+     "C": 154,
+     "V": 28
+    },
+    "frames5s": {
+     "C": 237,
+     "V": 216
+    },
+    "layouts": {
+     "C": 68,
+     "V": 58
+    },
+    "countdownStyleInvalidations": {
+     "C": 10,
+     "V": 0
+    }
+   },
+   "top": {
+    "file": "out/countdown-faces/sim-top-2026-10-04T11-42-05-893Z.json",
+    "C": {
+     "RenderingFrame": 202,
+     "RecalculateStyles": 212,
+     "Layout": 146,
+     "Paint": 169,
+     "countdownRaf": 4
+    },
+    "V": {
+     "RenderingFrame": 204,
+     "RecalculateStyles": 210,
+     "Layout": 143,
+     "Paint": 164,
+     "countdownRaf": 4
+    }
+   }
+  },
+  "knownNonVisualDifference": "aria-label/data-value of a stopped (unseen) clock refresh every 60 s and on focusin, not every second",
+  "notes": "No measurement code changed. No timing verdict. Phone no-worse check (T-055) not run: the lead decides when."
  }
 }

@@ -3,25 +3,27 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** round 2 (review r1 NEEDS-WORK addressed). Measured: counts, call-tree attribution, frozen-frame pixel
-identity. No timing A/B, by design.
-**Stage:** I (instrumented and attributed). A proposal (PR-007) decides whether it goes on to F. A phone segment
-card is needed before F/L (WebKit, see "WebKit").
-**Device class / gate:** Chrome counts and call tree; WebKit counts on the Simulator. No phone timing blocks and no
-timing A/B gain claim (timing was deferred project-wide when this ran).
-**Driver(s) behind the claims:**
-- Chrome CDP probe (`probe.mjs counts|profile`);
-- frozen-frame harness (`probe.mjs pixels`);
-- spring model (`chain.mjs`);
-- Simulator Timeline counter (`sim-counts.mjs`).
+**Status:** part (b) "hide while unseen" plus the stopped 1 s interval (frame audit §5 item 3), rebuilt on the C stack
+(main + morph-inherit + cd-strip + cd-roll-ca), 2026-10-04: built and checked, ready for the lead's land review. Measured:
+counts, frozen-frame pixel identity (reduced motion included, A/A on Chrome and the Simulator), Simulator counts. No timing
+run and no phone block (lead's order). Section "(b) on the C stack" has the design and every number; the X1 sections
+below it describe the earlier PoC on the plain baseline (`patch-x1-baseline.diff`), kept as history.
+**Stage:** I→F for (b) on C; landing basis T-055 (memory "less-work landing rule": cost-card counts + a short phone
+no-worse check; the countdown finger A/B is waived).
+**Device class / gate:** Chrome counts and frozen frames; WebKit counts and frozen frames on the Simulator. No phone
+timing blocks and no timing A/B gain claim.
+**Driver(s) behind the claims (current build):**
+- frozen-frame and hold harness (`pixels.mjs`, Chrome) and `simpx.mjs` (Simulator);
+- cost card windows (`cc-run.mjs` → `cc-check.mjs` → `cc-records.mjs` → `tools/costcard.mjs`);
+- Simulator Timeline/mutation probes (`f146.mjs`, `sim-top.mjs`).
 
 **Topic:** user thread T-024 (the countdown re-renders while nobody can see it; each digit has 10 faces).
-**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (pretty line numbers of the baseline):
-- spring/digit `$E` and its helpers (3805-3876);
-- `tD` (3894);
-- countdown `cD` (3920, 3958);
-- the hero `fD`: a state (4026), its exit-opacity function (4162-4174) and the `cD` call (4330);
-- the morph panel's `cD` call (13157).
+**Files touched (current patch, on cd-roll-ca's overlay):** `/_app/immutable/nodes/2.DyWL8TcE.js` only:
+- the module's runtime aliases (`__cdState`, `__cdSet`, `__cdGet`, after `YE`);
+- the digit `$E` (hold and show), `tD` (passes `shown`);
+- the countdown `cD` (`shown`, `__cdLive`, the stopped interval with its phase, the 60 s / focusin label refresh);
+- the hero `fD` (`__cdHeroShown`, set in the exit rAF next to `--exit-opacity`, and its `cD` call);
+- the morph panel (`__cdPanelShown` = `JM(x) > 0.08`, and its `cD` call).
 
 No CSS change.
 
@@ -954,45 +956,126 @@ the page.
   - top C has up to 2.
 - Falsifiers: phone row 2 is separated with V below, so the phone falsifier is not met.
 
-## Restack of part (b) on cd-strip (planned 2026-10-03; lead approved; not built yet)
-cd-strip (F-153) replaces part (a): each digit becomes one sliding strip instead of 10 faces. Part (b), the hidden-skip
-gate, rewrites the same `$E` body, so the plain-baseline `patch.diff` above does not apply on top of it. (b) will be
-rebuilt once cd-strip lands, on the lead's order.
+## (b) on the C stack: "hide while unseen" + stopped interval (built 2026-10-04; this is the current patch.diff)
 
-**Stack order (agreed with fix-cd-roll-ca and the lead):** st6-rb2 → cd-strip → cd-roll-ca → (b).
-- If (b) is rebuilt before cd-roll-ca lands, it goes on cd-strip alone.
-- Once cd-roll-ca lands, (b) is rebuilt on it.
+Lead's order (2026-10-04): build (b) on 0eb4a101 (cd-roll-ca) + morph-inherit, no timing run, no phone block;
+reduced motion exact before any land request. Frame audit §5 item 3 (user T-100) folded in: the two 1 s intervals stop
+while their clock can't be seen.
 
-**How the gate and cd-roll-ca's Web Animation roll interact (hero clock):**
-- *Gate position.* At the top of cd-roll-ca's spring effect in `$E`, before its `YE.current || !s(__cdAnimate)`
-  branch, or folded into that branch.
-- *Hidden, target change.* Call `__crStop()` (cancel any running roll; `__crRoll = null`) and hold the target in
-  `__cdV`. Nothing else runs: no `animate()`, no `z(a, …)`, no inline transform write, no rAF.
-  - This removes exactly the per-tick writes that C still makes off-screen. In cd-roll-ca's snap path that is one
-    `a` write per tick, and through cd-strip's template effect one strip transform write per changed digit.
-- *Hidden edge, mid-roll.* `__crStop()` again. The strip keeps its last transform while off-screen, which nobody sees.
-- *Show.* One `z(a, __cdV, !0)` through the state, then clear `__cdV`. There is no direct style write and no animation.
-  - Why through the state: cd-roll-ca's next roll takes its start value from `a` (velocity 0). A direct style write
-    would leave `a` stale, and the next roll would start from the wrong value.
-  - The show frame is the snapped target, which is C's own off-screen snap. So the show frame never animates from a
-    stale value.
-- *Don't read `a` mid-roll.* Under cd-roll-ca, `a` is already the target during a roll (the animation shows the
-  path), so `a` is not the value on screen.
-- *No reset needed.* cd-roll-ca's `__crHideAt`/`__crNoFrames` track only a hidden tab (`visibilitychange`), not this
-  gate. Its one-shot `startTime` rAF does nothing once `__crRoll` changes.
-- *Panel clock.* `.countdown.inverse` keeps the rAF spring in cd-roll-ca, so the `r.active` panel gate is unchanged.
+**Stack (C):** main + morph-inherit (st6-rb2 + delta, JS `7c61fe7d0662`) → cd-strip strip-tc → cd-roll-ca. Served C
+= JS `3d70edb5bf31` (cd-roll-ca's overlay rebuilt on morph-inherit) + CSS `982a747d9263` (cd-strip). **V** = C + this
+patch: JS `9c098e608a0f`, CSS unchanged. `patch.diff` (+107 -10) applies on `fixes/cd-roll-ca/overlay` (its header
+names the base sha). The plain-baseline X1 patch is kept as `patch-x1-baseline.diff` (X1 references below use it).
+Intermediate builds, superseded: `7a8489e3bd48` (hold only), `e0d7420d4183` (+ stopped interval, no slow label refresh).
 
-**Checks (no timing run, no phone block):**
-- *Pixel parity.* `fixes/cd-strip/pixels.mjs` frozen frames, C vs V on the same base.
-  - Hero: at top and after resume.
-  - Panel: at m 0.25, 0.5, 0.75 and 1.
-  - The show frame: the first frame after the hero comes back. If cd-roll-ca has landed, this check runs with C =
-    cd-strip + cd-roll-ca.
-  - Pass: 0 px on the hero, and only noise-class shots on the panel.
-- *Simulator counts.* cd-strip's `sim.mjs` (clock Paint records, layers) and `f146.mjs` (mutations, heavy Layouts).
-  - Expected at pastHero: V has about 0 strip style writes per 4 s.
-  - Expected at top: V equals C.
-  - No paintCount deltas (F-149).
+**What V changes (JS only):**
+- *Hold.* `$E` (each digit): while the digit is neither animated (C's `animate` = on screen per the 64 px IO and
+  `active`) nor `shown`, a target change only stops a running roll (`__crStop()`) and marks the digit held. No `a`
+  write, so no strip transform write, no style recalc. C snaps (`z(a, e)`) at every tick there instead.
+- *Show.* The first effect run after a hold snaps to the current target (`z(a, e)`), which is C's own off-screen snap
+  value: the show frame never animates from a stale value.
+- *`shown`* (new optional prop on `cD`, passed to `tD` → `$E`): false only while the clock is painted at opacity 0,
+  set in the same frame as that opacity:
+  - hero: `--exit-opacity` 0 (`.hero-copy` opacity is `--copy-in × --exit-opacity`; phone width `--exit-opacity`
+    alone). Set in the exit rAF `s()` next to that write (`__cdSet(__cdHeroShown, r > 0)`; reduced motion: true);
+  - panel: `JM(x) > 0.08` (`.start-selling-morph-panel` opacity `clamp(0, (--morph − 0.08) / 0.72, 1)`, `--morph` =
+    `JM(x)` inline, no transition on the panel).
+  - Why it is needed: the IntersectionObserver reports a frame late. After a jump of more than 64 px + the clock's
+    height in one frame, C's per-tick snap still has the right digits in that frame; a hold alone would not. With
+    `shown` the hold ends in the frame that paints the clock again.
+  - Why the hold does not also cover "on screen at opacity 0" (the hero between the pin end and leaving the
+    viewport): C rolls there (unseen), and a clock coming back mid-roll shows the roll in C. Holding there would show
+    the settled digit instead: not pixel-identical.
+- *Stopped interval* (`cD`, frame audit §5 item 3): `__cdLive = (visible && active) || shown`, exactly "no digit is
+  held". While not live the 1 s `setInterval` is cleared. Back to live, the next fire is at the original interval's
+  phase (`__cdT0 + k s`), then every second as before.
+  - The clock value `u` reads `max(c, the time of the original's last fire)` while live. That runs in the same update
+    that makes the clock live, so the first painted frame already has the digits the original shows, and nothing
+    rolls through the skipped seconds. It does not depend on effect order. Between fires `c` is the newer value.
+  - The tab-hidden carve-out (lead approved): a clock that is live when the tab hides keeps its interval, so
+    cd-roll-ca's exact tab-return sweep (PR-017, `__crHideAt`/`__crNoFrames`) is unchanged. A hidden tab paints no
+    frames and its timers are throttled by the browser anyway.
+- *Known non-visual difference: the timer's `aria-label` (and the numbers' `data-value`) while stopped.* C rewrites
+  them every second off screen; V refreshes them once per 60 s and on `focusin` of the timer (lead's condition), with
+  the value of the original's last fire, and at once when the clock comes back. A screen reader's virtual cursor on an
+  off-screen clock can hear a label up to 60 s old. The held digits are not written by the refresh (two attributes,
+  nothing on screen).
+
+**Checks (Chrome 430x932 DPR 3, counts and frozen frames only; shared lane; fresh ports and `--no-cache` for every
+served page, I-131; every arm hash-checked from `out/countdown-faces/snap/`):**
+
+| check | C | V | result | raw (`out/countdown-faces/`) |
+|---|---|---|---|---|
+| hold: mutations under the hidden hero timer, 4 s at pastHero | 44-66 `cell@style`, 4-5 `data-value`, 4 `aria-label` | **0** | V writes nothing | `pixels-2026-10-04T10-27-36-488Z.json`, `…10-37-27-991Z` |
+| hold: panel timer mounted at the end pin, morph closed (m 0, opacity 0) | 44-66 / 4-5 / 4 | **0** | same | same |
+| panel show frame: 40 → 39 while closed, then the page's driver opens it; real frames with opacity > 0 | 15 frames, all the settled target | 16 frames, all the settled target | pass; 0 countdown rAF queued | `…10-27-36-488Z` |
+| hero resume, real clock: 5.5 s stopped at pastHero, back to y 0; shown − true remaining seconds per frame | 0 / 1 | 1 / 0 | pass: the original's own 0-1 s lag, no skipped-seconds roll | `…10-37-27-991Z` |
+| frozen frames hero (60 + 120 Hz, resume incl. the show frame) + panel m 1 | | | 428 shots: 0 state differences, 1 panel shot of the known background class (16059 px, delta 1) | `…10-37-27-991Z` |
+
+- The panel background class (16059 px, delta 1) is Chrome panel raster noise: it appears in C's own A/A (1 shot in
+  `…09-53-06-442Z`, hold-only build) and in cd-strip's reduced-motion A/A.
+- First-visible frame index after a resume differs by one frame in A/B and A/A alike (IntersectionObserver timing);
+  the content is identical in every case.
+
+**Reduced motion and the panel mid-points (Chrome, same harness):**
+
+| run | V vs C | C vs C (A/A) | raw |
+|---|---|---|---|
+| reduced motion, hero + panel (428 shots, 2000 frames) | 5 shots of the panel shade class, 0 state differences | 0 | `pixels-2026-10-04T10-52-30-802Z.json` |
+| reduced motion, panel, run order C V V C (169 shots per pair, all 6 pairs) | 2-4 shots of the class per C-V pair | 4 (C-C), 4 (V-V) | `pixels-2026-10-04T11-23-39-240Z.json` |
+| hero fade v 0.25/0.5/0.75/0.9 + panel m 0.25/0.5/0.75/0.9 (168 shots, 1920 frames) | 13 shots, every one also differs in the A/A, at a lower or equal shade; 0 state differences | 16 | `pixels-2026-10-04T11-26-18-141Z.json` |
+| same, reduced motion | **0** | 1 (panel shade class at m 0.75) | `pixels-2026-10-04T11-31-57-699Z.json` |
+
+- The panel shade class: always 16059 device px of the 1152x288 timer clip, largest shade 1 of 255, fill, static.
+  The C V V C run settles it: C against C and V against V show it as often as C against V (OBSERVED in our setup,
+  Chrome panel raster, cause unknown). Five numbers: largest shade 1, share beyond the A/A 0 % (no pixel differs by more
+  than 8 levels), area 0 CSS px, fill, static: T1 (inside the original's own A/A).
+- The hero fade at v 0.75 differs between two loads of C as well (up to shade 134, the page's other moving parts behind
+  the fading copy); V's differing shots are a subset of the A/A's.
+- Reduced motion, hero fade v 0.75 and 0.9: the hero clock is not painted in either arm (42 blank shots in both, equal).
+
+**Cost card (Chrome, counts per 1 s of the page at rest, median of 2-3 loads per arm; ABBA order; `tools/costcard.mjs`
+`--event times:sec`; cards in `out/countdown-faces/cc/costcard-{top,pastHero,end}.md`):**
+
+| where | timer fires | main frames | style recalcs | elements restyled | script calls | paints |
+|---|---|---|---|---|---|---|
+| top (hero clock in view, panel hidden) | C 5 · V 4 | C 50.5 · V 48.5 | 50.5 · 48.5 | 436 · 402 | 15 · 11 | 173 · 174 |
+| pastHero (no clock in view, page at rest) | C 4 · V **2** | C 8 · V **6** | 8 · 6 | 108 · **67** | 10 · **4** | 11 · 9 |
+| end (pin, morph closed) | C 2 · V **0** | C 60 · V 60 | 60 · 60 | 407 · 390 | 6 · **0** | 121 · 120 |
+
+- Countdown ticks per 6 s window (`cc-check`): top C 19 · V 12 (the hidden panel clock stops), pastHero C 12 · V 0, end
+  C 12 · V 0.
+- pastHero is the case the frame audit named: the two intervals cost 2 main frames/s at rest there, and V removes them
+  (8 → 6 frames/s; the 6 left are the page's avatar animations). At the end pin the page renders 60 frames/s for other
+  reasons, so V saves the timer work (2 fires, 6 calls, about 17 restyled elements per second) but no frames. At the top the
+  panel's interval stops; the hero clock is in view and ticks as before.
+- The 60 s label refresh: at most one timer fire per minute per stopped clock, writing two attributes on an off-screen
+  element. A 6 s window cannot show it; it is 1/60 of a fire per second, against the 2 fires per second it replaces.
+- With 2-3 loads per arm and no A/A arm, the card's tolerance is the 2-count floor: the frame and fire changes are at
+  that floor (-2), and the per-load counts don't overlap (pastHero main frames per 6 s: C 48-49, V 37-39).
+
+**WebKit (iOS Simulator, 15 Pro Max, counts and frozen frames; Simulator ms never count, F-084):**
+
+| check | C | V | raw (`out/countdown-faces/`) |
+|---|---|---|---|
+| frozen frames hero + panel + panel m 0.25-0.9, normal motion (29 shots, A/A built in) | | 0 px, 0 state vs C and vs C-again; A/A 0 | `simpx/simpx-2026-10-04T11-54-23-716Z.json` |
+| same, Reduce Motion on | | 0 / 0; A/A 0 | `simpx/simpx-2026-10-04T11-52-08-620Z.json` |
+| pastHero, 4 s mutations (page at rest, no clock in view) | 154 (110 cell `style`, 8 `data-value`, 8 `aria-label`, 28 avatar carousel) | **28** (the avatar carousel only) | `f146/f146-2026-10-04T11-41-12-894Z.json` |
+| pastHero, 5 s Timeline: rendering frames / layouts / countdown style invalidations | 237 / 68 / 10 | 216 / 58 / 0 | same |
+| top window (hero clock in view): rendering frames, style recalcs, layouts, paints, countdown rAF | 202, 212, 146, 169, 4 | 204, 210, 143, 164, 4 | `sim-top-2026-10-04T11-42-05-893Z.json` |
+
+At the top V equals C, as it should: the hero clock is in view and live. Past the hero WebKit loses every countdown write.
+
+**Landing basis (T-055, memory "less-work landing rule"):** a "does less work" fix lands on cost-card counts plus a short
+phone no-worse check. The countdown finger A/B is waived.
+- The counts are above.
+- The visual is T0 on the Simulator. On Chrome it is T1: the only differences are the panel shade class and the hero-fade
+  phase, and the original shows both against itself.
+- The phone no-worse check is not run yet. The lead's order for this build was "no phone block", and fix-cd-roll-ca's
+  P-093 top-window trace has the phone first. The lead decides whether and when it runs.
+
+**Not covered:** tab-hidden timing (unchanged by design, PR-017's path); a clock that is held while a roll is mid-flight
+when the clock hides (`__crStop()` ends the roll, the same as C's snap does at that moment).
 
 ## Overlap with other topics (review r1 Blocking 3)
 
@@ -1051,8 +1134,16 @@ rebuilt once cd-strip lands, on the lead's order.
 
 ## Files
 
-- `patch.diff`: the PoC (+79 -16).
-- `results.json`: round-2 counts (n=3, tick-aligned), call tree, pixels (by kind, real frame stamps), Simulator,
+- `patch.diff`: part (b) + the stopped interval on the C stack (+107 -10), made with
+  `node tools/fix.mjs diff countdown-faces --on cd-roll-ca` (its header names the base sha256 `3d70edb5bf31…`).
+- `patch-x1-baseline.diff`: the earlier X1 PoC on the plain baseline (+79 -16), history.
+- `pixels.mjs`: frozen-frame, hold and show-frame harness for C vs V (Chrome; copy of cd-roll-ca's, used with credit).
+- `simpx.mjs`: the Simulator frozen-frame harness (copy of cd-strip's), arms C, V, A/A.
+- `cc-run.mjs`, `cc-check.mjs`, `cc-records.mjs`: cost card windows at top / pastHero / end (copies of cd-roll-ca's
+  comp-check and records scripts, used with credit) for `tools/costcard.mjs`.
+- `sim-top.mjs`: Simulator top-window counts (copy of cd-roll-ca's sim-counts.mjs).
+- `results.json`: `bOnC` holds the current build's checks (served hashes, pixels, cost card, Simulator counts); the rest is
+  the X1-era record: round-2 counts (n=3, tick-aligned), call tree, pixels (by kind, real frame stamps), Simulator,
   and the served sha256 per arm; round-1 data under `round1`, labelled. Baseline snapshot `b1789284481295-4ad4a84a`.
 - `chain.mjs`: the spring model. It compares the round-2 replay draft and the shipped design with the original.
 - `mkresults.mjs`: builds `results.json` from the probe outputs in `out/countdown-faces/`.
@@ -1062,6 +1153,6 @@ rebuilt once cd-strip lands, on the lead's order.
 - `x1.mjs`: the X1 segment card sequence (Simulator `sim`, phone `phone`, `score`); see "X1 phone segment card".
 - `x1-stage1.json`: X1 stage 1 counts (Simulator, n=2 per arm); see "Stage 1 readout".
 - `x1-block.mjs`: the X1 stage-2 phone block driver (parts A, B, C); see "Stage 2 block plan".
-- `f146.mjs`: the F-146 Simulator probe (mutations and Timeline invalidation stacks at pastHero, base vs PoC).
+- `f146.mjs`: the F-146 Simulator probe (mutations and Timeline invalidation stacks at pastHero); arms base/poc (X1) or C/V (current).
 - `x1-stage2.json`: the X1 stage-2 per-run window sums, counts, dt bins and long-frame counts (counted runs 1-8 and the
   attribution runs); see "Stage 2 readout".

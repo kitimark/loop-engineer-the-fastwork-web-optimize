@@ -371,6 +371,91 @@
       "kind": "tool",
       "for": "README.md X1 block plan",
       "fastworkDerived": true
+    },
+    {
+      "path": "out/countdown-faces/snap",
+      "why": "immutable snapshots C, V (and superseded V1, V2) with hashes.json, served by every (b)-on-C check",
+      "kind": "tool",
+      "for": "README.md (b) on the C stack; results.json bOnC",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T09-47-10-365Z.json",
+      "why": "hold + panel show frame (V1)",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T09-53-06-442Z.json",
+      "why": "frozen frames V1 vs C with A/A",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T10-27-36-488Z.json",
+      "why": "hold: 0 mutations while hidden (V)",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T10-37-27-991Z.json",
+      "why": "frozen frames + hero resume real clock (V)",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T10-52-30-802Z.json",
+      "why": "reduced motion hero+panel with A/A",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T11-23-39-240Z.json",
+      "why": "reduced motion panel C V V C: the shade class is A/A noise",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T11-26-18-141Z.json",
+      "why": "hero fade + panel m 0.25-0.9 with A/A",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-04T11-31-57-699Z.json",
+      "why": "same, reduced motion",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/cc",
+      "why": "cost card traces, records and cards top/pastHero/end",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/f146/f146-2026-10-04T11-41-12-894Z.json",
+      "why": "Simulator pastHero mutations and invalidations C vs V",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/sim-top-2026-10-04T11-42-05-893Z.json",
+      "why": "Simulator top window counts C vs V",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/simpx/simpx-2026-10-04T11-54-23-716Z.json",
+      "why": "Simulator frozen frames C vs V with A/A, normal motion",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
+    },
+    {
+      "path": "out/countdown-faces/simpx/simpx-2026-10-04T11-52-08-620Z.json",
+      "why": "Simulator frozen frames C vs V with A/A, Reduce Motion",
+      "kind": "result",
+      "for": "README.md (b) on the C stack; results.json bOnC"
     }
   ]
 }

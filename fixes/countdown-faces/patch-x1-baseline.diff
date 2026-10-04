@@ -1,0 +1,201 @@
+# fastwork mirror fix: countdown-faces
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply countdown-faces
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3805,6 +3805,17 @@
+   let n = ((t % 10) + 10) % 10,
+     r = (10 + e - n) % 10;
+   return r > 5 ? r - 10 : r;
++}
++/*countdown-faces: slot k shows the face at cell position p = round(v)-1..round(v)+1 with p = k (mod 3), so the
++two faces that can be inside the cell (floor(v), ceil(v)) always have a slot. Its digit is p mod 10 and its offset is
++KE(digit, v), the same number the original face of that digit gets. Offsets are parked at +-1 cell: .digit has
++overflow:hidden, so a face >= 1 cell away shows nothing, as at rest, where the original puts the neighbours at +-1.*/
++function __cdSlotFace(e, t) {
++  let n = Math.round(t),
++    r = n - 1 + ((((e - n + 1) % 3) + 3) % 3),
++    i = ((r % 10) + 10) % 10,
++    a = KE(i, t);
++  return [i, a < -1 ? -1 : a > 1 ? 1 : a];
+ }
+ function qE(e, t) {
+   return Math.floor(Math.abs(Math.floor(e)) / t) % 10;
+@@ -3816,6 +3827,12 @@
+ }
+ var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
+   XE = Array.from({ length: 10 }, (e, t) => t),
++  /*countdown-faces: 3 face slots per digit instead of 10 (current, next, one spare for the roll)*/
++  __cdSlots = [0, 1, 2],
++  /*countdown-faces: the hero component (fD) shadows N/z/s with its own locals; it reaches state/set/get through these*/
++  __cdState = N,
++  __cdSet = z,
++  __cdGet = s,
+   ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
+   QE = h(
+     `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
+@@ -3824,21 +3841,35 @@
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-faces: false while the countdown can't be seen (faded out, scrolled away, mounted at opacity 0)*/
++    __cdLive = R(() => r.animate !== !1),
++    /*countdown-faces: the spring's current value while the digit is out of sight (null while `a` holds it)*/
++    __cdV = null;
+   b(() => {
+     let e = s(i);
+     if (YE.current) {
+-      z(a, e, !0);
++      (z(a, e, !0), (__cdV = null));
+       return;
+     }
+-    let t = { value: o(() => s(a)), velocity: 0 },
++    /*countdown-faces: the original's spring, frame for frame (same rAF frames, same steps, same start value); out of
++    sight it only computes: no state write, so no Svelte flush, no face style writes, no style recalc*/
++    let t = { value: __cdV ?? o(() => s(a)), velocity: 0 },
+       n = performance.now(),
+-      r = window.requestAnimationFrame(function i(o) {
+-        let s = GE(t, e, o - n);
+-        ((n = o), (t = s.state), z(a, t.value, !0), s.done || (r = window.requestAnimationFrame(i)));
++      r = window.requestAnimationFrame(function i(__o) {
++        let l = GE(t, e, __o - n);
++        ((n = __o), (t = l.state));
++        o(() => s(__cdLive)) ? (z(a, t.value, !0), (__cdV = null)) : (__cdV = t.value);
++        l.done || (r = window.requestAnimationFrame(i));
+       });
+     return () => window.cancelAnimationFrame(r);
+   });
++  /*countdown-faces: back in sight: show the spring's current value at once. The hero's exit function and the panel's
++  morph spring run inside a frame (rAF), so this lands in the frame that shows the clock again; if the spring's own
++  callback for that frame runs later in it, that callback writes the frame's value*/
++  b(() => {
++    s(__cdLive) && __cdV !== null && (z(a, __cdV, !0), (__cdV = null));
++  });
+   var u = QE(),
+     d = e(u),
+     h = V(d, 2),
+@@ -3848,7 +3879,7 @@
+       (_(
+         i,
+         16,
+-        () => XE,
++        () => __cdSlots,
+         (e) => e,
+         (n, r) => {
+           var i = ZE();
+@@ -3856,10 +3887,13 @@
+           var u = e(i, !0);
+           (M(i),
+             l(
+-              (e) => {
+-                ((o = S(i, ``, o, e)), t(u, r));
++              (e, d) => {
++                ((o = S(i, ``, o, e)), t(u, d));
+               },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
++              [
++                () => ({ transform: `translateY(${__cdSlotFace(r, s(a))[1] * s(c)}px)` }),
++                () => __cdSlotFace(r, s(a))[0],
++              ],
+             ),
+             f(n, i));
+         },
+@@ -3894,6 +3928,9 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
+       });
+     },
+   ),
+@@ -3920,6 +3957,10 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
++    /*countdown-faces: the digits roll only while the call site shows the clock (optional `active` prop: the hero
++    passes "not faded out and near the viewport", the morph panel "not at opacity 0"). A background tab needs no
++    gate: the browser runs no rAF callbacks there, so the original already rolls nothing (and keeps its look on return)*/
++    __cdLive = R(() => r.active !== !1),
+     u = R(() => (s(c) === null ? null : rD(s(c)))),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+@@ -3958,6 +3999,9 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdLive);
++            },
+           });
+         },
+         p = (e) => {
+@@ -4026,7 +4070,12 @@
+         ),
+         f(n, i));
+     },
+-    o = R(WT);
++    o = R(WT),
++    /*countdown-faces: false while the hero countdown can't be seen: --exit-opacity is 0 (.hero-copy, which holds the
++    countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))) or div.hero (x, the element the exit callback
++    writes --exit-opacity on) is more than one viewport away (the lead of apple.com's play ranges). Set in the exit callback below, in the same frame as the scroll, so the
++    first frame that shows the clock again already has the right digits*/
++    __cdHeroShown = __cdState(!0);
+   function c(e) {
+     return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
+   }
+@@ -4162,13 +4211,16 @@
+       o = !1,
+       s = () => {
+         if (((i = 0), e.matches)) {
+-          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
++          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``), __cdSet(__cdHeroShown, !0));
+           return;
+         }
+         let t = b.getBoundingClientRect(),
+           n = Math.max(1, t.height - window.innerHeight),
+-          r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
+-        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
++          r = 1 - Math.min(n, Math.max(0, -t.top)) / n,
++          __q = x.getBoundingClientRect();
++        (x.style.setProperty(`--exit-opacity`, String(r)),
++          (x.style.pointerEvents = r < 0.05 ? `none` : ``),
++          __cdSet(__cdHeroShown, r > 0 && __q.bottom > -window.innerHeight && __q.top < 2 * window.innerHeight));
+       },
+       c = () => {
+         i ||= window.requestAnimationFrame(s);
+@@ -4330,7 +4382,11 @@
+     be = e(ye, !0);
+   (M(ye), M(W));
+   var xe = V(W, 2);
+-  cD(xe, {});
++  cD(xe, {
++    get active() {
++      return __cdGet(__cdHeroShown);
++    },
++  });
+   var Se = V(xe, 2),
+     Ce = e(Se),
+     we = e(Ce),
+@@ -13157,7 +13213,14 @@
+         m = e(p, !0);
+       M(p);
+       var h = V(p, 2);
+-      (cD(e(h), { inverse: !0 }), M(h));
++      (cD(e(h), {
++        inverse: !0,
++        /*countdown-faces: .start-selling-morph-panel has opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph = JM(x)*/
++        get active() {
++          return s(x) > 0.08;
++        },
++      }),
++        M(h));
+       var g = V(h, 2),
+         v = e(g),
+         __ctaBellC = e(v),
