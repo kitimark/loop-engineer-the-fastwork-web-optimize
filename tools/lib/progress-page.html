@@ -83,6 +83,16 @@ details li { margin: 3px 0; color: var(--muted); word-break: break-word; }
 .empty { color: var(--muted); }
 .tablewrap { overflow-x: auto; }
 section[data-item] { scroll-margin-top: 80px; }
+/* T-079: the Versions section on /build */
+ul.versions { display: grid; gap: 12px; }
+ul.versions li.version { margin: 0; padding: 16px 18px; border: 1px solid var(--line); }
+li.version.current { border-left: 4px solid var(--ok); }
+.vhead { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.vnum { font-size: 12px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
+li.version > div, li.version > p { margin-top: 6px; }
+.tryit { word-break: break-all; }
+.lannote { color: var(--muted); font-size: .9em; }
+.hashes { font-size: 12px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 </style>
 </head>
 <body>
@@ -264,8 +274,54 @@ function gainRow(t, b, extra) {
     el('td', null, el('span', { class: 'tag ' + b.tag, text: b.tag }), el('div', { class: 'note', text: [b.driver].concat(extra || [], b.ref ? [b.ref] : []).join(' · ') }))));
 }
 function writeupLink(w) { return w ? el('a', { href: w.url, text: 'Write-up' }) : null; }
-function renderBuild(m, b) {
-  if (!b) { m.appendChild(el('p', { class: 'empty', text: 'No best build is written up yet (the "build" part of fixes/PROGRESS.json; mgmt-ops fills it in).' })); return; }
+
+// T-079 (user T-079): every version, oldest first: what it improves, its numbers vs the version before, its cost and
+// a Try-it link. The server puts this Mac's Wi-Fi address into the link now (I-073); only such a link is followed.
+var TRY_HREF = /^https?:\/\/(\d{1,3}\.){3}\d{1,3}:\d{2,5}\/[^\s"<>]*$/;
+function tryItLine(t) {
+  var line = el('div', { class: 'tryit' }, el('b', { text: 'Try it: ' }));
+  if (!t) { line.appendChild(document.createTextNode('no page given')); return line; }
+  if (t.none !== undefined) { line.appendChild(document.createTextNode('no page (' + t.none + ')')); return line; }
+  if (t.url && TRY_HREF.test(t.url)) {
+    line.appendChild(el('a', { href: t.url, target: '_blank', rel: 'noreferrer', title: 'Try it: phone link (' + t.placeholder + '), with this Mac’s Wi-Fi address now', text: t.url }));
+    if (t.running === false) line.appendChild(el('span', { class: 'lannote', text: ' (nothing answers on this port now)' }));
+  } else {
+    line.appendChild(document.createTextNode(t.placeholder));
+    line.appendChild(el('span', { class: 'lannote', text: ' (Wi-Fi address not available)' }));
+  }
+  if (t.server) line.appendChild(el('span', { class: 'lannote', text: ' · server: ' + t.server }));
+  return line;
+}
+function renderVersions(m, vs) {
+  if (!vs || !vs.length) return;
+  m.appendChild(el('h2', { class: 'section', text: 'Versions, oldest first' }));
+  var ul = el('ul', { class: 'plain build versions' });
+  vs.forEach(function (v, i) {
+    var li = el('li', { class: 'card version' + (v.current ? ' current' : ''), 'data-version': v.id },
+      el('div', { class: 'vhead' }, el('span', { class: 'vnum', text: String(i + 1) }), el('b', { text: v.name }),
+        v.base ? el('span', { class: 'chip muted', text: 'the original page' }) : null,
+        v.current ? el('span', { class: 'chip ok', text: 'today’s best build' }) : null,
+        v.toTry ? el('span', { class: 'chip warn', text: 'to try (not landed)' }) : null),
+      el('div', { class: 'q', text: 'since ' + hhmm(v.since) + ' ' + String(v.since).slice(0, 10) }));
+    if (v.improvement) li.appendChild(el('p', { class: 'fixes', text: v.improvement }));
+    if (v.verdict) li.appendChild(el('div', null, el('b', { text: 'Verdict: ' }), v.verdict));
+    if (v.fixes.length) li.appendChild(el('div', { class: 'q', text: 'Adds: ' + v.fixes.map(function (f) { return f.title; }).join('; ') }));
+    if (v.result.length) {
+      li.appendChild(el('div', { class: 'q', text: 'vs ' + (v.previous || 'the version before') + ':' }));
+      var t = el('table', { class: 'nums' });
+      v.result.forEach(function (c) { gainRow(t, c, (c.when ? ['measured ' + hhmm(c.when) + ' ' + String(c.when).slice(0, 10)] : []).concat(c.how ? [c.how] : [])); });
+      li.appendChild(el('div', { class: 'tablewrap' }, t));
+    } else if (!v.base) li.appendChild(el('div', { class: 'q', text: 'No number vs the version before yet.' }));
+    if (v.cost) li.appendChild(el('div', null, el('b', { text: 'Cost: ' }), v.cost));
+    li.appendChild(tryItLine(v.tryIt));
+    if (v.hashes) li.appendChild(el('div', { class: 'hashes', text: ['js', 'css'].filter(function (k) { return v.hashes[k]; }).map(function (k) { return k + ' ' + v.hashes[k]; }).join(' · ') }));
+    ul.appendChild(li);
+  });
+  m.appendChild(el('section', { 'aria-label': 'Versions' }, ul));
+}
+
+function renderBuild(m, b, vs) {
+  if (!b) { m.appendChild(el('p', { class: 'empty', text: 'No best build is written up yet (the "build" part of fixes/PROGRESS.json; mgmt-ops fills it in).' })); renderVersions(m, vs); return; }
   var head = el('section', { class: 'card goal', 'aria-label': 'Best build' }, el('p', null, el('b', { text: b.name })),
     el('div', { class: 'q', text: 'The best build since ' + hhmm(b.since) + ' ' + String(b.since).slice(0, 10) + ' · ' + b.applied.length + ' fix' + (b.applied.length === 1 ? '' : 'es') + ' in it' }));
   if (b.summary) head.appendChild(el('p', { class: 'fixes', text: b.summary }));
@@ -290,6 +346,7 @@ function renderBuild(m, b) {
     b.combined.forEach(function (c) { gainRow(t, c, ['measured ' + hhmm(c.when) + ' ' + String(c.when).slice(0, 10)].concat(c.how ? [c.how] : [])); });
     m.appendChild(el('section', { class: 'card', 'aria-label': 'Whole build' }, el('div', { class: 'tablewrap' }, t)));
   } else m.appendChild(el('p', { class: 'empty', text: 'Not measured as a whole yet.' }));
+  renderVersions(m, vs);
   m.appendChild(el('h2', { class: 'section', text: 'Tried, not applied' }));
   var tu = el('ul', { class: 'plain card build' });
   b.tried.forEach(function (x) {
@@ -319,7 +376,7 @@ function render(v) {
 
   var m = document.getElementById('main');
   m.replaceChildren();
-  if (BUILD_PAGE) { renderBuild(m, v.build); return; }
+  if (BUILD_PAGE) { renderBuild(m, v.build, v.versions); return; }
   if (v.goal || v.complaints.length) {
     var g = el('section', { class: 'card goal', 'aria-label': 'Goal' });
     if (v.goal) g.appendChild(el('p', { text: v.goal }));

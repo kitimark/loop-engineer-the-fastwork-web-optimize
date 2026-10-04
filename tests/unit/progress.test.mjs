@@ -335,3 +335,143 @@ test('I-048 gatherLive: the real shared group through lock.mjs (live readers onl
     assert.match(out, /Chrome: fix-a \(w2, since \d\d:\d\dZ\), fix-b \(w1, since \d\d:\d\dZ\) \(shared lane 3\/4\); joins closed \(fix-c waits for Chrome alone\), 1 waiting \(fix-c\)/);
   } finally { try { ghost.kill('SIGKILL'); } catch {} }
 });
+
+// ---- T-079: the Versions section on /build ---------------------------------------------------------------------
+
+function withVersions() {
+  const p = sample();
+  p.build = { name: 'Stack 6', since: '2026-10-02T08:00:00Z', fixes: ['cdwc'] };
+  p.versions = [
+    { id: 'v0', name: 'Original page', since: '2026-10-01T00:00:00Z', improvement: 'The page as the site serves it.',
+      hashes: { js: '4606120cf392', css: '27776f3d4138' }, tryIt: { port: 5301, server: 'baseline' } },
+    { id: 'st6-rb', name: 'Stack 6', since: '2026-10-02T08:00:00Z', improvement: 'The countdown no longer repaints the end panel.', fixes: ['cdwc'], verdict: 'smoother', best: true,
+      result: [{ what: 'frames over 50 ms', before: '4-9', after: '0-2', tag: 'OBSERVED', driver: 'scripted scroll', when: '2026-10-02T08:40:00Z', how: 'phone block A1', ref: 'P-029' }],
+      cost: 'nothing visible; 2 KB more CSS', hashes: { js: '59b23b3f57fd', css: 'd22542d0b5f8' }, tryIt: { port: 5302, scheme: 'https', path: '/?v=2' } },
+    { id: 'gpu', name: 'GPU preview', since: '2026-10-03T08:00:00Z', improvement: 'The end morph runs on the GPU.',
+      result: [{ what: 'frames over 34 ms', before: '3', after: '1', tag: 'UNRESOLVED', driver: 'robot finger' }],
+      cost: 'none', landed: false, tryIt: { none: 'not served yet' } },
+  ];
+  return p;
+}
+const fakeLan = (u) => u.replace('//lan:', '//10.9.8.7:');
+
+test('T-079 validateProgress: versions (oldest first, baseline first) with improvement, result vs the previous, cost, hashes and a Try-it port', () => {
+  assert.deepEqual(P.validateProgress(withVersions()), []);
+  assert.deepEqual(P.validateProgress(sample()), [], 'versions are optional');
+  const bad = withVersions();
+  bad.versions[1].id = 'v0';
+  bad.versions[2].since = '2026-10-01T12:00:00Z';
+  delete bad.versions[2].improvement;
+  delete bad.versions[1].result;
+  delete bad.versions[1].cost;
+  bad.versions[1].fixes = ['nope'];
+  bad.versions[0].hashes = { js: 'XYZ', css: '27776f3d4138aa27776f3d4138' };
+  bad.versions[2].tryIt = { port: 5303, none: 'x' };
+  const e = P.validateProgress(bad).join('\n');
+  for (const re of [/versions\[1\]\.id: duplicate "v0"/, /versions\[2\]\.since: earlier than versions\[1\]/, /versions\[2\]\.improvement: required/,
+    /versions\[1\]\.result: at least one number vs the previous version/, /versions\[1\]\.cost: required/, /versions\[1\]\.fixes\[0\]: no item "nope"/,
+    /versions\[0\]\.hashes\.js: a short hex hash/, /versions\[0\]\.hashes\.css: a short hex hash/, /versions\[2\]\.tryIt: either \{port/]) assert.match(e, re);
+  for (const [tryIt, re] of [
+    [undefined, /versions\[0\]\.tryIt: required/],
+    [{ port: 80 }, /versions\[0\]\.tryIt\.port: a port number 1024-65535/],
+    [{ port: '5301' }, /versions\[0\]\.tryIt\.port: a port number 1024-65535/],
+    [{ port: 70000 }, /versions\[0\]\.tryIt\.port/],
+    [{ port: 5301, scheme: 'ftp' }, /versions\[0\]\.tryIt\.scheme: must be one of http, https/],
+    [{ port: 5301, path: 'x' }, /versions\[0\]\.tryIt\.path: a path on that server/],
+    [{ port: 5301, path: '//evil' }, /versions\[0\]\.tryIt\.path: a path on that server/],
+    [{ port: 5301, host: 'lan' }, /versions\[0\]\.tryIt: unknown field "host"/],
+    [{ none: '' }, /versions\[0\]\.tryIt\.none: required/],
+    [{ port: 5301, server: 'a b' }, /versions\[0\]\.tryIt\.server: the server's short name/],
+  ]) {
+    const p = withVersions(); p.versions[0].tryIt = tryIt;
+    assert.match(P.validateProgress(p).join('\n'), re, JSON.stringify(tryIt));
+  }
+  const url = withVersions(); url.versions[1].improvement = 'try http://lan:5302/';
+  assert.match(P.validateProgress(url).join('\n'), /versions\[1\]\.improvement: contains a url/, 'no URL in the file: the console builds it');
+  const notArr = withVersions(); notArr.versions = {};
+  assert.match(P.validateProgress(notArr).join('\n'), /^versions: must be an array/m);
+  const first = withVersions(); delete first.versions[0].result; delete first.versions[0].cost;
+  assert.deepEqual(P.validateProgress(first), [], 'the baseline needs no result or cost');
+  const long = withVersions(); long.versions[1].verdict = 'x'.repeat(81);
+  assert.match(P.validateProgress(long).join('\n'), /versions\[1\]\.verdict: too long/);
+});
+
+test('T-079 versionsView: oldest first, fixes by title, result vs the previous, Try-it resolved at render time, running or not', () => {
+  const v = P.versionsView(withVersions(), { lan: fakeLan, running: new Map([[5301, true], [5302, false]]) });
+  assert.deepEqual(v.map((x) => x.id), ['v0', 'st6-rb', 'gpu']);
+  assert.equal(v[0].base, true); assert.equal(v[1].base, false);
+  assert.equal(v[0].previous, null); assert.equal(v[1].previous, 'Original page'); assert.equal(v[2].previous, 'Stack 6');
+  assert.deepEqual(v[1].fixes, [{ id: 'cdwc', title: 'Countdown fix' }]);
+  assert.deepEqual(v[0].tryIt, { placeholder: 'http://lan:5301/', url: 'http://10.9.8.7:5301/', port: 5301, server: 'baseline', running: true, noLan: false });
+  assert.deepEqual(v[1].tryIt, { placeholder: 'https://lan:5302/?v=2', url: 'https://10.9.8.7:5302/?v=2', port: 5302, server: null, running: false, noLan: false });
+  assert.deepEqual(v[2].tryIt, { none: 'not served yet' });
+  assert.deepEqual(v[0].hashes, { js: '4606120cf392', css: '27776f3d4138' });
+  assert.equal(v[2].hashes, null);
+  assert.deepEqual(v.map((x) => x.verdict), [null, 'smoother', null]);
+  assert.deepEqual(v.map((x) => x.current), [false, true, false], 'the one version with "best": true is today\'s best build, not the newest');
+  assert.deepEqual(v.map((x) => x.toTry), [false, false, true], '"landed": false is a page to try');
+  // no Wi-Fi address now (the resolver throws, or hands the placeholder back): no link, the placeholder stays
+  for (const lan of [() => { throw new Error('no LAN address'); }, (u) => u]) {
+    const off = P.versionsView(withVersions(), { lan });
+    assert.deepEqual(off[0].tryIt, { placeholder: 'http://lan:5301/', url: null, port: 5301, server: 'baseline', running: null, noLan: true });
+  }
+  assert.deepEqual(P.versionsView(sample()), []);
+});
+
+test('T-079 the best-build chip: only "best": true, at most one; none or several -> no chip; "to try" by landed:false or the verdict', () => {
+  const none = withVersions(); delete none.versions[1].best;
+  assert.deepEqual(P.validateProgress(none), [], 'no "best" is valid');
+  assert.deepEqual(P.versionsView(none).map((x) => x.current), [false, false, false], 'no flag: no chip, not the newest');
+  const two = withVersions(); two.versions[0].best = true;
+  assert.match(P.validateProgress(two).join('\n'), /versions: "best": true on versions\[0\], versions\[1\]; at most one version/);
+  assert.deepEqual(P.versionsView(two).map((x) => x.current), [false, false, false], 'several flags: no chip');
+  const both = withVersions(); both.versions[2].best = true; delete both.versions[1].best;
+  assert.match(P.validateProgress(both).join('\n'), /versions\[2\]: "best": true and "landed": false/);
+  const str = withVersions(); str.versions[1].best = 'yes'; str.versions[2].landed = 'no';
+  const e = P.validateProgress(str).join('\n');
+  assert.match(e, /versions\[1\]\.best: true or false/); assert.match(e, /versions\[2\]\.landed: true or false/);
+  const verdict = withVersions(); delete verdict.versions[2].landed; verdict.versions[2].verdict = 'to try; not landed';
+  assert.equal(P.versionsView(verdict)[2].toTry, true, 'a verdict starting "to try" marks it too');
+  const landed = withVersions(); delete landed.versions[2].landed;
+  assert.equal(P.versionsView(landed)[2].toTry, false);
+  // main's v5 (e5a1c2df): no landed flag, the verdict says nothing; only the name carries "(to try; not landed)"
+  const byName = withVersions(); delete byName.versions[2].landed;
+  byName.versions[2].name = 'GPU preview c0c8ad4e (to try; not landed)'; byName.versions[2].verdict = 'less work at rest and in the hero; not timed as a whole';
+  assert.deepEqual(P.validateProgress(byName), []);
+  assert.deepEqual(P.versionsView(byName).map((x) => x.toTry), [false, false, true], 'the name marks it when there is no flag');
+  byName.versions[2].landed = true;
+  assert.equal(P.versionsView(byName)[2].toTry, false, 'an explicit "landed": true wins over the words');
+  const bestWords = withVersions(); bestWords.versions[1].name = 'Stack 6 (was to try)';
+  assert.equal(P.versionsView(bestWords)[1].toTry, false, 'the best build is never "to try"');
+});
+
+test('T-079 buildView and renderText: versions in the model; the text shows the lan placeholder, never the address', () => {
+  const v = P.buildView({ progress: withVersions(), now: NOW, lan: fakeLan, versionPorts: new Map([[5301, true], [5302, false]]) });
+  assert.equal(v.versions.length, 3);
+  assert.equal(v.versions[0].tryIt.url, 'http://10.9.8.7:5301/');
+  const t = P.renderText(v);
+  const i = t.indexOf('VERSIONS (oldest first)');
+  assert.ok(i > 0, t);
+  const block = t.slice(i);
+  assert.match(block, /1\. Original page \(since 00:00Z 2026-10-01\): The page as the site serves it\.\n {6}try it: http:\/\/lan:5301\/ \[baseline\] \(running\)\n {6}js 4606120cf392 · css 27776f3d4138/);
+  assert.match(block, /2\. Stack 6 \(since 08:00Z 2026-10-02; today's best build\): The countdown no longer repaints the end panel\.\n {6}verdict: smoother\n {6}adds: Countdown fix\n {6}vs Original page: frames over 50 ms: 4-9 -> 0-2 \(OBSERVED, scripted scroll; measured 08:40Z 2026-10-02, phone block A1; P-029\)\n {6}cost: nothing visible; 2 KB more CSS\n {6}try it: https:\/\/lan:5302\/\?v=2 \(not running now\)/);
+  assert.match(block, /3\. GPU preview \(since 08:00Z 2026-10-03; to try \(not landed\)\):[^\n]*\n(?: {6}[^\n]*\n)* {6}try it: none \(not served yet\)/);
+  assert.match(block, /vs Stack 6: frames over 34 ms: 3 -> 1 \(UNRESOLVED, robot finger\)/, 'a result without when');
+  assert.ok(!t.includes('10.9.8.7'), 'the LAN address stays off the text');
+  assert.deepEqual(P.buildView({ progress: sample(), now: NOW }).versions, []);
+});
+
+test('T-079 probePorts: true for a port that accepts a connection on this Mac, false for a closed one, quickly', async () => {
+  const net = await import('node:net');
+  const srv = net.createServer((c) => c.destroy());
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const open = srv.address().port;
+  const probe = net.createServer(); await new Promise((r) => probe.listen(0, '127.0.0.1', r));
+  const closed = probe.address().port; await new Promise((r) => probe.close(r));
+  try {
+    const t0 = Date.now();
+    const m = await P.probePorts([open, closed, open], { timeoutMs: 400 });
+    assert.equal(m.get(open), true); assert.equal(m.get(closed), false); assert.equal(m.size, 2);
+    assert.ok(Date.now() - t0 < 2000);
+  } finally { await new Promise((r) => srv.close(r)); }
+});

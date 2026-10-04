@@ -169,6 +169,74 @@ test('I-061: /build (the best build, the same top bar with "Best build" on), /ap
   } finally { await s.stop(); }
 });
 
+test('T-079: /build shows Versions oldest first (improvement, result vs the previous, cost, hashes, Try-it with the Wi-Fi address now, running or not); text keeps lan', async () => {
+  const net = await import('node:net');
+  const up = net.createServer((c) => c.destroy());
+  await new Promise((r) => up.listen(0, '127.0.0.1', r));
+  const upPort = up.address().port;
+  const gone = net.createServer(); await new Promise((r) => gone.listen(0, '127.0.0.1', r));
+  const downPort = gone.address().port; await new Promise((r) => gone.close(r));
+  const st = tempDir('fw-versions-e2e-');
+  const pv = {
+    ...progress,
+    build: { name: 'Stack 6', since: '2026-10-02T08:00:00Z', fixes: ['cdwc'] },
+    versions: [
+      { id: 'v0', name: 'Original page', since: '2026-10-01T00:00:00Z', improvement: 'The page as the site serves it.', hashes: { js: '4606120cf392', css: '27776f3d4138' }, tryIt: { port: upPort, server: 'baseline' } },
+      { id: 'st6-rb', name: 'Stack 6', since: '2026-10-02T08:00:00Z', improvement: 'The countdown no longer repaints the end panel.', fixes: ['cdwc'], verdict: 'smoother', best: true,
+        result: [{ what: 'frames over 50 ms', before: '4-9', after: '0-2', tag: 'OBSERVED', driver: 'scripted scroll', when: '2026-10-02T08:40:00Z' }],
+        cost: 'nothing visible', hashes: { js: '59b23b3f57fd', css: 'd22542d0b5f8' }, tryIt: { port: downPort, scheme: 'https', path: '/?v=2' } },
+      { id: 'gpu', name: 'GPU preview', since: '2026-10-03T08:00:00Z', improvement: 'The end morph runs on the GPU.',
+        result: [{ what: 'frames over 34 ms', before: '3', after: '1', tag: 'UNRESOLVED', driver: 'robot finger' }], cost: 'none', landed: false, tryIt: { none: 'not served yet' } },
+    ],
+  };
+  const pf = join(st, 'PROGRESS.json'); writeFileSync(pf, JSON.stringify(pv));
+  const e = { FW_STATE_DIR: st, FW_PROGRESS_FILE: pf, FW_PREDICTIONS_FILE: join(st, 'none.md'), FW_LAN_ADDRESS: '10.9.8.7' };
+  // the page's first /api/progress can take longer than loadPage's settle (it probes the Try-it ports): wait for the cards
+  const loadBuild = async (url) => {
+    const pg = await loadPage(url, '/build');
+    for (let i = 0; i < 40 && !pg.document.querySelectorAll('li').some((x) => x.getAttribute('data-version')); i++) await pg.settle(100);
+    return pg;
+  };
+  const s = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env: e, ready: (x) => { const m = x.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
+  try {
+    assert.deepEqual(node(CON, ['progress', '--check', '--file', pf], { env: e }).code, 0);
+    const pg = await loadBuild(s.url);
+    const sec = pg.document.querySelectorAll('section').find((x) => x.getAttribute('aria-label') === 'Versions');
+    assert.ok(sec, 'a Versions section');
+    const cards = sec.querySelectorAll('li').filter((x) => x.getAttribute('data-version'));
+    assert.deepEqual(cards.map((c) => c.getAttribute('data-version')), ['v0', 'st6-rb', 'gpu'], 'oldest first');
+    const [c0, c1, c2] = cards.map((c) => c.textContent);
+    assert.match(c0, /Original page/); assert.match(c0, /The page as the site serves it\./); assert.match(c0, /js 4606120cf392 · css 27776f3d4138/);
+    assert.match(c1, /today’s best build/); assert.ok(!/today’s best build/.test(c2), 'the newest version, a preview, is not the best build');
+    assert.match(c2, /to try \(not landed\)/); assert.ok(!/to try/.test(c1)); assert.match(c1, /Adds: Countdown fix/);
+    assert.match(c1, /Verdict: smoother/); assert.match(c0, /server: baseline/);
+    assert.match(c1, /vs Original page/); assert.match(c1, /frames over 50 ms/); assert.match(c1, /4-9 → 0-2/); assert.match(c1, /Cost: nothing visible/);
+    assert.match(c2, /Try it: no page \(not served yet\)/);
+    const a0 = cards[0].querySelectorAll('a').find((a) => /Try it/.test(a.getAttribute('title') || ''));
+    assert.equal(a0.getAttribute('href'), `http://10.9.8.7:${upPort}/`, 'the Wi-Fi address now');
+    assert.equal(a0.textContent, `http://10.9.8.7:${upPort}/`);
+    assert.equal(a0.getAttribute('target'), '_blank');
+    assert.ok(!/not running/.test(c0));
+    const a1 = cards[1].querySelectorAll('a').find((a) => /Try it/.test(a.getAttribute('title') || ''));
+    assert.equal(a1.getAttribute('href'), `https://10.9.8.7:${downPort}/?v=2`);
+    assert.match(c1, /nothing answers on this port now/);
+    const t = node(CON, ['progress'], { env: e }).stdout;
+    assert.match(t, new RegExp(`try it: http://lan:${upPort}/ \\[baseline\\] \\(running\\)`));
+    assert.ok(!t.includes('10.9.8.7'), 'the text keeps the lan placeholder');
+    const page = await request(new URL('build', s.url).href);
+    assert.ok(!/https?:\/\/(?!localhost|127\.0\.0\.1)[a-z0-9]/i.test(page.text.replace(/https?:\/\/(fonts|cdn)[^"' ]*/g, '')), 'no literal outside URL in the page source');
+  } finally { await s.stop(); await new Promise((r) => up.close(r)); }
+  // no Wi-Fi address: the placeholder as text, no link, and the note threads use too (ts-i119)
+  const s2 = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env: { ...e, FW_LAN_ADDRESS: '', FW_LAN_IFACES: '{}' }, ready: (x) => { const m = x.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
+  try {
+    const pg = await loadBuild(s2.url);
+    const card = pg.document.querySelectorAll('li').find((x) => x.getAttribute('data-version') === 'v0');
+    assert.ok(card, `the v0 card (page: ${pg.document.getElementById('main').textContent.slice(0, 300)})`);
+    assert.match(card.textContent, new RegExp(`Try it: http://lan:${upPort}/ \\(Wi-Fi address not available\\)`));
+    assert.ok(!card.querySelectorAll('a').some((a) => /lan:/.test(a.getAttribute('href') || '')), 'no link to the placeholder');
+  } finally { await s2.stop(); }
+});
+
 test('I-060: "Right now" says what the phone does (lock.mjs doing), for whom and the time left; the API and the text; no LAN address', async () => {
   const lk = (a) => node(tool('lock.mjs'), a, { env });
   const d = lk(['doing', 'iphone', '--owner', 'iphone-runner', '--text', 'timing test for the blur change (PR-003 A), run 3 of 9', '--for', 'wi-stack', '--eta-min', '20']);

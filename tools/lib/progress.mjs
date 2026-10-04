@@ -48,8 +48,27 @@
 //     "combined": [{ "what": "<metric, plain>", "before": "<the original page>", "after": "<this build>",
 //                    "tag": "OBSERVED|…", "driver": "<scripted|robot finger|finger|…>", "when": "<ISO: measured>",
 //                    "how": "<runs, block, phone, plain>", "ref": "P-062", "note": "<e.g. threshold-sensitive>" }]
-//   }
+//   },
+//   "versions": [{                               // optional (user T-079): the original page and every best build since,
+//     "id": "<slug>", "name": "<plain name>",   //   OLDEST FIRST ([0] is the original page); `since` never goes back
+//     "since": "<ISO: when it became the best build>",
+//     "improvement": "<what this version changes, one plain line>",
+//     "verdict": "<optional: a few words, e.g. smoother at rest; scrolling no-worse>",
+//     "best": true,                              // optional: today's best build (at most one version; no chip without it)
+//     "landed": false,                           // optional: a page to try, not landed (shown "to try (not landed)");
+//                                                //   without the flag, "to try"/"not landed" in name or verdict does it
+//     "fixes": ["<item id>", …],                 // optional: the items it adds over the previous version
+//     "result": [{ …the fields of build.combined, when/how optional… }],   // vs the PREVIOUS version; [0] may omit it
+//     "cost": "<what it costs: visual change, bytes, risk, or none>",      // [0] may omit it
+//     "hashes": { "js": "<hex>", "css": "<hex>" },                         // optional: what it serves (short sha256)
+//     "tryIt": { "port": 5301, "scheme": "http|https", "path": "/",        // the page to try, on this Mac's long-lived
+//                "server": "<its short name, a label>" }                   //   server; never a URL in the file
+//              | { "none": "<why there is no page to try>" }
+//   }]
 // }
+// Try-it (T-079): the console builds <scheme>://lan:<port><path> and puts this Mac's Wi-Fi address in at render time,
+// like a console step's URL (I-073), and says whether anything answers on that port now (probePorts). The text output
+// keeps the lan placeholder.
 // The /build page (I-061): in the build (each fix, its own phone gain and tag), the whole build vs the original (with
 // when and how it was measured), and "tried, not applied": every dropped item and every item with a whyNot, with
 // its reason and a link to its write-up (served read-only by the console at /writeup/<path>).
@@ -58,6 +77,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { REPO } from './paths.mjs';
 import { redact } from './redact.mjs';
+import { resolveLanUrl, isLanPlaceholder } from './lan.mjs';
 
 export const SCHEMA = 'fw-progress/1';
 export const progressFile = () => process.env.FW_PROGRESS_FILE || join(REPO, 'fixes', 'PROGRESS.json');
@@ -85,6 +105,9 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/;
 const REF = /^(P-\d{3}[a-z]?|F-\d{3}|C-\d{3}|I-\d{3})$/;
 /** A write-up the console may serve (I-061): a .md file under fixes/ or research/, no '..', no hidden parts. */
 export const WRITEUP = /^(fixes|research)(\/(?!\.)[A-Za-z0-9_][A-Za-z0-9._-]{0,80}){1,4}\.md$/;
+/** T-079: a version's served-file hash (a short sha256 prefix) and its Try-it path (one leading "/", no "//"). */
+const HASH = /^[0-9a-f]{7,16}$/;
+const TRY_PATH = /^\/(?!\/)[A-Za-z0-9._~!$&'()*+,;=:@/?%-]{0,200}$/;
 
 // ---- personal data -----------------------------------------------------------------------------------
 
@@ -220,6 +243,58 @@ export function validateProgress(p) {
     str(it.whyNot, `${at}.whyNot`, { optional: true, max: 200 });
     if (it.writeup !== undefined && !WRITEUP.test(String(it.writeup))) E.push(`${at}.writeup: a .md file under fixes/ or research/ (like fixes/<topic>/README.md)`);
   });
+  // T-079: every version, oldest first
+  if (p.versions !== undefined) {
+    const vids = new Set();
+    let prev = null;
+    arr(p.versions, 'versions', { max: 30 }).forEach((v, i) => {
+      const at = `versions[${i}]`;
+      if (!v || typeof v !== 'object' || Array.isArray(v)) { E.push(`${at}: must be an object`); return; }
+      if (!SLUG.test(String(v.id))) E.push(`${at}.id: a short slug (a-z, 0-9, -)`);
+      else if (vids.has(v.id)) E.push(`${at}.id: duplicate "${v.id}"`);
+      vids.add(v.id);
+      str(v.name, `${at}.name`, { max: 80 });
+      if (!isIso(v.since)) E.push(`${at}.since: must be an ISO UTC time (when it became the best build)`);
+      else if (prev && isIso(prev.since) && Date.parse(v.since) < Date.parse(prev.since)) E.push(`${at}.since: earlier than versions[${i - 1}] (the list is oldest first)`);
+      str(v.improvement, `${at}.improvement`, { max: 300 });
+      arr(v.fixes, `${at}.fixes`, { optional: true, max: 30 }).forEach((id, j) => { if (!ids.has(id)) E.push(`${at}.fixes[${j}]: no item "${id}"`); });
+      const res = arr(v.result, `${at}.result`, { optional: true, max: 8 });
+      if (i > 0 && (v.result === undefined || (Array.isArray(v.result) && !v.result.length))) E.push(`${at}.result: at least one number vs the previous version`);
+      res.forEach((c, j) => {
+        const ct = `${at}.result[${j}]`;
+        str(c?.what, `${ct}.what`, { max: 120 }); str(c?.before, `${ct}.before`, { max: 80 }); str(c?.after, `${ct}.after`, { max: 80 });
+        oneOf(c?.tag, TAGS, `${ct}.tag`);
+        str(c?.driver, `${ct}.driver`, { max: 60 });
+        if (c?.when !== undefined && !isIso(c.when)) E.push(`${ct}.when: must be an ISO UTC time (when it was measured)`);
+        str(c?.how, `${ct}.how`, { optional: true, max: 160 });
+        if (c?.ref !== undefined && !REF.test(String(c.ref))) E.push(`${ct}.ref: a ledger, finding, console or incident id (P-029, F-084, C-001, I-038)`);
+        str(c?.note, `${ct}.note`, { optional: true, max: 160 });
+      });
+      str(v.cost, `${at}.cost`, { optional: i === 0, max: 300 });
+      str(v.verdict, `${at}.verdict`, { optional: true, max: 80 });
+      for (const k of ['best', 'landed']) if (v[k] !== undefined && typeof v[k] !== 'boolean') E.push(`${at}.${k}: true or false`);
+      if (v.best === true && v.landed === false) E.push(`${at}: "best": true and "landed": false (today's best build is landed)`);
+      if (v.hashes !== undefined) {
+        if (!v.hashes || typeof v.hashes !== 'object' || Array.isArray(v.hashes)) E.push(`${at}.hashes: {js, css}`);
+        else for (const k of ['js', 'css']) if (v.hashes[k] !== undefined && !HASH.test(String(v.hashes[k]))) E.push(`${at}.hashes.${k}: a short hex hash (7-16 hex digits)`);
+      }
+      const t = v.tryIt;
+      if (t === undefined) E.push(`${at}.tryIt: required: {port, scheme?, path?} or {none: "<why there is no page to try>"}`);
+      else if (!t || typeof t !== 'object' || Array.isArray(t)) E.push(`${at}.tryIt: must be an object`);
+      else if (t.none !== undefined && Object.keys(t).length > 1) E.push(`${at}.tryIt: either {port, scheme?, path?} or {none: "<why>"}, not both`);
+      else if (t.none !== undefined) str(t.none, `${at}.tryIt.none`, { max: 200 });
+      else {
+        for (const k of Object.keys(t)) if (!['port', 'scheme', 'path', 'server'].includes(k)) E.push(`${at}.tryIt: unknown field "${k}" (the host is always this Mac)`);
+        if (!Number.isInteger(t.port) || t.port < 1024 || t.port > 65535) E.push(`${at}.tryIt.port: a port number 1024-65535 (got ${JSON.stringify(t.port)})`);
+        if (t.scheme !== undefined) oneOf(t.scheme, ['http', 'https'], `${at}.tryIt.scheme`);
+        if (t.path !== undefined && !TRY_PATH.test(String(t.path))) E.push(`${at}.tryIt.path: a path on that server, starting with one "/" (like /?v=2)`);
+        if (t.server !== undefined && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,40}$/.test(String(t.server))) E.push(`${at}.tryIt.server: the server's short name (like best-build)`);
+      }
+      prev = v;
+    });
+    const best = Array.isArray(p.versions) ? p.versions.map((v, i) => (v?.best === true ? `versions[${i}]` : null)).filter(Boolean) : [];
+    if (best.length > 1) E.push(`versions: "best": true on ${best.join(', ')}; at most one version is today's best build`);
+  }
   // Hard rule 12: no personal data anywhere in the file
   const walk = (v, path) => {
     if (typeof v === 'string') { const f = findPersonal(v); if (f) E.push(`${path}: contains a ${f.kind} ("${f.match.slice(0, 40)}"); nothing personal or network-identifying in this file (Hard rule 12)`); }
@@ -558,10 +633,66 @@ export function bestBuildView(p, { exists = writeupExists } = {}) {
 }
 
 /**
+ * T-079 "to try (not landed)" chip: never on the entry flagged best; an explicit "landed" flag decides; without one,
+ * the words "to try" or "not landed" in the name or the verdict (main's v5 at e5a1c2df carries them in its name only).
+ */
+export const toTry = (v) => v.best !== true && (typeof v.landed === 'boolean' ? !v.landed : /\b(?:to try|not landed)\b/i.test(`${v.name || ''} ${v.verdict || ''}`));
+
+/**
+ * T-079: the Versions model, oldest first: [{id, name, since, improvement, verdict, base, current (today's best build:
+ * the one version with "best": true; none when no version or several have it), toTry (see toTry below), previous, fixes: [{id, title}], result, cost, hashes, tryIt}]. tryIt: {none} or {placeholder (<scheme>://lan:<port><path>), url (the placeholder with
+ * this Mac's Wi-Fi address now, null when there is none), port, running (true/false from `running`, null if not
+ * probed), noLan}. `lan`: the resolver (lan.mjs resolveLanUrl; throws without an address).
+ */
+export function versionsView(p, { lan = resolveLanUrl, running = new Map() } = {}) {
+  if (!Array.isArray(p?.versions)) return [];
+  const titles = new Map((Array.isArray(p.items) ? p.items : []).filter((it) => it && typeof it === 'object').map((it) => [it.id, it.title]));
+  const vs = p.versions.filter((v) => v && typeof v === 'object');
+  const oneBest = vs.filter((v) => v.best === true).length === 1; // none or several: no version gets the chip (lead, T-079)
+  return vs.map((v, i) => ({
+    id: v.id, name: v.name, since: v.since, improvement: v.improvement || null, verdict: v.verdict || null,
+    base: i === 0, current: oneBest && v.best === true, previous: i ? vs[i - 1].name : null,
+    toTry: toTry(v), // a page to try, not landed
+    fixes: (Array.isArray(v.fixes) ? v.fixes : []).filter((id) => titles.has(id)).map((id) => ({ id, title: titles.get(id) })),
+    result: (Array.isArray(v.result) ? v.result : []).map((c) => ({ ...c })),
+    cost: v.cost || null,
+    hashes: v.hashes && typeof v.hashes === 'object' ? { ...v.hashes } : null,
+    tryIt: tryItView(v.tryIt, lan, running),
+  }));
+}
+
+function tryItView(t, lan, running) {
+  if (!t || typeof t !== 'object') return null;
+  if (t.none !== undefined) return { none: t.none };
+  const server = t.server || null; // the long-lived server's short name: a label next to the link
+  const placeholder = `${t.scheme || 'http'}://lan:${t.port}${t.path || '/'}`;
+  let url = null;
+  try {
+    const r = lan(placeholder);
+    if (!isLanPlaceholder(new URL(r).hostname)) url = r; // a resolver that hands the placeholder back did not resolve it
+  } catch { url = null; }
+  return { placeholder, url, port: t.port, server, running: running.has(t.port) ? running.get(t.port) : null, noLan: url === null };
+}
+
+/** T-079: Map port -> whether something accepts a TCP connection on `host` now (each port once, all at a time). */
+export async function probePorts(ports, { host = '127.0.0.1', timeoutMs = 300 } = {}) {
+  const net = await import('node:net');
+  const one = (port) => new Promise((done) => {
+    const s = net.connect({ host, port });
+    const end = (ok) => { s.destroy(); done(ok); };
+    s.setTimeout(timeoutMs, () => end(false));
+    s.once('connect', () => end(true));
+    s.once('error', () => end(false));
+  });
+  const list = [...new Set(ports.filter((x) => Number.isInteger(x) && x > 0 && x < 65536))];
+  return new Map(await Promise.all(list.map(async (port) => [port, await one(port)])));
+}
+
+/**
  * The page / CLI model from the curated data and the live sources. Pure: every input passed in.
  * {now, summary, goal, complaints, changes, live, sections: [{key, label, items}], upcoming, waiting}
  */
-export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists } = {}) {
+export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists, lan = resolveLanUrl, versionPorts = new Map() } = {}) {
   const p = errors.length && !progress ? null : progress;
   const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
@@ -579,6 +710,7 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
     },
     goal: p?.goal || null,
     build: bestBuildView(p, { exists: writeups }), // I-061: today's best build (null without one)
+    versions: versionsView(p, { lan, running: versionPorts }), // T-079: the original page and every best build, oldest first
     complaints: (p?.complaints || []).map((c) => ({ ...c, areaLabel: AREAS[c.area] })),
     changes: [...(p?.changes || [])].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, CHANGES_SHOWN),
     live: {
@@ -616,7 +748,11 @@ export async function currentView({ now = Date.now() } = {}) {
     statusLinks = S.progressLinks(sv);
     board = sv.items;
   } catch (e) { live.errors.push(`status board: ${e.message}`); }
-  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board });
+  // T-079: does anything answer on each version's Try-it port now
+  const ports = Array.isArray(data?.versions) ? data.versions.map((v) => v?.tryIt?.port) : [];
+  let versionPorts = new Map();
+  if (ports.length) try { versionPorts = await probePorts(ports); } catch (e) { live.errors.push(`try-it ports: ${e.message}`); }
+  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board, versionPorts });
 }
 
 // ---- text --------------------------------------------------------------------------------------------
@@ -681,6 +817,30 @@ export function buildLines(b) {
   return L;
 }
 
+/** A version's number vs the previous one: combinedText, with `when` optional. */
+export function resultText(c) {
+  const when = c.when ? `measured ${hhmm(c.when)} ${String(c.when).slice(0, 10)}` : '';
+  const how = [when, c.how].filter(Boolean).join(', ');
+  return `${c.what}: ${c.before} -> ${c.after} (${c.tag}, ${c.driver}${how ? `; ${how}` : ''}${c.ref ? `; ${c.ref}` : ''}${c.note ? `; ${c.note}` : ''})`;
+}
+
+/** T-079: the versions as text lines; Try-it keeps the lan placeholder (the address only goes on the page). */
+export function versionLines(vs) {
+  const L = ['VERSIONS (oldest first)'];
+  vs.forEach((v, i) => {
+    const since = `since ${hhmm(v.since)} ${String(v.since).slice(0, 10)}${v.current ? "; today's best build" : ''}${v.toTry ? '; to try (not landed)' : ''}`;
+    L.push(`  ${i + 1}. ${v.name} (${since}): ${v.improvement || ''}`);
+    if (v.verdict) L.push(`      verdict: ${v.verdict}`);
+    if (v.fixes.length) L.push(`      adds: ${v.fixes.map((f) => f.title).join('; ')}`);
+    for (const r of v.result) L.push(`      vs ${v.previous || 'the previous version'}: ${resultText(r)}`);
+    if (v.cost) L.push(`      cost: ${v.cost}`);
+    const t = v.tryIt;
+    if (t) L.push(`      try it: ${t.none !== undefined ? `none (${t.none})` : `${t.placeholder}${t.server ? ` [${t.server}]` : ''}${t.running === true ? ' (running)' : t.running === false ? ' (not running now)' : ''}`}`);
+    if (v.hashes) L.push(`      ${['js', 'css'].filter((k) => v.hashes[k]).map((k) => `${k} ${v.hashes[k]}`).join(' · ')}`);
+  });
+  return L;
+}
+
 /** The view as plain text (`console.mjs progress`); `details` adds the technical lines. */
 export function renderText(v, { details = false } = {}) {
   const L = [];
@@ -693,6 +853,7 @@ export function renderText(v, { details = false } = {}) {
   if (v.complaints.length) L.push(`You flagged: ${v.complaints.map((c) => c.text).join('; ')}`);
   if (v.changes.length) { L.push('', 'WHAT CHANGED'); for (const c of v.changes) L.push(`  ${hhmm(c.at)}  ${c.text}`); }
   if (v.build) L.push('', ...buildLines(v.build));
+  if (v.versions?.length) L.push('', ...versionLines(v.versions));
   L.push('', 'NOW');
   L.push(`  ${holderText(v.live.phone, 'phone')}`, ...deviceLines(v.live.devices?.phone));
   L.push(`  ${holderText(v.live.chrome, 'Chrome')}`, ...deviceLines(v.live.devices?.chrome));
