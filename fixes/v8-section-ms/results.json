@@ -1,0 +1,9470 @@
+{
+ "generated": "2026-10-04T21:00:48.192Z",
+ "source": "out/sec/pages.jsonl (fixes/v8-section-ms/probe.mjs)",
+ "tags": [
+  "h1"
+ ],
+ "setting": "Chrome 430x932 DPR 3 touch, CPU 6x, serve --vendors=local --https --latency 150, fresh isolated context per page; tracing + JS profiler on (perturbs timing: compare arms with each other only)",
+ "arms": {
+  "A": {
+   "name": "v7",
+   "js": "8c90da217745",
+   "css": "308f0da70c3a",
+   "nav": [
+    13628,
+    14129
+   ],
+   "runs": 2,
+   "browser": "Chrome/154.0.8037.97"
+  },
+  "V": {
+   "name": "v8",
+   "js": "3e3e94cb6e9f",
+   "css": "f836404b3728",
+   "nav": [
+    13763,
+    14270
+   ],
+   "runs": 2,
+   "browser": "Chrome/154.0.8037.97"
+  },
+  "B": {
+   "name": "baseline",
+   "js": "4606120cf392",
+   "css": "27776f3d4138",
+   "nav": [
+    12884,
+    13251
+   ],
+   "runs": 2,
+   "browser": "Chrome/154.0.8037.97"
+  }
+ },
+ "geometry": {
+  "A": {
+   "h": 6277,
+   "vh": 932,
+   "secs": [
+    {
+     "id": "hero-track",
+     "top": 0,
+     "h": 1864
+    },
+    {
+     "id": "people",
+     "top": 933,
+     "h": 1328
+    },
+    {
+     "id": "pain",
+     "top": 1329,
+     "h": 2796
+    },
+    {
+     "id": "commission",
+     "top": 3193,
+     "h": 1203
+    },
+    {
+     "id": "platform",
+     "top": 4396,
+     "h": 1881
+    }
+   ],
+   "nav": {
+    "top": 16,
+    "h": 52,
+    "position": "fixed"
+   },
+   "sameAcrossRuns": true,
+   "maxTopShiftAfterScroll": 0
+  },
+  "V": {
+   "h": 6277,
+   "vh": 932,
+   "secs": [
+    {
+     "id": "hero-track",
+     "top": 0,
+     "h": 1864
+    },
+    {
+     "id": "people",
+     "top": 933,
+     "h": 1328
+    },
+    {
+     "id": "pain",
+     "top": 1329,
+     "h": 2796
+    },
+    {
+     "id": "commission",
+     "top": 3193,
+     "h": 1203
+    },
+    {
+     "id": "platform",
+     "top": 4396,
+     "h": 1881
+    }
+   ],
+   "nav": {
+    "top": 16,
+    "h": 52,
+    "position": "fixed"
+   },
+   "sameAcrossRuns": true,
+   "maxTopShiftAfterScroll": 0
+  },
+  "B": {
+   "h": 6240,
+   "vh": 932,
+   "secs": [
+    {
+     "id": "hero-track",
+     "top": 0,
+     "h": 1864
+    },
+    {
+     "id": "people",
+     "top": 933,
+     "h": 1328
+    },
+    {
+     "id": "pain",
+     "top": 1329,
+     "h": 2796
+    },
+    {
+     "id": "commission",
+     "top": 3193,
+     "h": 1166
+    },
+    {
+     "id": "platform",
+     "top": 4359,
+     "h": 1881
+    }
+   ],
+   "nav": {
+    "top": 16,
+    "h": 52,
+    "position": "fixed"
+   },
+   "sameAcrossRuns": true,
+   "maxTopShiftAfterScroll": 37
+  }
+ },
+ "checks": {
+  "A": [
+   {
+    "run": 1,
+    "tag": "h1",
+    "errors": 0,
+    "load1": [
+     5.3,
+     4.6,
+     5.2,
+     6.7
+    ],
+    "scrollHostBusyPct": 69.3,
+    "scrollTicks": 27,
+    "scrollS": 8.4,
+    "traceEvents": 252198,
+    "bufferPercentMax": 3.5,
+    "dataLoss": false,
+    "jsInsideMainEvents": 1,
+    "restJsInside": {
+     "hero": 1,
+     "end": 1,
+     "commission": 1,
+     "pain": 1,
+     "profile-showcase": 1,
+     "people": 1
+    }
+   },
+   {
+    "run": 2,
+    "tag": "h1",
+    "errors": 0,
+    "load1": [
+     4.6,
+     4.5,
+     4.6,
+     4.6
+    ],
+    "scrollHostBusyPct": 46.3,
+    "scrollTicks": 27,
+    "scrollS": 8.4,
+    "traceEvents": 264726,
+    "bufferPercentMax": 3.8,
+    "dataLoss": false,
+    "jsInsideMainEvents": 1,
+    "restJsInside": {
+     "hero": 1,
+     "end": 1,
+     "commission": 1,
+     "pain": 1,
+     "profile-showcase": 1,
+     "people": 1
+    }
+   }
+  ],
+  "V": [
+   {
+    "run": 1,
+    "tag": "h1",
+    "errors": 0,
+    "load1": [
+     6.3,
+     5.9,
+     5.8,
+     5.6
+    ],
+    "scrollHostBusyPct": 47.2,
+    "scrollTicks": 27,
+    "scrollS": 8.4,
+    "traceEvents": 267437,
+    "bufferPercentMax": 3.8,
+    "dataLoss": false,
+    "jsInsideMainEvents": 1,
+    "restJsInside": {
+     "hero": 1,
+     "end": 1,
+     "commission": 1,
+     "pain": 1,
+     "profile-showcase": 1,
+     "people": 1
+    }
+   },
+   {
+    "run": 2,
+    "tag": "h1",
+    "errors": 0,
+    "load1": [
+     5.1,
+     4.9,
+     5,
+     4.6
+    ],
+    "scrollHostBusyPct": 50.5,
+    "scrollTicks": 27,
+    "scrollS": 8.4,
+    "traceEvents": 265884,
+    "bufferPercentMax": 3.8,
+    "dataLoss": false,
+    "jsInsideMainEvents": 1,
+    "restJsInside": {
+     "hero": 1,
+     "end": 1,
+     "commission": 1,
+     "pain": 1,
+     "profile-showcase": 1,
+     "people": 1
+    }
+   }
+  ],
+  "B": [
+   {
+    "run": 1,
+    "tag": "h1",
+    "errors": 0,
+    "load1": [
+     5.5,
+     5.4,
+     5.6,
+     4.9
+    ],
+    "scrollHostBusyPct": 48.9,
+    "scrollTicks": 27,
+    "scrollS": 8.4,
+    "traceEvents": 234169,
+    "bufferPercentMax": 3.3,
+    "dataLoss": false,
+    "jsInsideMainEvents": 1,
+    "restJsInside": {
+     "hero": 1,
+     "end": 1,
+     "commission": 1,
+     "pain": 1,
+     "profile-showcase": 1,
+     "people": 1
+    }
+   },
+   {
+    "run": 2,
+    "tag": "h1",
+    "errors": 0,
+    "load1": [
+     4.7,
+     4.4,
+     4,
+     4.7
+    ],
+    "scrollHostBusyPct": 42.6,
+    "scrollTicks": 28,
+    "scrollS": 8.4,
+    "traceEvents": 216676,
+    "bufferPercentMax": 3.1,
+    "dataLoss": false,
+    "jsInsideMainEvents": 1,
+    "restJsInside": {
+     "hero": 1,
+     "end": 1,
+     "commission": 1,
+     "pain": 1,
+     "profile-showcase": 1,
+     "people": 1
+    }
+   }
+  ]
+ },
+ "scroll": {
+  "hero-track": {
+   "label": "hero",
+   "A": {
+    "script": {
+     "median": 110.2,
+     "min": 105.5,
+     "max": 114.8,
+     "n": 2,
+     "runs": [
+      114.8,
+      105.5
+     ]
+    },
+    "style": {
+     "median": 208.7,
+     "min": 203.9,
+     "max": 213.4,
+     "n": 2,
+     "runs": [
+      213.4,
+      203.9
+     ]
+    },
+    "layout": {
+     "median": 1.3,
+     "min": 1,
+     "max": 1.6,
+     "n": 2,
+     "runs": [
+      1,
+      1.6
+     ]
+    },
+    "paint": {
+     "median": 345.4,
+     "min": 338.9,
+     "max": 351.8,
+     "n": 2,
+     "runs": [
+      351.8,
+      338.9
+     ]
+    },
+    "other": {
+     "median": 192.4,
+     "min": 186.1,
+     "max": 198.7,
+     "n": 2,
+     "runs": [
+      198.7,
+      186.1
+     ]
+    },
+    "main": {
+     "median": 857.9,
+     "min": 836,
+     "max": 879.7,
+     "n": 2,
+     "runs": [
+      879.7,
+      836
+     ]
+    },
+    "layer": {
+     "median": 253.5,
+     "min": 253.2,
+     "max": 253.7,
+     "n": 2,
+     "runs": [
+      253.7,
+      253.2
+     ]
+    },
+    "hitTest": {
+     "median": 25.5,
+     "min": 23.5,
+     "max": 27.4,
+     "n": 2,
+     "runs": [
+      27.4,
+      23.5
+     ]
+    },
+    "navJs": {
+     "median": 54.4,
+     "min": 54.4,
+     "max": 54.4,
+     "n": 2,
+     "runs": [
+      54.4,
+      54.4
+     ]
+    },
+    "compositor": {
+     "median": 59.9,
+     "min": 55.2,
+     "max": 64.6,
+     "n": 2,
+     "runs": [
+      64.6,
+      55.2
+     ]
+    },
+    "wallMs": {
+     "median": 846.1,
+     "min": 825.6,
+     "max": 866.5,
+     "n": 2,
+     "runs": [
+      866.5,
+      825.6
+     ]
+    },
+    "frames": {
+     "median": 63.5,
+     "min": 61,
+     "max": 66,
+     "n": 2,
+     "runs": [
+      61,
+      66
+     ]
+    },
+    "mainPerFrame": {
+     "median": 13.5,
+     "min": 12.7,
+     "max": 14.4,
+     "n": 2,
+     "runs": [
+      14.4,
+      12.7
+     ]
+    },
+    "k5": {
+     "median": 0.5,
+     "min": 0,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 3217,
+     "min": 2907,
+     "max": 3527,
+     "n": 2,
+     "runs": [
+      2907,
+      3527
+     ]
+    },
+    "layoutObjects": {
+     "median": 47.5,
+     "min": 40,
+     "max": 55,
+     "n": 2,
+     "runs": [
+      40,
+      55
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      169.4
+     ],
+     [
+      ":0 elementsFromPoint",
+      49.9
+     ],
+     [
+      "(injected frame logger):4 tick",
+      39.3
+     ],
+     [
+      ":0 animate",
+      9.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12012 l",
+      4.1
+     ],
+     [
+      ":0 requestAnimationFrame",
+      3.4
+     ],
+     [
+      ":0 setTimeout",
+      2.2
+     ],
+     [
+      ":0 querySelector",
+      1.7
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      213.4
+     ],
+     [
+      "paint:Layerize",
+      183.3
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      109.6
+     ],
+     [
+      "script:FunctionCall",
+      74.2
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      56.2
+     ],
+     [
+      "paint:Commit",
+      55.9
+     ],
+     [
+      "paint:Paint",
+      47.1
+     ],
+     [
+      "paint:PrePaint",
+      44.1
+     ],
+     [
+      "other:HitTest",
+      27.4
+     ],
+     [
+      "paint:UpdateLayer",
+      14.6
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 100.7,
+     "min": 98.6,
+     "max": 102.7,
+     "n": 2,
+     "runs": [
+      102.7,
+      98.6
+     ]
+    },
+    "style": {
+     "median": 214.3,
+     "min": 206.2,
+     "max": 222.4,
+     "n": 2,
+     "runs": [
+      206.2,
+      222.4
+     ]
+    },
+    "layout": {
+     "median": 2.8,
+     "min": 2.6,
+     "max": 3,
+     "n": 2,
+     "runs": [
+      2.6,
+      3
+     ]
+    },
+    "paint": {
+     "median": 340.8,
+     "min": 332.1,
+     "max": 349.5,
+     "n": 2,
+     "runs": [
+      332.1,
+      349.5
+     ]
+    },
+    "other": {
+     "median": 180.1,
+     "min": 171.7,
+     "max": 188.4,
+     "n": 2,
+     "runs": [
+      188.4,
+      171.7
+     ]
+    },
+    "main": {
+     "median": 838.6,
+     "min": 832,
+     "max": 845.2,
+     "n": 2,
+     "runs": [
+      832,
+      845.2
+     ]
+    },
+    "layer": {
+     "median": 253,
+     "min": 241.2,
+     "max": 264.8,
+     "n": 2,
+     "runs": [
+      241.2,
+      264.8
+     ]
+    },
+    "hitTest": {
+     "median": 26.8,
+     "min": 26.5,
+     "max": 27,
+     "n": 2,
+     "runs": [
+      26.5,
+      27
+     ]
+    },
+    "navJs": {
+     "median": 56.4,
+     "min": 51.8,
+     "max": 61,
+     "n": 2,
+     "runs": [
+      61,
+      51.8
+     ]
+    },
+    "compositor": {
+     "median": 57.2,
+     "min": 55.6,
+     "max": 58.7,
+     "n": 2,
+     "runs": [
+      58.7,
+      55.6
+     ]
+    },
+    "wallMs": {
+     "median": 850,
+     "min": 849.9,
+     "max": 850.1,
+     "n": 2,
+     "runs": [
+      849.9,
+      850.1
+     ]
+    },
+    "frames": {
+     "median": 65.5,
+     "min": 65,
+     "max": 66,
+     "n": 2,
+     "runs": [
+      65,
+      66
+     ]
+    },
+    "mainPerFrame": {
+     "median": 12.8,
+     "min": 12.8,
+     "max": 12.8,
+     "n": 2,
+     "runs": [
+      12.8,
+      12.8
+     ]
+    },
+    "k5": {
+     "median": 0.5,
+     "min": 0,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 3279.5,
+     "min": 3264,
+     "max": 3295,
+     "n": 2,
+     "runs": [
+      3264,
+      3295
+     ]
+    },
+    "layoutObjects": {
+     "median": 47.5,
+     "min": 40,
+     "max": 55,
+     "n": 2,
+     "runs": [
+      40,
+      55
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      170.1
+     ],
+     [
+      ":0 elementsFromPoint",
+      53.8
+     ],
+     [
+      "(injected frame logger):4 tick",
+      46.2
+     ],
+     [
+      ":0 querySelector",
+      5.8
+     ],
+     [
+      ":0 setProperty",
+      5.2
+     ],
+     [
+      ":0 requestAnimationFrame",
+      4.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12147 l",
+      3.6
+     ],
+     [
+      ":0 animate",
+      3
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      206.2
+     ],
+     [
+      "paint:Layerize",
+      170.7
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      94.6
+     ],
+     [
+      "script:FunctionCall",
+      65.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      59.5
+     ],
+     [
+      "paint:Commit",
+      47.6
+     ],
+     [
+      "paint:PrePaint",
+      46.2
+     ],
+     [
+      "paint:Paint",
+      41.9
+     ],
+     [
+      "other:HitTest",
+      26.5
+     ],
+     [
+      "paint:UpdateLayer",
+      22.8
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 151.6,
+     "min": 131.6,
+     "max": 171.6,
+     "n": 2,
+     "runs": [
+      131.6,
+      171.6
+     ]
+    },
+    "style": {
+     "median": 248.4,
+     "min": 246,
+     "max": 250.8,
+     "n": 2,
+     "runs": [
+      246,
+      250.8
+     ]
+    },
+    "layout": {
+     "median": 59.3,
+     "min": 40.2,
+     "max": 78.4,
+     "n": 2,
+     "runs": [
+      40.2,
+      78.4
+     ]
+    },
+    "paint": {
+     "median": 229.7,
+     "min": 225.4,
+     "max": 234,
+     "n": 2,
+     "runs": [
+      225.4,
+      234
+     ]
+    },
+    "other": {
+     "median": 113.7,
+     "min": 108.8,
+     "max": 118.6,
+     "n": 2,
+     "runs": [
+      108.8,
+      118.6
+     ]
+    },
+    "main": {
+     "median": 802.7,
+     "min": 752,
+     "max": 853.4,
+     "n": 2,
+     "runs": [
+      752,
+      853.4
+     ]
+    },
+    "layer": {
+     "median": 129.6,
+     "min": 126.9,
+     "max": 132.3,
+     "n": 2,
+     "runs": [
+      126.9,
+      132.3
+     ]
+    },
+    "hitTest": {
+     "median": 10.7,
+     "min": 8.8,
+     "max": 12.6,
+     "n": 2,
+     "runs": [
+      8.8,
+      12.6
+     ]
+    },
+    "navJs": {
+     "median": 85.4,
+     "min": 83.3,
+     "max": 87.6,
+     "n": 2,
+     "runs": [
+      87.6,
+      83.3
+     ]
+    },
+    "compositor": {
+     "median": 50.4,
+     "min": 49.6,
+     "max": 51.2,
+     "n": 2,
+     "runs": [
+      49.6,
+      51.2
+     ]
+    },
+    "wallMs": {
+     "median": 854.3,
+     "min": 849.4,
+     "max": 859.1,
+     "n": 2,
+     "runs": [
+      849.4,
+      859.1
+     ]
+    },
+    "frames": {
+     "median": 62,
+     "min": 60,
+     "max": 64,
+     "n": 2,
+     "runs": [
+      64,
+      60
+     ]
+    },
+    "mainPerFrame": {
+     "median": 13,
+     "min": 11.8,
+     "max": 14.2,
+     "n": 2,
+     "runs": [
+      11.8,
+      14.2
+     ]
+    },
+    "k5": {
+     "median": 1.5,
+     "min": 1,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      1,
+      2
+     ]
+    },
+    "k7": {
+     "median": 0.5,
+     "min": 0,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      0,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 3826.5,
+     "min": 3574,
+     "max": 4079,
+     "n": 2,
+     "runs": [
+      4079,
+      3574
+     ]
+    },
+    "layoutObjects": {
+     "median": 553,
+     "min": 267,
+     "max": 839,
+     "n": 2,
+     "runs": [
+      267,
+      839
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      217.2
+     ],
+     [
+      ":0 elementFromPoint",
+      59.4
+     ],
+     [
+      "(injected frame logger):4 tick",
+      57.5
+     ],
+     [
+      ":0 setProperty",
+      5.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:2670 iE",
+      3.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4163 s",
+      3.4
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:11303 l",
+      2.9
+     ],
+     [
+      ":0 querySelector",
+      2.9
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      246
+     ],
+     [
+      "script:FunctionCall",
+      98.5
+     ],
+     [
+      "paint:Layerize",
+      79.6
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      69.7
+     ],
+     [
+      "paint:Paint",
+      51
+     ],
+     [
+      "paint:PrePaint",
+      46.3
+     ],
+     [
+      "layout:Layout",
+      40.2
+     ],
+     [
+      "paint:Commit",
+      33.4
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      23.9
+     ],
+     [
+      "paint:UpdateLayer",
+      13.9
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "overlap",
+    "layout": "higher",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "people": {
+   "label": "people (avatar rows)",
+   "A": {
+    "script": {
+     "median": 72.7,
+     "min": 68,
+     "max": 77.4,
+     "n": 2,
+     "runs": [
+      68,
+      77.4
+     ]
+    },
+    "style": {
+     "median": 163.6,
+     "min": 159.7,
+     "max": 167.6,
+     "n": 2,
+     "runs": [
+      167.6,
+      159.7
+     ]
+    },
+    "layout": {
+     "median": 3.3,
+     "min": 3,
+     "max": 3.5,
+     "n": 2,
+     "runs": [
+      3.5,
+      3
+     ]
+    },
+    "paint": {
+     "median": 148.7,
+     "min": 141.8,
+     "max": 155.5,
+     "n": 2,
+     "runs": [
+      155.5,
+      141.8
+     ]
+    },
+    "other": {
+     "median": 106.6,
+     "min": 103.5,
+     "max": 109.6,
+     "n": 2,
+     "runs": [
+      103.5,
+      109.6
+     ]
+    },
+    "main": {
+     "median": 494.8,
+     "min": 491.5,
+     "max": 498.1,
+     "n": 2,
+     "runs": [
+      498.1,
+      491.5
+     ]
+    },
+    "layer": {
+     "median": 101.3,
+     "min": 98.3,
+     "max": 104.2,
+     "n": 2,
+     "runs": [
+      104.2,
+      98.3
+     ]
+    },
+    "hitTest": {
+     "median": 22.5,
+     "min": 20.9,
+     "max": 24,
+     "n": 2,
+     "runs": [
+      20.9,
+      24
+     ]
+    },
+    "navJs": {
+     "median": 57.4,
+     "min": 54.3,
+     "max": 60.5,
+     "n": 2,
+     "runs": [
+      54.3,
+      60.5
+     ]
+    },
+    "compositor": {
+     "median": 36.4,
+     "min": 34.7,
+     "max": 38,
+     "n": 2,
+     "runs": [
+      38,
+      34.7
+     ]
+    },
+    "wallMs": {
+     "median": 496.4,
+     "min": 491.8,
+     "max": 500.9,
+     "n": 2,
+     "runs": [
+      500.9,
+      491.8
+     ]
+    },
+    "frames": {
+     "median": 21.5,
+     "min": 21,
+     "max": 22,
+     "n": 2,
+     "runs": [
+      21,
+      22
+     ]
+    },
+    "mainPerFrame": {
+     "median": 23,
+     "min": 22.3,
+     "max": 23.7,
+     "n": 2,
+     "runs": [
+      23.7,
+      22.3
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 0.5,
+     "min": 0,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 2351.5,
+     "min": 2217,
+     "max": 2486,
+     "n": 2,
+     "runs": [
+      2217,
+      2486
+     ]
+    },
+    "layoutObjects": {
+     "median": 58,
+     "min": 32,
+     "max": 84,
+     "n": 2,
+     "runs": [
+      84,
+      32
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      133.9
+     ],
+     [
+      ":0 elementsFromPoint",
+      42.7
+     ],
+     [
+      "(injected frame logger):4 tick",
+      29.2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13718 ee",
+      6.4
+     ],
+     [
+      ":0 setProperty",
+      2.9
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13754 _",
+      2.7
+     ],
+     [
+      "(injected frame logger):3 ",
+      2.6
+     ],
+     [
+      ":0 requestAnimationFrame",
+      2.4
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      167.6
+     ],
+     [
+      "paint:Layerize",
+      74.9
+     ],
+     [
+      "script:FunctionCall",
+      60
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      58.1
+     ],
+     [
+      "paint:Commit",
+      24.2
+     ],
+     [
+      "paint:Paint",
+      23.8
+     ],
+     [
+      "paint:PrePaint",
+      23.5
+     ],
+     [
+      "other:HitTest",
+      20.9
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      18.9
+     ],
+     [
+      "script:FireAnimationFrame",
+      5.6
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 70.5,
+     "min": 52.6,
+     "max": 88.4,
+     "n": 2,
+     "runs": [
+      52.6,
+      88.4
+     ]
+    },
+    "style": {
+     "median": 166.9,
+     "min": 165.1,
+     "max": 168.6,
+     "n": 2,
+     "runs": [
+      168.6,
+      165.1
+     ]
+    },
+    "layout": {
+     "median": 6.1,
+     "min": 3.4,
+     "max": 8.7,
+     "n": 2,
+     "runs": [
+      8.7,
+      3.4
+     ]
+    },
+    "paint": {
+     "median": 161.8,
+     "min": 155.7,
+     "max": 167.9,
+     "n": 2,
+     "runs": [
+      167.9,
+      155.7
+     ]
+    },
+    "other": {
+     "median": 101.4,
+     "min": 93.6,
+     "max": 109.3,
+     "n": 2,
+     "runs": [
+      93.6,
+      109.3
+     ]
+    },
+    "main": {
+     "median": 506.7,
+     "min": 491.4,
+     "max": 521.9,
+     "n": 2,
+     "runs": [
+      491.4,
+      521.9
+     ]
+    },
+    "layer": {
+     "median": 104.5,
+     "min": 103.2,
+     "max": 105.7,
+     "n": 2,
+     "runs": [
+      105.7,
+      103.2
+     ]
+    },
+    "hitTest": {
+     "median": 23.6,
+     "min": 22.4,
+     "max": 24.8,
+     "n": 2,
+     "runs": [
+      22.4,
+      24.8
+     ]
+    },
+    "navJs": {
+     "median": 58.4,
+     "min": 56.6,
+     "max": 60.2,
+     "n": 2,
+     "runs": [
+      60.2,
+      56.6
+     ]
+    },
+    "compositor": {
+     "median": 36.4,
+     "min": 35.8,
+     "max": 37,
+     "n": 2,
+     "runs": [
+      35.8,
+      37
+     ]
+    },
+    "wallMs": {
+     "median": 508.2,
+     "min": 491.4,
+     "max": 524.9,
+     "n": 2,
+     "runs": [
+      491.4,
+      524.9
+     ]
+    },
+    "frames": {
+     "median": 23.5,
+     "min": 23,
+     "max": 24,
+     "n": 2,
+     "runs": [
+      24,
+      23
+     ]
+    },
+    "mainPerFrame": {
+     "median": 21.6,
+     "min": 20.5,
+     "max": 22.7,
+     "n": 2,
+     "runs": [
+      20.5,
+      22.7
+     ]
+    },
+    "k5": {
+     "median": 1.5,
+     "min": 1,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      1,
+      2
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 2651,
+     "min": 2599,
+     "max": 2703,
+     "n": 2,
+     "runs": [
+      2703,
+      2599
+     ]
+    },
+    "layoutObjects": {
+     "median": 60,
+     "min": 32,
+     "max": 88,
+     "n": 2,
+     "runs": [
+      88,
+      32
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      138.5
+     ],
+     [
+      ":0 elementsFromPoint",
+      52.3
+     ],
+     [
+      "(injected frame logger):4 tick",
+      35.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13856 ee",
+      5.6
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 r",
+      2.2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12147 l",
+      1.6
+     ],
+     [
+      "__vendor/www.googletagmanager.com/gtm.js?id=GTM-M8BMQ3VJ:548 gA",
+      1.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:2702 rE",
+      1.5
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      168.6
+     ],
+     [
+      "paint:Layerize",
+      76.9
+     ],
+     [
+      "script:FunctionCall",
+      46.2
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      39.7
+     ],
+     [
+      "paint:PrePaint",
+      30.3
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      28.3
+     ],
+     [
+      "paint:Paint",
+      26
+     ],
+     [
+      "other:HitTest",
+      22.4
+     ],
+     [
+      "paint:Commit",
+      21.6
+     ],
+     [
+      "layout:Layout",
+      8.7
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 73.7,
+     "min": 71.8,
+     "max": 75.6,
+     "n": 2,
+     "runs": [
+      71.8,
+      75.6
+     ]
+    },
+    "style": {
+     "median": 193.1,
+     "min": 180.5,
+     "max": 205.7,
+     "n": 2,
+     "runs": [
+      180.5,
+      205.7
+     ]
+    },
+    "layout": {
+     "median": 11.3,
+     "min": 3.9,
+     "max": 18.7,
+     "n": 2,
+     "runs": [
+      18.7,
+      3.9
+     ]
+    },
+    "paint": {
+     "median": 112.7,
+     "min": 105.6,
+     "max": 119.8,
+     "n": 2,
+     "runs": [
+      119.8,
+      105.6
+     ]
+    },
+    "other": {
+     "median": 70.3,
+     "min": 66.3,
+     "max": 74.2,
+     "n": 2,
+     "runs": [
+      74.2,
+      66.3
+     ]
+    },
+    "main": {
+     "median": 461.1,
+     "min": 457.1,
+     "max": 465,
+     "n": 2,
+     "runs": [
+      465,
+      457.1
+     ]
+    },
+    "layer": {
+     "median": 56.9,
+     "min": 54.3,
+     "max": 59.5,
+     "n": 2,
+     "runs": [
+      59.5,
+      54.3
+     ]
+    },
+    "hitTest": {
+     "median": 10.9,
+     "min": 10.7,
+     "max": 11,
+     "n": 2,
+     "runs": [
+      10.7,
+      11
+     ]
+    },
+    "navJs": {
+     "median": 81.1,
+     "min": 76.2,
+     "max": 86,
+     "n": 2,
+     "runs": [
+      76.2,
+      86
+     ]
+    },
+    "compositor": {
+     "median": 27.9,
+     "min": 27.3,
+     "max": 28.4,
+     "n": 2,
+     "runs": [
+      28.4,
+      27.3
+     ]
+    },
+    "wallMs": {
+     "median": 462.2,
+     "min": 457.8,
+     "max": 466.6,
+     "n": 2,
+     "runs": [
+      466.6,
+      457.8
+     ]
+    },
+    "frames": {
+     "median": 21.5,
+     "min": 21,
+     "max": 22,
+     "n": 2,
+     "runs": [
+      22,
+      21
+     ]
+    },
+    "mainPerFrame": {
+     "median": 21.5,
+     "min": 21.1,
+     "max": 21.8,
+     "n": 2,
+     "runs": [
+      21.1,
+      21.8
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 2901.5,
+     "min": 2836,
+     "max": 2967,
+     "n": 2,
+     "runs": [
+      2967,
+      2836
+     ]
+    },
+    "layoutObjects": {
+     "median": 150,
+     "min": 32,
+     "max": 268,
+     "n": 2,
+     "runs": [
+      268,
+      32
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      141.9
+     ],
+     [
+      ":0 elementFromPoint",
+      50.5
+     ],
+     [
+      "(injected frame logger):4 tick",
+      34.2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:11303 l",
+      6.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12964 ee",
+      5.8
+     ],
+     [
+      ":0 setProperty",
+      3.4
+     ],
+     [
+      ":0 requestAnimationFrame",
+      3.1
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4163 s",
+      2.6
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      180.5
+     ],
+     [
+      "script:FunctionCall",
+      63
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      54.6
+     ],
+     [
+      "paint:Layerize",
+      30.4
+     ],
+     [
+      "paint:PrePaint",
+      29.2
+     ],
+     [
+      "paint:Paint",
+      26.5
+     ],
+     [
+      "paint:Commit",
+      23.2
+     ],
+     [
+      "layout:Layout",
+      18.7
+     ],
+     [
+      "other:HitTest",
+      10.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      6.1
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "overlap",
+    "style": "overlap",
+    "layout": "overlap",
+    "paint": "higher",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "profile-showcase": {
+   "label": "profile showcase",
+   "A": {
+    "script": {
+     "median": 5.9,
+     "min": 5.1,
+     "max": 6.8,
+     "n": 2,
+     "runs": [
+      6.8,
+      5.1
+     ]
+    },
+    "style": {
+     "median": 10.1,
+     "min": 6.9,
+     "max": 13.3,
+     "n": 2,
+     "runs": [
+      13.3,
+      6.9
+     ]
+    },
+    "layout": {
+     "median": 2,
+     "min": 1.9,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      2,
+      1.9
+     ]
+    },
+    "paint": {
+     "median": 7.7,
+     "min": 5.7,
+     "max": 9.6,
+     "n": 2,
+     "runs": [
+      5.7,
+      9.6
+     ]
+    },
+    "other": {
+     "median": 6.9,
+     "min": 4.5,
+     "max": 9.3,
+     "n": 2,
+     "runs": [
+      4.5,
+      9.3
+     ]
+    },
+    "main": {
+     "median": 32.6,
+     "min": 32.3,
+     "max": 32.8,
+     "n": 2,
+     "runs": [
+      32.3,
+      32.8
+     ]
+    },
+    "layer": {
+     "median": 4.1,
+     "min": 1.5,
+     "max": 6.7,
+     "n": 2,
+     "runs": [
+      1.5,
+      6.7
+     ]
+    },
+    "hitTest": {
+     "median": 1.7,
+     "min": 1.5,
+     "max": 1.8,
+     "n": 2,
+     "runs": [
+      1.5,
+      1.8
+     ]
+    },
+    "navJs": {
+     "median": 2.6,
+     "min": 2.5,
+     "max": 2.7,
+     "n": 2,
+     "runs": [
+      2.5,
+      2.7
+     ]
+    },
+    "compositor": {
+     "median": 2.8,
+     "min": 2.6,
+     "max": 2.9,
+     "n": 2,
+     "runs": [
+      2.9,
+      2.6
+     ]
+    },
+    "wallMs": {
+     "median": 33.1,
+     "min": 32.6,
+     "max": 33.5,
+     "n": 2,
+     "runs": [
+      33.5,
+      32.6
+     ]
+    },
+    "frames": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "mainPerFrame": {
+     "median": 32.6,
+     "min": 32.3,
+     "max": 32.8,
+     "n": 2,
+     "runs": [
+      32.3,
+      32.8
+     ]
+    },
+    "k5": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 121,
+     "min": 120,
+     "max": 122,
+     "n": 2,
+     "runs": [
+      122,
+      120
+     ]
+    },
+    "layoutObjects": {
+     "median": 17,
+     "min": 16,
+     "max": 18,
+     "n": 2,
+     "runs": [
+      18,
+      16
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      12.5
+     ],
+     [
+      "(injected frame logger):4 tick",
+      4.5
+     ],
+     [
+      ":0 elementsFromPoint",
+      2.1
+     ],
+     [
+      ":0 setAttribute",
+      0.9
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 r",
+      0.9
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:11985 fwCheck",
+      0.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13754 _",
+      0.4
+     ],
+     [
+      ":0 requestAnimationFrame",
+      0.1
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      13.3
+     ],
+     [
+      "script:FunctionCall",
+      5.9
+     ],
+     [
+      "layout:Layout",
+      2
+     ],
+     [
+      "paint:PrePaint",
+      1.9
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      1.5
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      1.5
+     ],
+     [
+      "other:HitTest",
+      1.5
+     ],
+     [
+      "paint:UpdateLayer",
+      1.4
+     ],
+     [
+      "paint:Paint",
+      1.2
+     ],
+     [
+      "script:RunMicrotasks",
+      0.9
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 6.1,
+     "min": 5.8,
+     "max": 6.4,
+     "n": 2,
+     "runs": [
+      5.8,
+      6.4
+     ]
+    },
+    "style": {
+     "median": 8.5,
+     "min": 8.1,
+     "max": 8.9,
+     "n": 2,
+     "runs": [
+      8.9,
+      8.1
+     ]
+    },
+    "layout": {
+     "median": 1.3,
+     "min": 0.7,
+     "max": 1.9,
+     "n": 2,
+     "runs": [
+      0.7,
+      1.9
+     ]
+    },
+    "paint": {
+     "median": 10.1,
+     "min": 7.5,
+     "max": 12.7,
+     "n": 2,
+     "runs": [
+      12.7,
+      7.5
+     ]
+    },
+    "other": {
+     "median": 4.8,
+     "min": 3.1,
+     "max": 6.5,
+     "n": 2,
+     "runs": [
+      6.5,
+      3.1
+     ]
+    },
+    "main": {
+     "median": 30.8,
+     "min": 27,
+     "max": 34.6,
+     "n": 2,
+     "runs": [
+      34.6,
+      27
+     ]
+    },
+    "layer": {
+     "median": 6.1,
+     "min": 3.7,
+     "max": 8.5,
+     "n": 2,
+     "runs": [
+      8.5,
+      3.7
+     ]
+    },
+    "hitTest": {
+     "median": 1.7,
+     "min": 1.4,
+     "max": 1.9,
+     "n": 2,
+     "runs": [
+      1.4,
+      1.9
+     ]
+    },
+    "navJs": {
+     "median": 3,
+     "min": 2.5,
+     "max": 3.5,
+     "n": 2,
+     "runs": [
+      2.5,
+      3.5
+     ]
+    },
+    "compositor": {
+     "median": 2.3,
+     "min": 2,
+     "max": 2.6,
+     "n": 2,
+     "runs": [
+      2.6,
+      2
+     ]
+    },
+    "wallMs": {
+     "median": 29.3,
+     "min": 25,
+     "max": 33.6,
+     "n": 2,
+     "runs": [
+      33.6,
+      25
+     ]
+    },
+    "frames": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "mainPerFrame": {
+     "median": 30.8,
+     "min": 27,
+     "max": 34.6,
+     "n": 2,
+     "runs": [
+      34.6,
+      27
+     ]
+    },
+    "k5": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 123,
+     "min": 122,
+     "max": 124,
+     "n": 2,
+     "runs": [
+      122,
+      124
+     ]
+    },
+    "layoutObjects": {
+     "median": 17.5,
+     "min": 17,
+     "max": 18,
+     "n": 2,
+     "runs": [
+      18,
+      17
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      7.5
+     ],
+     [
+      ":0 elementsFromPoint",
+      2.5
+     ],
+     [
+      "(injected frame logger):4 tick",
+      1.6
+     ],
+     [
+      ":0 querySelector",
+      1.1
+     ],
+     [
+      ":0 setAttribute",
+      1
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12052 E",
+      0.6
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 r",
+      0.3
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1733 K",
+      0.2
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      8.9
+     ],
+     [
+      "paint:Layerize",
+      7.2
+     ],
+     [
+      "script:FunctionCall",
+      4.5
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      2.8
+     ],
+     [
+      "paint:Paint",
+      2.4
+     ],
+     [
+      "paint:PrePaint",
+      1.8
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      1.6
+     ],
+     [
+      "other:HitTest",
+      1.4
+     ],
+     [
+      "script:FireAnimationFrame",
+      1.3
+     ],
+     [
+      "paint:UpdateLayer",
+      1.1
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 12.1,
+     "min": 10.6,
+     "max": 13.6,
+     "n": 2,
+     "runs": [
+      10.6,
+      13.6
+     ]
+    },
+    "style": {
+     "median": 21.8,
+     "min": 21.1,
+     "max": 22.4,
+     "n": 2,
+     "runs": [
+      21.1,
+      22.4
+     ]
+    },
+    "layout": {
+     "median": 1,
+     "min": 0.2,
+     "max": 1.7,
+     "n": 2,
+     "runs": [
+      1.7,
+      0.2
+     ]
+    },
+    "paint": {
+     "median": 16,
+     "min": 15.8,
+     "max": 16.1,
+     "n": 2,
+     "runs": [
+      16.1,
+      15.8
+     ]
+    },
+    "other": {
+     "median": 6.3,
+     "min": 4.6,
+     "max": 7.9,
+     "n": 2,
+     "runs": [
+      7.9,
+      4.6
+     ]
+    },
+    "main": {
+     "median": 57,
+     "min": 56.6,
+     "max": 57.4,
+     "n": 2,
+     "runs": [
+      57.4,
+      56.6
+     ]
+    },
+    "layer": {
+     "median": 8.6,
+     "min": 8.3,
+     "max": 8.9,
+     "n": 2,
+     "runs": [
+      8.3,
+      8.9
+     ]
+    },
+    "hitTest": {
+     "median": 0.8,
+     "min": 0.2,
+     "max": 1.4,
+     "n": 2,
+     "runs": [
+      1.4,
+      0.2
+     ]
+    },
+    "navJs": {
+     "median": 9.3,
+     "min": 8.9,
+     "max": 9.6,
+     "n": 2,
+     "runs": [
+      8.9,
+      9.6
+     ]
+    },
+    "compositor": {
+     "median": 4.6,
+     "min": 4.5,
+     "max": 4.7,
+     "n": 2,
+     "runs": [
+      4.5,
+      4.7
+     ]
+    },
+    "wallMs": {
+     "median": 58.2,
+     "min": 58.1,
+     "max": 58.3,
+     "n": 2,
+     "runs": [
+      58.3,
+      58.1
+     ]
+    },
+    "frames": {
+     "median": 2,
+     "min": 2,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      2,
+      2
+     ]
+    },
+    "mainPerFrame": {
+     "median": 28.5,
+     "min": 28.3,
+     "max": 28.7,
+     "n": 2,
+     "runs": [
+      28.7,
+      28.3
+     ]
+    },
+    "k5": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 304,
+     "min": 292,
+     "max": 316,
+     "n": 2,
+     "runs": [
+      316,
+      292
+     ]
+    },
+    "layoutObjects": {
+     "median": 20,
+     "min": 8,
+     "max": 32,
+     "n": 2,
+     "runs": [
+      32,
+      8
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      19.4
+     ],
+     [
+      ":0 elementFromPoint",
+      5.2
+     ],
+     [
+      "(injected frame logger):4 tick",
+      4.7
+     ],
+     [
+      ":0 closest",
+      1.6
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 r",
+      1.1
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 l",
+      0.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:11303 l",
+      0.5
+     ],
+     [
+      ":0 getComputedStyle",
+      0.5
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      21.1
+     ],
+     [
+      "paint:Layerize",
+      6.7
+     ],
+     [
+      "script:FunctionCall",
+      5.4
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      5.1
+     ],
+     [
+      "paint:PrePaint",
+      3.8
+     ],
+     [
+      "paint:Paint",
+      3
+     ],
+     [
+      "script:V8.GC_MC_INCREMENTAL_EMBEDDER_TRACING",
+      2.8
+     ],
+     [
+      "layout:Layout",
+      1.7
+     ],
+     [
+      "script:FireAnimationFrame",
+      1.4
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      1.4
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "overlap",
+    "style": "overlap",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "pain": {
+   "label": "pain",
+   "A": {
+    "script": {
+     "median": 298.5,
+     "min": 295.8,
+     "max": 301.2,
+     "n": 2,
+     "runs": [
+      301.2,
+      295.8
+     ]
+    },
+    "style": {
+     "median": 191.8,
+     "min": 179.8,
+     "max": 203.7,
+     "n": 2,
+     "runs": [
+      179.8,
+      203.7
+     ]
+    },
+    "layout": {
+     "median": 18.9,
+     "min": 17.8,
+     "max": 20,
+     "n": 2,
+     "runs": [
+      20,
+      17.8
+     ]
+    },
+    "paint": {
+     "median": 826.1,
+     "min": 781.6,
+     "max": 870.5,
+     "n": 2,
+     "runs": [
+      781.6,
+      870.5
+     ]
+    },
+    "other": {
+     "median": 582.5,
+     "min": 560,
+     "max": 605,
+     "n": 2,
+     "runs": [
+      605,
+      560
+     ]
+    },
+    "main": {
+     "median": 1917.7,
+     "min": 1887.6,
+     "max": 1947.8,
+     "n": 2,
+     "runs": [
+      1887.6,
+      1947.8
+     ]
+    },
+    "layer": {
+     "median": 553.8,
+     "min": 523.4,
+     "max": 584.2,
+     "n": 2,
+     "runs": [
+      523.4,
+      584.2
+     ]
+    },
+    "hitTest": {
+     "median": 135.5,
+     "min": 133.6,
+     "max": 137.4,
+     "n": 2,
+     "runs": [
+      133.6,
+      137.4
+     ]
+    },
+    "navJs": {
+     "median": 284.8,
+     "min": 280.7,
+     "max": 288.9,
+     "n": 2,
+     "runs": [
+      280.7,
+      288.9
+     ]
+    },
+    "compositor": {
+     "median": 146.1,
+     "min": 142.9,
+     "max": 149.3,
+     "n": 2,
+     "runs": [
+      149.3,
+      142.9
+     ]
+    },
+    "wallMs": {
+     "median": 1929.2,
+     "min": 1899.2,
+     "max": 1959.2,
+     "n": 2,
+     "runs": [
+      1899.2,
+      1959.2
+     ]
+    },
+    "frames": {
+     "median": 122,
+     "min": 111,
+     "max": 133,
+     "n": 2,
+     "runs": [
+      111,
+      133
+     ]
+    },
+    "mainPerFrame": {
+     "median": 15.8,
+     "min": 14.6,
+     "max": 17,
+     "n": 2,
+     "runs": [
+      17,
+      14.6
+     ]
+    },
+    "k5": {
+     "median": 1.5,
+     "min": 1,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      2,
+      1
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 2679.5,
+     "min": 2377,
+     "max": 2982,
+     "n": 2,
+     "runs": [
+      2377,
+      2982
+     ]
+    },
+    "layoutObjects": {
+     "median": 315.5,
+     "min": 280,
+     "max": 351,
+     "n": 2,
+     "runs": [
+      280,
+      351
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementsFromPoint",
+      257
+     ],
+     [
+      "(injected frame logger):4 tick",
+      157.4
+     ],
+     [
+      ":0 getBoundingClientRect",
+      32.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4708 s",
+      9.4
+     ],
+     [
+      ":0 querySelector",
+      9.2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13704 F",
+      7.5
+     ],
+     [
+      ":0 setProperty",
+      6.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:858 e",
+      6.8
+     ]
+    ],
+    "topNames": [
+     [
+      "paint:Layerize",
+      440.6
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      296.8
+     ],
+     [
+      "script:FunctionCall",
+      231.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      179.8
+     ],
+     [
+      "paint:PrePaint",
+      140.8
+     ],
+     [
+      "other:HitTest",
+      133.6
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      132.9
+     ],
+     [
+      "paint:Paint",
+      102
+     ],
+     [
+      "paint:Commit",
+      73.1
+     ],
+     [
+      "other:RunTask",
+      33.2
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 271.2,
+     "min": 267.4,
+     "max": 274.9,
+     "n": 2,
+     "runs": [
+      267.4,
+      274.9
+     ]
+    },
+    "style": {
+     "median": 180.2,
+     "min": 172,
+     "max": 188.3,
+     "n": 2,
+     "runs": [
+      172,
+      188.3
+     ]
+    },
+    "layout": {
+     "median": 22.3,
+     "min": 19.3,
+     "max": 25.3,
+     "n": 2,
+     "runs": [
+      25.3,
+      19.3
+     ]
+    },
+    "paint": {
+     "median": 830.5,
+     "min": 806.7,
+     "max": 854.2,
+     "n": 2,
+     "runs": [
+      854.2,
+      806.7
+     ]
+    },
+    "other": {
+     "median": 578.3,
+     "min": 573.9,
+     "max": 582.8,
+     "n": 2,
+     "runs": [
+      573.9,
+      582.8
+     ]
+    },
+    "main": {
+     "median": 1882.4,
+     "min": 1872,
+     "max": 1892.8,
+     "n": 2,
+     "runs": [
+      1892.8,
+      1872
+     ]
+    },
+    "layer": {
+     "median": 572.5,
+     "min": 539.8,
+     "max": 605.2,
+     "n": 2,
+     "runs": [
+      605.2,
+      539.8
+     ]
+    },
+    "hitTest": {
+     "median": 150.5,
+     "min": 140.3,
+     "max": 160.7,
+     "n": 2,
+     "runs": [
+      160.7,
+      140.3
+     ]
+    },
+    "navJs": {
+     "median": 295.4,
+     "min": 283.1,
+     "max": 307.7,
+     "n": 2,
+     "runs": [
+      307.7,
+      283.1
+     ]
+    },
+    "compositor": {
+     "median": 138.8,
+     "min": 136.5,
+     "max": 141,
+     "n": 2,
+     "runs": [
+      141,
+      136.5
+     ]
+    },
+    "wallMs": {
+     "median": 1896.4,
+     "min": 1883.9,
+     "max": 1908.8,
+     "n": 2,
+     "runs": [
+      1908.8,
+      1883.9
+     ]
+    },
+    "frames": {
+     "median": 129.5,
+     "min": 120,
+     "max": 139,
+     "n": 2,
+     "runs": [
+      139,
+      120
+     ]
+    },
+    "mainPerFrame": {
+     "median": 14.6,
+     "min": 13.6,
+     "max": 15.6,
+     "n": 2,
+     "runs": [
+      13.6,
+      15.6
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 2496.5,
+     "min": 2429,
+     "max": 2564,
+     "n": 2,
+     "runs": [
+      2564,
+      2429
+     ]
+    },
+    "layoutObjects": {
+     "median": 317.5,
+     "min": 305,
+     "max": 330,
+     "n": 2,
+     "runs": [
+      305,
+      330
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementsFromPoint",
+      280
+     ],
+     [
+      "(injected frame logger):4 tick",
+      199.4
+     ],
+     [
+      ":0 getBoundingClientRect",
+      22.1
+     ],
+     [
+      ":0 querySelector",
+      15.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13892 _",
+      9.2
+     ],
+     [
+      ":0 requestAnimationFrame",
+      8.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13856 ee",
+      6.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4837 s",
+      6.5
+     ]
+    ],
+    "topNames": [
+     [
+      "paint:Layerize",
+      472.1
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      257.6
+     ],
+     [
+      "script:FunctionCall",
+      201.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      172
+     ],
+     [
+      "other:HitTest",
+      160.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      126.3
+     ],
+     [
+      "paint:PrePaint",
+      116
+     ],
+     [
+      "paint:Paint",
+      111.4
+     ],
+     [
+      "paint:Commit",
+      109.2
+     ],
+     [
+      "layout:Layout",
+      25.3
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 301.9,
+     "min": 297.9,
+     "max": 305.9,
+     "n": 2,
+     "runs": [
+      305.9,
+      297.9
+     ]
+    },
+    "style": {
+     "median": 560.6,
+     "min": 554.4,
+     "max": 566.7,
+     "n": 2,
+     "runs": [
+      566.7,
+      554.4
+     ]
+    },
+    "layout": {
+     "median": 112.9,
+     "min": 107.3,
+     "max": 118.5,
+     "n": 2,
+     "runs": [
+      107.3,
+      118.5
+     ]
+    },
+    "paint": {
+     "median": 564,
+     "min": 552.2,
+     "max": 575.8,
+     "n": 2,
+     "runs": [
+      552.2,
+      575.8
+     ]
+    },
+    "other": {
+     "median": 346.4,
+     "min": 343.1,
+     "max": 349.6,
+     "n": 2,
+     "runs": [
+      343.1,
+      349.6
+     ]
+    },
+    "main": {
+     "median": 1885.7,
+     "min": 1875.2,
+     "max": 1896.2,
+     "n": 2,
+     "runs": [
+      1875.2,
+      1896.2
+     ]
+    },
+    "layer": {
+     "median": 304.6,
+     "min": 302.3,
+     "max": 306.8,
+     "n": 2,
+     "runs": [
+      302.3,
+      306.8
+     ]
+    },
+    "hitTest": {
+     "median": 51.7,
+     "min": 51.2,
+     "max": 52.2,
+     "n": 2,
+     "runs": [
+      52.2,
+      51.2
+     ]
+    },
+    "navJs": {
+     "median": 332.5,
+     "min": 320.3,
+     "max": 344.6,
+     "n": 2,
+     "runs": [
+      320.3,
+      344.6
+     ]
+    },
+    "compositor": {
+     "median": 122.3,
+     "min": 117.7,
+     "max": 126.8,
+     "n": 2,
+     "runs": [
+      126.8,
+      117.7
+     ]
+    },
+    "wallMs": {
+     "median": 1892.4,
+     "min": 1883.5,
+     "max": 1901.3,
+     "n": 2,
+     "runs": [
+      1883.5,
+      1901.3
+     ]
+    },
+    "frames": {
+     "median": 77,
+     "min": 76,
+     "max": 78,
+     "n": 2,
+     "runs": [
+      78,
+      76
+     ]
+    },
+    "mainPerFrame": {
+     "median": 24.5,
+     "min": 24,
+     "max": 25,
+     "n": 2,
+     "runs": [
+      24,
+      25
+     ]
+    },
+    "k5": {
+     "median": 6,
+     "min": 6,
+     "max": 6,
+     "n": 2,
+     "runs": [
+      6,
+      6
+     ]
+    },
+    "k7": {
+     "median": 2.5,
+     "min": 2,
+     "max": 3,
+     "n": 2,
+     "runs": [
+      2,
+      3
+     ]
+    },
+    "styleElements": {
+     "median": 8388,
+     "min": 8368,
+     "max": 8408,
+     "n": 2,
+     "runs": [
+      8408,
+      8368
+     ]
+    },
+    "layoutObjects": {
+     "median": 1242,
+     "min": 1213,
+     "max": 1271,
+     "n": 2,
+     "runs": [
+      1213,
+      1271
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getBoundingClientRect",
+      385.3
+     ],
+     [
+      ":0 elementFromPoint",
+      221.2
+     ],
+     [
+      "(injected frame logger):4 tick",
+      154.3
+     ],
+     [
+      ":0 setProperty",
+      13.4
+     ],
+     [
+      ":0 querySelector",
+      10.3
+     ],
+     [
+      "(injected frame logger):3 ",
+      9.7
+     ],
+     [
+      ":0 requestAnimationFrame",
+      7.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13000 _",
+      6.5
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      566.7
+     ],
+     [
+      "paint:Layerize",
+      233.2
+     ],
+     [
+      "script:FunctionCall",
+      225.2
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      217.1
+     ],
+     [
+      "paint:PrePaint",
+      132.4
+     ],
+     [
+      "layout:Layout",
+      107.3
+     ],
+     [
+      "paint:Paint",
+      97.3
+     ],
+     [
+      "paint:Commit",
+      60
+     ],
+     [
+      "other:HitTest",
+      52.2
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      46.4
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "overlap",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "higher",
+    "navJs": "overlap",
+    "compositor": "lower"
+   }
+  },
+  "feed": {
+   "label": "profile feed",
+   "A": {
+    "script": {
+     "median": 68.8,
+     "min": 67.9,
+     "max": 69.7,
+     "n": 2,
+     "runs": [
+      69.7,
+      67.9
+     ]
+    },
+    "style": {
+     "median": 45.9,
+     "min": 44.3,
+     "max": 47.5,
+     "n": 2,
+     "runs": [
+      44.3,
+      47.5
+     ]
+    },
+    "layout": {
+     "median": 3.1,
+     "min": 3.1,
+     "max": 3.1,
+     "n": 2,
+     "runs": [
+      3.1,
+      3.1
+     ]
+    },
+    "paint": {
+     "median": 177,
+     "min": 164.7,
+     "max": 189.2,
+     "n": 2,
+     "runs": [
+      164.7,
+      189.2
+     ]
+    },
+    "other": {
+     "median": 127.3,
+     "min": 116.5,
+     "max": 138,
+     "n": 2,
+     "runs": [
+      138,
+      116.5
+     ]
+    },
+    "main": {
+     "median": 422,
+     "min": 419.8,
+     "max": 424.2,
+     "n": 2,
+     "runs": [
+      419.8,
+      424.2
+     ]
+    },
+    "layer": {
+     "median": 118,
+     "min": 108.3,
+     "max": 127.6,
+     "n": 2,
+     "runs": [
+      108.3,
+      127.6
+     ]
+    },
+    "hitTest": {
+     "median": 28.8,
+     "min": 27.9,
+     "max": 29.7,
+     "n": 2,
+     "runs": [
+      29.7,
+      27.9
+     ]
+    },
+    "navJs": {
+     "median": 75,
+     "min": 74.2,
+     "max": 75.8,
+     "n": 2,
+     "runs": [
+      74.2,
+      75.8
+     ]
+    },
+    "compositor": {
+     "median": 34.7,
+     "min": 33.2,
+     "max": 36.1,
+     "n": 2,
+     "runs": [
+      36.1,
+      33.2
+     ]
+    },
+    "wallMs": {
+     "median": 425.1,
+     "min": 425,
+     "max": 425.1,
+     "n": 2,
+     "runs": [
+      425.1,
+      425
+     ]
+    },
+    "frames": {
+     "median": 25.5,
+     "min": 24,
+     "max": 27,
+     "n": 2,
+     "runs": [
+      24,
+      27
+     ]
+    },
+    "mainPerFrame": {
+     "median": 16.6,
+     "min": 15.7,
+     "max": 17.5,
+     "n": 2,
+     "runs": [
+      17.5,
+      15.7
+     ]
+    },
+    "k5": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 502,
+     "min": 460,
+     "max": 544,
+     "n": 2,
+     "runs": [
+      460,
+      544
+     ]
+    },
+    "layoutObjects": {
+     "median": 90,
+     "min": 73,
+     "max": 107,
+     "n": 2,
+     "runs": [
+      107,
+      73
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementsFromPoint",
+      64.6
+     ],
+     [
+      "(injected frame logger):4 tick",
+      55.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3292 a",
+      5.1
+     ],
+     [
+      ":0 setAttribute",
+      4.4
+     ],
+     [
+      ":0 getBoundingClientRect",
+      3.4
+     ],
+     [
+      ":0 requestAnimationFrame",
+      2.9
+     ],
+     [
+      ":0 querySelector",
+      1.9
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 (anon)",
+      1.5
+     ]
+    ],
+    "topNames": [
+     [
+      "paint:Layerize",
+      87.1
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      75.1
+     ],
+     [
+      "script:FunctionCall",
+      53.7
+     ],
+     [
+      "style:UpdateLayoutTree",
+      44.3
+     ],
+     [
+      "paint:PrePaint",
+      32.9
+     ],
+     [
+      "other:HitTest",
+      29.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      23.8
+     ],
+     [
+      "paint:Commit",
+      19.7
+     ],
+     [
+      "paint:Paint",
+      17.5
+     ],
+     [
+      "other:RunTask",
+      8.4
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 63.7,
+     "min": 60.6,
+     "max": 66.7,
+     "n": 2,
+     "runs": [
+      60.6,
+      66.7
+     ]
+    },
+    "style": {
+     "median": 50.1,
+     "min": 49.4,
+     "max": 50.8,
+     "n": 2,
+     "runs": [
+      49.4,
+      50.8
+     ]
+    },
+    "layout": {
+     "median": 3.2,
+     "min": 2.4,
+     "max": 3.9,
+     "n": 2,
+     "runs": [
+      2.4,
+      3.9
+     ]
+    },
+    "paint": {
+     "median": 184.5,
+     "min": 183.5,
+     "max": 185.5,
+     "n": 2,
+     "runs": [
+      183.5,
+      185.5
+     ]
+    },
+    "other": {
+     "median": 132.4,
+     "min": 127.7,
+     "max": 137,
+     "n": 2,
+     "runs": [
+      127.7,
+      137
+     ]
+    },
+    "main": {
+     "median": 433.8,
+     "min": 423.6,
+     "max": 443.9,
+     "n": 2,
+     "runs": [
+      423.6,
+      443.9
+     ]
+    },
+    "layer": {
+     "median": 122.1,
+     "min": 114.8,
+     "max": 129.4,
+     "n": 2,
+     "runs": [
+      129.4,
+      114.8
+     ]
+    },
+    "hitTest": {
+     "median": 33.7,
+     "min": 30.2,
+     "max": 37.2,
+     "n": 2,
+     "runs": [
+      37.2,
+      30.2
+     ]
+    },
+    "navJs": {
+     "median": 72.8,
+     "min": 65.7,
+     "max": 79.9,
+     "n": 2,
+     "runs": [
+      65.7,
+      79.9
+     ]
+    },
+    "compositor": {
+     "median": 34.6,
+     "min": 33.3,
+     "max": 35.8,
+     "n": 2,
+     "runs": [
+      33.3,
+      35.8
+     ]
+    },
+    "wallMs": {
+     "median": 436.8,
+     "min": 424.6,
+     "max": 449,
+     "n": 2,
+     "runs": [
+      424.6,
+      449
+     ]
+    },
+    "frames": {
+     "median": 28.5,
+     "min": 27,
+     "max": 30,
+     "n": 2,
+     "runs": [
+      30,
+      27
+     ]
+    },
+    "mainPerFrame": {
+     "median": 15.3,
+     "min": 14.1,
+     "max": 16.4,
+     "n": 2,
+     "runs": [
+      14.1,
+      16.4
+     ]
+    },
+    "k5": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "k7": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "styleElements": {
+     "median": 525.5,
+     "min": 514,
+     "max": 537,
+     "n": 2,
+     "runs": [
+      537,
+      514
+     ]
+    },
+    "layoutObjects": {
+     "median": 96,
+     "min": 93,
+     "max": 99,
+     "n": 2,
+     "runs": [
+      93,
+      99
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementsFromPoint",
+      55.5
+     ],
+     [
+      "(injected frame logger):4 tick",
+      48.4
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4837 s",
+      5.2
+     ],
+     [
+      ":0 querySelector",
+      4.6
+     ],
+     [
+      ":0 setAttribute",
+      2.6
+     ],
+     [
+      ":0 getBoundingClientRect",
+      2.2
+     ],
+     [
+      ":0 closest",
+      2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12147 l",
+      1.9
+     ]
+    ],
+    "topNames": [
+     [
+      "paint:Layerize",
+      101.4
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      53.6
+     ],
+     [
+      "script:FunctionCall",
+      49.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      49.4
+     ],
+     [
+      "other:HitTest",
+      37.2
+     ],
+     [
+      "paint:PrePaint",
+      28.3
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      27.4
+     ],
+     [
+      "paint:Commit",
+      25.4
+     ],
+     [
+      "paint:Paint",
+      19.1
+     ],
+     [
+      "other:RunTask",
+      7.9
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 123.9,
+     "min": 116.3,
+     "max": 131.4,
+     "n": 2,
+     "runs": [
+      116.3,
+      131.4
+     ]
+    },
+    "style": {
+     "median": 126.3,
+     "min": 112.7,
+     "max": 139.9,
+     "n": 2,
+     "runs": [
+      139.9,
+      112.7
+     ]
+    },
+    "layout": {
+     "median": 15.1,
+     "min": 14.8,
+     "max": 15.4,
+     "n": 2,
+     "runs": [
+      14.8,
+      15.4
+     ]
+    },
+    "paint": {
+     "median": 136.8,
+     "min": 131.8,
+     "max": 141.8,
+     "n": 2,
+     "runs": [
+      141.8,
+      131.8
+     ]
+    },
+    "other": {
+     "median": 81.9,
+     "min": 77.3,
+     "max": 86.6,
+     "n": 2,
+     "runs": [
+      77.3,
+      86.6
+     ]
+    },
+    "main": {
+     "median": 484,
+     "min": 477.9,
+     "max": 490.1,
+     "n": 2,
+     "runs": [
+      490.1,
+      477.9
+     ]
+    },
+    "layer": {
+     "median": 71.5,
+     "min": 69,
+     "max": 73.9,
+     "n": 2,
+     "runs": [
+      73.9,
+      69
+     ]
+    },
+    "hitTest": {
+     "median": 9.6,
+     "min": 8.2,
+     "max": 11,
+     "n": 2,
+     "runs": [
+      11,
+      8.2
+     ]
+    },
+    "navJs": {
+     "median": 105.5,
+     "min": 103.3,
+     "max": 107.6,
+     "n": 2,
+     "runs": [
+      107.6,
+      103.3
+     ]
+    },
+    "compositor": {
+     "median": 32.8,
+     "min": 31.1,
+     "max": 34.4,
+     "n": 2,
+     "runs": [
+      34.4,
+      31.1
+     ]
+    },
+    "wallMs": {
+     "median": 487.6,
+     "min": 482.9,
+     "max": 492.3,
+     "n": 2,
+     "runs": [
+      492.3,
+      482.9
+     ]
+    },
+    "frames": {
+     "median": 24,
+     "min": 21,
+     "max": 27,
+     "n": 2,
+     "runs": [
+      27,
+      21
+     ]
+    },
+    "mainPerFrame": {
+     "median": 20.5,
+     "min": 18.2,
+     "max": 22.8,
+     "n": 2,
+     "runs": [
+      18.2,
+      22.8
+     ]
+    },
+    "k5": {
+     "median": 1.5,
+     "min": 1,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      1,
+      2
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 2047.5,
+     "min": 1793,
+     "max": 2302,
+     "n": 2,
+     "runs": [
+      2302,
+      1793
+     ]
+    },
+    "layoutObjects": {
+     "median": 448,
+     "min": 448,
+     "max": 448,
+     "n": 2,
+     "runs": [
+      448,
+      448
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementFromPoint",
+      74.8
+     ],
+     [
+      ":0 getBoundingClientRect",
+      63.7
+     ],
+     [
+      "(injected frame logger):4 tick",
+      41.7
+     ],
+     [
+      ":0 get offsetHeight",
+      25
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12955 F",
+      4.8
+     ],
+     [
+      ":0 requestAnimationFrame",
+      4.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13000 _",
+      4.4
+     ],
+     [
+      ":0 querySelector",
+      3.9
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      139.9
+     ],
+     [
+      "script:FunctionCall",
+      96.1
+     ],
+     [
+      "paint:Layerize",
+      54.8
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      43.3
+     ],
+     [
+      "paint:PrePaint",
+      37.8
+     ],
+     [
+      "paint:Paint",
+      25
+     ],
+     [
+      "paint:Commit",
+      16.3
+     ],
+     [
+      "layout:Layout",
+      14.8
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      13.8
+     ],
+     [
+      "other:HitTest",
+      11
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "higher",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "higher",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "commission": {
+   "label": "commission",
+   "A": {
+    "script": {
+     "median": 257,
+     "min": 246,
+     "max": 267.9,
+     "n": 2,
+     "runs": [
+      267.9,
+      246
+     ]
+    },
+    "style": {
+     "median": 143.9,
+     "min": 140,
+     "max": 147.7,
+     "n": 2,
+     "runs": [
+      147.7,
+      140
+     ]
+    },
+    "layout": {
+     "median": 32.3,
+     "min": 31,
+     "max": 33.5,
+     "n": 2,
+     "runs": [
+      31,
+      33.5
+     ]
+    },
+    "paint": {
+     "median": 436.5,
+     "min": 421.9,
+     "max": 451,
+     "n": 2,
+     "runs": [
+      451,
+      421.9
+     ]
+    },
+    "other": {
+     "median": 534.4,
+     "min": 531.2,
+     "max": 537.5,
+     "n": 2,
+     "runs": [
+      537.5,
+      531.2
+     ]
+    },
+    "main": {
+     "median": 1403.9,
+     "min": 1372.6,
+     "max": 1435.1,
+     "n": 2,
+     "runs": [
+      1435.1,
+      1372.6
+     ]
+    },
+    "layer": {
+     "median": 252.2,
+     "min": 252.2,
+     "max": 252.2,
+     "n": 2,
+     "runs": [
+      252.2,
+      252.2
+     ]
+    },
+    "hitTest": {
+     "median": 125,
+     "min": 114.8,
+     "max": 135.2,
+     "n": 2,
+     "runs": [
+      114.8,
+      135.2
+     ]
+    },
+    "navJs": {
+     "median": 235.2,
+     "min": 232.6,
+     "max": 237.8,
+     "n": 2,
+     "runs": [
+      237.8,
+      232.6
+     ]
+    },
+    "compositor": {
+     "median": 88.4,
+     "min": 83.6,
+     "max": 93.3,
+     "n": 2,
+     "runs": [
+      93.3,
+      83.6
+     ]
+    },
+    "wallMs": {
+     "median": 1478.8,
+     "min": 1466.1,
+     "max": 1491.5,
+     "n": 2,
+     "runs": [
+      1491.5,
+      1466.1
+     ]
+    },
+    "frames": {
+     "median": 131,
+     "min": 123,
+     "max": 139,
+     "n": 2,
+     "runs": [
+      123,
+      139
+     ]
+    },
+    "mainPerFrame": {
+     "median": 10.8,
+     "min": 9.9,
+     "max": 11.7,
+     "n": 2,
+     "runs": [
+      11.7,
+      9.9
+     ]
+    },
+    "k5": {
+     "median": 1.5,
+     "min": 1,
+     "max": 2,
+     "n": 2,
+     "runs": [
+      2,
+      1
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 2580,
+     "min": 2464,
+     "max": 2696,
+     "n": 2,
+     "runs": [
+      2464,
+      2696
+     ]
+    },
+    "layoutObjects": {
+     "median": 774,
+     "min": 768,
+     "max": 780,
+     "n": 2,
+     "runs": [
+      780,
+      768
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementsFromPoint",
+      207.6
+     ],
+     [
+      "(injected frame logger):4 tick",
+      150.7
+     ],
+     [
+      ":0 requestAnimationFrame",
+      13.1
+     ],
+     [
+      ":0 getBoundingClientRect",
+      8.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13704 F",
+      6.4
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13754 _",
+      6.3
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13718 ee",
+      4.7
+     ],
+     [
+      ":0 querySelector",
+      4.1
+     ]
+    ],
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      275.5
+     ],
+     [
+      "script:FunctionCall",
+      198.2
+     ],
+     [
+      "paint:Layerize",
+      168
+     ],
+     [
+      "style:UpdateLayoutTree",
+      147.7
+     ],
+     [
+      "other:HitTest",
+      114.8
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      99.1
+     ],
+     [
+      "paint:PrePaint",
+      96.7
+     ],
+     [
+      "paint:Paint",
+      77.8
+     ],
+     [
+      "paint:Commit",
+      66.9
+     ],
+     [
+      "layout:Layout",
+      31
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 262,
+     "min": 251.8,
+     "max": 272.1,
+     "n": 2,
+     "runs": [
+      251.8,
+      272.1
+     ]
+    },
+    "style": {
+     "median": 144.7,
+     "min": 137.5,
+     "max": 151.8,
+     "n": 2,
+     "runs": [
+      137.5,
+      151.8
+     ]
+    },
+    "layout": {
+     "median": 30.3,
+     "min": 30.1,
+     "max": 30.4,
+     "n": 2,
+     "runs": [
+      30.4,
+      30.1
+     ]
+    },
+    "paint": {
+     "median": 436.3,
+     "min": 426.4,
+     "max": 446.2,
+     "n": 2,
+     "runs": [
+      426.4,
+      446.2
+     ]
+    },
+    "other": {
+     "median": 529.7,
+     "min": 511.5,
+     "max": 547.8,
+     "n": 2,
+     "runs": [
+      511.5,
+      547.8
+     ]
+    },
+    "main": {
+     "median": 1402.8,
+     "min": 1357.6,
+     "max": 1448,
+     "n": 2,
+     "runs": [
+      1357.6,
+      1448
+     ]
+    },
+    "layer": {
+     "median": 252.8,
+     "min": 245.1,
+     "max": 260.5,
+     "n": 2,
+     "runs": [
+      245.1,
+      260.5
+     ]
+    },
+    "hitTest": {
+     "median": 134.9,
+     "min": 131.4,
+     "max": 138.3,
+     "n": 2,
+     "runs": [
+      131.4,
+      138.3
+     ]
+    },
+    "navJs": {
+     "median": 242.7,
+     "min": 236.7,
+     "max": 248.6,
+     "n": 2,
+     "runs": [
+      248.6,
+      236.7
+     ]
+    },
+    "compositor": {
+     "median": 87.9,
+     "min": 85.3,
+     "max": 90.5,
+     "n": 2,
+     "runs": [
+      85.3,
+      90.5
+     ]
+    },
+    "wallMs": {
+     "median": 1495.8,
+     "min": 1491.1,
+     "max": 1500.5,
+     "n": 2,
+     "runs": [
+      1491.1,
+      1500.5
+     ]
+    },
+    "frames": {
+     "median": 139,
+     "min": 132,
+     "max": 146,
+     "n": 2,
+     "runs": [
+      146,
+      132
+     ]
+    },
+    "mainPerFrame": {
+     "median": 10.1,
+     "min": 9.3,
+     "max": 11,
+     "n": 2,
+     "runs": [
+      9.3,
+      11
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 2685,
+     "min": 2552,
+     "max": 2818,
+     "n": 2,
+     "runs": [
+      2818,
+      2552
+     ]
+    },
+    "layoutObjects": {
+     "median": 724.5,
+     "min": 708,
+     "max": 741,
+     "n": 2,
+     "runs": [
+      741,
+      708
+     ]
+    },
+    "topJs": [
+     [
+      ":0 elementsFromPoint",
+      225.4
+     ],
+     [
+      "(injected frame logger):4 tick",
+      161.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13856 ee",
+      8.9
+     ],
+     [
+      ":0 querySelector",
+      8.8
+     ],
+     [
+      ":0 getBoundingClientRect",
+      8.8
+     ],
+     [
+      ":0 requestAnimationFrame",
+      7.9
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3292 a",
+      6.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3294 (anon)",
+      6.2
+     ]
+    ],
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      237
+     ],
+     [
+      "script:FunctionCall",
+      196.1
+     ],
+     [
+      "paint:Layerize",
+      160
+     ],
+     [
+      "style:UpdateLayoutTree",
+      137.5
+     ],
+     [
+      "other:HitTest",
+      131.4
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      91.3
+     ],
+     [
+      "paint:PrePaint",
+      84.2
+     ],
+     [
+      "paint:Paint",
+      76.5
+     ],
+     [
+      "paint:Commit",
+      68.5
+     ],
+     [
+      "layout:Layout",
+      30.4
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 271.1,
+     "min": 256,
+     "max": 286.1,
+     "n": 2,
+     "runs": [
+      286.1,
+      256
+     ]
+    },
+    "style": {
+     "median": 445.3,
+     "min": 423.6,
+     "max": 467,
+     "n": 2,
+     "runs": [
+      423.6,
+      467
+     ]
+    },
+    "layout": {
+     "median": 35.5,
+     "min": 34.2,
+     "max": 36.8,
+     "n": 2,
+     "runs": [
+      36.8,
+      34.2
+     ]
+    },
+    "paint": {
+     "median": 411.5,
+     "min": 411.3,
+     "max": 411.6,
+     "n": 2,
+     "runs": [
+      411.3,
+      411.6
+     ]
+    },
+    "other": {
+     "median": 321.7,
+     "min": 321,
+     "max": 322.3,
+     "n": 2,
+     "runs": [
+      321,
+      322.3
+     ]
+    },
+    "main": {
+     "median": 1485,
+     "min": 1478.8,
+     "max": 1491.1,
+     "n": 2,
+     "runs": [
+      1478.8,
+      1491.1
+     ]
+    },
+    "layer": {
+     "median": 214.8,
+     "min": 211.5,
+     "max": 218.1,
+     "n": 2,
+     "runs": [
+      218.1,
+      211.5
+     ]
+    },
+    "hitTest": {
+     "median": 35.8,
+     "min": 33.8,
+     "max": 37.9,
+     "n": 2,
+     "runs": [
+      37.9,
+      33.8
+     ]
+    },
+    "navJs": {
+     "median": 247.6,
+     "min": 246.5,
+     "max": 248.6,
+     "n": 2,
+     "runs": [
+      246.5,
+      248.6
+     ]
+    },
+    "compositor": {
+     "median": 76.4,
+     "min": 74.5,
+     "max": 78.2,
+     "n": 2,
+     "runs": [
+      78.2,
+      74.5
+     ]
+    },
+    "wallMs": {
+     "median": 1495,
+     "min": 1490.8,
+     "max": 1499.2,
+     "n": 2,
+     "runs": [
+      1490.8,
+      1499.2
+     ]
+    },
+    "frames": {
+     "median": 62,
+     "min": 58,
+     "max": 66,
+     "n": 2,
+     "runs": [
+      66,
+      58
+     ]
+    },
+    "mainPerFrame": {
+     "median": 24.1,
+     "min": 22.4,
+     "max": 25.7,
+     "n": 2,
+     "runs": [
+      22.4,
+      25.7
+     ]
+    },
+    "k5": {
+     "median": 4,
+     "min": 3,
+     "max": 5,
+     "n": 2,
+     "runs": [
+      3,
+      5
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 7768.5,
+     "min": 7441,
+     "max": 8096,
+     "n": 2,
+     "runs": [
+      8096,
+      7441
+     ]
+    },
+    "layoutObjects": {
+     "median": 719,
+     "min": 699,
+     "max": 739,
+     "n": 2,
+     "runs": [
+      739,
+      699
+     ]
+    },
+    "topJs": [
+     [
+      ":0 getClientRects",
+      172.9
+     ],
+     [
+      ":0 elementFromPoint",
+      165
+     ],
+     [
+      "(injected frame logger):4 tick",
+      139.3
+     ],
+     [
+      ":0 getBoundingClientRect",
+      81.2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3106 a",
+      13.3
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:12964 ee",
+      11.4
+     ],
+     [
+      ":0 setProperty",
+      8.9
+     ],
+     [
+      ":0 querySelector",
+      7.2
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      423.6
+     ],
+     [
+      "script:FunctionCall",
+      228.6
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      212.6
+     ],
+     [
+      "paint:Layerize",
+      174.4
+     ],
+     [
+      "paint:PrePaint",
+      86.5
+     ],
+     [
+      "paint:Paint",
+      84.2
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      38.2
+     ],
+     [
+      "other:HitTest",
+      37.9
+     ],
+     [
+      "paint:Commit",
+      37
+     ],
+     [
+      "layout:Layout",
+      36.8
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "overlap",
+    "style": "overlap",
+    "layout": "lower",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "platform": {
+   "label": "platform",
+   "A": {
+    "script": {
+     "median": 654.4,
+     "min": 646.5,
+     "max": 662.3,
+     "n": 2,
+     "runs": [
+      662.3,
+      646.5
+     ]
+    },
+    "style": {
+     "median": 393.8,
+     "min": 387.5,
+     "max": 400.1,
+     "n": 2,
+     "runs": [
+      400.1,
+      387.5
+     ]
+    },
+    "layout": {
+     "median": 161.5,
+     "min": 154.3,
+     "max": 168.6,
+     "n": 2,
+     "runs": [
+      168.6,
+      154.3
+     ]
+    },
+    "paint": {
+     "median": 1351.2,
+     "min": 1349.5,
+     "max": 1352.9,
+     "n": 2,
+     "runs": [
+      1349.5,
+      1352.9
+     ]
+    },
+    "other": {
+     "median": 863.9,
+     "min": 850.9,
+     "max": 876.9,
+     "n": 2,
+     "runs": [
+      876.9,
+      850.9
+     ]
+    },
+    "main": {
+     "median": 3424.8,
+     "min": 3392.1,
+     "max": 3457.4,
+     "n": 2,
+     "runs": [
+      3457.4,
+      3392.1
+     ]
+    },
+    "layer": {
+     "median": 762.1,
+     "min": 756.8,
+     "max": 767.3,
+     "n": 2,
+     "runs": [
+      756.8,
+      767.3
+     ]
+    },
+    "hitTest": {
+     "median": 117.9,
+     "min": 112.1,
+     "max": 123.7,
+     "n": 2,
+     "runs": [
+      123.7,
+      112.1
+     ]
+    },
+    "navJs": {
+     "median": 295.5,
+     "min": 294.6,
+     "max": 296.3,
+     "n": 2,
+     "runs": [
+      294.6,
+      296.3
+     ]
+    },
+    "compositor": {
+     "median": 309.8,
+     "min": 298,
+     "max": 321.5,
+     "n": 2,
+     "runs": [
+      321.5,
+      298
+     ]
+    },
+    "wallMs": {
+     "median": 3683.6,
+     "min": 3683.4,
+     "max": 3683.8,
+     "n": 2,
+     "runs": [
+      3683.4,
+      3683.8
+     ]
+    },
+    "frames": {
+     "median": 329,
+     "min": 312,
+     "max": 346,
+     "n": 2,
+     "runs": [
+      312,
+      346
+     ]
+    },
+    "mainPerFrame": {
+     "median": 10.4,
+     "min": 9.8,
+     "max": 11.1,
+     "n": 2,
+     "runs": [
+      11.1,
+      9.8
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 4600,
+     "min": 4346,
+     "max": 4854,
+     "n": 2,
+     "runs": [
+      4346,
+      4854
+     ]
+    },
+    "layoutObjects": {
+     "median": 2753.5,
+     "min": 2693,
+     "max": 2814,
+     "n": 2,
+     "runs": [
+      2693,
+      2814
+     ]
+    },
+    "topJs": [
+     [
+      "(injected frame logger):4 tick",
+      362
+     ],
+     [
+      ":0 elementsFromPoint",
+      246.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3292 a",
+      51
+     ],
+     [
+      ":0 requestAnimationFrame",
+      29.1
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:13718 ee",
+      18.5
+     ],
+     [
+      ":0 getBoundingClientRect",
+      17.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:908 #g",
+      11.1
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:2196 gi",
+      10.3
+     ]
+    ],
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      518
+     ],
+     [
+      "paint:Layerize",
+      500.6
+     ],
+     [
+      "script:FunctionCall",
+      493.4
+     ],
+     [
+      "style:UpdateLayoutTree",
+      400.1
+     ],
+     [
+      "paint:Paint",
+      301
+     ],
+     [
+      "paint:PrePaint",
+      244.2
+     ],
+     [
+      "paint:Commit",
+      212.4
+     ],
+     [
+      "layout:Layout",
+      168.6
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      157
+     ],
+     [
+      "other:HitTest",
+      123.7
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 562.8,
+     "min": 517.2,
+     "max": 608.4,
+     "n": 2,
+     "runs": [
+      608.4,
+      517.2
+     ]
+    },
+    "style": {
+     "median": 354.3,
+     "min": 330.5,
+     "max": 378,
+     "n": 2,
+     "runs": [
+      378,
+      330.5
+     ]
+    },
+    "layout": {
+     "median": 104.9,
+     "min": 65.1,
+     "max": 144.7,
+     "n": 2,
+     "runs": [
+      144.7,
+      65.1
+     ]
+    },
+    "paint": {
+     "median": 1193.8,
+     "min": 1054.1,
+     "max": 1333.4,
+     "n": 2,
+     "runs": [
+      1333.4,
+      1054.1
+     ]
+    },
+    "other": {
+     "median": 887.1,
+     "min": 873.7,
+     "max": 900.5,
+     "n": 2,
+     "runs": [
+      873.7,
+      900.5
+     ]
+    },
+    "main": {
+     "median": 3102.8,
+     "min": 2867.4,
+     "max": 3338.2,
+     "n": 2,
+     "runs": [
+      3338.2,
+      2867.4
+     ]
+    },
+    "layer": {
+     "median": 626.5,
+     "min": 508.6,
+     "max": 744.4,
+     "n": 2,
+     "runs": [
+      744.4,
+      508.6
+     ]
+    },
+    "hitTest": {
+     "median": 150.6,
+     "min": 129.2,
+     "max": 172.1,
+     "n": 2,
+     "runs": [
+      129.2,
+      172.1
+     ]
+    },
+    "navJs": {
+     "median": 285.2,
+     "min": 280.1,
+     "max": 290.3,
+     "n": 2,
+     "runs": [
+      290.3,
+      280.1
+     ]
+    },
+    "compositor": {
+     "median": 309.4,
+     "min": 308.5,
+     "max": 310.2,
+     "n": 2,
+     "runs": [
+      308.5,
+      310.2
+     ]
+    },
+    "wallMs": {
+     "median": 3662.3,
+     "min": 3641.6,
+     "max": 3682.9,
+     "n": 2,
+     "runs": [
+      3682.9,
+      3641.6
+     ]
+    },
+    "frames": {
+     "median": 357.5,
+     "min": 346,
+     "max": 369,
+     "n": 2,
+     "runs": [
+      346,
+      369
+     ]
+    },
+    "mainPerFrame": {
+     "median": 8.7,
+     "min": 7.8,
+     "max": 9.6,
+     "n": 2,
+     "runs": [
+      9.6,
+      7.8
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 4821,
+     "min": 4738,
+     "max": 4904,
+     "n": 2,
+     "runs": [
+      4738,
+      4904
+     ]
+    },
+    "layoutObjects": {
+     "median": 1841.5,
+     "min": 825,
+     "max": 2858,
+     "n": 2,
+     "runs": [
+      2858,
+      825
+     ]
+    },
+    "topJs": [
+     [
+      "(injected frame logger):4 tick",
+      353.2
+     ],
+     [
+      ":0 elementsFromPoint",
+      257.1
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3292 a",
+      53.1
+     ],
+     [
+      ":0 requestAnimationFrame",
+      25.8
+     ],
+     [
+      ":0 getBoundingClientRect",
+      25.7
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      14.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:2196 gi",
+      10.1
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1067 ensure",
+      6.8
+     ]
+    ],
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      517.4
+     ],
+     [
+      "paint:Layerize",
+      511.4
+     ],
+     [
+      "script:FunctionCall",
+      455.4
+     ],
+     [
+      "style:UpdateLayoutTree",
+      378
+     ],
+     [
+      "paint:Paint",
+      308.2
+     ],
+     [
+      "paint:PrePaint",
+      244.3
+     ],
+     [
+      "paint:Commit",
+      181.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      145.9
+     ],
+     [
+      "layout:Layout",
+      144.7
+     ],
+     [
+      "other:HitTest",
+      129.2
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 715,
+     "min": 689.3,
+     "max": 740.7,
+     "n": 2,
+     "runs": [
+      689.3,
+      740.7
+     ]
+    },
+    "style": {
+     "median": 660.1,
+     "min": 650.3,
+     "max": 669.8,
+     "n": 2,
+     "runs": [
+      650.3,
+      669.8
+     ]
+    },
+    "layout": {
+     "median": 122.8,
+     "min": 62.2,
+     "max": 183.4,
+     "n": 2,
+     "runs": [
+      62.2,
+      183.4
+     ]
+    },
+    "paint": {
+     "median": 1243.7,
+     "min": 1207.2,
+     "max": 1280.2,
+     "n": 2,
+     "runs": [
+      1207.2,
+      1280.2
+     ]
+    },
+    "other": {
+     "median": 695.8,
+     "min": 673.4,
+     "max": 718.1,
+     "n": 2,
+     "runs": [
+      673.4,
+      718.1
+     ]
+    },
+    "main": {
+     "median": 3437.3,
+     "min": 3282.4,
+     "max": 3592.2,
+     "n": 2,
+     "runs": [
+      3282.4,
+      3592.2
+     ]
+    },
+    "layer": {
+     "median": 659.6,
+     "min": 640.3,
+     "max": 678.8,
+     "n": 2,
+     "runs": [
+      640.3,
+      678.8
+     ]
+    },
+    "hitTest": {
+     "median": 81.5,
+     "min": 76.5,
+     "max": 86.4,
+     "n": 2,
+     "runs": [
+      86.4,
+      76.5
+     ]
+    },
+    "navJs": {
+     "median": 447.2,
+     "min": 432.5,
+     "max": 461.8,
+     "n": 2,
+     "runs": [
+      432.5,
+      461.8
+     ]
+    },
+    "compositor": {
+     "median": 252.8,
+     "min": 244.4,
+     "max": 261.2,
+     "n": 2,
+     "runs": [
+      261.2,
+      244.4
+     ]
+    },
+    "wallMs": {
+     "median": 3649.9,
+     "min": 3649.9,
+     "max": 3649.9,
+     "n": 2,
+     "runs": [
+      3649.9,
+      3649.9
+     ]
+    },
+    "frames": {
+     "median": 278.5,
+     "min": 242,
+     "max": 315,
+     "n": 2,
+     "runs": [
+      315,
+      242
+     ]
+    },
+    "mainPerFrame": {
+     "median": 12.6,
+     "min": 10.4,
+     "max": 14.8,
+     "n": 2,
+     "runs": [
+      10.4,
+      14.8
+     ]
+    },
+    "k5": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "k7": {
+     "median": 1,
+     "min": 1,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      1,
+      1
+     ]
+    },
+    "styleElements": {
+     "median": 10640,
+     "min": 9837,
+     "max": 11443,
+     "n": 2,
+     "runs": [
+      11443,
+      9837
+     ]
+    },
+    "layoutObjects": {
+     "median": 2119,
+     "min": 698,
+     "max": 3540,
+     "n": 2,
+     "runs": [
+      698,
+      3540
+     ]
+    },
+    "topJs": [
+     [
+      "(injected frame logger):4 tick",
+      322.8
+     ],
+     [
+      ":0 elementFromPoint",
+      310.5
+     ],
+     [
+      ":0 getBoundingClientRect",
+      143.6
+     ],
+     [
+      ":0 getClientRects",
+      95.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3106 a",
+      31.4
+     ],
+     [
+      ":0 setProperty",
+      24.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      21.7
+     ],
+     [
+      ":0 querySelector",
+      14.8
+     ]
+    ],
+    "topNames": [
+     [
+      "style:UpdateLayoutTree",
+      650.3
+     ],
+     [
+      "script:FunctionCall",
+      540.9
+     ],
+     [
+      "paint:Layerize",
+      438.6
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      427.7
+     ],
+     [
+      "paint:Paint",
+      285.8
+     ],
+     [
+      "paint:PrePaint",
+      233.8
+     ],
+     [
+      "paint:Commit",
+      157.2
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      95.9
+     ],
+     [
+      "other:HitTest",
+      86.4
+     ],
+     [
+      "layout:Layout",
+      62.2
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "lower",
+    "layout": "lower",
+    "paint": "lower",
+    "other": "overlap",
+    "main": "lower",
+    "layer": "lower",
+    "hitTest": "higher",
+    "navJs": "lower",
+    "compositor": "overlap"
+   }
+  }
+ },
+ "scrollTotal": {
+  "A": {
+   "script": {
+    "median": 1467.4,
+    "min": 1444.2,
+    "max": 1490.7,
+    "n": 2,
+    "runs": [
+     1490.7,
+     1444.2
+    ]
+   },
+   "style": {
+    "median": 1157.7,
+    "min": 1149.2,
+    "max": 1166.2,
+    "n": 2,
+    "runs": [
+     1166.2,
+     1149.2
+    ]
+   },
+   "layout": {
+    "median": 222.2,
+    "min": 215.2,
+    "max": 229.2,
+    "n": 2,
+    "runs": [
+     229.2,
+     215.2
+    ]
+   },
+   "paint": {
+    "median": 3292.3,
+    "min": 3259.8,
+    "max": 3324.8,
+    "n": 2,
+    "runs": [
+     3259.8,
+     3324.8
+    ]
+   },
+   "other": {
+    "median": 2413.9,
+    "min": 2363.6,
+    "max": 2464.1,
+    "n": 2,
+    "runs": [
+     2464.1,
+     2363.6
+    ]
+   },
+   "main": {
+    "median": 8553.5,
+    "min": 8497,
+    "max": 8610,
+    "n": 2,
+    "runs": [
+     8610,
+     8497
+    ]
+   },
+   "layer": {
+    "median": 2044.8,
+    "min": 2000.1,
+    "max": 2089.5,
+    "n": 2,
+    "runs": [
+     2000.1,
+     2089.5
+    ]
+   },
+   "hitTest": {
+    "median": 456.8,
+    "min": 451.6,
+    "max": 461.9,
+    "n": 2,
+    "runs": [
+     451.6,
+     461.9
+    ]
+   },
+   "navJs": {
+    "median": 1004.9,
+    "min": 998.5,
+    "max": 1011.2,
+    "n": 2,
+    "runs": [
+     998.5,
+     1011.2
+    ]
+   },
+   "compositor": {
+    "median": 678,
+    "min": 650.2,
+    "max": 705.7,
+    "n": 2,
+    "runs": [
+     705.7,
+     650.2
+    ]
+   },
+   "wallMs": {
+    "median": 8892.1,
+    "min": 8884.1,
+    "max": 8900.1,
+    "n": 2,
+    "runs": [
+     8900.1,
+     8884.1
+    ]
+   },
+   "frames": {
+    "median": 693.5,
+    "min": 653,
+    "max": 734,
+    "n": 2,
+    "runs": [
+     653,
+     734
+    ]
+   },
+   "k5": {
+    "median": 5.5,
+    "min": 4,
+    "max": 7,
+    "n": 2,
+    "runs": [
+     7,
+     4
+    ]
+   },
+   "k7": {
+    "median": 2.5,
+    "min": 2,
+    "max": 3,
+    "n": 2,
+    "runs": [
+     3,
+     2
+    ]
+   },
+   "mainPerFrame": {
+    "median": 12.4,
+    "min": 11.6,
+    "max": 13.2,
+    "n": 2,
+    "runs": [
+     13.2,
+     11.6
+    ]
+   }
+  },
+  "V": {
+   "script": {
+    "median": 1336.8,
+    "min": 1324.3,
+    "max": 1349.3,
+    "n": 2,
+    "runs": [
+     1349.3,
+     1324.3
+    ]
+   },
+   "style": {
+    "median": 1118.8,
+    "min": 1117,
+    "max": 1120.6,
+    "n": 2,
+    "runs": [
+     1120.6,
+     1117
+    ]
+   },
+   "layout": {
+    "median": 170.8,
+    "min": 126.7,
+    "max": 214.8,
+    "n": 2,
+    "runs": [
+     214.8,
+     126.7
+    ]
+   },
+   "paint": {
+    "median": 3157.7,
+    "min": 3005.2,
+    "max": 3310.2,
+    "n": 2,
+    "runs": [
+     3310.2,
+     3005.2
+    ]
+   },
+   "other": {
+    "median": 2413.8,
+    "min": 2375.3,
+    "max": 2452.2,
+    "n": 2,
+    "runs": [
+     2375.3,
+     2452.2
+    ]
+   },
+   "main": {
+    "median": 8197.8,
+    "min": 8025.4,
+    "max": 8370.2,
+    "n": 2,
+    "runs": [
+     8370.2,
+     8025.4
+    ]
+   },
+   "layer": {
+    "median": 1937.5,
+    "min": 1795.4,
+    "max": 2079.5,
+    "n": 2,
+    "runs": [
+     2079.5,
+     1795.4
+    ]
+   },
+   "hitTest": {
+    "median": 521.7,
+    "min": 508.8,
+    "max": 534.6,
+    "n": 2,
+    "runs": [
+     508.8,
+     534.6
+    ]
+   },
+   "navJs": {
+    "median": 1013.9,
+    "min": 991.7,
+    "max": 1036,
+    "n": 2,
+    "runs": [
+     1036,
+     991.7
+    ]
+   },
+   "compositor": {
+    "median": 666.4,
+    "min": 665.2,
+    "max": 667.6,
+    "n": 2,
+    "runs": [
+     665.2,
+     667.6
+    ]
+   },
+   "wallMs": {
+    "median": 8878.7,
+    "min": 8875,
+    "max": 8882.3,
+    "n": 2,
+    "runs": [
+     8882.3,
+     8875
+    ]
+   },
+   "frames": {
+    "median": 744.5,
+    "min": 738,
+    "max": 751,
+    "n": 2,
+    "runs": [
+     751,
+     738
+    ]
+   },
+   "k5": {
+    "median": 5,
+    "min": 5,
+    "max": 5,
+    "n": 2,
+    "runs": [
+     5,
+     5
+    ]
+   },
+   "k7": {
+    "median": 2,
+    "min": 2,
+    "max": 2,
+    "n": 2,
+    "runs": [
+     2,
+     2
+    ]
+   },
+   "mainPerFrame": {
+    "median": 11,
+    "min": 10.9,
+    "max": 11.1,
+    "n": 2,
+    "runs": [
+     11.1,
+     10.9
+    ]
+   }
+  },
+  "B": {
+   "script": {
+    "median": 1649.2,
+    "min": 1611.6,
+    "max": 1686.8,
+    "n": 2,
+    "runs": [
+     1611.6,
+     1686.8
+    ]
+   },
+   "style": {
+    "median": 2255.5,
+    "min": 2228.1,
+    "max": 2282.8,
+    "n": 2,
+    "runs": [
+     2228.1,
+     2282.8
+    ]
+   },
+   "layout": {
+    "median": 357.9,
+    "min": 281.7,
+    "max": 434,
+    "n": 2,
+    "runs": [
+     281.7,
+     434
+    ]
+   },
+   "paint": {
+    "median": 2714.3,
+    "min": 2673.8,
+    "max": 2754.8,
+    "n": 2,
+    "runs": [
+     2673.8,
+     2754.8
+    ]
+   },
+   "other": {
+    "median": 1635.9,
+    "min": 1605.7,
+    "max": 1666.1,
+    "n": 2,
+    "runs": [
+     1605.7,
+     1666.1
+    ]
+   },
+   "main": {
+    "median": 8612.7,
+    "min": 8400.9,
+    "max": 8824.5,
+    "n": 2,
+    "runs": [
+     8400.9,
+     8824.5
+    ]
+   },
+   "layer": {
+    "median": 1445.4,
+    "min": 1429.3,
+    "max": 1461.6,
+    "n": 2,
+    "runs": [
+     1429.3,
+     1461.6
+    ]
+   },
+   "hitTest": {
+    "median": 201,
+    "min": 193.5,
+    "max": 208.4,
+    "n": 2,
+    "runs": [
+     208.4,
+     193.5
+    ]
+   },
+   "navJs": {
+    "median": 1308.4,
+    "min": 1279.6,
+    "max": 1337.2,
+    "n": 2,
+    "runs": [
+     1279.6,
+     1337.2
+    ]
+   },
+   "compositor": {
+    "median": 567,
+    "min": 550.9,
+    "max": 583.1,
+    "n": 2,
+    "runs": [
+     583.1,
+     550.9
+    ]
+   },
+   "wallMs": {
+    "median": 8899.6,
+    "min": 8890.8,
+    "max": 8908.3,
+    "n": 2,
+    "runs": [
+     8890.8,
+     8908.3
+    ]
+   },
+   "frames": {
+    "median": 527,
+    "min": 480,
+    "max": 574,
+    "n": 2,
+    "runs": [
+     574,
+     480
+    ]
+   },
+   "k5": {
+    "median": 15,
+    "min": 13,
+    "max": 17,
+    "n": 2,
+    "runs": [
+     13,
+     17
+    ]
+   },
+   "k7": {
+    "median": 6,
+    "min": 5,
+    "max": 7,
+    "n": 2,
+    "runs": [
+     5,
+     7
+    ]
+   },
+   "mainPerFrame": {
+    "median": 16.5,
+    "min": 14.6,
+    "max": 18.4,
+    "n": 2,
+    "runs": [
+     14.6,
+     18.4
+    ]
+   }
+  },
+  "v8vsV7": {
+   "script": "lower",
+   "style": "lower",
+   "layout": "lower",
+   "paint": "overlap",
+   "other": "overlap",
+   "main": "lower",
+   "layer": "overlap",
+   "hitTest": "higher",
+   "navJs": "overlap",
+   "compositor": "overlap"
+  }
+ },
+ "rest": {
+  "hero": {
+   "y": {
+    "A": 0,
+    "V": 0,
+    "B": 0
+   },
+   "section": "hero-track",
+   "A": {
+    "script": {
+     "median": 55.8,
+     "min": 47.3,
+     "max": 64.3,
+     "n": 2,
+     "runs": [
+      64.3,
+      47.3
+     ]
+    },
+    "style": {
+     "median": 71.4,
+     "min": 68.4,
+     "max": 74.4,
+     "n": 2,
+     "runs": [
+      74.4,
+      68.4
+     ]
+    },
+    "layout": {
+     "median": 0.9,
+     "min": 0.9,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      0.9,
+      1
+     ]
+    },
+    "paint": {
+     "median": 523.4,
+     "min": 504.6,
+     "max": 542.3,
+     "n": 2,
+     "runs": [
+      542.3,
+      504.6
+     ]
+    },
+    "other": {
+     "median": 247.1,
+     "min": 223.1,
+     "max": 271,
+     "n": 2,
+     "runs": [
+      271,
+      223.1
+     ]
+    },
+    "main": {
+     "median": 898.6,
+     "min": 844.4,
+     "max": 952.9,
+     "n": 2,
+     "runs": [
+      952.9,
+      844.4
+     ]
+    },
+    "layer": {
+     "median": 419.4,
+     "min": 408.4,
+     "max": 430.4,
+     "n": 2,
+     "runs": [
+      430.4,
+      408.4
+     ]
+    },
+    "hitTest": {
+     "median": 0.3,
+     "min": 0.3,
+     "max": 0.3,
+     "n": 2,
+     "runs": [
+      0.3,
+      0.3
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 70.5,
+     "min": 67.1,
+     "max": 74,
+     "n": 2,
+     "runs": [
+      74,
+      67.1
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      1908
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      940.6
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      591.7
+     ],
+     [
+      "paint:Commit",
+      506
+     ],
+     [
+      "style:UpdateLayoutTree",
+      446.6
+     ],
+     [
+      "paint:PrePaint",
+      406.3
+     ],
+     [
+      "paint:Paint",
+      265.2
+     ],
+     [
+      "script:FunctionCall",
+      240.9
+     ],
+     [
+      "paint:UpdateLayer",
+      169.7
+     ],
+     [
+      "other:RunTask",
+      64.9
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 animate",
+      50.6
+     ],
+     [
+      ":0 requestAnimationFrame",
+      25.1
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4191 (anon)",
+      20.3
+     ],
+     [
+      "(injected frame logger):4 tick",
+      12
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4193 (anon)",
+      6
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      4.5
+     ],
+     [
+      ":0 KeyframeEffect",
+      2.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:908 #g",
+      2.7
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 44.3,
+     "min": 43.9,
+     "max": 44.6,
+     "n": 2,
+     "runs": [
+      44.6,
+      43.9
+     ]
+    },
+    "style": {
+     "median": 66.9,
+     "min": 61.9,
+     "max": 72,
+     "n": 2,
+     "runs": [
+      61.9,
+      72
+     ]
+    },
+    "layout": {
+     "median": 0.9,
+     "min": 0.8,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      0.8,
+      1
+     ]
+    },
+    "paint": {
+     "median": 517.4,
+     "min": 503.1,
+     "max": 531.7,
+     "n": 2,
+     "runs": [
+      503.1,
+      531.7
+     ]
+    },
+    "other": {
+     "median": 215.2,
+     "min": 201.2,
+     "max": 229.2,
+     "n": 2,
+     "runs": [
+      201.2,
+      229.2
+     ]
+    },
+    "main": {
+     "median": 844.7,
+     "min": 811.6,
+     "max": 877.8,
+     "n": 2,
+     "runs": [
+      811.6,
+      877.8
+     ]
+    },
+    "layer": {
+     "median": 416.7,
+     "min": 404.6,
+     "max": 428.8,
+     "n": 2,
+     "runs": [
+      404.6,
+      428.8
+     ]
+    },
+    "hitTest": {
+     "median": 0.6,
+     "min": 0.3,
+     "max": 0.9,
+     "n": 2,
+     "runs": [
+      0.3,
+      0.9
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 68.3,
+     "min": 65.5,
+     "max": 71.1,
+     "n": 2,
+     "runs": [
+      65.5,
+      71.1
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      1773.3
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      604.2
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      524.7
+     ],
+     [
+      "paint:Commit",
+      476.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      371.8
+     ],
+     [
+      "paint:PrePaint",
+      336.9
+     ],
+     [
+      "paint:Paint",
+      254.9
+     ],
+     [
+      "paint:UpdateLayer",
+      180.2
+     ],
+     [
+      "script:FunctionCall",
+      141
+     ],
+     [
+      "other:RunTask",
+      55.2
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      32.3
+     ],
+     [
+      ":0 animate",
+      20.6
+     ],
+     [
+      "(injected frame logger):4 tick",
+      9.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4235 (anon)",
+      6.7
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      6.3
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4240 (anon)",
+      3.8
+     ],
+     [
+      ":0 KeyframeEffect",
+      2.3
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3887 l",
+      2.2
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 66.3,
+     "min": 46.8,
+     "max": 85.8,
+     "n": 2,
+     "runs": [
+      46.8,
+      85.8
+     ]
+    },
+    "style": {
+     "median": 74.4,
+     "min": 65.9,
+     "max": 82.8,
+     "n": 2,
+     "runs": [
+      65.9,
+      82.8
+     ]
+    },
+    "layout": {
+     "median": 32.4,
+     "min": 32.1,
+     "max": 32.6,
+     "n": 2,
+     "runs": [
+      32.1,
+      32.6
+     ]
+    },
+    "paint": {
+     "median": 349,
+     "min": 316.8,
+     "max": 381.2,
+     "n": 2,
+     "runs": [
+      316.8,
+      381.2
+     ]
+    },
+    "other": {
+     "median": 141.6,
+     "min": 112.6,
+     "max": 170.6,
+     "n": 2,
+     "runs": [
+      112.6,
+      170.6
+     ]
+    },
+    "main": {
+     "median": 663.6,
+     "min": 574.3,
+     "max": 753,
+     "n": 2,
+     "runs": [
+      574.3,
+      753
+     ]
+    },
+    "layer": {
+     "median": 245.6,
+     "min": 225.4,
+     "max": 265.9,
+     "n": 2,
+     "runs": [
+      225.4,
+      265.9
+     ]
+    },
+    "hitTest": {
+     "median": 0.3,
+     "min": 0.1,
+     "max": 0.6,
+     "n": 2,
+     "runs": [
+      0.1,
+      0.6
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 61.3,
+     "min": 56.2,
+     "max": 66.3,
+     "n": 2,
+     "runs": [
+      56.2,
+      66.3
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      848.6
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      426.6
+     ],
+     [
+      "style:UpdateLayoutTree",
+      395.7
+     ],
+     [
+      "paint:Commit",
+      369.4
+     ],
+     [
+      "paint:PrePaint",
+      325.1
+     ],
+     [
+      "paint:Paint",
+      223.8
+     ],
+     [
+      "script:FunctionCall",
+      211.8
+     ],
+     [
+      "layout:Layout",
+      193
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      182.8
+     ],
+     [
+      "paint:UpdateLayer",
+      135.5
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      25.5
+     ],
+     [
+      ":0 setProperty",
+      24.1
+     ],
+     [
+      "(injected frame logger):4 tick",
+      10.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      9.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:908 #g",
+      8.4
+     ],
+     [
+      ":0 before",
+      8.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      7.3
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1067 ensure",
+      6.2
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "overlap",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "people": {
+   "y": {
+    "A": 933,
+    "V": 933,
+    "B": 933
+   },
+   "section": "pain",
+   "A": {
+    "script": {
+     "median": 49.2,
+     "min": 45.7,
+     "max": 52.6,
+     "n": 2,
+     "runs": [
+      45.7,
+      52.6
+     ]
+    },
+    "style": {
+     "median": 75.7,
+     "min": 70.3,
+     "max": 81,
+     "n": 2,
+     "runs": [
+      81,
+      70.3
+     ]
+    },
+    "layout": {
+     "median": 3.1,
+     "min": 2.7,
+     "max": 3.5,
+     "n": 2,
+     "runs": [
+      2.7,
+      3.5
+     ]
+    },
+    "paint": {
+     "median": 574.6,
+     "min": 555.8,
+     "max": 593.3,
+     "n": 2,
+     "runs": [
+      593.3,
+      555.8
+     ]
+    },
+    "other": {
+     "median": 217.9,
+     "min": 204,
+     "max": 231.8,
+     "n": 2,
+     "runs": [
+      231.8,
+      204
+     ]
+    },
+    "main": {
+     "median": 920.5,
+     "min": 886.3,
+     "max": 954.6,
+     "n": 2,
+     "runs": [
+      954.6,
+      886.3
+     ]
+    },
+    "layer": {
+     "median": 456.8,
+     "min": 442.1,
+     "max": 471.4,
+     "n": 2,
+     "runs": [
+      471.4,
+      442.1
+     ]
+    },
+    "hitTest": {
+     "median": 0.9,
+     "min": 0.7,
+     "max": 1,
+     "n": 2,
+     "runs": [
+      0.7,
+      1
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 53,
+     "min": 51.8,
+     "max": 54.2,
+     "n": 2,
+     "runs": [
+      54.2,
+      51.8
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      2348.9
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      907
+     ],
+     [
+      "style:UpdateLayoutTree",
+      486.9
+     ],
+     [
+      "paint:PrePaint",
+      456.8
+     ],
+     [
+      "paint:Commit",
+      419.2
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      353.8
+     ],
+     [
+      "paint:Paint",
+      272.9
+     ],
+     [
+      "script:FunctionCall",
+      184.2
+     ],
+     [
+      "other:BlinkScheduler_PerformMicrotaskCheckpoint",
+      68.1
+     ],
+     [
+      "paint:UpdateLayer",
+      64.2
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 animate",
+      27.2
+     ],
+     [
+      ":0 requestAnimationFrame",
+      22.1
+     ],
+     [
+      "(injected frame logger):4 tick",
+      12.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4191 (anon)",
+      5.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4193 (anon)",
+      4.8
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      4.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      2.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4050 JE",
+      2.5
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 43.5,
+     "min": 43.1,
+     "max": 43.9,
+     "n": 2,
+     "runs": [
+      43.9,
+      43.1
+     ]
+    },
+    "style": {
+     "median": 68,
+     "min": 64.9,
+     "max": 71.2,
+     "n": 2,
+     "runs": [
+      71.2,
+      64.9
+     ]
+    },
+    "layout": {
+     "median": 2.7,
+     "min": 2.2,
+     "max": 3.2,
+     "n": 2,
+     "runs": [
+      3.2,
+      2.2
+     ]
+    },
+    "paint": {
+     "median": 556.4,
+     "min": 542.1,
+     "max": 570.7,
+     "n": 2,
+     "runs": [
+      570.7,
+      542.1
+     ]
+    },
+    "other": {
+     "median": 193.3,
+     "min": 184.5,
+     "max": 202,
+     "n": 2,
+     "runs": [
+      202,
+      184.5
+     ]
+    },
+    "main": {
+     "median": 863.9,
+     "min": 836.7,
+     "max": 891,
+     "n": 2,
+     "runs": [
+      891,
+      836.7
+     ]
+    },
+    "layer": {
+     "median": 445.6,
+     "min": 435.2,
+     "max": 455.9,
+     "n": 2,
+     "runs": [
+      455.9,
+      435.2
+     ]
+    },
+    "hitTest": {
+     "median": 1.5,
+     "min": 0.8,
+     "max": 2.2,
+     "n": 2,
+     "runs": [
+      0.8,
+      2.2
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 49.6,
+     "min": 48.5,
+     "max": 50.6,
+     "n": 2,
+     "runs": [
+      50.6,
+      48.5
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      2279.9
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      770.5
+     ],
+     [
+      "paint:PrePaint",
+      433.3
+     ],
+     [
+      "style:UpdateLayoutTree",
+      427.3
+     ],
+     [
+      "paint:Commit",
+      401.6
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      326
+     ],
+     [
+      "paint:Paint",
+      253
+     ],
+     [
+      "script:FunctionCall",
+      154.3
+     ],
+     [
+      "other:BlinkScheduler_PerformMicrotaskCheckpoint",
+      60.5
+     ],
+     [
+      "paint:UpdateLayer",
+      55.9
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      26.4
+     ],
+     [
+      ":0 animate",
+      19.6
+     ],
+     [
+      "(injected frame logger):4 tick",
+      13.5
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4235 (anon)",
+      8.7
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4240 (anon)",
+      6.6
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      5.1
+     ],
+     [
+      ":0 setAttribute",
+      3.9
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      3.3
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 92.6,
+     "min": 87.7,
+     "max": 97.5,
+     "n": 2,
+     "runs": [
+      87.7,
+      97.5
+     ]
+    },
+    "style": {
+     "median": 96.3,
+     "min": 96.3,
+     "max": 96.3,
+     "n": 2,
+     "runs": [
+      96.3,
+      96.3
+     ]
+    },
+    "layout": {
+     "median": 35.3,
+     "min": 34,
+     "max": 36.6,
+     "n": 2,
+     "runs": [
+      34,
+      36.6
+     ]
+    },
+    "paint": {
+     "median": 495.7,
+     "min": 483,
+     "max": 508.4,
+     "n": 2,
+     "runs": [
+      483,
+      508.4
+     ]
+    },
+    "other": {
+     "median": 181.6,
+     "min": 169.8,
+     "max": 193.5,
+     "n": 2,
+     "runs": [
+      169.8,
+      193.5
+     ]
+    },
+    "main": {
+     "median": 901.5,
+     "min": 870.7,
+     "max": 932.2,
+     "n": 2,
+     "runs": [
+      870.7,
+      932.2
+     ]
+    },
+    "layer": {
+     "median": 362.2,
+     "min": 353.1,
+     "max": 371.2,
+     "n": 2,
+     "runs": [
+      353.1,
+      371.2
+     ]
+    },
+    "hitTest": {
+     "median": 0.3,
+     "min": 0.1,
+     "max": 0.4,
+     "n": 2,
+     "runs": [
+      0.1,
+      0.4
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 50.7,
+     "min": 49.4,
+     "max": 52,
+     "n": 2,
+     "runs": [
+      49.4,
+      52
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      1664.5
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      696.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      578.8
+     ],
+     [
+      "paint:PrePaint",
+      450.7
+     ],
+     [
+      "paint:Commit",
+      393.9
+     ],
+     [
+      "script:FunctionCall",
+      366
+     ],
+     [
+      "paint:Paint",
+      310.7
+     ],
+     [
+      "layout:Layout",
+      204.5
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      200.4
+     ],
+     [
+      "other:RunTask",
+      66.4
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 setProperty",
+      39.4
+     ],
+     [
+      ":0 requestAnimationFrame",
+      26.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      24
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      22.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1775 kr",
+      18.1
+     ],
+     [
+      "(injected frame logger):4 tick",
+      14.1
+     ],
+     [
+      ":0 before",
+      8.1
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:908 #g",
+      7.4
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "overlap",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "lower",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "lower"
+   }
+  },
+  "profile-showcase": {
+   "y": {
+    "A": 1248,
+    "V": 1248,
+    "B": 1248
+   },
+   "section": "pain",
+   "A": {
+    "script": {
+     "median": 55.4,
+     "min": 53.8,
+     "max": 57,
+     "n": 2,
+     "runs": [
+      53.8,
+      57
+     ]
+    },
+    "style": {
+     "median": 83,
+     "min": 82.9,
+     "max": 83.1,
+     "n": 2,
+     "runs": [
+      83.1,
+      82.9
+     ]
+    },
+    "layout": {
+     "median": 1.3,
+     "min": 1,
+     "max": 1.6,
+     "n": 2,
+     "runs": [
+      1.6,
+      1
+     ]
+    },
+    "paint": {
+     "median": 592.5,
+     "min": 583.1,
+     "max": 601.9,
+     "n": 2,
+     "runs": [
+      601.9,
+      583.1
+     ]
+    },
+    "other": {
+     "median": 241.3,
+     "min": 234.7,
+     "max": 247.8,
+     "n": 2,
+     "runs": [
+      247.8,
+      234.7
+     ]
+    },
+    "main": {
+     "median": 973.5,
+     "min": 958.7,
+     "max": 988.2,
+     "n": 2,
+     "runs": [
+      988.2,
+      958.7
+     ]
+    },
+    "layer": {
+     "median": 472.4,
+     "min": 465.5,
+     "max": 479.3,
+     "n": 2,
+     "runs": [
+      479.3,
+      465.5
+     ]
+    },
+    "hitTest": {
+     "median": 0.7,
+     "min": 0.3,
+     "max": 1.1,
+     "n": 2,
+     "runs": [
+      0.3,
+      1.1
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 68.1,
+     "min": 67.3,
+     "max": 68.9,
+     "n": 2,
+     "runs": [
+      68.9,
+      67.3
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      2374
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      955.3
+     ],
+     [
+      "style:UpdateLayoutTree",
+      499.4
+     ],
+     [
+      "paint:PrePaint",
+      471.3
+     ],
+     [
+      "paint:Commit",
+      446.9
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      398.8
+     ],
+     [
+      "paint:Paint",
+      263.3
+     ],
+     [
+      "script:FunctionCall",
+      221.7
+     ],
+     [
+      "other:RunTask",
+      78.9
+     ],
+     [
+      "script:FireAnimationFrame",
+      60.2
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      40.2
+     ],
+     [
+      ":0 animate",
+      26.3
+     ],
+     [
+      "(injected frame logger):4 tick",
+      20.1
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4191 (anon)",
+      11.2
+     ],
+     [
+      ":0 setAttribute",
+      8
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      5.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4193 (anon)",
+      4.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1775 kr",
+      4
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 53,
+     "min": 52.7,
+     "max": 53.4,
+     "n": 2,
+     "runs": [
+      52.7,
+      53.4
+     ]
+    },
+    "style": {
+     "median": 83.4,
+     "min": 82.4,
+     "max": 84.5,
+     "n": 2,
+     "runs": [
+      84.5,
+      82.4
+     ]
+    },
+    "layout": {
+     "median": 1.8,
+     "min": 1.7,
+     "max": 1.9,
+     "n": 2,
+     "runs": [
+      1.7,
+      1.9
+     ]
+    },
+    "paint": {
+     "median": 581.1,
+     "min": 580.6,
+     "max": 581.5,
+     "n": 2,
+     "runs": [
+      581.5,
+      580.6
+     ]
+    },
+    "other": {
+     "median": 232.8,
+     "min": 228.5,
+     "max": 237,
+     "n": 2,
+     "runs": [
+      228.5,
+      237
+     ]
+    },
+    "main": {
+     "median": 952.1,
+     "min": 949,
+     "max": 955.2,
+     "n": 2,
+     "runs": [
+      949,
+      955.2
+     ]
+    },
+    "layer": {
+     "median": 465.7,
+     "min": 465.3,
+     "max": 466,
+     "n": 2,
+     "runs": [
+      465.3,
+      466
+     ]
+    },
+    "hitTest": {
+     "median": 1.3,
+     "min": 0.3,
+     "max": 2.4,
+     "n": 2,
+     "runs": [
+      0.3,
+      2.4
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 67.8,
+     "min": 67.6,
+     "max": 68.1,
+     "n": 2,
+     "runs": [
+      68.1,
+      67.6
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      2276.8
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      897.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      507.7
+     ],
+     [
+      "paint:Commit",
+      461.2
+     ],
+     [
+      "paint:PrePaint",
+      453.6
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      354.1
+     ],
+     [
+      "paint:Paint",
+      241.8
+     ],
+     [
+      "script:FunctionCall",
+      190.9
+     ],
+     [
+      "other:RunTask",
+      70
+     ],
+     [
+      "script:FireAnimationFrame",
+      58.5
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      26.4
+     ],
+     [
+      ":0 animate",
+      23.1
+     ],
+     [
+      "(injected frame logger):4 tick",
+      17
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4235 (anon)",
+      8.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      6.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:858 e",
+      5.2
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4240 (anon)",
+      4.6
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      4
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 104,
+     "min": 102.5,
+     "max": 105.5,
+     "n": 2,
+     "runs": [
+      105.5,
+      102.5
+     ]
+    },
+    "style": {
+     "median": 103.1,
+     "min": 102.9,
+     "max": 103.3,
+     "n": 2,
+     "runs": [
+      102.9,
+      103.3
+     ]
+    },
+    "layout": {
+     "median": 36.3,
+     "min": 35.9,
+     "max": 36.8,
+     "n": 2,
+     "runs": [
+      36.8,
+      35.9
+     ]
+    },
+    "paint": {
+     "median": 502.3,
+     "min": 499.8,
+     "max": 504.7,
+     "n": 2,
+     "runs": [
+      499.8,
+      504.7
+     ]
+    },
+    "other": {
+     "median": 201,
+     "min": 197,
+     "max": 205.1,
+     "n": 2,
+     "runs": [
+      205.1,
+      197
+     ]
+    },
+    "main": {
+     "median": 946.8,
+     "min": 943.4,
+     "max": 950.2,
+     "n": 2,
+     "runs": [
+      950.2,
+      943.4
+     ]
+    },
+    "layer": {
+     "median": 362.4,
+     "min": 359.7,
+     "max": 365.2,
+     "n": 2,
+     "runs": [
+      359.7,
+      365.2
+     ]
+    },
+    "hitTest": {
+     "median": 0.8,
+     "min": 0.4,
+     "max": 1.2,
+     "n": 2,
+     "runs": [
+      1.2,
+      0.4
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 64,
+     "min": 63.7,
+     "max": 64.4,
+     "n": 2,
+     "runs": [
+      63.7,
+      64.4
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      1685.5
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      832.3
+     ],
+     [
+      "style:UpdateLayoutTree",
+      618.6
+     ],
+     [
+      "paint:PrePaint",
+      508.1
+     ],
+     [
+      "script:FunctionCall",
+      456.8
+     ],
+     [
+      "paint:Commit",
+      414.9
+     ],
+     [
+      "paint:Paint",
+      311.4
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      231.8
+     ],
+     [
+      "layout:Layout",
+      221
+     ],
+     [
+      "other:RunTask",
+      92
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      43.2
+     ],
+     [
+      ":0 setProperty",
+      40.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      26.6
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      20.3
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1081 schedule",
+      15.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1775 kr",
+      14.3
+     ],
+     [
+      "(injected frame logger):4 tick",
+      12.9
+     ],
+     [
+      ":0 before",
+      11.3
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "lower",
+    "style": "overlap",
+    "layout": "higher",
+    "paint": "lower",
+    "other": "overlap",
+    "main": "lower",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "pain": {
+   "y": {
+    "A": 1329,
+    "V": 1329,
+    "B": 1329
+   },
+   "section": "feed",
+   "A": {
+    "script": {
+     "median": 58.3,
+     "min": 53.6,
+     "max": 62.9,
+     "n": 2,
+     "runs": [
+      62.9,
+      53.6
+     ]
+    },
+    "style": {
+     "median": 92.4,
+     "min": 91.2,
+     "max": 93.6,
+     "n": 2,
+     "runs": [
+      93.6,
+      91.2
+     ]
+    },
+    "layout": {
+     "median": 2.1,
+     "min": 1.9,
+     "max": 2.3,
+     "n": 2,
+     "runs": [
+      2.3,
+      1.9
+     ]
+    },
+    "paint": {
+     "median": 570.7,
+     "min": 570.2,
+     "max": 571.2,
+     "n": 2,
+     "runs": [
+      570.2,
+      571.2
+     ]
+    },
+    "other": {
+     "median": 253.4,
+     "min": 252.8,
+     "max": 254.1,
+     "n": 2,
+     "runs": [
+      252.8,
+      254.1
+     ]
+    },
+    "main": {
+     "median": 976.9,
+     "min": 972,
+     "max": 981.8,
+     "n": 2,
+     "runs": [
+      981.8,
+      972
+     ]
+    },
+    "layer": {
+     "median": 449.8,
+     "min": 446.6,
+     "max": 453,
+     "n": 2,
+     "runs": [
+      446.6,
+      453
+     ]
+    },
+    "hitTest": {
+     "median": 0.6,
+     "min": 0.5,
+     "max": 0.7,
+     "n": 2,
+     "runs": [
+      0.5,
+      0.7
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 70.1,
+     "min": 68,
+     "max": 72.3,
+     "n": 2,
+     "runs": [
+      72.3,
+      68
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      2194.2
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      1012.3
+     ],
+     [
+      "style:UpdateLayoutTree",
+      562
+     ],
+     [
+      "paint:PrePaint",
+      455.1
+     ],
+     [
+      "paint:Commit",
+      419.9
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      381.9
+     ],
+     [
+      "paint:Paint",
+      285.7
+     ],
+     [
+      "script:FunctionCall",
+      258.4
+     ],
+     [
+      "paint:UpdateLayer",
+      67.3
+     ],
+     [
+      "other:RunTask",
+      61.2
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 animate",
+      48.9
+     ],
+     [
+      ":0 requestAnimationFrame",
+      43.8
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4191 (anon)",
+      20.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4193 (anon)",
+      12.4
+     ],
+     [
+      ":0 setAttribute",
+      4.8
+     ],
+     [
+      "(injected frame logger):4 tick",
+      4.1
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      3.4
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4080 __crPath",
+      2.4
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 53.5,
+     "min": 52.6,
+     "max": 54.5,
+     "n": 2,
+     "runs": [
+      52.6,
+      54.5
+     ]
+    },
+    "style": {
+     "median": 89.6,
+     "min": 88.5,
+     "max": 90.7,
+     "n": 2,
+     "runs": [
+      88.5,
+      90.7
+     ]
+    },
+    "layout": {
+     "median": 1.8,
+     "min": 1.6,
+     "max": 1.9,
+     "n": 2,
+     "runs": [
+      1.9,
+      1.6
+     ]
+    },
+    "paint": {
+     "median": 575.1,
+     "min": 567.4,
+     "max": 582.9,
+     "n": 2,
+     "runs": [
+      582.9,
+      567.4
+     ]
+    },
+    "other": {
+     "median": 237.9,
+     "min": 237.6,
+     "max": 238.1,
+     "n": 2,
+     "runs": [
+      237.6,
+      238.1
+     ]
+    },
+    "main": {
+     "median": 957.9,
+     "min": 952.3,
+     "max": 963.5,
+     "n": 2,
+     "runs": [
+      963.5,
+      952.3
+     ]
+    },
+    "layer": {
+     "median": 460.7,
+     "min": 452.8,
+     "max": 468.5,
+     "n": 2,
+     "runs": [
+      468.5,
+      452.8
+     ]
+    },
+    "hitTest": {
+     "median": 1.2,
+     "min": 0.7,
+     "max": 1.8,
+     "n": 2,
+     "runs": [
+      0.7,
+      1.8
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 68.5,
+     "min": 67,
+     "max": 69.9,
+     "n": 2,
+     "runs": [
+      69.9,
+      67
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      2288.7
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      916.8
+     ],
+     [
+      "style:UpdateLayoutTree",
+      531.4
+     ],
+     [
+      "paint:Commit",
+      448.5
+     ],
+     [
+      "paint:PrePaint",
+      440.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      387.3
+     ],
+     [
+      "paint:Paint",
+      245.7
+     ],
+     [
+      "script:FunctionCall",
+      193
+     ],
+     [
+      "paint:UpdateLayer",
+      77
+     ],
+     [
+      "script:FireAnimationFrame",
+      71.3
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      41.4
+     ],
+     [
+      ":0 animate",
+      24.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4235 (anon)",
+      13.3
+     ],
+     [
+      "(injected frame logger):4 tick",
+      11.1
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      5.1
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      3.9
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:4240 (anon)",
+      3.6
+     ],
+     [
+      ":0 setTimeout",
+      3.4
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 97.8,
+     "min": 94.9,
+     "max": 100.7,
+     "n": 2,
+     "runs": [
+      94.9,
+      100.7
+     ]
+    },
+    "style": {
+     "median": 114.2,
+     "min": 113.3,
+     "max": 115.1,
+     "n": 2,
+     "runs": [
+      113.3,
+      115.1
+     ]
+    },
+    "layout": {
+     "median": 35.3,
+     "min": 35.1,
+     "max": 35.5,
+     "n": 2,
+     "runs": [
+      35.5,
+      35.1
+     ]
+    },
+    "paint": {
+     "median": 493.7,
+     "min": 488.2,
+     "max": 499.2,
+     "n": 2,
+     "runs": [
+      488.2,
+      499.2
+     ]
+    },
+    "other": {
+     "median": 198,
+     "min": 195.2,
+     "max": 200.8,
+     "n": 2,
+     "runs": [
+      195.2,
+      200.8
+     ]
+    },
+    "main": {
+     "median": 939,
+     "min": 927.2,
+     "max": 950.8,
+     "n": 2,
+     "runs": [
+      927.2,
+      950.8
+     ]
+    },
+    "layer": {
+     "median": 356.8,
+     "min": 355,
+     "max": 358.7,
+     "n": 2,
+     "runs": [
+      355,
+      358.7
+     ]
+    },
+    "hitTest": {
+     "median": 0.5,
+     "min": 0.4,
+     "max": 0.7,
+     "n": 2,
+     "runs": [
+      0.7,
+      0.4
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 62.4,
+     "min": 62.1,
+     "max": 62.7,
+     "n": 2,
+     "runs": [
+      62.7,
+      62.1
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      1659.1
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      831.2
+     ],
+     [
+      "style:UpdateLayoutTree",
+      680.6
+     ],
+     [
+      "paint:PrePaint",
+      473
+     ],
+     [
+      "script:FunctionCall",
+      420.4
+     ],
+     [
+      "paint:Commit",
+      415.4
+     ],
+     [
+      "paint:Paint",
+      312.4
+     ],
+     [
+      "layout:Layout",
+      213.4
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      203.9
+     ],
+     [
+      "script:FireAnimationFrame",
+      75.3
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 setProperty",
+      39.1
+     ],
+     [
+      ":0 requestAnimationFrame",
+      39
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      23.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      21.9
+     ],
+     [
+      "(injected frame logger):4 tick",
+      12.3
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1081 schedule",
+      11.5
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:2855 Qi",
+      10.8
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      10.1
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "overlap",
+    "style": "lower",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "lower",
+    "main": "lower",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "commission": {
+   "y": {
+    "A": 3193,
+    "V": 3193,
+    "B": 3193
+   },
+   "section": "commission",
+   "A": {
+    "script": {
+     "median": 39.5,
+     "min": 35.8,
+     "max": 43.2,
+     "n": 2,
+     "runs": [
+      43.2,
+      35.8
+     ]
+    },
+    "style": {
+     "median": 43.3,
+     "min": 30.8,
+     "max": 55.9,
+     "n": 2,
+     "runs": [
+      55.9,
+      30.8
+     ]
+    },
+    "layout": {
+     "median": 15.5,
+     "min": 14.3,
+     "max": 16.7,
+     "n": 2,
+     "runs": [
+      16.7,
+      14.3
+     ]
+    },
+    "paint": {
+     "median": 167.1,
+     "min": 150.6,
+     "max": 183.5,
+     "n": 2,
+     "runs": [
+      183.5,
+      150.6
+     ]
+    },
+    "other": {
+     "median": 130.1,
+     "min": 105.4,
+     "max": 154.8,
+     "n": 2,
+     "runs": [
+      154.8,
+      105.4
+     ]
+    },
+    "main": {
+     "median": 395.5,
+     "min": 337,
+     "max": 454.1,
+     "n": 2,
+     "runs": [
+      454.1,
+      337
+     ]
+    },
+    "layer": {
+     "median": 125.5,
+     "min": 112.4,
+     "max": 138.6,
+     "n": 2,
+     "runs": [
+      138.6,
+      112.4
+     ]
+    },
+    "hitTest": {
+     "median": 0.1,
+     "min": 0,
+     "max": 0.2,
+     "n": 2,
+     "runs": [
+      0,
+      0.2
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 29.9,
+     "min": 26.1,
+     "max": 33.7,
+     "n": 2,
+     "runs": [
+      33.7,
+      26.1
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      576.3
+     ],
+     [
+      "paint:Layerize",
+      567.9
+     ],
+     [
+      "style:UpdateLayoutTree",
+      335.8
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      253.3
+     ],
+     [
+      "paint:Commit",
+      240
+     ],
+     [
+      "paint:PrePaint",
+      181.5
+     ],
+     [
+      "script:FunctionCall",
+      173.2
+     ],
+     [
+      "layout:Layout",
+      100.3
+     ],
+     [
+      "paint:Paint",
+      86.6
+     ],
+     [
+      "script:FireAnimationFrame",
+      53.3
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      41.6
+     ],
+     [
+      "(injected frame logger):4 tick",
+      12.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:2196 gi",
+      7.3
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      6.7
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1775 kr",
+      4.2
+     ],
+     [
+      "__vendor/script.hotjar.com/modules.e762be2b6b709245aabb.js:2 (anon)",
+      3.8
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 o.t",
+      3.2
+     ],
+     [
+      ":0 setProperty",
+      2.9
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 33.7,
+     "min": 30.3,
+     "max": 37.1,
+     "n": 2,
+     "runs": [
+      30.3,
+      37.1
+     ]
+    },
+    "style": {
+     "median": 35.9,
+     "min": 35.1,
+     "max": 36.8,
+     "n": 2,
+     "runs": [
+      35.1,
+      36.8
+     ]
+    },
+    "layout": {
+     "median": 16.3,
+     "min": 15.8,
+     "max": 16.7,
+     "n": 2,
+     "runs": [
+      16.7,
+      15.8
+     ]
+    },
+    "paint": {
+     "median": 154.3,
+     "min": 153.6,
+     "max": 154.9,
+     "n": 2,
+     "runs": [
+      154.9,
+      153.6
+     ]
+    },
+    "other": {
+     "median": 115,
+     "min": 114.4,
+     "max": 115.6,
+     "n": 2,
+     "runs": [
+      114.4,
+      115.6
+     ]
+    },
+    "main": {
+     "median": 355.2,
+     "min": 351.4,
+     "max": 359,
+     "n": 2,
+     "runs": [
+      351.4,
+      359
+     ]
+    },
+    "layer": {
+     "median": 115.6,
+     "min": 112.9,
+     "max": 118.2,
+     "n": 2,
+     "runs": [
+      118.2,
+      112.9
+     ]
+    },
+    "hitTest": {
+     "median": 1.2,
+     "min": 0,
+     "max": 2.4,
+     "n": 2,
+     "runs": [
+      0,
+      2.4
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 28.9,
+     "min": 28.7,
+     "max": 29.1,
+     "n": 2,
+     "runs": [
+      28.7,
+      29.1
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      495.4
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      403.5
+     ],
+     [
+      "style:UpdateLayoutTree",
+      211
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      210.7
+     ],
+     [
+      "paint:Commit",
+      199.4
+     ],
+     [
+      "script:FunctionCall",
+      140.7
+     ],
+     [
+      "paint:PrePaint",
+      128.5
+     ],
+     [
+      "layout:Layout",
+      100.6
+     ],
+     [
+      "paint:Paint",
+      90.2
+     ],
+     [
+      "other:BlinkScheduler_PerformMicrotaskCheckpoint",
+      40.7
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      24.5
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      9.8
+     ],
+     [
+      "(injected frame logger):4 tick",
+      6.4
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:2615 (anon)",
+      6.2
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 r",
+      4.3
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 (anon)",
+      3.3
+     ],
+     [
+      ":0 setProperty",
+      3
+     ],
+     [
+      "__vendor/static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495:1 o.t",
+      2.7
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 95.7,
+     "min": 95.2,
+     "max": 96.1,
+     "n": 2,
+     "runs": [
+      96.1,
+      95.2
+     ]
+    },
+    "style": {
+     "median": 108.5,
+     "min": 106.4,
+     "max": 110.5,
+     "n": 2,
+     "runs": [
+      106.4,
+      110.5
+     ]
+    },
+    "layout": {
+     "median": 20.4,
+     "min": 19.5,
+     "max": 21.3,
+     "n": 2,
+     "runs": [
+      21.3,
+      19.5
+     ]
+    },
+    "paint": {
+     "median": 483.7,
+     "min": 475.1,
+     "max": 492.2,
+     "n": 2,
+     "runs": [
+      475.1,
+      492.2
+     ]
+    },
+    "other": {
+     "median": 195.8,
+     "min": 191.2,
+     "max": 200.4,
+     "n": 2,
+     "runs": [
+      200.4,
+      191.2
+     ]
+    },
+    "main": {
+     "median": 904,
+     "min": 899.3,
+     "max": 908.7,
+     "n": 2,
+     "runs": [
+      899.3,
+      908.7
+     ]
+    },
+    "layer": {
+     "median": 345.6,
+     "min": 337.7,
+     "max": 353.6,
+     "n": 2,
+     "runs": [
+      337.7,
+      353.6
+     ]
+    },
+    "hitTest": {
+     "median": 0.4,
+     "min": 0.3,
+     "max": 0.5,
+     "n": 2,
+     "runs": [
+      0.3,
+      0.5
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 44.7,
+     "min": 43.8,
+     "max": 45.6,
+     "n": 2,
+     "runs": [
+      45.6,
+      43.8
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      1651.8
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      866.4
+     ],
+     [
+      "style:UpdateLayoutTree",
+      639.9
+     ],
+     [
+      "paint:Paint",
+      490
+     ],
+     [
+      "script:FunctionCall",
+      426.1
+     ],
+     [
+      "paint:Commit",
+      311.1
+     ],
+     [
+      "paint:PrePaint",
+      291.3
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      224.4
+     ],
+     [
+      "layout:Layout",
+      128.3
+     ],
+     [
+      "script:FireAnimationFrame",
+      68.2
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 setProperty",
+      32.7
+     ],
+     [
+      ":0 requestAnimationFrame",
+      30.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      25.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      25.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1775 kr",
+      14
+     ],
+     [
+      "(injected frame logger):4 tick",
+      13.1
+     ],
+     [
+      ":0 queueMicrotask",
+      11.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:908 #g",
+      9.1
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "overlap",
+    "style": "overlap",
+    "layout": "overlap",
+    "paint": "overlap",
+    "other": "overlap",
+    "main": "overlap",
+    "layer": "overlap",
+    "hitTest": "overlap",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  },
+  "end": {
+   "y": {
+    "A": 5345,
+    "V": 5345,
+    "B": 5345
+   },
+   "section": "platform",
+   "A": {
+    "script": {
+     "median": 53.5,
+     "min": 49,
+     "max": 57.9,
+     "n": 2,
+     "runs": [
+      57.9,
+      49
+     ]
+    },
+    "style": {
+     "median": 96.5,
+     "min": 90.8,
+     "max": 102.3,
+     "n": 2,
+     "runs": [
+      102.3,
+      90.8
+     ]
+    },
+    "layout": {
+     "median": 15.9,
+     "min": 15.8,
+     "max": 16.1,
+     "n": 2,
+     "runs": [
+      16.1,
+      15.8
+     ]
+    },
+    "paint": {
+     "median": 332.8,
+     "min": 325.3,
+     "max": 340.4,
+     "n": 2,
+     "runs": [
+      340.4,
+      325.3
+     ]
+    },
+    "other": {
+     "median": 195.1,
+     "min": 184.6,
+     "max": 205.6,
+     "n": 2,
+     "runs": [
+      205.6,
+      184.6
+     ]
+    },
+    "main": {
+     "median": 693.8,
+     "min": 665.4,
+     "max": 722.3,
+     "n": 2,
+     "runs": [
+      722.3,
+      665.4
+     ]
+    },
+    "layer": {
+     "median": 184.7,
+     "min": 181.2,
+     "max": 188.2,
+     "n": 2,
+     "runs": [
+      188.2,
+      181.2
+     ]
+    },
+    "hitTest": {
+     "median": 0.9,
+     "min": 0.9,
+     "max": 0.9,
+     "n": 2,
+     "runs": [
+      0.9,
+      0.9
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 91.9,
+     "min": 87.1,
+     "max": 96.8,
+     "n": 2,
+     "runs": [
+      96.8,
+      87.1
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      714.5
+     ],
+     [
+      "paint:Layerize",
+      625.2
+     ],
+     [
+      "style:UpdateLayoutTree",
+      614.1
+     ],
+     [
+      "paint:Paint",
+      496.6
+     ],
+     [
+      "paint:Commit",
+      412.8
+     ],
+     [
+      "paint:PrePaint",
+      379.7
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      368.8
+     ],
+     [
+      "script:FunctionCall",
+      235.7
+     ],
+     [
+      "layout:Layout",
+      96.6
+     ],
+     [
+      "paint:UpdateLayer",
+      91.9
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      31.4
+     ],
+     [
+      "(injected frame logger):4 tick",
+      21.6
+     ],
+     [
+      ":0 setProperty",
+      8.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      7.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:2196 gi",
+      4.6
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:2475 d",
+      4.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1267 Dn",
+      3.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:908 #g",
+      3.2
+     ]
+    ]
+   },
+   "V": {
+    "script": {
+     "median": 43.7,
+     "min": 33.7,
+     "max": 53.7,
+     "n": 2,
+     "runs": [
+      53.7,
+      33.7
+     ]
+    },
+    "style": {
+     "median": 90.8,
+     "min": 83.4,
+     "max": 98.2,
+     "n": 2,
+     "runs": [
+      83.4,
+      98.2
+     ]
+    },
+    "layout": {
+     "median": 6.6,
+     "min": 0,
+     "max": 13.2,
+     "n": 2,
+     "runs": [
+      13.2,
+      0
+     ]
+    },
+    "paint": {
+     "median": 293,
+     "min": 257.3,
+     "max": 328.8,
+     "n": 2,
+     "runs": [
+      328.8,
+      257.3
+     ]
+    },
+    "other": {
+     "median": 176,
+     "min": 174.4,
+     "max": 177.6,
+     "n": 2,
+     "runs": [
+      177.6,
+      174.4
+     ]
+    },
+    "main": {
+     "median": 610.1,
+     "min": 563.7,
+     "max": 656.6,
+     "n": 2,
+     "runs": [
+      656.6,
+      563.7
+     ]
+    },
+    "layer": {
+     "median": 154.1,
+     "min": 125,
+     "max": 183.2,
+     "n": 2,
+     "runs": [
+      183.2,
+      125
+     ]
+    },
+    "hitTest": {
+     "median": 0.5,
+     "min": 0.4,
+     "max": 0.6,
+     "n": 2,
+     "runs": [
+      0.6,
+      0.4
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 91,
+     "min": 87.1,
+     "max": 94.8,
+     "n": 2,
+     "runs": [
+      87.1,
+      94.8
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "other:ThreadControllerImpl::RunTask",
+      630.9
+     ],
+     [
+      "paint:Layerize",
+      614.4
+     ],
+     [
+      "style:UpdateLayoutTree",
+      500.8
+     ],
+     [
+      "paint:Paint",
+      448.2
+     ],
+     [
+      "paint:PrePaint",
+      398.6
+     ],
+     [
+      "paint:Commit",
+      393.1
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      304.8
+     ],
+     [
+      "script:FunctionCall",
+      202.9
+     ],
+     [
+      "paint:UpdateLayer",
+      93.1
+     ],
+     [
+      "layout:Layout",
+      79.1
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 requestAnimationFrame",
+      23.9
+     ],
+     [
+      "(injected frame logger):4 tick",
+      17.6
+     ],
+     [
+      ":0 setProperty",
+      14.2
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      10.1
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1067 ensure",
+      6.7
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1081 schedule",
+      6.5
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:879 e",
+      5.4
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:2196 gi",
+      5.2
+     ]
+    ]
+   },
+   "B": {
+    "script": {
+     "median": 105.5,
+     "min": 89,
+     "max": 121.9,
+     "n": 2,
+     "runs": [
+      89,
+      121.9
+     ]
+    },
+    "style": {
+     "median": 94.2,
+     "min": 84.4,
+     "max": 104,
+     "n": 2,
+     "runs": [
+      84.4,
+      104
+     ]
+    },
+    "layout": {
+     "median": 13.5,
+     "min": 0,
+     "max": 27.1,
+     "n": 2,
+     "runs": [
+      0,
+      27.1
+     ]
+    },
+    "paint": {
+     "median": 388.9,
+     "min": 349.9,
+     "max": 428,
+     "n": 2,
+     "runs": [
+      349.9,
+      428
+     ]
+    },
+    "other": {
+     "median": 182.6,
+     "min": 163.9,
+     "max": 201.4,
+     "n": 2,
+     "runs": [
+      163.9,
+      201.4
+     ]
+    },
+    "main": {
+     "median": 784.8,
+     "min": 687.3,
+     "max": 882.3,
+     "n": 2,
+     "runs": [
+      687.3,
+      882.3
+     ]
+    },
+    "layer": {
+     "median": 221.7,
+     "min": 196.8,
+     "max": 246.7,
+     "n": 2,
+     "runs": [
+      196.8,
+      246.7
+     ]
+    },
+    "hitTest": {
+     "median": 0.6,
+     "min": 0.5,
+     "max": 0.6,
+     "n": 2,
+     "runs": [
+      0.5,
+      0.6
+     ]
+    },
+    "navJs": {
+     "median": 0,
+     "min": 0,
+     "max": 0,
+     "n": 2,
+     "runs": [
+      0,
+      0
+     ]
+    },
+    "compositor": {
+     "median": 74.2,
+     "min": 73.5,
+     "max": 74.9,
+     "n": 2,
+     "runs": [
+      73.5,
+      74.9
+     ]
+    },
+    "commitsPerS": null,
+    "mainMsPerCommit": null,
+    "topNames": [
+     [
+      "paint:Layerize",
+      769.9
+     ],
+     [
+      "other:ThreadControllerImpl::RunTask",
+      622.4
+     ],
+     [
+      "paint:Paint",
+      520.2
+     ],
+     [
+      "style:UpdateLayoutTree",
+      507.3
+     ],
+     [
+      "script:FunctionCall",
+      387
+     ],
+     [
+      "paint:Commit",
+      325.9
+     ],
+     [
+      "paint:PrePaint",
+      322.8
+     ],
+     [
+      "other:IntersectionObserverController::computeIntersections",
+      221.5
+     ],
+     [
+      "paint:UpdateLayer",
+      86.2
+     ],
+     [
+      "other:RunTask",
+      78.4
+     ]
+    ],
+    "topJs": [
+     [
+      ":0 setProperty",
+      38.5
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1850 Mr",
+      29.4
+     ],
+     [
+      ":0 requestAnimationFrame",
+      23.1
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:950 #_",
+      20.2
+     ],
+     [
+      "(injected frame logger):4 tick",
+      19.8
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1081 schedule",
+      13.9
+     ],
+     [
+      "_app/immutable/chunks/BSBv9QXB.js:1775 kr",
+      12.9
+     ],
+     [
+      "_app/immutable/nodes/2.DyWL8TcE.js:3862 (anon)",
+      12.8
+     ]
+    ]
+   },
+   "v8vsV7": {
+    "script": "overlap",
+    "style": "overlap",
+    "layout": "lower",
+    "paint": "overlap",
+    "other": "lower",
+    "main": "lower",
+    "layer": "overlap",
+    "hitTest": "lower",
+    "navJs": "overlap",
+    "compositor": "overlap"
+   }
+  }
+ }
+}
