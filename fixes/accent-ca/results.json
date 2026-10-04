@@ -183,5 +183,91 @@
   },
   "notes": "No measurement code changed. No timing A/B by rule.",
   "verdict": "E1 exact on frozen frames (Chrome phone+desktop, Simulator, reduced motion); WebKit saving small (~5-7 % recalc frames / accent paints). WP (wipe) halves page updates in WebKit but is a visible change. Both go to the user in one proposal (motion-only / visible difference).",
-  "proposal": "PR-019 (options exact = E1, slide = WP, keep; recommended exact)"
+  "proposal": "PR-019 (options exact = E1, slide = WP, keep; recommended exact)",
+  "decision": "PR-019 accepted, option exact (2026-10-04 13:09Z)",
+  "v7": {
+    "landBuild": {
+      "patch": "fixes/accent-ca-v7/patch.diff",
+      "js": "8c90da217745",
+      "css": "7eda63cc7015",
+      "base": "v7-best (8c90da217745 / 308f0da70c3a)",
+      "delta": "fixes/accent-ca/e1-delta.diff"
+    },
+    "pixels": {
+      "chromeP430": {
+        "frames": 74,
+        "C7_vs_C7again": 0,
+        "C7_vs_E7": 0,
+        "maxLevel": 0,
+        "tier": "T0",
+        "raw": "out/accent-ca/chrome-p430-2026-10-04T13-27-34-861Z.json"
+      },
+      "simulator": {
+        "frames": 58,
+        "C7_vs_C7again": {
+          "differing": 6,
+          "maxLevel": 2,
+          "beyond": 0
+        },
+        "C7_vs_E7": {
+          "differing": 0,
+          "maxLevel": 0
+        },
+        "tier": "T0",
+        "raw": "out/accent-ca/sim-pixels-2026-10-04T13-36-46-889Z.json"
+      }
+    },
+    "chromeCounts": {
+      "windowMs": 9150,
+      "C7": {
+        "mainFrames": 366,
+        "styleElements": 3222,
+        "paint": 1316,
+        "layout": 12,
+        "timerFire": 46
+      },
+      "C7-again": {
+        "mainFrames": 369,
+        "styleElements": 3280,
+        "paint": 1317,
+        "layout": 11,
+        "timerFire": 47
+      },
+      "E7": {
+        "mainFrames": 374,
+        "styleElements": 2752,
+        "paint": 680,
+        "layout": 12,
+        "timerFire": 47
+      }
+    },
+    "simCounts": {
+      "windowMs": 9150,
+      "raw": "out/accent-ca/sim-counts-census-2026-10-04T13-41-12-831Z.json",
+      "C7": {
+        "renderingFrame": 417,
+        "recalc": 416,
+        "layout": 352,
+        "paint": 466,
+        "accentPaint": 435
+      },
+      "C7-again": {
+        "renderingFrame": 420,
+        "recalc": 416,
+        "layout": 357,
+        "paint": 476,
+        "accentPaint": 439
+      },
+      "E7": {
+        "renderingFrame": 352,
+        "recalc": 361,
+        "layout": 326,
+        "paint": 429,
+        "accentPaint": 398
+      }
+    },
+    "census": "identical in C7 and E7: boil svg layers 0.386 MB at rest, none mid-draw",
+    "costCardPerCycle": "Sim: frames 139-140 -> 117, recalcs 139 -> 120, layouts 117-119 -> 109, accent paints 145-146 -> 133; Chrome: paints 439 -> 227, restyled elements 1074-1093 -> 917, main frames 122-123 -> 125",
+    "phone": "short no-worse check ticketed by the lead in v8 phone block"
+  }
 }
