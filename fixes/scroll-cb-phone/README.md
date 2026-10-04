@@ -400,7 +400,7 @@ built by `build.mjs` as in P-103. If the Simulator paint attribution (item 10) l
 with the new V hash and its build diff against 27f23f6a3878 before any load; the noise run (C only) stands.
 
 **2. Harnesses** (sha256/12, pinned): `probe/scb-probe.mjs` ba2f8fbb5752, `simcount.mjs` 4374051b37a0, `score-p108.mjs`
-2a408c17977a, `pixcheck.mjs` f1be95111e25, `build.mjs` 0b028c5ef8a5, `patch-on-best.diff` c2dc144b7bd2. Changes since
+4cf547f88a3b (rev of 2a408c17977a after ops pre-data read C1, see item 7e), `pixcheck.mjs` f1be95111e25, `build.mjs` 0b028c5ef8a5, `patch-on-best.diff` c2dc144b7bd2. Changes since
 P-103, all equal in both arms:
 - *Geometry log (both engines):* a ResizeObserver on the document element and on every top-level section (the
   children of the commission section's parent) logs `geom` = `scrollHeight` + each section's `offsetTop` and
@@ -459,6 +459,14 @@ rAF and rects, Simulator side rAF and rects. `desk`: |V mean − C mean| ≤ 0.0
 |---|---|---|---|---|---|---|
 | largest noise C-vs-C pair | 0 | 0 | 7 | 0 | 2 | 0 |
 | N_vp | 5 | 5 | 19 | 5 | 9 | 5 |
+
+  These values are frozen inside `score-p108.mjs` (`N_VP`, a const map per viewport); there is no `--void-n` flag (it
+  exits 2 if given), and a viewport with no frozen value throws. Exact scoring command for the P-108 loads, run once
+  after the last load: `node fixes/scroll-cb-phone/score-p108.mjs out/scroll-cb-phone/p108 --aa-extra
+  out/scroll-cb-phone/noise --json out/scroll-cb-phone/p108/score.json`. Without `--aa-extra` (or with a missing dir) the
+  scorer exits 2. Each guard row prints V − C (`d`) next to its tolerance (`tol`) and limit, pass or fail.
+  The noise run was scored with 2a408c17977a; 4cf547f88a3b changes only flags, the VOID gate and printing, and gives the
+  same numbers on `out/scroll-cb-phone/noise --noise`.
 
   Outcome: VOID = parity not shown = not landable on P-108, with no re-run on the same harness.
 - *(f) Pixels:* as P-103 item 7. No new page errors in V.

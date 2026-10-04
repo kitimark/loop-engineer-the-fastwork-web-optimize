@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // P-108 scorer (fix-scroll-cb). Rules as registered in README "D card P-108"; committed before any P-108 data.
-// usage: node fixes/scroll-cb-phone/score-p108.mjs <dir> [--noise] [--void-n N] [--json out.json]
+// usage (P-108 loads, the card's exact command): node fixes/scroll-cb-phone/score-p108.mjs out/scroll-cb-phone/p108 --aa-extra out/scroll-cb-phone/noise [--json out.json]
+//        (noise run): node fixes/scroll-cb-phone/score-p108.mjs out/scroll-cb-phone/noise --noise [--json out.json]
 //   <dir> holds counts-<vp>.json (Chrome, scb-probe.mjs) and sim-counts.json (Simulator, simcount.mjs).
 //   --noise: C-only noise run (card item d): per-count C-vs-C spreads and normalised A/A diffs; nothing judged.
 //   --aa-extra <noise dir>: the noise run's C loads also feed the A/A flake set (each diffed against this block's C1);
@@ -8,15 +9,19 @@
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const argv = process.argv.slice(2);
-const D = argv.find((a, i) => !a.startsWith('--') && !['--void-n', '--json', '--aa-extra'].includes(argv[i - 1])) || 'out/scroll-cb-phone/p108';
+const D = argv.find((a, i) => !a.startsWith('--') && !['--json', '--aa-extra'].includes(argv[i - 1])) || 'out/scroll-cb-phone/p108';
 const NOISE = argv.includes('--noise');
 const opt = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : undefined; };
 const EXTRA = opt('--aa-extra');
-const VOID_N = opt('--void-n') === undefined ? null : +opt('--void-n');
+// N_vp frozen from the noise run (card item 7e, commit 4354a187): 2 x largest noise C-vs-C pair + 5. Not a flag.
+const N_VP = Object.freeze({ phone: 5, phone775: 5, desk: 19, desk900: 5, resize: 9, sim: 5 });
+if (argv.includes('--void-n')) { console.error('score-p108: --void-n was removed; N_vp is frozen per viewport (card item 7e)'); process.exit(2); }
+if (!NOISE && !EXTRA) { console.error('score-p108: P-108 scoring needs --aa-extra out/scroll-cb-phone/noise (card item 7d)'); process.exit(2); }
+if (EXTRA && !existsSync(EXTRA)) { console.error(`score-p108: --aa-extra dir not found: ${EXTRA}`); process.exit(2); }
 const r3 = (x) => Math.round(x * 1000) / 1000;
 const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
 const spread = (a) => (a.length < 2 ? 0 : Math.max(...a) - Math.min(...a));
-const OUT = { dir: D, noise: NOISE, voidN: VOID_N, viewports: {} };
+const OUT = { dir: D, noise: NOISE, nVp: N_VP, aaExtra: EXTRA || null, viewports: {} };
 
 // --- state-log normalisation (card item 7) ---
 // class tokens exact; style declarations exact, except:
@@ -55,7 +60,7 @@ function normLog(load) {
 }
 const diff = (A, B) => { const a = new Set(A), b = new Set(B); return [...[...a].filter((x) => !b.has(x)).map((x) => '-' + x), ...[...b].filter((x) => !a.has(x)).map((x) => '+' + x)]; };
 
-function parity(loads, extraC = []) {
+function parity(loads, extraC, vp) {
   const C = loads.filter((l) => l.arm === 'C'), V = loads.filter((l) => l.arm === 'V');
   if (!C.length) return null;
   const N = new Map(loads.map((l) => [l, normLog(l)]));
@@ -70,8 +75,10 @@ function parity(loads, extraC = []) {
   const v = V.map((l) => { const d = diff(N.get(c1).entries, N.get(l).entries); const real = d.filter((x) => !flakes.has(x)); return { load: `V${l.rep}`, diffs: d.length, beyondAA: real.length, geomBeyondAA: real.filter((x) => x.split('|')[1] === 'geom').length, sample: real.slice(0, 12) }; });
   const deferC = {}; for (const c of C) for (const [k, vals] of Object.entries(N.get(c).defers)) for (const x of vals) (deferC[k] ||= new Set()).add(x);
   const deferV = V.map((l) => ({ load: `V${l.rep}`, notInC: Object.entries(N.get(l).defers).flatMap(([k, vals]) => vals.filter((x) => !deferC[k]?.has(x)).map((x) => `${k}=${x}`)) }));
-  const voided = VOID_N !== null && maxAA > VOID_N;
-  return { c1: `C${c1.rep}`, extraAA: extraPairs.map((p) => `${p.load} ${p.diffs.length}`), aa: aaPairs.map((p) => ({ load: p.load, diffs: p.diffs.length, sample: p.diffs.slice(0, 8) })), maxAA, maxAAall, voided, v, deferC: Object.fromEntries(Object.entries(deferC).map(([k, s]) => [k, [...s]])), deferV,
+  const nvp = N_VP[vp];
+  if (nvp === undefined) throw new Error(`score-p108: no frozen N_vp for viewport ${vp}`);
+  const voided = !NOISE && maxAA > nvp;
+  return { c1: `C${c1.rep}`, extraAA: extraPairs.map((p) => `${p.load} ${p.diffs.length}`), aa: aaPairs.map((p) => ({ load: p.load, diffs: p.diffs.length, sample: p.diffs.slice(0, 8) })), maxAA, maxAAall, nVp: nvp, voided, v, deferC: Object.fromEntries(Object.entries(deferC).map(([k, s]) => [k, [...s]])), deferV,
     pass: !voided && V.length > 0 ? v.every((x) => x.beyondAA === 0) : null };
 }
 
@@ -84,7 +91,7 @@ function rows(C, V, defs) {
     row.vMean = r3(mean(v)); row.dMean = r3(mean(v) - mean(c));
     if (rule === 'below') row.pass = Math.max(...v) < Math.min(...c);
     if (rule === 'equal') row.pass = Math.abs(mean(v) - mean(c)) <= 0.05;
-    if (rule === 'guard') { row.limit = r3(mean(c) + Math.max(0.05, sp)); row.pass = mean(v) <= mean(c) + Math.max(0.05, sp); }
+    if (rule === 'guard') { row.tol = r3(Math.max(0.05, sp)); row.limit = r3(mean(c) + Math.max(0.05, sp)); row.pass = mean(v) <= mean(c) + Math.max(0.05, sp); }
     row.rule = rule;
     return row;
   });
@@ -105,7 +112,7 @@ for (const vp of ['phone', 'phone775', 'desk', 'desk900', 'resize']) {
     : [['side raf/step', (l) => l.perStep.side.raf || 0, 'report'], ['side rect/step', (l) => l.perStep.side.rect || 0, 'report']];
   const guards = CH_GUARDS.map((g) => [g, (l) => l.trace.perStep[g] || 0, 'guard']);
   const res = { valid: { C: C.length, V: V.length }, voidLoads: j.loads.filter((l) => l.void).map((l) => `${l.arm}${l.rep}: ${l.void}`), pageErrors: valid.map((l) => `${l.arm}${l.rep}:${l.pageErrors.length}`),
-    judged: NOISE ? rows(C, [], judged) : rows(C, V, judged), guards: NOISE ? rows(C, [], guards) : rows(C, V, guards), parity: parity(valid, extraC(`counts-${vp}.json`)) };
+    judged: NOISE ? rows(C, [], judged) : rows(C, V, judged), guards: NOISE ? rows(C, [], guards) : rows(C, V, guards), parity: parity(valid, extraC(`counts-${vp}.json`), vp) };
   OUT.viewports[vp] = res;
 }
 const sf = join(D, 'sim-counts.json');
@@ -116,15 +123,15 @@ if (existsSync(sf)) {
   const judged = [['side raf/step', (l) => l.perStep.side.raf || 0, 'below'], ['side rect/step', (l) => l.perStep.side.rect || 0, 'below']];
   const guards = ['styleRecalcs', 'layouts', 'forcedLayouts', 'paints', 'renderingFrames'].map((g) => [g, (l) => l.window.perStep[g] || 0, 'guard']);
   OUT.viewports.sim = { valid: { C: C.length, V: V.length }, voidLoads: j.loads.filter((l) => l.void).map((l) => `${l.arm}${l.rep}: ${l.void}`),
-    judged: NOISE ? rows(C, [], judged) : rows(C, V, judged), guards: NOISE ? rows(C, [], guards) : rows(C, V, guards), parity: parity(valid, extraC('sim-counts.json')),
+    judged: NOISE ? rows(C, [], judged) : rows(C, V, judged), guards: NOISE ? rows(C, [], guards) : rows(C, V, guards), parity: parity(valid, extraC('sim-counts.json'), 'sim'),
     paintBySec: valid.map((l) => ({ load: `${l.arm}${l.rep}`, ...l.paintBySec })) };
 }
 for (const [vp, r] of Object.entries(OUT.viewports)) {
   console.log(`\n== ${vp}: valid C ${r.valid.C} V ${r.valid.V}${r.voidLoads.length ? ' | VOID ' + r.voidLoads.join('; ') : ''}`);
-  for (const x of [...r.judged, ...r.guards]) console.log(`  ${x.name.padEnd(24)} C ${JSON.stringify(x.C)} mean ${x.cMean} spread ${x.cSpread}${x.V.length ? ` | V ${JSON.stringify(x.V)} mean ${x.vMean} d ${x.dMean}${x.limit !== undefined ? ` limit ${x.limit}` : ''} ${x.rule} ${x.pass === undefined ? '' : x.pass ? 'PASS' : 'FAIL'}` : ''}`);
+  for (const x of [...r.judged, ...r.guards]) console.log(`  ${x.name.padEnd(24)} C ${JSON.stringify(x.C)} mean ${x.cMean} spread ${x.cSpread}${x.V.length ? ` | V ${JSON.stringify(x.V)} mean ${x.vMean} d ${x.dMean}${x.limit !== undefined ? ` tol ${x.tol} limit ${x.limit}` : ''} ${x.rule} ${x.pass === undefined ? '' : x.pass ? 'PASS' : 'FAIL'}` : ''}`);
   const p = r.parity;
   if (p) {
-    console.log(`  A/A vs ${p.c1}: ${[...p.aa.map((a) => `${a.load} ${a.diffs}`), ...p.extraAA].join(', ')} (max ${p.maxAA}, max over all C pairs ${p.maxAAall})${p.voided ? ` -> VOID (> ${VOID_N})` : ''}`);
+    console.log(`  A/A vs ${p.c1}: ${[...p.aa.map((a) => `${a.load} ${a.diffs}`), ...p.extraAA].join(', ')} (max ${p.maxAA}, max over all C pairs ${p.maxAAall}) N_vp ${p.nVp}${p.voided ? ` -> VOID (${p.maxAA} > ${p.nVp})` : ''}`);
     for (const v of p.v) console.log(`  parity ${v.load}: diffs ${v.diffs}, beyond A/A ${v.beyondAA} (geom ${v.geomBeyondAA}) ${v.sample.slice(0, 4).join('  ')}`);
     console.log(`  deferral sizes in C: ${JSON.stringify(p.deferC)}${p.deferV.length ? ' | V values not in C: ' + JSON.stringify(p.deferV) : ''}`);
     if (p.pass !== null) console.log(`  parity ${p.pass ? 'PASS' : 'FAIL'}`);
