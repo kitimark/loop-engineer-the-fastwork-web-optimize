@@ -72,6 +72,11 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-118 revised scripts (fix-double-drive 4c52690d): PASS 4 of 4 xcode-serious checks.**
+  - Pins: hold.sh 09c0b21eaa0f, TICKET b8d48b0803c7; scorer pins unchanged.
+  - The diff is only the pre-warm removal and `--accept-induced`; the rest is byte-identical.
+  - H1 waits on the lead's sign-off and iphone-runner's decisive check.
+  - Card: "Ops re-validation of the revised scripts".
 - 10-05 **P-117 momentum case (fix-nav-morph d5d12629, branch nav-hit-cache): numbers AGREE** with sim-momentum.json
   (summary fields only). Lag 1 per load; mismatches 0/0/0. Moving frames with no scroll event: glide 42/499 and 34/552.
   Scripted task mode: lag 0, mismatches 0/0/0. The missing scroll events stay OBSERVED. The .pain flicker verdict

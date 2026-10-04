@@ -161,3 +161,32 @@ hold.sh 09c0b21eaa0f (f1532738, TICKET b8d48b0803c7) passes the four xcode-serio
 diff: (1) the pre-warm loop is removed; (2) `--accept-induced` is in gate(), so it applies at start and end; one start read,
 any non-zero exit voids the hold with no retry; (3) the per-arm load warm-ups wC/wV/wgC/wgV are unchanged; (4) `--max-c 44`
 is unchanged. The only other edits are comments. SIGNED. H1 may start once the user's Xcode Serious condition is on.
+
+## Ops re-validation of the revised scripts (fix-double-drive 4c52690d, 2026-10-05, before H1): PASS 4 of 4
+
+The pins are hold.sh **09c0b21eaa0f** (was 58d285cb0094) and TICKET.md **b8d48b0803c7** (was dfbac7327abe), sha256/12.
+Ops hashed them both in the commit and on disk in the owner's worktree; the two match. The scorer pins are unchanged
+(652bba12f6a3, f2823168094f). The commit contains c4875944, so the checkout that runs the hold has the `--accept-induced`
+gate.
+
+The hold.sh diff against c2d377cb has only these hunks:
+- the header comment;
+- `--accept-induced` on the `gate()` line, which serves both the start and end calls;
+- the pre-warm loop replaced by one `gate start`, where any non-zero exit means VOID (exit 5).
+
+Everything else is byte-identical, including the end gate (any non-zero means VOID, exit 3), the served check before
+every item, park and pmcheck.
+
+| # | check | hold.sh 09c0b21eaa0f | result |
+|---|---|---|---|
+| 1 | no heat pre-warm | the loop and every `prewarm` run are gone; the first phone action is the start gate | PASS |
+| 2 | `--accept-induced` at start and end of each hold | `gate()` line 43; `gate start` before the items, `gate end` after the last run (line 69) | PASS |
+| 3 | one uncounted load warm-up per arm port | wC / wV / wgC / wgV unchanged | PASS |
+| 4 | 44 °C / Critical ceiling | `--max-c 44`; exit 3 in every profile | PASS |
+
+The TICKET states `profile: xcode-serious`, no pre-warm, no cooling wait, and never pooled with a real-heat block. Its
+question now reads "Xcode-induced Serious". It names gate exits 2 / 3 / 7 as in 8e4eacbb's README.
+
+H1 may start on these pins once two things hold: the lead's sign-off on the revised scripts, and iphone-runner's
+decisive check (part OFF, the user's console step, part ON) per the amendment. Whether induced Serious slows the chip
+stays UNRESOLVED until that check reports.
