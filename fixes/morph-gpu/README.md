@@ -845,6 +845,30 @@ call that open 'cold'; an open after the setup has run is 'warm'.
       refill; reported to the lead (lead ruling, rule 2). This replaces the in-place re-run clause below for this
       case only.
     - For any void counted run, the report gives its gap and catch scrollY from the raw file (ops N1).
+- **Amendment A1-A5: runs beside the shared group** (the lead's request, the Chrome queue was 11 deep; ops pre-data read
+  PASS; before any P-099 data; scorer and gesture hashes unchanged). This replaces the hold layout above.
+  - **A1, Mac state.** The P-099 phone parts (gates, S1/S2, wC wV, the 8 G runs) take no exclusive chrome-measure
+    hold. They run under the `iphone` lease only, beside a shared group: Mac-quiet is preferred, not required (I-056).
+    `iphone.mjs gesture` records `meta.mac` (the shared jobs with weights, load1 at start and end). Beside anyone's
+    exclusive hold the tools refuse, as before.
+  - **A2, guard.** Before each gate and run, the runner waits while the group holds a job heavier than weight 1, or
+    an exclusive hold runs (`lock.mjs wait chrome-measure --until released-by:<owner>`). It also waits while load1 >
+    8 (bounded re-reads).
+  - **A3, validity.** A counted run with load1 > 8 at its start (its `meta.mac`) is VOID "mac load". It gets the
+    usual one in-place re-run; after one short warm-up it stops the block like any void (rule 2). Load-VOID files are
+    left out of the scorer input, and the block log names them.
+  - **A4, layout.** Same order: part 1 = gate, S1, wC wV, C1 V2 V3 C4, gate; part 2 = gate, C5 V6 V7 C8, S2, gate,
+    park. No 900 s cap, so the H1 timing rule (N4) falls away; the lease bounds the time.
+  - **A5, a new confounder.** The gap from fling to catch runs through Mac HTTP round trips to WDA, so Mac load can
+    lengthen it. It is reported per run with load1.
+  - **Ops notes on A1-A5:**
+    - No cross-block absolutes: P-099 numbers (f1/f2/f3, catch gap, cold share) are never compared in absolute
+      terms with P-098 or any quiet-Mac run. Verdicts stay within the block.
+    - The A5 rule, decided before data: report the median catch gap for V and for C, and load1 at start and end
+      per run. If every valid V gap is above every valid C gap (or the reverse) AND the medians differ by > 20 ms,
+      the verdict line carries "confounded by catch gap". That is not a void, and the verdict is unchanged.
+    - The block log lists, per counted run, the shared-group members and weights at its start (from `meta.mac`),
+      and A2's waits with their duration.
 - **Scorer**, committed before data: `phone/g-fling.mjs`, sha256 `a493f689422a`:
   `node fixes/morph-gpu/phone/g-fling.mjs C:<file> V:<file> … --served out/morph-gpu/phone/p099-served.json`, with
   the files in block order.

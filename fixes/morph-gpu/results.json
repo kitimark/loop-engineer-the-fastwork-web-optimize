@@ -922,7 +922,16 @@
         "bothWarmupsShort": "no O1 and the catch short of the end in wC and wV: stop before counted runs; report catch gap, catch scrollY, end scrollY as a finding; a longer catch = v3, new ticket rev (rule 1)",
         "oneWarmupShort": "block goes on; any void counted run stops it at once, no re-run or refill; to the lead (rule 2)",
         "voidRuns": "report catch gap and catch scrollY from the raw file (N1)",
-        "h1Timing": "last H1 gesture starts by ~750 s; else C4 moves to H2, logged as a hold-layout change (N4)"
+        "h1Timing": "last H1 gesture starts by ~750 s; else C4 moves to H2, logged as a hold-layout change (N4); superseded by amendment A4"
+      },
+      "amendmentA1A5": {
+        "source": "lead request (Chrome queue 11 deep), ops pre-data read PASS, before any P-099 data; scorer a493f689422a and gesture 6a7569615807 unchanged",
+        "A1": "no exclusive chrome-measure hold; iphone lease only, beside a shared group; meta.mac recorded per run (I-056)",
+        "A2": "before each gate/run wait out a shared reader heavier than weight 1 or an exclusive hold (lock.mjs wait --until released-by), and load1 > 8",
+        "A3": "counted run with load1 > 8 at start = VOID 'mac load'; one in-place re-run, or stop under rule 2; left out of the scorer input",
+        "A4": "same order (part 1: gate S1 wC wV C1 V2 V3 C4 gate; part 2: gate C5 V6 V7 C8 S2 gate park), no 900 s cap",
+        "A5": "catch gap goes through Mac HTTP to WDA; reported per run with load1",
+        "opsNotes": ["no cross-block absolutes vs P-098 or quiet-Mac runs", "median catch gap V and C; if fully separated AND medians differ > 20 ms the verdict line carries 'confounded by catch gap' (not VOID, verdict unchanged)", "block log: shared-group members and weights per counted run, A2 waits with duration"]
       }
     }
   }
