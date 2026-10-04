@@ -42,6 +42,10 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 08:2xZ Landed: I-118 + T-079 (77849780, 02280180; console restarted, /agents works, Versions page live), ops aa84a0ff. I-126 is in its full test. **P-096 scored STYLE fails.** Ops second read PASS: tools re-hashed, crossing-read re-run byte-identical, data after the freeze. One descriptive error sent to the owner as C1: the README's C column shows 704 / 455, the medians are 697 / 440. Candidate F is not built; the crossing residual is a phone-only cost, OBSERVED. hand-over nav-morph -> rest-script clean (08:02:45Z); now watching rest-script -> cd-roll-ca. **Lead rulings:**
+  - **F3 (nav-morph):** no landing on the single pair. Next is one 4-part phone step by fix-nav-morph (a BA pair with V first, plus a catch pair), after P-094 and P-093, once the user says "ready" in T-087. Felt stays "better (one pair, provisional)". hero-exit-threaded landed as v6 (5bf5d1e4); its next is the morph stage A proposal.
+  - **PR-017 rev 3** (cd-roll-ca): review READY. It lands after P-093 and the user's decision. It is not ready while T-085 is open.
+
 - 10-04 08:0xZ Landed: ops bd29c3e1, I-124 disk guard 62d1f2f8. More merges, on the lead's go:
   - heat: T-039 closed into T-029;
   - breakpoints: T-040, T-053, T-063 closed into T-034.
