@@ -853,6 +853,104 @@ paints, because they show no frame cost (post hoc, above). This is option 1 with
 
 None of K, P or L is built. N and Fb get no further block (ticket decision).
 
+**The lead's pick (2026-10-04 04:0xZ): option 1, with option 2.** Land R2 after its own phone no-worse check (P-095)
+and the blind finger swipe A/B. No K, P or L build unless the swipe says the hero still lags. Phone-queue place: right
+after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
+
+### B-R2: best-build + R2 (build JS `8018ce062d30`, CSS `71b65c667720`)
+
+- **How it was made** (scratchpad `br2-build.sh`): A = best-build (`out/snapshots/best-A-65052c4a3902`, rebuilt from
+  main's `fixes/best-build/patch.diff` 9bf4c6e41f11 on the baseline); R2's delta = R2 (`hext-R2-924be86afac8`) minus
+  morph-inherit's own build (`mi-C-7c61fe7d0662` / `f523598b2a24`), 4 JS hunks (4388-4650) and 1 CSS hunk (2153).
+  Applied to A with `patch -F0` (no fuzz, no offsets), both exit 0; `node --check` ok.
+- **Reverse check:** B-R2 minus A equals R2 minus mi-C, line for line (177 JS lines, 130 CSS lines). B-R2 minus mi-C is
+  218 JS lines = platform-idle's 41 + R2's 177, so nothing of platform-idle was lost. The gate text is there once.
+- **Scorer lines:** A's writer `s` stays at JS 4391 (as C); B-R2's writer `s` is at 4503 and `heRest` at 4455 (R2's
+  positions: platform-idle and morph-inherit sit below JS 12447 / 13490).
+- Snapshot (read-only): `out/snapshots/best-BR2-8018ce062d30`; JS
+  `8018ce062d301134fb0e96e836a4a91b611a7a8fc3b6d8f5869659e3216f996f`, CSS
+  `71b65c6677209db88a9150e9e23eb5fc2188381d7b809c2337d6c0bd18ec1eb8`.
+
+### P-095: phone ticket, R2's no-worse check on best-build (registration; written before any P-095 phone data)
+
+- **Question (one):** on the iPhone at real thermal Serious, under driver G, does adding R2 to best-build make the hero
+  band's frames worse, and is R2's CSS path active? No-worse only. The landing basis is P-081 (F7's per-frame gain,
+  frames no-worse) plus R2 = R = F7 on the phone path (rpx1-3, px13); P-095 checks R2's own build on the build the user
+  will get.
+- **Builds** (immutable read-only copies, re-checked by sha256 before every hold; mirror snapshot
+  b1789284481295-4ad4a84a):
+  - C = A = best-build, `out/snapshots/best-A-65052c4a3902`: JS
+    `65052c4a3902beefd50672a7391a9b9980366741270f88b991cec04a3a571e68`, CSS
+    `e0f92804c5216aa0ecc6cafafcb823662d7c19da19284e61460387df052004d6`.
+  - V = B-R2, `out/snapshots/best-BR2-8018ce062d30`: hashes above.
+  - The runner serves from its own copies of these, hash-checked against these values (as P-088).
+  - **Pre-block condition:** the Simulator hero check pxbr2 (frozen frames at rest, y 0 / 300 / 548; arms R2, B-R2, and
+    R2 again on its own server as the A/A) shows B-R2 vs R2 at 0 px beyond the A/A in the hero. Its result is added
+    here before the block starts; a failure stops P-095 and goes to the lead.
+- **Servers:** one per arm, P-088's flags (`--overlay <copy> --port 0 --https --vendors=local --latency 150 --no-cache`),
+  plain http twins for the phone (I-003), ports in the block log, never 5173. The plain baseline page is the pre-warm
+  and gate-timer page (no counted run). One uncounted warm-up load per arm port.
+- **Driver G:** `gestures/hero-pass-v1.json` (sha256 `e3f31872b82f`, as P-074 / P-081 / P-088), band y 1..780.
+- **Condition** (user T-039 B, `memory/phone-checks-start-warm.md`), as P-088:
+  - `research/phone-thermal-gate/thermal-gate.mjs` (sha256 `4604218c4041`, `--expect serious --max-c 44`) at every
+    hold's start and end; a hold counts only when both reads say Serious with Is Induced = No.
+  - 900 s `--no-timing` holds, keep-awake inside the hold only (C-024); stop at 44 °C or Critical. Every gate failure
+    goes to the lead; two strikes roll back to A (the lead's standing rule). A start read that fails before any step is
+    retried in the same hold and is not a strike (P-085).
+  - One start method: pre-warm on the plain baseline page for every arm. Logged per run: battery °C, charging, timer
+    grid median, Mac load1 at start and end, shared jobs. A Low Power Mode run (median dt > 25 ms) is void.
+  - **Hand-over (the lead's T-058 rules):** ops keeps this ticket read before P-091 ends; the runner queues the iphone
+    lease at once (`lock.mjs acquire iphone --owner <runner> --ttl 900 --wait 3600`, re-run on exit 3) so it hands
+    over the moment P-091 releases; no cooling gap between blocks (the only allowed gap is a user step). From P-091 on,
+    the runner starts its uncounted pre-warm under the lease at once, beside any shared group (I-056), and queues its
+    `--no-timing` hold at the same time; counted runs only inside its own hold. The ticketed start method inside the
+    hold (pre-warm + start gate) is unchanged, so the gate still decides; the extra pre-warm is logged as a runner
+    deviation.
+- **Runs:** 2 arms, 3 counted runs each, Timeline on (as P-081 / P-088), block order C1 V1 V2 C2 C3 V3 (C V V C C V).
+  - Holds: H1 = wC wV S1, C1+V1, V2+C2; H2 = C3+V3, S2. A pair (C1+V1, V2+C2, C3+V3) never splits across holds; the
+    runner may move a pair to the next hold when the budget is short.
+  - Runner: iphone-runner's P-088 driver (`out/iphone-runner/p088.mjs`, sha256 `ab412369e006`) as `p095.mjs` with only
+    the arms, builds, `--fn` lines and output dir changed; ops hashes it in the pre-block read.
+- **Sentinels:** an uncounted Timeline-OFF control run on C (A), bottom ≥ 58 fps and scroll ≥ 44 fps, at the block start
+  (S1) and the block end (S2). A failing start sentinel: no counted run starts; cool, restart. A failing end sentinel
+  voids every counted run since the last passing one; cool (protocol §5.3), re-run those pairs once.
+- **Void rules:** scoreF.mjs's own (gesture error or abort, Timeline errors or more than one epoch, over 10 % uncovered
+  moving band frames) and LPM: one in-place re-run; a second void at one position voids the block. A hold that failed
+  either gate read voids all its runs (its files never reach the scorers). A Mac Sleep or DarkWake inside a hold voids
+  all its runs (I-098; after each hold `pmset -g log | grep -E '\s(Sleep|DarkWake)\s' | tail -2`); re-run in a new hold;
+  2 sleep-VOIDs in a row: park and report.
+- **Load-sensitivity line (pre-declared, as P-088):** if a counted run starts with Mac load1 > 8 or a hold carries an
+  unleased CPU job, each verdict is also scored on the pairs recorded at load1 ≤ 8. A verdict that differs between the
+  full set and that subset is "load-sensitive", with no verdict claimed (one more block allowed).
+- **Scorers, committed before data** (unchanged, the P-088 hashes). `<d>` = the runner's `out/p095/`.
+  ```sh
+  node fixes/hero-exit-threaded/pF/scoreF.mjs C:<d>/gesture-p095-C1.json:<d>/tl-p095-C1.json V:<d>/gesture-p095-V1.json:<d>/tl-p095-V1.json V:<d>/gesture-p095-V2.json:<d>/tl-p095-V2.json C:<d>/gesture-p095-C2.json:<d>/tl-p095-C2.json C:<d>/gesture-p095-C3.json:<d>/tl-p095-C3.json V:<d>/gesture-p095-V3.json:<d>/tl-p095-V3.json --fn C:s=4391 --fn V:s=4503,heRest=4455 --band 1:780 --json out/hext/p095/scoreF.json
+  node fixes/hero-exit-threaded/pF/framesF.mjs C:<d>/gesture-p095-C1.json V:<d>/gesture-p095-V1.json V:<d>/gesture-p095-V2.json C:<d>/gesture-p095-C2.json C:<d>/gesture-p095-C3.json V:<d>/gesture-p095-V3.json --band 1:780 --json out/hext/p095/framesF.json
+  ```
+  scoreF.mjs `32ed5f4e81f9`, framesF.mjs `40d0d302c3f1`. scoreF pairs V run i with C run i (C1-V1, C2-V2, C3-V3).
+- **Failure lines (falsifiers; the lead's):**
+
+  | # | prediction | falsified when | P(hit) |
+  |---|---|---|---|
+  | a-C | A's writer share, every valid C run, about 0.8 | outside 0.3..1.0: the measure failed, no claim | 0.9 |
+  | a-V | B-R2's writer share, every valid V run, 0.01-0.03 | above 0.05 in any valid V run: R2's CSS path is not active | 0.9 |
+  | f50 | band dt > 50, median V − median C (twins > 46 / > 54) | ≥ +2 (twins the same bound; a twin with another verdict: threshold-sensitive) | 0.8 |
+  | f34 | band dt > 34, median V − median C (twins > 30 / > 38) | ≥ +3 (twins the same bound) | 0.8 |
+
+  Reported, not falsifiers: gesture-scope frames, the (b) per-pair lines (b-ts, b-fm-rest, fm1, b-rest; R2's named
+  residuals from P-081), timer grid. Fewer than 2 valid runs in an arm: no verdict.
+- **Decisions:**
+  - **Hit** (a-C in, a-V in, f50 and f34 no-worse, not threshold-sensitive, not load-sensitive): the blind finger swipe
+    A/B, A = best-build vs B = B-R2, from the same snapshots (3 steps: pair 1 A/B, pair 2 B/A, catch B/B; key drawn
+    before posting, kept only in `--meta`), posted only with the phone parked and the user there. Then the lead lands R2.
+  - **f50 or f34 WORSE:** no landing; to the lead with the long frames' units.
+  - **a-V out:** R2's path is not active on the phone with best-build; back to F.
+  - **a-C out:** the measure failed, not the fix; scorer check, ops re-read, re-score; new runs only if still failing.
+  - **Threshold-sensitive or load-sensitive:** to the lead, no verdict; at most one more block.
+  - **Block void:** no claim; cool and re-run once; a second void goes to the lead.
+- **Expected minutes:** about 20 (range 15-30) in 2 holds of 900 s: 2 warm-ups, 2 sentinels, 6 counted runs at about
+  1.5 min each, 4 gate reads, pre-warm.
+
 ## What changed
 
 On WebKit, once the entrance is over (`d()`), the exit is a set of CSS scroll-driven animations on a `--hero-exit`
