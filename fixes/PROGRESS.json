@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T12:36:07Z",
+ "updatedAt": "2026-10-04T12:52:37Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -695,7 +695,7 @@
    "state": "diagnosing",
    "stage": "R",
    "fixes": "Finds what makes fast flicks lag in the hero cards (also right after a fresh load) and at the end of the page, which you reported on v7 (T-113).",
-   "felt": { "answer": "not-yet", "text": "you reported the lag on v7 (T-113); your short finger test comes after the robot runs" },
+   "felt": { "answer": "not-yet", "text": "no fix to try yet; your finger test on v7 (C-045) found almost every slow frame (29 of 31) while Safari's toolbar was growing or shrinking" },
    "gate": "A finding first: which work fills each slow frame. Fixes it leads to go into v8 with their own checks.",
    "next": "First finding (robot flicks on v7, our data only): the slow hero frames happen while Safari's toolbar collapses or expands, with 3-5 page re-layouts in one frame. A new fix (toolbar resize) looks for the cause; then a phone test that switches suspects off one at a time, then your short finger test.",
    "owner": "iphone-runner",
@@ -703,7 +703,8 @@
    "details": [
     "User T-113 (12:0xZ): 3 reports on v7: hero cards when scrolling starts right after a fresh load (rare), hero cards on fast scrolling (rare), end of page on fast scrolling. Board priority 1.",
     "New standing check from it (T-113 #4): every best build gets a whole-page fast-flick robot check (hero, middle, end) next to the scripted runs.",
-    "12:3xZ iphone-runner (G driver, v7): slow hero frames = 3-5 layouts per frame during the toolbar collapse/expand (OBSERVED). fix-toolbar-resize spawned (status row toolbar-resize, linked here); its ablation block follows P-102's extra hold and P-100 on the phone."
+    "12:3xZ iphone-runner (G driver, v7): slow hero frames = 3-5 layouts per frame during the toolbar collapse/expand (OBSERVED). fix-toolbar-resize spawned (status row toolbar-resize, linked here); its ablation block follows P-102's extra hold and P-100 on the phone.",
+    "12:5xZ user finger test C-045 parts 1-2: 29 of 31 slow frames sat next to a change of the toolbar height (OBSERVED, F driver, our setup). fix-toolbar-resize is the top-priority fix (lead)."
    ]
   },
   {

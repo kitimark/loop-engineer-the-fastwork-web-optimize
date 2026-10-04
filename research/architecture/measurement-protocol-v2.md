@@ -360,7 +360,9 @@ the whole page, next to S/W. It has four parts: a flick right after a fresh load
 hero; the middle; and fast flicks into the end. Metrics per part are dt > 50 and > 34 ms per run with the ±4 ms twins,
 and the position of each slow frame by crossing (§3.4). The toolbar state at each slow frame is recorded as well. The
 check compares the candidate against the current best build in one ticketed block at real Serious. Its verdict is
-no-worse at d ≤ +2 frames >50 per run. It also judges where the slow frames cluster. Playbook: `fixes/LEAD.md` §6.
+no-worse at d ≤ +2 frames >50 per run. It also judges where the slow frames cluster: a new cluster fails the check
+even inside +2 (lead ruling 2026-10-04 12:5xZ). A new cluster is a spot, by crossing, that is slow in at least 2 of 3
+runs of the candidate and that the previous best build did not have. Playbook: `fixes/LEAD.md` §6.
 
 ### 5.5 Standard probe (one command, every run; arch-safari answers folded)
 **In the timed window (page side, cheap):**

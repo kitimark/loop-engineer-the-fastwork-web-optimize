@@ -338,7 +338,8 @@ page: (1) a flick right after a fresh load, (2) fast flicks down and back throug
 flicks into the end of the page. Record per part frames >50 and >34 ms per run with the ±4 ms twins and the page
 position of each slow frame, and note when Safari's toolbar collapses or expands during a slow frame (S never moves
 the toolbar, so S/W runs cannot show that class). The candidate build is compared with the current best build in
-the same hold; it must be no worse (protocol §5.4). It is ticketed like any phone block (a P-row before data) and
+the same hold; it must be no worse (protocol §5.4: d ≤ +2 frames >50 per run, and no new cluster, i.e. no spot slow in
+at least 2 of 3 runs that the previous best build did not have, even inside +2). It is ticketed like any phone block (a P-row before data) and
 runs at real Serious. Any slow-frame cluster it finds becomes a topic (T-113 -> toolbar-resize) or a known item in
 the build's write-up. Fixes in the build keep their own checks; this check does not replace a finger test where the
 less-work rule or the top-3 rule asks for one.
