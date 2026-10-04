@@ -101,6 +101,57 @@ CHECK OK. The live-page diffs are countdown and orbit phase (frozen pixels below
 followed up in the frozen-pixel and census runs.
 
 <!-- GATES -->
+## Gate results (v8 vs v7; arms from `out/v8-best/snap`, A = v7, V = v8; shared lane, no timing)
+
+**Frozen pixels, Chrome** (`gates/px-chrome.mjs`, PR-010 method: loads A V A2 V2, Date.now frozen, animations paused at
+4000 ms; "consistent" = over 8 levels in A~V beyond A~A2 and in A2~V2 beyond V~V2).
+- Phone width 430x932 DPR 3 (15:14Z), 13 stops 0-5346: consistent at most 12 css px² (y 1913, `#people` image, also in
+  A~A2 at 0.75 %) and 11 (y 1422); y 0, 548 and every stop from 2403 down are 0. Within T2.
+- Desktop 1440x900 (15:25Z), 13 stops 0-8448: one cluster above T2 on its face, y 300, 9957 css px² (0.77 %, max 110),
+  on `em.script-accent`. Cause: the accent's word rotator (setTimeout: idle 1250 ms, draw-out 900, draw-in 900, 7 words)
+  is not frozen by pausing animations; both v8 loads froze mid-draw-out (a frozen finished stroke-out is blank), the v7
+  loads idle and mid-draw-out of another phase. **Recheck with the rotator aligned** (`PX_ALIGN=1 PX_YS=0,300,548`,
+  16:01Z: each stop waits until the accent enters idle showing load A's word, then freezes): **0 css px² at y 0, 300 and
+  548 in every pair** (max level ≤ 2). The other desktop cells are within T2: y 0 160 css px² (max 61, the hero button
+  edge, gone in the aligned run), y 1739 / 2577 `section.feed` images 0.35 / 0.27 % (max 114-116, flat 0, and V~V2
+  differs by 0.58 / 0.45 % there: per-load image state), y 4255 / 5932 / 7609 consistent 0.
+- The check's 0.46 % at the phone-width bottom (live shot, not frozen) is the same per-load state as v7-best's own check
+  (0.42 % there); the frozen stops at the bottom (4856, 5346) are 0.
+
+**Element count** (`gates/dom-count.mjs`, 16:00Z; 4 loads A V A2 V2; tag.class tokens at load, after a walk to the
+bottom, and 3 s later): desktop 1224 → 1409 → 1409 and phone width 1381 → 1578 → 1578 in **all four loads, v7 and v8
+equal**. The only tokens that differ between loads are the accent state (`is-idle` / `is-drawing-in|out`) and the
+splash classes, and they differ between two loads of the same build too. So the check's desktop 1424 → 1423 is a
+per-load state (the moment the check counts), not an element v8 removes.
+
+**Work counts, Chrome desktop** (`gates/census-run.mjs`, both orders A,V and V,A; per 6 s at rest, and one scroll):
+| phase | v7 paint (2 runs) | v8 paint (2 runs) | elements restyled v7 / v8 | layout, rAF |
+|---|---|---|---|---|
+| rest y 0 | 145 / 142 | 74 / 72 | 355 / 323 → 249 / 269 | equal |
+| rest y 1400 | 149 / 151 | 79 / 79 | 544 / 522 → 466 / 499 | equal |
+| rest y 2796 | 1.5 / 1.5 | 0 / 0 | 56 / 68 → 17 / 17 | equal |
+| rest page end | 8.7 / 9 | 0.7 / 0.7 | 26 / 28 → 1.2 / 1.2 | equal |
+| scroll top → end | 221 / 243 | 202 / 198 | 2213 / 2214 → 2149 / 2232 | equal |
+v8 does less work at rest everywhere (paint about half at the top; nothing at the page end), and no count rises.
+
+**Widths** (de-breakpoints-v7's method, `research/breakpoints/run.sh`, OVL = v8, BOVL = v7, arms B S B2):
+- census, 5 configs (c430, c768t, c1440, c932l, rm1440): 0 exceptions, console errors or 404s; equal page heights and
+  media-query states; rest paint lower in v8 at every config (430: 672/607 → 416; 768t 632/631 → 376; 1440 643/635 →
+  374; 932l 641/623 → 380; rm1440 131/137 → 123); rest layers 151 → 147 at 430, equal elsewhere; scroll layouts,
+  recalcs and frames equal (within B~B2).
+- pixels, 14 configs x 6 stops = 84 cells, hero title accent masked: 0 errors. 66 cells are 0; the rest are the A/A
+  floor (AB = AA with S~B2 0: c430 hero, c768t top, c1024 top/hero, c1440 end, rm1440 commission), one-pixel slivers
+  (c600, c768t, c1440 top, ≤ 0.017 %), the commission counter mid-count (c1920, $16 vs $17), a 14x8 px edge next to
+  the language button at rm1440 (0.006 %, maxd 107), and one flagged cell, **c1920 people 0.119 %**: the Spotify embed
+  (an iframe) renders its text sharper in v8's one load than in both v7 loads; no v8 part touches the embed (per-load
+  iframe state).
+- **Second 1920 sample** (16:1xZ, `OUTNAME=v8-pix2`): people AB 0 % (the embed difference does not repeat; this time
+  B2 differs from both B and S by 0.255 %), hero 0 %, commission 0.001 %; end 0.014 % (a 76x3 px line, maxd 207) in S
+  against both v7 loads, the same cell and size that sample 1 showed in B2 against B and S: a per-load state either
+  build takes. Widths: **no v8 change beyond per-load states.**
+
+**Pending:** iPad Simulator smoke and Simulator WebKit pixels (after P-112, lead / I-160);
+Mac Safari smoke (Safari's remote automation is off: needs the user); P-111 G leg and verdict; P-112 attribution.
 
 ## P-111 phone no-worse ticket (less-work rule), before any phone data
 
@@ -254,6 +305,135 @@ predictions (before data): CAUSE P 0.65 (rev 3 keeps `#platform` below opacity 1
   transparency group through the close; the close start pays for it; code reading only, not observed).
   O2/O3 opens faster in V by ≥ 10 ms: P 0.85 (rev 3's Simulator open-frame result). Sentinels pass first try: P 0.75.
 minutes: ~25 (2 holds; M runs ~0.8 min, warm-ups 2, pre-warm and gates ~3 min each).
+```
+
+## P-111 result (2026-10-04 15:2xZ-16:2xZ, iphone-runner; scored by int-v8): WORSE
+
+All 8 holds VALID: every start and end gate was Serious, every pmcheck passed, no void. Every heat sentinel passed: the
+W/M C runs and the sC runs. H5's opening sC record was lost: hold.sh gave both sC runs of a hold one label, so the closing
+run overwrote it, and only its exit 0 is known; H5's closing sentinel passed. The opening records for H6-H8 were saved
+apart by the runner. Score: `out/p111/score.json`, scorer 26d944bf93e2, in block order over H1-H8.
+
+| gate | C (v7) | V (v8) | d | verdict |
+|---|---|---|---|---|
+| W top > 50 (median per run) | 0.5 | 2 | +1.5 | no-worse |
+| W rest > 50 | 0 | 0 | 0 | no-worse |
+| M moving > 50 / > 34 | 2 / 3.5 | 0 / 2.5 | −2 / −1 | no-worse |
+| M tweens O1.f1 / f2 / f3 (ms) | 35.5 / 49 / 65.5 | 33.5 / 47 / 61.5 | −2 / −2 / −4 | no-worse |
+| M tweens close.f1 (ms) | 28 | 30.5 | **+2.5** | **WORSE** |
+| M tweens close.f3 (ms) | 60 | 63.5 | **+3.5** | **WORSE** |
+| reported: O2.f1 / O3.f1 (ms) | 53 / 53 | 36 / 37 | −17 / −16 | (faster) |
+| G F fresh > 50 | 4 | 3 | −1 | no-worse, no new cluster |
+| G H hero > 50 | 8 | 9 | +1 | **NEW CLUSTER at 2500-2749** (threshold-sensitive) |
+| G M middle > 50 | 0 | 0 | 0 | no-worse, no new cluster |
+| G E end > 50 | 0 | 0 | 0 | no-worse, no new cluster |
+
+- **The GH cluster.** All 3 V runs have a moving frame > 50 ms in bin 10 (scrollY 2500-2749, phone geometry), all of
+  them on the script's up flicks: 59@2701; 56@2745 (+ 52@2488 in bin 9); 58@2743 + 57@2701. No C run has a > 50 frame
+  in bins 9-11. C's slowest frames in the band are 42-48 ms at the same crossings (48@2496, 48@2485, 45@2747, 44@2750).
+  The cluster is new at > 54 too, but not at > 46, so it is threshold-sensitive. The slow scripted W scroll through the
+  same band (y 2300-2900) has no frame > 34 ms in either arm (max 25-34 ms). The cluster shows only in fast flicks.
+- **Mac load (load1 at each run's start and end).**
+
+  | runs | C | V |
+  |---|---|---|
+  | W | 14-139 | 9-105 |
+  | M | 13-140 | 42-119 |
+  | G F | 28-39 | 29-38 |
+  | G H | 6.8-12.9 | 6.0-14.3 |
+  | G M | 4.5-8.4 | 3.9-7.6 |
+  | G E | 4.6-7.3 | 4.2-7.9 |
+
+  The W and M holds ran beside heavy shared jobs. The arms' ranges overlap in every leg. In H6 (G H) the C and V runs
+  ran at the same load. The V run with the lowest load (gHV3, 6) has the cluster frames too (58@2743, 57@2701). Load
+  does not explain the cluster.
+- **Predictions, checked:**
+  - Hit: W top, W rest and M moving no-worse; every G part no-worse on > 50; sentinels passed first try.
+  - Missed: M tweens no-worse (P 0.8); no new cluster (P 0.65); overall no-worse (P 0.4).
+- **Consequence (the ticket's rule):** v8 does not land as is. The components are found by reversal builds:
+  - P-112: rev 3 against the M close;
+  - P-113 below: faces + glue, and K, against the GH cluster.
+  After both, the lead rules on what stays in v8.
+
+## P-113 hero-flick cluster attribution ticket (lead 2026-10-04 16:2xZ), before any P-113 data
+
+Why: P-111's G part H has a new > 50 cluster in v8, in scrollY 2500-2749 (up flicks, phone geometry). Code reading
+names two suspects (not measured):
+- **countdown-faces + the heUp glue.** On an up flick into the hero exit range, the clock goes from held to shown. In
+  R2's CSS mode, `heUp` runs `s()`, then the glue sets `__cdHeroShown`. The release snaps every held digit (`z(a, e)`,
+  cd-strip transform writes on layered cells), recomputes `u`, and restarts the interval. v7 snapped the clock every
+  second while it was out of sight, so its digits were already current at that crossing.
+- **K** (cd-roll-ca rev 5, V9's roll with fewer keyframes). The first tick after the release starts a roll with K's
+  Web Animations; v7 ran V9's.
+
+The other v8 parts don't run at that crossing: accent exact is CSS on the hero title at the top; morph rev 3 is CSS at
+the page end. They are the remaining suspects if neither arm removes the cluster.
+
+```
+PHONE TICKET P-113 v8-best · attribution of P-111's new G part H cluster (scrollY 2500-2749) · runner iphone-runner (right
+  after P-112, before P-105 H3-H6) · verdict owner int-v8 · registered before any phone data; no counted run before
+  the lead's pre-data read
+arms (all CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43, v8's):
+  C = v8-best: JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16
+  F = v8 minus countdown-faces and the heUp glue (glue-heup.diff reversed, then faces-delta.diff reversed):
+      JS cf7ec51d037ec01f2b3b131120001c6414d557b6257a5319c431ff6f476861a4
+  R = v8 with cd-roll-ca V9 in place of K (the V9 -> K delta reversed; V9 = fixes/cd-roll-ca/patch.diff at 1bb87be9,
+      K = the current one, both on the cd-strip build):
+      JS 5ea2a58788cf2d6325f2b74fee83767629f49ce443c40793bcde40f818735c02
+  identity (node fixes/v8-best/phone/p113/build.mjs, best-build's strict applier, no fuzz; refuses on any failure):
+  every input equals its owner's build (st6-rb2, cd-strip, V9 582d120c9f8f, K b43fe790c20c, v8, accent-ca-v7); F − (V9 -> K)
+  and R − glue − faces both equal accent-ca-v7 + morph rev 3 (JS 8c90da217745, CSS f836404b3728), the README's
+  reversal line "v8pure − morph − faces − K + V9 = accent-ca-v7" with rev 3's CSS kept; three different JS; node --check
+  passes on F and R.
+copies: out/p113/snap/{C,F,R} in int-v8's worktree (`sh fixes/v8-best/phone/p113/serve.sh snap`, made 16:2xZ, snap ok);
+  read-only, HASHES.txt (full sha256 as above).
+question: does removing faces + glue, or K, remove v8's > 50 cluster in the hero up flicks? Attribution only, no
+  landing basis.
+ports: `sh fixes/v8-best/phone/p113/serve.sh` (sha256 cf11151b44ba, P-112's serve.sh with four servers): B plain
+  baseline, C, F, R; serve.mjs --port 0 --latency 150 --vendors=local, plain http. Served-hash check before every item
+  (B 4606120cf392/27776f3d4138, C 3e3e94cb6e9f, F cf7ec51d037e, R 5ea2a58788cf, CSS f836404b3728; exit 4 on a wrong
+  one). int-v8 starts them; ports go to the runner by message, never into a committed file.
+thermal gate, start method, sleep check: as P-111 (thermal-gate.mjs --expect serious --max-c 44 --url <B> at the start
+  and end of the hold; pre-warm on B with S runs, at most 4; pmcheck.mjs). The hold counts only if both reads PASS;
+  else VOID, re-run once with the same items.
+hold: `RUNNER=iphone-runner caffeinate -i -s sh <int-v8 worktree>/fixes/v8-best/phone/p113/hold.sh H1 sCo wgC wgF wgR
+  gHC1 gHF1 gHR1 gHF2 gHR2 gHC2 gHR3 gHC3 gHF3 sCc` (sha256 603d354f0b3b: P-111's hold.sh with G part H items only,
+  three arms, folder out/p113/runs, labels p113-*). Under the iphone lease held by iphone-runner, beside any shared group.
+  - sCo / sCc: the opening and closing heat sentinel (S run on C, uncounted). They now have their own labels: in
+    P-111 the closing sC overwrote the opening one.
+  - wgC / wgF / wgR: one uncounted G-H warm-up per arm port (A3/U5).
+  - 9 counted runs in a rotated Latin square: C F R · F R C · R C F (3 per arm).
+  Then `iphone.mjs park`; int-v8 stops the servers. ~16 min (14 G/S runs at ~0.6 min, pre-warm and gates ~3 min).
+G part H (P-111's, unchanged): `iphone.mjs gesture fixes/v8-best/phone/g/flick-hero-v1.json` (6ae05e12ace9 /
+  GESTURE_HASH 53a8e657fa28, window down1 -> end: down, up, down, up). Each run reloads the page itself.
+scorer: `node fixes/v8-best/phone/p113/score.mjs <item>:<file> ... [--json out]` (sha256 0daf43f6df58). It imports P-111's
+  scorer unchanged (26d944bf93e2, refused if changed): scoreG for part H (moving frames, voids, 250 px bins at > 50,
+  > 46, > 54) and applySentinel's chain, with three arms. Self-test `node fixes/v8-best/phone/p113/selftest.mjs`
+  (990541977343, 11 checks OK on synthetic records).
+  - Band (fixed before data): bins 9-11 = scrollY [2250, 3000), P-111's cluster bin and its neighbours.
+  - Cluster PRESENT in an arm at > k ms: one band bin holds a moving frame > k in >= 2 of that arm's valid runs (P-111's
+    vCluster rule, restricted to the band). k = 50; twins 46 and 54.
+  - Per removed part (F: faces + glue; R: K):
+    - C without the cluster -> NOT REPRODUCED (no attribution);
+    - C with it and the part's arm with it -> NOT THE CAUSE (falsifier: cluster present in the removed-part arm too);
+    - C with it and the part's arm without it -> CAUSE.
+    - Threshold-sensitive when the > 46 or > 54 verdict differs.
+  - Block verdict: faces + glue CAUSE / K CAUSE / BOTH (either removal removes it) / NEITHER (then accent exact and
+    morph rev 3 are left, and int-v8 reports to the lead before any further block) / NOT REPRODUCED / insufficient
+    (< 3 valid runs in an arm).
+  - Reported, not gated: per run the band's max moving dt and its > 34 frames; per arm the band-max median; P-111's
+    > 50 count gate for F and R against C.
+  - Voids: P-111's G voids (no record, aborted, run errors, missing marks, median moving dt > 25 ms), the served check
+    before the item (B, C, F, R all ok); sentinel S runs: no record, not driver S, run error, served not C's build, Low
+    Power Mode; a sentinel whose pass is not true voids every run since the last passing one. At most one extra hold
+    (the same items).
+predictions (before data):
+  - C reproduces the cluster: P 0.6 (P-111's was 3 of 3 runs, but threshold-sensitive).
+  - faces + glue CAUSE: P 0.55 (the release write sits at the crossing).
+  - K CAUSE: P 0.15 (a roll starts only on the next tick after the release, at most 1 s later, and K has fewer
+    keyframes than V9).
+  - Sentinels pass first try: P 0.8.
+minutes: ~16 (1 hold).
 ```
 
 ## Reproduce
