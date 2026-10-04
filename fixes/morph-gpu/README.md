@@ -5,8 +5,10 @@
 
 **Status:** PR-012 rev 1 accepted by the user (2026-10-04 02:56:15Z, no notes); the accepted rev is the spec. Lands
 as a "less work" fix once the phone no-worse block below passes.
-**Stage:** V: the phone no-worse block is registered ("Phone block", below), paused under I-098 until the user answers
-T-052.
+**Stage:** V: the phone no-worse block P-092 is registered ("Phone block", below). The user answered T-052 at 03:10Z
+(option A, the Mac kept awake), so the I-098 pause is lifted; the VOID-on-sleep rules stay. Ops re-read PASS
+(registered at 55064128, scorer f3a50b8ec2dd). Next: the phone queue (3rd, after P-088 and P-091) and the lead's go;
+I run it from this worktree.
 **Device class / gate:** phone-only, render-bound (WebKit paint during the morph). Gains below are Simulator counts.
 **Driver(s) behind the claims:** M (`__fwMorphDrive` in the Simulator, `__fwMorphSet` frozen frames). No S, G or F yet.
 **Base:** best-build (main 60df1cf: st6-rb2 + platform-idle + morph-inherit), js `65052c4a3902`, css `e0f92804c521`.
@@ -290,14 +292,16 @@ ATTRIBUTION morph-gpu · cluster end-of-page morph (open and close tweens, m 0 �
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up during the morph ·
 toolbar resize · rubber band · reduced motion in the Simulator or on the phone (Chrome frames done, see Risks) · finger (G/F). The phone no-worse block
-(registered below, condition B) waits on T-052 (I-098).
+(P-092, registered below, condition B; ops PASS) waits on its phone-queue place and the lead's go.
 
 ## Phone block: no-worse check against best-build (registration; written before any phone data)
 
 PR-012 rev 1's gain row 5 ("Smoothness on the iPhone, pending, UNRESOLVED"). A short no-worse check under the less-work
 rule (`memory/less-work-landing-rule.md`; N2 is not one of the top three, so no finger test), not a gain block. Timing:
-paused under I-098 until the user answers T-052. Prediction id **P-092** (mgmt-ops-10); this text answers the ops
-second read (R1-R3 and the pre-warm ruling) and goes back to ops for one re-read before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran clean.
+the I-098 pause was lifted when the user answered T-052 (03:10Z, option A); a run that a Mac sleep or dark wake
+falls into is VOID and re-run; after 2 sleep-VOIDs in a row the block parks (ops). Prediction id **P-092** (mgmt-ops-10); this text answers the ops
+second read (R1-R3 and the pre-warm ruling); ops re-read it: PASS, registered at 55064128 with frames-n2
+`f3a50b8ec2dd`. The block starts only on the lead's go. Template: P-085 (`fixes/morph-inherit/README.md`), which ran clean.
 - **Question (one).** On the iPhone at real thermal Serious, under the morph driver M at the page end, does the reveal
   (V) show no more long moving frames than today's best build (C)?
 - **Builds** (immutable snapshot copies, `node fixes/morph-gpu/build.mjs`; without the overlay it rebuilds V from

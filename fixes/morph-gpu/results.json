@@ -277,7 +277,7 @@
   },
   "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/.",
   "phoneBlock": {
-    "status": "registered before any phone data; ops second read R1-R3 + pre-warm ruling answered, awaiting the ops re-read; timing paused under I-098 until the user answers T-052",
+    "status": "registered before any phone data; ops re-read PASS (55064128, frames-n2 f3a50b8ec2dd); waiting for its phone-queue place (3rd after P-088, P-091) and the lead's go; I-098 pause lifted (user T-052 option A, 03:10Z): a hold spanning a sleep is VOID and re-run, 2 sleep-VOIDs in a row park the block",
     "question": "At real thermal Serious under driver M at the page end, does V show no more long moving frames than C?",
     "kind": "no-worse check under the less-work rule (not top-3: no finger test)",
     "builds": {
