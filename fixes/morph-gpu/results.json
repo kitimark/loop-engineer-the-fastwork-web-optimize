@@ -1,6 +1,6 @@
 {
   "topic": "morph-gpu",
-  "kind": "counts and frozen frames only; no timing A/B (spawn rule: the phone timing block comes later through the lead and ops)",
+  "kind": "record only (lead, P-092 ruling 2026-10-04): lands as a record, out of the next best build, not as a less-work fix. Evidence: Simulator counts and frozen frames, Chrome counts, and one phone no-worse block (P-092, frame times, M driver); no timing A/B",
   "date": "2026-10-03",
   "builds": {
     "base": {
@@ -277,7 +277,7 @@
   },
   "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/.",
   "phoneBlock": {
-    "status": "ran 2026-10-04 05:39-06:06Z, 3 holds VALID at Serious, 8/8 runs valid; lead ruling: PASS as no-worse (drive >34 threshold-sensitive, better at 34 / no-worse at twins, no gain claimed); cost: tween-start frame +7 ms in V, so rev 1 stays out of the next best build (GPU preview only, labelled); rev 2 in work",
+    "status": "ran 2026-10-04 05:39-06:06Z, 3 holds VALID at Serious, 8/8 runs valid; lead ruling: PASS as no-worse (drive >34 threshold-sensitive, better at 34 / no-worse at twins, no gain claimed); cost: the first frame of the 2nd/3rd open per run is +7 ms in V and paid back in the next frame; first open per load V 41 vs C 34.5 ms (ranges overlap); close starts shorter in V; frame loss UNRESOLVED (claims-audit 2.3). Rev 1 lands as a record, stays out of the next best build (GPU preview only, labelled); rev 2 in work",
     "question": "At real thermal Serious under driver M at the page end, does V show no more long moving frames than C?",
     "kind": "no-worse check under the less-work rule (not top-3: no finger test)",
     "builds": {
@@ -322,7 +322,7 @@
           "gates": "Serious/Serious PASS",
           "batteryC": [
             40.29,
-            40.0
+            40
           ]
         },
         {
@@ -471,7 +471,7 @@
         "sent": "hit (S1, S2)"
       },
       "decision": "registered row \"Threshold-sensitive f50 or f34, in the moving or the drive scope\": to the lead, no verdict, no land request until the lead rules",
-      "reportedNotScored": "tween-start moving frames >50: 2 per run in both arms; C 54-56 ms (median 55), V 60-64 ms (median 62); all 8 V frames longer than every C frame; count equal, worst frame ~7 ms longer with the reveal (cause OBSERVED in our setup, unknown)",
+      "reportedNotScored": "moving frames >50: 2 per run in both arms, all the first frame of the 2nd and 3rd open (O2, O3, repeat opens after a full close): C 54-56 ms (median 55), V 60-64 ms (median 62); the next frame is shorter by the same amount (first 2 frames O2 V 72.5 / C 71, O3 70 / 70.5; first 3 frames 83 / 83). First open per page load (O1): V 41 [40-49] vs C 34.5 [33-49] ms, n 4, ranges overlap; first 3 frames 69 vs 63. Close starts shorter in V: first frame 32.5-33 vs 38.5-39.5 ms, first 3 frames 50 vs 72. Whether a displayed frame is lost is UNRESOLVED (phone stamps mark the rendering-update start, claims-audit 2.3). OBSERVED in our setup; cause untested (corrected after review B1; the first version said all tween-start frames)",
       "deviations": [
         "900 s holds (lead rule; registered 600)",
         "early pre-warm under the lease while H1 queued (T-058) and a keep-warm W loop on base to 43 C while H2/H3 queued (lead 05:36Z)",
@@ -481,10 +481,123 @@
       "leadRuling": {
         "verdict": "no-worse (not better)",
         "drive>34": "threshold-sensitive (better at 34, no-worse at the twins); no gain claimed",
-        "cost": "tween-start >50 count equal; all 8 V tween-start frames (60-64 ms) longer than every C frame (54-56 ms), about +7 ms at the worst frame; OBSERVED, cause untested",
+        "cost": "first frame of the 2nd and 3rd open per run +7 ms in V (62 vs 55 median), paid back in the next frame (first 2 frames 71 vs 71, first 3 83 vs 83); first open per load 41 vs 34.5 ms, ranges overlap; close starts shorter in V (33 vs 39, first 3 frames 50 vs 72); frame loss UNRESOLVED; OBSERVED, cause untested (corrected after review B1)",
         "bestBuild": "rev 1 does NOT enter the next best build; stays in the GPU preview labelled with the cost",
-        "next": "rev 2: prepare the clip layer before the tween starts; Chrome/Simulator mechanism check, then a short phone no-worse block with falsifier tween-start frame V <= C + 2 ms"
+        "next": "rev 2: prepare the clip layer before the tween starts; Chrome/Simulator mechanism check, then a short phone no-worse block judged on the first open per page load: first frame V <= C + 2 ms, plus the first-2 and first-3 frame sums and the close starts (review B1)",
+        "dCard": "LOCATED, record only (lead, P-092 ruling 2026-10-04)"
+      },
+      "perTween": {
+        "source": "driverResult.driver.frames of the 8 counted runs; tween start = first frame whose m leaves 0 (open) or 1 (close); medians of 4 runs per arm, ms",
+        "C": {
+          "O1": {
+            "f1": 34.5,
+            "f1range": [
+              33,
+              49
+            ],
+            "f12": 49.5,
+            "f123": 63
+          },
+          "O2": {
+            "f1": 55,
+            "f12": 71,
+            "f123": 83
+          },
+          "O3": {
+            "f1": 55,
+            "f12": 70.5,
+            "f123": 83
+          },
+          "C1": {
+            "f1": 38.5,
+            "f12": 57.5,
+            "f123": 71.5
+          },
+          "C2": {
+            "f1": 39.5,
+            "f12": 57.5,
+            "f123": 72
+          },
+          "C3": {
+            "f1": 38.5,
+            "f12": 57.5,
+            "f123": 71.5
+          }
+        },
+        "V": {
+          "O1": {
+            "f1": 41,
+            "f1range": [
+              40,
+              49
+            ],
+            "f12": 56,
+            "f123": 69
+          },
+          "O2": {
+            "f1": 62,
+            "f12": 72.5,
+            "f123": 83
+          },
+          "O3": {
+            "f1": 62,
+            "f12": 70,
+            "f123": 83
+          },
+          "C1": {
+            "f1": 33,
+            "f12": 39,
+            "f123": 50
+          },
+          "C2": {
+            "f1": 32.5,
+            "f12": 38.5,
+            "f123": 50
+          },
+          "C3": {
+            "f1": 33,
+            "f12": 43,
+            "f123": 50.5
+          }
+        }
+      },
+      "nearBands": {
+        "note": "flagged, not scored; sums over the 4 valid runs per arm, from score.json",
+        "moving": {
+          "C": {
+            "(30,38]": 10,
+            "(46,54]": 3
+          },
+          "V": {
+            "(30,38]": 11,
+            "(46,54]": 1
+          }
+        },
+        "drive": {
+          "C": {
+            "(30,38]": 20,
+            "(46,54]": 7
+          },
+          "V": {
+            "(30,38]": 25,
+            "(46,54]": 1
+          }
+        }
+      },
+      "blockDriver": {
+        "path": "out/morph-gpu/phone/n2.mjs (local, gitignored: it names the local checkout path)",
+        "sha256": "3c475e77a6e04f52c4c6cdf272e02ea88132f50b7e5862607a012f01f69122d8"
+      },
+      "scorerFile": {
+        "path": "fixes/morph-gpu/phone/frames-n2.mjs",
+        "sha256": "f3a50b8ec2dd2311e3d3fb10de0d31a28f1a0c18f6dbc266485480b526a900fb"
       }
     }
+  },
+  "status": "LOCATED, record only (lead, P-092 ruling 2026-10-04); review-morph-gpu B1-B5 addressed 2026-10-04",
+  "hashes": {
+    "note": "sha256 of the committed deliverables at the review-fix commit (review non-blocking item)",
+    "patch.diff": "07c50a4e48f49b7b05cc5c08a69ca61fc9d0a28eb6deb2cae59e21e1e5ddaec8",
+    "delta.diff": "27c4905900a44c8f94ba142877bfaf26bf705bd04a70813833193e01c5e00696"
   }
 }

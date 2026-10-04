@@ -3,15 +3,23 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** PR-012 rev 1 accepted by the user (2026-10-04 02:56:15Z, no notes); the accepted rev is the spec. Lands
-as a "less work" fix once the phone no-worse block below passes.
+**Status:** PR-012 rev 1 accepted by the user (2026-10-04 02:56:15Z, no notes); the accepted rev is the spec. Rev 1
+lands as a **record only**: out of the next best build, not as a "less work" fix (lead, P-092 ruling 2026-10-04, and
+review-morph-gpu B2). It stays in the GPU preview with the cost label below. Owed before it can go further: see
+"Owed (review B5)" below.
 **Stage:** V: the phone no-worse block P-092 ran on 2026-10-04 (05:39-06:06Z, 3 holds, all valid at Serious;
 "Phone block P-092: result", below). Moving scope: '>50' Δ 0 and '>34' Δ −2, both no-worse and not threshold-sensitive.
 Drive scope '>34' is threshold-sensitive (better at 34, no-worse at the twins); no gain is claimed from it.
-**Lead ruling (2026-10-04 ~06:15Z): PASS as no-worse**, land request sent. **Cost:** every tween-start frame is longer
-in V (60-64 ms against C's 54-56 ms, about +7 ms at the worst frame; OBSERVED, cause untested). Because of that cost,
-rev 1 does NOT enter the next best build. It stays in the GPU preview, labelled with this cost. Rev 2 (prepare the clip
-layer before the tween starts) is in work ("Rev 2", below).
+**Lead ruling (2026-10-04 ~06:15Z): PASS as no-worse**, to land as a record. **Cost** (OBSERVED in our setup, M driver,
+medians of the 4 runs per arm; corrected after review B1):
+- The +7 ms is only at the 2nd and 3rd open of each run (after a full close): first frame V 62 vs C 55 ms. The next
+  frame is shorter by the same amount: the first 2 frames sum to 71 vs 71 ms, the first 3 to 82-83 vs 82-84 ms.
+- The first open per page load: first frame V 41 vs C 34.5 ms (n = 4, ranges 40-49 vs 33-49, overlapping).
+- Close starts are SHORTER in V: first frame 33 vs 39 ms, first 3 frames 50 vs 72 ms.
+- Whether a displayed frame is lost is UNRESOLVED: the phone's stamps mark the rendering-update start, not display
+  (claims-audit §2.3).
+Because of the open-start cost, rev 1 does NOT enter the next best build. It stays in the GPU preview, labelled with
+this cost. Rev 2 (prepare the clip layer before the tween starts) is in work ("Rev 2", below).
 **Device class / gate:** phone-only, render-bound (WebKit paint during the morph). Gains below are Simulator counts.
 **Driver(s) behind the claims:** M (`__fwMorphDrive` in the Simulator, `__fwMorphSet` frozen frames). No S, G or F yet.
 **Base:** best-build (main 60df1cf: st6-rb2 + platform-idle + morph-inherit), js `65052c4a3902`, css `e0f92804c521`.
@@ -223,7 +231,9 @@ References:
 - Status: UNRESOLVED.
 - Decisive local check, done: toggling the nav's backdrop filter after the clip is gone clears it; toggling the
   clip-path does not.
-- Open: whether it happens on the real iPhone (the phone block would show it at m = 1).
+- Open, unchecked on the device: whether it happens on the real iPhone, and whether the workaround clears it there.
+  The phone block P-092 did not check it (frame times only; its registration lists the stale clip under "Not in this
+  block"). A device check needs a pixel read at m = 1 on the phone, which no tool here does yet.
 
 The toggle is a workaround with that status. At m = 1 the nav's blur is `blur(0px)` under an opaque panel, so it
 changes nothing you can see (max 5 above).
@@ -287,15 +297,41 @@ ATTRIBUTION morph-gpu · cluster end-of-page morph (open and close tweens, m 0 �
   Phone Timeline segment card: not planned (the registered phone block is a no-worse frame check).
 5 platform claims relied on:
   | claim | status | reference / check | what falls if wrong |
-  | WebKit applies a changed clip-path on a composited layer as a mask-shape change, without repainting content (iOS 26 Simulator Safari) | CONFIRMED in source + OBSERVED in counts | WebKit main 2026-10-03: RenderElement.cpp ClipPath → RecompositeLayer (willCompositeClipPath); RenderLayerCompositor::layerStyleChanged → RenderLayerBacking::updateMaskingLayer / updateMaskingLayerGeometry ("FIXME: Avoid repaints when clip path changes"); counts above | the paint gain |
+  | WebKit applies a changed clip-path on a composited layer as a mask-shape change, without repainting content (iOS 26 Simulator Safari) | UNRESOLVED (corrected after review B3; was "CONFIRMED in source"). The Simulator paint-count check passed; the device is unverified | WebKit main as read 2026-10-03, not the iOS 26.6.1 build on the phone: RenderElement.cpp ClipPath → RecompositeLayer (willCompositeClipPath); RenderLayerCompositor::layerStyleChanged → RenderLayerBacking::updateMaskingLayer / updateMaskingLayerGeometry, which carries "FIXME: Avoid repaints when clip path changes", so the source itself says repaints can still happen. Decisive local checks: Simulator paint counts (done, above); a phone Timeline Paint count during the tween (not run) | the paint gain |
   | Simulator paint counts stand in for the iPhone's | OBSERVED | none; the phone block measures it | the size of the gain on the phone |
   | after the reveal ends at m = 1 Safari keeps the last clip until the nav's backdrop filter is toggled | OBSERVED in our setup, cause unknown; references UNRESOLVED | decisive check run: simframes-2026-10-03T16-31-40-782Z, -16-57-35-003Z | the m = 1 workaround (two extra frames) |
-6 lead: <to sign>
+6 lead: LOCATED, record only (lead, P-092 ruling 2026-10-04)
 ```
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up during the morph ·
-toolbar resize · rubber band · reduced motion in the Simulator or on the phone (Chrome frames done, see Risks) · finger (G/F). The phone no-worse block
+toolbar resize · rubber band · reduced motion in the Simulator or on the phone (Chrome frames done, see Risks) · finger (G/F) ·
+rapid re-entry (scroll away and back while a tween runs) · rotation · Android Chrome on a device · DPR 2 phones · the
+stale clip on the device. The phone no-worse block
 (P-092, registered below, condition B; ops PASS) ran on 2026-10-04; result below the registration.
+
+## Owed (review B5, 2026-10-04)
+
+The review (review-morph-gpu, NEEDS-WORK) listed protocol items rev 1 does not have yet. The lead's order: the idle
+triple and the memory/layers note before the GPU preview goes to the user.
+- **Idle triple** (protocol v2 §3.5): callbacks/s, writes/s, mutations/s and rAF/s at y = 0, parked mid-page after a
+  scroll, and at the pin. Tool: `rev2/idle-run.mjs` (M, R1, A, B). Status: see "Idle triple and layers" below.
+- **Memory / layers note:** rev 1 promotes about 10 full-panel layers (`will-change` on the bar, logo, actions, morph
+  columns, center, footer, backdrop and veil, plus the dark and glass layers) each time the reveal switches on. That is
+  the likely open-start cost. Layer count and layer memory at y = 0, mid-page, the pin and mid-morph: see "Idle triple
+  and layers" below.
+- **Phone segment card** (Script / Style / Layout / Paint+Composite / Other per tween frame, phone Timeline): not run.
+  It needs a Timeline block on the phone (lease, ticket); owed before rev 2 can claim where the open-start cost sits on
+  the device.
+- **Chrome census:** Chrome shows no gain and some extra work while moving (restyled elements 24.5 → 34.8 per frame,
+  Paint events 9.1 → 9.9; "Desktop and Chrome counts"). Android Chrome is a phone with `width <= 640px`, so it gets the
+  reveal and this cost; listed under Risks. No Android device run.
+- **Accessibility:** no change by code. The reveal adds two `div`s with no text, no role, no focusable content and
+  `pointer-events: none` (`.fw-rv-dark` inside the nav, `.fw-rv-glass` before it), and changes only clip-path,
+  transforms, opacity and `will-change` while m moves. The nav's own DOM order, accessible names and focus order are
+  the same as best-build; settled (m 0 or 1) its styles and hit targets are best-build's. While m moves (one tween,
+  a few hundred ms) the nav's box is panel-sized and cut by the clip-path; the CSS Masking spec says the clipped-out
+  area takes no pointer events, not checked here. Reduced motion: the reveal never switches on (Risks). Not checked
+  with a screen reader.
 
 ## Phone block: no-worse check against best-build (registration; written before any phone data)
 
@@ -463,17 +499,44 @@ with no verdict. No land request until the lead rules." The sensitivity points o
 threshold, the twins included, reads no-worse or better. Drive '>34' is recorded as "threshold-sensitive (better at
 34, no-worse at the twins)", and no gain is claimed from it.
 
-**Cost: the tween-start frame is longer in V.** This is a real cost of rev 1. Every run in both arms has exactly 2
-moving frames over 50 ms, all at the start of a tween (m 0.004-0.061, the [0, 100) ms since-start bucket). Their
-length differs by arm:
+**Cost: the first frame of a repeat open is longer in V** (wording corrected after review B1, 2026-10-04; the first
+version said "every tween-start frame", which was too broad). Every run in both arms has exactly 2 moving frames over
+50 ms. Both are the first frame of the 2nd and 3rd open of the run (O2, O3: m 0.004-0.061, the [0, 100) ms
+since-start bucket), i.e. a repeat open after a full close. Their length differs by arm:
 - C: 54-56 ms (median 55);
 - V: 60-64 ms (median 62).
 
-All 8 of V's frames are longer than every one of C's. The '>50' count is equal, but the worst frame is about 7 ms
-longer with the reveal. OBSERVED; the cause is untested (a setup cost when the reveal starts is the likely reading).
-Because of this cost, rev 1 does not enter the next best build. It stays in the GPU preview, labelled with the cost,
-and rev 2 targets it. The >54 twin picks this up only as +0.5 on the median, because
-C's frames sit at 54-56.
+All 8 of V's O2/O3 first frames are longer than every one of C's. The '>50' count is equal. The >54 twin picks this
+up only as +0.5 on the median, because C's frames sit at 54-56.
+
+Per tween, first frame and the sums of the first 2 and 3 frames (ms, median of the 4 runs per arm, `driverResult.driver.frames`;
+a tween starts at the first frame whose m leaves 0 or 1):
+
+| tween | C f1 | V f1 | C f1+f2 | V f1+f2 | C f1..f3 | V f1..f3 |
+|---|---|---|---|---|---|---|
+| O1, first open per page load | 34.5 (33-49) | 41 (40-49) | 49.5 | 56 | 63 | 69 |
+| O2, repeat open | 55 (54-56) | 62 (60-64) | 71 | 72.5 | 83 | 83 |
+| O3, repeat open | 55 (54-55) | 62 (60-63) | 70.5 | 70 | 83 | 83 |
+| C1-C3, close starts | 38.5-39.5 (37-40) | 32.5-33 (30-36) | 57.5 | 38.5-43 | 71.5-72 | 50-50.5 |
+
+Reading (OBSERVED in our setup, M driver):
+- At the repeat opens the +7 ms first frame is paid back in the next frame: the first 2 frames sum to 71 vs 71 (O2
+  72.5 vs 71, O3 70 vs 70.5), the first 3 to 83 vs 83.
+- The first open per page load is the case a reader meets: V 41 vs C 34.5 ms, n = 4, ranges overlap (40-49 vs 33-49);
+  over 3 frames 69 vs 63.
+- Close starts are SHORTER in V: first frame 33 vs 39 ms, first 3 frames 50 vs 72 ms.
+- Whether any displayed frame is lost is UNRESOLVED: the phone's 1 ms stamps mark the rendering-update start and are
+  not vsync-quantized above one vsync (claims-audit §2.3), so a longer first gap followed by a shorter one may or may
+  not drop a frame on screen.
+- The cause of the longer open start is untested. The likely reading: the reveal's setup in the switch-on frame
+  (layer creation, a forced layout read, about 10 full-panel layers promoted; the Chrome mechanism check below shows
+  the forced layout and the extra paints there).
+
+Because of the open-start cost, rev 1 does not enter the next best build. It stays in the GPU preview, labelled with the
+cost, and rev 2 targets it.
+
+Near-band frames (flagged, not scored; sums over the 4 runs per arm, `score.json`): moving (30, 38] C 10 / V 11,
+(46, 54] C 3 / V 1; drive (30, 38] C 20 / V 25, (46, 54] C 7 / V 1.
 
 Runner deviations (logged in the block log, out of the registered text):
 - holds of 900 s instead of 600 (the lead's rule);
@@ -495,7 +558,9 @@ the iPhone, so it stays out of the next best build. Rev 2 moves the reveal's set
 
 The setup moves to a crossing on the approach, before m leaves 0. Steps: a Chrome and Simulator mechanism check that
 the setup work leaves the tween-start frame (shared lane, no phone), then a pre-registered short phone no-worse block
-(falsifier: tween-start frame V ≤ C + 2 ms) through mgmt-ops-10.
+through mgmt-ops-10. Its falsifier (after review B1): judged on the first open per page load, not on the driver's
+repeats; first frame V ≤ C + 2 ms, plus the first-2 and first-3 frame sums and the close starts (V no longer than C
+by more than the same bound).
 
 ## Risks, conflicts, follow-ups
 
@@ -507,6 +572,10 @@ the setup work leaves the tween-start frame (shared lane, no phone), then a pre-
 - **One frame of shade 5** at m = 1 (frames N and N+2). In real back-to-back frames, possibly one frame cut ~0.7 css
   px at the panel's bottom edge (N+1, estimate).
 - **Phones only:** `matchMedia(width <= 640px)`. Desktop is unchanged (reveal off).
+- **Android Chrome** (review B5): a phone-width Chrome gets the reveal too, and Chrome shows no gain from it: while
+  moving, 24.5 → 34.8 restyled elements per frame and Paint events 9.1 → 9.9 ("Desktop and Chrome counts", headless,
+  no throttle). On an Android phone that is a small extra main-thread cost with no paint gain to pay for it. No
+  Android device was run.
 - **Reduced motion: exact in Chrome; the Simulator was not run with it.**
   - Code: with reduced motion the morph skips its spring. `E()` sets m straight to its target (JS ~13292), and the
     target is only ever 0 or 1 (`XM`, JS 12940). So m never sits between 0.001 and 1, and the reveal never
