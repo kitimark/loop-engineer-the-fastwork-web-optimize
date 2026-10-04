@@ -270,3 +270,48 @@ predictions (before data):
     builds; E has the end-of-page menu, not changed by v7, and the noisiest flicks).
   - No new cluster in any part: P 0.65 (4 parts, 3 runs per arm, the >= 2-of-3 rule against flick noise).
   - All sentinels pass on the first try: P 0.7. Overall no-worse (all of the above): P 0.5.
+
+## P-105 result: v7 vs v6 on the phone (iphone-runner, 2026-10-04)
+
+**Verdict: WORSE (threshold-sensitive), on the hero flicks (GH) only.** S, GF, GM and GE are no-worse; no new cluster
+in any part. Scorer `fixes/v7-best/phone/score.mjs` sha256 b9a29ffcc7bb (frozen, unchanged), over every VALID hold in
+block order. v8 has since landed (743295de), so this result is a record for v7, not a landing gate.
+
+| gate | C runs | V runs | d >50 | twins >46 / >54 | d >34 | new cluster | verdict |
+|---|---|---|---|---|---|---|---|
+| S | 4 | 4 | -1 | +0.5 / -0.5 | +3.5 | n/a | no-worse |
+| GF fresh load | 3 | 3 | 0 | -1 / -1 | -1 | none | no-worse |
+| GH hero | 3 | 3 | **+3** | +3 / +1 | +1 | none | **WORSE (threshold-sensitive)** |
+| GM middle | 3 | 3 | 0 | +1 / 0 | +1 | none (>46 twin: 3250-3499) | no-worse; cluster threshold-sensitive |
+| GE end | 3 | 3 | 0 | 0 / 0 | 0 | none (>46 twin: 4750-4999) | no-worse; cluster threshold-sensitive |
+
+GH per run (>50): C 7, 7, 8; V 10, 9, 10. Moving frames C 511, 517, 623; V 611, 540, 616. Per 100 moving frames: >50
+C 1.35, V 1.64; >34 C 4.06, V 3.76. The S leg's +3.5 on >34 (reported, not gated) is not repeated in the flicks: G >34
+deltas are -1, +1, +1, 0, and per moving frame V is lower on GF and GH.
+
+Extra reads asked by the lead (no new rule; the frozen scorer's own functions):
+- Warm-up sensitivity (the G holds give the V port no uncounted warm-up, see below): without each G hold's first V item
+  GH d >50 is +2.5 (twins +3 / +1), still WORSE; GF -0.5, GM 0, GE +0.5. Not warm-up-sensitive.
+- N3 (max scrollY per arm): GH C 3376-3620, V 3482-3559; F/M/E within 30 px. Same page geometry; bins compare as is.
+
+Block record:
+
+| hold | items | pre-warm | start / end gate | note |
+|---|---|---|---|---|
+| H1 | wC wV C1 V2 V3 C4 | 1 | Serious / end gate xctrace killed at 90 s | VOID (I-154); files not used |
+| H1r | wC wV C1 V2 V3 C4 | 1 | Serious 38.5 / 38.4 | VALID; beside the shared group |
+| H2 | C5 V6 V7 C8 | 1 | Serious 41.0 / 40.2 | VALID; beside the shared group |
+| H3 (1st) | F part | 4 | Fair 37.4-37.6 | VOID at the opening gate, no counted run (lead: no re-run used) |
+| H3 | sC + F part + sC | 1 | Serious 38.5 / 38.9 | VALID; 2 uncounted G flicks on B before; exclusive no-timing hold |
+| H4 | sC + H part + sC | 1 | Serious 38.9 / 39.1 | VALID; exclusive no-timing hold |
+| H5 | sC + M part + sC | 1, blocked | Serious 39.1 / 39.7 | VALID; 3 uncounted G flicks on B in the queue gap, the 3rd overlapped the hold start and blanked Safari, so the hold's pre-warm S run got no data (lead ruling: H5 stands) |
+| H6 | sC + E part + sC | 1 | Serious 38.1 / 39.3 | VALID; 6 uncounted G flicks on B before; exclusive no-timing hold |
+
+- Every counted run exited 0; every sentinel passed; pmcheck OK in every hold; served hashes checked before every item.
+- Ticket gaps, recorded: (1) hold.sh labels both sC runs `p105-sC-<H>`, so the closing one overwrote the opening one's
+  files; from H3 on the opening sC was copied aside (`p105-sC-<H>-open.json`) and scored in place. No verdict effect.
+  (2) The G holds have no uncounted warm-up on the V port (A3/U5 not met for V): gFV1, gHV1, gMV1 and gEV1 are flagged
+  "no port warm-up"; the sensitivity read above covers them. (3) H3-H6 ran inside exclusive no-timing holds (lead,
+  mid-block, for a quiet Mac); H1r and H2 ran beside the shared group.
+- Outputs (gitignored): `out/p105/runs/` (hold logs, run records, check logs), `out/p105/score-all.json`, warm-up logs
+  in `out/p105/warm*`.
