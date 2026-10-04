@@ -3366,6 +3366,109 @@
     }
   },
   "decision": {
-    "PR017": "accepted, option land, rev 4, 2026-10-04T09:11:18Z (user; note: proposed page significantly smoother, asks for more research -> T-096)"
+    "PR017": "accepted, option land, rev 4, 2026-10-04T09:11:18Z (user; note: proposed page significantly smoother, asks for more research -> T-096)",
+    "PR017rev5": "accepted, option land-k, 2026-10-04T14:28:04Z (user): v8 takes K (VK), not V9"
+  },
+  "k": {
+    "build": "VK = C8 (cd-strip strip-tc) + cd-roll-ca with K per-frame keyframes (same roll path as V9, 3-4x fewer keyframes)",
+    "servedJs": "b43fe790c20c",
+    "servedCss": "982a747d9263 (cd-strip, unchanged)",
+    "baseJs": "6fa0e1e8a221 (cd-strip overlay)",
+    "patchDiff": "fixes/cd-roll-ca/patch.diff (stacked on cd-strip; round trip on cd-strip JS -> b43fe790c20c)",
+    "recipe": [
+      "node tools/fix.mjs apply cd-strip --on st6-rb2 --reset",
+      "node tools/fix.mjs apply cd-roll-ca --on cd-strip"
+    ],
+    "p102": {
+      "what": "phone less-work no-worse, VK vs V9 (driver S, top window)",
+      "verdict": "hit",
+      "gt50MedianDelta": 0,
+      "twins": {
+        "gt46": -1,
+        "gt54": 0
+      },
+      "thresholdSensitive": false,
+      "gt34MedianDelta": -2,
+      "runs": "C9 V9 2 (4/2) >34 9; V10 VK 0 >34 3; V11 VK 1 >34 3; C12 V9 0 >34 5; sentinels C9 58.7/52.9, C12 58.7/59.5"
+    },
+    "p100": {
+      "hold": "H1r",
+      "ticket": "P-100 rev 3 (a72a100f, ops PASS)",
+      "allSerious": false,
+      "O1": "RAISED",
+      "O2": "not enough",
+      "O3": {
+        "arm": "VK",
+        "VK": {
+          "fastPerSec": 118.905,
+          "perSec": 119.35
+        },
+        "C8": {
+          "fastPerSec": 118.675,
+          "perSec": 119.30000000000001
+        },
+        "fastRatio": 1
+      },
+      "arms": {
+        "quiet": {
+          "n": 2,
+          "fastPerSec": 0,
+          "perSec": 61.9,
+          "vsyncLt": 0,
+          "vsyncPerSec": 11.75,
+          "caFps": 0
+        },
+        "ca": {
+          "n": 2,
+          "fastPerSec": 46.59,
+          "perSec": 50.95,
+          "vsyncLt": 0.747,
+          "vsyncPerSec": 58.45,
+          "caFps": 53
+        },
+        "paused": {
+          "n": 1,
+          "fastPerSec": 0,
+          "perSec": 60.5,
+          "vsyncLt": 0,
+          "vsyncPerSec": 11.7,
+          "caFps": 0
+        },
+        "raf": {
+          "n": 2,
+          "fastPerSec": 0,
+          "perSec": 26.05,
+          "vsyncLt": 0.0005,
+          "vsyncPerSec": 35.35,
+          "caFps": 25
+        },
+        "V9": {
+          "n": 0,
+          "fastPerSec": null,
+          "perSec": null,
+          "vsyncLt": null,
+          "vsyncPerSec": null,
+          "caFps": null
+        },
+        "VK": {
+          "n": 2,
+          "fastPerSec": 118.905,
+          "perSec": 119.35,
+          "vsyncLt": 0.998,
+          "vsyncPerSec": 119.75,
+          "caFps": 60
+        },
+        "C8": {
+          "n": 2,
+          "fastPerSec": 118.675,
+          "perSec": 119.30000000000001,
+          "vsyncLt": 0.997,
+          "vsyncPerSec": 119.69999999999999,
+          "caFps": 60
+        }
+      },
+      "summary": "fixes/cd-roll-ca/phone/p100-H1r-summary.json",
+      "scorer": "a7e0861f13a9b3e51e6d4cf7cf87a82645286d5821d67a8ac1fb7e6bc09830f4"
+    }
   }
 }
