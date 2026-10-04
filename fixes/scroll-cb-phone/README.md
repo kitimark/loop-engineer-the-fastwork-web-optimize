@@ -629,14 +629,17 @@ while the avatar row is near (`fwNear`). v8 C runs the same call on the same fra
 
 **Re-count** (agreed with ops and the lead): P-108 harness unchanged except `build.mjs` (c486a52e5710, adds `SCB_SET=v8`:
 C = v8 3e3e94cb6e9f / f836404b3728 at `out/snapshots/v8-3e3e94cb6e9f`, V = v8 + nav-hit-cache + scroll-cb e8d8323f674b /
-f836404b3728 at `out/snapshots/nsc-e8d8323f674b`, both checked by full sha256). scb-probe ba2f8fbb5752, simcount
-4374051b37a0, score-p108 4cf547f88a3b, run script `out/scroll-cb-phone/run-n2.sh` b906ba05d64e.
+f836404b3728 at `out/snapshots/nsc-e8d8323f674b`, both checked by full sha256). scb-probe b88e92e68e46 (ba2f8fbb5752 + `forcedByLine`, reported
+only: forced style/layout by the JS line on top of the stack, for fwCheck's lines; lead 2026-10-05), simcount
+4374051b37a0, score-p108 4cf547f88a3b, run script `out/scroll-cb-phone/run-n2.sh` d2b816cd392a (prints every pin at the top of its log).
 - Chrome `phone`, C1 V1 V2 C2, one shared probe hold; Simulator, C1 V1 V2 C2, one exclusive `--no-timing` hold.
 - Scored with the P-108 rules unchanged: `node fixes/scroll-cb-phone/score-p108.mjs out/scroll-cb-phone/n2 --aa-extra
   out/scroll-cb-phone/noise --json out/scroll-cb-phone/n2/score.json` (N_vp phone 5, sim 5; the noise C loads are v4's,
   so I also report the parity with an empty `--aa-extra`, i.e. this block's C2 vs C1 only).
 - Pass: judged side rAF and rects below every C, every guard (forced layouts, style, layout, PrePaint, Paint), parity
   0 beyond A/A, not VOID. Anything else: not landable in P-117, reported to the lead.
+- Reported (lead): Chrome forced style/layout at fwCheck's lines (C 12122-12123, V 12211-12212), per step, C vs V. The
+  Simulator records no stacks (Timeline maxCallStackDepth 0), so it gives no line.
 
 ## Risks, conflicts, follow-ups
 

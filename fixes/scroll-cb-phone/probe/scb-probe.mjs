@@ -224,7 +224,7 @@ async function runLoad(armName, rep) {
       const inRaf = (e) => { const l = byTid.get(e.tid); if (!l) return false; let lo = 0, hi = l.length - 1, f = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (l[m].ts <= e.ts) { f = m; lo = m + 1; } else hi = m - 1; } return f >= 0 && e.ts <= l[f].ts + (l[f].dur || 0); };
       const tot = { fireAnimationFrame: rafs.length, prePaint: 0, updateLayoutTree: 0, layout: 0, paint: 0, forcedUpdateLayoutTree: 0, forcedLayout: 0, functionCallNode: 0, computeIntersections: 0 };
       const ioNames = {}; const paints = [];
-      const forced = {}, fc = {};
+      const forced = {}, fc = {}, forcedLine = {}; // forcedLine: reported only (P-117 N2: fwCheck's flush, by JS line)
       for (const e of events) {
         if (!inW(e)) continue;
         if (e.name === 'PrePaint' && e.ph === 'X') tot.prePaint++;
@@ -240,10 +240,12 @@ async function runLoad(armName, rep) {
             const top = st.find((s) => /2\.DyWL8TcE\.js/.test(s.url || ''));
             const k = `${isU ? 'style' : 'layout'}@${top ? fnOf(top.lineNumber + 1) : 'nostack'}`;
             forced[k] = (forced[k] || 0) + 1;
+            const kl = `${isU ? 'style' : 'layout'}@${top ? top.lineNumber + 1 : 'nostack'}`;
+            forcedLine[kl] = (forcedLine[kl] || 0) + 1;
           }
         }
       }
-      r.trace = { events: events.length, tot, perStep: per(tot), functionCallsByFn: fc, forcedByFn: forced, intersectionEventNames: ioNames };
+      r.trace = { events: events.length, tot, perStep: per(tot), functionCallsByFn: fc, forcedByFn: forced, forcedByLine: forcedLine, intersectionEventNames: ioNames };
       // reported, not judged: Paint events by painted element (DOM.describeNode on the event's nodeId)
       const desc = {};
       try { await page.send('DOM.getDocument', { depth: 0 }); } catch {}
