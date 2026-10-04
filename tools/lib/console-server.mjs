@@ -67,6 +67,10 @@
 //                                404 when it has no live entry. Guarded like the thread POSTs (x-console, own Origin).
 //                                409 for a console opened at http://[::1]:<port>: open it at localhost or 127.0.0.1
 //                                (an IPv6 literal is no CSP host-source, CSP3 §2.3.1 grammar, so no frame-ancestors).
+//   GET  /api/live/<id>/phone[?option=<name>]  I-126 / user T-086: {wifi, a, b, start, note?}: is the (option's) A / B
+//                                build served on the Wi-Fi for the iPhone (`proposal phone`, lib/live-phone.mjs)? A side:
+//                                {up: true, lan: "http://lan:<port>/", href: the same with this Mac's LAN address now, or
+//                                null} or {up: false}; start: the command that serves them. Reads only; starts nothing.
 //   POST /api/live/ping          {ok, measuring, running}: the open panel's heartbeat (every minute); 10 min without one
 //                                ($FW_CONSOLE_LIVE_IDLE_SEC) and the children are killed; also when the console exits.
 //                                measuring: chrome-measure has a timing hold (the panel shows a note, never blocks).
@@ -89,6 +93,7 @@ import { listeningState } from './thread-routing.mjs';
 import { PAGES as COMMENT_PAGES, normAnchor, commentTitle, markersFor } from './console-comments.mjs';
 import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
 import { createLiveServers, measuringNow } from './live.mjs';
+import { phoneStatus, phoneCommand } from './live-phone.mjs'; // I-126 / T-086
 import { talkRoute, talkView, talkIndex } from './proposal-talk.mjs';
 import { statSync, createReadStream } from 'node:fs';
 
@@ -264,6 +269,8 @@ function sendMedia(req, res, m) {
  * this server has none (a handler built without them).
  */
 async function liveRoute(req, res, u, port, live) {
+  const ph = u.pathname.match(/^\/api\/live\/(PR-\d{3,6})\/phone$/);
+  if (ph && req.method === 'GET') { await phoneRoute(res, ph[1], u.searchParams.get('option')); return true; }
   const start = u.pathname.match(/^\/api\/live\/(PR-\d{3,6})\/start$/);
   if (req.method !== 'POST' || !(start || u.pathname === '/api/live/ping')) return false;
   const refused = threadPostRefusal(req, port);
@@ -291,6 +298,26 @@ async function liveRoute(req, res, u, port, live) {
     send(res, 200, { a: urls.a, b: urls.b, measuring: measuringNow(), idleMin: Math.round(srv.idleMs / 6000) / 10, version: target.live.blob.slice(0, 12), ...(aBlob && { aVersion: aBlob.slice(0, 12) }) });
   } catch (e) { send(res, 503, { error: e.message }); }
   return true;
+}
+
+/**
+ * I-126 / user T-086: GET /api/live/<id>/phone[?option=<name>]: are this proposal's (option's) Try-it pages on the
+ * Wi-Fi for the iPhone? Starts nothing (`proposal phone` does): live-phone.mjs phoneStatus + the start command.
+ */
+async function phoneRoute(res, id, option) {
+  let p = null;
+  try { p = getProposal(id); } catch {}
+  if (!p || !proposalView(p)) return send(res, 404, { error: `no proposal ${id}` });
+  let target = p;
+  if (p.options?.length) {
+    target = option ? findOption(p, option) : null;
+    if (!target) return send(res, 400, { error: `${p.id} has options: say which one (option)` });
+  }
+  if (!target.live?.blob) return send(res, 404, { error: `${p.id}${p.options?.length ? ` option ${target.name}` : ''} has no live pages` });
+  try {
+    const s = await phoneStatus(target.live);
+    return send(res, 200, { ...s, start: phoneCommand(p.id, p.options?.length ? target.name : '') });
+  } catch (e) { return send(res, 503, { error: e.message }); }
 }
 
 /** The proposals routes; true when handled. */

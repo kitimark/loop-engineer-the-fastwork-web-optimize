@@ -9,7 +9,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { tempDir, node, tool, startProc, request, git, sleep } from '../helpers.mjs';
@@ -19,6 +19,8 @@ import { writePng } from '../fixtures/fake-media.mjs';
 const CON = tool('console.mjs');
 let fx, repo, state, env, srv, base, src;
 const cli = (...a) => node(CON, ['proposal', ...a], { env, cwd: repo });
+const FAKE_LAN = '192.0.2.44'; // TEST-NET-1, never a real address
+const phoneCli = (...a) => node(CON, ['proposal', ...a], { env: { ...env, FW_PHONE_SERVE_HOST: '127.0.0.1' }, cwd: repo }); // I-126: off the network in tests
 const postJson = (p, body, headers = { 'x-console': '1' }) => request(new URL(p, base).href, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const json = (r) => JSON.parse(r.text);
 const postedId = (r) => { assert.equal(r.code, 0, r.out); const m = r.stdout.match(/^POSTED (PR-\d+): /m); assert.ok(m, r.stdout); return m[1]; };
@@ -69,7 +71,7 @@ before(async () => {
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'init');
   state = join(repo, '.git', 'fastwork-mirror');
-  env = { FW_STATE_DIR: state, FW_MIRROR_HOME: home, FW_CONSOLE_LIVE_IDLE_SEC: '4' };
+  env = { FW_STATE_DIR: state, FW_MIRROR_HOME: home, FW_CONSOLE_LIVE_IDLE_SEC: '4', FW_LAN_ADDRESS: FAKE_LAN }; // I-126: a made-up Wi-Fi address
   src = tempDir('fw-live-e2e-src-');
   writePng(join(src, 'a-0.png'), 8, 6, [10, 20, 30]);
   writePng(join(src, 'b-0.png'), 8, 6, [10, 20, 30], [250, 250, 250]);
@@ -78,7 +80,10 @@ before(async () => {
   srv = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env, ready: (s) => { const m = s.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
   base = srv.url;
 });
-after(async () => { await srv?.stop(); });
+after(async () => {
+  await srv?.stop();
+  if (repo) phoneCli('phone', 'PR-001', '--stop'); // I-126: never leave a phone server behind
+});
 
 let urls;
 test('post --live-patch from the repo; the page may frame localhost only; start is guarded; 404 without a live B', async () => {
@@ -246,6 +251,58 @@ test('I-093: a live A of its own (post --live-a-patch, live --a-patch): start se
   assert.equal(s.aVersion, undefined);
   assert.equal((await request(s.a + PAGE_JS.slice(1))).text, fx.prettyFiles[PAGE_JS], 'A is the plain baseline');
   urls = s;
+});
+
+test('I-126 / T-086 proposal phone: the Try-it pages for the iPhone (plain http, port auto, detached); the page route shows their phone links with the Mac\'s address now; --stop; no address printed or stored', async () => {
+  const route = (id, q = '') => request(new URL(`/api/live/${id}/phone${q}`, base).href);
+  let r = json(await route('PR-001'));
+  assert.deepEqual([r.wifi, r.a, r.b, r.start], [true, { up: false }, { up: false }, 'node tools/console.mjs proposal phone PR-001']);
+  assert.equal((await route('PR-002')).status, 404, 'a {none} entry has no pages');
+  assert.equal((await route('PR-099')).status, 404);
+  const withOpts = json(await request(new URL('/api/proposals', base).href)).proposals.find((p) => p.title === 'With options').id;
+  assert.equal((await route(withOpts)).status, 400, 'which option?');
+  assert.equal((await route(withOpts, '?option=full')).status, 404, 'that option has no pages now');
+  let c = phoneCli('phone', withOpts);
+  assert.equal(c.code, 1);
+  assert.match(c.out, /has options: say which one with --option <name> \(full, pause-only\)/);
+  assert.match(phoneCli('phone', 'PR-002').out, /PR-002 has no live pages \(Keep the original: B = A\.\)/);
+
+  c = phoneCli('phone', 'PR-001');
+  assert.equal(c.code, 0, c.out);
+  const m = c.stdout.match(/^PHONE PR-001: A http:\/\/lan:(\d+)\/ \(started\), B http:\/\/lan:(\d+)\/ \(started\)$/m);
+  assert.ok(m, c.stdout);
+  assert.match(c.stdout, /node tools\/console\.mjs proposal phone PR-001 --stop/);
+  const [pa, pb] = [m[1], m[2]];
+  for (const p of [pa, pb]) { assert.notEqual(p, '5173'); assert.notEqual(p, new URL(base).port); }
+  // real serve.mjs children, detached (the CLI has exited), plain http, A = the baseline, B = the baseline + the patch
+  const a = await request(`http://127.0.0.1:${pa}/${PAGE_JS.slice(1)}`), b = await request(`http://127.0.0.1:${pb}/${PAGE_JS.slice(1)}`);
+  assert.equal(a.text, fx.prettyFiles[PAGE_JS]);
+  assert.equal(b.headers['x-mirror-source'], 'overlay');
+  assert.equal(b.text, fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
+  const info = json(await request(`http://127.0.0.1:${pb}/__mirror/info`));
+  assert.deepEqual([info.https, info.vendors, info.frameAncestors], [false, 'local', undefined]);
+  // the page route: the phone links, with the (made-up) Wi-Fi address resolved now
+  r = json(await route('PR-001'));
+  assert.deepEqual(r.a, { up: true, lan: `http://lan:${pa}/`, href: `http://${FAKE_LAN}:${pa}/` });
+  assert.deepEqual(r.b, { up: true, lan: `http://lan:${pb}/`, href: `http://${FAKE_LAN}:${pb}/` });
+  // again: reused; --list
+  c = phoneCli('phone', 'PR-001');
+  assert.match(c.stdout, new RegExp(`^PHONE PR-001: A http://lan:${pa}/ \\(already running\\), B http://lan:${pb}/ \\(already running\\)$`, 'm'));
+  c = phoneCli('phone', '--list');
+  assert.match(c.stdout, new RegExp(`^UP {3}site-pretty \\(no patch: the original page\\) {2}http://lan:${pa}/ {2}pid \\d+$`, 'm'));
+  assert.match(c.stdout, new RegExp(`^UP {3}site-pretty \\+ patch [0-9a-f]{12} {2}http://lan:${pb}/`, 'm'));
+  // nothing printed or stored names an address (Hard rule 12)
+  for (const out of [c.out]) assert.ok(!out.includes(FAKE_LAN), out);
+  const reg = join(state, 'console', 'live', 'phone');
+  for (const f of readdirSync(reg)) assert.ok(!readFileSync(join(reg, f), 'utf8').includes(FAKE_LAN), f);
+  // --stop: both gone, the page says so again
+  c = phoneCli('phone', 'PR-001', '--stop');
+  assert.equal(c.code, 0, c.out);
+  assert.match(c.stdout, new RegExp(`^STOPPED PR-001: A stopped \\(port ${pa}\\), B stopped \\(port ${pb}\\)$`, 'm'));
+  assert.ok(await until(async () => (await refused(`http://127.0.0.1:${pa}/`)) && (await refused(`http://127.0.0.1:${pb}/`))), 'both servers gone');
+  r = json(await route('PR-001'));
+  assert.deepEqual([r.a, r.b], [{ up: false }, { up: false }]);
+  assert.match(phoneCli('phone', 'PR-001', '--stop').stdout, /^STOPPED PR-001: A was not running, B was not running$/m);
 });
 
 test('the console\'s exit stops its page servers', async () => {

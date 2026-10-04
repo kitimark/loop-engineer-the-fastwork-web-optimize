@@ -45,6 +45,15 @@
 //        # --live-a-patch <path> [--live-a-ref <ref>] on post/revise, "live": {"patch": …, "a": {"patch": …, "ref": …}}
 //        # in the file. A is read and stored like B, on the same base tree (site-pretty or site; refused otherwise);
 //        # without it A is the plain baseline. The panel labels A with compare.a.label, else "Base: <A's patch>".
+//   proposal phone <id> [--option <name>]           # I-126 / user T-086: the Try-it pages (A and B) on the iPhone, same Wi-Fi
+//        # starts (or reuses) one tools/serve.mjs per build, plain http (I-003), --vendors=local, --port auto, on the Wi-Fi
+//        # (0.0.0.0), detached: they run until --stop. Prints PHONE PR-017 option x: A http://lan:<port>/ (started), B …;
+//        # never an address (lan = the Mac's Wi-Fi address, resolved when shown). The Proposals page shows each option's
+//        # phone links (resolved at view time, like I-119), or "not on the Wi-Fi" plus this command. The console itself
+//        # stays on 127.0.0.1. Registry: <console>/live/phone/ (lib/live-phone.mjs). A build (the plain baseline, or the
+//        # baseline + one patch) has one server, shared by every proposal that shows it.
+//   proposal phone <id> [--option <name>] --stop    # STOPPED …: stops that option's two phone servers (only ones it started)
+//   proposal phone --list                           # UP/DOWN per build in the registry, with its http://lan:<port>/
 //   proposal talk <id> [--as <agent>] [--json]     # T-048: the user's questions and comments on one proposal, every message
 //        # (threads anchored on it: from the page's "Ask a question" box, a reply box, or the Comment button on a part of
 //        # it), and how to answer; --as marks them read for you. A comment on a proposal is assigned at once to its
@@ -172,8 +181,16 @@ export async function run(argv) {
     else for (const l of rows) console.log(l);
     return 0;
   }
+  if (sub === 'phone' && !arg && a.flag('list')) { // I-126 / T-086: every phone server of the registry
+    const PH = await import('./live-phone.mjs');
+    const rows = await PH.listPhoneServers();
+    if (!rows.length) console.log(`no phone servers (start: ${PH.phoneCommand('<id>')} [--option <name>])`);
+    for (const r of rows) console.log(`${r.up ? 'UP  ' : 'DOWN'} ${r.blob ? `${r.base} + patch ${r.blob.slice(0, 12)}` : `${r.base} (no patch: the original page)`}${r.up ? `  ${PH.phoneLink(r.port)}  pid ${r.pid}` : ''}`);
+    return 0;
+  }
   if (!arg) throw new Error(`usage: node tools/console.mjs proposal ${sub} <id> … (see the header of tools/lib/proposal-cli.mjs)`);
   const id = parseProposalId(arg);
+  if (sub === 'phone') return phone(id, a); // I-126 / T-086
   if (sub === 'show') { const p = get(id); console.log(a.flag('json') ? JSON.stringify(withDecisionState(p), null, 1) : showText(p)); return 0; }
   if (sub === 'revise') {
     const r = await reviseProposal(id, { by: by(), note: a.one('note'), ...inputs(a), publish: a.flag('publish'), keepDecision: a.flag('keep-decision'), unhold: a.flag('unhold') });
@@ -241,6 +258,39 @@ export async function run(argv) {
     return 0;
   }
   throw new Error(`unknown proposal command "${sub}" (see the header of tools/lib/proposal-cli.mjs)`);
+}
+
+/** I-126 / T-086: `proposal phone <id> [--option <name>] [--stop]`: the Try-it pages on the iPhone (lib/live-phone.mjs). */
+async function phone(id, a) {
+  const PH = await import('./live-phone.mjs');
+  const p = get(id);
+  let t = p, name = '';
+  if (p.options?.length) {
+    const names = p.options.map((o) => o.name).join(', ');
+    if (!a.one('option')) throw new Error(`${p.id} has options: say which one with --option <name> (${names})`);
+    t = findOption(p, a.one('option'));
+    if (!t) throw new Error(`no option "${a.one('option')}" in ${p.id} (options: ${names})`);
+    name = t.name;
+  }
+  const what = `${p.id}${name ? ` option ${name}` : ''}`;
+  if (t.live?.none !== undefined) throw new Error(`${what} has no live pages (${t.live.none})`);
+  if (!t.live?.blob) throw new Error(`${what} has no live pages (the author adds them: node tools/console.mjs proposal live …)`);
+  const cmd = PH.phoneCommand(p.id, name);
+  if (a.flag('stop')) {
+    const r = await PH.stopPhoneServers(t.live);
+    const one = (s) => (s.stopped ? `stopped (port ${s.port})` : 'was not running');
+    console.log(`STOPPED ${what}: A ${one(r.a)}, B ${one(r.b)}`);
+    console.log(`  the Proposals page now says they are not on the Wi-Fi; start again: ${cmd}`);
+    return 0;
+  }
+  if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn: nothing to show on the phone`);
+  const r = await PH.startPhoneServers(t.live);
+  const one = (s) => `${s.lan} (${s.reused ? 'already running' : 'started'})`;
+  console.log(`PHONE ${what}: A ${one(r.a)}, B ${one(r.b)}`);
+  console.log('  plain http on the Wi-Fi, for an iPhone on the same Wi-Fi as this Mac; the Proposals page shows them as phone links');
+  console.log('  with the Mac\'s current Wi-Fi address (lan = that address; node tools/lan.mjs prints it). They run until stopped,');
+  console.log(`  also after this command: ${cmd} --stop   (a build shared with another proposal stops there too)`);
+  return 0;
 }
 
 async function wait(w, a) {
