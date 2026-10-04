@@ -870,6 +870,16 @@ control: C = st6-rb2 (fixes/st6-rb2/patch.diff, on main cff1a037), JS 7bf7c4657d
   Why st6-rb2 and not best-build (65052c4a3902): v4 is stacked on st6-rb2 and every cost count was measured against it;
   best-build adds platform-idle and morph-inherit, which touch neither the avatar row nor its counters. The integrator
   stacks v4 on the current best build later.
+  Pre-data byte check (the lead's condition for C = st6-rb2, via mgmt-ops-10's read; 2026-10-04 04:2xZ; no Chrome,
+  no phone):
+  - Command: `node tools/fix.mjs combine p094-bb best-build rest-script` (git apply, exact context, no fuzz). Both
+    patches applied, with no conflicts.
+  - Overlap: v4's changed lines span st6-rb2 JS lines 2431-12270, in 20 -U0 hunks. best-build's own changes on st6-rb2
+    (platform-idle, morph-inherit) start at line 12451. The gap is 181 lines, and no line is shared. v4 changes no CSS.
+  - Delta identity: `diff -U0 st6-rb2 -> v4` and `diff -U0 best-build -> combined` are byte-identical (223 lines, the
+    same line numbers, offset 0).
+  - Combined build: JS e9b94ba7c560, CSS e0f92804c521 (= best-build's).
+  - Evidence: out/rest-script/p094/bbcheck/ (both deltas and the combined JS). The temporary fixes/p094-bb was removed.
 question: on the phone at real thermal Serious, does rest-script v4 add slow frames where it changes the page? Those
   places are: the avatar row far with the scene gate active (V plays each far slide as an empty 1 ms Web Animation, while C
   runs the slide), and the row entering and leaving V's near band (fwNearChange). The counters' skip-unchanged writes
