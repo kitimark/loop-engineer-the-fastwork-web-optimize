@@ -19,6 +19,7 @@ test('anchor model: known pages, an allowlisted item id per page, caps; anything
     ['steps', 'step:C-032'], ['proposals', 'PR-009'], ['proposals', 'PR-009/option:both'], ['proposals', 'PR-009/option:both/shot:2'],
     ['proposals', 'PR-009/video:b'], ['proposals', 'PR-012/option:gpu-roll.v2/video:both'], ['status', 'status:cd-strip'],
     ['progress', 'progress:style-recalc'], ['build', 'progress:hero-exit'], ['threads', 'thread:T-003'], ['threads', 'thread:T-003/msg:4'],
+    ['agents', 'agent:wi-stack'], ['agents', 'agent:mgmt-ops-10'], ['agents', 'part:page'], // I-118
   ];
   for (const [page, item] of ok) assert.deepEqual(C.normAnchor({ page, item }), { page, item }, `${page} ${item}`);
   const bad = [
@@ -31,6 +32,8 @@ test('anchor model: known pages, an allowlisted item id per page, caps; anything
     [{ page: 'status', item: `status:${'a'.repeat(200)}` }, /not an item/],
     [{ page: 'threads', item: 'thread:T-1/msg:1/x' }, /not an item/],
     [{ page: 'threads', item: 7 }, /not an item/],
+    [{ page: 'agents', item: 'agent:../x' }, /not an item/], [{ page: 'agents', item: 'agent:a b' }, /not an item/],
+    [{ page: 'agents', item: 'status:cd-strip' }, /not an item/],
     [{ page: 'steps', item: 'step:C-1', quote: { x: 1 } }, /anchor\.quote must be text/],
     [null, /anchor must be an object/], [['steps'], /anchor must be an object/],
   ];
@@ -50,6 +53,8 @@ test('anchor model: the link back, the words for the item, the thread title', ()
   assert.equal(u('progress', 'progress:style-recalc'), '/progress#style-recalc');
   assert.equal(u('build', 'progress:hero-exit'), '/build#hero-exit');
   assert.equal(u('threads', 'thread:T-003/msg:4'), '/threads#T-003');
+  assert.equal(u('agents', 'agent:wi-stack'), '/agent/wi-stack'); // I-118
+  assert.equal(u('agents', 'part:page'), '/agents');
   assert.equal(u('steps', 'javascript:alert(1)'), null);
   assert.equal(C.itemText({ page: 'proposals', item: 'PR-009/option:both/shot:2' }), 'PR-009 option both, shot 2');
   assert.equal(C.itemText({ page: 'threads', item: 'thread:T-003/msg:4' }), 'T-003 #4');

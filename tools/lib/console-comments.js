@@ -20,7 +20,7 @@
   if (typeof document === 'undefined') return;
   var me = document.currentScript;
   var PAGE = (me && me.getAttribute('data-page')) || '';
-  if (!/^(steps|proposals|status|progress|build|threads)$/.test(PAGE)) return;
+  if (!/^(steps|proposals|status|progress|build|threads|agents)$/.test(PAGE)) return;
   var TID = /^T-\d{1,6}$/;
   var QUOTE_MAX = 300;
   var INTERACTIVE = 'a,button,input,textarea,select,summary,label,video,[contenteditable]';

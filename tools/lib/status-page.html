@@ -137,6 +137,13 @@ function ago(min) { if (min === null || min === undefined) return ''; if (min < 
 function dur(min) { if (min === null || min === undefined) return ''; if (min < 1) return 'under a minute'; if (min < 60) return min + ' min'; return Math.floor(min / 60) + ' h ' + (min % 60) + ' min'; }
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 var SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/, STEP = /^C-\d{1,6}$/;
+// I-118 (user T-074): an agent's name links to its own page (/agent/<name>: everything it did); anything else is text
+var AGENT = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$/;
+function agentLink(name) {
+  return AGENT.test(name || '') && name !== 'user' && name !== 'unknown'
+    ? el('a', { class: 'agent', href: '/agent/' + encodeURIComponent(name), title: 'Everything ' + name + ' did, on one page', text: name })
+    : document.createTextNode(name || '');
+}
 var GROUP_FILTERS = [['active', 'Active'], ['working', 'Working'], ['waiting', 'Waiting'], ['queued', 'Not started'], ['parked', 'Parked'], ['finished', 'Finished'], ['all', 'All']];
 var fGroup = store('status-group') || 'active', fKind = store('status-kind') || 'all';
 var last = null, hashDone = false;
@@ -184,12 +191,12 @@ function row(v) {
     el('div', { class: 'st ' + v.group, text: v.state + (v.group !== 'finished' && v.stateForMin !== null ? ' · ' + dur(v.stateForMin) : '') }),
     el('div', { class: 'plain', text: v.statePlain }));
   var upd = el('td', { class: 'upd', 'data-label': 'Updated' }, el('div', { text: ago(v.ageMin) }),
-    v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain', text: 'by ' + v.updatedBy }) : null,
+    v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain' }, 'by ', agentLink(v.updatedBy)) : null,
     v.stale ? el('div', { class: 'stale', title: (v.staleWhy && v.staleWhy.length ? v.staleWhy.join('; ') : 'no update for more than ' + dur(last.staleAfterMin)), text: 'may be out of date' }) : null);
   return el('tr', { 'data-item': v.id, 'data-anchor': SLUG.test(v.id) ? 'status:' + v.id : null, 'data-anchor-label': v.title }, // I-090
     el('td', { class: 'prio', 'data-label': 'Priority' }, pr), wk, st,
     el('td', { 'data-label': 'Waiting on' }, waitChips(v)),
-    el('td', { 'data-label': 'Owner', text: v.owner }), upd);
+    el('td', { 'data-label': 'Owner' }, agentLink(v.owner)), upd);
 }
 
 function render(v) {
@@ -242,7 +249,7 @@ function render(v) {
   var ow = v.otherWaits || [];
   if (ow.length) {
     var ol = el('ul');
-    ow.forEach(function (x) { ol.appendChild(el('li', null, el('b', { text: x.owner + ': ' }), x.plain, el('span', { class: 'plain', text: ' (' + x.tool + ')' }))); });
+    ow.forEach(function (x) { ol.appendChild(el('li', null, el('b', null, agentLink(x.owner), ': '), x.plain, el('span', { class: 'plain', text: ' (' + x.tool + ')' }))); });
     m.appendChild(el('section', { class: 'card', 'aria-label': 'Other waits' }, el('h2', { text: 'Other waits' }), el('div', { class: 'plain', text: 'Wait commands running now whose agent has no active row above.' }), ol));
   }
   var dl = document.getElementById('legend-dl');

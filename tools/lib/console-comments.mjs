@@ -8,17 +8,17 @@
 // caps, the link back, and the per-page marker counts from a list of threads. The browser side is console-comments.js.
 //
 // An anchor: {page, item, quote?, label?}
-//   page   steps | proposals | status | progress | build | threads
+//   page   steps | proposals | status | progress | build | threads | agents (I-118: /agents and /agent/<name>)
 //   item   per page (ITEM): steps "step:C-032"; proposals "PR-009", "PR-009/option:both", "PR-009/option:both/shot:2",
 //          "PR-009/video:b", "PR-009/section:gain", "PR-009/option:both/section:risk" (T-048, SECTIONS); status
-//          "status:cd-strip"; progress and build "progress:style-recalc"; threads "thread:T-003" or "thread:T-003/msg:4";
+//          "status:cd-strip"; progress and build "progress:style-recalc"; threads "thread:T-003" or "thread:T-003/msg:4"; agents "agent:wi-stack" (one agent's page, I-118);
 //          and on every page "part:page" (I-096): anything on the page that is no item of its own (headings, filters,
 //          panels, list lines without an id); its quote is the line pointed at
 //   quote  the selected text, plain, one line, at most LIMITS.quote chars (longer selections are cut with "…")
 //   label  the item's own title as the page shows it (one line, at most LIMITS.label), for the thread title
 // The user's own words: stored as typed (the local store, like any thread text); never HTML (the pages use textContent).
 
-export const PAGES = ['steps', 'proposals', 'status', 'progress', 'build', 'threads'];
+export const PAGES = ['steps', 'proposals', 'status', 'progress', 'build', 'threads', 'agents'];
 export const LIMITS = Object.freeze({ item: 120, quote: 300, label: 120 });
 const SLUG = '[a-z0-9][a-z0-9-]{0,40}';
 const OPTION = '[a-z0-9][a-z0-9._-]{0,39}';
@@ -38,9 +38,10 @@ export const ITEM = Object.freeze({
   progress: withPart(`progress:${SLUG}`),
   build: withPart(`progress:${SLUG}`),
   threads: withPart('thread:T-\\d{1,6}(?:\\/msg:\\d{1,3})?'),
+  agents: withPart('agent:[A-Za-z0-9][A-Za-z0-9_.-]{0,60}'), // I-118: the agent-view.mjs AGENT shape
 });
 /** The page's own name, as the menu says it. */
-export const PAGE_WORDS = Object.freeze({ steps: 'Your steps', proposals: 'Proposals', status: 'Status', progress: 'Progress', build: 'Best build', threads: 'Threads' });
+export const PAGE_WORDS = Object.freeze({ steps: 'Your steps', proposals: 'Proposals', status: 'Status', progress: 'Progress', build: 'Best build', threads: 'Threads', agents: 'Agents' });
 const isPart = (it) => /^part:/.test(it);
 
 /** One line of plain text: control characters and line breaks become spaces, runs of spaces one. */
@@ -74,6 +75,7 @@ export function anchorUrl(a) {
     case 'progress': return `/progress#${it.slice('progress:'.length)}`;
     case 'build': return `/build#${it.slice('progress:'.length)}`;
     case 'threads': return `/threads#${it.slice('thread:'.length).split('/')[0]}`;
+    case 'agents': return `/agent/${it.slice('agent:'.length)}`;
     default: return null;
   }
 }

@@ -188,6 +188,13 @@ function ago(iso) {
   return new Date(iso).toLocaleDateString();
 }
 function who(by) { return by === 'user' ? 'You' : by; }
+// I-118 (user T-074): an agent's name links to its own page (/agent/<name>: everything it did); "You" and the rest are text
+var AGENT = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$/;
+function agentLink(by) {
+  if (by === 'user' || by === 'unknown' || !AGENT.test(by || '')) return document.createTextNode(who(by || ''));
+  var a = el('a', 'agent', by); a.href = '/agent/' + encodeURIComponent(by); a.title = 'Everything ' + by + ' did, on one page';
+  return a;
+}
 /** I-084 (user T-038): who reads the user's reply: the lead always, then the assignees; 'lead' when the list is missing. */
 function toNames(t, forLead) {
   // T-050: with toState, name only who listens; the lead is the 10-min backstop, or the reader when nobody listens
@@ -281,7 +288,7 @@ function loadList() {
 
 // ---- one thread ----
 /** I-090: the item a comment is about, quoted, with a link back (only to this console's own pages). */
-var ANCHOR_URL = /^\/(?:(?:proposals|status|progress|build|threads)?#[A-Za-z0-9-]{1,48}|(?:proposals|status|progress|build|threads)?)$/; // I-096: a page part links to its page
+var ANCHOR_URL = /^\/(?:(?:proposals|status|progress|build|threads)?#[A-Za-z0-9-]{1,48}|(?:proposals|status|progress|build|threads|agents)?|agent\/[A-Za-z0-9][A-Za-z0-9_.-]{0,60})$/; // I-096: a page part links to its page; I-118: an agent's page
 function renderAnchor(a) {
   var box = $('tv-anchor'); box.replaceChildren();
   box.hidden = !a;
@@ -299,15 +306,19 @@ function renderThread(t) {
   m.appendChild(el('span', 'pill ' + t.state, STATE[t.state] || t.state));
   m.appendChild(el('span', null, t.id));
   if (t.topic) { var a = el('a', 'chip', 'Status: ' + t.topic); a.href = '/status#' + t.topic; m.appendChild(a); }
-  m.appendChild(el('span', null, 'started ' + ago(t.createdAt) + ' by ' + who(t.createdBy)));
-  if (t.assignees.length) m.appendChild(el('span', null, 'handled by lead, ' + t.assignees.join(', ')));
+  var sb = el('span', null, 'started ' + ago(t.createdAt) + ' by '); sb.appendChild(agentLink(t.createdBy)); m.appendChild(sb);
+  if (t.assignees.length) {
+    var hb = el('span', null, 'handled by '); hb.appendChild(agentLink('lead'));
+    t.assignees.forEach(function (n) { hb.appendChild(document.createTextNode(', ')); hb.appendChild(agentLink(n)); });
+    m.appendChild(hb);
+  }
   renderAnchor(t.anchor);
   var ol = $('tv-msgs'); ol.replaceChildren();
   t.messages.forEach(function (x) {
     var li = el('li', (x.by === 'user' ? 'you' : 'agent') + (x.by !== 'user' && x.n > t.readUser ? ' new' : '') + (x.ask ? ' ask' : ''));
     li.id = t.id + '-' + x.n;
     if (TID.test(t.id)) { li.setAttribute('data-anchor', 'thread:' + t.id + '/msg:' + x.n); li.setAttribute('data-anchor-label', t.title + ' #' + x.n); } // I-090
-    var h = el('div', 'mhead'); h.appendChild(el('b', null, who(x.by)));
+    var h = el('div', 'mhead'), hb2 = el('b'); hb2.appendChild(agentLink(x.by)); h.appendChild(hb2);
     var tm = el('span', null, ago(x.at)); tm.title = x.at; h.appendChild(tm);
     if (x.ask) h.appendChild(el('span', 'pill waiting-on-you', 'asks you'));
     li.appendChild(h);

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agents</title>
+<link rel="stylesheet" href="/console-nav.css">
+<style>
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1da;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --accent-soft: #e8eefc;
+  --ok: #23824a; --ok-soft: #e4f3ea; --bad: #c62f2f; --bad-soft: #fbe9e7; --warn: #8a5a00; --warn-soft: #fdf3dc;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+    --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+    --ok: #5cc68a; --ok-soft: #1d3326; --bad: #ff6b6b; --bad-soft: #3a2020; --warn: #f0c060; --warn-soft: #3a3220;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161716; --card: #202221; --ink: #ecebe6; --muted: #9b9a93; --line: #34362f;
+  --accent: #7c9bff; --accent-ink: #0f1424; --accent-soft: #232b45;
+  --ok: #5cc68a; --ok-soft: #1d3326; --bad: #ff6b6b; --bad-soft: #3a2020; --warn: #f0c060; --warn-soft: #3a3220;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 24px 20px 80px; }
+header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+header h1 { font-size: 22px; margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.sub { color: var(--muted); font-size: 14px; flex: 1 1 240px; }
+.status.off { color: var(--bad); font-weight: 600; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.banner { border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; background: var(--warn-soft); font-size: 15px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.card h2 { font-size: 16px; margin: 0 0 8px; }
+.card.now { border-color: var(--ok); }
+.card ul { margin: 0; padding-left: 0; list-style: none; }
+.card li { padding: 6px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.card li:first-child { border-top: 0; }
+.plain { font-size: 13px; color: var(--muted); }
+.pill { display: inline-block; font-size: 13px; font-weight: 650; border-radius: 999px; padding: 1px 10px; }
+.pill.run { background: var(--ok-soft); color: var(--ok); }
+.pill.done { background: var(--accent-soft); color: var(--muted); }
+.pill.stale { background: var(--warn-soft); color: var(--warn); }
+.chip { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); text-decoration: none; margin-right: 4px; }
+.chip.k { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.when { color: var(--muted); font-size: 13px; white-space: nowrap; margin-right: 8px; font-variant-numeric: tabular-nums; }
+.name { font-weight: 650; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+.filters input { font: inherit; font-size: 15px; padding: 5px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); min-width: 0; flex: 0 1 260px; }
+.more { font: inherit; font-size: 14px; cursor: pointer; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 4px 12px; margin-top: 8px; min-height: 34px; }
+.empty { color: var(--muted); }
+.back { font-size: 14px; }
+</style>
+</head>
+<body>
+<!--console-menu-->
+<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="Agents"><!-- I-096: the page's comment anchor (one agent: agent:<name>) -->
+  <header data-comment-slot>
+    <h1 id="h1">Agents</h1>
+    <span class="sub" id="upd">loading…</span>
+  </header>
+  <div id="banners"></div>
+  <main id="main"></main>
+</div>
+<script src="/console-nav.js"></script>
+<script>
+'use strict';
+// I-118 (user T-074: "how do I trace the work of wi-stack?"): /agents lists every agent, running now first, then the
+// finished ones by last activity; /agent/<name> shows everything one agent did, from every store the console sees
+// (status rows, Chrome/phone holds and queue places, holds.log, console steps, threads, commits on main tagged
+// "(<name>)", fixes/*/README.md that name it, incidents, findings, proposals) and one timeline, newest first.
+// Read-only; data from GET /api/agents or /api/agent/<name> every 10 s. Text only (textContent), never HTML.
+function el(tag, attrs) {
+  var n = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    var v = attrs[k];
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (var i = 2; i < arguments.length; i++) {
+    var c = arguments[i];
+    if (c === undefined || c === null || c === false) continue;
+    n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return n;
+}
+function hhmm(iso) { return iso ? iso.slice(11, 16) + 'Z' : '?'; }
+function day(iso) { return iso ? iso.slice(5, 10) + ' ' + hhmm(iso) : '?'; }
+function ago(iso, now) {
+  var min = Math.round((Date.parse(now) - Date.parse(iso)) / 60000);
+  if (!(min >= 0)) return '';
+  if (min < 1) return 'just now';
+  if (min < 60) return min + ' min ago';
+  if (min < 48 * 60) return Math.floor(min / 60) + ' h ' + (min % 60) + ' min ago';
+  return Math.floor(min / 1440) + ' days ago';
+}
+var AGENT = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$/;
+// only this console's own pages are links (the server builds them; checked again here)
+var HREF = /^\/(?:#C-\d{1,6}|(?:status|threads|progress|proposals)#[A-Za-z0-9-]{1,48}|agent\/[A-Za-z0-9][A-Za-z0-9_.-]{0,60}|writeup\/fixes\/[A-Za-z0-9._-]{1,80}\/README\.md)$/;
+function link(href, text, title) { return HREF.test(href || '') ? el('a', { href: href, title: title, text: text }) : document.createTextNode(text); }
+function agentLink(name) {
+  return AGENT.test(name || '') && name !== 'user' && name !== 'unknown'
+    ? el('a', { class: 'agent', href: '/agent/' + encodeURIComponent(name), title: 'Everything ' + name + ' did, on one page', text: name })
+    : document.createTextNode(name || '');
+}
+
+// /agent/<name> = one agent; /agents = the list
+var me = null;
+(function () {
+  var m = /^\/agent\/([^/]+)$/.exec(location.pathname);
+  if (!m) return;
+  try { me = decodeURIComponent(m[1]); } catch (e) { me = null; }
+  if (!AGENT.test(me || '')) me = null;
+})();
+var showAll = false, filter = '';
+
+function section(main, title, items, line, empty) {
+  if (!items || !items.length) { if (empty) main.appendChild(el('section', { class: 'card', 'aria-label': title }, el('h2', { text: title }), el('div', { class: 'empty', text: empty }))); return; }
+  var ul = el('ul');
+  items.forEach(function (x) { ul.appendChild(line(x)); });
+  main.appendChild(el('section', { class: 'card', 'aria-label': title }, el('h2', { text: title + ' (' + items.length + ')' }), ul));
+}
+function doneChip(x) { return x.open === false ? el('span', { class: 'chip k', text: 'done' }) : x.open === true ? el('span', { class: 'chip', text: 'open' }) : null; }
+
+// ---- the list ----
+function renderList(l) {
+  document.getElementById('h1').textContent = 'Agents';
+  var run = l.agents.filter(function (a) { return a.running; }), done = l.agents.filter(function (a) { return !a.running; });
+  var upd = document.getElementById('upd');
+  upd.textContent = run.length + ' running now · ' + done.length + ' finished · live ' + hhmm(l.now);
+  upd.className = 'sub';
+  banners(l.errors);
+  var main = document.getElementById('main');
+  main.replaceChildren();
+  var input = el('input', { type: 'search', id: 'filter', placeholder: 'Find an agent', 'aria-label': 'Find an agent', value: filter });
+  input.value = filter;
+  input.addEventListener('input', function () { filter = input.value; renderList(l); var f = document.getElementById('filter'); if (f && f.focus) f.focus(); });
+  main.appendChild(el('div', { class: 'filters' }, input, el('span', { class: 'plain', text: 'A name opens everything that agent did: rows, Chrome and phone use, commits, write-ups, threads, problems.' })));
+  var q = filter.trim().toLowerCase();
+  var ok = function (a) { return !q || a.name.toLowerCase().indexOf(q) >= 0; };
+  section(main, 'Running now', run.filter(ok), function (a) {
+    return el('li', { 'data-agent': a.name }, el('span', { class: 'name' }, agentLink(a.name)), ' ', el('span', { class: 'pill run', text: 'running' }),
+      el('div', { class: 'plain', text: a.now + (a.lastAt ? ' · last activity ' + ago(a.lastAt, l.now) : '') }));
+  }, q ? 'No running agent by that name.' : 'No agent is running right now.');
+  var fin = done.filter(ok), shown = showAll || q ? fin : fin.slice(0, 40);
+  section(main, 'Finished', shown, function (a) {
+    return el('li', { 'data-agent': a.name }, el('span', { class: 'name' }, agentLink(a.name)),
+      el('div', { class: 'plain', text: a.lastAt ? 'last seen ' + ago(a.lastAt, l.now) + ' (' + day(a.lastAt) + '): ' + (a.lastWhat || '') : 'no trace with a time' }));
+  }, q ? 'No finished agent by that name.' : 'None yet.');
+  if (shown.length < fin.length) {
+    var b = el('button', { type: 'button', class: 'more', text: 'Show all ' + fin.length + ' finished agents' });
+    b.addEventListener('click', function () { showAll = true; renderList(l); });
+    main.lastChild.appendChild(b);
+  }
+}
+
+// ---- one agent ----
+function renderAgent(v) {
+  document.getElementById('h1').textContent = v.name;
+  document.title = v.name + ' · Agents';
+  var part = document.getElementById('page-part');
+  part.setAttribute('data-anchor', 'agent:' + v.name); part.setAttribute('data-anchor-label', 'Agent ' + v.name);
+  var upd = document.getElementById('upd');
+  upd.replaceChildren(el('span', { class: 'pill ' + (v.running ? 'run' : 'done'), text: v.running ? 'running now' : 'finished' }),
+    ' ' + (v.lastAt ? 'last activity ' + ago(v.lastAt, v.now) : 'no trace found') + ' · live ' + hhmm(v.now));
+  upd.className = 'sub';
+  banners(v.errors);
+  var main = document.getElementById('main');
+  main.replaceChildren();
+  main.appendChild(el('div', { class: 'back' }, el('a', { href: '/agents', text: '← All agents' })));
+  if (v.aliasOf) main.appendChild(el('div', { class: 'banner' }, v.name + ' is a status row id that ', agentLink(v.aliasOf), ' uses on the locks and in commits: open ', agentLink(v.aliasOf), ' for its work.'));
+  // right now
+  var now = el('section', { class: 'card' + (v.running ? ' now' : ''), 'aria-label': 'Right now' }, el('h2', { text: v.running ? 'Right now' : 'Not running' }));
+  if (v.running) { var ul = el('ul'); v.runningWhy.forEach(function (w) { ul.appendChild(el('li', { text: w })); }); now.appendChild(ul); }
+  else now.appendChild(el('div', { class: 'plain', text: v.lastAt ? 'Last seen ' + ago(v.lastAt, v.now) + ' (' + day(v.lastAt) + '): ' + v.lastWhat : 'Nothing on the board, the locks, the console or main names this agent.' }));
+  if (v.aka && v.aka.length) now.appendChild(el('div', { class: 'plain', text: 'Also on the locks and in commits as: ' + v.aka.join(', ') }));
+  main.appendChild(now);
+  section(main, 'Status rows', v.rows, function (r) {
+    return el('li', null, doneChip(r), link(r.href, r.title, 'Status row ' + r.id), ' ', el('span', { class: 'chip k', text: r.state }),
+      r.stale ? el('span', { class: 'pill stale', text: 'may be out of date' }) : null,
+      el('div', { class: 'plain' }, r.id + ' · ' + r.how + (r.how !== 'owns it' ? ' (owner ' : ''), r.how !== 'owns it' ? agentLink(r.owner) : null, r.how !== 'owns it' ? ')' : '', ' · ' + ago(r.at, v.now)),
+      r.note ? el('div', { class: 'plain', text: 'Now: ' + r.note }) : null);
+  });
+  section(main, 'Commits on main tagged (' + v.name + ')', v.commits, function (c) {
+    return el('li', null, el('span', { class: 'when', text: day(c.at) }), el('span', { class: 'mono', text: c.sha }), ' ' + c.subject);
+  });
+  section(main, 'Chrome and phone holds (last ' + (v.holds ? v.holds.length : 0) + ', from holds.log)', v.holds, function (h) {
+    return el('li', null, el('span', { class: 'when', text: day(h.start) + '-' + hhmm(h.at) }), h.plain + (h.as ? ' (as ' + h.as + ')' : ''));
+  });
+  section(main, 'Steps it asked you for', v.steps, function (x) { return el('li', null, doneChip(x), link(x.href, x.id + ': ' + x.title), el('span', { class: 'plain', text: ' · ' + x.status })); });
+  section(main, 'Threads', v.threads, function (x) { return el('li', null, doneChip(x), link(x.href, x.id + ': ' + x.title), el('div', { class: 'plain', text: x.how + ' · ' + x.state + ' · ' + ago(x.at, v.now) })); });
+  section(main, 'Problems (incidents)', v.incidents, function (x) { return el('li', null, doneChip(x), x.id + ': ' + x.title, el('div', { class: 'plain', text: x.how + ' · ' + x.status })); });
+  section(main, 'Findings it posted', v.findings, function (x) { return el('li', null, x.id + ' (' + x.kind + '): ' + x.title); });
+  section(main, 'Proposals', v.proposals, function (x) { return el('li', null, link(x.href, x.id + ': ' + x.title), el('span', { class: 'plain', text: ' · ' + x.state })); });
+  section(main, 'Write-ups that name it', v.writeups, function (w) {
+    return el('li', null, link(w.href, w.path), el('span', { class: 'plain', text: ' · ' + w.mentions + (w.mentions === 1 ? ' mention' : ' mentions') }), w.line ? el('div', { class: 'plain', text: w.line }) : null);
+  });
+  section(main, 'Everything, newest first', v.timeline, function (e) {
+    return el('li', null, el('span', { class: 'when', text: day(e.at) }), e.href ? link(e.href, e.text) : e.text);
+  }, 'No activity found.');
+}
+
+function banners(errors) {
+  var ban = document.getElementById('banners');
+  ban.replaceChildren();
+  (errors || []).forEach(function (e) { ban.appendChild(el('div', { class: 'banner', text: 'A source is unavailable: ' + e })); });
+}
+
+var sig = '';
+function load() {
+  if (/^\/agent\//.test(location.pathname) && !me) {
+    document.getElementById('upd').textContent = 'That is no agent name.';
+    document.getElementById('main').replaceChildren(el('a', { href: '/agents', text: 'All agents' }));
+    return Promise.resolve();
+  }
+  var url = me ? '/api/agent/' + encodeURIComponent(me) : '/api/agents';
+  return fetch(url, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
+    if (v.error) throw new Error(v.error);
+    var s = JSON.stringify(v, function (k, x) { return k === 'now' ? undefined : x; });
+    if (s === sig) { var u = document.getElementById('upd'); u.lastChild.textContent = u.lastChild.textContent.replace(/live \S+$/, 'live ' + hhmm(v.now)); return; }
+    sig = s;
+    if (me) renderAgent(v); else renderList(v);
+  }).catch(function () {
+    var u = document.getElementById('upd'); u.textContent = 'not connected: is console.mjs serve running?'; u.className = 'sub status off';
+  });
+}
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

@@ -144,9 +144,11 @@ test('stepWatcher (serve --notify): silent at start, one notification per new st
 test('menuHtml: the same top bar on every page, plain links, the current page highlighted, the badge on "Your steps"', () => {
   const steps = S.menuHtml('steps'), prog = S.menuHtml('progress'), stat = S.menuHtml('status'), thr = S.menuHtml('threads'), prop = S.menuHtml('proposals');
   const build = S.menuHtml('build'); // I-061
-  for (const m of [steps, prog, stat, thr, prop, build]) {
+  const agents = S.menuHtml('agents'); // I-118
+  for (const m of [steps, prog, stat, thr, prop, build, agents]) {
     assert.match(m, /<nav class="menu" aria-label="Console pages">/);
     assert.match(m, /href="\/">Your steps<span class="badge" data-badge hidden>0<\/span><\/a>/);
+    assert.match(m, /href="\/agents">Agents<\/a>/);
     assert.match(m, /href="\/progress">Progress<\/a>/);
     assert.match(m, /href="\/build">Best build<\/a>/);
     assert.match(m, /href="\/status">Status<\/a>/);
@@ -166,7 +168,9 @@ test('menuHtml: the same top bar on every page, plain links, the current page hi
   assert.match(build, /class="mbtn on" aria-current="page" title="[^"]*" href="\/build"/);
   assert.equal(build.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the best-build page: the same bar');
   assert.equal(steps.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'identical apart from the highlight');
-  for (const f of ['console-page.html', 'progress-page.html', 'status-page.html', 'threads-page.html', 'proposals-page.html']) {
+  assert.match(agents, /class="mbtn on" aria-current="page" title="[^"]*" href="\/agents"/);
+  assert.equal(agents.replace(' on" aria-current="page', ''), prog.replace(' on" aria-current="page', ''), 'the agents page: the same bar');
+  for (const f of ['console-page.html', 'progress-page.html', 'status-page.html', 'threads-page.html', 'proposals-page.html', 'agents-page.html']) {
     const html = readFileSync(new URL(`../../tools/lib/${f}`, import.meta.url), 'utf8');
     assert.equal(html.split('<!--console-menu-->').length, 2, `${f}: one menu slot`);
     assert.ok(html.includes('<script src="/console-nav.js"></script>') && html.includes('<link rel="stylesheet" href="/console-nav.css">'), f);

@@ -142,6 +142,10 @@ export function anchorOwner(anchor, { statusRows = [], steps = [], proposals = [
     const p = proposals.find((x) => x.id === id);
     return p?.by ? { owner: p.by, why: `author of ${id}` } : null;
   }
+  if (anchor.page === 'agents' && it.startsWith('agent:')) { // I-118: a comment on an agent's page is for that agent
+    const n = it.slice('agent:'.length);
+    return n && n !== USER ? { owner: n, why: `its agent page` } : null;
+  }
   return null;
 }
 

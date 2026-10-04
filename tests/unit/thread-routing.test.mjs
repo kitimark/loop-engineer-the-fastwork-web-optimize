@@ -59,6 +59,10 @@ test('routeOwner order: anchor owner > the lead\'s topic map > status-board owne
   assert.deepEqual(R.routeOwner({ topic: 'hero-exit' }, { ...ctx, listening: all }), { owner: 'arch-hero', why: 'topic hero-exit, set by the lead' });
   assert.deepEqual(R.routeOwner({ topic: 'cd-strip' }, { ...ctx, listening: all }), { owner: 'fix-cd-strip', why: 'owner of cd-strip' });
   assert.deepEqual(R.routeOwner({ anchor: { page: 'status', item: 'part:page' } }, { ...ctx, listening: all }), { owner: 'mgmt-ops-10', why: 'the desk' });
+  // I-118: a comment on an agent's own page (/agent/wi-stack) is for that agent; the agents list page is the desk's
+  assert.deepEqual(R.routeOwner({ anchor: { page: 'agents', item: 'agent:wi-stack' } }, { ...ctx, listening: all }), { owner: 'wi-stack', why: 'its agent page' });
+  assert.deepEqual(R.routeOwner({ anchor: { page: 'agents', item: 'agent:user' } }, { ...ctx, listening: all }), { owner: 'mgmt-ops-10', why: 'the desk' });
+  assert.deepEqual(R.routeOwner({ anchor: { page: 'agents', item: 'part:page' } }, { ...ctx, listening: all }), { owner: 'mgmt-ops-10', why: 'the desk' });
   assert.equal(R.routeOwner({}, { ...ctx, desk: null, listening: all }), null);
 });
 

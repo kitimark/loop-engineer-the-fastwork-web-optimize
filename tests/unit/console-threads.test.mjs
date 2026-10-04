@@ -645,19 +645,22 @@ test('I-119 threads page: a lan link opens the address resolved at view time; un
   const view = T.pageThread(T.getThread(n.thread.id), null, { lan: () => FAKE_LAN });
   const p = await threadsPage({ hash: `#${n.thread.id}`, thread: view });
   const msg = p.ids['tv-msgs'].children[0];
-  const links = msg.all().filter((x) => x.tagName === 'a').map((a) => [a.textContent, a.href]);
+  // I-118: the author's name links to its agent page; the I-119 checks below are about the message's own links
+  const isOwn = (a) => !a.href.startsWith('/agent/');
+  assert.deepEqual(msg.all().filter((x) => x.tagName === 'a' && !isOwn(x)).map((a) => [a.textContent, a.href]), [['lead', '/agent/lead']]);
+  const links = msg.all().filter((x) => x.tagName === 'a' && isOwn(x)).map((a) => [a.textContent, a.href]);
   assert.deepEqual(links, [[`http://${FAKE_LAN}:5231/x`, `http://${FAKE_LAN}:5231/x`], ['http://localhost:5559/progress', 'http://localhost:5559/progress'], [`http://${FAKE_LAN}:5232/`, `http://${FAKE_LAN}:5232/`]]);
   assert.equal(msg.all().find((x) => x.className === 'mtext').textContent, `A: http://${FAKE_LAN}:5231/x and the console http://localhost:5559/progress and B: http://${FAKE_LAN}:5232/`);
   // unresolvable: the placeholder as text with a plain note, no link, no error
   const off = T.pageThread(T.getThread(n.thread.id), null, { lan: () => { throw new Error('no LAN address'); } });
   const q = await threadsPage({ hash: `#${n.thread.id}`, thread: off });
   const m2 = q.ids['tv-msgs'].children[0];
-  assert.deepEqual(m2.all().filter((x) => x.tagName === 'a').map((a) => a.href), ['http://localhost:5559/progress']);
+  assert.deepEqual(m2.all().filter((x) => x.tagName === 'a' && isOwn(x)).map((a) => a.href), ['http://localhost:5559/progress']);
   assert.equal(m2.all().find((x) => x.className === 'mtext').textContent, 'A: http://lan:5231/x (Wi-Fi address not available) and the console http://localhost:5559/progress and B: http://lan:5232/ (Wi-Fi address not available)');
   assert.equal(m2.all().filter((x) => x.className === 'lannote').length, 2);
   // a placeholder the server did not list (an old reply, or a hand-edited store) is plain text, never a link
   const bare = await threadsPage({ hash: `#${n.thread.id}`, thread: { ...view, messages: view.messages.map((m) => ({ ...m, lan: undefined })) } });
-  assert.deepEqual(bare.ids['tv-msgs'].children[0].all().filter((x) => x.tagName === 'a').map((a) => a.href), ['http://localhost:5559/progress']);
+  assert.deepEqual(bare.ids['tv-msgs'].children[0].all().filter((x) => x.tagName === 'a' && isOwn(x)).map((a) => a.href), ['http://localhost:5559/progress']);
   // a listed href that is not an http(s) URL is not linked either
   const evil = await threadsPage({ hash: `#${n.thread.id}`, thread: { ...view, messages: view.messages.map((m) => ({ ...m, lan: [{ text: 'http://lan:5231/x', href: 'javascript:alert(1)' }] })) } });
   assert.ok(!evil.ids['tv-msgs'].children[0].all().some((x) => x.tagName === 'a' && /^javascript:/.test(x.href)));

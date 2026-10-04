@@ -117,6 +117,18 @@ function el(tag, attrs) {
 }
 function hhmm(iso) { return iso ? iso.slice(11, 16) + 'Z' : '?'; }
 function ago(min) { if (min === null || min === undefined) return ''; if (min < 1) return 'just now'; if (min < 60) return min + ' min ago'; return Math.floor(min / 60) + ' h ' + (min % 60) + ' min ago'; }
+// I-118 (user T-074): an agent's name links to its own page (/agent/<name>: everything it did); anything else is text
+var AGENT = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$/;
+function agentLink(name) {
+  return AGENT.test(name || '') && name !== 'user' && name !== 'unknown'
+    ? el('a', { class: 'agent', href: '/agent/' + encodeURIComponent(name), title: 'Everything ' + name + ' did, on one page', text: name })
+    : document.createTextNode(name || '');
+}
+/** Names joined by ", ", each one a link (a parent element to append). */
+function agentLinks(parent, names) {
+  names.forEach(function (n, i) { if (i) parent.appendChild(document.createTextNode(', ')); parent.appendChild(agentLink(n)); });
+  return parent;
+}
 var STAGES = ['R', 'I', 'D', 'F', 'V', 'L'];
 var open = {}; // which details are open, kept across refreshes
 
@@ -124,7 +136,8 @@ var open = {}; // which details are open, kept across refreshes
 // the phone run going on now, and the holder's other jobs as "Next"
 function jobLines(box, j) {
   box.appendChild(el('div', { class: 'v', text: j.line }));
-  box.appendChild(el('div', { class: 'q', text: j.byLine }));
+  var pre = 'Run by ' + j.by; // I-118: the runner's name as a link, the words as the server wrote them
+  box.appendChild(j.by && j.byLine.indexOf(pre) === 0 ? el('div', { class: 'q' }, 'Run by ', agentLink(j.by), j.byLine.slice(pre.length)) : el('div', { class: 'q', text: j.byLine }));
   if (j.run) box.appendChild(el('div', { class: 'q', text: 'Right now: ' + j.run.text + ' (since ' + hhmm(j.run.since) + ')' }));
   j.next.forEach(function (n) { box.appendChild(el('div', { class: 'q', text: 'Next: ' + n })); });
 }
@@ -137,22 +150,24 @@ function holder(label, l, d) {
     // the chrome-measure shared lane (I-048): the readers' names first (user T-008), then the weight in use against
     // the cap, then every reader's job (I-060; without the device view: its weight and start time)
     var s = l.shared;
-    var names = s.readers.map(function (x) { return x.owner; }).join(', ') || 'no live reader';
-    box.appendChild(el('div', { class: jobs.length ? 'q' : 'v', text: (jobs.length ? 'Shared by ' : '') + names + ' (shared lane ' + s.used + '/' + (s.cap === null ? '?' : s.cap) + ')' }));
+    var names = el('div', { class: jobs.length ? 'q' : 'v' }, jobs.length ? 'Shared by ' : null);
+    if (s.readers.length) agentLinks(names, s.readers.map(function (x) { return x.owner; })); else names.appendChild(document.createTextNode('no live reader'));
+    names.appendChild(document.createTextNode(' (shared lane ' + s.used + '/' + (s.cap === null ? '?' : s.cap) + ')'));
+    box.appendChild(names);
     if (jobs.length) jobs.forEach(function (j) { var sub = el('div', { class: 'job' }); jobLines(sub, j); box.appendChild(sub); });
-    else s.readers.forEach(function (x) { box.appendChild(el('div', { class: 'q', text: x.owner + ' (w' + x.weight + ', since ' + hhmm(x.since) + ')' })); });
+    else s.readers.forEach(function (x) { box.appendChild(el('div', { class: 'q' }, agentLink(x.owner), ' (w' + x.weight + ', since ' + hhmm(x.since) + ')')); });
     if (l.lane && !l.lane.on) box.appendChild(el('div', { class: 'q', text: 'switch off: no new reader joins' }));
     if (s.joinsClosed) box.appendChild(el('div', { class: 'q', text: 'joins closed: ' + s.closedBy + ' waits for Chrome alone' }));
   } else {
     if (l.holder && jobs.length) jobLines(box, jobs[0]);
     else {
-      box.appendChild(el('div', { class: 'v', text: l.holder ? l.holder.owner : 'free' }));
+      box.appendChild(el('div', { class: 'v' }, l.holder ? agentLink(l.holder.owner) : 'free'));
       if (l.holder) box.appendChild(el('div', { class: 'q', text: 'since ' + hhmm(l.holder.since) }));
       else if (l.handover) box.appendChild(el('div', { class: 'q', text: l.handover.text })); // I-051: a stalled hand-over shows
     }
     if (l.lane && l.lane.on) box.appendChild(el('div', { class: 'q', text: 'shared lane on, cap ' + l.lane.cap }));
   }
-  if (l.queue.length) box.appendChild(el('div', { class: 'q', text: 'In line after it: ' + l.queue.join(', ') }));
+  if (l.queue.length) box.appendChild(agentLinks(el('div', { class: 'q' }, 'In line after it: '), l.queue));
   return box;
 }
 
@@ -162,7 +177,7 @@ function agentsSection(m, a) {
   m.appendChild(el('h2', { class: 'section', text: 'Who is doing what' }));
   var ul = el('ul', { class: 'plain card agents' });
   a.agents.forEach(function (x) {
-    var li = el('li', null, el('b', { text: x.owner + ': ' }), x.doing);
+    var li = el('li', null, el('b', null, agentLink(x.owner), ': '), x.doing);
     li.appendChild(el('div', { class: 'q', text: [x.state].concat(x.using).join(' · ') }));
     if (x.waits.length) li.appendChild(el('div', { class: 'q', text: 'Waiting on: ' + x.waits.join(' · ') }));
     x.also.forEach(function (t) { li.appendChild(el('div', { class: 'q', text: 'Also: ' + t })); });
@@ -171,7 +186,7 @@ function agentsSection(m, a) {
   if (!a.agents.length) ul.appendChild(el('li', { class: 'empty', text: 'Nobody is working on something right now.' }));
   m.appendChild(ul);
   var fd = detailsBox('__folded', 'Paused, not started or not updated (' + a.folded.length + ')',
-    a.folded.map(function (f) { return f.owner + ': ' + f.title + ' (' + f.why + ')'; }));
+    a.folded.map(function (f) { return [agentLink(f.owner), ': ' + f.title + ' (' + f.why + ')']; }));
   if (fd) m.appendChild(fd);
 }
 
@@ -187,7 +202,7 @@ function detailsBox(key, summary, lines) {
   if (open[key]) d.open = true;
   d.addEventListener('toggle', function () { open[key] = d.open; });
   var ul = el('ul');
-  lines.forEach(function (l) { ul.appendChild(el('li', { text: l })); });
+  lines.forEach(function (l) { ul.appendChild(Array.isArray(l) ? el.apply(null, ['li', null].concat(l)) : el('li', { text: l })); }); // a line: text, or [nodes and text] (I-118)
   d.append(el('summary', { text: summary }), ul);
   return d;
 }
@@ -200,7 +215,7 @@ function itemCard(it, compact) {
     el('span', { class: 'chip', text: it.areaLabel }),
     it.attention ? el('span', { class: 'chip bad', text: 'new result' }) : null,
     it.status ? el('a', { class: 'chip' + (it.status.stale ? ' warn' : ''), href: '/status#' + encodeURIComponent(it.status.id), title: 'Status row ' + it.status.id + ': ' + it.status.plain + (it.status.waits.length ? ' · ' + it.status.waits.join(' · ') : ''), text: 'now: ' + it.status.state + (it.status.waits.length ? ' · ' + it.status.waits[0] : '') }) : null,
-    it.owner ? el('span', { text: 'owner: ' + it.owner }) : null));
+    it.owner ? el('span', null, 'owner: ', agentLink(it.owner)) : null));
   // I-104 (user T-057): the other Status rows that belong to this item (the server names only rows on the board)
   if (it.status && it.status.also) it.status.also.forEach(function (x) {
     card.lastChild.appendChild(el('a', { class: 'chip', href: '/status#' + encodeURIComponent(x.id), title: 'Status row ' + x.id + ': ' + x.title, text: 'also: ' + x.title }));
