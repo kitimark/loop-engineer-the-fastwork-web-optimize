@@ -98,6 +98,7 @@ li.version.current { border-left: 4px solid var(--ok); }
 .vnum { font-size: 12px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
 li.version > div, li.version > p { margin-top: 6px; }
 .tryit { word-break: break-all; }
+.tryit button { margin-left: 6px; font: inherit; padding: 2px 12px; border-radius: 6px; }
 .lannote { color: var(--muted); font-size: .9em; }
 .hashes { font-size: 12px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 </style>
@@ -307,13 +308,25 @@ function tryItLine(t) {
   if (t.none !== undefined) { line.appendChild(document.createTextNode('no page (' + t.none + ')')); return line; }
   if (t.url && TRY_HREF.test(t.url)) {
     line.appendChild(el('a', { href: t.url, target: '_blank', rel: 'noreferrer', title: 'Try it: phone link (' + t.placeholder + '), with this Mac’s Wi-Fi address now', text: t.url }));
-    if (t.running === false) line.appendChild(el('span', { class: 'lannote', text: ' (nothing answers on this port now)' }));
+    if (t.running === false) line.appendChild(el('span', { class: 'lannote', text: t.startable ? ' (not served now)' : ' (nothing answers on this port now)' }));
+    if (t.startable) line.appendChild(startButton(t.port)); // T-106: the Try-it host serves it again in a few seconds
   } else {
     line.appendChild(document.createTextNode(t.placeholder));
     line.appendChild(el('span', { class: 'lannote', text: ' (Wi-Fi address not available)' }));
   }
   if (t.server) line.appendChild(el('span', { class: 'lannote', text: ' · server: ' + t.server }));
   return line;
+}
+// T-106: one click serves a registered Try-it build again (POST /api/tryit/start {port}), then the page reloads its data
+function startButton(port) {
+  var b = el('button', { type: 'button', class: 'btn', text: 'Start' });
+  b.addEventListener('click', function () {
+    b.disabled = true; b.textContent = 'Starting…';
+    fetch('/api/tryit/start', { method: 'POST', headers: { 'content-type': 'application/json', 'x-console': '1' }, body: JSON.stringify({ port: port }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); })
+      .then(function () { b.textContent = 'Started'; if (typeof load === 'function') load(); }, function (e) { b.disabled = false; b.textContent = 'Start'; b.title = e.message; });
+  });
+  return b;
 }
 function renderVersions(m, vs) {
   if (!vs || !vs.length) return;

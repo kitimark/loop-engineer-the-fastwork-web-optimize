@@ -46,14 +46,14 @@
 //        # in the file. A is read and stored like B, on the same base tree (site-pretty or site; refused otherwise);
 //        # without it A is the plain baseline. The panel labels A with compare.a.label, else "Base: <A's patch>".
 //   proposal phone <id> [--option <name>]           # I-126 / user T-086: the Try-it pages (A and B) on the iPhone, same Wi-Fi
-//        # starts (or reuses) one tools/serve.mjs per build, plain http (I-003), --vendors=local, --port auto, on the Wi-Fi
-//        # (0.0.0.0), detached: they run until --stop. Prints PHONE PR-017 option x: A http://lan:<port>/ (started), B …;
-//        # never an address (lan = the Mac's Wi-Fi address, resolved when shown). The Proposals page shows each option's
-//        # phone links (resolved at view time, like I-119), or "not on the Wi-Fi" plus this command. The console itself
-//        # stays on 127.0.0.1. Registry: <console>/live/phone/ (lib/live-phone.mjs). A build (the plain baseline, or the
-//        # baseline + one patch) has one server, shared by every proposal that shows it.
-//   proposal phone <id> [--option <name>] --stop    # STOPPED …: stops that option's two phone servers (only ones it started)
-//   proposal phone --list                           # UP/DOWN per build in the registry, with its http://lan:<port>/
+//        # serves each build through the Try-it host (T-106, tools/tryit.mjs: one process for every Try-it page, started
+//        # if needed), plain http (I-003), --vendors=local, one port per build in 6400-6599, on the Wi-Fi, until --stop.
+//        # Prints PHONE PR-017 option x: A http://lan:<port>/ (started), B …; never an address (lan = the Mac's Wi-Fi
+//        # address, resolved when shown). The Proposals page shows each option's phone links (resolved at view time,
+//        # like I-119), or a Start button. The console itself stays on 127.0.0.1. A build (the plain baseline, or the
+//        # baseline + one patch) has one port, shared by every proposal that shows it.
+//   proposal phone <id> [--option <name>] --stop    # STOPPED …: that option's two pages stop; their ports show a Start page
+//   proposal phone --list                           # UP/STOPPED/DOWN per proposal build in the Try-it registry, with its link
 //   proposal talk <id> [--as <agent>] [--json]     # T-048: the user's questions and comments on one proposal, every message
 //        # (threads anchored on it: from the page's "Ask a question" box, a reply box, or the Comment button on a part of
 //        # it), and how to answer; --as marks them read for you. A comment on a proposal is assigned at once to its
@@ -185,7 +185,7 @@ export async function run(argv) {
     const PH = await import('./live-phone.mjs');
     const rows = await PH.listPhoneServers();
     if (!rows.length) console.log(`no phone servers (start: ${PH.phoneCommand('<id>')} [--option <name>])`);
-    for (const r of rows) console.log(`${r.up ? 'UP  ' : 'DOWN'} ${r.blob ? `${r.base} + patch ${r.blob.slice(0, 12)}` : `${r.base} (no patch: the original page)`}${r.up ? `  ${PH.phoneLink(r.port)}  pid ${r.pid}` : ''}`);
+    for (const r of rows) console.log(`${r.up ? 'UP     ' : r.stopped ? 'STOPPED' : 'DOWN   '} ${r.blob ? `${r.base} + patch ${r.blob.slice(0, 12)}` : `${r.base} (no patch: the original page)`}  ${PH.phoneLink(r.port)}${r.up ? `  host pid ${r.pid}` : ''}`);
     return 0;
   }
   if (!arg) throw new Error(`usage: node tools/console.mjs proposal ${sub} <id> … (see the header of tools/lib/proposal-cli.mjs)`);
@@ -280,7 +280,7 @@ async function phone(id, a) {
     const r = await PH.stopPhoneServers(t.live);
     const one = (s) => (s.stopped ? `stopped (port ${s.port})` : 'was not running');
     console.log(`STOPPED ${what}: A ${one(r.a)}, B ${one(r.b)}`);
-    console.log(`  the Proposals page now says they are not on the Wi-Fi; start again: ${cmd}`);
+    console.log(`  their links now show a Start page (one tap serves them again), the Proposals page a Start button; or: ${cmd}`);
     return 0;
   }
   if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn: nothing to show on the phone`);
@@ -288,8 +288,8 @@ async function phone(id, a) {
   const one = (s) => `${s.lan} (${s.reused ? 'already running' : 'started'})`;
   console.log(`PHONE ${what}: A ${one(r.a)}, B ${one(r.b)}`);
   console.log('  plain http on the Wi-Fi, for an iPhone on the same Wi-Fi as this Mac; the Proposals page shows them as phone links');
-  console.log('  with the Mac\'s current Wi-Fi address (lan = that address; node tools/lan.mjs prints it). They run until stopped,');
-  console.log(`  also after this command: ${cmd} --stop   (a build shared with another proposal stops there too)`);
+  console.log('  with the Mac\'s current Wi-Fi address (lan = that address; node tools/lan.mjs prints it). Served by the Try-it host');
+  console.log(`  (node tools/tryit.mjs list) until: ${cmd} --stop   (a build shared with another proposal stops there too)`);
   return 0;
 }
 

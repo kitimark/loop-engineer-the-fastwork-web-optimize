@@ -149,6 +149,16 @@ Without `--cert`, `--https` creates a self-signed cert under `out/certs/`. Safar
 and you can tap through it ("Show Details → visit this website"). HTTPS also gives you HTTP/2, like
 production. Over plain http, Safari is limited to about 6 connections per host.
 
+**Try-it pages (T-106):** pages kept up for people to try (proposal phone links, the /build page's
+versions) are served by ONE process, `node tools/tryit.mjs host` (detached; `tryit.mjs start` starts it),
+not one `serve.mjs` each. Each registered build keeps its own port (6400-6599, plain http, links
+`http://lan:<port>/`); its files load on the first request and are dropped after 30 idle minutes
+(`--idle-min`, `$FW_TRYIT_IDLE_MIN`). Every response is `no-store`. `tryit.mjs stop <name>` leaves a
+"Start" page on the port, and one tap serves it again. Commands: `tryit.mjs add <name> [--overlay d,d]
+[--port n] [--from-state <serve state file>]`, `stop`, `rm`, `list`, `quit`. The registry is in
+`.git/fastwork-mirror/tryit/`. Measurement servers (`serve.mjs`, `fix.mjs serve|ab`, `verify.mjs`,
+`bench.mjs`) are unchanged.
+
 ## Third-party scripts: three modes
 
 Production's `/analytics.js` (first-party, hand-written) pushes dataLayer events. It also watches the

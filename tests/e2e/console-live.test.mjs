@@ -20,7 +20,7 @@ const CON = tool('console.mjs');
 let fx, repo, state, env, srv, base, src;
 const cli = (...a) => node(CON, ['proposal', ...a], { env, cwd: repo });
 const FAKE_LAN = '192.0.2.44'; // TEST-NET-1, never a real address
-const phoneCli = (...a) => node(CON, ['proposal', ...a], { env: { ...env, FW_PHONE_SERVE_HOST: '127.0.0.1' }, cwd: repo }); // I-126: off the network in tests
+const phoneCli = (...a) => node(CON, ['proposal', ...a], { env, cwd: repo }); // T-106: the Try-it host on 127.0.0.1 ($FW_TRYIT_HOST), off the network
 const postJson = (p, body, headers = { 'x-console': '1' }) => request(new URL(p, base).href, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const json = (r) => JSON.parse(r.text);
 const postedId = (r) => { assert.equal(r.code, 0, r.out); const m = r.stdout.match(/^POSTED (PR-\d+): /m); assert.ok(m, r.stdout); return m[1]; };
@@ -71,7 +71,7 @@ before(async () => {
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'init');
   state = join(repo, '.git', 'fastwork-mirror');
-  env = { FW_STATE_DIR: state, FW_MIRROR_HOME: home, FW_CONSOLE_LIVE_IDLE_SEC: '4', FW_LAN_ADDRESS: FAKE_LAN }; // I-126: a made-up Wi-Fi address
+  env = { FW_STATE_DIR: state, FW_MIRROR_HOME: home, FW_CONSOLE_LIVE_IDLE_SEC: '4', FW_LAN_ADDRESS: FAKE_LAN, FW_TRYIT_HOST: '127.0.0.1' }; // I-126: a made-up Wi-Fi address
   src = tempDir('fw-live-e2e-src-');
   writePng(join(src, 'a-0.png'), 8, 6, [10, 20, 30]);
   writePng(join(src, 'b-0.png'), 8, 6, [10, 20, 30], [250, 250, 250]);
@@ -82,7 +82,7 @@ before(async () => {
 });
 after(async () => {
   await srv?.stop();
-  if (repo) phoneCli('phone', 'PR-001', '--stop'); // I-126: never leave a phone server behind
+  if (repo) node(tool('tryit.mjs'), ['quit'], { env, cwd: repo }); // T-106: never leave the Try-it host behind
 });
 
 let urls;
@@ -253,7 +253,7 @@ test('I-093: a live A of its own (post --live-a-patch, live --a-patch): start se
   urls = s;
 });
 
-test('I-126 / T-086 proposal phone: the Try-it pages for the iPhone (plain http, port auto, detached); the page route shows their phone links with the Mac\'s address now; --stop; no address printed or stored', async () => {
+test('I-126 / T-086 / T-106 proposal phone: the Try-it pages for the iPhone (plain http, served by the ONE detached Try-it host); the page route shows their phone links with the Mac\'s address now; --stop leaves a Start page; Start from the page; no address printed or stored', async () => {
   const route = (id, q = '') => request(new URL(`/api/live/${id}/phone${q}`, base).href);
   let r = json(await route('PR-001'));
   assert.deepEqual([r.wifi, r.a, r.b, r.start], [true, { up: false }, { up: false }, 'node tools/console.mjs proposal phone PR-001']);
@@ -274,39 +274,58 @@ test('I-126 / T-086 proposal phone: the Try-it pages for the iPhone (plain http,
   assert.match(c.stdout, /node tools\/console\.mjs proposal phone PR-001 --stop/);
   const [pa, pb] = [m[1], m[2]];
   for (const p of [pa, pb]) { assert.notEqual(p, '5173'); assert.notEqual(p, new URL(base).port); }
-  // real serve.mjs children, detached (the CLI has exited), plain http, A = the baseline, B = the baseline + the patch
+  // the detached host (the CLI has exited), plain http, A = the baseline, B = the baseline + the patch, no-store
   const a = await request(`http://127.0.0.1:${pa}/${PAGE_JS.slice(1)}`), b = await request(`http://127.0.0.1:${pb}/${PAGE_JS.slice(1)}`);
   assert.equal(a.text, fx.prettyFiles[PAGE_JS]);
   assert.equal(b.headers['x-mirror-source'], 'overlay');
+  assert.equal(b.headers['cache-control'], 'no-store', 'Try-it pages are never cached');
   assert.equal(b.text, fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
   const info = json(await request(`http://127.0.0.1:${pb}/__mirror/info`));
   assert.deepEqual([info.https, info.vendors, info.frameAncestors], [false, 'local', undefined]);
+  const host = JSON.parse(readFileSync(join(state, 'tryit', 'host.json'), 'utf8'));
   // the page route: the phone links, with the (made-up) Wi-Fi address resolved now
   r = json(await route('PR-001'));
   assert.deepEqual(r.a, { up: true, lan: `http://lan:${pa}/`, href: `http://${FAKE_LAN}:${pa}/` });
   assert.deepEqual(r.b, { up: true, lan: `http://lan:${pb}/`, href: `http://${FAKE_LAN}:${pb}/` });
-  // again: reused; --list
+  // again: reused, the same host; --list
   c = phoneCli('phone', 'PR-001');
   assert.match(c.stdout, new RegExp(`^PHONE PR-001: A http://lan:${pa}/ \\(already running\\), B http://lan:${pb}/ \\(already running\\)$`, 'm'));
+  assert.equal(JSON.parse(readFileSync(join(state, 'tryit', 'host.json'), 'utf8')).pid, host.pid, 'one host');
   c = phoneCli('phone', '--list');
-  assert.match(c.stdout, new RegExp(`^UP {3}site-pretty \\(no patch: the original page\\) {2}http://lan:${pa}/ {2}pid \\d+$`, 'm'));
-  assert.match(c.stdout, new RegExp(`^UP {3}site-pretty \\+ patch [0-9a-f]{12} {2}http://lan:${pb}/`, 'm'));
+  assert.match(c.stdout, new RegExp(`^UP {6}site-pretty \\(no patch: the original page\\) {2}http://lan:${pa}/ {2}host pid ${host.pid}$`, 'm'));
+  assert.match(c.stdout, new RegExp(`^UP {6}site-pretty \\+ patch [0-9a-f]{12} {2}http://lan:${pb}/`, 'm'));
   // nothing printed or stored names an address (Hard rule 12)
   for (const out of [c.out]) assert.ok(!out.includes(FAKE_LAN), out);
-  const reg = join(state, 'console', 'live', 'phone');
+  const reg = join(state, 'tryit', 'builds');
   for (const f of readdirSync(reg)) assert.ok(!readFileSync(join(reg, f), 'utf8').includes(FAKE_LAN), f);
-  // --stop: both gone, the page says so again
+  // --stop: the ports stay and answer with a Start page; the page route says "stopped"
   c = phoneCli('phone', 'PR-001', '--stop');
   assert.equal(c.code, 0, c.out);
   assert.match(c.stdout, new RegExp(`^STOPPED PR-001: A stopped \\(port ${pa}\\), B stopped \\(port ${pb}\\)$`, 'm'));
-  assert.ok(await until(async () => (await refused(`http://127.0.0.1:${pa}/`)) && (await refused(`http://127.0.0.1:${pb}/`))), 'both servers gone');
+  assert.ok(await until(async () => (await request(`http://127.0.0.1:${pb}/`)).status === 503), 'B shows the Start page');
+  assert.match((await request(`http://127.0.0.1:${pa}/`)).text, />Start<\/button>/);
   r = json(await route('PR-001'));
-  assert.deepEqual([r.a, r.b], [{ up: false }, { up: false }]);
+  assert.deepEqual([r.a, r.b], [{ up: false, stopped: true, lan: `http://lan:${pa}/` }, { up: false, stopped: true, lan: `http://lan:${pb}/` }]);
   assert.match(phoneCli('phone', 'PR-001', '--stop').stdout, /^STOPPED PR-001: A was not running, B was not running$/m);
+  // Start from the Proposals page: guarded like every console POST; serves both again on the same ports
+  assert.equal((await postJson('/api/live/PR-001/phone/start', {}, {})).status, 403, 'no x-console header');
+  r = await postJson('/api/live/PR-001/phone/start', {});
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual([json(r).a.lan, json(r).a.up, json(r).b.up], [`http://lan:${pa}/`, true, true]);
+  assert.equal((await request(`http://127.0.0.1:${pb}/${PAGE_JS.slice(1)}`)).status, 200);
+  // Start from the /build page by port: an unregistered port is a 404; a stopped build serves again
+  assert.equal((await postJson('/api/tryit/start', { port: 1 })).status, 404);
+  assert.equal((await postJson('/api/tryit/start', { port: Number(pb) }, {})).status, 403);
+  phoneCli('phone', 'PR-001', '--stop');
+  r = await postJson('/api/tryit/start', { port: Number(pb) });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(json(r).port, Number(pb));
+  assert.equal((await request(`http://127.0.0.1:${pb}/${PAGE_JS.slice(1)}`)).status, 200);
+  assert.equal(JSON.parse(readFileSync(join(state, 'tryit', 'host.json'), 'utf8')).pid, host.pid, 'still the one host');
 });
 
 test('the console\'s exit stops its page servers', async () => {
-  json(await postJson('/api/live/ping', {}));
+  urls = json(await postJson('/api/live/PR-001/start', {})); // (re)started: the 4 s idle limit may pass during the phone test
   assert.equal(await refused(urls.a), false);
   await srv.stop();
   srv = null;

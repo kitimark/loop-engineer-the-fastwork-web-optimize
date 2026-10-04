@@ -72,7 +72,12 @@
 //   GET  /api/live/<id>/phone[?option=<name>]  I-126 / user T-086: {wifi, a, b, start, note?}: is the (option's) A / B
 //                                build served on the Wi-Fi for the iPhone (`proposal phone`, lib/live-phone.mjs)? A side:
 //                                {up: true, lan: "http://lan:<port>/", href: the same with this Mac's LAN address now, or
-//                                null} or {up: false}; start: the command that serves them. Reads only; starts nothing.
+//                                null}, {up: false, stopped: true, lan} or {up: false}; start: the command that serves
+//                                them; state: the proposal's state. Reads only; starts nothing.
+//   POST /api/live/<id>/phone/start  T-106 {option?}: the page's Start button: serves A and B through the Try-it host
+//                                (lib/tryit.mjs, started if needed), then answers like the GET. Guarded like the thread POSTs.
+//   POST /api/tryit/start        T-106 {port}: the /build page's Start button: serves the Try-it build registered on that
+//                                port (starts the host if needed); 404 when no build is registered there.
 //   POST /api/live/ping          {ok, measuring, running}: the open panel's heartbeat (every minute); 10 min without one
 //                                ($FW_CONSOLE_LIVE_IDLE_SEC) and the children are killed; also when the console exits.
 //                                measuring: chrome-measure has a timing hold (the panel shows a note, never blocks).
@@ -95,7 +100,7 @@ import { listeningState } from './thread-routing.mjs';
 import { PAGES as COMMENT_PAGES, normAnchor, commentTitle, markersFor } from './console-comments.mjs';
 import { pageProposals, publicView as proposalView, get as getProposal, decide as decideProposal, undoDecision, mediaFile, findOption } from './proposal.mjs';
 import { createLiveServers, measuringNow } from './live.mjs';
-import { phoneStatus, phoneCommand } from './live-phone.mjs'; // I-126 / T-086
+import { phoneStatus, phoneCommand, startPhoneServers } from './live-phone.mjs'; // I-126 / T-086
 import { talkRoute, talkView, talkIndex } from './proposal-talk.mjs';
 import { statSync, createReadStream } from 'node:fs';
 
@@ -273,6 +278,25 @@ function sendMedia(req, res, m) {
 async function liveRoute(req, res, u, port, live) {
   const ph = u.pathname.match(/^\/api\/live\/(PR-\d{3,6})\/phone$/);
   if (ph && req.method === 'GET') { await phoneRoute(res, ph[1], u.searchParams.get('option')); return true; }
+  // T-106: one click serves a proposal's pages on the Wi-Fi (the Try-it host), or a /build version's registered port
+  const phs = u.pathname.match(/^\/api\/live\/(PR-\d{3,6})\/phone\/start$/);
+  if (req.method === 'POST' && (phs || u.pathname === '/api/tryit/start')) {
+    const refused = threadPostRefusal(req, port);
+    if (refused) { send(res, 403, { error: refused }); return true; }
+    const b = await readJsonBody(req);
+    if (b.error) { send(res, b.status, { error: b.error }); return true; }
+    if (phs) { await phoneRoute(res, phs[1], typeof b.body.option === 'string' ? b.body.option : null, { start: true }); return true; }
+    try {
+      const T = await import('./tryit.mjs');
+      const e = T.listBuilds().find((x) => x.port === Number(b.body.port));
+      if (!e) { send(res, 404, { error: `no Try-it build on port ${b.body.port} (node tools/tryit.mjs add <name> --port <port> registers one)` }); return true; }
+      T.setStopped(e.name, false);
+      await T.ensureHost();
+      await T.waitServed(e.name);
+      send(res, 200, { ok: true, name: e.name, port: e.port });
+    } catch (e) { send(res, 503, { error: e.message }); }
+    return true;
+  }
   const start = u.pathname.match(/^\/api\/live\/(PR-\d{3,6})\/start$/);
   if (req.method !== 'POST' || !(start || u.pathname === '/api/live/ping')) return false;
   const refused = threadPostRefusal(req, port);
@@ -306,7 +330,7 @@ async function liveRoute(req, res, u, port, live) {
  * I-126 / user T-086: GET /api/live/<id>/phone[?option=<name>]: are this proposal's (option's) Try-it pages on the
  * Wi-Fi for the iPhone? Starts nothing (`proposal phone` does): live-phone.mjs phoneStatus + the start command.
  */
-async function phoneRoute(res, id, option) {
+async function phoneRoute(res, id, option, { start = false } = {}) {
   let p = null;
   try { p = getProposal(id); } catch {}
   if (!p || !proposalView(p)) return send(res, 404, { error: `no proposal ${id}` });
@@ -317,8 +341,12 @@ async function phoneRoute(res, id, option) {
   }
   if (!target.live?.blob) return send(res, 404, { error: `${p.id}${p.options?.length ? ` option ${target.name}` : ''} has no live pages` });
   try {
+    if (start) {
+      if (p.state === 'withdrawn') return send(res, 409, { error: `${p.id} is withdrawn: nothing to show on the phone` });
+      await startPhoneServers(target.live); // T-106: registers the builds with the Try-it host (started if needed)
+    }
     const s = await phoneStatus(target.live);
-    return send(res, 200, { ...s, start: phoneCommand(p.id, p.options?.length ? target.name : '') });
+    return send(res, 200, { ...s, start: phoneCommand(p.id, p.options?.length ? target.name : ''), state: p.state });
   } catch (e) { return send(res, 503, { error: e.message }); }
 }
 
