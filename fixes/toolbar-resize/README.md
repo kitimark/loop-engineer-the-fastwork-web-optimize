@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 Simulator subtree bisect registered
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 Simulator bisect run (nvc and skp LOCATE, skh and ch NONE; indicative)
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -276,6 +276,55 @@ attribution: Simulator times are compared only within the session against interl
   - skh and skp both PARTIAL: the cost scales with rendered content.
   - nvc LOCATES: the S3 path through the top-nav or `.pain-sticky` (the hero alone was ruled out by P-106 sticky).
   - ch LOCATES or PARTIAL: fix idea (a) goes to a look check and a phone G check.
+
+## P-109 result (Simulator, one normal hold, 2026-10-04 ~14:50Z)
+
+| run | moving hero frames | median largest Layout | inStyle | docH | ratio | call |
+|---|---|---|---|---|---|---|
+| C-H1 | 11 | 21.4 ms | 10 | 5999->6035 | | |
+| skh-H1 | 14 | 20.2 ms | 12 | 5999->6035 | 0.956 | NONE |
+| skp-H1 | 29 | 1.03 ms | 3 | 6001->6037 | 0.049 | LOCATES |
+| C-H2 | 10 | 20.9 ms | 8 | 5999->6035 | | |
+| nvc-H1 | 19 | 0.36 ms | 5 | 5999->6035 | 0.017 | LOCATES |
+| ch-H1 | 12 | 21.0 ms | 10 | 5999->6035 | 0.982 | NONE |
+| C-H3 | 11 | 21.9 ms | 10 | 5999->6035 | | |
+
+REPLICA true (every C run counted, inStyle >= half), DRIFT 0.024 (C-H1 -> C-H3), VOID false. Scorer cb6f0c97b81b,
+`p109-score.json`; served-bytes log `p109-runs.jsonl` (all arms served the card's CSS from their overlay).
+
+- **What it says (indicative, one run per arm):** the ~21 ms toolbar-step Layout (phone ~13 ms) disappears when
+  #people is not rendered (skp) and when the hero zone has no viewport-constrained renderers (nvc). Hiding the hero
+  (skh) and containing it (ch, fix idea a) change nothing. With P-106 `sticky` (hero not sticky: NONE), the trigger is
+  the fixed top-nav or `.pain-sticky` (S3, `setViewportConstrainedObjectsNeedLayout`), and the time is spent laying
+  out #people's subtree. That is the "skh NONE, skp LOCATES" case, which the predictions did not expect
+  (skh LOCATES ~45 %, nvc NONE ~60 %). The mechanism behind "constrained renderer -> #people relayout" is
+  UNRESOLVED (no source read yet); decisive check: P-110 below.
+- **Deviations from the card (for ops):**
+  - Lock mode. `sim.mjs session --functional` (shared lane) refuses `sim.mjs gesture` as a timing run, so the shared
+    hold took no data. Every run here comes from one normal Simulator session (`lock.mjs run chrome-measure
+    --max-seconds 600 -- sim.mjs session`), which is quieter than the card's lane. Filters and scorer are unchanged.
+  - Order. Seven steps in one hold, not two holds of four: C:H1 skh skp C:H2 nvc ch C:H3. Every arm has a C run on
+    each side; there is no C:H4, and drift is C:H1 -> C:H3.
+  - The gesture's pull-to-refresh guard ended loop s2/s4 early in every run, C and arms alike (the page sat near the
+    top). nvc-H1 reached y -202 (rubber band at the top).
+- **N1 (cold C:H1):** not an outlier (21.4 vs 20.9 / 21.9 ms), so no exploratory ratios are needed.
+- **N2 (single-neighbour cases):** none. Every arm sits between two C runs.
+- **N3 (cross-hold neighbours):** none. Everything ran in one hold.
+- **N4:** every call is indicative. Only a phone G run feeds F.
+- **GEOMETRY edge:** skp's page height is 2 px off its neighbours (6001 vs 5999). The rule calls GEOMETRY at > 2 px,
+  so skp is judged, but only just. The 1329 px pin was not changed after the data (ops note).
+- **More frames in skp/nvc** (29/19 vs ~11 moving hero frames): cheaper steps give more frames during each toolbar
+  move. This is expected, not a filter effect.
+
+### Next (plan, not yet a ticket; needs an ops read)
+
+- **P-110 (Simulator, same scorer):** split the two located arms. Trigger: `nav-abs` (top-nav absolute only) vs
+  `pain-rel` (`.pain-sticky` relative only). Cost: hide each of #people's top-level children in turn, pinning its
+  height and keeping GEOMETRY.
+- **Then a phone G check:** v7 vs the smallest located change, Timeline on, same filters as P-106. If a
+  look-identical form exists (for example `contain: layout` or `content-visibility: auto` with a measured intrinsic
+  size on the located #people child, or isolating the constrained renderer), add a look check (pixel-identical rule)
+  before F.
 
 ## Scenarios not run
 

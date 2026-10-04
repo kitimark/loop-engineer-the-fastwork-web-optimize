@@ -1,0 +1,158 @@
+{
+ "scorer": "fixes/toolbar-resize/score-bisect.mjs",
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 11,
+   "medianLargest": 21.405,
+   "inStyle": 10,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "skh-H1",
+   "arm": "skh",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 20.21,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "skp-H1",
+   "arm": "skp",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 29,
+   "medianLargest": 1.029,
+   "inStyle": 3,
+   "counted": true,
+   "docH": [
+    6001,
+    6037
+   ]
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 10,
+   "medianLargest": 20.893,
+   "inStyle": 8,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "nvc-H1",
+   "arm": "nvc",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 19,
+   "medianLargest": 0.355,
+   "inStyle": 5,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "ch-H1",
+   "arm": "ch",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 12,
+   "medianLargest": 21.033,
+   "inStyle": 10,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 11,
+   "medianLargest": 21.924,
+   "inStyle": 10,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  }
+ ],
+ "replica": true,
+ "drift": 0.024,
+ "void": false,
+ "verdicts": {
+  "skh-H1": {
+   "ratio": 0.956,
+   "cMean": 21.149,
+   "neighbours": [
+    "C-H1",
+    "C-H2"
+   ],
+   "call": "NONE"
+  },
+  "skp-H1": {
+   "ratio": 0.049,
+   "cMean": 21.149,
+   "neighbours": [
+    "C-H1",
+    "C-H2"
+   ],
+   "call": "LOCATES"
+  },
+  "nvc-H1": {
+   "ratio": 0.017,
+   "cMean": 21.409,
+   "neighbours": [
+    "C-H2",
+    "C-H3"
+   ],
+   "call": "LOCATES"
+  },
+  "ch-H1": {
+   "ratio": 0.982,
+   "cMean": 21.409,
+   "neighbours": [
+    "C-H2",
+    "C-H3"
+   ],
+   "call": "NONE"
+  }
+ }
+}
