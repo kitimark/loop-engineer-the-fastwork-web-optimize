@@ -49,6 +49,11 @@
 //   Start (awaitsStart; any step kind with gated parts, the user's own test included). I-125 covered ready and started
 //   phone steps; this adds a part still loading (e.g. "finish the previous swipe test first; this one loads after it")
 //   and gated steps that are no phone step. `OK iphone: … its step … waits for the user's Start`, no thread.
+// Queued is not use (phone-hold v2 T0, research/architecture/phone-hold-v2.md §5; mgmt-devices): the holder HOLDING
+//   chrome-measure is use (I-155), but a holder only QUEUED for it (the T-150 kind of wait: the phone held 5-14 min
+//   behind a Mac reader) is its own state, macWait: `OK iphone: <holder> waits for its Mac hold since hh:mm`, no use
+//   sighting; past the phone limit (5 min) of that wait while others wait for the phone it alarms (`IDLE iphone: …
+//   has waited N min for its Mac hold`), with the NOTIFY line and the red /status alert to the holder.
 //
 // Free since (freeSince): the latest end of a hold that came after the last grant:
 //   - <r>.last-release.json (lib/lock.mjs noteRelease: a release, a process hold's end, the last shared reader leaving),
@@ -227,6 +232,14 @@ export function chromeUse(owner, cm, now = Date.now()) {
   return (cm.queue || []).some((w) => w && w.owner === owner && !w.notReady) ? 'queued' : null;
 }
 
+/** T0: since when `owner` has stood (ready) in the chrome-measure queue (its entry's `since`, ms; `now` if unknown). */
+export function macQueued(owner, cm, now = Date.now()) {
+  const w = (cm?.queue || []).find((x) => x && x.owner === owner && !x.notReady);
+  if (!w) return null;
+  const t = ms(w.since);
+  return t === null ? now : Math.min(t, now);
+}
+
 export const SELF_WAIT_MIN = 2;
 /** I-165: an open step whose current part its runner has loading or ready, before the user's Start of that part. */
 export const awaitsStart = (s) => isOpen(s) && Array.isArray(s.parts) && s.cur < s.parts.length && ['loading', 'ready'].includes(s.parts[s.cur]?.state);
@@ -260,9 +273,9 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     if (isUserLease(holder)) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, userLease: true, freeMin: 0, ...work, ready, alarm: false };
     const use = phoneUse(f.holder, { activity, now, isAlive });
     if (use.busy) return { resource: r, min, held: true, holder, holderToken, runLive: true, ...(f.holder?.meta?.run?.lockRun && { lockRun: true }), heldIdle: false, freeMin: 0, ...work, ready, alarm: false };
-    // I-155: the holder's phone-block hold of chrome-measure (held or queued) is use of the phone too
+    // I-155: the holder's phone-block hold of chrome-measure is use of the phone too; queued for it is not (T0, below)
     const cu = chromeUse(holder, cm, now);
-    if (cu) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, chromeUse: cu, freeMin: 0, ...work, ready, alarm: false };
+    if (cu === 'holds') return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, chromeUse: cu, freeMin: 0, ...work, ready, alarm: false };
     // I-125: the holder's console step the user is on (ready for Start, started, recording, or reset by Start over) is a
     // user wait, not idle (lib/phone-step.mjs ownerPhoneStep, the rule of the lease grace I-123 a)
     const us = ownerPhoneStep(holder, { steps, user: true });
@@ -273,8 +286,12 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     // I-165: the holder only waits on its own lease (a `lock.mjs wait iphone`): stuck after SELF_WAIT_MIN, waiters or not
     const sw = selfWait(holder, waits, r);
     const stuck = !!sw && sw.since !== null && now - Math.max(sw.since, use.since) > SELF_WAIT_MIN * 60000;
+    // T0 (phone-hold v2 §5): queued for its Mac hold is a wait of its own, not use; it alarms past `min` of that wait
+    const mq = cu === 'queued' ? macQueued(holder, cm, now) : null;
+    const macWait = mq && { since: mq, min: freeMinutes(mq, now) };
+    const over = macWait ? now - mq > min * 60000 : now - use.since > min * 60000;
     return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: true, since: use.since, freeMin: freeMinutes(use.since, now), how: use.how, key: `held:${holderToken || '-'}`, observed: false, ...work, ready,
-      ...(sw && { selfWait: { what: sw.what, since: sw.since, min: freeMinutes(sw.since, now) } }), ...(stuck && { stuck: true }), alarm: stuck || (ready && now - use.since > min * 60000) };
+      ...(sw && { selfWait: { what: sw.what, since: sw.since, min: freeMinutes(sw.since, now) } }), ...(stuck && { stuck: true }), ...(macWait && { macWait }), alarm: stuck || (ready && over) };
   }
   const work = readyWork(r, { st, rows });
   const ready = work.queue.length > 0 || work.rows.length > 0;
@@ -311,6 +328,11 @@ export function lineFor(a) {
     const R = RESOURCES[a.resource]?.short || a.resource;
     return `STUCK ${a.resource}: ${a.holder} holds the ${R} lease but its only process on it is a wait (${a.selfWait.what}, for ${forText(a.selfWait.min)}; no phone run since ${hhmm(a.since)}): the lease is already its own, so that wait idles the phone; end it and run the phone part (I-165)${a.ready ? `; waiting: ${workList(a)}` : ''}`;
   }
+  if (a.held && a.heldIdle && a.macWait && !a.stuck) { // T0 (phone-hold v2 §5): queued for its Mac hold is not use
+    const tail = `(since ${hhmm(a.macWait.since)}; no phone run since ${hhmm(a.since)})`;
+    if (a.alarm) return `IDLE ${a.resource}: ${R} held by ${a.holder}, which has waited ${forText(a.macWait.min)} for its Mac hold ${tail}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
+    return `OK ${a.resource}: ${a.holder} waits for its Mac hold since ${hhmm(a.macWait.since)} (${forText(a.macWait.min)}; not use of the phone)${a.ready ? `; waiting: ${workList(a)}` : ''}`;
+  }
   if (a.held && a.heldIdle) { // I-111
     const use = `(${a.alarm ? 'no phone run ' : ''}since ${hhmm(a.since)}, ${a.how})`;
     if (a.alarm) return `IDLE ${a.resource}: ${R} held by ${a.holder} but unused for ${forText(a.freeMin)} ${use}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
@@ -320,7 +342,7 @@ export function lineFor(a) {
   if (a.held && a.userLease) return `OK ${a.resource}: held by ${a.holder} for the user's own hand test (the user's phone time, not idle; I-144)`;
   if (a.held && a.userStart) return `OK ${a.resource}: held by ${a.holder}; its step ${a.userStep} waits for the user's Start (a user wait, not idle; I-165)`;
   if (a.held && a.userStep) return `OK ${a.resource}: held by ${a.holder}; the user's step ${a.userStep} is on the phone (a user wait, not idle)`; // I-125
-  if (a.held && a.chromeUse) return `OK ${a.resource}: held by ${a.holder}, which ${a.chromeUse === 'holds' ? 'holds the Chrome slot (its phone-block hold)' : 'waits for its next Chrome slot hold'}: in use, not idle (I-155)`;
+  if (a.held && a.chromeUse) return `OK ${a.resource}: held by ${a.holder}, which holds the Chrome slot (its phone-block hold): in use, not idle (I-155)`;
   if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? (a.lockRun ? ' (a lock.mjs run iphone command is on)' : ' (a phone run is on)') : ''}`;
   const free = `free for ${forText(a.freeMin)} (since ${hhmm(a.since)}, ${a.how})`;
   if (a.alarm) return `IDLE ${a.resource}: ${R} ${free}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
@@ -340,6 +362,7 @@ export function addressees(a, desk = null) {
  */
 export function notifyLine(a, n) {
   const R = RESOURCES[a.resource]?.short || a.resource, holder = n === a.holder && a.heldIdle;
+  if (holder && a.macWait && !a.stuck) return `NOTIFY ${n}: you hold the ${R} lease while you wait for your Mac hold (${a.macWait.min} min) and others wait for the phone: release it (or queue with --not-ready) until your Mac hold comes, or ask the lead (status board alert; phone-hold v2 T0)`;
   if (holder && a.stuck) return `NOTIFY ${n}: you hold the ${R} lease and your only process on it is a wait on it (${a.selfWait.what}, for ${a.selfWait.min} min): end that wait and run your phone part, or release the lease (I-165)`;
   return `NOTIFY ${n}: ${holder ? 'you hold the iPhone lease with no phone run' : `${R} ${a.heldIdle ? `held by ${a.holder} unused` : 'free'}`} for ${a.freeMin} min while ${holder ? 'others wait' : 'you wait'} (status board alert; I-155)`;
 }
@@ -412,7 +435,7 @@ export async function record(assessments, { now = Date.now(), claim = false, pid
         // I-155: the board alert follows the alarm as it stands now (who waits, whether anyone still does)
         if (cur.episode) { cur.episode.alarmNow = !!a.alarm; if (a.alarm) cur.episode.owners = addressees(a); }
         // I-165: why a held-lease alarm stands, when it is not the plain held-idle rule (the board alert's wording)
-        if (cur.episode && a.alarm) { if (a.stuck) cur.episode.why = 'stuck'; else delete cur.episode.why; }
+        if (cur.episode && a.alarm) { if (a.stuck) cur.episode.why = 'stuck'; else if (a.macWait) cur.episode.why = 'mac-wait'; else delete cur.episode.why; }
       }
       // I-111: the alarm's own sighting of a live phone run, kept per lease (a checkout on older lock code stamps no lastRunAt)
       // (I-125: a user step on the phone counts as use too, so the held-idle clock starts again when the step ends)

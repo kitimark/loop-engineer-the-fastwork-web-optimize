@@ -591,7 +591,8 @@ node tools/lock.mjs release iphone --owner <topic>
   console thread per idle period, assigned to the desk and the waiting owners, closed when the slot is taken. Only
   reads the locks; rules in `tools/lib/idle.mjs`. I-155: while an alarm stands, the /status rows of the agents it
   concerns (the holder of an unused lease, the waiting owners of a free slot) carry a red alert, and the watch logs one
-  `NOTIFY <agent>` line each. The lease holder is using the phone while it holds or queues for chrome-measure, or
+  `NOTIFY <agent>` line each. The lease holder is using the phone while it holds chrome-measure (only queued for it is a Mac wait, not use: over
+  5 min of it while others wait for the phone alarms; phone-hold v2 T0), or
   while `node tools/lock.mjs run iphone --owner <you> -- <cmd>` runs under its lease (wrap phone-side work that is no
   phone run in it: xctrace thermal gate, pre-warm). Not ready yet (pre-data read, cooling)? Don't take the lease:
   queue with `node tools/lock.mjs acquire iphone --owner <you> --not-ready` (keeps your place, never served, exit 3;

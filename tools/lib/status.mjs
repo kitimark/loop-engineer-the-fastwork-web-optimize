@@ -889,6 +889,7 @@ export function boardAlertText(al, owner, now = Date.now()) {
   const m = forText(Number.isFinite(t0) ? Math.max(0, Math.floor((now - t0) / 60000)) : 0);
   const t = al.thread ? ` (thread ${al.thread})` : '';
   if (al.kind === 'held' && al.holder === owner && al.why === 'stuck') return `idle alarm: you hold the ${R} lease and your only process on it is a wait on it (lock.mjs wait), no phone run for ${m}: end that wait and run your phone part, or release the lease${t} (I-165)`;
+  if (al.kind === 'held' && al.holder === owner && al.why === 'mac-wait') return `idle alarm: you hold the ${R} lease while you wait for your Mac hold, and others wait for the phone: release it (or queue with --not-ready) until your Mac hold comes${t} (phone-hold v2 T0)`;
   if (al.kind === 'held' && al.holder === owner) return `idle alarm: you hold the ${R} lease with no phone run for ${m} while others wait: run your phone part or release it${t} (I-155)`;
   if (al.kind === 'held') return `idle alarm: the ${R} lease of ${al.holder} has had no phone run for ${m} while you wait${t} (I-155)`;
   return `idle alarm: the ${R} has stood free for ${m} while you wait for it: take it now or say why not${t} (I-155)`;

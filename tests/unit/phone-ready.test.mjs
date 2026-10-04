@@ -83,7 +83,7 @@ const phoneLease = (extra = {}) => ({ resource: 'iphone', owner: 'runner', kind:
 const heldSt = (h, queue = [{ owner: 'fix-w' }]) => ({ resource: 'iphone', holder: h, stale: null, queue });
 const cmSt = (holder = null, queue = []) => ({ resource: 'chrome-measure', holder, stale: null, queue });
 
-test('I-155 idle: the holder holding or queued for chrome-measure is using the phone; a lock.mjs run iphone command is a run; a not-ready waiter is no ready work', () => {
+test('I-155 idle: the holder holding chrome-measure is using the phone (queued is not: phone-hold v2 T0, tests/unit/mac-wait.test.mjs); a lock.mjs run iphone command is a run; a not-ready waiter is no ready work', () => {
   const now = T0 + 30 * 60000;
   const A = (o = {}) => D.assess('iphone', { st: heldSt(phoneLease(o.h), o.queue), cm: o.cm ?? null, min: 5, now });
   assert.equal(A().alarm, true, 'as before: held-idle while fix-w waits');
@@ -92,9 +92,10 @@ test('I-155 idle: the holder holding or queued for chrome-measure is using the p
   assert.match(D.lineFor(holds), /^OK iphone: held by runner, which holds the Chrome slot \(its phone-block hold\): in use, not idle \(I-155\)$/);
   const reader = A({ cm: cmSt({ shared: true, owner: '(shared)', readers: [{ owner: 'runner', kind: 'lease', deadline: at(40) }] }) });
   assert.equal(reader.chromeUse, 'holds', 'a live reader of a shared group counts');
-  const queued = A({ cm: cmSt({ owner: 'fix-x', kind: 'lease' }, [{ owner: 'runner', noTiming: true }]) });
-  assert.deepEqual([queued.alarm, queued.chromeUse], [false, 'queued']);
-  assert.match(D.lineFor(queued), /waits for its next Chrome slot hold/);
+  // T0: queued for its Mac hold is a wait of its own (just queued: no alarm yet), not use
+  const queued = A({ cm: cmSt({ owner: 'fix-x', kind: 'lease' }, [{ owner: 'runner', noTiming: true, since: at(29) }]) });
+  assert.deepEqual([queued.alarm, queued.chromeUse, queued.heldIdle, queued.macWait.min], [false, undefined, true, 1]);
+  assert.match(D.lineFor(queued), /^OK iphone: runner waits for its Mac hold since 03:29Z \(1 min; not use of the phone\); waiting: fix-w/);
   assert.equal(A({ cm: cmSt({ owner: 'fix-x', kind: 'lease' }, [{ owner: 'other' }]) }).alarm, true, 'someone else on chrome-measure does not count');
   assert.equal(A({ cm: { ...cmSt({ owner: 'runner', kind: 'process' }), stale: 'pid 1 is gone' } }).alarm, true, 'a stale hold does not count');
   const lr = A({ h: { meta: { run: { text: 'xctrace gate', since: at(20), pid: process.pid, lockRun: true } } } });
