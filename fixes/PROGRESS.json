@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T08:25:00Z",
+ "updatedAt": "2026-10-04T08:21:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -185,7 +185,7 @@
    ],
    "felt": { "answer": "better", "text": "provisional, one pair (C-042): you picked the best build over the plain page, difference 4 of 5; the best build came second, on a warmer phone" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "Not landing on one pair. Next is one 4-part swipe step: the same pair with the best build first this time, plus a check pair. It runs after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087.",
+   "next": "Not landing on one pair. Next are two swipe steps in one phone slot: the same pair with the best build first this time, then a hidden check pair. It runs after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -685,7 +685,7 @@
   }
  ],
  "upcoming": [
-  { "title": "Your second blind swipe step for the menu fix (F3): the same pair in the other order, plus a check pair of the same page twice", "when": "after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087", "item": "f3-arm-scope" },
+  { "title": "Two more blind swipe steps for the menu fix (F3): the same pair in the other order, then a hidden check pair", "when": "after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087", "item": "f3-arm-scope" },
   { "title": "Milestone 2: the same checks from a hot 42-44 °C start and with Xcode's \"Serious\" heat state on (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
   { "title": "Full phone timing run of the best build against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
