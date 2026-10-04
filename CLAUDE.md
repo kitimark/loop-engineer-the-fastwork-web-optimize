@@ -494,7 +494,7 @@ before relying on them (the most common error in the benchmark).
 `tools/lock.mjs` (library `tools/lib/lock.mjs`) holds named locks in the shared git dir
 (`.git/fastwork-mirror/locks/`), visible from every worktree. Holders are either a live process
 (stale when its pid dies) or a lease with a TTL (stale when it expires). Waiters queue FIFO; a
-queue entry not refreshed for 10 min is dropped. Short lane: `--short --max-seconds N` (N <= 300, on
+queue entry not refreshed for 10 min is dropped (a `run --short|--shared` process waiter after 60 s; a re-run `acquire` keeps its place, I-113). Short lane: `--short --max-seconds N` (N <= 300, on
 `run` and `acquire`) is served before earlier normal waiters at the next hand-over, never preempts
 the holder, drains all queued short jobs (up to 15 min) before the next normal waiter; a normal waiter
 the lead moved ahead of them goes first, also while its host gate settles (I-011, I-020, I-030;
