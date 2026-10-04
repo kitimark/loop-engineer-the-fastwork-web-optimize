@@ -62,6 +62,13 @@ Each role decides these itself, without asking the lead, and reports them in its
 | toolsmith | rebases its own branch on the current `main` tip and runs the full `npm test` on exactly that commit; when `main` has not moved, the lead lands it without re-running the suite |
 | lead | priorities, landing, the user's proposal decisions, spawns, other lock repairs, rule changes, the enforcement layer; and the **inspection**: at every check-in, from `lock.mjs status`, `locks/holds.log`, the board and each agent's last activity, find a lease or hold not used, a stale row, an agent waiting on nobody, and send that agent one correction line |
 
+**Every problem the user reports, any role (user T-140 #7):** whoever owns the thread does both halves without
+asking the lead: (1) the **workaround** now, inside its own powers (a note, a status-row fix, a re-run, a queue move
+for the desk), told to the user in the thread; (2) the **long-term fix**: finds the cause, opens or joins an incident
+with the cause and the fix plan, and sends it to the toolsmith that owns that tool (a running one, or a parked one
+woken within the cache rule). Only a fix that needs a new agent, or more than ~30 min of agent time, goes to the
+lead, as one line with the plan. The thread owner posts in the thread when the fix lands.
+
 Hard rules are unchanged: only the lead lands on `main` and works in the main checkout.
 
 The **verifier** has the mapper's column (read only, posts and acks findings, commits nothing, never measures,
