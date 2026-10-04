@@ -37,7 +37,85 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .sizer.svelte-1fn2go6 {
    visibility: hidden;
    width: 100%;
-@@ -1413,6 +1419,33 @@
+@@ -1289,14 +1295,14 @@
+   animation: 0.45s forwards svelte-1fn2go6-fill-out;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-0;
++  animation: 0.6s linear infinite fw-acc-idle-0;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-1:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-1;
++  animation: 0.6s linear infinite fw-acc-idle-1;
+   transform: translate(0.25%, 0.3%);
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-2:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-2;
++  animation: 0.6s linear infinite fw-acc-idle-2;
+   transform: translate(-0.2%, 0.35%);
+ }
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+@@ -1309,6 +1315,18 @@
+   .is-idle-frame-0.svelte-1fn2go6 {
+   opacity: 1;
+ }
++/* accent-ca: (1) the idle boil runs as keyword-linear opacity animations (WebKit iOS 26 never hands a steps()
++   timing to Core Animation, F-048/F-065, so step-end ticked main-thread style and an opacity-flip Layout per step,
++   F-075). The fw-acc-idle-* keyframes switch at exactly the original step-end instants (33.33 %, 66.66 %, end of
++   cycle); each jump is a linear ramp of 1e-6 of the 0.6 s cycle (0.6 us) that ends on the original instant, so
++   every frame is the original's.
++   (2) While drawing, only boil frame 0 is visible (frames 1-2 are opacity 0, rule above); their stroke and fill
++   animations are dropped (a stroke-dashoffset change is an SVG Layout every frame on WebKit, F-097). */
++:is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
++  .is-idle-frame:not(.is-idle-frame-0).svelte-1fn2go6
++  :is(.accent-path, .accent-fill) {
++  animation: none;
++}
+ @keyframes svelte-1fn2go6-stroke-in {
+   0% {
+     stroke-dashoffset: 1px;
+@@ -1339,6 +1357,40 @@
+     opacity: 0;
+   }
+ }
++@keyframes fw-acc-idle-0 {
++  0%,
++  33.3299% {
++    opacity: 1;
++  }
++  33.33%,
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-1 {
++  0%,
++  33.3299% {
++    opacity: 0;
++  }
++  33.33%,
++  66.6599% {
++    opacity: 1;
++  }
++  66.66%,
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-2 {
++  0%,
++  66.6599% {
++    opacity: 0;
++  }
++  66.66%,
++  to {
++    opacity: 1;
++  }
++}
+ @keyframes svelte-1fn2go6-idle-0 {
+   0%,
+   33.32% {
+@@ -1413,6 +1465,33 @@
    position: absolute;
    inset: 0;
  }
@@ -71,7 +149,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .number.svelte-1jfovfa {
    font-variant-numeric: tabular-nums;
    align-items: center;
-@@ -1520,6 +1553,31 @@
+@@ -1520,6 +1599,31 @@
    inherits: false;
    initial-value: 0deg;
  }
@@ -103,7 +181,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .hero-track.svelte-1p2vpne {
    background: #fff;
    height: 200vh;
-@@ -2124,6 +2182,136 @@
+@@ -2124,6 +2228,136 @@
      right: -45px;
    }
  }
@@ -240,15 +318,17 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  @media (prefers-reduced-motion: reduce) {
    .hero-track.svelte-1p2vpne {
      height: auto;
-@@ -2400,16 +2588,30 @@
+@@ -2398,19 +2632,33 @@
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-     visibility 0s linear 1.6s;
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-+    visibility 0s linear 1.6s;
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
    transform: translateY(48px);
  }
  .start-selling-future.is-visible > .start-selling-future-card {
@@ -266,14 +346,15 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    transition:
      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
  }
  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
-@@ -2885,20 +3087,61 @@
+   transform: scale(var(--future-shrink-scale));
+@@ -2885,20 +3133,61 @@
  .start-selling-avatars.is-carousel img.is-enter {
    animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
  }
@@ -343,7 +424,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform: scale(0.35);
    }
  }
-@@ -2908,7 +3151,7 @@
+@@ -2908,7 +3197,7 @@
      transform: scale(0.35);
    }
    to {
@@ -352,18 +433,29 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      transform: scale(1);
    }
  }
-@@ -5799,6 +6042,10 @@
+@@ -5390,7 +5679,9 @@
+   box-sizing: border-box;
+   color: #151a23;
+   filter: blur(calc((1 - var(--morph-fade)) * 12px));
+-  opacity: var(--morph-fade);
++  /* [morph-gpu rev 3] never exactly 1: in WebKit (Simulator, OBSERVED) opacity leaving 1 repaints the whole section
++     on the open's first frame (19 paints, 1.05 Mpx); below 1 the fade only re-composites. 0.9999 is < 0.03 of a level. */
++  opacity: min(var(--morph-fade), 0.9999);
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
+@@ -5798,6 +6089,10 @@
+     background-image: none;
      animation: none;
    }
- }
++}
 +/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
 +.start-selling-platform [data-sweep-paused] {
 +  animation-play-state: paused !important;
-+}
+ }
  @keyframes start-selling-platform-i-doc-sweep {
    0% {
-     background-position: 100%;
-@@ -6513,16 +6760,24 @@
+@@ -6513,16 +6808,24 @@
    opacity: 0;
  }
  .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
@@ -391,11 +483,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -6811,7 +7066,94 @@
- .start-selling-platform-secure-network-dash-highlight.is-active {
+@@ -6812,6 +7115,93 @@
    opacity: 1;
    transition: opacity 0.2s;
-+}
+ }
 +/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
 +   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
 +   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
@@ -427,7 +518,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  clip-path: path(
 +    "M 1.77734375 0 H 92.22265625 A 1.59375 1.59375 0 0 1 92.22265625 3.1875 H 1.77734375 A 1.59375 1.59375 0 0 1 1.77734375 0 Z"
 +  );
- }
++}
 +.start-selling-platform-secure-network-dash-glint svg {
 +  width: 119.53125px;
 +  height: 5.2px;
@@ -486,7 +577,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling-platform-secure-network-face {
    box-sizing: border-box;
    object-fit: cover;
-@@ -7186,7 +7528,8 @@
+@@ -7186,7 +7576,8 @@
      transform: translate(-50%, -50%);
      animation: none !important;
    }
@@ -496,7 +587,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 0 !important;
    }
  }
-@@ -7509,21 +7852,23 @@
+@@ -7509,21 +7900,23 @@
    opacity: 0;
  }
  .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
@@ -524,10 +615,11 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11102,7 +11447,65 @@
+@@ -11101,6 +11494,64 @@
+     -webkit-background-clip: text;
      background-clip: text;
      animation: 4s linear infinite start-selling-platform-i-doc-sweep;
-   }
++  }
 +  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
 +     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
 +     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
@@ -578,19 +670,17 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +    animation-play-state: paused !important;
 +  }
 +  }
- }
++}
 +@keyframes start-selling-platform-pi-sweep-band {
 +  0% {
 +    transform: translateX(-66.6667%);
 +  }
 +  to {
 +    transform: translateX(0);
-+  }
-+}
+   }
+ }
  .start-selling-language-switch-wrap.svelte-1lc7nmb {
-   z-index: 2;
-   position: relative;
-@@ -11751,11 +12154,74 @@
+@@ -11751,11 +12202,74 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -667,7 +757,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +12234,53 @@
+@@ -11768,3 +12282,53 @@
      scroll-behavior: auto;
    }
  }
@@ -821,7 +911,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  fwQ = 0;
 +function fwIdle(e) {
 +  return window.requestIdleCallback ? window.requestIdleCallback(e, { timeout: 3e3 }) : window.setTimeout(e, 150);
-+}
+ }
 +function fwKick() {
 +  fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
 +}
@@ -860,7 +950,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
 +    }, 500);
 +  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
- }
++}
  function aE() {
 -  nE ||
 +  (fwBoot(), nE) ||
@@ -1124,8 +1214,14 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
  function GE(e, t, n, r = UE) {
-@@ -3817,6 +4055,107 @@
+@@ -3815,8 +4053,148 @@
+   return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
+ }
  var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
++  /*countdown-faces: the hero component (fD) shadows N/z/s with its own locals; it reaches state/set/get through these*/
++  __cdState = N,
++  __cdSet = z,
++  __cdGet = s,
    XE = Array.from({ length: 10 }, (e, t) => t),
    ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
 +  /*cd-strip: one static strip per digit, cells 0-9 and a second 0 (the 9 -> 0 wrap), each cell its own layer (CSS).
@@ -1149,33 +1245,68 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  quadratic in the phase, so it is sampled from 33 phase lanes (0..16 ms, 0.5 ms apart) with as many points as keep
 +  linear interpolation within 5e-4 cell, plus a point at every whole frame. Ends at the frame where every lane is
 +  done (GE snaps to the target). null when it can't end on the target (the caller keeps the rAF spring). u: the start
-+  velocity (0 at a target change; the state after a gap's first frame, see the start-frame callback in $E)*/
++  velocity (0 at a target change; the state after a gap's first frame, see the start-frame callback in $E).
++  cd-roll-ca K (PR-017 follow-up): fewer keyframes, same path. A point [ms, value, Q] with Q set starts a segment that
++  is the exact quadratic v0 + (v1 - v0)*(2Q s + (1 - 2Q) s^2), s = the segment's time fraction (__crQ, below). One
++  Euler step of p ms is quadratic in p, and the frames after it are affine in the state, so the original on
++  [kT, kT+16] is one quadratic in the phase, and on (kT+16, (k+1)T] (a 16 ms step, then one of p - 16 ms) another. A frame
++  whose lanes fit one monotone quadratic to 1e-9 cell becomes 2 keyframes ([kT, Q], [kT+16, Q2]) instead of up to
++  33; extra lanes at 16 + (T-16)*j/4 check the tail. A frame that doesn't fit (lanes snapping to the target in the
++  last frames: a jump under 0.001 cell) keeps the dense points as before. 144 -> 52 keyframes for a one-digit roll,
++  343 -> 66 for 0 -> 9 (WebKit resolves one style and one transform per keyframe at the roll's start)*/
++  __crQ = (v) => {
++    let n = v.length - 1,
++      D = v[n] - v[0],
++      Q = (4 * (v[n / 2] - v[0]) - D) / (2 * D),
++      fit = Math.abs(D) > 1e-6 && Q > -1e-9 && Q < 1 + 1e-9;
++    if (fit) {
++      Q = Math.min(1, Math.max(0, Q));
++      for (let j = 0; j <= n && fit; j++) {
++        let s = j / n;
++        fit = Math.abs(v[0] + D * (2 * Q * s + (1 - 2 * Q) * s * s) - v[j]) < 1e-9;
++      }
++    }
++    return fit ? Q : null;
++  },
 +  __crPath = (f, t, u = 0) => {
 +    let T = 1e3 / 60,
 +      L = [],
 +      K = [[0, f]];
 +    for (let j = 0; j <= 32; j++) L.push(GE({ value: f, velocity: u }, t, j / 2));
++    for (let j = 1; j <= 3; j++) L.push(GE({ value: f, velocity: u }, t, 16 + ((T - 16) * j) / 4));
 +    for (let k = 0; k < 600; k++) {
 +      let v = L.map((x) => x.state.value),
-+        q = Math.abs(v[0] - 2 * v[16] + v[32]) / 128,
-+        m = 1,
-+        w = L.every((x) => x.done);
-+      for (; m < 32 && (q * (16 / m) ** 2) / 4 > 5e-4; ) m *= 2;
-+      for (let j = 1; j <= m; j++) K.push([k * T + (16 * j) / m, v[(32 * j) / m]]);
++        w = L.every((x) => x.done),
++        Q = __crQ(v.slice(0, 33));
++      if (Q !== null) {
++        K[K.length - 1][2] = Q;
++        K.push([k * T + 16, v[32]]);
++      } else {
++        let q = Math.abs(v[0] - 2 * v[16] + v[32]) / 128,
++          m = 1;
++        for (; m < 32 && (q * (16 / m) ** 2) / 4 > 5e-4; ) m *= 2;
++        for (let j = 1; j <= m; j++) K.push([k * T + (16 * j) / m, v[(32 * j) / m]]);
++      }
 +      L = L.map((x) => (x.done ? x : GE(x.state, t, T)));
++      let Q2 = __crQ([v[32], v[33], v[34], v[35], L[0].state.value]);
++      Q2 !== null && (K[K.length - 1][2] = Q2);
 +      K.push([(k + 1) * T, L[0].state.value]);
 +      if (w) {
-+        for (; K.length > 2 && K[K.length - 2][1] === t; ) K.splice(K.length - 2, 1);
++        for (; K.length > 2 && K[K.length - 2][1] === t && K[K.length - 3][2] == null; ) K.splice(K.length - 2, 1);
 +        return K.every(([, x]) => x >= 0 && x < 10) ? K : null;
 +      }
 +    }
 +    return null;
 +  },
-+  /*cd-roll-ca: value of a path at x ms (linear between points, ends held)*/
++  /*cd-roll-ca: value of a path at x ms (linear between points, or the segment's quadratic, ends held)*/
 +  __crAt = (K, x) => {
 +    if (x <= K[0][0]) return K[0][1];
 +    for (let j = 1; j < K.length; j++)
-+      if (x < K[j][0]) return K[j - 1][1] + ((K[j][1] - K[j - 1][1]) * (x - K[j - 1][0])) / (K[j][0] - K[j - 1][0]);
++      if (x < K[j][0]) {
++        let [x0, v0, Q] = K[j - 1],
++          s = (x - x0) / (K[j][0] - x0);
++        return v0 + (K[j][1] - v0) * (Q == null ? s : 2 * Q * s + (1 - 2 * Q) * s * s);
++      }
 +    return K[K.length - 1][1];
 +  },
 +  /*cd-roll-ca: the original's spring only moves on rendered frames. While the tab is hidden (and until the first frame
@@ -1232,7 +1363,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    QE = h(
      `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
    );
-@@ -3824,14 +4163,91 @@
+@@ -3824,14 +4202,112 @@
    D(r, !0);
    let i = R(() => qE(r.value, r.place)),
      a = N(I(o(() => s(i)))),
@@ -1240,6 +1371,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    c = N(0),
 +    /*countdown-idle-raf: false while the countdown is off-screen*/
 +    __cdAnimate = R(() => r.animate !== !1),
++    /*countdown-faces: false only while the call site knows the clock is painted fully transparent (the hero at
++    --exit-opacity 0, the panel at opacity 0), written in the same frame as that opacity*/
++    __cdShown = R(() => r.shown !== !1),
++    /*countdown-faces: true while `a` is held (not written) because the clock is neither animated nor shown*/
++    __cdHeld = !1,
 +    /*cd-roll-ca: the strip's wrapper (set when it mounts; its children are the cells) and the running roll {K: path,
 +    t0, cells: the cells it moves, A: their Animations, F: the start-frame callback, ran}*/
 +    __crEl = null,
@@ -1253,7 +1389,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      Q.A && Q.A.forEach((x) => x.cancel());
 +    },
 +    /*cd-roll-ca: (re)start the roll's animations at its own t0 (a restart for a new cell height continues in place).
-+    Keyword easing linear between the points (composited in Chrome and WebKit). All cells of a roll get the same
++    Keyword easing linear between the points, or a segment's cubic-bezier (K; composited in Chrome and WebKit). All cells of a roll get the same
 +    keyframe offsets and the same startTime. fill both: a frame before t0 shows the start, and the end holds the rest
 +    place until the finish handler cancels them*/
 +    __crPlay = (C) => {
@@ -1264,7 +1400,14 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        d = K[K.length - 1][0];
 +      Q.A = Q.cells.map((k) => {
 +        let A = __crEl.children[k].animate(
-+          K.map(([x, v]) => ({ offset: x / d, transform: `translateY(${k * C + __cdStripY(v, C)}px)` })),
++          /*K: a quadratic segment as a per-keyframe cubic-bezier, x controls 1/3 and 2/3 (x(s) = s exactly), y controls
++          the degree-elevated quadratic's (2Q/3, 1/3 + 2Q/3), both in [0, 1] for 0 <= Q <= 1: per-keyframe cubic-bezier
++          stays on Core Animation, while linear() with points does not (WebKit KeyframeEffect::canBeAccelerated)*/
++        K.map(([x, v, Q]) => {
++          let f = { offset: x / d, transform: `translateY(${k * C + __cdStripY(v, C)}px)` };
++          Q != null && (f.easing = `cubic-bezier(${1 / 3}, ${(2 * Q) / 3}, ${2 / 3}, ${1 / 3 + (2 * Q) / 3})`);
++          return f;
++        }),
 +          { duration: d, easing: `linear`, fill: `both` },
 +        );
 +        A.startTime = Q.t0;
@@ -1275,8 +1418,17 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    b(() => {
      let e = s(i);
 -    if (YE.current) {
-+    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
-+    if (YE.current || !s(__cdAnimate)) {
++    /*countdown-faces: off-screen (or inactive) and painted transparent: hold. No state write, so no strip transform
++    write and no style recalc per tick; any running roll stops (its cells show cd-strip's rest place, unseen)*/
++    if (!YE.current && !s(__cdAnimate) && !s(__cdShown)) {
++      __crStop();
++      __cdHeld = !0;
++      return;
++    }
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion. countdown-faces: also the first run
++    after a hold (back on screen, or shown again), so the show frame has the target, as the per-tick snap gives*/
++    if (YE.current || !s(__cdAnimate) || __cdHeld) {
++      __cdHeld = !1;
 +      __crStop();
        z(a, e, !0);
        return;
@@ -1327,7 +1479,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        n = performance.now(),
        r = window.requestAnimationFrame(function i(o) {
          let s = GE(t, e, o - n);
-@@ -3843,27 +4259,24 @@
+@@ -3843,27 +4319,24 @@
      d = e(u),
      h = V(d, 2),
      g = (n) => {
@@ -1373,33 +1525,86 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, r));
      };
    (m(h, (e) => {
-@@ -3894,6 +4307,9 @@
+@@ -3893,6 +4366,12 @@
+         },
          get place() {
            return s(n);
-         },
++        },
 +        get animate() {
 +          return t.animate;
 +        },
++        get shown() {
++          return t.shown;
+         },
        });
      },
-   ),
-@@ -3920,6 +4336,9 @@
+@@ -3920,7 +4399,58 @@
    let a = C(r, `inverse`, 3, !1),
      o = R(WT),
      c = N(null),
+-    u = R(() => (s(c) === null ? null : rD(s(c)))),
 +    __cdVisible = N(!0),
 +    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
 +    __cdActive = R(() => r.active !== !1),
-     u = R(() => (s(c) === null ? null : rD(s(c)))),
++    /*countdown-faces: optional `shown` prop from the call site, false only while the clock is painted at opacity 0,
++    set in the frame that paints it*/
++    __cdShown = R(() => r.shown !== !1),
++    /*countdown-faces: the clock ticks only while a digit of it may be painted: on screen and active (it animates), or
++    shown (opacity > 0). Exactly when no digit is held in $E. Otherwise the interval is stopped: no timer fire, no
++    state write, no frame*/
++    __cdLive = R(() => (s(__cdVisible) && s(__cdActive)) || s(__cdShown)),
++    /*countdown-faces: the interval's phase (the original's k-th fire is due at __cdT0 + k s), its tick, timers*/
++    __cdT0 = 0,
++    __cdTick = null,
++    __cdTimer = 0,
++    __cdWait = 0,
++    __cdSlow = 0,
++    __cdStop = () => {
++      (window.clearTimeout(__cdWait),
++        window.clearInterval(__cdTimer),
++        window.clearInterval(__cdSlow),
++        (__cdWait = __cdTimer = __cdSlow = 0));
++    },
++    /*countdown-faces: while stopped, keep the timer's aria-label (and data-value) honest for a screen reader's virtual
++    cursor at low cost: the value of the original's last fire, once per 60 s and on focusin. The held digits are not
++    written ($E holds them), so this changes two attributes and nothing on screen*/
++    __cdRead = () => {
++      __cdTick && !__cdTimer && !__cdWait && z(c, __cdT0 + Math.floor((Date.now() - __cdT0) / 1e3) * 1e3, !0);
++    },
++    __cdPause = () => {
++      (__cdStop(), __cdTick && (__cdSlow = window.setInterval(__cdRead, 6e4)));
++    },
++    /*countdown-faces: back to live: the next fire at the original's phase, then every second as before*/
++    __cdGo = () => {
++      if (!__cdTick || __cdWait || __cdTimer) return;
++      (window.clearInterval(__cdSlow), (__cdSlow = 0));
++      let n = Date.now();
++      __cdWait = window.setTimeout(
++        () => {
++          ((__cdWait = 0), __cdTick(), (__cdTimer = window.setInterval(__cdTick, 1e3)));
++        },
++        __cdT0 + (Math.floor((n - __cdT0) / 1e3) + 1) * 1e3 - n,
++      );
++    },
++    /*countdown-faces: while live the clock reads the time of the original's last fire if the stored time is older (it
++    is only after a stop): the digits the original shows now, in the same update that makes the clock live again, so
++    the first painted frame already has them and nothing rolls through the skipped seconds. Between fires c is newer*/
++    u = R(() => {
++      let v = s(c);
++      return v === null
++        ? null
++        : rD(s(__cdLive) ? Math.max(v, __cdT0 + Math.floor((Date.now() - __cdT0) / 1e3) * 1e3) : v);
++    }),
      d = R(() => s(o).waitlist.units),
      p = R(
-@@ -3933,11 +4352,22 @@
+       () =>
+@@ -3933,14 +4463,34 @@
        z(c, Date.now(), !0);
      };
      e();
 -    let t = window.setInterval(e, 1e3);
-+    let t = window.setInterval(e, 1e3),
-+      /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++    ((__cdT0 = Date.now()), (__cdTick = e), s(__cdLive) ? (__cdTimer = window.setInterval(e, 1e3)) : __cdPause());
++    let /*countdown-idle-raf: digits spring only while the countdown is on screen*/
 +      __cdIo =
 +        typeof IntersectionObserver == `function`
 +          ? new IntersectionObserver(
@@ -1411,24 +1616,52 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          : null;
      return (
 +      __cdIo?.observe(h),
++      h.addEventListener(`focusin`, __cdRead),
        document.addEventListener(`visibilitychange`, e),
        () => {
 -        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
-+        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
++        (__cdStop(),
++          (__cdTick = null),
++          __cdIo?.disconnect(),
++          h.removeEventListener(`focusin`, __cdRead),
++          document.removeEventListener(`visibilitychange`, e));
        }
      );
    });
-@@ -3958,6 +4388,9 @@
++  /*countdown-faces: stop the interval when the clock goes out of sight, restart it at its phase when it comes back*/
++  b(() => {
++    s(__cdLive) ? __cdGo() : __cdPause();
++  });
+   var h = sD();
+   let g;
+   (_(
+@@ -3958,6 +4508,12 @@
                return s(u)[i];
              },
              padStart: i > 0,
 +            get animate() {
 +              return s(__cdVisible) && s(__cdActive);
 +            },
++            get shown() {
++              return s(__cdShown);
++            },
            });
          },
          p = (e) => {
-@@ -4160,6 +4593,118 @@
+@@ -4026,7 +4582,11 @@
+         ),
+         f(n, i));
+     },
+-    o = R(WT);
++    o = R(WT),
++    /*countdown-faces: false only while the hero countdown is painted fully transparent: --exit-opacity 0 on div.hero
++    (x; .hero-copy, which holds the countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))). Set in the
++    exit callback below, next to that write, so the frame that paints the clock again already has the target*/
++    __cdHeroShown = __cdState(!0);
+   function c(e) {
+     return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
+   }
+@@ -4160,15 +4720,131 @@
        i = 0,
        a = 0,
        o = !1,
@@ -1518,8 +1751,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        y > heTop + 30 && y < heEnd && heUp();
 +      },
 +      // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.
++      // v8 glue (countdown-faces x hero R2, F-235): live CSS mode runs s() only here and at park, so the hero clock is
++      // marked shown when going live (s() can compute r = 0 just under a stale heEnd after a toolbar step); heRest's s() sets it at park.
 +      heUp = () => {
-+        (i && window.cancelAnimationFrame(i), s(), b.classList.add(`he-css`), heRT());
++        (i && window.cancelAnimationFrame(i), s(), __cdSet(__cdHeroShown, !0), b.classList.add(`he-css`), heRT());
 +      },
 +      hePE = () => {
 +        x.style.pointerEvents = heIn || e.matches ? `` : `none`;
@@ -1546,8 +1781,21 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      },
        s = () => {
          if (((i = 0), e.matches)) {
-           (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
-@@ -4181,9 +4726,19 @@
+-          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
++          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``), __cdSet(__cdHeroShown, !0));
+           return;
+         }
+         let t = b.getBoundingClientRect(),
+           n = Math.max(1, t.height - window.innerHeight),
+           r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
+-        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
++        (x.style.setProperty(`--exit-opacity`, String(r)),
++          (x.style.pointerEvents = r < 0.05 ? `none` : ``),
++          __cdSet(__cdHeroShown, r > 0));
+       },
+       c = () => {
+         i ||= window.requestAnimationFrame(s);
+@@ -4181,9 +4857,19 @@
            window.clearTimeout(r),
            (r = 0),
            C.classList.add(`is-splash-done`),
@@ -1569,7 +1817,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          let t = e - a,
            r = O(t),
            i = j(t);
-@@ -4205,6 +4760,7 @@
+@@ -4205,6 +4891,7 @@
            window.clearTimeout(r),
            (r = 0),
            (o = !1),
@@ -1577,7 +1825,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            C.classList.add(`is-preparing`),
            x.classList.add(`is-preparing`),
            C.classList.remove(`is-splash-done`, `is-expanding`),
-@@ -4233,18 +4789,62 @@
+@@ -4233,18 +4920,62 @@
        };
      p();
      let h = () => {
@@ -1643,23 +1891,37 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            g());
        }
      );
-@@ -4689,12 +5289,29 @@
+@@ -4330,7 +5061,11 @@
+     be = e(ye, !0);
+   (M(ye), M(W));
+   var xe = V(W, 2);
+-  cD(xe, {});
++  cD(xe, {
++    get shown() {
++      return __cdGet(__cdHeroShown);
++    },
++  });
+   var Se = V(xe, 2),
+     Ce = e(Se),
+     we = e(Ce),
+@@ -4689,11 +5424,28 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
+-      n = () => {
+-        F &&= (window.clearInterval(F), 0);
 +      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
 +      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
 +      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
 +      fwOn = !1,
 +      fwT0 = 0,
-       n = () => {
--        F &&= (window.clearInterval(F), 0);
++      n = () => {
 +        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
        },
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-       },
++      },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1671,11 +1933,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-+      },
+       },
        i = new IntersectionObserver(
          ([e]) => {
-           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
-@@ -4726,10 +5343,15 @@
+@@ -4726,10 +5478,15 @@
          ((O = null), z(E, null));
        },
        d = () => {
@@ -1691,7 +1952,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        window.addEventListener(`pointermove`, l),
        window.addEventListener(`pointerup`, u),
        window.addEventListener(`pointercancel`, u));
-@@ -4740,6 +5362,7 @@
+@@ -4740,6 +5497,7 @@
          i.disconnect(),
          a.disconnect(),
          t.removeEventListener(`change`, c),
@@ -1699,7 +1960,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          window.removeEventListener(`pointermove`, l),
          window.removeEventListener(`pointerup`, u),
          window.removeEventListener(`pointercancel`, u),
-@@ -10776,11 +11399,14 @@
+@@ -10776,11 +11534,14 @@
      let t = ie(e);
      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
    }
@@ -1716,7 +1977,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    function le() {
      let e = window.innerHeight * 1.45,
-@@ -11249,7 +11875,7 @@
+@@ -11249,7 +12010,7 @@
  }
  g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
  var dM = h(
@@ -1725,7 +1986,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,12 +11920,95 @@
+@@ -11294,12 +12055,95 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -1821,7 +2082,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        l = () => {
          i = 0;
          let n = document.querySelector(`.hero-track`);
-@@ -11312,6 +12021,10 @@
+@@ -11312,6 +12156,10 @@
          if (g) {
            let t = T(g.getBoundingClientRect(), window.innerHeight),
              n = e.matches ? +(t >= 0.5) : w(t);
@@ -1832,7 +2093,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            ((o += (n - o) * (e.matches ? 1 : 0.22)),
              Math.abs(n - o) < 8e-4 && (o = n),
              h.style.setProperty(`--future-shrink`, String(o)),
-@@ -11325,7 +12038,7 @@
+@@ -11325,7 +12173,7 @@
          }
        },
        u = () => {
@@ -1841,7 +2102,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        f = (e) =>
          new Promise((t) => {
-@@ -11337,22 +12050,33 @@
+@@ -11337,22 +12185,33 @@
          }),
        p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
        m = (e) => {
@@ -1880,7 +2141,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              }
            }
        },
-@@ -11360,14 +12084,20 @@
+@@ -11360,14 +12219,20 @@
      return (
        e.addEventListener(`change`, u),
        t.addEventListener(`change`, u),
@@ -1902,7 +2163,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -11419,11 +12149,15 @@
+@@ -11419,11 +12284,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -1921,7 +2182,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        ),
          f(e, t));
      },
-@@ -11443,7 +12177,7 @@
+@@ -11443,7 +12312,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -1930,7 +2191,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(me));
    var ve = V(me, 2),
-@@ -11994,28 +12728,41 @@
+@@ -11994,28 +12863,41 @@
    ne(() => {
      let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
        t = 0,
@@ -1984,7 +2245,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                  a < 1 && (t = requestAnimationFrame(n)));
              };
            t = requestAnimationFrame(n);
-@@ -12197,14 +12944,9 @@
+@@ -12197,14 +13079,9 @@
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = !1,
        n = 0,
@@ -2001,7 +2262,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        i = () => {
          (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
-@@ -12243,26 +12985,16 @@
+@@ -12243,26 +13120,16 @@
          a = e(r),
          u = e(a),
          d = e(u),
@@ -2037,7 +2298,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13005,12 @@
+@@ -12273,8 +13140,12 @@
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
                "is-active": s(v),
              })),
@@ -2050,7 +2311,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(t, r));
      },
    );
-@@ -12433,21 +13169,28 @@
+@@ -12433,21 +13304,28 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -2081,7 +2342,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      };
    });
    var h = WM();
-@@ -12652,6 +13395,7 @@
+@@ -12652,6 +13530,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -2089,7 +2350,17 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, i));
      },
    ),
-@@ -12952,17 +13696,27 @@
+@@ -12945,6 +13824,9 @@
+     w = 0,
+     T,
+     E = R(() => s(x) > 0.001),
++    /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
++    JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
++    __cdPanelShown = R(() => JM(s(x)) > 0.08),
+     O = R(() => !s(p) && !s(E)),
+     A = R(() => s(O) || s(x) > 0.55);
+   function j(e) {
+@@ -12952,17 +13834,27 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -2123,7 +2394,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12999,7 +13753,7 @@
+@@ -12999,7 +13891,7 @@
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
      let _ = () => {
          (z(v, ee(), !0), z(g, F(), !0));
@@ -2132,7 +2403,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13771,105 @@
+@@ -13017,13 +13909,179 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2175,6 +2446,37 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      __msTO = 0,
 +      __msV = 0,
 +      __msT = 0,
++      // rev 7: a fast short flick that barely moved the page before lift-off has no known speed: the first scroll frame
++      // after a rest has no fresh previous sample, so rev 6 read it as v = 0 and committed with q = p, sending a flick
++      // from closed back to closed (and from open back to open); and one or two touch frames under-read a short flick's
++      // speed. Now __msVk counts fresh samples since the last rest or touchstart (the first one seeds v instead of
++      // averaging with 0), __msDy keeps the last move, and a lift while the page moves is a flick that goes where it
++      // points (>= 0.3 px/ms, or one fresh move of >= 3 px), like a paging UIScrollView; a slow or held release decides on
++      // the look-ahead as before. A lift at rest at an end (nothing to commit) lets the first glide frame with a known
++      // speed decide (__msLift 2). A fast glide (|v| >= 0.5) whose look-ahead passes the end it is heading for (q >= 1
++      // opening, q <= 0 closing) keeps the iOS momentum (no scrollTo); if it stops short, the slow-tick rule or the 200 ms
++      // rest timer still commits.
++      __msVk = 0,
++      __msDy = 0,
++      // rev 7b (the user's own fast short swipes, C-049): (1) the page scrolls only after the touchend (async
++      // scrolling), so at lift-off a flick looks like a page at rest, and at an end with Safari's toolbar shown the
++      // page rests 40 px (p 0.95 / 0.05) off the end, where the position rule sent a close flick back to open. Now the
++      // finger itself is read (passive touchmove: __msFv px/ms, + = finger up = opening): a finger still moving at
++      // lift-off (last move < 50 ms before the touchend, >= 0.3 px/ms) commits in its direction when that end is >= 0.1
++      // away (a flick out of the extra screen, or toward the end it is at, is left to the rules below). (2) a commit is
++      // kept (__msWant: 1 open, 0 closed, -1 none; for 1.5 s or until reached, cleared at touchstart, so a later
++      // scripted or link scroll is never pulled back): when the scroll comes to rest short of it (on the phone
++      // something knocked the smooth scroll back while the toolbar moved, cause UNRESOLVED), the rest timer aims at it
++      // again (2 tries) instead of deciding anew from the position. (3) a flick's direction is the sign of the smoothed
++      // speed, not of the last frame's step. A finger move > 50 ms after the previous one starts a new finger speed.
++      __msFy = 0,
++      __msFt = 0,
++      __msFv = 0,
++      __msFn = 0,
++      __msFl = 0,
++      __msWant = -1,
++      __msWt = 0,
++      __msTry = 0,
 +      __msLift = 0,
 +      __msGo = 0,
 +      __msArm = () => {
@@ -2188,17 +2490,52 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          // decide on where the momentum would take the scroll: + 500 ms of travel at the current speed (iOS momentum
 +          // travels about v x 500 ms: UIScrollView normal deceleration 0.998/ms; rev 4 G records 340-640 ms), so a
 +          // quick flick up at 0.28 opens and a slow pull from open to 0.75 closes; a stale speed (> 100 ms old) counts as 0
-+          q = t > 0 && performance.now() - __msT < 100 ? e + (500 * __msV) / t : e;
-+        e > 0.002 &&
-+          e < 0.998 &&
-+          ((__msGo = 1),
-+          window.scrollTo({ top: q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` }));
++          // f: the page is moving now; k: a flick (>= 0.3 px/ms, or one fresh move of >= 3 px whose speed is not known
++          // yet) goes where it points, like a paging UIScrollView; a slow or held release decides on the look-ahead q
++          f = t > 0 && performance.now() - __msT < 100,
++          k = f && (__msVk ? Math.abs(__msV) >= 0.3 : Math.abs(__msDy) >= 3),
++          q = f && __msVk ? e + (500 * __msV) / t : e,
++          o = k ? (__msVk ? __msV > 0 : __msDir > 0) : q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5),
++          go = (w) => ((__msWant = w ? 1 : 0), (__msWt = performance.now()), (__msGo = 1), window.scrollTo({ top: w ? n : n - t, behavior: `smooth` }));
++        if (!(t > 0)) return;
++        // a kept commit (for 1.5 s, until reached): aim at it again if the scroll came to rest short of it (2 tries).
++        // At or past the end counts as reached: Safari's toolbar showing during a close moves the closed rest 40 px
++        // (p -0.05, still closed), and re-aiming there scrolled the page back 40 px (+0.5 s, rev 7b G run f8a).
++        if (__msWant >= 0 && performance.now() - __msWt < 1500) {
++          if (__msWant ? window.scrollY >= n - 2 : window.scrollY <= n - t + 2) return void (__msWant = -1);
++          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
++        }
++        __msWant = -1;
++        // the finger was still moving at lift-off: go where it points
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1) && ((__msLift = 0), go(__msFl > 0)));
++        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
 +      },
 +      __msTouchEv = (e) => {
++        let c = e.changedTouches && e.changedTouches[0],
++          s = e.timeStamp;
++        if (e.type === `touchmove`)
++          // a move > 50 ms after the last one (the finger was still) starts a new speed instead of diluting it
++          return void (
++            c &&
++            s > __msFt &&
++            (s - __msFt > 50
++              ? ((__msFv = 0), (__msFn = 0))
++              : ((__msFv = (__msFn ? 0.5 * __msFv : 0) + ((__msFn ? 0.5 : 1) * (__msFy - c.clientY)) / Math.max(1, s - __msFt)), __msFn++),
++            (__msFy = c.clientY),
++            (__msFt = s))
++          );
 +        ((__msTouch = e.touches.length),
 +          __msTouch
-+            ? (window.clearTimeout(__msTO), (__msLift = 0), (__msGo = 0))
-+            : ((__msLift = 1), __msArm(), __msSettle()));
++            ? (window.clearTimeout(__msTO),
++              (__msLift = 0),
++              (__msGo = 0),
++              e.type === `touchstart` &&
++                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = c.clientY), (__msFt = s))))
++            : (__msArm(),
++              (__msLift = 2),
++              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
++              __msSettle(),
++              (__msFl = 0)));
 +      },
 +      __msTick = () => {
 +        if (!__msEnd) return;
@@ -2207,10 +2544,18 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        (y !== __msY &&
 +          (__msY >= 0 &&
 +            ((__msDir = y > __msY ? 1 : -1),
-+            (__msV = now - __msT < 100 ? 0.5 * __msV + (0.5 * (y - __msY)) / Math.max(1, now - __msT) : 0)),
++            (__msDy = y - __msY),
++            (now - __msT < 100
++              ? ((__msV = (__msVk ? 0.5 * __msV : 0) + ((__msVk ? 0.5 : 1) * (y - __msY)) / Math.max(1, now - __msT)), __msVk++)
++              : ((__msV = 0), (__msVk = 0)))),
 +          (__msY = y),
 +          (__msT = now)),
-+          __msTouch || (__msArm(), __msLift && Math.abs(__msV) < 0.5 && __msSettle()));
++          __msTouch ||
++            (__msArm(),
++            __msLift &&
++              __msVk &&
++              (__msLift > 1 || Math.abs(__msV) < 0.5) &&
++              ((__msLift = 1), __msSettle())));
 +        let t = __msEnd.offsetHeight,
 +          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
 +        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
@@ -2240,7 +2585,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +13891,9 @@
+@@ -13045,9 +14103,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2252,7 +2597,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +13901,58 @@
+@@ -13055,27 +14113,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2318,7 +2663,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +13963,60 @@
+@@ -13086,7 +14175,60 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2332,7 +2677,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      __msEnd.setAttribute(`aria-hidden`, `true`),
 +      R.after(__msEnd),
 +      // passive: they never block or delay the scroll; they only tell the settle when the finger is down
-+      [`touchstart`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
++      [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
 +      // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
 +      // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
 +      (__msRO = new ResizeObserver(() => {
@@ -2380,22 +2725,22 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,6 +14025,11 @@
+@@ -13095,10 +14237,50 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
 +          __msRO?.disconnect(),
 +          __msEnd?.remove(),
 +          window.clearTimeout(__msTO),
-+          [`touchstart`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
++          [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
 +          document.documentElement.classList.remove(`fw-ms`),
            P(),
            ne(),
            e.removeEventListener(`change`, m),
-@@ -13102,6 +14037,41 @@
-       }
-     );
-   });
+           t.removeEventListener(`change`, m));
++      }
++    );
++  });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -2428,13 +2773,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-+      }
-+    );
-+  });
-   var I = uN();
-   let L, te;
-   var B = e(I),
-@@ -13118,10 +14088,24 @@
+       }
+     );
+   });
+@@ -13118,10 +14300,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -2459,7 +2801,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14124,7 @@
+@@ -13140,7 +14336,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2468,7 +2810,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14141,13 @@
+@@ -13157,7 +14353,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2478,12 +2820,15 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        get active() {
 +          return s(E);
 +        },
++        get shown() {
++          return s(__cdPanelShown);
++        },
 +      }),
 +        M(h));
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14183,8 @@
+@@ -13193,7 +14398,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2493,7 +2838,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14201,7 @@
+@@ -13210,7 +14416,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2502,7 +2847,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13232,6 +14223,7 @@
+@@ -13232,6 +14438,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),
