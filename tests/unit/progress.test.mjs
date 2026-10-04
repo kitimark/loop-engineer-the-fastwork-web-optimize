@@ -163,8 +163,8 @@ test('I-116 parseLedger on fixes/PREDICTIONS.md: no result is a bare pipe or hol
 test('buildView: new ledger results are flagged, curated results win, sections, staleness, last 5 changes', () => {
   const v = P.buildView({ progress: sample(), ledger: P.parseLedger(LEDGER), live: {}, now: NOW });
   const testing = v.sections.find((s) => s.key === 'testing').items;
-  assert.deepEqual(testing.map((i) => i.id), ['hero-a', 'cdwc'], 'by area: hero before end');
-  const cdwc = testing[1];
+  assert.deepEqual(testing.map((i) => i.id), ['cdwc', 'hero-a'], 'no priority: furthest along first (V before F; T-112)');
+  const cdwc = testing[0];
   assert.deepEqual(cdwc.checks.map((c) => [c.id, c.result, c.newResult]), [['P-032', null, true], ['P-029', 'better', false]]);
   assert.equal(cdwc.attention, true);
   assert.equal(cdwc.felt.plain, 'you felt no difference');
@@ -496,4 +496,16 @@ test('validateProgress: build.since must equal the since of the version with "be
   // T-103 as it happened: the best flag moved to the newer version, the build block stayed on the older one
   const moved = withVersions(); delete moved.versions[1].best; delete moved.versions[2].landed; moved.versions[2].best = true;
   assert.match(P.validateProgress(moved).join('\n'), /build\.since: 2026-10-02T08:00:00Z, but the version with "best": true \(versions\[2\], "gpu"\) is since 2026-10-03T08:00:00Z/);
+});
+
+test('T-112 buildView: sections sort by the status board priority (unranked last), then stage, then area', () => {
+  const links = (m, state = 'working') => new Map(Object.entries(m).map(([id, priority]) => [id, { id: 's-' + id, state, plain: state, stale: false, waits: [], priority }]));
+  const ids = (statusLinks) => P.buildView({ progress: sample(), now: NOW, statusLinks }).sections.find((s) => s.key === 'testing').items.map((i) => i.id);
+  assert.deepEqual(ids(links({ 'hero-a': 1, cdwc: 2 })), ['hero-a', 'cdwc'], 'priority 1 first although less far along');
+  assert.deepEqual(ids(links({ 'hero-a': 3 })), ['hero-a', 'cdwc'], 'ranked before unranked');
+  assert.deepEqual(ids(links({ 'hero-a': null, cdwc: null })), ['cdwc', 'hero-a'], 'both unranked: furthest along first');
+  assert.deepEqual(ids(links({ 'hero-a': 1 }, 'landed')), ['cdwc', 'hero-a'], 'a landed row\'s old rank does not count');
+  assert.deepEqual(ids(links({ 'hero-a': 1 }, 'done')), ['cdwc', 'hero-a'], 'nor a done row\'s');
+  const two = sample(); two.items.find((i) => i.id === 'hero-a').stage = 'V';
+  assert.deepEqual(P.buildView({ progress: two, now: NOW }).sections.find((s) => s.key === 'testing').items.map((i) => i.id), ['hero-a', 'cdwc'], 'same stage: by area, hero before end');
 });

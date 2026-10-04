@@ -700,12 +700,17 @@ export async function probePorts(ports, { host = '127.0.0.1', timeoutMs = 300 } 
  * The page / CLI model from the curated data and the live sources. Pure: every input passed in.
  * {now, summary, goal, complaints, changes, live, sections: [{key, label, items}], upcoming, waiting}
  */
+const FINISHED_ROW = new Set(['landed', 'done', 'dropped']); // status board states that no longer rank (T-112)
+
 export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists, lan = resolveLanUrl, versionPorts = new Map() } = {}) {
   const p = errors.length && !progress ? null : progress;
   const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
-  const byArea = (a, b) => areaRank(a.area) - areaRank(b.area) || b.stage.index - a.stage.index;
-  const pick = (states) => items.filter((i) => states.includes(i.state)).sort(byArea);
+  // user T-112: the lead's priority first (status board, 1 = first, unranked last), then the furthest along, then by area
+  // a finished row (landed, done, dropped) keeps its old rank on the board: it no longer orders live work
+  const prio = (i) => (Number.isInteger(i.status?.priority) && !FINISHED_ROW.has(i.status.state) ? i.status.priority : Infinity);
+  const byPriority = (a, b) => prio(a) - prio(b) || b.stage.index - a.stage.index || areaRank(a.area) - areaRank(b.area);
+  const pick = (states) => items.filter((i) => states.includes(i.state)).sort(byPriority);
   const ageMin = p?.updatedAt ? Math.round((now - Date.parse(p.updatedAt)) / 60000) : null;
   const inc = (live.incidents || []).map((i) => ({ id: i.id, title: sanitize(i.title, 160), blocking: !!i.blocking }));
   return {

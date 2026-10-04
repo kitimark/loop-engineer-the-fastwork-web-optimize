@@ -352,7 +352,10 @@ test('seedPlan/applySeed: active PROGRESS items + a seed file; dry run writes no
 test('progressLinks: a PROGRESS item id maps to its workstream\'s live state', () => {
   const v = S.buildStatusView({ items: [{ id: 'st5', title: 'st5', kind: 'fix', owner: 'fix-a', state: 'measuring', progress: 'hero-carousel', updatedAt: new Date().toISOString(), waitingOn: { kind: 'chrome' } }], live: {} });
   const m = S.progressLinks(v);
-  assert.deepEqual(m.get('hero-carousel'), { id: 'st5', state: 'measuring', plain: 'measuring it on Chrome or the phone', stale: false, waits: ['waiting on the Chrome slot'] });
+  assert.deepEqual(m.get('hero-carousel'), { id: 'st5', state: 'measuring', plain: 'measuring it on Chrome or the phone', stale: false, priority: null, waits: ['waiting on the Chrome slot'] });
+  // T-112: the lead's priority rides along, so /progress can sort by it
+  const r = S.buildStatusView({ items: [{ id: 'st6', title: 'st6', kind: 'fix', owner: 'fix-a', state: 'measuring', priority: 2, progress: 'hero-x', updatedAt: new Date().toISOString() }], live: {} });
+  assert.equal(S.progressLinks(r).get('hero-x').priority, 2);
 });
 
 // I-108 (user T-060 #3 "a lot of out dated status"; audit T-060 #6). (1) A plain thread-wait listener is not a wait on

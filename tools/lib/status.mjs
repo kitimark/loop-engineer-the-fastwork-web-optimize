@@ -585,7 +585,7 @@ export function progressLinks(view) {
     const [best, ...rest] = list.sort((a, b) => a.rank - b.rank); // stable: the board's order within a rank
     const v = best.v;
     const link = {
-      id: v.id, state: v.state, plain: v.statePlain, stale: v.stale,
+      id: v.id, state: v.state, plain: v.statePlain, stale: v.stale, priority: v.priority ?? null, // T-112: /progress sorts by it
       waits: [...(v.waiting ? [`waiting on ${v.waiting.plain}`] : []), ...v.derived.filter((d) => d.kind !== 'listen').map((d) => d.plain)], // I-108: a listener is no wait
     };
     if (rest.length) link.also = rest.map((r) => ({ id: r.v.id, title: r.v.title }));
