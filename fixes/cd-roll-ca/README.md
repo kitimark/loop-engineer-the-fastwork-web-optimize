@@ -1619,6 +1619,48 @@ caveat (tool, OBSERVED in our setup, cause unknown): in window S there are about
 next: step 3 (Simulator, sim-rollstart 01351e543210, shared simulator slots), then the T-096 write-up.
 ```
 
+### T-096 step 3 result: Simulator (WebKit Timeline) counts, A (C8) vs B (V9) (2026-10-04 13:20-13:39Z)
+
+```
+RESULT T-096 step 3 · lead OK to run now (13:1xZ) · 3 shared simulator slots, one round each: "C8,V9,C8" (A B A2),
+  "V9,C8,C8" (B A2 A), "C8,C8,V9" (A2 A B), 1 rep, functional session, Timeline on in every arm, window 21 s at y 0,
+  9 loads, 0 VOID (served JS/CSS hashes checked per arm) · sim-rollstart 01351e543210, tools/sim.mjs 248931edf42d,
+  tools/lib/sim.mjs 7167d5e8a297 (as the addendum) · counts only, no Simulator time judged (F-084)
+data: out/cd-roll-ca/rollstart/rollstart-2026-10-04T13-{24,29,39}*.json (gitignored); per-load summary
+  fixes/cd-roll-ca/t096-step3-summary.json (fixes/cd-roll-ca/t096-agg3.mjs; the C8 rows of a round are labelled A/A2
+  by position). Same statistic as step 2: d = med(B) - med(A), s = max over rounds |A_i - A2_i|.
+ticks: 21 stamped per load in every arm (2-3 "long" carries, 18-19 one-digit); B samples 4 animated cells per tick,
+  144 keyframes per animation, 576 per tick (A: no Web Animations).
+whole window (21 s): RenderingFrame records A 1139 1122 1126 | A2 1136 1126 1113 | B 1055 1006 1051 -> d -75, s 13:
+  DIFFERS (about 3.6 fewer web-process rendering frames per roll on B). LayerTree changes 1 per load on every arm
+  (the Simulator sends no per-roll layer events here; no reading).
+roll start (H4): the tick's own task is a RenderingFrame in every load (one A2 load also had a TimerFire one), per load
+  summed over its 21 ticks:
+  RecalculateStyles in the tick's frame A 21 15 18 | A2 16 18 16 | B 40 40 41 -> d +22, s 5: DIFFERS (about 2 style
+     passes per tick on B, about 0.8 on A)
+  Layout in the tick's frame A 15 14 14 | B 15 14 15 -> d +1, s 1: no difference
+next frames (the first 4 RenderingFrames after the tick's task):
+  frame 1: Paint A 30 29 32 | A2 32 29 29 | B 28 37 24 -> d -2, s 3: no difference; cell-sized Paint d -2, s 3: no;
+     RecalculateStyles A 21 21 21 | B 17 18 19 -> d -3, s 1: fewer on B; Layout and Composite the same (14-16, 21)
+  frame 2: Paint A 21 23 24 | A2 19 23 19 | B 15 21 14 -> d -8, s 5: fewer on B; cell-sized Paint A 16 18 19 | B 10 11 9
+     -> d -8, s 5: fewer on B; RecalculateStyles d -3, s 1: fewer on B
+  frames 1-4 summed: Paint d -6, s 15; RecalculateStyles d -10, s 20 (one A2 load 105): no difference
+  FireAnimationFrame in frames 1-4: A 100 92 100 | B 6 6 6 (expected: the spring is gone)
+outcome (rules as registered):
+  H4 HOLDS in the Simulator: B's roll-start frame has work A lacks, one extra style pass per tick (40 vs 18 per 21
+     ticks, beyond s 5), the per-cell animations starting (576 keyframes per tick); no extra layout. Chrome showed no
+     such difference (step 2: 1 UpdateLayoutTree per roll start on every arm). Which part of that pass dominates on the
+     device (keyframe count, animation start, backing) stays open: per the card, at most one phone attribution
+     ticket (Timeline on, protocol §5.2), registered through ops before any data, and only if the lead asks.
+     P(H4) 0.85 stays out of the tally.
+  H1's Simulator reading (stated before data: fewer RenderingFrame records on B) is seen: -75 per 21 s, beyond s 13.
+     The registered H1 rule is the Chrome one (step 2: not held as worded); this does not change that score.
+  F-229 on WebKit: at y 0 the web process still makes about 50 RenderingFrames per second on B with 6 rAF callbacks per
+     84 frames after ticks, so the rAF-less main-thread frames of step 2 have a WebKit twin (Simulator, OBSERVED).
+link to K (P-102): K writes the same spring as fewer quadratic keyframes; whether the extra roll-start style pass
+  shrinks with the keyframe count is not tested here (not registered).
+```
+
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
 
 ```
