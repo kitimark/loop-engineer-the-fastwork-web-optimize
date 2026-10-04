@@ -14,6 +14,8 @@ registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's s
 - **Un-parked (2026-10-04 03:57Z):** the user accepted PR-014, option **keep** (final). The landing basis is the
   less-work rule: the cost counts plus one short iPhone no-worse check, **P-094** (ticket below, phone queue place 5).
   No finger test.
+- **P-094 phone no-worse: hit** (2026-10-04 08:36Z). C n 4, V n 4, at real Serious. The median of frames > 50 ms is
+  Δ 0, not threshold-sensitive; frames > 34 ms is Δ +1, inside [-1, +1]. See "P-094 result" below. **Ready to land.**
 **Stage:** F, stopped; D card registered below (P-078 → P-080 → P-083 → P-084, v4 last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
@@ -982,6 +984,41 @@ queue: phone-queue place 5 (lead), after P-093 (cd-roll-ca).
   - `sh fixes/rest-script/phone/serve.sh` before the lease comes.
   - Waits carry --owner fix-rest-script.
 ```
+
+### P-094 result (2026-10-04 06:30-08:36Z): **hit**, no worse on the phone
+
+Verdict: **hit**. The ticket's gate passed on the iPhone at real Serious. V (st6-rb2 + rest-script v4) has no more
+long frames than C (st6-rb2) in the timed window.
+
+| timed window, median per run | C (n 4) | V (n 4) | V − C | rule | result |
+|---|---|---|---|---|---|
+| frames > 50 ms | 0 | 0 | 0 | ≥ +2 falsifies | hit |
+| twins > 46 / > 54 ms | 0 / 0 | 0 / 0 | 0 / 0 | decide threshold-sensitivity | not sensitive |
+| frames > 34 ms | 3 | 4 | +1 | in [-1, +1] | in (twins > 30 / > 38: 0 / 0, in) |
+
+- Descriptive phases, no gate: idle Δ 0 everywhere; scroll Δ frames −0.5, > 34 +0.5; hold Δ > 34 +0.5.
+- Valid counted runs: C4 C5 C8 C9 and V2 V3 V6 V7, about 1176 frames each. The row top (tops) is 2102 in every run.
+- Scorer `score.mjs` sha256 4cbaf2b72219 (unchanged since the ticket). The output is
+  `out/rest-script/p094/score.json` (5a96f016d1f7, local), and the block log is `out/rest-script/p094/block.log`.
+
+Holds, each with a pre-warm on B, a start and an end gate, and the I-098 pmcheck:
+
+| hold | time (Z) | items | gates (state, induced, battery) | result |
+|---|---|---|---|---|
+| H1 | 06:35-06:40 | wC wV C1 V2 | Serious, No, 39.3 °C, both | VALID; **C1 void**: sentinel bottom 57.7 fps < 58 (scroll 58.1). It was the first C, so it voids only itself |
+| H2 | 08:08-08:13 | V3 C4 C5 V6 | Serious, No, 39.3 → 39.1 °C | VALID; C4 and C5 sentinels pass |
+| H3 | 08:18-08:21 | V7, then failed at C8 | Serious, No, 39.4 °C | **VOID**: the iPhone's USB link dropped (`fetch failed`, I-127). Files kept in `out/rest-script/p094/void-H3/`, not scored |
+| H3 re-run | 08:31-08:36 | V7 C8 C9 | Serious, No, 41.9 → 41.3 °C | VALID; C9 is the ticket's re-run of C1, within the one extra quartet |
+
+Deviations from the ticket, all before scoring:
+- **Hand-over pre-warms.** T-058: three uncounted W runs on B under the lease, outside a hold (06:31-06:35Z), while
+  H1 waited for chrome-measure. A fourth at 08:03Z was refused (WAIT) because another agent's no-timing hold was
+  running.
+- **The phone left mid-block twice.**
+  - 06:40-08:02Z: the user's swipe tests went first (T-078, user steps first). H1 had already ended VALID.
+  - 08:20-08:31Z: I-127. The lead says the user had not unplugged the phone; the cause is unknown.
+  The battery started H3's re-run 2.5 °C warmer than H1/H2. It stayed Serious, not induced, under the 44 °C ceiling.
+- **C1's re-run is labelled C9**, appended at the block end, so the voided `rs-C1.json` stays on disk for re-scoring.
 
 ## Why it lags
 
