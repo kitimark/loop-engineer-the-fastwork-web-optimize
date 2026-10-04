@@ -179,7 +179,7 @@ export function worktrees(mainRoot) {
   return list;
 }
 /** Topics a worktree works on: fixes/<t>/overlay present there, or fixes|research/<t>/ changed on its branch. */
-function worktreeTopics(w, mainRoot, mainRef) {
+export function worktreeTopics(w, mainRoot, mainRef) {
   const t = new Set();
   try { for (const d of readdirSync(join(w.path, 'fixes'))) if (isDir(join(w.path, 'fixes', d, 'overlay'))) t.add(d); } catch {}
   if (w.head) {
@@ -194,7 +194,7 @@ export function ownCommits(mainRoot, branch) {
   const out = git(mainRoot, 'reflog', 'show', '--format=%gs', `refs/heads/${branch}`, '--');
   return out ? out.split('\n').filter((l) => /^(commit( \([a-z]+\))?|cherry-pick):/.test(l)).length : 0;
 }
-function boardRowsFor(topics, rows) {
+export function boardRowsFor(topics, rows) {
   const keys = new Set(topics.flatMap((t) => [t, `fix-${t}`]));
   return rows.filter((r) => keys.has(r.id) || keys.has(r.owner) || (r.aliases || []).some((a) => keys.has(a)));
 }
@@ -229,6 +229,98 @@ export function validateManifest(m) {
     if (!it.why) p.push(`items[${i}].why missing (what claim or proposal it backs)`);
   }
   return p;
+}
+
+// ---- writers and citations (I-124) ------------------------------------------------------------------------
+/**
+ * Who writes what under out/ (path relative to the checkout's out/, first match wins). `regen`: true = scratch a tool
+ * or probe can make again (a deletion candidate when nothing cites it and its owner is finished); false = keep (a phone
+ * record or screen recording can't be made again, certs and Try-it pages are in use); null = unknown (listed, ask the
+ * owner, never in the deletion block). Chrome profiles are classified by the profile section (status), not here.
+ */
+export const WRITERS = [
+  { re: /^certs(\/|$)/, writer: 'TLS certs (serve.mjs --https; the phone trusts them)', regen: false },
+  { re: /^tryit(\/|$)/, writer: 'proposal Try-it builds (lead)', regen: false },
+  { re: /^snapshots(\/|$)/, writer: 'immutable build copies for phone blocks (lead)', regen: false },
+  { re: /^iphone-screen(\/|$)|\.mov$/, writer: 'ioscap screen recordings', regen: false },
+  { re: /^iphone(\/|$)|(^|\/)[^/]*-(?:run|gesture|finger)-[^/]*\.json$/, writer: 'phone run records (iphone.mjs, gesture)', regen: false },
+  { re: /^ioscap(\/|$)/, writer: 'ioscap app build', regen: true },
+  { re: /^ab(\/|$)/, writer: 'fix.mjs ab raw runs (results.json is the committed record)', regen: true },
+  { re: /^check(\/|$)/, writer: 'fix.mjs check / check.mjs', regen: true },
+  { re: /^bench(\/|$)/, writer: 'bench.mjs runs and overlays', regen: true },
+  { re: /^verify[^/]*(\/|$)/, writer: 'verify.mjs output', regen: true },
+  { re: /^sim(\/|$)/, writer: 'sim.mjs shots and runs', regen: true },
+  { re: /^costcard(\/|$)|(^|\/)costcard[^/]*$/, writer: 'costcard.mjs', regen: true },
+  { re: /(^|\/)simpx(\/|$)/, writer: 'simpx Simulator screenshots', regen: true },
+  { re: /(^|\/)[^/]*pixels?[^/]*(\/|$)/, writer: 'pixel runs (frames)', regen: true },
+  { re: /(^|\/)chrome(-fn|-profile[^/]*)?(\/|$)/, writer: 'Chrome profiles', regen: true },
+  { re: /(^|\/)snap(\/|$)/, writer: 'topic build copies (snap)', regen: true },
+  { re: /\.(log|txt)$/, writer: 'logs', regen: true },
+  { re: /(^|\/)serve-[^/]*\.json$/, writer: 'serve state files', regen: true },
+];
+/** {writer, regen} for a path relative to out/. */
+export function writerOf(relInOut) {
+  const p = String(relInOut).split(sep).join('/');
+  for (const w of WRITERS) if (w.re.test(p)) return { writer: w.writer, regen: w.regen };
+  return { writer: `topic output (${p.split('/')[0]})`, regen: null };
+}
+
+// a path to out/... in committed text: preceded by a start or a non-name char (so "layout/x" is no hit)
+const CITE_RE = '(^|[^A-Za-z0-9_.-])out/[A-Za-z0-9_.@+=:,-]+(/[A-Za-z0-9_.@+=:,-]+)*';
+/**
+ * Paths under out/ that committed write-ups cite: `git grep` over fixes/ and research/ (*.md, *.json, *.tsv, *.csv) at
+ * every ref in `refs` (main plus each unlanded branch head). Returns Map "out/..." -> [citing files] (deduplicated).
+ * Conservative on purpose: a citation in any checkout's text keeps that path in every checkout.
+ */
+export function citations(root, refs) {
+  const out = new Map();
+  for (const ref of [...new Set(refs.filter(Boolean))]) {
+    const r = spawnSync('git', ['grep', '-I', '-o', '-E', CITE_RE, ref, '--', 'fixes/*.md', 'fixes/*.json', 'fixes/*.tsv', 'fixes/*.csv', 'research/*.md', 'research/*.json', 'research/*.tsv', 'research/*.csv'], { cwd: root, encoding: 'utf8', timeout: 60000, maxBuffer: 256 * 1024 * 1024 });
+    for (const l of (r.stdout || '').split('\n')) {
+      const m = l.match(/^[^:]+:([^:]+):(.*)$/);
+      if (!m) continue;
+      const path = m[2].replace(/^[^o]*(?=out\/)/, '').replace(/[.,:]+$/, '').replace(/\/+$/, '');
+      if (!path.startsWith('out/') || path === 'out/') continue;
+      const s = out.get(path) || new Set(); s.add(m[1]); out.set(path, s);
+    }
+  }
+  return new Map([...out].map(([k, v]) => [k, [...v].sort()]));
+}
+/** The citing files of `rel` ("out/..."): a citation of it, of a path inside it, or of a folder holding it. */
+export function citedBy(rel, cites) {
+  const files = new Set();
+  for (const [c, fs] of cites) if (c === rel || c.startsWith(rel + '/') || rel.startsWith(c + '/')) for (const f of fs) files.add(f);
+  return [...files].sort();
+}
+const citedInside = (rel, cites) => { for (const c of cites.keys()) if (c.startsWith(rel + '/')) return true; return false; };
+
+/**
+ * The items of one checkout's out/: its entries, split further where something must stay (a citation or a Chrome
+ * profile lies inside), down to `maxDepth` levels, so the items partition out/ and each one is kept or not as a whole.
+ * Returns [{path, rel ("out/..."), relInOut}].
+ */
+export function outItems(checkout, { cites = new Map(), profiles = [], maxDepth = 5 } = {}) {
+  const outDir = join(checkout, 'out');
+  const items = [];
+  const profileInside = (d) => profiles.some((p) => p.startsWith(d + sep));
+  const walk = (d, n) => {
+    let es = []; try { es = readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of es) {
+      const p = join(d, e.name);
+      const relInOut = relative(outDir, p).split(sep).join('/');
+      const rel = `out/${relInOut}`;
+      if (e.isDirectory() && !e.isSymbolicLink() && n > 0 && !profiles.includes(p) && (citedInside(rel, cites) || profileInside(p))) walk(p, n - 1);
+      else items.push({ path: p, rel, relInOut });
+    }
+  };
+  if (isDir(outDir)) walk(outDir, maxDepth);
+  return items;
+}
+/** Uncommitted changes outside out/ (git status --porcelain): [] = clean, null = unknown. */
+export function dirtyOutsideOut(wt) {
+  const s = git(wt, 'status', '--porcelain', '--untracked-files=normal');
+  if (s === null) return null;
+  return s.split('\n').filter(Boolean).filter((l) => { const f = l.slice(3).replace(/^"|"$/g, ''); return !/^out(\/|$)/.test(f) && !/^fixes\/[^/]+\/overlay(\/|$)/.test(f); });
 }
 
 // ---- scratch ----------------------------------------------------------------------------------------------
@@ -282,7 +374,15 @@ export function buildReport(opts) {
   const wtOut = wts.filter((w) => !w.main).map((w) => ({ w, out: join(w.path, 'out') })).filter((x) => isDir(x.out));
   const mainOut = join(mainRoot, 'out');
   const scratchEntries = scratchRoots.flatMap((r) => { let es = []; try { es = readdirSync(r); } catch {} return es.map((e) => join(r, e)); });
-  const sizes = duBytes([...profDirs, ...wtOut.map((x) => x.out), ...(isDir(mainOut) ? [mainOut] : []), ...scratchEntries, ...evItems.filter((i) => i.resolved).map((i) => i.resolved)]);
+  // I-124: what committed write-ups cite (main, and each branch head main does not contain) plus the evidence manifests;
+  // the out/ items of every checkout split down to what must stay; one du over all of them (items partition each out/)
+  const heads = wts.filter((w) => !w.main && w.head && git(mainRoot, 'merge-base', '--is-ancestor', w.head, mainRef) === null).map((w) => w.head);
+  const cites = opts.cites ?? citations(mainRoot, [mainRef, ...heads]);
+  for (const i of evItems) if (/^out\//.test(i.path)) { const k = i.path.replace(/\/+$/, ''); const f = relative(mainRoot, i.manifest); cites.set(k, [...new Set([...(cites.get(k) || []), f])].sort()); }
+  const outOf = new Map(wts.map((w) => [w.path, outItems(w.path, { cites, profiles: profDirs })]));
+  const allItems = [...outOf.values()].flat();
+  const sizes = duBytes([...profDirs, ...allItems.map((i) => i.path), ...scratchEntries, ...evItems.filter((i) => i.resolved).map((i) => i.resolved)]);
+  const outBytes = (w) => (outOf.get(w) || []).reduce((s, i) => s + (sizes.get(i.path) || 0), 0);
   const evidenceIn = (p) => evItems.filter((i) => i.resolved && inside(i.resolved, p));
   const isEvidence = (p) => evItems.some((i) => i.resolved && inside(p, i.resolved));
 
@@ -315,7 +415,8 @@ export function buildReport(opts) {
     if (busyPids.length) why.push(`busy: ${[...new Set(busyPids)].length} process(es) run in it`);
     if (ev.length) why.push(`holds ${ev.length} evidence file(s): keep those`);
     const status = !finished ? 'active' : busyPids.length || recent ? 'check' : ev.length ? 'keep-evidence' : 'finished';
-    return { path: w.path, out, branch: w.branch, ahead, ownCommits: own, merged, topics, board, bytes: sizes.get(out) || 0, lastWrite: lastWrite ? new Date(lastWrite).toISOString() : null, busy: [...new Set(busyPids)], evidence: ev.length, status, note: why.join('; ') };
+    return { path: w.path, out, branch: w.branch, ahead, ownCommits: own, merged, topics, board, bytes: outBytes(w.path), lastWrite: lastWrite ? new Date(lastWrite).toISOString() : null, busy: [...new Set(busyPids)], evidence: ev.length, status, note: why.join('; '),
+      owner: busyPids.length || boardActive ? 'alive' : finished ? 'finished' : 'unknown', clean: merged && finished ? dirtyOutsideOut(w.path) : null };
   }).sort((a, b) => b.bytes - a.bytes);
 
   // a scratch folder is named after its agent (CLAUDE.md "Scratch files go in <scratchpad>/<your-topic>/"): its board
@@ -338,11 +439,32 @@ export function buildReport(opts) {
     m.missing = m.items.filter((i) => i.missing).length;
     m.fastworkDerived = m.items.filter((i) => i.fastworkDerived).length;
   }
+  // I-124: every out/ item with its writer, size, owner state (alive / finished / unknown, branch landed) and the
+  // committed files that cite it; what auto-clean may remove is decided by lib/space-prune.mjs (space.mjs prune)
+  const wtBy = new Map(worktreesOut.map((w) => [w.path, w]));
+  const profBy = new Map(profiles.map((p) => [p.path, p]));
+  const items = [];
+  for (const w of wts) for (const it of outOf.get(w.path) || []) {
+    const wt = wtBy.get(w.path);
+    const prof = profBy.get(it.path);
+    const { writer, regen } = prof ? { writer: `Chrome profile (${prof.status})`, regen: prof.status !== 'reused' && prof.status !== 'in-use' } : writerOf(it.relInOut);
+    const cited = citedBy(it.rel, cites);
+    const owner = w.main ? 'lead' : wt ? wt.owner : 'unknown';
+    const note = cited.length ? `cited by ${cited.slice(0, 3).join(', ')}${cited.length > 3 ? ` +${cited.length - 3}` : ''}`
+      : prof ? prof.note || prof.status : regen === false ? 'keep: not regenerable, or in use' : regen === null ? 'unknown writer: ask the owner' : 'regenerable';
+    items.push({ path: it.path, rel: it.rel, checkout: w.path, checkoutRel: w.main ? '.' : relative(mainRoot, w.path), branch: w.branch || null, main: !!w.main, owner, landed: wt ? wt.merged : null,
+      writer, regen, bytes: sizes.get(it.path) || 0, citedBy: cited, note });
+  }
+  items.sort((a, b) => b.bytes - a.bytes);
+  // landed, finished and clean outside out/: the worktree itself could go (git worktree remove); its out/ holds JSON, logs
+  // and records the user keeps as blog evidence (T-049 #27), so it is listed for the user, never removed by a tool
+  const landedClean = worktreesOut.filter((w) => w.merged && w.status === 'finished' && Array.isArray(w.clean) && !w.clean.length && !w.busy.length).map((w) => ({ path: w.path, branch: w.branch, bytes: w.bytes }));
   let free = null; try { free = freeSpace(mainRoot); } catch {}
   const sum = (xs) => xs.reduce((s, x) => s + x.bytes, 0);
   return {
     schema: 'fw-space-report/1', createdAt: new Date(now).toISOString(), readOnly: true, mainRoot, free, warnGb: warnGb(),
-    profiles, worktrees: worktreesOut, mainOut: isDir(mainOut) ? { path: mainOut, bytes: sizes.get(mainOut) || 0 } : null, scratch,
+    profiles, worktrees: worktreesOut, mainOut: isDir(mainOut) ? { path: mainOut, bytes: outBytes(mainRoot) } : null, scratch,
+    items, byWriter: groupBytes(items, (i) => i.writer), byCheckout: groupBytes(items, (i) => i.checkoutRel), landedClean, citationCount: cites.size,
     evidence: { manifests, items: evItems },
     totals: {
       leftoverProfiles: sum(profiles.filter((p) => p.status === 'leftover')), inUseProfiles: sum(profiles.filter((p) => p.status === 'in-use')), reusedProfiles: sum(profiles.filter((p) => p.status === 'reused')),
@@ -354,7 +476,23 @@ export function buildReport(opts) {
 }
 
 // ---- rendering --------------------------------------------------------------------------------------------
-const rel = (r, p) => { const x = relative(r.mainRoot, p); return x && !x.startsWith('..') ? x : p; };
+/** [{key, bytes, n}] summed by key(item), biggest first. */
+export function groupBytes(items, key) {
+  const m = new Map();
+  for (const i of items) { const k = key(i); const e = m.get(k) || { key: k, bytes: 0, n: 0 }; e.bytes += i.bytes; e.n++; m.set(k, e); }
+  return [...m.values()].sort((a, b) => b.bytes - a.bytes);
+}
+// I-124: printed paths are relative to the repo; a session scratchpad shows as <scratch>/<session>/..., the OS temp dir
+// as $TMPDIR/... (no home folder or user name on screen)
+const SCRATCH_BASE = /^\/private\/tmp\/claude-\d+\/[^/]+\//;
+export function showPath(r, p) {
+  const x = relative(r.mainRoot, p);
+  if (x && !x.startsWith('..') && !isAbsolute(x)) return x;
+  const t = tmpdir();
+  if (inside(p, t) || inside(p, real(t))) return `$TMPDIR/${relative(inside(p, t) ? t : real(t), p)}`;
+  return p.replace(SCRATCH_BASE, '<scratch>/');
+}
+const rel = showPath;
 const pad = (s, n) => String(s).padStart(n);
 export function renderText(r, { top = 12 } = {}) {
   const L = [];
@@ -382,11 +520,30 @@ export function renderText(r, { top = 12 } = {}) {
   for (const w of chk.slice(0, top)) L.push(`   ${pad(fmtSize(w.bytes), 8)}  ${rel(r, w.out)}  ${w.branch || ''}: ${w.note}`);
   L.push(`   active (not listed as candidates): ${act.length} = ${fmtSize(t.activeWorktreeOut)}${r.mainOut ? `; the main checkout's out/ (lead): ${fmtSize(r.mainOut.bytes)}` : ''}`);
   L.push('', `3. Scratch folders: idle ${r.scratch.filter((s) => s.status === 'idle').length} = ${fmtSize(t.scratchIdle)}; in use, active, recent or with evidence = ${fmtSize(t.scratchOther)}`);
-  for (const s of r.scratch.slice(0, top)) L.push(`   ${pad(fmtSize(s.bytes), 8)}  ${s.status.padEnd(13)} ${s.path}  ${s.note}`);
+  for (const s of r.scratch.slice(0, top)) L.push(`   ${pad(fmtSize(s.bytes), 8)}  ${s.status.padEnd(13)} ${showPath(r, s.path)}  ${s.note}`);
   const ms = r.evidence.manifests;
   L.push('', `4. Must-keep evidence (evidence.json manifests): ${ms.length} manifest(s), ${r.evidence.items.length} item(s), ${fmtSize(t.evidence)}`);
   for (const m of ms) L.push(`   ${pad(fmtSize(m.bytes), 8)}  ${m.topic}: ${m.items.length} item(s)${m.fastworkDerived ? `, ${m.fastworkDerived} Fastwork-derived (gitignored, never commit, MUST KEEP)` : ''}${m.missing ? `, ${m.missing} MISSING` : ''}${m.overCap ? `, OVER the ${m.capMB} MB cap` : ''}${m.problems.length ? `; manifest problems: ${m.problems.join('; ')}` : ''}  (${rel(r, m.file)})`);
   if (!ms.length) L.push('   none yet: see fixes/README.md "Evidence keep-list"');
+  // I-124: by writer, by checkout (owner alive or finished, branch landed), landed and clean worktrees
+  if (r.items) {
+    L.push('', `5. out/ by writer (every checkout; ${r.citationCount} cited path(s) in committed fixes/ and research/ text and evidence.json):`);
+    for (const g of r.byWriter.slice(0, top)) {
+      const cited = r.items.filter((i) => i.writer === g.key && i.citedBy.length).reduce((s, i) => s + i.bytes, 0);
+      L.push(`   ${pad(fmtSize(g.bytes), 8)}  ${pad(g.n, 4)} item(s)  ${g.key}${cited ? `  (${fmtSize(cited)} cited)` : ''}`);
+    }
+    if (r.byWriter.length > top) L.push(`   ... ${r.byWriter.length - top} more writer(s) in --json`);
+    L.push('', '6. out/ by checkout (owner: alive = a process runs in it or a board row is active; finished = landed or board done/dropped):');
+    const wtBy = new Map(r.worktrees.map((w) => [rel(r, w.path), w]));
+    for (const g of r.byCheckout.slice(0, top)) {
+      const w = wtBy.get(g.key);
+      const who = g.key === '.' ? 'main checkout (lead)' : w ? `${w.branch || '?'}: owner ${w.owner}, ${w.merged ? 'landed' : `${w.ahead ?? '?'} commit(s) not on main`}${w.board.length ? `, board ${w.board.map((b) => `${b.id} ${b.state}`).join(', ')}` : ''}` : '?';
+      L.push(`   ${pad(fmtSize(g.bytes), 8)}  ${g.key === '.' ? 'out/' : `${g.key}/out/`}  ${who}`);
+    }
+    if (r.byCheckout.length > top) L.push(`   ... ${r.byCheckout.length - top} more checkout(s) in --json`);
+    L.push('', `7. Landed, finished worktrees with nothing uncommitted outside out/: ${r.landedClean.length} = ${fmtSize(r.landedClean.reduce((s, w) => s + w.bytes, 0))} of out/ (its JSON, logs and records are blog evidence: the user decides, no tool removes a worktree)`);
+    for (const w of r.landedClean.slice(0, top)) L.push(`   ${pad(fmtSize(w.bytes), 8)}  ${rel(r, w.path)}  ${w.branch || ''}`);
+  }
   return L.join('\n');
 }
 /** The list file: one TSV line per path (category, status, bytes, size, path, note); review it before deleting anything. */

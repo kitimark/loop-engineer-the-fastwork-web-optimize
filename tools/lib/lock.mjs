@@ -116,6 +116,7 @@ import { THRESHOLDS, sample, quiet } from './host.mjs';
 import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
 import { warmSummary, reapWarm, reapWarmSync, reapNote, settleSec, gateReapMs } from './sim-warm.mjs';
 import { stepGrace } from './phone-step.mjs'; // I-123: an iphone lease does not run out under the user's step
+import { timingDiskRefusal } from './disk.mjs'; // I-124: no new timing hold on a nearly full disk
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -779,6 +780,18 @@ export async function tryAcquire(r, opts) {
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
     if (lane) return readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap: sw.cap, queueTtlSec, load1, ncpu, busyPct, T });
+    // I-124: no NEW timing hold of a gated resource on a nearly full disk (lib/disk.mjs, FW_TIMING_MIN_FREE_GB, default
+    // 8 GB). Re-entered holds returned above; shared, short and --no-timing holds and phone runs (meta.phoneRun, a `run` whose
+    // command is iphone.mjs scroll|record|run|gesture: the phone stamps its own frames) pass. The waiter leaves the queue (a
+    // DISK-LOW error, checked at every attempt), so the next waiter is served instead of waiting behind it.
+    if (GATED[r] && !short && !shared && !noTiming && !meta.phoneRun) {
+      const low = timingDiskRefusal(lockDir());
+      if (low) {
+        const k = q.findIndex((w) => w.owner === owner && !w.shared);
+        if (k >= 0) { q.splice(k, 1); writeJson(queueFile(r), q); }
+        throw new Error(`[lock ${r}] ${low}`);
+      }
+    }
     let mine = q.findIndex((w) => w.owner === owner && !w.shared);
     // the switch went off while this shared job waited as a reader: its reader entry becomes this entry, in place (N10)
     if (shared && mine < 0) mine = q.findIndex((w) => w.shared && sameWaiter(w, owner, kind, pid));
