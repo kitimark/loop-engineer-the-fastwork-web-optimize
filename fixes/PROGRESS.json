@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T06:14:00Z",
+ "updatedAt": "2026-10-04T06:17:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,7 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
-  { "at": "2026-10-04T06:14:00Z", "text": "The end-of-page morph on the graphics chip passed its phone check (P-092) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. One reported number goes to the lead before it lands. The phone is now on your blind swipe test of the menu fix." },
+  { "at": "2026-10-04T06:14:00Z", "text": "The end-of-page morph on the graphics chip passed its phone check (P-092) as not worse: no new slow frames. But the first frame of each morph is about 7 ms longer (62 vs 55 ms), so it stays out of the next best build until a revised version fixes that. Phone now: your menu-fix swipe test." },
   { "at": "2026-10-04T05:41:00Z", "text": "The hero's slimmer version (R2) passed its phone check (P-095) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. Next is your blind swipe test of it." },
   { "at": "2026-10-04T05:40:00Z", "text": "Your new order (T-073): GPU fixes first. Phone: hero check (P-095, running), end-of-page morph (P-092), your blind swipe test of the menu fix, countdown roll (P-093), resting avatar row (P-094). A GPU preview build with the three GPU fixes is being put together for you to try." },
   { "at": "2026-10-04T05:30:00Z", "text": "The menu-edge measurement (P-091) ended without an answer (VOID): its fixed scoring rule could not read 2 of the 4 reference runs. The lead ruled that the menu fix (F3) lands on its earlier phone evidence plus your blind swipe test, which comes right after the hero check on the phone." },
@@ -657,12 +657,12 @@
    "fixes": "When you push past the end of the page, the bottom panel's grow-and-fade runs as an animation on the graphics chip instead of script every frame.",
    "felt": { "answer": "not-yet", "text": "not tried by you yet" },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-092).",
-   "next": "The phone check passed on what it scores. The lead rules on one reported number (frames over 34 ms while the driver runs: better at 34 ms, equal at 30 and 38 ms), then the land request.",
+   "next": "Lead ruling: it lands as a record and stays in the GPU preview, labelled with the first-frame cost, but not in the next best build. Rev 2 prepares the clipping layer before the morph starts; its new phone check must show the first frame no more than 2 ms longer than today's best build.",
    "owner": "fix-morph-gpu",
-   "checks": [ { "id": "P-092", "what": "short phone check: no new slow frames during the end-of-page morph", "result": "Yes: at the phone's real heat state, no new slow frames during the morph (over 50 ms: 2 vs 2 per run; over 34 ms: 3.5 vs 5.5). 8 of 8 runs valid; ops re-score identical." } ],
+   "checks": [ { "id": "P-092", "what": "short phone check: no new slow frames during the end-of-page morph", "result": "Not worse: at the phone's real heat state, no new slow frames during the morph (over 50 ms: 2 vs 2 per run; over 34 ms within the normal range). Cost: the first frame of each morph is about 7 ms longer (60-64 vs 54-56 ms, in all 8 runs). 8 of 8 runs valid; ops re-score identical." } ],
    "details": [
     "P-092 registered 10-04 03:1xZ (55064128, frames-n2 f3a50b8ec2dd), N2 reveal, PR-012 row 5.",
-    "P-092 result 10-04 05:39-06:06Z (bce1eb48): 3 holds valid at Serious, S1/S2 pass, M sentinel 4/4; moving >50 d 0, >34 d -2, no-worse, not threshold-sensitive; drive >34 d -3.5 threshold-sensitive (to the lead). Reported: the 2 tween-start frames over 50 ms run longer in V (60-64 vs 54-56 ms)."
+    "P-092 result 10-04 05:39-06:06Z (bce1eb48): 3 holds valid at Serious, S1/S2 pass, M sentinel 4/4; moving >50 d 0, >34 d -2, no-worse, not threshold-sensitive; drive >34 d -3.5 threshold-sensitive, no gain claimed. Lead ruling 06:1xZ: PASS as no-worse; tween-start cost +7 ms (V 60-64 vs C 54-56, 8/8) is real, so morph-gpu lands as a record, stays in the GPU preview only; rev 2 (clip layer prepared before the tween) gets a ticket with falsifier V <= C + 2 ms."
    ]
   },
   {

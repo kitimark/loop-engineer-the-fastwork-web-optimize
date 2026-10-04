@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 06:0xZ** (mgmt-ops-10).
+**10-04 06:1xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 06:1xZ **P-092 closed** (ledger HIT, ops re-score identical; landed a41ac6d0). Lead ruling: PASS as no-worse, no gain claimed; tween-start +7 ms (V 60-64 vs C 54-56) is a real cost: morph-gpu lands as a record, stays in the GPU preview, NOT in the next best build; rev 2 (clip layer prepared before the tween) gets a ticket, falsifier V <= C + 2 ms, ops pre-data read. Desk wording: "not worse", never "fewer frames over 34 ms" for P-092. **P-096 freeze read** (d0ff57bd, tool hashes match): CHANGES C1 (line-base rule: text says fixed base 1 + only-other-base = UNRESOLVED; crossing-read detects the base per run); no rep before the re-read PASS. I-120 -> ts-i115 after I-116.
 - 10-04 06:0xZ Lead landed 7d067b1a (I-114 resolved: shared npm-test is now `--weight npm-test --max-seconds 480`), b410fc25 (I-108 follow-up: "landed?" only on ready-to-land/reviewing rows; T-075 answered) and 4ec58d83 (ops). T-076: the six Try-it LAN links went to the user as console step **C-036** (one part per version, `http://lan:<port>/` resolved when shown). **Desk rule (lead): never put addresses in threads, not even as host:port text;** the thread scrubber hides them on purpose (Hard rule 12), so LAN links go in a console step. **I-119** (open, low priority, unowned): an improvement, not a bug. A thread reply should be able to carry an `http://lan:<port>/` link, stored as "lan" and resolved only when shown, like steps. T-077 #5: explained "parked".
 - 10-04 05:5xZ **Try-it servers (user T-076, lead):** six localhost servers run from the main checkout, one per version: baseline, st6-rb, st6-rb+shell-hold-c, st6-rb2, best-build 65052c4a, gpu-preview c0c8ad4e ("not yet passed"). Overlays in out/tryit/, state files out/tryit/serve-*.json, served hashes checked. They stay up until the user says done; **only the lead may kill them.** T-077: user asked why cdwc is "dropped"; it is the T-070 board cleanup label, the fix is still in the best build (P-032 paused); answered #2; lead fixed it (#3): cdwc, re-keep-op, blur-cubic, countdown-faces now **parked**, fwreskip landed. **Desk rule (lead): "dropped" on the board means abandoned only**; paused or superseded work is parked. Rightly dropped: pill-swap, image-size, anim-transform, duplicates.
 - 10-04 05:4xZ Lead landed 607201d8; spawned ts-i118 (I-118, user T-074; peer row added). I-117 stays unowned until ts-i109 finishes I-114 and I-111. P-092 H2 (morph-gpu) moved to #1 on chrome-measure. User T-075: "may be out of date" on the ops row is the I-108 landed-branch check misfiring for an ongoing role (ops lands often); answered #2, told the lead.
