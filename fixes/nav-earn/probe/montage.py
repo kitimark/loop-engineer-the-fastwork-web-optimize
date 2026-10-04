@@ -19,7 +19,10 @@ for j, a in enumerate(arms):
 for i, s in enumerate(rows):
     y = 30 + i * (H + 6)
     m = s.get('morph') or '0'
-    dr.text((4, y + 4), ('before' if s['ms'] < 0 else f"{s['ms']} ms") + (f"\nmorph {float(m):.2f}" if s['ms'] >= 0 else ''), fill='black')
+    if 'p' in s:  # glide-stills.mjs: scroll progress of the hero track (the bar leaves its pill at 0.72)
+        dr.text((4, y + 4), ('before' if s['ms'] < 0 else f"{s['ms']} ms") + f"\nscroll {float(s['p']):.3f}" + ''.join(f"\n{a}: w {runs[a]['stills'][i]['w']}" for a in arms), fill='black')
+    else:
+        dr.text((4, y + 4), ('before' if s['ms'] < 0 else f"{s['ms']} ms") + (f"\nmorph {float(m):.2f}" if s['ms'] >= 0 and 'morph' in s else (f"\nw {s['w']} op {float(s['op']):.2f}" if s['ms'] >= 0 and 'w' in s else '')), fill='black')
     for j, a in enumerate(arms):
         out.paste(ims[a][i].resize((W, H)), (lab + j * (W + 10), y))
 o = os.path.join(d, f'montage-{vp}' + ('' if len(arms) > 1 else '-' + arms[0]) + '.png')

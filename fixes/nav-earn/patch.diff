@@ -119,10 +119,11 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  @keyframes svelte-1fn2go6-idle-0 {
    0%,
    33.32% {
-@@ -1413,6 +1465,33 @@
+@@ -1412,7 +1464,34 @@
+   display: flex;
    position: absolute;
    inset: 0;
- }
++}
 +/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; inside it an uncomposited wrapper of
 +   the same box at top -m*c, and each cell is a face's box placed at top k*c in the wrapper (both set by the script),
 +   its glyph centred the same way */
@@ -139,7 +140,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  left: 0;
 +  right: 0;
 +  height: 100%;
-+}
+ }
 +.cell.svelte-1quva9c {
 +  justify-content: center;
 +  align-items: center;
@@ -153,7 +154,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .number.svelte-1jfovfa {
    font-variant-numeric: tabular-nums;
    align-items: center;
-@@ -1519,6 +1598,31 @@
+@@ -1519,7 +1598,32 @@
    syntax: "<angle>";
    inherits: false;
    initial-value: 0deg;
@@ -173,7 +174,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  syntax: "<number>";
 +  inherits: false;
 +  initial-value: 0;
-+}
+ }
 +.start-selling-top-nav-bar,
 +.start-selling-top-nav-logo,
 +.start-selling-top-nav-actions,
@@ -182,15 +183,14 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling-morph-pill,
 +.start-selling-morph-panel {
 +  --morph: inherit;
- }
++}
  .hero-track.svelte-1p2vpne {
    background: #fff;
-@@ -2122,6 +2226,136 @@
-     top: 83.3333%;
-     left: auto;
+   height: 200vh;
+@@ -2124,6 +2228,136 @@
      right: -45px;
-+  }
-+}
+   }
+ }
 +/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
 +   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
 +   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
@@ -319,18 +319,22 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +        animation-play-state: paused !important;
 +      }
 +    }
-   }
- }
++  }
++}
  @media (prefers-reduced-motion: reduce) {
-@@ -2400,16 +2634,30 @@
+   .hero-track.svelte-1p2vpne {
+     height: auto;
+@@ -2398,19 +2632,33 @@
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-     visibility 0s linear 1.6s;
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-+    visibility 0s linear 1.6s;
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
    transform: translateY(48px);
  }
  .start-selling-future.is-visible > .start-selling-future-card {
@@ -348,23 +352,25 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    transition:
      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 +  transition:
 +    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
 +    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
  }
  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
-@@ -2885,20 +3133,61 @@
+   transform: scale(var(--future-shrink-scale));
+@@ -2884,21 +3132,62 @@
+ }
  .start-selling-avatars.is-carousel img.is-enter {
    animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
- }
++}
 +/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
 +   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
 +   advance (32px - 8px overlap) with the same easing, via the independent translate property */
 +.start-selling-avatars.is-carousel img.is-exit ~ img {
 +  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
-+}
+ }
 +.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
 +  animation:
 +    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
@@ -484,7 +490,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -6811,7 +7114,94 @@
+@@ -6811,6 +7114,93 @@
  .start-selling-platform-secure-network-dash-highlight.is-active {
    opacity: 1;
    transition: opacity 0.2s;
@@ -501,7 +507,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +   old highlight line. */
 +.start-selling-platform-secure-network-dash-svg {
 +  display: none;
- }
++}
 +.start-selling-platform-secure-network-dash-glint {
 +  opacity: 0;
 +}
@@ -575,10 +581,9 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  to {
 +    transform: translateX(-199.03515625px);
 +  }
-+}
+ }
  .start-selling-platform-secure-network-face {
    box-sizing: border-box;
-   object-fit: cover;
 @@ -7186,7 +7576,8 @@
      transform: translate(-50%, -50%);
      animation: none !important;
@@ -617,11 +622,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11101,7 +11494,65 @@
-     -webkit-background-clip: text;
+@@ -11102,6 +11495,64 @@
      background-clip: text;
      animation: 4s linear infinite start-selling-platform-i-doc-sweep;
-+  }
+   }
 +  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
 +     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
 +     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
@@ -676,24 +680,77 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +@keyframes start-selling-platform-pi-sweep-band {
 +  0% {
 +    transform: translateX(-66.6667%);
-   }
++  }
 +  to {
 +    transform: translateX(0);
 +  }
  }
  .start-selling-language-switch-wrap.svelte-1lc7nmb {
    z-index: 2;
-@@ -11451,6 +11902,9 @@
- .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
-   transition: none;
+@@ -11449,6 +11900,9 @@
+   translate: 0 -50%;
  }
-+.start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+ .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
 +  transition: none;
 +}
++.start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   transition: none;
+ }
  .start-selling-top-nav-btn.svelte-1dcozpm {
-   box-sizing: border-box;
-   color: #fff;
-@@ -11579,7 +12033,7 @@
+@@ -11541,7 +11995,52 @@
+   .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill)
+     .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm):after {
+     animation: 0.98s cubic-bezier(0.33, 0, 0.2, 1) 0.52s both svelte-1dcozpm-start-selling-nav-earn-sheen;
++  }
++}
++/* nav-earn rev 2 (T-154): at the top of the page Join waitlist follows the scroll instead of its own clock.
++   --earn-in (0 -> 1 over hero progress 0.58 -> 0.72, written inline by the nav's scroll callback on the actions row
++   and the button) drives, in the hero-pill state only, what --nav-expand and the 0.68 s / 0.32 s transitions and the
++   0.52 s + 0.98 s unmask animation drove after the class flip: the width, padding, gap, fade and the left-to-right
++   mask sweep, with no transition of their own. At progress 0.72 the pill state ends with everything at its full
++   value, so the flip changes nothing and the unmask (which would hide the shown button again) is replaced by its
++   end state (mask kept, at position 0 0: the same pixels as the finished animation, also under the end-of-page
++   blur). The sheen keeps its own timing. Reduced motion: never in the pill state after load (JS), unchanged. */
++@property --earn-in {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 0;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++  gap: calc(var(--earn-in) * 8px);
++  transition: none;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  --earn-layout: calc(var(--earn-in) * (1 - var(--earn-out)));
++  opacity: calc((1 - var(--earn-out)) * var(--earn-in));
++  transition: none;
++}
++@media (width<=640px) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++    gap: calc(var(--earn-in) * 4px);
++  }
++}
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    -webkit-mask-image: var(--nav-earn-mask);
++    mask-image: var(--nav-earn-mask);
++    -webkit-mask-size: 240% 100%;
++    mask-size: 240% 100%;
++    -webkit-mask-repeat: no-repeat;
++    mask-repeat: no-repeat;
++    -webkit-mask-position: calc((1 - var(--earn-in)) * 100%) 0;
++    mask-position: calc((1 - var(--earn-in)) * 100%) 0;
+   }
++  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill)
++    .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    animation: none;
++    -webkit-mask-position: 0 0;
++    mask-position: 0 0;
++  }
+ }
+ @keyframes svelte-1dcozpm-start-selling-nav-earn-unmask {
+   0% {
+@@ -11579,7 +12078,7 @@
      scale: 0.75;
    }
    .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
@@ -702,7 +759,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    }
    .start-selling-top-nav-actions.svelte-1dcozpm {
      gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
-@@ -11751,11 +12205,74 @@
+@@ -11751,11 +12250,74 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -779,7 +836,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +12285,39 @@
+@@ -11768,3 +12330,39 @@
      scroll-behavior: auto;
    }
  }
@@ -847,10 +904,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        S = (e, t, r, a, o) =>
          new Promise((s) => {
-@@ -2459,6 +2461,39 @@
-             };
-           n = window.requestAnimationFrame(d);
-         }),
+@@ -2456,6 +2458,39 @@
+               }
+               let s = Math.min(1, (i - u) / a);
+               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
++            };
++          n = window.requestAnimationFrame(d);
++        }),
 +      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
 +      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
 +      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
@@ -881,12 +941,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
 +                  }, w))
 +                : (n = window.requestAnimationFrame(d));
-+            };
-+          n = window.requestAnimationFrame(d);
-+        }),
-       E = async (e) => (
-         z(y, !0),
-         z(v, !1),
+             };
+           n = window.requestAnimationFrame(d);
+         }),
 @@ -2486,7 +2521,7 @@
              (z(b, e, !0), z(C, e / 100));
            })) ||
@@ -905,10 +962,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2671,8 +2706,57 @@
+@@ -2670,9 +2705,58 @@
+ function iE() {
    tE = 0;
    for (let e of $T) e.active && e.callback();
- }
++}
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -957,7 +1015,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
 +    }, 500);
 +  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
-+}
+ }
  function aE() {
 -  nE ||
 +  (fwBoot(), nE) ||
@@ -982,7 +1040,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,7 +2794,90 @@
+@@ -2710,8 +2794,91 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -995,7 +1053,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
-+}
+ }
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -1071,9 +1129,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
  function lE(e) {
    let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2923,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -1910,7 +1969,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,12 +5424,29 @@
+@@ -4689,11 +5424,28 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
@@ -1927,7 +1986,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-       },
++      },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1939,10 +1998,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-+      },
+       },
        i = new IntersectionObserver(
          ([e]) => {
-           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5478,15 @@
          ((O = null), z(E, null));
        },
@@ -2305,13 +2363,15 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13140,12 @@
+@@ -12271,10 +13138,14 @@
+             k(d, `x1`, n === `right` ? 200 : -200),
+             k(d, `x2`, n === `right` ? 320 : -80),
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
-               "is-active": s(v),
-             })),
-+            (P = U(G, 1, `start-selling-platform-secure-network-dash-glint`, null, P, {
 +              "is-active": s(v),
 +            })),
++            (P = U(G, 1, `start-selling-platform-secure-network-dash-glint`, null, P, {
+               "is-active": s(v),
+             })),
              k(g, `stroke`, `url(#secure-network-dash-${n})`));
          }),
 +        r.appendChild(G),
@@ -2367,7 +2427,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      O = R(() => !s(p) && !s(E)),
      A = R(() => s(O) || s(x) > 0.55);
    function j(e) {
-@@ -12952,17 +13834,27 @@
+@@ -12952,17 +13834,34 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -2391,6 +2451,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
 +  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
 +  let __navEls = {};
++  // nav-earn rev 2: writer for --earn-in (see `_` in the nav effect); ie / oe are assigned at mount, before the effect runs
++  let __eiV = -1,
++    __eiW = (v) => {
++      if (v === __eiV) return;
++      __eiV = v;
++      for (let t of [ie, oe]) t && t.style.setProperty(`--earn-in`, String(v));
++    };
 +  function __navEl(e) {
 +    let t = __navEls[e];
 +    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
@@ -2401,7 +2468,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12999,7 +13891,7 @@
+@@ -12999,7 +13898,7 @@
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
      let _ = () => {
          (z(v, ee(), !0), z(g, F(), !0));
@@ -2410,7 +2477,20 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13909,20 @@
+@@ -13008,6 +13907,12 @@
+           r = Math.max(1, n.height - window.innerHeight),
+           i = Math.min(r, Math.max(0, -n.top));
+         z(p, i / r >= 0.72);
++        // nav-earn rev 2 (T-154): Join waitlist follows the scroll in. --earn-in goes 0 -> 1 over hero progress
++        // 0.58 -> 0.72 (it reaches 1 exactly where the bar leaves its hero-pill state above); the CSS uses it only
++        // in the hero-pill state. Written only when it changes, so outside that band there are no writes. Written
++        // on its two readers (the actions row `ie`, the button `oe`), not inherited from the header: WebKit kept
++        // stale `inherit` values on registered non-inheriting properties (F-183, OBSERVED).
++        __eiW(Math.round(Math.min(1, Math.max(0, (i / r - 0.58) / 0.14)) * 1e3) / 1e3);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
+       S = () => {
+@@ -13017,13 +13922,20 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2433,7 +2513,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +13944,9 @@
+@@ -13045,9 +13957,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2445,7 +2525,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +13954,56 @@
+@@ -13055,27 +13967,56 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2509,7 +2589,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +14014,38 @@
+@@ -13086,7 +14027,38 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2549,10 +2629,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13102,6 +14061,41 @@
-       }
-     );
-   });
+@@ -13099,6 +14071,41 @@
+           ne(),
+           e.removeEventListener(`change`, m),
+           t.removeEventListener(`change`, m));
++      }
++    );
++  });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -2585,13 +2668,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-+      }
-+    );
-+  });
-   var I = uN();
-   let L, te;
-   var B = e(I),
-@@ -13118,10 +14112,24 @@
+       }
+     );
+   });
+@@ -13118,10 +14125,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -2616,7 +2696,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14148,7 @@
+@@ -13140,7 +14161,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2625,7 +2705,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14165,16 @@
+@@ -13157,7 +14178,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2643,7 +2723,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14210,8 @@
+@@ -13193,7 +14223,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2653,7 +2733,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14228,7 @@
+@@ -13210,7 +14241,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2662,7 +2742,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13232,6 +14250,7 @@
+@@ -13232,6 +14263,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),

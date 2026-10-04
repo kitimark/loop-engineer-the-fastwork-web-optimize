@@ -1,4 +1,5 @@
-# nav-earn delta on v8 (T-148): Join waitlist collapses with the morph, phone logo stays anchored. CSS only, 2 rules.
+# nav-earn rev 2 delta on v8 (T-148, T-154): rev 1's end-of-page CSS unchanged, plus the Join waitlist button
+# following the scroll at the top (JS writes --earn-in over hero progress 0.58 -> 0.72; CSS uses it in the hero-pill state).
 # Apply on the v8-best build (fixes/v8-best/patch.diff). Contains excerpts of Fastwork's code: local branches only, never push.
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
@@ -13,7 +14,59 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling-top-nav-btn.svelte-1dcozpm {
    box-sizing: border-box;
    color: #fff;
-@@ -12030,7 +12033,7 @@
+@@ -11994,6 +11997,51 @@
+     animation: 0.98s cubic-bezier(0.33, 0, 0.2, 1) 0.52s both svelte-1dcozpm-start-selling-nav-earn-sheen;
+   }
+ }
++/* nav-earn rev 2 (T-154): at the top of the page Join waitlist follows the scroll instead of its own clock.
++   --earn-in (0 -> 1 over hero progress 0.58 -> 0.72, written inline by the nav's scroll callback on the actions row
++   and the button) drives, in the hero-pill state only, what --nav-expand and the 0.68 s / 0.32 s transitions and the
++   0.52 s + 0.98 s unmask animation drove after the class flip: the width, padding, gap, fade and the left-to-right
++   mask sweep, with no transition of their own. At progress 0.72 the pill state ends with everything at its full
++   value, so the flip changes nothing and the unmask (which would hide the shown button again) is replaced by its
++   end state (mask kept, at position 0 0: the same pixels as the finished animation, also under the end-of-page
++   blur). The sheen keeps its own timing. Reduced motion: never in the pill state after load (JS), unchanged. */
++@property --earn-in {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 0;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++  gap: calc(var(--earn-in) * 8px);
++  transition: none;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  --earn-layout: calc(var(--earn-in) * (1 - var(--earn-out)));
++  opacity: calc((1 - var(--earn-out)) * var(--earn-in));
++  transition: none;
++}
++@media (width<=640px) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++    gap: calc(var(--earn-in) * 4px);
++  }
++}
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    -webkit-mask-image: var(--nav-earn-mask);
++    mask-image: var(--nav-earn-mask);
++    -webkit-mask-size: 240% 100%;
++    mask-size: 240% 100%;
++    -webkit-mask-repeat: no-repeat;
++    mask-repeat: no-repeat;
++    -webkit-mask-position: calc((1 - var(--earn-in)) * 100%) 0;
++    mask-position: calc((1 - var(--earn-in)) * 100%) 0;
++  }
++  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill)
++    .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    animation: none;
++    -webkit-mask-position: 0 0;
++    mask-position: 0 0;
++  }
++}
+ @keyframes svelte-1dcozpm-start-selling-nav-earn-unmask {
+   0% {
+     -webkit-mask-position: 100% 0;
+@@ -12030,7 +12078,7 @@
      scale: 0.75;
    }
    .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
@@ -22,3 +75,33 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    }
    .start-selling-top-nav-actions.svelte-1dcozpm {
      gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13849,6 +13849,13 @@
+   }
+   // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
+   let __navEls = {};
++  // nav-earn rev 2: writer for --earn-in (see `_` in the nav effect); ie / oe are assigned at mount, before the effect runs
++  let __eiV = -1,
++    __eiW = (v) => {
++      if (v === __eiV) return;
++      __eiV = v;
++      for (let t of [ie, oe]) t && t.style.setProperty(`--earn-in`, String(v));
++    };
+   function __navEl(e) {
+     let t = __navEls[e];
+     return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
+@@ -13900,6 +13907,12 @@
+           r = Math.max(1, n.height - window.innerHeight),
+           i = Math.min(r, Math.max(0, -n.top));
+         z(p, i / r >= 0.72);
++        // nav-earn rev 2 (T-154): Join waitlist follows the scroll in. --earn-in goes 0 -> 1 over hero progress
++        // 0.58 -> 0.72 (it reaches 1 exactly where the bar leaves its hero-pill state above); the CSS uses it only
++        // in the hero-pill state. Written only when it changes, so outside that band there are no writes. Written
++        // on its two readers (the actions row `ie`, the button `oe`), not inherited from the header: WebKit kept
++        // stale `inherit` values on registered non-inheriting properties (F-183, OBSERVED).
++        __eiW(Math.round(Math.min(1, Math.max(0, (i / r - 0.58) / 0.14)) * 1e3) / 1e3);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
+       S = () => {
