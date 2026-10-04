@@ -194,6 +194,68 @@ minutes: ~95 (range 80-130): 8 holds; W runs ~1.4 min, M runs ~0.8 min, G runs ~
   (~3 min).
 ```
 
+## P-112 morph close-tween attribution ticket (lead 2026-10-04 15:5xZ), before any P-112 data
+
+Why: P-111's M leg (H3-H4, 4 + 4 valid runs) is WORSE on the scored close keys. close.f1 is 28 → 30.5 ms (d +2.5) and
+close.f3 is 60 → 63.5 ms (d +3.5). The warm opens are much faster: O2.f1 53 → 36 ms, O3.f1 53 → 37 ms (reported). The
+ticket's rule says "WORSE → find the leg's component by the reversal builds". Only morph-gpu rev 3 changes code that
+runs at the page end. This block checks whether rev 3 causes the slower close start. Runner: iphone-runner;
+verdict owner: int-v8. Order: right after P-111 H8, before P-105 H3-H6.
+
+```
+PHONE TICKET P-112 v8-best · attribution of P-111's slower morph close start (M leg only) · runner iphone-runner (after
+  P-111 H8, before P-105 H3) · verdict owner int-v8 · registered before any phone data; no counted run before the
+  lead's pre-data read
+build: V = v8 (as P-111): JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16,
+  CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43.
+control: C = v8 minus morph-gpu rev 3: v8's copy with fixes/morph-gpu/rev3/delta.diff reversed (patch -R --fuzz=0,
+  strict; one CSS line, `opacity: min(var(--morph-fade), 0.9999)` back to `opacity: var(--morph-fade)`):
+  JS 3e3e94cb6e9f… (the same), CSS 7eda63cc70155d8abfd89ceb5ea33a7dedbc6f7def014d60b8f11e85acf5d0ea.
+  Reversal proof: that CSS is byte-identical to accent-ca-v7's (7eda63cc7015, built independently from v7 + the exact
+  accent). Identity line "v8pure − morph − faces − K + V9 = accent-ca-v7" above shows K and faces change only the JS.
+  So C differs from V only by rev 3's one line.
+copies: out/p112/snap/{C,V} in int-v8's worktree (`sh fixes/v8-best/phone/p112/serve.sh snap`, made 15:5xZ, snap ok);
+  read-only, HASHES.txt.
+question: at real thermal Serious, does rev 3 cause v8's longer morph close start? Attribution only, no landing basis.
+ports: `sh fixes/v8-best/phone/p112/serve.sh` (sha256 6b33baed1949, P-111's serve.sh with the arms changed): B plain
+  baseline, C, V; serve.mjs --port 0 --latency 150 --vendors=local, plain http. Served-hash check before every item
+  (B 4606120cf392/27776f3d4138, C 3e3e94cb6e9f/7eda63cc7015, V 3e3e94cb6e9f/f836404b3728; exit 4 on a wrong one).
+  int-v8 starts them; ports go to the runner by message, never into a committed file.
+thermal gate, start method, sleep check: as P-111 (thermal-gate.mjs --expect serious --max-c 44 --url <B> at the start
+  and end of every hold; pre-warm on B with S runs, at most 4; pmcheck.mjs). A hold counts only if both reads PASS;
+  else VOID, re-run once with the same items.
+holds: `RUNNER=iphone-runner caffeinate -i -s sh <int-v8 worktree>/fixes/v8-best/phone/p112/hold.sh Hn <items>`
+  (sha256 2f57b979a617: P-111's hold.sh with only M items, an M warm-up item per port, folder out/p112/runs, labels
+  p112-*, --block P-112). Under the iphone lease held by iphone-runner, beside any shared group.
+  H1: wmC wmV mC1 mV2 mV3 mC4 · H2: mC5 mV6 mV7 mC8 (counted C V V C C V V C, n = 4 per arm)
+  then `iphone.mjs park`; int-v8 stops the servers.
+M leg (P-111's driver line unchanged): `iphone.mjs run --driver morph --probe std --block P-112 --arm C|V --run <n>`,
+  hold 2000 ms, cycles 3 (O1 C1 O2 C2 O3 C3 at the page's max scrollY). Warm-ups wmC / wmV (--warmup), uncounted.
+  Every counted C M run is a heat sentinel (held m=1 p95 <= 18 ms); a failing one voids every run since the last
+  passing one (either arm).
+scorer: `node fixes/v8-best/phone/p112/score.mjs <item>:<file> ... [--json out]` (sha256 831ca91ad2a1). It runs P-111's
+  scorer unchanged (fixes/v8-best/phone/score.mjs 26d944bf93e2, refused if changed) with arm C's expected build set to
+  v8 − rev 3, over the M gates only. Self-test `node fixes/v8-best/phone/p112/selftest.mjs` (54183e5fdba1, 4 checks OK
+  on P-111's M records: v7 records void under P-112's C; P-111's M leg → CAUSE with d +2.5 / +3.5; V closes 3 ms
+  shorter → NOT THE CAUSE; warm-ups skipped).
+  - Mtweens: O1.f1, O1.f2, O1.f3, close.f1, close.f3 WORSE when d = median(V) − median(C) > +2 ms (close = per run
+    median of C1-C3). Mmoving: > 50 WORSE when d > +1, > 34 when d > +2; twins reported.
+  - Reported: every tween key, and the O2/O3 opens (f1, f2, f3; C, V, d).
+  - Voids as P-111's M leg (no record, driver, run error, served build not the arm's, Low Power Mode, no drive mark,
+    no m, tween starts != 6, driver tweens not O1 C1 O2 C2 O3 C3; heat chain; VOID hold). At most one extra hold.
+verdict:
+  - CAUSE when Mtweens is WORSE: rev 3 is the cause of P-111's longer close start.
+  - falsifier: close.f1 and close.f3 d ≤ +2 ms → rev 3 is not the cause ("NOT THE CAUSE", with Mmoving no-worse).
+  - MIXED when the tweens are no-worse and Mmoving is WORSE.
+  - insufficient when an arm has fewer than 3 valid runs.
+  With CAUSE, the lead rules on the trade: v8 with rev 3 (slower close start, much faster warm open) or without it.
+  With NOT THE CAUSE, int-v8 continues the reversal search (faces, K, accent, glue) and reports to the lead first.
+predictions (before data): CAUSE P 0.65 (rev 3 keeps `#platform` below opacity 1, so the section stays a
+  transparency group through the close; the close start pays for it; code reading only, not observed).
+  O2/O3 opens faster in V by ≥ 10 ms: P 0.85 (rev 3's Simulator open-frame result). Sentinels pass first try: P 0.75.
+minutes: ~25 (2 holds; M runs ~0.8 min, warm-ups 2, pre-warm and gates ~3 min each).
+```
+
 ## Reproduce
 
 ```sh

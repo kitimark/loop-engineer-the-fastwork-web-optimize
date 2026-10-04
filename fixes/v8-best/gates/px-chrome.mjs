@@ -44,6 +44,26 @@ const FREEZE = `(() => { let n = 0, s = 0; for (const a of document.getAnimation
 const HITS = `(() => { const out = []; const lab = (e) => { if (!e) return null; const sec = e.closest('section[id],section[class],[id]'); const c = (x) => x ? x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + (typeof x.className === 'string' && x.className.trim() ? '.' + x.className.trim().split(/\\s+/).slice(0, 2).join('.') : '') : ''; return (sec && sec !== e ? c(sec) + ' > ' : '') + c(e); };
   for (let y = 20; y < innerHeight; y += 40) for (let x = 20; x < innerWidth; x += 40) out.push([x, y, lab(document.elementFromPoint(x, y))]); return out; })()`;
 
+// PX_ALIGN=1 (added 2026-10-04 for the desktop y 300 cluster): the hero accent's word rotator (setTimeout: idle 1250 ms,
+// draw-out 900, draw-in 900, 7 words) is not frozen, so its state at a stop is load-time phase. With PX_ALIGN the probe
+// waits at each stop where the accent is on screen for the moment it ENTERS idle showing the same word (svg viewBox)
+// that load A showed there (A takes the first idle entry), then freezes at once (idle lasts 1250 ms). PX_YS=0,300 limits
+// the stops.
+const ALIGN = process.env.PX_ALIGN === '1'; const alignWord = {};
+const ACC = `(() => { const em = document.querySelector('em.script-accent'); if (!em) return null; const r = em.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return null;
+  const svg = em.querySelector('svg'); return [em.classList.contains('is-idle') ? 'idle' : 'draw', svg ? svg.getAttribute('viewBox') : ''] })()`;
+async function alignAccent(page, y, load) {
+  let prev = await page.eval(ACC); if (!prev) return;
+  const want = alignWord[y]; const t0 = Date.now();
+  while (Date.now() - t0 < 30000) {
+    await sleep(40); const cur = await page.eval(ACC); if (!cur) return;
+    if (prev[0] !== 'idle' && cur[0] === 'idle' && (!want || cur[1] === want)) {
+      if (!want) alignWord[y] = cur[1]; (load.aligned ||= {})[y] = { word: cur[1], waitMs: Date.now() - t0 }; return;
+    }
+    prev = cur;
+  }
+  (load.aligned ||= {})[y] = { timeout: true };
+}
 async function server(arm) {
   const d = DIRMAP[arm.replace(/\d+$/, '')];
   const st = join(OUT, `serve-${arm}.json`); rmSync(st, { force: true });
@@ -74,10 +94,13 @@ try {
       if (!YS) {
         const g = await page.eval(`({ H: document.documentElement.scrollHeight, vh: innerHeight })`); res.docHeight = g.H;
         const end = g.H - g.vh, ys = new Set([0, 300, 548, 2796]); for (let i = 1; i <= 8; i++) ys.add(Math.round(g.vh + (end - g.vh) * i / 9)); ys.add(end);
-        YS = [...ys].filter((y) => y <= end).sort((a, b) => a - b); res.ys = YS;
+        YS = [...ys].filter((y) => y <= end).sort((a, b) => a - b);
+        if (process.env.PX_YS) YS = process.env.PX_YS.split(',').map(Number);
+        res.ys = YS;
       }
       for (const y of YS) {
         await page.eval(`(scrollTo({ top: ${y}, behavior: 'instant' }), 1)`); await sleep(1600);
+        if (ALIGN) await alignAccent(page, y, load);
         const anims = JSON.parse(await page.eval(ANIMS)); const fr = await page.eval(FREEZE); await sleep(500);
         const yy = await page.eval('Math.round(scrollY)');
         const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
@@ -87,7 +110,7 @@ try {
       }
       await page.close();
     } finally { s.p.kill(); }
-    console.log(`load ${arm}: ${load.stops.length} stops, ${load.errors.length} page errors, scripts ${JSON.stringify(load.scripts)}`);
+    console.log(`load ${arm}: ${load.stops.length} stops, ${load.errors.length} page errors, scripts ${JSON.stringify(load.scripts)}${load.aligned ? ' aligned ' + JSON.stringify(load.aligned) : ''}`);
   }
 } finally { cdp.close(); await chrome.close(); }
 // score (pxlib.mjs)
