@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
+import net from 'node:net';
 import { tempDir, git, request } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 import { checkMarkdown } from './md-cases.mjs';
@@ -58,7 +59,21 @@ before(async () => {
   P = await import('../../tools/lib/proposal.mjs');
   blobs.b = commitPatch('demo', fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
   blobs.a = commitPatch('best', fx.prettyFiles[PAGE_JS] + '/* best build */\n');
+  // I-157: the machine's own Try-it host may already listen on the first Try-it port (6400; pid 90540 did): hold the
+  // lowest free one here, on every address like that host, so every run meets that case, live host or not
+  const { portBusy } = await import('../../tools/lib/port-probe.mjs');
+  for (let p = T.TRYIT_PORTS.from; p <= T.TRYIT_PORTS.to && !blocker; p++) {
+    if (await portBusy(p)) continue;
+    const s = net.createServer();
+    const ok = await new Promise((done) => { s.once('error', () => done(false)); s.listen({ port: p, host: '0.0.0.0', exclusive: true }, () => done(true)); });
+    if (ok) blocker = s;
+  }
+  assert.ok(blocker, 'a free Try-it port to hold');
 });
+let blocker = null;
+after(() => blocker?.close());
+// I-157: the real probe (never a stub that calls every port free): the build gets a port nobody listens on
+const freePort = async (p) => (await import('../../tools/lib/port-probe.mjs')).portBusy(p);
 
 const liveB = () => ({ patch: 'fixes/demo/patch.diff', blob: blobs.b, base: 'site-pretty' });
 const liveAB = () => ({ ...liveB(), a: { patch: 'fixes/best/patch.diff', blob: blobs.a, base: 'site-pretty' } });
@@ -94,7 +109,7 @@ test('phoneStatus: down without a registry entry; registered but not served -> s
   const lan = () => FAKE_LAN;
   assert.deepEqual(await PH.phoneStatus(live, { lan }), { wifi: true, a: { up: false }, b: { up: false } });
   const b = PH.liveBuilds(live).b;
-  const { entry } = await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.b)], busy: async () => null });
+  const { entry } = await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.b)], busy: freePort });
   assert.deepEqual((await PH.phoneStatus(live, { lan })).b, { up: false, stopped: true, lan: `http://lan:${entry.port}/` }, 'no host running');
   startHost();
   try {
@@ -103,9 +118,9 @@ test('phoneStatus: down without a registry entry; registered but not served -> s
     assert.deepEqual((await PH.phoneStatus(live, { lan })).a, { up: false }, 'the plain-baseline A is not registered');
     assert.equal(host.status()[entry.name].mounted, false, 'a status check loads no files');
     // the entry serving another overlay is not this build
-    await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.a)], busy: async () => null });
+    await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.a)], busy: freePort });
     assert.deepEqual((await PH.phoneStatus(live, { lan })).b, { up: false });
-    await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.b)], busy: async () => null });
+    await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.b)], busy: freePort });
     // no Wi-Fi address: the placeholder, href null, and a plain note
     await T.waitServed(entry.name, { timeoutMs: 3000 });
     const off = await PH.phoneStatus(live, { lan: () => { throw new Error('no LAN address'); } });
