@@ -1,6 +1,6 @@
 # P-120: v9 step 4 phone no-worse (lead signature)
 
-Ticket: `fixes/v9-best/README.md` "Phone no-worse ticket P-120" on int-v8's branch (registering commit 745c7d46,
+Ticket: `fixes/v9-best/README.md` "Phone no-worse ticket P-120" (registering commit 745c7d46, 4c734e05 after the S1 rebase with the same pins, on main since 63904a76;
 look results 305e9ace). Owner and verdict: int-v8; runner: iphone-runner; start gate: mgmt-devices; result read:
 mgmt-ops-10. Profile `xcode-serious` (T-162 #3); never pooled with real-heat data.
 
