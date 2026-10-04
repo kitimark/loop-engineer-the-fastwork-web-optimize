@@ -1371,6 +1371,8 @@ C8's sentinel (OBSERVED in our setup, cause unknown): in the bottom phase (3.0 s
   ~0.56 s, then at 30-33 ms (the 30 Hz rhythm) to the run's end, 45 frames; not one stall. Same heat state as the
   passing sentinels (end gate Serious, induced No, 40.09 C), served hashes and marks OK, Mac quiet (no shared jobs,
   load1 3.1). Low Power Mode is not flagged, but the record reads the setting as "unknown", so LPM is not ruled out.
+  LPM off 44 min later (console step C-045 on this test phone, 12:44Z), not checked at the time: LPM unlikely, not
+  proven; the 30 Hz cause stays OBSERVED / open (lead 12:5xZ).
   The extra hold starts from the same warm band (39.8-40.4 C), pre-warmed outside the Mac hold (lead 12:1xZ).
 descriptive (no gate; void runs left out): VK's valid top-window > 50 counts 0, 0; V9's 0, 2, 0.
 ```
