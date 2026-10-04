@@ -620,6 +620,69 @@ predictions (before data):
 minutes: ~22 of phone time (4 holds), plus the waits for each exclusive hold.
 ```
 
+## P-114 result (2026-10-04 17:0xZ-17:5xZ, iphone-runner; scored by int-v8): no-worse, so v8 replaces v7
+
+**Holds.** H1, H2, H3 and H4 are all VALID (H4: hold exit 0 in locks/holds.log, 283 s). Every hold ran inside iphone-runner's exclusive no-timing hold, the
+thermal gates read Serious at 38.6-38.9 °C at both ends, and pmcheck was OK. Every item exited 0, every sentinel
+passed, and every counted run is valid.
+
+H1 ran on its third attempt. Attempts 1 and 2 (17:02Z, 17:07Z) were VOID at the start gate (too cool: Nominal/Fair,
+35.4-36.6 °C) before any item, so no data was seen. Under the lead's ruling, such a VOID does not use the hold's
+re-run. The phone was then warmed outside any hold, with uncounted S runs and G flicks on B (iphone-runner's out/p114/warm),
+until a gate read passed at 38.6 °C.
+
+Scorer `p114/score.mjs` 5bbdd2f10cca (base 26d944bf93e2); output out/p114/score.json (sha256 377f19c597da).
+
+| gate | C = v7 | V = v8 | d | verdict |
+|---|---|---|---|---|
+| M moving > 50 (per run) | 2 / 2 / 2 / 2 | 0 / 0 / 0 / 0 | −2 | no-worse (twins −2 / −0.5) |
+| M moving > 34 | 3 / 2 / 3 / 3 | 3 / 3 / 2 / 3 | 0 | no-worse |
+| M O1.f1 / f2 / f3 (ms) | 35 / 46.5 / 61 | 35.5 / 48 / 61 | +0.5 / +1.5 / 0 | no-worse (limit +2) |
+| M close.f1 / close.f3 (ms) | 30.5 / 64 | 26.5 / 59 | −4 / −5 | no-worse |
+| GH > 50 (per run) | 10 / 9 / 7 | 7 / 9 / 8 | −1 | no-worse (twins −1 / −1) |
+| GH new cluster | | | | none (at > 46 and > 54 too) |
+
+**Verdict: no-worse on all three gates, at every twin threshold.** Under the outcome rule written before data, v8
+replaces v7 as the best build once the rest of the land gate passes (Simulator/iPad pixels and smoke, Mac Safari
+smoke).
+
+**What the morph leg shows.** The close tweens P-111 found WORSE (+2.5 / +3.5 ms on a loaded Mac) are now faster in
+v8 than in v7 (−4 / −5 ms). Every one of v8's 4 runs has 0 moving frames > 50 ms; every one of v7's has 2. The later
+opens are faster in v8 too (O2.f1 55 → 37, O3.f1 54 → 38), matching P-111 and P-112. O1.f2 is +1.5 ms (P-112 had
++2.5 in one run): inside the +2 limit.
+
+**What the hero flicks show (P-111's band, bins 9-11, scrollY 2250-2999).** Neither arm has a > 50 cluster there.
+The band max per run is 49 / 49 / 50 ms in v7 and 49 / 48 / 49 ms in v8, and both arms have a > 46 cluster there.
+So P-111's new GH cluster is not replicated. The band sits at the 50 ms line in v7 as much as in v8, which fits the
+P-113 reading: frames at the threshold, not a v8 cost. v8's > 50 clusters elsewhere (bins 0-5, the hero track and
+the top) all have v7 frames in the same or a neighbouring bin.
+
+**Mac load1 per run** (start / end): low throughout, with the highest values in H4's last G runs.
+
+| hold | load1 |
+|---|---|
+| H1 (M) | 2.7-3.3 |
+| H2 (M) | 2.3-3.1 |
+| H3 (G-H) | 2.7-3.9 |
+| H4 (G-H) | 2.6-7.0 (gHC3 5.0 / 7.0, gHV3 6.1 / 4.9) |
+
+No shared job could join the exclusive holds; the H4 rise is inside the runner's own hold.
+
+**Predictions check:**
+
+| prediction | P | outcome |
+|---|---|---|
+| Mmoving no-worse | 0.85 | hit |
+| Mtweens no-worse | 0.55 | hit |
+| GH no-worse | 0.6 | hit |
+| sentinels pass on the first try | 0.8 | hit (H1's gate VOIDs came before any sentinel) |
+| overall switch | 0.35 | hit |
+
+**Reading P-111 and P-114 together** (cross-block values don't compare; verdicts do). P-111's two WORSE verdicts (M
+close, GH cluster) came from a block whose M leg ran at Mac load1 13-140. P-114 is the second and last block, run on
+a quiet Mac with P-111's gates unchanged, and it finds neither. P-112 cleared morph rev 3 of the close start, and P-113
+cleared faces + glue and K of the band. This block's verdict decides the switch: v7 → v8.
+
 ## Reproduce
 
 ```sh
