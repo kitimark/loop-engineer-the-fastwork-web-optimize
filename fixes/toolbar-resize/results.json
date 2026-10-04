@@ -1453,5 +1453,16 @@
    "pass": true
   }
  ],
- "void": false
+ "void": false,
+ "p109": {
+  "scorer": "fixes/toolbar-resize/score-bisect.mjs",
+  "scorerSha256_12": "cb6f0c97b81b",
+  "score": "p109-score.json",
+  "servedBytesLog": "p109-runs.jsonl",
+  "notes": [
+   "CHANGE IN METHOD: P-109 ran in one exclusive Simulator hold of 7 steps (C skh skp C nvc ch C), not in the shared lane as two holds of four; the shared lane refuses gestures (functional session), so its first attempt took no data.",
+   "No C:H4; drift is C-H1 -> C-H3 (2.4 %). Every arm sits between two C runs. One run per arm, every call indicative; only phone G feeds a fix.",
+   "No measurement code (verify.mjs, lib/cdp.mjs, fix.mjs ab) was changed."
+  ]
+ }
 }

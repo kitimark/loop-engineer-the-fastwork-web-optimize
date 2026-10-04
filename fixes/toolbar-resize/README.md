@@ -299,7 +299,8 @@ REPLICA true (every C run counted, inStyle >= half), DRIFT 0.024 (C-H1 -> C-H3),
   out #people's subtree. That is the "skh NONE, skp LOCATES" case, which the predictions did not expect
   (skh LOCATES ~45 %, nvc NONE ~60 %). The mechanism behind "constrained renderer -> #people relayout" is
   UNRESOLVED (no source read yet); decisive check: P-110 below.
-- **Deviations from the card (for ops):**
+- **Deviations from the card (for ops):** CHANGE IN METHOD (asked for by the desk): the bisect ran in one
+  exclusive Simulator hold of 7 steps, not in the shared lane as 2 holds of 4.
   - Lock mode. `sim.mjs session --functional` (shared lane) refuses `sim.mjs gesture` as a timing run, so the shared
     hold took no data. Every run here comes from one normal Simulator session (`lock.mjs run chrome-measure
     --max-seconds 600 -- sim.mjs session`), which is quieter than the card's lane. Filters and scorer are unchanged.
@@ -325,6 +326,38 @@ REPLICA true (every C run counted, inStyle >= half), DRIFT 0.024 (C-H1 -> C-H3),
   look-identical form exists (for example `contain: layout` or `content-visibility: auto` with a measured intrinsic
   size on the located #people child, or isolating the constrained renderer), add a look check (pixel-identical rule)
   before F.
+
+## Prediction P-110: trigger and cost split (Simulator, registered before data)
+
+Lead (via desk): the Simulator part goes now, mechanism only; its phone G check waits for the ops reads (P-109 result and
+this pre-data card). It runs after v8's P-111 and PR-018 6d in the phone order. v8's phone block is P-111.
+
+- **Question.** P-109: removing the hero zone's fixed/sticky renderers (nvc) and not rendering #people (skp) each remove the
+  toolbar-step Layout; hero hide (skh) and `contain` on .hero (ch) do not. Which constrained renderer triggers it, and which
+  part of #people carries the cost?
+- **Arms** (all on the v7 server, CSS `308f0da70c3a`, JS `8c90da217745`; the arm is applied in the page by
+  `p110-inject.mjs`, sha256/12 `a2a4d4419f4b`, after each load and before the Timeline starts; mechanism only, look may change):
+  - Trigger: `nav` (`.start-selling-top-nav` position absolute), `pain` (`.pain-sticky` position relative), `navpain` (both;
+    nvc without the `.hero` change, to see whether the hero's own sticky is needed).
+  - Cost, inside `#people .start-selling-future-card`: `ph` (header), `ps` (showcase), `pc` (community pill):
+    `content-visibility: hidden` with `contain-intrinsic-block-size` = that box's own height measured in the same page just
+    before (so the Simulator's height is used; no height is typed in; GEOMETRY still checks docH).
+  - C = v7 with the same injection and no change (it reads the heights only).
+- **Order (one exclusive hold, <= 10 min):** C:H1 nav:H1 pain:H1 C:H2 navpain:H1 ph:H1 C:H3 ps:H1 pc:H1 C:H4. The driver
+  `sim-bisect110.mjs` (sha256/12 `93c7459a12cf`) stops before a step when < 45 s of its 520 s budget are left; an arm with
+  only one neighbouring C uses it and says so. Served bytes are hashed before the hold (refuses on a mismatch, exit 26).
+- **Scorer and filters:** unchanged, `score-bisect.mjs` `cb6f0c97b81b` (LOCATES <= 0.30, PARTIAL <= 0.70, NONE, GEOMETRY > 2 px,
+  replication gate, VOID at 30 % drift). One run per arm, so every call is indicative; only phone G feeds a fix.
+- **Predictions:** navpain LOCATES ~80 % (the layout needs a constrained renderer other than the hero). Of nav and pain:
+  nav LOCATES ~40 %, pain LOCATES ~35 %, both NONE with navpain LOCATES (needs both) ~25 %. Cost: ps (showcase) LOCATES
+  or PARTIAL ~70 %; ph NONE ~75 %; pc NONE ~80 %. skp's 0.05 and the three parts together should make sense: if ps is only
+  PARTIAL the cost is spread.
+- **Reading.**
+  - nav or pain LOCATES: that renderer is the trigger; a fix keeps it from invalidating #people (look-identical forms to be
+    found; a phone G check before F).
+  - ps LOCATES: the cost is the showcase subtree; `contain` / `content-visibility: auto` on it is the candidate.
+  - Nothing locates in a group: the cost is not one child (replace by the next split).
+
 
 ## Scenarios not run
 
