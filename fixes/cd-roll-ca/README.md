@@ -995,6 +995,12 @@ void runs: none; every C sentinel passed; no LPM
 ports (I-131, lead 09:1xZ: "unverified", not invalid): B 5419, C8 5420, V9 5421 (serve-snap, production cache headers,
   started 08:16Z / 08:16Z / ~08:41Z); whether a port served another build earlier today is for ts-i131's audit. C8 and V9
   serve the same CSS (982a747d), so a stale CSS can't separate the arms; the JS path differs per arm.
+  ts-i131 audit (09:2xZ, serve logs, OBSERVED; no client address in the logs): all three ports served other builds
+  before (differing only in 2.DyWL8TcE.js / 2.gBuqKVzi.css). On serve-B/C8/V9 the first document load fetched both with
+  a 200, and later reloads mostly re-requested them (C8 24 docs / 18 JS 200s, V9 12 / 10). No earlier overlay changed a
+  lazy image. WebKit honours `immutable` only on https (CachedResource.cpp makeRevalidationDecision, per ts-i131), and
+  the phone ran plain http. So there is no evidence that a counted run measured a stale file. After the I-131 fix
+  (no-cache + ETag), phone runs revalidate ~51 lazy files per run: phone numbers before and after that fix don't compare.
 ```
 
 | top window (idle 8 s + W through the hero) | C1 | C4 | C5 | C8 | V2 | V3 | V6 | V7 | median V − C |
