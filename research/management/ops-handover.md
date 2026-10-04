@@ -5,7 +5,21 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 06:4xZ** (mgmt-ops-10).
+**10-04 07:4xZ** (mgmt-ops-10).
+
+## Answer format (standing, user T-080, memory/answer-format.md, 0f868e6d)
+
+Every answer to the user (threads, chat, proposals, console step text) follows it:
+- the answer first;
+- short plain bullets;
+- codes explained (P-095, PR-017, ...);
+- numbers in small tables that say which side is better;
+- UTC times;
+- about 10 lines at most;
+- "What you need to do" last.
+
+Running agents don't reload memory, so put this rule in every spawn prompt (mgmt-ops-11's included) and in every
+resume brief.
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -27,6 +41,8 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **best-build COMPONENTS**: carousel-leaver and cd-strip each join best-build as one COMPONENTS line once they land (lead 17:5xZ).
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+
+- 10-04 07:4xZ **v6-best-br2** added to `versions` (hero-exit-threaded B-R2, JS 8018ce062d30 / CSS 71b65c667720, P-095 HIT, swipe C-038 to C-040). It now carries `"best": true` and v4 no longer does (exactly one best). Try-it server "best-br2", http, port 60238, served from fix-hero-exit-threaded's out/tryit/best-br2; only the lead kills it. Its cost line comes from main's README (first move after a rest paints 8-19 vs 2-8; frame about 330 ms after a rest 4-6 vs 0-1). The newer Simulator first-scroll counts (B +~50 paints, e0040db3) are not landed and not cited. **P-098 = morph-gpu rev 2 phone block** (C best-65052c4a3902 vs V rv2a, driver M, ticket 618b43b8). Ops read PASS: scorer fa2212d0a307 and its diff checked, P-092 re-scored as rv2a reproduces the ticket, both snapshots hash as stated. Lead: 3 holds approved; a G fling-into-end check C vs A before landing, after P-094 and P-093. Next free P-099. The answer-format rule (T-080) is now a standing section at the top of this file. After the rebase, the ops commits from 07:3xZ are 7af3baae (best flag) and fdd02896 (P-097).
 
 - 10-04 07:3xZ An API usage limit stopped several agents at about 07:25Z; the user switched accounts and the lead resumed them. iphone-runner died on it after C-038 to C-040 had finished (T-082, unblinded: B-R2 won both pairs, catch "same"); the lead killed its orphaned thread wait. Phone order (final while the user is active): fix-nav-morph (C-041 F3 swipe, holder since 07:22:19Z), then fix-rest-script (P-094), then cd-roll-ca (P-093). **P-097 = cd-roll-ca panel clock roll #1** (next free P-098). Lead ruling on versions: the "today's best build" chip goes only to an entry with `"best": true` (v4), and v5 gets a "to try" chip (ts-i118 22973643 is held until it changes). Ops commits 3cf849cd (best flag) and e51b686c (P-097) land after ts-i118's land request. I-124 approved: under 8 GB free, new timing holds refuse with DISK-LOW (shared jobs, phone runs and running holds are not stopped; the refusal says how to free space); the 20 GB warning goes to the desk. ts-i123 was sent back to rebase (conflicts with I-121/I-119). T-083 (idle alarm while the phone waits on the user's Start) closed as the I-125 case. T-084: the user used the phone during fix-nav-morph's lease with C-041 not started, so no data was hit; fix-nav-morph reloads Page 1 before Start.
 
