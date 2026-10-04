@@ -11,6 +11,7 @@ import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { tempDir, git } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
+import { checkMarkdown } from './md-cases.mjs';
 
 const FAKE_LAN = '192.0.2.44';
 let L, PH, P, fx, repo, fake;
@@ -211,6 +212,15 @@ test('I-126 page: talk messages turn http://lan:<port>/ into the resolved link (
   // a placeholder the server did not list, and a listed href that is no http(s)://<IPv4>:<port> URL: plain text
   const bare = pg.talkThread({ ...t, messages: [{ ...msg, lan: [{ text: 'http://lan:5231/', href: 'javascript:alert(1)' }] }] }, { id: 'PR-017' });
   assert.deepEqual(links(bare.all().find((x) => x.className === 'mt')), [['http://localhost:5559/proposals', 'http://localhost:5559/proposals']]);
+});
+
+test('I-129 page (user T-091): talk messages render pipe tables, "- " bullets and **bold** as the Threads page, as DOM nodes only', async () => {
+  const pg = page();
+  await checkMarkdown((text) => {
+    const lan = text.includes('http://lan:5231/') ? [{ text: 'http://lan:5231/', href: `http://${FAKE_LAN}:5231/` }] : undefined;
+    const box = pg.talkThread({ id: 'T-090', status: 'open', state: 'answered', to: ['de-hero'], messages: [{ by: 'de-hero', at: '2026-10-04T07:00:00.000Z', text, lan }] }, { id: 'PR-017' });
+    return box.all().find((x) => x.className === 'mt');
+  }, { lan: (port) => `http://${FAKE_LAN}:${port}/` });
 });
 
 test('T-086 page: each Try-it side shows its phone link (Wi-Fi address now) with Copy; down -> "not on the Wi-Fi" and the start command; no address -> placeholder and a note', () => {

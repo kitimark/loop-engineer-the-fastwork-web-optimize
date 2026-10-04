@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { readFileSync, existsSync, writeFileSync, readdirSync, truncateSync } from 'node:fs';
 import { tempDir, TOOLS } from '../helpers.mjs';
+import { checkMarkdown } from './md-cases.mjs';
 
 const T = await import('../../tools/lib/console-threads.mjs');
 let state;
@@ -641,6 +642,28 @@ test('I-119 store: a lan link is stored as written (no address resolved before s
     assert.ok(!('lan' in T.pageThread(plain, null, { lan: () => { throw new Error('never asked'); } }).messages[0]), 'a message without lan links has no lan key');
     assert.doesNotMatch(readFileSync(join(state, 'console', 'threads', `${n.thread.id}.json`), 'utf8'), IPV4_ANY, 'viewing stores nothing');
   } finally { if (old === undefined) delete process.env.FW_LAN_ADDRESS; else process.env.FW_LAN_ADDRESS = old; }
+});
+
+test('I-129 threads page (user T-091): pipe tables, "- " bullets and **bold** in a message, as DOM nodes only; links as before', async () => {
+  const old = process.env.FW_LAN_ADDRESS;
+  try {
+    await checkMarkdown(async (text) => {
+      const n = await T.createThread({ by: 'lead', title: 'Results', text });
+      const p = await threadsPage({ hash: `#${n.thread.id}`, thread: T.pageThread(T.getThread(n.thread.id), null, { lan: () => FAKE_LAN }) });
+      return p.ids['tv-msgs'].children[0].all().find((x) => x.className === 'mtext');
+    }, { lan: (port) => `http://${FAKE_LAN}:${port}/` });
+  } finally { if (old === undefined) delete process.env.FW_LAN_ADDRESS; else process.env.FW_LAN_ADDRESS = old; }
+});
+
+test('I-129: the Proposals page renders talk messages with the same markdown code as the Threads page (one block, two copies)', () => {
+  const block = (f) => {
+    const m = readFileSync(join(TOOLS, 'lib', f), 'utf8').match(/\/\/ md:begin[^\n]*\n([\s\S]*?)\/\/ md:end/);
+    assert.ok(m, `${f}: the md:begin ... md:end block`);
+    return m[1];
+  };
+  assert.equal(block('proposals-page.html'), block('threads-page.html'));
+  assert.match(block('threads-page.html'), /function richText\(node, text, lan\)/);
+  assert.doesNotMatch(block('threads-page.html'), /innerHTML|insertAdjacentHTML|outerHTML|document\.write/, 'text only, never HTML');
 });
 
 test('I-119 threads page: a lan link opens the address resolved at view time; unresolved: the text and a plain note; only listed links', async () => {

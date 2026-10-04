@@ -167,6 +167,15 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 .tq .mt { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tq .mt a { color: var(--accent); }
 .tq .mt .lannote { color: var(--muted); font-size: .9em; }
+/* I-129 (user T-091): pipe tables, "- " bullets, **bold** in a message (richText) */
+.tq .mt .md-wrap { overflow-x: auto; margin: 6px 0; }
+.tq .mt .md-table { border-collapse: collapse; white-space: normal; overflow-wrap: break-word; font-size: .95em; }
+.tq .mt .md-table th, .tq .mt .md-table td { border: 1px solid var(--line); padding: 4px 9px; text-align: left; vertical-align: top; }
+.tq .mt .md-table th { font-weight: 700; }
+.tq .mt .md-table .md-c { text-align: center; } .tq .mt .md-table .md-r { text-align: right; }
+.tq .mt .md-list { margin: 4px 0; padding-left: 1.3em; white-space: normal; list-style: disc; }
+.tq .mt .md-list > li { margin: 0 0 2px; padding: 0; border: 0; border-radius: 0; background: none; }
+.tq .mt .md-list > li.md-l1 { margin-left: 1.2em; } .tq .mt .md-list > li.md-l2 { margin-left: 2.4em; } .tq .mt .md-list > li.md-l3 { margin-left: 3.6em; }
 .tq .mi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .tq .mi figure { margin: 0; max-width: 220px; }
 .tq .mi img { display: block; max-width: 100%; border-radius: 6px; border: 1px solid var(--line); }
@@ -245,7 +254,7 @@ var LOCAL_LINK = /\bhttps?:\/\/(?:localhost|127\.0\.0\.1)(?::\d{1,5})?(?:\/[\w\-
  * [{text: the placeholder link (host "lan"), href: resolved | null}] (pageThread): a resolved one opens this Mac's LAN
  * address now, an unresolved one stays text with a plain note; a placeholder the server did not list stays text.
  */
-function richText(node, text, lan) {
+function linkText(node, text, lan) {
   var s = String(text), i = 0, m;
   var items = (Array.isArray(lan) ? lan : []).filter(function (l) { return l && typeof l.text === 'string' && /^https?:\/\/lan:\d/i.test(l.text); });
   for (;;) {
@@ -268,6 +277,90 @@ function richText(node, text, lan) {
   }
   if (i < s.length) node.appendChild(document.createTextNode(s.slice(i)));
 }
+
+// md:begin I-129 (user T-091): the same block in threads-page.html and proposals-page.html (a unit test compares them)
+/**
+ * A message's text with a small markdown subset: pipe tables (a header row, then a separator row of dashes such as
+ * |---|:--:|--:| for left, centre, right), "- " bullets (two spaces of indent per level, up to 3) and **bold**; the
+ * links inside as linkText (localhost and the phone's lan links, I-119). Built from elements and text nodes only, so
+ * nothing in the text becomes HTML; everything else stays text as written (white-space: pre-wrap).
+ */
+var MD_SEP = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
+var MD_LI = /^( *)- (.*)$/;
+var MD_BOLD = /\*\*(?=[^\s*])([^\n]*?[^\s*])\*\*/g;
+function mdEl(tag, cls) { var n = document.createElement(tag); if (cls) n.className = cls; return n; }
+function mdCells(line) {
+  var s = line.trim(), out = [], cur = '', i;
+  if (s.charAt(0) === '|') s = s.slice(1);
+  if (s.slice(-1) === '|' && s.slice(-2) !== '\\|') s = s.slice(0, -1);
+  for (i = 0; i < s.length; i++) {
+    if (s.charAt(i) === '\\' && s.charAt(i + 1) === '|') { cur += '|'; i++; }
+    else if (s.charAt(i) === '|') { out.push(cur.trim()); cur = ''; }
+    else cur += s.charAt(i);
+  }
+  out.push(cur.trim());
+  return out;
+}
+function mdInline(node, s, lan) {
+  var i = 0, m, parts = [];
+  MD_BOLD.lastIndex = 0;
+  while ((m = MD_BOLD.exec(s))) parts.push([m.index, m[0].length, m[1]]);
+  parts.forEach(function (p) {
+    if (p[0] > i) linkText(node, s.slice(i, p[0]), lan);
+    var b = mdEl('strong'); linkText(b, p[2], lan); node.appendChild(b);
+    i = p[0] + p[1];
+  });
+  if (i < s.length) linkText(node, s.slice(i), lan);
+}
+function mdTable(node, rows, align, lan) {
+  var wrap = mdEl('div', 'md-wrap'), t = mdEl('table', 'md-table'), head = mdEl('thead'), body = mdEl('tbody');
+  rows.forEach(function (cells, r) {
+    var tr = mdEl('tr');
+    for (var c = 0; c < align.length; c++) { var td = mdEl(r ? 'td' : 'th', align[c]); mdInline(td, cells[c] || '', lan); tr.appendChild(td); }
+    (r ? body : head).appendChild(tr);
+  });
+  t.appendChild(head);
+  if (rows.length > 1) t.appendChild(body);
+  wrap.appendChild(t);
+  node.appendChild(wrap);
+}
+function richText(node, text, lan) {
+  var lines = String(text).split('\n'), buf = [], afterBlock = false, i = 0, head, sep, m;
+  function flush(beforeBlock) { // the blank lines next to a table or a list go: the block has its own margin
+    if (afterBlock) while (buf.length && !buf[0].trim()) buf.shift();
+    if (beforeBlock) while (buf.length && !buf[buf.length - 1].trim()) buf.pop();
+    if (buf.length) { mdInline(node, buf.join('\n'), lan); afterBlock = false; }
+    buf = [];
+  }
+  while (i < lines.length) {
+    var line = lines[i], next = lines[i + 1];
+    if (line.indexOf('|') >= 0 && next !== undefined && next.indexOf('|') >= 0 && MD_SEP.test(next) &&
+        (head = mdCells(line)).length === (sep = mdCells(next)).length) {
+      flush(true);
+      var rows = [head];
+      for (i += 2; i < lines.length && lines[i].trim() && lines[i].indexOf('|') >= 0; i++) rows.push(mdCells(lines[i]));
+      mdTable(node, rows, sep.map(function (c) { return /^:-+:$/.test(c) ? 'md-c' : /^-+:$/.test(c) ? 'md-r' : ''; }), lan);
+      afterBlock = true;
+      continue;
+    }
+    if (MD_LI.test(line)) {
+      flush(true);
+      var ul = mdEl('ul', 'md-list');
+      for (; i < lines.length && (m = MD_LI.exec(lines[i])); i++) {
+        var li = mdEl('li', m[1].length >= 2 ? 'md-l' + Math.min(3, m[1].length >> 1) : '');
+        mdInline(li, m[2], lan);
+        ul.appendChild(li);
+      }
+      node.appendChild(ul);
+      afterBlock = true;
+      continue;
+    }
+    buf.push(line);
+    i++;
+  }
+  flush(false);
+}
+// md:end
 
 // ---- state kept across refreshes ----
 var listSig = '', detailSig = '', current = null, drafts = {}, pick = {}, view = {}, pair = {}, blinkTimer = null, slider = {};
@@ -848,7 +941,7 @@ function talkThread(t, p) {
   (t.messages || []).forEach(function (m) {
     var li = el('li', { class: m.by === 'user' ? 'mine' : null },
       el('div', { class: 'mw', text: (m.by === 'user' ? 'You' : m.by) + ' · ' + when(m.at) + (m.ask ? ' · asks you' : '') }));
-    if (m.text || !(m.images && m.images.length)) { var mt = el('p', { class: 'mt' }); richText(mt, m.text || '', m.lan); li.appendChild(mt); } // I-126
+    if (m.text || !(m.images && m.images.length)) { var mt = el('div', { class: 'mt' }); richText(mt, m.text || '', m.lan); li.appendChild(mt); } // I-126; I-129: a div, it may hold a table or a list
     var ims = talkImages(m.images);
     if (ims) li.appendChild(ims);
     ol.appendChild(li);
