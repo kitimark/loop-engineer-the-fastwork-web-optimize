@@ -42,6 +42,15 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 13:3xZ **P-104 second read AGREE: does not pass (parity).**
+  - fix-nav-morph's 4b7ec45b: I re-scored every count from the raw counts/steps. All loads served the card's hashes, with no errors.
+  - Judged counts: every V below every C in both viewports. Guards hold, and the Sim is no worse.
+  - Parity fails: the audit at 40 px per frame finds 1 mismatch at y 3186 on mobile (y 3486 in the shift case), and desktop shows 4 state mismatches.
+  - Ops note: Sim function calls per step rose from 7.37 to 8.6 (not a card guard). The successor ticket gets a fresh id.
+- 10-04 13:3xZ **P-105 pre-data read PASS** (iphone-runner b9c7d1eb).
+  - 12 hashes match, and the self-test is 17/17.
+  - Notes: N1 a script failure on M means a re-ticket; N2 record the pre-warm count; N3 bins by scrollY need the same geometry in both arms; N4 the report names it "v7 vs v6".
+  - Ledger rows P-104 (result) and P-105 added.
 - 10-04 13:2xZ **P-106 re-read PASS** (card d97873ef, scorer 4b7fca760270).
   - The scorer re-run on the v7 t113 data gives hero 104/114 and end 5/83, matching the card.
   - Notes: N1 vt and js need a WebKit proof the arm acts; N2 a cv NOT-CONFIRMED does not void the H arms; N3 page height per arm; N4 frames near the y 3250 boundary in C-E.
