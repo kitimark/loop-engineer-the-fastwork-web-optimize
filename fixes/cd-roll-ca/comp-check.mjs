@@ -109,7 +109,12 @@ try {
     frameSplit, otherAnimationInstances: inst.length - stripInst.length, clocksAtEnd: strips, runningAtEnd: running, traceEvents: events.length, t0,
     timerFire: cnt('TimerFire'), styleElements: events.filter((e) => e.name === 'UpdateLayoutTree').reduce((n, e) => n + (e.args?.elementCount || e.args?.data?.elementCount || 0), 0),
     otherAnimNodes: Object.entries(inst.filter((r) => !/\b(strip|cell)\b/.test(r.node || '')).reduce((m, r) => ((m[r.node || '?'] = (m[r.node || '?'] || 0) + 1), m), {})),
+    // the countdown's 1 s ticks (review round 4 B3, cost card event): countdown-code FunctionCalls outside any
+    // FireAnimationFrame (the setInterval / visibilitychange callbacks), one per 50 ms cluster; trace µs
+    tickTimes: cdCalls.filter((c) => !fafs.some((f) => f.tid === c.tid && c.ts >= f.ts && c.ts <= f.ts + (f.dur || 0))).map((c) => c.ts).sort((a, b) => a - b).filter((t, i, a) => i === 0 || t - a[i - 1] > 50e3),
   };
+  // --save-trace <path>: the raw events as {traceEvents} (tools/costcard.mjs input)
+  if (arg('--save-trace')) { const p = join(root, arg('--save-trace')); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, JSON.stringify({ traceEvents: events })); out.trace = arg('--save-trace'); }
 } finally {
   await page.close(); cdp.close(); await chrome.close();
 }

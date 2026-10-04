@@ -1,0 +1,1171 @@
+{
+ "tool": "tools/costcard.mjs",
+ "schema": "fw-costcard/1",
+ "topic": "cd-roll-ca",
+ "generatedAt": "2026-10-04T07:10:24.542Z",
+ "inputs": [
+  "out/cd-roll-ca/full/records.json",
+  "out/cd-roll-ca/full/trace-C8-r1.json",
+  "out/cd-roll-ca/full/trace-C8-r2.json",
+  "out/cd-roll-ca/full/trace-C8-r3.json",
+  "out/cd-roll-ca/full/trace-V9-r1.json",
+  "out/cd-roll-ca/full/trace-V9-r2.json",
+  "out/cd-roll-ca/full/trace-V9-r3.json"
+ ],
+ "arms": [
+  "C8",
+  "V9"
+ ],
+ "control": "C8",
+ "aa": null,
+ "dpr": 3,
+ "scriptFromFrz": null,
+ "rows": [
+  {
+   "element": "hero + panel countdown (full page)",
+   "event": "tick",
+   "engine": "chrome",
+   "modes": [
+    "full"
+   ],
+   "arms": {
+    "C8": {
+     "full": {
+      "loads": 3,
+      "reps": [
+       1,
+       2,
+       3
+      ],
+      "metrics": {
+       "events": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 3
+       },
+       "seconds": {
+        "median": 1.000027,
+        "min": 0.999761,
+        "max": 1.000123,
+        "n": 3
+       },
+       "mainFrames": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "rafFires": {
+        "median": 27,
+        "min": 27,
+        "max": 27,
+        "n": 3
+       },
+       "rafWithCode": {
+        "median": null,
+        "n": 0
+       },
+       "codeCalls": {
+        "median": null,
+        "n": 0
+       },
+       "fileCalls": {
+        "median": null,
+        "n": 0
+       },
+       "functionCalls": {
+        "median": 66,
+        "min": 66,
+        "max": 66,
+        "n": 3
+       },
+       "timerFires": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 3
+       },
+       "styleRecalcs": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "styleElements": {
+        "median": 417,
+        "min": 417,
+        "max": 417,
+        "n": 3
+       },
+       "layouts": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 3
+       },
+       "layoutObjects": {
+        "median": 33,
+        "min": 32,
+        "max": 34,
+        "n": 3
+       },
+       "paints": {
+        "median": 178,
+        "min": 155,
+        "max": 182,
+        "n": 3
+       },
+       "pageCullArea": {
+        "median": 36591742734489330,
+        "min": 31525193744179590,
+        "max": 37436167566657540,
+        "n": 3
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementCullArea": {
+        "median": null,
+        "n": 0
+       },
+       "prePaints": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "layerizes": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "io": {
+        "median": 120,
+        "min": 120,
+        "max": 120,
+        "n": 3
+       },
+       "commits": {
+        "median": 180,
+        "min": 180,
+        "max": 180,
+        "n": 3
+       },
+       "compositorFrames": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "frameHz": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "rafHz": {
+        "median": 27,
+        "min": 27,
+        "max": 27,
+        "n": 3
+       }
+      },
+      "msUnjudged": {
+       "script": 3.8,
+       "style": 8.09,
+       "layout": 0.26,
+       "paint": 5.96
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": [
+       {
+        "name": null,
+        "displayName": "avatars-shift",
+        "nodeName": "IMG",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 13
+       },
+       {
+        "name": null,
+        "displayName": "avatars-exit",
+        "nodeName": "IMG class='st5-lead'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 3
+       },
+       {
+        "name": null,
+        "displayName": "avatars-shift",
+        "nodeName": "IMG class='st5-next'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 5
+       },
+       {
+        "name": null,
+        "displayName": "avatars-pop",
+        "nodeName": "IMG class='st5-next'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 7
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-0",
+        "nodeName": "svg class='accent-svg is-idle-frame is-idle-frame-0 svelte-1fn2go6'",
+        "compositeFailed": 131072,
+        "reasons": [
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": true,
+        "seen": 1
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-1",
+        "nodeName": "svg class='accent-svg is-idle-frame is-idle-frame-1 svelte-1fn2go6'",
+        "compositeFailed": 131072,
+        "reasons": [
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": true,
+        "seen": 3
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-2",
+        "nodeName": "svg class='accent-svg is-idle-frame is-idle-frame-2 svelte-1fn2go6'",
+        "compositeFailed": 131072,
+        "reasons": [
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": true,
+        "seen": 1
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-stroke-in",
+        "nodeName": "path class='accent-path svelte-1fn2go6'",
+        "compositeFailed": 8224,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 2
+       }
+      ],
+      "animsAttributed": false
+     }
+    },
+    "V9": {
+     "full": {
+      "loads": 3,
+      "reps": [
+       1,
+       2,
+       3
+      ],
+      "metrics": {
+       "events": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 3
+       },
+       "seconds": {
+        "median": 0.999997,
+        "min": 0.999958,
+        "max": 1.000399,
+        "n": 3
+       },
+       "mainFrames": {
+        "median": 50,
+        "min": 47,
+        "max": 52,
+        "n": 3
+       },
+       "rafFires": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 3
+       },
+       "rafWithCode": {
+        "median": null,
+        "n": 0
+       },
+       "codeCalls": {
+        "median": null,
+        "n": 0
+       },
+       "fileCalls": {
+        "median": null,
+        "n": 0
+       },
+       "functionCalls": {
+        "median": 14,
+        "min": 14,
+        "max": 16,
+        "n": 3
+       },
+       "timerFires": {
+        "median": 5,
+        "min": 5,
+        "max": 5,
+        "n": 3
+       },
+       "styleRecalcs": {
+        "median": 50,
+        "min": 47,
+        "max": 52,
+        "n": 3
+       },
+       "styleElements": {
+        "median": 392,
+        "min": 346,
+        "max": 469,
+        "n": 3
+       },
+       "layouts": {
+        "median": 2,
+        "min": 2,
+        "max": 2,
+        "n": 3
+       },
+       "layoutObjects": {
+        "median": 33,
+        "min": 33,
+        "max": 33,
+        "n": 3
+       },
+       "paints": {
+        "median": 178,
+        "min": 155,
+        "max": 178,
+        "n": 3
+       },
+       "pageCullArea": {
+        "median": 36591742734489330,
+        "min": 31525193744179590,
+        "max": 36591742734489330,
+        "n": 3
+       },
+       "elementPaints": {
+        "median": null,
+        "n": 0
+       },
+       "elementCullArea": {
+        "median": null,
+        "n": 0
+       },
+       "prePaints": {
+        "median": 50,
+        "min": 47,
+        "max": 52,
+        "n": 3
+       },
+       "layerizes": {
+        "median": 50,
+        "min": 47,
+        "max": 52,
+        "n": 3
+       },
+       "io": {
+        "median": 100,
+        "min": 94,
+        "max": 104,
+        "n": 3
+       },
+       "commits": {
+        "median": 150,
+        "min": 141,
+        "max": 156,
+        "n": 3
+       },
+       "compositorFrames": {
+        "median": 60,
+        "min": 60,
+        "max": 60,
+        "n": 3
+       },
+       "frameHz": {
+        "median": 50,
+        "min": 47,
+        "max": 52,
+        "n": 3
+       },
+       "rafHz": {
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "n": 3
+       }
+      },
+      "msUnjudged": {
+       "script": 2.15,
+       "style": 6.89,
+       "layout": 0.23,
+       "paint": 5.59
+      },
+      "census": null,
+      "lineBase": [],
+      "preCut": false,
+      "anims": [
+       {
+        "name": null,
+        "displayName": "avatars-shift",
+        "nodeName": "IMG",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 10
+       },
+       {
+        "name": null,
+        "displayName": "avatars-exit",
+        "nodeName": "IMG class='st5-lead'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 3
+       },
+       {
+        "name": null,
+        "displayName": "avatars-shift",
+        "nodeName": "IMG class='st5-next'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 3
+       },
+       {
+        "name": null,
+        "displayName": "avatars-pop",
+        "nodeName": "IMG class='st5-next'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 4
+       },
+       {
+        "name": null,
+        "displayName": "avatars-exit",
+        "nodeName": "SPAN class='cell svelte-1quva9c'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 5
+       },
+       {
+        "name": null,
+        "displayName": "avatars-shift",
+        "nodeName": "SPAN class='cell svelte-1quva9c'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 12
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-0",
+        "nodeName": "svg class='accent-svg is-idle-frame is-idle-frame-0 svelte-1fn2go6'",
+        "compositeFailed": 131072,
+        "reasons": [
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": true,
+        "seen": 1
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-1",
+        "nodeName": "svg class='accent-svg is-idle-frame is-idle-frame-1 svelte-1fn2go6'",
+        "compositeFailed": 131072,
+        "reasons": [
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": true,
+        "seen": 2
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-2",
+        "nodeName": "svg class='accent-svg is-idle-frame is-idle-frame-2 svelte-1fn2go6'",
+        "compositeFailed": 131072,
+        "reasons": [
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": true,
+        "seen": 1
+       },
+       {
+        "name": null,
+        "displayName": "avatars-pop",
+        "nodeName": "SPAN class='cell svelte-1quva9c'",
+        "compositeFailed": 139296,
+        "reasons": [
+         "TargetHasInvalidCompositingState",
+         "UnsupportedCSSProperty",
+         "AnimationHasNoVisibleChange"
+        ],
+        "unsupportedProperties": [
+         "stroke-dashoffset"
+        ],
+        "hasCompositeInstant": true,
+        "seen": 4
+       },
+       {
+        "name": null,
+        "displayName": "svelte-1fn2go6-idle-1",
+        "nodeName": "SPAN class='cell svelte-1quva9c'",
+        "compositeFailed": 0,
+        "reasons": [],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": false,
+        "seen": 1
+       },
+       {
+        "name": null,
+        "displayName": null,
+        "nodeName": "SPAN class='cell svelte-1quva9c'",
+        "compositeFailed": 0,
+        "reasons": [],
+        "unsupportedProperties": [],
+        "hasCompositeInstant": false,
+        "seen": 10
+       }
+      ],
+      "animsAttributed": false,
+      "delta": {
+       "mainFrames": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "rafFires": {
+        "d": -26,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "functionCalls": {
+        "d": -52,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "timerFires": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "styleRecalcs": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "styleElements": {
+        "d": -25,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "layouts": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "layoutObjects": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "paints": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "pageCullArea": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "prePaints": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "layerizes": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "io": {
+        "d": -20,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "commits": {
+        "d": -30,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "compositorFrames": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "frameHz": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       },
+       "rafHz": {
+        "d": -26,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     }
+    }
+   },
+   "aaSource": {
+    "full": "none: 2-count floor only (chrome FULL, no A/A arm)"
+   },
+   "fields": {
+    "0": {
+     "mainFrames": {
+      "C8": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 50,
+       "min": 47,
+       "max": 52,
+       "n": 3,
+       "delta": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "frameHz": {
+      "C8": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 50,
+       "min": 47,
+       "max": 52,
+       "n": 3,
+       "delta": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "rafHz": {
+      "C8": {
+       "mode": "full",
+       "median": 27,
+       "min": 27,
+       "max": 27,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 3,
+       "delta": {
+        "d": -26,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "rafFires": {
+      "C8": {
+       "mode": "full",
+       "median": 27,
+       "min": 27,
+       "max": 27,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 1,
+       "min": 1,
+       "max": 1,
+       "n": 3,
+       "delta": {
+        "d": -26,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "prePaints": {
+      "C8": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 50,
+       "min": 47,
+       "max": 52,
+       "n": 3,
+       "delta": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "layerizes": {
+      "C8": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 50,
+       "min": 47,
+       "max": 52,
+       "n": 3,
+       "delta": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "commits": {
+      "C8": {
+       "mode": "full",
+       "median": 180,
+       "min": 180,
+       "max": 180,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 150,
+       "min": 141,
+       "max": 156,
+       "n": 3,
+       "delta": {
+        "d": -30,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "compositorFrames": {
+      "C8": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "io": {
+      "C8": {
+       "mode": "full",
+       "median": 120,
+       "min": 120,
+       "max": 120,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 100,
+       "min": 94,
+       "max": 104,
+       "n": 3,
+       "delta": {
+        "d": -20,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     }
+    },
+    "1": {
+     "C8": {
+      "mode": "full",
+      "text": "8 of 8 page (not element-attributed) animations not composited: TargetHasInvalidCompositingState, UnsupportedCSSProperty, AnimationHasNoVisibleChange (properties stroke-dashoffset)",
+      "status": "UNRESOLVED"
+     },
+     "V9": {
+      "mode": "full",
+      "text": "10 of 12 page (not element-attributed) animations not composited: TargetHasInvalidCompositingState, UnsupportedCSSProperty, AnimationHasNoVisibleChange (properties stroke-dashoffset)",
+      "status": "UNRESOLVED"
+     }
+    },
+    "2": {},
+    "3": {
+     "paints": {
+      "C8": {
+       "mode": "full",
+       "median": 178,
+       "min": 155,
+       "max": 182,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 178,
+       "min": 155,
+       "max": 178,
+       "n": 3,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "pageCullArea": {
+      "C8": {
+       "mode": "full",
+       "median": 36591742734489330,
+       "min": 31525193744179590,
+       "max": 37436167566657540,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 36591742734489330,
+       "min": 31525193744179590,
+       "max": 36591742734489330,
+       "n": 3,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     }
+    },
+    "4": {
+     "layouts": {
+      "C8": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 2,
+       "min": 2,
+       "max": 2,
+       "n": 3,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "layoutObjects": {
+      "C8": {
+       "mode": "full",
+       "median": 33,
+       "min": 32,
+       "max": 34,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 33,
+       "min": 33,
+       "max": 33,
+       "n": 3,
+       "delta": {
+        "d": 0,
+        "tol": 2,
+        "beyondAA": false,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     }
+    },
+    "5": {
+     "styleElements": {
+      "C8": {
+       "mode": "full",
+       "median": 417,
+       "min": 417,
+       "max": 417,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 392,
+       "min": 346,
+       "max": 469,
+       "n": 3,
+       "delta": {
+        "d": -25,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "styleRecalcs": {
+      "C8": {
+       "mode": "full",
+       "median": 60,
+       "min": 60,
+       "max": 60,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 50,
+       "min": 47,
+       "max": 52,
+       "n": 3,
+       "delta": {
+        "d": -10,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     },
+     "functionCalls": {
+      "C8": {
+       "mode": "full",
+       "median": 66,
+       "min": 66,
+       "max": 66,
+       "n": 3,
+       "delta": null
+      },
+      "V9": {
+       "mode": "full",
+       "median": 14,
+       "min": 14,
+       "max": 16,
+       "n": 3,
+       "delta": {
+        "d": -52,
+        "tol": 2,
+        "beyondAA": true,
+        "lowPower": false,
+        "aaSource": "none"
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "voids": [],
+ "skipped": [],
+ "sourceStatus": [
+  "Field 1, Chrome: the trace \"Animation\" instant event with compositeFailed is CONFIRMED in source (chromium inspector_trace_events.cc inspector_animation_compositor_event::Data; devtools-frontend TraceEvents.ts, CLSCulprits.ts). Emitted on Chrome 154 with our trace categories: OBSERVED for a CSS width animation (failure UnsupportedCSSProperty, property width) and absent for a transform animation (tests/chrome/costcard.chrome.test.mjs); that every animation type on this page gets it is UNRESOLVED. A composited animation gets no compositeFailed event, so \"no failure reason\" is never read as \"composited\".",
+  "Field 3, Chrome: a trace Paint clip is the paint layer's cull rect in layer-local coordinates (CONFIRMED, chromium paint_layer_painter.cc \"Paint\" event), so Chrome areas are upper bounds, never intersected with an element rect; element paints use Paint args.data.nodeId against the element's backend node ids."
+ ]
+}

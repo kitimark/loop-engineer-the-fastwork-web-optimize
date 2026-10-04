@@ -1,7 +1,7 @@
 {
   "topic": "cd-roll-ca",
   "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
-  "date": "2026-10-04T06:35:00Z",
+  "date": "2026-10-04T07:40:00Z",
   "config": {
     "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
     "stackedOn": "cd-strip strip-tc (accepted PR-008 rev 2, 2026-10-03 09:31Z) on st6-rb2",
@@ -65,9 +65,27 @@
           "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  V7/_app/immutable/assets/2.gBuqKVzi.css"
         ]
       }
+    },
+    "patchDiffSha256": "d48095cc16fff5ca556561b74bfb344b770d025588b86dc45fd4e55d5e619367",
+    "tryIt": {
+      "b": {
+        "patch": "fixes/cd-roll-ca-live/patch.diff",
+        "sha256": "936b5b13b5acab7a7d6d249cee2762468b5432b8f2e6e5980bddca2a2d85d0ee",
+        "overlayJs": "582d120c9f8f",
+        "overlayCss": "982a747d9263",
+        "equals": "V9"
+      },
+      "a": {
+        "patch": "fixes/cd-roll-ca-live-a/patch.diff",
+        "sha256": "66de9aa47bda956284734bb314bab8113186c3fe3e7da0c5c4a6198068cbf88b",
+        "overlayJs": "6fa0e1e8a221",
+        "overlayCss": "982a747d9263",
+        "equals": "C8"
+      },
+      "built": "fix.mjs combine (st6-rb2 cd-strip [cd-roll-ca]) + fix.mjs diff, committed 49589be3"
     }
   },
-  "verdict": "V9 (cd-roll-ca on main's strip-tc): less-work counts hold (Chrome countdown rAF 163 -> 6 per 6 s, main frames 205 -> 79; WebKit Sim 132-146 -> 4 per 4 s); pixels: T2 (lead ruling; moving-only sub-pixel offset, max delta 9, <= 0.041 % of the screen, Sim); reduced motion exact against the control's A/A (lead ruling); phone P-093 no-worse check and review round 4 pending",
+  "verdict": "V9 (cd-roll-ca on main's strip-tc): less work holds on the full page (Chrome countdown rAF 23-26 -> 1 per roll, FunctionCalls 66 -> 14 per 1 s tick, main frames 60 -> 50, layouts/paints equal; Sim full page countdown rAF 107-112 -> 4 per 4 s); pixels exact at rest/end/reduced motion, Sim mid-roll T2, Chrome mid-roll T3 (motion-only) -> proposal PR-017; pending: user decision, review round 5, phone P-093",
   "chromeCounts": {
     "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
     "base_frozen": {
@@ -1756,8 +1774,9 @@
     "note": "offline Node 24 micro-benchmark of __crPath (all 90 from/to pairs x 20) on this Mac under load; OBSERVED, not a page timing"
   },
   "regressions": {
-    "check": "round 2 (673b110d): fix.mjs check cd-roll-ca --on cd-strip --viewport mobile: morph reached both, 0 errors, 0 4xx, elements 1543 -> 1543, pixel diff top 0.14 / middle 0.01 / bottom 0.51 % (bottom above the 0.4 % band: the gradient accent words in another colour phase, looked at; no countdown in that shot)",
-    "raw": "out/check/cd-roll-ca/2026-10-03T02-14-47-205Z/check.json",
+    "check": "round 4 on C8 (V9 582d120c9f8f): fix.mjs check cd-roll-ca --on cd-strip --viewport mobile: morph reached both, 0 errors, 0 4xx, elements 1558 -> 1558, pixel diff top 0.10 / middle 0 / bottom 0.34 %",
+    "raw": "out/check/cd-roll-ca/2026-10-04T06-30-37-471Z/check.json",
+    "round2": "out/check/cd-roll-ca/2026-10-03T02-14-47-205Z/check.json (673b110d; top 0.14 / middle 0.01 / bottom 0.51 %)",
     "round1": "out/check/cd-roll-ca/2026-10-03T01-30-19-691Z/check.json (top 0.19 / middle 0.01 / bottom 0.39 %)"
   },
   "raw": [
@@ -1778,7 +1797,7 @@
     "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json"
   ],
   "round4": {
-    "design": "one Web Animation per moved cell (cells within 1.5 cells of the path), keyword linear easing, shared startTime; moved cells at top M*c inside cd-strip wrapper at -M*c; gap re-key on a first frame > 1 frame after the change; hidden-tab logic of round 3 unchanged",
+    "design": "one Web Animation per moved cell (cells within 1.5 cells of the path), keyword linear easing, shared startTime, on cd-strip strip-tc (no top write: the animation moves the cell transform); gap re-key on a first frame > 1 frame after the change; hidden-tab logic of round 3 unchanged",
     "pathTolerance": {
       "kept": 0.0005,
       "keyframes5e-4": {
@@ -1959,7 +1978,8 @@
       "costLine": "+1 backed cell (+0.023 MB) at rest in V in 2 of 4 Sim runs (seconds ones cell 2, ~0.1 s after a roll); persistence not checked yet; OBSERVED"
     },
     "pending": [
-      "review round 4",
+      "user decision on PR-017 (land / park)",
+      "review round 5",
       "phone P-093 (W driver, 3 holds, real thermal Serious)"
     ],
     "measuredOn": "strip-rw (C5/V6 dev, C6/V7) and strip-tc (C8/V9: session A + Chrome roll-end check)",
@@ -2190,7 +2210,7 @@
       },
       "rollEndSimSpots": "The Sim end pairs that differ (session A wrap, B1 carry) show the same 73 px, delta 1: 42 px at css x 260-299 and 31 px at x 160-209 from the timer left. Both spots also toggle in the unchanged page: C8 vs C8-again shows the 260-299 spot in most frames and the exact 31-px x 160-209 pattern in 1 of 49 (B1) and 2 of 45 (A) frame pairs. So a page-own 1-shade toggle, not the cancel (OBSERVED, Simulator)."
     },
-    "status": "resumed 2026-10-04 on the landed cd-strip (C8 = strip-tc 5d1ca102); list done: B2, C, rate, sim-counts, sim-hide, reduced motion (Sim + Chrome), Chrome comp/h60/hide/T-034/check; next: review round 4, phone P-093",
+    "status": "round 4 review items done (B1-B4, N1-N8); B2: Chrome mid-roll T3, Sim T2, rest/end/RM exact; B3: full-page Chrome counts + cost card + Sim full page; proposal PR-017 posted; next: review round 5, P-093, the user decision",
     "resumedOnTc": {
       "served": {
         "C8": {
@@ -2276,12 +2296,26 @@
         "file": "out/cd-roll-ca/sim-hide-2026-10-04T04-15-29-333Z.json"
       },
       "pixelTierNumbers": {
-        "largestShade": 9,
-        "shareBeyondAA": "<= 0.041 %",
-        "areaCssPx": 166,
-        "edgeOrFill": "edge",
-        "staticOrMoving": "moving only",
-        "tier": "T2 (lead ruling 2026-10-04: max delta 9 edge <= 128/fill 64, <= 0.041 % < 0.5 %; A/A Sim B2 8/24 delta 1, C 0/92; Chrome RM 0/428 and 2/105 delta 1, end-check 1/8 delta 1)"
+        "restEndReducedMotion": "T0 exact (Chrome + Sim rest/end; reduced motion exact against the control A/A, lead ruling)",
+        "simMidRoll": {
+          "largestShade": 9,
+          "shareBeyondAA": "<= 0.041 %",
+          "areaCssPx": 166,
+          "edgeOrFill": "edge",
+          "staticOrMoving": "moving only",
+          "geometry": "<= 0.017 CSS px = 0.05 device px",
+          "tier": "T2"
+        },
+        "chromeMidRoll": {
+          "largestShade": 222,
+          "shareBeyondAA": "<= 0.130 %",
+          "areaCssPx": 754,
+          "edgeOrFill": "edge and moved glyphs",
+          "staticOrMoving": "moving only",
+          "geometry": "<= 0.21 CSS px; 0.63 CSS px = 1.9 device px with two changes mid-roll",
+          "tier": "T3 (222 > edge 128; 1.9 device px > 1)"
+        },
+        "tier": "motion-only difference beyond T2 in Chrome mid-roll: goes to the user as proposal PR-017 (lead 2026-10-04)"
       },
       "reducedMotion": {
         "sim": {
@@ -2925,7 +2959,337 @@
         "css": "f5ee35c41a72",
         "countdownRegionSha": "854f366a21fd"
       },
-      "measurementCodeChanged": false
+      "measurementCodeChanged": false,
+      "chromeMotionB2": {
+        "tool": "fixes/cd-roll-ca/pixels.mjs MOTION=1 + fixes/cd-roll-ca/fivenum.mjs",
+        "files": [
+          "out/cd-roll-ca/pixels-2026-10-04T06-57-19-874Z.json",
+          "out/cd-roll-ca/pixels-2026-10-04T06-58-28-626Z.json",
+          "out/cd-roll-ca/fivenum-430.json",
+          "out/cd-roll-ca/fivenum-1440.json"
+        ],
+        "method": "C8, V9, C8-again at the same virtual frame stamps; V9 cell animations paused at currentTime = stamp - startTime; beyond A/A = channel diff > 8 where C8-again vs C8 <= 8, share of the whole viewport",
+        "w430dpr3": {
+          "hz60": {
+            "differ": 17,
+            "beyondAA": 12,
+            "of": 119,
+            "maxShade": 222,
+            "sharePct": 0.027,
+            "areaCssPx": 107,
+            "kind": "edge",
+            "motion": "moving only"
+          },
+          "hz120": {
+            "differ": 36,
+            "beyondAA": 35,
+            "of": 50,
+            "maxShade": 222,
+            "sharePct": 0.13,
+            "areaCssPx": 520,
+            "kind": "edge and moved glyphs",
+            "motion": "moving only"
+          },
+          "geometryCssPx": 0.21,
+          "geometryTwoChangesCssPx": 0.63
+        },
+        "w1440dpr1": {
+          "hz60": {
+            "differ": 119,
+            "beyondAA": 119,
+            "of": 119,
+            "maxShade": 222,
+            "sharePct": 0.012,
+            "areaCssPx": 157,
+            "kind": "edge (fill max 4)",
+            "motion": "moving only"
+          },
+          "hz120": {
+            "differ": 50,
+            "beyondAA": 50,
+            "of": 50,
+            "maxShade": 222,
+            "sharePct": 0.058,
+            "areaCssPx": 754,
+            "kind": "edge and moved glyphs",
+            "motion": "moving only"
+          }
+        },
+        "aa": "430: 6 of 169 shots, max 173 (C8 first load low-res raster); 1440: every shot, max 56-59 (label anti-aliasing per load); one A/A sample, so beyond-A/A is an upper bound",
+        "dpr1FirstFrame": "up to 113 at the roll first frame (computed transform equal): OBSERVED, in our setup, cause unknown"
+      },
+      "fullPageChrome": {
+        "files": "out/cd-roll-ca/full/comp-check-{C8,V9}-full-r{1,2,3}.json (+ trace-*.json), out/cd-roll-ca/r6-full.sh, r6-chFull.log",
+        "setup": "Chrome 154 headless 430x932 DPR 3 mobile, y 0, 6 s, nothing paused, 3 loads per arm alternating, shared lane, 2026-10-04 07:00-07:09Z",
+        "per6s": {
+          "countdownRaf": {
+            "C8": [
+              162,
+              163,
+              183
+            ],
+            "V9": [
+              6,
+              7,
+              6
+            ]
+          },
+          "countdownRafPerRoll": {
+            "C8": [
+              23,
+              23,
+              26
+            ],
+            "V9": [
+              1,
+              1.2,
+              1
+            ]
+          },
+          "countdownCalls": {
+            "C8": [
+              174,
+              175,
+              195
+            ],
+            "V9": [
+              25,
+              26,
+              24
+            ]
+          },
+          "mainFrames": {
+            "C8": [
+              295,
+              298,
+              306
+            ],
+            "V9": [
+              250,
+              262,
+              257
+            ]
+          },
+          "updateLayoutTree": {
+            "C8": [
+              296,
+              298,
+              306
+            ],
+            "V9": [
+              250,
+              262,
+              258
+            ]
+          },
+          "layout": {
+            "C8": [
+              11,
+              13,
+              11
+            ],
+            "V9": [
+              13,
+              13,
+              12
+            ]
+          },
+          "paint": {
+            "C8": [
+              859,
+              888,
+              887
+            ],
+            "V9": [
+              864,
+              890,
+              887
+            ]
+          },
+          "compositorFrames": "360-361 both"
+        }
+      },
+      "costcard": {
+        "files": [
+          "fixes/cd-roll-ca/costcard.md",
+          "fixes/cd-roll-ca/costcard.json",
+          "out/cd-roll-ca/full/records.json"
+        ],
+        "records": "fixes/cd-roll-ca/cc-records.mjs (tick = countdown FunctionCall inside the first-firing TimerFire, stamps within 200 ms = one tick)",
+        "cmd": "node tools/costcard.mjs --records out/cd-roll-ca/full/records.json --event times:tick --instances 1 --period-ms 1000 --arms C8,V9 --control C8 --topic cd-roll-ca --element \"hero + panel countdown (full page)\" --dpr 3 --print",
+        "perTick": {
+          "rafCallbacks": [
+            27,
+            1
+          ],
+          "functionCalls": [
+            66,
+            14
+          ],
+          "mainFramesStyleLayerize": [
+            60,
+            50
+          ],
+          "styleElements": [
+            417,
+            392
+          ],
+          "layouts": [
+            2,
+            2
+          ],
+          "objectsNeedingLayout": [
+            33,
+            33
+          ],
+          "paints": [
+            178,
+            178
+          ],
+          "compositorFrames": [
+            60,
+            60
+          ],
+          "timerFires": [
+            5,
+            5
+          ]
+        },
+        "field1": "non-composited animation names not attributed to the countdown cells: UNRESOLVED, no claim"
+      },
+      "simFull": {
+        "file": "out/cd-roll-ca/sim-counts-2026-10-04T07-15-36-357Z.json",
+        "log": "out/cd-roll-ca/r6-simFull.log",
+        "setup": "sim-counts.mjs C8,V9 2, nothing frozen, fw-sim 15 Pro Max, y 0, 4 s windows, 4 rolls, order C8 V9 V9 C8, sim background mean 13 % max 38 %",
+        "per4s": {
+          "countdownRaf": {
+            "C8": [
+              112,
+              107
+            ],
+            "V9": [
+              4,
+              4
+            ]
+          },
+          "countdownRafPerRoll": {
+            "C8": [
+              28,
+              26.75
+            ],
+            "V9": [
+              1,
+              1
+            ]
+          },
+          "renderingFrame": {
+            "C8": [
+              223,
+              206
+            ],
+            "V9": [
+              210,
+              203
+            ]
+          },
+          "recalcStyles": {
+            "C8": [
+              235,
+              216
+            ],
+            "V9": [
+              220,
+              213
+            ]
+          },
+          "layout": {
+            "C8": [
+              175,
+              149
+            ],
+            "V9": [
+              157,
+              149
+            ]
+          },
+          "paint": {
+            "C8": [
+              195,
+              170
+            ],
+            "V9": [
+              178,
+              170
+            ]
+          },
+          "clockPaints": {
+            "C8": [
+              189,
+              164
+            ],
+            "V9": [
+              172,
+              164
+            ]
+          }
+        },
+        "census": {
+          "rest": {
+            "C8": [
+              16,
+              0.376
+            ],
+            "V9": [
+              [
+                18,
+                0.423
+              ],
+              [
+                17,
+                0.399
+              ]
+            ]
+          },
+          "midRoll": {
+            "C8": [
+              16,
+              0.376
+            ],
+            "V9": [
+              18,
+              0.423
+            ]
+          },
+          "longMid": {
+            "C8": [
+              16,
+              0.376
+            ],
+            "V9": [
+              [
+                25,
+                0.587
+              ],
+              [
+                26,
+                0.611
+              ]
+            ]
+          }
+        },
+        "note": "frame/style/layout/paint counts differ less between arms than between C8 reps: no claim beyond not more; memory +1-2 backed cells at rest, +9-10 in a long roll (OBSERVED, cause unknown)"
+      },
+      "proposal": {
+        "id": "PR-017",
+        "rev": 2,
+        "options": [
+          "land",
+          "park"
+        ],
+        "recommended": "land",
+        "tryIt": "A = C8 (cd-roll-ca-live-a), B = V9 (cd-roll-ca-live); park: live none",
+        "posted": "2026-10-04"
+      }
     }
   }
 }

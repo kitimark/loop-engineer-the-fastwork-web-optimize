@@ -2,10 +2,20 @@
 // read, PNG diff and A/A order are fix-cd-strip's and de-countdown's, used with credit). Changes for cd-roll-ca: arms are
 // the hash-pinned snapshots out/cd-roll-ca/snap/<arm> (C8 = cd-strip strip-tc, V9 = C8 + cd-roll-ca), output goes to
 // out/cd-roll-ca/. Used for the reduced-motion exact check (RM=1): under reduced motion the V build never starts a Web
-// Animation (it snaps, like the original), so the virtual clocks drive both arms alike. With motion on, V's rolls run on
-// the real timeline and this harness can't freeze them (use simpx.mjs / end-check.mjs for that).
+// Animation (it snaps, like the original), so the virtual clocks drive both arms alike.
 //   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner cd-roll-ca -- \
 //     env RM=1 node fixes/cd-roll-ca/pixels.mjs C8,V9 hero,panel
+// env MOTION=1 (review round 4 B2: Chrome mid-roll A/A with motion on, hero clock only): V's roll is Web Animations
+// whose startTime is the virtual change time (performance.now from the countdown's lines is virtual). Before every shot
+// each hero cell animation is paused at currentTime = the last stepped frame's stamp - its startTime (as simpx.mjs does;
+// at or past its end: its last keyframe = the inline rest place), so V shows its path at the same frame stamps at which
+// C's rAF spring was stepped. document.timeline.currentTime read from the countdown's lines returns the last stepped
+// frame (the build reads it as "the last frame"). Digit state is then read from computed transforms (the paused
+// animation's value; the inline transform in C). Per-frame state and the resume passes are skipped (V's cells only move
+// when paused at a shot). Per shot it records how many hero animations were paused and whether each digit's cells
+// share one startTime.
+//   ... -- env MOTION=1 node fixes/cd-roll-ca/pixels.mjs C8,V9 hero
+//   ... -- env MOTION=1 VW=1440 VH=900 DPR=1 MOBILE=0 FREEZE=1 SETTLE=4000 node fixes/cd-roll-ca/pixels.mjs C8,V9 hero
 //
 // cd-strip frozen-frame identity harness (T-030). Adapted from de-countdown's fixes/countdown-faces/probe.mjs
 // `pixels` mode (virtual clocks for the countdown's own code, its rAF frames queued and stepped by the harness; credit
@@ -140,6 +150,20 @@ const STATE = (which) => `(() => { const t = ${TIMER[which]}; if (!t) return nul
     if (st) { const T = Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(st.style.transform) || [])[1]); const ty = (x) => Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(x.style.transform) || [])[1] || 0); v = [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, (parseFloat(c.style.top) || 0) + ty(c) + (c.parentElement === st ? 0 : (parseFloat(c.parentElement.style.top) || 0) + ty(c.parentElement)) + T]); }
     else v = [...d.querySelectorAll('.face.svelte-1quva9c')].map((f) => [f.textContent, Number((/translateY\\((-?[\\d.e-]+)px\\)/.exec(f.style.transform) || [])[1])]);
     return v.filter(([, y]) => Math.abs(y) < h - 0.001).map(([t, y]) => t + '@' + (Object.is(+y.toFixed(3), -0) ? 0 : +y.toFixed(3)).toFixed(3)).sort().join(' '); }).join(' | '); })()`;
+const MOTION = process.env.MOTION === '1';
+// MOTION: the digit state from computed transforms (a paused animation's value counts; tops and the strip's transform too)
+const STATE_M = (which) => `(() => { const t = ${TIMER[which]}; if (!t) return null; const ty = (x) => { const s = getComputedStyle(x).transform; return s && s !== 'none' ? new DOMMatrixReadOnly(s).m42 : 0; };
+  return [...t.querySelectorAll('.digit.svelte-1quva9c')].map((d) => { const h = d.offsetHeight; const st = d.querySelector('.strip.svelte-1quva9c'); if (!st) return '?';
+    const T = ty(st) + (parseFloat(st.style.top) || 0);
+    return [...st.querySelectorAll('.cell.svelte-1quva9c')].map((c) => [c.textContent, (parseFloat(c.style.top) || 0) + ty(c) + T]).filter(([, y]) => Math.abs(y) < h - 0.001)
+      .map(([x, y]) => x + '@' + (Object.is(+y.toFixed(3), -0) ? 0 : +y.toFixed(3)).toFixed(3)).sort().join(' '); }).join(' | '); })()`;
+// MOTION: pause every hero cell animation at currentTime = t - its virtual startTime (clamped to its end); per digit
+// [cells, one startTime?, currentTime]
+const PAUSE_AT = (t) => `(() => [...document.querySelectorAll('.hero-copy [role=timer] .digit.svelte-1quva9c')].map((d) => {
+  const A = [...d.querySelectorAll('.cell.svelte-1quva9c')].flatMap((c) => c.getAnimations()); if (!A.length) return null;
+  A.forEach((a) => { if (a.__vst === undefined) a.__vst = a.startTime; });
+  const st = A[0].__vst, dur = A[0].effect.getTiming().duration, ct = Math.min(${t} - st, dur);
+  A.forEach((a) => { a.pause(); a.currentTime = ct; }); return [A.length, A.every((a) => a.__vst === st), +ct.toFixed(3)]; }))()`;
 const OPACITY = (which) => `(() => { let op = 1; for (let e = ${TIMER[which]}; e && e.nodeType === 1; e = e.parentElement) op *= +getComputedStyle(e).opacity; return op; })()`;
 
 async function run(cdp, arm, url, dir, range) {
@@ -152,7 +176,7 @@ async function run(cdp, arm, url, dir, range) {
   const twoFrames = 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 20))))';
   const go = (y) => page.eval(`(window.scrollTo({ top: ${y}, behavior: 'instant' }), ${twoFrames})`);
   const pause = (ms) => page.eval(`new Promise((r) => setTimeout(r, ${ms}))`);
-  const step = (t) => page.eval(`(window.__step(${t}), 0)`);
+  const step = (t) => page.eval(`(${MOTION ? `window.__vf = ${t}, ` : ''}window.__step(${t}), 0)`);
   const tick = (t, r, extra = '') => page.eval(`(window.__vt = ${t}, window.__vd = ${nowFor(r)}, ${extra} document.dispatchEvent(new Event('visibilitychange')), new Promise((r) => setTimeout(r, 30)))`);
   const J = (k) => (((k * 7919) % 21) - 10) / 10; // frame jitter in [-1, 1] ms on a 0.1 ms grid
   let T = 5e6;
@@ -203,13 +227,14 @@ async function run(cdp, arm, url, dir, range) {
     clip = await page.eval(`(() => { const r = ${TIMER[which]}.getBoundingClientRect(); return { x: r.left + scrollX - 4, y: r.top + scrollY - 4, width: r.width + 8, height: r.height + 8, scale: 1 }; })()`);
     info[vkey].clip = clip;
     const fname = variant === null ? which : typeof variant === 'string' ? `${which}${variant}` : `${which}${Math.round(variant * 100)}`;
-    const shot = async (key, file) => {
+    const shot = async (key, file, ft) => {
+      if (MOTION && ft !== undefined) (info.motion ||= {})[key] = await page.eval(PAUSE_AT(ft));
       await page.eval(twoFrames);
       const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip, captureBeyondViewport: false });
-      shots[key] = data; state[key] = await page.eval(STATE(which));
+      shots[key] = data; state[key] = await page.eval(MOTION ? STATE_M(which) : STATE(which));
       writeFileSync(join(dir, `${arm}-${fname}-${file}.png`), Buffer.from(data, 'base64'));
     };
-    const fstep = async (key, t) => { await step(t); (frames[key] ||= []).push(await page.eval(STATE(which))); };
+    const fstep = async (key, t) => { await step(t); if (!MOTION) (frames[key] ||= []).push(await page.eval(STATE(which))); };
     const extra = variant !== null;
     for (const [hz, FR, phases] of extra ? [[60, 1000 / 60, [0, 2, 4, 8, 15, 30, 60]]] : [[60, 1000 / 60, PHASES], [120, 1000 / 120, PHASES120]]) {
       for (const [si, [name, r0, r1, r2]] of SCENARIOS.entries()) {
@@ -221,13 +246,13 @@ async function run(cdp, arm, url, dir, range) {
         const second = r2 !== undefined ? (hz === 60 ? 9 : 18) : -1;
         for (const ph of phases) {
           while (k < ph) { k++; await fstep(key0, G + k * FR + J(k)); if (k === second) await tick(G + k * FR + FR / 3, r2); }
-          await shot(`${key0} | frame ${ph}`, `${hz}-${si}-f${String(ph).padStart(3, '0')}`);
+          await shot(`${key0} | frame ${ph}`, `${hz}-${si}-f${String(ph).padStart(3, '0')}`, ph === 0 ? G : G + ph * FR + J(ph));
         }
         while (k < phases.at(-1) + 20) { k++; await fstep(key0, G + k * FR + J(k)); }
         await step(G + 1e5); T = G + 1e5;
       }
     }
-    if (which !== 'hero') continue;
+    if (which !== 'hero' || MOTION) continue;
     // resume: hide, change mid-frame, frames run, instant jump back; first real frame with the hero copy visible is read
     // right after it was produced; then shots at +0.. frames
     const REC = `(() => { window.__ff = []; const hc = document.querySelector('.hero-copy'); let n = 0;
@@ -267,7 +292,7 @@ for (const arm of ARMS) { ranges[arm] = cdRange(arm); servers[arm] = await serve
 const ch = await launchChrome({ port: 0, profileDir: join(OUT, 'chrome-profile-pixels') });
 const cdp = await CDP.connect(ch.wsUrl);
 await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
-const res = { arms: ARMS, clocks: CLOCKS, viewport: { w: Number(process.env.VW || 430), h: Number(process.env.VH || 932), dpr: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== "0" }, reducedMotion: process.env.RM === '1', ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
+const res = { arms: ARMS, clocks: CLOCKS, viewport: { w: Number(process.env.VW || 430), h: Number(process.env.VH || 932), dpr: Number(process.env.DPR || 3), mobile: process.env.MOBILE !== "0" }, reducedMotion: process.env.RM === '1', motion: MOTION, ranges, served, browser: ch.browser, startedAt: new Date().toISOString(), load1: [loadavg()[0]] };
 const dir = join(OUT, `pixels-${STAMP}`); mkdirSync(dir, { recursive: true });
 const got = [];
 try {
