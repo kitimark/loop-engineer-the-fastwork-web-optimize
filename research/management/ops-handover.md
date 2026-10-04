@@ -42,6 +42,19 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-117 split check (fix-scroll-cb, ebee20a5; Simulator, C1 N1 S1 S2 N2 C2): AGREE. The N2 nav failure is
+  nav-hit-cache's, under the rAF-step driver.**
+  - Pins: c151589d (21:04:16Z) pre-registered run-split.sh 7c0eeb5de3b3, build.mjs ef50f44d629e and simcount
+    4374051b37a0. The PIN line at 21:04:23Z precedes the first load (21:06:47Z). All 6 loads served their arm's JS/CSS
+    (C 3e3e94cb6e9f, N fd3688901f50, S 4c48e372ecdd).
+  - Ops re-derived every nav class-change step from out/scroll-cb-phone/split/sim-counts.json. It matches the owner's
+    table: C1, C2 and S1, S2 are identical (62, 215, 292, 412, 641, 761, 838, 991); N1 and N2 flip the hero pill at 63
+    (not 62) and at 993 / 992 (not 991), 4 diffs each; scroll-cb's side counts equal V's.
+  - simcount on disk is now 45175dbac676 (task-mode driver added after the split). I diffed it against the pinned
+    4374051b37a0: the default `raf` path builds the same step function, so the split data stands.
+  - Open: whether N's lag is real or the driver's artefact (F-239: a rAF-step driver makes nav-hit-cache answer from the
+    previous scroll event) is decided by the task-mode check (C1 V1 N1 N2 V2 C2, run-task.sh 7b46b06cb798) and the
+    Simulator momentum case, not by this one. OBSERVED until then.
 - 10-05 **P-118 registered: double-drive phone no-worse check (v8 vs v8 + double-drive), at mgmt-devices' request for the lead.**
   - Card: research/management/p118-double-drive-phone-no-worse.md. Ticket draft: fixes/double-drive/phone/TICKET.md
     (fix-double-drive's worktree), P-117's shape: S n = 4 and G part M n = 3, three exclusive no-timing holds.
