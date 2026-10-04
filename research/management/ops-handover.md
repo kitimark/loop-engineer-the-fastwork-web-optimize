@@ -42,6 +42,10 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 10:4xZ **Idle page servers (user T-106):**
+  - Stopped the PR-017 Try-it phone servers, ports 5558/5560, up since 08:24Z: `console.mjs proposal phone PR-017 --option land --stop`. PR-017 landed at 09:2xZ and no open step needed them. `proposal phone --list` is now empty.
+  - **For the user:** a 23 h leftover serve.mjs from the finished iphone-runner agent (its worktree's out/thermal-trial, baseline only, started 10-03 about 11:0xZ) is still running. The lead could not stop it (permission) and ops leaves it alone too. The user can stop it.
+  - New peer row: `ts-tryit` (one on-demand Try-it host).
 - 10-04 10:3xZ Pre-data reads:
   - **P-099 amendment A1-A5** (lead request, Chrome queue 11 deep): the runs go beside a light shared group (weight 1 only), load1 > 8 at start = VOID. PASS with notes:
     - N1: no cross-block absolutes;
@@ -2530,6 +2534,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `ts-tryit` (name; spawned 10-04 10:3xZ by the lead, user T-106) | toolsmith: one on-demand Try-it host in place of the long-lived per-proposal page servers (idle servers kept running for hours) | alive |
 | `mgmt-desk-1` (name; spawned 10-04 10:17Z by the lead, user T-104) | the user's DESK, split off from mgmt-ops: console threads, PROGRESS.json (/build and /progress), status row `desk`; agents' user-facing posts (T-100 progress, follow-ups) go here. mgmt-ops keeps tickets, pre-data and second reads, PREDICTIONS and this handover | alive |
 | `fix-scroll-cb` (name; spawned 10-04 09:5xZ, frame audit §5 item 2, user T-100) | topic `scroll-cb-phone`, less-work: four scroll handlers keep running on phones for effects the phone hides; switch them off while the effect is off (research/design-engineering/frame-audit.md §5); cost counts + a short phone no-worse check | alive |
 | `fix-accent-ca` (name; spawned 10-04 09:5xZ, T-096 ranking #1 from research/gpu-lessons) | hero accent and boil on the compositor, restacking the 10-02 illusion drafts; pixel-identical, or a proposal with Try-it (memory illusion-must-be-pixel-identical, proposal-try-it-required) | alive |
