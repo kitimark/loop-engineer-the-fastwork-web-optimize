@@ -7,6 +7,8 @@ There is no counted run before the lead's pre-data read.
 ```
 PHONE TICKET P-118 · less-work no-worse check: v8 vs v8 + double-drive · runner iphone-runner · builder and verdict
   owner fix-double-drive (ops second read) · registered before any phone data
+profile: xcode-serious (lead amendment aacfbd40, user T-162 #3; ops rule c10a3660). No heat pre-warm, no cooling wait;
+  every counted run is under Xcode-induced Serious. Never pooled with a real-heat block.
 when: the Simulator pixel check (set 2 of 2) passed (0 consistent differences) and left V unchanged. The phone order
   is the lead's call; P-118 runs first, independent of P-117 (V has neither nav-hit-cache nor scroll-cb).
 V pinned (final, before the lead's read): JS 3076c5a8c9a3 / CSS 2f7197880ffd (full sha256 above). Any change to V's
@@ -24,15 +26,17 @@ arms (2):
 build and identity: `sh fixes/double-drive/phone/serve.sh snap` copies C from v8's snapshot and applies delta.diff with
   `patch -p1`. It refuses on fuzz, .orig/.rej or any hash other than the four above. Copies: out/pdd/snap/{C,V},
   read-only, HASHES.txt with the full sha256. V adds no debug hooks over C.
-question: at real thermal Serious on a quiet Mac, does V add slow frames over v8 in a scripted scroll of the whole page,
+question: at Xcode-induced thermal Serious on a quiet Mac, does V add slow frames over v8 in a scripted scroll of the whole page,
   or in fast flicks through the middle of the page (#people, pain, commission)? No-worse only, no smoothness claim.
   On phones V changes little: the commission card is compact (transform none, untouched), and the future card's
   scale is fixed at 1, so V only drops the future card's transform transition while it shrinks. That is 4 -> 2
   transitionruns in Chrome at 430x775 and 3 -> 2 in the Simulator, with geometry identical in both arms.
-ports, served check, thermal gate, start method, sleep check: as P-117 (B plain baseline for pre-warm and gates, C, V;
+ports, served check, thermal gate, start method, sleep check: as P-117 (B plain baseline for the gates' timer page, C, V;
   --port 0 --latency 150 --vendors=local, plain http; `sh fixes/double-drive/phone/serve.sh check` before every item,
-  exit 4 on a wrong hash; thermal-gate.mjs --expect serious --max-c 44 at the start and end of every hold; pre-warm on
-  B with S runs, at most 4; pmcheck.mjs). A hold counts only if both reads PASS, otherwise VOID and once more with the
+  exit 4 on a wrong hash; thermal-gate.mjs --expect serious --max-c 44 --accept-induced once at the start and once at the
+  end of every hold (after the last run), labelled p118-<H>-start / -end; exit 2 condition dropped or Nominal/Fair, 3
+  ceiling, 7 real heat instead of the Xcode condition; no heat pre-warm; pmcheck.mjs).
+  A hold counts only if both reads PASS, otherwise VOID and once more with the
   same items. Ports go to the runner by message, never into a committed file.
 Mac: every hold inside the runner's EXCLUSIVE no-timing hold of chrome-measure (P-117's line).
 holds (each <= 10 min):
@@ -44,8 +48,9 @@ holds (each <= 10 min):
 drivers: S = `iphone.mjs run --driver scroll --probe std --block P-118 --arm C|V --run <n>`; G part M =
   flick-middle-v1.json (sha256/12 0f97205f1d42, as P-105/P-111/P-117), window mid1 -> end, moving frames only.
 scripts (pinned, sha256/12): fixes/double-drive/phone/serve.sh 730fb0718409 (committed in a95e4ea7);
-  fixes/double-drive/phone/hold.sh 58d285cb0094 (a copy of P-116's hold.sh b25c8fc83e6f with arms C and V and P-117's
-  items; labels p118-*, --block P-118).
+  fixes/double-drive/phone/hold.sh 09c0b21eaa0f (a copy of P-116's hold.sh b25c8fc83e6f with arms C and V and P-117's
+  items; labels p118-*, --block P-118; revised for xcode-serious: pre-warm removed, gates --accept-induced; it was
+  58d285cb0094 before).
 scorer: fixes/double-drive/phone/p118/score.mjs 652bba12f6a3 and selftest.mjs f2823168094f (sha256/12), written by
   int-v8 (lead's order, 21:19Z; its commit bb68123d) on P-116's scorer, which handled an arm with its own CSS; ops reads
   them before data. Run in block order: `node fixes/double-drive/phone/p118/score.mjs <item>:<file> ... --json out.json`

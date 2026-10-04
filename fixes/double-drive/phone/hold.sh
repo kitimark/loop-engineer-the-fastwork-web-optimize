@@ -2,9 +2,10 @@
 # P-118 (double-drive phone no-worse check, v8 vs v8 + double-drive; PHONE TICKET research/management/
 # p118-double-drive-phone-no-worse.md, ticket text fixes/double-drive/phone/TICKET.md): one phone hold. A copy of
 # int-v8's fixes/v8-best/phone/p116/hold.sh (P-116, b25c8fc83e6f) with two arms (C = v8, V = v8 + double-drive) and
-# P-117's item layout (S whole-page runs, G part M flicks through the middle); the pre-warm, the start/end gates, the
-# served check before every item, the park after every G run and the sleep check are P-116's, unchanged. Committed
-# before any phone data. Runs under the iphone lease held by the runner (RUNNER, default iphone-runner), INSIDE the
+# P-117's item layout (S whole-page runs, G part M flicks through the middle); the served check before every item, the
+# park after every G run and the sleep check are P-116's, unchanged. Profile xcode-serious (lead amendment aacfbd40,
+# user T-162 #3): no heat pre-warm; the start and end gates run thermal-gate.mjs --accept-induced (PASS = Serious AND
+# induced by Xcode, battery < 44 C, not Critical). Committed before any phone data. Runs under the iphone lease held by the runner (RUNNER, default iphone-runner), INSIDE the
 # runner's exclusive no-timing hold, so no shared job runs beside it:
 #   node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-118 H1" -- \
 #     caffeinate -i -s sh fixes/double-drive/phone/hold.sh H1 wC wV C1 V2 V3 C4
@@ -18,10 +19,12 @@
 #   wgC / wgV        uncounted G part M warm-up on that arm's port
 #   gMC<n> / gMV<n>  counted G part M run n (flick-middle-v1.json, sha256/12 0f97205f1d42; window mid1 -> end)
 # The servers (sh fixes/double-drive/phone/serve.sh) are up before the hold; B = the plain baseline (no overlay), the
-# pre-warm page and the gate's timer page. Before every item the served JS/CSS of all three ports is re-checked
+# gate's timer page. Before every item the served JS/CSS of all three ports is re-checked
 # (serve.sh check; a wrong hash ends the hold VOID). Nothing here prints the LAN address (Hard rule 12).
-# Steps: 1. pre-warm on B (S runs, at most 4) and the start gate; 2. the items in order (each G run parks Safari);
-# 3. the end gate, then the I-098 sleep check over the hold (fixes/rest-script/tools/pmcheck.mjs).
+# Steps: 1. the start gate (once; no pre-warm, no retry); 2. the items in order (each G run parks Safari); 3. the end
+# gate after the last run, then the I-098 sleep check over the hold (fixes/rest-script/tools/pmcheck.mjs).
+# Gate exits: 0 PASS; 2 condition dropped or Nominal/Fair; 3 ceiling (Critical or battery >= 44 C); 7 real heat instead
+# of the Xcode condition (another profile, never pooled); any non-zero voids the hold (P-116's failure path).
 # Before the items it prints the hold's lock state (chrome-measure line only), so the block log shows the exclusive
 # hold; every run record keeps the Mac load (mac.start / mac.end load1).
 # Last line: "HOLD <H> VALID" (exit 0) or "HOLD <H> VOID <why>" (exit 3/4/5).
@@ -37,18 +40,10 @@ VU=$(node tools/lan.mjs --url --port "$(port V)") || exit 2
 T0=$(date +%s)
 echo "HOLD $H start $(date -u +%FT%TZ) items $*"
 node tools/lock.mjs status 2>&1 | grep '^chrome-measure' | sed 's/checkout .*//'
-gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p118-$H-$1" --expect serious --max-c 44 --url "$B"; }
+gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p118-$H-$1" --expect serious --max-c 44 --accept-induced --url "$B"; }
 SR="--driver scroll --probe std --owner $R --block P-118"
-n=0
-while :; do
-  n=$((n + 1))
-  node tools/iphone.mjs open "$B" --owner "$R" > /dev/null || { echo "HOLD $H VOID open B failed"; exit 4; }
-  node tools/iphone.mjs run $SR --warmup --label "p118-$H-prewarm$n" --out "$O/p118-$H-prewarm$n.json" > "$O/p118-$H-prewarm$n.log" 2>&1
-  gate start; g=$?
-  [ $g -eq 0 ] && break
-  [ $g -eq 2 ] && [ $n -lt 4 ] && continue
-  echo "HOLD $H VOID start gate exit $g after $n pre-warm runs (no counted run)"; exit 5
-done
+gate start; g=$?
+[ $g -ne 0 ] && { echo "HOLD $H VOID start gate exit $g (no counted run)"; exit 5; }
 for I in "$@"; do
   sh fixes/double-drive/phone/serve.sh check > "$O/p118-$H-check-$I.log" 2>&1 || { echo "HOLD $H VOID served hash check failed before $I"; exit 4; }
   node tools/lock.mjs renew iphone --owner "$R" --ttl 900 > /dev/null
