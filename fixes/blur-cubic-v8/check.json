@@ -1,0 +1,120 @@
+{
+ "topic": "blur-cubic-v8",
+ "kind": "functional check",
+ "chromeMode": "headless",
+ "createdAt": "2026-10-04T23:10:17.677Z",
+ "git": {
+  "branch": "worktree-agent-a01f6e90959e85164",
+  "head": "31bb480e"
+ },
+ "config": {
+  "viewport": "mobile",
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty + fixes/bcv8-c/overlay",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": "bcv8-c",
+  "browser": "Chrome/154.0.8037.97",
+  "uaOverride": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "screenInfo": {
+   "width": 1512,
+   "height": 982,
+   "dpr": 2,
+   "arg": "--screen-info={0,0 3024x1964 devicePixelRatio=2}"
+  },
+  "lock": {
+   "mode": "reentrant-shared",
+   "weight": 1,
+   "maxSec": 300
+  }
+ },
+ "note": "functional only (headless Chrome): no timing; screenshot diffs compare headless with headless (research/architecture/headless-functional.md). Never a gain verdict: that is fix.mjs ab.",
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "source": "overlay",
+   "sha256": "265e48039d059ef77b1407249fda70cb7b742e4961af3ace8d23f8299fb2f598"
+  }
+ ],
+ "verdict": "ok",
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "newFailures": [],
+  "morphReached": {
+   "baseline": true,
+   "patched": true
+  },
+  "screenshotDiffPct": {
+   "top": 0.15,
+   "middle": 0.01,
+   "bottom": 0.43
+  },
+  "domDiff": {
+   "elements": {
+    "baseline": 1580,
+    "patched": 1580
+   },
+   "added": [
+    "em.is-drawing-in"
+   ],
+   "removed": [
+    "em.is-idle"
+   ]
+  }
+ },
+ "pages": [
+  {
+   "label": "base",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1580,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/mobile-base-top.png",
+    "middle": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/mobile-base-middle.png",
+    "bottom": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/mobile-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1580,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/mobile-fix-top.png",
+    "middle": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/mobile-fix-middle.png",
+    "bottom": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/mobile-fix-bottom.png"
+   }
+  }
+ ],
+ "raw": "out/check/blur-cubic-v8/2026-10-04T23-08-52-263Z/check-raw.json"
+}
