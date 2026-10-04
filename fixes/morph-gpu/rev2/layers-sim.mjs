@@ -19,7 +19,7 @@ const OUT = join(WT, 'out/morph-gpu/rev2'); mkdirSync(OUT, { recursive: true });
 const SNAP = join(WT, 'out/snapshots');
 const hashOf = (dir, f) => createHash('sha256').update(readFileSync(join(dir, f))).digest('hex').slice(0, 12);
 const newest = (re) => readdirSync(SNAP).filter((d) => re.test(d)).map((d) => join(SNAP, d)).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0];
-const dirs = { M: join(SNAP, 'besthook-fef569e3c2e2'), R1: join(SNAP, 'rvhook-81a43009c62d'), A: newest(/^rv2ahook-[0-9a-f]{12}$/), B: newest(/^rv2bhook-[0-9a-f]{12}$/) };
+const dirs = { M: join(SNAP, 'besthook-fef569e3c2e2'), R1: join(SNAP, 'rvhook-81a43009c62d'), A: newest(/^rv2ahook-[0-9a-f]{12}$/), B: newest(/^rv2bhook-[0-9a-f]{12}$/), R: join(SNAP, 'fdhook-fef569e3c2e2') };
 const ARMDEF = Object.fromEntries(Object.entries(dirs).map(([k, d]) => [k, { dir: d, js: hashOf(d, NODE), css: hashOf(d, CSS) }]));
 const ARMS = (process.argv[2] || 'M,R1,A,B').split(',');
 const BASE = resolveTree('site-pretty');

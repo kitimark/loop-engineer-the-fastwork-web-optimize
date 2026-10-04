@@ -942,10 +942,55 @@ prevT − 17 ms. Frames listed with `out/morph-gpu/rev2/open-window.mjs`.)
 - The cold first open keeps its 32 rects: 4 layouts and 430x512 tile-sized rects over y 4608-5690. That is separate
   first-time work, not the fade (R never crosses 1). Not yet attributed; next for this topic.
 
-Owed before it is called same-look:
-- the PR-010 still-pixel check (Simulator and Chrome, best against fd, whole-page stops);
-- the open-frame counts in the Simulator (driver M, best against fd);
-- a scroll-through check that the always-below-1 section costs nothing extra at rest.
+**Rev 3 still pixels (PR-010, 2026-10-04 13:20-13:45Z).**
+- Harness: the committed v7 gates `px-sim.mjs` / `px-chrome.mjs` (1b911a2344ef / pxlib 2bf3dd947191), dir map
+  `A=B,V=R` (B = best-build, R = fd). Two samples per engine, plus a best-against-best A/A per engine.
+- Folders: `out/v7-best/px-sim-…T13-20-00`, `…T13-33-25` (A/A), `…T13-35-05`; `px-mobile-…T13-23-41`,
+  `…T13-39-09` (A/A), `…T13-42-40`.
+- The table gives the "consistent" css px² (over 8 levels in all four cross pairs while neither same-build pair is),
+  with the max level in brackets.
+
+| engine, stop | rev 3 sample 1 | rev 3 sample 2 | best vs best (A/A) |
+|---|---|---|---|
+| Simulator, platform stops 4263 / 4762 / 5260 | 0 / 0 / 0 | 4 (28) / 0 / 0 | 4 (28) / 15 (232) / 0 |
+| Simulator, 300 (hero) | 34 (121) | 1 (133) | 3 (63) |
+| Simulator, 3267 (commission fee visual) | 146 (228) | 0 | 0 |
+| Chrome, platform stops 4365 / 4856 / 5346 | 0 / 0 / 0 | 0 / 4 (232) / 0 | 0 / 0 / 0 |
+| Chrome, 0 / 300 / 548 (hero heading accent) | 0 / 10 / **3360 (87)** | 222 (212) / 47 / 41 | 0 / 0 / 22 (32) |
+| Chrome, 1422 / 1913 (people) | 5 / 73 (250) | 70 / 1 | 0 / 0 |
+
+**Reading.**
+- At every platform stop rev 3 is at the best-build A/A floor in both engines.
+- Every larger cluster is outside `#platform`, which is the only element rev 3 touches.
+- None of them repeats in the second sample.
+- Each sits on an element that also varies between two loads of best-build: in Chrome's A/A, V~V2 at y 548 differs
+  by 34,490 px in the same accent rows (css 239-278), against rev 3 sample 1's 35,100.
+- So they are per-load states (accent phase, people images, fee visual), and the single-sample consistent rule caught
+  a lucky split.
+
+Verdict: **pixel-identical within the A/A floor** (T2 holds at every stop once a cluster must repeat). The lead decides
+whether that counts as an exact build or needs a proposal.
+
+**At rest: no extra layers, memory or paints** (`rev2/layers-sim.mjs M,R,M,R`, hook builds besthook-fef569e3c2e2
+and fdhook-fef569e3c2e2 = the same JS + the fd CSS; Simulator, 2026-10-04 13:54Z).
+- Layer count and layer memory are identical in every state:
+  - top: 144 layers / 51,344 KB;
+  - mid-page: 58 / 95,221 KB;
+  - end: 54 / 90,894 KB;
+  - m 0.5, m 1 and back to 0: the same in both builds.
+- Cumulative paintCount, best (two loads) against rev 3 (two loads):
+  - top 466/459 against 453/454;
+  - mid 269/276 against 260/282;
+  - end 384/389 against 377/397.
+  That is load-to-load noise.
+
+The checks first listed as owed (pixels, open-frame counts, at-rest cost) are done above.
+
+**Still owed before landing:**
+- the lead's call on exact build against proposal;
+- a short phone no-worse check (less-work landing rule).
+
+The cold first open (32 rects, unchanged) is a separate item.
 
 ## v7's y 4365 pixel point under `#platform` (mgmt-ops-10 request, 2026-10-04 13:09Z; still pixels, no timing)
 
