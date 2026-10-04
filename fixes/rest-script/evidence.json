@@ -17,10 +17,24 @@
     },
     {
       "path": "out/rest-script/ic2",
-      "why": "MISSING at write time (not found in the main checkout or any worktree): the post-registration Chrome census at 430 and 375 that the aggregation rule scores (README names ic2/)",
+      "why": "NEVER PRODUCED (fix-rest-script, 2026-10-04): the post-registration v1 Chrome census at 430/375 was queued in chain3.sh but never ran; chain3 was still waiting for chain2 when all v1 chains stopped at 09:58Z on 2026-10-03 after the 768 census MORE (README Registration v2: \"the second Chrome census never ran\"); v1 was re-registered as v2, so no claim rests on ic2",
       "kind": "result",
       "for": "README.md aggregation rule",
-      "missing": true
+      "missing": true,
+      "neverProduced": true
+    },
+    {
+      "path": "out/rest-script/scratch",
+      "why": "byte copy of the session scratchpad rest-script/ (676 KB, copied 2026-10-04): every probe, chain script (chain..chainI, chainJ under ht/ and optA/), census/identity runners, the overlay patch scripts patch1-8, the hold-test harness and its logs (ht/), the Option A edits (optA/), legsum.mjs and since.mjs; chain3.sh shows the ic2 run that never started",
+      "kind": "tool",
+      "for": "README.md registration tables, P-089 Option A and chain harness"
+    },
+    {
+      "path": "out/rest-script/scratch/d1440.png",
+      "why": "diff picture of the avatar row from the 1440 identity check (v1, pre-registration), made from page shots",
+      "kind": "frames",
+      "for": "README.md Registration v2 (pre-registration checks)",
+      "fastworkDerived": true
     },
     {
       "path": "out/rest-script/ic3",
