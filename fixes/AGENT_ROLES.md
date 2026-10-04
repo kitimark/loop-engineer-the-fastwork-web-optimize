@@ -108,9 +108,8 @@ The user wants no reactive agents. These rules beat any older line that makes an
   bind the spawn time) and follows them to a land request; it changes its own device plan. It
   reports each action to the lead as one FYI line (what, why, owner). The lead keeps the order of the day (the
   `direction` row), landing and user-facing decisions outside devices.
-- **R8 mgmt-ops lands docs-only commits** (user T-160 #10 "yes", 2026-10-04 ~21:35Z). **Not in force yet:** CLAUDE.md Hard
-  rule 5 and "Agent roles" still say only the lead lands; the lead's edit of those lines was refused by the permission
-  layer, so they change only by the user's own edit or OK. Until then the lead lands every commit. Once in force: a
+- **R8 mgmt-ops lands docs-only commits** (user T-160 #10 "yes", 2026-10-04 ~21:35Z). In force since the user's T-160 #12 (CLAUDE.md Hard rule 5 and "Agent roles"
+  amended by the lead). A
   commit is docs-only when every path is under `research/`, `fixes/*/README.md`, `fixes/PREDICTIONS.md`,
   `fixes/PROGRESS.json`, `fixes/*/phone/` cards and tickets, or `memory/`-free management notes. It contains no
   `tools/`, `tests/`, `.claude/`, `.githooks/`, `package.json`, `site*/`, `baseline.json`, `patch.diff`, overlay or

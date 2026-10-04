@@ -70,7 +70,8 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    baseline was not that snapshot throughout; git-guard asks before `FW_BASELINE_ALLOW_MODIFIED`.
    Details: "Baseline snapshot".
 5. **Your own worktree, never the main checkout.** Every agent works in its own git worktree under
-   `.claude/worktrees/` on its own branch; only the lead works in the main checkout and lands on `main`.
+   `.claude/worktrees/` on its own branch; only the lead works in the main checkout and lands on `main`, except that
+   mgmt-ops lands docs-only commits with one `git merge --ff-only` there (user T-160 #10/#12; `fixes/AGENT_ROLES.md` R8).
    *Why:* the main checkout holds `main`, the baseline and port 5173. *Enforced:* `fix.mjs` refuses to
    write fixes in the main checkout, `fix.mjs doctor`; otherwise convention. Details: "Parallel agents",
    roles and who may do what: `fixes/AGENT_ROLES.md`.
@@ -305,7 +306,7 @@ npm run test:all      # both
   read-only): adversarial review of a finished fix, a combined wave or a measurement-code tool fix,
   spawned by the lead.
 - Only fix owners and the integrator measure; the toolsmith runs tests; helpers and reviewers never
-  run Chrome, the iPhone or the locks. The lead coordinates incidents and is the only one who lands.
+  run Chrome, the iPhone or the locks. The lead coordinates incidents and lands everything except docs-only commits, which mgmt-ops lands (R8).
 - Roster, who may do what, nesting limits, what teammates take from a definition (not `effort`, not
   `isolation`), model/effort per task, Serena use: `fixes/AGENT_ROLES.md`. The project loop and
   landing: `fixes/LEAD.md`. Incidents: `fixes/INCIDENTS.md`.
