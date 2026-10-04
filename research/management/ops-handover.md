@@ -42,6 +42,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 12:4xZ **After the usage pause (lead list of 7, 12:2xZ).**
+  - PROGRESS refresh for T-112 #3 landed: b3bb7818, then bb29d345 (cdwc and re-keep-op landed). t113 now carries the toolbar finding, and the `toolbar-resize` row links to it.
+  - fix-nav-morph has the P-101 verdict and the lead's ruling: T-107 button trace first, then P-104, the rev 2 card. P-104 is reserved for it.
+  - Scrubber incident opened: **I-139** (redact.mjs line 29 eats "<word>'s Mac …"). A toolsmith takes it with I-137/I-138.
+  - **v7 second read AGREE.** All 52 pixel stops in 6 runs were re-scored from the PNGs with `gates/pxlib.mjs` and match px.json/results.json. Served hashes per load match: A 8018ce062d30/71b65c667720, V 8c90da217745/308f0da70c3a, P e9b94ba7c560/e0f92804c521. The census per-second numbers match the summary.
+    - Sim y 4365: consistent 16 CSS px² with max 197, under section#platform. That is above the T2 edge level of 128.
+    - No v7 patch (cd-strip, cd-roll-ca, rest-script) changes a `platform` line, and Chrome mobile shows 0 at 4365. The Sim P control run had no 4365 stop.
+    - So the cause is open (OBSERVED, Sim only). Decisive check: one Sim shared slot with A/A2 and V/V2 plus the P control at 4365.
+  - The mobile P control vs v7 shows 150 CSS px² at y 3875 (max 37, referral card), while v6 vs v7 shows 0 there. That is v6's hero R2 delta (P lacks it), not v7.
+  - **P-105 reserved:** the v7 phone no-worse check (less-work rule, v7 vs v6, S/W at real Serious, C V V C C V V C, judged on > 50 per run with the twins, no-worse d ≤ +2). Its card goes to the runner after P-102's extra hold and P-100.
+  - Phone order (lead): T-113 → P-102 quartet → P-100 → toolbar-resize ablation block (ops pre-data read on its ticket) → P-105.
+  - The standing best-build check (T-113 #4) is written into `fixes/LEAD.md` §6 and protocol v2 §5.4: a whole-page fast-flick G check next to S/W.
+  - Ledger: P-098 measured (WORSE), P-099 skipped, the P-100 rev 2 and P-103 harness cites, P-101 Chrome result.
+  - Port footnotes: P-093's was already in (1e97963d). For P-094 and the thermal trial I found no audit data for those ports, so I wrote no footnote.
+  - Next free id: **P-106**.
 - 10-04 10:5xZ Correction to 10:4xZ: the user stopped the iphone-runner leftover server themselves at about 10:37Z (T-106 #6; gone, checked by the desk and the lead). About 13 page servers remain; ts-tryit (row by id) takes the registry and auto-stop.
   - **P-103 pre-data read PASS** (fix-scroll-cb, ce4ef96b; 5 harness hashes and tools/check.mjs 5fc6b9180ae6 match). Notes due in the card before the first counted load:
     - N1: the C-only smoke shows non-zero side counts in the Simulator (late wrap) and in Chrome, else a harness rev first;
@@ -2540,6 +2555,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `fix-toolbar-resize` (name; spawned 10-04 12:3xZ by the lead, user T-113) | status row `toolbar-resize` (linked to PROGRESS item `t113`): the T-113 hero lag on fast flicks. iphone-runner found 3-5 layouts per frame while Safari's toolbar collapses or expands on v7 (OBSERVED, G driver). It sends ops an ablation ticket for a pre-data read; its phone block comes after P-102's extra hold and P-100 | alive |
+| `fix-nav-morph` (a277ea00c8773c1ea) | nav-hit-cache: P-101 did not pass as registered (forced Layout not lower; ops second read AGREE 12:2xZ). Lead order: T-107 button trace first, then P-104 = rev 2 card (forced PrePaint, PrePaint, eFP, gCS judged; forced Layout a guard; fresh loads; parity + Sim owed) | alive |
 | `af8ba1df07b604ad1` (ts-tryit; the name does not resolve, use the id; spawned 10-04 10:3xZ by the lead, user T-106) | toolsmith: one on-demand Try-it host (start on click) in place of the long-lived per-proposal page servers; per T-106 #9/#11 also a server registry, idle auto-stop (never mid-hold), a console Servers page and an idle.mjs alarm for servers up > 2 h | alive |
 | `mgmt-desk-1` (name; spawned 10-04 10:17Z by the lead, user T-104) | the user's DESK, split off from mgmt-ops: console threads, PROGRESS.json (/build and /progress), status row `desk`; agents' user-facing posts (T-100 progress, follow-ups) go here. mgmt-ops keeps tickets, pre-data and second reads, PREDICTIONS and this handover | alive |
 | `fix-scroll-cb` (name; spawned 10-04 09:5xZ, frame audit §5 item 2, user T-100) | topic `scroll-cb-phone`, less-work: four scroll handlers keep running on phones for effects the phone hides; switch them off while the effect is off (research/design-engineering/frame-audit.md §5); cost counts + a short phone no-worse check | alive |
