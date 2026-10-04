@@ -51,6 +51,8 @@ for (const f of fs.readdirSync(path.join(D, 'console/threads')).filter((f) => /^
     if (u.by !== 'user' || !inWin(u.at)) return;
     const first = m.slice(i + 1).find((x) => x.by !== 'user');
     const nextUser = m.slice(i + 1).find((x) => x.by === 'user');
+    // a burst (the user wrote again within 2 min, before any reply) is one message: the reply after it answers both
+    if (nextUser && (!first || nextUser.n < first.n) && Date.parse(nextUser.at) - Date.parse(u.at) < 120e3) return;
     if (!first || (nextUser && nextUser.n < first.n)) {
       if (Date.parse(until) - Date.parse(u.at) > 600e3) unans.push(`${t.id} #${u.n}`);
       return;
