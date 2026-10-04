@@ -16,7 +16,8 @@ user's finger test before landing (lead, T-029 #30). **Phone block P-079 done at
 2026-10-03 10:45-12:03Z: hit** (top and pin frames no worse, re-entry clock repaint 53.5 → 21, clock backing 48 → 16
 layers; pin Layout not enough by the n rule, falsifier unreachable; ops second read PASS; the pin rows are void for
 the morph region after morph-inherit landed, the top, re-entry and backing results stand); section "Phone block P-079".
-Next: the user's finger swipe A/B, then the land request.
+**Finger swipe A/B (C-035): the user picked the control (st6-rb2), low confidence**; V's recordings show more > 50 ms
+frames at the hero in both tries (uncontrolled, fixed page order); section "Finger swipe A/B". Landing: the lead's decision.
 **Stage:** V (BUILD card strip-tc below; review round 3 ACCEPT-WITH-NOTES; phone block P-079 hit; finger test next). D: LOCATED, signed by the lead on the fast path
 (2026-10-03 01:1xZ, no gain claim: the frame effect is measured only in the phone block, so no segment card now)
 **Device class / gate:** render-bound / phone-only (WebKit paint and layer work; Chrome 6x can't stand in for it)
@@ -868,6 +869,28 @@ output). Raw files, gate log (`gates.jsonl`, `holds.jsonl`) and hold logs: iphon
   `--port auto` slot was taken), served hashes checked at each hold start; holds 3 and 4 ran 900 s (lead exception);
   I-091 (iphone.mjs run shortens the lease) did not touch the data. Every run: LPM off, rafHz 59, not charging, 79-80 %.
 
+## Finger swipe A/B (C-035, re-run of C-033; answered 2026-10-04 02:48:55Z)
+
+Blind pair run by iphone-runner on the P-079 servers: page 1 = C (st6-rb2), page 2 = V (strip-tc). **The user picked
+page 1, the control**, with low confidence (paraphrased: hard to tell by eye; page 2 felt a little warmer and a little
+laggy, maybe bias). The recordings of the same swipes (iphone-runner's worktree `out/swipecd/`; driver F, so frame
+counts compare only within this pair):
+
+| try | arm | frames while scrollY changes | > 34 ms | > 50 ms | max ms | > 50 ms frames at y |
+|---|---|---|---|---|---|---|
+| 1 (then Start over) | C | 728 | 44 | 7 | 90 | 7 of 8 (all frames) in y 14-1353, one at 5220 |
+| 1 | V | 1123 | 115 | 21 | 82 | all 21 in y −1 to 1715, 20 of them in y −1 to 957 |
+| 2 (answered) | C | 901 | 61 | 6 | 74 | all 6 in y 80-725 |
+| 2 | V | 1084 | 64 | 9 | 64 | 9 of 10 (all frames) in y 125-694, one at 5222 |
+
+- Per 1000 scrolling frames, > 50 ms: C 9.6 / 6.7, V 18.7 / 8.3 (tries 1 / 2): V higher in both tries, the slow
+  frames in the hero and countdown region. OBSERVED, n = 1 swipe session per arm per try, not a controlled block.
+- Confounds: the page order was fixed (C always first, V always second, so V always ran on a phone that had been
+  used longer); the swipes differ in count and speed (V's sessions have 20-54 % more scrolling frames); no thermal read
+  is attached to these recordings.
+- This disagrees in direction with the scripted P-079 top window (W, no difference: median gt50 +0.5), and it is the
+  first sign against strip-tc at the hero. Landing is the lead's decision.
+
 ## Next
 
 - Done: the user accepted PR-008 rev 2, land-strip-tc (09:31:49Z, final); strip-tc ported into the overlay, `patch.diff`
@@ -877,8 +900,8 @@ output). Raw files, gate log (`gates.jsonl`, `holds.jsonl`) and hold logs: iphon
   attribution script committed with their hashes, pin-hold pairing, P(hit), the user's thermal Serious gate).
 - Done since: ops' line check and GO (fdb3145; ports line 99d4914); attr079 Simulator retest on both arms (hash
   unchanged); phone block P-079 under B, hit (section "Phone block P-079"); ops second read PASS (row 9ab03c1).
-- Next, in order: the user's finger swipe A/B (C vs V, posted by the lead through iphone-runner, after platform-idle's
-  hold); then the land request.
+- Done since: the finger swipe A/B, C-035 (re-run of C-033): the user picked the control, low confidence.
+- Next: the lead's landing decision.
 - Phone: the frame effect is measured only in the P-079 block (D was signed on the fast path with no gain claim, so no
   separate phone segment card now).
 - P-032 (fix-nav-morph) is re-registered on the strip build after the D card.

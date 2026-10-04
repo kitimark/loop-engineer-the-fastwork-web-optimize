@@ -662,5 +662,47 @@
   "morphCaveat": "lead 15:0xZ after morph-inherit landed (b11f977 + 0ad5407): both arms on st6-rb2 (WebKit nav children at --morph 0, panel fade frozen at 0.924; F-183/F-184, OBSERVED); pin frames and pin Layout void for the morph region; top frames, re-entry and backing stand; next build stacks on main + morph-inherit",
   "reviewerNote": "review-morph-inherit: WebKit panel countdown cells differ from the baseline at m 0.9 and 1 (max 11, 52 px over 8), attributed to st6-rb2; OBSERVED, cause unknown; both arms share st6-rb2",
   "runnerDeviations": "servers on --port 0 (port auto slot taken), served hashes checked each hold; holds 3 and 4 ran 900 s (lead exception); I-091 no effect on data; LPM off, rafHz 59, not charging, 79-80 %"
+ },
+ "fingerSwipeAB": {
+  "step": "C-035 (re-run of C-033, cut off by a cable drop)",
+  "answeredAt": "2026-10-04T02:48:55Z",
+  "runner": "iphone-runner",
+  "key": {
+   "1": "C st6-rb2 (JS 7bf7c4657d21, CSS f523598b2a24)",
+   "2": "V strip-tc (JS 6fa0e1e8a221, CSS 982a747d9263)"
+  },
+  "answer": "1 (the control)",
+  "confidence": "low (user: hard to tell by eye; page 2 felt a little warmer and laggy, maybe bias; paraphrased)",
+  "recordings": {
+   "try1": {
+    "C": {
+     "scrollFrames": 728,
+     "gt34": 44,
+     "gt50": 7,
+     "max": 90
+    },
+    "V": {
+     "scrollFrames": 1123,
+     "gt34": 115,
+     "gt50": 21,
+     "max": 82
+    }
+   },
+   "try2answered": {
+    "C": {
+     "scrollFrames": 901,
+     "gt34": 61,
+     "gt50": 6,
+     "max": 74
+    },
+    "V": {
+     "scrollFrames": 1084,
+     "gt34": 64,
+     "gt50": 9,
+     "max": 64
+    }
+   }
+  },
+  "note": "driver F, n = 1 session per arm per try; V higher > 50 ms per 1000 scrolling frames in both tries (18.7 vs 9.6, 8.3 vs 6.7), slow frames in the hero/countdown region; OBSERVED; confounds: fixed page order (C first), swipe counts differ, no thermal read; landing is the lead decision"
  }
 }
