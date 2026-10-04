@@ -310,8 +310,9 @@ export function isLockDelegate(by) {
 }
 const delegateText = () => { const d = deskAgent(); return `mgmt-devices, mgmt-desk*${d ? `, the desk "${d}"` : ''}`; };
 
-/** I-171: owner -> its board rank: the best priority among its open status rows (1 = first), or null (unranked). */
-async function boardRanks() {
+/** I-171: owner -> its board rank: the best priority among its open status rows (1 = first), or null (unranked).
+ *  Exported for lock.mjs gatePassPick (I-185: which capped job passes a gated timing head first). */
+export async function boardRanks() {
   const S = await import('./status.mjs');
   const items = S.list({ all: false });
   return (owner) => {

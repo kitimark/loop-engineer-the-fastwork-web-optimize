@@ -196,16 +196,18 @@ test('I-030: short jobs pass any gated head normal waiter only during the first 
   assert.equal((await L.tryAcquire(R, { owner: 'npm-test', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, true, 'within the pass window: exempt');
   await L.release(R, { owner: 'npm-test' });
   usedUp('bbbbbbbbbbbb');
-  // the waiter keeps polling (fresh gate record) and has now waited 31 s at the gate: past the pass window, far below the cap
+  // the waiter keeps polling (fresh gate record) and has now waited 490 s at the gate: past the pass window, below the
+  // cap. (I-185: past the window only a job whose cap ends GATE_PASS_SETTLE_SEC before the cap passes; this 60 s one
+  // would end at 550 s, inside the settling window, so the gate stays closed to it. Before I-185 this waited 31 s.)
   const q = readJson(`${R}.queue.json`);
-  Object.assign(q[0].gate, { at: new Date().toISOString(), since: new Date(Date.now() - 31000).toISOString() });
+  Object.assign(q[0].gate, { at: new Date().toISOString(), since: new Date(Date.now() - 490000).toISOString() });
   writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
-  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 'npm-test2', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false, 'past the pass window the gate closes to short jobs too');
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 'npm-test2', kind: 'lease', short: true, maxSec: 60, thresholds: T })).ok, false, 'past the pass window the gate closes to short jobs that do not fit');
   assert.equal((await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: BUSY, thresholds: T })).gated, true, 'still waits for quiet (cap not reached)');
   const g = await L.tryAcquire(R, { owner: 'normal', kind: 'lease', host: QUIET, thresholds: T });
   assert.equal(g.ok, true);
   assert.equal(g.holder.gateTimeout, undefined);
-  assert.ok(g.holder.gate.waitedSec >= 31);
+  assert.ok(g.holder.gate.waitedSec >= 490);
 });
 
 // review of I-030: the short-lane drain (nextIndex) let short jobs pass a gated waiter before gateHolding was asked
@@ -284,6 +286,134 @@ test('I-030 review: a lead-moved gated waiter that stopped polling is skipped at
   assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, false);
   assert.equal((await L.tryAcquire(R, { owner: 's', kind: 'lease', short: true, maxSec: 60 })).ok, true);
   assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['goal', 'a']);
+});
+
+// I-185 (user T-165, 2026-10-04 22:04-22:07Z): the lane stood empty while 11 jobs waited behind a timing head held at
+// the host gate past its 120 s pass window. Past that window a capped non-timing job (a short job, or a shared reader)
+// passes the gated timing head when its cap ends at least GATE_PASS_SETTLE_SEC before the head's gate-timeout grant
+// (now + maxSec + 120 <= gate.since + gateMaxWaitSec); moved heads too; never a job without a cap (--no-timing) and never
+// a timing waiter; FW_GATE_SHORT_PASS=0: none; board priority, then queue order; every pass is one audit line.
+const gatePasses = () => (existsSync(lockFile('audit.log')) ? readFileSync(lockFile('audit.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((x) => x.code === 'gate-pass') : []);
+/** A head timing waiter held at the gate since `sec` s before `now` (its gate record fresh, as while it polls a free lock). */
+async function gatedHead(owner, sec, now, { moved = false } = {}) {
+  if (moved) {
+    assert.equal((await L.tryAcquire(R, { owner: 'holder', kind: 'lease', now })).ok, true);
+    assert.equal((await L.tryAcquire(R, { owner, kind: 'lease', host: BUSY, now })).ok, false);
+    const X = await import('../../tools/lib/lock-repair.mjs');
+    await X.moveWaiter(R, { owner, to: 1, by: 'lead', reason: 'goal path', apply: true });
+    await L.release(R, { owner: 'holder' });
+  }
+  assert.equal((await L.tryAcquire(R, { owner, kind: 'lease', host: BUSY, now })).gated, true);
+  editQueue((q) => Object.assign(gateOf(q, owner), { since: new Date(now - sec * 1000).toISOString(), at: new Date(now).toISOString() }));
+}
+const short = (owner, maxSec, now, extra = {}) => L.tryAcquire(R, { owner, kind: 'lease', short: true, maxSec, now, ...extra });
+const reader = (owner, maxSec, now, extra = {}) => L.tryAcquire(R, { owner, kind: 'lease', shared: true, weight: 2, job: 'npm-test', maxSec, now, load1: 1, ...extra });
+
+test('I-185: past the pass window a short job whose cap fits passes the gated timing head (130 s, 300 s job), logged as gate-pass', async () => {
+  assert.equal(L.GATE_PASS_SETTLE_SEC, 120);
+  const now = Date.now();
+  await gatedHead('normal', 130, now);
+  assert.equal((await short('fit', 300, now)).ok, false, 'the first poll queues it');
+  const s = await short('fit', 300, now);
+  assert.equal(s.ok, true, '130 + 300 + 120 = 550 <= 600: it passes');
+  assert.equal(s.mode, 'short');
+  assert.deepEqual(readJson(`${R}.queue.json`).map((w) => w.owner), ['normal'], 'the head keeps its place and its gate wait');
+  const [a, ...more] = gatePasses();
+  assert.equal(more.length, 0, 'one audit line per pass');
+  assert.deepEqual({ code: a.code, resource: a.resource, by: a.by, owner: a.owner, head: a.head, headGatedSec: a.headGatedSec, maxSec: a.maxSec },
+    { code: 'gate-pass', resource: R, by: 'lock', owner: 'fit', head: 'normal', headGatedSec: 130, maxSec: 300 });
+  assert.equal(a.ts, new Date(now).toISOString());
+  assert.match(a.reason, /I-185/);
+});
+
+test('I-185: no pass that would end inside the settling window before the head\'s gate-timeout grant (boundary; back-to-back shorts)', async () => {
+  const now = Date.now();
+  await gatedHead('normal', 181, now);
+  for (let i = 0; i < 2; i++) assert.equal((await short('long', 300, now)).ok, false, '181 + 300 + 120 = 601 > 600');
+  editQueue((q) => { gateOf(q, 'normal').since = new Date(now - 180000).toISOString(); });
+  assert.equal((await short('long', 300, now)).ok, true, '180 + 300 + 120 = 600: just fits');
+  await L.release(R, { owner: 'long' });
+  // back to back: the head polls again (busy, fresh gate record) 60 s later; a second 300 s short no longer fits, a 60 s one does
+  const later = now + 60000;
+  editQueue((q) => { gateOf(q, 'normal').at = new Date(later).toISOString(); q[0].lastSeen = new Date(later).toISOString(); });
+  for (let i = 0; i < 2; i++) assert.equal((await short('second', 300, later)).ok, false, '240 + 300 + 120 > 600: refused after the first pass');
+  assert.equal((await short('small', 60, later)).ok, false, 'queued');
+  assert.equal((await short('small', 60, later)).ok, true, '240 + 60 + 120 = 420: fits');
+  assert.deepEqual(gatePasses().map((x) => [x.owner, x.headGatedSec, x.maxSec]), [['long', 180, 300], ['small', 240, 60]]);
+});
+
+test('I-185: a shared reader passes the gated head when its cap fits; a 480 s npm-test reader at 200 s does not', async () => {
+  await L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'test', cap: 6 });
+  const now = Date.now();
+  await gatedHead('normal', 200, now);
+  for (let i = 0; i < 2; i++) assert.equal((await reader('npm480', 480, now)).ok, false, '200 + 480 + 120 = 800 > 600');
+  assert.equal((await reader('npm260', 260, now)).ok, false, 'queued');
+  const g = await reader('npm260', 260, now);
+  assert.equal(g.ok, true, '200 + 260 + 120 = 580 <= 600: it opens a group');
+  assert.equal(g.opened, true);
+  // npm480 was queued before the group opened (an in-batch join), but its cap still does not fit
+  assert.equal((await reader('npm480', 480, now)).ok, false, 'no join past the gated head that does not fit');
+  assert.deepEqual(gatePasses().map((x) => [x.owner, x.head, x.headGatedSec, x.maxSec]), [['npm260', 'normal', 200, 260]]);
+});
+
+test('I-185: an in-batch reader join past a gated head is a pass too: it joins only when its cap fits, and is logged', async () => {
+  await L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'test', cap: 6 });
+  const now = Date.now();
+  await gatedHead('normal', 130, now);
+  assert.equal((await reader('r1', 300, now)).ok, false);
+  assert.equal((await reader('r2', 300, now, { weight: 2 })).ok, false);
+  assert.equal((await reader('r1', 300, now)).opened, true);
+  const j = await reader('r2', 300, now);
+  assert.equal(j.ok, true, 'r2 queued before the group opened and fits: it joins');
+  assert.deepEqual(gatePasses().map((x) => x.owner), ['r1', 'r2']);
+});
+
+test('I-185: nobody passes before 120 s at a moved head; a moved head is passed after 120 s by a job that fits', async () => {
+  const now = Date.now();
+  await gatedHead('goal', 100, now, { moved: true });
+  for (let i = 0; i < 2; i++) assert.equal((await short('s', 60, now)).ok, false, 'a moved head is never passed in its first 120 s (I-030)');
+  editQueue((q) => { gateOf(q, 'goal').since = new Date(now - 125000).toISOString(); });
+  const s = await short('s', 60, now);
+  assert.equal(s.ok, true, 'after 120 s the fit rule passes the moved head too');
+  assert.deepEqual(gatePasses().map((x) => [x.owner, x.head, x.headGatedSec]), [['s', 'goal', 125]]);
+});
+
+test('I-185: no pass without a cap (--no-timing) and never a timing waiter past a timing waiter; FW_GATE_SHORT_PASS=0: none', async () => {
+  const now = Date.now();
+  await gatedHead('normal', 130, now);
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 'build', kind: 'lease', noTiming: true, now })).ok, false, 'a --no-timing hold has no cap');
+  for (let i = 0; i < 2; i++) assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', host: QUIET, now })).ok, false, 'a timing waiter never passes a timing waiter');
+  const T0 = H.thresholds({ FW_GATE_SHORT_PASS: '0' });
+  for (let i = 0; i < 2; i++) assert.equal((await short('s', 60, now, { thresholds: T0 })).ok, false, 'FW_GATE_SHORT_PASS=0: no pass at all');
+  assert.equal(gatePasses().length, 0);
+  assert.equal((await short('s', 60, now)).ok, true, 'the default env passes');
+});
+
+test('I-185: candidates go in board-priority order (best open status row), then queue order', async () => {
+  const now = Date.now();
+  await gatedHead('normal', 130, now);
+  for (const o of ['a', 'b', 'c']) assert.equal((await short(o, 60, now)).ok, false);
+  const ranks = { b: 1, c: 1, a: 5 };
+  const rankOf = (o) => ranks[o] ?? null;
+  assert.equal((await short('a', 60, now, { rankOf })).ok, false, 'a is first in the queue but ranks below b and c');
+  assert.equal((await short('c', 60, now, { rankOf })).ok, false, 'b and c rank equal: queue order');
+  assert.equal((await short('b', 60, now, { rankOf })).ok, true);
+  await L.release(R, { owner: 'b' });
+  assert.equal((await short('a', 60, now)).ok, true, 'without board ranks: queue order');
+});
+
+test('I-185: without an injected rankOf the pass reads the real status board (lock-repair boardRanks)', async () => {
+  const S = await import('../../tools/lib/status.mjs');
+  const now = Date.now();
+  await gatedHead('normal', 130, now);
+  for (const o of ['a', 'b']) assert.equal((await short(o, 60, now)).ok, false);
+  await S.set('b-row', { by: 'b', kind: 'fix', title: 'Item b' });
+  await S.set('a-row', { by: 'a', kind: 'fix', title: 'Item a' });
+  await S.setPriority('b-row', 1, { by: 'lead' });
+  await S.setPriority('a-row', 2, { by: 'lead' });
+  assert.equal((await short('a', 60, now)).ok, false, 'a is first in the queue but b ranks #1 on the board');
+  assert.equal((await short('b', 60, now)).ok, true);
+  assert.deepEqual(gatePasses().map((x) => x.owner), ['b']);
 });
 
 test('I-033: a host sleep inside a gate window is not quiet (one more window), and the grant records the gate\'s sleep', async () => {

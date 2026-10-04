@@ -54,7 +54,17 @@
 // only during the first THRESHOLDS.gateShortPassSec (120 s, at most the cap) of its gate wait, and never
 // past a waiter the lead moved (I-030); then no short job passes it until it is granted, so the host can
 // settle. FW_GATE_SHORT_PASS sets that window per process: a short job's grant is decided in the short
-// job's own process (its env), like every tryAcquire with the caller's THRESHOLDS. After
+// job's own process (its env), like every tryAcquire with the caller's THRESHOLDS. I-185 (user T-165: the lane
+// stood empty for minutes while 11 jobs waited behind a gated timing head): past the window, one capped non-timing
+// job at a time (a short job, or a shared reader opening or joining a group) still passes the gated timing head,
+// a moved one too, when its cap ends at least GATE_PASS_SETTLE_SEC (120 s) before the head's gate-timeout grant
+// (now + maxSec + 120 <= gate.since + gateMaxWaitSec, awake time), so passes happen at 120-480 s and the head always
+// keeps a 120 s settling window. A --no-timing hold (no cap) never passes, nor does a timing waiter;
+// FW_GATE_SHORT_PASS=0: none. Candidates go by the status board's priority (lock-repair.mjs boardRanks, I-171),
+// then queue order; each pass appends a `gate-pass` line to locks/audit.log (owner, head, headGatedSec, maxSec).
+// Trade-off: every pass loads the host while the head waits for quiet, so passes can push the head toward a
+// contaminated 600 s gate-timeout grant (the I-030 case); the fit rule bounds that but does not exclude it (a
+// pass's tail load can outlast its 120 s settling window). After
 // THRESHOLDS.gateMaxWaitSec (600 s; env FW_GATE_MAX_WAIT) the waiter is granted anyway: the holder record
 // gets `gateTimeout: true`, a line goes to locks/host-alerts.log, and verify.mjs marks every run of that hold contaminated. Every gated grant
 // records `gate: {quiet, waitedSec, reasons, load1, busyPct, sysPct, pressure}` in the holder. The host
@@ -704,6 +714,49 @@ function gateHolding(w, now, T = THRESHOLDS) {
   return !gatePassDone(w, now, T);
 }
 
+/** I-185: a gate pass ends at least this long before the head's gate-timeout grant, so the host can settle for the head. */
+export const GATE_PASS_SETTLE_SEC = 120;
+/** I-185: a timing waiter `w` held at its host gate (not quiet), whose wait the pass window has closed to I-030's passes. */
+const gateHeldPastWindow = (w, now, T) => !!(w && !w.short && !w.shared && !w.functional && !w.noTiming && w.gate && w.gate.quiet !== true && gatePassDone(w, now, T));
+/** I-185: a job capped at `maxSec` s, starting now, ends GATE_PASS_SETTLE_SEC before `w`'s gate-timeout grant (awake time, I-033). */
+function gateFits(w, maxSec, now, T) {
+  if (!(T.gateShortPassSec > 0) || !(maxSec > 0)) return false; // FW_GATE_SHORT_PASS=0: no pass at all; no cap: never
+  const grantAt = Date.parse(w.gate.since) + ((w.gate.sleptSec || 0) + T.gateMaxWaitSec) * 1000;
+  return now + (maxSec + GATE_PASS_SETTLE_SEC) * 1000 <= grantAt;
+}
+/**
+ * I-185 (user T-165: the lane stood empty 22:04-22:07Z while 11 jobs waited behind a timing head at its host gate): the
+ * queue entry that may pass the head `q[ni]` now, or null. The head is a timing waiter held at its gate (record fresh)
+ * past the pass window (gatePassDone; a lead-moved head too); a candidate is a capped non-timing waiter (a short job or a
+ * shared reader: short-lane entries with maxSec; a --no-timing hold has no cap and never passes, nor does a timing
+ * waiter) seen within HANDOVER_FRESH_SEC whose cap fits (gateFits). Board priority first (`rankOf(owner)`: the owner's
+ * best open status-row priority, lower first; null = unranked, last), then queue order. One job (or one group) at a time.
+ */
+function gatePassPick(q, ni, now, caller, T, rankOf) {
+  const head = q[ni];
+  if (!gateHeldPastWindow(head, now, T) || now - Date.parse(head.gate.at) >= GATE_FRESH_MS) return null;
+  const c = q.map((w, i) => [w, i]).filter(([w, i]) => i !== ni && w.short && !w.notReady && (w.owner === caller || now - Date.parse(w.lastSeen) <= HANDOVER_FRESH_SEC * 1000) && gateFits(head, w.maxSec, now, T));
+  if (!c.length) return null;
+  const rk = (o) => { const p = rankOf ? rankOf(o) : null; return Number.isInteger(p) ? p : Infinity; };
+  c.sort((a, b) => rk(a[0].owner) - rk(b[0].owner) || a[1] - b[1]);
+  return c[0][0];
+}
+/** I-185: one locks/audit.log line per gate pass, so the hourly measures can count them. */
+function auditGatePass(r, { owner, head, maxSec, now }) {
+  const headGatedSec = Math.round((now - Date.parse(head.gate.since)) / 1000);
+  try {
+    appendFileSync(join(lockDir(), 'audit.log'), JSON.stringify({ ts: iso(now), by: 'lock', reason: `I-185 gate pass: "${owner}" (cap ${maxSec} s) runs while "${head.owner}" waits at the host gate (${headGatedSec} s)`, resource: r, code: 'gate-pass', owner, head: head.owner, headGatedSec, maxSec }) + '\n');
+  } catch {}
+}
+/** I-185: the status board's priority per owner for gatePassPick (lib/lock-repair.mjs boardRanks, I-171), or null. */
+async function boardRankOf() {
+  try { const X = await import('./lock-repair.mjs'); return typeof X.boardRanks === 'function' ? await X.boardRanks() : null; } catch { return null; }
+}
+/** I-185: cheap unguarded peek: some waiter of `r` is held at its gate past the pass window (board ranks are worth reading). */
+function gatePassPossible(r, now, T) {
+  try { return readJson(queueFile(r), []).some((w) => gateHeldPastWindow(w, now, T)); } catch { return false; }
+}
+
 /**
  * One acquisition attempt. Returns {ok:true, holder, mode} or {ok:false, holder, position, queue, next, gated, why}.
  * opts: {owner, kind:'process'|'lease', ttlSec, pid, meta, queueTtlSec, short, maxSec, held, host, thresholds, noTiming,
@@ -757,6 +810,10 @@ export async function tryAcquire(r, opts) {
     if (ttlSec > pol.maxHoldSec) throw new Error(`a ${r} lease is capped at ${pol.maxHoldSec} s (asked --ttl ${ttlSec}); measure inside one process hold instead: node tools/lock.mjs run ${r} --owner <topic> -- sh -c '<ab && probe>' (I-020)`);
     ttlSec ||= pol.defaultTtlSec;
   }
+  // I-185: the board ranks for a gate pass, read outside the guard and only when one is possible (a capped non-timing
+  // caller, a waiter past its pass window); `opts.rankOf` injects them (tests)
+  const rankOf = opts.rankOf !== undefined ? opts.rankOf
+    : GATED[r] && (short || lane) && maxSec > 0 && T.gateShortPassSec > 0 && gatePassPossible(r, opts.now ?? Date.now(), T) ? await boardRankOf() : null;
   return withGuard(r, () => {
     const now = opts.now ?? Date.now();
     let h = readJson(holderFile(r), null);
@@ -815,7 +872,7 @@ export async function tryAcquire(r, opts) {
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
-    if (lane) return readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap: sw.cap, queueTtlSec, load1, ncpu, busyPct, T });
+    if (lane) return readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap: sw.cap, queueTtlSec, load1, ncpu, busyPct, T, rankOf });
     // I-124: no NEW timing hold of a gated resource on a nearly full disk (lib/disk.mjs, FW_TIMING_MIN_FREE_GB, default
     // 8 GB). Re-entered holds returned above; shared, short and --no-timing holds and phone runs (meta.phoneRun, a `run` whose
     // command is iphone.mjs scroll|record|run|gesture: the phone stamps its own frames) pass. The waiter leaves the queue (a
@@ -835,8 +892,11 @@ export async function tryAcquire(r, opts) {
     if (mine >= 0 && q[mine].notReady && !notReady) { const { notReady: _, ...w } = q[mine]; q[mine] = w; }
     const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
-    // (not one the lead moved, and only early in its gate wait: gateHolding, I-030)
-    const headOk = !notReady && (q.length === 0 || mine === ni || (short && GATED[r] && ni >= 0 && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner)));
+    // (not one the lead moved, and only early in its gate wait: gateHolding, I-030); past that window, a short job whose
+    // cap fits before the head's settling window (gatePassPick, I-185)
+    let headOk = !notReady && (q.length === 0 || mine === ni || (short && GATED[r] && ni >= 0 && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner)));
+    const fitPass = !headOk && !h && !notReady && short && GATED[r] && ni >= 0 && mine >= 0 && gatePassPick(q, ni, now, owner, T, rankOf) === q[mine] ? q[ni] : null;
+    if (fitPass) headOk = true;
     let gateRec;
     if (!h && headOk && GATED[r] && !short && !noTiming && host !== undefined) {
       const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
@@ -877,6 +937,7 @@ export async function tryAcquire(r, opts) {
       };
       if (gateRec?.timeout) { try { appendFileSync(hostAlertsFile(), JSON.stringify({ at: h.acquiredAt, resource: r, owner, event: 'gate-timeout', ...gateRec }) + '\n'); } catch {} }
       writeJson(holderFile(r), h);
+      if (fitPass) auditGatePass(r, { owner, head: fitPass, maxSec, now });
       if (GATED[r] && !short && !shared) closeBetween(owner); // I-160: the phone block's next hold ends its between-holds window
       const runStart = short ? new Date(shortRunStart(seen, now) ?? now).toISOString() : undefined;
       writeJson(lastGrantFile(r), { owner, short, maxSec, at: h.acquiredAt, token: h.token, runStart });
@@ -1028,7 +1089,7 @@ export function groupGrant(g, now) {
  * Inside the guard, the shared lane on: join the live group, open one on a free lock at this reader's turn, or queue
  * (a short-lane entry with `shared: true`, keyed by owner + pid, or owner + checkout for a lease reader).
  */
-function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap, queueTtlSec, load1, ncpu, busyPct, T }) {
+function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, weight, cap, queueTtlSec, load1, ncpu, busyPct, T, rankOf = null }) {
   // its reader entry, or the switch-off entry it queued with before the lead switched the lane on (N10): kept in place
   const isMine = (w) => (w.shared || w.functional) && sameWaiter(w, owner, kind, pid);
   const mine = q.findIndex(isMine);
@@ -1058,6 +1119,10 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     const moved = q.slice(0, mine >= 0 ? mine : q.length).find((w) => !w.shared && w.movedBy);
     if (moved) return wait(`joins closed: "${moved.owner}" waits for an exclusive hold, moved ahead by ${moved.movedBy} (I-097)`);
     if (writer && !inBatch) return wait(`joins closed: "${writer.owner}" waits for an exclusive hold (writer preference)`);
+    // I-185: an in-batch join past a timing writer held at its host gate past the pass window is a gate pass: only when
+    // this reader's cap ends before the writer's settling window (gateFits), and it is audited like one
+    const joinPass = writer && gateHeldPastWindow(writer, now, T) ? writer : null;
+    if (joinPass && !gateFits(joinPass, maxSec, now, T)) return wait(`joins closed: "${writer.owner}" waits at the host gate and this job's ${maxSec} s would not end ${GATE_PASS_SETTLE_SEC} s before its gate-timeout grant (I-185)`);
     // readers join in queue order (review-lock-share N4; a reader that stopped polling does not hold the others up).
     // I-049 head-of-line: a reader that fits may pass readers ahead that do not fit now, while each of them has waited
     // less than readerBypassSec; past that the group drains for them. A reader ahead that fits is never passed.
@@ -1080,6 +1145,7 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     writeJson(holderFile(r), g);
     writeJson(lastGrantFile(r), groupGrant(g, now)); // the record stays "short" until this reader's end + the grace
     leaveQueue();
+    if (joinPass) auditGatePass(r, { owner, head: joinPass, maxSec, now });
     return { ok: true, holder: g, reader: x, mode: 'shared' };
   }
   // free: reader entries are short-lane entries; right after a group a normal waiter goes first (groupGrant spends the
@@ -1089,12 +1155,15 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
   const afterGroup = !!seen.shared;
   // the opener is the waiter served next (readers in queue order, N4), or the first short-lane entry past a gate-held head
   const headOk = q.length === 0 || mine === ni || (!afterGroup && GATED[r] && ni >= 0 && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner));
-  if (!headOk) return wait(`"${q[ni]?.owner}" is served first`);
+  // I-185: past the head's pass window, the reader picked by gatePassPick (its cap fits) opens a group, after a group too
+  const fitPass = !headOk && GATED[r] && ni >= 0 && mine >= 0 && gatePassPick(q, ni, now, owner, T, rankOf) === q[mine] ? q[ni] : null;
+  if (!headOk && !fitPass) return wait(`"${q[ni]?.owner}" is served first`);
   const x = reader();
   const g = groupWith({ resource: r, owner: GROUP_OWNER, kind: 'lease', token: randomBytes(6).toString('hex'), checkout: REPO, host: os.hostname(), acquiredAt: iso(now), openedAt: iso(now), meta: {}, short: true, maxSec: SHARED_LANE.maxSec, shared: true, format: SHARED_FORMAT }, [x]);
   writeJson(holderFile(r), g);
   writeJson(lastGrantFile(r), groupGrant(g, now));
   leaveQueue();
+  if (fitPass) auditGatePass(r, { owner, head: fitPass, maxSec, now });
   return { ok: true, holder: g, reader: x, mode: 'shared', opened: true };
 }
 
