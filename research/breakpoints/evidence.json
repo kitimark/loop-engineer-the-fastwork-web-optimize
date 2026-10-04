@@ -1,0 +1,31 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "breakpoints",
+  "capMB": 200,
+  "items": [
+    { "path": "out/breakpoints/proposal-shots-N", "why": "the 14 shots of the T-053 proposal (research/breakpoints/proposal-t053.json): rr11 best build N and rr8 frozen frames, full screen and 3x card crops", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr11/loads.json", "why": "README 3.2.2 item 4 and the T-053 proposal: best build N load classes, sharpness scores, class matrix (rm1440)", "kind": "result" },
+    { "path": "out/breakpoints/rr11/png", "why": "frames behind README 3.2.2 item 4 (tolrep: N fast vs B fast 3.052 %, 39,549 px²; after the redraw 4 px²)", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/census-N/sweep-census.json", "why": "README 3.2.2 item 4 and the proposal's gain rows: best build N census at rm1440", "kind": "result" },
+    { "path": "out/breakpoints/rr2/loads.json", "why": "README 3.2.1 repeated-loads table (load classes, 26 loads in rr2-rr5)", "kind": "result" },
+    { "path": "out/breakpoints/rr2/png", "why": "frames behind README 3.2.1 repeated loads", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr3/loads.json", "why": "README 3.2.1 repeated-loads table", "kind": "result" },
+    { "path": "out/breakpoints/rr3/png", "why": "frames behind README 3.2.1 repeated loads", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr4/loads.json", "why": "README 3.2.1 repeated-loads table", "kind": "result" },
+    { "path": "out/breakpoints/rr4/png", "why": "frames behind README 3.2.1 repeated loads", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr5/loads.json", "why": "README 3.2.1 five-numbers table (S fast vs B fast 3.052 %)", "kind": "result" },
+    { "path": "out/breakpoints/rr5/png", "why": "frames behind README 3.2.1 five-numbers table", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr6/trace-1-B.json.gz", "why": "README 3.2.2 item 2: fast B card raster tasks (frames 2 and 4 only); gzip of trace-1-B.json", "kind": "trace", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr6/trace-3-S.json.gz", "why": "README 3.2.2 item 2: fast S card raster tasks (third raster at frame 38, ~820 ms), the proposal's 0.8 s redraw; gzip of trace-3-S.json", "kind": "trace", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr6/png", "why": "frames of the rr6 trace loads (soft/sharp class per traced load)", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr7/mem.txt", "why": "README 3.2.2 item 1: decode-cache and GPU transfer-cache entry sizes, B = S", "kind": "result", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr7/trace-1-B.json", "why": "README 3.2.2 item 1: memory-infra dump, fast B (soft)", "kind": "trace", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr7/trace-3-S.json", "why": "README 3.2.2 item 1: memory-infra dump, fast S (sharp)", "kind": "trace", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr8/loads.json", "why": "README 3.2.2 item 3 and the proposal: Reduce Motion off pair (2 px²)", "kind": "result" },
+    { "path": "out/breakpoints/rr8/png", "why": "frames behind README 3.2.2 item 3", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr9", "why": "README 3.2.2 item 1: Skia command logs (sampling kLinear + mip kLinear in every load) and the observer-effect frames", "kind": "result", "fastworkDerived": true },
+    { "path": "out/breakpoints/rr10/loads.json", "why": "README 3.2.2 repaint check and the 39,415 px² pair (tolrep RR=rr10 1 4 2)", "kind": "result" },
+    { "path": "out/breakpoints/rr10/png", "why": "frames behind README 3.2.2 repaint check", "kind": "frames", "fastworkDerived": true },
+    { "path": "out/breakpoints/census/sweep-census.json", "why": "README 3.3 census table, all 15 configs", "kind": "result" }
+  ]
+}
