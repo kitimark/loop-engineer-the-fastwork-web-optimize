@@ -42,6 +42,15 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 10:2xZ **Desk split (lead, user T-104 "is mgmt-ops-10 the bottleneck?"):** `mgmt-desk-1` (spawned 10:17Z) owns the console threads and the PROGRESS pages. mgmt-ops keeps tickets, pre-data and second reads, PREDICTIONS and this log. I handed over the open user items: T-103 and T-104 close once read; T-099 and T-101 wait on I-134; T-100 progress posts; the T-098 format watch.
+  - Landed: 4a7f1baa (answer-format rule 5, spawn-rules unread guard) and 85cf0340 (/build box on v6; howToUpdate: build moves with best:true). T-103 was told it is live (#5).
+  - Merge backfill (lead, user T-024 #13), done 10:14Z without --force, none refused: T-055/T-057/T-077 into T-024; T-035/T-046/T-067/T-072/T-076/T-079 into T-066; T-078 into T-087; T-024 related to T-085.
+  - **P-101 = nav-hit-cache D card** (fix-nav-morph, frame audit item 1, less-work, 0c861a14). Pre-data read PASS with 2 edits before data:
+    - a "judged lower but a guard or the Sim worse" branch (not landable as less-work, re-ticket);
+    - the point predictions for nav gCS/eFP C = 1.0 become intervals (else scored ±0.05).
+    - The harness hashes match the card. C-only smoke allowed, unscored. Its phone no-worse check gets its own P-id later.
+    - Next free id: **P-102** (P-100 stays reserved for fix-cd-roll-ca's F-212 diagnostic).
+  - Lead 10:15Z: fix-morph-gpu's quiet-Mac hold moved to #1 in the Chrome queue. Readers' "joins closed" behind a queued exclusive left the phone idle about 15 min.
 - 10-04 10:0xZ Landed: 37230fe3 (research/gpu-lessons), my ops 9adfe82c + cda36a95.
   - I-134 (the /build table layout, user T-099) goes to ts-threads.
   - F3 land refused for now: 96 old commits came along, plus absolute paths. fix-nav-morph is building a clean branch.
@@ -2510,6 +2519,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `mgmt-desk-1` (name; spawned 10-04 10:17Z by the lead, user T-104) | the user's DESK, split off from mgmt-ops: console threads, PROGRESS.json (/build and /progress), status row `desk`; agents' user-facing posts (T-100 progress, follow-ups) go here. mgmt-ops keeps tickets, pre-data and second reads, PREDICTIONS and this handover | alive |
 | `fix-scroll-cb` (name; spawned 10-04 09:5xZ, frame audit §5 item 2, user T-100) | topic `scroll-cb-phone`, less-work: four scroll handlers keep running on phones for effects the phone hides; switch them off while the effect is off (research/design-engineering/frame-audit.md §5); cost counts + a short phone no-worse check | alive |
 | `fix-accent-ca` (name; spawned 10-04 09:5xZ, T-096 ranking #1 from research/gpu-lessons) | hero accent and boil on the compositor, restacking the 10-02 illusion drafts; pixel-identical, or a proposal with Try-it (memory illusion-must-be-pixel-identical, proposal-try-it-required) | alive |
 | `wave-v7` (name; spawned 10-04 09:2xZ by the lead) | wave integrator v7: v6 (best-build + hero B-R2) + the countdown strips (cd-strip strip-tc, `patch.diff` 4f2ff4eb9afa, made `--on st6-rb2`; served JS 6fa0e1e8a221 / CSS 982a747d9263) + rest-script v4 (`patch.diff` be2b46a3ceaf) + PR-017 (cd-roll-ca, `patch.diff` d48095cc16ff, on strip-tc); counts and pixels only, no phone; ops second read, then a land request. Reference: gpu-preview 8aa2fe0b identity-checked a similar stack | alive |
