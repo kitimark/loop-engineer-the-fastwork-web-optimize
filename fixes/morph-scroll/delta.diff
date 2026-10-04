@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13777,7 +13777,65 @@
+@@ -13777,7 +13777,92 @@
        __osb = () => {
          let e = C() ? `none` : ``;
          e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
@@ -23,36 +23,63 @@
 +      // is up and the scroll has come to rest (no scroll for 200 ms) with the morph part open, a smooth scroll
 +      // finishes it to an end: open when the last move was opening and p >= 0.3, or closing and p >= 0.7 (0.5 if no
 +      // move was seen). The morph follows that scroll like any other.
++      // rev 6: waiting for the rest took 3-5 s after a slow swipe (iOS momentum creeps on for seconds). Now, once the
++      // finger is up, the commit happens as soon as the scroll is slow (|v| < 0.5 px/ms, the momentum tail) or at
++      // lift-off when the finger was still; a fast fling keeps its momentum until it leaves the extra screen or slows.
++      // The 200 ms rest timer stays as the fallback (e.g. a scripted scroll). One commit per lift-off (__msGo).
++      // The open/closed choice uses the position 200 ms ahead at the current speed (rev 6b; 500 ms since rev 6d).
++      // rev 6c: waiting for |v| < 0.5 still took 0.6-0.9 s after a 300 px swipe on the phone; inside the extra screen
++      // the commit now happens at lift-off itself (a lift outside it commits once the momentum enters it and slows).
++      // rev 6d: a 200 ms look-ahead sent a slow pull from open (lifted at 0.755) back to open against its momentum.
 +      __msY = -1,
 +      __msDir = 0,
 +      __msTouch = 0,
 +      __msTO = 0,
++      __msV = 0,
++      __msT = 0,
++      __msLift = 0,
++      __msGo = 0,
 +      __msArm = () => {
-+        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(__msSettle, 200)));
-       },
++        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __msSettle()), 200)));
++      },
 +      __msSettle = () => {
-+        if (!__msEnd || __msTouch) return;
++        if (!__msEnd || __msTouch || __msGo) return;
 +        let t = __msEnd.offsetHeight,
 +          n = document.documentElement.scrollHeight - window.innerHeight,
-+          e = t > 0 ? (window.scrollY - (n - t)) / t : 0;
++          e = t > 0 ? (window.scrollY - (n - t)) / t : 0,
++          // decide on where the momentum would take the scroll: + 500 ms of travel at the current speed (iOS momentum
++          // travels about v x 500 ms: UIScrollView normal deceleration 0.998/ms; rev 4 G records 340-640 ms), so a
++          // quick flick up at 0.28 opens and a slow pull from open to 0.75 closes; a stale speed (> 100 ms old) counts as 0
++          q = t > 0 && performance.now() - __msT < 100 ? e + (500 * __msV) / t : e;
 +        e > 0.002 &&
 +          e < 0.998 &&
-+          window.scrollTo({ top: e >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` });
++          ((__msGo = 1),
++          window.scrollTo({ top: q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` }));
 +      },
 +      __msTouchEv = (e) => {
-+        ((__msTouch = e.touches.length), __msTouch ? window.clearTimeout(__msTO) : __msArm());
++        ((__msTouch = e.touches.length),
++          __msTouch
++            ? (window.clearTimeout(__msTO), (__msLift = 0), (__msGo = 0))
++            : ((__msLift = 1), __msArm(), __msSettle()));
 +      },
 +      __msTick = () => {
 +        if (!__msEnd) return;
-+        let y = window.scrollY;
-+        (y !== __msY && (__msY >= 0 && (__msDir = y > __msY ? 1 : -1), (__msY = y)), __msTouch || __msArm());
++        let y = window.scrollY,
++          now = performance.now();
++        (y !== __msY &&
++          (__msY >= 0 &&
++            ((__msDir = y > __msY ? 1 : -1),
++            (__msV = now - __msT < 100 ? 0.5 * __msV + (0.5 * (y - __msY)) / Math.max(1, now - __msT) : 0)),
++          (__msY = y),
++          (__msT = now)),
++          __msTouch || (__msArm(), __msLift && Math.abs(__msV) < 0.5 && __msSettle()));
 +        let t = __msEnd.offsetHeight,
 +          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
 +        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
 +        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
 +        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
 +          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => z(g, F(), !0))));
-+      },
+       },
 +      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
 +      __navMorphSet = (t) => {
 +        (n && window.cancelAnimationFrame(n),
@@ -66,7 +93,7 @@
        T = (e) => {
          let t = ZM(i, a, e - o);
          ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
-@@ -13826,6 +13884,7 @@
+@@ -13826,6 +13911,7 @@
        __tt = [],
        N = () => {
          d ||
@@ -74,7 +101,7 @@
            ((d = !0),
            window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
            (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
-@@ -13862,7 +13921,8 @@
+@@ -13862,7 +13948,8 @@
        __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
        __pinY = () => Math.min(window.scrollY, __pinMax()),
        L = () => {
@@ -84,7 +111,7 @@
          let e = window.scrollY,
            t = __pinMax();
          (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
-@@ -13877,6 +13937,28 @@
+@@ -13877,6 +13964,28 @@
            )
          : void 0;
      (R && te && te.observe(R), _(), m(), N());
@@ -113,7 +140,7 @@
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
      // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
      // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
-@@ -13916,6 +13998,11 @@
+@@ -13916,6 +14025,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),

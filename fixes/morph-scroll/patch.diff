@@ -807,10 +807,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2671,8 +2706,57 @@
+@@ -2670,9 +2705,58 @@
+ function iE() {
    tE = 0;
    for (let e of $T) e.active && e.callback();
- }
++}
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -859,7 +860,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
 +    }, 500);
 +  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
-+}
+ }
  function aE() {
 -  nE ||
 +  (fwBoot(), nE) ||
@@ -884,7 +885,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,7 +2794,90 @@
+@@ -2710,8 +2794,91 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -897,7 +898,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
-+}
+ }
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -973,9 +974,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
  function lE(e) {
    let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2923,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -1641,24 +1643,23 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            g());
        }
      );
-@@ -4689,11 +5289,28 @@
+@@ -4689,12 +5289,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
--      n = () => {
--        F &&= (window.clearInterval(F), 0);
 +      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
 +      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
 +      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
 +      fwOn = !1,
 +      fwT0 = 0,
-+      n = () => {
+       n = () => {
+-        F &&= (window.clearInterval(F), 0);
 +        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
        },
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1670,9 +1671,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5343,15 @@
          ((O = null), z(E, null));
        },
@@ -2130,7 +2132,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13771,78 @@
+@@ -13017,13 +13771,105 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2159,29 +2161,56 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // is up and the scroll has come to rest (no scroll for 200 ms) with the morph part open, a smooth scroll
 +      // finishes it to an end: open when the last move was opening and p >= 0.3, or closing and p >= 0.7 (0.5 if no
 +      // move was seen). The morph follows that scroll like any other.
++      // rev 6: waiting for the rest took 3-5 s after a slow swipe (iOS momentum creeps on for seconds). Now, once the
++      // finger is up, the commit happens as soon as the scroll is slow (|v| < 0.5 px/ms, the momentum tail) or at
++      // lift-off when the finger was still; a fast fling keeps its momentum until it leaves the extra screen or slows.
++      // The 200 ms rest timer stays as the fallback (e.g. a scripted scroll). One commit per lift-off (__msGo).
++      // The open/closed choice uses the position 200 ms ahead at the current speed (rev 6b; 500 ms since rev 6d).
++      // rev 6c: waiting for |v| < 0.5 still took 0.6-0.9 s after a 300 px swipe on the phone; inside the extra screen
++      // the commit now happens at lift-off itself (a lift outside it commits once the momentum enters it and slows).
++      // rev 6d: a 200 ms look-ahead sent a slow pull from open (lifted at 0.755) back to open against its momentum.
 +      __msY = -1,
 +      __msDir = 0,
 +      __msTouch = 0,
 +      __msTO = 0,
++      __msV = 0,
++      __msT = 0,
++      __msLift = 0,
++      __msGo = 0,
 +      __msArm = () => {
-+        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(__msSettle, 200)));
++        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __msSettle()), 200)));
 +      },
 +      __msSettle = () => {
-+        if (!__msEnd || __msTouch) return;
++        if (!__msEnd || __msTouch || __msGo) return;
 +        let t = __msEnd.offsetHeight,
 +          n = document.documentElement.scrollHeight - window.innerHeight,
-+          e = t > 0 ? (window.scrollY - (n - t)) / t : 0;
++          e = t > 0 ? (window.scrollY - (n - t)) / t : 0,
++          // decide on where the momentum would take the scroll: + 500 ms of travel at the current speed (iOS momentum
++          // travels about v x 500 ms: UIScrollView normal deceleration 0.998/ms; rev 4 G records 340-640 ms), so a
++          // quick flick up at 0.28 opens and a slow pull from open to 0.75 closes; a stale speed (> 100 ms old) counts as 0
++          q = t > 0 && performance.now() - __msT < 100 ? e + (500 * __msV) / t : e;
 +        e > 0.002 &&
 +          e < 0.998 &&
-+          window.scrollTo({ top: e >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` });
++          ((__msGo = 1),
++          window.scrollTo({ top: q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` }));
 +      },
 +      __msTouchEv = (e) => {
-+        ((__msTouch = e.touches.length), __msTouch ? window.clearTimeout(__msTO) : __msArm());
++        ((__msTouch = e.touches.length),
++          __msTouch
++            ? (window.clearTimeout(__msTO), (__msLift = 0), (__msGo = 0))
++            : ((__msLift = 1), __msArm(), __msSettle()));
 +      },
 +      __msTick = () => {
 +        if (!__msEnd) return;
-+        let y = window.scrollY;
-+        (y !== __msY && (__msY >= 0 && (__msDir = y > __msY ? 1 : -1), (__msY = y)), __msTouch || __msArm());
++        let y = window.scrollY,
++          now = performance.now();
++        (y !== __msY &&
++          (__msY >= 0 &&
++            ((__msDir = y > __msY ? 1 : -1),
++            (__msV = now - __msT < 100 ? 0.5 * __msV + (0.5 * (y - __msY)) / Math.max(1, now - __msT) : 0)),
++          (__msY = y),
++          (__msT = now)),
++          __msTouch || (__msArm(), __msLift && Math.abs(__msV) < 0.5 && __msSettle()));
 +        let t = __msEnd.offsetHeight,
 +          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
 +        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
@@ -2211,7 +2240,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +13864,9 @@
+@@ -13045,9 +13891,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2223,7 +2252,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +13874,58 @@
+@@ -13055,27 +13901,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2289,7 +2318,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +13936,60 @@
+@@ -13086,7 +13963,60 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2351,7 +2380,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,6 +13998,11 @@
+@@ -13095,6 +14025,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -2363,7 +2392,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            P(),
            ne(),
            e.removeEventListener(`change`, m),
-@@ -13102,6 +14010,41 @@
+@@ -13102,6 +14037,41 @@
        }
      );
    });
@@ -2405,7 +2434,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var I = uN();
    let L, te;
    var B = e(I),
-@@ -13118,10 +14061,24 @@
+@@ -13118,10 +14088,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -2430,7 +2459,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14097,7 @@
+@@ -13140,7 +14124,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2439,7 +2468,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14114,13 @@
+@@ -13157,7 +14141,13 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2454,7 +2483,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14156,8 @@
+@@ -13193,7 +14183,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2464,7 +2493,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14174,7 @@
+@@ -13210,7 +14201,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2473,7 +2502,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13232,6 +14196,7 @@
+@@ -13232,6 +14223,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),

@@ -18,12 +18,16 @@ if (!SNAP) throw new Error('--snap <abs snapshot dir>');
 const VW = 430, VH = 932, DPR = 3;
 const OUT = join(WT, 'out/morph-scroll'); mkdirSync(OUT, { recursive: true });
 const tag = new Date().toISOString().replace(/[:.]/g, '-');
-// [name, p0, drag as a share of the extra screen (+ = finger up = scroll down), expected end]
+// [name, p0, drag as a share of the extra screen (+ = finger up = scroll down), expected end, px per 16 ms step,
+//  hold (still steps + 1.2 s finger down before lift) or release while moving]
 const CASES = [
-  ['open from closed, drag 0.45, hold, release', 0, 0.45, 1],
-  ['open from closed, drag 0.15, hold, release', 0, 0.15, 0],
-  ['close from open, drag 0.45, hold, release', 1, -0.45, 0],
-  ['close from open, drag 0.15, hold, release', 1, -0.15, 1],
+  ['open from closed, drag 0.45, hold, release', 0, 0.45, 1, 24, true],
+  ['open from closed, drag 0.15, hold, release', 0, 0.15, 0, 24, true],
+  ['close from open, drag 0.45, hold, release', 1, -0.45, 0, 24, true],
+  ['close from open, drag 0.15, hold, release', 1, -0.15, 1, 24, true],
+  ['open from closed, slow swipe 0.35, lift while moving', 0, 0.35, 1, 8, false],
+  ['close from open, slow swipe 0.35, lift while moving', 1, -0.35, 0, 8, false],
+  ['open from closed, medium swipe 0.3, lift while moving', 0, 0.3, 1, 24, false],
 ];
 async function serve() {
   const st = join(OUT, 'serve-settle-chrome.json'); rmSync(st, { force: true });
@@ -48,30 +52,31 @@ try {
   res.geo = g;
   console.log('geo', JSON.stringify(g));
   const touch = (type, y) => page.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: 215, y }] });
-  const drag = async (dy) => {
+  const drag = async (dy, step = 24, still = true) => {
     // finger moves up by dy (scrolls down) in 24 px steps every 16 ms, from a start that leaves room
     const y0 = dy > 0 ? 820 : 120; let y = y0;
     await touch('touchStart', y);
-    const steps = Math.ceil(Math.abs(dy) / 24);
-    for (let i = 0; i < steps; i++) { y = y0 - Math.sign(dy) * Math.min(Math.abs(dy), (i + 1) * 24); await touch('touchMove', y); await sleep(16); }
-    for (let i = 0; i < 6; i++) { await touch('touchMove', y); await sleep(16); }   // stop moving before the hold: no fling
+    const steps = Math.ceil(Math.abs(dy) / step);
+    for (let i = 0; i < steps; i++) { y = y0 - Math.sign(dy) * Math.min(Math.abs(dy), (i + 1) * step); await touch('touchMove', y); await sleep(16); }
+    if (still) for (let i = 0; i < 6; i++) { await touch('touchMove', y); await sleep(16); }   // stop moving before the hold: no fling
     return y;
   };
   // far from the end: an ordinary drag must not be followed by any settle
   await page.eval(`(window.scrollTo(0, ${Math.round(g.max * 0.5)}), 0)`); await sleep(500);
   { await drag(200); await touch('touchEnd'); await sleep(300); const a = await page.eval('scrollY'); await sleep(1500); const b = await page.eval('scrollY');
     res.midPage = { a, b, moved: a !== b }; console.log('mid page drag: moved after release', a !== b); }
-  for (const [name, p0, share, want] of CASES) {
+  for (const [name, p0, share, want, step, hold] of CASES) {
     await page.eval(`(window.scrollTo({ top: ${Math.round(g.max - g.t + p0 * g.t)}, behavior: 'instant' }), 0)`); await sleep(1200);
     const before = (await page.eval(GEO)).p;
-    await drag(share * g.t);
-    const held0 = (await page.eval(GEO)).p; await sleep(1200); const held1 = (await page.eval(GEO)).p;
+    await drag(share * g.t, step, hold);
+    const held0 = (await page.eval(GEO)).p; if (hold) await sleep(1200); const held1 = (await page.eval(GEO)).p;
     await touch('touchEnd');
     const samples = [];
-    for (const ms of [100, 250, 500, 1000, 2000]) { await sleep(ms - (samples.at(-1)?.[0] ?? 0)); samples.push([ms, (await page.eval(GEO)).p]); }
+    for (const ms of [100, 200, 300, 400, 500, 700, 1000, 2000, 4000]) { await sleep(ms - (samples.at(-1)?.[0] ?? 0)); samples.push([ms, (await page.eval(GEO)).p]); }
     const end = samples.at(-1)[1], ok = Math.abs(end - want) < 0.01 && held0 === held1;
-    res.cases.push({ name, before, held: [held0, held1], samples, end, want, ok });
-    console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}: p ${before}, held ${held0} -> ${held1} (1.2 s, finger down), after release ${samples.map((x) => x[0] + 'ms ' + x[1]).join(', ')}`);
+    const doneAt = samples.find((x, i) => samples.slice(i).every((z) => Math.abs(z[1] - want) < 0.01))?.[0] ?? null;
+    res.cases.push({ name, before, held: [held0, held1], samples, end, want, ok, doneAt });
+    console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}: p ${before}, held ${held0} -> ${held1} (${hold ? '1.2 s finger down' : 'no hold'}), at the end by ${doneAt} ms; after release ${samples.map((x) => x[0] + 'ms ' + x[1]).join(', ')}`);
   }
   await page.close();
 } finally { srv.proc.kill(); cdp.close(); await chrome.close(); }

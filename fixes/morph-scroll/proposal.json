@@ -4,12 +4,12 @@
   "area": "end",
   "topic": "morph-scroll",
   "problem": "At the end of the page, on a phone, the page takes over your scroll: once you reach the bottom, it cancels your finger's moves, pins the page in place every frame, and plays a 680 ms spring that grows the small nav pill into the dark panel (the 'morph'). Your finger stops scrolling the page for that moment.",
-  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put (CSS sticky) while that screen scrolls in, and the panel opens exactly as far as that screen has scrolled in, so it follows your finger (kept from rev 3, as you asked). Rev 4 answers your review: (1) Momentum: rev 3's CSS snapping made Safari brake every flick on the whole page (Safari switches the page to fast deceleration as soon as the page has any snap point: WebKit source, CONFIRMED). Rev 4 has no CSS snap at all, so flicks coast like today.\n\nRev 3 vs rev 4, glide after the same flick (iPhone, robot finger):\nflick up: 299 px in 0.7 s -> 1087 px in 2.7 s\nflick down: 164 px in 0.5 s -> 1174 px in 2.7 s\n\n(2) Did we measure it before? No. Rev 2 and 3 were checked only with scripted scrolls, which have no momentum, so the braking was missed. Rev 4 is measured with a robot finger on the iPhone (numbers under Gain). (3) No more stuck half open: when you let go and the page comes to rest part open, the page itself scrolls to open or closed in about half a second. It opens if you were opening and got past 30 %, closes if you were closing and got below 70 %; nothing moves while your finger is still on the glass. (4) Better ways, researched: native iOS apps pick the end point during the flick, which web pages cannot; CSS snap 'mandatory' brakes the same way as 'proximity'; so a short settle after the page rests is what keeps both the momentum and a clean end. Desktop, tablets and reduced motion keep today's behaviour. Base (A, v7): js 8c90da217745, css 308f0da70c3a; this (B, rev 4): js 5372c2d68c7d, css c4a4af0a7d6a.\n\nWhat it saves: Before = today's best build (v7), After = rev 4, last column = better / same / worse. Measured with a robot finger on the iPhone (6 flicks up and 6 down per build, medians); details in the fix README.",
-  "looksSame": "No. The motion is new: the panel follows your finger instead of a fixed spring, and after you let go part open it glides to open or closed. Still frames at the same opening match the base in the iOS Simulator while the panel covers the last section (only the running countdown differs, in base vs base too). Where the last section shows, Safari draws its text about 1 device pixel higher (T3, below). In Chrome only the EN language label differs. The pictures are from rev 2's build: rev 4 changes only the snapping and adds the settle, which change motion, not still frames.",
+  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put while that screen scrolls in, and the panel opens exactly as far as that screen has scrolled in, so it follows your finger (kept, as you asked). No CSS snapping, so flicks coast like today (rev 4).\n\nRev 6 answers your rev 5 review:\n(1) Slow to decide (3-5 s): rev 4 waited until the iPhone's own after-swipe glide had fully stopped, and after a slow swipe that tail is long. Rev 6 decides the moment your finger lifts: it looks at where you are and where the glide would carry you in the next half second, then scrolls to open or closed. Opens if you were opening and that point is past 30 %, closes if you were closing and it is below 70 %. Nothing moves while your finger is on the glass.\nMeasured (robot finger on the iPhone, 16 swipes: slow, 300 px, medium and a drag, each opening and closing, twice): lift-off to open or closed in 0.31-0.35 s, all 16 to the end they were heading for, none turned back. Rev 4 on the same swipes: 1.3-2.8 s.\n(2) Laggy, GPU team: I asked fix-morph-gpu and tried their newest change on top (iOS Simulator, repaint counts only): the big repaint when the panel starts to open halves (1.5 -> 0.9 million pixels); the one when it closes stays (2.3 million). It is not in this build: their change still needs its pixel check and the lead's go. If it lands, B is rebuilt on it. Smoothness on the phone: not measured yet.\n\nDesktop, tablets and reduced motion keep today's behaviour. Base (A, v7): js 8c90da217745, css 308f0da70c3a; this (B, rev 6): js 49c2317ecf98, css c4a4af0a7d6a.\n\nGain: Before = v7 (best build) where it has the same thing; for the decide time v7 has no settle, so Before = rev 4, the build you tried. Last column = better / same / worse.",
+  "looksSame": "No. The motion is new: the panel follows your finger instead of a fixed spring, and when you let go part open it glides to open or closed in about a third of a second. Still frames at the same opening match the base in the iOS Simulator while the panel covers the last section (only the running countdown differs, in base vs base too). Where the last section shows, Safari draws its text about 1 device pixel higher (T3, below). In Chrome only the EN language label differs. The pictures are from rev 2's build: revs 4-6 change only motion (no snapping, the settle), not still frames.",
   "visualDiff": [
     "Motion: the panel follows your scroll position, not a 680 ms spring. Scroll halfway and it is halfway open.",
-    "New in rev 4: let go part open and the page settles by itself in about 0.5 s: to open if you were opening and passed 30 %, to closed if you were closing and went below 70 %. While your finger stays on the glass nothing moves.",
-    "New in rev 4: no CSS snapping anywhere, so flicks on the whole page coast as far as today (measured below).",
+    "New in rev 6: let go part open and the page decides at once, then glides to open or closed in 0.31-0.35 s (rev 4 waited for the glide to stop: up to 2.8 s). Opens if you were opening and are heading past 30 %, closes if you were closing and heading below 70 %. While your finger stays on the glass nothing moves.",
+    "Since rev 4: no CSS snapping anywhere, so flicks on the whole page coast as far as today (measured below).",
     "Safari only, T3 (over the wide rule by share, not by shade): wherever the last section (#platform) is on screen, its text and edges sit about 1 device pixel (1/3 CSS px) higher. Closed at the end: 0.89 % of the screen over 8 shades, max 77. One screen before: 0.57 %, max 78. Base vs base: 0.",
     "Why (Safari): the box position is identical to 1/64 px. WebKit gives every sticky box its own GPU layer (WebKit source, CONFIRMED); that this layer causes the 1 px shift is OBSERVED, cause unknown.",
     "Safari, panel covering the section (m 0.25 to 1): equal to the base apart from the countdown, which also differs base vs base (max shade 224 in both).",
@@ -19,32 +19,32 @@
   ],
   "gain": [
     {
-      "what": "Glide distance after a flick up",
-      "before": "1058 px",
-      "after": "1087 px",
+      "what": "Time from lifting your finger to open or closed, slow swipe at the end",
+      "before": "2.5 s (rev 4)",
+      "after": "0.33 s",
       "tag": "OBSERVED",
-      "how": "same"
+      "how": "better. v7 has no settle, so Before = rev 4. Robot finger on the iPhone, 4 slow swipes (open and close, twice each); 4 more drags: 0.5 s -> 0.32 s."
     },
     {
-      "what": "Glide distance after a flick down",
-      "before": "1077 px",
-      "after": "1174 px",
+      "what": "Same, after a medium or 300 px swipe",
+      "before": "1.3-2.8 s (rev 4)",
+      "after": "0.33-0.35 s",
       "tag": "OBSERVED",
-      "how": "same"
+      "how": "better. 8 swipes, open and close; all 16 rev 6 swipes ended where they were heading, 0 turned back."
     },
     {
-      "what": "Glide time after the finger lifts",
-      "before": "2.7 s",
-      "after": "2.7 s",
+      "what": "Glide after a flick mid-page, up / down",
+      "before": "1015 / 1063 px (v7)",
+      "after": "1048 / 1019 px",
       "tag": "OBSERVED",
-      "how": "same"
+      "how": "same. 3 flicks each way, both 2.7 s. Measured on rev 6c, which has the same code mid-page as rev 6."
     },
     {
-      "what": "Slow frames (> 50 ms) during 12 glides",
+      "what": "Slow frames (> 50 ms) during those 6 glides",
       "before": "2",
-      "after": "2",
+      "after": "1",
       "tag": "OBSERVED",
-      "how": "same"
+      "how": "same (too few to call better); > 34 ms: 17 -> 9."
     },
     {
       "what": "Touch moves blocked at the end of the page",
@@ -54,13 +54,13 @@
       "how": "better"
     }
   ],
-  "risk": "A motion change: you decide whether the end-of-page panel should follow the finger and settle by itself. The settle is a script: it waits 200 ms after the page stops, so on a slow phone it could start a little late; touching the screen while it glides was not checked. Repaint: one big repaint (about 1.6 million pixels) in the frame where the panel leaves closed and again where it returns to closed, a settle to closed included; frames in between repaint only small areas (fix-morph-gpu's Simulator counts, F-223, OBSERVED). In Safari the last section is drawn 1 device px higher wherever it shows (T3), and it is its own GPU layer for the whole visit (memory not measured). Not run: reduced motion in Safari, iPad, a reload while scrolled into the extra screen. It reuses fix-nav-morph's setter and gate: if accepted it becomes a conflict cluster with nav-morph, and the nav-hit-cache change would need one extra line (__nsForce) to keep the nav colour right.",
+  "risk": "A motion change: you decide whether the end-of-page panel should follow the finger and settle by itself. The settle replaces the iPhone's own glide with a script scroll the moment you lift; on the robot finger it never fought the glide (16 of 16), but your own finger, touching the screen during the settle, and the address bar collapsing at lift-off were not checked. The half-second look-ahead is based on measured glides (OBSERVED, not from Apple docs). Repaint: one big repaint (about 1.5-2.3 million pixels) in the frame where the panel leaves closed and where it returns to closed; small ones in between (Simulator counts, OBSERVED); not timed on the phone. In Safari the last section is drawn 1 device px higher wherever it shows (T3), and it is its own GPU layer for the whole visit (memory not measured). Not run: reduced motion in Safari, iPad, a reload while scrolled into the extra screen. It reuses fix-nav-morph's setter and gate: if accepted it becomes a conflict cluster with nav-morph, and the nav-hit-cache change would need one extra line (__nsForce) to keep the nav colour right.",
   "compare": {
     "a": {
       "label": "Best build (v7)"
     },
     "b": {
-      "label": "Morph follows the scroll, settles when you let go (rev 4)"
+      "label": "Morph follows the scroll, decides at lift-off (rev 6)"
     },
     "view": "side",
     "shots": [
