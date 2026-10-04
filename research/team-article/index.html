@@ -1,0 +1,413 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A Team for Sixteen Milliseconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column (~66ch) on graph-paper ground; figures break out to a wider measure. The frame budget ruler is the one bold element. */
+:root {
+  color-scheme: light;
+  --paper: #f1f4f2;
+  --paper-2: #e4eae6;
+  --ink: #17221e;
+  --ink-soft: #4a5a54;
+  --grid: #d3ddd8;
+  --signal: #2743c9;      /* smooth frames, links, the accent */
+  --late: #c9472a;        /* frames over budget (semantic, not the accent) */
+  --warn: #b98a12;        /* near-threshold band */
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Literata", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --measure: 40rem;
+  --wide: 60rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0f1513;
+    --paper-2: #18211d;
+    --ink: #e2e9e5;
+    --ink-soft: #9db0a8;
+    --grid: #24312c;
+    --signal: #93a6ff;
+    --late: #ff8a6b;
+    --warn: #e2b84a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f1513;
+  --paper-2: #18211d;
+  --ink: #e2e9e5;
+  --ink-soft: #9db0a8;
+  --grid: #24312c;
+  --signal: #93a6ff;
+  --late: #ff8a6b;
+  --warn: #e2b84a;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 100% 2.25rem, 2.25rem 100%;
+  background-attachment: fixed;
+  color: var(--ink);
+  font: 400 1.0625rem/1.7 var(--body);
+  padding-inline: max(16px, 4vw);
+  padding-block: 3rem 5rem;
+}
+main { display: grid; gap: 2.75rem; justify-items: center; }
+main > * { width: 100%; max-width: var(--measure); }
+main > .wide { max-width: var(--wide); }
+
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; margin: 0; }
+h1 { font-size: clamp(2.4rem, 6.5vw, 4.4rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.55rem, 3.4vw, 2.1rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+section { display: grid; gap: 1.1rem; }
+a { color: var(--signal); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+em { font-style: italic; }
+strong { font-weight: 600; }
+.label {
+  font: 600 0.72rem/1.3 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.mono { font-family: var(--mono); font-size: 0.9em; }
+.num { font-variant-numeric: tabular-nums; }
+.surface {
+  background: var(--paper);
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  padding: clamp(1rem, 3vw, 1.75rem);
+}
+
+/* Header */
+header.masthead { display: grid; gap: 1.25rem; }
+.dek { font-size: 1.25rem; line-height: 1.5; color: var(--ink-soft); max-width: 36rem; }
+.byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; }
+
+/* The frame budget ruler (hero figure) */
+.ruler { display: grid; gap: 0.9rem; }
+.ruler svg { width: 100%; height: auto; display: block; }
+.ruler-wrap { overflow-x: auto; }
+.ruler-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+.swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; vertical-align: -0.05rem; margin-right: 0.4rem; }
+
+/* Stat strip */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 1px; background: var(--grid); border: 1px solid var(--grid); border-radius: 6px; overflow: hidden; }
+.stat { background: var(--paper); padding: 1rem 1.1rem; display: grid; gap: 0.25rem; align-content: start; }
+.stat b { font: 800 1.9rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.88rem; line-height: 1.35; color: var(--ink-soft); }
+
+/* Team map */
+.team { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
+.role { display: grid; gap: 0.4rem; align-content: start; padding: 1rem 1.1rem; border-top: 3px solid var(--ink); background: var(--paper); }
+.role.lead { border-top-color: var(--signal); }
+.role h3 { display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline; }
+.role h3 .mono { font-weight: 400; color: var(--ink-soft); font-size: 0.75rem; }
+.role p { font-size: 0.95rem; line-height: 1.55; }
+
+/* Stage line */
+.stages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.75rem; counter-reset: st; }
+.stages li { display: grid; gap: 0.3rem; align-content: start; padding: 0.9rem; background: var(--paper); border: 1px solid var(--grid); border-radius: 6px; }
+.stages b { font: 800 1.6rem/1 var(--display); color: var(--signal); }
+.stages span { font-size: 0.9rem; line-height: 1.45; }
+
+/* Device lanes */
+.lanes { display: grid; gap: 0.6rem; overflow-x: auto; }
+.lane { display: grid; grid-template-columns: 8rem 1fr; gap: 0.75rem; align-items: center; min-width: 34rem; }
+.lane .track { display: flex; gap: 4px; }
+.blk { padding: 0.45rem 0.6rem; border-radius: 4px; font: 400 0.78rem/1.25 var(--mono); color: var(--paper); background: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blk.sig { background: var(--signal); }
+.blk.soft { background: var(--paper-2); color: var(--ink); border: 1px dashed var(--ink-soft); }
+.blk.late { background: var(--late); }
+
+/* Results */
+.results { display: grid; gap: 1.1rem; }
+.res { display: grid; gap: 0.35rem; }
+.res-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 0.95rem; }
+.res-head .v { font: 600 0.75rem/1.6 var(--mono); color: var(--ink-soft); letter-spacing: 0.06em; }
+.bars { display: grid; gap: 3px; }
+.bar { height: 0.85rem; border-radius: 2px; }
+.bar.before { background: var(--ink-soft); opacity: 0.45; }
+.bar.after { background: var(--signal); }
+.res-nums { font: 400 0.8rem/1.4 var(--mono); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* Rules list */
+.rules { display: grid; gap: 0.9rem; margin: 0; padding: 0; list-style: none; }
+.rules li { display: grid; grid-template-columns: 3rem 1fr; gap: 0.75rem; }
+.rules li > .mono { color: var(--signal); font-weight: 600; padding-top: 0.15rem; }
+
+blockquote { margin: 0; padding: 0.25rem 0 0.25rem 1.25rem; border-left: 3px solid var(--signal); font-style: italic; color: var(--ink-soft); }
+.note { font-size: 0.9rem; color: var(--ink-soft); }
+hr { border: 0; border-top: 1px solid var(--grid); margin: 0; width: 100%; max-width: var(--measure); }
+footer { font-size: 0.88rem; color: var(--ink-soft); display: grid; gap: 0.5rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .bar.after { animation: grow 900ms cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
+  @keyframes grow { from { transform: scaleX(0.02); } to { transform: scaleX(1); } }
+}
+</style>
+
+<main>
+
+<header class="masthead">
+  <p class="label">A field report from the lead agent · night of 4 to 5 October 2026</p>
+  <h1>A Team for Sixteen Milliseconds</h1>
+  <p class="dek">How one lead and about 130 AI agents shared one Mac and one iPhone for five days to make a single web page scroll smoothly, and what it took to keep them from tripping over each other.</p>
+  <div class="byline label">
+    <span>Written by Claude, the team's lead</span>
+    <span>For the project owner</span>
+    <span>Personal study, not affiliated with Fastwork</span>
+  </div>
+</header>
+
+<figure class="wide surface ruler" aria-labelledby="ruler-cap">
+  <p class="label">The budget every frame has to fit</p>
+  <div class="ruler-wrap">
+    <svg viewBox="0 0 920 170" role="img" aria-label="A scale from 0 to 60 milliseconds. Chrome ticks every 8.33 ms; the phone draws about every 16.7 ms; frames over 34 ms count as slow and frames over 50 ms as very slow.">
+      <rect x="40" y="58" width="840" height="34" fill="var(--paper-2)" stroke="var(--grid)"></rect>
+      <rect x="40" y="58" width="233.8" height="34" fill="var(--signal)" opacity="0.85"></rect>
+      <rect x="516" y="58" width="56" height="34" fill="var(--warn)" opacity="0.55"></rect>
+      <rect x="740" y="58" width="140" height="34" fill="var(--late)" opacity="0.8"></rect>
+      <g fill="var(--ink-soft)" font-family="var(--mono)" font-size="12" text-anchor="middle">
+        <line x1="40" y1="92" x2="40" y2="104" stroke="var(--ink-soft)"></line><text x="40" y="120">0</text>
+        <line x1="156.7" y1="92" x2="156.7" y2="100" stroke="var(--ink-soft)"></line><text x="156.7" y="120">8.3</text>
+        <line x1="273.8" y1="92" x2="273.8" y2="104" stroke="var(--ink-soft)"></line><text x="273.8" y="120">16.7</text>
+        <line x1="390.5" y1="92" x2="390.5" y2="100" stroke="var(--ink-soft)"></line><text x="390.5" y="120">25</text>
+        <line x1="516" y1="92" x2="516" y2="104" stroke="var(--ink-soft)"></line><text x="516" y="120">34</text>
+        <line x1="740" y1="92" x2="740" y2="104" stroke="var(--ink-soft)"></line><text x="740" y="120">50</text>
+        <line x1="880" y1="92" x2="880" y2="104" stroke="var(--ink-soft)"></line><text x="880" y="120">60 ms</text>
+      </g>
+      <g font-family="var(--display)" font-size="15" font-weight="700" fill="var(--ink)">
+        <text x="40" y="44">One phone frame at 60 Hz</text>
+        <text x="516" y="44">Slow (&gt; 34 ms)</text>
+        <text x="740" y="44" fill="var(--late)">Goal: zero over 50</text>
+      </g>
+      <g font-family="var(--body)" font-size="13" fill="var(--ink-soft)">
+        <text x="40" y="150">Chrome stamps frames on an 8.33 ms grid (120 Hz). The phone's twin counts at ±4 ms flag results that sit near a line.</text>
+      </g>
+    </svg>
+  </div>
+  <figcaption id="ruler-cap" class="ruler-legend">
+    <span><i class="swatch" style="background:var(--signal)"></i>Inside one phone frame</span>
+    <span><i class="swatch" style="background:var(--warn)"></i>Near band, flagged</span>
+    <span><i class="swatch" style="background:var(--late)"></i>Very slow: the frames you feel</span>
+  </figcaption>
+</figure>
+
+<section>
+  <p>You asked me to write this down, so here it is from my side of the screen.</p>
+  <p>The job sounded small. Take one public home page, the one at fastwork.com, freeze a copy of it on this Mac, and make it scroll smoothly on an iPhone 15 Pro Max. Smooth has a number here. The phone draws a new picture about every 16.7 milliseconds. When the page needs longer than that, a frame is late and your thumb feels the page stick. Our goal is plain: no frame over 50 ms while you scroll, and as few over 34 ms as we can manage.</p>
+  <p>One agent could not do this alone. The page has a dozen moving parts that fight each other: a countdown, an avatar carousel, a hero fade, a morphing menu, a nav bar that changes colour over dark sections. Each part needed its own owner, and every owner needed the same two scarce things, the Mac's quiet CPU and the one phone. Most of what I did as lead was decide who gets those two things, when, and on what evidence.</p>
+</section>
+
+<section class="wide">
+  <div class="stats" role="list">
+    <div class="stat" role="listitem"><b class="num">5</b><span>days, 1 to 5 October</span></div>
+    <div class="stat" role="listitem"><b class="num">~130</b><span>named agents with a row on the board</span></div>
+    <div class="stat" role="listitem"><b class="num">1,638</b><span>commits on main, all local, never pushed</span></div>
+    <div class="stat" role="listitem"><b class="num">190</b><span>incidents reported, triaged and closed or parked</span></div>
+    <div class="stat" role="listitem"><b class="num">118</b><span>predictions written down before the data</span></div>
+    <div class="stat" role="listitem"><b class="num">2,207</b><span>automated tests guarding the tools</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Who is on the team</h2>
+  <p>Every agent has one job and a name that says what it is: <span class="mono">fix-</span> for a fix owner, <span class="mono">ts-</span> for a toolsmith, <span class="mono">mgmt-</span> for management. The name is also the address. When an agent needs something, it messages the owner of the question directly, and I get one line of FYI.</p>
+</section>
+
+<section class="wide">
+  <div class="team">
+    <article class="role lead surface">
+      <h3>Lead <span class="mono">1</span></h3>
+      <p>Lands every change on main, signs every phone test before its data exists, resolves incidents, sets the priority order and answers you. The only agent working in the main checkout.</p>
+    </article>
+    <article class="role surface">
+      <h3>Fix owners <span class="mono">fix-*</span></h3>
+      <p>One topic each, end to end, in their own git worktree: find the cost, patch a private copy of the page, measure it, write it up. They never touch another owner's code; they message the owner.</p>
+    </article>
+    <article class="role surface">
+      <h3>Integrator <span class="mono">int-v8</span></h3>
+      <p>Combines the winning fixes into the next best build, checks that they still work and look the same together, and owns the build's phone test.</p>
+    </article>
+    <article class="role surface">
+      <h3>Toolsmiths <span class="mono">ts-*</span></h3>
+      <p>One per incident. They write a failing test first, fix the shared tool, and hand me a single commit that I land after the full test suite passes.</p>
+    </article>
+    <article class="role surface">
+      <h3>Ops hub <span class="mono">mgmt-ops</span></h3>
+      <p>Reads every card and result a second time, keeps the prediction ledger and the handover log, and catches the gaps before a phone hour is spent.</p>
+    </article>
+    <article class="role surface">
+      <h3>Devices <span class="mono">mgmt-devices</span></h3>
+      <p>Keeps the Mac queue in priority order, runs the phone's start check, and answers the alarm when the phone sits idle while work is waiting.</p>
+    </article>
+    <article class="role surface">
+      <h3>Phone runner <span class="mono">iphone-runner</span></h3>
+      <p>The only hands on the iPhone. Runs the scripted scrolls and gestures in fixed blocks, never during a user step, and parks Safari after each block.</p>
+    </article>
+    <article class="role surface">
+      <h3>Mappers and reviewers</h3>
+      <p>Read-only helpers. Mappers trace minified code and answer browser questions with sources. Reviewers try to break a finished fix before it lands.</p>
+    </article>
+  </div>
+</section>
+
+<section>
+  <h2>Two scarce things</h2>
+  <p>A timing measurement only means something on a quiet machine. If one agent compiles while another measures, the second agent's numbers are noise. So the Mac has a lock, <span class="mono">chrome-measure</span>, with a queue. Timing jobs hold it alone. Jobs that time nothing, like test suites and page-structure probes, share it in a lane of their own. The phone has a lease: one holder, one page at a time.</p>
+  <p>Here is roughly what the two lanes looked like this evening while the v9 phone test started.</p>
+</section>
+
+<figure class="wide surface lanes" aria-label="The Mac and phone lanes around 23:25 to 23:35 UTC">
+  <p class="label">Mac and phone, about 23:25 to 23:35 UTC, 4 October</p>
+  <div class="lane"><span class="label">Mac, shared</span><div class="track"><span class="blk soft" style="flex:2">ts-gate-lane · test suite</span><span class="blk soft" style="flex:1.4">fix-nav-morph · probe</span></div></div>
+  <div class="lane"><span class="label">Mac, alone</span><div class="track"><span class="blk sig" style="flex:3">iphone-runner · v9 hold 1</span><span class="blk" style="flex:1.6">fix-toolbar-resize · next</span></div></div>
+  <div class="lane"><span class="label">iPhone</span><div class="track"><span class="blk sig" style="flex:4">P-120 · v9 step 4 vs v8 · Serious heat</span></div></div>
+  <p class="note">While a phone test is running, its Mac turns jump the queue, so the phone never waits on a compile.</p>
+</figure>
+
+<section>
+  <h2>How one fix travels</h2>
+  <p>Every topic moves through the same six stages, and each stage ends with a written card. The order matters. Nobody measures a fix before writing down what they expect to see.</p>
+</section>
+
+<section class="wide">
+  <ol class="stages">
+    <li><b>R</b><span><strong>Research.</strong> Where does the time go? Traces, call trees, layout counts.</span></li>
+    <li><b>I</b><span><strong>Idea.</strong> One mechanism, one patch on a private copy.</span></li>
+    <li><b>D</b><span><strong>Design card.</strong> The prediction and the pass rule, signed by the lead before any data.</span></li>
+    <li><b>F</b><span><strong>Fit.</strong> Function and pixel checks: same page, same look.</span></li>
+    <li><b>V</b><span><strong>Verify.</strong> A/B on Chrome, then a block on the real phone.</span></li>
+    <li><b>L</b><span><strong>Land.</strong> Rebase, fast-forward, into the next best build.</span></li>
+  </ol>
+</section>
+
+<section>
+  <h2>The rules that keep us honest</h2>
+  <p>Fast agents are good at sounding sure. Most of the structure exists to stop a confident guess from turning into a decision.</p>
+  <ul class="rules">
+    <li><span class="mono">01</span><p><strong>Predict, then measure.</strong> 118 predictions sit in a ledger, each written and committed before its first run. The phone test running tonight, P-120, was signed at 23:25 UTC with four conditions, and its pass rule can't move now.</p></li>
+    <li><span class="mono">02</span><p><strong>OBSERVED is not a fact.</strong> A browser behaviour we saw only in our own probes stays OBSERVED until a spec, the engine source or a bug report agrees. Every result on this page carries that tag for that reason.</p></li>
+    <li><span class="mono">03</span><p><strong>Looks must not change.</strong> A fix that makes the page cheaper but different by more than a sliver of pixels is a proposal for you to decide, not a fix.</p></li>
+    <li><span class="mono">04</span><p><strong>Your thumb is the judge.</strong> For lag you can feel, the test is a blind swipe pair on the phone. You don't know which page is which.</p></li>
+    <li><span class="mono">05</span><p><strong>The baseline is frozen.</strong> Every agent measures the same committed snapshot of the page, and the tools refuse to run on a changed one.</p></li>
+    <li><span class="mono">06</span><p><strong>Nothing leaves this Mac.</strong> No pushes, no remotes, no device ids or addresses in anything written down.</p></li>
+  </ul>
+</section>
+
+<section>
+  <h2>When things break</h2>
+  <p>A team this size breaks its own tools daily. A lock that hands a slot to the wrong job, an alarm that fires because a note mentions the phone, a listener that misses your message. Each of those became an incident: a numbered report, one toolsmith, a failing test, a fix, the full suite, then main. There have been 190 of them.</p>
+  <p>The incidents are where the team got better. One example from yesterday: my own listener for your messages had a gap, and three of your messages woke nobody (I-181). You asked me to make it the top priority. A toolsmith fixed it test-first, the suite passed, and since then your messages reach me within about a minute. Last hour: 4 messages, median first reply 1.1 minutes, none late.</p>
+  <blockquote>Check that all agents can work together properly. If they can't, you will be the bottleneck.</blockquote>
+  <p>That instruction from you shaped the last two days. I had become the bottleneck: on one day, 89 of 92 manual queue moves were mine, and a dozen agents were waiting on me for decisions that were theirs to make. So the roles changed. Agents now pull their own next step, send results straight to whoever uses them, and the devices manager moves the queue. My hand moves are still the worst number in the hourly report. The fix for that is in testing now.</p>
+</section>
+
+<section>
+  <h2>Talking to you</h2>
+  <p>You never had to read the agents' chatter. Everything you need goes through a small console on this Mac: threads for questions (172 so far), steps when the phone needs your hand (53), and proposals with live A and B pages you can try on the phone (44). Every answer follows the format you set: the answer first, short bullets, numbers in small tables, and "What you need to do" last. A linter refuses a reply that breaks it, mine included.</p>
+</section>
+
+<section>
+  <h2>How we measured</h2>
+  <p>Two instruments, used for different questions. Chrome on the Mac answers "how much work does this frame do?" quickly and repeatably. The real iPhone answers "does it feel smoother?", which is the question that matters.</p>
+  <ul class="rules">
+    <li><span class="mono">MAC</span><p><strong>Chrome, calibrated to the phone.</strong> A phone-sized window (430 × 932, 3× pixels, touch) with the CPU slowed 6×, which we found reproduces the iPhone 15 Pro Max's late-frame counts on a scripted scroll. The page is served from the frozen copy with a 150 ms delay so it loads like the live site. Each A/B runs both versions in alternation, at least three times each, and a result counts as better only when the two ranges don't overlap.</p></li>
+    <li><span class="mono">IOS</span><p><strong>The iPhone, in blocks.</strong> One question per block, one named control, a warm-up per version, then counted runs in a fixed C V V C order. Control runs double as heat sentinels: if the control gets slower, the runs since the last good control are thrown out. Phones get slower when hot, so every block names its heat state, and results from different heat states are never pooled.</p></li>
+    <li><span class="mono">ATT</span><p><strong>Attribution before claims.</strong> Before a fix is credited, call trees and layout counts show which work it removed. "Fewer late frames" without a mechanism stays a hypothesis.</p></li>
+  </ul>
+</section>
+
+<section>
+  <h2>What we changed on the page</h2>
+  <p>Most of the cost was not in scrolling itself but in work the page kept doing while you scrolled. These are the changes that made it into the best builds, in plain terms.</p>
+  <ul class="rules">
+    <li><span class="mono">GPU</span><p><strong>Animations moved to the graphics chip.</strong> The hero cards' fade-out, the countdown roll, the security panel's shimmer and the end-of-page menu fade used to be redrawn by script on every frame. They now run as compositor animations that Safari can play on its scroll thread.</p></li>
+    <li><span class="mono">CSS</span><p><strong>Smaller style changes.</strong> A section switch that restyled the whole page now restyles only its own section, with 40 fewer style rules. The title sweep pauses when it is off screen.</p></li>
+    <li><span class="mono">IDLE</span><p><strong>Less work at rest.</strong> The countdown runs in 4× fewer animation steps and pauses while off screen; the avatar row rests instead of ticking. At the top of the page, script animation callbacks fell from about 30 a second to 1.</p></li>
+    <li><span class="mono">HOLD</span><p><strong>Hide what you can't see.</strong> Off-screen profile cards are hidden while the people section starts to shrink, which halved that frame.</p></li>
+    <li><span class="mono">PIN</span><p><strong>Stop following past the end.</strong> The top bar and menu no longer chase the page's overscroll bounce at the bottom.</p></li>
+  </ul>
+  <p class="note">Every change keeps the page's look. A change that altered pixels beyond a small tolerance went to the project owner as a proposal with live A and B pages instead.</p>
+</section>
+
+<section class="wide surface results">
+  <p class="label">What the builds changed, before → after, one row per measurement</p>
+  <p class="note">Each pair is drawn to its own scale, with the before value as the full bar. All OBSERVED in our setup. Lower is better in every row.</p>
+  <div class="res">
+    <div class="res-head"><span>Frames over 50 ms in a full scroll, per run</span><span class="v">V1</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:60%"></div></div>
+    <div class="res-nums">5 → 3 (Chrome, calibrated to the phone)</div>
+  </div>
+  <div class="res">
+    <div class="res-head"><span>The frame where the people section starts to shrink</span><span class="v">V2</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:46%"></div></div>
+    <div class="res-nums">37 ms → 17 ms median</div>
+  </div>
+  <div class="res">
+    <div class="res-head"><span>Style work at the section switch about 2,600 px down</span><span class="v">V3</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:2.3%"></div></div>
+    <div class="res-nums">18–25 ms → 0.4–0.5 ms (iPhone Timeline)</div>
+  </div>
+  <div class="res">
+    <div class="res-head"><span>Style updates in 20 s at rest at the bottom of the page</span><span class="v">V4</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:3.3%"></div></div>
+    <div class="res-nums">1,200 → 40 (Chrome)</div>
+  </div>
+  <div class="res">
+    <div class="res-head"><span>Slow frames over 34 ms through the top card, warm phone</span><span class="v">V6</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:44%"></div></div>
+    <div class="res-nums">27 → 12 per run (you also picked it in both blind swipes)</div>
+  </div>
+  <div class="res">
+    <div class="res-head"><span>Script animation callbacks per second at rest at the top</span><span class="v">V7</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:3.3%"></div></div>
+    <div class="res-nums">27–33 → 1 (Chrome)</div>
+  </div>
+  <div class="res">
+    <div class="res-head"><span>Frames over 50 ms in the end-of-page menu open and close</span><span class="v">V8</span></div>
+    <div class="bars"><div class="bar before" style="width:100%"></div><div class="bar after" style="width:0.6%"></div></div>
+    <div class="res-nums">2 → 0 in all 4 runs (iPhone at Serious heat)</div>
+  </div>
+</section>
+
+<section>
+  <h2>Where v9 stands tonight</h2>
+  <p>v8 is the best build. You told us it feels very smooth, and that's the best result this team can get. v9 adds six more fixes, one step at a time. Step 4 holds four of them: a menu swipe revision, cards drawn once per frame instead of twice, lighter scroll callbacks, and a cheaper Join button. It passed its function and look checks on the Mac and is on the phone right now. Its test asks whether it is no worse than v8; a later test can then ask whether it is better.</p>
+  <p>One of the remaining fixes, the nav colour cache, failed its re-check on the new build an hour ago: one wrong colour at one scroll position per screen size. It stays out until its owner finds why. That's the system working. The earlier check passed on an older build, and the rule that made us check again on the new one caught it before you could see it.</p>
+  <p>The phone test itself hit a snag in its first hold. The end-of-page menu test opens and closes the menu three times, starting from closed. On v9 the menu is already open at the page end, so the v9 runs started with a close, and the scorer threw them out. Its owner proposed dropping that test. The ops hub and I said no. The thrown-out runs hinted that v9's menu closes might be about 10 ms slower. Dropping the one test that looks at that spot, after seeing the hint, would be choosing the test after the data. So the gesture tests run now, and the menu test gets fixed so both versions start from closed. It is re-registered and re-checked before it runs again.</p>
+  <p>I can't promise you "ULTRA smooth" before the phone has spoken. I can promise that when I tell you, the number was written down before it was measured.</p>
+</section>
+
+<section>
+  <h2>What I'd tell the next lead</h2>
+  <ul class="rules">
+    <li><span class="mono">→</span><p><strong>Give scarce devices an owner and a queue on day one.</strong> Every early fight was over the Mac or the phone.</p></li>
+    <li><span class="mono">→</span><p><strong>Make every agent write its state somewhere public.</strong> The status board turned "is anyone on this?" into a glance.</p></li>
+    <li><span class="mono">→</span><p><strong>Turn every surprise into a test.</strong> 2,207 of them now stand between a tired agent and a broken tool.</p></li>
+    <li><span class="mono">→</span><p><strong>Don't be the router.</strong> Results go to whoever uses them. The lead decides, lands, and stays out of the way.</p></li>
+    <li><span class="mono">→</span><p><strong>Say what you got wrong.</strong> Tonight I started a test a minute before I added a second fix to it, so the run counted for neither. I stopped it and ran it again.</p></li>
+  </ul>
+</section>
+
+<hr>
+
+<footer>
+  <p>Numbers as of 4 October 2026, about 23:45 UTC, from the project's own records: git history, the incident store, the prediction ledger and the status board. Results are OBSERVED in our setup: Chrome with a 6× CPU slowdown that reproduced the phone's jank counts, and the iPhone itself.</p>
+  <p>A personal, educational study of a public page on a local copy. Not affiliated with Fastwork. Written by Claude, lead of the team.</p>
+</footer>
+
+</main>
