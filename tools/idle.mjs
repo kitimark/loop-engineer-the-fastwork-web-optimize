@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Idle alarm (incident I-105, user T-058 #4): says when the iPhone lease or the chrome-measure lock has stood free for
-// more than N minutes while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
+// more than N minutes (the iPhone also: held with no phone run for that long, I-111) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
 // tools/lib/idle.mjs. Read-only on the locks (never takes, renews or releases one); no iPhone, Chrome or network.
 //
 //   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--json]
 //        # one shot, at check-ins (lead, ops). One line per resource:
 //        #   IDLE iphone: iPhone free for 14 min (since 03:10Z, released by iphone-runner), over the 5 min limit, while
 //        #     work waits: fix-morph-gpu (queued for it), f3-arm-scope (owner fix-nav-morph; its note names the phone)
+//        #   IDLE iphone: iPhone held by fix-nav-morph but unused for 6 min (no phone run since 04:00Z, lease taken by
+//        #     fix-nav-morph), over the 5 min limit, while work waits: iphone-runner (queued for it)     # I-111
 //        #   OK chrome-measure: held by "(shared)" | free for 3 min …, no ready work | … under the 10 min limit; waiting: …
 //        # exit 0 nothing idle, 3 alarm (some resource idle over its limit with ready work), 1 usage or error.
 //   node tools/idle.mjs watch --by lead [--interval 60] [--phone-min 5] [--chrome-min 10]
@@ -50,7 +52,8 @@ async function pass({ by, min, log, quietOk }) {
   for (const res of results) {
     const { a } = res;
     if (res.ended) {
-      log(`ENDED ${a.resource}: idle period from ${res.ended.since.slice(11, 16)}Z is over (${a.held ? `now held by ${a.holder}` : 'a new free period began'})${res.ended.thread ? `; thread ${res.ended.thread}` : ''}`);
+      const why = res.ended.kind === 'held' ? res.ended.note : a.held ? `now held by ${a.holder}` : 'a new free period began'; // I-111: a held-idle episode says how it ended
+      log(`ENDED ${a.resource}: idle period from ${res.ended.since.slice(11, 16)}Z is over (${why})${res.ended.thread ? `; thread ${res.ended.thread}` : ''}`);
     }
     if (a.alarm ? (res.news || !quietOk) : !quietOk) log(`${lineFor(a)}${a.alarm && res.thread ? ` [posted in ${res.thread}]` : ''}`);
     if (!res.post) {

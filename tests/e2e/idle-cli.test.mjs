@@ -125,3 +125,26 @@ test('watch: one IDLE line and one post for a new episode; stops on SIGTERM', as
   } finally { await p.stop(); }
   assert.match(p.stdout(), /STOPPED/);
 });
+
+// I-111 (2026-10-04): fix-nav-morph held the lease ~6 min without a phone run while others queued; check said OK.
+test('I-111 check: a held iPhone lease with no phone run past the limit is IDLE while another owner queues; the holder is addressed; release ends it', () => {
+  let r = lock('acquire', 'iphone', '--owner', 'fix-h', '--ttl', '1800');
+  assert.equal(r.code, 0, r.out);
+  r = lock('acquire', 'iphone', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
+  assert.equal(r.code, 3, r.out);
+  const before = lockFiles();
+  r = idle(['check', '--by', 'lead'], 4);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^OK iphone: held by fix-h; no phone run for 4 min \(since \d\d:\d\dZ, lease taken by fix-h\), under the 5 min limit; waiting: fix-w \(queued for it\)$/m);
+  r = idle(['check', '--by', 'lead'], 6);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^IDLE iphone: iPhone held by fix-h but unused for 6 min \(no phone run since \d\d:\d\dZ, lease taken by fix-h\), over the 5 min limit, while work waits: fix-w \(queued for it\)$/m);
+  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone held by fix-h, unused for 6 min while 1 job waits \(to fix-h, fix-w\)$/m);
+  assert.match(node(CON, ['thread', 'show', 'T-001'], { env }).stdout, /fix-h has held the iPhone lease for 6 min without a phone run/);
+  assert.deepEqual(lockFiles(), before, 'read-only on the locks');
+  // the holder releases: the episode ends (released), its thread closes
+  assert.equal(lock('release', 'iphone', '--owner', 'fix-h').code, 0);
+  r = idle(['check', '--by', 'lead'], 7);
+  assert.match(r.stdout, /^ENDED iphone: idle period from \d\d:\d\dZ is over \(released by fix-h\); thread T-001$/m);
+  assert.match(r.stdout, /^CLOSED T-001 \(iphone: released by fix-h\)$/m);
+});

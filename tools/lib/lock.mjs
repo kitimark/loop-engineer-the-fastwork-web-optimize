@@ -990,7 +990,7 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
 /**
  * I-060: the holder describes what its hold is for (lib/hold-job.mjs; shown on the progress page). `job`: a parsed job
  * ({text, for?, at, etaAt?}) sets it, null clears it, undefined leaves it. `run`: a phone run's marker ({text, since,
- * pid}) sets it; null clears it only if `runPid` (default this process) set it. Only the live holder (or, in a shared
+ * pid}) sets it; null clears it only if `runPid` (default this process) set it; either stamps the holder's lastRunAt (I-111). Only the live holder (or, in a shared
  * group, the owner's own reader records) may describe it. Returns the updated holder, or {shared, readers} for a group.
  */
 export async function describeHold(r, { owner, job, run, runPid = process.pid, now = Date.now() } = {}) {
@@ -1012,6 +1012,8 @@ export async function describeHold(r, { owner, job, run, runPid = process.pid, n
       return { shared: true, readers: readers.filter((x) => x.owner === owner) };
     }
     if (h.owner !== owner) throw new Error(`${r} is held by "${h.owner}", not "${owner}": only the holder describes its job`);
+    // I-111: a phone run's start or end (its own marker) stamps the holder's last use, read by the idle alarm (lib/idle.mjs)
+    if (run || (run === null && h.meta?.run && h.meta.run.pid === runPid)) h.lastRunAt = new Date(now).toISOString();
     h.meta = apply(h.meta);
     writeJson(holderFile(r), h);
     return h;

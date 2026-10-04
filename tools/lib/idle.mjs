@@ -16,6 +16,16 @@
 //         is named too. Whole words only: a hyphenated name such as the agent iphone-runner does not count.
 //     A row whose owner is already queued for that resource is listed once, as queued.
 //
+// Held but unused (I-111; fix-nav-morph held the lease ~6 min without a phone run while others queued): a held iPhone
+// lease (not chrome-measure) is idle too when no phone run has used it for MORE than the same N minutes and someone
+// other than the holder waits (the holder's own queue entry or board rows do not count). In use = a phone run's marker
+// (holder meta.run, set by iphone.mjs run/scroll/record/gesture, a --warmup run included) names a live process. Last
+// use (phoneUse) = the latest of: the lease's acquiredAt, the holder's lastRunAt (lib/lock.mjs describeHold stamps a
+// run's start and end), a dead run marker's start, and the alarm's own sighting of a live run under this lease
+// (state.json `activity` {token, at}; covers checkouts on older lock code). Its episode (kind "held") ends when the
+// phone is used again, the lease is released or taken by another; the thread is addressed to the holder too.
+// `iphone.mjs open`, `park`, a renew or `lock.mjs doing` are not phone runs, and neither is a phone-temp cooling wait.
+//
 // Free since (freeSince): the latest end of a hold that came after the last grant:
 //   - <r>.last-release.json (lib/lock.mjs noteRelease: a release, a process hold's end, the last shared reader leaving),
 //   - the newest locks/holds.log line for the resource (every `lock.mjs run` hold, also from checkouts on older lock
@@ -82,15 +92,19 @@ export function rowWaitsOn(row) {
   return out;
 }
 
-/** Ready work for `r`: {queue: [{owner}], rows: [{id, owner, why}]}; rows whose owner is queued are left out. */
-export function readyWork(r, { st, rows = [] }) {
+/**
+ * Ready work for `r`: {queue: [{owner}], rows: [{id, owner, why}]}; rows whose owner is queued are left out, and so is
+ * everything of `exclude` (the holder of a held-idle lease, I-111: its own wait is not someone else's).
+ */
+export function readyWork(r, { st, rows = [], exclude = null }) {
   const queue = [];
-  for (const w of st?.queue || []) if (w?.owner && !queue.some((x) => x.owner === w.owner)) queue.push({ owner: w.owner });
+  for (const w of st?.queue || []) if (w?.owner && w.owner !== exclude && !queue.some((x) => x.owner === w.owner)) queue.push({ owner: w.owner });
   const queued = new Set(queue.map((x) => x.owner));
   const out = [];
   for (const row of rows) {
     const hit = rowWaitsOn(row).find((x) => x.resource === r);
     if (!hit || queued.has(row.owner) || (row.aliases || []).some((a) => queued.has(a))) continue;
+    if (exclude && (row.owner === exclude || (row.aliases || []).includes(exclude))) continue;
     out.push({ id: row.id, owner: row.owner, why: hit.why });
   }
   return { queue, rows: out };
@@ -153,6 +167,27 @@ export function freeSince({ st, rel = null, grant = null, holdsEnd = null, seen 
   return { held: false, since: now, how: 'first seen free now (no release record)', key, observed: true };
 }
 
+const pidAlive = (pid) => { if (!Number.isInteger(pid) || pid <= 0) return false; try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+
+/**
+ * I-111: how a held iPhone lease is used. In: h (the live holder record), activity ({token, at}: the alarm's last
+ * sighting of a live phone run under this lease), now. Out: {busy: true} while a phone run's marker (meta.run, set by
+ * iphone.mjs run/scroll/record/gesture) names a live process; else {since (ms), how}: the latest of the lease's grant,
+ * the holder's lastRunAt (lib/lock.mjs describeHold: a run's start or end), a dead run marker's start, the sighting.
+ */
+export function phoneUse(h, { activity = null, now = Date.now(), isAlive = pidAlive } = {}) {
+  const run = h?.meta?.run || null;
+  if (run && isAlive(run.pid)) return { busy: true };
+  const who = h?.owner || '?';
+  const cands = [[ms(h?.acquiredAt), `lease taken by ${who}`], [ms(h?.lastRunAt), `last phone run of ${who}`]];
+  if (run) cands.push([ms(run.since), `a phone run of ${who} started (its process is gone)`]);
+  if (activity && activity.token && activity.token === h?.token) cands.push([ms(activity.at), 'a phone run seen by the idle alarm']);
+  const ok = cands.filter(([t]) => t !== null && t <= now);
+  if (!ok.length) return { since: now, how: `held by ${who}, no record of its use` };
+  const [since, how] = ok.reduce((a, b) => (b[0] > a[0] ? b : a));
+  return { since, how };
+}
+
 /** Whole minutes from `since` to `now` (floor, never negative). */
 export const freeMinutes = (since, now) => Math.max(0, Math.floor((now - since) / 60000));
 
@@ -161,8 +196,17 @@ export const freeMinutes = (since, now) => Math.max(0, Math.floor((now - since) 
  * minutes), now. Out: {resource, held, holder?, since?, freeMin, how, key, observed, queue, rows, ready, alarm}.
  * alarm: free for MORE than `min` minutes (free ms > min x 60000) and ready work exists.
  */
-export function assess(r, { st, rel, grant, holdsEnd, seen, rows = [], min = RESOURCES[r]?.defaultMin ?? 10, now = Date.now() }) {
+export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, rows = [], min = RESOURCES[r]?.defaultMin ?? 10, now = Date.now(), isAlive = pidAlive }) {
   const f = freeSince({ st, rel, grant, holdsEnd, seen, now });
+  if (f.held && r === 'iphone' && !isGroup(f.holder)) {
+    // I-111: a held iPhone lease is idle too while no phone run uses it (heldIdle; since = its last use)
+    const holder = f.holder?.owner || '?', holderToken = f.holder?.token || null;
+    const work = readyWork(r, { st, rows, exclude: holder });
+    const ready = work.queue.length > 0 || work.rows.length > 0;
+    const use = phoneUse(f.holder, { activity, now, isAlive });
+    if (use.busy) return { resource: r, min, held: true, holder, holderToken, runLive: true, heldIdle: false, freeMin: 0, ...work, ready, alarm: false };
+    return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: true, since: use.since, freeMin: freeMinutes(use.since, now), how: use.how, key: `held:${holderToken || '-'}`, observed: false, ...work, ready, alarm: ready && now - use.since > min * 60000 };
+  }
   const work = readyWork(r, { st, rows });
   const ready = work.queue.length > 0 || work.rows.length > 0;
   if (f.held) return { resource: r, min, held: true, holder: f.holder?.owner || (isGroup(f.holder) ? '(shared)' : '?'), freeMin: 0, ...work, ready, alarm: false };
@@ -175,7 +219,8 @@ export function gather({ now = Date.now(), resources = RESOURCE_NAMES, state = r
   const rows = statusList();
   const tail = holdsLogTail();
   return resources.map((r) => ({
-    r, st: lockStatus(r), rel: lastRelease(r), grant: lastGrant(r), holdsEnd: holdsLogEnd(r, tail), seen: state.resources?.[r]?.seen || null, rows, now,
+    r, st: lockStatus(r), rel: lastRelease(r), grant: lastGrant(r), holdsEnd: holdsLogEnd(r, tail), seen: state.resources?.[r]?.seen || null,
+    activity: state.resources?.[r]?.activity || null, rows, now,
   }));
 }
 
@@ -191,7 +236,13 @@ const workList = (a) => [
 /** The stdout line for one assessment (check prints one per resource; watch prints alarms and ends). */
 export function lineFor(a) {
   const R = RESOURCES[a.resource]?.short || a.resource;
-  if (a.held) return `OK ${a.resource}: held by ${a.holder}`;
+  if (a.held && a.heldIdle) { // I-111
+    const use = `(${a.alarm ? 'no phone run ' : ''}since ${hhmm(a.since)}, ${a.how})`;
+    if (a.alarm) return `IDLE ${a.resource}: ${R} held by ${a.holder} but unused for ${forText(a.freeMin)} ${use}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
+    const head = `OK ${a.resource}: held by ${a.holder}; no phone run for ${forText(a.freeMin)} ${use}`;
+    return a.ready ? `${head}, under the ${a.min} min limit; waiting: ${workList(a)}` : `${head}, nobody else waits`;
+  }
+  if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? ' (a phone run is on)' : ''}`;
   const free = `free for ${forText(a.freeMin)} (since ${hhmm(a.since)}, ${a.how})`;
   if (a.alarm) return `IDLE ${a.resource}: ${R} ${free}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
   if (!a.ready) return `OK ${a.resource}: ${free}, no ready work`;
@@ -200,7 +251,7 @@ export function lineFor(a) {
 
 /** The owners to address (agent names), the desk first; at most 8 (a thread's assignee limit). */
 export function addressees(a, desk = null) {
-  const names = [desk, ...a.queue.map((x) => x.owner), ...a.rows.map((x) => x.owner)].filter((n) => n && n !== 'lead' && n !== 'user' && AGENT.test(n));
+  const names = [desk, a.heldIdle ? a.holder : null, ...a.queue.map((x) => x.owner), ...a.rows.map((x) => x.owner)].filter((n) => n && n !== 'lead' && n !== 'user' && AGENT.test(n));
   return [...new Set(names)].slice(0, MAX_ASSIGNEES);
 }
 
@@ -208,16 +259,33 @@ export function addressees(a, desk = null) {
 export function threadFor(a, { desk = null } = {}) {
   const R = RESOURCES[a.resource] || { name: a.resource, short: a.resource };
   const n = a.queue.length + a.rows.length;
-  const title = `${R.short} free for ${forText(a.freeMin)} while ${n} ${n === 1 ? 'job waits' : 'jobs wait'}`;
-  const L = [`${R.name[0].toUpperCase()}${R.name.slice(1)} has had no holder for ${forText(a.freeMin)} (since ${hhmm(a.since)}; ${a.how}). The limit is ${a.min} min.`];
-  if (a.queue.length) L.push(`Queued for it: ${a.queue.map((x) => x.owner).join(', ')}.`);
-  if (a.rows.length) L.push(`Waiting on the status board: ${a.rows.map((x) => `${x.id} (owner ${x.owner}; ${x.why})`).join('; ')}.`);
+  const jobs = `${n} ${n === 1 ? 'job waits' : 'jobs wait'}`;
+  const waits = [];
+  if (a.queue.length) waits.push(`Queued for it: ${a.queue.map((x) => x.owner).join(', ')}.`);
+  if (a.rows.length) waits.push(`Waiting on the status board: ${a.rows.map((x) => `${x.id} (owner ${x.owner}; ${x.why})`).join('; ')}.`);
+  if (a.heldIdle) { // I-111: held, but no phone run
+    const L = [`${a.holder} has held the iPhone lease for ${forText(a.freeMin)} without a phone run (iphone.mjs run, scroll, record or gesture; since ${hhmm(a.since)}, ${a.how}). The limit is ${a.min} min.`, ...waits];
+    L.push(`${a.holder}: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner ${a.holder}) so the next one can start, or say here why it waits.${desk ? ` Desk (${desk}): please make sure the phone is used.` : ''}`);
+    L.push('One message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111).');
+    return { title: `${R.short} held by ${a.holder}, unused for ${forText(a.freeMin)} while ${jobs}`, text: L.join('\n') };
+  }
+  const title = `${R.short} free for ${forText(a.freeMin)} while ${jobs}`;
+  const L = [`${R.name[0].toUpperCase()}${R.name.slice(1)} has had no holder for ${forText(a.freeMin)} (since ${hhmm(a.since)}; ${a.how}). The limit is ${a.min} min.`, ...waits];
   L.push(`Owners: take it now${a.resource === 'iphone' ? ' (node tools/lock.mjs acquire iphone --owner <you> ...)' : ' (your queued hold, or node tools/lock.mjs run chrome-measure ...)'}, or say here why not.${desk ? ` Desk (${desk}): please make sure the next one starts.` : ''}`);
   L.push('One message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105).');
   return { title, text: L.join('\n') };
 }
 
 // ---- state: de-duplication per episode ------------------------------------------------------------------------
+
+/** Why an episode ended, in plain words (the ENDED line and the note its thread is closed with). */
+export function endNote(ep, a) {
+  if (ep?.kind === 'held') { // I-111
+    if (a.held && a.holder === ep.holder) return `${ep.holder} used the phone again`;
+    return a.held ? `taken by ${a.holder}` : `released by ${ep.holder}`;
+  }
+  return a.held ? `taken by ${a.holder}` : 'a new idle period started';
+}
 
 /**
  * Under the guard: record each assessment in the state and decide what to say. Returns per resource {a, news, ended}:
@@ -234,29 +302,33 @@ export async function record(assessments, { now = Date.now(), claim = false, pid
     for (const a of assessments) {
       const cur = s.resources[a.resource] || {};
       const res = { a, news: null, ended: null, post: false };
-      if (a.held) {
-        if (cur.episode) res.ended = { ...cur.episode, endedAt: iso(now), heldBy: a.holder };
+      const end = (ep) => ({ ...ep, endedAt: iso(now), heldBy: a.held ? a.holder : null, note: endNote(ep, a) });
+      if (a.held && !a.heldIdle) {
+        if (cur.episode) res.ended = end(cur.episode);
         delete cur.episode; delete cur.seen;
       } else {
         if (a.observed && (!cur.seen || cur.seen.key !== a.key)) cur.seen = { key: a.key, at: iso(a.since) };
         if (!a.observed) delete cur.seen;
-        const since = iso(a.since);
-        if (cur.episode && cur.episode.since !== since) { res.ended = { ...cur.episode, endedAt: iso(now), heldBy: null }; delete cur.episode; }
+        const since = iso(a.since), kind = a.heldIdle ? 'held' : 'free';
+        if (cur.episode && (cur.episode.since !== since || (cur.episode.kind || 'free') !== kind)) { res.ended = end(cur.episode); delete cur.episode; }
         if (a.alarm) {
-          if (!cur.episode) { cur.episode = { since, alarmedAt: iso(now), freeMin: a.freeMin }; res.news = 'alarm'; }
+          if (!cur.episode) { cur.episode = { since, alarmedAt: iso(now), freeMin: a.freeMin, ...(a.heldIdle && { kind, holder: a.holder }) }; res.news = 'alarm'; }
           const ep = cur.episode;
           const claimLive = ep.claim && now - (ms(ep.claim.at) ?? 0) < CLAIM_TTL_MS && ep.claim.pid !== pid;
           if (claim && !ep.thread && !claimLive) { ep.claim = { pid, at: iso(now) }; res.post = true; }
           if (ep.thread) res.thread = ep.thread;
         }
       }
+      // I-111: the alarm's own sighting of a live phone run, kept per lease (a checkout on older lock code stamps no lastRunAt)
+      if (a.runLive && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
+      else if (cur.activity && (!a.held || cur.activity.token !== a.holderToken)) delete cur.activity;
       s.resources[a.resource] = cur;
       out.push(res);
     }
     // an ended episode's thread waits here until the lead's run closes it (only the lead or an assignee may close)
     for (const res of out) {
       const t = res.ended?.thread;
-      if (t && !(s.toClose ||= []).some((x) => x.thread === t)) s.toClose.push({ thread: t, resource: res.a.resource, note: res.a.held ? `taken by ${res.a.holder}` : 'a new idle period started', at: iso(now) });
+      if (t && !(s.toClose ||= []).some((x) => x.thread === t)) s.toClose.push({ thread: t, resource: res.a.resource, note: res.ended.note, at: iso(now) });
     }
     s.updatedAt = iso(now);
     writeJson(stateFile(), s);

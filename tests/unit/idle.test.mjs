@@ -273,3 +273,108 @@ test('words: the line and the thread name the resource, minutes and owners; noth
   assert.match(D.lineFor({ ...a, alarm: false }), /under the 5 min limit; waiting: fix-nav-morph/);
   assert.match(D.lineFor({ ...a, freeMin: 75 }), /free for 1 h 15 min/);
 });
+
+// ---- I-111: a held iPhone lease nobody uses -------------------------------------------------------------------
+// fix-nav-morph held the lease ~6 min (04:00-04:07Z, 2026-10-04) without a phone run while others queued, and the
+// alarm said OK ("held"). Now a held iPhone lease with no phone run (iphone.mjs run/scroll/record/gesture, a --warmup
+// pre-warm run too) for MORE than --phone-min minutes is idle too, while someone else waits for the phone.
+const phoneLease = (extra = {}) => ({ resource: 'iphone', owner: 'fix-nav-morph', kind: 'lease', token: 'L1', acquiredAt: at(0), expiresAt: at(60), meta: {}, ...extra });
+const heldSt = (h, queue = [{ owner: 'iphone-runner' }]) => ({ resource: 'iphone', holder: h, stale: null, queue });
+
+test('I-111 lock library: a phone run marker (start and end) stamps the holder\'s lastRunAt; the meta stays as it was', async () => {
+  assert.equal((await L.tryAcquire('iphone', { owner: 'fix-h', kind: 'lease', ttlSec: 600 })).ok, true);
+  assert.equal(L.status('iphone').holder.lastRunAt, undefined, 'nothing run yet');
+  const t1 = Date.now();
+  await L.describeHold('iphone', { owner: 'fix-h', run: { text: 'phone test run', since: new Date(t1).toISOString(), pid: 4242 } });
+  const h1 = L.status('iphone').holder;
+  assert.ok(Date.parse(h1.lastRunAt) >= t1 - 5, 'the start stamps it');
+  await L.describeHold('iphone', { owner: 'fix-h', run: null, runPid: 999, now: t1 + 60000 });
+  assert.equal(L.status('iphone').holder.lastRunAt, h1.lastRunAt, 'another pid clears nothing and stamps nothing');
+  await L.describeHold('iphone', { owner: 'fix-h', run: null, runPid: 4242, now: t1 + 120000 });
+  const h2 = L.status('iphone').holder;
+  assert.equal(h2.lastRunAt, new Date(t1 + 120000).toISOString(), 'the end stamps it');
+  assert.deepEqual(h2.meta, {}, 'meta unchanged (the run marker is gone)');
+  // a job description is not phone activity
+  await L.describeHold('iphone', { owner: 'fix-h', job: { text: 'block next', at: new Date().toISOString() }, now: t1 + 300000 });
+  assert.equal(L.status('iphone').holder.lastRunAt, h2.lastRunAt);
+});
+
+test('I-111 assess: a held iPhone lease without a phone run for MORE than the limit is idle while someone else waits', () => {
+  const A = (h, now, extra = {}) => D.assess('iphone', { st: heldSt(h, extra.queue), rows: extra.rows || [], activity: extra.activity || null, min: 5, now });
+  // taken at 0, nothing run since
+  const exactly = A(phoneLease(), T0 + 5 * 60000);
+  assert.deepEqual([exactly.held, exactly.heldIdle, exactly.alarm, exactly.freeMin], [true, true, false, 5], 'exactly 5 min is not more than 5');
+  const over = A(phoneLease(), T0 + 6 * 60000 + 1);
+  assert.deepEqual([over.held, over.heldIdle, over.alarm, over.holder, over.since, over.freeMin], [true, true, true, 'fix-nav-morph', T0, 6]);
+  assert.match(over.how, /lease taken by fix-nav-morph/);
+  assert.deepEqual(over.queue, [{ owner: 'iphone-runner' }]);
+  // nobody else waits: the holder's own queue entry or board row is not ready work
+  assert.equal(A(phoneLease(), T0 + 60 * 60000, { queue: [] }).alarm, false, 'no waiter');
+  const own = A(phoneLease(), T0 + 60 * 60000, { queue: [{ owner: 'fix-nav-morph' }], rows: [row('f3', 'fix-nav-morph', { waitingOn: { kind: 'phone' } })] });
+  assert.deepEqual([own.alarm, own.queue, own.rows], [false, [], []]);
+  assert.equal(A(phoneLease(), T0 + 60 * 60000, { queue: [], rows: [row('g1', 'fix-morph-gpu', { waitingOn: { kind: 'phone' } })] }).alarm, true, 'a board row of someone else is');
+  // a run in progress (its process alive) is use, however long it takes
+  const running = A(phoneLease({ meta: { run: { text: 'phone test run', since: at(1), pid: process.pid } } }), T0 + 40 * 60000);
+  assert.deepEqual([running.held, running.heldIdle, running.alarm, running.runLive], [true, false, false, true]);
+  // a run marker whose process is gone (a killed run) counts from its start
+  const killed = phoneLease({ meta: { run: { text: 'x', since: at(4), pid: 999999 } } });
+  assert.equal(A(killed, T0 + 9 * 60000).alarm, false);
+  const k = A(killed, T0 + 9 * 60000 + 1);
+  assert.deepEqual([k.alarm, k.since], [true, T0 + 4 * 60000]);
+  assert.match(k.how, /phone run of fix-nav-morph started/);
+  // the end of the last run (lastRunAt) counts
+  const ran = phoneLease({ lastRunAt: at(10) });
+  assert.equal(A(ran, T0 + 15 * 60000).alarm, false);
+  const r = A(ran, T0 + 15 * 60000 + 1);
+  assert.deepEqual([r.alarm, r.since], [true, T0 + 10 * 60000]);
+  assert.match(r.how, /last phone run of fix-nav-morph/);
+  // the alarm's own sighting of a live run (a checkout on older lock code stamps no lastRunAt): this lease only
+  assert.equal(A(phoneLease(), T0 + 25 * 60000, { activity: { token: 'L1', at: at(20) } }).alarm, false);
+  const seen = A(phoneLease(), T0 + 25 * 60000 + 1, { activity: { token: 'L1', at: at(20) } });
+  assert.deepEqual([seen.alarm, seen.since], [true, T0 + 20 * 60000]);
+  assert.match(seen.how, /run seen by the idle alarm/);
+  assert.equal(A(phoneLease(), T0 + 25 * 60000, { activity: { token: 'L0', at: at(20) } }).since, T0, 'a sighting under another lease does not count');
+  // Chrome is unchanged: a held chrome-measure lock is never idle by this rule
+  const ch = D.assess('chrome-measure', { st: { resource: 'chrome-measure', holder: { owner: 'fix-x', token: 'h', kind: 'lease', acquiredAt: at(0) }, stale: null, queue: [{ owner: 'w' }] }, min: 10, now: T0 + 60 * 60000 });
+  assert.deepEqual([ch.held, ch.heldIdle, ch.alarm], [true, undefined, false]);
+});
+
+test('I-111 record: one alarm per held-idle episode; a phone run ends it (thread closed: used again); the sighting of a live run is kept per lease', async () => {
+  const A = (h, now) => D.assess('iphone', { st: heldSt(h), activity: D.readState().resources.iphone?.activity || null, min: 5, now });
+  const r1 = await D.record([A(phoneLease(), T0 + 7 * 60000)], { now: T0 + 7 * 60000, claim: true, pid: 111 });
+  assert.deepEqual([r1[0].news, r1[0].post], ['alarm', true]);
+  await D.settle('iphone', at(0), { thread: 'T-009', by: 'lead', now: T0 + 7 * 60000 });
+  assert.equal((await D.record([A(phoneLease(), T0 + 9 * 60000)], { now: T0 + 9 * 60000 }))[0].news, null, 'the same episode is not news again');
+  // the holder starts a phone run: the episode ends once, and the live run is remembered for this lease
+  const live = phoneLease({ meta: { run: { text: 'phone test run', since: at(10), pid: process.pid } } });
+  const e = await D.record([A(live, T0 + 10 * 60000)], { now: T0 + 10 * 60000 });
+  assert.equal(e[0].ended.thread, 'T-009');
+  assert.match(e[0].ended.note, /fix-nav-morph used the phone again/);
+  assert.deepEqual(D.readState().resources.iphone.activity, { token: 'L1', at: at(10) });
+  assert.deepEqual((await D.takeToClose()).map((x) => [x.thread, x.note]), [['T-009', 'fix-nav-morph used the phone again']]);
+  // the run ended without a stamp (older lock code): idle counts from the sighting, a new episode past the limit
+  assert.equal((await D.record([A(phoneLease(), T0 + 14 * 60000)], { now: T0 + 14 * 60000 }))[0].news, null);
+  const n = await D.record([A(phoneLease(), T0 + 16 * 60000)], { now: T0 + 16 * 60000 });
+  assert.equal(n[0].news, 'alarm');
+  assert.equal(n[0].a.since, T0 + 10 * 60000);
+  // released: the held-idle episode ends (released), and the free rule takes over
+  const freeA = D.assess('iphone', { st: { resource: 'iphone', holder: null, stale: null, queue: [{ owner: 'iphone-runner' }] }, rel: { owner: 'fix-nav-morph', token: 'L1', at: at(17) }, grant: { token: 'L1', at: at(0) }, min: 5, now: T0 + 18 * 60000 });
+  const f = await D.record([freeA], { now: T0 + 18 * 60000 });
+  assert.equal(f[0].ended.since, at(10));
+  assert.match(f[0].ended.note, /released/);
+  assert.equal(D.readState().resources.iphone.activity, undefined, 'the sighting goes with the lease');
+});
+
+test('I-111 words: the held-idle line and thread name the holder, the minutes and the waiters; the holder is addressed', () => {
+  const a = D.assess('iphone', { st: heldSt(phoneLease()), rows: [row('morph-gpu', 'fix-morph-gpu', { waitingOn: { kind: 'phone' } })], min: 5, now: T0 + 6 * 60000 + 1 });
+  assert.match(D.lineFor(a), /^IDLE iphone: iPhone held by fix-nav-morph but unused for 6 min \(no phone run since 03:00Z, lease taken by fix-nav-morph\), over the 5 min limit, while work waits: iphone-runner \(queued for it\), morph-gpu \(owner fix-morph-gpu; waits on the phone\)$/);
+  const { title, text } = D.threadFor(a, { desk: 'mgmt-ops-10' });
+  assert.equal(title, 'iPhone held by fix-nav-morph, unused for 6 min while 2 jobs wait');
+  assert.match(text, /fix-nav-morph has held the iPhone lease for 6 min without a phone run \(iphone\.mjs run, scroll, record or gesture; since 03:00Z, lease taken by fix-nav-morph\)\. The limit is 5 min\./);
+  assert.match(text, /fix-nav-morph: run your phone part now, or release the lease \(node tools\/lock\.mjs release iphone --owner fix-nav-morph\)/);
+  assert.deepEqual(D.addressees(a, 'mgmt-ops-10'), ['mgmt-ops-10', 'fix-nav-morph', 'iphone-runner', 'fix-morph-gpu']);
+  const under = D.assess('iphone', { st: heldSt(phoneLease()), min: 5, now: T0 + 3 * 60000 });
+  assert.match(D.lineFor(under), /^OK iphone: held by fix-nav-morph; no phone run for 3 min \(since 03:00Z, lease taken by fix-nav-morph\), under the 5 min limit; waiting: iphone-runner \(queued for it\)$/);
+  const busy = D.assess('iphone', { st: heldSt(phoneLease({ meta: { run: { since: at(1), pid: process.pid } } })), min: 5, now: T0 + 30 * 60000 });
+  assert.match(D.lineFor(busy), /^OK iphone: held by fix-nav-morph \(a phone run is on\)$/);
+});
