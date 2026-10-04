@@ -123,4 +123,10 @@ async function main() {
   throw new Error(`unknown command "${cmd}" (see the header of tools/status.mjs)`);
 }
 
-main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(1); });
+// I-110: never process.exit() straight away: a --json view past the pipe buffer (64 KB) was still queued for a slow
+// reader (`| node -e …`) and got cut. Set the code, and exit once stdout and stderr have flushed what was written.
+const done = (c) => {
+  process.exitCode = c;
+  process.stdout.write('', () => process.stderr.write('', () => process.exit(c)));
+};
+main().then(done, (e) => { console.error(e.message || e); done(1); });
