@@ -1014,6 +1014,28 @@ after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
 - **Files.** The runner's `out/p095/` (BLOCKLOG, holds/gates/runs.jsonl). Scores are in `out/hext/p095/scoreF.json`,
   `framesF.json` and `out/hext/p095-score.log`; the Mac load read is in `p095mac.mjs`.
 
+### Blind finger swipe A/B: best-build (A) vs B-R2 (B), driver F (2026-10-04 07:13-07:22Z)
+
+Key drawn 03:29:16Z before any step; run by iphone-runner (`swipehx.mjs`, `iphone.mjs record`), plain-http twins with
+the P-095 flags, served files hash-checked. The user saw no build names until the catch pair was answered.
+
+| step | page 1 | page 2 | answer | read |
+|---|---|---|---|---|
+| C-038 pair 1 | A | B | page 2 | B |
+| C-039 pair 2 | B | A | page 1 | B |
+| C-040 catch (attempt 2; the user restarted once) | B | B | same | catch passes |
+
+- **Result: B preferred in both real pairs, catch "same".** With P-095 HIT, R2 on best-build meets the plan's landing
+  condition. In pair 1 the user praised page 2's hero card motion and asked to apply the approach elsewhere (T-082).
+- **Catch note (paraphrased):** both smooth while scrolling; page 2 felt a little laggy right at the start of
+  scrolling, then smooth. Both pages were B, so this is not an A/B difference.
+- **Recorder, first second of the first scroll after load** (page rAF stamps, F driver; scratch `swstart.mjs`): every part,
+  A and B alike, starts with 1-2 frames of 29-46 ms and has 2-6 frames > 34 ms and 0-1 > 50 ms in its first second
+  (A: 6/0, 4/0; B: 4/1, 3/0, 3/0, 3/0, 2/0, 2/0). The catch page 2 had the longest first frame (46 ms in attempt 2,
+  40-44 in attempt 1) followed by a back-to-back frame (2 ms). Swipe length and speed differ per part, so these do
+  not compare as an A/B number. OBSERVED, one finger per part, cause unknown. Simulator counts for the first scroll
+  after load: below when measured.
+
 ## What changed
 
 On WebKit, once the entrance is over (`d()`), the exit is a set of CSS scroll-driven animations on a `--hero-exit`
