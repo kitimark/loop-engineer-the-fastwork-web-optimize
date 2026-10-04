@@ -42,6 +42,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 10:5xZ Correction to 10:4xZ: the user stopped the iphone-runner leftover server themselves at about 10:37Z (T-106 #6; gone, checked by the desk and the lead). About 13 page servers remain; ts-tryit (row by id) takes the registry and auto-stop.
+  - **P-103 pre-data read PASS** (fix-scroll-cb, ce4ef96b; 5 harness hashes and tools/check.mjs 5fc6b9180ae6 match). Notes due in the card before the first counted load:
+    - N1: the C-only smoke shows non-zero side counts in the Simulator (late wrap) and in Chrome, else a harness rev first;
+    - N2: an intersection-observation trace event is reported per step if present, never judged.
+  - Next free id: **P-104**.
+  - Phone at 10:47Z: fix-morph-gpu's P-098 H3 exclusive hold had waited 19 min in the Chrome queue (#1, behind a shared npm-test lease, I-136), with the lease idle. Reported to the lead.
 - 10-04 10:4xZ **Idle page servers (user T-106):**
   - Stopped the PR-017 Try-it phone servers, ports 5558/5560, up since 08:24Z: `console.mjs proposal phone PR-017 --option land --stop`. PR-017 landed at 09:2xZ and no open step needed them. `proposal phone --list` is now empty.
   - **For the user:** a 23 h leftover serve.mjs from the finished iphone-runner agent (its worktree's out/thermal-trial, baseline only, started 10-03 about 11:0xZ) is still running. The lead could not stop it (permission) and ops leaves it alone too. The user can stop it.
@@ -2534,7 +2540,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
-| `ts-tryit` (name; spawned 10-04 10:3xZ by the lead, user T-106) | toolsmith: one on-demand Try-it host in place of the long-lived per-proposal page servers (idle servers kept running for hours) | alive |
+| `af8ba1df07b604ad1` (ts-tryit; the name does not resolve, use the id; spawned 10-04 10:3xZ by the lead, user T-106) | toolsmith: one on-demand Try-it host (start on click) in place of the long-lived per-proposal page servers; per T-106 #9/#11 also a server registry, idle auto-stop (never mid-hold), a console Servers page and an idle.mjs alarm for servers up > 2 h | alive |
 | `mgmt-desk-1` (name; spawned 10-04 10:17Z by the lead, user T-104) | the user's DESK, split off from mgmt-ops: console threads, PROGRESS.json (/build and /progress), status row `desk`; agents' user-facing posts (T-100 progress, follow-ups) go here. mgmt-ops keeps tickets, pre-data and second reads, PREDICTIONS and this handover | alive |
 | `fix-scroll-cb` (name; spawned 10-04 09:5xZ, frame audit §5 item 2, user T-100) | topic `scroll-cb-phone`, less-work: four scroll handlers keep running on phones for effects the phone hides; switch them off while the effect is off (research/design-engineering/frame-audit.md §5); cost counts + a short phone no-worse check | alive |
 | `fix-accent-ca` (name; spawned 10-04 09:5xZ, T-096 ranking #1 from research/gpu-lessons) | hero accent and boil on the compositor, restacking the 10-02 illusion drafts; pixel-identical, or a proposal with Try-it (memory illusion-must-be-pixel-identical, proposal-try-it-required) | alive |
