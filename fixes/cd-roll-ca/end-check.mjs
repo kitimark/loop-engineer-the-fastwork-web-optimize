@@ -11,7 +11,14 @@
 //   3. B: finish() on every hero animation -> onfinish -> __crStop -> cancel(), two rAFs, screenshot, rects, the number
 //      of animations left (0 expected).
 // Reports per roll: kf-vs-inline max |px|, A vs B and A vs A2 differing pixels and max channel delta, rect max |dy|.
+// Other cell sizes (T-034; c = 31 px at width <= 400, 36 at 430, 52 on desktop): --vp WxHxDPR[xMOBILE] sets the
+// viewport (default 430x932x3x1; e.g. 375x812x3, 1440x900x1x0). --resize WxHxDPR[xMOBILE]: on every roll, while it runs,
+// read each hero cell's animation (startTime, keyframe px), switch the viewport, wait two rAFs and read them again: the
+// roll must be rebuilt from the new c at the same startTime, i.e. every keyframe scaled by c_new / c_old (reported as
+// max |kf_new * c_old / c_new - kf_old| in old px) with the same startTime; then the end pair as above (at the new c),
+// and the viewport goes back for the next roll.
 //   node fixes/cd-roll-ca/end-check.mjs --state <serve-state.json> [--out out/cd-roll-ca/end-check.json] [--rolls 8]
+//     [--vp 375x812x3] [--resize 375x812x3]
 // Run inside a chrome-measure hold (shared lane: probe weight; nothing timed).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -28,6 +35,9 @@ const statePath = arg('--state');
 const outPath = arg('--out', 'out/cd-roll-ca/end-check.json');
 const ROLLS = Number(arg('--rolls', '8'));
 const headless = arg('--headless', '1') === '1';
+const vpOf = (t) => { const [w, h, d, m] = t.split('x').map(Number); return { width: w, height: h, deviceScaleFactor: d, mobile: m === undefined ? true : m === 1 }; };
+const VP = vpOf(arg('--vp', '430x932x3x1'));
+const RESIZE = arg('--resize', null) ? vpOf(arg('--resize')) : null;
 
 // PNG reader (8-bit RGB/RGBA, not interlaced): fix-cd-strip's simpx.mjs, via fixes/cd-roll-ca/simpx.mjs
 function png(buf) {
@@ -70,6 +80,8 @@ const HELP = `(() => { if (window.__ec) return 'again'; ${READ}
       await raf2(); return per; },
     settle: () => raf2().then(() => 0),
     finish: async () => { let n = 0; for (const A of window.__ec.anims()) for (const a of A) { try { a.finish(); n++; } catch {} } await new Promise((r) => setTimeout(r, 30)); await raf2(); return { finished: n, left: window.__ec.count() }; },
+    // per digit: c and, per animated cell index k, [startTime, keyframe px...] (the --resize check)
+    kf: () => hero().map((s) => ({ c: cell(s), cells: cellsOf(s).map((el, k) => [k, el.getAnimations().map((a) => [a.startTime, ...a.effect.getKeyframes().map((f) => pxOf(f.transform))])]).filter(([, A]) => A.length) })),
     waitRoll: (ms) => new Promise((r) => { const t0 = performance.now(); const f = () => { const n = window.__ec.count(); if (n || performance.now() - t0 > ms) r(n); else requestAnimationFrame(f); }; f(); }),
   };
   return 'ok'; })()`;
@@ -77,12 +89,15 @@ const HELP = `(() => { if (window.__ec) return 'again'; ${READ}
 const state = JSON.parse(readFileSync(join(root, statePath), 'utf8'));
 const url = state.url || `http://localhost:${state.port}/`;
 const profileDir = tempProfileDir(join(root, 'out', 'cd-roll-ca', 'chrome'), 'cd-roll-ca-endcheck');
-const chrome = await launchChrome({ port: 0, profileDir, headless, windowSize: '430,932', args: ['--ignore-certificate-errors'] });
+const chrome = await launchChrome({ port: 0, profileDir, headless, windowSize: `${Math.max(VP.width, RESIZE?.width || 0)},${Math.max(VP.height, RESIZE?.height || 0)}`, args: ['--ignore-certificate-errors'] });
 const cdp = await CDP.connect(chrome.wsUrl);
 const page = await cdp.newIsolatedPage();
-const out = { tool: 'fixes/cd-roll-ca/end-check.mjs', url, browser: chrome.browser, headless, rolls: [] };
+const out = { tool: 'fixes/cd-roll-ca/end-check.mjs', url, browser: chrome.browser, headless, viewport: VP, resize: RESIZE, rolls: [] };
+const kfCmp = (a, b) => { let m = 0, st = 0, miss = 0, n = 0; a.forEach((D, j) => { const E = b[j]; if (!E) { miss += D.cells.length; return; } const r = D.c / E.c, B = new Map(E.cells);
+  for (const [k, A] of D.cells) { const X = B.get(k); if (!X || X.length !== A.length) { miss++; continue; } A.forEach((v, i) => { const w = X[i]; if (!w || w.length !== v.length) { miss++; return; } n++; if (v[0] !== w[0]) st++; for (let q = 1; q < v.length; q++) m = Math.max(m, Math.abs(w[q] * r - v[q])); }); } });
+  return { animsCompared: n, kfScaledMaxPx: +m.toFixed(5), startTimeChanged: st, unmatched: miss, c: [a.map((D) => D.c), b.map((D) => D.c)] }; };
 try {
-  await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 3, mobile: true });
+  await page.send('Emulation.setDeviceMetricsOverride', VP);
   await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Page.addScriptToEvaluateOnNewDocument', { source: INJECT });
   await gotoAndSettle(page, url, { quietMs: 2000, maxMs: 45000 });
@@ -104,6 +119,8 @@ try {
     if (forced) { const off = Math.round(1 + rand() * 4000) * 1000 + Math.round(rand() * 900); fo = off; await page.eval(`(window.__crOff += ${off}, document.dispatchEvent(new Event('visibilitychange')), 0)`); }
     const n = await page.eval('window.__ec.waitRoll(1500)');
     if (!n) { out.rolls.push({ i, forced, off: fo, error: 'no roll seen' }); continue; }
+    let rs = null;
+    if (RESIZE) { const k0 = await page.eval('window.__ec.kf()'); await page.send('Emulation.setDeviceMetricsOverride', RESIZE); await page.eval('window.__ec.settle()'); const k1 = await page.eval('window.__ec.kf()'); rs = kfCmp(k0, k1); rs.stillRunning = await page.eval('window.__ec.count()'); }
     const per = await page.eval('window.__ec.prep()');
     const A = await shot(), rA = await page.eval('window.__ec.rects()');
     await page.eval('window.__ec.settle()');
@@ -111,7 +128,8 @@ try {
     const fin = await page.eval('window.__ec.finish()');
     const B = await shot(), rB = await page.eval('window.__ec.rects()');
     out.rolls.push({ i, forced, off: fo, digits: per.filter(Boolean), kfInlineMaxPx: Math.max(0, ...per.filter(Boolean).map((d) => d.kfInlineMaxPx)), sharedStart: per.filter(Boolean).every((d) => d.starts === 1),
-      finish: fin, AB: pxd(A, B), AA: pxd(A, A2), rectAB: rectd(rA, rB) });
+      finish: fin, AB: pxd(A, B), AA: pxd(A, A2), rectAB: rectd(rA, rB), ...(rs ? { resize: rs } : {}) });
+    if (RESIZE) { await page.send('Emulation.setDeviceMetricsOverride', VP); await page.eval('window.__ec.settle()'); }
     await sleep(300);
   }
 } finally {
@@ -122,7 +140,8 @@ out.summary = { rolls: R.length, errors: out.rolls.length - R.length, digitRolls
   kfInlineMaxPx: Math.max(0, ...R.map((r) => r.kfInlineMaxPx)), allSharedStart: R.every((r) => r.sharedStart), animsLeftMax: Math.max(0, ...R.map((r) => r.finish.left)),
   abDiffer: R.filter((r) => r.AB.diffPixels || r.AB.sizeMismatch).length, abMaxDelta: Math.max(0, ...R.map((r) => r.AB.maxDelta || 0)),
   aaDiffer: R.filter((r) => r.AA.diffPixels || r.AA.sizeMismatch).length, aaMaxDelta: Math.max(0, ...R.map((r) => r.AA.maxDelta || 0)),
-  rectABMaxPx: Math.max(0, ...R.map((r) => r.rectAB.maxPx)), rectABUnmatched: R.reduce((m, r) => m + r.rectAB.unmatched, 0) };
+  rectABMaxPx: Math.max(0, ...R.map((r) => r.rectAB.maxPx)), rectABUnmatched: R.reduce((m, r) => m + r.rectAB.unmatched, 0),
+  ...(RESIZE ? { resize: { rolls: R.filter((r) => r.resize).length, animsCompared: R.reduce((m, r) => m + (r.resize?.animsCompared || 0), 0), kfScaledMaxPx: Math.max(0, ...R.map((r) => r.resize?.kfScaledMaxPx || 0)), startTimeChanged: R.reduce((m, r) => m + (r.resize?.startTimeChanged || 0), 0), unmatched: R.reduce((m, r) => m + (r.resize?.unmatched || 0), 0), c: R[0]?.resize?.c } } : {}) };
 mkdirSync(dirname(join(root, outPath)), { recursive: true });
 writeFileSync(join(root, outPath), JSON.stringify(out, null, 1));
 console.log('ENDCHECK', JSON.stringify(out.servedHash), JSON.stringify(out.summary));

@@ -555,6 +555,53 @@ debug hooks: none
 ```
 
 ```
+PHONE TICKET cd-roll-ca V9 · less-work no-worse check (lead 2026-10-04 03:3xZ; T-055 waived only the finger A/B) · prediction P-id from mgmt-ops-10 (registered before any phone data)
+build: V = V9 = cd-strip strip-tc + cd-roll-ca, JS 582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3,
+  CSS 982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d, patch.diff d48095cc16ff (--on cd-strip);
+  immutable copy out/cd-roll-ca/snap/V9 (fix-cd-roll-ca worktree)
+control: C = C8 = cd-strip strip-tc (landed on main 5d1ca102), JS 6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16,
+  CSS 982a747d9263… (the same as V's); copy out/cd-roll-ca/snap/C8; mirror snapshot b1789284481295-4ad4a84a
+question: on the phone at real thermal Serious, does moving the hero clock's roll from the rAF spring to Web Animations
+  add slow frames at the top of the page (the clock rolling at rest, then the W window through the hero)? No-worse only;
+  the landing basis is the cost counts (countdown rAF callbacks ~108 -> ~4 per 4 s, by code).
+ports: two, one per arm: `ARMS="C8 V9" sh out/cd-roll-ca/serve-snap.sh` (serve.mjs --root site-pretty --overlay <copy>
+  --port auto --latency 150 --vendors=local, plain http per I-003; it checks the copies against HASHES.txt and the served
+  JS/CSS hashes, and prints the phone URLs); one uncounted warm-up load per port (A3/U5)
+thermal gate (P-079's condition B; memory "phone checks start warm"): real thermal Serious, `node
+  research/phone-thermal-gate/thermal-gate.mjs --owner cd-roll-ca --expect serious` (sha256 4604218c4041) at the start and
+  the end of every phone hold; a hold counts only if both reads PASS (Serious, Is Induced = No), else it is re-run.
+  Ceiling 44 °C or Critical (stop, cool). Holds back to back. Timer-grid median and battery °C logged per hold. Low Power
+  Mode runs dropped. One start method for every run. The later Fair no-worse check is not part of this block.
+block (driver W, Timeline OFF; ~15-20 min): warm-up C, warm-up V, counted C V V C C V V C (n = 4 per arm), each
+  `node tools/iphone.mjs run --driver window --probe std --owner cd-roll-ca --arm C|V --block <P-id> --run <n>
+  --label crca-<arm><n> --to 2400 --idle 8 --hold 2 --sentinel 3` (warm-ups with --warmup), after `iphone.mjs open
+  <the arm's URL>`; --idle 8 (P-079 had 4): 8 s of the clock rolling at y 0 per run, so ~8 rolls per run in the
+  window. Every counted C run is the heat sentinel (bottom >= 58 fps and scroll >= 44 fps, meta.sentinel): a failing
+  C run voids every run since the last passing one; voided runs are re-run in the same order, at most one extra
+  C V V C quartet; then park Safari (`iphone.mjs park`)
+scorer: fixes/cd-roll-ca/phone/score.mjs, sha256 f697000e77e48e6f20af9b48c8f65ba4d26fd7c720067f27efd89c00d798595b,
+  committed before any phone data; run as `node fixes/cd-roll-ca/phone/score.mjs <arm>:<file> ... --json <out>` with
+  every block file in block order (warm-ups skipped, void runs reported and dropped). Files of a hold that fails the
+  thermal gate are left out of the call and listed with their two gate reads in the block log (as P-079). Checked
+  before data on a synthetic block built from a real P-079 W file (all equal -> hit; V +3 frames > 50 per run ->
+  FALSIFIED; V +1 -> hit; a failing C sentinel voids the runs since the last pass -> not enough; LPM and a wrong served
+  hash -> void). Windows, fixed before data:
+  top frames: a W run's frames with t in [marks.idle start, marks.scroll end) and yEnd < 1000 (P-079's window)
+  idle frames: t in [marks.idle start, marks.idle end) (descriptive, no gate)
+gate (no-worse), top window: median of V's valid runs minus median of C's, dt > 50 (twins > 46, > 54): FALSIFIED when
+  it rises by >= 2; a twin with another verdict marks it threshold-sensitive; dt > 34 (twins > 30, > 38) judged against
+  [-1, +1], reported, not a falsifier; >= 3 valid runs per arm, else "not enough" (re-run per the block rule)
+decision rows: hit -> cd-roll-ca lands on the less-work basis (cost counts + this check + review round 4); FALSIFIED ->
+  no landing; back to the code (first suspect: the per-roll animation creation on the main thread at the tick), the
+  lead decides; not enough after the extra quartet -> the lead decides (re-block once, or land on the counts alone)
+confidence (rough, for calibration, not a gate): P(hit) 0.85 (Simulator: same layers, no extra backing, roll on the
+  compositor; the phone's CA path is not measured; P-079's top window was no-worse with the rAF spring)
+minutes: ~15-20 plus the thermal reads (2 warm-ups ~2, 8 counted ~10, park and overhead ~3)
+queue: phone-queue place 4 (lead); ops calls the turn, then `node tools/lock.mjs acquire iphone --owner cd-roll-ca
+  --ttl 900 --url <V's URL> --wait 3600`
+```
+
+```
 BUILD cd-roll-ca-4 (round 4, cells-only, history: strip-rw, not the landing base) on cd-strip strip-rw (DEV build JS 5e37af69bcc4…, CSS 9b2f89ea58bd…) · overlay fixes/cd-roll-ca/overlay
 served hashes: nodes/2.DyWL8TcE.js 73dff152e454… (V6), CSS 9b2f89ea58bd… = cd-strip's; snapshot copies out/cd-roll-ca/snap/{C5,V6}
 checks (dev base): Chrome comp-check V6 (rAF 8 / 6 s, 40 animations), roll-probe h60 V6 + base fit C5 (0 px), hide-check

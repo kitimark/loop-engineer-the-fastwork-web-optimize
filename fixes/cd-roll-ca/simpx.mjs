@@ -112,6 +112,8 @@ const RATE_STEP = Number(process.env.SIMPX_RATE_STEP || 0.05);
 const RES = (process.env.SIMPX_RES || '334,347').split(',').map(Number);
 // SIMPX_NOEND=1 skips the roll-end pair (V arms)
 const NOEND = process.env.SIMPX_NOEND === '1';
+// SIMPX_RM=1: reduced-motion exact check (run in a sim.mjs session --reduce-motion on; see run())
+const RM = process.env.SIMPX_RM === '1';
 const bufd = (a, b) => { if (a.length !== b.length) return { sizeMismatch: [a.length, b.length] }; let n = 0, max = 0;
   for (let i = 0; i < a.length; i += 3) { const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])); if (d) n++; if (d > max) max = d; }
   return { diffPixels: n, maxDelta: max }; };
@@ -211,6 +213,12 @@ async function run(c, arm, range, isV, first) {
   c.on((m) => { if (TL.on && m.method === 'Timeline.eventRecorded') TL.recs.push(m.params.record); });
   res.info.freeze = await ev(freeze(range));
   res.info.help = await ev(HELP);
+  // the page's prefers-reduced-motion (a sim.mjs session --reduce-motion on|off sets it, I-100). SIMPX_RM=1 (the
+  // reduced-motion exact check): the page must match it, and V is shot like C (under reduced motion it starts no Web
+  // Animation and snaps like the original, so there is nothing to pause, run slowly or end)
+  res.info.reducedMotion = await ev(`matchMedia('(prefers-reduced-motion: reduce)').matches`);
+  if (RM && res.info.reducedMotion !== true) throw new Error(arm + ': SIMPX_RM=1 but the page does not match prefers-reduced-motion: reduce');
+  if (RM) { res.info.anyHeroAnimations = await ev(`${TIMER}.getAnimations({ subtree: true }).length`); isV = false; }
   const FR = 1000 / 60;
   for (const pass of PASSES) {
     await ev(`(scrollTo({ top: Math.round(innerHeight * ${SCROLL[pass]}), behavior: 'instant' }), 0)`); await sleep(1500);
@@ -249,6 +257,7 @@ async function run(c, arm, range, isV, first) {
           await sleep(150);
           const sh = crop(screenshot(`${arm}-${pass}-${sk}-f${ph}`).img, box), st = await ev('window.__px.ty()'), rc = await ev('window.__px.rects()');
           for (const m of ['paused', 'running']) { res.shots[`${key} | ${m}`] = sh; res.state[`${key} | ${m}`] = st; res.rects[`${key} | ${m}`] = rc; }
+          if (RM) res.info.rmHeroAnimsMax = Math.max(res.info.rmHeroAnimsMax || 0, await ev(`${TIMER}.getAnimations({ subtree: true }).length`));
           if (ph === mid) { res.layers[`${id} mid f${ph}`] = await heroLayers(c); res.tl[`${id} mid f${ph} frozen`] = await tlWindow(c, 1000); }
         } else {
           const before = await ev('window.__px.info()');
