@@ -237,3 +237,6 @@ arms pinned before data. A fixed V gets new pins and a new signature.
   setup). But under the task driver, step parity is VOID by the scorer's own rule, so this check cannot pass V's
   Simulator parity formally. Lifting the hold, and on what evidence, is the lead's call. The two flickers are
   OBSERVED, cause unknown, and both need nav-hit-cache: they go to fix-nav-morph.
+- **The lead's ruling (2026-10-05, after this read): the hold stays.** The task-mode check clears the lag (OBSERVED,
+  F-239), but parity is VOID under that driver, and two flickers appear only with nav-hit-cache. nav-hit-cache enters
+  v9 only after fix-nav-morph rules on the flickers and one valid parity read passes.
