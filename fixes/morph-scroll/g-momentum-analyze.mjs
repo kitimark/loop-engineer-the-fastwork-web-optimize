@@ -67,6 +67,19 @@ for (const name of [...new Set(rows.filter((r) => r.kind === 'end' || /^E\d/.tes
   const s = rows.filter((r) => r.arm === arm && r.name === name);
   if (s.length) console.log(`${name.padEnd(20)} ${arm.padEnd(4)} ${s.map((r) => (r.error ? r.error : `${r.pLift} -> ${r.pRest} (${r.glideMs} ms${r.rev ? `, ${r.rev} rev` : ''}${r.rested ? '' : ', not rested'})`)).join(' | ')}`);
 }
+// rev 7 (g-fastshort-v1.json): hit = the menu rests at the end the flick was heading for (close: p <= 0.02, which
+// includes a glide that leaves the extra screen; open: p >= 0.98); time = lift-off to rest (glideMs)
+const fast = rows.filter((r) => /^E\d+-(open|close)-fast-/.test(r.name) && !r.error);
+if (fast.length) {
+  console.log('\nFast short flicks at the end: hits (rests where the flick was heading) per arm');
+  const hit = (r) => (/-open-/.test(r.name) ? r.pRest >= 0.98 : r.pRest <= 0.02);
+  for (const arm of arms) {
+    const s = fast.filter((r) => r.arm === arm); if (!s.length) continue;
+    const by = (re) => { const z = s.filter((r) => re.test(r.name)); return `${z.filter(hit).length}/${z.length}`; };
+    const h = s.filter(hit);
+    console.log(`${arm.padEnd(4)} all ${h.length}/${s.length}  open ${by(/-open-/)}  close ${by(/-close-/)}  60px ${by(/-60px-/)}  120px ${by(/-120px-/)}  200px ${by(/-200px-/)}  time to rest (hits) median ${med(h.map((r) => r.glideMs))} ms, max ${h.length ? Math.max(...h.map((r) => r.glideMs)) : null} ms; turned back ${s.filter((r) => r.rev).length}`);
+  }
+}
 const errs = rows.filter((r) => r.error);
 if (errs.length) console.log(`\n${errs.length} stroke(s) without a touch end`);
 if (ji > 0) { writeFileSync(process.argv[ji + 1], JSON.stringify({ rows }, null, 1)); console.log('WROTE', process.argv[ji + 1]); }
