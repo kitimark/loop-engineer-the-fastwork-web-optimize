@@ -532,6 +532,94 @@ cluster) stands as **threshold-sensitive and unreplicated**. On a quiet Mac, v8'
 (max 48-52 ms), whether faces, the glue and K are in or out. Cross-block values don't compare, and P-113 had no v7 arm.
 The v8-vs-v7 question goes to the lead's single confirm block, P-114 (v7 against the composition the lead picks).
 
+## P-114 v8 vs v7 confirm ticket (lead 2026-10-04 16:5xZ), before any P-114 data
+
+The lead's pick for the v8 side is the full v8, with nothing removed. P-112 cleared morph rev 3. P-113 shows that faces,
+the glue and K make no difference in the hero band.
+
+This is the **second and last block on the v8-vs-v7 question** (§5.3 sequential rule, at most 2 blocks). Its verdict
+decides the v7 → v8 switch. It repeats P-111's two legs that failed (M and G part H), with P-111's rules unchanged.
+The difference is that the Mac is kept quiet: every hold runs inside the runner's exclusive no-timing hold.
+
+```
+PHONE TICKET P-114 v8-best · confirm block v8 vs v7 (lead ruling 2026-10-04 on P-112 / P-113) · runner iphone-runner (next,
+  the phone is free) · verdict owner int-v8 · registered before any phone data; no counted run before the lead's
+  pre-data read
+arms (P-111's, unchanged):
+  C = v7-best: JS 8c90da2177455718861e4b6a7d5a826671b7946fc61ef9254fd90d37cdcd6f00,
+      CSS 308f0da70c3a64b0dfe1a99cdbd127a77256eef9b0c809583fc328052417c84d
+  V = v8-best (full, all 9 parts): JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16,
+      CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43
+copies: out/p114/snap/{C,V} in int-v8's worktree (`sh fixes/v8-best/phone/p114/serve.sh snap`, made 16:5xZ from
+  out/v8-best/snap/{A,V}, snap ok); read-only, HASHES.txt (full sha256 as above).
+question: on a quiet Mac at real thermal Serious, does v8 add slow frames compared with v7 in the morph open and close
+  (M) or in the hero fast flicks (G part H)? No-worse.
+ports: `sh fixes/v8-best/phone/p114/serve.sh` (sha256 04b793255e19; P-111's serve.sh, folder out/p114/snap): B plain
+  baseline (pre-warm and gate page, no counted run), C, V; --port 0, --latency 150, --vendors=local, plain http.
+  Served-hash check before every item (B 4606120cf392/27776f3d4138, C 8c90da217745/308f0da70c3a, V 3e3e94cb6e9f/
+  f836404b3728; exit 4 on a wrong one). int-v8 starts them; ports go to the runner by message, never into a committed
+  file.
+thermal gate, start method, sleep check: as P-111 (thermal-gate.mjs --expect serious --max-c 44 --url <B> at the start
+  and end of every hold; pre-warm on B with S runs, at most 4; pmcheck.mjs). A hold counts only if both reads PASS; else
+  VOID, re-run once with the same items.
+Mac: every hold runs inside an EXCLUSIVE no-timing hold of chrome-measure, owned by the runner, so no shared job (npm
+  test, Simulator, probes) runs beside it:
+    node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-114 Hn" -- \
+      caffeinate -i -s sh <int-v8 worktree>/fixes/v8-best/phone/p114/hold.sh Hn <items>
+  (hold.sh sha256 6367f45452e4: P-112's M items and P-113's G-H and sentinel items, P-111's arms). The iphone lease is
+  held by iphone-runner as before. Each run record keeps load1 at its start and end (mac). hold.sh also prints the
+  chrome-measure line at the hold start and load1 after each item. Load is reported per run; it voids nothing.
+holds (each ≤ 10 min: M runs ~37 s, G-H and S runs ~33 s, pre-warm and gates ~2 min; P-112/P-113 timings):
+  H1 (M, ~6 min): wmC wmV mC1 mV2 mV3 mC4
+  H2 (M, ~5 min): mC5 mV6 mV7 mC8
+  H3 (G-H, ~6 min): sCo wgC wgV gHC1 gHV1 gHV2 sCc
+  H4 (G-H, ~5 min): sCo gHC2 gHC3 gHV3 sCc
+  - Counted order: M C V V C C V V C (n = 4 per arm, P-111's); G-H C V V C C V (n = 3 per arm, P-111's layout, so
+    the cluster rule means what it meant in P-111).
+  - One uncounted warm-up per arm port per leg (wm*, wg*).
+  - Every counted C M run is a heat sentinel (held m=1 p95 ≤ 18 ms). Each G hold opens and closes with an S sentinel
+    on C (sCo / sCc, labels p114-sCo-Hn / p114-sCc-Hn, never shared).
+  - Back to back. The runner requeues for the next exclusive hold right after each one (the gate's pre-warm brings the
+    phone back to Serious after any wait). Then `iphone.mjs park`; int-v8 stops the servers.
+drivers: M = P-111's (`iphone.mjs run --driver morph --probe std --block P-114 --arm C|V --run <n>`, hold 2000 ms, 3
+  cycles). G part H = P-111's flick-hero-v1.json (6ae05e12ace9 / GESTURE_HASH 53a8e657fa28), window down1 -> end. S =
+  `--driver scroll --heat-sentinel`. Timeline off.
+scorer: `node fixes/v8-best/phone/p114/score.mjs <item>:<file> ... [--json out]` (sha256 5bbdd2f10cca). It imports P-111's
+  scorer unchanged (26d944bf93e2, refused if changed): scoreBlock with all its voids, the sentinel chain, the M gates, and
+  the G gate with the new-cluster rule. It keeps only the gates P-114 measures. Self-test
+  `node fixes/v8-best/phone/p114/selftest.mjs` (c2a86e730417, 10 checks OK): on P-111's own M and G-H records it gives
+  exactly P-111's Mmoving, Mtweens and GH gates (no-worse; WORSE close.f1/close.f3; NEW CLUSTER 2500-2749).
+  Gates (P-111's, unchanged):
+  - Mmoving: > 50 WORSE when d > +1; > 34 when d > +2.
+  - Mtweens: O1.f1, O1.f2, O1.f3, close.f1, close.f3 WORSE when d > +2 ms.
+  - GH: > 50 WORSE when d > +2. Any NEW cluster fails, even inside +2: a V bin with a > 50 frame in ≥ 2 V runs, and no
+    C run with one in that bin or a neighbour.
+  - Twins 46/54 (and 30/38). A verdict that differs at a twin is "threshold-sensitive".
+  - < 3 valid runs in an arm: insufficient.
+  Reported (not gated):
+  - P-111's band, bins 9-11 (scrollY 2250-2999): per arm the cluster at > 50 / > 46 / > 54 (P-113's present rule) and
+    the band max per run. P-111's cluster counts as replicated when GH has a NEW cluster in the band.
+  - load1 per run.
+  - Re-runs: at most one extra hold per leg (M: C V V C; G-H: H3 or H4 again).
+what each outcome means for the switch (fixed before data):
+  - no-worse on Mmoving, Mtweens and GH -> v8 replaces v7 as the best build, once the rest of the land gate passes
+    (Simulator/iPad pixels and smoke, Mac Safari smoke). P-111's M and G-H WORSE then stand as loaded-Mac results not
+    replicated on a quiet Mac.
+  - WORSE on any of the three, threshold-sensitive or not (P-111's rule unchanged), including a NEW cluster -> no switch.
+    v7 stays the best build; P-111 and P-114 agree. There is no third block on v8 vs v7. int-v8 reports the gate, key
+    and size; a fix of the part (a new question, a new ticket) is the lead's call.
+  - insufficient after the one extra hold -> no switch from this block; v7 stays; int-v8 reports to the lead.
+  - A VOID hold (gate, sleep, served hash) -> the same items once more; the 600 s cap killing a hold makes it VOID too.
+predictions (before data):
+  - Mmoving no-worse: P 0.85.
+  - Mtweens no-worse: P 0.55. P-111's close was +2.5/+3.5 ms on a loaded Mac; on a quiet Mac P-112 cleared rev 3, but
+    faces' panel clock is still a candidate.
+  - GH no-worse with no new cluster: P 0.6. P-113 had v8's band frames at 48-52 ms; v7 there on a quiet Mac is unknown.
+  - Sentinels pass first try: P 0.8.
+  - Overall switch: P 0.35.
+minutes: ~22 of phone time (4 holds), plus the waits for each exclusive hold.
+```
+
 ## Reproduce
 
 ```sh
