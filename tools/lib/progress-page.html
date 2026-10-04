@@ -31,6 +31,8 @@
 [hidden] { display: none !important; } /* I-092: a class display rule must not show a hidden element */
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
 .wrap { max-width: 860px; margin: 0 auto; padding: 24px 20px 80px; }
+/* I-134 (user T-099): no sideways page scroll at <= 900 px; only a table scrolls, inside its own box (.tablewrap) */
+@media (max-width: 900px) { .wrap { padding: 16px 16px 64px; } }
 header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 header h1 { font-size: 22px; margin: 0; font-weight: 650; }
 .sub { color: var(--muted); font-size: 14px; flex: 1 1 240px; }
@@ -38,7 +40,7 @@ header h1 { font-size: 22px; margin: 0; font-weight: 650; }
 a { color: var(--accent); }
 a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .banner { border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; background: var(--warn-soft); font-size: 15px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow); min-width: 0; }
 .goal p { margin: 0 0 8px; font-size: 18px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { display: inline-block; font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); }
@@ -66,9 +68,13 @@ ul.plain li:last-child { border-bottom: 0; }
 .stageplain { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
 .fixes { margin: 6px 0 10px; }
 table.nums { border-collapse: collapse; width: 100%; font-size: 15px; margin: 4px 0 10px; }
-table.nums td { padding: 6px 8px 6px 0; vertical-align: top; border-top: 1px solid var(--line); }
-table.nums td.ba { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 650; }
-table.nums .note { color: var(--muted); font-size: 13px; }
+table.nums th { text-align: left; vertical-align: bottom; font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 10px 4px 0; }
+table.nums td { padding: 6px 10px 6px 0; vertical-align: top; border-top: 1px solid var(--line); overflow-wrap: break-word; }
+table.nums td.ba { font-variant-numeric: tabular-nums; font-weight: 650; }
+table.nums td.how { color: var(--muted); font-size: 13px; }
+table.nums .note { color: var(--muted); font-size: 13px; font-weight: 400; }
+table.nums .codes { margin-top: 2px; }
+table.nums .code { color: var(--muted); font-size: 12px; font-weight: 400; letter-spacing: .02em; }
 .tag { font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 1px 6px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); }
 .tag.CONFIRMED { background: var(--ok-soft); color: var(--ok); }
 dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 6px 0; font-size: 15px; }
@@ -81,10 +87,11 @@ details ul { margin: 6px 0 0; padding-left: 18px; }
 details li { margin: 3px 0; color: var(--muted); word-break: break-word; }
 .dropped .item h3 { font-size: 16px; }
 .empty { color: var(--muted); }
-.tablewrap { overflow-x: auto; }
+.tablewrap { overflow-x: auto; max-width: 100%; }
 section[data-item] { scroll-margin-top: calc(var(--nav-h, 58px) + 22px); }
 /* T-079: the Versions section on /build */
 ul.versions { display: grid; gap: 12px; }
+ul.versions > li { min-width: 0; } /* I-134: a grid item may shrink below its table (the box scrolls) */
 ul.versions li.version { margin: 0; padding: 16px 18px; border: 1px solid var(--line); }
 li.version.current { border-left: 4px solid var(--ok); }
 .vhead { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -238,13 +245,8 @@ function itemCard(it, compact) {
   if (it.why) card.appendChild(el('p', { class: 'fixes' }, el('b', { text: 'Why: ' }), it.why));
   if (it.fixes && !compact) card.appendChild(el('p', { class: 'fixes', text: it.fixes }));
   if (it.best.length) {
-    var t = el('table', { class: 'nums' });
-    it.best.forEach(function (b) {
-      t.appendChild(el('tr', null,
-        el('td', null, b.what, b.note ? el('div', { class: 'note', text: b.note }) : null),
-        el('td', { class: 'ba', text: b.before + ' → ' + b.after }),
-        el('td', null, el('span', { class: 'tag ' + b.tag, text: b.tag }), el('div', { class: 'note', text: b.driver + (b.ref ? ' · ' + b.ref : '') }))));
-    });
+    var t = gainTable(); // I-134: the same table as /build
+    it.best.forEach(function (b) { gainRow(t, b); });
     card.appendChild(el('div', { class: 'tablewrap' }, t));
   }
   var kv = el('dl', { class: 'kv' });
@@ -267,15 +269,36 @@ function itemCard(it, compact) {
 
 // I-061 (user T-021): today's best build. /build shows it in full; /progress shows a short card linking to it
 var BUILD_PAGE = /^\/build(\.html)?$/.test((typeof location !== 'undefined' && location.pathname) || '');
+// I-134 (user T-099, "This table is hard to read"): what was measured (its note under it), before, after and how it
+// was measured, each in its own column under a header; codes (the tag, the ref, ids such as C-038 or P-095 in the
+// text) in small grey text. A table scrolls inside its own box (.tablewrap), never the page.
+var CODE = /\b(?:[A-Z]{1,3}-\d{1,4}|OBSERVED|CONFIRMED|REFUTED|UNRESOLVED)\b/g;
+function withCodes(node, text) {
+  var s = String(text == null ? '' : text), i = 0, m, parts = [];
+  CODE.lastIndex = 0;
+  while ((m = CODE.exec(s))) parts.push([m.index, m[0]]);
+  parts.forEach(function (p) {
+    if (p[0] > i) node.appendChild(document.createTextNode(s.slice(i, p[0])));
+    node.appendChild(el('span', { class: 'code', text: p[1] }));
+    i = p[0] + p[1].length;
+  });
+  if (i < s.length) node.appendChild(document.createTextNode(s.slice(i)));
+  return node;
+}
+function gainTable() {
+  return el('table', { class: 'nums' }, el('thead', null, el('tr', null,
+    el('th', { text: 'What' }), el('th', { text: 'Before' }), el('th', { text: 'After' }), el('th', { text: 'How it was measured' }))));
+}
 function gainRow(t, b, extra) {
-  t.appendChild(el('tr', null,
-    el('td', null, b.what, b.note ? el('div', { class: 'note', text: b.note }) : null),
-    el('td', { class: 'ba', text: b.before + ' → ' + b.after }),
-    el('td', null, el('span', { class: 'tag ' + b.tag, text: b.tag }), el('div', { class: 'note', text: [b.driver].concat(extra || [], b.ref ? [b.ref] : []).join(' · ') }))));
+  var what = withCodes(el('td', { class: 'what' }), b.what);
+  if (b.note) what.appendChild(withCodes(el('div', { class: 'note' }), b.note));
+  var how = withCodes(el('td', { class: 'how' }), [b.driver].concat(extra || []).join(' · '));
+  how.appendChild(el('div', { class: 'codes' }, el('span', { class: 'code', text: b.tag }), b.ref ? ' · ' : null, b.ref ? el('span', { class: 'code', text: b.ref }) : null));
+  t.appendChild(el('tr', null, what, withCodes(el('td', { class: 'ba before' }), b.before), withCodes(el('td', { class: 'ba after' }), b.after), how));
 }
 function writeupLink(w) { return w ? el('a', { href: w.url, text: 'Write-up' }) : null; }
 
-// T-079 (user T-079): every version, oldest first: what it improves, its numbers vs the version before, its cost and
+// T-079 (user T-079): every version, newest first since T-101: what it improves, its numbers vs the version before, its cost and
 // a Try-it link. The server puts this Mac's Wi-Fi address into the link now (I-073); only such a link is followed.
 var TRY_HREF = /^https?:\/\/(\d{1,3}\.){3}\d{1,3}:\d{2,5}\/[^\s"<>]*$/;
 function tryItLine(t) {
@@ -294,9 +317,10 @@ function tryItLine(t) {
 }
 function renderVersions(m, vs) {
   if (!vs || !vs.length) return;
-  m.appendChild(el('h2', { class: 'section', text: 'Versions, oldest first' }));
+  m.appendChild(el('h2', { class: 'section', text: 'Versions, newest first' })); // T-101 (user); numbered by age, 1 = the original page
   var ul = el('ul', { class: 'plain build versions' });
-  vs.forEach(function (v, i) {
+  vs.slice().reverse().forEach(function (v, j) {
+    var i = vs.length - 1 - j;
     var li = el('li', { class: 'card version' + (v.current ? ' current' : ''), 'data-version': v.id },
       el('div', { class: 'vhead' }, el('span', { class: 'vnum', text: String(i + 1) }), el('b', { text: v.name }),
         v.base ? el('span', { class: 'chip muted', text: 'the original page' }) : null,
@@ -308,7 +332,7 @@ function renderVersions(m, vs) {
     if (v.fixes.length) li.appendChild(el('div', { class: 'q', text: 'Adds: ' + v.fixes.map(function (f) { return f.title; }).join('; ') }));
     if (v.result.length) {
       li.appendChild(el('div', { class: 'q', text: 'vs ' + (v.previous || 'the version before') + ':' }));
-      var t = el('table', { class: 'nums' });
+      var t = gainTable();
       v.result.forEach(function (c) { gainRow(t, c, (c.when ? ['measured ' + hhmm(c.when) + ' ' + String(c.when).slice(0, 10)] : []).concat(c.how ? [c.how] : [])); });
       li.appendChild(el('div', { class: 'tablewrap' }, t));
     } else if (!v.base) li.appendChild(el('div', { class: 'q', text: 'No number vs the version before yet.' }));
@@ -331,7 +355,7 @@ function renderBuild(m, b, vs) {
   b.applied.forEach(function (a) {
     var li = el('li', { 'data-fix': a.id, 'data-anchor': anchorId(a.id), 'data-anchor-label': a.title }, el('b', { text: a.title }), a.writeup ? ' ' : null, writeupLink(a.writeup));
     if (a.fixes) li.appendChild(el('div', { class: 'q', text: a.fixes }));
-    if (a.gain) { var t = el('table', { class: 'nums' }); gainRow(t, a.gain); li.appendChild(el('div', { class: 'tablewrap' }, t)); }
+    if (a.gain) { var t = gainTable(); gainRow(t, a.gain); li.appendChild(el('div', { class: 'tablewrap' }, t)); }
     else li.appendChild(el('div', { class: 'q', text: 'No measured phone gain yet.' }));
     if (a.felt) li.appendChild(el('div', { class: 'q', text: 'You: ' + a.felt.plain + (a.felt.text ? ' (' + a.felt.text + ')' : '') }));
     var more = detailsBox('build-' + a.id, 'Its other numbers', a.more.map(function (x) { return x.what + ': ' + x.before + ' → ' + x.after + ' (' + x.tag + ', ' + x.driver + (x.ref ? ', ' + x.ref : '') + ')'; }));
@@ -342,7 +366,7 @@ function renderBuild(m, b, vs) {
   m.appendChild(ul);
   m.appendChild(el('h2', { class: 'section', text: 'The whole build vs the original page' }));
   if (b.combined.length) {
-    var t = el('table', { class: 'nums' });
+    var t = gainTable();
     b.combined.forEach(function (c) { gainRow(t, c, ['measured ' + hhmm(c.when) + ' ' + String(c.when).slice(0, 10)].concat(c.how ? [c.how] : [])); });
     m.appendChild(el('section', { class: 'card', 'aria-label': 'Whole build' }, el('div', { class: 'tablewrap' }, t)));
   } else m.appendChild(el('p', { class: 'empty', text: 'Not measured as a whole yet.' }));
