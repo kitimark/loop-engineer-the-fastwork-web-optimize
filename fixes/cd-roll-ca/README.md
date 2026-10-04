@@ -1565,6 +1565,60 @@ ops pre-data read (mgmt-ops-10, 2026-10-04 after 12:20Z): PASS. All 5 frozen has
   No ledger row (T-096 has no P-id); P(H4) stays out of the tally.
 ```
 
+### T-096 step 2 result: Chrome counts, A (C8) vs B (V9) (2026-10-04 13:04-13:15Z)
+
+```
+RESULT T-096 step 2 · run before P-102/P-100 with the lead's OK (no dependency; ops told) · 3 shared probe slots
+  (weight 1), one order each (A B A2 / B A2 A / A2 A B), 9 loads, 0 errors · Chrome/154.0.8037.97 headless, 60 Hz
+  frame clock · frozen hashes at run time: t096-count 849f26e9f8c5, serve.mjs 2ee439a95856, cdp.mjs f58d75d1179d (same
+  as the addendum) · one served JS/CSS hash per arm, checked against HASHES.txt · gesture 1864 px, scale 1
+data: out/cd-roll-ca/t096/t096-2026-10-04T13-*.json (gitignored); per-load summary fixes/cd-roll-ca/t096-step2-summary.json
+  (fixes/cd-roll-ca/t096-agg.mjs). Statistic as registered: d = med(B) - med(A), s = max over the 3 rounds |A_i - A2_i|,
+  a difference counts only when |d| > s. Counts per window, never durations.
+window R (8 s at y 0, 8 rolls per load), A / A2 / B per load, d, s:
+  main-thread frames (BeginMainThreadFrame = Commit = Layerize = UpdateLayoutTree):
+     A 394 384 382 | A2 393 385 388 | B 316 315 322 -> d -68, s 6: DIFFERS (per roll 48 -> 39.5)
+  presented with no main-thread stage (H1's count): A 86 97 98 | A2 88 98 118 | B 164 165 158 -> d +67, s 20: DIFFERS
+  N1 PARTIAL-only row: STATE_PRESENTED_PARTIAL A 0 0 0 | A2 0 0 25 | B 0 0 0 -> no A vs B difference; the 25 sit in one
+     A2 load only and set s for the row above (counting PRESENTED_ALL only, s would be 5; d stays +67)
+  frames drawn 480-483 every load, dropped 0 (one A2 load 1): no difference
+  countdown rAF A 274 272 281 | A2 220 252 242 | B 8 9 9 -> d -265, s 54 (expected: the spring is gone)
+  countdown FunctionCalls A 290 288 297 | B 32 34 34 -> d -256
+  UpdateLayer A 44005 med | B 36210 med -> d -7795, s 658 (follows the main-thread frames)
+  Paint A 1155 1058 1056 | A2 1146 1122 1159 | B 1050 1047 1071 -> d -8, s 103: no difference
+  Layout A 15 19 18 | B 17 18 17 -> d -1, s 2: no difference
+window S (touch scroll through the hero, 3 s):
+  main-thread frames A 189 184 179 | A2 190 191 187 | B 188 189 189 -> d +5, s 8: no difference
+  presented with no main-thread stage 188 in every load of every arm
+  dropped frames A 8 12 18 | A2 8 8 13 | B 10 8 7 -> d -4, s 5: no difference; PRESENTED_PARTIAL A 6 10 16 | B 8 6 6 ->
+     d -4, s 5: no difference
+  rAF (all) d -32, s 141; UpdateLayoutTree d +10, s 20; Layout d -1, s 11; Paint d -43, s 164; UpdateLayer d +425,
+     s 886: no difference. Countdown rAF A 53 67 47 | B 3 3 2 -> d -50, s 32 (expected)
+roll start (H4), the frame from the tick to the second BeginMainThreadFrame after it, every roll in every arm
+  (R: 24 rolls per arm; S: 9-10): 1 Commit, 1 Layerize, 112-116 UpdateLayer, 1 UpdateLayoutTree, 0 Layout, Paint 0 or
+  4 in 0 or 1 layer (alternating), the same in A, A2 and B; in S Paint 2-9 in 1 layer on all arms (one A2 roll 102).
+  Layers per roll (window L, LayerTree): +4/-0, +3/-3, +0/-4 in the same repeating pattern on all arms (the strip's
+  own churn, which C8 and V9 share). No work at B's roll start that A lacks.
+outcome (rules as registered):
+  H1 NOT HELD as worded: B has 67 more frames with no main-thread stage and 68 fewer main-thread frames per 8 s (each
+     beyond s), the direction H1 predicts, but A's count is not 0 (86-98 per 8 s, about 12 per roll), and the
+     page-wide count cannot say which of those frames carry a digit move. Scored as a miss for P(H1) 0.8.
+  H2 no difference in window S beyond the spread (main-thread frames, dropped, PARTIAL). Scored: no (P 0.4).
+  H3 from step 1 (no mismatch found in what could be checked). N2: the step-2 arms run with the I-131 code (no-cache +
+     ETag); the user's PR-017 pages had the old immutable headers, so a cache-linked effect cannot be reproduced here.
+  H4 not shown in Chrome: the roll-start frame is the same on all arms. Step 3 (Simulator, WebKit Timeline) still reads
+     H4 where the phone's long frames were seen; P(H4) 0.85 stays out of the tally.
+what stands out (deliverable, descriptive): with the countdown's rAF gone (B: 8-9 rAF per 8 s), B still runs 316
+  main-thread frames per 480 drawn at y 0 (2 in 3), each with a style recalc, about 1050 paints per 8 s, and no rAF
+  behind them. Something other than script (a CSS or Web animation that needs the main thread, or a timer) keeps
+  the main thread busy at the top of the page on both builds. Which element is not counted here; finding it is the
+  T-096 item 2 candidate (a new card), next to the hero, top-bar morph and end-of-page morph.
+caveat (tool, OBSERVED in our setup, cause unknown): in window S there are about 2 presented reporters per drawn frame
+  (368-380 for 192-195 draws; R is 1:1), so the S "no main-thread stage" count includes reporters split off a frame,
+  not only whole frames. It is the same on every arm, so d is unaffected; not checked against Chromium source.
+next: step 3 (Simulator, sim-rollstart 01351e543210, shared simulator slots), then the T-096 write-up.
+```
+
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
 
 ```
