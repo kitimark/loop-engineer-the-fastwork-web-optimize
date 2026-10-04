@@ -475,3 +475,25 @@ test('T-079 probePorts: true for a port that accepts a connection on this Mac, f
     assert.ok(Date.now() - t0 < 2000);
   } finally { await new Promise((r) => srv.close(r)); }
 });
+
+// ---- the lead (T-103 follow-up): build.since is the since of the version with "best": true ------------------------
+
+test('validateProgress: build.since must equal the since of the version with "best": true; the message names both (T-103)', () => {
+  assert.deepEqual(P.validateProgress(withVersions()), [], 'the fixture agrees: Stack 6 is best, since 08:00Z both');
+  const stale = withVersions(); stale.build.since = '2026-10-01T09:00:00Z';
+  const e = P.validateProgress(stale);
+  assert.equal(e.length, 1, e.join('\n'));
+  assert.match(e[0], /^build\.since: 2026-10-01T09:00:00Z, but the version with "best": true \(versions\[1\], "st6-rb"\) is since 2026-10-02T08:00:00Z;/);
+  assert.match(e[0], /progress best <versionId>/, 'it says how to move both');
+  // the same instant written another way is the same time
+  const ms = withVersions(); ms.build.since = '2026-10-02T08:00:00.000Z';
+  assert.deepEqual(P.validateProgress(ms), []);
+  // no best version, or no build: nothing to compare
+  const none = withVersions(); delete none.versions[1].best; none.build.since = '2026-10-01T09:00:00Z';
+  assert.deepEqual(P.validateProgress(none), []);
+  const noBuild = withVersions(); delete noBuild.build;
+  assert.deepEqual(P.validateProgress(noBuild), []);
+  // T-103 as it happened: the best flag moved to the newer version, the build block stayed on the older one
+  const moved = withVersions(); delete moved.versions[1].best; delete moved.versions[2].landed; moved.versions[2].best = true;
+  assert.match(P.validateProgress(moved).join('\n'), /build\.since: 2026-10-02T08:00:00Z, but the version with "best": true \(versions\[2\], "gpu"\) is since 2026-10-03T08:00:00Z/);
+});
