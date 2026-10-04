@@ -11,6 +11,7 @@ Every agent:
 - [Defer timing; call tree + layout](defer-timing-focus-call-tree.md): no timing A/Bs or phone gain blocks except the listed exceptions
 - [Illusions must be pixel-identical](illusion-must-be-pixel-identical.md): look-alike fixes are exact, or T2 within the PR-010 wide numbers (fill 64, edge 128, 0.5 %, Chrome + Simulator A/A); more, or motion-only, is a proposal
 - [Proposal decision is the spec](proposal-decision-is-the-spec.md): changes-requested means rev N+1 of the same proposal, every point answered
+- [Proposals need Try-it](proposal-try-it-required.md): every option gets a live Try-it panel (A and B pages), not only shots
 - [No camera access](no-camera-access.md): never open a Mac camera; screen recording only via `ioscap.mjs`
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test (countdown waived, T-055)
