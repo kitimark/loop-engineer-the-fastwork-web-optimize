@@ -617,3 +617,25 @@ rep 1 and rep 3. The raw files stay in `out/nav-morph/p096/` (`chrome-r*-*.json`
 - **Limits.** This is one pair only, with no BA order and no catch pair. V always came second, on a warmer phone,
   which works against V. There was no S2 sentinel (the lead's ruling). Earlier tries C-037 and C-041 were skipped
   after slow Start-over handling (I-123) and count as nothing.
+
+**Two-order log check (phone rAF logger, OBSERVED; it sees frame gaps, not touch-to-paint).** The long frames from the
+swipe recordings were binned by the nearest code threshold. The bins are:
+- F3 crossing = morph IO at 4155 − 3·innerHeight, window −60..+200 px;
+- first-section end = 888 / 1408 ± 150;
+- end of page = the last 300 px.
+
+Only frames where scrollY changed are counted. Script: `out/nav-morph/swipe/bin-lag.mjs` (gitignored output).
+
+| frames > 50 ms | F3 crossing C / V | end of page C / V | all, per 100 moving frames C / V |
+|---|---|---|---|
+| C-042 (C first; 39.5 → 40.0 °C) | 5 / 1 | 7 / 1 | 6.7 / 3.9 |
+| C-041 (V first; 38.5 → 38.3 °C; user skipped the answer) | 10 / 0 | 1 / 0 | 6.3 / 1.1 |
+
+- C is worse at every threshold twin (> 30, 34, 38, 46, 50, 54 ms) in both orders. For example, C-042 > 30 is 106 vs
+  43, and > 54 is 34 vs 5. So the result is not threshold-sensitive.
+- The counts by time half show no heat drift that favours V.
+- Caveats:
+  - C-042's C log is attempt 2 of the same step, because the counted attempt-3 recorder was stopped at the user's
+    restart;
+  - V moved less in C-042 (280 vs 571 moving frames), so the per-100 column is the fair one.
+- Lead ruling: these logs settle the order question, so the BA swipe step is dropped. One hidden catch pair remains.
