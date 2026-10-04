@@ -4,7 +4,7 @@
 // to next session."
 //
 //   node research/management/tools/usage.mjs                          # markdown report; appends one JSON line to the log
-//   node research/management/tools/usage.mjs --reset 2026-10-01T21:20Z  # window anchor (any past reset; windows are 5 h)
+//   node research/management/tools/usage.mjs --reset 2026-10-04T07:20Z  # window anchor (any past reset; windows are 5 h)
 //   node research/management/tools/usage.mjs --calibrate 2026-10-01T22:04:55Z=10   # record the user's own plan reading
 //   node research/management/tools/usage.mjs --now <ISO>              # report as of another instant (tests, back-fills)
 //   node research/management/tools/usage.mjs --no-log                 # do not append to usage.jsonl
@@ -43,7 +43,9 @@ const flag = (k) => argv.includes('--' + k);
 
 const H5 = 5 * 3600e3;
 const NOW = opt('now') ? Date.parse(opt('now')) : Date.now();
-const ANCHOR = Date.parse(opt('reset', '2026-10-01T21:20:00Z'));
+// Default anchor: the user's reading 10-04 10:55Z (63 %) sat in the window from 07:20Z (calibration.jsonl); the old
+// 10-01 21:20Z anchor put 10-04's windows at 04:20/09:20/14:20, 3 h off the plan's real 07:20/12:20 resets.
+const ANCHOR = Date.parse(opt('reset', '2026-10-04T07:20:00Z'));
 if (!Number.isFinite(NOW) || !Number.isFinite(ANCHOR)) { console.error('usage.mjs: bad --now or --reset'); process.exit(1); }
 const windowStartOf = (t) => ANCHOR + Math.floor((t - ANCHOR) / H5) * H5;
 
