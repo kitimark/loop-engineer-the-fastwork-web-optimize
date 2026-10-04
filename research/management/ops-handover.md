@@ -97,6 +97,9 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - R5 state how a run with a different moving-frame count is read (cva had 38 vs 11-14).
     - R6 two-miss rule: the author's leans missed svh and csl here, and navpain/nav/pain in P-110. P-119 is attribution
       and may run, but the lead reviews the model before cva or cct drives a build.
+    - R7 (lead, 10-05 after e01a0c14): the P-119 card's gate carries a "lead model review" line: the lead reviews the
+      author's model once P-119 is read, before cva or cct drives any build. A card without the line fails the ops
+      pre-data read. The same gate is in the PREDICTIONS.md row.
 - 10-05 **P-118 revised scripts (fix-double-drive 4c52690d): PASS 4 of 4 xcode-serious checks.**
   - Pins: hold.sh 09c0b21eaa0f, TICKET b8d48b0803c7; scorer pins unchanged.
   - The diff is only the pre-warm removal and `--accept-induced`; the rest is byte-identical.
