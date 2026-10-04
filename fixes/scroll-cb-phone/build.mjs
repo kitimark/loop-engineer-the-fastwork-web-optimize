@@ -32,13 +32,18 @@ const C_DIR = join(SNAP, 'best-65052c4a3902');
 const V8_FULL = {
   C: { [JS]: '3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
   V: { [JS]: 'e8d8323f674b0dd713b38b070f706f0a8540fcd7927c9fbab87f5cbb9ea0f657', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
+  // split check (lead, after N2's Simulator nav parity failure): N = v8 + nav-hit-cache alone (64ad0b9b
+  // patch-on-v8.diff 7bbb6d4212ff, P-107's V), S = v8 + scroll-cb alone (int-v8's scroll-cb-on-v8.diff 3abcd7008e61)
+  N: { [JS]: 'fd3688901f506b2a81b0aa07e63d86900c12f20f570122950ccca78556a01f79', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
+  S: { [JS]: '4c48e372ecdd6cdf93c25f6b0adc2617c77ab0ed71b4be823bd37492db591dec', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
 };
-const V8_DIR = { C: join(SNAP, 'v8-3e3e94cb6e9f'), V: join(SNAP, 'nsc-e8d8323f674b') };
+const V8_DIR = { C: join(SNAP, 'v8-3e3e94cb6e9f'), V: join(SNAP, 'nsc-e8d8323f674b'), N: join(SNAP, 'nav-fd3688901f50'), S: join(SNAP, 'scbv8-4c48e372ecdd') };
 const full = (b) => createHash('sha256').update(b).digest('hex');
 
 function v8Arms(log) {
   const arms = {};
-  for (const k of ['C', 'V']) {
+  for (const k of Object.keys(V8_DIR)) {
+    if ((k === 'N' || k === 'S') && !existsSync(join(V8_DIR[k], JS))) continue; // split arms: optional
     for (const f of FILES) {
       if (!existsSync(join(V8_DIR[k], f))) throw new Error(`${V8_DIR[k]}: missing ${f}; run --import-v8 <dir>`);
       if (full(read(V8_DIR[k], f)) !== V8_FULL[k][f]) throw new Error(`${V8_DIR[k]}/${f}: not the pinned v8 arm ${k}`);
@@ -47,6 +52,14 @@ function v8Arms(log) {
   }
   for (const [k, a] of Object.entries(arms)) log(`${k.padEnd(3)} js ${a.js} css ${a.css}  ${a.dir.replace(WT + '/', '')}  (SCB_SET=v8)`);
   return arms;
+}
+
+// --import-arm N|S <js file>: the split arms, the JS as built (sha256-checked) + v8's CSS
+function importArm(k, jsFile) {
+  if (k !== 'N' && k !== 'S') throw new Error('--import-arm N|S <js>');
+  const tree = { [JS]: readFileSync(jsFile), [CSS]: read(V8_DIR.C, CSS) };
+  for (const f of FILES) if (full(tree[f]) !== V8_FULL[k][f]) throw new Error(`arm ${k} ${f}: sha256 ${full(tree[f])}, pinned ${V8_FULL[k][f]}`);
+  writeSnap(V8_DIR[k].split('/').pop(), tree);
 }
 
 function importV8(src) {
@@ -114,5 +127,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--diff')) regenDiff();
   const iv = process.argv.indexOf('--import-v8');
   if (iv > 0) importV8(process.argv[iv + 1]);
+  const ia = process.argv.indexOf('--import-arm');
+  if (ia > 0) importArm(process.argv[ia + 1], process.argv[ia + 2]);
   build({ expect: !process.argv.includes('--no-expect') });
 }

@@ -676,6 +676,23 @@ section (mM) forced style per load: 238 -> 146-147 with `fwCheck` kept.
 but the combined V fails the card's parity in the Simulator, on the nav. Not landable in P-117 as built until the nav
 lag is attributed: decisive check = one Simulator hold with v8 + nav-hit-cache alone and v8 + scroll-cb alone.
 
+## Split check (lead, after N2; pre-registered before any split load)
+
+Which change makes the nav's Simulator flips late? One exclusive `--no-timing` Simulator hold, loads C1 N1 S1 S2 N2 C2,
+same harness as N2 (simcount 4374051b37a0, rAF-step driver). Arms (`SCB_SET=v8`, `build.mjs` ef50f44d629e, every file
+full-sha256-checked): C = v8 3e3e94cb6e9f; N = v8 + nav-hit-cache alone (64ad0b9b `patch-on-v8.diff` 7bbb6d4212ff,
+rebuilt here with no fuzz) fd3688901f50; S = v8 + scroll-cb alone (int-v8's `scroll-cb-on-v8.diff` 3abcd7008e61,
+rebuilt here with no fuzz) 4c48e372ecdd; CSS f836404b3728 for all. Run script `out/scroll-cb-phone/run-split.sh`
+7c0eeb5de3b3 (prints its pins first).
+
+Reading (per load, the driver step of each `.start-selling-top-nav` class change, against C1 and C2):
+- N late, S on C's steps: the lag is nav-hit-cache's; scroll-cb is clear.
+- S late: scroll-cb's.
+- Both late, or neither (while V was): an interaction; report it as measured.
+- fix-nav-morph's reading (F-239, OBSERVED): a rAF-step driver makes nav-hit-cache answer from the previous scroll event
+  (`__nsY`), so N lagging here would be the driver's artefact, not a real-input bug. This check does not decide that;
+  its task-mode driver and Simulator momentum case do.
+
 ## Risks, conflicts, follow-ups
 
 - Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
