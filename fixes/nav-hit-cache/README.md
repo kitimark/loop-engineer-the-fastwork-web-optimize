@@ -216,6 +216,102 @@ viewport.
   stretches: a long moving zone, or a transition that restarts every frame. The card's next step for "counts not
   lower" is an exploratory per-trigger tally (a VA-like hook) and a re-ticket. That is paused for the usage pause.
 
+## D card P-104 (rev 2 of P-101; pre-registered, committed before its data)
+
+**Why a rev 2.** The lead ruled on 10-04: P-101 fails as registered, because forced Layout is not lower. P-104 judges
+the four counts the fix is built to cut, and keeps forced Layout as a guard. It needs fresh loads, and the P-101 loads
+do not count. Each viewport is predicted on its own. Parity (3 holds) and the Simulator are owed either way. Ops owns
+the PREDICTIONS.md row.
+
+**Question.** During a scripted scroll from the top to the bottom of the full page, does V make Chrome do fewer pre-paint
+passes and fewer nav hit-test reads per scroll frame than C, without more layout, style or paint work? Does it do no
+more work in the Simulator? Does it keep the nav state identical in every frame?
+
+**Gate.** As P-101: the less-work landing rule (T-029 #30). Judged counts are per scroll frame (one 10 px stepper
+step) on the full page. No smoothness claim.
+
+**Arms.** The same as P-101, unchanged and checked as served: C 65052c4a3902 / e0f92804c521, V aa3ea472d26b /
+e0f92804c521, VA a01a2ef32db0 / e0f92804c521 (VA is parity only). `node fixes/nav-hit-cache/build.mjs` rebuilds V and
+VA from the committed diff and prints these hashes.
+
+**Harnesses.** Unchanged since P-101's harness change 1 (sha256/12):
+
+| file | hash |
+|---|---|
+| `build.mjs` | 31379fa08c89 |
+| `probe.mjs` | 506d1f0397d7 |
+| `simcount.mjs` | 58fc44c464a2 |
+| `patch-on-best.diff` | 60d5d0f183b6 |
+
+The parts (`probe.mjs count`, `probe.mjs parity`, `simcount.mjs`) and their settings are as described in P-101. Any
+later harness change is listed here with its new hash, before its data.
+
+**Loads and order.** Fresh loads, 2 per arm and viewport, in the order C1 V1 V2 C2.
+- Chrome counts: one shared-lane probe hold per viewport (`count --vp mobile`, then `count --vp desktop`), at most 300 s
+  each.
+- Parity, 3 shared-lane probe holds:
+  1. `--cases mobile,desktop`;
+  2. `--cases desktop-rtl,mobile-rtl`;
+  3. `--cases mobile-shift`.
+- Simulator: one `simulator` hold, `C:1 V:1 V:2 C:2`.
+- Raw output goes to `out/nav-hit-cache/p104/` (gitignored). The JSON records are committed to `fixes/nav-hit-cache/p104/`
+  after scoring.
+
+**VOID** (per load): as P-101.
+- the load errored;
+- the trace marks are missing, or the step count is below 300;
+- the served hashes differ from the arms;
+- V has a page error that C does not have.
+
+An engine with fewer than 2 valid loads per arm and viewport is re-run with new loads in the same order, and the re-run
+is reported.
+
+**Counts and verdicts.**
+- *Judged, Chrome.* Each must be lower in both viewports, with every V load below every C load in that viewport:
+  - PrePaint per step (total);
+  - forced PrePaint per step;
+  - nav `elementsFromPoint` per step;
+  - nav `getComputedStyle` per step.
+- *Guards, Chrome.* Each must be no worse, V mean ≤ C mean + 0.05 per step, in each viewport:
+  - forced Layout per step;
+  - Layout per step (total);
+  - UpdateLayoutTree per step;
+  - Paint per step.
+- *Simulator.* Must be no worse, V mean ≤ C mean + 0.05 per step: RecalculateStyles, Layout, RenderingFrame. Forced
+  Layout per step is reported as the answer to the UNRESOLVED WebKit question, not judged.
+- *Parity.* Must hold:
+  - audit mismatches = 0 in every case, at both speeds;
+  - state mismatches C vs V = 0 in every case;
+  - no new page errors.
+
+**Predictions** (intervals per 10 px scroll step; each viewport on its own):
+
+| count | mobile C | mobile V | desktop C | desktop V |
+|---|---|---|---|---|
+| PrePaint, total | 2.15 to 2.30 | 1.80 to 1.95 | 1.75 to 1.88 | 1.63 to 1.76 |
+| PrePaint, forced | 0.95 to 1.05 | 0.58 to 0.70 | 0.60 to 0.72 | 0.46 to 0.57 |
+| nav `elementsFromPoint` | 0.95 to 1.05 | 0.58 to 0.70 | 0.95 to 1.05 | 0.62 to 0.73 |
+| nav `getComputedStyle` | 0.95 to 1.05 | 0 to 0.02 | 0.95 to 1.05 | 0 to 0.02 |
+| Layout, forced (guard) | 0.33 to 0.43 | C ± 0.03 | 0.30 to 0.40 | C ± 0.03 |
+| Layout / UpdateLayoutTree / Paint, total (guards) | as measured | within ±0.05 of C | as measured | within ±0.05 of C |
+
+- Simulator:
+  - RecalculateStyles, Layout and RenderingFrame per step: C as measured, V within ±0.05 of C;
+  - forced Layout: V from 0 to C, with no prediction on the size.
+- Parity: 0 audit mismatches and 0 state mismatches in all 5 cases.
+
+**What happens next, whatever the result.**
+- *Pass* (judged counts lower, guards and Simulator no worse, parity holds): next is the short phone no-worse check.
+  It needs its own ops ticket: scripted S, 1 warm-up plus C V V C, in the lead's slot. Then a land request with
+  `patch.diff`.
+- *Parity fails:* not landable. Fix the trigger that missed (the audit names the scrollY and the answer), re-ticket,
+  and re-run all parts.
+- *Judged counts lower, but a guard or the Simulator is worse:* not landable as a less-work fix. Report it as measured,
+  find what moved in an exploratory VA run, and re-ticket. No retuning on this card's data.
+- *A judged count not lower:* report it as the measured outcome, and re-ticket. No retuning against this card's data.
+- *In every case:* the per-trigger tally (why V still tests in about 65 % of steps) runs only after P-104's data, as an
+  exploratory VA-like run. It never changes V under this card.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
@@ -235,6 +331,9 @@ It was run only to check the harness, and it is not part of P-101's loads.
 - **fix-scroll-cb (scroll callbacks off on phones).** If they stop registering the commission / future / platform
   callbacks on phones, the `shrinking` / `entering` / `is-visible` classes may stop flipping there. This fix reads those
   classes as triggers. The audit must be re-run on their build before both land together (agreed: they tell me first).
+- **T-107, the Join waitlist GPU variant (same owner).** It changes the header's earn-button rules, not the hit test.
+  If it lands on the best build before this fix does, V is rebuilt on the new best, and P-104's arms no longer match:
+  re-ticket.
 - **Optional later.** Share the hero-track progress ≥ 0.72 value with fix-scroll-cb (their suggestion), so that one
   reader computes it.
 - **History.** N12 v5's history and its probe stay in `fixes/nav-scroll-handler/` (brought over from the work branch,
