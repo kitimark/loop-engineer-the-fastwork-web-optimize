@@ -314,11 +314,11 @@ stale clip on the device. The phone no-worse block
 The review (review-morph-gpu, NEEDS-WORK) listed protocol items rev 1 does not have yet. The lead's order: the idle
 triple and the memory/layers note before the GPU preview goes to the user.
 - **Idle triple** (protocol v2 §3.5): callbacks/s, writes/s, mutations/s and rAF/s at y = 0, parked mid-page after a
-  scroll, and at the pin. Tool: `rev2/idle-run.mjs` (M, R1, A, B). Status: see "Idle triple and layers" below.
-- **Memory / layers note:** rev 1 promotes about 10 full-panel layers (`will-change` on the bar, logo, actions, morph
-  columns, center, footer, backdrop and veil, plus the dark and glass layers) each time the reveal switches on. That is
-  the likely open-start cost. Layer count and layer memory at y = 0, mid-page, the pin and mid-morph: see "Idle triple
-  and layers" below.
+  scroll, and at the pin. **Done** 2026-10-04: no idle work added ("Idle triple and layers", below).
+- **Memory / layers note:** the review expected about 10 layers promoted at each switch-on (`will-change` on the bar,
+  logo, actions, morph columns, center, footer, backdrop and veil, plus the dark and glass divs). **Done** 2026-10-04
+  in the Simulator: while the reveal is on, +3 layers and +3.9 MiB over best-build; at rest nothing is left behind
+  ("Idle triple and layers", below). Device unverified.
 - **Phone segment card** (Script / Style / Layout / Paint+Composite / Other per tween frame, phone Timeline): not run.
   It needs a Timeline block on the phone (lease, ticket); owed before rev 2 can claim where the open-start cost sits on
   the device.
@@ -332,6 +332,78 @@ triple and the memory/layers note before the GPU preview goes to the user.
   a few hundred ms) the nav's box is panel-sized and cut by the clip-path; the CSS Masking spec says the clipped-out
   area takes no pointer events, not checked here. Reduced motion: the reveal never switches on (Risks). Not checked
   with a screen reader.
+
+## Idle triple and layers (review B5, 2026-10-04)
+
+**Idle triple** (`rev2/idle-run.mjs` → `fixes/platform-idle/tools/idletriple.mjs`, ROUNDS 1; headless Chrome
+430x932 DPR 3, CPU 1x, counts only; `out/morph-gpu/rev2/idletriple-2026-10-04T06-56-14-656Z.json`; shared-lane
+probe hold 06:48-06:58Z, no Mac sleep). Per second over 5 s with no input, after 2 s settle:
+
+| spot | arm | callbacks | rAF | timers | observers | events | writes (style) | nodes |
+|---|---|---|---|---|---|---|---|---|
+| top y 0 | M best-build | 36 | 29.4 | 5 | 1.6 | 18.6 | 80.8 (68.4) | 2.4 |
+| top y 0 | R1 rev 1 | 32.8 | 26.2 | 5 | 1.6 | 19.2 | 71.2 (58.8) | 2.4 |
+| top y 0 | A rev 2, no pre-promotion | 33.4 | 26.8 | 5 | 1.6 | 18.2 | 74 (61.6) | 2.4 |
+| top y 0 | B rev 2 | 32.8 | 26.2 | 5 | 1.6 | 18.6 | 71.2 (58.8) | 2.4 |
+| mid 2620 | M | 4.2 | 0 | 4.2 | 0 | 25.8 | 15.8 (6) | 0 |
+| mid 2620 | R1 | 4.4 | 0 | 4.4 | 0 | 22.2 | 17 (6) | 0 |
+| mid 2620 | A | 4.2 | 0 | 4.2 | 0 | 21 | 16.8 (6) | 0 |
+| mid 2620 | B | 4.4 | 0 | 4.4 | 0 | 27 | 17 (6) | 0 |
+| pin 5345 | M | 2 | 0 | 2 | 0 | 1 | 10 (6) | 0 |
+| pin 5345 | R1 | 2 | 0 | 2 | 0 | 1 | 10 (6) | 0 |
+| pin 5345 | A | 2 | 0 | 2 | 0 | 1 | 10 (6) | 0 |
+| pin 5345 | B | 2 | 0 | 2 | 0 | 1 | 10 (6) | 0 |
+
+Reading: the reveal adds no idle work. At the pin every arm is identical, and mid-page differs by at most 0.2
+callbacks/s. At the top, the hero's rAF loop runs in every arm, and the reveal arms read a little lower (26-27 vs
+29.4 rAF/s). The reveal is off at the top, so that is one round's phase noise, not a saving. Rev 2's scroll listener
+(a 300 ms debounce timer) fires only while scrolling, so no idle window sees it.
+
+**Layers and memory** (WebKit, iOS Simulator, `LayerTree.layersForNode`):
+
+Census at rest and mid-morph (`rev2/layers-sim.mjs`, `out/morph-gpu/rev2/layers-sim-2026-10-04T07-13-53-927Z.json`, run 2, 07:08-07:15Z, no Mac sleep;
+run 1 stopped at the glass div, which has no renderer while hidden, and agreed where it ran). iOS Simulator 15 Pro
+Max, 430x775, hook builds (the arm + `__fwMorphSet` + the frame stepper). Rest = 2.5-3 s still after the walk; m set
+by `__fwMorphSet` at the page end, 1.5 s each. Layers / layer memory in MiB, whole document (nav in brackets):
+
+| spot | M best-build | R1 rev 1 | A rev 2 | B rev 2 + pre-promotion |
+|---|---|---|---|---|
+| top y 0 | 144 / 50.3 (15 / 16.0) | 148 / 50.3 (15 / 16.0) | 144 / 50.3 (15 / 16.0) | 144 / 50.3 (15 / 16.0) |
+| mid 2620 | 58 / 93.0 (15 / 16.1) | 58 / 93.0 (15 / 16.1) | 58 / 93.0 (15 / 16.1) | 58 / 93.0 (15 / 16.1) |
+| end (pin) | 54 / 88.8 (15 / 16.1) | 54 / 88.8 (15 / 16.1) | 54 / 88.8 (15 / 16.1) | 56 / 88.2 (17 / 15.6) |
+| end, m 0.5 | 54 / 101.4 (15 / 28.8) | 57 / 105.3 (17 / 32.7) | 57 / 105.3 (17 / 32.7) | 57 / 105.3 (17 / 32.7) |
+| end, m 1 | 54 / 105.8 (15 / 45.8) | 54 / 105.8 (15 / 45.8) | 54 / 105.8 (15 / 45.8) | 56 / 105.2 (17 / 45.2) |
+| end, back at m 0 | 54 / 88.8 (15 / 16.1) | 54 / 88.8 (15 / 16.1) | 54 / 88.8 (15 / 16.1) | 56 / 88.2 (17 / 15.6) |
+
+Reading (OBSERVED in the Simulator; device unverified):
+- **While the reveal is on (m 0.5): +3 layers and +3.9 MiB** against best-build (2 more in the nav, 1 for the glass
+  div). The review's "about 10 full-panel layers promoted" does not show in WebKit's layer tree: of the ~10
+  `will-change` parts, WebKit reports 2 extra nav layers. So the open-start cost on the phone is not explained by
+  10 new layers; which of the setup steps costs the time stays untested (the phone segment card is owed).
+- **At rest nothing is left behind:** top, mid-page, the pin, m 1 and back at m 0 match best-build exactly in R1 and
+  A (the R1 top 148 vs 144 is the hero; the nav is the same).
+- **Rev 2 B** keeps 2 nav layers promoted at the page end at rest (56 vs 54), with 0.6 MB less memory there (the nav's
+  backing is split differently). A keeps none.
+
+Tween-start mechanism run (`rev2/tween-start-sim.mjs`, `out/morph-gpu/rev2/tween-start-sim-2026-10-04T06-46-25-542Z.json`,
+430x775, driver M hold 2000 ms, 3 cycles; snapshots before the driver, in the first m = 1 hold, and at m = 0 before
+the 2nd open):
+
+| arm | layers | memory pre / m 1 / m 0 (MB) | paintCount sum, pre → m 0 before 2nd open |
+|---|---|---|---|
+| M best-build | 50 | 93.1 / 110.9 / 93.1 | 139 → 880 (+741) |
+| R1 rev 1 | 50 | 97.4 / 110.9 / 93.1 | 135 → 511 (+376) |
+| A rev 2, no pre-promotion | 50 | 97.4 / 110.9 / 93.1 | 140 → 476 (+336) |
+| B rev 2 | 52 | 96.8 / 110.3 / 92.5 | 137 → 471 (+334) |
+
+Reading (OBSERVED in the Simulator; device unverified):
+- The reveal leaves no layers behind. Settled at m 1 and back at m 0, every arm has the same layer count and the same
+  memory as best-build (110.9 and 93.1 MB). Rev 2 B keeps 2 more layers near the end (the pre-promoted parts).
+- The `will-change` parts are promoted only while m moves, so no rest snapshot shows them; the census above has the
+  mid-morph count (+3 layers).
+- The +4.3 MB "pre" in R1 and A was read once per arm, 3.5 s after the scroll to the end; it is gone at m 0, and the
+  census's rest reads at the end show no such difference. Cause unknown.
+- Paint work over one full open and close is about half of best-build's (+376 vs +741), which is the rev 1 gain.
 
 ## Phone block: no-worse check against best-build (registration; written before any phone data)
 
@@ -529,8 +601,8 @@ Reading (OBSERVED in our setup, M driver):
   not vsync-quantized above one vsync (claims-audit §2.3), so a longer first gap followed by a shorter one may or may
   not drop a frame on screen.
 - The cause of the longer open start is untested. The likely reading: the reveal's setup in the switch-on frame
-  (layer creation, a forced layout read, about 10 full-panel layers promoted; the Chrome mechanism check below shows
-  the forced layout and the extra paints there).
+  (creating the dark and glass divs, a forced layout read, the nav resized to the panel, new layers: +3 layers and
+  +3.9 MiB in the Simulator; the Chrome mechanism check in "Rev 2" shows the forced layout and the extra paints there).
 
 Because of the open-start cost, rev 1 does not enter the next best build. It stays in the GPU preview, labelled with the
 cost, and rev 2 targets it.
@@ -550,8 +622,9 @@ Files (local, `out/morph-gpu/phone/`, listed in `evidence.json`): the eight `n2-
 
 ## Rev 2 (in work): the reveal's setup before the tween starts
 
-The lead's ruling on P-092 (2026-10-04): rev 1 passes as no-worse, but its tween-start frame is about 7 ms longer on
-the iPhone, so it stays out of the next best build. Rev 2 moves the reveal's setup off that frame:
+The lead's ruling on P-092 (2026-10-04): rev 1 passes as no-worse, but the first frame of an open is longer on the
+iPhone (repeat opens +7 ms, paid back the next frame; the first open per load 41 vs 34.5 ms, overlapping), so it stays
+out of the next best build. Rev 2 moves the reveal's setup off that frame:
 - creating the dark and glass layers;
 - the layout read;
 - the layer promotion (`will-change`) and the switch to the panel-sized nav.
@@ -561,6 +634,51 @@ the setup work leaves the tween-start frame (shared lane, no phone), then a pre-
 through mgmt-ops-10. Its falsifier (after review B1): judged on the first open per page load, not on the driver's
 repeats; first frame V ≤ C + 2 ms, plus the first-2 and first-3 frame sums and the close starts (V no longer than C
 by more than the same bound).
+
+**What rev 2 changes** (`rev2/delta.diff` against best-build, `rev2/rev1-to-rev2.diff` against rev 1; built by
+`node fixes/morph-gpu/rev2/build.mjs`):
+- `__rvPrep`, run 300 ms after scrolling stops (and once after load), on phones within 3 viewports of the page end:
+  - creates the dark and glass divs;
+  - measures the panel size once with a hidden probe div (no toggle of `data-fw-rv`, so no width transition);
+  - B only (`__rvPP`): sets `data-fw-rvp` on the nav, which promotes the moving parts with `will-change` ahead of time.
+- The switch-on in `__rvW` then reads no layout when the probe already ran.
+- Snapshots: B `rv2b-f993a405620c` (js `f993a405620c`, css `f7071e9138ac`), A `rv2a-ef9d1c9d5fca` (`__rvPP` off, same
+  css), hook builds `rv2bhook-9667bc5c7d9c`, `rv2ahook-5bf004426809`.
+
+**Mechanism check, Chrome** (`rev2/tween-start-chrome.mjs`, `out/morph-gpu/rev2/tween-start-chrome-2026-10-04T06-28-43-904Z.json`;
+headless 430x932 DPR 3, driver M hold 1500, 3 cycles; the switch-on frame of each open, per tween):
+
+| arm | style recalcs (forced) | elements | layouts (forced) | dirty objects | Paint events | layers before |
+|---|---|---|---|---|---|---|
+| M best-build | 2 (1) | 128 | 1 (0) | 8 | 4-6 | 77 |
+| R1 rev 1 | 3 (2) | 155 | 2 (1) | 19 | 15 | 77 |
+| A | 2 (1) | 139 | 1 (0) | 15 | 15 | 80 |
+| B | 2 (1) | 139 | 1 (0) | 12 | 15 | 83 |
+
+Rev 2 removes rev 1's forced layout and its extra style pass from the switch-on frame. The ~10 extra paints stay: the
+nav still resizes from pill to panel in that frame. (The trace's paint areas were unbounded clip quads, not usable.)
+
+**Mechanism check, Simulator** (`rev2/tween-start-sim.mjs`, `out/morph-gpu/rev2/tween-start-sim-2026-10-04T06-46-25-542Z.json`;
+430x775, driver M hold 2000, 3 cycles; WebKit Timeline counts in the switch-on frame; ms never judged, F-084):
+
+| arm | opens O1 / O3 / O5: Paint records (k css px) | closes C2 / C4 / C6: Paint records (k css px) | styles, forced; layouts, forced (every open) |
+|---|---|---|---|
+| M | 10 (779) / 9 (598) / 10 (640) | 11 (1160) / 11 (1163) / 11 (1118) | 2, 1; 2, 1 |
+| R1 | 8 (340) / 6 (83) / 5 (173) | 3 (450) / 9 (860) / 9 (858) | 2, 1; 2, 1 |
+| A | 5 (175) / 5 (82) / 3 (50) | 1 (1) / 9 (858) / 9 (861) | 2, 1; 2, 1 |
+| B | 6 (178) / 5 (82) / 3 (50) | 1 (1) / 1 (1) / 1 (1) | 2, 1; 2, 1 |
+
+Reading (OBSERVED in the Simulator):
+- In WebKit the forced style and layout counts in the open's first frame are the same in every arm, best-build
+  included (the page's own `E()` start). So rev 1's extra forced layout seen in Chrome does not show as an extra
+  record here.
+- The open's first frame paints less in rev 2 than in rev 1: 3-5 records and 50-175k px against 5-8 and 83-340k px.
+- At a close, the one ~860k px repaint lands in the first or the second frame depending on the frame cut, in every
+  reveal arm. In B's three closes it fell in the second frame each time; that is not a saving, only a shift.
+- A and B do not differ at the opens. B's pre-promotion adds 2 layers at rest near the end and a pixel risk (promoted
+  text can rasterize differently), with no count gain here. Frozen-frame pixel checks for A and B are still to run.
+
+Next: frozen-frame pixel checks (A, B against best-build and rev 1); then the rev 2 phone ticket to mgmt-ops-10.
 
 ## Risks, conflicts, follow-ups
 

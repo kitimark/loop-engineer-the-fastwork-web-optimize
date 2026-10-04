@@ -1,0 +1,95 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13513,6 +13513,46 @@
+     __rvIx = 16,
+     __rvDpr = 1,
+     __rvF = 0,
++    // rev 2 (P-092: rev 1's tween-start frame was ~7 ms longer on the iPhone): the reveal's setup moves off that
++    // frame. Near the end of the page (within 3 viewports), once the scroll has been still for 300 ms, __rvPrep
++    // creates the dark and glass layers, measures the panel size (a hidden probe child of the nav takes the nav's
++    // --panel-w / --panel-h, which are its size under data-fw-rv: border-box, border 0) and the bar inset, and, with
++    // __rvPP, keeps the reveal's layers promoted (data-fw-rvp), so a morph that starts later only changes values.
++    // A resize drops the measure; a morph that starts before __rvPrep ran measures in its first frame, as rev 1 did.
++    __rvPP = !0,
++    __rvRdy = !1,
++    __rvPT = 0,
++    __rvPrep = () => {
++      __rvPT = 0;
++      if (__rvOn || !I.isConnected) return;
++      if (!(__rvMq.matches && window.scrollY + 3 * window.innerHeight >= document.documentElement.scrollHeight)) {
++        __rvPP && I.hasAttribute(`data-fw-rvp`) && I.removeAttribute(`data-fw-rvp`);
++        return;
++      }
++      __rvD ||
++        ((__rvD = document.createElement(`div`)), (__rvD.className = `fw-rv-dark`), I.insertBefore(__rvD, B));
++      __rvG ||
++        ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), I.parentNode.insertBefore(__rvG, I));
++      if (!__rvRdy) {
++        let p = document.createElement(`div`);
++        p.style.cssText = `position:absolute;top:0;left:0;visibility:hidden;pointer-events:none;width:var(--panel-w);height:var(--panel-h)`;
++        I.appendChild(p);
++        ((__rvWf = p.offsetWidth), (__rvHf = p.offsetHeight));
++        p.remove();
++        __rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16;
++        __rvRdy = __rvWf > 0 && __rvHf > 0;
++      }
++      __rvPP && !I.hasAttribute(`data-fw-rvp`) && I.setAttribute(`data-fw-rvp`, ``);
++    },
++    __rvSch = () => {
++      __rvPT && clearTimeout(__rvPT);
++      __rvPT = setTimeout(__rvPrep, 300);
++    },
++    __rvL =
++      (window.addEventListener(`scroll`, __rvSch, { passive: !0 }),
++      window.addEventListener(`resize`, () => ((__rvRdy = !1), __rvSch())),
++      __rvMq.addEventListener(`change`, () => ((__rvRdy = !1), __rvSch())),
++      setTimeout(__rvSch, 0)),
+     __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
+     // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
+     __rvFin = () => {
+@@ -13578,9 +13618,12 @@
+           ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), I.parentNode.insertBefore(__rvG, I));
+         __rvG.setAttribute(`data-fw-rv`, ``);
+         I.setAttribute(`data-fw-rv`, ``);
+-        // one layout read per morph, in the frame that switches the reveal on (that frame lays the nav out anyway)
+-        ((__rvWf = I.offsetWidth), (__rvHf = I.offsetHeight));
+-        __rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16;
++        // measured by __rvPrep before the morph (rev 2); if it has not run yet, one layout read here, as in rev 1
++        __rvRdy ||
++          ((__rvWf = I.offsetWidth),
++          (__rvHf = I.offsetHeight),
++          (__rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16),
++          (__rvRdy = !0));
+         __rvDpr = window.devicePixelRatio || 1;
+       }
+       if (__rvP !== __mkP)
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12161,4 +12161,27 @@
+     transform-origin: 0 0;
+     will-change: transform;
+   }
++  /* rev 2: near the end of the page (data-fw-rvp, set by __rvPrep) the reveal's layers stay promoted between
++     morphs, so the frame that starts a morph does not create them. Settled they change no pixel: will-change only
++     (no transform, no transform-origin), and the dark layer is at opacity 0. */
++  .start-selling-top-nav[data-fw-rvp] .start-selling-top-nav-bar,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-top-nav-logo,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-top-nav-actions,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-morph-col,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-morph-center,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-morph-footer,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-morph-backdrop,
++  .start-selling-top-nav[data-fw-rvp] .start-selling-morph-veil {
++    will-change: transform;
++  }
++  .start-selling-top-nav[data-fw-rvp] > .fw-rv-dark {
++    display: block;
++    position: absolute;
++    inset: 0;
++    z-index: 0;
++    background: #131922;
++    pointer-events: none;
++    will-change: opacity;
++    opacity: 0;
++  }
+ }

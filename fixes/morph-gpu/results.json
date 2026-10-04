@@ -599,5 +599,145 @@
     "note": "sha256 of the committed deliverables at the review-fix commit (review non-blocking item)",
     "patch.diff": "07c50a4e48f49b7b05cc5c08a69ca61fc9d0a28eb6deb2cae59e21e1e5ddaec8",
     "delta.diff": "27c4905900a44c8f94ba142877bfaf26bf705bd04a70813833193e01c5e00696"
+  },
+  "idleTriple": {
+    "file": "out/morph-gpu/rev2/idletriple-2026-10-04T06-56-14-656Z.json",
+    "setup": "headless Chrome 430x932 DPR 3, CPU 1x, ROUNDS 1, 5 s windows",
+    "callbacksPerSec": {
+      "top": {
+        "M": 36,
+        "R1": 32.8,
+        "A": 33.4,
+        "B": 32.8
+      },
+      "mid": {
+        "M": 4.2,
+        "R1": 4.4,
+        "A": 4.2,
+        "B": 4.4
+      },
+      "pin": {
+        "M": 2,
+        "R1": 2,
+        "A": 2,
+        "B": 2
+      }
+    },
+    "reading": "no idle work added; pin identical in every column; top differs by hero rAF phase (reveal off there)"
+  },
+  "layers": {
+    "file": "out/morph-gpu/rev2/layers-sim-2026-10-04T07-13-53-927Z.json",
+    "setup": "iOS Simulator 15 Pro Max 430x775, hook builds, LayerTree.layersForNode on the document; MiB",
+    "docLayersMiB": {
+      "top": {
+        "M": [
+          144,
+          50.3
+        ],
+        "R1": [
+          148,
+          50.3
+        ],
+        "A": [
+          144,
+          50.3
+        ],
+        "B": [
+          144,
+          50.3
+        ]
+      },
+      "mid": {
+        "M": [
+          58,
+          93
+        ],
+        "R1": [
+          58,
+          93
+        ],
+        "A": [
+          58,
+          93
+        ],
+        "B": [
+          58,
+          93
+        ]
+      },
+      "end": {
+        "M": [
+          54,
+          88.8
+        ],
+        "R1": [
+          54,
+          88.8
+        ],
+        "A": [
+          54,
+          88.8
+        ],
+        "B": [
+          56,
+          88.2
+        ]
+      },
+      "m05": {
+        "M": [
+          54,
+          101.4
+        ],
+        "R1": [
+          57,
+          105.3
+        ],
+        "A": [
+          57,
+          105.3
+        ],
+        "B": [
+          57,
+          105.3
+        ]
+      },
+      "m1": {
+        "M": [
+          54,
+          105.8
+        ],
+        "R1": [
+          54,
+          105.8
+        ],
+        "A": [
+          54,
+          105.8
+        ],
+        "B": [
+          56,
+          105.2
+        ]
+      },
+      "m0": {
+        "M": [
+          54,
+          88.8
+        ],
+        "R1": [
+          54,
+          88.8
+        ],
+        "A": [
+          54,
+          88.8
+        ],
+        "B": [
+          56,
+          88.2
+        ]
+      }
+    },
+    "reading": "reveal on (m 0.5): +3 layers, +3.9 MiB vs best-build; at rest nothing left behind (R1, A); B keeps 2 nav layers promoted at the end at rest; the review estimate of ~10 promoted layers does not show in WebKit layer tree. OBSERVED in the Simulator, device unverified"
   }
 }

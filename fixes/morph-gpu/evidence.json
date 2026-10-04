@@ -254,6 +254,30 @@
       "why": "P-092 block log (deviations, lease times)",
       "kind": "result",
       "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/rev2/idletriple-2026-10-04T06-56-14-656Z.json",
+      "why": "idle triple M/R1/A/B (review B5)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/rev2/layers-sim-2026-10-04T07-13-53-927Z.json",
+      "why": "Simulator layers/memory census M/R1/A/B (review B5)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/rev2/tween-start-sim-2026-10-04T06-46-25-542Z.json",
+      "why": "rev 2 mechanism check, Simulator tween-start counts",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/rev2/tween-start-chrome-2026-10-04T06-28-43-904Z.json",
+      "why": "rev 2 mechanism check, Chrome tween-start counts",
+      "kind": "result",
+      "for": "README.md"
     }
   ]
 }
