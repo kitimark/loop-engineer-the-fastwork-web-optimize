@@ -4,6 +4,13 @@
 //
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
 //        [--video <clip of both> | --video-a <clip> --video-b <clip>] [--option <name>] [--draft]   # POSTED PR-001: <title>
+//        [--live-patch fixes/<topic>/patch.diff [--live-a-patch <path>] | --live-none "<why>"]
+//        # I-109 (user T-063 #2): the proposal (with options: EVERY option) needs a Try-it entry, or post refuses:
+//        # "live": {"patch": "fixes/<topic>/patch.diff"} (B = the baseline + that patch; see `proposal live`), or
+//        # "live": {"none": "<why there is no page to try>"} (e.g. "keep the original: B = A"; at most 300 characters),
+//        # which the page shows in the Try-it spot. The flags set it for the proposal, or for the --option named;
+//        # the other options take theirs from the file. Markdown: "live: <patch>" or "live: none: <why>". A --draft may
+//        # lack it; revise to a non-draft state (and --publish) and `proposal publish` refuse without it.
 //        # options (I-053): the file's "options" list holds 2-6 solutions, each with its own idea, looksSame,
 //        # visualDiff, gain, risk and compare {b, shots, video} against the shared compare.a; "recommended":
 //        # {option, why}. --option <name>: the option the --shot-a/--shot-b/--video flags belong to (required then).
@@ -11,7 +18,9 @@
 //   proposal show <id> [--json]      # --json (and list --json) adds decisionState: final | under-review | stale | null
 //        # (T-030): act on a decision only when it is "final"; under-review = on hold, stale = revised since, re-decide
 //   proposal revise <id> --by <agent> --note "<what changed>" [--file …] [--shot-a … --shot-b …] [--video …] [--option <name>] [--publish]
-//        [--keep-decision] [--unhold]
+//        [--keep-decision] [--unhold] [--live-patch <path> [--live-a-patch <path>] | --live-none "<why>"]
+//        # I-109: unless it stays a draft, every option needs its Try-it entry (as on post); a proposal posted before
+//        # the rule gets one here or with `proposal live` (posted ones keep loading and showing without it).
 //        # options: the new file's list replaces the old one (add, change, drop options); an option without new shots
 //        # keeps those of the old option of the same name; --option <name> + --shot-a/--shot-b replaces that one's.
 //        # T-030: an accepted or rejected proposal can be revised too: the decision goes STALE (kept in the history,
@@ -24,9 +33,12 @@
 //        # decision is kept but under review (decisionState under-review, not final). Again: replaces the note.
 //   proposal unhold <id> --by <agent|lead> [--note "..."]                          # UNHELD PR-008 …
 //   proposal live <id> --by <agent> [--option <name>] --patch fixes/<topic>/patch.diff [--ref <git ref, default HEAD>]
+//   proposal live <id> --by <agent> [--option <name>] --none "<why there is no page to try>"     # I-109
 //        # I-074: what the console's "Try it" panel serves as B (A = the baseline): a committed patch, read from git
 //        # here (`<ref>:<patch>` in this checkout) and kept in the console store; any state but withdrawn, no new
-//        # revision, the decision stands. --clear removes it. post/revise take the same as --live-patch <path>
+//        # revision, the decision stands. --clear removes it (warns on a posted proposal: it needs an entry, I-109).
+//        # I-109: --none "<why>" instead of --patch: no page to try (e.g. "keep the original"); the page's Try-it spot
+//        # shows the reason. post/revise take the same as --live-patch <path>
 //        # [--live-ref <ref>] (with options: plus --option <name>), or "live": {"patch": …} in the file (per option).
 //        # I-093: A can be a build of its own too (e.g. the current best build, so a fix stacked on it shows only its
 //        # own changes): --a-patch fixes/<base>/patch.diff [--a-ref <ref>] here (also as --live-patch/--live-a-patch),
@@ -73,7 +85,7 @@ import * as TALK from './proposal-talk.mjs'; // T-048
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-none', '--none']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -113,7 +125,10 @@ function inputs(a) {
   if (a.one('live-a-ref') && !a.one('live-a-patch')) throw new Error('--live-a-ref goes with --live-a-patch fixes/<topic>/patch.diff');
   if (a.one('live-a-patch') && !a.one('live-patch')) throw new Error('--live-a-patch (A) goes with --live-patch fixes/<topic>/patch.diff (B)');
   const aSide = a.one('live-a-patch') ? { a: { patch: a.one('live-a-patch'), ref: a.one('live-a-ref', 'HEAD') } } : {};
-  const live = a.one('live-patch') ? { patch: a.one('live-patch'), ref: a.one('live-ref', 'HEAD'), ...aSide } : undefined; // I-074
+  // I-109: --live-none "<why>": this proposal (option) has no page to try, and the Try-it spot says why
+  if (a.one('live-none') !== undefined && a.one('live-patch')) throw new Error('--live-none "<why>" or --live-patch <path>, not both');
+  const live = a.one('live-none') !== undefined ? { none: a.one('live-none') }
+    : a.one('live-patch') ? { patch: a.one('live-patch'), ref: a.one('live-ref', 'HEAD'), ...aSide } : undefined; // I-074
   return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option'), live };
 }
 
@@ -193,8 +208,16 @@ export async function run(argv) {
     // I-093: --a-patch (or --live-a-patch) [--a-ref] names A next to B; without it A is the plain baseline
     const aPatch = a.one('a-patch', a.one('live-a-patch')), aRef = a.one('a-ref', a.one('live-a-ref'));
     if (aRef && !aPatch) throw new Error('--a-ref goes with --a-patch fixes/<topic>/patch.diff');
-    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch', a.one('live-patch')), ref: a.one('ref', a.one('live-ref')), ...(aPatch && { a: { patch: aPatch, ref: aRef ?? 'HEAD' } }), clear: a.flag('clear') });
+    const none = a.one('none', a.one('live-none')); // I-109
+    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch', a.one('live-patch')), ref: a.one('ref', a.one('live-ref')), ...(aPatch && { a: { patch: aPatch, ref: aRef ?? 'HEAD' } }), ...(none !== undefined && { none }), clear: a.flag('clear') });
     const t = p.options?.length ? findOption(p, a.one('option')) : p;
+    if (t?.live?.none !== undefined) {
+      console.log(`LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: no live pages (${t.live.none}); the "Try it" spot shows this reason`);
+      const u = await serverUrl();
+      if (u) console.log(`on the user console ${new URL(`proposals#${p.id}`, u).href}`);
+      return 0;
+    }
+    if (!t?.live && p.state !== 'draft') console.error(`warning: ${p.id}${p.options?.length ? ` option ${t?.name}` : ''} now has no Try-it entry, which every posted proposal needs (I-109): give one with --patch, or --none "<why>"`);
     const aText = t?.live?.a ? `; A = baseline + ${t.live.a.patch} @ ${t.live.a.blob.slice(0, 12)} (${t.live.a.files.length} file(s))` : '';
     const warn = liveAWarning(t?.live);
     if (warn) console.error(`warning: ${warn}`);

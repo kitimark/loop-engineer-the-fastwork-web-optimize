@@ -34,6 +34,7 @@ const option = (name, over = {}) => ({
   visualDiff: [`Diff ${name}: 0.3 % of pixels differ at 3x zoom.`],
   gain: [{ what: 'Elements restyled per frame', before: '120', after: name === 'tiles' ? '0' : '4', tag: 'OBSERVED', how: 'Chrome trace, 3 runs' }],
   risk: `Risk ${name}.`,
+  live: { none: `No page for ${name}.` }, // I-109
   compare: { b: { label: `B ${name}`, url: 'http://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b: `${name}-0.png` }] },
   ...over,
 });
@@ -100,7 +101,7 @@ test('normalize: --shot-a/--shot-b/--video go to the option named by --option; w
   assert.deepEqual(n.errors, []);
   assert.deepEqual(n.media.options.map((m) => m.shots.length), [1, 1, 2]);
   assert.equal(n.media.options[2].shots[1].caption, 'Middle');
-  const single = { ...sample(), options: undefined, recommended: undefined, visualDiff: ['x'], gain: [{ what: 'x', before: '1', after: '2', tag: 'OBSERVED', how: 'h' }], looksSame: 'same', risk: 'low', compare: { a: { label: 'A' }, shots: [{ a: 'a-0.png', b: 'tiles-0.png' }] } };
+  const single = { ...sample(), options: undefined, recommended: undefined, visualDiff: ['x'], gain: [{ what: 'x', before: '1', after: '2', tag: 'OBSERVED', how: 'h' }], looksSame: 'same', risk: 'low', live: { none: 'One way, no page.' }, compare: { a: { label: 'A' }, shots: [{ a: 'a-0.png', b: 'tiles-0.png' }] } };
   assert.equal(errs(single), '');
   assert.match(errs(single, { ...cli, option: 'copy' }), /--option: this proposal has no options/);
 });
@@ -122,6 +123,7 @@ Three ways to show the same word swap without a restyle.
 
 ## Option tiles: Label tiles
 b: B tiles | http://localhost:5613/
+live: none: No page for tiles.
 ### Idea
 Idea tiles.
 ### Looks the same
@@ -137,6 +139,7 @@ Risk tiles.
 
 ## Option copy: Label copy
 b: B copy | http://localhost:5613/
+live: none: No page for copy.
 ### Idea
 Idea copy.
 ### Looks the same
@@ -205,7 +208,7 @@ test('decide --option: accept needs one (by name or label); change may name one;
   assert.match(P.showText(a), / user decided rev 1 accepted, option: video: smallest file$/m);
   const r = await P.postProposal({ by: 'de-opt-d', raw: sample(), baseDir: dir });
   assert.equal((await P.decide(r.proposal.id, { value: 'reject', notes: 'none of them' })).decision.option, undefined, 'reject without an option');
-  const single = await P.postProposal({ by: 'de-opt-d', raw: { ...sample(), options: undefined, recommended: undefined, visualDiff: ['x'], gain: [{ what: 'x', before: '1', after: '2', tag: 'OBSERVED', how: 'h' }], looksSame: 'same', risk: 'low', compare: { a: { label: 'A' }, shots: [{ a: 'a-0.png', b: 'tiles-0.png' }] } }, baseDir: dir });
+  const single = await P.postProposal({ by: 'de-opt-d', raw: { ...sample(), options: undefined, recommended: undefined, visualDiff: ['x'], gain: [{ what: 'x', before: '1', after: '2', tag: 'OBSERVED', how: 'h' }], looksSame: 'same', risk: 'low', live: { none: 'One way, no page.' }, compare: { a: { label: 'A' }, shots: [{ a: 'a-0.png', b: 'tiles-0.png' }] } }, baseDir: dir });
   await assert.rejects(P.decide(single.proposal.id, { value: 'accept', option: 'tiles' }), /has no options/);
   assert.equal((await P.decide(single.proposal.id, { value: 'accept' })).decision.option, undefined);
 });
@@ -269,7 +272,7 @@ test('revise with options: add, change and drop options; media kept for a same-n
   assert.deepEqual(t.recommended, { option: 'tiles-lite', why: 'Half the tiles.' });
   await assert.rejects(P.reviseProposal(p.id, { by: 'de-opt-r', note: 'x', shotsA: [join(dir, 'a-0.png')], shotsB: [join(dir, 'tiles-0.png')] }), /say which one/);
   // back to one solution: options and recommended go
-  const one = { ...sample(), options: undefined, recommended: undefined, idea: 'Tiles only.', looksSame: 'same', risk: 'low', visualDiff: ['x'], gain: [{ what: 'x', before: '1', after: '2', tag: 'OBSERVED', how: 'h' }], compare: { a: { label: 'A' }, shots: [{ a: 'a-0.png', b: 'tiles-0.png' }] } };
+  const one = { ...sample(), options: undefined, recommended: undefined, idea: 'Tiles only.', looksSame: 'same', risk: 'low', live: { none: 'One way, no page.' }, visualDiff: ['x'], gain: [{ what: 'x', before: '1', after: '2', tag: 'OBSERVED', how: 'h' }], compare: { a: { label: 'A' }, shots: [{ a: 'a-0.png', b: 'tiles-0.png' }] } };
   const s = (await P.reviseProposal(p.id, { by: 'de-opt-r', note: 'tiles only', raw: one, baseDir: dir })).proposal;
   assert.equal(s.options, undefined);
   assert.equal(s.recommended, undefined);

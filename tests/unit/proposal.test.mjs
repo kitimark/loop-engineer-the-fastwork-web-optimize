@@ -38,6 +38,7 @@ const sample = (over = {}) => ({
     { what: 'Frames over 50 ms on the phone', before: '6', after: 'estimate 1-2', tag: 'estimate', how: 'from the Chrome count', needsPhone: true },
   ],
   risk: 'A future design change to the glow needs a new image.',
+  live: { none: 'Test fixture: no page to try.' }, // I-109: every posted proposal names its Try-it entry
   compare: {
     a: { label: 'Original (baseline)', url: 'https://localhost:5612/' },
     b: { label: 'PoC', url: 'http://127.0.0.1:5613/?x=1' },
@@ -124,6 +125,7 @@ topic: style-recalc-r4
 a: Original (baseline) | https://localhost:5612/
 b: PoC | http://127.0.0.1:5613/?x=1
 view: slider
+live: none: Test fixture: no page to try.
 ---
 ## Problem
 Every scroll frame restyles 412 elements in the hero.

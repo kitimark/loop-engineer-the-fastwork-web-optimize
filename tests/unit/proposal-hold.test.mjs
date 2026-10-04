@@ -29,6 +29,7 @@ const sample = (over = {}) => ({
   looksSame: 'Same digits, same timing.', visualDiff: ['Nothing visible at 1x.'],
   gain: [{ what: 'Layers repainted per tick', before: '40', after: '1', tag: 'OBSERVED', how: 'Chrome layer tree, 3 runs' }],
   risk: 'A font change needs a new strip.',
+  live: { none: 'Test fixture: no page to try.' }, // I-109
   compare: { a: { label: 'Original' }, b: { label: 'Strip' }, shots: [{ caption: 'Top', a: 'shots/a-0.png', b: 'shots/b-0.png' }] },
   ...over,
 });

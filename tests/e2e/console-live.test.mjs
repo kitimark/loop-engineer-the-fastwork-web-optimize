@@ -88,7 +88,13 @@ test('post --live-patch from the repo; the page may frame localhost only; start 
   const bad = cli('post', '--by', 'de-x', '--file', writeProposal('p2.json', proposal()), '--live-patch', 'fixes/nope/patch.diff');
   assert.equal(bad.code, 1);
   assert.match(bad.out, /--live-patch\.patch: .*not committed/);
-  assert.equal(postedId(cli('post', '--by', 'de-x', '--file', writeProposal('p3.json', proposal({ title: 'No live B' })))), 'PR-002');
+  // I-109 (user T-063 #2): no Try-it entry, no post; --live-none says why there is no page to try
+  const none = cli('post', '--by', 'de-x', '--file', writeProposal('p3.json', proposal({ title: 'No live B' })));
+  assert.equal(none.code, 1, none.out);
+  assert.match(none.out, /live: required: a Try-it panel \(user T-063, I-109\)/);
+  assert.equal(postedId(cli('post', '--by', 'de-x', '--file', join(src, 'p3.json'), '--live-none', 'Keep the original: B = A.')), 'PR-002');
+  assert.match(cli('show', 'PR-002').stdout, /^ {2}live: none \(Keep the original: B = A\.\)$/m);
+  assert.deepEqual(json(await request(new URL('/api/proposals/PR-002', base).href)).proposal.live, { none: 'Keep the original: B = A.' });
 
   const page = await request(new URL('/proposals', base).href);
   assert.equal(page.status, 200);
@@ -169,7 +175,7 @@ test('idle: no ping for the idle limit and both children are killed; the next op
 });
 
 test('proposal live: an accepted proposal with options gets a B per option; start needs the option and restarts only B', async () => {
-  const opt = (name) => ({ name, label: `L ${name}`, idea: `I ${name}.`, looksSame: 'Same.', visualDiff: ['None.'], risk: 'Low.', gain: [{ what: 'Restyles', before: '9', after: '1', tag: 'OBSERVED', how: 'trace' }], compare: { b: { label: `B ${name}` }, shots: [{ a: 'a-0.png', b: 'b-0.png' }] } });
+  const opt = (name) => ({ name, label: `L ${name}`, idea: `I ${name}.`, looksSame: 'Same.', visualDiff: ['None.'], risk: 'Low.', gain: [{ what: 'Restyles', before: '9', after: '1', tag: 'OBSERVED', how: 'trace' }], compare: { b: { label: `B ${name}` }, shots: [{ a: 'a-0.png', b: 'b-0.png' }] }, live: { none: 'Built later.' } });
   const raw = proposal({ title: 'With options', compare: { a: { label: 'Original' } }, options: [opt('full'), opt('pause-only')], recommended: { option: 'full', why: 'Most saved.' }, visualDiff: undefined, looksSame: undefined, risk: undefined, gain: undefined });
   const id = postedId(cli('post', '--by', 'de-x', '--file', writeProposal('p4.json', raw)));
   assert.equal(json(await postJson(`/api/proposals/${id}/decide`, { value: 'accept', option: 'full', rev: 1 })).proposal.state, 'accepted');
@@ -184,7 +190,7 @@ test('proposal live: an accepted proposal with options gets a B per option; star
   assert.equal(view.state, 'accepted', 'the decision stands');
   assert.equal(view.rev, 1, 'no new revision');
   assert.equal(view.options[0].live.patch, 'fixes/other/patch.diff');
-  assert.equal(view.options[1].live, undefined);
+  assert.deepEqual(view.options[1].live, { none: 'Built later.' }, 'I-109: a reason, no pages');
   assert.equal((await postJson(`/api/live/${id}/start`, {})).status, 400, 'which option?');
   assert.equal((await postJson(`/api/live/${id}/start`, { option: 'pause-only' })).status, 404, 'that option has no B');
   const s = json(await postJson(`/api/live/${id}/start`, { option: 'full' }));
@@ -194,6 +200,11 @@ test('proposal live: an accepted proposal with options gets a B per option; star
   r = cli('live', id, '--by', 'lead', '--option', 'full', '--clear');
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, new RegExp(`^LIVE ${id} option full: removed`, 'm'));
+  assert.match(r.stderr, /now has no Try-it entry, which every posted proposal needs \(I-109\)/);
+  r = cli('live', id, '--by', 'lead', '--option', 'full', '--none', 'Pages come with the next build.');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, new RegExp(`^LIVE ${id} option full: no live pages \\(Pages come with the next build\\.\\)`, 'm'));
+  assert.equal(json(await request(new URL(`/api/proposals/${id}`, base).href)).proposal.state, 'accepted', 'the decision stands');
   urls = s;
 });
 

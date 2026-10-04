@@ -32,6 +32,7 @@ function proposal(over = {}) {
     gain: [{ what: 'Elements restyled per frame', before: '412', after: '38', tag: 'OBSERVED', how: 'Chrome trace, 3 runs' },
       { what: 'Layers', before: '41', after: '12', tag: 'estimate', how: 'layer count', needsPhone: true }],
     risk: 'A design change needs a new image.',
+    live: { none: 'Test fixture: no page to try.' }, // I-109
     compare: { a: { label: 'Original', url: 'https://localhost:5612/' }, b: { label: 'PoC', url: 'https://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b: 'b-0.png' }], view: 'blink' },
     ...over,
   };
@@ -85,6 +86,7 @@ title: Middle cards without backdrop blur
 area: middle
 a: Original | http://localhost:5700/
 b: PoC | http://localhost:5701/
+live: none: Test fixture: no page to try.
 ---
 ## Problem
 The blur repaints 3 large layers per frame.
@@ -313,7 +315,7 @@ test('I-053 options: post with --option media, show/list, the API and media, acc
   const opt = (name, b, over = {}) => ({
     name, label: `Way ${name}`, idea: `Idea ${name}.`, looksSame: `Same ${name}.`, visualDiff: [`${name}: 0.2 % of pixels differ`],
     gain: [{ what: 'Elements restyled per frame', before: '120', after: name === 'tiles' ? '0' : '6', tag: 'OBSERVED', how: 'Chrome trace, 3 runs' }],
-    risk: `Risk ${name}.`, compare: { b: { label: `B ${name}`, url: 'http://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b }] }, ...over,
+    risk: `Risk ${name}.`, live: { none: `No page for ${name}.` }, compare: { b: { label: `B ${name}`, url: 'http://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b }] }, ...over,
   });
   const file = writeProposal('opts.json', {
     schema: 'fw-proposal/1', title: 'Word swap, three ways', area: 'hero', problem: `Restyles 120 elements per frame (seen on ${LAN}).`,

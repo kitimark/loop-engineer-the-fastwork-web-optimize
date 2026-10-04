@@ -27,6 +27,7 @@ before(async () => {
     schema: 'fw-proposal/1', title: 'Countdown strip', area: 'hero', problem: 'Forty layers repaint per tick.',
     idea: 'One strip.', looksSame: 'Same digits.', visualDiff: ['Nothing visible.'],
     gain: [{ what: 'Layers per tick', before: '40', after: '1', tag: 'OBSERVED', how: 'layer tree, 3 runs' }], risk: 'Font changes.',
+    live: { none: 'Test fixture: no page to try.' }, // I-109
     compare: { a: { label: 'Original' }, b: { label: 'Strip' }, shots: [{ caption: 'Top', a: 'a.png', b: 'b.png' }] },
   }));
   srv = await startProc(process.execPath, [CON, 'serve', '--port', '0'], { env, ready: (s) => { const m = s.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });

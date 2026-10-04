@@ -45,6 +45,11 @@
 // CLI: --live-a-patch <path> [--live-a-ref <ref>] next to --live-patch; `proposal live` takes --a-patch/--a-ref (or
 // the same --live-a-* names). B should be built on A (its baseline-relative patch repeats A's changes); when some of A's
 // changed lines are missing from B, post/revise/live warn (not refuse: an option may rework part of A on purpose).
+// I-109 (user T-063 #2): every solution the user sees carries a Try-it entry. `live: {none: "<why>"}` (at most 300
+// characters, scrubbed) says why an option has no page to try (e.g. "keep the original": B = A); the panel shows that
+// reason in the Try-it spot. post (not --draft), revise to a non-draft state, and publish refuse a proposal (or an
+// option) without a live entry; drafts may lack it. Stored proposals from before keep loading and showing as before.
+// CLI: --live-none "<why>" on post/revise (with --option), `proposal live <id> --none "<why>"`; Markdown "live: none: <why>".
 // Hard rule 12: compare URLs must be localhost; every text field is scrubbed when stored (progress.mjs sanitize +
 // redact.mjs; localhost URLs are kept) and the scrubs are reported. The page renders text as text, never HTML.
 import { mkdirSync, readFileSync, statSync, openSync, readSync, closeSync, copyFileSync, existsSync } from 'node:fs';
@@ -147,6 +152,8 @@ function mdSection(out, head, text) {
 }
 
 const splitHead = (p) => { const nl = p.indexOf('\n'); return [(nl < 0 ? p : p.slice(0, nl)).trim(), (nl < 0 ? '' : p.slice(nl + 1)).trim()]; };
+/** A Markdown "live:" value: a patch path, or "none: <why>" (I-109). */
+const liveMd = (v) => { const m = String(v).match(/^none\s*:\s*(.*)$/i); return m ? { none: m[1] } : { patch: v }; };
 const labelUrl = (v) => { const [label, url] = v.split('|').map((x) => x.trim()); return { label, ...(url && { url }) }; };
 
 /**
@@ -166,7 +173,7 @@ export function parseMarkdown(src) {
       const k = m[1].toLowerCase(), v = m[2].replace(/^["']|["']$/g, '');
       if (k === 'a' || k === 'b') out.compare[k] = labelUrl(v);
       else if (k === 'view') out.compare.view = v;
-      else if (k === 'live') out.live = { patch: v }; // I-074
+      else if (k === 'live') out.live = liveMd(v); // I-074, I-109
       else if (k === 'looks-same' || k === 'lookssame') out.looksSame = v;
       else if (k === 'recommended') { const [option, ...why] = v.split('|'); out.recommended = { option: option.trim(), why: why.join('|').trim() }; }
       else if (['title', 'area', 'topic', 'thread', 'schema'].includes(k)) out[k] = v;
@@ -181,7 +188,7 @@ export function parseMarkdown(src) {
     for (const l of pre.split('\n')) {
       const m = l.match(/^\s*(b|label|live)\s*:\s*(.*?)\s*$/i);
       if (m && m[1].toLowerCase() === 'b') o.compare = { b: labelUrl(m[2]) };
-      else if (m && m[1].toLowerCase() === 'live') o.live = { patch: m[2] }; // I-074
+      else if (m && m[1].toLowerCase() === 'live') o.live = liveMd(m[2]); // I-074, I-109
       else if (m) o.label = m[2];
     }
     for (const sp of subs) { const [h, t] = splitHead(sp); mdSection(o, h, t); }
@@ -251,6 +258,10 @@ export function mediaFile(id, name) {
 const list = (v) => (v == null || v === '' ? [] : Array.isArray(v) ? v : [v]);
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const hasMedia = (m) => !!(m && (m.shots?.length || m.video?.a || m.video?.both));
+/** I-109: what a proposal without a Try-it entry is told (post, revise to a non-draft state, publish). */
+export const LIVE_REQUIRED = 'required: a Try-it panel (user T-063, I-109): --live-patch fixes/<topic>/patch.diff (or "live": {"patch": …} in the file), or, when there is no page to try, --live-none "<why>" ("live": {"none": "<why>"})';
+const absent = (v) => v === undefined || v === null || v === '';
+const liveFlag = (l) => (l?.none !== undefined ? '--live-none' : '--live-patch');
 /** An option name: what `decide --option` and the decision carry. */
 export const OPTION_NAME = /^[a-z0-9][a-z0-9._-]{0,39}$/;
 
@@ -388,6 +399,12 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     if (v === undefined || v === null || v === '') return undefined;
     if (typeof v === 'string') v = { patch: v };
     if (!isObj(v)) { E.push(`${path}: ${LIVE_SHAPE}`); return undefined; }
+    if (v.none !== undefined) { // I-109: no page to try, and why
+      const extra = Object.keys(v).filter((k) => k !== 'none');
+      if (extra.length) { E.push(`${path}: either ${LIVE_SHAPE} or {none: "<why there is no page to try>"}, not both (got ${extra.join(', ')} next to none)`); return undefined; }
+      const why = txt(v.none, `${path}.none`, LIMITS.item, { required: true });
+      return why === undefined ? undefined : { none: why };
+    }
     const b = liveEntry(v, path);
     if (v.a === undefined || v.a === null || v.a === '') return b;
     const av = typeof v.a === 'string' ? { patch: v.a } : v.a;
@@ -410,8 +427,9 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     if (cliOption !== undefined && cliOption !== null && cliOption !== '') E.push('--option: this proposal has no options (--option names the option that --shot-a/--shot-b/--video belong to)');
     if (raw.recommended !== undefined && raw.recommended !== null) E.push('recommended: only with options (it names the option you recommend)');
     Object.assign(f, solution(raw, ''));
-    const lv = liveOf(cliLive ?? raw.live, cliLive ? '--live-patch' : 'live', cliLive ? '--live-a-patch' : 'live.a');
+    const lv = liveOf(cliLive ?? raw.live, cliLive ? liveFlag(cliLive) : 'live', cliLive ? '--live-a-patch' : 'live.a');
     if (lv) f.live = lv;
+    else if (!draft && absent(cliLive ?? raw.live)) E.push(`live: ${LIVE_REQUIRED}`);
     f.compare = {};
     for (const s of ['a', 'b']) { const v = side(c[s], `compare.${s}`, s === 'a' ? 'Original' : 'PoC'); if (v) f.compare[s] = v; }
     viewOf();
@@ -439,7 +457,7 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
   const target = cliOption === undefined || cliOption === null || cliOption === '' ? null : findOptionIn(opts.map((o, i) => ({ name: names[i], label: isObj(o) ? o.label : undefined })), String(cliOption));
   if (anyCli && cliOption == null) E.push(`this proposal has options: say which one the --shot-a/--shot-b/--video flags are for (--option <name>: ${names.join(', ')})`);
   if (cliOption != null && cliOption !== '' && !target) E.push(`--option: no option "${cliOption}" (options: ${names.join(', ')})`);
-  if (cliLive && (cliOption == null || cliOption === '')) E.push(`--live-patch: this proposal has options: say which one it is for (--option <name>: ${names.join(', ')})`);
+  if (cliLive && (cliOption == null || cliOption === '')) E.push(`${liveFlag(cliLive)}: this proposal has options: say which one it is for (--option <name>: ${names.join(', ')})`);
   f.options = [];
   const optMedia = [];
   opts.slice(0, LIMITS.options).forEach((o, i) => {
@@ -453,8 +471,9 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     const b = side(oc.b, `${p}compare.b`, out.label);
     out.compare = { b };
     const mine = !!cliLive && target?.name === name;
-    const lv = liveOf(mine ? cliLive : o.live, mine ? '--live-patch' : `${p}live`, mine ? '--live-a-patch' : `${p}live.a`);
+    const lv = liveOf(mine ? cliLive : o.live, mine ? liveFlag(cliLive) : `${p}live`, mine ? '--live-a-patch' : `${p}live.a`);
     if (lv) out.live = lv;
+    else if (!draft && absent(mine ? cliLive : o.live)) E.push(`${p}live (${name}): ${LIVE_REQUIRED}`);
     f.options.push(out);
     optMedia.push(media(oc, p, target?.name === name ? cli : null));
   });
@@ -713,7 +732,7 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
  * I-093: `a: {patch, ref}` (or a patch path) sets A too: the baseline + that patch, on B's base tree. Without it the
  * entry has no A (A = the plain baseline); --clear removes both.
  */
-export async function setLive(id, { by, option, patch, ref, a, clear = false, repoDir = process.cwd() } = {}) {
+export async function setLive(id, { by, option, patch, ref, a, none, clear = false, repoDir = process.cwd() } = {}) {
   const who = needBy(by);
   const cur = get(id);
   if (cur.state === 'withdrawn') throw new Error(`${cur.id} is withdrawn`);
@@ -721,7 +740,21 @@ export async function setLive(id, { by, option, patch, ref, a, clear = false, re
   if (names.length && (option == null || option === '')) throw new Error(`${cur.id} has options: say which one B is for (--option <name>: ${names.join(', ')})`);
   if (!names.length && option != null && option !== '') throw new Error(`${cur.id} has no options (--option is for a proposal with options)`);
   if (names.length && !findOption(cur, option)) throw new Error(`no option "${option}" in ${cur.id} (options: ${names.join(', ')})`);
-  if (!clear && (patch == null || patch === '')) throw new Error('--patch fixes/<topic>/patch.diff is required (or --clear)');
+  // I-109: --none "<why>": no page to try for this option, and why (shown in the Try-it spot)
+  if (none != null && (clear || (patch != null && patch !== '') || (a != null && a !== ''))) throw new Error('--none "<why>" stands alone: no --patch, --a-patch or --clear with it');
+  if (none != null) {
+    const w = scrubText(String(none).replace(/\r\n/g, '\n').trim());
+    if (!w.text) throw new Error('--none: say why there is no page to try (e.g. "keep the original: B = A")');
+    if (w.text.length > LIMITS.item) throw new Error(`--none: ${w.text.length} characters, at most ${LIMITS.item}`);
+    return change(cur.id, who, 'live', (p) => {
+      if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn`);
+      const target = p.options?.length ? findOption(p, option) : p;
+      if (!target) throw new Error(`no option "${option}" in ${p.id}`);
+      target.live = { none: w.text };
+      return { ...(p.options?.length && { option: target.name }), note: `no live pages: ${w.text}` };
+    });
+  }
+  if (!clear && (patch == null || patch === '')) throw new Error('--patch fixes/<topic>/patch.diff is required (or --none "<why>", or --clear)');
   let entry = null;
   const av = typeof a === 'string' ? { patch: a } : a;
   if (clear && av != null && av.patch != null && av.patch !== '') throw new Error('--clear removes B and its A: give no --a-patch with it');
@@ -1090,7 +1123,10 @@ const viewVideo = (id, v) => (v ? { a: media(id, v.a), b: media(id, v.b), both: 
 /** I-074: what the page needs to know about a live B (the console serves it; no paths beyond the patch name). */
 const viewLiveOne = (l) => (l && BLOB.test(String(l.blob)) ? { patch: l.patch, version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
 /** I-093: plus `a` ({patch, version, files}) when the entry names its own A. */
-const viewLive = (l) => { const v = viewLiveOne(l); const a = v && viewLiveOne(l.a); return v && (a ? { ...v, a } : v); };
+const viewLive = (l) => {
+  if (l && typeof l.none === 'string') return { none: l.none }; // I-109: no page to try, and why
+  const v = viewLiveOne(l); const a = v && viewLiveOne(l.a); return v && (a ? { ...v, a } : v);
+};
 
 const viewHold = (h) => ({ by: h.by, note: h.note, at: h.at, rev: h.rev });
 /**
@@ -1181,7 +1217,8 @@ export function showText(p) {
   const c = p.compare || {};
   if (p.options?.length) L.push(`  options: ${p.options.map((o) => o.name).join(', ')}${p.recommended ? `; recommended: ${p.recommended.option} (${p.recommended.why})` : ''}`);
   L.push(`  A: ${c.a?.label}${c.a?.url ? ` ${c.a.url}` : ''}${p.options?.length ? '' : `   B: ${c.b?.label}${c.b?.url ? ` ${c.b.url}` : ''}`}${c.view ? `   view: ${c.view}` : ''}`);
-  if (p.live) L.push(`  live B: ${liveText(p.live)}`);
+  if (p.live?.none !== undefined) L.push(`  live: none (${p.live.none})`); // I-109
+  else if (p.live) L.push(`  live B: ${liveText(p.live)}`);
   if (p.live?.a) L.push(`  live A: ${liveAText(p.live.a)}`);
   for (const [i, s] of (c.shots || []).entries()) L.push(`  shot ${i + 1}${s.caption ? ` "${s.caption}"` : ''}: ${s.a} | ${s.b}`);
   if (c.video) L.push(`  video: ${Object.entries(c.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
@@ -1194,7 +1231,8 @@ export function showText(p) {
     L.push(`    B: ${oc.b?.label}${oc.b?.url ? ` ${oc.b.url}` : ''}${shots.length ? `   ${shots[0]}` : ''}`);
     for (const x of shots.slice(1)) L.push(`    ${x}`);
     if (oc.video) L.push(`    video: ${Object.entries(oc.video).map(([k, v]) => `${k}=${v}`).join(' ')}`);
-    if (o.live) L.push(`    live B: ${liveText(o.live)}`);
+    if (o.live?.none !== undefined) L.push(`    live: none (${o.live.none})`); // I-109
+    else if (o.live) L.push(`    live B: ${liveText(o.live)}`);
     if (o.live?.a) L.push(`    live A: ${liveAText(o.live.a)}`);
   }
   if (p.decision) L.push(`  decision: ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);

@@ -28,6 +28,7 @@ before(async () => {
     looksSame: 'The glow is static while you scroll.', visualDiff: ['The glow no longer follows the cursor.'],
     gain: [{ what: 'Elements restyled per frame', before: '412', after: '38', tag: 'OBSERVED', how: 'Chrome trace, 3 runs' }],
     risk: 'A design change needs a new image.',
+    live: { none: 'Test fixture: no page to try.' }, // I-109
     compare: { a: { label: 'Original', url: 'https://localhost:5612/' }, b: { label: 'PoC', url: 'https://localhost:5613/' }, shots: [{ caption: 'Top', a: 'a-0.png', b: 'b-0.png' }], view: 'blink' },
   }));
   ok(node(CON, ['proposal', 'post', '--by', 'de-hero', '--file', join(src, 'p.json')], { env, cwd: src }));

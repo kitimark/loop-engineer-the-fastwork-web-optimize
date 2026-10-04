@@ -513,10 +513,18 @@ function renderTryIt(p) {
   var box = document.getElementById('tryit');
   var t = p && liveTarget(p);
   var key = t ? p.id + '|' + p.rev + '|' + (t.option || '') + '|' + t.live.version + '|' + (t.live.a ? t.live.a.version : '') : '';
+  if (t && t.live.none !== undefined) key = p.id + '|' + p.rev + '|' + (t.option || '') + '|none|' + t.live.none; // I-109
   if (key === tryKey) return; // the frames stay loaded while the proposal refreshes around them
   tryKey = key;
   stopBeat();
   if (!t) { box.replaceChildren(); return; }
+  if (t.live.none !== undefined) { // I-109: no page to try for this proposal (option); the author says why
+    var nc = el('section', { class: 'card tryit', 'aria-label': 'Try it' });
+    nc.appendChild(el('h3', { text: 'Try it: no live pages' + (t.label ? ' (option: ' + t.label + ')' : '') }));
+    nc.appendChild(el('p', { class: 'hint tryit-none', text: t.live.none }));
+    box.replaceChildren(nc);
+    return;
+  }
   var id = p.id;
   var aLabel = aLabelOf(p, t);
   var aFrame = aLabel === 'Original' ? 'A: original' : 'A: ' + aLabel;
