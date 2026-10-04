@@ -1,0 +1,242 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "best-build",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/best-build/build.json",
+      "why": "build record: component hashes, the two deltas, conflict check (closest pair about 960 lines apart), offsets; best build JS 65052c4a3902 / CSS e0f92804c521",
+      "kind": "result",
+      "for": "README.md Components"
+    },
+    {
+      "path": "out/best-build/check.json",
+      "why": "the 17 identity checks, all ok (build with a delta reversed equals the other fix's own build byte for byte)",
+      "kind": "result",
+      "for": "README.md Identity checks"
+    },
+    {
+      "path": "out/best-build/work",
+      "why": "the platform-idle and morph-inherit deltas against st6-rb2 (sha256/12 31897bc8e56d, cd8804c0ff0b) the README names as out/best-build/work/",
+      "kind": "tool",
+      "for": "README.md Components (deltas)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/work-arms",
+      "why": "arm copies used to derive the deltas",
+      "kind": "tool",
+      "for": "README.md Components (deltas)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/work-check",
+      "why": "files of the identity checks (reversed-delta builds)",
+      "kind": "tool",
+      "for": "README.md Identity checks",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/idle",
+      "why": "platform-idle idle counts in Chrome (5346: UpdateLayoutTree 40/40, Paint 169/169 vs C 2409; 4660) and the compare verdicts, Chrome PASS",
+      "kind": "result",
+      "for": "README.md platform-idle idle counts"
+    },
+    {
+      "path": "out/best-build/sim",
+      "why": "Simulator idle counts per stop (bottom 40/40/20; y 4660 529/368/305 and 588/401/321) and Simulator PASS",
+      "kind": "result",
+      "for": "README.md platform-idle idle counts (Simulator)"
+    },
+    {
+      "path": "out/best-build/logs",
+      "why": "shared-lane hold and run logs of the Chrome and Simulator gates (about 15:06-15:43Z)",
+      "kind": "result",
+      "for": "README.md Functional gates"
+    },
+    {
+      "path": "out/best-build/restyle-chrome-2026-10-03T15-12-00-785Z.json",
+      "why": "morph-inherit gate (c) restyle counts on the build: UpdateLayoutTree 650-652, Layout 381-385, elements restyled 6781-6831 (platform-idle adds about +835, F-188)",
+      "kind": "result",
+      "for": "README.md morph-inherit gate (c)"
+    },
+    {
+      "path": "out/best-build/restyle-chrome-2026-10-03T15-13-28-783Z.json",
+      "why": "morph-inherit gate (c) restyle counts on the build: UpdateLayoutTree 650-652, Layout 381-385, elements restyled 6781-6831 (platform-idle adds about +835, F-188)",
+      "kind": "result",
+      "for": "README.md morph-inherit gate (c)"
+    },
+    {
+      "path": "out/best-build/restyle-chrome-2026-10-03T15-24-54-296Z.json",
+      "why": "morph-inherit gate (c) restyle counts on the build: UpdateLayoutTree 650-652, Layout 381-385, elements restyled 6781-6831 (platform-idle adds about +835, F-188)",
+      "kind": "result",
+      "for": "README.md morph-inherit gate (c)"
+    },
+    {
+      "path": "out/best-build/inherit-scroll-2026-10-03T15-33-00-406Z/inherit-scroll.json",
+      "why": "gate (a) user path in WebKit on C, M, N: children --morph 0 / 1 / 1, logo x 43.3 / 169.3 / 169.3, earn 110.4 / 0 / 0",
+      "kind": "result",
+      "for": "README.md morph-inherit gate (a)"
+    },
+    {
+      "path": "out/best-build/inherit-scroll-2026-10-03T15-33-00-406Z/C-open+2s.png",
+      "why": "open + 2 s frames of C (F-183 bug), M and N behind the gate (a) table",
+      "kind": "frames",
+      "for": "README.md morph-inherit gate (a)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/inherit-scroll-2026-10-03T15-33-00-406Z/M-open+2s.png",
+      "why": "open + 2 s frames of C (F-183 bug), M and N behind the gate (a) table",
+      "kind": "frames",
+      "for": "README.md morph-inherit gate (a)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/inherit-scroll-2026-10-03T15-33-00-406Z/N-open+2s.png",
+      "why": "open + 2 s frames of C (F-183 bug), M and N behind the gate (a) table",
+      "kind": "frames",
+      "for": "README.md morph-inherit gate (a)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-14-32-173Z/frames.json",
+      "why": "Chrome nav-morph frozen frame diffs and masks: NH vs VH matches the NH~NH2 A/A at every m (195-280 px); MH~NH 325 px at m 1 vs MH~MH2 floor 240",
+      "kind": "result",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-14-32-173Z/masks",
+      "why": "Chrome nav-morph frozen frame diffs and masks: NH vs VH matches the NH~NH2 A/A at every m (195-280 px); MH~NH 325 px at m 1 vs MH~MH2 floor 240",
+      "kind": "result",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-21-15-164Z/frames.json",
+      "why": "Chrome nav-morph frozen frame diffs and masks: NH vs VH matches the NH~NH2 A/A at every m (195-280 px); MH~NH 325 px at m 1 vs MH~MH2 floor 240",
+      "kind": "result",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-21-15-164Z/masks",
+      "why": "Chrome nav-morph frozen frame diffs and masks: NH vs VH matches the NH~NH2 A/A at every m (195-280 px); MH~NH 325 px at m 1 vs MH~MH2 floor 240",
+      "kind": "result",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-21-15-164Z/MH-0-m0.png",
+      "why": "key frames at m 0 and m 1 of N, M and the A/A pair (run 2): the platform-dash band at m 0 and the button-edge line at m 1",
+      "kind": "frames",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-21-15-164Z/MH-7-m1.png",
+      "why": "key frames at m 0 and m 1 of N, M and the A/A pair (run 2): the platform-dash band at m 0 and the button-edge line at m 1",
+      "kind": "frames",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-21-15-164Z/NH-0-m0.png",
+      "why": "key frames at m 0 and m 1 of N, M and the A/A pair (run 2): the platform-dash band at m 0 and the button-edge line at m 1",
+      "kind": "frames",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/frames-2026-10-03T15-21-15-164Z/NH-7-m1.png",
+      "why": "key frames at m 0 and m 1 of N, M and the A/A pair (run 2): the platform-dash band at m 0 and the button-edge line at m 1",
+      "kind": "frames",
+      "for": "README.md Pixel checks, nav morph frozen frames (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/masks",
+      "why": "Simulator nav-morph frozen frame diffs: NH~MH within the A/A at every m > 0 (max 1-2, 0 px over 8), m 0 start 61 / 666 and end 236 / 1685, NH~VH shows the F-183 bug",
+      "kind": "result",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/simframes.json",
+      "why": "Simulator nav-morph frozen frame diffs: NH~MH within the A/A at every m > 0 (max 1-2, 0 px over 8), m 0 start 61 / 666 and end 236 / 1685, NH~VH shows the F-183 bug",
+      "kind": "result",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/MH-0-m0.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/MH-6-m1.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/NH-0-m0.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/NH-6-m1.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/NH2-0-m0.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/NH2-6-m1.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/VH-0-m0.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/simframes-2026-10-03T15-36-14-043Z/VH-6-m1.png",
+      "why": "Simulator key frames at m 0 and m 1 for N, M, A/A and V (platform sweep titles and glint at m 0)",
+      "kind": "frames",
+      "for": "README.md Pixel checks, Simulator table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/pi",
+      "why": "platform sweep and glint frozen frames and scores (N, V, P, C at m430 and d1440; N~V at the P~V floor; N~C repeats PR-009 9 / 56 and 22 / 64)",
+      "kind": "frames",
+      "for": "README.md Platform sweep and glint frozen frames",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/best-build/page/page-frames.json",
+      "why": "whole-page frozen-frame shares (hero N~N2 1.19 %, N~V 0.97 %, N~M 0.12 %; 2620 and 5346 near 0)",
+      "kind": "result",
+      "for": "README.md Whole page"
+    }
+  ]
+}

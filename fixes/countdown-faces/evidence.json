@@ -1,0 +1,376 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "countdown-faces",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/countdown-faces/x1/X1-1C.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-2V.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-3V.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-4C.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-5C.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-6V.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-7V.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-8C.json",
+      "why": "X1 stage 2 counted phone runs 1C 2V 3V 4C 5C 6V 7V 8C (n=4 per arm): rows 1 top (median V - C -19.2 ms, not separated) and 2 pastHero (V/C 0.62) of the readout",
+      "kind": "result",
+      "for": "README.md Stage 2 readout; x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-attrC.json",
+      "why": "X1 attribution runs C and V (post-hoc: V more long frames at pastHero)",
+      "kind": "result",
+      "for": "README.md Stage 2 readout post-hoc"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-attrV.json",
+      "why": "X1 attribution runs C and V (post-hoc: V more long frames at pastHero)",
+      "kind": "result",
+      "for": "README.md Stage 2 readout post-hoc"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-wC.json",
+      "why": "X1 uncounted warm-up runs of each arm",
+      "kind": "result",
+      "for": "README.md Stage 2 block plan"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-wV.json",
+      "why": "X1 uncounted warm-up runs of each arm",
+      "kind": "result",
+      "for": "README.md Stage 2 block plan"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-heat-end.json",
+      "why": "X1 heat checks at block open and end (both pass)",
+      "kind": "result",
+      "for": "README.md Stage 2 readout, heat checks"
+    },
+    {
+      "path": "out/countdown-faces/x1/X1-heat-open.json",
+      "why": "X1 heat checks at block open and end (both pass)",
+      "kind": "result",
+      "for": "README.md Stage 2 readout, heat checks"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-score-2026-10-02T22-55-14-611Z.json",
+      "why": "x1.mjs score outputs of stage 1 and stage 2 (the rows the readouts quote)",
+      "kind": "result",
+      "for": "README.md Stage 1 and Stage 2 readouts; x1-stage1.json, x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-score-2026-10-02T23-35-48-801Z.json",
+      "why": "x1.mjs score outputs of stage 1 and stage 2 (the rows the readouts quote)",
+      "kind": "result",
+      "for": "README.md Stage 1 and Stage 2 readouts; x1-stage1.json, x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-score-2026-10-03T00-07-44-168Z.json",
+      "why": "x1.mjs score outputs of stage 1 and stage 2 (the rows the readouts quote)",
+      "kind": "result",
+      "for": "README.md Stage 1 and Stage 2 readouts; x1-stage1.json, x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-score-2026-10-03T00-12-19-697Z.json",
+      "why": "x1.mjs score outputs of stage 1 and stage 2 (the rows the readouts quote)",
+      "kind": "result",
+      "for": "README.md Stage 1 and Stage 2 readouts; x1-stage1.json, x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-score-2026-10-03T00-16-21-660Z.json",
+      "why": "x1.mjs score outputs of stage 1 and stage 2 (the rows the readouts quote)",
+      "kind": "result",
+      "for": "README.md Stage 1 and Stage 2 readouts; x1-stage1.json, x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-score-2026-10-03T00-16-33-466Z.json",
+      "why": "x1.mjs score outputs of stage 1 and stage 2 (the rows the readouts quote)",
+      "kind": "result",
+      "for": "README.md Stage 1 and Stage 2 readouts; x1-stage1.json, x1-stage2.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-sim-2026-10-02T22-30-43-894Z.json",
+      "why": "X1 stage 1 Simulator sessions (A1, A1b and parts): V's 2 stale updates at rendered opacity 0, digit-Paint counts",
+      "kind": "result",
+      "for": "README.md Stage 1 readout; x1-stage1.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-sim-2026-10-02T22-38-47-266Z.json",
+      "why": "X1 stage 1 Simulator sessions (A1, A1b and parts): V's 2 stale updates at rendered opacity 0, digit-Paint counts",
+      "kind": "result",
+      "for": "README.md Stage 1 readout; x1-stage1.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-sim-2026-10-02T22-51-47-268Z.json",
+      "why": "X1 stage 1 Simulator sessions (A1, A1b and parts): V's 2 stale updates at rendered opacity 0, digit-Paint counts",
+      "kind": "result",
+      "for": "README.md Stage 1 readout; x1-stage1.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-sim-2026-10-02T23-11-21-613Z.json",
+      "why": "X1 stage 1 Simulator sessions (A1, A1b and parts): V's 2 stale updates at rendered opacity 0, digit-Paint counts",
+      "kind": "result",
+      "for": "README.md Stage 1 readout; x1-stage1.json"
+    },
+    {
+      "path": "out/countdown-faces/x1/x1-sim-2026-10-02T23-24-48-864Z.json",
+      "why": "X1 stage 1 Simulator sessions (A1, A1b and parts): V's 2 stale updates at rendered opacity 0, digit-Paint counts",
+      "kind": "result",
+      "for": "README.md Stage 1 readout; x1-stage1.json"
+    },
+    {
+      "path": "out/countdown-faces/x1-a1.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-a1b.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-acquire.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-acquire2.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-partA.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-partB.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-partC.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-s1.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-s1b.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-s2.log",
+      "why": "X1 run logs: parts A/B/C, A1/A1b (invalid first, redo), acquire logs, stage 1 and 2 logs, C-027 settings window",
+      "kind": "result",
+      "for": "README.md X1 amendments A1, A1b, D1"
+    },
+    {
+      "path": "out/countdown-faces/x1-ticket.md",
+      "why": "X1 ticket text the block ran against",
+      "kind": "result",
+      "for": "README.md X1 block plan"
+    },
+    {
+      "path": "out/countdown-faces/hold-r2.log",
+      "why": "exclusive-hold logs of the round 1 and round 2 Chrome measurement holds (awake true, display on; round 2 21:43:45-21:50:15Z)",
+      "kind": "result",
+      "for": "README.md Round-2 hold"
+    },
+    {
+      "path": "out/countdown-faces/hold-r2b.log",
+      "why": "exclusive-hold logs of the round 1 and round 2 Chrome measurement holds (awake true, display on; round 2 21:43:45-21:50:15Z)",
+      "kind": "result",
+      "for": "README.md Round-2 hold"
+    },
+    {
+      "path": "out/countdown-faces/hold1.log",
+      "why": "exclusive-hold logs of the round 1 and round 2 Chrome measurement holds (awake true, display on; round 2 21:43:45-21:50:15Z)",
+      "kind": "result",
+      "for": "README.md Round-2 hold"
+    },
+    {
+      "path": "out/countdown-faces/hold2.log",
+      "why": "exclusive-hold logs of the round 1 and round 2 Chrome measurement holds (awake true, display on; round 2 21:43:45-21:50:15Z)",
+      "kind": "result",
+      "for": "README.md Round-2 hold"
+    },
+    {
+      "path": "out/countdown-faces/sim-r2.log",
+      "why": "Simulator run logs for the count readings",
+      "kind": "result",
+      "for": "README.md WebKit Simulator counts"
+    },
+    {
+      "path": "out/countdown-faces/sim.log",
+      "why": "Simulator run logs for the count readings",
+      "kind": "result",
+      "for": "README.md WebKit Simulator counts"
+    },
+    {
+      "path": "out/countdown-faces/f146.log",
+      "why": "F-146 follow-up Simulator probe log (1/s pastHero Layout burst = community-pill avatar swap)",
+      "kind": "result",
+      "for": "README.md F-146 follow-up"
+    },
+    {
+      "path": "out/countdown-faces/f146",
+      "why": "F-146 follow-up Simulator probe record (the burst is identical in both arms; PoC adds no write while hidden)",
+      "kind": "result",
+      "for": "README.md F-146 follow-up"
+    },
+    {
+      "path": "out/countdown-faces/counts-2026-10-02T15-43-00-533Z.json",
+      "why": "Chrome count records of rounds 1 and 2 (n=3, tick-aligned): layout, style and paint counts, idle windows",
+      "kind": "result",
+      "for": "README.md Round-2 counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/counts-2026-10-02T15-49-10-207Z.json",
+      "why": "Chrome count records of rounds 1 and 2 (n=3, tick-aligned): layout, style and paint counts, idle windows",
+      "kind": "result",
+      "for": "README.md Round-2 counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/counts-2026-10-02T19-13-31-387Z.json",
+      "why": "Chrome count records of rounds 1 and 2 (n=3, tick-aligned): layout, style and paint counts, idle windows",
+      "kind": "result",
+      "for": "README.md Round-2 counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/counts-2026-10-02T19-14-23-389Z.json",
+      "why": "Chrome count records of rounds 1 and 2 (n=3, tick-aligned): layout, style and paint counts, idle windows",
+      "kind": "result",
+      "for": "README.md Round-2 counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/counts-2026-10-02T21-46-15-493Z.json",
+      "why": "Chrome count records of rounds 1 and 2 (n=3, tick-aligned): layout, style and paint counts, idle windows",
+      "kind": "result",
+      "for": "README.md Round-2 counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/profile-2026-10-02T20-12-36-803Z.json",
+      "why": "call-tree attribution profiles (round 1 and round 2)",
+      "kind": "result",
+      "for": "README.md Call-tree attribution; results.json"
+    },
+    {
+      "path": "out/countdown-faces/profile-2026-10-02T21-49-06-277Z.json",
+      "why": "call-tree attribution profiles (round 1 and round 2)",
+      "kind": "result",
+      "for": "README.md Call-tree attribution; results.json"
+    },
+    {
+      "path": "out/countdown-faces/sim-counts-2026-10-02T20-16-45-215Z.json",
+      "why": "Simulator Timeline counts (2 sessions)",
+      "kind": "result",
+      "for": "README.md WebKit Simulator counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/sim-counts-2026-10-02T21-50-54-130Z.json",
+      "why": "Simulator Timeline counts (2 sessions)",
+      "kind": "result",
+      "for": "README.md WebKit Simulator counts; results.json"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-02T19-11-49-099Z.json",
+      "why": "frozen-frame pixel records of all pixel runs, including the first round-2 hold (21:38:15Z, replay draft, 0/295 under regular virtual stamps) and the final 21:43:45Z run; real frame stamps",
+      "kind": "result",
+      "for": "README.md Pixel identity (frozen frames); results.json pixels"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-02T20-10-13-383Z.json",
+      "why": "frozen-frame pixel records of all pixel runs, including the first round-2 hold (21:38:15Z, replay draft, 0/295 under regular virtual stamps) and the final 21:43:45Z run; real frame stamps",
+      "kind": "result",
+      "for": "README.md Pixel identity (frozen frames); results.json pixels"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-02T21-38-15-853Z.json",
+      "why": "frozen-frame pixel records of all pixel runs, including the first round-2 hold (21:38:15Z, replay draft, 0/295 under regular virtual stamps) and the final 21:43:45Z run; real frame stamps",
+      "kind": "result",
+      "for": "README.md Pixel identity (frozen frames); results.json pixels"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-02T21-43-45-440Z.json",
+      "why": "frozen-frame pixel records of all pixel runs, including the first round-2 hold (21:38:15Z, replay draft, 0/295 under regular virtual stamps) and the final 21:43:45Z run; real frame stamps",
+      "kind": "result",
+      "for": "README.md Pixel identity (frozen frames); results.json pixels"
+    },
+    {
+      "path": "out/countdown-faces/pixels-2026-10-02T21-43-45-440Z",
+      "why": "frozen-frame images of the final pixel run (A B A with the A/A control); the shots behind the final 0 px table",
+      "kind": "frames",
+      "for": "README.md Pixel identity (frozen frames)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/countdown-faces/proposal.json",
+      "why": "the proposal record the readouts were prepared against",
+      "kind": "result",
+      "for": "README.md header"
+    },
+    {
+      "path": "out/countdown-faces/arms",
+      "why": "immutable arm copies (faces, still, iso-*) the X1 phone block and Simulator reads served; arms.json maps arm to hash",
+      "kind": "tool",
+      "for": "README.md X1 block plan (immutable arms)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/countdown-faces/snap-x1",
+      "why": "immutable snapshot of the PoC served in X1 (snap-x1/poc)",
+      "kind": "tool",
+      "for": "README.md X1 block plan",
+      "fastworkDerived": true
+    }
+  ]
+}

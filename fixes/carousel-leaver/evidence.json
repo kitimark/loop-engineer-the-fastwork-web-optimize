@@ -1,0 +1,480 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "carousel-leaver",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/carousel-leaver/h4a",
+      "why": "P-086 Chrome hold 4a: rect series, served hashes and score files; E vs A inside the A/A (L.w 10.247 vs 10.212), cost counts (Layout A 166, S 12, E 68)",
+      "kind": "result",
+      "for": "README.md Results (P-086) (1), (4)"
+    },
+    {
+      "path": "out/carousel-leaver/h4b",
+      "why": "P-086 Chrome hold 4b: frozen crops and diffs behind the paint-order MISS for E (n8 1083 at t 0, E~A in the 8 px overlap lens, A/A 0) and the scene-paused HIT",
+      "kind": "frames",
+      "for": "README.md Results (P-086) (2), (3)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/sim3",
+      "why": "P-086 Simulator run 3: series, scores, served hashes and Timeline counts (carousel-rooted per slide base 13.0, S 1.8, E 7.5)",
+      "kind": "result",
+      "for": "README.md Results (P-086) (1), (4)"
+    },
+    {
+      "path": "out/carousel-leaver/h1",
+      "why": "P-086 Chrome hold 1 (off-screen): the shape row 'Chrome A~E 0 / 0 / 0' quoted in the post hoc table",
+      "kind": "result",
+      "for": "README.md P-086 post hoc table"
+    },
+    {
+      "path": "out/carousel-leaver/h2",
+      "why": "P-086 Chrome hold 2 (pixels, paused; off-screen data agreeing with the in-view runs)",
+      "kind": "result",
+      "for": "README.md P-086 Results, off-screen note"
+    },
+    {
+      "path": "out/carousel-leaver/sim2",
+      "why": "P-086 Simulator run 2 (off-screen data agreeing with the in-view run 3)",
+      "kind": "result",
+      "for": "README.md P-086 Results, off-screen note"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c3.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c4.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c5.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/d1a.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/d1b.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w1.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w3.log",
+      "why": "P-087 hold logs, run record of every Chrome and Sim hold",
+      "kind": "result",
+      "for": "README.md Results (P-087)"
+    },
+    {
+      "path": "out/carousel-leaver/p87/blocklog.txt",
+      "why": "P-087 run record with the pmset window check (I-098) named in the README",
+      "kind": "result",
+      "for": "README.md Results (P-087) run record"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/clp.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/score-series-A-E.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/score-series-E-E2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/score-series-F-E.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/score-series-F-E2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/score-series-F-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/score-series-F2-E.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/series-A.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/series-E.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/series-E2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/series-F.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/series-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/back-A.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/back-A2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/back-F.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/back-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/back-S.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/clp.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/paused-A.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/paused-A2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/paused-F.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/paused-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/paused-S.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-A-A2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-A-F.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-A-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-A-S.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-A2-F.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-A2-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/score-back-F-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c3/pord.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c4/clp.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c5/pord.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/d1a/simcrop.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/d1b/simcrop.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w1/simcrop.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2/series-sim-E.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2/series-sim-E2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2/series-sim-F.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2/series-sim-F2.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2/series-sim-base.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w2/simclp.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w3/simcrop.json",
+      "why": "P-087 records and scores of every hold (C1-C5 Chrome, W1-W3 Sim, D1a/D1b): Chrome phone P1 0 px at all 13 points, P3 motion within E~E2 + 0.05, P4 cost counts, P5 return series, P6 desktop A/A-limited",
+      "kind": "result",
+      "for": "README.md Results (P-087) prediction table"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c1/served.txt",
+      "why": "P-087 served hashes per hold (A, S, E, F JS/CSS hashes)",
+      "kind": "result",
+      "for": "README.md Results (P-087) run record"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c2/served.txt",
+      "why": "P-087 served hashes per hold (A, S, E, F JS/CSS hashes)",
+      "kind": "result",
+      "for": "README.md Results (P-087) run record"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c3/served.txt",
+      "why": "P-087 served hashes per hold (A, S, E, F JS/CSS hashes)",
+      "kind": "result",
+      "for": "README.md Results (P-087) run record"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c4/served.txt",
+      "why": "P-087 served hashes per hold (A, S, E, F JS/CSS hashes)",
+      "kind": "result",
+      "for": "README.md Results (P-087) run record"
+    },
+    {
+      "path": "out/carousel-leaver/p87/c5/served.txt",
+      "why": "P-087 served hashes per hold (A, S, E, F JS/CSS hashes)",
+      "kind": "result",
+      "for": "README.md Results (P-087) run record"
+    },
+    {
+      "path": "out/carousel-leaver/p87/w1",
+      "why": "P-087 WebKit phone hold W1 with frozen crops: P1 MISS (F~base n8 2877 at t 0, A/A 0), the picture behind D1's finding that E carries the same difference",
+      "kind": "frames",
+      "for": "README.md P-087 P1 WebKit, D1",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/p87/w3",
+      "why": "P-087 WebKit iPad hold W3 (1032 CSS px): P6a MISS, F~base 470-2012 against base~base2 0",
+      "kind": "frames",
+      "for": "README.md P-087 P6a iPad",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/p87/d1a",
+      "why": "P-087 diagnostic D1a crops (E vs base in WebKit, faces 0 and 2) showing that the WebKit difference comes with st6-rb2's slots, not with F",
+      "kind": "frames",
+      "for": "README.md D1",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/p87/d1b",
+      "why": "P-087 diagnostic D1b crops and records (S vs base) paired with D1a",
+      "kind": "frames",
+      "for": "README.md D1",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/d2",
+      "why": "D2 describes-only result: WebKit slot geometry and layers, geometry equal at rest, mid-slide 0.007 px (simgeo.json)",
+      "kind": "result",
+      "for": "README.md D2 result"
+    },
+    {
+      "path": "out/carousel-leaver/d3",
+      "why": "D3 result: lens crops base vs S vs Sc/Sv/Sw showing card, layers and slot opacity ruled out; base faces drawn at low interpolation quality",
+      "kind": "frames",
+      "for": "README.md D3 result",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/d4",
+      "why": "D4 result: pinned image-rendering arms (Bq/Bs/Sq/Ss) in snapshots; base equals base pinned Low at 0 px from t 17 through post300, quiet rest 523 px at max 81",
+      "kind": "frames",
+      "for": "README.md D4 result, proposal draft rev 3 (snapshot max 81)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/g1a",
+      "why": "P-090 Hold A: split at quiet rest on the Simulator screen for st6-rb2 and the So/St/Sv/Sw candidates (no single slot value is the culprit), natural and screen crops, burst",
+      "kind": "frames",
+      "for": "README.md Hold A result",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/g1a-void1",
+      "why": "P-090 Hold A void first run (probe repair 1), kept as the README says",
+      "kind": "result",
+      "for": "README.md P-090 addendum 1 (void run kept)"
+    },
+    {
+      "path": "out/carousel-leaver/g1b",
+      "why": "P-090 Hold B: Simulator screen, quiet rest st6-rb2 vs base (max shade 50, 1137 px, 0.0315 %, 126.3 CSS px2) and the 4th face in the burst (max 45, 457 px); no Low window from 328 ms",
+      "kind": "frames",
+      "for": "README.md Hold B result, proposal draft rev 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/g1rm",
+      "why": "P-090 amendment 1 (a): reduced motion on the Simulator screen, st6-rb2 vs base 1761 px, max 49, against base's own A/A of 1260 (not exact)",
+      "kind": "frames",
+      "for": "README.md Amendment 1 leg (a), proposal draft rev 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/carousel-leaver/g1ipad",
+      "why": "P-090 amendment 1 (b): iPad width 1032 CSS px, 3 loads per arm, max 36, 61 CSS px2, 0.004 %",
+      "kind": "frames",
+      "for": "README.md Amendment 1 leg (b), proposal draft rev 3",
+      "fastworkDerived": true
+    }
+  ]
+}

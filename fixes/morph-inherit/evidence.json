@@ -1,0 +1,244 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "morph-inherit",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/f3r/inherit-mini.json",
+      "why": "minimal-page result (no Fastwork code): a child with --r: inherit of a registered inherits:false property never follows its parent in WebKit; the two controls do",
+      "kind": "result",
+      "for": "README.md What was wrong (minimal page)"
+    },
+    {
+      "path": "out/f3r/minipage",
+      "why": "the minimal page the Simulator read ran against",
+      "kind": "tool",
+      "for": "README.md What was wrong (minimal page)"
+    },
+    {
+      "path": "out/f3r/inherit-scroll-2026-10-03T13-55-05-096Z",
+      "why": "gate (a) user path in the Simulator: children's computed --morph, logo x, earn width/opacity for baseline B, C and fixed C at rest, open + 2 s, closed + 2 s (table: children 1 / 0 / 1, logo x 169.3 / 43.3 / 169.3, earn 0 / 110.4 / 0), with the frames",
+      "kind": "frames",
+      "for": "README.md What was wrong table, Gates (a)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/f3r/simframes-2026-10-03T13-56-07-077Z",
+      "why": "gate (a) frozen frames at m 0 / 0.1 / 0.25 / 0.5 / 0.75 / 0.9 / 1 / 0 for baseline+hook, fixed C+hook and A/A: state identical, pixels within max delta 2 except m 0.1 (52, same as A/A) and m 0.9 / 1 (11 / 6; 52 / 0 px over 8 in the countdown cells)",
+      "kind": "frames",
+      "for": "README.md Gates (a)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/f3r/frames-2026-10-03T14-00-03-524Z",
+      "why": "gate (b) Chrome frozen frames C, fixed C (M), C2: 0 px at m 0.1 / 0.75 / 0.9 / 1, max 1 at 0.25 / 0.5; the y 225.7-228 band at m 0 (549 / 36, 994 / 47, 1021 / 94 against A/A 0 / 1, 1021 / 141, 0 / 2)",
+      "kind": "frames",
+      "for": "README.md Gates (b)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-inherit/series-2026-10-03T14-20-45-448Z",
+      "why": "mid-tween time series B, B2, M, M2, C per rAF frame (earn opacity and width, first frame with m >= 0.2 at 117 / 123 / 70 / 67 / 68 ms; children's --morph 0 difference)",
+      "kind": "result",
+      "for": "README.md Gates (a) mid-tween table"
+    },
+    {
+      "path": "out/morph-inherit/restyle-chrome-2026-10-03T13-58-59-959Z.json",
+      "why": "gate (c) Chrome counts, C vs fixed C: style recalcs 648, 652 vs 648, 645; elements restyled 6348, 6329 vs 5929, 6056; layouts 384, 380 vs 383, 381",
+      "kind": "result",
+      "for": "README.md Gates (c)"
+    },
+    {
+      "path": "out/f3a/tween-paint-2026-10-03T14-01-10-919Z.json",
+      "why": "gate (c) WebKit Simulator per-tween-frame counts C vs fixed C (layouts open 2.0 vs 3.0-3.1, paints 15.5-15.8 vs 16.5-16.6)",
+      "kind": "result",
+      "for": "README.md Gates (c)"
+    },
+    {
+      "path": "out/f3a/tl-C-2026-10-03T14-01-10-919Z.json",
+      "why": "Timeline record of the C arm of the same gate (c) WebKit run",
+      "kind": "result",
+      "for": "README.md Gates (c)"
+    },
+    {
+      "path": "out/f3a/tl-M-2026-10-03T14-01-10-919Z.json",
+      "why": "Timeline record of the fixed-C arm of the same gate (c) WebKit run",
+      "kind": "result",
+      "for": "README.md Gates (c)"
+    },
+    {
+      "path": "out/morph-inherit/p085/read-2026-10-03T14-45-29-346Z.json",
+      "why": "P-085 pre-registration Simulator read (B M M B): DOM PASS, earn start 120 vs 120 ms, visible undecided",
+      "kind": "result",
+      "for": "README.md P-085 pre-registration check"
+    },
+    {
+      "path": "out/morph-inherit/p085/score",
+      "why": "P-085 re-score: frames-score.json (moving dt > 50 B 21, M 0.5; > 34 B 56, M 1), phone-read verdicts (DOM PASS, earn d = +1 ms, visible within d = -11 ms), per-run slow frames, BLOCKLOG copy",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-B-1.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-B-4.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-B-5.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-B-8.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-M-2.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-M-3.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-M-6.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-M-7.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-S-S1.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-S-S2.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-wB.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085-wM.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/ports.json",
+      "why": "P-085 iPhone raw runs (B 1 4 5 8, M 2 3 6 7, sentinels S1 / S2, warm-ups) as run by iphone-runner",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/gates.jsonl",
+      "why": "P-085 gate reads (Serious, Is Induced No, battery 38.9-41.0 C, timer grid 30 ms), hold and run logs in JSON lines",
+      "kind": "result",
+      "for": "README.md P-085 result, conditions"
+    },
+    {
+      "path": "out/p085/holds.jsonl",
+      "why": "P-085 gate reads (Serious, Is Induced No, battery 38.9-41.0 C, timer grid 30 ms), hold and run logs in JSON lines",
+      "kind": "result",
+      "for": "README.md P-085 result, conditions"
+    },
+    {
+      "path": "out/p085/progress.jsonl",
+      "why": "P-085 gate reads (Serious, Is Induced No, battery 38.9-41.0 C, timer grid 30 ms), hold and run logs in JSON lines",
+      "kind": "result",
+      "for": "README.md P-085 result, conditions"
+    },
+    {
+      "path": "out/p085/runs.jsonl",
+      "why": "P-085 gate reads (Serious, Is Induced No, battery 38.9-41.0 C, timer grid 30 ms), hold and run logs in JSON lines",
+      "kind": "result",
+      "for": "README.md P-085 result, conditions"
+    },
+    {
+      "path": "out/p085/tgrid.jsonl",
+      "why": "P-085 gate reads (Serious, Is Induced No, battery 38.9-41.0 C, timer grid 30 ms), hold and run logs in JSON lines",
+      "kind": "result",
+      "for": "README.md P-085 result, conditions"
+    },
+    {
+      "path": "out/p085/BLOCKLOG.txt",
+      "why": "P-085 block log and hold logs: holds h161622 / h164019 / h170510 valid, h165958 failed its start read (no strike), deviations",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/RUNLOG.txt",
+      "why": "P-085 block log and hold logs: holds h161622 / h164019 / h170510 valid, h165958 failed its start read (no strike), deviations",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/hold1.log",
+      "why": "P-085 block log and hold logs: holds h161622 / h164019 / h170510 valid, h165958 failed its start read (no strike), deviations",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/hold2.log",
+      "why": "P-085 block log and hold logs: holds h161622 / h164019 / h170510 valid, h165958 failed its start read (no strike), deviations",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/hold3.log",
+      "why": "P-085 block log and hold logs: holds h161622 / h164019 / h170510 valid, h165958 failed its start read (no strike), deviations",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/hold3b.log",
+      "why": "P-085 block log and hold logs: holds h161622 / h164019 / h170510 valid, h165958 failed its start read (no strike), deviations",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/p085/p085",
+      "why": "P-085 scorers as run (phone-read.mjs f7ae2c55677b, frames-p085.mjs 385eb00f1564)",
+      "kind": "tool",
+      "for": "README.md P-085 scorers"
+    },
+    {
+      "path": "out/morph-inherit/p085/read-2026-10-03T16-20-20-599Z.json",
+      "why": "P-085 phone read on the iPhone (4 reads per arm, B M M B): every child's --morph at the target, earn fade start tA + 119 vs tA + 120",
+      "kind": "result",
+      "for": "README.md P-085 result"
+    },
+    {
+      "path": "out/iphone-runner/p085.mjs",
+      "why": "the runner's P-085 driver (sha256 05cb22a59969) named in the result",
+      "kind": "tool",
+      "for": "README.md P-085 result"
+    }
+  ]
+}

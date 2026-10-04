@@ -1,0 +1,865 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "cd-strip",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T00-17-10-586Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T00-22-15-492Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T00-23-51-037Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T00-37-14-365Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T01-26-37-707Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T03-02-05-000Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T03-34-02-051Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T04-15-39-058Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T04-56-46-997Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T06-09-16-872Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T07-06-14-926Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T07-24-34-478Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T07-26-07-654Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-06-47-209Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-15-45-336Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-16-43-338Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-27-51-582Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-30-44-772Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-35-27-250Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-54-21-993Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T08-56-28-939Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T09-00-01-648Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T09-02-33-199Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T09-09-43-646Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-03T09-10-52-884Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-04T02-57-19-314Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/pixels-2026-10-04T03-01-02-897Z.json",
+      "why": "Chrome frozen-frame pixel records, one per run, cited by the README tables: hero 259 shots 0 differ, panel 169 shots, strip-rw/strip-tc herofade classes, in-between states, widths, and the reduced-motion exact runs (428 and 147 shots, 0 differ; A/A in the same run)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome), Review round 3, Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T01-27-41-309Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T04-58-19-565Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T06-25-10-812Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T07-05-25-135Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T07-13-16-856Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T07-23-21-026Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/idle-2026-10-03T07-57-59-004Z.json",
+      "why": "Chrome idle-triple records (LayoutCount, RecalcStyleCount, inline style writes per s, layout shifts, observer callbacks) behind the idle and G7-G16 count claims (tc top 1.8-2.2 layouts/s vs faces 1.6-2.2; off-screen writes 22-31 vs 6-11)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 3 counts; results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T00-20-20-449Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T00-47-25-402Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T00-52-00-285Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T01-03-03-384Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T02-51-56-793Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T04-08-36-086Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T04-19-52-049Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T04-38-35-168Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T05-39-37-736Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T06-21-41-635Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T06-57-45-788Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T07-42-21-502Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T07-54-46-465Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T08-11-36-870Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/sim/sim-2026-10-03T08-44-10-007Z.json",
+      "why": "WebKit Simulator Timeline and LayerTree count records (hero clock layers 96 vs 80, backed 16 vs 48, 0.39 vs 1.18 MB; S5 re-entry digit Paint 55 / 23 / 31)",
+      "kind": "result",
+      "for": "README.md WebKit (iOS Simulator, counts only); results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T01-31-21-792Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T01-42-29-320Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T01-51-36-189Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T01-53-29-732Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T02-00-05-869Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T02-12-58-911Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T02-19-01-525Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T02-21-15-086Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T02-32-10-367Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T03-07-36-977Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T03-23-02-911Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T03-47-37-499Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T04-02-08-845Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T04-06-29-382Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T04-27-02-825Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T04-39-57-971Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T05-17-45-723Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T05-39-59-608Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T07-14-08-896Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T07-43-38-076Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T07-55-29-967Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T08-13-01-916Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-03T08-24-34-771Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-04T03-01-41-632Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/simpx/simpx-2026-10-04T03-04-06-648Z.json",
+      "why": "Simulator frozen-frame pixel records (hero, panel, fade50, fade90, panelmid; R-fade pooling; reduced motion 0 of 29 in simpx-2026-10-04T03-04-06-648Z)",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit), Reduced motion exact; results.json"
+    },
+    {
+      "path": "out/cd-strip/g1.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g10.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g11.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g12.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g13.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g13c.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g14.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g14b.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g15.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g16.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g17.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g2.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g3.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g4.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g5.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g6.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g7.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g8.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g9.log",
+      "why": "Chrome run logs G1-G17 (layout-shift sources, G11 layer census, G13c 0.9-fade class, G16 idle windows recovered from log lines since G16 produced no JSON)",
+      "kind": "result",
+      "for": "README.md Review round 3 (G7-G17)"
+    },
+    {
+      "path": "out/cd-strip/g13c-sum.txt",
+      "why": "G13c summary of the 0.9-fade class (strip vs faces 8-11 of 21 shots; faces A/A 4, 4, 2)",
+      "kind": "result",
+      "for": "README.md Review round 3, Pixels Chrome"
+    },
+    {
+      "path": "out/cd-strip/s1.log",
+      "why": "Simulator run logs S1-S5 (strip-tw composited wrapper, S2/S5 layer and re-entry paint counts, S3/S4 panel and fade90)",
+      "kind": "result",
+      "for": "README.md Review round 3 (S1-S5)"
+    },
+    {
+      "path": "out/cd-strip/s2.log",
+      "why": "Simulator run logs S1-S5 (strip-tw composited wrapper, S2/S5 layer and re-entry paint counts, S3/S4 panel and fade90)",
+      "kind": "result",
+      "for": "README.md Review round 3 (S1-S5)"
+    },
+    {
+      "path": "out/cd-strip/s3.log",
+      "why": "Simulator run logs S1-S5 (strip-tw composited wrapper, S2/S5 layer and re-entry paint counts, S3/S4 panel and fade90)",
+      "kind": "result",
+      "for": "README.md Review round 3 (S1-S5)"
+    },
+    {
+      "path": "out/cd-strip/s4.log",
+      "why": "Simulator run logs S1-S5 (strip-tw composited wrapper, S2/S5 layer and re-entry paint counts, S3/S4 panel and fade90)",
+      "kind": "result",
+      "for": "README.md Review round 3 (S1-S5)"
+    },
+    {
+      "path": "out/cd-strip/s5.log",
+      "why": "Simulator run logs S1-S5 (strip-tw composited wrapper, S2/S5 layer and re-entry paint counts, S3/S4 panel and fade90)",
+      "kind": "result",
+      "for": "README.md Review round 3 (S1-S5)"
+    },
+    {
+      "path": "out/cd-strip/rm1.log",
+      "why": "reduced-motion exact runs RM1-RM3b: strip-tc vs st6-rb2 vs A/A, matchMedia reduce confirmed per arm, RM3 stopped with the clock off screen, RM3b re-run",
+      "kind": "result",
+      "for": "README.md Reduced motion exact"
+    },
+    {
+      "path": "out/cd-strip/rm2.log",
+      "why": "reduced-motion exact runs RM1-RM3b: strip-tc vs st6-rb2 vs A/A, matchMedia reduce confirmed per arm, RM3 stopped with the clock off screen, RM3b re-run",
+      "kind": "result",
+      "for": "README.md Reduced motion exact"
+    },
+    {
+      "path": "out/cd-strip/rm3.log",
+      "why": "reduced-motion exact runs RM1-RM3b: strip-tc vs st6-rb2 vs A/A, matchMedia reduce confirmed per arm, RM3 stopped with the clock off screen, RM3b re-run",
+      "kind": "result",
+      "for": "README.md Reduced motion exact"
+    },
+    {
+      "path": "out/cd-strip/rm3b.log",
+      "why": "reduced-motion exact runs RM1-RM3b: strip-tc vs st6-rb2 vs A/A, matchMedia reduce confirmed per arm, RM3 stopped with the clock off screen, RM3b re-run",
+      "kind": "result",
+      "for": "README.md Reduced motion exact"
+    },
+    {
+      "path": "out/cd-strip/hold1.log",
+      "why": "shared-lane hold logs of the Chrome and Simulator runs",
+      "kind": "result",
+      "for": "README.md Review round 2 re-runs"
+    },
+    {
+      "path": "out/cd-strip/hold2.log",
+      "why": "shared-lane hold logs of the Chrome and Simulator runs",
+      "kind": "result",
+      "for": "README.md Review round 2 re-runs"
+    },
+    {
+      "path": "out/cd-strip/hold3.log",
+      "why": "shared-lane hold logs of the Chrome and Simulator runs",
+      "kind": "result",
+      "for": "README.md Review round 2 re-runs"
+    },
+    {
+      "path": "out/cd-strip/hold4.log",
+      "why": "shared-lane hold logs of the Chrome and Simulator runs",
+      "kind": "result",
+      "for": "README.md Review round 2 re-runs"
+    },
+    {
+      "path": "out/cd-strip/hold5.log",
+      "why": "shared-lane hold logs of the Chrome and Simulator runs",
+      "kind": "result",
+      "for": "README.md Review round 2 re-runs"
+    },
+    {
+      "path": "out/cd-strip/idle-r2.log",
+      "why": "idle triple log of review round 2 (strip-rw top/mid/end windows)",
+      "kind": "result",
+      "for": "README.md Idle triple, Review round 2 re-runs"
+    },
+    {
+      "path": "out/cd-strip/px-r2.log",
+      "why": "review round 2 Chrome pixel run log (panel background class across runs)",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome) background class"
+    },
+    {
+      "path": "out/cd-strip/sim-cost1.log",
+      "why": "Simulator count run logs (rb1, rb2, cost1) for the strip-rb step and the script cost of the derived round()",
+      "kind": "result",
+      "for": "README.md WebKit"
+    },
+    {
+      "path": "out/cd-strip/sim-rb1.log",
+      "why": "Simulator count run logs (rb1, rb2, cost1) for the strip-rb step and the script cost of the derived round()",
+      "kind": "result",
+      "for": "README.md WebKit"
+    },
+    {
+      "path": "out/cd-strip/sim-rb2.log",
+      "why": "Simulator count run logs (rb1, rb2, cost1) for the strip-rb step and the script cost of the derived round()",
+      "kind": "result",
+      "for": "README.md WebKit"
+    },
+    {
+      "path": "out/cd-strip/simpx-cl1.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/simpx-cl2.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/simpx-cl3.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/simpx-cl4.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/simpx-r1.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/simpx-rb1.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/simpx-rb2.log",
+      "why": "Simulator pixel run logs for the strip-cl, strip-rb and R-fade passes",
+      "kind": "result",
+      "for": "README.md Pixel identity (WebKit)"
+    },
+    {
+      "path": "out/cd-strip/pixels-cl.log",
+      "why": "Chrome pixel run logs for strip-cl and strip-rb",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome)"
+    },
+    {
+      "path": "out/cd-strip/pixels-cl2.log",
+      "why": "Chrome pixel run logs for strip-cl and strip-rb",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome)"
+    },
+    {
+      "path": "out/cd-strip/pixels-rb1.log",
+      "why": "Chrome pixel run logs for strip-cl and strip-rb",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome)"
+    },
+    {
+      "path": "out/cd-strip/p072-row.txt",
+      "why": "P-072 prediction row superseded by P-079 (text the README quotes)",
+      "kind": "result",
+      "for": "README.md header"
+    },
+    {
+      "path": "out/cd-strip/p079-score.json",
+      "why": "P-079 scorer output (score079.mjs 302b608e09e7), re-scored byte-identically by mgmt-ops-10: top gt50 per run C 0 1 0 1, V 1 1 2 1; re-entry clock Paint 53.5 to 21; backing 48 to 16 layers; pin frames p95 17",
+      "kind": "result",
+      "for": "README.md Phone block P-079; results.json"
+    },
+    {
+      "path": "out/cd-strip/pr2",
+      "why": "PR-008 rev 2 proposal: proposal.json, widths.json and the frozen-frame crops and diffs it shows (faces vs strip vs tc at f14 and f30)",
+      "kind": "frames",
+      "for": "README.md Review round 3 and PR-008 rev 2",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/aa1440-diff.png",
+      "why": "key crops of the Chrome pixel differences (1440 A/A line, strip-cl fade50, hero f30 diff, static cell 0 diff) named while tracing the delta-1 classes",
+      "kind": "frames",
+      "for": "README.md Pixel identity (Chrome), Review round 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/aa1440.png",
+      "why": "key crops of the Chrome pixel differences (1440 A/A line, strip-cl fade50, hero f30 diff, static cell 0 diff) named while tracing the delta-1 classes",
+      "kind": "frames",
+      "for": "README.md Pixel identity (Chrome), Review round 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/cl-fade50-two-f30.png",
+      "why": "key crops of the Chrome pixel differences (1440 A/A line, strip-cl fade50, hero f30 diff, static cell 0 diff) named while tracing the delta-1 classes",
+      "kind": "frames",
+      "for": "README.md Pixel identity (Chrome), Review round 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/diff-hero-f30.png",
+      "why": "key crops of the Chrome pixel differences (1440 A/A line, strip-cl fade50, hero f30 diff, static cell 0 diff) named while tracing the delta-1 classes",
+      "kind": "frames",
+      "for": "README.md Pixel identity (Chrome), Review round 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/diff-static-cell0.png",
+      "why": "key crops of the Chrome pixel differences (1440 A/A line, strip-cl fade50, hero f30 diff, static cell 0 diff) named while tracing the delta-1 classes",
+      "kind": "frames",
+      "for": "README.md Pixel identity (Chrome), Review round 3",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/overlay-rw",
+      "why": "the only copy of strip-rw (rev 1's build, not landed; patch 1f3c26a16563, JS 5e37af69bcc4, CSS 40078cb2d9cf) that the README names",
+      "kind": "tool",
+      "for": "README.md header and Files",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/arm-cl",
+      "why": "measured copy of strip-cl (cell layers, no re-base) behind the strip-cl pixel and Simulator rows",
+      "kind": "tool",
+      "for": "README.md Pixel identity",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/arm-rb",
+      "why": "measured copy of strip-rb behind the strip-rb rows (48 to 16 backed, 1.18 to 0.39 MB)",
+      "kind": "tool",
+      "for": "README.md Pixel identity, WebKit",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/arm-rbf",
+      "why": "measured copy of strip-rb final bytes (JS 56c075242353, CSS 9f90afa65888)",
+      "kind": "tool",
+      "for": "README.md Pixel identity (Chrome) review round 2 (c)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/patch-prev-358cd8ae16b9.diff",
+      "why": "patch of the first strip build (JS 358cd8ae16b9) that the first-build B2 data was measured on",
+      "kind": "tool",
+      "for": "README.md Pixel identity (Chrome)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/cd-strip/patch-rb-08bedca68ac7.diff",
+      "why": "patch of strip-rb (08bedca68ac7), the step before strip-rw",
+      "kind": "tool",
+      "for": "README.md header",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/check/cd-strip/2026-10-03T00-15-54-504Z/check.json",
+      "why": "fix.mjs check of the first build: OK, morph reached, 0 errors, 0 4xx",
+      "kind": "result",
+      "for": "results.json"
+    },
+    {
+      "path": "out/check/cd-strip/2026-10-03T06-29-13-833Z/check.json",
+      "why": "fix.mjs check on strip-rw (06-29Z): OK; diff against the plain baseline top 0.19 %, middle 0, bottom 0.53 %",
+      "kind": "result",
+      "for": "README.md Pixel identity (Chrome); results.json"
+    },
+    {
+      "path": "out/p079",
+      "why": "P-079 phone block raw files (runs C1-C4 / V1-V4, warm-ups, attribution a1-a6, gate and hold logs, BLOCKLOG): the iPhone numbers for top frames, re-entry paint, clock backing, pin Layout, M sentinel",
+      "kind": "result",
+      "for": "README.md Phone block P-079; p079-score.json is scored from these"
+    },
+    {
+      "path": "out/swipecd",
+      "why": "C-035 finger swipe recordings, both tries, arms C and V, and the answer: > 50 ms frames C 7 / 6, V 21 / 9; the user picked the control (low confidence)",
+      "kind": "result",
+      "for": "README.md Finger swipe A/B"
+    }
+  ]
+}

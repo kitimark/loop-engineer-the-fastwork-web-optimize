@@ -1,0 +1,928 @@
+{
+  "schema": "fw-evidence/1",
+  "topic": "rest-script",
+  "capMB": 200,
+  "items": [
+    {
+      "path": "out/rest-script/probes",
+      "why": "the hashed copies of the registered probes and scorers (census, rot, simrot, tocard, analyse, startprobe, chain lists); the README's sha256 table names these files",
+      "kind": "tool",
+      "for": "README.md registration tables"
+    },
+    {
+      "path": "out/rest-script/ic",
+      "why": "v1 Chrome census 375/430/768 and the 768 card: the first scored census (v1 overlay), where the registered rule gave a MORE (rAF at near y 2500, 0/0 vs 3/4) that led to v2",
+      "kind": "result",
+      "for": "README.md Registration v2"
+    },
+    {
+      "path": "out/rest-script/ic2",
+      "why": "MISSING at write time (not found in the main checkout or any worktree): the post-registration Chrome census at 430 and 375 that the aggregation rule scores (README names ic2/)",
+      "kind": "result",
+      "for": "README.md aggregation rule",
+      "missing": true
+    },
+    {
+      "path": "out/rest-script/ic3",
+      "why": "v2 Chrome census 430/430r: the MORE at far y 2796 (rAF 0/0 vs 4/4, code calls 17/17 vs 20/20; main frames 34/34 vs 13/13) that led to v3",
+      "kind": "result",
+      "for": "README.md Registration v3"
+    },
+    {
+      "path": "out/rest-script/ic4",
+      "why": "v3 Chrome census 430/430r: no MORE; far y 2796 rAF and code calls SAME, main frames 31 to 13, layouts 4 to 0, paints 37/36 to 3/0",
+      "kind": "result",
+      "for": "README.md Registration v4"
+    },
+    {
+      "path": "out/rest-script/ic5",
+      "why": "v4 Chrome census 430/430r and cards: no MORE, far y 2796 main frames 31/32 to 17/17, layouts 4 to 0, paints 34/39 to 0/3; 430r all SAME; mgmt-ops-10 reproduced byte for byte",
+      "kind": "result",
+      "for": "README.md v4 result"
+    },
+    {
+      "path": "out/rest-script/startprobe",
+      "why": "start-frame table of the clock-animation forms (Chrome F0/F1, Simulator offsets, cost of 3 plays per 3 s) that chose the 1 ms clock in v4",
+      "kind": "result",
+      "for": "README.md Registration v4 table"
+    },
+    {
+      "path": "out/rest-script/ident3",
+      "why": "v3 Chrome 430 identity: analysis shows 6 of 27 slides matching neither F1 nor F2 (one frame ahead), smooth-40 differing by 427 px (max delta 5), A/A 0",
+      "kind": "result",
+      "for": "README.md Registration v4 (P-083 identity miss)",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/ident4",
+      "why": "v4 Chrome identity at 430, 375, 1024: 0 mismatches, 27 slides (F1 24, F2 2, both 1), all 20 frozen shots 0/0 at 430; the 1024 pixel view (10507/62) and the T2 scores rest on these records and shots",
+      "kind": "result",
+      "for": "README.md v4 result, P-089 scores",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/sim4",
+      "why": "v4 Simulator identity: records, replays, analysis-s4.json, and the rest shot miss (5131 device px, max channel delta 49, A/A 0/0; only the 4th avatar), with crop and diff pictures",
+      "kind": "frames",
+      "for": "README.md v4 result: parked",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/t2",
+      "why": "t2score outputs and unmasked re-scores of the existing v4 legs (Sim sim4, Chrome 1024/430/375) quoted in the P-089 score tables",
+      "kind": "result",
+      "for": "README.md P-089 registration scores"
+    },
+    {
+      "path": "out/rest-script/chainJ",
+      "why": "P-089 chain logs, per-leg coverage and unmasked JSON, and the hashes-after lists: the hold results, VOID rules (rc, PMSET), REST-QUIET and mask-dependent checks for every Sim and Chrome leg",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results and Chrome chain"
+    },
+    {
+      "path": "out/rest-script/p089/analysis-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/analysis-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/analysis-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/fix-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/fix-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/fix-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/parts-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/parts-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/parts-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/rep-fix-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/rep-fix-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/rep-fix-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/rep-st6-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/rep-st6-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/rep-st6-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/st6-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/st6-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/st6-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/t2-w1440.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/t2-w1440r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/t2-w430r.json",
+      "why": "P-089 Chrome 430r/1440/1440r records, replays, analysis, parts and t2 scores: 430r T2 on all five shots (shade max 4, 10325 px) = T3 under rule 2; 1440 legs coverage VOID",
+      "kind": "result",
+      "for": "README.md P-089 Chrome chain, first run"
+    },
+    {
+      "path": "out/rest-script/p089/fix-w1440-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fix-w1440r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fix-w430r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/rep-fix-w1440-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/rep-fix-w1440r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/rep-fix-w430r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/rep-st6-w1440-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/rep-st6-w1440r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/rep-st6-w430r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/st6-w1440-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/st6-w1440r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/st6-w430r-shots",
+      "why": "P-089 Chrome 430r/1440/1440r frozen shots behind the t2 scores and the 1440 intoview VOID (slot sizes still changing 0.3-0.5 s before capture)",
+      "kind": "frames",
+      "for": "README.md P-089 Chrome chain, first run",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-rm.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/pair-x-vs-q.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/pair-x-vs-s.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/parts-rm.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/parts.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-fix-rm.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-fix.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-rm.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/repq-fix.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/reps-fix.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-rm.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/t2-rm.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/t2-vs-q.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/t2.json",
+      "why": "P-089 Simulator fw-sim records, replays, t2/parts scores, F-200 pins and pair diffs (readings a, b, c all false), reduced-motion leg (T0/T1)",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-far-0-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-far-0.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-intoview-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-intoview.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-jump-0-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-jump-0.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-outin-20-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-outin-20.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-quiet-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-quiet.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-rest-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-shots/fix-sim-rest.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-far-0-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-far-0.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-intoview-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-intoview.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-jump-0-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-jump-0.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-outin-20-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-outin-20.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-quiet-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-quiet.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-rest-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-shots/replay-st6-st6-sim-rest.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-far-0-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-far-0.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-intoview-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-intoview.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-jump-0-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-jump-0.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-outin-20-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-outin-20.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-quiet-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-quiet.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-rest-cal.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-shots/st6-sim-rest.png",
+      "why": "fw-sim key frames behind the P-089 table: rest T2 and quiet T0 (the transient is gone at 2.5 s), worst counted label outin-20, largest shade jump-0; arms fix, st6 and the st6 replay (X) for the A/A",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/repq-fix-shots",
+      "why": "F-200 pin replays (st6 pinned optimizeQuality / optimizeSpeed) for readings a, b, c",
+      "kind": "frames",
+      "for": "README.md F-200 readings",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/reps-fix-shots",
+      "why": "F-200 pin replays (st6 pinned optimizeQuality / optimizeSpeed) for readings a, b, c",
+      "kind": "frames",
+      "for": "README.md F-200 readings",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/fix-rm-shots",
+      "why": "fw-sim reduced-motion shots (rest, quiet, jump-0, far-0, intoview): reduced motion exact, T0/T1 with max d 2",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator reduced-motion row",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/rep-st6-rm-shots",
+      "why": "fw-sim reduced-motion shots (rest, quiet, jump-0, far-0, intoview): reduced motion exact, T0/T1 with max d 2",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator reduced-motion row",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-sim/st6-rm-shots",
+      "why": "fw-sim reduced-motion shots (rest, quiet, jump-0, far-0, intoview): reduced motion exact, T0/T1 with max d 2",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator reduced-motion row",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix.json",
+      "why": "P-089 Simulator iPad desktop-width records, replays, t2 and parts: coverage 12/12 moving, rest and quiet T0, worst jump-100 edge 30 / 853 px / 213.25 CSS px, parts PASS",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/parts.json",
+      "why": "P-089 Simulator iPad desktop-width records, replays, t2 and parts: coverage 12/12 moving, rest and quiet T0, worst jump-100 edge 30 / 853 px / 213.25 CSS px, parts PASS",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-fix.json",
+      "why": "P-089 Simulator iPad desktop-width records, replays, t2 and parts: coverage 12/12 moving, rest and quiet T0, worst jump-100 edge 30 / 853 px / 213.25 CSS px, parts PASS",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6.json",
+      "why": "P-089 Simulator iPad desktop-width records, replays, t2 and parts: coverage 12/12 moving, rest and quiet T0, worst jump-100 edge 30 / 853 px / 213.25 CSS px, parts PASS",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6.json",
+      "why": "P-089 Simulator iPad desktop-width records, replays, t2 and parts: coverage 12/12 moving, rest and quiet T0, worst jump-100 edge 30 / 853 px / 213.25 CSS px, parts PASS",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/t2.json",
+      "why": "P-089 Simulator iPad desktop-width records, replays, t2 and parts: coverage 12/12 moving, rest and quiet T0, worst jump-100 edge 30 / 853 px / 213.25 CSS px, parts PASS",
+      "kind": "result",
+      "for": "README.md P-089 Simulator results"
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-far-0-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-far-0.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-intoview-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-intoview.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-jump-100-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-jump-100.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-quiet-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-quiet.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-rest-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/fix-shots/fix-sim-rest.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-far-0-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-far-0.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-intoview-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-intoview.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-jump-100-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-jump-100.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-quiet-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-quiet.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-rest-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/rep-st6-shots/replay-st6-st6-sim-rest.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-far-0-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-far-0.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-intoview-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-intoview.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-jump-100-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-jump-100.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-quiet-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-quiet.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-rest-cal.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/rest-script/p089/fw-ipad/st6-shots/st6-sim-rest.png",
+      "why": "fw-ipad key frames behind the table: rest and quiet T0, static T2 far-0 and intoview (45.75 CSS px), worst moving jump-100",
+      "kind": "frames",
+      "for": "README.md P-089 Simulator results table",
+      "fastworkDerived": true
+    }
+  ]
+}
