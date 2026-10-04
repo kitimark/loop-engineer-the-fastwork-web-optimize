@@ -6,15 +6,15 @@
 // exits with its parent), fake DOM. No real server on the network, no Chrome. Made-up address 192.0.2.44 (TEST-NET-1).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
-import { tempDir, git } from '../helpers.mjs';
+import { tempDir, git, request } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 import { checkMarkdown } from './md-cases.mjs';
 
 const FAKE_LAN = '192.0.2.44';
-let L, PH, P, fx, repo, fake;
+let L, PH, P, T, fx, repo;
 const blobs = {};
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
@@ -41,7 +41,6 @@ function commitPatch(topic, newText) {
   return blob;
 }
 
-const started = new Set();
 before(async () => {
   const home = tempDir('fw-phone-home-');
   fx = makeFixtureHome(home);
@@ -53,30 +52,16 @@ before(async () => {
   git(repo, 'commit', '-q', '-m', 'init');
   process.env.FW_MIRROR_HOME = home;
   process.env.FW_STATE_DIR = join(repo, '.git', 'fastwork-mirror');
-  delete process.env.FW_PHONE_SERVE_HOST;
   L = await import('../../tools/lib/live.mjs');
   PH = await import('../../tools/lib/live-phone.mjs');
+  T = await import('../../tools/lib/tryit.mjs');
   P = await import('../../tools/lib/proposal.mjs');
   blobs.b = commitPatch('demo', fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
   blobs.a = commitPatch('best', fx.prettyFiles[PAGE_JS] + '/* best build */\n');
-  // a fake serve.mjs: writes the --state file like the real one, answers /__mirror/info with its --root and --overlay,
-  // listens on 127.0.0.1 only, and exits when its parent (this test) is gone; with $FAKE_SERVE_PRE_I131 its info lacks
-  // the `cache` field, like a serve.mjs from before I-131
-  fake = join(tempDir('fw-phone-fake-'), 'fake-serve.mjs');
-  writeFileSync(fake, [
-    "import http from 'node:http'; import { writeFileSync, renameSync } from 'node:fs'; import { resolve } from 'node:path';",
-    'const a = process.argv.slice(2); const opt = (k) => { const i = a.indexOf(k); return i < 0 ? null : a[i + 1]; };',
-    "const root = resolve(process.env.FW_MIRROR_HOME, opt('--root')); const ov = opt('--overlay');",
-    "const s = http.createServer((q, r) => { r.setHeader('content-type', 'application/json'); r.end(JSON.stringify(q.url === '/__mirror/info' ? { root, overlays: ov ? [{ dir: ov, files: [] }] : [], ...(process.env.FAKE_SERVE_PRE_I131 ? {} : { cache: 'revalidate' }) } : { argv: a, pid: process.pid })); });",
-    "s.listen(0, '127.0.0.1', () => { const f = opt('--state'); writeFileSync(f + '.tmp', JSON.stringify({ url: 'http://localhost:' + s.address().port + '/', port: s.address().port, pid: process.pid, root, overlays: ov ? [ov] : [] })); renameSync(f + '.tmp', f); });",
-    'const ppid = process.ppid; setInterval(() => { try { process.kill(ppid, 0); } catch { process.exit(0); } }, 300);',
-  ].join('\n'));
 });
-after(() => { for (const pid of started) { try { process.kill(pid, 'SIGKILL'); } catch {} } });
 
 const liveB = () => ({ patch: 'fixes/demo/patch.diff', blob: blobs.b, base: 'site-pretty' });
 const liveAB = () => ({ ...liveB(), a: { patch: 'fixes/best/patch.diff', blob: blobs.a, base: 'site-pretty' } });
-const who = async (port) => (await fetch(`http://127.0.0.1:${port}/x`)).json();
 
 test('liveBuilds / buildKey / phoneLink / phoneCommand: one build per tree + patch; placeholders only; refused shapes', () => {
   assert.deepEqual(PH.liveBuilds(liveB()), { a: { base: 'site-pretty', blob: null }, b: { base: 'site-pretty', blob: blobs.b } });
@@ -92,99 +77,95 @@ test('liveBuilds / buildKey / phoneLink / phoneCommand: one build per tree + pat
   assert.equal(PH.phoneCommand('PR-017', 'land'), 'node tools/console.mjs proposal phone PR-017 --option land');
 });
 
-test('phoneStatus: down without a state file; up only when the pid lives and /__mirror/info names the same build; href resolved now or null', async () => {
+/** T-106: this process plays the Try-it host (127.0.0.1, the real mirror handler): host.json + status.json like runHost. */
+let host = null, hostTimer = null;
+function startHost() {
+  host = T.createTryitHost({ host: '127.0.0.1', mount: T.mountBuild, retryMs: 0, onStatus: (builds) => writeFileSync(T.statusFile(), JSON.stringify({ pid: process.pid, builds })) });
+  mkdirSync(T.tryitDir(), { recursive: true });
+  writeFileSync(T.hostFile(), JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+  host.poll();
+  hostTimer = setInterval(() => host.poll(), 30);
+}
+function stopHost() { clearInterval(hostTimer); host?.close(); host = null; rmSync(T.hostFile(), { force: true }); rmSync(T.statusFile(), { force: true }); }
+const here = async () => ({ pid: process.pid, started: false }); // the host is this process: nothing is spawned
+
+test('phoneStatus: down without a registry entry; registered but not served -> stopped + its link; up only when the running host listens and the entry is that build; href resolved now or null', async () => {
   const live = liveB();
   const lan = () => FAKE_LAN;
   assert.deepEqual(await PH.phoneStatus(live, { lan }), { wifi: true, a: { up: false }, b: { up: false } });
-  mkdirSync(PH.phoneDir(), { recursive: true });
   const b = PH.liveBuilds(live).b;
-  writeFileSync(PH.phoneStateFile(b), JSON.stringify({ port: 5321, pid: process.pid }));
-  const right = async () => ({ root: join(fx.home || '/x', 'site-pretty'), overlays: [{ dir: L.liveOverlayDir(blobs.b) }] });
-  assert.deepEqual((await PH.phoneStatus(live, { lan, probe: right })).b, { up: true, lan: 'http://lan:5321/', href: `http://${FAKE_LAN}:5321/` });
-  // the A side (plain baseline) has no state file: down; the B side with another overlay, another tree, or no answer: down
-  assert.deepEqual((await PH.phoneStatus(live, { lan, probe: right })).a, { up: false });
-  for (const probe of [async () => ({ root: '/x/site-pretty', overlays: [{ dir: L.liveOverlayDir(blobs.a) }] }), async () => ({ root: '/x/site', overlays: [{ dir: L.liveOverlayDir(blobs.b) }] }), async () => ({ root: '/x/site-pretty', overlays: [] }), async () => null]) {
-    assert.deepEqual((await PH.phoneStatus(live, { lan, probe })).b, { up: false });
-  }
-  // a dead pid is down whatever answers on the port
-  writeFileSync(PH.phoneStateFile(b), JSON.stringify({ port: 5321, pid: 2 ** 22 + 12345 }));
-  assert.deepEqual((await PH.phoneStatus(live, { lan, probe: right })).b, { up: false });
-  // no Wi-Fi address: the placeholder, href null, and a plain note
-  writeFileSync(PH.phoneStateFile(b), JSON.stringify({ port: 5321, pid: process.pid }));
-  const off = await PH.phoneStatus(live, { lan: () => { throw new Error('no LAN address'); }, probe: right });
-  assert.equal(off.wifi, false);
-  assert.deepEqual(off.b, { up: true, lan: 'http://lan:5321/', href: null });
-  assert.match(off.note, /no Wi-Fi address right now/);
-  assert.equal((await PH.phoneStatus(live, { lan: () => 'not-an-ip', probe: right })).b.href, null);
+  const { entry } = await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.b)], busy: async () => null });
+  assert.deepEqual((await PH.phoneStatus(live, { lan })).b, { up: false, stopped: true, lan: `http://lan:${entry.port}/` }, 'no host running');
+  startHost();
+  try {
+    await T.waitServed(entry.name, { timeoutMs: 3000 });
+    assert.deepEqual((await PH.phoneStatus(live, { lan })).b, { up: true, lan: `http://lan:${entry.port}/`, href: `http://${FAKE_LAN}:${entry.port}/` });
+    assert.deepEqual((await PH.phoneStatus(live, { lan })).a, { up: false }, 'the plain-baseline A is not registered');
+    assert.equal(host.status()[entry.name].mounted, false, 'a status check loads no files');
+    // the entry serving another overlay is not this build
+    await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.a)], busy: async () => null });
+    assert.deepEqual((await PH.phoneStatus(live, { lan })).b, { up: false });
+    await T.addBuild({ name: PH.buildKey(b), overlays: [L.buildLiveOverlay(blobs.b)], busy: async () => null });
+    // no Wi-Fi address: the placeholder, href null, and a plain note
+    await T.waitServed(entry.name, { timeoutMs: 3000 });
+    const off = await PH.phoneStatus(live, { lan: () => { throw new Error('no LAN address'); } });
+    assert.equal(off.wifi, false);
+    assert.deepEqual(off.b, { up: true, lan: `http://lan:${entry.port}/`, href: null });
+    assert.match(off.note, /no Wi-Fi address right now/);
+    assert.equal((await PH.phoneStatus(live, { lan: () => 'not-an-ip' })).b.href, null);
+  } finally { stopHost(); T.removeBuild(entry.name); }
 });
 
-test('startPhoneServers: detached serve.mjs per build, plain http on 0.0.0.0, --port fresh (I-131), no framing; reused; stop kills only its own; the registry holds no address', async () => {
-  for (const f of readdirSync(PH.phoneDir())) if (f.endsWith('.json')) writeFileSync(join(PH.phoneDir(), f), '{}'); // the previous test's fakes
-  const live = liveAB();
-  const r = await PH.startPhoneServers(live, { serveScript: fake });
-  for (const s of [r.a, r.b]) started.add(s.pid);
-  assert.equal(r.a.reused, false);
-  assert.equal(r.b.reused, false);
-  assert.match(r.a.lan, /^http:\/\/lan:\d+\/$/);
-  assert.notEqual(r.a.port, r.b.port);
-  const a = await who(r.a.port), b = await who(r.b.port);
-  const tailArgs = (argv) => argv.slice(argv.indexOf('--vendors=local'));
-  for (const x of [a, b]) {
-    assert.deepEqual(tailArgs(x.argv).slice(0, 6), ['--vendors=local', '--port', 'fresh', '--host', '0.0.0.0', '--quiet']);
-    assert.ok(!x.argv.includes('--https') && !x.argv.includes('--frame-ancestors'), x.argv.join(' '));
-  }
-  assert.equal(a.argv[a.argv.indexOf('--overlay') + 1], L.liveOverlayDir(blobs.a), 'A: the baseline + its own patch');
-  assert.equal(b.argv[b.argv.indexOf('--overlay') + 1], L.liveOverlayDir(blobs.b), 'B: the baseline + the proposal');
-  assert.ok(existsSync(join(L.liveOverlayDir(blobs.b), PAGE_JS.slice(1))), 'the overlay was built from the stored patch');
-  const st = await PH.phoneStatus(live, { lan: () => FAKE_LAN });
-  assert.deepEqual(st.b, { up: true, lan: r.b.lan, href: r.b.lan.replace('lan', FAKE_LAN) });
-  // reused, not restarted
-  const again = await PH.startPhoneServers(live, { serveScript: fake });
-  assert.deepEqual([again.a.pid, again.a.reused, again.b.pid, again.b.reused], [r.a.pid, true, r.b.pid, true]);
-  // a plain-baseline A for another proposal is its own build
-  const plain = await PH.startPhoneServers(liveB(), { serveScript: fake });
-  started.add(plain.a.pid);
-  assert.equal(plain.b.pid, r.b.pid, 'B is the same build: shared');
-  assert.equal((await who(plain.a.port)).argv.includes('--overlay'), false, 'A without a patch: the plain baseline');
-  const listed = await PH.listPhoneServers();
-  assert.deepEqual(listed.filter((x) => x.up).map((x) => x.key).sort(), ['site-pretty', `site-pretty+${blobs.a}`, `site-pretty+${blobs.b}`].sort());
-  // nothing in the registry names an address (Hard rule 12): ports, pids and paths only
-  for (const f of readdirSync(PH.phoneDir())) assert.doesNotMatch(readFileSync(join(PH.phoneDir(), f), 'utf8'), /\b(?:192\.0\.2\.44|192\.168\.|10\.\d+\.\d+\.\d+)/, f);
-  // stop: both builds of this entry go; the other proposal's plain A stays
-  const s = await PH.stopPhoneServers(live);
-  assert.deepEqual([s.a.stopped, s.b.stopped], [true, true]);
-  const after1 = await PH.phoneStatus(live, { lan: () => FAKE_LAN });
-  assert.deepEqual([after1.a, after1.b], [{ up: false }, { up: false }]);
-  assert.equal((await PH.phoneStatus(liveB(), { lan: () => FAKE_LAN })).a.up, true, 'another build is not touched');
-  assert.deepEqual(await PH.stopPhoneServers(live), { a: { stopped: false }, b: { stopped: false } }, 'stopping again: nothing to stop');
-  await PH.stopPhoneServers(liveB());
-  // a server that dies at start: a plain error with its stderr, no state file left
-  const bad = join(dirname(fake), 'bad-serve.mjs');
-  writeFileSync(bad, "console.error('BASELINE-MODIFIED: test'); process.exit(3);");
-  await assert.rejects(PH.startPhoneServers(liveB(), { serveScript: bad }), /page server for the plain site-pretty exited \(3\): BASELINE-MODIFIED: test/);
-  await assert.rejects(PH.startPhoneServers(liveB(), { serveScript: fake, host: '192.0.2.44' }), /0\.0\.0\.0 \(the Wi-Fi\) or 127\.0\.0\.1 \(tests\) only/);
-});
-
-test('startPhoneServers (I-131): a running server from before the fix (info without `cache`) is replaced, not reused', async () => {
-  for (const f of readdirSync(PH.phoneDir())) if (f.endsWith('.json')) writeFileSync(join(PH.phoneDir(), f), '{}');
-  process.env.FAKE_SERVE_PRE_I131 = '1';
-  let old;
-  try { old = await PH.startPhoneServers(liveB(), { serveScript: fake }); } finally { delete process.env.FAKE_SERVE_PRE_I131; }
-  for (const s of [old.a, old.b]) started.add(s.pid);
-  const st = await PH.phoneStatus(liveB(), { lan: () => FAKE_LAN });
-  assert.equal(st.b.up, true, 'it still serves the build: the page shows it up');
-  const now = await PH.startPhoneServers(liveB(), { serveScript: fake });
-  for (const s of [now.a, now.b]) started.add(s.pid);
-  assert.deepEqual([now.a.reused, now.b.reused], [false, false]);
-  assert.notEqual(now.b.pid, old.b.pid);
-  for (const pid of [old.a.pid, old.b.pid]) {
-    let alive = true;
-    for (let i = 0; i < 40 && alive; i++) { try { process.kill(pid, 0); await new Promise((r) => setTimeout(r, 50)); } catch { alive = false; } }
-    assert.equal(alive, false, `the pre-I-131 server ${pid} was stopped`);
-  }
-  const again = await PH.startPhoneServers(liveB(), { serveScript: fake });
-  assert.deepEqual([again.b.pid, again.b.reused], [now.b.pid, true], 'a post-I-131 server is reused as before');
-  await PH.stopPhoneServers(liveB());
+test('startPhoneServers (T-106): each build registered with the ONE Try-it host, own port, --vendors=local, no-store; reused; stop leaves a Start page; the registry holds no address', async () => {
+  startHost();
+  try {
+    const live = liveAB();
+    const r = await PH.startPhoneServers(live, { ensure: here });
+    assert.deepEqual([r.a.reused, r.b.reused, r.a.pid, r.b.pid], [false, false, process.pid, process.pid], 'one process serves both');
+    assert.match(r.a.lan, /^http:\/\/lan:\d+\/$/);
+    assert.notEqual(r.a.port, r.b.port);
+    const info = async (port) => JSON.parse((await request(`http://127.0.0.1:${port}/__mirror/info`)).text);
+    const ia = await info(r.a.port), ib = await info(r.b.port);
+    assert.deepEqual(ia.overlays.map((o) => o.dir), [L.liveOverlayDir(blobs.a)], 'A: the baseline + its own patch');
+    assert.deepEqual(ib.overlays.map((o) => o.dir), [L.liveOverlayDir(blobs.b)], 'B: the baseline + the proposal');
+    assert.deepEqual([ib.vendors, ib.https, ib.cache], ['local', false, 'no-store']);
+    const js = await request(`http://127.0.0.1:${r.b.port}${PAGE_JS}`);
+    assert.match(js.text, /PoC: demo/);
+    assert.equal(js.headers['cache-control'], 'no-store');
+    assert.ok(existsSync(join(L.liveOverlayDir(blobs.b), PAGE_JS.slice(1))), 'the overlay was built from the stored patch');
+    const st = await PH.phoneStatus(live, { lan: () => FAKE_LAN });
+    assert.deepEqual(st.b, { up: true, lan: r.b.lan, href: r.b.lan.replace('lan', FAKE_LAN) });
+    // reused, same ports
+    const again = await PH.startPhoneServers(live, { ensure: here });
+    assert.deepEqual([again.a.port, again.a.reused, again.b.port, again.b.reused], [r.a.port, true, r.b.port, true]);
+    // a plain-baseline A for another proposal is its own build; B is shared
+    const plain = await PH.startPhoneServers(liveB(), { ensure: here });
+    assert.equal(plain.b.port, r.b.port, 'B is the same build: shared');
+    assert.deepEqual((await info(plain.a.port)).overlays, [], 'A without a patch: the plain baseline');
+    const listed = await PH.listPhoneServers();
+    assert.deepEqual(listed.filter((x) => x.up).map((x) => x.key).sort(), ['site-pretty', `site-pretty+${blobs.a}`, `site-pretty+${blobs.b}`].sort());
+    for (const f of readdirSync(join(T.tryitDir(), 'builds'))) assert.doesNotMatch(readFileSync(join(T.tryitDir(), 'builds', f), 'utf8'), /\b(?:192\.0\.2\.44|192\.168\.|10\.\d+\.\d+\.\d+)/, f);
+    // stop: both builds of this entry; their ports answer with a Start page; the other proposal's plain A stays
+    const s = await PH.stopPhoneServers(live);
+    assert.deepEqual([s.a.stopped, s.b.stopped], [true, true]);
+    const after1 = await PH.phoneStatus(live, { lan: () => FAKE_LAN });
+    assert.deepEqual([after1.a, after1.b], [{ up: false, stopped: true, lan: r.a.lan }, { up: false, stopped: true, lan: r.b.lan }]);
+    host.poll(); // the host sees the registry change at its next poll (1 s in runHost)
+    const sp = await request(`http://127.0.0.1:${r.b.port}/`);
+    assert.equal(sp.status, 503);
+    assert.match(sp.text, />Start<\/button>/);
+    assert.equal((await PH.phoneStatus(liveB(), { lan: () => FAKE_LAN })).a.up, true, 'another build is not touched');
+    assert.deepEqual(await PH.stopPhoneServers(live), { a: { stopped: false }, b: { stopped: false } }, 'stopping again: nothing to stop');
+    assert.deepEqual((await PH.listPhoneServers()).filter((x) => x.stopped).map((x) => x.key).sort(), [`site-pretty+${blobs.a}`, `site-pretty+${blobs.b}`].sort());
+    // start again: the same ports serve again
+    const back = await PH.startPhoneServers(live, { ensure: here });
+    assert.deepEqual([back.a.port, back.b.port], [r.a.port, r.b.port]);
+    assert.equal((await request(`http://127.0.0.1:${r.b.port}${PAGE_JS}`)).status, 200);
+    for (const e of T.listBuilds()) T.removeBuild(e.name);
+  } finally { stopHost(); }
+  // no host and none can start: a plain error
+  await assert.rejects(PH.startPhoneServers(liveB(), { ensure: async () => { throw new Error('the Try-it host exited (3): BASELINE-MODIFIED: test'); } }), /Try-it host exited \(3\): BASELINE-MODIFIED: test/);
+  for (const e of T.listBuilds()) T.removeBuild(e.name);
 });
 
 // ---- the Proposals page ----------------------------------------------------------------------------------------
@@ -246,7 +227,7 @@ test('I-129 page (user T-091): talk messages render pipe tables, "- " bullets an
   }, { lan: (port) => `http://${FAKE_LAN}:${port}/` });
 });
 
-test('T-086 page: each Try-it side shows its phone link (Wi-Fi address now) with Copy; down -> "not on the Wi-Fi" and the start command; no address -> placeholder and a note', () => {
+test('T-086 page: each Try-it side shows its phone link (Wi-Fi address now) with Copy; down -> "not served now" and the start command (T-106: a Start button when the page can start them); no address -> placeholder and a note', async () => {
   const pg = page();
   const box = new pg.N('div');
   const labels = { a: 'A: original', b: 'B: proposal (Land it)' };
@@ -262,12 +243,38 @@ test('T-086 page: each Try-it side shows its phone link (Wi-Fi address now) with
   pg.drawPhone(down, { wifi: true, a: { up: true, lan: 'http://lan:5231/', href: `http://${FAKE_LAN}:5231/` }, b: { up: false }, start }, labels);
   assert.deepEqual(links(down).length, 1);
   assert.match(down.textContent, /B: proposal \(Land it\)not on the Wi-Fi now/);
-  assert.match(down.textContent, /B is not served on the Wi-Fi yet, so the iPhone can't open it\. To serve them, ask the lead to run this on the Mac/);
-  assert.equal(down.all().find((x) => x.tagName === 'code').textContent, start);
+  assert.match(down.textContent, /B is not served now\. Press Start to serve it on the Wi-Fi \(a few seconds\)\./);
+  assert.equal(down.all().find((x) => x.tagName === 'code').textContent, start, 'no start function: the command');
   const none = new pg.N('div');
-  pg.drawPhone(none, { wifi: true, a: { up: false }, b: { up: false }, start }, labels);
-  assert.match(none.textContent, /A and B are not served on the Wi-Fi yet, so the iPhone can't open them\./);
+  pg.drawPhone(none, { wifi: true, a: { up: false }, b: { up: false, stopped: true, lan: 'http://lan:5232/' }, start }, labels);
+  assert.match(none.textContent, /A and B are not served now\. Press Start to serve them on the Wi-Fi/);
+  assert.match(none.textContent, /B: proposal \(Land it\)not served now/);
   assert.equal(links(none).length, 0);
+  // T-106: with a start function, a Start button (no command); a click serves them and redraws with the answer
+  let clicks = 0;
+  const up = { wifi: true, a: { up: true, lan: 'http://lan:5231/', href: `http://${FAKE_LAN}:5231/` }, b: { up: true, lan: 'http://lan:5232/', href: `http://${FAKE_LAN}:5232/` }, start };
+  const withStart = { ...labels, start: () => { clicks++; return Promise.resolve(up); } };
+  const btn = new pg.N('div');
+  pg.drawPhone(btn, { wifi: true, a: { up: false }, b: { up: false }, start, state: 'proposed' }, withStart);
+  assert.equal(btn.all().filter((x) => x.tagName === 'code').length, 0);
+  const sb = btn.all().find((x) => x.tagName === 'button' && x.textContent === 'Start');
+  assert.ok(sb, 'a Start button');
+  assert.equal(clicks, 0, 'drawing starts nothing');
+  sb.listeners.click[0]();
+  assert.equal(sb.textContent, 'Starting…');
+  for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
+  assert.equal(clicks, 1);
+  assert.equal(links(btn).length, 2, 'redrawn with the served links');
+  // a decided proposal: archived, still startable; a withdrawn one: archived, no Start (the command only)
+  const arch = new pg.N('div');
+  pg.drawPhone(arch, { wifi: true, a: { up: false }, b: { up: false }, start, state: 'accepted' }, withStart);
+  assert.match(arch.textContent, /Archived: this proposal is decided, so its pages are not served now\. Press Start/);
+  assert.ok(arch.all().find((x) => x.tagName === 'button' && x.textContent === 'Start'));
+  const wd = new pg.N('div');
+  pg.drawPhone(wd, { wifi: true, a: { up: false }, b: { up: false }, start, state: 'withdrawn' }, withStart);
+  assert.match(wd.textContent, /Archived/);
+  assert.ok(!wd.all().find((x) => x.tagName === 'button' && x.textContent === 'Start'));
+  assert.equal(wd.all().find((x) => x.tagName === 'code').textContent, start);
   // up but no Wi-Fi address: the placeholder as text, no link, and the server's note
   const nowifi = new pg.N('div');
   pg.drawPhone(nowifi, { wifi: false, note: 'This Mac has no Wi-Fi address right now (is the Wi-Fi on?), so the iPhone cannot reach it.', a: { up: true, lan: 'http://lan:5231/', href: null }, b: { up: true, lan: 'http://lan:5232/', href: 'javascript:alert(1)' }, start }, labels);
@@ -291,5 +298,6 @@ test('T-086 page: the Try-it card asks GET /api/live/<id>/phone (with the option
   const card = pg.ids.tryit;
   assert.match(card.textContent, /The frames below run on this Mac only \(localhost\)/);
   assert.match(card.textContent, /On the iPhone \(same Wi-Fi as this Mac\)A: originalnot on the Wi-Fi nowB: proposal \(Land it\)http:\/\/192\.0\.2\.44:5232\/Copy/);
-  assert.equal(card.all().find((x) => x.tagName === 'code').textContent, start);
+  assert.ok(card.all().find((x) => x.tagName === 'button' && x.textContent === 'Start'), 'T-106: the card can start them');
+  assert.equal(pg.calls.filter((u) => u.includes('/phone/start')).length, 0, 'rendering starts nothing');
 });

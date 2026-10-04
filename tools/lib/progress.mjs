@@ -652,7 +652,7 @@ export const toTry = (v) => v.best !== true && (typeof v.landed === 'boolean' ? 
  * this Mac's Wi-Fi address now, null when there is none), port, running (true/false from `running`, null if not
  * probed), noLan}. `lan`: the resolver (lan.mjs resolveLanUrl; throws without an address).
  */
-export function versionsView(p, { lan = resolveLanUrl, running = new Map() } = {}) {
+export function versionsView(p, { lan = resolveLanUrl, running = new Map(), tryitPorts = new Set() } = {}) {
   if (!Array.isArray(p?.versions)) return [];
   const titles = new Map((Array.isArray(p.items) ? p.items : []).filter((it) => it && typeof it === 'object').map((it) => [it.id, it.title]));
   const vs = p.versions.filter((v) => v && typeof v === 'object');
@@ -665,11 +665,11 @@ export function versionsView(p, { lan = resolveLanUrl, running = new Map() } = {
     result: (Array.isArray(v.result) ? v.result : []).map((c) => ({ ...c })),
     cost: v.cost || null,
     hashes: v.hashes && typeof v.hashes === 'object' ? { ...v.hashes } : null,
-    tryIt: tryItView(v.tryIt, lan, running),
+    tryIt: tryItView(v.tryIt, lan, running, tryitPorts),
   }));
 }
 
-function tryItView(t, lan, running) {
+function tryItView(t, lan, running, tryitPorts = new Set()) {
   if (!t || typeof t !== 'object') return null;
   if (t.none !== undefined) return { none: t.none };
   const server = t.server || null; // the long-lived server's short name: a label next to the link
@@ -679,7 +679,9 @@ function tryItView(t, lan, running) {
     const r = lan(placeholder);
     if (!isLanPlaceholder(new URL(r).hostname)) url = r; // a resolver that hands the placeholder back did not resolve it
   } catch { url = null; }
-  return { placeholder, url, port: t.port, server, running: running.has(t.port) ? running.get(t.port) : null, noLan: url === null };
+  const up = running.has(t.port) ? running.get(t.port) : null;
+  // T-106: a port the Try-it host has registered can be started from the page when nothing answers there
+  return { placeholder, url, port: t.port, server, running: up, noLan: url === null, ...(up === false && tryitPorts.has(t.port) && { startable: true }) };
 }
 
 /** T-079: Map port -> whether something accepts a TCP connection on `host` now (each port once, all at a time). */
@@ -702,7 +704,7 @@ export async function probePorts(ports, { host = '127.0.0.1', timeoutMs = 300 } 
  */
 const FINISHED_ROW = new Set(['landed', 'done', 'dropped']); // status board states that no longer rank (T-112)
 
-export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists, lan = resolveLanUrl, versionPorts = new Map() } = {}) {
+export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists, lan = resolveLanUrl, versionPorts = new Map(), tryitPorts = new Set() } = {}) {
   const p = errors.length && !progress ? null : progress;
   const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
@@ -723,7 +725,7 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
     },
     goal: p?.goal || null,
     build: bestBuildView(p, { exists: writeups }), // I-061: today's best build (null without one)
-    versions: versionsView(p, { lan, running: versionPorts }), // T-079: the original page and every best build, oldest first
+    versions: versionsView(p, { lan, running: versionPorts, tryitPorts }), // T-079: the original page and every best build, oldest first
     complaints: (p?.complaints || []).map((c) => ({ ...c, areaLabel: AREAS[c.area] })),
     changes: [...(p?.changes || [])].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, CHANGES_SHOWN),
     live: {
@@ -765,7 +767,9 @@ export async function currentView({ now = Date.now() } = {}) {
   const ports = Array.isArray(data?.versions) ? data.versions.map((v) => v?.tryIt?.port) : [];
   let versionPorts = new Map();
   if (ports.length) try { versionPorts = await probePorts(ports); } catch (e) { live.errors.push(`try-it ports: ${e.message}`); }
-  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board, versionPorts });
+  let tryitPorts = new Set();
+  try { tryitPorts = new Set((await import('./tryit.mjs')).listBuilds().map((e) => e.port)); } catch (e) { live.errors.push(`try-it registry: ${e.message}`); }
+  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board, versionPorts, tryitPorts });
 }
 
 // ---- text --------------------------------------------------------------------------------------------

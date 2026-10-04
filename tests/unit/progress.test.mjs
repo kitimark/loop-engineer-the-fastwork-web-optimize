@@ -416,6 +416,12 @@ test('T-079 versionsView: oldest first, fixes by title, result vs the previous, 
     assert.deepEqual(off[0].tryIt, { placeholder: 'http://lan:5301/', url: null, port: 5301, server: 'baseline', running: null, noLan: true });
   }
   assert.deepEqual(P.versionsView(sample()), []);
+  // T-106: a stopped page whose port the Try-it host has registered can be started from the page; a running one or an
+  // unregistered port can't
+  const reg = P.versionsView(withVersions(), { lan: fakeLan, running: new Map([[5301, true], [5302, false]]), tryitPorts: new Set([5301, 5302]) });
+  assert.equal(reg[1].tryIt.startable, true);
+  assert.equal(reg[0].tryIt.startable, undefined, 'running: nothing to start');
+  assert.equal(v[1].tryIt.startable, undefined, 'not registered: no Start');
 });
 
 test('T-079 the best-build chip: only "best": true, at most one; none or several -> no chip; "to try" by landed:false or the verdict', () => {

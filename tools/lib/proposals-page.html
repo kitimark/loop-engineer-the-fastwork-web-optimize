@@ -664,14 +664,23 @@ function drawPhone(box, j, labels) {
       row.appendChild(el('span', { class: 'phdown', text: '(Wi-Fi address not available)' }));
     } else {
       down.push(s.toUpperCase());
-      row.appendChild(el('span', { class: 'phdown', text: 'not on the Wi-Fi now' }));
+      row.appendChild(el('span', { class: 'phdown', text: x && x.stopped ? 'not served now' : 'not on the Wi-Fi now' }));
     }
     box.appendChild(row);
   });
   if (j.note) box.appendChild(el('p', { class: 'hint', text: j.note }));
   if (down.length) {
-    box.appendChild(el('p', { class: 'hint', text: (down.length === 2 ? 'A and B are' : down[0] + ' is') + ' not served on the Wi-Fi yet, so the iPhone can\'t open ' + (down.length === 2 ? 'them' : 'it') + '. To serve them, ask the lead to run this on the Mac (they then show here within 30 seconds):' }));
-    if (typeof j.start === 'string') box.appendChild(el('code', { class: 'phcmd', text: j.start }));
+    // T-106: one click serves them (the Try-it host); a decided proposal's pages are archived, still startable
+    var archived = /^(accepted|rejected|withdrawn)$/.test(String(j.state || ''));
+    box.appendChild(el('p', { class: 'hint', text: (archived ? 'Archived: this proposal is decided, so its pages are not served now. ' : (down.length === 2 ? 'A and B are' : down[0] + ' is') + ' not served now. ') + 'Press Start to serve ' + (down.length === 2 ? 'them' : 'it') + ' on the Wi-Fi (a few seconds).' }));
+    if (labels.start && String(j.state || '') !== 'withdrawn') {
+      var st = el('button', { type: 'button', class: 'btn', text: 'Start' });
+      st.addEventListener('click', function () {
+        st.disabled = true; st.textContent = 'Starting…';
+        labels.start().then(function (r) { drawPhone(box, r, labels); }, function (e) { st.disabled = false; st.textContent = 'Start'; box.appendChild(el('p', { class: 'hint', text: 'Could not start: ' + e.message })); });
+      });
+      box.appendChild(st);
+    } else if (typeof j.start === 'string') box.appendChild(el('code', { class: 'phcmd', text: j.start }));
   } else if (j.wifi) {
     box.appendChild(el('p', { class: 'hint', text: 'Open them in Safari on an iPhone that is on the same Wi-Fi as this Mac: type the address, or press Copy and paste it on the iPhone (same Apple ID). Plain http, so no certificate warning. The address follows the Mac\'s Wi-Fi.' }));
   }
@@ -775,7 +784,8 @@ function renderTryIt(p) {
   // I-126 / user T-086: the same two pages on the iPhone, when `proposal phone` serves them on the Wi-Fi
   var phone = el('div', { class: 'tryphone', 'aria-label': 'On the iPhone' });
   card.appendChild(phone);
-  var phoneLabels = { a: aFrame, b: 'B: proposal' + (t.label ? ' (' + t.label + ')' : '') };
+  var phoneLabels = { a: aFrame, b: 'B: proposal' + (t.label ? ' (' + t.label + ')' : ''),
+    start: function () { return livePost('/api/live/' + id + '/phone/start', t.option ? { option: t.option } : {}); } };
   function loadPhone() {
     return fetch('/api/live/' + id + '/phone' + (t.option ? '?option=' + encodeURIComponent(t.option) : ''), { cache: 'no-store' })
       .then(function (r) { return r.json().then(function (j) { return r.ok ? j : { error: j.error || ('HTTP ' + r.status) }; }); })
