@@ -710,3 +710,12 @@ Conditions:
    Safari smoke; any WORSE or new cluster (threshold-sensitive included) -> no switch, v7 stays, no third block; the
    lead then asks fix owners which v8 parts can land on their own under the less-work rule.
 3. Order: right after the current Simulator gap, before P-105 H3-H6.
+
+## P-114 lead ruling on gate VOIDs (2026-10-04 17:1xZ, still before any counted P-114 run)
+
+H1 and its re-run were VOID at the opening thermal gate (Nominal 34.3 °C, then Fair 35.6-36.6 °C after the Simulator
+gap cooled the phone), before any counted item ran. A VOID decided by the opening gate, with no counted run recorded,
+does not use the hold's one re-run: no data was seen, so repeating it can't select on results. The runner warms the
+phone outside any hold (uncounted S runs on B, gate read after each, at most 7 rounds) and starts H1 as soon as a read
+passes; the one re-run allowance still applies to a hold that VOIDs after counted items ran. If 7 rounds don't reach
+Serious, the block waits for the lead.
