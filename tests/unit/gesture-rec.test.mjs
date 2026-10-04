@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../helpers.mjs';
-import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun, motionMetrics, motionTick, touchToScrollMs } from '../../tools/lib/gesture-rec.mjs';
+import { RECORDER_JS, READ_JS, STATE_JS, markJs, toolbarTransitions, pinReversals, overscroll, touchSequences, touchTime, touchmoveStats, momentumTau, frameBands, morphStats, summarizeRun, motionMetrics, motionTick, touchToScrollMs, countOnlySummary, countOnlyRun } from '../../tools/lib/gesture-rec.mjs';
 
 function fakeWindow() {
   let now = 1000;
@@ -306,4 +306,44 @@ test('summarizeRun: per-stroke motion (touchstart to the next touchstart), touch
   // not aligned: no per-stroke windows
   const un = summarizeRun([seg], [{ id: 's1', seg: 0, kin: kin('minjerk') }]);
   assert.deepEqual(pick(un.segments[0].perStroke[0]), [null, null, null, null, null, null, null]);
+});
+
+// I-184: sim.mjs gesture --count-only runs without a timing hold (a functional session, a --no-timing hold): no host
+// gate, so its record and its printed line carry counts only, never a timing number (no ms, no tau, no frame log)
+const TIMING_KEY = /Ms$|[a-z]S$|Hz$|^p\d+$|^gt\d+|^bands$|^motion$|^swings$|^touchStart$|^sync$|^startWall$|^max$/;
+function timingKeys(x, path = '') {
+  if (Array.isArray(x)) return x.flatMap((v, i) => timingKeys(v, `${path}[${i}]`));
+  if (!x || typeof x !== 'object') return [];
+  return Object.entries(x).flatMap(([k, v]) => [...(TIMING_KEY.test(k) || (k === 'frames' && Array.isArray(v)) ? [`${path}.${k}`] : []), ...timingKeys(v, `${path}.${k}`)]);
+}
+
+test('I-184 countOnlySummary / countOnlyRun: counts kept (frames, touchmoves, prevented, toolbar transitions, pin, overscroll, flings), every timing number dropped', () => {
+  const fr = [[0, 0, 5000, 775]];
+  const at = (t, y, h = 775) => fr.push([t, Math.round((t - fr[fr.length - 1][0]) * 10) / 10, y, h]);
+  at(20, 5000); at(40, 5100); at(90, 5250, 790); at(110, 5320, 815); at(130, 5240, 815); at(150, 5320, 815); at(200, 5230, 815); at(220, 5230, 815);
+  const touches = [[30, 's', 1, 1, 0, 5000, 700, 29], [35, 'm', 1, 1, 1, 5000, 690, 34], [60, 'm', 1, 1, 0, 5100, 650, 59], [140, 'e', 0, 0, 0, 5240, 300, 139]];
+  const seg = { docH: 6000, vh0: 775, href: 'http://127.0.0.1:5999/', frames: fr, touches, marks: [[25, 'go']], sync: { pageMs: 1 }, startWall: 2 };
+  const strokes = [{ id: 's1', seg: 0, kin: { profile: 'fling', dir: 'up', px: 300, liftoffPxPerS: 900 }, sentAt: 1, returnedAt: 2, httpMs: 1 }];
+  const full = summarizeRun([seg], strokes, { morph: [{ seg: 0, frames: [[0, 99, 5220, 1, ''], [1, 60, 5220, 1, 'm']] }] });
+  assert.ok(timingKeys(full).length > 10, 'the full summary has timing numbers (the test would prove nothing otherwise)');
+  const c = countOnlySummary(full);
+  assert.deepEqual(timingKeys(c), [], 'no timing number in the count-only summary');
+  assert.equal(c.countOnly, true);
+  assert.deepEqual([c.segments[0].frames, c.segments[0].touchSequences, c.segments[0].strokes, c.segments[0].aligned], [full.segments[0].frames, 1, 1, true]);
+  assert.deepEqual(c.touchmove, full.touchmove, 'touchmove counts and prevented ratios are counts');
+  assert.deepEqual([c.toolbar.transitions, c.segments[0].toolbar.transitions, c.segments[0].toolbar.levels], [full.toolbar.transitions, full.segments[0].toolbar.transitions.length, full.segments[0].toolbar.levels]);
+  assert.deepEqual([c.pin.reversals, c.pin.excursions, c.segments[0].pin.reversals], [full.pin.reversals, full.pin.excursions, full.segments[0].pin.reversals]);
+  assert.ok(full.pin.reversals > 0, 'the fixture has a pin fight to count');
+  assert.deepEqual(c.overscroll, full.overscroll);
+  assert.deepEqual(c.momentum, { flings: full.momentum.flings });
+  assert.deepEqual(c.morph, { frames: full.morph.frames }, 'morph: its frame count only');
+  const p = c.segments[0].perStroke[0], q = full.segments[0].perStroke[0];
+  assert.deepEqual([p.id, p.touchmoves, p.prevented, p.movingFrames, p.postReleaseTravelPx, p.firstMoveCancelable], [q.id, 2, 1, q.movingFrames, q.postReleaseTravelPx, 1]);
+  // the raw run: no frame log (t, dt per rAF) and no morph frames; counts of both stay; touches and marks (event logs) stay
+  const res = { segments: [seg], strokes, morph: [{ seg: 0, frames: [[0, 99]], summary: { p50: 1 } }], loops: 1, errors: [], aborted: null };
+  const r = countOnlyRun(res);
+  assert.deepEqual([r.segments[0].frames, r.segments[0].frameCount, r.segments[0].touches, r.segments[0].marks], [undefined, fr.length, touches, [[25, 'go']]]);
+  assert.deepEqual(r.morph, [{ seg: 0, frameCount: 1 }]);
+  assert.deepEqual(timingKeys(r.segments), []);
+  assert.equal(res.segments[0].frames, fr, 'the input is not changed');
 });

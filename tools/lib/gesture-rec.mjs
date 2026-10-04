@@ -341,6 +341,39 @@ function sumPin(pins) {
 }
 
 /**
+ * I-184: a count-only run (`sim.mjs gesture --count-only`) runs without a timing hold (a functional session or a
+ * --no-timing hold: no host gate), so it keeps counts and drops every timing number. countOnlySummary(summarizeRun(...))
+ * keeps per segment: href, frames (the count), toolbar levels / transitions (count) / aborted, overscroll (px), pin
+ * counts (no swings: they carry frame times), touchmove counts, touch sequences, strokes, aligned, and per stroke
+ * id, profile, dir, px, touchmoves, prevented, startY, pinTouching, pinAfterLift, movingFrames, postReleaseTravelPx,
+ * firstMoveCancelable; per run touchmove, toolbar.transitions, pin, overscroll, momentum.flings, morph.frames. Gone:
+ * motion (MWFI, gaps, stutter), frame bands (>34 / >50 counts are frame times), contact / lag / tau / ms of any kind.
+ */
+const COUNT_STROKE = ['id', 'profile', 'dir', 'px', 'touchmoves', 'prevented', 'startY', 'pinTouching', 'pinAfterLift', 'movingFrames', 'postReleaseTravelPx', 'firstMoveCancelable'];
+const pickKeys = (o, keys) => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k]]));
+const countPin = ({ swings, ...p }) => p;
+export function countOnlySummary(sum) {
+  return {
+    countOnly: true,
+    segments: sum.segments.map((s) => ({
+      href: s.href, frames: s.frames, toolbar: { levels: s.toolbar.levels, transitions: s.toolbar.transitions.length, aborted: s.toolbar.aborted }, overscroll: s.overscroll, pin: countPin(s.pin),
+      touchmove: s.touchmove, touchSequences: s.touchSequences, strokes: s.strokes, aligned: s.aligned, perStroke: s.perStroke.map((p) => pickKeys(p, COUNT_STROKE)),
+    })),
+    touchmove: sum.touchmove, toolbar: { transitions: sum.toolbar.transitions }, pin: sum.pin, overscroll: sum.overscroll,
+    momentum: { flings: sum.momentum.flings }, morph: sum.morph ? { frames: sum.morph.frames } : null,
+  };
+}
+/** I-184: the raw run of a count-only record: each segment's rAF frame log (t, dt) becomes frameCount, morph frames
+ *  their count; sync / startWall (clock alignment) go; touches and marks (event logs: the counts' source) stay. */
+export function countOnlyRun(res) {
+  return {
+    ...res,
+    segments: (res.segments || []).map(({ frames, sync, startWall, ...s }) => ({ ...s, frameCount: (frames || []).length })),
+    ...(res.morph ? { morph: res.morph.map((m) => ({ seg: m.seg, frameCount: (m.frames || []).length })) } : {}),
+  };
+}
+
+/**
  * Whole-run summary. `segments`: recorder buffers (one per page load); `strokes`: the runner's per-stroke
  * records in execution order, each with `seg` (segment index) and `kin` (compiled kinematics).
  * Motion metrics (motionMetrics) per stroke over its window, from its touchstart to the next stroke's (finger

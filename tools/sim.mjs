@@ -80,6 +80,15 @@
 //        iphone.mjs gesture on the Simulator: strokes to WDA-sim (start it first), page over the session's proxy
 //        -> out/sim/<owner>-gesture-<label>-<ts>.json, meta.device simulator + meta.sim. For mechanism checks (touch
 //        counts, prevented moves, dp per stroke); Simulator timing is never a verdict (F-084). --dry-run needs no session.
+//        Timed like record: refused in a functional session and in a --no-timing hold, unless
+//   node tools/sim.mjs gesture <script.json> --count-only [--label l] ...   (I-184) counts only, no timing number: runs in
+//        any session, so also in a functional one (shared slot of weight simulator) or a --no-timing hold (no host gate):
+//          node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner <o> -- \
+//            node tools/sim.mjs session --functional --owner <o> -- sh -c 'node tools/sim.mjs open <url> && node tools/sim.mjs gesture <s> --count-only'
+//        The record (meta.countOnly {incident, lock, note}) keeps no frame log (segments get frameCount), no morph frames
+//        and a counts-only summary (frames, touchmoves, prevented, toolbar transitions, pin, overscroll px, flings); it
+//        prints COUNT_ONLY {json} instead of the summary. Refuses --timeline and --morph-log. --inject loggers still
+//        run: report counts from them, never times. iphone.mjs gesture refuses --count-only.
 //   # WDA for the Simulator, unsigned (no Apple ID), built once in your own normal hold (minutes of CPU):
 //   node tools/lock.mjs run chrome-measure --owner <o> --max-seconds 600 -- node tools/sim.mjs wda build --owner <o>
 //   # debugging parts of `session` (boot: in your own normal hold; shutdown / proxy stop: always allowed)
@@ -103,7 +112,7 @@ const VALUED = ['--device', '--settle-ms', '--owner', '--out', '--label', '--sec
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const log = (s) => console.log(S.scrub(String(s)));
 const err = (s) => console.error(S.scrub(String(s)));
-const USAGE = 'usage: node tools/sim.mjs [--device fw-sim|fw-ipad|fw-ipad-a16|fw-ipad-mini] setup [--runtime r] | orient portrait|landscape | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] [--reduce-motion on|off] -- <cmd> | open <url> | reduce-motion | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
+const USAGE = 'usage: node tools/sim.mjs [--device fw-sim|fw-ipad|fw-ipad-a16|fw-ipad-mini] setup [--runtime r] | orient portrait|landscape | status | doctor [--fix] | background [--seconds 3] | session [--functional] --owner <o> [--window shown|hidden] [--reduce-motion on|off] -- <cmd> | open <url> | reduce-motion | fetched <part> [--log f] | safari-restart [--url U] [--via auto|wda|simctl] | gesture <script.json> [--count-only] [--dry-run] | scroll [--label l] | record [--seconds 25] | run --driver d ... | wda build --owner <o> | wda start | wda stop | boot --owner <o> | shutdown [--force | --warm-only] | proxy start --owner <o> | proxy stop  (header of tools/sim.mjs)';
 
 async function main() {
   // I-087: which Simulator: --device, else FW_SIM_DEVICE (a session's <cmd>), else (status / doctor / plain shutdown) the
@@ -205,16 +214,23 @@ async function main() {
   if (cmd === 'gesture') {
     // the phone's gesture runner (tools/lib/gesture-run.mjs) with the Simulator as its target: strokes to WDA-sim,
     // the page over the session's proxy; the session (inside your own normal hold) stands in for the iphone lease.
-    // Timed like record (it saves frame timing): refused in a functional session
+    // Timed like record (it saves frame timing): refused in a functional session and in a no-timing hold. I-184:
+    // --count-only saves and prints counts only (no frame log, no ms), so it also runs there (no host gate)
     const { gestureCmd } = await import('./lib/gesture-run.mjs');
     const { gestureTarget } = await import('./lib/sim-scroll.mjs');
     const dry = flag('dry-run');
-    const session = dry ? null : S.requireSession({ owner: opt('owner'), timed: true });
+    const countOnly = flag('count-only');
+    const hint = (e) => { throw new Error(countOnly || !/^refusing:/.test(e.message) ? e.message : `${e.message}\n(a gesture that needs counts only, no timing number, runs there as: node tools/sim.mjs gesture <script.json> --count-only (I-184))`); };
+    let session = null;
+    if (!dry) { try { session = S.requireSession({ owner: opt('owner'), timed: !countOnly }); } catch (e) { hint(e); } }
     if (session) S.scopeTabs(session); // only tabs on the server of this session's open (I-050)
-    const requireSession = () => S.requireSession({ owner: session.owner, timed: true });
-    const holdEndsAt = () => S.holdGate(undefined, undefined, { owner: session.owner }).endsAt ?? 0;
+    const requireSession = () => S.requireSession({ owner: session.owner, timed: !countOnly });
+    const holdEndsAt = () => S.holdGate(undefined, undefined, { owner: session.owner, functional: !!session.functional }).endsAt ?? 0;
+    const { status: lockStatus } = await import('./lib/lock.mjs');
+    const lockKind = () => (session.functional ? `functional session (${session.lock?.mode ?? '?'})` : lockStatus('chrome-measure').holder?.noTiming ? 'no-timing hold' : 'normal hold');
     return gestureCmd({ argv, arg, opt, flag, port: S.ports().tabs, requireLease: () => { requireSession(); return session.owner; },
-      target: dry ? null : gestureTarget(session, { requireSession, holdEndsAt }), usage: 'node tools/sim.mjs gesture <script.json> [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run] (inside a session)' });
+      countOnly: countOnly ? { incident: 'I-184', lock: dry ? null : lockKind(), note: 'counts only: run without a host gate, so no frame log and no timing number (never a timing verdict)' } : false,
+      target: dry ? null : gestureTarget(session, { requireSession, holdEndsAt }), usage: 'node tools/sim.mjs gesture <script.json> [--count-only] [--label l] [--variant v] [--param k=v]... [--morph-log <morph-log.mjs>] [--out file] [--dry-run] (inside a session)' });
   }
   if (cmd === 'reduce-motion') {
     // I-100: the Simulator's Reduce Motion setting and what the last open's page reports for prefers-reduced-motion;

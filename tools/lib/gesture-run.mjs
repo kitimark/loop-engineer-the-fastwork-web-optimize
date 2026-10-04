@@ -21,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { openTab, safariTab, sleep, TIMELINE_START, timelineSyncJs, findTimeStamp } from './wip.mjs';
 import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
-import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
+import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun, countOnlySummary, countOnlyRun } from './gesture-rec.mjs';
 import { status as wdaStatus, createSession, SAFARI, SESSION_SETTINGS } from './wda.mjs';
 import { status as lockStatus, phoneGuard, phoneMacRecord, parseHeld, staleReason } from './lock.mjs';
 import { REPO } from './paths.mjs';
@@ -520,9 +520,12 @@ export async function gestureCmd({ log = console.log, ...args }) {
   }
 }
 
-async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null, profileGate = null,
+async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null, profileGate = null, countOnly,
   usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--timeline <out.json>] [--out file] [--dry-run]' }) {
   if (!arg) throw new Error(`usage: ${usage}`);
+  // I-184: --count-only is the Simulator's (sim.mjs passes countOnly); it runs without a host gate, so nothing timed
+  if (flag('count-only') && countOnly === undefined) throw new Error('--count-only is for node tools/sim.mjs gesture only (I-184): the phone stamps its own frames and runs in its own hold (I-056)');
+  if (countOnly && ['timeline', 'morph-log'].some((k) => argv.some((a) => a === `--${k}` || a.startsWith(`--${k}=`)))) throw new Error(`--count-only refuses ${argv.some((a) => a.startsWith('--timeline')) ? '--timeline (a WebKit Timeline is timing)' : '--morph-log (its frames are timing)'}: a count-only run has no host gate, so it records no timing (I-184)`);
   const file = resolve(arg);
   const script = JSON.parse(readFileSync(file, 'utf8'));
   const prog = compileScript(script, { params: cliParams(argv) });
@@ -604,6 +607,18 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   if (res.inject) res.inject = JSON.parse(lanSafeText(JSON.stringify(res.inject))); // a logger's values may carry the page's href
   if (res.timeline) res.timeline = res.timeline.map((t) => ({ ...t, file: repoRel(t.file), errors: t.errors.map(saved) })); // I-079
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
+  if (countOnly) {
+    // I-184: counts only, in the record and on stdout (no frame log, no ms: never a timing number)
+    doc.meta.countOnly = countOnly;
+    doc.run = countOnlyRun(res);
+    doc.summary = countOnlySummary(doc.summary);
+    writeFileSync(out, JSON.stringify(doc));
+    const c = doc.summary;
+    log(`COUNT_ONLY ${JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, frames: c.segments.map((x) => x.frames), touchmove: c.touchmove, toolbar: c.toolbar, pin: (({ perMark, ...p }) => p)(c.pin), overscroll: c.overscroll, momentum: c.momentum, morph: c.morph, errors: res.errors })}`);
+    log(`saved ${out}`);
+    if (res.aborted) throw new Error(`gesture run aborted: ${res.aborted} (partial data saved in ${out})`);
+    return 0;
+  }
   writeFileSync(out, JSON.stringify(doc));
   await tg.saved?.(out); // I-186
   log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));

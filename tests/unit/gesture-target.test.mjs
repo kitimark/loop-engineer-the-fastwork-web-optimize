@@ -8,7 +8,7 @@ import { tempDir } from '../helpers.mjs';
 process.env.FW_STATE_DIR = tempDir('fw-gtarget-');
 process.env.FW_SIM_WDA_PORT = '8199';
 process.env.FW_LOCK_LOAD1 = '3.5'; // the phone guard records load1 (I-056) and a reader's join checks it: never the host's (I-057)
-const { settingsEcho, phoneTarget, TOOL_FILES } = await import('../../tools/lib/gesture-run.mjs');
+const { settingsEcho, phoneTarget, TOOL_FILES, gestureCmd } = await import('../../tools/lib/gesture-run.mjs');
 const { gestureTarget, SIM_TOOL_FILES } = await import('../../tools/lib/sim-scroll.mjs');
 
 test('settingsEcho: the values WDA applied for our keys, and how many it echoed; nothing else', () => {
@@ -112,4 +112,16 @@ test('I-186 phoneTarget.preflight with a profile gate: the guard first, then the
   const plain = phoneTarget({ owner: 'me' });
   assert.deepEqual(Object.keys(await plain.extra()), []);
   assert.equal(plain.saved('x.json'), null);
+});
+
+test('I-184 --count-only: the Simulator\'s only (iphone.mjs passes no countOnly: refused before the lease or the page); with it, --timeline and --morph-log refuse before anything runs', async () => {
+  const cli = (argv) => ({ argv, arg: argv[0], opt: (n) => { const i = argv.indexOf(`--${n}`); return i < 0 ? undefined : argv[i + 1]; }, flag: (n) => argv.includes(`--${n}`), log: () => {} });
+  let leased = 0;
+  const requireLease = () => { leased++; return 'me'; };
+  await assert.rejects(gestureCmd({ ...cli(['/nonexistent/s.json', '--count-only']), requireLease }), /--count-only is for node tools\/sim\.mjs gesture only \(I-184\)/);
+  const co = { incident: 'I-184', lock: 'no-timing hold', note: 'x' };
+  await assert.rejects(gestureCmd({ ...cli(['/nonexistent/s.json', '--count-only', '--timeline', 't.json']), requireLease, countOnly: co }), /--count-only refuses --timeline/);
+  await assert.rejects(gestureCmd({ ...cli(['/nonexistent/s.json', '--count-only', '--morph-log', 'm.mjs']), requireLease, countOnly: co }), /--count-only refuses --morph-log/);
+  assert.equal(leased, 0, 'refused before the lease or the session is checked');
+  await assert.rejects(gestureCmd({ ...cli(['/nonexistent/s.json']), requireLease }), /ENOENT/, 'without --count-only nothing changes (the script is read first)');
 });

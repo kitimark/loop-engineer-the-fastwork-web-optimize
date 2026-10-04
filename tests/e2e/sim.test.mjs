@@ -674,6 +674,50 @@ test('gesture inside a session: strokes to WDA-sim, the page over the session pr
   cleanedUp();
 });
 
+test('I-184: gesture --count-only runs in a functional shared slot and in a no-timing hold (no host gate), saving and printing counts only; plain gesture is still refused there (with the hint), --timeline / --morph-log refuse with --count-only', async () => {
+  const udid = setup();
+  const f = join(dir, 'script.json');
+  const S = (o) => ({ type: 'stroke', dir: 'up', px: 450, ms: 900, profile: 'minjerk', ...o });
+  writeFileSync(f, JSON.stringify({ name: 'sim-e2e', version: 1, screen: [430, 932], steps: [{ type: 'mark', name: 'go' }, S({}), { type: 'pause', ms: 300 }, S({ px: 300, ms: 300, profile: 'fling' })] }));
+  const e = { ...env, FW_LOCK_SHARED_JOIN_LOAD: '1000', FW_LOCK_SHARED_JOIN_BUSY: '100', FAKE_IWDP_TAB: 'webkit', FAKE_IWDP_TAB_ARGS: `--wda-port=${env.FW_SIM_WDA_PORT} --url=http://127.0.0.1:1/ --doc-height=2800`, FAKE_WDA_LOG: join(dir, 'wda.jsonl') };
+  assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
+  const g = (args, err) => `"${process.execPath}" "${SIM}" gesture "${f}" ${args} 2> "${join(dir, err)}"`;
+  const steps = (out) => ['sh', '-c', [g(`--label plain --out "${join(dir, 'plain.json')}"`, 'plain.err'), g(`--count-only --timeline "${join(dir, 'tl.json')}"`, 'tl.err'),
+    g(`--count-only --morph-log "${join(dir, 'ml.mjs')}"`, 'ml.err'), `"${process.execPath}" "${SIM}" gesture "${f}" --count-only --label co --out "${out}"`].join('; ')];
+  const check = (r, out, refusal) => {
+    assert.equal(r.code, 0, r.out);
+    noIds(r.out, udid);
+    assert.match(readFileSync(join(dir, 'plain.err'), 'utf8'), refusal);
+    assert.match(readFileSync(join(dir, 'plain.err'), 'utf8'), /sim\.mjs gesture <script\.json> --count-only \(I-184\)/, 'the refusal names the count-only path');
+    assert.ok(!existsSync(join(dir, 'plain.json')), 'the plain gesture never ran');
+    assert.match(readFileSync(join(dir, 'tl.err'), 'utf8'), /--count-only.*--timeline/);
+    assert.match(readFileSync(join(dir, 'ml.err'), 'utf8'), /--count-only.*--morph-log/);
+    const j = JSON.parse(readFileSync(out, 'utf8'));
+    assert.deepEqual([j.meta.kind, j.meta.device, j.meta.label, j.meta.countOnly?.incident, j.summary.countOnly], ['gesture', 'simulator', 'co', 'I-184', true]);
+    assert.equal(j.run.strokes.length, 2, 'both strokes ran');
+    assert.ok(j.run.segments[0].touches.length > 0, 'the page saw the touches');
+    assert.deepEqual([j.run.segments[0].frames, typeof j.run.segments[0].frameCount], [undefined, 'number'], 'no frame log, its count only');
+    assert.equal(j.summary.motion, undefined);
+    assert.equal(j.summary.segments[0].bands, undefined);
+    assert.equal(typeof j.summary.touchmove.total, 'number');
+    const line = r.stdout.match(/^COUNT_ONLY .*$/m)?.[0];
+    assert.ok(line, 'one COUNT_ONLY line');
+    // (the GESTURE line before it names the script's stroke inputs, e.g. "pressMs": parameters, not measurements)
+    assert.doesNotMatch(line, /"\w*(Ms|S|Hz)"|"motion"|"p\d+"|"gt\d+"/, 'the printed line carries no timing number');
+    cleanedUp();
+  };
+  // a functional session in a shared reader slot (no host gate)
+  let out = join(dir, 'co-shared.json');
+  let r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--shared', '--weight', 'simulator', '--max-seconds', '200', '--owner', 'me', '--', process.execPath, SIM, 'session', '--functional', '--owner', 'me', '--window', 'hidden', '--', ...steps(out)], { env: e, timeout: 150000 });
+  check(r, out, /refusing: this is a functional Simulator session.*takes no timing runs/s);
+  assert.deepEqual(JSON.parse(readFileSync(out, 'utf8')).meta.countOnly.lock, 'functional session (shared)');
+  // a normal session in a --no-timing hold (no host gate)
+  out = join(dir, 'co-nt.json');
+  r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--no-timing', '--max-seconds', '200', '--owner', 'me', '--', process.execPath, SIM, 'session', '--owner', 'me', '--window', 'hidden', '--', ...steps(out)], { env: e, timeout: 150000 });
+  check(r, out, /refusing: your chrome-measure hold is a no-timing hold/);
+  assert.deepEqual(JSON.parse(readFileSync(out, 'utf8')).meta.countOnly.lock, 'no-timing hold');
+});
+
 test('I-050: Safari restored an earlier session\'s tab (a dead server, never answers): gesture alone refuses (AMBIGUOUS, I-037); after open in the same session it picks only the open\'s host and never touches the stale tab; the next session refuses again', async () => {
   const udid = setup();
   const f = join(dir, 'script.json');
