@@ -72,6 +72,10 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-120 H3a (23:40-23:43Z) VOID (lead):** WDA was down and every gesture exited 1, yet hold.sh printed VALID.
+  - Rule for the result read: an item that exits non-zero or leaves no data is void. A G hold is valid only if every counted item exits 0. hold.sh's own VALID line is not enough: check each item's exit code and record file.
+  - iphone-runner re-runs H3a after `iphone.mjs wda check`. hold.sh stays as pinned (49797e76c299) for H3/H4.
+  - int-v8 adds the exit-code check to hold.sh in the H2' amendment. At its re-check, also confirm that hold.sh refuses VALID on any non-zero item exit or missing record, with a self-test case for it, and that the new hold.sh hash is in the re-signed pins.
 - 10-05 **P-120 H1: V M runs VOID; lead ruling on the M leg (not A).**
   - Cause (int-v8, confirmed in the records out/pv9/runs/pv9-m*.json summary.tweens): with rev 7c the panel is already open at the page end (m=1), so V's first tween is a close (C,O,C,O,C; 5 tweens). The scorer's EXPECT O1,C1,... voids both V runs. The C runs mC1 and mC4 count as sentinels only. Served hashes in the check logs match the pins.
   - Ops look before the ruling: first-frame dt by tween type. Open: C median 35.5 ms, V 37 ms. Close: C 28.5 ms, V 40 ms (38.5 ms without V's first, scroll-driven close). OBSERVED, 2 void runs, not evidence. Because of this look, dropping the M gates (int-v8's option A) would be choosing the test after the data.
