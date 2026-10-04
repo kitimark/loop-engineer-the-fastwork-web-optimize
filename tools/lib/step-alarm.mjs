@@ -42,9 +42,13 @@ export const stuckAddressees = (x, desk = null) => [...new Set([x.by, desk].filt
 /** The console thread for one stuck step: {title, text}. Ids, names and minutes only (Hard rule 12). */
 export function stuckThread(x, { desk = null, min = STUCK_STEP_MIN } = {}) {
   const title = `${x.id} part ${x.part} waits on ${x.by} for ${x.minutes} min`;
+  // I-140 (T-116, C-045): the user read this thread and asked "what's the problem?": the first line is for them, in
+  // plain words with what they can do; the runner's line names the exact ack, with the part's CURRENT attempt (C-045's
+  // runner kept acking the attempt from before its own redo, and every ack was refused as STALE-ATTEMPT).
   const L = [
+    `For you: you did nothing wrong. ${/^gated/.test(x.why) ? `The Start button of ${x.id} part ${x.part} stays grey until ${x.by} gets the phone ready` : `${x.id} part ${x.part} says "don't swipe yet" until ${x.by} starts its recording`}, and ${x.by} has not reacted for ${x.minutes} min; it has been told. If you don't want to wait, press "Skip / not now" on the step; it can be brought back later.`,
     `Step ${x.id} (by ${x.by}), part ${x.part}${x.attempt > 1 ? `, attempt ${x.attempt}` : ''}: ${x.why}. Nothing has changed on it since ${x.after} at ${hhmm(x.since)} (${x.minutes} min; the limit is ${min} min), so the user is looking at a step that waits on its runner.`,
-    `${x.by}: ack the part now (node tools/console.mjs ack ${x.id} --by ${x.by} --part ${x.part} --state loading|ready|recording --message "<what you do, ETA>"), or cancel the step. A wait armed after the user's Start over: re-arm it with --epoch (header of tools/console.mjs, I-123).`,
+    `${x.by}: ack the part now with its current attempt (node tools/console.mjs ack ${x.id} --by ${x.by} --part ${x.part} --attempt ${x.attempt} --state loading|ready|recording --message "<what you do, ETA>"), or cancel the step. Check the ack's exit code: a STALE-ATTEMPT refusal changes nothing (I-140). A wait armed after the user's Start over: re-arm it with --epoch (header of tools/console.mjs, I-123).`,
   ];
   if (desk && desk !== x.by) L.push(`Desk (${desk}): please make sure ${x.by} reacts.`);
   L.push('One message per stuck period; this thread closes by itself when the step moves on (tools/idle.mjs, I-123).');

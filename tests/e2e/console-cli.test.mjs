@@ -248,6 +248,49 @@ test('I-059 B Start over: the page\'s restart wakes the runner\'s waits (exit 5 
   assert.deepEqual((({ action, by, attempts }) => ({ action, by, attempts }))(JSON.parse(r2.stdout)), { action: 'redo', by: 'iphone-runner', attempts: [2] });
 });
 
+test('I-140 (C-045): redo prints REDO-ATTEMPT, a stale ack exits 1 with ONE STALE-ATTEMPT line, wait --until started on an unready gated part exits 6 NOT-READY', async () => {
+  const parts = JSON.stringify([{ label: 'Hero', gate: true }, { label: 'Footer', gate: true }]);
+  const id = postedId(cli('post', '--by', 'runner-x', '--kind', 'action', '--title', 'Gated check', '--parts', parts));
+  assert.equal(cli('ack', id, '--by', 'runner-x', '--part', '1', '--attempt', '1', '--state', 'ready').code, 0);
+  assert.equal((await click(id, 'start', { part: 1 })).status, 200);
+  assert.equal((await click(id, 'done', { part: 1 })).status, 200);
+  assert.equal(cli('ack', id, '--by', 'runner-x', '--part', '2', '--attempt', '1', '--state', 'ready').code, 0);
+  assert.equal((await click(id, 'start', { part: 2 })).status, 200);
+  const rd = cli('redo', id, '--by', 'runner-x', '--part', '2', '--message', 'read failed');
+  assert.equal(rd.code, 0, rd.out);
+  const m = rd.stdout.match(/^REDO-ATTEMPT (\{.*\})$/m);
+  assert.ok(m, rd.stdout);
+  assert.deepEqual(JSON.parse(m[1]), { id, part: 2, attempt: 2, attempts: [1, 2], epoch: 1 });
+  // the runner's old `attempt` variable: refused, exit 1, one line naming the attempt to use
+  const stale = cli('ack', id, '--by', 'runner-x', '--part', '2', '--attempt', '1', '--state', 'ready');
+  assert.equal(stale.code, 1, stale.out);
+  assert.equal(stale.stderr.trim().split('\n').length, 1, stale.stderr);
+  assert.match(stale.stderr, new RegExp(`^STALE-ATTEMPT ${id} part 2: current attempt 2; re-run with --attempt 2 \\(`));
+  // the wait that hung for 5 min in C-045: a hint at once on stderr, NOT-READY (exit 6) after the grace
+  const w = cli('wait', id, '--until', 'started', '--part', '2', '--timeout', '30', '--ready-grace', '1', '--quiet');
+  assert.equal(w.code, 6, w.out);
+  assert.match(w.stderr, new RegExp(`^HINT console ${id} part 2 started: part 2 attempt 2 is still 'waiting'.*--attempt 2; without a ready ack this wait ends NOT-READY \\(exit 6\\) after 1 s$`, 'm'));
+  const nr = w.stdout.match(new RegExp(`^NOT-READY console ${id} part 2 started: (\\{.*\\}) \\(after \\d+ s\\): ack ready first`, 'm'));
+  assert.ok(nr, w.stdout);
+  assert.deepEqual((({ part, attempt, state, epoch }) => ({ part, attempt, state, epoch }))(JSON.parse(nr[1])), { part: 2, attempt: 2, state: 'waiting', epoch: 1 });
+  const wj = cli('wait', id, '--until', 'started', '--part', '2', '--timeout', '30', '--ready-grace', '0', '--json', '--quiet');
+  assert.equal(wj.code, 6);
+  assert.equal(JSON.parse(wj.stdout).ack, `node tools/console.mjs ack ${id} --by runner-x --part 2 --state ready --attempt 2`);
+  // redo --json: the JSON alone; after the right ack the wait meets on the user's Start
+  assert.equal(cli('ack', id, '--by', 'runner-x', '--part', '2', '--attempt', '2', '--state', 'ready').code, 0);
+  const ws = cliAsync('wait', id, '--until', 'started', '--part', '2', '--timeout', '30', '--ready-grace', '0', '--quiet');
+  await sleep(400);
+  assert.equal((await click(id, 'start', { part: 2 })).status, 200);
+  const s = await ws;
+  assert.equal(s.code, 0, s.out);
+  assert.doesNotMatch(s.stderr, /HINT/);
+  const rj = cli('redo', id, '--by', 'runner-x', '--part', '2', '--json');
+  assert.equal(rj.code, 0, rj.out);
+  assert.equal(JSON.parse(rj.stdout).attempt, 3);
+  assert.equal(cli('wait', id, '--ready-grace', 'soon').code, 1, 'a bad --ready-grace is a usage error');
+  cli('cancel', id, '--by', 'runner-x');
+});
+
 test('I-084 post --topic: the page data names who gets the answer (to, topic), the click\'s reply too, show says it; a bad topic exits 1', async () => {
   const id = postedId(cli('post', '--by', 'fix-hero-exit-threaded', '--kind', 'question', '--title', 'Smoother now?', '--topic', 'hero-exit-threaded'));
   const view = (await req('/api/steps')).json.steps.find((s) => s.id === id);

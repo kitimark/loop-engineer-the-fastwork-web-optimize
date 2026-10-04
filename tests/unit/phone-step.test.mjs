@@ -180,3 +180,17 @@ test('I-123 f: posting a phone step needs the poster\'s iphone lease and no othe
   assert.equal(P.postRefusal({ step: step('iphone-runner'), by: 'iphone-runner', lease: L.status('iphone') }), null);
   assert.equal(existsSync(join(state, 'console')), true);
 });
+
+test('I-140 d: the stuck thread starts with a plain line for the user (what is going on, Skip / not now) and names the ack with the CURRENT attempt', async () => {
+  const SA = await import('../../tools/lib/step-alarm.mjs');
+  const base = { id: 'C-045', by: 'iphone-runner', part: 3, attempt: 2, minutes: 3, after: 'iphone-runner\'s redo', since: Date.parse('2026-10-04T12:44:40Z') };
+  const g = SA.stuckThread({ ...base, why: 'gated, waiting: Start stays off until iphone-runner acks ready' }, { desk: 'mgmt-ops-10' });
+  const lines = g.text.split('\n');
+  assert.match(lines[0], /^For you: you did nothing wrong\. The Start button of C-045 part 3 stays grey until iphone-runner gets the phone ready, and iphone-runner has not reacted for 3 min; it has been told\. If you don't want to wait, press "Skip \/ not now"/);
+  assert.match(g.text, /node tools\/console\.mjs ack C-045 --by iphone-runner --part 3 --attempt 2 --state loading\|ready\|recording/);
+  assert.match(g.text, /STALE-ATTEMPT refusal changes nothing \(I-140\)/);
+  assert.match(g.text, /^Desk \(mgmt-ops-10\): /m);
+  const r = SA.stuckThread({ ...base, attempt: 1, why: 'recorded, started: iphone-runner has not acked recording' });
+  assert.match(r.text.split('\n')[0], /C-045 part 3 says "don't swipe yet" until iphone-runner starts its recording/);
+  assert.doesNotMatch(r.text, /https?:|\.invalid|\d+\.\d+\.\d+\.\d+/, 'no URL or address (Hard rule 12)');
+});
