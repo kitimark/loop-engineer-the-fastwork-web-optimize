@@ -194,3 +194,13 @@ Committed at 10e19597. Hashes are sha256/12.
   - The carried diff inside V (scroll-cb-on-v8.diff 3abcd7008e61) still has the stale comment "(fwCheck: a cached
     box, no layout read)". It is left byte-identical on purpose, because rewording it would change V's pinned hash. A
     later V can fix it.
+
+## Lead signature (2026-10-04 21:0xZ, before any P-117 data): SIGNED, with conditions S1-S2
+
+The user asked why the iPhone sat free (T-159 #6/#7). The open items don't change any arm, so the phone part starts now, in
+parallel with them:
+- Fixed before data: B, C and V are pinned (V e8d8323f674b / f836404b3728); the scorer is pinned (23cfb35e5516, second read PASS).
+- fix-nav-morph's VA parity audit on V passes all 5 Chrome cases (0 lag frames, 0 mismatches; served VA eb2089b858ab).
+- **S1.** Scoring waits for the Simulator momentum case of that audit. If it fails, the block is VOID (V would be wrong), never re-scored.
+- **S2.** fix-scroll-cb's N2 re-count only reports what scroll-cb saves. It gates nothing in this block and can arrive later.
+- iphone-runner runs the holds as the ticket says; int-v8 starts the servers from out/nsc/snap and scores.
