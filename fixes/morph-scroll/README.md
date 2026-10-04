@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** proposal build, **rev 7c** (PR-018 rev 7, 2026-10-04), on the best build **v8** (which has morph-gpu rev 3).
+**Status:** proposal build, **rev 7c** (PR-018 rev 7, 2026-10-04), on the best build **v8** (which has morph-gpu rev 3). The user picked rev 7c in the blind finger A/B C-052 (42/42 vs 64/85); **accepted by the user** (PR-018 rev 7, 2026-10-04 20:12:50Z); land request with the D and F cards below ("Cards").
 Rev 7 answers the user's rev 6 review (fast short swipes with high acceleration were hard to open and close): the
 user's own swipes were captured on the phone (C-049), the misses traced (async scroll at lift-off, Safari's toolbar
 offset, a one-frame direction), and the settle now reads the finger's speed at lift-off; see "Rev 7". Rev 6 (decide at
@@ -98,6 +98,8 @@ The motion changes: the morph follows the finger instead of a 680 ms spring, and
 - Nearly all of the user's swipes are fast and short: touch <= 150 ms (50 of 51), finger speed at lift-off 1.4-4.4 px/ms.
 - Three causes (OBSERVED in the captures, cause of (b) UNRESOLVED): (a) at touchend the page has not moved yet: iOS
   scrolls asynchronously, and the page sees the flick 7-35 ms after the lift, so rev 6/7 decided on a page "at rest".
+  [Corrected after C-052, `finger-liftdelay.mjs`: that holds for only 23 of 166 fast swipes. In the rest the page
+  started 16-42 ms before the lift and rAF saw 1-2 moving frames, so the rAF speed was thin, not absent. See the claims table.]
   With Safari's bottom toolbar shown the ends sit 40 px off (p 0.95 open / 0.05 closed), and the position rule with the
   last direction sent a close flick from 0.95 back to open. (b) a close commit was knocked back while the toolbar moved,
   and the rest timer then decided anew from the position (open). (c) the flick's direction came from one frame's step.
@@ -134,6 +136,35 @@ cost (its rev 3 is in v8, so rev 7c gets it). Its interim on rev 7b (Simulator c
 Mpx per open): when is-morphing drops, the nav header's width/background transitions (CSS 11806) relayout and repaint
 the menu panel's composited child layers, although the panel's opacity is already 0. Its candidate (one CSS line, hide
 the panel while not morphing) is fix-morph-gpu's to check and land; PR-018 is rebuilt on it if it lands.
+
+**The user's finger on v8 (F, console step C-052, 2026-10-04 19:57-20:06Z; captures
+`out/morph-scroll/cap/C-052-p{1,2}-a{1,2}.json`; OBSERVED, a pattern, not timing).** Blind pair, page 1 = v8 + rev 7c
+(ms-428961bda278), page 2 = v8 + rev 7 (ms-be590dd3766d, the user's "v8 without any change" idea, T-146 #11). The user
+started over once, so there are two tries. Pick: **page 1 (rev 7c)**. Note: both lag on hard short swipes, page 2
+feels worse, "not sure if I'm biased" (asked for a catch-up thread).
+
+| build (v8) | try | swipes | reach the end they head for | turned back | stopped part open | fast (<= 150 ms) hit |
+|---|---|---|---|---|---|---|
+| rev 7c | 1 | 19 | 19 | 0 | 0 | 17/17 |
+| rev 7c | 2 | 23 | 23 | 0 | 0 | 21/21 |
+| rev 7 | 1 | 43 | 33 | 6 | 4 | 22/32 |
+| rev 7 | 2 | 42 | 31 | 6 | 5 | 30/41 |
+
+- Try 2's flicks were harder (touch 63-98 ms, lift speed 3-4.5 px/ms) and rev 7c still hit every one.
+- Frames (`finger-frames.mjs`, `finger-lift.mjs` on the captures; moving frames > 34 ms): mostly 100-300 ms after the lift, i.e.
+  while the settle scroll opens or closes the panel (try 2: rev 7c 22 of 30, rev 7 45 of 113); plain scroll far fewer.
+  That is the morph repaint (F-241, fix-morph-gpu). Rev 7 has more slow frames, which fits its turn-backs and longer
+  glides (more frames spent moving the panel).
+- Try 2 was slower on both pages, also with the page still (idle frames > 20 ms: ~1 % in try 1, 6-10 % in try 2;
+  phone 37.3 °C right after; Mac load1 lower than in try 1). OBSERVED, cause unknown. Page 2 always came second, so the
+  lag feel may lean against page 2; the hit counts do not depend on it.
+
+**Chrome mechanism check on rev 7c** (`settle-chrome.mjs --flicks`, `out/morph-scroll/r7c-v8-chrome-check.log`): all
+cases OK but one: "open from 0.05, small finger flick, page moves only after lift" settles closed. Its close twin
+passes only because the emulated glide carries it. UNRESOLVED: the harness's CDP round trips put > 50 ms between the
+150 ms jump and the first 8 px move, so the finger speed is likely unknown at lift (`__msFl` 0) and the position rule
+decides (p 0.05, last move closing, so closed). The decisive check is to log `__msFv/__msFn/__msFl` at touchend in a debug build.
+The phone does not show it: all 21 of the user's opens on rev 7c hit (most from the closed rest at p -0.05).
 
 **Also seen once in each build (OBSERVED, cause unknown):** a swipe up out of the extra screen glided to p -0.88, then
 the page scrolled back to the open end with no finger down. There is no y scroll-snap in the CSS.
@@ -375,6 +406,53 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
   which the end of the scroll range explains as well. Whether WebKit snaps after `scrollTo` at all: UNRESOLVED, and it
   does not matter for the finger case. Decisive check: a G (WDA gesture) or F run that ends a swipe at p 0.1 and 0.9.
 
+## Cards (rev 7c land request, 2026-10-04 ~20:30Z)
+
+This is a motion change the user accepted (PR-018 rev 7, 20:12:50Z), not a slow-frame fix: the D card attributes the
+user's misses on fast short swipes (the rev 6 review), and the gate is F (the user's finger) plus G (robot finger).
+
+```
+ATTRIBUTION morph-scroll rev 7c · fast short swipes at the end miss the end they head for · verdict LOCATED (lead decides)
+1 pipeline stage: script (the settle decision in __msSettle / __msTick, then a smooth scrollTo), input (touch timing)
+  logger y source: rAF-only frame log + passive touch listeners (tools/lib/gesture-rec.mjs RECORDER_JS)
+2 code: overlay nodes/2.DyWL8TcE.js __msSettle (13987-14013) and __msTouchEv (14015-14041): the decision at lift used
+  only rAF-measured page speed and position, and a commit could be re-decided by the rest timer
+3 ablations (same base v8 = msbase-3e3e94cb6e9f, same blind pair, same user / same robot profile):
+  | arm | removes | role | mechanism check | result |
+  | rev 7 on v8 (ms-be590dd3766d) | nothing (control) | control | n/a | F: 64/85 hit, 12 back, 9 mid; G: 24/24, 4 reversals |
+  | rev 7c (ms-428961bda278) | decision from rAF only; re-decision of a commit | positive | touchmove speed __msFv read (passive); kept commit __msWant | F: 42/42, 0 back, 0 mid; G f8b: 12/12, 0 reversals |
+  | rev 7b (ms-ba256c2a48f8) | same as 7c but "reached" = exactly at the end | negative sibling | same code minus one line | G f8a: 24/24 but every close (12) stepped back 40 px, 0.85 s |
+  axis: time since touchend (the decision moment) · decoupling: Chrome --flicks cases "page moves only after lift"
+  and "knocked back at +150 ms" move the page's motion apart from the finger's (r7c-v8-chrome-check.log: all OK but one,
+  UNRESOLVED harness case, see "Rev 7")
+  per-cause split NOT separated: rev 7's misses come in at least two modes (try 1: turn-backs without overshoot; try 2:
+  5 of 6 overshoot to p -0.5 and return to open, cause UNRESOLVED); rev 7c removes both in the data, by which line is
+  not shown arm by arm. Hence LOCATED, not NAMED.
+4 device class: touch-only → gate: G/F (done: G f8a/f8b, F C-052 blind, user accepted)
+5 platform claims relied on:
+  | claim | status | reference / check | what falls if wrong |
+  | iOS starts scrolling the page late in a fast short swipe, so rAF sees 0-2 moving frames before the lift | OBSERVED (WEAKENED from "not at all", table below) | C-052 + C-049 captures, finger-liftdelay.mjs | why rev 7 missed; not rev 7c's result (rev 7c reads the finger, which needs no such claim) |
+  | Safari's toolbar shifts the ends by 40 px | OBSERVED | C-049, G f8a innerHeight 775/815 | why rev 7b stepped back; rev 7c's ">= end" rule holds either way |
+  | passive touchmove events arrive during a native scroll on iOS Safari | OBSERVED (every capture logs them) | captures | rev 7c's finger read |
+6 lead: <pending>
+```
+
+```
+BUILD ms-428961bda278 (rev 7c) on base v8 (fixes/v8-best/patch.diff sha256 7df5f08e…6b9; msbase-3e3e94cb6e9f)
+overlay snapshot: out/snapshots/ms-428961bda278 (build.mjs, base v8)
+served hashes: _app/immutable/nodes/2.DyWL8TcE.js sha256 428961bda2789f8f32d6ca9dae81b28b7e7e5f2571714ce1469d598da699262b
+               _app/immutable/assets/2.gBuqKVzi.css sha256 659b02f7169dd0a3a36678cff548e26d208aa12ddd945a42741838160d4907b1
+patch.diff (baseline b1789284481295-4ad4a84a → v8 + rev 7c) sha256 585f959145b3…0a9d; delta.diff (v8 → rev 7c) sha256 81ac7e1ee500…8333
+parity: still frames as rev 2 (T3 on #platform in Safari, see "Pixel tiers"; revs 4-7 change motion only)
+a11y diff: none since rev 2 (panel never inert while open; Chrome gate checks, "Checks")
+mechanism delta: no non-passive touch listener under the phone gate; passive touchstart/move/end/cancel added
+debug hooks: none added by rev 7c (delta.diff); patch.diff carries v8's own window.__fwMorphDrive (fixes/v8-best/patch.diff);
+  window.__fwMorphSet only in the msbasehook control
+prediction: none (motion change; timing deferred, memory "defer timing")
+```
+
+V: the fix-reviewer's report (the lead spawns it).
+
 ## Platform claims and their status
 
 | claim | status |
@@ -389,7 +467,8 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
 | The scroll engine calls `L` every frame during a finger scroll on iOS | UNRESOLVED: decisive: a G run logging p per rAF |
 | Touch scroll is never blocked under the gate (no non-passive listener) | by the code (N() returns at once under the gate); OBSERVED in Chrome only |
 | iOS momentum carries the page about v x 500 ms after lift-off | OBSERVED on G (rev 4 records: 340-640 ms); the 0.998/ms rate is UIScrollView's documented normal deceleration; that WebKit page scrolling uses it is UNRESOLVED |
-| At touchend after a fast short flick the page has not scrolled yet (iOS async scrolling; the page sees it 7-35 ms later) | OBSERVED (C-049 captures), in our setup; no reference checked yet (UNRESOLVED as a platform fact) |
+| At touchend after a fast short flick the page has not scrolled yet (iOS async scrolling; the page sees it 7-35 ms later) | **WEAKENED by our own data** (C-052 + C-049, `finger-liftdelay.mjs`, 2026-10-04): in 143 of 166 fast swipes a rAF frame saw the page move before the lift; by touchend the page had scrolled a median 0.59-0.71 of the finger's travel, starting 16-42 ms (median) before the lift. What stands: in 23 of 166 no rAF frame saw motion before the lift, and the rAF speed at lift rests on 1-2 frames in most of the rest. OBSERVED, in our setup |
+| A fast close on rev 7 can overshoot out of the extra screen (p -0.5) and the page then scrolls back to the open end with no finger down | OBSERVED (C-052 try 2: 5 of rev 7's 6 turn-backs; none on rev 7c), cause UNRESOLVED; decisive: a debug build logging every `scrollTo` caller during such a return |
 | Safari's bottom toolbar moves the ends by 40 px (innerHeight 775 / 815), p 0.95 / 0.05 | OBSERVED (C-049, G f8a: innerHeight 775 shown, 815 hidden) |
 | A close commit was knocked back while the toolbar moved | OBSERVED once in C-049, cause UNRESOLVED; decisive: an F capture logging scrollY and innerHeight per frame around the commit |
 | A swipe out of the extra screen can glide away and come back to open with no finger down | OBSERVED once per build, cause unknown |
@@ -407,8 +486,9 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
 ## Gain
 
 Rev 7c: the robot's fast short flicks at the end reach the end they head for in 12/12, rest 0.32-0.34 s, no reversal
-(rev 7b: closes 0.85 s with a 40 px back-step; rev 7 on v8: 24/24 but 4 reversals). The user's finger result (blind A/B,
-v8 + rev 7 vs v8 + rev 7c) is pending. Smoothness: not changed by rev 7 (the paint cost is morph-gpu's).
+(rev 7b: closes 0.85 s with a 40 px back-step; rev 7 on v8: 24/24 but 4 reversals). The user's own fast short swipes
+(blind A/B C-052, F driver): rev 7c 42/42 reach the end aimed for, v8 + rev 7 64/85 (12 turned back, 9 stopped part
+open); the user picked rev 7c. Smoothness: not changed by rev 7 (the paint cost is morph-gpu's).
 Rev 6: lift-off to rest at open or closed, 0.31-0.35 s for every swipe (rev 4: 1.3-2.8 s after a swipe that lifts while
 moving); glide mid-page equal to v7 (see "Checks, Rev 6"; G driver, not a timed block). Rev 4 momentum: see "Checks, Rev 4". Smoothness gain: not measured. What the change removes on phones: the non-passive touchmove (cancelled touch moves), the per-frame
 `scrollTo` pin, and the spring's rAF loop. The finger now scrolls the page throughout. Any smoothness or perception
@@ -444,4 +524,4 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
 ## Files
 
 `build.mjs` (snapshots + delta), `ms.css` (the CSS block), `delta.diff`, `prepnow.diff` (rev 1 only; copy of morph-gpu a02f2b97 rev2/prepnow.diff),
-`patch.diff`, `frames.mjs` (Chrome frames), `simcheck.mjs` / `simk0.mjs` / `simcheck.sh` (Simulator), `settle-checks.sh` + `settle-sim.mjs` + `settle-chrome.mjs` (rev 4 mechanism checks), `g-momentum-v1.json` + `g-momentum-run.sh` + `g-momentum-analyze.mjs` (rev 4 G proof), `g-slowswipe-v1.json` + `g-slow-run.sh` (rev 6 G proof, parts slow / mom / c / d; rev 7 parts fast1-3, f8a-c, f8r), `g-fastshort-v1.json` (rev 7 fast short flicks), `finger-capture.mjs` + `finger-analyze.mjs` (the user's own swipes, rev 7), `g-tail.mjs` (momentum tail), `g-horizon.mjs` (momentum distance per lift speed), `gpu-cross-sim.mjs` (morph-gpu cap on top, user T-131), `proposal.json`.
+`patch.diff`, `frames.mjs` (Chrome frames), `simcheck.mjs` / `simk0.mjs` / `simcheck.sh` (Simulator), `settle-checks.sh` + `settle-sim.mjs` + `settle-chrome.mjs` (rev 4 mechanism checks), `g-momentum-v1.json` + `g-momentum-run.sh` + `g-momentum-analyze.mjs` (rev 4 G proof), `g-slowswipe-v1.json` + `g-slow-run.sh` (rev 6 G proof, parts slow / mom / c / d; rev 7 parts fast1-3, f8a-c, f8r), `g-fastshort-v1.json` (rev 7 fast short flicks), `finger-capture.mjs` + `finger-analyze.mjs` + `finger-frames.mjs` + `finger-lift.mjs` + `finger-liftdelay.mjs` (the user's own swipes and their slow frames, rev 7), `g-tail.mjs` (momentum tail), `g-horizon.mjs` (momentum distance per lift speed), `gpu-cross-sim.mjs` (morph-gpu cap on top, user T-131), `proposal.json`.

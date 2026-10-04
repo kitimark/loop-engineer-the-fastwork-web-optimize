@@ -4,7 +4,7 @@
   "area": "end",
   "topic": "morph-scroll",
   "problem": "At the end of the page, on a phone, the page takes over your scroll: once you reach the bottom, it cancels your finger's moves, pins the page in place every frame, and plays a 680 ms spring that grows the small nav pill into the dark panel (the 'morph'). Your finger stops scrolling the page for that moment.",
-  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put while that screen scrolls in, and the panel opens exactly as far as that screen has scrolled in, so it follows your finger. When you let go part open, it glides to open or closed in about a third of a second (rev 6).\n\nRev 7 answers your rev 6 review (fast short swipes were hard to open and close):\n(1) I recorded your own swipes on the phone (the two-page test): almost all were under 0.15 s, and only 18 of 51 ended where you aimed. Three causes: when your finger lifts, the iPhone has not moved the page yet (it scrolls on its own a few ms later), so the old rule saw a page at rest and could send a close back to open; Safari's bottom bar shifts the ends by 40 px; and the direction came from a single frame.\n(2) Now the page reads your finger's speed while it moves. A finger still moving when it lifts decides the direction, and the page keeps that decision for 1.5 s even if the bottom bar moves the page.\n(3) Built on v8 (the current best build), which already has the GPU team's repaint fix. You asked whether v8 alone fixes it: the robot finger reaches the end in every case on both, so your finger test decides (below).\n\nBuilds: A = v8 (the best build); B = v8 + rev 7c (file versions in the fix's README).",
+  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put while that screen scrolls in, and the panel opens exactly as far as that screen has scrolled in, so it follows your finger. When you let go part open, it glides to open or closed in about a third of a second (rev 6).\n\nRev 7 answers your rev 6 review (fast short swipes were hard to open and close):\n(1) I recorded your own swipes on the phone (the two-page test): almost all were under 0.15 s, and only 18 of 51 ended where you aimed. Three causes: when your finger lifts, the iPhone has not moved the page yet (it scrolls on its own a few ms later), so the old rule saw a page at rest and could send a close back to open; Safari's bottom bar shifts the ends by 40 px; and the direction came from a single frame.\n(2) Now the page reads your finger's speed while it moves. A finger still moving when it lifts decides the direction, and the page keeps that decision for 1.5 s even if the bottom bar moves the page.\n(3) Built on v8 (the current best build), which already has the GPU team's repaint fix. You asked whether v8 alone fixes it: in your blind two-page test on v8 you picked rev 7c, and your recorded swipes agree: rev 7c reached the end you aimed for in 42 of 42 swipes, v8 with rev 7 alone in 64 of 85 (12 turned back, 9 stopped part open).\n\nBuilds: A = v8 (the best build); B = v8 + rev 7c (file versions in the fix's README).",
   "looksSame": "No. The motion is new: the panel follows your finger instead of a fixed spring, and when you let go part open it glides to open or closed in about a third of a second. Still frames at the same opening match the base in the iOS Simulator while the panel covers the last section (only the running countdown differs, in base vs base too). Where the last section shows, Safari draws its text about 1 device pixel higher (T3, below). In Chrome only the EN language label differs. The pictures are from rev 2's build on v7: revs 4-7 change only motion (no snapping, the settle), not still frames.",
   "visualDiff": [
     "Motion: the panel follows your scroll position, not a 680 ms spring. Scroll halfway and it is halfway open.",
@@ -36,11 +36,11 @@
     },
     {
       "what": "Your own fast short swipes hitting the end",
-      "before": "8 of 15 (rev 7 on v7)",
-      "after": "pending: your finger test",
-      "better": "same",
+      "before": "64 of 85 (rev 7 on v8)",
+      "after": "42 of 42",
+      "better": "better",
       "tag": "OBSERVED",
-      "how": "Your two-page test on rev 7 vs rev 6d: rev 7 8 of 15, rev 6d 10 of 36. The v8 test (rev 7 vs rev 7c) comes next."
+      "how": "Your blind two-page test on v8; you picked rev 7c.\n- Done twice (you started over once); swipes counted from the page's own scroll record.\n- Rev 7 on v8: 12 turned back, 9 stopped part open. Rev 7c: none."
     },
     {
       "what": "Glide after a flick mid-page, up / down",
@@ -59,7 +59,7 @@
       "how": "No non-passive listener under the phone gate."
     }
   ],
-  "risk": "A motion change: you decide whether the end-of-page panel should follow the finger and settle by itself.\n- Rev 7 adds a passive finger-speed reader at the end of the page; it never blocks scrolling.\n- Still a bit laggy: in your recordings 12-22 % of frames in the menu area took over 20 ms (plain scroll 6-7 %). That is the panel's repaint; the GPU team's fix is in v8, and they are tracing the closing frame on this build. Not timed on the phone.\n- Seen once per build: a swipe up out of the end glided away and came back to open by itself (cause unknown).\n- In Safari the last section is drawn 1 device px higher wherever it shows.\n- Not run: reduced motion in Safari, iPad, a reload while scrolled into the extra screen. It reuses fix-nav-morph's setter and gate.",
+  "risk": "A motion change: you decide whether the end-of-page panel should follow the finger and settle by itself.\n- Rev 7 adds a passive finger-speed reader at the end of the page; it never blocks scrolling.\n- Still a bit laggy on hard short swipes, on both pages (your note).\n- Most slow frames come 0.1-0.3 s after you lift, while the panel opens or closes; plain scrolling had far fewer.\n- That is the panel's repaint, the GPU team's area (they have a one-line candidate for the close). Not timed on the phone.\n- Seen once per build: a swipe up out of the end glided away and came back to open by itself (cause unknown).\n- In Safari the last section is drawn 1 device px higher wherever it shows.\n- Not run: reduced motion in Safari, iPad, a reload while scrolled into the extra screen. It reuses fix-nav-morph's setter and gate.",
   "compare": {
     "a": {
       "label": "Best build (v8)"
