@@ -11,6 +11,9 @@ registered at the desk ("P-089 registration" + "P-089 addendum", mgmt-ops-10's s
   shade-≤4 difference). chrome-1440 and chrome-1440r are unscored (coverage VOID on intoview).
 - **Parked again** (lead, P-084 lesson). The keep/drop decision goes to the user as a proposal draft,
   `proposal-p089.json`, which the lead publishes.
+- **Un-parked (2026-10-04 03:57Z):** the user accepted PR-014, option **keep** (final). The landing basis is the
+  less-work rule: the cost counts plus one short iPhone no-worse check, **P-094** (ticket below, phone queue place 5).
+  No finger test.
 **Stage:** F, stopped; D card registered below (P-078 → P-080 → P-083 → P-084, v4 last iteration)
 **Device class / gate:** less-work (heat) fix: cost-card counts, full page, Chrome + Simulator, plus one short phone
 no-worse check (memory/less-work-landing-rule.md, user T-029 #30). No timing A/B (deferred, user rule).
@@ -854,6 +857,121 @@ At 430r there is no such change (`resizeMs` 24296). The `endMs` values (3913 / n
 looks like an eased transform on an ancestor of the row at desktop width (not checked). It is the same in both arms
 and on every run, so a plain re-run would void again. The intoview replays (2500 ms settle) pass (1947 / 16773 ms).
 The lead ruled: no remedy now (see the ruling above).
+
+### P-094 phone no-worse ticket (after PR-014 keep), before any phone data
+
+```
+PHONE TICKET P-094 rest-script v4 · less-work no-worse check (lead 2026-10-04 03:5xZ after PR-014 keep; no finger test) · P-094 from mgmt-ops-10; form of P-093 (fix-cd-roll-ca, 3f7ce94a), registered before any phone data
+build: V = st6-rb2 + rest-script v4 = fixes/rest-script-live/patch.diff (04bb3156), JS 520d5f1139c74b55977ec2c7a7ffae362876bb4801755aa04ff432f6232bb7f5,
+  CSS f523598b2a24ede87f745d8b6d3b7c61e113559cc6dfdb35744b20bdbcffda97; the bytes P-084/P-089 scored and the user saw in PR-014's Try it;
+  immutable copy out/rest-script/snap/V (fix-rest-script worktree, HASHES.txt)
+control: C = st6-rb2 (fixes/st6-rb2/patch.diff, on main cff1a037), JS 7bf7c4657d21f1e94c666d582efccda65f20a5498626d22964bfbc5e35124f7a,
+  CSS f523598b2a24… (the same as V's); copy out/rest-script/snap/C; mirror snapshot b1789284481295-4ad4a84a.
+  Why st6-rb2 and not best-build (65052c4a3902): v4 is stacked on st6-rb2 and every cost count was measured against it;
+  best-build adds platform-idle and morph-inherit, which touch neither the avatar row nor its counters. The integrator
+  stacks v4 on the current best build later.
+question: on the phone at real thermal Serious, does rest-script v4 add slow frames where it changes the page? Those
+  places are: the avatar row far with the scene gate active (V plays each far slide as an empty 1 ms Web Animation, while C
+  runs the slide), and the row entering and leaving V's near band (fwNearChange). The counters' skip-unchanged writes
+  ride along. No-worse only. The landing basis is the cost counts (Chrome 430 ic5, far y2796: main frames 31/32 -> 17/17,
+  layouts 4 -> 0, paints 34/39 -> 0/3; paused rows SAVE; near SAME; 430r all SAME).
+ports: three, `sh fixes/rest-script/phone/serve.sh` (sha256 f3eedd95371e): serve.mjs --root site-pretty [--overlay
+  <copy>] --port auto --latency 150 --vendors=local, plain http per I-003. B = the plain baseline page (no overlay): the
+  pre-warm and gate-timer page, with no counted run on it. The script checks the copies against HASHES.txt and the served
+  JS/CSS hashes of all three arms (exit 4 on a wrong one), and prints the phone URLs to the runner's terminal only.
+  Checked 04:03Z: B 4606120cf392/27776f3d4138, C 7bf7c4657d21/f523598b2a24, V 520d5f1139c7/f523598b2a24, then stopped.
+  One uncounted warm-up load per arm port (A3/U5).
+thermal gate (P-079's condition B; memory "phone checks start warm"): real thermal Serious, `node
+  research/phone-thermal-gate/thermal-gate.mjs --owner fix-rest-script --expect serious --max-c 44 --url <B's URL>`
+  (sha256 4604218c4041), at the start and the end of every phone hold.
+  - A hold counts only if both reads PASS (Serious, Is Induced = No); otherwise it is VOID and re-run.
+  - Ceiling 44 °C or Critical: stop and cool.
+  - Every gate failure goes to the lead. After two gate-failed holds (not necessarily in a row), roll back to condition
+    A, reported in T-039 (the lead's switch).
+  - Holds run back to back. The timer-grid median and battery °C are logged per hold.
+  - Low Power Mode runs are dropped. The later Fair no-worse check is not part of this block.
+start method (one for every hold and every arm; the lead's ruling after P-073): pre-warm on B.
+  - One uncounted W run on B (`--warmup`, no --arm), then the start gate.
+  - While the gate says too cool (exit 2): another W run on B and another read, at most 4 pre-warm runs.
+  - Any other start-gate failure, or still too cool after 4, ends the hold with no counted run. That is reported, and it
+    is not a strike unless the lead rules otherwise (as h165958 in P-085).
+hand-over (lead, T-058, from P-091 on): when the iphone lease comes to fix-rest-script, the uncounted pre-warm on B
+  starts under the lease at once (`iphone.mjs open <B>` + `iphone.mjs run <W> --warmup --label p094-handover<n>`, beside
+  any shared group, I-056). The H1 hold is queued at the same moment. Counted runs happen only inside the own hold, and
+  the ticketed start method inside the hold (pre-warm + start gate) is unchanged, so the gate still decides. Logged in
+  the block log as a runner deviation.
+holds: every phone part runs inside its own hold, with the iphone lease held by fix-rest-script:
+    node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900 --owner fix-rest-script --doing "P-094 hold Hn"
+      -- caffeinate -i -s sh fixes/rest-script/phone/hold.sh Hn <items>
+  - I-056; 900 s under the lead's condition-B rule, as P-088, P-092 and P-093.
+  - caffeinate -i -s runs inside the hold only (C-024). Nowhere else.
+  hold.sh (sha256 e831e0f90d00, committed with this ticket; adapted from fixes/cd-roll-ca/phone/hold.sh) runs:
+  - pre-warm + start gate;
+  - the items in order (`iphone.mjs open <arm URL>`, then `iphone.mjs run`; each run parks Safari);
+  - the end gate;
+  - the I-098 sleep check, `node fixes/rest-script/tools/pmcheck.mjs <hold start> <hold end>` (sha256 d36bd7437b7c). A
+    pmset Sleep, DarkWake or Maintenance line within 5 s of the hold, or an unreadable log, makes the hold VOID.
+  A VOID hold (gate or sleep) is re-run as a new hold with the same items. After 2 sleep-VOIDs in a row: park and report
+  to the lead. The last line is "HOLD Hn VALID" or "HOLD Hn VOID <why>".
+  H1: wC wV C1 V2 · H2: V3 C4 C5 V6 · H3: V7 C8; then `iphone.mjs park` and `serve.sh stop`
+block (driver W, Timeline OFF): warm-up C, warm-up V, counted C V V C C V V C (block positions 1-8, n = 4 per arm).
+  Each run: `node tools/iphone.mjs run --driver window --probe std --owner fix-rest-script --block P-094 --arm C|V --run <n>
+  --label rs-<arm><n> --to 2800 --idle 8 --hold 8 --sentinel 3 --tops "people=#people,row=#people .start-selling-avatars"`
+  (warm-ups with --warmup).
+  - The W run: 8 s at y 0, where the row is far (Chrome 430 geom: row top 2181, gate active to y 3150; Simulator rest
+    shot: row top ≈ 2054). Then the 250 px steps down to y >= 2800, through V's near band: entered near y ≈ 900-1000,
+    left near y ≈ 2470-2600 at the phone's 775 px height (estimates from the band rule, rowTop < 1.5 vh and
+    rowTop + 32 > -0.5 vh; the tops record the real row top). Then 8 s held at y 2800 (row far, gate active in Chrome's
+    geometry at 932 px; the phone's gate state there is not known before data), then the sentinel.
+  - The --tops reads happen before and after the timed window, outside it.
+  - Every counted C run is the heat sentinel (bottom >= 58 fps and scroll >= 44 fps, meta.sentinel). A failing C run voids
+    every run since the last passing one. Voided runs are re-run in the same order, at most one extra C V V C quartet (one
+    more hold).
+scorer: fixes/rest-script/phone/score.mjs, sha256 4cbaf2b72219, adapted from cd-roll-ca's P-093 score.mjs rev 2
+  (57856e3f530a): the same void rules, sentinel voiding and frame gate; new arm hashes and windows. Committed before any
+  phone data.
+  - Run as `node fixes/rest-script/phone/score.mjs <arm>:<file> ... --json out/rest-script/p094/score.json`, with every
+    counted file of the VALID holds in block order (warm-ups skipped; void runs reported and dropped).
+  - Files of a VOID hold are left out of the call and listed in the block log with their gate reads and pmcheck line.
+  - The sentinel of every counted C run is judged, whatever its other voids: a pass resets; anything other than
+    pass === true voids that run and every run back to the last pass.
+  Checked before data: fixes/rest-script/phone/selftest.mjs (sha256 0df3fdd75e42) on synthetic blocks built from one
+  real W file (out/rest-script/p094/fixture-p079-V4.json, sha256 b0a29801f78a, P-079's V4): SELFTEST PASS 15 cases.
+  - all equal: hit;
+  - V +3 frames > 50 in idle, or in hold: FALSIFIED; V +2 in scroll: FALSIFIED; V +1: hit;
+  - V +5 in the sentinel phase only: hit (outside the window);
+  - V +3 frames of 52 ms: FALSIFIED, threshold-sensitive;
+  - slow warm-ups: skipped;
+  - a failing or no-data C sentinel voids back to the last pass: not enough;
+  - a wrong served hash, or LPM: void;
+  - a C run with a wrong hash AND a failing sentinel still voids back;
+  - an LPM C run with a passing sentinel is void itself but resets;
+  - a missing hold mark: void.
+  Windows, fixed before data:
+    timed (GATED): a W run's frames with t in [marks.idle start, marks.hold end): idle at y 0 + the steps + the hold at y 2800
+    idle / scroll / hold: each phase alone (descriptive, no gate)
+gate (no-worse), timed window: median of V's valid runs minus median of C's.
+  - dt > 50 (twins > 46, > 54): FALSIFIED when it rises by >= 2. A twin with another verdict marks it threshold-sensitive.
+  - dt > 34 (twins > 30, > 38): judged against [-1, +1], reported, not a falsifier.
+  - >= 3 valid runs per arm, else "not enough" (re-run per the block rule).
+decision rows:
+  - hit: rest-script lands on the less-work basis (cost counts + PR-014 keep + this check). The land request goes to the lead.
+  - FALSIFIED: no landing; back to the code. First suspects: fwNearChange at the row's near-band edges (scroll phase), then
+    the per-slide empty Web Animation while far (idle and hold phases); the descriptive phase deltas point to which. The
+    lead decides.
+  - not enough after the extra quartet: the lead decides (re-block once, or land on the counts alone).
+confidence (rough, for calibration, not a gate): P(hit) 0.85. V does strictly less main-thread work where it differs
+  (Chrome far: main frames 31 -> 17 per 4 s), and near and paused rows were SAME. The phone's WebKit path is not
+  measured. Main risk: the near-band edge, which is one call per crossing.
+minutes: ~25 (range 20-40). 3 holds, each with a pre-warm of 1-4 runs (~1.2 min each), 2 gate reads (~1.5 min) and its
+  items (2 warm-ups ~2.5 min, 8 counted ~10 min, each W run ~55 s: settle 8 + idle 8 + steps ~4 + hold 8 + sentinel 3 +
+  load and park). More if the phone starts cool.
+queue: phone-queue place 5 (lead), after P-093 (cd-roll-ca).
+  - `node tools/lock.mjs acquire iphone --owner fix-rest-script --ttl 900 --url <B's URL> --wait 3600 --doing "P-094
+    rest-script phone no-worse"` in the background (re-run on exit 3), renewed between holds.
+  - `sh fixes/rest-script/phone/serve.sh` before the lease comes.
+  - Waits carry --owner fix-rest-script.
+```
 
 ## Why it lags
 
