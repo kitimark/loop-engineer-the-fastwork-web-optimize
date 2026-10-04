@@ -83,3 +83,33 @@ test('gestureTarget (Simulator): the session and the hold guard it; WDA-sim on t
   assert.deepEqual(x.sim.hostLoad, { start: { load1: 1 }, end: { load1: 1 } });
   assert.equal(x.sim.window, 'hidden');
 });
+
+test('I-186 phoneTarget.preflight with a profile gate: the guard first, then the gate, then the lease budget; meta.profile and saved()', async () => {
+  const { tryAcquire, release } = await import('../../tools/lib/lock.mjs');
+  assert.equal((await tryAcquire('iphone', { owner: 'me', ttlSec: 900 })).ok, true);
+  const order = [];
+  const savedFiles = [];
+  const rec = { name: 'serious', gate: 'xcode-serious', hold: 'iphone:x', start: { state: 'Serious', induced: 'Yes', battC: 33, code: 0, cached: false }, end: null, drift: null };
+  const gate = async (owner) => { order.push(`gate ${owner}`); return { record: () => rec, saved: async (f) => { savedFiles.push(f); } }; };
+  const t = phoneTarget({ owner: 'me', log: () => {}, profileGate: gate });
+  assert.equal((await t.preflight(60000)).pageSource, 'your lease');
+  assert.deepEqual(order, ['gate me']);
+  const x = await t.extra();
+  assert.deepEqual([x.profile, x.profileDrift, x.mac.requireQuiet], [rec, null, false]);
+  await t.saved('run-1.json');
+  assert.deepEqual(savedFiles, ['run-1.json']);
+  // a refusing gate: preflight rejects with the gate's error (exit 8), nothing else runs
+  const refusing = phoneTarget({ owner: 'me', log: () => {}, profileGate: async () => { throw Object.assign(new Error('REFUSED profile serious'), { exitCode: 8 }); } });
+  await assert.rejects(refusing.preflight(60000), (e) => e.exitCode === 8);
+  // the guard still goes first: beside someone else's normal hold it WAITs without reading the phone
+  assert.equal((await tryAcquire('chrome-measure', { owner: 'fix-ab', ttlSec: 600 })).ok, true);
+  order.length = 0;
+  assert.throws(() => phoneTarget({ owner: 'me', log: () => {}, profileGate: gate }).preflight(60000), /^Error: WAIT: chrome-measure is held by "fix-ab"/);
+  assert.deepEqual(order, [], 'no thermal read beside someone else\'s hold');
+  await release('chrome-measure', { owner: 'fix-ab' });
+  await release('iphone', { owner: 'me' });
+  // without a gate: no profile fields, saved() is a no-op
+  const plain = phoneTarget({ owner: 'me' });
+  assert.deepEqual(Object.keys(await plain.extra()), []);
+  assert.equal(plain.saved('x.json'), null);
+});
