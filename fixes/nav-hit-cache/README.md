@@ -312,6 +312,47 @@ is reported.
 - *In every case:* the per-trigger tally (why V still tests in about 65 % of steps) runs only after P-104's data, as an
   exploratory VA-like run. It never changes V under this card.
 
+## P-104 results (owner's reading; ops re-scores from `p104/`)
+
+The pre-data read passed (mgmt-ops-10, ledger dccc727c). All parts ran on 10-04, 12:51-13:19Z, in shared slots. Every
+load served the card's hashes, no load is VOID, and there are no page errors.
+
+**Verdict: P-104 fails on parity, so V is not landable.** The counts pass.
+
+| per scroll step (10 px), loads C1 / C2 and V1 / V2 | mobile C | mobile V | desktop C | desktop V | rule | result |
+|---|---|---|---|---|---|---|
+| PrePaint, total | 2.221 / 2.215 | 1.877 / 1.869 | 1.822 / 1.838 | 1.691 / 1.689 | judged | lower, separated |
+| PrePaint, forced | 0.998 / 0.998 | 0.641 / 0.641 | 0.663 / 0.664 | 0.512 / 0.511 | judged | lower, separated |
+| nav elementsFromPoint | 0.998 / 0.998 | 0.641 / 0.641 | 0.999 / 0.999 | 0.673 / 0.672 | judged | lower, separated |
+| nav getComputedStyle | 0.998 / 0.998 | 0 / 0 | 0.999 / 0.999 | 0.001 / 0.001 | judged | lower, separated |
+| Layout, forced | 0.383 / 0.387 | 0.383 / 0.379 | 0.356 / 0.355 | 0.351 / 0.350 | guard | holds |
+| Layout, total | 0.454 / 0.458 | 0.454 / 0.450 | 0.402 / 0.401 | 0.398 / 0.396 | guard | holds |
+| UpdateLayoutTree, total | 1.361 / 1.406 | 1.378 / 1.396 | 1.592 / 1.599 | 1.589 / 1.600 | guard | holds |
+| Paint, total | 4.011 / 4.080 | 4.077 / 4.052 | 2.567 / 2.503 | 2.393 / 2.497 | guard | holds (mobile V mean +0.019) |
+
+- **Predictions:** every judged and guard count falls inside its interval. Ops' N1 applies: the intervals were set
+  after P-101's data, so the hits are a replication on fresh loads.
+- **Simulator** (per step, C1 / C2 vs V1 / V2): no worse.
+  - RenderingFrame 0.970 / 0.981 vs 0.954 / 0.981;
+  - RecalculateStyles 1.593 / 1.591 vs 1.555 / 1.570;
+  - Layout 3.778 / 3.755 vs 3.798 / 3.747 (V mean +0.006).
+  - Reported only: forced Layout is 2.563 / 2.504 in C and 2.272 / 2.200 in V. This answers the UNRESOLVED WebKit
+    question: in WebKit, the nav hit test does force layouts (OBSERVED, in our setup).
+- **Parity fails.**
+  - *Audit (VA), 40 px per frame:* 1 mismatch in mobile, mobile-rtl and mobile-shift. In each, the cached answer was
+    `false` and the real `F()` returned `true`, for one frame:
+    - at y 3186 (mobile, mobile-rtl);
+    - at y 3486 in mobile-shift, which is the same place moved by the inserted 300 px.
+  - *Audit, 10 px per frame:* 0 mismatches in all cases. At 40 px in desktop and desktop-rtl: 0.
+  - *States, C vs V:* 4 mismatches each in desktop and desktop-rtl.
+    - On the way down, at y 1261 and 1334, V shows `is-scroll-hidden is-profile-sticky-hidden` and C does not.
+    - On the way back up, at y 2425 and 2223, C shows those classes and V does not.
+    - Mobile, mobile-rtl and mobile-shift have 0 state mismatches.
+- **Next, per the card:** not landable.
+  - Find the trigger that missed: the 40 px crossing near y 3186 on mobile, and the desktop hidden-state settle positions.
+  - Then re-ticket and re-run all parts.
+  - No retuning on this data.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

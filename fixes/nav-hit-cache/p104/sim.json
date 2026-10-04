@@ -1,0 +1,180 @@
+{
+ "loads": [
+  {
+   "arm": "C",
+   "rep": 1,
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-04T13:16:47.449Z",
+   "served": {
+    "js": "65052c4a3902",
+    "css": "e0f92804c521"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6035
+   },
+   "window": {
+    "scroll": {
+     "n": 526,
+     "y": 5260,
+     "max": 5260
+    },
+    "records": 2897,
+    "renderingFrames": 510,
+    "styleRecalcs": 838,
+    "layouts": 1987,
+    "paints": 3024,
+    "forcedStyleRecalcs": 616,
+    "forcedLayouts": 1348,
+    "functionCalls": 3894,
+    "rafs": 2686,
+    "perStep": {
+     "renderingFrames": 0.97,
+     "styleRecalcs": 1.593,
+     "layouts": 3.778,
+     "paints": 5.749,
+     "forcedStyleRecalcs": 1.171,
+     "forcedLayouts": 2.563,
+     "functionCalls": 7.403,
+     "rafs": 5.106
+    }
+   }
+  },
+  {
+   "arm": "V",
+   "rep": 1,
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-04T13:17:20.944Z",
+   "served": {
+    "js": "aa3ea472d26b",
+    "css": "e0f92804c521"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6035
+   },
+   "window": {
+    "scroll": {
+     "n": 526,
+     "y": 5260,
+     "max": 5260
+    },
+    "records": 3083,
+    "renderingFrames": 502,
+    "styleRecalcs": 818,
+    "layouts": 1998,
+    "paints": 2966,
+    "forcedStyleRecalcs": 606,
+    "forcedLayouts": 1195,
+    "functionCalls": 4506,
+    "rafs": 2637,
+    "perStep": {
+     "renderingFrames": 0.954,
+     "styleRecalcs": 1.555,
+     "layouts": 3.798,
+     "paints": 5.639,
+     "forcedStyleRecalcs": 1.152,
+     "forcedLayouts": 2.272,
+     "functionCalls": 8.567,
+     "rafs": 5.013
+    }
+   }
+  },
+  {
+   "arm": "V",
+   "rep": 2,
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-04T13:17:56.112Z",
+   "served": {
+    "js": "aa3ea472d26b",
+    "css": "e0f92804c521"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6035
+   },
+   "window": {
+    "scroll": {
+     "n": 526,
+     "y": 5260,
+     "max": 5260
+    },
+    "records": 2827,
+    "renderingFrames": 516,
+    "styleRecalcs": 826,
+    "layouts": 1971,
+    "paints": 3022,
+    "forcedStyleRecalcs": 605,
+    "forcedLayouts": 1157,
+    "functionCalls": 4543,
+    "rafs": 2665,
+    "perStep": {
+     "renderingFrames": 0.981,
+     "styleRecalcs": 1.57,
+     "layouts": 3.747,
+     "paints": 5.745,
+     "forcedStyleRecalcs": 1.15,
+     "forcedLayouts": 2.2,
+     "functionCalls": 8.637,
+     "rafs": 5.067
+    }
+   }
+  },
+  {
+   "arm": "C",
+   "rep": 2,
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-04T13:18:30.063Z",
+   "served": {
+    "js": "65052c4a3902",
+    "css": "e0f92804c521"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6035
+   },
+   "window": {
+    "scroll": {
+     "n": 526,
+     "y": 5260,
+     "max": 5260
+    },
+    "records": 2820,
+    "renderingFrames": 516,
+    "styleRecalcs": 837,
+    "layouts": 1975,
+    "paints": 3022,
+    "forcedStyleRecalcs": 603,
+    "forcedLayouts": 1317,
+    "functionCalls": 3861,
+    "rafs": 2666,
+    "perStep": {
+     "renderingFrames": 0.981,
+     "styleRecalcs": 1.591,
+     "layouts": 3.755,
+     "paints": 5.745,
+     "forcedStyleRecalcs": 1.146,
+     "forcedLayouts": 2.504,
+     "functionCalls": 7.34,
+     "rafs": 5.068
+    }
+   }
+  }
+ ]
+}

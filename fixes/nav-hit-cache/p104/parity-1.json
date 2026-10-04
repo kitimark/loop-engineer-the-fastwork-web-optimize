@@ -1,0 +1,113 @@
+{
+ "part": "parity",
+ "date": "2026-10-04T13:06:02.207Z",
+ "browser": "Chrome/154.0.8037.97",
+ "arms": {
+  "C": {
+   "js": "65052c4a3902",
+   "css": "e0f92804c521"
+  },
+  "V": {
+   "js": "aa3ea472d26b",
+   "css": "e0f92804c521"
+  },
+  "VA": {
+   "js": "a01a2ef32db0",
+   "css": "e0f92804c521"
+  }
+ },
+ "audit": {
+  "mobile": {
+   "px10": {
+    "steps": 1070,
+    "tested": 724,
+    "cached": 346,
+    "mismatches": 0,
+    "first": []
+   },
+   "px40": {
+    "steps": 268,
+    "tested": 238,
+    "cached": 30,
+    "mismatches": 1,
+    "first": [
+     [
+      3186,
+      false,
+      true
+     ]
+    ]
+   },
+   "errors": []
+  },
+  "desktop": {
+   "px10": {
+    "steps": 1690,
+    "tested": 1119,
+    "cached": 571,
+    "mismatches": 0,
+    "first": []
+   },
+   "px40": {
+    "steps": 424,
+    "tested": 387,
+    "cached": 37,
+    "mismatches": 0,
+    "first": []
+   },
+   "errors": []
+  }
+ },
+ "states": {
+  "mobile": {
+   "steps": 126,
+   "maxY": [
+    5346,
+    5346
+   ],
+   "mismatchCount": 0,
+   "mismatches": [],
+   "stateChangesC": 8,
+   "errors": {
+    "C": [],
+    "V": []
+   }
+  },
+  "desktop": {
+   "steps": 168,
+   "maxY": [
+    8448,
+    8448
+   ],
+   "mismatchCount": 4,
+   "mismatches": [
+    {
+     "y": 1261,
+     "C": "",
+     "V": "is-scroll-hidden is-profile-sticky-hidden"
+    },
+    {
+     "y": 1334,
+     "C": "",
+     "V": "is-scroll-hidden is-profile-sticky-hidden"
+    },
+    {
+     "y": -2425,
+     "C": "is-scroll-hidden is-profile-sticky-hidden",
+     "V": ""
+    },
+    {
+     "y": -2223,
+     "C": "is-scroll-hidden is-profile-sticky-hidden",
+     "V": ""
+    }
+   ],
+   "stateChangesC": 12,
+   "errors": {
+    "C": [],
+    "V": []
+   }
+  }
+ },
+ "wallMs": 135849
+}

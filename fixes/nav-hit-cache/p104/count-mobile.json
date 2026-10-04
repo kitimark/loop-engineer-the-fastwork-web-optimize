@@ -1,0 +1,230 @@
+{
+ "part": "count",
+ "date": "2026-10-04T12:51:16.491Z",
+ "browser": "Chrome/154.0.8037.97",
+ "arms": {
+  "C": {
+   "js": "65052c4a3902",
+   "css": "e0f92804c521"
+  },
+  "V": {
+   "js": "aa3ea472d26b",
+   "css": "e0f92804c521"
+  },
+  "VA": {
+   "js": "a01a2ef32db0",
+   "css": "e0f92804c521"
+  }
+ },
+ "regions": {
+  "C": [
+   13204,
+   13416
+  ],
+  "V": [
+   13204,
+   13566
+  ]
+ },
+ "loads": [
+  {
+   "rep": 0,
+   "arm": "C",
+   "vp": "mobile",
+   "served": [
+    "65052c4a3902",
+    "e0f92804c521"
+   ],
+   "steps": 535,
+   "max": 5346,
+   "ms": 8912,
+   "counts": {
+    "UpdateLayoutTree.forced": 686,
+    "PrePaint.frame": 654,
+    "Paint.frame": 2146,
+    "PrePaint.forced": 534,
+    "Layout.forced": 205,
+    "UpdateLayoutTree.frame": 42,
+    "Layout.frame": 38
+   },
+   "perStep": {
+    "Layout.forced": 0.383,
+    "Layout.frame": 0.071,
+    "Paint.frame": 4.011,
+    "PrePaint.forced": 0.998,
+    "PrePaint.frame": 1.222,
+    "UpdateLayoutTree.forced": 1.282,
+    "UpdateLayoutTree.frame": 0.079
+   },
+   "prePaintPerStep": 2.221,
+   "layoutPerStep": 0.454,
+   "styleRecalcPerStep": 1.361,
+   "api": {
+    "all": {
+     "gcs": 534,
+     "rect": 3384,
+     "efp": 534
+    },
+    "nav": {
+     "gcs": 534,
+     "rect": 1068,
+     "efp": 534
+    },
+    "navPerStep": {
+     "gcs": 0.998,
+     "rect": 1.996,
+     "efp": 0.998
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 0,
+   "arm": "V",
+   "vp": "mobile",
+   "served": [
+    "aa3ea472d26b",
+    "e0f92804c521"
+   ],
+   "steps": 535,
+   "max": 5346,
+   "ms": 8920,
+   "counts": {
+    "UpdateLayoutTree.forced": 694,
+    "Layout.forced": 205,
+    "PrePaint.frame": 661,
+    "Paint.frame": 2181,
+    "PrePaint.forced": 343,
+    "UpdateLayoutTree.frame": 43,
+    "Layout.frame": 38
+   },
+   "perStep": {
+    "Layout.forced": 0.383,
+    "Layout.frame": 0.071,
+    "Paint.frame": 4.077,
+    "PrePaint.forced": 0.641,
+    "PrePaint.frame": 1.236,
+    "UpdateLayoutTree.forced": 1.297,
+    "UpdateLayoutTree.frame": 0.08
+   },
+   "prePaintPerStep": 1.877,
+   "layoutPerStep": 0.454,
+   "styleRecalcPerStep": 1.378,
+   "api": {
+    "all": {
+     "rect": 3002,
+     "efp": 343
+    },
+    "nav": {
+     "rect": 686,
+     "efp": 343
+    },
+    "navPerStep": {
+     "rect": 1.282,
+     "efp": 0.641
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 1,
+   "arm": "V",
+   "vp": "mobile",
+   "served": [
+    "aa3ea472d26b",
+    "e0f92804c521"
+   ],
+   "steps": 535,
+   "max": 5346,
+   "ms": 8927,
+   "counts": {
+    "UpdateLayoutTree.forced": 705,
+    "PrePaint.frame": 657,
+    "PrePaint.forced": 343,
+    "Layout.forced": 203,
+    "Paint.frame": 2168,
+    "UpdateLayoutTree.frame": 42,
+    "Layout.frame": 38
+   },
+   "perStep": {
+    "Layout.forced": 0.379,
+    "Layout.frame": 0.071,
+    "Paint.frame": 4.052,
+    "PrePaint.forced": 0.641,
+    "PrePaint.frame": 1.228,
+    "UpdateLayoutTree.forced": 1.318,
+    "UpdateLayoutTree.frame": 0.079
+   },
+   "prePaintPerStep": 1.869,
+   "layoutPerStep": 0.45,
+   "styleRecalcPerStep": 1.396,
+   "api": {
+    "all": {
+     "rect": 3002,
+     "efp": 343
+    },
+    "nav": {
+     "rect": 686,
+     "efp": 343
+    },
+    "navPerStep": {
+     "rect": 1.282,
+     "efp": 0.641
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 1,
+   "arm": "C",
+   "vp": "mobile",
+   "served": [
+    "65052c4a3902",
+    "e0f92804c521"
+   ],
+   "steps": 535,
+   "max": 5346,
+   "ms": 8914,
+   "counts": {
+    "UpdateLayoutTree.forced": 710,
+    "PrePaint.frame": 651,
+    "PrePaint.forced": 534,
+    "Layout.forced": 207,
+    "Paint.frame": 2183,
+    "UpdateLayoutTree.frame": 42,
+    "Layout.frame": 38
+   },
+   "perStep": {
+    "Layout.forced": 0.387,
+    "Layout.frame": 0.071,
+    "Paint.frame": 4.08,
+    "PrePaint.forced": 0.998,
+    "PrePaint.frame": 1.217,
+    "UpdateLayoutTree.forced": 1.327,
+    "UpdateLayoutTree.frame": 0.079
+   },
+   "prePaintPerStep": 2.215,
+   "layoutPerStep": 0.458,
+   "styleRecalcPerStep": 1.406,
+   "api": {
+    "all": {
+     "gcs": 534,
+     "rect": 3384,
+     "efp": 534
+    },
+    "nav": {
+     "gcs": 534,
+     "rect": 1068,
+     "efp": 534
+    },
+    "navPerStep": {
+     "gcs": 0.998,
+     "rect": 1.996,
+     "efp": 0.998
+    }
+   },
+   "errors": []
+  }
+ ],
+ "wallMs": 69482
+}
