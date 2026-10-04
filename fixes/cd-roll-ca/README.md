@@ -1232,7 +1232,7 @@ and `__crPlay`'s keyframe mapping change; everything else in V9 is byte-identica
 ```
 PHONE TICKET K cd-roll-ca VK · less-work no-worse check (lead 2026-10-04 ~10:0xZ: "Before data: register the phone part
   with ops as a less-work no-worse ticket. If P-100 settles the display-rate question first, fold its result into K's
-  ticket.") · ops id: pending (registered with mgmt-ops-10 at this text's commit, before any phone data)
+  ticket.") · ops id P-102 (BLK=P-102); ops pre-data read of 592ebb6d: PASS, all harness hashes match
 build: V = VK = V9 + K, JS b43fe790c20c8fbdc6a9a8693a2f39ddc82d75b231cef68df0562cbb245cdd4c, CSS 982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d;
   immutable copy out/cd-roll-ca/snap/VK
 control: C = V9 = cd-strip strip-tc + cd-roll-ca (landed, series ends 0eb4a101), JS 582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3,
@@ -1246,7 +1246,7 @@ ports: three fresh servers (I-131 interim rule: OS-assigned ports, never one tha
 thermal gate, start method, sleep check: as P-093, unchanged (thermal-gate.mjs 4604218c4041 at the start and end of every
   hold, real Serious, Is Induced = No, ceiling 44 °C/Critical; pre-warm on B, at most 4 runs; pmcheck.mjs d36bd7437b7c).
 holds (T2): `node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900 --owner cd-roll-ca --doing "K phone hold
-  Hn" -- env BLK=<ops id> caffeinate -i -s sh fixes/cd-roll-ca/phone/k-hold.sh Hn <items>`, with the iphone lease held by
+  Hn" -- env BLK=P-102 caffeinate -i -s sh fixes/cd-roll-ca/phone/k-hold.sh Hn <items>`, with the iphone lease held by
   cd-roll-ca. k-hold.sh (sha256 b7f9519712e3) is hold.sh with only the arms, the block id, the output folder
   (out/cd-roll-ca/pk) and the labels changed. Its last line is "HOLD Hn VALID" or "HOLD Hn VOID <why>".
   H1: wC wV C1 V2 · H2: V3 C4 C5 V6 · H3: V7 C8; then `iphone.mjs park`
@@ -1255,7 +1255,8 @@ block (driver W, Timeline OFF): as P-093. Warm-up C, warm-up V, counted C V V C 
   one extra quartet.
 scorer: fixes/cd-roll-ca/phone/k-score.mjs, sha256 771820466f845597ac98e3164e11cfe60c00138f471080fdffc68ccf00056c59. It is
   P-093's score.mjs (rev 2, 57856e3f) with only the header, the usage line and the expected hashes changed (V = VK,
-  C = V9). Checked before data on P-093's own files: V9 files as C score, and a C8 file passed as V is void (served not
+  C = V9). Its JSON field `scorer` still reads 'fixes/cd-roll-ca/phone/score.mjs' (left as is, ops: changing it would
+  change the hash); the result names the scorer by the sha256 it prints. Checked before data on P-093's own files: V9 files as C score, and a C8 file passed as V is void (served not
   arm V). The same windows (top, idle) and the same gate.
 gate (no-worse), top window: median of VK's valid runs minus median of V9's, dt > 50 (twins > 46, > 54): FALSIFIED when it
   rises by >= 2; a twin with another verdict marks it threshold-sensitive; dt > 34 (twins > 30, > 38) judged against
@@ -1329,6 +1330,18 @@ decisions: O1 RAISED -> F-212 becomes OBSERVED on the device (CONFIRMED in sourc
   decides when. O2 KEPT -> a finding for fix-accent-ca (its idle loop keeps animations on the layers): cancel, don't
   pause. UNCLEAR -> reported, no second block unless the lead asks.
 fold into K: if P-100 settles O1 before the K block runs, the K ticket gets a note (no gate change); if not, no change.
+ops notes (mgmt-ops-10 pre-data read of 592ebb6d: PASS; written here before data):
+  N1 Inspector: p100-hold.sh runs `iphone.mjs open` in the foreground, and open closes its inspector socket before it
+     exits (tools/iphone.mjs, open: c2.close()); each REC line comes after its open returned, so no inspector client of
+     ours is attached while a record runs. The hold starts no other inspector client. If the hold log shows otherwise
+     for any record, that holds for every arm alike and is logged in the result.
+  N2 privacy (Hard rule 12): .trace bundles (deleted by p100-rec after the export) and the per-record .json/.tables.json
+     stay in out/ (gitignored). Only the scorer's summary JSON is committed, after a check for device ids, names and
+     LAN addresses.
+  N3: if the Mac table-reader test forces a p100-lib/p100-rec rev, the new hashes and the diff go to ops before any
+     phone data.
+order: the K block first, then this hold on the warm phone, in one lease after fix-morph-gpu's P-098/P-099 (requested
+  through ops; the lead sets the phone order).
 minutes: ~12 (12 records x ~45 s + 2 thermal reads)
 ```
 
