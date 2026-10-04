@@ -60,6 +60,8 @@ test('gesture --dry-run: compiles and prints the strokes and the hash; needs no 
   const want = compileScript(JSON.parse(readFileSync(PROTOCOL, 'utf8')), { params: { variant: 'slow', pushes: '4' } });
   assert.match(r.stdout, new RegExp(`^GESTURE_HASH ${want.hash}$`, 'm'));
   assert.match(r.stdout, /^finger-protocol-v1 v1 hash [0-9a-f]{12} .*"variant":"slow".*"pushes":4.*: 20 strokes/m);
+  assert.match(r.stdout, /^GESTURE_BUDGET_S \d+ {2}\(plan per run on the phone: reload, waits, Timeline and save included; I-112\)$/m);
+  assert.ok(Number(r.stdout.match(/^GESTURE_BUDGET_S (\d+)/m)[1]) >= 150, 'I-112: at least 150 s per G run');
   assert.match(r.stdout, /^ {2}s1 up 450 px \/ 900 ms minjerk: x 215 y 705->255/m);
   const bad = node(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({ dir: 'down' })]), '--dry-run'], { env });
   assert.equal(bad.code, 1);
@@ -313,6 +315,26 @@ test('a lease too short for the run is refused up front', async () => {
   const r = node(IPHONE, ['gesture', PROTOCOL, '--owner', 'me'], { env });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /your iphone lease ends in \d+ s, the run needs ~\d+ s: node tools\/lock\.mjs renew iphone --owner me --ttl 900/);
+});
+
+// I-112 (fix-nav-morph): a block spent its start gate and pre-warm, then the first gesture found WDA down. `wda check`
+// is the runner's preflight (no lease): exit 0 READY, 3 NOT READY with the start command. And a gesture inside its own
+// chrome-measure hold refuses to start when the hold has less than the run's budget left (GESTURE_BUDGET_S).
+test('I-112: wda check is a lease-free preflight (0 READY / 3 NOT READY); a gesture refuses a hold too short for its budget', async () => {
+  const down = node(IPHONE, ['wda', 'check', '--owner', 'me'], { env });
+  assert.equal(down.code, 3, down.out);
+  assert.match(down.stdout, /^WDA NOT READY: not reachable at http:\/\/127\.0\.0\.1:\d+\. Start it \(iphone lease\): node tools\/iphone\.mjs wda start --owner me$/m);
+  const phone = await fakePhone();
+  const up = node(IPHONE, ['wda', 'check'], { env: phone.env });
+  assert.equal(up.code, 0, up.out);
+  assert.match(up.stdout, /^WDA READY build fake os 26\.6\.1$/m);
+  lock('acquire', 'iphone', '--owner', 'me', '--ttl', '900');
+  const f = scriptFile([S({})]);
+  const r = node(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--no-timing', '--max-seconds', '60', '--', process.execPath, IPHONE, 'gesture', f, '--owner', 'me'], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /your chrome-measure hold ends in \d+ s, a gesture run needs up to ~150 s \(GESTURE_BUDGET_S, I-112\): run it in a new hold/);
+  assert.equal(actionsCalls(phone.wda()).length, 0, 'no stroke played');
+  lock('release', 'iphone', '--owner', 'me');
 });
 
 test('a reconnect that fails saves its error without a LAN address or another tab\'s title (review-t1a N1)', async () => {

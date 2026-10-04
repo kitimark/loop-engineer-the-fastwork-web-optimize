@@ -22,7 +22,9 @@
 //
 // Simulated finger (real OS-level touches through WebDriverAgent over USB, research/architecture/
 // finger-simulation.md; NEW MEASUREMENT CODE, gesture numbers compare only with the same script hash):
-//   node tools/iphone.mjs wda status | build --owner <topic> | start --owner <topic> | stop   # tools/lib/wda-runner.mjs
+//   node tools/iphone.mjs wda status | check | build --owner <topic> | start --owner <topic> | stop   # tools/lib/wda-runner.mjs
+//        # wda check: exit 0 WDA READY / 3 WDA NOT READY, no lease; block runners run it before the start gate (I-112)
+//        # gesture --dry-run prints GESTURE_BUDGET_S: plan that per G run (whole run, not only the strokes; I-112)
 //   node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <topic> [--label l]
 //        [--variant asPerformed|slow] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>]
 //        [--timeline <out.json>] [--dry-run]   # tools/lib/gesture-run.mjs; --inject runs an in-page logger on the run's
@@ -308,13 +310,17 @@ async function main() {
     return;
   }
   if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease: leaseAndMark, port: PORT });
-  if (cmd === 'wda') return (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
+  if (cmd === 'wda') {
+    const c = await (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
+    if (arg === 'check' && c) { await clearMark(); process.exit(c); } // I-112: 3 = WDA NOT READY (other subcommands keep exit 0)
+    return c;
+  }
   if (cmd === 'safari-restart') {
     requireLease();
     await restartSafari(opt('url', null));
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(0); }, async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });

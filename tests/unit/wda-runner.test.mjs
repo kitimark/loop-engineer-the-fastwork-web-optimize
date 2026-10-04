@@ -97,3 +97,22 @@ test('cliParams: repeatable --param k=v (both spellings) and --variant', () => {
   assert.deepEqual(cliParams(['--param', 'a=b=c']), { a: 'b=c' });
   assert.throws(() => cliParams(['--param', 'nope']), /--param wants k=v/);
 });
+
+// I-112 (fix-nav-morph, P-091): a phone G run took 125-135 s for a ~44 s program; block runners planned 75 s and the
+// lease check asked for estMs x 1.5 + 30 s. The plan per run is now max(150 s, 3x the estimate), and a run inside its
+// own chrome-measure hold knows how long that hold has left.
+test('I-112: runBudgetMs plans the whole G run; ownHoldLeftMs reads this process\'s own hold only', async () => {
+  const { runBudgetMs, G_RUN_MIN_BUDGET_MS, ownHoldLeftMs } = await import('../../tools/lib/gesture-run.mjs');
+  assert.equal(G_RUN_MIN_BUDGET_MS, 150000);
+  assert.equal(runBudgetMs(43600), 150000, 'the P-091 program (~44 s): 150 s');
+  assert.equal(runBudgetMs(80000), 240000, 'a long program: 3x its estimate');
+  assert.equal(runBudgetMs(undefined), 150000);
+  const now = Date.now();
+  const run = (o) => ({ holder: holder({ kind: 'process', pid: process.pid, expiresAt: undefined, acquiredAt: new Date(now - 100000).toISOString(), meta: { expectSec: 600 }, ...o }), stale: null });
+  assert.equal(ownHoldLeftMs(run(), 'chrome-measure:aaaaaaaaaaaa', now), 500000, '600 s hold, 100 s in');
+  assert.equal(ownHoldLeftMs(run({ meta: {} }), 'chrome-measure:aaaaaaaaaaaa', now), null, 'no declared end');
+  assert.equal(ownHoldLeftMs(run(), 'chrome-measure:bbbbbbbbbbbb', now), null, 'someone else\'s hold');
+  assert.equal(ownHoldLeftMs(run(), undefined, now), null, 'not inside a lock.mjs run');
+  assert.equal(ownHoldLeftMs({ holder: null, stale: null }, 'chrome-measure:aaaaaaaaaaaa', now), null, 'free');
+  assert.equal(ownHoldLeftMs({ holder: holder({ expiresAt: new Date(now + 40000).toISOString() }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', now), 40000, 'a lease: its expiry');
+});
