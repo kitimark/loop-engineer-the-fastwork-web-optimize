@@ -152,3 +152,29 @@ test('I-111 check: a held iPhone lease with no phone run past the limit is IDLE 
   assert.match(r.stdout, /^ENDED iphone: idle period from \d\d:\d\dZ is over \(released by fix-h\); thread T-001$/m);
   assert.match(r.stdout, /^CLOSED T-001 \(iphone: released by fix-h\)$/m);
 });
+
+// I-189 (2026-10-04 22:34Z, T-167): between two holds of the marked P-118 block the holder queued for its next Mac hold
+// and the block's own result row (waiting on the holder) made a false IDLE. Marked: exit 0; the same unmarked: exit 3.
+test('I-189 check: a block-marked holder queued for its next Mac hold is not idle; without the mark the Mac-wait alarm stands', () => {
+  let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '1800', '--block', 'P-118');
+  assert.equal(r.code, 0, r.out);
+  r = lock('acquire', 'chrome-measure', '--owner', 'mac-x', '--ttl', '1200');
+  assert.equal(r.code, 0, r.out);
+  r = lock('acquire', 'chrome-measure', '--owner', 'runner', '--wait', '0');
+  assert.equal(r.code, 3, r.out);
+  r = lock('acquire', 'iphone', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
+  assert.equal(r.code, 3, r.out);
+  r = node(ST, ['set', 'dd-fix', '--by', 'lead', '--kind', 'fix', '--title', 'Double drive', '--state', 'waiting', '--waiting-on', 'agent:runner', '--note', 'P-118 phone runs next'], { env });
+  assert.equal(r.code, 0, r.out);
+  r = idle(['check', '--by', 'lead'], 7);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^OK iphone: held by runner, which waits for its next Mac hold inside phone block P-118 since \d\d:\d\dZ \(7 min; a Mac wait inside the block, not idle; I-189\); waiting: fix-w \(queued for it\)$/m);
+  assert.doesNotMatch(r.stdout, /dd-fix/, 'a row waiting on the holder is no phone waiter');
+  assert.doesNotMatch(r.stdout, /POSTED/);
+  // the block ends (mark cleared), the holder still queued for the Mac, fix-w still waits: T0's Mac-wait alarm
+  r = lock('doing', 'iphone', '--owner', 'runner', '--block', 'none');
+  assert.equal(r.code, 0, r.out);
+  r = idle(['check', '--by', 'lead'], 8);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^IDLE iphone: iPhone held by runner, which has waited 8 min for its Mac hold .* while work waits: fix-w \(queued for it\)$/m);
+});

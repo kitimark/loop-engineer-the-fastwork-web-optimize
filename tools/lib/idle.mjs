@@ -54,6 +54,11 @@
 //   behind a Mac reader) is its own state, macWait: `OK iphone: <holder> waits for its Mac hold since hh:mm`, no use
 //   sighting; past the phone limit (5 min) of that wait while others wait for the phone it alarms (`IDLE iphone: …
 //   has waited N min for its Mac hold`), with the NOTIFY line and the red /status alert to the holder.
+// I-189 (22:34Z, T-167: a false alarm between H1 and H2 of the marked P-118 block): inside a marked phone block (I-160
+//   `--block`) the holder queued for its next Mac hold is the block's own wait, not an unused phone: `OK iphone: …
+//   waits for its next Mac hold inside phone block <id>`, a sighting of use (the chrome-measure queue owns that wait);
+//   a STUCK holder stays stuck. And a board row waiting on the lease holder itself (--waiting-on agent:<holder>, or its
+//   wait text names the holder) is no phone waiter: it waits for the holder's results, not for the phone.
 //
 // Free since (freeSince): the latest end of a hold that came after the last grant:
 //   - <r>.last-release.json (lib/lock.mjs noteRelease: a release, a process hold's end, the last shared reader leaving),
@@ -124,9 +129,19 @@ export function rowWaitsOn(row) {
   return out;
 }
 
+const escRe = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** I-189: the row waits on agent `name` (its --waiting-on agent target, or its wait text names it as a whole word). */
+export function waitsOnAgent(row, name) {
+  const w = row?.waitingOn;
+  if (!w || !name) return false;
+  if (w.target === name) return true;
+  return new RegExp(`(?<![\\w-])${escRe(name)}(?![\\w-])`).test(String(w.text || ''));
+}
+
 /**
  * Ready work for `r`: {queue: [{owner}], rows: [{id, owner, why}]}; rows whose owner is queued are left out, and so is
- * everything of `exclude` (the holder of a held-idle lease, I-111: its own wait is not someone else's).
+ * everything of `exclude` (the holder of a held-idle lease, I-111: its own wait is not someone else's), including a row
+ * that waits on the holder itself (I-189: the block's own result row, waiting on agent:<holder>, is no phone waiter).
  */
 export function readyWork(r, { st, rows = [], exclude = null }) {
   const queue = [];
@@ -136,7 +151,7 @@ export function readyWork(r, { st, rows = [], exclude = null }) {
   for (const row of rows) {
     const hit = rowWaitsOn(row).find((x) => x.resource === r);
     if (!hit || queued.has(row.owner) || (row.aliases || []).some((a) => queued.has(a))) continue;
-    if (exclude && (row.owner === exclude || (row.aliases || []).includes(exclude))) continue;
+    if (exclude && (row.owner === exclude || (row.aliases || []).includes(exclude) || waitsOnAgent(row, exclude))) continue;
     out.push({ id: row.id, owner: row.owner, why: hit.why });
   }
   return { queue, rows: out };
@@ -289,6 +304,10 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     const stuck = !!sw && sw.since !== null && now - Math.max(sw.since, use.since) > SELF_WAIT_MIN * 60000;
     // T0 (phone-hold v2 §5): queued for its Mac hold is a wait of its own, not use; it alarms past `min` of that wait
     const mq = cu === 'queued' ? macQueued(holder, cm, now) : null;
+    // I-189: inside a marked phone block (I-160 --block) that Mac wait is the block's own next hold: not idle (any alarm
+    // for it belongs to the chrome-measure queue); it counts as a sighting of use, like the hold itself (I-155)
+    const block = f.holder?.meta?.block?.id || null;
+    if (mq !== null && block && !stuck) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, blockWait: { block, since: mq, min: freeMinutes(mq, now) }, freeMin: 0, ...work, ready, alarm: false };
     const macWait = mq && { since: mq, min: freeMinutes(mq, now) };
     const over = macWait ? now - mq > min * 60000 : now - use.since > min * 60000;
     return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: true, since: use.since, freeMin: freeMinutes(use.since, now), how: use.how, key: `held:${holderToken || '-'}`, observed: false, ...work, ready,
@@ -343,6 +362,7 @@ export function lineFor(a) {
   if (a.held && a.userLease) return `OK ${a.resource}: held by ${a.holder} for the user's own hand test (the user's phone time, not idle; I-144)`;
   if (a.held && a.userStart) return `OK ${a.resource}: held by ${a.holder}; its step ${a.userStep} waits for the user's Start (a user wait, not idle; I-165)`;
   if (a.held && a.userStep) return `OK ${a.resource}: held by ${a.holder}; the user's step ${a.userStep} is on the phone (a user wait, not idle)`; // I-125
+  if (a.held && a.blockWait) return `OK ${a.resource}: held by ${a.holder}, which waits for its next Mac hold inside phone block ${a.blockWait.block} since ${hhmm(a.blockWait.since)} (${forText(a.blockWait.min)}; a Mac wait inside the block, not idle; I-189)${a.ready ? `; waiting: ${workList(a)}` : ''}`;
   if (a.held && a.chromeUse) return `OK ${a.resource}: held by ${a.holder}, which holds the Chrome slot (its phone-block hold): in use, not idle (I-155)`;
   if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? (a.lockRun ? ' (a lock.mjs run iphone command is on)' : ' (a phone run is on)') : ''}`;
   const free = `free for ${forText(a.freeMin)} (since ${hhmm(a.since)}, ${a.how})`;
@@ -403,7 +423,7 @@ export function threadFor(a, { steward = null } = {}) {
 /** Why an episode ended, in plain words (the ENDED line and the note its thread is closed with). */
 export function endNote(ep, a) {
   if (ep?.kind === 'held') { // I-111
-    if (a.held && a.holder === ep.holder) return a.userStep ? `the user is on ${ep.holder}'s step` : `${ep.holder} used the phone again`;
+    if (a.held && a.holder === ep.holder) return a.userStep ? `the user is on ${ep.holder}'s step` : a.blockWait ? `${ep.holder} waits for its next Mac hold inside phone block ${a.blockWait.block}` : `${ep.holder} used the phone again`;
     return a.held ? `taken by ${a.holder}` : `released by ${ep.holder}`;
   }
   return a.held ? `taken by ${a.holder}` : 'a new idle period started';
@@ -448,7 +468,7 @@ export async function record(assessments, { now = Date.now(), claim = false, pid
       }
       // I-111: the alarm's own sighting of a live phone run, kept per lease (a checkout on older lock code stamps no lastRunAt)
       // (I-125: a user step on the phone counts as use too, so the held-idle clock starts again when the step ends)
-      if ((a.runLive || a.userStep || a.chromeUse) && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
+      if ((a.runLive || a.userStep || a.chromeUse || a.blockWait) && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
       else if (cur.activity && (!a.held || cur.activity.token !== a.holderToken)) delete cur.activity;
       s.resources[a.resource] = cur;
       out.push(res);
