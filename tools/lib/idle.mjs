@@ -25,6 +25,10 @@
 // (state.json `activity` {token, at}; covers checkouts on older lock code). Its episode (kind "held") ends when the
 // phone is used again, the lease is released or taken by another; the thread is addressed to the holder too.
 // `iphone.mjs open`, `park`, a renew or `lock.mjs doing` are not phone runs, and neither is a phone-temp cooling wait.
+// Not idle either (I-125; C-038 sat "ready" for the user's Start while the alarm called the lease unused): the holder
+// has a console step the user is on (lib/phone-step.mjs userOnPhone: ready for Start, started, recording, or reset
+// by a Start over), the rule of the lease grace (I-123 a); `OK iphone: … the user's step … is on the phone`, and it
+// counts as a sighting of use, so the held-idle clock starts again when the step ends.
 //
 // Free since (freeSince): the latest end of a hold that came after the last grant:
 //   - <r>.last-release.json (lib/lock.mjs noteRelease: a release, a process hold's end, the last shared reader leaving),
@@ -47,6 +51,7 @@ import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, lastRelease, lastGrant, holdsLogFile, withGuard, isGroup } from './lock.mjs';
 import { list as statusList } from './status.mjs';
 import { readJson, writeJson, iso } from './store.mjs';
+import { ownerPhoneStep, readSteps, stepText } from './phone-step.mjs';
 
 export const SCHEMA = 'fw-idle/1';
 export const RESOURCES = Object.freeze({
@@ -196,7 +201,7 @@ export const freeMinutes = (since, now) => Math.max(0, Math.floor((now - since) 
  * minutes), now. Out: {resource, held, holder?, since?, freeMin, how, key, observed, queue, rows, ready, alarm}.
  * alarm: free for MORE than `min` minutes (free ms > min x 60000) and ready work exists.
  */
-export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, rows = [], min = RESOURCES[r]?.defaultMin ?? 10, now = Date.now(), isAlive = pidAlive }) {
+export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, rows = [], steps = [], min = RESOURCES[r]?.defaultMin ?? 10, now = Date.now(), isAlive = pidAlive }) {
   const f = freeSince({ st, rel, grant, holdsEnd, seen, now });
   if (f.held && r === 'iphone' && !isGroup(f.holder)) {
     // I-111: a held iPhone lease is idle too while no phone run uses it (heldIdle; since = its last use)
@@ -205,6 +210,10 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     const ready = work.queue.length > 0 || work.rows.length > 0;
     const use = phoneUse(f.holder, { activity, now, isAlive });
     if (use.busy) return { resource: r, min, held: true, holder, holderToken, runLive: true, heldIdle: false, freeMin: 0, ...work, ready, alarm: false };
+    // I-125: the holder's console step the user is on (ready for Start, started, recording, or reset by Start over) is a
+    // user wait, not idle (lib/phone-step.mjs ownerPhoneStep, the rule of the lease grace I-123 a)
+    const us = ownerPhoneStep(holder, { steps, user: true });
+    if (us) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, userStep: stepText(us), freeMin: 0, ...work, ready, alarm: false };
     return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: true, since: use.since, freeMin: freeMinutes(use.since, now), how: use.how, key: `held:${holderToken || '-'}`, observed: false, ...work, ready, alarm: ready && now - use.since > min * 60000 };
   }
   const work = readyWork(r, { st, rows });
@@ -220,7 +229,7 @@ export function gather({ now = Date.now(), resources = RESOURCE_NAMES, state = r
   const tail = holdsLogTail();
   return resources.map((r) => ({
     r, st: lockStatus(r), rel: lastRelease(r), grant: lastGrant(r), holdsEnd: holdsLogEnd(r, tail), seen: state.resources?.[r]?.seen || null,
-    activity: state.resources?.[r]?.activity || null, rows, now,
+    activity: state.resources?.[r]?.activity || null, rows, now, ...(r === 'iphone' && { steps: readSteps() }),
   }));
 }
 
@@ -242,6 +251,7 @@ export function lineFor(a) {
     const head = `OK ${a.resource}: held by ${a.holder}; no phone run for ${forText(a.freeMin)} ${use}`;
     return a.ready ? `${head}, under the ${a.min} min limit; waiting: ${workList(a)}` : `${head}, nobody else waits`;
   }
+  if (a.held && a.userStep) return `OK ${a.resource}: held by ${a.holder}; the user's step ${a.userStep} is on the phone (a user wait, not idle)`; // I-125
   if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? ' (a phone run is on)' : ''}`;
   const free = `free for ${forText(a.freeMin)} (since ${hhmm(a.since)}, ${a.how})`;
   if (a.alarm) return `IDLE ${a.resource}: ${R} ${free}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
@@ -281,7 +291,7 @@ export function threadFor(a, { desk = null } = {}) {
 /** Why an episode ended, in plain words (the ENDED line and the note its thread is closed with). */
 export function endNote(ep, a) {
   if (ep?.kind === 'held') { // I-111
-    if (a.held && a.holder === ep.holder) return `${ep.holder} used the phone again`;
+    if (a.held && a.holder === ep.holder) return a.userStep ? `the user is on ${ep.holder}'s step` : `${ep.holder} used the phone again`;
     return a.held ? `taken by ${a.holder}` : `released by ${ep.holder}`;
   }
   return a.held ? `taken by ${a.holder}` : 'a new idle period started';
@@ -320,7 +330,8 @@ export async function record(assessments, { now = Date.now(), claim = false, pid
         }
       }
       // I-111: the alarm's own sighting of a live phone run, kept per lease (a checkout on older lock code stamps no lastRunAt)
-      if (a.runLive && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
+      // (I-125: a user step on the phone counts as use too, so the held-idle clock starts again when the step ends)
+      if ((a.runLive || a.userStep) && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
       else if (cur.activity && (!a.held || cur.activity.token !== a.holderToken)) delete cur.activity;
       s.resources[a.resource] = cur;
       out.push(res);

@@ -30,6 +30,15 @@ function req(path, { method = 'GET', body, headers = {}, host } = {}) {
 }
 const click = (id, action, body = {}) => req(`/api/steps/${id}/${action}`, { method: 'POST', body, headers: { 'x-console': '1' } });
 const postedId = (r) => { assert.equal(r.code, 0, r.out); const m = r.stdout.match(/^POSTED (C-\d+): /m); assert.ok(m, r.stdout); return m[1]; };
+/** I-123 (f): a phone step's poster holds the iphone lease (on this temp store); hand it over from the last holder. */
+let phoneHolder = null;
+function holdPhone(by) {
+  if (phoneHolder === by) return;
+  if (phoneHolder) assert.equal(node(tool('lock.mjs'), ['release', 'iphone', '--owner', phoneHolder], { env }).code, 0);
+  const r = node(tool('lock.mjs'), ['acquire', 'iphone', '--owner', by, '--ttl', '900'], { env });
+  assert.equal(r.code, 0, r.out);
+  phoneHolder = by;
+}
 
 before(async () => {
   state = tempDir('fw-console-e2e-');
@@ -70,6 +79,7 @@ test('the API refuses a foreign Host (DNS rebinding) and a POST without x-consol
 });
 
 test('swipe pair: wait --until started exits MET on Start, recording after ack, Done, part 2, the pick as JSON', async () => {
+  holdPhone('iphone-runner');
   const id = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'swipe-pair', '--title', 'Pair 3: which follows your finger better?',
     '--instructions', 'Swipe each page the same way, then pick.', '--url', 'http://page-a.invalid:5401/', '--url2', 'http://page-b.invalid:5402/', '--meta', '{"key":"1=A"}'));
   // the page sees it, blind: no URLs, no meta
@@ -128,6 +138,7 @@ test('swipe pair: wait --until started exits MET on Start, recording after ack, 
 });
 
 test('wait: NEVER (exit 4) when the user skips, TIMEOUT (exit 3), the user brings it back; usage errors exit 1', async () => {
+  holdPhone('fix-x');
   const id = postedId(cli('post', '--by', 'fix-x', '--kind', 'action', '--title', 'Finger scroll top to bottom', '--record'));
   const t = cli('wait', id, '--until', 'started', '--timeout', '1', '--quiet');
   assert.equal(t.code, 3, t.out);
@@ -153,6 +164,7 @@ test('wait: NEVER (exit 4) when the user skips, TIMEOUT (exit 3), the user bring
   const an = cli('answer', q, '--by', 'lead', '--value', 'yes');
   assert.equal(an.code, 0, an.out);
   assert.equal(JSON.parse(cli('show', q, '--json').stdout).history.at(-1).who, 'lead');
+  assert.equal(cli('cancel', id, '--by', 'fix-x').code, 0, 'one phone step at a time (I-123): done with it');
 });
 
 test('I-059 --runner-ends: the page\'s Done is refused (403, plain message) on a runner-ended part; the runner\'s ack done ends it', async () => {
@@ -225,6 +237,7 @@ test('I-059 B Start over: the page\'s restart wakes the runner\'s waits (exit 5 
   assert.match(sh.stdout, /user restart part 1 \(epoch 1\): I tapped the wrong thing/);
   assert.equal(JSON.parse(cli('show', id, '--json').stdout).status, 'answered');
   // the runner's own redo through the same core also ends a wait with REDO
+  holdPhone('iphone-runner');
   const id2 = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'action', '--title', 'Finger scroll', '--record'));
   assert.equal((await click(id2, 'start', { part: 1 })).status, 200);
   const w2 = cliAsync('wait', id2, '--until', 'recording', '--part', '1', '--timeout', '30', '--json', '--quiet');

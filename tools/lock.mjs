@@ -58,7 +58,8 @@
 // command with FW_LOCK_HELD=<resource>:<token>, so everything inside it (verify.mjs, fix.mjs ab, a
 // probe, another `lock.mjs run`) uses this one hold instead of queueing behind it; e.g.
 //   node tools/lock.mjs run chrome-measure --owner <topic> -- sh -c 'node tools/fix.mjs ab <topic> --runs 5 && node probe.mjs'
-// Resources: chrome-measure (verify.mjs takes it automatically), iphone (lease, TTL default 900 s).
+// Resources: chrome-measure (verify.mjs takes it automatically), iphone (lease, TTL default 900 s; I-123: a lease that runs
+// out while its owner has a console step on the phone stays the owner's for up to 10 min more, `status` says KEPT).
 //
 // chrome-measure (incident I-020): measure in ONE `run` hold (servers started inside its sh -c), not a lease.
 // A normal lease there defaults to --ttl 600 and can't outlive acquiredAt + 1200 s (--ttl above it is
@@ -144,6 +145,7 @@
 // --max-seconds; a notice on stderr) whose command gets FW_LOCK_SHARED too, so nothing timed starts inside it. `status` shows the group, its readers and the switch.
 import { spawn } from 'node:child_process';
 import { psTable, descendants, treeState, waitTreeGone } from './lib/proc-tree.mjs'; // I-024, I-099: the command's tree, and the wait until it is gone
+import { graceText } from './lib/phone-step.mjs';
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedMaxSec, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -207,6 +209,7 @@ function fmt(s) {
     if (h.format !== 'rw1') line += `\n${pad}format "${h.format}": unknown to this lock code (it waits as for an exclusive holder)`;
   }
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}${awakeText(s)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
+  if (s.grace) line += `\n${pad}KEPT: ${graceText(s.grace)}`; // I-123: not handed over in the middle of the user's step
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
   // the lane's line only while it is in use (review-lock-share N1: with the switch off and nothing shared, status reads as on main)
   if (laneInUse(s)) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${laneText(sw)}`; }

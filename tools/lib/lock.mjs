@@ -115,6 +115,7 @@ import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
 import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
 import { warmSummary, reapWarm, reapWarmSync, reapNote, settleSec, gateReapMs } from './sim-warm.mjs';
+import { stepGrace } from './phone-step.mjs'; // I-123: an iphone lease does not run out under the user's step
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -429,10 +430,15 @@ export function pidAlive(pid) {
 function readJson(f, d) { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } }
 function writeJson(f, v) { const t = `${f}.${process.pid}.${randomBytes(3).toString('hex')}.tmp`; writeFileSync(t, JSON.stringify(v, null, 1)); renameSync(t, f); }
 
-/** Why a holder record is stale, or null if it is live. */
+/**
+ * Why a holder record is stale, or null if it is live. I-123: an iphone lease that ran out while its owner has a console
+ * step on the phone (lib/phone-step.mjs stepGrace: begun, not answered/skipped/cancelled) stays live for up to
+ * LEASE_STEP_GRACE_SEC (600 s) past its expiry, the hard bound, so the phone is not handed over in the middle of the
+ * user's step; status() names the step (`grace`), and the first other acquirer that sees it logs it (step-grace.log).
+ */
 export function staleReason(h, now = Date.now()) {
   if (!h) return 'none';
-  if (h.expiresAt && now > Date.parse(h.expiresAt)) return `expired at ${h.expiresAt}`;
+  if (h.expiresAt && now > Date.parse(h.expiresAt) && !stepGrace(h, now)) return `expired at ${h.expiresAt}`;
   if (h.kind === 'process' && !pidAlive(h.pid)) return `pid ${h.pid} is gone`;
   return null;
 }
@@ -562,7 +568,8 @@ export function status(r) {
   const h = readJson(holderFile(r), null);
   const q = pruneQueue(readJson(queueFile(r), []));
   const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)].owner : null;
-  const st = { resource: r, holder: h, stale: h ? staleReason(h) : null, queue: q, next };
+  const now = Date.now(), grace = h ? stepGrace(h, now) : null; // I-123: a lease kept for its owner's user step
+  const st = { resource: r, holder: h, stale: h ? staleReason(h, now) : null, queue: q, next, ...(grace ? { grace } : {}) };
   const ho = handoverInfo(st);
   return ho ? { ...st, handover: ho } : st;
 }
@@ -738,6 +745,7 @@ export async function tryAcquire(r, opts) {
       h = null;
     }
     if (knownGroup(h)) h = pruneGroup(r, h, now, owner);
+    if (h && h.owner !== owner) noteStepGrace(r, h, now, owner); // I-123: logged once per lease and step
     // B1: inside a live functional slot (FW_LOCK_SHARED: a reader, the switch-off stand-in, or an exclusive hold a
     // --shared job re-entered) no exclusive job starts, on any path, in either switch state (N2); a shared one re-enters
     // it if it is no heavier than the slot (N8)
@@ -833,6 +841,19 @@ export async function tryAcquire(r, opts) {
     writeJson(queueFile(r), q);
     return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner, mode: short ? 'short' : 'exclusive' };
   });
+}
+
+export const stepGraceLogFile = () => join(lockDir(), 'step-grace.log');
+/**
+ * Inside the guard: when the live holder `h` is a lease kept past its expiry for its owner's user step (I-123), record
+ * it once per step in the holder (`stepGrace`) and as one line in locks/step-grace.log (who saw it: the acquirer `by`).
+ */
+function noteStepGrace(r, h, now, by) {
+  const g = stepGrace(h, now);
+  if (!g || h.stepGrace?.step === g.step) return;
+  h.stepGrace = { ...g, since: new Date(now).toISOString() };
+  writeJson(holderFile(r), h);
+  try { appendFileSync(stepGraceLogFile(), JSON.stringify({ at: h.stepGrace.since, resource: r, owner: h.owner, token: h.token, step: g.step, expiredAt: g.expiredAt, until: g.until, seenBy: by }) + '\n'); } catch {}
 }
 
 /** Why a --no-timing run may not run inside the timing hold `h` (ts-lock-bundle, review N7). */

@@ -20,6 +20,8 @@
 //   - open first checks whether Safari is parked (I-077: only blank views listed after a park, I-047) and then loads the
 //     URL in the parked tab or restarts Safari (openParked, outside the block); with a web page listed it goes on
 //     exactly as before. open measures nothing.
+//   - requireLease refuses while another owner's console step is on the phone (I-123 d: lib/phone-step.mjs runnerRefusal,
+//     --ignore-step), after the lease check and before anything touches Safari; it measures nothing (RUNNER_GUARD).
 // The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,6 +54,9 @@ test('iphone.mjs: scroll, record, open, status, PROBE, summarize and requireLeas
     record: sha(block(src, "  if (cmd === 'record') {", '  }')),
   };
   assert.deepEqual(got, PINS);
+  const lease = block(src, 'function requireLease() {', '}');
+  assert.equal(lease.split(RUNNER_GUARD).length, 2, 'requireLease has the I-123 runner guard, once');
+  assert.equal(sha(lease.replace(RUNNER_GUARD, '')), PINS_BEFORE_I123.requireLease, 'requireLease: only the I-123 guard changed');
   for (const [k, changes] of Object.entries(CHANGES)) {
     let b = block(src, `  if (cmd === '${k}') {`, '  }');
     for (const [now, then] of changes) {
@@ -82,11 +87,13 @@ const CHANGES = {
   record: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [GUARD, ''], [MAC, ''], MARK],
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
+const RUNNER_GUARD = "\n  // I-123: never touch the phone under another owner's console step that is on it (begun, not over); the Simulator is\n  // not the phone. --ignore-step C-NNN: a step its owner left behind, named on purpose.\n  const busy = process.env.FW_SIM_SESSION ? null : runnerRefusal({ owner, ignore: opt('ignore-step') });\n  if (busy) throw new Error(busy);";
+const PINS_BEFORE_I123 = { requireLease: '138ba8339515624d' }; // = 2226d51
 const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', record: 'f8dea07e65914d49', status: '28dd691408056316', open: 'dabba5b174193021' };
 
 const PINS = {
-  requireLease: '138ba8339515624d', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: 'ea6efe52e87761be', record: 'a22ece491910c1cb', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park)
+  requireLease: 'c3fe5c3908d05b4b', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
+  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: 'ea6efe52e87761be', record: 'a22ece491910c1cb', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with
