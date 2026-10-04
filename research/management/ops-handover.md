@@ -42,6 +42,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 01:xxZ **P-114 result, ops second read: AGREE, no-worse, so v7 -> v8 after the smoke checks** (int-v8 8830dcbf,
+    against the card be0d650b and ruling e0b92985). Re-checked hashes: score 5bbdd2f10cca, base 26d944bf93e2, hold.sh
+    6367f45452e4, serve.sh 04b793255e19, selftest c2a86e730417, score.json 377f19c597da.
+  - Mmoving > 50: v7 has 2 per run, v8 0 (d -2). Mtweens scored keys are within +1.5 ms; close is -4/-5 ms. GH > 50 d -1,
+    no new cluster at any twin. All three gates are no-worse, and no verdict changes at a twin.
+  - The P-111 band (2250-2999) has no > 50 cluster in either arm and a > 46 cluster in both, so it is not replicated
+    (the rule needs a GH NEW cluster in the band).
+  - All 4 holds VALID (holds.log 17:31-17:52Z, exit 0); every sentinel passed; no void runs; load1 2.3-7.0, all inside
+    exclusive holds.
+  - Conditions met. Condition 1: no Simulator session ran in the gaps; the only gap job was a 3 s shared ts-lock-rules
+    job at 17:41:40Z between H2 and H3. Ruling: two opening-gate VOIDs (17:02Z, 17:06Z, exit 5) before any item.
+  - N1: the warm-up outside the holds also used G flicks on B; the ruling names S runs only. B is uncounted with no arm
+    data, so nothing could be selected on results. Accepted; record it.
+  - N2: "P-111's WORSE came from Mac load" stays OBSERVED (in our setup). The pre-registered outcome only says not replicated.
+  - Ledger row P-114 added and filled: 5 of 5 predictions in.
 - 10-05 00:4xZ **P-115 pre-data (fix-toolbar-resize e48d9e1b): FAIL C1.** Hashes match: p115-inject 0cc373b2594d,
     check-inject115 126f46d31f3c, sim-bisect115 91d32f9ac1c6 (only arms, inject file, folder and label differ from
     f77c5e456d17), score-bisect cb6f0c97b81b. No P-115 data yet.
