@@ -629,7 +629,8 @@ passed, and every counted run is valid.
 H1 ran on its third attempt. Attempts 1 and 2 (17:02Z, 17:07Z) were VOID at the start gate (too cool: Nominal/Fair,
 35.4-36.6 °C) before any item, so no data was seen. Under the lead's ruling, such a VOID does not use the hold's
 re-run. The phone was then warmed outside any hold, with uncounted S runs and G flicks on B (iphone-runner's out/p114/warm),
-until a gate read passed at 38.6 °C.
+until a gate read passed at 38.6 °C. Deviation from the ruling's wording (ops N1): the ruling names S runs for the
+warm-up, and the runner also used G flicks. Harmless: B is uncounted and outside every hold, and no gate reads it.
 
 Scorer `p114/score.mjs` 5bbdd2f10cca (base 26d944bf93e2); output out/p114/score.json (sha256 377f19c597da).
 
@@ -680,8 +681,10 @@ No shared job could join the exclusive holds; the H4 rise is inside the runner's
 
 **Reading P-111 and P-114 together** (cross-block values don't compare; verdicts do). P-111's two WORSE verdicts (M
 close, GH cluster) came from a block whose M leg ran at Mac load1 13-140. P-114 is the second and last block, run on
-a quiet Mac with P-111's gates unchanged, and it finds neither. P-112 cleared morph rev 3 of the close start, and P-113
-cleared faces + glue and K of the band. This block's verdict decides the switch: v7 → v8.
+a quiet Mac with P-111's gates unchanged, and it finds neither: by the outcome rule, P-111's WORSE verdicts are
+**not replicated**. That P-111's WORSE came from the Mac load is OBSERVED (in our setup, cause unknown): no check
+isolated load as the cause (ops N2). P-112 cleared morph rev 3 of the close start, and P-113 cleared faces + glue
+and K of the band. This block's verdict decides the switch: v7 → v8.
 
 ## Reproduce
 
