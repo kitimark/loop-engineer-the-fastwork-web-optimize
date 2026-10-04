@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T11:48:14Z",
- "updatedBy": "lead",
+ "updatedAt": "2026-10-04T12:26:48Z",
+ "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T12:26:48Z", "text": "Progress tidied: fixes in the best build marked landed (people-section shrink, avatar row, pin clamp, F3, the earlier combined build); the end-of-page menu GPU version landed as a record only; countdown faces landed; new rows for the fast-flick test (T-113) and the next best build v8." },
   { "at": "2026-10-04T11:48:14Z", "text": "Best build is now v7: v6 plus the countdown on the GPU and a calmer avatar row; same look, less work at rest." },
   { "at": "2026-10-04T11:19:00Z", "text": "The end-of-page menu animation's version 2 failed its first phone check (P-098): the menu's first frames when it opens got 4.5-6.5 ms slower, although closing got faster. It stays out, and the next best build (v7) goes ahead without it. The second check (P-099) was not needed." },
   { "at": "2026-10-04T09:55:00Z", "text": "The countdown roll on the graphics chip has landed. You chose to let the next best build (v7) wait for the end-of-page menu animation: it goes in if its two phone checks, running now, pass." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T15:48:02Z", "text": "Today's best build now has every landed fix in one piece (base plus the idle-animation and menu display fixes). It is the \"before\" side of every Try-it and finger test from now on." },
   { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." },
   { "at": "2026-10-03T15:23:14Z", "text": "You accepted the hero change (PR-011, both items) under your new pixel rule; the avatar slider is looked into separately. Next for the hero: its phone test (P-081) and your finger test, once the iPhone is back." },
-  { "at": "2026-10-03T15:21:00Z", "text": "You accepted the wide pixel rule (PR-010): a fix that differs only in edge pixels or tiny shade steps, within set limits checked in Chrome and the Simulator, lands without asking you; anything bigger, or seen only in motion, still comes to you. Open fixes are being re-checked against it." },
-  { "at": "2026-10-03T15:05:00Z", "text": "The Try-it panels you used for the pixel rule and the hero change compared against the original page, so they also showed earlier changes; a tool fix lets each option show only its own change. Revised proposals follow." }
+  { "at": "2026-10-03T15:21:00Z", "text": "You accepted the wide pixel rule (PR-010): a fix that differs only in edge pixels or tiny shade steps, within set limits checked in Chrome and the Simulator, lands without asking you; anything bigger, or seen only in motion, still comes to you. Open fixes are being re-checked against it." }
  ],
  "items": [
   {
@@ -71,7 +71,7 @@
    "fixes": "Each countdown digit becomes one fixed strip of numbers that only slides, in the hero clock and in the menu panel's clock: less redrawing when the clock comes back into view, less graphics memory and fewer style changes.",
    "felt": { "answer": "not-yet", "text": "your finger test was waived for the countdown (T-055); your earlier blind swipe picked the original, with low confidence (C-035)" },
    "gate": "Landed under the 'does less work' rule: fewer redraws and layers, measured; no new slow frames on the phone.",
-   "next": "Landed on main. It goes into the next best build (v7) after the countdown roll check (P-093) and your PR-017 decision: with the roll (cd-roll-ca) if you accept it, alone if not.",
+   "next": "Landed: part of today's best build (v7).",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-079", "what": "phone block of strip-tc at the phone's real \"Serious\" heat state: no new slow frames, less clock redrawing", "result": "Yes: slow frames over 50 ms the same as without it (at the top and with the menu pinned); clock repaints in the first second back at the top 21 vs 54; 16 vs 48 clock layers kept in memory. One layout count could not be fully decided but cannot have failed." }],
    "details": [
@@ -102,7 +102,7 @@
     "text": "your blind swipes (C-038, C-039, C-040): you picked R2 in both pairs, and the catch pair (the same page twice) came out \"same\""
    },
    "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
-   "next": "Its short phone check (P-095) passed and you preferred it in the blind swipes; landed, and it is today's best build (v6). Next from this work: a proposal to use the same idea on the end-of-page menu animation (stage A: on touch phones, no scroll lock and a real scroll length with gentle snapping).",
+   "next": "Landed in v6. Follow-up (PR-018, on hold): the end-of-page menu follows your scroll instead of locking it; version B is being rebuilt on v7 without the GPU menu change that measured slower (P-098), then you decide.",
    "owner": "fix-hero-exit-threaded",
    "checks": [ { "id": "P-095", "what": "short phone check of the slimmer version (R2) at the phone's real \"Serious\" heat state", "result": "Yes: no new slow frames over 50 ms, and fewer over 34 ms (median 12 vs 27 per run in the hero band); its extra script work stays off. Checked twice from the raw data." }, { "id": "P-088", "what": "phone test of the two cheaper restarts (N and Fb) at the phone's real \"Serious\" heat state", "result": "No: no extra slow frames, but both add work the moment your finger starts a scroll (and Fb still redraws at rest), so back to the code." } ],
    "details": [
@@ -129,9 +129,9 @@
     "text": "you accepted it (PR-017, 09:11 UTC) and said the new page is much smoother"
    },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-093) at the phone's real \"Serious\" heat state.",
-   "next": "Landed (09:2x UTC) and goes into the next best build (v7). Research follows (T-096): why it feels smoother, and where its one extra slow frame per phone run comes from.",
+   "next": "Landed in v7. Follow-up for v8: a lighter version of the same roll (far fewer animation steps) needs one more short phone round (P-102), then a display-rate check (P-100) and the T-096 research on why it feels smoother.",
    "owner": "fix-cd-roll-ca",
-   "checks": [ { "id": "P-093", "what": "short phone check: no new slow frames at the top of the page", "result": "passed (within the allowed +2); each new-build run had 1-2 frames over 50 ms, the old build none, so T-096 looks at it" } ],
+   "checks": [ { "id": "P-093", "what": "short phone check: no new slow frames at the top of the page", "result": "passed (within the allowed +2); each new-build run had 1-2 frames over 50 ms, the old build none, so T-096 looks at it" }, { "id": "P-102", "what": "short phone check: the lighter roll (about 4x fewer animation steps) has no new slow frames at the top of the page", "result": "" }, { "id": "P-100", "what": "phone check: does the phone run the roll animation at its fast display rate", "result": "" } ],
    "details": [
     "de-gpu T-030 brief 3: within about 0.08 px of the original's motion; the original itself differs by 3.3 px between 60 and 120 Hz. Parked under the identical-only rule, then started at the user's request (T-030 #10, 00:10Z). Stacks on cd-strip.",
     "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order).",
@@ -177,8 +177,8 @@
    "writeup": "fixes/iphone-wave2/README.md",
    "title": "F3: touch listeners set up once, removing the hitch in the middle",
    "area": "middle",
-   "state": "testing",
-   "stage": "F",
+   "state": "landed",
+   "stage": "L",
    "fixes": "One very slow frame (over 100 ms) in the middle of the page, around 1960 px down, when the end-of-page panel added its touch listeners. F3 adds them once when the page loads, so that frame is gone.",
    "best": [
     { "what": "the slow frame around 1960 px down", "before": "106-118 ms", "after": "none over 34 ms in 4 of 4 runs", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-022", "note": "one unexplained 49 ms frame at 2019 px in 1 run" },
@@ -186,7 +186,7 @@
    ],
    "felt": { "answer": "better", "text": "provisional, one pair (C-042): you picked the best build over the plain page, difference 4 of 5; the best build came second, on a warmer phone" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "One more swipe step: a hidden check pair. The swapped-order repeat is dropped: the frame logs of your first pair show the build without F3 worse in both orders. It runs after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087.",
+   "next": "Landed: in every best build since v1; its last swipe check is done.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -359,12 +359,12 @@
    "writeup": "fixes/stack5/README.md",
    "title": "Today's best combined build (your sitting)",
    "area": "whole",
-   "state": "testing",
-   "stage": "V",
+   "state": "landed",
+   "stage": "L",
    "fixes": "All of today's candidate fixes together: the countdown fix, the panel fix, the card reveal fix and F3.",
    "felt": { "answer": "better", "text": "Blind swipe test (10-02 23:41Z, C-026): you picked today's best build as smoother than the original, at the top and in the menu change, with a little lag left. Earlier, not blind: B felt quite a bit smoother on the hero and at the end." },
    "gate": "Each part still needs its own phone test and review before it can land; the combined build is a preview.",
-   "next": "Option A is confirmed on the phone: the slow frame at the people cards is back to today's level and the calm start at the top is kept. B is still being researched (picture check first).",
+   "next": "Done: that sitting's combined build landed and grew into today's best build (v7). The next one is v8.",
    "owner": "iphone-runner (builds), lead",
    "checks": [],
    "details": [
@@ -531,14 +531,14 @@
    "writeup": "fixes/shell-hold-c/README.md",
    "title": "People section shrink: hide the off-screen profile cards while it starts",
    "area": "middle",
-   "state": "testing",
-   "stage": "V",
+   "state": "landed",
+   "stage": "L",
    "fixes": "When the people section starts to shrink, the phone briefly redraws profile cards that are off screen. This hides them for that moment, so one slow frame at that spot goes away. It does not lower the count of slow frames over the whole scroll.",
    "best": [
     { "what": "the frame where the people section starts to shrink (median)", "before": "37 ms, build without it", "after": "17 ms", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-063", "note": "phone block C1, 4 runs per arm, no overlap; slow frames over the whole scroll unchanged (8 vs 7.5)" }
    ],
    "gate": "Passed on the phone (C1): the spot frame fell and the reveal and scroll guards held.",
-   "next": "Landing is the lead's call. If two near-34 ms spots matter, a second C1 block scored there decides it.",
+   "next": "Landed: in every best build since v2.",
    "owner": "wi-stack",
    "details": [
     "C1 (iphone-runner, scored by wi-stack, 81dbc9b): 8/8 runs valid; S6 st6-rb css d22542d0b5f8 vs HC css a3b34c3a3920, JS 59b23b3f57fd both. Spot (c) fn S6 36/40/37/37 vs HC 17/17/16/17; guards: reveal frame 2 median 41.5 both, scroll dt>50 1 vs 0.5. Scroll dt>34 7.5 vs 8; HC has more near-34 frames at avatars +is-sliding and commission +entering (n=4, can't tell from noise). P-063 hit."
@@ -550,15 +550,15 @@
    "writeup": "fixes/iphone-wave2/README.md",
    "title": "Panel pin clamp: no back-and-forth jump when you push past the end",
    "area": "end",
-   "state": "testing",
-   "stage": "V",
+   "state": "landed",
+   "stage": "L",
    "fixes": "When you pushed past the end of the page, the page could jump back and forth between two positions while the bottom panel grew. This keeps the pin inside the real page end and stops the bounce while the panel grows, so the jumping is gone.",
    "best": [
     { "what": "page jumping back and forth when you push past the end", "before": "present (scroll position 5220 <-> 5334)", "after": "gone", "tag": "OBSERVED", "driver": "finger", "note": "slow frames while the panel grows were not better (over 50 ms: 10 % before, 21-26 % with it)" }
    ],
    "felt": { "answer": "same", "text": "you called both versions laggy in that finger test; the jump itself was gone" },
    "gate": "No phone gate of its own: it is checked as part of the whole build.",
-   "next": "Nothing on its own; the slow frames while the panel grows are tracked under the morph work.",
+   "next": "Landed: in every best build since v1. The slow frames while the panel grows are tracked under the morph work.",
    "owner": "fix-nav-morph",
    "details": [
     "mw10e-g = pin clamp (f, JS 68a00843) + overscroll-behavior-y: none while morphing (JS 22efa0ab69ba), on aw1-10e; carried in user-b/user-bplus/RB/st6-rb. It still carries the inert DEBUG __fwMorphDrive hook (runs only when called).",
@@ -637,35 +637,38 @@
    "writeup": "fixes/rest-script/README.md",
    "title": "Avatar row rests while it is off-screen",
    "area": "middle",
-   "state": "testing",
-   "stage": "V",
+   "state": "landed",
+   "stage": "L",
    "fixes": "The avatar slider in the people section stops its slide work while it is off-screen, so the page does less work at rest and the phone stays cooler.",
    "felt": { "answer": "not-yet", "text": "you kept it (PR-014); no finger test needed for a 'does less work' fix" },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-094).",
-   "next": "Its short phone check (P-094) passed: no new slow frames. It lands, then goes into the next best build (v7) with the countdown fixes, once the countdown roll check and your PR-017 decision settle.",
+   "next": "Landed: part of today's best build (v7).",
    "owner": "fix-rest-script",
    "checks": [ { "id": "P-094", "what": "short phone check: no new slow frames where it changes the page", "result": "passed: frames over 50 ms 0 vs 0 per run (OBSERVED, scripted window scroll, 4 runs per arm, phone at real \"Serious\" heat); frames over 34 ms 3 vs 4, inside the allowed band" } ],
    "details": [
     "Chrome 430, far at y2796: main frames 31/32 -> 17/17 per 4 s, layouts 4 -> 0, paints 34/39 -> 0/3; near and paused rows the same. PR-014 accepted keep 03:57:01Z. P-094 ticket 8f1e16a0 in ops read (the lead's combine byte check on the best build is owed)."
-   ]
+   ],
+   "inBuild": true
   },
   {
    "id": "morph-gpu",
    "title": "End-of-page morph on the graphics chip",
    "area": "end",
-   "state": "testing",
-   "stage": "V",
+   "state": "landed",
+   "stage": "L",
    "fixes": "When you push past the end of the page, the bottom panel's grow-and-fade runs as an animation on the graphics chip instead of script every frame.",
    "felt": { "answer": "not-yet", "text": "not tried by you yet" },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-092).",
-   "next": "Version 2 (the clipping layer prepared before the morph) failed its first phone check: the menu's first frames when it opens got 4.5-6.5 ms slower, though closing got faster. It stays out, and v7 goes out without it (your choice in T-030). What happens next with this fix is the lead's decision.",
+   "next": "Landed as a record, not in any best build. It stays out until we know why the opening frame got slower.",
    "owner": "fix-morph-gpu",
    "checks": [ { "id": "P-092", "what": "short phone check: no new slow frames during the end-of-page morph", "result": "Not worse: at the phone's real heat state, no new slow frames during the morph (over 50 ms: 2 vs 2 per run; over 34 ms within the normal range). Cost: the first frame of each morph is about 7 ms longer (60-64 vs 54-56 ms, in all 8 runs). 8 of 8 runs valid; ops re-score identical." }, { "id": "P-098", "what": "short phone check: the first opening of the end menu no more than 2 ms longer than today's best build", "result": "Worse at the open start (done): the first frames of the opening were 4.5-6.5 ms longer than today's best build on every run of version 2; closing got 8-22 ms faster. Version 2 stays out. Ops re-score agrees." }, { "id": "P-099", "what": "phone check with a real flick into the page end (the case where the preparation may not have run)", "result": "Skipped (not needed): it was to run only if P-098 passed." } ],
    "details": [
     "P-092 registered 10-04 03:1xZ (55064128, frames-n2 f3a50b8ec2dd), N2 reveal, PR-012 row 5.",
     "P-092 result 10-04 05:39-06:06Z (bce1eb48): 3 holds valid at Serious, S1/S2 pass, M sentinel 4/4; moving >50 d 0, >34 d -2, no-worse, not threshold-sensitive; drive >34 d -3.5 threshold-sensitive, no gain claimed. Lead ruling 06:1xZ: PASS as no-worse; tween-start cost +7 ms (V 60-64 vs C 54-56, 8/8) is real, so morph-gpu lands as a record, stays in the GPU preview only; rev 2 (clip layer prepared before the tween) gets a ticket with falsifier V <= C + 2 ms.",
     "P-098 result 10-04 11:1xZ (mgmt-ops-10 second read agrees): open-start first frames V +4.5 to +6.5 ms vs C on every V run, falsifier met, rev 2 stays out (registered decision); close 8-22 ms faster. P-099 skipped per ticket. v7 ships without morph-gpu (lead T-030 #32, choice A)."
-   ]
+   ],
+   "inBuild": false,
+   "whyNot": "Kept on main as a record only: both versions made the menu's first opening frames slower on the phone (version 1 about 7 ms, version 2 4.5-6.5 ms, P-098)."
   },
   {
    "id": "nav-morph",
@@ -684,10 +687,61 @@
    "details": [
     "P-091 registered 10-04 03:1xZ (fixes/nav-morph/README.md ticket rev 2, amendment 4a786165)."
    ]
+  },
+  {
+   "id": "t113",
+   "title": "Fast-flick stress test of v7 (hero cards and end of page)",
+   "area": "whole",
+   "state": "diagnosing",
+   "stage": "R",
+   "fixes": "Finds what makes fast flicks lag in the hero cards (also right after a fresh load) and at the end of the page, which you reported on v7 (T-113).",
+   "felt": { "answer": "not-yet", "text": "you reported the lag on v7 (T-113); your short finger test comes after the robot runs" },
+   "gate": "A finding first: which work fills each slow frame. Fixes it leads to go into v8 with their own checks.",
+   "next": "Robot-finger fast flicks on v7 on our iPhone (fresh load, hero, end of page) with a Safari timeline; then your short finger test.",
+   "owner": "iphone-runner",
+   "checks": [],
+   "details": [
+    "User T-113 (12:0xZ): 3 reports on v7: hero cards when scrolling starts right after a fresh load (rare), hero cards on fast scrolling (rare), end of page on fast scrolling. Board priority 1.",
+    "New standing check from it (T-113 #4): every best build gets a whole-page fast-flick robot check (hero, middle, end) next to the scripted runs."
+   ]
+  },
+  {
+   "id": "v8",
+   "title": "Next best build (v8)",
+   "area": "whole",
+   "state": "testing",
+   "stage": "V",
+   "fixes": "The next combined build: a lighter countdown roll or the countdown faces (the better of the two), phone-only scroll handlers off, the hero accent word on the GPU, a cheaper top-bar colour check, and fixes from the fast-flick test.",
+   "felt": { "answer": "not-yet", "text": "not built yet" },
+   "gate": "Each part passes its own checks plus the new whole-page fast-flick check; then the build as a whole.",
+   "next": "Parts are being checked one by one (T-114); the build follows when they pass.",
+   "owner": "lead",
+   "checks": [],
+   "details": [
+    "Candidates in T-114 (12:10Z): cd-roll-ca K (P-102), countdown-faces (landed 25f860ff), scroll-cb-phone (P-103), accent-ca, nav-hit-cache (P-101 failed as registered, re-ticket P-104), and the T-113 findings. The two countdown fixes compete; only the better goes in."
+   ]
+  },
+  {
+   "id": "countdown-faces",
+   "title": "Countdown digits as 3 ready-made faces, nothing animating while hidden",
+   "area": "hero",
+   "state": "landed",
+   "stage": "L",
+   "inBuild": false,
+   "writeup": "fixes/countdown-faces/README.md",
+   "fixes": "Each countdown digit is drawn from 3 ready-made faces, and nothing animates or ticks while the clock is out of view, so the page does less work at rest.",
+   "felt": { "answer": "not-yet", "text": "your finger test was waived for the countdown (T-055)" },
+   "gate": "Landed under the 'does less work' rule; its phone no-worse check was waived for the countdown (T-055).",
+   "next": "Landed on main (after v7). A v8 candidate; it competes with the lighter countdown roll, and only the better one goes in.",
+   "owner": "de-countdown",
+   "checks": [],
+   "details": [
+    "Landed as 25f860ff: option (b) hide while unseen plus the stopped 1 s interval, rebuilt on main + morph-inherit + cd-strip + cd-roll-ca (user T-024)."
+   ]
   }
  ],
  "upcoming": [
-  { "title": "One more blind swipe step for the menu fix (F3): a hidden check pair", "when": "after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087", "item": "f3-arm-scope" },
+  { "title": "Short finger test on v7: fresh load, fast flicks through the hero, fast flicks at the end (about 5 min)", "when": "after the robot fast-flick runs on v7 (T-113)", "item": "t113" },
   { "title": "Milestone 2: the same checks from a hot 42-44 °C start and with Xcode's \"Serious\" heat state on (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
   { "title": "Full phone timing run of the best build against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
