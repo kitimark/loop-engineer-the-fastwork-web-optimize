@@ -1,0 +1,16 @@
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+index 61c66de2..7dabb397 100644
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13552,7 +13552,10 @@ function dN(n, r) {
+       (window.addEventListener(`scroll`, __rvSch, { passive: !0 }),
+       window.addEventListener(`resize`, () => ((__rvRdy = !1), __rvSch())),
+       __rvMq.addEventListener(`change`, () => ((__rvRdy = !1), __rvSch())),
+-      setTimeout(__rvSch, 0)),
++      setTimeout(__rvSch, 0),
++      // for a caller that knows the end is coming without a scroll rest (an end-section observer): run the setup
++      // now, at most once per need (idempotent: __rvPrep keeps what exists and measures only when not ready)
++      (window.__rvPrepNow = () => (__rvPT && (clearTimeout(__rvPT), (__rvPT = 0)), __rvPrep(), __rvRdy))),
+     __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
+     // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
+     __rvFin = () => {
