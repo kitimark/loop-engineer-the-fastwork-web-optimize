@@ -74,7 +74,12 @@ async function counts(c, ev) {
   // flatten; phase marks
   const flat = []; const walk = (r, top) => { flat.push([r, top]); for (const ch of r.children || []) walk(ch, top); };
   for (const r of recs) walk(r, r);
-  const marks = flat.filter(([r]) => r.type === 'TimeStamp' && /^acc:/.test(r.data?.message || '')).map(([r]) => [r.startTime, r.data.message.slice(4)]).sort((a, b) => a[0] - b[0]);
+  let marks = flat.filter(([r]) => r.type === 'TimeStamp' && /^acc:/.test(r.data?.message || '')).map(([r]) => [r.startTime, r.data.message.slice(4)]).sort((a, b) => a[0] - b[0]);
+  // fallback (console.timeStamp marks were not seen on the Simulator, 12:30Z run): HE's own timers mark each phase start,
+  // TimerInstall timeout 1250/2200 = idle starts, 900 = a draw starts (JS 3834-3958)
+  let markSrc = 'timeStamp';
+  if (!marks.length) { markSrc = 'TimerInstall'; marks = flat.filter(([r]) => r.type === 'TimerInstall' && [900, 1250, 2200].includes(r.data?.timeout)).map(([r]) => [r.startTime, r.data.timeout === 900 ? 'draw' : 'idle']).sort((a, b) => a[0] - b[0]); }
+  const types = {}; for (const [r] of flat) types[r.type] = (types[r.type] || 0) + 1;
   const phaseAt = (t) => { let p = 'out'; for (const [s, q] of marks) if (s <= t) p = q; return p === 'idle' ? 'idle' : 'draw'; };
   const isAcc = (r) => { const q = QB(r.data?.clip); return !!q && q.w <= 1.6 * g.w && q.h <= 1.6 * g.h && q.w > 0.2 * g.w; };
   const c0 = () => ({ RenderingFrame: 0, RecalculateStyles: 0, Layout: 0, Paint: 0, accentPaint: 0, Composite: 0, FireAnimationFrame: 0, framesWithRecalc: 0, framesWithLayout: 0, framesWithAccentPaint: 0 });
@@ -89,7 +94,7 @@ async function counts(c, ev) {
   const dur = { idle: 0, draw: 0 }; { let prev = t0, p = 'draw'; for (const [t, q] of [...marks.filter(([t]) => t >= t0 && t <= t1), [t1, null]]) { dur[p] += t - prev; prev = t; if (q) p = q === 'idle' ? 'idle' : 'draw'; } }
   const perS = (P) => Object.fromEntries(['RenderingFrame', 'RecalculateStyles', 'Layout', 'Paint', 'accentPaint', 'framesWithRecalc'].map((k) => [k, dur[P] ? +(C[P][k] / dur[P]).toFixed(1) : null]));
   live = false;
-  return { windowMs: WIN, phaseS: { idle: +dur.idle.toFixed(2), draw: +dur.draw.toFixed(2) }, marks: marks.map((m) => m[1]).join(','), paintBoxDev: g, layerTreeDidChange: lt, counts: C, perSecond: { idle: perS('idle'), draw: perS('draw') }, records: recs.length };
+  return { windowMs: WIN, markSrc, recordTypes: types, phaseS: { idle: +dur.idle.toFixed(2), draw: +dur.draw.toFixed(2) }, marks: marks.map((m) => m[1]).join(','), paintBoxDev: g, layerTreeDidChange: lt, counts: C, perSecond: { idle: perS('idle'), draw: perS('draw') }, records: recs.length };
 }
 
 async function layers(c) {
@@ -142,7 +147,9 @@ for (let i = 0; i < order.length; i++) {
         const shoot = async (box) => { const img = screenshot(label); const r = { x: Math.round(cal.ox + box.x * cal.s), y: Math.round(cal.oy + box.y * cal.s), w: Math.round(box.w * cal.s), h: Math.round(box.h * cal.s) }; return crop(img, r); };
         await ev(SHIM(heRange(arm))); await ev('(window.__acc.hold = true, 0)');
         for (let j = 0; j < 160 && !(await ev('window.__acc.heldReady()')); j++) await sleep(25);
-        row.plan = await shootPlan(ev, shoot, TARGETS, keep, { settle: 250, log: (m) => console.log(label, m) });
+        // ACC_TARGETS=k1,k2 (label|phase): a subset of TARGETS, to fit a session
+        const TG = process.env.ACC_TARGETS ? TARGETS.filter((t) => process.env.ACC_TARGETS.split(',').includes(t.join('|'))) : TARGETS;
+        row.plan = await shootPlan(ev, shoot, TG, keep, { settle: Number(process.env.ACC_SETTLE || 200), log: (m) => console.log(label, m) });
         row.plan.hits = await ev('window.__acc.hits');
         for (const k of Object.keys(row.plan.meta)) row.plan.meta[k].perT = row.plan.meta[k].perT.map((x) => x.join(':')).join(' ');
         cmp[label] = Object.keys(ref).map((k) => ({ key: k, ...tol(ref[k], shots[k], i >= 2 ? aa[k] || null : null, cal.screen[0] * cal.screen[1], cal.s) }));

@@ -1,12 +1,24 @@
 {
   "topic": "accent-ca",
   "kind": "mechanism counts + frozen-frame pixels (no timing; memory/defer-timing-focus-call-tree.md)",
-  "base": { "name": "v6 (best-build + B-R2)", "js": "8018ce062d30", "css": "71b65c667720" },
+  "base": {
+    "name": "v6 (best-build + B-R2)",
+    "js": "8018ce062d30",
+    "css": "71b65c667720"
+  },
   "arms": {
     "C": "v6",
-    "E1": { "js": "8018ce062d30", "css": "cd7f976eebaf", "note": "this patch.diff" },
-    "WC": { "css": "a1f4f5b434fd" },
-    "WP": { "css": "16c91b8577b9" }
+    "E1": {
+      "js": "8018ce062d30",
+      "css": "cd7f976eebaf",
+      "note": "this patch.diff"
+    },
+    "WC": {
+      "css": "a1f4f5b434fd"
+    },
+    "WP": {
+      "css": "16c91b8577b9"
+    }
   },
   "chrome": {
     "browser": "Chrome/154.0.8037.97",
@@ -15,16 +27,161 @@
     "windowMs": 9150,
     "raw": "out/accent-ca/chrome-p430-2026-10-04T10-32-20-391Z.json",
     "counts": {
-      "C": { "paint": 1316, "styleElements": 3861, "updateLayoutTree": 450, "mainFrames": 450, "accentAnimsNotComposited": "18/27" },
-      "C-again": { "paint": 1317, "styleElements": 3895, "updateLayoutTree": 452, "mainFrames": 452, "accentAnimsNotComposited": "18/27" },
-      "E1": { "paint": 688, "styleElements": 3337, "updateLayoutTree": 452, "mainFrames": 452, "accentAnimsNotComposited": "6/15" }
+      "C": {
+        "paint": 1316,
+        "styleElements": 3861,
+        "updateLayoutTree": 450,
+        "mainFrames": 450,
+        "accentAnimsNotComposited": "18/27"
+      },
+      "C-again": {
+        "paint": 1317,
+        "styleElements": 3895,
+        "updateLayoutTree": 452,
+        "mainFrames": 452,
+        "accentAnimsNotComposited": "18/27"
+      },
+      "E1": {
+        "paint": 688,
+        "styleElements": 3337,
+        "updateLayoutTree": 452,
+        "mainFrames": 452,
+        "accentAnimsNotComposited": "6/15"
+      }
     },
     "pixels": {
       "frames": 74,
-      "C_vs_Cagain": { "differing": 0, "maxLevel": 0 },
-      "C_vs_E1": { "differing": 0, "maxLevel": 0, "tier": "T0 (Chrome phone width only)" }
+      "C_vs_Cagain": {
+        "differing": 0,
+        "maxLevel": 0
+      },
+      "C_vs_E1": {
+        "differing": 0,
+        "maxLevel": 0,
+        "tier": "T0 (Chrome phone width only)"
+      }
+    },
+    "pixelsDesktop1440": {
+      "frames": 74,
+      "C_vs_Cagain": {
+        "differing": 0,
+        "maxLevel": 0
+      },
+      "C_vs_E1": {
+        "differing": 0,
+        "maxLevel": 0
+      },
+      "raw": "out/accent-ca/chrome-d1440-2026-10-04T12-43-41-042Z.json"
+    },
+    "reducedMotion": {
+      "shots": 3,
+      "C_vs_E1": {
+        "differing": 0
+      },
+      "stylesSame": true,
+      "raw": "out/accent-ca/chrome-p430-rm-2026-10-04T12-42-46-346Z.json"
+    },
+    "pixelsWP": {
+      "frames": 28,
+      "C_vs_WP": {
+        "differing": 20,
+        "maxLevel": 212,
+        "beyondPct": 0.115,
+        "areaCssPx2": 459,
+        "tier": "T3 visible"
+      },
+      "raw": "out/accent-ca/chrome-p430-2026-10-04T12-50-53-729Z.json"
     }
   },
-  "simulator": "owed (parked at the usage pause, 2026-10-04 10:52Z)",
-  "notes": "No measurement code changed. No timing A/B by rule."
+  "simulator": {
+    "device": "iPhone 15 Pro Max simulator (sim.mjs session --functional)",
+    "windowMs": 9150,
+    "counts": {
+      "session1": {
+        "raw": "out/accent-ca/sim-counts-census-2026-10-04T12-30-30-208Z.json",
+        "C": {
+          "renderingFrame": 493,
+          "recalc": 516,
+          "layout": 359,
+          "paint": 473,
+          "accentPaint": 441
+        },
+        "C-again": {
+          "renderingFrame": 483,
+          "recalc": 505,
+          "layout": 357,
+          "paint": 473,
+          "accentPaint": 441
+        },
+        "E1": {
+          "renderingFrame": 456,
+          "recalc": 484,
+          "layout": 348,
+          "paint": 455,
+          "accentPaint": 423
+        },
+        "WC": {
+          "renderingFrame": 460,
+          "recalc": 490,
+          "layout": 348,
+          "paint": 411,
+          "accentPaint": 377
+        }
+      },
+      "session2": {
+        "raw": "out/accent-ca/sim-counts-2026-10-04T12-47-34-678Z.json",
+        "C": {
+          "renderingFrame": 499,
+          "recalc": 520,
+          "layout": 364,
+          "paint": 479,
+          "accentPaint": 447
+        },
+        "C-again": {
+          "renderingFrame": 486,
+          "recalc": 511,
+          "layout": 356,
+          "paint": 471,
+          "accentPaint": 439
+        },
+        "WP": {
+          "renderingFrame": 263,
+          "recalc": 281,
+          "layout": 32,
+          "paint": 128,
+          "accentPaint": 58
+        }
+      },
+      "phaseSplit": "not available (timeStamp marks do not line up with frame records in our script)",
+      "layerTreeDidChange": "never arrived (0)"
+    },
+    "census": "C and E1: 3 boil svg layers backed only while idle (animation, stacking; 0.35-0.39 MB), none at mid-draw; WC keeps them in every phase (+0.39 MB). F-220",
+    "pixels": {
+      "frames": 58,
+      "raw": "out/accent-ca/sim-pixels-2026-10-04T12-36-58-991Z.json",
+      "C_vs_Cagain": {
+        "differing": 27,
+        "maxLevel": 211,
+        "beyondPct": 0.9,
+        "note": "stale boil frame in the 2nd C load from idle 399.9 ms on (F-221)"
+      },
+      "C_vs_E1": {
+        "differing": 8,
+        "maxLevel": 2,
+        "beyondPct": 0,
+        "tier": "T0/T1: equals one of the two C loads in 57/58 frames; 2 shades in the other"
+      }
+    },
+    "reducedMotion": {
+      "shots": 3,
+      "C_vs_E1": {
+        "differing": 0
+      },
+      "stylesSame": true,
+      "raw": "out/accent-ca/sim-rm-2026-10-04T12-46-18-939Z.json"
+    }
+  },
+  "notes": "No measurement code changed. No timing A/B by rule.",
+  "verdict": "E1 exact on frozen frames (Chrome phone+desktop, Simulator, reduced motion); WebKit saving small (~5-7 % recalc frames / accent paints). WP (wipe) halves page updates in WebKit but is a visible change. Both go to the user in one proposal (motion-only / visible difference).",
+  "proposal": "PR-019 (options exact = E1, slide = WP, keep; recommended exact)"
 }
