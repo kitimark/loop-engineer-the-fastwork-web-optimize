@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T12:52:37Z",
- "updatedBy": "mgmt-ops-10",
+ "updatedAt": "2026-10-04T15:59:11Z",
+ "updatedBy": "ts-board",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
@@ -414,10 +414,10 @@
   {
    "id": "illusion-proposals",
    "inBuild": false,
-   "whyNot": "None of the 5 image or video ways to draw the hero's accent word beat today's drawing on the phone; you asked to test the word alone next (PR-004).",
+   "whyNot": "None of the 5 image or video ways to draw the accent word beat today's drawing on the phone; drawn alone it had no slow frames (P-065), so the cost is the rest of the page.",
    "title": "Cheaper look-alike effects (user priority 2)",
    "area": "whole",
-   "state": "diagnosing",
+   "state": "dropped",
    "stage": "R",
    "fixes": "Some effects cost a lot to redraw. A cheaper way to draw something that looks the same is fine with the user. Agents look for such swaps and show each one to the user as a proposal.",
    "felt": {"answer": "not-yet"},
@@ -436,23 +436,25 @@
    "09:0xZ PR-001 block A (C F1 F2 F3, W driver, 8/8 valid, load1 > 8 in runs 1-7 flagged): F2 the best canvas arm, but no frame gain over the SVG on the phone (n=2); F1 and F3 freeze mid-stroke. Recordings dropped (user T-018); the live visual look waits on the user. Block B (C V B) next, not gated.",
   "09:3xZ PR-001 block B (C V B) done: 9/9 valid, sentinels passed. P-058 overall: no arm beats the SVG on the phone (rule 4). F1/F3 freeze mid-stroke; V reaches the end of only 67 % of draws (its own start-detection bug); F2 and B eligible but not better. Rev 3 adds a 'keep' option and recommends it (de-illusion-style drafts, lead reviews). User approved visual route (b) (T-018 #11): C-021, the user's own screen recording, 4 parts, active.",
   "09:4xZ-10:1xZ C-021/C-023 deferred by the user (T-019 #9: make the test easier first). PR-004 (PR-001 follow-up) rev 2 = test report + 4 next-step options, waiting on the user. T-019 #18: the user asked for a hardened Mac-side iPhone screen recorder: de-iphone-screenrec researches (docs only), a toolsmith follows, the first run needs the user's OK. NO CAMERA rule unchanged."
-   ]
+   ],
+   "why": "None of the 5 image or video ways to draw the accent word beat today's drawing on the phone; drawn alone it had no slow frames (P-065), so the cost is the rest of the page."
   },
   {
    "id": "r4-v3",
    "title": "Panel push at the page end: less style work when it starts",
    "area": "end",
-   "state": "diagnosing",
-   "stage": "I",
+   "state": "landed",
+   "stage": "L",
    "fixes": "When the bottom panel starts to grow, about 700 elements get their style recalculated (11-14 ms). Two small CSS/JS changes would leave most of them out.",
    "felt": {"answer": "not-yet"},
    "gate": "Rank 2 of de-style-recalc's list: a Chrome check, then a phone test with the scripted panel driver; a robot or real finger before landing.",
-   "next": "fix-scene-scope adds it after the scene-scope build.",
+   "next": "Landed with the section-switch fix (scene-scope RB: R4a + R4b, 82077978); part of build st6-rb2 (cff1a037, as RBi40pti) and every best build since.",
    "owner": "fix-scene-scope",
    "checks": [],
    "details": [
     "style-recalc-images.md §5 rank 2: R4 on B (@property --morph, --morph-fade inherits:false; in nav-morph-all v04, not in B) + scene-scope V3 (panel exempt/narrowed, B JS 13567). Derived: ~545 inherited + 172 panel nodes leave the scope. M block; G/F before landing."
-   ]
+   ],
+   "inBuild": true
   },
   {
    "id": "fwreskip",
@@ -481,7 +483,7 @@
    "id": "anim-transform",
    "title": "Endless sweep and line animations in the platform section",
    "area": "middle",
-   "state": "diagnosing",
+   "state": "dropped",
    "stage": "R",
    "fixes": "Six endless light sweeps and 20 moving line packets repaint every frame while that section is on screen. Small each frame, but continuous; they could move with the GPU instead.",
    "felt": {"answer": "not-yet"},
@@ -491,7 +493,8 @@
    "checks": [],
    "details": [
     "style-recalc-images.md §5 ranks 5-6: doc-sweep background-position -> transform on a pseudo-element strip (6 infinite in #platform, B CSS 5834); stroke-dashoffset packets (20 paid-border/rail) -> transform/offset-distance or a mask. Paint <= 2.6 ms per frame (OBSERVED)."
-   ]
+   ],
+   "why": "Superseded: the platform section's endless animations moved to the graphics chip with platform-idle, which is in the best build."
   },
   {
    "id": "image-size",
@@ -514,7 +517,7 @@
    "id": "countdown-ca",
    "title": "Countdown ticking at rest (PoC 3)",
    "area": "hero",
-   "state": "diagnosing",
+   "state": "dropped",
    "stage": "D",
    "fixes": "At rest at the top of the page, the countdown ticks every second, and some ticks make a slow frame. This first finds which part of the tick is slow; then the digits could run on the GPU instead.",
    "gate": "P-037: name the slow part of the tick before any build.",
@@ -523,7 +526,8 @@
    "checks": [ { "id": "P-037", "what": "phone attribution run at rest", "result": "" } ],
    "details": [
     "Any countdown-ca ticket carries the P-034 / F-076 gate: GPU animations on the digit faces might bring back the ~80 layers that cdwc removes (UNRESOLVED)."
-   ]
+   ],
+   "why": "Superseded: the countdown digit strips (cd-strip) and the countdown roll on the graphics chip (cd-roll-ca) took over this work; both are in the best build."
   },
   {
    "id": "shell-hold-c",
@@ -752,7 +756,7 @@
   {"id": "v0-baseline", "name": "Original page", "since": "2026-09-30T19:03:53Z", "improvement": "The fastwork.com home page as mirrored on 2026-09-30, unchanged. Every version below is measured against it or against the version before.", "cost": "none", "verdict": "the starting point", "hashes": {"js": "4606120cf392", "css": "27776f3d4138"}, "tryIt": {"port": 56937, "scheme": "http", "path": "/", "server": "baseline"}},
   {"id": "v1-st6-rb", "name": "First best build (st6-rb)", "since": "2026-10-02T10:06:27Z", "improvement": "The wave 1 fixes (bottom panel pin, countdown, card reveal, menu touch setup), a section switch that restyles only its own section, and a lighter avatar carousel.", "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel"], "verdict": "smoother", "result": [{"what": "frames over 50 ms in a full scroll, per run", "before": "5 (5-13)", "after": "3 (2-3)", "tag": "OBSERVED", "driver": "scripted scroll", "note": "measured for the wave 1 part of this version"},{"what": "style work in the middle of the page, per run (iPhone Timeline)", "before": "329-346 ms", "after": "207-222 ms", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "note": "measured on B+, this version without the section-switch and carousel fixes"},{"what": "whole-page layout at each section switch (iPhone Timeline)", "before": "17-23 ms per switch", "after": "gone (0 in 4 runs)", "tag": "OBSERVED", "driver": "scripted window scroll", "ref": "P-061", "note": "against the same build without this fix"},{"what": "slow frames over 34 ms at rest at the top of the page, per run", "before": "3 (2-4)", "after": "0 (0-0)", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-062", "note": "against the same build without the carousel fix"}], "cost": "The avatar slider moves a little differently (the leaving face is cropped, no 2 px end snap); you kept it in PR-013. Five avatar pictures stay on the graphics chip.", "hashes": {"js": "59b23b3f57fd", "css": "d22542d0b5f8"}, "tryIt": {"port": 57724, "scheme": "http", "path": "/", "server": "st6-rb"}},
   {"id": "v2-shell-hold-c", "name": "People section shrink hold (+shell-hold-c)", "since": "2026-10-02T10:40:40Z", "improvement": "Hides the off-screen profile cards while the people section starts to shrink, so that frame does less work.", "fixes": ["shell-hold-c"], "verdict": "smoother", "result": [{"what": "the frame where the people section starts to shrink (median)", "before": "37 ms", "after": "17 ms", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-063"}], "cost": "none seen: pixels identical to the version before (0 px)", "hashes": {"js": "59b23b3f57fd", "css": "a3b34c3a3920"}, "tryIt": {"port": 57726, "scheme": "http", "path": "/", "server": "shell-hold-c"}},
-  {"id": "v3-st6-rb2", "name": "Leaner section switch (st6-rb2)", "since": "2026-10-02T11:49:57Z", "improvement": "The section-switch fix made leaner: 40 fewer style rules, so switching to the platform section no longer restyles the page; the title sweep pauses off screen.", "verdict": "smoother in its changed part; not timed as a whole", "result": [{"what": "style work at the section switch about 2600 px down (iPhone Timeline)", "before": "18-25 ms", "after": "0.4-0.5 ms", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-02T10:58:00Z", "note": "the leaner switch alone (T-011); the whole version was checked by mechanism and pixels, not timed"}], "cost": "none seen; the version as a whole was checked by mechanism and pixels, not timed on the phone", "hashes": {"js": "7bf7c4657d21", "css": "f523598b2a24"}, "tryIt": {"port": 57728, "scheme": "http", "path": "/", "server": "st6-rb2"}},
+  {"id": "v3-st6-rb2", "name": "Leaner section switch (st6-rb2)", "since": "2026-10-02T11:49:57Z", "improvement": "The section-switch fix made leaner: 40 fewer style rules, so switching to the platform section no longer restyles the page; the title sweep pauses off screen.", "verdict": "smoother in its changed part; not timed as a whole", "result": [{"what": "style work at the section switch about 2600 px down (iPhone Timeline)", "before": "18-25 ms", "after": "0.4-0.5 ms", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-02T10:58:00Z", "note": "the leaner switch alone (T-011); the whole version was checked by mechanism and pixels, not timed"}], "cost": "none seen; the version as a whole was checked by mechanism and pixels, not timed on the phone", "hashes": {"js": "7bf7c4657d21", "css": "f523598b2a24"}, "tryIt": {"port": 57728, "scheme": "http", "path": "/", "server": "st6-rb2"}, "fixes": ["r4-v3"]},
   {"id": "v4-best-build", "name": "Best build 65052c4a", "since": "2026-10-03T15:48:02Z", "improvement": "Adds the shimmering security panel on the graphics chip (far less work at rest) and the top bar and menu fix: they stop following the page past its end.", "fixes": ["platform-idle", "morph-inherit"], "verdict": "smoother at rest; scrolling no-worse", "result": [{"what": "style updates in 20 s at rest at the bottom of the page (Chrome)", "before": "1200", "after": "40", "tag": "OBSERVED", "driver": "at rest, no scrolling", "ref": "P-077"},{"what": "layouts in 20 s at rest at the bottom of the page (iPhone Simulator)", "before": "about 1187", "after": "40", "tag": "OBSERVED", "driver": "at rest, no scrolling", "ref": "P-077"},{"what": "slow frames over 50 ms while scrolling, phone at its real \"Serious\" heat state", "before": "1 and 1", "after": "2", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-077", "note": "inside the no-worse bound"},{"what": "slow frames over 50 ms while the end-of-page panel moves, per run (iPhone)", "before": "21", "after": "0.5", "tag": "OBSERVED", "driver": "morph driver", "ref": "P-085", "note": "this build up to the menu fix against the original page"}], "cost": "The security panel's still frames are not pixel-identical (you accepted it in PR-009). The build as a whole was checked by identity, pixels and function, not timed.", "hashes": {"js": "65052c4a3902", "css": "e0f92804c521"}, "tryIt": {"port": 57725, "scheme": "http", "path": "/", "server": "best-build"}},
   {"id": "v5-gpu-preview", "landed": false, "name": "GPU preview c0c8ad4e (to try; not landed)", "since": "2026-10-04T07:08:29Z", "improvement": "Moves the countdown roll, the hero exit and the end-of-page menu reveal onto the graphics chip, plus the landed countdown strips. A page to try; each fix still lands on its own.", "fixes": ["cd-strip", "cd-roll-ca", "hero-exit-threaded", "morph-gpu"], "verdict": "less work at rest and in the hero; not timed as a whole", "result": [{"what": "script timer callbacks (rAF) in 10 s at rest at the top (iPhone Simulator)", "before": "297-298", "after": "11", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "counts only, two loads per build"},{"what": "script function calls while scrolling through the hero (iPhone Simulator)", "before": "778-867", "after": "679-711", "tag": "OBSERVED", "driver": "scripted scroll", "note": "counts only, two loads per build"},{"what": "main-thread frames per second at rest at the top (Chrome)", "before": "49.6", "after": "41.2", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "one load per build"},{"what": "elements restyled per second over a full scroll (Chrome)", "before": "2042", "after": "2238 (+10 %)", "tag": "OBSERVED", "driver": "scripted scroll", "note": "a cost: the rolling countdown cells and the menu reveal"}], "cost": "About 10 % more elements restyled in Chrome; the menu reveal's first frame on a repeat open is about 7 ms longer (P-092). The countdown roll has not had its phone check yet (P-093).", "hashes": {"js": "c0c8ad4e36cb", "css": "d0f1017e692d"}, "tryIt": {"port": 57727, "scheme": "http", "path": "/", "server": "gpu-preview"}},
   {"id": "v6-best-br2", "name": "Best build 8018ce06 (best build + hero fade on the GPU)", "since": "2026-10-04T07:33:52Z", "improvement": "The hero cards and text fade out on Safari's scroll thread (GPU) instead of being redrawn by script on every scroll frame, on top of best build 65052c4a.", "fixes": ["hero-exit-threaded"], "verdict": "smoother through the hero; you preferred it in both blind swipes", "result": [{"what": "slow frames (over 34 ms) while scrolling through the top card, warm phone, per run (fewer is better)", "before": "27", "after": "12", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095"},{"what": "very slow frames (over 50 ms), same runs (fewer is better)", "before": "4", "after": "3", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095", "note": "no-worse"},{"what": "area redrawn per moving frame in the top card, iPhone (smaller is better)", "before": "165-174 k px", "after": "55-70 k px", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095"},{"what": "blind finger swipe, 2 pairs: which page followed your finger better (more picks is better)", "before": "0 of 2 picks", "after": "2 of 2 picks (a hidden same-page pair: \"same\")", "tag": "OBSERVED", "driver": "your finger (C-038, C-039, C-040)"}], "cost": "The first move after a rest paints a little more (8-19 paint units vs 2-8), as does the frame about 330 ms after a rest (4-6 vs 0-1). The first scroll after load paints about 50 more (185-186 vs 121-141, Simulator). No frame cost seen; narrow iPad windows unchecked.", "hashes": {"js": "8018ce062d30", "css": "71b65c667720"}, "tryIt": {"port": 60238, "scheme": "http", "path": "/", "server": "best-br2"}},
@@ -763,7 +767,7 @@
   "name": "Best build v7 (8c90da21): v6 + GPU countdown + calmer avatar row",
   "since": "2026-10-04T11:36:58Z",
   "summary": "v6 plus the countdown digits and roll on the GPU and a resting avatar row. Same look as v6 (Chrome and Simulator pixel checks). Less work at rest: top-of-page frames 49 -> ~41/s, script animation callbacks ~30 -> 1/s. End-of-page menu animation stays out. A short iPhone no-worse check is still owed.",
-  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "platform-idle", "morph-inherit", "hero-exit-threaded", "cd-strip", "cd-roll-ca", "rest-script"],
+  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "platform-idle", "morph-inherit", "hero-exit-threaded", "cd-strip", "cd-roll-ca", "rest-script", "r4-v3"],
   "combined": [
   ]
  }
