@@ -42,6 +42,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 13:4xZ **P-103 second read AGREE: not landable** (fix-scroll-cb 79feedd7).
+  - I re-scored all counts files: judged counts pass; the Paint guard fails (phone +0.090, resize +0.069, Sim +0.086); parity fails (phone775 V1 44, resize V2 4); desk legs VOID twice.
+  - Rev 2 is **P-108**. **P-107** is held for nav-hit-cache's successor. Next free id: **P-109**.
+  - Conditions sent for P-108:
+    - Paint: a spread rule from ≥ 4 C loads, not an element exclusion.
+    - Eased floats: one rule only.
+    - The deferral size equals C's, or geometry parity proves it harmless.
+    - A/A from ≥ 4 C loads; a named desk void rule.
+    - The noise run is committed before any V load.
+    - The Sim Paint excess (beyond its 0.03 spread) needs Sim attribution or decides on its own.
 - 10-04 13:3xZ **P-104 second read AGREE: does not pass (parity).**
   - fix-nav-morph's 4b7ec45b: I re-scored every count from the raw counts/steps. All loads served the card's hashes, with no errors.
   - Judged counts: every V below every C in both viewports. Guards hold, and the Sim is no worse.
