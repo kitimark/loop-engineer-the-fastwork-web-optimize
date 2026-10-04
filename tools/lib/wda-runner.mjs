@@ -1,4 +1,4 @@
-// `node tools/iphone.mjs wda build|start|stop|status`: build, start and stop WebDriverAgent (the XCUITest
+// `node tools/iphone.mjs wda build|start|stop|status|check`: build, start and stop WebDriverAgent (the XCUITest
 // runner that plays gesture strokes as real touches, research/architecture/finger-simulation.md) on the iPhone,
 // and forward its port 8100 over USB with `iproxy 8100:8100`.
 //
@@ -10,6 +10,9 @@
 // that they still are our xcodebuild/iproxy.
 //
 //   wda status                   sources, build, profile expiry, runner/iproxy pids, /status (no lease)
+//   wda check [--owner <o>]      I-112 preflight for phone block runners (no lease, read-only): exit 0 `WDA READY …`,
+//                                exit 3 `WDA NOT READY: …` with the start command. Run it before a hold's start gate
+//                                and pre-warm, so a block never spends them on a runner that is down
 //   wda build --owner <o> [--ref vX] [--team ID] [--udid UDID] [--bundle-id ID]
 //                                lease-guarded (xcodebuild talks to the device); xcodebuild build-for-testing is
 //                                minutes of Mac CPU, so it runs only INSIDE your own chrome-measure hold
@@ -229,6 +232,13 @@ async function wdaCmdInner({ sub, opt, requireLease, log }) {
     log(`wda:      ${st.error ? `not reachable at ${WDA_URL()}` : `ready=${st.ready} build ${st.build?.version ?? '?'} os ${st.os?.version ?? '?'}`}`);
     return 0;
   }
+  if (sub === 'check') {
+    const st = await wdaStatus().catch((e) => ({ error: e.message }));
+    if (!st.error && st.ready) { log(`WDA READY build ${st.build?.version ?? '?'} os ${st.os?.version ?? '?'}`); return 0; }
+    const owner = opt('owner') || '<you>';
+    log(`WDA NOT READY: ${st.error ? `not reachable at ${WDA_URL()}` : 'it answers /status but is not ready'}. Start it (iphone lease): node tools/iphone.mjs wda start --owner ${owner}`);
+    return 3;
+  }
   if (sub === 'build') {
     const owner = requireLease(); // xcodebuild talks to the device (provisioning, preparing it for development): lease holders only
     const gate = buildGate(undefined, undefined, { owner });
@@ -296,7 +306,7 @@ async function wdaCmdInner({ sub, opt, requireLease, log }) {
     if (!a && !b) log('WDA was not running (no pidfiles)');
     return 0;
   }
-  throw new Error('usage: node tools/iphone.mjs wda status | build --owner <topic> [--ref vX] [--team ID] [--udid UDID] | start --owner <topic> | stop');
+  throw new Error('usage: node tools/iphone.mjs wda status | check [--owner <topic>] | build --owner <topic> [--ref vX] [--team ID] [--udid UDID] | start --owner <topic> | stop');
 }
 
 export { stateDir as wdaStateDir };

@@ -23,7 +23,7 @@ import { openTab, safariTab, sleep, TIMELINE_START, timelineSyncJs, findTimeStam
 import { compileScript, condText, COMPILER_VERSION } from './gesture.mjs';
 import { RECORDER_JS, READ_JS, STATE_JS, markJs, summarizeRun } from './gesture-rec.mjs';
 import { status as wdaStatus, createSession, SAFARI, SESSION_SETTINGS } from './wda.mjs';
-import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
+import { status as lockStatus, phoneGuard, phoneMacRecord, parseHeld, staleReason } from './lock.mjs';
 import { REPO } from './paths.mjs';
 import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeText } from './iphone-url.mjs';
 import { tryResolveLanUrl } from './lan.mjs';
@@ -445,9 +445,32 @@ export function settingsEcho(echo) {
 }
 
 /**
+ * I-112 (fix-nav-morph, P-091): what to plan per phone G run. The program's own estimate (strokes, pauses) leaves out
+ * the reload, until-waits, settles, the Timeline arm and the save: a ~44 s program took 125-135 s with --timeline
+ * (OBSERVED in our setup). Plan max(150 s, 3x the estimate) per run; `gesture --dry-run` prints it (GESTURE_BUDGET_S),
+ * the lease check uses it, and a run inside its own chrome-measure hold refuses to start without that much time left.
+ */
+export const G_RUN_MIN_BUDGET_MS = 150000;
+export const runBudgetMs = (estMs) => Math.max(G_RUN_MIN_BUDGET_MS, Math.round(3 * (Number(estMs) || 0)));
+
+/**
+ * I-112: ms left in this process's own chrome-measure hold ($FW_LOCK_HELD names its token: a `lock.mjs run`), from a
+ * lease's expiresAt or a run's declared --max-seconds (meta.expectSec) since acquiredAt; null when the process is not
+ * in its own live hold or the hold declared no end.
+ */
+export function ownHoldLeftMs(s = lockStatus('chrome-measure'), held = process.env.FW_LOCK_HELD, now = Date.now()) {
+  const h = s?.holder;
+  if (!h || s.stale || staleReason(h, now)) return null;
+  const mine = parseHeld(held)['chrome-measure'];
+  if (!mine || mine !== h.token) return null;
+  const ends = [h.expiresAt && Date.parse(h.expiresAt), h.meta?.expectSec > 0 && Date.parse(h.acquiredAt) + h.meta.expectSec * 1000].filter((x) => Number.isFinite(x));
+  return ends.length ? Math.min(...ends) - now : null;
+}
+
+/**
  * Where a gesture run plays: the phone (default; the iphone lease and the phone measure guard guard it, I-056) or the Simulator (`sim.mjs gesture`: a
  * Simulator session in the caller's own chrome-measure hold guards it, strokes go to WDA-sim). A target is
- * {device, outDir, wdaBase, toolFiles, wdaHint, openHint(url), preflight(estMs) -> {pageUrl, pageSource},
+ * {device, outDir, wdaBase, toolFiles, wdaHint, openHint(url), preflight(estMs, {budgetMs}) -> {pageUrl, pageSource},
  *  lost() -> reason | null (checked before every op), extra() -> more meta fields}.
  */
 export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = false, log = console.log }) {
@@ -456,14 +479,17 @@ export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = 
   return {
     device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', outDir: 'iphone', wdaBase: undefined, toolFiles: TOOL_FILES,
     wdaHint: `node tools/iphone.mjs wda start --owner ${owner}`, openHint: (u) => `node tools/iphone.mjs open ${u} --owner ${owner}`,
-    preflight(estMs) {
+    preflight(estMs, { budgetMs = runBudgetMs(estMs) } = {}) {
       // I-056: the measure guard of iphone.mjs run (lib/lock.mjs phoneGuard): no G run beside someone else's normal
       // hold; the runner's own hold passes; shared jobs pass with a NOTE and the Mac state in meta.mac, unless
       // --require-quiet or FW_PHONE_REQUIRE_QUIET=1
       mac = phoneGuard({ owner, allow: allowDuringMeasure, requireQuiet, log });
       const h0 = lease();
       const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
-      if (left < estMs * 1.5 + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(estMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
+      // I-112: the whole run (reload, untils, Timeline, save), not only the strokes
+      if (left < budgetMs + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(budgetMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
+      const hold = ownHoldLeftMs();
+      if (hold !== null && hold < budgetMs) throw new Error(`your chrome-measure hold ends in ${Math.max(0, Math.round(hold / 1000))} s, a gesture run needs up to ~${Math.round(budgetMs / 1000)} s (GESTURE_BUDGET_S, I-112): run it in a new hold`);
       return { pageUrl: h0.meta?.url ?? null, pageSource: 'your lease' };
     },
     lost: () => (lease() ? null : 'lost the iphone lease (expired or released): stopped between strokes'),
@@ -499,15 +525,17 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   if (argv.some((a) => a === '--timeline' || a.startsWith('--timeline=')) && (!tlFile || tlFile.startsWith('--'))) throw new Error('--timeline wants a file: --timeline <out.json>');
   if (tlFile && opt('morph-log')) throw new Error('--timeline and --morph-log: pass one (morph-log\'s own inspector connection takes the tab and restarts the Timeline stopwatch, I-038; an in-page logger goes in --inject, on this connection)');
   const head = `${prog.name} v${prog.version} hash ${prog.hash.slice(0, 12)} params ${JSON.stringify(prog.params)}: ${prog.strokes.length} strokes, ~${Math.round(prog.estMs / 1000)} s`;
+  const budgetMs = runBudgetMs(prog.estMs); // I-112
   if (flag('dry-run')) {
     log(head);
     for (const s of prog.strokes) log(`  ${s.id} ${s.dir} ${s.px} px / ${s.ms} ms ${s.profile}${s.holdMs ? ` hold ${s.holdMs}` : ''}: x ${s.x} y ${s.y0}->${s.y1}, peak ${s.peakPxPerS} px/s${s.plateauPxPerS ? ` (plateau ${s.plateauPxPerS} px/s)` : ''}, lift-off ${s.liftoffPxPerS} px/s`);
     log(`GESTURE_HASH ${prog.hash}`);
+    log(`GESTURE_BUDGET_S ${Math.round(budgetMs / 1000)}  (plan per run on the phone: reload, waits, Timeline and save included; I-112)`);
     return 0;
   }
   const owner = requireLease();
   const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), log });
-  const { pageUrl, pageSource } = await tg.preflight(prog.estMs);
+  const { pageUrl, pageSource } = await tg.preflight(prog.estMs, { budgetMs });
 
   // Safari's tab: there, not the certificate warning, the lease's page
   const list = await (await fetch(`http://localhost:${port}/json`, { signal: AbortSignal.timeout(4000) })).json();
