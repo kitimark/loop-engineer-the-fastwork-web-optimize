@@ -1,0 +1,385 @@
+{
+ "files": [
+  "rollstart-2026-10-04T13-24-49-463Z.json",
+  "rollstart-2026-10-04T13-29-49-854Z.json",
+  "rollstart-2026-10-04T13-39-14-309Z.json"
+ ],
+ "loads": {
+  "A": [
+   {
+    "round": 0,
+    "ticks": 22,
+    "stamped": 21,
+    "renderingFrames": 1139,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 3,
+     "multi": 0,
+     "one": 18
+    },
+    "animCellsMed": 0,
+    "kfMaxMed": 0,
+    "kfTotalMed": 0,
+    "taskRecalc": 21,
+    "taskLayout": 15,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 30,
+     "cellPaint": 25,
+     "RecalculateStyles": 21,
+     "Layout": 15,
+     "Composite": 21,
+     "FireAnimationFrame": 25
+    },
+    "f2": {
+     "Paint": 21,
+     "cellPaint": 16,
+     "RecalculateStyles": 21,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 25
+    },
+    "f1to4": {
+     "Paint": 93,
+     "RecalculateStyles": 85,
+     "FireAnimationFrame": 100
+    }
+   },
+   {
+    "round": 1,
+    "ticks": 21,
+    "stamped": 21,
+    "renderingFrames": 1122,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 0,
+    "kfMaxMed": 0,
+    "kfTotalMed": 0,
+    "taskRecalc": 15,
+    "taskLayout": 14,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 29,
+     "cellPaint": 24,
+     "RecalculateStyles": 21,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f2": {
+     "Paint": 23,
+     "cellPaint": 18,
+     "RecalculateStyles": 22,
+     "Layout": 16,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f1to4": {
+     "Paint": 91,
+     "RecalculateStyles": 86,
+     "FireAnimationFrame": 92
+    }
+   },
+   {
+    "round": 2,
+    "ticks": 21,
+    "stamped": 21,
+    "renderingFrames": 1126,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 0,
+    "kfMaxMed": 0,
+    "kfTotalMed": 0,
+    "taskRecalc": 18,
+    "taskLayout": 14,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 32,
+     "cellPaint": 27,
+     "RecalculateStyles": 21,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 25
+    },
+    "f2": {
+     "Paint": 24,
+     "cellPaint": 19,
+     "RecalculateStyles": 21,
+     "Layout": 15,
+     "Composite": 21,
+     "FireAnimationFrame": 25
+    },
+    "f1to4": {
+     "Paint": 95,
+     "RecalculateStyles": 85,
+     "FireAnimationFrame": 100
+    }
+   }
+  ],
+  "A2": [
+   {
+    "round": 0,
+    "ticks": 22,
+    "stamped": 21,
+    "renderingFrames": 1136,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 0,
+    "kfMaxMed": 0,
+    "kfTotalMed": 0,
+    "taskRecalc": 16,
+    "taskLayout": 14,
+    "taskTypes": [
+     "RenderingFrame",
+     "TimerFire"
+    ],
+    "f1": {
+     "Paint": 32,
+     "cellPaint": 27,
+     "RecalculateStyles": 21,
+     "Layout": 15,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f2": {
+     "Paint": 19,
+     "cellPaint": 14,
+     "RecalculateStyles": 21,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f1to4": {
+     "Paint": 108,
+     "RecalculateStyles": 105,
+     "FireAnimationFrame": 92
+    }
+   },
+   {
+    "round": 1,
+    "ticks": 21,
+    "stamped": 21,
+    "renderingFrames": 1126,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 0,
+    "kfMaxMed": 0,
+    "kfTotalMed": 0,
+    "taskRecalc": 18,
+    "taskLayout": 14,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 29,
+     "cellPaint": 24,
+     "RecalculateStyles": 22,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f2": {
+     "Paint": 23,
+     "cellPaint": 18,
+     "RecalculateStyles": 21,
+     "Layout": 16,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f1to4": {
+     "Paint": 86,
+     "RecalculateStyles": 86,
+     "FireAnimationFrame": 92
+    }
+   },
+   {
+    "round": 2,
+    "ticks": 21,
+    "stamped": 21,
+    "renderingFrames": 1113,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 0,
+    "kfMaxMed": 0,
+    "kfTotalMed": 0,
+    "taskRecalc": 16,
+    "taskLayout": 15,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 29,
+     "cellPaint": 24,
+     "RecalculateStyles": 21,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f2": {
+     "Paint": 19,
+     "cellPaint": 14,
+     "RecalculateStyles": 22,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 23
+    },
+    "f1to4": {
+     "Paint": 86,
+     "RecalculateStyles": 86,
+     "FireAnimationFrame": 92
+    }
+   }
+  ],
+  "B": [
+   {
+    "round": 0,
+    "ticks": 22,
+    "stamped": 21,
+    "renderingFrames": 1055,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 4,
+    "kfMaxMed": 144,
+    "kfTotalMed": 576,
+    "taskRecalc": 40,
+    "taskLayout": 15,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 28,
+     "cellPaint": 23,
+     "RecalculateStyles": 17,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 6
+    },
+    "f2": {
+     "Paint": 15,
+     "cellPaint": 10,
+     "RecalculateStyles": 19,
+     "Layout": 14,
+     "Composite": 21,
+     "FireAnimationFrame": 0
+    },
+    "f1to4": {
+     "Paint": 87,
+     "RecalculateStyles": 76,
+     "FireAnimationFrame": 6
+    }
+   },
+   {
+    "round": 1,
+    "ticks": 22,
+    "stamped": 21,
+    "renderingFrames": 1006,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 4,
+    "kfMaxMed": 144,
+    "kfTotalMed": 576,
+    "taskRecalc": 40,
+    "taskLayout": 14,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 37,
+     "cellPaint": 30,
+     "RecalculateStyles": 18,
+     "Layout": 15,
+     "Composite": 21,
+     "FireAnimationFrame": 6
+    },
+    "f2": {
+     "Paint": 21,
+     "cellPaint": 11,
+     "RecalculateStyles": 18,
+     "Layout": 15,
+     "Composite": 21,
+     "FireAnimationFrame": 0
+    },
+    "f1to4": {
+     "Paint": 100,
+     "RecalculateStyles": 75,
+     "FireAnimationFrame": 6
+    }
+   },
+   {
+    "round": 2,
+    "ticks": 21,
+    "stamped": 21,
+    "renderingFrames": 1051,
+    "layerTreeChanges": 1,
+    "classes": {
+     "long": 2,
+     "multi": 0,
+     "one": 19
+    },
+    "animCellsMed": 4,
+    "kfMaxMed": 144,
+    "kfTotalMed": 576,
+    "taskRecalc": 41,
+    "taskLayout": 15,
+    "taskTypes": [
+     "RenderingFrame"
+    ],
+    "f1": {
+     "Paint": 24,
+     "cellPaint": 19,
+     "RecalculateStyles": 19,
+     "Layout": 16,
+     "Composite": 21,
+     "FireAnimationFrame": 6
+    },
+    "f2": {
+     "Paint": 14,
+     "cellPaint": 9,
+     "RecalculateStyles": 18,
+     "Layout": 13,
+     "Composite": 21,
+     "FireAnimationFrame": 0
+    },
+    "f1to4": {
+     "Paint": 76,
+     "RecalculateStyles": 75,
+     "FireAnimationFrame": 6
+    }
+   }
+  ]
+ }
+}
