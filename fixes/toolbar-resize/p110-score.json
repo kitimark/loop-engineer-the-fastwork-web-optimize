@@ -1,0 +1,224 @@
+{
+ "scorer": "fixes/toolbar-resize/score-bisect.mjs",
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 12,
+   "medianLargest": 20.416,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "nav-H1",
+   "arm": "nav",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 15,
+   "medianLargest": 19.601,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "pain-H1",
+   "arm": "pain",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 19.842,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 15,
+   "medianLargest": 18.097,
+   "inStyle": 13,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "navpain-H1",
+   "arm": "navpain",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 16,
+   "medianLargest": 19.4,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "ph-H1",
+   "arm": "ph",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 19.86,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 20.429,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "ps-H1",
+   "arm": "ps",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 45,
+   "medianLargest": 0.644,
+   "inStyle": 3,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "pc-H1",
+   "arm": "pc",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 19.893,
+   "inStyle": 11,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "C-H4",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 20.173,
+   "inStyle": 12,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  }
+ ],
+ "replica": true,
+ "drift": 0.012,
+ "void": false,
+ "verdicts": {
+  "nav-H1": {
+   "ratio": 1.018,
+   "cMean": 19.257,
+   "neighbours": [
+    "C-H1",
+    "C-H2"
+   ],
+   "call": "NONE"
+  },
+  "pain-H1": {
+   "ratio": 1.03,
+   "cMean": 19.257,
+   "neighbours": [
+    "C-H1",
+    "C-H2"
+   ],
+   "call": "NONE"
+  },
+  "navpain-H1": {
+   "ratio": 1.007,
+   "cMean": 19.263,
+   "neighbours": [
+    "C-H2",
+    "C-H3"
+   ],
+   "call": "NONE"
+  },
+  "ph-H1": {
+   "ratio": 1.031,
+   "cMean": 19.263,
+   "neighbours": [
+    "C-H2",
+    "C-H3"
+   ],
+   "call": "NONE"
+  },
+  "ps-H1": {
+   "ratio": 0.032,
+   "cMean": 20.301,
+   "neighbours": [
+    "C-H3",
+    "C-H4"
+   ],
+   "call": "LOCATES"
+  },
+  "pc-H1": {
+   "ratio": 0.98,
+   "cMean": 20.301,
+   "neighbours": [
+    "C-H3",
+    "C-H4"
+   ],
+   "call": "NONE"
+  }
+ }
+}

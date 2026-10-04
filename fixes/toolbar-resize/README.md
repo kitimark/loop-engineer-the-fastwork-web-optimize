@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 Simulator bisect run (nvc and skp LOCATE, skh and ch NONE; indicative)
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -366,6 +366,48 @@ this pre-data card). It runs after v8's P-111 and PR-018 6d in the phone order. 
   - ps LOCATES: the cost is the showcase subtree; `contain` / `content-visibility: auto` on it is the candidate.
   - Nothing locates in a group: the cost is not one child (replace by the next split).
 
+
+## P-110 result (Simulator, one exclusive hold, 2026-10-04 ~16:40Z; ops PASS at 4329275d)
+
+Gate first (`check-inject110.mjs` 61931a562308), then the scorer (`score-bisect.mjs` cb6f0c97b81b). All 10 steps ran
+(no C:H5/C:H6 needed). Measured heights in the Simulator page: header 170, showcase 904.08, pill 84.66 px.
+
+| run | gate | moving hero frames | median largest Layout | inStyle | docH | ratio | call |
+|---|---|---|---|---|---|---|---|
+| C-H1 | applied | 12 | 20.4 ms | 12 | 5999->6035 | | |
+| nav-H1 | applied | 15 | 19.6 ms | 12 | 5999->6035 | 1.018 | NONE |
+| pain-H1 | applied | 14 | 19.8 ms | 12 | 5999->6035 | 1.030 | NONE |
+| C-H2 | applied | 15 | 18.1 ms | 13 | 5999->6035 | | |
+| navpain-H1 | applied | 16 | 19.4 ms | 12 | 5999->6035 | 1.007 | NONE |
+| ph-H1 | applied | 14 | 19.9 ms | 12 | 5999->6035 | 1.031 | NONE |
+| C-H3 | applied | 14 | 20.4 ms | 12 | 5999->6035 | | |
+| ps-H1 | applied | 45 | 0.64 ms | 3 | 5999->6035 | 0.032 | LOCATES |
+| pc-H1 | applied | 14 | 19.9 ms | 11 | 5999->6035 | 0.980 | NONE |
+| C-H4 | applied | 14 | 20.2 ms | 12 | 5999->6035 | | |
+
+REPLICA true, DRIFT 0.012 (C-H1 -> C-H4), VOID false; INJECT-GATE all applied; no arm moved docH. Files: `p110-score.json`,
+`p110-runs.jsonl` (served bytes, inject sha and each run's inject record).
+
+- **Cost: the showcase.** Not rendering `.start-selling-future-showcase` (904 px, the profile deck) removes the
+  toolbar-step Layout (0.032), as #people did in P-109 (0.049). Header and pill: NONE. Prediction (ps LOCATES or PARTIAL
+  ~70 %) held.
+- **Trigger: no single renderer.** nav, pain and nav+pain are all NONE; P-106 `sticky` (hero only, phone) was NONE; only nvc
+  (hero + nav + pain together) located in P-109. Reading (OBSERVED, in our setup, mechanism UNRESOLVED): the step's layout
+  happens while any viewport-constrained renderer is present, so removing a subset changes nothing. That fits S3 (every
+  viewport-constrained object is marked for layout on a layout-viewport change) but S3 does not say why the showcase is laid
+  out; the predictions (navpain LOCATES ~80 %) were wrong.
+- **A lead, not a claim:** the `.start-selling-future-card` has `min-height: 100svh` (CSS l.3522, width <= 860px), and S5 says a
+  viewport-size change invalidates every element that uses any viewport unit; the heavy Layout runs nested in style
+  resolution. Whether that invalidation reaches the showcase's layout is UNRESOLVED; decisive local check: an `svh` arm that
+  pins the card's min-height to its measured px (look-identical in portrait), same driver and scorer.
+- Every call is indicative (one run per arm). Only a phone G run feeds F.
+
+### Next (plan; needs an ops read)
+
+- P-112 (Simulator, same driver/gate/scorer): `svh` (card min-height pinned to px), `csl` (`contain: layout` on the
+  showcase; look-identical if no descendant overflows to the card), and `cva` (`content-visibility: auto` +
+  `contain-intrinsic-block-size: auto 904px` on the showcase; helps only while it is off screen). Whichever locates and is
+  look-identical goes to a look check (pixel-identical rule) and a phone G check, after v8's P-111.
 
 ## Scenarios not run
 
