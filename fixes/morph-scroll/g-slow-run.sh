@@ -7,11 +7,13 @@
 # 2. g-momentum-v1.json (mid-page glide) on rev 6 and v7: R6 V7
 # c. rev 6c (commit at lift-off, ms-654da079999d): glide R6C V7, then slow swipes R6C R6C
 # d. rev 6d (500 ms look-ahead, ms-49c2317ecf98): slow swipes R6D R6D
+# fast1 / fast2 / fast3 (rev 7, user review of rev 6: fast short swipes hard to open/close): g-fastshort-v1.json
+#   R6D R7, then R7 R6D, then V7 (rev 7 snapshot: $R7, default below)
 # Records: out/morph-scroll/g6/slow/<arm>-<n>.json, out/morph-scroll/g6/mom/<arm>-<n>.json;
 # analysis: node fixes/morph-scroll/g-momentum-analyze.mjs <dir>
 OWN=fix-hero-exit-threaded
 OUT=out/morph-scroll/g6
-mkdir -p "$OUT/slow" "$OUT/mom"
+mkdir -p "$OUT/slow" "$OUT/mom" "$OUT/fast"
 node tools/iphone.mjs wda check || { echo "EXIT wda not ready"; exit 3; }
 serve() { # name snapdir
   rm -f "$OUT/serve-$1.json"
@@ -25,6 +27,7 @@ serve R4 ms-5372c2d68c7d
 serve R6 ms-d5ddd1b9d9c2
 serve R6C ms-654da079999d
 serve R6D ms-49c2317ecf98
+serve R7 ${R7:-ms-0b87602cab0c}
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$OUT/serve-$1.json','utf8')).port)"; }
 run() { # n arm script outdir
   node tools/lock.mjs renew iphone --owner $OWN --ttl 900 > /dev/null
@@ -40,6 +43,14 @@ elif [ "$PART" = c ]; then
   run 8 V7 fixes/morph-scroll/g-momentum-v1.json "$OUT/mom"
   run 5 R6C fixes/morph-scroll/g-slowswipe-v1.json "$OUT/slow"
   run 6 R6C fixes/morph-scroll/g-slowswipe-v1.json "$OUT/slow"
+elif [ "$PART" = fast1 ]; then
+  run 1 R6D fixes/morph-scroll/g-fastshort-v1.json "$OUT/fast"
+  run 2 R7 fixes/morph-scroll/g-fastshort-v1.json "$OUT/fast"
+elif [ "$PART" = fast2 ]; then
+  run 3 R7 fixes/morph-scroll/g-fastshort-v1.json "$OUT/fast"
+  run 4 R6D fixes/morph-scroll/g-fastshort-v1.json "$OUT/fast"
+elif [ "$PART" = fast3 ]; then
+  run 5 V7 fixes/morph-scroll/g-fastshort-v1.json "$OUT/fast"
 elif [ "$PART" = d ]; then
   run 9 R6D fixes/morph-scroll/g-slowswipe-v1.json "$OUT/slow"
   run 10 R6D fixes/morph-scroll/g-slowswipe-v1.json "$OUT/slow"

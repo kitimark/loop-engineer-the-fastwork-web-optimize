@@ -1,0 +1,714 @@
+{
+ "name": "ms-fastshort-v1",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "PR-018 rev 7 (user review of rev 6: a fast, short swipe with high acceleration at the end of the page hardly opens or closes the menu). At the end of the page: short flicks lifted at peak speed (fling profile: 60 px in 50 ms, 120 px in 60 ms, 200 px in 90 ms; robot lift-off 1200, 2000 and 3390 px/s), closing from open and opening from closed, each twice. Hit = the menu rests at the end the flick was heading for. Compare runs of the same script hash only.",
+ "params": {
+  "x": 215
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "pause",
+   "ms": 4000
+  },
+  {
+   "type": "mark",
+   "name": "approach"
+  },
+  {
+   "type": "repeat",
+   "times": 30,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E20-close-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E21-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E22-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E23-open-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E24-close-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E25-open-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E26-close-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E27-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E28-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E29-open-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E30-close-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E31-open-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "mark",
+   "name": "done"
+  }
+ ]
+}
