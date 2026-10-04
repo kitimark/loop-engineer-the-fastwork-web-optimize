@@ -99,6 +99,14 @@ The user wants no reactive agents. These rules beat any older line that makes an
   who unblocks what. Read it before asking the lead what to do next.
 - **R7 The lead's loop is proactive.** Every check-in, in order: rows waiting on the lead, idle devices, unanswered
   user messages, land requests; each decision asked of the lead gets an answer or a named delegate in that check-in.
+- **R9 mgmt-devices decides device work itself** (user T-161 #7, 2026-10-04 21:29Z: "if you found the improvement
+  you could delegate by yourself, proactively, and just report what you did to the lead; no need for the lead to decide").
+  Without asking the lead: it starts the next phone or Mac slot in the direction order (a phone no-worse ticket that
+  mgmt-ops validated, with arms hashed and served-checked, gets mgmt-devices' start in place of the lead's signature;
+  a D (attribution) card is still signed by the lead); it moves the chrome-measure queue; it briefs and hands device or
+  lock incidents to a running toolsmith, or asks the lead for a spawn in one line; it changes its own device plan. It
+  reports each action to the lead as one FYI line (what, why, owner). The lead keeps the order of the day (the
+  `direction` row), landing and user-facing decisions outside devices.
 - **R8 (pending the user's OK; Hard rules 1/5)** mgmt-ops lands docs-only commits with the lead's checks. Until
   the user says yes, only the lead lands.
 

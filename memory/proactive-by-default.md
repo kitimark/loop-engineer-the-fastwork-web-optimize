@@ -19,3 +19,7 @@ Evidence: `research/management/roles-v3-proactive.md`.
 mgmt-ops, mgmt-devices and the owners of affected topics, plus one FYI line to the lead. A phone ticket goes to ops
 only when complete. In a shared thread, only the question's owner answers. Related: [[lead-owns-issue-loop]],
 [[lead-delegates-areas-measures]], [[busy-workers-answer-later]].
+
+2026-10-04 21:29Z (user T-161 #7): mgmt-devices starts device work itself and only reports to the lead ("no need for
+the lead to decide or management; reduce bottleneck of lead"). Rule R9 in AGENT_ROLES.md: mgmt-devices may start
+ops-validated phone tickets, move the queue and brief toolsmiths. The lead still signs D cards and owns the direction row.
