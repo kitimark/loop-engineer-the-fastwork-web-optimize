@@ -109,6 +109,16 @@ test('update: validates enums, records history, refuses empty updates and "resol
   assert.equal(n.history.at(-1).note, 'repro found');
 });
 
+test('I-183: update --blocking yes|no flips the blocking flag, records it in the history, and counts as an update on its own', async () => {
+  await I.open({ by: 'lead', title: 'lead-only', error: 'e1', blocking: true });
+  assert.equal(I.get('1').blocking, true);
+  const off = await I.update('1', { by: 'lead', blocking: false });
+  assert.equal(off.blocking, false);
+  assert.deepEqual(off.history.at(-1).changes, { blocking: false });
+  await assert.rejects(I.update('1', { by: 'lead', blocking: false }), /nothing to update/, 'no change, no note: refused');
+  assert.equal((await I.update('1', { by: 'lead', blocking: true })).blocking, true);
+});
+
 test('resolve: "fixed" needs a real commit; other resolutions need a note; parked/resolved leave the active list', async () => {
   await I.open({ by: 'a', title: 't1', error: 'alpha failed' });
   await I.open({ by: 'b', title: 't2', error: 'beta failed' });

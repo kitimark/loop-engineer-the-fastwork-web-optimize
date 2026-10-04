@@ -152,6 +152,18 @@ test('derive: queue positions, holder, pending steps by the owner, blocking inci
   assert.deepEqual(S.derive(S.get('b'), live).derived, []);
 });
 
+test('I-183 derive: an incident that affects only the lead is not "blocked by" on a row the lead owns; workers still are', async () => {
+  const mk = (affected, reportedBy) => ({ id: 'I-009', title: 'lead listener', blocking: true, reportedBy, affected: affected.map((by) => ({ by })) });
+  await add('lr', { by: 'lead', state: 'testing' });   // a row the lead merely owns
+  await add('wr', { by: 'fix-w', state: 'testing' });  // a worker's row
+  const blocked = (id, inc) => S.derive(S.get(id), { locks: {}, steps: [], incidents: [inc] }).derived.filter((x) => x.kind === 'incident').map((x) => x.ref);
+  assert.deepEqual(blocked('lr', mk(['lead'], 'lead')), [], 'reported by and affecting only the lead');
+  assert.deepEqual(blocked('wr', mk(['lead'], 'lead')), [], 'a worker row is not blocked by it either');
+  assert.deepEqual(blocked('lr', mk(['lead', 'fix-w'], 'fix-w')), [], 'the lead owns the row, a worker is the one affected');
+  assert.deepEqual(blocked('wr', mk(['lead', 'fix-w'], 'lead')), ['I-009'], 'a worker affected next to the lead is still blocked');
+  assert.deepEqual(blocked('wr', mk([], 'fix-w')), ['I-009'], 'the reporting worker is still blocked');
+});
+
 test('I-048 derive: every reader of a shared Chrome group is "using Chrome now (shared)"; an exclusive holder and a free lock as before', async () => {
   // a fake lock.status('chrome-measure'): 2 readers (w2 + w1 of cap 3), joins closed by the exclusive waiter fix-c
   const group = {

@@ -154,7 +154,7 @@ export async function open(report, { cwd = REPO } = {}) {
 }
 
 /** Triage / progress fields (the lead, or the assignee for notes). */
-export async function update(id, { by, status, cls, priority, assignee, workaround, note, affected } = {}) {
+export async function update(id, { by, status, cls, priority, assignee, workaround, note, affected, blocking } = {}) {
   if (!by) throw new Error('--by <name> is required');
   check('status', status, STATUSES.filter((s) => s !== 'resolved'));
   check('class', cls, CLASSES);
@@ -166,9 +166,10 @@ export async function update(id, { by, status, cls, priority, assignee, workarou
     const set = (k, v) => { if (v !== undefined && inc[k] !== v) { changes[k] = v; inc[k] = v; } };
     set('status', status); set('class', cls); set('priority', priority); set('assignee', assignee);
     set('workaround', clip(workaround, 2000));
+    if (blocking !== undefined) set('blocking', !!blocking); // I-183: clear (or set) the flag the status board reads
     if (status && status !== 'resolved') delete inc.resolution;
     if (affected && !inc.affected.some((a) => a.by === affected)) { inc.affected.push({ by: affected, at: iso() }); changes.affected = affected; }
-    if (!Object.keys(changes).length && !note) throw new Error('nothing to update (give --status, --class, --priority, --assignee, --workaround, --affected or --note)');
+    if (!Object.keys(changes).length && !note) throw new Error('nothing to update (give --status, --class, --priority, --assignee, --workaround, --blocking, --affected or --note)');
     inc.history.push({ at: iso(), by, action: 'update', changes, note: clip(note, 4000) });
     writeJson(fileOf(iid), inc);
     return inc;
