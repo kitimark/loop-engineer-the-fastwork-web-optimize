@@ -72,6 +72,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-120 H1: V M runs VOID; lead ruling on the M leg (not A).**
+  - Cause (int-v8, confirmed in the records out/pv9/runs/pv9-m*.json summary.tweens): with rev 7c the panel is already open at the page end (m=1), so V's first tween is a close (C,O,C,O,C; 5 tweens). The scorer's EXPECT O1,C1,... voids both V runs. The C runs mC1 and mC4 count as sentinels only. Served hashes in the check logs match the pins.
+  - Ops look before the ruling: first-frame dt by tween type. Open: C median 35.5 ms, V 37 ms. Close: C 28.5 ms, V 40 ms (38.5 ms without V's first, scroll-driven close). OBSERVED, 2 void runs, not evidence. Because of this look, dropping the M gates (int-v8's option A) would be choosing the test after the data.
+  - Lead ruling: H3/H4 (GM, GE) run now, unchanged. The M leg is re-driven: both arms drive from m=0, EXPECT 6, with new driver and scorer pins, a self-test on a rev 7c replay, and fresh C V V C runs (H2'). Ops re-checks int-v8's amendment before H2', then the lead re-signs. P-121 stays free: this is an amendment of P-120, not a new id.
+  - At the amendment re-check:
+    - the H1 look must be disclosed in the ticket;
+    - the self-test must include the open-start replay (it must fail with EXPECT, and the m=0 driver must yield 6);
+    - the new pins must be checked on disk against the commit blobs;
+    - the M gates must be the P-111 ones, unchanged (Mmoving >50 d > +1, >34 d > +2; Mtweens d > +2 ms);
+    - mC1/mC4 tween data must not be pooled into H2'.
 - 10-05 **nav-hit-cache parity on step 4 + nav + glue: interim FAIL (fix-nav-morph, note B):** part 1 fails the task gate on mobile and desktop.
   - At task40 there is one in-sync theme mismatch per viewport (mobile y 2240, desktop y 4960); in each the cache said false and the live hit test said on-dark. task10 is clean, and nhcms 9138732704f2 was clean, so a step 3 or step 4 change moves a boundary the cache does not track.
   - Note B was right to require this check. nav-hit-cache stays out of v9-final until fix-nav-morph diagnoses it, fixes it, rebuilds and re-runs parity parts 1 and 2. Ops second-reads the passing re-run.
