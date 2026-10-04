@@ -33,12 +33,12 @@ const ms = (s) => s * 1000;
 
 test('config: one constant holds the cap, the per-job weights and the bounds; the join load is 2x the cpu count', () => {
   assert.deepEqual(L.SHARED_LANE, {
-    cap: 4, defaultCap: 3, joinLoadPerCpu: 2, joinBusyPct: 75, busyWindowMs: 1000, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5, readerMaxWaitSec: 600, readerBypassSec: 300,
+    cap: 6, maxWeight: 4, defaultCap: 3, joinLoadPerCpu: 2, joinBusyPct: 75, busyWindowMs: 1000, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5, readerMaxWaitSec: 600, readerBypassSec: 300,
     weights: { check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 },
     jobMaxSec: { 'npm-test': 480 },
   });
   assert.ok(Object.isFrozen(L.SHARED_LANE) && Object.isFrozen(L.SHARED_LANE.weights) && Object.isFrozen(L.SHARED_LANE.jobMaxSec));
-  for (const w of Object.values(L.SHARED_LANE.weights)) assert.ok(Number.isInteger(w) && w >= 1 && w <= L.SHARED_LANE.cap);
+  for (const w of Object.values(L.SHARED_LANE.weights)) assert.ok(Number.isInteger(w) && w >= 1 && w <= L.SHARED_LANE.maxWeight);
   const prev = process.env.FW_LOCK_SHARED_JOIN_LOAD;
   delete process.env.FW_LOCK_SHARED_JOIN_LOAD;
   try { assert.equal(L.sharedJoinLoad(), 2 * os.cpus().length); } finally { if (prev !== undefined) process.env.FW_LOCK_SHARED_JOIN_LOAD = prev; }
@@ -549,10 +549,12 @@ test('opening batch: readers queued before the group opened join for batchJoinSe
   const t0 = Date.now();
   assert.equal((await L.tryAcquire(R, { owner: 'w1', kind: 'lease', now: t0 })).ok, true);
   const pB = livePid(), pC = livePid(), pD = livePid();
+  // I-136: w2 queues before the readers: since I-136 only a writer queued ahead of a reader closes its join, so the
+  // batch window matters for readers behind a writer (a reader ahead of every writer joins anyway, see the I-136 tests)
+  assert.equal((await L.tryAcquire(R, { owner: 'w2', kind: 'lease', now: t0 + 500 })).ok, false);
   assert.equal((await rd('fn-a', { now: t0 + 1000 })).ok, false);
   assert.equal((await rd('fn-b', { pid: pB, now: t0 + 2000 })).ok, false);
   assert.equal((await rd('fn-c', { pid: pC, now: t0 + 3000 })).ok, false);
-  assert.equal((await L.tryAcquire(R, { owner: 'w2', kind: 'lease', now: t0 + 4000 })).ok, false);
   await L.release(R, { owner: 'w1' });
   const t1 = t0 + 10000;
   const a = await rd('fn-a', { now: t1 });
@@ -1057,4 +1059,143 @@ test('I-113: a short lease entry that is not polling does not stop a polling sho
   const r = await L.tryAcquire(R, { owner: 'npm-y', kind: 'lease', short: true, maxSec: 120, now });
   assert.equal(r.ok, true, 'the polling short job passes; the unseen one keeps its place');
   assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['ab', 'idle-short']);
+});
+
+// I-136 (2026-10-04 08:20-10:20Z): the slot was busy only 71 % while agents waited 249 agent-minutes for it: any queued
+// exclusive waiter closed joins for every reader, also for readers queued AHEAD of it, which run before it anyway (I-049),
+// so the group ran with 1-2 readers instead of up to the cap (10:13Z: 1 reader w2/4 running, 4 readers queued ahead).
+test('I-136: readers queued ahead of the first exclusive waiter join a running group while they fit; readers behind it stay closed out', async () => {
+  await on({ cap: 4 });
+  const t0 = Date.now();
+  const a = await rd('npm-a', { weight: 2, maxSec: 300, now: t0 });
+  assert.equal(a.opened, true);
+  const pB = livePid(), pC = livePid(), pD = livePid();
+  // two readers queue while the host is loaded (load1 above the join load), then a writer queues behind them
+  for (const [o, pid, at, why] of [['fn-b', pB, 1000, /load1/], ['fn-c', pC, 2000, /"fn-b" queued first/]]) {
+    const w = await rd(o, { pid, load1: 100, now: t0 + at });
+    assert.equal(w.ok, false);
+    assert.match(w.why, why);
+  }
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', now: t0 + 3000 })).ok, false);
+  const t1 = t0 + ms(L.SHARED_LANE.batchJoinSec) + 10000; // past the opening batch window: only I-136 lets them in
+  const b = await rd('fn-b', { pid: pB, now: t1 });
+  assert.equal(b.ok, true, 'fn-b is ahead of ab: it would run before ab anyway, so it joins now');
+  const c = await rd('fn-c', { pid: pC, now: t1 + 1000 });
+  assert.equal(c.ok, true, 'fn-c too: the group fills to the cap (2 + 1 + 1 = 4)');
+  assert.equal(holder().readers.length, 3);
+  const d = await rd('fn-d', { pid: pD, now: t1 + 2000 });
+  assert.equal(d.ok, false, 'a reader queued behind ab stays closed out (writer preference)');
+  assert.match(d.why, /joins closed: "ab" waits for an exclusive hold \(writer preference\)/);
+  assert.deepEqual(L.status(R).queue.map((w) => w.owner), ['ab', 'fn-d']);
+  for (const x of [a, b, c]) await L.releaseReader(R, x.reader.token);
+  assert.equal(holder(), null);
+  assert.equal(L.status(R).next, 'ab', 'the writer still goes before the reader queued after it');
+});
+
+test('I-136: a reader ahead of a lead-moved exclusive waiter joins too; one behind it does not (I-097)', async () => {
+  await on();
+  const t0 = Date.now(), iso = (t) => new Date(t).toISOString();
+  assert.equal((await rd('fn-a', { now: t0 })).opened, true);
+  const pB = livePid();
+  const t1 = t0 + ms(L.SHARED_LANE.batchJoinSec) + 10000;
+  const reader = { owner: 'fn-b', kind: 'process', pid: pB, checkout: REPO, since: iso(t0 + 1000), lastSeen: iso(t1), queueTtlSec: 60, short: true, maxSec: 60, shared: true, weight: 1 };
+  const moved = { owner: 'runner', kind: 'lease', checkout: REPO, since: iso(t0 + 2000), lastSeen: iso(t1), queueTtlSec: 600, noTiming: true, movedBy: 'lead', movedAt: iso(t0 + 3000) };
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([moved, reader]));
+  const behind = await rd('fn-b', { pid: pB, now: t1 });
+  assert.equal(behind.ok, false);
+  assert.match(behind.why, /"runner" waits for an exclusive hold, moved ahead by lead \(I-097\)/);
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([reader, moved]));
+  assert.equal((await rd('fn-b', { pid: pB, now: t1 + 1000 })).ok, true, 'ahead of the moved hold: it joins');
+});
+
+// I-136 cause 2: a phone block's quiet-Mac hold (--no-timing, by the owner of the iphone lease) waited FIFO behind
+// readers that queued after the lease began, while the phone sat idle; the lead moved it by hand (repair --move).
+test('I-136: phone-block priority: the iphone lease holder\'s --no-timing hold queues ahead of readers that queued after the lease began', async () => {
+  await on();
+  const t0 = Date.now();
+  const a = await rd('sim-a', { weight: 3, maxSec: 300, now: t0 }); // the group is full
+  assert.equal(a.opened, true);
+  const pB = livePid(), pC = livePid(), pD = livePid(), pR = livePid();
+  assert.equal((await rd('fn-b', { pid: pB, now: t0 + 1000 })).ok, false, 'queued before the lease');
+  assert.equal((await L.tryAcquire('iphone', { owner: 'runner', kind: 'lease', ttlSec: 900, now: t0 + 2000 })).ok, true);
+  assert.equal((await rd('fn-c', { pid: pC, now: t0 + 3000 })).ok, false);
+  assert.equal((await rd('fn-d', { pid: pD, now: t0 + 4000 })).ok, false);
+  const w = await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 5000 });
+  assert.equal(w.ok, false, 'never preempts the running group');
+  assert.equal(w.position, 2);
+  const q = L.status(R).queue;
+  assert.deepEqual(q.map((x) => x.owner), ['fn-b', 'runner', 'fn-c', 'fn-d'], 'ahead of the readers that queued after the lease began, behind the one before it');
+  assert.equal(L.PHONE_BLOCK_BY, 'phone-block priority');
+  assert.equal(q[1].movedBy, L.PHONE_BLOCK_BY);
+  assert.equal(q[1].since, new Date(t0 + 5000).toISOString(), 'it keeps its own since');
+  // a refresh keeps the place and the mark (no second entry)
+  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 6000 })).position, 2);
+  assert.equal(L.status(R).queue.filter((x) => x.owner === 'runner').length, 1);
+  // readers behind it do not join (it is an exclusive waiter ahead of them); fn-b, ahead of it, goes first (FIFO, I-049)
+  await L.releaseReader(R, a.reader.token);
+  assert.equal(L.status(R).next, 'fn-b', 'the reader queued before the lease still goes first');
+  const b = await rd('fn-b', { pid: pB, now: t0 + 7000 });
+  assert.equal(b.opened, true);
+  const c = await rd('fn-c', { pid: pC, now: t0 + 8000 });
+  assert.equal(c.ok, false);
+  assert.match(c.why, /"runner" waits for an exclusive hold, moved ahead by phone-block priority/);
+  await L.releaseReader(R, b.reader.token);
+  assert.equal(L.status(R).next, 'runner', 'at the hand-over the phone hold goes before the readers behind it');
+  const g = await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 9000 });
+  assert.equal(g.ok, true);
+  assert.equal(g.holder.noTiming, true);
+  assert.deepEqual(L.status(R).queue.map((x) => x.owner), ['fn-c', 'fn-d']);
+});
+
+test('I-136: phone-block priority is bounded: only --no-timing holds of the live iphone lease owner, never past an exclusive waiter, never over a lead move; dropped with the lease', async () => {
+  await on();
+  const t0 = Date.now();
+  assert.equal((await rd('sim-a', { weight: 3, maxSec: 300, now: t0 })).opened, true);
+  assert.equal((await L.tryAcquire('iphone', { owner: 'runner', kind: 'lease', ttlSec: 900, now: t0 + 1000 })).ok, true);
+  const pC = livePid(), pR = livePid(), pX = livePid();
+  assert.equal((await L.tryAcquire(R, { owner: 'cal', kind: 'lease', now: t0 + 2000 })).ok, false);
+  assert.equal((await rd('fn-c', { pid: pC, now: t0 + 3000 })).ok, false);
+  // another owner's no-timing hold, and the lease owner's timing hold: plain FIFO, no mark
+  assert.equal((await L.tryAcquire(R, { owner: 'build', kind: 'process', pid: pX, noTiming: true, now: t0 + 4000 })).position, 3);
+  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, now: t0 + 5000 })).position, 4);
+  assert.equal(L.status(R).queue.some((x) => x.movedBy), false);
+  await L.dequeue(R, 'runner');
+  await L.dequeue(R, 'build');
+  // its no-timing hold passes fn-c but not cal (an exclusive waiter)
+  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 6000 })).position, 2);
+  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['cal', undefined], ['runner', L.PHONE_BLOCK_BY], ['fn-c', undefined]]);
+  // the lease ends while the hold waits: the mark goes, the place stays (nothing is moved back)
+  await L.release('iphone', { owner: 'runner' });
+  await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 7000 });
+  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['cal', undefined], ['runner', undefined], ['fn-c', undefined]]);
+  // a lead move is never replaced by the phone-block mark
+  assert.equal((await L.tryAcquire('iphone', { owner: 'runner', kind: 'lease', ttlSec: 900, now: t0 + 8000 })).ok, true);
+  const q = readJson(`${R}.queue.json`).map((x) => (x.owner === 'runner' ? { ...x, movedBy: 'lead', movedAt: new Date(t0 + 8500).toISOString() } : x));
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+  await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 9000 });
+  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['cal', undefined], ['runner', 'lead'], ['fn-c', undefined]]);
+});
+
+// I-136 addition (user T-105 #3, more parallel functional tests): the lead's switch may set --cap up to 6; a job's
+// --weight stays 1..4; the join load / busy checks still gate every join, and a group never runs beside an exclusive hold
+test('I-136: the switch allows --cap 1..6 (was 1..4); --weight stays 1..4; a cap-6 group fills to 6 only while the host is not loaded', async () => {
+  assert.equal(L.SHARED_LANE.cap, 6);
+  assert.equal(L.SHARED_LANE.maxWeight, 4);
+  await assert.rejects(L.setSharedSwitch(R, { on: true, by: 'lead', reason: 'x', cap: 7 }), /--cap must be an integer 1\.\.6/);
+  await on({ cap: 6 });
+  assert.deepEqual(L.sharedSwitch(R), { enabled: true, cap: 6 });
+  await assert.rejects(rd('w5', { weight: 5 }), /--weight must be an integer 1\.\.4/);
+  const t0 = Date.now();
+  assert.equal((await rd('npm-a', { weight: 2, maxSec: 300, now: t0 })).opened, true);
+  assert.equal((await rd('npm-b', { pid: livePid(), weight: 2, maxSec: 300, now: t0 + 1000 })).ok, true);
+  const loaded = await rd('npm-c', { pid: livePid(), weight: 2, maxSec: 300, load1: 100, now: t0 + 2000 });
+  assert.equal(loaded.ok, false, 'the join load still gates a join at cap 6');
+  assert.match(loaded.why, /load1/);
+  const c = await rd('npm-c', { pid: loaded.queue.find((w) => w.owner === 'npm-c').pid, weight: 2, maxSec: 300, now: t0 + 3000 });
+  assert.equal(c.ok, true, '2 + 2 + 2 = 6 fits cap 6');
+  assert.equal(holder().readers.reduce((s, x) => s + x.weight, 0), 6);
+  const full = await rd('fn-d', { pid: livePid(), now: t0 + 4000 });
+  assert.equal(full.ok, false);
+  assert.match(full.why, /full \(weight 6\/6/);
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', now: t0 + 5000 })).ok, false, 'no exclusive hold beside the group');
 });

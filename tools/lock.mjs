@@ -139,10 +139,12 @@
 //   node tools/lock.mjs shared on|off chrome-measure --by lead --reason "<why>" [--cap N] [--join-load L] [--join-busy P]   # the lead's switch
 // --max-seconds N (1..300) is required, 1..480 for --weight npm-test (I-114: the suite takes ~250 s; only by that name,
 // a plain --weight 2 keeps 300, and the switch-off --short stand-in keeps the 480); --weight is 1..4 or a job name
-// (check, probe, bench-mech, test-chrome-fn 1; npm-test 2; simulator 3); the readers' weights fit the switch's --cap (default 3, max 4). A reader joins the running
+// (check, probe, bench-mech, test-chrome-fn 1; npm-test 2; simulator 3); the readers' weights fit the switch's --cap (default 3, max 6 since I-136). A reader joins the running
 // group while it fits, CPU busy over its own polls <= --join-busy (default 75 %; before its first busy sample load1 <=
-// --join-load, default 2x the cpu count; I-051) and no exclusive waiter is queued (writer preference; readers queued before the
-// group opened may still join for 30 s). `run --shared` kills its command at --max-seconds like --short (exit 124) and
+// --join-load, default 2x the cpu count; I-051) and no exclusive waiter is queued ahead of it (writer preference; I-136:
+// a reader queued ahead of every exclusive waiter joins; readers queued before the group opened may still join for 30 s).
+// A --no-timing run of the iphone lease owner (a phone block's quiet-Mac hold) queues ahead of the readers that queued
+// after the lease began; status shows it "moved by phone-block priority" (I-136). `run --shared` kills its command at --max-seconds like --short (exit 124) and
 // gives it FW_LOCK_SHARED=<resource>:<reader token>: a nested shared run re-enters that slot, a nested exclusive one
 // (verify.mjs, fix.mjs ab, bench gain, a normal or --short run) is refused at once. Timing tools refuse --shared.
 // The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
@@ -323,7 +325,7 @@ async function main() {
     if (short) throw new Error('--shared and --short do not combine: a shared job is bounded by its --max-seconds already');
     if (noTiming) throw new Error('--shared and --no-timing do not combine: a shared job is a bounded functional reader already; a build that needs the Mac alone is --no-timing');
     if (cmd !== 'release' && cmd !== 'dequeue' && opt('max-seconds') === undefined) throw new Error(`--shared needs --max-seconds N (1..${sharedMaxSec(job)}${sharedMaxSec(job) !== SHARED_LANE.maxSec ? ` for ${job}` : ''}): a shared job is bounded`);
-    if (cmd !== 'release' && cmd !== 'dequeue' && Number.isNaN(weight)) throw new Error(`--weight must be 1..${SHARED_LANE.cap} or a job name (${Object.entries(SHARED_LANE.weights).map(([k, v]) => `${k} ${v}`).join(', ')}), got "${weightOpt}"`);
+    if (cmd !== 'release' && cmd !== 'dequeue' && Number.isNaN(weight)) throw new Error(`--weight must be 1..${SHARED_LANE.maxWeight} or a job name (${Object.entries(SHARED_LANE.weights).map(([k, v]) => `${k} ${v}`).join(', ')}), got "${weightOpt}"`);
   }
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
   if (noTiming && cmd !== 'run') throw new Error('--no-timing is for lock.mjs run (a normal hold that measures nothing: builds, CPU work)');
