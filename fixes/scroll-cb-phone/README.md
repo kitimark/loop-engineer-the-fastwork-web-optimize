@@ -236,8 +236,18 @@ C only, one load per engine, to check the harness before C/V data (as P-101 did)
     By job: `AE` rAF 0.76 / rects 1.52; `uM` rAF 0.58 / qs 0.58; `mM` rAF 0.61 / rects 1.82 / qs 1.21; `GM` rAF 0.54 /
     rects 0.54. Whole page per step: rAF 4.35, rects 6.44, getComputedStyle 1.02, elementsFromPoint 1.02.
   - The side rAF rate (2.48 per frame) matches the frame audit's ~146 entries/s at 60 fps.
-- *Re-run with d2f4a6b2a60d (Chrome) and the Simulator C smoke (N1):* queued at 10:54Z, withdrawn from the queue for
-  the lead's usage pause (until 12:20Z) before it started. To run first after the pause, before any counted load.
+- *Re-run with d2f4a6b2a60d (Chrome) and the Simulator C smoke (N1):* queued at 10:54Z, withdrawn for the lead's
+  usage pause before it started; run after the pause (12:29Z Chrome, 12:34Z Simulator), both before any counted load.
+  - Chrome, phone: valid. 1093 steps, no page errors. Side per step: rAF 2.48, rects 3.87 (as in the first try).
+    Trace per step: FireAnimationFrame 6.50, PrePaint 2.41, UpdateLayoutTree 1.43 (forced 0.88), Layout 0.48 (forced
+    0.26), Paint 5.68. Forced style/layout by function (whole run): `fD` 362/86, `AE` 297/179, `mM` 236/6, `dN` 43/13,
+    `GM` 22/2.
+  - N2: the trace has `IntersectionObserverController::computeIntersections`, 2.19 per step on C (2393 events). It is
+    reported for C and V, not judged.
+  - Simulator (fw-sim 15 Pro Max, 430×775 DPR 3, doc 6035): valid. 1052 steps. N1: the late wrap catches the jobs on C:
+    side rAF 2.27, rects 3.53 per step (`AE` 0.67/1.34, `uM` 0.53/0, `mM` 0.56/1.68, `GM` 0.51/0.51). Timeline per
+    step: RenderingFrame 0.95, RecalculateStyles 1.51 (forced 1.11), Layout 3.68 (forced 2.49), Paint 5.53.
+  - Hold sizes seen: Chrome 57 s per load, Simulator 70 s per load (whole session), so the card's 2 loads per hold fit.
 
 ## Risks, conflicts, follow-ups
 
