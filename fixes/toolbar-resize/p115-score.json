@@ -1,0 +1,133 @@
+{
+ "scorer": "fixes/toolbar-resize/score-bisect.mjs",
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 11,
+   "medianLargest": 20.778,
+   "inStyle": 11,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "svh-H1",
+   "arm": "svh",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 12,
+   "medianLargest": 20.465,
+   "inStyle": 11,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "csl-H1",
+   "arm": "csl",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 12,
+   "medianLargest": 21.131,
+   "inStyle": 10,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 12,
+   "medianLargest": 21.269,
+   "inStyle": 11,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "cva-H1",
+   "arm": "cva",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 38,
+   "medianLargest": 0.757,
+   "inStyle": 7,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  },
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 14,
+   "medianLargest": 20.738,
+   "inStyle": 13,
+   "counted": true,
+   "docH": [
+    5999,
+    6035
+   ]
+  }
+ ],
+ "replica": true,
+ "drift": 0.002,
+ "void": false,
+ "verdicts": {
+  "svh-H1": {
+   "ratio": 0.973,
+   "cMean": 21.024,
+   "neighbours": [
+    "C-H1",
+    "C-H2"
+   ],
+   "call": "NONE"
+  },
+  "csl-H1": {
+   "ratio": 1.005,
+   "cMean": 21.024,
+   "neighbours": [
+    "C-H1",
+    "C-H2"
+   ],
+   "call": "NONE"
+  },
+  "cva-H1": {
+   "ratio": 0.036,
+   "cMean": 21.004,
+   "neighbours": [
+    "C-H2",
+    "C-H3"
+   ],
+   "call": "LOCATES"
+  }
+ }
+}

@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -468,6 +468,49 @@ opens the gap). Mechanism and candidate screening only; a candidate that locates
   - All NONE: the cost is inside the showcase and needs its own split (profile deck children).
   - (ops N4, before data) P-110 located the cost on v7. If C on v8 shows no toolbar-step Layout in the showcase, the result
     is NOT REPRODUCED on v8 (not NONE for the arms), and it goes to the lead before any next card.
+
+## P-115 result (Simulator, 2026-10-04 22:11Z, one normal exclusive hold; indicative, one run per arm)
+
+Build C = v8 (JS `3e3e94cb6e9f`, CSS `f836404b3728`; served bytes checked by the driver), inject `0cc373b2594d`, driver
+`4e1077d555cd`. Data: `p115-score.json`, `p115-runs.jsonl`, `results.json` key `p115`.
+
+- Gate: `node fixes/toolbar-resize/check-inject115.mjs out/toolbar-resize/sim115 C-H1 svh-H1 csl-H1 C-H2 cva-H1 C-H3` ->
+  `INJECT-GATE all applied` (every arm applied; C runs arm none).
+- Scorer: `node fixes/toolbar-resize/score-bisect.mjs out/toolbar-resize/sim115 C-H1 svh-H1 csl-H1 C-H2 cva-H1 C-H3` ->
+  `REPLICA true DRIFT 0.002 VOID false`.
+
+| run | n (toolbar-moving hero frames) | median largest Layout | in RecalcStyle | docH | ratio | call |
+|---|---|---|---|---|---|---|
+| C-H1 | 11 | 20.778 ms | 11 | 5999->6035 | | |
+| svh-H1 | 12 | 20.465 ms | 11 | 5999->6035 | 0.973 | NONE |
+| csl-H1 | 12 | 21.131 ms | 10 | 5999->6035 | 1.005 | NONE |
+| C-H2 | 12 | 21.269 ms | 11 | 5999->6035 | | |
+| cva-H1 | 38 | 0.757 ms | 7 | 5999->6035 | 0.036 | LOCATES |
+| C-H3 | 14 | 20.738 ms | 13 | 5999->6035 | | |
+
+- **N4:** C reproduces on v8 (20.7-21.3 ms, as on v7: P-110 C ~20 ms), so the calls stand; not NOT REPRODUCED.
+- **Predictions:** svh LOCATES ~35 % (missed; NONE was ~55 %). csl LOCATES ~35 % / PARTIAL ~20 % (missed: NONE). cva ratio
+  at most csl's + 0.05, ~85 % (hit: 0.036 vs 1.005). cva LOCATES ~50 % (hit).
+- **Reading (card: "cva LOCATES and csl NONE"):** layout containment alone does nothing; the cost goes with style or
+  paint containment, or with the skip of the showcase's contents while it is off screen. In the H flick the showcase
+  sits below the viewport (hero zone, y < 3250), so the skip is the likely path, OBSERVED in our setup, cause
+  unknown; the next card separates them. svh NONE: the card's own `100svh` min-height is not the path (other svh users
+  stay open, ops N1).
+- **Read, not judged:** cva-H1 has 38 toolbar-moving frames against 11-14 elsewhere (cheaper frames, more of them in the
+  same toolbar move). The flick script's pull-to-refresh guard ended its loop early in C-H1, svh-H1, cva-H1 and C-H3
+  (page near the top); every run kept >= 11 moving frames.
+- **What it does not show:** look and the cost when the showcase comes into view. WebKit's content-visibility margin
+  is 0 (v8 JS l.2809 comment; OBSERVED by the scroll-engine owner, not checked by me against WebKit source), so a
+  skipped showcase may render on its entering frame (a cost spike or an unpainted frame) where v8 has none.
+
+### Next (plan; needs an ops read and a P-id)
+
+- Simulator: split cva into `cct` (`contain: content`, i.e. layout + paint + style, no skip) and `cva` again (a
+  replicate), plus an entering check: a flick that brings the showcase into view (`flick-middle-v1`, the part that
+  crosses #people), counting the largest Layout/Paint on the entering frames, C vs cva. cct LOCATES -> containment is
+  enough and no skip is needed (safer); cct NONE -> the skip is the mechanism, and the entering check decides whether
+  cva can ship as is or needs an un-skip ahead (the pattern v8's deferred sections use).
+- Then a look check (pixel-identical rule) of the winning build (`p115-cands.mjs`), then the phone G kit.
 
 ### Pre-staged while P-115 waits (roles v3 R3; no data, not a ticket)
 
