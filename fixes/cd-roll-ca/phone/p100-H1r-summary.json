@@ -1,0 +1,296 @@
+{
+ "scorer": "a7e0861f13a9b3e51e6d4cf7cf87a82645286d5821d67a8ac1fb7e6bc09830f4",
+ "records": [
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-1-quiet.json",
+   "label": "p100-H1r-1-quiet",
+   "arm": "quiet",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 37.69,
+    "end": 37.59
+   },
+   "fastPerSec": 0,
+   "perSec": 61.9,
+   "surfGapMedian": 16.67,
+   "vsyncLt": 0,
+   "vsyncPerSec": 11.8,
+   "caFps": 0,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-2-ca.json",
+   "label": "p100-H1r-2-ca",
+   "arm": "ca",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 37.5,
+    "end": 37.29
+   },
+   "fastPerSec": 47.46,
+   "perSec": 51.4,
+   "surfGapMedian": 8.34,
+   "vsyncLt": 0.755,
+   "vsyncPerSec": 58.4,
+   "caFps": 54,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-3-paused.json",
+   "label": "p100-H1r-3-paused",
+   "arm": "paused",
+   "void": [
+    "no displayed-surfaces table"
+   ],
+   "thermal": "Fair",
+   "batt": {
+    "start": 37.19,
+    "end": 37.19
+   },
+   "fastPerSec": null,
+   "perSec": null,
+   "surfGapMedian": null,
+   "vsyncLt": 0,
+   "vsyncPerSec": 10,
+   "caFps": 0,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-4-raf.json",
+   "label": "p100-H1r-4-raf",
+   "arm": "raf",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 37.09,
+    "end": 36.89
+   },
+   "fastPerSec": 0,
+   "perSec": 26.6,
+   "surfGapMedian": 16.67,
+   "vsyncLt": 0.001,
+   "vsyncPerSec": 35.2,
+   "caFps": 25,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-5-VK.json",
+   "label": "p100-H1r-5-VK",
+   "arm": "VK",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.89,
+    "end": 36.79
+   },
+   "fastPerSec": 118.96,
+   "perSec": 119.4,
+   "surfGapMedian": 8.34,
+   "vsyncLt": 0.998,
+   "vsyncPerSec": 119.8,
+   "caFps": 60,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-6-C8.json",
+   "label": "p100-H1r-6-C8",
+   "arm": "C8",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.79,
+    "end": 36.79
+   },
+   "fastPerSec": 118.8,
+   "perSec": 119.4,
+   "surfGapMedian": 8.34,
+   "vsyncLt": 0.998,
+   "vsyncPerSec": 119.8,
+   "caFps": 60,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-7-C8.json",
+   "label": "p100-H1r-7-C8",
+   "arm": "C8",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.79,
+    "end": 36.79
+   },
+   "fastPerSec": 118.55,
+   "perSec": 119.2,
+   "surfGapMedian": 8.34,
+   "vsyncLt": 0.996,
+   "vsyncPerSec": 119.6,
+   "caFps": 60,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-8-VK.json",
+   "label": "p100-H1r-8-VK",
+   "arm": "VK",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.79,
+    "end": 36.89
+   },
+   "fastPerSec": 118.85,
+   "perSec": 119.3,
+   "surfGapMedian": 8.34,
+   "vsyncLt": 0.998,
+   "vsyncPerSec": 119.7,
+   "caFps": 60,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-9-raf.json",
+   "label": "p100-H1r-9-raf",
+   "arm": "raf",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.89,
+    "end": 36.89
+   },
+   "fastPerSec": 0,
+   "perSec": 25.5,
+   "surfGapMedian": 16.67,
+   "vsyncLt": 0,
+   "vsyncPerSec": 35.5,
+   "caFps": 25,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-10-paused.json",
+   "label": "p100-H1r-10-paused",
+   "arm": "paused",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.89,
+    "end": 36.89
+   },
+   "fastPerSec": 0,
+   "perSec": 60.5,
+   "surfGapMedian": 16.67,
+   "vsyncLt": 0,
+   "vsyncPerSec": 11.7,
+   "caFps": 0,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-11-ca.json",
+   "label": "p100-H1r-11-ca",
+   "arm": "ca",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.89,
+    "end": 36.69
+   },
+   "fastPerSec": 45.72,
+   "perSec": 50.5,
+   "surfGapMedian": 8.34,
+   "vsyncLt": 0.739,
+   "vsyncPerSec": 58.5,
+   "caFps": 52,
+   "caFpsOver62": 0
+  },
+  {
+   "file": "out/cd-roll-ca/p100/p100-H1r-12-quiet.json",
+   "label": "p100-H1r-12-quiet",
+   "arm": "quiet",
+   "void": [],
+   "thermal": "Fair",
+   "batt": {
+    "start": 36.69,
+    "end": 36.59
+   },
+   "fastPerSec": 0,
+   "perSec": 61.9,
+   "surfGapMedian": 16.67,
+   "vsyncLt": 0,
+   "vsyncPerSec": 11.7,
+   "caFps": 0,
+   "caFpsOver62": 0
+  }
+ ],
+ "arms": {
+  "quiet": {
+   "n": 2,
+   "fastPerSec": 0,
+   "perSec": 61.9,
+   "vsyncLt": 0,
+   "vsyncPerSec": 11.75,
+   "caFps": 0
+  },
+  "ca": {
+   "n": 2,
+   "fastPerSec": 46.59,
+   "perSec": 50.95,
+   "vsyncLt": 0.747,
+   "vsyncPerSec": 58.45,
+   "caFps": 53
+  },
+  "paused": {
+   "n": 1,
+   "fastPerSec": 0,
+   "perSec": 60.5,
+   "vsyncLt": 0,
+   "vsyncPerSec": 11.7,
+   "caFps": 0
+  },
+  "raf": {
+   "n": 2,
+   "fastPerSec": 0,
+   "perSec": 26.05,
+   "vsyncLt": 0.0005,
+   "vsyncPerSec": 35.35,
+   "caFps": 25
+  },
+  "V9": {
+   "n": 0,
+   "fastPerSec": null,
+   "perSec": null,
+   "vsyncLt": null,
+   "vsyncPerSec": null,
+   "caFps": null
+  },
+  "VK": {
+   "n": 2,
+   "fastPerSec": 118.905,
+   "perSec": 119.35,
+   "vsyncLt": 0.998,
+   "vsyncPerSec": 119.75,
+   "caFps": 60
+  },
+  "C8": {
+   "n": 2,
+   "fastPerSec": 118.675,
+   "perSec": 119.30000000000001,
+   "vsyncLt": 0.997,
+   "vsyncPerSec": 119.69999999999999,
+   "caFps": 60
+  }
+ },
+ "allSerious": false,
+ "O1": "RAISED",
+ "O2": "not enough",
+ "O3": {
+  "arm": "VK",
+  "VK": {
+   "fastPerSec": 118.905,
+   "perSec": 119.35
+  },
+  "C8": {
+   "fastPerSec": 118.675,
+   "perSec": 119.30000000000001
+  },
+  "fastRatio": 1
+ }
+}

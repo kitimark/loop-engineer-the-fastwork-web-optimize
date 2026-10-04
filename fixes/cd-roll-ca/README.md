@@ -3,7 +3,15 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** round 4, "cells-only", now on fix-cd-strip's **strip-tc** (the user accepted PR-008 rev 2, option
+**Deliverable now K (2026-10-04, user: PR-017 rev 5 accepted, option land-k, 14:28:04Z):** `patch.diff` is build VK =
+C8 + cd-roll-ca with K's per-frame keyframes (same roll path as V9, 3-4x fewer keyframes), JS `b43fe790c20c…`, CSS
+`982a747d9263…` (cd-strip's, unchanged); stacked on cd-strip strip-tc (base JS `6fa0e1e8a221…`). Rebuild:
+`node tools/fix.mjs apply cd-strip --on st6-rb2 --reset` then `node tools/fix.mjs apply cd-roll-ca --on cd-strip`
+(round trip checked: the patch on cd-strip's JS gives `b43fe790c20c…`). The V9 patch it replaces (landed, `1bb87be9`)
+stays in git history. Phone: P-102 (VK vs V9, less-work no-worse) hit; P-100 rev 3 ran on VK (see "K" section).
+V9 text below is kept as history.
+
+**Status (history, V9):** round 4, "cells-only", now on fix-cd-strip's **strip-tc** (the user accepted PR-008 rev 2, option
 land-strip-tc, 2026-10-03 09:31Z): build V9 = C8 + this fix, JS `582d120c…`; a design delta from the strip-rw build
 (no `__crTops`), so review round 4 on the delta comes before the counted set (lead). Everything measured so far ran on
 strip-rw: dev base C5/V6 (CSS `9b2f89ea…`) and counted session A on C6/V7 (CSS `40078cb2…`); those sections are kept,
@@ -1503,6 +1511,28 @@ rev 3 (re-ticket 2026-10-04 ~14:35Z, before the rerun's data; lead order after P
   (VK arm; O3 = VK vs C8 when VK has records, else V9 vs C8; O1/O2 unchanged; dry run on H1's two interrupted
   records: not enough, as before). p100-rec, p100-lib, serve-snap and thermal-gate keep their hashes. H1's two
   interrupted records (quiet, ca) stay descriptive only and are not pooled with H1r.
+RESULT P-100 rev 3, hold H1r (2026-10-04 14:35:28-14:47:27Z; ops PASS a72a100f; one lease, no chrome-measure hold)
+  served before item 1 (ops N1): VK JS b43fe790c20c, C8 JS 6fa0e1e8a221, both CSS 982a747d9263; P100 p100.html
+  3bdbc016e3d4. 12/12 records exit 0; PMSET OK (no sleep); Safari parked. Thermal Fair at start and end (37.8 -> 36.5
+  °C; the T-127 hand test cooled the phone), so every record is Fair: the Serious caveat does not apply.
+  Scored on the explicit H1r list (ops N2) -> fixes/cd-roll-ca/phone/p100-H1r-summary.json (scorer a7e0861f13a9).
+  arm     n  fast/s  surfaces/s  vsync<12.5  CA fps
+  quiet   2  0       61.9        0           0
+  ca      2  46.6    51.0        0.75        53
+  paused  1  0       60.5        0           0      (record 3 VOID: no displayed-surfaces table; its vsync share 0)
+  raf     2  0       26.1        0.0005      25
+  VK      2  118.9   119.4       0.998       60
+  C8      2  118.7   119.3       0.997       60
+  O1 RAISED (at Fair): while a CA roll plays, surfaces are shown faster than 80 Hz (~47/s, gap median 8.34 ms);
+     the rAF roll and the still digit never are. F-212 is now OBSERVED on the device (CONFIRMED in source already).
+  O2 not enough (paused n 1). Descriptive only: both paused records show vsync<12.5 share 0, the same as quiet.
+  O3 descriptive: VK and C8 both run the panel at ~120 Hz at y 0 (ratio 1.00). Something else on the page already
+     holds 120 Hz on both builds, so the display rate at rest does not tell VK from C8 (not compared with V9, ops N3).
+  calibration: P(O1 RAISED) 0.55 -> yes; P(raf <= 2) 0.9 -> yes; P(O2 KEPT) 0.4 -> not enough; P(O3 ratio >= 2) 0.5 ->
+     no (1.00); P(all Serious) 0.8 -> no (all Fair).
+  decisions (as registered): O1 RAISED -> F-212 goes to fix-accent-ca and fix-morph-gpu (every CA animation costs
+     high-rate frames while it runs); T-096 H5 stays out of the closed tally. O3 = 1.00 means the user's "B feels
+     smoother" is not a y-0 display-rate difference in this setup.
 serving code: the same as the K block (I-131's, 291ee671; the record names serve.mjs's sha256).
 order: the K block first, then this hold on the warm phone, in one lease after fix-morph-gpu's P-098/P-099 (requested
   through ops; the lead sets the phone order).
