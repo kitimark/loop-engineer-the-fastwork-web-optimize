@@ -389,6 +389,111 @@ What the diffs are (read from the logs):
 - *Before rev 2:* an exploratory, unscored noise run, `--no-trace` C×4 at `phone775`, `desk`, `desk900` and `resize`,
   to size these numbers. No retuning on P-103's data.
 
+## D card P-108 (P-103 rev 2; pre-registered; committed with the noise run before any P-108 load)
+
+**Question and gate:** as P-103 (less work per scroll frame at phone widths, no more lifecycle work, identical state),
+judged counts per driver step. Changes from P-103 were agreed with mgmt-ops-10 (2026-10-04, after P-103's second read).
+P-103's data is not reused: every load below is new.
+
+**1. Arms.** C = best build (65052c4a3902 / e0f92804c521), V = C + `patch-on-best.diff` (27f23f6a3878 / e0f92804c521),
+built by `build.mjs` as in P-103. If the Simulator paint attribution (item 10) leads to a new V, this card is revised
+with the new V hash and its build diff against 27f23f6a3878 before any load; the noise run (C only) stands.
+
+**2. Harnesses** (sha256/12, pinned): `probe/scb-probe.mjs` ba2f8fbb5752, `simcount.mjs` 4374051b37a0, `score-p108.mjs`
+2a408c17977a, `pixcheck.mjs` f1be95111e25, `build.mjs` 0b028c5ef8a5, `patch-on-best.diff` c2dc144b7bd2. Changes since
+P-103, all equal in both arms:
+- *Geometry log (both engines):* a ResizeObserver on the document element and on every top-level section (the
+  children of the commission section's parent) logs `geom` = `scrollHeight` + each section's `offsetTop` and
+  `offsetHeight`, as a state-log entry, whenever it changes. The observer runs after layout, so it forces none.
+- *Chrome:* Paint events keyed to the painted element (`DOM.describeNode`). Reported, not judged.
+- *Simulator:* one `console.timeStamp` per step, and each Timeline Paint record's clip quad is attributed to a
+  top-level section by page y. Reported, not judged.
+
+**3. Loads** (shared lane, ≤ 300 s per hold, 2 loads per hold):
+- Chrome, per viewport (`phone`, `phone775`, `desk`, `desk900`, `resize` as in P-103): C1 V1 | V2 C2 | C3 V3 | V4 C4.
+- Simulator: the same 8 loads in 4 holds.
+- Pixels: `pixcheck.mjs` C1 V C2, both viewports, P-103's rule including one re-take.
+
+**4. VOID per load:** as P-103 item 4.
+
+**5. Judged:** as P-103 item 5. Every V load below every C load: `phone` / `phone775` side rAF and rects, `desk900` `AE`
+rAF and rects, Simulator side rAF and rects. `desk`: |V mean − C mean| ≤ 0.05.
+
+**6. Guards (spread rule):**
+- Chrome: forced Layout, forced UpdateLayoutTree, Layout, UpdateLayoutTree, PrePaint, Paint, FireAnimationFrame.
+- Simulator: RecalculateStyles, Layout, forced Layout, Paint, RenderingFrame.
+- Rule, per viewport: V mean ≤ C mean + max(0.05, largest C-vs-C difference among this block's 4 C loads).
+- Whole-page Paint is the judged guard number; per-element / per-section paints are reported only.
+- **The Simulator leg decides on its own:** a Simulator guard fail fails the card, whatever Chrome shows.
+
+**7. Parity** (`score-p108.mjs`; state log keyed by driver step):
+- *(a) Normalisation:* class tokens exact; style declarations exact, except as follows.
+  - Eased floats follow ONE rule, the rest-crossing step:
+    - `--profile-scale` is "rest" (= 1) or "moving";
+    - the active profile shell's `transform` is "set" or absent (`transform-origin` is dropped, it follows
+      `transform`);
+    - `--future-shrink` is "0", "1" or "between".
+  - An entry counts only when its element's normalised state changes.
+- *(b) Geometry:* `geom` entries are exact, in every viewport and in the Simulator.
+- *(c) Deferral size `--start-selling-intrinsic-block-size`:* compared as "written in the same step". Its values are
+  reported per load. A V value that no C load has passes only if (b) holds in that viewport with 0 `geom` diffs beyond
+  A/A; otherwise it is a parity fail.
+  - Mechanism note, written before data: `sE` (JS ~2751) writes it once per section, 2 rAFs after mount, from
+    `getBoundingClientRect().height`. Commission's height at that moment depends on its title's line count. That
+    count comes from `j()`, a `Range.getClientRects` check that the h2's ResizeObserver re-runs when the web font
+    swaps. So the value depends on how far font loading has got (OBSERVED reading of the code; cause of the one
+    1203 px load UNRESOLVED).
+  - V's mount path is C's plus creating the gate's observers. They read nothing and write no style.
+  - The CSS uses `contain-intrinsic-block-size: auto var(...)`. The length applies only while the section has no
+    last remembered size, and a section measured while rendered normally has one. CONFIRMED (spec rule): CSS
+    Sizing 4, "Last Remembered Size" / `contain-intrinsic-size: auto <length>`,
+    https://drafts.csswg.org/css-sizing-4/#last-remembered. Whether this page's sections always have one at that
+    moment is what (b) checks.
+- *(d) A/A:* a V diff (vs C1) is A/A only when the identical entry appears in some C-vs-C1 diff. The C loads are this
+  block's C2-C4 plus the noise run's 4 C loads (same harness, diffed against this block's C1). A ±1-step shift is
+  therefore A/A only when some C load shows the same shift at the same event.
+- *(e) VOID:* a viewport's parity is VOID when any of this block's C-vs-C1 pairs has more than N_vp normalised
+  diffs. N_vp = 2 × (largest normalised C-vs-C pair diff in the noise run for that viewport) + 5:
+
+| | `phone` | `phone775` | `desk` | `desk900` | `resize` | Sim |
+|---|---|---|---|---|---|---|
+| N_vp | TBD | TBD | TBD | TBD | TBD | TBD |
+
+  Outcome: VOID = parity not shown = not landable on P-108, with no re-run on the same harness.
+- *(f) Pixels:* as P-103 item 7. No new page errors in V.
+
+**8. Outcomes:**
+- *Pass* (judged, equality, every guard, parity and pixels): phone no-worse ticket from ops, then `patch.diff` and the
+  land request.
+- *Anything else:* not landable on P-108, reported as measured.
+
+**9. Noise run (item d, C only, not scored, committed with this card):** the tables below, from the same harnesses:
+4 C loads per Chrome viewport and 4 in the Simulator. They set N_vp and show the spreads the rule in item 6 will meet.
+
+NOISE_TABLES
+
+**10. Simulator paint attribution (exploratory under P-103 branch 8, before this card's data; not scored).**
+- Run: `simcount.mjs` with the item 2 additions, C1 V1 V2 C2, 2 Simulator holds (13:58-14:12Z), `sim-expl.json`.
+- The section names in that run were cut at the letter "s" by a regex escape bug in the page script (e.g. "commi").
+  That bug is fixed in the pinned hash; the counts are unaffected.
+- Whole-page Paint per step: C 5.597 / 5.540, V 5.580 / 5.519. V is *lower* this time, so P-103's Simulator
+  +0.086 did not repeat. The C-vs-C spread is 0.057 here (0.033 in P-103).
+- Paints by top-level section (clip-quad centre + the driver's y):
+
+| section | C1 | V1 | V2 | C2 |
+|---|---|---|---|---|
+| hero-track | 763 | 801 | 671 | 695 |
+| people (future) | 362 | 331 | 345 | 358 |
+| pain | 1764 | 1762 | 1789 | 1792 |
+| commission | 313 | 314 | 312 | 309 |
+| platform | 974 | 976 | 986 | 968 |
+| outside (nav / fixed layers) | 1712 | 1686 | 1703 | 1706 |
+
+- Commission and platform paint the same in C and V. The largest load-to-load swings are in the hero
+  (countdown / ring), in both arms.
+- No new V is needed. P-108 judges the Simulator Paint guard by the item 6 rule from its own 4 C loads.
+- Parity in this run: V1 and V2 vs C1 0 diffs, C2 vs C1 0, including the new `geom` entries.
+
 ## Risks, conflicts, follow-ups
 
 - Up to 12 extra IntersectionObservers on phones (commission 4, future 6, platform 2). Their cost is not in these counts

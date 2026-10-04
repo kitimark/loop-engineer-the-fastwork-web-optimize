@@ -15,7 +15,8 @@
 // querySelector, elementsFromPoint, requestAnimationFrame, each keyed by the first 2.DyWL8TcE.js line on the
 // caller's stack, then attributed to the top-level function that contains that line in the served JS (side jobs:
 // AE commission, uM profile, mM future, GM platform, scbGate the V helper).
-// Trace (devtools.timeline): FireAnimationFrame, PrePaint, UpdateLayoutTree, Layout, Paint per step; UpdateLayoutTree /
+// P-108 additions: a geometry log (ResizeObserver: scrollHeight + top-level section offsets, key 'geom') and Paint
+// events by painted element (reported). Trace (devtools.timeline): FireAnimationFrame, PrePaint, UpdateLayoutTree, Layout, Paint per step; UpdateLayoutTree /
 // Layout inside a FireAnimationFrame = forced, attributed by the JS line on their stack.
 // usage (shared lane, one viewport per hold):
 //   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner fix-scroll-cb -- \
@@ -79,8 +80,19 @@ const INIT = `(() => {
   const get = (k) => { const e = els[k]; return e && e.isConnected ? e : (els[k] = qs.call(document, SEL[k])); };
   const snap = () => { const o = {}; for (const k in SEL) { const e = get(k); o[k] = e ? (e.getAttribute('class') || '') + ' | ' + (e.getAttribute('style') || '') : '-'; } return o; };
   P.snap = snap;
+  // P-108 harness: geometry log fed by a ResizeObserver (runs after layout, forces none): scrollHeight + offsetTop /
+  // offsetHeight of every top-level section (children of the commission section's parent), as (frame, step, 'geom', v).
+  const nm = (e) => e.id || ((e.getAttribute('class') || '').split(/\\s+/).find((c) => c && !/^svelte-/.test(c))) || e.tagName.toLowerCase();
+  const geomSetup = () => {
+    const c = qs.call(document, 'section.commission'); if (!c || !c.parentElement) return;
+    P.secEls = [...c.parentElement.children];
+    P.geom = () => 'sh=' + document.documentElement.scrollHeight + ';' + P.secEls.map((e) => nm(e) + '=' + e.offsetTop + '+' + e.offsetHeight).join(';');
+    P.ro = new ResizeObserver(() => { if (!P.rec) return; const g = P.geom(); if (g !== P.lastGeom) { P.log.push([P.frame, P.k, 'geom', g]); P.lastGeom = g; } });
+    P.ro.observe(document.documentElement); for (const e of P.secEls) P.ro.observe(e);
+  };
   const tick = () => {
     P.frame++;
+    if (!P.ro) geomSetup();
     if (P.rec) { const s = snap(); for (const k in s) if (s[k] !== P.last[k]) { P.log.push([P.frame - 1, P.k, k, s[k]]); P.last[k] = s[k]; } }
     if (P.queue && P.queue.length) P.ch.port2.postMessage(0);
     oraf(tick);
@@ -166,7 +178,7 @@ async function runLoad(armName, rep) {
     }
     await page.eval(`scrollTo({ top: 0, behavior: 'instant' })`);
     await sleep(800);
-    await page.eval(`(() => { const P = window.__scb; P.y = 0; P.k = 0; P.last = P.snap(); P.log = []; P.counts = {}; P.f0 = P.frame; P.on = true; P.rec = true; P.done = false; P.marks = []; P.queue = ${JSON.stringify(q)}; performance.mark('scb-start'); })()`);
+    await page.eval(`(() => { const P = window.__scb; P.y = 0; P.k = 0; P.last = P.snap(); P.lastGeom = P.geom ? P.geom() : ''; P.log = []; P.counts = {}; P.f0 = P.frame; P.on = true; P.rec = true; P.done = false; P.marks = []; P.queue = ${JSON.stringify(q)}; performance.mark('scb-start'); })()`);
     const t0 = Date.now();
     while (!(await page.eval('window.__scb.done')) && Date.now() - t0 < 150000) await sleep(250);
     if (!(await page.eval('window.__scb.done'))) throw new Error('VOID scroll queue did not finish in 150 s');
@@ -211,12 +223,12 @@ async function runLoad(armName, rep) {
       for (const l of byTid.values()) l.sort((x, y) => x.ts - y.ts);
       const inRaf = (e) => { const l = byTid.get(e.tid); if (!l) return false; let lo = 0, hi = l.length - 1, f = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (l[m].ts <= e.ts) { f = m; lo = m + 1; } else hi = m - 1; } return f >= 0 && e.ts <= l[f].ts + (l[f].dur || 0); };
       const tot = { fireAnimationFrame: rafs.length, prePaint: 0, updateLayoutTree: 0, layout: 0, paint: 0, forcedUpdateLayoutTree: 0, forcedLayout: 0, functionCallNode: 0, computeIntersections: 0 };
-      const ioNames = {};
+      const ioNames = {}; const paints = [];
       const forced = {}, fc = {};
       for (const e of events) {
         if (!inW(e)) continue;
         if (e.name === 'PrePaint' && e.ph === 'X') tot.prePaint++;
-        if (e.name === 'Paint' && e.ph === 'X') tot.paint++;
+        if (e.name === 'Paint' && e.ph === 'X') { tot.paint++; paints.push(e.args?.data?.nodeId); }
         if (/ntersection/.test(e.name) && (e.ph === 'X' || e.ph === 'B')) { tot.computeIntersections++; ioNames[e.name] = (ioNames[e.name] || 0) + 1; } // N2: reported, not judged
         if (e.name === 'FunctionCall' && e.ph === 'X') { const d = e.args?.data || {}; if (/2\.DyWL8TcE\.js/.test(d.url || '')) { tot.functionCallNode++; const fn = fnOf((d.lineNumber || 0) + 1); fc[fn] = (fc[fn] || 0) + 1; } }
         if ((e.name === 'UpdateLayoutTree' || e.name === 'Layout') && (e.ph === 'X' || e.ph === 'B')) {
@@ -232,6 +244,14 @@ async function runLoad(armName, rep) {
         }
       }
       r.trace = { events: events.length, tot, perStep: per(tot), functionCallsByFn: fc, forcedByFn: forced, intersectionEventNames: ioNames };
+      // reported, not judged: Paint events by painted element (DOM.describeNode on the event's nodeId)
+      const desc = {};
+      try { await page.send('DOM.getDocument', { depth: 0 }); } catch {}
+      for (const id of new Set(paints)) {
+        if (id === undefined) { desc[id] = 'none'; continue; }
+        try { const { node } = await page.send('DOM.describeNode', { backendNodeId: id }); const at = node.attributes || []; const ci = at.indexOf('class'); const ii = at.indexOf('id'); desc[id] = `${node.nodeName}${ii >= 0 ? '#' + at[ii + 1] : ''}${ci >= 0 ? '.' + at[ci + 1].split(/\s+/).filter((c) => !/^svelte-/.test(c)).slice(0, 3).join('.') : ''}`; } catch { desc[id] = 'removed'; }
+      }
+      r.paintByEl = {}; for (const id of paints) { const k = desc[id]; r.paintByEl[k] = (r.paintByEl[k] || 0) + 1; }
     }
     await page.close();
   } catch (e) {

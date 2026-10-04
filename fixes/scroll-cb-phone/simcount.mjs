@@ -44,14 +44,24 @@ const INSTALL = `(() => {
     pain: '.pain', future: '#people', fcard: '.start-selling-future-card', platform: '#platform', pcard: '.start-selling-platform-card',
     profile: '.start-selling-profile', psticky: '.start-selling-profile-sticky', pshell: '.start-selling-profile-shell.is-active-shell' };
   P.snap = () => { const o = {}; for (const k in SEL) { const e = document.querySelector(SEL[k]); o[k] = e ? (e.getAttribute('class') || '') + ' | ' + (e.getAttribute('style') || '') : '-'; } return o; };
+  // P-108 harness: top-level sections (children of the commission section's parent), their page bounds at install, and a
+  // geometry log fed by a ResizeObserver (after layout, so it forces none): scrollHeight + offsetTop/offsetHeight of each.
+  const host = (document.querySelector('section.commission') || document.body.firstElementChild).parentElement;
+  const nm = (e) => e.id || ((e.getAttribute('class') || '').split(/\\s+/).find((c) => c && !/^svelte-/.test(c))) || e.tagName.toLowerCase();
+  P.secEls = [...host.children];
+  P.secs = P.secEls.map((e) => { const b = e.getBoundingClientRect(); return [nm(e), Math.round(b.top + scrollY), Math.round(b.bottom + scrollY)]; });
+  P.geom = () => 'sh=' + document.documentElement.scrollHeight + ';' + P.secEls.map((e) => nm(e) + '=' + e.offsetTop + '+' + e.offsetHeight).join(';');
+  P.n = 0;
+  P.ro = new ResizeObserver(() => { if (!P.on) return; const g = P.geom(); if (g !== P.lastGeom) { P.log.push([P.n, 'geom', g]); P.lastGeom = g; } });
+  P.ro.observe(document.documentElement); for (const e of P.secEls) P.ro.observe(e);
   return 1;
 })()`;
 const SCROLL = `new Promise((res) => { const P = window.__scb; const max = document.documentElement.scrollHeight - innerHeight; let y = 0, n = 0, dir = 1;
-  P.last = P.snap(); P.log = []; P.counts = {}; P.on = true;
+  P.last = P.snap(); P.lastGeom = P.geom(); P.log = []; P.counts = {}; P.ys = [0]; P.n = 0; P.on = true;
   const step = () => { const s = P.snap(); for (const k in s) if (s[k] !== P.last[k]) { P.log.push([n, k, s[k]]); P.last[k] = s[k]; }
     if (dir > 0 && y >= max) dir = -1;
     if (dir < 0 && y <= 0) { P.on = false; res({ n, y: scrollY, max }); return; }
-    y = Math.max(0, Math.min(max, y + 10 * dir)); scrollTo({ top: y, behavior: 'instant' }); n++;
+    y = Math.max(0, Math.min(max, y + 10 * dir)); scrollTo({ top: y, behavior: 'instant' }); n++; P.n = n; P.ys.push(y); console.timeStamp('scb' + n);
     if (n < 10000) P.raf(step); else { P.on = false; res({ n, y: scrollY, max, cut: true }); } };
   P.raf(step); })`;
 
@@ -99,8 +109,27 @@ for (const L of order) {
     if (!sc) throw new Error('scroll did not finish in 200 s');
     await sleep(300);
     await c.send('Timeline.stop'); await sleep(1000);
-    const res = await c.evaluate('JSON.stringify({ counts: window.__scb.counts, log: window.__scb.log })');
-    const { counts, log } = JSON.parse(res);
+    const res = await c.evaluate('JSON.stringify({ counts: window.__scb.counts, log: window.__scb.log, secs: window.__scb.secs, ys: window.__scb.ys })');
+    const { counts, log, secs, ys } = JSON.parse(res);
+    // reported, not judged: Paint records by top-level section. Step from the last console.timeStamp ('scbN') before
+    // the paint; page y = clip quad's centre y (root-view coordinates) + the driver's y at that step.
+    const flat = []; const types = {};
+    const fl = (r) => { if (!r) return; types[r.type] = (types[r.type] || 0) + 1; flat.push(r); for (const ch of r.children || []) fl(ch); };
+    for (const r of recs) fl(r);
+    flat.sort((a, b) => (a.startTime ?? 0) - (b.startTime ?? 0));
+    let curStep = 0; const paintBySec = {}; const paintSample = [];
+    const secOf = (py) => { for (const [k, a, b] of secs) if (py >= a && py < b) return k; return 'outside'; };
+    for (const r of flat) {
+      if (r.type === 'TimeStamp') { const m = /^scb(\d+)$/.exec(r.data?.message || ''); if (m) curStep = +m[1]; }
+      if (r.type === 'Paint') {
+        const d = r.data || {}; if (paintSample.length < 3) paintSample.push(d);
+        const q = d.clip || d.quad || (d.y !== undefined ? [d.x, d.y, d.x + d.width, d.y, d.x + d.width, d.y + d.height, d.x, d.y + d.height] : null);
+        let k = 'noquad';
+        if (Array.isArray(q) && q.length >= 8) { const cy = (q[1] + q[3] + q[5] + q[7]) / 4; k = secOf(cy + (ys[curStep] ?? 0)); }
+        paintBySec[k] = (paintBySec[k] || 0) + 1;
+      }
+    }
+    load.paintBySec = paintBySec; load.paintSample = paintSample; load.recordTypes = types; load.secs = secs;
     const byFn = {};
     for (const [k, v] of Object.entries(counts)) { const [kind, line] = k.split('@'); const fn = line === 'other' ? 'other' : fnOf(+line); byFn[fn] ||= {}; byFn[fn][kind] = (byFn[fn][kind] || 0) + v; }
     const steps = sc.n || 1;
