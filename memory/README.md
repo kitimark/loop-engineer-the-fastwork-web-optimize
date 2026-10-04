@@ -19,7 +19,7 @@ Every agent:
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test (countdown waived, T-055)
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
 - [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at real Serious, stay smooth from a 42-44 °C start and under Xcode-induced Serious
-- [Phone checks start warm](phone-checks-start-warm.md): tests run at real thermal Serious (xctrace gate per hold, ceiling 44 °C/Critical), Fair no-worse check at the end; LPM runs dropped; no countdown-only test page
+- [Phone checks start warm](phone-checks-start-warm.md): tests run at thermal Serious, since T-162 #3 Xcode-induced Serious by default (no heat pre-warm), real heat once for the final build; ceiling 44 °C/Critical; Fair no-worse check at the end; LPM dropped
 - [One phone step at a time](one-phone-step-at-a-time.md): only the lease holder posts a phone step, one open at a time, after the user says ready; the lead sets the order; renew 2 min early, arm `--until redo`
 - [Answer format](answer-format.md): every answer to the user: answer first, short plain bullets, codes explained, numbers in small tables, ~10 lines, "What you need to do" last
 - [Trace before asking](trace-before-asking.md): a reported lag or bug is traced from our recordings, logs and probes first; ask the user only what no data can answer
