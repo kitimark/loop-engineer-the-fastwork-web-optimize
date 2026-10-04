@@ -408,6 +408,11 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   `npm test`, `lock.mjs run`/`acquire --wait`/`wait`, `fix.mjs ab`, `verify.mjs`, `bench.mjs`, `iphone.mjs scroll|record|run|gesture`, builds)
   goes through Bash `run_in_background`; a foreground command makes you deaf to messages and user threads until it
   ends. Keep only short commands (`npm run test:unit`, reads, `status.mjs set`) in the foreground.
+  *Enforced:* the Claude Code hook `.claude/hooks/fg-guard.mjs` (I-170) refuses these in the foreground (also inside
+  `sh -c`, `lock.mjs … --` and npm scripts): full `npm test`/`test:all`/`test:chrome*`, `lock.mjs run`, `acquire --wait N`
+  and `lock.mjs wait`, `fix.mjs ab|serve`, `verify.mjs`, `bench.mjs`, `serve.mjs`, `iphone.mjs scroll|record|run|gesture`,
+  `ioscap.mjs record`, `sim.mjs session`, every `wait.mjs`/`console.mjs [thread] wait`/`incident.mjs wait`/`finding.mjs
+  wait`, `caffeinate`; a wait with `--timeout N` (N ≤ 60 s) and anything with `--help` pass. No opt-out.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
   `sleep`/`until`/`for … sleep` loop**: run it with Bash `run_in_background` and keep working (Claude Code wakes you
   when it exits); with nothing else to do, still run it in the background with a long `--timeout` (thread waits 3500)
