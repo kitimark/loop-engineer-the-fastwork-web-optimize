@@ -1,10 +1,15 @@
-// nav-hit-cache arms: the best build (C) and best + nav-hit-cache (V), as immutable snapshot copies to serve.
-//   node fixes/nav-hit-cache/build.mjs           # check C, build V (+ VA, the audit-hook copy), print the arm table
-//   node fixes/nav-hit-cache/build.mjs --diff    # regenerate patch-on-best.diff from overlay/ (the working copy)
-//   node fixes/nav-hit-cache/build.mjs --no-expect   # print V's hashes without comparing them with EXPECT
-// Arms (sha256/12 of the JS node / the CSS as written):
-//   C   the best build, out/snapshots/best-65052c4a3902 (fixes/best-build/build.mjs --snapshot)
-//   V   C + patch-on-best.diff: the landing build, no debug code
+// nav-hit-cache arms: the control build (C) and C + nav-hit-cache (V), as immutable snapshot copies to serve.
+//   node fixes/nav-hit-cache/build.mjs [--base v8|best]          # check C, build V (+ VA, the audit-hook copy), print the arm table
+//   node fixes/nav-hit-cache/build.mjs [--base v8|best] --diff   # regenerate the base's patch from overlay/ (the working copy)
+//   node fixes/nav-hit-cache/build.mjs --no-expect               # print V's hashes without comparing them with EXPECT
+// Bases (sha256/12 of the JS node / the CSS as written):
+//   v8   (default, from the P-104 successor on) best build v8 = baseline + fixes/v8-best/patch.diff, written once to
+//        out/snapshots/v8-3e3e94cb6e9f; V = C + patch-on-v8.diff
+//   best (P-101 / P-104 record) best build v6, out/snapshots/best-65052c4a3902 (fixes/best-build/build.mjs --snapshot);
+//        V = C + patch-on-best.diff
+// Arms:
+//   C   the base build
+//   V   C + the base's patch: the landing build, no debug code
 //   VA  V + the in-frame audit hook (DEBUG ONLY, never lands): in every frame where V keeps its cached theme answer it
 //       also runs the real hit test F() and records a mismatch. Used only by the parity part of probe.mjs.
 import { createHash } from 'node:crypto';
@@ -13,6 +18,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveTree } from '../../tools/lib/paths.mjs';
 
 export const HERE = dirname(fileURLToPath(import.meta.url));
 export const WT = join(HERE, '../..');
@@ -21,21 +27,72 @@ export const CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const FILES = [JS, CSS];
 export const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const SNAP = join(WT, 'out/snapshots');
-const PATCH = join(HERE, 'patch-on-best.diff');
 const OVERLAY = join(HERE, 'overlay');
-// pinned hashes: C is the best build (fixes/best-build BUILD_EXPECT); V / VA as pinned in the README's D card
-export const PIN = { C: ['65052c4a3902', 'e0f92804c521'] };
-const EXPECT = { V: ['aa3ea472d26b', 'e0f92804c521'], VA: ['a01a2ef32db0', 'e0f92804c521'] };
-const C_DIR = join(SNAP, 'best-65052c4a3902');
+// pinned hashes: C per base (best: fixes/best-build BUILD_EXPECT; v8: fixes/v8-best/README.md); V / VA as pinned in the
+// README's D card for that base
+export const BASES = {
+  best: {
+    dir: join(SNAP, 'best-65052c4a3902'), pin: ['65052c4a3902', 'e0f92804c521'], patch: join(HERE, 'patch-on-best.diff'),
+    expect: { V: ['aa3ea472d26b', 'e0f92804c521'], VA: ['a01a2ef32db0', 'e0f92804c521'] }, pre: { V: 'nhc', VA: 'nhca' },
+  },
+  v8: {
+    dir: join(SNAP, 'v8-3e3e94cb6e9f'), pin: ['3e3e94cb6e9f', 'f836404b3728'], from: join(WT, 'fixes/v8-best/patch.diff'),
+    patch: join(HERE, 'patch-on-v8.diff'), expect: { V: null, VA: null }, pre: { V: 'nhc8', VA: 'nhc8a' },
+  },
+};
+const baseOf = (b) => {
+  const B = BASES[b];
+  if (!B) throw new Error(`unknown base ${b} (v8 | best)`);
+  return B;
+};
+// v8's C is not kept anywhere else: build it once from the baseline snapshot + fixes/v8-best/patch.diff
+function ensureBase(B) {
+  if (existsSync(join(B.dir, JS)) || !B.from) return;
+  const base = resolveTree('site-pretty');
+  const tmp = mkdtempSync(join(tmpdir(), 'nhc-base-'));
+  try {
+    for (const f of FILES) { mkdirSync(join(tmp, dirname(f)), { recursive: true }); writeFileSync(join(tmp, f), readFileSync(join(base, f))); }
+    const r = spawnSync('patch', ['-p1', '-s', '-F', '0', '-N', '-d', tmp, '-i', B.from], { encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`${B.from} does not apply to the baseline: ${r.stdout}${r.stderr}`);
+    const t = Object.fromEntries(FILES.map((f) => [f, read(tmp, f)]));
+    if ([sha(t[JS]), sha(t[CSS])].join() !== B.pin.join()) throw new Error(`base from ${B.from}: ${sha(t[JS])} / ${sha(t[CSS])}, pinned ${B.pin.join(' / ')}`);
+    writeSnap(B.dir.split('/').pop(), t);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
 
 const HOOK_AT = '          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),\n';
-const HOOK =
+// best base (P-104 record): the theme audit only
+const HOOK_BEST =
   '          // DEBUG ONLY (nav-hit-cache VA arm, never lands): audit every cached frame against the real hit test\n' +
   '          window.__nhcAudit &&\n' +
   '            (__h\n' +
   '              ? window.__nhcAudit.t++\n' +
   '              : (window.__nhcAudit.n++,\n' +
   '                ((e) => e !== __nsG && window.__nhcAudit.m.push([Math.round(__nsY), __nsG, e]))(F()))),\n';
+// v8 base (P-104 successor): every frame is audited against the original's own per-frame reads, in the same frame:
+//   m theme  (cached frames only) the cached answer vs the real hit test F()
+//   v profile-sticky  __nsEE(n) vs the original ee() (getComputedStyle + 2 rects)
+//   p hero pill  the cached-offset formula vs the original's live hero-track rect formula
+// each entry [__nsY, V's answer, the original's answer, scrollY]; lag counts frames where the scroll position captured
+// in the scroll event (__nsY) is not the live scrollY (a script scrolled between the scroll event and this rAF callback)
+const HOOK_V8 =
+  '          // DEBUG ONLY (nav-hit-cache VA arm, never lands): audit every frame against the original per-frame reads\n' +
+  '          window.__nhcAudit &&\n' +
+  '            ((window.__nhcAudit.lag += Math.round(window.scrollY) !== Math.round(__nsY) ? 1 : 0),\n' +
+  '            __h\n' +
+  '              ? window.__nhcAudit.t++\n' +
+  '              : (window.__nhcAudit.n++,\n' +
+  '                ((q) => q !== __nsG && window.__nhcAudit.m.push([Math.round(__nsY), __nsG, q, Math.round(window.scrollY)]))(F())),\n' +
+  '            ((q, w) => q !== w && window.__nhcAudit.v.push([Math.round(__nsY), q, w, Math.round(window.scrollY)]))(__nsEE(n), ee()),\n' +
+  '            ((q, w) => q !== w && window.__nhcAudit.p.push([Math.round(__nsY), q, w, Math.round(window.scrollY)]))(\n' +
+  '              ((q) => !q || e.matches || n - q.t >= 0.72 * Math.max(1, q.h - __nsVh))(__nsGeo.track),\n' +
+  '              ((q) => {\n' +
+  '                if (!q || e.matches) return !0;\n' +
+  '                let w = q.getBoundingClientRect(), u = Math.max(1, w.height - window.innerHeight);\n' +
+  '                return Math.min(u, Math.max(0, -w.top)) / u >= 0.72;\n' +
+  '              })(__navEl(`.hero-track`)))),\n';
 
 const read = (dir, f) => readFileSync(join(dir, f));
 
@@ -53,24 +110,27 @@ function writeSnap(name, tree) {
   return d;
 }
 
-export function build({ quiet = false, expect = true } = {}) {
+export function build({ quiet = false, expect = true, base = 'v8' } = {}) {
   const log = (...a) => quiet || console.log(...a);
-  if (!existsSync(join(C_DIR, JS))) throw new Error(`best build snapshot missing: run node fixes/best-build/build.mjs --snapshot`);
+  const B = baseOf(base), C_DIR = B.dir, PATCH = B.patch;
+  ensureBase(B);
+  if (!existsSync(join(C_DIR, JS))) throw new Error(`base ${base} snapshot missing: run node fixes/best-build/build.mjs --snapshot`);
   const c = Object.fromEntries(FILES.map((f) => [f, read(C_DIR, f)]));
-  if ([sha(c[JS]), sha(c[CSS])].join() !== PIN.C.join()) throw new Error(`C at ${C_DIR}: not the pinned best build`);
+  if ([sha(c[JS]), sha(c[CSS])].join() !== B.pin.join()) throw new Error(`C at ${C_DIR}: not the pinned ${base} build`);
   const tmp = mkdtempSync(join(tmpdir(), 'nhc-'));
   try {
     for (const f of FILES) { mkdirSync(join(tmp, dirname(f)), { recursive: true }); writeFileSync(join(tmp, f), c[f]); }
     const r = spawnSync('patch', ['-p1', '-s', '-F', '0', '-N', '-d', tmp, '-i', PATCH], { encoding: 'utf8' });
-    if (r.status !== 0) throw new Error(`patch-on-best.diff does not apply to the best build: ${r.stdout}${r.stderr}`);
+    if (r.status !== 0) throw new Error(`${PATCH.split('/').pop()} does not apply to the ${base} build: ${r.stdout}${r.stderr}`);
     const v = Object.fromEntries(FILES.map((f) => [f, read(tmp, f)]));
     const js = v[JS].toString('utf8');
     if (js.split(HOOK_AT).length !== 2) throw new Error('audit hook anchor not unique');
+    const HOOK = base === 'best' ? HOOK_BEST : HOOK_V8;
     const va = { ...v, [JS]: Buffer.from(js.replace(HOOK_AT, HOOK + HOOK_AT)) };
-    const arms = { C: { dir: C_DIR, js: PIN.C[0], css: PIN.C[1] } };
-    for (const [k, t, pre] of [['V', v, 'nhc'], ['VA', va, 'nhca']]) {
+    const arms = { C: { dir: C_DIR, js: B.pin[0], css: B.pin[1] } };
+    for (const [k, t, pre] of [['V', v, B.pre.V], ['VA', va, B.pre.VA]]) {
       const h = [sha(t[JS]), sha(t[CSS])];
-      if (expect && EXPECT[k] && h.join() !== EXPECT[k].join()) throw new Error(`arm ${k}: ${h.join(' / ')}, pinned ${EXPECT[k].join(' / ')}`);
+      if (expect && B.expect[k] && h.join() !== B.expect[k].join()) throw new Error(`arm ${k}: ${h.join(' / ')}, pinned ${B.expect[k].join(' / ')}`);
       arms[k] = { dir: writeSnap(`${pre}-${h[0]}`, t), js: h[0], css: h[1] };
     }
     for (const [k, a] of Object.entries(arms)) log(`${k.padEnd(3)} js ${a.js} css ${a.css}  ${a.dir.replace(WT + '/', '')}`);
@@ -80,7 +140,9 @@ export function build({ quiet = false, expect = true } = {}) {
   }
 }
 
-function regenDiff() {
+function regenDiff(base) {
+  const B = baseOf(base), C_DIR = B.dir, PATCH = B.patch;
+  ensureBase(B);
   let out = '';
   for (const f of FILES) {
     const r = spawnSync('diff', ['-u', '--label', `a/${f}`, '--label', `b/${f}`, join(C_DIR, f), join(OVERLAY, f)], { encoding: 'utf8', maxBuffer: 64 << 20 });
@@ -92,6 +154,7 @@ function regenDiff() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  if (process.argv.includes('--diff')) regenDiff();
-  build({ expect: !process.argv.includes('--no-expect') });
+  const i = process.argv.indexOf('--base'), base = i > 0 ? process.argv[i + 1] : 'v8';
+  if (process.argv.includes('--diff')) regenDiff(base);
+  build({ base, expect: !process.argv.includes('--no-expect') });
 }

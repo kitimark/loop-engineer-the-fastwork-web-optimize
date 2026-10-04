@@ -4,8 +4,8 @@
 > Fastwork). `patch-on-best.diff` and `patch.diff` contain excerpts of Fastwork's code: keep them on local branches,
 > never push.
 
-**Status:** draft (ticket written, no data yet)
-**Stage:** I (implemented on the best build); the counts ticket below is for ops to read before any data
+**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); successor card drafted for ops
+**Stage:** I (rebased on best build v8); the P-104 successor card is for ops to read before any data
 **Device class / gate:** less-work fix (memory `less-work-landing-rule`): Chrome + Simulator work counts, then one short
 phone no-worse check
 **Driver(s) behind the claims:** Chrome scripted scroll (counts only), Simulator scripted scroll (counts only)
@@ -352,6 +352,165 @@ load served the card's hashes, no load is VOID, and there are no page errors.
   - Find the trigger that missed: the 40 px crossing near y 3186 on mobile, and the desktop hidden-state settle positions.
   - Then re-ticket and re-run all parts.
   - No retuning on this data.
+
+## P-104 parity diagnosis (10-04, 18:20-18:40Z, exploratory; no V change judged on it)
+
+Lead order (b), after v8 was decided. Debug-only probes in `out/nav-hit-cache/p104diag/` (gitignored), shared probe
+slots, Chrome 154 headless, no CPU throttle. The A/A record is committed as `p104/diag-states-aa.json`.
+
+**1. The mobile 40 px miss is a one-frame lag of the P-104 harness's own making, not a missed trigger.**
+- The harness scrolls with `scrollTo` inside a rAF callback. That write lands after the frame's scroll event, but
+  before the scroll engine's rAF callback, which was queued from that scroll event. So in every frame V's cached
+  position (`__nsY`, taken in the scroll event) is one step behind the live `scrollY`.
+- Logged per frame at the miss (mobile, scroll up, 40 px): `__nsY` 3186, live scrollY 3146, probe line 42 px.
+  - V's cached line moved 3268 → 3228. The live line moved to 3188 and crossed the `.pain` top edge at 3194, so the
+    real `F()` says dark.
+  - V's ±12 px crossing window [3216, 3280] doesn't reach 3194, so V keeps "light" for that frame.
+  - The next frame's window, [3176, 3240], holds the edge. V runs the real test there and agrees with C again.
+- In that run all 21 logged frames around the miss lag by exactly one step (40 px). At 10 px the lag (10 px) is inside
+  the ±12 px window, so P-104's 10 px audit saw 0 misses.
+- Input doesn't do this: a touch, wheel or smooth scroll fires its scroll event before the frame's rAF callbacks. The
+  page's only rAF-time `scrollTo` is the morph pin, and while the morph is active `C()` already forces the real test.
+- Reading the live `scrollY` in the callback would close the gap, but it costs layout. Blink's
+  `LocalDOMWindow::scrollY()` runs `document()->UpdateStyleAndLayout(DocumentUpdateReason::kJavaScript)`
+  before it returns the offset (CONFIRMED: chromium/chromium main, `third_party/blink/renderer/core/frame/
+  local_dom_window.cc`, `LocalDOMWindow::scrollY`, line 1877, fetched 10-04). That forced layout is exactly what this fix
+  removes, so V keeps the scroll-event position.
+- The successor card's audit now steps in two modes:
+  - *task*: `scrollTo` in a task between frames, which orders events like input;
+  - *raf*: P-104's mode.
+  It also counts the lag frames, so a miss in a lag frame can be told apart from a missed trigger.
+
+**2. The desktop state mismatches are the states harness, not V.**
+- The harness jumps to a position, waits 3 rAFs and reads the nav's classes. The profile section's card has
+  0.7-0.9 s transitions, so the one frame that the jump produces samples them at an arbitrary phase.
+- A/A with P-104's own arms, 4 fresh desktop loads in the order C1 V1 C2 V2:
+  - C1 vs C2: 5 mismatches, at y 1164, 1261, 1334, -2425, -2223 (negative = the way back up). These are P-104's
+    positions plus 1164.
+  - V1 vs V2: 1 mismatch.
+  - C2 vs V2: 0 mismatches.
+  - C1 vs V1: 4 mismatches.
+- Between them, V's `__nsEE` and C's `ee()` do the same two rect reads inside the window, so the answer can only differ
+  by frame phase. The successor audits that directly, frame by frame: `__nsEE(n)` against `ee()` in the same frame.
+  It does the same for the hero pill (cached offsets against C's live rect formula). The states part is dropped.
+
+**3. A real bug the parity runs could not see: the nav's own classes were never part of the signature.**
+- Inside the scroll effect, `T` is the morph spring's step function. It is a local that shadows the component's bound
+  nav element `T`.
+- So `T && (a += T.className)` appended `"undefined"`, and the transition filter's `t === T` never matched the nav.
+- The designed triggers (the nav's own scroll-hidden, pill and expanded classes, and its own geometry transitions)
+  were dead code.
+- The 10 px audits still found no frame where it changed the answer. Why is not known; the successor's audit covers
+  it with the fix in place.
+- Fixed in V on v8: a component-level `__navNode()` returns the nav. The fix adds a few real tests where the nav's
+  classes change, and no reads in other frames.
+
+**4. Rebased on v8.** `build.mjs` builds C from the baseline plus `fixes/v8-best/patch.diff` (3e3e94cb6e9f /
+f836404b3728, checked against the pin). `patch-on-best.diff` applies to v8 unchanged with fuzz 0. `patch-on-v8.diff`
+is that diff plus fix 3 above. `--base best` still rebuilds P-104's arms byte for byte.
+
+**5. Smoke of the new audit on v8 (VA d7e96c5902a9, mobile only, 1 load, 10-04 18:44Z; harness check, not scored).**
+Record: `p104/diag-audit-smoke-v8.json`.
+
+| mode, step | frames | lag frames | theme / sticky / pill mismatches | of them in a frame without lag |
+|---|---|---|---|---|
+| task, 10 px | 1070 | 0 | 0 / 0 / 0 | 0 |
+| task, 40 px | 268 | 0 | 0 / 0 / 0 | 0 |
+| raf, 10 px | 1070 | 1069 | 0 / 0 / 2 | 0 |
+| raf, 40 px | 268 | 267 | 1 / 0 / 2 | 0 |
+
+- In raf mode, every mismatch falls in a lag frame. These are P-104's y 3186 miss, and the pill threshold near y 670,
+  also one frame late.
+- In task mode there is no lag and there are no mismatches.
+- The run took 52 s, so all 5 cases fit in 2 shared probe slots.
+
+## D card P-104 successor (draft for ops' pre-data read; id from ops)
+
+**Why.** P-104 failed on parity. The diagnosis above traces both failures to the harness. It also found and fixed a
+real trigger bug (the nav's own classes), and the lead ordered the rebase onto v8. So the arms, the parity harness and
+the base all change. Fresh loads only; nothing from P-104 counts.
+
+**Question.** During a scripted scroll from top to bottom on v8, does V make Chrome do fewer pre-paint passes and fewer
+nav hit-test reads per scroll frame than C, without more layout, style or paint work? Does it do no more work in the
+Simulator? Does the nav state, frame by frame, equal what the original per-frame reads give in the same frame?
+
+**Gate.** As P-104: the less-work landing rule. Judged counts are per 10 px stepper step, on the full page. No
+smoothness claim.
+
+**Arms**, checked as served. `node fixes/nav-hit-cache/build.mjs` rebuilds all three and prints these hashes. C is
+built from the baseline plus `fixes/v8-best/patch.diff` and checked against v8's pin.
+
+| arm | JS | CSS |
+|---|---|---|
+| C, v8 | 3e3e94cb6e9f | f836404b3728 |
+| V, C + `patch-on-v8.diff` | fd3688901f50 | f836404b3728 |
+| VA, V + debug audit hook (parity only) | d7e96c5902a9 | f836404b3728 |
+
+**Harnesses** (sha256/12). Any change is listed here with its new hash before its data.
+
+| file | hash |
+|---|---|
+| `build.mjs` | 17355c247e9c |
+| `probe.mjs` | 8922642a627d |
+| `simcount.mjs` | 58fc44c464a2 (unchanged) |
+| `patch-on-v8.diff` | 7bbb6d4212ff |
+
+- `probe.mjs count` and `simcount.mjs` are unchanged in what they count, except that the arms come from base v8.
+- `probe.mjs parity` changed, as in the diagnosis:
+  - the audit covers theme, sticky and pill, frame by frame;
+  - it steps in task and raf modes;
+  - it counts lag frames;
+  - the states part is dropped.
+
+**Loads and order.** As P-104: 2 fresh loads per arm and viewport, in the order C1 V1 V2 C2.
+- Chrome counts: `count --vp mobile`, then `count --vp desktop`. One shared probe hold each, at most 300 s.
+- Parity: `--cases mobile,desktop`, then `--cases desktop-rtl,mobile-rtl,mobile-shift`. One shared probe hold each.
+- Simulator: one simulator hold, `C:1 V:1 V:2 C:2`.
+- Raw output goes to `out/nav-hit-cache/p10x/`. The JSON records are committed to `fixes/nav-hit-cache/p10x/` after
+  scoring.
+
+**VOID.** As P-104. The served hashes must equal the arm table above.
+
+**Counts and verdicts.**
+- *Judged, Chrome.* Each must be lower in both viewports, with every V load below every C load:
+  - PrePaint per step (total);
+  - forced PrePaint per step;
+  - nav `elementsFromPoint` per step;
+  - nav `getComputedStyle` per step.
+- *Guards, Chrome.* Each must be no worse in each viewport, V mean ≤ C mean + 0.05 per step:
+  - forced Layout;
+  - Layout;
+  - UpdateLayoutTree;
+  - Paint.
+- *Simulator.* No worse, V mean ≤ C mean + 0.05: RecalculateStyles, Layout, RenderingFrame. Forced Layout is reported
+  only.
+- *Parity.* Must hold in all 5 cases:
+  - task mode, 10 px and 40 px: lag frames = 0, and theme, sticky and pill mismatches = 0;
+  - raf mode, 10 px and 40 px: no mismatch in a frame without lag. Mismatches in lag frames are reported with their y;
+    they are the harness's one-frame lag (diagnosis 1).
+  - no new page errors.
+
+**Predictions** (per 10 px step). v8 differs from best, and the nav-class fix adds a few real tests. So the V intervals
+are P-104's V values ± 0.06, and the C intervals are P-104's C values ± 0.06:
+
+| count | mobile C | mobile V | desktop C | desktop V |
+|---|---|---|---|---|
+| PrePaint, total | 2.16 to 2.28 | 1.81 to 1.94 | 1.76 to 1.90 | 1.63 to 1.75 |
+| PrePaint, forced | 0.94 to 1.06 | 0.58 to 0.70 | 0.60 to 0.73 | 0.45 to 0.57 |
+| nav `elementsFromPoint` | 0.94 to 1.06 | 0.58 to 0.70 | 0.94 to 1.06 | 0.61 to 0.73 |
+| nav `getComputedStyle` | 0.94 to 1.06 | 0 to 0.02 | 0.94 to 1.06 | 0 to 0.02 |
+| guards | as measured | within ±0.05 of C | as measured | within ±0.05 of C |
+
+- Simulator: V within ±0.05 of C on the three no-worse counts.
+- Parity: as the rule above, in all 5 cases.
+
+**What happens next, whatever the result.**
+- *Pass:* the short phone no-worse check, on its own ops ticket. The lead's order holds: no iPhone until P-105 and
+  PR-018 rev 7 are done. Then a land request.
+- *Parity fails* (a task-mode mismatch, or a raf mismatch in a frame without lag): not landable. Fix it, re-ticket and
+  re-run all parts.
+- *A guard or the Simulator worse,* or *a judged count not lower:* report it as measured and re-ticket. No retuning on
+  this card's data.
 
 ## Smoke (not scored)
 

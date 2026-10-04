@@ -1,0 +1,119 @@
+{
+ "part": "parity",
+ "date": "2026-10-04T18:44:05.750Z",
+ "browser": "Chrome/154.0.8037.97",
+ "arms": {
+  "C": {
+   "js": "3e3e94cb6e9f",
+   "css": "f836404b3728"
+  },
+  "V": {
+   "js": "fd3688901f50",
+   "css": "f836404b3728"
+  },
+  "VA": {
+   "js": "d7e96c5902a9",
+   "css": "f836404b3728"
+  }
+ },
+ "base": "v8",
+ "audit": {
+  "mobile": {
+   "task10": {
+    "steps": 1070,
+    "tested": 722,
+    "cached": 348,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 268,
+    "tested": 238,
+    "cached": 30,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1070,
+    "tested": 789,
+    "cached": 281,
+    "lagFrames": 1069,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      676,
+      true,
+      false,
+      666
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 268,
+    "tested": 238,
+    "cached": 30,
+    "lagFrames": 267,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      3186,
+      false,
+      true,
+      3146
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      706,
+      true,
+      false,
+      666
+     ]
+    ]
+   },
+   "errors": []
+  }
+ },
+ "wallMs": 51606
+}

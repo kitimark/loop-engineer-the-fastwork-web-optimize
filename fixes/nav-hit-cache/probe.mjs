@@ -9,12 +9,18 @@
 //   (inside a script event: FunctionCall / FireAnimationFrame / EventDispatch / TimerFire / RunMicrotasks) and the
 //   frame's own lifecycle; plus getBoundingClientRect / getComputedStyle / elementsFromPoint calls, total and from the
 //   nav block (call stack line inside the nav code region of the served file).
-// part "parity" (arms C, V, VA):
-//   - audit (VA): window.__nhcAudit = {t, n, m}: t frames that ran the real hit test, n frames that kept the cached
-//     answer, m = cached frames where the real hit test F() disagrees ([scrollY, cached, real]). Continuous scroll
-//     down then up, 10 px and 40 px per rAF, in 5 cases: mobile, desktop, desktop-rtl, mobile-rtl, mobile-shift (a
-//     300 px block inserted above the theme sections mid-page, no resize). Pass = m empty in every case.
-//   - states (C vs V): the nav header's state classes after settling at ~60 positions down and back up, per case.
+// part "parity" (arm VA; base v8, see build.mjs HOOK_V8): window.__nhcAudit = {t, n, lag, m, v, p}: t frames that ran
+//   the real hit test, n frames that kept the cached answer, lag frames whose scroll-event position was not the live
+//   scrollY, and per-frame disagreements with the original's own reads in the same frame: m theme (cached frames vs
+//   F()), v profile-sticky (__nsEE vs ee()), p hero pill (cached offsets vs the live rect), each [__nsY, V, original,
+//   scrollY]. Continuous scroll down then up, 10 px and 40 px per step, in 5 cases: mobile, desktop, desktop-rtl,
+//   mobile-rtl, mobile-shift (a 300 px block inserted above the theme sections mid-page, no resize), in two step modes:
+//     task  scrollTo in a task between frames (the scroll event precedes the engine's rAF callback, as with input)
+//     raf   scrollTo inside a rAF callback (P-104's harness: the write lands after the frame's scroll event, so the
+//           engine's callback sees the previous position; a one-frame lag that no input or page script produces)
+//   The P-104 "states" part (settle at ~60 positions, compare C and V classes) is gone: its C-vs-C A/A disagreed at 5
+//   positions (profile section transitions still running at the single settle frame), so it can't judge V.
+// base best (--base best): the P-104 record, theme audit only, raf mode.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -29,7 +35,8 @@ const REPS = Number(arg('--reps', '2'));
 const OUTD = join(WT, 'out/nav-hit-cache'); mkdirSync(OUTD, { recursive: true });
 const OUT = arg('--out', join(OUTD, `probe-${PART}-${Date.now()}.json`));
 const BASE = resolveTree('site-pretty');
-const ARMS = build({ quiet: true });
+const BASE_NAME = arg('--base', 'v8');
+const ARMS = build({ quiet: true, base: BASE_NAME });
 const VP = {
   mobile: { width: 430, height: 932, deviceScaleFactor: 3, mobile: true },
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false },
@@ -56,15 +63,14 @@ const COUNTER = (lo, hi) => `(() => {
   wrap(Element.prototype, 'getBoundingClientRect', 'rect'); wrap(Element.prototype, 'getClientRects', 'rects');
   wrap(window, 'getComputedStyle', 'gcs'); wrap(Document.prototype, 'elementsFromPoint', 'efp'); wrap(Document.prototype, 'elementFromPoint', 'ef1');
 })();`;
-const NAVSTATE = `(() => { const h = document.querySelector('header.start-selling-top-nav'); if (!h) return 'no-nav';
-  return ['is-on-dark', 'is-scroll-hidden', 'is-profile-sticky-hidden', 'is-hero-pill', 'is-morphing', 'is-expanded'].filter((c) => h.classList.contains(c)).join(' '); })()`;
 const RAF3 = 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))))';
 // continuous scroll: from -> to in px per rAF; resolves with the step count
-const SCROLL = (to, px) => `new Promise((res) => { const max = document.documentElement.scrollHeight - innerHeight; const goal = Math.max(0, Math.min(max, ${to}));
+const SCROLL = (to, px, mode = 'raf') => { const next = mode === 'task' ? '() => setTimeout(step, 0)' : 'step';
+  return `new Promise((res) => { const max = document.documentElement.scrollHeight - innerHeight; const goal = Math.max(0, Math.min(max, ${to}));
   let y = scrollY, n = 0; const dir = goal >= y ? 1 : -1;
   const step = () => { y = dir > 0 ? Math.min(goal, y + ${px}) : Math.max(goal, y - ${px}); scrollTo({ top: y, behavior: 'instant' }); n++;
-    if (y !== goal && n < 5000) requestAnimationFrame(step); else res({ n, y: scrollY, max }); };
-  requestAnimationFrame(step); })`;
+    if (y !== goal && n < 5000) requestAnimationFrame(${next}); else ${mode === 'task' ? 'requestAnimationFrame(() => requestAnimationFrame(() => res({ n, y: scrollY, max })))' : 'res({ n, y: scrollY, max })'}; };
+  requestAnimationFrame(${next}); })`; };
 
 async function openPage(cdp, arm, url, vp, { pre = [], rtl = false } = {}) {
   const page = await cdp.newIsolatedPage();
@@ -140,35 +146,30 @@ async function doShift(page) {
 }
 async function audit(cdp, url, name, opt) {
   const vp = name.split('-')[0];
-  const page = await openPage(cdp, 'VA', url, vp, { pre: ['window.__nhcAudit = { t: 0, n: 0, m: [] };'], rtl: opt.rtl });
+  const INIT = 'window.__nhcAudit = { t: 0, n: 0, lag: 0, m: [], v: [], p: [] }';
+  const page = await openPage(cdp, 'VA', url, vp, { pre: [INIT + ';'], rtl: opt.rtl });
   if (opt.shift) await doShift(page);
   const out = {};
-  for (const px of [10, 40]) {
-    await page.eval(`scrollTo({ top: 0, behavior: 'instant' })`); await page.eval(RAF3);
-    await page.eval('(window.__nhcAudit = { t: 0, n: 0, m: [] }, 0)');
-    const down = await page.eval(SCROLL('1e9', px), { timeout: 120000 });
-    const up = await page.eval(SCROLL('0', px), { timeout: 120000 });
-    await page.eval(RAF3);
-    const A = await page.eval('JSON.parse(JSON.stringify(window.__nhcAudit))');
-    out['px' + px] = { steps: down.n + up.n, tested: A.t, cached: A.n, mismatches: A.m.length, first: A.m.slice(0, 10) };
-  }
+  for (const mode of BASE_NAME === 'best' ? ['raf'] : ['task', 'raf'])
+    for (const px of [10, 40]) {
+      await page.eval(`scrollTo({ top: 0, behavior: 'instant' })`); await page.eval(RAF3);
+      await page.eval(`(${INIT}, 0)`);
+      const down = await page.eval(SCROLL('1e9', px, mode), { timeout: 120000 });
+      const up = await page.eval(SCROLL('0', px, mode), { timeout: 120000 });
+      await page.eval(RAF3);
+      const A = await page.eval('JSON.parse(JSON.stringify(window.__nhcAudit))');
+      // inSync: the frame's scroll-event position was the live scrollY (entries carry scrollY as their 4th field)
+      const sync = (l) => l.filter((x) => x.length < 4 || x[0] === x[3]).length;
+      out[mode + px] = { steps: down.n + up.n, tested: A.t, cached: A.n, lagFrames: BASE_NAME === 'best' ? null : A.lag,
+        mismatches: A.m.length, mismatchesInSync: sync(A.m), first: A.m.slice(0, 10),
+        sticky: A.v.length, stickyInSync: sync(A.v), stickyFirst: A.v.slice(0, 10),
+        pill: A.p.length, pillInSync: sync(A.p), pillFirst: A.p.slice(0, 10) };
+    }
   out.errors = page.errors.slice(0, 5);
   await page.close();
-  console.log('audit', name, JSON.stringify({ px10: { ...out.px10, first: out.px10.first.slice(0, 3) }, px40: { ...out.px40, first: out.px40.first.slice(0, 3) }, errors: out.errors }));
+  console.log('audit', name, JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, o]) => [k, k === 'errors' ? o
+    : { steps: o.steps, lag: o.lagFrames, theme: [o.mismatches, o.mismatchesInSync], sticky: [o.sticky, o.stickyInSync], pill: [o.pill, o.pillInSync], first: [...o.first, ...o.stickyFirst, ...o.pillFirst].slice(0, 3) }]))));
   return out;
-}
-async function states(cdp, arm, url, name, opt) {
-  const vp = name.split('-')[0];
-  const page = await openPage(cdp, arm, url, vp, { rtl: opt.rtl });
-  if (opt.shift) await doShift(page);
-  const maxY = await page.eval('document.documentElement.scrollHeight - innerHeight');
-  const ys = new Set(); for (let i = 0; i < 39; i++) ys.add(Math.round((maxY * i) / 38)); for (let y = 0; y < maxY; y += 97) ys.add(y);
-  const list = [...ys].sort((x, y) => x - y), out = [];
-  for (const y of list) { await page.eval(`window.scrollTo({ top: ${y}, behavior: 'instant' })`); await page.eval(RAF3); out.push({ y, s: await page.eval(NAVSTATE) }); }
-  for (let i = list.length - 1; i >= 0; i -= 3) { const y = list[i]; await page.eval(`window.scrollTo({ top: ${y}, behavior: 'instant' })`); await page.eval(RAF3); out.push({ y: -y, s: await page.eval(NAVSTATE) }); }
-  const errors = page.errors.slice(0, 5);
-  await page.close();
-  return { maxY, out, errors };
 }
 
 const servers = [];
@@ -187,16 +188,10 @@ try {
         // --arms C: the harness smoke (C only, not scored)
         for (const arm of (rep % 2 ? ['V', 'C'] : ['C', 'V']).filter((a) => arg('--arms', 'C,V').split(',').includes(a))) result.loads.push({ rep, ...(await countLoad(cdp, arm, S[arm].url, region[arm], vp)) });
   } else {
-    const S = { C: await server('C'), V: await server('V'), VA: await server('VA') }; servers.push(...Object.values(S));
-    result.audit = {}; result.states = {};
-    for (const [name, opt] of CASES.filter(([n]) => arg('--cases', CASES.map((c) => c[0]).join(',')).split(',').includes(n))) {
+    const S = { VA: await server('VA') }; servers.push(...Object.values(S));
+    result.base = BASE_NAME; result.audit = {};
+    for (const [name, opt] of CASES.filter(([n]) => arg('--cases', CASES.map((c) => c[0]).join(',')).split(',').includes(n)))
       result.audit[name] = await audit(cdp, S.VA.url, name, opt);
-      const a = await states(cdp, 'C', S.C.url, name, opt), b = await states(cdp, 'V', S.V.url, name, opt);
-      const mism = a.out.map((r, i) => ({ y: r.y, C: r.s, V: b.out[i]?.s })).filter((r) => r.C !== r.V);
-      result.states[name] = { steps: a.out.length, maxY: [a.maxY, b.maxY], mismatchCount: mism.length, mismatches: mism.slice(0, 20),
-        stateChangesC: a.out.filter((r, i) => i && r.s !== a.out[i - 1].s).length, errors: { C: a.errors, V: b.errors } };
-      console.log('states', name, JSON.stringify({ steps: a.out.length, mismatchCount: mism.length, stateChangesC: result.states[name].stateChangesC, first: mism.slice(0, 3) }));
-    }
   }
 } catch (e) {
   result.fatal = String((e && e.stack) || e); console.error('FATAL', result.fatal.split('\n')[0]);
