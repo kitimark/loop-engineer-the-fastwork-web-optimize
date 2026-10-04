@@ -3,6 +3,17 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
+## Decision
+
+- **PR-013 rev 4 was accepted by the user, option keep-st6** (2026-10-04 02:59:56Z, no notes).
+- st6-rb2's avatar slider stays as it is. Nothing goes on top of it: no carousel-leaver patch, no option B
+  (original slider), no halfway build.
+- The topic is **closed**. F stays parked; no G1 or Sw arm was built.
+- What the user accepted, as written in PR-013: the at-rest saving, a still picture that is within our
+  near-identical numbers at phone and iPad width but **not exact with reduced motion on**, and the motion
+  differences (the leaving face is cropped, there is no 2 px end snap, the 4th face's shade shifts). The evidence is
+  in "Proposal draft rev 3" and the P-090 sections below.
+
 **Owner:** `fix-carousel-leaver` (lead, 2026-10-03, user T-042 #10-#11: ruled a bug, OBSERVED in Chrome only).
 **Status:** P-086 results in (2026-10-03). (1) Chrome hit; (1) Sim mixed (the registered scorer is weak in the Sim);
 (2) **miss**: a paint-order difference in the first 50 ms of every slide, cause found; (3) hit; (4) Chrome hit, Sim carousel-rooted
