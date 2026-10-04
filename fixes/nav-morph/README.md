@@ -466,8 +466,9 @@ pre-mounted panel?
 **Per load** (both engines):
 - Cold: a new server port and a new browser context or tab.
 - Rest 6 s at the top of the page. V's panel mounts at idle; the mount is checked below.
-- A document-start MutationObserver (attributes with old values, childList, subtree) logs each record with the
-  current rAF index. This census runs in every arm.
+- A MutationObserver census (attributes with old values, childList, subtree) logs each record with its page-clock
+  time. This census runs in every arm. (Amended before data, see "Freeze": installed at the end of the rest, not at
+  document start.)
 - Scripted scroll from 0 to 3000 px at 16 px per rAF (`scrollTo` inside rAF), then 1 s of rest.
 - Frame k = 0 is the rendering frame that runs the arm's IO callback (a FunctionCall at the arm's callback line).
   The window is k = 0, +1, +2. The reference band is k = -10..-3.
@@ -549,6 +550,25 @@ reps per engine. Otherwise that engine is VOID and the result is UNRESOLVED.
 - **Freeze (R5).** After the dry run and before rep 1, the three tools are committed and their sha256/12 is added
   below in a commit of its own. mgmt-ops-10 re-hashes them at the result read; any later change is a deviation.
   - Tool hashes: (filled in by the freeze commit).
+
+**Freeze (2026-10-04, before rep 1).** Ops PASSed rev 2 and the lead approved it. The dry runs (C only, uncounted) found
+the crossing once in each engine (Chrome k0 127 of 267 frames, 167 style invalidation events in the window, all with
+a JS stack; Simulator k0 114 of 189 frames, census logging). The amendment below, accepted by ops before data, is part
+of the frozen rules:
+- **Census install time.** The census MutationObserver and a rAF poll for the panel are installed at the end of the
+  6 s rest, right before tracing and the scroll, in both engines (the Simulator cannot run a document-start script;
+  both engines do the same).
+- **Panel checks.** "V's panel is in the DOM before the scroll" is read at install. "C's panel is in the DOM before
+  k = 0" uses the first rAF-poll sighting after install.
+- **Line base.** Chrome FunctionCall and stack `lineNumber` values are read as 1-based (the dry run's C callback
+  matched at line 13083 under base 1). If V's IO FunctionCall matches only under the other base, H2 is BASE-SENSITIVE
+  and counts as UNRESOLVED.
+- **Trace categories.** `disabled-by-default-devtools.timeline.frame` is added to the list above
+  (BeginMainThreadFrame needs it; the first dry run without it had no frames).
+- Hashes (sha256/12) of the frozen tools, as committed in the commit before this one:
+  - `crossing-chrome.mjs` 253b15eb4207;
+  - `crossing-sim.mjs` c234c0189ff0;
+  - `crossing-read.mjs` 1b8afaea066e.
 
 **Prediction (R6, fix-nav-morph, before any data).**
 - P(STYLE holds) 0.45, P(STYLE fails) 0.40, P(UNRESOLVED) 0.15.
