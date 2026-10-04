@@ -36,6 +36,11 @@ rejected.
      self-test 16 OK) ran at the start AND at the end of each hold, and both lines are in the log;
   3. the one uncounted load warm-up per arm port is kept;
   4. the 44 C / Critical ceiling is kept (any reading above 44 C or any Critical voids the runs since the last pass).
+- Sentinels under xcode-serious (int-v8's v9 draft, ops read 10-05): a failing control run still voids every run since
+  the last passing one; the block is rerun with no cooling wait (the "cool to the last passing sentinel minus 0.5 C"
+  rule is a real-heat rule). The thermal-gate exits for hold.sh match 8e4eacbb's README: 2 = condition dropped or
+  Nominal/Fair, 3 = Critical or the battery ceiling, 7 = real Serious instead of the induced condition. CLAUDE.md
+  "Phone blocks" still words the cooling rule for real heat only; amending it is the lead's call.
 - P-118 stays real heat as signed (`profile: real-serious`); the profile line is recorded on its card, not a change to
   its pins or arms.
 - The ticket's profile is stated before data, in the same commit as the pins. A profile change is a new ticket.
