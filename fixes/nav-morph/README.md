@@ -400,3 +400,94 @@ Files (gitignored, they hold LAN addresses: never commit or quote them):
 - `out/nav-morph/p091/`: gesture-/tl- files, runs/holds/gates/progress jsonl, RUNLOG, served.txt, void/.
 - `out/nav-morph/edge/`: score.json, score.txt, span.json.
 - They are listed in `evidence.json`.
+
+## Draft ticket (rules frozen before data): F3 crossing-frame count check, C vs V (fix-nav-morph, 2026-10-04)
+
+This follows the lead's ruling (c) after P-091. Counts only: no ms is judged in either engine. Shared lane, no phone.
+Status: DRAFT. It is sent to mgmt-ops-10 and the lead for a read, and no data is taken before their OK. The rules
+below are fixed by the commit that adds this section.
+
+**Question.** On the frame where #platform crosses the arm's IO edge, and the two frames after it, how many elements
+are restyled and laid out, C vs V? In V, does the style work come from the writes the crossing triggers on the
+pre-mounted panel?
+- V's crossing writes are both in `ue()` of the best build:
+  - `a.inert = !(b || E)` plus the scene and aria attributes, JS 13576-13588;
+  - each column image's `src` and `height` writes, JS 13517-13519.
+- In C, the crossing mounts the whole panel instead.
+
+**Arms.**
+- C = plain baseline B (JS 4606120cf392 / CSS 27776f3d4138, IO callback 13083:13).
+- V = best build N, `out/snapshots/best-65052c4a3902` (JS 65052c4a3902 / CSS e0f92804c521, IO callback 13378:13).
+- C2 = a second C server, the A/A pair.
+- Servers: `serve.mjs --root site-pretty [--overlay <snapshot>] --port 0 --https --vendors=local --latency 150 --no-cache`.
+  The served JS and CSS hashes are checked before each load.
+
+**Per load** (both engines):
+- Cold: a new server port and a new browser context or tab.
+- Rest 6 s at the top of the page. V's panel mounts at idle; the mount is checked below.
+- A document-start MutationObserver (attributes with old values, childList, subtree) logs each record with the
+  current rAF index. This census runs in every arm.
+- Scripted scroll from 0 to 3000 px at 16 px per rAF (`scrollTo` inside rAF), then 1 s of rest.
+- Frame k = 0 is the rendering frame that runs the arm's IO callback (a FunctionCall at the arm's callback line).
+  The window is k = 0, +1, +2. The reference band is k = -10..-3.
+
+**Chrome.**
+- Headless Chrome 430x775 DPR 3, mobile + touch (the phone's scripted geometry), no CPU throttle.
+- Trace categories: `devtools.timeline`, `disabled-by-default-devtools.timeline`,
+  `disabled-by-default-devtools.timeline.invalidationTracking`, `disabled-by-default-devtools.timeline.stack`.
+- Per frame, counted between BeginMainThreadFrame events:
+  - R = the sum of UpdateLayoutTree `elementCount`;
+  - L = the sum of Layout `dirtyObjects` (and the number of Layout events);
+  - the style and layout invalidation-tracking events, grouped by their top JS frame (url:line) and reason.
+- 3 reps per arm. Rep orders: C V C2, then V C2 C, then C2 C V.
+- Run: `lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner fix-nav-morph`, one rep per slot.
+
+**Simulator.**
+- `sim.mjs session --functional` (iPhone 15 Pro Max, Safari) inside `lock.mjs run chrome-measure --shared --weight
+  simulator --max-seconds 300`.
+- WebKit Timeline is cut per rAF frame on the page clock (as in `tween-paint-sim.mjs`). Per frame it counts
+  RecalculateStyles, Layout and Paint records, plus the MutationObserver census.
+- WebKit gives no element count, so the size of the restyle set from an attribute write is the descendant count of
+  its target at write time (`querySelectorAll('*').length`, read once the run ends). That is an upper bound, so it is
+  descriptive only.
+- 3 reps per arm, same orders. Simulator ms are never judged (F-084).
+
+**Validity** (per load, then per rep). A load is void when any of these holds:
+- a served hash differs;
+- the crossing is not found exactly once, or fewer than 3 frames follow it;
+- V's panel (`.start-selling-morph-panel`) is not in the DOM before the scroll starts;
+- C's panel is in the DOM before k = 0.
+
+A Chrome rep is also void when C vs C2 window R differs by more than max(10 %, 50 elements). An arm needs 2 of 3 valid
+reps per engine. Otherwise that engine is VOID and the result is UNRESOLVED.
+
+**Rules, per engine on the median of valid reps.**
+- **H1 (crossing style burst in V).**
+  - Chrome: V's window R (3 frames) ≥ 3 × the reference expectation, i.e. ≥ 9 × V's median per-frame R in the
+    reference band.
+  - Simulator: the census shows V's `inert` flip and at least one image `src` write in k = 0..+1, and the Timeline has
+    at least one RecalculateStyles record in the frame after the first of them.
+- **H2 (V's style is the crossing's writes, Chrome only).** At least 50 % of V's style invalidation-tracking events in
+  the window have a top JS frame in JS 13517-13519 or 13576-13588. If the invalidation-tracking events do not appear
+  at all in this Chrome build, H2 is UNRESOLVED and the report says so. That claim is then checked against the
+  Chromium source before it is written up.
+- **Descriptive only** (decides nothing):
+  - C vs V window R and L, frame by frame;
+  - C's Layout per frame for k = +3..+8 (the P-091 post-hoc C run);
+  - the census tallies by attribute.
+
+**Decision.**
+- **STYLE holds** = H1 in both engines and H2 true. Then candidate F is built:
+  - the `inert` lift and the `src` writes are moved off the crossing frame (planned: write the image `src` at the
+    idle mount, and lift `inert` on a later frame while the panel is still invisible);
+  - F gets its own cost card, which is new rules frozen before its data;
+  - F then joins the phone queue as a new ticket after P-094.
+- **STYLE fails** = H1 false in Chrome, or H2 false. F is not built, and the residual goes back to the lead as a
+  phone-only OBSERVED cost (cause unknown).
+- **Engines disagree, or H2 is UNRESOLVED with H1 true in both** = UNRESOLVED. The lead decides whether F is still
+  worth a cost card.
+
+**Tools to write before any data** (in `fixes/nav-morph/`, no tools/ change): `crossing-chrome.mjs`,
+`crossing-sim.mjs` and `crossing-read.mjs`. One dry run on C alone checks the scripts work. The dry run is not
+counted and is not read for R or L: it checks only that the crossing is found, the census logs and the
+invalidation-tracking events appear.
