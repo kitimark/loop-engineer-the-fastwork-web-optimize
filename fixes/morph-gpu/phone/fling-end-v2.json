@@ -1,0 +1,18 @@
+{
+  "name": "morph-gpu-fling-end-v2",
+  "version": 2,
+  "screen": [430, 932],
+  "about": "fix-morph-gpu, rev 2 G check (lead ruling 2026-10-04): one first open per page load reached by a fling into the end, then a drag that catches the moving page and pushes past the end in the same touch. With --inject fixes/morph-gpu/phone/rv2-flinglog.mjs the page jumps to 4.5 viewports above the scroll end on load (outside rev 2's 3-viewport setup range). The fling's momentum alone would carry past the end (560 px / 130 ms, lift-off 7316 px/s; 520 / 160 fell short in 1 of 4 Simulator runs); the catch drag is sent with no pause, mark or until in between (each of those reads the page over the Web Inspector). v1 waited for the end (until atEnd) and for a still page before the push, so the page always rested first (Simulator pilot 2026-10-04).",
+  "params": { "x": 215, "settleMs": 2000, "flingPx": 560, "flingMs": 130, "catchPx": 540, "catchMs": 600, "catchHoldMs": 300, "openHoldMs": 2000, "endY": 5000 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": "$settleMs" },
+    { "type": "mark", "name": "fling" },
+    { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling", "y": 760 },
+    { "type": "stroke", "dir": "up", "px": "$catchPx", "ms": "$catchMs", "profile": "minjerk", "y": 760, "holdMs": "$catchHoldMs" },
+    { "type": "pause", "ms": "$openHoldMs" },
+    { "type": "mark", "name": "close" },
+    { "type": "stroke", "dir": "down", "px": 300, "ms": 400, "profile": "still", "y": 330 },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "end" }
+  ]
+}

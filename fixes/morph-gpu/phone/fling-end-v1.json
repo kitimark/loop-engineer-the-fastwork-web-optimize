@@ -1,0 +1,24 @@
+{
+  "name": "morph-gpu-fling-end-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "fix-morph-gpu, rev 2 G check (lead ruling 2026-10-04): one first open per page load reached by a fling straight into the end, with no scroll rest before the push. With --inject fixes/morph-gpu/phone/rv2-flinglog.mjs the page jumps to 4.5 viewports above the end on load (outside rev 2's setup range); flings run until the end; the push past the end starts at once (no 'settled' wait), so rev 2's 300 ms scroll-rest setup may not have run; then a close.",
+  "params": { "x": 215, "settleMs": 2000, "flingPx": 520, "flingMs": 160, "flingGapMs": 250, "pushPx": 300, "pushMs": 400, "pushHoldMs": 300, "openHoldMs": 2000, "endY": 5000 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": "$settleMs" },
+    { "type": "mark", "name": "fling" },
+    { "type": "repeat", "times": 8, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": "$flingGapMs" }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 4000 },
+    { "type": "mark", "name": "push" },
+    { "type": "stroke", "dir": "up", "px": "$pushPx", "ms": "$pushMs", "profile": "still", "holdMs": "$pushHoldMs" },
+    { "type": "mark", "name": "open-hold" },
+    { "type": "pause", "ms": "$openHoldMs" },
+    { "type": "mark", "name": "close" },
+    { "type": "stroke", "dir": "down", "px": 300, "ms": 400, "profile": "still" },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "end" }
+  ]
+}

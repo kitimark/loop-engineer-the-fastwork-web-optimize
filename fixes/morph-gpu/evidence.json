@@ -392,6 +392,48 @@
       "why": "P-098 scorer pre-registration check",
       "kind": "tool",
       "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/rev2/g-pilot-sim.mjs",
+      "why": "P-099 Simulator G pilots (runner and per-run analysis)",
+      "kind": "tool",
+      "for": "README.md",
+      "fastworkDerived": false
+    },
+    {
+      "path": "out/morph-gpu/rev2/gpilot",
+      "why": "P-099 Simulator G pilot results: v1 every A open warm, v2 4/4 open and close in the catch touch",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": false
+    },
+    {
+      "path": "out/morph-gpu/rev2/g-scorer-check.mjs",
+      "why": "P-099 pre-registration check of g-fling.mjs",
+      "kind": "tool",
+      "for": "README.md",
+      "fastworkDerived": false
+    },
+    {
+      "path": "out/morph-gpu/rev2/g-scorer-check.log",
+      "why": "P-099 pre-registration check output",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": false
+    },
+    {
+      "path": "out/morph-gpu/rev2/syncdelay.mjs",
+      "why": "F-210: page reads answered only after fling momentum (Simulator)",
+      "kind": "tool",
+      "for": "README.md",
+      "fastworkDerived": false
+    },
+    {
+      "path": "out/morph-gpu/rev2/ports-today.mjs",
+      "why": "I-131 port check (prints ports only)",
+      "kind": "tool",
+      "for": "README.md",
+      "fastworkDerived": false
     }
   ]
 }

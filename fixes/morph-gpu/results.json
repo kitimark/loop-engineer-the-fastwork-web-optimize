@@ -846,7 +846,15 @@
         "tween in the last 2 driver rows not found -> void (strict, accepted)",
         "rev 1 O2.f1/O3.f1 +7 WORSE: reported (rep row), not scored",
         "P-092 drive '>34' better was threshold-sensitive: say so if it recurs"
-      ]
+      ],
+      "ports": {
+        "amended": "2026-10-04 before any data (I-131, lead)",
+        "base": 5791,
+        "C": 5792,
+        "V": 5793,
+        "mode": "plain http, no --https (no random twin)",
+        "checkedFree": "2026-10-04T09:20Z by out/morph-gpu/rev2/ports-today.mjs"
+      }
     },
     "pixelsSimulator": {
       "dir": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z",
@@ -870,6 +878,43 @@
         "tier": "rest exact; motion = rev 1 class (rev 1 at 0.99: 233, 1.30 %, 5194 css px)"
       }
     },
-    "beforeLanding": "G (WDA gesture) fling straight into the end, C vs A, same O1.f1 bound (<= +2 ms); wda check + gesture --dry-run budget (I-112); own prediction id; after P-094 and P-093 (lead ruling 2026-10-04)"
+    "beforeLanding": {
+      "predictionId": "P-099 (asked of mgmt-ops-10)",
+      "ruling": "G (WDA gesture) fling into the end, C vs A, O1.f1 <= C + 2 ms (lead 2026-10-04); cold/warm split, lead decides on cold not reached",
+      "script": {
+        "file": "fixes/morph-gpu/phone/fling-end-v2.json",
+        "gestureHash": "6a7569615807",
+        "budgetS": 150
+      },
+      "logger": {
+        "file": "fixes/morph-gpu/phone/rv2-flinglog.mjs",
+        "sha256": "8ddcb77e47f7"
+      },
+      "scorer": {
+        "file": "fixes/morph-gpu/phone/g-fling.mjs",
+        "sha256": "a493f689422a",
+        "scored": [
+          "O1.f1",
+          "O1.f2",
+          "O1.f3"
+        ],
+        "coldSubset": ">= 2 cold V runs"
+      },
+      "holds": [
+        "H1: gate, start sentinel, wC wV, C1 V2 V3 C4, gate",
+        "H2: gate, C5 V6 V7 C8, end sentinel, gate; park"
+      ],
+      "ports": {
+        "base": 5791,
+        "C": 5792,
+        "V": 5793
+      },
+      "simulatorPilots": {
+        "status": "OBSERVED, mechanism only (F-084)",
+        "v1": "page read during fling momentum answered only when momentum stopped (2.5-3 s, 3/3); push always on a resting page; every A open warm (F-210)",
+        "v2": "4/4 (C A A C) reached the end, opened in the catch touch, closed; every A open warm",
+        "phone": "UNRESOLVED whether the phone also waits for the momentum"
+      }
+    }
   }
 }

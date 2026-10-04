@@ -771,13 +771,110 @@ sentinels, void rules, Mac-sleep rule, runner duties.
   - in the rev 1 data, O2.f1 and O3.f1 are +7 ms (WORSE). They stay reported in the 'rep' row, not scored;
   - P-092's drive '>34' 'better' was threshold-sensitive. If it shows again, it is reported as such.
 - **Not in this block:** the finger case (F), Fair, reduced motion, desktop.
-- **Before landing, a G check of a fling into the end** (the lead's ruling, 2026-10-04). It covers rev 2's 300 ms
-  scroll-rest risk (see Risks): a WDA gesture that flings straight into the page end and on into the morph, C against
-  A, scored with the same O1.f1 bound (V ≤ C + 2 ms).
-  - It runs as a separate small ticket, or as the last hold of this block; ops orders it after P-094 and P-093.
-  - First `iphone.mjs wda check`. Each run is budgeted from `gesture --dry-run`'s `GESTURE_BUDGET_S` (I-112).
-  - It is registered with its own prediction id before any data.
+- **Ports (amended before any data, I-131, the lead 2026-10-04).** `serve.mjs` sends `/_app/immutable` files as
+  `immutable, max-age=1y`, so Safari may keep an earlier build's copy on a reused port. Until ts-i131's fix lands, each
+  arm is served on a fixed plain-http port that served no other build today, with no `--https` (so no random http
+  twin; the phone loads plain http as before, I-003): base `--port 5791`, C `--port 5792`, V `--port 5793`, each
+  with `--vendors=local --latency 150 --no-cache` as above. Checked free on 2026-10-04 at 09:20Z
+  (`out/morph-gpu/rev2/ports-today.mjs`: every port in today's serve state and phone or Simulator run files). The
+  runner re-checks before H1. If one is taken, it uses the next free one from 5794-5799 and logs it in the block log.
+- **Before landing, a G check of a fling into the end** (the lead's ruling, 2026-10-04): P-099, registered below.
 - **Expected minutes:** about 30 (25-45), as P-092.
+
+## G check before landing: a fling into the end, C against A (registration; written before any phone data)
+
+Prediction id **P-099** (asked of mgmt-ops-10). This ticket checks the risk named under Risks. Rev 2's setup runs once
+the scroll has rested for 300 ms. A morph that starts sooner does the setup in its first frame, as rev 1 did. We
+call that open 'cold'; an open after the setup has run is 'warm'.
+- **Question (one).** When a real touch flings into the page end and pushes on into the morph, is A's first open no
+  worse than best-build's (O1.f1, V ≤ C + 2 ms, P-098's bound)? And when it is cold, how much does that cost?
+- **What the Simulator showed (pilots, 2026-10-04; mechanism only, no Simulator ms judged, F-084).**
+  - v1 (fling until the end, then a push): the runner reads the page before every stroke. A read sent during a
+    fling's momentum was answered only when the momentum stopped: 2.5-3 s, in every run. An up stroke in the last
+    150 px also waits for a still page. So the push always landed on a page at rest, and A's setup ran first: 'd'
+    before O1 in every A run. OBSERVED in our setup, cause unknown; F-210. The phone G runs on file have no flings, so
+    whether the phone does the same is UNRESOLVED. The first counted runs will show it.
+  - v2 (`phone/fling-end-v2.json`, GESTURE_HASH `6a7569615807`):
+    - setup: on load the logger jumps 4.5 viewports above the scroll end, outside the setup's range;
+    - fling: 560 px / 130 ms, lift-off 7316 px/s;
+    - catch: a 540 px / 600 ms drag sent straight after the fling, with nothing between them that reads the page;
+      it pushes past the end in the same touch and holds 300 ms;
+    - then 2 s open, a 300 px close stroke, and 1.5 s.
+  - If the phone answers reads during momentum, the catch lands on the moving page: a cold open.
+  - In 4 of 4 Simulator runs (C A A C) the page reached the end and opened once and closed once in the catch touch.
+    All A opens were warm, as expected there. 520 px / 160 ms fell short of the end once in 4 runs, so v2 flings
+    harder.
+  - In that v2 pilot (hold 09:12:39-09:16:06Z) the fling-to-catch gaps were 1.25-3.0 s and the catch positions
+    5164-5220, in the range of the earlier pilots.
+- **Builds and ports:** V = A `rv2a-ef9d1c9d5fca` and C `best-65052c4a3902`, as P-098. Same plain-http ports as
+  P-098: base 5791, C 5792, V 5793 (same builds, so reusing them is safe under I-131). The runner records each arm's
+  served js/css (sha256 prefixes, read from localhost) before every run into `out/morph-gpu/phone/p099-served.json`,
+  keyed by the run label.
+- **Per run:**
+  - `iphone.mjs open http://lan:<arm port>/`;
+  - then `iphone.mjs gesture fixes/morph-gpu/phone/fling-end-v2.json --inject fixes/morph-gpu/phone/rv2-flinglog.mjs
+    --owner <runner> --label p099-<arm>-<pos>`.
+  - The logger (`phone/rv2-flinglog.mjs`, sha256 `8ddcb77e47f7`) writes rAF rows [t, dt, scrollY, m, flags]. Flags
+    'd' = rev 2's dark layer exists; 'r' = reveal on.
+- **Before the block:** `iphone.mjs wda check` must say ready, and `gesture --dry-run` must give GESTURE_BUDGET_S 150.
+  A run takes about 40 s; a gesture refuses to start in a hold with less than 150 s left (I-112).
+- **Condition** as P-098 (T-039 B: real Serious, the thermal gate at the start and end of every hold, pre-warm on the
+  base port, Low Power Mode runs dropped). Phone parts run in the runner's `--no-timing` hold with the `iphone`
+  lease (I-056).
+- **Block**, two holds, each at most 900 s:
+  - H1: gate, start sentinel, warm-ups wC wV (one uncounted gesture run per arm port), counted C1 V2 V3 C4, gate.
+  - H2: gate, counted C5 V6 V7 C8, end sentinel, gate; then park Safari.
+  - Sentinels are P-098's: an S-driver `--heat-sentinel` run on C's port, bottom ≥ 58 fps and scroll ≥ 44 fps. A
+    failing start sentinel: no counted run starts. A failing end sentinel voids every counted run.
+  - The G runs carry no M sentinel; heat is judged by the gate and the S sentinels.
+- **Scorer**, committed before data: `phone/g-fling.mjs`, sha256 `a493f689422a`:
+  `node fixes/morph-gpu/phone/g-fling.mjs C:<file> V:<file> … --served out/morph-gpu/phone/p099-served.json`, with
+  the files in block order.
+  - Tweens from the logger rows, as frames-rv2.mjs: O1 starts where m leaves a held 0, C1 where it leaves a held 1.
+    f1 / f2 / f3 = the first 1 / 2 / 3 gaps.
+  - Void run:
+    - a runner abort or error;
+    - the script hash is not `6a7569615807`;
+    - served js/css not recorded or not the arm's build;
+    - the logger's CSS tag is not the arm's ('none' C, 'rv2' V);
+    - tweens not exactly O1 then C1;
+    - O1 not inside the catch touch (from its touchstart to 50 ms after its touchend).
+    - One in-place re-run per position; a second void at one position voids the block.
+  - Scored: O1.f1, O1.f2, O1.f3. Per key, d = median(V) − median(C):
+    - 'better' at d ≤ −2 ms with every V run below every C run;
+    - 'no-worse' at d ≤ +2 ms;
+    - else 'WORSE';
+    - 'insufficient' below 3 valid runs per arm.
+  - Reported: C1.f1, C1.f3. Per V run: cold or warm (cold = no 'd' in the row before O1), the rest before O1 (ms),
+    the gap between the fling and the catch, and scrollY at the catch.
+  - Cold subset: scored when at least 2 valid V runs are cold (O1.f1 and O1.f3 of the cold V runs against all valid
+    C runs, same rule); else reported as 'cold not reached'. Warm V runs are reported the same way.
+  - Pre-registration check (`out/morph-gpu/rev2/g-scorer-check.mjs`, local, on the Simulator pilot files):
+    - as recorded: 4 valid, every A open warm;
+    - V = C's own files: every key d 0;
+    - a cut close: void;
+    - wrong served js: void;
+    - V = C with the setup flag removed: 4 cold runs, cold subset scored, d 0.
+- **Predictions** (P(hit) before data):
+
+  | # | prediction | point | interval (falsified outside) | P(hit) |
+  |---|---|---|---|---|
+  | g1 | O1.f1, V − C, all valid runs | 0 | ≤ +2 ms | 0.55 |
+  | g3 | O1.f2 and O1.f3, V − C | 0 | ≤ +2 ms each | 0.5 |
+  | cold | at least 2 of 4 V runs cold | no (the phone also waits for the momentum) | — | 0.6 |
+  | gc | if cold is scored: cold O1.f1, V − C | +6 (rev 1's P-092 cost) | ≤ +2 ms | 0.3 |
+
+- **Decisions:**
+  - **Scored keys no-worse or better, and the cold subset no-worse (or not reached):** the G check passes. Rev 2 A
+    can be landed on P-098's result. With 'cold not reached', the lead decides whether the cold case is closed or
+    needs a finger test (lead, 2026-10-04).
+  - **O1.f1 WORSE in all runs:** rev 2's open start under a real touch is worse than best-build's. To the lead; no
+    land request.
+  - **Cold subset WORSE:** the risk is real. Fallback: start the setup earlier, without waiting for a scroll rest,
+    e.g. when the end comes within 3 viewports (`rev2/prepnow.diff`'s `__rvPrepNow` hook). That is a new build and a
+    new ticket.
+  - **Insufficient or void:** no claim; cool and re-run the counted part once. A second void goes to the lead.
+- **Expected minutes:** about 20 (15-30).
 
 ## Risks, conflicts, follow-ups
 
@@ -796,7 +893,7 @@ sentinels, void rules, Mac-sleep rule, runner duties.
 - **Rev 2's setup waits for the scroll to rest for 300 ms.** With a finger, a fling that runs straight into a push
   past the end may start the morph before that, and then the open's first frame does the setup as rev 1 did
   (`__rvRdy` false). The M driver always waits 1.1 s, so P-098 cannot see this case. The lead requires a G
-  fling-into-end check before landing (P-098 "Before landing"). An earlier trigger, e.g. an idle callback while
+  fling-into-end check before landing (P-099, "G check before landing"). An earlier trigger, e.g. an idle callback while
   within 3 viewports of the end, is the fallback if the G check fails.
 - **Reduced motion: exact in Chrome; the Simulator was not run with it.**
   - Code: with reduced motion the morph skips its spring. `E()` sets m straight to its target (JS ~13292), and the
