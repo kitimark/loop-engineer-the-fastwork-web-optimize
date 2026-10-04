@@ -1,0 +1,70 @@
+{
+  "schema": "fw-proposal/1",
+  "title": "Hero photos on desktop with Reduce Motion: keep them sharp, or copy the original's soft quick reload",
+  "area": "hero",
+  "topic": "breakpoints",
+  "thread": "T-053",
+  "problem": "On a 1440 px wide desktop window in Chrome with Reduce Motion on, the original page draws the 10 tilted hero photo cards in one of two ways. On a slow first load they are sharp. On a quick reload they come out slightly soft. Only the fine detail inside the photos differs, about 3 % of the screen.\n\nThe current best build (st6-rb2, the scroll-engine fix) almost always ends with the sharp photos, on a quick reload too. Card positions, sizes, tilt and everything else on the page are the same.\n\nYour pixel rule (PR-010) asks for an exact match under Reduce Motion. st6-rb2 shows one of the original's own two pictures, so it draws nothing new. But a quick reload compared with a quick reload differs by 3 % of the screen, above the 0.5 % limit. So it is your call.",
+  "idea": "What we know (de-breakpoints, Chrome headless, 1440x900, 2026-10-04):\n- Both versions load and decode the photos the same way: full size, with the same smoothing. Same bytes in Chrome's image caches (OBSERVED); full-size decode matches Chrome's source code (CONFIRMED).\n- The soft picture is Chrome's first drawing of the cards. On a quick reload, the original never draws them again (OBSERVED).\n- st6-rb2 happens to redraw the photos once, about 0.8 s after load, so they end sharp (OBSERVED). Which part of st6-rb2 causes that redraw was not traced.\n- An invisible redraw of the original's photos made them sharp too, 2 of 2 tries (OBSERVED).\n- Why Chrome's first drawing is soft is unknown: OBSERVED in our setup, cause unknown.\n- With Reduce Motion off there is no difference: 2 px on one card, 0 % of the screen.",
+  "risk": "Only desktop Chrome with Reduce Motion on was checked. Phone widths with Reduce Motion (430) show no difference at all. Safari was not checked: the iPhone Simulator tool cannot turn Reduce Motion on.",
+  "compare": {
+    "a": { "label": "Original page, quick reload (Reduce Motion on, 1440 wide)" },
+    "view": "slider"
+  },
+  "options": [
+    {
+      "name": "keep",
+      "label": "Keep st6-rb2 as it is: photos end sharp",
+      "idea": "Change nothing. The hero photos end sharp, the same picture the original shows after a slow first load or after any redraw. The work st6-rb2 saves under Reduce Motion stays saved.",
+      "looksSame": "It shows one of the original's own pictures. st6-rb2 on a quick reload compared with the original on a slow first load: the same pixels within 4 px² and 19 of 255 shades. After one invisible redraw of both, a quick reload of each matches within 4 px² as well.",
+      "visualDiff": [
+        "Quick reload against quick reload: the photo detail is crisper in st6-rb2 on 10 cards, 3.04 % of the screen (39,415 px²), largest shade 118 of 255, up to 11,983 px² on one card. Above PR-010's 0.5 % and 2,000 px² limits.",
+        "None of it is flat colour: it is photo texture and photo edges. Nothing moves, nothing is missing, nothing changes place or size.",
+        "Slow first load against slow first load: the same picture (4 px², largest shade 19).",
+        "After any redraw (shown here with an invisible one), the original is sharp as well and the two match (4 px², 0 % of the screen).",
+        "st6-rb2 was sharp in 7 of 9 quick reloads and in between in the other 2. The original was soft in 12 of 12 quick reloads and sharp in 5 of 5 slow first loads.",
+        "Reduce Motion off (1440 wide): no difference, 2 px² on one card, 0 % of the screen.",
+        "The nav's 'EN' label also differs between slow and quick loads, in both versions alike (83 px). It is a load effect, not the fix."
+      ],
+      "gain": [
+        { "what": "Layouts during one scripted scroll (1440, Reduce Motion)", "before": "42 / 43", "after": "22", "tag": "OBSERVED", "how": "Census, Chrome 1440x900, two original loads and one st6-rb2 load, counts only, 2026-10-03/04. A count of work, not a timing." },
+        { "what": "Style recalculations during that scroll", "before": "728 / 728", "after": "229", "tag": "OBSERVED", "how": "Same census." },
+        { "what": "Paint events during that scroll", "before": "663 / 663", "after": "378", "tag": "OBSERVED", "how": "Same census." },
+        { "what": "Paint events in 4 s at rest (the one cost)", "before": "97 / 97", "after": "121", "tag": "OBSERVED", "how": "Same census; style recalcs at rest 4 -> 8, layers 102 -> 129. The ~0.8 s redraw that makes the photos sharp is part of this." }
+      ],
+      "risk": "A strict reading of your rule is not met: quick reload against quick reload is a 3 % difference. Why st6-rb2 redraws the photos was not traced, so a later fix could change which picture shows (in either direction).",
+      "compare": {
+        "b": { "label": "st6-rb2 (best build), quick reload" },
+        "shots": [
+          { "caption": "Whole screen, quick reload (the countdown digits differ in every pair: it is a clock)", "a": "../../out/breakpoints/proposal-shots/rm-fast-orig-full.png", "b": "../../out/breakpoints/proposal-shots/rm-fast-st6-full.png" },
+          { "caption": "One card (Pakincht), 3x zoom, quick reload: the original is soft, st6-rb2 sharp", "a": "../../out/breakpoints/proposal-shots/rm-fast-orig-card6-x3.png", "b": "../../out/breakpoints/proposal-shots/rm-fast-st6-card6-x3.png" },
+          { "caption": "The same card, 3x zoom, after one invisible redraw of both: both sharp, matching", "a": "../../out/breakpoints/proposal-shots/rm-fast-orig-redrawn-card6-x3.png", "b": "../../out/breakpoints/proposal-shots/rm-fast-st6-redrawn-card6-x3.png" },
+          { "caption": "Reduce Motion off, one card, 3x zoom, quick reload: no difference", "a": "../../out/breakpoints/proposal-shots/motion-fast-orig-card6-x3.png", "b": "../../out/breakpoints/proposal-shots/motion-fast-st6-card6-x3.png" }
+        ]
+      }
+    },
+    {
+      "name": "match",
+      "label": "Make st6-rb2 copy the original's soft quick reload",
+      "idea": "Not achievable as a dependable result today. Honest steps:\n1. Trace which part of st6-rb2 redraws the photos at about 0.8 s (one more Chrome check, about 5 minutes, counts only).\n2. Stop that redraw under Reduce Motion. If the redraw comes from the work-saving change itself, stopping it may mean putting some of that work back.\n3. Re-check the pixels.\nEven then, the soft picture comes from a Chrome first-drawing effect whose cause we don't know. It changes with load speed: slow first loads are sharp in both versions, and any redraw makes the original sharp. We would be copying a browser quirk, not a design, and it could stop matching with any Chrome update.",
+      "looksSame": "Not known until steps 1-3 are done. The target is the original's quick-reload picture (shown as B here). The original's own two pictures differ by 3.06 % of the screen, the same size as the difference in question.",
+      "visualDiff": [
+        "Target: on a quick reload, the photos would look as soft as the original's. Slow first loads would stay sharp, as they are in both versions today.",
+        "No build exists yet, so the shot compares the original with itself: A is its quick reload (soft), B its slow first load (sharp). That is the size of the change this option would put back on quick reloads.",
+        "If it works, a quick reload would match the original to the pixel only as long as Chrome keeps the same first-drawing behaviour (cause unknown, OBSERVED)."
+      ],
+      "gain": [
+        { "what": "Work saved", "before": "as st6-rb2 today", "after": "unknown; possibly less", "tag": "estimate", "how": "Depends on what step 1 finds. If the redraw is a side effect of the work-saving change, some of the saving under Reduce Motion goes away." },
+        { "what": "Quick-reload pixel match with the original (1440, Reduce Motion)", "before": "3.04 % differ", "after": "unknown", "tag": "UNRESOLVED", "how": "Needs steps 1-3. The soft picture's cause is unknown, so a match cannot be promised." }
+      ],
+      "risk": "It makes the page worse on purpose (soft photos) to copy a Chrome effect we can't explain. It may cost back part of st6-rb2's saving under Reduce Motion, and the match could break with a Chrome update or a different load speed.",
+      "compare": {
+        "b": { "label": "Target: the original's quick-reload picture" },
+        "shots": [
+          { "caption": "The original itself, one card, 3x zoom. A: quick reload (soft, the target). B: slow first load (sharp).", "a": "../../out/breakpoints/proposal-shots/rm-fast-orig-card6-x3.png", "b": "../../out/breakpoints/proposal-shots/rm-cold-orig-card6-x3.png" }
+        ]
+      }
+    }
+  ],
+  "recommended": { "option": "keep", "why": "st6-rb2 shows the original's own sharp picture, the one any redraw gives. Copying the soft one means copying a Chrome effect we can't explain, possibly at the cost of some of the saving." }
+}
