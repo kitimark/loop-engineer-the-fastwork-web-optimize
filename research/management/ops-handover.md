@@ -91,6 +91,9 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     the cva runs are ENTER-THIN, the entering question stays open and a flick-middle hold needs its own P-id and pins.
     It is not added after the data.
   - PREDICTIONS row updated with the pins, the order and the predictions.
+  - N1 helper split-io119.mjs pinned before data: b090aa1b (22:49:14Z), sha256/12 1ad22b858eb8; ops checked that the
+    on-disk file equals the blob. It is descriptive only, with no call, and the scorer is unchanged. The result read
+    checks that the first run is later than 22:49:14Z.
 - 10-05 **P-118 H2: VALID, 4 of 4 met.** Gates Serious with induced Yes (34.4-34.7 C); the same servers as H1, so no new warm-up is owed; served hashes ok; pmset clean. H3 is queued.
 - 10-05 **P-118 H1 (iphone-runner): VALID, xcode-serious checks 4 of 4 met.**
   - The PIN line matches the validated pins.
