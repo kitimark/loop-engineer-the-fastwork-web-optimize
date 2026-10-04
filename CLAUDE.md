@@ -400,6 +400,10 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   (http://lan:<port>/, resolved at view time). The console itself stays localhost-only.
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
+- **Long commands run in the background** (user T-152, 2026-10-04): anything that may take over ~60 s (full
+  `npm test`, `lock.mjs run`/`acquire --wait`/`wait`, `fix.mjs ab`, `verify.mjs`, `bench.mjs`, `iphone.mjs scroll|record|run|gesture`, builds)
+  goes through Bash `run_in_background`; a foreground command makes you deaf to messages and user threads until it
+  ends. Keep only short commands (`npm run test:unit`, reads, `status.mjs set`) in the foreground.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
   `sleep`/`until`/`for … sleep` loop**: run it with Bash `run_in_background` and keep working (Claude Code wakes you
   when it exits); with nothing else to do, still run it in the background with a long `--timeout` (thread waits 3500)
