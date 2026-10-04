@@ -24,6 +24,10 @@
 //                                              # panel): no x-frame-options, CSP frame-ancestors 'self' + the origins.
 //                                              # Exact http(s)://localhost|127.0.0.1:<port> origins only, else exit 2.
 //                                              # Without the flag every header stays as before (tools/lib/framing.mjs).
+//   node tools/serve.mjs --owner <agent> --doing "<plain words>"   # T-106 #11: who runs it and what for, recorded in
+//                                              # the shared servers registry (lib/servers.mjs; owner default $FW_AGENT,
+//                                              # else "unknown") with its port, root/overlays, start and last request
+//                                              # time: the console's Servers page. Nothing served changes.
 //
 // Baseline lookup: site/ and site-pretty/ are the snapshot committed on main; agent worktrees are sparse
 // and have neither. `--root` names are resolved against this checkout first, then against the main
@@ -67,6 +71,7 @@ import { lanInterfaces, isPhoneLan } from './lib/lan.mjs';
 import { parseFrameAncestors } from './lib/framing.mjs';
 import { createMirrorHandler } from './lib/mirror-handler.mjs';
 import { probeHosts, portBusy } from './lib/port-probe.mjs';
+import { recordServer, ownerOf } from './lib/servers.mjs';
 
 const ROOT_DIR = REPO;
 const HOME = mirrorHome(); // where the shared baseline (site/, site-pretty/) and out/certs live
@@ -108,6 +113,9 @@ try {
     latency: LATENCY, frameAncestors: FRAME_ANCESTORS, baseline: BASELINE, transport: () => ({ https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT }) });
 } catch (e) { console.error(e.message); process.exit(1); }
 const { handler, listFiles, rewrites: REWRITES } = mirror;
+let REC = null; // T-106 #11: this server's registry record (lib/servers.mjs), from the announcement on
+const served = (req, res) => { REC?.hit(); return handler(req, res); }; // notes the time in memory only
+const DOING = opt('doing') ? String(opt('doing')).replace(/[\x00-\x1f]/g, ' ').slice(0, 200) : null;
 
 // Every non-internal IPv4 address, in the OS's order; isPhoneLan picks the iPhone-reachable ones. One rule with
 // tools/lan.mjs (lib/lan.mjs, incident I-073), which resolves the `lan` placeholder of phone URLs.
@@ -154,18 +162,18 @@ if (HTTPS) {
     }
     console.log(`using self-signed certificate ${cert} (browsers will warn; see README for mkcert)`);
     SELF_SIGNED = true;
-    server = http2.createSecureServer({ ...pair, allowHTTP1: true }, handler);
+    server = http2.createSecureServer({ ...pair, allowHTTP1: true }, served);
   } else {
-    server = http2.createSecureServer({ cert: readFileSync(cert), key: readFileSync(key), allowHTTP1: true }, handler);
+    server = http2.createSecureServer({ cert: readFileSync(cert), key: readFileSync(key), allowHTTP1: true }, served);
   }
 } else {
-  server = http.createServer(handler);
+  server = http.createServer(served);
 }
 // The plain-http twin: same handler, any free port, started before the URLs are printed so the
 // announcement (and the --state file) can name it. If it can't listen, serve on without it.
 function onListening() {
   if (!HTTP_TWIN) return announce();
-  const twin = http.createServer(handler);
+  const twin = http.createServer(served);
   twin.once('error', (e) => { console.error(`plain-http twin not started (${e.code || e.message}); serving https only`); announce(); });
   twin.listen(0, HOST, () => { TWIN_PORT = twin.address().port; announce(); });
 }
@@ -201,6 +209,10 @@ function announce() {
     // second signal (fix.mjs ab signals its servers twice) killed us before cleanup ran (incident I-009).
     for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => process.exit(0));
   }
+  try {
+    REC = recordServer({ kind: 'serve', port: PORT, httpTwin: TWIN_PORT, owner: ownerOf(opt('owner')), doing: DOING, root: ROOT, overlays: OVERLAYS,
+      vendors: VENDORS, https: HTTPS, checkout: ROOT_DIR });
+  } catch {} // best-effort: the registry never stops a server
   console.log(`\nMIRROR_URL=${url}`); // machine-readable (tools/fix.mjs and agents grep for it)
   console.log('');
 }

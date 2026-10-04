@@ -24,6 +24,7 @@ import { withGuard } from './lock.mjs';
 import { portBusy } from './port-probe.mjs';
 import { createMirrorHandler } from './mirror-handler.mjs';
 import { baselineStatus, baselineMeta, ALLOW_ENV } from './baseline.mjs';
+import { recordServer } from './servers.mjs';
 
 export const TRYIT_PORTS = Object.freeze({ from: 6400, to: 6599 });
 export const DEFAULT_IDLE_MIN = 30;
@@ -163,7 +164,7 @@ export function mountBuild(e) {
  * The host: {poll(), sweep(), status(), close()}. `mount(entry)` -> {handler} (default mountBuild); `now` and `idleMs`
  * injectable for the tests; `onStatus(status)` after each change (runHost writes status.json).
  */
-export function createTryitHost({ host = '0.0.0.0', idleMs = DEFAULT_IDLE_MIN * 60000, now = Date.now, mount = mountBuild, busy = portBusy, retryMs = 5000, onStatus = () => {}, log = () => {} } = {}) {
+export function createTryitHost({ host = '0.0.0.0', idleMs = DEFAULT_IDLE_MIN * 60000, now = Date.now, mount = mountBuild, busy = portBusy, retryMs = 5000, onStatus = () => {}, onHit = () => {}, log = () => {} } = {}) {
   if (!HOSTS.includes(host)) throw new Error(`host: 0.0.0.0 (the Wi-Fi) or 127.0.0.1 (tests) only (got ${JSON.stringify(host)})`);
   const builds = new Map(); // name -> {entry, server, listening, starting, error, triedAt, mount, mountedAt, lastHit}
   let last = '';
@@ -177,6 +178,7 @@ export function createTryitHost({ host = '0.0.0.0', idleMs = DEFAULT_IDLE_MIN * 
 
   function onRequest(b, req, res) {
     b.lastHit = now();
+    onHit(b.lastHit);
     const u = new URL(req.url, 'http://x');
     if (u.pathname === '/__tryit/start' && req.method === 'POST') {
       let body = '';
@@ -270,9 +272,15 @@ export async function runHost({ idleMs = idleFromEnv(), host = process.env.FW_TR
   });
   if (other) { console.log(`ALREADY Try-it host pid ${other.pid} (since ${other.startedAt})`); return 0; }
   const startedAt = new Date().toISOString();
+  // T-106 #11: on the console's Servers page with the other mirror servers (lib/servers.mjs); never auto-stopped
+  const rec = recordServer({ kind: 'tryit-host', port: null, owner: 'tryit', doing: 'Try-it pages (node tools/tryit.mjs list)', root: null, overlays: [], checkout: REPO, keep: true });
   const H = createTryitHost({
-    host, idleMs,
-    onStatus: (builds) => writeJson(statusFile(), { pid: process.pid, startedAt, host, idleMs, updatedAt: new Date().toISOString(), builds }),
+    host, idleMs, onHit: (t) => rec.hit(t),
+    onStatus: (builds) => {
+      writeJson(statusFile(), { pid: process.pid, startedAt, host, idleMs, updatedAt: new Date().toISOString(), builds });
+      const ports = Object.values(builds).filter((b) => b.listening).map((b) => b.port);
+      rec.entry.ports = ports; rec.entry.doing = `Try-it pages: ${ports.length} build${ports.length === 1 ? '' : 's'} (node tools/tryit.mjs list)`; rec.flush();
+    },
     log: (m) => process.stderr.write(`[${new Date().toISOString().slice(11, 19)}Z] ${m}\n`),
   });
   H.poll();
@@ -281,7 +289,7 @@ export async function runHost({ idleMs = idleFromEnv(), host = process.env.FW_TR
   let done = false;
   const quit = () => {
     if (done) return; done = true;
-    clearInterval(pt); clearInterval(st); H.close();
+    clearInterval(pt); clearInterval(st); H.close(); rec.remove();
     for (const f of [hostFile(), statusFile()]) { const j = readJson(f); if (j && j.pid === process.pid) rmSync(f, { force: true }); }
     process.exit(0);
   };
