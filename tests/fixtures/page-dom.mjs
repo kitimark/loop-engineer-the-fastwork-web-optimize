@@ -145,8 +145,11 @@ export function parseInto(doc, parent, html) {
 /**
  * A page from `base` + `path`: parse it, run its inline scripts (fetch → the test server), then console-comments.js
  * when the page carries its tag (data-page). Returns {document, window, fire, settle, calls}.
+ * It returns once the page has settled (I-132): none of its fetches in flight and none of its short timers pending,
+ * for two polls in a row; `settle()` waits the same way after a click. No fixed sleep, so a slow (loaded) server
+ * still yields the rendered page; a page that does not settle within `settleTimeoutMs` throws, naming what is pending.
  */
-export async function loadPage(base, path, { hash = '', transform = (s) => s } = {}) {
+export async function loadPage(base, path, { hash = '', transform = (s) => s, settleTimeoutMs = 20000 } = {}) {
   const res = await fetch(new URL(path, base));
   const html = await res.text();
   const listeners = {};
@@ -175,18 +178,27 @@ export async function loadPage(base, path, { hash = '', transform = (s) => s } =
     return !e.defaultPrevented;
   };
   const calls = [];
+  const inFlight = new Set(); // the page's fetches not yet answered (their urls)
   const pageFetch = async (url, init = {}) => {
-    calls.push({ url: String(url), init });
-    const r = await fetch(new URL(url, base), { method: init.method || 'GET', headers: init.headers, body: init.body });
-    const text = await r.text();
-    return { ok: r.ok, status: r.status, json: async () => JSON.parse(text), text: async () => text };
+    const call = { url: String(url), init };
+    calls.push(call); inFlight.add(call);
+    try {
+      const r = await fetch(new URL(url, base), { method: init.method || 'GET', headers: init.headers, body: init.body });
+      const text = await r.text();
+      return { ok: r.ok, status: r.status, json: async () => JSON.parse(text), text: async () => text };
+    } finally { inFlight.delete(call); }
   };
   const store = new Map();
   const localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
   const location = { hash, pathname: new URL(path, base).pathname, href: new URL(path + hash, base).href, origin: new URL(base).origin };
   location.replace = location.assign = (u) => { location.hash = new URL(u, location.href).hash; };
-  const timers = [];
-  const setTimeoutShort = (f, ms = 0) => { if (ms <= 100) { const t = setTimeout(f, ms); timers.push(t); return t; } return 0; };
+  const timers = new Set(); // the page's short timers not yet fired or cleared
+  const setTimeoutShort = (f, ms = 0) => {
+    if (ms > 100) return 0;
+    const t = setTimeout(() => { timers.delete(t); f(); }, ms);
+    timers.add(t); return t;
+  };
+  const clearTimeoutShort = (t) => { timers.delete(t); clearTimeout(t); };
   const window = {
     location, localStorage, document, scrollX: 0, scrollY: 0, innerWidth: 1200, innerHeight: 900,
     addEventListener: (e, f) => (winListeners[e] ||= []).push(f), removeEventListener() {},
@@ -195,7 +207,7 @@ export async function loadPage(base, path, { hash = '', transform = (s) => s } =
   const run = (src, script) => {
     document.currentScript = script || null;
     new Function('window', 'document', 'location', 'fetch', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'localStorage', 'history', 'navigator', 'requestAnimationFrame', 'Image', src)(
-      window, document, location, pageFetch, () => 0, () => {}, setTimeoutShort, clearTimeout, localStorage, { replaceState() {}, pushState() {} }, { userAgent: 'fake' }, (f) => setTimeoutShort(f, 16),
+      window, document, location, pageFetch, () => 0, () => {}, setTimeoutShort, clearTimeoutShort, localStorage, { replaceState() {}, pushState() {} }, { userAgent: 'fake' }, (f) => setTimeoutShort(f, 16),
       function Image() { return document.createElement('img'); });
     document.currentScript = null;
   };
@@ -205,7 +217,18 @@ export async function loadPage(base, path, { hash = '', transform = (s) => s } =
   if (cs) run(readFileSync(join(TOOLS, 'lib', 'console-comments.js'), 'utf8'), cs);
   document.readyState = 'complete';
   for (const f of listeners.DOMContentLoaded || []) f({ type: 'DOMContentLoaded' });
-  const settle = async (ms = 150) => { const t0 = Date.now(); while (Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 10)); };
-  await settle(250);
+  // settled: nothing in flight and no short timer pending at two polls 10 ms apart (a fetch answer's .then chain runs as
+  // microtasks before the next poll, so a fetch it starts is seen)
+  const settle = async ({ timeoutMs = settleTimeoutMs } = {}) => {
+    const t0 = Date.now();
+    for (let quiet = 0; quiet < 2;) {
+      if (Date.now() - t0 > timeoutMs) {
+        throw new Error(`fake DOM: ${path} did not settle in ${timeoutMs} ms: ${inFlight.size} fetch(es) pending (${[...inFlight].map((c) => c.url).join(', ')}), ${timers.size} short timer(s)`);
+      }
+      await new Promise((r) => setTimeout(r, 10));
+      quiet = inFlight.size === 0 && timers.size === 0 ? quiet + 1 : 0;
+    }
+  };
+  await settle();
   return { document, window, fire: document.fire, settle, calls };
 }

@@ -115,7 +115,7 @@ test('a comment sent from a page part: a thread with {page, item: part:page, quo
   assert.match(box.querySelector('.cmt-quote').textContent, /^Show by state:/, 'the quote is the pointed-at block, not the whole page');
   box.querySelector('textarea').value = 'What does "Not started" mean?';
   p.fire(box.querySelector('.cmt-send'), 'click');
-  await p.settle(300);
+  await p.settle();
   const post = p.calls.find((c) => c.init?.method === 'POST');
   assert.ok(post, 'sent');
   const sent = JSON.parse(post.init.body);
