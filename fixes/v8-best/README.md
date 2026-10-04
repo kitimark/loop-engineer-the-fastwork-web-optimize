@@ -350,6 +350,12 @@ apart by the runner. Score: `out/p111/score.json`, scorer 26d944bf93e2, in block
 - **Predictions, checked:**
   - Hit: W top, W rest and M moving no-worse; every G part no-worse on > 50; sentinels passed first try.
   - Missed: M tweens no-worse (P 0.8); no new cluster (P 0.65); overall no-worse (P 0.4).
+- **Ops second read (mgmt-ops-10): AGREE, WORSE.**
+  - N1: V's run mV2 is the high run for both close keys (close.f1 37 ms, close.f3 70 ms). Without it, close.f1 is
+    +2.0 (not above the rule) and close.f3 +3.0 (still WORSE). The WORSE does not rest on one run.
+  - N2: H5's opening sC record was lost to a label collision. P-111's hold.sh labels both sC runs `p111-sC-<H>`, so
+    the closing run overwrote the opening record. Its exit 0 and the passing closing sentinel keep the hold valid.
+    P-113's hold.sh labels them apart (sCo / sCc).
 - **Consequence (the ticket's rule):** v8 does not land as is. The components are found by reversal builds:
   - P-112: rev 3 against the M close;
   - P-113 below: faces + glue, and K, against the GH cluster.
