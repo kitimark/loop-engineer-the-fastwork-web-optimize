@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 04:5xZ** (mgmt-ops-10).
+**10-04 05:0xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 05:0xZ Lead: T-070 #6 done (7 stale rows set done/dropped: count-checks, claims-audit, i063-sim done; cdwc, re-keep-op, blur-cubic, countdown-faces dropped 'off for now'). T-071 #10 'add the hook' -> I-115, ts-i115 spawned (peer row added). Lead npm test on 71190916 1586/1586. **Watch item:** when cd-roll-ca lands, ping the lead to decide whether countdown-faces comes back.
 - 10-04 04:5xZ User T-071: GitHub via gh, never curl -> F-203, announced to 9 live agents, lead saved memory/github-via-gh.md (a8f1806d); rule line added above the peer directory. T-070 (board 'waiting for a user reply' lines): I-108 part 1 in its hook test, user asked highest priority + workaround (escalated: hide 7 stale parked rows); ops posts the 'live' note only after the lead's 'console restarted'. P-091 h043142 VALID (V2 C2 C3 V3); h044740 GATE-FAIL (end Critical 42.89 °C), strike 1, V4 C4 S2 void; nav-morph cools under its lease (< 41.5 °C) then re-runs H4; ops advised no swap to P-095 (its start gate also needs Serious).
 - 10-04 04:4xZ Lead landed 2518e9ca (P-095 pre-block met: pxbr2 PASS, ops digit check R2 21 / R2b 33 / B 57; owner README 93705754). T-066 #11-#14 (Svelte batching idea, design-engineer ask) escalated; lead spawned de-frame-audit (peer directory row added). F-202 pitfall (acquire --wait re-run lost ts-i103's place) sent to 7 agents; lead opened I-113, ops note added (immediate iphone re-run kept fix-morph-gpu's 03:25Z place). P-091 h041713 VALID (C1 V1, S1 PASS, 40.89 -> 42.39 °C, sleep clean); hold 3 running, hold 4 next; P-095 then takes the phone (iphone-runner #1, wait good to 05:16Z).
 - 10-04 04:2xZ **P-094 and P-095 registered** (62c252cf, 5757e71f). P-094: fix-rest-script's best-build byte check 87e4b603 PASS, ops re-ran it (diff -U0 st6-rb2 -> v4 equals best-build 65052c4a3902 -> combined e9b94ba7c560, 223 lines; best-build changes start at 12451), so C stays st6-rb2. P-095 (hero R2 on best-build, runner iphone-runner): pre-block read PASS (scorers 32ed5f4e81f9 / 40d0d302c3f1, gate 4604218c4041, gesture e3f31872b82f, p095.mjs = p088.mjs with arms/labels only, then 53a74ccd1bcc with a GO-pxbr2 wait block, serve095 a38b04f9d481, copies match the full sha256s, --fn lines checked). Open: the pxbr2 Simulator PASS (fix-hero-exit-threaded); the runner writes out/p095/GO-pxbr2 only on that message. Phone order (lead): P-091 (running; hold h040657 VALID but no counted step, WDA was down, no strike; re-queued), P-095, P-092, P-093, P-094; fix-morph-gpu told. Lesson for every G ticket: `iphone.mjs wda status` before the hold. PROGRESS refreshed (c8187d4d). T-066 #5 (GPU / parallel rendering) answered #6 as desk. Nothing landed on main since c187fa19. idle.mjs check OK 04:22Z.
@@ -2398,6 +2399,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `ts-i115` (name; spawned 10-04 05:0xZ, user T-071 #10) | I-115: git-guard ask on curl/wget to GitHub hosts + WebFetch ask rules (enforcement layer: the edit asks the user) | alive |
 | `de-frame-audit` (name; spawned 10-04 04:4xZ, user T-066 #11/#12) | page-wide audit of per-frame and per-second script: is each result visible at that moment, would skipping or batching it remove work; checks the Svelte batching claim (docs, tick()); counts only, shared lane, no phone, ~90 min; user-facing answers go through T-066 | alive |
 | `ts-i100` (name; spawned 10-03 19:3xZ) | I-100: reduced-motion option for sim.mjs sessions (matchMedia check, restored at session end); unblocks P-089's WebKit reduced-motion leg and the T-034 Sim reduced-motion gap | alive |
 | `fix-carousel-leaver` (a468e571c76f341a1) | carousel-leaver: st6-rb2 leaving face (T-042 #10); P-086 done (miss), P-087 build F PASS 7643f68, measuring | alive (10-03 18:4xZ) |
