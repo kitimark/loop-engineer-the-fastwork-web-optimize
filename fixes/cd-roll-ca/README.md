@@ -1553,6 +1553,14 @@ tool checks on B (baseline copy, not an arm; out/cd-roll-ca/t096/smoke/, gitigno
     animation; H1's count is read as written (presented with no SendBeginMainFrameToCommit), and the counter also
     prints the split by state (compositorOnlyByState), so a PARTIAL-only difference can be told apart. The H1 outcome
     rule is unchanged.
+ops pre-data read (mgmt-ops-10, 2026-10-04 after 12:20Z): PASS. All 5 frozen hashes match at 387d7f20; the tools/ files
+  are identical on main (tools/lib/sim.mjs 7167d5e8a297 too); if one changes before the last arm load, its new hash goes
+  here before that load. Step 1 stated as is (cache question open; crawl-diff N/A). Notes for the write-up:
+  N1 read H1 as A vs B against the A vs A2 spread, never as an absolute count (the baseline already shows 65
+     compositor-only reporters per 8 s, 64 PRESENTED_PARTIAL); a PARTIAL-only difference is reported as its own row.
+  N2 (next to H3) the step-2 arms are served with the I-131 code (no-cache + ETag), the user's PR-017 pages had the old
+     immutable headers: a cache-linked effect the user felt cannot be reproduced here.
+  No ledger row (T-096 has no P-id); P(H4) stays out of the tally.
 ```
 
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
