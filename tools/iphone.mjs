@@ -64,6 +64,10 @@
 // session) do not stop a phone run (Mac-quiet is preferred, not required: the lead, 08:33Z; user T-017): it prints a NOTE
 // and its record keeps the Mac state (`mac`: shared jobs, load1 at start and end); --require-quiet or
 // FW_PHONE_REQUIRE_QUIET=1 makes it WAIT for them instead. --allow-during-measure: diagnostics only.
+// I-176: `scroll`, `run` and `gesture` take --warmup (also FW_PHONE_WARMUP=1; `record` refuses it, exit 2): an uncounted
+// warm-up run may run beside ANOTHER agent's --no-timing hold (a build: the phone stamps its own frames, and a warm-up's
+// numbers are not counted), with a NOTE and mac.warmup / mac.beside {owner, kind} in the record. A normal (timing) hold
+// still WAITs it, and a counted run or a sentinel/control run must not take --warmup (it would pass a gate it must keep).
 //
 // Protocol v2 runs (T1a, research/architecture/measurement-protocol-v2.md §5.4-5.5; tools/lib/iphone-run.mjs):
 //   node tools/iphone.mjs run --driver scroll|window|morph --probe std --owner <topic> [--label l] ...   (run --help)
@@ -140,7 +144,7 @@ async function clearMark() {
  *  hold; the runner's own hold passes; shared jobs pass with a NOTE and the Mac state in the record (`mac`) unless
  *  --require-quiet or FW_PHONE_REQUIRE_QUIET=1 (lib/lock.mjs phoneGuard). --allow-during-measure: diagnostics. */
 function measureGuard(owner) {
-  return phoneGuard({ owner, allow: flag('allow-during-measure'), requireQuiet: flag('require-quiet') });
+  return phoneGuard({ owner, allow: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), warmup: cmd === 'scroll' && flag('warmup') }); // I-176: only an uncounted warm-up scroll
 }
 
 async function tabs() {
@@ -225,6 +229,9 @@ async function main() {
   const refusal = ['scroll', 'record', 'run', 'gesture'].includes(cmd) && !flag('help') ? timedInSlotRefusal(`iphone.mjs ${cmd}`) : null;
   if (refusal) { console.error(refusal); process.exit(2); }
   if (['scroll', 'record', 'run', 'gesture'].includes(cmd) && !flag('help') && opt('doing') !== undefined) parseJob({ text: opt('doing') }); // I-060: a bad --doing fails before the phone is touched
+  // I-176: --warmup (an uncounted warm-up run may run beside another agent's --no-timing hold) is for scroll, run and
+  // gesture; a finger-test record is never a warm-up
+  if (cmd === 'record' && flag('warmup') && !flag('help')) { console.error('usage: --warmup is not for record (a finger test is never an uncounted warm-up); it is for scroll, run and gesture (I-176)'); process.exit(2); }
   if (cmd === 'run') parseRunArgsSync = (await import('./lib/iphone-run.mjs')).parseRunArgs;
   if (cmd === 'status') {
     const dev = await fetch(`http://localhost:${DEVICE_PORT}/json`, { signal: AbortSignal.timeout(4000) }).then((r) => r.json()).catch((e) => ({ error: `proxy not reachable on :${DEVICE_PORT} (${e.cause?.code || e.message})` }));
@@ -343,6 +350,6 @@ async function main() {
     return;
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT });
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(1); });

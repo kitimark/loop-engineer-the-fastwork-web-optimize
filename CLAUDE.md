@@ -557,6 +557,9 @@ waiter except a user step or a hand-made move (I-172, "moved by phone-block prio
 normal hold; an exclusive short job does not stop them. Mac-quiet is preferred, not required: beside a shared group they
 run, print a NOTE and keep the Mac state in their record (`mac`: shared jobs, load1 at start and end); `--require-quiet`
 (or `FW_PHONE_REQUIRE_QUIET=1`) makes them WAIT for it instead. `--allow-during-measure` is for diagnostics only.
+An uncounted warm-up (`scroll|run|gesture --warmup`, or `FW_PHONE_WARMUP=1`; not `record`) may run beside another
+agent's `--no-timing` hold, with a NOTE and `mac.warmup`/`mac.beside` in its record; never beside a timing hold, and
+counted or sentinel/control runs never take `--warmup` (I-176).
 Every `run` hold, shared readers included, leaves one line in `locks/holds.log` (owner, weight, start, end, duration, exit code).
 Shared lane (`research/architecture/lock-shared-lane.md`, switched on by the lead 2026-10-02): jobs that time nothing
 (`npm test`, `fix.mjs check`, DOM probes, `bench mech`, `npm run test:chrome:fn`, a Simulator mechanism session) hold
