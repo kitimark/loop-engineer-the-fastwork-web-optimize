@@ -17,6 +17,10 @@
 // right now (tools/lib/waits.mjs live records, I-058: wait.mjs, lock.mjs wait, console/incident/finding waits):
 // "waiting for <what> since 08:31Z (3 min, timeout 10 min)"; waits whose owner has no active row are listed under
 // "other waits" (view.otherWaits).
+// I-108 (user T-060 #3): a thread listener reads "listening for console messages", never as a wait on the user; an
+// open proposal by the owner waits on the user like a pending step; and every live record goes to the owner's ONE
+// active row (liveRouter: the hold's --for / --doing, else the newest working/waiting/not-started row), never to a
+// parked or finished one.
 //
 // Hard rule 12: every stored string is checked with progress.mjs findPersonal and refused (no URL, IP address, local
 // host name, e-mail, device id or home path); every string shown is sanitize()d again, live ones included.
@@ -26,7 +30,7 @@ import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { findPersonal, sanitize, gatherLive } from './progress.mjs';
-import { waitPlain } from './waits.mjs';
+import { waitPlain, isListener, listenPlain } from './waits.mjs';
 
 export const SCHEMA = 'fw-status/1';
 export const SEED_SCHEMA = 'fw-status-seed/1';
@@ -301,8 +305,11 @@ const LOCKS = [['chrome-measure', 'chrome', 'Chrome'], ['iphone', 'phone', 'the 
  * {locks: {iphone, 'chrome-measure'}: lock.status(), incidents: active list, steps: pending steps, waits: live wait records}.
  * Returns {derived: [{kind, plain, ref?, position?, of?}], flags: [plain], liveWait: bool}.
  */
-export function derive(it, live = {}, byId = new Map(), now = Date.now()) {
+export function derive(it, live = {}, byId = new Map(), now = Date.now(), route = null) {
   const names = itemNames(it);
+  // I-108 (5): a live record (hold, queue place, step, proposal, wait) belongs to its owner's ONE active row
+  const router = route || liveRouter(byId.has(it.id) ? [...byId.values()] : [...byId.values(), it]);
+  const mine = (owner, job) => router(owner, job) === it.id;
   const derived = [];
   for (const [r, kind, label] of LOCKS) {
     const st = live.locks?.[r];
@@ -311,22 +318,29 @@ export function derive(it, live = {}, byId = new Map(), now = Date.now()) {
     // a shared group (the chrome-measure shared lane, I-048) holds for its readers: each one matching this row is
     // using Chrome now, beside the others; the group's own owner "(shared)" is nobody's
     const group = h && h.shared === true && Array.isArray(h.readers);
-    if (group && h.readers.some((x) => names.has(x.owner))) derived.push({ kind: 'using', resource: kind, shared: true, plain: kind === 'chrome' ? 'using Chrome now (shared)' : 'on the phone now (shared)' });
-    else if (h && !group && names.has(h.owner)) derived.push({ kind: 'using', resource: kind, plain: kind === 'chrome' ? 'using Chrome now' : 'on the phone now' });
+    if (group && h.readers.some((x) => mine(x.owner, x.meta?.job))) derived.push({ kind: 'using', resource: kind, shared: true, plain: kind === 'chrome' ? 'using Chrome now (shared)' : 'on the phone now (shared)' });
+    else if (h && !group && mine(h.owner, h.meta?.job)) derived.push({ kind: 'using', resource: kind, plain: kind === 'chrome' ? 'using Chrome now' : 'on the phone now' });
     const q = st.queue || [];
-    const i = q.findIndex((w) => names.has(w.owner));
+    const i = q.findIndex((w) => mine(w.owner, w.meta?.job));
     if (i >= 0) derived.push({ kind, position: i + 1, of: q.length, plain: `in line for ${label}, #${i + 1} of ${q.length}` });
   }
   for (const s of live.steps || []) {
-    if (names.has(s.by)) derived.push({ kind: 'user', ref: s.id, plain: `waiting on you: ${s.id} ${sanitize(s.title, 120)}` });
+    if (mine(s.by, { text: s.title })) derived.push({ kind: 'user', ref: s.id, plain: `waiting on you: ${s.id} ${sanitize(s.title, 120)}` });
+  }
+  // I-108 (2): an open proposal (proposed, not held) waits on the user's decision
+  for (const p of live.proposals || []) {
+    if (p.state === 'proposed' && !p.hold && mine(p.by, { for: p.topic, text: p.title })) derived.push({ kind: 'user', ref: p.id, plain: `waiting on you: ${p.id} ${sanitize(p.title, 120)} (your decision)` });
   }
   for (const inc of live.incidents || []) {
     if (!inc.blocking || (it.unlinked || []).includes(inc.id)) continue;
     const hit = names.has(inc.reportedBy) || (inc.affected || []).some((a) => names.has(a.by) && a.blocking !== false);
     if (hit) derived.push({ kind: 'incident', ref: inc.id, plain: `blocked by ${inc.id}: ${sanitize(inc.title, 120)}` });
   }
-  if (!isFinished(it.state)) for (const x of live.waits || []) {
-    if (names.has(x.owner)) derived.push({ kind: 'wait', tool: sanitize(x.tool, 40), since: x.since, plain: waitPlain(x, now) });
+  for (const x of live.waits || []) {
+    if (!mine(x.owner, { text: x.reason })) continue;
+    // I-108 (1): a thread listener waits on nobody: "listening …", never "waiting for a user reply"
+    if (isListener(x)) derived.push({ kind: 'listen', tool: sanitize(x.tool, 40), since: x.since, plain: listenPlain(x) });
+    else derived.push({ kind: 'wait', tool: sanitize(x.tool, 40), since: x.since, plain: waitPlain(x, now) });
   }
   const flags = [];
   const w = it.waitingOn;
@@ -343,6 +357,36 @@ export function derive(it, live = {}, byId = new Map(), now = Date.now()) {
 /** The names a row answers to on the locks, the console and the wait records: owner, id, aliases. */
 const itemNames = (it) => new Set([it.owner, it.id, ...(it.aliases || [])].filter(Boolean));
 
+/** Rows that take live data: working, waiting, not started (never parked or finished; I-108 audit T-060 #6). */
+const LIVE_GROUPS = new Set(['working', 'waiting', 'queued']);
+const recency = (i) => i.updatedAt || i.createdAt || '';
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * I-108 (5): which row a live record belongs to. An agent often has several rows (a fix, a parked try, a finished
+ * review); its queue place, hold, wait or step showed on every one of them. Now `router(owner, job)` returns ONE row
+ * id (or null: no active row, the record goes to OTHER WAITS), among the active rows that answer to `owner` (owner,
+ * id or alias):
+ *   1. the row the hold's --for names (job.for, an id or alias),
+ *   2. else a row whose id or alias appears as a word in the hold's --doing text (job.text; ids of 3+ characters),
+ *   3. else the row named by `owner` itself (a lock owner that is a topic id),
+ *   4. else the owner's most recently updated active row.
+ */
+export function liveRouter(items = []) {
+  const open = items.filter((i) => LIVE_GROUPS.has((STATES[i.state] || { group: 'working' }).group));
+  const keys = (i) => [i.id, ...(i.aliases || [])];
+  const newest = (rows) => rows.reduce((a, b) => (!a || recency(b) > recency(a) ? b : a), null);
+  return (owner, job = null) => {
+    if (!owner) return null;
+    const mine = open.filter((i) => itemNames(i).has(owner));
+    if (mine.length <= 1) return mine[0]?.id ?? null;
+    const named = (x) => (x ? mine.filter((i) => keys(i).includes(x)) : []);
+    const inText = job?.text ? mine.filter((i) => keys(i).some((k) => k.length >= 3 && new RegExp(`(^|[^A-Za-z0-9_-])${escRe(k)}($|[^A-Za-z0-9_-])`).test(job.text))) : [];
+    for (const rows of [named(job?.for), inText, named(owner), mine]) if (rows.length) return newest(rows).id;
+    return null;
+  };
+}
+
 // ---- the view ----------------------------------------------------------------------------------------
 
 const minutes = (from, now) => (from ? Math.max(0, Math.round((now - Date.parse(from)) / 60000)) : null);
@@ -357,9 +401,9 @@ export function statePlain(state, st = STATES[state] || { plain: state }, waitin
   return waiting?.plain ? `waiting for: ${waiting.plain}` : 'waiting (reason not given)';
 }
 
-export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin() } = {}) {
+export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin(), route = null } = {}) {
   const st = STATES[it.state] || { group: 'working', plain: it.state };
-  const { derived, flags, liveWait } = derive(it, live, byId, now);
+  const { derived, flags, liveWait } = derive(it, live, byId, now, route);
   const ageMin = minutes(it.updatedAt || it.createdAt, now);
   const canStale = ['working', 'waiting', 'queued'].includes(st.group);
   const s = (x, n) => (x == null ? null : sanitize(x, n));
@@ -390,13 +434,15 @@ export function compareViews(a, b) {
 /** The board: pure, every input passed in. */
 export function buildStatusView({ items = [], live = {}, now = Date.now(), staleAfterMin = staleMin() } = {}) {
   const byId = new Map(items.map((i) => [i.id, i]));
-  const views = items.map((it) => itemView(it, { live, byId, now, staleAfterMin })).sort(compareViews);
+  const route = liveRouter(items);
+  const views = items.map((it) => itemView(it, { live, byId, now, staleAfterMin, route })).sort(compareViews);
   const counts = { total: views.length, stale: 0, waitingOnYou: 0 };
   for (const g of GROUP_ORDER) counts[g] = 0;
   for (const v of views) { counts[v.group] = (counts[v.group] || 0) + 1; if (v.stale) counts.stale++; if (v.waitingOnYou) counts.waitingOnYou++; }
   // I-058: live waits whose owner has no active row (the rows show their own owner's waits)
-  const active = new Set(items.filter((i) => !isFinished(i.state)).flatMap((i) => [...itemNames(i)]));
-  const otherWaits = (live.waits || []).filter((x) => !active.has(x.owner)).map((x) => ({ owner: sanitize(x.owner, 80), tool: sanitize(x.tool, 40), since: x.since, plain: waitPlain(x, now) }));
+  // (I-108: the same router as the rows, so a wait shows exactly once: on its row, or here)
+  const otherWaits = (live.waits || []).filter((x) => route(x.owner, { text: x.reason }) === null)
+    .map((x) => ({ owner: sanitize(x.owner, 80), tool: sanitize(x.tool, 40), since: x.since, plain: isListener(x) ? listenPlain(x) : waitPlain(x, now) }));
   return {
     schema: SCHEMA, now: new Date(now).toISOString(), staleAfterMin, counts,
     groups: GROUP_ORDER.map((k) => ({ key: k, label: GROUPS[k] })),
@@ -419,7 +465,7 @@ export function progressLinks(view) {
     if (!v.progress || m.has(v.progress)) continue;
     m.set(v.progress, {
       id: v.id, state: v.state, plain: v.statePlain, stale: v.stale,
-      waits: [...(v.waiting ? [`waiting on ${v.waiting.plain}`] : []), ...v.derived.map((d) => d.plain)],
+      waits: [...(v.waiting ? [`waiting on ${v.waiting.plain}`] : []), ...v.derived.filter((d) => d.kind !== 'listen').map((d) => d.plain)], // I-108: a listener is no wait
     });
   }
   return m;

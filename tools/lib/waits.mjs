@@ -5,7 +5,7 @@
 // and waits that match no row in a short "other waits" section. Nobody has to remember to report a wait.
 //
 //   <git-common-dir>/fastwork-mirror/waits/<pid>-<rand>.json     ($FW_STATE_DIR/waits/ in tests)
-//   {schema, id, owner, tool, what, reason?, since, timeoutSec, until, pid}
+//   {schema, id, owner, tool, what, reason?, listener?, since, timeoutSec, until, pid}   (listener: I-108, isListener)
 //
 // Cheap by design: one write when the wait starts (plus a directory listing that drops records of dead processes,
 // read from the file names only), one unlink when it exits ('exit' event). A wait that is killed leaves its record,
@@ -58,7 +58,7 @@ export function urlText(u) {
  * waitOwner fills in), what (the plain condition), timeoutSec, reason?}. Returns {record, end()}; end() removes the
  * record (also run on process 'exit'). Never throws: on any failure it returns {record: null, end() {}}.
  */
-export function startWait({ tool, owner, what, timeoutSec, reason, pid = process.pid, now = Date.now(), onExit = true } = {}) {
+export function startWait({ tool, owner, what, timeoutSec, reason, listener = false, pid = process.pid, now = Date.now(), onExit = true } = {}) {
   try {
     const dir = waitsDir();
     mkdirSync(dir, { recursive: true });
@@ -71,6 +71,7 @@ export function startWait({ tool, owner, what, timeoutSec, reason, pid = process
     const record = {
       schema: SCHEMA, id, owner: waitOwner(owner), tool: clean(tool, 40), what: clean(what, LIMITS.what),
       ...(reason ? { reason: clean(reason, LIMITS.reason) } : {}),
+      ...(listener ? { listener: true } : {}),
       since: new Date(now).toISOString(), timeoutSec: Number.isFinite(t) && t >= 0 ? Math.round(t) : null,
       until: Number.isFinite(t) && t >= 0 ? new Date(now + t * 1000).toISOString() : null, pid,
     };
@@ -112,6 +113,19 @@ const KIND_OF_WAIT = {
   'wait.mjs pid': 'a background process to finish',
   'wait.mjs git': 'a commit to land on main',
 };
+/**
+ * I-108 (user T-060 #3): a thread listener (`console.mjs thread wait` without --thread, kept armed by every owner)
+ * waits on nobody; its old text "a user reply in a console thread" read as "waiting on the user". Marked
+ * `listener: true` since I-108; records from before (no marker) are known by the tool and a what naming no thread.
+ */
+export const isListener = (w) => !!w && (w.listener === true || (w.tool === 'console.mjs thread wait' && !/\bT-\d+/.test(String(w.what || ''))));
+
+/** "listening for console messages since 03:55Z (not waiting on anyone)". */
+export function listenPlain(w) {
+  const at = typeof w?.since === 'string' ? `${w.since.slice(11, 16)}Z` : '?';
+  return `listening for console messages since ${at} (not waiting on anyone)`;
+}
+
 /** Whether a wait's text is technical (a path, regex, pid or placeholder) rather than plain words. */
 export const technicalWait = (what) => TECHNICAL.test(sanitize(what, LIMITS.what));
 

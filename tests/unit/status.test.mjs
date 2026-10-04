@@ -354,3 +354,108 @@ test('progressLinks: a PROGRESS item id maps to its workstream\'s live state', (
   const m = S.progressLinks(v);
   assert.deepEqual(m.get('hero-carousel'), { id: 'st5', state: 'measuring', plain: 'measuring it on Chrome or the phone', stale: false, waits: ['waiting on the Chrome slot'] });
 });
+
+// I-108 (user T-060 #3 "a lot of out dated status"; audit T-060 #6). (1) A plain thread-wait listener is not a wait on
+// the user: it reads "listening for console messages", never "waiting for a user reply", and the row keeps the owner's
+// own state and --waiting-on. (2) WAITING ON YOU: only --waiting-on user, or an open console step / proposal the owner
+// posted. A listener's "a user reply …" record, old (no marker) or new, is neither.
+test('I-108: a thread listener never reads as "waiting for a user reply" or waiting on you; steps and open proposals do', () => {
+  const now = Date.parse('2026-10-04T04:00:00Z');
+  const at = (min) => new Date(now - min * 60000).toISOString();
+  const mk = (id, owner, state, extra = {}) => ({ id, title: `Row ${id}`, kind: 'fix', owner, state, stateSince: at(10), updatedAt: at(10), priority: null, waitingOn: null, progress: id, ...extra });
+  const items = [
+    mk('lis', 'fix-l', 'implementing'),
+    mk('lis-lead', 'fix-ll', 'waiting', { waitingOn: { kind: 'lead', text: 'land request' } }),
+    mk('old-marker', 'fix-o', 'testing'),
+    mk('asked', 'fix-q', 'waiting', { waitingOn: { kind: 'other', text: 'the yes/no in T-031' } }),
+    mk('step', 'fix-s', 'measuring'),
+    mk('prop', 'fix-p', 'waiting', { waitingOn: { kind: 'other', text: 'PR-009 decision' } }),
+  ];
+  const w = (id, owner, tool, what, extra = {}) => ({ schema: 'fw-wait/1', id, owner, tool, what, since: at(5), timeoutSec: 3600, pid: 1, ...extra });
+  const waits = [
+    w('1-a', 'fix-l', 'console.mjs thread wait', 'messages in its console threads or a proposal decision', { listener: true }),
+    w('2-b', 'fix-ll', 'console.mjs thread wait', 'messages in its console threads or a proposal decision', { listener: true }),
+    w('3-c', 'fix-o', 'console.mjs thread wait', 'a user reply in a console thread or a proposal decision'), // a record from before I-108
+    w('4-d', 'fix-q', 'console.mjs thread wait', 'a user reply in T-031'), // waits on one thread: a real wait, still not "on you"
+  ];
+  const live = {
+    waits, incidents: [],
+    steps: [{ id: 'C-007', by: 'fix-s', title: 'Swipe the menu', status: 'pending' }],
+    proposals: [{ id: 'PR-009', by: 'fix-p', title: 'Blur swap', state: 'proposed' }],
+  };
+  const v = S.buildStatusView({ items, live, now });
+  const by = Object.fromEntries(v.items.map((x) => [x.id, x]));
+  for (const id of ['lis', 'lis-lead', 'old-marker']) {
+    const r = by[id];
+    assert.deepEqual(r.derived.map((d) => d.kind), ['listen'], `${id}: one listener line`);
+    assert.match(r.derived[0].plain, /^listening for console messages since 03:55Z \(not waiting on anyone\)$/, id);
+    assert.equal(r.waitingOnYou, false, `${id}: a listener is not waiting on you`);
+    assert.equal(r.liveWait, false, `${id}: a listener is no live wait (it says nothing about the row being current)`);
+  }
+  assert.equal(by.lis.statePlain, 'building the change', 'the row keeps its own state');
+  assert.equal(by['lis-lead'].statePlain, 'waiting for: the lead: land request', 'and its own --waiting-on');
+  assert.equal(by.asked.derived[0].kind, 'wait');
+  assert.match(by.asked.derived[0].plain, /^waiting for a user reply in T-031/);
+  assert.equal(by.asked.waitingOnYou, false, 'a thread wait is not a step: WAITING ON YOU stays for steps, proposals and --waiting-on user');
+  assert.equal(by.step.waitingOnYou, true);
+  assert.equal(by.prop.waitingOnYou, true, 'an open proposal the owner posted waits on the user');
+  assert.deepEqual(by.prop.derived.map((d) => [d.kind, d.ref, d.plain]), [['user', 'PR-009', 'waiting on you: PR-009 Blur swap (your decision)']]);
+  assert.equal(v.counts.waitingOnYou, 2);
+  const t = S.renderText(v);
+  assert.ok(!/user reply in a console thread/.test(t), 'no listener reads as waiting for a user reply');
+  assert.match(t, /WAITING ON YOU\n {2}step: waiting on you: C-007 Swipe the menu\n {2}prop: waiting on you: PR-009 Blur swap \(your decision\)\n\n/);
+  // the progress page's views carry the row's own words, not the listener
+  const links = S.progressLinks(v);
+  assert.deepEqual(links.get('lis').waits, []);
+  assert.deepEqual(links.get('lis-lead').waits, ['waiting on the lead: land request']);
+  const ag = P.agentsView(v.items).agents.find((a) => a.owner === 'fix-l');
+  assert.deepEqual(ag.waits, []);
+  // no open proposal (decided, held): nothing waits on the user
+  const v2 = S.buildStatusView({ items, live: { ...live, proposals: [] }, now });
+  assert.equal(v2.items.find((x) => x.id === 'prop').waitingOnYou, false);
+});
+
+// I-108 (5): live data (queue places, lock holds, wait and listener lines, steps, proposals) attaches to the owner's
+// ONE active row: the row its hold's --for or --doing names, else a row named by the record's own owner (a lock owner
+// that is a topic id), else the owner's most recently updated working/waiting/not-started row. Never a parked or
+// finished row; an owner with no active row goes to OTHER WAITS.
+test('I-108: live data attaches to the owner\'s one active row (--for/--doing, else the newest), never to parked or finished rows', () => {
+  const now = Date.parse('2026-10-04T04:00:00Z');
+  const at = (min) => new Date(now - min * 60000).toISOString();
+  const mk = (id, owner, state, min) => ({ id, title: `Row ${id}`, kind: 'fix', owner, state, stateSince: at(min), updatedAt: at(min), priority: null, waitingOn: null });
+  const items = [
+    mk('m-old', 'fix-m', 'measuring', 30),
+    mk('m-new', 'fix-m', 'testing', 5),
+    mk('m-park', 'fix-m', 'parked', 1),
+    mk('m-done', 'fix-m', 'done', 0),
+    mk('p-park', 'fix-p', 'parked', 2),
+    mk('topic-x', 'fix-t', 'measuring', 40),
+    mk('t-other', 'fix-t', 'testing', 1),
+  ];
+  const lockSt = (holder, queue = []) => ({ holder, stale: null, queue });
+  const live = {
+    incidents: [],
+    locks: {
+      'chrome-measure': lockSt({ owner: 'fix-m', kind: 'process', meta: { job: { text: 'timing test', for: 'm-old' } } }, [{ owner: 'topic-x' }]),
+      iphone: lockSt({ owner: 'fix-t', kind: 'lease', meta: { job: { text: 'finger check for t-other, part 2' } } }, [{ owner: 'fix-m' }, { owner: 'fix-p' }]),
+    },
+    steps: [{ id: 'C-009', by: 'fix-m', title: 'Swipe A/B', status: 'pending' }],
+    waits: [
+      { schema: 'fw-wait/1', id: '1-a', owner: 'fix-m', tool: 'wait.mjs phone-temp', what: 'the phone to cool', since: at(2), timeoutSec: 600, pid: 1 },
+      { schema: 'fw-wait/1', id: '2-b', owner: 'fix-m', tool: 'console.mjs thread wait', what: 'messages', listener: true, since: at(2), timeoutSec: 3600, pid: 2 },
+      { schema: 'fw-wait/1', id: '3-c', owner: 'fix-p', tool: 'lock.mjs wait', what: 'lock iphone free', since: at(1), timeoutSec: 600, pid: 3 },
+    ],
+  };
+  const v = S.buildStatusView({ items, live, now });
+  const kinds = (id) => v.items.find((x) => x.id === id).derived.map((d) => d.kind);
+  assert.deepEqual(kinds('m-old'), ['using'], 'the hold\'s --for names m-old');
+  assert.deepEqual(kinds('m-new'), ['phone', 'user', 'wait', 'listen'], 'the rest: the newest active row');
+  assert.deepEqual(kinds('m-park'), [], 'never a parked row');
+  assert.deepEqual(kinds('m-done'), [], 'never a finished row');
+  assert.deepEqual(kinds('p-park'), [], 'a parked row, even as the owner\'s only one');
+  assert.deepEqual(kinds('topic-x'), ['chrome'], 'a queue entry under a topic id goes to that row');
+  assert.deepEqual(kinds('t-other'), ['using'], 'the --doing text names t-other');
+  assert.equal(v.items.find((x) => x.id === 'm-new').derived[0].plain, 'in line for the phone, #1 of 2');
+  assert.deepEqual(v.otherWaits.map((x) => x.owner), ['fix-p'], 'an owner with only a parked row: OTHER WAITS');
+  assert.equal(v.counts.waitingOnYou, 1);
+});

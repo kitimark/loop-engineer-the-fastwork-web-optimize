@@ -282,7 +282,10 @@ test('I-058 incident, finding and console waits register too (owner from --as, o
   assert.equal(by['fix-q'].what, 'incident I-001 to be resolved or parked');
   assert.equal(by['fix-r'].what, 'a new finding');
   assert.equal(by['fix-s'].what, 'console C-001 answered');
-  assert.match(by['fix-t'].what, /^a user reply in a console thread/);
+  // I-108: a plain thread wait is a listener (marked), worded as one, never "a user reply in a console thread"
+  assert.equal(by['fix-t'].what, 'messages in its console threads or a proposal decision');
+  assert.equal(by['fix-t'].listener, true);
+  assert.equal(by['fix-s'].listener, undefined, 'a step wait is no listener');
   const [i, f, c, t] = await Promise.all(jobs);
   assert.match(i.stdout, /^STILL OPEN I-001 after 3 s: x broke\n$/);
   assert.match(f.stdout, /^NO NEW FINDINGS after 3 s\n$/);

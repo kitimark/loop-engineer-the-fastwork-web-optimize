@@ -158,7 +158,7 @@ function waitChips(v) {
   v.derived.forEach(function (d) {
     var cls = d.kind === 'user' ? 'you' : d.kind === 'incident' ? 'block' : d.kind === 'using' ? 'live' : d.kind === 'wait' ? 'wait' : '';
     if (d.kind === 'user' && STEP.test(d.ref || '')) box.appendChild(el('a', { class: 'chip you', href: '/#' + d.ref, text: d.plain }));
-    else box.appendChild(el('span', { class: 'chip ' + cls, title: d.kind === 'wait' ? 'a wait command running now (' + d.tool + ')' : 'seen live by the console', text: d.plain }));
+    else box.appendChild(el('span', { class: 'chip ' + cls, title: d.kind === 'wait' ? 'a wait command running now (' + d.tool + ')' : d.kind === 'listen' ? 'a thread listener: it wakes the owner when someone writes; it waits on nobody (I-108)' : 'seen live by the console', text: d.plain }));
   });
   if (!box.childNodes.length) box.appendChild(el('span', { class: 'plain', text: '–' }));
   return box;

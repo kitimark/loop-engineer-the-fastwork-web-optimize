@@ -49,6 +49,20 @@ test('startWait: one record (owner, what, reason, since, timeout, until, pid); e
   assert.deepEqual(W.listWaits({ now }), []);
 });
 
+test('I-108: a thread listener is marked (listener: true) and known as one; an old record by its tool and a what naming no thread', () => {
+  const now = Date.parse('2026-10-04T03:55:00Z');
+  const w = W.startWait({ tool: 'console.mjs thread wait', owner: 'fix-a', what: 'messages in its console threads', timeoutSec: 3600, listener: true, now, onExit: false });
+  assert.equal(w.record.listener, true);
+  assert.equal(JSON.parse(readFileSync(join(state, 'waits', files()[0]), 'utf8')).listener, true);
+  w.end();
+  assert.equal(W.startWait({ tool: 'wait.mjs file', owner: 'fix-a', what: 'x', timeoutSec: 1, now, onExit: false }).record.listener, undefined, 'only when asked');
+  assert.equal(W.isListener(w.record), true);
+  assert.equal(W.isListener({ tool: 'console.mjs thread wait', what: 'a user reply in a console thread or a proposal decision' }), true, 'a record from before I-108');
+  assert.equal(W.isListener({ tool: 'console.mjs thread wait', what: 'a user reply in T-031' }), false, 'one thread: a real wait');
+  assert.equal(W.isListener({ tool: 'console.mjs wait', what: 'C-004 answered' }), false);
+  assert.equal(W.listenPlain(w.record), 'listening for console messages since 03:55Z (not waiting on anyone)');
+});
+
 test('startWait: never throws (a broken state dir gives a no-op handle); owner falls back to "unknown"', () => {
   const f = join(state, 'not-a-dir');
   writeFileSync(f, 'x');

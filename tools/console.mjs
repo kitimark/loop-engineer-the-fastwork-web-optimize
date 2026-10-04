@@ -238,7 +238,8 @@ async function thread() {
     };
     const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
     const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
-    startWait({ tool: 'console.mjs thread wait', owner: w.reader, what: w.triage ? 'a thread that needs the lead (triage) or a proposal decision' : `a user reply ${opt('thread') ? `in ${opt('thread')}` : 'in a console thread'}${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
+    // I-108: without --thread this is a listener (armed all the time, waits on nobody): marked, and worded as such
+    startWait({ tool: 'console.mjs thread wait', owner: w.reader, listener: !opt('thread'), what: w.triage ? 'a thread that needs the lead (triage) or a proposal decision' : opt('thread') ? `a user reply in ${opt('thread')}` : `messages in its console threads${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
     const r = await pollUntil(check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
     if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }

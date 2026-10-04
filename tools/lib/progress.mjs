@@ -380,7 +380,7 @@ export function agentsView(items = []) {
   const order = [...shown.filter((v) => v.group === 'working'), ...shown.filter((v) => v.group === 'waiting')];
   const byOwner = new Map();
   for (const v of order) { if (!byOwner.has(v.owner)) byOwner.set(v.owner, []); byOwner.get(v.owner).push(v); }
-  const waitsOf = (v) => [...(v.waiting ? [sanitize(v.waiting.plain, 200)] : []), ...(v.derived || []).filter((d) => d.kind !== 'using').map((d) => sanitize(d.plain, 200))];
+  const waitsOf = (v) => [...(v.waiting ? [sanitize(v.waiting.plain, 200)] : []), ...(v.derived || []).filter((d) => d.kind !== 'using' && d.kind !== 'listen').map((d) => sanitize(d.plain, 200))]; // I-108: a listener is no wait
   const agents = [...byOwner.entries()].map(([owner, [m, ...rest]]) => ({
     owner: sanitize(owner, 60), id: m.id, doing: rowText(m), state: m.statePlain,
     using: (m.derived || []).filter((d) => d.kind === 'using').map((d) => sanitize(d.plain, 80)),
@@ -411,6 +411,8 @@ export async function gatherLive() {
   try { live.incidents = (await import('./incident.mjs')).list(); } catch (e) { live.errors.push(`incidents: ${e.message}`); }
   try { live.steps = (await import('./console.mjs')).list({ pending: true }); } catch (e) { live.errors.push(`console steps: ${e.message}`); }
   try { live.waits = (await import('./waits.mjs')).listWaits(); } catch (e) { live.errors.push(`waits: ${e.message}`); } // I-058
+  // I-108: an open proposal (proposed, not held) waits on the user's decision, like a pending step
+  try { live.proposals = (await import('./proposal.mjs')).listProposals({ waiting: true }); } catch (e) { live.errors.push(`proposals: ${e.message}`); }
   return live;
 }
 
