@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 06:2xZ** (mgmt-ops-10).
+**10-04 06:3xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 06:3xZ **New user rule: one phone step at a time** (memory/one-phone-step-at-a-time.md, 48ad2387; T-078 #8/#11): only the lease holder posts a phone step, one open at a time; the lead sets the order; nothing is posted before the user says "ready"; runners renew 2 min early, arm `--until redo` from part 1, check the previous holder's step before the first open. Phone-step requests go to the lead, not the console. Ops told fix-nav-morph, iphone-runner, fix-hero-exit-threaded, cd-roll-ca (by id a65f148991747deb7; the name was unreachable), fix-rest-script, wi-gpu-bundle. I-122 resolved as a duplicate of I-123 (ts-i123: lease guard, REDO wake-up, stuck-ready alarm). I-121 (flaky console test) -> ts-i115 after I-120. Landed: I-111 54fb1f47, 6992d463 (ops).
 - 10-04 06:2xZ Lead landed I-116 00dcb450 (the P-090 ledger misparse is fixed; two-space empty cells stay the convention), I-112 a5f3bdc5 (WDA check, GESTURE_BUDGET_S), docs cc47d0fc, 1be73acb (ops). cd-roll-ca safe-to-delete list: T-049 #19. **Hand-over watch, new pattern:** a queued phone waiter whose agent task shows completed has an orphaned lease request (iphone-runner and fix-rest-script ended their turns; the lead resumed both). At each hand-over check, confirm the next holder's agent is still running; if not, tell the lead. **Unit-test failures:** capture the name with `node --test ... 2>&1 | grep -B2 'not ok'`.
 - 10-04 06:1xZ Lead landed 51c98146. P-096 C1 hold confirmed: no rep until the freeze text and crossing-read.mjs agree and ops re-reads; a code change means a new crossing-read hash in the freeze commit. morph-gpu land request waits on **review-morph-gpu** (never had a fix review). **Disk:** about 10 GB free, falling about 1 GB per 10 min; the lead asked the user in T-049 to delete the listed folders and asked cd-roll-ca to write less. Desk answers that touch disk point to **T-049 #18**.
 - 10-04 06:1xZ **P-092 closed** (ledger HIT, ops re-score identical; landed a41ac6d0). Lead ruling: PASS as no-worse, no gain claimed; tween-start +7 ms (V 60-64 vs C 54-56) is a real cost: morph-gpu lands as a record, stays in the GPU preview, NOT in the next best build; rev 2 (clip layer prepared before the tween) gets a ticket, falsifier V <= C + 2 ms, ops pre-data read. Desk wording: "not worse", never "fewer frames over 34 ms" for P-092. **P-096 freeze read** (d0ff57bd, tool hashes match): CHANGES C1 (line-base rule: text says fixed base 1 + only-other-base = UNRESOLVED; crossing-read detects the base per run); no rep before the re-read PASS. I-120 -> ts-i115 after I-116.
@@ -2429,7 +2430,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | `de-gpu` (ae7885a4cf83f8d7b) | T-030 GPU/compositor-only CSS (research/gpu-props/, 41563ad, F-145) | done 10-03 00:1xZ |
 | `fix-cd-strip` (name) | cd-strip: countdown digits as sliding strips (T-030 F1, user priority #1); PR-008 on hold, rev 2 after G12-G14 | alive (10-03 08:2xZ) |
 | `fix-hero-exit-threaded` (name) | hero-exit-threaded: hero exit as a scroll-driven animation (T-030 F2); review NEEDS-FIX fixes, then P-074 ticket | alive (10-03 08:2xZ) |
-| `fix-cd-roll-ca` (name) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10); paused until the strips decision | alive (10-03 08:2xZ) |
+| `fix-cd-roll-ca` (name; if the name fails use id a65f148991747deb7) | cd-roll-ca: countdown roll on the GPU, stacks on cd-strip (T-030 #10); paused until the strips decision | alive (10-03 08:2xZ) |
 | `fix-platform-idle` (name; new 10-03 07:2xZ) | heat goal (T-029, P-068: Fastwork warms the phone ~5x apple.com): glint-ca + sweep-exact, unparked | alive |
 | `map-rest-script` (name; new 10-03 07:2xZ) | heat goal: read-only map of the middle-section script work at rest | alive |
 | `ts-proposal-hold` (name; 10-03 07:2xZ) | T-030 #19: console proposal hold/unhold and a "stale: re-decide" state on revise | done: cd966b7 landed |
