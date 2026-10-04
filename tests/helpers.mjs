@@ -122,6 +122,7 @@ export function cleanEnv(extra = {}) {
   env.FW_TEST_LIFELINE = String(process.pid); // I-072: long-lived fixtures end with this test process
   env.FW_TEST_FIXTURES = fixtureRegistry();
   env.FW_CAFFEINATE = 'off'; // no real sleep assertions from tests (I-026); a test passes the fake via `extra`
+  env.FW_ANSWER_LINT = 'off'; // I-146: test texts skip the answer-format lint (honoured only with $FW_STATE_DIR); its own tests pass 'on'
   delete env.FW_NO_CAFFEINATE; // I-070: a test that passes the fake gets it, whatever the caller's shell says
   // a git hook exports GIT_DIR / GIT_INDEX_FILE / ...: never let them redirect the temp repos' git calls
   for (const k of Object.keys(env)) if (/^GIT_/.test(k)) delete env[k];

@@ -111,6 +111,16 @@
 //        # the lead always; others only when assigned ("ask the lead to assign you"). --ask: you need an answer from
 //        # the user (the thread shows "waiting on you"). Prints REPLIED T-003 #4 and anything that was scrubbed.
 //        # For phone links write http://lan:<port>/ (never the address): the page opens the Mac's LAN address (I-119).
+//        # I-146 (user T-123): the text must follow the answer format (memory/answer-format.md), checked by
+//        # tools/lib/answer-lint.mjs, or nothing is posted (FORMAT REFUSED, exit 1, one line per problem with a fix):
+//        # (a) a last line "What you need to do: …", (b) at most 18 non-empty lines, (c) no line over 250 characters
+//        # (tables exempt), (d) every id (T-/PR-/I-/P-/F-/C-nnn, a commit sha) explained in plain words: "the heat
+//        # check (P-094)". Warnings: a first line over 160 characters, a paragraph of more than 3 sentences.
+//        # --check-format: check only, post nothing (exit 0 ok, 1 not). --force-format "<reason>": post anyway; the reason
+//        # and the problems go to <console>/answer-lint-overrides.jsonl for the lead. Same for `thread new`, the step text
+//        # of `post` and the proposal text of `proposal post|revise` (kind field: no action line, lines up to 600).
+//        # `thread reply --help` prints the rule.
+//   node tools/console.mjs thread lint [<id>] --text "…" | --file <f> | --file - [--kind answer|field]   # test a draft
 //   node tools/console.mjs thread new --by lead --title "…" --text "…"|--file <f> [--topic <status id>] [--to <agent>] [--ask] [--image …]
 //        # I-089 images: --image <path> repeats (at most 6 per message); a --caption belongs to the --image before it.
 //        # PNG, JPEG, GIF or WebP by content (not by name), at most 15 MB each, copied as is into the local store
@@ -179,14 +189,24 @@ import { currentStatusView, renderText as statusText } from './lib/status.mjs';
 import * as TH from './lib/console-threads.mjs';
 import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk, topic map
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
+import * as AL from './lib/answer-lint.mjs'; // I-146: the answer-format check on agent text the user reads
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch', '--into', '--progress', '--name', '--summary', '--delete'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch', '--into', '--progress', '--name', '--summary', '--delete', '--force-format'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const by = () => opt('by', process.env.FW_AGENT || process.env.FW_LOCK_OWNER);
 const tri = (yes, no) => (flag(yes) ? true : flag(no) ? false : undefined);
+/** I-146: lint agent text the user reads; prints the outcome. Returns {proceed, exit}: post only when proceed. */
+function formatGate(result, where) {
+  const g = AL.gate(result, { where, check: flag('check-format'), force: opt('force-format'), by: by(), dir: consoleDir() });
+  for (const l of g.out) console.log(l);
+  for (const l of g.err) console.error(l);
+  return g;
+}
+/** Ids the user already knows in a thread: its own id, ids in its title and in the user's messages. */
+const knownIds = (t) => [t.id, ...AL.idsIn(t.title), ...t.messages.filter((m) => m.by === TH.USER).flatMap((m) => AL.idsIn(m.text))];
 
 async function serverUrl() {
   const s = runningServer();
@@ -290,7 +310,23 @@ async function thread() {
   const images = () => TH.parseImageArgs(argv); // I-089
   const imgNote = (k) => (k ? ` with ${k} image${k === 1 ? '' : 's'}` : '');
   const scrubNote = (sc) => (sc && sc.length ? `\nscrubbed before storing (Hard rule 12): ${sc.join(', ')}${sc.includes('url') ? '; for phone links write http://lan:<port>/' : ''}` : ''); // I-119
-  if (!sub || sub === 'help') { console.log('see the header of tools/console.mjs (Threads)'); return sub ? 0 : EXIT.usage; }
+  if (!sub || sub === 'help' || flag('help')) { // I-146: the answer format at the point of use
+    console.log('see the header of tools/console.mjs (Threads)');
+    console.log('  thread reply <id> --by <agent> --text "…" | --file <f> [--ask] [--check-format] [--force-format "<reason>"]');
+    console.log('  thread lint [<id>] --text "…" | --file <f> [--kind answer|field]   # test a draft, posts nothing');
+    for (const l of AL.RULE_SUMMARY) console.log(l);
+    return sub || flag('help') ? 0 : EXIT.usage;
+  }
+  if (sub === 'lint') { // I-146: check a draft against the answer format; nothing is posted
+    const kind = opt('kind', 'answer');
+    if (!['answer', 'field'].includes(kind)) throw new Error('--kind answer|field');
+    const t = idArg ? TH.getThread(TH.parseThreadId(idArg)) : null;
+    const text = textArg();
+    if (text === undefined) throw new Error('thread lint [<id>] --text "…" | --file <f> | --file -');
+    const g = AL.gate(AL.lintText(text, { kind, known: t ? knownIds(t) : [] }), { where: t ? `draft for ${t.id}` : 'draft', check: true });
+    for (const l of g.out) console.log(l);
+    return g.exit;
+  }
   if (sub === 'list') {
     if (flag('unread') && !as()) throw new Error('--unread needs --as <agent>');
     let items = TH.listThreads();
@@ -303,7 +339,10 @@ async function thread() {
     return 0;
   }
   if (sub === 'new') {
-    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask'), images: images(), checkSimilar: !flag('force') });
+    const text = textArg();
+    const fg = formatGate(AL.lintText(text, { kind: 'answer' }), 'thread new'); // I-146
+    if (!fg.proceed) return fg.exit;
+    const r = await TH.createThread({ by: by(), title: opt('title'), text, topic: opt('topic'), to: opt('to'), ask: flag('ask'), images: images(), checkSimilar: !flag('force') });
     if (r.similar) { // T-024 #13: one topic, one thread
       console.log(`SIMILAR ${r.similar.id} (${r.why}) [${TH.threadState(r.similar)}]: ${TH.oneLine(r.similar.title)}`);
       console.log(`  nothing started: write there (thread reply ${r.similar.id} --by ${by()} …), or start it anyway with --force`);
@@ -396,7 +435,10 @@ async function thread() {
     return 0;
   }
   if (sub === 'reply') {
-    const r = await TH.replyAgent(id, { by: by(), text: textArg(), ask: flag('ask'), images: images() });
+    const text = textArg();
+    const fg = formatGate(AL.lintText(text, { kind: 'answer', known: knownIds(TH.getThread(id)) }), `thread reply ${id}`); // I-146
+    if (!fg.proceed) return fg.exit;
+    const r = await TH.replyAgent(id, { by: by(), text, ask: flag('ask'), images: images() });
     console.log(`REPLIED ${id} #${r.n}${imgNote(r.images)}${flag('ask') ? ' (waiting on the user)' : ''}${scrubNote(r.scrubbed)}`);
     return 0;
   }
@@ -436,13 +478,17 @@ async function thread() {
 
 async function main() {
   if (argv[0] === 'proposal') return (await import('./lib/proposal-cli.mjs')).run(argv.slice(1));
-  if (!cmd || cmd === 'help' || flag('help')) { console.log('see the header of tools/console.mjs'); return cmd ? 0 : EXIT.usage; }
+  if (!cmd || cmd === 'help' || (flag('help') && cmd !== 'thread')) { console.log('see the header of tools/console.mjs'); return cmd ? 0 : EXIT.usage; }
   if (cmd === 'serve') return serve();
   if (cmd === 'thread') return thread();
   if (cmd === 'url') { const u = await serverUrl(); if (!u) { console.log('NO SERVER: node tools/console.mjs serve (run it in the background)'); return 3; } console.log(`CONSOLE_URL=${u}`); return 0; }
   if (cmd === 'post') {
     let parts = opt('parts');
     if (parts !== undefined) { const raw = parts.startsWith('@') ? readFileSync(parts.slice(1), 'utf8') : parts; try { parts = JSON.parse(raw); } catch (e) { throw new Error(`--parts is not JSON: ${e.message}`); } }
+    const stepText = [{ path: 'title', text: opt('title') }, { path: 'instructions', text: opt('instructions') }, // I-146
+      ...(Array.isArray(parts) ? parts.flatMap((p, i) => ['label', 'instructions'].map((k) => ({ path: `parts[${i}].${k}`, text: p?.[k] }))) : [])];
+    const fg = formatGate(AL.lintFields(stepText), 'post');
+    if (!fg.proceed) return fg.exit;
     const s = await post({
       by: by(), kind: opt('kind'), title: opt('title'), instructions: opt('instructions'), url: opt('url'), url2: opt('url2'),
       options: opt('options'), yesno: flag('yesno'), text: flag('text'), record: tri('record', 'no-record'), gate: tri('gate', 'no-gate'),

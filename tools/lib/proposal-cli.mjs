@@ -4,7 +4,11 @@
 //
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
 //        [--video <clip of both> | --video-a <clip> --video-b <clip>] [--option <name>] [--draft]   # POSTED PR-001: <title>
-//        [--live-patch fixes/<topic>/patch.diff [--live-a-patch <path>] | --live-none "<why>"]
+//        [--live-patch fixes/<topic>/patch.diff [--live-a-patch <path>] | --live-none "<why>"] [--check-format] [--force-format "<reason>"]
+//        # I-146: the text fields (title, problem, idea, looksSame, risk, visualDiff, gain what/how, labels, why, none,
+//        # captions; on revise also --note) follow the answer format (tools/lib/answer-lint.mjs, kind field): every id
+//        # explained in plain words, no line over 600 characters (over 250 warns), at most 18 lines a field; or
+//        # FORMAT REFUSED, nothing posted (exit 1). --check-format: check only; --force-format "<reason>": post, logged.
 //        # I-109 (user T-063 #2): the proposal (with options: EVERY option) needs a Try-it entry, or post refuses:
 //        # "live": {"patch": "fixes/<topic>/patch.diff"} (B = the baseline + that patch; see `proposal live`), or
 //        # "live": {"none": "<why there is no page to try>"} (e.g. "keep the original: B = A"; at most 300 characters),
@@ -93,8 +97,10 @@ import { runningServer } from './console-server.mjs';
 import * as TALK from './proposal-talk.mjs'; // T-048
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
+import * as AL from './answer-lint.mjs'; // I-146: the answer format on the proposal text the user reads
+import { consoleDir } from './console.mjs';
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-none', '--none']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-none', '--none', '--force-format']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -141,6 +147,18 @@ function inputs(a) {
   return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option'), live };
 }
 
+/**
+ * I-146: lint the proposal's text fields (the file's prose, --caption, revise --note) as kind 'field' before posting.
+ * Returns undefined to go on, or the exit code (refused, or --check-format).
+ */
+function formatCheck(a, inp, { where, by, known = [] }) {
+  const fields = [...(inp.raw ? AL.proposalTexts(inp.raw) : []), ...inp.captions.map((c, i) => ({ path: `--caption ${i + 1}`, text: c })), { path: '--note', text: a.one('note') }];
+  const g = AL.gate(AL.lintFields(fields, { known }), { where, check: a.flag('check-format'), force: a.one('force-format'), by, dir: consoleDir() });
+  for (const l of g.out) console.log(l);
+  for (const l of g.err) console.error(l);
+  return g.proceed ? undefined : g.exit;
+}
+
 function report(r) {
   for (const s of r.scrubbed) console.error(`scrubbed ${s.replace(/^(.*?): (.*)$/, '$2 in $1')} (Hard rule 12)`);
   for (const w of r.warnings) console.error(`warning: ${w}`);
@@ -153,7 +171,10 @@ export async function run(argv) {
   if (!sub || sub === 'help' || a.flag('help')) { console.log('see the header of tools/lib/proposal-cli.mjs'); return sub ? 0 : EXIT.usage; }
   if (sub === 'post') {
     if (!a.one('file')) throw new Error('--file <proposal.json|md> is required (schema: research/architecture/console-proposals.md)');
-    const r = await postProposal({ by: by(), ...inputs(a), draft: a.flag('draft') });
+    const inp = inputs(a);
+    const refused = formatCheck(a, inp, { where: 'proposal post', by: by() });
+    if (refused !== undefined) return refused;
+    const r = await postProposal({ by: by(), ...inp, draft: a.flag('draft') });
     report(r);
     const p = r.proposal;
     console.log(`POSTED ${p.id}: ${p.title}${p.state === 'draft' ? ' (draft: not shown to the user; proposal publish ' + p.id + ')' : ''}`);
@@ -193,7 +214,10 @@ export async function run(argv) {
   if (sub === 'phone') return phone(id, a); // I-126 / T-086
   if (sub === 'show') { const p = get(id); console.log(a.flag('json') ? JSON.stringify(withDecisionState(p), null, 1) : showText(p)); return 0; }
   if (sub === 'revise') {
-    const r = await reviseProposal(id, { by: by(), note: a.one('note'), ...inputs(a), publish: a.flag('publish'), keepDecision: a.flag('keep-decision'), unhold: a.flag('unhold') });
+    const inp = inputs(a);
+    const refused = formatCheck(a, inp, { where: `proposal revise ${id}`, by: by(), known: [id] });
+    if (refused !== undefined) return refused;
+    const r = await reviseProposal(id, { by: by(), note: a.one('note'), ...inp, publish: a.flag('publish'), keepDecision: a.flag('keep-decision'), unhold: a.flag('unhold') });
     report(r);
     const p = r.proposal;
     console.log(`REVISED ${line(p)}`);
