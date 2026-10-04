@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 06:3xZ** (mgmt-ops-10).
+**10-04 06:4xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -27,6 +27,8 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **best-build COMPONENTS**: carousel-leaver and cd-strip each join best-build as one COMPONENTS line once they land (lead 17:5xZ).
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+
+- 10-04 06:4xZ P-092 ledger row corrected after review (fix-morph-gpu): the registered table has 6 lines (the S-sentinel line "sent", README line 420, was missing in the row); now HIT 5 of 6, wdt miss in V's favour, ratio n/a (predicted d 0); lesson adds the tween-start cost and F-208. Phone: fix-rest-script P-094 H1 VALID (C1 sentinel fail 57.7 < 58 voids C1 only, per ticket lines 937-947; V2/V3 hang on C4's sentinel; C9 re-runs C1), released 06:40Z for the user steps; cd-roll-ca took the lease 06:40:36Z against the lead's posted order (T-078 #14), ops relayed the order, it released 06:42:53Z after an uncounted warm-up; iphone-runner holds for the user swipe steps. Desk: T-049 #27 user YES to auto-delete + keep blog-post evidence (escalated); T-080 new, format rules for answers proposed in #2 (escalated).
 
 - 10-04 06:3xZ Lead landed a154d656 + f0056f16. Disk plan in T-049 #24, I-124 -> ts-i124 (peer row added); auto-delete waits on the user's yes/no. Ops sent ts-i124 the idea "landed branch's worktree listed as deletable in the report". review-cd-roll-ca-4 running (peer row); cd-roll-ca pixel tier ruled T2. P-096 freeze PASS, rep 1 cleared by ops and lead.
 - 10-04 06:3xZ **New user rule: one phone step at a time** (memory/one-phone-step-at-a-time.md, 48ad2387; T-078 #8/#11): only the lease holder posts a phone step, one open at a time; the lead sets the order; nothing is posted before the user says "ready"; runners renew 2 min early, arm `--until redo` from part 1, check the previous holder's step before the first open. Phone-step requests go to the lead, not the console. Ops told fix-nav-morph, iphone-runner, fix-hero-exit-threaded, cd-roll-ca (by id a65f148991747deb7; the name was unreachable), fix-rest-script, wi-gpu-bundle. I-122 resolved as a duplicate of I-123 (ts-i123: lease guard, REDO wake-up, stuck-ready alarm). I-121 (flaky console test) -> ts-i115 after I-120. Landed: I-111 54fb1f47, 6992d463 (ops).
