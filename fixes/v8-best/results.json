@@ -1,0 +1,2313 @@
+{
+ "topic": "v8-best",
+ "kind": "wave integration (bytes, function, frozen pixels, work counts, widths, Simulator/iPad + Mac Safari smoke; phone no-worse via P-111..P-114)",
+ "createdAt": "2026-10-04T18:45:09.079Z",
+ "build": {
+  "js": "3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16",
+  "css": "f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43",
+  "patchDiff": "fixes/v8-best/patch.diff",
+  "patchDiffSha": "7df5f08e036e",
+  "pureCompositionJs": "3b4774f9a6da"
+ },
+ "config": {
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "comparedWith": "v7-best (8c90da217745 / 308f0da70c3a)"
+ },
+ "components": [
+  {
+   "name": "best-build",
+   "patch": "fixes/best-build/patch.diff",
+   "sha": "9bf4c6e41f11"
+  },
+  {
+   "name": "hero R2 delta (v6)",
+   "patch": "fixes/v7-best/hero-r2-delta.diff",
+   "sha": "a8daa419b791"
+  },
+  {
+   "name": "cd-strip strip-tc (PR-008 rev 2)",
+   "patch": "fixes/cd-strip/patch.diff",
+   "sha": "4f2ff4eb9afa"
+  },
+  {
+   "name": "cd-roll-ca K (PR-017 rev 5 land-k; replaces V9)",
+   "patch": "fixes/cd-roll-ca/patch.diff",
+   "sha": "0ba6f9a0b686"
+  },
+  {
+   "name": "countdown-faces (b), rebased onto v6 + strip + K",
+   "patch": "fixes/v8-best/faces-delta.diff",
+   "sha": "d3a865191e06"
+  },
+  {
+   "name": "rest-script v4 (P-094)",
+   "patch": "fixes/rest-script/patch.diff",
+   "sha": "be2b46a3ceaf"
+  },
+  {
+   "name": "accent-ca exact (PR-019, e1 delta, CSS only)",
+   "patch": "fixes/accent-ca/e1-delta.diff",
+   "sha": "7d2156af3df8"
+  },
+  {
+   "name": "morph-gpu rev 3 (one CSS line)",
+   "patch": "fixes/morph-gpu/rev3/delta.diff",
+   "sha": "47518661e2d0"
+  },
+  {
+   "name": "glue faces x hero R2 (F-235, heUp)",
+   "patch": "fixes/v8-best/glue-heup.diff",
+   "sha": "638605952873"
+  }
+ ],
+ "combine": {
+  "command": "node tools/fix.mjs combine v8-best best-build fixes/v7-best/hero-r2-delta.diff cd-strip cd-roll-ca fixes/v8-best/faces-delta.diff rest-script fixes/accent-ca/e1-delta.diff fixes/morph-gpu/rev3/delta.diff fixes/v8-best/glue-heup.diff",
+  "conflicts": [],
+  "offsets": {
+   "hero": {
+    "_app/immutable/nodes/2.DyWL8TcE.js": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "_app/immutable/assets/2.gBuqKVzi.css": [
+     0
+    ]
+   },
+   "strip": {
+    "_app/immutable/nodes/2.DyWL8TcE.js": [
+     0,
+     0
+    ],
+    "_app/immutable/assets/2.gBuqKVzi.css": [
+     0,
+     276,
+     276
+    ]
+   },
+   "K": {
+    "_app/immutable/nodes/2.DyWL8TcE.js": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faces'": {
+    "_app/immutable/nodes/2.DyWL8TcE.js": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rest": {
+    "_app/immutable/nodes/2.DyWL8TcE.js": [
+     0,
+     0,
+     0,
+     0,
+     471,
+     471,
+     471,
+     471,
+     471,
+     471,
+     471,
+     471
+    ]
+   },
+   "acc": {
+    "_app/immutable/assets/2.gBuqKVzi.css": [
+     0,
+     0,
+     0
+    ]
+   },
+   "morph": {
+    "_app/immutable/assets/2.gBuqKVzi.css": [
+     203
+    ]
+   },
+   "glue": {
+    "_app/immutable/nodes/2.DyWL8TcE.js": [
+     0
+    ]
+   }
+  },
+  "facesTrims": [
+   "2.DyWL8TcE.js @@ -4561: 1 leading / 0 trailing context lines dropped"
+  ],
+  "heroTrims": [
+   "2.DyWL8TcE.js @@ -4388: 0 leading / 1 trailing context lines dropped"
+  ]
+ },
+ "excluded": [
+  {
+   "name": "cd-roll-ca V9 (PR-017, in v7)",
+   "why": "replaced by K (PR-017 rev 5 land-k); V9 kept in 1bb87be9"
+  }
+ ],
+ "identity": {
+  "tool": "fixes/v8-best/check.mjs",
+  "ok": 40,
+  "total": 40,
+  "results": [
+   {
+    "name": "input st6 = owner's build",
+    "pass": true,
+    "detail": "js 7bf7c4657d21 / css f523598b2a24 (fixes/st6-rb2/patch.diff 457dc775e360)"
+   },
+   {
+    "name": "input best = owner's build",
+    "pass": true,
+    "detail": "js 65052c4a3902 / css e0f92804c521 (fixes/best-build/patch.diff 9bf4c6e41f11)"
+   },
+   {
+    "name": "input mi = owner's build",
+    "pass": true,
+    "detail": "js 7c61fe7d0662 / css f523598b2a24 (fixes/morph-inherit/patch.diff b4d4ccc97ec9)"
+   },
+   {
+    "name": "input r2 = owner's build",
+    "pass": true,
+    "detail": "js 924be86afac8 / css cc74cd980e72 (fixes/hero-exit-threaded/patch.diff 168233b0a4ae)"
+   },
+   {
+    "name": "input v6 = owner's build",
+    "pass": true,
+    "detail": "js 8018ce062d30 / css 71b65c667720 (fixes/v7-best/hero-r2-delta.diff a8daa419b791)"
+   },
+   {
+    "name": "input strip = owner's build",
+    "pass": true,
+    "detail": "js 6fa0e1e8a221 / css 982a747d9263 (fixes/cd-strip/patch.diff 4f2ff4eb9afa)"
+   },
+   {
+    "name": "input V9 = owner's build",
+    "pass": true,
+    "detail": "js 582d120c9f8f / css 982a747d9263 (1bb87be9:fixes/cd-roll-ca/patch.diff d48095cc16ff)"
+   },
+   {
+    "name": "input K = owner's build",
+    "pass": true,
+    "detail": "js b43fe790c20c / css 982a747d9263 (fixes/cd-roll-ca/patch.diff 0ba6f9a0b686)"
+   },
+   {
+    "name": "input rest = owner's build",
+    "pass": true,
+    "detail": "js 520d5f1139c7 / css f523598b2a24 (fixes/rest-script/patch.diff be2b46a3ceaf)"
+   },
+   {
+    "name": "input v7 = owner's build",
+    "pass": true,
+    "detail": "js 8c90da217745 / css 308f0da70c3a (fixes/v7-best/patch.diff b0de3b4c2b6e)"
+   },
+   {
+    "name": "input acc = owner's build",
+    "pass": true,
+    "detail": "js 8c90da217745 / css 7eda63cc7015 (fixes/accent-ca-v7/patch.diff 2779e3f31376)"
+   },
+   {
+    "name": "input accD = owner's build",
+    "pass": true,
+    "detail": "js 8c90da217745 / css 7eda63cc7015 (fixes/accent-ca/e1-delta.diff 7d2156af3df8)"
+   },
+   {
+    "name": "input fd = owner's build",
+    "pass": true,
+    "detail": "js 65052c4a3902 / css e4c80db5e0a8 (fixes/morph-gpu/rev3/delta.diff 47518661e2d0)"
+   },
+   {
+    "name": "countdown-faces' base C = mi + strip + V9",
+    "pass": true,
+    "detail": "js 3d70edb5bf31 / css 982a747d9263"
+   },
+   {
+    "name": "input faces = owner's build (V on C)",
+    "pass": true,
+    "detail": "js 9c098e608a0f / css 982a747d9263 (fixes/countdown-faces/patch.diff 67a9dff1eda5)"
+   },
+   {
+    "name": "countdown-faces patch applies on mi + strip + K unchanged (exact context, offsets only)",
+    "pass": true,
+    "detail": "js b438de38974f / css 982a747d9263 offsets [0,35,42,42,42,42,42,42,42,42,42,42,42]"
+   },
+   {
+    "name": "faces build (on V9) + (V9 -> K) = facesK, and facesK - (V9 -> K) = faces build: the K follow-up and faces commute",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "faces on v6 + strip + K: +/- lines unchanged, context trimmed only where the hero changed it",
+    "pass": true,
+    "detail": "2.DyWL8TcE.js @@ -4561: 1 leading / 0 trailing context lines dropped"
+   },
+   {
+    "name": "fixes/v8-best/faces-delta.diff = faces moved onto v6 + strip + K",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "faces-delta.diff's +/- lines = countdown-faces patch.diff's, hunk for hunk",
+    "pass": true,
+    "detail": "13 hunks"
+   },
+   {
+    "name": "strict build, the 8 parts (pure composition)",
+    "pass": true,
+    "detail": "js 3b4774f9a6da / css f836404b3728"
+   },
+   {
+    "name": "strict build v8 = pure composition + glue",
+    "pass": true,
+    "detail": "js 3e3e94cb6e9f / css f836404b3728"
+   },
+   {
+    "name": "glue changes one line (heUp) and adds two comment lines, JS only",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8 - glue = pure composition",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "glue right after faces (before rest, accent, morph): same bytes",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "hero then faces = faces then hero (the hero's s() context line trimmed)",
+    "pass": true,
+    "detail": "2.DyWL8TcE.js @@ -4388: 0 leading / 1 trailing context lines dropped"
+   },
+   {
+    "name": "best + strip + K + faces - (best - mi) = facesK (faces on mi + strip + K)",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "all 24 orders of [hero+countdown], [rest], [accent], [morph] give the same bytes",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "[strip, K] before the hero, then faces': same bytes",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "fix.mjs combine overlay = strict build (git apply = no-fuzz applier)",
+    "pass": true,
+    "detail": "js 3e3e94cb6e9f / css f836404b3728"
+   },
+   {
+    "name": "fixes/v8-best/patch.diff on the baseline = v8",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8pure - morph - accent - faces = v7 with K for V9: (that) - K + V9 = v7-best (8c90da217745 / 308f0da70c3a)",
+    "pass": true,
+    "detail": "js cf7ec51d037e / css 308f0da70c3a"
+   },
+   {
+    "name": "v8pure - morph - faces - K + V9 = accent-ca-v7 build (8c90da217745 / 7eda63cc7015)",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8pure - morph - accent - rest - faces - K - strip = v6-best-br2 (B-R2)",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8pure - accent - rest - faces - K - strip - hero = morph-gpu rev 3 build fd (65052c4a3902 / e4c80db5e0a8)",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8pure - hero - morph - accent - rest - faces - (best - st6) = cd-roll-ca K build (b43fe790c20c)",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8pure - hero (s() context trimmed) - morph - accent - rest - (best - mi) = facesK (= countdown-faces build + V9 -> K, above)",
+    "pass": true,
+    "detail": "2.DyWL8TcE.js @@ -4388: 0 leading / 1 trailing context lines dropped"
+   },
+   {
+    "name": "v8pure - hero - morph - accent - faces - K - strip - (best - st6) = rest-script v4 build",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "v8pure - all = best build",
+    "pass": true,
+    "detail": ""
+   },
+   {
+    "name": "node --check (ES module) on the v8 JS",
+    "pass": true,
+    "detail": ""
+   }
+  ]
+ },
+ "functionalCheck": {
+  "file": "fixes/v8-best/check.json",
+  "createdAt": "2026-10-04T15:14:04.685Z",
+  "base": "v8-v7base (v7-best overlay)",
+  "verdict": "ok",
+  "regressions": {
+   "newErrors": [],
+   "fixedErrors": [],
+   "errorsBothSides": [],
+   "new404s": [],
+   "newFailures": [],
+   "byViewport": {
+    "mobile": {
+     "newErrors": [],
+     "fixedErrors": [],
+     "errorsBothSides": [],
+     "new404s": [],
+     "newFailures": [],
+     "morphReached": {
+      "baseline": true,
+      "patched": true
+     },
+     "screenshotDiffPct": {
+      "top": 0.08,
+      "middle": 0.01,
+      "bottom": 0.46
+     },
+     "domDiff": {
+      "elements": {
+       "baseline": 1580,
+       "patched": 1580
+      },
+      "added": [],
+      "removed": []
+     }
+    },
+    "desktop": {
+     "newErrors": [],
+     "fixedErrors": [],
+     "errorsBothSides": [],
+     "new404s": [],
+     "newFailures": [],
+     "morphReached": {
+      "baseline": true,
+      "patched": true
+     },
+     "screenshotDiffPct": {
+      "top": 0.05,
+      "middle": 0,
+      "bottom": 0
+     },
+     "domDiff": {
+      "elements": {
+       "baseline": 1424,
+       "patched": 1423
+      },
+      "added": [],
+      "removed": []
+     }
+    }
+   }
+  }
+ },
+ "pixels": {
+  "chromeMobile": {
+   "dir": "px-mobile-2026-10-04T15-14-19-796Z",
+   "sha": "09cba0788f9b",
+   "tool": "fixes/v8-best/gates/px-chrome.mjs",
+   "viewport": "mobile",
+   "width": 430,
+   "height": 932,
+   "dpr": 3,
+   "browser": "Chrome/154.0.8037.97",
+   "startedAt": "2026-10-04T15:14:19.797Z",
+   "endedAt": "2026-10-04T15:17:26.967Z",
+   "load1": 9.90576171875,
+   "load1End": 35.25341796875,
+   "loads": [
+    {
+     "arm": "A",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "A2",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V2",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    }
+   ],
+   "stops": [
+    {
+     "y": 0,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0.0368
+    },
+    {
+     "y": 300,
+     "AV_beyondAA_cssPx2": 1,
+     "AV_beyondPct": 0.0003,
+     "AV_maxLevel": 32,
+     "A2V2_beyondAA_cssPx2": 1065,
+     "A2V2_beyondPct": 0.2658,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0.0001,
+      "maxLevel": 16,
+      "flatShare": 0,
+      "top": {
+       "px": 4,
+       "cssPx2": 0,
+       "maxLevel": 14,
+       "bboxCss": [
+        160,
+        256,
+        176,
+        272
+       ],
+       "under": "h1#start-selling-heading.svelte-1p2vpne > em.script-accent.is-vector"
+      }
+     },
+     "AA_over8Pct": 0.836,
+     "VV_over8Pct": 0.8043
+    },
+    {
+     "y": 548,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 4362,
+     "A2V2_beyondPct": 1.0885,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 1.0885,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 1422,
+     "AV_beyondAA_cssPx2": 11,
+     "AV_beyondPct": 0.0027,
+     "AV_maxLevel": 38,
+     "A2V2_beyondAA_cssPx2": 2561,
+     "A2V2_beyondPct": 0.639,
+     "consistent": {
+      "cssPx2": 11,
+      "pct": 0.0027,
+      "maxLevel": 38,
+      "flatShare": 0,
+      "top": {
+       "px": 16,
+       "cssPx2": 2,
+       "maxLevel": 13,
+       "bboxCss": [
+        80,
+        80,
+        112,
+        96
+       ],
+       "under": "section#profile-showcase.start-selling-profile > div.start-selling-profile-meta"
+      }
+     },
+     "AA_over8Pct": 0.6363,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 1913,
+     "AV_beyondAA_cssPx2": 86,
+     "AV_beyondPct": 0.0214,
+     "AV_maxLevel": 253,
+     "A2V2_beyondAA_cssPx2": 575,
+     "A2V2_beyondPct": 0.1434,
+     "consistent": {
+      "cssPx2": 12,
+      "pct": 0.003,
+      "maxLevel": 243,
+      "flatShare": 0.157,
+      "top": {
+       "px": 108,
+       "cssPx2": 12,
+       "maxLevel": 235,
+       "bboxCss": [
+        48,
+        208,
+        144,
+        256
+       ],
+       "under": "section#people.start-selling-future.is-visible > img"
+      }
+     },
+     "AA_over8Pct": 0.7544,
+     "VV_over8Pct": 0.5897
+    },
+    {
+     "y": 2403,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 2,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 2,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 2796,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 2,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 2,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 2894,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 3384,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 3875,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 37,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 1,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0.0374,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 4365,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 98,
+     "A2V2_beyondPct": 0.0245,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0.2515,
+     "VV_over8Pct": 0.1445
+    },
+    {
+     "y": 4856,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0.0001,
+     "AV_maxLevel": 14,
+     "A2V2_beyondAA_cssPx2": 49,
+     "A2V2_beyondPct": 0.0122,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0.0001,
+      "maxLevel": 14,
+      "flatShare": 0,
+      "top": {
+       "px": 1,
+       "cssPx2": 0,
+       "maxLevel": 11,
+       "bboxCss": [
+        160,
+        656,
+        176,
+        672
+       ],
+       "under": "section#platform.start-selling-platform.is-platform-shrink-track > div.start-selling-platform-secure.is-network"
+      }
+     },
+     "AA_over8Pct": 0.0121,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 5346,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 2,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 2,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    }
+   ]
+  },
+  "chromeDesktop": {
+   "dir": "px-desktop-2026-10-04T15-25-18-993Z",
+   "sha": "9c4d7e860791",
+   "tool": "fixes/v8-best/gates/px-chrome.mjs",
+   "viewport": "desktop",
+   "width": 1440,
+   "height": 900,
+   "dpr": 1,
+   "browser": "Chrome/154.0.8037.97",
+   "startedAt": "2026-10-04T15:25:18.995Z",
+   "endedAt": "2026-10-04T15:28:14.725Z",
+   "load1": 9.07666015625,
+   "load1End": 30.01806640625,
+   "loads": [
+    {
+     "arm": "A",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "A2",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V2",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    }
+   ],
+   "stops": [
+    {
+     "y": 0,
+     "AV_beyondAA_cssPx2": 175,
+     "AV_beyondPct": 0.0135,
+     "AV_maxLevel": 212,
+     "A2V2_beyondAA_cssPx2": 181,
+     "A2V2_beyondPct": 0.014,
+     "consistent": {
+      "cssPx2": 160,
+      "pct": 0.0123,
+      "maxLevel": 61,
+      "flatShare": 0.037,
+      "top": {
+       "px": 153,
+       "cssPx2": 153,
+       "maxLevel": 61,
+       "bboxCss": [
+        512,
+        608,
+        704,
+        672
+       ],
+       "under": "section.hero-track.svelte-1p2vpne > button.svelte-1p2vpne"
+      }
+     },
+     "AA_over8Pct": 0.3093,
+     "VV_over8Pct": 0.0002
+    },
+    {
+     "y": 300,
+     "AV_beyondAA_cssPx2": 10971,
+     "AV_beyondPct": 0.8465,
+     "AV_maxLevel": 110,
+     "A2V2_beyondAA_cssPx2": 16846,
+     "A2V2_beyondPct": 1.2998,
+     "consistent": {
+      "cssPx2": 9957,
+      "pct": 0.7683,
+      "maxLevel": 110,
+      "flatShare": 0.038,
+      "top": {
+       "px": 9957,
+       "cssPx2": 9957,
+       "maxLevel": 110,
+       "bboxCss": [
+        464,
+        288,
+        960,
+        368
+       ],
+       "under": "h1#start-selling-heading.svelte-1p2vpne > em.script-accent.is-vector"
+      }
+     },
+     "AA_over8Pct": 1.0288,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 548,
+     "AV_beyondAA_cssPx2": 6,
+     "AV_beyondPct": 0.0005,
+     "AV_maxLevel": 33,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 1,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0.6866,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 1739,
+     "AV_beyondAA_cssPx2": 10872,
+     "AV_beyondPct": 0.8389,
+     "AV_maxLevel": 114,
+     "A2V2_beyondAA_cssPx2": 4525,
+     "A2V2_beyondPct": 0.3492,
+     "consistent": {
+      "cssPx2": 4525,
+      "pct": 0.3492,
+      "maxLevel": 114,
+      "flatShare": 0,
+      "top": {
+       "px": 4525,
+       "cssPx2": 4525,
+       "maxLevel": 114,
+       "bboxCss": [
+        896,
+        608,
+        1056,
+        720
+       ],
+       "under": "section.feed.svelte-ty4hd7 > img"
+      }
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0.5785
+    },
+    {
+     "y": 2577,
+     "AV_beyondAA_cssPx2": 8490,
+     "AV_beyondPct": 0.6551,
+     "AV_maxLevel": 116,
+     "A2V2_beyondAA_cssPx2": 3561,
+     "A2V2_beyondPct": 0.2748,
+     "consistent": {
+      "cssPx2": 3561,
+      "pct": 0.2748,
+      "maxLevel": 116,
+      "flatShare": 0,
+      "top": {
+       "px": 3561,
+       "cssPx2": 3561,
+       "maxLevel": 116,
+       "bboxCss": [
+        992,
+        544,
+        1136,
+        640
+       ],
+       "under": "section.feed.svelte-ty4hd7 > img"
+      }
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0.4518
+    },
+    {
+     "y": 2796,
+     "AV_beyondAA_cssPx2": 58,
+     "AV_beyondPct": 0.0045,
+     "AV_maxLevel": 19,
+     "A2V2_beyondAA_cssPx2": 58,
+     "A2V2_beyondPct": 0.0045,
+     "consistent": {
+      "cssPx2": 58,
+      "pct": 0.0045,
+      "maxLevel": 19,
+      "flatShare": 0,
+      "top": {
+       "px": 47,
+       "cssPx2": 47,
+       "maxLevel": 19,
+       "bboxCss": [
+        592,
+        432,
+        656,
+        464
+       ],
+       "under": "section.feed.svelte-ty4hd7 > img"
+      }
+     },
+     "AA_over8Pct": 0.0002,
+     "VV_over8Pct": 0.0002
+    },
+    {
+     "y": 3416,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 34,
+     "A2V2_beyondPct": 0.0026,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0.0026,
+     "VV_over8Pct": 0.0009
+    },
+    {
+     "y": 4255,
+     "AV_beyondAA_cssPx2": 28864,
+     "AV_beyondPct": 2.2272,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 58,
+     "A2V2_beyondPct": 0.0045,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 219,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 1.192,
+     "VV_over8Pct": 3.5336
+    },
+    {
+     "y": 5093,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 5932,
+     "AV_beyondAA_cssPx2": 1028,
+     "AV_beyondPct": 0.0793,
+     "AV_maxLevel": 12,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 6771,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 7609,
+     "AV_beyondAA_cssPx2": 1953,
+     "AV_beyondPct": 0.1507,
+     "AV_maxLevel": 48,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0.065,
+     "VV_over8Pct": 0.0846
+    },
+    {
+     "y": 8448,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 0,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    }
+   ],
+   "note": "y 300 em.script-accent cluster: the accent word rotator is not frozen; see chromeDesktopAligned"
+  },
+  "chromeDesktopAligned": {
+   "dir": "px-desktop-2026-10-04T16-01-53-671Z",
+   "sha": "c8f496556e67",
+   "tool": "fixes/v8-best/gates/px-chrome.mjs",
+   "viewport": "desktop",
+   "width": 1440,
+   "height": 900,
+   "dpr": 1,
+   "browser": "Chrome/154.0.8037.97",
+   "startedAt": "2026-10-04T16:01:53.672Z",
+   "endedAt": "2026-10-04T16:03:14.711Z",
+   "load1": 8.02294921875,
+   "load1End": 7.568359375,
+   "loads": [
+    {
+     "arm": "A",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "A2",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V2",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    }
+   ],
+   "stops": [
+    {
+     "y": 0,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 2,
+     "A2V2_beyondAA_cssPx2": 2,
+     "A2V2_beyondPct": 0.0002,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 1,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0.0002,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 300,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 1,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 0,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    },
+    {
+     "y": 548,
+     "AV_beyondAA_cssPx2": 0,
+     "AV_beyondPct": 0,
+     "AV_maxLevel": 1,
+     "A2V2_beyondAA_cssPx2": 0,
+     "A2V2_beyondPct": 0,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 1,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 0,
+     "VV_over8Pct": 0
+    }
+   ],
+   "note": "PX_ALIGN=1: each stop waits for the accent to idle on load A's word"
+  },
+  "simulator": [
+   {
+    "dir": "px-sim-2026-10-04T18-28-53-544Z",
+    "sha": "55ade7c31f8a",
+    "tool": "fixes/v8-best/gates/px-sim.mjs",
+    "viewport": "webkit-simulator",
+    "dpr": 3,
+    "startedAt": "2026-10-04T18:28:53.554Z",
+    "endedAt": "2026-10-04T18:30:37.720Z",
+    "load1": 127.27734375,
+    "load1End": 54.1337890625,
+    "top": 0,
+    "loads": [
+     {
+      "arm": "A",
+      "build": "A",
+      "served": {
+       "js": "8c90da217745",
+       "css": "308f0da70c3a"
+      },
+      "void": null,
+      "errors": 0
+     },
+     {
+      "arm": "V",
+      "build": "V",
+      "served": {
+       "js": "3e3e94cb6e9f",
+       "css": "f836404b3728"
+      },
+      "void": null,
+      "errors": 0
+     },
+     {
+      "arm": "A2",
+      "build": "A",
+      "served": {
+       "js": "8c90da217745",
+       "css": "308f0da70c3a"
+      },
+      "void": null,
+      "errors": 0
+     },
+     {
+      "arm": "V2",
+      "build": "V",
+      "served": {
+       "js": "3e3e94cb6e9f",
+       "css": "f836404b3728"
+      },
+      "void": null,
+      "errors": 0
+     }
+    ],
+    "stops": [
+     {
+      "y": 0,
+      "AV_beyondAA_cssPx2": 13,
+      "AV_beyondPct": 0.0032,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 61,
+      "A2V2_beyondPct": 0.0152,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 129,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 6.1803,
+      "VV_over8Pct": 0.9778
+     },
+     {
+      "y": 300,
+      "AV_beyondAA_cssPx2": 872,
+      "AV_beyondPct": 0.2177,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 27,
+      "A2V2_beyondPct": 0.0068,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0.0001,
+       "maxLevel": 64,
+       "flatShare": 0,
+       "top": {
+        "px": 2,
+        "cssPx2": 0,
+        "maxLevel": 52,
+        "bboxCss": [
+         192,
+         288,
+         208,
+         304
+        ],
+        "under": "section.hero-track.svelte-1p2vpne > p.svelte-1p2vpne"
+       }
+      },
+      "AA_over8Pct": 6.3905,
+      "VV_over8Pct": 1.1912
+     },
+     {
+      "y": 548,
+      "AV_beyondAA_cssPx2": 303,
+      "AV_beyondPct": 0.0756,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 0,
+      "A2V2_beyondPct": 0,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 0,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 6.4101,
+      "VV_over8Pct": 0.3282
+     },
+     {
+      "y": 1400,
+      "AV_beyondAA_cssPx2": 62,
+      "AV_beyondPct": 0.0154,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 0,
+      "A2V2_beyondPct": 0,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 1,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.8964,
+      "VV_over8Pct": 0.6715
+     },
+     {
+      "y": 1913,
+      "AV_beyondAA_cssPx2": 109,
+      "AV_beyondPct": 0.0272,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 0,
+      "A2V2_beyondPct": 0,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 0,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.8856,
+      "VV_over8Pct": 0.656
+     },
+     {
+      "y": 2796,
+      "AV_beyondAA_cssPx2": 18,
+      "AV_beyondPct": 0.0045,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 0,
+      "A2V2_beyondPct": 0,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 0,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.2551,
+      "VV_over8Pct": 0.025
+     }
+    ]
+   },
+   {
+    "dir": "px-sim-2026-10-04T18-30-45-713Z",
+    "sha": "6e27d7006ff5",
+    "tool": "fixes/v8-best/gates/px-sim.mjs",
+    "viewport": "webkit-simulator",
+    "dpr": 3,
+    "startedAt": "2026-10-04T18:30:45.723Z",
+    "endedAt": "2026-10-04T18:32:13.714Z",
+    "load1": 46.72021484375,
+    "load1End": 20.142578125,
+    "top": 0,
+    "loads": [
+     {
+      "arm": "A",
+      "build": "A",
+      "served": {
+       "js": "8c90da217745",
+       "css": "308f0da70c3a"
+      },
+      "void": null,
+      "errors": 0
+     },
+     {
+      "arm": "V",
+      "build": "V",
+      "served": {
+       "js": "3e3e94cb6e9f",
+       "css": "f836404b3728"
+      },
+      "void": null,
+      "errors": 0
+     },
+     {
+      "arm": "A2",
+      "build": "A",
+      "served": {
+       "js": "8c90da217745",
+       "css": "308f0da70c3a"
+      },
+      "void": null,
+      "errors": 0
+     },
+     {
+      "arm": "V2",
+      "build": "V",
+      "served": {
+       "js": "3e3e94cb6e9f",
+       "css": "f836404b3728"
+      },
+      "void": null,
+      "errors": 0
+     }
+    ],
+    "stops": [
+     {
+      "y": 3384,
+      "AV_beyondAA_cssPx2": 0,
+      "AV_beyondPct": 0,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 1144,
+      "A2V2_beyondPct": 0.2855,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 3,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.5729,
+      "VV_over8Pct": 0.082
+     },
+     {
+      "y": 3875,
+      "AV_beyondAA_cssPx2": 0,
+      "AV_beyondPct": 0,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 5,
+      "A2V2_beyondPct": 0.0013,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 0,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.2734,
+      "VV_over8Pct": 0.082
+     },
+     {
+      "y": 4365,
+      "AV_beyondAA_cssPx2": 0,
+      "AV_beyondPct": 0,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 2,
+      "A2V2_beyondPct": 0.0004,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 1,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.2755,
+      "VV_over8Pct": 0.082
+     },
+     {
+      "y": 4856,
+      "AV_beyondAA_cssPx2": 0,
+      "AV_beyondPct": 0,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 0,
+      "A2V2_beyondPct": 0,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 0,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.2721,
+      "VV_over8Pct": 0.082
+     },
+     {
+      "y": 5260,
+      "AV_beyondAA_cssPx2": 0,
+      "AV_beyondPct": 0,
+      "AV_maxLevel": 255,
+      "A2V2_beyondAA_cssPx2": 0,
+      "A2V2_beyondPct": 0,
+      "consistent": {
+       "cssPx2": 0,
+       "pct": 0,
+       "maxLevel": 0,
+       "flatShare": null,
+       "top": null
+      },
+      "AA_over8Pct": 5.2721,
+      "VV_over8Pct": 0.082
+     }
+    ]
+   }
+  ],
+  "ipad": {
+   "dir": "ipad-portrait-2026-10-04T18-33-39-205Z",
+   "sha": "106270776f06",
+   "tool": "fixes/v8-best/gates/sim-ipad.mjs",
+   "viewport": "webkit-simulator",
+   "device": "fw-sim 15 Pro Max",
+   "orient": "portrait",
+   "dpr": 2,
+   "startedAt": "2026-10-04T18:33:39.215Z",
+   "endedAt": "2026-10-04T18:36:25.377Z",
+   "top": 0,
+   "loads": [
+    {
+     "arm": "A",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "A2",
+     "build": "A",
+     "served": {
+      "js": "8c90da217745",
+      "css": "308f0da70c3a"
+     },
+     "void": null,
+     "errors": 0
+    },
+    {
+     "arm": "V2",
+     "build": "V",
+     "served": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+     },
+     "void": null,
+     "errors": 0
+    }
+   ],
+   "stops": [
+    {
+     "y": 0,
+     "AV_beyondAA_cssPx2": 200,
+     "AV_beyondPct": 0.014,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 567,
+     "A2V2_beyondPct": 0.0399,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 219,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 9.3349,
+     "VV_over8Pct": 0.1051
+    },
+    {
+     "y": 622,
+     "AV_beyondAA_cssPx2": 156,
+     "AV_beyondPct": 0.011,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 567,
+     "A2V2_beyondPct": 0.0399,
+     "consistent": {
+      "cssPx2": 0,
+      "pct": 0,
+      "maxLevel": 219,
+      "flatShare": null,
+      "top": null
+     },
+     "AA_over8Pct": 9.3345,
+     "VV_over8Pct": 0.1015
+    },
+    {
+     "y": 2017,
+     "AV_beyondAA_cssPx2": 156,
+     "AV_beyondPct": 0.011,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 823,
+     "A2V2_beyondPct": 0.058,
+     "consistent": {
+      "cssPx2": 2,
+      "pct": 0.0001,
+      "maxLevel": 255,
+      "flatShare": 0,
+      "top": {
+       "px": 4,
+       "cssPx2": 1,
+       "maxLevel": 247,
+       "bboxCss": [
+        80,
+        0,
+        144,
+        32
+       ],
+       "under": " > div.start-selling-top-nav-bar"
+      }
+     },
+     "AA_over8Pct": 9.3345,
+     "VV_over8Pct": 0.084
+    },
+    {
+     "y": 2623,
+     "AV_beyondAA_cssPx2": 158,
+     "AV_beyondPct": 0.0111,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 825,
+     "A2V2_beyondPct": 0.0581,
+     "consistent": {
+      "cssPx2": 2,
+      "pct": 0.0001,
+      "maxLevel": 255,
+      "flatShare": 0,
+      "top": {
+       "px": 4,
+       "cssPx2": 1,
+       "maxLevel": 247,
+       "bboxCss": [
+        80,
+        0,
+        144,
+        32
+       ],
+       "under": " > div.start-selling-top-nav-bar"
+      }
+     },
+     "AA_over8Pct": 9.5467,
+     "VV_over8Pct": 0.2642
+    },
+    {
+     "y": 5111,
+     "AV_beyondAA_cssPx2": 156,
+     "AV_beyondPct": 0.011,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 823,
+     "A2V2_beyondPct": 0.058,
+     "consistent": {
+      "cssPx2": 2,
+      "pct": 0.0001,
+      "maxLevel": 255,
+      "flatShare": 0,
+      "top": {
+       "px": 4,
+       "cssPx2": 1,
+       "maxLevel": 247,
+       "bboxCss": [
+        80,
+        0,
+        144,
+        32
+       ],
+       "under": " > div.start-selling-top-nav-bar"
+      }
+     },
+     "AA_over8Pct": 9.3345,
+     "VV_over8Pct": 0.084
+    },
+    {
+     "y": 6853,
+     "AV_beyondAA_cssPx2": 156,
+     "AV_beyondPct": 0.011,
+     "AV_maxLevel": 255,
+     "A2V2_beyondAA_cssPx2": 823,
+     "A2V2_beyondPct": 0.058,
+     "consistent": {
+      "cssPx2": 2,
+      "pct": 0.0001,
+      "maxLevel": 255,
+      "flatShare": 0,
+      "top": {
+       "px": 4,
+       "cssPx2": 1,
+       "maxLevel": 247,
+       "bboxCss": [
+        80,
+        0,
+        144,
+        32
+       ],
+       "under": " > div.start-selling-top-nav-bar"
+      }
+     },
+     "AA_over8Pct": 9.3345,
+     "VV_over8Pct": 0.084
+    }
+   ],
+   "args": "--hide .hero-title --settle 4000",
+   "note": "consistent px at y 2017-6853 = the iOS status bar clock/date above the page (tint differs between arms; harness calibration bar suspected, OBSERVED); 0 inside the page"
+  }
+ },
+ "census": [
+  {
+   "file": "census-A-2026-10-04T15-29-57-635Z.json",
+   "arm": "A",
+   "browser": "Chrome/154.0.8037.97",
+   "w": 430,
+   "vh": 932,
+   "dpr": 3,
+   "windows": [
+    {
+     "label": "rest-0",
+     "y": 0,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 40.1,
+      "styleRecalc": 40.1,
+      "elementsRestyled": 355.3,
+      "layout": 1,
+      "layoutDirtyObjects": 21.3,
+      "paint": 145.4,
+      "rafFire": 1.2,
+      "timerFire": 4.8
+     }
+    },
+    {
+     "label": "rest-1400",
+     "y": 1400,
+     "ms": 6001,
+     "perSec": {
+      "mainFrames": 41.8,
+      "styleRecalc": 41.8,
+      "elementsRestyled": 543.9,
+      "layout": 2.3,
+      "layoutDirtyObjects": 37.5,
+      "paint": 149.1,
+      "rafFire": 1.2,
+      "timerFire": 5
+     }
+    },
+    {
+     "label": "rest-2796",
+     "y": 2796,
+     "ms": 6001,
+     "perSec": {
+      "mainFrames": 4,
+      "styleRecalc": 4,
+      "elementsRestyled": 55.8,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 1.5,
+      "rafFire": 0,
+      "timerFire": 4
+     }
+    },
+    {
+     "label": "rest-3800",
+     "y": 3800,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 26.7,
+      "styleRecalc": 26.7,
+      "elementsRestyled": 239.7,
+      "layout": 14,
+      "layoutDirtyObjects": 319.5,
+      "paint": 37.3,
+      "rafFire": 17.7,
+      "timerFire": 6.5
+     }
+    },
+    {
+     "label": "rest-end",
+     "y": 5346,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 2.2,
+      "styleRecalc": 2.2,
+      "elementsRestyled": 26.2,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 8.7,
+      "rafFire": 0,
+      "timerFire": 2
+     }
+    },
+    {
+     "label": "scroll",
+     "y": "top->end",
+     "ms": 8905,
+     "perSec": {
+      "mainFrames": 126.2,
+      "styleRecalc": 71.9,
+      "elementsRestyled": 2212.9,
+      "layout": 21.8,
+      "layoutDirtyObjects": 272.8,
+      "paint": 220.6,
+      "rafFire": 305.1,
+      "timerFire": 11.3
+     }
+    }
+   ]
+  },
+  {
+   "file": "census-V-2026-10-04T15-29-57-635Z.json",
+   "arm": "V",
+   "browser": "Chrome/154.0.8037.97",
+   "w": 430,
+   "vh": 932,
+   "dpr": 3,
+   "windows": [
+    {
+     "label": "rest-0",
+     "y": 0,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 39.8,
+      "styleRecalc": 39.8,
+      "elementsRestyled": 249,
+      "layout": 1.2,
+      "layoutDirtyObjects": 23.2,
+      "paint": 74,
+      "rafFire": 1,
+      "timerFire": 4
+     }
+    },
+    {
+     "label": "rest-1400",
+     "y": 1400,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 41.5,
+      "styleRecalc": 41.5,
+      "elementsRestyled": 466.4,
+      "layout": 2,
+      "layoutDirtyObjects": 33.8,
+      "paint": 79.3,
+      "rafFire": 1.2,
+      "timerFire": 4
+     }
+    },
+    {
+     "label": "rest-2796",
+     "y": 2796,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 2.2,
+      "styleRecalc": 2.2,
+      "elementsRestyled": 17.3,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 0,
+      "rafFire": 0,
+      "timerFire": 2
+     }
+    },
+    {
+     "label": "rest-3800",
+     "y": 3800,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 26.3,
+      "styleRecalc": 26.3,
+      "elementsRestyled": 226.1,
+      "layout": 14,
+      "layoutDirtyObjects": 320.2,
+      "paint": 36,
+      "rafFire": 17.8,
+      "timerFire": 4.5
+     }
+    },
+    {
+     "label": "rest-end",
+     "y": 5346,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 0.2,
+      "styleRecalc": 0.2,
+      "elementsRestyled": 1.2,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 0.7,
+      "rafFire": 0,
+      "timerFire": 0
+     }
+    },
+    {
+     "label": "scroll",
+     "y": "top->end",
+     "ms": 8910,
+     "perSec": {
+      "mainFrames": 126.2,
+      "styleRecalc": 71.9,
+      "elementsRestyled": 2149.3,
+      "layout": 21.7,
+      "layoutDirtyObjects": 271.5,
+      "paint": 202.1,
+      "rafFire": 304.8,
+      "timerFire": 9.8
+     }
+    }
+   ]
+  },
+  {
+   "file": "census-A-2026-10-04T15-32-57-322Z.json",
+   "arm": "A",
+   "browser": "Chrome/154.0.8037.97",
+   "w": 430,
+   "vh": 932,
+   "dpr": 3,
+   "windows": [
+    {
+     "label": "rest-0",
+     "y": 0,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 39.1,
+      "styleRecalc": 39.1,
+      "elementsRestyled": 323,
+      "layout": 1.3,
+      "layoutDirtyObjects": 25,
+      "paint": 142.4,
+      "rafFire": 1,
+      "timerFire": 5
+     }
+    },
+    {
+     "label": "rest-1400",
+     "y": 1400,
+     "ms": 6002,
+     "perSec": {
+      "mainFrames": 41.8,
+      "styleRecalc": 41.8,
+      "elementsRestyled": 521.5,
+      "layout": 2,
+      "layoutDirtyObjects": 33.5,
+      "paint": 151.3,
+      "rafFire": 1,
+      "timerFire": 4.8
+     }
+    },
+    {
+     "label": "rest-2796",
+     "y": 2796,
+     "ms": 6006,
+     "perSec": {
+      "mainFrames": 3.8,
+      "styleRecalc": 3.8,
+      "elementsRestyled": 67.8,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 1.5,
+      "rafFire": 0,
+      "timerFire": 3.8
+     }
+    },
+    {
+     "label": "rest-3800",
+     "y": 3800,
+     "ms": 6019,
+     "perSec": {
+      "mainFrames": 26.9,
+      "styleRecalc": 26.9,
+      "elementsRestyled": 243.9,
+      "layout": 14.1,
+      "layoutDirtyObjects": 322.6,
+      "paint": 37,
+      "rafFire": 17.6,
+      "timerFire": 6.6
+     }
+    },
+    {
+     "label": "rest-end",
+     "y": 5346,
+     "ms": 6002,
+     "perSec": {
+      "mainFrames": 2.2,
+      "styleRecalc": 2.2,
+      "elementsRestyled": 28,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 9,
+      "rafFire": 0,
+      "timerFire": 2
+     }
+    },
+    {
+     "label": "scroll",
+     "y": "top->end",
+     "ms": 8900,
+     "perSec": {
+      "mainFrames": 126.3,
+      "styleRecalc": 71.9,
+      "elementsRestyled": 2213.7,
+      "layout": 21.9,
+      "layoutDirtyObjects": 273.6,
+      "paint": 242.7,
+      "rafFire": 305.3,
+      "timerFire": 11.6
+     }
+    }
+   ]
+  },
+  {
+   "file": "census-V-2026-10-04T15-32-57-322Z.json",
+   "arm": "V",
+   "browser": "Chrome/154.0.8037.97",
+   "w": 430,
+   "vh": 932,
+   "dpr": 3,
+   "windows": [
+    {
+     "label": "rest-0",
+     "y": 0,
+     "ms": 6004,
+     "perSec": {
+      "mainFrames": 38.3,
+      "styleRecalc": 38.3,
+      "elementsRestyled": 269.2,
+      "layout": 1.3,
+      "layoutDirtyObjects": 25,
+      "paint": 72,
+      "rafFire": 1.2,
+      "timerFire": 4
+     }
+    },
+    {
+     "label": "rest-1400",
+     "y": 1400,
+     "ms": 6005,
+     "perSec": {
+      "mainFrames": 41.3,
+      "styleRecalc": 41.3,
+      "elementsRestyled": 499.4,
+      "layout": 2.3,
+      "layoutDirtyObjects": 37.5,
+      "paint": 79.3,
+      "rafFire": 1.2,
+      "timerFire": 4
+     }
+    },
+    {
+     "label": "rest-2796",
+     "y": 2796,
+     "ms": 6004,
+     "perSec": {
+      "mainFrames": 2.2,
+      "styleRecalc": 2.2,
+      "elementsRestyled": 17.3,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 0,
+      "rafFire": 0,
+      "timerFire": 2
+     }
+    },
+    {
+     "label": "rest-3800",
+     "y": 3800,
+     "ms": 6003,
+     "perSec": {
+      "mainFrames": 26.2,
+      "styleRecalc": 26.2,
+      "elementsRestyled": 224.9,
+      "layout": 14.2,
+      "layoutDirtyObjects": 323.5,
+      "paint": 36.6,
+      "rafFire": 17.7,
+      "timerFire": 4.5
+     }
+    },
+    {
+     "label": "rest-end",
+     "y": 5346,
+     "ms": 6001,
+     "perSec": {
+      "mainFrames": 0.2,
+      "styleRecalc": 0.2,
+      "elementsRestyled": 1.2,
+      "layout": 0,
+      "layoutDirtyObjects": 0,
+      "paint": 0.7,
+      "rafFire": 0,
+      "timerFire": 0
+     }
+    },
+    {
+     "label": "scroll",
+     "y": "top->end",
+     "ms": 8915,
+     "perSec": {
+      "mainFrames": 126,
+      "styleRecalc": 71.9,
+      "elementsRestyled": 2231.6,
+      "layout": 21.4,
+      "layoutDirtyObjects": 268,
+      "paint": 197.5,
+      "rafFire": 304.9,
+      "timerFire": 9.8
+     }
+    }
+   ]
+  }
+ ],
+ "widths": {
+  "method": "research/breakpoints/run.sh (de-breakpoints-v7), OVL = v8, BOVL = v7",
+  "logs": [
+   "out/v8-best/bp.log",
+   "out/v8-best/pix2.log"
+  ],
+  "verdict": "no v8 change beyond per-load states (census 5 configs: 0 errors, equal heights and media-query states, rest paint lower; pixels 14 configs x 6 stops: per-load states only, c1920 people embed not repeated in sample 2)"
+ },
+ "smoke": {
+  "simulatorAndIpad": {
+   "verdict": "PASS",
+   "at": "2026-10-04T18:28Z-18:36Z",
+   "holds": "three shared simulator-weight holds, exit 0"
+  },
+  "macSafari": {
+   "verdict": "PASS",
+   "consoleStep": "C-048",
+   "answeredAt": "2026-10-04T18:43:31Z",
+   "answer": "v8 looks the same as v7",
+   "servedHashes": {
+    "v8": "3e3e94cb6e9f / f836404b3728",
+    "v7": "8c90da217745 / 308f0da70c3a"
+   }
+  }
+ },
+ "phone": {
+  "P-111": {
+   "scoreFile": "out/p111/score.json",
+   "sha": "7b0585520616",
+   "verdict": "WORSE",
+   "gates": {
+    "Wtop": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": 1.5,
+      "gt46": 0,
+      "gt54": 0,
+      "gt34": -0.5,
+      "gt30": -1,
+      "gt38": 0
+     },
+     "thresholdSensitive": false
+    },
+    "Wrest": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "gt34": 0,
+      "gt30": 0,
+      "gt38": 0
+     },
+     "thresholdSensitive": false
+    },
+    "Mmoving": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": -2,
+      "gt46": -2,
+      "gt54": 0,
+      "gt34": -1,
+      "gt30": 0,
+      "gt38": -2
+     },
+     "thresholdSensitive": false
+    },
+    "Mtweens": {
+     "verdict": "WORSE (close.f1, close.f3 up by more than 2 ms)"
+    },
+    "GF": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": -1,
+      "gt46": -2,
+      "gt54": -2,
+      "gt34": 2,
+      "gt30": 2,
+      "gt38": 0
+     },
+     "thresholdSensitive": false
+    },
+    "GH": {
+     "verdict": "NEW CLUSTER at 2500-2749",
+     "delta": {
+      "gt50": 1,
+      "gt46": 1,
+      "gt54": 0,
+      "gt34": 4,
+      "gt30": 6,
+      "gt38": -1
+     },
+     "thresholdSensitive": false
+    },
+    "GM": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": 0,
+      "gt46": 1,
+      "gt54": 0,
+      "gt34": -1,
+      "gt30": 3,
+      "gt38": 1
+     },
+     "thresholdSensitive": false
+    },
+    "GE": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": 0,
+      "gt46": 0,
+      "gt54": 0,
+      "gt34": 0,
+      "gt30": -3,
+      "gt38": -2
+     },
+     "thresholdSensitive": false
+    }
+   }
+  },
+  "P-112": {
+   "scoreFile": "out/p112/score.json",
+   "sha": "6fb20c67fe50",
+   "verdict": "CAUSE: rev 3 is the cause (WORSE (O1.f2 up by more than 2 ms))",
+   "gates": {
+    "Mmoving": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": -2,
+      "gt46": -2,
+      "gt54": -1,
+      "gt34": 0,
+      "gt30": 0,
+      "gt38": -2
+     },
+     "thresholdSensitive": false
+    },
+    "Mtweens": {
+     "verdict": "WORSE (O1.f2 up by more than 2 ms)"
+    }
+   }
+  },
+  "P-113": {
+   "scoreFile": "out/p113/score.json",
+   "sha": "e85918552270",
+   "verdict": "NOT REPRODUCED: v8 (C) shows no > 50 cluster in the band; no attribution (threshold-sensitive)"
+  },
+  "P-114": {
+   "scoreFile": "out/p114/score.json",
+   "sha": "377f19c597da",
+   "verdict": "no-worse",
+   "thresholdSensitive": false,
+   "gates": {
+    "Mmoving": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": -2,
+      "gt46": -2,
+      "gt54": -0.5,
+      "gt34": 0,
+      "gt30": -1.5,
+      "gt38": -2
+     },
+     "thresholdSensitive": false
+    },
+    "Mtweens": {
+     "verdict": "no-worse"
+    },
+    "GH": {
+     "verdict": "no-worse",
+     "delta": {
+      "gt50": -1,
+      "gt46": -1,
+      "gt54": -1,
+      "gt34": -2,
+      "gt30": -6,
+      "gt38": -3
+     },
+     "thresholdSensitive": false
+    }
+   }
+  },
+  "outcome": "P-114 (second and last block, quiet Mac, exclusive holds) no-worse on Mmoving, Mtweens, GH at every twin, no new cluster; P-111 WORSE not replicated; switch v7 -> v8 (lead 8830dcbf)"
+ },
+ "notes": [
+  "No Mac timing A/B measured (memory defer-timing). Phone gate per the less-work rule: P-111 (WORSE, loaded Mac), P-112 (scorer CAUSE on O1.f2 +2.5 ms in one run; the close falsifier held and the lead ruled rev 3 not the cause of the close start, f70eb918; P-114 O1.f2 +1.5 ms, within +2),P-113 (band NOT REPRODUCED), P-114 (no-worse; decides).",
+  "No measurement code changed.",
+  "I-131: every load on its own server/port with --no-cache; served JS/CSS hashes checked, no VOID load.",
+  "iPad status-bar pixels: cause OBSERVED (in our setup, cause unknown); outside the page.",
+  "Simulator single pairs: largest A~V share 0.2177 % (y 300) not repeated in A2~V2; A2~V2 0.2855 % (y 3384) not in A~V: per-load states, under T2 0.5 %.",
+  "Widths and functional check: Chrome only; WebKit covered by the Simulator, iPad and Mac Safari smoke."
+ ]
+}

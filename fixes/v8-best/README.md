@@ -5,7 +5,7 @@
 
 **Status:** built and checked by bytes (40/40), function, frozen pixels and work counts (sections below); **not timed**
 (memory `defer-timing-focus-call-tree.md`). Phone gate (less-work no-worse + whole-page fast-flick G): see "Phone gate".
-PROGRESS row `v8-best` is `best: false` until the lead signs it.
+**Land gate passed (2026-10-04 18:4xZ, see "Smoke after P-114"): v8 replaces v7**; the PROGRESS switch is the lead's.
 **Integrator:** int-v8 (wave-integrator), 2026-10-04 (status board item `v8`, user T-114 #9).
 **Build:** `patch.diff` (baseline-relative, 2 files) = JS `3e3e94cb6e9f…`, CSS `f836404b3728…` (the 8 parts alone, without the glue: JS `3b4774f9a6da`) (full hashes in
 `results.json`); baseline snapshot `b1789284481295-4ad4a84a`.
@@ -124,7 +124,7 @@ equal**. The only tokens that differ between loads are the accent state (`is-idl
 splash classes, and they differ between two loads of the same build too. So the check's desktop 1424 → 1423 is a
 per-load state (the moment the check counts), not an element v8 removes.
 
-**Work counts, Chrome desktop** (`gates/census-run.mjs`, both orders A,V and V,A; per 6 s at rest, and one scroll):
+**Work counts, Chrome at phone width 430x932 DPR 3** (`gates/census-run.mjs`, both orders A,V and V,A; per 6 s at rest, and one scroll; an earlier version of this line said "desktop", corrected 18:5xZ from the census files' own `w`):
 | phase | v7 paint (2 runs) | v8 paint (2 runs) | elements restyled v7 / v8 | layout, rAF |
 |---|---|---|---|---|
 | rest y 0 | 145 / 142 | 74 / 72 | 355 / 323 → 249 / 269 | equal |
@@ -150,8 +150,8 @@ v8 does less work at rest everywhere (paint about half at the top; nothing at th
   against both v7 loads, the same cell and size that sample 1 showed in B2 against B and S: a per-load state either
   build takes. Widths: **no v8 change beyond per-load states.**
 
-**Pending:** iPad Simulator smoke and Simulator WebKit pixels (after P-112, lead / I-160);
-Mac Safari smoke (Safari's remote automation is off: needs the user); P-111 G leg and verdict; P-112 attribution.
+**Pending at the time (all done since):** iPad Simulator smoke and Simulator WebKit pixels, Mac Safari smoke (see
+"Smoke after P-114"); P-111 G leg and verdict, P-112 attribution (see their result sections).
 
 ## P-111 phone no-worse ticket (less-work rule), before any phone data
 
@@ -817,5 +817,11 @@ pixels that differ by more than 8 levels in all four cross pairs while neither A
 **Simulator and iPad verdict: PASS.** WebKit pixels show no v8 difference from v7 at any of the 11 iPhone stops or
 inside the page at the 6 iPad stops (T0/T1), and no new errors.
 
-**Mac Safari smoke:** this is a user console step (C-048), because Safari's remote automation is off. v8 and v7 are
-served from the same snapshot copies (served hashes checked). The result is added here when the user answers.
+**Mac Safari smoke: PASS.** This was a user console step (C-048), because Safari's remote automation is off. v8 and v7
+were served from the same snapshot copies on localhost (served hashes checked: v8 3e3e94cb6e9f / f836404b3728, v7
+8c90da217745). The user scrolled both, wide and narrow, and answered "v8 looks the same as v7" (18:43Z). The user's
+note asked for next improvements and per-element rendering times; it went to the lead for a thread.
+
+**Land gate, all items:** bytes 40/40; function (`fix.mjs check`) OK; frozen pixels in Chrome, the Simulator and the
+iPad within T2 (0 consistent px in WebKit); widths: per-load states only; Simulator/iPad and Mac Safari smoke PASS;
+phone no-worse (P-114). **v8 replaces v7.** `results.json` collects every gate.
