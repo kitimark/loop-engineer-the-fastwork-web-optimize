@@ -42,6 +42,20 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 00:4xZ **P-115 pre-data (fix-toolbar-resize e48d9e1b): FAIL C1.** Hashes match: p115-inject 0cc373b2594d,
+    check-inject115 126f46d31f3c, sim-bisect115 91d32f9ac1c6 (only arms, inject file, folder and label differ from
+    f77c5e456d17), score-bisect cb6f0c97b81b. No P-115 data yet.
+  - C1: the card reads cva as "helps only while off screen" and predicts cva NONE beside csl LOCATES. Per CSS Contain 2,
+    content-visibility:auto always applies layout, style and paint containment (CONFIRMED by spec,
+    w3.org/TR/css-contain-2/#content-visibility), so cva on screen includes csl. Fix: rewrite the reading and re-state the
+    prediction before data.
+  - N1: svh pins only the card. Other svh users stay (`.start-selling-future` margin-top, hero, pain), so svh NONE refutes
+    only the card-to-showcase path, not the S5 lead as a whole. The profile shell's 100vh clamp is overridden on phones.
+  - N2: csl and cva change the box (formatting context, paint clip), so a locating arm goes to the look check first.
+  - **PASS at 18fc5ecb** (README only; the scripts and hashes are unchanged). The cva reading and prediction were restated
+    (cva ratio <= csl + 0.05 ~85 %, cva LOCATES ~50 %), N1 was checked against the v7 CSS, and N2 is in the card.
+    N3: the reading has no case for "csl LOCATES, cva NONE". That would contradict the spec, so read it as noise or a
+    WebKit difference, never as a mechanism. Ledger row added.
 - 10-05 00:2xZ **P-id clash fixed (lead).** int-v8 took P-114 for its v8 vs v7 confirm ticket (81d65025, lead PASS
     be0d650b) as "the next free id" without registering it, while I gave P-114 to toolbar-resize. Resolution: P-114 stays
     int-v8's; toolbar-resize's svh/csl/cva card is P-115 (owner told); next free P-116. New rule in the registry header:
