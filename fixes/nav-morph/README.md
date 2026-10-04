@@ -553,16 +553,17 @@ reps per engine. Otherwise that engine is VOID and the result is UNRESOLVED.
 
 **Freeze (2026-10-04, before rep 1).** Ops PASSed rev 2 and the lead approved it. The dry runs (C only, uncounted) found
 the crossing once in each engine (Chrome k0 127 of 267 frames, 167 style invalidation events in the window, all with
-a JS stack; Simulator k0 114 of 189 frames, census logging). The amendment below, accepted by ops before data, is part
-of the frozen rules:
+a JS stack; Simulator k0 114 of 189 frames, census logging). The amendment below is part of the frozen rules
+(ops read 10-04 06:1xZ: PASS after C1; no data before it):
 - **Census install time.** The census MutationObserver and a rAF poll for the panel are installed at the end of the
   6 s rest, right before tracing and the scroll, in both engines (the Simulator cannot run a document-start script;
   both engines do the same).
 - **Panel checks.** "V's panel is in the DOM before the scroll" is read at install. "C's panel is in the DOM before
   k = 0" uses the first rAF-poll sighting after install.
-- **Line base.** Chrome FunctionCall and stack `lineNumber` values are read as 1-based (the dry run's C callback
-  matched at line 13083 under base 1). If V's IO FunctionCall matches only under the other base, H2 is BASE-SENSITIVE
-  and counts as UNRESOLVED.
+- **Line base** (worded after ops' C1, to describe `crossing-read.mjs` as frozen). The reader detects the line base
+  per run from the arm's IO FunctionCall (the dry run's C callback matched line 13083 under base 1) and scores H2 at
+  that detected base (median of the valid V runs). It also scores the H2 share with stack lines read at base 0 and
+  at base 1. If the two verdicts (share ≥ 0.5) differ, H2 is BASE-SENSITIVE and counts as UNRESOLVED.
 - **Trace categories.** `disabled-by-default-devtools.timeline.frame` is added to the list above
   (BeginMainThreadFrame needs it; the first dry run without it had no frames).
 - Hashes (sha256/12) of the frozen tools, as committed in the commit before this one:
