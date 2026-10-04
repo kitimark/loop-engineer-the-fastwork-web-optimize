@@ -67,7 +67,9 @@ asking the lead: (1) the **workaround** now, inside its own powers (a note, a st
 for the desk), told to the user in the thread; (2) the **long-term fix**: finds the cause, opens or joins an incident
 with the cause and the fix plan, and sends it to the toolsmith that owns that tool (a running one, or a parked one
 woken within the cache rule). Only a fix that needs a new agent, or more than ~30 min of agent time, goes to the
-lead, as one line with the plan. The thread owner posts in the thread when the fix lands.
+lead, as one line with the plan. The thread owner posts in the thread when the fix lands. It also sends the lead
+one FYI line per workaround (thread, what was wrong, workaround, long-term fix and its owner; user T-140 #10), so
+the lead knows what changed; the lead answers only if it disagrees.
 
 Hard rules are unchanged: only the lead lands on `main` and works in the main checkout.
 
