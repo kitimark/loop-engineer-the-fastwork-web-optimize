@@ -249,6 +249,146 @@ C only, one load per engine, to check the harness before C/V data (as P-101 did)
     step: RenderingFrame 0.95, RecalculateStyles 1.51 (forced 1.11), Layout 3.68 (forced 2.49), Paint 5.53.
   - Hold sizes seen: Chrome 57 s per load, Simulator 70 s per load (whole session), so the card's 2 loads per hold fit.
 
+## P-103 result (scored per the card, 2026-10-04 12:40-13:30Z)
+
+**Outcome: not landable as a less-work fix on this card.** The judged counts pass everywhere: V does about 75 % fewer
+side rAF requests and 60 % fewer side rects at phone widths, in Chrome and in the Simulator. Three of the card's
+own rules fail:
+- the Paint guard, in Chrome `phone` and `resize` and in the Simulator;
+- state parity, in `phone775` (V1) and `resize` (V2);
+- `desk` / `desk900` parity is VOID, also on the card's re-run, because the logger is not stable C vs C.
+
+Card branch 8 applies: "reported as measured; find what moved in an exploratory run; re-ticket". The exploratory
+run below says the Paint movement comes from the time-driven animations, not from the side jobs (OBSERVED, in our
+setup). The parity diffs look like timing races of values that are written once. Both still need a re-ticket
+(P-103 rev 2) before any landing.
+
+All loads valid: served hashes as the table, 0 page errors, all marks seen. Chrome: 4 loads per viewport (C1 V1 V2 C2,
+2 holds of 2), ~57 s per load. Simulator: fw-sim 15 Pro Max 430×775 DPR 3, doc 6035, 1052 steps, 4 loads in 2 holds.
+
+**Judged counts** (per step; every V load below every C load in every judged row):
+
+| viewport | side rAF C → V | side rects C → V | rule |
+|---|---|---|---|
+| Chrome `phone` | 2.479 → 0.652 (−74 %) | 3.874 → 1.556 (−60 %) | pass |
+| Chrome `phone775` | 2.320 → 0.568 (−76 %) | 3.620 → 1.355 (−63 %) | pass |
+| Chrome `desk900`, `AE` only | 0.447 → 0.230 | 0.894 → 0.460 | pass |
+| Chrome `desk` (equality ≤ 0.05) | 2.403 → 2.403 | 3.670 → 3.670 | pass (identical) |
+| Simulator | 2.269 → 0.521 (−77 %) | 3.527 → 1.254 (−64 %) | pass |
+| Chrome `resize` (reported) | 2.612 → 0.767 | 4.086 → 1.709 | n/a |
+
+The calibration predictions (≥ 60 % / ≥ 50 % fewer) hold. Every C and V value is inside its predicted interval.
+Reported, not judged:
+- side job runs per step, `phone`: 2.506 → 0.678;
+- FireAnimationFrame per step: `phone` 6.557 → 4.700, Simulator rAF callbacks 5.072 → 3.319;
+- side `querySelector`, `phone`: 1.791 → 0.528;
+- side `scrollY` reads: 0 in both arms.
+
+**Guards** (V mean ≤ C mean + 0.05):
+
+| | forced Layout | forced ULT / RS | Layout | ULT | PrePaint | Paint | FAF / RF |
+|---|---|---|---|---|---|---|---|
+| Chrome `phone` | +0.005 | −0.018 | +0.004 | −0.008 | +0.014 | **+0.090 FAIL** (C 5.694/5.503, V 5.715/5.661) | −1.857 |
+| Chrome `phone775` | −0.012 | −0.006 | −0.032 | +0.001 | −0.067 | −0.144 | −1.758 |
+| Chrome `desk` | −0.002 | +0.001 | +0.016 | −0.002 | +0.020 | +0.045 | +0.005 |
+| Chrome `desk900` | −0.019 | −0.007 | −0.016 | 0 | −0.014 | −0.035 | −0.253 |
+| Chrome `resize` | −0.003 | −0.024 | +0.007 | −0.013 | +0.008 | **+0.069 FAIL** (C 6.144/6.355, V 6.219/6.418) | −1.855 |
+| Simulator | −0.041 | −0.040 (RS) | −0.072 | | | **+0.086 FAIL** (C 5.543/5.576, V 5.653/5.638) | +0.002 (RF) |
+
+Paint's own C-vs-C spread is 0.19 (`phone`) and 0.21 (`resize`) in Chrome, 0.03 in the Simulator. The card's fixed
++0.05 is below the Chrome noise, but that is a lesson for rev 2, not a reason to pass these.
+
+**N2, the IO trace event** (reported, not judged): `IntersectionObserverController::computeIntersections` per step,
+C → V:
+
+| `phone` | `phone775` | `desk` | `desk900` | `resize` |
+|---|---|---|---|---|
+| 2.186 → 2.191 | 2.198 → 2.186 | 2.126 → 2.133 | 2.138 → 2.134 | 2.380 → 2.388 |
+
+It counts one event per frame, not per observer, so it does not show the extra observers' cost. That cost is for the
+phone no-worse check.
+
+**Parity** (state log, keyed by step, element and value; A/A = C2 vs C1):
+
+| viewport | C2 vs C1 (A/A) | V1 beyond A/A | V2 beyond A/A | card |
+|---|---|---|---|---|
+| Chrome `phone` | 0 | 0 | 0 | pass |
+| Chrome `phone775` | 0 | **44** | 0 | FAIL |
+| Chrome `desk` | 240; re-run 205 | | | VOID twice |
+| Chrome `desk900` | 242; re-run 239 | | | VOID twice |
+| Chrome `resize` | 0 | 0 | **4** | FAIL |
+| Simulator | 0 | 0 | 0 | pass |
+
+What the diffs are (read from the logs):
+- *`phone775` V1:* all 44 are the commission section's `--start-selling-intrinsic-block-size`: 1203 px in V1, 1166 px
+  in C1, C2 and V2. Classes and steps are identical. This value is written by the engine's deferral (`sE`, JS ~2751),
+  which measures the section 2 rAFs after it deactivates and writes the height once. V2 matches C, so the write
+  depends on what was laid out at that moment in that load. Cause unknown; one load in four.
+- *`resize` V2:* the profile shell's `is-active-shell` removal and the nav's `is-scroll-hidden is-profile-sticky-hidden`
+  change happen 1 step later (1181/1189 vs 1180/1188), in the phone leg after the desktop resize. V1 matches C.
+- *`desk` / `desk900` A/A:* time-eased floats (`--future-shrink`, `--profile-scale`, the profile shell's transform)
+  differ in the last digits from load to load, so C vs C is above the card's 10. The logger cannot judge these
+  viewports as registered.
+- *Class tokens only (exploratory, not scored: classes compared, style values ignored):*
+  - `phone` / `phone775`: 0 diffs.
+  - `desk`: V1 has one extra one-frame nav `is-on-dark` blink at step 1687 (a jump to y 5772). V2 lacks C1's blink at
+    step 1739 (a jump to y 7008).
+  - `desk900`: V1 lacks C1's blink at step 1501 (a jump to y 5117).
+  - `resize`: the 1-step shift above.
+  - Every one is on a jump frame or right after a resize, where the deferral's render, the nav hit test and the async
+    `scrollend` race.
+  - The card's re-run of `desk` / `desk900` (13:33-13:45Z, same loads and order, `counts-<vp>-rerun.json`) shows C
+    doing the same between its own loads:
+    - `desk` re-run: C2 vs C1 moves the nav `is-on-dark` blink at step 1687 by 1-2 steps, V1 differs at 1687 and 1739
+      (the steps of the first run), and V2 has 0 class diffs.
+    - `desk900` re-run: V1, V2 and C2 all differ from C1 the same way at step 1501 (C1 is the odd load).
+    - So the jump-frame nav blink is a pre-existing C race (OBSERVED, in our setup).
+  - Judged and guard counts of the re-runs repeat the first run: `desk` side rAF 2.403 = 2.403, Paint −0.03; `desk900`
+    `AE` rAF 0.447 → 0.230, Paint +0.04.
+
+**Pixels** (`pixcheck.mjs`, V-vs-C1 ≤ C2-vs-C1 + 0.1 pp):
+- First take: mobile bottom V 0.47 vs C2 0 → beyond. Desktop top 0.11 ≤ 0.16 and mobile top 0.15 ≤ 0.22 are fine.
+- Re-take (card: once): mobile bottom V 0 vs C2 0.45, mobile top V 0.20 ≤ 0.21, desktop top 0.05 ≤ 0.16, everything
+  else 0-0.01 → **pass**.
+- The bottom-shot difference moves between the C2 and V loads. It is the colour phase of the animated gradient
+  headline text ("Secure", "Organized"); the screenshots look identical to the eye.
+- C1 desktop of the re-take logged one `net::ERR_HTTP2_PROTOCOL_ERROR` (a C load, the local server); V had none.
+
+**Exploratory, not scored: where the extra Paint comes from.**
+- Harness: `probe/expl-paint.mjs` (97ca1ffd33db, exploratory only), a copy of `scb-probe.mjs` that also keys every Paint event to its painted element
+  (`DOM.describeNode`). One shared probe hold, `phone`, C1 V1 V2 C2.
+- Totals per step: C 5.521 / 5.451, V 5.573 / 5.557. V is +0.08 again, with C-vs-C 0.07.
+- By region (V − C, per step):
+
+| region | V − C per step |
+|---|---|
+| countdown faces | +0.065 |
+| hero | +0.076 |
+| orbit cards | −0.043 |
+| removed nodes | −0.042 |
+| other | +0.019 |
+| every side-job element (commission, pain, future, platform, profile, 45 elements) | −0.002 to +0.004 each, sum ≈ 0 |
+
+- The positive regions are single-load outliers: the countdown faces in V2 (1971 vs about 1815 in the other three
+  loads), the hero in V1 (377 vs 223-256).
+- The side jobs' own elements paint the same number of times in C and V. In this run, the Paint guard moves with the
+  time-driven animations (countdown, hero ring, orbit) and their phase in each load, not with the patch. OBSERVED, in
+  our setup, on 2 loads per arm. The Simulator has no per-element paint data yet.
+
+**Re-ticket proposal (P-103 rev 2, to mgmt-ops-10; to be registered before any new data):**
+- *Paint guard:*
+  - either exclude paints of the time-driven animations (countdown faces, hero, orbit) and keep +0.05 on the rest;
+  - or judge Paint against the C-vs-C spread from ≥ 4 C loads.
+- *Parity:*
+  - class tokens exact, per step;
+  - style values exact only for non-eased values. Eased floats are compared at a stated precision, or by the step
+    they cross their end values;
+  - the deferral-measured `--start-selling-intrinsic-block-size` is checked as "written in the same step", with its
+    value reported;
+  - A/A from ≥ 4 C loads, so a ±1-step shift on a jump frame or after a resize can be shown to be C's own.
+- *Before rev 2:* an exploratory, unscored noise run, `--no-trace` C×4 at `phone775`, `desk`, `desk900` and `resize`,
+  to size these numbers. No retuning on P-103's data.
+
 ## Risks, conflicts, follow-ups
 
 - Up to 12 extra IntersectionObservers on phones (commission 4, future 6, platform 2). Their cost is not in these counts
