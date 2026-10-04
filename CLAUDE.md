@@ -391,7 +391,11 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   when it exits); with nothing else to do, still run it in the background with a long `--timeout` (thread waits 3500)
   and end your turn: a foreground `--timeout 580` rerun costs a full model turn every 10 min (user T-109). A thread
   listener runs as ONE persistent Claude Code `Monitor` (a shell loop around `thread wait --as <you> --timeout 3500`
-  that prints only the TRIAGE/NEW lines and the message text), so a message wakes you without a re-arm step. Every
+  that prints only the TRIAGE/NEW lines and the message text), so a message wakes you without a re-arm step. **No
+  work, no listener** (user T-109 #29): an agent with no step of its own left parks (status `parked`, final report)
+  instead of keeping a wait up; user messages for a parked owner reach the lead's listener (the router's fallback),
+  and the lead resumes the owner with SendMessage. Light jobs (routing, lookups, summaries) go to sonnet/haiku helpers
+  with a short prompt, not to a 200k-context opus agent (each wake re-reads the whole context). Every
   wait prints one line, exit 0 MET, 3 TIMEOUT, 4 NEVER, 1 usage (c4a1ee2). Pass `--owner <you>` (or set `$FW_AGENT`)
   to every `wait.mjs` and `lock.mjs wait`: without it the wait still runs, prints a NOTE, and the board shows it as
   "owner unknown" (I-108):
