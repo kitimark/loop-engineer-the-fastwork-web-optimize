@@ -463,6 +463,8 @@ opens the gap). Mechanism and candidate screening only; a candidate that locates
   - csl, cva change the box (independent formatting context; paint containment clips overflow): any arm that locates goes to
     the pixel-identical look check before a phone G check (ops N2).
   - All NONE: the cost is inside the showcase and needs its own split (profile deck children).
+  - (ops N4, before data) P-110 located the cost on v7. If C on v8 shows no toolbar-step Layout in the showcase, the result
+    is NOT REPRODUCED on v8 (not NONE for the arms), and it goes to the lead before any next card.
 
 ## Scenarios not run
 
