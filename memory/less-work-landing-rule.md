@@ -20,3 +20,9 @@ user's own finger test before landing.
 from the full page, and add one short no-worse phone check; frame-driven counts and illusion rules (pixel-identical)
 still apply. Smoothness claims ("feels smoother") still need phone data and, for the top three, a user finger test.
 Signed D gates already written for a fix stay as signed unless the lead re-signs them and tells the user.
+
+**History.**
+- 2026-10-04 02:53Z (T-055 #2, after finger A/B C-035 picked the control with low confidence): for the countdown the
+  user waived further finger A/Bs: both versions already feel smooth, so keep the one that does less work. cd-strip
+  (and the countdown fixes stacked on it) now land under this rule: cost counts + the phone block's no-worse check,
+  no finger test. hero-exit and F3 keep their finger test.

@@ -13,7 +13,7 @@ Every agent:
 - [Proposal decision is the spec](proposal-decision-is-the-spec.md): changes-requested means rev N+1 of the same proposal, every point answered
 - [No camera access](no-camera-access.md): never open a Mac camera; screen recording only via `ioscap.mjs`
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
-- [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test
+- [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test (countdown waived, T-055)
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
 - [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at real Serious, stay smooth from a 42-44 °C start and under Xcode-induced Serious
 - [Phone checks start warm](phone-checks-start-warm.md): tests run at real thermal Serious (xctrace gate per hold, ceiling 44 °C/Critical), Fair no-worse check at the end; LPM runs dropped; no countdown-only test page
