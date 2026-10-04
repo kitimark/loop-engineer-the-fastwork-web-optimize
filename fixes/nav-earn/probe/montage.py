@@ -22,6 +22,6 @@ for i, s in enumerate(rows):
     dr.text((4, y + 4), ('before' if s['ms'] < 0 else f"{s['ms']} ms") + (f"\nmorph {float(m):.2f}" if s['ms'] >= 0 else ''), fill='black')
     for j, a in enumerate(arms):
         out.paste(ims[a][i].resize((W, H)), (lab + j * (W + 10), y))
-o = os.path.join(d, f'montage-{vp}.png')
+o = os.path.join(d, f'montage-{vp}' + ('' if len(arms) > 1 else '-' + arms[0]) + '.png')
 out.save(o)
 print(o)

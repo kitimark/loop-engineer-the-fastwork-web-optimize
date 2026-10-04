@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
 **Status:** built and checked (DOM probe, frozen stills, pixel check, WebKit Simulator); visual change, so a proposal
-(PROPOSAL_ID); **not timed** (memory `defer-timing-focus-call-tree.md`; this is a visual bug, not a cost fix).
+(PR-021); **not timed** (memory `defer-timing-focus-call-tree.md`; this is a visual bug, not a cost fix).
 **Base:** v8 (best build, `fixes/v8-best/`, JS `3e3e94cb6e9f` / CSS `f836404b3728`). **This build:** JS `3e3e94cb6e9f`
 (unchanged) / CSS `9581cd83004c`. Baseline snapshot `b1789284481295-4ad4a84a`.
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (2 rules). `delta.diff` = the change on top of v8;
@@ -87,7 +87,7 @@ Page errors / HTTP ≥ 400 in every probe load: 0 / 0.
 
 ## Proposal and Try-it
 
-PROPOSAL_ID: A = v8 (`--live-a-patch fixes/v8-best/patch.diff`), B = `fixes/nav-earn/patch.diff`; frame-by-frame
+PR-021 (posted 2026-10-04, Try-it phone pages http://lan:6403/ (A) and http://lan:6404/ (B)): A = v8 (`--live-a-patch fixes/v8-best/patch.diff`), B = `fixes/nav-earn/patch.diff`; frame-by-frame
 nav stills of the morph start (0, 16, 33, 50, 67, 100, 150, 200, 300, 450, 700, 1000 ms) for phone and desktop.
 
 ## Reproduce
