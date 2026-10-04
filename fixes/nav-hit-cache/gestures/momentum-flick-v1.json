@@ -1,0 +1,28 @@
+{
+  "name": "momentum-flick-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "nav-hit-cache P-117 N1 (lead ruling): does WebKit fire a scroll event in every frame where the page moves during momentum (finger lifted, the page still gliding)? The nav cache keeps the position from the last scroll event (__nsY), so a frame that moved without one would run on a stale position. From a fresh load: 3 s idle, fling strokes (lift-off at speed, so the page glides on) down the page to the end, each followed by the glide until the page settles, then the same back up to the top. Counts only (momentum-inject.mjs); Simulator ms are never judged (F-084).",
+  "params": { "x": 215, "flingPx": 520, "flingMs": 250 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": 3000 },
+    { "type": "mark", "name": "down" },
+    { "type": "repeat", "times": 16, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "pause", "ms": 1000 },
+    { "type": "until", "cond": "y>=2000", "timeoutMs": 2000 },
+    { "type": "mark", "name": "up" },
+    { "type": "repeat", "times": 16, "until": "atTop", "steps": [
+      { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "pause", "ms": 1000 },
+    { "type": "mark", "name": "end" }
+  ]
+}

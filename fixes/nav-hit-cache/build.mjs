@@ -7,6 +7,8 @@
 //        out/snapshots/v8-3e3e94cb6e9f; V = C + patch-on-v8.diff
 //   best (P-101 / P-104 record) best build v6, out/snapshots/best-65052c4a3902 (fixes/best-build/build.mjs --snapshot);
 //        V = C + patch-on-best.diff
+//   v8sc (P-117 combined) v8 + scroll-cb-on-v8.diff (int-v8 833fb29e) = 4c48e372ecdd, out/snapshots/v8sc-4c48e372ecdd;
+//        V = C + patch-on-v8.diff = e8d8323f674b (int-v8's combined V), VA = eb2089b858ab
 // Arms:
 //   C   the base build
 //   V   C + the base's patch: the landing build, no debug code
@@ -39,10 +41,39 @@ export const BASES = {
     dir: join(SNAP, 'v8-3e3e94cb6e9f'), pin: ['3e3e94cb6e9f', 'f836404b3728'], from: join(WT, 'fixes/v8-best/patch.diff'),
     patch: join(HERE, 'patch-on-v8.diff'), expect: { V: null, VA: null }, pre: { V: 'nhc8', VA: 'nhc8a' },
   },
+  // P-117 combined build (int-v8 833fb29e, fixes/v8-best/phone/nsc/build.mjs): C = v8 + scroll-cb-on-v8.diff (scroll-cb
+  // carried onto v8), V = C + patch-on-v8.diff = the combined V int-v8 pinned (nav and scroll-cb commute, int-v8 checked)
+  v8sc: {
+    dir: join(SNAP, 'v8sc-4c48e372ecdd'), pin: ['4c48e372ecdd', 'f836404b3728'],
+    from: [join(WT, 'fixes/v8-best/patch.diff'), { rev: '833fb29e', path: 'fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff', sha: '3abcd7008e61' }],
+    patch: join(HERE, 'patch-on-v8.diff'), expect: { V: ['e8d8323f674b', 'f836404b3728'], VA: ['eb2089b858ab', 'f836404b3728'] }, pre: { V: 'nhcsc', VA: 'nhcsca' },
+  },
+  // v9 prep: C = v8 + PR-018 rev 7c (fixes/morph-scroll/delta.diff, the owner's build 428961bda278 / 659b02f7169d),
+  // V = C + patch-on-v8ms.diff = patch-on-v8.diff's changed lines (same lines, offsets only) + the glue in rev 7c's
+  // microtask: (z(g, (__nsG = F()), !0), (__nsForce = !0)), so the cached nav frame keeps the fresh answer
+  v8ms: {
+    dir: join(SNAP, 'v8ms-428961bda278'), pin: ['428961bda278', '659b02f7169d'],
+    from: [join(WT, 'fixes/v8-best/patch.diff'), { rev: '75466887', path: 'fixes/morph-scroll/delta.diff', sha: '81ac7e1ee500' }],
+    patch: join(HERE, 'patch-on-v8ms.diff'), expect: { V: ['9138732704f2', '659b02f7169d'], VA: ['f325bf009cd6', '659b02f7169d'] }, pre: { V: 'nhcms', VA: 'nhcmsa' },
+  },
 };
+// a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
+// cached under out/nav-hit-cache/from/
+function fromFile(e) {
+  if (typeof e === 'string') return e;
+  const to = join(WT, 'out/nav-hit-cache/from', `${e.rev}-${e.path.split('/').pop()}`);
+  if (!existsSync(to)) {
+    const r = spawnSync('git', ['-C', WT, 'show', `${e.rev}:${e.path}`], { encoding: 'buffer', maxBuffer: 1 << 28 });
+    if (r.status !== 0) throw new Error(`git show ${e.rev}:${e.path}: ${r.stderr}`);
+    mkdirSync(dirname(to), { recursive: true });
+    writeFileSync(to, r.stdout);
+  }
+  if (sha(readFileSync(to)) !== e.sha) throw new Error(`${to}: ${sha(readFileSync(to))}, pinned ${e.sha}`);
+  return to;
+}
 const baseOf = (b) => {
   const B = BASES[b];
-  if (!B) throw new Error(`unknown base ${b} (v8 | best)`);
+  if (!B) throw new Error(`unknown base ${b} (v8 | v8sc | v8ms | best)`);
   return B;
 };
 // v8's C is not kept anywhere else: build it once from the baseline snapshot + fixes/v8-best/patch.diff
@@ -52,10 +83,13 @@ function ensureBase(B) {
   const tmp = mkdtempSync(join(tmpdir(), 'nhc-base-'));
   try {
     for (const f of FILES) { mkdirSync(join(tmp, dirname(f)), { recursive: true }); writeFileSync(join(tmp, f), readFileSync(join(base, f))); }
-    const r = spawnSync('patch', ['-p1', '-s', '-F', '0', '-N', '-d', tmp, '-i', B.from], { encoding: 'utf8' });
-    if (r.status !== 0) throw new Error(`${B.from} does not apply to the baseline: ${r.stdout}${r.stderr}`);
+    for (const e of [B.from].flat()) {
+      const p = fromFile(e);
+      const r = spawnSync('patch', ['-p1', '-s', '-F', '0', '-N', '-d', tmp, '-i', p], { encoding: 'utf8' });
+      if (r.status !== 0) throw new Error(`${p} does not apply: ${r.stdout}${r.stderr}`);
+    }
     const t = Object.fromEntries(FILES.map((f) => [f, read(tmp, f)]));
-    if ([sha(t[JS]), sha(t[CSS])].join() !== B.pin.join()) throw new Error(`base from ${B.from}: ${sha(t[JS])} / ${sha(t[CSS])}, pinned ${B.pin.join(' / ')}`);
+    if ([sha(t[JS]), sha(t[CSS])].join() !== B.pin.join()) throw new Error(`base ${B.dir.split('/').pop()}: ${sha(t[JS])} / ${sha(t[CSS])}, pinned ${B.pin.join(' / ')}`);
     writeSnap(B.dir.split('/').pop(), t);
   } finally {
     rmSync(tmp, { recursive: true, force: true });

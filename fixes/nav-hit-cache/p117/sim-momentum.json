@@ -1,0 +1,1474 @@
+{
+ "tool": "fixes/nav-hit-cache/momentum-sim.mjs",
+ "base": "v8sc",
+ "arm": {
+  "VA": {
+   "js": "eb2089b858ab",
+   "css": "f836404b3728"
+  },
+  "V": {
+   "js": "e8d8323f674b",
+   "css": "f836404b3728"
+  }
+ },
+ "script": "fixes/nav-hit-cache/gestures/momentum-flick-v1.json",
+ "scriptSha": "032e1856d707",
+ "injectSha": "797a2d5705ad",
+ "note": "Simulator: counts only, ms never judged (F-084)",
+ "loads": [
+  {
+   "arm": "VA",
+   "rep": 1,
+   "startedAt": "2026-10-04T21:47:23.432Z",
+   "served": {
+    "js": "eb2089b858ab",
+    "css": "f836404b3728"
+   },
+   "gesture": {
+    "status": 0,
+    "saved": "out/sim/fix-nav-morph-gesture-nhc-momentum-1-1791150454541.json"
+   },
+   "gestureSummary": {
+    "segments": [
+     {
+      "href": "http://localhost:62786/",
+      "frames": 3172,
+      "motion": {
+       "movingFrames": 543,
+       "movingMs": 10983,
+       "mwfiMs": 42.3,
+       "longestGapMs": 208,
+       "stutterRuns": 26,
+       "stutterRunMaxMs": 793
+      },
+      "bands": {
+       "all": {
+        "frames": 3172,
+        "gt20": 333,
+        "gt34": 41,
+        "gt50": 18,
+        "gt100": 3,
+        "max": 208
+       },
+       "hero": {
+        "frames": 97,
+        "gt20": 36,
+        "gt34": 7,
+        "gt50": 5,
+        "gt100": 1,
+        "max": 125
+       },
+       "middle": {
+        "frames": 324,
+        "gt20": 36,
+        "gt34": 18,
+        "gt50": 9,
+        "gt100": 2,
+        "max": 208
+       },
+       "lastScreen": {
+        "frames": 122,
+        "gt20": 15,
+        "gt34": 6,
+        "gt50": 2,
+        "gt100": 0,
+        "max": 79
+       }
+      },
+      "toolbar": {
+       "levels": [
+        775,
+        815
+       ],
+       "transitions": [
+        {
+         "t": 5524,
+         "from": 775,
+         "to": 815,
+         "ms": 335
+        },
+        {
+         "t": 46996,
+         "from": 815,
+         "to": 775,
+         "ms": 311
+        }
+       ],
+       "aborted": 0,
+       "medianMs": 311,
+       "minMs": 311,
+       "maxMs": 335
+      },
+      "overscroll": {
+       "minY": 0,
+       "maxOverPx": 143,
+       "atY": 5363
+      },
+      "pin": {
+       "reversals": 1,
+       "excursions": 1,
+       "touching": {
+        "reversals": 0,
+        "excursions": 1
+       },
+       "afterLift": {
+        "reversals": 1,
+        "excursions": 0,
+        "windows": 1,
+        "extraReversals": 0
+       },
+       "noTouch": {
+        "reversals": 0,
+        "excursions": 0
+       },
+       "perMark": {
+        "down": {
+         "reversals": 1,
+         "excursions": 1,
+         "touching": 0,
+         "afterLift": 1
+        }
+       },
+       "bounces": 1,
+       "fight": 0,
+       "touchData": true,
+       "swings": [
+        [
+         15173,
+         5363,
+         5220
+        ]
+       ]
+      },
+      "touchmove": {
+       "total": 352,
+       "cancelable": 291,
+       "prevented": 261,
+       "preventedPct": 74.1,
+       "atEnd": {
+        "total": 2,
+        "prevented": 0,
+        "preventedPct": 0
+       }
+      },
+      "touchSequences": 19,
+      "strokes": 19,
+      "aligned": true,
+      "perStroke": [
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 5326,
+        "contactMs": 333,
+        "endLagMs": 38,
+        "touchmoves": 14,
+        "prevented": 0,
+        "moveHz": 41,
+        "startY": 0,
+        "tauS": 0.457,
+        "postReleaseTravelPx": 1768,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 111,
+        "movingMs": 2694,
+        "mwfiMs": 101.3,
+        "longestGapMs": 208,
+        "stutterRuns": 3,
+        "stutterRunMaxMs": 793,
+        "touchToScrollMs": 198,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 10015,
+        "contactMs": 333,
+        "endLagMs": 7,
+        "touchmoves": 20,
+        "prevented": 0,
+        "moveHz": 60,
+        "startY": 2445,
+        "tauS": null,
+        "postReleaseTravelPx": 2009,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 139,
+        "movingMs": 2582,
+        "mwfiMs": 25.2,
+        "longestGapMs": 79,
+        "stutterRuns": 6,
+        "stutterRunMaxMs": 125,
+        "touchToScrollMs": 124,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 14752,
+        "contactMs": 334,
+        "endLagMs": 19,
+        "touchmoves": 17,
+        "prevented": 0,
+        "moveHz": 50,
+        "startY": 4908,
+        "tauS": null,
+        "postReleaseTravelPx": 151,
+        "pinTouching": 0,
+        "pinAfterLift": 1,
+        "movingFrames": 11,
+        "movingMs": 292,
+        "mwfiMs": 30.6,
+        "longestGapMs": 69,
+        "stutterRuns": 2,
+        "stutterRunMaxMs": 107,
+        "touchToScrollMs": 136,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 16818,
+        "contactMs": 334,
+        "endLagMs": 2,
+        "touchmoves": 14,
+        "prevented": 14,
+        "moveHz": 43,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 18872,
+        "contactMs": 333,
+        "endLagMs": 16,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 20993,
+        "contactMs": 334,
+        "endLagMs": 11,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 23039,
+        "contactMs": 333,
+        "endLagMs": 16,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 25200,
+        "contactMs": 333,
+        "endLagMs": 5,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 27285,
+        "contactMs": 333,
+        "endLagMs": 20,
+        "touchmoves": 15,
+        "prevented": 15,
+        "moveHz": 44,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 29412,
+        "contactMs": 334,
+        "endLagMs": 8,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 31467,
+        "contactMs": 334,
+        "endLagMs": 20,
+        "touchmoves": 18,
+        "prevented": 18,
+        "moveHz": 57,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 33495,
+        "contactMs": 333,
+        "endLagMs": 10,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 35509,
+        "contactMs": 332,
+        "endLagMs": 14,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 37719,
+        "contactMs": 332,
+        "endLagMs": 4,
+        "touchmoves": 14,
+        "prevented": 14,
+        "moveHz": 41,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 39773,
+        "contactMs": 333,
+        "endLagMs": 15,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 41775,
+        "contactMs": 334,
+        "endLagMs": 12,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 44798,
+        "contactMs": 333,
+        "endLagMs": 7,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 46793,
+        "contactMs": 333,
+        "endLagMs": 13,
+        "touchmoves": 20,
+        "prevented": 0,
+        "moveHz": 60,
+        "startY": 5212,
+        "tauS": 0.449,
+        "postReleaseTravelPx": 1929,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 145,
+        "movingMs": 2599,
+        "mwfiMs": 21.9,
+        "longestGapMs": 52,
+        "stutterRuns": 5,
+        "stutterRunMaxMs": 84,
+        "touchToScrollMs": 129,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 51660,
+        "contactMs": 332,
+        "endLagMs": 15,
+        "touchmoves": 20,
+        "prevented": 0,
+        "moveHz": 60,
+        "startY": 2773,
+        "tauS": null,
+        "postReleaseTravelPx": 1954,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 137,
+        "movingMs": 2816,
+        "mwfiMs": 24,
+        "longestGapMs": 89,
+        "stutterRuns": 10,
+        "stutterRunMaxMs": 97,
+        "touchToScrollMs": 128,
+        "firstMoveCancelable": 1
+       }
+      ]
+     }
+    ],
+    "motion": {
+     "movingFrames": 543,
+     "movingMs": 10983,
+     "mwfiMs": 42.3,
+     "longestGapMs": 208,
+     "stutterRuns": 26,
+     "stutterRunMaxMs": 793
+    },
+    "touchmove": {
+     "total": 352,
+     "prevented": 261,
+     "endTotal": 2,
+     "endPrevented": 0,
+     "preventedPct": 74.1,
+     "endPreventedPct": 0
+    },
+    "toolbar": {
+     "transitions": 2,
+     "medianMs": 311,
+     "minMs": 311,
+     "maxMs": 335
+    },
+    "pin": {
+     "reversals": 1,
+     "excursions": 1,
+     "fight": 0,
+     "bounces": 1,
+     "touching": {
+      "reversals": 0,
+      "excursions": 1
+     },
+     "afterLift": {
+      "reversals": 1,
+      "excursions": 0,
+      "windows": 1,
+      "extraReversals": 0
+     },
+     "noTouch": {
+      "reversals": 0,
+      "excursions": 0
+     },
+     "perMark": {
+      "down": {
+       "reversals": 1,
+       "excursions": 1,
+       "touching": 0,
+       "afterLift": 1
+      }
+     },
+     "touchData": true
+    },
+    "overscroll": {
+     "minY": 0,
+     "maxOverPx": 143
+    },
+    "momentum": {
+     "flings": 2,
+     "tauMedianS": 0.449,
+     "tauS": [
+      0.457,
+      0.449
+     ]
+    },
+    "morph": null
+   },
+   "seg": 0,
+   "y": 308,
+   "summary": {
+    "frames": 3172,
+    "scrollEvents": 502,
+    "moved": 543,
+    "movedNoEvent": 44,
+    "touchMoved": 44,
+    "touchMovedNoEvent": 2,
+    "glideMoved": 499,
+    "glideMovedNoEvent": 42,
+    "glideFirstNoEvent": [
+     [
+      5747,
+      301,
+      677
+     ],
+     [
+      6138,
+      1510,
+      1654
+     ],
+     [
+      6218,
+      1654,
+      1753
+     ],
+     [
+      6282,
+      1840,
+      1860
+     ],
+     [
+      6312,
+      1860,
+      1880
+     ],
+     [
+      6383,
+      1880,
+      1951
+     ],
+     [
+      6446,
+      1951,
+      2013
+     ],
+     [
+      6519,
+      2068,
+      2080
+     ],
+     [
+      6534,
+      2080,
+      2093
+     ],
+     [
+      6552,
+      2093,
+      2104
+     ]
+    ],
+    "restWithEvent": 3,
+    "maxEventsPerFrame": 1
+   },
+   "audit": {
+    "t": 319,
+    "n": 185,
+    "lag": 1,
+    "theme": 0,
+    "sticky": 0,
+    "pill": 0,
+    "inSync": [
+     0,
+     0,
+     0
+    ],
+    "first": []
+   },
+   "marks": [
+    [
+     "fwg:idle",
+     1603
+    ],
+    [
+     "fwg:down",
+     4607
+    ],
+    [
+     "fwg:up",
+     44006
+    ],
+    [
+     "fwg:end",
+     56750
+    ]
+   ],
+   "framesFile": "out/nav-hit-cache/sim/momentum-frames-1-2026-10-04T21-47-23-432Z.json",
+   "scripted": {
+    "task": {
+     "steps": 1051,
+     "endY": 10,
+     "tested": 638,
+     "cached": 439,
+     "lag": 0,
+     "theme": [
+      0,
+      0
+     ],
+     "sticky": [
+      0,
+      0
+     ],
+     "pill": [
+      0,
+      0
+     ],
+     "first": [],
+     "flips": [
+      [
+       "pain",
+       890,
+       1,
+       1407.7,
+       6035,
+       856,
+       517.7
+      ],
+      [
+       "nav",
+       2150,
+       1
+      ],
+      [
+       "nav",
+       2920,
+       0
+      ],
+      [
+       "nav",
+       4120,
+       1
+      ],
+      [
+       "nav",
+       4110,
+       0
+      ],
+      [
+       "nav",
+       2910,
+       1
+      ],
+      [
+       "nav",
+       2140,
+       0
+      ],
+      [
+       "pain",
+       880,
+       0,
+       1407.7,
+       6035,
+       856,
+       527.7
+      ]
+     ]
+    },
+    "raf": {
+     "steps": 1052,
+     "endY": 0,
+     "tested": 616,
+     "cached": 437,
+     "lag": 1050,
+     "theme": [
+      1,
+      0
+     ],
+     "sticky": [
+      0,
+      0
+     ],
+     "pill": [
+      2,
+      0
+     ],
+     "first": [
+      [
+       2930,
+       false,
+       true,
+       2910
+      ],
+      [
+       610,
+       false,
+       true,
+       620
+      ],
+      [
+       620,
+       true,
+       false,
+       610
+      ]
+     ],
+     "flips": [
+      [
+       "pain",
+       890,
+       1,
+       1407.7,
+       6035,
+       856,
+       517.7
+      ],
+      [
+       "nav",
+       2150,
+       1
+      ],
+      [
+       "nav",
+       2920,
+       0
+      ],
+      [
+       "nav",
+       4120,
+       1
+      ],
+      [
+       "nav",
+       4110,
+       0
+      ],
+      [
+       "nav",
+       2900,
+       1
+      ],
+      [
+       "nav",
+       2140,
+       0
+      ],
+      [
+       "pain",
+       880,
+       0,
+       1407.7,
+       6035,
+       856,
+       527.7
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "arm": "VA",
+   "rep": 2,
+   "startedAt": "2026-10-04T21:49:54.744Z",
+   "served": {
+    "js": "eb2089b858ab",
+    "css": "f836404b3728"
+   },
+   "gesture": {
+    "status": 0,
+    "saved": "out/sim/fix-nav-morph-gesture-nhc-momentum-2-1791150605528.json"
+   },
+   "gestureSummary": {
+    "segments": [
+     {
+      "href": "http://localhost:63422/",
+      "frames": 1737,
+      "motion": {
+       "movingFrames": 601,
+       "movingMs": 11758,
+       "mwfiMs": 42.7,
+       "longestGapMs": 196,
+       "stutterRuns": 22,
+       "stutterRunMaxMs": 791
+      },
+      "bands": {
+       "all": {
+        "frames": 1737,
+        "gt20": 182,
+        "gt34": 41,
+        "gt50": 21,
+        "gt100": 3,
+        "max": 196
+       },
+       "hero": {
+        "frames": 47,
+        "gt20": 15,
+        "gt34": 9,
+        "gt50": 7,
+        "gt100": 1,
+        "max": 111
+       },
+       "middle": {
+        "frames": 426,
+        "gt20": 41,
+        "gt34": 17,
+        "gt50": 9,
+        "gt100": 2,
+        "max": 196
+       },
+       "lastScreen": {
+        "frames": 128,
+        "gt20": 13,
+        "gt34": 4,
+        "gt50": 2,
+        "gt100": 0,
+        "max": 78
+       }
+      },
+      "toolbar": {
+       "levels": [
+        775,
+        815
+       ],
+       "transitions": [
+        {
+         "t": 5448,
+         "from": 775,
+         "to": 815,
+         "ms": 499
+        },
+        {
+         "t": 20187,
+         "from": 815,
+         "to": 775,
+         "ms": 272
+        }
+       ],
+       "aborted": 0,
+       "medianMs": 272,
+       "minMs": 272,
+       "maxMs": 499
+      },
+      "overscroll": {
+       "minY": -27,
+       "maxOverPx": 170,
+       "atY": 5390
+      },
+      "pin": {
+       "reversals": 1,
+       "excursions": 1,
+       "touching": {
+        "reversals": 0,
+        "excursions": 0
+       },
+       "afterLift": {
+        "reversals": 1,
+        "excursions": 1,
+        "windows": 1,
+        "extraReversals": 0
+       },
+       "noTouch": {
+        "reversals": 0,
+        "excursions": 0
+       },
+       "perMark": {
+        "down": {
+         "reversals": 1,
+         "excursions": 1,
+         "touching": 0,
+         "afterLift": 1
+        }
+       },
+       "bounces": 1,
+       "fight": 0,
+       "touchData": true,
+       "swings": [
+        [
+         15117,
+         5390,
+         5220
+        ]
+       ]
+      },
+      "touchmove": {
+       "total": 121,
+       "cancelable": 54,
+       "prevented": 20,
+       "preventedPct": 16.5,
+       "atEnd": {
+        "total": 29,
+        "prevented": 20,
+        "preventedPct": 69
+       }
+      },
+      "touchSequences": 7,
+      "strokes": 7,
+      "aligned": true,
+      "perStroke": [
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 5262,
+        "contactMs": 334,
+        "endLagMs": 32,
+        "touchmoves": 17,
+        "prevented": 0,
+        "moveHz": 50,
+        "startY": 0,
+        "tauS": 0.574,
+        "postReleaseTravelPx": 2005,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 112,
+        "movingMs": 2686,
+        "mwfiMs": 90.7,
+        "longestGapMs": 196,
+        "stutterRuns": 4,
+        "stutterRunMaxMs": 791,
+        "touchToScrollMs": 186,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 9903,
+        "contactMs": 333,
+        "endLagMs": 18,
+        "touchmoves": 18,
+        "prevented": 0,
+        "moveHz": 54,
+        "startY": 2440,
+        "tauS": 2.559,
+        "postReleaseTravelPx": 2077,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 142,
+        "movingMs": 2586,
+        "mwfiMs": 27.9,
+        "longestGapMs": 74,
+        "stutterRuns": 5,
+        "stutterRunMaxMs": 121,
+        "touchToScrollMs": 135,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s1",
+        "profile": "fling",
+        "dir": "up",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 14669,
+        "contactMs": 333,
+        "endLagMs": 36,
+        "touchmoves": 16,
+        "prevented": 0,
+        "moveHz": 50,
+        "startY": 4900,
+        "tauS": null,
+        "postReleaseTravelPx": 68,
+        "pinTouching": 0,
+        "pinAfterLift": 1,
+        "movingFrames": 11,
+        "movingMs": 282,
+        "mwfiMs": 32,
+        "longestGapMs": 78,
+        "stutterRuns": 2,
+        "stutterRunMaxMs": 146,
+        "touchToScrollMs": 134,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 17865,
+        "contactMs": 333,
+        "endLagMs": 10,
+        "touchmoves": 20,
+        "prevented": 20,
+        "moveHz": 60,
+        "startY": 5220,
+        "tauS": null,
+        "postReleaseTravelPx": 0,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 0,
+        "movingMs": 0,
+        "mwfiMs": null,
+        "longestGapMs": null,
+        "stutterRuns": 0,
+        "stutterRunMaxMs": null,
+        "touchToScrollMs": null,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 19936,
+        "contactMs": 334,
+        "endLagMs": 18,
+        "touchmoves": 16,
+        "prevented": 0,
+        "moveHz": 47,
+        "startY": 5220,
+        "tauS": 0.271,
+        "postReleaseTravelPx": 1142,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 135,
+        "movingMs": 2354,
+        "mwfiMs": 19.7,
+        "longestGapMs": 39,
+        "stutterRuns": 5,
+        "stutterRunMaxMs": 70,
+        "touchToScrollMs": 135,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 24786,
+        "contactMs": 333,
+        "endLagMs": 31,
+        "touchmoves": 17,
+        "prevented": 0,
+        "moveHz": 51,
+        "startY": 3624,
+        "tauS": null,
+        "postReleaseTravelPx": 1386,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 144,
+        "movingMs": 2610,
+        "mwfiMs": 33.6,
+        "longestGapMs": 100,
+        "stutterRuns": 2,
+        "stutterRunMaxMs": 273,
+        "touchToScrollMs": 104,
+        "firstMoveCancelable": 1
+       },
+       {
+        "id": "s2",
+        "profile": "fling",
+        "dir": "down",
+        "px": 520,
+        "liftoffPxPerS": 3798,
+        "touchStart": 29417,
+        "contactMs": 333,
+        "endLagMs": 8,
+        "touchmoves": 17,
+        "prevented": 0,
+        "moveHz": 50,
+        "startY": 1632,
+        "tauS": 0.654,
+        "postReleaseTravelPx": 1178,
+        "pinTouching": 0,
+        "pinAfterLift": 0,
+        "movingFrames": 57,
+        "movingMs": 1240,
+        "mwfiMs": 31.3,
+        "longestGapMs": 111,
+        "stutterRuns": 4,
+        "stutterRunMaxMs": 194,
+        "touchToScrollMs": 121,
+        "firstMoveCancelable": 1
+       }
+      ]
+     }
+    ],
+    "motion": {
+     "movingFrames": 601,
+     "movingMs": 11758,
+     "mwfiMs": 42.7,
+     "longestGapMs": 196,
+     "stutterRuns": 22,
+     "stutterRunMaxMs": 791
+    },
+    "touchmove": {
+     "total": 121,
+     "prevented": 20,
+     "endTotal": 29,
+     "endPrevented": 20,
+     "preventedPct": 16.5,
+     "endPreventedPct": 69
+    },
+    "toolbar": {
+     "transitions": 2,
+     "medianMs": 272,
+     "minMs": 272,
+     "maxMs": 499
+    },
+    "pin": {
+     "reversals": 1,
+     "excursions": 1,
+     "fight": 0,
+     "bounces": 1,
+     "touching": {
+      "reversals": 0,
+      "excursions": 0
+     },
+     "afterLift": {
+      "reversals": 1,
+      "excursions": 1,
+      "windows": 1,
+      "extraReversals": 0
+     },
+     "noTouch": {
+      "reversals": 0,
+      "excursions": 0
+     },
+     "perMark": {
+      "down": {
+       "reversals": 1,
+       "excursions": 1,
+       "touching": 0,
+       "afterLift": 1
+      }
+     },
+     "touchData": true
+    },
+    "overscroll": {
+     "minY": -27,
+     "maxOverPx": 170
+    },
+    "momentum": {
+     "flings": 4,
+     "tauMedianS": 0.574,
+     "tauS": [
+      0.574,
+      2.559,
+      0.271,
+      0.654
+     ]
+    },
+    "morph": null
+   },
+   "seg": 0,
+   "y": 0,
+   "summary": {
+    "frames": 1737,
+    "scrollEvents": 565,
+    "moved": 601,
+    "movedNoEvent": 37,
+    "touchMoved": 49,
+    "touchMovedNoEvent": 3,
+    "glideMoved": 552,
+    "glideMovedNoEvent": 34,
+    "glideFirstNoEvent": [
+     [
+      5756,
+      735,
+      898
+     ],
+     [
+      6104,
+      1651,
+      1702
+     ],
+     [
+      6155,
+      1702,
+      1750
+     ],
+     [
+      6224,
+      1837,
+      1876
+     ],
+     [
+      6246,
+      1876,
+      1895
+     ],
+     [
+      6319,
+      1895,
+      1947
+     ],
+     [
+      6427,
+      2010,
+      2064
+     ],
+     [
+      6461,
+      2077,
+      2089
+     ],
+     [
+      6476,
+      2089,
+      2100
+     ],
+     [
+      6494,
+      2100,
+      2112
+     ]
+    ],
+    "restWithEvent": 1,
+    "maxEventsPerFrame": 1
+   },
+   "audit": {
+    "t": 465,
+    "n": 103,
+    "lag": 1,
+    "theme": 0,
+    "sticky": 0,
+    "pill": 0,
+    "inSync": [
+     0,
+     0,
+     0
+    ],
+    "first": []
+   },
+   "marks": [
+    [
+     "fwg:idle",
+     1629
+    ],
+    [
+     "fwg:down",
+     4632
+    ],
+    [
+     "fwg:up",
+     16944
+    ],
+    [
+     "fwg:end",
+     32690
+    ]
+   ],
+   "framesFile": "out/nav-hit-cache/sim/momentum-frames-2-2026-10-04T21-49-54-744Z.json",
+   "scripted": {}
+  }
+ ]
+}

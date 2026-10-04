@@ -4,8 +4,9 @@
 > Fastwork). `patch-on-best.diff` and `patch.diff` contain excerpts of Fastwork's code: keep them on local branches,
 > never push.
 
-**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); P-107 (successor) PASS on every part: judged counts lower, guards and Simulator no worse, task-mode parity 0 in all 5 cases
-**Stage:** D done (P-107, v8 base); next the short phone no-worse check (after P-105 and PR-018 rev 7)
+**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); P-107 (successor) PASS on every part: judged counts lower, guards and Simulator no worse, task-mode parity 0 in all 5 cases.
+P-117 owed checks on the combined V (v8 + nav-hit-cache + scroll-cb, JS e8d8323f674b): parity PASS in all 5 cases (task 0/0), Simulator momentum case below
+**Stage:** D done (P-107, v8 base); P-117 combined-build checks done (section "P-117 owed checks"); with PR-018 rev 7c a combined build sets `__nsForce = !0`
 **Device class / gate:** less-work fix (memory `less-work-landing-rule`): Chrome + Simulator work counts, then one short
 phone no-worse check
 **Driver(s) behind the claims:** Chrome scripted scroll (counts only), Simulator scripted scroll (counts only)
@@ -599,6 +600,123 @@ mobile-shift). Mismatches are listed as theme / sticky / pill.
 **Next, per the card.** *Pass:* the short phone no-worse check on its own ops ticket. That waits for the lead's order
 (no iPhone until P-105 and PR-018 rev 7 are done). Before a land request, two more checks are owed: the combined VA
 audit with fix-scroll-cb's patch, and `__nsForce = !0` in any combined build with PR-018.
+
+## P-117 owed checks on the combined build (10-04, 20:41Z on; records in `p117/`)
+
+The lead's order (P-117 N1 ruling): the parity audit on the exact combined V that int-v8 built, a Simulator momentum
+case, each load's served hash in the records, and the PR-018 note.
+
+**Build** (`build.mjs --base v8sc`):
+
+| arm | what | JS / CSS |
+|---|---|---|
+| C | v8 + scroll-cb-on-v8.diff (int-v8 833fb29e, file 3abcd7008e61) | 4c48e372ecdd / f836404b3728 |
+| V | C + patch-on-v8.diff (7bbb6d4212ff) = int-v8's combined V | e8d8323f674b / f836404b3728 |
+| VA | V + the audit hook (HOOK_V8, DEBUG ONLY) | eb2089b858ab / f836404b3728 |
+
+- V matches int-v8's pin, so nav-hit-cache applies to v8 + scroll-cb with exact context (`patch -F 0`), as int-v8
+  found (nav and scroll-cb commute).
+- The scroll-cb diff is read from commit 833fb29e with `git show` and checked against its hash
+  (`out/nav-hit-cache/from/`).
+- scroll-cb touches only the commission, future and platform sections (lines 3216-3354, 11537-12239 and 13308-13332 of
+  v8). The nav effect (13846-14063) is outside every hunk, so the audit hook's anchor is unchanged.
+- Harness: `probe.mjs` now writes each parity load's served hashes (`audit.<case>.served`), which closes ops' N1.
+
+**Parity** (`probe.mjs parity --base v8sc`, Chrome, shared probe slots):
+
+PASS: task mode (the gate) has 0 lag frames and 0 mismatches in all 5 cases, at 10 and 40 px per step.
+
+| case | task: lag / theme / sticky / pill | raf: mismatches (all in lag frames) | served JS / CSS |
+|---|---|---|---|
+| mobile | 0 / 0 / 0 / 0 | pill 2+2, theme 0+1 | eb2089b858ab / f836404b3728 |
+| desktop | 0 / 0 / 0 / 0 | pill 2+2 | eb2089b858ab / f836404b3728 |
+| desktop-rtl | 0 / 0 / 0 / 0 | pill 2+2 | eb2089b858ab / f836404b3728 |
+| mobile-rtl | 0 / 0 / 0 / 0 | pill 2+2, theme 0+1 | eb2089b858ab / f836404b3728 |
+| mobile-shift | 0 / 0 / 0 / 0 | pill 2+2, theme 0+1 | eb2089b858ab / f836404b3728 |
+
+- Steps per case: mobile 1070 + 268, desktop 1690 + 424, mobile-shift 1130 + 284 (10 px + 40 px, down and up).
+- Raf mode (report only, F-239): every frame lags one step, as before, and no mismatch is in sync (inSync 0). The
+  raf counts equal P-107's on v8 alone, so scroll-cb changes nothing the nav reads.
+- Records: `p117/parity-1.json` (mobile, desktop, 20:41Z) and `p117/parity-2.json` (rtl and shift cases, 20:45Z),
+  each with `audit.<case>.served`; page errors none.
+
+**Simulator momentum case** (`momentum-sim.mjs`, gesture `gestures/momentum-flick-v1.json`, logger
+`momentum-inject.mjs`):
+
+Run: VA of v8sc (eb2089b858ab / f836404b3728, checked on every load), 2 loads, Simulator (iPhone 15 Pro Max, iOS 18.7
+runtime), normal exclusive hold 21:45:49-21:50:47Z (`sim.mjs gesture` refuses a no-timing hold, I-184). WDA flings run
+down to the end and back to the top, and each glide is left to settle. Counts only, no ms (F-084). Record:
+`p117/sim-momentum.json`.
+
+| load | frames moved (touch + glide) | moved with no scroll event: touch / glide | audit: tested / cached | lag frames | theme / sticky / pill mismatches |
+|---|---|---|---|---|---|
+| 1 | 543 (44 + 499) | 2 / 42 | 319 / 185 | 1 | 0 / 0 / 0 |
+| 2 | 601 (49 + 552) | 3 / 34 | 465 / 103 | 1 | 0 / 0 / 0 |
+
+- **Scroll events during momentum: not every frame (OBSERVED in the Simulator, cause unknown).** In 7-8 % of the glide
+  frames where the page moved, WebKit fired no scroll event; at most one event per frame. This settles the P-117 N1
+  question locally, for the Simulator only. No reference was checked; the real phone was not tested (no iPhone for this
+  topic).
+- **The cache follows anyway.** The nav frame is scheduled from the scroll event, in the original and in V alike. In a
+  frame with no event, neither one runs, so neither updates. Per load, `__nsY` differed from the live scrollY in 1 nav
+  frame. Even there, V's answers equalled the original's own reads (`inSync` 0 / 0 / 0, no mismatch at all).
+- **The same load, WebKit scripted audit** (probe.mjs's 10 px scroll, top -> bottom -> top, load 1):
+
+  | driver | steps | tested / cached | lag frames | theme / sticky / pill mismatches |
+  |---|---|---|---|---|
+  | task (the gate) | 1051 | 638 / 439 | 0 | 0 / 0 / 0 |
+  | raf (report only, F-239) | 1052 | 616 / 437 | 1050 | 1 / 0 / 2, all in lag frames (inSync 0) |
+
+  The WebKit result matches Chrome's: task mode 0 / 0, and raf mode differs only by the harness's one-frame lag.
+
+**PR-018 (rev 7c, accepted).** Rev 7c's `delta.diff` (branch fix/morph-scroll 75466887, line 155) runs the nav's
+backdrop test again in a microtask: `e <= 0.2 && queueMicrotask(() => z(g, F(), !0))`. With nav-hit-cache, the nav
+frame writes the cached answer every frame (`z(g, __nsG, !0)`), so one frame later it would undo that microtask. Any
+build that has both must use:
+
+```js
+e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))
+```
+
+- `__nsG = F()` keeps the cache equal to the fresh answer.
+- `__nsForce = !0` makes the next nav frame run the real test again and re-read the probe line.
+- Both names are `let`s of the same scroll effect (`ne(() => { … })`, lines 13881-14227 of the overlay) as rev 7c's
+  `__osb` / `__navMorphSet` code, so they are in scope.
+- The two patches overlap textually (rev 7c hunks @@ -14015 and @@ -14054 against nav @@ -14014 and @@ -14057), so the
+  combined build needs a carry like int-v8's. The combiner does it; the line above is the only semantic change it
+  needs.
+- The combined build gets the same VA audit, with an extra case that runs into rev 7c's extra end screen and back
+  to p = 0, before it lands.
+
+## v9 package: nav on top of PR-018 rev 7c, plus the glue (10-04, for int-v8)
+
+int-v8 chose option (a). The nav delta enters v9 unchanged, and a separate glue component is applied last, only when
+both nav-hit-cache and rev 7c are in.
+
+| file | what | sha256 (12) |
+|---|---|---|
+| `patch-on-v8.diff` | the nav delta on v8, 3 context lines (U3) | 7bbb6d4212ff |
+| `patch-on-v8-u1.diff` | the same change with 1 context line (U1), for strict apply on top of 7c | 7b5f3947b465 |
+| `glue-ms7c.diff` | rev 7c's microtask line -> `(z(g, (__nsG = F()), !0), (__nsForce = !0))`, one hunk | 5d63660a9e62 |
+| `patch-on-v8ms.diff` | v8 + 7c -> nav + glue in one diff (build.mjs base `v8ms`) | af661eba2c7c |
+
+Strict apply (`patch -F 0`; every build below passes `node --check`):
+
+| base | + | result JS / CSS |
+|---|---|---|
+| v8 (3e3e94cb6e9f) | U3 or U1 | fd3688901f50 / f836404b3728 (nhc8) |
+| v8 + 7c (v8ms 428961bda278 / 659b02f7169d) | U3 | **fails**: U3's trailing context overlaps the "morph-scroll setup" lines that 7c inserts |
+| v8 + 7c | U1, then glue | 9138732704f2 / 659b02f7169d (nhcms) = `patch-on-v8ms.diff` |
+| v9 step 3 (7c + double-drive + scroll-cb, 25dc3025f1a0 / 40037dc99f11) | U1, then glue | c211d557e357 / 40037dc99f11 |
+
+- **Order:** 7c, then nav (U1), then glue. 7c's own delta does not apply strictly on top of nav, so nav cannot go in
+  first.
+- **Parity on nhcms (9138732704f2, VA f325bf009cd6):** `probe.mjs parity --base v8ms`, all 5 cases. The records go in
+  `v9prep/parity-{1,2}.json`; result pending.
+
+## Flicker triage (fix-scroll-cb's task-driver check, 26777ce0)
+
+Pending: a C (v8) vs N (v8 + nav-hit-cache) Simulator check, `flicker-sim.mjs`, 12 loads in ABBA order.
 
 ## Smoke (not scored)
 

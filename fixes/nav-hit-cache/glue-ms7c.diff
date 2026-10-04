@@ -1,0 +1,11 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14201,7 +14201,7 @@
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+         ((e = e > 0 ? (e < 1 ? e : 1) : 0),
+-          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => z(g, F(), !0))));
++          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
+       },
+       // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
+       __navMorphSet = (t) => {

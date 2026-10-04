@@ -20,7 +20,8 @@
 //           engine's callback sees the previous position; a one-frame lag that no input or page script produces)
 //   The P-104 "states" part (settle at ~60 positions, compare C and V classes) is gone: its C-vs-C A/A disagreed at 5
 //   positions (profile section transitions still running at the single settle frame), so it can't judge V.
-// base best (--base best): the P-104 record, theme audit only, raf mode.
+// base best (--base best): the P-104 record, theme audit only, raf mode. base v8sc: the P-117 combined build (build.mjs).
+// Each parity case records its load's served JS / CSS hashes (audit.<case>.served).
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -165,9 +166,10 @@ async function audit(cdp, url, name, opt) {
         sticky: A.v.length, stickyInSync: sync(A.v), stickyFirst: A.v.slice(0, 10),
         pill: A.p.length, pillInSync: sync(A.p), pillFirst: A.p.slice(0, 10) };
     }
+  out.served = page.served; // this load's served JS / CSS hashes (checked against VA's pin in openPage)
   out.errors = page.errors.slice(0, 5);
   await page.close();
-  console.log('audit', name, JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, o]) => [k, k === 'errors' ? o
+  console.log('audit', name, JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, o]) => [k, k === 'errors' || k === 'served' ? o
     : { steps: o.steps, lag: o.lagFrames, theme: [o.mismatches, o.mismatchesInSync], sticky: [o.sticky, o.stickyInSync], pill: [o.pill, o.pillInSync], first: [...o.first, ...o.stickyFirst, ...o.pillFirst].slice(0, 3) }]))));
   return out;
 }
