@@ -693,3 +693,20 @@ Conditions:
   block (P-114): v7 against the v8 composition the lead picks after P-113, M leg + G part H, run inside an exclusive
   `--no-timing` chrome-measure hold so no shared job loads the Mac. It is the second and last block on the v8-vs-v7
   close question (sequential rule §5.3); its verdict decides the v7 -> v8 switch.
+
+## P-114 lead pre-data read (2026-10-04 16:5xZ, before any P-114 data): PASS
+
+- One question (v8 vs v7 on a quiet Mac at real Serious), one named control (v7), P-111's arms, scorer pinned
+  (26d944bf93e2) and self-tested against P-111's own gates; outcomes and predictions fixed before data. Second and last
+  block on the v8-vs-v7 question (§5.3).
+- GH gate: P-111's whole-page new-cluster rule, as written (confirmed); bins 9-11 are the replication read only.
+- Quiet Mac: every hold runs inside an exclusive `--no-timing` chrome-measure hold, so no shared job runs beside it.
+
+Conditions:
+1. No Simulator session starts in the gaps between P-114 holds (int-v8's Simulator/iPad gate and any other Simulator
+   work wait for P-114's end): a Simulator boot leaves load1 high for minutes after it ends (I-160). fix-scroll-cb's
+   queued Simulator part runs before H1.
+2. Outcomes as written: no-worse on Mmoving, Mtweens and GH -> the v7 -> v8 switch after the Simulator/iPad and Mac
+   Safari smoke; any WORSE or new cluster (threshold-sensitive included) -> no switch, v7 stays, no third block; the
+   lead then asks fix owners which v8 parts can land on their own under the less-work rule.
+3. Order: right after the current Simulator gap, before P-105 H3-H6.
