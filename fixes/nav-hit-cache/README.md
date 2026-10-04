@@ -4,8 +4,8 @@
 > Fastwork). `patch-on-best.diff` and `patch.diff` contain excerpts of Fastwork's code: keep them on local branches,
 > never push.
 
-**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); successor card P-107 passed the ops pre-data read (notes N1-N4 folded in)
-**Stage:** D (rebased on best build v8); P-107 loads next, in shared slots
+**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); P-107 (successor) PASS on every part: judged counts lower, guards and Simulator no worse, task-mode parity 0 in all 5 cases
+**Stage:** D done (P-107, v8 base); next the short phone no-worse check (after P-105 and PR-018 rev 7)
 **Device class / gate:** less-work fix (memory `less-work-landing-rule`): Chrome + Simulator work counts, then one short
 phone no-worse check
 **Driver(s) behind the claims:** Chrome scripted scroll (counts only), Simulator scripted scroll (counts only)
@@ -546,6 +546,59 @@ are P-104's V values ± 0.06, and the C intervals are P-104's C values ± 0.06:
   re-run all parts.
 - *A guard or the Simulator worse,* or *a judged count not lower:* report it as measured and re-ticket. No retuning on
   this card's data.
+
+## P-107 result: PASS on every part (10-04, 18:55-19:51Z; records in `p107/`)
+
+The arms were served as pinned in every load. The probe throws if a served hash differs, and the count and Simulator
+records list the hashes. No page errors in any load. Harness hashes are as on the card. Order C1 V1 V2 C2.
+
+**Chrome counts** (per 10 px step; mean of 2 loads; every V load below every C load; all values inside the predicted
+intervals). Scored by `p107/score-chrome.mjs` → `p107/score-chrome.json`.
+
+| count | mobile C | mobile V | desktop C | desktop V |
+|---|---|---|---|---|
+| PrePaint, total | 2.227 | 1.861 | 1.848 | 1.699 |
+| PrePaint, forced | 0.998 | 0.641 | 0.664 | 0.516 |
+| nav `elementsFromPoint` | 0.998 | 0.641 | 0.999 | 0.672 |
+| nav `getComputedStyle` | 0.998 | 0 | 0.999 | 0.001 |
+| guard: forced Layout | 0.379 | 0.377 | 0.345 | 0.343 |
+| guard: Layout | 0.450 | 0.448 | 0.391 | 0.389 |
+| guard: UpdateLayoutTree | 1.271 | 1.270 | 1.528 | 1.525 |
+| guard: Paint | 3.676 | 3.622 | 2.516 | 2.514 |
+
+Every judged count is lower in both viewports, and every guard is no worse (V ≤ C + 0.05).
+
+**Parity** (VA d7e96c5902a9; `p107/parity-1.json`: mobile, desktop; `p107/parity-2.json`: desktop-rtl, mobile-rtl,
+mobile-shift). Mismatches are listed as theme / sticky / pill.
+
+| case | task 10 / 40 px: lag, mismatches | raf 10 px: lag frames, mismatches | raf 40 px: lag frames, mismatches |
+|---|---|---|---|
+| mobile | 0, 0/0/0 · 0, 0/0/0 | 1069 of 1070, 0/0/2 | 267 of 268, 1/0/2 |
+| desktop | 0, 0/0/0 · 0, 0/0/0 | 1689 of 1690, 0/0/2 | 423 of 424, 0/0/2 |
+| desktop-rtl | 0, 0/0/0 · 0, 0/0/0 | 1689 of 1690, 0/0/2 | 423 of 424, 0/0/2 |
+| mobile-rtl | 0, 0/0/0 · 0, 0/0/0 | 1069 of 1070, 0/0/2 | 267 of 268, 1/0/2 |
+| mobile-shift | 0, 0/0/0 · 0, 0/0/0 | 1129 of 1130, 0/0/2 | 283 of 284, 1/0/2 |
+
+- Task mode (the gate, N1): no lag frame and no mismatch in any of the 5 cases, at both steps. No case was voided (N2).
+- Raf mode (report only): every mismatch is in a lag frame. They are the pill threshold near y 640-680 (one frame
+  late each way) and the theme edge at y 3186 (3486 with the 300 px shift). These are the same places as the smoke
+  and P-104.
+
+**Simulator** (`p107/simcount.json`, per step, mean of 2 loads): no worse on all three counts.
+
+| count | C | V | rule V ≤ C + 0.05 |
+|---|---|---|---|
+| RecalculateStyles | 1.353 | 1.346 | holds |
+| Layout | 3.724 | 3.715 | holds |
+| RenderingFrame | 0.938 | 0.931 | holds |
+| forced Layout (report only) | 2.519 | 2.261 | |
+
+- The Simulator ran beside a busy Mac: sim background mean 73 %, load1 max 116 (I-082). These are counts, so they
+  carry that context, but C and V ran in the same session in the C V V C order.
+
+**Next, per the card.** *Pass:* the short phone no-worse check on its own ops ticket. That waits for the lead's order
+(no iPhone until P-105 and PR-018 rev 7 are done). Before a land request, two more checks are owed: the combined VA
+audit with fix-scroll-cb's patch, and `__nsForce = !0` in any combined build with PR-018.
 
 ## Smoke (not scored)
 

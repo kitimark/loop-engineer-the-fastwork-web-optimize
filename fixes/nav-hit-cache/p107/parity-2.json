@@ -1,0 +1,304 @@
+{
+ "part": "parity",
+ "date": "2026-10-04T19:10:29.808Z",
+ "browser": "Chrome/154.0.8037.97",
+ "arms": {
+  "C": {
+   "js": "3e3e94cb6e9f",
+   "css": "f836404b3728"
+  },
+  "V": {
+   "js": "fd3688901f50",
+   "css": "f836404b3728"
+  },
+  "VA": {
+   "js": "d7e96c5902a9",
+   "css": "f836404b3728"
+  }
+ },
+ "base": "v8",
+ "audit": {
+  "desktop-rtl": {
+   "task10": {
+    "steps": 1690,
+    "tested": 1130,
+    "cached": 560,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 424,
+    "tested": 398,
+    "cached": 26,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1690,
+    "tested": 1215,
+    "cached": 475,
+    "lagFrames": 1689,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      650
+     ],
+     [
+      648,
+      true,
+      false,
+      638
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 424,
+    "tested": 397,
+    "cached": 27,
+    "lagFrames": 423,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      648,
+      true,
+      false,
+      608
+     ]
+    ]
+   },
+   "errors": []
+  },
+  "mobile-rtl": {
+   "task10": {
+    "steps": 1070,
+    "tested": 722,
+    "cached": 348,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 268,
+    "tested": 238,
+    "cached": 30,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1070,
+    "tested": 789,
+    "cached": 281,
+    "lagFrames": 1069,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      676,
+      true,
+      false,
+      666
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 268,
+    "tested": 238,
+    "cached": 30,
+    "lagFrames": 267,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      3186,
+      false,
+      true,
+      3146
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      706,
+      true,
+      false,
+      666
+     ]
+    ]
+   },
+   "errors": []
+  },
+  "mobile-shift": {
+   "task10": {
+    "steps": 1130,
+    "tested": 791,
+    "cached": 339,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 284,
+    "tested": 242,
+    "cached": 42,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1130,
+    "tested": 792,
+    "cached": 338,
+    "lagFrames": 1129,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      676,
+      true,
+      false,
+      666
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 284,
+    "tested": 240,
+    "cached": 44,
+    "lagFrames": 283,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      3486,
+      false,
+      true,
+      3446
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      686,
+      true,
+      false,
+      646
+     ]
+    ]
+   },
+   "errors": []
+  }
+ },
+ "wallMs": 178822
+}
