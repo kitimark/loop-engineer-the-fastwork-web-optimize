@@ -3,8 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft, parked mid-measurement (usage pause, lead 2026-10-04 10:52Z)
-**Stage:** I (mechanism counts in Chrome done; Simulator counts, layer census and pixels still owed)
+**Status:** proposal PR-019 posted; waiting for the user's decision
+**Stage:** I done (Chrome + Simulator counts, layer census, pixels at phone + desktop width, reduced motion); the
+phone is not used (no ticket yet)
 **Device class / gate:** "less work" mechanism (counts, no timing: memory/defer-timing-focus-call-tree.md); phone
 only via a ticket read by mgmt-ops-10
 **Driver(s) behind the claims:** Chrome counts and frozen-frame pixels (fixes/accent-ca/chrome-counts.mjs)
@@ -26,7 +27,9 @@ change (fix-hero-exit-threaded: B-R2 touches no accent rule).
 - Boil (idle, 1.25 s of each 3.05 s cycle): three SVG frames swap by `0.6s step-end infinite` opacity animations.
   WebKit iOS 26 never hands `steps()` timing to Core Animation (F-048/F-065, source line cited in F-215 by
   fix-cd-roll-ca: KeyframeEffect canBeAccelerated, l.2015-2021), so each step is main-thread style plus an
-  opacity-flip Layout (F-075).
+  opacity-flip Layout (F-075). The Simulator census (below) shows WebKit still gives the three boil SVGs their own
+  backed layers while idle (reason "animation, stacking") and drops them at every draw (OBSERVED, F-220), and the
+  boil is a small part of the accent's cost: the draw dominates.
 - Draw (draw-out 0.9 s, then draw-in 0.9 s): `stroke-dashoffset` animations on the path of EVERY boil frame: three
   paths animate, but frames 1-2 are `opacity: 0` while drawing (rule at CSS ~1308-1316), so 2 of 3 run for nothing.
   A stroke-dashoffset change is an SVG Layout + repaint every frame on WebKit (F-097) and is never composited in
@@ -43,14 +46,14 @@ change (fix-hero-exit-threaded: B-R2 touches no accent rule).
    `.is-idle-frame:not(.is-idle-frame-0) :is(.accent-path, .accent-fill)` under `.is-drawing-in/out`). They are
    `opacity: 0` then, so this is exact.
 3. Reduced motion: the existing `@media (prefers-reduced-motion: reduce)` block sets `animation: none !important` on
-   the same elements and the JS returns early: unchanged by construction (pixel check still owed, see below).
+   the same elements and the JS returns early: unchanged by construction, and checked: exact in Chrome and the Simulator (below).
 
 Other arms (not in patch.diff; overlays `fixes/accent-ca--wc`, `fixes/accent-ca--wipe`, snapshot copies in
 `out/accent-ca/snap/`): WC = E1 + `will-change: opacity` on `.accent-svg` (pre-promote once, F-213); WP = E1 + the
 10-02 wipe (a clip slide instead of the stroke draw: a VISIBLE change the user turned down in PR-001 rev 1; only as a
 proposal option, never recommended).
 
-## Numbers so far (Chrome 154, 430x932 DPR 3, mobile + touch, y 0, CPU 1x, no timing)
+## Chrome (Chrome 154, 430x932 DPR 3, mobile + touch, y 0, CPU 1x, no timing)
 
 Counts: one 9.15 s window (3 accent cycles) starting at a draw-out; C run twice (A/A).
 
@@ -77,19 +80,75 @@ idle t = 100, 199.9, 200.1, 300, 399.9, 400.1, 500, 599.9 ms (both sides of ever
 
 T0 (exact) in Chrome at phone width. Raw: `out/accent-ca/chrome-p430-2026-10-04T10-32-20-391Z.json`.
 
-## Still owed (when the pause ends)
+More Chrome pixel checks (2026-10-04 12:42-12:44Z): reduced motion at phone width, C/C-again/E1: 3 shots 700 ms
+apart each, 0 differ, computed styles of the accent subtree identical (`chrome-p430-rm-2026-10-04T12-42-46-346Z.json`);
+desktop 1440x900 DPR 2, the same 74-frame plan: C vs C-again 0, C vs E1 0 of 74 (`chrome-d1440-2026-10-04T12-43-41-042Z.json`).
 
-1. Simulator (WebKit) counts + LayerTree census, C/C/E1/WC: `sim-counts.mjs C,E1,WC counts,census` (the first try
-   crashed on a script bug, fixed; the second was queued and left at the pause). This decides the claim (main-thread
-   recalcs/layouts per second in idle) and E1 vs WC (layerTreeDidChange per cycle, F-213).
-2. Simulator pixels C/C/E1 (`pixels` mode) and reduced motion (`sim.mjs session --reduce-motion on`, `rm` mode);
-   Chrome desktop 1440 and reduced motion (`--desktop 1`, `--rm 1`); WC/WP Chrome counts.
-3. Motion-only difference: frozen frames are exact, but on the phone the boil switches would be drawn by Core
-   Animation on its own clock (80-120 Hz request while it runs, F-212) instead of at the page's main-thread update.
-   Under the stricter reading that is a timing difference, so the plan is ONE proposal (options: exact boil E1/WC,
-   wipe WP with the PR-001 history up front, keep) with Try-it pages (A = v6: `fixes/accent-ca--v6/patch.diff`).
-4. Cost to state: an infinite CA animation during idle keeps Core Animation's high-rate request alive for ~1.25 s of
-   every 3.05 s (F-212, fix-cd-roll-ca).
+## Simulator (WebKit; iPhone 15 Pro Max simulator, `sim.mjs session --functional`, no timing)
+
+Counts: one 9.15 s Timeline window from a draw-out (3 cycles), y 0, whole page running. Two sessions (12:30Z: C, C
+again, E1, WC; 12:47Z: C, C again, WP), so compare within a session.
+
+| arm | page updates (RenderingFrame) | style recalcs | layouts | paints | accent-word paints | frames with a recalc |
+|---|---|---|---|---|---|---|
+| C (v6) | 493 | 516 | 359 | 473 | 441 | 481 |
+| C again | 483 | 505 | 357 | 473 | 441 | 470 |
+| E1 (this patch) | 456 | 484 | 348 | 455 | 423 | 450 |
+| WC (E1 + will-change) | 460 | 490 | 348 | 411 | 377 | 456 |
+| C (2nd session) | 499 | 520 | 364 | 479 | 447 | 486 |
+| C again | 486 | 511 | 356 | 471 | 439 | 475 |
+| WP (E1 + wipe) | **263** | **281** | **32** | **128** | **58** | 245 |
+
+- E1 saves ~5-7 % of WebKit's recalc frames and accent paints (A/A spread 2 %). The draw (stroke-dashoffset, 1.8 s of
+  every 3.05 s) is SVG layout + paint every frame and has no exact compositor form; it is the accent's real cost.
+- WP (the clip wipe) removes nearly all of it: layouts 360 -> 32, accent paints 443 -> 58, page updates -47 %. A
+  visible change (see the proposal).
+- WC: ~10 % fewer accent paints than E1, at a permanent ~0.39 MB of layer backing. Not worth it; not an option.
+- Phase split (idle vs draw per second): not available. The page's `console.timeStamp` marks arrive (9 per window)
+  but their `startTime` does not line up with the frame records in our script (all frames fall in one phase); the
+  totals above don't depend on it. `LayerTree.layerTreeDidChange` never arrived (0 for every arm).
+
+Layer census (LayerTree snapshot at mid-draw-out, mid-draw-in, mid-boil, y 100, y 300; `sim-counts-census-...json`):
+C mid-boil: the 3 boil SVGs backed ("animation, stacking", 0.35-0.39 MB) + `.frame` ("transform with composited
+descendants"); mid-draw-out: no accent layers (the layers are made and dropped every cycle); mid-draw-in: only the 2
+row-sibling layers of the hero's word slide (HEflip). E1: the same. WC: the 3 SVG layers in every phase ("stacking,
+will-change"), still repainted during the draw. (F-220)
+
+Pixels: the plan's frozen frames ("you" draw-out, "คุณ" draw-in, idle, draw-out), paused and running, 58 frames;
+crop calibrated by a magenta marker (`sim-pixels-2026-10-04T12-36-58-991Z.json`, shots in `out/accent-ca/sim-shots/`).
+
+| pair | frames differing | largest shade | share beyond A/A | area | edge/fill | static/moving |
+|---|---|---|---|---|---|---|
+| C vs C again (A/A) | 27 of 58 | 211 | 0.90 % | 3615 CSS px2 | edge | moving (see below) |
+| C vs E1 | 8 of 58 | 2 | 0 % | 0 | - | - |
+
+- E1 equals one of the two C loads exactly in 57 of 58 frames; in the one other frame ("คุณ" draw-in 300 ms, running)
+  it is 2 of 255 shades off both, no pixel over 8. Exact for the tolerance rule (T0/T1).
+- The A/A break: from the idle 399.9 ms "running" shot on, the second C load kept a different boil frame on screen
+  for the rest of the cycle, through the draw-out, after the idle class and its animation were gone. Same build, so
+  a probe artefact of seeking/slowing a composited step-end animation, or a WebKit stale-layer glitch; OBSERVED,
+  cause unknown (F-221). E1 matched the first C load in those frames.
+
+Reduced motion (`sim.mjs session --reduce-motion on`, `rm` mode, `sim-rm-2026-10-04T12-46-18-939Z.json`): C, C
+again, E1: 3 shots each, 0 differ; computed styles the same.
+
+## Tiers
+
+| arm | Chrome phone | Chrome desktop | Simulator | reduced motion | tier |
+|---|---|---|---|---|---|
+| E1 | 0 / 74 | 0 / 74 | max 2 shades, 0 beyond A/A | exact (both) | T0/T1 on frozen frames; motion: the boil may switch on Core Animation's clock (not visible in frozen frames), so it goes to the user |
+| WP | see the proposal | | | | visible change while drawing (T3) |
+
+## Proposal
+
+PR-019 (posted 2026-10-04 ~12:55Z): ONE proposal with three options and Try-it pages (A = v6, `fixes/accent-ca--v6/patch.diff`):
+- `exact` = E1 (`fixes/accent-ca/patch.diff`), recommended: exact frames, small saving;
+- `slide` = WP (`fixes/accent-ca--wipe/patch.diff`): the big saving, but the wipe look the user turned down in PR-001
+  rev 1, stated up front;
+- `keep`: no change; PR-001 rev 2 (image frames, phone check approved) stays the route to keep the drawn look.
+
+Cost to state: an infinite CA animation during idle keeps Core Animation's high-rate request alive for ~1.25 s of
+every 3.05 s (F-212, fix-cd-roll-ca); not measured here. Phone: not used; a ticket would follow a decision.
 
 ## Tools
 

@@ -24,6 +24,11 @@ const ARMS = arg('--arms', 'C,E1').split(',');
 const WIN = Number(arg('--win', '9150'));
 const PIX = arg('--pixels', '0') === '1', FREEZE = arg('--freeze', '0') === '1', DESK = arg('--desktop', '0') === '1', RM = arg('--rm', '0') === '1';
 const COUNTS = arg('--counts', RM ? '0' : '1') === '1';
+// --save 1: keep every shot as a PNG in out/accent-ca/chrome-shots/<stamp>/<label>__<key>.png (proposal pictures);
+// --targets 'word|phase,...' replaces the shot plan's TARGETS
+const SAVE = arg('--save', '0') === '1';
+const TGT = arg('--targets', '') ? arg('--targets', '').split(',').map((x) => x.split('|')) : TARGETS;
+let lastBuf = null;
 const VW = DESK ? 1440 : 430, VH = DESK ? 900 : 932, DPR = DESK ? 2 : 3;
 const OUT = join(WT, 'out/accent-ca'); mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -99,7 +104,7 @@ async function counts(page) {
 
 async function shootFn(page) {
   return async (box) => { const r = await page.send('Page.captureScreenshot', { format: 'png', clip: { x: box.x, y: box.y, width: box.w, height: box.h, scale: 1 } });
-    const img = png(Buffer.from(r.data, 'base64')); return crop(img, { x: 0, y: 0, w: img.w, h: img.h }); };
+    lastBuf = Buffer.from(r.data, 'base64'); const img = png(lastBuf); return crop(img, { x: 0, y: 0, w: img.w, h: img.h }); };
 }
 
 const res = { tool: 'fixes/accent-ca/chrome-counts.mjs', startedAt: new Date().toISOString(), viewport: [VW, VH, DPR], win: WIN, freeze: FREEZE, rm: RM, order: labels, arms: {}, compare: {} };
@@ -128,7 +133,8 @@ try {
         row.accents = await page.eval('window.__ax.count()');
         if (FREEZE) row.frozen = await page.eval(FREEZE_JS);
         const shots = {};
-        const keep = (k, c) => { if (i === 0) ref[k] = c; else if (i === 1) aa[k] = c; shots[k] = c; };
+        const shotDir = join(OUT, 'chrome-shots', STAMP); if (SAVE) mkdirSync(shotDir, { recursive: true });
+        const keep = (k, c) => { if (SAVE && lastBuf) writeFileSync(join(shotDir, `${label}__${k.replace(/[|]/g, '_')}.png`), lastBuf); if (i === 0) ref[k] = c; else if (i === 1) aa[k] = c; shots[k] = c; };
         if (RM) {
           const shoot = await shootFn(page); const box = await page.eval('window.__ax.box()');
           row.rmStyles = await page.eval('window.__ax.styles()'); row.rmAnims = await page.eval('document.getAnimations().length');
@@ -140,7 +146,7 @@ try {
             await page.eval('(window.__acc.hold = true, 0)');
             for (let j = 0; j < 160 && !(await page.eval('window.__acc.heldReady()')); j++) await sleep(25);
             const shoot = await shootFn(page);
-            row.plan = await shootPlan((e) => page.eval(e), shoot, TARGETS, keep, { log: (m) => console.log(label, m) });
+            row.plan = await shootPlan((e) => page.eval(e), shoot, TGT, keep, { log: (m) => console.log(label, m) });
             row.plan.hits = await page.eval('window.__acc.hits');
           }
         }
