@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T08:15:00Z",
+ "updatedAt": "2026-10-04T08:25:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -94,15 +94,15 @@
    "writeup": "research/gpu-props/README.md",
    "title": "Hero ending run by Safari's scrolling thread",
    "area": "hero",
-   "state": "testing",
-   "stage": "F",
+   "state": "landed",
+   "stage": "L",
    "fixes": "The hero's fade-out as you scroll becomes an animation tied to scrolling that Safari runs off the main thread, in the part of the page that held most of the slow frames in your last finger run.",
    "felt": {
     "answer": "better",
     "text": "your blind swipes (C-038, C-039, C-040): you picked R2 in both pairs, and the catch pair (the same page twice) came out \"same\""
    },
    "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
-   "next": "Its short phone check (P-095) passed and you preferred it in the blind swipes; it is today's best build (v6). The lead lands it.",
+   "next": "Its short phone check (P-095) passed and you preferred it in the blind swipes; landed, and it is today's best build (v6). Next from this work: a proposal to use the same idea on the end-of-page menu animation (stage A: on touch phones, no scroll lock and a real scroll length with gentle snapping).",
    "owner": "fix-hero-exit-threaded",
    "checks": [ { "id": "P-095", "what": "short phone check of the slimmer version (R2) at the phone's real \"Serious\" heat state", "result": "Yes: no new slow frames over 50 ms, and fewer over 34 ms (median 12 vs 27 per run in the hero band); its extra script work stays off. Checked twice from the raw data." }, { "id": "P-088", "what": "phone test of the two cheaper restarts (N and Fb) at the phone's real \"Serious\" heat state", "result": "No: no extra slow frames, but both add work the moment your finger starts a scroll (and Fb still redraws at rest), so back to the code." } ],
    "details": [
@@ -183,9 +183,9 @@
     { "what": "the slow frame around 1960 px down", "before": "106-118 ms", "after": "none over 34 ms in 4 of 4 runs", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-022", "note": "one unexplained 49 ms frame at 2019 px in 1 run" },
     { "what": "frames over 50 ms in the whole scroll, per run", "before": "1-3", "after": "0-1", "tag": "OBSERVED", "driver": "scripted scroll", "ref": "P-022" }
    ],
-   "felt": { "answer": "better", "text": "your blind swipe (C-042): you picked the best build over the plain page, difference 4 of 5; one pair only, and the best build always came second on a warmer phone" },
+   "felt": { "answer": "better", "text": "provisional, one pair (C-042): you picked the best build over the plain page, difference 4 of 5; the best build came second, on a warmer phone" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "Your blind swipe is done (you picked the best build). It lands on that plus its earlier phone evidence for the hitch in the middle (P-013, P-022) and one heat check run; the lead decides the landing.",
+   "next": "Not landing on one pair. Next is one 4-part swipe step: the same pair with the best build first this time, plus a check pair. It runs after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087.",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -685,6 +685,7 @@
   }
  ],
  "upcoming": [
+  { "title": "Your second blind swipe step for the menu fix (F3): the same pair in the other order, plus a check pair of the same page twice", "when": "after the avatar-row check (P-094) and the countdown roll check (P-093), once you say \"ready\" in T-087", "item": "f3-arm-scope" },
   { "title": "Milestone 2: the same checks from a hot 42-44 °C start and with Xcode's \"Serious\" heat state on (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
   { "title": "Full phone timing run of the best build against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
