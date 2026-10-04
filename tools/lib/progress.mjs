@@ -40,7 +40,9 @@
 //     "details": ["<technical line>", …],
 //     "inBuild": true|false,                     // optional (I-061): in today's best build; must agree with build.fixes
 //     "whyNot": "<not applied: why, one plain line>",                        // optional (I-061): tried, not applied
-//     "writeup": "fixes/<topic>/README.md"       // optional (I-061): its write-up (fixes/ or research/, a .md file)
+//     "writeup": "fixes/<topic>/README.md",      // optional (I-061): its write-up (fixes/ or research/, a .md file)
+//     "build": "v8"                              // optional (user T-133): the next build it is meant for; /status and
+//                                                //   /progress group the parts of a build that has not landed yet
 //   }],
 //   "upcoming": [{ "title": "<a step that will come to the user console>", "when": "<plain>", "item": "<item id>" }],
 //   "build": {                                   // optional (I-061, user T-021): today's best build, the /build page
@@ -245,6 +247,7 @@ export function validateProgress(p) {
     if (inBuild.has(it.id) && it.whyNot !== undefined) E.push(`${at}.whyNot: "${it.id}" is in the build`);
     str(it.whyNot, `${at}.whyNot`, { optional: true, max: 200 });
     if (it.writeup !== undefined && !WRITEUP.test(String(it.writeup))) E.push(`${at}.writeup: a .md file under fixes/ or research/ (like fixes/<topic>/README.md)`);
+    if (it.build !== undefined && !(typeof it.build === 'string' && BUILD_TARGET.test(it.build))) E.push(`${at}.build: the build it is meant for, like "v8"`);
   });
   // T-079: every version, oldest first
   if (p.versions !== undefined) {
@@ -510,7 +513,12 @@ export async function gatherLive() {
       live.locks[r] = st;
     }
   } catch (e) { live.errors.push(`locks: ${e.message}`); }
-  try { live.incidents = (await import('./incident.mjs')).list(); } catch (e) { live.errors.push(`incidents: ${e.message}`); }
+  try {
+    const I = await import('./incident.mjs');
+    const all = I.list({ all: true });
+    live.incidents = all.filter((i) => I.ACTIVE.has(i.status));
+    live.incidentStatus = Object.fromEntries(all.map((i) => [i.id, i.status])); // T-125: a parked row's --resume-on incident:I-NNN
+  } catch (e) { live.errors.push(`incidents: ${e.message}`); }
   try { live.steps = (await import('./console.mjs')).list({ pending: true }); } catch (e) { live.errors.push(`console steps: ${e.message}`); }
   try { live.waits = (await import('./waits.mjs')).listWaits(); } catch (e) { live.errors.push(`waits: ${e.message}`); } // I-058
   // I-108: an open proposal (proposed, not held) waits on the user's decision, like a pending step
@@ -549,10 +557,46 @@ export async function refsLive() {
   return { steps, proposals, threads, at };
 }
 
+// ---- user T-133 #6: the next build(s) and their parts -------------------------------------------------------------
+
+const BUILD_TARGET = /^v\d{1,3}$/;
+/** "v7-best" -> "v7"; null when the id does not start with v<N>. */
+export const buildShort = (id) => (String(id ?? '').match(/^v\d{1,3}(?![0-9])/i) || [null])[0]?.toLowerCase() ?? null;
+/**
+ * The builds still to come and their parts, from PROGRESS data: items with "build": "v8", and the fixes of a version
+ * not landed yet (toTry) that is newer than the newest landed or best version (the integrator's parts list; an old
+ * preview like v5 is not "next"). A build that has a landed version is no longer next. Sorted v8, v9, …; parts in
+ * file order. -> [{build: 'v8', name, parts: [{id, via: 'item'|'version <id>'}]}]
+ */
+export function targetBuilds(p) {
+  const items = Array.isArray(p?.items) ? p.items.filter((x) => x && typeof x.id === 'string') : [];
+  const versions = Array.isArray(p?.versions) ? p.versions.filter((v) => v && typeof v === 'object') : [];
+  const num = (b) => Number(String(b).slice(1));
+  const landed = new Set(versions.filter((v) => !toTry(v)).map((v) => buildShort(v.id)).filter(Boolean));
+  const topN = Math.max(-1, ...[...landed].map(num).filter(Number.isFinite));
+  const groups = new Map();
+  const add = (b, id, via) => {
+    if (!b || landed.has(b)) return;
+    if (!groups.has(b)) groups.set(b, { build: b, name: null, parts: [] });
+    const g = groups.get(b);
+    if (!g.parts.some((x) => x.id === id)) g.parts.push({ id, via });
+  };
+  for (const it of items) if (typeof it.build === 'string' && BUILD_TARGET.test(it.build)) add(it.build, it.id, 'item');
+  for (const v of versions) {
+    const b = buildShort(v.id);
+    if (!b || !toTry(v) || landed.has(b) || num(b) <= topN) continue;
+    for (const f of Array.isArray(v.fixes) ? v.fixes : []) add(b, f, `version ${v.id}`);
+    if (groups.has(b) && !groups.get(b).name && typeof v.name === 'string') groups.get(b).name = v.name;
+  }
+  for (const g of groups.values()) if (!g.name) { const it = items.find((x) => x.id === g.build); g.name = it?.title || `Build ${g.build}`; }
+  return [...groups.values()].sort((a, b) => num(a.build) - num(b.build));
+}
+
 const MAIN_SHAS = 3000;
 /**
  * I-108 (3): main as the board checks branches against it: {merged: branch names merged into main, mainShas: the last
- * 3000 commits on main}. Read-only; throws when the repository or main is not there (gatherLive reports it).
+ * 3000 commits on main, shaAt: sha -> commit time, topics: topic -> {sha, at} of the newest of them touching
+ * fixes/<topic>/ (T-125)}. Read-only; throws when the repository or main is not there (gatherLive reports it).
  */
 const gitCache = new Map(); // cwd -> {at, value}: the pages poll; main moves at landings only
 export function gitLive(cwd = REPO, { now = Date.now(), maxAgeMs = 20000 } = {}) {
@@ -568,9 +612,23 @@ function gitRead(cwd) {
     if (r.status !== 0) throw new Error(`${a[0]} failed`);
     return r.stdout.split('\n').map((x) => x.trim()).filter(Boolean);
   };
-  const mainShas = run('rev-list', '-n', String(MAIN_SHAS), 'main');
+  const mainShas = [];
+  const shaAt = {};
+  for (const l of run('log', '-n', String(MAIN_SHAS), '--format=%H %cI', 'main')) {
+    const [sha, at] = l.split(' ');
+    mainShas.push(sha);
+    if (at) shaAt[sha] = new Date(at).toISOString();
+  }
   const merged = run('branch', '--merged', 'main', '--format=%(refname:short)');
-  return { mainShas, merged };
+  // T-125 #10: the newest commit on main that touched fixes/<topic>/ (a fix lands its deliverables there)
+  const topics = {};
+  let cur = null;
+  for (const l of run('log', '-n', String(MAIN_SHAS), '--format=@@%H', '--name-only', 'main', '--', 'fixes/')) {
+    if (l.startsWith('@@')) { cur = l.slice(2); continue; }
+    const m = l.match(/^fixes\/([a-z0-9][a-z0-9-]{0,60})\//);
+    if (cur && m && !topics[m[1]]) topics[m[1]] = { sha: cur, at: shaAt[cur] || null };
+  }
+  return { mainShas, merged, shaAt, topics };
 }
 
 // ---- the view ----------------------------------------------------------------------------------------
@@ -714,9 +772,9 @@ export async function probePorts(ports, { host = '127.0.0.1', timeoutMs = 300 } 
  * The page / CLI model from the curated data and the live sources. Pure: every input passed in.
  * {now, summary, goal, complaints, changes, live, sections: [{key, label, items}], upcoming, waiting}
  */
-const FINISHED_ROW = new Set(['landed', 'done', 'dropped']); // status board states that no longer rank (T-112)
+const FINISHED_ROW = new Set(['landed', 'done', 'closed-no-fix', 'dropped']); // status board states that no longer rank (T-112)
 
-export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists, lan = resolveLanUrl, versionPorts = new Map(), tryitPorts = new Set() } = {}) {
+export function buildView({ progress, errors = [], ledger = new Map(), live = {}, now = Date.now(), statusLinks = new Map(), board = null, writeups = writeupExists, lan = resolveLanUrl, versionPorts = new Map(), tryitPorts = new Set(), buildGroups = null, labelLegend = null } = {}) {
   const p = errors.length && !progress ? null : progress;
   const items = (p?.items || []).map((it) => itemView(it, ledger, statusLinks));
   const areaRank = (a) => Object.keys(AREAS).indexOf(a);
@@ -737,6 +795,15 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
     },
     goal: p?.goal || null,
     build: bestBuildView(p, { exists: writeups }), // I-061: today's best build (null without one)
+    // user T-133 #6: each build still to come with its parts and their one label (the status board's when it has them,
+    // else the Progress stage); finished parts stay listed
+    targets: buildGroups || targetBuilds(p).map((g) => ({ ...g, parts: g.parts.map((x) => {
+      const it = (p?.items || []).find((i) => i.id === x.id);
+      const done = !!it && (it.stage === 'L' || it.state === 'landed' || it.state === 'base');
+      const plain = !it ? 'not started yet' : done ? `done, waits for build ${g.build}` : it.state === 'dropped' ? 'dropped' : it.state === 'testing' ? 'being tested' : it.state === 'diagnosing' ? 'being diagnosed' : it.state;
+      return { id: x.id, via: x.via, title: it?.title || x.id, inProgress: !!it, done, label: statusLinks.get(x.id)?.label || plain, row: statusLinks.get(x.id)?.id || null, alerts: statusLinks.get(x.id)?.alerts || [] };
+    }) })),
+    labelLegend: labelLegend || [], // T-130: what the labels mean (the status board's list, the same on both pages)
     versions: versionsView(p, { lan, running: versionPorts, tryitPorts }), // T-079: the original page and every best build, oldest first
     complaints: (p?.complaints || []).map((c) => ({ ...c, areaLabel: AREAS[c.area] })),
     changes: [...(p?.changes || [])].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, CHANGES_SHOWN),
@@ -768,12 +835,14 @@ export function buildView({ progress, errors = [], ledger = new Map(), live = {}
 export async function currentView({ now = Date.now() } = {}) {
   const { data, errors } = readProgress();
   const live = await gatherLive();
-  let statusLinks = new Map(), board = null;
+  let statusLinks = new Map(), board = null, buildGroups = null, labelLegend = null;
   try {
     const S = await import('./status.mjs');
-    const sv = S.buildStatusView({ items: S.list(), live, now, progress: data?.items || null }); // I-104: rows found by id, alias, P-id too
+    const sv = S.buildStatusView({ items: S.list(), live, now, progress: Array.isArray(data?.items) ? data : null }); // I-104; T-124: the whole data (build, versions) for the labels: rows found by id, alias, P-id too
     statusLinks = S.progressLinks(sv);
     board = sv.items;
+    buildGroups = sv.buildGroups;
+    labelLegend = sv.labelLegend;
   } catch (e) { live.errors.push(`status board: ${e.message}`); }
   // T-079: does anything answer on each version's Try-it port now
   const ports = Array.isArray(data?.versions) ? data.versions.map((v) => v?.tryIt?.port) : [];
@@ -781,7 +850,7 @@ export async function currentView({ now = Date.now() } = {}) {
   if (ports.length) try { versionPorts = await probePorts(ports); } catch (e) { live.errors.push(`try-it ports: ${e.message}`); }
   let tryitPorts = new Set();
   try { tryitPorts = new Set((await import('./tryit.mjs')).listBuilds().map((e) => e.port)); } catch (e) { live.errors.push(`try-it registry: ${e.message}`); }
-  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board, versionPorts, tryitPorts });
+  return buildView({ progress: data, errors, ledger: readLedger(), live, now, statusLinks, board, versionPorts, tryitPorts, buildGroups, labelLegend });
 }
 
 // ---- text --------------------------------------------------------------------------------------------
@@ -897,7 +966,8 @@ export function renderText(v, { details = false } = {}) {
     for (const it of sec.items) {
       const stage = it.state === 'dropped' ? `stopped at stage ${it.stage.code}` : `stage ${it.stage.code}: ${it.stage.plain}`;
       L.push(`  [${it.areaLabel}] ${it.title}  (${stage}${it.owner ? `; ${it.owner}` : ''})`);
-      if (it.status) L.push(`    now: ${it.status.state} (${it.status.plain})${it.status.waits.length ? `; ${it.status.waits.join('; ')}` : ''}${it.status.stale ? '; may be out of date' : ''} [status board: ${it.status.id}]`);
+      if (it.status) L.push(`    now: ${it.status.label || it.status.state}${it.status.plain && it.status.plain !== it.status.label ? ` (${it.status.plain})` : ''}${it.status.waits.length ? `; ${it.status.waits.join('; ')}` : ''}${it.status.stale ? '; may be out of date' : ''} [status board: ${it.status.id}]`);
+      for (const a of it.status?.alerts || []) L.push(`    !! ${a} [status board: ${it.status.id}]`); // T-124
       if (it.fixes) L.push(`    what it fixes: ${it.fixes}`);
       for (const b of it.best) L.push(`    best: ${bestText(b)}`);
       if (it.felt) L.push(`    felt: ${FELT_PLAIN[it.felt.answer] || it.felt.answer}${it.felt.text ? ` (${it.felt.text})` : ''}`);

@@ -131,7 +131,8 @@ test('the progress page carries each linked workstream\'s live state (chip data 
   const page = await request(new URL('progress', base).href);
   assert.match(page.text, /href: '\/status#' \+ encodeURIComponent\(it\.status\.id\)/);
   const t = node(CON, ['progress'], { env });
-  assert.match(t.stdout, /now: measuring \(measuring it on Chrome or the phone\); waiting on the Chrome slot: Timeline A\/B \[status board: style-recalc\]/);
+  // T-124/T-130: the now line leads with the one plain label (a measurement during the diagnosis), then the row's words
+  assert.match(t.stdout, /now: being diagnosed \(measuring it on Chrome or the phone\); waiting on the Chrome slot: Timeline A\/B \[status board: style-recalc\]/);
 });
 
 // I-104 (user T-057 on /status#cd-roll-ca: "Can we link this row to each progress?"): rows link to their Progress
@@ -169,5 +170,77 @@ test('I-104: Status rows link to their Progress items and back (same id without 
     assert.deepEqual(hrefs(card, /^\/status#/), ['/status#cd-roll-ca', '/status#panel']);
     for (const h of hrefs(pp.document.documentElement, /^\/status#/)) assert.ok(v.items.some((x) => `/status#${x.id}` === h), `${h} is a row on the board`);
     for (const h of hrefs(sp.document.documentElement, /^\/progress#/)) assert.ok(more.items.some((x) => `/progress#${x.id}` === h), `${h} is a Progress item`);
+  } finally { writeFileSync(pf, JSON.stringify(progress)); }
+});
+
+test('T-124/T-125: --resume-on, the landed refusal, check (exit 3), sync, progress --check WARN, red rows on /status, the label on /progress', async () => {
+  const pf = env.FW_PROGRESS_FILE;
+  const more = { ...progress, build: { name: 'Version 1', since: '2026-10-02T08:00:00Z', fixes: ['in-best'] },
+    versions: [{ id: 'v1-best', name: 'Version 1', since: '2026-10-02T08:00:00Z', improvement: 'The hero is lighter.', best: true, fixes: ['in-best'], tryIt: { none: 'not served in this test' } }],
+    items: [...progress.items,
+      { id: 'done-item', title: 'Landed item', area: 'end', state: 'landed', stage: 'L', next: 'nothing', owner: 'fix-d' },
+      { id: 'in-best', title: 'In the best build', area: 'hero', state: 'testing', stage: 'F', next: 'phone check', owner: 'fix-b' },
+    ] };
+  writeFileSync(pf, JSON.stringify(more));
+  try {
+    assert.equal(st('set', 'done-item', '--by', 'fix-d', '--kind', 'fix', '--title', 'Landed row', '--state', 'testing').code, 0);
+    let r = st('set', 'done-item', '--by', 'fix-d', '--state', 'parked', '--resume-on', 'never');
+    assert.equal(r.code, 1);
+    assert.match(r.out, /PROGRESS item done-item, whose work is done \(done, not in a build\): when your part is over use --state done/);
+    r = st('set', 'ts-park', '--by', 'ts-p', '--kind', 'tool', '--title', 'Parked tool', '--state', 'parked');
+    assert.equal(r.code, 1);
+    assert.match(r.out, /--state parked needs --resume-on <when>/);
+    // parked on an incident the lead then resolves: the row reads "ready to resume" by itself
+    const INC = tool('incident.mjs');
+    const o = node(INC, ['open', '--by', 'ts-p', '--title', 'park test tool breaks', '--error', 'Error: park test', '--class', 'tool', '--blocking', 'no'], { env });
+    const inc = (o.out.match(/^OPENED (I-\d+)/m) || [])[1];
+    assert.ok(inc, o.out);
+    r = st('set', 'ts-park', '--by', 'ts-p', '--kind', 'tool', '--title', 'Parked tool', '--state', 'parked', '--resume-on', `incident:${inc}`, '--note', 'waits for the tool fix');
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, new RegExp(`^ADDED ts-park: parked; resumes on incident:${inc}$`, 'm'));
+    assert.equal(st('check').out.includes('READY ts-park'), false, 'still open: not ready');
+    assert.equal(node(INC, ['resolve', inc, '--by', 'lead', '--resolution', 'not-a-bug', '--note', 'works as meant'], { env }).code, 0);
+    assert.equal(st('set', 'cdwc', '--by', 'fix-nav-morph', '--kind', 'fix', '--title', 'Countdown row', '--state', 'landed').code, 0);
+    assert.equal(st('set', 'in-best', '--by', 'fix-b', '--kind', 'fix', '--title', 'Best row', '--state', 'testing').code, 0);
+    r = st('check');
+    assert.equal(r.code, 3, r.out);
+    assert.match(r.out, /^MISMATCH cdwc \(owner fix-nav-morph\): Progress cdwc: being tested; status row: done \(on main\)$/m);
+    assert.match(r.out, new RegExp(`^READY ts-park \\(owner ts-p\\): parked until ${inc} is resolved; ${inc} is resolved: ready to resume$`, 'm'));
+    assert.equal(JSON.parse(st('check', '--json').out).count, 2);
+    const w = node(CON, ['progress', '--check'], { env });
+    assert.equal(w.code, 0, 'warnings only');
+    assert.match(w.out, /^PROGRESS OK /m);
+    assert.match(w.out, /^ {2}WARN MISMATCH cdwc /m);
+    r = st('sync', '--by', 'lead', '--dry-run');
+    assert.equal(r.code, 0, r.out);
+    assert.match(r.out, /^WOULD SYNC done-item: testing \(landed: PROGRESS done-item: done, not in a build\)$/m);
+    assert.match(r.out, /^WOULD SYNC in-best: testing \(landed: PROGRESS in-best: in best build \(v1\)\)$/m);
+    assert.equal(JSON.parse(st('show', 'done-item', '--json').out).item.landed, undefined, 'dry run');
+    assert.equal(st('sync', '--by', 'lead').code, 0);
+    assert.deepEqual(JSON.parse(st('show', 'done-item', '--json').out).item.landed, { at: null, sha: null, via: 'PROGRESS done-item: done, not in a build' });
+    assert.match(st('sync', '--by', 'lead').out, /^nothing to sync$/m);
+    assert.equal(node(ST, ['sync'], { env: { ...env, FW_AGENT: '', FW_LOCK_OWNER: '' } }).code, 1, '--by is required');
+    // the pages: the red row and the count on /status, the combined label on /progress
+    const v = JSON.parse((await request(new URL('api/status', base).href)).text);
+    assert.equal(v.counts.alerts, 2);
+    assert.equal(v.items.find((x) => x.id === 'in-best').label, 'in best build (v1); being tested');
+    const sp = await loadPage(base, '/status');
+    // (the default filter shows active rows: cdwc is finished, its red line is on /progress below)
+    const tr = sp.document.querySelector('tr[data-item="ts-park"]');
+    assert.ok(tr.classList.contains('has-alert'));
+    assert.equal(tr.querySelector('span.alert').textContent, `ready to resume: ${inc} is resolved`);
+    assert.match(tr.textContent, new RegExp(`unfinished, paused until ${inc} is resolved · waits for the tool fix`));
+    assert.doesNotMatch(sp.document.body.textContent, /paused on purpose/, 'T-135');
+    assert.ok(sp.document.getElementById('labels-dl').childNodes.length >= 20, 'T-130: the legend');
+    assert.equal(sp.document.querySelector('tr[data-item="in-best"]').classList.contains('has-alert'), false);
+    assert.match(sp.document.querySelector('tr[data-item="in-best"]').textContent, /in best build \(v1\); being tested/);
+    assert.match(sp.document.getElementById('upd').textContent, /2 to fix/);
+    const pp = await loadPage(base, '/progress');
+    const chip = (id) => pp.document.querySelector(`section[data-item="${id}"]`).querySelectorAll('a').find((a) => /^\/status#/.test(a.getAttribute('href') || ''));
+    assert.equal(chip('in-best').textContent, 'now: in best build (v1); being tested');
+    assert.ok(chip('cdwc').classList.contains('bad'));
+    const txt = node(CON, ['progress'], { env }).out;
+    assert.match(txt, /\n {4}now: in best build \(v1\); being tested \(/);
+    assert.match(txt, /\n {4}!! does not match: Progress cdwc: being tested; status row: done \(on main\) \[status board: cdwc\]\n/);
   } finally { writeFileSync(pf, JSON.stringify(progress)); }
 });

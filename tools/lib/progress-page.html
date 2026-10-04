@@ -232,7 +232,7 @@ function itemCard(it, compact) {
   card.appendChild(el('div', { class: 'meta' },
     el('span', { class: 'chip', text: it.areaLabel }),
     it.attention ? el('span', { class: 'chip bad', text: 'new result' }) : null,
-    it.status ? el('a', { class: 'chip' + (it.status.stale ? ' warn' : ''), href: '/status#' + encodeURIComponent(it.status.id), title: 'Status row ' + it.status.id + ': ' + it.status.plain + (it.status.waits.length ? ' · ' + it.status.waits.join(' · ') : ''), text: (it.status.priority && !/^(landed|done|dropped)$/.test(it.status.state) ? '#' + it.status.priority + ' · ' : '') + 'now: ' + it.status.state + (it.status.waits.length ? ' · ' + it.status.waits[0] : '') }) : null,
+    it.status ? el('a', { class: 'chip' + (it.status.alerts && it.status.alerts.length ? ' bad' : it.status.stale ? ' warn' : ''), href: '/status#' + encodeURIComponent(it.status.id), title: 'Status row ' + it.status.id + ': ' + it.status.plain + (it.status.waits.length ? ' · ' + it.status.waits.join(' · ') : '') + (it.status.alerts && it.status.alerts.length ? ' · ' + it.status.alerts.join(' · ') : ''), text: (it.status.priority && !/^(landed|done|closed-no-fix|dropped)$/.test(it.status.state) ? '#' + it.status.priority + ' · ' : '') + 'now: ' + (it.status.label || it.status.state) + (it.status.waits.length ? ' · ' + it.status.waits[0] : '') }) : null,
     it.owner ? el('span', null, 'owner: ', agentLink(it.owner)) : null));
   // I-104 (user T-057): the other Status rows that belong to this item (the server names only rows on the board)
   if (it.status && it.status.also) it.status.also.forEach(function (x) {
@@ -424,6 +424,17 @@ function render(v) {
     }
     m.appendChild(g);
   }
+  // T-133 #6: each build still to come, near the top: its parts and each part's one label (finished parts stay)
+  (v.targets || []).forEach(function (g) {
+    var ul = el('ul', { class: 'plain parts' });
+    g.parts.forEach(function (x) {
+      ul.appendChild(el('li', { 'data-part': x.id },
+        x.inProgress ? el('a', { href: '#' + encodeURIComponent(x.id), text: x.title }) : el('b', { text: x.title }), ': ',
+        el('span', { class: x.done ? 'chip ok' : 'chip', text: x.label }),
+        x.alerts && x.alerts.length ? el('span', { class: 'chip bad', text: x.alerts.join('; ') }) : null));
+    });
+    m.appendChild(el('section', { class: 'card build-next', 'data-build': g.build, 'aria-label': 'Next build ' + g.build }, el('h2', { text: 'Next build ' + g.build + ': ' + g.name }), ul));
+  });
   buildCard(m, v.build);
   if (v.changes.length) {
     m.appendChild(el('h2', { class: 'section', text: 'What changed' }));
@@ -464,6 +475,8 @@ function render(v) {
     var lines = v.live.incidents.list.map(function (i) { return i.id + (i.blocking ? ' (blocking)' : '') + ': ' + i.title; });
     m.appendChild(detailsBox('__incidents', 'All open tool problems (' + lines.length + ')', lines));
   }
+  // T-130: what the labels mean, the same lines as on /status
+  if (v.labelLegend && v.labelLegend.length) m.appendChild(detailsBox('__labels', 'What the labels mean', v.labelLegend.map(function (x) { return x.label + ': ' + x.plain; })));
 }
 
 var sig = '', hashDone = false;

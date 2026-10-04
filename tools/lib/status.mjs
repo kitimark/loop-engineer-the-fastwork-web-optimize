@@ -29,7 +29,7 @@ import { join } from 'node:path';
 import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
-import { findPersonal, sanitize, gatherLive, readProgress } from './progress.mjs';
+import { findPersonal, sanitize, gatherLive, readProgress, toTry, buildShort, targetBuilds } from './progress.mjs';
 import { waitPlain, isListener, listenPlain, ownerText } from './waits.mjs';
 
 export const SCHEMA = 'fw-status/1';
@@ -63,9 +63,11 @@ export const STATES = {
   // user T-044: a row names its reason in the same line (itemView: "waiting for: <the waiting-on text>"); this is the legend
   waiting: { group: 'waiting', plain: 'waiting for: what the owner names (or "reason not given")' },
   'ready-to-land': { group: 'waiting', plain: 'finished; waiting for the lead to land it' },
-  parked: { group: 'parked', plain: 'paused on purpose; may resume' },
+  parked: { group: 'parked', plain: 'paused; the row says why and what brings it back (--resume-on)' }, // T-135: never a generic "may resume"
   landed: { group: 'finished', plain: 'on main (done)' },
-  done: { group: 'finished', plain: 'finished (nothing to land)' },
+  done: { group: 'finished', plain: 'finished, no build to land' }, // user T-139 #3: a tool or review job
+  // T-124 (user, lead decision): a topic closed without a fix is not "done"; done stays for landed or finished work
+  'closed-no-fix': { group: 'finished', plain: 'closed without a fix (nothing landed)' },
   dropped: { group: 'finished', plain: 'stopped; will not continue' },
 };
 export const STATE_NAMES = Object.keys(STATES);
@@ -181,6 +183,44 @@ export function parseUnlink(v) {
   }))];
 }
 
+/**
+ * T-125 #14: when a parked row comes back, so the board can say "ready to resume" by itself:
+ * incident:I-NNN (resolved) | land:<topic|sha> (on main) | after:<ISO time> | decision:lead|user | build:<vN> (a
+ * best build of that name) | never (done for good). Returns {kind, target?}.
+ */
+export const RESUME_KINDS = ['incident', 'land', 'after', 'decision', 'build', 'never'];
+const RESUME_HELP = 'incident:I-NNN | land:<topic|sha> | after:<ISO time> | decision:lead|user | build:v8 | never';
+export function parseResumeOn(v) {
+  const raw = String(v ?? '').trim();
+  const i = raw.indexOf(':');
+  const kind = (i < 0 ? raw : raw.slice(0, i)).trim().toLowerCase();
+  const t = i < 0 ? '' : raw.slice(i + 1).trim();
+  const bad = (why) => new Error(`bad --resume-on "${raw}"${why ? ` (${why})` : ''}: one of ${RESUME_HELP}`);
+  if (kind === 'never') { if (t) throw bad('never takes no target'); return { kind }; }
+  if (!RESUME_KINDS.includes(kind) || !t) throw bad();
+  if (kind === 'incident') {
+    const m = t.match(/^(?:i-?)?0*(\d{1,6})$/i);
+    if (!m) throw bad('an incident id like I-136');
+    return { kind, target: `I-${m[1].padStart(3, '0')}` };
+  }
+  if (kind === 'land') {
+    if (/^[0-9a-f]{7,40}$/.test(t)) return { kind, target: t };
+    if (!SLUG.test(t)) throw bad('a topic slug or a commit sha');
+    return { kind, target: t };
+  }
+  if (kind === 'after') {
+    const ms = Date.parse(t);
+    if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(t) || !Number.isFinite(ms)) throw bad('an ISO time like 2026-10-04T16:00Z');
+    return { kind, target: new Date(ms).toISOString() };
+  }
+  if (kind === 'decision') {
+    if (!['lead', 'user'].includes(t.toLowerCase())) throw bad('decision:lead or decision:user');
+    return { kind, target: t.toLowerCase() };
+  }
+  if (!/^v\d{1,3}[a-z0-9-]{0,30}$/i.test(t)) throw bad('a build name like v8');
+  return { kind: 'build', target: t.toLowerCase() };
+}
+
 function parseAliases(v) {
   const list = (Array.isArray(v) ? v : String(v).split(',')).map((x) => String(x).trim()).filter(Boolean);
   if (list.length > 8) throw new Error('at most 8 --alias names');
@@ -255,6 +295,8 @@ export async function set(id, opts = {}) {
   const waitGiven = opts.waitingOn !== undefined;
   const wait = waitGiven ? parseWaiting(opts.waitingOn) : undefined;
   const unlink = opts.unlink !== undefined ? parseUnlink(opts.unlink) : undefined;
+  const resumeOn = opts.resumeOn !== undefined ? parseResumeOn(opts.resumeOn) : undefined;
+  if (resumeOn && v.state !== undefined && v.state !== 'parked') throw new Error('--resume-on goes with --state parked');
 
   return withGuard(GUARD, () => {
     mkdirSync(statusDir(), { recursive: true });
@@ -275,8 +317,22 @@ export async function set(id, opts = {}) {
     else if (waitGiven) newWait = wait;
     if (state === 'ready-to-land' && !newWait && (v.state !== undefined || !waitGiven)) newWait = { kind: 'lead', text: 'land request' };
     if (state === 'waiting' && !newWait) throw new Error('--state waiting needs --waiting-on <what> (chrome, phone, user, lead, agent:<name>, review:<name>, incident:I-0NN, item:<id>, other:"<text>")');
+    // T-125 #14 (a): a parked row names what brings it back (ts-testspeed sat parked 3 h after its incident resolved)
+    if (resumeOn && state !== 'parked') throw new Error('--resume-on goes with --state parked');
+    if (v.state === 'parked' && !resumeOn && !(it.state === 'parked' && it.resumeOn)) {
+      throw new Error(`--state parked needs --resume-on <when>: ${RESUME_HELP} (never: done for good). The board then shows "ready to resume" when it happens`);
+    }
+    // T-125 #10 (c): a landed topic is not parked or researching (countdown-faces stayed "parked" after it landed);
+    // T-135: parked until its build comes out (--resume-on build:v8, a part still to check there) is fine
+    const waitsForBuild = v.state === 'parked' && (resumeOn || (it.state === 'parked' ? it.resumeOn : null))?.kind === 'build';
+    if ((v.state === 'parked' && !waitsForBuild) || v.state === 'researching') {
+      const lp = landedProgress({ ...it, ...(v.progress !== undefined && { progress: v.progress }), ...(v.aliases && { aliases: v.aliases }), ...(v.refs && { refs: v.refs }) }, opts.progressData);
+      if (lp) throw new Error(`${sid} belongs to PROGRESS item ${lp.id}, whose work is done (${lp.label}): when your part is over use --state done (the board then shows "${lp.label}"); for follow-up work on it use designing, implementing, testing or measuring, or start a new row`);
+    }
     if (v.state !== undefined && v.state !== it.state) { changes.state = v.state; it.state = v.state; it.stateSince = now; }
     put('waitingOn', newWait);
+    put('resumeOn', state === 'parked' ? (resumeOn ?? it.resumeOn ?? null) : null);
+    if (it.resumeOn === null) delete it.resumeOn;
     // unlinked incidents (I-044): --unlink adds, 'none' clears; a self-reported wait on one links it again
     let unl = unlink === undefined ? it.unlinked || [] : unlink === null ? [] : [...new Set([...(it.unlinked || []), ...unlink])];
     if (newWait?.kind === 'incident') unl = unl.filter((x) => x !== newWait.target);
@@ -498,6 +554,205 @@ export function waitAnswered(it, live = {}, now = Date.now()) {
   return { refs: ids, at, plain: `${ends.map((e) => `${e.what}${e.at ? ` at ${hhmm(e.at)}` : ''}`).join(', ')}${tail}` };
 }
 
+// ---- T-124/T-125/T-130: one plain label per item, derived from PROGRESS and the row -------------------------------
+
+/**
+ * The PROGRESS facts the labels need, from fixes/PROGRESS.json data (or a bare items array): items, the best build
+ * (its short name "v7" and build.fixes), every item in a landed version (builds stack, so it is in the best build
+ * too), the landed version ids, and the next build each item is meant for (T-133). null without items.
+ */
+export function progressContext(p) {
+  const items = Array.isArray(p) ? p : Array.isArray(p?.items) ? p.items : null;
+  if (!items) return null;
+  const versions = Array.isArray(p?.versions) ? p.versions.filter((v) => v && typeof v === 'object') : [];
+  const bestV = versions.find((v) => v.best === true) || null;
+  const bestFixes = new Set(Array.isArray(p?.build?.fixes) ? p.build.fixes : []);
+  const built = new Set(bestFixes);
+  for (const v of versions) if (!toTry(v) && Array.isArray(v.fixes)) for (const f of v.fixes) built.add(f);
+  const short = bestV ? buildShort(bestV.id) : null;
+  const landedBuilds = versions.filter((v) => !toTry(v)).map((v) => String(v.id).toLowerCase());
+  const groups = Array.isArray(p) ? [] : targetBuilds(p);
+  const targetOf = new Map();
+  for (const g of groups) for (const x of g.parts) if (!targetOf.has(x.id)) targetOf.set(x.id, g.build);
+  return { items, byId: new Map(items.filter((x) => x && typeof x.id === 'string').map((x) => [x.id, x])), best: { short, fixes: bestFixes }, built, landedBuilds, groups, targetOf };
+}
+const ctxOf = (x) => (x && x.byId instanceof Map ? x : progressContext(x));
+
+/** In the best build: in build.fixes or in any landed version (builds stack), or the base everything builds on. */
+const inBest = (it, ctx) => it.state === 'base' || !!ctx?.built?.has(it.id);
+/** Is this PROGRESS item's work done: in the best build, or its notes saved (stage L / state landed). */
+export function progressLanded(it, ctx) {
+  if (!it) return false;
+  return inBest(it, ctx) || it.stage === 'L' || it.state === 'landed';
+}
+
+/**
+ * user T-130 #6: the plain words of every label, shared by /status and /progress (their legends) and the text views.
+ * "landed" is never shown alone: it only means the notes were saved on main.
+ */
+export const LABEL_LEGEND = [
+  ['in best build (v7)', 'part of the best build the user tries today'],
+  ['done, waits for build (v8)', 'the work is finished and saved; the next build will include it'],
+  ['done, not in a build', 'finished and saved on main; no build includes it, and none is planned yet'],
+  ['being tested (rev 2)', 'the owner is checking it now; rev = which version of the fix'],
+  ['being built', 'the owner is writing the change'],
+  ['being diagnosed', 'still finding out what makes it slow'],
+  ['unfinished, paused until …', 'stopped for now; it starts again when the named thing happens'],
+  ['standing by', 'a helper (ops, the desk, the phone runner) with nothing to do right now'],
+  ['closed, no fix', 'looked at and closed without a change to the page'],
+  ['not used', 'finished, but in no build; the reason follows'],
+  ['dropped', 'tried and given up'],
+  ['ready to resume', 'red: what a paused row waited for has happened'],
+  ['does not match', 'red: the row and the progress list say different things; the lead fixes one'],
+];
+
+/** The Progress side, plain: "in best build (v7)", "done, waits for build v8", "dropped", "being tested". */
+export function progressLabel(it, ctx) {
+  if (inBest(it, ctx)) return `in best build${ctx?.best?.short ? ` (${ctx.best.short})` : ''}`;
+  if (progressLanded(it, ctx)) {
+    const t = ctx?.targetOf?.get(it.id);
+    if (t) return `done, waits for build ${t}`; // T-133: a part of the next build
+    if (it.whyNot) return 'not used'; // T-139 #3: done, kept on main, in no build (its whyNot says why)
+    return 'done, not in a build'; // T-140: never "waits for build" without a build to wait for
+  }
+  if (it.state === 'dropped') return 'dropped';
+  if (it.state === 'testing') return 'being tested';
+  if (it.state === 'diagnosing') return 'being diagnosed';
+  return String(it.state || 'unknown');
+}
+
+const REV = /\brev(?:ision)?\.?\s*(\d{1,3})\b/i;
+const revOf = (...texts) => { for (const t of texts) { const m = String(t ?? '').match(REV); if (m) return Number(m[1]); } return null; };
+/** What the owner is doing now, in plain words (an active row). */
+const ACTIVITY = {
+  queued: 'not started', researching: 'being diagnosed', designing: 'being designed', implementing: 'being built',
+  testing: 'being tested', measuring: 'being tested', reviewing: 'in review', coordinating: 'being coordinated',
+  waiting: 'waiting', 'ready-to-land': 'ready, waits for the lead',
+};
+function activity(row, p) {
+  // a measurement while Progress still diagnoses it is part of the diagnosis (style-recalc: Timeline A/B)
+  const a = p?.state === 'diagnosing' && ['researching', 'testing', 'measuring'].includes(row.state) ? 'being diagnosed' : ACTIVITY[row.state] || row.state;
+  const rev = a === 'being tested' || a === 'being built' || a === 'in review' ? revOf(row.note, row.title, p?.next, p?.title) : null;
+  return rev ? `${a} (rev ${rev})` : a;
+}
+/** The row's state in the words a mismatch line uses (never "landed" alone). */
+const ROW_SAYS = { landed: 'done (on main)', done: 'done', 'closed-no-fix': 'closed, no fix', dropped: 'dropped', parked: 'paused', researching: 'being diagnosed' };
+
+/** The row's strongest PROGRESS item (I-104 matches) with how it matched, or null. */
+function progressMatch(row, ctx) {
+  if (!ctx) return null;
+  const m = progressMatches(row, ctx.items)[0];
+  const p = m ? ctx.byId.get(m.id) : null;
+  return p ? { p, how: m.how } : null;
+}
+const progressOf = (row, ctx) => progressMatch(row, ctx)?.p || null;
+
+/** set(): the row's PROGRESS item when its work is done ({id, label}), else null. progressData: tests; default the file. */
+function landedProgress(row, progressData) {
+  let data = progressData;
+  if (data === undefined) { try { data = readProgress().data; } catch { data = null; } }
+  const ctx = progressContext(data);
+  const p = progressOf(row, ctx);
+  return p && progressLanded(p, ctx) ? { id: p.id, label: progressLabel(p, ctx) } : null;
+}
+
+const NOT_FIX_KINDS = new Set(['ops', 'phone']); // T-125: ops, the desk, the phone runner stand by, they don't finish
+function resumePlain(r) {
+  if (!r) return '';
+  if (r.kind === 'incident') return `${r.target} is resolved`;
+  if (r.kind === 'land') return `${r.target} is saved on main`;
+  if (r.kind === 'after') return `${r.target.slice(0, 10)} ${hhmm(r.target)}`;
+  if (r.kind === 'decision') return `the ${r.target} decides`;
+  if (r.kind === 'build') return `build ${r.target} is out`;
+  return r.kind;
+}
+
+/**
+ * T-125 #14 (b): is a parked row's --resume-on condition met? From the live sources only (never guessed): an incident
+ * resolved or parked (live.incidentStatus), a sha or a topic's fixes/<topic>/ commit on main after the row was parked
+ * (or its PROGRESS item done), the time passed, a landed build of that name. Returns the plain why, or null.
+ */
+export function resumeReady(it, live = {}, ctx = null, now = Date.now()) {
+  const r = it.resumeOn;
+  if (!r || it.state !== 'parked') return null;
+  if (r.kind === 'incident') {
+    const st = live.incidentStatus?.[r.target]; // an id the store does not know is never "ready"
+    if (st === 'resolved') return `${r.target} is resolved`;
+    if (st === 'parked') return `${r.target} was parked (no fix coming now)`;
+  }
+  if (r.kind === 'after' && now >= Date.parse(r.target)) return `it is past ${hhmm(r.target)}`;
+  if (r.kind === 'build' && ctx?.landedBuilds?.some((id) => id === r.target || id.startsWith(`${r.target}-`))) return `build ${r.target} is out`;
+  if (r.kind === 'land') {
+    const g = live.git;
+    if (/^[0-9a-f]{7,40}$/.test(r.target)) { if (g && [...asSet(g.mainShas)].some((s) => s.startsWith(r.target))) return `${r.target} is on main`; }
+    else {
+      const t = g?.topics?.[r.target];
+      if (t?.at && (!it.stateSince || t.at > it.stateSince)) return `${r.target} was saved on main (${String(t.sha).slice(0, 8)})`;
+      const p = ctx?.byId?.get(r.target);
+      if (p && progressLanded(p, ctx)) return `${r.target} is ${progressLabel(p, ctx)}`;
+    }
+  }
+  return null;
+}
+
+/** The branch's work is on main (I-108 landHead, or the branch merged). */
+const branchOnMain = (it, live) => !!(it.branch?.landHead && live.git && (asSet(live.git.mainShas).has(it.branch.landHead) || asSet(live.git.merged).has(it.branch.name)));
+
+/**
+ * T-124/T-125/T-130: the row's derived words. Returns {plain (statePlain override or null), label (the one plain
+ * label, with the PROGRESS item, or null without one), mismatch: [..], progress: id|null, how (the match), resume:
+ * {kind, target, plain, ready}|null, needsReview: plain|null}.
+ */
+export function deriveLabel(it, { live = {}, ctx = null, now = Date.now() } = {}) {
+  const m = progressMatch(it, ctx);
+  const p = m?.p || null;
+  const landed = p ? progressLanded(p, ctx) : false;
+  const P = p ? progressLabel(p, ctx) : null;
+  const out = { plain: null, label: null, mismatch: [], progress: p?.id || null, how: m?.how || null, resume: null, needsReview: null };
+  if (it.state === 'parked') {
+    const r = it.resumeOn || null;
+    const until = r && r.kind !== 'never' ? ` until ${resumePlain(r)}` : '';
+    if (NOT_FIX_KINDS.has(it.kind)) out.plain = `standing by${until}`;
+    else if (landed) out.plain = P;
+    else if (r?.kind === 'build') out.plain = `done, waits for build ${r.target}`;
+    else if (branchOnMain(it, live)) out.plain = 'done, not in a build';
+    else if (r?.kind === 'never') out.plain = 'done, nothing more to do';
+    else out.plain = `unfinished, paused${until}`;
+    if (r) out.resume = { ...r, plain: resumePlain(r), ready: resumeReady(it, live, ctx, now) };
+    // user T-135: never the generic "paused on purpose; may resume": the label (with its "until …") and the row's own
+    // reason, e.g. "done, waits for build v8 · next: phone no-worse check in v8's block"
+    const reason = it.next ? `next: ${sanitize(it.next, LIMITS.next)}` : it.note ? sanitize(it.note, LIMITS.note) : null;
+    out.plain = [out.plain, reason].filter(Boolean).join(' · ');
+    // T-125 #14 (c) / T-135: a parked row without a reason or a way back is red until the owner says
+    const since = it.stateSince ? `; paused ${forText(minutes(it.stateSince, now))}` : '';
+    if (!reason) out.needsReview = `needs review: no reason given${r ? '' : ' and nothing set to bring it back (--resume-on)'}${since}`;
+    else if (!r) out.needsReview = `needs review: nothing set to bring it back (--resume-on)${since}`;
+  }
+  if (!p) return out;
+  // diagnosing contradicts a finished row always (r4-v3: in v6, yet "diagnosing"); testing only while not built (an
+  // item in a build is tested there)
+  const active = p.state === 'diagnosing' || (p.state === 'testing' && !landed);
+  const said = (x) => `Progress ${p.id}: ${x}; status row: ${ROW_SAYS[it.state] || it.state}`;
+  if (active && ['landed', 'done', 'dropped', 'closed-no-fix'].includes(it.state)) out.mismatch.push(said(p.state === 'diagnosing' ? 'being diagnosed' : 'being tested'));
+  if (landed && it.state === 'dropped') out.mismatch.push(said(P));
+  if (!landed && p.state === 'dropped' && it.state === 'landed') out.mismatch.push(said('dropped'));
+  if (landed && ((it.state === 'parked' && it.resumeOn?.kind !== 'build') || it.state === 'researching')) out.mismatch.push(`${said(P)} (status.mjs sync sets it done)`);
+  if (it.state === 'done' || it.state === 'closed-no-fix') out.label = landed ? P : 'closed, no fix';
+  else if (it.state === 'dropped') out.label = landed ? P : 'dropped';
+  else if (it.state === 'landed') out.label = landed ? P : P === 'dropped' ? 'dropped' : activityLabelFor(p);
+  else if (it.state === 'parked') out.label = out.plain.split(' · ')[0];
+  else out.label = landed ? `${P}; ${activity(it, p)}` : activity(it, p);
+  if (it.state === 'done') out.plain = landed ? P : 'closed, no fix';
+  // user T-139 #3: a finished row says why its work is not used (Progress whyNot), not only "closed"
+  const whyText = p.whyNot || (p.state === 'dropped' ? p.why : null); // a dropped item's own "why"
+  const why = whyText ? sanitize(whyText, LIMITS.note) : null;
+  if (why && FINISHED_ROW_STATES.has(it.state) && ['closed, no fix', 'dropped', 'not used'].includes(out.label)) out.plain = `${out.label}: ${why}`;
+  return out;
+}
+const FINISHED_ROW_STATES = new Set(['done', 'closed-no-fix', 'dropped', 'landed']);
+/** A row that says it is done while Progress still works on it: show Progress's words. */
+const activityLabelFor = (p) => (p.state === 'diagnosing' ? 'being diagnosed' : p.state === 'testing' ? 'being tested' : String(p.state));
+
 // ---- the view ----------------------------------------------------------------------------------------
 
 const minutes = (from, now) => (from ? Math.max(0, Math.round((now - Date.parse(from)) / 60000)) : null);
@@ -543,6 +798,8 @@ const matchRank = (how) => { const i = MATCH_RANK.indexOf(how); return i < 0 ? M
 
 export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin(), route = null, progress = null } = {}) {
   const st = STATES[it.state] || { group: 'working', plain: it.state };
+  const ctx = ctxOf(progress);
+  const lab = deriveLabel(it, { live, ctx, now }); // T-124/T-125
   const { derived, flags, over, liveWait } = derive(it, live, byId, now, route);
   const ageMin = minutes(it.updatedAt || it.createdAt, now);
   const canStale = ['working', 'waiting', 'queued'].includes(st.group);
@@ -555,9 +812,16 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   return {
     id: it.id, title: s(it.title, LIMITS.title), kind: it.kind, kindLabel: KINDS[it.kind] || it.kind,
     owner: s(it.owner, 80), aliases: (it.aliases || []).map((a) => s(a, 80)), progress: it.progress || null, refs: (it.refs || []).map((r) => s(r, 20)),
-    progressItems: progressMatches(it, progress), // I-104: links to /progress#<id>, only to items that exist
+    progressItems: progressMatches(it, ctx ? ctx.items : progress), // I-104: links to /progress#<id>, only to items that exist
     priority: Number.isInteger(it.priority) ? it.priority : null,
-    state: it.state, statePlain: statePlain(it.state, st, waiting), group: st.group, groupLabel: GROUPS[st.group] || st.group,
+    state: it.state, statePlain: lab.plain || statePlain(it.state, st, waiting), group: st.group, groupLabel: GROUPS[st.group] || st.group,
+    // T-124/T-125: one label with the PROGRESS item ("in v7, owner testing", "closed, no fix"), what contradicts it, and
+    // a parked row's way back (resumeOn, "ready to resume", "needs review"); alerts = the red lines on /status
+    // T-130/T-135: the one line the pages show for the state: the label (a parked row: label · its reason · its way
+    // back); null = the row's own state words
+    stateText: lab.plain && (it.state === 'parked' || st.group === 'finished') ? lab.plain : lab.label,
+    label: lab.label, labelOf: lab.progress, labelHow: lab.how, mismatch: lab.mismatch, resume: lab.resume, needsReview: lab.needsReview,
+    alerts: [...lab.mismatch.map((m) => `does not match: ${m}`), ...(lab.resume?.ready ? [`ready to resume: ${lab.resume.ready}`] : []), ...(lab.needsReview ? [lab.needsReview] : [])],
     // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
     stateSince: it.stateSince || null, stateForMin: minutes(st.group === 'waiting' ? waitSince(it) : it.stateSince, now),
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
@@ -586,10 +850,40 @@ export function compareViews(a, b) {
 export function buildStatusView({ items = [], live = {}, now = Date.now(), staleAfterMin = staleMin(), progress = null } = {}) {
   const byId = new Map(items.map((i) => [i.id, i]));
   const route = liveRouter(items);
-  const views = items.map((it) => itemView(it, { live, byId, now, staleAfterMin, route, progress })).sort(compareViews);
-  const counts = { total: views.length, stale: 0, waitingOnYou: 0 };
+  const ctx = ctxOf(progress); // T-124: PROGRESS data (items, build, versions) or a bare items array
+  const views = items.map((it) => itemView(it, { live, byId, now, staleAfterMin, route, progress: ctx })).sort(compareViews);
+  // user T-130 #6: one line per Progress item. Fix rows that belong to the same item by a strong match (linked by the
+  // owner, same id, same topic) fold under the newest one, which lists the others as "also" (morph-gpu had a stale
+  // "testing" row and a newer parked one: one line). Folded rows stay in items (foldedInto) for check and the JSON.
+  const STRONG = new Set(MATCH_RANK);
+  const byItem = new Map();
+  for (const v of views) if (v.labelOf && STRONG.has(v.labelHow) && v.kind === 'fix') { if (!byItem.has(v.labelOf)) byItem.set(v.labelOf, []); byItem.get(v.labelOf).push(v); }
+  for (const vs of byItem.values()) {
+    if (vs.length < 2) continue;
+    const primary = [...vs].sort((a, b) => (a.ageMin ?? Infinity) - (b.ageMin ?? Infinity))[0];
+    primary.also = vs.filter((x) => x !== primary).map((x) => ({ id: x.id, owner: x.owner, state: x.state, note: x.note || null, ageMin: x.ageMin }));
+    for (const x of vs) if (x !== primary) x.foldedInto = primary.id;
+  }
+  const counts = { total: 0, stale: 0, waitingOnYou: 0, alerts: 0, folded: 0 };
   for (const g of GROUP_ORDER) counts[g] = 0;
-  for (const v of views) { counts[v.group] = (counts[v.group] || 0) + 1; if (v.stale) counts.stale++; if (v.waitingOnYou) counts.waitingOnYou++; }
+  for (const v of views) {
+    if (v.foldedInto) { counts.folded++; continue; }
+    counts.total++;
+    counts[v.group] = (counts[v.group] || 0) + 1; if (v.stale) counts.stale++; if (v.waitingOnYou) counts.waitingOnYou++; if (v.alerts.length) counts.alerts++;
+  }
+  // user T-133 #6: each build still to come (v8) with its parts and each part's one label; finished parts stay
+  const buildGroups = (ctx?.groups || []).map((g) => ({
+    build: g.build, name: sanitize(g.name, LIMITS.title),
+    parts: g.parts.map((x) => {
+      const it = ctx.byId.get(x.id) || null;
+      const row = views.find((v) => !v.foldedInto && v.labelOf === x.id) || views.find((v) => !v.foldedInto && v.id === x.id) || null;
+      const label = row?.label && row.labelOf === x.id ? row.label : it ? progressLabel(it, ctx) : row ? row.statePlain : 'not started yet';
+      return {
+        id: x.id, via: x.via, title: sanitize(it?.title || row?.title || x.id, LIMITS.title), label, inProgress: !!it,
+        done: it ? progressLanded(it, ctx) : false, row: row?.id || null, owner: row?.owner || null, alerts: row?.alerts || [],
+      };
+    }),
+  }));
   // I-058: live waits whose owner has no active row (the rows show their own owner's waits)
   // (I-108: the same router as the rows, so a wait shows exactly once: on its row, or here)
   const otherWaits = (live.waits || []).filter((x) => route(x.owner, { text: x.reason }) === null)
@@ -600,6 +894,8 @@ export function buildStatusView({ items = [], live = {}, now = Date.now(), stale
     kinds: Object.entries(KINDS).map(([key, label]) => ({ key, label })),
     states: STATE_NAMES.map((k) => ({ key: k, group: STATES[k].group, plain: STATES[k].plain })),
     items: views,
+    buildGroups,
+    labelLegend: LABEL_LEGEND.map(([label, plain]) => ({ label, plain })), // T-130: the same on /status and /progress
     otherWaits,
     liveErrors: (live.errors || []).map((e) => sanitize(e, 200)),
   };
@@ -609,9 +905,13 @@ export function buildStatusView({ items = [], live = {}, now = Date.now(), stale
 export function progressItems() {
   try { const { data } = readProgress(); return Array.isArray(data?.items) ? data.items : null; } catch { return null; }
 }
+/** T-124: the whole PROGRESS data (items, build, versions) for the labels, or null. */
+export function progressData() {
+  try { const { data } = readProgress(); return Array.isArray(data?.items) ? data : null; } catch { return null; }
+}
 
 export async function currentStatusView({ now = Date.now(), live } = {}) {
-  return buildStatusView({ items: list(), live: live || (await gatherLive()), now, progress: progressItems() });
+  return buildStatusView({ items: list(), live: live || (await gatherLive()), now, progress: progressData() });
 }
 
 /**
@@ -633,10 +933,11 @@ export function progressLinks(view) {
   }
   const m = new Map();
   for (const [id, list] of rows) {
-    const [best, ...rest] = list.sort((a, b) => a.rank - b.rank); // stable: the board's order within a rank
+    const [best, ...rest] = list.sort((a, b) => a.rank - b.rank || (a.v.foldedInto ? 1 : 0) - (b.v.foldedInto ? 1 : 0)); // stable: the board's order within a rank; a folded row (T-130) after its line
     const v = best.v;
     const link = {
       id: v.id, state: v.state, plain: v.statePlain, stale: v.stale, priority: v.priority ?? null, // T-112: /progress sorts by it
+      ...(v.label && v.labelOf === id && { label: v.label }), ...(v.alerts?.length && { alerts: v.alerts }), // T-124
       waits: [...(v.waiting ? [v.waiting.answered ? v.waiting.plain : `waiting on ${v.waiting.plain}`] : []), ...v.derived.filter((d) => d.kind !== 'listen').map((d) => d.plain)], // I-108: a listener is no wait
     };
     if (rest.length) link.also = rest.map((r) => ({ id: r.v.id, title: r.v.title }));
@@ -657,6 +958,7 @@ export function countsText(c) {
   if (c.parked) bits.push(`${c.parked} parked`);
   if (c.waitingOnYou) bits.push(`${c.waitingOnYou} waiting on you`);
   if (c.stale) bits.push(`${c.stale} may be out of date`);
+  if (c.alerts) bits.push(`${c.alerts} to fix (status.mjs check)`);
   return bits.join(', ');
 }
 
@@ -665,7 +967,12 @@ export function itemText(v) {
   const L = [];
   const pr = v.priority ? `#${v.priority}` : '–';
   L.push(`${pr.padEnd(4)}${v.id}  [${v.kindLabel}] ${v.title}`);
-  L.push(`      ${v.state}${v.stateForMin !== null && v.group !== 'finished' ? ` for ${forText(v.stateForMin)}` : ''}: ${v.statePlain}; owner ${v.owner}; updated ${agoText(v.ageMin)}${v.updatedBy && v.updatedBy !== v.owner ? ` by ${v.updatedBy}` : ''}${v.stale ? `  (MAY BE OUT OF DATE: ${v.staleWhy.join('; ')})` : ''}`);
+  // T-130: a derived label replaces the row's own state words (the owner's text stays as the note)
+  const st = v.stateText || v.label ? `${v.stateText || v.label}${v.labelOf ? ` [progress ${v.labelOf}]` : ''}` : `${v.state}${v.stateForMin !== null && v.group !== 'finished' ? ` for ${forText(v.stateForMin)}` : ''}: ${v.statePlain}`;
+  L.push(`      ${st}; owner ${v.owner}; updated ${agoText(v.ageMin)}${v.updatedBy && v.updatedBy !== v.owner ? ` by ${v.updatedBy}` : ''}${v.stale ? `  (MAY BE OUT OF DATE: ${v.staleWhy.join('; ')})` : ''}`);
+  for (const a of v.also || []) L.push(`      also: row ${a.id} (owner ${a.owner}, updated ${agoText(a.ageMin)})${a.note ? `: ${a.note}` : ''}`); // T-130
+  if (v.resume) L.push(`      resumes when: ${v.resume.plain}${v.resume.ready ? '' : ' (not yet)'}`); // T-125
+  for (const a of v.alerts || []) L.push(`      !! ${a}`);
   if (v.waiting?.answered) L.push(`      wait over: ${v.waiting.plain} (the row says: waiting on ${v.waiting.reported})`); // I-145
   else if (v.waiting) L.push(`      waiting on: ${v.waiting.plain}`);
   for (const d of v.derived) L.push(`      now: ${d.plain}`);
@@ -688,11 +995,16 @@ export function renderText(view, { all = false } = {}) {
       L.push(`  ${v.id}: ${what.join('; ')}`);
     }
   }
-  const shown = view.items.filter((v) => all || v.group !== 'finished');
+  // T-133 #6: the next build(s) first, every part with its one label (finished parts too)
+  for (const g of view.buildGroups || []) {
+    L.push('', `NEXT BUILD ${g.build}: ${g.name}`);
+    for (const x of g.parts) L.push(`  ${x.id}: ${x.label}${x.row && x.row !== x.id ? ` [row ${x.row}]` : ''}${x.alerts.length ? `  !! ${x.alerts.join('; ')}` : ''}`);
+  }
+  const shown = view.items.filter((v) => !v.foldedInto && (all || v.group !== 'finished'));
   L.push('');
   if (!shown.length) L.push(all ? 'no workstreams on the board' : 'no active workstreams (node tools/status.mjs list --all)');
   for (const v of shown) L.push(itemText(v));
-  const hidden = view.items.length - shown.length;
+  const hidden = view.items.filter((v) => !v.foldedInto).length - shown.length;
   if (hidden) L.push('', `(${hidden} finished; --all shows them)`);
   if (view.otherWaits?.length) {
     L.push('', 'OTHER WAITS (no active workstream row for their owner)');
@@ -714,6 +1026,20 @@ export function staleText(view) {
   return L.join('\n') + '\n';
 }
 
+/**
+ * T-124/T-125: `status.mjs check`: every row whose label contradicts PROGRESS (MISMATCH), a parked row whose way back
+ * happened (READY), a row parked > 4 h with none (REVIEW). Returns {lines, count}.
+ */
+export function checkLines(view) {
+  const lines = [];
+  for (const v of view.items) {
+    for (const m of v.mismatch || []) lines.push(`MISMATCH ${v.id} (owner ${v.owner}): ${m}`);
+    if (v.resume?.ready) lines.push(`READY ${v.id} (owner ${v.owner}): parked until ${v.resume.plain}; ${v.resume.ready}: ready to resume`);
+    if (v.needsReview) lines.push(`REVIEW ${v.id} (owner ${v.owner}): ${v.needsReview}`);
+  }
+  return { lines, count: lines.length };
+}
+
 /** One item with its history (`status.mjs show`). */
 export function showText(it, v) {
   const L = [itemText(v)];
@@ -723,6 +1049,52 @@ export function showText(it, v) {
   L.push('  history:');
   for (const h of it.history || []) L.push(`    ${h.at} ${sanitize(h.by, 80)} ${h.action}${h.changes && Object.keys(h.changes).length ? ' ' + sanitize(JSON.stringify(h.changes), 400) : ''}${h.note ? `: ${sanitize(h.note, 200)}` : ''}`);
   return L.join('\n');
+}
+
+// ---- T-125 #10 (a): sync rows with main ------------------------------------------------------------------------
+
+/**
+ * `status.mjs sync` (the lead runs it after every landing): ties rows to landings, from main and PROGRESS only.
+ * For every row whose PROGRESS item landed (stage L, landed, in a landed build) or whose branch work is on main:
+ * records `landed: {at, sha, via}` (the newest main commit touching fixes/<item>/, or the branch tip), then
+ *   ready-to-land / reviewing with its branch on main -> landed;  parked / researching / queued on a landed item -> done.
+ * Rows working on a follow-up keep their state (the label says "landed, owner testing"). Returns [{id, from, to,
+ * landed, changed}]. apply=false: nothing written.
+ */
+export async function sync({ by = 'status-sync', live = {}, progress = null, apply = true, now = Date.now() } = {}) {
+  agentName(by, '--by');
+  const ctx = ctxOf(progress);
+  const out = [];
+  for (const it of list()) {
+    if (it.state === 'landed' || it.state === 'dropped' || it.state === 'closed-no-fix') continue;
+    const p = progressOf(it, ctx);
+    const pl = p ? progressLanded(p, ctx) : false;
+    const br = branchOnMain(it, live);
+    if (!pl && !br) continue;
+    const topic = p ? live.git?.topics?.[p.id] : null;
+    const landed = br && it.branch?.landHead
+      ? { at: live.git?.shaAt?.[it.branch.landHead] || null, sha: it.branch.landHead, via: `branch ${it.branch.name}` }
+      : topic ? { at: topic.at, sha: topic.sha, via: `fixes/${p.id}/ on main` } : { at: null, sha: null, via: `PROGRESS ${p.id}: ${progressLabel(p, ctx)}` };
+    let to = it.state;
+    if (br && LANDING_STATES.has(it.state)) to = 'landed';
+    else if (pl && ['parked', 'researching', 'queued'].includes(it.state) && !(it.state === 'parked' && it.resumeOn?.kind === 'build')) to = 'done'; // T-135: a part waiting for its build stays
+    const changed = to !== it.state || JSON.stringify(it.landed ?? null) !== JSON.stringify(landed);
+    out.push({ id: it.id, owner: it.owner, from: it.state, to, landed, changed });
+    if (!apply || !changed) continue;
+    await withGuard(GUARD, () => {
+      const cur = readJson(fileOf(it.id));
+      if (!cur || cur.state !== it.state) return; // changed meanwhile: the next sync sees it
+      const at = iso(now);
+      const changes = { landed };
+      cur.landed = landed;
+      if (to !== cur.state) { changes.state = to; cur.state = to; cur.stateSince = at; delete cur.resumeOn; if (to === 'landed' || to === 'done') cur.waitingOn = null; }
+      cur.updatedAt = at;
+      cur.updatedBy = by;
+      pushHistory(cur, { at, by, action: 'sync', changes });
+      writeJson(fileOf(it.id), cur);
+    });
+  }
+  return out;
 }
 
 // ---- seed --------------------------------------------------------------------------------------------

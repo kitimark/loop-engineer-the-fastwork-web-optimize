@@ -80,7 +80,8 @@
 //
 // Fix progress for the user (read-only; the same content as the page's Progress tab, /progress):
 //   node tools/console.mjs progress [--details] [--json]   # curated fixes/PROGRESS.json + live phone/Chrome/incidents/steps
-//   node tools/console.mjs progress --check [--file <path>] # validate a PROGRESS.json (schema + no personal data); exit 1 on errors
+//   node tools/console.mjs progress --check [--file <path>] # validate a PROGRESS.json (schema + no personal data); exit 1 on errors;
+//        # then WARN lines for status rows that contradict it (status.mjs check, T-124)
 //        # mgmt-ops keeps fixes/PROGRESS.json current (schema: header of tools/lib/progress.mjs)
 // Editing it (the lead after the T-104 team measurement; tools/lib/progress-edit.mjs): every edit keeps the file's hand
 // layout outside the changed values, stamps updatedAt/updatedBy, and is checked first: a result that fails --check is
@@ -527,9 +528,13 @@ async function main() {
     if (arg !== undefined) throw new Error(`unknown progress command "${arg}" (progress [--check] | progress set <json-path> <value> … | progress best <versionId>; see the header of tools/console.mjs)`);
     if (opt('file')) process.env.FW_PROGRESS_FILE = opt('file');
     if (flag('check')) {
-      const { errors, file } = readProgress();
+      const { data, errors, file } = readProgress();
       if (errors.length) { console.log(`PROGRESS INVALID ${file}:`); for (const e of errors) console.log(`  ${e}`); return 1; }
       console.log(`PROGRESS OK ${file}`);
+      // T-124: where the status board contradicts it (warnings, exit stays 0; status.mjs check exits 3 on them)
+      const S = await import('./lib/status.mjs');
+      const P = await import('./lib/progress.mjs');
+      for (const l of S.checkLines(S.buildStatusView({ items: S.list(), live: await P.gatherLive(), progress: data })).lines) console.log(`  WARN ${l}`);
       return 0;
     }
     const v = await currentView();

@@ -45,7 +45,7 @@ before(async () => {
     wts[name] = w;
   }
   for (const [id, by, st] of [['tp2', 'fix-tp2', 'implementing'], ['tp3', 'fix-tp3', 'parked'], ['tp4', 'fix-tp4', 'dropped']]) {
-    const r = node(join(repo.main, 'tools', 'status.mjs'), ['set', id, '--by', by, '--kind', 'fix', '--title', `topic ${id}`, '--state', st, '--note', 'test row'], { cwd: repo.main, env: env() });
+    const r = node(join(repo.main, 'tools', 'status.mjs'), ['set', id, '--by', by, '--kind', 'fix', '--title', `topic ${id}`, '--state', st, '--note', 'test row', ...(st === 'parked' ? ['--resume-on', 'decision:lead'] : [])], { cwd: repo.main, env: env() });
     assert.equal(r.code, 0, r.out);
   }
   // done-wt: landed; leftover temp profile (marker of a dead pid), a probe's profile, a reused

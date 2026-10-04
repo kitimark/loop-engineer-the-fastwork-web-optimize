@@ -15,7 +15,8 @@ const I = await import('../../tools/lib/incident.mjs');
 const P = await import('../../tools/lib/progress.mjs');
 
 let state;
-beforeEach(() => { state = tempDir('fw-status-'); process.env.FW_STATE_DIR = state; delete process.env.FW_STATUS_STALE_MIN; });
+// T-124: set() reads fixes/PROGRESS.json (a landed item refuses parked/researching): never the repo's file here
+beforeEach(() => { state = tempDir('fw-status-'); process.env.FW_STATE_DIR = state; process.env.FW_PROGRESS_FILE = join(state, 'no-progress.json'); delete process.env.FW_STATUS_STALE_MIN; });
 
 const LAN = 'http://192.168.77.12:5497/';
 const add = (id, extra = {}) => S.set(id, { by: 'fix-a', kind: 'fix', title: `Item ${id}`, ...extra });

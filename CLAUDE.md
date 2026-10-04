@@ -364,9 +364,12 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   never copy them into committed files (Hard rule 12).
 - **Status board** (`tools/status.mjs`, console `/status`): report your workstream's state at every transition, when
   a wait starts or ends, and on resume (`status.mjs mine --by <you>`): `node tools/status.mjs set <id> --by <you>
-  --state researching|designing|implementing|testing|measuring|reviewing|coordinating|waiting|ready-to-land|parked|landed|done|dropped
+  --state researching|designing|implementing|testing|measuring|reviewing|coordinating|waiting|ready-to-land|parked|landed|done|closed-no-fix|dropped
   --note "<one plain line>" [--next "…"] [--waiting-on lead:"land request"|agent:<name>|incident:I-0NN|…]`. The board
   adds your Chrome/phone queue place, console steps and blocking incidents itself; only the lead sets priority.
+  `parked` needs `--resume-on incident:I-NNN|land:<topic|sha>|after:<ISO>|decision:lead|user|build:vN|never` (T-125);
+  a row whose Progress item landed takes `done`, not parked/researching. `status.mjs check` lists rows that contradict
+  fixes/PROGRESS.json or are ready to resume (red on /status); the lead runs `status.mjs sync --by lead` after landing.
 - **Threads** (`console.mjs thread`, console `/threads`): the user's questions, one thread per topic. The lead keeps
   `node tools/console.mjs thread wait --as lead --triage --timeout 3600` armed in the background (re-arm after each
   wake). It wakes only for a message nobody listening owns, one the user ticked "For the lead", an escalation, a user

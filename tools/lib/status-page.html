@@ -74,6 +74,10 @@ td.prio { width: 56px; }
 .st.finished, .st.parked, .st.queued { color: var(--muted); }
 .plain { font-size: 13px; color: var(--muted); }
 .flag { font-size: 13px; color: var(--bad); }
+.alert { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 650; color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 1px 6px; }
+section.build ul.parts { margin: 6px 0 0; padding-left: 18px; }
+section.build .plabel.done { color: var(--ok); font-weight: 600; }
+tr.has-alert td.wk { box-shadow: inset 3px 0 0 var(--bad); }
 .upd { white-space: nowrap; font-size: 14px; }
 .stale { display: inline-block; margin-top: 2px; font-size: 12px; font-weight: 650; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 0 6px; }
 .empty { color: var(--muted); padding: 18px; text-align: center; }
@@ -106,10 +110,12 @@ tr.flash td { animation: row-flash 2.5s ease-out 1; }
     <span class="sub" id="upd">loading…</span>
   </header>
   <div id="banners"></div>
+  <div id="builds"></div>
   <div id="you"></div>
   <div class="filters" id="fgroup" role="group" aria-label="Show by state"></div>
   <div class="filters" id="fkind" role="group" aria-label="Show by kind"></div>
   <main id="main"></main>
+  <details class="legend" id="labels-legend"><summary>What the labels mean</summary><dl id="labels-dl"></dl></details>
   <details class="legend" id="legend"><summary>What the states mean</summary><dl id="legend-dl"></dl></details>
 </div>
 <script src="/console-nav.js"></script>
@@ -148,7 +154,8 @@ var GROUP_FILTERS = [['active', 'Active'], ['working', 'Working'], ['waiting', '
 var fGroup = store('status-group') || 'active', fKind = store('status-kind') || 'all';
 var last = null, hashDone = false;
 
-function groupOk(v) { return fGroup === 'all' || (fGroup === 'active' ? v.group !== 'finished' : v.group === fGroup); }
+// T-130: a row folded under its item's newest row shows there as "Also", not as a line of its own
+function groupOk(v) { return !v.foldedInto && (fGroup === 'all' || (fGroup === 'active' ? v.group !== 'finished' : v.group === fGroup)); }
 function kindOk(v) { return fKind === 'all' || v.kind === fKind; }
 
 function filterBar(box, list, cur, count, set) {
@@ -187,13 +194,21 @@ function row(v) {
   if (v.note) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Now: ' }), v.note));
   if (v.next) wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Next: ' }), v.next));
   v.flags.forEach(function (f) { wk.appendChild(el('div', { class: 'flag', text: f })); });
-  var st = el('td', { 'data-label': 'State' },
-    el('div', { class: 'st ' + v.group, text: v.state + (v.group !== 'finished' && v.stateForMin !== null ? ' · ' + dur(v.stateForMin) : '') }),
-    el('div', { class: 'plain', text: v.statePlain }));
+  // T-124/T-125: red until fixed: the row contradicts Progress, its way back happened, or it sits parked with none
+  (v.alerts || []).forEach(function (a) { wk.appendChild(el('div', {}, el('span', { class: 'alert', title: 'status.mjs check lists these; the lead fixes landings with status.mjs sync', text: a }))); });
+  // T-130/T-135: a derived label replaces the row's own state words (one line; the owner's text stays as Now/Next);
+  // the row's raw state is in the tooltip
+  var dl = v.group !== 'finished' && v.stateForMin !== null ? ' · ' + dur(v.stateForMin) : '';
+  var st = v.stateText
+    ? el('td', { 'data-label': 'State' }, el('div', { class: 'st ' + v.group, title: 'the row says: ' + v.state + (v.labelOf ? ' · with Progress item ' + v.labelOf : ''), text: v.stateText + dl }))
+    : el('td', { 'data-label': 'State' },
+      el('div', { class: 'st ' + v.group, text: v.state + dl }),
+      el('div', { class: 'plain', text: v.statePlain }));
+  (v.also || []).forEach(function (a) { wk.appendChild(el('div', { class: 'line' }, el('b', { text: 'Also: ' }), 'row ' + a.id + ' (' + a.owner + ', ' + ago(a.ageMin) + ')' + (a.note ? ': ' + a.note : ''))); });
   var upd = el('td', { class: 'upd', 'data-label': 'Updated' }, el('div', { text: ago(v.ageMin) }),
     v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain' }, 'by ', agentLink(v.updatedBy)) : null,
     v.stale ? el('div', { class: 'stale', title: (v.staleWhy && v.staleWhy.length ? v.staleWhy.join('; ') : 'no update for more than ' + dur(last.staleAfterMin)), text: 'may be out of date' }) : null);
-  return el('tr', { 'data-item': v.id, 'data-anchor': SLUG.test(v.id) ? 'status:' + v.id : null, 'data-anchor-label': v.title }, // I-090
+  return el('tr', { class: v.alerts && v.alerts.length ? 'has-alert' : null, 'data-item': v.id, 'data-anchor': SLUG.test(v.id) ? 'status:' + v.id : null, 'data-anchor-label': v.title }, // I-090
     el('td', { class: 'prio', 'data-label': 'Priority' }, pr), wk, st,
     el('td', { 'data-label': 'Waiting on' }, waitChips(v)),
     el('td', { 'data-label': 'Owner' }, agentLink(v.owner)), upd);
@@ -206,11 +221,26 @@ function render(v) {
   if (c.queued) bits.push(c.queued + ' not started');
   if (c.waitingOnYou) bits.push(c.waitingOnYou + ' waiting on you');
   if (c.stale) bits.push(c.stale + ' may be out of date'); // I-108: not only age (work on main, wait answered)
+  if (c.alerts) bits.push(c.alerts + ' to fix'); // T-124/T-125: red rows (status.mjs check)
   document.getElementById('upd').textContent = bits.join(' · ') + ' · live ' + hhmm(v.now);
   document.getElementById('upd').className = 'sub';
   var ban = document.getElementById('banners');
   ban.replaceChildren();
   v.liveErrors.forEach(function (e) { ban.appendChild(el('div', { class: 'banner', text: 'A live source is unavailable: ' + e })); });
+
+  // T-133 #6: each build still to come, at the top: its parts and each part's one label (finished parts stay)
+  var bx = document.getElementById('builds');
+  bx.replaceChildren();
+  (v.buildGroups || []).forEach(function (g) {
+    var ul = el('ul', { class: 'parts' });
+    g.parts.forEach(function (x) {
+      ul.appendChild(el('li', { 'data-part': x.id },
+        x.row ? el('a', { href: '#' + encodeURIComponent(x.row), text: x.title }) : el('b', { text: x.title }), ': ',
+        el('span', { class: 'plabel' + (x.done ? ' done' : ''), text: x.label }),
+        x.alerts.length ? el('span', { class: 'alert', text: x.alerts.join('; ') }) : null));
+    });
+    bx.appendChild(el('section', { class: 'card build', 'data-build': g.build, 'aria-label': 'Next build ' + g.build }, el('h2', { text: 'Next build ' + g.build + ': ' + g.name }), ul));
+  });
 
   var you = document.getElementById('you');
   you.replaceChildren();
@@ -228,7 +258,7 @@ function render(v) {
   }
 
   filterBar(document.getElementById('fgroup'), GROUP_FILTERS, fGroup,
-    function (g) { return v.items.filter(function (x) { return kindOk(x) && (g === 'all' || (g === 'active' ? x.group !== 'finished' : x.group === g)); }).length; },
+    function (g) { return v.items.filter(function (x) { return !x.foldedInto && kindOk(x) && (g === 'all' || (g === 'active' ? x.group !== 'finished' : x.group === g)); }).length; },
     function (g) { fGroup = g; store('status-group', g); });
   filterBar(document.getElementById('fkind'), [['all', 'All kinds']].concat(v.kinds.map(function (k) { return [k.key, k.label]; })), fKind,
     function (k) { return v.items.filter(function (x) { return groupOk(x) && (k === 'all' || x.kind === k); }).length; },
@@ -254,6 +284,8 @@ function render(v) {
   }
   var dl = document.getElementById('legend-dl');
   if (!dl.childNodes.length) v.states.forEach(function (s) { dl.append(el('dt', { text: s.key }), el('dd', { text: s.plain })); });
+  var ll = document.getElementById('labels-dl'); // T-130: the same lines as on /progress
+  if (!ll.childNodes.length) (v.labelLegend || []).forEach(function (s) { ll.append(el('dt', { text: s.label }), el('dd', { text: s.plain })); });
   revealHash();
 }
 
@@ -262,6 +294,7 @@ function revealHash() {
   if (hashDone || !SLUG.test(location.hash.slice(1))) return;
   var id = location.hash.slice(1);
   var item = last.items.filter(function (x) { return x.id === id; })[0];
+  if (item && item.foldedInto) { id = item.foldedInto; item = last.items.filter(function (x) { return x.id === id; })[0]; } // T-130
   if (!item) return;
   if (!groupOk(item) || !kindOk(item)) { fGroup = 'all'; fKind = 'all'; hashDone = true; render(last); hashDone = false; }
   var tr = document.querySelector('tr[data-item="' + id + '"]');
