@@ -600,7 +600,13 @@ Final score, exact card 7e command (`score.json` in `out/scroll-cb-phone/p108/`)
 phone775 −0.071 (0.297), desk +0.001 (0.05), desk900 +0.010 (0.114), resize −0.038 (0.05), sim −0.041 (0.110); every
 guard passes, parity passes, nothing VOID.
 
-**P-108: PASS** (Chrome, Simulator, pixels). Next: the short phone no-worse check (less-work rule), ticket from ops.
+**P-108: PASS** (Chrome, Simulator, pixels). `patch.diff` (against the baseline, via `fix.mjs diff`) is committed with
+this result.
+
+Next (lead, 2026-10-05): one combined ticket from mgmt-ops-10, v8 vs v8 + nav-hit-cache + scroll-cb, after P-116. It
+covers this fix's phone no-worse check (less-work rule) and the combined-build parity check with nav-hit-cache (item 9
+of P-103) in one block. int-v8 carries `patch-on-best.diff` onto v8 (P-108's C is morph-gpu rev 3, 65052c4a3902, not
+v8).
 
 ## Risks, conflicts, follow-ups
 
