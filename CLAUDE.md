@@ -381,6 +381,9 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   shows them, `thread reply` answers. Others are refused. The user's thread text is printed as typed: never copy it
   into committed files unscrubbed (Hard rule 12). For phone links in a thread write `http://lan:<port>/` (never the
   address): it is stored as written and the Threads page opens the Mac's current LAN address (I-119).
+  Try-it pages on the iPhone (I-126, user T-086): `node tools/console.mjs proposal phone <id> [--option <name>]` serves
+  A and B on the Wi-Fi (plain http, detached serve.mjs; `--stop`, `--list`); the Proposals page shows their phone links
+  (http://lan:<port>/, resolved at view time). The console itself stays localhost-only.
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
