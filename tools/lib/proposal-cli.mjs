@@ -5,6 +5,7 @@
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
 //        [--video <clip of both> | --video-a <clip> --video-b <clip>] [--option <name>] [--draft]   # POSTED PR-001: <title>
 //        [--live-patch fixes/<topic>/patch.diff [--live-a-patch <path>] | --live-none "<why>"] [--check-format] [--force-format "<reason>"]
+//        [--no-phone]
 //        # I-146: the text fields (title, problem, idea, looksSame, risk, visualDiff, gain what/how, labels, why, none,
 //        # captions; on revise also --note) follow the answer format (tools/lib/answer-lint.mjs, kind field): every id
 //        # explained in plain words, no line over 600 characters (over 250 warns), at most 18 lines a field; or
@@ -26,7 +27,7 @@
 //   proposal show <id> [--json]      # --json (and list --json) adds decisionState: final | under-review | stale | null
 //        # (T-030): act on a decision only when it is "final"; under-review = on hold, stale = revised since, re-decide
 //   proposal revise <id> --by <agent> --note "<what changed>" [--file …] [--shot-a … --shot-b …] [--video …] [--option <name>] [--publish]
-//        [--keep-decision] [--unhold] [--live-patch <path> [--live-a-patch <path>] | --live-none "<why>"]
+//        [--keep-decision] [--unhold] [--live-patch <path> [--live-a-patch <path>] | --live-none "<why>"] [--no-phone]
 //        # I-109: unless it stays a draft, every option needs its Try-it entry (as on post); a proposal posted before
 //        # the rule gets one here or with `proposal live` (posted ones keep loading and showing without it).
 //        # options: the new file's list replaces the old one (add, change, drop options); an option without new shots
@@ -60,6 +61,13 @@
 //        # address, resolved when shown). The Proposals page shows each option's phone links (resolved at view time,
 //        # like I-119), or a Start button. The console itself stays on 127.0.0.1. A build (the plain baseline, or the
 //        # baseline + one patch) has one port, shared by every proposal that shows it.
+//        # I-143 (user T-119): post, revise, publish and live do this by themselves: once the proposal is visible to the
+//        # user (not a draft, not withdrawn), every option with live pages gets its phone pages, one PHONE line each
+//        # (ports already up are reused: "already running"). --no-phone skips it (post, revise, publish, live), and so does
+//        # FW_PROPOSAL_PHONE=off in the environment (the tests' default: they never start a Try-it host unasked). A phone
+//        # start that fails is a warning with the command to retry, never a failed post. The pages stay up after the
+//        # decision (the host loads a build's files on first use and drops them after 30 min idle, so an idle port costs
+//        # nothing); stop them with --stop below.
 //   proposal phone <id> [--option <name>] --stop    # STOPPED …: that option's two pages stop; their ports show a Start page
 //   proposal phone --list                           # UP/STOPPED/DOWN per proposal build in the Try-it registry, with its link
 //   proposal talk <id> [--as <agent>] [--json]     # T-048: the user's questions and comments on one proposal, every message
@@ -184,7 +192,55 @@ function report(r) {
   for (const w of r.warnings) console.error(`warning: ${w}`);
 }
 
-export async function run(argv) {
+/** I-143: does this command start the phone pages? Not with --no-phone, nor with FW_PROPOSAL_PHONE=off (tests). */
+export function phoneWanted(a, env = process.env) {
+  if (a.flag('no-phone')) return false;
+  return !/^(off|0|no|false)$/i.test(String(env.FW_PROPOSAL_PHONE ?? '').trim());
+}
+
+const phoneSide = (s) => `${s.lan} (${s.reused ? 'already running' : 'started'})`;
+
+/**
+ * I-143 (user T-119): start the phone Try-it pages of every option of `p` that has live pages (or only option `only`),
+ * as `proposal phone` does. Skips a draft or withdrawn proposal (the user does not see it) and options without a live
+ * patch. A failed start is a warning with the retry command, never an error. `start(live)`: PH.startPhoneServers (tests
+ * inject theirs). Returns [{what, ok, a?, b?, error?}].
+ */
+export async function startPhones(p, { start, only, out = console.log, err = console.error } = {}) {
+  if (!p || p.state === 'draft' || p.state === 'withdrawn') return [];
+  const targets = p.options?.length ? p.options.filter((o) => !only || o.name === only).map((o) => ({ t: o, name: o.name })) : [{ t: p, name: '' }];
+  const res = [];
+  for (const { t, name } of targets) {
+    if (!t.live?.blob) continue;
+    const what = `${p.id}${name ? ` option ${name}` : ''}`;
+    const cmd = `node tools/console.mjs proposal phone ${p.id}${name ? ` --option ${name}` : ''}`;
+    try {
+      const r = await start(t.live);
+      out(`PHONE ${what}: A ${phoneSide(r.a)}, B ${phoneSide(r.b)}`);
+      res.push({ what, ok: true, a: r.a, b: r.b });
+    } catch (e) {
+      err(`warning: ${what}: the phone pages did not start (${String(e?.message || e).split('\n')[0]}); start them later: ${cmd}`);
+      res.push({ what, ok: false, error: String(e?.message || e) });
+    }
+  }
+  if (res.some((r) => r.ok)) out(`  for the iPhone on this Mac's Wi-Fi (plain http; lan = the Mac's Wi-Fi address, shown on the Proposals page); they stay up after the decision; stop: node tools/console.mjs proposal phone ${p.id}${p.options?.length ? ' --option <name>' : ''} --stop (I-143; --no-phone skips this)`);
+  return res;
+}
+
+/** I-143: after post/revise/publish/live, unless --no-phone or FW_PROPOSAL_PHONE=off. */
+async function autoPhones(p, a, deps, only) {
+  if (!p || p.state === 'draft' || p.state === 'withdrawn') return [];
+  const has = (p.options?.length ? p.options.filter((o) => !only || o.name === only) : [p]).some((t) => t.live?.blob);
+  if (!has) return [];
+  if (!phoneWanted(a)) {
+    if (a.flag('no-phone')) console.log(`  phone pages not started (--no-phone); start them: node tools/console.mjs proposal phone ${p.id}${p.options?.length ? ' --option <name>' : ''}`);
+    return [];
+  }
+  const start = deps.startPhone || (async (live) => (await import('./live-phone.mjs')).startPhoneServers(live));
+  return startPhones(p, { start, only });
+}
+
+export async function run(argv, deps = {}) {
   const a = parseArgs(argv);
   const [sub, arg] = a.pos;
   const by = () => a.one('by', a.one('as', process.env.FW_AGENT || process.env.FW_LOCK_OWNER));
@@ -204,6 +260,7 @@ export async function run(argv) {
     if (p.state === 'proposed') console.log(u ? `on the user console ${new URL(`proposals#${p.id}`, u).href}; wait: node tools/console.mjs proposal wait ${p.id} --until decided (in the background)` : 'the console page is not running: ask the lead to start `node tools/console.mjs serve`');
     // T-048: questions on the page go to the author
     if (p.state === 'proposed') console.log(`questions: the user can ask about it on the page; they come to you: keep node tools/console.mjs thread wait --as ${p.by} armed in the background (it also wakes on your decisions), answer with thread reply <T-id>; list: proposal talk ${p.id}`);
+    await autoPhones(p, a, deps); // I-143
     return 0;
   }
   if (sub === 'list') {
@@ -252,6 +309,7 @@ export async function run(argv) {
     else if (mine.some((h) => h.keptDecision)) console.log(`  the decision ${p.decision.value} (rev ${p.decision.rev}) is kept (--keep-decision): it stays final${p.hold ? '; under review while on hold' : ''}`);
     else if (p.hold) console.log(`  still on hold: proposal unhold ${p.id} --by <you> (or revise --unhold) when the user may decide`);
     if (unheld) console.log('  the hold is lifted');
+    await autoPhones(p, a, deps); // I-143
     return 0;
   }
   if (sub === 'hold') {
@@ -287,9 +345,10 @@ export async function run(argv) {
     console.log(t?.live ? `LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: B = baseline + ${t.live.patch} @ ${t.live.blob.slice(0, 12)} (${t.live.files.length} file(s))${aText}; the console's "Try it" panel serves it` : `LIVE ${p.id}${p.options?.length ? ` option ${t?.name}` : ''}: removed`);
     const u = await serverUrl();
     if (u) console.log(`on the user console ${new URL(`proposals#${p.id}`, u).href}`);
+    if (t?.live?.blob) await autoPhones(p, a, deps, p.options?.length ? t.name : undefined); // I-143
     return 0;
   }
-  if (sub === 'publish') { console.log(`PUBLISHED ${line(await publishProposal(id, { by: by() }))}`); return 0; }
+  if (sub === 'publish') { const p = await publishProposal(id, { by: by() }); console.log(`PUBLISHED ${line(p)}`); await autoPhones(p, a, deps); return 0; } // I-143
   if (sub === 'withdraw') { console.log(`WITHDRAWN ${line(await withdrawProposal(id, { by: by(), note: a.one('note') }))}`); return 0; }
   if (sub === 'decide') {
     if (!by()) throw new Error('--by <who> is required (the user answered in chat: --by lead)');

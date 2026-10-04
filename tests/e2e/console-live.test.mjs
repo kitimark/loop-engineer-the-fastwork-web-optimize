@@ -324,6 +324,44 @@ test('I-126 / T-086 / T-106 proposal phone: the Try-it pages for the iPhone (pla
   assert.equal(JSON.parse(readFileSync(join(state, 'tryit', 'host.json'), 'utf8')).pid, host.pid, 'still the one host');
 });
 
+test('I-143 (user T-119): post, revise, publish and live start the phone pages themselves (ports already up reused); --no-phone and a draft do not; no address printed', async () => {
+  const on = { ...env, FW_PROPOSAL_PHONE: 'on' }; // helpers' cleanEnv turns it off for every other test
+  const outs = [];
+  const pcli = (...a) => { const x = node(CON, ['proposal', ...a], { env: on, cwd: repo }); outs.push(x.out); return x; };
+  const phoneOf = (r, id) => { assert.equal(r.code, 0, r.out); const m = r.stdout.match(new RegExp(`^PHONE ${id}: A http://lan:(\\d+)/ \\((started|already running)\\), B http://lan:(\\d+)/ \\((started|already running)\\)$`, 'm')); assert.ok(m, r.stdout); return { pa: m[1], a: m[2], pb: m[3], b: m[4] }; };
+  const before = json(await request(new URL('/api/live/PR-001/phone', base).href)); // the phone test left B up, A stopped
+  let r = pcli('post', '--by', 'de-x', '--file', writeProposal('p8.json', proposal({ title: 'Phone at once' })), '--live-patch', 'fixes/other/patch.diff');
+  const id = postedId(r);
+  const s1 = phoneOf(r, id);
+  assert.equal(`http://lan:${s1.pa}/`, before.a.lan, 'A (the plain baseline) keeps its port');
+  assert.notEqual(s1.pb, new URL(before.b.lan).port, 'B is another build');
+  assert.match(r.stdout, new RegExp(`stay up after the decision; stop: node tools/console\\.mjs proposal phone ${id} --stop`));
+  assert.equal((await request(`http://127.0.0.1:${s1.pb}/${PAGE_JS.slice(1)}`)).text, fx.prettyFiles[PAGE_JS] + '/* PoC: other */\n');
+  r = pcli('revise', id, '--by', 'de-x', '--note', 'Wording.');
+  assert.deepEqual(phoneOf(r, id), { pa: s1.pa, a: 'already running', pb: s1.pb, b: 'already running' }, 'reused');
+  // --no-phone: nothing started, the command to start them later
+  r = pcli('post', '--by', 'de-x', '--file', writeProposal('p9.json', proposal({ title: 'No phone' })), '--live-patch', 'fixes/demo/patch.diff', '--no-phone');
+  const quiet = postedId(r);
+  assert.doesNotMatch(r.stdout, /^PHONE /m);
+  assert.match(r.stdout, new RegExp(`phone pages not started \\(--no-phone\\); start them: node tools/console\\.mjs proposal phone ${quiet}$`, 'm'));
+  // a draft: nothing (the user does not see it); publish starts them
+  r = pcli('post', '--by', 'de-x', '--draft', '--file', writeProposal('p10.json', proposal({ title: 'Draft first' })), '--live-patch', 'fixes/demo/patch.diff');
+  const draft = postedId(r);
+  assert.doesNotMatch(r.stdout, /^PHONE |phone pages/m);
+  r = pcli('publish', draft, '--by', 'de-x');
+  const s2 = phoneOf(r, draft);
+  assert.equal(s2.pa, s1.pa);
+  // live: the new patch's pages at once
+  r = pcli('live', draft, '--by', 'de-x', '--patch', 'fixes/other/patch.diff');
+  assert.deepEqual(phoneOf(r, draft), { pa: s1.pa, a: 'already running', pb: s1.pb, b: 'already running' }, 'the same build as the first post');
+  // a {none} entry: no pages, no PHONE line
+  r = pcli('live', draft, '--by', 'de-x', '--none', 'Keep the original.');
+  assert.doesNotMatch(r.stdout, /^PHONE /m);
+  // Hard rule 12: no address in any output or the registry
+  for (const f of readdirSync(join(state, 'tryit', 'builds'))) assert.ok(!readFileSync(join(state, 'tryit', 'builds', f), 'utf8').includes(FAKE_LAN), f);
+  for (const o of outs) assert.ok(!o.includes(FAKE_LAN), o);
+});
+
 test('the console\'s exit stops its page servers', async () => {
   urls = json(await postJson('/api/live/PR-001/start', {})); // (re)started: the 4 s idle limit may pass during the phone test
   assert.equal(await refused(urls.a), false);
