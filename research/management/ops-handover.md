@@ -42,6 +42,15 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 16:xxZ **P-111 result, ops second read: AGREE, WORSE** (int-v8 964b2f99; scorer fixes/v8-best/phone/score.mjs
+    26d944bf93e2 re-checked; out/p111/score.json read against the frozen ticket rules). The lead did the pre-data read.
+  - Mtweens: close.f1 +2.5 and close.f3 +3.5 ms, both above the +2 ms rule. N1: V run 2 is high on both keys. Without it,
+    close.f1 is +2.0, not above the rule, but close.f3 stays +3.0, so the verdict does not rest on that one run.
+  - GH: new cluster at 2500-2749 (§5.4 rule), all frames on up flicks. It fails even though the >50 delta is only +1.
+    It is threshold-sensitive (new at >54, not at >46): this is reported, not an excuse. P-113 attributes it.
+  - Wtop, Wrest, Mmoving, GF, GM and GE are no-worse, with no new clusters. All 8 holds VALID.
+  - N2: the opening sC record of H5 was lost to a label collision. Its exit 0 and the passing closing sentinel keep the hold valid.
+  - Registry: **P-113 v8 G-H cluster attribution** (int-v8, lead's pre-data read f386543a). **Next free: P-114.**
 - 10-04 15:xxZ **Read batch (lead order).** Re-checked every hash listed below.
   - P-108 pre-data (fix-scroll-cb 4354a187): FAIL C1. score-p108 takes one `--void-n` for every viewport, but the card's
     N_vp is per viewport (5/5/19/5/9/Sim 5). Fix: freeze the map in the scorer and the exact command (with `--aa-extra`)
@@ -56,7 +65,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
     P-107 held, nav-hit-cache successor · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
     P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
-    P-112 v8 M-only attribution (int-v8, ticket to the lead). **Next free: P-113.**
+    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read). **Next free: P-114.**
   - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
     listens on 6400. It fails after the I-157 fix too, so `npm run test:unit` is red for everyone (1 of 1042).
   - P-100 H1r result: AGREE. O1 RAISED, O2 not enough (paused n 1), O3 1.00 descriptive, all Fair. Ledger row filled.
