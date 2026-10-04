@@ -9,7 +9,8 @@
 //     (Esc cancels, Ctrl/⌘+Enter sends). Sending POSTs /api/comments {anchor: {page, item, quote?, label?}, text};
 //     the server checks the anchor (console-comments.mjs) and starts a thread the lead reads;
 //   - a marker on every item that has comments ("2 comments"), linking to its newest thread, from GET
-//     /api/comments?page=<page>; re-placed when the page redraws its items.
+//     /api/comments?page=<page>; re-placed when the page redraws its items. I-156 (user T-137): with more than one
+//     thread, a short list after it links to each one ("T-004 (closed) · T-007"), so the first is reachable too.
 // I-096 (user T-043: "comment anywhere"): each page's main wrapper is the anchor "part:page", so every line on the page
 // takes a comment; the innermost anchor wins (a row inside the page stays a comment on that row). In a page part the
 // button sits by the line pointed at and that line's text is the quote. A page that redrew its items while the box was
@@ -264,9 +265,9 @@
     var nodes = document.querySelectorAll('[data-anchor]');
     Array.prototype.forEach.call(nodes, function (a) {
       var m = markers[itemOf(a)], slot = slotOf(a);
-      var cur = null;
-      Array.prototype.forEach.call(slot.children, function (c) { if (c.className === 'cmt-marker') cur = c; });
-      if (!m || !m.count) { if (cur) cur.remove(); return; }
+      var cur = null, list = null;
+      Array.prototype.forEach.call(slot.children, function (c) { if (c.className === 'cmt-marker') cur = c; else if (c.className === 'cmt-list') list = c; });
+      if (!m || !m.count) { if (cur) cur.remove(); if (list) list.remove(); return; }
       var last = m.threads[m.threads.length - 1];
       var href = TID.test(last && last.id) ? '/threads#' + last.id : '/threads';
       if (!cur) { cur = el('a', 'cmt-marker'); slot.appendChild(cur); }
@@ -274,6 +275,22 @@
       if (cur.getAttribute('href') !== href) cur.setAttribute('href', href);
       var title = 'Comments: ' + m.threads.map(function (t) { return t.id; }).join(', ') + (m.open < m.count ? ' (' + (m.count - m.open) + ' closed)' : '');
       if (cur.title !== title) cur.title = title;
+      // I-156: every thread of the item, oldest first, each its own link (rebuilt only when the threads change)
+      var ids = (m.threads || []).filter(function (t) { return t && TID.test(t.id); });
+      var sig = ids.map(function (t) { return t.id + ':' + (t.state || ''); }).join(',');
+      if (ids.length < 2) { if (list) list.remove(); return; }
+      if (list && list.getAttribute('data-sig') === sig) return;
+      if (list) list.remove();
+      list = el('span', 'cmt-list');
+      list.setAttribute('data-sig', sig);
+      ids.forEach(function (t, i) {
+        if (i) list.appendChild(document.createTextNode(' · '));
+        var a = el('a', null, t.id + (t.state === 'closed' ? ' (closed)' : ''));
+        a.setAttribute('href', '/threads#' + t.id);
+        a.title = 'Open thread ' + t.id;
+        list.appendChild(a);
+      });
+      slot.appendChild(list);
     });
   }
   var applyTimer = null;

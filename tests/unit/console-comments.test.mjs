@@ -124,7 +124,7 @@ test('pages: every console page marks its items with an anchor id of its own pag
     assert.match(html, /<div class="wrap" id="page-part" data-anchor="part:page" data-anchor-label="[^"]+">[^\n]*\n {2}<header data-comment-slot>/, `${f}: the page is its own fallback anchor`);
   }
   const css = readFileSync(join(TOOLS, 'lib', 'console-nav.css'), 'utf8');
-  for (const c of ['.cmt-btn', '.cmt-box', 'a.cmt-marker', '.cmt-note']) assert.ok(css.includes(c), c);
+  for (const c of ['.cmt-btn', '.cmt-box', 'a.cmt-marker', '.cmt-note', '.cmt-list']) assert.ok(css.includes(c), c);
 });
 
 /** console-comments.js on a tiny fake DOM: elements with attributes, closest/querySelector for the few selectors it uses. */
@@ -289,10 +289,17 @@ test('console-comments.js: markers show the count and link to the newest thread;
   assert.equal(m.textContent, '2 comments');
   assert.equal(m.getAttribute('href'), '/threads#T-007');
   assert.equal(m.title, 'Comments: T-004, T-007 (1 closed)');
+  // I-156 (user T-137): with two threads the first one is reachable too: a list links to each
+  const list = p.item.querySelector('.cmt-list');
+  assert.deepEqual(list.querySelectorAll('a').map((a) => [a.textContent, a.getAttribute('href')]), [['T-004 (closed)', '/threads#T-004'], ['T-007', '/threads#T-007']]);
+  assert.equal(list.textContent, 'T-004 (closed) · T-007');
+  assert.equal(p.other.querySelector('.cmt-list'), null, 'one thread: the badge is enough');
   assert.equal(p.other.querySelector('.cmt-marker').getAttribute('href'), '/threads', 'a bad id is never put in a link');
   assert.equal(p.other.querySelector('.cmt-marker').textContent, '1 comment');
   p.window.ConsoleComments.apply();
   assert.equal(p.item.querySelectorAll('.cmt-marker').length, 1, 'applied twice, one marker');
+  assert.equal(p.item.querySelectorAll('.cmt-list').length, 1, 'applied twice, one list');
+  assert.equal(p.item.querySelector('.cmt-list'), list, 'unchanged threads: the same list node (no redraw loop)');
   p.window.ConsoleComments.open(p.item);
   p.box().querySelector('textarea').value = 'x';
   p.fire(p.box().querySelector('.cmt-send'), 'click');

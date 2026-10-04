@@ -55,5 +55,7 @@ section.flash { animation: nav-flash 2s ease-out 1; }
 .cmt-box button { font: inherit; font-size: 14px; cursor: pointer; min-height: 36px; padding: 4px 14px; border-radius: 10px; border: 1px solid var(--line, #e3e1da); background: var(--bg, #f6f5f1); color: var(--ink, #1d1d1b); }
 .cmt-box .cmt-send { background: var(--accent, #2f5bd3); border-color: var(--accent, #2f5bd3); color: var(--accent-ink, #fff); font-weight: 650; }
 a.cmt-marker { display: inline-block; margin: 4px 0 0 6px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; text-decoration: none; background: var(--accent-soft, #e7edfb); color: var(--accent, #2f5bd3); }
+.cmt-list { display: inline-block; margin: 4px 0 0 6px; font-size: 12px; } /* I-156: each thread of an item */
+.cmt-list a { color: var(--accent, #2f5bd3); }
 .cmt-note { position: fixed; z-index: 32; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); padding: 8px 14px; border-radius: 12px; background: var(--ink, #1d1d1b); color: var(--card, #fff); font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
 .cmt-btn:focus-visible, .cmt-box button:focus-visible, a.cmt-marker:focus-visible { outline: 3px solid var(--accent, #2f5bd3); outline-offset: 2px; }
