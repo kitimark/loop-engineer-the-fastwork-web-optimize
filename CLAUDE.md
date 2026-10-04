@@ -379,7 +379,8 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   or a read or reply in the last 5 min. Answer in the thread, not in chat; hand a decision to the lead with
   `thread escalate <id> --by <you> --note "…"`. Questions on a proposal (T-048) reach its author: `proposal talk <id>`
   shows them, `thread reply` answers. Others are refused. The user's thread text is printed as typed: never copy it
-  into committed files unscrubbed (Hard rule 12).
+  into committed files unscrubbed (Hard rule 12). For phone links in a thread write `http://lan:<port>/` (never the
+  address): it is stored as written and the Threads page opens the Mac's current LAN address (I-119).
 - **Ask the owner of the question directly.** mgmt-ops is the hub for the rest; the lead lands, resolves
   incidents, reorders locks, spawns and talks to the user.
 - Messages reach you only at your next tool round. **Wait with one command that exits by itself, never a
