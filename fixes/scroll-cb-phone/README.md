@@ -103,10 +103,21 @@ changes, before its data.
 |---|---|---|
 | `build.mjs` | 0b028c5ef8a5 | arms (C check, V build, snapshot copies) |
 | `patch-on-best.diff` | c2dc144b7bd2 | V's change |
-| `probe/scb-probe.mjs` | 109c8d62810b | Chrome: rAF-request / rect / scrollY counter, trace counter (forced layout, lifecycle), per-frame state logger |
+| `probe/scb-probe.mjs` | 109c8d62810b at the card; d2f4a6b2a60d after harness change 1 | Chrome: rAF-request / rect / scrollY counter, trace counter (forced layout, lifecycle), per-frame state logger |
 | `simcount.mjs` | 6af68099ea53 | Simulator (WebKit): the same counters and state logger, Timeline counts |
 | `pixcheck.mjs` | f1be95111e25 | pixel diff: `tools/check.mjs` (5fc6b9180ae6 on main at this card) on C1, V, C2 |
 
+- *Harness change 1 (after the ops read PASS of ce4ef96b, before any C/V data):* the C-only smoke was VOID with
+  "trace marks missing": `performance.mark` lives in the `blink.user_timing` trace category, which the trace config
+  lacked. `scb-probe.mjs` adds that category and, for ops note N2, counts trace events whose name contains
+  "Intersection" (`computeIntersections` per step, with the names seen; reported, not judged). Nothing else it counts
+  changed. New `scb-probe.mjs` hash: d2f4a6b2a60d.
+- *Ops notes on the read (mgmt-ops-10):*
+  - N1: the C-only smoke must show non-zero side rAF and rect counts on C in the Simulator (proof that the late wrap
+    catches jobs registered before settle), and the same is logged for Chrome's document-start wrappers. If the
+    Simulator reads 0 on C, `simcount.mjs` gets a new revision and hash before any data, and ops is told first.
+  - N2: if the Chrome trace has an intersection-observation event, its count per step is reported for C and V, not
+    judged; if it has none, the result says so. The phone no-worse check stays where the IO cost is judged.
 - `scb-probe.mjs` (Chrome, headless, no CPU throttle; `serve.mjs --https --vendors=local --no-cache --port auto`,
   `--root` the pinned baseline + `--overlay` the arm's snapshot copy; a fresh Chrome per load; UA and virtual screen as
   `tools/check.mjs`):
@@ -216,7 +227,17 @@ reported. A VOID load is reported, never scored.
 
 ## Smoke (not scored)
 
-To be filled: C only, one load, to check the harness before C/V data (as P-101 did). Not part of P-103's loads.
+C only, one load per engine, to check the harness before C/V data (as P-101 did). Not part of P-103's loads.
+
+- *Chrome, phone, `scb-probe.mjs` 109c8d62810b, 10-04 10:53Z, shared probe slot:* VOID "trace marks missing"
+  (→ harness change 1). The parts before the trace worked:
+  - served 65052c4a3902 / e0f92804c521; doc 6277 px; 1093 steps, 1195 frames; no page errors; 70 state changes logged;
+  - N1, Chrome document-start wrappers on C: non-zero. Side per step: rAF 2.48, rects 3.87, querySelector 1.79.
+    By job: `AE` rAF 0.76 / rects 1.52; `uM` rAF 0.58 / qs 0.58; `mM` rAF 0.61 / rects 1.82 / qs 1.21; `GM` rAF 0.54 /
+    rects 0.54. Whole page per step: rAF 4.35, rects 6.44, getComputedStyle 1.02, elementsFromPoint 1.02.
+  - The side rAF rate (2.48 per frame) matches the frame audit's ~146 entries/s at 60 fps.
+- *Re-run with d2f4a6b2a60d (Chrome) and the Simulator C smoke (N1):* queued at 10:54Z, withdrawn from the queue for
+  the lead's usage pause (until 12:20Z) before it started. To run first after the pause, before any counted load.
 
 ## Risks, conflicts, follow-ups
 

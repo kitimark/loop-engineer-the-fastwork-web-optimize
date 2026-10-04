@@ -162,7 +162,7 @@ async function runLoad(armName, rep) {
     if (TRACE) {
       off = page.on((m) => { if (m.method === 'Tracing.dataCollected') for (const e of m.params.value) events.push(e); });
       await page.send('Tracing.start', { traceConfig: { recordMode: 'recordUntilFull', traceBufferSizeInKb: 600 * 1024,
-        includedCategories: ['devtools.timeline', 'disabled-by-default-devtools.timeline', 'disabled-by-default-devtools.timeline.stack', '__metadata'] }, transferMode: 'ReportEvents' });
+        includedCategories: ['devtools.timeline', 'blink.user_timing', 'disabled-by-default-devtools.timeline', 'disabled-by-default-devtools.timeline.stack', '__metadata'] }, transferMode: 'ReportEvents' });
     }
     await page.eval(`scrollTo({ top: 0, behavior: 'instant' })`);
     await sleep(800);
@@ -210,12 +210,14 @@ async function runLoad(armName, rep) {
       const byTid = new Map(); for (const p of rafs) { if (!byTid.has(p.tid)) byTid.set(p.tid, []); byTid.get(p.tid).push(p); }
       for (const l of byTid.values()) l.sort((x, y) => x.ts - y.ts);
       const inRaf = (e) => { const l = byTid.get(e.tid); if (!l) return false; let lo = 0, hi = l.length - 1, f = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (l[m].ts <= e.ts) { f = m; lo = m + 1; } else hi = m - 1; } return f >= 0 && e.ts <= l[f].ts + (l[f].dur || 0); };
-      const tot = { fireAnimationFrame: rafs.length, prePaint: 0, updateLayoutTree: 0, layout: 0, paint: 0, forcedUpdateLayoutTree: 0, forcedLayout: 0, functionCallNode: 0 };
+      const tot = { fireAnimationFrame: rafs.length, prePaint: 0, updateLayoutTree: 0, layout: 0, paint: 0, forcedUpdateLayoutTree: 0, forcedLayout: 0, functionCallNode: 0, computeIntersections: 0 };
+      const ioNames = {};
       const forced = {}, fc = {};
       for (const e of events) {
         if (!inW(e)) continue;
         if (e.name === 'PrePaint' && e.ph === 'X') tot.prePaint++;
         if (e.name === 'Paint' && e.ph === 'X') tot.paint++;
+        if (/ntersection/.test(e.name) && (e.ph === 'X' || e.ph === 'B')) { tot.computeIntersections++; ioNames[e.name] = (ioNames[e.name] || 0) + 1; } // N2: reported, not judged
         if (e.name === 'FunctionCall' && e.ph === 'X') { const d = e.args?.data || {}; if (/2\.DyWL8TcE\.js/.test(d.url || '')) { tot.functionCallNode++; const fn = fnOf((d.lineNumber || 0) + 1); fc[fn] = (fc[fn] || 0) + 1; } }
         if ((e.name === 'UpdateLayoutTree' || e.name === 'Layout') && (e.ph === 'X' || e.ph === 'B')) {
           const isU = e.name === 'UpdateLayoutTree';
@@ -229,7 +231,7 @@ async function runLoad(armName, rep) {
           }
         }
       }
-      r.trace = { events: events.length, tot, perStep: per(tot), functionCallsByFn: fc, forcedByFn: forced };
+      r.trace = { events: events.length, tot, perStep: per(tot), functionCallsByFn: fc, forcedByFn: forced, intersectionEventNames: ioNames };
     }
     await page.close();
   } catch (e) {
