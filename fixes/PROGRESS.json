@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T05:15:00Z",
+ "updatedAt": "2026-10-04T05:35:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T05:30:00Z", "text": "The menu-edge measurement (P-091) ended without an answer (VOID): its fixed scoring rule could not read 2 of the 4 reference runs. The lead ruled that the menu fix (F3) lands on its earlier phone evidence plus your blind swipe test, which comes right after the hero check on the phone." },
   { "at": "2026-10-04T05:10:00Z", "text": "The menu-edge measurement (P-091) has 6 of its 9 runs. The phone got too hot at the end of the third hold, so its last 3 runs did not count; they are running again now. If the phone gets too hot again, the measurement closes on the 6 runs it has." },
   { "at": "2026-10-04T04:33:00Z", "text": "The hero's slimmer version (R2) passed its check before the phone test (P-095): same pixels apart from the countdown digits. It is next on the phone after the menu-edge measurement." },
   { "at": "2026-10-04T04:05:00Z", "text": "The hero photo sharpness question is closed: you chose keep (PR-015). No code change." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T12:20:00Z", "text": "The menu fix (F3) is dropped as a speed fix: what it changes sits in a thin strip at the screen edges, so on the phone it would feel the same as today. A new idea for the menu is being planned." },
   { "at": "2026-10-03T12:05:00Z", "text": "The countdown digit strips (strip-tc) passed their phone check at the phone's real \"Serious\" heat state: no new slow frames, and much less clock redrawing. Your finger test is next." },
   { "at": "2026-10-03T10:40:00Z", "text": "You asked for a pixel-tolerance rule; a proposal is being drafted for you (T-042). Until you decide, the rule stays: pixel-identical, or your OK for each fix." },
-  { "at": "2026-10-03T10:31:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) does far less work at rest in Chrome and the Simulator, and you accepted its look (PR-009, option \"both\"). Next: a short phone check that it is no worse, after the strips' test." },
-  { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B, as a trial): phone tests run with the phone in its real \"Serious\" heat state, checked at each run's start and end, stopping at 44 °C. If the phone won't hold it, we switch to cool starts (A), as you approved." }
+  { "at": "2026-10-03T10:31:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) does far less work at rest in Chrome and the Simulator, and you accepted its look (PR-009, option \"both\"). Next: a short phone check that it is no worse, after the strips' test." }
  ],
  "items": [
   {
@@ -185,7 +185,7 @@
    ],
    "felt": { "answer": "not-yet", "text": "your blind swipe test comes after the robot-finger test" },
    "gate": "P-036: with a robot finger, scrolling must not start later anywhere on the page with F3; then an independent review.",
-   "next": "arm-scope in build via st6-rb2 (y≈1960 listener-add frame removed); no further live arm; open: residual 40-49 ms edge frames (no Timeline yet), B1 end-pin collapse UNRESOLVED (P-036 only); replan owed by lead. Edge-frame ticket drafted, waits for T-052.",
+   "next": "Lead 10-04 05:2xZ: it lands on its earlier phone evidence for the hitch in the middle (P-013, P-022) plus your blind swipe test (the plain page against the best build) and one heat check run. Your swipe test takes the phone right after the hero check (P-095).",
 
    "owner": "fix-nav-morph",
    "checks": [
@@ -674,15 +674,16 @@
    "fixes": "Finds which drawing step makes the leftover slow frames at the menu's edge, so the next fix aims at the right thing.",
    "felt": { "answer": "not-yet", "text": "a measurement, nothing to feel yet" },
    "gate": "A clear cause from the phone's timeline; a fix comes after.",
-   "next": "Running on the phone now (P-091): 6 of 9 runs counted; the last 3 are running again after the phone got too hot. Then the score.",
+   "next": "Done on the phone. Next, without the phone: a count check in Chrome and the Simulator of the style work at the menu edge; a new phone check only if that points at style, after the resting avatar row (P-094).",
    "owner": "fix-nav-morph",
-   "checks": [ { "id": "P-091", "what": "phone measurement of the menu-edge slow frames", "result": "" } ],
+   "checks": [ { "id": "P-091", "what": "phone measurement of the menu-edge slow frames", "result": "No answer (VOID): the fixed scoring rule could not read 2 of the 4 reference runs, because Safari's timeline records part of those frames where the rule does not look. All 8 runs were valid; the counts are kept as a description only." } ],
    "details": [
     "P-091 registered 10-04 03:1xZ (fixes/nav-morph/README.md ticket rev 2, amendment 4a786165)."
    ]
   }
  ],
  "upcoming": [
+  { "title": "Your blind swipe test of the menu fix (F3): the plain page against the best build", "when": "right after the hero check (P-095) ends, before the end-of-page morph check", "item": "f3-arm-scope" },
   { "title": "Your blind swipe test of the hero fix (slim version R2)", "when": "after its short phone check (P-095), next on the phone after the menu-edge measurement", "item": "hero-exit-threaded" },
   { "title": "Milestone 2: the same checks from a hot 42-44 °C start and with Xcode's \"Serious\" heat state on (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
   { "title": "Full phone timing run of the best build against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
