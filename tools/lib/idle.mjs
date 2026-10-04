@@ -29,6 +29,10 @@
 // has a console step the user is on (lib/phone-step.mjs userOnPhone: ready for Start, started, recording, or reset
 // by a Start over), the rule of the lease grace (I-123 a); `OK iphone: … the user's step … is on the phone`, and it
 // counts as a sighting of use, so the held-idle clock starts again when the step ends.
+// Not idle either (I-144; T-121 told the user that their own phone time on PR-018 was idle): a lease the lead takes for
+// the user's hand test, marked by its owner name: `user` or `user-<anything>` (e.g. `node tools/lock.mjs acquire iphone
+// --owner user-try`); `OK iphone: held by user-try for the user's own hand test …`. It is never held-idle, however long
+// the user takes; waiters still queue, and the free-period alarm starts again from its release.
 //
 // Free since (freeSince): the latest end of a hold that came after the last grant:
 //   - <r>.last-release.json (lib/lock.mjs noteRelease: a release, a process hold's end, the last shared reader leaving),
@@ -193,6 +197,9 @@ export function phoneUse(h, { activity = null, now = Date.now(), isAlive = pidAl
   return { since, how };
 }
 
+/** I-144: a lease held for the user's own hand test: owner `user` or `user-<anything>` (e.g. the lead's `user-try`). */
+export const isUserLease = (owner) => typeof owner === 'string' && /^user(-[A-Za-z0-9_.-]+)?$/.test(owner);
+
 /** Whole minutes from `since` to `now` (floor, never negative). */
 export const freeMinutes = (since, now) => Math.max(0, Math.floor((now - since) / 60000));
 
@@ -208,6 +215,8 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     const holder = f.holder?.owner || '?', holderToken = f.holder?.token || null;
     const work = readyWork(r, { st, rows, exclude: holder });
     const ready = work.queue.length > 0 || work.rows.length > 0;
+    // I-144: a lease the lead took for the user's own hand test (owner `user` or `user-*`) is the user's phone time
+    if (isUserLease(holder)) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, userLease: true, freeMin: 0, ...work, ready, alarm: false };
     const use = phoneUse(f.holder, { activity, now, isAlive });
     if (use.busy) return { resource: r, min, held: true, holder, holderToken, runLive: true, heldIdle: false, freeMin: 0, ...work, ready, alarm: false };
     // I-125: the holder's console step the user is on (ready for Start, started, recording, or reset by Start over) is a
@@ -251,6 +260,7 @@ export function lineFor(a) {
     const head = `OK ${a.resource}: held by ${a.holder}; no phone run for ${forText(a.freeMin)} ${use}`;
     return a.ready ? `${head}, under the ${a.min} min limit; waiting: ${workList(a)}` : `${head}, nobody else waits`;
   }
+  if (a.held && a.userLease) return `OK ${a.resource}: held by ${a.holder} for the user's own hand test (the user's phone time, not idle; I-144)`;
   if (a.held && a.userStep) return `OK ${a.resource}: held by ${a.holder}; the user's step ${a.userStep} is on the phone (a user wait, not idle)`; // I-125
   if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? ' (a phone run is on)' : ''}`;
   const free = `free for ${forText(a.freeMin)} (since ${hhmm(a.since)}, ${a.how})`;

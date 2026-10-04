@@ -416,3 +416,23 @@ test('I-125 record: a user step ends the held-idle episode (the user is on the s
   assert.deepEqual([after.heldIdle, after.alarm, after.since], [true, false, T0 + 20 * 60000]);
   assert.equal(A([], T0 + 25 * 60000 + 1).alarm, true);
 });
+
+// ---- I-144: a lease for the user's own hand test is never idle ------------------------------------------------
+// T-121 (2026-10-04): the lead took the lease as "user-try" while the user tried PR-018 on the phone by hand; the I-111
+// rule posted an IDLE thread telling the user that their own phone time was unused.
+test('I-144: a lease owned by `user` or `user-*` (the user\'s hand test) is not held-idle, however long; it ends an earlier episode; other owners are unchanged', async () => {
+  for (const owner of ['user', 'user-try', 'user-PR-018']) {
+    assert.equal(D.isUserLease(owner), true, owner);
+    const a = D.assess('iphone', { st: heldSt(phoneLease({ owner })), min: 5, now: T0 + 90 * 60000 });
+    assert.deepEqual([a.held, a.heldIdle, a.userLease, a.alarm, a.ready], [true, false, true, false, true], owner);
+    assert.equal(D.lineFor(a), `OK iphone: held by ${owner} for the user's own hand test (the user's phone time, not idle; I-144)`);
+  }
+  for (const owner of ['users', 'userX', 'iphone-runner', 'fix-user-try', 'user-', '']) assert.equal(D.isUserLease(owner), false, owner);
+  assert.equal(D.assess('iphone', { st: heldSt(phoneLease({ owner: 'fix-user-try' })), min: 5, now: T0 + 30 * 60000 }).alarm, true, 'only the user- prefix');
+  // an earlier held-idle episode of an agent ends when the user's lease takes over; nothing new is posted
+  const r1 = await D.record([D.assess('iphone', { st: heldSt(phoneLease()), min: 5, now: T0 + 7 * 60000 })], { now: T0 + 7 * 60000, claim: true, pid: 111 });
+  assert.equal(r1[0].news, 'alarm');
+  const r2 = await D.record([D.assess('iphone', { st: heldSt(phoneLease({ owner: 'user-try', token: 'L2', acquiredAt: at(8) })), min: 5, now: T0 + 30 * 60000 })], { now: T0 + 30 * 60000, claim: true, pid: 111 });
+  assert.deepEqual([r2[0].news, r2[0].post, r2[0].ended?.note], [null, false, 'taken by user-try']);
+  assert.equal(D.readState().resources.iphone.episode, undefined);
+});

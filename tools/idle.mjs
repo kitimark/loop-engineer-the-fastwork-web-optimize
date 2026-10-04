@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Idle alarm (incident I-105, user T-058 #4): says when the iPhone lease or the chrome-measure lock has stood free for
-// more than N minutes (the iPhone also: held with no phone run for that long, I-111, unless the user is on the holder's console step, I-125) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
+// more than N minutes (the iPhone also: held with no phone run for that long, I-111, unless the user is on the holder's console step, I-125, or the lease is the user's own hand test: owner `user` or `user-*`, I-144) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
 // tools/lib/idle.mjs. Read-only on the locks (never takes, renews or releases one); no iPhone, Chrome or network.
 //
 //   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--step-min 2] [--json]
