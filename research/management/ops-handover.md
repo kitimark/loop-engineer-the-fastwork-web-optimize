@@ -72,6 +72,20 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **v9 phone ticket pre-data read (int-v8 5bd7eb4d): PASS WITH GAPS G1-G7; P-120 assigned** (lead ruling: register on step 4).
+  - Checked: the 4 scripts on disk equal the 5bd7eb4d blobs (serve.sh fc643888a9bc, hold.sh ff6e9250d637, score.mjs 963f476c877a,
+    selftest f3a2247ac577); SELFTEST OK 15 re-run by ops; P-111 scorer 26d944bf93e2, thermal-gate ecb403b3ad25, verdict 8edb2fc77795
+    (= P-118's), pmcheck d36bd7437b7c, flicks 0f97205f1d42 / 93a1cf7bb091 on disk; out/pv9/snap HASHES = the ticket arms; no out/pv9/runs.
+  - hold.sh vs P-118's 09c0b21eaa0f: only labels, paths, the TICKET guard, the M item and part E; gates, served check, park and pmcheck unchanged.
+    The 4 xcode-serious checks are in the profile line and the script.
+  - Gaps, fix in the registering commit (before data): G1 PIN line at each hold start (all hashes above) and name the checkout
+    hold.sh runs in (it needs out/pv9/snap and serve-*.json, i.e. int-v8's worktree); G2 drop the stale "CLAUDE.md still words cooling"
+    clause (7c8e4e23 amended it) and cite the decisive check's result (P-118, 22:02-22:09Z) instead of "runs first"; G4 header P-120,
+    step-4 ruling replaces "provisional until the set is final"; G6 predictions per gate + sentinels + overall.
+  - Wording/confirm: G3 H2 has no warm-ups, valid only if H1's server processes serve H2 (P-118 precedent; else re-run wC/wV);
+    G5 3 runs per arm per G part, so one void G run makes GM/GE insufficient (re-run rule applies); G7 H3/H4 at 10 items each,
+    P-118's H3 took 552 of 600 s: the runner checks part E's GESTURE_BUDGET_S fits (I-112) or splits H4.
+  - Next free: P-121.
 - 10-05 **v9 step 3 count check second read (fix-scroll-cb d8660568, README "v9 step 3 result"): AGREE, PASS.** No P-id (int-v8 item).
   - Pins: build.mjs d190003298c5, simcount 45175dbac676 and score-p108 4cf547f88a3b on disk equal the blobs in 26777ce0 and d8660568.
     run-v9b.sh 39cc2ff54946 (gitignored out/) matches its hash in f8ab3036 (22:39:41Z) and its PIN line.
@@ -202,7 +216,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
   - Gaps before the lead's read: no P-118 scorer (P-117's pins its own V and a shared CSS), no hold.sh, P-<ops>
     placeholders, pins provisional until the Simulator pixel set 2 ends (any V change voids the signature), future-card
     y range vs G part M, and the order note (V does not depend on P-117).
-  - The ticket itself is not edited by ops. Next free: **P-119** (assigned 10-05 to fix-toolbar-resize; now P-120).
+  - The ticket itself is not edited by ops. Next free: **P-121** (P-119 to fix-toolbar-resize, P-120 to the v9 phone ticket, both 10-05).
 - 10-05 **P-117 N2 result (fix-scroll-cb, 01daa38f): AGREE, Simulator parity FAIL on the nav. P-117 is on hold (lead,
   c7d165b7).**
   - The pins in n2.log's PIN line match the files on disk: run-n2.sh d2b816cd392a, build.mjs c486a52e5710, scb-probe
