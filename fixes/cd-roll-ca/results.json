@@ -1,2199 +1,2931 @@
 {
- "topic": "cd-roll-ca",
- "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
- "date": "2026-10-03T07:45:24Z",
- "config": {
-  "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
-  "stackedOn": "cd-strip strip-tc (accepted PR-008 rev 2, 2026-10-03 09:31Z) on st6-rb2",
-  "baseJsSha256": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
-  "buildJsSha256": "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3",
-  "chrome": "Chrome/154.0.8037.97, 430x932 DPR 3 mobile, CPU 1x, served --vendors=local --latency 150 via fix.mjs serve",
-  "webkit": "iOS Simulator fw-sim 15 Pro Max, Mobile Safari, Timeline counts (never times, F-084)",
-  "buildJsSha256Round2": "673b110d118c",
-  "buildJsSha256Round1": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
-  "snapshots": {
-   "dir": "out/cd-roll-ca/snap/{C8,V9} (C8 = cd-strip strip-tc, V9 = C8 + this build); earlier C6/V7 on strip-rw (config.stripRw)",
-   "hashes": [
-    "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16  C8/_app/immutable/nodes/2.DyWL8TcE.js",
-    "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d  C8/_app/immutable/assets/2.gBuqKVzi.css",
-    "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3  V9/_app/immutable/nodes/2.DyWL8TcE.js",
-    "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d  V9/_app/immutable/assets/2.gBuqKVzi.css"
-   ]
+  "topic": "cd-roll-ca",
+  "kind": "counts-and-positions (no timing; timing A/Bs deferred by the user 2026-10-02)",
+  "date": "2026-10-04T06:35:00Z",
+  "config": {
+    "baselineStatus": "snapshot   b1789284481295-4ad4a84a",
+    "stackedOn": "cd-strip strip-tc (accepted PR-008 rev 2, 2026-10-03 09:31Z) on st6-rb2",
+    "baseJsSha256": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
+    "buildJsSha256": "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3",
+    "chrome": "Chrome/154.0.8037.97, 430x932 DPR 3 mobile, CPU 1x, served --vendors=local --latency 150 via fix.mjs serve",
+    "webkit": "iOS Simulator fw-sim 15 Pro Max, Mobile Safari, Timeline counts (never times, F-084)",
+    "buildJsSha256Round2": "673b110d118c",
+    "buildJsSha256Round1": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
+    "snapshots": {
+      "dir": "out/cd-roll-ca/snap/{C8,V9} (C8 = cd-strip strip-tc, V9 = C8 + this build); earlier C6/V7 on strip-rw (config.stripRw)",
+      "hashes": [
+        "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16  C8/_app/immutable/nodes/2.DyWL8TcE.js",
+        "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d  C8/_app/immutable/assets/2.gBuqKVzi.css",
+        "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3  V9/_app/immutable/nodes/2.DyWL8TcE.js",
+        "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d  V9/_app/immutable/assets/2.gBuqKVzi.css"
+      ]
+    },
+    "measurementCodeChanged": false,
+    "probes": [
+      "fixes/cd-roll-ca/roll-probe.mjs",
+      "fixes/cd-roll-ca/comp-check.mjs",
+      "fixes/cd-roll-ca/sim-counts.mjs",
+      "fixes/cd-roll-ca/hide-check.mjs",
+      "fixes/cd-roll-ca/hide-audit.mjs",
+      "fixes/cd-roll-ca/sim-hide.mjs",
+      "fixes/cd-roll-ca/sim-gaps.mjs"
+    ],
+    "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build; round 3 2af461dc (ran flag + __crWatch, roll clock only): hide-check V3, h60e, sim-hide C/V3; fix.mjs check not re-run for round 3",
+    "round3": {
+      "stackedOn": "cd-strip (arm b) on st6-rb2",
+      "baseJsSha256": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
+      "buildJsSha256": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+      "snapshots": {
+        "dir": "out/cd-roll-ca/snap/{C,V,V3} (V = round 2, V3 = round 3)",
+        "hashes": [
+          "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830  C/_app/immutable/nodes/2.DyWL8TcE.js",
+          "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  C/_app/immutable/assets/2.gBuqKVzi.css",
+          "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5  V/_app/immutable/nodes/2.DyWL8TcE.js",
+          "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css",
+          "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b  V3/_app/immutable/nodes/2.DyWL8TcE.js",
+          "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V3/_app/immutable/assets/2.gBuqKVzi.css"
+        ],
+        "serve": "sh out/cd-roll-ca/serve-snap.sh"
+      }
+    },
+    "baseCssSha256": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d",
+    "patchDiffBaseSha256": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
+    "stripRw": {
+      "stackedOn": "cd-strip strip-rw (patch 1f3c26a16563, review round 2 CSS) on st6-rb2",
+      "baseJsSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
+      "baseCssSha256": "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe",
+      "buildJsSha256": "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec",
+      "patchDiffBaseSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
+      "snapshots": {
+        "dir": "out/cd-roll-ca/snap/{C6,V7} (C6 = cd-strip final, V7 = C6 + this build); dev base C5/V6 (CSS 9b2f89ea58bd)",
+        "hashes": [
+          "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5  C6/_app/immutable/nodes/2.DyWL8TcE.js",
+          "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  C6/_app/immutable/assets/2.gBuqKVzi.css",
+          "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec  V7/_app/immutable/nodes/2.DyWL8TcE.js",
+          "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  V7/_app/immutable/assets/2.gBuqKVzi.css"
+        ]
+      }
+    }
   },
-  "measurementCodeChanged": false,
-  "probes": [
-   "fixes/cd-roll-ca/roll-probe.mjs",
-   "fixes/cd-roll-ca/comp-check.mjs",
-   "fixes/cd-roll-ca/sim-counts.mjs",
-   "fixes/cd-roll-ca/hide-check.mjs",
-   "fixes/cd-roll-ca/hide-audit.mjs",
-   "fixes/cd-roll-ca/sim-hide.mjs",
-   "fixes/cd-roll-ca/sim-gaps.mjs"
+  "verdict": "V9 (cd-roll-ca on main's strip-tc): less-work counts hold (Chrome countdown rAF 163 -> 6 per 6 s, main frames 205 -> 79; WebKit Sim 132-146 -> 4 per 4 s); pixels: moving-only sub-pixel offset (max delta 9, <= 0.041 % of the screen, Sim); reduced motion exact against the control's A/A (lead ruling); phone P-093 no-worse check and review round 4 pending",
+  "chromeCounts": {
+    "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
+    "base_frozen": {
+      "counts": {
+        "updateLayoutTree": 108,
+        "layout": 7,
+        "paint": 28,
+        "beginMainThreadFrame": 118,
+        "beginFrame": 123,
+        "drawFrame": 105,
+        "fireAnimationFrame": 108,
+        "countdownRaf": 108,
+        "countdownFunctionCalls": 116
+      },
+      "frameSplit": {
+        "rollStarts": 5,
+        "mainFramesPer400msInRoll": 19.4,
+        "mainFramesPer400msOutside": 4.2
+      },
+      "stripAnimations": {
+        "instances": 0,
+        "compositingDecisions": {
+          "composited": 0,
+          "compositeFailed": 0,
+          "noDecision": 0
+        },
+        "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
+      }
+    },
+    "build_frozen": {
+      "counts": {
+        "updateLayoutTree": 41,
+        "layout": 6,
+        "paint": 26,
+        "beginMainThreadFrame": 50,
+        "beginFrame": 134,
+        "drawFrame": 113,
+        "fireAnimationFrame": 4,
+        "countdownRaf": 4,
+        "countdownFunctionCalls": 12
+      },
+      "frameSplit": {
+        "rollStarts": 4,
+        "mainFramesPer400msInRoll": 4.5,
+        "mainFramesPer400msOutside": 6
+      },
+      "stripAnimations": {
+        "instances": 4,
+        "compositingDecisions": {
+          "composited": 0,
+          "compositeFailed": 0,
+          "noDecision": 4
+        },
+        "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
+      }
+    },
+    "base_pausedOnce": {
+      "counts": {
+        "updateLayoutTree": 186,
+        "layout": 8,
+        "paint": 449,
+        "beginMainThreadFrame": 185,
+        "beginFrame": 236,
+        "drawFrame": 179,
+        "fireAnimationFrame": 108,
+        "countdownRaf": 108,
+        "countdownFunctionCalls": 116
+      },
+      "frameSplit": {
+        "rollStarts": 4,
+        "mainFramesPer400msInRoll": 23.8,
+        "mainFramesPer400msOutside": 17.8
+      },
+      "stripAnimations": {
+        "instances": 0,
+        "compositingDecisions": {
+          "composited": 0,
+          "compositeFailed": 0,
+          "noDecision": 0
+        },
+        "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
+      }
+    },
+    "build_pausedOnce": {
+      "counts": {
+        "updateLayoutTree": 195,
+        "layout": 8,
+        "paint": 679,
+        "beginMainThreadFrame": 195,
+        "beginFrame": 241,
+        "drawFrame": 211,
+        "fireAnimationFrame": 4,
+        "countdownRaf": 4,
+        "countdownFunctionCalls": 12
+      },
+      "frameSplit": {
+        "rollStarts": 4,
+        "mainFramesPer400msInRoll": 18.8,
+        "mainFramesPer400msOutside": 20
+      },
+      "stripAnimations": {
+        "instances": 4,
+        "compositingDecisions": {
+          "composited": 0,
+          "compositeFailed": 0,
+          "noDecision": 4
+        },
+        "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
+      }
+    }
+  },
+  "webkitSimCounts": {
+    "frozen": {
+      "base": [
+        {
+          "rep": 0,
+          "counts": {
+            "RenderingFrame": 111,
+            "RecalculateStyles": 120,
+            "Layout": 8,
+            "Paint": 18,
+            "Composite": 111,
+            "FireAnimationFrame": 107,
+            "countdownRaf": 107
+          },
+          "animSamples": {
+            "n": 29,
+            "withRunning": 0,
+            "maxRunning": 0,
+            "strips": 8
+          }
+        },
+        {
+          "rep": 1,
+          "counts": {
+            "RenderingFrame": 114,
+            "RecalculateStyles": 124,
+            "Layout": 10,
+            "Paint": 24,
+            "Composite": 114,
+            "FireAnimationFrame": 110,
+            "countdownRaf": 110
+          },
+          "animSamples": {
+            "n": 30,
+            "withRunning": 0,
+            "maxRunning": 0,
+            "strips": 8
+          }
+        }
+      ],
+      "build": [
+        {
+          "rep": 0,
+          "counts": {
+            "RenderingFrame": 55,
+            "RecalculateStyles": 54,
+            "Layout": 8,
+            "Paint": 18,
+            "Composite": 55,
+            "FireAnimationFrame": 4,
+            "countdownRaf": 4
+          },
+          "animSamples": {
+            "n": 29,
+            "withRunning": 14,
+            "maxRunning": 2,
+            "strips": 8
+          }
+        },
+        {
+          "rep": 1,
+          "counts": {
+            "RenderingFrame": 57,
+            "RecalculateStyles": 57,
+            "Layout": 9,
+            "Paint": 23,
+            "Composite": 57,
+            "FireAnimationFrame": 5,
+            "countdownRaf": 5
+          },
+          "animSamples": {
+            "n": 30,
+            "withRunning": 14,
+            "maxRunning": 2,
+            "strips": 8
+          }
+        }
+      ]
+    },
+    "allRunning": {
+      "base": [
+        {
+          "rep": 0,
+          "counts": {
+            "RenderingFrame": 214,
+            "RecalculateStyles": 222,
+            "Layout": 156,
+            "Paint": 175,
+            "Composite": 214,
+            "FireAnimationFrame": 108,
+            "countdownRaf": 108
+          },
+          "animSamples": {
+            "n": 30,
+            "withRunning": 0,
+            "maxRunning": 0,
+            "strips": 8
+          }
+        },
+        {
+          "rep": 1,
+          "counts": {
+            "RenderingFrame": 204,
+            "RecalculateStyles": 213,
+            "Layout": 145,
+            "Paint": 164,
+            "Composite": 204,
+            "FireAnimationFrame": 105,
+            "countdownRaf": 105
+          },
+          "animSamples": {
+            "n": 30,
+            "withRunning": 0,
+            "maxRunning": 0,
+            "strips": 8
+          }
+        }
+      ],
+      "build": [
+        {
+          "rep": 0,
+          "counts": {
+            "RenderingFrame": 207,
+            "RecalculateStyles": 220,
+            "Layout": 158,
+            "Paint": 177,
+            "Composite": 207,
+            "FireAnimationFrame": 6,
+            "countdownRaf": 6
+          },
+          "animSamples": {
+            "n": 28,
+            "withRunning": 0,
+            "maxRunning": 0,
+            "strips": 8
+          }
+        },
+        {
+          "rep": 1,
+          "counts": {
+            "RenderingFrame": 197,
+            "RecalculateStyles": 209,
+            "Layout": 149,
+            "Paint": 167,
+            "Composite": 197,
+            "FireAnimationFrame": 4,
+            "countdownRaf": 4
+          },
+          "animSamples": {
+            "n": 30,
+            "withRunning": 0,
+            "maxRunning": 0,
+            "strips": 8
+          }
+        }
+      ]
+    },
+    "note": "allRunning anim samples were taken on the panel clock (selector bug, fixed for the frozen run)"
+  },
+  "positions": {
+    "note": "|B - A| px per frame, B = build computed translateY, A = original GE chain on the same frame stamps (cell 36 px). origJitter = A on real stamps vs A on ideal 60 Hz stamps (the original's own variation).",
+    "headless60_beforeStartFix": {
+      "mode": "build",
+      "headless": true,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 2403,
+      "frameDtMedianMs": 16.7,
+      "frameDtP95Ms": 16.7,
+      "rolls": 84,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 963,
+        "maxPx": 0.4508,
+        "p95Px": 0.0187,
+        "p99Px": 0.0977
+      },
+      "errForcedRolls": {
+        "n": 1568,
+        "maxPx": 4.5112,
+        "p95Px": 0.0562,
+        "p99Px": 0.5362
+      },
+      "startValueDiffPx": {
+        "n": 84,
+        "maxPx": 0.0977,
+        "p95Px": 0.002,
+        "p99Px": 0.0977
+      },
+      "startValueDiffForcedPx": {
+        "n": 49,
+        "maxPx": 0.0977,
+        "p95Px": 0.0141,
+        "p99Px": 0.0977
+      },
+      "worstRolls": [
+        {
+          "i": 14,
+          "from": 0,
+          "to": 5,
+          "forced": true,
+          "maxPx": 4.5112
+        },
+        {
+          "i": 13,
+          "from": 4,
+          "to": 1,
+          "forced": true,
+          "maxPx": 1.7539
+        },
+        {
+          "i": 15,
+          "from": 2,
+          "to": 1,
+          "forced": true,
+          "maxPx": 1.4146
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.4508
+        },
+        {
+          "i": 12,
+          "from": 3,
+          "to": 1,
+          "forced": true,
+          "maxPx": 0.4262
+        }
+      ]
+    },
+    "headless60_base_modelCheck": {
+      "mode": "base",
+      "headless": true,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 1202,
+      "frameDtMedianMs": 16.7,
+      "frameDtP95Ms": 16.7,
+      "rollsFitted": 11,
+      "modelDeviationPx": {
+        "n": 277,
+        "maxPx": 0.0005,
+        "p95Px": 0.0005
+      }
+    },
+    "headless60": {
+      "mode": "build",
+      "headless": true,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 2405,
+      "frameDtMedianMs": 16.7,
+      "frameDtP95Ms": 16.7,
+      "rolls": 83,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 1119,
+        "maxPx": 0.1327,
+        "p95Px": 0.0154,
+        "p99Px": 0.0208
+      },
+      "errForcedRolls": {
+        "n": 1426,
+        "maxPx": 0.1452,
+        "p95Px": 0.0213,
+        "p99Px": 0.0646
+      },
+      "startValueDiffPx": {
+        "n": 83,
+        "maxPx": 0.0066,
+        "p95Px": 0,
+        "p99Px": 0.0066
+      },
+      "origJitterTickPx": {
+        "n": 1119,
+        "maxPx": 0.6123,
+        "p95Px": 0.0257,
+        "p99Px": 0.0991
+      },
+      "origJitterForcedPx": {
+        "n": 1426,
+        "maxPx": 0.3125,
+        "p95Px": 0.0362,
+        "p99Px": 0.1078
+      },
+      "errVsIdeal60TickPx": {
+        "n": 1119,
+        "maxPx": 0.4796,
+        "p95Px": 0.026,
+        "p99Px": 0.0894
+      },
+      "errVsIdeal60ForcedPx": {
+        "n": 1426,
+        "maxPx": 0.1848,
+        "p95Px": 0.0207,
+        "p99Px": 0.0517
+      },
+      "startValueDiffForcedPx": {
+        "n": 46,
+        "maxPx": 0.0066,
+        "p95Px": 0.0013,
+        "p99Px": 0.0066
+      },
+      "worstRolls": [
+        {
+          "i": 13,
+          "from": 2,
+          "to": 9,
+          "forced": true,
+          "maxPx": 0.1452
+        },
+        {
+          "i": 9,
+          "from": 0,
+          "to": 9,
+          "forced": true,
+          "maxPx": 0.1401
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.1327
+        },
+        {
+          "i": 14,
+          "from": 5,
+          "to": 0,
+          "forced": true,
+          "maxPx": 0.1258
+        },
+        {
+          "i": 15,
+          "from": 5,
+          "to": 1,
+          "forced": true,
+          "maxPx": 0.1006
+        }
+      ]
+    },
+    "headed120": {
+      "mode": "build",
+      "headless": false,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 3603,
+      "frameDtMedianMs": 8.3,
+      "frameDtP95Ms": 9.5,
+      "rolls": 68,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 1419,
+        "maxPx": 27.7404,
+        "p95Px": 2.5473,
+        "p99Px": 5.8923
+      },
+      "errForcedRolls": {
+        "n": 2650,
+        "maxPx": 26.6748,
+        "p95Px": 4.0829,
+        "p99Px": 13.1212
+      },
+      "startValueDiffPx": {
+        "n": 68,
+        "maxPx": 0.2812,
+        "p95Px": 0.185,
+        "p99Px": 0.2812
+      },
+      "origJitterTickPx": {
+        "n": 1419,
+        "maxPx": 49.4277,
+        "p95Px": 3.0918,
+        "p99Px": 9.0204
+      },
+      "origJitterForcedPx": {
+        "n": 2650,
+        "maxPx": 55.4622,
+        "p95Px": 6.5443,
+        "p99Px": 21.0867
+      },
+      "errVsIdeal60TickPx": {
+        "n": 1419,
+        "maxPx": 51.4655,
+        "p95Px": 2.4222,
+        "p99Px": 6.1103
+      },
+      "errVsIdeal60ForcedPx": {
+        "n": 2650,
+        "maxPx": 51.0937,
+        "p95Px": 4.7966,
+        "p99Px": 17.9436
+      },
+      "startValueDiffForcedPx": {
+        "n": 41,
+        "maxPx": 0.2812,
+        "p95Px": 0.1925,
+        "p99Px": 0.2812
+      },
+      "worstRolls": [
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 27.7404
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 26.6828
+        },
+        {
+          "i": 13,
+          "from": 9,
+          "to": 0,
+          "forced": true,
+          "maxPx": 26.6748
+        },
+        {
+          "i": 9,
+          "from": 0,
+          "to": 9,
+          "forced": true,
+          "maxPx": 24.0663
+        },
+        {
+          "i": 13,
+          "from": 1,
+          "to": 9,
+          "forced": true,
+          "maxPx": 23.9811
+        }
+      ]
+    },
+    "headed120_base_modelCheck": {
+      "mode": "base",
+      "headless": false,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 1808,
+      "frameDtMedianMs": 8.3,
+      "frameDtP95Ms": 9.5,
+      "rollsFitted": 16,
+      "modelDeviationPx": {
+        "n": 781,
+        "maxPx": 0.0008,
+        "p95Px": 0.0005
+      }
+    },
+    "headless60_heroOnly": {
+      "mode": "build",
+      "headless": true,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 1203,
+      "frameDtMedianMs": 16.7,
+      "frameDtP95Ms": 16.7,
+      "rolls": 33,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 427,
+        "maxPx": 0.0264,
+        "p95Px": 0.0156,
+        "p99Px": 0.0246
+      },
+      "errForcedRolls": {
+        "n": 542,
+        "maxPx": 0.1313,
+        "p95Px": 0.0192,
+        "p99Px": 0.0736
+      },
+      "startValueDiffPx": {
+        "n": 33,
+        "maxPx": 0.0141,
+        "p95Px": 0.0053,
+        "p99Px": 0.0141
+      },
+      "origJitterTickPx": {
+        "n": 427,
+        "maxPx": 0.0353,
+        "p95Px": 0.0227,
+        "p99Px": 0.03
+      },
+      "origJitterForcedPx": {
+        "n": 542,
+        "maxPx": 0.216,
+        "p95Px": 0.0524,
+        "p99Px": 0.1293
+      },
+      "errVsIdeal60TickPx": {
+        "n": 427,
+        "maxPx": 0.0509,
+        "p95Px": 0.0256,
+        "p99Px": 0.0443
+      },
+      "errVsIdeal60ForcedPx": {
+        "n": 542,
+        "maxPx": 0.2533,
+        "p95Px": 0.0241,
+        "p99Px": 0.1312
+      },
+      "startValueDiffForcedPx": {
+        "n": 16,
+        "maxPx": 0.0141,
+        "p95Px": 0.0141,
+        "p99Px": 0.0141
+      },
+      "worstRolls": [
+        {
+          "i": 15,
+          "from": 2.0708,
+          "to": 7,
+          "forced": true,
+          "maxPx": 0.1313
+        },
+        {
+          "i": 15,
+          "from": 2,
+          "to": 9,
+          "forced": true,
+          "maxPx": 0.1155
+        },
+        {
+          "i": 13,
+          "from": 2,
+          "to": 8,
+          "forced": true,
+          "maxPx": 0.0989
+        },
+        {
+          "i": 14,
+          "from": 0,
+          "to": 5,
+          "forced": true,
+          "maxPx": 0.0822
+        },
+        {
+          "i": 14,
+          "from": 3,
+          "to": 0,
+          "forced": true,
+          "maxPx": 0.0736
+        }
+      ]
+    },
+    "headless60_round2": {
+      "mode": "build",
+      "headless": true,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 2405,
+      "frameDtMedianMs": 16.7,
+      "frameDtP95Ms": 16.7,
+      "rolls": 82,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 1087,
+        "maxPx": 0.6433,
+        "p95Px": 0.0245,
+        "p99Px": 0.0943
+      },
+      "errForcedRolls": {
+        "n": 1370,
+        "maxPx": 0.2954,
+        "p95Px": 0.0199,
+        "p99Px": 0.0664
+      },
+      "startValueDiffPx": {
+        "n": 82,
+        "maxPx": 0.0064,
+        "p95Px": 0.0016,
+        "p99Px": 0.0064
+      },
+      "origJitterTickPx": {
+        "n": 1087,
+        "maxPx": 0.7957,
+        "p95Px": 0.0294,
+        "p99Px": 0.1279
+      },
+      "origJitterForcedPx": {
+        "n": 1370,
+        "maxPx": 0.5479,
+        "p95Px": 0.0427,
+        "p99Px": 0.1544
+      },
+      "errVsIdeal60TickPx": {
+        "n": 1087,
+        "maxPx": 0.1524,
+        "p95Px": 0.014,
+        "p99Px": 0.0228
+      },
+      "errVsIdeal60ForcedPx": {
+        "n": 1370,
+        "maxPx": 0.8433,
+        "p95Px": 0.0355,
+        "p99Px": 0.139
+      },
+      "startValueDiffForcedPx": {
+        "n": 44,
+        "maxPx": 0.0064,
+        "p95Px": 0.0053,
+        "p99Px": 0.0064
+      },
+      "worstRolls": [
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.6433
+        },
+        {
+          "i": 9,
+          "from": 0,
+          "to": 9,
+          "forced": true,
+          "maxPx": 0.2954
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.2497
+        },
+        {
+          "i": 15,
+          "from": 2.1629,
+          "to": 9,
+          "forced": true,
+          "maxPx": 0.1646
+        },
+        {
+          "i": 14,
+          "from": 0,
+          "to": 5,
+          "forced": false,
+          "maxPx": 0.1301
+        }
+      ]
+    },
+    "headed120_round2": {
+      "mode": "build",
+      "headless": false,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 3604,
+      "frameDtMedianMs": 8.3,
+      "frameDtP95Ms": 9.4,
+      "rolls": 68,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 1749,
+        "maxPx": 29.5886,
+        "p95Px": 3.154,
+        "p99Px": 15.8782
+      },
+      "errForcedRolls": {
+        "n": 2471,
+        "maxPx": 21.4511,
+        "p95Px": 4.0377,
+        "p99Px": 11.1506
+      },
+      "startValueDiffPx": {
+        "n": 68,
+        "maxPx": 0.2038,
+        "p95Px": 0.019,
+        "p99Px": 0.2038
+      },
+      "origJitterTickPx": {
+        "n": 1749,
+        "maxPx": 60.1887,
+        "p95Px": 6.0194,
+        "p99Px": 24.3358
+      },
+      "origJitterForcedPx": {
+        "n": 2471,
+        "maxPx": 47.1387,
+        "p95Px": 5.7828,
+        "p99Px": 16.5528
+      },
+      "errVsIdeal60TickPx": {
+        "n": 1749,
+        "maxPx": 58.7873,
+        "p95Px": 3.6919,
+        "p99Px": 17.0694
+      },
+      "errVsIdeal60ForcedPx": {
+        "n": 2471,
+        "maxPx": 29.3551,
+        "p95Px": 3.9458,
+        "p99Px": 13.1571
+      },
+      "startValueDiffForcedPx": {
+        "n": 39,
+        "maxPx": 0.2038,
+        "p95Px": 0.1892,
+        "p99Px": 0.2038
+      },
+      "worstRolls": [
+        {
+          "i": 15,
+          "from": 0.0155,
+          "to": 9,
+          "forced": false,
+          "maxPx": 29.5886
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 29.3687
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 29.0907
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 25.3917
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 24.8089
+        }
+      ]
+    },
+    "headless60_round3": {
+      "mode": "build",
+      "headless": true,
+      "cpu": 1,
+      "browser": "Chrome/154.0.8037.97",
+      "frames": 2405,
+      "frameDtMedianMs": 16.7,
+      "frameDtP95Ms": 16.7,
+      "rolls": 84,
+      "keyframesMax": 343,
+      "errTickRolls": {
+        "n": 1146,
+        "maxPx": 0.2359,
+        "p95Px": 0.0211,
+        "p99Px": 0.1101
+      },
+      "errForcedRolls": {
+        "n": 1374,
+        "maxPx": 0.1043,
+        "p95Px": 0.0156,
+        "p99Px": 0.0443
+      },
+      "startValueDiffPx": {
+        "n": 84,
+        "maxPx": 0.0156,
+        "p95Px": 0.0049,
+        "p99Px": 0.0156
+      },
+      "origJitterTickPx": {
+        "n": 1146,
+        "maxPx": 0.3175,
+        "p95Px": 0.0287,
+        "p99Px": 0.1311
+      },
+      "origJitterForcedPx": {
+        "n": 1374,
+        "maxPx": 0.2343,
+        "p95Px": 0.0346,
+        "p99Px": 0.1107
+      },
+      "errVsIdeal60TickPx": {
+        "n": 1146,
+        "maxPx": 0.0815,
+        "p95Px": 0.0144,
+        "p99Px": 0.0251
+      },
+      "errVsIdeal60ForcedPx": {
+        "n": 1374,
+        "maxPx": 0.2224,
+        "p95Px": 0.0328,
+        "p99Px": 0.1097
+      },
+      "startValueDiffForcedPx": {
+        "n": 46,
+        "maxPx": 0.008,
+        "p95Px": 0.0048,
+        "p99Px": 0.008
+      },
+      "worstRolls": [
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.2359
+        },
+        {
+          "i": 15,
+          "from": 0.0028,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.2303
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.1926
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.124
+        },
+        {
+          "i": 15,
+          "from": 0,
+          "to": 9,
+          "forced": false,
+          "maxPx": 0.1179
+        }
+      ],
+      "servedHash": "2af461dc50ad (hold7.log, serve-snap.sh)",
+      "raw": "out/cd-roll-ca/probe-build-h60e.json"
+    },
+    "offlineModel": {
+      "gridVsOriginal60HzMaxPx": {
+        "oneStep": 0.0167,
+        "zeroToNine": 0.0189
+      },
+      "original60vs120MaxPx": {
+        "oneStep": 3.275,
+        "zeroToNine": 29.47
+      },
+      "keyframesMax": 343,
+      "durationMaxMs": 566.7
+    }
+  },
+  "hiddenTab": {
+    "note": "hide-check.mjs: headed Chrome, a second tab activated for ~3 s, 4 cycles; pending = wrapped requestAnimationFrame callbacks (logger excluded); OBSERVED, Chrome",
+    "servedHashes": {
+      "source": "out/cd-roll-ca/hold5.log lines 17-18 (serve-snap.sh: curl | shasum of the served bodies, x-mirror-source overlay); the hide JSONs predate the servedHash field",
+      "C": {
+        "js": "358cd8ae16b9",
+        "css": "ce6beca745a0"
+      },
+      "V": {
+        "js": "673b110d118c",
+        "css": "ce6beca745a0"
+      },
+      "V0": {
+        "js": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
+        "source": "shasum of out/cd-roll-ca/v0/_app/immutable/nodes/2.DyWL8TcE.js"
+      }
+    },
+    "firstAnalysisAudit": {
+      "firstReported": {
+        "V0": 108,
+        "V": 247.918
+      },
+      "second": {
+        "V0": 3.293,
+        "V": 0.274
+      },
+      "bug": "the first analysis compared the first frame after the show with the last roll started while hidden (now < show event) and ignored the show-tick roll that cD starts on the show visibilitychange, after the show event and before the first frame; the second takes the latest roll started before the first frame callback",
+      "rawUnchanged": "--analyze copies log verbatim; fixes/cd-roll-ca/hide-audit.mjs reruns both selections on the saved raw logs and prints 108 / 247.918 and 3.293 / 0.274"
+    },
+    "C": {
+      "servedHash": {},
+      "summary": {
+        "hiddenConfirmed": true,
+        "framesWhileHidden": 0,
+        "maxPendingWhileHidden": 2,
+        "maxPendingAtShow": 2,
+        "hiddenRolls": 0,
+        "maxStartErrPx": 0,
+        "maxFirstFrameErrPx": 0,
+        "errors": 0
+      },
+      "per": [
+        {
+          "k": 0,
+          "hiddenMs": 3068.1,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 2,
+            "atShow": 2,
+            "after1s": 1
+          },
+          "hiddenRolls": 0,
+          "gapRolls": 0,
+          "firstFrameAfterShow": []
+        },
+        {
+          "k": 1,
+          "hiddenMs": 3014.9,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 1,
+            "atShow": 1,
+            "after1s": 0
+          },
+          "hiddenRolls": 0,
+          "gapRolls": 0,
+          "firstFrameAfterShow": []
+        },
+        {
+          "k": 2,
+          "hiddenMs": 3017.8,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 2,
+            "atShow": 2,
+            "after1s": 0
+          },
+          "hiddenRolls": 0,
+          "gapRolls": 0,
+          "firstFrameAfterShow": []
+        },
+        {
+          "k": 3,
+          "hiddenMs": 3016.7,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 1,
+            "atShow": 1,
+            "after1s": 0
+          },
+          "hiddenRolls": 0,
+          "gapRolls": 0,
+          "firstFrameAfterShow": []
+        }
+      ]
+    },
+    "V0_round1": {
+      "servedHash": {},
+      "summary": {
+        "hiddenConfirmed": true,
+        "framesWhileHidden": 0,
+        "maxPendingWhileHidden": 3,
+        "maxPendingAtShow": 4,
+        "hiddenRolls": 12,
+        "maxStartErrPx": 0.396,
+        "maxFirstFrameErrPx": 3.293,
+        "errors": 0
+      },
+      "per": [
+        {
+          "k": 0,
+          "hiddenMs": 3014.5,
+          "framesWhileHidden": 0,
+          "rollingAtHide": true,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 3,
+            "atShow": 3,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 3,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 186.5,
+              "build": -39.858,
+              "originalModel": -39.734,
+              "errPx": 0.125
+            }
+          ]
+        },
+        {
+          "k": 1,
+          "hiddenMs": 3017.6,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 3,
+            "atShow": 3,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 4,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "show tick",
+              "dtMs": 4.5,
+              "build": -321.278,
+              "originalModel": -321.278,
+              "errPx": 0
+            }
+          ]
+        },
+        {
+          "k": 2,
+          "hiddenMs": 3021.7,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 3,
+            "atShow": 3,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 6,
+          "firstFrameAfterShow": [
+            {
+              "i": 5,
+              "rollAt": "show tick",
+              "dtMs": -1,
+              "build": -324,
+              "originalModel": -324,
+              "errPx": 0
+            },
+            {
+              "i": 6,
+              "rollAt": "show tick",
+              "dtMs": -1.3,
+              "build": 0,
+              "originalModel": 0,
+              "errPx": 0
+            },
+            {
+              "i": 7,
+              "rollAt": "show tick",
+              "dtMs": -1.8,
+              "build": -108,
+              "originalModel": -108,
+              "errPx": 0
+            }
+          ]
+        },
+        {
+          "k": 3,
+          "hiddenMs": 3017,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 1,
+            "maxWhileHidden": 3,
+            "atShow": 4,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 3,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 18.7,
+              "build": -215.275,
+              "originalModel": -211.982,
+              "errPx": 3.293
+            }
+          ]
+        }
+      ]
+    },
+    "V_round2": {
+      "servedHash": {},
+      "summary": {
+        "hiddenConfirmed": true,
+        "framesWhileHidden": 0,
+        "maxPendingWhileHidden": 2,
+        "maxPendingAtShow": 2,
+        "hiddenRolls": 13,
+        "maxStartErrPx": 0,
+        "maxFirstFrameErrPx": 0.274,
+        "errors": 0
+      },
+      "per": [
+        {
+          "k": 0,
+          "hiddenMs": 3014.6,
+          "framesWhileHidden": 0,
+          "rollingAtHide": true,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 1,
+            "atShow": 1,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 3,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 222.7,
+              "build": -146.022,
+              "originalModel": -145.931,
+              "errPx": 0.091
+            }
+          ]
+        },
+        {
+          "k": 1,
+          "hiddenMs": 3026.5,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 2,
+            "atShow": 2,
+            "after1s": 0
+          },
+          "hiddenRolls": 4,
+          "gapRolls": 5,
+          "firstFrameAfterShow": [
+            {
+              "i": 6,
+              "rollAt": "hidden tick",
+              "dtMs": 897,
+              "build": -72,
+              "originalModel": -72,
+              "errPx": 0
+            },
+            {
+              "i": 7,
+              "rollAt": "show tick",
+              "dtMs": 4.5,
+              "build": -76.082,
+              "originalModel": -76.082,
+              "errPx": 0
+            }
+          ]
+        },
+        {
+          "k": 2,
+          "hiddenMs": 3022.2,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 1,
+            "atShow": 1,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 4,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "show tick",
+              "dtMs": 2.2,
+              "build": -215.341,
+              "originalModel": -215.35,
+              "errPx": 0.009
+            }
+          ]
+        },
+        {
+          "k": 3,
+          "hiddenMs": 3018.5,
+          "framesWhileHidden": 0,
+          "rollingAtHide": true,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 1,
+            "atShow": 1,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 3,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 88.8,
+              "build": -211.843,
+              "originalModel": -212.117,
+              "errPx": 0.274
+            }
+          ]
+        }
+      ]
+    },
+    "V3_round3": {
+      "servedHash": {
+        "/_app/immutable/nodes/2.DyWL8TcE.js": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+        "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+      },
+      "summary": {
+        "hiddenConfirmed": true,
+        "framesWhileHidden": 0,
+        "maxPendingWhileHidden": 3,
+        "maxPendingAtShow": 3,
+        "hiddenRolls": 15,
+        "maxStartErrPx": 0,
+        "maxFirstFrameErrPx": 0.207,
+        "errors": 0
+      },
+      "per": [
+        {
+          "k": 0,
+          "hiddenMs": 3019.6,
+          "framesWhileHidden": 0,
+          "rollingAtHide": true,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 3,
+            "atShow": 3,
+            "after1s": 0
+          },
+          "hiddenRolls": 4,
+          "gapRolls": 4,
+          "firstFrameAfterShow": [
+            {
+              "i": 6,
+              "rollAt": "hidden tick",
+              "dtMs": 214.1,
+              "build": -36.748,
+              "originalModel": -36.738,
+              "errPx": 0.009
+            },
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 213,
+              "build": -318.533,
+              "originalModel": -318.74,
+              "errPx": 0.207
+            }
+          ]
+        },
+        {
+          "k": 1,
+          "hiddenMs": 3067.5,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 2,
+            "atShow": 2,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 3,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 297.1,
+              "build": -108.657,
+              "originalModel": -108.652,
+              "errPx": 0.005
+            }
+          ]
+        },
+        {
+          "k": 2,
+          "hiddenMs": 3024.3,
+          "framesWhileHidden": 0,
+          "rollingAtHide": false,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 3,
+            "atShow": 3,
+            "after1s": 0
+          },
+          "hiddenRolls": 5,
+          "gapRolls": 5,
+          "firstFrameAfterShow": [
+            {
+              "i": 6,
+              "rollAt": "hidden tick",
+              "dtMs": 2004.1,
+              "build": 0,
+              "originalModel": 0,
+              "errPx": 0
+            },
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 4.8,
+              "build": -40.657,
+              "originalModel": -40.645,
+              "errPx": 0.012
+            }
+          ]
+        },
+        {
+          "k": 3,
+          "hiddenMs": 3015.3,
+          "framesWhileHidden": 0,
+          "rollingAtHide": true,
+          "pending": {
+            "beforeHide": 0,
+            "atHide": 0,
+            "maxWhileHidden": 2,
+            "atShow": 2,
+            "after1s": 0
+          },
+          "hiddenRolls": 3,
+          "gapRolls": 3,
+          "firstFrameAfterShow": [
+            {
+              "i": 7,
+              "rollAt": "hidden tick",
+              "dtMs": 204.1,
+              "build": -38.815,
+              "originalModel": -38.695,
+              "errPx": 0.12
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "hiddenPageWebKitSim": {
+    "note": "sim-hide.mjs, iOS Simulator fw-sim 15 Pro Max, iOS 18.7 Mobile Safari, Safari to the background by launching Settings and back (simctl), 3 cycles per arm, y 0; OBSERVED, Simulator, cause unknown",
+    "raw": "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
+    "how": "Safari to the background by launching Settings, back by launching Safari (simctl launch)",
+    "arms": {
+      "C": {
+        "servedHash": {
+          "/_app/immutable/nodes/2.DyWL8TcE.js": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
+          "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+        },
+        "summary": {
+          "hideEvents": 3,
+          "showEvents": 3,
+          "framesWhileHidden": 2,
+          "timerSamplesWhileHidden": 27,
+          "maxPendingWhileHidden": 2,
+          "maxPendingAtShow": 2,
+          "hiddenRolls": 0,
+          "gapRolls": 0,
+          "maxStartErrPx": 0,
+          "maxFirstFrameErrPx": 0,
+          "errors": 0
+        }
+      },
+      "V": {
+        "servedHash": {
+          "/_app/immutable/nodes/2.DyWL8TcE.js": "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5",
+          "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+        },
+        "summary": {
+          "hideEvents": 3,
+          "showEvents": 3,
+          "framesWhileHidden": 2,
+          "timerSamplesWhileHidden": 32,
+          "maxPendingWhileHidden": 3,
+          "maxPendingAtShow": 3,
+          "hiddenRolls": 14,
+          "gapRolls": 16,
+          "maxStartErrPx": 23.791,
+          "maxFirstFrameErrPx": 36,
+          "errors": 0
+        }
+      }
+    },
+    "sameAsChrome": "pending rAF callbacks do not grow with hidden ticks (V at most one per rolling digit, max 3 when 3 digits rolled at the hide; C 2); 0 errors; ticks continue while hidden (~every 2 s)",
+    "differsFromChrome": {
+      "eventOrder": "rAF callbacks stop 365-545 ms before visibilitychange(hidden); document.timeline.currentTime read in that event is 318-492 ms after the last rAF frame; in 4 of 6 cycles a frame runs 25-31 ms before visibilitychange(visible) (sim-gaps.mjs)",
+      "startValueVsOriginalHeldPx": {
+        "V_cycle0": 3.94,
+        "V_cycle1": 19.257,
+        "V_cycle2": 23.791
+      },
+      "firstFrameAfterShowVsOriginalPx": {
+        "V_cycle0": "build snaps 1 -> 0 without a roll (original -16.3 px into its roll at that frame)",
+        "V_cycle1": 8.379,
+        "V_cycle2": 11.722
+      },
+      "simHideFirstFrameColumn": "its 36 px for V cycle 0 is not valid on WebKit (no snap ticks, no pre-event frame in its model)",
+      "proposedFix": "(a) the start-frame rAF marks its roll as having run a frame; a roll with no frame holds at its start while hidden; (b) the hide handler requests one rAF that ends __crNoFrames at the first frame after the hide. Not in build 673b110d; folded into round 3 2af461dc on the lead's order (see hiddenPageWebKitSimRound3)"
+    }
+  },
+  "hiddenPageWebKitSimRound3": {
+    "note": "same Simulator and script as round 2, arms C and V3 (2af461dc), 3 cycles each; analysed with the chain model (sim-hide.mjs --analyze): the original GE chain replayed over the logged frames, every target change (MutationObserver on the strip style, snaps included) restarts it from the current value with velocity 0; OBSERVED, Simulator, cause unknown",
+    "raw": "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json",
+    "how": "Safari to the background by launching Settings, back by launching Safari (simctl launch)",
+    "arms": {
+      "C": {
+        "servedHash": {
+          "/_app/immutable/nodes/2.DyWL8TcE.js": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
+          "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+        },
+        "summary": {
+          "hideEvents": 3,
+          "showEvents": 3,
+          "framesWhileHidden": 3,
+          "timerSamplesWhileHidden": 28,
+          "maxPendingWhileHidden": 3,
+          "maxPendingAtShow": 1,
+          "hiddenRolls": 0,
+          "gapRolls": 0,
+          "errors": 0,
+          "perCycleModelNotValidOnWebKit": {
+            "note": "round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain",
+            "maxStartErrPx": 0,
+            "maxFirstFrameErrPx": 0
+          }
+        }
+      },
+      "V3": {
+        "servedHash": {
+          "/_app/immutable/nodes/2.DyWL8TcE.js": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
+          "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
+        },
+        "summary": {
+          "hideEvents": 3,
+          "showEvents": 3,
+          "framesWhileHidden": 3,
+          "timerSamplesWhileHidden": 30,
+          "maxPendingWhileHidden": 4,
+          "maxPendingAtShow": 1,
+          "hiddenRolls": 16,
+          "gapRolls": 16,
+          "errors": 0,
+          "perCycleModelNotValidOnWebKit": {
+            "note": "round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain",
+            "maxStartErrPx": 1.33,
+            "maxFirstFrameErrPx": 36
+          }
+        }
+      }
+    },
+    "summaryColumnsNotValid": "summary.perCycleModelNotValidOnWebKit (maxStartErrPx / maxFirstFrameErrPx) is the round-2 per-cycle model (no pre-visible frame, no snaps): not valid on WebKit; use chain",
+    "review": "review-cd-roll-ca round 3: PASS with nits (nit 1 README line on the watch re-arming per hidden frame, nit 2 legacy fields renamed, nit 3 wording kept as a time lead)",
+    "chain": {
+      "frames": 829,
+      "targetChanges": 36,
+      "startValueMaxErrPx": {
+        "visible": 1.39,
+        "hidden": 1.39,
+        "showTick": null,
+        "firstSecondAfterShow": 0
+      },
+      "snaps": 3,
+      "missedRolls": 2,
+      "frameWiseMaxErrPx": {
+        "visible": 23.225,
+        "firstSecondAfterShow": 2.016,
+        "hidden": 1.39
+      },
+      "worstAfterShow": [
+        {
+          "i": 7,
+          "t": 33350,
+          "phase": "first 1 s after show",
+          "build": -243.398,
+          "model": -245.414,
+          "err": 2.016
+        },
+        {
+          "i": 7,
+          "t": 47483,
+          "phase": "first 1 s after show",
+          "build": -99.027,
+          "model": -100.44,
+          "err": 1.413
+        },
+        {
+          "i": 7,
+          "t": 19666,
+          "phase": "first 1 s after show",
+          "build": -31.934,
+          "model": -33.278,
+          "err": 1.344
+        },
+        {
+          "i": 7,
+          "t": 47516,
+          "phase": "first 1 s after show",
+          "build": -86.714,
+          "model": -87.614,
+          "err": 0.9
+        },
+        {
+          "i": 7,
+          "t": 47500,
+          "phase": "first 1 s after show",
+          "build": -92.092,
+          "model": -92.884,
+          "err": 0.792
+        }
+      ],
+      "worstVisible": [
+        {
+          "i": 7,
+          "t": 20683,
+          "phase": "visible",
+          "build": -112.084,
+          "model": -88.858,
+          "err": 23.225
+        },
+        {
+          "i": 7,
+          "t": 20700,
+          "phase": "visible",
+          "build": -165.141,
+          "model": -151.707,
+          "err": 13.434
+        },
+        {
+          "i": 7,
+          "t": 20716,
+          "phase": "visible",
+          "build": -205.112,
+          "model": -195.205,
+          "err": 9.907
+        },
+        {
+          "i": 7,
+          "t": 20666,
+          "phase": "visible",
+          "build": -14.818,
+          "model": -7.56,
+          "err": 7.258
+        },
+        {
+          "i": 7,
+          "t": 34350,
+          "phase": "visible",
+          "build": -208.44,
+          "model": -212.64,
+          "err": 4.2
+        }
+      ]
+    },
+    "eventOrder": "rAF stops 382-528 ms before visibilitychange(hidden); timeline time in it 331-471 ms after the last frame; one frame 28-63 ms before visibilitychange(visible) in all 6 cycles (sim-gaps.mjs)",
+    "residual": "rolls whose first frames ran before rAF stopped: held 0.876 px (cycle 0) and 1.39 px (cycle 1) from the original's last-frame value, snapped to the target at the show where the original rolls them; bound: the part of a roll that plays in the 0.3-0.5 s between the last frame and the hidden event; needs a per-frame script to close, documented (review round 2)",
+    "visibleSamplingLead": "not hide-related: getComputedStyle in the rAF callback reads the CA transform 0.5-5.5 ms ahead of the rAF stamp (median 1.5, p90 4 ms, n 56), up to 23.2 px frame-wise in the fastest part of a 0->9 roll (29 px in round 2); OBSERVED, relates to the UNRESOLVED presentation-time item",
+    "phoneEventOrder": "UNRESOLVED (not run on the device)"
+  },
+  "pathCostPerTick": {
+    "medianMs": 0.04,
+    "p95Ms": 0.073,
+    "oneStepMedianMs": 0.035,
+    "note": "offline Node 24 micro-benchmark of __crPath (all 90 from/to pairs x 20) on this Mac under load; OBSERVED, not a page timing"
+  },
+  "regressions": {
+    "check": "round 2 (673b110d): fix.mjs check cd-roll-ca --on cd-strip --viewport mobile: morph reached both, 0 errors, 0 4xx, elements 1543 -> 1543, pixel diff top 0.14 / middle 0.01 / bottom 0.51 % (bottom above the 0.4 % band: the gradient accent words in another colour phase, looked at; no countdown in that shot)",
+    "raw": "out/check/cd-roll-ca/2026-10-03T02-14-47-205Z/check.json",
+    "round1": "out/check/cd-roll-ca/2026-10-03T01-30-19-691Z/check.json (top 0.19 / middle 0.01 / bottom 0.39 %)"
+  },
+  "raw": [
+    "out/cd-roll-ca/probe-build-h60.json",
+    "out/cd-roll-ca/probe-build-h60b.json",
+    "out/cd-roll-ca/probe-build-h60c.json",
+    "out/cd-roll-ca/probe-build-headed.json",
+    "out/cd-roll-ca/probe-base-h60.json",
+    "out/cd-roll-ca/probe-base-headed.json",
+    "out/cd-roll-ca/comp-check-*.json",
+    "out/cd-roll-ca/sim-counts-*.json",
+    "out/cd-roll-ca/probe-build-h60d.json",
+    "out/cd-roll-ca/probe-build-headed2.json",
+    "out/cd-roll-ca/hide-{C,V0,V}.json",
+    "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
+    "out/cd-roll-ca/hide-V3.json",
+    "out/cd-roll-ca/probe-build-h60e.json",
+    "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json"
   ],
-  "buildsMeasured": "counts (comp-check, sim-counts) and h60c on round 1 9ac52b08 (round 2 only adds the cancel of the start-frame rAF in __crStop and the hide time from document.timeline: no per-frame or per-tick change); h60d, headed2, hide-check V and fix.mjs check on round 2 673b110d; h60b and headed on an earlier pre-hero-only build; round 3 2af461dc (ran flag + __crWatch, roll clock only): hide-check V3, h60e, sim-hide C/V3; fix.mjs check not re-run for round 3",
-  "round3": {
-   "stackedOn": "cd-strip (arm b) on st6-rb2",
-   "baseJsSha256": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
-   "buildJsSha256": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
-   "snapshots": {
-    "dir": "out/cd-roll-ca/snap/{C,V,V3} (V = round 2, V3 = round 3)",
-    "hashes": [
-     "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830  C/_app/immutable/nodes/2.DyWL8TcE.js",
-     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  C/_app/immutable/assets/2.gBuqKVzi.css",
-     "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5  V/_app/immutable/nodes/2.DyWL8TcE.js",
-     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V/_app/immutable/assets/2.gBuqKVzi.css",
-     "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b  V3/_app/immutable/nodes/2.DyWL8TcE.js",
-     "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6  V3/_app/immutable/assets/2.gBuqKVzi.css"
-    ],
-    "serve": "sh out/cd-roll-ca/serve-snap.sh"
-   }
-  },
-  "baseCssSha256": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d",
-  "patchDiffBaseSha256": "6fa0e1e8a221ccd5aa2983c6dcceaceab239a1535b295e07a0035ff4ea32ef16",
-  "stripRw": {
-   "stackedOn": "cd-strip strip-rw (patch 1f3c26a16563, review round 2 CSS) on st6-rb2",
-   "baseJsSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
-   "baseCssSha256": "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe",
-   "buildJsSha256": "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec",
-   "patchDiffBaseSha256": "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5",
-   "snapshots": {
-    "dir": "out/cd-roll-ca/snap/{C6,V7} (C6 = cd-strip final, V7 = C6 + this build); dev base C5/V6 (CSS 9b2f89ea58bd)",
-    "hashes": [
-     "5e37af69bcc4b2aaa3b9c224d857bc2afb7014afb964ebb1b8a5dde072bf41f5  C6/_app/immutable/nodes/2.DyWL8TcE.js",
-     "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  C6/_app/immutable/assets/2.gBuqKVzi.css",
-     "73dff152e4546d8d028af6fb402be6bfafc6614509967d6474a11f83ab10a0ec  V7/_app/immutable/nodes/2.DyWL8TcE.js",
-     "40078cb2d9cfd5a863f8bc20645a92cfcc35054d83d11bc7a997d0936b9e5ffe  V7/_app/immutable/assets/2.gBuqKVzi.css"
-    ]
-   }
-  }
- },
- "verdict": "round 4 rebuilt on strip-tc (V9, no __crTops; review round 4 on the delta, then the counted set from session A on C8/V9); all round-4 measurements so far are on strip-rw (C5/V6, C6/V7): Chrome countdown rAF 162 -> 8 per 6 s at y 0 (others frozen), WebKit Sim frames match C to <= 0.0151 px cell rects (0 >= 1/64, 0 unmatched), pixel max delta 5 on rolling digits (path interpolation <= 0.019 px), layers equal mid-roll; +1 backed cell (+0.023 MB) at rest in 2 of 4 Sim runs (OBSERVED); rest of the counted set PENDING (cd-strip PR-008 rev 2)",
- "chromeCounts": {
-  "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
-  "base_frozen": {
-   "counts": {
-    "updateLayoutTree": 108,
-    "layout": 7,
-    "paint": 28,
-    "beginMainThreadFrame": 118,
-    "beginFrame": 123,
-    "drawFrame": 105,
-    "fireAnimationFrame": 108,
-    "countdownRaf": 108,
-    "countdownFunctionCalls": 116
-   },
-   "frameSplit": {
-    "rollStarts": 5,
-    "mainFramesPer400msInRoll": 19.4,
-    "mainFramesPer400msOutside": 4.2
-   },
-   "stripAnimations": {
-    "instances": 0,
-    "compositingDecisions": {
-     "composited": 0,
-     "compositeFailed": 0,
-     "noDecision": 0
-    },
-    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
-   }
-  },
-  "build_frozen": {
-   "counts": {
-    "updateLayoutTree": 41,
-    "layout": 6,
-    "paint": 26,
-    "beginMainThreadFrame": 50,
-    "beginFrame": 134,
-    "drawFrame": 113,
-    "fireAnimationFrame": 4,
-    "countdownRaf": 4,
-    "countdownFunctionCalls": 12
-   },
-   "frameSplit": {
-    "rollStarts": 4,
-    "mainFramesPer400msInRoll": 4.5,
-    "mainFramesPer400msOutside": 6
-   },
-   "stripAnimations": {
-    "instances": 4,
-    "compositingDecisions": {
-     "composited": 0,
-     "compositeFailed": 0,
-     "noDecision": 4
-    },
-    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
-   }
-  },
-  "base_pausedOnce": {
-   "counts": {
-    "updateLayoutTree": 186,
-    "layout": 8,
-    "paint": 449,
-    "beginMainThreadFrame": 185,
-    "beginFrame": 236,
-    "drawFrame": 179,
-    "fireAnimationFrame": 108,
-    "countdownRaf": 108,
-    "countdownFunctionCalls": 116
-   },
-   "frameSplit": {
-    "rollStarts": 4,
-    "mainFramesPer400msInRoll": 23.8,
-    "mainFramesPer400msOutside": 17.8
-   },
-   "stripAnimations": {
-    "instances": 0,
-    "compositingDecisions": {
-     "composited": 0,
-     "compositeFailed": 0,
-     "noDecision": 0
-    },
-    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
-   }
-  },
-  "build_pausedOnce": {
-   "counts": {
-    "updateLayoutTree": 195,
-    "layout": 8,
-    "paint": 679,
-    "beginMainThreadFrame": 195,
-    "beginFrame": 241,
-    "drawFrame": 211,
-    "fireAnimationFrame": 4,
-    "countdownRaf": 4,
-    "countdownFunctionCalls": 12
-   },
-   "frameSplit": {
-    "rollStarts": 4,
-    "mainFramesPer400msInRoll": 18.8,
-    "mainFramesPer400msOutside": 20
-   },
-   "stripAnimations": {
-    "instances": 4,
-    "compositingDecisions": {
-     "composited": 0,
-     "compositeFailed": 0,
-     "noDecision": 4
-    },
-    "note": "no decision recorded for the strip animations; \"Chrome composites the roll\" stays OBSERVED (main-frame split), not read from these events"
-   }
-  }
- },
- "webkitSimCounts": {
-  "frozen": {
-   "base": [
-    {
-     "rep": 0,
-     "counts": {
-      "RenderingFrame": 111,
-      "RecalculateStyles": 120,
-      "Layout": 8,
-      "Paint": 18,
-      "Composite": 111,
-      "FireAnimationFrame": 107,
-      "countdownRaf": 107
-     },
-     "animSamples": {
-      "n": 29,
-      "withRunning": 0,
-      "maxRunning": 0,
-      "strips": 8
-     }
-    },
-    {
-     "rep": 1,
-     "counts": {
-      "RenderingFrame": 114,
-      "RecalculateStyles": 124,
-      "Layout": 10,
-      "Paint": 24,
-      "Composite": 114,
-      "FireAnimationFrame": 110,
-      "countdownRaf": 110
-     },
-     "animSamples": {
-      "n": 30,
-      "withRunning": 0,
-      "maxRunning": 0,
-      "strips": 8
-     }
-    }
-   ],
-   "build": [
-    {
-     "rep": 0,
-     "counts": {
-      "RenderingFrame": 55,
-      "RecalculateStyles": 54,
-      "Layout": 8,
-      "Paint": 18,
-      "Composite": 55,
-      "FireAnimationFrame": 4,
-      "countdownRaf": 4
-     },
-     "animSamples": {
-      "n": 29,
-      "withRunning": 14,
-      "maxRunning": 2,
-      "strips": 8
-     }
-    },
-    {
-     "rep": 1,
-     "counts": {
-      "RenderingFrame": 57,
-      "RecalculateStyles": 57,
-      "Layout": 9,
-      "Paint": 23,
-      "Composite": 57,
-      "FireAnimationFrame": 5,
-      "countdownRaf": 5
-     },
-     "animSamples": {
-      "n": 30,
-      "withRunning": 14,
-      "maxRunning": 2,
-      "strips": 8
-     }
-    }
-   ]
-  },
-  "allRunning": {
-   "base": [
-    {
-     "rep": 0,
-     "counts": {
-      "RenderingFrame": 214,
-      "RecalculateStyles": 222,
-      "Layout": 156,
-      "Paint": 175,
-      "Composite": 214,
-      "FireAnimationFrame": 108,
-      "countdownRaf": 108
-     },
-     "animSamples": {
-      "n": 30,
-      "withRunning": 0,
-      "maxRunning": 0,
-      "strips": 8
-     }
-    },
-    {
-     "rep": 1,
-     "counts": {
-      "RenderingFrame": 204,
-      "RecalculateStyles": 213,
-      "Layout": 145,
-      "Paint": 164,
-      "Composite": 204,
-      "FireAnimationFrame": 105,
-      "countdownRaf": 105
-     },
-     "animSamples": {
-      "n": 30,
-      "withRunning": 0,
-      "maxRunning": 0,
-      "strips": 8
-     }
-    }
-   ],
-   "build": [
-    {
-     "rep": 0,
-     "counts": {
-      "RenderingFrame": 207,
-      "RecalculateStyles": 220,
-      "Layout": 158,
-      "Paint": 177,
-      "Composite": 207,
-      "FireAnimationFrame": 6,
-      "countdownRaf": 6
-     },
-     "animSamples": {
-      "n": 28,
-      "withRunning": 0,
-      "maxRunning": 0,
-      "strips": 8
-     }
-    },
-    {
-     "rep": 1,
-     "counts": {
-      "RenderingFrame": 197,
-      "RecalculateStyles": 209,
-      "Layout": 149,
-      "Paint": 167,
-      "Composite": 197,
-      "FireAnimationFrame": 4,
-      "countdownRaf": 4
-     },
-     "animSamples": {
-      "n": 30,
-      "withRunning": 0,
-      "maxRunning": 0,
-      "strips": 8
-     }
-    }
-   ]
-  },
-  "note": "allRunning anim samples were taken on the panel clock (selector bug, fixed for the frozen run)"
- },
- "positions": {
-  "note": "|B - A| px per frame, B = build computed translateY, A = original GE chain on the same frame stamps (cell 36 px). origJitter = A on real stamps vs A on ideal 60 Hz stamps (the original's own variation).",
-  "headless60_beforeStartFix": {
-   "mode": "build",
-   "headless": true,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 2403,
-   "frameDtMedianMs": 16.7,
-   "frameDtP95Ms": 16.7,
-   "rolls": 84,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 963,
-    "maxPx": 0.4508,
-    "p95Px": 0.0187,
-    "p99Px": 0.0977
-   },
-   "errForcedRolls": {
-    "n": 1568,
-    "maxPx": 4.5112,
-    "p95Px": 0.0562,
-    "p99Px": 0.5362
-   },
-   "startValueDiffPx": {
-    "n": 84,
-    "maxPx": 0.0977,
-    "p95Px": 0.002,
-    "p99Px": 0.0977
-   },
-   "startValueDiffForcedPx": {
-    "n": 49,
-    "maxPx": 0.0977,
-    "p95Px": 0.0141,
-    "p99Px": 0.0977
-   },
-   "worstRolls": [
-    {
-     "i": 14,
-     "from": 0,
-     "to": 5,
-     "forced": true,
-     "maxPx": 4.5112
-    },
-    {
-     "i": 13,
-     "from": 4,
-     "to": 1,
-     "forced": true,
-     "maxPx": 1.7539
-    },
-    {
-     "i": 15,
-     "from": 2,
-     "to": 1,
-     "forced": true,
-     "maxPx": 1.4146
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.4508
-    },
-    {
-     "i": 12,
-     "from": 3,
-     "to": 1,
-     "forced": true,
-     "maxPx": 0.4262
-    }
-   ]
-  },
-  "headless60_base_modelCheck": {
-   "mode": "base",
-   "headless": true,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 1202,
-   "frameDtMedianMs": 16.7,
-   "frameDtP95Ms": 16.7,
-   "rollsFitted": 11,
-   "modelDeviationPx": {
-    "n": 277,
-    "maxPx": 0.0005,
-    "p95Px": 0.0005
-   }
-  },
-  "headless60": {
-   "mode": "build",
-   "headless": true,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 2405,
-   "frameDtMedianMs": 16.7,
-   "frameDtP95Ms": 16.7,
-   "rolls": 83,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 1119,
-    "maxPx": 0.1327,
-    "p95Px": 0.0154,
-    "p99Px": 0.0208
-   },
-   "errForcedRolls": {
-    "n": 1426,
-    "maxPx": 0.1452,
-    "p95Px": 0.0213,
-    "p99Px": 0.0646
-   },
-   "startValueDiffPx": {
-    "n": 83,
-    "maxPx": 0.0066,
-    "p95Px": 0,
-    "p99Px": 0.0066
-   },
-   "origJitterTickPx": {
-    "n": 1119,
-    "maxPx": 0.6123,
-    "p95Px": 0.0257,
-    "p99Px": 0.0991
-   },
-   "origJitterForcedPx": {
-    "n": 1426,
-    "maxPx": 0.3125,
-    "p95Px": 0.0362,
-    "p99Px": 0.1078
-   },
-   "errVsIdeal60TickPx": {
-    "n": 1119,
-    "maxPx": 0.4796,
-    "p95Px": 0.026,
-    "p99Px": 0.0894
-   },
-   "errVsIdeal60ForcedPx": {
-    "n": 1426,
-    "maxPx": 0.1848,
-    "p95Px": 0.0207,
-    "p99Px": 0.0517
-   },
-   "startValueDiffForcedPx": {
-    "n": 46,
-    "maxPx": 0.0066,
-    "p95Px": 0.0013,
-    "p99Px": 0.0066
-   },
-   "worstRolls": [
-    {
-     "i": 13,
-     "from": 2,
-     "to": 9,
-     "forced": true,
-     "maxPx": 0.1452
-    },
-    {
-     "i": 9,
-     "from": 0,
-     "to": 9,
-     "forced": true,
-     "maxPx": 0.1401
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.1327
-    },
-    {
-     "i": 14,
-     "from": 5,
-     "to": 0,
-     "forced": true,
-     "maxPx": 0.1258
-    },
-    {
-     "i": 15,
-     "from": 5,
-     "to": 1,
-     "forced": true,
-     "maxPx": 0.1006
-    }
-   ]
-  },
-  "headed120": {
-   "mode": "build",
-   "headless": false,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 3603,
-   "frameDtMedianMs": 8.3,
-   "frameDtP95Ms": 9.5,
-   "rolls": 68,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 1419,
-    "maxPx": 27.7404,
-    "p95Px": 2.5473,
-    "p99Px": 5.8923
-   },
-   "errForcedRolls": {
-    "n": 2650,
-    "maxPx": 26.6748,
-    "p95Px": 4.0829,
-    "p99Px": 13.1212
-   },
-   "startValueDiffPx": {
-    "n": 68,
-    "maxPx": 0.2812,
-    "p95Px": 0.185,
-    "p99Px": 0.2812
-   },
-   "origJitterTickPx": {
-    "n": 1419,
-    "maxPx": 49.4277,
-    "p95Px": 3.0918,
-    "p99Px": 9.0204
-   },
-   "origJitterForcedPx": {
-    "n": 2650,
-    "maxPx": 55.4622,
-    "p95Px": 6.5443,
-    "p99Px": 21.0867
-   },
-   "errVsIdeal60TickPx": {
-    "n": 1419,
-    "maxPx": 51.4655,
-    "p95Px": 2.4222,
-    "p99Px": 6.1103
-   },
-   "errVsIdeal60ForcedPx": {
-    "n": 2650,
-    "maxPx": 51.0937,
-    "p95Px": 4.7966,
-    "p99Px": 17.9436
-   },
-   "startValueDiffForcedPx": {
-    "n": 41,
-    "maxPx": 0.2812,
-    "p95Px": 0.1925,
-    "p99Px": 0.2812
-   },
-   "worstRolls": [
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 27.7404
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 26.6828
-    },
-    {
-     "i": 13,
-     "from": 9,
-     "to": 0,
-     "forced": true,
-     "maxPx": 26.6748
-    },
-    {
-     "i": 9,
-     "from": 0,
-     "to": 9,
-     "forced": true,
-     "maxPx": 24.0663
-    },
-    {
-     "i": 13,
-     "from": 1,
-     "to": 9,
-     "forced": true,
-     "maxPx": 23.9811
-    }
-   ]
-  },
-  "headed120_base_modelCheck": {
-   "mode": "base",
-   "headless": false,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 1808,
-   "frameDtMedianMs": 8.3,
-   "frameDtP95Ms": 9.5,
-   "rollsFitted": 16,
-   "modelDeviationPx": {
-    "n": 781,
-    "maxPx": 0.0008,
-    "p95Px": 0.0005
-   }
-  },
-  "headless60_heroOnly": {
-   "mode": "build",
-   "headless": true,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 1203,
-   "frameDtMedianMs": 16.7,
-   "frameDtP95Ms": 16.7,
-   "rolls": 33,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 427,
-    "maxPx": 0.0264,
-    "p95Px": 0.0156,
-    "p99Px": 0.0246
-   },
-   "errForcedRolls": {
-    "n": 542,
-    "maxPx": 0.1313,
-    "p95Px": 0.0192,
-    "p99Px": 0.0736
-   },
-   "startValueDiffPx": {
-    "n": 33,
-    "maxPx": 0.0141,
-    "p95Px": 0.0053,
-    "p99Px": 0.0141
-   },
-   "origJitterTickPx": {
-    "n": 427,
-    "maxPx": 0.0353,
-    "p95Px": 0.0227,
-    "p99Px": 0.03
-   },
-   "origJitterForcedPx": {
-    "n": 542,
-    "maxPx": 0.216,
-    "p95Px": 0.0524,
-    "p99Px": 0.1293
-   },
-   "errVsIdeal60TickPx": {
-    "n": 427,
-    "maxPx": 0.0509,
-    "p95Px": 0.0256,
-    "p99Px": 0.0443
-   },
-   "errVsIdeal60ForcedPx": {
-    "n": 542,
-    "maxPx": 0.2533,
-    "p95Px": 0.0241,
-    "p99Px": 0.1312
-   },
-   "startValueDiffForcedPx": {
-    "n": 16,
-    "maxPx": 0.0141,
-    "p95Px": 0.0141,
-    "p99Px": 0.0141
-   },
-   "worstRolls": [
-    {
-     "i": 15,
-     "from": 2.0708,
-     "to": 7,
-     "forced": true,
-     "maxPx": 0.1313
-    },
-    {
-     "i": 15,
-     "from": 2,
-     "to": 9,
-     "forced": true,
-     "maxPx": 0.1155
-    },
-    {
-     "i": 13,
-     "from": 2,
-     "to": 8,
-     "forced": true,
-     "maxPx": 0.0989
-    },
-    {
-     "i": 14,
-     "from": 0,
-     "to": 5,
-     "forced": true,
-     "maxPx": 0.0822
-    },
-    {
-     "i": 14,
-     "from": 3,
-     "to": 0,
-     "forced": true,
-     "maxPx": 0.0736
-    }
-   ]
-  },
-  "headless60_round2": {
-   "mode": "build",
-   "headless": true,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 2405,
-   "frameDtMedianMs": 16.7,
-   "frameDtP95Ms": 16.7,
-   "rolls": 82,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 1087,
-    "maxPx": 0.6433,
-    "p95Px": 0.0245,
-    "p99Px": 0.0943
-   },
-   "errForcedRolls": {
-    "n": 1370,
-    "maxPx": 0.2954,
-    "p95Px": 0.0199,
-    "p99Px": 0.0664
-   },
-   "startValueDiffPx": {
-    "n": 82,
-    "maxPx": 0.0064,
-    "p95Px": 0.0016,
-    "p99Px": 0.0064
-   },
-   "origJitterTickPx": {
-    "n": 1087,
-    "maxPx": 0.7957,
-    "p95Px": 0.0294,
-    "p99Px": 0.1279
-   },
-   "origJitterForcedPx": {
-    "n": 1370,
-    "maxPx": 0.5479,
-    "p95Px": 0.0427,
-    "p99Px": 0.1544
-   },
-   "errVsIdeal60TickPx": {
-    "n": 1087,
-    "maxPx": 0.1524,
-    "p95Px": 0.014,
-    "p99Px": 0.0228
-   },
-   "errVsIdeal60ForcedPx": {
-    "n": 1370,
-    "maxPx": 0.8433,
-    "p95Px": 0.0355,
-    "p99Px": 0.139
-   },
-   "startValueDiffForcedPx": {
-    "n": 44,
-    "maxPx": 0.0064,
-    "p95Px": 0.0053,
-    "p99Px": 0.0064
-   },
-   "worstRolls": [
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.6433
-    },
-    {
-     "i": 9,
-     "from": 0,
-     "to": 9,
-     "forced": true,
-     "maxPx": 0.2954
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.2497
-    },
-    {
-     "i": 15,
-     "from": 2.1629,
-     "to": 9,
-     "forced": true,
-     "maxPx": 0.1646
-    },
-    {
-     "i": 14,
-     "from": 0,
-     "to": 5,
-     "forced": false,
-     "maxPx": 0.1301
-    }
-   ]
-  },
-  "headed120_round2": {
-   "mode": "build",
-   "headless": false,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 3604,
-   "frameDtMedianMs": 8.3,
-   "frameDtP95Ms": 9.4,
-   "rolls": 68,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 1749,
-    "maxPx": 29.5886,
-    "p95Px": 3.154,
-    "p99Px": 15.8782
-   },
-   "errForcedRolls": {
-    "n": 2471,
-    "maxPx": 21.4511,
-    "p95Px": 4.0377,
-    "p99Px": 11.1506
-   },
-   "startValueDiffPx": {
-    "n": 68,
-    "maxPx": 0.2038,
-    "p95Px": 0.019,
-    "p99Px": 0.2038
-   },
-   "origJitterTickPx": {
-    "n": 1749,
-    "maxPx": 60.1887,
-    "p95Px": 6.0194,
-    "p99Px": 24.3358
-   },
-   "origJitterForcedPx": {
-    "n": 2471,
-    "maxPx": 47.1387,
-    "p95Px": 5.7828,
-    "p99Px": 16.5528
-   },
-   "errVsIdeal60TickPx": {
-    "n": 1749,
-    "maxPx": 58.7873,
-    "p95Px": 3.6919,
-    "p99Px": 17.0694
-   },
-   "errVsIdeal60ForcedPx": {
-    "n": 2471,
-    "maxPx": 29.3551,
-    "p95Px": 3.9458,
-    "p99Px": 13.1571
-   },
-   "startValueDiffForcedPx": {
-    "n": 39,
-    "maxPx": 0.2038,
-    "p95Px": 0.1892,
-    "p99Px": 0.2038
-   },
-   "worstRolls": [
-    {
-     "i": 15,
-     "from": 0.0155,
-     "to": 9,
-     "forced": false,
-     "maxPx": 29.5886
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 29.3687
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 29.0907
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 25.3917
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 24.8089
-    }
-   ]
-  },
-  "headless60_round3": {
-   "mode": "build",
-   "headless": true,
-   "cpu": 1,
-   "browser": "Chrome/154.0.8037.97",
-   "frames": 2405,
-   "frameDtMedianMs": 16.7,
-   "frameDtP95Ms": 16.7,
-   "rolls": 84,
-   "keyframesMax": 343,
-   "errTickRolls": {
-    "n": 1146,
-    "maxPx": 0.2359,
-    "p95Px": 0.0211,
-    "p99Px": 0.1101
-   },
-   "errForcedRolls": {
-    "n": 1374,
-    "maxPx": 0.1043,
-    "p95Px": 0.0156,
-    "p99Px": 0.0443
-   },
-   "startValueDiffPx": {
-    "n": 84,
-    "maxPx": 0.0156,
-    "p95Px": 0.0049,
-    "p99Px": 0.0156
-   },
-   "origJitterTickPx": {
-    "n": 1146,
-    "maxPx": 0.3175,
-    "p95Px": 0.0287,
-    "p99Px": 0.1311
-   },
-   "origJitterForcedPx": {
-    "n": 1374,
-    "maxPx": 0.2343,
-    "p95Px": 0.0346,
-    "p99Px": 0.1107
-   },
-   "errVsIdeal60TickPx": {
-    "n": 1146,
-    "maxPx": 0.0815,
-    "p95Px": 0.0144,
-    "p99Px": 0.0251
-   },
-   "errVsIdeal60ForcedPx": {
-    "n": 1374,
-    "maxPx": 0.2224,
-    "p95Px": 0.0328,
-    "p99Px": 0.1097
-   },
-   "startValueDiffForcedPx": {
-    "n": 46,
-    "maxPx": 0.008,
-    "p95Px": 0.0048,
-    "p99Px": 0.008
-   },
-   "worstRolls": [
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.2359
-    },
-    {
-     "i": 15,
-     "from": 0.0028,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.2303
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.1926
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.124
-    },
-    {
-     "i": 15,
-     "from": 0,
-     "to": 9,
-     "forced": false,
-     "maxPx": 0.1179
-    }
-   ],
-   "servedHash": "2af461dc50ad (hold7.log, serve-snap.sh)",
-   "raw": "out/cd-roll-ca/probe-build-h60e.json"
-  },
-  "offlineModel": {
-   "gridVsOriginal60HzMaxPx": {
-    "oneStep": 0.0167,
-    "zeroToNine": 0.0189
-   },
-   "original60vs120MaxPx": {
-    "oneStep": 3.275,
-    "zeroToNine": 29.47
-   },
-   "keyframesMax": 343,
-   "durationMaxMs": 566.7
-  }
- },
- "hiddenTab": {
-  "note": "hide-check.mjs: headed Chrome, a second tab activated for ~3 s, 4 cycles; pending = wrapped requestAnimationFrame callbacks (logger excluded); OBSERVED, Chrome",
-  "servedHashes": {
-   "source": "out/cd-roll-ca/hold5.log lines 17-18 (serve-snap.sh: curl | shasum of the served bodies, x-mirror-source overlay); the hide JSONs predate the servedHash field",
-   "C": {
-    "js": "358cd8ae16b9",
-    "css": "ce6beca745a0"
-   },
-   "V": {
-    "js": "673b110d118c",
-    "css": "ce6beca745a0"
-   },
-   "V0": {
-    "js": "9ac52b08bc3212adce052443d13d88895f9ad8ae041bc56d20612b40f2fcf700",
-    "source": "shasum of out/cd-roll-ca/v0/_app/immutable/nodes/2.DyWL8TcE.js"
-   }
-  },
-  "firstAnalysisAudit": {
-   "firstReported": {
-    "V0": 108,
-    "V": 247.918
-   },
-   "second": {
-    "V0": 3.293,
-    "V": 0.274
-   },
-   "bug": "the first analysis compared the first frame after the show with the last roll started while hidden (now < show event) and ignored the show-tick roll that cD starts on the show visibilitychange, after the show event and before the first frame; the second takes the latest roll started before the first frame callback",
-   "rawUnchanged": "--analyze copies log verbatim; fixes/cd-roll-ca/hide-audit.mjs reruns both selections on the saved raw logs and prints 108 / 247.918 and 3.293 / 0.274"
-  },
-  "C": {
-   "servedHash": {},
-   "summary": {
-    "hiddenConfirmed": true,
-    "framesWhileHidden": 0,
-    "maxPendingWhileHidden": 2,
-    "maxPendingAtShow": 2,
-    "hiddenRolls": 0,
-    "maxStartErrPx": 0,
-    "maxFirstFrameErrPx": 0,
-    "errors": 0
-   },
-   "per": [
-    {
-     "k": 0,
-     "hiddenMs": 3068.1,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 2,
-      "atShow": 2,
-      "after1s": 1
-     },
-     "hiddenRolls": 0,
-     "gapRolls": 0,
-     "firstFrameAfterShow": []
-    },
-    {
-     "k": 1,
-     "hiddenMs": 3014.9,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 1,
-      "atShow": 1,
-      "after1s": 0
-     },
-     "hiddenRolls": 0,
-     "gapRolls": 0,
-     "firstFrameAfterShow": []
-    },
-    {
-     "k": 2,
-     "hiddenMs": 3017.8,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 2,
-      "atShow": 2,
-      "after1s": 0
-     },
-     "hiddenRolls": 0,
-     "gapRolls": 0,
-     "firstFrameAfterShow": []
-    },
-    {
-     "k": 3,
-     "hiddenMs": 3016.7,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 1,
-      "atShow": 1,
-      "after1s": 0
-     },
-     "hiddenRolls": 0,
-     "gapRolls": 0,
-     "firstFrameAfterShow": []
-    }
-   ]
-  },
-  "V0_round1": {
-   "servedHash": {},
-   "summary": {
-    "hiddenConfirmed": true,
-    "framesWhileHidden": 0,
-    "maxPendingWhileHidden": 3,
-    "maxPendingAtShow": 4,
-    "hiddenRolls": 12,
-    "maxStartErrPx": 0.396,
-    "maxFirstFrameErrPx": 3.293,
-    "errors": 0
-   },
-   "per": [
-    {
-     "k": 0,
-     "hiddenMs": 3014.5,
-     "framesWhileHidden": 0,
-     "rollingAtHide": true,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 3,
-      "atShow": 3,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 3,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 186.5,
-       "build": -39.858,
-       "originalModel": -39.734,
-       "errPx": 0.125
-      }
-     ]
-    },
-    {
-     "k": 1,
-     "hiddenMs": 3017.6,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 3,
-      "atShow": 3,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 4,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "show tick",
-       "dtMs": 4.5,
-       "build": -321.278,
-       "originalModel": -321.278,
-       "errPx": 0
-      }
-     ]
-    },
-    {
-     "k": 2,
-     "hiddenMs": 3021.7,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 3,
-      "atShow": 3,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 6,
-     "firstFrameAfterShow": [
-      {
-       "i": 5,
-       "rollAt": "show tick",
-       "dtMs": -1,
-       "build": -324,
-       "originalModel": -324,
-       "errPx": 0
+  "round4": {
+    "design": "one Web Animation per moved cell (cells within 1.5 cells of the path), keyword linear easing, shared startTime; moved cells at top M*c inside cd-strip wrapper at -M*c; gap re-key on a first frame > 1 frame after the change; hidden-tab logic of round 3 unchanged",
+    "pathTolerance": {
+      "kept": 0.0005,
+      "keyframes5e-4": {
+        "oneStep": 144,
+        "zeroToNine": 343,
+        "median": 232
       },
-      {
-       "i": 6,
-       "rollAt": "show tick",
-       "dtMs": -1.3,
-       "build": 0,
-       "originalModel": 0,
-       "errPx": 0
+      "keyframes1e-4": {
+        "oneStep": 268,
+        "zeroToNine": 520,
+        "median": 390
       },
-      {
-       "i": 7,
-       "rollAt": "show tick",
-       "dtMs": -1.8,
-       "build": -108,
-       "originalModel": -108,
-       "errPx": 0
-      }
-     ]
+      "maxErrPx36": {
+        "5e-4": 0.0189,
+        "1e-4": 0.0189
+      },
+      "meanErrPx36": {
+        "5e-4": 0.0054,
+        "1e-4": 0.0018
+      },
+      "note": "max is set by the 32-points-per-frame cap in the first frame; offline, all 90 pairs"
     },
-    {
-     "k": 3,
-     "hiddenMs": 3017,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 1,
-      "maxWhileHidden": 3,
-      "atShow": 4,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 3,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 18.7,
-       "build": -215.275,
-       "originalModel": -211.982,
-       "errPx": 3.293
+    "chromeCompCheck6s": {
+      "C4_stripRb": {
+        "countdownRaf": 162,
+        "updateLayoutTree": 159,
+        "mainFrames": 170,
+        "inRollPer400ms": 24,
+        "outsidePer400ms": 3.4,
+        "layout": 23,
+        "paint": 47
+      },
+      "V5_stripRb": {
+        "countdownRaf": 7,
+        "updateLayoutTree": 79,
+        "mainFrames": 91,
+        "inRollPer400ms": 8.7,
+        "outsidePer400ms": 4.3,
+        "layout": 30,
+        "paint": 49,
+        "animations": 34,
+        "noDecision": 34
+      },
+      "V6_stripRwDev": {
+        "countdownRaf": 8,
+        "updateLayoutTree": 73,
+        "mainFrames": 82,
+        "inRollPer400ms": 7,
+        "outsidePer400ms": 4.6,
+        "layout": 30,
+        "paint": 67,
+        "animations": 40,
+        "noDecision": 40
+      },
+      "note": "C on strip-rw not run yet (PENDING); composited: OBSERVED, no decision recorded"
+    },
+    "positionsH60_V6": {
+      "errTickMaxPx": 0.2536,
+      "errTickP95Px": 0.0174,
+      "errForcedMaxPx": 0.2413,
+      "errForcedP95Px": 0.0199,
+      "vsIdealTickMaxPx": 0.0647,
+      "vsIdealForcedMaxPx": 0.2112,
+      "startValueMaxPx": 0.0165,
+      "origJitterTickPx": 0.2716,
+      "origJitterForcedPx": 0.267,
+      "baseFitC5": {
+        "rolls": 22,
+        "maxPx": 0
       }
-     ]
+    },
+    "hiddenTabChromeV6": {
+      "framesWhileHidden": 0,
+      "maxPending": 3,
+      "startErrPx": 0,
+      "firstFrameErrPx": 0.008,
+      "errors": 0
+    },
+    "fixCheckV6": {
+      "morph": "both",
+      "errors": 0,
+      "http4xx": 0,
+      "elements": 1558,
+      "pixelDiffPct": {
+        "top": 0.19,
+        "middle": 0,
+        "bottom": 0
+      }
+    },
+    "simFrames": {
+      "debugRuns_C5_V6": {
+        "rectMaxPx": 0.0151,
+        "rectOverLayoutUnit": 0,
+        "unmatched": 0,
+        "pixelMaxDelta": 5,
+        "aaMaxDelta": 1,
+        "timelineV6PausedVsRunning1e-6": {
+          "recalc": [
+            54,
+            55
+          ],
+          "rAF": [
+            0,
+            0
+          ]
+        },
+        "compositingReason": "animation on rolling cells (V only)",
+        "rate1Match": [
+          {
+            "maxDelta": 4,
+            "atBracket": 0.507
+          },
+          {
+            "maxDelta": 1,
+            "atBracket": 0.526
+          }
+        ],
+        "caLead": "UNRESOLVED"
+      },
+      "firstBuild_sessionA_C5_V6": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T06-47-53-243Z.json",
+        "shots": 90,
+        "aaMaxDelta": 1,
+        "vMaxDelta": 5,
+        "rectMaxPx": 0.01508,
+        "restBacked": [
+          14,
+          14
+        ]
+      },
+      "counted_sessionA_C6_V7": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T07-10-10-961Z.json",
+        "scenarios": [
+          "wrap",
+          "wrapUp"
+        ],
+        "pass": "fade50",
+        "shots": 90,
+        "aa": {
+          "differ": 36,
+          "maxDelta": 1,
+          "state": 0,
+          "rects": 0
+        },
+        "v": {
+          "differ": 87,
+          "maxDelta": 5,
+          "stateMaxPx": 0.015,
+          "rectMaxPx": 0.01508,
+          "rectOverLayoutUnit": 0,
+          "unmatched": 0,
+          "sharedStart": "79/79"
+        },
+        "layers": {
+          "restC": [
+            14,
+            0.329
+          ],
+          "restV": [
+            15,
+            0.352
+          ],
+          "midEqual": true
+        },
+        "pausedScene": {
+          "C6": {
+            "cellAnimations": 0,
+            "backedCells": 0,
+            "willChange": "auto"
+          },
+          "V7": {
+            "cellAnimations": 0,
+            "backedCells": 0,
+            "willChange": "auto"
+          }
+        }
+      },
+      "costLine": "+1 backed cell (+0.023 MB) at rest in V in 2 of 4 Sim runs (seconds ones cell 2, ~0.1 s after a roll); persistence not checked yet; OBSERVED"
+    },
+    "pending": [
+      "review round 4",
+      "phone P-093 (W driver, 3 holds, real thermal Serious)"
+    ],
+    "measuredOn": "strip-rw (C5/V6 dev, C6/V7) and strip-tc (C8/V9: session A + Chrome roll-end check)",
+    "tcDelta": "no __crTops: the roll writes no top; per-cell animations override cd-strip tc inline rest transforms (k-M)*c, cancel() at finish reveals them (last keyframe = rest transform)",
+    "tc": {
+      "rollEndChrome": {
+        "file": "out/cd-roll-ca/end-check-V9.json",
+        "tool": "fixes/cd-roll-ca/end-check.mjs",
+        "served": {
+          "js": "582d120c9f8f",
+          "css": "982a747d9263"
+        },
+        "rolls": 8,
+        "forced": 4,
+        "digitRolls": 18,
+        "kfInlineMaxPx": 0,
+        "sharedStart": true,
+        "animsLeftAfterFinish": 0,
+        "AvsB": {
+          "differ": 1,
+          "maxDelta": 1,
+          "pixels": 4
+        },
+        "AvsA2": {
+          "differ": 1,
+          "maxDelta": 1,
+          "pixels": 4
+        },
+        "rectABMaxPx": 0,
+        "note": "A = rolls paused at their end (fill both), B = after finish() -> onfinish -> cancel(); the one A/B difference (4 px, delta 1) is the same as A vs A2 in that roll (noise); headless Chrome 430x932 DPR 3"
+      },
+      "sessionA_C8_V9": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-33-01-524Z.json",
+        "log": "out/cd-roll-ca/simpx-countA-tc2.log",
+        "pass": "fade50",
+        "scenarios": [
+          "wrap",
+          "wrapUp"
+        ],
+        "shots": 90,
+        "simQuiet": "NOT settled after 28 s (FW_SIM_SETTLE_SEC=30; background 115 % of a core at start), SIM_BACKGROUND mean 20 % max 130 %, load1 max 81-91",
+        "aa": {
+          "differ": 28,
+          "maxDelta": 1,
+          "state": 0,
+          "rects": 0
+        },
+        "v": {
+          "differ": 90,
+          "maxDelta": {
+            "wrap": 5,
+            "wrapUp": 6
+          },
+          "stateMaxPx": 0.017,
+          "rectMaxPx": 0.01636,
+          "rectOverLayoutUnit": 1,
+          "unmatched": 0,
+          "sharedStart": "79/79",
+          "restMaxDelta": 1,
+          "note": "rects are getBoundingClientRect (transforms included); on tc no top is written, so the rect difference is the path interpolation offset (offline bound 0.0189 px), not layout; the 1 shot over 1/64 is that offset"
+        },
+        "layers": {
+          "restC": [
+            14,
+            0.329
+          ],
+          "restV": [
+            14,
+            0.329
+          ],
+          "rest2sC": [
+            14,
+            0.329
+          ],
+          "rest2sV": [
+            14,
+            0.329
+          ],
+          "midEqual": true,
+          "reasonsV": "animation on the rolling cells only"
+        },
+        "rollEndSim": {
+          "wrap": {
+            "cells": 15,
+            "kfInlineMaxPx": 0,
+            "animsLeft": 0,
+            "AvsB": [
+              73,
+              1
+            ],
+            "AvsA2": [
+              42,
+              1
+            ],
+            "rectAB": 0,
+            "stateABpx": 0,
+            "where": "42 px = the A/A spot (css x 260-299 from the timer, also in C8 vs C8-again); 31 px at css x 160-209, digits with no animation in this pair (the seconds rolled): not at the rolled cells"
+          },
+          "wrapUp": {
+            "cells": 15,
+            "kfInlineMaxPx": 0,
+            "animsLeft": 0,
+            "AvsB": [
+              0,
+              0
+            ],
+            "AvsA2": [
+              42,
+              1
+            ],
+            "rectAB": 0,
+            "stateABpx": 0
+          }
+        },
+        "pausedScene": {
+          "C8": {
+            "cellAnimations": 0,
+            "backedCells": 0,
+            "willChange": "auto"
+          },
+          "V9": {
+            "cellAnimations": 0,
+            "backedCells": 0,
+            "willChange": "auto"
+          }
+        },
+        "rate": {
+          "1": "inconclusive: brackets 305-311 ms under load (load1 81-91), best max delta 121",
+          "0.001": {
+            "maxDelta": 1,
+            "atBracket": 0.451
+          }
+        },
+        "tlRecalcV9PausedVsRunning": {
+          "wrap": [
+            53,
+            50
+          ],
+          "wrapUp": [
+            53,
+            52
+          ]
+        }
+      },
+      "costLineTc": "extra backed cell at rest: not seen on tc (V9 14 / 0.329 MB = C8, at rest and rest+2s, 1 run); on rw 2 of 4 runs (OBSERVED)",
+      "sessionB1_C8_V9": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-54-38-590Z.json",
+        "log": "out/cd-roll-ca/simpx-countB1-tc.log",
+        "pass": "fade50",
+        "scenarios": [
+          "carry",
+          "two"
+        ],
+        "shots": 98,
+        "simQuiet": "skipped (ps failed); SIM_BACKGROUND mean 42 % max 142 %, load1 max 72; SIMPX_RATES empty (no rate check)",
+        "aa": {
+          "differ": 48,
+          "maxDelta": 1,
+          "state": 0,
+          "rects": 0
+        },
+        "v": {
+          "differ": 94,
+          "maxDelta": {
+            "carry": 6,
+            "two": 5
+          },
+          "stateMaxPx": 0.017,
+          "rectMaxPx": 0.01648,
+          "rectOverLayoutUnit": 1,
+          "unmatched": 0,
+          "sharedStart": "103/103",
+          "restMaxDelta": 1
+        },
+        "layers": {
+          "restC": [
+            14,
+            0.329
+          ],
+          "restV": [
+            14,
+            0.329
+          ],
+          "rest2sC": [
+            14,
+            0.329
+          ],
+          "rest2sV": [
+            14,
+            0.329
+          ],
+          "midEqual": true
+        },
+        "rollEndSim": {
+          "carry": {
+            "digits": 3,
+            "cells": 22,
+            "kfInlineMaxPx": 0,
+            "animsLeft": 0,
+            "AvsB": [
+              73,
+              1
+            ],
+            "AvsA2": [
+              0,
+              0
+            ],
+            "rectAB": 0,
+            "stateABpx": 0
+          },
+          "two": {
+            "digits": 2,
+            "cells": 15,
+            "kfInlineMaxPx": 0,
+            "animsLeft": 0,
+            "AvsB": [
+              0,
+              0
+            ],
+            "AvsA2": [
+              0,
+              0
+            ],
+            "rectAB": 0,
+            "stateABpx": 0
+          }
+        }
+      },
+      "rollEndSimSpots": "The Sim end pairs that differ (session A wrap, B1 carry) show the same 73 px, delta 1: 42 px at css x 260-299 and 31 px at x 160-209 from the timer left. Both spots also toggle in the unchanged page: C8 vs C8-again shows the 260-299 spot in most frames and the exact 31-px x 160-209 pattern in 1 of 49 (B1) and 2 of 45 (A) frame pairs. So a page-own 1-shade toggle, not the cancel (OBSERVED, Simulator)."
+    },
+    "status": "resumed 2026-10-04 on the landed cd-strip (C8 = strip-tc 5d1ca102); list done: B2, C, rate, sim-counts, sim-hide, reduced motion (Sim + Chrome), Chrome comp/h60/hide/T-034/check; next: review round 4, phone P-093",
+    "resumedOnTc": {
+      "served": {
+        "C8": {
+          "js": "6fa0e1e8a221",
+          "css": "982a747d9263"
+        },
+        "V9": {
+          "js": "582d120c9f8f",
+          "css": "982a747d9263"
+        }
+      },
+      "simB2": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-04T03-21-10-943Z.json",
+        "aa": {
+          "differ": "8/24",
+          "maxDelta": 1
+        },
+        "v9VsC8": {
+          "differ": "21/24",
+          "maxDelta": 6,
+          "stateMaxPx": 0.013,
+          "rectMaxPx": 0.01355,
+          "unmatched": 0
+        },
+        "layers": "14 backed 0.329 MB both"
+      },
+      "simC": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-04T03-26-27-409Z.json",
+        "aa": {
+          "differ": "0/92"
+        },
+        "v9VsC8": {
+          "differ": "84/92",
+          "maxDelta": 9,
+          "stateMaxPx": 0.015,
+          "rectMaxPx": 0.01505,
+          "unmatched": 0,
+          "largestAreaDevicePx": 1491
+        },
+        "layersAtRest": {
+          "C8": "14 backed 0.329 MB",
+          "V9": "15 backed 0.352 MB"
+        }
+      },
+      "simRate1": {
+        "file": "out/cd-roll-ca/simpx/simpx-2026-10-04T03-42-38-135Z.json",
+        "pairs": [
+          "0 px at 0.70 of a 400 ms bracket",
+          "delta 1 (64 px) at 0.51 of a 244 ms bracket"
+        ]
+      },
+      "simCounts": {
+        "file": "out/cd-roll-ca/sim-counts-2026-10-04T04-01-00-187Z.json",
+        "per4s": {
+          "countdownRaf": {
+            "C8": [
+              146,
+              132
+            ],
+            "V9": [
+              4,
+              4
+            ]
+          },
+          "renderingFrame": {
+            "C8": [
+              132,
+              121
+            ],
+            "V9": [
+              49,
+              58
+            ]
+          }
+        },
+        "census": {
+          "rest": "16 -> 17 backed",
+          "midRoll": "16 -> 18",
+          "longMidRoll": "16 -> 22 / 31 (0.376 -> 0.517 / 0.728 MB)"
+        }
+      },
+      "simHide": {
+        "file": "out/cd-roll-ca/sim-hide-2026-10-04T04-15-29-333Z.json"
+      },
+      "pixelTierNumbers": {
+        "largestShade": 9,
+        "shareBeyondAA": "<= 0.041 %",
+        "areaCssPx": 166,
+        "edgeOrFill": "edge",
+        "staticOrMoving": "moving only",
+        "tier": "not claimed (lead's call)"
+      },
+      "reducedMotion": {
+        "sim": {
+          "file": "out/cd-roll-ca/simpx/simpx-2026-10-04T04-59-08-829Z.json",
+          "aa": "0/12",
+          "v9VsC8": "0/12",
+          "animations": 0
+        },
+        "chrome": [
+          {
+            "file": "out/cd-roll-ca/pixels-2026-10-04T05-42-49-483Z.json",
+            "scenes": "hero, panel",
+            "shotsPerArm": 428,
+            "aa": {
+              "differ": 0
+            },
+            "v9VsC8": {
+              "differ": 2,
+              "maxDelta": 1
+            },
+            "frames": 2000,
+            "stateDiffer": 0
+          },
+          {
+            "file": "out/cd-roll-ca/pixels-2026-10-04T05-56-38-918Z.json",
+            "scenes": "herofade 0.25/0.5, panelmid",
+            "shotsPerArm": 105,
+            "aa": {
+              "differ": 2,
+              "maxDelta": 1
+            },
+            "v9VsC8": {
+              "differ": 2,
+              "maxDelta": 1
+            },
+            "frames": 1200,
+            "stateDiffer": 0
+          }
+        ],
+        "note": "hero byte-exact in Chrome; every differing shot (A/A included) is a +-1 checkerboard on the panel background around the digit cards, odd arm varies (V9 in RM1, C8 in RM2); OBSERVED, cause unknown (dither guess, no reference). Lead ruling 2026-10-04: exact against the control's A/A; the panel is not called exact."
+      },
+      "chromeCompCheck6s": {
+        "C8": {
+          "file": "out/cd-roll-ca/comp-check-C8-p2.json",
+          "seconds": 6,
+          "counts": {
+            "updateLayoutTree": 175,
+            "layout": 12,
+            "paint": 41,
+            "beginMainThreadFrame": 205,
+            "beginFrame": 224,
+            "drawFrame": 161,
+            "fireAnimationFrame": 163,
+            "countdownRaf": 163,
+            "countdownFunctionCalls": 175
+          },
+          "frameSplit": {
+            "rollStarts": 7,
+            "mainFramesPer400msInRoll": 21,
+            "mainFramesPer400msOutside": 7.3
+          },
+          "stripAnimations": {
+            "instances": 0,
+            "composited": 0,
+            "failed": [],
+            "noDecision": 0
+          },
+          "runningAtEnd": 0
+        },
+        "V9": {
+          "file": "out/cd-roll-ca/comp-check-V9-p2.json",
+          "seconds": 6,
+          "counts": {
+            "updateLayoutTree": 72,
+            "layout": 11,
+            "paint": 39,
+            "beginMainThreadFrame": 79,
+            "beginFrame": 188,
+            "drawFrame": 170,
+            "fireAnimationFrame": 6,
+            "countdownRaf": 6,
+            "countdownFunctionCalls": 24
+          },
+          "frameSplit": {
+            "rollStarts": 6,
+            "mainFramesPer400msInRoll": 8.2,
+            "mainFramesPer400msOutside": 3.4
+          },
+          "stripAnimations": {
+            "instances": 23,
+            "composited": 0,
+            "failed": [],
+            "noDecision": 23
+          },
+          "runningAtEnd": 3
+        }
+      },
+      "positionsH60_V9": {
+        "file": "out/cd-roll-ca/probe-build-h60-V9.json",
+        "baseFit": {
+          "file": "out/cd-roll-ca/probe-base-h60-C8.json",
+          "rollsFitted": 22,
+          "maxPx": 0
+        }
+      },
+      "hiddenTabChromeV9": {
+        "file": "out/cd-roll-ca/hide-V9.json",
+        "servedHash": {
+          "/_app/immutable/nodes/2.DyWL8TcE.js": "582d120c9f8ffacd9ff7f8b46f11f548fc8163411ef9cc67b2e6f59ca90f18f3",
+          "/_app/immutable/assets/2.gBuqKVzi.css": "982a747d9263ca258ad60aa773d8df4b19cf0dfec10b27a6672b1746a129007d"
+        },
+        "errors": []
+      },
+      "t034": {
+        "c375": {
+          "file": "out/cd-roll-ca/end-check-V9-c375.json",
+          "viewport": {
+            "width": 375,
+            "height": 812,
+            "deviceScaleFactor": 3,
+            "mobile": true
+          },
+          "resize": null,
+          "servedHash": {
+            "/_app/immutable/nodes/2.DyWL8TcE.js": "582d120c9f8f",
+            "/_app/immutable/assets/2.gBuqKVzi.css": "982a747d9263"
+          },
+          "summary": {
+            "rolls": 6,
+            "errors": 0,
+            "digitRolls": 12,
+            "kfInlineMaxPx": 0,
+            "allSharedStart": true,
+            "animsLeftMax": 0,
+            "abDiffer": 0,
+            "abMaxDelta": 0,
+            "aaDiffer": 0,
+            "aaMaxDelta": 0,
+            "rectABMaxPx": 0,
+            "rectABUnmatched": 0
+          },
+          "perRoll": [
+            {
+              "i": 0,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 1,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 2,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 3,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 4,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 5,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            }
+          ]
+        },
+        "c1440": {
+          "file": "out/cd-roll-ca/end-check-V9-c1440.json",
+          "viewport": {
+            "width": 1440,
+            "height": 900,
+            "deviceScaleFactor": 1,
+            "mobile": false
+          },
+          "resize": null,
+          "servedHash": {
+            "/_app/immutable/nodes/2.DyWL8TcE.js": "582d120c9f8f",
+            "/_app/immutable/assets/2.gBuqKVzi.css": "982a747d9263"
+          },
+          "summary": {
+            "rolls": 6,
+            "errors": 0,
+            "digitRolls": 11,
+            "kfInlineMaxPx": 0,
+            "allSharedStart": true,
+            "animsLeftMax": 0,
+            "abDiffer": 1,
+            "abMaxDelta": 1,
+            "aaDiffer": 0,
+            "aaMaxDelta": 0,
+            "rectABMaxPx": 0,
+            "rectABUnmatched": 0
+          },
+          "perRoll": [
+            {
+              "i": 0,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 1,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 2,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 3,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 4,
+              "forced": false,
+              "AB": {
+                "diffPixels": 3,
+                "maxDelta": 1
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 5,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            }
+          ]
+        },
+        "resize430to375": {
+          "file": "out/cd-roll-ca/end-check-V9-rs430to375.json",
+          "viewport": {
+            "width": 430,
+            "height": 932,
+            "deviceScaleFactor": 3,
+            "mobile": true
+          },
+          "resize": {
+            "width": 375,
+            "height": 812,
+            "deviceScaleFactor": 3,
+            "mobile": true
+          },
+          "servedHash": {
+            "/_app/immutable/nodes/2.DyWL8TcE.js": "582d120c9f8f",
+            "/_app/immutable/assets/2.gBuqKVzi.css": "982a747d9263"
+          },
+          "summary": {
+            "rolls": 6,
+            "errors": 0,
+            "digitRolls": 14,
+            "kfInlineMaxPx": 0,
+            "allSharedStart": true,
+            "animsLeftMax": 0,
+            "abDiffer": 0,
+            "abMaxDelta": 0,
+            "aaDiffer": 0,
+            "aaMaxDelta": 0,
+            "rectABMaxPx": 0.21698,
+            "rectABUnmatched": 0,
+            "resize": {
+              "rolls": 6,
+              "animsCompared": 79,
+              "kfScaledMaxPx": 0.00103,
+              "startTimeChanged": 0,
+              "unmatched": 0,
+              "c": [
+                [
+                  36,
+                  36,
+                  36,
+                  36,
+                  36,
+                  36,
+                  36,
+                  36
+                ],
+                [
+                  31,
+                  31,
+                  31,
+                  31,
+                  31,
+                  31,
+                  31,
+                  31
+                ]
+              ]
+            }
+          },
+          "perRoll": [
+            {
+              "i": 0,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 1,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0.21698
+            },
+            {
+              "i": 2,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 3,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 4,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 5,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            }
+          ]
+        },
+        "resize375to1440": {
+          "file": "out/cd-roll-ca/end-check-V9-rs375to1440.json",
+          "viewport": {
+            "width": 375,
+            "height": 812,
+            "deviceScaleFactor": 3,
+            "mobile": true
+          },
+          "resize": {
+            "width": 1440,
+            "height": 900,
+            "deviceScaleFactor": 1,
+            "mobile": false
+          },
+          "servedHash": {
+            "/_app/immutable/nodes/2.DyWL8TcE.js": "582d120c9f8f",
+            "/_app/immutable/assets/2.gBuqKVzi.css": "982a747d9263"
+          },
+          "summary": {
+            "rolls": 6,
+            "errors": 0,
+            "digitRolls": 13,
+            "kfInlineMaxPx": 0,
+            "allSharedStart": true,
+            "animsLeftMax": 0,
+            "abDiffer": 3,
+            "abMaxDelta": 2,
+            "aaDiffer": 2,
+            "aaMaxDelta": 2,
+            "rectABMaxPx": 0,
+            "rectABUnmatched": 0,
+            "resize": {
+              "rolls": 6,
+              "animsCompared": 71,
+              "kfScaledMaxPx": 0.00077,
+              "startTimeChanged": 0,
+              "unmatched": 0,
+              "c": [
+                [
+                  31,
+                  31,
+                  31,
+                  31,
+                  31,
+                  31,
+                  31,
+                  31
+                ],
+                [
+                  52,
+                  52,
+                  52,
+                  52,
+                  52,
+                  52,
+                  52,
+                  52
+                ]
+              ]
+            }
+          },
+          "perRoll": [
+            {
+              "i": 0,
+              "forced": false,
+              "AB": {
+                "diffPixels": 87,
+                "maxDelta": 2
+              },
+              "AA": {
+                "diffPixels": 87,
+                "maxDelta": 2
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 1,
+              "forced": true,
+              "AB": {
+                "diffPixels": 87,
+                "maxDelta": 2
+              },
+              "AA": {
+                "diffPixels": 87,
+                "maxDelta": 2
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 2,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 3,
+              "forced": true,
+              "AB": {
+                "diffPixels": 87,
+                "maxDelta": 2
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 4,
+              "forced": false,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            },
+            {
+              "i": 5,
+              "forced": true,
+              "AB": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "AA": {
+                "diffPixels": 0,
+                "maxDelta": 0
+              },
+              "rectABMaxPx": 0
+            }
+          ]
+        },
+        "note": "last keyframe = inline rest 0 px at every size; 375->1440 A/B 87 px delta 2 equals the A/A of the same roll in 2 of 3; 430->375 one forced roll rect 0.217 px with pixels identical (OBSERVED, cause unknown)"
+      },
+      "fixCheck": {
+        "file": "out/check/cd-roll-ca/2026-10-04T06-30-37-471Z/check.json",
+        "on": "cd-strip",
+        "viewport": "mobile",
+        "morph": [
+          true,
+          true
+        ],
+        "errors": 0,
+        "http4xx": 0,
+        "elements": [
+          1558,
+          1558
+        ],
+        "pixelDiffPct": {
+          "top": 0.1,
+          "middle": 0,
+          "bottom": 0.34
+        }
+      },
+      "combineCheck": {
+        "bestBuild": "9bf4c6e41f11",
+        "conflict": false,
+        "js": "efaccfe2a52e",
+        "css": "f5ee35c41a72",
+        "countdownRegionSha": "854f366a21fd"
+      },
+      "measurementCodeChanged": false
     }
-   ]
-  },
-  "V_round2": {
-   "servedHash": {},
-   "summary": {
-    "hiddenConfirmed": true,
-    "framesWhileHidden": 0,
-    "maxPendingWhileHidden": 2,
-    "maxPendingAtShow": 2,
-    "hiddenRolls": 13,
-    "maxStartErrPx": 0,
-    "maxFirstFrameErrPx": 0.274,
-    "errors": 0
-   },
-   "per": [
-    {
-     "k": 0,
-     "hiddenMs": 3014.6,
-     "framesWhileHidden": 0,
-     "rollingAtHide": true,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 1,
-      "atShow": 1,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 3,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 222.7,
-       "build": -146.022,
-       "originalModel": -145.931,
-       "errPx": 0.091
-      }
-     ]
-    },
-    {
-     "k": 1,
-     "hiddenMs": 3026.5,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 2,
-      "atShow": 2,
-      "after1s": 0
-     },
-     "hiddenRolls": 4,
-     "gapRolls": 5,
-     "firstFrameAfterShow": [
-      {
-       "i": 6,
-       "rollAt": "hidden tick",
-       "dtMs": 897,
-       "build": -72,
-       "originalModel": -72,
-       "errPx": 0
-      },
-      {
-       "i": 7,
-       "rollAt": "show tick",
-       "dtMs": 4.5,
-       "build": -76.082,
-       "originalModel": -76.082,
-       "errPx": 0
-      }
-     ]
-    },
-    {
-     "k": 2,
-     "hiddenMs": 3022.2,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 1,
-      "atShow": 1,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 4,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "show tick",
-       "dtMs": 2.2,
-       "build": -215.341,
-       "originalModel": -215.35,
-       "errPx": 0.009
-      }
-     ]
-    },
-    {
-     "k": 3,
-     "hiddenMs": 3018.5,
-     "framesWhileHidden": 0,
-     "rollingAtHide": true,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 1,
-      "atShow": 1,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 3,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 88.8,
-       "build": -211.843,
-       "originalModel": -212.117,
-       "errPx": 0.274
-      }
-     ]
-    }
-   ]
-  },
-  "V3_round3": {
-   "servedHash": {
-    "/_app/immutable/nodes/2.DyWL8TcE.js": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
-    "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
-   },
-   "summary": {
-    "hiddenConfirmed": true,
-    "framesWhileHidden": 0,
-    "maxPendingWhileHidden": 3,
-    "maxPendingAtShow": 3,
-    "hiddenRolls": 15,
-    "maxStartErrPx": 0,
-    "maxFirstFrameErrPx": 0.207,
-    "errors": 0
-   },
-   "per": [
-    {
-     "k": 0,
-     "hiddenMs": 3019.6,
-     "framesWhileHidden": 0,
-     "rollingAtHide": true,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 3,
-      "atShow": 3,
-      "after1s": 0
-     },
-     "hiddenRolls": 4,
-     "gapRolls": 4,
-     "firstFrameAfterShow": [
-      {
-       "i": 6,
-       "rollAt": "hidden tick",
-       "dtMs": 214.1,
-       "build": -36.748,
-       "originalModel": -36.738,
-       "errPx": 0.009
-      },
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 213,
-       "build": -318.533,
-       "originalModel": -318.74,
-       "errPx": 0.207
-      }
-     ]
-    },
-    {
-     "k": 1,
-     "hiddenMs": 3067.5,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 2,
-      "atShow": 2,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 3,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 297.1,
-       "build": -108.657,
-       "originalModel": -108.652,
-       "errPx": 0.005
-      }
-     ]
-    },
-    {
-     "k": 2,
-     "hiddenMs": 3024.3,
-     "framesWhileHidden": 0,
-     "rollingAtHide": false,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 3,
-      "atShow": 3,
-      "after1s": 0
-     },
-     "hiddenRolls": 5,
-     "gapRolls": 5,
-     "firstFrameAfterShow": [
-      {
-       "i": 6,
-       "rollAt": "hidden tick",
-       "dtMs": 2004.1,
-       "build": 0,
-       "originalModel": 0,
-       "errPx": 0
-      },
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 4.8,
-       "build": -40.657,
-       "originalModel": -40.645,
-       "errPx": 0.012
-      }
-     ]
-    },
-    {
-     "k": 3,
-     "hiddenMs": 3015.3,
-     "framesWhileHidden": 0,
-     "rollingAtHide": true,
-     "pending": {
-      "beforeHide": 0,
-      "atHide": 0,
-      "maxWhileHidden": 2,
-      "atShow": 2,
-      "after1s": 0
-     },
-     "hiddenRolls": 3,
-     "gapRolls": 3,
-     "firstFrameAfterShow": [
-      {
-       "i": 7,
-       "rollAt": "hidden tick",
-       "dtMs": 204.1,
-       "build": -38.815,
-       "originalModel": -38.695,
-       "errPx": 0.12
-      }
-     ]
-    }
-   ]
   }
- },
- "hiddenPageWebKitSim": {
-  "note": "sim-hide.mjs, iOS Simulator fw-sim 15 Pro Max, iOS 18.7 Mobile Safari, Safari to the background by launching Settings and back (simctl), 3 cycles per arm, y 0; OBSERVED, Simulator, cause unknown",
-  "raw": "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
-  "how": "Safari to the background by launching Settings, back by launching Safari (simctl launch)",
-  "arms": {
-   "C": {
-    "servedHash": {
-     "/_app/immutable/nodes/2.DyWL8TcE.js": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
-     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
-    },
-    "summary": {
-     "hideEvents": 3,
-     "showEvents": 3,
-     "framesWhileHidden": 2,
-     "timerSamplesWhileHidden": 27,
-     "maxPendingWhileHidden": 2,
-     "maxPendingAtShow": 2,
-     "hiddenRolls": 0,
-     "gapRolls": 0,
-     "maxStartErrPx": 0,
-     "maxFirstFrameErrPx": 0,
-     "errors": 0
-    }
-   },
-   "V": {
-    "servedHash": {
-     "/_app/immutable/nodes/2.DyWL8TcE.js": "673b110d118c9c3cbbe427bbf10eac98798fc6221927f4ce0afb8c7d21b510e5",
-     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
-    },
-    "summary": {
-     "hideEvents": 3,
-     "showEvents": 3,
-     "framesWhileHidden": 2,
-     "timerSamplesWhileHidden": 32,
-     "maxPendingWhileHidden": 3,
-     "maxPendingAtShow": 3,
-     "hiddenRolls": 14,
-     "gapRolls": 16,
-     "maxStartErrPx": 23.791,
-     "maxFirstFrameErrPx": 36,
-     "errors": 0
-    }
-   }
-  },
-  "sameAsChrome": "pending rAF callbacks do not grow with hidden ticks (V at most one per rolling digit, max 3 when 3 digits rolled at the hide; C 2); 0 errors; ticks continue while hidden (~every 2 s)",
-  "differsFromChrome": {
-   "eventOrder": "rAF callbacks stop 365-545 ms before visibilitychange(hidden); document.timeline.currentTime read in that event is 318-492 ms after the last rAF frame; in 4 of 6 cycles a frame runs 25-31 ms before visibilitychange(visible) (sim-gaps.mjs)",
-   "startValueVsOriginalHeldPx": {
-    "V_cycle0": 3.94,
-    "V_cycle1": 19.257,
-    "V_cycle2": 23.791
-   },
-   "firstFrameAfterShowVsOriginalPx": {
-    "V_cycle0": "build snaps 1 -> 0 without a roll (original -16.3 px into its roll at that frame)",
-    "V_cycle1": 8.379,
-    "V_cycle2": 11.722
-   },
-   "simHideFirstFrameColumn": "its 36 px for V cycle 0 is not valid on WebKit (no snap ticks, no pre-event frame in its model)",
-   "proposedFix": "(a) the start-frame rAF marks its roll as having run a frame; a roll with no frame holds at its start while hidden; (b) the hide handler requests one rAF that ends __crNoFrames at the first frame after the hide. Not in build 673b110d; folded into round 3 2af461dc on the lead's order (see hiddenPageWebKitSimRound3)"
-  }
- },
- "hiddenPageWebKitSimRound3": {
-  "note": "same Simulator and script as round 2, arms C and V3 (2af461dc), 3 cycles each; analysed with the chain model (sim-hide.mjs --analyze): the original GE chain replayed over the logged frames, every target change (MutationObserver on the strip style, snaps included) restarts it from the current value with velocity 0; OBSERVED, Simulator, cause unknown",
-  "raw": "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json",
-  "how": "Safari to the background by launching Settings, back by launching Safari (simctl launch)",
-  "arms": {
-   "C": {
-    "servedHash": {
-     "/_app/immutable/nodes/2.DyWL8TcE.js": "358cd8ae16b9ee4c9e5bb81ad0b6557302fe913f306b3d205317d899cbee2830",
-     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
-    },
-    "summary": {
-     "hideEvents": 3,
-     "showEvents": 3,
-     "framesWhileHidden": 3,
-     "timerSamplesWhileHidden": 28,
-     "maxPendingWhileHidden": 3,
-     "maxPendingAtShow": 1,
-     "hiddenRolls": 0,
-     "gapRolls": 0,
-     "errors": 0,
-     "perCycleModelNotValidOnWebKit": {
-      "note": "round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain",
-      "maxStartErrPx": 0,
-      "maxFirstFrameErrPx": 0
-     }
-    }
-   },
-   "V3": {
-    "servedHash": {
-     "/_app/immutable/nodes/2.DyWL8TcE.js": "2af461dc50ad56fb133a92a374358c84b815d53a50b7e93b81957dcfe0e9685b",
-     "/_app/immutable/assets/2.gBuqKVzi.css": "ce6beca745a0d50bd8ed2afebb3ac18398610a0b57f4a33e2758e42bf7c259b6"
-    },
-    "summary": {
-     "hideEvents": 3,
-     "showEvents": 3,
-     "framesWhileHidden": 3,
-     "timerSamplesWhileHidden": 30,
-     "maxPendingWhileHidden": 4,
-     "maxPendingAtShow": 1,
-     "hiddenRolls": 16,
-     "gapRolls": 16,
-     "errors": 0,
-     "perCycleModelNotValidOnWebKit": {
-      "note": "round-2 per-cycle model: no pre-visible frame, no snap ticks; not valid on WebKit, use chain",
-      "maxStartErrPx": 1.33,
-      "maxFirstFrameErrPx": 36
-     }
-    }
-   }
-  },
-  "summaryColumnsNotValid": "summary.perCycleModelNotValidOnWebKit (maxStartErrPx / maxFirstFrameErrPx) is the round-2 per-cycle model (no pre-visible frame, no snaps): not valid on WebKit; use chain",
-  "review": "review-cd-roll-ca round 3: PASS with nits (nit 1 README line on the watch re-arming per hidden frame, nit 2 legacy fields renamed, nit 3 wording kept as a time lead)",
-  "chain": {
-   "frames": 829,
-   "targetChanges": 36,
-   "startValueMaxErrPx": {
-    "visible": 1.39,
-    "hidden": 1.39,
-    "showTick": null,
-    "firstSecondAfterShow": 0
-   },
-   "snaps": 3,
-   "missedRolls": 2,
-   "frameWiseMaxErrPx": {
-    "visible": 23.225,
-    "firstSecondAfterShow": 2.016,
-    "hidden": 1.39
-   },
-   "worstAfterShow": [
-    {
-     "i": 7,
-     "t": 33350,
-     "phase": "first 1 s after show",
-     "build": -243.398,
-     "model": -245.414,
-     "err": 2.016
-    },
-    {
-     "i": 7,
-     "t": 47483,
-     "phase": "first 1 s after show",
-     "build": -99.027,
-     "model": -100.44,
-     "err": 1.413
-    },
-    {
-     "i": 7,
-     "t": 19666,
-     "phase": "first 1 s after show",
-     "build": -31.934,
-     "model": -33.278,
-     "err": 1.344
-    },
-    {
-     "i": 7,
-     "t": 47516,
-     "phase": "first 1 s after show",
-     "build": -86.714,
-     "model": -87.614,
-     "err": 0.9
-    },
-    {
-     "i": 7,
-     "t": 47500,
-     "phase": "first 1 s after show",
-     "build": -92.092,
-     "model": -92.884,
-     "err": 0.792
-    }
-   ],
-   "worstVisible": [
-    {
-     "i": 7,
-     "t": 20683,
-     "phase": "visible",
-     "build": -112.084,
-     "model": -88.858,
-     "err": 23.225
-    },
-    {
-     "i": 7,
-     "t": 20700,
-     "phase": "visible",
-     "build": -165.141,
-     "model": -151.707,
-     "err": 13.434
-    },
-    {
-     "i": 7,
-     "t": 20716,
-     "phase": "visible",
-     "build": -205.112,
-     "model": -195.205,
-     "err": 9.907
-    },
-    {
-     "i": 7,
-     "t": 20666,
-     "phase": "visible",
-     "build": -14.818,
-     "model": -7.56,
-     "err": 7.258
-    },
-    {
-     "i": 7,
-     "t": 34350,
-     "phase": "visible",
-     "build": -208.44,
-     "model": -212.64,
-     "err": 4.2
-    }
-   ]
-  },
-  "eventOrder": "rAF stops 382-528 ms before visibilitychange(hidden); timeline time in it 331-471 ms after the last frame; one frame 28-63 ms before visibilitychange(visible) in all 6 cycles (sim-gaps.mjs)",
-  "residual": "rolls whose first frames ran before rAF stopped: held 0.876 px (cycle 0) and 1.39 px (cycle 1) from the original's last-frame value, snapped to the target at the show where the original rolls them; bound: the part of a roll that plays in the 0.3-0.5 s between the last frame and the hidden event; needs a per-frame script to close, documented (review round 2)",
-  "visibleSamplingLead": "not hide-related: getComputedStyle in the rAF callback reads the CA transform 0.5-5.5 ms ahead of the rAF stamp (median 1.5, p90 4 ms, n 56), up to 23.2 px frame-wise in the fastest part of a 0->9 roll (29 px in round 2); OBSERVED, relates to the UNRESOLVED presentation-time item",
-  "phoneEventOrder": "UNRESOLVED (not run on the device)"
- },
- "pathCostPerTick": {
-  "medianMs": 0.04,
-  "p95Ms": 0.073,
-  "oneStepMedianMs": 0.035,
-  "note": "offline Node 24 micro-benchmark of __crPath (all 90 from/to pairs x 20) on this Mac under load; OBSERVED, not a page timing"
- },
- "regressions": {
-  "check": "round 2 (673b110d): fix.mjs check cd-roll-ca --on cd-strip --viewport mobile: morph reached both, 0 errors, 0 4xx, elements 1543 -> 1543, pixel diff top 0.14 / middle 0.01 / bottom 0.51 % (bottom above the 0.4 % band: the gradient accent words in another colour phase, looked at; no countdown in that shot)",
-  "raw": "out/check/cd-roll-ca/2026-10-03T02-14-47-205Z/check.json",
-  "round1": "out/check/cd-roll-ca/2026-10-03T01-30-19-691Z/check.json (top 0.19 / middle 0.01 / bottom 0.39 %)"
- },
- "raw": [
-  "out/cd-roll-ca/probe-build-h60.json",
-  "out/cd-roll-ca/probe-build-h60b.json",
-  "out/cd-roll-ca/probe-build-h60c.json",
-  "out/cd-roll-ca/probe-build-headed.json",
-  "out/cd-roll-ca/probe-base-h60.json",
-  "out/cd-roll-ca/probe-base-headed.json",
-  "out/cd-roll-ca/comp-check-*.json",
-  "out/cd-roll-ca/sim-counts-*.json",
-  "out/cd-roll-ca/probe-build-h60d.json",
-  "out/cd-roll-ca/probe-build-headed2.json",
-  "out/cd-roll-ca/hide-{C,V0,V}.json",
-  "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
-  "out/cd-roll-ca/hide-V3.json",
-  "out/cd-roll-ca/probe-build-h60e.json",
-  "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json"
- ],
- "round4": {
-  "design": "one Web Animation per moved cell (cells within 1.5 cells of the path), keyword linear easing, shared startTime; moved cells at top M*c inside cd-strip wrapper at -M*c; gap re-key on a first frame > 1 frame after the change; hidden-tab logic of round 3 unchanged",
-  "pathTolerance": {
-   "kept": 0.0005,
-   "keyframes5e-4": {
-    "oneStep": 144,
-    "zeroToNine": 343,
-    "median": 232
-   },
-   "keyframes1e-4": {
-    "oneStep": 268,
-    "zeroToNine": 520,
-    "median": 390
-   },
-   "maxErrPx36": {
-    "5e-4": 0.0189,
-    "1e-4": 0.0189
-   },
-   "meanErrPx36": {
-    "5e-4": 0.0054,
-    "1e-4": 0.0018
-   },
-   "note": "max is set by the 32-points-per-frame cap in the first frame; offline, all 90 pairs"
-  },
-  "chromeCompCheck6s": {
-   "C4_stripRb": {
-    "countdownRaf": 162,
-    "updateLayoutTree": 159,
-    "mainFrames": 170,
-    "inRollPer400ms": 24,
-    "outsidePer400ms": 3.4,
-    "layout": 23,
-    "paint": 47
-   },
-   "V5_stripRb": {
-    "countdownRaf": 7,
-    "updateLayoutTree": 79,
-    "mainFrames": 91,
-    "inRollPer400ms": 8.7,
-    "outsidePer400ms": 4.3,
-    "layout": 30,
-    "paint": 49,
-    "animations": 34,
-    "noDecision": 34
-   },
-   "V6_stripRwDev": {
-    "countdownRaf": 8,
-    "updateLayoutTree": 73,
-    "mainFrames": 82,
-    "inRollPer400ms": 7,
-    "outsidePer400ms": 4.6,
-    "layout": 30,
-    "paint": 67,
-    "animations": 40,
-    "noDecision": 40
-   },
-   "note": "C on strip-rw not run yet (PENDING); composited: OBSERVED, no decision recorded"
-  },
-  "positionsH60_V6": {
-   "errTickMaxPx": 0.2536,
-   "errTickP95Px": 0.0174,
-   "errForcedMaxPx": 0.2413,
-   "errForcedP95Px": 0.0199,
-   "vsIdealTickMaxPx": 0.0647,
-   "vsIdealForcedMaxPx": 0.2112,
-   "startValueMaxPx": 0.0165,
-   "origJitterTickPx": 0.2716,
-   "origJitterForcedPx": 0.267,
-   "baseFitC5": {
-    "rolls": 22,
-    "maxPx": 0
-   }
-  },
-  "hiddenTabChromeV6": {
-   "framesWhileHidden": 0,
-   "maxPending": 3,
-   "startErrPx": 0,
-   "firstFrameErrPx": 0.008,
-   "errors": 0
-  },
-  "fixCheckV6": {
-   "morph": "both",
-   "errors": 0,
-   "http4xx": 0,
-   "elements": 1558,
-   "pixelDiffPct": {
-    "top": 0.19,
-    "middle": 0,
-    "bottom": 0
-   }
-  },
-  "simFrames": {
-   "debugRuns_C5_V6": {
-    "rectMaxPx": 0.0151,
-    "rectOverLayoutUnit": 0,
-    "unmatched": 0,
-    "pixelMaxDelta": 5,
-    "aaMaxDelta": 1,
-    "timelineV6PausedVsRunning1e-6": {
-     "recalc": [
-      54,
-      55
-     ],
-     "rAF": [
-      0,
-      0
-     ]
-    },
-    "compositingReason": "animation on rolling cells (V only)",
-    "rate1Match": [
-     {
-      "maxDelta": 4,
-      "atBracket": 0.507
-     },
-     {
-      "maxDelta": 1,
-      "atBracket": 0.526
-     }
-    ],
-    "caLead": "UNRESOLVED"
-   },
-   "firstBuild_sessionA_C5_V6": {
-    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T06-47-53-243Z.json",
-    "shots": 90,
-    "aaMaxDelta": 1,
-    "vMaxDelta": 5,
-    "rectMaxPx": 0.01508,
-    "restBacked": [
-     14,
-     14
-    ]
-   },
-   "counted_sessionA_C6_V7": {
-    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T07-10-10-961Z.json",
-    "scenarios": [
-     "wrap",
-     "wrapUp"
-    ],
-    "pass": "fade50",
-    "shots": 90,
-    "aa": {
-     "differ": 36,
-     "maxDelta": 1,
-     "state": 0,
-     "rects": 0
-    },
-    "v": {
-     "differ": 87,
-     "maxDelta": 5,
-     "stateMaxPx": 0.015,
-     "rectMaxPx": 0.01508,
-     "rectOverLayoutUnit": 0,
-     "unmatched": 0,
-     "sharedStart": "79/79"
-    },
-    "layers": {
-     "restC": [
-      14,
-      0.329
-     ],
-     "restV": [
-      15,
-      0.352
-     ],
-     "midEqual": true
-    },
-    "pausedScene": {
-     "C6": {
-      "cellAnimations": 0,
-      "backedCells": 0,
-      "willChange": "auto"
-     },
-     "V7": {
-      "cellAnimations": 0,
-      "backedCells": 0,
-      "willChange": "auto"
-     }
-    }
-   },
-   "costLine": "+1 backed cell (+0.023 MB) at rest in V in 2 of 4 Sim runs (seconds ones cell 2, ~0.1 s after a roll); persistence not checked yet; OBSERVED"
-  },
-  "pending": [
-   "review round 4 (lead spawns it with session A data)",
-   "session B2 step at fade50 + A/A on C8/V9; session C hero pass + A/A",
-   "sim-counts frozen 2 reps C8,V9; sim-hide C8/V9 3 cycles",
-   "Chrome hold: comp-check C8/V9 (Paint per roll), h60 roll-probe, hide-check, fix.mjs check --on cd-strip",
-   "frozen-frame identity at c375 (DPR 3 touch) and c1440 (DPR 1) mid-roll + live resize across 400 mid-roll (T-034)",
-   "rate-1 cross-check in a quiet Sim"
-  ],
-  "measuredOn": "strip-rw (C5/V6 dev, C6/V7) and strip-tc (C8/V9: session A + Chrome roll-end check)",
-  "tcDelta": "no __crTops: the roll writes no top; per-cell animations override cd-strip tc inline rest transforms (k-M)*c, cancel() at finish reveals them (last keyframe = rest transform)",
-  "tc": {
-   "rollEndChrome": {
-    "file": "out/cd-roll-ca/end-check-V9.json",
-    "tool": "fixes/cd-roll-ca/end-check.mjs",
-    "served": {
-     "js": "582d120c9f8f",
-     "css": "982a747d9263"
-    },
-    "rolls": 8,
-    "forced": 4,
-    "digitRolls": 18,
-    "kfInlineMaxPx": 0,
-    "sharedStart": true,
-    "animsLeftAfterFinish": 0,
-    "AvsB": {
-     "differ": 1,
-     "maxDelta": 1,
-     "pixels": 4
-    },
-    "AvsA2": {
-     "differ": 1,
-     "maxDelta": 1,
-     "pixels": 4
-    },
-    "rectABMaxPx": 0,
-    "note": "A = rolls paused at their end (fill both), B = after finish() -> onfinish -> cancel(); the one A/B difference (4 px, delta 1) is the same as A vs A2 in that roll (noise); headless Chrome 430x932 DPR 3"
-   },
-   "sessionA_C8_V9": {
-    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-33-01-524Z.json",
-    "log": "out/cd-roll-ca/simpx-countA-tc2.log",
-    "pass": "fade50",
-    "scenarios": [
-     "wrap",
-     "wrapUp"
-    ],
-    "shots": 90,
-    "simQuiet": "NOT settled after 28 s (FW_SIM_SETTLE_SEC=30; background 115 % of a core at start), SIM_BACKGROUND mean 20 % max 130 %, load1 max 81-91",
-    "aa": {
-     "differ": 28,
-     "maxDelta": 1,
-     "state": 0,
-     "rects": 0
-    },
-    "v": {
-     "differ": 90,
-     "maxDelta": {
-      "wrap": 5,
-      "wrapUp": 6
-     },
-     "stateMaxPx": 0.017,
-     "rectMaxPx": 0.01636,
-     "rectOverLayoutUnit": 1,
-     "unmatched": 0,
-     "sharedStart": "79/79",
-     "restMaxDelta": 1,
-     "note": "rects are getBoundingClientRect (transforms included); on tc no top is written, so the rect difference is the path interpolation offset (offline bound 0.0189 px), not layout; the 1 shot over 1/64 is that offset"
-    },
-    "layers": {
-     "restC": [
-      14,
-      0.329
-     ],
-     "restV": [
-      14,
-      0.329
-     ],
-     "rest2sC": [
-      14,
-      0.329
-     ],
-     "rest2sV": [
-      14,
-      0.329
-     ],
-     "midEqual": true,
-     "reasonsV": "animation on the rolling cells only"
-    },
-    "rollEndSim": {
-     "wrap": {
-      "cells": 15,
-      "kfInlineMaxPx": 0,
-      "animsLeft": 0,
-      "AvsB": [
-       73,
-       1
-      ],
-      "AvsA2": [
-       42,
-       1
-      ],
-      "rectAB": 0,
-      "stateABpx": 0,
-      "where": "42 px = the A/A spot (css x 260-299 from the timer, also in C8 vs C8-again); 31 px at css x 160-209, digits with no animation in this pair (the seconds rolled): not at the rolled cells"
-     },
-     "wrapUp": {
-      "cells": 15,
-      "kfInlineMaxPx": 0,
-      "animsLeft": 0,
-      "AvsB": [
-       0,
-       0
-      ],
-      "AvsA2": [
-       42,
-       1
-      ],
-      "rectAB": 0,
-      "stateABpx": 0
-     }
-    },
-    "pausedScene": {
-     "C8": {
-      "cellAnimations": 0,
-      "backedCells": 0,
-      "willChange": "auto"
-     },
-     "V9": {
-      "cellAnimations": 0,
-      "backedCells": 0,
-      "willChange": "auto"
-     }
-    },
-    "rate": {
-     "0.001": {
-      "maxDelta": 1,
-      "atBracket": 0.451
-     },
-     "1": "inconclusive: brackets 305-311 ms under load (load1 81-91), best max delta 121"
-    },
-    "tlRecalcV9PausedVsRunning": {
-     "wrap": [
-      53,
-      50
-     ],
-     "wrapUp": [
-      53,
-      52
-     ]
-    }
-   },
-   "costLineTc": "extra backed cell at rest: not seen on tc (V9 14 / 0.329 MB = C8, at rest and rest+2s, 1 run); on rw 2 of 4 runs (OBSERVED)",
-   "sessionB1_C8_V9": {
-    "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-54-38-590Z.json",
-    "log": "out/cd-roll-ca/simpx-countB1-tc.log",
-    "pass": "fade50",
-    "scenarios": [
-     "carry",
-     "two"
-    ],
-    "shots": 98,
-    "simQuiet": "skipped (ps failed); SIM_BACKGROUND mean 42 % max 142 %, load1 max 72; SIMPX_RATES empty (no rate check)",
-    "aa": {
-     "differ": 48,
-     "maxDelta": 1,
-     "state": 0,
-     "rects": 0
-    },
-    "v": {
-     "differ": 94,
-     "maxDelta": {
-      "carry": 6,
-      "two": 5
-     },
-     "stateMaxPx": 0.017,
-     "rectMaxPx": 0.01648,
-     "rectOverLayoutUnit": 1,
-     "unmatched": 0,
-     "sharedStart": "103/103",
-     "restMaxDelta": 1
-    },
-    "layers": {
-     "restC": [
-      14,
-      0.329
-     ],
-     "restV": [
-      14,
-      0.329
-     ],
-     "rest2sC": [
-      14,
-      0.329
-     ],
-     "rest2sV": [
-      14,
-      0.329
-     ],
-     "midEqual": true
-    },
-    "rollEndSim": {
-     "carry": {
-      "digits": 3,
-      "cells": 22,
-      "kfInlineMaxPx": 0,
-      "animsLeft": 0,
-      "AvsB": [
-       73,
-       1
-      ],
-      "AvsA2": [
-       0,
-       0
-      ],
-      "rectAB": 0,
-      "stateABpx": 0
-     },
-     "two": {
-      "digits": 2,
-      "cells": 15,
-      "kfInlineMaxPx": 0,
-      "animsLeft": 0,
-      "AvsB": [
-       0,
-       0
-      ],
-      "AvsA2": [
-       0,
-       0
-      ],
-      "rectAB": 0,
-      "stateABpx": 0
-     }
-    }
-   },
-   "rollEndSimSpots": "The Sim end pairs that differ (session A wrap, B1 carry) show the same 73 px, delta 1: 42 px at css x 260-299 and 31 px at x 160-209 from the timer left. Both spots also toggle in the unchanged page: C8 vs C8-again shows the 260-299 spot in most frames and the exact 31-px x 160-209 pattern in 1 of 49 (B1) and 2 of 45 (A) frame pairs. So a page-own 1-shade toggle, not the cancel (OBSERVED, Simulator)."
-  },
-  "status": "parked by the lead (2026-10-03 ~10:50Z, user order: fixes 1-3 first, Simulator queue); resumes on the landed cd-strip base: B2, C, sim-counts, sim-hide, Chrome hold, then review round 4"
- }
 }

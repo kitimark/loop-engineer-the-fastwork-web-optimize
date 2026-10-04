@@ -127,6 +127,28 @@ thread per roll: the change's own recalc, one rAF callback (the start fix), and 
 
 ## Before / after (counts, no timing)
 
+**Final, on cd-strip's landed strip-tc (C8/V9, 2026-10-04).** Chrome 154, headless, 430x932 DPR 3 mobile, y 0,
+**6 s**, every other animation frozen (`comp-check.mjs --pause-others 2`, shared lane). Files:
+`out/cd-roll-ca/comp-check-{C8,V9}-p2.json`. Served bodies: C8 JS `6fa0e1e8a221…`, V9 JS `582d120c9f8f…`, CSS
+`982a747d9263…` (both).
+
+| per 6 s at y 0 | C8 = main's cd-strip strip-tc | V9 = C8 + cd-roll-ca |
+|---|---|---|
+| countdown rAF callbacks | 163 | **6** |
+| countdown function calls | 175 | 24 |
+| UpdateLayoutTree | 175 | **72** |
+| main frames (BeginMainThreadFrame) | 205 | **79** |
+| main frames per 400 ms, in a roll / outside | 21 / 7.3 | 8.2 / 3.4 |
+| Layout / Paint | 12 / 41 | 11 / 39 |
+| compositor frames (BeginFrame / DrawFrame) | 224 / 161 | 188 / 170 |
+| roll starts in the window | 7 | 6 |
+| cell animations (trace: composited / failed / no decision) | - | 23 (0 / 0 / 23) |
+
+Per roll, V9 runs one rAF callback (the start-frame callback) where C8 runs about 23. Its rolls add 8.2 main frames
+per 400 ms against 21. Layout and Paint are equal within one count. At the end of the window, 3 cell animations of the
+inverse=false clock were running, all on `span.cell`. The trace recorded no compositing decision for them, as in
+rounds 1-4: "no decision recorded", not "no failure".
+
 **Round 4 (cells-only).** Chrome 154, headless, 430x932 DPR 3 mobile, y 0, **6 s**, every other animation frozen
 (`comp-check.mjs --pause-others 2`), `out/cd-roll-ca/comp-check-{C4,V5,V6}-p2.json` (hold10, hold11):
 
@@ -139,9 +161,8 @@ thread per roll: the change's own recalc, one rAF callback (the start fix), and 
 | Layout / Paint | 23 / 47 | 30 / 49 | 30 / 67 |
 | strip animations (trace: composited / failed / no decision) | - | 34 (0 / 0 / 34) | 40 (0 / 0 / 40) |
 
-PENDING (counted set on cd-strip's final hash): the same run on C = strip-rw, so V6's Layout/Paint compare with its
-own base (C4 is strip-rb; V6's +18 Paint vs V5 is not attributed yet: the strip-rw wrapper, the top writes, or
-noise). The roll's top writes add one layout at the start and one at the end of each roll (6 rolls here).
+(History. V6's +18 Paint vs V5 was never attributed. The final C8/V9 pair above settles it for the landing build:
+on strip-tc the roll writes no top, and Layout/Paint equal the base's within one count.)
 
 **Rounds 1-3 (one animation per strip, history).** Chrome 154, headless, 430x932 DPR 3 mobile, y 0, 4 s, every other animation frozen (`comp-check.mjs --pause-others 2`:
 CSS `animation-play-state: paused` on everything but the strips, and other `Element.animate()` calls start paused),
@@ -191,6 +212,10 @@ at its own end (fill both: the last keyframe), A2 = the same again (noise floor)
 | | rolls / digit rolls / cells | last keyframe vs inline | anims left | A vs B | A vs A2 | rects A vs B |
 |---|---|---|---|---|---|---|
 | Chrome (`end-check.mjs`, headless 430x932 DPR 3; 4 natural, 4 forced multi-digit) | 8 / 18 / 77 | 0 px | 0 | 7 of 8 identical; 1: 4 px, delta 1 | same roll: 4 px, delta 1 | 0 px |
+| Chrome T-034, c = 31 (375x812 DPR 3), `end-check-V9-c375.json` | 6 / 12 / - | 0 px | 0 | 6 of 6 identical | 0 | 0 px |
+| Chrome T-034, c = 52 (1440x900 DPR 1 desktop), `end-check-V9-c1440.json` | 6 / 11 / - | 0 px | 0 | 5 of 6 identical; 1 (natural): 3 px, delta 1 | 0 | 0 px |
+| Chrome T-034, live resize mid-roll 430→375 (c 36→31), `end-check-V9-rs430to375.json` | 6 / 14 / - | 0 px | 0 | 6 of 6 identical | 0 | 1 roll 0.217 px, pixels identical; others 0 |
+| Chrome T-034, live resize mid-roll 375→1440 (c 31→52), `end-check-V9-rs375to1440.json` | 6 / 13 / - | 0 px | 0 | 3 of 6 identical; 3: 87 px, delta 2 | 2 of the same 3: 87 px, delta 2 | 0 px |
 | Simulator wrap (simpx, fade50, frozen clock) | 1 / 2 / 15 | 0 px | 0 | 73 px, delta 1 | 42 px, delta 1 | 0 px |
 | Simulator wrapUp | 1 / 2 / 15 | 0 px | 0 | 0 px | 42 px, delta 1 | 0 px |
 
@@ -198,6 +223,17 @@ The Simulator wrap pair's 73 px: 42 are the A/A spot (css x 260-299 from the tim
 C8-again), 31 lie at css x 160-209, on digits that had no animation in that pair (only the seconds rolled), so not at
 a cancelled cell; the same 1-shade A/A class. No jump at the roll end in either engine: the last keyframe and the
 rest transform are the same number, and the frames before and after the cancel match within the A/A noise.
+
+**T-034 (other cell sizes, and a live resize mid-roll; Chrome, V9 served `582d120c…`, 2026-10-04, shared lane).**
+`end-check.mjs --vp` / `--resize`. A resize mid-roll restarts the roll's animations for the new cell height,
+continuing in place.
+- Restarts: 79 and 71 animations compared. The keyframes scaled to the new height within 0.001 px, no startTime
+  changed, 0 unmatched.
+- Last keyframe = inline rest at every size: 0 px.
+- At 375→1440, the 87 px delta-2 difference is in the A/A of the same roll in 2 of 3 cases. It is the A/A class at that
+  size, not the cancel.
+- At 430→375, one forced roll has a cell rect 0.217 px off between A and B, while its pixels are identical (0 differ).
+  OBSERVED, cause unknown. The likely place is a cell outside the clip, but I did not check that.
 
 **Session A on C8/V9** (`out/cd-roll-ca/simpx/simpx-2026-10-03T10-33-01-524Z.json`; fade50, wrap + wrapUp, 90 shots per
 arm, then C8 again). The Simulator did not settle (I-082: background 115 % of a core at the start, `FW_SIM_SETTLE_SEC=30`,
@@ -242,9 +278,126 @@ x 160-209 from the timer's left. Both spots toggle in the unchanged page too: C8
 most frames and the exact 31-px 160-209 pattern in 1 of 49 (B1) and 2 of 45 (A) frame pairs. A 1-shade toggle of the
 page itself, not the cancel (OBSERVED, Simulator).
 
-**Parked** by the lead after B1 (user order: fixes 1-3 first; the Simulator queue is their bottleneck). Resumes on the
-landed cd-strip base: B2 (step), C (hero pass), sim-counts, sim-hide, the Chrome hold (comp-check, h60, hide-check,
-`fix.mjs check`, T-034 widths), then review round 4.
+**Parked** by the lead after B1 (user order: fixes 1-3 first; the Simulator queue is their bottleneck). Resumed
+2026-10-04 on the landed cd-strip base (C8 = main's strip-tc, 5d1ca102) under the less-work rule (lead): B2, C,
+sim-counts, sim-hide, reduced motion, the Chrome hold, then review round 4. Results below.
+
+### Resumed list on C8/V9 (2026-10-04; OBSERVED, in our setup)
+
+All Simulator parts ran as functional sessions in the shared lane (weight simulator), counts and frozen frames only.
+
+**Session B2** (`out/cd-roll-ca/simpx/simpx-2026-10-04T03-21-10-943Z.json`; fade50, step, 24 shots per arm, A/A; the
+Simulator settled after 23 s, background mean 42 %):
+
+| | A/A (C8 vs C8 again) | V9 vs C8 |
+|---|---|---|
+| shots differing | 8 of 24, max delta 1 | 21 of 24, max delta 6 (shade histogram 1:9, 2:4, 3:4, 5:2, 6:2 shots) |
+| digit place (state) / cell rects | 0 / 0 | ≤ 0.013 px / ≤ 0.01355 px (0 over 1/64), 0 unmatched |
+| largest differing area | 73 device px | 353 device px (≈ 39 CSS px), inside the rolling digit |
+| shared startTime | | 11 / 11 |
+| layers | 14 backed, 0.329 MB | the same (rest, rest + 2 s, mid-step) |
+| roll end (A vs B) | | 0 px |
+
+**Session C** (`out/cd-roll-ca/simpx/simpx-2026-10-04T03-26-27-409Z.json`; the hero pass, wrap + carry, 92 shots per
+arm, A/A; Simulator background mean 3 %, quiet):
+
+| | A/A | V9 vs C8 |
+|---|---|---|
+| shots differing | **0 of 92 (exact)** | 84 of 92, max delta 9 (18 shots reach 9) |
+| digit place / cell rects | 0 / 0 | ≤ 0.015 px / ≤ 0.01505 px (0 over 1/64), 0 unmatched |
+| largest differing area | 0 | 1,491 device px (≈ 166 CSS px; bounding box of every rolling digit ≤ 3,870 CSS px) |
+| shared startTime | | 98 / 98 |
+| roll end (A vs B), wrap / carry | | 0 px / 0 px |
+| layers at rest / rest + 2 s | 14 backed, 0.329 MB | **15 backed, 0.352 MB** (digit 5 cell 6, `stacking,willChange`) |
+
+**Rate 1** (`out/cd-roll-ca/simpx/simpx-2026-10-04T03-42-38-135Z.json`, V9 only, fade50 step, background mean 9 %): the
+frame shot while the roll runs at rate 1 matches a paused frame of the same roll inside its time bracket exactly (0 px,
+at 0.70 of a 400 ms bracket), and within delta 1 (64 px, at 0.51 of a 244 ms bracket) in the second pair. The
+compositor plays the roll's own path. The brackets are wide, so this says nothing about timing within ~0.25-0.4 s.
+Session A's rate-1 check (inconclusive under load) is replaced by this one.
+
+**The five pixel numbers (PR-010, `memory/illusion-must-be-pixel-identical.md`), Simulator, B2 + C:**
+- Largest shade: 9 (of 255), mid-roll only.
+- Share of the screen beyond A/A: at most 1,491 differing device pixels of 3.6 M, i.e. ≤ 0.041 %, counting every
+  differing pixel (an upper bound for the > 8 count).
+- Area: ≤ 166 CSS px per frame, on the rolling digits.
+- Edge or fill: edge. The anti-aliased glyph edges of digits ≤ 0.015 px from C8's place.
+- Static or moving: moving only. At rest V9 = C8 (0 px in every rest and end pair).
+
+What this is: the sub-pixel offset of the path's interpolation. It sits inside the user's position rule (T-030,
+"Position identity" below). The PR-010 reading that a moving-only difference goes to the user is the lead's call. I
+claim no tier for it here. Reduced motion (exact required) is below.
+
+**Simulator counts** (`out/cd-roll-ca/sim-counts-2026-10-04T04-01-00-187Z.json`; hero at y 0, 4 s windows, others
+frozen, 2 reps, 4 digit rolls per window; background mean 10 %):
+
+| per 4 s (rep 0 / rep 1) | C8 | V9 |
+|---|---|---|
+| countdown rAF callbacks | 146 / 132 | **4 / 4** |
+| RenderingFrame | 132 / 121 | 49 / 58 |
+| RecalculateStyles (frames with one) | 136 (124) / 130 (113) | 51 (34) / 57 (40) |
+| Layout / Paint | 8 / 30, 9 / 28 | 8 / 22, 10 / 28 |
+| clock-sized paints | 25 / 18 | 17 / 18 |
+| per digit roll: countdown rAF, frames with recalc | 36.5, 31 / 33, 28 | 1, 8.5 / 1, 10 |
+| hero census at rest: layers, backed, MB | 96, 16, 0.376 (both) | 96, **17, 0.399** (both) |
+| ~150 ms into a roll | 96, 16, 0.376 | 96, **18, 0.423** (both) |
+| ~150 ms into a long roll (a digit change of ≥ 5) | 96, 16, 0.376 | 96, **22, 0.517 / 31, 0.728** |
+
+**Cost lines (OBSERVED, Simulator, cause unknown):**
+- Memory, while a roll runs: every cell that a running animation moves can hold a backing store. In the long roll,
+  V9 held 6 and 15 more than C8 (+0.14 / +0.35 MB) in the two reps. In a normal roll it held 2 more (+0.047 MB). The
+  extra backing is held while the roll runs, which is at most 1 s per tick.
+- At rest: one more backed cell than C8 (+0.023 MB) in 3 of 6 censuses on tc (session C; counts reps 0 and 1). It
+  did not show in sessions A, B1, B2 or the rate run. Sessions A and B1 saw the same +1 at mid-roll in C8 itself.
+- These are the only counts that are higher for V9. The work counts are all lower: countdown rAF callbacks go from
+  132-146 to 4 per 4 s, and rendering updates from 121-132 to 49-58 with the rest of the page frozen.
+- The simpx Timeline counts (1 s windows mid-roll) swing as much in C8 against itself as between the arms. Examples:
+  hero carry frozen C8 50 against C8-again 61 frames; step 42 against 53. No claim is made from them.
+  sim-counts is the count source.
+
+**Reduced motion, exact (the T2 requirement), Simulator**
+(`out/cd-roll-ca/simpx/simpx-2026-10-04T04-59-08-829Z.json`). Setup:
+- The session ran with `--reduce-motion on`, and the page matched `prefers-reduced-motion: reduce` in all 3 arms (checked
+  by the script; a mismatch throws).
+- Hero pass, step + wrap + carry, 12 shots per arm, then C8 again. V9 was shot like C8.
+- The Simulator background was busy (mean 81 %). The frozen frames don't depend on it.
+
+| | A/A (C8 vs C8 again) | V9 vs C8 |
+|---|---|---|
+| shots differing | 0 of 12 | **0 of 12 (exact)** |
+| digit place / rects / unmatched | 0 / 0 / 0 | 0 / 0 / 0 |
+| hero animations (`getAnimations`, at the start and at every shot) | 0 | 0 |
+| layers (rest, rest + 2 s, mid step/wrap/carry) | 14 backed, 0.329 MB | the same |
+
+Under reduced motion V9 starts no animation and snaps, like the original.
+
+**Reduced motion, Chrome** (`fixes/cd-roll-ca/pixels.mjs` with `RM=1`: `prefers-reduced-motion: reduce` emulated in
+every arm, and the script throws if the page does not match it; 430x932 DPR 3, arms C8, V9, C8 again):
+
+| run | scenes | shots per arm | A/A (C8 vs C8 again) | V9 vs C8 | positions (state, frames) |
+|---|---|---|---|---|---|
+| RM1 `out/cd-roll-ca/pixels-2026-10-04T05-42-49-483Z.json` | hero, panel (60/120 Hz) | 428 | 0 differ | 2 differ, max delta 1 | 0 differ (2,000 frames) |
+| RM2 `out/cd-roll-ca/pixels-2026-10-04T05-56-38-918Z.json` | scrolled hero (fade 0.25/0.5), panel mid | 105 | 2 differ, max delta 1 | 2 differ, max delta 1 | 0 differ (1,200 frames) |
+
+Every differing shot, in the A/A and in V9 vs C8, has the same pattern (diffed per pixel with a difference mask):
+- It is in the panel clock only, never in the hero. V9's code runs only for the hero.
+- The changed pixels are a regular checkerboard of ±1 steps on the panel's dark background around the digit cards:
+  7,600-16,000 pixels per shot, in all three channels. Nothing changes inside the cards or on the glyphs.
+- Which arm is the odd one varies. In RM1, V9's shot differs from both C8 shots (frames 0 and 2 of one page load).
+  In RM2, C8's own shot is the odd one: its "one step down, frame 4" shot differs by the same 10,220 pixels from V9
+  and from C8 again. The A/A pair differs in one more panel shot (fade 0.75, frame 30).
+
+Reading (OBSERVED, in our setup, cause unknown): a 1-level dither flip of the panel background that hits any arm,
+the control included. It looks like gradient dithering redrawn with another phase. That is a guess; I did not check it
+against a reference. In Chrome, V9 under reduced motion differs from C8 only in the way C8 differs from itself:
+4 of 533 shots against 2 of 533 for the A/A, all max delta 1, all this checkerboard. It never differs in the hero, in
+positions or in any frame state. The Simulator half is exact (0 of 12, A/A 0).
+
+**Lead ruling (2026-10-04):** this counts as exact against the control's A/A.
+- The hero, the only part V9 changes, is byte-exact in Chrome: 0 shots differ.
+- The panel is not called exact. It has ±1 background flips in any arm, the A/A included (OBSERVED, cause unknown;
+  dither is a guess, not checked against a reference).
+- The Simulator is exact (0 of 12).
 
 ## WebKit frames, layers and Timeline (round 4, Simulator; OBSERVED, Simulator, in our setup) (strip-rw, history)
 
@@ -280,7 +433,7 @@ Debug runs on the strip-rw **dev** build (C5 `5e37af69…` vs V6 `73dff152…`, 
 - The pixel differences are the path's interpolation offset (≤ 0.019 px offline, 0.002-0.015 px measured) on
   antialiased glyph edges at fade50: a 0.015 px shift moving an edge pixel by 4-5 levels fits that contrast. It is
   V-only by construction (both arms share cd-strip's strip). cd-strip's own delta-1 glyph-edge class (seconds' ones,
-  mid-roll at fade50) cancels in this V-vs-C comparison; PENDING: the counted set reports it per arm.
+  mid-roll at fade50) cancels in this V-vs-C comparison (on tc, the A/A per session is in "Resumed list on C8/V9").
 - On the compositor at rate 1e-6 (OBSERVED, Simulator): running adds no recalc and no script per frame vs paused (54
   vs 55 recalcs per 1 s; 0 rAF), layers unchanged, reason `animation` present. The page recalcs in every frame in both
   arms (C5 frozen: 60 frames, 63 recalcs per 1 s), from other content, so "frames with a recalc" does not separate
@@ -336,7 +489,7 @@ open, lead 2026-10-03 ~07:10Z):
   (census ~0.1 s after the roll was finished). Persistence not checked yet: the probe now takes a second rest census 2 s
   later (next session).
 
-PENDING (rest of the counted set, after cd-strip's rev 2 is decided): carry, two, step at fade50 and a hero pass,
+DONE on strip-tc 2026-10-04 (see "Resumed list on C8/V9", "Before / after" and T-034; Paint per window in sim-counts, not per roll). Was: carry, two, step at fade50 and a hero pass,
 with A/A; sim-counts frozen, 2 reps; sim-hide C/V 3 cycles; Paint records per roll; Chrome comp-check C/V, h60,
 hide-check, fix.mjs check; frozen-frame identity at the other cell sizes (T-034, de-breakpoints: c = 31 px at
 width <= 400, 52 px on desktop): c375 touch DPR 3 and c1440 DPR 1 mid-roll, and a live resize across 400 mid-roll (the
@@ -352,6 +505,7 @@ plus a synthetic `visibilitychange`, so the countdown ticks at a random phase, o
 
 | run | frames | B vs A: normal ticks max / p95 | forced (random phase) max / p95 | start value diff max | original's own stamp jitter (A on real stamps vs ideal 60 Hz) max / p95 |
 |---|---|---|---|---|---|
+| **final, V9 `582d120c…`** (on main's strip-tc), headless 60 Hz, 40 s, 16 jumps, seed 11, 79 rolls (`probe-build-h60-V9.json`, servedHash logged in `r5-chProbe.log`; base fit on C8 `6fa0e1e8…` `probe-base-h60-C8.json`: 22 rolls, 0 px) | 2406 | 0.067 / 0.014 px (vs ideal-60 Hz original 0.502 / 0.030) | 0.241 / 0.023 px (vs ideal-60 Hz original 0.227 / 0.027) | 0.012 px | ticks 0.44 / 0.026 px, forced 0.31 / 0.048 px |
 | **round 4, V6 `73dff152…`** (cells-only on strip-rw dev), headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60-V6.json`, hold11; base fit on C5 `probe-base-h60-C5.json`: 22 rolls, 0 px) | 2405 | 0.254 / 0.017 px (vs ideal-60 Hz original 0.065) | 0.241 / 0.020 px (vs ideal-60 Hz original 0.211) | 0.017 px | ticks 0.27 px, forced 0.27 px |
 | **round 3 build `2af461dc…`**, headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60e.json`, served hash in `hold7.log`) | 2405 | 0.236 / 0.021 px (vs ideal-60 Hz original 0.082 / 0.014) | 0.104 / 0.016 px (vs ideal-60 Hz original 0.222 / 0.033) | 0.016 px | ticks 0.32 / 0.029 px, forced 0.23 / 0.035 px |
 | **round 2 build `673b110d…`**, headless 60 Hz, 40 s, 16 jumps, seed 11 (`probe-build-h60d.json`, served hash logged) | 2405 | 0.643 / 0.025 px (vs ideal-60 Hz original 0.152 / 0.014) | 0.295 / 0.020 px (vs ideal-60 Hz original 0.843 / 0.036) | 0.006 px | ticks 0.80 / 0.029 px, forced 0.55 / 0.043 px |
@@ -411,6 +565,7 @@ C JS `358cd8ae16b9…`, V JS `673b110d118c…`, CSS `ce6beca745a0…` both, `x-m
 | V, round 2 (`673b110d…`) | 2 | 2 | 0.000 px | 0.27 px | 0 |
 | **V3, round 3 (`2af461dc…`)**, `hide-V3.json` (servedHash in the file; `hold7.log`) | 3 | 3 | 0.000 px | 0.21 px | 0 |
 | **V6, round 4 (`73dff152…`, cells-only on strip-rw dev)**, `hide-V6.json` (hold11), 13 hidden rolls | 3 | 3 | 0.000 px | 0.008 px | 0 |
+| **V9, final (`582d120c…`, on strip-tc)**, `hide-V9.json` (servedHash in the file; 2026-10-04 shared lane), 4 cycles, 0 frames while hidden, 14 hidden rolls | 3 | 3 | 0.000 px | 0.012 px | 0 |
 
 - V0 kept one more pending callback per hidden tick (3 ticks in 3 s here), each holding its path and Animation, so a
   tab left hidden for hours would pile them up at whatever rate Chrome lets the 1 s interval run in the background
@@ -514,6 +669,34 @@ with a new analysis (`chain`, below), C and V3, 3 cycles each (hidden 7.2-9.3 s)
   this task). References not checked yet: WebKit's rAF throttling and `DocumentTimeline` update while the page goes
   to the background (UNRESOLVED; decisive local check: the same script on the phone with the `iphone` lease).
 
+**On tc, C8 vs V9 (2026-10-04).** Raw: `out/cd-roll-ca/sim-hide-2026-10-04T04-15-29-333Z.json`. Served bodies were
+hashed by the script: C8 JS `6fa0e1e8a221…`, V9 JS `582d120c9f8f…`. 3 cycles per arm, hidden 7.0-9.4 s each. The
+Simulator background was busy: mean 53 %, max 159 % of a core, 3 windows over 60 %.
+
+| arm | pending rAF while hidden, max | at the show | target changes / frames | tick start vs the original, max (visible / hidden / first 1 s after the show) | frame-wise, first 1 s after the show, max | snaps / missed rolls | errors |
+|---|---|---|---|---|---|---|---|
+| C8 | 3 | 1 | (rAF spring) | (is the original) | (is the original) | | 0 |
+| V9 | 4 (rolling digits + the watch) | 2 | 37 / 808 | 0 / 57.48 / 0 px | 28.73 px (one frame; the next ones 9.3, 3.9 px) | 2 / 0 | 0 |
+
+- No pile-up, 0 errors, 0 missed rolls, and every tick start while visible and after the show is at the original's
+  value (0 px).
+- The 57.48 px while hidden is the documented residual above, in its largest form so far. A 0→9 roll (digit 7, at
+  8751 ms) was in its fast part when WebKit stopped rAF: the last frame was at 8850 ms, and the hidden event came at
+  9255 ms. The original holds its last frame (−266.4 px). The build holds `document.timeline.currentTime` of the hidden
+  event (the roll's end, −323.9 px). It sits within the stated bound: the part of a roll that plays in the 0.3-0.5 s
+  window. Round 3 met it at 0.9 / 1.4 px, round 2 at 3.9 px. On the show, the next tick starts at the original's value.
+- The frame-wise numbers belong to the item that is "not hide-related" above. They come from the first frames of the
+  0→9 roll, the fastest roll there is (round 3's V3 log: 0 → −112 px in 17 ms):
+  - V9's first frame of that roll reads 20-29 px ahead of the model, 7-8 ms after the tick, at 18670 and 48678 ms. That
+    is ≈ 4-5 ms of the roll, inside the 0.5-5.5 ms by which WebKit's computed value of a Core Animation transform runs
+    ahead of the rAF stamp.
+  - One frame reads 138.8 px ahead (at 8761 ms, the first 0→9 roll after the load). A 53 ms frame gap follows it, so
+    the main thread was busy there, in a busy Simulator.
+  - The positions themselves match the original at the same animation time: sessions C and B2 above froze the same
+    rolls with the animations paused and found ≤ 0.015 px.
+  - OBSERVED, Simulator, cause unknown. It is the UNRESOLVED presentation-time item; a read that comes after main-thread
+    work samples a later time than its stamp.
+
 ## Cards (protocol v2)
 
 ```
@@ -549,8 +732,19 @@ end and the spring's start value)
 design delta from cd-roll-ca-4 (strip-rw): no __crTops (no top writes); the animations override cd-strip's inline rest
 transforms, cancel() at the finish reveals them (last keyframe = rest transform)
 checks on tc: roll end (Chrome end-check 8 rolls, Sim wrap/wrapUp): last keyframe = inline rest, 0 px; A vs B within A/A; session A
-(fade50 wrap,wrapUp + A/A) and B1 (carry,two): V9 vs C8 max delta 6, state <= 0.017 px, rects <= 0.01648 px, 0 unmatched, layers equal; PARKED: rest of the counted set PENDING
-memory/layers (Simulator, fade50, session A): 84 layers, 14 backed, 0.329 MB at rest and rest+2s, C8 = V9; mid-roll equal
+(fade50 wrap,wrapUp + A/A) and B1 (carry,two): V9 vs C8 max delta 6, state <= 0.017 px, rects <= 0.01648 px, 0 unmatched, layers equal
+resumed list (2026-10-04, all done): Sim B2 + C (max delta 9, state <= 0.015 px, rects <= 0.01505 px, 0 unmatched,
+  A/A C exact 0/92), rate 1 (0 px / delta 1), sim-counts (countdown rAF 132-146 -> 4 per 4 s, RenderingFrame 121-132 ->
+  49-58), sim-hide C8/V9; reduced motion: Sim exact 0/12 (A/A 0), Chrome hero exact, panel +-1 background flips in any
+  arm incl. A/A (V9 4/533, A/A 2/533; lead ruling: exact against the control's A/A); Chrome comp-check C8/V9 (rAF
+  163 -> 6 / 6 s, UpdateLayoutTree 175 -> 72, main frames 205 -> 79, Layout/Paint 12/41 vs 11/39), roll-probe h60 V9
+  (ticks 0.067 / forced 0.241 px max, start 0.012 px; base fit C8 0 px), hide-check V9 (0 errors, 0 px start, 0.012 px
+  first frame), T-034 c375/c1440 + live resize 430->375, 375->1440 (last keyframe = rest 0 px, A vs B within A/A),
+  fix.mjs check --on cd-strip mobile: morph both, 0 errors, 0 4xx, 1558 elements both, pixel diff top 0.1 / middle 0 /
+  bottom 0.34 %
+memory/layers (Simulator): 14 backed, 0.329 MB at rest in sessions A/B1/B2; +1 backed cell (0.352 MB) at rest in 3 of
+  6 censuses on tc; while a roll runs every animated cell can hold a backing store (+2 cells / +0.047 MB normal roll,
+  +6 / +15 cells, +0.14 / +0.35 MB in a long roll; F-201); OBSERVED, cause unknown
 debug hooks: none
 ```
 
@@ -628,8 +822,7 @@ checks (dev base): Chrome comp-check V6 (rAF 8 / 6 s, 40 animations), roll-probe
 V6 (0 errors, 0 px start, 0.008 px first frame), fix.mjs check --on cd-strip mobile: morph both, 0 errors, 0 4xx,
 1558 elements both, pixel diff top 0.19 / middle 0 / bottom 0 %; Simulator simpx debug runs 1-2 (wrap at fade50:
 rects ≤ 0.0151 px, 0 unmatched, layers equal, reason animation, no added recalc running)
-PENDING on cd-strip's final hash: counted simpx set + A/A, sim-counts, sim-hide C/V 3 cycles, Chrome comp-check C/V,
-h60, hide-check, fix.mjs check, c375/c1440 frozen frames + live resize mid-roll (T-034)
+(the checks on cd-strip's final hash ran on strip-tc: see BUILD cd-roll-ca-4tc)
 memory/layers (Simulator, fade50): 84 layers, 0.329 MB, 77 cell layers, 14 backed, at rest and mid-roll, same as C
 debug hooks: none
 ```
@@ -657,10 +850,27 @@ debug hooks: none
 code path: original spring). Real tab hide/show: run in rounds 2 and 3 (section "Hidden tab, for real": Chrome, and WebKit in the Simulator via an app
 switch; not on the phone).
 
+## Combine check with the best build (byte check only, lead 2026-10-04)
+
+`fix.mjs combine` was run on best-build (`fixes/best-build/patch.diff` 9bf4c6e41f11, main 60df1cfb), cd-strip and
+cd-roll-ca (`patch.diff` d48095cc16ff), in that order. Output: `out/cd-roll-ca/bbcheck/cdrollca-bbcheck/overlay`. Nothing
+of it is built or measured as a variant.
+- It applies with no conflict. The combined JS is efaccfe2a52e and the CSS f5ee35c41a72.
+- The countdown region (from `var UE = { stiffness` to `var lD = h(`, lines 3993-4381) is byte-identical to V9's:
+  sha 854f366a21fd on both sides.
+- The combined JS differs from V9 in 9 hunks, all at lines ≥ 12623. Those are best-build's own deltas, outside the
+  countdown.
+- The combined CSS differs in 3 hunks. None touches the strip, cdwrap or cell rules.
+- No conflict to name in the land request.
+
 ## Risks, conflicts, follow-ups
 
-- Not frame-identical at 120 Hz, at 80 Hz, or after a late first frame (see above); the user judges in a blind
-  watched comparison at rest (no touch), ticket held by the lead (rev 2).
+- Not frame-identical at 120 Hz, at 80 Hz, or after a late first frame (see above). The blind watch test was dropped
+  (T-055 covers the countdown chain). It lands on the less-work rule: cost counts, the pixel numbers, reduced motion
+  exact, review round 4 and the P-093 phone no-worse check.
+- Memory cost while a roll runs on WebKit (F-201): animated cells get backing stores, up to +15 cells / +0.35 MB in
+  a long roll in the Simulator, plus +1 cell / +0.023 MB at rest in 3 of 6 censuses. OBSERVED, Simulator; not
+  checked on the phone.
 - Couples to fix-cd-strip's `__cdStripY` and strip markup: a change there needs a re-apply here. fix-cd-strip is
   looking for a pixel-identical WebKit layout (lead, 2026-10-03 ~02:00Z), possibly a new cell pitch or offset.
   `__crPath` works in digit values and maps to px only through `__cdStripY(v, c)` with the measured cell `c`, so a
@@ -668,8 +878,8 @@ switch; not on the phone).
   or other strip markup needs this patch re-applied, the snapshot V rebuilt and the probes re-run.
 - cd-strip lands with one compositing layer per cell, cells moved by their own transform (strip-tc). The roll moves
   cells, not the strip, so a cell entering the clip mid-roll could show blank or late (F-142): not seen on strip-rw in
-  the Simulator (0 unmatched cells in all paused and running shots; layers and backing unchanged mid-roll). The
-  counted set re-checks it on C8/V9.
+  the Simulator (0 unmatched cells in all paused and running shots; layers and backing unchanged mid-roll). On C8/V9
+  it was re-checked: sessions A, B1, B2 and C had 0 unmatched cells in every shot.
 - Couples to cd-strip's `__cdStripM`, `__cdStripY` and its cell-transform effect on [c, M] (the roll's last keyframe
   must equal that effect's rest transform `(k − M)*c`): a change to the strip's geometry there needs this patch
   re-applied and the probes re-run. (On strip-rw it also coupled to the wrapper's `-M*c` and the cell-top effect.)
@@ -677,8 +887,10 @@ switch; not on the phone).
   a hidden page would turn it into a per-frame rAF for as long as the page stays hidden (cheap, nothing drawn). Neither
   engine did here: Chrome ran 0 frames while hidden, WebKit (Simulator) 1 frame just before the visible event
   (OBSERVED, review round 3 nit 1).
-- Hidden page on WebKit: the residual above (≤ ~1.4 px here, bounded by the 0.3-0.5 s between WebKit's last frame and
-  its hidden event) stays; the real phone's event order is UNRESOLVED (not checked on the device).
+- Hidden page on WebKit: the residual above stays. It is bounded by the part of a roll that plays in the 0.3-0.5 s
+  between WebKit's last frame and its hidden event: 0.9-3.9 px in rounds 2-3, and 57.5 px on tc when a 0→9 roll was
+  in its fast part. It only shows while the page is hidden, and the next tick after the show starts at the original's
+  value. The real phone's event order is UNRESOLVED (not checked on the device).
 - The one-shot rAF per roll is a main-thread callback (cheap, no style write); WebKit "0 countdown rAF at rest"
   holds, "at roll start" it is 1.
 - Tools: `roll-probe.mjs`, `comp-check.mjs`, `sim-counts.mjs`, `hide-check.mjs`, `sim-hide.mjs`, `simpx.mjs` and
