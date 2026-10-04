@@ -191,3 +191,82 @@ node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300
 node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner <you> -- \
   node tools/sim.mjs session --functional --owner <you> -- node fixes/v7-best/gates/px-sim.mjs
 ```
+
+## P-105 phone no-worse ticket (less-work rule), before any phone data
+
+```
+PHONE TICKET P-105 v7-best · less-work no-worse check on the phone (mgmt-ops-10's P-105 terms, 2026-10-04; lead's phone
+  order: after the toolbar-resize ablation, iphone-runner's baseline flick block, fix-cd-roll-ca's P-102 quartet and P-100)
+  · runner iphone-runner · registered before any phone data; no counted run before mgmt-ops-10's pre-data read
+build: V = v7 = fixes/v7-best/patch.diff (c3dc73b1), served JS 8c90da2177455718861e4b6a7d5a826671b7946fc61ef9254fd90d37cdcd6f00,
+  CSS 308f0da70c3a64b0dfe1a99cdbd127a77256eef9b0c809583fc328052417c84d. Built with `node tools/fix.mjs apply p105-v7 --from
+  v7-best`; read-only copy out/p105/snap/V (HASHES.txt).
+control: C = v6 = best-build + fixes/v7-best/hero-r2-delta.diff (c3dc73b1), JS 8018ce062d30, CSS 71b65c667720
+  (`fix.mjs apply p105-v6 --from best-build,fixes/v7-best/hero-r2-delta.diff`; copy out/p105/snap/C). v7 is v6 plus
+  cd-strip, cd-roll-ca and rest-script v4, so C is the build every v7 cost count was measured against. Mirror snapshot
+  b1789284481295-4ad4a84a.
+question: at real thermal Serious, does v7 add slow frames anywhere on the page compared with v6? No-worse only. The
+  landing basis is the cost card above (rest y 0: the countdown spring's 32.6 rAF/s gone; layouts and paints SAVE or
+  SAME). Prior data not used: the T-113 v7 G runs had no v6 runs beside them, so they cannot be the §5.4 G leg.
+ports: `sh fixes/v7-best/phone/serve.sh` (sha256 83ee15958f00): three serve.mjs --root site-pretty [--overlay <copy>]
+  --port 0 (OS-assigned, I-131) --latency 150 --vendors=local, plain http (I-003). B = plain baseline (no overlay): the
+  pre-warm and gate-timer page, no counted run on it. It checks the copies against HASHES.txt and the served JS/CSS of all
+  three ports (expected B 4606120cf392/27776f3d4138, C 8018ce062d30/71b65c667720, V 8c90da217745/308f0da70c3a; exit 4
+  on a wrong one). Tried before this ticket: all three ok, then stopped. Phone URLs go to the runner's terminal only.
+thermal gate (memory "phone checks start warm"): `node research/phone-thermal-gate/thermal-gate.mjs --owner iphone-runner
+  --expect serious --max-c 44 --url <B>` (sha256 4604218c4041) at the start and end of every hold. A hold counts only if
+  both reads PASS; otherwise it is VOID and re-run once with the same items. Ceiling 44 °C or Critical: stop and cool.
+  Gate failures go to the lead. Low Power Mode runs are dropped.
+start method (one for every hold): pre-warm on B. One uncounted S run on B, then the start gate; while it says too cool
+  (exit 2), another S run on B and another read, at most 4 pre-warm runs; any other failure, or still too cool, ends the
+  hold with no counted run.
+holds: `caffeinate -i -s sh fixes/v7-best/phone/hold.sh Hn <items>` (hold.sh sha256 b277523cc943) under the iphone lease
+  held by iphone-runner, beside any shared group (lead ruling 2026-10-04 13:0xZ: robot runs need no quiet-Mac hold; each
+  record keeps the Mac state). Before every item: serve.sh check (a wrong hash ends the hold VOID) and a lease renew.
+  Then the end gate and the I-098 sleep check (`fixes/rest-script/tools/pmcheck.mjs`, sha256 d36bd7437b7c). Last line
+  "HOLD Hn VALID" or "HOLD Hn VOID <why>". If another agent's normal chrome-measure hold makes iphone.mjs refuse (WAIT),
+  that item has no record and is void; it is re-run, not waited around.
+  S leg   H1: wC wV C1 V2 V3 C4 · H2: C5 V6 V7 C8
+  G leg   H3: sC gFC1 gFV1 gFV2 gFC2 gFC3 gFV3 sC · H4: the same for H · H5: for M · H6: for E
+  then `iphone.mjs park` and `serve.sh stop`. Cooling between holds: `wait.mjs phone-temp --below auto` (<= 10 min) only
+  when the end gate said ceiling; otherwise back to back (the start gate decides).
+S leg (driver S, Timeline off): `iphone.mjs run --driver scroll --probe std --block P-105 --arm C|V --run <n>`; warm-ups
+  with --warmup, one per arm port (A3/U5); counted C V V C C V V C (n = 4 per arm). Every counted C run is the heat
+  sentinel (bottom >= 58 fps and scroll >= 44 fps, meta.sentinel).
+G leg (driver G, protocol v2 §5.4 whole-page fast flicks, Timeline off): `iphone.mjs gesture <script>`, each run reloads
+  the page itself. Scripts (sha256 / GESTURE_HASH, GESTURE_BUDGET_S 150 each):
+  - F fresh load: g/flick-fresh-v1.json  076bd7d046b6 / b6a4a96d189b (window fresh-flick -> end)
+  - H hero:       g/flick-hero-v1.json   6ae05e12ace9 / 53a8e657fa28 (window down1 -> end)
+  - M middle:     g/flick-middle-v1.json 0f97205f1d42 / 34e82a3dddcb (new: still strokes to y >= 1900, then 3 fast
+                  down/up fling pairs over about y 1900-3800; window mid1 -> end)
+  - E end:        g/flick-end-v1.json    93a1cf7bb091 / 47c5a1b000fb (window into1 -> end)
+  F/H/E are the T-113 scripts (E's arrival test `until y >= 5100`). Per part 3 runs per arm in C V V C C V order; the sC
+  S run on C opens and closes each G hold as its heat sentinel (uncounted itself).
+scorer: `node fixes/v7-best/phone/score.mjs <item>:<file> ... [--json out]` (sha256 b9a29ffcc7bb), in block order over
+  the VALID holds; self-test `node fixes/v7-best/phone/selftest.mjs` (sha256 100f55fd2dec, 17 checks OK on synthetic
+  records). Frame counts per run: dt > 50 (twins > 46, > 54) and dt > 34 (twins > 30, > 38).
+  - S window: [marks.idle, marks.bottom) (idle at the top + the scroll down). G window: the part's start mark -> end,
+    moving frames only (scrollY changed).
+  - Gate per leg and G part: d = median(V) - median(C) of the > 50 count. WORSE when d > +2; "threshold-sensitive" when a
+    twin's verdict differs. > 34 reported, not gated. Fewer than 3 valid runs in an arm: insufficient (one re-run hold).
+  - New cluster (§5.4, lead ruling 12:5xZ), per G part: fixed 250 px bins of scrollY (§3.4). A V cluster is a bin with a
+    moving frame > 50 ms in >= 2 valid V runs; it is NEW when no valid C run has one there or in a neighbouring bin.
+    Any new cluster fails, even inside +2. Scored with > 46 and > 54 too (clusterThresholdSensitive).
+  - Descriptive: every slow G frame (> 34) with its y, innerHeight and whether the toolbar height stepped within one frame.
+void (dropped and listed):
+  - S: run error; served JS/CSS not the arm's (meta.served); Low Power Mode; no idle/bottom marks; no record.
+  - G: no record; run.aborted; any run.errors entry; missing start or end mark; median moving dt > 25 ms (30 Hz, LPM
+    suspect); the hold's served check before the item not all ok.
+  - Heat: a counted C S run or an sC run whose sentinel is not pass voids itself and every run (S or G, either arm) since
+    the last passing sentinel. A VOID hold (gate, sleep, served hash) voids all its runs.
+  - An I-127/I-141 inspector drop shows as no record or an aborted run: void, re-run in the same order.
+  Re-runs: at most one extra hold per leg (S: C V V C; G: the part's hold again). Then report as it stands.
+verdict: no-worse when every gate (S, GF, GH, GM, GE) is no-worse; WORSE when any is WORSE or has a NEW CLUSTER;
+  insufficient otherwise. The report gives per-part medians, d, the twins and the cluster lists.
+predictions (before data):
+  - S leg > 50 no-worse: P 0.85 (v7 only removes main-thread work at rest and in the countdown; S hit few slow frames in
+    v6 already).
+  - G parts no-worse on > 50: F 0.8, H 0.8, M 0.8, E 0.75 (the hero and toolbar-step frames seen in T-113 are in both
+    builds; E has the end-of-page menu, not changed by v7, and the noisiest flicks).
+  - No new cluster in any part: P 0.65 (4 parts, 3 runs per arm, the >= 2-of-3 rule against flick noise).
+  - All sentinels pass on the first try: P 0.7. Overall no-worse (all of the above): P 0.5.

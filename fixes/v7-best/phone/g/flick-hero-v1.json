@@ -1,0 +1,164 @@
+{
+  "name": "flick-hero-v1",
+  "version": 1,
+  "screen": [
+    430,
+    932
+  ],
+  "about": "T-113 (2): after a 3 s idle at the top, fast flicks down the page through the hero (to y >= 1800) and fast flicks back to the top, twice. Attribution only.",
+  "params": {
+    "x": 215,
+    "flingPx": 560,
+    "flingMs": 140,
+    "idleMs": 3000,
+    "gapMs": 350
+  },
+  "steps": [
+    {
+      "type": "reload",
+      "scrollAfterMs": 0
+    },
+    {
+      "type": "mark",
+      "name": "idle"
+    },
+    {
+      "type": "pause",
+      "ms": "$idleMs"
+    },
+    {
+      "type": "mark",
+      "name": "down1"
+    },
+    {
+      "type": "repeat",
+      "times": 6,
+      "until": "y>=1800",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$flingPx",
+          "ms": "$flingMs",
+          "profile": "fling"
+        },
+        {
+          "type": "pause",
+          "ms": "$gapMs"
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "y>=1800",
+      "timeoutMs": 6000
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "mark",
+      "name": "up1"
+    },
+    {
+      "type": "repeat",
+      "times": 6,
+      "until": "atTop",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "down",
+          "px": "$flingPx",
+          "ms": "$flingMs",
+          "profile": "fling"
+        },
+        {
+          "type": "pause",
+          "ms": 1200
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "pause",
+      "ms": 1000
+    },
+    {
+      "type": "mark",
+      "name": "down2"
+    },
+    {
+      "type": "repeat",
+      "times": 6,
+      "until": "y>=1800",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$flingPx",
+          "ms": "$flingMs",
+          "profile": "fling"
+        },
+        {
+          "type": "pause",
+          "ms": "$gapMs"
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "y>=1800",
+      "timeoutMs": 6000
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "mark",
+      "name": "up2"
+    },
+    {
+      "type": "repeat",
+      "times": 6,
+      "until": "atTop",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "down",
+          "px": "$flingPx",
+          "ms": "$flingMs",
+          "profile": "fling"
+        },
+        {
+          "type": "pause",
+          "ms": 1200
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "mark",
+      "name": "end"
+    },
+    {
+      "type": "pause",
+      "ms": 1000
+    }
+  ]
+}
