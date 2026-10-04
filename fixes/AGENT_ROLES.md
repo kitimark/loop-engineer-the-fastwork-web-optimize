@@ -8,7 +8,7 @@ file links to them instead of repeating them.
 
 | role | definition | responsibility | spawned by, as | model / effort | tools (beyond Read/Grep/Glob) | writes |
 |---|---|---|---|---|---|---|
-| **lead** | none: the main session in the main checkout | plans waves, spawns everyone, **coordinates incidents**, relays finger tests to the user, reviews, lands on `main` (tool fixes first) | the user | the session's; `/effort high` before spawning teammates (they inherit it) | everything; `SendMessage`, `Agent` | `main` (by fast-forward only), the incident store (triage) |
+| **lead** | none: the main session in the main checkout | plans waves, spawns everyone, **coordinates incidents**, relays finger tests to the user, reviews, lands on `main` (tool fixes first); turns repeated problems into tool fixes (devices: mgmt-devices watches, the lead fixes the cause) | the user | the session's; `/effort high` before spawning teammates (they inherit it) | everything; `SendMessage`, `Agent` | `main` (by fast-forward only), the incident store (triage) |
 | **fix owner** | [`fix-owner`](../.claude/agents/fix-owner.md) | one topic or conflict cluster end to end: evidence, overlay patch, A/B, README | lead: teammate (clusters that must talk) or worktree subagent | opus / high; per call `fable` for L-size | Edit, Write, Bash, Agent, SendMessage, EnterWorktree, Monitor, TaskStop, Web*, Serena (read) | `fixes/<topic>/` on its branch; self-fixes of small tool bugs ([`INCIDENTS.md`](INCIDENTS.md) 1) |
 | **toolsmith** | [`toolsmith`](../.claude/agents/toolsmith.md) | one incident in `tools/`/`tests/`: reproduce, failing test, fix, one `tools:` commit | lead, per incident: worktree subagent (`isolation` on the call), name `ts-i<nnn>` | opus / high; per call `sonnet` for a small non-measurement bug | Edit, Write, Bash, SendMessage, EnterWorktree, Monitor, TaskStop, Web*; no Agent | `tools/`, `tests/` on its branch |
 | **wave integrator** | [`wave-integrator`](../.claude/agents/wave-integrator.md) | after a wave landed: `combine`, mechanical conflicts, combined A/B, interactions, iPhone confirmation, write-up | lead: worktree subagent, name `wave<N>` | opus / high | as fix owner | `fixes/all-wave<N>/`, `research/<nn>-wave<N>-results/` |
@@ -19,9 +19,12 @@ file links to them instead of repeating them.
 Not separate agents, on purpose:
 - **Incident coordinator = the lead**, backed by the shared store `tools/incident.mjs`. See
   "Why the lead coordinates incidents" below.
-- **Device steward = the lead + the locks.** `tools/lock.mjs` already serializes Chrome measurements
-  (FIFO `chrome-measure`) and the iPhone (`iphone` lease with TTL); what remains is talking to the
-  user for finger tests and physical fixes, and only the lead can do that.
+- **Device steward = `mgmt-devices` + the locks** (user T-149 #10, 2026-10-04 18:5xZ; was "the lead + the locks").
+  `tools/lock.mjs` serializes Chrome measurements (FIFO `chrome-measure`) and the iPhone (`iphone` lease); a light
+  agent (`mgmt-devices`, sonnet) watches both every minute and acts on an idle or stuck holder (Delegated authority
+  below), because the lead, busy landing, noticed idle phones after the user did (18 alarms, 204 min on 10-04).
+  The long-term fix is in the tools (`research/architecture/phone-hold-v2.md`, arch-phone-hold); the steward stays
+  as the backstop. Talking to the user stays with the lead.
 - **Researcher = `bundle-mapper`.** Web-platform and WebKit-vs-Chrome questions have the same shape
   as its code questions (read, cite, answer in ~60 lines); a second read-only definition would only
   differ in its prompt.
@@ -58,9 +61,10 @@ Each role decides these itself, without asking the lead, and reports them in its
 |---|---|
 | fix owner | its next probe, build or measurement inside its topic and protocol v2; asks mgmt-ops directly for card reads; posts its own proposal (`proposal revise`, `phone`) and answers the user in its own topic threads; takes the iPhone only when its hold can start at once and releases it as soon as it stops using it (incident I-155) |
 | mgmt-desk (deputy lead) | queue order inside the board's priority order (`lock.mjs repair <lock> --move <owner> --to N`, `--reason`); releases a lease idle > 5 min with waiters after one nudge to its holder (and `user-try` on the user's "done"); corrects stale status rows; opens incidents, sets P2/P3, dispatches them to a running toolsmith; wakes parked owners within the cache rule |
+| mgmt-devices (device steward) | every minute `idle.mjs check --phone-min 2`; on an idle or stuck holder reads its processes (`ps`, its board row) and sends it one exact correction; no reaction in 3 min: the desk's lock powers (move inside the priority order, release an idle lease with waiters after that nudge, `--reason`); opens or joins incidents for tool causes; from the 3rd idle period a day sends the lead the pattern (cause, minutes, one fix). Never runs Chrome, the phone or tests, never kills a process, never posts to the user |
 | mgmt-ops | tickets phone blocks and sets their order within the priorities; signs pre-data and second reads; signs I, F and V cards (the lead still signs D) |
 | toolsmith | rebases its own branch on the current `main` tip and runs the full `npm test` on exactly that commit; when `main` has not moved, the lead lands it without re-running the suite |
-| lead | priorities, landing, the user's proposal decisions, spawns, other lock repairs, rule changes, the enforcement layer; and the **inspection**: at every check-in, from `lock.mjs status`, `locks/holds.log`, the board and each agent's last activity, find a lease or hold not used, a stale row, an agent waiting on nobody, and send that agent one correction line |
+| lead | priorities, landing, the user's proposal decisions, spawns, other lock repairs, rule changes, the enforcement layer; and the **inspection**: at every check-in, from the board and each agent's last activity, find a stale row or an agent waiting on nobody and send it one correction line; idle leases and holds are mgmt-devices' (the lead reads its pattern reports and owns the long-term tool fix: a repeated cause gets a design and a toolsmith, not more nudges, memory `idle-alarms-are-a-pattern`) |
 
 **Every problem the user reports, any role (user T-140 #7):** whoever owns the thread does both halves without
 asking the lead: (1) the **workaround** now, inside its own powers (a note, a status-row fix, a re-run, a queue move
