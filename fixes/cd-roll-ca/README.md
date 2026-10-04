@@ -1526,8 +1526,8 @@ RESULT P-100 rev 3, hold H1r (2026-10-04 14:35:28-14:47:27Z; ops PASS a72a100f; 
   O1 RAISED (at Fair): while a CA roll plays, surfaces are shown faster than 80 Hz (~47/s, gap median 8.34 ms);
      the rAF roll and the still digit never are. F-212 is now OBSERVED on the device (CONFIRMED in source already).
   O2 not enough (paused n 1). Descriptive only: both paused records show vsync<12.5 share 0, the same as quiet.
-  O3 descriptive: VK and C8 both run the panel at ~120 Hz at y 0 (ratio 1.00). Something else on the page already
-     holds 120 Hz on both builds, so the display rate at rest does not tell VK from C8 (not compared with V9, ops N3).
+  O3 descriptive: VK and C8 both run the panel at ~120 Hz at y 0 (ratio 1.00). Something else on the page appears to
+     hold 120 Hz on both builds (OBSERVED, in our setup, cause unknown; ops read: not for the user as fact), so the display rate at rest does not tell VK from C8 (not compared with V9, ops N3).
   calibration: P(O1 RAISED) 0.55 -> yes; P(raf <= 2) 0.9 -> yes; P(O2 KEPT) 0.4 -> not enough; P(O3 ratio >= 2) 0.5 ->
      no (1.00); P(all Serious) 0.8 -> no (all Fair).
   decisions (as registered): O1 RAISED -> F-212 goes to fix-accent-ca and fix-morph-gpu (every CA animation costs
