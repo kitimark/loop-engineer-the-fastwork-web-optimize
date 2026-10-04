@@ -1,5 +1,5 @@
 // tools/idle.mjs end to end (incident I-105, user T-058 #4) on a temp state dir: `check` exit codes (0 nothing idle,
-// 3 alarm, 1 usage), one console thread per idle episode (as the lead, assigned to the desk and the waiting owners),
+// 3 alarm, 1 usage), one console thread per idle episode (as the lead, assigned to the steward only, I-175),
 // print-only without --by lead, the episode's end closing its thread, `watch`'s 30 s floor and its one line per new
 // alarm, and that it never changes a lock (holder, queue). The test clock is FW_IDLE_NOW. No port 5173, phone,
 // Chrome, real locks or real store (I-041).
@@ -54,7 +54,7 @@ test('check: a queued waiter on a free iPhone is an alarm only past the limit; o
   r = idle(['check', '--by', 'lead'], 6);
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /^IDLE iphone: iPhone free for 6 min .* over the 5 min limit, while work waits: fix-w \(queued for it\)$/m);
-  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone free for 6 min while 1 job waits \(to fix-w\)$/m);
+  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone free for 6 min while 1 job waits$/m, 'I-175: no steward set: no assignee (the lead\'s triage), never the waiter');
   // the same episode again: still exit 3, no second post
   r = idle(['check', '--by', 'lead'], 9);
   assert.equal(r.code, 3, r.out);
@@ -64,7 +64,8 @@ test('check: a queued waiter on a free iPhone is an alarm only past the limit; o
   assert.equal(t.code, 0, t.out);
   assert.match(t.stdout, /The iPhone has had no holder for 6 min/);
   assert.match(t.stdout, /Queued for it: fix-w\./);
-  assert.match(t.stdout, /lead assign: fix-w/);
+  assert.doesNotMatch(t.stdout, /assign: fix-w/, 'I-175: the waiting worker is never assigned');
+  assert.match(t.stdout, /No steward on duty \(no steward set\): the lead handles this thread \(I-175\)\./);
   assert.equal(node(CON, ['thread', 'list', '--json'], { env }).stdout.match(/"id": "T-/g).length, 1);
   assert.deepEqual(lockFiles(), before, 'read-only on the locks: holder and queue files unchanged');
   // the slot is taken: the episode ends, its thread closes, exit 0
@@ -98,9 +99,11 @@ test('check: a status-board row waiting on the phone is ready work; without --by
   assert.doesNotMatch(r.stdout, /mgmt-ops-10 \(|ops \(owner/, 'iphone-runner as a name is not the phone');
   assert.match(r.stdout, /^NOT POSTED iphone: posting needs --by lead/m);
   assert.equal(idle(['check'], 8).code, 3);
+  assert.match(node(CON, ['thread', 'steward', 'set', 'mgmt-devices', '--by', 'lead'], { env }).stdout, /^STEWARD mgmt-devices/);
   r = idle(['check', '--by', 'lead'], 9);
   assert.equal(r.code, 3, r.out);
-  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone free for 9 min while 1 job waits \(to fix-morph-gpu\)$/m);
+  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone free for 9 min while 1 job waits \(to mgmt-devices\)$/m, 'I-175: the steward, not the row owner');
+  assert.match(node(CON, ['thread', 'show', 'T-001'], { env }).stdout, /Steward \(mgmt-devices\): nudge fix-morph-gpu by message/);
 });
 
 test('check --json: the verdict per resource and the exit code agree', () => {
@@ -139,7 +142,8 @@ test('I-111 check: a held iPhone lease with no phone run past the limit is IDLE 
   r = idle(['check', '--by', 'lead'], 6);
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /^IDLE iphone: iPhone held by fix-h but unused for 6 min \(no phone run since \d\d:\d\dZ, lease taken by fix-h\), over the 5 min limit, while work waits: fix-w \(queued for it\)$/m);
-  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone held by fix-h, unused for 6 min while 1 job waits \(to fix-h, fix-w\)$/m);
+  assert.match(r.stdout, /^POSTED T-001 iphone: iPhone held by fix-h, unused for 6 min while 1 job waits$/m, 'I-175: never the holder or the waiter');
+  assert.match(r.stdout, /^NOTIFY fix-h: /m, 'the NOTIFY lines still name the concerned owners');
   assert.match(node(CON, ['thread', 'show', 'T-001'], { env }).stdout, /fix-h has held the iPhone lease for 6 min without a phone run/);
   assert.deepEqual(lockFiles(), before, 'read-only on the locks');
   // the holder releases: the episode ends (released), its thread closes

@@ -1,5 +1,5 @@
-// I-124: the disk pass of idle.mjs watch (tools/lib/space-watch.mjs): one alarm thread per low-disk period to the desk
-// and the owners of the biggest out/ folders, one reply under the timing floor, closed when space is back; the
+// I-124: the disk pass of idle.mjs watch (tools/lib/space-watch.mjs): one alarm thread per low-disk period to the
+// steward (I-175; the owners of the biggest out/ folders are named in it, not assigned), one reply under the timing floor, closed when space is back; the
 // automatic prune (default on, FW_SPACE_AUTOPRUNE=0 off) only for the lead's watch, on its interval, never beside
 // someone's exclusive chrome-measure hold. Fake free-space readings, a temp $FW_STATE_DIR, a fake prune.
 import { test, beforeEach, afterEach } from 'node:test';
@@ -20,6 +20,7 @@ beforeEach(async () => {
   process.env.FW_STATE_DIR = tempDir('fw-swatch-');
   calls = [];
   await R.setDesk({ agent: 'mgmt-ops-10', by: 'lead' });
+  await R.setSteward({ agent: 'mgmt-devices', by: 'lead' });
 });
 afterEach(() => { if (saved.FW_STATE_DIR === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = saved.FW_STATE_DIR; });
 
@@ -50,13 +51,13 @@ test('auto-clean off: FW_SPACE_AUTOPRUNE=0, autoClean false (idle.mjs check), or
   assert.equal(calls.length, 0);
 });
 
-test('low disk: one thread to the desk and the folder owners, a reply under the timing floor, closed when space is back', async () => {
+test('low disk: one thread to the steward (I-175: not the desk or the folder owners), a reply under the timing floor, closed when space is back', async () => {
   const a = await pass(15, T0, { env: { FW_SPACE_AUTOPRUNE: '0' } });
   assert.equal(a.alarm, true);
   const [t] = T.listThreads();
   assert.equal(a.posted, t.id);
   assert.match(t.title, /^Disk nearly full: 15\.0 GB free \(I-124\)$/);
-  assert.deepEqual(t.assignees.sort(), ['fix-rest-script', 'mgmt-ops-10']);
+  assert.deepEqual(t.assignees, ['mgmt-devices']);
   const body = t.messages[0].text;
   assert.match(body, /10\.0 GB \.claude\/worktrees\/a\/out\/rest-script \(worktree-a, fix-rest-script\)/);
   assert.match(body, /every JSON, Markdown, log, phone record and recording stays/);

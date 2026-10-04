@@ -1,7 +1,7 @@
 // Disk watch for idle.mjs watch (incident I-124; user T-049 #22/#27). One call per watch pass: diskPass().
 //
 //   - Alarm: free space under alarmGb() (FW_SPACE_ALARM_GB, default 20) opens an episode; the lead's watch posts ONE
-//     console thread to the desk and the owners of the biggest out/ folders, with those folders (sizes from one du of
+//     console thread to the steward (I-175; never the folder owners: it nudges them), with the biggest out/ folders and their owners (sizes from one du of
 //     every checkout's out/ entries, skipped beside someone's exclusive chrome-measure hold). Under the timing floor
 //     (lib/disk.mjs timingMinGb, default 8) it adds one reply: new timing holds are now refused. The episode ends (thread
 //     closed) when free space is back over the alarm + 2 GB.
@@ -19,7 +19,7 @@ import { worktrees, duBytes, fmtSize, spaceRunRefusalNow, worktreeTopics, boardR
 import { autoPruneEnabled, runPrune, spaceDir } from './space-prune.mjs';
 import { status as lockStatus } from './lock.mjs';
 import { createThread, replyAgent, setStatus } from './console-threads.mjs';
-import { getDesk } from './thread-routing.mjs';
+import { alarmSteward, stewardTo, stewardLine } from './thread-routing.mjs';
 import { list as boardList } from './status.mjs';
 
 export const END_MARGIN_GB = 2;
@@ -54,13 +54,14 @@ export function topFolders({ mainRoot = mainCheckout(), rows = [], top = 8 } = {
   return entries.map((e) => ({ show: e.show, bytes: sizes.get(e.path) || 0, branch: e.branch, owners: e.owners })).sort((a, b) => b.bytes - a.bytes).slice(0, top);
 }
 
-function alarmText({ free, alarm, floor, folders, sizesWhy }) {
+function alarmText({ free, alarm, floor, folders, sizesWhy, steward = null }) {
   const L = [`Only ${fmtGb(free)} free on the Mac's disk (alarm under ${alarm} GB; under ${floor} GB new timing holds are refused). Auto-clean (space.mjs prune) removes only leftover Chrome profiles, uncited full-frame images (a record and thumbnails stay) and rebuildable snapshot copies; every JSON, Markdown, log, phone record and recording stays.`];
   if (folders.length) {
     L.push('', 'Biggest out/ folders:');
     for (const f of folders) L.push(`- ${fmtSize(f.bytes)} ${f.show}${f.branch ? ` (${f.branch}${f.owners.length ? `, ${f.owners.join(', ')}` : ''})` : ''}`);
   } else L.push('', `Folder sizes skipped: ${sizesWhy}.`);
-  L.push('', 'Owners: keep fewer full frames (write them only on a diff, or behind a --keep-frames flag). See what can go: node tools/space.mjs prune (dry run), node tools/space.mjs report.');
+  L.push('', 'What helps: the folder owners keep fewer full frames (write them only on a diff, or behind a --keep-frames flag). See what can go: node tools/space.mjs prune (dry run), node tools/space.mjs report.');
+  L.push('', stewardLine(steward, folders.flatMap((f) => f.owners))); // I-175
   return L.join('\n');
 }
 
@@ -86,11 +87,11 @@ export async function diskPass({ by, log = () => {}, now = Date.now(), env = pro
       let fs = folders, rws = rows;
       if (!rws) { try { rws = boardList(); } catch { rws = []; } }
       if (!fs) fs = busy ? [] : topFolders({ mainRoot: mainRoot || mainCheckout(), rows: rws });
-      const desk = getDesk()?.agent || null;
-      const to = [...new Set([desk, ...fs.flatMap((f) => f.owners)].filter((a) => a && a !== 'lead'))].slice(0, 8);
+      const steward = await alarmSteward({ statusRows: rws }); // I-175: the steward only, never the folder owners
+      const to = stewardTo(steward);
       const episode = { since: new Date(now).toISOString(), freeAtStart: d.freeBytes };
       try {
-        const r = await createThread({ by: 'lead', title: `Disk nearly full: ${fmtGb(d.freeBytes)} free (I-124)`, text: alarmText({ free: d.freeBytes, alarm, floor, folders: fs, sizesWhy: busy || 'no out/ folders' }), ...(to.length ? { to: to.join(',') } : {}) });
+        const r = await createThread({ by: 'lead', title: `Disk nearly full: ${fmtGb(d.freeBytes)} free (I-124)`, text: alarmText({ free: d.freeBytes, alarm, floor, folders: fs, sizesWhy: busy || 'no out/ folders', steward }), ...(to.length ? { to: to.join(',') } : {}) });
         episode.thread = r.thread.id;
         out.posted = r.thread.id;
         log(`POSTED ${r.thread.id} disk: ${fmtGb(d.freeBytes)} free${to.length ? ` (to ${to.join(', ')})` : ''}`);

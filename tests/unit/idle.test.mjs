@@ -257,17 +257,19 @@ test('words: the line and the thread name the resource, minutes and owners; noth
   const a = D.assess('iphone', { st: free([{ owner: 'fix-nav-morph' }]), rel, grant, rows, min: 5, now: T0 + 24 * 60000 });
   const line = D.lineFor(a);
   assert.match(line, /^IDLE iphone: iPhone free for 14 min \(since 03:10Z, released by iphone-runner\), over the 5 min limit, while work waits: fix-nav-morph \(queued for it\), morph-gpu \(owner fix-morph-gpu; its note names the phone\)$/);
-  const { title, text } = D.threadFor(a, { desk: 'mgmt-ops-10' });
+  const { title, text } = D.threadFor(a, { steward: { agent: 'mgmt-devices' } });
   assert.equal(title, 'iPhone free for 14 min while 2 jobs wait');
   assert.match(text, /The iPhone has had no holder for 14 min \(since 03:10Z; released by iphone-runner\)\. The limit is 5 min\./);
   assert.match(text, /Queued for it: fix-nav-morph\./);
   assert.match(text, /morph-gpu \(owner fix-morph-gpu; its note names the phone\)/);
-  assert.match(text, /Desk \(mgmt-ops-10\)/);
+  // I-175: the steward, not the desk; no line addressed to the waiting owners
+  assert.match(text, /^Steward \(mgmt-devices\): nudge fix-nav-morph, fix-morph-gpu by message/m);
+  assert.doesNotMatch(text, /Desk \(|^Owners: /m);
   assert.doesNotMatch(text + title + line, /192\.168|http/, 'a row note is never copied (Hard rule 12)');
-  assert.deepEqual(D.addressees(a, 'mgmt-ops-10'), ['mgmt-ops-10', 'fix-nav-morph', 'fix-morph-gpu']);
+  assert.deepEqual(D.addressees(a), ['fix-nav-morph', 'fix-morph-gpu'], 'the concerned owners (NOTIFY, red alert), no desk');
   const many = { queue: Array.from({ length: 10 }, (_, i) => ({ owner: `fix-${i}` })), rows: [{ owner: 'lead' }, { owner: 'user' }] };
-  assert.equal(D.addressees(many, 'desk-x').length, 8);
-  assert.equal(D.addressees(many, null).includes('lead'), false);
+  assert.equal(D.addressees(many).length, 8);
+  assert.equal(D.addressees(many).includes('lead'), false);
   assert.match(D.lineFor({ resource: 'chrome-measure', held: true, holder: 'fix-x' }), /^OK chrome-measure: held by fix-x$/);
   assert.match(D.lineFor({ ...a, alarm: false, ready: false, queue: [], rows: [] }), /^OK iphone: free for 14 min .*, no ready work$/);
   assert.match(D.lineFor({ ...a, alarm: false }), /under the 5 min limit; waiting: fix-nav-morph/);
@@ -365,14 +367,15 @@ test('I-111 record: one alarm per held-idle episode; a phone run ends it (thread
   assert.equal(D.readState().resources.iphone.activity, undefined, 'the sighting goes with the lease');
 });
 
-test('I-111 words: the held-idle line and thread name the holder, the minutes and the waiters; the holder is addressed', () => {
+test('I-111 words: the held-idle line and thread name the holder, the minutes and the waiters; the holder is concerned (NOTIFY), the steward nudges it (I-175)', () => {
   const a = D.assess('iphone', { st: heldSt(phoneLease()), rows: [row('morph-gpu', 'fix-morph-gpu', { waitingOn: { kind: 'phone' } })], min: 5, now: T0 + 6 * 60000 + 1 });
   assert.match(D.lineFor(a), /^IDLE iphone: iPhone held by fix-nav-morph but unused for 6 min \(no phone run since 03:00Z, lease taken by fix-nav-morph\), over the 5 min limit, while work waits: iphone-runner \(queued for it\), morph-gpu \(owner fix-morph-gpu; waits on the phone\)$/);
-  const { title, text } = D.threadFor(a, { desk: 'mgmt-ops-10' });
+  const { title, text } = D.threadFor(a, { steward: { agent: 'mgmt-devices' } });
   assert.equal(title, 'iPhone held by fix-nav-morph, unused for 6 min while 2 jobs wait');
   assert.match(text, /fix-nav-morph has held the iPhone lease for 6 min without a phone run \(iphone\.mjs run, scroll, record or gesture; since 03:00Z, lease taken by fix-nav-morph\)\. The limit is 5 min\./);
-  assert.match(text, /fix-nav-morph: run your phone part now, or release the lease \(node tools\/lock\.mjs release iphone --owner fix-nav-morph\)/);
-  assert.deepEqual(D.addressees(a, 'mgmt-ops-10'), ['mgmt-ops-10', 'fix-nav-morph', 'iphone-runner', 'fix-morph-gpu']);
+  assert.match(text, /^What unblocks it: fix-nav-morph runs its phone part now, or releases the lease \(node tools\/lock\.mjs release iphone --owner fix-nav-morph\)/m);
+  assert.match(text, /^Steward \(mgmt-devices\): nudge fix-nav-morph by message/m);
+  assert.deepEqual(D.addressees(a), ['fix-nav-morph', 'iphone-runner', 'fix-morph-gpu']);
   const under = D.assess('iphone', { st: heldSt(phoneLease()), min: 5, now: T0 + 3 * 60000 });
   assert.match(D.lineFor(under), /^OK iphone: held by fix-nav-morph; no phone run for 3 min \(since 03:00Z, lease taken by fix-nav-morph\), under the 5 min limit; waiting: iphone-runner \(queued for it\)$/);
   const busy = D.assess('iphone', { st: heldSt(phoneLease({ meta: { run: { since: at(1), pid: process.pid } } })), min: 5, now: T0 + 30 * 60000 });

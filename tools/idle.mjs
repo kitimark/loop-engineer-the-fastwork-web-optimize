@@ -16,18 +16,19 @@
 //        # Polls every --interval s (at least 30); prints a line only for a new alarm (IDLE …), its post (POSTED T-…
 //        # or NOT POSTED: …) and the end of an episode (ENDED …). Exit 0 on SIGINT/SIGTERM.
 // Posting (one console thread per idle episode, never one per poll): only with --by lead (only the lead starts threads).
-// The thread is assigned to the desk and to the waiting owners (so the T-050 router and their `thread wait` reach
-// them) and closed by itself when the slot is taken again. Each pass also checks the disk (I-124, lib/space-watch.mjs):
-// under FW_SPACE_ALARM_GB (default 20) free one thread to the desk and the biggest out/ owners; with --by lead the
+// The thread is assigned to the steward the lead keeps (I-175: `console.mjs thread steward set`; never the holder or the
+// waiters, who get NOTIFY lines and a red /status alert; no steward or parked: no assignee, the lead's triage) and
+// closed by itself when the slot is taken again. Each pass also checks the disk (I-124, lib/space-watch.mjs):
+// under FW_SPACE_ALARM_GB (default 20) free one thread to the steward, naming the biggest out/ folders and owners; with --by lead the
 // auto-clean of `space.mjs prune --apply` every 6 h (hourly while low; FW_SPACE_AUTOPRUNE=0 turns it off). Without --by (or with another name) it only prints; the
 // episode stays unposted, so the lead's watch still posts it. Names and minutes only (Hard rule 12).
 // Stuck steps (I-123, lib/step-alarm.mjs), in the same passes: an active console step whose current part waits on its
 // runner (a gated part not ready, a recorded part started without "recording") with no change for more than --step-min
 // minutes (default 2): `STUCK C-037: part 1 (attempt 2) waits on fix-nav-morph for 10 min (…)`, exit 3 in check, one
-// thread per stuck period to the step's owner and the desk (--by lead), ENDED / CLOSED when the step moves on.
+// thread per stuck period to the steward (--by lead), ENDED / CLOSED when the step moves on.
 import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, notifyLine, readState } from './lib/idle.mjs';
 import { createThread, setStatus } from './lib/console-threads.mjs';
-import { getDesk } from './lib/thread-routing.mjs';
+import { alarmSteward, stewardTo } from './lib/thread-routing.mjs';
 import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
 import { diskPass } from './lib/space-watch.mjs'; // I-124: disk alarm + auto-clean (FW_SPACE_AUTOPRUNE=0 turns the clean off)
 import { exitOnHelp } from './lib/help.mjs';
@@ -72,11 +73,11 @@ async function pass({ by, min, log, quietOk, watching = false }) {
       if (a.alarm && res.news && !lead) log(`NOT POSTED ${a.resource}: posting needs --by lead (only the lead starts threads); the lead's watch posts it`);
       continue;
     }
-    const desk = getDesk()?.agent || null;
-    const { title, text } = threadFor(a, { desk });
+    const steward = await alarmSteward(); // I-175: the steward only (unset or parked: no assignee, the lead's triage)
+    const { title, text } = threadFor(a, { steward });
     const since = new Date(a.since).toISOString();
     try {
-      const to = addressees(a, desk);
+      const to = stewardTo(steward);
       const r = await createThread({ by, title, text, ...(to.length ? { to: to.join(',') } : {}) });
       await settle(a.resource, since, { thread: r.thread.id, by, now });
       log(`POSTED ${r.thread.id} ${a.resource}: ${title}${to.length ? ` (to ${to.join(', ')})` : ''}`);

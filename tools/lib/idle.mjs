@@ -66,8 +66,8 @@
 // release and stale-holder tokens), so `watch` is accurate to one poll and `check` to the previous check.
 //
 // Episodes: one free period = one episode, identified by its start (freeSince). The first alarm of an episode prints a
-// line and posts one console thread (as the lead, assigned to the desk and to the waiting owners, so the T-050 router
-// and their `thread wait` reach them); later polls of the same episode post nothing. When the resource is held again
+// line and posts one console thread (as the lead, assigned to the steward only, I-175: workers are never assignees;
+// the steward nudges them by message, unset or parked: no assignee, the lead's triage); later polls of the same episode post nothing. When the resource is held again
 // the episode ends: one ENDED line, and its thread is closed with a note by the next run as the lead (toClose). State (shared by every worktree):
 //   <git-common-dir>/fastwork-mirror/idle/state.json   ($FW_STATE_DIR/idle/ in tests), under the "idle-alarm" guard.
 import { mkdirSync, openSync, readSync, fstatSync, closeSync } from 'node:fs';
@@ -78,6 +78,7 @@ import { list as statusList } from './status.mjs';
 import { readJson, writeJson, iso } from './store.mjs';
 import { ownerPhoneStep, readSteps, stepText, isOpen } from './phone-step.mjs';
 import { listWaits } from './waits.mjs';
+import { stewardLine } from './thread-routing.mjs';
 
 export const SCHEMA = 'fw-idle/1';
 export const RESOURCES = Object.freeze({
@@ -350,9 +351,13 @@ export function lineFor(a) {
   return `OK ${a.resource}: ${free}, under the ${a.min} min limit; waiting: ${workList(a)}`;
 }
 
-/** The owners to address (agent names), the desk first; at most 8 (a thread's assignee limit). */
-export function addressees(a, desk = null) {
-  const names = [desk, a.heldIdle ? a.holder : null, ...a.queue.map((x) => x.owner), ...a.rows.map((x) => x.owner)].filter((n) => n && n !== 'lead' && n !== 'user' && AGENT.test(n));
+/**
+ * The owners an alarm concerns (agent names; at most 8): the idle holder, the queue, the waiting rows. They get the
+ * watch's NOTIFY lines and the red /status alert; they are never the thread's assignees (I-175, user T-155 #5: the
+ * thread goes to the steward, thread-routing stewardTo, who nudges them by message).
+ */
+export function addressees(a) {
+  const names = [a.heldIdle ? a.holder : null, ...a.queue.map((x) => x.owner), ...a.rows.map((x) => x.owner)].filter((n) => n && n !== 'lead' && n !== 'user' && AGENT.test(n));
   return [...new Set(names)].slice(0, MAX_ASSIGNEES);
 }
 
@@ -368,7 +373,7 @@ export function notifyLine(a, n) {
 }
 
 /** The console thread for one alarm: {title, text}. Names and minutes only (no notes, URLs or devices; Hard rule 12). */
-export function threadFor(a, { desk = null } = {}) {
+export function threadFor(a, { steward = null } = {}) {
   const R = RESOURCES[a.resource] || { name: a.resource, short: a.resource };
   const n = a.queue.length + a.rows.length;
   const jobs = `${n} ${n === 1 ? 'job waits' : 'jobs wait'}`;
@@ -378,13 +383,17 @@ export function threadFor(a, { desk = null } = {}) {
   if (a.heldIdle) { // I-111: held, but no phone run
     const L = [`${a.holder} has held the iPhone lease for ${forText(a.freeMin)} without a phone run (iphone.mjs run, scroll, record or gesture; since ${hhmm(a.since)}, ${a.how}). The limit is ${a.min} min.`, ...waits];
     if (a.stuck) L.splice(1, 0, `Its only process on the lease is a wait on that same lease (${a.selfWait.what}, for ${forText(a.selfWait.min)}), which can not end while it holds the lease: stop that wait (I-165).`);
-    L.push(`${a.holder}: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner ${a.holder}) so the next one can start, or say here why it waits.${desk ? ` Desk (${desk}): please make sure the phone is used.` : ''}`);
+    // I-175: facts for the steward, no line addressed to the holder (the steward nudges it by message)
+    L.push(`What unblocks it: ${a.holder} runs its phone part now, or releases the lease (node tools/lock.mjs release iphone --owner ${a.holder}), or says why it waits.`);
+    L.push(stewardLine(steward, [a.holder]));
     L.push('One message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111).');
     return { title: `${R.short} held by ${a.holder}, unused for ${forText(a.freeMin)} while ${jobs}`, text: L.join('\n') };
   }
   const title = `${R.short} free for ${forText(a.freeMin)} while ${jobs}`;
   const L = [`${R.name[0].toUpperCase()}${R.name.slice(1)} has had no holder for ${forText(a.freeMin)} (since ${hhmm(a.since)}; ${a.how}). The limit is ${a.min} min.`, ...waits];
-  L.push(`Owners: take it now${a.resource === 'iphone' ? ' (node tools/lock.mjs acquire iphone --owner <you> ...)' : ' (your queued hold, or node tools/lock.mjs run chrome-measure ...)'}, or say here why not.${desk ? ` Desk (${desk}): please make sure the next one starts.` : ''}`);
+  const next = addressees(a);
+  L.push(`What unblocks it: ${next.length ? `the next of ${next.join(', ')}` : 'the next owner'} takes it${a.resource === 'iphone' ? ' (node tools/lock.mjs acquire iphone --owner <you> ...)' : ' (its queued hold, or node tools/lock.mjs run chrome-measure ...)'}.`);
+  L.push(stewardLine(steward, next));
   L.push('One message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105).');
   return { title, text: L.join('\n') };
 }
