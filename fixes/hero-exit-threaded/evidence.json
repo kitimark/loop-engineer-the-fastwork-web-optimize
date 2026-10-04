@@ -21,7 +21,7 @@
    "path": "out/p088",
    "why": "P-088 phone block raw run records (C / N / Fb, sentinels, holds, gates, voids); behind the P-088 result",
    "kind": "phone",
-   "for": "README \"P-088\"",
+   "for": "README \"P-088 result\"",
    "checkout": "iphone-runner"
   },
   {
@@ -38,9 +38,9 @@
   },
   {
    "path": "out/hext/p088",
-   "why": "P-088 registered scorer outputs (scoreF / framesF / fm1F for N and Fb)",
+   "why": "P-088 registered scorer outputs (scoreF / framesF / fm1F for N and Fb), the rows 2-3 subset (sub23-*), score.log, and the post-hoc go-live frame diagnostic (golive-posthoc.json)",
    "kind": "result",
-   "for": "README \"P-088\""
+   "for": "README \"P-088 result\""
   },
   {
    "path": "out/hext/fm1F-p081-check.json",

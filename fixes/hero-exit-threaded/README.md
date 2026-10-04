@@ -744,6 +744,115 @@ change after registration needs a new P-id. **Nothing timed runs until the lead 
   about 1.5 min each, gate reads about 1.5 min per hold, pre-warm to Serious and any ceiling cool-down. The finger
   A/B comes after and is not part of P-088.
 
+### P-088 result (scored 2026-10-04; mgmt-ops-10's independent re-score matches line for line)
+
+**Verdict under the ticket: neither N nor Fb passes, on all rows and on rows 2-3 alone.** The decision row is
+"Neither passes: back to F, naming the rows. No further block on these builds." So px14 is not run, and there is no
+finger swipe A/B for N or Fb (both were conditional on a pass).
+
+| verdict | N, all rows | N, rows 2-3 | Fb, all rows | Fb, rows 2-3 |
+|---|---|---|---|---|
+| a-C | in (0.791, 0.785, 0.761) | in | in | in |
+| a (claim) | in (0.017, 0.016, 0.016) | in | in (0.019, 0.018, 0.009) | in |
+| b-ts | **OUT** (N1 ts1, N3 ts2) | **OUT** (N3 ts2) | **OUT** (Fb1 ts2) | in |
+| b-fm-rest | **OUT** (all 6 lines) | **OUT** (all 4) | **OUT** (Fb1 fm4) | in |
+| b-rest | OUT (reported: the park repaint, P 57-64 at rest1) | OUT | **OUT, a falsifier for Fb** (Fb1 rest1; Fb2 rest1, rest4; Fb3 rest3, rest4) | **OUT** |
+| fm1 frames, > 50 (twins) | 0 (0 / 0): no-worse | −0.5 (−0.5 / 0): no-worse | 0 (+1 / 0): threshold-sensitive | 0 (+1 / +0.5): threshold-sensitive |
+| fm1 frames, > 34 (twins) | 0 (+2 / 0): threshold-sensitive | 0 (+1.5 / −0.5): threshold-sensitive | **+1 (+4 / +2): WORSE** | **+1 (+7 / +1.5): WORSE** |
+| f50, band (twins) | −1 (−1 / 0): no-worse | −1 (−1 / 0): no-worse | −1 (0 / 0): no-worse | 0 (+0.5 / +1): no-worse |
+| f34, band (twins) | −8 (−11 / −2): no-worse | −7.5 (−11 / −1): no-worse | −6 (−13 / +2): no-worse | −7.5 (−7 / +2): no-worse |
+| **arm** | **FAIL** | **FAIL** | **FAIL** | **FAIL** |
+
+- **Load-sensitivity line (pre-declared).** Row 1 ran beside an unleased `npm test` (03:36:30-03:40:31Z; load1 at run
+  start C1 9.14, N1 7.8, Fb1 5.5). So each arm was also scored on rows 2-3 (load1 at every run start 3.3-6.2, no
+  shared or unleased job; hold h034817 ran alone in `holds.log`).
+  - The arm verdicts are the same both ways, so neither is load-sensitive.
+  - Fb's b-ts and b-fm-rest components differ (OUT with row 1, in without it). Those two are load-sensitive, with no
+    verdict claimed. They don't decide the arm: b-rest and fm1 > 34 falsify Fb on both sets.
+- **Named residual, fm1 S / L** (scoreF's first-move 1 lines, claim vs C): N1 S8 L13 vs S8 L15, N2 S8 L14 vs S8 L14,
+  N3 S8 L14 vs S9 L15, so N has no S / L excess in any row. Fb1 S10 L13 vs S8 L15 (+2 S), Fb2 S7 L13 vs S8 L14, Fb3 S8
+  L14 vs S9 L15, so Fb's excess is +2 S in Fb1 only.
+- **N's miss is P-081's miss.** At the go-live from a rest at y≈548, N still paints about 5 more than C: first-move 2
+  P 8 / 10 / 8 vs C 4 / 5 / 7, first-move 4 P 7 / 7 / 7 vs C 1 / 2 / 3. N's change (no `s()` write on going live)
+  leaves a smaller excess than F7 had in P-081 (P 9-19 vs 2-5), a comparison across two blocks, but not none.
+- **Fb's miss.** Staying live at rest inside the band costs +1 paint or +1 layout per rest unit vs C (rest1 / 3 / 4),
+  the per-frame invalidation the Simulator showed (rc9), and one fm1 frame over 34 ms (Fb3's crossing ran 17 frames at
+  31-47 ms).
+- **Descriptive, not a claim:** gesture-scope frames > 34 fall against C (N −35, Fb −23 arm medians), consistent with
+  the writer being gone (paint area per moving band frame N 59-68k, Fb 59-68k, C 175-192k px).
+
+**Block.** iphone-runner, two holds, both VALID, 0 voids.
+- h032856: wC wN wFb, S1, row 1 (C1 N1 Fb1). Gates start Serious 38.39 → 38.29 °C, end Serious 40.5 °C, induced No,
+  grid30. pmset: nothing inside.
+- h034817: rows 2-3 (N2 Fb2 C2, Fb3 C3 N3), S2. Gates start Serious 39.69 → 39.79 °C, end Serious 41.69 → 41.79 °C,
+  induced No, grid30. pmset: nothing inside.
+- Each hold's first start read was Fair (too cool) before any step, then re-warmed and passed: not strikes (P-085).
+- Sentinels: S1 60.2 / 58.7 PASS, S2 60.2 / 58.5 PASS.
+- Every counted run: gesture exit 0, one segment, gesture program hash `c414f67158e3`, median dt 17 ms (no LPM), timer
+  grid 30 ms. Battery 39.7-41.7 °C, 80 %, not charging.
+- Inputs hashed against the registration: scorers `32ed5f4e81f9` / `40d0d302c3f1` / `3a6ba376bc9b`; each run's
+  gesture and Timeline sha256 is in `out/hext/p088/score.log`.
+- Data (gitignored): iphone-runner's worktree `out/p088/`. Scorer outputs: `out/hext/p088/` (`scoreF-`, `framesF-`,
+  `fm1F-` `N` / `Fb`, and `sub23-*` for rows 2-3).
+
+**What the go-live residual costs in frames (POST HOC diagnostic, not registered; small n).** The first 10 moving
+frames after each rest of ≥ 250 ms at 500 < y < 600 (two per run), from the gesture logs (`golive-posthoc.json`, script
+`golive.mjs` in the scratchpad):
+
+| block, arm | go-lives | frames > 34 (> 30 / > 38) | frames > 50 (> 46 / > 54) | largest gap, median |
+|---|---|---|---|---|
+| P-081, C | 4 | 1 (1 / 0) | 0 (0 / 0) | 27.5 ms |
+| P-081, F7 (R and R2 draw the same) | 4 | 0 (2 / 0) | 0 (0 / 0) | 28.5 ms |
+| P-088, C | 6 | 2 (3 / 0) | 0 (0 / 0) | 29.5 ms |
+| P-088, N | 6 | 1 (2 / 0) | 0 (0 / 0) | 25.5 ms |
+| P-088, Fb | 6 | 0 (2 / 0) | 0 (0 / 0) | 25 ms |
+
+- On this phone at real Serious, the extra paints at the go-live (F7 P 9-19 vs C 2-5; N about +5) did not show up as a
+  long frame: no arm has a frame over 38 ms there, and C has as many over 34 ms as any claim arm.
+- That is OBSERVED for this driver (G, 2.3-2.5 s rests) and this device state. The residual is extra paint work at one
+  frame per rest, not a frame-time cost we can see. Registered band verdicts agree: f50 and f34 no-worse in P-081 (F7)
+  and P-088 (N, Fb).
+
+## F-stage options after P-088 (for the lead to pick)
+
+Ordered by how soon they give the user a smoother hero.
+
+**Option 1 (first): land R2 alone (`580e5e00`, build R2 JS `924be86afac8`, CSS `cc74cd980e72`).**
+- What it rests on:
+  - P-081 on F7: a in (writer share 0.015), about 63 % less paint area per moving band frame, band f50 +0.5 and f34
+    −5.5 (no-worse), gesture > 34 −26.5.
+  - R draws the same frames as F7 (rpx1-3), and R2 the same as R on the phone (px13). On a phone, R2's gate is true,
+    so it runs F7's path.
+  - Named residuals that land with it: b-fm (the go-live from rest, extra paints, no frame cost seen above); fm1 S / L;
+    the static T2 cue difference at y0 (F7's own); R2-iPad-AFP.
+- What it lacks: a phone run of its own build. The top-3 rule (`memory/less-work-landing-rule.md`) keeps a phone check
+  and a finger test for the hero.
+- Steps:
+  1. Build B-R2 = best-build (`65052c4a3902` / `e0f92804c521`) + R2's hero delta vs morph-inherit's build, by the same
+     no-fuzz `patch -F0` method as B-N / B-Fb. R2 = st6-rb2 + morph-inherit + hero; best-build = st6-rb2 +
+     platform-idle + morph-inherit; the hero hunks (JS 4388-4650, CSS 2153) don't overlap platform-idle (JS 12447+,
+     CSS 6909+ / 11293+). Simulator check (shared slot): B-R2 vs R2 in the hero, 0 px beyond A/A at y0 / y300 / y548.
+  2. A short phone no-worse check under a new P-id from ops: arms A = best-build, B = B-R2; driver G (`hero-pass-v1`);
+     real Serious; C V V C C V. Falsified (no landing) when band f50 is WORSE (≥ +2, twins agree) or f34 is WORSE (≥ +3),
+     or a is out (writer share > 0.05).
+  3. If it holds: the blind finger swipe A/B, A = best-build vs B = B-R2 (3 steps: pair1 A/B, pair2 B/A, catch B/B),
+     posted after the phone is parked and the user is there. Falsified when the user picks A in both real pairs.
+  4. Then land R2's `patch.diff` (the lead lands).
+- Cost: one build, one Simulator slot, one phone block of 6 runs (about 15-20 min plus gates), one swipe step.
+
+**Option 2: leave the residual named and stop here.** Land as option 1, and spend no more builds on the go-live
+paints, because they show no frame cost (post hoc, above). This is option 1 without new-build work after it.
+
+**New-build ideas for the residual (only after option 1; each needs its own Simulator check, then a new P-id):**
+
+| idea | change | one falsifier |
+|---|---|---|
+| K (keep layers) | While parked, keep the animated hero layers composited (hold their `will-change` and current values) and only stop the timeline, so going live doesn't rebuild layers | Simulator go-live from rest at y548 (ho4a): first moving frame paint count ≤ C's; above it, drop K |
+| P (pause, not park) | Park by `animation-play-state: paused` instead of removing the animations, so the layers and timeline stay attached | Simulator rest cost (rc9 at y548): per-frame style recalcs at rest = 0 like C; any per-frame recalc at rest (Fb's failure mode) drops P |
+| L (longer park delay) | Park only after a longer rest (for example 1 s instead of about 300 ms), so short pauses never go live from parked | P-081 / P-088 logs: share of go-lives that follow a rest shorter than the new delay; if the hero-pass rests (2.3-2.5 s) all exceed it, L can't change b-fm on this driver, so drop it for this question |
+
+None of K, P or L is built. N and Fb get no further block (ticket decision).
+
 ## What changed
 
 On WebKit, once the entrance is over (`d()`), the exit is a set of CSS scroll-driven animations on a `--hero-exit`
