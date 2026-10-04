@@ -473,7 +473,7 @@ export function ownHoldLeftMs(s = lockStatus('chrome-measure'), held = process.e
  * {device, outDir, wdaBase, toolFiles, wdaHint, openHint(url), preflight(estMs, {budgetMs}) -> {pageUrl, pageSource},
  *  lost() -> reason | null (checked before every op), extra() -> more meta fields}.
  */
-export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = false, log = console.log }) {
+export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = false, warmup = false, log = console.log }) {
   const lease = () => { const s = lockStatus('iphone'); return s.holder && !s.stale && s.holder.owner === owner ? s.holder : null; };
   let mac = null;
   return {
@@ -483,7 +483,7 @@ export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = 
       // I-056: the measure guard of iphone.mjs run (lib/lock.mjs phoneGuard): no G run beside someone else's normal
       // hold; the runner's own hold passes; shared jobs pass with a NOTE and the Mac state in meta.mac, unless
       // --require-quiet or FW_PHONE_REQUIRE_QUIET=1
-      mac = phoneGuard({ owner, allow: allowDuringMeasure, requireQuiet, log });
+      mac = phoneGuard({ owner, allow: allowDuringMeasure, requireQuiet, warmup, log });
       const h0 = lease();
       const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
       // I-112: the whole run (reload, untils, Timeline, save), not only the strokes
@@ -534,7 +534,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     return 0;
   }
   const owner = requireLease();
-  const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), log });
+  const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), warmup: flag('warmup'), log });
   const { pageUrl, pageSource } = await tg.preflight(prog.estMs, { budgetMs });
 
   // Safari's tab: there, not the certificate warning, the lease's page

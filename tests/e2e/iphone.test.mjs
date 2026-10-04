@@ -108,6 +108,32 @@ test('I-056: scroll / record refuse (WAIT) beside someone else\'s normal hold, a
   assert.ok(past(rec()), 'record in the same owner\'s hold goes on to Safari');
 });
 
+test('I-176: scroll --warmup runs beside ANOTHER agent\'s --no-timing hold (NOTE), a counted scroll WAITs there, a timing hold WAITs a warm-up too, no lease still refuses, record refuses --warmup (exit 2)', () => {
+  const past = (r) => /fetch failed|ECONNREFUSED/.test(r.stderr) && !/WAIT/.test(r.stderr);
+  // another owner's --no-timing `run`: FW_LOCK_HELD is dropped for the phone command, so the hold is not the runner's own
+  const beside = (args) => lock('run', 'chrome-measure', '--owner', 'builder', '--no-timing', '--max-seconds', '60', '--', 'sh', '-c',
+    `env -u FW_LOCK_HELD ${JSON.stringify(process.execPath)} ${JSON.stringify(IPHONE)} ${args}; echo "rc=$?"`);
+  // no lease: refused before any guard
+  let r = beside('scroll --warmup --owner me');
+  assert.match(r.stderr, /you \("me"\) don't hold the iphone lease/);
+  lock('acquire', 'iphone', '--owner', 'me');
+  r = beside('scroll --owner me');
+  assert.match(r.stderr, /^WAIT: chrome-measure is held by "builder" \(a no-timing hold: a build or CPU work\).*--warmup/m, r.out);
+  assert.match(r.stdout, /^rc=1$/m);
+  r = beside('scroll --warmup --owner me');
+  assert.ok(past(r), `a warm-up goes on to Safari: ${r.stderr}`);
+  assert.match(r.stdout, /^NOTE: uncounted warm-up run beside "builder"'s --no-timing hold/m);
+  // record is never a warm-up
+  r = iphone('record', '--warmup', '--owner', 'me');
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.stderr, /--warmup is not for record/);
+  // a normal (timing) hold still waits a warm-up
+  assert.equal(lock('acquire', 'chrome-measure', '--owner', 'fix-ab').code, 0);
+  r = iphone('scroll', '--warmup', '--owner', 'me');
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /^WAIT: chrome-measure is held by "fix-ab" \(a normal hold.*--warmup passes only beside a --no-timing hold/m);
+});
+
 test('unknown command prints usage', () => {
   const r = iphone('dance');
   assert.equal(r.code, 0);

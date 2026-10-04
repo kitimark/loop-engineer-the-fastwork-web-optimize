@@ -337,6 +337,8 @@ export function timedInSlotRefusal(what, env = process.env) {
 export const phoneHoldCmd = (owner = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${owner} --no-timing --max-seconds 600 -- sh -c '<phone part>'`;
 /** I-056: FW_PHONE_REQUIRE_QUIET=1 makes every phone run wait for shared jobs, as --require-quiet does. */
 export const phoneRequireQuiet = (env = process.env) => env.FW_PHONE_REQUIRE_QUIET === '1';
+/** I-176: FW_PHONE_WARMUP=1 is --warmup (an uncounted warm-up run). */
+export const phoneWarmup = (env = process.env) => env.FW_PHONE_WARMUP === '1';
 /**
  * The shared (functional) jobs holding chrome-measure in a status snapshot: [{owner, weight}] (empty: none). A group in a
  * format this code does not know counts as one job of unknown weight; the switch-off stand-in for a reader (`functional:
@@ -378,7 +380,7 @@ export function phoneMacNote(state) {
  * other job, shared ones included, off the Mac. `allow` (--allow-during-measure) passes anything: diagnostics only.
  * `st`: a status('chrome-measure') snapshot; `env`: where FW_LOCK_HELD and FW_PHONE_REQUIRE_QUIET come from.
  */
-export function phoneRunRefusal({ owner, allow = false, requireQuiet = false, st = status('chrome-measure'), env = process.env, now = Date.now() } = {}) {
+export function phoneRunRefusal({ owner, allow = false, requireQuiet = false, warmup = false, st = status('chrome-measure'), env = process.env, now = Date.now() } = {}) {
   const h = st?.holder;
   if (allow || !h || st.stale) return null;
   const how = `run it inside your own hold, which waits its turn and keeps everything else off the Mac: ${phoneHoldCmd(owner || '<you>')} (I-056); or pass --allow-during-measure for a diagnostic run`;
@@ -390,15 +392,27 @@ export function phoneRunRefusal({ owner, allow = false, requireQuiet = false, st
   if (h.short) return null;
   const inherited = !!h.token && parseHeld(env.FW_LOCK_HELD)['chrome-measure'] === h.token;
   if (inherited || (owner && h.owner === owner)) return null;
-  return `WAIT: chrome-measure is held by "${h.owner}" (${h.noTiming ? 'a no-timing hold: a build or CPU work' : 'a normal hold, e.g. a goal A/B'}): no timed iPhone runs meanwhile. Retry after it ends, or ${how}`;
+  // I-176: an uncounted warm-up run (--warmup, FW_PHONE_WARMUP=1) may go beside another agent's --no-timing hold (a build
+  // or CPU work: the phone stamps its own frames and a warm-up's numbers are not counted); never beside a timing hold
+  const warm = !!(warmup || phoneWarmup(env));
+  if (warm && h.noTiming) return null;
+  const hint = h.noTiming ? ` An uncounted warm-up run may go beside it: add --warmup (never a counted or sentinel/control run, I-176).` : warm ? ` (--warmup passes only beside a --no-timing hold, not a timing one, I-176)` : '';
+  return `WAIT: chrome-measure is held by "${h.owner}" (${h.noTiming ? 'a no-timing hold: a build or CPU work' : 'a normal hold, e.g. a goal A/B'}): no timed iPhone runs meanwhile. Retry after it ends, or ${how}.${hint}`;
+}
+/** I-176: the other agent's --no-timing hold that an uncounted warm-up run goes beside, as {owner, kind: 'no-timing'}, else null (nothing relaxed: own or inherited hold, no warm-up, anything but a no-timing exclusive hold). */
+export function warmupBeside({ owner, warmup = false, allow = false, st, env = process.env } = {}) {
+  const h = st?.holder;
+  if (!(warmup || phoneWarmup(env)) || allow || !h || st.stale || isGroup(h) || h.functional || h.short || !h.noTiming) return null;
+  const inherited = !!h.token && parseHeld(env.FW_LOCK_HELD)['chrome-measure'] === h.token;
+  return inherited || (owner && h.owner === owner) ? null : { owner: h.owner, kind: 'no-timing' };
 }
 /**
  * The phone measure guard for one run (I-056): throws Error(phoneRunRefusal) when the run may not start, else returns
  * {requireQuiet, allow, start: phoneMacState} and logs phoneMacNote (when `note`). Pass the result to phoneMacRecord at
  * the end of the run: it becomes the record's `mac` field.
  */
-export function phoneGuard({ owner, allow = false, requireQuiet = false, st = status('chrome-measure'), env = process.env, now = Date.now(), load1, note = true, log = console.log } = {}) {
-  const why = phoneRunRefusal({ owner, allow, requireQuiet, st, env, now });
+export function phoneGuard({ owner, allow = false, requireQuiet = false, warmup = false, st = status('chrome-measure'), env = process.env, now = Date.now(), load1, note = true, log = console.log } = {}) {
+  const why = phoneRunRefusal({ owner, allow, requireQuiet, warmup, st, env, now });
   if (why) throw new Error(why);
   const quiet = !!(requireQuiet || phoneRequireQuiet(env));
   // I-063: a warm Simulator (booted, idle, kept for the next sim session) is Mac load. A run that asks for a quiet Mac
@@ -417,12 +431,13 @@ export function phoneGuard({ owner, allow = false, requireQuiet = false, st = st
   }
   const start = phoneMacState({ st, now: reaped?.settledSec ? Date.now() : now, load1 });
   if (reaped) start.simWarm = reaped;
-  const lines = note ? [phoneMacNote(start), reaped ? reapNote(reaped, 'this phone run') : start.simWarm?.stale ? `NOTE: a stale warm Simulator record (written before the Mac restarted, so fw-sim is not booted) is in the record (mac.start.simWarm); node tools/sim.mjs shutdown clears it (I-063)` : start.simWarm ? `NOTE: a warm Simulator (fw-sim, ${start.simWarm.keeperAlive ? 'booted' : 'recorded as booted, keeper not running'} and idle until ${start.simWarm.idleUntil}) is on the Mac beside this phone run: Mac-quiet is preferred, not required, so it runs and its record keeps it (mac.start.simWarm); --require-quiet or FW_PHONE_REQUIRE_QUIET=1 shuts it down first (I-063)` : null] : [];
+  const beside = warmupBeside({ owner, warmup, allow, st, env });
+  const lines = note ? [phoneMacNote(start), beside ? `NOTE: uncounted warm-up run beside "${beside.owner}"'s --no-timing hold (a build or CPU work): the phone stamps its own frames and a warm-up is not counted, so it runs; the record keeps mac.warmup and mac.beside (I-176)` : null, reaped ? reapNote(reaped, 'this phone run') : start.simWarm?.stale ? `NOTE: a stale warm Simulator record (written before the Mac restarted, so fw-sim is not booted) is in the record (mac.start.simWarm); node tools/sim.mjs shutdown clears it (I-063)` : start.simWarm ? `NOTE: a warm Simulator (fw-sim, ${start.simWarm.keeperAlive ? 'booted' : 'recorded as booted, keeper not running'} and idle until ${start.simWarm.idleUntil}) is on the Mac beside this phone run: Mac-quiet is preferred, not required, so it runs and its record keeps it (mac.start.simWarm); --require-quiet or FW_PHONE_REQUIRE_QUIET=1 shuts it down first (I-063)` : null] : [];
   for (const line of lines) if (line) log(line);
-  return { requireQuiet: quiet, allow: !!allow, start };
+  return { requireQuiet: quiet, allow: !!allow, start, ...(warmup || phoneWarmup(env) ? { warmup: true } : {}), ...(beside ? { beside } : {}) };
 }
 /** A phone run record's `mac` field (I-056): {requireQuiet, allow, start, end}, `end` read now; null without a guard. */
-export const phoneMacRecord = (g, end = phoneMacState()) => (g ? { requireQuiet: g.requireQuiet, allow: g.allow, start: g.start, end } : null);
+export const phoneMacRecord = (g, end = phoneMacState()) => (g ? { requireQuiet: g.requireQuiet, allow: g.allow, start: g.start, end, ...(g.warmup ? { warmup: true } : {}), ...(g.beside ? { beside: g.beside } : {}) } : null); // I-176: warmup/beside only on an uncounted warm-up run
 
 function checkName(r) {
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(r)) throw new Error(`bad resource name "${r}"`);

@@ -74,6 +74,11 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--require-quiet]                                       WAIT while shared jobs (npm test, a Simulator session) hold
                                                             chrome-measure (also FW_PHONE_REQUIRE_QUIET=1); default: run
                                                             beside them, with a NOTE and the Mac state in meta.mac
+    [--warmup]                                              an uncounted warm-up run (label; also FW_PHONE_WARMUP=1): it
+                                                            may run beside ANOTHER agent's --no-timing chrome-measure
+                                                            hold (a build; the record's mac.warmup / mac.beside say so),
+                                                            never beside a timing hold (I-176). Sentinel/control runs
+                                                            and counted runs must not take --warmup
     [--allow-during-measure]                                run beside someone else's chrome-measure hold (diagnostics
                                                             only; to keep the Mac quiet, run inside your own lock.mjs
                                                             run chrome-measure --no-timing hold)
@@ -329,7 +334,7 @@ async function parkAfterRun(port, owner) {
  *  unless o.requireQuiet (--require-quiet) or FW_PHONE_REQUIRE_QUIET=1 (I-056, lib/lock.mjs phoneGuard).
  *  --allow-during-measure for diagnostics. Returns phoneGuard's {requireQuiet, allow, start} for phoneMacRecord. */
 export function measureGuard(o, st = lockStatus('chrome-measure'), env = process.env, { note = true, log = console.log, load1 } = {}) {
-  return phoneGuard({ owner: o.owner, allow: o.allowDuringMeasure, requireQuiet: o.requireQuiet, st, env, note, log, load1 });
+  return phoneGuard({ owner: o.owner, allow: o.allowDuringMeasure, requireQuiet: o.requireQuiet, warmup: !!o.labels?.warmup, st, env, note, log, load1 });
 }
 
 /**
