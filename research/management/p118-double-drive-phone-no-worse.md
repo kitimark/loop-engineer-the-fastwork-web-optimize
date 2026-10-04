@@ -132,3 +132,25 @@ pre-warm, the per-arm load warm-up (A3/U5) kept, ceiling 44 °C / Critical. Arms
 Order: iphone-runner's decisive check part OFF on the cool phone, mgmt-devices' console step (the user sets the
 condition), part ON, then H1. P-118 data never pools with real-heat blocks. Whether induced Serious also slows the chip
 stays UNRESOLVED until the decisive check reports.
+
+## Ops xcode-serious check of the pinned scripts (2026-10-05, before H1, asked by the lead): FAIL on 2 of 4
+
+Read against the four xcode-serious checks (ops-handover.md "Phone ticket profile"). The amendment (eae96f01) changed
+the card, not the pinned hold.sh, which is still **58d285cb0094** in every worktree that has it (agent-a4f202310c79fbd82,
+agent-a830cd580ed840805, mgmt-devices-gate, and ops' copy).
+
+| # | check | hold.sh 58d285cb0094 | result |
+|---|---|---|---|
+| 1 | no heat pre-warm | lines 42-51: before the first gate read, every hold runs `iphone.mjs run … --warmup` on B (`p118-<H>-prewarm<n>`), and on gate exit 2 it repeats, at most 4 | **FAIL** |
+| 2 | `thermal-gate.mjs --accept-induced` at start and end of each hold | line 40: `--expect serious --max-c 44`, no `--accept-induced`; with an induced Serious `gateVerdict` returns 4 ("induced by Xcode", verdict.mjs at c4875944), so H1 would void at its start gate after one pre-warm run | **FAIL** |
+| 3 | one uncounted load warm-up per arm port | items wC / wV (S) and wgC / wgV (G part M), labels `--warmup --arm C|V` | PASS |
+| 4 | 44 °C / Critical ceiling | `--max-c 44`; Critical or battery >= 44 exits 3 in every profile; start exit 5 VOID, end exit 3 VOID | PASS |
+
+Nothing is lost if H1 runs as pinned (it voids before any counted run), but it would heat the phone with real runs
+first, which the profile forbids. Needed before H1, owned by the script owner, signed like the amendment:
+- a revised hold.sh: drop the pre-warm loop; `gate start` read once, exit 2 = VOID (no retry by heating, the user resets
+  the condition); `--accept-induced` on both gate calls; everything else byte-for-byte;
+- its new hash committed before data, the PIN line in the H1 log, and the gate tool at c4875944 or later in the
+  checkout that runs it;
+- the decisive check (part OFF, the user's console step, part ON) still precedes H1 per the amendment.
+Ops re-reads the revised script (diff against 58d285cb0094: only those lines) on request.

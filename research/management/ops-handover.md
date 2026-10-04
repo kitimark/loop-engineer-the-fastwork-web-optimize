@@ -39,11 +39,14 @@ rejected.
 - Sentinels under xcode-serious (int-v8's v9 draft, ops read 10-05): a failing control run still voids every run since
   the last passing one; the block is rerun with no cooling wait (the "cool to the last passing sentinel minus 0.5 C"
   rule is a real-heat rule). The thermal-gate exits for hold.sh match 8e4eacbb's README: 2 = condition dropped or
-  Nominal/Fair, 3 = Critical or the battery ceiling, 7 = real Serious instead of the induced condition. CLAUDE.md
-  "Phone blocks" still words the cooling rule for real heat only; amending it is the lead's call.
-- P-118 stays real heat as signed (`profile: real-serious`); the profile line is recorded on its card, not a change to
-  its pins or arms.
-- The ticket's profile is stated before data, in the same commit as the pins. A profile change is a new ticket.
+  Nominal/Fair, 3 = Critical or the battery ceiling, 7 = real Serious instead of the induced condition. Without
+  `--accept-induced` an induced Serious exits 4.
+- P-118 runs `profile: xcode-serious` (lead amendment eae96f01, card aacfbd40; supersedes ops' first real-serious line;
+  no counted run had started). CLAUDE.md "Phone blocks" sentinel text amended by the lead (7c8e4e23).
+- The ticket's profile is stated before data, in the same commit as the pins. A profile change before data needs a
+  signed lead amendment (eae96f01 is the model); after data it is a new ticket.
+- The scripts must match the profile, not only the card: ops checks the pinned hold script itself (pre-warm loop,
+  gate flags) before H1, since a ticket amendment does not change a pinned hash.
 - Open (iphone-runner's decisive check, before the first v9 block): if induced Serious does not slow the chip, one
   real-heat confirmation block for the final best build (milestone 2b) is added later. Until the check reports, a
   v9 ticket may name `xcode-serious` but ops notes the check as open on the card.
@@ -69,6 +72,11 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-118 pinned hold.sh vs xcode-serious: FAIL on 2 of 4, before H1 (lead's ask after eae96f01).**
+  hold.sh 58d285cb0094 still pre-warms (up to 4 S runs on B before the start gate) and calls the gate without
+  `--accept-induced` (an induced Serious exits 4, so H1 would void at its start gate). Warm-ups per arm port and the
+  44 C / Critical ceiling pass. A revised hold.sh with a new pinned hash is needed before H1. Card section "Ops
+  xcode-serious check of the pinned scripts". Sent to the lead, iphone-runner, mgmt-devices.
 - 10-05 **Phone ticket `profile:` rule added (user T-162 #3, mgmt-devices' request).** New standing section "Phone ticket
   profile": mandatory `profile:` line (xcode-serious | real-serious | real-fair), no pooling across profiles (a pooling
   ticket is rejected), and the four xcode-serious checks (no pre-warm; `thermal-gate.mjs --accept-induced` 8e4eacbb at
