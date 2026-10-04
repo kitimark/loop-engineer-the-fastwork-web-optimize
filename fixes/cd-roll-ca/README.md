@@ -1001,6 +1001,8 @@ ports (I-131, lead 09:1xZ: "unverified", not invalid): B 5419, C8 5420, V9 5421 
   lazy image. WebKit honours `immutable` only on https (CachedResource.cpp makeRevalidationDecision, per ts-i131), and
   the phone ran plain http. So there is no evidence that a counted run measured a stale file. After the I-131 fix
   (no-cache + ETag), phone runs revalidate ~51 lazy files per run: phone numbers before and after that fix don't compare.
+  Lead's reading (11:2xZ): ports 5419-5421 served several builds in a row; OBSERVED, low risk (the first loads fetched JS
+  and CSS fresh, 200). P-093 ran on the old serving code (before I-131's fix, 291ee671).
 ```
 
 | top window (idle 8 s + W through the hero) | C1 | C4 | C5 | C8 | V2 | V3 | V6 | V7 | median V − C |
@@ -1244,9 +1246,50 @@ and `__crPlay`'s keyframe mapping change; everything else in V9 is byte-identica
     is not a "composited" claim. Countdown rAF 7 / 6 and countdown function calls 26 / 24 in 6 rolls.
   - Descriptive only: main frames 103 vs 79 and animation instances 35 vs 23. That is a single run each, and the roll
     mix differs (more cells animated in the VK window, e.g. a longer tens roll), so it is no per-roll comparison.
-- Simulator: `sim-rollstart.mjs V9,VK 2`. It gives keyframes per tick (getAnimations), the f1-f3 cell paints (the
-  backing burst) and layerTreeDidChange per tick, in a shared simulator slot. Pending.
-- Simulator frozen frames: `simpx.mjs C8,VK hero wrap,carry`, the session C setup (A/A on C8). Pending.
+- Simulator (done 11:21Z, `sim-rollstart.mjs V9,VK 2`, shared simulator slot, fresh servers on OS ports, served JS
+  582d120c9f8f / b43fe790c20c; file `out/cd-roll-ca/rollstart/rollstart-2026-10-04T11-21-25-137Z.json`; counts only,
+  Simulator times never count, F-084). 21 hero ticks per load, 2 loads per arm: 19 one-step rolls and 2 long rolls (the
+  ones digit's 9-step wrap) per load.
+
+  | per hero tick, Simulator | V9 | VK |
+  |---|---|---|
+  | keyframes on the hero, one-step roll (4 cells) | 576 (144 per cell) | 208 (52 per cell) |
+  | keyframes on the hero, long roll (15 cells), per roll | 1,908-4,349 | 882-1,368 |
+  | max keyframes in one animation | 343 | 66 |
+  | layer tree changes per tick (median, both classes) | 0 | 0 |
+  | backing burst, long roll: cell-sized paints in the tick's frame + f1 + f2, per roll | 10, 9, 9, 12 | 11, 13, 10, 15 |
+  | the same, one-step rolls: mean per roll (load 1 / load 2) | 2.7 / 2.5 | 2.7 / 2.7 |
+  | style recalcs in the tick's task (median) | 2 | 2 |
+
+  - Keyframes per tick drop 2.8x on one-step rolls and 2-3x on long ones, as the offline count said.
+  - The backing burst does NOT shrink with K (as the K ticket predicted). WebKit still paints the newly animated cells'
+    backing stores at the roll start. Where the burst lands (in the tick's own frame or f1) varies per roll in both arms,
+    so the per-frame medians (f1: V9 6, VK 1 on long rolls) are not a difference. Long rolls: VK 10-15 vs V9 9-12,
+    n = 4 each, overlapping. OBSERVED, Simulator, in our setup.
+  - Descriptive only: V9 / VK medians for the long roll's tick task 68 / 58 ms and f1 41 / 20 ms (Simulator ms, not
+    judged).
+- Simulator frozen frames (done 11:28Z, `simpx.mjs C8,VK hero wrap,carry`, the session C setup, A/A on C8; file
+  `out/cd-roll-ca/simpx/simpx-2026-10-04T11-28-50-782Z.json`; Simulator background mean 4 %, quiet), next to session C's
+  V9 row (same setup, `simpx-2026-10-04T03-26-27-409Z.json`):
+
+  | 92 shots per arm | A/A (C8 again) | VK vs C8 | V9 vs C8 (session C) |
+  |---|---|---|---|
+  | shots differing | **0 (exact)** | 32 | 84 |
+  | max pixel delta (shots at it) | 0 | 8 (4) | 9 (18) |
+  | shots with any pixel delta > 1 | 0 | 21 | 82 |
+  | largest differing area, device px | 0 | 536 | 1,491 |
+  | digit place / cell rects, max | 0 / 0 | 0.013 px / 0.0127 px (0 over 1/64), 0 unmatched | 0.015 / 0.01505 px |
+  | shared startTime | | 98 / 98 | 98 / 98 |
+  | roll end, wrap / carry (A vs B, and A/A) | | 0 px / 0 px | 0 px / 0 px |
+  | layers at rest / rest + 2 s | 14 backed, 0.329 MB | 14 backed, 0.329 MB | 15 backed, 0.352 MB |
+
+  - VK is closer to the original than V9 in every row. In our setup the likely reason is that V9 interpolates linearly
+    between its sub-frame points, and a shot taken mid-segment lands slightly off. K's segments are the exact
+    quadratics. What is left is WebKit drawing a layer offset rather than an inline transform (OBSERVED, Simulator, in
+    our setup; the cause is a reading, not a check).
+  - At rest the layers match C8 (14 backed, 0.329 MB). Session C's extra V9 backing (digit 5 cell 6) did not appear in
+    this VK run.
+  - A one-run difference; the A/A is exact.
 
 ```
 PHONE TICKET K cd-roll-ca VK · less-work no-worse check (lead 2026-10-04 ~10:0xZ: "Before data: register the phone part
@@ -1286,6 +1329,11 @@ decision rows: hit -> K goes to the user as the PR-017 follow-up rev (exact path
 predictions (calibration, not a gate): P(hit) 0.9 (the same path and the same layers, 4x fewer keyframes; only the
   keyframe count changes). Descriptive: P(VK's median top-window dt > 50 is below V9's) 0.45. P-093 had V9 at a median
   of 1 per run (C8 0). The backing burst stays in K, so V9's extra frames may not all go.
+serving code (lead 11:2xZ, I-131 landed 291ee671: no-cache + ETag, Safari revalidates ~51 lazy files per reload): this
+  block runs on the I-131 serving code. The branch is rebased onto main (with 291ee671) after the Simulator gates and before
+  the block; the block record names the serve.mjs sha256 it ran with. Both arms are on that code, so the gate (VK vs V9
+  in this block) is unaffected. P-093's numbers (old serving code) are not compared with this block's: the descriptive
+  "V9's hero frames over 50 ms" reading uses this block's own V9 runs only.
 P-100 fold-in: if P-100 (display-rate diagnostic, separate ticket below) settles the display-rate question before this
   block runs, its result is added here as a note before data, without changing the gate.
 minutes: ~25 (range 20-40), as P-093
@@ -1371,6 +1419,7 @@ ops notes (mgmt-ops-10 pre-data read of 592ebb6d: PASS; written here before data
      LAN addresses.
   N3: if the Mac table-reader test forces a p100-lib/p100-rec rev, the new hashes and the diff go to ops before any
      phone data.
+serving code: the same as the K block (I-131's, 291ee671; the record names serve.mjs's sha256).
 order: the K block first, then this hold on the warm phone, in one lease after fix-morph-gpu's P-098/P-099 (requested
   through ops; the lead sets the phone order).
 minutes: ~12 (12 records x ~45 s + 2 thermal reads)
