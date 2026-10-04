@@ -55,6 +55,7 @@
 // its reason and a link to its write-up (served read-only by the console at /writeup/<path>).
 import { readFileSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { REPO } from './paths.mjs';
 import { redact } from './redact.mjs';
 
@@ -374,6 +375,9 @@ export function deviceView(st, { resource, board = [], now = Date.now(), alive =
  * that is up to date ({owner, id, doing, state, using, waits, also}; its main row first: working before waiting, in
  * board order), and the rest folded ({owner, id, title, why: parked | not started | not updated for …}).
  */
+// I-108 (3): a row folded because what it reports looks over (not only its age) says why
+const overWhy = (v) => { const w = (v.staleWhy || []).filter((x) => !/^not updated for /.test(x)); return w.length ? `may be out of date: ${sanitize(w.join('; '), 200)}` : ''; };
+
 export function agentsView(items = []) {
   const open = items.filter((v) => v.group !== 'finished');
   const shown = open.filter((v) => (v.group === 'working' || v.group === 'waiting') && !v.stale);
@@ -389,7 +393,7 @@ export function agentsView(items = []) {
   }));
   const folded = open.filter((v) => !shown.includes(v)).map((v) => ({
     owner: sanitize(v.owner, 60), id: v.id, title: sanitize(v.title, 90),
-    why: v.group === 'parked' ? 'parked' : v.group === 'queued' ? 'not started' : `not updated for ${durText(v.ageMin ?? 0)}`,
+    why: v.group === 'parked' ? 'parked' : v.group === 'queued' ? 'not started' : overWhy(v) || `not updated for ${durText(v.ageMin ?? 0)}`,
   }));
   return { agents, folded };
 }
@@ -413,7 +417,50 @@ export async function gatherLive() {
   try { live.waits = (await import('./waits.mjs')).listWaits(); } catch (e) { live.errors.push(`waits: ${e.message}`); } // I-058
   // I-108: an open proposal (proposed, not held) waits on the user's decision, like a pending step
   try { live.proposals = (await import('./proposal.mjs')).listProposals({ waiting: true }); } catch (e) { live.errors.push(`proposals: ${e.message}`); }
+  // I-108 (3): what a row's wait or branch points at, to mark rows whose news is over ("may be out of date")
+  try { live.refs = await refsLive(); } catch (e) { live.errors.push(`refs: ${e.message}`); }
+  try { live.git = gitLive(); } catch (e) { live.errors.push(`git: ${e.message}`); }
   return live;
+}
+
+/**
+ * I-108 (3): {steps: {C-id: status}, proposals: {PR-id: state}, threads: {T-id: {status, state, lastBy, lastAt}}}, every
+ * step, proposal and thread (ids and states only, no text).
+ */
+export async function refsLive() {
+  const steps = {}, proposals = {}, threads = {};
+  for (const s of (await import('./console.mjs')).list({ all: true })) steps[s.id] = s.status;
+  for (const p of (await import('./proposal.mjs')).listProposals({ all: true })) proposals[p.id] = p.state;
+  const T = await import('./console-threads.mjs');
+  for (const t of T.listThreads()) {
+    const m = t.messages?.[t.messages.length - 1];
+    threads[t.id] = { status: t.status, state: T.threadState(t), lastBy: m?.by ?? null, lastAt: m?.at ?? null };
+  }
+  return { steps, proposals, threads };
+}
+
+const MAIN_SHAS = 3000;
+/**
+ * I-108 (3): main as the board checks branches against it: {merged: branch names merged into main, mainShas: the last
+ * 3000 commits on main}. Read-only; throws when the repository or main is not there (gatherLive reports it).
+ */
+const gitCache = new Map(); // cwd -> {at, value}: the pages poll; main moves at landings only
+export function gitLive(cwd = REPO, { now = Date.now(), maxAgeMs = 20000 } = {}) {
+  const c = gitCache.get(cwd);
+  if (c && now - c.at < maxAgeMs) return c.value;
+  const value = gitRead(cwd);
+  gitCache.set(cwd, { at: now, value });
+  return value;
+}
+function gitRead(cwd) {
+  const run = (...a) => {
+    const r = spawnSync('git', a, { cwd, encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] });
+    if (r.status !== 0) throw new Error(`${a[0]} failed`);
+    return r.stdout.split('\n').map((x) => x.trim()).filter(Boolean);
+  };
+  const mainShas = run('rev-list', '-n', String(MAIN_SHAS), 'main');
+  const merged = run('branch', '--merged', 'main', '--format=%(refname:short)');
+  return { mainShas, merged };
 }
 
 // ---- the view ----------------------------------------------------------------------------------------
@@ -645,7 +692,7 @@ export function renderText(v, { details = false } = {}) {
     for (const it of sec.items) {
       const stage = it.state === 'dropped' ? `stopped at stage ${it.stage.code}` : `stage ${it.stage.code}: ${it.stage.plain}`;
       L.push(`  [${it.areaLabel}] ${it.title}  (${stage}${it.owner ? `; ${it.owner}` : ''})`);
-      if (it.status) L.push(`    now: ${it.status.state} (${it.status.plain})${it.status.waits.length ? `; ${it.status.waits.join('; ')}` : ''}${it.status.stale ? '; not updated for a while' : ''} [status board: ${it.status.id}]`);
+      if (it.status) L.push(`    now: ${it.status.state} (${it.status.plain})${it.status.waits.length ? `; ${it.status.waits.join('; ')}` : ''}${it.status.stale ? '; may be out of date' : ''} [status board: ${it.status.id}]`);
       if (it.fixes) L.push(`    what it fixes: ${it.fixes}`);
       for (const b of it.best) L.push(`    best: ${bestText(b)}`);
       if (it.felt) L.push(`    felt: ${FELT_PLAIN[it.felt.answer] || it.felt.answer}${it.felt.text ? ` (${it.felt.text})` : ''}`);

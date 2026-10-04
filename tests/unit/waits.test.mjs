@@ -143,10 +143,10 @@ test('board: a live wait shows on its owner\'s active row as "now: waiting for �
   assert.deepEqual(row.derived.map((d) => d.plain), ['waiting for the phone to cool to 37.1 °C or below (auto) since 11:57Z (3 min, timeout 10 min)']);
   assert.equal(row.stale, false, 'a running wait is a live wait');
   assert.deepEqual(v.items.find((x) => x.id === 'old').derived, [], 'a finished row shows no waits');
-  assert.deepEqual(v.otherWaits.map((x) => x.owner), ['ts-old', 'unknown']);
+  assert.deepEqual(v.otherWaits.map((x) => x.owner), ['ts-old', 'owner unknown']);
   const t = S.renderText(v);
   assert.match(t, /now: waiting for the phone to cool to 37\.1 °C or below \(auto\) since 11:57Z \(3 min, timeout 10 min\)/);
-  assert.match(t, /OTHER WAITS \(no active workstream row for their owner\)\n {2}ts-old: waiting for lock chrome-measure idle since 11:59Z \(1 min, timeout 1 h\) {2}\[lock\.mjs wait\]\n {2}unknown: waiting for a server to answer since 12:00Z/, "I-060: a URL wait is shown by its kind, not the (scrubbed) URL");
+  assert.match(t, /OTHER WAITS \(no active workstream row for their owner\)\n {2}ts-old: waiting for lock chrome-measure idle since 11:59Z \(1 min, timeout 1 h\) {2}\[lock\.mjs wait\]\n {2}owner unknown: waiting for a server to answer since 12:00Z/, "I-060: a URL wait is shown by its kind, not the (scrubbed) URL");
   assert.ok(!t.includes('192.168'), 'shown text is sanitized again');
   assert.ok(!S.renderText(S.buildStatusView({ items, live: {}, now })).includes('OTHER WAITS'));
 });

@@ -240,13 +240,13 @@ test('derive: a self-reported wait that is over is flagged (resolved incident, f
   assert.match(S.derive(S.get('w1'), live, byId).flags[0], /I-001, which is no longer open/);
 });
 
-test('view: stale after 2 h without an update unless a live wait; finished/parked never; sort by priority, group, recency', () => {
+test('view: stale after 45 min (I-108; was 2 h) without an update unless a live wait; finished/parked never; sort by priority, group, recency', () => {
   const now = Date.parse('2026-10-02T12:00:00Z');
   const at = (min) => new Date(now - min * 60000).toISOString();
   const mk = (id, state, min, extra = {}) => ({ id, title: id, kind: 'fix', owner: `o-${id}`, state, stateSince: at(min), updatedAt: at(min), priority: null, waitingOn: null, ...extra });
   const items = [
     mk('old-working', 'implementing', 121),
-    mk('fresh', 'researching', 119),
+    mk('fresh', 'researching', 44),
     mk('old-queued-chrome', 'measuring', 300),
     mk('old-parked', 'parked', 600),
     mk('old-done', 'done', 600),
@@ -280,7 +280,7 @@ test('renderText: plain board, waiting-on-you first, finished hidden unless --al
   ];
   const v = S.buildStatusView({ items, live: {}, now });
   const t = S.renderText(v);
-  assert.match(t, /^STATUS BOARD {2}\(live 12:00Z; 1 working, 1 waiting, 1 waiting on you; stale after 2 h 0 min/);
+  assert.match(t, /^STATUS BOARD {2}\(live 12:00Z; 1 working, 1 waiting, 1 waiting on you; stale after 45 min/);
   assert.match(t, /WAITING ON YOU\n {2}ts-x: you: yes\/no on the menu/);
   assert.match(t, /#1 {2}style-recalc {2}\[Fix\] Style recalculation\n {6}researching for 40 min: finding out where and why it is slow; owner de-style-recalc; updated 12 min ago/);
   assert.match(t, /note: tracing\n {6}next: Timeline block\n {6}progress item: style-recalc/);
@@ -458,4 +458,129 @@ test('I-108: live data attaches to the owner\'s one active row (--for/--doing, e
   assert.equal(v.items.find((x) => x.id === 'm-new').derived[0].plain, 'in line for the phone, #1 of 2');
   assert.deepEqual(v.otherWaits.map((x) => x.owner), ['fix-p'], 'an owner with only a parked row: OTHER WAITS');
   assert.equal(v.counts.waitingOnYou, 1);
+});
+
+// I-108 (3): a row "may be out of date" (stale, with its reasons) when it was not updated for 45 min (no live wait),
+// when its branch's work is already on main but the row is not landed/done, or when it waits on a step, proposal or
+// thread that is already answered or decided. `status.mjs stale` lists them (staleText).
+test('I-108: "may be out of date": 45 min without an update, work already on main, a wait on something answered or decided', () => {
+  assert.equal(S.DEFAULT_STALE_MIN, 45);
+  const now = Date.parse('2026-10-04T05:00:00Z');
+  const at = (min) => new Date(now - min * 60000).toISOString();
+  const A = 'a'.repeat(40), B = 'b'.repeat(40), C = 'c'.repeat(40);
+  const mk = (id, state, min, extra = {}) => ({ id, title: `Row ${id}`, kind: 'fix', owner: `o-${id}`, state, stateSince: at(min), updatedAt: at(min), priority: null, waitingOn: null, ...extra });
+  const items = [
+    mk('fresh', 'implementing', 44),
+    mk('old', 'implementing', 46),
+    mk('old-parked', 'parked', 300),
+    mk('landed-rtl', 'ready-to-land', 5, { waitingOn: { kind: 'lead', text: 'land request' }, branch: { name: 'worktree-a', landHead: A } }),
+    mk('landed-by-name', 'testing', 5, { branch: { name: 'worktree-b', landHead: B } }),
+    mk('not-landed', 'testing', 5, { branch: { name: 'worktree-c', landHead: C } }),
+    mk('no-commits', 'testing', 5, { branch: { name: 'worktree-d' } }),
+    mk('done-landed', 'landed', 5, { branch: { name: 'worktree-a', landHead: A } }),
+    mk('on-step', 'waiting', 5, { waitingOn: { kind: 'user', text: 'the swipe test C-004' } }),
+    mk('on-step-open', 'waiting', 5, { waitingOn: { kind: 'user', text: 'the swipe test C-005' } }),
+    mk('on-pr', 'waiting', 5, { waitingOn: { kind: 'other', text: 'PR-014 decision' } }),
+    mk('on-thread', 'waiting', 5, { waitingOn: { kind: 'user', text: 'the yes/no in T-031' } }),
+    mk('on-thread-asked', 'waiting', 5, { waitingOn: { kind: 'user', text: 'the yes/no in T-032' } }),
+    mk('on-thread-old-reply', 'waiting', 5, { waitingOn: { kind: 'user', text: 'the yes/no in T-033' } }),
+  ];
+  const live = {
+    refs: {
+      steps: { 'C-004': 'answered', 'C-005': 'pending' },
+      proposals: { 'PR-014': 'accepted' },
+      threads: { 'T-031': { status: 'open', lastBy: 'user', lastAt: at(1) }, 'T-032': { status: 'open', lastBy: 'fix-x', lastAt: at(3) }, 'T-033': { status: 'open', lastBy: 'user', lastAt: at(20) } },
+    },
+    git: { mainShas: [A], merged: ['worktree-b', 'worktree-d'] },
+  };
+  const v = S.buildStatusView({ items, live, now });
+  const by = Object.fromEntries(v.items.map((x) => [x.id, x]));
+  const why = (id) => by[id].staleWhy;
+  assert.deepEqual(why('old'), ['not updated for 46 min']);
+  assert.deepEqual(why('landed-rtl'), ['its work is on main (branch worktree-a), but the row says ready-to-land: landed?']);
+  assert.deepEqual(why('landed-by-name'), ['its work is on main (branch worktree-b), but the row says testing: landed?']);
+  assert.deepEqual(why('on-step'), ['it waits on C-004, which is already answered']);
+  assert.deepEqual(why('on-pr'), ['it waits on PR-014, which is already decided (accepted)']);
+  assert.deepEqual(why('on-thread'), ['it waits on T-031, where the user has already answered']);
+  for (const id of ['fresh', 'old-parked', 'not-landed', 'no-commits', 'done-landed', 'on-step-open', 'on-thread-asked', 'on-thread-old-reply']) {
+    assert.equal(by[id].stale, false, id);
+    assert.deepEqual(why(id), [], id);
+  }
+  for (const id of ['old', 'landed-rtl', 'landed-by-name', 'on-step', 'on-pr', 'on-thread']) assert.equal(by[id].stale, true, id);
+  assert.equal(v.counts.stale, 6);
+  const t = S.renderText(v);
+  assert.match(t, /stale after 45 min without an update/);
+  assert.match(t, /6 may be out of date/);
+  assert.match(t, /\(MAY BE OUT OF DATE: it waits on PR-014, which is already decided \(accepted\)\)/);
+  const st = S.staleText(v);
+  assert.match(st, /^6 rows may be out of date \(stale after 45 min without an update\):\n/);
+  assert.match(st, /\n {2}landed-rtl {2}owner o-landed-rtl, ready-to-land, updated 5 min ago: its work is on main \(branch worktree-a\), but the row says ready-to-land: landed\?\n/);
+  assert.equal(S.staleText(S.buildStatusView({ items: [items[0]], live, now })), 'no row looks out of date (stale after 45 min without an update)');
+  // no live sources (refs, git): nothing guessed
+  const bare = S.buildStatusView({ items, live: {}, now });
+  assert.deepEqual(bare.items.filter((x) => x.stale).map((x) => x.id), ['old']);
+});
+
+// I-108 (4): a waiting row's time counts from its last change of state OR of what it waits on, not from when it first
+// started waiting; the owner's branch is recorded on its own sets only (the work the board checks against main).
+test('I-108: wait time counts from the last change of the wait; set records the owner\'s branch (landHead only with commits of its own)', async () => {
+  const now = Date.parse('2026-10-04T05:00:00Z');
+  const at = (min) => new Date(now - min * 60000).toISOString();
+  const row = {
+    id: 'w', title: 'W', kind: 'fix', owner: 'fix-w', state: 'waiting', stateSince: at(180), updatedAt: at(10), priority: null,
+    waitingOn: { kind: 'agent', target: 'fix-x', text: 'the second patch' },
+    history: [
+      { at: at(180), by: 'fix-w', action: 'set', changes: { state: 'waiting', waitingOn: { kind: 'lead', text: 'land request' } } },
+      { at: at(30), by: 'fix-w', action: 'set', changes: { note: 'still' } },
+      { at: at(10), by: 'fix-w', action: 'set', changes: { waitingOn: { kind: 'agent', target: 'fix-x', text: 'the second patch' } } },
+    ],
+  };
+  const v = S.itemView(row, { now });
+  assert.equal(v.stateForMin, 10, 'a new --waiting-on restarts the wait time');
+  assert.equal(S.itemView({ ...row, history: row.history.slice(0, 2) }, { now }).stateForMin, 180, 'a note does not');
+  assert.equal(S.itemView({ ...row, state: 'measuring', stateSince: at(50) }, { now }).stateForMin, 50, 'a working row: its state time');
+
+  const tip = 'd'.repeat(40);
+  await S.set('br', { by: 'fix-br', kind: 'fix', title: 'Br', state: 'implementing', branch: { name: 'worktree-br', ahead: 0, head: tip } });
+  assert.deepEqual(S.get('br').branch, { name: 'worktree-br' }, 'no commits of its own yet: no landHead');
+  await S.set('br', { by: 'fix-br', state: 'ready-to-land', branch: { name: 'worktree-br', ahead: 2, head: tip } });
+  assert.deepEqual(S.get('br').branch, { name: 'worktree-br', landHead: tip });
+  await S.set('br', { by: 'mgmt-ops-1', note: 'nudged', branch: { name: 'worktree-ops', ahead: 1, head: 'e'.repeat(40) } });
+  assert.deepEqual(S.get('br').branch, { name: 'worktree-br', landHead: tip }, 'someone else\'s set never records its own branch');
+  await S.set('br', { by: 'fix-br', note: 'bad', branch: { name: 'x;rm -rf', ahead: 1, head: 'zz' } });
+  assert.deepEqual(S.get('br').branch, { name: 'worktree-br', landHead: tip }, 'a bad branch name or sha is ignored');
+});
+
+// I-108 (3): the live sources behind "may be out of date": every step/proposal/thread id with its state (no text), and
+// main's commits + the branches merged into it (read-only git, cached 20 s per checkout).
+test('I-108: refsLive and gitLive feed the board the ids, states and main', async () => {
+  const s1 = await C.post({ by: 'fix-a', kind: 'question', title: 'Yes?', yesno: true });
+  const T = await import('../../tools/lib/console-threads.mjs');
+  const { thread: t } = await T.createThread({ by: 'lead', title: 'Ask', text: 'one question', ask: true });
+  const r = await P.refsLive();
+  assert.equal(r.steps[s1.id], 'pending');
+  assert.equal(r.threads[t.id].status, 'open');
+  assert.equal(r.threads[t.id].lastBy, 'lead');
+  assert.equal(typeof r.threads[t.id].lastAt, 'string');
+  assert.deepEqual(r.proposals, {});
+
+  const { git: g } = await import('../helpers.mjs');
+  const d = tempDir('fw-status-git-');
+  g(d, 'init', '-q', '-b', 'main');
+  g(d, '-c', 'user.email=t@example.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'one');
+  g(d, 'branch', 'landed-b');
+  g(d, 'checkout', '-q', '-b', 'open-b');
+  g(d, '-c', 'user.email=t@example.invalid', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'two');
+  const tip = g(d, 'rev-parse', 'HEAD');
+  const live = P.gitLive(d, { maxAgeMs: 0 });
+  assert.equal(live.mainShas.length, 1);
+  assert.ok(live.merged.includes('main') && live.merged.includes('landed-b'));
+  assert.ok(!live.merged.includes('open-b'));
+  const row = { id: 'x', owner: 'fix-x', state: 'testing', branch: { name: 'open-b', landHead: tip } };
+  assert.deepEqual(S.overFlags(row, { git: live }), []);
+  g(d, 'checkout', '-q', 'main');
+  g(d, 'merge', '-q', '--ff-only', 'open-b');
+  assert.deepEqual(P.gitLive(d, { maxAgeMs: 60000 }), live, 'cached within maxAgeMs');
+  assert.deepEqual(S.overFlags(row, { git: P.gitLive(d, { maxAgeMs: 0 }) }), ['its work is on main (branch open-b), but the row says testing: landed?']);
+  assert.throws(() => P.gitLive(tempDir('fw-status-nogit-'), { maxAgeMs: 0 }), /failed/);
 });

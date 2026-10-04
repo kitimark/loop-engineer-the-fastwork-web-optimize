@@ -24,6 +24,9 @@
 //   node tools/status.mjs mine --by <agent>                 # your items (on resume)
 //   node tools/status.mjs list [--all] [--state s] [--kind k] [--owner a] [--json]   # priority order; --all adds finished
 //   node tools/status.mjs show <id> [--json]                # one item with live waits and history
+//   node tools/status.mjs stale [--json]                    # rows that may be out of date, each with why (I-108):
+//        # no update for 45 min (no live wait), its branch's work already on main but the row not landed (`set` by the
+//        # owner records the branch of the checkout it runs in), or it waits on a C-/PR-/T- id already answered/decided
 // Lead:
 //   node tools/status.mjs priority <id> <1..99|none> --by lead [--note "<why>"]   # 1 = first; refused for anyone else
 //   node tools/status.mjs seed --by <agent> [--file <seed.json>] [--apply]        # active PROGRESS fix items + a seed
@@ -32,7 +35,8 @@
 //
 // Exit codes: 0 ok, 1 usage or refused (the reason on stderr).
 import { readFileSync } from 'node:fs';
-import { set, setPriority, get, list, buildStatusView, itemView, renderText, showText, seedPlan, applySeed } from './lib/status.mjs';
+import { spawnSync } from 'node:child_process';
+import { set, setPriority, get, list, buildStatusView, itemView, renderText, showText, staleText, seedPlan, applySeed } from './lib/status.mjs';
 import { gatherLive, readProgress } from './lib/progress.mjs';
 
 const argv = process.argv.slice(2);
@@ -41,6 +45,18 @@ const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.star
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg, arg2] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const by = () => opt('by', process.env.FW_AGENT || process.env.FW_LOCK_OWNER);
+
+/**
+ * I-108 (3): the branch of the checkout this runs in, {name, ahead (commits not on main), head}, so the board can see
+ * when that work is on main while the row is not landed. null on main, a detached HEAD, or without git.
+ */
+function branchInfo() {
+  const run = (...a) => { const r = spawnSync('git', a, { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] }); return r.status === 0 ? r.stdout.trim() : null; };
+  const name = run('rev-parse', '--abbrev-ref', 'HEAD');
+  if (!name || name === 'HEAD' || name === 'main') return null;
+  const ahead = Number(run('rev-list', '--count', 'main..HEAD'));
+  return { name, ahead: Number.isFinite(ahead) ? ahead : 0, head: run('rev-parse', 'HEAD') };
+}
 
 async function main() {
   if (!cmd || cmd === 'help' || flag('help')) { console.log('see the header of tools/status.mjs; design: research/architecture/status-board.md'); return cmd ? 0 : 1; }
@@ -56,6 +72,12 @@ async function main() {
     if (flag('json')) { console.log(JSON.stringify(v, null, 1)); return 0; }
     if (cmd === 'mine' && !v.items.length) { console.log(`no status items owned by ${owner}: node tools/status.mjs set <id> --by ${owner} --kind … --title "…" --state …`); return 0; }
     console.log(renderText(v, { all: flag('all') || cmd === 'mine' || !!opt('state') }));
+    return 0;
+  }
+  if (cmd === 'stale') {
+    const v = buildStatusView({ items: list(), live: await gatherLive() });
+    if (flag('json')) { console.log(JSON.stringify(v.items.filter((x) => x.stale).map((x) => ({ id: x.id, owner: x.owner, state: x.state, ageMin: x.ageMin, why: x.staleWhy })), null, 1)); return 0; }
+    console.log(staleText(v).trimEnd());
     return 0;
   }
   if (cmd === 'seed') {
@@ -76,6 +98,7 @@ async function main() {
     const r = await set(arg, {
       by: by(), state: opt('state'), note: opt('note'), next: opt('next'), waitingOn: opt('waiting-on'), kind: opt('kind'), title: opt('title'),
       owner: opt('owner'), progress: opt('progress'), refs: opt('refs'), aliases: opt('alias'), unlink: opt('unlink'),
+      branch: branchInfo(), // kept on the owner's own sets only (lib set)
     });
     const it = r.item;
     const w = (it.waitingOn ? `; waiting on ${it.waitingOn.kind}${it.waitingOn.target ? ':' + it.waitingOn.target : ''}${it.waitingOn.text ? ` "${it.waitingOn.text}"` : ''}` : '')

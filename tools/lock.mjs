@@ -22,7 +22,8 @@
 //   node tools/lock.mjs run chrome-measure --owner <topic> --short --max-seconds 150 -- npm test
 //   node tools/lock.mjs run chrome-measure --owner <topic> --no-timing --max-seconds 600 -- <build>   # CPU work, no host gate
 //   node tools/lock.mjs acquire chrome-measure --owner <topic> --short --max-seconds 180 --wait 1800
-//   node tools/lock.mjs wait chrome-measure --until free|idle|mine|held-by:<o>|released-by:<o>|'position<=N' [--owner <you>] [--for S] [--timeout 3600]
+//   node tools/lock.mjs wait chrome-measure --until free|idle|mine|held-by:<o>|released-by:<o>|'position<=N' --owner <you> [--reason "<why>"] [--for S] [--timeout 3600]
+//        # pass --owner (or $FW_AGENT / $FW_LOCK_OWNER): without one it prints a NOTE and the board shows "owner unknown" (I-108)
 //
 // wait (run it in the background; ts-wait): blocks until the lock reaches a state, then prints ONE line and exits
 // 0 MET / 3 TIMEOUT (1 usage). It only reads the lock files (polls 1 s, backing off to 10 s; each change of state
@@ -35,8 +36,8 @@
 //   held-by:<o>        held by <o>
 //   released-by:<o>    <o> neither holds it nor waits for it (its hold, or its queued run, is over)
 //   position<=N        --owner holds it or is #N or better in the queue (as status prints it)
-// e.g.  node tools/lock.mjs wait chrome-measure --until released-by:all-wave1 --timeout 2h
-//       node tools/lock.mjs wait chrome-measure --until idle --for 120 --timeout 1h
+// e.g.  node tools/lock.mjs wait chrome-measure --until released-by:all-wave1 --owner <you> --timeout 2h
+//       node tools/lock.mjs wait chrome-measure --until idle --for 120 --owner <you> --timeout 1h
 //
 // --short --max-seconds N (N <= 300; default 120): the short lane for jobs like `npm test` (~35 s).
 // Waits for the current holder, then is served before earlier normal waiters (queued short jobs run
@@ -149,7 +150,7 @@ import { RUN_PROFILES_ENV, removeRunProfiles } from './lib/cdp.mjs'; // I-106: t
 import { doctor, repair, moveWaiter, leaveQueue, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
-import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
+import { startWait, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { describeHold } from './lib/lock.mjs';
 import { warmLine, warmSummary } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
@@ -555,14 +556,17 @@ async function main() {
 
 /** `lock.mjs wait <resource> --until <cond>`: read-only, no queue place (see the header). */
 async function waitCmd() {
-  if (opt('until') === undefined) throw new Error("usage: node tools/lock.mjs wait <resource> --until free|idle|mine|held-by:<owner>|released-by:<owner>|'position<=N' [--owner <you>] [--for S] [--timeout 3600]");
+  if (opt('until') === undefined) throw new Error("usage: node tools/lock.mjs wait <resource> --until free|idle|mine|held-by:<owner>|released-by:<owner>|'position<=N' --owner <you> [--reason \"<why>\"] [--for S] [--timeout 3600]");
+  // I-108 (6): a wait nobody owns belongs to no row: say so once, then run as before (shown as "owner unknown")
+  if (waitOwner(owner) === UNKNOWN) console.error(NO_OWNER_NOTE);
   const cond = parseLockCondition(opt('until'), owner);
   const sec = (n, d) => { const v = opt(n); if (v === undefined) return d; const x = parseSec(v); if (!(x >= 0)) throw new Error(`--${n} must be a number of seconds (or 10m, 2h), got ${v}`); return x; };
   const timeoutSec = sec('timeout', 3600), holdSec = sec('for', 0);
   status(resource); // a bad resource name fails here, before the first poll
   const what = `${resource} ${lockConditionText(cond)}`;
   const onChange = flag('quiet') ? undefined : (state, s) => console.error(`[lock wait ${new Date().toISOString().slice(11, 19)}Z +${s}s] ${resource} ${state}`);
-  startWait({ tool: 'lock.mjs wait', owner, what: `lock ${what}${holdSec ? `, for ${holdSec} s` : ''}`, timeoutSec }); // I-058: shown on the status board
+  const reason = String(opt('reason') ?? '').trim(); // I-108: like wait.mjs, the board shows why
+  startWait({ tool: 'lock.mjs wait', owner, what: `lock ${what}${holdSec ? `, for ${holdSec} s` : ''}`, timeoutSec, ...(reason && !reason.startsWith('--') ? { reason } : {}) }); // I-058: shown on the status board
   const r = await pollUntil(() => lockConditionMet(cond, status(resource)), { timeoutSec, holdSec, onChange });
   if (r.result === 'met') { console.log(`MET ${what}: ${r.state}${holdSec ? ` (for ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return WAIT_EXIT.met; }
   console.log(`TIMEOUT ${what} after ${r.waitedSec} s: ${r.state}`);

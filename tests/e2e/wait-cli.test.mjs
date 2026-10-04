@@ -15,7 +15,8 @@ const WAIT = tool('wait.mjs');
 const LOCK = tool('lock.mjs');
 const STATUS = tool('status.mjs');
 let state, env;
-beforeEach(() => { state = tempDir('fw-waitcli-'); env = { FW_STATE_DIR: state }; });
+// I-108: a wait without an owner (--owner, $FW_AGENT or $FW_LOCK_OWNER) prints a NOTE; these tests run as "wait-tester" unless they say
+beforeEach(() => { state = tempDir('fw-waitcli-'); env = { FW_STATE_DIR: state, FW_AGENT: 'wait-tester' }; });
 const lock = (...a) => node(LOCK, a, { env });
 const lockAsync = (...a) => nodeAsync(LOCK, a, { env });
 const queue = (r) => { try { return JSON.parse(readFileSync(join(state, 'locks', `${r}.queue.json`), 'utf8')).map((w) => w.owner); } catch { return []; } };
@@ -227,6 +228,43 @@ test('I-058 wait time: --reason is required (exit 1, the usage points at the pro
   assert.deepEqual(waitRecords(), [], 'a refused wait registers nothing');
 });
 
+// I-108 (6, audit T-060 #6): waits without an owner landed in OTHER WAITS as a bare "unknown". They still run (a
+// refusal would stall agents whose scripts predate the rule), with one stderr NOTE, and the board says "owner unknown".
+test('I-108: wait.mjs and lock.mjs wait without an owner run with a NOTE and show as "owner unknown"; lock.mjs wait takes --reason', async () => {
+  const noOwner = { ...env, FW_AGENT: '', FW_LOCK_OWNER: '' };
+  const f = join(state, 'done.log');
+  writeFileSync(f, 'DONE\n');
+  const NOTE = /^NOTE: pass --owner <you> so the board can show who waits \(this wait shows as "owner unknown"\)$/m;
+  const w = node(WAIT, ['file', f, '--match', 'DONE', '--timeout', '1', '--quiet'], { env: noOwner });
+  assert.equal(w.code, 0, w.out);
+  assert.match(w.stdout, /^MET /);
+  assert.match(w.stderr, NOTE);
+  const l = node(LOCK, ['wait', 'w', '--until', 'free', '--timeout', '1', '--quiet'], { env: noOwner });
+  assert.equal(l.code, 0, l.out);
+  assert.match(l.stderr, NOTE);
+  for (const [r, why] of [
+    [node(WAIT, ['file', f, '--match', 'DONE', '--timeout', '1', '--owner', 'fix-o'], { env: noOwner }), '--owner'],
+    [node(WAIT, ['file', f, '--match', 'DONE', '--timeout', '1'], { env: { ...noOwner, FW_AGENT: 'fix-e' } }), '$FW_AGENT'],
+    [node(LOCK, ['wait', 'w', '--until', 'free', '--timeout', '1'], { env: { ...noOwner, FW_LOCK_OWNER: 'fix-l' } }), '$FW_LOCK_OWNER (inside a lock.mjs run)'],
+  ]) {
+    assert.equal(r.code, 0, `${why}: ${r.out}`);
+    assert.doesNotMatch(r.stderr, /NOTE: pass --owner/, why);
+  }
+  // --reason on lock.mjs wait is stored like wait.mjs's, and the board shows it; an ownerless wait shows as "owner unknown"
+  assert.equal(lock('acquire', 'w', '--owner', 'holder-h', '--ttl', '60').code, 0);
+  const j = nodeAsync(LOCK, ['wait', 'w', '--until', 'free', '--timeout', '3', '--owner', 'fix-r', '--reason', 'the phone block to end', '--quiet'], { env });
+  const k = nodeAsync(LOCK, ['wait', 'w', '--until', 'free', '--timeout', '3', '--quiet'], { env: noOwner });
+  assert.ok(await until(() => waitRecords().length === 2), JSON.stringify(waitRecords()));
+  const rec = waitRecords().find((x) => x.owner === 'fix-r');
+  assert.equal(rec.reason, 'the phone block to end');
+  assert.ok(waitRecords().some((x) => x.owner === 'unknown'));
+  const board = node(STATUS, ['list'], { env }).stdout;
+  assert.match(board, /fix-r: waiting for lock w free since \d\d:\d\dZ \(under a minute, timeout 3 s\); reason: the phone block to end/);
+  assert.match(board, /\n {2}owner unknown: waiting for lock w free since /);
+  assert.equal((await j).code, 3);
+  assert.equal((await k).code, 3);
+});
+
 test('I-058 waits register while they run and go away on exit: wait.mjs (with the reason) and lock.mjs wait; the board shows them', async () => {
   node(STATUS, ['set', 'blocks', '--by', 'iphone-runner', '--kind', 'phone', '--title', 'Phone blocks', '--state', 'measuring', '--note', 'block 3'], { env });
   const tm = nodeAsync(WAIT, ['time', '4', '--reason', 'the block slot starts then', '--owner', 'iphone-runner', '--quiet'], { env });
@@ -274,7 +312,7 @@ test('I-058 incident, finding and console waits register too (owner from --as, o
   const jobs = [
     nodeAsync(INC, ['wait', 'I-001', '--as', 'fix-q', '--timeout', '3', '--poll', '1'], { env }),
     nodeAsync(FIND, ['wait', '--as', 'fix-r', '--timeout', '3', '--poll', '1'], { env }),
-    nodeAsync(CON, ['wait', 'C-001', '--timeout', '3', '--quiet'], { env }),
+    nodeAsync(CON, ['wait', 'C-001', '--timeout', '3', '--quiet'], { env: { ...env, FW_AGENT: '' } }), // no agent name: the step's poster
     nodeAsync(CON, ['thread', 'wait', '--as', 'fix-t', '--timeout', '3', '--quiet'], { env }),
   ];
   assert.ok(await until(() => waitRecords().length === 4), `four records: ${JSON.stringify(waitRecords())}`);

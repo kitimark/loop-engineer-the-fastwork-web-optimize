@@ -86,6 +86,14 @@ export function startWait({ tool, owner, what, timeoutSec, reason, listener = fa
   }
 }
 
+/**
+ * I-108 (6): the one stderr line a wait prints when nobody owns it (no --owner, $FW_AGENT or $FW_LOCK_OWNER); the
+ * wait still runs (a refusal would stall agents whose scripts predate the rule), and the board shows "owner unknown".
+ */
+export const NO_OWNER_NOTE = 'NOTE: pass --owner <you> so the board can show who waits (this wait shows as "owner unknown")';
+/** How the board names a wait's owner: "owner unknown" for a wait nobody owns. */
+export const ownerText = (o) => (!o || o === UNKNOWN ? 'owner unknown' : o);
+
 /** The live waits, oldest first: records whose pid runs and that are not 15 min past their own timeout. */
 export function listWaits({ now = Date.now(), alive = pidRuns } = {}) {
   let names = [];

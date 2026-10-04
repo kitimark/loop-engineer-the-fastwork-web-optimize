@@ -178,7 +178,7 @@ function row(v) {
     el('div', { class: 'plain', text: v.statePlain }));
   var upd = el('td', { class: 'upd', 'data-label': 'Updated' }, el('div', { text: ago(v.ageMin) }),
     v.updatedBy && v.updatedBy !== v.owner ? el('div', { class: 'plain', text: 'by ' + v.updatedBy }) : null,
-    v.stale ? el('div', { class: 'stale', title: 'no update for more than ' + dur(last.staleAfterMin), text: 'not updated' }) : null);
+    v.stale ? el('div', { class: 'stale', title: (v.staleWhy && v.staleWhy.length ? v.staleWhy.join('; ') : 'no update for more than ' + dur(last.staleAfterMin)), text: 'may be out of date' }) : null);
   return el('tr', { 'data-item': v.id, 'data-anchor': SLUG.test(v.id) ? 'status:' + v.id : null, 'data-anchor-label': v.title }, // I-090
     el('td', { class: 'prio', 'data-label': 'Priority' }, pr), wk, st,
     el('td', { 'data-label': 'Waiting on' }, waitChips(v)),
@@ -191,7 +191,7 @@ function render(v) {
   var bits = [c.working + ' working', c.waiting + ' waiting'];
   if (c.queued) bits.push(c.queued + ' not started');
   if (c.waitingOnYou) bits.push(c.waitingOnYou + ' waiting on you');
-  if (c.stale) bits.push(c.stale + ' not updated for ' + dur(v.staleAfterMin));
+  if (c.stale) bits.push(c.stale + ' may be out of date'); // I-108: not only age (work on main, wait answered)
   document.getElementById('upd').textContent = bits.join(' · ') + ' · live ' + hhmm(v.now);
   document.getElementById('upd').className = 'sub';
   var ban = document.getElementById('banners');

@@ -35,8 +35,9 @@
 //        # Reads only the battery and those files: no lease, no page, no device ids.
 //
 // Common: --timeout <s|10m|2h> (default 3600; url/serve 120), --for <s> (the condition must hold that long),
-// --quiet (no stderr change lines), --owner <agent> (or --as; default $FW_AGENT, then $FW_LOCK_OWNER, else
-// "unknown"). The wait itself only reads: it never takes a lock or a queue place.
+// --quiet (no stderr change lines), --owner <agent> (or --as; default $FW_AGENT, then $FW_LOCK_OWNER; without any
+// of them it prints one stderr NOTE and runs; the board shows it as "owner unknown", I-108). The wait itself only
+// reads: it never takes a lock or a queue place.
 //
 // The board sees every wait (I-058): while it runs, the wait registers itself (tools/lib/waits.mjs: one record in
 // <git-common-dir>/fastwork-mirror/waits/, removed on exit; a killed wait's record counts as gone once its pid is
@@ -51,7 +52,7 @@
 //   usage errors                                  exit 1
 import { resolve, join, relative, isAbsolute } from 'node:path';
 import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition, phoneTempCondition, parseBelowC, autoBelowC, fmtC, PHONE_TEMP } from './lib/wait.mjs';
-import { startWait, urlText } from './lib/waits.mjs';
+import { startWait, urlText, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs';
 
 const argv = process.argv.slice(2);
 const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every', '--runs-dir', '--driver', '--owner', '--as', '--reason'];
@@ -147,16 +148,19 @@ async function build() {
 }
 
 async function main() {
-  const usage = 'usage: node tools/wait.mjs file|serve|url|pid|git|time|phone-temp … [--timeout 3600] [--for S] [--quiet] [--owner <you>] (time also --reason "<why>"); exit 0 met, 3 timeout, 4 never (phone-temp: 1 unavailable); see the header of tools/wait.mjs';
+  const usage = 'usage: node tools/wait.mjs file|serve|url|pid|git|time|phone-temp … --owner <you> [--timeout 3600] [--for S] [--quiet] [--reason "<why>"] (time needs --reason "<why>"); exit 0 met, 3 timeout, 4 never (phone-temp: 1 unavailable); see the header of tools/wait.mjs';
   if (cmd === 'help' || flag('help')) { console.log(usage); return 0; }
   if (!cmd) { console.error(usage); return EXIT.usage; }
+  // I-108 (6): a wait nobody owns belongs to no row: say so once, then run as before (shown as "owner unknown")
+  const owner = waitOwner(opt('owner') ?? opt('as'));
+  if (owner === UNKNOWN) console.error(NO_OWNER_NOTE);
   const w = await build();
   const timeoutSec = opt('timeout') !== undefined ? num('timeout', opt('timeout')) : w.defTimeout ?? 3600;
   const holdSec = opt('for') !== undefined ? num('for', opt('for')) : 0;
   const quiet = flag('quiet');
   const onChange = quiet ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
   // I-058: the board shows this wait while it runs (one record, removed on exit)
-  startWait({ tool: `wait.mjs ${cmd}`, owner: opt('owner') ?? opt('as'), what: `${w.plain}${holdSec ? `, held ${holdSec} s` : ''}`, timeoutSec, reason: w.reason ?? ((r) => (r && !r.startsWith('--') ? r : undefined))(String(opt('reason') ?? '').trim()) }); // I-060: any wait may say why (--reason); the board shows that, not a path or regex
+  startWait({ tool: `wait.mjs ${cmd}`, owner, what: `${w.plain}${holdSec ? `, held ${holdSec} s` : ''}`, timeoutSec, reason: w.reason ?? ((r) => (r && !r.startsWith('--') ? r : undefined))(String(opt('reason') ?? '').trim()) }); // I-060: any wait may say why (--reason); the board shows that, not a path or regex
   const r = await pollUntil(w.check, { timeoutSec, holdSec, onChange, ...(w.minMs && { minMs: w.minMs }), ...(w.maxMs && { maxMs: w.maxMs }) });
   if (r.result === 'met') { console.log(`MET ${w.what}: ${r.detail ?? r.state}${holdSec ? ` (held ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return EXIT.met; }
   if (r.result === 'never') { console.log(`${w.never?.word ?? 'NEVER'} ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return w.never?.exit ?? EXIT.never; }

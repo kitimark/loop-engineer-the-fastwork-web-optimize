@@ -30,14 +30,15 @@ import { sharedStateDir } from './paths.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, iso } from './store.mjs';
 import { findPersonal, sanitize, gatherLive } from './progress.mjs';
-import { waitPlain, isListener, listenPlain } from './waits.mjs';
+import { waitPlain, isListener, listenPlain, ownerText } from './waits.mjs';
 
 export const SCHEMA = 'fw-status/1';
 export const SEED_SCHEMA = 'fw-status-seed/1';
 export const LEAD = 'lead';
 const GUARD = 'status-store';
 const HISTORY_MAX = 100;
-export const DEFAULT_STALE_MIN = 120;
+// I-108 (user T-060 #3): rows went hours out of date before the board said so; 45 min, was 120
+export const DEFAULT_STALE_MIN = 45;
 export const staleMin = () => {
   const v = Number(process.env.FW_STATUS_STALE_MIN);
   return Number.isFinite(v) && v > 0 ? v : DEFAULT_STALE_MIN;
@@ -181,6 +182,14 @@ function parseAliases(v) {
   return [...new Set(list.map((a) => agentName(a, '--alias')))];
 }
 
+/** I-108: {name, ahead, head} from the owner's checkout -> {name, landHead?}; a bad name or sha is ignored (null). */
+export function parseBranch(b) {
+  const name = String(b?.name ?? '');
+  if (!/^[A-Za-z0-9._/-]{1,120}$/.test(name) || name === 'HEAD' || name === 'main' || name.startsWith('baseline/')) return null;
+  const head = String(b?.head ?? '');
+  return { name, ...(Number(b?.ahead) > 0 && /^[0-9a-f]{40}$/.test(head) ? { landHead: head } : {}) };
+}
+
 export function parsePriority(v) {
   const s = String(v ?? '').trim();
   if (/^(none|-|clear)$/i.test(s)) return null;
@@ -269,6 +278,9 @@ export async function set(id, opts = {}) {
     if (JSON.stringify(unl) !== JSON.stringify(it.unlinked || [])) changes.unlinked = unl;
     if (unl.length) it.unlinked = unl; else delete it.unlinked;
     if (!created && !Object.keys(changes).length) throw new Error('nothing changed (give --state, --note, --next, --waiting-on or another field)');
+    // I-108: the owner's own branch (tools/status.mjs passes it from the checkout it runs in), never someone else's:
+    // landHead = its tip while it has commits of its own, so the board can see that work reach main
+    if (opts.branch && by === it.owner) { const b = parseBranch(opts.branch); if (b) it.branch = b; }
     it.updatedAt = now;
     it.updatedBy = by;
     pushHistory(it, { at: now, by, action: created ? 'created' : 'set', changes });
@@ -303,7 +315,7 @@ const LOCKS = [['chrome-measure', 'chrome', 'Chrome'], ['iphone', 'phone', 'the 
 /**
  * What the system knows about this workstream right now. live: progress.mjs gatherLive() shape
  * {locks: {iphone, 'chrome-measure'}: lock.status(), incidents: active list, steps: pending steps, waits: live wait records}.
- * Returns {derived: [{kind, plain, ref?, position?, of?}], flags: [plain], liveWait: bool}.
+ * Returns {derived: [{kind, plain, ref?, position?, of?}], flags: [plain], over: [plain] (overFlags), liveWait: bool}.
  */
 export function derive(it, live = {}, byId = new Map(), now = Date.now(), route = null) {
   const names = itemNames(it);
@@ -350,8 +362,10 @@ export function derive(it, live = {}, byId = new Map(), now = Date.now(), route 
     if (!other) flags.push(`it waits on workstream ${w.target}, which is not on the board`);
     else if (isFinished(other.state)) flags.push(`it waits on ${w.target}, which is ${other.state}: update?`);
   }
+  // I-108 (3): what makes an active row look over (its work on main, its wait answered or decided)
+  const over = LIVE_GROUPS.has((STATES[it.state] || { group: 'working' }).group) ? overFlags(it, live) : [];
   const liveWait = derived.some((d) => d.kind === 'chrome' || d.kind === 'phone' || d.kind === 'using' || d.kind === 'user' || d.kind === 'wait');
-  return { derived, flags, liveWait };
+  return { derived, flags, over, liveWait };
 }
 
 /** The names a row answers to on the locks, the console and the wait records: owner, id, aliases. */
@@ -387,6 +401,53 @@ export function liveRouter(items = []) {
   };
 }
 
+const WAIT_REF = /\b(?:C|PR|T)-\d{1,4}\b/g;
+const asSet = (x) => (x instanceof Set ? x : new Set(Array.isArray(x) ? x : []));
+
+/**
+ * I-108 (4): when the row's current wait began: its last change of state or of what it waits on (history), not the
+ * first time it started waiting. A row without history: its stateSince.
+ */
+export function waitSince(it) {
+  let t = it.stateSince || null;
+  for (const h of it.history || []) if (h?.changes && 'waitingOn' in h.changes && h.at && (!t || h.at > t)) t = h.at;
+  return t;
+}
+
+/**
+ * I-108 (3): what makes an active row look over, from the live sources (never guessed without them):
+ * live.git {mainShas, merged}: the owner's branch work (landHead, recorded by set) is on main, the row not landed;
+ * live.refs {steps: {id: status}, proposals: {id: state}, threads: {id: {status, lastBy, lastAt}}}: the step,
+ * proposal or thread its --waiting-on names is already answered, decided or closed.
+ */
+export function overFlags(it, live = {}) {
+  const out = [];
+  const b = it.branch;
+  if (b?.landHead && live.git && (asSet(live.git.mainShas).has(b.landHead) || asSet(live.git.merged).has(b.name))) {
+    out.push(`its work is on main (branch ${sanitize(b.name, 120)}), but the row says ${it.state}: landed?`);
+  }
+  const w = it.waitingOn;
+  const refs = live.refs;
+  if (w && refs) {
+    const since = waitSince(it);
+    for (const id of new Set(`${w.target || ''} ${w.text || ''}`.match(WAIT_REF) || [])) {
+      if (id.startsWith('C-')) {
+        const st = refs.steps?.[id];
+        if (st && st !== 'pending' && st !== 'active') out.push(`it waits on ${id}, which is already ${st}`);
+      } else if (id.startsWith('PR-')) {
+        const st = refs.proposals?.[id];
+        if (st === 'withdrawn') out.push(`it waits on ${id}, which is withdrawn`);
+        else if (st && st !== 'proposed' && st !== 'draft') out.push(`it waits on ${id}, which is already decided (${st})`);
+      } else {
+        const t = refs.threads?.[id];
+        if (t?.status === 'closed') out.push(`it waits on ${id}, which is closed`);
+        else if (t && t.lastBy === 'user' && since && t.lastAt > since) out.push(`it waits on ${id}, where the user has already answered`);
+      }
+    }
+  }
+  return out;
+}
+
 // ---- the view ----------------------------------------------------------------------------------------
 
 const minutes = (from, now) => (from ? Math.max(0, Math.round((now - Date.parse(from)) / 60000)) : null);
@@ -403,7 +464,7 @@ export function statePlain(state, st = STATES[state] || { plain: state }, waitin
 
 export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), staleAfterMin = staleMin(), route = null } = {}) {
   const st = STATES[it.state] || { group: 'working', plain: it.state };
-  const { derived, flags, liveWait } = derive(it, live, byId, now, route);
+  const { derived, flags, over, liveWait } = derive(it, live, byId, now, route);
   const ageMin = minutes(it.updatedAt || it.createdAt, now);
   const canStale = ['working', 'waiting', 'queued'].includes(st.group);
   const s = (x, n) => (x == null ? null : sanitize(x, n));
@@ -413,12 +474,18 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     owner: s(it.owner, 80), aliases: (it.aliases || []).map((a) => s(a, 80)), progress: it.progress || null, refs: (it.refs || []).map((r) => s(r, 20)),
     priority: Number.isInteger(it.priority) ? it.priority : null,
     state: it.state, statePlain: statePlain(it.state, st, waiting), group: st.group, groupLabel: GROUPS[st.group] || st.group,
-    stateSince: it.stateSince || null, stateForMin: minutes(it.stateSince, now),
+    // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
+    stateSince: it.stateSince || null, stateForMin: minutes(st.group === 'waiting' ? waitSince(it) : it.stateSince, now),
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
     waitingOnYou: waiting?.kind === 'user' || derived.some((d) => d.kind === 'user'),
     note: s(it.note, LIMITS.note), next: s(it.next, LIMITS.next),
     updatedAt: it.updatedAt || it.createdAt || null, updatedBy: s(it.updatedBy || it.createdBy, 80), ageMin,
-    stale: canStale && !liveWait && ageMin !== null && ageMin > staleAfterMin,
+    // I-108 (3): "may be out of date", with the reasons: no update for staleAfterMin (unless a live wait shows it is
+    // current), or what it reports is over (its work is on main, its wait is answered or decided: overFlags)
+    ...(() => {
+      const why = canStale ? [...(!liveWait && ageMin !== null && ageMin > staleAfterMin ? [`not updated for ${forText(ageMin)}`] : []), ...over] : [];
+      return { stale: why.length > 0, staleWhy: why };
+    })(),
   };
 }
 
@@ -442,7 +509,7 @@ export function buildStatusView({ items = [], live = {}, now = Date.now(), stale
   // I-058: live waits whose owner has no active row (the rows show their own owner's waits)
   // (I-108: the same router as the rows, so a wait shows exactly once: on its row, or here)
   const otherWaits = (live.waits || []).filter((x) => route(x.owner, { text: x.reason }) === null)
-    .map((x) => ({ owner: sanitize(x.owner, 80), tool: sanitize(x.tool, 40), since: x.since, plain: isListener(x) ? listenPlain(x) : waitPlain(x, now) }));
+    .map((x) => ({ owner: sanitize(ownerText(x.owner), 80), tool: sanitize(x.tool, 40), since: x.since, plain: isListener(x) ? listenPlain(x) : waitPlain(x, now) }));
   return {
     schema: SCHEMA, now: new Date(now).toISOString(), staleAfterMin, counts,
     groups: GROUP_ORDER.map((k) => ({ key: k, label: GROUPS[k] })),
@@ -482,7 +549,7 @@ export function countsText(c) {
   if (c.queued) bits.push(`${c.queued} not started`);
   if (c.parked) bits.push(`${c.parked} parked`);
   if (c.waitingOnYou) bits.push(`${c.waitingOnYou} waiting on you`);
-  if (c.stale) bits.push(`${c.stale} not updated`);
+  if (c.stale) bits.push(`${c.stale} may be out of date`);
   return bits.join(', ');
 }
 
@@ -491,7 +558,7 @@ export function itemText(v) {
   const L = [];
   const pr = v.priority ? `#${v.priority}` : '–';
   L.push(`${pr.padEnd(4)}${v.id}  [${v.kindLabel}] ${v.title}`);
-  L.push(`      ${v.state}${v.stateForMin !== null && v.group !== 'finished' ? ` for ${forText(v.stateForMin)}` : ''}: ${v.statePlain}; owner ${v.owner}; updated ${agoText(v.ageMin)}${v.updatedBy && v.updatedBy !== v.owner ? ` by ${v.updatedBy}` : ''}${v.stale ? '  (NOT UPDATED for a while)' : ''}`);
+  L.push(`      ${v.state}${v.stateForMin !== null && v.group !== 'finished' ? ` for ${forText(v.stateForMin)}` : ''}: ${v.statePlain}; owner ${v.owner}; updated ${agoText(v.ageMin)}${v.updatedBy && v.updatedBy !== v.owner ? ` by ${v.updatedBy}` : ''}${v.stale ? `  (MAY BE OUT OF DATE: ${v.staleWhy.join('; ')})` : ''}`);
   if (v.waiting) L.push(`      waiting on: ${v.waiting.plain}`);
   for (const d of v.derived) L.push(`      now: ${d.plain}`);
   for (const f of v.flags) L.push(`      ! ${f}`);
@@ -524,6 +591,19 @@ export function renderText(view, { all = false } = {}) {
     for (const x of view.otherWaits) L.push(`  ${x.owner}: ${x.plain}  [${x.tool}]`);
   }
   return L.join('\n');
+}
+
+/**
+ * I-108 (3): the rows that may be out of date, each with why (`status.mjs stale`): what the lead and ops chase at a
+ * check-in instead of reading the whole board.
+ */
+export function staleText(view) {
+  const rows = view.items.filter((v) => v.stale);
+  const tail = `(stale after ${forText(view.staleAfterMin)} without an update)`;
+  if (!rows.length) return `no row looks out of date ${tail}`;
+  const L = [`${rows.length} row${rows.length === 1 ? '' : 's'} may be out of date ${tail}:`];
+  for (const v of rows) L.push(`  ${v.id}  owner ${v.owner}, ${v.state}, updated ${agoText(v.ageMin)}: ${v.staleWhy.join('; ')}`);
+  return L.join('\n') + '\n';
 }
 
 /** One item with its history (`status.mjs show`). */
