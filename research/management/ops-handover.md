@@ -42,6 +42,23 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-108 result (fix-scroll-cb, scroll-cb-phone on best-build v4, 5e616aa5): AGREE, PASS on every leg.**
+  - All six harness pins match. Ops re-ran the card's 7e command on the owner's records, and the output matches the
+    owner's table line for line.
+  - Judged counts: every V load is below every C load. Desk is equal.
+  - Paint d and all guards pass. The closest is phone775 PrePaint, +0.040 against a tolerance of 0.05.
+  - phone775's Paint tolerance is wide (0.297) because of one low C4 load. Two V loads are equally low; d is −0.071.
+  - Parity: 0 beyond A/A and nothing VOID. resize V3's 1202.97 px deferral matches C3's geom diff, so it is A/A.
+  - Pixels: V at most 0.07 %.
+  - Caveat: the base is v4, not v8. See P-117 N2.
+  - PREDICTIONS row filled.
+- 10-05 **P-117 registered and carded at the lead's order:** one combined phone no-worse block, C = v8 vs V = v8 +
+  nav-hit-cache + scroll-cb.
+  - Card: research/management/p117-combined-phone-no-worse.md.
+  - Legs: S n = 4 and G part M n = 3, on P-105's scorer and gates, after P-116.
+  - int-v8 builds V with a hunk-by-hunk carry report and fills in the hashes. The lead reads and signs.
+  - N1: suggests a Simulator touch case for the combined parity audit. N2: scroll-cb's counts carry only if its hunks
+    carry with offsets only.
 - 10-05 **P-107 result (fix-nav-morph, nav-hit-cache on v8, 64ad0b9b): AGREE, PASS on every part.**
   - Ops re-scored independently from the raw records in fixes/nav-hit-cache/p107/: counts / steps, not the owner's
     perStep fields or score-chrome.mjs.
@@ -179,7 +196,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
     P-107 nav-hit-cache successor (fix-nav-morph, registered 10-05) · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
     P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
-    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize) · P-116 v8 GH attribution (int-v8 + iphone-runner, ticket drafted by ops, the lead's read; registered 10-05). **Next free: P-117.**
+    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize) · P-116 v8 GH attribution (int-v8 + iphone-runner, ticket drafted by ops, the lead's read; registered 10-05) · P-117 combined phone no-worse v8 + nav-hit-cache + scroll-cb (int-v8 + iphone-runner, card by ops, the lead's read; registered 10-05). **Next free: P-118.**
   - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
     listens on 6400. It fails after the I-157 fix too, so `npm run test:unit` is red for everyone (1 of 1042).
   - P-100 H1r result: AGREE. O1 RAISED, O2 not enough (paused n 1), O3 1.00 descriptive, all Fair. Ledger row filled.
