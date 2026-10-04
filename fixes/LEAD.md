@@ -332,6 +332,17 @@ send the pair to its owners (resume them) and have one adapt. Review the combine
 `fix-reviewer`, land it like a fix. Wave-2 owners start with `node tools/fix.mjs apply all-wave<N>`
 in their worktree and pass `--on all-wave<N>` to `edit`, `diff`, `serve` and `ab`.
 
+**Standing check for every best build: whole-page fast flicks (user T-113 #4/#5, 2026-10-04).** Every best build
+(v7 is the first) gets, next to its S/W phone runs, one fast-flick check on the G driver (WDA gesture) across the whole
+page: (1) a flick right after a fresh load, (2) fast flicks down and back through the hero, (3) the middle, (4) fast
+flicks into the end of the page. Record per part frames >50 and >34 ms per run with the ±4 ms twins and the page
+position of each slow frame, and note when Safari's toolbar collapses or expands during a slow frame (S never moves
+the toolbar, so S/W runs cannot show that class). The candidate build is compared with the current best build in
+the same hold; it must be no worse (protocol §5.4). It is ticketed like any phone block (a P-row before data) and
+runs at real Serious. Any slow-frame cluster it finds becomes a topic (T-113 -> toolbar-resize) or a known item in
+the build's write-up. Fixes in the build keep their own checks; this check does not replace a finger test where the
+less-work rule or the top-3 rule asks for one.
+
 ## 7. Wrap up
 
 Shut down idle teammates, `node tools/lock.mjs status` shows no holder of yours,

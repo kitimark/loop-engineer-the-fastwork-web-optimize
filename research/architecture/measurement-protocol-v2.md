@@ -353,6 +353,15 @@ Immutable snapshot copies of each overlay (hashes recorded); servers restarted a
 A claim names its driver. Touch-only classes (§2.3) need G or F before landing; a morph change lands only with G
 or F (M never bounces). F runs are scheduled by the lead in batches, not per topic.
 
+**Best builds: whole-page fast flicks on G (user T-113 #4/#5, 2026-10-04).** S and W run at an even speed and never
+collapse or expand Safari's toolbar, so they missed the v7 hero lag on fast flicks (3-5 layouts per frame while the
+toolbar resized; OBSERVED, iphone-runner, T-113 #6). Every best build therefore also gets a G fast-flick check across
+the whole page, next to S/W. It has four parts: a flick right after a fresh load; fast flicks down and back through the
+hero; the middle; and fast flicks into the end. Metrics per part are dt > 50 and > 34 ms per run with the ±4 ms twins,
+and the position of each slow frame by crossing (§3.4). The toolbar state at each slow frame is recorded as well. The
+check compares the candidate against the current best build in one ticketed block at real Serious. Its verdict is
+no-worse at d ≤ +2 frames >50 per run. It also judges where the slow frames cluster. Playbook: `fixes/LEAD.md` §6.
+
 ### 5.5 Standard probe (one command, every run; arch-safari answers folded)
 **In the timed window (page side, cheap):**
 - Per frame: [t, dt, yStart, yEnd, innerHeight, m, jsMs].
