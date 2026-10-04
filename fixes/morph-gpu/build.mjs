@@ -6,10 +6,13 @@
 //   rvhook-<js12>   = B + the same hook, byte for byte the same hook text, plus a frame stepper for the switch-off
 //                     frames: its rAF calls go through window.__rvRaf when a gate sets it (unset = the same as rv)
 // Also writes fixes/morph-gpu/delta.diff: this fix's own change against best-build (diff -u, both files).
+// Without the (gitignored) overlay, e.g. in the phone runner's checkout, rv is rebuilt from best-build + the committed
+// delta.diff (`patch -p1`) and must come out as the accepted PR-012 build, js 372b99478871 / css 257507365449.
 //   node fixes/morph-gpu/build.mjs
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const WT = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -17,6 +20,7 @@ const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/
 const SNAP = join(WT, 'out/snapshots');
 const OV = join(WT, 'fixes/morph-gpu/overlay');
 const BEST = { js: '65052c4a3902', css: 'e0f92804c521' };
+const RV = { js: '372b99478871', css: '257507365449' }; // PR-012 rev 1 (accepted 2026-10-04); checked when built from delta.diff
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const bestDir = join(SNAP, `best-${BEST.js}`);
 if (!existsSync(join(bestDir, NODE))) execFileSync(process.execPath, [join(WT, 'fixes/best-build/build.mjs'), '--snapshot'], { stdio: 'inherit' });
@@ -36,11 +40,21 @@ function put(name, js, css) {
   return got;
 }
 put('besthook', addHook(bjs), bcss);
-const js = readFileSync(join(OV, NODE), 'utf8'), css = readFileSync(join(OV, CSS));
+const fromDelta = !existsSync(join(OV, NODE));
+let js, css;
+if (fromDelta) {
+  const tmp = mkdtempSync(join(tmpdir(), 'morph-gpu-rv-'));
+  for (const f of [NODE, CSS]) { mkdirSync(join(tmp, dirname(f)), { recursive: true }); writeFileSync(join(tmp, f), readFileSync(join(bestDir, f))); }
+  const pr = spawnSync('patch', ['-p1', '-s', '-d', tmp, '-i', join(WT, 'fixes/morph-gpu/delta.diff')], { encoding: 'utf8' });
+  if (pr.status !== 0) throw new Error(`patch delta.diff: ${pr.stdout}${pr.stderr}`);
+  js = readFileSync(join(tmp, NODE), 'utf8'); css = readFileSync(join(tmp, CSS)); rmSync(tmp, { recursive: true });
+  if (sha(js) !== RV.js || sha(css) !== RV.css) throw new Error(`rv from delta.diff is ${sha(js)} / ${sha(css)}, expected ${RV.js} / ${RV.css}`);
+} else { js = readFileSync(join(OV, NODE), 'utf8'); css = readFileSync(join(OV, CSS)); }
 put('rv', js, css);
 const RAF = '__rvF = requestAnimationFrame(';
 const addStep = (js) => { const n = js.split(RAF).length - 1; if (n !== 3) throw new Error(`switch-off rAF calls: ${n}, expected 3`); return js.split(RAF).join('__rvF = (window.__rvRaf || requestAnimationFrame)('); };
 put('rvhook', addStep(addHook(js)), css);
+if (fromDelta) { console.log('rv built from delta.diff (no overlay); delta.diff left as committed'); process.exit(0); }
 let delta = '';
 for (const f of [NODE, CSS]) {
   const d = spawnSync('diff', ['-u', '--label', `a/${f}`, '--label', `b/${f}`, join(bestDir, f), join(OV, f)], { encoding: 'utf8' });

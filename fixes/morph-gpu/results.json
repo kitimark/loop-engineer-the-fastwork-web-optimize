@@ -259,7 +259,56 @@
       "steppedRvsOwnEarlier": "0 px over 8 in 14 of 16 frames; N+1 after the abrupt jump (19 css px max 53) and the top-of-page frame (19 css px) vary run to run",
       "enLabelFlip": "OBSERVED, cause unknown: the nav EN label sits at one of two sub-pixel x positions per load in either build (22 css px, edge max 94, frame 0 before any morph); both A loads landed in the same state, so the A/A mask missed it",
       "steppedBeyondAAExclEN": "N+1 after jump 25 css px max 10 (unchanged); N+2 after 0.99 step 23 css px max 18 = the Chrome A/A two-state flip at m 1, landed only in R this run"
+    },
+    "postAcceptRun": {
+      "askedBy": "lead, after PR-012 rev 1 was accepted (2026-10-04 02:56:15Z); main 6a01e287",
+      "window": "2026-10-04T02:56:59Z/03:00:06Z, one shared slot, no sleep or dark wake (pmset checked after)",
+      "outputs": [
+        "frames-2026-10-04T02-57-00-303Z",
+        "frames-2026-10-04T02-58-18-635Z",
+        "restyle-chrome-2026-10-04T02-59-03-837Z.json"
+      ],
+      "chrome": "154.0.8037.97; served hashes checked",
+      "steppedBeyondAA": "m0 0; m0.5 855 css px (T3 motion, as before); m1 23 css px max 19 (A/A flip, landed only in R); N+1 after jump 25 css px max 10 y 612 (unchanged, the fix-specific T2 difference); next 0; third chain frame 19 css px max 53 y 660 (A/A state: M2 vs M shows the same 174 px max 53); m0.99 1.501 % = 6013 css px (as before); frames 8-14 0; top of page 3 css px; no EN flip",
+      "desktop": "0 beyond A/A except 6 px (2 css px, max 18) at the first m 0, as in the 18:11Z run",
+      "counts": "elements restyled / layouts / Paint events per frame: moving M 24.3/1.77/9.11 and 24.2/1.77/9.22, R 35.2/1.77/9.85 and 36.0/1.77/9.84; at m 1 M 11.7-11.8/0.17-0.19, R 13.0/0.23; at m 0 M 12.3-12.4/0.78-0.80, R 12.8-12.9/0.81",
+      "versusEarlier": "R's moving restyle count up 0.5-1.2 against 34.7-34.8; layouts and Paint events unchanged; no conclusion changes"
     }
   },
-  "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/."
+  "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/.",
+  "phoneBlock": {
+    "status": "registered, before any phone data; timing paused under I-098 until the user answers T-052; prediction id and ops second read from mgmt-ops-10 pending",
+    "question": "At real thermal Serious under driver M at the page end, does V show no more long moving frames than C?",
+    "kind": "no-worse check under the less-work rule (not top-3: no finger test)",
+    "builds": {
+      "C": {
+        "snapshot": "best-65052c4a3902",
+        "js": "65052c4a3902",
+        "css": "e0f92804c521"
+      },
+      "V": {
+        "snapshot": "rv-372b99478871",
+        "js": "372b99478871",
+        "css": "257507365449"
+      }
+    },
+    "driver": "M (iphone.mjs run --driver morph --probe std, hold 2000 ms, cycles 3)",
+    "order": "C V V C C V V C, n = 4 per arm; one uncounted warm-up per arm port",
+    "condition": "T-039 B: thermal-gate.mjs 4604218c4041 at start and end of each hold, 44 C / Critical ceiling, one pre-warm method on C, LPM dropped",
+    "scorer": {
+      "file": "fixes/morph-gpu/phone/frames-n2.mjs",
+      "sha256": "fad6d7eadcb4",
+      "derivedFrom": "fixes/morph-inherit/p085/frames-p085.mjs 385eb00f1564"
+    },
+    "predictions": {
+      "f50": "0, <= +1, P 0.85",
+      "f34": "0, <= +2, P 0.85",
+      "better": "no, P 0.95 (C at the floor: P-085 mi moving >50 1,0,0,1)",
+      "wdt": "0 ms, |d| <= 1, P 0.7",
+      "sentM": "pass, P 0.8",
+      "sent": "pass, P 0.75"
+    },
+    "decisions": "no-worse (or better) on f50 and f34, not threshold-sensitive, drive no-worse -> land request; WORSE -> lead, no land request; threshold-sensitive or drive WORSE -> lead, no verdict; insufficient/void -> re-run once, second void -> lead",
+    "expectedMinutes": "30 (25-45)"
+  }
 }

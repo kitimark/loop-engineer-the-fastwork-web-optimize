@@ -3,10 +3,11 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. Proposal only: the motion is T3, so this lands only if the user accepts it.
-**Stage:** D (attribution card below, for the lead to sign) → proposal draft `fixes/morph-gpu/proposal.json`
+**Status:** PR-012 rev 1 accepted by the user (2026-10-04 02:56:15Z, no notes); the accepted rev is the spec. Lands
+as a "less work" fix once the phone no-worse block below passes.
+**Stage:** V: the phone no-worse block is registered ("Phone block", below), paused under I-098 until the user answers
+T-052.
 **Device class / gate:** phone-only, render-bound (WebKit paint during the morph). Gains below are Simulator counts.
-The phone gain block comes after the user's decision, through the lead and ops.
 **Driver(s) behind the claims:** M (`__fwMorphDrive` in the Simulator, `__fwMorphSet` frozen frames). No S, G or F yet.
 **Base:** best-build (main 60df1cf: st6-rb2 + platform-idle + morph-inherit), js `65052c4a3902`, css `e0f92804c521`.
 This fix's own change against that base: `fixes/morph-gpu/delta.diff` (229 lines). `patch.diff` is baseline-relative,
@@ -50,6 +51,21 @@ so it carries best-build too. Built by `node fixes/morph-gpu/build.mjs` → `rv-
     max 18. That is the Chrome A/A two-state flip at m 1 (207 px over 8, max 19), which only R landed in here.
   - OBSERVED, cause unknown: the EN label's per-load sub-pixel position. Seen in both builds, so not from this
     change.
+- Post-acceptance re-run, asked for by the lead after PR-012 rev 1 was accepted (main 6a01e287), one shared slot
+  02:56:59-03:00:06Z on 2026-10-04, no sleep or dark wake in it (pmset checked after): `frames-2026-10-04T02-57-00-303Z`,
+  `frames-2026-10-04T02-58-18-635Z`, `restyle-chrome-2026-10-04T02-59-03-837Z.json`. Same builds (served hashes
+  checked), Chrome 154.0.8037.97. Everything matches the accepted spec:
+  - Stepped, R vs M beyond A/A: 0 at m 0; 855 css px at m 0.5 (the T3 motion, as before); 1.501 % (6013 css px) at
+    m 0.99 (as before); 0 at every rest from frame 8 on, 3 css px at the top of the page.
+  - Switch-off chain: N+1 after the abrupt jump 25 css px, max 10, y 612 (the one fix-specific T2 difference,
+    unchanged). The m 1 frame shows 23 css px, max 19, and the third chain frame 19 css px, max 53 at y 660: both are
+    Chrome A/A states (M's second load against M shows the same 174 px, max 53), which only R landed in this time.
+    No EN-label flip in this run.
+  - Desktop: 0 beyond A/A, except 6 px (2 css px, max 18) at the first m 0, as in the 18:11Z run.
+  - Counts per frame (elements restyled / layouts / Paint events): moving M 24.3 / 1.77 / 9.11 and 24.2 / 1.77 /
+    9.22, R 35.2 / 1.77 / 9.85 and 36.0 / 1.77 / 9.84; at m 1 M 11.7-11.8 / 0.17-0.19, R 13.0 / 0.23; at m 0 M
+    12.3-12.4 / 0.78-0.80, R 12.8-12.9 / 0.81. R's moving restyle count is up by 0.5-1.2 against 34.7-34.8 in the
+    two earlier runs; layouts and Paint events are unchanged. No conclusion changes (Chrome shows no gain either way).
 
 ## Why it lags
 
@@ -263,7 +279,7 @@ ATTRIBUTION morph-gpu · cluster end-of-page morph (open and close tweens, m 0 �
   → LOCATED, not NAMED.
 4 device class: phone-only, render-bound (Chrome counts show no gain: moving frames restyle 24.5 → 34.8
   elements, layouts equal, Paint events 9.1 → 9.9; CPU-6x Chrome can't stand in for raster, claims-audit §2.6).
-  Phone Timeline segment card: not yet (phone block after the user's decision).
+  Phone Timeline segment card: not planned (the registered phone block is a no-worse frame check).
 5 platform claims relied on:
   | claim | status | reference / check | what falls if wrong |
   | WebKit applies a changed clip-path on a composited layer as a mask-shape change, without repainting content (iOS 26 Simulator Safari) | CONFIRMED in source + OBSERVED in counts | WebKit main 2026-10-03: RenderElement.cpp ClipPath → RecompositeLayer (willCompositeClipPath); RenderLayerCompositor::layerStyleChanged → RenderLayerBacking::updateMaskingLayer / updateMaskingLayerGeometry ("FIXME: Avoid repaints when clip path changes"); counts above | the paint gain |
@@ -273,8 +289,102 @@ ATTRIBUTION morph-gpu · cluster end-of-page morph (open and close tweens, m 0 �
 ```
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up during the morph ·
-toolbar resize · rubber band · reduced motion in the Simulator or on the phone (Chrome frames done, see Risks) · finger (G/F). The phone block (pre-registered,
-condition B) comes after the user's decision.
+toolbar resize · rubber band · reduced motion in the Simulator or on the phone (Chrome frames done, see Risks) · finger (G/F). The phone no-worse block
+(registered below, condition B) waits on T-052 (I-098).
+
+## Phone block: no-worse check against best-build (registration; written before any phone data)
+
+PR-012 rev 1's gain row 5 ("Smoothness on the iPhone, pending, UNRESOLVED"). A short no-worse check under the less-work
+rule (`memory/less-work-landing-rule.md`; N2 is not one of the top three, so no finger test), not a gain block. Timing:
+paused under I-098 until the user answers T-052. The prediction id and the ops second read come from mgmt-ops-10
+before any data. Template: P-085 (`fixes/morph-inherit/README.md`), which ran clean.
+- **Question (one).** On the iPhone at real thermal Serious, under the morph driver M at the page end, does the reveal
+  (V) show no more long moving frames than today's best build (C)?
+- **Builds** (immutable snapshot copies, `node fixes/morph-gpu/build.mjs`; without the overlay it rebuilds V from
+  best-build + the committed `delta.diff` and refuses any other hash; re-check by sha256 before the block; served
+  `nodes/2.DyWL8TcE.js` / `assets/2.gBuqKVzi.css`):
+  - V: `out/snapshots/rv-372b99478871`, `372b99478871` / `257507365449` (PR-012 rev 1, what would land).
+  - The one control, C: `out/snapshots/best-65052c4a3902`, `65052c4a3902` / `e0f92804c521` (best-build = main 60df1cf:
+    st6-rb2 + platform-idle + morph-inherit; `fixes/best-build/build.mjs --snapshot`). Both carry `__fwMorphDrive`
+    (best-build's own; the reveal adds nothing to it).
+  - Same base: site-pretty, the snapshot pinned by `baseline.json`. V = C + `delta.diff` (229 lines), nothing else.
+  - Checkout and who runs it: the lead's call (P-085 ran on main with the runner's lease). The builds need only this
+    branch's `fixes/morph-gpu/` and `fixes/best-build/`.
+- **Servers and ports**, one per arm: `node tools/serve.mjs --root site-pretty --overlay out/snapshots/<snapshot>
+  --port 0 --https --vendors=local --latency 150 --no-cache --state out/morph-gpu/phone/serve-<arm>.json`. The phone
+  loads the plain http twin (I-003). Ports go in the block log, never 5173; no LAN address in any committed file.
+- **Driver M.** `iphone.mjs run --driver morph --probe std` with the defaults hold 2000 ms and cycles 3: 6 tweens per
+  run through `E(1)` / `E(0)` at the page's max scrollY. The phone is 430 px wide, so the reveal is on in V
+  (`width <= 640px`).
+- **Condition** T-039 B (`memory/phone-checks-start-warm.md`), as P-085:
+  - Real thermal Serious. Every hold runs `research/phone-thermal-gate/thermal-gate.mjs` (sha256 `4604218c4041`,
+    `--expect serious --max-c 44 --url http://lan:<twin C>/`) at its start and end; a hold counts only when both reads
+    say Serious with Is Induced = No, else it is re-run. Stop at 44 °C battery or Critical; cool before the next hold.
+  - Two gate strikes (two gate-failed holds) → roll back to A (the lead's switch, in T-039 and the block log).
+  - One start method: pre-warm on C's port the same way before every hold.
+  - Logged per run: battery °C, charging state, the timer-grid median. A Low Power Mode run is dropped and re-run.
+  - Phone parts run inside the runner's own `lock.mjs run chrome-measure --no-timing --max-seconds 600` hold, with the
+    `iphone` lease (I-056); `iphone.mjs open <twin URL>` before every run.
+- **Block**, three holds: H1 gate, start sentinel, warm-ups (one uncounted load per arm port: `iphone.mjs run --driver
+  morph --arm C|V --warmup`), gate; H2 gate, counted 1-4, gate; H3 gate, counted 5-8, end sentinel, gate; park Safari.
+- **Counted runs:** n = 4 per arm, order C V V C C V V C: `iphone.mjs run --driver morph --probe std --owner <runner>
+  --block N2 --arm C|V --pos <1-8> --build best-65052c4a3902|rv-372b99478871 --label n2-<arm>-<pos>`.
+  - Arm C is the control, so iphone.mjs judges every counted C run as the M heat sentinel (held m = 1 p95 ≤ 18 ms,
+    `tools/lib/iphone-run.mjs`). P-085's mi arm (best-build minus platform-idle) held 17 ms in 4 of 4 runs at Serious.
+    The protocol rule applies (§5.2): a failing C run voids every counted run since the last passing one. If ops
+    prefers P-085's way (a non-C control letter, no M sentinel on counted runs), the scorer's arm letter is the only
+    change.
+- **Sentinel** (as P-085): an uncounted `iphone.mjs run --driver scroll --probe std --arm C --heat-sentinel` on C's
+  port, bottom ≥ 58 fps and scroll ≥ 44 fps, in H1 and H3. A failing start sentinel: no counted run starts; cool,
+  restart. A failing end sentinel voids every counted run; cool, re-run the counted part once.
+- **Void run** (`phone/frames-n2.mjs`'s rules): a driver error, not driver M, a warm-up, Low Power Mode, served js/css
+  not the arm's build, no drive mark, no m seen by the probe, a tween-start count ≠ 6, a failing C sentinel (above).
+  One in-place re-run; a second void at one position voids the block. Files from a hold that failed either gate read
+  are never passed to the scorer (the block log lists them as excluded).
+- **Scorer**, committed before data: `phone/frames-n2.mjs`, sha256 `fad6d7eadcb4`, every valid counted run passed in
+  block order. P-085's `frames-p085.mjs` (`385eb00f1564`) with: arms C / V, the protocol sentinel-void rule, a
+  'better' verdict, a minimum of 3 valid runs per arm, and the A6 reports.
+  - Scopes: 'moving' is scored (a frame whose m differs from the previous or next frame's m); 'drive' and 'held1'
+    are reported.
+  - Thresholds: dt > 50 and > 34, the ±4 ms twins (>46/>54, >30/>38), near-band frames flagged.
+  - Verdict on the arm medians, d = V − C: 'better' when d ≤ −2 and every V run is below every C run; else
+    'no-worse' at d ≤ +1 ('>50') / ≤ +2 ('>34'); else 'WORSE'. Threshold-sensitive when a twin's verdict differs.
+    Fewer than 3 valid runs in an arm: no verdict ('insufficient').
+  - A6 (reported, not scored): the |Δm|-weighted dt per run and arm, and the moving frames by time since tween start
+    ([0,100) [100,250) [250,500) [500,∞) ms: n, >34, >50).
+  - Pre-registration check only (synthetic files with known counts, order C V V C C V V C): better (d −6 / −24),
+    equal (0 / 0, no-worse), worse (+6 / +6, WORSE), and a void case (a failing C at pos 4 voided pos 2-4; a wrong
+    served js voided pos 7; C 3 / V 1 valid → insufficient). All as expected. No driver-M phone run of C or V exists
+    to re-score.
+- **Predictions**, as falsifiers, P(hit) before data. The points come from P-085's mi arm at Serious (the same
+  driver; mi = best-build minus platform-idle): moving > 50 per run 1, 0, 0, 1, > 34 1, 0, 1, 1, held m=1 p95 17 ms.
+  C sits at the floor, so a 'better' verdict on these counts is close to impossible: this block can show no-worse,
+  not a gain. The reveal's gain stays the Simulator paint counts (12.3 → 2.3 paints per frame), as PR-012 says.
+
+  | # | prediction | point | interval (falsified outside) | P(hit) |
+  |---|---|---|---|---|
+  | f50 | moving dt > 50, V − C (arm medians) | 0 (C ~0.5) | ≤ +1 (WORSE at ≥ +2); twins >46/>54 the same bound | 0.85 |
+  | f34 | moving dt > 34, V − C | 0 (C ~1) | ≤ +2 (WORSE at ≥ +3); twins >30/>38 the same bound | 0.85 |
+  | better | 'better' on f50 or f34 | no | a 'better' verdict falsifies the floor reading | 0.95 |
+  | wdt | \|Δm\|-weighted dt, V − C (reported) | 0 ms | \|d\| ≤ 1 ms | 0.7 |
+  | sentM | every counted C run passes held m = 1 p95 ≤ 18 ms | pass | one fail costs a cool and the voided runs | 0.8 |
+  | sent | start and end S sentinels pass on C's page at Serious | pass | a fail costs a cool and a restart | 0.75 |
+
+- **Decisions** (if X then Y):
+  - **f50 and f34 no-worse (or better), not threshold-sensitive, drive scope no-worse:** the phone no-worse check
+    passes. With PR-012 rev 1 accepted, that meets the less-work gate: land request to the lead. A 'better' verdict is
+    reported as a phone smoothness result on top; it changes no landing step.
+  - **f50 or f34 WORSE (moving scope):** to the lead, with the slow moving frames per run (dt @ m) and the A6 profile.
+    No land request. The lead decides: drop, or a new rev to the user (e.g. the reveal only on the close tween).
+  - **Threshold-sensitive f50 or f34:** to the lead, with no verdict. No land request until the lead rules.
+  - **Drive-scope WORSE with moving no-worse:** to the lead (frames outside the tweens), no verdict on the fix; no land
+    request until the lead rules.
+  - **Insufficient / block void:** no claim. Cool and re-run the counted part once; a second void goes to the lead.
+  - **Gate failures:** as condition B above (re-run the hold; two strikes → A, the lead's switch).
+- **Not in this block:** the stale clip at m = 1 (a compositor paint question; a DOM read can't see it, the Simulator
+  frozen frames cover it, README "Stale clip"), reduced motion, finger (G/F), Fair.
+- **Expected minutes:** about 30 (range 25-45): pre-warm to Serious about 10; H1 about 6; H2 about 6 (4 runs at about
+  1.2 min); H3 about 8; about 1.5 min of gate reads per hold.
 
 ## Risks, conflicts, follow-ups
 
