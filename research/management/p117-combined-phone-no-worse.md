@@ -204,3 +204,11 @@ parallel with them:
 - **S1.** Scoring waits for the Simulator momentum case of that audit. If it fails, the block is VOID (V would be wrong), never re-scored.
 - **S2.** fix-scroll-cb's N2 re-count only reports what scroll-cb saves. It gates nothing in this block and can arrive later.
 - iphone-runner runs the holds as the ticket says; int-v8 starts the servers from out/nsc/snap and scores.
+
+## Lead hold (2026-10-04 ~21:05Z, before any P-117 data): ON HOLD
+
+fix-scroll-cb's N2 (01daa38f, README "P-117 N2 result") found V failing Simulator parity on the nav: both hero-pill flips land
+2 steps (20 px) late in both V loads (62 -> 64, 991 -> 993), while C matches itself. A block on this V would be void, so no
+counted run is taken. The suspect is nav-hit-cache's cached geometry (`__nsVh` while the toolbar changes innerHeight), OBSERVED;
+scroll-cb is not ruled out. Decisive check: one Simulator hold C1 N1 S1 S2 N2 C2 (N = nav-hit-cache alone, S = scroll-cb alone),
+arms pinned before data. A fixed V gets new pins and a new signature.
