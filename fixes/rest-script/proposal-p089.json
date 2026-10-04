@@ -82,6 +82,12 @@
             "b": "../../out/rest-script/p089/fw-sim/fix-shots/fix-sim-rest.png"
           }
         ]
+      },
+      "live": {
+        "patch": "fixes/rest-script-live/patch.diff",
+        "a": {
+          "patch": "fixes/st6-rb2/patch.diff"
+        }
       }
     },
     {
@@ -112,6 +118,12 @@
             "b": "../../out/rest-script/p089/rep-st6-w430r-shots/replay-st6-st6-430-rest.png"
           }
         ]
+      },
+      "live": {
+        "patch": "fixes/st6-rb2/patch.diff",
+        "a": {
+          "patch": "fixes/st6-rb2/patch.diff"
+        }
       }
     }
   ],
