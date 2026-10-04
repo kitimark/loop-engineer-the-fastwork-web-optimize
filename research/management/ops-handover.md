@@ -42,6 +42,25 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 15:xxZ **Read batch (lead order).** Re-checked every hash listed below.
+  - P-108 pre-data (fix-scroll-cb 4354a187): FAIL C1. score-p108 takes one `--void-n` for every viewport, but the card's
+    N_vp is per viewport (5/5/19/5/9/Sim 5). Fix: freeze the map in the scorer and the exact command (with `--aa-extra`)
+    in the card. **PASS at 23940497** (score-p108 4cf547f88a3b). Ledger row added.
+  - P-109 result: AGREE. Re-score reproduces skp 0.049 and nvc 0.017 LOCATES, skh and ch NONE, drift 0.024. The method
+    change (one exclusive hold, the shared lane refuses gestures) is accepted. Ledger row filled.
+  - P-110 pre-data (1eb38351): FAIL C1. An in-page arm can silently become C (selector missing or height 0), and the
+    scorer ignores `inject`. Fix: an applied/height/kids rule, else INSUFFICIENT. N1: pre-register a continuation hold
+    for budget-dropped arms. **PASS at 4329275d** (gate check-inject110 61931a562308, driver f77c5e456d17). Ledger row added.
+  - **P-id registry** (lead order: add each id when it is assigned, not when it is committed):
+    P-100 cd-roll-ca display rate · P-101 nav-hit-cache · P-102 cd-roll-ca K · P-103 scroll-cb-phone ·
+    P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
+    P-107 held, nav-hit-cache successor · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
+    P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
+    P-112 v8 M-only attribution (int-v8, ticket to the lead). **Next free: P-113.**
+  - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
+    listens on 6400. It fails after the I-157 fix too, so `npm run test:unit` is red for everyone (1 of 1042).
+  - P-100 H1r result: AGREE. O1 RAISED, O2 not enough (paused n 1), O3 1.00 descriptive, all Fair. Ledger row filled.
+  - P-111 (v8) is the lead's; ops may second-read its result when int-v8 posts it.
 - 10-04 13:5xZ **P-106 second read AGREE: D proposed LOCATED** (fix-toolbar-resize e3bfa9b4).
   - Pinned scorer score-tr.mjs 4b7fca760270 (hash re-checked) re-run on their out/toolbar-resize/phone reproduces
     every call: sticky, cq, dvh, vt, js NONE; cv CONFIRMS (end 1/1 vs C-E 0/0); drift 0.5 %; both sentinels pass; not VOID.
