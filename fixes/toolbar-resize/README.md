@@ -245,15 +245,21 @@ attribution: Simulator times are compared only within the session against interl
 - **Arms** (v7 + one appended CSS rule; served CSS sha256/12; the arm deltas are appended to `arms.diff`):
   - `nvc`, `9c3d7e989f94`: no viewport-constrained renderers in the hero zone (`.hero` relative, top-nav absolute,
     `.pain-sticky` relative). Tests S2/S3 as a whole.
-  - `skh`, `e18da8bba027`: `section.hero-track { content-visibility: hidden }` (hero never rendered).
-  - `skp`, `1372e7d11604`: `section#people { content-visibility: hidden }`.
+  - `skh`, `903bc0a5380b`: `section.hero-track { content-visibility: hidden; contain-intrinsic-block-size: 200vh }`
+    (hero never rendered; 200vh = the track's own `height`, CSS l.1583, so its box keeps its size).
+  - `skp`, `b6cac1379bd7`: `section#people { content-visibility: hidden; contain-intrinsic-block-size: 1329px }`
+    (1329 px = #people's rendered height on the phone at 775, y 776-2105; ops C1: hidden implies size containment).
   - `ch`, `496c6ec41688`: fix idea (a), `.hero { contain: size layout style }`. The hero has an explicit height
     (100svh, min 680px), so size containment keeps its box.
   - All four are mechanism-only (look changes allowed) except `ch`, which must be look-identical if it ever goes to F.
 - **Order:** two 300 s holds, because a gesture refuses with < 150 s left in its hold (`GESTURE_BUDGET_S`, I-112).
   Hold 1: C:H1 skh:H1 skp:H1 C:H2. Hold 2: C:H3 nvc:H1 ch:H1 C:H4. The driver (`sim-bisect.mjs`) stops before a step
   when < 45 s are left; an arm without a later C uses the C before it. Drift is checked from C:H1 to C:H4.
-- **Scorer:** `score-bisect.mjs`, sha256/12 `be444733d18d` (filters frozen in its header). On the phone's C-H1 / cq-H1 /
+- **GEOMETRY (ops C1):** an arm whose final page height differs from a neighbouring C run's by > 2 px is called
+  GEOMETRY and not judged.
+- **Served bytes (ops C2):** before each hold, the driver hashes every arm's served CSS (http twin), logs it to
+  `runs.jsonl` and refuses on any mismatch with the hashes above.
+- **Scorer:** `score-bisect.mjs`, sha256/12 `cb6f0c97b81b` (filters frozen in its header). On the phone's C-H1 / cq-H1 /
   C-H2 it reproduces P-106: cq ratio 1.04 NONE, replica true.
 - **Metric:** per run, the median largest Layout over toolbar-moving frames (strictly between the run's two toolbar
   heights) at y < 3250. Ratio = arm / mean of the neighbouring C runs.

@@ -223,3 +223,22 @@ diff --color -ru fixes/v7-best/overlay/_app/immutable/nodes/2.DyWL8TcE.js fixes/
 +
 +/* toolbar-resize--b-ch: P-109 candidate (a), the sticky hero contains size and layout (explicit height 100svh, min 680px) */
 +.hero.svelte-1p2vpne{contain:size layout style}
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--b-skh/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 21:08:18
+@@ -12270,3 +12270,6 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
++
++/* toolbar-resize--b-skh: P-109 MECHANISM ARM, hero track never rendered */
++section.hero-track{content-visibility:hidden!important;contain-intrinsic-block-size:200vh!important}
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--b-skp/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 21:08:18
+@@ -12270,3 +12270,6 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
++
++/* toolbar-resize--b-skp: P-109 MECHANISM ARM, #people never rendered */
++section#people{content-visibility:hidden!important;contain-intrinsic-block-size:1329px!important}
+(the two diffs above replace the earlier skh/skp deltas: ops C1, intrinsic block size)

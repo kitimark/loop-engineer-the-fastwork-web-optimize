@@ -13,6 +13,8 @@
 // - ratio = arm medianLargest / mean medianLargest of the nearest C run before and after it.
 //   LOCATES ratio <= 0.30; PARTIAL <= 0.70; NONE otherwise; INSUFFICIENT when the arm or no C run counts.
 // - replication gate (else the block says NO-REPLICA and no arm is judged): every C run counted and inStyle >= 0.5 n.
+// - GEOMETRY (ops C1): an arm whose final page height (segment docH1) differs from any neighbouring C run's by > 2 px
+//   is called GEOMETRY and not judged.
 // - VOID: C medianLargest drifts > 30 % from the first to the last C run.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -53,7 +55,8 @@ runs.forEach((r, i) => {
   for (let j = i + 1; j < runs.length; j++) if (runs[j].arm === 'C') { nb.push(runs[j]); break; }
   const cs = nb.filter((c) => c.counted), cMean = cs.length ? cs.reduce((a, c) => a + c.medianLargest, 0) / cs.length : null;
   const ratio = r.counted && cMean ? r3(r.medianLargest / cMean) : null;
-  const call = !replica ? 'NO-REPLICA' : ratio == null ? 'INSUFFICIENT' : ratio <= 0.3 ? 'LOCATES' : ratio <= 0.7 ? 'PARTIAL' : 'NONE';
+  const geom = nb.some((c) => Math.abs((c.docH[1] ?? c.docH[0]) - (r.docH[1] ?? r.docH[0])) > 2);
+  const call = !replica ? 'NO-REPLICA' : geom ? 'GEOMETRY' : ratio == null ? 'INSUFFICIENT' : ratio <= 0.3 ? 'LOCATES' : ratio <= 0.7 ? 'PARTIAL' : 'NONE';
   verdicts[r.name] = { ratio, cMean: r3(cMean), neighbours: nb.map((c) => c.name), call };
 });
 const out = { scorer: 'fixes/toolbar-resize/score-bisect.mjs', runs, replica, drift, void: drift != null && drift > 0.3, verdicts };
