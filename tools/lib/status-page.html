@@ -82,7 +82,7 @@ details.legend summary { cursor: pointer; color: var(--muted); }
 details.legend dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0 0; }
 details.legend dt { font-weight: 650; }
 details.legend dd { margin: 0; color: var(--muted); }
-tr[data-item] { scroll-margin-top: 80px; }
+tr[data-item] { scroll-margin-top: calc(var(--nav-h, 58px) + 22px); }
 @keyframes row-flash { 0%, 60% { background: var(--accent-soft); } 100% { background: transparent; } }
 tr.flash td { animation: row-flash 2.5s ease-out 1; }
 @media (prefers-reduced-motion: reduce) { tr.flash td { animation: none; background: var(--accent-soft); } }

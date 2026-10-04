@@ -6,6 +6,7 @@
 //     Sound), a desktop notification once the user grants permission with a button (never asked on load), and one
 //     reminder per step left on the user's turn for N minutes (default from the server, 3; Alerts -> Remind after);
 //   - the theme switch (auto / light / dark), shared by both pages;
+//   - --nav-h on <html>: the menu's measured height (ResizeObserver), the sticky banner's offset (I-130);
 //   - threads (ts-console-threads): the "Threads" badge (threads with unread replies or a question for the user), and
 //     on a new agent reply a banner (Open -> /threads#T-003), the chime and a desktop notification; the same rule as
 //     console-threads.mjs diffThreads, from the `threads` events (polling fallback: /api/thread-feed). No reminders.
@@ -74,6 +75,21 @@
     var b = $('nav-theme'); if (b) b.textContent = 'Theme: ' + t;
   }
   applyTheme(theme());
+
+  // ---- I-130 (user T-092): --nav-h = the menu's real height, so the sticky banner sits right under it (a narrow
+  // window wraps the menu to 2+ rows; a fixed one-row offset let the second row cover the banner's first line) ----
+  function trackMenuHeight() {
+    var m = document.querySelector('nav.menu'), de = document.documentElement;
+    if (!m || !de || !de.style || typeof m.getBoundingClientRect !== 'function') return;
+    function apply() {
+      var h = Math.ceil(m.getBoundingClientRect().height);
+      if (h > 0) de.style.setProperty('--nav-h', h + 'px'); // 0: hidden (display none); keep the last height
+    }
+    apply();
+    if (root.ResizeObserver) { try { new root.ResizeObserver(apply).observe(m); return; } catch (e) {} }
+    if (root.addEventListener) root.addEventListener('resize', apply);
+  }
+  trackMenuHeight();
 
   // ---- sound: Web Audio, no files ----
   var actx = null;

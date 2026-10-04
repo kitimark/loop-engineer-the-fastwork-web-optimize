@@ -212,7 +212,7 @@ class El {
   get offsetWidth() { return 0; }
 }
 /** One console tab: console-nav.js run on fake DOM, storage, Notification, Web Audio and EventSource. */
-function fakePage({ path = '/progress', store = new Map(), blocked = false } = {}) {
+function fakePage({ path = '/progress', store = new Map(), blocked = false, menu = null, ResizeObserver } = {}) {
   const els = {};
   for (const i of ['nav-theme', 'nav-sound', 'nav-desktop', 'nav-test', 'nav-alerts-sum', 'nav-banner']) els[i] = new El('div', i);
   els['nav-alerts'] = new El('details', 'nav-alerts');
@@ -223,7 +223,7 @@ function fakePage({ path = '/progress', store = new Map(), blocked = false } = {
     title: 'Fix progress', documentElement: new El('html'),
     getElementById: (i) => els[i] || null,
     querySelectorAll: (sel) => (sel === '[data-badge]' ? badges : []),
-    querySelector: () => null,
+    querySelector: (sel) => (sel === 'nav.menu' ? menu : null),
     createElement: (t) => new El(t),
     addEventListener: () => {},
     hasFocus: () => false,
@@ -246,11 +246,13 @@ function fakePage({ path = '/progress', store = new Map(), blocked = false } = {
     emit(v) { this.l.waiting({ data: JSON.stringify(v) }); }
   }
   const location = { pathname: path, hash: '', href: path };
-  const window = { AudioContext, Notification, EventSource, focus() {} };
+  const winListeners = {};
+  const window = { AudioContext, Notification, EventSource, focus() {}, addEventListener: (e, f) => { (winListeners[e] ||= []).push(f); } };
+  if (ResizeObserver) window.ResizeObserver = ResizeObserver;
   const noop = () => 0;
   new Function('window', 'document', 'localStorage', 'location', 'history', 'navigator', 'Notification', 'fetch', 'setInterval', 'setTimeout', 'EventSource', NAV_JS)(
     window, document, localStorage, location, { replaceState() {} }, {}, Notification, () => Promise.reject(new Error('no fetch')), noop, noop, EventSource);
-  return { document, els, badges, notes, perms, oscillators, location, store, es: sources[0] };
+  return { document, els, badges, notes, perms, oscillators, location, store, es: sources[0], winListeners };
 }
 const T0 = Date.now();
 const wv = (steps, nowMs = T0) => ({ now: new Date(nowMs).toISOString(), count: steps.length, remindMin: 3,
@@ -375,4 +377,68 @@ test('console-nav.js: proposals (ts-proposals): a new one shows a banner and chi
   assert.equal(p.location.href, '/proposals#PR-003');
   p.es.emit(wvp([], [], T0 + 22 * 60000));
   assert.equal(p.document.title, 'Fix progress');
+});
+
+// ---- I-130 (user T-092): the menu wrapped to two rows and covered the banner's first line ----
+/** The CSS rule for one selector (the first block whose selector list is exactly `sel`). */
+const cssRule = (css, sel) => { const m = css.match(new RegExp(`(?:^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`)); return m ? m[1] : null; };
+
+test('console-nav.css (I-130): the banner sits under the menu\'s real height (--nav-h), no fixed one-row offset; badges add no width; one row fits 1100 px', () => {
+  const banner = cssRule(NAV_CSS, '.nav-banner');
+  assert.ok(banner, '.nav-banner rule');
+  assert.match(banner, /position: sticky;/);
+  assert.match(banner, /top: calc\(env\(safe-area-inset-top, 0px\) \+ var\(--nav-h, 58px\)\);/, 'the offset is the measured menu height');
+  assert.ok(!/\+ 58px\)/.test(NAV_CSS), 'no fixed 58 px offset anywhere');
+  const zMenu = Number(cssRule(NAV_CSS, '.menu').match(/z-index: (\d+)/)[1]), zBanner = Number(banner.match(/z-index: (\d+)/)[1]);
+  assert.ok(zMenu > zBanner, 'the Alerts panel (in the menu) still opens over the banner');
+  // a step jumped to (Open) lands under the menu, whatever its height
+  assert.match(cssRule(NAV_CSS, 'section[data-id]'), /scroll-margin-top: calc\(var\(--nav-h, 58px\) \+ \d+px\);/);
+  // badges sit on the button's corner: a count never widens a button, so it never pushes Alerts to a new row
+  const badge = cssRule(NAV_CSS, '.menu .badge');
+  assert.match(badge, /position: absolute;/);
+  assert.match(cssRule(NAV_CSS, '.menu a.mbtn'), /position: relative;/);
+  // room for every button on one row from a 1100 px window (the old 860 px cap wrapped Alerts even on a wide screen)
+  const inner = cssRule(NAV_CSS, '.menu-in');
+  const maxW = Number(inner.match(/max-width: (\d+)px/)[1]);
+  assert.ok(maxW >= 1000 && maxW <= 1100 - 32, `.menu-in max-width ${maxW}px: wider than the 8 buttons, inside a 1100 px window`);
+});
+
+class FakeRO {
+  static all = [];
+  constructor(cb) { this.cb = cb; this.targets = []; FakeRO.all.push(this); }
+  observe(t) { this.targets.push(t); }
+  fire() { this.cb(this.targets.map((target) => ({ target }))); }
+}
+const fakeMenu = (h) => { const m = new El('nav'); m.h = h; m.getBoundingClientRect = () => ({ height: m.h }); return m; };
+
+test('console-nav.js (I-130): sets --nav-h on <html> from the menu\'s height at load and on every resize (ResizeObserver)', () => {
+  FakeRO.all = [];
+  const menu = fakeMenu(107.4);
+  // the style object must exist before the script runs: give El a style through the prototype for this page
+  const props = {};
+  const desc = Object.getOwnPropertyDescriptor(El.prototype, 'style');
+  Object.defineProperty(El.prototype, 'style', { configurable: true, get() { return { setProperty: (k, v) => { props[k] = v; } }; } });
+  try {
+    fakePage({ menu, ResizeObserver: FakeRO });
+    assert.equal(props['--nav-h'], '108px', 'rounded up: the banner never tucks under the last pixel row');
+    assert.equal(FakeRO.all.length, 1, 'one observer');
+    assert.deepEqual(FakeRO.all[0].targets, [menu], 'it watches the menu');
+    menu.h = 57; FakeRO.all[0].fire();
+    assert.equal(props['--nav-h'], '57px', 'one row again after the window widened');
+    menu.h = 0; FakeRO.all[0].fire();
+    assert.equal(props['--nav-h'], '57px', 'a hidden menu (0 px) keeps the last height');
+    // no ResizeObserver (an old browser): the window's resize event does the same
+    for (const k of Object.keys(props)) delete props[k];
+    const m2 = fakeMenu(150);
+    const p2 = fakePage({ menu: m2 });
+    assert.equal(props['--nav-h'], '150px');
+    m2.h = 99; for (const f of p2.winListeners.resize || []) f();
+    assert.equal(props['--nav-h'], '99px');
+    // no menu on the page: nothing set, nothing thrown
+    for (const k of Object.keys(props)) delete props[k];
+    assert.doesNotThrow(() => fakePage({ ResizeObserver: FakeRO }));
+    assert.equal(props['--nav-h'], undefined);
+  } finally {
+    if (desc) Object.defineProperty(El.prototype, 'style', desc); else delete El.prototype.style;
+  }
 });
