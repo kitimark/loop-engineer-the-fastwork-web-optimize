@@ -965,6 +965,50 @@ after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
 - **Expected minutes:** about 20 (range 15-30) in 2 holds of 900 s: 2 warm-ups, 2 sentinels, 6 counted runs at about
   1.5 min each, 4 gate reads, pre-warm.
 
+### P-095 result (scored 2026-10-04 05:35Z with the registered lines; ops re-score pending)
+
+**Verdict under the ticket: HIT.**
+- a-C and a-V are in. f50 and f34 are no-worse, with no threshold sensitivity and no load sensitivity.
+- Per the decision row, the next step is the blind finger swipe A/B (best-build vs B-R2); then the lead lands R2.
+
+**The block.**
+- One hold, h052459, 05:24:59-05:34:07Z: wC wV S1 C1 V1 V2 C2 C3 V3 S2, every step exit 0. Nothing was void and
+  there were no re-runs.
+- Gates:
+  - start: Serious, not induced, 41.39 °C, timer grid30 0.89;
+  - end: Serious, not induced, 42.39->42.29 °C, grid30 0.85.
+- Sentinels: S1 bottom 60 / scroll 58.7, S2 60.1 / 58.5, both pass.
+- Battery 41.4-42.5 °C, not charging. Median dt 17 ms in every run, so no Low Power Mode.
+- No Sleep or DarkWake in the hold (the last one was 02:32Z).
+- Mac load1 at counted-run starts and ends was 2.85-6.36, with no shared jobs. That is under the 8 line, so no load
+  subset is needed.
+- Runner p095.mjs `53a74ccd1bcc` (ops-hashed), gesture program `c414f67158e3`, scorers `32ed5f4e81f9` /
+  `40d0d302c3f1`.
+- The runner's one logged deviation is the T-058 pre-warm under the lease before the hold. It ran 0 cycles because
+  the phone was already at 41.5 °C after P-091, followed by a keep-warm on the gate page while the hold waited for
+  Chrome.
+
+| line | C (best-build) | V (B-R2) | result |
+|---|---|---|---|
+| a-C writer share | 0.776, 0.763, 0.768 | | in (0.3..1.0) |
+| a-V writer share | | 0.015, 0.021, 0.011 | in (≤ 0.05): R2's CSS path is active |
+| f50 band dt > 50 (per run; median) | 4, 4, 2; 4 | 8, 2, 3; 3 | −1 (twins > 46 −2, > 54 −1): no-worse |
+| f34 band dt > 34 (per run; median) | 27, 37, 22; 27 | 26, 8, 12; 12 | −15 (twins > 30 −8, > 38 −7): no-worse |
+
+- **Reported, not falsifiers:**
+  - Gesture scope: > 50 −2, > 34 −21.
+  - Near bands: near34 C 37, V 22; near50 C 3, V 2.
+  - Per moving frame, V has fewer style, layout and paint-area units (S 1.68-1.72 vs 2.33-2.41; Ppx 55-70 k vs
+    165-174 k).
+- **(b) lines.** These are R2's named residuals from P-081, the same pattern as there.
+  - touchstart: in, all 9.
+  - first-move 1: in.
+  - first-move 2 and 4: OUT. V has a few more paint units at the first move after a rest (P 8-19 vs 2-8).
+  - rest1/3/4: OUT. At about 330 ms after a rest, V's next frame paints P 4-6 against C's 0-1.
+  - heRest fires past the hero end (y ≈ 1095), so they are not scored.
+- **Files.** The runner's `out/p095/` (BLOCKLOG, holds/gates/runs.jsonl). Scores are in `out/hext/p095/scoreF.json`,
+  `framesF.json` and `out/hext/p095-score.log`; the Mac load read is in `p095mac.mjs`.
+
 ## What changed
 
 On WebKit, once the entrance is over (`d()`), the exit is a set of CSS scroll-driven animations on a `--hero-exit`
