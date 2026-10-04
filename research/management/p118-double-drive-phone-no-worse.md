@@ -154,3 +154,10 @@ first, which the profile forbids. Needed before H1, owned by the script owner, s
   checkout that runs it;
 - the decisive check (part OFF, the user's console step, part ON) still precedes H1 per the amendment.
 Ops re-reads the revised script (diff against 58d285cb0094: only those lines) on request.
+
+## Lead sign-off of the revised hold.sh (2026-10-04 ~22:10Z)
+
+hold.sh 09c0b21eaa0f (f1532738, TICKET b8d48b0803c7) passes the four xcode-serious checks, read by the lead from the
+diff: (1) the pre-warm loop is removed; (2) `--accept-induced` is in gate(), so it applies at start and end; one start read,
+any non-zero exit voids the hold with no retry; (3) the per-arm load warm-ups wC/wV/wgC/wgV are unchanged; (4) `--max-c 44`
+is unchanged. The only other edits are comments. SIGNED. H1 may start once the user's Xcode Serious condition is on.
