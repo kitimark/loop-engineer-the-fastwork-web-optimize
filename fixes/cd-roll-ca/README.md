@@ -1407,6 +1407,14 @@ P-100 in the same lease: H1 started 14:09:58Z (fresh servers B, P100, V9, C8 by 
   (quiet) and 2 (ca) done; at 14:12Z the lead asked for the phone for a user hand test (T-127, user steps first): the
   hold was stopped after record 2 (no end read), Safari parked, lease released 14:13:03Z. INTERRUPTED, not void by heat;
   the two records are kept as descriptive only and P-100 H1 reruns whole in a later lease.
+PR-017 rev 5 (the hit row, posted 2026-10-04 ~14:27Z): options "Land K" (Try it A = fixes/cd-roll-ca-live/patch.diff
+  = V9, B = fixes/cd-roll-ca-live-k/patch.diff = VK) and "Keep the accepted roll (V9)" (no page: B = A); the rev 4
+  decision went stale, the user decides again. Its Chrome shots: `MOTION=1 pixels.mjs V9,VK hero` (shared probe slot;
+  pixels.mjs now knows the VK copy and refuses an unknown arm: the first try at 14:16Z served the plain baseline as
+  "VK", caught by its served hash 4606120c, discarded), file out/cd-roll-ca/pixels-2026-10-04T14-22-09-981Z.json:
+  served JS 582d120c / b43fe790; V9 vs VK 1 of 169 shots differ (120 Hz, two jumps within 9 frames, frame 45: 130
+  device px, max delta 222, the digit ~0.01 CSS px apart across a pixel edge), 136 differ in digit state by <= 0.013 px;
+  V9 vs V9-again 0 of 169 (exact).
 ```
 
 ```
