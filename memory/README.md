@@ -21,6 +21,7 @@ Every agent:
 - [Phone checks start warm](phone-checks-start-warm.md): tests run at real thermal Serious (xctrace gate per hold, ceiling 44 °C/Critical), Fair no-worse check at the end; LPM runs dropped; no countdown-only test page
 - [One phone step at a time](one-phone-step-at-a-time.md): only the lease holder posts a phone step, one open at a time, after the user says ready; the lead sets the order; renew 2 min early, arm `--until redo`
 - [Answer format](answer-format.md): every answer to the user: answer first, short plain bullets, codes explained, numbers in small tables, ~10 lines, "What you need to do" last
+- [Trace before asking](trace-before-asking.md): a reported lag or bug is traced from our recordings, logs and probes first; ask the user only what no data can answer
 
 Lead:
 - [Agent spawn names](agent-spawn-names.md): every spawn gets `name: <role>-<topic>`; check the first spawn after each compaction
