@@ -327,7 +327,9 @@ export async function set(id, opts = {}) {
     const waitsForBuild = v.state === 'parked' && (resumeOn || (it.state === 'parked' ? it.resumeOn : null))?.kind === 'build';
     if ((v.state === 'parked' && !waitsForBuild) || v.state === 'researching') {
       const lp = landedProgress({ ...it, ...(v.progress !== undefined && { progress: v.progress }), ...(v.aliases && { aliases: v.aliases }), ...(v.refs && { refs: v.refs }) }, opts.progressData);
-      if (lp) throw new Error(`${sid} belongs to PROGRESS item ${lp.id}, whose work is done (${lp.label}): when your part is over use --state done (the board then shows "${lp.label}"); for follow-up work on it use designing, implementing, testing or measuring, or start a new row`);
+      // I-162 (user T-145): the row matches the item by its --progress link, its id or an alias (progressMatches); a
+      // follow-up job (a new proposal rev, a new question) gets its own row, so this one keeps the item's label
+      if (lp) throw new Error(`${sid} belongs to PROGRESS item ${lp.id}, whose work is done (${lp.label}): when your part is over use --state done (the board then shows "${lp.label}"); for more work on this item use designing, implementing, testing or measuring; give a follow-up job its own row (status.mjs set <new-id> --kind fix --title "<plain name>" --state ${v.state}, without --progress ${lp.id})`);
     }
     if (v.state !== undefined && v.state !== it.state) { changes.state = v.state; it.state = v.state; it.stateSince = now; }
     put('waitingOn', newWait);

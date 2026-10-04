@@ -91,6 +91,24 @@ test('T-125 #14 (a) + #10 (c): set --state parked needs --resume-on; kept while 
   await S.set('gpu-only', { by: 'fix-g', kind: 'fix', title: 'GPU', state: 'researching' }); // only in a to-try build
 });
 
+test('I-162 (user T-145): researching is refused on a row that matches a landed item by id or alias, not only by --progress; the message names the own-row way out', async () => {
+  const own = /give a follow-up job its own row \(status\.mjs set <new-id> --kind fix --title "<plain name>" --state researching, without --progress rest-script\)/;
+  // the T-145 case: the row's id is the item's id, no --progress link; it was done, the owner reused it for a follow-up
+  await S.set('rest-script', { by: 'fix-h', kind: 'fix', title: 'Hero', state: 'testing', progressData: DATA });
+  await S.set('rest-script', { by: 'fix-h', state: 'done', progressData: DATA });
+  assert.equal(S.get('rest-script').progress, undefined, 'no --progress link');
+  await assert.rejects(S.set('rest-script', { by: 'fix-h', state: 'researching', note: 'PR-018 rev 7', progressData: DATA }), own, 'same id');
+  // an alias names the item
+  await S.set('hero-follow', { by: 'fix-h', kind: 'fix', title: 'Hero follow-up', state: 'testing', aliases: ['rest-script'], progressData: DATA });
+  await assert.rejects(S.set('hero-follow', { by: 'fix-h', state: 'researching', progressData: DATA }), own, 'alias');
+  await assert.rejects(S.set('alias-new', { by: 'fix-h', kind: 'fix', title: 'New', state: 'researching', aliases: ['rest-script'], progressData: DATA }), own, 'alias given with the state');
+  assert.throws(() => S.get('alias-new'), /no status item "alias-new"/, 'a refused create writes nothing');
+  // the way out the message names: a new row without the link takes researching
+  await S.set('rest-script-rev7', { by: 'fix-h', kind: 'fix', title: 'Hero follow-up rev 7', state: 'researching', progressData: DATA });
+  assert.equal(S.get('rest-script-rev7').state, 'researching');
+  assert.equal(S.get('rest-script').state, 'done', 'the old row keeps its item label');
+});
+
 const NOW = Date.parse('2026-10-04T16:00:00Z');
 const ago = (min) => new Date(NOW - min * 60000).toISOString();
 const row = (id, state, extra = {}) => ({ id, title: `Row ${id}`, kind: 'fix', owner: `fix-${id}`, state, stateSince: ago(30), updatedAt: ago(30), priority: null, waitingOn: null, ...extra });
