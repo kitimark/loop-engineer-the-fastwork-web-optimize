@@ -42,6 +42,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 00:2xZ **P-id clash fixed (lead).** int-v8 took P-114 for its v8 vs v7 confirm ticket (81d65025, lead PASS
+    be0d650b) as "the next free id" without registering it, while I gave P-114 to toolbar-resize. Resolution: P-114 stays
+    int-v8's; toolbar-resize's svh/csl/cva card is P-115 (owner told); next free P-116. New rule in the registry header:
+    registered P-ids only.
+  - registered P-114 int-v8 v8 vs v7 confirm (81d65025).
+  - registered P-115 fix-toolbar-resize svh/csl/cva split (card not yet written; ops pre-data read before data).
+- 10-05 00:0xZ **P-110 result, ops second read: AGREE** (fix-toolbar-resize b7daeac0). Re-checked the hashes for scorer,
+    gate, driver and inject, and the served bytes; recomputed the ratios from p110-score.json.
+  - Calls: ps 0.032 LOCATES. nav 1.018, pain 1.030, navpain 1.007, ph 1.031 and pc 0.980 are NONE. Gate: every run applied.
+    REPLICA true, drift 0.012, all 10 steps ran. Ledger row filled; 3 of 4 calls with a stated lean were right (navpain wrong).
+  - N1: ps-H1 had 45 moving frames against 12-16 in every other run, so its median covers a different frame set. The call
+    does not rest on that: in-style Layouts fell from 11-13 to 3. The phone G check should report n per run.
+  - N2: the reading "the layout runs whenever any constrained renderer is present" stays OBSERVED (in our setup), mechanism
+    UNRESOLVED. P-106's hero-only sticky NONE is a phone result, not a Simulator one.
+  - N3: P-id clash averted. The owner had planned its next card as "P-112", but P-112 (v8 M-only attribution) and P-113 are
+    int-v8's, and so is P-114 (lead correction below). The svh/csl/cva card is **P-115**; next free **P-116**.
 - 10-04 16:xxZ **P-111 result, ops second read: AGREE, WORSE** (int-v8 964b2f99; scorer fixes/v8-best/phone/score.mjs
     26d944bf93e2 re-checked; out/p111/score.json read against the frozen ticket rules). The lead did the pre-data read.
   - Mtweens: close.f1 +2.5 and close.f3 +3.5 ms, both above the +2 ms rule. N1: V run 2 is high on both keys. Without it,
@@ -60,12 +76,13 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
   - P-110 pre-data (1eb38351): FAIL C1. An in-page arm can silently become C (selector missing or height 0), and the
     scorer ignores `inject`. Fix: an applied/height/kids rule, else INSUFFICIENT. N1: pre-register a continuation hold
     for budget-dropped arms. **PASS at 4329275d** (gate check-inject110 61931a562308, driver f77c5e456d17). Ledger row added.
-  - **P-id registry** (lead order: add each id when it is assigned, not when it is committed):
+  - **P-id registry** (lead order: add each id when it is assigned, not when it is committed). **Rule (lead, 10-05):** an
+    agent takes a P-id only from ops, as a `registered` line here; an id with no such line is not taken. Ask ops, not "next free".
     P-100 cd-roll-ca display rate · P-101 nav-hit-cache · P-102 cd-roll-ca K · P-103 scroll-cb-phone ·
     P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
     P-107 held, nav-hit-cache successor · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
     P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
-    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read). **Next free: P-114.**
+    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize). **Next free: P-116.**
   - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
     listens on 6400. It fails after the I-157 fix too, so `npm run test:unit` is red for everyone (1 of 1042).
   - P-100 H1r result: AGREE. O1 RAISED, O2 not enough (paused n 1), O3 1.00 descriptive, all Fair. Ledger row filled.
