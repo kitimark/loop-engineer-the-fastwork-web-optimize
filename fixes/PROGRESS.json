@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T08:46:00Z",
+ "updatedAt": "2026-10-04T09:25:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T09:25:00Z", "text": "The countdown roll on the graphics chip passed its phone check (P-093) and you accepted it. It lands next and joins the next best build. Each new-build run had 1-2 slow frames the old one did not (still inside the allowed range); the research in T-096 looks at that too." },
   { "at": "2026-10-04T08:45:00Z", "text": "The resting avatar row passed its phone check (P-094) at the phone's real heat state: no new slow frames (over 50 ms: 0 in both). It lands and joins the next best build with the countdown fixes." },
   { "at": "2026-10-04T08:35:00Z", "text": "Menu fix (F3): one swipe step fewer. The frame logs of your first pair already show the build without F3 doing worse in both orders, so the repeat with the order swapped is dropped. Only a hidden check pair is left, after the avatar-row and countdown-roll phone checks." },
   { "at": "2026-10-04T06:14:00Z", "text": "The end-of-page morph on the graphics chip passed its phone check (P-092) as not worse: no new slow frames. But the first frame of each morph is about 7 ms longer (62 vs 55 ms), so it stays out of the next best build until a revised version fixes that. Phone now: your menu-fix swipe test." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T15:05:00Z", "text": "The Try-it panels you used for the pixel rule and the hero change compared against the original page, so they also showed earlier changes; a tool fix lets each option show only its own change. Revised proposals follow." },
   { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
-  { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
-  { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." }
+  { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." }
  ],
  "items": [
   {
@@ -125,13 +125,13 @@
    "stage": "F",
    "fixes": "Instead of script moving the digits every frame during each half-second roll, one GPU animation per digit per second: the most script work saved at the top and in the menu panel.",
    "felt": {
-    "answer": "not-yet",
-    "text": "you judge it in a blind side-by-side look before it goes into a build"
+    "answer": "better",
+    "text": "you accepted it (PR-017, 09:11 UTC) and said the new page is much smoother"
    },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-093) at the phone's real \"Serious\" heat state.",
-   "next": "Rebuilt on the landed digit strips; its short phone check (P-093) is registered and queued after the end-of-page morph check.",
+   "next": "Passed its phone check (P-093) and you accepted it. The lead lands it next; then it joins the next best build (v7). Research into why it feels smoother follows (T-096).",
    "owner": "fix-cd-roll-ca",
-   "checks": [ { "id": "P-093", "what": "short phone check: no new slow frames at the top of the page", "result": "" } ],
+   "checks": [ { "id": "P-093", "what": "short phone check: no new slow frames at the top of the page", "result": "passed (within the allowed +2); each new-build run had 1-2 frames over 50 ms, the old build none, so T-096 looks at it" } ],
    "details": [
     "de-gpu T-030 brief 3: within about 0.08 px of the original's motion; the original itself differs by 3.3 px between 60 and 120 Hz. Parked under the identical-only rule, then started at the user's request (T-030 #10, 00:10Z). Stacks on cd-strip.",
     "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order).",
@@ -139,7 +139,8 @@
     "Lead 05:1xZ: adapts __crTops to cd-strip's strip-rw wrapper.",
     "Lead 10-03 06:5xZ: counted set stopped until the new strip base (patch 1f3c26a16563, CSS 40078cb2d9cf); sessions so far are first-build data. Rebuild on it and restart the counted set. Simulator count results carry I-082 (SleepWidgetExtension burning a core, load1 37-108) as a caveat.",
     "PR-010 wide accepted 15:21Z (memory/illusion-must-be-pixel-identical.md): re-tier on resume with the five numbers (was near-identical). T2 lands after the numbers check; a motion-only difference stays a proposal (the blind side-by-side look).",
-    "P-093 registered 10-04 03:4xZ (rev 2 3f7ce94a, scorer 57856e3f530a, hold.sh 6bd99cf3909e): V9 = strip-tc + cd-roll-ca vs C8 = strip-tc, driver W, top window, no-worse at dt>50."
+    "P-093 registered 10-04 03:4xZ (rev 2 3f7ce94a, scorer 57856e3f530a, hold.sh 6bd99cf3909e): V9 = strip-tc + cd-roll-ca vs C8 = strip-tc, driver W, top window, no-worse at dt>50.",
+    "P-093 hit (owner fcb2b752; ops second read 10-04 09:2xZ, re-score identical except paths): top dt>50 C 0/0/0/0 vs V 1/1/2/1, median +1 (falsifier +2), twins >46 +1 / >54 0, not threshold-sensitive; >34 +2 reported; H1-H3 VALID at Serious. Ports B 5419 / C8 5420 / V9 5421 unverified until the I-131 audit. PR-017 accepted (land) 09:11:18Z."
    ]
   },
   {
