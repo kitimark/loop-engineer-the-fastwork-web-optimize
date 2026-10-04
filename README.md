@@ -159,6 +159,11 @@ not one `serve.mjs` each. Each registered build keeps its own port (6400-6599, p
 `.git/fastwork-mirror/tryit/`. Measurement servers (`serve.mjs`, `fix.mjs serve|ab`, `verify.mjs`,
 `bench.mjs`) are unchanged.
 
+**Who runs which server (T-106 #11):** every `serve.mjs` and the Try-it host record themselves in
+`.git/fastwork-mirror/servers/<pid>.json` (port, owner from `--owner` else `$FW_AGENT` else "unknown",
+purpose from `--doing`, root and overlays, start time, last request time flushed every 30 s). The entry
+goes when the process exits; readers drop entries whose pid is dead. Nothing served changes.
+
 ## Third-party scripts: three modes
 
 Production's `/analytics.js` (first-party, hand-written) pushes dataLayer events. It also watches the
