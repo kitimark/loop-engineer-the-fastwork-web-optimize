@@ -38,6 +38,7 @@ import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso, clip } from './store.mjs';
 import { resolveLanUrl } from './lan.mjs';
 import { sanitize } from './progress.mjs';
+import { waitsOnRunner } from './phone-step.mjs';
 
 export const KINDS = ['question', 'choice', 'action', 'swipe-pair'];
 export const STATUSES = ['pending', 'active', 'answered', 'skipped', 'cancelled'];
@@ -209,6 +210,7 @@ export function buildStep(p) {
     by: String(p.by).slice(0, 80),
     ...(normTopic(p.topic) && { topic: normTopic(p.topic) }), // I-084: optional; steps from before have none
     kind,
+    ...(p.phone === true && { phone: true }), // I-123: the user handles the phone (lib/phone-step.mjs isPhoneStep)
     title: text(p.title, 200),
     instructions: text(p.instructions, 1200),
     url: checkUrl(p.url),
@@ -248,11 +250,14 @@ export function get(id) {
   return s;
 }
 
-export async function post(p) {
+/** `refuse(step, steps)` (optional, I-123): run under the store guard with every step; a returned text refuses the post. */
+export async function post(p, { refuse } = {}) {
   const step = buildStep(p);
   return withGuard(GUARD, () => {
     mkdirSync(consoleDir(), { recursive: true });
     const items = readAll(consoleDir(), 'C');
+    const why = refuse ? refuse(step, items) : null;
+    if (why) throw new Error(why);
     step.id = nextId(items, 'C');
     step.queueSeq = nextQueueSeq(items);
     writeJson(fileOf(step.id), step);
@@ -501,13 +506,29 @@ export async function cancel(id, { by, note } = {}) {
 // ---- waits ------------------------------------------------------------------------------------------
 
 /**
+ * I-123: the last reset of `s` (a user's Start over, or another agent's redo) that its poster has not reacted to: no
+ * history entry by the poster (an ack, a redo, a cancel …) after it. The history entry, or null.
+ */
+export function missedReset(s) {
+  const h = s.history || [];
+  let i = h.length - 1;
+  for (; i >= 0; i--) {
+    if (h[i].who === s.by) return null;
+    if (h[i].action === 'restart' || h[i].action === 'redo') return h[i];
+  }
+  return null;
+}
+
+/**
  * A tools/lib/wait.mjs condition for `console.mjs wait <id> --until started|recording|done|answered [--part N]`.
  * Without --part: started waits for the part that is current when the wait starts (the step's Start for a
  * step without parts); recording and done wait for the last part the user started (or the current one).
  * Skipped or cancelled before the condition is met: never. Detail: the JSON printed on MET.
  */
-export function waitCondition(id, { until = 'answered', part } = {}) {
+export function waitCondition(id, { until = 'answered', part, epoch } = {}) {
   if (!WAIT_UNTIL.includes(until)) throw new Error(`--until must be one of ${WAIT_UNTIL.join(', ')} (got ${until})`);
+  const seen = epoch === undefined || epoch === null || epoch === '' ? undefined : Number(epoch);
+  if (seen !== undefined && !(Number.isInteger(seen) && seen >= 0)) throw new Error(`--epoch must be a whole number >= 0 (the epoch in your last MET or REDO line; got ${epoch})`);
   const sid = parseId(id);
   const s0 = get(sid);
   let idx = null; // 0-based part, or null = the step itself
@@ -517,12 +538,20 @@ export function waitCondition(id, { until = 'answered', part } = {}) {
     else { let last = -1; s0.parts.forEach((p, i) => { if (rank(p.state) >= rank('started')) last = i; }); idx = last >= 0 ? last : Math.min(s0.cur, s0.parts.length - 1); }
   } else if (until !== 'answered' && until !== 'started' && until !== 'redo') throw new Error(`${sid} has no parts: wait --until started, answered or redo`);
   const what = `console ${sid}${idx !== null ? ` part ${idx + 1}` : ''} ${until}`;
-  const e0 = epochOf(s0);
+  // I-123: the baseline epoch. --epoch N: the epoch the runner last saw (its last MET or REDO JSON), so a reset that came
+  // before this wait was armed still ends it (REDO at once; `--until redo` is MET at once). Without --epoch, a reset the
+  // runner has not reacted to (missedReset: no entry by the step's poster after it) ends it too while the user waits on
+  // the runner since (waitsOnRunner: a gated part not ready, a recorded part started without "recording"); the runner's
+  // next ack after the REDO clears it. A reset the user went on from by themselves (ungated parts) ends nothing.
+  // C-037, 06:17:59Z: the user's Start over came 0.5 s before the runner armed `wait --until answered`; that wait took
+  // the new epoch as its baseline, never saw a reset, and the user looked at "Getting page 1 ready" for 10 min.
+  let e0 = seen ?? epochOf(s0);
+  if (seen === undefined && until !== 'redo' && missedReset(s0) && waitsOnRunner(s0)) e0 = -1;
   const w = { what, check: null, redo: null };
   /** The REDO detail: the last reset (who, what, from which part), every part's attempt now, the epoch. */
   const redoDetail = (s) => {
     const h = [...s.history].reverse().find((x) => x.action === 'redo' || x.action === 'restart') || {};
-    return { id: sid, action: h.action, by: h.who, at: h.at, part: h.part ?? 1, attempts: s.parts.map(attemptOf), epoch: epochOf(s), ...(h.note && { note: h.note }) };
+    return { id: sid, action: h.action, by: h.who, at: h.at, part: h.part ?? 1, attempts: s.parts.map(attemptOf), epoch: epochOf(s), ...(h.note && { note: h.note }), ...(e0 === -1 && { missed: true }) };
   };
   w.check = () => {
     const s = get(sid);

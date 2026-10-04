@@ -378,3 +378,41 @@ test('I-111 words: the held-idle line and thread name the holder, the minutes an
   const busy = D.assess('iphone', { st: heldSt(phoneLease({ meta: { run: { since: at(1), pid: process.pid } } })), min: 5, now: T0 + 30 * 60000 });
   assert.match(D.lineFor(busy), /^OK iphone: held by fix-nav-morph \(a phone run is on\)$/);
 });
+
+// ---- I-125: a held lease whose holder's step the user is on is a user wait, not idle --------------------------
+// C-038 (2026-10-04) sat "ready" for the user's Start while the I-111 rule called iphone-runner's lease unused.
+const step = (status, states, extra = {}) => ({ id: 'C-038', by: 'fix-nav-morph', kind: 'swipe-pair', status, cur: 0, parts: states.map((state) => ({ state, gate: true })), ...extra });
+
+test('I-125 assess: the holder\'s phone step the user is on (ready, started, recording, reset by Start over) exempts the lease; the runner still preparing does not', () => {
+  const A = (steps) => D.assess('iphone', { st: heldSt(phoneLease()), steps, min: 5, now: T0 + 30 * 60000 });
+  for (const s of [step('pending', ['ready', 'waiting']), step('active', ['started', 'waiting']), step('active', ['recording', 'waiting']),
+    step('active', ['loading', 'waiting'], { epoch: 1 }), step('active', ['done', 'waiting'], { cur: 1 })]) {
+    const a = A([s]);
+    assert.deepEqual([a.held, a.heldIdle, a.alarm, a.freeMin], [true, false, false, 0], JSON.stringify(s.parts));
+    assert.match(D.lineFor(a), /^OK iphone: held by fix-nav-morph; the user's step C-038 by fix-nav-morph \((pending|active), part \d\/2 \w+\) is on the phone \(a user wait, not idle\)$/);
+  }
+  // not a user wait: the runner still preparing a pending step, a step of someone else, a closed step, a non-phone step
+  for (const s of [step('pending', ['loading', 'waiting']), step('pending', ['waiting', 'waiting']), step('active', ['ready', 'waiting'], { by: 'iphone-runner' }),
+    step('answered', ['done', 'done']), step('active', ['started'], { kind: 'action', parts: [{ state: 'started' }] })]) {
+    const a = A([s]);
+    assert.deepEqual([a.heldIdle, a.alarm], [true, true], JSON.stringify(s));
+  }
+  // no steps passed (older callers): the I-111 rule as before
+  assert.equal(D.assess('iphone', { st: heldSt(phoneLease()), min: 5, now: T0 + 30 * 60000 }).alarm, true);
+});
+
+test('I-125 record: a user step ends the held-idle episode (the user is on the step) and counts as use, so the clock starts again after it', async () => {
+  const A = (steps, now) => D.assess('iphone', { st: heldSt(phoneLease()), steps, activity: D.readState().resources.iphone?.activity || null, min: 5, now });
+  const r1 = await D.record([A([], T0 + 7 * 60000)], { now: T0 + 7 * 60000, claim: true, pid: 111 });
+  assert.equal(r1[0].news, 'alarm');
+  await D.settle('iphone', at(0), { thread: 'T-010', by: 'lead', now: T0 + 7 * 60000 });
+  const e = await D.record([A([step('pending', ['ready', 'waiting'])], T0 + 8 * 60000)], { now: T0 + 8 * 60000 });
+  assert.equal(e[0].ended.thread, 'T-010');
+  assert.match(e[0].ended.note, /the user is on fix-nav-morph's step/);
+  assert.deepEqual(D.readState().resources.iphone.activity, { token: 'L1', at: at(8) });
+  assert.equal((await D.record([A([step('active', ['started', 'waiting'])], T0 + 20 * 60000)], { now: T0 + 20 * 60000 }))[0].news, null);
+  // the step is over: idle counts from the last sighting of it (20), not from the lease's grant (0)
+  const after = A([step('answered', ['done', 'done'])], T0 + 24 * 60000);
+  assert.deepEqual([after.heldIdle, after.alarm, after.since], [true, false, T0 + 20 * 60000]);
+  assert.equal(A([], T0 + 25 * 60000 + 1).alarm, true);
+});

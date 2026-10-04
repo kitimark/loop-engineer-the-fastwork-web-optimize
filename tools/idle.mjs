@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Idle alarm (incident I-105, user T-058 #4): says when the iPhone lease or the chrome-measure lock has stood free for
-// more than N minutes (the iPhone also: held with no phone run for that long, I-111) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
+// more than N minutes (the iPhone also: held with no phone run for that long, I-111, unless the user is on the holder's console step, I-125) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
 // tools/lib/idle.mjs. Read-only on the locks (never takes, renews or releases one); no iPhone, Chrome or network.
 //
-//   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--json]
+//   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--step-min 2] [--json]
 //        # one shot, at check-ins (lead, ops). One line per resource:
 //        #   IDLE iphone: iPhone free for 14 min (since 03:10Z, released by iphone-runner), over the 5 min limit, while
 //        #     work waits: fix-morph-gpu (queued for it), f3-arm-scope (owner fix-nav-morph; its note names the phone)
@@ -19,12 +19,17 @@
 // The thread is assigned to the desk and to the waiting owners (so the T-050 router and their `thread wait` reach
 // them) and closed by itself when the slot is taken again. Without --by (or with another name) it only prints; the
 // episode stays unposted, so the lead's watch still posts it. Names and minutes only (Hard rule 12).
+// Stuck steps (I-123, lib/step-alarm.mjs), in the same passes: an active console step whose current part waits on its
+// runner (a gated part not ready, a recorded part started without "recording") with no change for more than --step-min
+// minutes (default 2): `STUCK C-037: part 1 (attempt 2) waits on fix-nav-morph for 10 min (…)`, exit 3 in check, one
+// thread per stuck period to the step's owner and the desk (--by lead), ENDED / CLOSED when the step moves on.
 import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, readState } from './lib/idle.mjs';
 import { createThread, setStatus } from './lib/console-threads.mjs';
 import { getDesk } from './lib/thread-routing.mjs';
+import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
 
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval'];
+const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -40,7 +45,7 @@ function minutesOpt(name, def) {
   return n;
 }
 
-const limits = () => ({ iphone: minutesOpt('phone-min', RESOURCES.iphone.defaultMin), 'chrome-measure': minutesOpt('chrome-min', RESOURCES['chrome-measure'].defaultMin) });
+const limits = () => ({ iphone: minutesOpt('phone-min', RESOURCES.iphone.defaultMin), 'chrome-measure': minutesOpt('chrome-min', RESOURCES['chrome-measure'].defaultMin), step: minutesOpt('step-min', STUCK_STEP_MIN) });
 
 /** One pass: assess, record (de-duplicated per episode), post / close as the lead. Returns {results, alarm}. */
 async function pass({ by, min, log, quietOk }) {
@@ -78,7 +83,8 @@ async function pass({ by, min, log, quietOk }) {
       try { await setStatus(c.thread, { status: 'closed', by, note: c.note }); log(`CLOSED ${c.thread} (${c.resource}: ${c.note})`); } catch (e) { log(`NOT CLOSED ${c.thread}: ${e.message}`); }
     }
   }
-  return { results, alarm: as.some((a) => a.alarm) };
+  const steps = await stepPass({ by, log, quietOk, now, min: min.step }); // I-123 (c): steps stuck on their runner
+  return { results, alarm: as.some((a) => a.alarm) || steps.alarm };
 }
 
 async function main() {

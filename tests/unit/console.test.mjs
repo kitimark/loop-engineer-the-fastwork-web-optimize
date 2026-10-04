@@ -405,6 +405,76 @@ test('I-059 B old step files (no attempt, no epoch) read as attempt 1, epoch 0, 
   assert.deepEqual([r.epoch, r.parts[0].attempt, r.parts[0].attempts.length], [1, 2, 1]);
 });
 
+// ---- I-123 (b): a Start over that came before the wait was armed --------------------------------------------------
+
+/** C-037 up to 06:17:59Z: both parts swiped and done, then the user's Start over; the runner has not acted since. */
+async function c037() {
+  const s = await pair({ by: 'fix-nav-morph' });
+  for (const n of [1, 2]) {
+    await C.ack(s.id, { by: 'fix-nav-morph', part: n, state: 'ready' });
+    await C.start(s.id, { part: n });
+    await C.ack(s.id, { by: 'fix-nav-morph', part: n, state: 'recording' });
+    await C.done(s.id, { part: n });
+  }
+  return s;
+}
+
+test('I-123 b: a wait armed just after an unacked Start over ends REDO at once ("missed"), not after its timeout (C-037)', async () => {
+  const s = await c037();
+  const before = C.waitCondition(s.id, { until: 'answered' }); // armed before the restart: REDO, as since I-059
+  await C.restart(s.id);
+  assert.match(before.check().never, /^REDO /);
+  // the runner's foreground wait, armed 0.5 s after the restart (06:18:00Z): it took epoch 1 as its baseline and waited 580 s
+  for (const until of ['answered', 'done', 'recording', 'started']) {
+    const w = C.waitCondition(s.id, { until, ...(until === 'answered' ? {} : { part: 1 }) });
+    const c = w.check();
+    assert.equal(c.met, false, until);
+    assert.match(c.never || '', /^REDO /, `--until ${until}: the user waits on "Getting page 1 ready"`);
+    assert.deepEqual([w.redo.action, w.redo.by, w.redo.epoch, w.redo.attempts, w.redo.missed], ['restart', 'user', 1, [2, 2], true]);
+  }
+  // --until redo is about the next reset: a missed one does not meet it (it would loop)
+  assert.equal(C.waitCondition(s.id, { until: 'redo' }).check().met, false);
+  // the runner reacts (resets the phone, acks the new attempt): later waits wait normally
+  await C.ack(s.id, { by: 'fix-nav-morph', part: 1, state: 'loading', attempt: 2 });
+  const w = C.waitCondition(s.id, { until: 'started', part: 1 });
+  assert.deepEqual([w.check().met, w.check().never], [false, undefined]);
+  await C.ack(s.id, { by: 'fix-nav-morph', part: 1, state: 'ready', attempt: 2 });
+  await C.start(s.id, { part: 1 });
+  assert.equal(w.check().met, true);
+});
+
+test('I-123 b: --epoch N (the epoch of the runner\'s last MET/REDO) makes a reset before the wait REDO at once; --until redo MET at once', async () => {
+  const s = await c037();
+  await C.restart(s.id);
+  await C.ack(s.id, { by: 'fix-nav-morph', message: 'resetting the phone' }); // acted (so no "missed"), but the wait still names its epoch
+  let w = C.waitCondition(s.id, { until: 'answered', epoch: 0 });
+  assert.match(w.check().never, /^REDO /);
+  assert.equal(w.redo.missed, undefined);
+  const r = C.waitCondition(s.id, { until: 'redo', epoch: 0 }).check();
+  assert.equal(r.met, true);
+  assert.equal(JSON.parse(r.detail).epoch, 1);
+  w = C.waitCondition(s.id, { until: 'answered', epoch: 1 }); // the current epoch: an ordinary wait
+  assert.deepEqual([w.check().met, w.check().never], [false, undefined]);
+  for (const bad of ['-1', 'x', '1.5']) assert.throws(() => C.waitCondition(s.id, { until: 'answered', epoch: bad }), /--epoch must be a whole number/);
+});
+
+test('I-123 b: no forced REDO when the user can go on alone (ungated, unrecorded parts) or when the runner itself redid the part', async () => {
+  const s = await C.post({ by: 'r', kind: 'action', title: 't', parts: [{ label: 'A' }, { label: 'B' }] });
+  await C.start(s.id, { part: 1 });
+  await C.restart(s.id); // nothing waits on the runner: the user presses Start again
+  assert.equal(C.missedReset(C.get(s.id)).action, 'restart');
+  assert.equal(C.waitCondition(s.id, { until: 'answered' }).check().never, undefined);
+  const g = await pair({ by: 'r' });
+  await C.ack(g.id, { by: 'r', part: 1, state: 'ready' });
+  await C.start(g.id, { part: 1 });
+  await C.redo(g.id, { by: 'r', part: 1, message: 'missed the swipe' }); // the runner's own reset: it knows
+  assert.equal(C.missedReset(C.get(g.id)), null);
+  assert.equal(C.waitCondition(g.id, { until: 'answered' }).check().never, undefined);
+  await C.redo(g.id, { by: 'lead', part: 1 }); // someone else's redo is news to the runner
+  assert.equal(C.missedReset(C.get(g.id)).who, 'lead');
+  assert.match(C.waitCondition(g.id, { until: 'answered' }).check().never, /^REDO /);
+});
+
 test('I-059 userTurn: no reminder while a runner-ended part runs; the Start before it is still the user\'s turn', async () => {
   const { userTurn } = await import('../../tools/lib/console-notify.mjs');
   const s = await C.post({ by: 'r', kind: 'action', title: 't', parts: [{ label: 'Play', ends: 'runner' }] });

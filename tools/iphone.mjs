@@ -19,6 +19,10 @@
 //   node tools/iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]   # battery log (I-075; no lease, no page):
 //        # one JSON line per idevicediagnostics read (BATTERY_KEYS only), every --every s for --seconds (lib/iphone-battery.mjs)
 //   node tools/lock.mjs release iphone --owner <topic>
+//   I-123: every command that needs the lease (open, scroll, record, gesture, run, park, safari-restart, wda build|start)
+//   also refuses (exit 1, "WAIT: the user's step C-… by <agent> … is on the iPhone") while another owner's console step
+//   is on the phone (begun, not answered, skipped or cancelled): wait for it (console.mjs wait <id> --until answered).
+//   --ignore-step C-NNN passes one named step (only one its owner really left behind).
 //
 // Simulated finger (real OS-level touches through WebDriverAgent over USB, research/architecture/
 // finger-simulation.md; NEW MEASUREMENT CODE, gesture numbers compare only with the same script hash):
@@ -63,6 +67,7 @@ import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
 import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold } from './lib/lock.mjs';
 import { keepAwakeFor } from './lib/awake.mjs';
+import { runnerRefusal } from './lib/phone-step.mjs';
 import { parseJob, phoneRunText } from './lib/hold-job.mjs';
 import { basename, extname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
@@ -72,7 +77,7 @@ import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every'];
+const VALUED = ['--ignore-step', '--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -84,6 +89,10 @@ function requireLease() {
   if (!s.holder || s.stale || s.holder.owner !== owner) {
     throw new Error(`you ("${owner}") don't hold the iphone lease${s.holder ? ` (holder: "${s.holder.owner}"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);
   }
+  // I-123: never touch the phone under another owner's console step that is on it (begun, not over); the Simulator is
+  // not the phone. --ignore-step C-NNN: a step its owner left behind, named on purpose.
+  const busy = process.env.FW_SIM_SESSION ? null : runnerRefusal({ owner, ignore: opt('ignore-step') });
+  if (busy) throw new Error(busy);
   return owner;
 }
 

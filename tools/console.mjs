@@ -20,7 +20,7 @@
 // Agents:
 //   node tools/console.mjs post --by <agent> --kind question|choice|action|swipe-pair --title "<one line>"
 //        [--instructions "<1-2 plain sentences>"] [--url <url>] [--url2 <url>] [--options a,b,c | --yesno | --text]
-//        [--record] [--gate] [--no-record] [--no-gate] [--show-url | --hide-url] [--parts '<json array>'] [--meta '<json>']
+//        [--record] [--gate] [--no-record] [--no-gate] [--phone] [--show-url | --hide-url] [--parts '<json array>'] [--meta '<json>']
 //        [--scale 1-5 [--scale-label "How different did they feel?"]]   # an optional rating next to the pick
 //        [--topic <status id>]   # I-084: the page shows "Your answer goes to: <agent> (topic <id>)"
 //        [--runner-ends N[,M]|all]   # I-059: parts YOU end (ack --part N --state done), not the user; also per part
@@ -33,13 +33,20 @@
 //        # until you ack recording, then "recording… swipe now". --meta: private to agents (e.g. the blind key and
 //        # the A/B order), never shown on the page, returned by wait --until answered. Forced choice: --options 1,2.
 //        # A session that runs on the phone page itself: --kind action --hide-url --options "done,stopped early".
-//   node tools/console.mjs wait <id> [--until started|recording|done|answered|redo] [--part N] [--timeout 3600] [--json] [--quiet]
+//        # I-123 (f): a phone step (swipe-pair, a recorded part, or --phone: the user handles the phone) posts only while
+//        # you hold the iphone lease and no other phone step is open (pending or active), else exit 1 naming the lease
+//        # holder or the open step and its owner. --by lead is exempt. Questions and plain actions post as before.
+//   node tools/console.mjs wait <id> [--until started|recording|done|answered|redo] [--part N] [--epoch N] [--timeout 3600] [--json] [--quiet]
 //        # exit 0 MET (prints MET … : <json>; --json: the JSON alone), 3 TIMEOUT, 4 NEVER (skipped/cancelled), 1 usage,
 //        # 5 REDO (I-059): the step was reset while you waited (the user's "Start over" on the page, or a `redo`):
 //        # prints REDO … : {action: restart|redo, by, part, attempts: [per part], epoch}; reset the phone and wait for the
 //        # new Start. --until redo: MET on the next reset (run it in the background during a long runner-ended part).
 //        # in a sequence pass --part N (1-based). answered prints {value, notes, meta}; part waits add {attempt, epoch}:
 //        # label your files with the attempt (e.g. iphone.mjs record --label C-21-p2-a2).
+//        # I-123: a reset that came BEFORE the wait was armed: --epoch N (the epoch of your last MET/REDO JSON) makes it
+//        # REDO at once when the step is past N (--until redo: MET at once). Without --epoch, a wait armed after a Start
+//        # over you have not acked yet (no entry by you since) ends REDO at once ("missed": true) while the user waits on
+//        # you (a gated part not ready, a recorded part without "recording"); your next ack clears that.
 //   node tools/console.mjs ack <id> --by <agent> [--state loading|ready|recording|done] [--part N] [--message "<short line>"] [--attempt N]
 //        # --attempt N: refused (exit 1, "stale") when the part is at another attempt: a late ack from an earlier try
 //   node tools/console.mjs redo <id> --by <agent> [--part N] [--message "why"]   # ask part N again (e.g. the swipe was missed);
@@ -129,6 +136,8 @@ import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir, attemptOf, EXIT_REDO, recipients } from './lib/console.mjs';
 import { runningServer, startServer } from './lib/console-server.mjs';
+import { postRefusal } from './lib/phone-step.mjs';
+import { status as lockStatus } from './lib/lock.mjs';
 import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
 import { autoPortBase } from './lib/paths.mjs';
@@ -139,7 +148,7 @@ import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk,
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -342,8 +351,8 @@ async function main() {
       by: by(), kind: opt('kind'), title: opt('title'), instructions: opt('instructions'), url: opt('url'), url2: opt('url2'),
       options: opt('options'), yesno: flag('yesno'), text: flag('text'), record: tri('record', 'no-record'), gate: tri('gate', 'no-gate'),
       showUrl: tri('show-url', 'hide-url'), parts, meta: opt('meta'), scale: opt('scale'), scaleLabel: opt('scale-label'),
-      runnerEnds: opt('runner-ends'), topic: opt('topic'),
-    });
+      runnerEnds: opt('runner-ends'), topic: opt('topic'), phone: flag('phone'),
+    }, { refuse: (step, steps) => postRefusal({ step, by: step.by, lease: lockStatus('iphone'), steps }) }); // I-123 (f)
     console.log(`POSTED ${s.id}: ${s.title}`);
     const u = await serverUrl();
     console.log(u ? `on the user console ${u} (the user sees it within a second)` : 'the console page is not running: ask the lead to start `node tools/console.mjs serve`');
@@ -387,7 +396,7 @@ async function main() {
     return 0;
   }
   if (cmd === 'wait') {
-    const w = waitCondition(id, { until: opt('until', 'answered'), part: opt('part') });
+    const w = waitCondition(id, { until: opt('until', 'answered'), part: opt('part'), epoch: opt('epoch') });
     const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
     if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
     const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
