@@ -741,6 +741,10 @@ driver task; all 6 loads valid, served hashes match; `out/scroll-cb-phone/task/`
 
   - The pain flicker is in N, which has no scroll-cb, so it is not scroll-cb's.
   - The pain rule is a sub-pixel threshold, so a 1 px layout or scroll difference at that step is enough to flip it.
+  - **Triage (fix-nav-morph, 0d4b83ec on branch nav-hit-cache, `fixes/nav-hit-cache/p117/flicker-{1,2}.json`;
+    OBSERVED):** in 7 C/N loads every flicker coincides with live scrollY stepping back one step under the one-way task
+    driver, and `.pain` geometry is the same at every flip. So the flickers are driver jitter, not nav-hit-cache.
+    Their parity rule: a flip pair counts as a flicker only if scrollY moves monotonically across it.
 
 ## v9 step 3 count check (int-v8; pre-registered before any v9 load)
 
