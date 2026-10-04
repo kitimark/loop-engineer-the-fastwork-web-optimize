@@ -11,6 +11,8 @@
 // Schema "fw-proposal/1" (the author's file; the tool adds id, by, times, rev, state, decision, history):
 //   {schema, title, area: hero|middle|end|whole, topic?, thread?, problem, idea, looksSame, visualDiff: [text],
 //    gain: [{what, before, after, tag: OBSERVED|CONFIRMED|estimate|UNRESOLVED|REFUTED, how, needsPhone?}], risk,
+//    (T-126: plus better: better|same|worse, the page's "Better?" column; tag, needsPhone and how show folded below;
+//    markdown: a "Better" or "Verdict" column; `proposal post|revise` refuse rows without it, tools/lib/answer-lint.mjs)
 //    compare: {a: {label, url?}, b: {label, url?}, shots: [{caption, a, b}], video?: {a, b} | {both}, view?}}
 // Options (I-053, user 2026-10-02: "propose the multiple solution in the same proposal … allow user to decide which
 // one"): instead of one solution, `options: [{name, label, idea, looksSame, visualDiff, gain, risk, compare: {b, shots,
@@ -73,6 +75,8 @@ const REVISABLE = new Set(['draft', 'proposed', 'changes-requested', 'accepted',
 /** What a decision is worth now (T-030): final | under-review (on hold) | stale (revised since; re-decide) | null. */
 export const DECISION_STATES = ['final', 'under-review', 'stale'];
 export const GAIN_TAGS = ['OBSERVED', 'CONFIRMED', 'estimate', 'UNRESOLVED', 'REFUTED'];
+// I-146 / user T-126: a gain row's verdict, the page's 4th column "Better?" (the tag and `how` go in its folded details)
+export const GAIN_BETTER = ['better', 'same', 'worse'];
 export const VIEWS = ['side', 'slider', 'blink'];
 /** User words -> state. */
 export const DECISION_VALUES = {
@@ -140,10 +144,10 @@ function mdSection(out, head, text) {
     const [hdr, ...rest] = data;
     if (hdr) {
       const idx = (n) => hdr.findIndex((h) => h.toLowerCase().replace(/[^a-z]/g, '') === n);
-      const col = { what: idx('what'), before: idx('before'), after: idx('after'), tag: idx('tag'), how: [idx('how'), idx('howmeasured')].find((i) => i >= 0) ?? -1, needsPhone: [idx('phone'), idx('needsphone')].find((i) => i >= 0) ?? -1 };
+      const col = { what: idx('what'), before: idx('before'), after: idx('after'), tag: idx('tag'), better: [idx('better'), idx('verdict')].find((i) => i >= 0) ?? -1, how: [idx('how'), idx('howmeasured'), idx('notes')].find((i) => i >= 0) ?? -1, needsPhone: [idx('phone'), idx('needsphone')].find((i) => i >= 0) ?? -1 };
       out.gain = rest.map((r) => {
         const g = {};
-        for (const k of ['what', 'before', 'after', 'tag', 'how']) if (col[k] >= 0 && r[col[k]] !== undefined) g[k] = r[col[k]];
+        for (const k of ['what', 'before', 'after', 'tag', 'better', 'how']) if (col[k] >= 0 && r[col[k]] !== undefined) g[k] = r[col[k]];
         if (col.needsPhone >= 0 && /^(yes|true|needed|x)$/i.test(r[col.needsPhone] || '')) g.needsPhone = true;
         return g;
       });
@@ -328,6 +332,11 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
         else row.tag = tag;
         if (g.needsPhone !== undefined && typeof g.needsPhone !== 'boolean') E.push(`${gp}.needsPhone: true or false`);
         if (g.needsPhone === true) row.needsPhone = true;
+        if (g.better !== undefined && g.better !== null && g.better !== '') { // I-146 / T-126
+          const b = GAIN_BETTER.find((x) => x === String(g.better).trim().toLowerCase());
+          if (!b) E.push(`${gp}.better: one of ${GAIN_BETTER.join(', ')} (got ${JSON.stringify(g.better)})`);
+          else row.better = b;
+        }
         if (row.how === undefined) delete row.how;
         return row;
       }).filter(Boolean);
@@ -1195,7 +1204,7 @@ function solutionText(s, ind) {
   const L = [];
   for (const [k, label] of [['idea', 'idea'], ['looksSame', 'looks the same'], ['risk', 'risk']]) if (s[k]) L.push(`${ind}${label}: ${s[k].replace(/\n/g, `\n${ind}  `)}`);
   if (s.visualDiff?.length) { L.push(`${ind}visual difference:`); for (const v of s.visualDiff) L.push(`${ind}  - ${v}`); }
-  if (s.gain?.length) { L.push(`${ind}gain:`); for (const g of s.gain) L.push(`${ind}  ${g.what}: ${g.before} -> ${g.after} [${g.tag}]${g.needsPhone ? ' (phone check needed)' : ''}${g.how ? ` (${g.how})` : ''}`); }
+  if (s.gain?.length) { L.push(`${ind}gain:`); for (const g of s.gain) L.push(`${ind}  ${g.what}: ${g.before} -> ${g.after}${g.better ? `, ${g.better}` : ''} [${g.tag}]${g.needsPhone ? ' (phone check needed)' : ''}${g.how ? ` (${g.how})` : ''}`); }
   return L;
 }
 
@@ -1213,7 +1222,7 @@ export function showText(p) {
   if (p.thread) L.push(`  thread: ${p.thread}`);
   for (const [k, label] of [['problem', 'problem'], ['idea', 'idea'], ['looksSame', 'looks the same'], ['risk', 'risk']]) if (p[k]) L.push(`  ${label}: ${p[k].replace(/\n/g, '\n    ')}`);
   if (p.visualDiff?.length) { L.push('  visual difference:'); for (const v of p.visualDiff) L.push(`    - ${v}`); }
-  if (p.gain?.length) { L.push('  gain:'); for (const g of p.gain) L.push(`    ${g.what}: ${g.before} -> ${g.after} [${g.tag}]${g.needsPhone ? ' (phone check needed)' : ''}${g.how ? ` (${g.how})` : ''}`); }
+  if (p.gain?.length) { L.push('  gain:'); for (const g of p.gain) L.push(`    ${g.what}: ${g.before} -> ${g.after}${g.better ? `, ${g.better}` : ''} [${g.tag}]${g.needsPhone ? ' (phone check needed)' : ''}${g.how ? ` (${g.how})` : ''}`); }
   const c = p.compare || {};
   if (p.options?.length) L.push(`  options: ${p.options.map((o) => o.name).join(', ')}${p.recommended ? `; recommended: ${p.recommended.option} (${p.recommended.why})` : ''}`);
   L.push(`  A: ${c.a?.label}${c.a?.url ? ` ${c.a.url}` : ''}${p.options?.length ? '' : `   B: ${c.b?.label}${c.b?.url ? ` ${c.b.url}` : ''}`}${c.view ? `   view: ${c.view}` : ''}`);

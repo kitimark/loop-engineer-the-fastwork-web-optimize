@@ -117,3 +117,31 @@ test('proposal post|revise: the text fields are checked before anything is read 
   assert.equal(rev.code, 1);
   assert.match(rev.stdout, /--note line 1: "P-095"/);
 });
+
+test('proposal post: gain rows are 4 short cells with a verdict (T-126); proposal lint is warn-only on stored ones', () => {
+  const f = join(state, 'gain.json');
+  const base = { title: 'Glide after lift-off', area: 'end', problem: 'The glide stops early.', idea: 'Settle to the nearer end.', looksSame: 'Pixel-identical.', visualDiff: ['nothing visible'], live: { none: 'fixture' } };
+  writeFileSync(f, JSON.stringify({ ...base, gain: [{ what: 'Glide time', before: '2.7 s', after: 'OBSERVED 2.7 s (G driver, 8 swipes)', tag: 'OBSERVED', how: 'robot swipes' }] }));
+  const r = cli(['proposal', 'post', '--by', 'lead', '--file', f, '--check-format']);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /gain-tag, gain\[0\]\.after/);
+  assert.match(r.stdout, /gain-note, gain\[0\]\.after/);
+  assert.match(r.stdout, /gain-better, gain\[0\]\.better/);
+  assert.match(r.stdout, /Gain rows \("What it saves"/);
+  writeFileSync(f, JSON.stringify({ ...base, gain: [{ what: 'Glide time', before: '2.7 s', after: '2.7 s', better: 'same', tag: 'OBSERVED', how: 'G driver, 8 robot swipes' }] }));
+  const ok = cli(['proposal', 'post', '--by', 'lead', '--file', f, '--draft']);
+  assert.equal(ok.code, 0, ok.out);
+  const id = ok.stdout.match(/^POSTED (PR-\d+)/)[1];
+  // an old-style row in the store (posted before the rule, here with the lint off) is only warned about
+  writeFileSync(f, JSON.stringify({ ...base, gain: [{ what: 'Glide time', before: '2.7 s', after: '2.7 s (8 robot swipes)', tag: 'OBSERVED', how: 'same' }] }));
+  const old = cli(['proposal', 'post', '--by', 'lead', '--file', f, '--draft'], { FW_ANSWER_LINT: 'off' });
+  assert.equal(old.code, 0, old.out);
+  const oldId = old.stdout.match(/^POSTED (PR-\d+)/)[1];
+  const l = cli(['proposal', 'lint', oldId]);
+  assert.equal(l.code, 0, l.out);
+  assert.match(l.stdout, new RegExp(`^FORMAT 2 warning\\(s\\) ${oldId} rev 1 \\(stored; warn-only\\)`));
+  assert.match(l.stdout, /FORMAT warning gain-note, gain\[0\]\.after/);
+  const all = cli(['proposal', 'lint', '--quiet']);
+  assert.equal(all.code, 0, all.out);
+  assert.match(all.stdout, new RegExp(`FORMAT OK ${id} rev 1`));
+});

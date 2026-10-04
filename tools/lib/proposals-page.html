@@ -70,7 +70,25 @@ table.gain { border-collapse: collapse; width: 100%; font-size: 15px; }
 table.gain th { text-align: left; font-size: 13px; color: var(--muted); font-weight: 600; padding: 4px 10px 4px 0; }
 table.gain td { padding: 6px 10px 6px 0; vertical-align: top; border-top: 1px solid var(--line); }
 table.gain td.n { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 650; }
-table.gain .how { color: var(--muted); font-size: 13px; }
+table.gain td.verdict { white-space: nowrap; font-weight: 650; color: var(--muted); }
+table.gain td.verdict.better { color: var(--ok); }
+table.gain td.verdict.worse { color: var(--bad); }
+/* I-146 / T-126: how we know, folded below the gain table */
+details.gaindetails { margin: 6px 0 0; font-size: 14px; }
+details.gaindetails summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+ul.gainnotes { margin: 6px 0 0; padding-left: 20px; }
+ul.gainnotes li { margin: 6px 0; }
+ul.gainnotes .tag { margin-right: 4px; }
+ul.gainnotes .how { color: var(--muted); font-size: 13px; margin-top: 2px; }
+/* I-146 / T-126: a markdown table or list in a proposal's text (the threads' md block, I-129) */
+.block .md { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.block .md .md-wrap { overflow-x: auto; margin: 6px 0; }
+.block .md .md-table { border-collapse: collapse; white-space: normal; overflow-wrap: break-word; font-size: .95em; }
+.block .md .md-table th, .block .md .md-table td { border: 1px solid var(--line); padding: 4px 9px; text-align: left; vertical-align: top; }
+.block .md .md-table th { font-weight: 700; }
+.block .md .md-table .md-c { text-align: center; } .block .md .md-table .md-r { text-align: right; }
+.block .md .md-list { margin: 4px 0; padding-left: 1.3em; white-space: normal; list-style: disc; }
+.block .md .md-list > li.md-l1 { margin-left: 1.2em; } .block .md .md-list > li.md-l2 { margin-left: 2.4em; } .block .md .md-list > li.md-l3 { margin-left: 3.6em; }
 .tag { font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 1px 6px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); white-space: nowrap; }
 .tag.CONFIRMED { background: var(--ok-soft); color: var(--ok); }
 .tag.estimate { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
@@ -580,7 +598,20 @@ function decisionBlock(p) {
 }
 
 // ---- one proposal ----
-function para(text) { return (text || '').split(/\n\s*\n/).map(function (t) { return el('p', { text: t }); }); }
+// I-146 / user T-126: a paragraph with a pipe table or "- " bullets renders through richText (the threads' markdown,
+// I-129), so a proposal can show a second small table in its text; any other paragraph stays plain text as written.
+function mdPara(t) {
+  var lines = t.split('\n');
+  return lines.some(function (l, i) { return MD_LI.test(l) || (l.indexOf('|') >= 0 && i + 1 < lines.length && MD_SEP.test(lines[i + 1]) && lines[i + 1].indexOf('|') >= 0); });
+}
+function para(text) {
+  return (text || '').split(/\n\s*\n/).map(function (t) {
+    if (!mdPara(t)) return el('p', { text: t });
+    var d = el('div', { class: 'md' });
+    richText(d, t);
+    return d;
+  });
+}
 // T-048: each section is a comment anchor of its own ("PR-009/section:gain", "PR-009/option:tiles/section:risk")
 var SECTION_KEY = { 'What costs': 'problem', 'The idea': 'idea', 'Why it looks the same': 'looks-same', 'What looks different, and when you would notice': 'visual-diff', 'What it saves': 'gain', 'Risk': 'risk' };
 function section(title, nodes, an) {
@@ -589,19 +620,36 @@ function section(title, nodes, an) {
   nodes.forEach(function (n) { if (n) b.appendChild(n); });
   return b;
 }
+// I-146 / user T-126: four short cells (What | Before | After | Better?); how we know (the status tag, "phone check
+// needed", the note) is folded below the table as "Details", never inline. Rows posted before T-126 have no `better`:
+// their `how` stands in when it is a plain verdict word (PR-018 rev 5), else the cell shows "—".
+var VERDICT = { better: 'better', same: 'same', worse: 'worse' };
+function verdictOf(g) {
+  var b = String(g.better || '').toLowerCase();
+  if (VERDICT[b]) return { v: b, fromHow: false };
+  var h = String(g.how || '').trim().toLowerCase().replace(/[.!]$/, '');
+  if (VERDICT[h]) return { v: h, fromHow: true };
+  return { v: null, fromHow: false };
+}
 function gainTable(rows) {
-  var t = el('table', { class: 'gain' }, el('thead', null, el('tr', null, el('th', { text: 'What' }), el('th', { text: 'Before' }), el('th', { text: 'After' }), el('th', { text: 'How we know' }))));
-  var tb = el('tbody');
+  var t = el('table', { class: 'gain' }, el('thead', null, el('tr', null, el('th', { text: 'What' }), el('th', { text: 'Before' }), el('th', { text: 'After' }), el('th', { text: 'Better?' }))));
+  var tb = el('tbody'), notes = el('ul', { class: 'gainnotes' });
   rows.forEach(function (g) {
+    var v = verdictOf(g);
     tb.appendChild(el('tr', null,
       el('td', null, g.what),
       el('td', { class: 'n', text: g.before }),
       el('td', { class: 'n', text: g.after }),
-      el('td', null, el('span', { class: 'tag ' + g.tag, text: g.tag === 'estimate' ? 'estimate' : g.tag }), g.needsPhone ? el('span', { class: 'tag phone', text: 'phone check needed' }) : null,
-        g.how ? el('div', { class: 'how', text: g.how }) : null)));
+      el('td', { class: 'verdict' + (v.v ? ' ' + v.v : ''), text: v.v || '—' })));
+    var how = v.fromHow ? '' : (g.how || '');
+    notes.appendChild(el('li', null, el('b', { text: g.what }), ' ',
+      g.tag ? el('span', { class: 'tag ' + g.tag, text: g.tag }) : null,
+      g.needsPhone ? el('span', { class: 'tag phone', text: 'phone check needed' }) : null,
+      how ? el('div', { class: 'how', text: how }) : null));
   });
   t.appendChild(tb);
-  return el('div', { class: 'tablewrap' }, t);
+  var det = el('details', { class: 'gaindetails' }, el('summary', { text: 'Details: how we know' }), notes);
+  return el('div', null, el('div', { class: 'tablewrap' }, t), det);
 }
 /** The option on screen: the tab you picked, else the decided one, else the recommended one, else the first. */
 function curOptionName(p) {

@@ -26,13 +26,23 @@
 //                     Ids inside a URL are not checked. A plain word: 3+ letters, not an id.
 // Warnings (printed, the text still posts): a first line over 160 characters; a paragraph (or one list item) of more
 // than 3 sentences.
+// Gain rows (proposal post|revise only, user T-126: PR-018's "What it saves" table packed the claim, the numbers, the
+// status tag, the driver and a long note into one cell): gainProblems() refuses (rule g)
+//   gain-cell      a what over LIMITS.gainWhat (50) or a before/after over LIMITS.gainCell (40) characters;
+//   gain-better    no `better` verdict (better | same | worse: the page's 4th column "Better?");
+//   gain-tag       a status word (OBSERVED, CONFIRMED, UNRESOLVED, REFUTED, estimate) in a cell: it goes in `tag`;
+//   gain-driver    a driver or run code in a cell ("S1", "G1b", "S/W", "driver", "n=3", an id): it goes in `how`;
+//   gain-note      a note in a cell (a ";", or in before/after a parenthesis of 2+ words): it goes in `how`.
+// The page shows tag, phone flag and `how` folded under the table ("details"). Calibrated on the 131 rows in the store
+// (2026-10-04): what over 40 chars 75, over 50 41; before/after over 40: 7. Stored proposals are only warned about
+// (`proposal lint <id>|--all`, warn-only: old revs still render, with "—" where no verdict was given).
 // Overrides: `--force-format "<reason>"` posts anyway and appends {at, by, where, reason, errors} to
 // <console>/answer-lint-overrides.jsonl. No author is exempt (the lead neither). FW_ANSWER_LINT=off is honoured only with
 // $FW_STATE_DIR set (the test suites' temp stores), never on the real store.
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const LIMITS = Object.freeze({ maxLines: 18, maxLineChars: 250, fieldLineChars: 600, firstLineWarn: 160, maxSentences: 3, maxActionItems: 6 });
+export const LIMITS = Object.freeze({ maxLines: 18, maxLineChars: 250, fieldLineChars: 600, firstLineWarn: 160, maxSentences: 3, maxActionItems: 6, gainWhat: 50, gainCell: 40 });
 
 /** The rule, short, for --help and the refusal message (memory/answer-format.md). */
 export const RULE_SUMMARY = [
@@ -43,6 +53,13 @@ export const RULE_SUMMARY = [
   '  4. Numbers in a small table or list, saying which is better.',
   `  5. About 10 lines (refused over ${LIMITS.maxLines}); no line over ${LIMITS.maxLineChars} characters.`,
   '  6. Last line: "What you need to do: …" (or "What you need to do: nothing.").',
+];
+
+/** The gain-row rule (proposal post|revise), printed after RULE_SUMMARY there. */
+export const GAIN_RULE = [
+  'Gain rows ("What it saves", user T-126): 4 short cells, everything else in the notes below the table',
+  `  what (at most ${LIMITS.gainWhat} chars) | before | after (at most ${LIMITS.gainCell} each) | better: better, same or worse.`,
+  '  No status word, driver/run code or note in a cell: the status goes in "tag", the rest in "how" (shown folded as details).',
 ];
 
 const ID_RE = /\b(?:PR|T|I|P|F|C)-\d{2,4}\b/g;
@@ -230,6 +247,59 @@ export function proposalTexts(raw) {
   return out;
 }
 
+const STATUS_RE = /\b(?:OBSERVED|CONFIRMED|UNRESOLVED|REFUTED)\b|\bestimated?\b/i;
+const DRIVER_RE = /\b(?:[SWMGF]\d+[a-z]?|[SWMGF](?:\/[SWMGF])+|driver|n\s*=\s*\d+|(?:PR|T|I|P|F|C)-\d{2,4})\b|\(\s*[SWMGF]\s*\)/;
+const GAIN_BETTER = ['better', 'same', 'worse'];
+
+/** Problems of one gain row's cells (rule g). path: "gain[2]" or "options[1].gain[0]". */
+function gainRowProblems(g, path) {
+  const out = [];
+  const add = (code, field, msg, hint) => out.push({ code, rule: 'g', line: 0, where: `${path}.${field}`, msg, hint });
+  if (!g || typeof g !== 'object') return out;
+  for (const f of ['what', 'before', 'after']) {
+    const v = g[f];
+    if (v === undefined || v === null) continue;
+    const t = String(v).trim();
+    const max = f === 'what' ? LIMITS.gainWhat : LIMITS.gainCell;
+    const len = [...t].length;
+    if (len > max) add('gain-cell', f, `${len} characters, at most ${max}: "${t.slice(0, 40)}…"`, 'a short cell: the claim or the number only; the rest goes in "how", shown as the row\'s details');
+    const st = t.match(STATUS_RE);
+    if (st) add('gain-tag', f, `status word "${st[0]}" in a cell`, `put it in "tag" (${['OBSERVED', 'CONFIRMED', 'estimate', 'UNRESOLVED', 'REFUTED'].join(', ')}); the page shows it in the details`);
+    const dr = t.match(DRIVER_RE);
+    if (dr) add('gain-driver', f, `driver or run code "${dr[0].trim()}" in a cell`, 'move it to the notes ("how") below the table');
+    // a short qualifier in the claim is fine ("Paints (Simulator, 4 s)"); a parenthesised note in a number cell is not
+    const paren = f !== 'what' && [...t.matchAll(/\(([^()]*)\)/g)].find((m) => (m[1].match(/[A-Za-z]{3,}/g) || []).length >= 2);
+    if (paren || t.includes(';')) add('gain-note', f, `a note in a cell: "${(paren ? paren[0] : t.slice(t.indexOf(';'))).slice(0, 40)}"`, 'move it to the notes ("how") below the table; keep the cell to the number');
+  }
+  const b = g.better === undefined || g.better === null ? '' : String(g.better).trim().toLowerCase();
+  if (!GAIN_BETTER.includes(b)) add('gain-better', 'better', b ? `"${g.better}" is not better, same or worse` : 'no verdict', 'add "better": "better" | "same" | "worse" (the page\'s "Better?" column; in a markdown table a "Better" column)');
+  return out;
+}
+
+/** Rule g over a proposal file's gain rows (top level and every option's). Returns {errors, warnings, ok}. */
+export function gainProblems(raw) {
+  const errors = [];
+  const rows = (list, base) => (Array.isArray(list) ? list : []).forEach((g, i) => errors.push(...gainRowProblems(g, `${base}gain[${i}]`)));
+  if (raw && typeof raw === 'object') {
+    rows(raw.gain, '');
+    (Array.isArray(raw.options) ? raw.options : []).forEach((o, k) => rows(o?.gain, `options[${k}]${o?.name ? ` (${o.name})` : ''}.`));
+  }
+  return { errors, warnings: [], ok: !errors.length };
+}
+
+/** A proposal file's whole format check: its prose fields (kind 'field') plus the gain rows (rule g). */
+export function lintProposal(raw, { extra = [], known = [] } = {}) {
+  const f = lintFields([...(raw ? proposalTexts(raw) : []), ...extra], { known });
+  const g = gainProblems(raw);
+  const errors = [...f.errors, ...g.errors];
+  return { errors, warnings: f.warnings, ok: !errors.length };
+}
+
+/** Warn-only: the same check on a stored proposal (old revs keep rendering; their problems are warnings). */
+export function warnOnly(r) {
+  return { errors: [], warnings: [...r.errors, ...r.warnings], ok: true };
+}
+
 /** The problem lines, one per problem: "FORMAT error (d) line 3: … Fix: …". */
 export function problemLines(r) {
   return [
@@ -239,11 +309,11 @@ export function problemLines(r) {
 }
 
 /** The refusal text (nothing posted): header, problems, the rule, the ways out. */
-export function refusalText(r, { where, force = '--force-format "<reason>"' } = {}) {
+export function refusalText(r, { where, force = '--force-format "<reason>"', rule = RULE_SUMMARY } = {}) {
   return [
     `FORMAT REFUSED ${where}: ${r.errors.length} error(s), nothing posted`,
     ...problemLines(r).map((l) => `  ${l}`),
-    ...RULE_SUMMARY,
+    ...rule,
     `Test a draft without posting: --check-format (or thread lint --file <f>). Post anyway, logged for the lead: ${force}.`,
   ].join('\n');
 }
@@ -265,14 +335,14 @@ export function logOverride(dir, { by, where, reason, errors }) {
  * The CLI's gate: lint, then refuse, check or post. Returns {proceed, exit, out: [stdout lines], err: [stderr lines]}.
  * check: --check-format (print, never post); force: the --force-format reason (string) or undefined.
  */
-export function gate(result, { where, check = false, force, by, dir, disabled = lintDisabled() } = {}) {
+export function gate(result, { where, check = false, force, by, dir, disabled = lintDisabled(), rule = RULE_SUMMARY } = {}) {
   if (disabled && !check) return { proceed: true, out: [], err: [] };
   if (check) {
     const head = result.ok ? `FORMAT OK ${where}${result.warnings.length ? `: ${result.warnings.length} warning(s)` : ''} (nothing posted: --check-format)` : `FORMAT FAIL ${where}: ${result.errors.length} error(s) (nothing posted: --check-format)`;
-    return { proceed: false, exit: result.ok ? 0 : 1, out: [head, ...problemLines(result).map((l) => `  ${l}`), ...(result.ok ? [] : RULE_SUMMARY)], err: [] };
+    return { proceed: false, exit: result.ok ? 0 : 1, out: [head, ...problemLines(result).map((l) => `  ${l}`), ...(result.ok ? [] : rule)], err: [] };
   }
   if (!result.ok) {
-    if (force === undefined) return { proceed: false, exit: 1, out: [], err: [refusalText(result, { where })] };
+    if (force === undefined) return { proceed: false, exit: 1, out: [], err: [refusalText(result, { where, rule })] };
     if (typeof force !== 'string' || !force.trim() || force.startsWith('--')) return { proceed: false, exit: 1, out: [], err: ['--force-format needs a reason: --force-format "<why this text cannot follow the answer format>"'] };
     logOverride(dir, { by, where, reason: force.trim(), errors: result.errors });
     return { proceed: true, out: [], err: [`FORMAT OVERRIDE ${where}: posted with ${result.errors.length} error(s), reason logged for the lead: ${force.trim()}`, ...problemLines(result).map((l) => `  ${l}`)] };

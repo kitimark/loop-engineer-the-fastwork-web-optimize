@@ -18,6 +18,10 @@
 //        # options (I-053): the file's "options" list holds 2-6 solutions, each with its own idea, looksSame,
 //        # visualDiff, gain, risk and compare {b, shots, video} against the shared compare.a; "recommended":
 //        # {option, why}. --option <name>: the option the --shot-a/--shot-b/--video flags belong to (required then).
+//        # T-126 (user: PR-018's gain table was hard to read): each gain row is 4 short cells, what (<= 50 chars) |
+//        # before | after (<= 40 each) | "better": better|same|worse (the page's "Better?" column); no status word, driver
+//        # or run code, or note in a cell: the status goes in "tag", the rest in "how", which the page folds as details.
+//   proposal lint [<id>] [--quiet]   # T-126: the same check on the stored current revision (all without <id>), warn-only, exit 0
 //   proposal list [--waiting] [--all] [--by <agent>] [--json]   # waiting (proposed) first; --all adds withdrawn ones
 //   proposal show <id> [--json]      # --json (and list --json) adds decisionState: final | under-review | stale | null
 //        # (T-030): act on a decision only when it is "final"; under-review = on hold, stale = revised since, re-decide
@@ -152,11 +156,27 @@ function inputs(a) {
  * Returns undefined to go on, or the exit code (refused, or --check-format).
  */
 function formatCheck(a, inp, { where, by, known = [] }) {
-  const fields = [...(inp.raw ? AL.proposalTexts(inp.raw) : []), ...inp.captions.map((c, i) => ({ path: `--caption ${i + 1}`, text: c })), { path: '--note', text: a.one('note') }];
-  const g = AL.gate(AL.lintFields(fields, { known }), { where, check: a.flag('check-format'), force: a.one('force-format'), by, dir: consoleDir() });
+  const extra = [...inp.captions.map((c, i) => ({ path: `--caption ${i + 1}`, text: c })), { path: '--note', text: a.one('note') }];
+  // T-126: plus the gain rows (rule g: 4 short cells, a better|same|worse verdict, tags and notes out of the cells)
+  const g = AL.gate(AL.lintProposal(inp.raw, { extra, known }), { where, check: a.flag('check-format'), force: a.one('force-format'), by, dir: consoleDir(), rule: [...AL.RULE_SUMMARY, ...AL.GAIN_RULE] });
   for (const l of g.out) console.log(l);
   for (const l of g.err) console.error(l);
   return g.proceed ? undefined : g.exit;
+}
+
+/**
+ * T-126: `proposal lint <id>|--all`: the format check (prose fields + gain rows) on the stored current revision(s),
+ * warn-only: posted revisions keep loading and rendering; the problems are printed as warnings, exit 0.
+ */
+function lintStored(id, a) {
+  const items = id ? [get(id)] : listProposals({ all: true });
+  if (!items.length) { console.log('no proposals'); return 0; }
+  for (const p of items) {
+    const r = AL.warnOnly(AL.lintProposal(p, { known: [p.id] }));
+    console.log(`FORMAT ${r.warnings.length ? `${r.warnings.length} warning(s)` : 'OK'} ${p.id} rev ${p.rev} (stored; warn-only)`);
+    if (!a.flag('quiet')) for (const l of AL.problemLines(r)) console.log(`  ${l}`);
+  }
+  return 0;
 }
 
 function report(r) {
@@ -209,9 +229,11 @@ export async function run(argv) {
     for (const r of rows) console.log(`${r.up ? 'UP     ' : r.stopped ? 'STOPPED' : 'DOWN   '} ${r.blob ? `${r.base} + patch ${r.blob.slice(0, 12)}` : `${r.base} (no patch: the original page)`}  ${PH.phoneLink(r.port)}${r.up ? `  host pid ${r.pid}` : ''}`);
     return 0;
   }
+  if (sub === 'lint' && !arg) return lintStored(undefined, a); // T-126: every stored proposal
   if (!arg) throw new Error(`usage: node tools/console.mjs proposal ${sub} <id> … (see the header of tools/lib/proposal-cli.mjs)`);
   const id = parseProposalId(arg);
   if (sub === 'phone') return phone(id, a); // I-126 / T-086
+  if (sub === 'lint') return lintStored(id, a); // T-126: warn-only check of stored proposals
   if (sub === 'show') { const p = get(id); console.log(a.flag('json') ? JSON.stringify(withDecisionState(p), null, 1) : showText(p)); return 0; }
   if (sub === 'revise') {
     const inp = inputs(a);
