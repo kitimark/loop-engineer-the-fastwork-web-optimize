@@ -53,3 +53,28 @@ Gaps to close before the lead's read:
   Simulator pixel set 2.
 - Ops: second read of the scorer and hold script once the hashes are in; check them on disk before data.
 - The lead: pre-data read and signature after item 3 resolves. A signature on provisional pins is not enough to start.
+
+## Ops re-check after fix-double-drive's close (commit 063c9edd, 2026-10-05 04:20+07, on its branch)
+
+| item | sha256/12 | result |
+|---|---|---|
+| TICKET.md | 6bfd511f9a89 | placeholders gone; P-118 in the --block argument and labels |
+| phone/hold.sh | 58d285cb0094 | diffed against P-116's b25c8fc83e6f, see below |
+| phone/serve.sh | 730fb0718409 | committed; same bytes as read before |
+| delta.diff | baae6114cd65 | unchanged |
+| V JS / CSS | 3076c5a8c9a3 / 2f7197880ffd | unchanged by Simulator pixel set 2 (the owner says so; the hashes on disk match) |
+
+- **hold.sh diff against P-116's:** only the arms (C, V), the S items (wC, wV, C<n>, V<n>), the G part M items
+  (wg[CV], gM[CV]<n>), the snapshot folder (out/pdd/snap), the scenario (flick-middle-v1.json), the labels p118-*, the
+  block P-118 and the serve.sh path changed. The gate, pre-warm, served check before every item, park after every G
+  run and the sleep check are P-116's lines. The relative `cd` is correct for its path. A counted C S run is a heat
+  sentinel by default in the run tool (tools/lib/iphone-run.mjs line 214), as in P-105, so the missing
+  `--heat-sentinel` on C<n> is right.
+- **Gaps 2, 4, 5, 6: closed.** Coverage (gap 5): the owner puts the future card's shrink at scrollY 1468-2860 of 5189 on
+  the phone, inside flick-middle-v1's window (y 1900-3800 is the flick's work range), so part M fits and part E has
+  no future-card shrink. That is the owner's OBSERVED position, which gates nothing.
+- **Gap 1, the scorer: open.** The lead assigned p118/score.mjs and its self-test to int-v8 (21:19Z). Its hashes go
+  into the ticket, and ops reads and re-runs it before the lead's read.
+- **Gap 3, provisional pins:** the desktop commission recheck is still queued. If it changes V, the owner re-hashes
+  and tells ops, and the signature is void until the new pins are read.
+- Status: **ready for the lead's read once the scorer's hashes are in the ticket.**
