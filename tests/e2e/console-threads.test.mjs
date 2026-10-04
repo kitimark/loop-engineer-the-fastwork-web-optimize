@@ -493,6 +493,25 @@ test('T-024 #13 CLI: thread new SIMILAR (topic or close title) unless --force; m
   assert.doesNotMatch(cli('thread', 'list').stdout, new RegExp(`^${keep} .*(merged|related)`, 'm'));
 });
 
+test('I-181: two --monitor listeners with the same reader (staggered) never crash when one takes the news first; the message is delivered', async () => {
+  cli('thread', 'wait', '--as', 'lead', '--timeout', '1', '--quiet'); // take what earlier tests left unread
+  const a = cliAsync('thread', 'wait', '--as', 'lead', '--monitor', '--timeout', '8');
+  await sleep(250);
+  const b = cliAsync('thread', 'wait', '--as', 'lead', '--monitor', '--timeout', '8');
+  await sleep(250);
+  const c = cliAsync('thread', 'wait', '--as', 'lead', '--monitor', '--timeout', '8');
+  await sleep(500);
+  const t = await userPost('/api/threads', { title: 'Twin listeners', text: 'Who takes this' });
+  const id = t.json.thread.id;
+  const rs = await Promise.all([a, b, c]);
+  for (const r of rs) {
+    assert.equal(r.code, 3, `ends by its timeout, no crash: ${r.out}`);
+    assert.doesNotMatch(r.stderr, /Cannot destructure|TypeError/);
+    for (const l of r.stdout.trim().split('\n')) assert.match(l, /^WAKE [a-z]+ \S+/, l);
+  }
+  assert.ok(rs.some((r) => r.stdout.includes(`WAKE new ${id} #1 by user: Who takes this`)), 'delivered to at least one listener');
+});
+
 test('I-147: `thread wait --monitor` keeps listening and prints each wake as WAKE lines only (no MET, no stderr states)', async () => {
   cli('thread', 'wait', '--as', 'lead', '--timeout', '1', '--quiet'); // take what earlier tests left unread
   const w = cliAsync('thread', 'wait', '--as', 'lead', '--monitor', '--timeout', '7');

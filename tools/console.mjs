@@ -395,7 +395,6 @@ async function thread() {
       const news = t.met ? JSON.parse(t.detail) : [];
       return { met: true, state: `${news.length} thread(s), ${ev.length} proposal decision event(s)`, detail: JSON.stringify({ news, ev }) };
     };
-    const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
     const monitor = flag('monitor'); // I-147: one WAKE line per event, keeps listening until --timeout; no stderr states
     const onChange = flag('quiet') || monitor ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
     // I-108: without --thread this is a listener (armed all the time, waits on nobody): marked, and worded as such
@@ -409,7 +408,9 @@ async function thread() {
         if (r.result !== 'met') { console.log(TH.wakeEndLine({ reader: w.reader, triage: w.triage, waitedSec: Math.round((Date.now() - t0) / 1000) })); return EXIT.timeout; }
         await new Promise((res) => setTimeout(res, 1000)); // a burst: settle, then print everything unread at once
         const again = check();
-        const { news, ev } = split(again.met ? again : r);
+        const settled = TH.settledWake(again);
+        if (!settled) continue; // I-181: another reader with this name took the news: nothing to print, keep listening
+        const { news, ev } = settled;
         await TH.commitWait(w.reader, news);
         await PR.commitProposalNews(w.reader, ev);
         const L = [...news.flatMap((t) => TH.wakeLines(t)), ...ev.map((e) => PR.proposalWakeLine(e))];
@@ -422,7 +423,9 @@ async function thread() {
     // a burst (the user sends two or three lines in a row): settle a moment, then print everything unread at once
     await new Promise((res) => setTimeout(res, 1000));
     const again = check();
-    const { news, ev } = split(again.met ? again : r);
+    const settled = TH.settledWake(again);
+    if (!settled) { console.log(`NOTHING NEW ${w.what}: another reader named ${w.reader} took the news (after ${r.waitedSec} s). Re-arm: node tools/console.mjs thread wait --as ${w.reader}${w.triage ? ' --triage' : ''}`); return EXIT.met; } // I-181
+    const { news, ev } = settled;
     await TH.commitWait(w.reader, news);
     await PR.commitProposalNews(w.reader, ev);
     if (flag('json')) console.log(JSON.stringify([...news, ...ev.map((e) => ({ kind: 'proposal', ...e }))], null, 1));

@@ -174,3 +174,27 @@ test('the desk assigns only to a listening owner (else escalate); the lead assig
   await T.assign(t.id, { by: 'lead', to: 'fix-away' });
   assert.match(T.threadLine(T.getThread(t.id), null, R.listeningState({ threads: T.listThreads() })), /-> fix-here \(listening\),fix-away \(not listening\)/);
 });
+
+test('I-181: a user message in a thread assigned to the lead wakes the triage wait at once (the lead is no "other owner" with 10 min)', async () => {
+  const t = await userThread();
+  await T.assign(t.id, { by: 'lead', to: 'lead' });
+  listen('lead'); // the lead's own listener is live, as in the incident
+  const a = news(triage(0));
+  assert.equal(a.length, 1, 'woken at once, not after 10 min');
+  assert.deepEqual(a[0].why, ['#1 assigned to the lead']);
+  await T.commitWait('lead', a);
+  assert.deepEqual(news(triage(0)), [], 'once');
+  assert.deepEqual(news(triage(30)), [], 'and not again after 10 min');
+  // a later message wakes again; an answer by the lead keeps the lead asleep
+  await T.replyUser(t.id, { text: 'second' });
+  assert.deepEqual(news(triage(0)).map((x) => x.why), [['#2 assigned to the lead']]);
+  await T.replyAgent(t.id, { by: 'lead', text: 'answered' });
+  assert.deepEqual(news(triage(0)), []);
+  // another listening owner next to the lead keeps the 10 min for that owner
+  const u = await userThread({ title: 'Two owners' });
+  await T.assign(u.id, { by: 'lead', to: 'lead' });
+  await T.assign(u.id, { by: 'lead', to: 'fix-h' });
+  listen('fix-h');
+  assert.deepEqual(news(triage(0)), [], 'fix-h listens: it has its 10 min');
+  assert.deepEqual(news(triage(11)).map((x) => x.why), [['#1 unanswered 10 min (owner: fix-h)']]);
+});

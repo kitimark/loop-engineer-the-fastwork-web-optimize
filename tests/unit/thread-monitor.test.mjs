@@ -56,3 +56,12 @@ test('I-147: end and never lines name the reader and how to re-arm', () => {
   assert.equal(T.wakeEndLine({ reader: 'fix-a', waitedSec: 5 }), 'WAKE end fix-a timeout after 5 s; re-arm: node tools/console.mjs thread wait --as fix-a --monitor');
   assert.equal(T.wakeNeverLine({ id: 'T-003', why: 'T-003 was closed\nfor good' }), 'WAKE never T-003 T-003 was closed for good');
 });
+
+test('I-181: the 1 s re-check after a wake: not met any more (another reader with the same name took the news) is null, not a crash', () => {
+  const news = [{ id: 'T-002', title: 'x', messages: [{ n: 1, by: 'user', at: 'x', text: 'hi' }] }];
+  const ev = [{ id: 'PR-001', event: 'decided' }];
+  assert.equal(T.settledWake({ met: false, state: '2 thread(s), nothing new' }), null);
+  // still met: the re-check is what prints (it may hold more of a burst), in both detail shapes
+  assert.deepEqual(T.settledWake({ met: true, detail: JSON.stringify(news) }), { news, ev: [] });
+  assert.deepEqual(T.settledWake({ met: true, detail: JSON.stringify({ news, ev }) }), { news, ev });
+});

@@ -897,7 +897,9 @@ function triageCondition(nowFn, busy = null) {
     for (const t of ts) {
       const mark = t.reads?.[LEAD] || 0;
       const histSeen = t.histSeen?.[LEAD] || 0;
-      const heard = t.assignees.filter((a) => ls(a).listening);
+      // I-181: the lead is the reader of this wait, not an "other owner" with 10 min to answer: a thread assigned to the
+      // lead (listening or not) wakes it at once, exactly as a thread nobody listens to
+      const heard = t.assignees.filter((a) => a !== LEAD && ls(a).listening);
       const busyOnes = bs ? heard.filter((a) => bs(a).busy) : [];
       const owners = heard.filter((a) => !busyOnes.includes(a));
       const why = [], msgs = [];
@@ -913,7 +915,8 @@ function triageCondition(nowFn, busy = null) {
           // I-164: a busy owner still answers the user's reply to its own question (--ask)
           const asked = busyOnes.length ? askedBy(t, m) : null;
           const mine = busyOnes.includes(asked) ? [...owners, asked] : owners;
-          if (!mine.length) r = busyOnes.length ? `nobody free (${busyOnes.map((a) => `${a} busy: ${bs(a).why}`).join('; ')})` : t.assignees.length ? `nobody listening (assigned: ${t.assignees.join(', ')})` : 'nobody listening';
+          if (!mine.length && !busyOnes.length && t.assignees.includes(LEAD)) r = 'assigned to the lead';
+          else if (!mine.length) r = busyOnes.length ? `nobody free (${busyOnes.map((a) => `${a} busy: ${bs(a).why}`).join('; ')})` : t.assignees.length ? `nobody listening (assigned: ${t.assignees.join(', ')})` : 'nobody listening';
           else if (now - Date.parse(m.at) >= TRIAGE_ESCALATE_MIN * 60000) r = `unanswered ${TRIAGE_ESCALATE_MIN} min (owner: ${mine.join(', ')})`;
         }
         if (!r) { pending = Math.min(pending, m.n); continue; }
@@ -1002,6 +1005,16 @@ export function wakeLines(t) {
   });
   for (const e of esc) L.push(`WAKE escalate ${t.id} ${wakeShort(e)}`);
   return L;
+}
+/**
+ * I-181: what a wake prints after its 1 s settle. `again` is a fresh check() ({met, detail}). Not met any more means
+ * another reader with the same name (a second lead listener) already took the news: null, the caller prints nothing
+ * and keeps listening. (It used to destructure pollUntil's result, which has no `.met`, and crashed.) Otherwise
+ * {news, ev}; detail is the news array or {news, ev} (JSON).
+ */
+export function settledWake(again) {
+  if (!again.met) return null;
+  return again.detail.startsWith('[') ? { news: JSON.parse(again.detail), ev: [] } : JSON.parse(again.detail);
 }
 /** The last line of a --monitor wait that ran out of its --timeout. */
 export const wakeEndLine = ({ reader, triage = false, waitedSec }) =>
