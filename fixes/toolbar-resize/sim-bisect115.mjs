@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // toolbar-resize P-115 (copy of the P-110 driver, sim-bisect110 f77c5e456d17): candidate forms for the showcase cost, in-page arms (p115-inject.mjs),
-// all on the v7 server. One normal (exclusive) Simulator hold, as P-109 (the shared lane refuses gestures):
+// all on the v8 server (C = v8, lead 2026-10-04 19:2xZ; was v7 before data). One normal (exclusive) Simulator hold, as P-109 (the shared lane refuses gestures):
 //   node tools/lock.mjs run chrome-measure --max-seconds 600 --owner fix-toolbar-resize -- sh -c \
 //     'SB_BUDGET_S=520 node tools/sim.mjs session --owner fix-toolbar-resize -- node fixes/toolbar-resize/sim-bisect115.mjs <step> ...'
 // step = <arm>:H<n>, arm C (control) | svh | csl | cva. Output: out/toolbar-resize/sim115/. Gate: check-inject115.mjs.
@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 const WT = new URL('../..', import.meta.url).pathname;
 const D = join(WT, 'out/toolbar-resize/sim115'); mkdirSync(D, { recursive: true });
-const STATE = join(WT, 'out/serve-v7-best.json');
+const STATE = join(WT, 'out/serve-v8-best.json');
 const ARMS = ['C', 'svh', 'csl', 'cva'];
 const INJ = join(WT, 'fixes/toolbar-resize/p115-inject.mjs');
 const injSha = createHash('sha256').update(readFileSync(INJ)).digest('hex').slice(0, 12);
@@ -19,12 +19,12 @@ const SCRIPT = join(WT, 'out/toolbar-resize/flick-hero-v1.json');
 const t0 = Date.now(), budget = Number(process.env.SB_BUDGET_S || 285) * 1000;
 const sh = (args) => { const r = spawnSync('node', args, { cwd: WT, encoding: 'utf8', maxBuffer: 64 << 20 }); const out = `${r.stdout || ''}${r.stderr || ''}`.trim().split('\n'); console.log('  ' + out.slice(-2).join('\n  ')); return r.status; };
 const log = (o) => appendFileSync(join(D, 'runs.jsonl'), JSON.stringify({ at: new Date().toISOString(), ...o }) + '\n');
-// served bytes (ops C2): the v7 twin must serve v7's CSS and JS from its overlay
+// served bytes (ops C2): the v8 twin must serve v8's CSS and JS from its overlay
 const st = JSON.parse(readFileSync(STATE, 'utf8'));
 const hash = async (p) => { const res = await fetch(`http://localhost:${st.httpTwin}${p}`); return { h: createHash('sha256').update(Buffer.from(await res.arrayBuffer())).digest('hex').slice(0, 12), source: res.headers.get('x-mirror-source') }; };
 const served = { css: await hash('/_app/immutable/assets/2.gBuqKVzi.css'), js: await hash('/_app/immutable/nodes/2.DyWL8TcE.js'), port: st.httpTwin };
 log({ served, injectSha: injSha });
-if (served.css.h !== '308f0da70c3a' || served.js.h !== '8c90da217745' || served.css.source !== 'overlay') { console.log(`STOP served bytes: ${JSON.stringify(served)}`); process.exit(26); }
+if (served.css.h !== 'f836404b3728' || served.js.h !== '3e3e94cb6e9f' || served.css.source !== 'overlay') { console.log(`STOP served bytes: ${JSON.stringify(served)}`); process.exit(26); }
 console.log(`served bytes ok: css ${served.css.h} js ${served.js.h}; inject ${injSha}`);
 console.log('wda start:'); sh(['tools/sim.mjs', 'wda', 'start']);
 for (const s of process.argv.slice(2)) {

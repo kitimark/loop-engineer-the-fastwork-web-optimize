@@ -419,20 +419,27 @@ REPLICA true, DRIFT 0.012 (C-H1 -> C-H4), VOID false; INJECT-GATE all applied; n
 Lead (message, after P-110): yes; one exclusive `--no-timing` Simulator hold, <= 10 min, after the phone work (iphone-runner
 opens the gap). Mechanism and candidate screening only; a candidate that locates still needs a look check and a phone G check.
 
+- **Amended before data (lead, 2026-10-04 19:2xZ): C = v8** (`fixes/v8-best`, landed 743295de; JS `3e3e94cb6e9f`, CSS
+  `f836404b3728`, rebuilt here with `fix.mjs apply v8-best`, hashes checked). Nothing else changes: same arms, order, inject
+  file (`0cc373b2594d`), gate (`126f46d31f3c`), scorer (`cb6f0c97b81b`) and predictions. v7 to v8 does not touch the tested
+  rules: v8 CSS l.3646-3946 equals v7 l.3600-3900 line for line (offset +46), none of the 56 changed CSS lines names
+  `.start-selling-future*`, `.start-selling-profile*`, `#people` or a viewport unit, and no changed JS line names the showcase,
+  the profile deck, `innerHeight` or `resize` (v8's parts: countdown K + faces, accent exact, morph rev 3, the glue line).
+  No P-115 data was taken on v7.
 - **Question.** P-110: the toolbar-step Layout is spent in `#people .start-selling-future-showcase`. Which change that
   keeps the look removes it?
-- **Arms** (all on the v7 server, CSS `308f0da70c3a`, JS `8c90da217745`; applied in the page by `p115-inject.mjs`,
+- **Arms** (all on the v8 server, CSS `f836404b3728`, JS `3e3e94cb6e9f`; applied in the page by `p115-inject.mjs`,
   sha256/12 `0cc373b2594d`, after each load and before the Timeline starts, like P-110):
-  - `svh`: `.start-selling-future-card { min-height: <its own computed px> }` (replaces `100svh`, CSS l.3522, width <= 860px;
+  - `svh`: `.start-selling-future-card { min-height: <its own computed px> }` (replaces `100svh`, v8 CSS l.3811 (v7 l.3765), width <= 860px;
     the small viewport height is constant while the toolbar moves, so the look is the same in portrait). Tests the S5 lead.
   - `csl`: `contain: layout` on the showcase.
   - `cva`: `content-visibility: auto; contain-intrinsic-block-size: auto <its measured px>` on the showcase. Per spec,
     `auto` always turns on layout, style and paint containment and skips the contents only while the element is not
     relevant to the user (CONFIRMED, CSS Containment 2, w3.org/TR/css-contain-2/#content-visibility, value `auto`; WebKit
     assumed to follow it). So cva = csl + style and paint containment + a skip while off screen (ops C1, amended before data).
-  - C = v7 with the same injection and no change.
-- **Order (one hold):** C:H1 svh:H1 csl:H1 C:H2 cva:H1 C:H3. Driver `sim-bisect115.mjs` (sha256/12 `91d32f9ac1c6`, a copy of
-  sim-bisect110 with the arm list, inject file and folder changed). If the budget stop drops steps, they run in one more
+  - C = v8 with the same injection and no change.
+- **Order (one hold):** C:H1 svh:H1 csl:H1 C:H2 cva:H1 C:H3. Driver `sim-bisect115.mjs` (sha256/12 `4e1077d555cd`, a copy of
+  sim-bisect110 with the arm list, inject file, folder and the v8 server (state file, served hashes) changed). If the budget stop drops steps, they run in one more
   hold as `C:H4 <dropped arms> C:H5`, same scorer and gate, and the result says so.
 - **Applied-arm gate (frozen, as P-110 C1):** `check-inject115.mjs` (sha256/12 `126f46d31f3c`) runs before the scorer. An arm
   counts only when `applied: true`, its rule is in `css`, and: svh, `measured.cardMinH` is a px value > 0; csl, the computed
@@ -447,9 +454,9 @@ opens the gap). Mechanism and candidate screening only; a candidate that locates
   - svh LOCATES: the card's min-height viewport-unit invalidation (S5) drives it; the fix is a px min-height set once
     (resize listener for rotation); look check, then phone G. svh NONE refutes only that path (the card's min-height reaching
     the showcase), not the S5 lead as a whole (ops N1): other svh users stay, e.g. `.start-selling-future` margin-top
-    `calc(1px - 100svh)` (v7 CSS l.2556; baseline l.2368), the hero and pain. Inside the showcase,
-    `.start-selling-profile-shell`'s `100vh` clamp (v7 l.3262-3263; baseline l.3019-3020) is overridden on phones by
-    `height: auto; min-height: 0` (v7 l.3711-3728, in the phone media query at l.3627; checked against the v7 CSS), so it is
+    `calc(1px - 100svh)` (v8 CSS l.2602; v7 l.2556; baseline l.2368), the hero and pain. Inside the showcase,
+    `.start-selling-profile-shell`'s `100vh` clamp (v8 l.3308-3309; v7 l.3262-3263; baseline l.3019-3020) is overridden on phones by
+    `height: auto; min-height: 0` (v8 l.3757-3774 in the phone media query at l.3673; v7 l.3711-3728 / l.3627; checked against the v8 CSS), so it is
     not a live viewport-unit user there.
   - csl and cva both LOCATE: layout containment is enough; csl is the candidate.
   - cva LOCATES and csl NONE: style or paint containment, or the off-screen skip; separate them in the next card.
