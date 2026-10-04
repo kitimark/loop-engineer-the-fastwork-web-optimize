@@ -1,0 +1,208 @@
+{
+ "files": [
+  "t096-2026-10-04T13-06-43-907Z.json",
+  "t096-2026-10-04T13-11-30-534Z.json",
+  "t096-2026-10-04T13-13-57-824Z.json"
+ ],
+ "A": {
+  "n": 3,
+  "served": 1,
+  "R": {
+   "beginMainThreadFrame": "394,384,382",
+   "drawFrame": "480,481,480",
+   "droppedFrame": "0,0,0",
+   "fireAnimationFrame": "274,272,281",
+   "countdownRaf": "274,272,281",
+   "countdownFunctionCalls": "290,288,297",
+   "updateLayoutTree": "394,384,382",
+   "layout": "15,19,18",
+   "paint": "1155,1058,1056",
+   "commit": "394,384,382",
+   "layerize": "394,384,382",
+   "updateLayer": "45056,44005,43869",
+   "pipeline": [
+    "{\"frames\":480,\"byState\":{\"STATE_PRESENTED_ALL\":480},\"presentedWithMain\":394,\"presentedCompositorOnly\":86,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":86}}",
+    "{\"frames\":481,\"byState\":{\"STATE_PRESENTED_ALL\":481},\"presentedWithMain\":384,\"presentedCompositorOnly\":97,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":97}}",
+    "{\"frames\":480,\"byState\":{\"STATE_PRESENTED_ALL\":480},\"presentedWithMain\":382,\"presentedCompositorOnly\":98,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":98}}"
+   ],
+   "roll": {
+    "n": 24,
+    "commit": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "layerize": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "paint": "0,4,4,0,4,4,0,4,4,0,4,4,0,4,4,0,4,0,4,4,0,4,4,0",
+    "paintedLayers": "0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0",
+    "layout": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+    "updateLayoutTree": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "updateLayer": "116,112,116,116,112,116,116,112,116,116,112,116,116,112,116,116,116,116,112,116,116,112,116,116"
+   }
+  },
+  "S": {
+   "beginMainThreadFrame": "189,184,179",
+   "drawFrame": "192,192,193",
+   "droppedFrame": "8,12,18",
+   "fireAnimationFrame": "813,779,658",
+   "countdownRaf": "53,67,47",
+   "countdownFunctionCalls": "60,75,54",
+   "updateLayoutTree": "287,271,261",
+   "layout": "59,55,56",
+   "paint": "1140,954,854",
+   "commit": "189,184,179",
+   "layerize": "189,184,179",
+   "updateLayer": "13953,13270,12904",
+   "pipeline": [
+    "{\"frames\":378,\"byState\":{\"STATE_PRESENTED_ALL\":366,\"STATE_PRESENTED_PARTIAL\":6,\"STATE_DROPPED\":2,\"STATE_NO_UPDATE_DESIRED\":4},\"presentedWithMain\":184,\"presentedCompositorOnly\":188,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":6,\"STATE_PRESENTED_ALL\":182}}",
+    "{\"frames\":373,\"byState\":{\"STATE_PRESENTED_ALL\":361,\"STATE_PRESENTED_PARTIAL\":10,\"STATE_DROPPED\":2},\"presentedWithMain\":183,\"presentedCompositorOnly\":188,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":10,\"STATE_PRESENTED_ALL\":178}}",
+    "{\"frames\":368,\"byState\":{\"STATE_PRESENTED_ALL\":346,\"STATE_PRESENTED_PARTIAL\":16,\"STATE_NO_UPDATE_DESIRED\":4,\"STATE_DROPPED\":2},\"presentedWithMain\":174,\"presentedCompositorOnly\":188,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":16,\"STATE_PRESENTED_ALL\":172}}"
+   ],
+   "roll": {
+    "n": 10,
+    "commit": "1,1,1,1,1,1,1,1,1,1",
+    "layerize": "1,1,1,1,1,1,1,1,1,1",
+    "paint": "7,7,9,7,3,2,4,4,6,2",
+    "paintedLayers": "1,1,1,1,1,1,1,1,1,1",
+    "layout": "0,1,0,1,0,0,0,0,1,0",
+    "updateLayoutTree": "2,2,2,3,3,1,1,1,1,1",
+    "updateLayer": "116,133,32,112,116,31,31,112,133,31"
+   }
+  },
+  "L": [
+   "+0/-4 +4/-0 +3/-3 +0/-4",
+   "+0/-4 +4/-0 +3/-3 +0/-0",
+   "+0/-4 +4/-0 +3/-3 +0/-4"
+  ]
+ },
+ "A2": {
+  "n": 3,
+  "served": 1,
+  "R": {
+   "beginMainThreadFrame": "393,385,388",
+   "drawFrame": "481,483,481",
+   "droppedFrame": "0,0,1",
+   "fireAnimationFrame": "220,252,242",
+   "countdownRaf": "220,252,242",
+   "countdownFunctionCalls": "236,268,258",
+   "updateLayoutTree": "393,385,388",
+   "layout": "16,17,17",
+   "paint": "1146,1122,1159",
+   "commit": "393,385,388",
+   "layerize": "393,385,388",
+   "updateLayer": "44943,44018,44527",
+   "pipeline": [
+    "{\"frames\":481,\"byState\":{\"STATE_PRESENTED_ALL\":481},\"presentedWithMain\":393,\"presentedCompositorOnly\":88,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":88}}",
+    "{\"frames\":483,\"byState\":{\"STATE_PRESENTED_ALL\":483},\"presentedWithMain\":385,\"presentedCompositorOnly\":98,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":98}}",
+    "{\"frames\":506,\"byState\":{\"STATE_PRESENTED_ALL\":481,\"STATE_PRESENTED_PARTIAL\":25},\"presentedWithMain\":388,\"presentedCompositorOnly\":118,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":93,\"STATE_PRESENTED_PARTIAL\":25}}"
+   ],
+   "roll": {
+    "n": 24,
+    "commit": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "layerize": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "paint": "0,4,4,0,4,4,0,4,0,4,4,2,4,4,0,4,4,0,4,4,0,4,4,0",
+    "paintedLayers": "0,1,1,0,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,1,0,1,1,0",
+    "layout": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+    "updateLayoutTree": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "updateLayer": "116,112,116,116,112,116,116,112,116,112,116,116,112,116,116,112,116,116,112,116,116,112,116,116"
+   }
+  },
+  "S": {
+   "beginMainThreadFrame": "190,191,187",
+   "drawFrame": "193,195,194",
+   "droppedFrame": "8,8,13",
+   "fireAnimationFrame": "845,753,799",
+   "countdownRaf": "85,57,69",
+   "countdownFunctionCalls": "92,64,76",
+   "updateLayoutTree": "288,274,281",
+   "layout": "62,66,61",
+   "paint": "1155,1118,879",
+   "commit": "190,191,187",
+   "layerize": "190,191,187",
+   "updateLayer": "13995,14156,13377",
+   "pipeline": [
+    "{\"frames\":380,\"byState\":{\"STATE_PRESENTED_ALL\":369,\"STATE_PRESENTED_PARTIAL\":6,\"STATE_DROPPED\":2,\"STATE_NO_UPDATE_DESIRED\":3},\"presentedWithMain\":186,\"presentedCompositorOnly\":189,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":6,\"STATE_PRESENTED_ALL\":183}}",
+    "{\"frames\":379,\"byState\":{\"STATE_PRESENTED_ALL\":369,\"STATE_PRESENTED_PARTIAL\":6,\"STATE_DROPPED\":2,\"STATE_NO_UPDATE_DESIRED\":2},\"presentedWithMain\":188,\"presentedCompositorOnly\":187,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":6,\"STATE_PRESENTED_ALL\":181}}",
+    "{\"frames\":378,\"byState\":{\"STATE_PRESENTED_ALL\":362,\"STATE_PRESENTED_PARTIAL\":11,\"STATE_DROPPED\":2,\"STATE_NO_UPDATE_DESIRED\":3},\"presentedWithMain\":183,\"presentedCompositorOnly\":190,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":11,\"STATE_PRESENTED_ALL\":179}}"
+   ],
+   "roll": {
+    "n": 9,
+    "commit": "1,1,1,1,1,1,1,1,1",
+    "layerize": "1,1,1,1,1,1,1,1,1",
+    "paint": "7,102,5,7,7,5,5,6,0",
+    "paintedLayers": "1,1,1,1,1,1,1,1,0",
+    "layout": "0,1,0,0,1,0,0,1,0",
+    "updateLayoutTree": "3,3,1,2,2,1,3,2,1",
+    "updateLayer": "116,133,31,116,133,31,111,31,31"
+   }
+  },
+  "L": [
+   "+4/-0 +3/-3 +0/-4 +4/-0",
+   "+0/-4 +4/-0 +3/-3 +0/-0",
+   "+3/-3 +0/-4 +4/-0 +3/-3"
+  ]
+ },
+ "B": {
+  "n": 3,
+  "served": 1,
+  "R": {
+   "beginMainThreadFrame": "316,315,322",
+   "drawFrame": "480,481,480",
+   "droppedFrame": "0,0,0",
+   "fireAnimationFrame": "8,9,9",
+   "countdownRaf": "8,9,9",
+   "countdownFunctionCalls": "32,34,34",
+   "updateLayoutTree": "316,315,322",
+   "layout": "17,18,17",
+   "paint": "1050,1047,1071",
+   "commit": "316,315,322",
+   "layerize": "316,315,322",
+   "updateLayer": "36210,36061,36581",
+   "pipeline": [
+    "{\"frames\":480,\"byState\":{\"STATE_PRESENTED_ALL\":480},\"presentedWithMain\":316,\"presentedCompositorOnly\":164,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":164}}",
+    "{\"frames\":480,\"byState\":{\"STATE_PRESENTED_ALL\":480},\"presentedWithMain\":315,\"presentedCompositorOnly\":165,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":165}}",
+    "{\"frames\":480,\"byState\":{\"STATE_PRESENTED_ALL\":480},\"presentedWithMain\":322,\"presentedCompositorOnly\":158,\"compositorOnlyByState\":{\"STATE_PRESENTED_ALL\":158}}"
+   ],
+   "roll": {
+    "n": 24,
+    "commit": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "layerize": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "paint": "4,0,4,4,0,4,4,0,4,0,4,4,0,4,4,0,4,0,4,4,0,4,4,0",
+    "paintedLayers": "1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0",
+    "layout": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+    "updateLayoutTree": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+    "updateLayer": "116,116,112,116,116,112,116,116,116,116,112,116,116,112,116,116,116,116,112,116,116,112,116,116"
+   }
+  },
+  "S": {
+   "beginMainThreadFrame": "188,189,189",
+   "drawFrame": "193,192,193",
+   "droppedFrame": "10,8,7",
+   "fireAnimationFrame": "747,763,717",
+   "countdownRaf": "3,3,2",
+   "countdownFunctionCalls": "13,12,12",
+   "updateLayoutTree": "281,285,275",
+   "layout": "54,55,60",
+   "paint": "911,920,852",
+   "commit": "188,189,189",
+   "layerize": "188,189,189",
+   "updateLayer": "13610,13794,13695",
+   "pipeline": [
+    "{\"frames\":377,\"byState\":{\"STATE_PRESENTED_ALL\":363,\"STATE_PRESENTED_PARTIAL\":8,\"STATE_DROPPED\":2,\"STATE_NO_UPDATE_DESIRED\":4},\"presentedWithMain\":183,\"presentedCompositorOnly\":188,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":8,\"STATE_PRESENTED_ALL\":180}}",
+    "{\"frames\":378,\"byState\":{\"STATE_PRESENTED_ALL\":366,\"STATE_PRESENTED_PARTIAL\":6,\"STATE_DROPPED\":2,\"STATE_NO_UPDATE_DESIRED\":4},\"presentedWithMain\":184,\"presentedCompositorOnly\":188,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":6,\"STATE_PRESENTED_ALL\":182}}",
+    "{\"frames\":378,\"byState\":{\"STATE_PRESENTED_ALL\":370,\"STATE_PRESENTED_PARTIAL\":6,\"STATE_DROPPED\":2},\"presentedWithMain\":188,\"presentedCompositorOnly\":188,\"compositorOnlyByState\":{\"STATE_PRESENTED_PARTIAL\":6,\"STATE_PRESENTED_ALL\":182}}"
+   ],
+   "roll": {
+    "n": 9,
+    "commit": "1,1,1,1,1,1,1,1,1",
+    "layerize": "1,1,1,1,1,1,1,1,1",
+    "paint": "7,6,6,7,5,2,6,6,2",
+    "paintedLayers": "1,1,1,1,1,1,1,1,1",
+    "layout": "0,1,0,0,1,1,0,1,0",
+    "updateLayoutTree": "2,1,1,2,2,2,2,1,1",
+    "updateLayer": "112,133,32,112,133,32,112,30,31"
+   }
+  },
+  "L": [
+   "+4/-0 +3/-3 +0/-4 +4/-0",
+   "+0/-4 +4/-0 +3/-3 +0/-0",
+   "+4/-0 +3/-3 +0/-4 +0/-0"
+  ]
+ }
+}
