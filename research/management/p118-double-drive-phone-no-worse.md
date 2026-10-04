@@ -118,3 +118,13 @@ roles v3 R3), with:
 - **S1:** the owner reports that the at-rest check left V unchanged. The snapshot's V hashes on disk are still
   3076c5a8c9a3 / 2f7197880ffd, so the arms stand and this read holds.
 - Status: **scorer second read PASS; the signature's S2 condition is met, P-118's data may be scored with this scorer.**
+
+## Lead amendment (2026-10-04 ~21:55Z, user T-162 #3/#5): profile xcode-serious
+
+No counted run had started: warm-up hold 1 (21:37-21:45Z) left a cold phone (Nominal 30.7 °C) at Fair 34.9 °C after 12
+flicks. The user chose Xcode's Thermal State "Serious" as the default profile with no heat pre-warm, so P-118 runs under
+profile `xcode-serious`: gate `--expect serious --accept-induced` (c4875944) at the start and end of every hold, no
+pre-warm, the per-arm load warm-up (A3/U5) kept, ceiling 44 °C / Critical. Arms, order, scorer and gates are unchanged.
+Order: iphone-runner's decisive check part OFF on the cool phone, mgmt-devices' console step (the user sets the
+condition), part ON, then H1. P-118 data never pools with real-heat blocks. Whether induced Serious also slows the chip
+stays UNRESOLVED until the decisive check reports.
