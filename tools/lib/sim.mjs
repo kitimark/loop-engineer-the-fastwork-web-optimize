@@ -29,7 +29,7 @@ import { randomBytes } from 'node:crypto';
 import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, parseHeld, staleReason, pidAlive, tryAcquire, dequeue, release as lockRelease, isGroup, slotIn, timedInSlotRefusal, SHARED_LANE } from './lock.mjs';
 import { redact } from './redact.mjs';
-import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, warmLine, warmState, keeperRetryMs, SIM_MJS } from './sim-warm.mjs';
+import { idleSec, readWarm, warmFile, keeperInfo, timingDemand, leaseOwner, warmLine, warmState, keeperRetryMs, SIM_MJS } from './sim-warm.mjs';
 import * as BG from './sim-background.mjs';
 import { parseReduceMotion, applyReduceMotion, restoreReduceMotion, restorePending, readPending, pendingLine, fmtRM } from './sim-motion.mjs';
 
@@ -852,7 +852,7 @@ export async function keeper({ id, pollMs = Number(process.env.FW_SIM_KEEPER_POL
       const w = readWarm();
       if (!w || w.id !== id) { log(`keeper ${id}: the warm record is gone or another one (a session took the device over, or it was shut down): exiting`); return 0; }
       let why = Date.now() >= Date.parse(w.idleUntil) ? `idle ${Math.round((Date.now() - Date.parse(w.lastSessionEndedAt)) / 1000)} s` : null;
-      if (!why) { try { why = timingDemand(lockStatus('chrome-measure')); } catch {} }
+      if (!why) { try { why = timingDemand(lockStatus('chrome-measure'), { phoneOwner: leaseOwner(lockStatus('iphone')) }); } catch {} }
       if (!why && Date.now() - lastCheck >= checkMs) {
         // review-i063 N3: the real state every checkMs (one simctl list): a device shut down outside the keeper
         // (Simulator.app quit, simctl by hand) leaves no record that says "booted"; shutdownWarm clears it under the lock
@@ -1120,7 +1120,7 @@ export async function session({ owner, window = 'shown', cmd, args = [], log = c
     try {
       const idle = idleSec();
       const canKeep = functional && idle > 0 && state.ready && !interrupted && !motionDirty;
-      const demand = canKeep ? timingDemand(lockStatus('chrome-measure')) : null;
+      const demand = canKeep ? timingDemand(lockStatus('chrome-measure'), { phoneOwner: leaseOwner(lockStatus('iphone')) }) : null;
       if (demand) clog(`not keeping ${device().key} booted: ${demand}`);
       else if (canKeep) kept = await warmOut({ udid: cfg.udid, owner, boot: rec.boot, idle, log: clog });
     } catch (e) { clog(`keeping ${device().key} booted failed (${e.message}): shutting it down`); try { await stopOne('keeper', clog); } catch {} rmSync(warmFile(), { force: true }); kept = null; }

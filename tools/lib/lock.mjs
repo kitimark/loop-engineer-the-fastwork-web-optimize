@@ -574,7 +574,8 @@ export function status(r) {
   const q = pruneQueue(readJson(queueFile(r), []));
   const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)].owner : null;
   const now = Date.now(), grace = h ? stepGrace(h, now) : null; // I-123: a lease kept for its owner's user step
-  const st = { resource: r, holder: h, stale: h ? staleReason(h, now) : null, queue: q, next, ...(grace ? { grace } : {}) };
+  const df = GATED[r] ? pruneQueue(readJson(deferredFile(r), []), now) : []; // I-160: Simulator sessions a phone block defers
+  const st = { resource: r, holder: h, stale: h ? staleReason(h, now) : null, queue: q, next, ...(grace ? { grace } : {}), ...(df.length ? { deferred: df } : {}) };
   const ho = handoverInfo(st);
   return ho ? { ...st, handover: ho } : st;
 }
@@ -706,7 +707,7 @@ function gateHolding(w, now, T = THRESHOLDS) {
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, job, sharedHeld, load1, ncpu, busyPct, awake, simWarm } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, job, sharedHeld, load1, ncpu, busyPct, awake, simWarm, sim } = opts;
   let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
@@ -780,6 +781,19 @@ export async function tryAcquire(r, opts) {
       writeJson(holderFile(r), h);
       return { ok: true, holder: h, reentrant: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
     }
+    // I-160: a Simulator session (a shared job named `simulator`, or `sim`) does not start beside a ticketed phone block;
+    // it leaves the queue while deferred (so no waiter, old lock code included, waits behind it) and polls on
+    if (GATED[r] && shared && (sim ?? job === 'simulator')) {
+      const why = simDeferral({ owner, maxSec, h, q, now });
+      if (why) {
+        const k = q.findIndex((w) => (w.shared || w.functional) && sameWaiter(w, owner, kind, pid));
+        if (k >= 0) { q.splice(k, 1); writeJson(queueFile(r), q); }
+        noteDeferred(r, { owner, kind, pid, why, queueTtlSec, now });
+        const ni = q.length ? nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), now, owner, r, T) : -1;
+        return { ok: false, deferred: true, why, holder: h, position: 0, queue: q, next: ni >= 0 ? q[ni].owner : null, mode: lane ? 'shared' : 'short' };
+      }
+      dropDeferred(r, { owner, kind, pid });
+    }
     const lg = readJson(lastGrantFile(r), {});
     const seen = effectiveLastGrant(lg, h);
     if (seen !== lg) writeJson(lastGrantFile(r), seen); // record a grant made by old code (I-011)
@@ -843,6 +857,7 @@ export async function tryAcquire(r, opts) {
       };
       if (gateRec?.timeout) { try { appendFileSync(hostAlertsFile(), JSON.stringify({ at: h.acquiredAt, resource: r, owner, event: 'gate-timeout', ...gateRec }) + '\n'); } catch {} }
       writeJson(holderFile(r), h);
+      if (GATED[r] && !short && !shared) closeBetween(owner); // I-160: the phone block's next hold ends its between-holds window
       const runStart = short ? new Date(shortRunStart(seen, now) ?? now).toISOString() : undefined;
       writeJson(lastGrantFile(r), { owner, short, maxSec, at: h.acquiredAt, token: h.token, runStart });
       if (mine >= 0) q.splice(mine, 1);
@@ -887,6 +902,64 @@ function phoneBlockPriority(q, entry, now) {
   if (at === i) return q;
   const rest = q.filter((w) => w !== entry);
   return [...rest.slice(0, at), entry, ...rest.slice(at)];
+}
+
+// ---- I-160: a ticketed phone block on the iphone lease, and the Simulator sessions it defers ------------------------
+// A Simulator boot took Mac load1 to 80-170 during P-111's timed phone holds (2026-10-04 15:34Z, 15:40Z). The runner marks
+// its lease with the block (`lock.mjs doing iphone --owner <it> --block <ticket>`, also on `acquire iphone`; meta.block
+// {id, at}) and, after each hold, a between-holds window (`--between <min>`: meta.between {at, until}). While the live lease
+// carries a block, a Simulator session's shared acquire (job `simulator`, or a `run` wrapping `sim.mjs session`) neither
+// joins nor opens a group, unless the window is open and its --max-seconds ends inside it; the window counts as shut
+// while the runner holds or queues for chrome-measure or a phone run of its own is live, and it closes for good when
+// the runner is granted its next exclusive chrome-measure hold (closeBetween) or starts a phone run (describeHold).
+// The lease's owner itself is never deferred. A deferred session is not a queue entry (lock code from before I-160 would
+// wait behind it): it is listed in <r>.deferred.json (status `deferred`), polls on, and re-queues at the back.
+export const BLOCK_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
+const deferredFile = (r) => join(lockDir(), `${r}.deferred.json`);
+/** The phone block on the live iphone lease ({owner, id, since, between, run}), or null. `ph`: the iphone holder record. */
+export function phoneBlock(ph = readJson(holderFile('iphone'), null), now = Date.now()) {
+  if (!ph || staleReason(ph, now) || !ph.meta?.block?.id) return null;
+  return { owner: ph.owner, id: ph.meta.block.id, since: ph.meta.block.at ?? null, between: ph.meta.between || null, run: ph.meta.run || null };
+}
+/**
+ * Inside the chrome-measure guard: why the Simulator session of `owner` (bounded by `maxSec`) may not start now, or null.
+ * `h`, `q`: chrome-measure's holder and queue; `ph`: the iphone holder (read when omitted).
+ */
+export function simDeferral({ owner, maxSec, h, q = [], now = Date.now(), ph }) {
+  const b = phoneBlock(ph === undefined ? readJson(holderFile('iphone'), null) : ph, now);
+  if (!b || b.owner === owner) return null;
+  const until = Date.parse(b.between?.until ?? '');
+  const runLive = !!(b.run && pidAlive(b.run.pid));
+  const holds = !!h && (knownGroup(h) ? h.readers.some((x) => x.owner === b.owner) : h.owner === b.owner);
+  const queued = q.some((w) => w.owner === b.owner);
+  const shut = holds ? `"${b.owner}" holds chrome-measure` : queued ? `"${b.owner}" waits for its next chrome-measure hold` : runLive ? `a phone run of "${b.owner}" is on` : null;
+  if (!shut && Number.isFinite(until) && now + (maxSec || 0) * 1000 <= until) return null;
+  const win = shut ? `the between-holds window is shut (${shut})`
+    : !Number.isFinite(until) ? 'no between-holds window is open'
+      : until <= now ? `its between-holds window ended at ${iso(until)}`
+        : `its between-holds window ends at ${iso(until)}, before this session's ${maxSec} s would`;
+  return `deferred: phone block ${b.id} of "${b.owner}" runs on the iPhone and ${win}: a Simulator session starts in a window that fits it (the runner opens one with: node tools/lock.mjs doing iphone --owner ${b.owner} --between <min>) or after the block (I-160)`;
+}
+/** Inside the guard: record (refresh) a deferred Simulator session in <r>.deferred.json, pruning entries not seen lately. */
+function noteDeferred(r, { owner, kind, pid, why, queueTtlSec, now }) {
+  const all = pruneQueue(readJson(deferredFile(r), []), now);
+  const prev = all.find((w) => sameWaiter(w, owner, kind, pid)), list = all.filter((w) => w !== prev);
+  list.push({ owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: prev?.since ?? iso(now), lastSeen: iso(now), queueTtlSec, why });
+  writeJson(deferredFile(r), list);
+}
+/** Inside the guard: this session is no longer deferred. */
+function dropDeferred(r, { owner, kind, pid }) {
+  const f = deferredFile(r), list = readJson(f, null);
+  if (!Array.isArray(list) || !list.some((w) => sameWaiter(w, owner, kind, pid))) return;
+  writeJson(f, list.filter((w) => !sameWaiter(w, owner, kind, pid)));
+}
+/** The Simulator sessions deferred by a phone block right now (seen within their queue TTL). */
+export const deferredSessions = (r) => (checkName(r), pruneQueue(readJson(deferredFile(r), []), Date.now()));
+/** I-160: `owner` was granted an exclusive chrome-measure hold: its phone block's between-holds window ends (best effort). */
+function closeBetween(owner) {
+  const f = holderFile('iphone');
+  if (readJson(f, null)?.owner !== owner) return;
+  try { withGuardSync('iphone', () => { const x = readJson(f, null); if (x && x.owner === owner && x.meta?.between) { delete x.meta.between; writeJson(f, x); } }); } catch {}
 }
 
 export const stepGraceLogFile = () => join(lockDir(), 'step-grace.log');
@@ -1064,12 +1137,18 @@ export async function release(r, { owner, force = false, shared = false } = {}) 
  * pid}) sets it; null clears it only if `runPid` (default this process) set it; either stamps the holder's lastRunAt (I-111). Only the live holder (or, in a shared
  * group, the owner's own reader records) may describe it. Returns the updated holder, or {shared, readers} for a group.
  */
-export async function describeHold(r, { owner, job, run, runPid = process.pid, now = Date.now() } = {}) {
+export async function describeHold(r, { owner, job, run, runPid = process.pid, block, betweenMin, now = Date.now() } = {}) {
   checkName(r);
+  // I-160: the phone block mark (a ticket id; null clears it and its window) and the between-holds window (minutes; 0 clears)
+  if ((block !== undefined || betweenMin !== undefined) && r !== 'iphone') throw new Error(`--block and --between mark a phone block on the iphone lease (not ${r})`);
+  if (block != null && !BLOCK_ID.test(String(block))) throw new Error(`--block must be a ticket id such as P-114 (letters, digits, . _ -; got "${block}")`);
+  if (betweenMin !== undefined && !(Number.isFinite(betweenMin) && betweenMin >= 0 && betweenMin <= 120)) throw new Error(`--between must be minutes 0..120 (got ${betweenMin})`);
   const apply = (m) => {
     const meta = { ...(m || {}) };
     if (job === null) delete meta.job; else if (job) meta.job = job;
-    if (run === null) { if (!meta.run || meta.run.pid === runPid) delete meta.run; } else if (run) meta.run = run;
+    if (run === null) { if (!meta.run || meta.run.pid === runPid) delete meta.run; } else if (run) { meta.run = run; delete meta.between; } // a phone run ends the window
+    if (block === null) { delete meta.block; delete meta.between; } else if (block && meta.block?.id !== String(block)) meta.block = { id: String(block), at: iso(now) };
+    if (betweenMin === 0) delete meta.between; else if (betweenMin) meta.between = { at: iso(now), until: iso(now + betweenMin * 60000) };
     return meta;
   };
   return withGuard(r, () => {
@@ -1121,7 +1200,7 @@ export async function renew(r, { owner, ttlSec, noShorten = false }) {
  * ({FW_LOCK_SHARED} for a reader, a re-entered slot or an off-mode shared hold; {FW_LOCK_HELD} for an exclusive hold,
  * plus FW_LOCK_SHARED when a shared acquire re-entered it).
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, job, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, awake, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, job, sim, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, awake, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
   const t0 = Date.now();
   // I-051: a waiting reader measures host CPU busy over its own polls (no extra window inside the guard)
   let cpuBase = shared ? { at: Date.now(), t: cpuSampler() } : null, busyPct;
@@ -1146,7 +1225,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       if (b !== null) busyPct = b;
       cpuBase = { at: Date.now(), t };
     }
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, job, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct, simWarm: gateWarm });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, job, sim, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct, simWarm: gateWarm });
     // a queued or gated waiter keeps nothing awake (I-070, user C-024: only measurements; I-026's queue assertion is gone)
     if (res.gated) {
       // our turn, but the host is not (known to be) quiet: measure one window, then try again at once
@@ -1229,6 +1308,14 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       // the switch-off stand-in for a reader is a slot like one (N2): its command gets FW_LOCK_SHARED, never FW_LOCK_HELD
       const env = shared ? { FW_LOCK_SHARED: sharedEnv(r, res.holder.token, sharedHeld) } : { FW_LOCK_HELD: heldEnv(r, res.holder.token, held) };
       return { holder: res.holder, release: rel, mode: res.mode, env, ...(gateWarm ? { simWarm: gateWarm } : {}) };
+    }
+    if (res.deferred) {
+      // I-160: a Simulator session deferred by a phone block: not queued; polls on (it re-queues when the window opens)
+      if (Date.now() - t0 > timeoutSec * 1000) { await withGuard(r, () => dropDeferred(r, { owner, kind, pid: process.pid })); throw new Error(`[lock ${r}] timed out after ${timeoutSec} s; ${res.why}`); }
+      if (Date.now() - lastLog > 30000) { log(`[lock ${r}] ${res.why}`); lastLog = Date.now(); }
+      await sleep(Math.min(wait, 5000) + Math.random() * 500);
+      wait = Math.min(maxPollMs, Math.round(wait * 1.5));
+      continue;
     }
     // no holder but not our turn: the lock is being handed over to the waiter served next
     const h = res.holder, handover = `free, handing over to "${res.next}"`;

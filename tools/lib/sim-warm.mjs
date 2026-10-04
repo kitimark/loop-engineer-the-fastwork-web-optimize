@@ -5,7 +5,8 @@
 //   - after the idle timeout: FW_SIM_IDLE_SEC (default IDLE_SEC_DEFAULT) after the last session ended (0: no warm device,
 //     every session shuts down at its end as before I-063);
 //   - as soon as chrome-measure has a TIMING holder or waiter (timingDemand: a normal hold, not short, shared or
-//     no-timing), so that waiter's host gate settles on a Mac without it;
+//     no-timing), so that waiter's host gate settles on a Mac without it, or a --no-timing holder or waiter that is the
+//     iphone lease holder (a phone block's quiet-Mac hold, I-160);
 //   - never while a session holds the `simulator` lock (it backs off and polls again); `sim.mjs shutdown` stops it now.
 // The device belongs to the live session (sim/session.json) or to the keeper (warm.json), never both: the next functional
 // session takes it over under the `simulator` lock (stops the keeper, removes warm.json, resets Safari: tools/lib/sim.mjs);
@@ -61,13 +62,21 @@ export function warmState(now = Date.now()) {
  * fix.mjs ab, bench, a normal `lock.mjs run`, a lease taken without --short), not a short job, a shared reader (or the
  * switch-off stand-in, `functional`) or a no-timing hold? Returns a short text naming it, or null.
  */
-export function timingDemand(st) {
+export function timingDemand(st, { phoneOwner = null } = {}) {
   const h = st?.holder;
   const timing = (x) => x && !x.short && !x.shared && !x.functional && !x.noTiming && !Array.isArray(x.readers);
   if (h && !st.stale && timing(h)) return `chrome-measure is held by "${h.owner}" (a timing hold)`;
   const w = (st?.queue || []).find(timing);
-  return w ? `"${w.owner}" waits for a timing hold of chrome-measure` : null;
+  if (w) return `"${w.owner}" waits for a timing hold of chrome-measure`;
+  // I-160: a phone block's quiet-Mac hold (a --no-timing hold of the iphone lease holder, `phoneOwner`; a queue entry
+  // lib/lock.mjs phoneBlockPriority marked) is demand too: the lead had to shut a warm fw-sim down by hand before P-114
+  const phone = (x) => x && x.noTiming && !x.short && !x.shared && ((phoneOwner && x.owner === phoneOwner) || x.movedBy === 'phone-block priority');
+  if (h && !st.stale && phone(h)) return `chrome-measure is held by "${h.owner}" for a phone block (a --no-timing hold of the iphone lease holder)`;
+  const p = (st?.queue || []).find(phone);
+  return p ? `"${p.owner}" waits for a phone-block hold of chrome-measure (a --no-timing hold of the iphone lease holder)` : null;
 }
+/** The live iphone lease's owner in a lib/lock.mjs status('iphone') snapshot, or null (for timingDemand's phoneOwner). */
+export const leaseOwner = (st) => (st?.holder && !st.stale ? st.holder.owner ?? null : null);
 
 /**
  * One line on the warm device for `sim.mjs status` / `lock.mjs status` / NOTEs, or null. "booted" only when nothing

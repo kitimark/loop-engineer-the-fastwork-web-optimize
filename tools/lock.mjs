@@ -11,6 +11,13 @@
 //   node tools/lock.mjs doing   iphone --owner <topic> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear
 //       acquire|renew|run take the same as --doing "<plain line>" [--for X] [--eta-min N] (I-060): what the hold is for,
 //       in plain words, shown on the progress page's "Right now" (lib/hold-job.mjs; nothing personal, Hard rule 12)
+//   node tools/lock.mjs doing   iphone --owner <runner> --block <ticket>|none [--between <min>]       # I-160
+//       a ticketed phone block on the lease (also `acquire iphone --block <ticket>`): while it is on, Simulator sessions
+//       (run|acquire chrome-measure --shared --weight simulator, or a `run` of sim.mjs session) neither join nor open a
+//       shared group; they are DEFERRED (not queued, they poll on) until the runner opens a between-holds window with
+//       `--between <min>` after a hold ends (a session starts only if its --max-seconds ends inside it; the window is shut
+//       while the runner holds or queues for chrome-measure or runs the phone, and ends at its next exclusive hold or phone
+//       run; `--between 0` ends it), or until `--block none` / the lease's end. The lease owner's own sessions are never deferred.
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
 //   node tools/lock.mjs leave chrome-measure --owner <o> [--by <who>] [--reason "<why>"] [--json]
@@ -179,7 +186,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load', '--join-busy', '--doing', '--text', '--eta-min'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load', '--join-busy', '--doing', '--text', '--eta-min', '--block', '--between'];
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 // `shared on|off <resource>` has one more word
 const [cmd, resource] = pos[0] === 'shared' ? [pos[0], pos[2]] : pos;
@@ -220,6 +227,7 @@ function fmt(s) {
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}${awakeText(s)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
   if (s.grace) line += `\n${pad}KEPT: ${graceText(s.grace)}`; // I-123: not handed over in the middle of the user's step
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
+  if (s.deferred?.length) line += `\n${pad}deferred by a phone block (I-160; not queued, they poll on): ${s.deferred.map((w) => `${w.owner} (since ${w.since})`).join(', ')}`;
   // the lane's line only while it is in use (review-lock-share N1: with the switch off and nothing shared, status reads as on main)
   if (laneInUse(s)) { const sw = sharedSwitch(s.resource); line += `\n${pad}shared lane: ${laneText(sw)}`; }
   if (s.resource === 'simulator') { const w = warmLine(); if (w) line += `\n${pad}${w}`; } // I-063: the booted, idle fw-sim and its keeper
@@ -341,12 +349,25 @@ async function main() {
     return `${j.text}${extra.length ? ` (${extra.join('; ')})` : ''}`;
   };
   if (['acquire', 'run', 'renew'].includes(cmd) && opt('doing') !== undefined) meta.job = jobOf(opt('doing'));
+  // I-160: the phone block marks (iphone only): --block <ticket|none>, --between <min> (0 ends the window)
+  const blockOpt = opt('block'), betweenOpt = opt('between');
+  const blockArg = blockOpt === undefined ? undefined : blockOpt === 'none' ? null : blockOpt;
+  const betweenMin = betweenOpt === undefined ? undefined : Number(betweenOpt);
+  const marks = { ...(blockArg !== undefined ? { block: blockArg } : {}), ...(betweenMin !== undefined ? { betweenMin } : {}) };
+  const marked = Object.keys(marks).length > 0;
+  if (marked && !['doing', 'acquire'].includes(cmd)) throw new Error('--block and --between are for lock.mjs doing iphone (and --block for acquire iphone)');
+  if (marked && resource !== 'iphone') throw new Error(`--block and --between mark a phone block on the iphone lease (not ${resource})`);
+  if (cmd === 'acquire' && betweenMin !== undefined) throw new Error('--between is for lock.mjs doing iphone, after a hold of the block ends');
+  const markLine = (h) => {
+    const b = h?.meta?.block, w = h?.meta?.between;
+    return b ? `; phone block ${b.id}${w ? `, between holds until ${w.until} (Simulator sessions that fit may start; I-160)` : ', no between-holds window (Simulator sessions wait; I-160)'}` : '';
+  };
   if (cmd === 'doing') {
     if (flag('clear')) { await describeHold(resource, { owner, job: null }); console.log(`CLEARED ${resource} "${owner}": no job description`); return 0; }
-    if (opt('text') === undefined) throw new Error(`usage: node tools/lock.mjs doing ${resource} --owner <you> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear`);
-    const job = jobOf(opt('text'));
-    await describeHold(resource, { owner, job });
-    console.log(`DOING ${resource} "${owner}": ${jobLine(job)}`);
+    if (opt('text') === undefined && !marked) throw new Error(`usage: node tools/lock.mjs doing ${resource} --owner <you> --text "<plain line>" [--for <topic/agent>] [--eta-min N] | --clear; iphone also [--block <ticket>|none] [--between <min>] (I-160)`);
+    const job = opt('text') === undefined ? undefined : jobOf(opt('text'));
+    const h = await describeHold(resource, { owner, job, ...marks });
+    console.log(`DOING ${resource} "${owner}": ${job ? jobLine(job) : h.meta?.job ? jobLine(h.meta.job) : '(no job description)'}${markLine(h)}`);
     return 0;
   }
   if (cmd === 'acquire') {
@@ -387,7 +408,9 @@ async function main() {
       return 0;
     }
     if (res.ok && shared && res.mode === 'short') console.error(OFF_NOTICE(resource));
+    if (res.ok && blockArg !== undefined) res.holder = await describeHold(resource, { owner, block: blockArg }); // I-160
     if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
+    if (res.deferred) { console.log(`DEFERRED ${resource}: ${res.why}. You ("${owner}") are not queued while deferred; run acquire again (or --wait) to retry.`); return 3; }
     const hh = res.holder;
     const who = hh ? (isGroup(hh) ? `shared by ${(hh.readers || []).map((x) => `"${x.owner}"`).join(', ')} until ${hh.expiresAt}` : `held by "${hh.owner}" since ${hh.acquiredAt}${hh.expiresAt ? ' until ' + hh.expiresAt : ''}`)
       : res.gated ? `free, but the host is not quiet (${res.gate.reasons.join(', ')}; waiting since ${res.gate.since}, granted anyway after ${THRESHOLDS.gateMaxWaitSec} s)` : `free, but "${res.next}" is next`;
@@ -434,7 +457,9 @@ async function main() {
     // I-070: a --no-timing hold is a measurement (keeps the Mac awake) only when its command wraps a phone part or a Sim session
     const awake = noTiming && wrapsMeasurement(rest) ? true : undefined;
     if (wrapsPhoneRun(rest)) meta.phoneRun = true; // I-124: a phone run is never refused for disk space (lead's ruling)
-    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight, job } : {}), timeoutSec: Number(opt('timeout', 3600)) });
+    // I-160: a Simulator session (--weight simulator, or a command that runs sim.mjs session) waits out a phone block
+    const sim = shared && (job === 'simulator' || /\bsim\.mjs['"]?\s+session\b/.test(rest.join(' ')));
+    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight, job, sim } : {}), timeoutSec: Number(opt('timeout', 3600)) });
     if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
     // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds
     const bounded = short || shared;

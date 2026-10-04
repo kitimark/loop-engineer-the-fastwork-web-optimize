@@ -562,7 +562,7 @@ Nothing timed starts inside a `--shared` command (verify.mjs, fix.mjs ab, bench 
 `--short` run, `iphone.mjs scroll|record|run|gesture` refuse; they also refuse a `--shared` flag, exit 2); a nested
 `--shared` job re-enters its slot. Simulator mechanism checks: `node tools/lock.mjs run chrome-measure --shared --weight
 simulator --max-seconds 300 --owner <you> -- node tools/sim.mjs session --functional --owner <you> -- <cmd>` (no
-scroll/record/run in it). The lead switches the lane with `lock.mjs shared on|off`; while off, `--shared` runs as an
+scroll/record/run in it); during a marked phone block it is DEFERRED (I-160, "Phone blocks" below). The lead switches the lane with `lock.mjs shared on|off`; while off, `--shared` runs as an
 exclusive `--short` job.
 
 ```sh
@@ -638,6 +638,14 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
   on the same base, one uncounted warm-up run per arm's port (A3/U5), then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
   Latin square); park Safari (`iphone.mjs park`) after every block; between blocks cool with `node tools/wait.mjs phone-temp --below auto` (≤10 min, protocol §5.3); at most 2 blocks per question (sequential rule, §5.3).
+- **Block marks (I-160; the runner's steps).** At the block start: `node tools/lock.mjs doing iphone --owner <you>
+  --block <ticket>` (or `acquire iphone … --block <ticket>`). After each hold of the block: `doing iphone --owner <you>
+  --between <min>` (the gap until your next hold; your next chrome-measure hold or phone run ends it). At the end: `doing
+  iphone --owner <you> --block none`, or release the lease. While the block is marked, a Simulator session (`--shared
+  --weight simulator`, or a `run` of `sim.mjs session`) neither joins nor opens a shared group: it prints `DEFERRED`
+  (acquire: exit 3; run/--wait: polls on, out of the queue; `lock.mjs status` lists it) and starts only in a window its
+  `--max-seconds` fits into while you neither hold nor queue for chrome-measure, or after the block. The warm
+  Simulator's keeper shuts it down when the lease holder's `--no-timing` hold is held or queued, not only for a timing hold.
 - **Sentinel** (static idle is no heat check, F-028): every control run reaches bottom ≥58 fps and scroll ≥44 fps
   (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; the phone cools
   until the battery temperature is at or below the last passing sentinel's minus 0.5 °C, 38 if none today
