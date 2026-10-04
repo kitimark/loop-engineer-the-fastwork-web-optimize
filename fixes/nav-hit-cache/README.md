@@ -4,8 +4,8 @@
 > Fastwork). `patch-on-best.diff` and `patch.diff` contain excerpts of Fastwork's code: keep them on local branches,
 > never push.
 
-**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); successor card drafted for ops
-**Stage:** I (rebased on best build v8); the P-104 successor card is for ops to read before any data
+**Status:** P-104 failed on parity; diagnosed (harness lag and phase, plus one real trigger bug, fixed); successor card P-107 passed the ops pre-data read (notes N1-N4 folded in)
+**Stage:** D (rebased on best build v8); P-107 loads next, in shared slots
 **Device class / gate:** less-work fix (memory `less-work-landing-rule`): Chrome + Simulator work counts, then one short
 phone no-worse check
 **Driver(s) behind the claims:** Chrome scripted scroll (counts only), Simulator scripted scroll (counts only)
@@ -424,7 +424,9 @@ Record: `p104/diag-audit-smoke-v8.json`.
 - In task mode there is no lag and there are no mismatches.
 - The run took 52 s, so all 5 cases fit in 2 shared probe slots.
 
-## D card P-104 successor (draft for ops' pre-data read; id from ops)
+## D card P-107
+
+Successor to P-104. Ops pre-data read: PASS at 62e6d234 with notes N1-N4 (mgmt-ops-10), folded in below.
 
 **Why.** P-104 failed on parity. The diagnosis above traces both failures to the harness. It also found and fixed a
 real trigger bug (the nav's own classes), and the lead ordered the rebase onto v8. So the arms, the parity harness and
@@ -466,8 +468,8 @@ built from the baseline plus `fixes/v8-best/patch.diff` and checked against v8's
 - Chrome counts: `count --vp mobile`, then `count --vp desktop`. One shared probe hold each, at most 300 s.
 - Parity: `--cases mobile,desktop`, then `--cases desktop-rtl,mobile-rtl,mobile-shift`. One shared probe hold each.
 - Simulator: one simulator hold, `C:1 V:1 V:2 C:2`.
-- Raw output goes to `out/nav-hit-cache/p10x/`. The JSON records are committed to `fixes/nav-hit-cache/p10x/` after
-  scoring.
+- Raw output goes to `out/nav-hit-cache/p107/` (each run gets `--out out/nav-hit-cache/p107/<part>.json`). The JSON
+  records are committed to `fixes/nav-hit-cache/p107/` after scoring.
 
 **VOID.** As P-104. The served hashes must equal the arm table above.
 
@@ -489,6 +491,38 @@ built from the baseline plus `fixes/v8-best/patch.diff` and checked against v8's
   - raf mode, 10 px and 40 px: no mismatch in a frame without lag. Mismatches in lag frames are reported with their y;
     they are the harness's one-frame lag (diagnosis 1).
   - no new page errors.
+- *N1: task mode is the real parity gate; raf mode is report-only in effect.* In the smoke, 1069 of 1070 raf frames
+  lag, so the exemption would excuse nearly every raf mismatch. Raf mode stays in for its lag count and the y of each
+  mismatch, but a pass rests on task mode. The exemption ("no input or page script produces that lag") rests on two
+  things:
+  - (a) *Scroll-write inventory* of v8's page JS (`2.DyWL8TcE.js`, v8 line numbers, checked by mgmt-ops-10):
+    - `window.scrollTo` smooth at l.4713 and l.11624;
+    - the horizontal carousel `scrollTo` at l.11598 and l.11606 (not the window);
+    - the morph pin `L` at l.14006, which runs only while `C()` is true, and `C()` forces the real test;
+    - the debug `__fwMorphDrive` at l.14033, stripped before landing.
+    No other rAF-time write to the window's scroll position exists.
+  - (b) *Event loop order:* in "update the rendering", the scroll steps (which fire `scroll` events) run before the
+    animation frame callbacks. CONFIRMED: HTML Living Standard, event loops, processing model, "update the rendering"
+    (run the scroll steps, then run the animation frame callbacks). So a scroll from input or from a task is seen by
+    the passive listener before `iE` runs in the same frame.
+- *N2: a task-mode lag frame is a harness fault, not a V fault.* Task mode should show none. If any appears, that case
+  is VOID: re-run it once in a fresh load. If it lags again, report it as a harness fault and stop, with no parity
+  verdict for that case. A task-mode mismatch in a frame without lag still fails parity.
+- *N3: audit channel for every answer V caches.* V caches the scroll position (`__nsY`, from the passive listener),
+  the viewport height (`__nsVh`) and the geometry in `__nsGeo` (probe line, edges, zones, track). These feed three
+  answers, and each has a channel compared in the same frame:
+
+  | answer V writes | V's input | audited against |
+  |---|---|---|
+  | theme (`g`) | last real `F()` (`__nsG`), kept until a trigger | `F()` |
+  | sticky (`v`) | `__nsEE(__nsY)` | `ee()` |
+  | pill (`p`) | `__nsY` vs cached `__nsGeo.track` | C's live `.hero-track` rect formula |
+
+  Nothing else is cached. The nav's `is-scroll-hidden` class (the one P-104's desktop states showed) is
+  `s(v) && !s(E)`: `v` is the sticky channel above, and `E = R(() => s(x) > 0.001)` comes from the morph spring
+  value `x`, which V does not touch (overlay l.13820, 13826, 14412). `is-morphing` is `E` alone.
+- *N4: the prediction intervals come from P-104's data,* so hits here are a replication of P-104, not an independent
+  prediction. This is the same as P-104 itself.
 
 **Predictions** (per 10 px step). v8 differs from best, and the nav-class fix adds a few real tests. So the V intervals
 are P-104's V values ± 0.06, and the C intervals are P-104's C values ± 0.06:
@@ -507,7 +541,8 @@ are P-104's V values ± 0.06, and the C intervals are P-104's C values ± 0.06:
 **What happens next, whatever the result.**
 - *Pass:* the short phone no-worse check, on its own ops ticket. The lead's order holds: no iPhone until P-105 and
   PR-018 rev 7 are done. Then a land request.
-- *Parity fails* (a task-mode mismatch, or a raf mismatch in a frame without lag): not landable. Fix it, re-ticket and
+- *Parity fails* (a task-mode mismatch, or a raf mismatch in a frame without lag; a task-mode lag frame voids its
+  case instead, N2): not landable. Fix it, re-ticket and
   re-run all parts.
 - *A guard or the Simulator worse,* or *a judged count not lower:* report it as measured and re-ticket. No retuning on
   this card's data.
