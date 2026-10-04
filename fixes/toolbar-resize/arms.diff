@@ -1,0 +1,189 @@
+diff --color -ru fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css fixes/toolbar-resize--sticky/overlay/_app/immutable/assets/2.gBuqKVzi.css
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--sticky/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:55:34
+@@ -1594,7 +1594,7 @@
+   height: 100svh;
+   min-height: 680px;
+   display: flex;
+-  position: sticky;
++  position: relative; /* toolbar-resize--sticky: MECHANISM ARM, hero not viewport-constrained */
+   top: 0;
+   overflow: visible;
+ }
+diff --color -ru fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css fixes/toolbar-resize--cq/overlay/_app/immutable/assets/2.gBuqKVzi.css
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--cq/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:56:42
+@@ -2142,11 +2142,17 @@
+     transform: rotate(var(--orbit-rot));
+     animation: none;
+     scale: 1;
++    /* toolbar-resize--cq: same containment, but not a query container (WebKit StyleTreeResolver
++       updateStateForQueryContainer: only container-type triggers interleaved layout); --orbit-u in px
++       (= 100cqw / 302 with the card's content box = width - 2px border) */
++    container-type: normal;
++    contain: inline-size layout style;
+   }
+   .mobile-deck.svelte-1p2vpne .is-a:where(.svelte-1p2vpne) {
+     z-index: 1;
+     --scatter-x: -42vw;
+     --scatter-y: -12vh;
++    --orbit-u: calc(118px / 302);
+     width: 120px;
+     height: 149.416px;
+     top: 69.2488%;
+@@ -2156,6 +2162,7 @@
+     z-index: 2;
+     --scatter-x: -48vw;
+     --scatter-y: 22vh;
++    --orbit-u: calc(158.92px / 302);
+     width: 160.92px;
+     height: 200px;
+     top: 83.3333%;
+@@ -2165,6 +2172,7 @@
+     z-index: 1;
+     --scatter-x: 42vw;
+     --scatter-y: -12vh;
++    --orbit-u: calc(118px / 302);
+     width: 120px;
+     height: 149.416px;
+     top: 69.2488%;
+@@ -2175,6 +2183,7 @@
+     z-index: 2;
+     --scatter-x: 48vw;
+     --scatter-y: 22vh;
++    --orbit-u: calc(158.625px / 302);
+     width: 160.625px;
+     height: 200px;
+     top: 83.3333%;
+diff --color -ru fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css fixes/toolbar-resize--dvh/overlay/_app/immutable/assets/2.gBuqKVzi.css
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--dvh/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:55:34
+@@ -1158,7 +1158,7 @@
+     border-radius: 16px 16px 0 0;
+     width: 100%;
+     max-width: none;
+-    max-height: min(100dvh, 100vh);
++    max-height: min(100svh, 100vh);
+     padding: 0;
+     transform: translateY(100%);
+   }
+@@ -4156,7 +4156,7 @@
+   border: 0;
+   width: 100vw;
+   max-width: none;
+-  height: 100dvh;
++  height: 100svh;
+   max-height: none;
+   margin: 0;
+   padding: 0;
+@@ -4183,7 +4183,7 @@
+ .surface.svelte-17f1tde {
+   box-sizing: border-box;
+   width: min(var(--sb-drawer-size), 100vw);
+-  height: 100dvh;
++  height: 100svh;
+   color: var(--color-text-primary);
+   background: var(--color-background-surface);
+   box-shadow: var(--shadow-high);
+@@ -4193,7 +4193,7 @@
+ .sb-drawer[data-side="top"].svelte-17f1tde .surface:where(.svelte-17f1tde),
+ .sb-drawer[data-side="bottom"].svelte-17f1tde .surface:where(.svelte-17f1tde) {
+   width: 100vw;
+-  height: min(var(--sb-drawer-size), 100dvh);
++  height: min(var(--sb-drawer-size), 100svh);
+ }
+ .sb-drawer[data-side="bottom"].svelte-17f1tde .surface:where(.svelte-17f1tde) {
+   border-start-start-radius: var(--radius-element);
+@@ -11419,7 +11419,7 @@
+   }
+   .start-selling-top-nav,
+   .start-selling-morph {
+-    --panel-h: calc(100dvh - 40px);
++    --panel-h: calc(100svh - 40px);
+     --panel-w: calc(100vw - 40px);
+   }
+ }
+diff --color -ru fixes/v7-best/overlay/_app/immutable/nodes/2.DyWL8TcE.js fixes/toolbar-resize--vt/overlay/_app/immutable/nodes/2.DyWL8TcE.js
+--- fixes/v7-best/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-04 19:35:19
++++ fixes/toolbar-resize--vt/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-04 19:56:51
+@@ -4639,7 +4639,9 @@
+       // and on iPad, whose windows can be 600 CSS px wide or less; nobody pixel-checked the CSS path there, so
+       // those take the baseline path: a coarse pointer without hover and a screen whose short side is at most
+       // 600 CSS px (iPhone 430; iPad mini 744; Mac displays wider).
++      // toolbar-resize--vt: ABLATION ARM, no --hero-exit view timeline (the JS writer path everywhere)
+       heCss =
++        !1 &&
+         `GestureEvent` in window &&
+         !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`) &&
+         window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
+diff --color -ru fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css fixes/toolbar-resize--cv/overlay/_app/immutable/assets/2.gBuqKVzi.css
+--- fixes/v7-best/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:35:19
++++ fixes/toolbar-resize--cv/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-04 19:57:32
+@@ -12224,7 +12224,7 @@
+ }
+ .start-selling [data-start-selling-render="deferred"] {
+   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
+-  content-visibility: auto;
++  content-visibility: visible; /* toolbar-resize--cv: ABLATION ARM, no render deferral or far re-skip */
+ }
+ main.svelte-q2j1fg {
+   display: block;
+diff --color -ru fixes/v7-best/overlay/_app/immutable/nodes/2.DyWL8TcE.js fixes/toolbar-resize--js/overlay/_app/immutable/nodes/2.DyWL8TcE.js
+--- fixes/v7-best/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-04 19:35:19
++++ fixes/toolbar-resize--js/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-04 19:57:24
+@@ -2755,18 +2755,23 @@
+     }, 500);
+   document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
+ }
++// toolbar-resize--js: ABLATION ARM, height-only resizes (the iOS toolbar) do not run the scroll callbacks
++var trzW = window.innerWidth;
++function trzR() {
++  window.innerWidth !== trzW && ((trzW = window.innerWidth), rE());
++}
+ function aE() {
+   (fwBoot(), nE) ||
+     ((nE = !0),
+     window.addEventListener(`scroll`, rE, { passive: !0 }),
+-    window.addEventListener(`resize`, rE, { passive: !0 }));
++    window.addEventListener(`resize`, trzR, { passive: !0 }));
+ }
+ function oE() {
+   !nE ||
+     $T.size ||
+     ((nE = !1),
+     window.removeEventListener(`scroll`, rE),
+-    window.removeEventListener(`resize`, rE),
++    window.removeEventListener(`resize`, trzR),
+     tE && window.cancelAnimationFrame(tE),
+     (tE = 0));
+ }
+@@ -4819,6 +4824,11 @@
+       );
+       heIO.observe(b);
+     };
++    // toolbar-resize--js: re-arm only when the width changes (not on the iOS toolbar's height steps)
++    let heW = window.innerWidth,
++      heArmW = () => {
++        window.innerWidth !== heW && ((heW = window.innerWidth), heArm());
++      };
+     let heL = { passive: !0, capture: !0 },
+       heEv = [
+         [`touchstart`, heTS],
+@@ -4829,7 +4839,7 @@
+     return (
+       heCss &&
+         (heArm(),
+-        window.addEventListener(`resize`, heArm),
++        window.addEventListener(`resize`, heArmW),
+         e.addEventListener(`change`, heSync),
+         heEv.forEach(([e, t]) => window.addEventListener(e, t, heL))),
+       heMode || s(),
+@@ -4841,7 +4851,7 @@
+           window.removeEventListener(`pageshow`, m),
+           heIO &&
+             (heIO.disconnect(),
+-            window.removeEventListener(`resize`, heArm),
++            window.removeEventListener(`resize`, heArmW),
+             e.removeEventListener(`change`, heSync),
+             heEv.forEach(([e, t]) => window.removeEventListener(e, t, heL)),
+             window.clearTimeout(heR)),
