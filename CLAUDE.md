@@ -605,6 +605,8 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
   and are judged within the block; attribution runs come after the end sentinel (protocol §5.2, 441f15f).
 - **Drivers:** S `iphone.mjs scroll`, W window run, M morph driver (`__fwMorphDrive`), G WDA gesture, F finger via
   the lead. A claim names its driver; touch, bounce, pin and toolbar effects need G or F before landing.
+  G runners: `iphone.mjs wda check` (no lease) before the gate; plan each run from `gesture --dry-run`'s
+  `GESTURE_BUDGET_S` (max(150 s, 3x the estimate)); a gesture refuses in a hold with less time left (I-112).
 - Never during a timed block: an attached Web Inspector, paint rects or debug borders, `layersForNode`, heap
   snapshots, polling faster than ~1 Hz (§5.5). Attribution runs get real Timeline durations with `Page.disable` →
   `Page.enable` → `Timeline.start` on the page target, re-sent after every navigation (F-047). The logger's rAF
