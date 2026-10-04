@@ -34,6 +34,8 @@ const BASES = new Set(['site-pretty', 'site']);
 export const liveDir = () => join(sharedStateDir(), 'console', 'live');
 export const livePatchFile = (blob) => join(liveDir(), 'patches', `${checkBlob(blob)}.diff`);
 const overlayOf = (blob) => join(liveDir(), 'overlays', checkBlob(blob));
+/** The overlay dir a blob builds into (built or not; buildLiveOverlay builds it). I-126: the phone servers' check. */
+export const liveOverlayDir = overlayOf;
 
 function checkBlob(b) { if (!BLOB.test(String(b))) throw new Error(`bad blob id ${JSON.stringify(b)}`); return b; }
 
