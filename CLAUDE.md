@@ -612,7 +612,9 @@ node tools/lock.mjs release iphone --owner <topic>
   steward parked (every status row it owns parked or finished): no assignee, so the lead's triage gets the thread at once.
   The watch's `NOTIFY <agent>` lines and the red /status alerts still name the concerned owners.
 - Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
-  Never edit the lock JSON by hand.
+  Never edit the lock JSON by hand. The lead's delegates (mgmt-devices, mgmt-desk*, the desk) may `repair --move`
+  inside the board's priority order and release an iphone lease idle >= 5 min with a ready waiter (`release iphone
+  --owner <holder> --by <you> --reason "…"`); both are audited, and the tool refuses anything beyond that (I-171).
 - **Say what a hold is for** (I-060, the progress page's "Right now"): `acquire|renew|run` take `--doing "<plain line>"
   [--for <fix/agent>] [--eta-min N]`; mid-hold `lock.mjs doing <lock> --owner <you> --text "timing test for the blur
   change, run 3 of 9" [--for …] [--eta-min N] | --clear`. Without it the page shows your board note.
