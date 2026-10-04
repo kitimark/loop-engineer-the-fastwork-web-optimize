@@ -278,6 +278,120 @@
       "why": "rev 2 mechanism check, Chrome tween-start counts",
       "kind": "result",
       "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T07-36-19-311Z/frames.json",
+      "why": "rev 2 A Chrome frozen frames: diffs per m (A exact at rest)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T07-22-26-797Z/frames.json",
+      "why": "rev 2 B Chrome frozen frames: diffs per m (B fails T2 at rest)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T07-22-26-797Z/M-0-m0.png",
+      "why": "rev 2 B rest m 0, best-build shot (the B T2 failure)",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T07-22-26-797Z/R-0-m0.png",
+      "why": "rev 2 B rest m 0, B shot (nav text about 1 device px off)",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/frames-2026-10-04T07-22-26-797Z/M2-0-m0.png",
+      "why": "rev 2 B rest m 0, A/A shot",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/simframes.json",
+      "why": "rev 2 A Simulator frozen frames record",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/M-0-m0.png",
+      "why": "rev 2 A Simulator rest shot M 0-m0",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/R-0-m0.png",
+      "why": "rev 2 A Simulator rest shot R 0-m0",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/M2-0-m0.png",
+      "why": "rev 2 A Simulator rest shot M2 0-m0",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/M-10-m1.png",
+      "why": "rev 2 A Simulator rest shot M 10-m1",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/R-10-m1.png",
+      "why": "rev 2 A Simulator rest shot R 10-m1",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/M2-10-m1.png",
+      "why": "rev 2 A Simulator rest shot M2 10-m1",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/M-11-m0.png",
+      "why": "rev 2 A Simulator rest shot M 11-m0",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/R-11-m0.png",
+      "why": "rev 2 A Simulator rest shot R 11-m0",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z/M2-11-m0.png",
+      "why": "rev 2 A Simulator rest shot M2 11-m0",
+      "kind": "frames",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/rev2/t2.mjs",
+      "why": "T2 numbers helper (A/A mask, edge/fill) used for the rev 2 pixel tables",
+      "kind": "tool",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/rev2/scorer-check.mjs",
+      "why": "P-098 scorer pre-registration check",
+      "kind": "tool",
+      "for": "README.md"
     }
   ]
 }

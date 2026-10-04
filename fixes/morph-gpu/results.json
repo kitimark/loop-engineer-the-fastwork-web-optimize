@@ -741,7 +741,7 @@
     "reading": "reveal on (m 0.5): +3 layers, +3.9 MiB vs best-build; at rest nothing left behind (R1, A); B keeps 2 nav layers promoted at the end at rest; the review estimate of ~10 promoted layers does not show in WebKit layer tree. OBSERVED in the Simulator, device unverified"
   },
   "rev2": {
-    "status": "pixels done (Chrome); Simulator frames for A pending; phone ticket registered, waiting for the mgmt-ops-10 pre-data read",
+    "status": "pixels done (Chrome + Simulator); P-098 registered (ops pre-data read PASS on 618b43b8), waiting in the phone queue after the user steps, P-094 and P-093; G fling-into-end check owed before landing",
     "builds": {
       "A": {
         "snapshot": "rv2a-ef9d1c9d5fca",
@@ -839,7 +839,37 @@
       ],
       "bound": "d = median(V) - median(C) <= +2 ms (tweens); <= +1 / +2 (counts, as P-092)",
       "order": "C V V C C V V C, n = 4 per arm, driver M hold 2000 cycles 3",
-      "preRegCheck": "P-092 files relabelled reproduce the per-tween table (O1.f1 34.5 vs 41, WORSE): rev 1 fails this falsifier; V = C gives d 0; a 5-tween run is void"
-    }
+      "preRegCheck": "P-092 files relabelled reproduce the per-tween table (O1.f1 34.5 vs 41, WORSE): rev 1 fails this falsifier; V = C gives d 0; a 5-tween run is void",
+      "predictionId": "P-098",
+      "holds": "three holds of <= 900 s as P-092 (lead approved): H1 gate, S start, wC wV; H2 C1 V2 V3 C4; H3 C5 V6 V7 C8, S end",
+      "opsNotes": [
+        "tween in the last 2 driver rows not found -> void (strict, accepted)",
+        "rev 1 O2.f1/O3.f1 +7 WORSE: reported (rep row), not scored",
+        "P-092 drive '>34' better was threshold-sensitive: say so if it recurs"
+      ]
+    },
+    "pixelsSimulator": {
+      "dir": "out/morph-gpu/simframes-2026-10-04T07-45-21-851Z",
+      "band": "y 60-834 css",
+      "A": {
+        "restM0": {
+          "beyondPx": 0
+        },
+        "restM1": {
+          "beyondPx": 0
+        },
+        "restM0AfterClose": {
+          "beyondPx": 0
+        },
+        "m099": {
+          "max": 237,
+          "maxFill": 218,
+          "sharePct": 1.323,
+          "cssPx": 5301
+        },
+        "tier": "rest exact; motion = rev 1 class (rev 1 at 0.99: 233, 1.30 %, 5194 css px)"
+      }
+    },
+    "beforeLanding": "G (WDA gesture) fling straight into the end, C vs A, same O1.f1 bound (<= +2 ms); wda check + gesture --dry-run budget (I-112); own prediction id; after P-094 and P-093 (lead ruling 2026-10-04)"
   }
 }

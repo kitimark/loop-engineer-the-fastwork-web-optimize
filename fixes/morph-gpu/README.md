@@ -698,7 +698,10 @@ neighbourhood in M varies by 2 levels or less). Helper (local): `out/morph-gpu/r
 - Today's A/A pair is noisier than on 2026-10-03 (about 530-740 px over 8 per frame, max 168-186, the same spots in
   every frame), so the A/A mask is wider. A's rest frames are 0 beyond it.
 - Sources: A `out/morph-gpu/frames-2026-10-04T07-36-19-311Z`, B `out/morph-gpu/frames-2026-10-04T07-22-26-797Z`.
-- Simulator (WebKit) frames for A: see the line below the table once run.
+- Simulator (WebKit, `gates/sim-frames.mjs`, `RV=out/snapshots/rv2ahook-5bf004426809`, page band y 60-834 css,
+  `out/morph-gpu/simframes-2026-10-04T07-45-21-851Z`): A is exact at rest (m 0, m 1, m 0 after the close: 0 px beyond
+  A/A, max 19 / 1 / 2). Motion is rev 1's class: m 0.99 237 (edge; fill 218), 1.32 %, 5,301 css px (rev 1: 233,
+  1.30 %, 5,194).
 
 **Arms (the lead's ruling):** B fails the illusion rule at rest and showed no count gain over A (Simulator opens
 3-5 paints in both). B is dropped. The phone block is two arms, C (best-build) against A.
@@ -707,7 +710,8 @@ Next: the rev 2 phone ticket to mgmt-ops-10 (registration below).
 
 ## Phone block rev 2: the open start, C against A (registration; written before any phone data)
 
-Prediction id: from mgmt-ops-10 at the pre-data read. A no-worse check like P-092, with the falsifier from review B1.
+Prediction id **P-098** (mgmt-ops-10; pre-data read PASS on 618b43b8: scorer hash, its diff against frames-n2, the
+P-092 re-score and the served hashes checked). A no-worse check like P-092, with the falsifier from review B1.
 Everything not named here is P-092's registered text ("Phone block: no-worse check against best-build" above):
 servers and ports, condition T-039 B with the thermal gate per hold, the pre-warm on the plain baseline page,
 sentinels, void rules, Mac-sleep rule, runner duties.
@@ -722,10 +726,9 @@ sentinels, void rules, Mac-sleep rule, runner duties.
   page end and starts the first open 1.1 s later, so rev 2's setup (300 ms after scrolling stops) has run before O1,
   as in the Chrome and Simulator mechanism checks. The finger case is not in this block (see Risks).
 - **Block**: one block, 8 counted runs in the order C V V C C V V C (n = 4 per arm), one uncounted warm-up per arm.
-  The lead asked for one hold. The P-092 layout took three holds of at most 900 s (gate reads, start and end
-  sentinels, warm-ups, 8 runs: about 18 min in all), so a single hold would pass the 900 s cap. Proposed: P-092's
-  three holds (H1 gate, start sentinel, warm-ups; H2 C1 V2 V3 C4; H3 C5 V6 V7 C8, end sentinel). The lead and ops
-  decide; the counted runs and their order do not change either way.
+  **Holds (registered; the lead approved three holds, P-092 precedent):** H1 gate, start sentinel, warm-ups wC wV,
+  gate; H2 gate, C1 V2 V3 C4, gate; H3 gate, C5 V6 V7 C8, end sentinel, gate; park Safari. Each hold at most 900 s
+  (a single hold, about 18 min, would pass the cap).
 - **Scorer**, committed before data: `phone/frames-rv2.mjs`, sha256 `fa2212d0a307`. It is frames-n2.mjs (P-092,
   `f3a50b8ec2dd`) with V's build hashes changed and one addition, the per-tween start frames:
   - a tween starts at the first driver row whose m leaves a held 0 (opens O1-O3) or a held 1 (closes C1-C3);
@@ -763,7 +766,17 @@ sentinels, void rules, Mac-sleep rule, runner duties.
   - **O1.f1 no-worse but O1.f2 or O1.f3 WORSE** (the cost moved to the next frame): to the lead, no verdict.
   - **close.f1 or close.f3 WORSE, or f50/f34 WORSE or threshold-sensitive:** to the lead, no verdict, no land request.
   - **Insufficient or void:** no claim; cool and re-run the counted part once; a second void goes to the lead.
-- **Not in this block:** the finger and gesture case (G/F), Fair, reduced motion, desktop.
+- **Ops notes from the pre-data read** (reported with the result):
+  - a tween that starts in the driver's last 2 rows is not found, so the run is void. That is strict, and accepted;
+  - in the rev 1 data, O2.f1 and O3.f1 are +7 ms (WORSE). They stay reported in the 'rep' row, not scored;
+  - P-092's drive '>34' 'better' was threshold-sensitive. If it shows again, it is reported as such.
+- **Not in this block:** the finger case (F), Fair, reduced motion, desktop.
+- **Before landing, a G check of a fling into the end** (the lead's ruling, 2026-10-04). It covers rev 2's 300 ms
+  scroll-rest risk (see Risks): a WDA gesture that flings straight into the page end and on into the morph, C against
+  A, scored with the same O1.f1 bound (V ≤ C + 2 ms).
+  - It runs as a separate small ticket, or as the last hold of this block; ops orders it after P-094 and P-093.
+  - First `iphone.mjs wda check`. Each run is budgeted from `gesture --dry-run`'s `GESTURE_BUDGET_S` (I-112).
+  - It is registered with its own prediction id before any data.
 - **Expected minutes:** about 30 (25-45), as P-092.
 
 ## Risks, conflicts, follow-ups
@@ -782,8 +795,9 @@ sentinels, void rules, Mac-sleep rule, runner duties.
   Android device was run.
 - **Rev 2's setup waits for the scroll to rest for 300 ms.** With a finger, a fling that runs straight into a push
   past the end may start the morph before that, and then the open's first frame does the setup as rev 1 did
-  (`__rvRdy` false). The M driver always waits 1.1 s, so the phone block cannot see this case; a G or F run, or an
-  earlier trigger (an idle callback while within 3 viewports of the end), would.
+  (`__rvRdy` false). The M driver always waits 1.1 s, so P-098 cannot see this case. The lead requires a G
+  fling-into-end check before landing (P-098 "Before landing"). An earlier trigger, e.g. an idle callback while
+  within 3 viewports of the end, is the fallback if the G check fails.
 - **Reduced motion: exact in Chrome; the Simulator was not run with it.**
   - Code: with reduced motion the morph skips its spring. `E()` sets m straight to its target (JS ~13292), and the
     target is only ever 0 or 1 (`XM`, JS 12940). So m never sits between 0.001 and 1, and the reveal never
