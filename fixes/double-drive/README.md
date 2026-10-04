@@ -99,7 +99,27 @@ Frozen stops, A vs V beyond A vs A2 ("consistent" = differs in both pairs):
 - **Simulator hero:** the fix touches neither the hero nor the feed; the hero animations run on time, and A vs A
   over 8 shades is 5-6 % of the screen in the Simulator. Phase noise, OBSERVED.
 
-<!-- PX3 -->
+**Final build (hold 6, 3076c5a8c9a3 / 2f7197880ffd):**
+
+| Where | Stops | Consistent A~V | V vs V2 (a V load against itself) |
+|---|---|---|---|
+| Chrome desktop | y 5932, 6150, 6200, 6300 | 0 | 0-0.17 % |
+| Chrome desktop | y 6000 / 6100 / 6500 | 1330 / 105 / 17 css px² (0.10 / 0.008 / 0.001 %) | 0.18 / 0.13 / 0.24 % |
+| Chrome phone | y 2894, 3875 | 0 | 0 |
+| Chrome phone | y 3700 / 4000 | 2 / 75 css px² (fee percent, nav bar) | 0.001 % / 0 |
+
+The desktop spots are all under the referral card (pill, fee percent, copy), and a V load differs from the next V
+load there by more than A differs from V. The settle probe (`gates/settle-probe.mjs`, DOM only, loads A V A V,
+readings 100 ms to 4 s after the stop) decides it:
+- **y 6000:** the card's box, transform (scale 1) and origin (712.5px 0px) are identical in every load.
+- **y 6500 (shrinking):** from 1000 ms on, every load has the same scale 0.922412, origin 712.5px 948px, shrink
+  0.931056 and top -487.26. V's `--fw-co-w` is 1, matching the class rule.
+- **The pill:** it moves on its own between 2.6 and 4 s and stops somewhere different in each load (y 6000: A
+  565.96 / 564.36, V 567.7 / 565.96; y 6500: A 92.49 / 90.88, V 92.49 / 89.41).
+
+So the fix leaves the card at rest exactly where v8 leaves it. The remaining spots are the referral card's
+time-driven phase (OBSERVED, in our setup). Data: `out/double-drive/settle-desktop-2026-10-04T21-31-32-099Z`
+and `…T21-53-34-700Z` (local).
 
 ## Phone
 
