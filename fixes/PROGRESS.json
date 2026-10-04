@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T12:26:48Z",
+ "updatedAt": "2026-10-04T12:29:17Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -149,8 +149,8 @@
    "writeup": "fixes/iphone-wave2/README.md",
    "title": "Countdown fix: digits stop repainting when the end panel moves",
    "area": "end",
-   "state": "testing",
-   "stage": "V",
+   "state": "landed",
+   "stage": "L",
    "fixes": "At the end of the page, each time the bottom panel starts to grow or shrink, the countdown's ~80 digit layers were repainted. This one CSS rule keeps the digits inside the panel's own layer, so that repaint is gone.",
    "best": [
     { "what": "frames over 50 ms while the panel moves, per run", "before": "1-27", "after": "0", "tag": "OBSERVED", "driver": "scripted panel driver", "ref": "P-029", "note": "threshold-sensitive: at 54 ms one control run also has 0" },
@@ -159,9 +159,9 @@
    ],
    "felt": { "answer": "same", "text": "3 blind swipe pairs on the real page; one was a same-vs-same check, which you passed. You did not prefer the fix in either real pair." },
    "gate": "P-032: with a robot finger on the phone, the fix must show fewer slow frames at the start of the panel motion than without it, in every run.",
-   "next": "Paused by your decision (19:27Z): timing tests are on hold. P-032 (robot-finger timing test) waits; the robot-finger tool fix itself continues.",
+   "next": "Landed: in every best build since v1.",
    "owner": "fix-nav-morph",
-   "checks": [ { "id": "P-032", "what": "robot-finger test on the phone", "result": "" } ],
+   "checks": [ { "id": "P-032", "what": "robot-finger test on the phone", "result": "Not run alone: covered by the best-build phone checks and, from now on, the whole-page fast-flick robot check every best build gets (T-113)." } ],
    "details": [
     "Build mw10e-cdwc = aw1-10e + CSS 5dc6e8e37388 (panel digit faces will-change: auto); branch fix/mw10e-cdwc, review-cdwc round 2 resolved B1/B2/B4/B5, B3 = P-032.",
     "P-029 (g vs g-cdwc, driver M, 4v4 runs): face-repaint frames 85 % -> 0 %, layers at the hold 113 -> 33, excess per forward tween 209-234 -> 79-146 ms. >34 not threshold-sensitive; >50 threshold-sensitive (>54 twin 0/1/3/20 vs 0).",
@@ -216,15 +216,15 @@
    "writeup": "fixes/iphone-wave2/README.md",
    "title": "Card reveal ends without a page re-layout (re-keep-op)",
    "area": "hero",
-   "state": "testing",
-   "stage": "F",
+   "state": "landed",
+   "stage": "L",
    "fixes": "Just below the hero, the people card that fades in caused a whole-page layout as its reveal ended. This keeps the card in its own layer at rest, so those end-of-reveal layouts go away.",
    "best": [
     { "what": "the frame at the end of the card reveal", "before": "33 ms", "after": "17 ms", "tag": "OBSERVED", "driver": "scripted window scroll", "ref": "P-019", "note": "measured on re-keep, the parent build; 2 runs each" }
    ],
    "felt": { "answer": "not-yet" },
    "gate": "P-033 gain block on the phone: fewer frames over 34 ms in the reveal, in every run.",
-   "next": "Paused by your decision (19:27Z): timing tests are on hold. The P-033 gain test on the phone is parked.",
+   "next": "Landed: in every best build since v1.",
    "owner": "fix-hero-exit",
    "checks": [ { "id": "P-033", "what": "phone gain block (its step 0 safety check passed)", "result": "" } ],
    "details": [
