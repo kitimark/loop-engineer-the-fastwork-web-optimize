@@ -33,6 +33,11 @@ export const COMPONENTS = [
   { name: 'double-drive (future + commission cards, T-157; fix-double-drive, not landed yet)', key: 'dd',
     rev: '96293d29196230e4a9fdc7f95c7284792dc423ea', delta: 'fixes/double-drive/delta.diff', file: 'baae6114cd65',
     expect: exp('3076c5a8c9a3', '2f7197880ffd') },
+  { name: 'scroll-cb alone (side scroll jobs gated; fix-scroll-cb, split check ebee20a5: v8 + scroll-cb = v8 in Simulator nav parity)', key: 'scb',
+    delta: 'fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff', file: '3abcd7008e61', expect: exp('4c48e372ecdd', 'f836404b3728'),
+    // its commission-job hunks overlap double-drive's (both declare after `_ch`; dd rewrote the rAF line scb uses as
+    // context): with dd in the set, the carry (scb on v8 + dd, the same changed lines, both texts kept) is applied instead
+    carry: { over: 'dd', delta: 'fixes/v9-best/scroll-cb-on-v8dd.diff', file: '7b4a7ee04d85', expect: exp('bf40f48acd24', '2f7197880ffd') } },
 ];
 // v9 as pinned after the last component change (null: not pinned yet).
 export const V9_EXPECT = null;
@@ -72,15 +77,37 @@ for (const c of comps) {
   const own = apply(c.d, C, c.key);
   ok(`${c.key} alone on v8 = owner's build ${c.expect[JS]} / ${c.expect[CSS]}`, H(own)[JS] === c.expect[JS] && H(own)[CSS] === c.expect[CSS], `${fmt(own)}${own.offs.length ? ` offsets ${own.offs.join(',')}` : ''}`);
 }
-const build = (order) => order.reduce((t, c) => strip(apply(c.d, t, `${c.key}@${order.map((x) => x.key).join('+')}`)), C);
+// Carries: c.carry = c's delta re-based on v8 + the component it overlaps (`over`); used whenever `over` is in the set
+// (and only after it). Checks: the carry file's sha; v8 + over + carry = its pinned build; the carry changes exactly the
+// lines c's own delta changes (multiset of +/- lines), so it is c's text, only placed around the other component's.
+const lineSet = (d) => { const m = new Map(); for (const hs of Object.values(d)) for (const h of hs) for (const [op, t] of h.body) if (op !== ' ') m.set(op + t, (m.get(op + t) || 0) + 1); return m; };
+const sameSet = (a, b) => [...new Set([...a.keys(), ...b.keys()])].every((k) => (a.get(k) || 0) === (b.get(k) || 0));
+for (const c of comps.filter((x) => x.carry && comps.some((o) => o.key === x.carry.over))) {
+  const o = comps.find((x) => x.key === c.carry.over);
+  c.carry.text = rd(c.carry.delta);
+  ok(`${c.key} carry over ${o.key}: ${c.carry.delta}`, sha(c.carry.text) === c.carry.file, sha(c.carry.text));
+  c.carry.d = parseDiff(c.carry.text);
+  const own = apply(c.carry.d, strip(apply(o.d, C, o.key)), `${c.key}-carry`);
+  ok(`${c.key} carry: v8 + ${o.key} + carry = ${c.carry.expect[JS]} / ${c.carry.expect[CSS]}`, H(own)[JS] === c.carry.expect[JS] && H(own)[CSS] === c.carry.expect[CSS], fmt(own));
+  ok(`${c.key} carry changes exactly ${c.key}'s own lines`, sameSet(lineSet(c.carry.d), lineSet(c.d)));
+}
+const dOf = (c, set) => (c.carry?.d && set.some((x) => x.key === c.carry.over) ? c.carry.d : c.d);
+const legal = (order) => order.every((c, i) => !c.carry?.d || !order.some((x, j) => x.key === c.carry.over && j > i));
+const build = (order) => order.reduce((t, c) => strip(apply(dOf(c, order), t, `${c.key}@${order.map((x) => x.key).join('+')}`)), C);
+if (!legal(comps)) die('COMPONENTS order puts a carry before the component it is carried over');
 const V = build(comps);
 let orders = comps.length <= 5 ? perms(comps) : [...comps.map((_, i) => [...comps.slice(i), ...comps.slice(0, i)]), [...comps].reverse()];
-orders = orders.slice(1);
+orders = orders.slice(1).filter(legal);
 for (const o of orders) if (!same(build(o), V)) die(`order ${o.map((c) => c.key).join(' + ')} gives other bytes than ${comps.map((c) => c.key).join(' + ')}`);
-ok(`${orders.length + 1} order(s) of ${comps.length} component(s) give the same bytes`, true, fmt(V));
+ok(`${orders.length + 1} order(s) of ${comps.length} component(s) give the same bytes (orders with a carry before its base skipped)`, true, fmt(V));
 if (comps.length > 1) for (const c of comps) {
-  const minus = strip(apply(c.d, V, `v9-${c.key}`, true));
-  ok(`v9 - ${c.key} (reverse) = v8 + the others`, same(minus, build(comps.filter((x) => x !== c))), fmt(minus));
+  // a component others are carried over: reverse those carriers first, then c, then put the carriers' own deltas back
+  const carriers = comps.filter((x) => x.carry?.d && x.carry.over === c.key);
+  let t = V;
+  for (const x of carriers) t = strip(apply(x.carry.d, t, `v9-${x.key}(carry)`, true));
+  t = strip(apply(dOf(c, comps), t, `v9-${c.key}`, true));
+  for (const x of carriers) t = strip(apply(x.d, t, `+${x.key}`));
+  ok(`v9 - ${c.key} (reverse${carriers.length ? `, via ${carriers.map((x) => x.key).join(',')}'s carry and back` : ''}) = v8 + the others`, same(t, build(comps.filter((x) => x !== c))), fmt(t));
 }
 const work = join(WT, 'out/v9/work'); mkdirSync(work, { recursive: true });
 writeFileSync(join(work, 'v9.mjs'), V[JS]);

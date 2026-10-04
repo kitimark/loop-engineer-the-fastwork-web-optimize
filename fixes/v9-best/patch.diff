@@ -25,10 +25,13 @@
        },
        S = (e, t, r, a, o) =>
          new Promise((s) => {
-@@ -2459,6 +2461,39 @@
-             };
-           n = window.requestAnimationFrame(d);
-         }),
+@@ -2456,6 +2458,39 @@
+               }
+               let s = Math.min(1, (i - u) / a);
+               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
++            };
++          n = window.requestAnimationFrame(d);
++        }),
 +      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
 +      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
 +      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
@@ -59,12 +62,9 @@
 +                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
 +                  }, w))
 +                : (n = window.requestAnimationFrame(d));
-+            };
-+          n = window.requestAnimationFrame(d);
-+        }),
-       E = async (e) => (
-         z(y, !0),
-         z(v, !1),
+             };
+           n = window.requestAnimationFrame(d);
+         }),
 @@ -2486,7 +2521,7 @@
              (z(b, e, !0), z(C, e / 100));
            })) ||
@@ -282,7 +282,7 @@
          n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
          $T.delete(n),
          n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
-@@ -3103,8 +3279,22 @@
+@@ -3103,8 +3279,24 @@
        n = 1,
        r = 0,
        i = 0,
@@ -296,6 +296,8 @@
 +      _ce, // last written --commission-enter-shrink
 +      _cs, // last written --commission-shrink
 +      _ch, // last written runway height
++      _co, // [double-drive] last written --fw-co-w (the card's transform-origin weight)
++      _cw, // [double-drive] eased origin weight
        a = () => {
 -        if (((t = 0), z(y, A(), !0), !u || !c)) return;
 +        t = 0;
@@ -306,7 +308,7 @@
          let i = window.innerHeight,
            o = u.getBoundingClientRect(),
            l = c.getBoundingClientRect(),
-@@ -3112,16 +3302,24 @@
+@@ -3112,17 +3304,37 @@
            p = E(l, i),
            m = e.matches ? +(f >= 0.5) : w(f),
            h = e.matches ? +(p >= 0.5) : w(p);
@@ -328,19 +330,33 @@
 -          z(v, p > 0.04),
 -          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
 -          j(),
+-          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
 +          z(v, p > 0.04));
 +        // writes only when the value changed (same values as before, no redundant style mutations)
 +        let _ve = String(n),
 +          _vs = String(Math.max(n, r)),
-+          _vh = k || e.matches ? `` : `${i * 0.06}px`;
++          _vh = k || e.matches ? `` : `${i * 0.06}px`,
++          // [double-drive] transform-origin weight (0 top, 1 bottom). The class rule it replaces (bottom =
++          // .shrinking:not(.entering)) switched while r still eased (scale ~0.96, a 20-27 px jump scrolling up).
++          // Target: the same rule on the eased values (0.004672 = w(0.04), the classes' threshold), so at rest
++          // (n = w(f), r = w(p)) it is exactly the class state, and scrolling up it stays 1 until r is back at ~0
++          // (scale ~1). Where the target still flips under a real scale (entering toggling during the exit shrink)
++          // the weight eases there over a few frames like n and r instead of jumping. Reduced motion (n, r are 0/1
++          // steps there) takes the class rule itself and snaps.
++          _wt = (e.matches ? p > 0.04 && !(o.top < i * 0.995 && f > 0.04) : r > 0.004672 && !(n > 0.004672)) ? 1 : 0;
++        ((_cw = _cw === void 0 || e.matches || k ? _wt : _cw + (_wt - _cw) * 0.22),
++          Math.abs(_wt - _cw) < 1e-3 && (_cw = _wt));
++        let _vo = String(_cw);
 +        (k ||
 +          (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
-+          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs)),
++          _vo !== _co && u.style.setProperty(`--fw-co-w`, (_co = _vo))),
 +          _vh !== _ch && (d.style.height = _ch = _vh),
-           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
++          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4 || _cw !== _wt) && (t = window.requestAnimationFrame(a)));
        },
        o = () => {
-@@ -3669,7 +3867,8 @@
+         t ||= window.requestAnimationFrame(a);
+@@ -3669,7 +3881,8 @@
    );
  function HE(t, n) {
    D(n, !0);
@@ -350,7 +366,7 @@
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,10 +3981,49 @@
+@@ -3782,9 +3995,48 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -362,7 +378,7 @@
      }),
      f(t, d),
      H());
- }
++}
 +function HEflip(d, dw) {
 +  if (typeof d.animate != `function`) return;
 +  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
@@ -396,11 +412,10 @@
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
-+}
+ }
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
- function GE(e, t, n, r = UE) {
-@@ -3815,8 +4053,148 @@
+@@ -3815,8 +4067,148 @@
    return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
  }
  var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
@@ -549,7 +564,7 @@
    QE = h(
      `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
    );
-@@ -3824,14 +4202,112 @@
+@@ -3824,14 +4216,112 @@
    D(r, !0);
    let i = R(() => qE(r.value, r.place)),
      a = N(I(o(() => s(i)))),
@@ -665,7 +680,7 @@
        n = performance.now(),
        r = window.requestAnimationFrame(function i(o) {
          let s = GE(t, e, o - n);
-@@ -3843,27 +4319,24 @@
+@@ -3843,27 +4333,24 @@
      d = e(u),
      h = V(d, 2),
      g = (n) => {
@@ -711,20 +726,20 @@
          f(n, r));
      };
    (m(h, (e) => {
-@@ -3893,6 +4366,12 @@
-         },
+@@ -3894,6 +4381,12 @@
          get place() {
            return s(n);
-+        },
+         },
 +        get animate() {
 +          return t.animate;
 +        },
 +        get shown() {
 +          return t.shown;
-         },
++        },
        });
      },
-@@ -3920,7 +4399,58 @@
+   ),
+@@ -3920,7 +4413,58 @@
    let a = C(r, `inverse`, 3, !1),
      o = R(WT),
      c = N(null),
@@ -784,7 +799,7 @@
      d = R(() => s(o).waitlist.units),
      p = R(
        () =>
-@@ -3933,14 +4463,34 @@
+@@ -3933,14 +4477,34 @@
        z(c, Date.now(), !0);
      };
      e();
@@ -821,7 +836,7 @@
    var h = sD();
    let g;
    (_(
-@@ -3958,6 +4508,12 @@
+@@ -3958,6 +4522,12 @@
                return s(u)[i];
              },
              padStart: i > 0,
@@ -834,7 +849,7 @@
            });
          },
          p = (e) => {
-@@ -4026,7 +4582,11 @@
+@@ -4026,7 +4596,11 @@
          ),
          f(n, i));
      },
@@ -847,7 +862,7 @@
    function c(e) {
      return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
    }
-@@ -4160,15 +4720,131 @@
+@@ -4160,15 +4734,131 @@
        i = 0,
        a = 0,
        o = !1,
@@ -981,7 +996,7 @@
        },
        c = () => {
          i ||= window.requestAnimationFrame(s);
-@@ -4181,9 +4857,19 @@
+@@ -4181,9 +4871,19 @@
            window.clearTimeout(r),
            (r = 0),
            C.classList.add(`is-splash-done`),
@@ -1003,7 +1018,7 @@
          let t = e - a,
            r = O(t),
            i = j(t);
-@@ -4205,6 +4891,7 @@
+@@ -4205,6 +4905,7 @@
            window.clearTimeout(r),
            (r = 0),
            (o = !1),
@@ -1011,7 +1026,7 @@
            C.classList.add(`is-preparing`),
            x.classList.add(`is-preparing`),
            C.classList.remove(`is-splash-done`, `is-expanding`),
-@@ -4233,18 +4920,62 @@
+@@ -4233,18 +4934,62 @@
        };
      p();
      let h = () => {
@@ -1077,7 +1092,7 @@
            g());
        }
      );
-@@ -4330,7 +5061,11 @@
+@@ -4330,7 +5075,11 @@
      be = e(ye, !0);
    (M(ye), M(W));
    var xe = V(W, 2);
@@ -1090,24 +1105,23 @@
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5424,28 @@
+@@ -4689,12 +5438,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
--      n = () => {
--        F &&= (window.clearInterval(F), 0);
 +      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
 +      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
 +      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
 +      fwOn = !1,
 +      fwT0 = 0,
-+      n = () => {
+       n = () => {
+-        F &&= (window.clearInterval(F), 0);
 +        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
        },
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1119,10 +1133,11 @@
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
-@@ -4726,10 +5478,15 @@
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
+@@ -4726,10 +5492,15 @@
          ((O = null), z(E, null));
        },
        d = () => {
@@ -1138,7 +1153,7 @@
        window.addEventListener(`pointermove`, l),
        window.addEventListener(`pointerup`, u),
        window.addEventListener(`pointercancel`, u));
-@@ -4740,6 +5497,7 @@
+@@ -4740,6 +5511,7 @@
          i.disconnect(),
          a.disconnect(),
          t.removeEventListener(`change`, c),
@@ -1146,7 +1161,7 @@
          window.removeEventListener(`pointermove`, l),
          window.removeEventListener(`pointerup`, u),
          window.removeEventListener(`pointercancel`, u),
-@@ -10776,11 +11534,14 @@
+@@ -10776,11 +11548,14 @@
      let t = ie(e);
      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
    }
@@ -1163,7 +1178,7 @@
    }
    function le() {
      let e = window.innerHeight * 1.45,
-@@ -11249,7 +12010,7 @@
+@@ -11249,7 +12024,7 @@
  }
  g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
  var dM = h(
@@ -1172,7 +1187,7 @@
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,12 +12055,95 @@
+@@ -11294,12 +12069,95 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -1268,7 +1283,7 @@
        l = () => {
          i = 0;
          let n = document.querySelector(`.hero-track`);
-@@ -11312,6 +12156,10 @@
+@@ -11312,10 +12170,17 @@
          if (g) {
            let t = T(g.getBoundingClientRect(), window.innerHeight),
              n = e.matches ? +(t >= 0.5) : w(t);
@@ -1279,7 +1294,15 @@
            ((o += (n - o) * (e.matches ? 1 : 0.22)),
              Math.abs(n - o) < 8e-4 && (o = n),
              h.style.setProperty(`--future-shrink`, String(o)),
-@@ -11325,7 +12173,7 @@
+-            z(b, t > 0.04),
++            // [double-drive] keep .is-future-shrinking while the eased value is still above the class's threshold
++            // (0.004672 = w(0.04)), so a fast scroll up drops it only once the card is back at scale ~1 instead of
++            // handing a 0.96 scale to the 0.9 s transition. At rest o = w(t), so the class is t > 0.04 as before.
++            z(b, t > 0.04 || o > 0.004672),
+             Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
+         }
+         let r = document.querySelector(`.pain`);
+@@ -11325,7 +12190,7 @@
          }
        },
        u = () => {
@@ -1288,7 +1311,7 @@
        },
        f = (e) =>
          new Promise((t) => {
-@@ -11337,22 +12185,33 @@
+@@ -11337,22 +12202,33 @@
          }),
        p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
        m = (e) => {
@@ -1327,7 +1350,7 @@
              }
            }
        },
-@@ -11360,14 +12219,20 @@
+@@ -11360,14 +12236,20 @@
      return (
        e.addEventListener(`change`, u),
        t.addEventListener(`change`, u),
@@ -1349,7 +1372,7 @@
        }
      );
    });
-@@ -11419,11 +12284,15 @@
+@@ -11419,11 +12301,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -1368,7 +1391,7 @@
        ),
          f(e, t));
      },
-@@ -11443,7 +12312,7 @@
+@@ -11443,7 +12329,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -1377,7 +1400,7 @@
    }),
      M(me));
    var ve = V(me, 2),
-@@ -11994,28 +12863,41 @@
+@@ -11994,28 +12880,41 @@
    ne(() => {
      let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
        t = 0,
@@ -1431,7 +1454,7 @@
                  a < 1 && (t = requestAnimationFrame(n)));
              };
            t = requestAnimationFrame(n);
-@@ -12197,14 +13079,9 @@
+@@ -12197,14 +13096,9 @@
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = !1,
        n = 0,
@@ -1448,7 +1471,7 @@
        },
        i = () => {
          (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
-@@ -12243,26 +13120,16 @@
+@@ -12243,26 +13137,16 @@
          a = e(r),
          u = e(a),
          d = e(u),
@@ -1484,7 +1507,7 @@
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13140,12 @@
+@@ -12273,8 +13157,12 @@
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
                "is-active": s(v),
              })),
@@ -1497,7 +1520,7 @@
          f(t, r));
      },
    );
-@@ -12433,21 +13304,28 @@
+@@ -12433,21 +13321,28 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -1528,7 +1551,7 @@
      };
    });
    var h = WM();
-@@ -12652,6 +13530,7 @@
+@@ -12652,6 +13547,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -1536,7 +1559,7 @@
          f(n, i));
      },
    ),
-@@ -12945,6 +13824,9 @@
+@@ -12945,6 +13841,9 @@
      w = 0,
      T,
      E = R(() => s(x) > 0.001),
@@ -1546,7 +1569,7 @@
      O = R(() => !s(p) && !s(E)),
      A = R(() => s(O) || s(x) > 0.55);
    function j(e) {
-@@ -12952,17 +13834,27 @@
+@@ -12952,17 +13851,27 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -1580,7 +1603,7 @@
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12999,7 +13891,7 @@
+@@ -12999,7 +13908,7 @@
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
      let _ = () => {
          (z(v, ee(), !0), z(g, F(), !0));
@@ -1589,7 +1612,7 @@
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13909,179 @@
+@@ -13017,13 +13926,179 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -1771,7 +1794,7 @@
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14103,9 @@
+@@ -13045,9 +14120,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -1783,7 +1806,7 @@
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14113,58 @@
+@@ -13055,27 +14130,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -1849,7 +1872,7 @@
        },
        R = y(),
        te = R
-@@ -13086,7 +14175,60 @@
+@@ -13086,7 +14192,60 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -1911,7 +1934,7 @@
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,10 +14237,50 @@
+@@ -13095,10 +14254,50 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -1962,7 +1985,7 @@
        }
      );
    });
-@@ -13118,10 +14300,24 @@
+@@ -13118,10 +14317,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -1987,7 +2010,7 @@
        (_(
          u,
          21,
-@@ -13140,7 +14336,7 @@
+@@ -13140,7 +14353,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -1996,7 +2019,7 @@
                }),
                  f(e, n));
              },
-@@ -13157,7 +14353,16 @@
+@@ -13157,7 +14370,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2014,7 +2037,7 @@
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14398,8 @@
+@@ -13193,7 +14415,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2024,7 +2047,7 @@
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14416,7 @@
+@@ -13210,7 +14433,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2033,7 +2056,7 @@
    }),
      M(I),
      P(
-@@ -13232,6 +14438,7 @@
+@@ -13232,6 +14455,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),
@@ -2043,7 +2066,32 @@
            k(re, `data-selenium`, SE.header.home),
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -564,9 +564,16 @@
+@@ -38,7 +38,11 @@
+   width: 100%;
+   min-height: 100%;
+   transform: scale(var(--commission-shrink-scale));
+-  transform-origin: 50% 0;
++  /* double-drive (T-157): the origin is a weight the script writes (0 = top for the enter shrink, 1 = bottom for the
++     exit shrink, in between only while both shrinks are easing). The class switch below flipped it while the eased
++     scale was still ~0.96 when scrolling back up, a 20-27 px one-frame jump; at rest the weight equals the class
++     state (see the script), and without the script it is 0, the old default. */
++  transform-origin: 50% calc(var(--fw-co-w, 0) * 100%);
+   will-change: transform, border-radius;
+   background: #fff;
+   flex: 1;
+@@ -46,9 +50,8 @@
+   position: relative;
+   overflow: clip;
+ }
+-.commission.shrinking:not(.entering) .commission-card {
+-  transform-origin: 50% 100%;
+-}
++/* double-drive (T-157): `.commission.shrinking:not(.entering) .commission-card { transform-origin: 50% 100% }` is now
++   the --fw-co-w weight on .commission-card above. */
+ .commission-runway {
+   background: #fff;
+   width: 100%;
+@@ -564,9 +567,16 @@
    height: 12px;
    overflow: hidden;
  }
@@ -2061,7 +2109,7 @@
    border-radius: 999px;
    flex-direction: column;
    height: 100%;
-@@ -1227,9 +1234,8 @@
+@@ -1227,9 +1237,8 @@
    position: relative;
    overflow: visible;
  }
@@ -2073,7 +2121,7 @@
  .sizer.svelte-1fn2go6 {
    visibility: hidden;
    width: 100%;
-@@ -1289,14 +1295,14 @@
+@@ -1289,14 +1298,14 @@
    animation: 0.45s forwards svelte-1fn2go6-fill-out;
  }
  .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
@@ -2091,7 +2139,7 @@
    transform: translate(-0.2%, 0.35%);
  }
  :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
-@@ -1309,6 +1315,18 @@
+@@ -1309,6 +1318,18 @@
    .is-idle-frame-0.svelte-1fn2go6 {
    opacity: 1;
  }
@@ -2110,7 +2158,7 @@
  @keyframes svelte-1fn2go6-stroke-in {
    0% {
      stroke-dashoffset: 1px;
-@@ -1339,6 +1357,40 @@
+@@ -1339,6 +1360,40 @@
      opacity: 0;
    }
  }
@@ -2151,19 +2199,22 @@
  @keyframes svelte-1fn2go6-idle-0 {
    0%,
    33.32% {
-@@ -1413,6 +1465,33 @@
-   position: absolute;
-   inset: 0;
- }
+@@ -1410,9 +1465,36 @@
+   justify-content: center;
+   align-items: center;
+   display: flex;
++  position: absolute;
++  inset: 0;
++}
 +/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; inside it an uncomposited wrapper of
 +   the same box at top -m*c, and each cell is a face's box placed at top k*c in the wrapper (both set by the script),
 +   its glyph centred the same way */
 +.strip.svelte-1quva9c {
 +  will-change: transform;
 +  display: block;
-+  position: absolute;
-+  inset: 0;
-+}
+   position: absolute;
+   inset: 0;
+ }
 +.cdwrap.svelte-1quva9c {
 +  display: block;
 +  position: absolute;
@@ -2185,10 +2236,11 @@
  .number.svelte-1jfovfa {
    font-variant-numeric: tabular-nums;
    align-items: center;
-@@ -1520,6 +1599,31 @@
+@@ -1519,6 +1601,31 @@
+   syntax: "<angle>";
    inherits: false;
    initial-value: 0deg;
- }
++}
 +/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
 +   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
 +   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
@@ -2213,11 +2265,10 @@
 +.start-selling-morph-pill,
 +.start-selling-morph-panel {
 +  --morph: inherit;
-+}
+ }
  .hero-track.svelte-1p2vpne {
    background: #fff;
-   height: 200vh;
-@@ -2124,6 +2228,136 @@
+@@ -2124,6 +2231,136 @@
      right: -45px;
    }
  }
@@ -2354,7 +2405,18 @@
  @media (prefers-reduced-motion: reduce) {
    .hero-track.svelte-1p2vpne {
      height: auto;
-@@ -2398,19 +2632,33 @@
+@@ -2385,6 +2622,10 @@
+   display: flex;
+   position: relative;
+   overflow: clip;
++  /* double-drive (T-157): the shrink's origin on the card itself, so .is-future-shrinking no longer flips it
++     (50% 50% <-> 50% 100%) while the card is still scaled; scrolling up fast that flip jumped the card -105/+175/-77 px.
++     Outside the shrink the card only translates (reveal 48px -> 0) or rests at translateY(0): no visual change. */
++  transform-origin: 50% 100%;
+ }
+ .start-selling-future.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+@@ -2398,24 +2639,52 @@
    transition:
      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
      filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
@@ -2390,7 +2452,26 @@
  }
  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
    transform: scale(var(--future-shrink-scale));
-@@ -2885,20 +3133,61 @@
+   transform-origin: 50% 100%;
++  /* double-drive (T-157, the PR-021 move): --future-shrink is already eased per frame by the script, so the 0.9 s
++     transform transition restarted every frame and the card trailed the scroll by 0.7-1.3 s. While the shrink drives
++     transform only opacity and filter keep their transitions (the lists truncate to the first two entries: opacity
++     0.7 s, filter 0.9 s, exactly as above). End values are unchanged. */
++  transition-property: opacity, filter;
+ }
++/* double-drive (T-157), phones and tablets: the CSS below forces --future-shrink-scale: 1 here (same query), so the
++   shrink is scale(1), which looks the same as translateY(0). Keeping translateY(0) means the class toggle changes no
++   computed transform, so the 0.9 s identity transition (scale(1) <-> translateY(0)) no longer starts when the class
++   goes off; the transition-property rule above already stops the one when it goes on. */
++@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
++  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
++    transform: translateY(0);
++  }
++}
+ .start-selling-future-header {
+   z-index: 10;
+   text-align: center;
+@@ -2885,20 +3154,61 @@
  .start-selling-avatars.is-carousel img.is-enter {
    animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
  }
@@ -2460,7 +2541,7 @@
      transform: scale(0.35);
    }
  }
-@@ -2908,7 +3197,7 @@
+@@ -2908,7 +3218,7 @@
      transform: scale(0.35);
    }
    to {
@@ -2469,7 +2550,7 @@
      transform: scale(1);
    }
  }
-@@ -5390,7 +5679,9 @@
+@@ -5390,7 +5700,9 @@
    box-sizing: border-box;
    color: #151a23;
    filter: blur(calc((1 - var(--morph-fade)) * 12px));
@@ -2480,18 +2561,18 @@
    width: 100%;
    padding: 0 56px 144px;
    display: block;
-@@ -5798,6 +6089,10 @@
-     background-image: none;
+@@ -5799,6 +6111,10 @@
      animation: none;
    }
-+}
+ }
 +/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
 +.start-selling-platform [data-sweep-paused] {
 +  animation-play-state: paused !important;
- }
++}
  @keyframes start-selling-platform-i-doc-sweep {
    0% {
-@@ -6513,16 +6808,24 @@
+     background-position: 100%;
+@@ -6513,16 +6829,24 @@
    opacity: 0;
  }
  .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
@@ -2519,10 +2600,13 @@
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -6812,6 +7115,93 @@
-   opacity: 1;
-   transition: opacity 0.2s;
+@@ -6809,8 +7133,95 @@
+   opacity: 0;
  }
+ .start-selling-platform-secure-network-dash-highlight.is-active {
++  opacity: 1;
++  transition: opacity 0.2s;
++}
 +/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
 +   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
 +   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
@@ -2540,8 +2624,8 @@
 +  opacity: 0;
 +}
 +.start-selling-platform-secure-network-dash-glint.is-active {
-+  opacity: 1;
-+  transition: opacity 0.2s;
+   opacity: 1;
+   transition: opacity 0.2s;
 +}
 +.start-selling-platform-secure-network-dash-glint {
 +  pointer-events: none;
@@ -2609,11 +2693,10 @@
 +  to {
 +    transform: translateX(-199.03515625px);
 +  }
-+}
+ }
  .start-selling-platform-secure-network-face {
    box-sizing: border-box;
-   object-fit: cover;
-@@ -7186,7 +7576,8 @@
+@@ -7186,7 +7597,8 @@
      transform: translate(-50%, -50%);
      animation: none !important;
    }
@@ -2623,7 +2706,7 @@
      opacity: 0 !important;
    }
  }
-@@ -7509,21 +7900,23 @@
+@@ -7509,21 +7921,23 @@
    opacity: 0;
  }
  .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
@@ -2651,11 +2734,10 @@
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -11101,6 +11494,64 @@
-     -webkit-background-clip: text;
+@@ -11102,7 +11516,65 @@
      background-clip: text;
      animation: 4s linear infinite start-selling-platform-i-doc-sweep;
-+  }
+   }
 +  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
 +     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
 +     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
@@ -2706,17 +2788,19 @@
 +    animation-play-state: paused !important;
 +  }
 +  }
-+}
+ }
 +@keyframes start-selling-platform-pi-sweep-band {
 +  0% {
 +    transform: translateX(-66.6667%);
 +  }
 +  to {
 +    transform: translateX(0);
-   }
- }
++  }
++}
  .start-selling-language-switch-wrap.svelte-1lc7nmb {
-@@ -11751,11 +12202,74 @@
+   z-index: 2;
+   position: relative;
+@@ -11751,11 +12223,74 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -2793,7 +2877,7 @@
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
    content-visibility: auto;
-@@ -11768,3 +12282,53 @@
+@@ -11768,3 +12303,53 @@
      scroll-behavior: auto;
    }
  }
