@@ -2406,6 +2406,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `ts-i119` (name; spawned 10-04 06:1xZ, user T-076 #12) | toolsmith I-119: a thread reply may carry an `http://lan:<port>/` link, stored as "lan" and resolved only when shown (like steps) | alive |
 | `ts-i118` (name; spawned 10-04 05:4xZ, user T-074) | toolsmith I-118: per-agent console page /agent/<name>, /agents list in the nav, agent names linked on Status, Progress and Threads, CLI `status.mjs agent <name>`; coordinates files with ts-i103 | alive |
 | `wi-gpu-bundle` (name; spawned 10-04 05:4xZ, user T-073) | integrator: GPU preview build = best build + hero R2 + morph-gpu + cd-roll-ca; identity, pixel and function checks only (no timing); Try-it for the user | alive |
 | `ts-i115` (name; spawned 10-04 05:0xZ, user T-071 #10) | I-115 landed 8961e042 (resolved); next I-113, then I-116 (lead 05:1xZ) | alive |
