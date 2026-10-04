@@ -83,7 +83,34 @@ With two or more components, the script also checks:
   | desktop | 0 | 0 | yes / yes | 1423 → 1423 | 0.12 / 0 / 0 |
 
   The same picture as step 2 (v8's count is the per-load accent state, 1580 or 1581; the exact count is dom-count's).
-  Look checks on `out/v9/snap-de237379b556`: running.
+  **Look checks on `out/v9/snap-de237379b556`, 2026-10-04 22:30-23:17Z (`out/v9/looks-s4.log`), all EXIT 0:**
+  - `px-chrome.mjs`, all within PR-010's 0.5 %. Mobile: two diffs repeat. One is the top-nav language switch, 41 css px²
+    (0.0102 %, max 212), from PR-021. The other is the commission referral card at y 3875, 150 css px² (0.037 %, max 37),
+    from double-drive. Everything else is about 0. Desktop: the language switch, 72-83 css px² (PR-021). The hero heading
+    at y 548 differs by 2140 px² (0.165 %, max 107); the V/V noise is 0.68 %. The people image at y 4255 differs by
+    2654 px²; the A/A noise is 3 %.
+  - `dom-count.mjs` (A = v8, V = v9; A2/V2 repeat both, the same counts). Mobile: 1578 → 1579 after the walk. The +1 is
+    rev 7c's `div.fw-ms-end` with `html.fw-ms`. PR-021's earn box adds a span and one script element drops. Desktop:
+    1409 → 1409, with the same span added and script dropped. No other token differs.
+  - `census-run.mjs A,V` (Chrome work counts per second, no timing; docHeight 6278 → 7210 = rev 7c's 100lvh spacer):
+
+    | window | mainFrames A → V | elementsRestyled | layout | paint | rafFire |
+    |---|---|---|---|---|---|
+    | rest-0 | 39.3 → 39.2 | 299.5 → 240.9 | 1.2 → 1.0 | 71.2 → 73.0 | 1.2 → 1.0 |
+    | rest-1400 | 43.2 → 42.3 | 537 → 528.5 | 2.0 → 2.3 | 79 → 79.5 | 1.3 → 1.3 |
+    | rest-2796 | 3 → 2 | 24 → 16 | 0 → 0 | 0 → 0 | 0 → 0 |
+    | rest-3800 | 27.3 → 26.3 | 233.7 → 226.4 | 14.5 → 14.3 | 37 → 37 | 17.7 → 17.7 |
+    | rest-end (A y 5346, V y 6278) | 0 → 28 | 0 → 317.9 | 0 → 0 | 0 → 124.9 | 0 → 27 |
+    | scroll top → end (A 8.9 s, V 10.5 s) | 126.1 → 129 | 2194 → 2084 | 21.6 → 24.9 | 197.7 → 237.3 | 305.1 → 186.8 |
+
+    rest-end does not compare across arms. A rests at v8's page end, where the morph has not run. V rests one screen
+    lower, at the end of rev 7c's spacer, where the morph is complete (m = 1) and the countdown is in view. There V runs
+    the countdown roll's original rAF spring at about 27 calls/s, plus its 1/s tick. The spring is at V JS line 4408,
+    on cd-roll's "no strip yet or no path" fallback. At the page top the roll uses its strip path at about 1 rAF/s.
+    OBSERVED in our setup. This matches the open "panel clock roll" item (#1, less-work) on fix-cd-roll-ca's resume
+    list in ops-handover. The fallback code is the same in v8 (A JS line 4308). The census never rests on v8's morphed
+    panel, so this window cannot show whether v9 adds work there. The rest windows that compare (0, 1400, 2796, 3800) are equal or lower.
+    The scroll window is longer in V (the spacer), so its per-second counts are not a like-for-like comparison.
 - **Step 3 (+ scroll-cb), built 2026-10-04 ~21:45Z** (v9 = 25dc3025f1a0 / 40037dc99f11, patch.diff d31272fd8831). Its commission-job hunks (v8 JS 3289-3337) overlap
   double-drive's: both declare after `_ch`, and double-drive rewrote the rAF line scroll-cb uses as context. `build.mjs`
   now takes a `carry` (the component re-based on v8 + the component it overlaps, used whenever that one is in the set
