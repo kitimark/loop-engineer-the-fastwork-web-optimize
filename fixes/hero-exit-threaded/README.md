@@ -1065,6 +1065,33 @@ first 200 ms and the rest. Output `out/hext/firstscroll-2026-10-04T07-42-33-842Z
   (the first-scroll paint burst), plus B's extra first-scroll paints. These are counts, not time; the phone finger
   recordings show no A/B difference in the first second (above). No phone run is asked for; the lead decides.
 
+### What runs during the first swipe after load (Simulator trace, user T-082 #7, 2026-10-04 07:53-07:54Z)
+
+Scratch `firsttrace.mjs` (summary `ftan.mjs`), one shared-lane Simulator session, arms A, B, B2, A2. Each arm is a fresh
+load with the same move1 as above (0 -> 240 px). Recorded in one Timeline record: MutationObserver on the whole
+document, a rAF scrollY log, resource timing and network events. Paint clip rects are mapped to the element at their
+centre at the scroll position of the paint, so the mapping is approximate. Output
+`out/hext/firsttrace-2026-10-04T07-53-50-554Z/`. Counts only.
+
+| paints by element | first 200 ms, A / A2 | first 200 ms, B / B2 | whole swipe, A / A2 | whole swipe, B / B2 |
+|---|---|---|---|---|
+| all | 61 / 62 | 62 / 61 | 192 / 192 | 217 / 231 |
+| countdown digit units `div.unit` | 40 / 40 | 40 / 40 | 60 / 65 | 77 / 81 |
+| hero copy `header.hero-copy` | 0 / 0 | 0 / 0 | 63 / 57 | 64 / 75 |
+| countdown flip faces `span.face` | 8 / 8 | 8 / 8 | 8 / 8 | 8 / 8 |
+
+- **Script DOM writes per swipe:** `span.face` style 50-142 (countdown flip), `div.hero` style 3-20, heading accent
+  svg swap 3, `img` src in #people 3.
+- **Script entry points, about 21 per swipe each:** engine rE/iE (best-build 2668/2671), countdown spring rAF (4043),
+  hero callback (A 4391; B 4470), profile `f` (11163; B 11330), future `l` (11542; B 11709), and Google Analytics'
+  scroll handler (vendor `gtag js:903`, 19-20 calls).
+- **Loading:** 65 of 149 images were not complete before the swipe (lazy, below the fold). 4 finish during the swipe
+  (pin.svg and 3 photos in #profile-showcase). Fonts were loaded.
+- **Read:** the visible work at the start of the first swipe is mostly the countdown digit units. That is the same on
+  both builds in the first 200 ms; B has about 15-20 more unit paints over the whole swipe. Off-screen image loads
+  overlap the swipe but are not on screen. OBSERVED, Simulator, cause of the felt lag not proven. Finding posted
+  (countdown owner told).
+
 ## What changed
 
 On WebKit, once the entrance is over (`d()`), the exit is a set of CSS scroll-driven animations on a `--hero-exit`
