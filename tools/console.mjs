@@ -70,6 +70,19 @@
 //   node tools/console.mjs progress [--details] [--json]   # curated fixes/PROGRESS.json + live phone/Chrome/incidents/steps
 //   node tools/console.mjs progress --check [--file <path>] # validate a PROGRESS.json (schema + no personal data); exit 1 on errors
 //        # mgmt-ops keeps fixes/PROGRESS.json current (schema: header of tools/lib/progress.mjs)
+// Editing it (the lead after the T-104 team measurement; tools/lib/progress-edit.mjs): every edit keeps the file's hand
+// layout outside the changed values, stamps updatedAt/updatedBy, and is checked first: a result that fails --check is
+// refused (PROGRESS REFUSED, exit 1, nothing written; problems the file had before are marked). --dry-run: check, show.
+//   node tools/console.mjs progress set <json-path> <value> [<json-path> <value> …] --by <agent> [--string] [--dry-run]
+//   node tools/console.mjs progress set <json-path> --file <f|-> --by <agent>   # the value from a file (- = stdin)
+//   node tools/console.mjs progress set […] --delete <json-path> [--delete …] --by <agent>   # remove keys or entries,
+//        # after the sets: progress set 'changes[^]' '{"at": …, "text": …}' --delete 'changes[30]' (the list keeps 30)
+//        # paths: build.since, items[id=cd-strip].next, versions[6].best, changes[^] (a new first row), upcoming[+] (last)
+//        # value: JSON when it parses (true, 42, "x", {...}, [...]), else the words as a string (--string: always a string)
+//   node tools/console.mjs progress best <versionId> --by <agent> [--name "…"] [--summary "…"] [--dry-run]
+//        # today's best build: "best": true moves to that version and the build block with it (since = its since, the
+//        # T-103 rule; name; fixes = every landed version's fixes up to it; the old summary and combined rows go;
+//        # items' inBuild flags follow). set and best edit $FW_PROGRESS_FILE or fixes/PROGRESS.json; --progress <path>: another
 //
 // Status board (read-only; the same content as the page's Status tab, /status; agents report with tools/status.mjs):
 //   node tools/console.mjs status [--all] [--json]          # every workstream: priority, state, waits, owner, note
@@ -152,7 +165,7 @@
 //
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir, attemptOf, EXIT_REDO, recipients } from './lib/console.mjs';
 import { runningServer, startServer } from './lib/console-server.mjs';
 import { postRefusal } from './lib/phone-step.mjs';
@@ -160,14 +173,15 @@ import { status as lockStatus } from './lib/lock.mjs';
 import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
 import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
 import { autoPortBase } from './lib/paths.mjs';
-import { currentView, renderText, readProgress } from './lib/progress.mjs';
+import { currentView, renderText, readProgress, progressFile } from './lib/progress.mjs';
+import { progressSet, progressBest, parseValue } from './lib/progress-edit.mjs'; // T-104: progress set|best
 import { currentStatusView, renderText as statusText } from './lib/status.mjs';
 import * as TH from './lib/console-threads.mjs';
 import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk, topic map
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 
 const argv = process.argv.slice(2);
-const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch', '--into'];
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch', '--into', '--progress', '--name', '--summary', '--delete'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -218,6 +232,47 @@ async function serve() {
   const stop = () => { srv.close().then(() => process.exit(0)); setTimeout(() => process.exit(0), 2000).unref(); };
   process.on('SIGINT', stop); process.on('SIGTERM', stop); process.on('SIGHUP', stop);
   return new Promise(() => {}); // until a signal
+}
+
+/** `console.mjs progress set|best …` (T-104, see the header): edit PROGRESS.json, checked before writing. */
+function progressEdit(sub) {
+  const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1]))).slice(2);
+  const file = opt('progress') || (sub === 'best' ? opt('file') : undefined) || progressFile();
+  const usage = (why) => new Error(`usage: node tools/console.mjs progress set <json-path> <value> [<json-path> <value> …] | <json-path> --file <f|-> [--delete <json-path> …], with --by <agent>${why ? ` (${why})` : ''}`);
+  const text = readFileSync(file, 'utf8');
+  let r;
+  if (sub === 'set') {
+    const sets = [];
+    if (opt('file') !== undefined) {
+      if (pos.length !== 1) throw usage('with --file, one <json-path>');
+      const f = opt('file');
+      sets.push({ path: pos[0], value: parseValue(readFileSync(f === '-' ? 0 : f, 'utf8'), { string: flag('string') }) });
+    } else {
+      if (pos.length % 2) throw usage('a value for every path');
+      for (let i = 0; i < pos.length; i += 2) sets.push({ path: pos[i], value: parseValue(pos[i + 1], { string: flag('string') }) });
+    }
+    // --delete <json-path>, repeatable, after the sets (a new first change row, then the oldest one out: the 30 cap)
+    argv.forEach((a, i) => { if (a === '--delete') sets.push({ path: argv[i + 1]?.startsWith('--') ? '' : argv[i + 1], delete: true }); else if (a.startsWith('--delete=')) sets.push({ path: a.slice(9), delete: true }); });
+    if (sets.some((s) => s.delete && !s.path)) throw usage('--delete needs a path');
+    if (!sets.length) throw usage('nothing to set');
+    r = progressSet(text, sets, { by: by() });
+  } else {
+    if (pos.length !== 1) throw new Error('usage: node tools/console.mjs progress best <versionId> --by <agent> [--name "…"] [--summary "…"] [--dry-run]');
+    r = progressBest(text, pos[0], { by: by(), name: opt('name'), summary: opt('summary') });
+  }
+  const notes = r.notes.map((n) => `  ${n}`);
+  if (r.errors.length) {
+    const old = new Set(r.before);
+    console.log(`PROGRESS REFUSED ${file}: the result would not pass --check; nothing written`);
+    console.log([...notes, '  problems:', ...r.errors.map((e) => `    ${e}${old.has(e) ? '   (already in the file before this change)' : ''}`)].join('\n'));
+    return 1;
+  }
+  if (flag('dry-run')) { console.log([`PROGRESS DRY-RUN ${file}: valid (--check OK), nothing written`, ...notes].join('\n')); return 0; }
+  const tmp = `${file}.tmp-${process.pid}`;
+  writeFileSync(tmp, r.text);
+  renameSync(tmp, file);
+  console.log([`PROGRESS ${sub.toUpperCase()} ${file}: valid (--check OK), written`, ...notes].join('\n'));
+  return 0;
 }
 
 /** `console.mjs thread <sub> [<id>] …` (see the header). */
@@ -407,6 +462,8 @@ async function main() {
     return 0;
   }
   if (cmd === 'progress') {
+    if (arg === 'set' || arg === 'best') return progressEdit(arg);
+    if (arg !== undefined) throw new Error(`unknown progress command "${arg}" (progress [--check] | progress set <json-path> <value> … | progress best <versionId>; see the header of tools/console.mjs)`);
     if (opt('file')) process.env.FW_PROGRESS_FILE = opt('file');
     if (flag('check')) {
       const { errors, file } = readProgress();

@@ -1,11 +1,13 @@
 // Fix progress for the user (ts-progress, user request 2026-10-01: "put the current fix progress on the console
 // for me to catch up"): one plain-language page in the user console (`/progress`) and the same content as text
-// (`node tools/console.mjs progress`). Read-only: nothing here writes anything.
+// (`node tools/console.mjs progress`). Read-only: nothing here writes anything (edits: tools/lib/progress-edit.mjs,
+// `console.mjs progress set|best`, checked with validateProgress before they write).
 //
 // Two sources:
 //   1. fixes/PROGRESS.json (committed, curated by mgmt-ops): the headline layer in plain words. Schema below;
 //      `node tools/console.mjs progress --check` validates it, and tests/unit/progress.test.mjs validates the
-//      committed file in every `npm run test:unit`.
+//      committed file in every `npm run test:unit`. Edit it with `progress set <json-path> <value>` and move
+//      today's best build with `progress best <versionId>` (header of tools/console.mjs).
 //   2. Live state, read at request time: the iphone and chrome-measure holders and queues (owner names only, never
 //      a holder's meta, checkout, pid or token; a chrome-measure shared group as its readers with weight and start
 //      time, the weight in use against the cap, whether joins are closed, and the lane switch, I-048), open incidents (id, title, blocking), the console steps waiting for the user
@@ -42,7 +44,8 @@
 //   }],
 //   "upcoming": [{ "title": "<a step that will come to the user console>", "when": "<plain>", "item": "<item id>" }],
 //   "build": {                                   // optional (I-061, user T-021): today's best build, the /build page
-//     "name": "<plain name>", "since": "<ISO: when it became the best build>",
+//     "name": "<plain name>", "since": "<ISO: when it became the best build>",   // = the since of the version with
+//                                                //   "best": true when there is one (T-103; `progress best` moves both)
 //     "summary": "<how it improves things, one plain sentence>",            // optional
 //     "fixes": ["<item id>", …],                 // the fixes applied in it; each item's first best[] entry is its gain
 //     "combined": [{ "what": "<metric, plain>", "before": "<the original page>", "after": "<this build>",
@@ -294,6 +297,11 @@ export function validateProgress(p) {
     });
     const best = Array.isArray(p.versions) ? p.versions.map((v, i) => (v?.best === true ? `versions[${i}]` : null)).filter(Boolean) : [];
     if (best.length > 1) E.push(`versions: "best": true on ${best.join(', ')}; at most one version is today's best build`);
+    // the lead (T-103: the best flag moved to v6, build.since stayed on v4's time): the build block is the best version's
+    const bi = best.length === 1 ? Number(best[0].slice(9, -1)) : -1, bv = bi >= 0 ? p.versions[bi] : null;
+    if (bv && p.build && typeof p.build === 'object' && isIso(p.build.since) && isIso(bv.since) && Date.parse(p.build.since) !== Date.parse(bv.since)) {
+      E.push(`build.since: ${p.build.since}, but the version with "best": true (${best[0]}, "${bv.id}") is since ${bv.since}; the best build and the best version are the same build, so the times must match (T-103). Move both: node tools/console.mjs progress best <versionId>`);
+    }
   }
   // Hard rule 12: no personal data anywhere in the file
   const walk = (v, path) => {
