@@ -94,6 +94,23 @@ test('I-123 a: the grace has a hard bound (10 min past expiry), needs the OWNER\
 
 // ---- (c) stuck steps ------------------------------------------------------------------------------------------
 
+test('I-128: two changes in the same millisecond are two episodes (the key names the change by its place in the history, not by its time)', async () => {
+  const s = await pair();
+  await C.ack(s.id, { by: 'fix-nav-morph', part: 1, state: 'ready' });
+  await C.start(s.id, { part: 1 });
+  await C.restart(s.id, { by: 'user' });
+  const a = C.get(s.id);
+  const at = a.history.at(-1).at;
+  // the runner acks "loading" in the same ms as the Start over (a fast runner, or a coarse clock): still waiting on it
+  const b = { ...a, history: [...a.history, { at, who: 'fix-nav-morph', action: 'ack', part: 1, state: 'loading' }], parts: a.parts.map((p, i) => (i === 0 ? { ...p, state: 'loading' } : p)) };
+  const now = Date.parse(at) + 10 * 60000;
+  const [x] = P.stuckSteps({ steps: [a], now });
+  const [y] = P.stuckSteps({ steps: [b], now });
+  assert.ok(x && y, 'both wait on the runner');
+  assert.notEqual(y.key, x.key, 'a new change is a new episode, even in the same ms');
+  assert.equal(P.stuckSteps({ steps: [a], now })[0].key, x.key, 'the same step state keeps its key');
+});
+
 test('I-123 c: a step that waits on its runner (gated part not ready, recorded part without "recording") for more than 2 min is stuck', async () => {
   assert.equal(P.STUCK_STEP_MIN, 2);
   const s = await pair();

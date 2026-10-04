@@ -114,7 +114,9 @@ export function waitsOnRunner(s) {
 /**
  * (c) Active steps whose current part has waited on its runner for more than `min` minutes with no change on the step
  * (the newest history entry: a runner ack, a Start, a Start over, ...). Each: {id, by, part, label, attempt, why, since
- * (ms), minutes, key, after}. `key` names the episode (step, epoch, part, attempt, the change it waits after).
+ * (ms), minutes, key, after}. `key` names the episode (step, epoch, part, attempt, the change it waits after). I-128: the
+ * change is named by its place in the history (h<n>), not only by its time: two changes in the same millisecond (a
+ * runner's ack right after a Start over) are two episodes.
  */
 export function stuckSteps({ steps = readSteps(), now = Date.now(), min = STUCK_STEP_MIN } = {}) {
   const out = [];
@@ -126,7 +128,7 @@ export function stuckSteps({ steps = readSteps(), now = Date.now(), min = STUCK_
     if (since === null || now - since <= min * 60000) continue;
     const p = s.parts[s.cur];
     const after = last.action === 'restart' ? `the user's Start over` : last.action === 'start' ? `the user's Start` : last.who === s.by ? `${s.by}'s last ${last.action}` : `${last.who}'s ${last.action}`;
-    out.push({ id: s.id, by: s.by, part: s.cur + 1, label: p.label, attempt: p.attempt || 1, why, since, minutes: Math.floor((now - since) / 60000), after, key: `${s.id}/e${s.epoch || 0}/p${s.cur + 1}/a${p.attempt || 1}/${last.at || s.updatedAt}` });
+    out.push({ id: s.id, by: s.by, part: s.cur + 1, label: p.label, attempt: p.attempt || 1, why, since, minutes: Math.floor((now - since) / 60000), after, key: `${s.id}/e${s.epoch || 0}/p${s.cur + 1}/a${p.attempt || 1}/h${(s.history || []).length}/${last.at || s.updatedAt}` });
   }
   return out;
 }
