@@ -17,7 +17,9 @@
 //        # or NOT POSTED: …) and the end of an episode (ENDED …). Exit 0 on SIGINT/SIGTERM.
 // Posting (one console thread per idle episode, never one per poll): only with --by lead (only the lead starts threads).
 // The thread is assigned to the desk and to the waiting owners (so the T-050 router and their `thread wait` reach
-// them) and closed by itself when the slot is taken again. Without --by (or with another name) it only prints; the
+// them) and closed by itself when the slot is taken again. Each pass also checks the disk (I-124, lib/space-watch.mjs):
+// under FW_SPACE_ALARM_GB (default 20) free one thread to the desk and the biggest out/ owners; with --by lead the
+// auto-clean of `space.mjs prune --apply` every 6 h (hourly while low; FW_SPACE_AUTOPRUNE=0 turns it off). Without --by (or with another name) it only prints; the
 // episode stays unposted, so the lead's watch still posts it. Names and minutes only (Hard rule 12).
 // Stuck steps (I-123, lib/step-alarm.mjs), in the same passes: an active console step whose current part waits on its
 // runner (a gated part not ready, a recorded part started without "recording") with no change for more than --step-min
@@ -27,6 +29,7 @@ import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gath
 import { createThread, setStatus } from './lib/console-threads.mjs';
 import { getDesk } from './lib/thread-routing.mjs';
 import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
+import { diskPass } from './lib/space-watch.mjs'; // I-124: disk alarm + auto-clean (FW_SPACE_AUTOPRUNE=0 turns the clean off)
 
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min'];
@@ -48,7 +51,7 @@ function minutesOpt(name, def) {
 const limits = () => ({ iphone: minutesOpt('phone-min', RESOURCES.iphone.defaultMin), 'chrome-measure': minutesOpt('chrome-min', RESOURCES['chrome-measure'].defaultMin), step: minutesOpt('step-min', STUCK_STEP_MIN) });
 
 /** One pass: assess, record (de-duplicated per episode), post / close as the lead. Returns {results, alarm}. */
-async function pass({ by, min, log, quietOk }) {
+async function pass({ by, min, log, quietOk, watching = false }) {
   const now = clock();
   const state = readState();
   const as = gather({ now, state }).map((x) => assess(x.r, { ...x, min: min[x.r] }));
@@ -84,7 +87,10 @@ async function pass({ by, min, log, quietOk }) {
     }
   }
   const steps = await stepPass({ by, log, quietOk, now, min: min.step }); // I-123 (c): steps stuck on their runner
-  return { results, alarm: as.some((a) => a.alarm) || steps.alarm };
+  // I-124: the disk (alarm thread under FW_SPACE_ALARM_GB, default 20; with --by lead the auto-clean of lib/space-prune.mjs)
+  let disk = null;
+  try { disk = await diskPass({ by, log, now, autoClean: watching }); } catch (e) { log(`DISK ERROR ${e.message}`); }
+  return { results, alarm: as.some((a) => a.alarm) || steps.alarm, disk };
 }
 
 async function main() {
@@ -107,7 +113,7 @@ async function main() {
     let stop = false, wake = null;
     for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stop = true; if (wake) wake(); });
     while (!stop) {
-      try { await pass({ by, min, log, quietOk: true }); } catch (e) { log(`ERROR ${e.message}`); }
+      try { await pass({ by, min, log, quietOk: true, watching: true }); } catch (e) { log(`ERROR ${e.message}`); }
       if (stop) break;
       await new Promise((res) => { const t = setTimeout(res, iv * 1000); wake = () => { clearTimeout(t); res(); }; });
     }

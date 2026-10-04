@@ -83,6 +83,10 @@
 // display-sleep-preventing assertion (caffeinate -d) was active at its start and end; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
 //
+// DISK-LOW (I-124, lead's ruling 2026-10-04): under FW_TIMING_MIN_FREE_GB free (default 8; 0 = off) a NEW timing hold of
+// chrome-measure is refused (error, its queue entry dropped) with how to free space (space.mjs prune / report, the folder
+// owners). Holds already running and re-entries, shared, short and --no-timing holds and phone runs are never refused.
+//
 // --no-timing (run only; ts-lock-bundle): a normal hold for work that measures nothing (xcodebuild, other minutes of
 // CPU) while it keeps measurements out (Hard rule 7). It waits its FIFO turn like any normal job, but skips the host
 // gate (it needs no quiet host: e.g. the user works at the Mac), records no display / wake state, and shows as
@@ -154,6 +158,7 @@ import { randomBytes } from 'node:crypto';
 import { RUN_PROFILES_ENV, removeRunProfiles } from './lib/cdp.mjs'; // I-106: throwaway profiles a hard kill left
 import { doctor, repair, moveWaiter, leaveQueue, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
+import { wrapsPhoneRun } from './lib/disk.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { describeHold } from './lib/lock.mjs';
@@ -424,6 +429,7 @@ async function main() {
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
     // I-070: a --no-timing hold is a measurement (keeps the Mac awake) only when its command wraps a phone part or a Sim session
     const awake = noTiming && wrapsMeasurement(rest) ? true : undefined;
+    if (wrapsPhoneRun(rest)) meta.phoneRun = true; // I-124: a phone run is never refused for disk space (lead's ruling)
     const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight, job } : {}), timeoutSec: Number(opt('timeout', 3600)) });
     if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
     // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds

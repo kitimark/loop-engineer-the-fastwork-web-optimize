@@ -15,6 +15,15 @@ import zlib from 'node:zlib';
 
 // Same for in-process git calls (tools/lib/paths.mjs imported by unit tests).
 for (const k of Object.keys(process.env)) if (/^GIT_/.test(k)) delete process.env[k];
+// I-124: the timing-hold disk floor (lib/disk.mjs) reads the real disk; tests that take timing holds must not fail
+// because the Mac is nearly full. A test of the floor sets FW_TIMING_MIN_FREE_GB and the fake FW_DISK_FREE_GB itself.
+// Likewise the disk alarm and the automatic prune of idle.mjs watch (lib/space-watch.mjs) stay off in tests, so a
+// watch test never posts a disk thread or scans the real temp dir; their own tests switch them on with fixtures.
+process.env.FW_TIMING_MIN_FREE_GB = '0';
+process.env.FW_SPACE_ALARM_GB = '0';
+process.env.FW_SPACE_AUTOPRUNE = '0';
+delete process.env.FW_DISK_FREE_GB;
+delete process.env.FW_SIPS;
 
 export const TESTS = dirname(fileURLToPath(import.meta.url));
 /** The checkout whose tools are under test (main checkout or a worktree). */
