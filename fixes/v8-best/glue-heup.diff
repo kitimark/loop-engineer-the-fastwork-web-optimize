@@ -1,0 +1,17 @@
+# v8-best component 9: glue between countdown-faces (b) and the hero R2 delta (lead ruling 2026-10-04, F-235; agreed by
+# fix-hero-exit-threaded and de-countdown). Applied last, on the pure composition. Local branches only, never push
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4806,8 +4806,10 @@
+         y > heTop + 30 && y < heEnd && heUp();
+       },
+       // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.
++      // v8 glue (countdown-faces x hero R2, F-235): live CSS mode runs s() only here and at park, so the hero clock is
++      // marked shown when going live (s() can compute r = 0 just under a stale heEnd after a toolbar step); heRest's s() sets it at park.
+       heUp = () => {
+-        (i && window.cancelAnimationFrame(i), s(), b.classList.add(`he-css`), heRT());
++        (i && window.cancelAnimationFrame(i), s(), __cdSet(__cdHeroShown, !0), b.classList.add(`he-css`), heRT());
+       },
+       hePE = () => {
+         x.style.pointerEvents = heIn || e.matches ? `` : `none`;

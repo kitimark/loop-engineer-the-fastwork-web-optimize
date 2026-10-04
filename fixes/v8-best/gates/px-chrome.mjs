@@ -1,0 +1,101 @@
+#!/usr/bin/env node
+// v8-best (copy of fixes/v7-best/gates/px-chrome.mjs, wave-v7; paths and arms changed) Chrome pixel A/A at rest (PR-010 "tolerance report", research/pixel-tolerance/README.md §1), FROZEN FRAMES ONLY,
+// no timing. Arms from out/v8-best/snap (gates/snap.mjs): A = v7-best, V = v8-best. Load order A, V, A2, V2: every
+// load has its own server (port 0, --no-cache, own origin) and its own isolated browser context; the served JS/CSS are
+// hash-checked against HASHES.txt before the load (a mismatch is VOID) and the page's own script URL list is recorded.
+// Per load: settle, then Date.now frozen at one value F (both countdown clocks show the same time in every arm), 2.5 s
+// for the countdown to reach it, then per stop: instant scroll, 1.6 s, every running non-transition animation paused at
+// currentTime 4000 ms and SMIL paused at 4 s, 0.5 s, screenshot, and a hit grid (element under points every 40 CSS px).
+// Timer-driven loops (word rotators, avatar slider ticks, pain notes) are not frozen: their phase is the A/A noise.
+// Scores (per stop): A~V beyond the A/A mask A~A2 (pixels > 8 levels in A~V where A~A2 is <= 8), and the second sample
+// A2~V2 beyond V~V2; max level, % of frame, CSS px2, flat share (3x3 range in the old frame <= 2), clusters (16 CSS px
+// cells, 8-connected) with bbox and the element under their centre.
+//   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner int-v8 -- \
+//     node fixes/v8-best/gates/px-chrome.mjs mobile|desktop [A=A,V=V]
+// Scoring: pxlib.mjs.
+import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { loadavg } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { scoreStop, line } from './pxlib.mjs';
+
+const WT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
+const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
+const { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir } = await import(join(WT, 'tools/lib/cdp.mjs'));
+const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
+const VP = process.argv[2] || 'mobile';
+const VPS = { mobile: { width: 430, height: 932, dpr: 3, mobile: true }, desktop: { width: 1440, height: 900, dpr: 1, mobile: false } };
+const vp = VPS[VP]; if (!vp) { console.error('usage: px-chrome.mjs mobile|desktop [arms=A,V,A2,V2]'); process.exit(2); }
+const ARMS = ['A', 'V', 'A2', 'V2'];
+// optional dir map: A=P,V=V serves arm A (and A2) from snap dir P (a control other than v7, e.g. Q = accent-ca-v7)
+const DIRMAP = Object.fromEntries((process.argv[3] || 'A=A,V=V').split(',').map((kv) => kv.split('=')));
+const SNAP = join(WT, 'out/v8-best/snap');
+const HX = Object.fromEntries(readFileSync(join(SNAP, 'HASHES.txt'), 'utf8').trim().split('\n').map((l) => l.split(/\s+/)).map(([h, p]) => [p, h.slice(0, 12)]));
+const BASE = resolveTree('site-pretty');
+const tag = new Date().toISOString().replace(/[:.]/g, '-');
+const OUT = join(WT, 'out/v8-best', `px-${VP}-${tag}`); mkdirSync(OUT, { recursive: true });
+const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
+const F = Date.parse('2026-10-04T12:00:00Z') + 500;
+const ANIMS = `JSON.stringify(document.getAnimations().filter((a) => { const t = a.effect && a.effect.target; if (!t || !t.getBoundingClientRect) return false; const r = t.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; }).map((a) => { const t = a.effect.target, tm = a.effect.getTiming(); return [t.tagName.toLowerCase() + (typeof t.className === 'string' ? '.' + t.className.trim().split(/\\s+/).slice(0, 2).join('.') : ''), a.constructor.name, a.animationName || a.id || '', a.playState, Math.round(a.currentTime ?? -1), tm.duration, tm.iterations]; }))`;
+const FREEZE = `(() => { let n = 0, s = 0; for (const a of document.getAnimations()) { try { if (a instanceof CSSTransition) continue; if (a.playState !== 'running') continue; a.pause(); a.currentTime = 4000; n++; } catch {} }
+  for (const svg of document.querySelectorAll('svg')) { try { if (svg.animationsPaused && !svg.animationsPaused()) { svg.pauseAnimations(); svg.setCurrentTime(4); s++; } } catch {} } return { anims: n, smil: s }; })()`;
+const HITS = `(() => { const out = []; const lab = (e) => { if (!e) return null; const sec = e.closest('section[id],section[class],[id]'); const c = (x) => x ? x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + (typeof x.className === 'string' && x.className.trim() ? '.' + x.className.trim().split(/\\s+/).slice(0, 2).join('.') : '') : ''; return (sec && sec !== e ? c(sec) + ' > ' : '') + c(e); };
+  for (let y = 20; y < innerHeight; y += 40) for (let x = 20; x < innerWidth; x += 40) out.push([x, y, lab(document.elementFromPoint(x, y))]); return out; })()`;
+
+async function server(arm) {
+  const d = DIRMAP[arm.replace(/\d+$/, '')];
+  const st = join(OUT, `serve-${arm}.json`); rmSync(st, { force: true });
+  const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', BASE, '--overlay', join(SNAP, d), '--port', '0', '--quiet', '--no-cache', '--state', st, '--vendors=local', '--no-http-twin'], { stdio: ['ignore', 'ignore', 'inherit'] });
+  for (let i = 0; i < 300; i++) { if (existsSync(st)) try { return { p, d, ...JSON.parse(readFileSync(st, 'utf8')) }; } catch {} await sleep(100); }
+  p.kill(); throw new Error(arm + ' server did not start');
+}
+const res = { tool: 'fixes/v8-best/gates/px-chrome.mjs', viewport: VP, ...vp, arms: ARMS, dirs: DIRMAP, startedAt: new Date().toISOString(), load1: loadavg()[0], F, loads: [], stops: [] };
+const chrome = await launchChrome({ port: 0, profileDir: tempProfileDir(join(WT, 'out/v8-best/chrome'), 'px-' + VP), headless: true, windowSize: `${vp.width},${vp.height}` });
+const cdp = await CDP.connect(chrome.wsUrl); res.browser = chrome.browser;
+const shots = {}; let YS = null;
+try {
+  for (const arm of ARMS) {
+    const s = await server(arm); const load = { arm, build: s.d, errors: [], stops: [] }; res.loads.push(load);
+    try {
+      const url = `http://localhost:${s.port}/`;
+      load.served = { js: sha(Buffer.from(await (await fetch(new URL(NODE, url))).arrayBuffer())), css: sha(Buffer.from(await (await fetch(new URL(CSS, url))).arrayBuffer())) };
+      if (load.served.js !== HX[`${s.d}/${NODE}`] || load.served.css !== HX[`${s.d}/${CSS}`]) { load.void = `served ${load.served.js} / ${load.served.css}`; console.log('VOID', arm, load.void); continue; }
+      const page = await cdp.newIsolatedPage();
+      page.on((m) => { if (m.method === 'Runtime.exceptionThrown') load.errors.push(String(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).split('\n')[0].slice(0, 200)); });
+      await page.send('Network.enable'); await page.send('Network.setCacheDisabled', { cacheDisabled: true });
+      await page.send('Emulation.setDeviceMetricsOverride', { width: vp.width, height: vp.height, deviceScaleFactor: vp.dpr, mobile: vp.mobile });
+      if (vp.mobile) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+      await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+      await gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 }); await sleep(2000);
+      load.scripts = await page.eval(`performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')).filter((n) => n.includes('${NODE}') || n.includes('${CSS}'))`);
+      await page.eval(`(() => { const F = ${F}; Date.now = () => F; return 1; })()`); await sleep(2500);
+      if (!YS) {
+        const g = await page.eval(`({ H: document.documentElement.scrollHeight, vh: innerHeight })`); res.docHeight = g.H;
+        const end = g.H - g.vh, ys = new Set([0, 300, 548, 2796]); for (let i = 1; i <= 8; i++) ys.add(Math.round(g.vh + (end - g.vh) * i / 9)); ys.add(end);
+        YS = [...ys].filter((y) => y <= end).sort((a, b) => a - b); res.ys = YS;
+      }
+      for (const y of YS) {
+        await page.eval(`(scrollTo({ top: ${y}, behavior: 'instant' }), 1)`); await sleep(1600);
+        const anims = JSON.parse(await page.eval(ANIMS)); const fr = await page.eval(FREEZE); await sleep(500);
+        const yy = await page.eval('Math.round(scrollY)');
+        const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
+        const hits = await page.eval(HITS);
+        const f = join(OUT, `${arm}-y${y}.png`); writeFileSync(f, Buffer.from(data, 'base64'));
+        (shots[y] ||= {})[arm] = { file: f, hits }; load.stops.push({ y, scrollY: yy, frozen: fr, anims, hits });
+      }
+      await page.close();
+    } finally { s.p.kill(); }
+    console.log(`load ${arm}: ${load.stops.length} stops, ${load.errors.length} page errors, scripts ${JSON.stringify(load.scripts)}`);
+  }
+} finally { cdp.close(); await chrome.close(); }
+// score (pxlib.mjs)
+for (const y of YS || []) {
+  const S = shots[y]; if (!S || !S.A || !S.V || !S.A2 || !S.V2) { res.stops.push({ y, void: 'missing arm' }); continue; }
+  const row = { y, ...scoreStop(Object.fromEntries(['A', 'V', 'A2', 'V2'].map((a) => [a, S[a].file])), { V: S.V.hits, V2: S.V2.hits }, vp.dpr) };
+  res.stops.push(row); console.log(line(y, row));
+}
+res.endedAt = new Date().toISOString(); res.load1End = loadavg()[0];
+writeFileSync(join(OUT, 'px.json'), JSON.stringify(res, null, 1));
+console.log('wrote', join(OUT, 'px.json'));
