@@ -586,8 +586,8 @@ rep 1 and rep 3. The raw files stay in `out/nav-morph/p096/` (`chrome-r*-*.json`
 
 | Chrome, median of 3 valid reps | C (plain B) | V (best build) |
 |---|---|---|
-| window R (elements restyled, k0..k0+2) | 704 | 107 |
-| window L (layout dirty objects) | 455 | 49 |
+| window R (elements restyled, k0..k0+2) | 697 | 107 |
+| window L (layout dirty objects) | 440 | 49 |
 | frame k0 R / L | 332 / 374 | 17 / 0 |
 | frame k0+1 R / L | 191 / 39 | 72 / 22 |
 | reference band median R per frame | 180 | 15 |
