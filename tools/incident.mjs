@@ -24,6 +24,7 @@
 import { readFileSync } from 'node:fs';
 import { open, list, get, update, resolve, announcement, waitFor, parseId } from './lib/incident.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
+import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed (piped --json past 64 KB)
 
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--title', '--error', '--class', '--cmd', '--output', '--output-file', '--repro', '--env', '--suspect', '--blocking', '--workaround', '--sig', '--status', '--priority', '--assignee', '--affected', '--note', '--commit', '--resolution', '--timeout', '--poll', '--as'];
@@ -113,4 +114,4 @@ async function main() {
   throw new Error(`unknown command ${cmd}`);
 }
 
-main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(1); });
+runMain(main);

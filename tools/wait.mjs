@@ -53,6 +53,7 @@
 import { resolve, join, relative, isAbsolute } from 'node:path';
 import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition, phoneTempCondition, parseBelowC, autoBelowC, fmtC, PHONE_TEMP } from './lib/wait.mjs';
 import { startWait, urlText, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs';
+import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed
 
 const argv = process.argv.slice(2);
 const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every', '--runs-dir', '--driver', '--owner', '--as', '--reason'];
@@ -168,4 +169,4 @@ async function main() {
   return EXIT.timeout;
 }
 
-main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(EXIT.usage); });
+runMain(main, { errCode: EXIT.usage });

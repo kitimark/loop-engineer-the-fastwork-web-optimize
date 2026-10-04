@@ -160,6 +160,7 @@ import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 import { resolveLanUrl } from './lib/lan.mjs';
 import { lowSpaceWarning } from './lib/space.mjs'; // I-095: free-space warning in status
 import { fileURLToPath } from 'node:url';
+import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed (status --json past 64 KB)
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
@@ -578,4 +579,4 @@ async function waitCmd() {
   return WAIT_EXIT.timeout;
 }
 
-main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(1); });
+runMain(main);

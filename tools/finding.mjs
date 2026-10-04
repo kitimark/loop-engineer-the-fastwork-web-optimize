@@ -32,6 +32,7 @@
 // --by / --as default to $FW_AGENT. Exit codes: 0 ok (POSTED, SIMILAR, ...), 1 usage/error, 3 wait timed out.
 import { list, get, post, ack, resolve, claim, waitFor, digest, parseId, stateLabel, claimTag, claimLabel, claimChangeLine } from './lib/finding.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
+import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed (piped --json past 64 KB)
 
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--as', '--kind', '--topics', '--topic', '--title', '--where', '--evidence', '--body', '--since', '--note', '--folded', '--timeout', '--poll', '--claim', '--ref', '--status'];
@@ -124,4 +125,4 @@ async function main() {
   throw new Error(`unknown command ${cmd}`);
 }
 
-main().then((c) => process.exit(c), (e) => { console.error(e.message || e); process.exit(1); });
+runMain(main);

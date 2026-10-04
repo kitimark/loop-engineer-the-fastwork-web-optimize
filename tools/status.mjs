@@ -39,6 +39,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { set, setPriority, get, list, buildStatusView, itemView, renderText, showText, staleText, seedPlan, applySeed } from './lib/status.mjs';
 import { gatherLive, readProgress } from './lib/progress.mjs';
+import { runMain } from './lib/exit.mjs'; // I-110, I-117: exit once stdout has flushed
 
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file', '--unlink'];
@@ -125,9 +126,5 @@ async function main() {
 }
 
 // I-110: never process.exit() straight away: a --json view past the pipe buffer (64 KB) was still queued for a slow
-// reader (`| node -e …`) and got cut. Set the code, and exit once stdout and stderr have flushed what was written.
-const done = (c) => {
-  process.exitCode = c;
-  process.stdout.write('', () => process.stderr.write('', () => process.exit(c)));
-};
-main().then(done, (e) => { console.error(e.message || e); done(1); });
+// reader (`| node -e …`) and got cut. lib/exit.mjs (I-117) exits once stdout and stderr have flushed what was written.
+runMain(main);
