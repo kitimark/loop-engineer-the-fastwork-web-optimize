@@ -78,3 +78,15 @@ Gaps to close before the lead's read:
 - **Gap 3, provisional pins:** the desktop commission recheck is still queued. If it changes V, the owner re-hashes
   and tells ops, and the signature is void until the new pins are read.
 - Status: **ready for the lead's read once the scorer's hashes are in the ticket.**
+
+## Lead signature (2026-10-04 ~21:30Z, before any P-118 data): SIGNED, with conditions S1-S3
+
+Pre-data read: ticket 6bfd511f9a89, hold.sh 58d285cb0094, serve.sh 730fb0718409, arms C 3e3e94cb6e9f / f836404b3728 and
+V 3076c5a8c9a3 / 2f7197880ffd, scorer score.mjs 652bba12f6a3 + selftest f2823168094f (bb68123d, self-test passes),
+ops validation PASS WITH GAPS with gaps 2, 4, 5 and 6 closed (063c9edd). Signed now so the idle phone runs (user T-161 #4,
+roles v3 R3), with:
+- **S1 arms-superseded rule.** fix-double-drive's desktop at-rest probe (y 6000 commission card, ~5 css px lower in V,
+  diagnostic) is still open. If it changes V's JS or CSS, every P-118 run is kept but marked `arms-superseded`: it is
+  not counted, the ticket gets new pins, ops' disk check and a new signature before any counted run.
+- **S2 scoring waits on ops' second read of the scorer** (running and recording do not).
+- **S3** no change to the layout: S H1/H2 + G part M H3, sentinels and gates as P-105; one block, the sequential rule.
