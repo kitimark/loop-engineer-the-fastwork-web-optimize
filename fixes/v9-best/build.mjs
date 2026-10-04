@@ -30,6 +30,9 @@ const exp = (js, css) => ({ [JS]: js, [CSS]: css });
 export const COMPONENTS = [
   { name: 'morph-scroll rev 7c (PR-018, accepted 20:12:50Z; landed 42250648)', key: 'ms7c',
     delta: 'fixes/morph-scroll/delta.diff', file: '81ac7e1ee500', expect: exp('428961bda278', '659b02f7169d') },
+  { name: 'double-drive (future + commission cards, T-157; fix-double-drive, not landed yet)', key: 'dd',
+    rev: '96293d29196230e4a9fdc7f95c7284792dc423ea', delta: 'fixes/double-drive/delta.diff', file: 'baae6114cd65',
+    expect: exp('3076c5a8c9a3', '2f7197880ffd') },
 ];
 // v9 as pinned after the last component change (null: not pinned yet).
 export const V9_EXPECT = null;
