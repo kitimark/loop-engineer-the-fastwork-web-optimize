@@ -16,10 +16,10 @@
     {
       "what": "Top: button full after the bar changes, phone",
       "before": "582 ms",
-      "after": "0 ms (already full)",
+      "after": "0 ms",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome page probe at 430x775: a 1 s scroll from 50 % to 80 % of the hero. Not a smoothness test."
+      "how": "Chrome page probe at 430x775: a 1 s scroll from 50 % to 80 % of the hero. Not a smoothness test. B is already full when the bar changes."
     },
     {
       "what": "Top: button full after the bar changes, desktop",
@@ -30,12 +30,12 @@
       "how": "The same probe at 1440x900."
     },
     {
-      "what": "Top: button gone after scrolling back",
-      "before": "633 ms after the bar changes",
-      "after": "with the scroll",
+      "what": "Top: button gone after the bar changes back",
+      "before": "633 ms",
+      "after": "467 ms",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome phone. B is gone when the scroll leaves the 58-72 % stretch (467 ms into the 1 s scroll back); A shrinks on its own clock."
+      "how": "Chrome phone, 1 s scroll back from 80 % to 50 %. B is gone exactly when the scroll leaves the 58-72 % stretch (it follows the finger); A shrinks on its own clock. Desktop 616 vs 450 ms."
     },
     {
       "what": "Top: page layouts in the 0.7 s after the change",
@@ -56,10 +56,10 @@
     {
       "what": "End of page: button gone after the grow starts",
       "before": "617 ms",
-      "after": "0 ms (as rev 1)",
+      "after": "0 ms",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Rev 1 numbers; rev 2 keeps those two rules byte for byte. Desktop 618 -> 0 ms, Safari Simulator 610 -> 0 ms."
+      "how": "Rev 1 numbers, kept: rev 2 keeps those two rules byte for byte. Desktop 618 -> 0 ms, Safari Simulator 610 -> 0 ms."
     },
     {
       "what": "Page errors and missing files",
