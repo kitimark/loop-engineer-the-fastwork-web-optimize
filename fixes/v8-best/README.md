@@ -785,3 +785,37 @@ does not use the hold's one re-run: no data was seen, so repeating it can't sele
 phone outside any hold (uncounted S runs on B, gate read after each, at most 7 rounds) and starts H1 as soon as a read
 passes; the one re-run allowance still applies to a hold that VOIDs after counted items ran. If 7 rounds don't reach
 Serious, the block waits for the lead.
+
+## Smoke after P-114 (2026-10-04 18:28Z-18:36Z, int-v8; between P-105 H5 and H6, lead / user T-114 #13)
+
+The Simulator holds ended at 18:36:27Z, so iphone-runner can queue H6. All checks are frozen frames, with no timing. Each
+part ran in its own shared simulator-weight hold (`lock.mjs run chrome-measure --shared --weight simulator`, under 300 s,
+every exit 0). The arms come from out/v8-best/snap: A and A2 are v7 (JS 8c90da217745 / CSS 308f0da70c3a), V and V2 are
+v8 (JS 3e3e94cb6e9f / CSS f836404b3728). They are served hash-checked, in the order A, V, A2, V2. "Consistent" counts the
+pixels that differ by more than 8 levels in all four cross pairs while neither A/A pair (A~A2, V~V2) differs there.
+
+| part | tool | stops | consistent v8 difference | errors |
+|---|---|---|---|---|
+| iPhone Simulator (fw-sim, 430x775, DPR 3) | `gates/px-sim.mjs` d28fbde8a95e | 0, 300, 548, 1400, 1913, 2796 | **0** at every stop | none in 4 loads |
+| iPhone Simulator, second hold | same | 3384, 3875, 4365, 4856, 5260 | **0** at every stop | none in 4 loads |
+| iPad Simulator (fw-ipad Pro 13, 1032x1244, DPR 2, portrait; `--hide .hero-title --settle 4000`) | `gates/sim-ipad.mjs` 5000c2c40b90 | 0, 622, 2017, 2623, 5111, 6853 | 0 at y 0 and 622; 7 device px (2 CSS px², 0.0001 %) at the other four, **outside the page** (see below) | none: no exceptions, resource failures or console errors; server 4xx/5xx 0 |
+
+- **iPhone, single pairs.** The largest A~V share beyond A/A is 0.2177 % (y 300, under the hero track). It does not
+  repeat in A2~V2 (0.0068 %), so it is a per-load state. A2~V2's largest share is 0.2855 % (y 3384), where A~V is 0 %.
+  Both are under T2's 0.5 %, and neither repeats in the other sample.
+- **iPad, the 7 pixels.** They are the iOS status bar's clock and date text ("34   Mon 5 Oct"), above the page. In the
+  v7 loads the bar has a magenta tint with white text; in the v8 loads it is white with black text. The script draws
+  its magenta calibration bar (fixed, top 0) during load A only, which would explain the tint as a harness artifact,
+  not a build difference. A2 has the tint as well, and why is not checked: OBSERVED (in our setup, cause unknown).
+  Inside the page, the four iPad loads differ by 0 consistent pixels, and the media-query state is identical
+  (w600/w861/w1200 true, w1000 false, hover none, coarse pointer).
+- **Mac load.** load1 peaked at 132 during the first hold and 45-86 during the others. These are frozen frames, so
+  load cannot change a pixel verdict.
+- **Results.** out/v8-best/px-sim-2026-10-04T18-28-53-544Z/px.json (55ade7c31f8a),
+  px-sim-2026-10-04T18-30-45-713Z/px.json (6e27d7006ff5), ipad-portrait-2026-10-04T18-33-39-205Z/px.json (106270776f06).
+
+**Simulator and iPad verdict: PASS.** WebKit pixels show no v8 difference from v7 at any of the 11 iPhone stops or
+inside the page at the 6 iPad stops (T0/T1), and no new errors.
+
+**Mac Safari smoke:** this is a user console step (C-048), because Safari's remote automation is off. v8 and v7 are
+served from the same snapshot copies (served hashes checked). The result is added here when the user answers.
