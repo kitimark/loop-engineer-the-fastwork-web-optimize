@@ -1223,8 +1223,27 @@ and `__crPlay`'s keyframe mapping change; everything else in V9 is byte-identica
   (one step) to 11.8 px (0 -> 9) off.
 
 **Gates (results added as they come; OBSERVED, in our setup):**
-- Chrome: `roll-probe.mjs --mode build` h60 on VK (V9's final-row arguments: 40 s, 16 jumps, seed 11) and
-  `comp-check.mjs --pause-others 2` on VK. Script `out/cd-roll-ca/k1-chrome.sh`, shared probe slot. Pending.
+- Chrome (done 10:3xZ, shared probe slot, `out/cd-roll-ca/k1-chrome.sh`; served JS b43fe790…, CSS 982a747d…, from the
+  overlay): `roll-probe.mjs --mode build` h60 on VK with V9's final-row arguments (40 s, 16 jumps, seed 11), file
+  `out/cd-roll-ca/probe-build-h60-VK.json`, against `probe-build-h60-V9.json`. Position error vs the original's path,
+  px, per frame:
+
+  | | V9 max | V9 p95 | V9 p99 | VK max | VK p95 | VK p99 |
+  |---|---|---|---|---|---|---|
+  | rolls at a tick | 0.067 | 0.014 | 0.017 | 0.152 | 0.011 | 0.026 |
+  | forced rolls (jumps) | 0.241 | 0.023 | 0.066 | 0.145 | 0.018 | 0.067 |
+  | the original's own frame-to-frame variation, tick / forced (max) | 0.435 / 0.312 | | | 0.280 / 0.184 | | |
+
+  - Both builds stay inside the original's own variation in the same run (the position rule). VK's tick max is 0.152 px
+    against the 0.280 px own variation. VK's start values match the original to 0.012 px (same as V9).
+  - Max keyframes per animation: 66 (V9 343), as the offline count.
+  - The two runs differ by ~0.1 px at the max, in both directions (tick up, forced down). That is the size of the probe's
+    own frame-phase sampling in Chrome. The path itself is equal to 7e-15 cell offline. OBSERVED, in our setup.
+  - `comp-check.mjs --pause-others 2`, 6 s (`comp-check-VK-p2.json` vs `comp-check-V9-p2.json`): 0 composite failures.
+    Chrome logs no compositing decision for these animations in either build (noDecision 35 / 23, as before), so this
+    is not a "composited" claim. Countdown rAF 7 / 6 and countdown function calls 26 / 24 in 6 rolls.
+  - Descriptive only: main frames 103 vs 79 and animation instances 35 vs 23. That is a single run each, and the roll
+    mix differs (more cells animated in the VK window, e.g. a longer tens roll), so it is no per-roll comparison.
 - Simulator: `sim-rollstart.mjs V9,VK 2`. It gives keyframes per tick (getAnimations), the f1-f3 cell paints (the
   backing burst) and layerTreeDidChange per tick, in a shared simulator slot. Pending.
 - Simulator frozen frames: `simpx.mjs C8,VK hero wrap,carry`, the session C setup (A/A on C8). Pending.
@@ -1288,16 +1307,28 @@ instrument: Xcode's 'Display', 'Core Animation FPS' and 'Thermal State' instrume
   Instruments packages, checked before data): displayed-surfaces-interval (each surface shown: start, duration, display),
   display-vsyncs-interval (the panel's vsyncs), core-animation-fps-estimate (fps per period),
   device-thermal-state-intervals. Battery °C at the start and end of each record (idevicediagnostics).
-arms (all at y 0, the page at rest, no scrolling; synthetic page fixes/cd-roll-ca/phone/p100.html, sha256 9a61187b418d,
-  copy out/cd-roll-ca/snap/P100, one countdown-like digit with cd-strip's cell layers and nothing else):
+arms (all at y 0, the page at rest, no scrolling; synthetic page fixes/cd-roll-ca/phone/p100.html sha256 3bdbc016e3d4
+  with its script p100.js sha256 17ddc0a9a011 (rev 2), copy out/cd-roll-ca/snap/P100, one countdown-like digit with
+  cd-strip's cell layers and nothing else):
   quiet  = p100.html?m=quiet: the digit never moves (no animation, no rAF after load)
   ca     = ?m=ca: every 1 s a one-step roll as V9 plays it (V9's __crPath, literal; Web Animations on the near cells,
            easing linear, fill both, cancelled at the end)
   paused = ?m=paused: the same animations created once, paused at time 0 and left on the cells
   raf    = ?m=raf: every 1 s the same roll by the original's rAF spring (GE, literal), one inline write per frame
   V9, C8 = the real page at y 0 (all its animations running), from the snapshot copies
-  p100-check.mjs (sha256 ded4935a6e19) checks each synthetic mode in Chrome before the hold (quiet: 0 animations and
-  0 writes; ca: running animations; paused: all paused; raf: 0 animations, > 20 writes; no errors).
+  p100-check.mjs (sha256 78d74d82764b, rev 2) checks each synthetic mode in Chrome before the hold (quiet: 0 animations
+  and 0 writes; ca: running animations; paused: all paused; raf: 0 animations, > 20 writes; no errors, Log errors
+  included).
+  rev 2 (before any phone data): the first Chrome check (10:3xZ) found ca, paused and raf doing nothing. The mirror
+  server sends `script-src 'self'` for a document it has no production CSP for (tools/serve.mjs localCsp), which
+  blocked the page's inline script; the check missed the reason because CSP blocks reach the Log domain, not Runtime.
+  Fix: the same script, moved into p100.js (2 spaces of indent less, a 2-line header comment more, code unchanged); p100-check now counts Log errors
+  (favicon 404 ignored). The rev-1 copy stays as out/cd-roll-ca/snap/P100-r1. Nothing else changed: p100-hold.sh,
+  p100-rec.mjs, p100-lib.mjs and p100-score.mjs keep their hashes. Mac table-reader test (10:3xZ, the Mac's own
+  Display + Thermal State, 4 s): readTable/summarize read all three tables (vsync 525 rows on the built-in panel,
+  118.6/s; surfaces 514 rows, 116.8/s; thermal Fair), so no p100-lib/p100-rec rev. Rev 2 check (10:50Z, Chrome,
+  served from the new P100 copy): quiet 0 animations, 0 writes; ca up to 4 running animations, 144 keyframes each,
+  33 writes (the rest() snaps between rolls); paused 4 paused; raf 0 animations, 858 writes; no errors: all OK.
 holds: one hold after the K block (same lease if ops agrees, else its own turn after fix-morph-gpu's P-098/P-099):
   `ARMS="B P100 V9 C8" sh fixes/cd-roll-ca/phone/serve-snap.sh` (fresh ports, I-131; sha256 62b4706c2f86), then
   `node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900 --owner cd-roll-ca --doing "P-100 display-rate

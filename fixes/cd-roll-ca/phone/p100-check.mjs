@@ -17,8 +17,10 @@ let bad = 0;
 for (const m of ['quiet', 'ca', 'paused', 'raf']) {
   const page = await cdp.newIsolatedPage();
   const errs = [];
-  page.on((x) => { if (x.method === 'Runtime.exceptionThrown') errs.push(x.params.exceptionDetails?.text); if (x.method === 'Runtime.consoleAPICalled' && x.params.type === 'error') errs.push('console.error'); });
+  page.on((x) => { if (x.method === 'Runtime.exceptionThrown') errs.push(x.params.exceptionDetails?.text); if (x.method === 'Runtime.consoleAPICalled' && x.params.type === 'error') errs.push('console.error');
+    if (x.method === 'Log.entryAdded' && x.params.entry.level === 'error' && !/\/favicon\.ico$/.test(x.params.entry.url || '')) errs.push(`log ${x.params.entry.source}: ${String(x.params.entry.text).slice(0, 120)}`); }); // rev 2: CSP blocks land in Log, not Runtime
   await page.send('Runtime.enable');
+  await page.send('Log.enable');
   await gotoAndSettle(page, new URL(`p100.html?m=${m}`, base).href, { quietMs: 500, maxMs: 15000 });
   await page.send('Runtime.evaluate', { expression: `window.__mut = 0; new MutationObserver((l) => (window.__mut += l.length)).observe(document.getElementById('w'), { subtree: true, attributes: true, attributeFilter: ['style'] });` });
   let maxA = 0, kf = 0, states = new Set();
@@ -30,7 +32,7 @@ for (const m of ['quiet', 'ca', 'paused', 'raf']) {
   const mut = (await page.send('Runtime.evaluate', { expression: 'window.__mut', returnByValue: true })).result.value;
   const ok = { quiet: maxA === 0 && mut === 0, ca: maxA > 0 && states.has('running'), paused: maxA > 0 && [...states].every((s) => s === 'paused'), raf: maxA === 0 && mut > 20 }[m] && !errs.length;
   if (!ok) bad++;
-  console.log(`P100CHECK ${m}: animations max ${maxA}, states ${[...states].join('/') || '-'}, keyframes max ${kf}, style writes ${mut}, errors ${errs.length} -> ${ok ? 'OK' : 'FAIL'}`);
+  console.log(`P100CHECK ${m}: animations max ${maxA}, states ${[...states].join('/') || '-'}, keyframes max ${kf}, style writes ${mut}, errors ${errs.length}${errs.length ? ' (' + errs.slice(0, 2).join(' | ') + ')' : ''} -> ${ok ? 'OK' : 'FAIL'}`);
   await page.close();
 }
 cdp.close(); await chrome.close();
