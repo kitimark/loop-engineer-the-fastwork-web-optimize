@@ -19,7 +19,10 @@ medians of the 4 runs per arm; corrected after review B1):
 - Whether a displayed frame is lost is UNRESOLVED: the phone's stamps mark the rendering-update start, not display
   (claims-audit §2.3).
 Because of the open-start cost, rev 1 does NOT enter the next best build. It stays in the GPU preview, labelled with
-this cost. Rev 2 (prepare the clip layer before the tween starts) is in work ("Rev 2", below).
+this cost. Rev 2 (prepare the clip layer before the tween starts) did not remove it: phone block P-098 (2026-10-04,
+3 valid holds, ops second read AGREE) measured the first open frame at +6.5 ms again (V 40 55 43 38 vs C 36 35 35 34,
+WORSE), with the 2nd/3rd opens +5/+6. So rev 2 stays out and lands as a record only; P-099 was skipped ("Phone block
+P-098: result", below). Next (lead, after 12:20Z): a Simulator Timeline attribution of the open start, no timing.
 **Device class / gate:** phone-only, render-bound (WebKit paint during the morph). Gains below are Simulator counts.
 **Driver(s) behind the claims:** M (`__fwMorphDrive` in the Simulator, `__fwMorphSet` frozen frames). No S, G or F yet.
 **Base:** best-build (main 60df1cf: st6-rb2 + platform-idle + morph-inherit), js `65052c4a3902`, css `e0f92804c521`.
@@ -620,7 +623,7 @@ Files (local, `out/morph-gpu/phone/`, listed in `evidence.json`): the eight `n2-
 `n2-S-S2.json`, `n2-wC.json`, `n2-wV.json`, `score.json`, `gates.jsonl`, `holds.jsonl`, `runs.jsonl`, `batt.jsonl`,
 `BLOCKLOG.txt`.
 
-## Rev 2 (in work): the reveal's setup before the tween starts
+## Rev 2 (record only; P-098: does not fix the open start): the reveal's setup before the tween starts
 
 The lead's ruling on P-092 (2026-10-04): rev 1 passes as no-worse, but the first frame of an open is longer on the
 iPhone (repeat opens +7 ms, paid back the next frame; the first open per load 41 vs 34.5 ms, overlapping), so it stays
@@ -781,7 +784,64 @@ sentinels, void rules, Mac-sleep rule, runner duties.
 - **Before landing, a G check of a fling into the end** (the lead's ruling, 2026-10-04): P-099, registered below.
 - **Expected minutes:** about 30 (25-45), as P-092.
 
+## Phone block P-098: result (2026-10-04, after the registration above; nothing in it was changed)
+
+**Rev 2 A does not fix the open start.** The first frame of the first open is 6.5 ms longer than best-build's, the same
+as rev 1 in P-092. Under the registered decision rev 2 stays out, and there is no third block on this question. P-099
+(the G check below) is skipped under ops N2.
+- **Holds** (iPhone 15 Pro Max, condition T-039 B, driver M, plain http on 5791-5793 `--no-cache`, snapshot `b…`
+  pinned on this branch):
+  - H1 `h095732` (09:57-10:10Z): gate, S1, wC, wV, gate; valid.
+  - H2 `h101729` (10:17-10:27Z): C1, V2, V3, C4; valid.
+  - H3, first try `h105629`: during a 25 min queue wait the phone cooled to Nominal 34.9 °C. Three warm tries reached
+    only Fair 38.2 °C, so the start gate never passed: stopped with 0 runs, no data.
+  - H3, retry `h111132` (11:11-11:16Z): an early pre-warm under the lease reached 39.6 °C. C5, V6, V7, C8, S2; valid.
+  - Every gate was real Serious (39.0-39.9 °C). No Mac sleep. No void run.
+  - Sentinels: S1 bottom 59.6 / scroll 58.6 fps, S2 60.1 / 58.1; M sentinel true (p95 17 ms) on all 4 C runs.
+- **Scored keys** (`phone/frames-rv2.mjs` `fa2212d0a307`; local output `out/morph-gpu/phone/rv2/p098-score.txt`):
+
+  | key | C runs (ms) | V runs (ms) | C med | V med | V − C | verdict |
+  |---|---|---|---|---|---|---|
+  | O1.f1 | 36 35 35 34 | 40 55 43 38 | 35 | 41.5 | +6.5 | **WORSE** |
+  | O1.f2 | 49 50 49 47 | 51 63 54 54 | 49 | 54 | +5 | WORSE |
+  | O1.f3 | 65 67 61 58 | 58 73 68 67 | 63 | 67.5 | +4.5 | WORSE |
+  | close.f1 | 41 39 40 38 | 31 31 32 41 | 39.5 | 31.5 | −8 | no-worse |
+  | close.f3 | 72 71 72 72 | 50 50 50 67 | 72 | 50 | −22 | better |
+
+  - Long frames while moving: > 50 d +0.5, > 34 d −2, both no-worse, twins the same.
+  - Drive '> 34' d −0.5: threshold-sensitive (its > 30 twin is WORSE, +4.5), as ops noted for P-092.
+- **Reported:**
+  - O2.f1 +5 (C 55 / V 60) and O3.f1 +6 (55.5 / 61.5), both WORSE; O2/O3 f2-f3 equal.
+  - Each close: C1-C3 f1 −7 to −8, f3 −20 to −22.
+- **Predictions:**
+
+  | # | result | hit? |
+  |---|---|---|
+  | o1 | O1.f1 +6.5 | miss |
+  | o1s | O1.f2 +5, O1.f3 +4.5 | miss |
+  | cl | close.f1 −8, close.f3 −22 | hit |
+  | f50 / f34 | +0.5 / −2 | hit |
+  | rep | O2.f1 +5, O3.f1 +6 | miss |
+  | sent | all pass | hit |
+
+- **What it says** (OBSERVED in our setup, cause unknown):
+  - The second and third opens of a run cost 5-6 ms more in their first frame too. Rev 2's setup has certainly run
+    before them: the page has rested at the end for seconds, and the opens follow a close.
+  - So the open-start cost on the phone is not the setup that rev 2 moved out of the tween. It sits in starting the
+    reveal itself.
+  - Candidates, none checked:
+    - compositing-layer promotion of the reveal parts at the tween start (F-213: an animation start on a
+      non-composited part costs a compositing update on the main thread);
+    - the first clip-path change.
+  - Next step, if the lead wants one: trace it from a Timeline attribution run (Simulator or phone, no timing), not
+    with a new timed block.
+- **Decision (registered):** O1.f1 WORSE, so rev 2 does not fix the open start. To the lead with the per-run O1 frames
+  (above). Rev 2 stays out; no third block on this question (§5.3). The closes remain faster, as with rev 1.
+
 ## G check before landing: a fling into the end, C against A (registration; written before any phone data)
+
+**Skipped (2026-10-04):** P-098 found O1.f1 WORSE, so under ops N2 rev 2 is not land-eligible and P-099 did not run.
+No P-099 data exists.
 
 Prediction id **P-099** (asked of mgmt-ops-10). This ticket checks the risk named under Risks. Rev 2's setup runs once
 the scroll has rested for 300 ms. A morph that starts sooner does the setup in its first frame, as rev 1 did. We

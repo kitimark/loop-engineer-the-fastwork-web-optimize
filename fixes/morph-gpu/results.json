@@ -741,7 +741,35 @@
     "reading": "reveal on (m 0.5): +3 layers, +3.9 MiB vs best-build; at rest nothing left behind (R1, A); B keeps 2 nav layers promoted at the end at rest; the review estimate of ~10 promoted layers does not show in WebKit layer tree. OBSERVED in the Simulator, device unverified"
   },
   "rev2": {
-    "status": "pixels done (Chrome + Simulator); P-098 registered (ops pre-data read PASS on 618b43b8), waiting in the phone queue after the user steps, P-094 and P-093; G fling-into-end check owed before landing",
+    "status": "P-098 done 2026-10-04: O1.f1 WORSE (+6.5 ms, as rev 1) -> rev 2 does not fix the open start; stays out, no third block; P-099 skipped (ops N2). Record only.",
+    "p098Result": {
+      "baselineSnapshot": "b1789284481295-4ad4a84a",
+      "device": "iPhone 15 Pro Max, condition T-039 B (real Serious per gate), driver M",
+      "scorer": "phone/frames-rv2.mjs fa2212d0a307",
+      "holds": {
+        "H1": "h095732 valid (gate, S1, wC, wV)",
+        "H2": "h101729 valid (C1 V2 V3 C4)",
+        "H3try1": "h105629 stopped at the start gate (phone cooled to Nominal 34.9 C in a 25 min queue wait, warm tries reached Fair 38.2), 0 runs, no data",
+        "H3": "h111132 valid (C5 V6 V7 C8 S2) after an early pre-warm under the lease to 39.6"
+      },
+      "voids": 0,
+      "sentinels": { "S1": { "bottom": 59.6, "scroll": 58.6 }, "S2": { "bottom": 60.1, "scroll": 58.1 }, "M": "true (p95 17) on all 4 C runs" },
+      "gatesC": "39.0-39.9, Serious every gate",
+      "scored": {
+        "O1.f1": { "C": [36, 35, 35, 34], "V": [40, 55, 43, 38], "medC": 35, "medV": 41.5, "d": 6.5, "verdict": "WORSE" },
+        "O1.f2": { "medC": 49, "medV": 54, "d": 5, "verdict": "WORSE" },
+        "O1.f3": { "medC": 63, "medV": 67.5, "d": 4.5, "verdict": "WORSE" },
+        "close.f1": { "medC": 39.5, "medV": 31.5, "d": -8, "verdict": "no-worse" },
+        "close.f3": { "medC": 72, "medV": 50, "d": -22, "verdict": "better" }
+      },
+      "moving": { ">50": { "d": 0.5, "verdict": "no-worse" }, ">34": { "d": -2, "verdict": "no-worse" }, "thresholdSensitive": false },
+      "drive>34": { "d": -0.5, "thresholdSensitive": true, "note": ">30 twin WORSE (+4.5), as ops noted for P-092" },
+      "reported": { "O2.f1": { "d": 5, "verdict": "WORSE" }, "O3.f1": { "d": 6, "verdict": "WORSE" } },
+      "predictions": { "o1": "miss", "o1s": "miss", "cl": "hit", "f50/f34": "hit", "rep": "miss", "sent": "hit" },
+      "reading": "OBSERVED, cause unknown: 2nd/3rd opens (setup certainly done) also +5/+6 in f1, so the phone's open-start cost is in starting the reveal, not in the setup rev 2 moved",
+      "decision": "registered: O1.f1 WORSE -> rev 2 does not fix the open start; to the lead with per-run O1 frames; stays out; no third block (§5.3)",
+      "p099": "skipped under ops N2; no P-099 data"
+    },
     "builds": {
       "A": {
         "snapshot": "rv2a-ef9d1c9d5fca",
