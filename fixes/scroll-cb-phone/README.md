@@ -457,7 +457,8 @@ rAF and rects, Simulator side rAF and rects. `desk`: |V mean − C mean| ≤ 0.0
 
 | | `phone` | `phone775` | `desk` | `desk900` | `resize` | Sim |
 |---|---|---|---|---|---|---|
-| N_vp | TBD | TBD | TBD | TBD | TBD | TBD |
+| largest noise C-vs-C pair | 0 | 0 | 7 | 0 | 2 | 0 |
+| N_vp | 5 | 5 | 19 | 5 | 9 | 5 |
 
   Outcome: VOID = parity not shown = not landable on P-108, with no re-run on the same harness.
 - *(f) Pixels:* as P-103 item 7. No new page errors in V.
@@ -470,7 +471,52 @@ rAF and rects, Simulator side rAF and rects. `desk`: |V mean − C mean| ≤ 0.0
 **9. Noise run (item d, C only, not scored, committed with this card):** the tables below, from the same harnesses:
 4 C loads per Chrome viewport and 4 in the Simulator. They set N_vp and show the spreads the rule in item 6 will meet.
 
-NOISE_TABLES
+- Run: `out/scroll-cb-phone/run-noise.sh`, 2026-10-04 14:11-15:44Z, C only (JS 65052c4a3902, CSS e0f92804c521), 2 shared
+  holds per Chrome viewport (weight probe) and 2 Simulator holds (weight simulator). Every load: 0 page errors, the
+  same step count within its viewport. Scored with `score-p108.mjs --noise` (pinned hash), output
+  `out/scroll-cb-phone/noise/score.json`.
+- Guard spreads (max − min over the 4 C loads, per step). The item 6 tolerance in P-108 comes from P-108's own 4 C
+  loads; these show what to expect. "tol" = max(0.05, spread):
+
+| guard (per step) | `phone` | `phone775` | `desk` | `desk900` | `resize` |
+|---|---|---|---|---|---|
+| forced Layout | 0.249 ± 0.060 | 0.245 ± 0.008 | 0.286 ± 0.001 | 0.312 ± 0.005 | 0.325 ± 0.006 |
+| forced UpdateLayoutTree | 0.888 ± 0.025 | 0.857 ± 0.016 | 1.261 ± 0.020 | 1.163 ± 0.008 | 0.973 ± 0.022 |
+| Layout | 0.488 ± 0.021 | 0.453 ± 0.029 | 0.493 ± 0.034 | 0.545 ± 0.031 | 0.625 ± 0.022 |
+| UpdateLayoutTree | 1.445 ± 0.042 | 1.410 ± 0.013 | 1.768 ± 0.024 | 1.690 ± 0.002 | 1.608 ± 0.025 |
+| PrePaint | 2.426 ± 0.074 | 2.456 ± 0.061 | 2.007 ± 0.034 | 1.969 ± 0.061 | 2.742 ± 0.038 |
+| **Paint** (judged guard) | 5.592 ± 0.203 | 5.276 ± 0.273 | 3.423 ± 0.104 | 3.166 ± 0.072 | 6.174 ± 0.374 |
+| FireAnimationFrame | 6.561 ± 0.045 | 6.286 ± 0.056 | 6.079 ± 0.025 | 6.228 ± 0.041 | 6.851 ± 0.039 |
+
+  (cells: C mean ± spread). Judged side counts in C (rAF / rects per step) vary by ≤ 0.026 between C loads
+  (`desk900`: AE 0.447 / 0.894, spread 0).
+
+| Simulator guard (per step) | C mean | spread |
+|---|---|---|
+| RecalculateStyles | 1.483 | 0.019 |
+| Layout | 3.690 | 0.020 |
+| forced Layout | 2.480 | 0.039 |
+| **Paint** | 5.553 | 0.066 |
+| RenderingFrame | 0.915 | 0.042 |
+
+  Sim paints by section, C1-C4 (reported only): hero-track 780 / 767 / 736 / 738, people 368 / 350 / 362 / 351,
+  pain 1765 / 1758 / 1765 / 1759, platform 975 / 973 / 963 / 966, commission 305 / 311 / 315 / 316, outside
+  1694 / 1682 / 1682 / 1688. Side rAF / rects per step 2.269 / 3.527 in all 4.
+- Normalised parity, C2-C4 vs C1 (these are the noise loads that item 7(d) adds to the A/A set):
+
+| | `phone` | `phone775` | `desk` | `desk900` | `resize` | Sim |
+|---|---|---|---|---|---|---|
+| C2 / C3 / C4 vs C1 | 0 / 0 / 0 | 0 / 0 / 0 | 3 / 7 / 0 | 0 / 0 / 0 | 0 / 2 / 0 | 0 / 0 / 0 |
+
+  - `desk`: all 3 + 6 of the 7 diffs are the nav `is-on-dark` blink at steps 1687/1739 (dropped for one step, back
+    the next), the same race P-103's desk re-run showed in C alone; the 7th is future's deferral written one step
+    later (1746). Pre-existing in C (OBSERVED).
+  - `resize` C3: one `geom` change at step 1215, 1 px in `people` / `pain` / `commission` offsets. In that load
+    commission's deferral was **1202.97 px**, the other 3 loads 1166.17 px. So the 1203 value that failed P-103's
+    phone775 V1 also occurs in C (OBSERVED, consistent with the font-race reading in item 7(c)).
+- Deferral values seen in C: commission 1166.17 (`phone`, `phone775`, `resize`), 1202.97 (`resize` C3), 1002
+  (`desk`), 762.59 (`desk900`), 1197.38 (Sim); future 1327.88 (`phone`, `phone775`, `resize`), 4084.20 (`desk`),
+  4070.40 (`desk900`), 1326.73 (Sim).
 
 **10. Simulator paint attribution (exploratory under P-103 branch 8, before this card's data; not scored).**
 - Run: `simcount.mjs` with the item 2 additions, C1 V1 V2 C2, 2 Simulator holds (13:58-14:12Z), `sim-expl.json`.
