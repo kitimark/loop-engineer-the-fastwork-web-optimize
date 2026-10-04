@@ -1,0 +1,6 @@
+/* [toolbar-resize P-115 candidate csl] the in-page arm csl as a build rule (no !important; appended last, same selector) */
+@media (width<=860px) {
+  #people .start-selling-future-card > .start-selling-future-showcase {
+    contain: layout;
+  }
+}

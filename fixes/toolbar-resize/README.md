@@ -466,6 +466,18 @@ opens the gap). Mechanism and candidate screening only; a candidate that locates
   - (ops N4, before data) P-110 located the cost on v7. If C on v8 shows no toolbar-step Layout in the showcase, the result
     is NOT REPRODUCED on v8 (not NONE for the arms), and it goes to the lead before any next card.
 
+### Pre-staged while P-115 waits (roles v3 R3; no data, not a ticket)
+
+- Candidate builds on v8, CSS only, each the in-page arm as a build rule appended last inside `(width<=860px)` (no
+  `!important`): `p115-csl.css` and `p115-cva.css` (cva uses P-110's 904 px as the placeholder size; `auto` keeps the
+  last rendered size). `node fixes/toolbar-resize/p115-cands.mjs` builds `fixes/toolbar-resize--p115-{csl,cva}/overlay`
+  (gitignored) from the v8 overlay and refuses another v8: csl JS `3e3e94cb6e9f` CSS `010f197b09d0`, cva JS `3e3e94cb6e9f`
+  CSS `cade62fb4bd2`. svh needs JS (pin at load and on width change), so it is built only if it is the one that locates.
+- Phone G kit draft `phone/serve.sh` and `phone/hold.sh` (copies of int-v8's P-114 kit, with credit): C = v8, V = v8 +
+  the chosen candidate (`ARM=csl|cva sh phone/serve.sh snap`), G part H with a Timeline per run, so `score-tr.mjs`'s
+  frozen filters apply. It becomes a ticket only after P-115 names a locating, look-identical candidate: then the look
+  check, the scorer card with the run order, and a P-id from ops.
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).

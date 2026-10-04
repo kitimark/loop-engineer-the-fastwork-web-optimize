@@ -1,0 +1,8 @@
+/* [toolbar-resize P-115 candidate cva] the in-page arm cva as a build rule (no !important; appended last, same selector;
+   the arm measured the showcase per load, the build uses P-110's 904 px as the placeholder before the first render) */
+@media (width<=860px) {
+  #people .start-selling-future-card > .start-selling-future-showcase {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 904px;
+  }
+}
