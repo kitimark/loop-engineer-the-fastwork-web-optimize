@@ -65,22 +65,78 @@
   }
 
   // ---- the floating "Comment" button ----
-  var btn = el('button', 'cmt-btn', 'Comment');
-  btn.type = 'button'; btn.hidden = true; btn.setAttribute('aria-label', 'Comment on this item');
+  // I-103 (user T-056 #3: the words made it too long): an icon only, a speech bubble drawn in console-nav.css, 34 px
+  // round; its name is in aria-label and title ("Comment", or "Comment on the selection").
+  var btn = el('button', 'cmt-btn');
+  btn.type = 'button'; btn.hidden = true;
+  function nameBtn(t) { btn.setAttribute('aria-label', t); btn.setAttribute('title', t); }
+  nameBtn('Comment');
   var target = null, quote = '', line = null;
   function place(node, rect) {
     var r = rect || node.getBoundingClientRect();
     node.style.top = Math.max(0, (root.scrollY || 0) + r.top - 4) + 'px';
     node.style.left = Math.max(0, (root.scrollX || 0) + Math.min(r.right, document.documentElement.clientWidth - 16) - 90) + 'px';
   }
+  // I-103 (user T-056): the button floated at the line's right end and covered what sat there (PR-013 option B's "open
+  // in a new tab" link). Now it takes the first spot that covers no other control: on its line (centred on a short
+  // line, at the top of a tall item) from the right end leftwards, then just right of the line, then just above or
+  // below it (touching it, so the pointer goes straight from the line onto the button); the item it belongs to and
+  // that item's ancestors don't count. No free spot: the one that covers least. It always fits the window width.
+  var CONTROLS = INTERACTIVE + ',iframe,[role=button]';
+  var btnOut = false, moveTimer = null;
+  function num(v, d) { return typeof v === 'number' && isFinite(v) ? v : d; }
+  function obstacles(owner) {
+    var out = [], all = document.querySelectorAll(CONTROLS);
+    for (var i = 0; i < all.length; i++) {
+      var n = all[i];
+      if (n === btn || (box && box.contains(n)) || (n.contains && n.contains(owner))) continue;
+      var o = n.getBoundingClientRect && n.getBoundingClientRect();
+      if (o && o.right > o.left && o.bottom > o.top) out.push(o);
+    }
+    return out;
+  }
+  /** The leftmost control the box x,y,w,h overlaps, or the area it covers in all (`area`). */
+  function overlap(x, y, w, h, obs, area) {
+    var first = null, sum = 0;
+    for (var i = 0; i < obs.length; i++) {
+      var o = obs[i], dx = Math.min(x + w, o.right) - Math.max(x, o.left), dy = Math.min(y + h, o.bottom) - Math.max(y, o.top);
+      if (dx > 0 && dy > 0) { sum += dx * dy; if (!first || o.left < first.left) first = o; }
+    }
+    return area ? sum : first;
+  }
+  function placeBtn(owner, rect) {
+    var r = rect || owner.getBoundingClientRect();
+    var cw = document.documentElement.clientWidth || root.innerWidth || 1200;
+    var w = btn.offsetWidth || 34, h = btn.offsetHeight || 34;
+    var top = num(r.top, 0), right = num(r.right, 0), left = num(r.left, right - num(r.width, 0)), bottom = num(r.bottom, top + num(r.height, 0));
+    var edge = Math.max(Math.min(right, cw - 8), Math.min(w, cw)), lo = Math.max(0, Math.min(left, edge - w));
+    var obs = obstacles(owner), sy = root.scrollY || 0, spot = null;
+    function along(y) { // on row y, from the line's right end leftwards past each control in the way
+      for (var x = edge - w; x >= lo;) { var o = overlap(x, y, w, h, obs); if (!o) return { x: x, y: y }; x = o.left - 4 - w; }
+      return null;
+    }
+    var mid = top + (bottom - top - h) / 2, rows = bottom - top > 2 * h ? [top - 4, mid, bottom - h] : [mid, top - 4, bottom - h], i;
+    for (i = 0; i < rows.length && !spot; i++) spot = along(rows[i]);
+    if (!spot && right + w <= cw - 8) for (i = 0; i < rows.length && !spot; i++) if (!overlap(right, rows[i], w, h, obs)) spot = { x: right, y: rows[i] };
+    btnOut = false;
+    if (!spot) { spot = (sy + top - h >= 0 && along(top - h)) || along(bottom); btnOut = !!spot; }
+    if (!spot) { // every spot covers something: the least
+      var c = [{ x: edge - w, y: top - 4 }, { x: edge - w, y: top - h }, { x: edge - w, y: bottom }], best = Infinity;
+      for (i = 0; i < c.length; i++) { var a = overlap(c[i].x, c[i].y, w, h, obs, true); if (a < best && sy + c[i].y >= 0) { best = a; spot = c[i]; } }
+      spot = spot || c[0];
+    }
+    btn.style.top = Math.max(0, sy + spot.y) + 'px';
+    btn.style.left = Math.max(0, (root.scrollX || 0) + spot.x) + 'px';
+  }
   function showBtn(a, q, rect, at) {
     if (box && !box.hidden) return; // one comment at a time
+    clearTimeout(moveTimer); moveTimer = null;
     target = a; quote = q || ''; line = at || null;
-    btn.textContent = quote ? 'Comment on the selection' : 'Comment';
+    nameBtn(quote ? 'Comment on the selection' : 'Comment');
     btn.hidden = false;
-    place(btn, rect || (line || a).getBoundingClientRect());
+    placeBtn(line || a, rect);
   }
-  function hideBtn() { btn.hidden = true; target = null; quote = ''; line = null; }
+  function hideBtn() { clearTimeout(moveTimer); moveTimer = null; btn.hidden = true; target = null; quote = ''; line = null; btnOut = false; }
   /** Point at `node` (hover or tap): its item; in a page part, the line in it. */
   function pointAt(node) {
     var a = anchorOf(node);
@@ -163,8 +219,17 @@
 
   // ---- pointer, touch and selection ----
   document.addEventListener('mouseover', function (e) {
-    if (e.target === btn || (box && !box.hidden)) return;
-    if (!hasSelection()) pointAt(e.target);
+    if (e.target === btn) { clearTimeout(moveTimer); moveTimer = null; return; }
+    if (box && !box.hidden) return;
+    if (hasSelection()) return;
+    // I-103: above or below its line the pointer crosses the next line on its way to the button: wait before moving it
+    if (btnOut && !btn.hidden) {
+      var t = e.target;
+      clearTimeout(moveTimer);
+      moveTimer = setTimeout(function () { moveTimer = null; if (!(box && !box.hidden) && !hasSelection()) pointAt(t); }, 300);
+      return;
+    }
+    pointAt(e.target);
   });
   document.addEventListener('click', function (e) {
     if (e.target === btn || (box && box.contains(e.target))) return;

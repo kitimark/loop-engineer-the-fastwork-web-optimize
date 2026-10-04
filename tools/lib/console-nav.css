@@ -36,7 +36,11 @@ section.flash { animation: nav-flash 2s ease-out 1; }
 @media (prefers-reduced-motion: reduce) { section.flash { animation: none; outline: 3px solid var(--accent, #2f5bd3); } }
 /* I-090 (user T-043): comments on console items (console-comments.js): the floating Comment button, the comment box,
    the per-item marker, the "sent" note. */
-.cmt-btn { position: absolute; z-index: 30; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 30px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--accent, #2f5bd3); background: var(--card, #fff); color: var(--accent, #2f5bd3); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+/* I-103 (user T-056 #3): an icon, not words: a 34 px round button (a tap target over 32 px) with a speech bubble drawn
+   in CSS (no image, no URL); its name is in aria-label and title. */
+.cmt-btn { position: absolute; z-index: 30; box-sizing: border-box; width: 34px; height: 34px; min-height: 0; padding: 0; margin: 0; cursor: pointer; border-radius: 999px; border: 1px solid var(--accent, #2f5bd3); background: var(--card, #fff); color: var(--accent, #2f5bd3); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.cmt-btn::before { content: ""; position: absolute; left: 8px; top: 8px; width: 16px; height: 12px; box-sizing: border-box; border: 2px solid currentColor; border-radius: 4px; }
+.cmt-btn::after { content: ""; position: absolute; left: 11px; top: 19px; width: 0; height: 0; border-top: 6px solid currentColor; border-right: 6px solid transparent; }
 .cmt-btn:hover { background: var(--accent, #2f5bd3); color: var(--accent-ink, #fff); }
 .cmt-box { position: absolute; z-index: 31; width: min(340px, calc(100vw - 32px)); background: var(--card, #fff); color: var(--ink, #1d1d1b); border: 1px solid var(--line, #e3e1da); border-radius: 14px; padding: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.18); display: grid; gap: 8px; font-size: 14px; }
 .cmt-box .cmt-what { font-weight: 650; overflow-wrap: anywhere; }

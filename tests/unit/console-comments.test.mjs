@@ -191,7 +191,10 @@ test('console-comments.js: hover shows Comment; the box says who gets it; Send P
   assert.equal(p.btn().hidden, true);
   p.fire(p.words, 'mouseover');
   assert.equal(p.btn().hidden, false);
-  assert.equal(p.btn().textContent, 'Comment');
+  // I-103 (user T-056 #3): an icon, its name in aria-label and title (was the word "Comment")
+  assert.equal(p.btn().textContent, '', 'icon only, no words');
+  assert.equal(p.btn().getAttribute('aria-label'), 'Comment');
+  assert.equal(p.btn().getAttribute('title'), 'Comment');
   p.fire(p.btn(), 'click');
   const box = p.box();
   assert.equal(box.hidden, false);
@@ -239,7 +242,8 @@ test('console-comments.js: a selection inside one item becomes the quote; across
   p.fire(p.words, 'mouseup');
   await p.settle();
   assert.equal(p.btn().hidden, false);
-  assert.equal(p.btn().textContent, 'Comment on the selection');
+  assert.equal(p.btn().getAttribute('aria-label'), 'Comment on the selection');
+  assert.equal(p.btn().getAttribute('title'), 'Comment on the selection');
   p.fire(p.btn(), 'click');
   assert.equal(p.box().querySelector('.cmt-quote').textContent, 'the second page');
   p.box().querySelector('textarea').value = 'why?';
@@ -383,4 +387,130 @@ test('console-comments.js: the part\'s marker goes into its own slot (the header
   p.part.appendChild(new p.N('section', { 'data-anchor': 'status:cd-strip', 'data-anchor-label': 'Countdown strips (new)' }));
   p.fire(p.btn(), 'click');
   assert.equal(p.box().querySelector('.cmt-what').textContent, 'Comment on Countdown strips (new)');
+});
+
+// ---- I-103 (user T-056): the Comment button covered PR-013 option B's "open in a new tab" link ----
+// The button floated at the line's right end (top - 4, right - 90) over whatever sat there. Now it takes a spot that
+// covers no other control (link, button, field, frame); the item it belongs to and its ancestors don't count.
+
+/** The button's size like in the browser (console-nav.css: 34 x 34). */
+function sized(N) {
+  Object.defineProperty(N.prototype, 'offsetWidth', { get() { return (this.className || '').includes('cmt-btn') ? 34 : 0; } });
+  Object.defineProperty(N.prototype, 'offsetHeight', { get() { return (this.className || '').includes('cmt-btn') ? 34 : 0; } });
+}
+/** The Try-it panel of a proposal option: a part with a bar of buttons, then two framed pages, each with a caption
+ * line "B: proposal …" + "open in a new tab" and its frame. Rects are viewport boxes; `w` is the window width. */
+function tryItPage(w) {
+  return commentsPage({ page: 'proposals', build: (body, N) => {
+    sized(N);
+    const at = (n, left, right, top, bottom) => { n.getBoundingClientRect = () => ({ left, right, top, bottom, width: right - left, height: bottom - top }); return n; };
+    const part = at(body.appendChild(new N('div', { 'data-anchor': 'part:page', 'data-anchor-label': 'Proposals' })), 0, w, 0, 1400);
+    const bar = at(part.appendChild(new N('div')), 16, w - 16, 150, 186);
+    at(bar.appendChild(new N('button', {}, 'Show A')), 16, 116, 150, 186);
+    at(bar.appendChild(new N('button', {}, 'One at a time')), 124, 256, 150, 186);
+    const pair = at(part.appendChild(new N('div')), 16, w - 16, 196, 1160);
+    const fig = (x, label) => {
+      const f = at(pair.appendChild(new N('figure')), x, x + 432, 200, 1155);
+      const cap = at(f.appendChild(new N('figcaption')), x, x + 432, 200, 217);
+      const words = at(cap.appendChild(new N('span', {}, label)), x, x + 232, 201, 216);
+      const link = at(cap.appendChild(new N('a', { href: 'http://localhost:5301/', target: '_blank' }, 'open in a new tab')), x + 327, x + 432, 201, 216);
+      const frame = at(f.appendChild(new N('iframe')), x, x + 432, 221, 1155);
+      return { cap, words, link, frame };
+    };
+    return { part, A: fig(16, 'A: original'), B: fig(464, "B: proposal (A: keep st6-rb2's slider)") };
+  } });
+}
+/** Where the button is now (viewport box), and every control it overlaps besides its own item's elements. */
+function btnBox(p) {
+  const b = p.btn();
+  const left = parseFloat(b.style.left) - p.window.scrollX, top = parseFloat(b.style.top) - p.window.scrollY;
+  return { left, top, right: left + b.offsetWidth, bottom: top + b.offsetHeight };
+}
+function covered(p, owner) {
+  const r = btnBox(p);
+  return p.body.querySelectorAll('a,button,input,textarea,select,summary,label,video,iframe')
+    .filter((n) => n !== p.btn() && !n.contains(owner) && !(p.box() && p.box().contains(n)))
+    .filter((n) => { const o = n.getBoundingClientRect(); return Math.min(r.right, o.right) > Math.max(r.left, o.left) && Math.min(r.bottom, o.bottom) > Math.max(r.top, o.top); })
+    .map((n) => `${n.tagName} "${n.textContent}"`);
+}
+
+test('console-comments.js (I-103): the Comment button covers no other control: not the option\'s "open in a new tab" link, its frame or the bar; desktop and phone width', async () => {
+  for (const w of [1200, 400]) {
+    const p = tryItPage(w);
+    p.document.documentElement.clientWidth = w;
+    await p.settle();
+    const lines = w === 400 ? [p.A] : [p.A, p.B]; // at phone width B is scrolled off to the right of the pair
+    for (const f of lines) {
+      for (const at of [f.words, f.cap]) {
+        p.fire(at, 'mouseover');
+        assert.equal(p.btn().hidden, false, `${w}px: Comment shows by the caption`);
+        assert.deepEqual(covered(p, f.cap), [], `${w}px: the button covers no other control (hovering ${at.tagName})`);
+        const r = btnBox(p), line = f.cap.getBoundingClientRect();
+        assert.ok(r.left >= 0 && r.right <= w, `${w}px: inside the window (${r.left}..${r.right})`);
+        assert.ok(r.bottom >= line.top && r.top <= line.bottom, `${w}px: next to its line (${r.top}..${r.bottom} vs ${line.top}..${line.bottom})`);
+        p.fire(p.part, 'mouseover'); // off the line
+      }
+      // the covered link is still the link: a click on it opens the page, no box
+      p.fire(f.link, 'click');
+      assert.ok(!p.box() || p.box().hidden, 'a click on the link opens no comment box');
+    }
+    // the selection's button stays inside the window and off the link too
+    p.select('keep st6-rb2', p.A.words);
+    p.fire(p.A.words, 'mouseup');
+    await p.settle();
+    assert.equal(p.btn().getAttribute('title'), 'Comment on the selection');
+    const r = btnBox(p);
+    assert.ok(r.left >= 0 && r.right <= w, `${w}px: the selection button is inside the window (${r.left}..${r.right})`);
+    assert.deepEqual(covered(p, p.part), [], `${w}px: the selection button covers no control`);
+  }
+});
+
+test('console-comments.js (I-103): a line that is all controls gets the button just above it; on the way there the button waits for the pointer', async () => {
+  const p = commentsPage({ page: 'status', build: (body, N) => {
+    sized(N);
+    const at = (n, left, right, top, bottom) => { n.getBoundingClientRect = () => ({ left, right, top, bottom, width: right - left, height: bottom - top }); return n; };
+    const part = at(body.appendChild(new N('div', { 'data-anchor': 'part:page', 'data-anchor-label': 'Who is doing what' })), 0, 400, 0, 1000);
+    const words = at(part.appendChild(new N('p', {}, 'Show by state:')), 20, 380, 240, 264);
+    const row = at(part.appendChild(new N('p')), 20, 380, 300, 324);
+    const all = at(row.appendChild(new N('button', {}, 'All of them, in priority order')), 20, 380, 300, 324);
+    return { part, words, row, all };
+  } });
+  p.document.documentElement.clientWidth = 400;
+  await p.settle();
+  p.fire(p.all, 'mouseover');
+  assert.equal(p.btn().hidden, false);
+  assert.deepEqual(covered(p, p.row), [], 'the row\'s button is not covered');
+  const r = btnBox(p);
+  assert.equal(r.bottom, 300, 'just above the row, touching it');
+  // the pointer crosses the line above on its way to the button: the button stays put, and once on it, stays
+  const where = p.btn().style.top;
+  p.fire(p.words, 'mouseover');
+  assert.equal(p.btn().style.top, where, 'not moved at once');
+  p.fire(p.btn(), 'mouseover');
+  await new Promise((res) => setTimeout(res, 450));
+  assert.equal(p.btn().style.top, where, 'reaching the button keeps it');
+  p.fire(p.btn(), 'click');
+  assert.equal(p.box().querySelector('.cmt-quote').textContent, 'All of them, in priority order', 'the comment is on the row');
+  p.fire(p.box().querySelector('.cmt-cancel'), 'click');
+  // staying on the other line moves it there
+  p.fire(p.words, 'mouseover');
+  await new Promise((res) => setTimeout(res, 450));
+  assert.notEqual(p.btn().style.top, where, 'resting on another line moves the button');
+});
+
+test('console-comments.js (I-103, user T-056 #3): the button is an icon, named Comment, a tap target of at least 32 px, drawn without images or URLs', () => {
+  const css = readFileSync(join(TOOLS, 'lib', 'console-nav.css'), 'utf8');
+  const rule = (sel) => (css.match(new RegExp('^' + sel.replace(/[.:]/g, '\\$&') + ' \\{([^}]*)\\}', 'm')) || [])[1] || '';
+  const btn = rule('.cmt-btn');
+  for (const k of ['width', 'height']) {
+    const m = btn.match(new RegExp('(?:^|;)\\s*' + k + ':\\s*(\\d+)px'));
+    assert.ok(m && Number(m[1]) >= 32, `.cmt-btn ${k} >= 32px (${m && m[1]})`);
+  }
+  assert.match(btn, /padding: 0/, 'the size is the box, no words to pad');
+  assert.match(rule('.cmt-btn::before'), /content: ""/, 'the bubble is drawn in CSS');
+  assert.match(rule('.cmt-btn::after'), /currentColor/, 'its tail follows the button colour (hover too)');
+  assert.ok(!/url\(/.test(btn + rule('.cmt-btn::before') + rule('.cmt-btn::after')), 'no image');
+  const src = readFileSync(join(TOOLS, 'lib', 'console-comments.js'), 'utf8');
+  assert.match(src, /el\('button', 'cmt-btn'\);/, 'created without words');
+  assert.match(src, /nameBtn\('Comment'\)/);
 });
