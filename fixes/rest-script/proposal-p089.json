@@ -9,7 +9,7 @@
     {
       "name": "keep",
       "label": "Keep the change",
-      "idea": "Keep rest-script v4. It would land only after the lead un-parks it and a short iPhone no-worse check passes (the less-work landing rule); that check has not run, and phone timing waits for T-052. Once landed, the row stops sliding while it is off screen, and the counters stop rewriting values that don't change. On screen it slides as before.",
+      "idea": "Keep rest-script v4. It would land only after the lead un-parks it and a short iPhone no-worse check passes (the less-work landing rule); that check has not run yet, and it would queue after the current phone tests. Once landed, the row stops sliding while it is off screen, and the counters stop rewriting values that don't change. On screen it slides as before.",
       "visualDiff": [
         "Reduced motion, Chrome 430: NOT exact. All 5 still shots differ evenly by at most 4 shades (fill 3, edge 4) on 10325 device px. Nothing is over the counting threshold of 8, so share and area count as 0. Your rule needs exact here, so this is T3. Cause unknown (OBSERVED).",
         "Same comparison elsewhere: Chrome 1440 reduced motion T1 (within its own run-to-run noise; edge max 6, unscored leg), Chrome 430 normal motion T0 (identical), iPhone Simulator reduced motion T1 (edge max 2).",
@@ -21,15 +21,68 @@
         "When you would notice: the normal-motion differences are on avatar outlines, under the agreed limits; the reduced-motion one is a 4-shade shift on the still row. Nobody has judged either by eye."
       ],
       "gain": [
-        { "what": "Main frames, row far off screen, 4 s (Chrome 430)", "before": "31 / 32", "after": "17 / 17", "tag": "OBSERVED", "how": "ic5 census, Chrome 430x932, two runs per arm, 2026-10-03 about 13:10Z (tocard 05daca3beb58); mgmt-ops-10 reproduced it byte for byte. A count of work, not a timing." },
-        { "what": "Layouts, row far off screen, 4 s (Chrome 430)", "before": "4 / 4", "after": "0 / 0", "tag": "OBSERVED", "how": "Same ic5 census." },
-        { "what": "Paints, row far off screen, 4 s (Chrome 430)", "before": "34 / 39", "after": "0 / 3", "tag": "OBSERVED", "how": "Same ic5 census." },
-        { "what": "Main frames, fee section paused, 8 s (Chrome 430)", "before": "260 / 258", "after": "242 / 242", "tag": "OBSERVED", "how": "Same ic5 census; also pain section, 8 s: 234/232 -> 200/202, and y3728, 4 s: 158/158 -> 143/143. With the row on screen: no change (census SAME)." },
-        { "what": "Work saved with reduced motion on (Chrome 430)", "before": "as today", "after": "as today (none)", "tag": "OBSERVED", "how": "Census 430r: all SAME. With reduced motion the rotator doesn't run in either version, so nothing is saved, and the row is not exact." },
-        { "what": "Heat or battery on the iPhone", "before": "not measured", "after": "not measured", "tag": "UNRESOLVED", "how": "No phone timing or heat run (timing is deferred by your rule). The saving is in work counts only.", "needsPhone": true }
+        {
+          "what": "Main frames, row far off screen, 4 s (Chrome 430)",
+          "before": "31 / 32",
+          "after": "17 / 17",
+          "tag": "OBSERVED",
+          "how": "ic5 census, Chrome 430x932, two runs per arm, 2026-10-03 about 13:10Z (tocard 05daca3beb58); mgmt-ops-10 reproduced it byte for byte. A count of work, not a timing."
+        },
+        {
+          "what": "Layouts, row far off screen, 4 s (Chrome 430)",
+          "before": "4 / 4",
+          "after": "0 / 0",
+          "tag": "OBSERVED",
+          "how": "Same ic5 census."
+        },
+        {
+          "what": "Paints, row far off screen, 4 s (Chrome 430)",
+          "before": "34 / 39",
+          "after": "0 / 3",
+          "tag": "OBSERVED",
+          "how": "Same ic5 census."
+        },
+        {
+          "what": "Main frames, fee section paused, 8 s (Chrome 430)",
+          "before": "260 / 258",
+          "after": "242 / 242",
+          "tag": "OBSERVED",
+          "how": "Same ic5 census; also pain section, 8 s: 234/232 -> 200/202, and y3728, 4 s: 158/158 -> 143/143. With the row on screen: no change (census SAME)."
+        },
+        {
+          "what": "Work saved with reduced motion on (Chrome 430)",
+          "before": "as today",
+          "after": "as today (none)",
+          "tag": "OBSERVED",
+          "how": "Census 430r: all SAME. With reduced motion the rotator doesn't run in either version, so nothing is saved, and the row is not exact."
+        },
+        {
+          "what": "Heat or battery on the iPhone",
+          "before": "not measured",
+          "after": "not measured",
+          "tag": "UNRESOLVED",
+          "how": "No phone timing or heat run (timing is deferred by your rule). The saving is in work counts only.",
+          "needsPhone": true
+        }
       ],
       "risk": "Reduced-motion users get a still avatar row that is not pixel-exact (up to 4 shades, cause unknown) and none of the saving: with reduced motion on, no work is saved (census 430r: all SAME). Desktop 1440 has no scored result for the scrolled-into-view row. In the iPhone Simulator the row still differs (T2) at the rest shot, about 1.4 s after a slide ends, and is identical 2.5 s after (OBSERVED, cause unknown); in the iPad Simulator the rest shot is already identical. Landing still needs the lead's un-park and a phone no-worse check.",
-      "compare": { "b": { "label": "rest-script v4 (overlay 520d5f1139c7)" } }
+      "compare": {
+        "b": {
+          "label": "rest-script v4 (overlay 520d5f1139c7)"
+        },
+        "shots": [
+          {
+            "caption": "Chrome 430, reduced motion, still row: A = best build, B = with the change (at most 4 shades apart)",
+            "a": "../../out/rest-script/p089/rep-fix-w430r-shots/replay-st6-fix-430-rest.png",
+            "b": "../../out/rest-script/p089/fix-w430r-shots/fix-430-rest.png"
+          },
+          {
+            "caption": "iPhone Simulator 430, rest shot (T2, edge-only differences on the avatars): A = best build, B = with the change",
+            "a": "../../out/rest-script/p089/fw-sim/rep-fix-shots/replay-st6-fix-sim-rest.png",
+            "b": "../../out/rest-script/p089/fw-sim/fix-shots/fix-sim-rest.png"
+          }
+        ]
+      }
     },
     {
       "name": "drop",
@@ -39,11 +92,36 @@
         "Nothing changes: the page stays exactly as the current best build, reduced motion included."
       ],
       "gain": [
-        { "what": "Work saved", "before": "as today", "after": "as today (none)", "tag": "OBSERVED", "how": "No change to the page." }
+        {
+          "what": "Work saved",
+          "before": "as today",
+          "after": "as today (none)",
+          "tag": "OBSERVED",
+          "how": "No change to the page."
+        }
       ],
       "risk": "The avatar row keeps restyling and repainting about 30 times every 4 s while it is far off screen, and the counters keep rewriting unchanged values. That work goes on.",
-      "compare": { "b": { "label": "The current best build, unchanged" } }
+      "compare": {
+        "b": {
+          "label": "The current best build, unchanged"
+        },
+        "shots": [
+          {
+            "caption": "Chrome 430, reduced motion: the best build against itself (A/A), the noise floor",
+            "a": "../../out/rest-script/p089/st6-w430r-shots/st6-430-rest.png",
+            "b": "../../out/rest-script/p089/rep-st6-w430r-shots/replay-st6-st6-430-rest.png"
+          }
+        ]
+      }
     }
   ],
-  "compare": { "a": { "label": "The current best build (st6-rb2), which already has the earlier fixes" } }
+  "compare": {
+    "a": {
+      "label": "Current best build (st6-rb2), with earlier fixes"
+    }
+  },
+  "recommended": {
+    "option": "keep",
+    "why": "The only miss is reduced motion: the still row shifts by at most 4 shades, below the counting threshold of 8, and everything else is within the agreed numbers. But your rule says reduced motion must be exact, so only you can accept it."
+  }
 }
