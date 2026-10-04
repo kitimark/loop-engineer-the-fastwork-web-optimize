@@ -14,7 +14,9 @@ step instructions:
 3. **Plain words.** No internal codes (P-094, I-123, hashes, arm names) unless explained in a few words:
    "the heat check (P-094)".
 4. **What the user must do** goes on its own line at the end: "What you need to do: …" or "nothing".
-5. **Numbers** go in a small table or list, saying which is better: "62 ms vs 55 ms (7 ms slower)".
+5. **Numbers** go in a small table or list, saying which is better: "62 ms vs 55 ms (7 ms slower)". In console
+   threads, use a plain list ("C 5, V 1 (V better)") until the Threads page renders tables (I-129, user T-091):
+   a pipe table shows there as raw "|" text. Chat and proposal pages are unaffected.
 6. **Times** in UTC with a Z, until the user names a time zone (asked in T-080 #3, not answered yet).
 7. **At most about 10 lines.** If more is needed, use short headings and put the details on the progress page
    or in the README, with a pointer.
