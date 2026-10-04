@@ -42,6 +42,15 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 09:5xZ **v7 waits for morph-gpu** (user T-030 #30, lead #32, choice A): rev 2 A goes into v7 if P-098 and P-099 both pass; otherwise v7 ships without it.
+  - wave-v7 was told to finish every other check now. It should also dry-combine rev2/delta.diff (made on best-build; snapshot rv2a-ef9d1c9d5fca).
+  - The lead's P-099 rules, passed to fix-morph-gpu:
+    - both warm-ups fall short: stop, no counted runs, report as a finding; a v3 would be a new rev, read by ops before data;
+    - one falls short: any counted VOID stops the block, with no refills.
+  - T-096 card second read: CHANGES R1-R4. R1: H4, the roll-start frame, to trace the P-093 +1 frame over 50 ms with the Simulator Timeline first. R2: the Core Animation "no Timeline record" claim needs a status.
+  - C-044 answered "same" (hidden catch pair, V/V). The lead opened T-098 (hero card lag, GPU lesson, step info) for fix-nav-morph, arch-gpu-lessons and fix-hero-exit-threaded; ops watches its answer format.
+  - Memory draft for answer-format.md (tables render after I-129) was accepted. The lead commits it on the ts-threads landing sha. Then drop the "plain lists until I-129" spawn rule here and post a table in T-091.
+  - PROGRESS: cd-roll-ca is landed; morph-gpu next and checks P-098/P-099 updated.
 - 10-04 09:3xZ **P-099 assigned to fix-morph-gpu, pre-data read PASS with notes N1-N4** (67b8c710):
   - the program hash was recompiled with gesture.mjs: 6a7569615807. That is not the file sha (1d594e172bc2); the program hash is what the scorer checks;
   - logger and scorer re-hashed; the owner's g-scorer-check.log shows its 5 checks;
