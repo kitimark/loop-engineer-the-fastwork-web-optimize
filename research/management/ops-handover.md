@@ -5,7 +5,7 @@ or at ~60 % context). Charter: `fixes/LEAD.md` "Delegation: mgmt-ops runs the da
 **mgmt-ops-10** (named spawn; from 10-03 08:2xZ; mgmt-ops-9 ran 10-03 00:0xZ-08:2xZ, mgmt-ops-8 10-02 23:5xZ-10-03
 00:0xZ, mgmt-ops-7 10-02 09:13Z-23:5xZ), worktree `.claude/worktrees/agent-a606363cace2803d5`, branch
 `worktree-agent-a606363cace2803d5`. Next instance: **mgmt-ops-11**, named (at ~60 % context). Last update:
-**10-04 05:0xZ** (mgmt-ops-10).
+**10-04 05:1xZ** (mgmt-ops-10).
 
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
@@ -28,6 +28,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 
+- 10-04 05:1xZ d7adbf38 landed. P-091 h050416: start gate try 1 Fair (the phone was cooled to 41.09 C at 04:57Z, then waited ~6 min for chrome-measure with no pre-warm and fell to 38.6 C), try 2 PASS 05:10:45Z Serious 39.59 C; V4 C4 S2 running. **Lesson (lead):** a phone left to cool while its owner waits for Chrome costs a gate retry: every next phone holder pre-warms while it waits (T-058). User T-072 (Best build page: "4 new results"): false flag, the P-091..P-095 ledger rows had empty "| |" cells that the progress parser read as a result; data fixed (empty cells now two spaces), parser incident I-116 opened (lead). PROGRESS.json 05:15Z. **Incident owners (lead 05:1xZ):** ts-i103: I-108 part 2, then I-104, then I-112; ts-i109: I-106, I-110, I-111, I-114 (ruling: npm-test shared jobs up to 480 s); ts-i115: I-115, then I-113.
 - 10-04 05:0xZ Lead: T-070 #6 done (7 stale rows set done/dropped: count-checks, claims-audit, i063-sim done; cdwc, re-keep-op, blur-cubic, countdown-faces dropped 'off for now'). T-071 #10 'add the hook' -> I-115, ts-i115 spawned (peer row added). Lead npm test on 71190916 1586/1586. **Watch item:** when cd-roll-ca lands, ping the lead to decide whether countdown-faces comes back.
 - 10-04 04:5xZ User T-071: GitHub via gh, never curl -> F-203, announced to 9 live agents, lead saved memory/github-via-gh.md (a8f1806d); rule line added above the peer directory. T-070 (board 'waiting for a user reply' lines): I-108 part 1 in its hook test, user asked highest priority + workaround (escalated: hide 7 stale parked rows); ops posts the 'live' note only after the lead's 'console restarted'. P-091 h043142 VALID (V2 C2 C3 V3); h044740 GATE-FAIL (end Critical 42.89 °C), strike 1, V4 C4 S2 void; nav-morph cools under its lease (< 41.5 °C) then re-runs H4; ops advised no swap to P-095 (its start gate also needs Serious).
 - 10-04 04:4xZ Lead landed 2518e9ca (P-095 pre-block met: pxbr2 PASS, ops digit check R2 21 / R2b 33 / B 57; owner README 93705754). T-066 #11-#14 (Svelte batching idea, design-engineer ask) escalated; lead spawned de-frame-audit (peer directory row added). F-202 pitfall (acquire --wait re-run lost ts-i103's place) sent to 7 agents; lead opened I-113, ops note added (immediate iphone re-run kept fix-morph-gpu's 03:25Z place). P-091 h041713 VALID (C1 V1, S1 PASS, 40.89 -> 42.39 °C, sleep clean); hold 3 running, hold 4 next; P-095 then takes the phone (iphone-runner #1, wait good to 05:16Z).

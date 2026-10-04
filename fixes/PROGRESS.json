@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T04:15:00Z",
+ "updatedAt": "2026-10-04T05:15:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,8 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T05:10:00Z", "text": "The menu-edge measurement (P-091) has 6 of its 9 runs. The phone got too hot at the end of the third hold, so its last 3 runs did not count; they are running again now. If the phone gets too hot again, the measurement closes on the 6 runs it has." },
+  { "at": "2026-10-04T04:33:00Z", "text": "The hero's slimmer version (R2) passed its check before the phone test (P-095): same pixels apart from the countdown digits. It is next on the phone after the menu-edge measurement." },
   { "at": "2026-10-04T04:05:00Z", "text": "The hero photo sharpness question is closed: you chose keep (PR-015). No code change." },
   { "at": "2026-10-04T04:02:00Z", "text": "The hero fix's phone check (P-088) failed on both versions: no extra slow frames, but extra work the moment a scroll starts. The lead picked a slimmer version (R2): a short phone check, then your blind swipe test." },
   { "at": "2026-10-04T04:00:00Z", "text": "The menu-edge measurement (P-091) is running on the phone. Then the hero R2 check, the end-of-page morph (P-092), the countdown roll (P-093) and the resting avatar row (P-094), each a short phone check before it lands." },
@@ -36,9 +38,7 @@
   { "at": "2026-10-03T12:05:00Z", "text": "The countdown digit strips (strip-tc) passed their phone check at the phone's real \"Serious\" heat state: no new slow frames, and much less clock redrawing. Your finger test is next." },
   { "at": "2026-10-03T10:40:00Z", "text": "You asked for a pixel-tolerance rule; a proposal is being drafted for you (T-042). Until you decide, the rule stays: pixel-identical, or your OK for each fix." },
   { "at": "2026-10-03T10:31:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) does far less work at rest in Chrome and the Simulator, and you accepted its look (PR-009, option \"both\"). Next: a short phone check that it is no worse, after the strips' test." },
-  { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B, as a trial): phone tests run with the phone in its real \"Serious\" heat state, checked at each run's start and end, stopping at 44 °C. If the phone won't hold it, we switch to cool starts (A), as you approved." },
-  { "at": "2026-10-03T10:05:00Z", "text": "The hero fix's phone trace: the per-frame script is gone on the phone, but a touch start adds some style work, so it goes back to the code. The phone was in its real \"Serious\" heat state, so this counts as hot-phone data." },
-  { "at": "2026-10-03T09:31:00Z", "text": "You chose the strip-tc version of the countdown digit strips (corrected proposal). Its phone check and your finger test come after the hero fix's phone trace." }
+  { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B, as a trial): phone tests run with the phone in its real \"Serious\" heat state, checked at each run's start and end, stopping at 44 °C. If the phone won't hold it, we switch to cool starts (A), as you approved." }
  ],
  "items": [
   {
@@ -674,7 +674,7 @@
    "fixes": "Finds which drawing step makes the leftover slow frames at the menu's edge, so the next fix aims at the right thing.",
    "felt": { "answer": "not-yet", "text": "a measurement, nothing to feel yet" },
    "gate": "A clear cause from the phone's timeline; a fix comes after.",
-   "next": "Running on the phone now (P-091).",
+   "next": "Running on the phone now (P-091): 6 of 9 runs counted; the last 3 are running again after the phone got too hot. Then the score.",
    "owner": "fix-nav-morph",
    "checks": [ { "id": "P-091", "what": "phone measurement of the menu-edge slow frames", "result": "" } ],
    "details": [
