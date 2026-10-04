@@ -42,6 +42,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-117: the lead's rulings and int-v8's build, recorded in the card (before data).**
+  - Rulings: N2 confirmed (a merge means stop and report; fix-scroll-cb re-counts with pins before data; no
+    phone775). N1 accepted (a Simulator momentum-flick case in fix-nav-morph's VA audit). The lead signs once the
+    hashes are in.
+  - int-v8 (833fb29e, not landed) built V e8d8323f674b. Ops re-hashed the snapshot on disk (out/nsc/snap): it matches.
+  - 2 of 16 scroll-cb hunks collide with rest-script v4 in `mM`. int-v8's carry keeps `fwCheck` while the gate is
+    closed, so only the job's rAF is gated. That is a semantic merge, so N2 is triggered: fix-scroll-cb reviews,
+    re-counts and runs its parity before the block.
+  - Still owed before the lead's read: p117/score.mjs and its self-test hashes (int-v8); fix-nav-morph's VA audit with
+    the N1 case.
 - 10-05 **P-108 result (fix-scroll-cb, scroll-cb-phone on best-build v4, 5e616aa5): AGREE, PASS on every leg.**
   - All six harness pins match. Ops re-ran the card's 7e command on the owner's records, and the output matches the
     owner's table line for line.

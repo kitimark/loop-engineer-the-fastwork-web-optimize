@@ -95,3 +95,49 @@ Ops notes for the lead's read:
   any hunk needs a merge, that V needs scroll-cb's own count check on v8 (P-108's judged counts and guards, phone and
   Simulator, 2 loads per arm) before this block.
 - **N3.** `__nsForce = !0` is owed only in a build combined with PR-018. This V has no PR-018, so it does not apply here.
+
+## The lead's rulings (2026-10-05, before data)
+
+- **N2 confirmed.** If any scroll-cb hunk needs more than line offsets on v8, int-v8 stops and reports. fix-scroll-cb
+  then reviews the merged V and re-counts on it, with its pins sent to the lead and ops before data; the lead reads
+  them. phone775 is not re-tested.
+- **N1 accepted.** fix-nav-morph's parity audit on the exact V adds one Simulator momentum-flick case. WebKit's
+  scroll-event timing during momentum is UNRESOLVED, so this case decides it locally.
+- The lead signs this card once int-v8 has filled in V's JS hash and the harness hashes.
+
+## Build filled in by int-v8 (2026-10-05, before data; ops checked the hashes on disk)
+
+int-v8, branch worktree-agent-a068af37646232e05 @ 833fb29e (not landed yet). sha256/12; the full ones are in HASHES.txt.
+
+| item | hash |
+|---|---|
+| C JS / CSS | 3e3e94cb6e9f / f836404b3728 |
+| V JS / CSS | e8d8323f674b (e8d8323f674b0dd713b38b070f706f0a8540fcd7927c9fbab87f5cbb9ea0f657) / f836404b3728 |
+| C + nav-hit-cache (reference) | fd3688901f50 (P-107's V) |
+| C + scroll-cb alone (reference) | 4c48e372ecdd |
+| build script fixes/v8-best/phone/nsc/build.mjs | 2e8e72b6d927 |
+| carried patch fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff | 3abcd7008e61 |
+| inputs read from git | nav patch-on-v8.diff 7bbb6d4212ff @ 64ad0b9b; scroll-cb patch-on-best.diff c2dc144b7bd2 @ 5e616aa5 |
+| snapshot HASHES.txt | e69686f9522b |
+
+- **Snapshot path.** The copies are out/nsc/snap/{C,V}, not out/p117/snap as the card says. Ops re-hashed both JS
+  files and HASHES.txt on disk: all match.
+- **Identity checks, all ok (int-v8):**
+  - each input equals its owner's build (27f23f6a3878 on best, fd3688901f50 on v8);
+  - nav-hit-cache and scroll-cb commute, and V − nav-hit-cache = C + scroll-cb;
+  - V's CSS equals C's, and node --check passes.
+- **Carry: N2 is triggered.** 14 of the 16 scroll-cb hunks apply to v8 unchanged. 2 hunks, in the future section
+  (`mM`), collide with rest-script v4: in v8, `u` = `fwCheck()` + `rAF(l)`. The original `scbU` would also skip
+  `fwCheck` on phones while the gate is closed. int-v8's carry keeps it:
+  `scbU = () => { ((scbPoke = !0), !scbOff || scbDirty || scbG.near() ? u() : fwCheck()); }`
+  so only the job's rAF is gated. That is a semantic merge, so P-108's counts do not carry over. Under the lead's N2
+  ruling, before this block:
+  1. fix-scroll-cb reviews the merged V;
+  2. it re-counts on it (pins before data; its phone view and the Simulator, 2 loads per arm, P-108 rules);
+  3. it runs its class-state parity on phone and resize, combined vs C.
+  int-v8 says `fwCheck` is a cached box with no layout read; that is int-v8's reading, and fix-scroll-cb's review
+  checks it.
+- **Still owed before the read:**
+  - p117/score.mjs, its self-test on P-105's records, and their hashes (int-v8);
+  - fix-nav-morph's VA audit on V e8d8323f674b, with the N1 case.
+- **Servers** start at block time from int-v8's snapshot, not before. Ports go to the runner by message.
