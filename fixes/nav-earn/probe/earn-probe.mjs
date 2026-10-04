@@ -27,7 +27,7 @@ const VPS = {
 };
 const vpNames = (process.argv[2] || 'phone,tall,desktop').split(',');
 const ARMS = (process.argv[3] || 'A,B').split(',');
-const DIRS = { A: join(WT, 'fixes/v8-best/overlay'), A2: join(WT, 'fixes/v8-best/overlay'), B: join(WT, 'fixes/nav-earn/overlay'), B2: join(WT, 'fixes/nav-earn/overlay'), O: join(WT, 'out/nav-earn/empty-overlay') }; // O = the plain baseline
+const DIRS = { A: join(WT, 'fixes/v8-best/overlay'), A2: join(WT, 'fixes/v8-best/overlay'), B: join(WT, 'fixes/nav-earn/overlay'), B2: join(WT, 'fixes/nav-earn/overlay'), O: join(WT, 'out/nav-earn/empty-overlay'), R1: join(WT, 'fixes/nav-earn-r1/overlay') }; // O = the plain baseline; R1 = rev 1 (combine nav-earn-r1 v8-best fixes/nav-earn/delta.diff at 1d9f0ea7)
 const BASE = resolveTree('site-pretty');
 const tag = new Date().toISOString().replace(/[:.]/g, '-');
 const OUT = join(WT, 'out/nav-earn', `probe-${tag}`); mkdirSync(OUT, { recursive: true }); mkdirSync(DIRS.O, { recursive: true });

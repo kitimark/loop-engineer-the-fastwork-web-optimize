@@ -1,66 +1,65 @@
 {
   "schema": "fw-proposal/1",
-  "title": "End of page: the Join waitlist button leaves with the menu, and the phone logo no longer jumps",
-  "area": "end",
+  "title": "Join waitlist button: follows your scroll at the top too; the end of the page stays as in rev 1",
+  "area": "whole",
   "topic": "nav-earn",
-  "thread": "T-148",
-  "problem": "At the end of the page the top bar grows into the dark end panel, and its right side goes wrong for a moment.\nTwo causes, both in the original site too:\n- The Join waitlist button should be gone in the first fifth of the grow (about 50 ms).\n- But its own width and padding animations keep running for about 0.6 s.\n- So a blurred dark smudge stays on the right, and the language switch (EN) sits about 118 px from the right edge instead of 8 px, then slides over.\n- On phones the logo also jumps about 15 px right in one frame when the grow starts, and snaps back when the panel closes.",
-  "idea": "Two small style rules on top of today's best build (v8), nothing else:\n1. While the bar grows or shrinks, the Join waitlist button turns its own animations off, so its width, padding and fade follow the grow directly, as the gap next to it already does.\n2. Phones only: the logo's centre point for its shrink moves smoothly from its left edge (closed) to its middle (open), instead of switching in one frame.\nAt rest nothing changes. Desktop gets rule 1 (it had the same 0.6 s delay); rule 2 is phone-only.",
-  "looksSame": "At rest it is the same picture as today's best build.\n- Same: the closed bar, the open panel, and the page after scrolling back up.\n- Different on purpose: the first few hundred milliseconds of the grow, and the end of the shrink.",
+  "thread": "T-154",
+  "problem": "Rev 2, answering your notes on rev 1:\n- \"SOOOO ULTRA SMOOTH on the end of page\": kept. The end-of-page part is the same two rules as rev 1, unchanged.\n- \"the button will appear when we scroll down. it still lag a bit\": yes. At the top, the button runs on its own clock.\n- It starts only when the hero is 72 % scrolled, then reaches full width about 0.6 s later.\n- Its text then sweeps in until about 1.5 s, even if you stopped scrolling.\n- \"you didn't apply this on the scroll on the top of page\": correct, rev 1 only changed the end of the page.\n- \"open new thread\": the full trace is in the catch-up thread (T-154).",
+  "idea": "The button now follows your finger at the top too, like at the end of the page:\n1. While the hero goes from 58 % to 72 % scrolled, the button grows from nothing to full: width, fade and the left-to-right text sweep all follow the scroll position.\n2. At 72 %, where the bar used to start its own 0.6 s animation, the button is already full, so nothing jumps or keeps moving.\n3. Scrolling back up shrinks it the same way, with the scroll.\nThe end-of-page part is rev 1, unchanged. The shine that passes over the button keeps its own timing.",
+  "looksSame": "At rest it is the same picture as today's best build (v8).\n- Same: the hero at the top, the full bar further down, the end panel.\n- Different on purpose: the button grows during the scroll just before the bar changes, instead of after it.",
   "visualDiff": [
-    "Grow start: the button leaves in about 50 ms (3-4 frames).\n- Its blur and fade go with it, and EN moves to its final place at once.\n- Before: a dark blurred button stayed about 0.3 s, and EN slid right for about 0.6 s.",
-    "Phones: no 15 px logo jump at the grow start; the logo slides to the middle with the panel. When the panel closes, the logo ends where it started, no snap.",
-    "After closing, Join waitlist comes back with the shrink (about 0.6 s) instead of about 1.3 s.",
-    "Outside the top bar, the grow frames match today's build.\n- Frozen frames: 0-1.0 % of pixels differ, the same as today's build against itself (0-0.9 %, the moving avatar row).\n- Fully open: the whole frame matches (only the countdown numbers differ)."
+    "Top of the page: the button appears over the last stretch of the hero scroll (58-72 %), following the finger.\n- Before: nothing until 72 %, then a 0.6 s grow and a sweep until 1.5 s.",
+    "A very fast flick that jumps over the whole stretch in one frame shows the old 0.6 s grow (the text shows at once).",
+    "End of page: unchanged from rev 1 (the part you liked)."
   ],
   "gain": [
     {
-      "what": "Delay before the button is gone, phone",
+      "what": "Top: button full after the bar changes, phone",
+      "before": "582 ms",
+      "after": "0 ms (already full)",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at 430x775: a 1 s scroll from 50 % to 80 % of the hero. Not a smoothness test."
+    },
+    {
+      "what": "Top: button full after the bar changes, desktop",
+      "before": "582 ms",
+      "after": "0 ms",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "The same probe at 1440x900."
+    },
+    {
+      "what": "Top: button gone after scrolling back",
+      "before": "633 ms after the bar changes",
+      "after": "with the scroll",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "Chrome phone. B is gone when the scroll leaves the 58-72 % stretch (467 ms into the 1 s scroll back); A shrinks on its own clock."
+    },
+    {
+      "what": "Top: page layouts in the 0.7 s after the change",
+      "before": "43",
+      "after": "2",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "Chrome phone, layout count from the browser; desktop 42 vs 1. With no scrolling both builds do 1-2."
+    },
+    {
+      "what": "Top: largest button size jump per frame",
+      "before": "9.7 px",
+      "after": "5.6 px",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "Chrome phone during the 1 s scroll; desktop 11.2 vs 7.1 px."
+    },
+    {
+      "what": "End of page: button gone after the grow starts",
       "before": "617 ms",
-      "after": "0 ms",
+      "after": "0 ms (as rev 1)",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome page probe at 430x775 and 430x932 (same result). From the moment the grow is one fifth done to the button's width reaching 0. Not a smoothness test."
-    },
-    {
-      "what": "Delay before the button is gone, desktop",
-      "before": "618 ms",
-      "after": "0 ms",
-      "better": "better",
-      "tag": "OBSERVED",
-      "how": "Chrome page probe at 1440x900."
-    },
-    {
-      "what": "Delay before the button is gone, Safari",
-      "before": "610 ms",
-      "after": "0 ms",
-      "better": "better",
-      "tag": "OBSERVED",
-      "how": "The same probe in Safari on the iOS Simulator at 430x775 (no real iPhone used)."
-    },
-    {
-      "what": "EN from the right edge, one fifth into the grow",
-      "before": "118 px",
-      "after": "8 px",
-      "better": "better",
-      "tag": "OBSERVED",
-      "how": "Chrome phone; desktop 145 -> 8 px; Safari (Simulator) 86 -> 8 px. 8 px is where it ends in both builds."
-    },
-    {
-      "what": "Phone logo move in the first grow frame",
-      "before": "+24 px jump",
-      "after": "+5 px slide",
-      "better": "better",
-      "tag": "OBSERVED",
-      "how": "Chrome 16 -> 39.7 px vs 16 -> 20.6 px; Safari (Simulator) 16 -> 40.7 vs 16 -> 25.5 px."
-    },
-    {
-      "what": "Phone logo move in the last close frame",
-      "before": "15.5 px snap",
-      "after": "0.1 px",
-      "better": "better",
-      "tag": "OBSERVED",
-      "how": "Chrome, 31.5 -> 16 px vs 16.1 -> 16 px."
+      "how": "Rev 1 numbers; rev 2 keeps those two rules byte for byte. Desktop 618 -> 0 ms, Safari Simulator 610 -> 0 ms."
     },
     {
       "what": "Page errors and missing files",
@@ -68,18 +67,24 @@
       "after": "0",
       "better": "same",
       "tag": "OBSERVED",
-      "how": "Counted in every probe load (phone, tall phone, desktop, Simulator)."
+      "how": "Counted in every probe load (phone and desktop)."
     }
   ],
-  "risk": "Low: style only, two rules.\n- The page's script and the grow animation itself are untouched.\n- The button now leaves in about 50 ms, as the site's own numbers say. If that feels too fast, a later design change could slow it.\n- Reduced motion: nothing changes (the grow is instant there).\n- Not checked on the real iPhone; the Safari check ran in the iOS Simulator.",
+  "risk": "Low: one small style block and 7 lines of script on top of rev 1.\n- The script writes one number on two elements while the hero is 58-72 % scrolled, and only when it changes; outside that stretch it writes nothing.\n- The button now starts to show a bit earlier (at 58 % instead of 72 %); that is what makes it follow the finger.\n- Reduced motion: unchanged (the bar never uses the hero state there).\n- Safari check of rev 2 in the iOS Simulator: still running, result by about 21:10Z in this proposal's comments.\n- Not checked on the real iPhone.",
   "compare": {
     "a": {
       "label": "Today's best build (v8)"
     },
     "b": {
-      "label": "v8 + this fix"
+      "label": "v8 + rev 2"
     },
     "view": "side",
     "shots": []
+  },
+  "live": {
+    "patch": "fixes/nav-earn/patch.diff",
+    "a": {
+      "patch": "fixes/v8-best/patch.diff"
+    }
   }
 }

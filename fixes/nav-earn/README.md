@@ -5,12 +5,75 @@
 
 **Status:** built and checked (DOM probe, frozen stills, pixel check, WebKit Simulator); visual change, so a proposal
 (PR-021); **not timed** (memory `defer-timing-focus-call-tree.md`; this is a visual bug, not a cost fix).
-**Base:** v8 (best build, `fixes/v8-best/`, JS `3e3e94cb6e9f` / CSS `f836404b3728`). **This build:** JS `3e3e94cb6e9f`
-(unchanged) / CSS `9581cd83004c`. Baseline snapshot `b1789284481295-4ad4a84a`.
-**Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (2 rules). `delta.diff` = the change on top of v8;
+**Base:** v8 (best build, `fixes/v8-best/`, JS `3e3e94cb6e9f` / CSS `f836404b3728`). **This build (rev 2):** JS
+`f93d34915eb5` / CSS `044f52f797e5` (rev 1 was JS unchanged / CSS `9581cd83004c`). Baseline snapshot `b1789284481295-4ad4a84a`.
+**Files touched:** rev 1: `/_app/immutable/assets/2.gBuqKVzi.css` (2 rules, unchanged in rev 2); rev 2 adds one CSS block
+and a 7-line `--earn-in` writer in `/_app/immutable/nodes/2.DyWL8TcE.js` (section "Rev 2"). `delta.diff` = the change on top of v8;
 `patch.diff` = baseline-relative (v8 + this), what `fix.mjs apply` and the proposal's Try-it serve.
 **Driver(s):** Chrome DOM probe (synthetic wheel into the page's own capture listener, per-rAF samples) and the same in
 the iOS Simulator (Safari). No iPhone run (memory `simulator-for-non-perf-phone-jobs.md`).
+
+## Rev 2 (PR-021 changes-requested, T-154): the top-of-page appear follows the scroll too
+
+The user on rev 1: the end-of-page open/close is "SOOOO ULTRA SMOOTH", but the button's appear when scrolling down
+from the top "still lag a bit. i guess you didn't apply this on the scroll on the top of page". Correct: rev 1 only
+touched the morph (`.is-morphing`) rules. **Rev 2 keeps rev 1's two CSS rules byte-identical** and adds the top part.
+
+**Trace (OBSERVED, v8, `probe/top-probe.mjs`, Chrome headless, DOM samples per rAF; no timing claim).** The bar leaves
+its hero-pill state in one step when the hero track is 72 % scrolled (JS `_` in the nav effect, `z(p, i / r >= 0.72)`;
+`is-hero-pill` = not `p` and not morphing). From that frame the button grows on its own clock, not with the scroll:
+`--nav-expand` 0 → 1 drives `max-width` / `padding-inline` through `.68s` transitions, `opacity` through `.32s` after
+`.12s`, the actions gap through `.68s`, and the text is revealed by the `nav-earn-unmask` mask sweep (`.98s` after a
+`.52s` delay; the sheen runs with the same timing). Scrolling back above 72 % runs the same clocks backwards.
+
+| v8, after crossing 72 % | phone 430x775 | desktop 1440x900 |
+|---|---|---|
+| width full | 587 ms | 604 ms |
+| opacity 1 | 436 ms | 437 ms |
+| text sweep done (animations end) | 1487 ms | 1504 ms |
+| frames whose layout changed | 41 | 41 |
+| glide 0.50 → 0.80 in 1 s: width full after the crossing | 582 ms | 582 ms |
+| scrolling back: width 0 after the crossing | 633 ms | 616 ms |
+
+Layout counts (`Performance.getMetrics`): 43 layouts in the 0.7 s after the crossing vs 2 in a still 1.5 s window, 1
+in 0.7-1.6 s; the hide is the same (42). So the button keeps moving ~0.6 s after the scroll stopped and its text keeps
+sweeping in until ~1.5 s: the "lag" the user sees.
+
+**Change (rev 2, on top of rev 1).** The button follows the scroll inside a band just before the crossing:
+- JS (nav scroll callback `_`, right after the 72 % flip): `--earn-in` = clamp((progress − 0.58) / 0.14), 0 → 1 over
+  hero progress 0.58 → 0.72, rounded to 0.001, written inline on the actions row (`ie`) and the button (`oe`) only
+  when it changes (no writes outside the band). Written on its readers, not inherited from the header: WebKit kept
+  stale `inherit` values on registered non-inheriting properties (finding F-183, OBSERVED).
+- CSS, hero-pill state only, no transitions: width / padding (`--earn-layout`), gap, opacity and the mask sweep
+  position (`calc((1 - var(--earn-in)) * 100%)`) read `--earn-in`. At 0.72 every value is already at its full-bar
+  value, so the class flip changes nothing on screen. Outside the pill state the unmask animation is replaced by its
+  end state (`animation: none`, mask kept at `0 0`: the same pixels, also under the end-of-page blur); the sheen
+  keeps its own timing.
+- A fast flick that jumps over the whole band in one frame lands in the bar state with the original transitions
+  (width and fade catch up in ~0.6 s; the text shows at once).
+- Not a CSS scroll timeline: WebKit restyles every element with a scroll-driven animation each frame (CONFIRMED in
+  fixes/hero-exit-threaded/README.md, WebKit main 13a1f2916933).
+
+**Rev 2 numbers (OBSERVED, Chrome headless, `top-probe.mjs`, out/nav-earn/top-2026-10-04T20-15-42-191Z; A = v8 from
+top-2026-10-04T19-57-32-526Z).** Build JS `f93d34915eb5` / CSS `044f52f797e5`.
+
+| glide 0.50 → 0.80 → 0.50 (1 s each way) | A phone | B phone | A desktop | B desktop |
+|---|---|---|---|---|
+| width at the crossing (frame before → at) | 0 → 0 | 109.2 → 110.4 | 0 → 0.3 | 136.4 → 137.6 |
+| full width after the crossing | 582 ms | 0 ms | 582 ms | 0 ms |
+| button starts to grow at scroll y | 569 (after the crossing, 561) | 450 (band start) | 655 | 523 |
+| largest width step per frame | 9.7 px | 5.6 px | 11.2 px | 7.1 px |
+| scrolling back: width 0 after the back crossing | 633 ms | 467 ms (= when the scroll leaves the band) | 616 ms | 450 ms |
+| layouts in the 0.7 s after an instant step across 72 % | 43 | 2 | 42 | 1 |
+| layouts 0.7-1.6 s after / in the hide step | 1 / 42 | 0 / 3 | 1 / 43 | 1 / 4 |
+| page errors / failed requests | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+
+The instant step starts at progress 0.66 (inside the band, button at 57 %), so B completes it in the step's own frame;
+the sheen still runs to ~1.5 s by design (`animsEndMs` 1501). Still windows (no scroll): 1-2 layouts in both builds.
+
+**Pending when rev 2 was posted** (lead, 2026-10-04: post once the Try-it pages work, slower checks follow): the
+Safari check in the iOS Simulator (`sim-top-probe.mjs A,B`), frozen glide stills (`glide-stills.mjs phone A,B`) and
+the end-of-page identity check rev 1 vs rev 2 (`EP_RATE=0.05 earn-probe.mjs phone R1,B`), all in one shared hold.
 
 ## What the user saw (T-148 #3/#6)
 
