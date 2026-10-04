@@ -42,6 +42,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 09:3xZ **P-099 assigned to fix-morph-gpu, pre-data read PASS with notes N1-N4** (67b8c710):
+  - the program hash was recompiled with gesture.mjs: 6a7569615807. That is not the file sha (1d594e172bc2); the program hash is what the scorer checks;
+  - logger and scorer re-hashed; the owner's g-scorer-check.log shows its 5 checks;
+  - P-098's ports amendment PASS (5791/5792/5793 with `--no-cache`, so every file is sent no-store).
+  - Notes:
+    - N1: stop after the warm-ups if both catches fall short of the end (the phone answers reads during momentum). The lead then decides on a v3. Void runs report catchGap and catchY from the raw files;
+    - N2: P-099 runs only if P-098 leaves rev 2 land-eligible;
+    - N3: P-099 reuses P-098's logged ports;
+    - N4: the last H1 gesture starts by about 750 s, otherwise C4 moves to H2.
+  - PREDICTIONS rows P-098 and P-099 added (pending). Desk: T-091 #7 catch-up; T-030 #29 (v7 = hero B-R2 + PR-017 + strips + rest-script v4, morph-gpu after P-098/P-099; the lead confirmed). **Next free P-id: P-100.**
 - 10-04 09:2xZ **PR-017 landed** (fix-cd-roll-ca's series up to 0eb4a101, my P-093 result 3f391c7d on top). Lead: we land on the ticket and the user's acceptance; the steady V +1 frame over 50 ms goes to fix-cd-roll-ca to trace (Simulator Timeline first, a registered attribution ticket only if needed); the lead tells the user in T-096. The P-097 row now names the main shas (rev 1 b96427f3, rev 2 e3ebb88d, rev 3 c8cbaeb0). **wave-v7** spawned (v6 + strip-tc + rest-script v4 + PR-017; counts and pixels, no phone; my second read before its land request); peer-directory row added with the exact ingredient hashes.
 - 10-04 09:1xZ **I-130 done** (794f60af landed and resolved, console restarted; ts-i130 answered T-092 #3; its row done; it never had a peer-directory row). /build sideways scroll at <= 900 px goes to the backlog. **I-131** (ts-i131, user T-094): serve.mjs sends `immutable` for overlay files, so a reused port can keep an earlier build's file. Interim rule: prefer a port that has not served another build today. It went to fix-nav-morph and fix-cd-roll-ca. In P-093 a reused port is "unverified" (not invalid) until ts-i131's audit shows it served a different build that day; the result read cross-checks arm ports against the audit. P-097 rev 2 (6e4877d7) second read: R1-R7 answered, nits N1-N4 (invalid-pair spread, exclusive miss branches, platform scope of P1/P2, P4/P5 counts); the PREDICTIONS row is added once they are fixed.
 
