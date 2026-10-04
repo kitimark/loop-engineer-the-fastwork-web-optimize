@@ -14,6 +14,10 @@
 //        # --waiting-on: chrome | phone | user | lead | agent:<name> | review[:<name>] | incident:I-0NN | item:<id> |
 //        #   other:"<text>", each with an optional :"<text>" (lead:"land request"). With --state the wait is replaced
 //        #   (cleared if not given); waiting needs one; ready-to-land defaults to lead:"land request".
+//        #   user needs the id the user answers (I-145): user:"decision on PR-019", user:C-045, user:"yes/no in T-031".
+//        #   The moment that step is answered or skipped, the proposal decided or withdrawn, the thread closed or
+//        #   answered, the row leaves WAITING ON YOU by itself ("you decided PR-019 (accepted) at 13:09Z; <owner> has
+//        #   not picked it up (16 min)"); you still set your next state yourself.
 //        # The board adds what it already knows: your place in the Chrome/phone queue, your pending console steps,
 //        # blocking incidents that name you, and every wait command you run right now (wait.mjs, lock.mjs wait, console/
 //        # incident/finding waits: "now: waiting for <what> since 08:31Z (3 min, timeout 10 min)", I-058; waits whose owner has

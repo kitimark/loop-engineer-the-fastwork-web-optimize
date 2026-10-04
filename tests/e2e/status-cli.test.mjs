@@ -63,7 +63,7 @@ test('status.mjs set / priority / show / mine; refusals exit 1 with the reason',
 
 test('seed: dry run then --apply from PROGRESS + a seed file; existing ids skipped', () => {
   const seedFile = join(state, 'seed.json');
-  writeFileSync(seedFile, JSON.stringify({ schema: 'fw-status-seed/1', items: [{ id: 'ts-x', kind: 'tool', title: 'Tool X', owner: 'ts-x', state: 'waiting', waitingOn: 'user:yes or no on the menu' }] }));
+  writeFileSync(seedFile, JSON.stringify({ schema: 'fw-status-seed/1', items: [{ id: 'ts-x', kind: 'tool', title: 'Tool X', owner: 'ts-x', state: 'waiting', waitingOn: 'user:yes or no on the menu, C-009' }] }));
   let r = st('seed', '--by', 'lead', '--file', seedFile);
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^EXISTS style-recalc \(skipped\)$/m);
@@ -83,7 +83,7 @@ test('derived waits on the board: lock queue, the owner\'s console step, a block
   const r = st('list');
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^STATUS BOARD {2}\(live \d\d:\d\dZ; 1 working, 2 waiting, 1 waiting on you/);
-  assert.match(r.stdout, /WAITING ON YOU\n {2}ts-x: you: yes or no on the menu; waiting on you: C-001 Open <link> on the phone/);
+  assert.match(r.stdout, /WAITING ON YOU\n {2}ts-x: you: yes or no on the menu, C-009; waiting on you: C-001 Open <link> on the phone/);
   assert.match(r.stdout, /cdwc[\s\S]*now: blocked by I-001: WDA slow at <link>/);
   assert.ok(r.stdout.indexOf('#1  style-recalc') < r.stdout.indexOf('cdwc'), 'priority first');
   for (const bad of ['192.168', 'http://']) assert.ok(!r.out.includes(bad), `${bad} leaked: ${r.out}`);

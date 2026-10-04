@@ -637,3 +637,119 @@ test('buildStatusView (I-104): each row carries its Progress items; progressLink
   const bare = S.buildStatusView({ items, live: {}, now });
   assert.ok(bare.items.every((x) => Array.isArray(x.progressItems) && x.progressItems.length === 0));
 });
+
+// ---- I-145 (PR-020 N1, user T-122): an event that ends a wait overrides the owner's older self-report ----
+// The board kept "accent-ca: you: decision on PR-019" in WAITING ON YOU for 16 min after the user decided, because
+// the row depended on the owner writing again. Now the decision (or an answered/skipped step, a closed or answered
+// thread) ends the wait at read time; a wait on the user must name the id that can end it.
+test('I-145: --waiting-on user needs a C-, PR- or T- id (with a hint); other kinds unchanged', async () => {
+  assert.throws(() => S.parseWaiting('user'), /--waiting-on user needs the id of what the user answers.*user:"decision on PR-019".*other:"<what>"/);
+  assert.throws(() => S.parseWaiting('user:yes or no on the menu'), /needs the id/);
+  assert.throws(() => S.parseWaiting('user:PR19 soon'), /needs the id/);
+  assert.deepEqual(S.parseWaiting('user:decision on PR-019'), { kind: 'user', text: 'decision on PR-019' });
+  assert.deepEqual(S.parseWaiting('user:C-045'), { kind: 'user', text: 'C-045' });
+  assert.deepEqual(S.parseWaiting('user:the yes/no in T-031'), { kind: 'user', text: 'the yes/no in T-031' });
+  assert.throws(() => S.parseWaiting(`user:open ${LAN} PR-019`), /Hard rule 12/);
+  await assert.rejects(add('u', { state: 'waiting', waitingOn: 'user' }), /needs the id/);
+  assert.throws(() => S.get('u'), /no status item/, 'nothing written');
+  await add('u', { state: 'waiting', waitingOn: 'user:decision on PR-019' });
+  assert.deepEqual(S.get('u').waitingOn, { kind: 'user', text: 'decision on PR-019' });
+  assert.deepEqual(S.parseWaiting('other:the user, some day'), { kind: 'other', text: 'the user, some day' }, 'no id needed outside user');
+  // the seed checks the same
+  const r = await S.applySeed([{ id: 'seeded', kind: 'tool', title: 'T', owner: 'ts-x', state: 'waiting', waitingOn: 'user:yes or no' }], { by: 'lead' });
+  assert.equal(r[0].action, 'error');
+  assert.match(r[0].error, /needs the id/);
+});
+
+test('I-145: a decided proposal, an answered or skipped step, a closed or answered thread end the wait on you at read time', () => {
+  const now = Date.parse('2026-10-04T13:25:00Z');
+  const at = (min) => new Date(now - min * 60000).toISOString();
+  const mk = (id, waitingOn, updMin = 30, extra = {}) => ({ id, title: `Row ${id}`, kind: 'fix', owner: `fix-${id}`, state: 'waiting', stateSince: at(updMin), updatedAt: at(updMin), priority: null, waitingOn, ...extra });
+  const items = [
+    mk('accent-ca', { kind: 'user', text: 'decision on PR-019' }),
+    mk('pr-open', { kind: 'user', text: 'decision on PR-020' }),
+    mk('step', { kind: 'user', text: 'swipe pair C-045' }),
+    mk('skip', { kind: 'user', text: 'C-046' }),
+    mk('two', { kind: 'user', text: 'C-045 and C-047' }),
+    mk('thread-closed', { kind: 'user', text: 'yes/no in T-031' }),
+    mk('thread-answered', { kind: 'user', text: 'yes/no in T-032' }),
+    mk('thread-old', { kind: 'user', text: 'yes/no in T-033' }),
+    mk('picked-up', { kind: 'user', text: 'decision on PR-019' }, 2, { stateSince: at(30) }),
+    mk('legacy', { kind: 'user', text: 'yes or no on the menu' }),
+    mk('withdrawn', { kind: 'other', text: 'PR-021 decision' }),
+    mk('agent-pr', { kind: 'agent', target: 'fix-x', text: 'after PR-019' }),
+    mk('parked', { kind: 'user', text: 'decision on PR-019' }, 30, { state: 'parked' }),
+  ];
+  const live = {
+    refs: {
+      steps: { 'C-045': 'answered', 'C-046': 'skipped', 'C-047': 'pending' },
+      proposals: { 'PR-019': 'accepted', 'PR-020': 'proposed', 'PR-021': 'withdrawn' },
+      threads: {
+        'T-031': { status: 'closed', lastBy: 'lead', lastAt: at(20), closedAt: at(10) },
+        'T-032': { status: 'open', lastBy: 'user', lastAt: at(5) },
+        'T-033': { status: 'open', lastBy: 'user', lastAt: at(40) },
+      },
+      at: { 'C-045': at(8), 'C-046': at(7), 'PR-019': '2026-10-04T13:09:00.000Z', 'PR-021': at(3) },
+    },
+  };
+  const v = S.buildStatusView({ items, live, now });
+  const by = Object.fromEntries(v.items.map((x) => [x.id, x]));
+  const plain = (id) => by[id].waiting.plain;
+  assert.equal(plain('accent-ca'), 'you decided PR-019 (accepted) at 13:09Z; fix-accent-ca has not picked it up (16 min)');
+  assert.equal(by['accent-ca'].waiting.reported, 'you: decision on PR-019');
+  assert.equal(by['accent-ca'].waiting.answered.at, '2026-10-04T13:09:00.000Z');
+  assert.deepEqual(by['accent-ca'].waiting.answered.refs, ['PR-019']);
+  assert.equal(by['accent-ca'].statePlain, 'waiting for: you decided PR-019 (accepted) at 13:09Z; fix-accent-ca has not picked it up (16 min)');
+  assert.equal(plain('step'), 'you answered C-045 at 13:17Z; fix-step has not picked it up (8 min)');
+  assert.equal(plain('skip'), 'you skipped C-046 at 13:18Z; fix-skip has not picked it up (7 min)');
+  assert.equal(plain('thread-closed'), 'T-031 was closed at 13:15Z; fix-thread-closed has not picked it up (10 min)');
+  assert.equal(plain('thread-answered'), 'you answered in T-032 at 13:20Z; fix-thread-answered has not picked it up (5 min)');
+  assert.equal(plain('picked-up'), 'you decided PR-019 (accepted) at 13:09Z', 'the owner wrote the row after the event: no "not picked up"');
+  assert.equal(plain('withdrawn'), 'PR-021 was withdrawn at 13:22Z; fix-withdrawn has not picked it up (3 min)');
+  for (const id of ['accent-ca', 'step', 'skip', 'thread-closed', 'thread-answered', 'picked-up', 'withdrawn']) {
+    assert.equal(by[id].waitingOnYou, false, id);
+    assert.ok(by[id].waiting.answered, id);
+  }
+  // still open: some named id is not answered, the thread answer came before the wait, no id (a legacy row: no
+  // migration)
+  for (const id of ['pr-open', 'two', 'thread-old', 'legacy']) {
+    assert.equal(by[id].waitingOnYou, true, id);
+    assert.equal(by[id].waiting.answered, undefined, id);
+  }
+  assert.equal(by['agent-pr'].waiting.answered, undefined, 'an agent wait is not ended by the PR it mentions');
+  assert.equal(by.parked.waiting.answered, undefined, 'a parked row takes no live data');
+  assert.equal(v.counts.waitingOnYou, 5, 'pr-open, two, thread-old, legacy, and the parked row\'s own --waiting-on user');
+  // the owner's row is still flagged for an update (I-108), beside the event text
+  assert.match(by['accent-ca'].staleWhy.join(';'), /PR-019, which is already decided \(accepted\)/);
+  const t = S.renderText(v);
+  const you = t.split('\nWAITING ON YOU\n')[1].split('\n\n')[0];
+  assert.doesNotMatch(you, /accent-ca|step:|skip|thread-closed|thread-answered|picked-up/);
+  assert.match(you, /pr-open: you: decision on PR-020/);
+  assert.match(t, /\n {6}wait over: you decided PR-019 \(accepted\) at 13:09Z; fix-accent-ca has not picked it up \(16 min\) \(the row says: waiting on you: decision on PR-019\)\n/);
+  assert.match(t, /\n {6}waiting on: you: decision on PR-020\n/);
+  // /progress links: the event text, not "waiting on you decided …"
+  const links = S.progressLinks({ items: [{ ...by['accent-ca'], progress: 'accent-ca', progressItems: [] }] });
+  assert.deepEqual(links.get('accent-ca').waits, ['you decided PR-019 (accepted) at 13:09Z; fix-accent-ca has not picked it up (16 min)']);
+  // no live refs (a source down): nothing derived, the self-report stands
+  assert.equal(S.buildStatusView({ items: [items[0]], live: {}, now }).items[0].waitingOnYou, true);
+});
+
+test('I-145: refsLive gives the time each step, proposal and thread reached its state', async () => {
+  const s1 = await C.post({ by: 'fix-a', kind: 'question', title: 'Yes?', yesno: true });
+  const s2 = await C.post({ by: 'fix-a', kind: 'question', title: 'Skip me', yesno: true });
+  await C.answer(s1.id, { value: 'yes' });
+  await C.skip(s2.id, {});
+  const T = await import('../../tools/lib/console-threads.mjs');
+  const { thread: t } = await T.createThread({ by: 'lead', title: 'Ask', text: 'one question' });
+  await T.setStatus(t.id, { status: 'closed', by: 'lead' });
+  const PR = await import('../../tools/lib/proposal.mjs');
+  const { proposal: p } = await PR.postProposal({ by: 'de-a', raw: { title: 'Later', area: 'end' }, draft: true });
+  const r = await P.refsLive();
+  assert.equal(r.steps[s1.id], 'answered');
+  assert.equal(r.at[s1.id], C.get(s1.id).result.at);
+  assert.equal(r.at[s2.id], C.get(s2.id).skippedAt);
+  assert.equal(r.threads[t.id].status, 'closed');
+  assert.equal(r.threads[t.id].closedAt, T.getThread(t.id).history.at(-1).at);
+  assert.equal(r.proposals[p.id], 'draft');
+  assert.equal(r.at[p.id], p.history.at(-1).at);
+});

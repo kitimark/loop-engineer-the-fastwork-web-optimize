@@ -162,7 +162,7 @@ function filterBar(box, list, cur, count, set) {
 
 function waitChips(v) {
   var box = el('div', { class: 'meta' });
-  if (v.waiting) box.appendChild(el('span', { class: 'chip ' + (v.waiting.kind === 'user' ? 'you' : 'self'), title: 'reported by the owner', text: v.waiting.plain }));
+  if (v.waiting) box.appendChild(el('span', { class: 'chip ' + (v.waiting.kind === 'user' && !v.waiting.answered ? 'you' : 'self'), title: v.waiting.answered ? 'over (from the console): the row said "' + v.waiting.reported + '"' : 'reported by the owner', text: v.waiting.plain }));
   v.derived.forEach(function (d) {
     var cls = d.kind === 'user' ? 'you' : d.kind === 'incident' ? 'block' : d.kind === 'using' ? 'live' : d.kind === 'wait' ? 'wait' : '';
     if (d.kind === 'user' && STEP.test(d.ref || '')) box.appendChild(el('a', { class: 'chip you', href: '/#' + d.ref, text: d.plain }));
@@ -219,7 +219,7 @@ function render(v) {
     var ul = el('ul');
     mine.forEach(function (x) {
       var what = [];
-      if (x.waiting && x.waiting.kind === 'user') what.push(x.waiting.plain);
+      if (x.waiting && x.waiting.kind === 'user' && !x.waiting.answered) what.push(x.waiting.plain);
       x.derived.forEach(function (d) { if (d.kind === 'user') what.push(d.plain); });
       ul.appendChild(el('li', { 'data-anchor': SLUG.test(x.id) ? 'status:' + x.id : null, 'data-anchor-label': x.title }, el('b', { text: x.title + ': ' }), what.join('; '))); // I-096
     });

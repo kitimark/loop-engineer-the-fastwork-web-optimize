@@ -145,6 +145,11 @@ export function parseWaiting(s) {
   const w = { kind };
   if (target) w.target = target;
   if (text) w.text = plainText(text, 'waiting-on', LIMITS.wait);
+  // I-145 (PR-020 N1): a wait on the user names what the user answers (a step, proposal or thread), so the event that
+  // answers it (decided, answered, skipped, closed) can end it on the board without the owner writing again
+  if (kind === 'user' && !(w.text || '').match(WAIT_REF)) {
+    throw new Error(`--waiting-on user needs the id of what the user answers: a console step, proposal or thread, e.g. user:"decision on PR-019", user:C-045 or user:"yes/no in T-031" (the board then shows your row as answered the moment the user answers). Not a console item: other:"<what>"`);
+  }
   return w;
 }
 
@@ -451,6 +456,48 @@ export function overFlags(it, live = {}) {
   return out;
 }
 
+/**
+ * I-145 (PR-020 N1, user T-122): the events that ended a row's self-reported wait on the user (kind user or other),
+ * from live.refs (progress.mjs refsLive): every C-/PR-/T- id the wait names is answered, skipped, decided, withdrawn,
+ * closed, or (a thread) the user wrote there after the wait began. Returns null while any of them is still open (or the
+ * wait names none), else {refs, at (the latest event), plain: "you answered PR-019 at 13:09Z; fix-accent-ca has not
+ * picked it up (16 min)"}. "has not picked it up": the row was not updated since that event. Read-time only.
+ */
+const ANSWERABLE = new Set(['user', 'other']);
+const refAt = (refs, id) => (typeof refs.at?.[id] === 'string' ? refs.at[id] : null);
+function refEnded(id, refs, since) {
+  if (id.startsWith('C-')) {
+    const st = refs.steps?.[id];
+    if (!st || st === 'pending' || st === 'active') return null;
+    const what = st === 'answered' ? `you answered ${id}` : st === 'skipped' ? `you skipped ${id}` : `${id} was ${st}`;
+    return { id, what, at: refAt(refs, id) };
+  }
+  if (id.startsWith('PR-')) {
+    const st = refs.proposals?.[id];
+    if (!st || st === 'proposed' || st === 'draft') return null;
+    return { id, what: st === 'withdrawn' ? `${id} was withdrawn` : `you decided ${id} (${st})`, at: refAt(refs, id) };
+  }
+  const t = refs.threads?.[id];
+  if (t?.status === 'closed') return { id, what: `${id} was closed`, at: t.closedAt || null };
+  if (t && t.lastBy === 'user' && since && t.lastAt > since) return { id, what: `you answered in ${id}`, at: t.lastAt };
+  return null;
+}
+export function waitAnswered(it, live = {}, now = Date.now()) {
+  const w = it.waitingOn;
+  const refs = live.refs;
+  if (!w || !refs || !ANSWERABLE.has(w.kind)) return null;
+  const ids = [...new Set(`${w.target || ''} ${w.text || ''}`.match(WAIT_REF) || [])];
+  if (!ids.length) return null;
+  const since = waitSince(it);
+  const ends = ids.map((id) => refEnded(id, refs, since));
+  if (ends.some((e) => !e)) return null;
+  const at = ends.map((e) => e.at).filter(Boolean).sort().at(-1) || null;
+  const updated = it.updatedAt || it.createdAt || null;
+  const owner = sanitize(it.owner || 'the owner', 80);
+  const tail = !at || !updated || updated < at ? `; ${owner} has not picked it up${at ? ` (${forText(minutes(at, now))})` : ''}` : '';
+  return { refs: ids, at, plain: `${ends.map((e) => `${e.what}${e.at ? ` at ${hhmm(e.at)}` : ''}`).join(', ')}${tail}` };
+}
+
 // ---- the view ----------------------------------------------------------------------------------------
 
 const minutes = (from, now) => (from ? Math.max(0, Math.round((now - Date.parse(from)) / 60000)) : null);
@@ -501,6 +548,10 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   const canStale = ['working', 'waiting', 'queued'].includes(st.group);
   const s = (x, n) => (x == null ? null : sanitize(x, n));
   const waiting = it.waitingOn ? { kind: it.waitingOn.kind, target: s(it.waitingOn.target, 80), text: s(it.waitingOn.text, LIMITS.wait), plain: waitingPlain(it.waitingOn) } : null;
+  // I-145 (PR-020 N1): the event that ended the owner's wait (the user answered, decided, skipped; the thread closed)
+  // overrides the older self-report at read time: the row leaves WAITING ON YOU and says what happened
+  const ans = waiting && canStale ? waitAnswered(it, live, now) : null;
+  if (ans) Object.assign(waiting, { reported: waiting.plain, answered: ans, plain: ans.plain });
   return {
     id: it.id, title: s(it.title, LIMITS.title), kind: it.kind, kindLabel: KINDS[it.kind] || it.kind,
     owner: s(it.owner, 80), aliases: (it.aliases || []).map((a) => s(a, 80)), progress: it.progress || null, refs: (it.refs || []).map((r) => s(r, 20)),
@@ -510,7 +561,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
     stateSince: it.stateSince || null, stateForMin: minutes(st.group === 'waiting' ? waitSince(it) : it.stateSince, now),
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
-    waitingOnYou: waiting?.kind === 'user' || derived.some((d) => d.kind === 'user'),
+    waitingOnYou: (waiting?.kind === 'user' && !waiting.answered) || derived.some((d) => d.kind === 'user'),
     note: s(it.note, LIMITS.note), next: s(it.next, LIMITS.next),
     updatedAt: it.updatedAt || it.createdAt || null, updatedBy: s(it.updatedBy || it.createdBy, 80), ageMin,
     // I-108 (3): "may be out of date", with the reasons: no update for staleAfterMin (unless a live wait shows it is
@@ -586,7 +637,7 @@ export function progressLinks(view) {
     const v = best.v;
     const link = {
       id: v.id, state: v.state, plain: v.statePlain, stale: v.stale, priority: v.priority ?? null, // T-112: /progress sorts by it
-      waits: [...(v.waiting ? [`waiting on ${v.waiting.plain}`] : []), ...v.derived.filter((d) => d.kind !== 'listen').map((d) => d.plain)], // I-108: a listener is no wait
+      waits: [...(v.waiting ? [v.waiting.answered ? v.waiting.plain : `waiting on ${v.waiting.plain}`] : []), ...v.derived.filter((d) => d.kind !== 'listen').map((d) => d.plain)], // I-108: a listener is no wait
     };
     if (rest.length) link.also = rest.map((r) => ({ id: r.v.id, title: r.v.title }));
     m.set(id, link);
@@ -615,7 +666,8 @@ export function itemText(v) {
   const pr = v.priority ? `#${v.priority}` : '–';
   L.push(`${pr.padEnd(4)}${v.id}  [${v.kindLabel}] ${v.title}`);
   L.push(`      ${v.state}${v.stateForMin !== null && v.group !== 'finished' ? ` for ${forText(v.stateForMin)}` : ''}: ${v.statePlain}; owner ${v.owner}; updated ${agoText(v.ageMin)}${v.updatedBy && v.updatedBy !== v.owner ? ` by ${v.updatedBy}` : ''}${v.stale ? `  (MAY BE OUT OF DATE: ${v.staleWhy.join('; ')})` : ''}`);
-  if (v.waiting) L.push(`      waiting on: ${v.waiting.plain}`);
+  if (v.waiting?.answered) L.push(`      wait over: ${v.waiting.plain} (the row says: waiting on ${v.waiting.reported})`); // I-145
+  else if (v.waiting) L.push(`      waiting on: ${v.waiting.plain}`);
   for (const d of v.derived) L.push(`      now: ${d.plain}`);
   for (const f of v.flags) L.push(`      ! ${f}`);
   if (v.note) L.push(`      note: ${v.note}`);
@@ -632,7 +684,7 @@ export function renderText(view, { all = false } = {}) {
   if (you.length) {
     L.push('', 'WAITING ON YOU');
     for (const v of you) {
-      const what = [...(v.waiting?.kind === 'user' ? [v.waiting.plain] : []), ...v.derived.filter((d) => d.kind === 'user').map((d) => d.plain)];
+      const what = [...(v.waiting?.kind === 'user' && !v.waiting.answered ? [v.waiting.plain] : []), ...v.derived.filter((d) => d.kind === 'user').map((d) => d.plain)];
       L.push(`  ${v.id}: ${what.join('; ')}`);
     }
   }

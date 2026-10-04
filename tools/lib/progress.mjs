@@ -526,15 +526,27 @@ export async function gatherLive() {
  * step, proposal and thread (ids and states only, no text).
  */
 export async function refsLive() {
-  const steps = {}, proposals = {}, threads = {};
-  for (const s of (await import('./console.mjs')).list({ all: true })) steps[s.id] = s.status;
-  for (const p of (await import('./proposal.mjs')).listProposals({ all: true })) proposals[p.id] = p.state;
+  // I-145: at {C-id|PR-id: ISO}: when the step or proposal reached its current state (the board's "you answered PR-019
+  // at 13:09Z"); a closed thread's closedAt
+  const steps = {}, proposals = {}, threads = {}, at = {};
+  const lastAt = (x) => (Array.isArray(x?.history) ? x.history.at(-1)?.at : undefined);
+  for (const s of (await import('./console.mjs')).list({ all: true })) {
+    steps[s.id] = s.status;
+    const t = s.result?.at || s.skippedAt || lastAt(s);
+    if (typeof t === 'string') at[s.id] = t;
+  }
+  for (const p of (await import('./proposal.mjs')).listProposals({ all: true })) {
+    proposals[p.id] = p.state;
+    const t = (p.state !== 'withdrawn' && p.decision?.at) || lastAt(p);
+    if (typeof t === 'string') at[p.id] = t;
+  }
   const T = await import('./console-threads.mjs');
   for (const t of T.listThreads()) {
     const m = t.messages?.[t.messages.length - 1];
-    threads[t.id] = { status: t.status, state: T.threadState(t), lastBy: m?.by ?? null, lastAt: m?.at ?? null };
+    const closedAt = t.status === 'closed' ? (t.history || []).filter((h) => h.action === 'close' || h.action === 'merge').at(-1)?.at : undefined;
+    threads[t.id] = { status: t.status, state: T.threadState(t), lastBy: m?.by ?? null, lastAt: m?.at ?? null, ...(closedAt && { closedAt }) };
   }
-  return { steps, proposals, threads };
+  return { steps, proposals, threads, at };
 }
 
 const MAIN_SHAS = 3000;
