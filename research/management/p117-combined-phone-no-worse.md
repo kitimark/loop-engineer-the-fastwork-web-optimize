@@ -170,3 +170,27 @@ Committed at 10e19597. Hashes are sha256/12.
   - V adds no window.* debug hook (C and V both have only __fwMD and __fwMorphDrive), and has no VA audit hook.
   - `__nsForce = !0` is nav-hit-cache's own internal let, unchanged from P-107's V.
 - **fwCheck kept (the lead's ruling, 2026-10-05).** fix-scroll-cb's N2 re-count measures V with fwCheck in.
+- **Ops second read: PASS** (mgmt-ops-10, 2026-10-05, before data).
+  - **Self-test re-run by ops** in int-v8's worktree on the hashes above: exit 0, 25 of 25 OK (19 synthetic checks and
+    6 on P-105's records, with per-file input hashes printed). Both of int-v8's commits add files only under
+    fixes/v8-best/phone/{nsc,p117}/.
+
+    | leg | runs C + V | d at > 50 | verdict |
+    |---|---|---|---|
+    | S | 4 + 4 | −1 | no-worse |
+    | GM | 3 + 3 | 0, no new cluster | no-worse |
+
+  - **Verdict order** WORSE > insufficient > no-worse: the lead's ruling, accepted. The order matters only when one
+    leg is WORSE and the other insufficient. Both mean no land, so only the reported label can change.
+  - **N2 pin change checked before data** (fix-scroll-cb 3f2fe599, at the lead's request). Ops checked both hashes on
+    disk:
+    - scb-probe b88e92e68e46: ba2f8fbb5752 plus a reported-only `forcedByLine` field.
+    - run-n2.sh d2b816cd392a, which writes a PIN line first in n2.log. That line reads 2026-10-04T20:34:23Z, 7 s
+      after the commit, and the n2 directory was still empty.
+    - build.mjs c486a52e5710, simcount and score-p108 are unchanged.
+- **`fwCheck` correction.** It reads window.scrollY and window.innerHeight, which flush style and layout when dirty.
+  fix-scroll-cb calls this CONFIRMED in both engines' sources. That contradicts int-v8's "cached box, no layout read"
+  in the build section above. v8 (C) makes the same call, so keeping `fwCheck` cannot make V worse than C by itself.
+  - The carried diff inside V (scroll-cb-on-v8.diff 3abcd7008e61) still has the stale comment "(fwCheck: a cached
+    box, no layout read)". It is left byte-identical on purpose, because rewording it would change V's pinned hash. A
+    later V can fix it.
