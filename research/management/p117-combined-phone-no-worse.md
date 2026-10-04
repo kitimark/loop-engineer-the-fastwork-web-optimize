@@ -268,3 +268,47 @@ What this read is not:
 - Ops checked the summary fields, not the frame files.
 - "WebKit skips the scroll event in some moving frames" stays OBSERVED (Simulator, cause unknown, no reference yet).
 - The .pain flicker verdict waits on the queued 12-load flicker-sim. The P-117 hold stays (the lead's ruling, c7bfe59a).
+
+## Ops read: flicker verdict and v9 prep parity (fix-nav-morph 0d4b83ec, 2026-10-05): AGREE, with notes A and B
+
+fix-nav-morph's verdict: the one-step `.pain` and nav flickers seen in fix-scroll-cb's task-driver check (26777ce0) come
+from driver jitter, not from nav-hit-cache. It is OBSERVED in our setup; the cause of the backward scroll step is
+unknown.
+
+**What ops re-checked from the records** (`fixes/nav-hit-cache/p117/flicker-1.json` f655d0c360e7, `flicker-2.json`
+76ed14bc7948):
+- **The README table matches the records.** There are 7 loads, all serving the pinned hashes (C 3e3e94cb6e9f, N
+  fd3688901f50, CSS f836404b3728). Each load ran 526 steps down and then back up.
+- **Every flicker sits on a backward scroll step.**
+
+  | load | flicker | scrollY at the three flips |
+  |---|---|---|
+  | C1 | nav | 2150, 2140, 2170 |
+  | N4 | `.pain` | 890, 880, 900 |
+  | C4 | nav, on the way up | 2910, 2920, 2910 |
+
+- **No geometry moves.** `.pain`'s document offset (1407.72) and scrollHeight (6035) are the same at every flip of
+  every load.
+- **The odds hold up.** Pooled with fix-scroll-cb's loads, the `.pain` flicker shows in 4 of 9 N loads and 0 of 5 C
+  loads. Fisher's exact test gives one-sided 0.126 and two-sided 0.13, as reported.
+
+**Note A: the test has little power.**
+- With 14 loads, p = 0.13 shows only that the split is not significant. It does not show that nav-hit-cache has no
+  effect.
+- The verdict rests on the mechanism: the patch never writes `.pain`, and the backward step also occurs in C.
+- The records log scrollY only at flips, so the rate of backward steps per arm was never counted.
+- **The decisive check, if wanted:** log scrollY at every step and compare backward-step counts, C vs N. If N has
+  more backward steps, the verdict needs another look.
+
+**Note B: the parity read was run on nhcms, which lacks scroll-cb.**
+- The read itself passed: 5 cases, task mode 0 lag and 0 mismatches.
+- But nhcms (9138732704f2) is v8 + rev 7c + nav + glue, with no scroll-cb and no double-drive.
+- nav-hit-cache's own README (Risks) says the audit must be re-run on scroll-cb's build before both land together,
+  because nav reads the classes that scroll-cb's callbacks flip.
+- v9 step 3 onward contains scroll-cb. So a parity read on step 4 + nav + glue (or step 3 + nav + glue, c211d557e357)
+  is still owed before nav-hit-cache enters v9, unless the lead rules the nhcms read sufficient.
+- The lead's call.
+
+**P-117 is closed as superseded and never ran** (lead ruling, 2026-10-05). nav-hit-cache goes to the v9-final
+candidate with a phone flicker gate, not into P-120. P-118 answered the double-drive part, and the v9 step 3 count check
+answered the scroll-cb part. Notes A and B above carry over to the v9-final candidate's gate.

@@ -72,6 +72,14 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-117 closed as superseded** (lead ruling: nav-hit-cache to the v9-final candidate with a phone flicker gate). PREDICTIONS row
+  closed (no data). blur-cubic-v8 (landed 30d12a71, stays out): no PREDICTIONS row exists (P-038 is the 10-01 PoC), nothing to close.
+- 10-05 **P-117 flicker verdict read (fix-nav-morph 0d4b83ec): AGREE with notes A, B** (card p117 section "Ops read: flicker verdict").
+  - Records match the README (7 loads, pinned hashes, .pain offset 1407.72 and scrollHeight 6035 fixed); each of the 3 flickers is on a
+    one-step backward scrollY; Fisher 4/9 vs 0/5 p 0.13 confirmed.
+  - A: low power, and backward steps per arm were never counted (decisive check named). B: the v9 prep parity ran on nhcms (no
+    scroll-cb); nav-hit-cache's own Risks section requires the audit on scroll-cb's build, so a parity read on step 4 + nav + glue is owed
+    unless the lead rules otherwise.
 - 10-05 **v9 phone ticket pre-data read (int-v8 5bd7eb4d): PASS WITH GAPS G1-G7; P-120 assigned** (lead ruling: register on step 4).
   - Checked: the 4 scripts on disk equal the 5bd7eb4d blobs (serve.sh fc643888a9bc, hold.sh ff6e9250d637, score.mjs 963f476c877a,
     selftest f3a2247ac577); SELFTEST OK 15 re-run by ops; P-111 scorer 26d944bf93e2, thermal-gate ecb403b3ad25, verdict 8edb2fc77795
