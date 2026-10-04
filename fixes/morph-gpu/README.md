@@ -838,6 +838,56 @@ as rev 1 in P-092. Under the registered decision rev 2 stays out, and there is n
 - **Decision (registered):** O1.f1 WORSE, so rev 2 does not fix the open start. To the lead with the per-run O1 frames
   (above). Rev 2 stays out; no third block on this question (§5.3). The closes remain faster, as with rev 1.
 
+## What repaints at the open start (Simulator attribution, 2026-10-04; counts only, no timing)
+
+All of this is OBSERVED in our setup: WebKit's reason for the repaint is not checked against a reference. Simulator
+ms are never judged (F-084).
+
+**Correction to earlier readings.** In the M-driver data (`rev2/tween-start-sim.mjs`), the frame that first shows
+m > 0 is the window before the first logged m > 0. The logger's rAF runs ahead of the spring's rAF in the same frame,
+so it still logs 0. Read that way, the first open frame repaints about 30 rects in every build and on every open,
+the warm 2nd and 3rd opens included. The earlier "3-5 paints in A" counted the frame after it.
+
+| first open frame | O1 paints / kpx | O2 | O3 | first frame of the close | end of the close (back to m = 0) |
+|---|---|---|---|---|---|
+| best-build | 32 / 2155 | 29 / 1490 | 29 / 1531 | 13-14 / ~1300 | 22 / 1076 |
+| rev 1 | 34 / 2277 | 31 / 1651 | 31 / 1649 | 9-11 / ~900 | 22 / 1076 |
+| rev 2 A | 34 / 2281 | 31 / 1648 | 31 / 1645 | 9-10 / ~785 | 21-22 / 1075 |
+
+That frame also holds the run's largest Composite record. Frames later in the tween repaint 1 rect in rev 2.
+
+**Ablation** (`rev2/open-cause-sim.mjs`, best-build and rev 2 A, two runs):
+- Method: each write that the open's first frame makes was applied alone at m = 0, from a plain task, held 450 ms,
+  then reverted; twice each, in both builds.
+- Measured: paints in the frame that carries the change, and per-layer paintCount (LayerTree) before and after.
+
+| write, applied alone | frame with the change | per-layer repaints in 450 ms |
+|---|---|---|
+| `--morph-fade` 1 → 0.99 on `#platform` (S(); its `filter: blur((1-f)*12px)` and `opacity: f`) | **19 paints / 1049 kpx**, a 65-123 ms frame, both ways, every time | 15-16 platform layers, 1-2 each; layer count unchanged |
+| `--morph` 0 → 0.001 (header and the __mkW targets) | 2 / 28 | header 27, `.is-earn` 19 (gets its own layer, 50 → 51), actions 8: the earn button's 0.68 s max-width/padding transition (fix-nav-morph's T-107) |
+| header `is-morphing` class flip | 0-1 / ≤ 21 | top bar 1 |
+| root `overscroll-behavior-y` | 0 | none |
+| rev 2's `data-fw-rv` alone (no clip) | 12 / 900 | panel column tracks repaint 31-53 times (this state never occurs alone; not a cause) |
+
+**Cause (OBSERVED, cause in WebKit unknown).** About 2/3 of the open-start repaint (19 of ~30 rects, ~1.05 of
+~1.6 Mpx) is `#platform` switching from no blur and full opacity to `blur(> 0)` / `opacity < 1`. The page section
+under the nav is repainted in full in that frame. The reverse switch, `--morph-fade` back to 1 at the end of a close,
+repaints it once more: that is the 22-rect frame. The steps in between are not repainted. Most of the remaining
+~10 rects come from the earn button's transition starting (header layer).
+
+- Neither revision touches `#platform`'s fade (`QM(m) = 1 - m / 0.55`), which is why rev 1 and rev 2 did not change
+  the open start (P-098).
+- This cost lands only where m leaves or returns to 0, i.e. on a push past the end (wheel or touchmove with O() true,
+  JS 13303-13324). A fling that ends at the bottom with the finger up keeps m = 0.
+
+**Next (not started; stop before rev 3, lead).** Candidate directions for a later proposal, all to be checked
+pixel-identical:
+- keep `#platform` in its filtered state while it sits at the end;
+- or move its fade and blur onto a layer that is already composited before m leaves 0.
+
+Before any of these, the WebKit side (why a 0 → non-zero blur or opacity < 1 repaints the subtree, while later
+changes don't) goes through the claims process.
+
 ## G check before landing: a fling into the end, C against A (registration; written before any phone data)
 
 **Skipped (2026-10-04):** P-098 found O1.f1 WORSE, so under ops N2 rev 2 is not land-eligible and P-099 did not run.
