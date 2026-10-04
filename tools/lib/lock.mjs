@@ -87,10 +87,13 @@
 // (shelf B2). Invariant: the group's expiresAt >= every reader's hard deadline (a process reader: acquiredAt + maxSec
 // + killGraceSec, `lock.mjs run` kills it at maxSec; a lease reader: acquiredAt + maxSec), so old code clears the group
 // only when no reader can still run. A reader joins while the weights fit the switch file's cap (default
-// SHARED_LANE.defaultCap 3, at most SHARED_LANE.cap 4), host CPU busy <= sharedJoinBusy() over the reader's own
+// SHARED_LANE.defaultCap 3, at most SHARED_LANE.cap 6, I-136), host CPU busy <= sharedJoinBusy() over the reader's own
 // polls (default 75 %; the switch file's joinBusy; I-051), or before its first busy sample load1 <= sharedJoinLoad()
-// (default 2x the cpu count; the switch file's joinLoad); neither for the opener, and no exclusive waiter is queued (writer preference), except the
-// readers queued before the group opened, for batchJoinSec. The group opens at a hand-over like a short job (the short
+// (default 2x the cpu count; the switch file's joinLoad); neither for the opener, and no exclusive waiter is queued
+// ahead of it (writer preference; I-136: a reader queued ahead of every exclusive waiter joins, it runs before them
+// anyway), except the readers queued before the group opened, for batchJoinSec. A --no-timing hold of the iphone lease
+// owner (a phone block's quiet-Mac hold) queues ahead of the readers that queued after the lease began, marked movedBy
+// "phone-block priority" like a lead move (I-136, phoneBlockPriority). The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
 // first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
 // waiter (I-049: writer preference only closes joins; it does not reorder the queue), except one the lead moved ahead of
@@ -149,9 +152,10 @@ const SHORT_QUEUE_TTL_SEC = 60;
 export const SHORT_DRAIN_SEC = 900;
 /** Resources whose normal waiters pass the host admission gate (I-016). */
 export const GATED = Object.freeze({ 'chrome-measure': true });
-/** The shared lane's bounds and the per-job weights (ts-lock-share; the lead approved cap 4 and these weights). */
+/** The shared lane's bounds and the per-job weights (ts-lock-share; the lead approved cap 4 and these weights; I-136: cap 6). */
 export const SHARED_LANE = Object.freeze({
-  cap: 4, // weight units of all readers at once: the most the lead's switch may allow (--cap)
+  cap: 6, // weight units of all readers at once: the most the lead's switch may allow (--cap; 4 until I-136, user T-105)
+  maxWeight: 4, // one job's --weight: 1..this (I-136 kept it at 4 when the cap went to 6)
   defaultCap: 3, // the cap when the switch names none (the lead, 2026-10-02: 3 Chrome agents in parallel)
   joinLoadPerCpu: 2, // a joining reader needs load1 <= this x the cpu count, unless the switch names --join-load; only
   // before its first CPU busy sample (I-051)
@@ -714,7 +718,7 @@ export async function tryAcquire(r, opts) {
     if (job !== undefined && !Object.hasOwn(SHARED_LANE.weights, job)) throw new Error(`unknown shared job "${job}" (${Object.keys(SHARED_LANE.weights).join(', ')})`);
     if (job !== undefined && !(weight >= SHARED_LANE.weights[job])) throw new Error(`a shared ${job} job's --weight is at least ${SHARED_LANE.weights[job]} (got ${weight})`);
     if (!(maxSec > 0 && maxSec <= jobMax)) throw new Error(`a shared job${jobMax !== SHARED_LANE.maxSec ? ` (${job})` : ''} needs --max-seconds between 1 and ${jobMax} (got ${maxSec})`);
-    if (!(Number.isInteger(weight) && weight >= 1 && weight <= SHARED_LANE.cap)) throw new Error(`a shared job's --weight must be an integer 1..${SHARED_LANE.cap} (got ${weight})`);
+    if (!(Number.isInteger(weight) && weight >= 1 && weight <= SHARED_LANE.maxWeight)) throw new Error(`a shared job's --weight must be an integer 1..${SHARED_LANE.maxWeight} (got ${weight})`);
   }
   const sw = shared ? sharedSwitch(r) : null;
   const lane = shared && sw.enabled; // a reader; with the switch off a shared acquire is an exclusive short job
@@ -851,9 +855,38 @@ export async function tryAcquire(r, opts) {
       ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}) };
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
+    if (GATED[r] && noTiming && !short && !shared) q = phoneBlockPriority(q, entry, now); // I-136
     writeJson(queueFile(r), q);
     return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner, mode: short ? 'short' : 'exclusive' };
   });
+}
+
+/** I-136: the movedBy mark of a phone block's quiet-Mac hold (see phoneBlockPriority). */
+export const PHONE_BLOCK_BY = 'phone-block priority';
+/**
+ * Inside the guard, for the queue entry `entry` (in `q`) of a --no-timing hold (I-136): while its owner holds the live
+ * iphone lease, the hold is a phone block's quiet-Mac hold and the phone waits for it, so it moves ahead of the shared
+ * readers that queued after the lease began (only past a contiguous run of them: never past an exclusive waiter or a
+ * reader queued before the lease) and carries movedBy PHONE_BLOCK_BY, which nextIndex and the join rule read like a
+ * lead move (I-019/I-020/I-097; lock code from before I-136 reads that field the same way). Bounded: a queue place
+ * only (it never preempts a holder), one entry per owner (entries are keyed by owner), never over the lead's own move;
+ * once the lease is gone the mark goes and the place stays. Returns the (reordered) queue.
+ */
+function phoneBlockPriority(q, entry, now) {
+  if (entry.movedBy && entry.movedBy !== PHONE_BLOCK_BY) return q; // the lead's move wins
+  const ph = readJson(holderFile('iphone'), null);
+  const leaseSince = ph && ph.owner === entry.owner && !staleReason(ph, now) ? Date.parse(ph.acquiredAt) : NaN;
+  if (!Number.isFinite(leaseSince)) {
+    if (entry.movedBy === PHONE_BLOCK_BY) { delete entry.movedBy; delete entry.movedAt; }
+    return q;
+  }
+  if (entry.movedBy !== PHONE_BLOCK_BY) Object.assign(entry, { movedBy: PHONE_BLOCK_BY, movedAt: new Date(now).toISOString() });
+  const i = q.indexOf(entry);
+  let at = i;
+  while (at > 0 && (q[at - 1].shared || q[at - 1].functional) && Date.parse(q[at - 1].since) >= leaseSince) at--;
+  if (at === i) return q;
+  const rest = q.filter((w) => w !== entry);
+  return [...rest.slice(0, at), entry, ...rest.slice(at)];
 }
 
 export const stepGraceLogFile = () => join(lockDir(), 'step-grace.log');
@@ -917,7 +950,11 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
   if (again) return { ok: true, holder: h, reader: again, reentrant: true, mode: 'reentrant-shared' };
   if (h && !knownGroup(h)) return wait(isGroup(h) ? `held by a shared group in format "${h.format}", which this lock code does not know: it waits as for an exclusive holder` : `held by "${h.owner}" (exclusive)`);
   if (h) {
-    const writer = q.find((w) => !w.shared);
+    // I-136: only an exclusive waiter queued AHEAD of this reader closes its join (writer preference). A reader ahead of
+    // every exclusive waiter runs before them anyway (I-049: none passes a reader queued before it), so it joins while it
+    // fits instead of waiting for the group to drain and then opening the next one; the writer still goes first after
+    // the readers ahead of it, and no reader queued behind it extends the group. A new reader (no entry yet) queues last.
+    const writer = q.slice(0, mine >= 0 ? mine : q.length).find((w) => !w.shared);
     const inBatch = mine >= 0 && Date.parse(q[mine].since) <= Date.parse(h.openedAt) && now - Date.parse(h.openedAt) <= SHARED_LANE.batchJoinSec * 1000;
     // I-097: an exclusive waiter the lead moved ahead of this reader closes joins for the opening batch too: the group
     // only drains, and the moved hold is served at its end
