@@ -58,6 +58,14 @@ time and no new Chrome run (memory/defer-timing-focus-call-tree.md). The counts 
 - **One new question for the heat goal.** Every always-running graphics-side animation (marquees, vinyl spin,
   scroll cue) also asks for 80-120 Hz. That may keep the iPhone's screen at a high rate while they are visible,
   and it may be the unexplained 80 Hz stretches in finger runs (F-071). UNRESOLVED. One phone frame-rate record (§4.4) would settle this, the "why" above and whether the morph item is worth it.
+- **Follow-up T-102: how Svelte, React and Vue do it, and the leanest exact roll** is in
+  [frameworks.md](frameworks.md).
+  - Frameworks hand the browser either 2 keyframes and a curve, or samples, or script every frame. None of them
+    reproduces a stepped 60 Hz spring.
+  - fix-cd-roll-ca's K (one curve piece per piece of the original) is the minimum exact form: 52-66 keyframes per
+    cell per roll instead of 144-343.
+  - `linear()` runs on the main thread in shipping Safari.
+  - WebKit main's new threaded path would tick these animations at 60 Hz.
 
 ## 1. Mechanism: what PR-017 changed
 
