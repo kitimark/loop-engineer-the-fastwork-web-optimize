@@ -2124,7 +2124,7 @@
           ]
         }
       },
-      "costLineTc": "extra backed cell at rest: not seen on tc (V9 14 / 0.329 MB = C8, at rest and rest+2s, 1 run); on rw 2 of 4 runs (OBSERVED)",
+      "costLineTc": "SUPERSEDED (review round 5 nit): session A only (1 run): extra backed cell at rest not seen there (V9 14 / 0.329 MB = C8, at rest and rest+2s); on rw 2 of 4 runs. Later tc runs did see it: +1 cell in 3 of 6 censuses (session C, counts reps 0 and 1; README cost lines) and +1-2 cells in the full-page Sim run (round4.resumedOnTc.simFull). OBSERVED",
       "sessionB1_C8_V9": {
         "file": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-54-38-590Z.json",
         "log": "out/cd-roll-ca/simpx-countB1-tc.log",
@@ -3281,7 +3281,8 @@
       },
       "proposal": {
         "id": "PR-017",
-        "rev": 2,
+        "rev": 3,
+        "rev3": "review round 5, text only: 120 Hz row 29.6 CSS px (95 % within 3.2) on two earlier builds, not re-run on V9; 60 Hz labelled Chrome; WebKit first-frame lead row (UNRESOLVED); Simulator memory label",
         "options": [
           "land",
           "park"

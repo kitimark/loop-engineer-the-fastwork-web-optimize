@@ -653,8 +653,10 @@ plus a synthetic `visibilitychange`, so the countdown ticks at a random phase, o
   `GE`, review-cd-roll-ca round 1; OBSERVED, modelled, not measured on a device). In those cases the build still plays
   the regular 60 Hz path, so it differs from the original by about those amounts.
 - At 120 Hz the build still shows the 60 Hz path; the original at 120 Hz differs from its own 60 Hz path by up to
-  3.3 px (one step) and 29.5 px (0→9, offline model), and the build vs the original at 120 Hz measured 27.7 px max,
-  p95 2.5 px. The user has not explicitly accepted this motion difference (see "User decisions on the motion
+  3.3 px (one step) and 29.5 px (0→9, offline model), and the build vs the original at 120 Hz measured up to 29.6 CSS
+  px (95 % within 3.2) on two earlier builds with the same hero path (round 2 `probe-build-headed2.json` 29.6 / 3.2;
+  the pre-hero-only build `probe-build-headed.json` 27.7 / 2.5); not re-run on V9 (review round 5). The 120 Hz screen
+  is the Mac display we measured on (headed Chrome). The user has not explicitly accepted this motion difference (see "User decisions on the motion
   difference" below): it goes to the user as a proposal.
 - What rate the phone renders at: CONFIRMED only that WebKit asks for a 60 Hz display link as a hint
   (CLAUDE.md, pref PreferPageRenderingUpdatesNear60FPSEnabled, preferredFramesPerSecond=60; claims-audit §2.7); Core
@@ -684,15 +686,21 @@ Reading: #10 asked for the fix to be built. The acceptance of the motion differe
 (#11), and T-055 #2 dropped the swipe tests for the countdown in favour of the cheaper build
 (`memory/less-work-landing-rule.md`). Neither is an explicit acceptance of a motion difference. So these items go to
 the user as a proposal (land / park; Try-it A = C8, B = V9), lead 2026-10-04: **PR-017** (posted 2026-10-04; rev 2
-adds the Simulator full-page row and the at-rest memory line; recommended: land; decision pending):
+adds the Simulator full-page row and the at-rest memory line; rev 3 (review round 5) corrects the 120 Hz row, labels
+the 60 Hz numbers as Chrome's, adds the WebKit first-frame lead and the status words; recommended: land; decision
+pending):
 
 | what differs | how much | when |
 |---|---|---|
 | frozen Chrome frames mid-roll | edge shade up to 222 of 255, ≤ 0.13 % of the screen, ≤ 754 CSS px | only while digits roll |
-| path at 60 Hz (Chrome, 1 s ticks) | ≤ 0.21 CSS px; 0.63 px when the clock jumps twice within 9 frames | only while digits roll |
-| path on a 120 Hz screen | up to 27.7 px (p95 2.5 px; the original moves 3.3 / 29.5 px between its own 60 and 120 Hz paths) | only while digits roll |
+| path at 60 Hz (Chrome, 60 Hz, 1 s ticks) | ≤ 0.21 CSS px; 0.63 px when the clock jumps twice within 9 frames. The phone at rest ran at 60 Hz in our runs (OBSERVED, not CONFIRMED) | only while digits roll |
+| path on a 120 Hz screen (the Mac display we measured on) | up to 29.6 CSS px (95 % within 3.2) on two earlier builds with the same hero path; not re-run on V9 (the original moves 3.3 / 29.5 px between its own 60 and 120 Hz paths) | only while digits roll |
 | path at 80 Hz, or after a late first frame | about 2.7 / 24.7 px and 2.0 / 18 px (offline model) | only while digits roll |
+| WebKit first frame of a roll (UNRESOLVED presentation-time lead) | may run up to one frame ahead of the original; in the Simulator the read value ran 0.5-5.5 ms ahead, 20-29 px in the first frame of a 0→9 roll (OBSERVED, Simulator, cause unknown); not checked on the phone | first frame of a roll |
 | hidden page on WebKit | a roll can show a residual of up to 57.5 px (0→9 roll) | only while the page is hidden; the next tick after the show starts at the original's value |
+
+Memory cost in PR-017 is labelled "Cost in the iPhone Simulator (OBSERVED, in our setup, cause unknown; not checked on
+the phone)".
 
 ## Hidden tab, for real (review round 1, B1)
 
