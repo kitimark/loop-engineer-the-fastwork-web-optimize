@@ -64,7 +64,8 @@ sh fixes/gpu-preview/gates/run-all.sh         # the shared-lane checks below, on
 ## Try-it (console proposal PR-016, a draft until the lead publishes it)
 
 - A = baseline + `fixes/best-build/patch.diff` (today's best build); B = baseline + `fixes/gpu-preview/patch.diff`.
-  Both are read from git at commit cc9464da and kept in the console store.
+  Both were read when PR-016 was posted (pre-rebase commit cc9464da; `patch.diff` sha256/12 `17a2764ec8a7`, unchanged
+  since) and are kept in the console store.
 - When it was posted, the console warned that B lacks 3 lines of A's JS. This is expected and intended. The 3 lines
   belong to st6-rb2's countdown face snippet in the best build (`__cdAnimate`, the countdown-idle-raf face parking
   transform and its comment). cd-strip, landed on `main`, replaces the 10 faces per digit with one static strip, so
@@ -81,6 +82,10 @@ sh fixes/gpu-preview/gates/run-all.sh         # the shared-lane checks below, on
   switch-on), phone segment card, Android Chrome cost (restyles 24.5 -> 34.8, Paint 9.1 -> 9.9 per moving frame).
   The preview carries rev 1 as labelled; rev 2 (clip layer prepared before the tween) is in progress, and the preview
   moves to rev 2 once that passes its own checks.
+  Its owner's idle triple (headless Chrome 430x932, CPU 1x, callbacks per s, best vs rev 1): pin 2 vs 2, mid-page 4.2
+  vs 4.4, top 36 vs 32.8 (the reveal is off at the top: phase noise), so the reveal adds no idle work. Simulator layers
+  (first census run, to be confirmed by its owner): at rest the same layer count and memory as the best build; mid-morph
+  (m 0.5) 3 more layers (57 vs 54) and about +4 MB in the nav (33.4 vs 29.5 MB).
 - **cd-roll-ca:** its phone no-worse block (P-093) has not run.
 - **hero R2:** P-095 (no-worse on best) passed per its owner; the finger swipe A/B is still to come.
 - **`__fwMorphDrive`:** the best build ships this debug driver on `window` (best-build `patch.diff`); the preview keeps
