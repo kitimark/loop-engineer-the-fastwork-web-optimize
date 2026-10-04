@@ -190,9 +190,14 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
 - **Coupling with nav-hit-cache** (fix-nav-morph, not landed): it caches the is-on-dark answer in `__nsG` and writes
   it every frame, so this change's microtask `z(g, F())` would be overwritten one frame later. A combined build must
   also set `__nsForce = !0` (or `__nsG = F()`) there (fix-nav-morph, 2026-10-04).
-- **Repaint (rev 2):** without morph-gpu's change, every scroll frame inside the extra screen repaints the whole panel,
-  as today's spring does on every frame of its 680 ms run. The cost per frame is not measured here. If morph-gpu lands a
-  revision that is no slower on the phone, this is rebuilt on it (build.mjs).
+- **Repaint (rev 2), corrected 2026-10-04 from fix-morph-gpu's Simulator counts (F-223, its README "What repaints at
+  the open start", e274aef0; OBSERVED, counts only):** the large repaint (~30 rects, ~1.6 Mpx) happens only in the frame
+  where m leaves 0 and again where it returns to 0 (~22 rects): #platform's --morph-fade moves its blur/opacity off 1, and
+  the earn button's transition. Frames in between repaint 1-15 rects, not the whole panel (the rev 2 text said every
+  frame; that was wrong). For this change: each time the finger takes m across 0 (open from closed, or back to closed,
+  including a proximity snap to closed) it pays that one frame, so a user who scrolls back and forth around the start of
+  the extra screen pays it more often than the spring's one open per visit. Not measured on the phone. If morph-gpu lands
+  a revision that is no slower on the phone, this is rebuilt on it (build.mjs).
 - **Fast-flick G check** (user T-113 #4): needed before B can join a best build; phone slot via the lead.
 - **Not run:** finger/G driver, toolbar collapse, reduced motion in WebKit, iPad, rubber band at the page end, reload
   while scrolled into the extra screen.
