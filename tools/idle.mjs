@@ -66,6 +66,8 @@ async function pass({ by, min, log, quietOk, watching = false }) {
       log(`ENDED ${a.resource}: idle period from ${res.ended.since.slice(11, 16)}Z is over (${why})${res.ended.thread ? `; thread ${res.ended.thread}` : ''}`);
     }
     if (a.alarm ? (res.news || !quietOk) : !quietOk) log(`${lineFor(a)}${a.alarm && res.thread ? ` [posted in ${res.thread}]` : ''}`);
+    // I-155: whom a new alarm concerns, one line each (their /status rows carry a red alert while it stands)
+    if (a.alarm && res.news) for (const n of addressees(a)) log(`NOTIFY ${n}: ${n === a.holder && a.heldIdle ? 'you hold the iPhone lease with no phone run' : `${RESOURCES[a.resource]?.short || a.resource} ${a.heldIdle ? `held by ${a.holder} unused` : 'free'}`} for ${a.freeMin} min while ${n === a.holder && a.heldIdle ? 'others wait' : 'you wait'} (status board alert; I-155)`);
     if (!res.post) {
       if (a.alarm && res.news && !lead) log(`NOT POSTED ${a.resource}: posting needs --by lead (only the lead starts threads); the lead's watch posts it`);
       continue;

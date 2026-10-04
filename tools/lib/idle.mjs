@@ -33,6 +33,14 @@
 // the user's hand test, marked by its owner name: `user` or `user-<anything>` (e.g. `node tools/lock.mjs acquire iphone
 // --owner user-try`); `OK iphone: held by user-try for the user's own hand test …`. It is never held-idle, however long
 // the user takes; waiters still queue, and the free-period alarm starts again from its release.
+// I-155 (a phone lease taken before its hold could start idled the iPhone; the alarm then fired on phone-side work):
+//   - a not-ready waiter (lock.mjs acquire iphone --not-ready) is no ready work: it keeps its place, nobody waits on it;
+//   - the holder is using the phone while it holds chrome-measure (its phone-block hold, exclusive or as a reader) or is
+//     queued for it (`OK iphone: … holds the Chrome slot`), or while a `lock.mjs run iphone` command runs under its lease
+//     (meta.run with lockRun: xctrace thermal gate, pre-warm); both count as a sighting of use, like a phone run.
+//   - an alarm's episode keeps its owners (the holder of a held-idle lease; the waiting owners of a free one): the
+//     status board shows a red alert on their rows while the episode is open (boardAlerts; lib/status.mjs boardAlertText),
+//     and the watch prints one `NOTIFY <agent>` line each. The 5-min thread stays (user rule T-058, I-105).
 //
 // Free since (freeSince): the latest end of a hold that came after the last grant:
 //   - <r>.last-release.json (lib/lock.mjs noteRelease: a release, a process hold's end, the last shared reader leaving),
@@ -52,7 +60,7 @@
 import { mkdirSync, openSync, readSync, fstatSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import { sharedStateDir } from './paths.mjs';
-import { status as lockStatus, lastRelease, lastGrant, holdsLogFile, withGuard, isGroup } from './lock.mjs';
+import { status as lockStatus, lastRelease, lastGrant, holdsLogFile, withGuard, isGroup, liveReaders } from './lock.mjs';
 import { list as statusList } from './status.mjs';
 import { readJson, writeJson, iso } from './store.mjs';
 import { ownerPhoneStep, readSteps, stepText } from './phone-step.mjs';
@@ -107,7 +115,7 @@ export function rowWaitsOn(row) {
  */
 export function readyWork(r, { st, rows = [], exclude = null }) {
   const queue = [];
-  for (const w of st?.queue || []) if (w?.owner && w.owner !== exclude && !queue.some((x) => x.owner === w.owner)) queue.push({ owner: w.owner });
+  for (const w of st?.queue || []) if (w?.owner && !w.notReady && w.owner !== exclude && !queue.some((x) => x.owner === w.owner)) queue.push({ owner: w.owner }); // I-155: a not-ready waiter is no ready work
   const queued = new Set(queue.map((x) => x.owner));
   const out = [];
   for (const row of rows) {
@@ -197,6 +205,19 @@ export function phoneUse(h, { activity = null, now = Date.now(), isAlive = pidAl
   return { since, how };
 }
 
+/**
+ * I-155: the lease holder's use of chrome-measure (`cm`, its lock status): 'holds' while it holds it (exclusive, or as a
+ * live reader of a shared group), 'queued' while it waits for it (a ready entry), else null.
+ */
+export function chromeUse(owner, cm, now = Date.now()) {
+  if (!owner || !cm) return null;
+  const h = cm.holder;
+  if (h && !cm.stale) {
+    if (isGroup(h) ? liveReaders(h, now).some((x) => x.owner === owner) : h.owner === owner) return 'holds';
+  }
+  return (cm.queue || []).some((w) => w && w.owner === owner && !w.notReady) ? 'queued' : null;
+}
+
 /** I-144: a lease held for the user's own hand test: owner `user` or `user-<anything>` (e.g. the lead's `user-try`). */
 export const isUserLease = (owner) => typeof owner === 'string' && /^user(-[A-Za-z0-9_.-]+)?$/.test(owner);
 
@@ -208,7 +229,7 @@ export const freeMinutes = (since, now) => Math.max(0, Math.floor((now - since) 
  * minutes), now. Out: {resource, held, holder?, since?, freeMin, how, key, observed, queue, rows, ready, alarm}.
  * alarm: free for MORE than `min` minutes (free ms > min x 60000) and ready work exists.
  */
-export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, rows = [], steps = [], min = RESOURCES[r]?.defaultMin ?? 10, now = Date.now(), isAlive = pidAlive }) {
+export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, rows = [], steps = [], cm = null, min = RESOURCES[r]?.defaultMin ?? 10, now = Date.now(), isAlive = pidAlive }) {
   const f = freeSince({ st, rel, grant, holdsEnd, seen, now });
   if (f.held && r === 'iphone' && !isGroup(f.holder)) {
     // I-111: a held iPhone lease is idle too while no phone run uses it (heldIdle; since = its last use)
@@ -218,7 +239,10 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     // I-144: a lease the lead took for the user's own hand test (owner `user` or `user-*`) is the user's phone time
     if (isUserLease(holder)) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, userLease: true, freeMin: 0, ...work, ready, alarm: false };
     const use = phoneUse(f.holder, { activity, now, isAlive });
-    if (use.busy) return { resource: r, min, held: true, holder, holderToken, runLive: true, heldIdle: false, freeMin: 0, ...work, ready, alarm: false };
+    if (use.busy) return { resource: r, min, held: true, holder, holderToken, runLive: true, ...(f.holder?.meta?.run?.lockRun && { lockRun: true }), heldIdle: false, freeMin: 0, ...work, ready, alarm: false };
+    // I-155: the holder's phone-block hold of chrome-measure (held or queued) is use of the phone too
+    const cu = chromeUse(holder, cm, now);
+    if (cu) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, chromeUse: cu, freeMin: 0, ...work, ready, alarm: false };
     // I-125: the holder's console step the user is on (ready for Start, started, recording, or reset by Start over) is a
     // user wait, not idle (lib/phone-step.mjs ownerPhoneStep, the rule of the lease grace I-123 a)
     const us = ownerPhoneStep(holder, { steps, user: true });
@@ -236,9 +260,11 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
 export function gather({ now = Date.now(), resources = RESOURCE_NAMES, state = readState() } = {}) {
   const rows = statusList();
   const tail = holdsLogTail();
+  const sts = Object.fromEntries(resources.map((r) => [r, lockStatus(r)]));
   return resources.map((r) => ({
-    r, st: lockStatus(r), rel: lastRelease(r), grant: lastGrant(r), holdsEnd: holdsLogEnd(r, tail), seen: state.resources?.[r]?.seen || null,
-    activity: state.resources?.[r]?.activity || null, rows, now, ...(r === 'iphone' && { steps: readSteps() }),
+    r, st: sts[r], rel: lastRelease(r), grant: lastGrant(r), holdsEnd: holdsLogEnd(r, tail), seen: state.resources?.[r]?.seen || null,
+    activity: state.resources?.[r]?.activity || null, rows, now,
+    ...(r === 'iphone' && { steps: readSteps(), cm: sts['chrome-measure'] || lockStatus('chrome-measure') }), // I-155
   }));
 }
 
@@ -262,7 +288,8 @@ export function lineFor(a) {
   }
   if (a.held && a.userLease) return `OK ${a.resource}: held by ${a.holder} for the user's own hand test (the user's phone time, not idle; I-144)`;
   if (a.held && a.userStep) return `OK ${a.resource}: held by ${a.holder}; the user's step ${a.userStep} is on the phone (a user wait, not idle)`; // I-125
-  if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? ' (a phone run is on)' : ''}`;
+  if (a.held && a.chromeUse) return `OK ${a.resource}: held by ${a.holder}, which ${a.chromeUse === 'holds' ? 'holds the Chrome slot (its phone-block hold)' : 'waits for its next Chrome slot hold'}: in use, not idle (I-155)`;
+  if (a.held) return `OK ${a.resource}: held by ${a.holder}${a.runLive ? (a.lockRun ? ' (a lock.mjs run iphone command is on)' : ' (a phone run is on)') : ''}`;
   const free = `free for ${forText(a.freeMin)} (since ${hhmm(a.since)}, ${a.how})`;
   if (a.alarm) return `IDLE ${a.resource}: ${R} ${free}, over the ${a.min} min limit, while work waits: ${workList(a)}`;
   if (!a.ready) return `OK ${a.resource}: ${free}, no ready work`;
@@ -332,16 +359,19 @@ export async function record(assessments, { now = Date.now(), claim = false, pid
         const since = iso(a.since), kind = a.heldIdle ? 'held' : 'free';
         if (cur.episode && (cur.episode.since !== since || (cur.episode.kind || 'free') !== kind)) { res.ended = end(cur.episode); delete cur.episode; }
         if (a.alarm) {
-          if (!cur.episode) { cur.episode = { since, alarmedAt: iso(now), freeMin: a.freeMin, ...(a.heldIdle && { kind, holder: a.holder }) }; res.news = 'alarm'; }
+          // I-155: the episode keeps whom it concerns (the board's red alert on their rows, the watch's NOTIFY lines)
+          if (!cur.episode) { cur.episode = { since, alarmedAt: iso(now), freeMin: a.freeMin, owners: addressees(a), ...(a.heldIdle && { kind, holder: a.holder }) }; res.news = 'alarm'; }
           const ep = cur.episode;
           const claimLive = ep.claim && now - (ms(ep.claim.at) ?? 0) < CLAIM_TTL_MS && ep.claim.pid !== pid;
           if (claim && !ep.thread && !claimLive) { ep.claim = { pid, at: iso(now) }; res.post = true; }
           if (ep.thread) res.thread = ep.thread;
         }
+        // I-155: the board alert follows the alarm as it stands now (who waits, whether anyone still does)
+        if (cur.episode) { cur.episode.alarmNow = !!a.alarm; if (a.alarm) cur.episode.owners = addressees(a); }
       }
       // I-111: the alarm's own sighting of a live phone run, kept per lease (a checkout on older lock code stamps no lastRunAt)
       // (I-125: a user step on the phone counts as use too, so the held-idle clock starts again when the step ends)
-      if ((a.runLive || a.userStep) && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
+      if ((a.runLive || a.userStep || a.chromeUse) && a.holderToken) cur.activity = { token: a.holderToken, at: iso(now) };
       else if (cur.activity && (!a.held || cur.activity.token !== a.holderToken)) delete cur.activity;
       s.resources[a.resource] = cur;
       out.push(res);
@@ -381,4 +411,27 @@ export async function settle(r, since, { thread = null, by = null, error = null,
     writeJson(stateFile(), s);
     return ep;
   });
+}
+
+// ---- I-155: the status board's red alert ------------------------------------------------------------------------
+
+export const BOARD_FRESH_MS = 10 * 60000; // an episode is shown only while an alarm run (watch, check) updated the state lately
+
+/**
+ * The open idle episodes whose alarm stands as board alerts: [{resource, kind: 'held'|'free', holder, owners, since,
+ * thread?}], [] when the state is older than BOARD_FRESH_MS (no alarm run keeps it current). Names only (Hard rule 12).
+ */
+export function boardAlerts({ state = readState(), now = Date.now() } = {}) {
+  const at = ms(state.updatedAt);
+  if (at === null || now - at > BOARD_FRESH_MS) return [];
+  const out = [];
+  for (const [r, cur] of Object.entries(state.resources || {})) {
+    const ep = cur?.episode;
+    const since = ms(ep?.since);
+    if (!ep || since === null || !RESOURCES[r] || ep.alarmNow === false) continue;
+    const owners = (Array.isArray(ep.owners) ? ep.owners : ep.holder ? [ep.holder] : []).filter((n) => typeof n === 'string' && AGENT.test(n));
+    if (!owners.length) continue;
+    out.push({ resource: r, kind: ep.kind === 'held' ? 'held' : 'free', holder: ep.holder || null, owners, since: ep.since, ...(ep.thread && { thread: ep.thread }) });
+  }
+  return out;
 }

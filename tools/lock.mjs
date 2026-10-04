@@ -18,6 +18,13 @@
 //       `--between <min>` after a hold ends (a session starts only if its --max-seconds ends inside it; the window is shut
 //       while the runner holds or queues for chrome-measure or runs the phone, and ends at its next exclusive hold or phone
 //       run; `--between 0` ends it), or until `--block none` / the lease's end. The lease owner's own sessions are never deferred.
+//   node tools/lock.mjs acquire iphone --owner <topic> --not-ready [--wait N]                    # I-155
+//       queue for the phone before your part can start (pre-data read, cooling, a Mac-side gate): your entry keeps its
+//       place but is never served (the next ready waiter is); QUEUED … (not ready), exit 3. Re-run within 10 min to keep
+//       the place; the first acquire without --not-ready marks you ready (at the head: the lease is yours).
+//   node tools/lock.mjs run iphone --owner <lease holder> -- <cmd>     # I-155: phone-side work that is no phone run
+//       (xctrace thermal gate, pre-warm) under your own lease: marks the lease in use (meta.run, lockRun) while <cmd>
+//       runs, so the idle alarm does not call it unused; a phone run inside it gives the marker back at its end.
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
 //   node tools/lock.mjs leave chrome-measure --owner <o> [--by <who>] [--reason "<why>"] [--json]
@@ -243,7 +250,7 @@ const awakeLines = (list) => list.map((a) => `awake: keeping Mac awake for ${a.w
 const laneText = (sw) => (sw.enabled ? `on (cap ${sw.cap}${sw.joinLoad ? `, join load ${sw.joinLoad}` : ''}${sw.joinBusy ? `, join busy ${sw.joinBusy} %` : ''})` : 'off');
 const laneInUse = (s) => !!GATED[s.resource] && (sharedSwitch(s.resource).enabled || isGroup(s.holder) || !!s.holder?.functional || s.queue.some((w) => w.shared || w.functional));
 const moved = (w) => (w.movedBy ? `, moved by ${w.movedBy}` : '');
-const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.shared ? ` (shared w${w.weight}, max ${w.maxSec} s, since ${w.since}${moved(w)})` : w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (${w.noTiming ? 'no-timing, ' : ''}since ${w.since}${moved(w)})`}`).join(', ');
+const fmtQueue = (q) => q.map((w, i) => `${i + 1}. ${w.owner}${w.notReady ? ' [not ready, I-155]' : ''}${w.shared ? ` (shared w${w.weight}, max ${w.maxSec} s, since ${w.since}${moved(w)})` : w.short ? ` (short, max ${w.maxSec} s, since ${w.since}${moved(w)})` : ` (${w.noTiming ? 'no-timing, ' : ''}since ${w.since}${moved(w)})`}`).join(', ');
 
 /** host: load1 30.4 | cpu 68 % busy (sys 33 %) over 3 s | mem pressure warn | gate CLOSED (...) since ... */
 function hostLine(host, list) {
@@ -370,6 +377,10 @@ async function main() {
     console.log(`DOING ${resource} "${owner}": ${job ? jobLine(job) : h.meta?.job ? jobLine(h.meta.job) : '(no job description)'}${markLine(h)}`);
     return 0;
   }
+  // I-155: --not-ready (acquire iphone): queue without being served yet
+  const notReady = flag('not-ready');
+  if (notReady && (cmd !== 'acquire' || resource !== 'iphone')) throw new Error('--not-ready is for lock.mjs acquire iphone (queue for the phone before your part can start; I-155)');
+  if (notReady && blockArg !== undefined) throw new Error('--not-ready and --block do not combine: mark the block once the lease is yours');
   if (cmd === 'acquire') {
     const ttlSec = Number(opt('ttl', resource === 'iphone' ? 900 : 0)) || undefined;
     const waitSec = Number(opt('wait', 0));
@@ -377,7 +388,7 @@ async function main() {
     let host = GATED[resource] && !short && !shared ? { quiet: null, reasons: ['not measured yet'] } : undefined;
     // N7: FW_LOCK_SHARED from an enclosing slot (a `run --shared` command): a shared lease re-enters it, an exclusive
     // one is refused, as in acquire()
-    const sx = { ...(shared ? { shared, weight, job } : {}), sharedHeld: process.env.FW_LOCK_SHARED };
+    const sx = { ...(shared ? { shared, weight, job } : {}), ...(notReady ? { notReady } : {}), sharedHeld: process.env.FW_LOCK_SHARED };
     // I-051: a shared waiter measures CPU busy over its own polls; the join check uses it once it has one
     let cpuBase = shared ? { at: Date.now(), t: cpuTimes() } : null;
     const attempt = async () => {
@@ -410,6 +421,7 @@ async function main() {
     if (res.ok && shared && res.mode === 'short') console.error(OFF_NOTICE(resource));
     if (res.ok && blockArg !== undefined) res.holder = await describeHold(resource, { owner, block: blockArg }); // I-160
     if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
+    if (res.notReady) { console.log(`QUEUED ${resource} (not ready): you ("${owner}") are #${res.position} in the queue and keep the place, but a hand-over serves the next ready waiter (I-155). Run acquire again within 10 min to keep it; without --not-ready when your part can start.`); return 3; }
     if (res.deferred) { console.log(`DEFERRED ${resource}: ${res.why}. You ("${owner}") are not queued while deferred; run acquire again (or --wait) to retry.`); return 3; }
     const hh = res.holder;
     const who = hh ? (isGroup(hh) ? `shared by ${(hh.readers || []).map((x) => `"${x.owner}"`).join(', ')} until ${hh.expiresAt}` : `held by "${hh.owner}" since ${hh.acquiredAt}${hh.expiresAt ? ' until ' + hh.expiresAt : ''}`)
@@ -485,6 +497,11 @@ async function main() {
     // a short job runs in its own process group, so reaching --max-seconds stops the whole tree (npm test -> node --test -> ...);
     // FW_LOCK_HELD: the command's own verify.mjs / fix.mjs ab / nested run re-enter this hold instead of queueing behind it
     const child = spawn(rest[0], rest.slice(1), { stdio: 'inherit', detached: bounded, env: { ...process.env, ...childEnv } });
+    // I-155: a `run iphone` under the owner's lease is phone-side work (thermal gate, pre-warm): the lease is in use while it
+    // runs (meta.run, lockRun: it keeps a between-holds window; the idle alarm reads it as use)
+    const runMark = resource === 'iphone' && child.pid
+      ? describeHold('iphone', { owner, run: { text: String(opt('doing') ?? rest.join(' ')).slice(0, 120), since: new Date().toISOString(), pid: child.pid, lockRun: true } }).then(() => true, () => false)
+      : null;
     // I-024: a short job's tree can leave the command's group (a nested `run --short` detaches its own
     // command), and orphans lose their parent link once the command exits. So every kill also signals each
     // descendant seen so far (pid + its group, re-checked by pgid against pid reuse), not only the group.
@@ -579,6 +596,7 @@ async function main() {
     const warn = expectSec && setTimeout(() => console.error(`[lock ${resource}] this hold passed its ${expectSec} s (--max-seconds; I-020): it keeps running, but split long measurements into lock.mjs run holds of 5-10 min so short jobs get in at each hand-over`), expectSec * 1000);
     const code = await new Promise((r) => child.on('exit', (c, s) => r(c ?? (s ? 1 : 0))));
     const endedAt = Date.now();
+    if (runMark && (await runMark)) { try { await describeHold('iphone', { owner, run: null, runPid: child.pid }); } catch {} }
     clearInterval(timer);
     clearTimeout(warn);
     // anything in the tree that ignored SIGTERM (or was orphaned when the command exited); I-099: then wait until it is gone

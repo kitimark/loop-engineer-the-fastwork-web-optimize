@@ -572,7 +572,7 @@ export function status(r) {
   checkName(r);
   const h = readJson(holderFile(r), null);
   const q = pruneQueue(readJson(queueFile(r), []));
-  const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)].owner : null;
+  const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)]?.owner ?? null : null;
   const now = Date.now(), grace = h ? stepGrace(h, now) : null; // I-123: a lease kept for its owner's user step
   const df = GATED[r] ? pruneQueue(readJson(deferredFile(r), []), now) : []; // I-160: Simulator sessions a phone block defers
   const st = { resource: r, holder: h, stale: h ? staleReason(h, now) : null, queue: q, next, ...(grace ? { grace } : {}), ...(df.length ? { deferred: df } : {}) };
@@ -636,7 +636,9 @@ function shortRunStart(lg, now = Date.now()) {
  * `T`: the polling process's THRESHOLDS (gateShortPassSec, gateMaxWaitSec).
  */
 function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
-  let pool = q.map((w, i) => [w, i]);
+  // I-155: a not-ready waiter (acquire --not-ready) keeps its place but is never served; -1 when no waiter is ready
+  let pool = q.map((w, i) => [w, i]).filter(([w]) => !w.notReady);
+  if (!pool.length) return -1;
   if (!SLOW_POLL_RESOURCES.has(r)) {
     const fresh = pool.filter(([w]) => w.owner === caller || now - Date.parse(w.lastSeen) <= HANDOVER_FRESH_SEC * 1000);
     if (fresh.length) pool = fresh;
@@ -707,7 +709,7 @@ function gateHolding(w, now, T = THRESHOLDS) {
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, job, sharedHeld, load1, ncpu, busyPct, awake, simWarm, sim } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, job, sharedHeld, load1, ncpu, busyPct, awake, simWarm, sim, notReady = false } = opts;
   let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
@@ -813,10 +815,12 @@ export async function tryAcquire(r, opts) {
     let mine = q.findIndex((w) => w.owner === owner && !w.shared);
     // the switch went off while this shared job waited as a reader: its reader entry becomes this entry, in place (N10)
     if (shared && mine < 0) mine = q.findIndex((w) => w.shared && sameWaiter(w, owner, kind, pid));
+    // I-155: an acquire without --not-ready marks its entry ready (in place) before the hand-over picks the next waiter
+    if (mine >= 0 && q[mine].notReady && !notReady) { const { notReady: _, ...w } = q[mine]; q[mine] = w; }
     const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
     // (not one the lead moved, and only early in its gate wait: gateHolding, I-030)
-    const headOk = q.length === 0 || mine === ni || (short && GATED[r] && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner));
+    const headOk = !notReady && (q.length === 0 || mine === ni || (short && GATED[r] && ni >= 0 && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner)));
     let gateRec;
     if (!h && headOk && GATED[r] && !short && !noTiming && host !== undefined) {
       const since = (mine >= 0 && q[mine].gate?.since) || new Date(now).toISOString();
@@ -865,14 +869,14 @@ export async function tryAcquire(r, opts) {
       return { ok: true, holder: h, mode: short ? 'short' : 'exclusive' };
     }
     // busy (or someone else is served first): join / refresh the queue
-    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(shared ? { functional: true, weight } : {}), ...(noTiming ? { noTiming: true } : {}),
+    const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(shared ? { functional: true, weight } : {}), ...(noTiming ? { noTiming: true } : {}), ...(notReady ? { notReady: true } : {}), // I-155
       // a gate wait survives a short job granted in between, so short jobs can't stretch the gate's cap
       ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}) };
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     if (GATED[r] && noTiming && !short && !shared) q = phoneBlockPriority(q, entry, now); // I-136
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner, mode: short ? 'short' : 'exclusive' };
+    return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)]?.owner ?? null, mode: short ? 'short' : 'exclusive', ...(notReady ? { notReady: true } : {}) };
   });
 }
 
@@ -1016,7 +1020,7 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt });
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     writeJson(queueFile(r), q);
-    return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)].owner, why, mode: 'shared' };
+    return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)]?.owner ?? null, why, mode: 'shared' };
   };
   // the same agent's lease reader from this checkout (an `acquire --shared` repeated to check or keep it) is that slot
   const again = knownGroup(h) && kind !== 'process' ? h.readers.find((x) => x.kind !== 'process' && x.owner === owner && x.checkout === REPO) : null;
@@ -1064,8 +1068,8 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
   const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
   const afterGroup = !!seen.shared;
   // the opener is the waiter served next (readers in queue order, N4), or the first short-lane entry past a gate-held head
-  const headOk = q.length === 0 || mine === ni || (!afterGroup && GATED[r] && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner));
-  if (!headOk) return wait(`"${q[ni].owner}" is served first`);
+  const headOk = q.length === 0 || mine === ni || (!afterGroup && GATED[r] && ni >= 0 && gateHolding(q[ni], now, T) && mine === firstShortSeen(q, now, owner));
+  if (!headOk) return wait(`"${q[ni]?.owner}" is served first`);
   const x = reader();
   const g = groupWith({ resource: r, owner: GROUP_OWNER, kind: 'lease', token: randomBytes(6).toString('hex'), checkout: REPO, host: os.hostname(), acquiredAt: iso(now), openedAt: iso(now), meta: {}, short: true, maxSec: SHARED_LANE.maxSec, shared: true, format: SHARED_FORMAT }, [x]);
   writeJson(holderFile(r), g);
@@ -1146,7 +1150,14 @@ export async function describeHold(r, { owner, job, run, runPid = process.pid, b
   const apply = (m) => {
     const meta = { ...(m || {}) };
     if (job === null) delete meta.job; else if (job) meta.job = job;
-    if (run === null) { if (!meta.run || meta.run.pid === runPid) delete meta.run; } else if (run) { meta.run = run; delete meta.between; } // a phone run ends the window
+    if (run === null) {
+      // I-155: an inner run's end gives the marker back to the outer run (a `lock.mjs run iphone` command) while that lives
+      if (meta.run && meta.run.pid === runPid) { const o = meta.run.outer; if (o && pidAlive(o.pid)) meta.run = o; else delete meta.run; }
+    } else if (run) {
+      const cur = meta.run && meta.run.pid !== run.pid && pidAlive(meta.run.pid) ? (({ outer, ...x }) => x)(meta.run) : null;
+      meta.run = { ...run, ...(cur ? { outer: cur } : {}) };
+      if (!run.lockRun) delete meta.between; // a phone run ends the window (I-160); a lock.mjs run iphone wrapper does not
+    }
     if (block === null) { delete meta.block; delete meta.between; } else if (block && meta.block?.id !== String(block)) meta.block = { id: String(block), at: iso(now) };
     if (betweenMin === 0) delete meta.between; else if (betweenMin) meta.between = { at: iso(now), until: iso(now + betweenMin * 60000) };
     return meta;

@@ -589,7 +589,13 @@ node tools/lock.mjs release iphone --owner <topic>
   Chrome/measure/lock; never a wait on the user or an incident); exit 0 otherwise. The lead keeps
   `nohup node tools/idle.mjs watch --by lead --interval 60 > out/idle-watch.log 2>&1 &` running (polls >= 30 s): one
   console thread per idle period, assigned to the desk and the waiting owners, closed when the slot is taken. Only
-  reads the locks; rules in `tools/lib/idle.mjs`.
+  reads the locks; rules in `tools/lib/idle.mjs`. I-155: while an alarm stands, the /status rows of the agents it
+  concerns (the holder of an unused lease, the waiting owners of a free slot) carry a red alert, and the watch logs one
+  `NOTIFY <agent>` line each. The lease holder is using the phone while it holds or queues for chrome-measure, or
+  while `node tools/lock.mjs run iphone --owner <you> -- <cmd>` runs under its lease (wrap phone-side work that is no
+  phone run in it: xctrace thermal gate, pre-warm). Not ready yet (pre-data read, cooling)? Don't take the lease:
+  queue with `node tools/lock.mjs acquire iphone --owner <you> --not-ready` (keeps your place, never served, exit 3;
+  re-run within 10 min) and acquire without the flag when your part can start.
 - Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
   Never edit the lock JSON by hand.
 - **Say what a hold is for** (I-060, the progress page's "Right now"): `acquire|renew|run` take `--doing "<plain line>"

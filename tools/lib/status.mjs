@@ -844,7 +844,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     // back); null = the row's own state words
     stateText: gitText || (lab.plain && (it.state === 'parked' || st.group === 'finished') ? lab.plain : lab.label),
     label: gitText || lab.label, labelOf: lab.progress, labelHow: lab.how, mismatch: lab.mismatch, resume: lab.resume, needsReview: lab.needsReview,
-    alerts: [...lab.mismatch.map((m) => `does not match: ${m}`), ...(lab.resume?.ready ? [`ready to resume: ${lab.resume.ready}`] : []), ...(lab.needsReview ? [lab.needsReview] : [])],
+    alerts: [...lab.mismatch.map((m) => `does not match: ${m}`), ...(lab.resume?.ready ? [`ready to resume: ${lab.resume.ready}`] : []), ...(lab.needsReview ? [lab.needsReview] : []), ...idleAlerts(it, live, group, now)],
     // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
     stateSince: it.stateSince || null, stateForMin: minutes(st.group === 'waiting' ? waitSince(it) : it.stateSince, now),
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
@@ -862,6 +862,35 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
       return { stale: why.length > 0, staleWhy: why };
     })(),
   };
+}
+
+/**
+ * I-155: the idle alarm's open episodes (live.idle, lib/idle.mjs boardAlerts) as red lines on the rows of the agents they
+ * concern: the holder of a held-but-unused iPhone lease, the waiting owners of a free slot. Not on finished rows.
+ */
+export function idleAlerts(it, live, group, now = Date.now()) {
+  if (!Array.isArray(live?.idle) || !live.idle.length || group === 'finished') return [];
+  const names = [it.owner, ...(it.aliases || [])].filter(Boolean);
+  const out = [];
+  for (const al of live.idle) {
+    const who = names.find((n) => al?.owners?.includes(n));
+    const t = who ? boardAlertText(al, who, now) : null;
+    if (t) out.push(sanitize(t, 300));
+  }
+  return out;
+}
+
+const IDLE_NAMES = { iphone: 'iPhone', 'chrome-measure': 'Chrome slot' };
+/** I-155: the red line for one idle-alarm episode (lib/idle.mjs boardAlerts) on `owner`'s row; null when it is not theirs. */
+export function boardAlertText(al, owner, now = Date.now()) {
+  if (!al || !Array.isArray(al.owners) || !al.owners.includes(owner)) return null;
+  const R = IDLE_NAMES[al.resource] || al.resource;
+  const t0 = Date.parse(al.since);
+  const m = forText(Number.isFinite(t0) ? Math.max(0, Math.floor((now - t0) / 60000)) : 0);
+  const t = al.thread ? ` (thread ${al.thread})` : '';
+  if (al.kind === 'held' && al.holder === owner) return `idle alarm: you hold the ${R} lease with no phone run for ${m} while others wait: run your phone part or release it${t} (I-155)`;
+  if (al.kind === 'held') return `idle alarm: the ${R} lease of ${al.holder} has had no phone run for ${m} while you wait${t} (I-155)`;
+  return `idle alarm: the ${R} has stood free for ${m} while you wait for it: take it now or say why not${t} (I-155)`;
 }
 
 /** Priority ascending (unranked last), then group, then the most recently updated first. */
