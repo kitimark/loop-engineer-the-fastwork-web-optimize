@@ -250,8 +250,9 @@ attribution: Simulator times are compared only within the session against interl
   - `ch`, `496c6ec41688`: fix idea (a), `.hero { contain: size layout style }`. The hero has an explicit height
     (100svh, min 680px), so size containment keeps its box.
   - All four are mechanism-only (look changes allowed) except `ch`, which must be look-identical if it ever goes to F.
-- **Order** (one hold, 285 s budget): C:H1 skh:H1 skp:H1 C:H2 nvc:H1 ch:H1 C:H3. The driver
-  (`sim-bisect.mjs`) stops before a step when < 45 s are left; an arm without a later C uses the C before it.
+- **Order:** two 300 s holds, because a gesture refuses with < 150 s left in its hold (`GESTURE_BUDGET_S`, I-112).
+  Hold 1: C:H1 skh:H1 skp:H1 C:H2. Hold 2: C:H3 nvc:H1 ch:H1 C:H4. The driver (`sim-bisect.mjs`) stops before a step
+  when < 45 s are left; an arm without a later C uses the C before it. Drift is checked from C:H1 to C:H4.
 - **Scorer:** `score-bisect.mjs`, sha256/12 `be444733d18d` (filters frozen in its header). On the phone's C-H1 / cq-H1 /
   C-H2 it reproduces P-106: cq ratio 1.04 NONE, replica true.
 - **Metric:** per run, the median largest Layout over toolbar-moving frames (strictly between the run's two toolbar
