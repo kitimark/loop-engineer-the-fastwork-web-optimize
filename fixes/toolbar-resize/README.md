@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 card (cct vs cva + entering check) registered, waits for ops' pre-data read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -523,6 +523,151 @@ Build C = v8 (JS `3e3e94cb6e9f`, CSS `f836404b3728`; served bytes checked by the
   the chosen candidate (`ARM=csl|cva sh phone/serve.sh snap`), G part H with a Timeline per run, so `score-tr.mjs`'s
   frozen filters apply. It becomes a ticket only after P-115 names a locating, look-identical candidate: then the look
   check, the scorer card with the run order, and a P-id from ops.
+
+## Prediction P-119: containment vs skip, plus the entering check (Simulator, registered before data)
+
+P-id from mgmt-ops-10 (P-115 read AGREE; pre-data notes R1-R7 answered below). Attribution, Simulator only; one normal
+exclusive hold. Nothing here drives a build (R7).
+
+- **Question.** P-115: `content-visibility: auto` on the showcase removes the toolbar-step Layout; `contain: layout` does
+  not. Is containment enough (`contain: content` = layout + paint + style, no skip), or is skipping the off-screen showcase
+  the mechanism? And what does cva cost when the showcase comes into view?
+- **Build:** C = v8 (JS `3e3e94cb6e9f`, CSS `f836404b3728`; served bytes checked by the driver, exit 26 on a mismatch).
+- **Arms** (applied in the page by `p119-inject.mjs`, sha256/12 `ce37284b199d`, after each load and before the Timeline
+  starts, as P-110/P-115):
+  - `cct`: `contain: content` on `#people .start-selling-future-card > .start-selling-future-showcase` (R1).
+  - `cva`: P-115's rule unchanged, `content-visibility: auto; contain-intrinsic-block-size: auto <its height measured in
+    the same page just before>px` (R2).
+  - C: the same injection and no rule.
+  - Every arm, C included, also gets an IntersectionObserver on the showcase (root = viewport, rootMargin 0, threshold 0)
+    that logs `[time, in, top, bottom, rootH]` per entry (the crossing record), and the look gate's structural probe,
+    taken before the arm rule. The observer runs JS only on a crossing (a few per run) and is the same in every arm.
+- **Order (one normal exclusive hold, `--max-seconds 600`, `SB_BUDGET_S=520`):**
+  C:H1 cct:H1 C:H2 cva:H1 C:H3 cva:H2 C:H4 cct:H2 C:H5. That is two replicates per arm, five C runs, mirrored. About 9 x 33 s
+  plus ~60 s setup (P-115 took 33-34 s per run). Driver `sim-bisect119.mjs` (sha256/12 `c57654440d01`, a copy of
+  sim-bisect115 with the arm list, inject file, folder `out/toolbar-resize/sim119` and labels changed). It uses the same
+  gesture script, flick-hero-v1 (`6ae05e12ace9`, now committed as `fixes/toolbar-resize/flick-hero-v1.json`). If the
+  budget stop drops steps, they run in one more normal hold as `C:H6 <dropped arms> C:H7`, same gate and scorer, and the
+  result says so.
+- **Hold kind:** normal exclusive chrome-measure hold (`sim.mjs` refuses gestures in `--no-timing` holds and in the
+  shared lane; P-115's correction).
+- **Applied-arm gate** (`check-inject119.mjs`, sha256/12 `b280e6d5b930`, runs before the scorer). Each run, else INSUFFICIENT
+  (never NONE):
+  - every run: an IO record with >= 1 entry;
+  - C: arm none, no rule;
+  - cct: the rule is applied and the computed `contain` is `content` or names layout, paint and style;
+  - cva: the rule is applied, the measured height is > 0, and the computed `content-visibility` is `auto`.
+- **Look gate (R1).** Paint containment clips overflow, makes the box the containing block for fixed and absolute
+  descendants, and (with layout containment) a stacking context. Style containment scopes counters. Layout containment
+  stops margin collapse through the box and drops its baseline. The probe counts exactly those risks before the rule is
+  applied:
+  - descendants outside the box (unless it already clips overflow);
+  - fixed descendants;
+  - absolute descendants whose containing block is outside the box;
+  - positioned z-index descendants when the box is not already a stacking context;
+  - counters;
+  - child margins that collapse through its top or bottom edge;
+  - shadow, filter or outline descendants within 32 px of an edge;
+  - baseline alignment in the parent.
+
+  `LOOK-GATE clean` means none of these exist, so the rule cannot change the static look by those paths. Otherwise the gate
+  reads `LOOK-RISK` with the flags, and cct's and cva's calls are mechanism only (no candidate) until a pixel check. In
+  every case the pixel-identical check (PR-010: Chrome + Simulator with a true A/A) comes before any build (F), and the
+  probe does not see motion. A Chrome look pre-check (`probe-look119.mjs`, shared lane, no timing: probe plus screenshots
+  at 3 stops, none vs none2 / cct / cva) is queued. Its result is read before the hold if it arrives first; it is not a gate.
+- **Scorer** `score-p119.mjs` (sha256/12 `265d0c827b5f`). Self-test `p119-selftest.mjs` (`70b127f955d8`): `SELFTEST PASS`
+  on a fixture built from P-115's runs with synthetic crossing logs. It checks event count and direction, update match,
+  window maxima, catch-up k and medians, and that the primary block equals score-bisect's own output. Frozen sections:
+  1. **Primary, unchanged:** `score-bisect.mjs` `cb6f0c97b81b` on the same runs (LOCATES <= 0.30, PARTIAL <= 0.70, NONE;
+     GEOMETRY > 2 px; replication gate; VOID at > 30 % C drift). An arm's call is the common call of its two replicates,
+     else SPLIT (no call).
+  2. **Secondary (R5):** Layout ms per second of toolbar motion on the primary's frames. It sums the outermost Layout
+     records and divides by summed dt, so it does not depend on how many frames the move was cut into. The ratio is
+     banded like the primary. A run whose band differs from its primary call is N-SENSITIVE.
+  3. **Mid-page** (registered from a post-hoc read of P-115's data, see below): frames with the toolbar still, y >= 3000,
+     scrolling; count of frames whose largest Layout >= 10 ms. vs neighbouring C: MID-REMOVES <= 0.2x, MID-SAME >= 0.7x,
+     else MID-PARTIAL; MID-THIN when the C mean < 5.
+  4. **Entering (R3):**
+     - **Window by crossing, not y:** an enter event is an IO entry that turns intersecting (the showcase's edge crosses
+       the viewport edge: the same test as WebKit's own content-visibility observer, see R4). It counts down (enters at
+       the bottom) or up.
+     - **Updates are the Timeline's RenderingFrame records.** U_E is the update whose start lies within 2 ms of the
+       entry's time (else the last one starting before it). The window is updates E-1 .. E+2.
+     - **Metric:** the window's largest Layout and largest Paint. Per run, the medians over its events.
+     - **Unpainted proxy:** the catch-up k is the first update in E..E+2 with a Layout >= 5 ms. UNPAINTED-PROXY counts
+       events with k >= 1, i.e. the showcase's big Layout lands after the update that first saw it intersect. It is a
+       proxy, since the Timeline cannot see pixels. Read for cva only, because C and cct relayout the showcase anyway.
+     - **C replicates (R3):** five C runs. Each arm run is compared with the mean of its two neighbouring C runs.
+     - **Falsification line (frozen):** cva is ENTER-COST when its entering Layout (or Paint) is >= 1.5x C's and
+       >= 8 ms above it. It is ENTER-OK when both are <= 1.2x C's or within 4 ms. Anything else is ENTER-UNCLEAR, and
+       ENTER-THIN applies when a run has < 2 events. ENTER-COST, or UNPAINTED-PROXY >= 1 in both cva runs, falsifies
+       "cva as is enters for free".
+- **R4, WebKit's content-visibility margin: CONFIRMED for WebKit main, UNRESOLVED for the shipped iOS 26.5 WebKit.**
+  - Source: WebKit main [`6cf979a79f7b`](https://github.com/WebKit/WebKit/tree/6cf979a79f7bb78c0635ff43f02282d78137583e),
+    fetched read-only with `gh api` on 2026-10-05. The file last changed in `ce1fa925b83a`, 2026-09-26.
+  - The content-visibility observer is created with `IntersectionObserver::Init options { document, { }, { }, { } }`,
+    i.e. an empty rootMargin, scrollMargin and threshold
+    ([ContentVisibilityDocumentState.cpp l.105-117](https://github.com/WebKit/WebKit/blob/6cf979a79f7bb78c0635ff43f02282d78137583e/Source/WebCore/dom/ContentVisibilityDocumentState.cpp#L105-L117);
+    field order in [IntersectionObserver.h l.75-80](https://github.com/WebKit/WebKit/blob/6cf979a79f7bb78c0635ff43f02282d78137583e/Source/WebCore/page/IntersectionObserver.h#L75-L80)).
+  - An empty margin parses to 0
+    ([IntersectionObserver.cpp l.88-89](https://github.com/WebKit/WebKit/blob/6cf979a79f7bb78c0635ff43f02282d78137583e/Source/WebCore/page/IntersectionObserver.cpp#L88-L89)),
+    and an empty threshold to 0 (l.163-164). So: margin 0, threshold 0.
+  - Timing, from the same source: a crossing found by the observer reaches `updateViewportProximity`, which calls
+    `scheduleContentRelevancyUpdate` (CVDS l.249-259, l.69-77; Document.cpp l.12284-12290).
+  - In `Page::updateRendering`, `UpdateContentRelevancy` (l.2562) runs before `IntersectionObservations` (l.2570)
+    ([Page.cpp](https://github.com/WebKit/WebKit/blob/6cf979a79f7bb78c0635ff43f02282d78137583e/Source/WebCore/page/Page.cpp#L2562-L2572)).
+  - So a showcase that starts to intersect in update N is un-skipped and laid out in update N+1 at the earliest, and
+    update N shows its box without content.
+  - The decisive local check for the shipped WebKit is P-119's catch-up k on cva's enter events.
+- **R5, runs with different moving-frame counts (cva had 38 vs 11-14).**
+  - When frames get cheaper, the same toolbar move is cut into more, shorter frames. So n follows the cost; it is not a
+    filter artefact.
+  - The primary is a per-frame median, so it is not biased by n while n >= 8 (its gate), but it weights a frame, not a
+    millisecond.
+  - The secondary weights milliseconds and does not depend on n. Both are reported per run with n.
+  - When they disagree (N-SENSITIVE), no gain is read from either. The call says "per frame X, per second of motion Y",
+    and the phone G check decides.
+  - The scorer's self-test on P-115's data (post hoc) already gives cva-H1 secondary 0.41 (PARTIAL) against primary 0.036.
+    4 of its 38 moving frames (y 660-1653, the showcase in view, so cva cannot skip it) still pay ~20 ms, and they take
+    371 of the 995 ms of toolbar motion. C-H2: 11 of 12 frames pay it.
+- **Predictions** (before data; mine; leans missed in P-110 and P-115):
+  - Primary: cct NONE ~60 %, PARTIAL ~15 %, LOCATES ~25 %. cva LOCATES in both replicates ~85 %.
+  - Secondary: cva N-SENSITIVE in at least one replicate ~60 %. This is informed by the post-hoc self-test numbers above.
+  - Mid-page: cva MID-REMOVES ~70 %; cct MID-SAME ~55 %.
+  - Entering: cva ENTER-OK ~50 %, ENTER-UNCLEAR ~30 %, ENTER-COST ~20 %. C already pays ~20 ms per frame while the showcase
+    is in view, and cva's catch-up Layout should be about that size.
+  - Unpainted proxy: cva has >= 1 event with k >= 1 in each run ~65 % (the source order above).
+  - Look gate: clean ~50 % (the probe has not run yet).
+- **Model, for the lead's review (R6/R7).**
+  - What is known: the toolbar-step Layout is nested in RecalculateStyles (D, S8). It is spent in the showcase (P-110).
+    Layout containment on the showcase does not remove it (P-115 csl). The off-screen skip does (P-115 cva). D's block
+    already showed that dvh and the deck's query containers change only where or whether style runs, not this Layout.
+  - My model (M1): the showcase's relayout starts from an invalidation that containment does not block. Either it starts
+    inside the box (a style change of its own descendants, e.g. a viewport-unit value, S5) or it arrives as an inherited
+    style change from an ancestor.
+  - Skipping removes M1's cost because the skipped subtree's style and layout are not updated while it is skipped. That
+    is the spec's intent (CSS Containment 2: a skipped element's contents are not rendered); that WebKit skips the style
+    work too is OBSERVED via P-115.
+  - So M1 predicts cct NONE, and it fits csl NONE.
+  - M2: the invalidation enters through the box from outside (its size or position), and paint or style containment stops
+    it. M2 predicts cct LOCATES. csl NONE already argues against the layout-only form.
+  - The mid-page cost (C pays big Layouts at y >= 3000 with the toolbar still; cva did not in P-115) says something on
+    scroll frames, not only the toolbar, also re-lays out the showcase whenever it is laid out at all. That is OBSERVED,
+    cause unknown, and touches fix-scroll-cb (finding posted).
+- **Reading.**
+  - cct LOCATES (both runs), look gate clean: containment is enough, with no skip and no blank risk. cct is the candidate:
+    pixel check (Chrome + Simulator A/A), then R7, then the phone G kit.
+  - cct NONE, cva LOCATES: the skip is the mechanism.
+    - With ENTER-OK and UNPAINTED-PROXY 0, cva as is is the candidate: pixel check, then R7, then phone G.
+    - With UNPAINTED-PROXY >= 1 or ENTER-COST, cva needs an un-skip ahead (the pattern of v8's deferred sections). That
+      un-skip margin must be smaller than the gap between the viewport bottom and the showcase's top at the top of the
+      page (`gapAtTop`, measured in every run), or the skip is off during the toolbar steps and the gain goes. That makes
+      it a design card (next P-id), not a build.
+  - cct PARTIAL: both contribute; the next card splits paint (`contain: paint`) and style (`contain: style`).
+  - Any SPLIT: no call; the arm runs again in one more hold. N-SENSITIVE: both numbers reported, no gain claimed.
+  - GEOMETRY, NO-REPLICA or VOID: as in score-bisect; no call.
+- **Gate R7 (lead's instruction, via ops):** lead model review (two-miss rule): after the P-119 read and before cva or cct
+  drives any build, the lead reviews the author's model.
 
 ## Scenarios not run
 
