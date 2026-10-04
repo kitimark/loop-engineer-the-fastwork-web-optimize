@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-118 H1 (iphone-runner): VALID, xcode-serious checks 4 of 4 met.**
+  - The PIN line matches the validated pins.
+  - Both gates read Serious with induced Yes; the battery stayed at 32-33 C.
+  - The served hashes were checked before every item; pmset was clean.
+  - The checkout's gate tool is 023caa54 (two-row parser added, `gateVerdict` unchanged).
+  - H2 is queued. Card: "Ops check of H1".
 - 10-05 **P-115 result read (fix-toolbar-resize 08d1deb7): AGREE. P-119 assigned (next free P-120).**
   - What ops checked:
     - C was amended to v8 before data (7d56ce01, ops PASS 84bc91a5); the served JS 3e3e94cb6e9f / CSS f836404b3728 match.

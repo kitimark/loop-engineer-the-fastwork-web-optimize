@@ -190,3 +190,29 @@ question now reads "Xcode-induced Serious". It names gate exits 2 / 3 / 7 as in 
 H1 may start on these pins once two things hold: the lead's sign-off on the revised scripts, and iphone-runner's
 decisive check (part OFF, the user's console step, part ON) per the amendment. Whether induced Serious slows the chip
 stays UNRESOLVED until that check reports.
+
+## Ops check of H1 (iphone-runner, 2026-10-04 22:23-22:28Z): VALID under xcode-serious, 4 of 4 checks met
+
+Read from iphone-runner's out/p118/runs/hold-H1.log and the per-item check logs (gitignored; its worktree).
+- **PIN line** (first line, before the hold): hold.sh 09c0b21eaa0f, TICKET b8d48b0803c7, score.mjs 652bba12f6a3. These are
+  the pins ops validated (ac841f14), and the line says `profile xcode-serious`.
+- **Gate tool:** the checkout is 023caa54, so the gate is thermal-gate.mjs ecb403b3ad25 / verdict.mjs 8edb2fc77795, not
+  the c4875944 ops read.
+  - The c4875944..023caa54 diff adds `parseThermalRows`, a reader for Xcode's two-row Current/Induced export, with a
+    fixture and self-test cases.
+  - `gateVerdict` is byte-unchanged, so the PASS rules are the ones validated. The parser is newer; noted, not a
+    deviation.
+
+| # | check | H1 log | result |
+|---|---|---|---|
+| 1 | no heat pre-warm | no prewarm item, file or line; the first phone action is the start gate | met |
+| 2 | gate at start and end, `--accept-induced` | start: Serious, induced Yes, 32.39 °C, PASS; end: Serious, induced Yes, 33.09 °C, PASS | met |
+| 3 | one uncounted warm-up per arm port | wC, wV, both exit 0 | met |
+| 4 | 44 °C / Critical ceiling | max 33.09 °C, never Critical | met |
+
+- **Served check:** it ran before each of the 6 items. Every time, C served 3e3e94cb6e9f / f836404b3728 and V served
+  3076c5a8c9a3 / 2f7197880ffd, which are the signed arms. B was 4606120cf392 / 27776f3d4138.
+- **Items:** wC wV C1 V2 V3 C4, all exit 0.
+- **Other hold checks:** pmset found no sleep inside the hold, and the hold was an exclusive no-timing hold
+  (load1 2.7-6.6).
+- **Not checked here:** the scored numbers. Those come at the result read after the last hold.
