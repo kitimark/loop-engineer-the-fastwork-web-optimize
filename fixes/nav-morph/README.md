@@ -380,6 +380,41 @@ no hold now. A B1 end-pin M hold will be a separate ticket later.
   4. The decisive local check: a Fair (not Serious) G run with Timeline on C, or the same gesture in the Simulator
      (records only, no timing), counted with rf-nesting.mjs. If the outside share stays at 2-9 %, the cause is the
      driver or the long frames, not the heat.
+- **Research result, steps 1-3** (fix-nav-morph, 2026-10-04, read-only `gh` at WebKit main 322caa92c882; the bugs.webkit.org
+  search was not done because the source answers the question). Status: the record bookkeeping below is **CONFIRMED** by the source. That it
+  produces exactly our P-091 records is an inference consistent with it; step 4 is still the decisive local check.
+  - **A RenderingFrame opens only when none is open.** On Cocoa, `PageTimelineAgent::internalStart` registers an
+    `InspectorFrameBegin` run-loop observer on Entry and AfterWaiting. It pushes a RenderingFrame only while
+    `m_runLoopNestingLevel` is 0, then raises the level (`Source/WebCore/inspector/agents/page/PageTimelineAgent.cpp`
+    l.118-137). `InspectorFrameBegin` has order 0, the first observer (`Source/WebCore/platform/cf/RunLoopObserverCF.cpp`
+    l.43-44).
+  - **It closes only on `didCompleteRenderingFrame`.** That call lowers the level, and at 0 it ends any open Composite,
+    then the RenderingFrame (`PageTimelineAgent.cpp` l.361-379).
+  - **On iOS that call is asynchronous.** `RemoteLayerTreeDrawingArea` sends the layer-tree commit to `m_commitQueue`.
+    Only when the backing-store flush finishes there does it dispatch back to the main run loop and call
+    `didCompleteRenderingFrame()` (`Source/WebKit/WebProcess/WebPage/RemoteLayerTree/RemoteLayerTreeDrawingArea.mm`
+    l.431-438). So a RenderingFrame record runs from a run-loop wake to that later dispatch, not over one rendering
+    update.
+  - **Composite** is pushed at `willStartRenderingUpdateDisplay` and ended at `didCompleteRenderingUpdateDisplay`
+    (`Source/WebCore/page/Page.cpp` l.2808-2830). WebKit's own comment says the hook wraps "the non-WebKit CA commit
+    time which is mostly painting-related". Records nest under whatever record is open (`pushCurrentRecord`, l.275).
+  - **What follows** (inference): suppose a slow flush's completion closes the RenderingFrame part-way through a
+    run-loop iteration.
+    - The rest of that iteration has no RenderingFrame open: a style recalc, the rAF callbacks, an IO callback. That
+      work is recorded at top level.
+    - A Composite that starts then is top level too.
+    - The next wake (AfterWaiting) pushes its RenderingFrame inside that open Composite.
+
+    This is the shape seen in P-091 (top-level RecalculateStyles, FireAnimationFrame and ObserverCallback, and a
+    RenderingFrame nested in a Composite). The share would grow with long flushes, i.e. long frames, which fits the
+    outside records clustering in long frames.
+  - **For the scorer:** on iOS a RenderingFrame record is not a rendering update. Matching edge frames to
+    RenderingFrames is unreliable exactly when frames are long. Interval attribution on the page clock (edge-span.mjs)
+    does not depend on that bookkeeping. Any future phone attribution ticket should use it as the primary reading.
+  - Recent history: no change to this bookkeeping in the last commits to `PageTimelineAgent.cpp`. Those commits are
+    Safer CPP work (3941d977dc, 9a8a5f7d36), per-element "Layout Invalidated" events (7af6d5a321, 2026-07-16) and
+    node columns (f7dd925a68). The per-element "Layout Invalidated" events could give WebKit element counts in a
+    later ticket, if the Simulator's Safari carries that change (UNRESOLVED).
 
 **Post-hoc reading, exploratory** (written after the data; it decides nothing).
 - `fixes/nav-morph/edge-span.mjs` drops the RenderingFrame matching. It splits each edge frame's own interval (from
