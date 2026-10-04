@@ -1,0 +1,100 @@
+# fastwork mirror fix: double-drive
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/dd-v8base/overlay: apply dd-v8base first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply double-drive --on dd-v8base
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -38,7 +38,11 @@
+   width: 100%;
+   min-height: 100%;
+   transform: scale(var(--commission-shrink-scale));
+-  transform-origin: 50% 0;
++  /* double-drive (T-157): the origin is a weight the script writes (0 = top for the enter shrink, 1 = bottom for the
++     exit shrink, in between only while both shrinks are easing). The class switch below flipped it while the eased
++     scale was still ~0.96 when scrolling back up, a 20-27 px one-frame jump; at rest the weight equals the class
++     state (see the script), and without the script it is 0, the old default. */
++  transform-origin: 50% calc(var(--fw-co-w, 0) * 100%);
+   will-change: transform, border-radius;
+   background: #fff;
+   flex: 1;
+@@ -46,9 +50,8 @@
+   position: relative;
+   overflow: clip;
+ }
+-.commission.shrinking:not(.entering) .commission-card {
+-  transform-origin: 50% 100%;
+-}
++/* double-drive (T-157): `.commission.shrinking:not(.entering) .commission-card { transform-origin: 50% 100% }` is now
++   the --fw-co-w weight on .commission-card above. */
+ .commission-runway {
+   background: #fff;
+   width: 100%;
+@@ -2619,6 +2622,10 @@
+   display: flex;
+   position: relative;
+   overflow: clip;
++  /* double-drive (T-157): the shrink's origin on the card itself, so .is-future-shrinking no longer flips it
++     (50% 50% <-> 50% 100%) while the card is still scaled; scrolling up fast that flip jumped the card -105/+175/-77 px.
++     Outside the shrink the card only translates (reveal 48px -> 0) or rests at translateY(0): no visual change. */
++  transform-origin: 50% 100%;
+ }
+ .start-selling-future.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+@@ -2663,6 +2670,20 @@
+ .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+   transform-origin: 50% 100%;
++  /* double-drive (T-157, the PR-021 move): --future-shrink is already eased per frame by the script, so the 0.9 s
++     transform transition restarted every frame and the card trailed the scroll by 0.7-1.3 s. While the shrink drives
++     transform only opacity and filter keep their transitions (the lists truncate to the first two entries: opacity
++     0.7 s, filter 0.9 s, exactly as above). End values are unchanged. */
++  transition-property: opacity, filter;
++}
++/* double-drive (T-157), phones and tablets: the CSS below forces --future-shrink-scale: 1 here (same query), so the
++   shrink is scale(1), which looks the same as translateY(0). Keeping translateY(0) means the class toggle changes no
++   computed transform, so the 0.9 s identity transition (scale(1) <-> translateY(0)) no longer starts when the class
++   goes off; the transition-property rule above already stops the one when it goes on. */
++@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
++  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
++    transform: translateY(0);
++  }
+ }
+ .start-selling-future-header {
+   z-index: 10;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3289,6 +3289,7 @@
+       _ce, // last written --commission-enter-shrink
+       _cs, // last written --commission-shrink
+       _ch, // last written runway height
++      _co, // [double-drive] last written --fw-co-w (the card's transform-origin weight)
+       a = () => {
+         t = 0;
+         let k = _cq.some((e) => e.matches);
+@@ -3315,10 +3316,19 @@
+         // writes only when the value changed (same values as before, no redundant style mutations)
+         let _ve = String(n),
+           _vs = String(Math.max(n, r)),
+-          _vh = k || e.matches ? `` : `${i * 0.06}px`;
++          _vh = k || e.matches ? `` : `${i * 0.06}px`,
++          // [double-drive] transform-origin weight (0 top, 1 bottom) from the eased values themselves, so it changes
++          // only while the scale it applies to is ~1, or blends while both shrinks ease: no one-frame origin jump. The
++          // class rule it replaces (bottom = .shrinking:not(.entering)) switched while r still eased (scale ~0.96,
++          // a 20-27 px jump scrolling up). 0.004672 = w(0.04), the classes' threshold, so at rest (n = w(f),
++          // r = w(p)) the weight is 1 exactly when p > 0.04 and f <= 0.04: the class state where the card is visible.
++          _vR = Math.max(0, r - 0.004672),
++          _vN = Math.max(0, n - 0.004672),
++          _vo = _vR > 0 ? String(_vR / (_vN + _vR)) : `0`;
+         (k ||
+           (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
+-          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs)),
++          _vo !== _co && u.style.setProperty(`--fw-co-w`, (_co = _vo))),
+           _vh !== _ch && (d.style.height = _ch = _vh),
+           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
+       },
