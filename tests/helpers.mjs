@@ -112,6 +112,8 @@ export function unregisterRealWorktree(p) { realWorktrees.delete(p); }
  * the real, possibly busy machine. Pass FW_TEST_HOST: '' for the real host (the opt-in Chrome tests do).
  */
 export const FAKE_HOST = join(TESTS, 'fixtures', 'fake-host.mjs');
+/** tests/fixtures/fake-thermal.mjs: the phone's thermal read (xctrace + battery) for every tool subprocess (I-186). */
+export const FAKE_THERMAL = join(TESTS, 'fixtures', 'fake-thermal.mjs');
 /** A clean env for tool subprocesses: no inherited mirror/lock/port overrides unless given. */
 export function cleanEnv(extra = {}) {
   const env = { ...process.env };
@@ -126,6 +128,12 @@ export function cleanEnv(extra = {}) {
   env.FW_PROPOSAL_PHONE = 'off'; // I-143: proposal post/revise/publish/live start no Try-it host unless a test asks ('on')
   env.FW_TRANSCRIPTS_DIR = 'off'; // I-152: never the machine's Claude Code transcripts; a test passes its fixture dir
   delete env.FW_NO_CAFFEINATE; // I-070: a test that passes the fake gets it, whatever the caller's shell says
+  // I-186: a phone run's thermal-profile read never reaches the real phone, xctrace or libimobiledevice: the fake reads
+  // Serious, induced by Xcode (the default profile passes), battery 33.5 C; a test passes FAKE_THERMAL_* or its own fake
+  env.FW_XCTRACE = FAKE_THERMAL;
+  env.FW_THERMAL_BATTERY = FAKE_THERMAL;
+  env.FW_THERMAL_UDID = 'FAKE-UDID-0000';
+  for (const k of Object.keys(env)) if (/^FAKE_THERMAL_/.test(k)) delete env[k];
   // a git hook exports GIT_DIR / GIT_INDEX_FILE / ...: never let them redirect the temp repos' git calls
   for (const k of Object.keys(env)) if (/^GIT_/.test(k)) delete env[k];
   return { ...env, GIT_AUTHOR_NAME: 'fw-test', GIT_AUTHOR_EMAIL: 'fw-test@example.invalid', GIT_COMMITTER_NAME: 'fw-test', GIT_COMMITTER_EMAIL: 'fw-test@example.invalid', ...extra };

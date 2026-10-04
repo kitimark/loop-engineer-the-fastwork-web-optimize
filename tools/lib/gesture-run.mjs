@@ -473,9 +473,18 @@ export function ownHoldLeftMs(s = lockStatus('chrome-measure'), held = process.e
  * {device, outDir, wdaBase, toolFiles, wdaHint, openHint(url), preflight(estMs, {budgetMs}) -> {pageUrl, pageSource},
  *  lost() -> reason | null (checked before every op), extra() -> more meta fields}.
  */
-export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = false, warmup = false, log = console.log }) {
+export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = false, warmup = false, log = console.log, profileGate = null }) {
   const lease = () => { const s = lockStatus('iphone'); return s.holder && !s.stale && s.holder.owner === owner ? s.holder : null; };
-  let mac = null;
+  let mac = null, prof = null;
+  const budget = (budgetMs) => {
+    const h0 = lease();
+    const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
+    // I-112: the whole run (reload, untils, Timeline, save), not only the strokes
+    if (left < budgetMs + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(budgetMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
+    const hold = ownHoldLeftMs();
+    if (hold !== null && hold < budgetMs) throw new Error(`your chrome-measure hold ends in ${Math.max(0, Math.round(hold / 1000))} s, a gesture run needs up to ~${Math.round(budgetMs / 1000)} s (GESTURE_BUDGET_S, I-112): run it in a new hold`);
+    return { pageUrl: h0.meta?.url ?? null, pageSource: 'your lease' };
+  };
   return {
     device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', outDir: 'iphone', wdaBase: undefined, toolFiles: TOOL_FILES,
     wdaHint: `node tools/iphone.mjs wda start --owner ${owner}`, openHint: (u) => `node tools/iphone.mjs open ${u} --owner ${owner}`,
@@ -484,16 +493,14 @@ export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = 
       // hold; the runner's own hold passes; shared jobs pass with a NOTE and the Mac state in meta.mac, unless
       // --require-quiet or FW_PHONE_REQUIRE_QUIET=1
       mac = phoneGuard({ owner, allow: allowDuringMeasure, requireQuiet, warmup, log });
-      const h0 = lease();
-      const left = h0.expiresAt ? Date.parse(h0.expiresAt) - Date.now() : Infinity;
-      // I-112: the whole run (reload, untils, Timeline, save), not only the strokes
-      if (left < budgetMs + 30000) throw new Error(`your iphone lease ends in ${Math.round(left / 1000)} s, the run needs ~${Math.round(budgetMs / 1000)} s: node tools/lock.mjs renew iphone --owner ${owner} --ttl 900`);
-      const hold = ownHoldLeftMs();
-      if (hold !== null && hold < budgetMs) throw new Error(`your chrome-measure hold ends in ${Math.max(0, Math.round(hold / 1000))} s, a gesture run needs up to ~${Math.round(budgetMs / 1000)} s (GESTURE_BUDGET_S, I-112): run it in a new hold`);
-      return { pageUrl: h0.meta?.url ?? null, pageSource: 'your lease' };
+      // I-186: the thermal profile (--profile serious|fair) at the hold's start (one read per hold), after the guard and
+      // before the lease and hold budget checks (so they count its ~25 s), WDA and Safari; without a gate: synchronous
+      if (profileGate) return profileGate(owner).then((p) => { prof = p; return budget(budgetMs); });
+      return budget(budgetMs);
     },
     lost: () => (lease() ? null : 'lost the iphone lease (expired or released): stopped between strokes'),
-    extra: () => (mac ? { mac: phoneMacRecord(mac) } : {}), // I-056: shared jobs and load1 on the Mac at start and end
+    extra: () => ({ ...(mac ? { mac: phoneMacRecord(mac) } : {}), ...(prof ? { profile: prof.record(), profileDrift: null } : {}) }), // I-056: shared jobs and load1 on the Mac at start and end; I-186: the thermal profile (end / drift stamped by the hold's end read)
+    saved: (file) => (prof ? prof.saved(file) : null), // I-186: listed for the hold's end read
   };
 }
 
@@ -513,7 +520,7 @@ export async function gestureCmd({ log = console.log, ...args }) {
   }
 }
 
-async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null,
+async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null, profileGate = null,
   usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--timeline <out.json>] [--out file] [--dry-run]' }) {
   if (!arg) throw new Error(`usage: ${usage}`);
   const file = resolve(arg);
@@ -534,7 +541,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     return 0;
   }
   const owner = requireLease();
-  const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), warmup: flag('warmup'), log });
+  const tg = target || phoneTarget({ owner, allowDuringMeasure: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), warmup: flag('warmup'), log, profileGate });
   const { pageUrl, pageSource } = await tg.preflight(prog.estMs, { budgetMs });
 
   // Safari's tab: there, not the certificate warning, the lease's page
@@ -598,6 +605,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   if (res.timeline) res.timeline = res.timeline.map((t) => ({ ...t, file: repoRel(t.file), errors: t.errors.map(saved) })); // I-079
   doc.summary = summarizeRun(res.segments, res.strokes, { morph: res.morph });
   writeFileSync(out, JSON.stringify(doc));
+  await tg.saved?.(out); // I-186
   log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
   for (const t of res.timeline || []) log(`timeline seg ${t.seg}: ${t.records} records, offset ${t.offsetMs === null ? 'UNKNOWN' : `${t.offsetMs.toFixed(3)} ms`}${t.epochs > 1 ? `, ${t.epochs} epochs` : ''}${t.errors.length ? `, ${t.errors.length} errors` : ''} -> ${t.file}`); // I-079
   log(`saved ${out}`);

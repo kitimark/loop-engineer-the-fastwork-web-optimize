@@ -86,7 +86,11 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
                                                             without --warmup): meta.sentinel {driver, criterion, value, pass}
     [--no-park]                                             keep the page open after the run (default: Safari parks
                                                             on about:blank, I-047; iphone.mjs open <url> before the
-                                                            next run loads it in the parked tab or restarts Safari, I-077)`;
+                                                            next run loads it in the parked tab or restarts Safari, I-077)
+    [--profile serious|fair]                                the thermal test profile (I-186, default serious = Xcode's
+                                                            induced Serious; fair = Nominal or Fair, not induced),
+                                                            read once per hold before Safari is touched; a misfit
+                                                            refuses with exit 8 (iphone.mjs --help)`;
 
 /** Device settings that a page cannot read (U9, research/architecture/unknowns-validity.md): recorded as 'unknown'
  *  rather than left out, until a device-side reader (T2: WDA / lockdown) fills them in. */
@@ -251,7 +255,7 @@ export function estimateMs(o) {
  * toolFiles, outDir, extra() -> more meta fields, guard() in place of measureGuard (it runs inside its own normal
  * hold), renew(needMs), start() / end() around the timed part}; no lease renewal, lease URL check or battery read.
  */
-export async function runCmd({ argv, requireLease, port, target = null }) {
+export async function runCmd({ argv, requireLease, port, target = null, profileGate = null }) {
   const o = parseRunArgs(argv.slice(argv.indexOf('run') + 1));
   if (o.help) { console.log(USAGE); return; }
   const owner = requireLease();
@@ -259,6 +263,9 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
   if (target) o.battery = false;
   const guard = target ? target.guard : (again) => measureGuard({ ...o, owner }, undefined, undefined, { note: !again });
   await guard();
+  // I-186: the thermal profile (--profile serious|fair) at the hold's start, one read per hold, before the lease renewal and
+  // Safari: never in the timed part. A misfit refuses (exit 8). The Simulator target has no thermal profile.
+  const prof = !target && profileGate ? await profileGate(owner) : null;
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;
   if (!target) {
     // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs; the Mac stays awake
@@ -316,8 +323,10 @@ export async function runCmd({ argv, requireLease, port, target = null }) {
     raw.served = servedSkip ?? await servedHashes(await c.evaluate(RESOURCES_JS).catch(() => []));
     if (servedSkip) console.log(`served: not fetched (${servedSkip.reason})`);
     if (!target) raw.mac = phoneMacRecord(macGuard);
+    if (prof) raw.profile = prof.record(); // I-186
     if (target) await target.end?.();
-    return finish(o, owner, raw, { target });
+    let listed = null; // I-186: the ledger write is async; the run waits for it (also when finish throws on a page error)
+    try { return finish(o, owner, raw, { target, onSaved: prof ? (f) => { listed = prof.saved(f); } : null }); } finally { if (listed) await listed; }
   } finally { c.close(); if (reloaded && o.park && !target) await parkAfterRun(port, owner); }
 }
 
@@ -372,7 +381,7 @@ function lanSafe(o) {
 }
 
 /** Raw page result -> run JSON on disk + console summary. Exported for tests. */
-export function finish(o, owner, raw, { now = new Date(), target = null } = {}) {
+export function finish(o, owner, raw, { now = new Date(), target = null, onSaved = null } = {}) {
   const doc = buildDoc(raw);
   const meta = {
     schema: SCHEMA, kind: 'run', driver: DRIVERS[o.driver], driverName: o.driver, probe: o.probe, label: o.label,
@@ -383,12 +392,14 @@ export function finish(o, owner, raw, { now = new Date(), target = null } = {}) 
     rafHz: doc.summary.rafHz, lowPowerSuspect: doc.summary.lowPowerSuspect, battery: raw.battery ?? null,
     sentinel: o.sentinel && !target ? sentinelVerdict(o.driver, doc.summary, raw.driverResult) : null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
     ...(raw.mac ? { mac: raw.mac } : {}), // I-056: shared jobs and load1 on the Mac at the run's start and end
+    ...(raw.profile ? { profile: raw.profile, profileDrift: null } : {}), // I-186: the thermal profile; the hold's end read stamps end / drift
     ...(target?.extra ? target.extra() : {}),
   };
   const out = resolve(REPO, o.out || join('out', target?.outDir ?? 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
   const json = { meta, ...doc, tops: raw.tops, topsPost: raw.topsPost, stateAtStart: raw.stateAtStart, early: raw.early, driverResult: raw.driverResult, pre: lanSafe(raw.pre), post: lanSafe(raw.post) };
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(json));
+  if (onSaved) onSaved(out); // I-186: listed for the hold's end read (the caller awaits it)
   const sm = doc.summary;
   const cnt = (v) => `>50 ${v.gt50} >34 ${v.gt34} (+-4: >46 ${v.gt46} >54 ${v.gt54} >30 ${v.gt30} >38 ${v.gt38}, near34 ${v.near34} near50 ${v.near50})`;
   const ph = Object.entries(sm.phases).map(([k, v]) => `${k} ${v.frames}fr ${v.fps} fps ${cnt(v)} max ${v.max}@${v.maxY}`).join(' | ');

@@ -28,6 +28,10 @@
 // old final read; a failed read gets a diag and one reconnect. The in-page logger (RECORD_JS), the final read
 // (RECORD_STOP_JS) and the summary (recordSummary) stay the 2226d51 ones, byte for byte: pinned below (RECORD_PINS) and
 // equal to tools/lib/sim-scroll.mjs's copies. So the record block is pinned as it is now, no longer against 2226d51.
+// I-186 (2026-10-05, measurement-adjacent, nothing timed changes): scroll and record check the phone's thermal profile
+// (`--profile serious|fair`) right after measureGuard, before Safari is touched (profileGate: one ~25 s xctrace read per
+// hold, cached; a misfit refuses with exit 8), put it into the record (res.meta.profile) and list the saved file for the
+// hold's end read (prof.saved). PROFILE below; scroll still matches 2226d51 and record its I-141 pin without these lines.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -70,6 +74,12 @@ test('iphone.mjs: scroll, record, open, status, PROBE, summarize and requireLeas
     }
     assert.equal(sha(b), PINS_83B7F7B[k], `${k}: only the intended lines changed since 2226d51`);
   }
+  let rec = block(src, "  if (cmd === 'record') {", '  }');
+  for (const [now, then] of PROFILE.record) {
+    assert.equal(rec.split(now).length, 2, `record has the I-186 line, once: ${now.trim().slice(0, 60)}`);
+    rec = rec.replace(now, then);
+  }
+  assert.equal(sha(rec), PINS_BEFORE_I186.record, 'record: only the I-186 profile lines changed since I-141');
 });
 
 const LAN_SAFE_WRITE = '    writeFileSync(out, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)';
@@ -86,8 +96,13 @@ const LEASE_URL = ['    let leaseUrl = tryResolveLanUrl(holder.meta?.url); // a 
 const OPEN_LAN = ["    const url = resolveLanUrl(arg); // http://lan:<port>/ -> this Mac's LAN address now (I-073)\n    const info = await mirrorInfo(url);\n    const target = iphoneTarget(url, info, { keepHttps: flag('keep-https') });",
   "    const info = await mirrorInfo(arg);\n    const target = iphoneTarget(arg, info, { keepHttps: flag('keep-https') });"]; // I-073
 const OPEN_PARKED = ['\n    if (await openParked(url, target, info)) return; // Safari parked (I-047): its parked tab, or a Safari restart (I-077)', '']; // I-077
+const PROF_GATE = '\n    const prof = await profileGate(owner); // I-186: the thermal profile at the hold\'s start (one read per hold; refuses, exit 8)';
+const PROF_META = (indent) => `\n${indent}res.meta.profile = prof.record(); // I-186: profile, the hold's start read (the end read stamps end/drift)`;
+const PROF_SAVED = "\n    await prof.saved(out); // I-186: listed for the hold's end read";
+const PROFILE = { scroll: [[PROF_GATE, ''], [PROF_META('    '), ''], [PROF_SAVED, '']], record: [[PROF_GATE, ''], [PROF_META('      '), ''], [PROF_SAVED, '']] };
+const PINS_BEFORE_I186 = { record: '53258b1f26b31e01' }; // the I-141 pin
 const CHANGES = {
-  scroll: [[LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, ''], MARK, LEASE_URL],
+  scroll: [...PROFILE.scroll, [LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, ''], MARK, LEASE_URL],
   open: [OPEN_LAN, OPEN_PARKED],
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
@@ -99,7 +114,7 @@ const RECORD_PINS = { RECORD_JS: '8d5ee37294abb430', RECORD_STOP_JS: 'b24a0eac1e
 
 const PINS = {
   requireLease: 'c3fe5c3908d05b4b', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: 'ea6efe52e87761be', record: '53258b1f26b31e01', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-141: record through lib/iphone-record.mjs)
+  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: '88173866305dfab8', record: '93dc03f9721d7b09', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-141: record through lib/iphone-record.mjs; I-186: the thermal profile gate)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

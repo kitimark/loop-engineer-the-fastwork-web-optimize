@@ -100,6 +100,10 @@
 // profilesRemoved: n when the kill left throwaway Chrome profiles that `run` removed, I-106). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
 // display-sleep-preventing assertion (caffeinate -d) was active at its start and end; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
+// I-186: when a phone run (iphone.mjs run|scroll|record|gesture) inside an exclusive `run` hold left its thermal-profile
+// ledger (lib/thermal-profile.mjs), the hold makes the phone's END read after its command (~25 s, still inside the hold),
+// stamps the hold's run records (meta.profile.end, meta.profileDrift) and adds phoneProfile: [{profile, gate, start, end,
+// drift, runs, stamped}] to its holds.log line. The exit code stays the command's.
 //
 // DISK-LOW (I-124, lead's ruling 2026-10-04): under FW_TIMING_MIN_FREE_GB free (default 8; 0 = off) a NEW timing hold of
 // chrome-measure is refused (error, its queue entry dropped) with how to free space (space.mjs prune / report, the folder
@@ -615,11 +619,14 @@ async function main() {
     if (runMark && (await runMark)) { try { await describeHold('iphone', { owner, run: null, runPid: child.pid }); } catch {} }
     clearInterval(timer);
     clearTimeout(warn);
+    // I-186: a phone run (iphone.mjs run|scroll|record|gesture) inside this hold left its thermal-profile ledger: the hold's
+    // end read now, still inside the hold (~25 s); it stamps the hold's run records (profileDrift) and joins holds.log
+    const phoneProfile = !reentrant && mode !== 'shared' && holder?.token ? await closePhoneProfile(resource, holder.token) : null;
     // anything in the tree that ignored SIGTERM (or was orphaned when the command exited); I-099: then wait until it is gone
     let left = {};
     if (overran) { kill('SIGKILL'); left = { ...confirmGone(), ...cleanProfiles() }; }
     dropList();
-    const exit = overran ? { code: 124, killed: 'max-seconds', ...left } : { code };
+    const exit = { ...(overran ? { code: 124, killed: 'max-seconds', ...left } : { code }), ...(phoneProfile ? { phoneProfile } : {}) };
     if (powerStart) {
       const powerEnd = await hostPower();
       const hs = hostStateSummary([{ label: owner, run: 0, power: { start: powerStart, end: powerEnd } }]);
@@ -630,6 +637,17 @@ async function main() {
     return overran ? 124 : code;
   }
   throw new Error(`unknown command ${cmd}`);
+}
+
+/** I-186: the end read of the phone's thermal profile for a hold whose phone runs left a ledger (lib/thermal-profile.mjs
+ *  closeHold), or null; never throws. Lines go to stderr with the lock prefix. */
+async function closePhoneProfile(resource, token) {
+  try {
+    const P = await import('./lib/thermal-profile.mjs');
+    if (!P.openLedgers({ resource, token }).length) return null;
+    const s = await P.closeHold({ resource, token, log: (l) => console.error(`[lock ${resource}] ${l}`) });
+    return s.length ? s : null;
+  } catch (e) { console.error(`[lock ${resource}] phone profile end read failed: ${e.message} (I-186)`); return null; }
 }
 
 /** `lock.mjs wait <resource> --until <cond>`: read-only, no queue place (see the header). */
