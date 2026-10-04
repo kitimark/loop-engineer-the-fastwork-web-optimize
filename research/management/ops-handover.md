@@ -72,6 +72,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-120 Amendment A2 (int-v8; draft, committed after H4) and lead rulings:**
+  - The M leg cuts each record at the first m=0 after the first close, one rule for both arms. This is how the lead's "drive from m=0" ruling is implemented, and A2 says so.
+  - Precondition of the lead's re-sign: one real cycles-4 driver pass per arm, giving exactly 6 counted tweens after the cut. It runs as a shared Simulator job, outside the phone block or in a window it fits.
+  - int-v8's tree stays untouched until H4 ends; the runner executes its scripts from there. On-disk hashes matched the H3/H4 pins when last checked.
+  - H2' = H5 (wC wV nC1 nV2 nV3 nC4) and H6 (wC wV nC5 nV6 nV7 nC8), fresh; no m items or mC1/mC4 data.
+  - At the re-check, beyond the H1-entry list:
+    - the pre-look M predictions stand, or post-look values sit beside them, marked;
+    - "no data" voids an item (missing or empty record, or zero moving frames) even with exit 0;
+    - the full new pin list and the A2 head;
+    - the Simulator cycles-4 records.
 - 10-05 **P-120 H3a (23:40-23:43Z) VOID (lead):** WDA was down and every gesture exited 1, yet hold.sh printed VALID.
   - Rule for the result read: an item that exits non-zero or leaves no data is void. A G hold is valid only if every counted item exits 0. hold.sh's own VALID line is not enough: check each item's exit code and record file.
   - iphone-runner re-runs H3a after `iphone.mjs wda check`. hold.sh stays as pinned (49797e76c299) for H3/H4.
