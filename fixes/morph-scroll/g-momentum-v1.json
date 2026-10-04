@@ -1,0 +1,69 @@
+{
+  "name": "ms-momentum-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "PR-018 rev 4 proof (user's rev 3 review): M = momentum in the middle of the page: identical fling strokes up and down (finger speed fixed by the script), each followed by a free glide until the page rests; glide = travel after lift-off. E = the end of the page: slow drags (no fling) into and out of the extra screen, each held still on the glass for 1.5 s before lifting (a release half open), then a rest. Compare runs of the same script hash only.",
+  "params": {
+    "x": 215,
+    "idleMs": 4000,
+    "flingPx": 200,
+    "flingMs": 140,
+    "flicks": 3,
+    "dragPx": 450,
+    "dragMs": 2400,
+    "endHoldMs": 1500
+  },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": "$idleMs" },
+
+    { "type": "mark", "name": "position" },
+    { "type": "repeat", "times": 6, "until": "y>=2000", "steps": [
+      { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+      { "type": "pause", "ms": 150 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1000 },
+
+    { "type": "repeat", "times": "$flicks", "steps": [
+      { "type": "mark", "name": "flick-up" },
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+      { "type": "pause", "ms": 800 },
+      { "type": "until", "cond": "y>=600", "timeoutMs": 2000 },
+      { "type": "mark", "name": "flick-down" },
+      { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+      { "type": "pause", "ms": 800 }
+    ] },
+
+    { "type": "mark", "name": "approach" },
+    { "type": "repeat", "times": 30, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+      { "type": "pause", "ms": 400 }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 4000 },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "E1-close-half-hold" },
+    { "type": "stroke", "dir": "down", "px": "$dragPx", "ms": "$dragMs", "profile": "drag", "holdMs": "$endHoldMs" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "E2-open-half-hold" },
+    { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag", "holdMs": "$endHoldMs" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "E3-close-small-hold" },
+    { "type": "stroke", "dir": "down", "px": 150, "ms": 1200, "profile": "drag", "holdMs": "$endHoldMs" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "E4-close-flick" },
+    { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "done" }
+  ]
+}

@@ -4,61 +4,128 @@
   "area": "end",
   "topic": "morph-scroll",
   "problem": "At the end of the page, on a phone, the page takes over your scroll: once you reach the bottom, it cancels your finger's moves, pins the page in place every frame, and plays a 680 ms spring that grows the small nav pill into the dark panel (the 'morph'). Your finger stops scrolling the page for that moment.",
-  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put (CSS sticky) while that screen scrolls in, and the morph value is simply how far it has scrolled in, 0 to 1. So the panel opens and closes with your finger, like a normal scroll. Nothing cancels touch moves, nothing pins the page, no spring runs. Light snapping (CSS scroll-snap 'proximity') pulls a rest near closed or near open to the end. Rev 2: built directly on the current best build v7, without the morph-on-GPU change (morph-gpu rev 2 A measured slower on the phone, P-098) and without its early layer prep. Desktop, tablets and reduced motion keep today's behaviour. Base (A, v7): js 8c90da217745, css 308f0da70c3a; this (B): js d661831b8797, css cff335191762.",
-  "looksSame": "No. The motion is new: the panel follows the finger instead of a fixed spring, and it can rest half open (see the differences). Still frames at the same morph value match the base in the iOS Simulator while the panel covers the last section (only the running countdown differs, in base vs base too). Where the last section shows, Safari draws its text about 1 device pixel higher (T3, below). In Chrome only the EN language label differs (below).",
+  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put (CSS sticky) while that screen scrolls in, and the panel opens exactly as far as that screen has scrolled in, so it follows your finger (kept from rev 3, as you asked). Rev 4 answers your review: (1) Momentum: rev 3's CSS snapping made Safari brake every flick on the whole page (Safari switches the page to fast deceleration as soon as the page has any snap point: WebKit source, CONFIRMED). Rev 4 has no CSS snap at all, so flicks coast like today. (2) Did we measure it before? No. Rev 2 and 3 were checked only with scripted scrolls, which have no momentum, so the braking was missed. Rev 4 is measured with a robot finger on the iPhone (numbers under Gain). (3) No more stuck half open: when you let go and the page comes to rest part open, the page itself scrolls to open or closed in about half a second. It opens if you were opening and got past 30 %, closes if you were closing and got below 70 %; nothing moves while your finger is still on the glass. (4) Better ways, researched: native iOS apps pick the end point during the flick, which web pages cannot; CSS snap 'mandatory' brakes the same way as 'proximity'; so a short settle after the page rests is what keeps both the momentum and a clean end. Desktop, tablets and reduced motion keep today's behaviour. Base (A, v7): js 8c90da217745, css 308f0da70c3a; this (B, rev 4): js 5372c2d68c7d, css c4a4af0a7d6a.",
+  "looksSame": "No. The motion is new: the panel follows your finger instead of a fixed spring, and after you let go part open it glides to open or closed. Still frames at the same opening match the base in the iOS Simulator while the panel covers the last section (only the running countdown differs, in base vs base too). Where the last section shows, Safari draws its text about 1 device pixel higher (T3, below). In Chrome only the EN language label differs. The pictures are from rev 2's build: rev 4 changes only the snapping and adds the settle, which change motion, not still frames.",
   "visualDiff": [
-    "Motion: the morph follows your scroll position, not a 680 ms spring. Scroll halfway and the panel is halfway open.",
-    "Half-open rest is possible: Safari snaps a 'proximity' point only within 0.3 of the screen height (WebKit source, CONFIRMED), so a rest between about 30 % and 70 % open stays there.",
-    "Option if you want it: settle to the nearer end when the finger lets go (not built).",
+    "Motion: the panel follows your scroll position, not a 680 ms spring. Scroll halfway and it is halfway open.",
+    "New in rev 4: let go part open and the page settles by itself in about 0.5 s: to open if you were opening and passed 30 %, to closed if you were closing and went below 70 %. While your finger stays on the glass nothing moves.",
+    "New in rev 4: no CSS snapping anywhere, so flicks on the whole page coast as far as today (measured below).",
     "Safari only, T3 (over the wide rule by share, not by shade): wherever the last section (#platform) is on screen, its text and edges sit about 1 device pixel (1/3 CSS px) higher. Closed at the end: 0.89 % of the screen over 8 shades, max 77. One screen before: 0.57 %, max 78. Base vs base: 0.",
     "Why (Safari): the box position is identical to 1/64 px. WebKit gives every sticky box its own GPU layer (WebKit source, CONFIRMED); that this layer causes the 1 px shift is OBSERVED, cause unknown.",
     "Safari, panel covering the section (m 0.25 to 1): equal to the base apart from the countdown, which also differs base vs base (max shade 224 in both).",
-    "Chrome: the EN language label at the top right differs at every morph value, about 600 device px (0.02 %), max shade 187; everything else equals the base. Base vs base was 0 there in this run (rev 1 saw the same label differ base vs base). OBSERVED, cause unknown.",
+    "Chrome: the EN language label at the top right differs at every morph value, about 600 device px (0.02 %), max shade 187; everything else equals the base. OBSERVED, cause unknown.",
     "The page is one screen longer on phones.",
     "Nothing changes on desktop, tablets or with reduced motion."
   ],
   "gain": [
     {
+      "what": "Momentum after a flick, middle of the page (robot finger on the iPhone, same 200 px flick, 6 up + 6 down per build, median glide after the finger lifts)",
+      "before": "best build v7: 1058 px / 2.66 s up, 1077 px / 2.67 s down (rev 3 was 299 px / 0.70 s and 164 px / 0.47 s)",
+      "after": "rev 4: 1087 px / 2.67 s up, 1174 px / 2.66 s down",
+      "tag": "OBSERVED",
+      "how": "G driver (WDA robot finger), iPhone 15 Pro Max, iOS 26.6.1, runs R4 V7 R3 R3 V7 R4, 2026-10-04. Rev 4 sits inside v7's spread (v7 1016-1285 px, rev 4 1007-1292 px). Rev 3 lost 72-85 % of the glide, as the WebKit source predicts. Slow frames inside the glides (>34 / >50 ms): v7 16 / 2, rev 4 18 / 2. Not a timed block (no heat gate): a sanity check, not a smoothness claim."
+    },
+    {
+      "what": "Let go part open at the end of the page (slow drag, finger held still 1.5 s, then lifted)",
+      "before": "rev 3: stays part open (0.37 stayed at 0.45; a flick down out of the open panel stopped at 0.56)",
+      "after": "rev 4: 0.41 went to closed, 0.59 to open, 0.78 back to open, each in about 0.53 s; the flick glides on past the end screen",
+      "tag": "OBSERVED",
+      "how": "Same G runs, 2 per build, the same in both runs. Also checked in the iOS Simulator (6 rests from 0.2 to 0.8: all settle; rev 3 left 5 of 6 half open) and in Chrome with touch (nothing moves while the finger is down, settles after lift)."
+    },
+    {
       "what": "Touch moves cancelled at the end of the page",
       "before": "yes (non-passive touchmove)",
       "after": "none",
       "tag": "OBSERVED",
-      "how": "By the code: under the phone gate the listener is never added. Checked in Chrome; the Simulator check scrolled by script only."
+      "how": "By the code: under the phone gate the listener is never added; rev 4's touch listeners are passive. Checked in Chrome."
     },
     {
       "what": "Per-frame scroll pin and spring loop during the morph",
       "before": "scrollTo every frame + 680 ms spring",
-      "after": "none (the page scrolls by itself)",
+      "after": "none while scrolling (one smooth scroll to the nearer end after you let go part open)",
       "tag": "OBSERVED",
-      "how": "By the code and the Simulator scroll-step check on rev 2 (31 steps: morph value = scroll position, section held at the screen bottom every step)."
+      "how": "By the code and the Simulator scroll-step check (31 steps: morph value = scroll position, section held at the screen bottom every step)."
     },
     {
-      "what": "Smoothness and feel on the iPhone",
+      "what": "How it feels under your finger",
       "before": "not measured",
       "after": "not measured",
       "tag": "UNRESOLVED",
-      "how": "Needs a phone slot: the whole-page fast-flick gesture check (T-113) before it can join a best build, and your blind swipe A/B. Also untested: Safari's toolbar collapsing mid-scroll, and whether the scroll callback runs every frame during a finger scroll.",
+      "how": "Your Try-it on the phone is the test. Before it can join a best build it also needs the whole-page fast-flick check (T-113). Toolbar collapsing mid-scroll was covered only by these robot runs.",
       "needsPhone": true
     }
   ],
-  "risk": "A motion change: you decide whether the end-of-page morph should follow the finger. Repaint (corrected in rev 3): one big repaint (about 1.6 million pixels) in the frame where the menu leaves closed and again where it returns to closed, a snap back to closed included; the frames in between repaint only small areas (fix-morph-gpu's Simulator counts, F-223, OBSERVED). Following your scroll, that big frame comes every time you cross closed, so more often than the spring's one opening per visit. Not measured on the phone. A half-open rest can happen (WebKit's snap range, CONFIRMED). In Safari the last section is drawn 1 device px higher wherever it shows (T3), and it is its own GPU layer for the whole visit (memory not measured). Checked only with scripted scrolls in Chrome and the iOS Simulator, with the toolbar shown; no finger or gesture run yet, no reduced motion in Safari, no iPad, no rubber-band check. It reuses fix-nav-morph's setter and gate: if accepted it becomes a conflict cluster with nav-morph, and the nav-hit-cache change would need one extra line (__nsForce) to keep the nav colour right.",
+  "risk": "A motion change: you decide whether the end-of-page panel should follow the finger and settle by itself. The settle is a script: it waits 200 ms after the page stops, so on a slow phone it could start a little late; touching the screen while it glides was not checked. Repaint: one big repaint (about 1.6 million pixels) in the frame where the panel leaves closed and again where it returns to closed, a settle to closed included; frames in between repaint only small areas (fix-morph-gpu's Simulator counts, F-223, OBSERVED). In Safari the last section is drawn 1 device px higher wherever it shows (T3), and it is its own GPU layer for the whole visit (memory not measured). Not run: reduced motion in Safari, iPad, a reload while scrolled into the extra screen. It reuses fix-nav-morph's setter and gate: if accepted it becomes a conflict cluster with nav-morph, and the nav-hit-cache change would need one extra line (__nsForce) to keep the nav colour right.",
   "compare": {
-    "a": { "label": "Best build (v7)" },
-    "b": { "label": "Morph follows the scroll (this proposal)" },
+    "a": {
+      "label": "Best build (v7)"
+    },
+    "b": {
+      "label": "Morph follows the scroll, settles when you let go (rev 4)"
+    },
     "view": "side",
     "shots": [
-      { "caption": "iOS Simulator, closed at the end (m 0): last section 1 device px higher in B (T3)", "a": "../../out/morph-scroll/proposal-rev2/sim-0-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-0-b.png" },
-      { "caption": "iOS Simulator, halfway (m 0.5)", "a": "../../out/morph-scroll/proposal-rev2/sim-2-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-2-b.png" },
-      { "caption": "iOS Simulator, open (m 1)", "a": "../../out/morph-scroll/proposal-rev2/sim-4-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-4-b.png" },
-      { "caption": "iOS Simulator, one screen before the end", "a": "../../out/morph-scroll/proposal-rev2/sim-pre-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-pre-b.png" },
-      { "caption": "Where they differ, m 0 (red: shade > 8, yellow: 1-8; the clock in the status bar always differs)", "a": "../../out/morph-scroll/proposal-rev2/sim-0-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-0-diff.png" },
-      { "caption": "Noise only: base vs base, m 0", "a": "../../out/morph-scroll/proposal-rev2/sim-0-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-0-aa-diff.png" },
-      { "caption": "Where they differ, one screen before the end", "a": "../../out/morph-scroll/proposal-rev2/sim-pre-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-pre-diff.png" },
-      { "caption": "Where they differ, m 1 (countdown only)", "a": "../../out/morph-scroll/proposal-rev2/sim-4-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-4-diff.png" },
-      { "caption": "Noise only: base vs base, m 1 (countdown)", "a": "../../out/morph-scroll/proposal-rev2/sim-4-a.png", "b": "../../out/morph-scroll/proposal-rev2/sim-4-aa-diff.png" },
-      { "caption": "Chrome 430x932, halfway (m 0.5)", "a": "../../out/morph-scroll/proposal-rev2/chrome-05-a.png", "b": "../../out/morph-scroll/proposal-rev2/chrome-05-b.png" },
-      { "caption": "Chrome, where they differ at m 0: only the EN language label (top right)", "a": "../../out/morph-scroll/proposal-rev2/chrome-0-a.png", "b": "../../out/morph-scroll/proposal-rev2/chrome-0-diff.png" }
+      {
+        "caption": "iOS Simulator, closed at the end (m 0): last section 1 device px higher in B (T3)",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-0-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-0-b.png"
+      },
+      {
+        "caption": "iOS Simulator, halfway (m 0.5)",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-2-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-2-b.png"
+      },
+      {
+        "caption": "iOS Simulator, open (m 1)",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-4-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-4-b.png"
+      },
+      {
+        "caption": "iOS Simulator, one screen before the end",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-pre-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-pre-b.png"
+      },
+      {
+        "caption": "Where they differ, m 0 (red: shade > 8, yellow: 1-8; the clock in the status bar always differs)",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-0-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-0-diff.png"
+      },
+      {
+        "caption": "Noise only: base vs base, m 0",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-0-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-0-aa-diff.png"
+      },
+      {
+        "caption": "Where they differ, one screen before the end",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-pre-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-pre-diff.png"
+      },
+      {
+        "caption": "Where they differ, m 1 (countdown only)",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-4-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-4-diff.png"
+      },
+      {
+        "caption": "Noise only: base vs base, m 1 (countdown)",
+        "a": "../../out/morph-scroll/proposal-rev2/sim-4-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/sim-4-aa-diff.png"
+      },
+      {
+        "caption": "Chrome 430x932, halfway (m 0.5)",
+        "a": "../../out/morph-scroll/proposal-rev2/chrome-05-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/chrome-05-b.png"
+      },
+      {
+        "caption": "Chrome, where they differ at m 0: only the EN language label (top right)",
+        "a": "../../out/morph-scroll/proposal-rev2/chrome-0-a.png",
+        "b": "../../out/morph-scroll/proposal-rev2/chrome-0-diff.png"
+      }
     ]
   },
-  "live": { "patch": "fixes/morph-scroll/patch.diff", "a": { "patch": "fixes/v7-best/patch.diff" } }
+  "live": {
+    "patch": "fixes/morph-scroll/patch.diff",
+    "a": {
+      "patch": "fixes/v7-best/patch.diff"
+    }
+  }
 }

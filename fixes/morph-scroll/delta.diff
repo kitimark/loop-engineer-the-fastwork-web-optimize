@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13777,6 +13777,38 @@
+@@ -13777,7 +13777,65 @@
        __osb = () => {
          let e = C() ? `none` : ``;
          e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
@@ -18,10 +18,36 @@
 +      __msEnd = null,
 +      __msP = -1,
 +      __msRO = null,
++      // rev 4: no CSS scroll snap (any snap point on the root makes iOS use fast deceleration for the whole page,
++      // WebKit RemoteScrollingCoordinatorProxyIOS::shouldSetScrollViewDecelerationRateFast). Instead, once the finger
++      // is up and the scroll has come to rest (no scroll for 200 ms) with the morph part open, a smooth scroll
++      // finishes it to an end: open when the last move was opening and p >= 0.3, or closing and p >= 0.7 (0.5 if no
++      // move was seen). The morph follows that scroll like any other.
++      __msY = -1,
++      __msDir = 0,
++      __msTouch = 0,
++      __msTO = 0,
++      __msArm = () => {
++        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(__msSettle, 200)));
+       },
++      __msSettle = () => {
++        if (!__msEnd || __msTouch) return;
++        let t = __msEnd.offsetHeight,
++          n = document.documentElement.scrollHeight - window.innerHeight,
++          e = t > 0 ? (window.scrollY - (n - t)) / t : 0;
++        e > 0.002 &&
++          e < 0.998 &&
++          window.scrollTo({ top: e >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` });
++      },
++      __msTouchEv = (e) => {
++        ((__msTouch = e.touches.length), __msTouch ? window.clearTimeout(__msTO) : __msArm());
++      },
 +      __msTick = () => {
 +        if (!__msEnd) return;
++        let y = window.scrollY;
++        (y !== __msY && (__msY >= 0 && (__msDir = y > __msY ? 1 : -1), (__msY = y)), __msTouch || __msArm());
 +        let t = __msEnd.offsetHeight,
-+          e = t > 0 ? (window.scrollY - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
++          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
 +        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
 +        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
 +        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
@@ -36,10 +62,11 @@
 +          z(x, t, !0),
 +          S(),
 +          C() || I());
-       },
++      },
        T = (e) => {
          let t = ZM(i, a, e - o);
-@@ -13826,6 +13858,7 @@
+         ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
+@@ -13826,6 +13884,7 @@
        __tt = [],
        N = () => {
          d ||
@@ -47,7 +74,7 @@
            ((d = !0),
            window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
            (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
-@@ -13862,7 +13895,8 @@
+@@ -13862,7 +13921,8 @@
        __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
        __pinY = () => Math.min(window.scrollY, __pinMax()),
        L = () => {
@@ -57,7 +84,7 @@
          let e = window.scrollY,
            t = __pinMax();
          (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
-@@ -13877,6 +13911,27 @@
+@@ -13877,6 +13937,28 @@
            )
          : void 0;
      (R && te && te.observe(R), _(), m(), N());
@@ -67,8 +94,9 @@
 +      ((__msEnd = document.createElement(`div`)),
 +      (__msEnd.className = `fw-ms-end`),
 +      __msEnd.setAttribute(`aria-hidden`, `true`),
-+      (__msEnd.innerHTML = `<div class="fw-ms-snap0"></div>`),
 +      R.after(__msEnd),
++      // passive: they never block or delay the scroll; they only tell the settle when the finger is down
++      [`touchstart`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
 +      // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
 +      // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
 +      (__msRO = new ResizeObserver(() => {
@@ -85,19 +113,21 @@
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
      // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
      // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
-@@ -13916,6 +13971,9 @@
+@@ -13916,6 +13998,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
 +          __msRO?.disconnect(),
 +          __msEnd?.remove(),
++          window.clearTimeout(__msTO),
++          [`touchstart`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
 +          document.documentElement.classList.remove(`fw-ms`),
            P(),
            ne(),
            e.removeEventListener(`change`, m),
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -12269,4 +12269,30 @@
+@@ -12269,4 +12269,18 @@
  .start-selling-future.is-visible.is-future-shrinking
    .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
    animation: fw-c-shell-hold 0.95s linear;
@@ -105,26 +135,14 @@
 +/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
 +   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
 +   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
-+   under the old scrollTo pin while the morph follows the scroll. Proximity snap: .fw-ms-snap0 (end of the page as
-+   before, morph 0) and .fw-ms-end (morph 1). */
-+html.fw-ms {
-+  scroll-snap-type: y proximity;
-+}
++   under the old scrollTo pin while the morph follows the scroll. Rev 4: no scroll snap (it made iOS decelerate the
++   whole page fast); a script settles a part-open morph to an end once the scroll rests. */
 +html.fw-ms .start-selling-platform {
 +  position: sticky;
 +  top: calc(100dvh - var(--fw-ms-h, 100dvh));
-+}
+ }
 +.fw-ms-end {
 +  position: relative;
 +  height: 100lvh;
-+  scroll-snap-align: end;
 +  pointer-events: none;
- }
-+.fw-ms-snap0 {
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  width: 1px;
-+  height: 0;
-+  scroll-snap-align: end;
 +}

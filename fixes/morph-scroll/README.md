@@ -3,8 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** proposal build, **rev 2** (PR-018; motion change, so a user decision; lead ruling T-082 #5 item 1). Nothing
-timed has run. Rev 2 (lead, 2026-10-04): rebuilt on the best build without morph-gpu rev 2 A and `__rvPrepNow`, because
+**Status:** proposal build, **rev 4** (PR-018 rev 4, 2026-10-04; rev 3 was rev 2's build with corrected text). Rev 4
+answers the user's rev 3 review: no CSS scroll snap (it cost momentum on the whole page), and a settle to the nearer
+end when the page rests part open; see "Rev 4". Proposal history: rev 2 (PR-018; motion change, so a user decision;
+lead ruling T-082 #5 item 1). Rev 2 (lead, 2026-10-04): rebuilt on the best build without morph-gpu rev 2 A and `__rvPrepNow`, because
 P-098 measured rev 2 A slower on the phone (first open +6.5 ms). The base is v7 (best build since c3dc73b1; the lead
 confirmed v7 over plain B-R2). Before it can join a best build, B must also pass the whole-page fast-flick G check
 (user T-113 #4); phone slot via the lead.
@@ -15,18 +17,19 @@ screen side at most 600 px. Desktop, tablets and reduced motion keep today's jac
 (scripted `scrollTo`, frozen frames). No G or F driver yet: touch, snap and toolbar effects need one before landing.
 **Owner:** fix-hero-exit-threaded. Coupled to fix-nav-morph (setter and gate, its go-ahead for this proposal build).
 
-## Builds (rev 2)
+## Builds (rev 4)
 
 | name | what | JS / CSS (sha256, 12) | snapshot |
 |---|---|---|---|
 | msbase (Try-it A) | best build v7: `fixes/v7-best/patch.diff` | 8c90da217745 / 308f0da70c3a | `out/snapshots/msbase-8c90da217745` |
 | msbasehook | msbase + `window.__fwMorphSet(m)` (morph-gpu's frozen-frame hook, byte for byte) | 230ccb4b859a / 308f0da70c3a | control for every frame below |
-| ms (Try-it B) | msbase + this change (`delta.diff`, 131 lines, 14beb60c2e81) | d661831b8797 / cff335191762 | `out/snapshots/ms-d661831b8797` |
+| ms rev 4 (Try-it B) | msbase + this change (`delta.diff`, 149 lines, 8a8847a9517a) | 5372c2d68c7d / c4a4af0a7d6a | `out/snapshots/ms-5372c2d68c7d` |
+| ms rev 2/3 (history) | the same with root `scroll-snap-type: y proximity`, no settle | d661831b8797 / cff335191762 | `out/snapshots/ms-d661831b8797` |
 
 `node fixes/morph-scroll/build.mjs [--base v7|br2] [--seed <abs JS diff>]` rebuilds the three snapshots from the base
 patch (sha-checked) and writes `delta.diff` (the proposal against msbase). `--seed` rewrites the overlay as base + that
 JS diff + `ms.css` (the CSS block) appended. `patch.diff` is the whole stack against the baseline
-(`node tools/fix.mjs diff morph-scroll`, e85393c1a80f). Rev 1 (on B-R2 + morph-gpu rev 2 A + `__rvPrepNow`, ms
+(`node tools/fix.mjs diff morph-scroll`, rev 4: 0194e95999f5). Rev 1 (on B-R2 + morph-gpu rev 2 A + `__rvPrepNow`, ms
 9834ccf0a643 / b829d8e7ae29) is in git history (93d97dad); `prepnow.diff` is kept only as rev 1's record.
 
 ## The idea
@@ -42,7 +45,12 @@ the nav pill growing into the dark panel. With this change, on touch phones:
 - The morph value p = how far the extra screen has scrolled in, 0..1 (`__msTick`, called from `L`, the scroll
   engine's callback). It is written through `__navMorphSet(p)` (fix-nav-morph's setter: r/x, then `S()`; `b` before
   `x`, so the panel's inert lift comes first).
-- The root gets `scroll-snap-type: y proximity` with snap points at p=0 and p=1.
+- Rev 4: no CSS scroll snap. Instead a settle: passive window touchstart/touchend/touchcancel track whether a finger
+  is down; `__msTick` records the last scroll direction and, while no finger is down, re-arms a 200 ms timer on every
+  scroll frame. When it fires (the page has rested 200 ms, finger up) and 0.002 < p < 0.998, `__msSettle` smooth-scrolls
+  to open (p=1) or closed (p=0): open when p >= 0.3 after an opening move, p >= 0.7 after a closing move, p >= 0.5 with
+  no direction. So a small pull back from open returns to open, a pull past 30 % opens, and nothing settles while the
+  finger holds the panel. (Rev 2/3 had root `scroll-snap-type: y proximity` with snap points at p=0 and p=1.)
 - `N()` and the `scrollTo` pin are skipped under the gate. The page scrolls by itself: no non-passive listener.
 - At p <= 0.2 the nav's backdrop test (`z(g, F())`, is-on-dark) runs again in a microtask after the write, because
   `L`'s `_()` ran it before the write (found in the Simulator: a jump back to p=0 left the nav dark-on-light).
@@ -50,6 +58,59 @@ the nav pill growing into the dark panel. With this change, on touch phones:
 The motion changes: the morph follows the finger instead of a 680 ms spring, and the panel can be held half open.
 
 ## Checks
+
+### Rev 4 (ms-5372c2d68c7d; 2026-10-04 ~13:30Z)
+
+Rev 2/3's momentum was never measured before the user's review; rev 4's is (G driver, below).
+
+Mechanism checks, shared lane, no timing (`settle-checks.sh` = `settle-sim.mjs` + `settle-chrome.mjs`; output
+`out/morph-scroll/settle-sim-2026-10-04T13-31-32-431Z.json`, `settle-chrome-2026-10-04T13-32-42-676Z.json`):
+
+- Simulator (fw-sim, iPhone 15 Pro Max, scripted `scrollTo`): rev 4 root and body `scroll-snap-type: none` (rev 3:
+  root `y`). The 6 `scroll-snap-align` boxes left are the page's own profile carousel (nested scroller, in the base too).
+- Simulator, rest at p after a jump from p0 (sampled 100 ms to 2 s); a mid-page rest never moved in either build:
+
+  | p0 -> rest p | expected | rev 4 after 2 s (settled by) | rev 3 after 2 s |
+  |---|---|---|---|
+  | 0 -> 0.40 | open | 1 (500 ms) | 0.4, stuck |
+  | 0 -> 0.20 | closed | 0 (500 ms) | 0.2, stuck |
+  | 1 -> 0.60 | closed | 0 (500 ms) | 0.6, stuck |
+  | 1 -> 0.80 | open | 1 (500 ms) | 1 |
+  | 0.3 -> 0.50 | open | 1 (500 ms) | 0.5, stuck |
+  | 0.7 -> 0.50 | closed | 0 (250 ms) | 0.5, stuck |
+
+- Chrome 430x932 DPR 3, CDP touch drags (no fling), finger held still 1.2 s, then lifted: 4/4 OK. While the finger is
+  down p does not move (0.433, 0.134, 0.567, 0.866 held); after lift-off it settles by 500-1000 ms: 0.433 -> 1,
+  0.134 -> 0, 0.567 -> 0, 0.866 -> 1. A mid-page drag never moves after lift-off.
+
+G driver on the iPhone (WDA robot finger, iPhone 15 Pro Max, iOS 26.6.1 Safari, plain http, 2026-10-04 13:51-14:01Z;
+script `g-momentum-v1.json` hash 658e195e77fa, runs R4 V7 R3 R3 V7 R4 by `g-momentum-run.sh`, numbers by
+`g-momentum-analyze.mjs`; records `out/morph-scroll/g/`, `analysis.json`). Not a timed block: no sentinel, no thermal
+gate; the frame counts below are context, not a gain claim.
+
+- Mid page (y ~2000-3300, far from the end screen), the same 200 px / 140 ms fling (lift-off ~2.4 px/ms finger speed),
+  3 up + 3 down per run, 2 runs per arm; glide = scroll after lift-off until the page holds still 300 ms. Medians:
+
+  | arm | n | glide up | glide down | frames > 34 / > 50 ms inside the glides |
+  |---|---|---|---|---|
+  | V7 (A) | 6+6 | 1058 px, 2.66 s | 1077 px, 2.67 s | 16 / 2 |
+  | rev 4 | 6+6 | 1087 px, 2.67 s | 1174 px, 2.66 s | 18 / 2 |
+  | rev 2/3 (root snap) | 6+6 | 299 px, 0.70 s | 164 px, 0.47 s | 0 / 0 (shorter glides) |
+
+  Rev 3 lost 72-85 % of the glide: the fast deceleration the WebKit source predicts (CONFIRMED above, now also
+  measured). Rev 4's glide is within V7's spread (V7 1016-1285 px, rev 4 1007-1292 px).
+- End of page, slow drags (no fling) held still 1.5 s on the glass, then lifted; p before lift -> p at rest:
+
+  | stroke | rev 4 (2 runs) | rev 2/3 (2 runs) |
+  |---|---|---|
+  | E1 close from open by ~0.55, hold | 0.41 -> 0 (closed), 0.52-0.53 s | 0.37 -> 0.45, stuck half open |
+  | E2 open from there by ~0.55, hold | 0.59 -> 1 (open), 0.54-0.55 s | 1 -> 0.96 |
+  | E3 small pull back from open, hold | 0.78 -> 1 (back to open), 0.52-0.53 s | 0.74 -> 0.96 |
+  | E4 fling down out of the open screen | 0.81 -> glides past closed (-0.48/-0.65, 2.7 s) | 0.76 -> 0.56, stopped half open |
+
+  The settle runs only after lift-off (held 1.5 s without moving in every rev 4 case). V7 has no end screen (its rows
+  are not meaningful); V7 run 5 aborted at the end approach (`until atEnd` not reached in 4 s), so its flicks count and
+  its end strokes do not. p uses the frame's own innerHeight (Safari's toolbar moves the end of the scroll range).
 
 ### Rev 2 (ms-d661831b8797 vs msbasehook-230ccb4b859a, 2026-10-04 ~12:30Z)
 
@@ -165,8 +226,9 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
 
 | claim | status |
 |---|---|
-| WebKit proximity snap range 0.3 x scrollport | CONFIRMED, WebKit source above |
-| A rest at p 0.3-0.7 is possible (half-open panel) | CONFIRMED by the source; a design consequence |
+| Any root snap offset makes iOS use fast deceleration for the whole page (rev 2/3 momentum loss) | CONFIRMED, WebKit source above; measured on G: rev 3 glide 72-85 % shorter than v7 |
+| WebKit proximity snap range 0.3 x scrollport | CONFIRMED, WebKit source above (rev 2/3 only; rev 4 has no snap) |
+| A rest at p 0.3-0.7 is possible (half-open panel) | rev 2/3: CONFIRMED by the source, and on G; rev 4: settles (G, Simulator, Chrome) |
 | WebKit snaps programmatic scrolls | UNRESOLVED (none seen in the Simulator; spec says it should) |
 | WebKit composites every sticky box in an async-scrolled page, stuck or not | CONFIRMED, WebKit source above |
 | That layer is why #platform's text moves by 1 device px | OBSERVED, cause unknown |
@@ -185,14 +247,14 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
 
 ## Gain
 
-Not measured. What the change removes on phones: the non-passive touchmove (cancelled touch moves), the per-frame
+Rev 4 momentum and settle: see "Checks, Rev 4" (G driver, not a timed block). Smoothness gain: not measured. What the change removes on phones: the non-passive touchmove (cancelled touch moves), the per-frame
 `scrollTo` pin, and the spring's rAF loop. The finger now scrolls the page throughout. Any smoothness or perception
 gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
 
 ## Risks, conflicts, follow-ups
 
-- **Half-open rest** (above). Follow-up option if the user wants it: a small settle on touchend/scroll end that
-  scrolls to the nearer end when 0 < p < 1 (`scrollend` support in Safari would need checking).
+- **Half-open rest:** fixed in rev 4 by the script settle (rev 2/3 could rest at p 0.3-0.7). The settle uses a 200 ms
+  timer re-armed by the scroll callback, not `scrollend`. Not checked: touching the screen while the settle glides.
 - **A composited #platform for the whole page life on iOS:** the sticky box is a layer of its own, about 430 x 1880
   CSS px, so about 1290 x 5640 device px, tiled. Its memory and compositing cost is not measured.
 - **Page height** grows by one screen on phones; anything that measures "the end of the page" sees the new end.
@@ -217,4 +279,4 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
 ## Files
 
 `build.mjs` (snapshots + delta), `ms.css` (the CSS block), `delta.diff`, `prepnow.diff` (rev 1 only; copy of morph-gpu a02f2b97 rev2/prepnow.diff),
-`patch.diff`, `frames.mjs` (Chrome frames), `simcheck.mjs` / `simk0.mjs` / `simcheck.sh` (Simulator), `proposal.json`.
+`patch.diff`, `frames.mjs` (Chrome frames), `simcheck.mjs` / `simk0.mjs` / `simcheck.sh` (Simulator), `settle-checks.sh` + `settle-sim.mjs` + `settle-chrome.mjs` (rev 4 mechanism checks), `g-momentum-v1.json` + `g-momentum-run.sh` + `g-momentum-analyze.mjs` (rev 4 G proof), `proposal.json`.
