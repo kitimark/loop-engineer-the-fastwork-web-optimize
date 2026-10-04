@@ -175,3 +175,52 @@ All four open items are done; files in `fixes/v8-best/phone/p116/`, committed to
   still at most one.
 - **R3, phone order:** after PR-018's phone step (fix-hero-exit-threaded: rev 7c robot part, then the user's blind
   finger pair). User steps go first (memory user-steps-first). iphone-runner runs H1 and H2; int-v8 owns the verdict.
+
+## Result (int-v8, 2026-10-05; data 2026-10-04 20:20-20:41Z): NOT LOCATED
+
+Both holds are VALID; iphone-runner ran them in exclusive no-timing holds of chrome-measure.
+
+| hold | gates (start / end) | items | sleep check | length |
+|---|---|---|---|---|
+| H1 | Serious 37.89 °C PASS / Serious 38.39 °C PASS | 11 of 11 exit 0 | PMSET OK | 487 s |
+| H2 | Serious 37.79→37.69 °C PASS / Serious 38.09 °C PASS | 8 of 8 exit 0 | PMSET OK | 382 s |
+
+- **Scoring.** The scorer is fixes/v8-best/phone/p116/score.mjs 6c5dbcfac85e, which imports P-105's b9a29ffcc7bb unchanged. Items were given in block order.
+  - Output: out/p116/score.json 9d6536c6b859 (gitignored, in int-v8's worktree).
+  - All 12 counted runs are valid.
+  - All 4 sentinels pass (sCo and sCc in each hold).
+  - Every served check showed B, C, X and Y ok. The final check before the servers stopped also showed all four ok.
+  - No item is missing (R2), so no extra hold is needed.
+
+Counted runs, G part H, moving frames:
+
+| arm | > 50 per run | median > 50 | median > 46 | median > 54 | median > 34 | frames > 100 ms |
+|---|---|---|---|---|---|---|
+| C (v8) | 6, 10, 8, 8 | 8 | 9.5 | 5 | 23 | none |
+| X (v8 − countdown group) | 9, 8, 6, 8 | 8 | 10.5 | 6.5 | 20 | none |
+| Y (v8 − rest-script) | 7, 6, 8, 7 | 7 | 9.5 | 5.5 | 20.5 | 106 @ y 1416 (gHY2), 105 @ y 1490 (gHY4) |
+
+| removal | dA > 50 | > 46 | > 54 | class (> 50 / > 46 / > 54) |
+|---|---|---|---|---|
+| X | 0 | +1 | +1.5 | NOT THE CAUSE / NOT THE CAUSE / NOT THE CAUSE |
+| Y | −1 | 0 | +0.5 | PART / NOT THE CAUSE / NOT THE CAUSE (threshold-sensitive) |
+
+- **Block verdict: NOT LOCATED**, also at > 46 and > 54.
+  - Removing the countdown group changes nothing.
+  - Removing rest-script lowers the median by 1 at > 50 only. That is the PART edge, and it is threshold-sensitive: both twins call it NOT THE CAUSE.
+  - So neither group carries a > 2 cost in v8's hero flicks.
+  - Per the outcome fixed before data, P-105's +3 is not attributable in v8. Whether block 2 is a v8 vs v6 confirm is the lead's decision.
+- **Where the slow frames are (reported, not gated).** In every arm, the > 50 frames sit in the same 250 px bins in ≥ 2 runs: 0-249, 500-749, 750-999, 1000-1249 and 1250-1499 (the hero exit, the first ~1500 px). The arms share this pattern. X also has 2500-2749 in 2 runs. Y also has 250-499 in 2 runs.
+- **Predictions.**
+  - NOT LOCATED (P 0.55): happened.
+  - X CAUSE (0.25) and Y CAUSE (0.15): did not happen.
+  - Frames > 100 ms in C in ≥ 2 of 4 runs (0.3): did not happen; C had none, and Y had 2.
+  - Sentinels pass on the first try (0.8): happened, 4 of 4.
+- **Mac load1 per item:** 3.9-8.4, mostly 4-7. It voids nothing.
+- **Deviation N1: warm-up before the holds.** The ticket's pre-warm was S runs. iphone-runner warmed with uncounted G flicks on B instead, labelled p116-warmg-*, saved in its own worktree's out/p116/warm.
+  - Round 1, 19:49:54-19:56:30Z: flicks 1, 2, 10, 11 and 12 ran. Flicks 3-9 were refused (WAIT) during fix-scroll-cb's no-timing hold (I-176). The gate read Fair at 37.2-37.4 °C, and the runner stopped for the user's PR-018 step.
+  - Round 2, 20:10:49-20:15:07Z, inside its own no-timing hold: 6 flicks, alternating hero and end, all exit 0.
+    - Gate reads: FAIL Fair 36.69 °C after 2; FAIL Serious 37.19 °C "state changed during the read" after 4; PASS Serious 37.89 °C after 6 (log: iphone-runner's out/p116/warm-g2.log). Hold windows: H1 20:20:43-20:28:42Z, H2 20:34:38-20:40:53Z (PMSET OK in both).
+  - Each hold then ran one pre-warm S run on B (p116-H1-prewarm1, p116-H2-prewarm1) before its opening gate passed. That is the ticket's own pre-warm.
+  - The counted runs were not affected: every gate and every sentinel passed.
+- **Servers** B, C, X and Y were stopped after scoring. out/p116/snap is kept, read-only.
