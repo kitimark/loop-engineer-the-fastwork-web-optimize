@@ -5,10 +5,10 @@
 
 **Status:** PR-012 rev 1 accepted by the user (2026-10-04 02:56:15Z, no notes); the accepted rev is the spec. Lands
 as a "less work" fix once the phone no-worse block below passes.
-**Stage:** V: the phone no-worse block P-092 is registered ("Phone block", below). The user answered T-052 at 03:10Z
-(option A, the Mac kept awake), so the I-098 pause is lifted; the VOID-on-sleep rules stay. Ops re-read PASS
-(registered at 55064128, scorer f3a50b8ec2dd). Next: the phone queue (3rd, after P-088 and P-091) and the lead's go;
-I run it from this worktree.
+**Stage:** V: the phone no-worse block P-092 ran on 2026-10-04 (05:39-06:06Z, 3 holds, all valid at Serious;
+"Phone block P-092: result", below). Moving scope: '>50' Δ 0 and '>34' Δ −2, both no-worse and not threshold-sensitive.
+Drive scope '>34' is threshold-sensitive in V's favour: 'better' at 34 ms, 'no-worse' at both twins. Under the
+registered decisions that goes to the lead with no verdict, and no land request until the lead rules.
 **Device class / gate:** phone-only, render-bound (WebKit paint during the morph). Gains below are Simulator counts.
 **Driver(s) behind the claims:** M (`__fwMorphDrive` in the Simulator, `__fwMorphSet` frozen frames). No S, G or F yet.
 **Base:** best-build (main 60df1cf: st6-rb2 + platform-idle + morph-inherit), js `65052c4a3902`, css `e0f92804c521`.
@@ -292,7 +292,7 @@ ATTRIBUTION morph-gpu · cluster end-of-page morph (open and close tweens, m 0 �
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up during the morph ·
 toolbar resize · rubber band · reduced motion in the Simulator or on the phone (Chrome frames done, see Risks) · finger (G/F). The phone no-worse block
-(P-092, registered below, condition B; ops PASS) waits on its phone-queue place and the lead's go.
+(P-092, registered below, condition B; ops PASS) ran on 2026-10-04; result below the registration.
 
 ## Phone block: no-worse check against best-build (registration; written before any phone data)
 
@@ -396,6 +396,86 @@ second read (R1-R3 and the pre-warm ruling); ops re-read it: PASS, registered at
   frozen frames cover it, README "Stale clip"), reduced motion, finger (G/F), Fair.
 - **Expected minutes:** about 30 (range 25-45): pre-warm to Serious about 10; H1 about 6; H2 about 6 (4 runs at about
   1.2 min); H3 about 8; about 1.5 min of gate reads per hold.
+
+## Phone block P-092: result (2026-10-04, after the registration above; nothing in it was changed)
+
+Ran from this worktree under the `iphone` lease (05:34:52Z-06:06:15Z) in three `--no-timing` chrome-measure holds of
+at most 900 s, each wrapped in `caffeinate -i -s`. Scored with `phone/frames-n2.mjs` `f3a50b8ec2dd`, all 8 counted runs
+in block order (C1 V2 V3 C4 C5 V6 V7 C8). No re-runs, no void runs, no excluded files. The Mac did not sleep during the
+block (`pmset`: last wake 02:37Z).
+
+| hold | time (Z) | steps | start gate | end gate | battery °C |
+|---|---|---|---|---|---|
+| H1 h053928 | 05:39:28-05:42:48 | S1 wC wV | Serious, PASS | Serious, PASS | 40.3 → 40.0 |
+| H2 h054715 | 05:47:15-05:51:19 | C1 V2 V3 C4 | Serious, PASS | Serious, PASS | 40.4 → 40.5 |
+| H3 h060058 | 06:00:58-06:05:46 | C5 V6 V7 C8 S2 | Serious, PASS | Serious, PASS | 42.1 → 41.4 |
+
+Sentinels:
+- S on C's page: S1 bottom 60 / scroll 58.2 PASS, S2 60.1 / 57.9 PASS.
+- M sentinel: every counted C run held m = 1 at p95 17 ms (≤ 18), PASS 4 of 4.
+- rAF 59 Hz in every run; none ran in Low Power Mode.
+
+Per run (frames; moving scope scored, drive scope reported):
+
+| run | moving >50 (>46/>54) | moving >34 (>30/>38) | drive >50 | drive >34 (>30/>38) | \|Δm\|-weighted dt ms |
+|---|---|---|---|---|---|
+| C1 | 2 (3/1) | 8 (8/7) | 3 | 11 (14/9) | 18.51 |
+| V2 | 2 (2/2) | 5 (7/3) | 2 | 6 (12/3) | 16.87 |
+| V3 | 2 (2/2) | 3 (5/3) | 2 | 4 (7/3) | 15.89 |
+| C4 | 2 (2/1) | 6 (7/2) | 2 | 8 (10/4) | 17.45 |
+| C5 | 2 (2/2) | 5 (6/5) | 3 | 7 (9/7) | 18.13 |
+| V6 | 2 (2/2) | 3 (6/3) | 2 | 4 (12/4) | 16.08 |
+| V7 | 2 (3/2) | 4 (5/3) | 3 | 6 (9/5) | 16.66 |
+| C8 | 2 (2/2) | 5 (6/3) | 3 | 9 (13/6) | 16.88 |
+
+Verdicts (arm medians, d = V − C):
+
+| scope | threshold | C | V | d | verdict | twins (d, verdict) | threshold-sensitive |
+|---|---|---|---|---|---|---|---|
+| moving | >50 | 2 | 2 | 0 | no-worse | >46 0, >54 +0.5, both no-worse | no |
+| moving | >34 | 5.5 | 3.5 | −2 | no-worse (ranges meet at 5) | >30 −1, >38 −1, both no-worse | no |
+| drive | >50 | 3 | 2 | −1 | no-worse | >46 −1.5, >54 +0.5, both no-worse | no |
+| drive | >34 | 8.5 | 5 | −3.5 | better (every V run below every C run) | >30 −1, >38 −3, both no-worse (ranges overlap) | **yes** |
+
+Predictions:
+
+| # | prediction | result | hit |
+|---|---|---|---|
+| f50 | moving >50, d ≤ +1 | d = 0 | hit |
+| f34 | moving >34, d ≤ +2 | d = −2 | hit |
+| better | no 'better' on moving f50/f34 | none (drive >34 'better' at 34 ms only, a reported scope) | hit |
+| wdt | \|Δm\|-weighted dt, \|d\| ≤ 1 ms | V 16.37 − C 17.79 = −1.42 ms | miss (in V's favour) |
+| sentM | all counted C pass p95 ≤ 18 | 4 of 4 at 17 ms | hit |
+| sent | S1 and S2 pass | both | hit |
+
+C's moving >50 point was off (predicted ~0.5 from P-085's mi arm, measured 2 in every run). mi was best-build minus
+platform-idle, and C here is best-build, so the two arms differ. The interval is on d, so the verdict is not affected.
+
+**Decision (registered table):** moving f50 and f34 are no-worse and not threshold-sensitive, but drive-scope '>34' is
+threshold-sensitive. That falls under "Threshold-sensitive f50 or f34, in the moving or the drive scope: to the lead,
+with no verdict. No land request until the lead rules." The sensitivity points one way only: 'better' at 34 ms and
+'no-worse' at both twins. No scope or threshold reads WORSE.
+
+**Reported, not scored: the tween-start frames are longer in V.** Every run in both arms has exactly 2 moving frames
+over 50 ms, all at the start of a tween (m 0.004-0.061, the [0, 100) ms since-start bucket). Their length differs by
+arm:
+- C: 54-56 ms (median 55);
+- V: 60-64 ms (median 62).
+
+All 8 of V's frames are longer than every one of C's. The count is equal, but the worst frame is about 7 ms longer
+with the reveal, which is consistent with a setup cost when the clip-path reveal starts. That cause is OBSERVED in our
+setup, unknown otherwise; the block did not test it. The >54 twin picks this up only as +0.5 on the median, because
+C's frames sit at 54-56.
+
+Runner deviations (logged in the block log, out of the registered text):
+- holds of 900 s instead of 600 (the lead's rule);
+- an early pre-warm on the base page under the lease while H1 queued (T-058 hand-over rule), and a keep-warm loop on
+  base (W cycles to 43 °C) while H2 and H3 queued (the lead's 05:36Z instruction);
+- the phone came in at 42 °C from P-095, so H1's first pre-warm ran 0 cycles.
+
+Files (local, `out/morph-gpu/phone/`, listed in `evidence.json`): the eight `n2-<arm>-<pos>.json`, `n2-S-S1.json`,
+`n2-S-S2.json`, `n2-wC.json`, `n2-wV.json`, `score.json`, `gates.jsonl`, `holds.jsonl`, `runs.jsonl`, `batt.jsonl`,
+`BLOCKLOG.txt`.
 
 ## Risks, conflicts, follow-ups
 

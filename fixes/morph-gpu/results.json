@@ -277,7 +277,7 @@
   },
   "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/.",
   "phoneBlock": {
-    "status": "registered before any phone data; ops re-read PASS (55064128, frames-n2 f3a50b8ec2dd); waiting for its phone-queue place (3rd after P-088, P-091) and the lead's go; I-098 pause lifted (user T-052 option A, 03:10Z): a hold spanning a sleep is VOID and re-run, 2 sleep-VOIDs in a row park the block",
+    "status": "ran 2026-10-04 05:39-06:06Z, 3 holds all VALID at Serious, 8 of 8 counted runs valid; drive >34 threshold-sensitive (better at 34 ms, no-worse at both twins): to the lead, no verdict, no land request until the lead rules",
     "question": "At real thermal Serious under driver M at the page end, does V show no more long moving frames than C?",
     "kind": "no-worse check under the less-work rule (not top-3: no finger test)",
     "builds": {
@@ -311,6 +311,173 @@
     },
     "decisions": "no-worse (or better) on f50 and f34, not threshold-sensitive, drive no-worse -> land request; WORSE -> lead, no land request; threshold-sensitive (moving or drive scope) or drive WORSE -> lead, no verdict; insufficient/void -> re-run once, second void -> lead",
     "expectedMinutes": "30 (25-45)",
-    "id": "P-092"
+    "id": "P-092",
+    "result": {
+      "lease": "05:34:52Z-06:06:15Z",
+      "holds": [
+        {
+          "id": "h053928",
+          "at": "05:39:28-05:42:48Z",
+          "steps": "S1 wC wV",
+          "gates": "Serious/Serious PASS",
+          "batteryC": [
+            40.29,
+            40.0
+          ]
+        },
+        {
+          "id": "h054715",
+          "at": "05:47:15-05:51:19Z",
+          "steps": "C1 V2 V3 C4",
+          "gates": "Serious/Serious PASS",
+          "batteryC": [
+            40.39,
+            40.5
+          ]
+        },
+        {
+          "id": "h060058",
+          "at": "06:00:58-06:05:46Z",
+          "steps": "C5 V6 V7 C8 S2",
+          "gates": "Serious/Serious PASS",
+          "batteryC": [
+            42.09,
+            41.39
+          ]
+        }
+      ],
+      "macSleep": "none during the block (pmset last wake 02:37Z)",
+      "sentinels": {
+        "S1": {
+          "bottom": 60,
+          "scroll": 58.2,
+          "pass": true
+        },
+        "S2": {
+          "bottom": 60.1,
+          "scroll": 57.9,
+          "pass": true
+        },
+        "M": "C1 C4 C5 C8 held m=1 p95 17 ms, 4 of 4 pass"
+      },
+      "voidRuns": 0,
+      "reRuns": 0,
+      "perRun": {
+        "C1": {
+          "moving": {
+            ">50": 2,
+            ">34": 8
+          },
+          "drive": {
+            ">50": 3,
+            ">34": 11
+          },
+          "wdt": 18.51
+        },
+        "V2": {
+          "moving": {
+            ">50": 2,
+            ">34": 5
+          },
+          "drive": {
+            ">50": 2,
+            ">34": 6
+          },
+          "wdt": 16.87
+        },
+        "V3": {
+          "moving": {
+            ">50": 2,
+            ">34": 3
+          },
+          "drive": {
+            ">50": 2,
+            ">34": 4
+          },
+          "wdt": 15.89
+        },
+        "C4": {
+          "moving": {
+            ">50": 2,
+            ">34": 6
+          },
+          "drive": {
+            ">50": 2,
+            ">34": 8
+          },
+          "wdt": 17.45
+        },
+        "C5": {
+          "moving": {
+            ">50": 2,
+            ">34": 5
+          },
+          "drive": {
+            ">50": 3,
+            ">34": 7
+          },
+          "wdt": 18.13
+        },
+        "V6": {
+          "moving": {
+            ">50": 2,
+            ">34": 3
+          },
+          "drive": {
+            ">50": 2,
+            ">34": 4
+          },
+          "wdt": 16.08
+        },
+        "V7": {
+          "moving": {
+            ">50": 2,
+            ">34": 4
+          },
+          "drive": {
+            ">50": 3,
+            ">34": 6
+          },
+          "wdt": 16.66
+        },
+        "C8": {
+          "moving": {
+            ">50": 2,
+            ">34": 5
+          },
+          "drive": {
+            ">50": 3,
+            ">34": 9
+          },
+          "wdt": 16.88
+        }
+      },
+      "verdict": {
+        "moving": {
+          ">50": "d 0, no-worse, twins no-worse, not threshold-sensitive",
+          ">34": "d -2, no-worse (ranges meet at 5), twins no-worse, not threshold-sensitive"
+        },
+        "drive": {
+          ">50": "d -1, no-worse, twins no-worse, not threshold-sensitive",
+          ">34": "d -3.5, better (every V run below every C run); twins >30 d -1 and >38 d -3 no-worse; THRESHOLD-SENSITIVE"
+        }
+      },
+      "predictions": {
+        "f50": "hit (d 0)",
+        "f34": "hit (d -2)",
+        "better": "hit (no better on moving)",
+        "wdt": "miss in V's favour (d -1.42 ms)",
+        "sentM": "hit (4/4 at 17 ms)",
+        "sent": "hit (S1, S2)"
+      },
+      "decision": "registered row \"Threshold-sensitive f50 or f34, in the moving or the drive scope\": to the lead, no verdict, no land request until the lead rules",
+      "reportedNotScored": "tween-start moving frames >50: 2 per run in both arms; C 54-56 ms (median 55), V 60-64 ms (median 62); all 8 V frames longer than every C frame; count equal, worst frame ~7 ms longer with the reveal (cause OBSERVED in our setup, unknown)",
+      "deviations": [
+        "900 s holds (lead rule; registered 600)",
+        "early pre-warm under the lease while H1 queued (T-058) and a keep-warm W loop on base to 43 C while H2/H3 queued (lead 05:36Z)",
+        "phone arrived at 42 C from P-095"
+      ],
+      "scorer": "frames-n2.mjs f3a50b8ec2dd"
+    }
   }
 }

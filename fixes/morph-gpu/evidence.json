@@ -134,6 +134,126 @@
       "why": "record of the earlier R frames showing the EN-label flip (F-199); PNGs not kept (cap)",
       "kind": "result",
       "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-C-1.json",
+      "why": "P-092 counted run C-1 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-V-2.json",
+      "why": "P-092 counted run V-2 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-V-3.json",
+      "why": "P-092 counted run V-3 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-C-4.json",
+      "why": "P-092 counted run C-4 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-C-5.json",
+      "why": "P-092 counted run C-5 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-V-6.json",
+      "why": "P-092 counted run V-6 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-V-7.json",
+      "why": "P-092 counted run V-7 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-C-8.json",
+      "why": "P-092 counted run C-8 (driver M, Serious)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-S-S1.json",
+      "why": "P-092 start S sentinel",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-S-S2.json",
+      "why": "P-092 end S sentinel",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-wC.json",
+      "why": "P-092 warm-up C (uncounted)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/n2-wV.json",
+      "why": "P-092 warm-up V (uncounted)",
+      "kind": "result",
+      "for": "README.md",
+      "fastworkDerived": true
+    },
+    {
+      "path": "out/morph-gpu/phone/score.json",
+      "why": "P-092 scorer output (frames-n2 f3a50b8ec2dd)",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/phone/gates.jsonl",
+      "why": "P-092 thermal gate reads",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/phone/holds.jsonl",
+      "why": "P-092 hold records",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/phone/runs.jsonl",
+      "why": "P-092 run index",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/phone/batt.jsonl",
+      "why": "P-092 battery reads",
+      "kind": "result",
+      "for": "README.md"
+    },
+    {
+      "path": "out/morph-gpu/phone/BLOCKLOG.txt",
+      "why": "P-092 block log (deviations, lease times)",
+      "kind": "result",
+      "for": "README.md"
     }
   ]
 }
