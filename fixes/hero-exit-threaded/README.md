@@ -887,7 +887,10 @@ after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
   - **Pre-block condition:** the Simulator hero check pxbr2 (frozen frames at rest, y 0 / 300 / 548; arms R2, B-R2, and
     R2 again on its own server as the A/A) shows B-R2 vs R2 at 0 px beyond the A/A in the hero. Its result is added
     here before the block starts; a failure stops P-095 and goes to the lead.
-  - **pxbr2 result (2026-10-04 04:29-04:31Z, shared Simulator slot, no Mac Sleep/DarkWake in it): PASS.**
+  - **pxbr2 result (2026-10-04 04:29-04:31Z, shared Simulator slot, no Mac Sleep/DarkWake in it): PASS.** The gate
+    is judged outside the three live clock cells (status-bar clock, countdown minutes, countdown seconds). Inside them
+    the pixel count depends on the digits each capture caught, not on the build. Per ops' read (2518e9ca): seconds
+    R2 21, R2b 33, B 57, Bb 57; minutes R2 29, all others 28.
     - Every differing cluster of B-R2 vs R2 lies in a box where the A/A (R2b vs R2) differs too:
       - the status-bar clock [160,40]-[320,120] (2,499 px in both);
       - the countdown minutes cell [760,1320]-[840,1400] (1,535 / 1,631 / 1,618 px in both);
