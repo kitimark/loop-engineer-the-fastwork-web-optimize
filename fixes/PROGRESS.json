@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T08:36:00Z",
+ "updatedAt": "2026-10-04T08:46:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T08:45:00Z", "text": "The resting avatar row passed its phone check (P-094) at the phone's real heat state: no new slow frames (over 50 ms: 0 in both). It lands and joins the next best build with the countdown fixes." },
   { "at": "2026-10-04T08:35:00Z", "text": "Menu fix (F3): one swipe step fewer. The frame logs of your first pair already show the build without F3 doing worse in both orders, so the repeat with the order swapped is dropped. Only a hidden check pair is left, after the avatar-row and countdown-roll phone checks." },
   { "at": "2026-10-04T06:14:00Z", "text": "The end-of-page morph on the graphics chip passed its phone check (P-092) as not worse: no new slow frames. But the first frame of each morph is about 7 ms longer (62 vs 55 ms), so it stays out of the next best build until a revised version fixes that. Phone now: your menu-fix swipe test." },
   { "at": "2026-10-04T05:41:00Z", "text": "The hero's slimmer version (R2) passed its phone check (P-095) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. Next is your blind swipe test of it." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T15:05:00Z", "text": "Fixed a display bug on the iPhone where the top bar and menu stopped following the page past its end; now matches the original." },
   { "at": "2026-10-03T14:30:00Z", "text": "The idle-animation fix has landed: the shimmering security panel near the bottom now animates on the graphics chip, looking the way you accepted (PR-009); the phone check found it no worse." },
   { "at": "2026-10-03T14:06:00Z", "text": "The idle-animation fix was rebuilt so other browsers keep today's look; a check showed it draws exactly like the version the phone already tested, so that phone result carries over." },
-  { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." },
-  { "at": "2026-10-03T12:55:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) passed its short phone check at the phone's real \"Serious\" heat state: no worse. One run had a slightly longer first scroll frame, which the fix does not touch." }
+  { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." }
  ],
  "items": [
   {
@@ -641,9 +641,9 @@
    "fixes": "The avatar slider in the people section stops its slide work while it is off-screen, so the page does less work at rest and the phone stays cooler.",
    "felt": { "answer": "not-yet", "text": "you kept it (PR-014); no finger test needed for a 'does less work' fix" },
    "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-094).",
-   "next": "Its short phone check (P-094) is queued after the countdown roll check; then it lands.",
+   "next": "Its short phone check (P-094) passed: no new slow frames. It lands, then goes into the next best build (v7) with the countdown fixes, once the countdown roll check and your PR-017 decision settle.",
    "owner": "fix-rest-script",
-   "checks": [ { "id": "P-094", "what": "short phone check: no new slow frames where it changes the page", "result": "" } ],
+   "checks": [ { "id": "P-094", "what": "short phone check: no new slow frames where it changes the page", "result": "passed: frames over 50 ms 0 vs 0 per run (OBSERVED, scripted window scroll, 4 runs per arm, phone at real \"Serious\" heat); frames over 34 ms 3 vs 4, inside the allowed band" } ],
    "details": [
     "Chrome 430, far at y2796: main frames 31/32 -> 17/17 per 4 s, layouts 4 -> 0, paints 34/39 -> 0/3; near and paused rows the same. PR-014 accepted keep 03:57:01Z. P-094 ticket 8f1e16a0 in ops read (the lead's combine byte check on the best build is owed)."
    ]
