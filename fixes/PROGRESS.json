@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T18:50:59Z",
- "updatedBy": "mgmt-ops-11",
+ "updatedAt": "2026-10-04T23:18:17Z",
+ "updatedBy": "lead",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
@@ -240,18 +240,19 @@
    "writeup": "fixes/stack5/README.md",
    "title": "Card reveal blur with a standard easing curve (PoC 2)",
    "area": "hero",
-   "state": "testing",
+   "state": "dropped",
    "stage": "F",
    "fixes": "The card's blur fade uses an easing type that iPhone Safari freezes while the page is busy (CONFIRMED). The same curve written as a standard easing keeps moving and may make each reveal frame cheaper.",
    "felt": { "answer": "not-yet" },
    "gate": "P-038: on the phone, the reveal frames must cost less (composite and style time) in every run.",
-   "next": "Paused by your decision (19:27Z): timing tests are on hold. The P-038 phone test is parked.",
+   "next": "No further test planned.",
    "owner": "fix-hero-exit",
    "checks": [ { "id": "P-038", "what": "phone block: is each reveal frame cheaper?", "result": "" } ],
    "details": [
     "blur-cubic: T10 linear() tails of the reveal/hide blur replaced by exact cubic-bezier splits of cubic-bezier(0.16,1,0.3,1) 1.6 s (CSS 069725e4); max difference 0.64 px of blur.",
     "F-080 CONFIRMED: on the phone linear() freezes during main-thread blocks; cubic-bezier and sampled WAAPI keep moving. Reveal only; the hide tail is not measured yet."
-   ]
+   ],
+   "why": "On the phone the card-reveal frame got slower (74 vs 42 ms); you picked A, which leaves it out."
   },
   {
    "id": "platform-idle",
