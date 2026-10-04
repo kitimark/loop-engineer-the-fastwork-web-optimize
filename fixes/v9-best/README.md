@@ -119,6 +119,11 @@ profile: xcode-serious = Xcode Device Conditions Serious, Is Induced = Yes. No h
   load warm-up per arm port (A3/U5). xcode-serious blocks never pool with real-heat blocks: P-118 is real heat, so v9
   data and P-118 data do not pool. A decisive check (does induced Serious slow the chip like real heat?) runs first and
   belongs to iphone-runner; if induced slows nothing, one real-heat confirmation block for the final best build is added later.
+sentinels under xcode-serious: a failing control run (bottom >= 58 fps and scroll >= 44 fps for S/W; held m=1 p95 <= 18 ms for M)
+  voids every run since the last passing one, then the block is rerun; no cooling wait (the old "cool to the last passing
+  sentinel minus 0.5 C" rule is a real-heat rule). Gate exits in hold.sh: 2 = condition dropped or off (report to
+  iphone-runner and mgmt-devices), 3 = ceiling, 7 = real heat instead of the Xcode condition; each follows P-116 hold.sh's
+  failure path. mgmt-ops-10 to confirm this wording before the lead's read.
 ports, start method, sleep check: as P-111/P-117 (serve.mjs --port 0 --latency 150 --vendors=local, plain http;
   served-hash check before every item, exit 4 on a wrong one; pmcheck.mjs). A hold counts only if both gate reads PASS;
   else VOID, re-run once with the same items. Ports go to the runner by message.
