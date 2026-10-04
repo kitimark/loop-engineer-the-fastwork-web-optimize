@@ -6,6 +6,10 @@
 // Arms (sha256/12 of the JS node / the CSS as written):
 //   C  the best build, out/snapshots/best-65052c4a3902 (node fixes/best-build/build.mjs --snapshot)
 //   V  C + patch-on-best.diff (JS only; the CSS is C's): the landing build, no debug code
+// SCB_SET=v8 (P-117 N2, the count re-check on v8; every harness reads its arms from here):
+//   C  v8-best (3e3e94cb6e9f / f836404b3728), V  v8 + nav-hit-cache + scroll-cb carried by int-v8 (e8d8323f674b / f836404b3728),
+//   read-only copies in out/snapshots/{v8,nsc}-<js>; `node fixes/scroll-cb-phone/build.mjs --import-v8 <int-v8 out/nsc/snap>`
+//   copies them in after checking every file's full sha256 against V8_FULL below.
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -25,6 +29,36 @@ const OVERLAY = join(HERE, 'overlay');
 export const PIN = { C: ['65052c4a3902', 'e0f92804c521'] };
 const EXPECT = { V: ['27f23f6a3878', 'e0f92804c521'] }; // pinned in the README's D card
 const C_DIR = join(SNAP, 'best-65052c4a3902');
+const V8_FULL = {
+  C: { [JS]: '3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
+  V: { [JS]: 'e8d8323f674b0dd713b38b070f706f0a8540fcd7927c9fbab87f5cbb9ea0f657', [CSS]: 'f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43' },
+};
+const V8_DIR = { C: join(SNAP, 'v8-3e3e94cb6e9f'), V: join(SNAP, 'nsc-e8d8323f674b') };
+const full = (b) => createHash('sha256').update(b).digest('hex');
+
+function v8Arms(log) {
+  const arms = {};
+  for (const k of ['C', 'V']) {
+    for (const f of FILES) {
+      if (!existsSync(join(V8_DIR[k], f))) throw new Error(`${V8_DIR[k]}: missing ${f}; run --import-v8 <dir>`);
+      if (full(read(V8_DIR[k], f)) !== V8_FULL[k][f]) throw new Error(`${V8_DIR[k]}/${f}: not the pinned v8 arm ${k}`);
+    }
+    arms[k] = { dir: V8_DIR[k], js: V8_FULL[k][JS].slice(0, 12), css: V8_FULL[k][CSS].slice(0, 12) };
+  }
+  for (const [k, a] of Object.entries(arms)) log(`${k.padEnd(3)} js ${a.js} css ${a.css}  ${a.dir.replace(WT + '/', '')}  (SCB_SET=v8)`);
+  return arms;
+}
+
+function importV8(src) {
+  for (const k of ['C', 'V']) {
+    const tree = {};
+    for (const f of FILES) {
+      tree[f] = read(join(src, k), f);
+      if (full(tree[f]) !== V8_FULL[k][f]) throw new Error(`${src}/${k}/${f}: sha256 ${full(tree[f])}, pinned ${V8_FULL[k][f]}`);
+    }
+    writeSnap(V8_DIR[k].split('/').pop(), tree);
+  }
+}
 
 const read = (dir, f) => readFileSync(join(dir, f));
 
@@ -44,6 +78,8 @@ function writeSnap(name, tree) {
 
 export function build({ quiet = false, expect = true } = {}) {
   const log = (...a) => quiet || console.log(...a);
+  if (process.env.SCB_SET === 'v8') return v8Arms(log);
+  if (process.env.SCB_SET && process.env.SCB_SET !== 'best') throw new Error(`SCB_SET=${process.env.SCB_SET}: best or v8`);
   if (!existsSync(join(C_DIR, JS))) throw new Error('best build snapshot missing: run node fixes/best-build/build.mjs --snapshot');
   const c = Object.fromEntries(FILES.map((f) => [f, read(C_DIR, f)]));
   if ([sha(c[JS]), sha(c[CSS])].join() !== PIN.C.join()) throw new Error(`C at ${C_DIR}: not the pinned best build`);
@@ -76,5 +112,7 @@ function regenDiff() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--diff')) regenDiff();
+  const iv = process.argv.indexOf('--import-v8');
+  if (iv > 0) importV8(process.argv[iv + 1]);
   build({ expect: !process.argv.includes('--no-expect') });
 }

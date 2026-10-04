@@ -608,6 +608,36 @@ covers this fix's phone no-worse check (less-work rule) and the combined-build p
 of P-103) in one block. int-v8 carries `patch-on-best.diff` onto v8 (P-108's C is morph-gpu rev 3, 65052c4a3902, not
 v8).
 
+## P-117 N2: the carry onto v8 and the count re-check (pre-registered, before any N2 load)
+
+**Carry review** (int-v8's `fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff` 3abcd7008e61, branch
+worktree-agent-a068af37646232e05 @ 833fb29e): 14 of 16 hunks are this patch's text unchanged (offsets only). The 2
+future-section (mM) hunks needed a merge because rest-script v4 put the `fw*` declarations between `c = !1,` and `l`,
+and made `u = () => (fwCheck(), (i ||= rAF(l)))`. The carry keeps every scb line, moves the scb declarations after
+`fwNearChange`, and changes one line: `scbU = () => { scbPoke = !0; !scbOff || scbDirty || scbG.near() ? u() : fwCheck(); }`,
+so the gate skips only the job's rAF and rest-script's jump check runs on every scroll/resize frame as in v8. Checked here:
+the carried diff applies to v8 with no fuzz and gives v8 + scb = 4c48e372ecdd (int-v8's value); V minus that is
+nav-hit-cache only, all inside `dN` (not a side job), so V's side counts are scroll-cb's alone. Accepted.
+
+`fwCheck` (V lines 12209-12214; v8 C 12120-12125) reads the cached box (`fwTop`, `fwH`) plus `window.scrollY` and
+`window.innerHeight`. Both are flush-if-dirty reads, CONFIRMED in the engine sources: Chromium `LocalDOMWindow::scrollY()`
+calls `UpdateStyleAndLayout(kJavaScript)` and `innerHeight()` does so through `GetViewportSize()` when the viewport is
+enabled (local_dom_window.cc at chromium/chromium a2720418, lines 1739-1779, 1863-1877); WebKit `LocalDOMWindow::scrollY()`
+calls `updateLayoutIgnorePendingStylesheets()` when scrollY != 0 (LocalDOMWindow.cpp at WebKit/WebKit d89b9dbb, line
+1512). So fwCheck forces style and layout only when they are dirty at that point in the frame; it returns before any read
+while the avatar row is near (`fwNear`). v8 C runs the same call on the same frames; the carry adds none.
+
+**Re-count** (agreed with ops and the lead): P-108 harness unchanged except `build.mjs` (c486a52e5710, adds `SCB_SET=v8`:
+C = v8 3e3e94cb6e9f / f836404b3728 at `out/snapshots/v8-3e3e94cb6e9f`, V = v8 + nav-hit-cache + scroll-cb e8d8323f674b /
+f836404b3728 at `out/snapshots/nsc-e8d8323f674b`, both checked by full sha256). scb-probe ba2f8fbb5752, simcount
+4374051b37a0, score-p108 4cf547f88a3b, run script `out/scroll-cb-phone/run-n2.sh` b906ba05d64e.
+- Chrome `phone`, C1 V1 V2 C2, one shared probe hold; Simulator, C1 V1 V2 C2, one exclusive `--no-timing` hold.
+- Scored with the P-108 rules unchanged: `node fixes/scroll-cb-phone/score-p108.mjs out/scroll-cb-phone/n2 --aa-extra
+  out/scroll-cb-phone/noise --json out/scroll-cb-phone/n2/score.json` (N_vp phone 5, sim 5; the noise C loads are v4's,
+  so I also report the parity with an empty `--aa-extra`, i.e. this block's C2 vs C1 only).
+- Pass: judged side rAF and rects below every C, every guard (forced layouts, style, layout, PrePaint, Paint), parity
+  0 beyond A/A, not VOID. Anything else: not landable in P-117, reported to the lead.
+
 ## Risks, conflicts, follow-ups
 
 - Up to 12 extra IntersectionObservers on phones (commission 4, future 6, platform 2). Their cost is not in these counts
