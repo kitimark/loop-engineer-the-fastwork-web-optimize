@@ -42,6 +42,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-107 pre-data (fix-nav-morph, nav-hit-cache P-104 successor, 62e6d234): PASS with notes.**
+  - registered P-107 fix-nav-morph nav-hit-cache successor (held since P-104; the card's heading and output folder take
+    the id before data).
+  - Checks: hashes match (build 17355c247e9c, probe 8922642a627d, simcount 58fc44c464a2, patch-on-v8 7bbb6d4212ff); no
+    P-107 data. The probe's audit runs task mode (scrollTo in a timer after the rAF) and raf mode, and counts lag frames.
+  - N1: raf mode is report-only in effect (the smoke had a lag in 1069 of 1070 frames). The task mode is the gate. The
+    raf exemption rests on two things:
+    - Scroll-write inventory, checked in v8's page JS: smooth scrollTo at 4713 and 11624, horizontal carousel at
+      11598/11606, the morph pin L at 14006 (gated by C()), and the debug __fwMorphDrive at 14033 (stripped before landing).
+    - HTML update-the-rendering order: scroll steps run before the animation frame callbacks (CONFIRMED by spec).
+    The card should cite both.
+  - N2: a task-mode lag frame is a harness fault. It voids that case (re-run once), not V.
+  - N3: name the audit channel for every cached answer (theme F(), sticky ee(), pill rect), or say that V caches nothing else.
+  - N4: the intervals come from P-104's data, so hits are a replication.
+  - Ledger row added.
+  - Registry: next free P-116.
 - 10-05 01:xxZ **P-114 result, ops second read: AGREE, no-worse, so v7 -> v8 after the smoke checks** (int-v8 8830dcbf,
     against the card be0d650b and ruling e0b92985). Re-checked hashes: score 5bbdd2f10cca, base 26d944bf93e2, hold.sh
     6367f45452e4, serve.sh 04b793255e19, selftest c2a86e730417, score.json 377f19c597da.
@@ -109,7 +125,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     agent takes a P-id only from ops, as a `registered` line here; an id with no such line is not taken. Ask ops, not "next free".
     P-100 cd-roll-ca display rate · P-101 nav-hit-cache · P-102 cd-roll-ca K · P-103 scroll-cb-phone ·
     P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
-    P-107 held, nav-hit-cache successor · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
+    P-107 nav-hit-cache successor (fix-nav-morph, registered 10-05) · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
     P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
     P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize). **Next free: P-116.**
   - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
