@@ -1,0 +1,24 @@
+# nav-earn delta on v8 (T-148): Join waitlist collapses with the morph, phone logo stays anchored. CSS only, 2 rules.
+# Apply on the v8-best build (fixes/v8-best/patch.diff). Contains excerpts of Fastwork's code: local branches only, never push.
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11902,6 +11902,9 @@
+ .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
+   transition: none;
+ }
++.start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  transition: none;
++}
+ .start-selling-top-nav-btn.svelte-1dcozpm {
+   box-sizing: border-box;
+   color: #fff;
+@@ -12030,7 +12033,7 @@
+     scale: 0.75;
+   }
+   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+-    transform-origin: 50%;
++    transform-origin: calc(50% * var(--morph));
+   }
+   .start-selling-top-nav-actions.svelte-1dcozpm {
+     gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
