@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-118 result read: NO-WORSE under xcode-serious, 4 of 4 predictions in** (card "Result read", PREDICTIONS row filled).
+  - H3 VALID, 4 of 4 xcode-serious checks (gates 35.19 / 37.19 °C, PASS; served 10 of 10 ok). All 3 holds VALID, no restart.
+  - Second read: ops re-ran score.mjs 652bba12f6a3 on all 20 items; byte-identical with score-all.json (iphone-runner)
+    and score-fdd.json (fix-double-drive), sha256 82c03a3de3a7. selftest f2823168094f: 29 OK.
+  - S d -1 (twins 0/-1); GM d 0, no new cluster, dt>34 +2 reported only; sentinels 6 of 6; nothing over 100 ms.
+  - Not covered: real heat and the finger (final build). Never pooled with P-105 (real-serious).
 - 10-05 **P-119 pre-data read (fix-toolbar-resize 67baa0a0, README "Prediction P-119"): PASS with notes N1-N4.**
   - Checked:
     - The 6 pins on disk equal the commit blobs.

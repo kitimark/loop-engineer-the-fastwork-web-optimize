@@ -229,3 +229,67 @@ Read from iphone-runner's out/p118/runs/hold-H1.log and the per-item check logs 
 - **Served check:** it ran before each of the 4 items, all ok on the signed arms.
 - **Items:** C5 V6 V7 C8, all exit 0.
 - **pmset:** clean.
+
+## Ops check of H3 (iphone-runner, 2026-10-04 22:44-22:53Z): VALID, 4 of 4 checks met
+
+- **PIN line:** the same as H1 and H2 (hold.sh 09c0b21eaa0f, TICKET b8d48b0803c7, score.mjs 652bba12f6a3, gate 023caa54),
+  profile xcode-serious.
+
+| # | check | H3 log | result |
+|---|---|---|---|
+| 1 | no heat pre-warm | no prewarm item, file or line; the first phone action is the start gate | met |
+| 2 | gate at start and end, `--accept-induced` | start: Serious, induced Yes, 35.19 °C, PASS; end: Serious, induced Yes, 37.19 °C, PASS | met |
+| 3 | one uncounted warm-up per arm port | S ports covered by H1's wC/wV (same server pids 58543/58545, ports 52020/52021); the G part got its own uncounted warm-ups wgC/wgV, run by the pinned hold.sh and skipped by the scorer | met |
+| 4 | 44 °C / Critical ceiling | max 37.19 °C, never Critical | met |
+
+- **Served check:** 10 of 10 ok. C served 3e3e94cb6e9f / f836404b3728, V served 3076c5a8c9a3 / 2f7197880ffd and
+  B served 4606120cf392 / 27776f3d4138 every time.
+- **Items:** sCo wgC wgV gMC1 gMV1 gMV2 gMC2 gMC3 gMV3 sCc, all exit 0.
+- **Other hold checks:** pmset clean; the hold took 552 s.
+
+## Result read (mgmt-ops-10, 2026-10-05): NO-WORSE under xcode-serious; 4 of 4 predictions in
+
+- **Second read: the re-score matches byte for byte.**
+  - Ops re-ran score.mjs 652bba12f6a3 on all 20 items of H1-H3 in block order (warm-ups included, which the scorer
+    skips).
+  - Its JSON output is byte-identical to iphone-runner's `out/p118/score-all.json` and to fix-double-drive's
+    independent `score-fdd.json` (all three sha256 82c03a3de3a7).
+  - Scorer self-test (selftest.mjs f2823168094f, in iphone-runner's checkout where the P-105 references exist): 29 OK,
+    all OK.
+- **Validity.** All 3 holds are VALID, 4 of 4 xcode-serious checks each. The block was never restarted.
+  - Pre-amendment warm-ups (`warm/`, 21:37-21:53Z) and the decisive check (`decisive/`, 22:02-22:09Z) ran before H1,
+    contain no counted run, and are not scored.
+  - The phone was cooler at H1's start (32.39 °C) than at any later point, so no heat carried over from them.
+
+**S gate** (scripted scroll, n = 4 per arm): no-worse, not threshold-sensitive.
+
+| arm | dt > 50 per run | median | dt > 34 per run |
+|---|---|---|---|
+| C | 1, 4, 2, 0 | 1.5 | 7, 7, 5, 8 |
+| V | 1, 0, 4, 0 | 0.5 | 4, 7, 5, 7 |
+
+- d (dt > 50) = -1; twins: > 46 = 0, > 54 = -1; > 34 = -1.
+
+**GM gate** (G part M, flick-middle-v1, n = 3 per arm): no-worse, not threshold-sensitive, no new cluster (twins
+included).
+
+| arm | dt > 50 per run | median | dt > 34 per run | max dt |
+|---|---|---|---|---|
+| C | 0, 0, 0 | 0 | 4, 4, 4 | 46 ms |
+| V | 0, 0, 0 | 0 | 7, 6, 3 | 46 ms |
+
+- d (dt > 50) = 0; twins: > 46 = 0, > 54 = 0.
+- d (dt > 34) = +2 (twins > 30 = -3, > 38 = +2). It is reported only and does not gate. The V runs spread from 3 to 7,
+  so it is not a direction.
+
+**Sentinels:** C1, C4, C5, C8, sCo and sCc all pass on the first try. The lowest values were bottom 59.7 fps and
+scroll 58.4 fps.
+- sCc's max dt was 67 ms, the only frame above 59 ms in the block. It was a C arm frame at the end sentinel, 37.09 °C
+  at its start.
+- No frame in the block was over 100 ms.
+
+**Verdict: NO-WORSE (P-105 gates), profile xcode-serious.**
+- It never pools with a real-serious or real-fair result, including P-105's.
+- What this does not show: behaviour at real heat, and finger behaviour. The memory "phone-checks-start-warm" keeps
+  real heat for the final build.
+- Verdict owner: fix-double-drive, which agrees (NO-WORSE).
