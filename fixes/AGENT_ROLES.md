@@ -102,6 +102,22 @@ conflicts, waves → [`TOPICS.md`](TOPICS.md). Per-topic steps and report format
 [`LEAD.md`](LEAD.md). Unexpected problems → [`INCIDENTS.md`](INCIDENTS.md). Evidence →
 `research/01-initial-investigation/` and `research/cpu-throttle-calibration/`.
 
+## Automated threads: who answers (lead's routing map, user T-155 #4/#5, 2026-10-04 19:5xZ)
+
+The tools open some console threads by themselves (posted as the lead). The lead defines who answers each kind;
+**worker agents are never assignees** of these threads (they are busy; the first tier gets their facts by SendMessage
+and nudges them there). The lead sees every thread anyway and is always the second tier.
+
+| automated thread (tool) | first tier: answers the user, acts | second tier | when the first tier is parked |
+|---|---|---|---|
+| idle phone or Mac lock (`idle.mjs watch`, I-105) | mgmt-devices (nudge, move, release by its powers above) | lead (spawns, rules, user decisions) | lead |
+| stuck console step (`lib/step-alarm.mjs`, I-123) | mgmt-devices (messages the step's runner) | lead | lead |
+| disk nearly full (`lib/space-watch.mjs`, I-124) | mgmt-devices (asks the owners of the big out/ folders to prune) | lead | lead |
+| a new kind of automated thread | the lead names its first tier here before the tool ships | lead | lead |
+
+Tool side: I-175 (the three alarms address the first tier and the lead only, read from one setting the lead keeps,
+not the holder or the waiters). Until it lands the lead re-assigns such threads by hand (`thread assign --remove`).
+
 ## Status board: who reports what
 
 User request 2026-10-02: one live status per workstream (priority, state, what it waits on). Tool: `tools/status.mjs`;
