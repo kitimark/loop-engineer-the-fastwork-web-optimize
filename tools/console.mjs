@@ -182,7 +182,9 @@
 //        # wakes; `proposal talk <id> [--as <you>]` shows them, `thread reply <T-id> --by <you>` answers (shown under the
 //        # proposal). A question never changes the decision.
 //        # I-126/T-086: `proposal phone <id> [--option <name>] [--stop]` serves its Try-it pages A and B on the Wi-Fi
-//        # (plain http, detached serve.mjs, only the mirror; the console stays localhost); `proposal phone --list`.
+//        # (plain http, the Try-it host, only the mirror; the console stays localhost); `proposal phone --list`.
+//        # I-143 (user T-119): post, revise, publish and live do it themselves for every option with live pages
+//        # (--no-phone or FW_PROPOSAL_PHONE=off skips it); the pages stay up after the decision until --stop.
 //        # The Proposals page then shows each side's phone link (http://lan:<port>/, resolved at view time).
 //
 // Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait),
