@@ -28,6 +28,12 @@ const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const D = join(WT, 'out/scroll-cb-phone/sim'); mkdirSync(D, { recursive: true });
 const SCRIPT = new Set(['FunctionCall', 'FireAnimationFrame', 'EventDispatch', 'TimerFire']);
 const SIDE = ['AE', 'uM', 'mM', 'GM', 'scbGate'];
+// SCB_DRIVER=task (lead, after the split check; F-239): each step's scrollTo runs in a task posted from the frame's rAF
+// (rAF -> setTimeout 0 -> step), so the scroll lands before the next rendering update, ordered like input. Default
+// 'raf': the step itself runs in rAF (P-108 / N2 / split).
+const DRIVER = process.env.SCB_DRIVER || 'raf';
+if (DRIVER !== 'raf' && DRIVER !== 'task') { console.error(`SCB_DRIVER=${DRIVER}: raf or task`); process.exit(1); }
+const NEXT = DRIVER === 'task' ? '() => P.raf(() => setTimeout(step, 0))' : '() => P.raf(step)';
 const INSTALL = `(() => {
   if (window.__scb) return 0;
   const P = window.__scb = { on: false, counts: {}, log: [], last: {} };
@@ -62,8 +68,8 @@ const SCROLL = `new Promise((res) => { const P = window.__scb; const max = docum
     if (dir > 0 && y >= max) dir = -1;
     if (dir < 0 && y <= 0) { P.on = false; res({ n, y: scrollY, max }); return; }
     y = Math.max(0, Math.min(max, y + 10 * dir)); scrollTo({ top: y, behavior: 'instant' }); n++; P.n = n; P.ys.push(y); console.timeStamp('scb' + n);
-    if (n < 10000) P.raf(step); else { P.on = false; res({ n, y: scrollY, max, cut: true }); } };
-  P.raf(step); })`;
+    if (n < 10000) next(); else { P.on = false; res({ n, y: scrollY, max, cut: true }); } };
+  const next = ${NEXT}; next(); })`;
 
 function fnIndex(src) {
   const starts = [];
@@ -77,7 +83,7 @@ for (const L of order) {
   const st = join(D, `serve-sim-${arm}.json`); rmSync(st, { force: true });
   const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', BASE, '--overlay', ARMS[arm].dir, '--port', '0', '--quiet', '--no-cache',
     '--state', st, '--vendors=local', '--no-http-twin'], { cwd: WT, stdio: ['ignore', 'ignore', 'inherit'] });
-  const load = { arm, rep: Number(rep), engine: 'sim', tool: 'fixes/scroll-cb-phone/simcount.mjs', startedAt: new Date().toISOString() };
+  const load = { arm, rep: Number(rep), engine: 'sim', driver: DRIVER, tool: 'fixes/scroll-cb-phone/simcount.mjs', startedAt: new Date().toISOString() };
   let c = null;
   try {
     let s = null; for (let i = 0; i < 100 && !s; i++) { await sleep(200); if (existsSync(st)) try { s = JSON.parse(readFileSync(st, 'utf8')); } catch {} }

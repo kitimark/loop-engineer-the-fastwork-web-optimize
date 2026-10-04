@@ -693,6 +693,34 @@ Reading (per load, the driver step of each `.start-selling-top-nav` class change
   (`__nsY`), so N lagging here would be the driver's artefact, not a real-input bug. This check does not decide that;
   its task-mode driver and Simulator momentum case do.
 
+**Split result (21:06-21:12Z, PIN line run-split.sh 7c0eeb5de3b3 / build.mjs ef50f44d629e / simcount 4374051b37a0; all
+6 loads valid, served hashes match):** nav class changes by driver step (rAF-step driver):
+
+| load | pill off | on-dark | off | on-dark | off | on-dark | off | pill on | parity vs C1 |
+|---|---|---|---|---|---|---|---|---|---|
+| C1, C2 (v8) | 62 | 215 | 292 | 412 | 641 | 761 | 838 | 991 | C2: 0 (A/A) |
+| S1, S2 (v8 + scroll-cb) | 62 | 215 | 292 | 412 | 641 | 761 | 838 | 991 | 0, 0 |
+| N1, N2 (v8 + nav-hit-cache) | **63** | 215 | 292 | 412 | 641 | 761 | 838 | **993 / 992** | 4, 4 |
+| (N2 block) V1, V2 (both) | **64** | 215 | 292-293 | 412 | 641 | 761-762 | 838 | **993** | 6, 6 |
+
+- **scroll-cb alone matches v8 exactly** (0 diffs in both loads, side rAF 2.269 -> 0.521, rects 3.527 -> 1.254).
+- **nav-hit-cache alone moves both hero-pill flips** (1 step late going down, 1-2 steps late coming up), so the N2
+  parity failure is nav-hit-cache's under this driver. In the combined build the "pill off" flip is one step later
+  again (64 vs 63) and two on-dark flips moved once; whether that is an interaction or this driver's jitter is not
+  settled by 2 loads per arm (OBSERVED).
+- fix-nav-morph's reading (F-239: under a rAF-step driver nav-hit-cache answers from the previous scroll event) fits
+  N's lag; the task-mode check below and its Simulator momentum case decide whether real input lags.
+
+## Task-mode driver check (lead; pre-registered before any task-mode load)
+
+Same harness and arms as the split check, one change: `simcount.mjs` 45175dbac676 adds `SCB_DRIVER=task` (each step's
+`scrollTo` runs in a task posted from the frame's rAF, so the scroll lands before the next rendering update like input;
+the default `raf` path is unchanged). One exclusive `--no-timing` Simulator hold, loads C1 V1 N1 N2 V2 C2 (C = v8,
+V = v8 + nav-hit-cache + scroll-cb, N = v8 + nav-hit-cache), `out/scroll-cb-phone/run-task.sh` 7b46b06cb798 (prints its
+pins first), `build.mjs` ef50f44d629e. Reading: nav class-change steps per load against C1/C2. V and N on C's steps =
+the N2/split lag is the rAF-step driver's (F-239), and the combined build passes parity under input-ordered scrolling;
+still late = a nav-hit-cache lag under input-ordered scrolling, for fix-nav-morph. scroll-cb's own elements are read too.
+
 ## Risks, conflicts, follow-ups
 
 - Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
