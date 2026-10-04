@@ -5,6 +5,10 @@
 ticket text stays in the owner's file; this card holds the number, the pins ops checked on disk, and the gaps to close
 before the lead's read. No counted run happens before the lead signs.
 
+**profile: real-serious** (recorded 2026-10-05 under the phone-ticket profile rule, ops-handover.md "Phone ticket
+profile"). P-118 stays real heat as signed; the line only records it and changes no pin, arm or gate. Its blocks never
+pool with an xcode-serious block.
+
 ## Pins ops checked on disk (2026-10-05, in the owner's worktree)
 
 | item | sha256/12 | result |

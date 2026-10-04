@@ -21,6 +21,28 @@ Every answer to the user (threads, chat, proposals, console step text) follows i
 Running agents don't reload memory, so put this rule in every spawn prompt (mgmt-ops-11's included) and in every
 resume brief.
 
+## Phone ticket profile (standing, user T-162 #3, from the v9 block on; asked by mgmt-devices)
+
+Every phone ticket and every ops validation of one carries a mandatory `profile:` line. Missing line = the ticket is
+rejected.
+- `profile: xcode-serious | real-serious | real-fair`.
+  - xcode-serious: Xcode-induced Serious, no heat pre-warm. This is the default phone profile from the v9 block on.
+  - real-serious, real-fair: real heat, as before.
+- **Blocks of different profiles never pool.** A ticket that pools counted runs across profiles (one score over
+  two profiles, one C median over two profiles) is rejected. Each profile is its own block with its own C.
+- Checks for an `xcode-serious` ticket (all four, each named in the card):
+  1. no heat pre-warm anywhere in the run script or the log;
+  2. the gate `thermal-gate.mjs --accept-induced` (mgmt-devices, 8e4eacbb on branch worktree-mgmt-devices-gate,
+     self-test 16 OK) ran at the start AND at the end of each hold, and both lines are in the log;
+  3. the one uncounted load warm-up per arm port is kept;
+  4. the 44 C / Critical ceiling is kept (any reading above 44 C or any Critical voids the runs since the last pass).
+- P-118 stays real heat as signed (`profile: real-serious`); the profile line is recorded on its card, not a change to
+  its pins or arms.
+- The ticket's profile is stated before data, in the same commit as the pins. A profile change is a new ticket.
+- Open (iphone-runner's decisive check, before the first v9 block): if induced Serious does not slow the chip, one
+  real-heat confirmation block for the final best build (milestone 2b) is added later. Until the check reports, a
+  v9 ticket may name `xcode-serious` but ops notes the check as open on the card.
+
 ## Resume briefs (deliver with the next message that wakes the agent; then strike the line)
 
 Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and send it with the next real wake-up.
@@ -42,6 +64,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **Phone ticket `profile:` rule added (user T-162 #3, mgmt-devices' request).** New standing section "Phone ticket
+  profile": mandatory `profile:` line (xcode-serious | real-serious | real-fair), no pooling across profiles (a pooling
+  ticket is rejected), and the four xcode-serious checks (no pre-warm; `thermal-gate.mjs --accept-induced` 8e4eacbb at
+  start and end of each hold; one uncounted warm-up per arm port; 44 C / Critical ceiling). P-118 card records
+  `profile: real-serious`. No objection raised. No standalone ticket template exists in the repo, so the section is
+  the checklist ops reads against until one is written.
 - 10-05 **P-117 task-mode driver check (fix-scroll-cb 26777ce0): AGREE.**
   - Pins committed before data (ebee20a5, 21:15:03Z; PIN line 21:15:10Z).
   - Re-score byte-identical (score.json e7f5899a87bd).
