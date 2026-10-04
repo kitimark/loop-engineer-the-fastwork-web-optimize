@@ -113,7 +113,8 @@ roles v3 R3), with:
   CSS, or C for V; void G runs with no check log or a wrong hash; void runs since a failed sentinel; and report
   > 100 ms frames.
 - **On main:** the scorer landed as 97bbd4ad; main's score.mjs, selftest.mjs and P-105's scorer hash as in the table.
-- **Open, for the lead (not blocking scoring):** the ticket's scorer lines are on fix-double-drive's disk (TICKET.md
-  dfbac7327abe) but not committed (its branch has 6bfd511f9a89, and the ticket is not on main yet). The signature's
-  S1 stands: if the at-rest probe changes V, this read is void with the arms until the new pins are read.
+- **Ticket committed:** fix-double-drive committed the ticket's scorer lines in 2de7f724 on its branch (TICKET.md
+  dfbac7327abe, checked from the commit). It is on main as fd2aede3, with the same hash.
+- **S1:** the owner reports that the at-rest check left V unchanged. The snapshot's V hashes on disk are still
+  3076c5a8c9a3 / 2f7197880ffd, so the arms stand and this read holds.
 - Status: **scorer second read PASS; the signature's S2 condition is met, P-118's data may be scored with this scorer.**
