@@ -1,7 +1,10 @@
 // tools/lib/sim-background.mjs (incident I-082): the Simulator's own background CPU, read from two process tables.
-// Synthetic tables only: no real ps, no Simulator.
+// Synthetic tables only: no real ps (a sh stand-in for psSnapshot's stamp), no Simulator.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import * as BG from '../../tools/lib/sim-background.mjs';
 
 // a Mac with one booted fw-sim: launchd_sim (pid 100) and its tree; a host process and the host-side Sim services outside it
@@ -152,4 +155,88 @@ test('monitor: one window per tick, onWindow gets each, stop() summarizes (mean,
   assert.equal(s.load1Max, 20);
   assert.deepEqual(BG.monitor({ everySec: 0 }).stop(), { skipped: 'FW_SIM_BG_EVERY_SEC=0' });
   assert.deepEqual(BG.monitor({ everySec: 1, env: { FW_TEST_HOST: 'x' } }).stop(), { skipped: 'a test process without FW_PS' });
+});
+
+// I-120: a ps call that takes `span` s, the table read at an instant inside it (readAt 0 = its start, 1 = its end), as with a
+// ps (or the tests' node fake ps) slowed by host load. bg: the Sim background's true CPU, % of one core (widget + searchd 30 %).
+// step: fake seconds between two calls (the monitor's timer); settle's sleep advances the clock too.
+function slowPs({ bg = 130, calls = [], step = 0 } = {}) {
+  let t = 0, k = 0;
+  const sleep = async (ms) => { t += ms / 1000; };
+  const snapF = () => {
+    if (k > 0) t += step;
+    const { span = 0.02, readAt = 0.5 } = calls[k++] ?? {};
+    const read = t + span * readAt;
+    const s = { at: (t + span / 2) * 1000, span: span * 1000, wall: Date.UTC(2026, 9, 4, 6, 12) + t * 1000, procs: table({ widget: (read * (bg - 30)) / 100, search: read * 0.3 }) };
+    t += span;
+    return s;
+  };
+  return { sleep, snap: snapF, now: () => t, calls: () => k };
+}
+const within = (ws, bg) => ws.every((w) => w.bgPct >= bg * (1 - BG.MAX_SKEW) - 0.1 && w.bgPct <= bg * (1 + BG.MAX_SKEW) + 0.1);
+
+test('I-120 psSnapshot: stamped at the middle of the ps call, with the call\'s span (ps reads the table somewhere inside it)', () => {
+  const d = mkdtempSync(join(tmpdir(), 'fw-simbg-'));
+  const ps = join(d, 'ps');
+  writeFileSync(ps, '#!/bin/sh\necho "  100     1   0:01.50 /x/launchd_sim"\necho "  101   100   0:03.00 /x/SleepWidgetExtension"\n', { mode: 0o755 });
+  const times = [1000, 1400];
+  let i = 0;
+  try {
+    const s = BG.psSnapshot({ env: { FW_PS: ps }, now: () => times[i++] });
+    assert.equal(i, 2, 'one clock reading before ps, one after');
+    assert.equal(s.at, 1200);
+    assert.equal(s.span, 400);
+    assert.equal(s.procs[101].cpuSec, 3);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test('I-120 between: skew = the stamps\' uncertainty (half of each ps call) over the window; 0 without spans', () => {
+  const c = slowPs({ calls: [{ span: 0.35, readAt: 0 }, { span: 0.02, readAt: 1 }], step: 0.4 });
+  const w = BG.between(c.snap(), c.snap());
+  assert.equal(w.windowSec, 0.6);
+  assert.ok(Math.abs(w.skew - 0.185 / 0.585) < 0.001, `skew ${w.skew}`);
+  assert.ok(w.skew > BG.MAX_SKEW);
+  assert.equal(BG.between(snap(0, {}), snap(3, { widget: 3 })).skew, 0);
+});
+
+test('I-120 monitor: a slow ps call (host load) no longer inflates or deflates a window: a window whose stamps are too uncertain extends to the next tick; a real overrun still counts', async () => {
+  const calls = [{ span: 0.35, readAt: 0 }, { span: 0.02, readAt: 1 }, {}, { span: 0.3, readAt: 1 }, { span: 0.02, readAt: 0 }, {}, { span: 0.3, readAt: 0 }, {}];
+  for (const bg of [130, 200]) {
+    const c = slowPs({ bg, calls, step: 0.4 });
+    const m = BG.monitor({ everySec: 0.05, limitPct: 60, snap: c.snap, load: () => 34 });
+    for (let i = 0; i < 500 && c.calls() < calls.length; i++) await new Promise((r) => setTimeout(r, 10));
+    const s = m.stop();
+    assert.ok(s.n >= 1, `windows: ${s.n}`);
+    assert.ok(s.n < c.calls() - 1, `uncertain windows merged: ${s.n} windows from ${c.calls()} readings`);
+    assert.ok(within(s.windows, bg), `bg ${bg}: every window within ±${BG.MAX_SKEW * 100} %: ${s.windows.map((w) => w.bgPct)}`);
+    assert.ok(s.windows.every((w) => !w.uncertain));
+    assert.equal(s.busy, s.n, 'every window is above the limit');
+    assert.ok(s.bgMax >= bg * (1 - BG.MAX_SKEW));
+  }
+  // the command ended within one uncertain window: kept, flagged, rather than no window at all
+  const c = slowPs({ calls: [{ span: 0.35, readAt: 0 }], step: 0.4 });
+  const s = BG.monitor({ everySec: 0.05, limitPct: 60, snap: c.snap, load: () => 34 }).stop();
+  assert.equal(s.n, 1);
+  assert.equal(s.windows[0].uncertain, true);
+});
+
+test('I-120 settle: an uncertain window extends to the next reading; when time is up with nothing else read, it is kept and flagged', async () => {
+  let c = null; // the wall clock follows the fake one (sleeps and ps calls)
+  const realNow = Date.now;
+  Date.now = () => c.now() * 1000;
+  try {
+    for (const bg of [130, 200]) {
+      c = slowPs({ bg, calls: [{ span: 3, readAt: 0 }, {}, {}, {}, { span: 2.5, readAt: 1 }, { span: 0.02, readAt: 0 }] });
+      const r = await BG.settle({ maxSec: 30, limitPct: 60, sleep: c.sleep, snap: c.snap, load: () => 34 });
+      assert.equal(r.settled, false);
+      assert.ok(r.windows.length >= 2 && r.windows.length < c.calls() - 1, `windows ${r.windows.length} from ${c.calls()} readings`);
+      assert.ok(within(r.windows, bg), `bg ${bg}: ${r.windows.map((w) => w.bgPct)}`);
+      assert.ok(r.windows.every((w) => !w.uncertain));
+    }
+    c = slowPs({ calls: [{ span: 3, readAt: 0 }] });
+    const r = await BG.settle({ maxSec: 0, limitPct: 60, sleep: c.sleep, snap: c.snap, load: () => 34 });
+    assert.equal(r.windows.length, 1, 'one reading, no wait beyond it');
+    assert.equal(r.windows[0].uncertain, true);
+    assert.equal(r.last.bgPct, r.windows[0].bgPct);
+  } finally { Date.now = realNow; }
 });

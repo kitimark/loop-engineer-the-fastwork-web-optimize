@@ -61,14 +61,23 @@ export function config(env = process.env) {
 /** Is reading the real ps refused here (a test process without $FW_PS)? */
 export const refused = (env = process.env) => !env.FW_PS && (!!env.NODE_TEST_CONTEXT || !!env.FW_TEST_HOST);
 
-/** One process table {pid: {ppid, cpuSec, command}} with a monotonic stamp, or null (refused, or ps failed). */
+/** A window whose end stamps are less certain than this share of it (skew, see between()) is not reported on its own: it
+ *  extends to the next reading (I-120). The reported % is then within ±MAX_SKEW of the true one, so a 130 % background
+ *  reads 104-156 % and a real overrun (anything above limitPct / (1 - MAX_SKEW)) still counts as busy. */
+export const MAX_SKEW = 0.2;
+
+/** One process table {pid: {ppid, cpuSec, command}} with a monotonic stamp, or null (refused, or ps failed). ps reads the
+ *  table at some instant inside its run, so `at` is the middle of the call and `span` its length (ms): the stamp is right
+ *  within span / 2. A ps slowed by host load (a 0.35 s call against 0.4 s windows, I-120) otherwise read 130 % as 200 %. */
 export function psSnapshot({ env = process.env, now = () => performance.now() } = {}) {
   if (refused(env)) return null;
   try {
+    const t0 = now();
     const r = spawnSync(env.FW_PS || 'ps', ['-A', '-o', 'pid=,ppid=,time=,comm='], { encoding: 'utf8', timeout: 5000, maxBuffer: 16 * 1024 * 1024 });
+    const t1 = now();
     if (r.status !== 0) return null;
     const procs = parsePsProcs(r.stdout);
-    return Object.keys(procs).length ? { at: now(), wall: Date.now(), procs } : null;
+    return Object.keys(procs).length ? { at: (t0 + t1) / 2, span: t1 - t0, wall: Date.now(), procs } : null;
   } catch { return null; }
 }
 
@@ -88,7 +97,8 @@ const r1 = (x) => Math.round(x * 10) / 10;
 /**
  * The Simulator's CPU between two psSnapshot()s: {windowSec, sims (launchd_sim count), bgPct, pagePct, renderPct, logPct, driverPct,
  * hostSimPct, top: [{command, kind, cpuPct}] (the n busiest background processes, kind 'background'), page: same for
- * the page}. % of one core. Null without two snapshots.
+ * the page, skew}. % of one core. skew: how uncertain the window's length is, as a share of it (half of each ps call's
+ * span; 0 without spans); above MAX_SKEW, monitor() and settle() extend the window (I-120). Null without two snapshots.
  */
 export function between(a, b, { n = 3 } = {}) {
   if (!a || !b || !(b.at > a.at)) return null;
@@ -108,7 +118,8 @@ export function between(a, b, { n = 3 } = {}) {
     if (kind !== 'hostSim') rows.push({ command: p.command, kind, cpuPct: r1(pct) });
   }
   const top = (k) => rows.filter((x) => x.kind === k).sort((x, y) => y.cpuPct - x.cpuPct || x.command.localeCompare(y.command)).slice(0, n);
-  return { windowSec: r1(sec), sims: tree.roots.length, bgPct: r1(sum.background), pagePct: r1(sum.page), renderPct: r1(sum.render), logPct: r1(sum.log), driverPct: r1(sum.driver), hostSimPct: r1(sum.hostSim), top: top('background'), page: top('page') };
+  const skew = ((a.span || 0) + (b.span || 0)) / 2 / (b.at - a.at);
+  return { windowSec: r1(sec), skew: Math.round(skew * 1000) / 1000, sims: tree.roots.length, bgPct: r1(sum.background), pagePct: r1(sum.page), renderPct: r1(sum.render), logPct: r1(sum.log), driverPct: r1(sum.driver), hostSimPct: r1(sum.hostSim), top: top('background'), page: top('page') };
 }
 
 const topText = (w) => (w?.top?.length ? w.top.map((x) => `${x.command} ${Math.round(x.cpuPct)} %`).join(', ') : 'none');
@@ -135,11 +146,19 @@ export async function settle({ maxSec, limitPct, windowSec = DEFAULTS.windowSec,
     await sleep(windowSec * 1000);
     const b = snap();
     if (!b) break;
-    last = between(a, b);
-    a = b;
-    if (last) windows.push({ at: new Date(b.wall).toISOString(), bgPct: last.bgPct, pagePct: last.pagePct, renderPct: last.renderPct, logPct: last.logPct, top: last.top });
-    if (last && last.bgPct <= limitPct) break;
-    if ((Date.now() - t0) / 1000 + windowSec > maxSec) break;
+    const w = between(a, b);
+    const late = (Date.now() - t0) / 1000 + windowSec > maxSec;
+    const unsure = !!w && w.skew > MAX_SKEW;
+    // I-120: an uncertain window extends to the next reading; kept (flagged) only when time is up and nothing else was read
+    if (!unsure || (late && !last)) {
+      a = b;
+      if (w) {
+        last = w;
+        windows.push({ at: new Date(b.wall).toISOString(), bgPct: w.bgPct, pagePct: w.pagePct, renderPct: w.renderPct, logPct: w.logPct, top: w.top, ...(unsure ? { uncertain: true } : {}) });
+        if (w.bgPct <= limitPct) break;
+      }
+    }
+    if (late) break;
   }
   return { settled: !!last && last.bgPct <= limitPct, waitedSec: Math.round((Date.now() - t0) / 1000), limitPct, maxSec, windows, last, load1Start, load1End: load() };
 }
@@ -156,13 +175,16 @@ export function monitor({ everySec, limitPct, env = process.env, snap = () => ps
   if (!first) { const why = refused(env) ? 'a test process without FW_PS' : 'ps failed'; return { stop: () => ({ skipped: why }) }; }
   let prev = first;
   const windows = [];
-  const tick = () => {
+  const tick = (tail = false) => {
     const b = snap();
     if (!b) return;
     const w = between(prev, b);
+    const unsure = !!w && w.skew > MAX_SKEW;
+    // I-120: an uncertain window extends to the next tick; the tail is kept (flagged) only when it is the only window
+    if (unsure && !(tail && !windows.length)) return;
     prev = b;
     if (!w) return;
-    const row = { at: new Date(b.wall).toISOString(), bgPct: w.bgPct, pagePct: w.pagePct, renderPct: w.renderPct, logPct: w.logPct, top: w.top, load1: r1(load() ?? NaN) };
+    const row = { at: new Date(b.wall).toISOString(), bgPct: w.bgPct, pagePct: w.pagePct, renderPct: w.renderPct, logPct: w.logPct, top: w.top, load1: r1(load() ?? NaN), ...(unsure ? { uncertain: true } : {}) };
     windows.push(row);
     try { onWindow?.(row); } catch {}
   };
@@ -171,7 +193,7 @@ export function monitor({ everySec, limitPct, env = process.env, snap = () => ps
   return {
     stop: () => {
       clearInterval(timer);
-      tick(); // the tail since the last window
+      tick(true); // the tail since the last window
       const whole = between(first, prev, { n: 5 });
       const bg = windows.map((w) => w.bgPct);
       const mean = (k) => (windows.length ? r1(windows.reduce((x, w) => x + (w[k] ?? 0), 0) / windows.length) : null);
