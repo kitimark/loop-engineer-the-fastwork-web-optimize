@@ -332,6 +332,149 @@
    "why": "the resumed list's run log (part start/exit times)",
    "kind": "result",
    "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/hold5.log",
+   "why": "hold5 log: served hashes and run lines cited by the README (hidden-tab / h60 tables)",
+   "kind": "log",
+   "for": "README Hidden tab, Position identity (review N5)"
+  },
+  {
+   "path": "out/cd-roll-ca/hold7.log",
+   "why": "hold7 log: served hashes and run lines cited by the README (hidden-tab / h60 tables)",
+   "kind": "log",
+   "for": "README Hidden tab, Position identity (review N5)"
+  },
+  {
+   "path": "out/cd-roll-ca/hold10.log",
+   "why": "hold10 log: served hashes and run lines cited by the README (hidden-tab / h60 tables)",
+   "kind": "log",
+   "for": "README Hidden tab, Position identity (review N5)"
+  },
+  {
+   "path": "out/cd-roll-ca/hold11.log",
+   "why": "hold11 log: served hashes and run lines cited by the README (hidden-tab / h60 tables)",
+   "kind": "log",
+   "for": "README Hidden tab, Position identity (review N5)"
+  },
+  {
+   "path": "out/cd-roll-ca/r5-chProbe.log",
+   "why": "Chrome h60 probe log for V9/C8 on tc (positionsH60_V9)",
+   "kind": "log",
+   "for": "README Position identity (review N5)"
+  },
+  {
+   "path": "out/cd-roll-ca/v0",
+   "why": "V0 build copy used by hide-V0.json (round 1 hidden-tab arm)",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README Hidden tab (review N5)"
+  },
+  {
+   "path": "fixes/cd-roll-ca/phone/serve-snap.sh",
+   "why": "committed copy of the snapshot server script (out/cd-roll-ca/serve-snap.sh) used by P-093 and every Simulator/Chrome snapshot run",
+   "kind": "tool",
+   "for": "PHONE TICKET P-093 (review N5)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T06-57-19-874Z.json",
+   "why": "Chrome MOTION frozen mid-roll frames, 430 wide, C8/V9/C8-again",
+   "kind": "result",
+   "for": "README Chrome mid-roll frozen frames (B2)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T06-57-19-874Z",
+   "why": "Chrome MOTION shots, 430 wide",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README Chrome mid-roll frozen frames (B2)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T06-58-28-626Z.json",
+   "why": "Chrome MOTION frozen mid-roll frames, 1440 wide, C8/V9/C8-again",
+   "kind": "result",
+   "for": "README Chrome mid-roll frozen frames (B2)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T06-58-28-626Z",
+   "why": "Chrome MOTION shots, 1440 wide",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README Chrome mid-roll frozen frames (B2)"
+  },
+  {
+   "path": "out/cd-roll-ca/fivenum-430.json",
+   "why": "five numbers per shot, 430 (fivenum.mjs)",
+   "kind": "result",
+   "for": "README B2 table"
+  },
+  {
+   "path": "out/cd-roll-ca/fivenum-1440.json",
+   "why": "five numbers per shot, 1440 (fivenum.mjs)",
+   "kind": "result",
+   "for": "README B2 table"
+  },
+  {
+   "path": "out/cd-roll-ca/full",
+   "why": "Chrome full-page comp-check JSONs + traces (C8/V9 x3) and costcard records.json",
+   "kind": "result",
+   "fastworkDerived": true,
+   "for": "README Landing basis: the full page, cost card (B3)"
+  },
+  {
+   "path": "out/cd-roll-ca/sim-counts-2026-10-04T07-15-36-357Z.json",
+   "why": "Simulator counts with the whole page running (C8/V9 x2)",
+   "kind": "result",
+   "for": "README Simulator, everything running (B3)"
+  },
+  {
+   "path": "out/cd-roll-ca/r6.sh",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/r6.log",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/r6-full.sh",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/r6-chMotion430.log",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/r6-chMotion1440.log",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/r6-chFull.log",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/r6-simFull.log",
+   "why": "round-4 follow-up run script / log (B2, B3)",
+   "kind": "log",
+   "for": "README B2/B3"
+  },
+  {
+   "path": "out/cd-roll-ca/proposal",
+   "why": "PR-017 proposal file and its shots (C8 vs V9 mid-roll clock, 4x zoom)",
+   "kind": "media",
+   "fastworkDerived": true,
+   "for": "proposal PR-017"
   }
  ]
 }
