@@ -287,7 +287,7 @@ git -C <toolsmith worktree> rebase main
 git -C <toolsmith worktree> diff --stat main...HEAD              # only tools/, tests/; review them and their tests
 git diff --stat main...<toolsmith branch> -- site site-pretty baseline.json   # must print NOTHING (see below)
 git switch --detach <toolsmith branch>
-node tools/lock.mjs run chrome-measure --owner land-i<nnn> --short --max-seconds 300 -- npm test
+node tools/lock.mjs run chrome-measure --owner land-i<nnn> --shared --weight npm-test --max-seconds 480 -- npm test
 git switch main && git merge --ff-only <toolsmith branch>
 node tools/incident.mjs resolve I-<nnn> --by lead --commit <sha> [--remeasure]   # prints the announcement
 ```

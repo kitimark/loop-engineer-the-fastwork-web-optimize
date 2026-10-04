@@ -268,10 +268,10 @@ npm run test:all      # both
 - Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead
   as an incident, who lands them on main (rebase + ff-only) so every worktree gets them. The lead
   runs `npm test` on the exact commit in the **main checkout** too: it has `site/`, worktrees don't.
-- `npm test` is about 285 CPU-s and 160-165 s wall at concurrency 6, ~1.75 cores mean, bursts to 6 (I-076; ~1333 tests, lane doc §2/§11): while others may be measuring, run it under the lock in the
-  shared lane, `node tools/lock.mjs run chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 -- npm test`
+- `npm test` takes 250-280 s wall (2026-10-04, ~1640 tests; it was 160-165 s at ~1333 tests, I-076), ~1.75 cores mean, bursts to 6 (lane doc §2/§11), so a shared npm-test job may run up to 480 s (I-114): while others may be measuring, run it under the lock in the
+  shared lane, `node tools/lock.mjs run chrome-measure --owner <you> --shared --weight npm-test --max-seconds 480 -- npm test`
   (not `test:chrome`: it takes the lock itself), and hold a shared lease around a commit whose hook
-  runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --shared --weight 2 --max-seconds 300 --wait 1800`,
+  runs it: `node tools/lock.mjs acquire chrome-measure --owner <you> --shared --weight npm-test --max-seconds 480 --wait 1800`,
   `git commit`, `node tools/lock.mjs release chrome-measure --shared --owner <you>` (`fixes/INCIDENTS.md`). Shared
   jobs run beside each other, never beside a timing hold ("Shared devices"); with the lead's switch off they run as
   short jobs. A short job waits for the current holder only, not for the queued 5-min A/Bs (incident I-007).
@@ -533,7 +533,7 @@ exclusive `--short` job.
 ```sh
 node tools/lock.mjs status                                   # who holds what, who is queued
 node tools/lock.mjs leave chrome-measure --owner <you>       # drop your waiting entries (stop the waiting process first)
-node tools/lock.mjs run chrome-measure --shared --weight 2 --max-seconds 300 --owner <topic> -- npm test   # functional, shared
+node tools/lock.mjs run chrome-measure --shared --weight npm-test --max-seconds 480 --owner <topic> -- npm test   # functional, shared (I-114)
 # Chrome: automatic. verify.mjs / fix.mjs ab wait for chrome-measure and release on exit or crash.
 # iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://lan:<port>/ or the twin's http://lan:<twin>/):
 #   host `lan`: the Mac's LAN address, resolved at run time (I-073); `node tools/lan.mjs [--url --port N]` prints it.
