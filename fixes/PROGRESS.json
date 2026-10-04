@@ -1,8 +1,8 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T09:55:00Z",
+ "updatedAt": "2026-10-04T10:10:00Z",
  "updatedBy": "mgmt-ops-10",
- "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
+ "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
   { "area": "hero", "text": "the top of the page (hero) and scrolling out of it feel laggy" },
@@ -700,14 +700,11 @@
   {"id": "v6-best-br2", "best": true, "name": "Best build 8018ce06 (best build + hero fade on the GPU)", "since": "2026-10-04T07:33:52Z", "improvement": "The hero cards and text fade out on Safari's scroll thread (GPU) instead of being redrawn by script on every scroll frame, on top of best build 65052c4a.", "fixes": ["hero-exit-threaded"], "verdict": "smoother through the hero; you preferred it in both blind swipes", "result": [{"what": "slow frames (over 34 ms) while scrolling through the top card, warm phone, per run (fewer is better)", "before": "27", "after": "12", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095"},{"what": "very slow frames (over 50 ms), same runs (fewer is better)", "before": "4", "after": "3", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095", "note": "no-worse"},{"what": "area redrawn per moving frame in the top card, iPhone (smaller is better)", "before": "165-174 k px", "after": "55-70 k px", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095"},{"what": "blind finger swipe, 2 pairs: which page followed your finger better (more picks is better)", "before": "0 of 2 picks", "after": "2 of 2 picks (a hidden same-page pair: \"same\")", "tag": "OBSERVED", "driver": "your finger (C-038, C-039, C-040)"}], "cost": "The first move after a rest paints a little more (8-19 paint units vs 2-8), as does the frame about 330 ms after a rest (4-6 vs 0-1). The first scroll after load paints about 50 more (185-186 vs 121-141, Simulator). No frame cost seen; narrow iPad windows unchecked.", "hashes": {"js": "8018ce062d30", "css": "71b65c667720"}, "tryIt": {"port": 60238, "scheme": "http", "path": "/", "server": "best-br2"}}
  ],
  "build": {
-  "name": "Best build (T-046): st6-rb2 plus the idle-animation and menu display fixes",
-  "since": "2026-10-03T15:48:02Z",
-  "summary": "Every landed fix in one build: today's base (st6-rb2) plus the idle-animation fix and the menu display fix; checked by identity, pixels and function, not timed as a whole. It is the A side of the Try-it panels and of your finger tests.",
-  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "platform-idle", "morph-inherit"],
+  "name": "Best build v6 (8018ce06): the earlier best build plus the hero fade on the GPU",
+  "since": "2026-10-04T07:33:52Z",
+  "summary": "Every landed fix in one build: best build 65052c4a plus the hero fade on the GPU. It is the A side of Try-it and finger tests. Next, v7: the countdown strips and roll, the resting avatar row, and the end-of-page menu animation if its phone checks pass. Its numbers: see the version list below.",
+  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "platform-idle", "morph-inherit", "hero-exit-threaded"],
   "combined": [
-   { "what": "style work while the people cards scroll by, per run (iPhone Timeline)", "before": "118-123 ms", "after": "59-65 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
-   { "what": "style work in the middle of the page, per run (iPhone Timeline)", "before": "329-346 ms", "after": "207-222 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "measured on B+, this build without the section-switch and carousel fixes" },
-   { "what": "style work at the top, including 6 s at rest, per run (iPhone Timeline)", "before": "228-252 ms", "after": "322-330 ms (B+)", "tag": "OBSERVED", "driver": "scripted window scroll", "when": "2026-10-01T18:58:00Z", "how": "one phone block, 3 runs each, Timeline on", "note": "worse in B+; the carousel fix, now in this build, removes the slow frames at rest there (A1), not re-measured as style time" }
   ]
  }
 }
