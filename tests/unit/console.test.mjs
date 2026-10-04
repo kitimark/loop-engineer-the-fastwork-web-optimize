@@ -514,3 +514,96 @@ test('I-084 steps: publicView names the poster as the recipient (and the topic);
   assert.deepEqual(C.publicView({ ...old, by: 'someone@example.invalid' }).to, ['lead']);
   assert.equal(C.publicView({ ...old, topic: '../x' }).topic, undefined, 'a hand-edited topic that is no id is not shown');
 });
+
+// ---- I-140: a stale ack after a redo, and the wait that hung on a part nobody made ready (C-045 part 3, 12:44Z) ----
+/** C-045's shape: three gated, recorded parts; parts 1-3 done and answered, then the runner's redo of part 3. */
+async function c045() {
+  const parts = [1, 2, 3].map((n) => ({ label: `Part ${n}`, record: true, gate: true }));
+  const s = await C.post({ by: 'iphone-runner', kind: 'action', title: 'Fast flicks', parts, options: 'lag,no lag' });
+  for (const n of [1, 2, 3]) {
+    await C.ack(s.id, { by: 'iphone-runner', part: n, attempt: 1, state: 'ready' });
+    await C.start(s.id, { part: n });
+    await C.ack(s.id, { by: 'iphone-runner', part: n, attempt: 1, state: 'recording' });
+    await C.done(s.id, { part: n });
+  }
+  await C.answer(s.id, { value: 'lag' });
+  return C.redo(s.id, { by: 'iphone-runner', part: 3, message: 'not recorded' });
+}
+
+test('I-140 a/b: a stale ack is refused as ONE line STALE-ATTEMPT naming the attempt to re-run with; redoInfo names the new attempt', async () => {
+  const s = await c045();
+  assert.deepEqual(C.redoInfo(s), { id: s.id, part: 3, attempt: 2, attempts: [1, 1, 2], epoch: 1 });
+  for (const state of ['loading', 'ready']) {
+    const e = await C.ack(s.id, { by: 'iphone-runner', part: 3, attempt: 1, state }).then(() => null, (x) => x);
+    assert.ok(e, `the stale ${state} ack is refused`);
+    assert.equal(e.message.split('\n').length, 1, 'one line');
+    assert.match(e.message, new RegExp(`^STALE-ATTEMPT ${s.id} part 3: current attempt 2; re-run with --attempt 2 \\(${s.id} part 3 is at attempt 2: your ack for attempt 1 is stale \\(iphone-runner redid part 3 at [^)]+\\); nothing changed\\)$`));
+    assert.deepEqual(e.stale, { id: s.id, part: 3, attempt: 2, stale: 1 });
+  }
+  assert.equal(C.get(s.id).parts[2].state, 'waiting', 'the refused acks changed nothing');
+  await C.ack(s.id, { by: 'iphone-runner', part: 3, attempt: 2, state: 'ready' });
+  assert.equal(C.get(s.id).parts[2].state, 'ready', 'the re-run with the current attempt works');
+  // the user's Start over names part 1 (every part reached got a new attempt)
+  await C.start(s.id, { part: 3 });
+  const r = await C.restart(s.id);
+  assert.deepEqual(C.redoInfo(r), { id: s.id, part: 1, attempt: 2, attempts: [2, 2, 3], epoch: 2 });
+});
+
+test('I-140 c: --until started on the current gated part with no ready ack: a hint at once, NOT-READY after the grace (only while "waiting")', async () => {
+  const s = await c045();
+  let t = Date.now();
+  const w = C.waitCondition(s.id, { until: 'started', part: 3, now: () => t });
+  let c = w.check();
+  assert.deepEqual([c.met, c.never], [false, undefined], 'not at once: the runner may still ack');
+  assert.match(w.hint, new RegExp(`^HINT console ${s.id} part 3 started: part 3 attempt 2 is still 'waiting' \\(gated: the user's Start stays off until iphone-runner acks ready\\): ack ready first: node tools/console\\.mjs ack ${s.id} --by iphone-runner --part 3 --state ready --attempt 2; without a ready ack this wait ends NOT-READY \\(exit 6\\) after 60 s$`));
+  assert.equal(C.READY_GRACE_SEC, 60);
+  assert.equal(C.EXIT_NOT_READY, 6);
+  t += 59000;
+  assert.equal(w.check().never, undefined, '59 s: still waiting');
+  t += 2000;
+  c = w.check();
+  assert.equal(c.met, false);
+  assert.match(c.never, /^NOT-READY /);
+  assert.deepEqual(w.notReady, { id: s.id, part: 3, attempt: 2, state: 'waiting', epoch: 1, waitedSec: 61, ack: `node tools/console.mjs ack ${s.id} --by iphone-runner --part 3 --state ready --attempt 2` });
+  // --ready-grace never: the hint only; 0: at the first poll
+  const wn = C.waitCondition(s.id, { until: 'started', part: 3, readyGrace: 'never', now: () => t + 3600e3 });
+  assert.equal(wn.check().never, undefined);
+  assert.doesNotMatch(wn.hint, /NOT-READY/);
+  assert.match(C.waitCondition(s.id, { until: 'started', part: 3, readyGrace: '0' }).check().never, /^NOT-READY /);
+  assert.throws(() => C.waitCondition(s.id, { until: 'started', readyGrace: 'soon' }), /--ready-grace must be seconds/);
+  // "loading": the runner acked this attempt and prepares it: the hint, never NOT-READY
+  await C.ack(s.id, { by: 'iphone-runner', part: 3, attempt: 2, state: 'loading' });
+  const wl = C.waitCondition(s.id, { until: 'started', part: 3, now: () => Date.now() + 3600e3 });
+  assert.equal(wl.check().never, undefined);
+  assert.match(wl.hint, /part 3 attempt 2 is still 'loading'/);
+  // ready: no hint; the user's Start meets it
+  await C.ack(s.id, { by: 'iphone-runner', part: 3, attempt: 2, state: 'ready' });
+  const wr = C.waitCondition(s.id, { until: 'started', part: 3, readyGrace: '0' });
+  assert.deepEqual([wr.check().never, wr.hint], [undefined, null]);
+  await C.start(s.id, { part: 3 });
+  assert.equal(wr.check().met, true);
+});
+
+test('I-140 c: no hint and no NOT-READY on an ungated part, a part that is not current yet, or another --until', async () => {
+  const s = await C.post({ by: 'r', kind: 'action', title: 't', parts: [{ label: 'One', gate: true }, { label: 'Two', gate: true }, { label: 'Free' }] });
+  const later = { readyGrace: '0' };
+  const w2 = C.waitCondition(s.id, { until: 'started', part: 2, ...later });
+  assert.deepEqual([w2.check().never, w2.hint], [undefined, null], 'part 2 is not current: the runner cannot ack it yet');
+  assert.equal(C.waitCondition(s.id, { until: 'recording', part: 1, ...later }).check().never, undefined);
+  assert.equal(C.waitCondition(s.id, { until: 'answered', ...later }).check().never, undefined);
+  for (const n of [1, 2]) { await C.ack(s.id, { by: 'r', part: n, state: 'ready' }); await C.start(s.id, { part: n }); await C.done(s.id, { part: n }); }
+  const w3 = C.waitCondition(s.id, { until: 'started', part: 3, ...later });
+  assert.deepEqual([w3.check().never, w3.hint], [undefined, null], 'ungated: the user can Start without the runner');
+  // part 2 of a fresh step becomes current later: the grace counts from then, not from when the wait was armed
+  const u = await C.post({ by: 'r', kind: 'action', title: 'u', parts: [{ label: 'One', gate: true }, { label: 'Two', gate: true }] });
+  let t = Date.now();
+  const wu = C.waitCondition(u.id, { until: 'started', part: 2, now: () => t });
+  t += 3600e3;
+  assert.equal(wu.check().never, undefined, 'part 1 still current');
+  await C.ack(u.id, { by: 'r', part: 1, state: 'ready' }); await C.start(u.id, { part: 1 }); await C.done(u.id, { part: 1 });
+  t = Date.now() + 30000;
+  assert.equal(wu.check().never, undefined, '30 s after part 2 became current');
+  assert.ok(wu.hint);
+  t = Date.now() + 61000;
+  assert.match(wu.check().never, /^NOT-READY /);
+});

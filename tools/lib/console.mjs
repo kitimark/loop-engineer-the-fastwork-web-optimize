@@ -362,7 +362,7 @@ export async function ack(id, { state, part, message, by, attempt } = {}) {
     const i = partIndex(s, part);
     if (i !== s.cur) throw new Error(`${s.id}: part ${i + 1} is not the current part (${s.cur + 1}); wait for part ${s.cur} done first`);
     const p = s.parts[i];
-    if (want !== undefined && want !== attemptOf(p)) throw new Error(`${s.id} part ${i + 1} is at attempt ${attemptOf(p)}: your ack for attempt ${want} is stale (${lastReset(s)}); wait for the new attempt's Start`);
+    if (want !== undefined && want !== attemptOf(p)) throw staleAttempt(s, i, want);
     if (state === 'loading' || state === 'ready') {
       if (rank(p.state) >= rank('started')) throw new Error(`${s.id} part ${i + 1} is already ${p.state}: ${state} only before the user's Start`);
       p.state = state;
@@ -433,6 +433,26 @@ export async function reopen(id, { who = 'user', agent = false } = {}) {
 
 export const attemptOf = (p) => p.attempt || 1;
 const epochOf = (s) => s.epoch || 0;
+
+/**
+ * I-140: the refusal of an ack whose --attempt is not the part's current one, as ONE line that starts with STALE-ATTEMPT
+ * and names the attempt to re-run with (C-045, 12:44Z: a runner's script acked loading/ready with the attempt from before
+ * its own redo, did not check the exit code, and the user looked at a grey Start button for 4 min). The CLI prints it on
+ * stderr and exits 1 (refused), as before; `e.stale` carries {id, part, attempt (current), stale (the one given)}.
+ */
+function staleAttempt(s, i, want) {
+  const cur = attemptOf(s.parts[i]);
+  const e = new Error(`STALE-ATTEMPT ${s.id} part ${i + 1}: current attempt ${cur}; re-run with --attempt ${cur} (${s.id} part ${i + 1} is at attempt ${cur}: your ack for attempt ${want} is stale (${lastReset(s)}); nothing changed)`);
+  e.stale = { id: s.id, part: i + 1, attempt: cur, stale: want };
+  return e;
+}
+
+/** I-140: what `console.mjs redo` prints for scripts: the part asked again, its new attempt, every part's attempt, the epoch. */
+export function redoInfo(s) {
+  const h = [...(s.history || [])].reverse().find((x) => x.action === 'redo' || x.action === 'restart') || {};
+  const part = h.part ?? s.cur + 1;
+  return { id: s.id, part, attempt: attemptOf(s.parts[part - 1]), attempts: s.parts.map(attemptOf), epoch: epochOf(s) };
+}
 /** The last reset in plain words, for refusals: "user started over at …" / "iphone-runner redid part 2 at …". */
 function lastReset(s) {
   const h = [...s.history].reverse().find((x) => x.action === 'redo' || x.action === 'restart');
@@ -525,8 +545,10 @@ export function missedReset(s) {
  * step without parts); recording and done wait for the last part the user started (or the current one).
  * Skipped or cancelled before the condition is met: never. Detail: the JSON printed on MET.
  */
-export function waitCondition(id, { until = 'answered', part, epoch } = {}) {
+export function waitCondition(id, { until = 'answered', part, epoch, readyGrace, now = Date.now } = {}) {
   if (!WAIT_UNTIL.includes(until)) throw new Error(`--until must be one of ${WAIT_UNTIL.join(', ')} (got ${until})`);
+  const graceSec = parseReadyGrace(readyGrace);
+  const armedAt = now();
   const seen = epoch === undefined || epoch === null || epoch === '' ? undefined : Number(epoch);
   if (seen !== undefined && !(Number.isInteger(seen) && seen >= 0)) throw new Error(`--epoch must be a whole number >= 0 (the epoch in your last MET or REDO line; got ${epoch})`);
   const sid = parseId(id);
@@ -547,7 +569,28 @@ export function waitCondition(id, { until = 'answered', part, epoch } = {}) {
   // the new epoch as its baseline, never saw a reset, and the user looked at "Getting page 1 ready" for 10 min.
   let e0 = seen ?? epochOf(s0);
   if (seen === undefined && until !== 'redo' && missedReset(s0) && waitsOnRunner(s0)) e0 = -1;
-  const w = { what, check: null, redo: null };
+  const w = { what, check: null, redo: null, hint: null, notReady: null };
+  /**
+   * I-140: `--until started` on the current, gated part that the runner has not made ready for its current attempt: the
+   * user's Start stays off, so this wait can only end when the runner acks. w.hint (once, the CLI prints it on stderr)
+   * says so; a part still "waiting" (no ack at all on this attempt, e.g. every ack refused as STALE-ATTEMPT) for
+   * READY_GRACE_SEC after the wait was armed, or after the part became current if that was later, ends the wait with
+   * NOT-READY (w.notReady; exit 6). "loading" (the runner acked this attempt and is preparing it) only gets the hint.
+   */
+  const notReadyCheck = (s) => {
+    if (until !== 'started' || idx === null || !OPEN.has(s.status) || s.cur !== idx) return null;
+    const p = s.parts[idx];
+    if (!p.gate || rank(p.state) >= rank('ready')) return null;
+    const a = attemptOf(p);
+    const cmd = `node tools/console.mjs ack ${sid} --by ${s.by} --part ${idx + 1} --state ready --attempt ${a}`;
+    if (!w.hint) w.hint = `HINT ${what}: part ${idx + 1} attempt ${a} is still '${p.state}' (gated: the user's Start stays off until ${s.by} acks ready): ack ready first: ${cmd}${p.state === 'waiting' && graceSec !== null ? `; without a ready ack this wait ends NOT-READY (exit ${EXIT_NOT_READY}) after ${graceSec} s` : ''}`;
+    if (p.state !== 'waiting' || graceSec === null) return null;
+    const since = Math.max(armedAt, becameCurrent(s, idx) ?? 0);
+    const waited = Math.round((now() - since) / 1000);
+    if (now() - since < graceSec * 1000) return null;
+    w.notReady = { id: sid, part: idx + 1, attempt: a, state: p.state, epoch: epochOf(s), waitedSec: waited, ack: cmd };
+    return `NOT-READY ${JSON.stringify(w.notReady)}`;
+  };
   /** The REDO detail: the last reset (who, what, from which part), every part's attempt now, the epoch. */
   const redoDetail = (s) => {
     const h = [...s.history].reverse().find((x) => x.action === 'redo' || x.action === 'restart') || {};
@@ -585,9 +628,32 @@ export function waitCondition(id, { until = 'answered', part, epoch } = {}) {
     if (st === 'skipped') return { met: false, state, never: `the user skipped it (not now)${s.result?.notes ? `: ${s.result.notes}` : ''}; node tools/console.mjs reopen ${sid} --by <you> to queue it again` };
     if (st === 'cancelled') return { met: false, state, never: 'it was cancelled' };
     if (st === 'answered') return { met: false, state, never: `it was answered before part ${idx + 1} reached ${until}` };
+    const nr = notReadyCheck(s); // I-140
+    if (nr) return { met: false, state, never: nr };
     return { met: false, state };
   };
   return w;
+}
+
+/** `console.mjs wait --until started` exit code when the gated part never got a ready ack (I-140). */
+export const EXIT_NOT_READY = 6;
+/** Seconds a `--until started` wait allows a gated current part to stay "waiting" (no ack on its attempt), I-140. */
+export const READY_GRACE_SEC = 60;
+/** --ready-grace <sec>|never -> seconds, or null (never: the hint only). Default READY_GRACE_SEC. */
+export function parseReadyGrace(v) {
+  if (v === undefined || v === null || v === '') return READY_GRACE_SEC;
+  if (v === 'never') return null;
+  const n = Number(v);
+  if (!(Number.isFinite(n) && n >= 0 && n <= 86400)) throw new Error(`--ready-grace must be seconds (0-86400) or never (got ${v})`);
+  return n;
+}
+/** When part `i` became the current one: the previous part's done, the last reset, or the step's queueing (ms). */
+function becameCurrent(s, i) {
+  const t = [Date.parse(s.queuedAt), i > 0 ? Date.parse(s.parts[i - 1].at?.done) : NaN];
+  const h = [...(s.history || [])].reverse().find((x) => x.action === 'redo' || x.action === 'restart');
+  if (h) t.push(Date.parse(h.at));
+  const ok = t.filter(Number.isFinite);
+  return ok.length ? Math.max(...ok) : null;
 }
 
 // ---- page view --------------------------------------------------------------------------------------
