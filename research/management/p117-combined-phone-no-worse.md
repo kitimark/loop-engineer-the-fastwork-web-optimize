@@ -212,3 +212,28 @@ fix-scroll-cb's N2 (01daa38f, README "P-117 N2 result") found V failing Simulato
 counted run is taken. The suspect is nav-hit-cache's cached geometry (`__nsVh` while the toolbar changes innerHeight), OBSERVED;
 scroll-cb is not ruled out. Decisive check: one Simulator hold C1 N1 S1 S2 N2 C2 (N = nav-hit-cache alone, S = scroll-cb alone),
 arms pinned before data. A fixed V gets new pins and a new signature.
+
+## Ops second read: task-mode driver check (fix-scroll-cb 26777ce0, README "Task-mode driver check"): AGREE
+
+- **Pins before data.** ebee20a5 (21:15:03Z) committed simcount.mjs 45175dbac676 and build.mjs ef50f44d629e, and named
+  run-task.sh 7b46b06cb798. The log's PIN line (21:15:10Z) shows the same three hashes and `driver task`. On disk
+  run-task.sh and simcount.mjs still match. build.mjs is now d190003298c5: 26777ce0 changed it after the data, for
+  v9, and the PIN line keeps the hash used at run time.
+- **Loads.** All 6 loads report driver `task` and the served JS of their arm: C 3e3e94cb6e9f, V e8d8323f674b,
+  N fd3688901f50, all with CSS f836404b3728.
+- **Re-score.** `score-p108.mjs` 4cf547f88a3b (unchanged since ebee20a5) run on `out/scroll-cb-phone/task`
+  with `--aa-extra out/scroll-cb-phone/empty-aa` gives score.json byte for byte (e7f5899a87bd).
+- **Re-derived from sim-counts.json** with my own script, not the owner's scorer:
+  - **Step diffs against C1:** C2 20, V1 22, N1 22, N2 22, V2 28. A/A 20 > N_vp 5, so parity is VOID under this driver.
+  - **Hero-pill flips** (first nav state / is-hero-pill on): C1 63/992, C2 62/992, N1 62/992, N2 63/991, V1 62/991,
+    V2 63/992. All are within C's own ±1. The 2-step rAF-mode lag (N2, split) does not appear.
+  - **Pain flicker** (dark at 964 or 965, then off at 966): in V1, N1 and N2 only. It is absent from C1, C2 and V2,
+    and from all 10 rAF-mode loads (n2 C1 V1 V2 C2, split C1 N1 S1 S2 N2 C2, each with one off at 964).
+  - **Nav flicker:** in V2 only. `is-on-dark` turns on at 412, drops at 413 and returns at 414. No other load has a
+    1-step nav gap.
+- **Guards.** All pass. renderingFrames sits exactly at its limit (V mean 1.065 = limit 1.065, d +0.050 = tol 0.05), so
+  any rise would fail it.
+- **What this does not settle, for the lead.** The hold's lag looks like the rAF driver's (F-239, OBSERVED, in our
+  setup). But under the task driver, step parity is VOID by the scorer's own rule, so this check cannot pass V's
+  Simulator parity formally. Lifting the hold, and on what evidence, is the lead's call. The two flickers are
+  OBSERVED, cause unknown, and both need nav-hit-cache: they go to fix-nav-morph.

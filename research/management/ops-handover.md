@@ -42,6 +42,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-117 task-mode driver check (fix-scroll-cb 26777ce0): AGREE.**
+  - Pins committed before data (ebee20a5, 21:15:03Z; PIN line 21:15:10Z).
+  - Re-score byte-identical (score.json e7f5899a87bd).
+  - Re-derived independently from sim-counts.json:
+    - step diffs: C2 20, V1/N1/N2 22, V2 28 against C1, so parity is VOID under this driver;
+    - hero-pill flips within ±1 everywhere;
+    - pain flicker 964-966 in V1, N1 and N2 only, absent from all 10 rAF loads;
+    - nav flicker 413/414 in V2 only.
+  - renderingFrames guard sits exactly at its limit.
+  - Lifting the P-117 hold is the lead's call. The flickers go to fix-nav-morph. Card: p117-combined-phone-no-worse.md.
 - 10-05 **P-118 scorer second read (int-v8 bb68123d = main 97bbd4ad): PASS. This meets the signature's S2
   (cd720fb7).**
   - Hashes: score.mjs 652bba12f6a3, selftest.mjs f2823168094f, P-105 base b9a29ffcc7bb unchanged.
