@@ -409,7 +409,7 @@ test('I-093 createLiveServers.open: A from the A overlay when given, restarted o
     assert.equal(a.argv[a.argv.indexOf('--root') + 1], 'site-pretty');
     assert.notEqual(a.pid, a0, 'A restarted for its overlay');
     assert.equal(b.pid, b0, 'B (the same blob) reused');
-    for (const k of [a, b]) assert.deepEqual(k.argv.slice(k.argv.indexOf('--vendors=local')), ['--vendors=local', '--port', 'auto', '--host', '127.0.0.1', '--quiet', '--frame-ancestors', 'http://localhost:5559']);
+    for (const k of [a, b]) assert.deepEqual(k.argv.slice(k.argv.indexOf('--vendors=local')), ['--vendors=local', '--port', 'fresh', '--host', '127.0.0.1', '--quiet', '--frame-ancestors', 'http://localhost:5559']);
     assert.equal(readFileSync(join(L.buildLiveOverlay(blobs.css), PAGE_CSS.slice(1)), 'utf8'), fx.prettyFiles[PAGE_CSS] + '/* PoC css */\n');
     const a1 = a.pid;
 

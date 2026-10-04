@@ -60,13 +60,14 @@ before(async () => {
   blobs.b = commitPatch('demo', fx.prettyFiles[PAGE_JS] + '/* PoC: demo */\n');
   blobs.a = commitPatch('best', fx.prettyFiles[PAGE_JS] + '/* best build */\n');
   // a fake serve.mjs: writes the --state file like the real one, answers /__mirror/info with its --root and --overlay,
-  // listens on 127.0.0.1 only, and exits when its parent (this test) is gone
+  // listens on 127.0.0.1 only, and exits when its parent (this test) is gone; with $FAKE_SERVE_PRE_I131 its info lacks
+  // the `cache` field, like a serve.mjs from before I-131
   fake = join(tempDir('fw-phone-fake-'), 'fake-serve.mjs');
   writeFileSync(fake, [
     "import http from 'node:http'; import { writeFileSync, renameSync } from 'node:fs'; import { resolve } from 'node:path';",
     'const a = process.argv.slice(2); const opt = (k) => { const i = a.indexOf(k); return i < 0 ? null : a[i + 1]; };',
     "const root = resolve(process.env.FW_MIRROR_HOME, opt('--root')); const ov = opt('--overlay');",
-    "const s = http.createServer((q, r) => { r.setHeader('content-type', 'application/json'); r.end(JSON.stringify(q.url === '/__mirror/info' ? { root, overlays: ov ? [{ dir: ov, files: [] }] : [] } : { argv: a, pid: process.pid })); });",
+    "const s = http.createServer((q, r) => { r.setHeader('content-type', 'application/json'); r.end(JSON.stringify(q.url === '/__mirror/info' ? { root, overlays: ov ? [{ dir: ov, files: [] }] : [], ...(process.env.FAKE_SERVE_PRE_I131 ? {} : { cache: 'revalidate' }) } : { argv: a, pid: process.pid })); });",
     "s.listen(0, '127.0.0.1', () => { const f = opt('--state'); writeFileSync(f + '.tmp', JSON.stringify({ url: 'http://localhost:' + s.address().port + '/', port: s.address().port, pid: process.pid, root, overlays: ov ? [ov] : [] })); renameSync(f + '.tmp', f); });",
     'const ppid = process.ppid; setInterval(() => { try { process.kill(ppid, 0); } catch { process.exit(0); } }, 300);',
   ].join('\n'));
@@ -117,7 +118,7 @@ test('phoneStatus: down without a state file; up only when the pid lives and /__
   assert.equal((await PH.phoneStatus(live, { lan: () => 'not-an-ip', probe: right })).b.href, null);
 });
 
-test('startPhoneServers: detached serve.mjs per build, plain http on 0.0.0.0, --port auto, no framing; reused; stop kills only its own; the registry holds no address', async () => {
+test('startPhoneServers: detached serve.mjs per build, plain http on 0.0.0.0, --port fresh (I-131), no framing; reused; stop kills only its own; the registry holds no address', async () => {
   for (const f of readdirSync(PH.phoneDir())) if (f.endsWith('.json')) writeFileSync(join(PH.phoneDir(), f), '{}'); // the previous test's fakes
   const live = liveAB();
   const r = await PH.startPhoneServers(live, { serveScript: fake });
@@ -129,7 +130,7 @@ test('startPhoneServers: detached serve.mjs per build, plain http on 0.0.0.0, --
   const a = await who(r.a.port), b = await who(r.b.port);
   const tailArgs = (argv) => argv.slice(argv.indexOf('--vendors=local'));
   for (const x of [a, b]) {
-    assert.deepEqual(tailArgs(x.argv).slice(0, 6), ['--vendors=local', '--port', 'auto', '--host', '0.0.0.0', '--quiet']);
+    assert.deepEqual(tailArgs(x.argv).slice(0, 6), ['--vendors=local', '--port', 'fresh', '--host', '0.0.0.0', '--quiet']);
     assert.ok(!x.argv.includes('--https') && !x.argv.includes('--frame-ancestors'), x.argv.join(' '));
   }
   assert.equal(a.argv[a.argv.indexOf('--overlay') + 1], L.liveOverlayDir(blobs.a), 'A: the baseline + its own patch');
@@ -162,6 +163,28 @@ test('startPhoneServers: detached serve.mjs per build, plain http on 0.0.0.0, --
   writeFileSync(bad, "console.error('BASELINE-MODIFIED: test'); process.exit(3);");
   await assert.rejects(PH.startPhoneServers(liveB(), { serveScript: bad }), /page server for the plain site-pretty exited \(3\): BASELINE-MODIFIED: test/);
   await assert.rejects(PH.startPhoneServers(liveB(), { serveScript: fake, host: '192.0.2.44' }), /0\.0\.0\.0 \(the Wi-Fi\) or 127\.0\.0\.1 \(tests\) only/);
+});
+
+test('startPhoneServers (I-131): a running server from before the fix (info without `cache`) is replaced, not reused', async () => {
+  for (const f of readdirSync(PH.phoneDir())) if (f.endsWith('.json')) writeFileSync(join(PH.phoneDir(), f), '{}');
+  process.env.FAKE_SERVE_PRE_I131 = '1';
+  let old;
+  try { old = await PH.startPhoneServers(liveB(), { serveScript: fake }); } finally { delete process.env.FAKE_SERVE_PRE_I131; }
+  for (const s of [old.a, old.b]) started.add(s.pid);
+  const st = await PH.phoneStatus(liveB(), { lan: () => FAKE_LAN });
+  assert.equal(st.b.up, true, 'it still serves the build: the page shows it up');
+  const now = await PH.startPhoneServers(liveB(), { serveScript: fake });
+  for (const s of [now.a, now.b]) started.add(s.pid);
+  assert.deepEqual([now.a.reused, now.b.reused], [false, false]);
+  assert.notEqual(now.b.pid, old.b.pid);
+  for (const pid of [old.a.pid, old.b.pid]) {
+    let alive = true;
+    for (let i = 0; i < 40 && alive; i++) { try { process.kill(pid, 0); await new Promise((r) => setTimeout(r, 50)); } catch { alive = false; } }
+    assert.equal(alive, false, `the pre-I-131 server ${pid} was stopped`);
+  }
+  const again = await PH.startPhoneServers(liveB(), { serveScript: fake });
+  assert.deepEqual([again.b.pid, again.b.reused], [now.b.pid, true], 'a post-I-131 server is reused as before');
+  await PH.stopPhoneServers(liveB());
 });
 
 // ---- the Proposals page ----------------------------------------------------------------------------------------

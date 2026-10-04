@@ -160,12 +160,15 @@ test('baseline files are byte-identical; manifest MIME + cache headers; document
   assert.equal(js.status, 200);
   assert.equal(js.body.toString(), fx.min[PAGE_JS]);
   assert.equal(js.headers['content-type'], 'application/javascript');
-  assert.equal(js.headers['cache-control'], 'public, max-age=1, must-revalidate');
+  // I-131 (intended change): a recorded header that grants freshness is sent as no-cache, the recorded one beside it
+  assert.equal(js.headers['cache-control'], 'no-cache');
+  assert.equal(js.headers['x-mirror-prod-cache-control'], 'public, max-age=1, must-revalidate');
   assert.equal(js.headers['x-mirror-source'], undefined, 'no overlay header without --overlay');
   const png = await request(s.url + 'img/logo.png');
   assert.deepEqual(png.body, PNG);
   assert.equal(png.headers['content-type'], 'image/png');
-  assert.equal(png.headers['cache-control'], 'public, max-age=31536000, immutable');
+  assert.equal(png.headers['cache-control'], 'no-cache');
+  assert.equal(png.headers['x-mirror-prod-cache-control'], 'public, max-age=31536000, immutable');
   assert.equal(png.headers['content-encoding'], undefined, 'images are not compressed');
 
   const doc = await request(s.url);
@@ -182,6 +185,67 @@ test('baseline files are byte-identical; manifest MIME + cache headers; document
   const nc = await serve(['--port', '0', '--quiet', '--no-cache']);
   assert.equal((await request(nc.url + PAGE_JS.slice(1))).headers['cache-control'], 'no-store');
   await Promise.all([s.stop(), nc.stop()]);
+});
+
+test('I-131: no response lets a browser keep another build: overlay files, base files beside an overlay, a plain baseline and vendor scripts go out no-cache + ETag; one port, two builds', async () => {
+  // an overlay that changes a hashed, production-immutable file in place (as PR-017's 2.gBuqKVzi.css) and the CSS
+  const ov = join(fx.home, 'ov-i131');
+  const PNG2 = Buffer.concat([PNG, Buffer.from('overlay')]);
+  mkdirSync(join(ov, 'img'), { recursive: true }); mkdirSync(join(ov, PAGE_CSS, '..'), { recursive: true });
+  writeFileSync(join(ov, 'img', 'logo.png'), PNG2); writeFileSync(join(ov, PAGE_CSS), 'body{color:red}\n');
+  const port = await freePort();
+  const withOv = await serve(['--port', String(port), '--quiet', '--vendors=local', '--overlay', ov]);
+  const checks = async (url, path, source) => {
+    const r = await request(url + path);
+    assert.equal(r.status, 200, path);
+    assert.equal(r.headers['x-mirror-source'], source, path);
+    assert.equal(r.headers['cache-control'], 'no-cache', `${path} (${source})`);
+    assert.doesNotMatch(r.headers['cache-control'], /immutable|max-age=[1-9]/, path);
+    assert.match(r.headers.etag, /^"[\w-]{20}"$/, path);
+    return r;
+  };
+  const ovPng = await checks(withOv.url, 'img/logo.png', 'overlay');
+  assert.deepEqual(ovPng.body, PNG2);
+  assert.equal(ovPng.headers['x-mirror-prod-cache-control'], 'public, max-age=31536000, immutable');
+  await checks(withOv.url, PAGE_CSS.slice(1), 'overlay');
+  await checks(withOv.url, PAGE_JS.slice(1), 'base'); // a base file on an overlay server
+  const vendor = await request(withOv.url + '__vendor/' + VENDOR_KEY);
+  assert.equal(vendor.headers['cache-control'], 'no-cache', 'vendor scripts: no max-age=900 either');
+  assert.equal(vendor.headers['x-mirror-prod-cache-control'], 'public, max-age=900');
+  const doc = await request(withOv.url);
+  assert.equal(doc.headers['cache-control'], 'public, max-age=0, must-revalidate', 'the document already revalidates: sent as recorded');
+  assert.equal(doc.headers['x-mirror-prod-cache-control'], undefined);
+  assert.equal(JSON.parse((await request(withOv.url + '__mirror/info')).text).cache, 'revalidate');
+  await withOv.stop();
+
+  // the same port, now the plain baseline: the overlay's copy revalidates to the baseline's bytes (200, not 304)
+  const plain = await serve(['--port', String(port), '--quiet']);
+  const r = await request(plain.url + 'img/logo.png', { headers: { 'if-none-match': ovPng.headers.etag } });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, PNG);
+  assert.equal(r.headers['cache-control'], 'no-cache');
+  assert.equal(r.headers['x-mirror-source'], undefined);
+  const same = await request(plain.url + 'img/logo.png', { headers: { 'if-none-match': r.headers.etag } });
+  assert.equal(same.status, 304, 'the same bytes revalidate with a 304');
+  assert.equal(same.headers['cache-control'], 'no-cache');
+  await plain.stop();
+
+  const nc = await serve(['--port', '0', '--quiet', '--no-cache', '--overlay', ov]);
+  const n = await request(nc.url + 'img/logo.png');
+  assert.equal(n.headers['cache-control'], 'no-store');
+  assert.equal(n.headers['x-mirror-prod-cache-control'], undefined);
+  assert.equal(JSON.parse((await request(nc.url + '__mirror/info')).text).cache, 'no-store');
+  await nc.stop();
+});
+
+test('--port fresh (I-131): a per-checkout port in 6100-6398, never the auto range', async () => {
+  const { freshPortBase } = await import('../../tools/lib/paths.mjs');
+  const s = await serve(['--port', 'fresh', '--quiet']);
+  assert.ok(s.port >= freshPortBase() && s.port < freshPortBase() + 60 && s.port <= 6398, String(s.port));
+  await s.stop();
+  const bad = node(join(REPO, 'tools/serve.mjs'), ['--port', 'fresher'], { env });
+  assert.equal(bad.code, 2);
+  assert.match(bad.stderr, /--port must be a number, 0, auto or fresh/);
 });
 
 test('ETag / If-None-Match -> 304; ETag changes when the file changes', async () => {
@@ -433,7 +497,7 @@ test('HTTP Range (incident I-054): 206 for bytes=a-b / a- / -n on overlay and ba
   assert.equal(png.status, 206);
   assert.equal(png.headers['x-mirror-source'], 'base');
   assert.equal(png.headers['content-range'], `bytes 1-3/${PNG.length}`);
-  assert.equal(png.headers['cache-control'], 'public, max-age=31536000, immutable');
+  assert.equal(png.headers['cache-control'], 'no-cache'); // I-131
   assert.deepEqual(png.body, PNG.subarray(1, 4));
   assert.match(s.stdout(), /^206 GET \/media\/clip\.mp4 /m, 'the log line names the real status');
   assert.match(s.stdout(), /^416 GET \/media\/clip\.mp4 /m);

@@ -97,6 +97,17 @@ export function autoPortBase() {
   return 5200 + (h % 800);
 }
 
+/**
+ * I-131: serve.mjs --port fresh, a per-checkout starting port in [6100, 6339] (walk of 60: 6100-6398). No serve.mjs used
+ * these before I-131 (auto walked 5200-6058, the twin and the tests use the OS's ephemeral ports), so no browser holds
+ * a pre-I-131 `immutable` copy of another build there. The console's Try-it servers (lib/live.mjs, lib/live-phone.mjs).
+ */
+export const FRESH_PORT_RANGE = Object.freeze({ from: 6100, to: 6398 });
+export function freshPortBase() {
+  const h = createHash('sha1').update(REPO).digest().readUInt32BE(0);
+  return FRESH_PORT_RANGE.from + (h % 240);
+}
+
 export function sha256File(f) {
   return createHash('sha256').update(readFileSync(f)).digest('hex');
 }

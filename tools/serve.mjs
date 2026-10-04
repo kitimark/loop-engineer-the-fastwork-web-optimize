@@ -10,11 +10,13 @@
 //                                              # iOS Safari stops at the self-signed cert warning on every new port
 //                                              # (incident I-003); --no-http-twin turns it off
 //   node tools/serve.mjs --compress=none|gzip|br           # default br (what production sends)
-//   node tools/serve.mjs --no-cache            # send Cache-Control: no-store instead of production's
+//   node tools/serve.mjs --no-cache            # send Cache-Control: no-store on every file
 //   node tools/serve.mjs --root site-pretty    # serve another tree (e.g. an edited copy)
 //   node tools/serve.mjs --latency 120         # add N ms before every response (rough CDN RTT emulation)
 //   node tools/serve.mjs --root site-pretty --overlay fixes/<topic>/overlay   # baseline + one fix's files on top
-//   node tools/serve.mjs --port auto|0|N       # auto = per-checkout port from 5200-5999 (default in a git worktree);
+//   node tools/serve.mjs --port auto|fresh|0|N # auto = per-checkout port from 5200-5999 (default in a git worktree);
+//                                              # fresh = the same walk in 6100-6399, a range no serve.mjs used before
+//                                              # I-131 (the console's Try-it servers: no browser holds stale copies there);
 //                                              # 0 = any free port; N = exactly N (default 5173 in the main checkout)
 //   node tools/serve.mjs --state out/serve.json  # write {url, port, pid, root, overlay, ...} once listening
 //   node tools/serve.mjs --frame-ancestors http://localhost:5559[,http://127.0.0.1:5559]   # opt-in (I-074): documents
@@ -35,6 +37,14 @@
 // Served files are byte-identical to production except for the documented HTML rewrites
 // in --vendors=local mode (see README "Rewrites").
 //
+// Cache-Control (incident I-131): production's recorded headers are NOT replayed where they grant freshness (230 files
+// `public, max-age=31536000, immutable`, a few `max-age=86400`, the vendor scripts' `max-age=900`): those files go out as
+// `no-cache` (plus the content ETag every file has), so a browser revalidates each use and never keeps another build's
+// copy of a URL (an overlay changes hashed files in place; site-pretty differs from site/; ports are reused by other
+// builds). The recorded value rides along as `x-mirror-prod-cache-control`. Values that already revalidate every use
+// (the document's `max-age=0, must-revalidate`) are sent as recorded; --no-cache still sends no-store.
+// Rule and references: tools/lib/cache-control.mjs.
+//
 // Byte ranges (incident I-054): files from the root or an overlay answer `Range: bytes=a-b | a- | -n` with
 // 206 + Content-Range (416 + `Content-Range: bytes */size` when nothing is satisfiable) and send
 // `Accept-Ranges: bytes` on their 200s, because iOS Safari plays <video> only from servers that support
@@ -53,12 +63,13 @@ import { readFileSync, statSync, existsSync, appendFileSync, mkdirSync, writeFil
 import { resolve, join, extname, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase } from './lib/paths.mjs';
+import { REPO, mirrorHome, resolveTree, isLinkedWorktree, autoPortBase, freshPortBase } from './lib/paths.mjs';
 import { withGuard } from './lib/lock.mjs';
 import { requireBaseline, baselineMeta } from './lib/baseline.mjs';
 import { parseRange } from './lib/http-range.mjs';
 import { lanInterfaces, isPhoneLan } from './lib/lan.mjs';
 import { parseFrameAncestors, allowFraming } from './lib/framing.mjs';
+import { mirrorCacheControl } from './lib/cache-control.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = REPO;
@@ -202,6 +213,12 @@ function send(req, res, status, headers, body, { compressible = false, etag, ran
   return status;
 }
 
+/** I-131: the Cache-Control for a recorded (production) value, never one that lets a browser skip revalidation. */
+function cacheHeaders(recorded) {
+  const cc = mirrorCacheControl(recorded, { noStore: NO_CACHE });
+  return cc === recorded || NO_CACHE ? { 'cache-control': cc } : { 'cache-control': cc, 'x-mirror-prod-cache-control': recorded };
+}
+
 function vendorLookup(pathWithQuery) {
   // /__vendor/<host>/<path>?<query>
   const key = pathWithQuery.replace(/^\/__vendor\//, '');
@@ -261,7 +278,7 @@ function handler(req, res) {
   }
   if (pathname === '/__mirror/info') {
     done(200);
-    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, root: ROOT, baseline: BASELINE, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES, ...(FRAME_ANCESTORS && { frameAncestors: FRAME_ANCESTORS }) }, null, 1)));
+    return send(req, res, 200, { 'content-type': 'application/json', 'cache-control': 'no-store' }, Buffer.from(JSON.stringify({ vendors: VENDORS, compress: COMPRESS, cache: NO_CACHE ? 'no-store' : 'revalidate', root: ROOT, baseline: BASELINE, overlays: OVERLAYS.map((d) => ({ dir: d, files: listFiles(d) })), latency: LATENCY, https: HTTPS, selfSigned: SELF_SIGNED, httpTwin: TWIN_PORT, rewrites: REWRITES, ...(FRAME_ANCESTORS && { frameAncestors: FRAME_ANCESTORS }) }, null, 1)));
   }
   if (pathname.startsWith('/cdn-cgi/')) { done(204); return send(req, res, 204, {}, null); }
 
@@ -274,7 +291,8 @@ function handler(req, res) {
     const vf = [...OVERLAYS.map((d) => resolve(d, v.file)), resolve(MANIFEST_ROOT, v.file)].find((f) => existsSync(f)) || resolve(MANIFEST_ROOT, v.file);
     const c = load(vf);
     done(200);
-    return send(req, res, 200, { 'content-type': v.type || 'text/javascript', 'cache-control': NO_CACHE ? 'no-store' : 'public, max-age=900', 'access-control-allow-origin': '*' }, { __c: c }, { compressible: true, etag: c.etag });
+    const vh = { 'content-type': v.type || 'text/javascript', ...cacheHeaders('public, max-age=900'), 'access-control-allow-origin': '*' };
+    return send(req, res, 200, vh, { __c: c }, { compressible: true, etag: c.etag });
   }
 
   if (VENDORS === 'off' && pathname === '/analytics.js') {
@@ -296,7 +314,7 @@ function handler(req, res) {
   const type = (info.type && !isHtml ? info.type : null) || MIME[extname(hit.file).toLowerCase()] || 'application/octet-stream';
   const headers = { 'content-type': type };
   if (OVERLAYS.length) headers['x-mirror-source'] = hit.source;
-  headers['cache-control'] = NO_CACHE ? 'no-store' : info.cacheControl || (isHtml ? 'public, max-age=0, must-revalidate' : 'public, max-age=0, must-revalidate');
+  Object.assign(headers, cacheHeaders(info.cacheControl || 'public, max-age=0, must-revalidate'));
   if (isHtml) {
     Object.assign(headers, DOC_HEADERS);
     headers['content-security-policy'] = localCsp(info.csp);
@@ -374,7 +392,7 @@ function announce() {
   const url = `${proto}://localhost:${PORT}/`;
   console.log(`\nfastwork mirror  root=${ROOT}`);
   for (const d of OVERLAYS) console.log(`  overlay: ${d}  (${listFiles(d).length} files, served before the root)`);
-  console.log(`  vendors=${VENDORS}  compress=${COMPRESS}  cache=${NO_CACHE ? 'no-store' : 'production headers'}${HTTPS ? '  (HTTP/2 + TLS)' : ''}${LATENCY ? `  latency=+${LATENCY}ms` : ''}`);
+  console.log(`  vendors=${VENDORS}  compress=${COMPRESS}  cache=${NO_CACHE ? 'no-store' : 'revalidate (no-cache + ETag, I-131)'}${HTTPS ? '  (HTTP/2 + TLS)' : ''}${LATENCY ? `  latency=+${LATENCY}ms` : ''}`);
   if (REWRITES.length) console.log('  rewrites: ' + REWRITES.join(' | '));
   if (FRAME_ANCESTORS) console.log(`  framing: documents may be framed by ${FRAME_ANCESTORS.join(' ')} (no x-frame-options; CSP frame-ancestors)`);
   console.log(`\n  local:  ${url}`);
@@ -407,9 +425,9 @@ function announce() {
 // Ports: a fixed port fails loudly if taken (never silently serve on another one); "auto" starts at
 // a port derived from this checkout's path and walks up until one is free; 0 lets the OS pick.
 let candidates;
-if (PORT_OPT === 'auto') { const b = autoPortBase(); candidates = Array.from({ length: 60 }, (_, i) => b + i); }
+if (PORT_OPT === 'auto' || PORT_OPT === 'fresh') { const b = PORT_OPT === 'auto' ? autoPortBase() : freshPortBase(); candidates = Array.from({ length: 60 }, (_, i) => b + i); }
 else if (/^\d+$/.test(PORT_OPT)) candidates = [Number(PORT_OPT)];
-else { console.error(`--port must be a number, 0 or auto (got ${PORT_OPT})`); process.exit(2); }
+else { console.error(`--port must be a number, 0, auto or fresh (got ${PORT_OPT})`); process.exit(2); }
 // A port counts as free only when nothing listens on it at ANY local address (I-065): Node sets SO_REUSEADDR, and on
 // macOS a listen on 0.0.0.0:p succeeds beside another process's 127.0.0.1:p, after which "localhost" reaches that
 // process, not this server (a fix.test fixture's auto port hashed to the lead's console server on 127.0.0.1:5559: its
