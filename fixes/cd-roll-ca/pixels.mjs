@@ -43,7 +43,8 @@ const OUT = join(WT, 'out/cd-roll-ca'); mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const BASE = resolveTree('site-pretty');
 const SNAP = join(WT, 'out/cd-roll-ca/snap');
-const DIRS = { orig: null, C8: join(SNAP, 'C8'), V9: join(SNAP, 'V9') };
+const DIRS = { orig: null, C8: join(SNAP, 'C8'), V9: join(SNAP, 'V9'), VK: join(SNAP, 'VK') }; // VK: PR-017 rev 5 shots
+if (ARMS.some((a) => !(a in DIRS))) { console.log(`unknown arm in ${ARMS} (known: ${Object.keys(DIRS)})`); process.exit(2); }
 // every served file of an arm must match out/cd-roll-ca/snap/HASHES.txt (a mismatch stops the run, exit 3)
 const HASHES = Object.fromEntries(readFileSync(join(SNAP, 'HASHES.txt'), 'utf8').trim().split('\n').map((l) => l.split(/\s+/)).map(([h, p]) => [p, h]));
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
