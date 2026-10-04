@@ -50,6 +50,20 @@ Not separate agents, on purpose:
 | talk to the user | yes | via lead | via lead | via lead | no | no |
 | edit the enforcement layer | asks the user | no | no | no | no | no |
 
+### Delegated authority (user T-134 #11, 2026-10-04 14:5xZ; lead decision)
+
+Each role decides these itself, without asking the lead, and reports them in its status row or its digest:
+
+| role | decides itself |
+|---|---|
+| fix owner | its next probe, build or measurement inside its topic and protocol v2; asks mgmt-ops directly for card reads; posts its own proposal (`proposal revise`, `phone`) and answers the user in its own topic threads; takes the iPhone only when its hold can start at once and releases it as soon as it stops using it (incident I-155) |
+| mgmt-desk (deputy lead) | queue order inside the board's priority order (`lock.mjs repair <lock> --move <owner> --to N`, `--reason`); releases a lease idle > 5 min with waiters after one nudge to its holder (and `user-try` on the user's "done"); corrects stale status rows; opens incidents, sets P2/P3, dispatches them to a running toolsmith; wakes parked owners within the cache rule |
+| mgmt-ops | tickets phone blocks and sets their order within the priorities; signs pre-data and second reads; signs I, F and V cards (the lead still signs D) |
+| toolsmith | rebases its own branch on the current `main` tip and runs the full `npm test` on exactly that commit; when `main` has not moved, the lead lands it without re-running the suite |
+| lead | priorities, landing, the user's proposal decisions, spawns, other lock repairs, rule changes, the enforcement layer; and the **inspection**: at every check-in, from `lock.mjs status`, `locks/holds.log`, the board and each agent's last activity, find a lease or hold not used, a stale row, an agent waiting on nobody, and send that agent one correction line |
+
+Hard rules are unchanged: only the lead lands on `main` and works in the main checkout.
+
 The **verifier** has the mapper's column (read only, posts and acks findings, commits nothing, never measures,
 never holds a lock or the iPhone), plus one duty: it sends each REFUTED or WEAKENED verdict to the claim's
 owner and mgmt-ops at once, CC the lead when the claim reached the user.
