@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-// toolbar-resize P-114 (copy of the P-110 driver, sim-bisect110 f77c5e456d17): candidate forms for the showcase cost, in-page arms (p114-inject.mjs),
+// toolbar-resize P-115 (copy of the P-110 driver, sim-bisect110 f77c5e456d17): candidate forms for the showcase cost, in-page arms (p115-inject.mjs),
 // all on the v7 server. One normal (exclusive) Simulator hold, as P-109 (the shared lane refuses gestures):
 //   node tools/lock.mjs run chrome-measure --max-seconds 600 --owner fix-toolbar-resize -- sh -c \
-//     'SB_BUDGET_S=520 node tools/sim.mjs session --owner fix-toolbar-resize -- node fixes/toolbar-resize/sim-bisect114.mjs <step> ...'
-// step = <arm>:H<n>, arm C (control) | svh | csl | cva. Output: out/toolbar-resize/sim114/. Gate: check-inject114.mjs.
-// Score: node fixes/toolbar-resize/score-bisect.mjs out/toolbar-resize/sim114 C-H1 svh-H1 ... (scorer unchanged, cb6f0c97b81b).
+//     'SB_BUDGET_S=520 node tools/sim.mjs session --owner fix-toolbar-resize -- node fixes/toolbar-resize/sim-bisect115.mjs <step> ...'
+// step = <arm>:H<n>, arm C (control) | svh | csl | cva. Output: out/toolbar-resize/sim115/. Gate: check-inject115.mjs.
+// Score: node fixes/toolbar-resize/score-bisect.mjs out/toolbar-resize/sim115 C-H1 svh-H1 ... (scorer unchanged, cb6f0c97b81b).
 import { spawnSync } from 'node:child_process';
 import { readFileSync, mkdirSync, appendFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 const WT = new URL('../..', import.meta.url).pathname;
-const D = join(WT, 'out/toolbar-resize/sim114'); mkdirSync(D, { recursive: true });
+const D = join(WT, 'out/toolbar-resize/sim115'); mkdirSync(D, { recursive: true });
 const STATE = join(WT, 'out/serve-v7-best.json');
 const ARMS = ['C', 'svh', 'csl', 'cva'];
-const INJ = join(WT, 'fixes/toolbar-resize/p114-inject.mjs');
+const INJ = join(WT, 'fixes/toolbar-resize/p115-inject.mjs');
 const injSha = createHash('sha256').update(readFileSync(INJ)).digest('hex').slice(0, 12);
 const SCRIPT = join(WT, 'out/toolbar-resize/flick-hero-v1.json');
 const t0 = Date.now(), budget = Number(process.env.SB_BUDGET_S || 285) * 1000;
@@ -34,7 +34,7 @@ for (const s of process.argv.slice(2)) {
   if (existsSync(F)) { console.log(`exists ${F}`); continue; }
   process.env.P110_ARM = m[1] === 'C' ? 'none' : m[1];
   const o = sh(['tools/sim.mjs', 'open', `http://localhost:${st.httpTwin}/`]);
-  const g = sh(['tools/sim.mjs', 'gesture', SCRIPT, '--label', `p114-${name}`, '--out', F, '--timeline', TL, '--inject', INJ]);
+  const g = sh(['tools/sim.mjs', 'gesture', SCRIPT, '--label', `p115-${name}`, '--out', F, '--timeline', TL, '--inject', INJ]);
   let inj = null; try { const gj = JSON.parse(readFileSync(F, 'utf8')); inj = (gj.run?.inject || gj.inject || [])[0]?.value ?? null; } catch {}
   console.log(`SB ${name} open ${o} gesture ${g} t+${Math.round((Date.now() - t0) / 1000)} s inject ${JSON.stringify(inj).slice(0, 300)}`);
   log({ step: s, name, open: o, gesture: g, inject: inj });
