@@ -26,3 +26,5 @@ not keep fixing instances itself:
 **How to apply:** at the 3rd repeat of a problem in a day (see [[idle-alarms-are-a-pattern]]), pick or spawn the area
 owner, write its row in `fixes/AGENT_ROLES.md` "Delegated authority" (powers, long-term-fix duty, exit metric), and
 record the metric baseline. First case: mgmt-devices (roles d0f7aa32, design `research/architecture/phone-hold-v2.md`).
+
+**2026-10-04 19:49Z (user T-155 #4):** "The thread likes this should delegate to mgmt-devices as first tier management and lead as second tier management. They could not reply to work agent." So an area owner is also the **first tier** for the user's threads in its area (it answers; the lead is second tier, on escalation), and worker agents are not assignees there: the owner gets their facts by message. Tool side: idle-alarm threads address mgmt-devices + lead only (I-175).
