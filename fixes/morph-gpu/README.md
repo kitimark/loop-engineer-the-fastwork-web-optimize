@@ -678,7 +678,93 @@ Reading (OBSERVED in the Simulator):
 - A and B do not differ at the opens. B's pre-promotion adds 2 layers at rest near the end and a pixel risk (promoted
   text can rasterize differently), with no count gain here. Frozen-frame pixel checks for A and B are still to run.
 
-Next: frozen-frame pixel checks (A, B against best-build and rev 1); then the rev 2 phone ticket to mgmt-ops-10.
+**Frozen-frame pixels, rev 2** (`gates/frames.mjs --rv <hook build>`, Chrome 430x932 DPR 3; M = best-build + hook,
+R = the arm + the same hook, M2 = a second M load). T2 numbers per the tier rule: pixels more than 8 levels off that are
+not also more than 8 levels off in the A/A pair; edge vs fill as `research/pixel-tolerance/README.md` (flat = the 3x3
+neighbourhood in M varies by 2 levels or less). Helper (local): `out/morph-gpu/rev2/t2.mjs <frames dir>`.
+
+| frame | A (`rv2ahook-5bf004426809`) | B (`rv2bhook-9667bc5c7d9c`) | rev 1 (2026-10-03) |
+|---|---|---|---|
+| rest m = 0 (k0) | 0 px beyond A/A: exact | 3,178 px = 353 css px, 0.088 %, edge max **236**, fill max 51 | exact |
+| rest m = 1 (k14) | 0 px beyond A/A: exact | 2,513 px = 279 css px, 0.07 %, edge max 111 | exact |
+| rest m = 0 after the close (k17) | 10 px = 1 css px, edge max 14 | 3,168 px = 352 css px, edge max **236** | exact |
+| motion m = 0.5 (k7) | 175 (edge; fill 87), 0.21 %, 855 css px | same as A | 175 (edge), 0.22 %, 869 css px |
+| motion m = 0.99 (k13) | 236 (edge), 1.50 %, 6,006 css px | same as A | 237 (edge), 1.49 %, 5,965 css px |
+
+- **B fails T2 at rest**: the nav's "Join waitlist" text and the logo sit about one device pixel off in the promoted
+  layers (edge pixels at 236, over T2's 128). Crop and diff map: `out/morph-gpu/rev2/crop.py`, local.
+- **A is exact at rest**, and its motion frames equal rev 1's within the run's noise. So the visual is rev 1's: T3
+  motion, the class PR-012 rev 1 was accepted with. Nothing new to show the user.
+- Today's A/A pair is noisier than on 2026-10-03 (about 530-740 px over 8 per frame, max 168-186, the same spots in
+  every frame), so the A/A mask is wider. A's rest frames are 0 beyond it.
+- Sources: A `out/morph-gpu/frames-2026-10-04T07-36-19-311Z`, B `out/morph-gpu/frames-2026-10-04T07-22-26-797Z`.
+- Simulator (WebKit) frames for A: see the line below the table once run.
+
+**Arms (the lead's ruling):** B fails the illusion rule at rest and showed no count gain over A (Simulator opens
+3-5 paints in both). B is dropped. The phone block is two arms, C (best-build) against A.
+
+Next: the rev 2 phone ticket to mgmt-ops-10 (registration below).
+
+## Phone block rev 2: the open start, C against A (registration; written before any phone data)
+
+Prediction id: from mgmt-ops-10 at the pre-data read. A no-worse check like P-092, with the falsifier from review B1.
+Everything not named here is P-092's registered text ("Phone block: no-worse check against best-build" above):
+servers and ports, condition T-039 B with the thermal gate per hold, the pre-warm on the plain baseline page,
+sentinels, void rules, Mac-sleep rule, runner duties.
+- **Question (one).** Does rev 2 A remove rev 1's longer first frame of the first open per page load, without giving
+  back the shorter close starts or adding long moving frames?
+- **Builds** (immutable copies, `node fixes/morph-gpu/rev2/build.mjs`, sha256 re-checked before the block):
+  - V = A: `out/snapshots/rv2a-ef9d1c9d5fca`, js `ef9d1c9d5fca`, css `f7071e9138ac` (best-build + `rev2/delta.diff`,
+    `__rvPP` off).
+  - C: `out/snapshots/best-65052c4a3902`, `65052c4a3902` / `e0f92804c521`, as P-092.
+  - Same base: site-pretty at the pinned snapshot. Both carry best-build's `__fwMorphDrive`.
+- **Driver M**, as P-092: `iphone.mjs run --driver morph --probe std`, hold 2000 ms, cycles 3. The driver jumps to the
+  page end and starts the first open 1.1 s later, so rev 2's setup (300 ms after scrolling stops) has run before O1,
+  as in the Chrome and Simulator mechanism checks. The finger case is not in this block (see Risks).
+- **Block**: one block, 8 counted runs in the order C V V C C V V C (n = 4 per arm), one uncounted warm-up per arm.
+  The lead asked for one hold. The P-092 layout took three holds of at most 900 s (gate reads, start and end
+  sentinels, warm-ups, 8 runs: about 18 min in all), so a single hold would pass the 900 s cap. Proposed: P-092's
+  three holds (H1 gate, start sentinel, warm-ups; H2 C1 V2 V3 C4; H3 C5 V6 V7 C8, end sentinel). The lead and ops
+  decide; the counted runs and their order do not change either way.
+- **Scorer**, committed before data: `phone/frames-rv2.mjs`, sha256 `fa2212d0a307`. It is frames-n2.mjs (P-092,
+  `f3a50b8ec2dd`) with V's build hashes changed and one addition, the per-tween start frames:
+  - a tween starts at the first driver row whose m leaves a held 0 (opens O1-O3) or a held 1 (closes C1-C3);
+  - per tween f1 = that frame's gap, f2 = the sum of the first 2 gaps, f3 = the first 3;
+  - 'close' = per run the median of C1-C3, then per arm the median of runs;
+  - per key, d = median(V) − median(C), in ms: 'no-worse' at d ≤ +2 ms, 'better' at d ≤ −2 ms with every V run below
+    every C run, else 'WORSE';
+  - scored keys: O1.f1, O1.f2, O1.f3, close.f1, close.f3; O2/O3 and each close are reported;
+  - a run without exactly O1 C1 O2 C2 O3 C3 in its driver rows is void.
+  - Pre-registration check (`out/morph-gpu/rev2/scorer-check.mjs`, local):
+    - P-092's files, with V relabelled as rv2a, reproduce the P-092 per-tween table: O1.f1 C 34.5 / V 41 (d +6.5,
+      WORSE), O1.f3 63 / 69 (WORSE), close.f1 38.5 / 33 (better). So rev 1 would fail this falsifier.
+    - V = C's own frames: every key d 0, no-worse.
+    - A run cut to 5 tweens: void.
+- **Predictions** (falsifiers, P(hit) before data). Basis: in Chrome rev 2 removes rev 1's forced layout and extra
+  style pass from the open's first frame. In the Simulator the open's first frame paints 3-5 records in A against 5-8
+  in rev 1 and 9-10 in best-build. P-092's O1 spread is wide (C 33-49 ms) and n = 4, so the O1 calls are close to a
+  coin toss.
+
+  | # | prediction | point | interval (falsified outside) | P(hit) |
+  |---|---|---|---|---|
+  | o1 | O1.f1, V − C (ms) | 0 | ≤ +2 | 0.55 |
+  | o1s | O1.f2 and O1.f3, V − C | 0 | ≤ +2 each | 0.55 |
+  | cl | close.f1 and close.f3 | 'better' (−5 / −20, as rev 1) | ≤ +2 each | 0.9 |
+  | f50 / f34 | moving > 50 / > 34, as P-092 | 0 / −1 | ≤ +1 / ≤ +2, twins the same | 0.85 |
+  | rep | O2.f1, O3.f1 (reported) | 0 | ≤ +2 | 0.5 |
+  | sent | sentinels (S start and end, M on every C run) | pass | as P-092 | 0.75 |
+
+- **Decisions** (if X then Y):
+  - **Every scored tween key no-worse or better, f50 and f34 no-worse, not threshold-sensitive:** rev 2 A removes the
+    open-start cost. To the lead as the candidate for the next best build, in place of rev 1. A 'better' on the closes
+    is reported; no gain is claimed beyond P-092's closes.
+  - **O1.f1 WORSE:** rev 2 does not fix the open start. To the lead with the per-run O1 frames. Rev 2 stays out; no
+    third block on this question (§5.3).
+  - **O1.f1 no-worse but O1.f2 or O1.f3 WORSE** (the cost moved to the next frame): to the lead, no verdict.
+  - **close.f1 or close.f3 WORSE, or f50/f34 WORSE or threshold-sensitive:** to the lead, no verdict, no land request.
+  - **Insufficient or void:** no claim; cool and re-run the counted part once; a second void goes to the lead.
+- **Not in this block:** the finger and gesture case (G/F), Fair, reduced motion, desktop.
+- **Expected minutes:** about 30 (25-45), as P-092.
 
 ## Risks, conflicts, follow-ups
 
@@ -694,6 +780,10 @@ Next: frozen-frame pixel checks (A, B against best-build and rev 1); then the re
   moving, 24.5 → 34.8 restyled elements per frame and Paint events 9.1 → 9.9 ("Desktop and Chrome counts", headless,
   no throttle). On an Android phone that is a small extra main-thread cost with no paint gain to pay for it. No
   Android device was run.
+- **Rev 2's setup waits for the scroll to rest for 300 ms.** With a finger, a fling that runs straight into a push
+  past the end may start the morph before that, and then the open's first frame does the setup as rev 1 did
+  (`__rvRdy` false). The M driver always waits 1.1 s, so the phone block cannot see this case; a G or F run, or an
+  earlier trigger (an idle callback while within 3 viewports of the end), would.
 - **Reduced motion: exact in Chrome; the Simulator was not run with it.**
   - Code: with reduced motion the morph skips its spring. `E()` sets m straight to its target (JS ~13292), and the
     target is only ever 0 or 1 (`XM`, JS 12940). So m never sits between 0.001 and 1, and the reveal never

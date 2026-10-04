@@ -739,5 +739,107 @@
       }
     },
     "reading": "reveal on (m 0.5): +3 layers, +3.9 MiB vs best-build; at rest nothing left behind (R1, A); B keeps 2 nav layers promoted at the end at rest; the review estimate of ~10 promoted layers does not show in WebKit layer tree. OBSERVED in the Simulator, device unverified"
+  },
+  "rev2": {
+    "status": "pixels done (Chrome); Simulator frames for A pending; phone ticket registered, waiting for the mgmt-ops-10 pre-data read",
+    "builds": {
+      "A": {
+        "snapshot": "rv2a-ef9d1c9d5fca",
+        "js": "ef9d1c9d5fca",
+        "css": "f7071e9138ac",
+        "hook": "rv2ahook-5bf004426809",
+        "rvPP": false
+      },
+      "B": {
+        "snapshot": "rv2b-f993a405620c",
+        "js": "f993a405620c",
+        "css": "f7071e9138ac",
+        "hook": "rv2bhook-9667bc5c7d9c",
+        "rvPP": true,
+        "dropped": "fails T2 at rest; no count gain over A"
+      },
+      "deltaDiff": "c83d382800d7",
+      "rev1ToRev2Diff": "9d4d81dc873f"
+    },
+    "mechanism": {
+      "chrome": "switch-on frame: style recalcs 3 (2 forced) -> 2 (1), layouts 2 (1 forced) -> 1 (0), as best-build; Paint events 15 stay (pill to panel resize)",
+      "simulator": "open first-frame Paint records: best-build 9-10 (598-779k px), rev 1 5-8 (83-340k), A 3-5 (50-175k), B 3-6 (50-178k); WebKit forced counts equal in every arm",
+      "files": [
+        "out/morph-gpu/rev2/tween-start-chrome-2026-10-04T06-28-43-904Z.json",
+        "out/morph-gpu/rev2/tween-start-sim-2026-10-04T06-46-25-542Z.json"
+      ]
+    },
+    "pixelsChrome": {
+      "method": "gates/frames.mjs, 430x932 DPR 3; beyond the A/A mask (M vs M2 > 8 levels), > 8 levels; edge/fill per research/pixel-tolerance",
+      "A": {
+        "dir": "out/morph-gpu/frames-2026-10-04T07-36-19-311Z",
+        "restM0": {
+          "beyondPx": 0
+        },
+        "restM1": {
+          "beyondPx": 0
+        },
+        "restM0AfterClose": {
+          "beyondPx": 10,
+          "cssPx": 1,
+          "maxEdge": 14
+        },
+        "m05": {
+          "max": 175,
+          "sharePct": 0.213,
+          "cssPx": 855
+        },
+        "m099": {
+          "max": 236,
+          "sharePct": 1.499,
+          "cssPx": 6006
+        },
+        "tier": "rest exact (T0/T1); motion equal to rev 1 (T3, the accepted PR-012 class)"
+      },
+      "B": {
+        "dir": "out/morph-gpu/frames-2026-10-04T07-22-26-797Z",
+        "restM0": {
+          "beyondPx": 3178,
+          "cssPx": 353,
+          "sharePct": 0.088,
+          "maxEdge": 236,
+          "maxFill": 51
+        },
+        "restM1": {
+          "beyondPx": 2513,
+          "cssPx": 279,
+          "sharePct": 0.07,
+          "maxEdge": 111
+        },
+        "restM0AfterClose": {
+          "beyondPx": 3168,
+          "cssPx": 352,
+          "maxEdge": 236
+        },
+        "tier": "fails T2 at rest (edge 236 > 128): nav text about 1 device px off in the promoted layers"
+      },
+      "aaToday": "A/A 532-741 px over 8 per frame, max 168-186 (wider than 2026-10-03)"
+    },
+    "arms": "C (best-build) vs A; B dropped (lead ruling: B only if it passes T2 at rest and shows a count gain over A)",
+    "ticket": {
+      "readme": "README \"Phone block rev 2: the open start, C against A\"",
+      "scorer": {
+        "file": "fixes/morph-gpu/phone/frames-rv2.mjs",
+        "sha256": "fa2212d0a307",
+        "base": "frames-n2.mjs f3a50b8ec2dd"
+      },
+      "scored": [
+        "O1.f1",
+        "O1.f2",
+        "O1.f3",
+        "close.f1",
+        "close.f3",
+        "moving >50",
+        "moving >34"
+      ],
+      "bound": "d = median(V) - median(C) <= +2 ms (tweens); <= +1 / +2 (counts, as P-092)",
+      "order": "C V V C C V V C, n = 4 per arm, driver M hold 2000 cycles 3",
+      "preRegCheck": "P-092 files relabelled reproduce the per-tween table (O1.f1 34.5 vs 41, WORSE): rev 1 fails this falsifier; V = C gives d 0; a 5-tween run is void"
+    }
   }
 }
