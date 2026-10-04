@@ -42,6 +42,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 10:0xZ Landed: 37230fe3 (research/gpu-lessons), my ops 9adfe82c + cda36a95.
+  - I-134 (the /build table layout, user T-099) goes to ts-threads.
+  - F3 land refused for now: 96 old commits came along, plus absolute paths. fix-nav-morph is building a clean branch.
+  - Frame audit §5 items now have owners (user T-100, on my watch list; priority answered in #4):
+    - item 1: fix-nav-morph, after F3;
+    - item 2: new `fix-scroll-cb`;
+    - item 3: de-countdown with (b).
+  - T-096 ranking #1 goes to the new `fix-accent-ca`. Both new agents are in the peer directory.
+  - T-096 card rev 2 (24198f12): PASS. R2's claim is cited CONFIRMED (gpu-lessons §1.2 C4). P(H4) was set after the trace data, as disclosed.
+  - **P-100** assigned to fix-cd-roll-ca: the F-212 display-rate diagnostic (xctrace, countdown running vs frozen; the lead approved it as a diagnostic). It goes after P-098/P-099; ops reads it before data.
+  - The roll-start attribution (b) gets an id only after card step 3, if needed, in the same phone lease as P-100.
+  - wave-v7: the non-morph v7 is 8c90da217745 / 308f0da70c3a; checks so far are clean. rev 2 A stacks on v7 strictly (75e0f422ee63 / a87d4660d4b8).
+  - Desk:
+    - T-049 #31: the disk guard is live, about 44 GB free;
+    - T-099 #2: plainer v6 rows, layout is I-134.
+  - **Next free P-id: P-101.**
 - 10-04 09:5xZ **v7 waits for morph-gpu** (user T-030 #30, lead #32, choice A): rev 2 A goes into v7 if P-098 and P-099 both pass; otherwise v7 ships without it.
   - wave-v7 was told to finish every other check now. It should also dry-combine rev2/delta.diff (made on best-build; snapshot rv2a-ef9d1c9d5fca).
   - The lead's P-099 rules, passed to fix-morph-gpu:
@@ -2494,6 +2510,8 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `fix-scroll-cb` (name; spawned 10-04 09:5xZ, frame audit §5 item 2, user T-100) | topic `scroll-cb-phone`, less-work: four scroll handlers keep running on phones for effects the phone hides; switch them off while the effect is off (research/design-engineering/frame-audit.md §5); cost counts + a short phone no-worse check | alive |
+| `fix-accent-ca` (name; spawned 10-04 09:5xZ, T-096 ranking #1 from research/gpu-lessons) | hero accent and boil on the compositor, restacking the 10-02 illusion drafts; pixel-identical, or a proposal with Try-it (memory illusion-must-be-pixel-identical, proposal-try-it-required) | alive |
 | `wave-v7` (name; spawned 10-04 09:2xZ by the lead) | wave integrator v7: v6 (best-build + hero B-R2) + the countdown strips (cd-strip strip-tc, `patch.diff` 4f2ff4eb9afa, made `--on st6-rb2`; served JS 6fa0e1e8a221 / CSS 982a747d9263) + rest-script v4 (`patch.diff` be2b46a3ceaf) + PR-017 (cd-roll-ca, `patch.diff` d48095cc16ff, on strip-tc); counts and pixels only, no phone; ops second read, then a land request. Reference: gpu-preview 8aa2fe0b identity-checked a similar stack | alive |
 | `arch-gpu-lessons` (name; spawned 10-04 09:1xZ, user T-096 #4) | architecture: why PR-017 (countdown roll on the compositor) feels smoother, an inventory of every page animation ranked by compositor-only potential, top 2-3 new fix topics with cost cards; counts only, no phone; board row `gpu-lessons`. Split: fix-cd-roll-ca measures (T-096 card, after PR-017 lands), arch-gpu-lessons explains and generalizes | alive |
 | `ts-i132` (name; spawned 10-04 09:2xZ) | toolsmith I-132: flaky e2e agent-page "every agent name links to /agent/<name>" under a loaded npm test; replaces loadPage's fixed 250 ms settle with a condition wait, proven by 20 green loops plus npm test | alive |
