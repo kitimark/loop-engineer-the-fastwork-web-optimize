@@ -72,6 +72,13 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-120 registering commit re-check (int-v8 745c7d46): PASS, G1-G7 closed;** PREDICTIONS row filled from its predictions.
+  - hold.sh blob 6ad4ff81188e = disk, sha256/12 49797e76c299, sh -n ok; serve/score/selftest unchanged from 5bd7eb4d; SELFTEST OK 15;
+    HASHES.txt 46c5a6e38b7a; still no out/pv9/runs. Split H3a/H3b, H4a/H4b pre-stated.
+  - n1: hold.sh refuses only an unset TICKET, not one other than P-120; the result read checks the PIN line's ticket.
+  - n2: "no new decisive check owed" rests on F-251, OBSERVED (n = 3, Apple docs silent); it backs the profile policy (T-162 #3),
+    not this ticket's validity, but the lead should know when signing.
+  - At the result read: every hold's PIN line must equal the pins above (else that hold is void).
 - 10-05 **P-117 closed as superseded** (lead ruling: nav-hit-cache to the v9-final candidate with a phone flicker gate). PREDICTIONS row
   closed (no data). blur-cubic-v8 (landed 30d12a71, stays out): no PREDICTIONS row exists (P-038 is the 10-01 PoC), nothing to close.
 - 10-05 **P-117 flicker verdict read (fix-nav-morph 0d4b83ec): AGREE with notes A, B** (card p117 section "Ops read: flicker verdict").
