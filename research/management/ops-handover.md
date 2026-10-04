@@ -72,6 +72,31 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-115 result read (fix-toolbar-resize 08d1deb7): AGREE. P-119 assigned (next free P-120).**
+  - What ops checked:
+    - C was amended to v8 before data (7d56ce01, ops PASS 84bc91a5); the served JS 3e3e94cb6e9f / CSS f836404b3728 match.
+    - The order is as pinned.
+    - The on-disk inject, gate, driver and scorer files equal their commit blobs, and their hashes equal the pins.
+  - Ops re-runs reproduce the owner's results:
+    - the gate: INJECT-GATE all applied;
+    - the scorer: byte-identical (496437014667 = p115-score.json = out score.json); svh 0.973 NONE, csl 1.005 NONE,
+      cva 0.036 LOCATES, REPLICA true, drift 0.002.
+  - The predictions hit 2 of 4; the misses are the author's leans svh and csl. Row filled in PREDICTIONS.md.
+  - Pre-data notes for the P-119 card (the owner writes it; ops reads it before any run):
+    - R1 cct = `contain: content` = layout + paint + style, no size containment and no skip (CSS Containment 2 "content"
+      keyword). Paint containment clips overflow and makes the showcase a containing block for fixed and absolute
+      descendants, so P-115's look check (N2) comes before cct is counted.
+    - R2 cva is P-115's CSS unchanged, with the intrinsic size measured at run time as before.
+    - R3 entering check, frozen before data:
+      - the window: frames around the showcase's top crossing at the phone geometry, by crossing, not raw y;
+      - the metric: largest Layout and largest Paint per frame, and an unpainted-frame check if the tools can see one;
+      - at least 2 C replicates;
+      - a falsification line (cva entering cost vs C's).
+    - R4 "WebKit's content-visibility margin is 0" stays OBSERVED (v8 JS comment). Cite WebKit source before it drives
+      a decision.
+    - R5 state how a run with a different moving-frame count is read (cva had 38 vs 11-14).
+    - R6 two-miss rule: the author's leans missed svh and csl here, and navpain/nav/pain in P-110. P-119 is attribution
+      and may run, but the lead reviews the model before cva or cct drives a build.
 - 10-05 **P-118 revised scripts (fix-double-drive 4c52690d): PASS 4 of 4 xcode-serious checks.**
   - Pins: hold.sh 09c0b21eaa0f, TICKET b8d48b0803c7; scorer pins unchanged.
   - The diff is only the pre-warm removal and `--accept-induced`; the rest is byte-identical.
@@ -131,7 +156,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
   - Gaps before the lead's read: no P-118 scorer (P-117's pins its own V and a shared CSS), no hold.sh, P-<ops>
     placeholders, pins provisional until the Simulator pixel set 2 ends (any V change voids the signature), future-card
     y range vs G part M, and the order note (V does not depend on P-117).
-  - The ticket itself is not edited by ops. Next free: **P-119**.
+  - The ticket itself is not edited by ops. Next free: **P-119** (assigned 10-05 to fix-toolbar-resize; now P-120).
 - 10-05 **P-117 N2 result (fix-scroll-cb, 01daa38f): AGREE, Simulator parity FAIL on the nav. P-117 is on hold (lead,
   c7d165b7).**
   - The pins in n2.log's PIN line match the files on disk: run-n2.sh d2b816cd392a, build.mjs c486a52e5710, scb-probe
