@@ -42,6 +42,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 13:5xZ **P-106 second read AGREE: D proposed LOCATED** (fix-toolbar-resize e3bfa9b4).
+  - Pinned scorer score-tr.mjs 4b7fca760270 (hash re-checked) re-run on their out/toolbar-resize/phone reproduces
+    every call: sticky, cq, dvh, vt, js NONE; cv CONFIRMS (end 1/1 vs C-E 0/0); drift 0.5 %; both sentinels pass; not VOID.
+  - Fair-start runs (dvh:H1 aborted, vt:H1, C:H3, cv:E1, C:E1): no call changes without them.
+  - Note for the lead's D signature: the card's WebKit-source reading (setLayoutViewportOverrideRect,
+    RenderView::layout) needs links and lines before it leaves OBSERVED; the subtree bisect next needs a new P-id (P-109).
 - 10-04 13:4xZ **P-103 second read AGREE: not landable** (fix-scroll-cb 79feedd7).
   - I re-scored all counts files: judged counts pass; the Paint guard fails (phone +0.090, resize +0.069, Sim +0.086); parity fails (phone775 V1 44, resize V2 4); desk legs VOID twice.
   - Rev 2 is **P-108**. **P-107** is held for nav-hit-cache's successor. Next free id: **P-109**.
