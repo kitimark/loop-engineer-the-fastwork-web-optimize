@@ -2464,7 +2464,7 @@ between tool calls.
 
 ## Peer directory (F-046; keep current, send to every agent that joins)
 
-**Rules for every spawn prompt (send with the directory):** GitHub only through the `gh` CLI, read-only, never plain `curl` (user T-071, memory/github-via-gh.md, a8f1806d; F-203); `--owner` on every wait (I-108); long `--wait` or `lock.mjs run`, never a short-timeout acquire retry (F-202, I-113); `iphone.mjs wda status` before a G hold (I-112); until ts-threads' merge guard lands, no agent closes or merges a thread before the user has read its last reply (lead 10-04 09:0xZ, user T-089: closed threads hide replies the user hasn't read).
+**Rules for every spawn prompt (send with the directory):** GitHub only through the `gh` CLI, read-only, never plain `curl` (user T-071, memory/github-via-gh.md, a8f1806d; F-203); `--owner` on every wait (I-108); long `--wait` or `lock.mjs run`, never a short-timeout acquire retry (F-202, I-113); `iphone.mjs wda status` before a G hold (I-112); until ts-threads' merge guard lands, no agent closes or merges a thread before the user has read its last reply (lead 10-04 09:0xZ, user T-089: closed threads hide replies the user hasn't read); until I-131 lands, phone runners and Try-it pages prefer a port that has not served another build earlier today (stale `immutable` overlay files, lead 10-04 09:1xZ).
 
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
@@ -2472,6 +2472,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `ts-i131` (name; spawned 10-04 09:1xZ, user T-094) | toolsmith I-131: serve.mjs sends the mirror's `immutable, max-age=31536000` for overlay files, so a browser keeps an earlier build's file on a reused port (OBSERVED, PR-017's 2.gBuqKVzi.css on 5959/5960/5422); serve fix, stale-cache recovery, measurement-impact note, read-only audit of phone ports that served two builds; T-094 with fix-cd-roll-ca | alive |
 | `ts-i119` (name; spawned 10-04 06:1xZ, user T-076 #12) | toolsmith I-119: a thread reply may carry an `http://lan:<port>/` link, stored as "lan" and resolved only when shown (like steps) | alive |
 | `ts-i124` (name; spawned 10-04 06:3xZ, user T-049 #22) | toolsmith I-124 disk hardening: alarm at 20 GB, timing holds refused below 8 GB, per-writer/per-agent report with "cited by", self-deleting temp profiles, frames kept only on a diff, a paste-ready delete block for the user; auto-delete waits on the user's yes/no in T-049 | alive |
 | `review-cd-roll-ca-4` (name; spawned 10-04 06:3xZ) | fix-reviewer, round 4 on cd-roll-ca (deliverables dd878533, evidence fa302685); pixel tier ruled T2 (PR-010 wide numbers, A/A in Chrome + Simulator) | alive |
