@@ -196,6 +196,24 @@ test('I-056 (d): every shared reader writes one holds.log line (owner, weight, s
   assert.equal(off.start.display, 'on', 'a short hold keeps its display / wake record');
 });
 
+test('I-114: --weight npm-test takes --max-seconds up to 480 (run and the commit\'s lease); any other shared job keeps 300', () => {
+  turnOn();
+  const no = lock('acquire', 'chrome-measure', '--shared', '--weight', '2', '--max-seconds', '480', '--owner', 'commit-n');
+  assert.equal(no.code, 1, no.out);
+  assert.match(no.stderr, /between 1 and 300/);
+  const usage = lock('acquire', 'chrome-measure', '--shared', '--weight', 'npm-test', '--owner', 'commit-u');
+  assert.match(usage.stderr, /--shared needs --max-seconds N \(1\.\.480 for npm-test\)/);
+  const a = lock('acquire', 'chrome-measure', '--shared', '--weight', 'npm-test', '--max-seconds', '480', '--owner', 'commit-x');
+  assert.equal(a.code, 0, a.out);
+  assert.match(a.stdout, /^ACQUIRED chrome-measure for "commit-x" \(shared, weight 2, max 480 s\)/);
+  assert.equal(lock('release', 'chrome-measure', '--shared', '--owner', 'commit-x').code, 0);
+  const over = lock('run', 'chrome-measure', '--shared', '--weight', 'npm-test', '--max-seconds', '481', '--owner', 'npm', '--', 'true');
+  assert.equal(over.code, 1, over.out);
+  assert.match(over.stderr, /between 1 and 480/);
+  const r = lock('run', 'chrome-measure', '--shared', '--weight', 'npm-test', '--max-seconds', '480', '--owner', 'npm', '--', 'true');
+  assert.equal(r.code, 0, r.out);
+});
+
 test('acquire --shared lease + release --shared; wait --until held-by sees a reader', () => {
   turnOn();
   const a = lock('acquire', 'chrome-measure', '--shared', '--weight', '2', '--max-seconds', '120', '--owner', 'commit-x');

@@ -153,14 +153,19 @@ export const SHARED_LANE = Object.freeze({
   // before its first CPU busy sample (I-051)
   joinBusyPct: 75, // I-051: a joining reader needs host CPU busy <= this (% of all cores), unless the switch names --join-busy
   busyWindowMs: 1000, // I-051: a waiting reader's busy sample spans at least this much of its own polls
-  maxSec: 300, // per reader; `lock.mjs run` kills its command at maxSec (SIGKILL 3 s later)
+  maxSec: 300, // per reader (a job in jobMaxSec: that, I-114); `lock.mjs run` kills its command at maxSec (SIGKILL 3 s later)
   batchJoinSec: 30, // readers queued before the group opened may join this long despite a waiting writer
   expiryGraceSec: 10, // group expiresAt = the latest reader deadline + this
   killGraceSec: 5, // a process reader's deadline = acquiredAt + maxSec + this (the SIGTERM -> SIGKILL grace)
   readerMaxWaitSec: 600, // I-049: a reader queued this long goes before any exclusive waiter at the next hand-over
   readerBypassSec: 300, // I-049: a reader that fits may join past a non-fitting reader ahead until that one waited this long
   weights: Object.freeze({ check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 }),
+  // I-114 (the lead's ruling): a job named here (by `--weight <name>`, the library's `job`) may take this --max-seconds
+  // instead of maxSec; the commit hook's npm test takes ~250 s, too close to 300
+  jobMaxSec: Object.freeze({ 'npm-test': 480 }),
 });
+/** I-114: the --max-seconds bound of a shared job: SHARED_LANE.jobMaxSec[job] for a named job, else maxSec. */
+export const sharedMaxSec = (job) => (job && Object.hasOwn(SHARED_LANE.jobMaxSec, job) ? SHARED_LANE.jobMaxSec[job] : SHARED_LANE.maxSec);
 export const SHARED_FORMAT = 'rw1';
 export const GROUP_OWNER = '(shared)';
 /**
@@ -268,10 +273,14 @@ export async function setSharedSwitch(r, { on, by, reason, cap, joinLoad, joinBu
 const readerDeadline = (kind, at, maxSec) => at + (maxSec + (kind === 'process' ? SHARED_LANE.killGraceSec : 0)) * 1000;
 /** Readers that can still run at `now`. */
 export const liveReaders = (g, now = Date.now()) => (g.readers || []).filter((x) => Date.parse(x.deadline) > now && (x.kind !== 'process' || pidAlive(x.pid)));
-/** `g` with `readers`, its expiresAt and meta recomputed (expiresAt = the latest deadline + expiryGraceSec). */
+/**
+ * `g` with `readers`, its expiresAt, maxSec and meta recomputed (expiresAt = the latest deadline + expiryGraceSec;
+ * maxSec = the longest reader's, at least SHARED_LANE.maxSec: I-114 lets an npm-test reader take more).
+ */
 export function groupWith(g, readers) {
   const end = Math.max(...readers.map((x) => Date.parse(x.deadline)));
-  return { ...g, readers, expiresAt: iso(end + SHARED_LANE.expiryGraceSec * 1000), meta: { ...g.meta, readers: readers.map((x) => `${x.owner} (w${x.weight})`).join(', ') } };
+  const maxSec = Math.max(SHARED_LANE.maxSec, ...readers.map((x) => x.maxSec || 0));
+  return { ...g, readers, expiresAt: iso(end + SHARED_LANE.expiryGraceSec * 1000), maxSec, meta: { ...g.meta, readers: readers.map((x) => `${x.owner} (w${x.weight})`).join(', ') } };
 }
 const readerList = (g) => (g.readers || []).map((x) => `"${x.owner}"`).join(', ') || 'none';
 
@@ -669,29 +678,35 @@ function gateHolding(w, now, T = THRESHOLDS) {
  * `host`: for a GATED resource, the caller's latest host reading {quiet: true|false|null, reasons, sample}
  * (null quiet = not measured yet). Omitted: no gate (library callers that don't sample). A normal waiter
  * whose turn it is gets {ok:false, gated:true, gate} until host.quiet, or until the gate times out.
- * `shared` (ts-lock-share): a reader of the shared lane (see header), with `weight` (1..cap) and `maxSec` (1..300);
+ * `shared` (ts-lock-share): a reader of the shared lane (see header), with `weight` (1..cap) and `maxSec` (1..300; I-114:
+ * 1..sharedMaxSec(job) when `job` names it, e.g. 'npm-test' 1..480, whose weight is then at least that job's);
  * `sharedHeld`: an FW_LOCK_SHARED string: a live reader token there re-enters that slot (shared acquirer) or refuses
  * at once (exclusive acquirer, B1). `load1` / `ncpu` / `now`: injected for tests (default: FW_LOCK_LOAD1, else os.loadavg, the cpu
  * count, Date.now). `mode`: 'exclusive' | 'short' | 'shared' | 'reentrant' | 'reentrant-exclusive' | 'reentrant-shared'.
  */
 export async function tryAcquire(r, opts) {
   checkName(r);
-  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, sharedHeld, load1, ncpu, busyPct, awake, simWarm } = opts;
+  const { owner, kind = 'lease', pid = process.pid, meta = {}, maxSec, held, host, thresholds: T = THRESHOLDS, noTiming = false, shared = false, weight = 1, job, sharedHeld, load1, ncpu, busyPct, awake, simWarm } = opts;
   let { ttlSec, queueTtlSec = 600, short = false } = opts;
   if (!owner) throw new Error('owner is required (e.g. the fix topic)');
   if (noTiming && short) throw new Error('--no-timing is for normal holds (builds, CPU work); a short job passes the host gate already');
   if (noTiming && shared) throw new Error('--no-timing and --shared do not combine: a shared job is a bounded functional reader already; a build that needs the Mac alone is --no-timing');
+  const jobMax = sharedMaxSec(job); // I-114: npm-test may take more than SHARED_LANE.maxSec
   if (shared) {
     if (!GATED[r]) throw new Error(`--shared exists only on ${Object.keys(GATED).join(', ')} (not "${r}")`);
     if (short) throw new Error('--shared and --short do not combine: a shared job is bounded already (--max-seconds)');
-    if (!(maxSec > 0 && maxSec <= SHARED_LANE.maxSec)) throw new Error(`a shared job needs --max-seconds between 1 and ${SHARED_LANE.maxSec} (got ${maxSec})`);
+    if (job !== undefined && !Object.hasOwn(SHARED_LANE.weights, job)) throw new Error(`unknown shared job "${job}" (${Object.keys(SHARED_LANE.weights).join(', ')})`);
+    if (job !== undefined && !(weight >= SHARED_LANE.weights[job])) throw new Error(`a shared ${job} job's --weight is at least ${SHARED_LANE.weights[job]} (got ${weight})`);
+    if (!(maxSec > 0 && maxSec <= jobMax)) throw new Error(`a shared job${jobMax !== SHARED_LANE.maxSec ? ` (${job})` : ''} needs --max-seconds between 1 and ${jobMax} (got ${maxSec})`);
     if (!(Number.isInteger(weight) && weight >= 1 && weight <= SHARED_LANE.cap)) throw new Error(`a shared job's --weight must be an integer 1..${SHARED_LANE.cap} (got ${weight})`);
   }
   const sw = shared ? sharedSwitch(r) : null;
   const lane = shared && sw.enabled; // a reader; with the switch off a shared acquire is an exclusive short job
   if (shared && !lane) short = true;
   if (short) {
-    if (!(maxSec > 0 && maxSec <= SHORT_MAX_SEC)) throw new Error(`a short job needs --max-seconds between 1 and ${SHORT_MAX_SEC} (got ${maxSec})`);
+    // the switch-off stand-in of a shared job keeps that job's bound (I-114); a plain --short job keeps SHORT_MAX_SEC
+    const shortMax = shared ? Math.max(SHORT_MAX_SEC, jobMax) : SHORT_MAX_SEC;
+    if (!(maxSec > 0 && maxSec <= shortMax)) throw new Error(`a short job needs --max-seconds between 1 and ${shortMax} (got ${maxSec})`);
     ttlSec = kind === 'process' ? maxSec + 5 : maxSec; // + the grace `lock.mjs run` gives the command after SIGTERM
     queueTtlSec = Math.min(queueTtlSec, SHORT_QUEUE_TTL_SEC);
   }
@@ -825,13 +840,14 @@ export function noTimingRefusal(r, h) {
  * is expressed only in data that lock code from before the lane reads the same way (so old and new code always agree on
  * who is served next; a rule only new code knew made a reader and an old waiter each wait for the other): `short` with
  * `at` = the latest grant into the group keeps the record a live short grant until that reader's end + the hand-over
- * grace (lastGrantShort: 300 + 35 s after `at`, >= 30 s past any reader's maxSec + killGraceSec), and `runStart` one SHORT_DRAIN_SEC
+ * grace (lastGrantShort: the group's maxSec, the longest reader's (300, or 480 with an npm-test reader, I-114), + 35 s
+ * after `at`, >= 30 s past any reader's maxSec + killGraceSec), and `runStart` one SHORT_DRAIN_SEC
  * back marks the short-drain budget spent, so at the hand-over after a group a normal waiter goes before every short-lane
  * entry (reader or exclusive short); with no normal waiter, the short-lane entries go FIFO. When the group ends with no
  * normal waiter queued, the record is removed (endGroupGrant, I-080); otherwise that waiter's grant replaces it.
  */
 export function groupGrant(g, now) {
-  return { owner: GROUP_OWNER, short: true, shared: true, maxSec: SHARED_LANE.maxSec, at: iso(now), token: g.token, runStart: iso(now - SHORT_DRAIN_SEC * 1000) };
+  return { owner: GROUP_OWNER, short: true, shared: true, maxSec: Math.max(SHARED_LANE.maxSec, g.maxSec || 0), at: iso(now), token: g.token, runStart: iso(now - SHORT_DRAIN_SEC * 1000) };
 }
 
 /**
@@ -1016,13 +1032,13 @@ export async function renew(r, { owner, ttlSec, noShorten = false }) {
  * Process-kind locks are also released automatically on exit / SIGINT / SIGTERM.
  * A re-entrant acquire (the same owner's lease, or an ancestor's hold via `held`, default
  * $FW_LOCK_HELD) returns at once, and its release() is a no-op: the outer holder releases.
- * `shared` (+ `weight`, `maxSec` <= 300): a reader of the shared lane (see header); `sharedHeld` (default
+ * `shared` (+ `weight`, `maxSec` <= 300, or <= sharedMaxSec(`job`), I-114): a reader of the shared lane (see header); `sharedHeld` (default
  * $FW_LOCK_SHARED) re-enters an ancestor's reader slot, and refuses an exclusive acquire inside one at once (B1).
  * Returns {holder, release(), reentrant, mode, env, reader}: `env` is what a child command needs to re-enter
  * ({FW_LOCK_SHARED} for a reader, a re-entered slot or an off-mode shared hold; {FW_LOCK_HELD} for an exclusive hold,
  * plus FW_LOCK_SHARED when a shared acquire re-entered it).
  */
-export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, awake, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
+export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short = false, shared = false, weight = 1, job, maxSec, held = process.env.FW_LOCK_HELD, sharedHeld = process.env.FW_LOCK_SHARED, timeoutSec = 3600, pollMs = 2000, maxPollMs = short || shared ? 3000 : 15000, log = (s) => console.error(s), thresholds: T = THRESHOLDS, hostSamplers, noTiming = false, awake, cpuSampler = cpuTimes, busyWindowMs = SHARED_LANE.busyWindowMs } = {}) {
   const t0 = Date.now();
   // I-051: a waiting reader measures host CPU busy over its own polls (no extra window inside the guard)
   let cpuBase = shared ? { at: Date.now(), t: cpuSampler() } : null, busyPct;
@@ -1047,7 +1063,7 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       if (b !== null) busyPct = b;
       cpuBase = { at: Date.now(), t };
     }
-    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct, simWarm: gateWarm });
+    const res = await tryAcquire(r, { owner, kind, ttlSec, meta, short, shared, weight, job, maxSec, held, sharedHeld, host, thresholds: T, noTiming, awake, busyPct, simWarm: gateWarm });
     // a queued or gated waiter keeps nothing awake (I-070, user C-024: only measurements; I-026's queue assertion is gone)
     if (res.gated) {
       // our turn, but the host is not (known to be) quiet: measure one window, then try again at once

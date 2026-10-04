@@ -35,8 +35,9 @@ test('config: one constant holds the cap, the per-job weights and the bounds; th
   assert.deepEqual(L.SHARED_LANE, {
     cap: 4, defaultCap: 3, joinLoadPerCpu: 2, joinBusyPct: 75, busyWindowMs: 1000, maxSec: 300, batchJoinSec: 30, expiryGraceSec: 10, killGraceSec: 5, readerMaxWaitSec: 600, readerBypassSec: 300,
     weights: { check: 1, probe: 1, 'bench-mech': 1, 'test-chrome-fn': 1, 'npm-test': 2, simulator: 3 },
+    jobMaxSec: { 'npm-test': 480 },
   });
-  assert.ok(Object.isFrozen(L.SHARED_LANE) && Object.isFrozen(L.SHARED_LANE.weights));
+  assert.ok(Object.isFrozen(L.SHARED_LANE) && Object.isFrozen(L.SHARED_LANE.weights) && Object.isFrozen(L.SHARED_LANE.jobMaxSec));
   for (const w of Object.values(L.SHARED_LANE.weights)) assert.ok(Number.isInteger(w) && w >= 1 && w <= L.SHARED_LANE.cap);
   const prev = process.env.FW_LOCK_SHARED_JOIN_LOAD;
   delete process.env.FW_LOCK_SHARED_JOIN_LOAD;
@@ -94,6 +95,48 @@ test('argument checks: max-seconds 1..300 and weight 1..cap are required; never 
   const x = await L.tryAcquire(R, { owner: '(shared)', kind: 'lease' });
   assert.equal(x.ok, false, 'an exclusive "(shared)" lease does not re-enter the group by its owner name');
   assert.equal(holder().readers.length, 1);
+});
+
+test('I-114: a shared job named npm-test may take --max-seconds up to 480 (the commit hook\'s suite, ~250 s); every other shared job keeps 300', async () => {
+  assert.equal(L.sharedMaxSec('npm-test'), 480);
+  for (const j of [undefined, 'check', 'probe', 'bench-mech', 'test-chrome-fn', 'simulator']) assert.equal(L.sharedMaxSec(j), 300, String(j));
+  await on();
+  // only by its job name: a plain weight 2 is any job, and keeps 300
+  await assert.rejects(rd('a', { weight: 2, maxSec: 480 }), /between 1 and 300/);
+  await assert.rejects(rd('a', { job: 'check', maxSec: 301 }), /between 1 and 300/);
+  await assert.rejects(rd('a', { weight: 2, job: 'npm-test', maxSec: 481 }), /between 1 and 480/);
+  await assert.rejects(rd('a', { weight: 2, job: 'frob', maxSec: 60 }), /job/);
+  await assert.rejects(rd('a', { weight: 1, job: 'npm-test', maxSec: 480 }), /weight/, 'the name brings its weight: npm-test is at least 2');
+  const t0 = Date.now();
+  const a = await rd('npm-a', { weight: 2, job: 'npm-test', maxSec: 480 });
+  assert.equal(a.ok, true);
+  assert.equal(a.opened, true);
+  assert.equal(a.reader.maxSec, 480);
+  const dl = Date.parse(a.reader.deadline);
+  assert.ok(dl >= t0 + ms(480 + L.SHARED_LANE.killGraceSec) && dl <= Date.now() + ms(480 + L.SHARED_LANE.killGraceSec));
+  // the group record old lock code reads as a live short lease covers the long reader: expiresAt past its deadline,
+  // maxSec the longest reader's, and the last-grant record stays "short" until that reader's end + the hand-over grace
+  let h = holder();
+  assert.ok(Date.parse(h.expiresAt) >= dl + ms(L.SHARED_LANE.expiryGraceSec));
+  assert.equal(h.maxSec, 480);
+  assert.equal(L.lastGrant(R).maxSec, 480);
+  const b = await rd('chk-b', { maxSec: 60 });
+  assert.equal(b.ok, true);
+  h = holder();
+  assert.equal(h.readers.length, 2);
+  assert.equal(h.maxSec, 480, 'a shorter reader joining keeps the longest reader\'s bound');
+  assert.equal(L.lastGrant(R).maxSec, 480);
+});
+
+test('I-114 switch off: the stand-in exclusive short job of an npm-test shared job may take up to 480 s too; others keep 300', async () => {
+  await assert.rejects(rd('fn-x', { maxSec: 301 }), /between 1 and 300/);
+  const a = await rd('npm-x', { weight: 2, job: 'npm-test', maxSec: 480 });
+  assert.equal(a.ok, true);
+  assert.equal(a.mode, 'short');
+  const h = holder();
+  assert.equal(h.maxSec, 480);
+  assert.ok(Date.parse(h.expiresAt) - Date.parse(h.acquiredAt) >= ms(480));
+  await assert.rejects(L.tryAcquire(R, { owner: 'sh', kind: 'process', short: true, maxSec: 480 }), /between 1 and 300/, 'a plain --short job keeps 300');
 });
 
 test('switch off: a shared acquire is an exclusive short hold with the same max-seconds (tools never branch)', async () => {

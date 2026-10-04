@@ -126,12 +126,14 @@
 // Shared lane (ts-lock-share, research/architecture/lock-shared-lane.md): jobs that only confirm functionality (npm test,
 // headless checks, DOM probes, bench mech, a Simulator mechanism session) run in parallel with each other, never beside
 // an exclusive (timing) hold:
-//   node tools/lock.mjs run chrome-measure --shared --max-seconds 300 --weight npm-test --owner <you> -- npm test
+//   node tools/lock.mjs run chrome-measure --shared --max-seconds 480 --weight npm-test --owner <you> -- npm test
+//   node tools/lock.mjs acquire chrome-measure --shared --max-seconds 480 --weight npm-test --owner <you> --wait 1800   # the commit hook's npm test
 //   node tools/lock.mjs acquire chrome-measure --shared --max-seconds 240 --owner <you> --wait 1800   # a lease reader
 //   node tools/lock.mjs release chrome-measure --shared --owner <you>
 //   node tools/lock.mjs shared on|off chrome-measure --by lead --reason "<why>" [--cap N] [--join-load L] [--join-busy P]   # the lead's switch
-// --max-seconds N (1..300) is required; --weight is 1..4 or a job name (check, probe, bench-mech, test-chrome-fn 1;
-// npm-test 2; simulator 3); the readers' weights fit the switch's --cap (default 3, max 4). A reader joins the running
+// --max-seconds N (1..300) is required, 1..480 for --weight npm-test (I-114: the suite takes ~250 s; only by that name,
+// a plain --weight 2 keeps 300, and the switch-off --short stand-in keeps the 480); --weight is 1..4 or a job name
+// (check, probe, bench-mech, test-chrome-fn 1; npm-test 2; simulator 3); the readers' weights fit the switch's --cap (default 3, max 4). A reader joins the running
 // group while it fits, CPU busy over its own polls <= --join-busy (default 75 %; before its first busy sample load1 <=
 // --join-load, default 2x the cpu count; I-051) and no exclusive waiter is queued (writer preference; readers queued before the
 // group opened may still join for 30 s). `run --shared` kills its command at --max-seconds like --short (exit 124) and
@@ -141,7 +143,7 @@
 // --max-seconds; a notice on stderr) whose command gets FW_LOCK_SHARED too, so nothing timed starts inside it. `status` shows the group, its readers and the switch.
 import { spawn } from 'node:child_process';
 import { psTable, descendants, treeState, waitTreeGone } from './lib/proc-tree.mjs'; // I-024, I-099: the command's tree, and the wait until it is gone
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedMaxSec, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -175,6 +177,8 @@ const shared = flag('shared') && cmd !== 'shared';
 const maxSec = short ? Number(opt('max-seconds', 120)) : shared ? Number(opt('max-seconds')) : undefined;
 const weightOpt = opt('weight', '1');
 const weight = /^\d+$/.test(weightOpt) ? Number(weightOpt) : SHARED_LANE.weights[weightOpt] ?? NaN;
+// I-114: a job name brings its --max-seconds bound too (npm-test: 480); a plain number is any job (300)
+const job = !/^\d+$/.test(weightOpt) && Object.hasOwn(SHARED_LANE.weights, weightOpt) ? weightOpt : undefined;
 const sh = (w) => (w.shared ? '' : w.short ? ` (short, max ${w.maxSec} s)` : w.noTiming ? ' (no-timing)' : '');
 const OFF_NOTICE = (r) => `[lock ${r}] the shared lane is off: running as an exclusive --short job (same --max-seconds); the lead switches it on (lock.mjs shared on ${r})`;
 const NORMAL_HOLD_SEC = 600; // a normal chrome-measure hold should end within ~10 min (I-020); `run --max-seconds` declares another length
@@ -308,7 +312,7 @@ async function main() {
     if (!['acquire', 'run', 'release', 'dequeue'].includes(cmd)) throw new Error(`--shared is for run, acquire, release and dequeue (not ${cmd})`);
     if (short) throw new Error('--shared and --short do not combine: a shared job is bounded by its --max-seconds already');
     if (noTiming) throw new Error('--shared and --no-timing do not combine: a shared job is a bounded functional reader already; a build that needs the Mac alone is --no-timing');
-    if (cmd !== 'release' && cmd !== 'dequeue' && opt('max-seconds') === undefined) throw new Error(`--shared needs --max-seconds N (1..${SHARED_LANE.maxSec}): a shared job is bounded`);
+    if (cmd !== 'release' && cmd !== 'dequeue' && opt('max-seconds') === undefined) throw new Error(`--shared needs --max-seconds N (1..${sharedMaxSec(job)}${sharedMaxSec(job) !== SHARED_LANE.maxSec ? ` for ${job}` : ''}): a shared job is bounded`);
     if (cmd !== 'release' && cmd !== 'dequeue' && Number.isNaN(weight)) throw new Error(`--weight must be 1..${SHARED_LANE.cap} or a job name (${Object.entries(SHARED_LANE.weights).map(([k, v]) => `${k} ${v}`).join(', ')}), got "${weightOpt}"`);
   }
   if (!owner && cmd !== 'release') throw new Error('--owner <name> is required (use your fix topic)');
@@ -338,7 +342,7 @@ async function main() {
     let host = GATED[resource] && !short && !shared ? { quiet: null, reasons: ['not measured yet'] } : undefined;
     // N7: FW_LOCK_SHARED from an enclosing slot (a `run --shared` command): a shared lease re-enters it, an exclusive
     // one is refused, as in acquire()
-    const sx = { ...(shared ? { shared, weight } : {}), sharedHeld: process.env.FW_LOCK_SHARED };
+    const sx = { ...(shared ? { shared, weight, job } : {}), sharedHeld: process.env.FW_LOCK_SHARED };
     // I-051: a shared waiter measures CPU busy over its own polls; the join check uses it once it has one
     let cpuBase = shared ? { at: Date.now(), t: cpuTimes() } : null;
     const attempt = async () => {
@@ -415,7 +419,7 @@ async function main() {
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
     // I-070: a --no-timing hold is a measurement (keeps the Mac awake) only when its command wraps a phone part or a Sim session
     const awake = noTiming && wrapsMeasurement(rest) ? true : undefined;
-    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight } : {}), timeoutSec: Number(opt('timeout', 3600)) });
+    const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight, job } : {}), timeoutSec: Number(opt('timeout', 3600)) });
     if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
     // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds
     const bounded = short || shared;
