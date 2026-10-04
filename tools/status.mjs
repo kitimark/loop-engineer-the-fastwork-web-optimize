@@ -28,6 +28,13 @@
 //        # no update for 45 min (no live wait), a ready-to-land or reviewing row whose branch's work is already on main
 //        # (`set` by the owner records the branch of the checkout it runs in; a working or waiting row with landed
 //        # commits is normal), or it waits on a C-/PR-/T- id already answered/decided
+//   node tools/status.mjs agent <name> [--json]             # I-118: what is X doing / what did X do, in one place: running
+//        # now or finished (live holds, queue places, waits, fresh rows), its status rows (owned or updated), commits on
+//        # main tagged "(<name>)", holds.log lines, console steps, threads, incidents, findings, proposals, fixes/*/README.md
+//        # that name it, and the timeline, newest first. A row id or alias it uses on the locks counts as the agent.
+//        # Console: /agent/<name> (lib: tools/lib/agent-view.mjs)
+//   node tools/status.mjs agents [--all] [--json]           # every agent seen anywhere: RUNNING NOW, then FINISHED by last
+//        # activity (the 20 most recent without --all). Console: /agents
 // Lead:
 //   node tools/status.mjs priority <id> <1..99|none> --by lead [--note "<why>"]   # 1 = first; refused for anyone else
 //   node tools/status.mjs seed --by <agent> [--file <seed.json>] [--apply]        # active PROGRESS fix items + a seed
@@ -40,6 +47,7 @@ import { spawnSync } from 'node:child_process';
 import { set, setPriority, get, list, buildStatusView, itemView, renderText, showText, staleText, seedPlan, applySeed } from './lib/status.mjs';
 import { gatherLive, readProgress } from './lib/progress.mjs';
 import { runMain } from './lib/exit.mjs'; // I-110, I-117: exit once stdout has flushed
+import { currentAgentView, currentAgentsList, agentText, agentsText, parseAgent } from './lib/agent-view.mjs';
 
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file', '--unlink'];
@@ -94,6 +102,17 @@ async function main() {
     }
     if (!flag('apply')) console.log('(dry run: nothing written; add --apply)');
     return res.some((r) => r.action === 'error') ? 1 : 0;
+  }
+  if (cmd === 'agents') {
+    const l = await currentAgentsList({ maxAgeMs: 0 });
+    console.log(flag('json') ? JSON.stringify(l, null, 1) : agentsText(l, { all: flag('all') }));
+    return 0;
+  }
+  if (cmd === 'agent') {
+    if (!arg) throw new Error('usage: node tools/status.mjs agent <name> [--json] (node tools/status.mjs agents lists every name)');
+    const v = await currentAgentView(parseAgent(arg), { maxAgeMs: 0 });
+    console.log(flag('json') ? JSON.stringify(v, null, 1) : agentText(v));
+    return 0;
   }
   if (!arg) throw new Error(`usage: node tools/status.mjs ${cmd} <id> … (see the header of tools/status.mjs)`);
   if (cmd === 'set') {

@@ -14,6 +14,13 @@
 //   GET  /status                 the status board (tools/lib/status-page.html; read-only): every workstream's priority,
 //                                state, waits (self-reported + derived from the locks, steps, incidents), owner, note
 //   GET  /api/status             its model (tools/lib/status.mjs currentStatusView; scrubbed like /api/progress)
+//   GET  /agents                 I-118: every agent, running now first, then the finished ones by last activity
+//                                (tools/lib/agents-page.html; read-only); /agent/<name>: one agent's page (the same file)
+//   GET  /api/agents             {schema fw-agents/1, agents: [{name, running, now, lastAt, lastWhat, href}]}
+//   GET  /api/agent/<name>       {schema fw-agent/1, …}: one agent's status rows, live holds and queue places, waits,
+//                                holds.log lines, console steps, threads, commits on main tagged "(<name>)", fixes/*/README.md
+//                                that name it, incidents, findings, proposals, and the merged timeline (agent-view.mjs:
+//                                bounded reads, cached, scrubbed like /api/status); 400 for a name that is no agent name
 //   GET  /api/waiting            the badge / notification model (console-notify.mjs waitingView): {now, count,
 //                                yourTurn, remindMin, steps: [{id, title (sanitized), status, yourTurn, updatedAt,
 //                                queuedAt}]}; never a URL, instructions or meta
@@ -75,6 +82,7 @@ import { list, publicView, start, done, answer, skip, reopen, restart, consoleDi
 import { writeJson, readJson, iso } from './store.mjs';
 import { currentView, readWriteup } from './progress.mjs';
 import { currentStatusView } from './status.mjs';
+import { currentAgentView, currentAgentsList, parseAgent } from './agent-view.mjs';
 import { waitingView, stepWatcher, createNotifier, DEFAULT_REMIND_MIN } from './console-notify.mjs';
 import { feedView as threadFeedView, threadWatcher, listThreads, getThread, summary as threadSummary, threadState, pageThread, pageOrder, createThread, replyUser, markRead, setStatus, USER, threadMediaFile, LIMITS as THREAD_LIMITS } from './console-threads.mjs';
 import { listeningState } from './thread-routing.mjs';
@@ -98,13 +106,16 @@ const NAV_CSS_FILE = new URL('./console-nav.css', import.meta.url);
 const COMMENTS_JS_FILE = new URL('./console-comments.js', import.meta.url);
 const THREADS_PAGE_FILE = new URL('./threads-page.html', import.meta.url);
 const threadsPage = () => readFileSync(THREADS_PAGE_FILE, 'utf8');
+const AGENTS_PAGE_FILE = new URL('./agents-page.html', import.meta.url);
+const agentsPage = () => readFileSync(AGENTS_PAGE_FILE, 'utf8');
 
-/** The shared top bar of every page; `current` = 'steps' | 'status' | 'progress' | 'threads' (highlighted, aria-current). Plain links. */
+/** The shared top bar of every page; `current` = 'steps' | 'status' | 'agents' | 'progress' | 'build' | 'threads' | 'proposals' (highlighted, aria-current). Plain links. */
 export function menuHtml(current) {
   const on = (k) => (k === current ? ' on" aria-current="page' : '');
   return `<nav class="menu" aria-label="Console pages"><div class="menu-in">`
     + `<a class="mbtn${on('steps')}" title="What the agents need from you" href="/">Your steps<span class="badge" data-badge hidden>0</span></a>`
     + `<a class="mbtn${on('status')}" title="Who is doing what, in priority order" href="/status">Status</a>`
+    + `<a class="mbtn${on('agents')}" title="Every agent, running now or finished: everything one agent did, on one page" href="/agents">Agents</a>`
     + `<a class="mbtn${on('progress')}" title="Where the fixes stand" href="/progress">Progress</a>`
     + `<a class="mbtn${on('build')}" title="What is in today's best build, how much it helps, and what was tried and not applied" href="/build">Best build</a>`
     + `<a class="mbtn${on('threads')}" title="Your questions to the agents, one thread per topic" href="/threads">Threads<span class="badge" data-thread-badge hidden>0</span></a>`
@@ -455,6 +466,14 @@ export function handler(port, feed = null, live = null) {
       }
       if (req.method === 'GET' && (u.pathname === '/status' || u.pathname === '/status.html')) return send(res, 200, withMenu(statusPage(), 'status'), 'text/html; charset=utf-8');
       if (req.method === 'GET' && u.pathname === '/api/status') return send(res, 200, await currentStatusView());
+      // I-118: every agent (running now or finished), and everything one agent did, on one page (agent-view.mjs)
+      if (req.method === 'GET' && (u.pathname === '/agents' || u.pathname === '/agents.html')) return send(res, 200, withMenu(agentsPage(), 'agents'), 'text/html; charset=utf-8');
+      if (req.method === 'GET' && u.pathname === '/api/agents') return send(res, 200, await currentAgentsList());
+      const ag = u.pathname.match(/^\/(api\/)?agent\/([^/]*)$/);
+      if (ag && req.method === 'GET') {
+        let name; try { name = parseAgent(decodeURIComponent(ag[2])); } catch (e) { return send(res, 400, { error: e.message }); }
+        return ag[1] ? send(res, 200, await currentAgentView(name)) : send(res, 200, withMenu(agentsPage(), 'agents'), 'text/html; charset=utf-8');
+      }
       const m = u.pathname.match(/^\/api\/steps\/(C-\d{1,6})\/([a-z]+)$/);
       if (m && req.method === 'POST') {
         if (req.headers['x-console'] !== '1') return send(res, 403, { error: 'missing x-console header' });

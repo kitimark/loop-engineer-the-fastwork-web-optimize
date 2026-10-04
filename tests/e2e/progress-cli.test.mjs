@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, node, tool, startProc, request } from '../helpers.mjs';
+import { loadPage } from '../fixtures/page-dom.mjs';
 
 const CON = tool('console.mjs');
 const LAN = 'http://192.168.77.12:5497/';
@@ -102,8 +103,12 @@ test('I-048: the chrome-measure shared lane on the page, the API and the text: e
     assert.match(t.stdout, /^ {2}Chrome: fix-e2e-a \(w2, since \d\d:\d\dZ\), fix-e2e-b \(w1, since \d\d:\d\dZ\) \(shared lane 3\/3\)$/m);
     // the page renders the readers itself (text only, from the model): the names first (user T-008)
     const p = await request(new URL('progress', base).href);
-    assert.match(p.text, /names \+ ' \(shared lane ' \+ s\.used/);
     assert.match(p.text, /'joins closed: ' \+ s\.closedBy/);
+    // I-118: rendered, each name a link to its agent page, then the weight against the cap
+    const pg = await loadPage(base, '/progress');
+    assert.match(pg.document.getElementById('main').textContent, /fix-e2e-a, fix-e2e-b \(shared lane 3\/3\)/);
+    const links = pg.document.querySelectorAll('a').map((a) => a.getAttribute('href'));
+    for (const n of ['fix-e2e-a', 'fix-e2e-b']) assert.ok(links.includes(`/agent/${n}`), `${n} links to its page`);
   } finally {
     lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-a']);
     lock(['release', 'chrome-measure', '--shared', '--owner', 'fix-e2e-b']);
