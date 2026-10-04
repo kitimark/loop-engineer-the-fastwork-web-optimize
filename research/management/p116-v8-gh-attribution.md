@@ -160,3 +160,18 @@ All four open items are done; files in `fixes/v8-best/phone/p116/`, committed to
 | fixes/v8-best/phone/p116/selftest.mjs | 0f6b57150ef4 |
 | fixes/v7-best/phone/score.mjs (P-105's, imported) | b9a29ffcc7bb |
 | fixes/v8-best/phone/g/flick-hero-v1.json | 6ae05e12ace9 |
+
+## Lead pre-data read (2026-10-04 19:4xZ, before any P-116 data): PASS, with R1-R3
+
+- Pins checked on main (9e67e2ca): all seven sha256/12 in the table above match the files. No P-116 data exists.
+- Arms, question, classes, outcomes and predictions were fixed before data, by ops (writer) and int-v8 (builder). The
+  lead did not write them.
+- Ops' P-105 notes are covered: N1 (only +1 at > 54) by the threshold-sensitive rule; N2 (n = 3) by n = 4 per arm.
+- **R1, the served-check adapter: accepted.** P-116's check (B, C, X, Y all ok) runs first, and a failing log reaches
+  P-105's scoreG with WRONG, so the void is scoreG's own. The arm of each run comes from P-116's item label, never
+  from scoreG's B/C/V names. The self-test's WRONG and missing-log cases cover it.
+- **R2, gesture budget (I-112):** if `iphone.mjs gesture` refuses an item for lack of hold time, that item is
+  missing, not a void of the hold. It runs in the one extra hold, with the hold's sentinels. The extra hold is
+  still at most one.
+- **R3, phone order:** after PR-018's phone step (fix-hero-exit-threaded: rev 7c robot part, then the user's blind
+  finger pair). User steps go first (memory user-steps-first). iphone-runner runs H1 and H2; int-v8 owns the verdict.
