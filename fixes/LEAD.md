@@ -149,6 +149,19 @@ cooling between blocks: the Timeline-OFF heat sentinel at block start and end de
 failing sentinel means cooling, then a redo of the voided runs. Cooling, where a block needs it, is by battery temperature
 (user T-009, protocol §5.3): `node tools/wait.mjs phone-temp --below auto` (at most 10 min), never a fixed `wait.mjs time`.
 
+**Startable phone work (I-182, user T-159 #6/#7/#12, 2026-10-04).** A free phone for more than 5 min (the steward checks at 2 min)
+while any phone job could start is an alarm. A job *could start* when ALL hold: (a) its ticket is signed (pre-data read done) or it is a
+user step posted for the phone; (b) its arms are built and hashed; (c) it waits only on pre-checks that cannot change the arms' bytes
+(Chrome counts, Simulator parity, review, landing). A pre-check that can change the arms is a real precondition: no start. If the
+pre-check later fails, the phone data is kept and marked "arms superseded", never counted (the card was signed before data). Also
+startable: a fix whose next steps read "Simulator, then the iPhone" when its phone part needs only the built overlay. Not an alarm: a wait
+on the user's Start, a thermal gate, or a lead/user decision. The steward (mgmt-devices) proposes the next job to the lead in ONE line
+("phone free N min; startable <ticket>, waits only on <x>, arm-neutral; sign to start"); the lead signs or rejects and keeps ranking
+(order of the day: double-drive > v9-best > scroll-cb-phone > nav-hit-cache > nav-earn > toolbar-resize > morph-close-peak, subject to
+change). The steward may tell iphone-runner "go" for the top-ranked ticket that is signed, hashed and arm-neutral when no user phone step
+is open, sending the lead the same line at the same moment; the lead may veto. Ops marks each ticket's readiness on the phone-queue row
+(`--phone-next`, once the I-182 tool lands); the steward keeps the rolling plan (board row `device-plan`).
+
 **Slot tickets (phone access).** Only ticketed builds go on the phone. A ticket names: build + served hashes; the
 ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;
 the "if X then Y" decision for each outcome; the probe set; the served ports, each with one uncounted warm-up load
