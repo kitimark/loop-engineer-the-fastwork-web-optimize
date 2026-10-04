@@ -42,6 +42,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-115 amendment pre-data (fix-toolbar-resize, C = v8, 7d56ce01): PASS with a note.**
+  - Checks:
+    - Between the earlier PASS (18fc5ecb) and the rebased be7e2908, the card's folder is unchanged.
+    - 7d56ce01 changes only the README and sim-bisect115: the state file, the served-hash check and the v8 line refs.
+    - Hashes at 7d56ce01 equal the files on disk: sim-bisect115 4e1077d555cd, inject 0cc373b2594d, gate 126f46d31f3c,
+      scorer cb6f0c97b81b.
+    - The v8-best overlay is at 3e3e94cb6e9f / f836404b3728.
+    - No sim115 data exists.
+  - Owner's claims re-checked on the overlays:
+    - v8 CSS l.3646-3946 equals v7 l.3600-3900.
+    - Of the 56 changed CSS lines (4 out, 52 in), none names the showcase, the profile, #people or a viewport unit.
+    - Of the 185 changed JS lines, none names the showcase, the profile, innerHeight or resize.
+    - The line refs are right: l.3811 is .start-selling-future-card's 100svh in the (width<=860px) query, l.2602 the
+      margin-top calc, l.3308-3309 the shell clamp, and l.3757-3774 the override in the media query at l.3673.
+  - N4: P-110's locating ran on v7. If C on v8 shows no toolbar-step Layout in the showcase, the result reads NOT
+    REPRODUCED on v8, not NONE for the arms, and it goes to the lead before another card.
 - 10-05 **P-105 second read (iphone-runner, v7 vs v6 phone no-worse, 7035375d): AGREE, WORSE on GH only, threshold-sensitive.**
   - Ops ran the frozen scorer b9a29ffcc7bb on the runner's items-all.txt. The output matches the runner's table gate
     for gate: S -1, GF 0, GH +3 (twins +3/+1), GM 0, GE 0; no new cluster.
