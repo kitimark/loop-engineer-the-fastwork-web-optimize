@@ -64,7 +64,20 @@ Chrome desktop 1440x900 (`research/v8-double-drive/probe/dd-probe.mjs`, `gates/d
 | Commission | scroll-up class switch | -31.2 px at scale 0.967 | +2.0 px; the origin glides, ≤ 10.8 px per frame |
 | Commission | largest scroll-up jump, sticky noise included | 42 / -36.4 px | 34.9 px |
 
-<!-- HOLD6 -->
+The table is from build ccbdc1eb (one step before the final one). The final build 3076c5a8c9a3 / 2f7197880ffd
+(the eased origin weight) was re-probed in hold 6 (`out/v8-double-drive/probe-2026-10-04T21-18-06-930Z`,
+against the same A probe):
+
+| Card | Measure | v8 | Fix (final) |
+|---|---|---|---|
+| Future | transform transition runs | 74 (max 36) | 3 (max 2) |
+| Future | drift after the y 4500 stop | 26.8 px, 849 ms | 11.6 px, 399 ms |
+| Future | largest scroll-up jump | 270.9 px | -10.4 px |
+| Commission | scroll-up class switch (y 6082) | -31.2 px | +1.9 px; the origin then glides, ≤ 11.8 px per frame |
+| Commission | largest scroll-up jump, sticky noise included | 42 px | 30.6 px |
+| Commission | drift after the y 6300 stop | 7.7 px, 366 ms | 8.8 px, 367 ms (both arms' own shrink easing) |
+
+0 page errors, 0 4xx in both arms.
 
 - **Chrome phone 430x775:** future transition runs 4 → 2; every geometry number is identical.
 - **Safari (iOS Simulator, `dd-sim.mjs`):** future transition runs 3 → 2; jumps ≤ 1.6 px in both arms; 0 errors.
