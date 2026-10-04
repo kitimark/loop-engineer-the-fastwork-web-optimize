@@ -108,8 +108,16 @@ The user wants no reactive agents. These rules beat any older line that makes an
   bind the spawn time) and follows them to a land request; it changes its own device plan. It
   reports each action to the lead as one FYI line (what, why, owner). The lead keeps the order of the day (the
   `direction` row), landing and user-facing decisions outside devices.
-- **R8 (pending the user's OK; Hard rules 1/5)** mgmt-ops lands docs-only commits with the lead's checks. Until
-  the user says yes, only the lead lands.
+- **R8 mgmt-ops lands docs-only commits** (user T-160 #10 "yes", 2026-10-04 ~21:35Z). **Not in force yet:** CLAUDE.md Hard
+  rule 5 and "Agent roles" still say only the lead lands; the lead's edit of those lines was refused by the permission
+  layer, so they change only by the user's own edit or OK. Until then the lead lands every commit. Once in force: a
+  commit is docs-only when every path is under `research/`, `fixes/*/README.md`, `fixes/PREDICTIONS.md`,
+  `fixes/PROGRESS.json`, `fixes/*/phone/` cards and tickets, or `memory/`-free management notes. It contains no
+  `tools/`, `tests/`, `.claude/`, `.githooks/`, `package.json`, `site*/`, `baseline.json`, `patch.diff`, overlay or
+  `CLAUDE.md`/`AGENT_ROLES.md`/`LEAD.md` path. mgmt-ops lands such a commit (its own or a peer's) itself with the lead's
+  procedure (`fixes/LEAD.md` "Land a fix"): a land worktree, `git rebase main`, the snapshot, scrub and LAN checks, then
+  `git -C <main checkout> merge --ff-only`. That one command is its only action in the main checkout. It sends the lead
+  one FYI line per landing. Fixes, tool fixes and rule files stay the lead's to land.
 
 The **verifier** has the mapper's column (read only, posts and acks findings, commits nothing, never measures,
 never holds a lock or the iPhone), plus one duty: it sends each REFUTED or WEAKENED verdict to the claim's
