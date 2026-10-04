@@ -6,6 +6,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { tempDir } from '../helpers.mjs';
 
 const C = await import('../../tools/lib/console.mjs');
@@ -133,6 +134,37 @@ test('skip, reopen (user: only skipped; agent: any), redo a part, cancel', async
   assert.ok(!C.list({ all: false }).some((y) => y.id === s.id), 'cancelled steps are hidden unless --all');
   await assert.rejects(C.ack(s.id, { by: 'r', state: 'ready' }), /is cancelled/);
   await assert.rejects(C.cancel(other.id, {}), /--by/);
+});
+
+test('I-121: the queue order does not depend on the clock: posts and reopens in the same millisecond keep their order', async () => {
+  const realNow = Date.now;
+  Date.now = () => Date.UTC(2026, 9, 4, 7, 0); // a host so loaded that every step lands in one millisecond
+  try {
+    const s = await pair();
+    const other = await C.post({ by: 'x', kind: 'question', title: 'later one' });
+    const third = await C.post({ by: 'x', kind: 'question', title: 'third one' });
+    assert.deepEqual(C.list({ pending: true }).map((y) => y.id), [s.id, other.id, third.id], 'posts: in posting order');
+    await C.skip(s.id);
+    await C.reopen(s.id);
+    assert.deepEqual(C.list({ pending: true }).map((y) => y.id), [other.id, third.id, s.id], 'a reopened step goes to the end of the queue');
+    await C.skip(other.id);
+    await C.reopen(other.id);
+    assert.deepEqual(C.list({ pending: true }).map((y) => y.id), [third.id, s.id, other.id]);
+    const late = await C.post({ by: 'x', kind: 'question', title: 'posted after the reopens' });
+    assert.deepEqual(C.list({ pending: true }).map((y) => y.id), [third.id, s.id, other.id, late.id]);
+    // a step from before I-121 carries no queue number: in a tie it stays ahead of the numbered ones (its old order)
+    const f = join(C.consoleDir(), `${third.id}.json`);
+    const j = JSON.parse(readFileSync(f, 'utf8'));
+    delete j.queueSeq;
+    writeFileSync(f, JSON.stringify(j));
+    assert.deepEqual(C.list({ pending: true }).map((y) => y.id), [third.id, s.id, other.id, late.id]);
+  } finally { Date.now = realNow; }
+  // the clock still orders steps queued at different times (an older queuedAt first, whatever its number)
+  const f = join(C.consoleDir(), 'C-001.json');
+  const j = JSON.parse(readFileSync(f, 'utf8'));
+  j.queuedAt = '2026-10-04T06:00:00.000Z';
+  writeFileSync(f, JSON.stringify(j));
+  assert.equal(C.list({ pending: true })[0].id, 'C-001');
 });
 
 test('publicView: blind URLs, agent meta and history never reach the page', async () => {

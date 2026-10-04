@@ -229,13 +229,18 @@ export function buildStep(p) {
 
 // ---- store ------------------------------------------------------------------------------------------
 
-/** Every step, oldest in the queue first (queuedAt, then id). */
+/** Every step, oldest in the queue first (queuedAt, then queueSeq, then id). queueSeq (I-121) numbers every post and
+ *  reopen under the store guard, so a step reopened in the same millisecond as a post (a loaded host) still queues
+ *  after it; steps from before I-121 have none (0: their old order). */
 export function list({ all = true, pending = false } = {}) {
   let items = readAll(consoleDir(), 'C');
   if (pending) items = items.filter((s) => OPEN.has(s.status));
   else if (!all) items = items.filter((s) => s.status !== 'cancelled');
-  return items.sort((a, b) => (a.queuedAt < b.queuedAt ? -1 : a.queuedAt > b.queuedAt ? 1 : a.id < b.id ? -1 : 1));
+  const seq = (s) => s.queueSeq || 0;
+  return items.sort((a, b) => (a.queuedAt < b.queuedAt ? -1 : a.queuedAt > b.queuedAt ? 1 : seq(a) !== seq(b) ? seq(a) - seq(b) : a.id < b.id ? -1 : 1));
 }
+/** The next queue number (call under the store guard). */
+const nextQueueSeq = (items = readAll(consoleDir(), 'C')) => items.reduce((m, s) => Math.max(m, s.queueSeq || 0), 0) + 1;
 
 export function get(id) {
   const s = readJson(fileOf(parseId(id)));
@@ -247,7 +252,9 @@ export async function post(p) {
   const step = buildStep(p);
   return withGuard(GUARD, () => {
     mkdirSync(consoleDir(), { recursive: true });
-    step.id = nextId(readAll(consoleDir(), 'C'), 'C');
+    const items = readAll(consoleDir(), 'C');
+    step.id = nextId(items, 'C');
+    step.queueSeq = nextQueueSeq(items);
     writeJson(fileOf(step.id), step);
     return step;
   });
@@ -414,6 +421,7 @@ export async function reopen(id, { who = 'user', agent = false } = {}) {
     s.result = undefined;
     s.startedAt = undefined;
     s.queuedAt = now;
+    s.queueSeq = nextQueueSeq(); // I-121: after every step queued so far, even one posted in this millisecond
     for (const p of s.parts) { p.state = 'waiting'; p.at = {}; p.message = undefined; }
   });
 }
