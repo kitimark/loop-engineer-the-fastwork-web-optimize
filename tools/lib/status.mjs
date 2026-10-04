@@ -408,7 +408,10 @@ export function derive(it, live = {}, byId = new Map(), now = Date.now(), route 
   }
   for (const inc of live.incidents || []) {
     if (!inc.blocking || (it.unlinked || []).includes(inc.id)) continue;
-    const hit = names.has(inc.reportedBy) || (inc.affected || []).some((a) => names.has(a.by) && a.blocking !== false);
+    // I-183: the lead is not a worker: an incident that affects only the lead's own tools (its listener) blocks no row the
+    // lead merely owns
+    const mineName = (n) => n !== 'lead' && names.has(n);
+    const hit = mineName(inc.reportedBy) || (inc.affected || []).some((a) => mineName(a.by) && a.blocking !== false);
     if (hit) derived.push({ kind: 'incident', ref: inc.id, plain: `blocked by ${inc.id}: ${sanitize(inc.title, 120)}` });
   }
   for (const x of live.waits || []) {

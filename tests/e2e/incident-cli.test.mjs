@@ -43,6 +43,12 @@ test('open / join / list / show / update / announce, exit codes and usage errors
   const u = M('update', '1', '--by', 'lead', '--status', 'fixing', '--priority', 'P0', '--assignee', 'ts-i001', '--workaround', 'use --runs 3');
   assert.equal(u.code, 0, u.out);
   assert.match(u.stdout, /^UPDATED I-001 {2}\[fixing, tool, P0, -> ts-i001, blocking\]/);
+  // I-183: --blocking no clears the flag (the line drops "blocking"), --blocking yes sets it again
+  const nb = M('update', '1', '--by', 'lead', '--blocking', 'no');
+  assert.equal(nb.code, 0, nb.out);
+  assert.match(nb.stdout, /^UPDATED I-001 {2}\[fixing, tool, P0, -> ts-i001\]/);
+  assert.match(M('update', '1', '--by', 'lead', '--blocking', 'yes').stdout, /^UPDATED I-001 {2}\[fixing, tool, P0, -> ts-i001, blocking\]/);
+  assert.notEqual(M('update', '1', '--by', 'lead', '--blocking', 'maybe').code, 0);
   assert.match(M('announce', '1').stdout, /FIXING P0, assigned to ts-i001[\s\S]*Workaround meanwhile: use --runs 3/);
 
   // FW_AGENT stands in for --by

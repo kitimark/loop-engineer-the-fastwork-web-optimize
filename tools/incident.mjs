@@ -14,7 +14,7 @@
 //                                                          # announcement), 3 on timeout; run it in the background
 // The lead (triage, dispatch, close):
 //   node tools/incident.mjs update <id> --by lead [--status open|triaged|fixing|parked] [--class ...] [--priority P0-P3]
-//        [--assignee <agent>] [--workaround "<text>"] [--affected <agent>] [--note "<text>"]
+//        [--assignee <agent>] [--workaround "<text>"] [--blocking yes|no] [--affected <agent>] [--note "<text>"]
 //   node tools/incident.mjs resolve <id> --by lead --commit <sha on main> [--remeasure] [--note "..."]
 //        (--remeasure: the fix changed measurement code; --allow-unlanded skips the "commit is on main" check)
 //   node tools/incident.mjs resolve <id> --by lead --resolution workaround|answered|not-a-bug|duplicate --note "..."
@@ -96,7 +96,7 @@ async function main() {
   if (cmd === 'show') { const i = get(id); console.log(flag('json') ? JSON.stringify(i, null, 1) : details(i)); return 0; }
   if (cmd === 'announce') { console.log(announcement(get(id))); return 0; }
   if (cmd === 'update') {
-    const i = await update(id, { by: by(), status: opt('status'), cls: opt('class'), priority: opt('priority'), assignee: opt('assignee'), workaround: opt('workaround'), note: opt('note'), affected: opt('affected') });
+    const i = await update(id, { by: by(), status: opt('status'), cls: opt('class'), priority: opt('priority'), assignee: opt('assignee'), workaround: opt('workaround'), note: opt('note'), affected: opt('affected'), blocking: yesNo(opt('blocking')) });
     console.log(`UPDATED ${line(i)}`);
     return 0;
   }
