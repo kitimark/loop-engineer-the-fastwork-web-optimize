@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** proposal PR-019 posted; waiting for the user's decision
+**Status:** PR-019 accepted (option exact, 13:09Z); land build `fixes/accent-ca-v7/patch.diff` on v7, ready to land
 **Stage:** I done (Chrome + Simulator counts, layer census, pixels at phone + desktop width, reduced motion); the
 phone is not used (no ticket yet)
 **Device class / gate:** "less work" mechanism (counts, no timing: memory/defer-timing-focus-call-tree.md); phone
@@ -149,6 +149,56 @@ PR-019 (posted 2026-10-04 ~12:55Z): ONE proposal with three options and Try-it p
 
 Cost to state: an infinite CA animation during idle keeps Core Animation's high-rate request alive for ~1.25 s of
 every 3.05 s (F-212, fix-cd-roll-ca); not measured here. Phone: not used; a ticket would follow a decision.
+
+## On v7: land build (PR-019 accepted, option `exact`, 2026-10-04 13:09Z)
+
+Build: `fixes/accent-ca-v7/patch.diff` = v7-best (8c90da217745 / 308f0da70c3a) + `e1-delta.diff` (this topic's CSS
+delta, v6 -> E1) = JS 8c90da217745, CSS 7eda63cc7015. Arms: C7 = v7, E7 = the land build (hashed snapshot copies in
+`out/accent-ca/snap/`, C7 re-made by reversing the delta and equal to v7's bytes).
+
+### Pixels (against v7)
+
+| check | frames | differing | largest shade | share beyond A/A | area | tier |
+|---|---|---|---|---|---|---|
+| Chrome 430x932 DPR 3: C7 vs C7 again (A/A) | 74 | 0 | 0 | 0 | 0 | |
+| Chrome: C7 vs E7 | 74 | 0 | 0 | 0 | 0 | T0 |
+| Simulator: C7 vs C7 again (A/A) | 58 | 6 | 2 | 0 | 0 | |
+| Simulator: C7 vs E7 | 58 | 0 | 0 | 0 | 0 | T0 |
+
+Raw: `chrome-p430-2026-10-04T13-27-34-861Z.json`, `sim-pixels-2026-10-04T13-36-46-889Z.json` (the A/A held this
+time: the second load's 2-shade boil-edge differences are the noise E7 sits inside). Desktop and reduced motion were
+checked on v6 (exact, above); the delta touches the same rules on v7 and the reduced-motion block is unchanged.
+
+### Cost card ("less work" rule; counts per accent cycle = one 3.05 s rest + draw-out + draw-in; one 9.15 s window
+from a draw-out = 3 cycles, divided by 3; full page running, y 0; no ms judged)
+
+Hand-built from `chrome-counts.mjs` / `sim-counts.mjs` totals (these probes keep no raw trace, so `tools/costcard.mjs`
+could not read them).
+
+| per accent cycle | Chrome C7 (2 loads) | Chrome E7 | Simulator C7 (2 loads) | Simulator E7 |
+|---|---|---|---|---|
+| 1 thread: main frames (Chrome BeginMainThreadFrame / Sim RenderingFrame) | 122-123 | 125 | 139-140 | **117** |
+| 1 thread: style recalcs | 122-123 | 125 | 139 | **120** |
+| 1 thread: elements restyled (Chrome) | 1074-1093 | **917** | - | - |
+| 2 layers + memory (Sim census, mid-boil / mid-draw) | - | - | 3 svg layers 0.39 MB / 0 | the same |
+| 3 repaint: paints, whole page | 439 | **227** | 155-159 | **143** |
+| 3 repaint: accent-word paints (Sim) | - | - | 145-146 | **133** |
+| 4 layout: layouts | 4 | 4 | 117-119 | **109** |
+| 5 script: timer fires | 15-16 | 16 | - | - |
+
+- Simulator (WebKit, the target): -16 % rendering frames, -13 % style recalcs, -8 % layouts, -9 % accent paints per
+  cycle; A/A spread at most 2 % on every row (paints 466 vs 476 per window). The saving is larger than on v6 (-5-7 %), likely because v7's page does less
+  around the accent (cd-strip, cd-roll-ca, rest-script), so the boil's share is larger.
+- Chrome: paints halve (-48 %), restyled elements -15 %. Main frames +2-3 per cycle (A/A spread 1): in the rest phase
+  Chrome ticks 13.3 frames/s instead of 11.2-12.0 (accent animations report no composite decision in either build).
+  Small, Chrome only; the Simulator shows the opposite (fewer frames).
+- Layers: the same in both (the boil layers are made at rest and dropped at the draw in v7 and in E7, F-220); no
+  memory added.
+- Accent animations not composited in Chrome: 18 stroke animations per window in C7 -> 6 in E7 (the hidden copies no
+  longer animate); compositeFailed 8224 on the visible copy's stroke in both.
+
+Raw: `out/accent-ca/sim-counts-census-2026-10-04T13-41-12-831Z.json`, `chrome-p430-2026-10-04T13-27-34-861Z.json`.
+Phone: the short no-worse check is ticketed in v8's phone block by the lead.
 
 ## Tools
 

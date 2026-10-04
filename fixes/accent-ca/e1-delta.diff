@@ -1,0 +1,87 @@
+# accent-ca E1 delta: v6 (8018ce062d30 / 71b65c667720) -> E1 (CSS cd7f976eebaf), the exact boil only (PR-019 option exact, accepted 13:09Z)
+# contains excerpts of Fastwork's code: local branches only, never push
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -1295,14 +1295,14 @@
+   animation: 0.45s forwards svelte-1fn2go6-fill-out;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-0;
++  animation: 0.6s linear infinite fw-acc-idle-0;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-1:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-1;
++  animation: 0.6s linear infinite fw-acc-idle-1;
+   transform: translate(0.25%, 0.3%);
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-2:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-2;
++  animation: 0.6s linear infinite fw-acc-idle-2;
+   transform: translate(-0.2%, 0.35%);
+ }
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+@@ -1314,6 +1314,18 @@
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+   .is-idle-frame-0.svelte-1fn2go6 {
+   opacity: 1;
++}
++/* accent-ca: (1) the idle boil runs as keyword-linear opacity animations (WebKit iOS 26 never hands a steps()
++   timing to Core Animation, F-048/F-065, so step-end ticked main-thread style and an opacity-flip Layout per step,
++   F-075). The fw-acc-idle-* keyframes switch at exactly the original step-end instants (33.33 %, 66.66 %, end of
++   cycle); each jump is a linear ramp of 1e-6 of the 0.6 s cycle (0.6 us) that ends on the original instant, so
++   every frame is the original's.
++   (2) While drawing, only boil frame 0 is visible (frames 1-2 are opacity 0, rule above); their stroke and fill
++   animations are dropped (a stroke-dashoffset change is an SVG Layout every frame on WebKit, F-097). */
++:is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
++  .is-idle-frame:not(.is-idle-frame-0).svelte-1fn2go6
++  :is(.accent-path, .accent-fill) {
++  animation: none;
+ }
+ @keyframes svelte-1fn2go6-stroke-in {
+   0% {
+@@ -1341,10 +1353,44 @@
+   }
+ }
+ @keyframes svelte-1fn2go6-fill-out {
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-0 {
++  0%,
++  33.3299% {
++    opacity: 1;
++  }
++  33.33%,
+   to {
+     opacity: 0;
+   }
+ }
++@keyframes fw-acc-idle-1 {
++  0%,
++  33.3299% {
++    opacity: 0;
++  }
++  33.33%,
++  66.6599% {
++    opacity: 1;
++  }
++  66.66%,
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-2 {
++  0%,
++  66.6599% {
++    opacity: 0;
++  }
++  66.66%,
++  to {
++    opacity: 1;
++  }
++}
+ @keyframes svelte-1fn2go6-idle-0 {
+   0%,
+   33.32% {
