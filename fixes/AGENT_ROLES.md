@@ -194,8 +194,8 @@ Sources: [sub-agents](https://code.claude.com/docs/en/sub-agents.md),
   6. **Report your branch from your own worktree** (`git branch --show-current` there), never from the
      git status in your context: every subagent inherits the session's starting git status, which names
      another agent's branch (de-apple and arch-safari reported iphone-runner's branch on 2026-10-01).
-  7. **Assigned a console thread (T-nnn):** run `node tools/console.mjs thread wait --as <you> --timeout 3600` in
-     the background; reply with `thread reply T-nnn --by <you> --text "…"` (`--ask` when you need the user's
+  7. **Assigned a console thread (T-nnn):** keep ONE Claude Code `Monitor` on `node tools/console.mjs thread wait --as <you>
+     --monitor --timeout 86400` (I-147: one `WAKE <kind> <id>` line per wake, never filter its lines); reply with `thread reply T-nnn --by <you> --text "…"` (`--ask` when you need the user's
      answer, `--file` for long text) in plain words for the user; close with `thread close T-nnn --by <you> --note
      "…"` once answered. Never paste the user's thread text into commits or findings unscrubbed.
   8. **Design engineers post a PoC to the user as a proposal** (ts-proposals, `research/architecture/console-proposals.md`
