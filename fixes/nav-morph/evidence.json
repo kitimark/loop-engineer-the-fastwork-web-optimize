@@ -1,0 +1,331 @@
+{
+ "schema": "fw-evidence/1",
+ "topic": "nav-morph",
+ "capMB": 200,
+ "items": [
+  {
+   "path": "out/costcard/h1.json",
+   "why": "Chrome cost-card run records (hold 1) behind the counts in costcard.md / costcard.json sources.chrome",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/h2.json",
+   "why": "Chrome cost-card run records (hold 2) behind the counts in costcard.md / costcard.json sources.chrome",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/costcard-sim-r1-2026-10-03T10-08-58-021Z-cut.json",
+   "why": "Simulator cost-card session record (per-load counts) behind costcard.md / costcard.json sources.sim",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/costcard-sim-r2-2026-10-03T10-27-52-181Z-cut.json",
+   "why": "Simulator cost-card session record (per-load counts) behind costcard.md / costcard.json sources.sim",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/costcard-sim-r3-2026-10-03T11-44-59-449Z-cut.json",
+   "why": "Simulator cost-card session record (per-load counts) behind costcard.md / costcard.json sources.sim",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/costcard/covermap-2026-10-03T12-10-06-844Z.json",
+   "why": "touch-listener coverage map cited in costcard.md (raw output)",
+   "kind": "result",
+   "for": "costcard.md"
+  },
+  {
+   "path": "out/f3a/tl-C-2026-10-03T12-40-43-928Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-C-2026-10-03T13-17-41-361Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-C-2026-10-03T14-01-10-919Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-M-2026-10-03T14-01-10-919Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-P-2026-10-03T13-17-41-361Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tl-V-2026-10-03T12-40-43-928Z.json",
+   "why": "Timeline behind the A step 1 paint-rect counts (read with tween-paint-read.mjs; README 'A, step 1')",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint-2026-10-03T12-40-43-928Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint-2026-10-03T13-17-41-361Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint-2026-10-03T14-01-10-919Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/tween-paint2-2026-10-03T12-50-58-311Z.json",
+   "why": "A step 1 (tween paint diet) Simulator run record: paint counts quoted in README 'A, step 1'",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/f3a/read1.json",
+   "why": "tween-paint-read output for the 12:40Z A step 1 run (README 'A, step 1')",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/c-recount-tween-2026-10-03T15-02-07-432Z.json",
+   "why": "(c) recount tween side run record cited in README (paint counts M vs P)",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/tl-M-2026-10-03T15-02-07-432Z.json",
+   "why": "Timeline (arm M) behind the (c) recount tween paint counts",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/tl-P-2026-10-03T15-02-07-432Z.json",
+   "why": "Timeline (arm P) behind the (c) recount tween paint counts",
+   "kind": "timeline",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/c-recount-hold-2026-10-03T15-10-05-976Z.json",
+   "why": "(c) recount hold side run record cited in README (m = 1 hold paints per window)",
+   "kind": "result",
+   "for": "README.md"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C1.json",
+   "why": "P-091 counted run C1 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C1.json",
+   "why": "P-091 counted run C1 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V1.json",
+   "why": "P-091 counted run V1 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V1.json",
+   "why": "P-091 counted run V1 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V2.json",
+   "why": "P-091 counted run V2 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V2.json",
+   "why": "P-091 counted run V2 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C2.json",
+   "why": "P-091 counted run C2 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C2.json",
+   "why": "P-091 counted run C2 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C3.json",
+   "why": "P-091 counted run C3 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C3.json",
+   "why": "P-091 counted run C3 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V3.json",
+   "why": "P-091 counted run V3 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V3.json",
+   "why": "P-091 counted run V3 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-V4.json",
+   "why": "P-091 counted run V4 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-V4.json",
+   "why": "P-091 counted run V4 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gesture-p091-C4.json",
+   "why": "P-091 counted run C4 (frames behind the scorer rows)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/tl-p091-C4.json",
+   "why": "P-091 counted run C4 Timeline (scorer, edge-span and rf-nesting read it)",
+   "kind": "timeline",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/p091-S-1.json",
+   "why": "P-091 heat sentinel S1 (PASS)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/p091-S-2.json",
+   "why": "P-091 heat sentinel S2 (PASS)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/holds.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/gates.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/runs.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/progress.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/batt.jsonl",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/RUNLOG.txt",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/served.txt",
+   "why": "P-091 block log (holds, gates, sleep checks, deviations, served hashes)",
+   "kind": "log",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/gesture-p091-C4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/gesture-p091-V4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/p091-S-2-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/tl-p091-C4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/p091/void/tl-p091-V4-h044740-gatefail.json",
+   "why": "P-091 hold h044740 (end gate Critical, strike 1): void files, kept for the ops second read",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/edge/score.json",
+   "why": "P-091 frozen scorer output (score.*) and the post-hoc edge-span reading (span.json)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/edge/score.txt",
+   "why": "P-091 frozen scorer output (score.*) and the post-hoc edge-span reading (span.json)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  },
+  {
+   "path": "out/nav-morph/edge/span.json",
+   "why": "P-091 frozen scorer output (score.*) and the post-hoc edge-span reading (span.json)",
+   "kind": "result",
+   "for": "README.md P-091 result"
+  }
+ ]
+}
