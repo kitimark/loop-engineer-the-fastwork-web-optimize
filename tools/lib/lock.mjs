@@ -92,8 +92,9 @@
 // (default 2x the cpu count; the switch file's joinLoad); neither for the opener, and no exclusive waiter is queued
 // ahead of it (writer preference; I-136: a reader queued ahead of every exclusive waiter joins, it runs before them
 // anyway), except the readers queued before the group opened, for batchJoinSec. A --no-timing hold of the iphone lease
-// owner (a phone block's quiet-Mac hold) queues ahead of the readers that queued after the lease began, marked movedBy
-// "phone-block priority" like a lead move (I-136, phoneBlockPriority). The group opens at a hand-over like a short job (the short
+// owner (a phone part's quiet-Mac hold) queues ahead of every non-phone waiter (I-172; I-136 passed only the readers that
+// queued after the lease began), never past a user step or a hand-made move, marked movedBy "phone-block priority" like a
+// lead move (I-136, phoneBlockPriority). The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
 // first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
 // waiter (I-049: writer preference only closes joins; it does not reorder the queue), except one the lead moved ahead of
@@ -882,27 +883,31 @@ export async function tryAcquire(r, opts) {
 
 /** I-136: the movedBy mark of a phone block's quiet-Mac hold (see phoneBlockPriority). */
 export const PHONE_BLOCK_BY = 'phone-block priority';
+/** I-172: a user step's entry (owner `user` or `user-*`): phone-block priority never passes it. */
+export const isUserOwner = (o) => typeof o === 'string' && /^user(-[A-Za-z0-9_.-]+)?$/.test(o);
 /**
  * Inside the guard, for the queue entry `entry` (in `q`) of a --no-timing hold (I-136): while its owner holds the live
- * iphone lease, the hold is a phone block's quiet-Mac hold and the phone waits for it, so it moves ahead of the shared
- * readers that queued after the lease began (only past a contiguous run of them: never past an exclusive waiter or a
- * reader queued before the lease) and carries movedBy PHONE_BLOCK_BY, which nextIndex and the join rule read like a
- * lead move (I-019/I-020/I-097; lock code from before I-136 reads that field the same way). Bounded: a queue place
- * only (it never preempts a holder), one entry per owner (entries are keyed by owner), never over the lead's own move;
- * once the lease is gone the mark goes and the place stays. Returns the (reordered) queue.
+ * iphone (a lease, or a process hold), the hold is a phone part's quiet-Mac hold and the phone waits for it, so it
+ * moves ahead of every non-phone waiter (I-172: timing, no-timing, short and shared readers alike, queued before or
+ * after the lease; I-136 passed only the readers queued after the lease, so it sat behind earlier exclusive holds while
+ * the phone idled). It stops behind a user step's entry (isUserOwner), a hand-made move (the lead's, or a delegate's,
+ * I-171) and another phone-block entry (FIFO among phone owners), and carries movedBy PHONE_BLOCK_BY, which nextIndex
+ * and the join rule read like a lead move (I-019/I-020/I-097; lock code from before I-136 reads that field the same
+ * way). Bounded: a queue place only (it never preempts a holder or a running shared group), one entry per owner
+ * (entries are keyed by owner), never over the lead's own move; once the phone is gone the mark goes and the place
+ * stays. The holder's timing hold stays FIFO (a Chrome measurement is no phone part). Returns the (reordered) queue.
  */
 function phoneBlockPriority(q, entry, now) {
-  if (entry.movedBy && entry.movedBy !== PHONE_BLOCK_BY) return q; // the lead's move wins
+  if (entry.movedBy && entry.movedBy !== PHONE_BLOCK_BY) return q; // the lead's (or a delegate's) move wins
   const ph = readJson(holderFile('iphone'), null);
-  const leaseSince = ph && ph.owner === entry.owner && !staleReason(ph, now) ? Date.parse(ph.acquiredAt) : NaN;
-  if (!Number.isFinite(leaseSince)) {
+  if (!(ph && ph.owner === entry.owner && !isGroup(ph) && !staleReason(ph, now))) {
     if (entry.movedBy === PHONE_BLOCK_BY) { delete entry.movedBy; delete entry.movedAt; }
     return q;
   }
   if (entry.movedBy !== PHONE_BLOCK_BY) Object.assign(entry, { movedBy: PHONE_BLOCK_BY, movedAt: new Date(now).toISOString() });
   const i = q.indexOf(entry);
   let at = i;
-  while (at > 0 && (q[at - 1].shared || q[at - 1].functional) && Date.parse(q[at - 1].since) >= leaseSince) at--;
+  while (at > 0 && !q[at - 1].movedBy && !isUserOwner(q[at - 1].owner)) at--;
   if (at === i) return q;
   const rest = q.filter((w) => w !== entry);
   return [...rest.slice(0, at), entry, ...rest.slice(at)];

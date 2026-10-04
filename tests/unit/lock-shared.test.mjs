@@ -1110,7 +1110,9 @@ test('I-136: a reader ahead of a lead-moved exclusive waiter joins too; one behi
 
 // I-136 cause 2: a phone block's quiet-Mac hold (--no-timing, by the owner of the iphone lease) waited FIFO behind
 // readers that queued after the lease began, while the phone sat idle; the lead moved it by hand (repair --move).
-test('I-136: phone-block priority: the iphone lease holder\'s --no-timing hold queues ahead of readers that queued after the lease began', async () => {
+// I-172 changed the bound: it now queues ahead of every non-phone waiter, the reader queued before the lease included
+// (tests/unit/phone-priority.test.mjs has the rest of I-172)
+test('I-136/I-172: phone-block priority: the iphone lease holder\'s --no-timing hold queues ahead of the readers, also one queued before the lease', async () => {
   await on();
   const t0 = Date.now();
   const a = await rd('sim-a', { weight: 3, maxSec: 300, now: t0 }); // the group is full
@@ -1122,32 +1124,29 @@ test('I-136: phone-block priority: the iphone lease holder\'s --no-timing hold q
   assert.equal((await rd('fn-d', { pid: pD, now: t0 + 4000 })).ok, false);
   const w = await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 5000 });
   assert.equal(w.ok, false, 'never preempts the running group');
-  assert.equal(w.position, 2);
+  assert.equal(w.position, 1);
   const q = L.status(R).queue;
-  assert.deepEqual(q.map((x) => x.owner), ['fn-b', 'runner', 'fn-c', 'fn-d'], 'ahead of the readers that queued after the lease began, behind the one before it');
+  assert.deepEqual(q.map((x) => x.owner), ['runner', 'fn-b', 'fn-c', 'fn-d'], 'ahead of every reader, the one queued before the lease too (I-172)');
   assert.equal(L.PHONE_BLOCK_BY, 'phone-block priority');
-  assert.equal(q[1].movedBy, L.PHONE_BLOCK_BY);
-  assert.equal(q[1].since, new Date(t0 + 5000).toISOString(), 'it keeps its own since');
+  assert.equal(q[0].movedBy, L.PHONE_BLOCK_BY);
+  assert.equal(q[0].since, new Date(t0 + 5000).toISOString(), 'it keeps its own since');
   // a refresh keeps the place and the mark (no second entry)
-  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 6000 })).position, 2);
+  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 6000 })).position, 1);
   assert.equal(L.status(R).queue.filter((x) => x.owner === 'runner').length, 1);
-  // readers behind it do not join (it is an exclusive waiter ahead of them); fn-b, ahead of it, goes first (FIFO, I-049)
-  await L.releaseReader(R, a.reader.token);
-  assert.equal(L.status(R).next, 'fn-b', 'the reader queued before the lease still goes first');
-  const b = await rd('fn-b', { pid: pB, now: t0 + 7000 });
-  assert.equal(b.opened, true);
-  const c = await rd('fn-c', { pid: pC, now: t0 + 8000 });
+  // readers behind it do not join (it is an exclusive waiter ahead of them)
+  const c = await rd('fn-c', { pid: pC, now: t0 + 6500 });
   assert.equal(c.ok, false);
   assert.match(c.why, /"runner" waits for an exclusive hold, moved ahead by phone-block priority/);
-  await L.releaseReader(R, b.reader.token);
-  assert.equal(L.status(R).next, 'runner', 'at the hand-over the phone hold goes before the readers behind it');
+  await L.releaseReader(R, a.reader.token);
+  assert.equal(L.status(R).next, 'runner', 'at the hand-over the phone hold goes before the readers');
+  assert.equal((await rd('fn-b', { pid: pB, now: t0 + 7000 })).ok, false, 'the reader queued before the lease waits for it');
   const g = await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 9000 });
   assert.equal(g.ok, true);
   assert.equal(g.holder.noTiming, true);
-  assert.deepEqual(L.status(R).queue.map((x) => x.owner), ['fn-c', 'fn-d']);
+  assert.deepEqual(L.status(R).queue.map((x) => x.owner), ['fn-b', 'fn-c', 'fn-d']);
 });
 
-test('I-136: phone-block priority is bounded: only --no-timing holds of the live iphone lease owner, never past an exclusive waiter, never over a lead move; dropped with the lease', async () => {
+test('I-136/I-172: phone-block priority is bounded: only --no-timing holds of the live iphone lease owner, past an exclusive waiter too (I-172), never over a lead move; dropped with the lease', async () => {
   await on();
   const t0 = Date.now();
   assert.equal((await rd('sim-a', { weight: 3, maxSec: 300, now: t0 })).opened, true);
@@ -1161,17 +1160,17 @@ test('I-136: phone-block priority is bounded: only --no-timing holds of the live
   assert.equal(L.status(R).queue.some((x) => x.movedBy), false);
   await L.dequeue(R, 'runner');
   await L.dequeue(R, 'build');
-  // its no-timing hold passes fn-c but not cal (an exclusive waiter)
-  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 6000 })).position, 2);
-  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['cal', undefined], ['runner', L.PHONE_BLOCK_BY], ['fn-c', undefined]]);
+  // its no-timing hold passes fn-c and, since I-172, cal (an exclusive waiter) too
+  assert.equal((await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 6000 })).position, 1);
+  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['runner', L.PHONE_BLOCK_BY], ['cal', undefined], ['fn-c', undefined]]);
   // the lease ends while the hold waits: the mark goes, the place stays (nothing is moved back)
   await L.release('iphone', { owner: 'runner' });
   await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 7000 });
-  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['cal', undefined], ['runner', undefined], ['fn-c', undefined]]);
-  // a lead move is never replaced by the phone-block mark
+  assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['runner', undefined], ['cal', undefined], ['fn-c', undefined]]);
+  // a lead move is never replaced by the phone-block mark, and the entry stays where the lead put it
   assert.equal((await L.tryAcquire('iphone', { owner: 'runner', kind: 'lease', ttlSec: 900, now: t0 + 8000 })).ok, true);
   const q = readJson(`${R}.queue.json`).map((x) => (x.owner === 'runner' ? { ...x, movedBy: 'lead', movedAt: new Date(t0 + 8500).toISOString() } : x));
-  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([q[1], q[0], q[2]]));
   await L.tryAcquire(R, { owner: 'runner', kind: 'process', pid: pR, noTiming: true, now: t0 + 9000 });
   assert.deepEqual(L.status(R).queue.map((x) => [x.owner, x.movedBy]), [['cal', undefined], ['runner', 'lead'], ['fn-c', undefined]]);
 });

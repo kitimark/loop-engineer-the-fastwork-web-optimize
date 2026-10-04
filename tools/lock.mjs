@@ -157,8 +157,9 @@
 // group while it fits, CPU busy over its own polls <= --join-busy (default 75 %; before its first busy sample load1 <=
 // --join-load, default 2x the cpu count; I-051) and no exclusive waiter is queued ahead of it (writer preference; I-136:
 // a reader queued ahead of every exclusive waiter joins; readers queued before the group opened may still join for 30 s).
-// A --no-timing run of the iphone lease owner (a phone block's quiet-Mac hold) queues ahead of the readers that queued
-// after the lease began; status shows it "moved by phone-block priority" (I-136). `run --shared` kills its command at --max-seconds like --short (exit 124) and
+// A --no-timing run of the iphone holder (a phone part's quiet-Mac hold) queues ahead of every non-phone waiter, timing
+// holds and readers included, never past a user step (user, user-*) or a hand-made move (I-172; I-136 passed only the
+// readers that queued after the lease began); status shows it "moved by phone-block priority". `run --shared` kills its command at --max-seconds like --short (exit 124) and
 // gives it FW_LOCK_SHARED=<resource>:<reader token>: a nested shared run re-enters that slot, a nested exclusive one
 // (verify.mjs, fix.mjs ab, bench gain, a normal or --short run) is refused at once. Timing tools refuse --shared.
 // The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
