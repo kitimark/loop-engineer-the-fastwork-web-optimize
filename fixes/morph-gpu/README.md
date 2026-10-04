@@ -7,8 +7,11 @@
 as a "less work" fix once the phone no-worse block below passes.
 **Stage:** V: the phone no-worse block P-092 ran on 2026-10-04 (05:39-06:06Z, 3 holds, all valid at Serious;
 "Phone block P-092: result", below). Moving scope: '>50' Δ 0 and '>34' Δ −2, both no-worse and not threshold-sensitive.
-Drive scope '>34' is threshold-sensitive in V's favour: 'better' at 34 ms, 'no-worse' at both twins. Under the
-registered decisions that goes to the lead with no verdict, and no land request until the lead rules.
+Drive scope '>34' is threshold-sensitive (better at 34, no-worse at the twins); no gain is claimed from it.
+**Lead ruling (2026-10-04 ~06:15Z): PASS as no-worse**, land request sent. **Cost:** every tween-start frame is longer
+in V (60-64 ms against C's 54-56 ms, about +7 ms at the worst frame; OBSERVED, cause untested). Because of that cost,
+rev 1 does NOT enter the next best build. It stays in the GPU preview, labelled with this cost. Rev 2 (prepare the clip
+layer before the tween starts) is in work ("Rev 2", below).
 **Device class / gate:** phone-only, render-bound (WebKit paint during the morph). Gains below are Simulator counts.
 **Driver(s) behind the claims:** M (`__fwMorphDrive` in the Simulator, `__fwMorphSet` frozen frames). No S, G or F yet.
 **Base:** best-build (main 60df1cf: st6-rb2 + platform-idle + morph-inherit), js `65052c4a3902`, css `e0f92804c521`.
@@ -456,15 +459,20 @@ threshold-sensitive. That falls under "Threshold-sensitive f50 or f34, in the mo
 with no verdict. No land request until the lead rules." The sensitivity points one way only: 'better' at 34 ms and
 'no-worse' at both twins. No scope or threshold reads WORSE.
 
-**Reported, not scored: the tween-start frames are longer in V.** Every run in both arms has exactly 2 moving frames
-over 50 ms, all at the start of a tween (m 0.004-0.061, the [0, 100) ms since-start bucket). Their length differs by
-arm:
+**Lead ruling:** PASS as **no-worse**, not 'better'. The block was registered as a no-worse check, and every scope and
+threshold, the twins included, reads no-worse or better. Drive '>34' is recorded as "threshold-sensitive (better at
+34, no-worse at the twins)", and no gain is claimed from it.
+
+**Cost: the tween-start frame is longer in V.** This is a real cost of rev 1. Every run in both arms has exactly 2
+moving frames over 50 ms, all at the start of a tween (m 0.004-0.061, the [0, 100) ms since-start bucket). Their
+length differs by arm:
 - C: 54-56 ms (median 55);
 - V: 60-64 ms (median 62).
 
-All 8 of V's frames are longer than every one of C's. The count is equal, but the worst frame is about 7 ms longer
-with the reveal, which is consistent with a setup cost when the clip-path reveal starts. That cause is OBSERVED in our
-setup, unknown otherwise; the block did not test it. The >54 twin picks this up only as +0.5 on the median, because
+All 8 of V's frames are longer than every one of C's. The '>50' count is equal, but the worst frame is about 7 ms
+longer with the reveal. OBSERVED; the cause is untested (a setup cost when the reveal starts is the likely reading).
+Because of this cost, rev 1 does not enter the next best build. It stays in the GPU preview, labelled with the cost,
+and rev 2 targets it. The >54 twin picks this up only as +0.5 on the median, because
 C's frames sit at 54-56.
 
 Runner deviations (logged in the block log, out of the registered text):
@@ -476,6 +484,18 @@ Runner deviations (logged in the block log, out of the registered text):
 Files (local, `out/morph-gpu/phone/`, listed in `evidence.json`): the eight `n2-<arm>-<pos>.json`, `n2-S-S1.json`,
 `n2-S-S2.json`, `n2-wC.json`, `n2-wV.json`, `score.json`, `gates.jsonl`, `holds.jsonl`, `runs.jsonl`, `batt.jsonl`,
 `BLOCKLOG.txt`.
+
+## Rev 2 (in work): the reveal's setup before the tween starts
+
+The lead's ruling on P-092 (2026-10-04): rev 1 passes as no-worse, but its tween-start frame is about 7 ms longer on
+the iPhone, so it stays out of the next best build. Rev 2 moves the reveal's setup off that frame:
+- creating the dark and glass layers;
+- the layout read;
+- the layer promotion (`will-change`) and the switch to the panel-sized nav.
+
+The setup moves to a crossing on the approach, before m leaves 0. Steps: a Chrome and Simulator mechanism check that
+the setup work leaves the tween-start frame (shared lane, no phone), then a pre-registered short phone no-worse block
+(falsifier: tween-start frame V ≤ C + 2 ms) through mgmt-ops-10.
 
 ## Risks, conflicts, follow-ups
 

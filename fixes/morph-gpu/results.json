@@ -277,7 +277,7 @@
   },
   "notes": "No measurement code changed (tools/ untouched). Gates are this topic's own scripts in fixes/morph-gpu/gates/.",
   "phoneBlock": {
-    "status": "ran 2026-10-04 05:39-06:06Z, 3 holds all VALID at Serious, 8 of 8 counted runs valid; drive >34 threshold-sensitive (better at 34 ms, no-worse at both twins): to the lead, no verdict, no land request until the lead rules",
+    "status": "ran 2026-10-04 05:39-06:06Z, 3 holds VALID at Serious, 8/8 runs valid; lead ruling: PASS as no-worse (drive >34 threshold-sensitive, better at 34 / no-worse at twins, no gain claimed); cost: tween-start frame +7 ms in V, so rev 1 stays out of the next best build (GPU preview only, labelled); rev 2 in work",
     "question": "At real thermal Serious under driver M at the page end, does V show no more long moving frames than C?",
     "kind": "no-worse check under the less-work rule (not top-3: no finger test)",
     "builds": {
@@ -477,7 +477,14 @@
         "early pre-warm under the lease while H1 queued (T-058) and a keep-warm W loop on base to 43 C while H2/H3 queued (lead 05:36Z)",
         "phone arrived at 42 C from P-095"
       ],
-      "scorer": "frames-n2.mjs f3a50b8ec2dd"
+      "scorer": "frames-n2.mjs f3a50b8ec2dd",
+      "leadRuling": {
+        "verdict": "no-worse (not better)",
+        "drive>34": "threshold-sensitive (better at 34, no-worse at the twins); no gain claimed",
+        "cost": "tween-start >50 count equal; all 8 V tween-start frames (60-64 ms) longer than every C frame (54-56 ms), about +7 ms at the worst frame; OBSERVED, cause untested",
+        "bestBuild": "rev 1 does NOT enter the next best build; stays in the GPU preview labelled with the cost",
+        "next": "rev 2: prepare the clip layer before the tween starts; Chrome/Simulator mechanism check, then a short phone no-worse block with falsifier tween-start frame V <= C + 2 ms"
+      }
     }
   }
 }
