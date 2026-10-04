@@ -1,0 +1,138 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13449,7 +13449,40 @@
+       __osb = () => {
+         let e = C() ? `none` : ``;
+         e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
++      },
++      // perf(morph-scroll, PROPOSAL): on touch phones the end-of-page morph follows the scroll position instead of
++      // the jack. No non-passive touchmove (N) and no scrollTo pin (L): the page scrolls by itself. One extra screen
++      // of scroll (.fw-ms-end, inserted after #platform) holds #platform in place with position: sticky, and the
++      // morph value is how far the page has scrolled into that screen (0..1), written through __navMorphSet (the
++      // same writes the spring T makes per frame: r/x, then S()). Proximity snap at both ends of that screen.
++      // Desktop, reduced motion and screens wider than 600 px keep the jack.
++      __msOn =
++        !e.matches &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
++      __msEnd = null,
++      __msP = -1,
++      __msRO = null,
++      __msIO = null,
++      __msTick = () => {
++        if (!__msEnd) return;
++        let t = __msEnd.offsetHeight,
++          e = t > 0 ? (window.scrollY - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
++        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
++        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
++        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
++          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => z(g, F(), !0))));
+       },
++      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
++      __navMorphSet = (t) => {
++        (n && window.cancelAnimationFrame(n),
++          (n = 0),
++          t > 0 && z(b, !0),
++          (w = a = i = r = t),
++          z(x, t, !0),
++          S(),
++          C() || I());
++      },
+       T = (e) => {
+         let t = ZM(i, a, e - o);
+         ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
+@@ -13498,6 +13531,7 @@
+       __tt = [],
+       N = () => {
+         d ||
++          __msOn ||
+           ((d = !0),
+           window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+           (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
+@@ -13534,7 +13568,8 @@
+       __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+       __pinY = () => Math.min(window.scrollY, __pinMax()),
+       L = () => {
+-        if ((_(), !C())) return;
++        if ((_(), __msOn)) return void __msTick();
++        if (!C()) return;
+         let e = window.scrollY,
+           t = __pinMax();
+         (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
+@@ -13549,6 +13584,32 @@
+           )
+         : void 0;
+     (R && te && te.observe(R), _(), m(), N());
++    // morph-scroll setup (touch phones only): the extra screen after #platform, its height var for the sticky top,
++    // and the reveal's setup (window.__rvPrepNow, morph-gpu rev 2) once that screen is within one viewport
++    __msOn &&
++      R &&
++      ((__msEnd = document.createElement(`div`)),
++      (__msEnd.className = `fw-ms-end`),
++      __msEnd.setAttribute(`aria-hidden`, `true`),
++      (__msEnd.innerHTML = `<div class="fw-ms-snap0"></div>`),
++      R.after(__msEnd),
++      // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
++      // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
++      (__msRO = new ResizeObserver(() => {
++        let e = R.getBoundingClientRect().height,
++          t = document.documentElement.scrollHeight - __msEnd.offsetHeight - (__msEnd.getBoundingClientRect().top + window.scrollY);
++        R.style.setProperty(`--fw-ms-h`, `${e + (t > 0 && t < 1 ? t : 0)}px`);
++      })),
++      __msRO.observe(R),
++      // main (the page's content) grows with lazy content above; body is only one viewport tall here
++      R.parentElement && __msRO.observe(R.parentElement),
++      (__msIO = new IntersectionObserver(([e]) => e?.isIntersecting && window.__rvPrepNow?.(), {
++        rootMargin: `0px 0px 100% 0px`,
++      })),
++      __msIO.observe(__msEnd),
++      document.documentElement.classList.add(`fw-ms`),
++      __msTick());
++    window.__navMorphSet = __navMorphSet;
+     // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
+     // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
+     // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
+@@ -13588,6 +13649,10 @@
+         (n && window.cancelAnimationFrame(n),
+           window.clearTimeout(l),
+           te?.disconnect(),
++          __msRO?.disconnect(),
++          __msIO?.disconnect(),
++          __msEnd?.remove(),
++          document.documentElement.classList.remove(`fw-ms`),
+           P(),
+           ne(),
+           e.removeEventListener(`change`, m),
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12314,4 +12314,30 @@
+     will-change: opacity;
+     opacity: 0;
+   }
++}
++/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
++   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
++   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
++   under the old scrollTo pin while the morph follows the scroll. Proximity snap: .fw-ms-snap0 (end of the page as
++   before, morph 0) and .fw-ms-end (morph 1). */
++html.fw-ms {
++  scroll-snap-type: y proximity;
++}
++html.fw-ms .start-selling-platform {
++  position: sticky;
++  top: calc(100dvh - var(--fw-ms-h, 100dvh));
++}
++.fw-ms-end {
++  position: relative;
++  height: 100lvh;
++  scroll-snap-align: end;
++  pointer-events: none;
+ }
++.fw-ms-snap0 {
++  position: absolute;
++  top: 0;
++  left: 0;
++  width: 1px;
++  height: 0;
++  scroll-snap-align: end;
++}
