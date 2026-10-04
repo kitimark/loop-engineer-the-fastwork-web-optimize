@@ -44,6 +44,10 @@
 // waiter the lead moved ahead of short jobs goes before them). The hold ends at N s: `run` kills the command (and its children), waits up to 1.5 s until they are gone (I-099), and
 // exits 124; a short lease just expires (it cannot be renewed). Keep polling while you wait (`run`
 // and `acquire --wait` do): a short queue place is dropped after 60 s without a retry.
+// I-106: after such a hard kill (max-seconds, or a signal past its 3 s grace; also --shared), `run` removes the throwaway
+// Chrome profiles (lib/cdp.mjs tempProfileDir) its killed tree left: its command gets FW_RUN_PROFILES=<per-run list>,
+// each profile made in the tree is listed there, and only a listed folder whose marker names a killed process of the
+// tree, made during the run, goes ("removed N throwaway Chrome profile(s)" on stderr, profilesRemoved in holds.log).
 //
 // acquire exit codes: 0 = you hold it (prints the holder JSON), 3 = busy (you are queued; prints
 // holder + your queue position; call acquire again later to keep your place, every <= 5 min).
@@ -71,7 +75,8 @@
 // Every chrome-measure `run` hold (exclusive, short, no-timing, shared reader; not a re-entry) writes one JSON line to
 // locks/holds.log at its end (I-056 (d)): owner, mode, weight / maxSec (shared), acquiredAt, endedAt, durationSec and
 // the exit code (124 with killed: "max-seconds" when --max-seconds stopped it, 130 with the signal when `run` was
-// signalled; survivors: [pid, ...] when a process of the killed tree still ran 1.5 s after the SIGKILL, I-099). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
+// signalled; survivors: [pid, ...] when a process of the killed tree still ran 1.5 s after the SIGKILL, I-099;
+// profilesRemoved: n when the kill left throwaway Chrome profiles that `run` removed, I-106). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
 // display-sleep-preventing assertion (caffeinate -d) was active at its start and end; it warns on stderr when no such assertion is active, the host is already asleep (display off or DarkWake) at the start, or the display / wake state changed (T8+, I-033).
 // A host sleep inside a gate window makes that window not quiet; the grant's gate record carries sleptSec / woke (I-033).
 //
@@ -137,7 +142,10 @@ import { spawn } from 'node:child_process';
 import { psTable, descendants, treeState, waitTreeGone } from './lib/proc-tree.mjs'; // I-024, I-099: the command's tree, and the wait until it is gone
 import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { RUN_PROFILES_ENV, removeRunProfiles } from './lib/cdp.mjs'; // I-106: throwaway profiles a hard kill left
 import { doctor, repair, moveWaiter, leaveQueue, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, EXIT as WAIT_EXIT } from './lib/wait.mjs';
@@ -412,7 +420,15 @@ async function main() {
     const bounded = short || shared;
     // what the command needs to re-enter this hold: a reader's FW_LOCK_SHARED (never FW_LOCK_HELD, B1), an exclusive
     // hold's FW_LOCK_HELD (acquire() returns it, also for a re-entered hold or slot)
-    const childEnv = lockEnv;
+    // I-106: a bounded run hard-kills its tree (SIGKILL at --max-seconds + 3 s, or after a signal's grace), which no
+    // throwaway Chrome profile cleanup in the tree survives. Its command gets a per-run list ($FW_RUN_PROFILES, under
+    // locks/run-profiles/) where lib/cdp.mjs records each throwaway profile the tree creates; after the kill, the run
+    // removes those whose marker names a killed process of its tree. A nested bounded run keeps the outer list.
+    const ownList = bounded && !process.env[RUN_PROFILES_ENV] ? join(dirname(holdsLogFile()), 'run-profiles', `${process.pid}-${randomBytes(4).toString('hex')}.list`) : null;
+    if (ownList) { try { mkdirSync(dirname(ownList), { recursive: true }); writeFileSync(ownList, ''); } catch {} }
+    const profileList = ownList || (bounded ? process.env[RUN_PROFILES_ENV] : null);
+    const runStart = Date.now();
+    const childEnv = { ...lockEnv, ...(ownList && { [RUN_PROFILES_ENV]: ownList }) };
     // T8+ (I-033): a chrome-measure hold records the display / wake state and whether a display-sleep-preventing assertion
     // was active at its start and end (one JSON line per hold in locks/holds.log); a hold without one, or one in
     // which the display or wake state changed, warns on stderr (U1: display on ~76 fps vs DarkWake ~93 fps).
@@ -486,7 +502,19 @@ async function main() {
       kill('SIGKILL');
       return confirmGone();
     };
-    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); const left = bounded ? graceKill() : {}; logHold(Date.now(), { code: 130, signal: sig, ...left }); });
+    // I-106: after the hard kill (and the wait until the tree is gone), the throwaway profiles the killed tree left:
+    // only folders on this run's list whose marker names a process of the tree (the command or a descendant the kill
+    // saw), made since the run started, whose creator no longer runs. Returns {profilesRemoved?: n} for holds.log.
+    const cleanProfiles = () => {
+      if (!profileList) return {};
+      const rows = psTable(), running = new Set(rows.filter((r) => !r[3].startsWith('Z')).map((r) => r[0]));
+      const r = removeRunProfiles(profileList, { pids: new Set([child.pid, ...seen.keys()]), since: runStart, isAlive: (p) => running.has(p) });
+      if (r.removed.length) console.error(`[lock ${resource}] removed ${r.removed.length} throwaway Chrome profile${r.removed.length === 1 ? '' : 's'} the killed command left (I-106): ${r.removed.join(', ')}`);
+      for (const k of r.kept) console.error(`[lock ${resource}] kept ${k.dir}: ${k.why} (I-106)`);
+      return r.removed.length ? { profilesRemoved: r.removed.length } : {};
+    };
+    const dropList = () => { if (ownList) { try { rmSync(ownList, { force: true }); } catch {} } };
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.prependListener(sig, () => { kill(sig); const left = bounded ? { ...graceKill(), ...cleanProfiles() } : {}; dropList(); logHold(Date.now(), { code: 130, signal: sig, ...left }); });
     // wall-clock deadlines checked every second (I-026): a timer's clock stalls while the Mac sleeps
     // (Maintenance Sleep / DarkWake), so after a wake the cap is enforced at once, not minutes later.
     // A reader counts from its own acquiredAt: its SIGKILL (deadline + 3 s) lands inside its recorded deadline
@@ -510,7 +538,8 @@ async function main() {
     clearTimeout(warn);
     // anything in the tree that ignored SIGTERM (or was orphaned when the command exited); I-099: then wait until it is gone
     let left = {};
-    if (overran) { kill('SIGKILL'); left = confirmGone(); }
+    if (overran) { kill('SIGKILL'); left = { ...confirmGone(), ...cleanProfiles() }; }
+    dropList();
     const exit = overran ? { code: 124, killed: 'max-seconds', ...left } : { code };
     if (powerStart) {
       const powerEnd = await hostPower();

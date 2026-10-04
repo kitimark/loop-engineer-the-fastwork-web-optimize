@@ -1,8 +1,8 @@
 // Minimal Chrome DevTools Protocol client (Node >= 22: built-in fetch + WebSocket).
 // No dependencies. Used by tools/mirror.mjs --crawl and tools/verify.mjs.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, existsSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync, rmSync, existsSync, readdirSync, writeFileSync, appendFileSync } from 'node:fs';
+import { join, isAbsolute } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -82,7 +82,13 @@ export function tempProfileDir(base, owner = 'job') {
 // this cleanup. A kill -9 of the tool or of Chrome's parent leaks it too.
 // Persistent profiles (verify.mjs's out/chrome-verify-profile, bench's out/chrome-bench-profile) are never touched.
 // FW_KEEP_PROFILE=1 (or launchChrome({keepProfile: true})) keeps the profile for debugging.
+// I-106: the hard-kill gap. A bounded `lock.mjs run` (--short, --shared) names a per-run list in $FW_RUN_PROFILES; every
+// throwaway profile created inside its command's tree appends its path there (bookkeeping only: nothing about the
+// launch changes). After the run SIGKILLs the tree (max-seconds, or a signal past its grace), removeRunProfiles()
+// deletes each listed folder whose marker names a process of that killed tree, created during the run, no longer
+// running. Never by name pattern, never a folder without our marker, never one another process made.
 export const TEMP_PROFILE_MARKER = '.fw-temp-profile.json';
+export const RUN_PROFILES_ENV = 'FW_RUN_PROFILES';
 const RESERVED = new Set(); // paths handed out by tempProfileDir() in this process
 const OWNED = new Map(); // dir -> {}: created by this process (recorded at creation), removed when its run ends
 const SIGNALS = { SIGHUP: 1, SIGINT: 2, SIGTERM: 15 };
@@ -124,10 +130,41 @@ function claimTempProfile(dir, keep) {
   mkdirSync(dir, { recursive: true });
   const tool = process.argv[1] ? process.argv[1].split('/').slice(-3).join('/') : null;
   writeFileSync(join(dir, TEMP_PROFILE_MARKER), JSON.stringify({ schema: 'fw-temp-profile/1', dir, pid: process.pid, ppid: process.ppid, createdAt: new Date().toISOString(), tool }) + '\n');
+  // I-106: tell the enclosing bounded `lock.mjs run` (its list exists only while it runs; never created here)
+  const list = process.env[RUN_PROFILES_ENV];
+  if (list && isAbsolute(list) && existsSync(list)) { try { appendFileSync(list, dir + '\n'); } catch {} }
   if (!OWNED.size) for (const s of Object.keys(SIGNALS)) process.on(s, onSignal);
   OWNED.set(dir, {});
   return true;
 }
+
+/**
+ * I-106: after a bounded `lock.mjs run` hard-killed its command's tree, remove the throwaway profiles listed in its
+ * $FW_RUN_PROFILES file (`listFile`) that the tree left: a folder goes only when its marker (TEMP_PROFILE_MARKER) is ours
+ * (schema, the same dir), names a creator in `pids` (the killed tree), was created at or after `since` (ms; the run's
+ * start, so a reused pid's older profile stays) and that creator no longer runs (`isAlive`). A folder without a marker
+ * was already removed (or never ours) and is skipped silently. Returns {removed: [dir], kept: [{dir, why}]}.
+ */
+export function removeRunProfiles(listFile, { pids, since = 0, isAlive = pidAlive } = {}) {
+  const removed = [], kept = [];
+  let lines = [];
+  try { lines = readFileSync(listFile, 'utf8').split('\n').map((l) => l.trim()).filter(Boolean); } catch { return { removed, kept }; }
+  for (const dir of [...new Set(lines)]) {
+    if (!isAbsolute(dir)) { kept.push({ dir, why: 'not an absolute path' }); continue; }
+    let m;
+    try { m = JSON.parse(readFileSync(join(dir, TEMP_PROFILE_MARKER), 'utf8')); } catch { if (existsSync(dir)) kept.push({ dir, why: 'no profile marker' }); continue; }
+    const why = m?.schema !== 'fw-temp-profile/1' || m.dir !== dir ? 'marker does not match the folder'
+      : !pids?.has?.(m.pid) ? `made by pid ${m.pid}, not a process of the killed tree`
+        : !(Date.parse(m.createdAt) >= since) ? 'made before this run started'
+          : isAlive(m.pid) ? `its creator (pid ${m.pid}) still runs` : null;
+    if (why) { kept.push({ dir, why }); continue; }
+    try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }); } catch {}
+    if (existsSync(dir)) kept.push({ dir, why: 'could not be removed' });
+    else removed.push(dir);
+  }
+  return { removed, kept };
+}
+const pidAlive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 
 /**
  * Launch a dedicated Chrome (own profile dir + port) and return {proc, port, wsUrl, browser, userAgent, headless, close}.

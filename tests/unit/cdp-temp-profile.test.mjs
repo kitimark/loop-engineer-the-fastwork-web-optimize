@@ -155,3 +155,76 @@ test('SIGKILL cannot be caught: the profile stays with its marker (pid now dead)
   const m = JSON.parse(readFileSync(join(r.dir, cdp.TEMP_PROFILE_MARKER), 'utf8'));
   assert.equal(alive(m.pid), false);
 });
+
+// ---- I-106: the hard-kill gap, closed by the enclosing bounded `lock.mjs run` ----------------------------------
+// A bounded run names a per-run list in $FW_RUN_PROFILES; each throwaway profile made in its tree is appended there.
+// After the SIGKILL, removeRunProfiles() removes a listed folder only when its marker is ours, names a process of the
+// killed tree, was made during the run and its creator no longer runs. Never by pattern, never an unlisted folder.
+test('I-106: a throwaway profile is appended to the $FW_RUN_PROFILES list (only when that list exists); a persistent one is not', async () => {
+  process.env.CHROME = FAKE;
+  const d = tempDir('fw-tp-runlist-');
+  const list = join(d, 'run.list');
+  writeFileSync(list, '');
+  const ENV = 'FW_RUN_PROFILES';
+  assert.equal(cdp.RUN_PROFILES_ENV, ENV);
+  const prev = process.env[ENV];
+  const open = []; // a failed assertion must not leave a fake Chrome running (the file would never end)
+  try {
+    process.env[ENV] = list;
+    const a = cdp.tempProfileDir(join(d, 'chrome'), 'listed');
+    open.push(await cdp.launchChrome({ port: 0, profileDir: a }));
+    const keep = join(d, 'chrome-verify-profile');
+    open.push(await cdp.launchChrome({ port: 0, profileDir: keep }));
+    assert.deepEqual(readFileSync(list, 'utf8').split('\n').filter(Boolean), [a], 'the temp profile, not the persistent one');
+    // a list path that does not exist (the run ended) is never created by a profile
+    process.env[ENV] = join(d, 'gone.list');
+    const b = cdp.tempProfileDir(join(d, 'chrome'), 'late');
+    open.push(await cdp.launchChrome({ port: 0, profileDir: b }));
+    assert.equal(existsSync(join(d, 'gone.list')), false);
+  } finally {
+    for (const ch of open) await ch.close();
+    if (prev === undefined) delete process.env[ENV]; else process.env[ENV] = prev;
+  }
+});
+
+test('I-106: removeRunProfiles removes only listed, marked folders of the killed tree, made during the run, whose creator is gone', () => {
+  const d = tempDir('fw-tp-rm-');
+  const since = Date.parse('2026-10-04T04:00:00Z');
+  const at = (ms) => new Date(since + ms).toISOString();
+  const mk = (name, marker) => {
+    const dir = join(d, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'Local State'), '{}');
+    if (marker) writeFileSync(join(dir, cdp.TEMP_PROFILE_MARKER), JSON.stringify({ schema: 'fw-temp-profile/1', dir, pid: 4242, ppid: 1, createdAt: at(1000), tool: 'x', ...marker }));
+    return dir;
+  };
+  const left = mk('fn-left', {}); // made by 4242 (killed, gone) during the run: removed
+  const left2 = mk('fn-left2', { pid: 4243 });
+  const foreign = mk('fn-foreign', { pid: 777 }); // another process's profile, listed by mistake
+  const older = mk('fn-older', { createdAt: at(-60000) }); // pid reused: made before this run
+  const running = mk('fn-running', { pid: 4244 }); // its creator still runs
+  const plain = mk('fn-plain', null); // no marker: never ours
+  const moved = mk('fn-moved', { dir: join(d, 'elsewhere') }); // marker copied from another folder
+  const unlisted = mk('fn-unlisted', {}); // same tree, same pattern, not on the list: never touched
+  const list = join(d, 'run.list');
+  writeFileSync(list, [left, left2, left, foreign, older, running, plain, moved, 'relative/dir', join(d, 'never-made'), ''].join('\n'));
+  const r = cdp.removeRunProfiles(list, { pids: new Set([4242, 4243, 4244]), since, isAlive: (p) => p === 4244 });
+  assert.deepEqual(r.removed.sort(), [left, left2].sort());
+  assert.equal(existsSync(left), false);
+  assert.equal(existsSync(left2), false);
+  for (const x of [foreign, older, running, plain, moved, unlisted]) assert.equal(existsSync(x), true, `${x} kept`);
+  const why = Object.fromEntries(r.kept.map((k) => [k.dir, k.why]));
+  assert.match(why[foreign], /made by pid 777, not a process of the killed tree/);
+  assert.match(why[older], /made before this run started/);
+  assert.match(why[running], /its creator \(pid 4244\) still runs/);
+  assert.match(why[plain], /no profile marker/);
+  assert.match(why[moved], /marker does not match the folder/);
+  assert.match(why['relative/dir'], /not an absolute path/);
+  assert.equal(why[join(d, 'never-made')], undefined, 'a listed folder that no longer exists is skipped silently');
+  assert.equal(why[unlisted], undefined);
+  // a missing list (or no pids) removes nothing
+  assert.deepEqual(cdp.removeRunProfiles(join(d, 'none.list'), { pids: new Set([4242]) }), { removed: [], kept: [] });
+  writeFileSync(list, unlisted + '\n');
+  assert.deepEqual(cdp.removeRunProfiles(list, {}).removed, []);
+  assert.equal(existsSync(unlisted), true);
+});

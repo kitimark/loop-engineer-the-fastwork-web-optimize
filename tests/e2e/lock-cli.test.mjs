@@ -3,9 +3,10 @@
 // code, releases after, and does not leave the command running when it is killed).
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, existsSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, startProc, tool, sleep, TESTS } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, startProc, tool, sleep, TESTS, TOOLS } from '../helpers.mjs';
 
 const LOCK = tool('lock.mjs');
 let state, env;
@@ -328,6 +329,77 @@ test('I-099: after the hard kill, run waits until the killed tree is gone before
   assert.deepEqual([lastHold().code, lastHold().survivors], [124, [p]]);
   assert.equal(holder('chrome-measure'), null, 'released');
   assert.ok(took < 12000, `bounded (${took} ms)`);
+});
+
+// I-106 (2026-10-04): a bounded run's hard kill (SIGKILL at --max-seconds + 3 s, or after a signal's 3 s grace) leaves
+// the command's throwaway Chrome profile behind (I-095's cleanup can't run under SIGKILL; 75-155 MB each). `run` now
+// removes, after the kill, the profiles its killed tree listed in $FW_RUN_PROFILES whose marker names a process of
+// that tree. Decoys: a listed folder made by another pid, a listed folder without a marker, and an unlisted marked
+// folder of the same tree with the same name pattern: all three must survive (never by pattern).
+test('I-106: after the hard kill (max-seconds; a signal to a --shared run), run removes the throwaway profile its killed tree left, and nothing else', async (t) => {
+  const driver = join(state, 'stuck-probe.mjs');
+  writeFileSync(driver, `
+import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
+import { join } from 'node:path';
+const cdp = await import(${JSON.stringify(pathToFileURL(join(TOOLS, 'lib', 'cdp.mjs')).href)});
+const [base, up] = process.argv.slice(2);
+const dir = cdp.tempProfileDir(base, 'i106');
+const ch = await cdp.launchChrome({ port: 0, profileDir: dir, headless: true });
+const list = process.env.FW_RUN_PROFILES;
+const mk = (name, pid, listed) => {
+  const d = join(base, name);
+  mkdirSync(d, { recursive: true });
+  writeFileSync(join(d, 'Local State'), '{}');
+  if (pid) writeFileSync(join(d, cdp.TEMP_PROFILE_MARKER), JSON.stringify({ schema: 'fw-temp-profile/1', dir: d, pid, ppid: process.ppid, createdAt: new Date().toISOString(), tool: 'decoy' }));
+  if (listed && list) appendFileSync(list, d + '\\n');
+  return d;
+};
+const decoys = [mk('fn-foreign', 1, true), mk('fn-plain', 0, true), mk('fn-i106-unlisted', process.pid, false)];
+writeFileSync(up, JSON.stringify({ dir, chrome: ch.proc.pid, decoys, list: list || null }));
+console.log('CHILD UP');
+setTimeout(() => { for (;;) {} }, 100); // stuck on the main thread: no SIGTERM handler (cdp's cleanup) ever runs
+`);
+  const chromes = [];
+  t.after(() => { for (const x of chromes) try { process.kill(x, 'SIGKILL'); } catch {} });
+  const lastHold = () => readFileSync(join(state, 'locks', 'holds.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).pop();
+  const lists = () => { try { return readdirSync(join(state, 'locks', 'run-profiles')); } catch { return []; } };
+  const check = (r, upFile, base) => {
+    const u = JSON.parse(readFileSync(upFile, 'utf8'));
+    chromes.push(u.chrome);
+    assert.ok(u.list && u.list.startsWith(join(state, 'locks', 'run-profiles')), `the command got a per-run list: ${u.list}`);
+    assert.equal(existsSync(u.dir), false, `the killed tree's throwaway profile is removed: ${r.stderr}`);
+    for (const d of u.decoys) assert.equal(existsSync(d), true, `${d} kept`);
+    assert.match(r.stderr, new RegExp(`removed 1 throwaway Chrome profile the killed command left \\(I-106\\): ${u.dir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(r.stderr, /kept \S+fn-foreign: made by pid 1, not a process of the killed tree \(I-106\)/);
+    assert.match(r.stderr, /kept \S+fn-plain: no profile marker \(I-106\)/);
+    assert.doesNotMatch(r.stderr, /fn-i106-unlisted/);
+    assert.equal(lastHold().profilesRemoved, 1);
+    assert.deepEqual(lists(), [], 'the per-run list is gone with the run');
+    assert.equal(holder('chrome-measure'), null, 'released');
+    assert.ok(existsSync(base));
+  };
+  // max-seconds path (--short)
+  const baseA = join(state, 'a', 'chrome-fn');
+  const r = await nodeAsync(LOCK, ['run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '3', '--', process.execPath, driver, baseA, join(state, 'up-a.json')], { env: { ...env, CHROME: join(TESTS, 'fixtures', 'fake-chrome.mjs') } });
+  assert.equal(r.code, 124, r.out);
+  assert.equal(lastHold().killed, 'max-seconds');
+  check(r, join(state, 'up-a.json'), baseA);
+  // signal path (a SIGTERM to a --shared run: its 3 s grace, the SIGKILL, then the same cleanup)
+  const baseB = join(state, 'b', 'chrome-fn');
+  const s = await startProc(process.execPath, [LOCK, 'run', 'chrome-measure', '--owner', 'npm-test', '--shared', '--weight', '1', '--max-seconds', '60', '--', process.execPath, driver, baseB, join(state, 'up-b.json')], { env: { ...env, CHROME: join(TESTS, 'fixtures', 'fake-chrome.mjs') }, ready: (o) => /CHILD UP/.test(o) });
+  await sleep(400); // past the driver's 100 ms: now stuck
+  s.proc.kill('SIGTERM');
+  const e = await s.exited;
+  assert.equal(e.code, 130);
+  assert.equal(lastHold().signal, 'SIGTERM');
+  check({ stderr: s.stderr() }, join(state, 'up-b.json'), baseB);
+  // a run that ends by itself removes nothing (the command's own cleanup did it) and leaves no list
+  const c = lock('run', 'chrome-measure', '--owner', 'npm-test', '--short', '--max-seconds', '30', '--', process.execPath, '-e', `require('fs').writeFileSync(${JSON.stringify(join(state, 'env-c'))}, process.env.FW_RUN_PROFILES || '')`);
+  assert.equal(c.code, 0, c.out);
+  assert.match(readFileSync(join(state, 'env-c'), 'utf8'), /run-profiles/);
+  assert.doesNotMatch(c.stderr, /I-106/);
+  assert.equal(lastHold().profilesRemoved, undefined);
+  assert.deepEqual(lists(), []);
 });
 
 test('I-070 (C-024, narrows I-026): a timing hold runs under caffeinate: run (-i -s -w its pid), a lease (-t until expiry), ended on release; holds.log and status say so', async () => {
