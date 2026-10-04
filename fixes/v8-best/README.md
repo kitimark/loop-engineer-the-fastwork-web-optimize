@@ -288,3 +288,9 @@ Conditions: (1) v8 lands as the best build only with this verdict AND the open C
 count 1424 -> 1423; mobile bottom screenshot diff 0.46 %, just above the 0.4 % phase band). (2) Phone order: P-111
 runs before P-105 H3-H6; the runner may run one P-105 hold while it waits for nothing else. (3) The overall P 0.4 is
 accepted: a WORSE verdict sends int-v8 to the reversal builds, it does not drop v8.
+
+### P-112 lead pre-data read (2026-10-04 15:5xZ, before any P-112 phone data): PASS
+
+C = v8 − morph rev 3 (CSS 7eda63cc7015, byte-identical to accent-ca-v7's independently built CSS: a clean reversal),
+V = v8. M leg only, P-111's driver, scorer (26d944bf93e2, refused if changed), sentinels and heat gates; warm-up per
+port; C V V C C V V C over 2 holds; falsifier and verdict words fixed before data. OK. Runs right after P-111 H8.
