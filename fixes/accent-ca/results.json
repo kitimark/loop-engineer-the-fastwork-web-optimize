@@ -1,0 +1,30 @@
+{
+  "topic": "accent-ca",
+  "kind": "mechanism counts + frozen-frame pixels (no timing; memory/defer-timing-focus-call-tree.md)",
+  "base": { "name": "v6 (best-build + B-R2)", "js": "8018ce062d30", "css": "71b65c667720" },
+  "arms": {
+    "C": "v6",
+    "E1": { "js": "8018ce062d30", "css": "cd7f976eebaf", "note": "this patch.diff" },
+    "WC": { "css": "a1f4f5b434fd" },
+    "WP": { "css": "16c91b8577b9" }
+  },
+  "chrome": {
+    "browser": "Chrome/154.0.8037.97",
+    "viewport": "430x932 DPR 3 mobile touch",
+    "cpu": 1,
+    "windowMs": 9150,
+    "raw": "out/accent-ca/chrome-p430-2026-10-04T10-32-20-391Z.json",
+    "counts": {
+      "C": { "paint": 1316, "styleElements": 3861, "updateLayoutTree": 450, "mainFrames": 450, "accentAnimsNotComposited": "18/27" },
+      "C-again": { "paint": 1317, "styleElements": 3895, "updateLayoutTree": 452, "mainFrames": 452, "accentAnimsNotComposited": "18/27" },
+      "E1": { "paint": 688, "styleElements": 3337, "updateLayoutTree": 452, "mainFrames": 452, "accentAnimsNotComposited": "6/15" }
+    },
+    "pixels": {
+      "frames": 74,
+      "C_vs_Cagain": { "differing": 0, "maxLevel": 0 },
+      "C_vs_E1": { "differing": 0, "maxLevel": 0, "tier": "T0 (Chrome phone width only)" }
+    }
+  },
+  "simulator": "owed (parked at the usage pause, 2026-10-04 10:52Z)",
+  "notes": "No measurement code changed. No timing A/B by rule."
+}

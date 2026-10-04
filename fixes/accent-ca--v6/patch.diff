@@ -1,0 +1,1807 @@
+# fastwork mirror fix: accent-ca--v6
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply accent-ca--v6
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -564,9 +564,16 @@
+   height: 12px;
+   overflow: hidden;
+ }
++/* layout-animations: the bar keeps its full width; the count-up writes --fee-progress (0-1) and the
++   fill is revealed with clip-path (same pill shape: inset round clamps like border-radius) while the
++   gradient is sized to the visible part, as it was sized to the old width. min 4px = old padding box */
+ .fee-progress > span {
++  --fee-progress-w: max(4px, calc(var(--fee-progress, 0) * 100%));
+   box-sizing: border-box;
+-  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%);
++  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%) 0 0 / var(--fee-progress-w) 100%
++    no-repeat;
++  clip-path: inset(0 calc(100% - var(--fee-progress-w)) 0 0 round 999px);
++  width: 100% !important;
+   border-radius: 999px;
+   flex-direction: column;
+   height: 100%;
+@@ -1227,9 +1234,8 @@
+   position: relative;
+   overflow: visible;
+ }
+-.script-accent.is-drawing-in.svelte-1fn2go6 {
+-  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+-}
++/* layout-animations: no width transition (0.9s of h1 layout per cycle); the width now changes at once
++   and the neighbouring words slide with a transform animation (JS HE, same duration and easing) */
+ .sizer.svelte-1fn2go6 {
+   visibility: hidden;
+   width: 100%;
+@@ -1520,6 +1526,31 @@
+   inherits: false;
+   initial-value: 0deg;
+ }
++/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
++   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
++   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
++@property --morph-fade {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 1;
++}
++/* [scene-scope R4b] --morph is written inline on the nav header (JS 13614) and read by the header and some of its
++   descendants. Registered non-inheriting, a write restyles only the header plus the elements that take it with an
++   explicit `inherit` (the consumers and the wrappers between them and the header), not the whole nav subtree. */
++@property --morph {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 0;
++}
++.start-selling-top-nav-bar,
++.start-selling-top-nav-logo,
++.start-selling-top-nav-actions,
++.start-selling-top-nav-btn.is-earn,
++.start-selling-morph,
++.start-selling-morph-pill,
++.start-selling-morph-panel {
++  --morph: inherit;
++}
+ .hero-track.svelte-1p2vpne {
+   background: #fff;
+   height: 200vh;
+@@ -2122,6 +2153,136 @@
+     top: 83.3333%;
+     left: auto;
+     right: -45px;
++  }
++}
++/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
++   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
++   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
++   Only where the JS switched to CSS mode: on WebKit (GestureEvent) with scroll-driven animations at the
++   phone layout (width <= 600px), once the entrance is over (d() in 2.DyWL8TcE.js), the track gets .he-on
++   (parked: the cue's bob moves to .he-bob, the exit is the baseline's own rules from the inline
++   --exit-opacity the JS writes at rest), and .he-css while the page scrolls (live: these animations; the JS
++   writes nothing per frame). Parking at rest matters because WebKit invalidates the style of every element
++   with a relevant scroll-driven animation on every rendering update, moving or not (WebKit source, see the
++   JS comment). Wider layouts (desktop orbit cards: desktop
++   and iPad Safari, a landscape phone) keep the baseline writer: there WebKit drew the animated tilted cards
++   up to 108 levels off the baseline's static draw of the same computed values (width 980, Simulator,
++   OBSERVED; residual R5). Every other engine keeps the baseline writer and none of these rules apply.
++   Every exit animation starts at contain 0.05% (s) with fill forwards, so at rest at the top of the page
++   none is active and the hero is drawn exactly as in the baseline (the baseline's own rules: blur(0px) on
++   the copy and the cue, no filter on the float). For the first frame after .he-css arrives (the new
++   animations are pending) the JS writes the baseline's inline --exit-opacity, so the base values are the
++   exited ones there too; the JS then leaves it (stale) while live, so every live property that reads it is
++   animated (cards, copy, float) or, on the cue, replaced by its value at --exit-opacity 1 (the float carries
++   the cue's exit, and its base values carry it for the pending frame). The
++   `from` keyframes are the baseline value at s (a + (b - a) * s), so inside the range the value is the
++   baseline's a + (b - a) * p.
++   The copy's shift is a separate transform animation, present only while live (a transform animation on
++   .hero-copy, even inactive, made WebKit repaint the title's script accent about 1.4x as often; Simulator,
++   OBSERVED).
++   The scroll cue's own entrance animates --copy-in (in its opacity and transform), so its exit
++   (fade, shift, blur) runs on its only child, .scroll-float (blur on the cue itself over a composited
++   child drew a wider halo in WebKit; while live the cue draws blur(0px), as the baseline rule at
++   --exit-opacity 1), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
++   around the float's two children in CSS mode (one layer for both, as the baseline's float): an element
++   with both the infinite bob and scroll-driven animations made WebKit recalculate style every frame at
++   rest, and the bob on the two children separately drew the cue 1-2 levels off (Simulator, OBSERVED).
++   opacity/transform/translate animations are separate from the blur ones (compositable); past the end
++   the blur keeps blur(18px) like the baseline, so no filter change when the track reaches its end
++   (#people entry). */
++@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
++  @keyframes svelte-1p2vpne-hero-exit-card {
++    from {
++      opacity: 0.999825;
++      translate: calc(var(--scatter-x) * 0.0005) calc(var(--scatter-y) * 0.0005);
++    }
++    to {
++      opacity: 0.65;
++      translate: var(--scatter-x) var(--scatter-y);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-shift-m {
++    from {
++      transform: translate(-50%, -0.004px);
++    }
++    to {
++      transform: translate(-50%, -8px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade {
++    from {
++      opacity: 0.9995;
++    }
++    to {
++      opacity: 0;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade-up {
++    from {
++      opacity: 0.9995;
++      translate: 0px -0.005px;
++    }
++    to {
++      opacity: 0;
++      translate: 0px -10px;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur {
++    from {
++      filter: blur(0.009px);
++    }
++    to {
++      filter: blur(18px);
++    }
++  }
++  .he-bob.svelte-1p2vpne {
++    flex-direction: column;
++    align-items: center;
++    display: flex;
++  }
++  @media (prefers-reduced-motion: no-preference) {
++    .hero-track.he-css.svelte-1p2vpne {
++      view-timeline-name: --hero-exit;
++      view-timeline-axis: block;
++    }
++    @media (width<=600px) {
++      .hero-track.he-on .scroll-float.svelte-1p2vpne {
++        animation: none;
++      }
++      .hero-track.he-on .scroll-float.svelte-1p2vpne > .he-bob.svelte-1p2vpne {
++        animation: 2.2s ease-in-out infinite svelte-1p2vpne-scroll-float;
++      }
++      .hero-track.he-css .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
++        animation: 1ms linear forwards svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .hero-copy.svelte-1p2vpne {
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
++          1ms linear forwards svelte-1p2vpne-hero-exit-shift-m;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .scroll-cue.svelte-1p2vpne {
++        opacity: var(--copy-in);
++        filter: blur(0px);
++        transform: translate(-50%, calc((1 - var(--copy-in)) * 12px));
++      }
++      .hero-track.he-css .scroll-float.svelte-1p2vpne {
++        opacity: var(--exit-opacity);
++        filter: blur(calc(var(--exit-scatter) * 18px));
++        translate: 0px calc(var(--exit-scatter) * -10px);
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade-up,
++          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .start-selling [data-start-selling-scene="paused"] .scroll-float.svelte-1p2vpne > * {
++        animation-play-state: paused !important;
++      }
++    }
+   }
+ }
+ @media (prefers-reduced-motion: reduce) {
+@@ -2400,17 +2561,31 @@
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
+   transform: translateY(48px);
+ }
+ .start-selling-future.is-visible > .start-selling-future-card {
+   visibility: visible;
+-  opacity: 1;
+-  filter: none;
++  /* Fix candidate `re-keep-op` (hero-exit, P3: re-keep HIT): the reveal ends at opacity 0.999 / blur(0px) /
++     translateY(0) instead of 1 / none / none, so no property crosses its presence boundary at a transition
++     end. On the phone each such crossing cost one 12-18 ms whole-view Layout at flip + 700 / + 900 / + 1150 ms
++     (OBSERVED, in our setup). 0.999 over the white card is visually identical. */
++  opacity: 0.999;
++  filter: blur(0px);
++  transform: translateY(0);
+   pointer-events: auto;
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+ }
+ .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+@@ -2884,21 +3059,62 @@
+ }
+ .start-selling-avatars.is-carousel img.is-enter {
+   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
++   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
++   advance (32px - 8px overlap) with the same easing, via the independent translate property */
++.start-selling-avatars.is-carousel img.is-exit ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* st5: 5 persistent slots. Every slot keeps its own layer for the page's life (no layer gain/loss when the
++   slide starts or ends); the 5th waits at the pop's start state; .is-sliding (toggled by the rotator) runs the
++   same keyframes, easings and duration as the keyed version */
++.start-selling-avatars.is-carousel img {
++  will-change: transform, translate, opacity;
++  /* st6 (de-pm-hero's no-flip probe): every slot always has a transform and is never fully opaque, so no
++     style change ever flips hasTransform() or opacity isOpaque() (WebKit miscDataChangeRequiresLayout) */
++  transform: scale(1);
++  opacity: 0.999;
++}
++.start-selling-avatars.is-carousel img.st5-next {
++  opacity: 0;
++  transform: scale(0.35);
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++@keyframes avatars-shift {
++  0% {
++    translate: 0;
++  }
++  to {
++    translate: -24px;
++  }
+ }
+ @keyframes avatars-exit {
+   0% {
+-    opacity: 1;
+-    flex-basis: 32px;
+-    width: 32px;
+-    margin-right: -8px;
++    opacity: 0.999;
++    translate: 0;
++    clip-path: ellipse(16px 16px at 50% 50%);
+     transform: scale(1);
+   }
+   to {
+     opacity: 0;
+-    border-width: 0;
+-    flex-basis: 0;
+-    width: 0;
+-    margin-right: 0;
++    translate: -16px;
++    clip-path: ellipse(0px 16px at 50% 50%);
+     transform: scale(0.35);
+   }
+ }
+@@ -2908,7 +3124,7 @@
+     transform: scale(0.35);
+   }
+   to {
+-    opacity: 1;
++    opacity: 0.999;
+     transform: scale(1);
+   }
+ }
+@@ -5798,6 +6014,10 @@
+     background-image: none;
+     animation: none;
+   }
++}
++/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
++.start-selling-platform [data-sweep-paused] {
++  animation-play-state: paused !important;
+ }
+ @keyframes start-selling-platform-i-doc-sweep {
+   0% {
+@@ -6513,16 +6733,24 @@
+   opacity: 0;
+ }
+ .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+-@keyframes start-selling-cred-card-in {
++@keyframes start-selling-entry-blur-in {
+   0% {
+     filter: blur(8px);
++  }
++  to {
++    filter: blur();
++  }
++}
++@keyframes start-selling-cred-card-in {
++  0% {
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -6812,6 +7040,93 @@
+   opacity: 1;
+   transition: opacity 0.2s;
+ }
++/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
++   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
++   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
++   (meet) scaled the line and the gradient by s = 3.1875/3.2 and shifted them by (94 - 94 s)/2 = 0.18359375px:
++   the clip is that stadium (line 1.6..92.4, width 3.2, round caps, times s, plus the shift), the gradient strip
++   is 120 s = 119.53125px wide, and x1 = v becomes translateX(s v + 0.18359375px). Keyframes = the old values
++   (keyTimes 0;0.2;0.4;0.6;0.8;1, 5 s, linear, from the moment .is-active is set). The glint span is added by
++   NM's each block next to the SSR svg (the svg stays in the DOM for hydration and is not rendered: without its
++   <animate> its gradient sits at x1 -200 / 200, fully transparent over the dash). Opacity and .is-active as the
++   old highlight line. */
++.start-selling-platform-secure-network-dash-svg {
++  display: none;
++}
++.start-selling-platform-secure-network-dash-glint {
++  opacity: 0;
++}
++.start-selling-platform-secure-network-dash-glint.is-active {
++  opacity: 1;
++  transition: opacity 0.2s;
++}
++.start-selling-platform-secure-network-dash-glint {
++  pointer-events: none;
++  width: 94px;
++  height: 3.2px;
++  display: block;
++  position: absolute;
++  top: 0;
++  left: 0;
++  clip-path: path(
++    "M 1.77734375 0 H 92.22265625 A 1.59375 1.59375 0 0 1 92.22265625 3.1875 H 1.77734375 A 1.59375 1.59375 0 0 1 1.77734375 0 Z"
++  );
++}
++.start-selling-platform-secure-network-dash-glint svg {
++  width: 119.53125px;
++  height: 5.2px;
++  display: block;
++  position: absolute;
++  top: -1px;
++  left: 0;
++  overflow: visible;
++}
++.start-selling-platform-secure-network-dash.is-left .start-selling-platform-secure-network-dash-glint.is-active svg {
++  animation: 5s linear infinite start-selling-platform-pi-glint-left;
++}
++.start-selling-platform-secure-network-dash.is-right .start-selling-platform-secure-network-dash-glint.is-active svg {
++  animation: 5s linear infinite start-selling-platform-pi-glint-right;
++}
++@keyframes start-selling-platform-pi-glint-left {
++  0% {
++    transform: translateX(-199.03515625px);
++  }
++  20% {
++    transform: translateX(199.40234375px);
++  }
++  40% {
++    transform: translateX(199.40234375px);
++  }
++  60% {
++    transform: translateX(199.40234375px);
++  }
++  80% {
++    transform: translateX(-199.03515625px);
++  }
++  to {
++    transform: translateX(-199.03515625px);
++  }
++}
++@keyframes start-selling-platform-pi-glint-right {
++  0% {
++    transform: translateX(-199.03515625px);
++  }
++  20% {
++    transform: translateX(-199.03515625px);
++  }
++  40% {
++    transform: translateX(199.40234375px);
++  }
++  60% {
++    transform: translateX(-199.03515625px);
++  }
++  80% {
++    transform: translateX(-199.03515625px);
++  }
++  to {
++    transform: translateX(-199.03515625px);
++  }
++}
+ .start-selling-platform-secure-network-face {
+   box-sizing: border-box;
+   object-fit: cover;
+@@ -7186,7 +7501,8 @@
+     transform: translate(-50%, -50%);
+     animation: none !important;
+   }
+-  .start-selling-platform-secure-network-dash-highlight {
++  .start-selling-platform-secure-network-dash-highlight,
++  .start-selling-platform-secure-network-dash-glint {
+     opacity: 0 !important;
+   }
+ }
+@@ -7509,21 +7825,23 @@
+   opacity: 0;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
+-  animation: 0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in;
++  animation:
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in,
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards start-selling-entry-blur-in;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter
+   .start-selling-platform-profile-reviews
+   .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+ @keyframes start-selling-profile-phone-in {
+   0% {
+-    filter: blur(8px);
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -11101,8 +11419,66 @@
+     -webkit-background-clip: text;
+     background-clip: text;
+     animation: 4s linear infinite start-selling-platform-i-doc-sweep;
++  }
++  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
++     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
++     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
++     No background-position animation, so no style recalc or repaint per frame. Same selectors as above
++     (specificity 0,4,0 / 0,4,1), later in the file, so they win over the content:none rules.
++     Inside @supports (-webkit-mask-clip: text): an engine without text masks (Firefox, MDN BCD) keeps the original
++     background-clip sweep above instead of showing the band as a solid rectangle. */
++  @supports (-webkit-mask-clip: text) {
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure,
++  .start-selling-platform
++    .start-selling-platform-row.is-relationship
++    .start-selling-platform-row-title-organized {
++    background-image: none;
++    animation: none;
++    position: relative;
++    -webkit-mask-image: linear-gradient(#000, #000);
++    -webkit-mask-clip: text;
+   }
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc::after,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn::after,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure::after,
++  .start-selling-platform
++    .start-selling-platform-row.is-relationship
++    .start-selling-platform-row-title-organized::after {
++    content: "";
++    display: block;
++    position: absolute;
++    top: 0;
++    left: 0;
++    width: 300%;
++    height: 100%;
++    pointer-events: none;
++    background-image: linear-gradient(
++      90deg,
++      #fff 0 33.33%,
++      #82bcff 40%,
++      #2483ff 45%,
++      #ff66f4 50%,
++      #ff3029 55%,
++      #fe7b02 60%,
++      #fff 66.67% 100%
++    );
++    animation: 4s linear infinite start-selling-platform-pi-sweep-band;
++  }
++  .start-selling-platform [data-sweep-paused]::after {
++    animation-play-state: paused !important;
++  }
++  }
+ }
++@keyframes start-selling-platform-pi-sweep-band {
++  0% {
++    transform: translateX(-66.6667%);
++  }
++  to {
++    transform: translateX(0);
++  }
++}
+ .start-selling-language-switch-wrap.svelte-1lc7nmb {
+   z-index: 2;
+   position: relative;
+@@ -11751,11 +12127,71 @@
+ html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
+   unicode-bidi: plaintext;
+ }
++/* [scene-scope V1] The paused-scene rules used to match every descendant (`:where(*)`). A rule whose subject is
++   universal makes an attribute change on the scene restyle the whole subtree (WebKit AttributeChangeInvalidation /
++   StyleInvalidator, Blink "invalidates subtree"): 172-399 elements at every scene flip. The subject is now the
++   list of elements that can carry a CSS animation (the subject compound of every `animation`/`animation-name`
++   rule in this file and DialogHeader.css; pseudo-elements were never matched by `:where(*)`), so a flip restyles
++   only those. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
++   animation running while its scene is paused (CPU, not a visual change). */
+ .start-selling [data-start-selling-scene="paused"],
+-.start-selling [data-start-selling-scene="paused"] :where(*) {
+-  will-change: auto !important;
++.start-selling [data-start-selling-scene="paused"] .commission-underline,
++.start-selling [data-start-selling-scene="paused"] .commission-underline path,
++.start-selling [data-start-selling-scene="paused"] .frame-0,
++.start-selling [data-start-selling-scene="paused"] .frame-1,
++.start-selling [data-start-selling-scene="paused"] .frame-2,
++.start-selling [data-start-selling-scene="paused"] .fee-avatar,
++.start-selling [data-start-selling-scene="paused"] .typing-caret,
++.start-selling [data-start-selling-scene="paused"] .accent-path,
++.start-selling [data-start-selling-scene="paused"] .accent-fill,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-0,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-1,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-2,
++.start-selling [data-start-selling-scene="paused"] .orbit-card,
++.start-selling [data-start-selling-scene="paused"] .hero-copy,
++.start-selling [data-start-selling-scene="paused"] .scroll-cue,
++.start-selling [data-start-selling-scene="paused"] .scroll-float,
++.start-selling [data-start-selling-scene="paused"] .pain-note,
++.start-selling [data-start-selling-scene="paused"] .start-selling-people-o-preview,
++.start-selling [data-start-selling-scene="paused"] .start-selling-avatars img,
++.start-selling [data-start-selling-scene="paused"] .start-selling-profile-body,
++.start-selling [data-start-selling-scene="paused"] .record,
++.start-selling [data-start-selling-scene="paused"] .sb-drawer .surface,
++.start-selling [data-start-selling-scene="paused"] .panel.svelte-ty4hd7,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
++.start-selling [data-start-selling-scene="paused"] .start-selling-language-switch-menu,
++.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav-btn,
++.start-selling [data-start-selling-scene="paused"] .sb-tooltip,
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
++.start-selling [data-start-selling-scene="paused"] .sb-button .content,
++.start-selling [data-start-selling-scene="paused"] .sb-button .spinner,
++.start-selling [data-start-selling-scene="paused"] .sb-dialog {
+   animation-play-state: paused !important;
+ }
++/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
++   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
++   from flapping, so the flips happen away from the viewport.
++   [scene-scope V1] the scene arm lists the elements whose CSS asks for will-change (every non-auto
++   `will-change` rule in this file and DialogHeader.css) instead of `:where(*)`, for the same reason as above. */
++.start-selling [data-start-selling-scene="paused"],
++.start-selling [data-start-selling-scene="paused"] .commission-card,
++.start-selling [data-start-selling-scene="paused"] .why-bring-panel,
++.start-selling [data-start-selling-scene="paused"] .face,
++.start-selling [data-start-selling-scene="paused"] .orbit-card,
++.start-selling [data-start-selling-scene="paused"] .hero-copy,
++.start-selling [data-start-selling-scene="paused"] .start-selling-future-card,
++.start-selling [data-start-selling-scene="paused"] .start-selling-profile-shell,
++.start-selling [data-start-selling-scene="paused"] .start-selling-platform-card,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
++.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav,
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
++/* [rotator-st6 on RB] st6's persistent slot layers (will-change at .start-selling-avatars.is-carousel img) join
++   the arm, so a paused scene drops them like every other will-change element (scene-scope R4 coupling). */
++.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img,
++.start-selling [data-fw-wc="0"] {
++  will-change: auto !important;
++}
+ .start-selling [data-start-selling-render="deferred"] {
+   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
+   content-visibility: auto;
+@@ -11768,3 +12204,26 @@
+     scroll-behavior: auto;
+   }
+ }
++
++/* perf(morph-webkit, countdown fix, P-017): the morph panel's countdown digit faces get no will-change. With it,
++   the panel scene's flip to active creates ~80 digit layers at the tween start, and on the iPhone those layers were
++   repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
++   the page are unchanged. */
++.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
++  will-change: auto;
++}
++/* shell-hold-c (wi-stack): while #people starts shrinking (+is-future-shrinking, a 0.9 s scale transition on the card),
++   hide the off-screen profile shells (neither the active shell nor its neighbours) for 0.95 s. WebKit gives every
++   composited descendant of an on-screen transform-animating layer a backing store (GraphicsLayerCA,
++   ancestorWithTransformAnimationIntersectsCoverageRect); a hidden shell paints nothing. The deck clips
++   (overflow: auto hidden), so these shells are never in view; at 1440 they are display: none (no-op). */
++@keyframes fw-c-shell-hold {
++  from,
++  to {
++    visibility: hidden;
++  }
++}
++.start-selling-future.is-visible.is-future-shrinking
++  .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
++  animation: fw-c-shell-hold 0.95s linear;
++}
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -20,6 +20,7 @@
+   V as v,
+   W as y,
+   Y as b,
++  X as PMpre,
+   Z as x,
+   _ as S,
+   a as C,
+@@ -2587,7 +2588,7 @@
+               t(te, s(a).commission.earnedFrom),
+               t(B, `$${e ?? ``}`),
+               t(H, `${n ?? ``}%`),
+-              (oe = S(ae, ``, oe, { width: `${s(C) * 100}%` })));
++              (oe = S(ae, ``, oe, { "--fee-progress": `${s(C)}` })));
+           },
+           [() => Math.round(s(b)), () => Math.round(s(x))],
+         ),
+@@ -2670,9 +2671,58 @@
+ function iE() {
+   tE = 0;
+   for (let e of $T) e.active && e.callback();
++}
++// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
++// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
++// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
++var fwDef = new Set(),
++  fwBooted = !1,
++  fwArmed = !1,
++  fwQ = 0;
++function fwIdle(e) {
++  return window.requestIdleCallback ? window.requestIdleCallback(e, { timeout: 3e3 }) : window.setTimeout(e, 150);
++}
++function fwKick() {
++  fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
++}
++function fwUnskipNext() {
++  fwQ = 0;
++  for (let e of fwDef) {
++    (fwDef.delete(e), e.element?.getAttribute(`data-start-selling-render`) === `deferred` && sE(e, !0));
++    break;
++  }
++  fwKick();
++}
++// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
++// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
++// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
++// [scroll-engine /10e] `.face` removed (F-030): the countdown faces slide in and out of their overflow:hidden digit
++// window, and IntersectionObserver clips by ancestors, so they flipped data-fw-wc continuously (~1,500 writes/s at
++// idle, layer churn in the hero). Their will-change follows the scene gate again, as in wave 1.
++var fwWCSel = `.commission-card, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++  fwWCIO;
++function fwWC() {
++  if (!(`IntersectionObserver` in window)) return;
++  fwWCIO ||= new IntersectionObserver(
++    (e) => {
++      for (let t of e) t.target.setAttribute(`data-fw-wc`, t.isIntersecting ? `1` : `0`);
++    },
++    { rootMargin: `50% 0px 50% 0px` },
++  );
++  for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
++    e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
++}
++function fwBoot() {
++  if (fwBooted) return;
++  fwBooted = !0;
++  let e = () =>
++    window.setTimeout(() => {
++      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
++    }, 500);
++  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
+ }
+ function aE() {
+-  nE ||
++  (fwBoot(), nE) ||
+     ((nE = !0),
+     window.addEventListener(`scroll`, rE, { passive: !0 }),
+     window.addEventListener(`resize`, rE, { passive: !0 }));
+@@ -2689,7 +2739,7 @@
+ function sE(e, t) {
+   if (!(!e.deferRendering || !e.element)) {
+     if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
+-      e.element.setAttribute(`data-start-selling-render`, `active`);
++      (fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
+       return;
+     }
+     e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
+@@ -2700,7 +2750,7 @@
+               let t = e.element.getBoundingClientRect().height;
+               t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
+             }
+-            e.element.setAttribute(`data-start-selling-render`, `deferred`);
++            (e.element.setAttribute(`data-start-selling-render`, `deferred`), fwDef.add(e), fwKick());
+           }
+         });
+       }));
+@@ -2710,8 +2760,91 @@
+   (e.manageAnimations &&
+     e.element &&
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+-    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t && rE()));
++    e.active !== t &&
++      ((e.active = t),
++      t && sE(e, !0),
++      e.onActiveChange?.(t),
++      t && rE(),
++      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
++      // windows: re-scan once in idle time after a scene activates.
++      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
+ }
++var fwWCQ = 0;
++// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
++// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
++// before it reaches the viewport (WebKit's own content-visibility margin is 0), and it is never re-skipped.
++// Re-skipping changed the section's geometry at the scene gate's edge (gate flap, N9) and tore down and
++// rebuilt its layers on every pass (N10).
++var fwRG = new Map();
++function fwRM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%/, (e, t) => `${Math.max(150, +t + 50)}%`);
++}
++function fwRender(e, t, n) {
++  let r = fwRG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e) if (t.isIntersecting) for (let e of r.elements.get(t.target) ?? []) sE(e, !0);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwRG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
++// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
++// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
++// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
++// layers (w1 did this at the scene gate itself, which flapped: N9). It comes back through fwRender's IO
++// (gate + 50 %) on the way up, so the 0.25 vh band between the two edges is the hysteresis. Sections
++// ahead of the user are never re-skipped (they keep the idle un-skip).
++var fwFarG = new Map();
++function fwFM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
++}
++function fwReskip(e, t) {
++  !e.deferRendering ||
++    !e.element ||
++    e.active ||
++    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
++    ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++    fwDef.delete(e),
++    t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
++    e.element.setAttribute(`data-start-selling-render`, `deferred`));
++}
++function fwFar(e, t, n) {
++  let r = fwFarG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e)
++            if (!t.isIntersecting && t.boundingClientRect.bottom < 0)
++              for (let e of r.elements.get(t.target) ?? []) fwReskip(e, t.boundingClientRect.height);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwFarG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
+ function lE(e) {
+   let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
+@@ -2756,7 +2889,9 @@
+       onActiveChange: t.onActiveChange,
+       renderFrame: 0,
+     },
+-    r;
++    r,
++    fwRd,
++    fwFd;
+   return (
+     $T.add(n),
+     aE(),
+@@ -2766,9 +2901,16 @@
+     sE(n, n.active),
+     t.onActiveChange?.(n.active),
+     t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
++    n.deferRendering &&
++      t.element &&
++      `IntersectionObserver` in window &&
++      (fwRd = fwRender(n, t.element, fwRM(t.rootMargin ?? `100% 0px`))),
++    n.deferRendering && t.element && `IntersectionObserver` in window && (fwFd = fwFar(n, t.element, fwFM(fwRM(t.rootMargin ?? `100% 0px`)))),
+     rE(),
+     () => {
+       (r?.(),
++        fwRd?.(),
++        fwFd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
+@@ -3103,8 +3245,22 @@
+       n = 1,
+       r = 0,
+       i = 0,
++      // fix(commission-forced-layout): the three A() queries, parsed once instead of 3 matchMedia() per frame
++      _cq = [
++        `(max-width: 1000px)`,
++        `(max-device-width: 500px)`,
++        `(hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ].map((e) => window.matchMedia(e)),
++      _cc, // last compact value j() ran for
++      _ce, // last written --commission-enter-shrink
++      _cs, // last written --commission-shrink
++      _ch, // last written runway height
+       a = () => {
+-        if (((t = 0), z(y, A(), !0), !u || !c)) return;
++        t = 0;
++        let k = _cq.some((e) => e.matches);
++        // line-count check j() (Range.getClientRects) only when compact flips; the ResizeObserver on the
++        // h2 covers width/font/text changes. It no longer runs after the style writes every frame.
++        if ((z(y, k, !0), k !== _cc && ((_cc = k), j()), !u || !c)) return;
+         let i = window.innerHeight,
+           o = u.getBoundingClientRect(),
+           l = c.getBoundingClientRect(),
+@@ -3112,16 +3268,24 @@
+           p = E(l, i),
+           m = e.matches ? +(f >= 0.5) : w(f),
+           h = e.matches ? +(p >= 0.5) : w(p);
+-        (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
+-          (r += (h - r) * (e.matches ? 1 : 0.22)),
+-          Math.abs(m - n) < 8e-4 && (n = m),
+-          Math.abs(h - r) < 8e-4 && (r = h),
+-          c.style.setProperty(`--commission-enter-shrink`, String(n)),
+-          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
++        // compact: CSS forces --commission-shrink-scale:1 / radius 0 and hides the runway, so the eased
++        // values are invisible; snap them (no easing loop) and skip the --commission-* writes.
++        (k
++          ? ((n = m), (r = h))
++          : (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
++            (r += (h - r) * (e.matches ? 1 : 0.22)),
++            Math.abs(m - n) < 8e-4 && (n = m),
++            Math.abs(h - r) < 8e-4 && (r = h)),
+           z(g, o.top < i * 0.995 && f > 0.04, !0),
+-          z(v, p > 0.04),
+-          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
+-          j(),
++          z(v, p > 0.04));
++        // writes only when the value changed (same values as before, no redundant style mutations)
++        let _ve = String(n),
++          _vs = String(Math.max(n, r)),
++          _vh = k || e.matches ? `` : `${i * 0.06}px`;
++        (k ||
++          (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs))),
++          _vh !== _ch && (d.style.height = _ch = _vh),
+           (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
+       },
+       o = () => {
+@@ -3669,7 +3833,8 @@
+   );
+ function HE(t, n) {
+   D(n, !0);
+-  let r = N(-1),
++  let pwAccent,
++    r = N(-1),
+     i = N(`idle`),
+     a,
+     o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
+@@ -3782,10 +3947,49 @@
+           bottom: s(o).paintBottom,
+           left: s(o).paintLeft,
+         })));
++      // layout-animations: the width changes at once (no 0.9 s width transition, i.e. no h1 layout
++      // every frame); the other words of the centred row slide from where they were with a transform,
++      // as the width transition moved them: the accent's centre stays, each side moves half the change.
++      let we = s(o).width;
++      (pwAccent !== void 0 && we !== pwAccent && HEflip(d, we - pwAccent), (pwAccent = we));
+     }),
+     f(t, d),
+     H());
++}
++function HEflip(d, dw) {
++  if (typeof d.animate != `function`) return;
++  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
++  // siblings sit on the RIGHT of the accent and move the other way: flip the sign
++  let x = ((document.documentElement.getAttribute(`dir`) === `rtl` ? -1 : 1) * dw) / 128,
++    o = { duration: 900, easing: `cubic-bezier(0.4, 0, 0.2, 1)` };
++  for (let e = d.previousElementSibling; e; e = e.previousElementSibling)
++    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
++  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
++    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
+ }
++// layout-animations: the four gradient row titles sweep background-position forever (repaint every
++// frame); the engine pauses them only per section (±1 viewport), so also pause each title while it is
++// off-screen.
++var PMsweepIO;
++function PMsweepGate(row) {
++  if (!(`IntersectionObserver` in window)) return;
++  PMsweepIO ||= new IntersectionObserver((es) => {
++    for (let e of es) e.target.toggleAttribute(`data-sweep-paused`, !e.isIntersecting);
++  });
++  let ts = row.querySelectorAll(
++    `.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized`,
++  );
++  // [scene-scope RBi40pti] start paused: the first IO callback can land in the frame where #platform turns
++  // content-visibility:auto skipped, and a skipped subtree's style (the pause) waits until it is unskipped
++  // (status: the blocked recalc is CONFIRMED in Chromium source; that it holds back the pause is OBSERVED in Chrome,
++  // q40ti2; WebKit OBSERVED on the phone, T-011, one sweep load per arm)
++  for (let e of ts) (e.setAttribute(`data-sweep-paused`, ``), PMsweepIO.observe(e));
++  // unobserve when the row's each-block item is destroyed ($effect.pre attaches to the row's branch effect;
++  // its returned function is the effect's teardown)
++  PMpre(() => () => {
++    for (let e of ts) PMsweepIO.unobserve(e);
++  });
++}
+ var UE = { stiffness: 280, damping: 18, mass: 0.3 },
+   WE = 16;
+ function GE(e, t, n, r = UE) {
+@@ -3824,10 +4028,13 @@
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-idle-raf: false while the countdown is off-screen*/
++    __cdAnimate = R(() => r.animate !== !1);
+   b(() => {
+     let e = s(i);
+-    if (YE.current) {
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion*/
++    if (YE.current || !s(__cdAnimate)) {
+       z(a, e, !0);
+       return;
+     }
+@@ -3859,7 +4066,8 @@
+               (e) => {
+                 ((o = S(i, ``, o, e)), t(u, r));
+               },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
++              /*countdown-idle-raf: faces >= 1 cell away are clipped by .digit{overflow:hidden}; park them at +-1 cell so only the faces in view get a style write per frame*/
++              [() => ({ transform: `translateY(${Math.max(-1, Math.min(1, KE(r, s(a)))) * s(c)}px)` })],
+             ),
+             f(n, i));
+         },
+@@ -3894,6 +4102,9 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
+       });
+     },
+   ),
+@@ -3920,6 +4131,9 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
++    __cdVisible = N(!0),
++    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
++    __cdActive = R(() => r.active !== !1),
+     u = R(() => (s(c) === null ? null : rD(s(c)))),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+@@ -3933,11 +4147,22 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    let t = window.setInterval(e, 1e3),
++      /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++      __cdIo =
++        typeof IntersectionObserver == `function`
++          ? new IntersectionObserver(
++              (e) => {
++                z(__cdVisible, e[e.length - 1].isIntersecting, !0);
++              },
++              { rootMargin: `64px 0px` },
++            )
++          : null;
+     return (
++      __cdIo?.observe(h),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (window.clearInterval(t), __cdIo?.disconnect(), document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });
+@@ -3958,6 +4183,9 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdVisible) && s(__cdActive);
++            },
+           });
+         },
+         p = (e) => {
+@@ -4160,6 +4388,118 @@
+       i = 0,
+       a = 0,
+       o = !1,
++      // hero-exit-scroll-timeline: at the phone layout (t: width <= 600 px; d() runs at mount there and with
++      // reduced motion), and where CSS scroll-driven animations are supported, the exit (--exit-opacity /
++      // --exit-scatter) is a CSS animation on the `--hero-exit` view timeline of .hero-track (@supports
++      // block in 2.gBuqKVzi.css): heMode = CSS mode, no per-frame rect read / style write while the page scrolls. Wider layouts
++      // (desktop orbit cards) keep the baseline writer (c -> s): WebKit drew the animated tilted cards up
++      // to 108 levels off the baseline's static draw of equal computed values (width 980, Simulator,
++      // OBSERVED); heOff leaves CSS mode when the layout widens past 600 px.
++      // pointer-events (r < 0.05, i.e. track bottom < 0.05 * track height + 0.95 * innerHeight) comes
++      // from an IntersectionObserver in live CSS mode (parked: s()) whose top rootMargin is that threshold in px, re-armed on
++      // resize (innerHeight and the track height change with the toolbar / viewport).
++      // WebKit only: `GestureEvent` is a WebKit-only interface (Safari 9+, iOS 2+; Chrome and Firefox
++      // none: MDN browser-compat-data api/GestureEvent.json). Blink composites the animated cards/copy
++      // with a slightly different blend than its painted baseline (up to 6 levels, frozen-scroll
++      // harness), so Chrome, Firefox and others keep the baseline JS writer (identical by construction).
++      // CSS mode is parked at rest and live while the page scrolls. Parked (.he-on only): no exit animation
++      // exists, and the hero is drawn exactly as in the baseline, by the baseline's own rules from the inline
++      // --exit-opacity that s() writes (the dE callback runs the baseline writer c() while parked, e.g. on a
++      // resize). Live (.he-css added): the CSS rules key on it. Why park: WebKit invalidates the style of every
++      // element with a relevant scroll-driven animation on every rendering update, moving or not
++      // (WebAnimation::computeRelevance counts a non-monotonic timeline as relevant unless idle;
++      // AnimationTimelinesController ticks every relevant animation; KeyframeEffect::animationDidTick ->
++      // invalidate(); WebKit main 13a1f2916933, CONFIRMED), so with the animations always present every frame
++      // at rest and at the top paid a style recalc the baseline does not (Simulator: 1 per frame vs 0; phone
++      // P-074: touchstart rows +2 RecalculateStyles). Removing the animations (class off) stops it (Simulator:
++      // 0 per frame). heSc goes live on the first scroll event inside the range (finger, wheel, keys,
++      // scrollbar, find-in-page, status-bar tap, script; the scroll event fires before that frame's rendering
++      // update): s() writes the inline value for the current scrollY, then .he-css arrives. A newly added CSS
++      // animation is pending for its first frame, which draws the base values, i.e. that inline value. The
++      // value then stays (stale) while live: every property that reads it is animated while live (cards,
++      // copy, float), except the cue's, which a live rule replaces with its value at --exit-opacity 1 (the
++      // float carries the cue's exit; its base values read the inline value for the pending frame). Before
++      // the range start no exit animation is active and the base values show, so a scroll to y <= top + 30
++      // parks at once (see heSc). heRest parks again 300 ms after the last scroll
++      // event with no finger down: s() writes the value for the final scrollY, then the class goes (no
++      // pending frame on removal). Touchstart only marks the finger down (no style work in its frame).
++      // The copy's shift animation comes with .he-css (live only): a transform animation on .hero-copy,
++      // even inactive, made WebKit repaint the title's script accent about 1.4x as often (Simulator, OBSERVED).
++      // heWrap: CSS mode wraps the scroll cue's label + arrow in one span (.he-bob) that takes the 2.2 s bob,
++      // so .scroll-float carries only the scroll-driven exit (both on one element made WebKit recalculate
++      // style every frame at rest; the bob on the two children separately drew 1-2 levels off). Same layout
++      // (a flex column like the float); Svelte's node references (the label text) stay valid when moved.
++      // The bob rules key on .he-on (parked and live), so parking never moves or restarts the bob.
++      // Touch phones only (the lead, 2026-10-03): GestureEvent also exists in macOS Safari (MAC_GESTURE_EVENTS)
++      // and on iPad, whose windows can be 600 CSS px wide or less; nobody pixel-checked the CSS path there, so
++      // those take the baseline path: a coarse pointer without hover and a screen whose short side is at most
++      // 600 CSS px (iPhone 430; iPad mini 744; Mac displays wider).
++      heCss =
++        `GestureEvent` in window &&
++        !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`) &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
++      heMode = !1,
++      heIn = !0,
++      heIO = null,
++      heTop = 0,
++      heEnd = 1 / 0,
++      heTouch = 0,
++      heR = 0,
++      heLive = () => b.classList.contains(`he-css`),
++      heRT = () => {
++        (window.clearTimeout(heR), (heR = window.setTimeout(heRest, 300)));
++      },
++      // heRest: park (see above). s() first, so the frame that loses the animations has the baseline's
++      // inline value for the final scrollY (also past the end, where the exit is complete).
++      heRest = () => {
++        if (((heR = 0), !heMode || heTouch || !heLive())) return;
++        (s(), b.classList.remove(`he-css`));
++      },
++      heTS = () => {
++        heTouch = 1;
++      },
++      heTE = () => {
++        ((heTouch = 0), heMode && heLive() && heRT());
++      },
++      // heSc: live: keep the rest timer running; at y <= top + 30 park at once (s() for that scrollY, class off).
++      // Parked: go live when the scroll lands at top + 30 < y < end. Below top + 30 the parked dE callback runs
++      // the baseline writer, as in the baseline: there the cue's blur is under 0.7 px, and the float's animated
++      // blur drew the cue up to 78 levels off the baseline at y6 (0 at y30; Simulator, OBSERVED, cause unknown).
++      // Past the end nothing moves in the exit.
++      heSc = (ev) => {
++        if (ev.target !== document || !heMode || e.matches) return;
++        let y = window.scrollY;
++        if (heLive()) return y <= heTop + 30 ? (window.clearTimeout(heR), (heR = 0), s(), b.classList.remove(`he-css`)) : heRT();
++        y > heTop + 30 && y < heEnd && heUp();
++      },
++      // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.
++      heUp = () => {
++        (i && window.cancelAnimationFrame(i), s(), b.classList.add(`he-css`), heRT());
++      },
++      hePE = () => {
++        x.style.pointerEvents = heIn || e.matches ? `` : `none`;
++      },
++      heWrap = () => {
++        let e = x.querySelector(`.scroll-float`);
++        if (!e || e.firstElementChild?.classList.contains(`he-bob`)) return;
++        let t = document.createElement(`span`);
++        for (t.className = `he-bob svelte-1p2vpne`; e.firstChild; ) t.appendChild(e.firstChild);
++        e.appendChild(t);
++      },
++      // heOff: back to the baseline writer when the layout widens past 600 px (rotation, window resize) and
++      // on pageshow (p(); d() re-enters CSS mode where it applies): drop the classes, unwrap the cue (the
++      // baseline's DOM and bob), and write --exit-opacity now (s(), not c()): the media change runs before
++      // this frame's style, so the frame that loses the animations already has the baseline's inline value.
++      heOff = () => {
++        ((heMode = !1), window.clearTimeout(heR), (heR = 0), b.classList.remove(`he-css`, `he-on`));
++        let w = x.querySelector(`.scroll-float > .he-bob`);
++        if (w) {
++          for (; w.firstChild; ) w.parentNode.insertBefore(w.firstChild, w);
++          w.remove();
++        }
++        s();
++      },
+       s = () => {
+         if (((i = 0), e.matches)) {
+           (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
+@@ -4181,9 +4521,19 @@
+           window.clearTimeout(r),
+           (r = 0),
+           C.classList.add(`is-splash-done`),
+-          x.classList.add(`is-ring-splash-done`));
++          x.classList.add(`is-ring-splash-done`),
++          // CSS mode starts parked (the baseline's state: s() for the current scrollY, also mid-hero after a
++          // pageshow, a restored scroll or a layout narrowing to <= 600 px); a later scroll goes live.
++          heCss &&
++            t.matches &&
++            ((heMode = !0),
++            i && window.cancelAnimationFrame(i),
++            (i = 0),
++            s(),
++            heWrap(),
++            b.classList.add(`he-on`)));
+       },
+-      f = (e) => {
++      f =(e) => {
+         let t = e - a,
+           r = O(t),
+           i = j(t);
+@@ -4205,6 +4555,7 @@
+           window.clearTimeout(r),
+           (r = 0),
+           (o = !1),
++          heMode && heOff(),
+           C.classList.add(`is-preparing`),
+           x.classList.add(`is-preparing`),
+           C.classList.remove(`is-splash-done`, `is-expanding`),
+@@ -4233,18 +4584,62 @@
+       };
+     p();
+     let h = () => {
+-      t.matches && d();
++      t.matches ? d() : heMode && heOff();
+     };
+     (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
+-    let g = dE(c, { deferRendering: !0, element: b });
++    // hero-exit-scroll-timeline: live CSS mode skips the baseline writer (the animations draw the exit); parked
++    // and outside CSS mode the dE callback runs it as in the baseline. dE stays registered for its side
++    // effects on the track (scene pause + render deferral).
++    let g = dE(
++        () => {
++          (heMode && heLive()) || c();
++        },
++        { deferRendering: !0, element: b },
++      ),
++      heSync = () => {
++        heMode && heLive() && hePE();
++      };
++    let heArm = () => {
++      heIO && heIO.disconnect();
++      let n = window.innerHeight,
++        t = b.getBoundingClientRect(),
++        r = 0.05 * t.height + 0.95 * n;
++      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)));
++      heIO = new IntersectionObserver(
++        (n) => {
++          for (let e of n) heIn = e.isIntersecting;
++          heSync();
++        },
++        { rootMargin: `${-r}px 0px ${3 * n}px 0px` },
++      );
++      heIO.observe(b);
++    };
++    let heL = { passive: !0, capture: !0 },
++      heEv = [
++        [`touchstart`, heTS],
++        [`touchend`, heTE],
++        [`touchcancel`, heTE],
++        [`scroll`, heSc],
++      ];
+     return (
+-      s(),
++      heCss &&
++        (heArm(),
++        window.addEventListener(`resize`, heArm),
++        e.addEventListener(`change`, heSync),
++        heEv.forEach(([e, t]) => window.addEventListener(e, t, heL))),
++      heMode || s(),
+       () => {
+         (l(),
+           window.clearTimeout(r),
+           i && window.cancelAnimationFrame(i),
+           t.removeEventListener(`change`, h),
+           window.removeEventListener(`pageshow`, m),
++          heIO &&
++            (heIO.disconnect(),
++            window.removeEventListener(`resize`, heArm),
++            e.removeEventListener(`change`, heSync),
++            heEv.forEach(([e, t]) => window.removeEventListener(e, t, heL)),
++            window.clearTimeout(heR)),
+           g());
+       }
+     );
+@@ -4726,6 +5121,10 @@
+         ((O = null), z(E, null));
+       },
+       d = () => {
++        // fix(pain-offscreen-notes): nothing to clear -> skip the per-frame querySelector, the
++        // .commission-card rect read (forced layout after earlier writers) and the no-op reactive
++        // write z(T, []) that re-ran the notes each-block every scroll frame.
++        if (s(T).length === 0) return;
+         let e = document.querySelector(`.commission-card`);
+         e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
+       };
+@@ -10776,11 +11175,14 @@
+     let t = ie(e);
+     return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+   }
++  // Cache the MediaQueryLists: .matches is live, so behaviour is unchanged, but the per-frame
++  // profile callback no longer builds (and leaves for GC) up to four new MediaQueryLists per frame.
++  let reducedMotionMq, desktopMq;
+   function oe() {
+-    return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
++    return (reducedMotionMq ||= window.matchMedia(`(prefers-reduced-motion: reduce)`)).matches;
+   }
+   function ce() {
+-    return !oe() && !s(T) && window.matchMedia(`(min-width: 861px)`).matches;
++    return !oe() && !s(T) && (desktopMq ||= window.matchMedia(`(min-width: 861px)`)).matches;
+   }
+   function le() {
+     let e = window.innerHeight * 1.45,
+@@ -11249,7 +11651,7 @@
+ }
+ g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
+ var dM = h(
+-    `<img loading="lazy" decoding="async" class="is-exit" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" class="is-enter" alt=""/>`,
++    `<img loading="lazy" decoding="async" class="st5-lead" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" class="st5-next" alt=""/>`,
+     1,
+   ),
+   fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
+@@ -11294,6 +11696,10 @@
+   ne(() => {
+     let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
+       t = window.matchMedia(`(max-width: 860px)`),
++      // Same query as the CSS rule that forces --future-shrink-scale: 1 / --future-shrink-radius: 0px.
++      shrinkOffMq = window.matchMedia(
++        `(max-width: 860px), (max-device-width: 500px), (hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ),
+       n = [],
+       r = [],
+       i = 0,
+@@ -11312,6 +11718,10 @@
+         if (g) {
+           let t = T(g.getBoundingClientRect(), window.innerHeight),
+             n = e.matches ? +(t >= 0.5) : w(t);
++          // Phones/tablets: --future-shrink has no visible effect, so don't write it and don't
++          // keep an easing rAF loop alive. Track the target so a switch to desktop starts from it.
++          if (shrinkOffMq.matches) ((o = n), z(b, t > 0.04));
++          else
+           ((o += (n - o) * (e.matches ? 1 : 0.22)),
+             Math.abs(n - o) < 8e-4 && (o = n),
+             h.style.setProperty(`--future-shrink`, String(o)),
+@@ -11360,6 +11770,7 @@
+     return (
+       e.addEventListener(`change`, u),
+       t.addEventListener(`change`, u),
++      shrinkOffMq.addEventListener(`change`, u),
+       _(),
+       l(),
+       () => {
+@@ -11367,7 +11778,11 @@
+         for (let e of r) e();
+         ((r.length = 0), i && window.cancelAnimationFrame(i));
+         for (let e of n) window.clearTimeout(e);
+-        ((n.length = 0), C(), e.removeEventListener(`change`, u), t.removeEventListener(`change`, u));
++        ((n.length = 0),
++          C(),
++          e.removeEventListener(`change`, u),
++          t.removeEventListener(`change`, u),
++          shrinkOffMq.removeEventListener(`change`, u));
+       }
+     );
+   });
+@@ -11419,11 +11834,15 @@
+         i = V(r, 2),
+         a = V(i, 2),
+         o = V(a, 2);
++      /* st5: the 5 slots stay mounted for the page's life; x+1 updates src in place and S toggles
++         .is-sliding on the carousel (the slide runs on permanently layered imgs, see CSS), so neither
++         tick inserts/removes renderers or gains/loses layers */
+       (l(
+-        (e, t, s, c, l) => {
+-          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
++        (a0, a1, a2, a3, a4, sl) => {
++          (k(n, `src`, a0), k(r, `src`, a1), k(i, `src`, a2), k(a, `src`, a3), k(o, `src`, a4));
++          me.classList.toggle(`is-sliding`, sl);
+         },
+-        [() => E(0), () => E(1), () => E(2), () => E(3), () => E(4)],
++        [() => E(0), () => E(1), () => E(2), () => E(3), () => E(4), () => s(S)],
+       ),
+         f(e, t));
+     },
+@@ -11443,7 +11862,7 @@
+         f(e, t));
+     };
+   (m(he, (e) => {
+-    s(S) ? e(ge) : e(_e, -1);
++    e(ge); /* st5: always the persistent 5-slot block (the keyed 4-img `_e` branch is never used) */
+   }),
+     M(me));
+   var ve = V(me, 2),
+@@ -12197,14 +12616,9 @@
+     let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
+       t = !1,
+       n = 0,
++      // [platform-idle G1] no <animate> to begin: .is-active starts the glint's CSS animation
+       r = () => {
+-        (z(v, !0),
+-          y().then(() => {
+-            for (let e of d.querySelectorAll(`animate`))
+-              try {
+-                e.beginElement();
+-              } catch {}
+-          }));
++        z(v, !0);
+       },
+       i = () => {
+         (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
+@@ -12243,26 +12657,16 @@
+         a = e(r),
+         u = e(a),
+         d = e(u),
+-        p = V(e(d), 6),
+-        h = (e) => {
+-          var t = DM(),
+-            r = O(t);
+-          (k(r, `keyTimes`, i), k(r, `dur`, `5s`));
+-          var a = V(r);
+-          (k(a, `keyTimes`, i),
+-            k(a, `dur`, `5s`),
+-            l(() => {
+-              (k(r, `values`, o[n]), k(a, `values`, c[n]));
+-            }),
+-            f(e, t));
+-        };
+-      (m(p, (e) => {
+-        s(v) && e(h);
+-      }),
+-        M(d),
+-        M(u));
++        p = V(e(d), 6);
++      // [platform-idle G1] the <animate> pair (DM) is no longer mounted; the if block stays (renders nothing,
++      // as in SSR) so hydration walks the same markers. The glint is a span appended next to the svg (not in
++      // the template, so SSR markup and hydration are unchanged): a clipped, fixed 0..120 gradient strip that
++      // slides as a CSS transform while .is-active (2.gBuqKVzi.css "platform-idle G1").
++      (m(p, (e) => {}), M(d), M(u));
+       var g = V(u);
+-      let _;
++      var G = document.createElement(`span`);
++      G.innerHTML = `<svg viewBox="0 0 120 1" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="secure-network-glint-${n}" gradientUnits="userSpaceOnUse" x1="0" x2="120" y1="0" y2="0"><stop offset="0%" stop-color="#84b5ff" stop-opacity="0"></stop><stop offset="20%" stop-color="#84b5ff" stop-opacity="1"></stop><stop offset="40%" stop-color="#0569ff" stop-opacity="1"></stop><stop offset="60%" stop-color="#ae8eff" stop-opacity="1"></stop><stop offset="80%" stop-color="#ffcca5" stop-opacity="1"></stop><stop offset="100%" stop-color="#ffcca5" stop-opacity="0"></stop></linearGradient></defs><rect width="120" height="1" fill="url(#secure-network-glint-${n})"></rect></svg>`;
++      let _, P;
+       (M(a),
+         M(r),
+         l(() => {
+@@ -12273,8 +12677,12 @@
+             (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
+               "is-active": s(v),
+             })),
++            (P = U(G, 1, `start-selling-platform-secure-network-dash-glint`, null, P, {
++              "is-active": s(v),
++            })),
+             k(g, `stroke`, `url(#secure-network-dash-${n})`));
+         }),
++        r.appendChild(G),
+         f(t, r));
+     },
+   );
+@@ -12433,21 +12841,28 @@
+   ne(() => {
+     let e = 0,
+       t = matchMedia(`(prefers-reduced-motion: reduce)`),
++      // Same query as the CSS rule that forces --platform-shrink-scale: 1 / radius 0 / transform: none.
++      shrinkOffMq = matchMedia(
++        `(max-width: 860px), (max-device-width: 500px), (hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ),
+       n = () => {
+         e = 0;
+         let n = c.getBoundingClientRect(),
+           r = innerHeight * 0.85,
+           i = innerHeight * 0.35,
+           a = n.bottom >= r ? 0 : n.bottom <= i ? 1 : (r - n.bottom) / (r - i);
+-        (z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
++        // Phones/tablets: the inline --platform-shrink has no visible effect; skip the per-frame
++        // style-attribute rewrite. is-platform-shrinking (background colour) stays live.
++        (shrinkOffMq.matches || z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
+       },
+       r = () => {
+         e ||= requestAnimationFrame(n);
+       };
+     n();
+     let i = dE(r, { deferRendering: !0, element: o });
++    shrinkOffMq.addEventListener(`change`, r);
+     return () => {
+-      (e && cancelAnimationFrame(e), i());
++      (e && cancelAnimationFrame(e), i(), shrinkOffMq.removeEventListener(`change`, r));
+     };
+   });
+   var h = WM();
+@@ -12652,6 +13067,7 @@
+               "is-secure-mesh": s(r).id === `document`,
+             })));
+         }),
++        PMsweepGate(i),
+         f(n, i));
+     },
+   ),
+@@ -12952,17 +13368,27 @@
+       ? !1
+       : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
+   }
++  // perf(nav-hit-test): same answer as "nav pointer-events:none -> elementFromPoint -> restore", but
++  // without the two inline-style writes (each invalidated the style of the whole nav subtree and forced
++  // a recalc inside the scroll frame). elementsFromPoint lists every hit box top-down; skip the nav's
++  // own boxes except those that stay hit-testable under pointer-events:none on the nav because they set
++  // pointer-events:auto themselves (.start-selling-top-nav-actions, the expanded .start-selling-morph-panel).
+   function F() {
+     let e = T.getBoundingClientRect(),
+       t = e.left + e.width / 2,
+-      n = e.top + Math.min(e.height, 64) / 2,
+-      r = T.style.pointerEvents;
+-    T.style.pointerEvents = `none`;
+-    let i = document.elementFromPoint(t, n);
+-    return ((T.style.pointerEvents = r), j(i));
++      n = e.top + Math.min(e.height, 64) / 2;
++    for (let r of document.elementsFromPoint(t, n))
++      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
++    return j(null);
+   }
++  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
++  let __navEls = {};
++  function __navEl(e) {
++    let t = __navEls[e];
++    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
++  }
+   function ee() {
+-    let e = document.querySelector(`.start-selling-profile-sticky`);
++    let e = __navEl(`.start-selling-profile-sticky`);
+     if (!e) return !1;
+     let t = window.getComputedStyle(e);
+     if (t.position !== `sticky`) return !1;
+@@ -12999,7 +13425,7 @@
+     e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
+     let _ = () => {
+         (z(v, ee(), !0), z(g, F(), !0));
+-        let t = document.querySelector(`.hero-track`);
++        let t = __navEl(`.hero-track`);
+         if (!t || e.matches) {
+           z(p, !0);
+           return;
+@@ -13017,13 +13443,20 @@
+         (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
+       },
+       C = () => w > 0.001 || r > 0.001,
++      // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
++      // the end can't overscroll the page underneath the morph (one style write per morph start/end)
++      __osbV = ``,
++      __osb = () => {
++        let e = C() ? `none` : ``;
++        e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
++      },
+       T = (e) => {
+         let t = ZM(i, a, e - o);
+-        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), C() || I());
++        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if (((w = t), z(b, !0), __osb(), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -13045,9 +13478,9 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+-        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
++        k(e.deltaY) && (C() || (s = __pinY()), e.preventDefault(), D(e.deltaY));
+       },
+       j = (e) => {
+         c = e.touches[0]?.clientY ?? 0;
+@@ -13055,27 +13488,56 @@
+       M = (e) => {
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+-        ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
++        ((c = t), k(n) && (C() || (s = __pinY()), e.preventDefault(), D(n)));
+       },
++      // mw10e-arm-scope (F3): the touch listeners go on #platform and the nav header instead of the window, so only
++      // those two subtrees are touch-listener targets. At the end of the page #platform fills >= 45 % of the
++      // viewport (O()) and the expanding header covers the rest as m grows, so the morph's touches start on one of
++      // them. wheel stays on the window (desktop wheel over any part of the page still drives the morph). All of
++      // them are armed once at setup, never at the IO edge.
++      __tt = [],
+       N = () => {
+         d ||
+           ((d = !0),
+           window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
++            (t.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
++              t.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          }));
+       },
+       P = () => {
+         d &&
+           ((d = !1),
+           window.removeEventListener(`wheel`, A, !0),
+-          window.removeEventListener(`touchstart`, j, !0),
+-          window.removeEventListener(`touchmove`, M, !0));
++          __tt.forEach((t) => {
++            (t.removeEventListener(`touchstart`, j, !0), t.removeEventListener(`touchmove`, M, !0));
++          }),
++          (__tt = []));
+       },
++      // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
++      // #platform entered the 200% zone (IO below) and removed them when it left. That add is followed by the
++      // ~100 ms iPhone frame at y~1960 (observed). In WebKit's source a window wheel listener triggers a full
++      // style rebuild only when the set of event-region types changes (first wheel listener, first non-passive
++      // one, removal of the last); touch event regions are compiled out on iOS before WebKit 7625. Which listener
++      // costs the frame on the device is unresolved. They are now never removed while the effect lives, and the
++      // zone gate moved into the handlers (k(): `u`), so they act exactly when the original had them attached
++      // (u || C()).
++      // armed once at setup (page load), before any scroll.
+       I = () => {
+-        u || C() ? N() : P();
++        N();
+       },
++      // perf(morph-webkit): the pin fought iOS rubber-band at the end of the page. A morph started during the
++      // overscroll bounce stored s = scrollY > maxY (5312 vs 5220), so every frame scrollTo(s) was clamped to
++      // maxY, scrollY !== s again, and the pin re-fired: scrollY alternated 5220 <-> 5312 at ~13 fps. Now the
++      // pin target is clamped to [0, maxY], and the pin leaves the overscroll range (scrollY > maxY) alone:
++      // iOS springs back to maxY by itself.
++      __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
++      __pinY = () => Math.min(window.scrollY, __pinMax()),
+       L = () => {
+-        (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
++        if ((_(), !C())) return;
++        let e = window.scrollY,
++          t = __pinMax();
++        (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
+       },
+       R = y(),
+       te = R
+@@ -13086,7 +13548,38 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
+-    (R && te && te.observe(R), _(), m());
++    (R && te && te.observe(R), _(), m(), N());
++    // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
++    // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
++    // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
++    window.__fwMorphDrive = (o = {}) => {
++      let h = o.hold ?? 2e3,
++        c = o.cycles ?? 3,
++        f = [],
++        l = performance.now(),
++        u = !0,
++        d = (e) => new Promise((t) => setTimeout(t, e)),
++        p = (e) => {
++          (f.push([Math.round(e * 10) / 10, Math.round((e - l) * 10) / 10, Math.round(window.scrollY), Math.round(r * 1e3) / 1e3]), (l = e), u && requestAnimationFrame(p));
++        };
++      return (
++        (window.__fwMD = null),
++        window.scrollTo({ top: __pinMax(), behavior: `instant` }),
++        (async () => {
++          (await d(800), requestAnimationFrame(p), await d(300));
++          for (let e = 0; e < c; e++) (C() || (s = __pinY()), E(1), await d(h), E(0), await d(h));
++          u = !1;
++          let e = (e) => {
++              let t = e.map((e) => e[1]).sort((e, t) => e - t),
++                n = (e) => (t.length ? t[Math.min(t.length - 1, Math.floor(e * t.length))] : null);
++              return { frames: t.length, gt20: t.filter((e) => e > 20).length, gt34: t.filter((e) => e > 34).length, gt50: t.filter((e) => e > 50).length, p50: n(0.5), p95: n(0.95), max: t.at(-1) ?? null };
++            },
++            t = f.slice(1),
++            n = { href: location.href, hold: h, cycles: c, all: e(t), moving: e(t.filter((e) => e[3] > 0.001 && e[3] < 0.999)), atOne: e(t.filter((e) => e[3] >= 0.999)), atZero: e(t.filter((e) => e[3] <= 0.001)), frames: f };
++          return ((window.__fwMD = JSON.stringify(n)), n);
++        })()
++      );
++    };
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
+@@ -13099,6 +13592,41 @@
+           ne(),
+           e.removeEventListener(`change`, m),
+           t.removeEventListener(`change`, m));
++      }
++    );
++  });
++  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
++  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
++  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
++  // 64px nav) and inert, and its images get their src only when the original would have mounted it (b / E).
++  // The mount waits while the user is scrolling (a scroll event in the last 300 ms): it re-arms a 300 ms timer,
++  // so a scroll that starts right after load doesn't get the mount in its first frames (Safari has no rIC).
++  let __mnt = N(!1);
++  ne(() => {
++    let e = 0,
++      t = 0,
++      o = -1e9,
++      i = () => {
++        o = performance.now();
++      },
++      n = () => {
++        performance.now() - o < 300
++          ? (t = window.setTimeout(n, 300))
++          : (window.removeEventListener(`scroll`, i), z(__mnt, !0));
++      },
++      r = () => {
++        window.requestIdleCallback
++          ? (e = window.requestIdleCallback(n, { timeout: 4e3 }))
++          : (t = window.setTimeout(n, 2e3));
++      };
++    return (
++      window.addEventListener(`scroll`, i, { passive: !0 }),
++      document.readyState === `complete` ? r() : window.addEventListener(`load`, r, { once: !0 }),
++      () => {
++        (window.removeEventListener(`load`, r),
++          window.removeEventListener(`scroll`, i),
++          e && window.cancelIdleCallback(e),
++          window.clearTimeout(t));
+       }
+     );
+   });
+@@ -13118,10 +13646,24 @@
+   var oe = V(ae, 2),
+     le = e(oe, !0);
+   (M(oe), M(ie), M(B));
++  // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
++  // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
++  // children when only the header's value changes, so they kept the value from the last class flip (logo not
++  // centred, earn button not hidden, panel fade frozen). The header's writer now also writes the same value inline
++  // on each of them: the same elements restyle as R4b intended, and nothing depends on WebKit's inherit tracking.
++  // Chrome resolves the same values either way.
++  var __mkP = null,
++    __mkV = null,
++    __mkW = (v) => {
++      if (v === __mkV) return;
++      __mkV = v;
++      for (let t of [B, re, ie, oe, __mkP]) t && t.style.setProperty(`--morph`, v);
++    };
+   var W = V(B, 2),
+     ue = (n) => {
+       var a = lN(),
+         u = e(a);
++      ((__mkP = a), __mkV !== null && a.style.setProperty(`--morph`, __mkV));
+       (_(
+         u,
+         21,
+@@ -13140,7 +13682,7 @@
+               var n = sN();
+               let r;
+               (l(() => {
+-                (k(n, `src`, s(t)[0]), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
++                (k(n, `src`, s(b) || s(E) ? s(t)[0] : void 0), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
+               }),
+                 f(e, n));
+             },
+@@ -13157,7 +13699,13 @@
+         m = e(p, !0);
+       M(p);
+       var h = V(p, 2);
+-      (cD(e(h), { inverse: !0 }), M(h));
++      (cD(e(h), {
++        inverse: !0,
++        get active() {
++          return s(E);
++        },
++      }),
++        M(h));
+       var g = V(h, 2),
+         v = e(g),
+         __ctaBellC = e(v),
+@@ -13193,7 +13741,8 @@
+         M(w),
+         M(a),
+         l(() => {
+-          (k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
++          ((a.inert = !(s(b) || s(E))),
++            k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
+             k(a, `aria-hidden`, s(x) < 0.35),
+             t(m, s(o).header.future),
+             k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
+@@ -13210,7 +13759,7 @@
+         f(n, a));
+     };
+   (m(W, (e) => {
+-    (s(b) || s(E)) && e(ue);
++    (s(b) || s(E) || s(__mnt)) && e(ue);
+   }),
+     M(I),
+     P(
+@@ -13232,6 +13781,7 @@
+         })),
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
++          __mkW(e[`--morph`]),
+           k(re, `href`, a()),
+           k(re, `aria-label`, s(o).header.home),
+           k(re, `data-selenium`, SE.header.home),
