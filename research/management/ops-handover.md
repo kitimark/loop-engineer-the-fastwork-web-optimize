@@ -42,6 +42,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-116 result (int-v8, 09c1db2d on worktree-agent-a068af37646232e05, not landed): AGREE, NOT LOCATED.**
+  - Pins were committed at 9e67e2ca (19:42Z), before the first counted run (20:24Z). The scorer on disk is
+    6c5dbcfac85e and imports b9a29ffcc7bb.
+  - Ops re-ran the scorer on the runner's 19 records in block order. The output equals int-v8's score.json byte for
+    byte (9d6536c6b859).
+  - Hold logs: H1 and H2 are VALID, the gates pass at Serious, PMSET is OK, and the item order is the ticket's Latin
+    square. All 19 served-check logs show B, C, X and Y ok, with no WRONG.
+  - Results: dX 0 (twins +1 / +1.5), NOT THE CAUSE. dY −1 (twins 0 / +0.5), PART at > 50 only. Block: NOT LOCATED at
+    all three thresholds.
+  - Note 1: the scorer adds "(threshold-sensitive)" to the block line whenever any removal is threshold-sensitive
+    (code line 130). Its header and the ticket tie that label to the block verdict, and the block verdict is the same
+    at all three thresholds. This is a label only; no class changes.
+  - Note 2: deviation N1 (11 uncounted G flicks on B before H1, in place of S pre-warms) comes before all arms alike.
+    The gates and sentinels pass, so the counted runs are unaffected.
+  - PREDICTIONS row filled. Whether block 2 (a v8 vs v6 confirm) runs is the lead's call.
 - 10-05 **P-117: the lead's rulings and int-v8's build, recorded in the card (before data).**
   - Rulings: N2 confirmed (a merge means stop and report; fix-scroll-cb re-counts with pins before data; no
     phone775). N1 accepted (a Simulator momentum-flick case in fix-nav-morph's VA audit). The lead signs once the
