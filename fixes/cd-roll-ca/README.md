@@ -1377,6 +1377,38 @@ C8's sentinel (OBSERVED in our setup, cause unknown): in the bottom phase (3.0 s
 descriptive (no gate; void runs left out): VK's valid top-window > 50 counts 0, 0; V9's 0, 2, 0.
 ```
 
+### P-102 block log, part 2: the extra quartet and the verdict (2026-10-04 14:02-14:07Z; OBSERVED, as part 1)
+
+```
+lease 14:02Z (after T-113, iphone-runner's flick block and fix-hero-exit-threaded's PR-018 check; lead order); the same
+  three servers as part 1 (B, V9, VK, ports unchanged since 11:41Z, served hashes as HASHES.txt)
+H4 14:02:50Z  no extra pre-warm (phone warm after the earlier phone work, battery 42.1 C; lead 12:4xZ), the hold's own
+              registered prewarm1 + start gate PASS (Serious, induced No, 41.89 -> 41.59 C, timer grid 30 ms), C9 V10 V11
+              C12, end gate PASS (Serious, 40.89 C), PMSET OK -> VALID; park 14:07Z
+  run outside a chrome-measure hold (lead 12:4xZ: Mac-quiet preferred, not required), beside shared groups, Mac state
+  per run (mac.start/end): C9, V10 beside ts-board + ts-phone-steps (load1 15.3-15.6); V11, C12 beside ts-phone-steps +
+  fix-scroll-cb (load1 18.9-19.2); a warm idle Simulator on the Mac (I-063 note)
+  run   arm  start C  top >50 (>46/>54)  top >34 (>30/>38)  sentinel bottom/scroll fps  status
+  C9    V9   41.59    2 (4/2)            9 (14/8)           58.7 / 52.9                valid
+  V10   VK   41.50    0 (0/0)            3 (4/1)                                       valid
+  V11   VK   41.19    1 (1/0)            3 (4/1)                                       valid
+  C12   V9   41.09    0 (0/0)            5 (6/4)            58.7 / 59.5                valid
+score (k-score.mjs 771820466f84, all four holds, out/cd-roll-ca/pk/p102-score.json, gitignored): valid runs V9 5 (C1 C4
+  C5 C9 C12), VK 4 (V2 V3 V10 V11); V6, V7, C8 void as part 1
+  top >50: median VK 0 - median V9 0 = 0 (twins >46 -1, >54 0: same verdict, not threshold-sensitive) -> no rise >= 2
+  top >34: delta -2 (twins -3, -1.5), outside [-1, +1] on the fewer side (reported, not a falsifier)
+  idle window (descriptive): >50 delta 0, >34 delta -2
+VERDICT P-102: hit (K adds no slow frames at the top of the page vs V9 on the phone at real Serious). Decision row: K goes
+  to the user as the PR-017 follow-up rev (the Try-it pages show V9 and VK).
+calibration: P(hit) 0.9 -> hit; P(VK's median top >50 below V9's) 0.45 -> no (both medians 0).
+descriptive: V9's valid top >50 counts 0, 2, 0, 2, 0; VK's 0, 0, 0, 1.
+P-100 in the same lease: H1 started 14:09:58Z (fresh servers B, P100, V9, C8 by serve-snap.sh; run outside a
+  chrome-measure hold like H4, beside shared groups), start read Serious, induced No, 39.79 -> 39.5 C -> PASS; records 1
+  (quiet) and 2 (ca) done; at 14:12Z the lead asked for the phone for a user hand test (T-127, user steps first): the
+  hold was stopped after record 2 (no end read), Safari parked, lease released 14:13:03Z. INTERRUPTED, not void by heat;
+  the two records are kept as descriptive only and P-100 H1 reruns whole in a later lease.
+```
+
 ```
 PHONE TICKET P-100 cd-roll-ca · display-rate diagnostic for F-212 (ops-assigned, mgmt-ops-10; registered before any data)
 question (F-212): WebKit asks Core Animation for 80-120 Hz on every CA animation it creates (PlatformCAAnimationRemote.mm
