@@ -134,9 +134,9 @@ test('the /build page: in it with each gain and tag, the whole build with when a
   assert.equal(h1.textContent, 'Today’s best build');
   assert.equal(document.title, 'Best build');
   assert.match(text, /stack5The best build since 08:00Z 2026-10-02 · 2 fixes in it/);
-  assert.match(text, /In today’s best buildCountdown fix Write-upThe countdown digits stop repainting\.frames over 50 ms while the panel moves1-27 → 0OBSERVEDscripted panel driver · P-029/);
+  assert.match(text, /In today’s best buildCountdown fix Write-upThe countdown digits stop repainting\.WhatBeforeAfterHow it was measuredframes over 50 ms while the panel moves1-270scripted panel driverOBSERVED · P-029/);
   assert.match(text, /Blur changeNo measured phone gain yet\./);
-  assert.match(text, /The whole build vs the original pageframes over 50 ms, scripted scroll4-9 → 0-2OBSERVEDscripted scroll · measured 08:40Z 2026-10-02 · phone block A1, 9 runs · P-062/);
+  assert.match(text, /The whole build vs the original pageWhatBeforeAfterHow it was measuredframes over 50 ms, scripted scroll4-90-2scripted scroll · measured 08:40Z 2026-10-02 · phone block A1, 9 runsOBSERVED · P-062/);
   assert.match(text, /Tried, not appliedContainer query trick: no gain on the phone Write-upRotator v3: parked: the gain was inside the noise/);
   assert.match(text, /Still being worked on: Style recalc \(see Progress\)/);
   const links = main.all().filter((n) => n.tagName === 'a').map((n) => n.attrs.href);
@@ -151,4 +151,61 @@ test('the /build page: in it with each gain and tag, the whole build with when a
   const none = JSON.parse(JSON.stringify(P.buildView({ progress: null, now: NOW })));
   assert.match((await renderAt('/build', none)).main.textContent, /No best build is written up yet/);
   assert.ok(!/Today’s best build/.test((await renderAt('/progress', none)).main.textContent));
+});
+
+// ---- I-134 (user T-099 "This table is hard to read") and T-101 (versions newest first) ------------------------------
+
+const version = (o) => ({ id: 'v', name: 'V', since: '2026-10-02T08:00:00Z', base: false, current: false, toTry: false, improvement: null, verdict: null,
+  fixes: [], result: [], previous: null, cost: null, tryIt: { none: 'not served yet' }, hashes: null, ...o });
+const cellsOf = (tr) => tr.children.map((c) => [c.tagName, c.textContent]);
+
+test('I-134 (user T-099) the /build gain tables: before and after in their own columns under a header; codes (tag, ref, C-/P- ids) in small grey text; the which-is-better row kept', async () => {
+  const p = base();
+  p.build.combined.push({ what: 'blind finger swipe A/B: which page follows your finger better', before: 'best build 65052c4a', after: 'this build, in both pairs', tag: 'CONFIRMED', driver: 'your finger (C-038, C-039)', when: '2026-10-02T09:00:00Z', note: 'the catch pair came out "same"' });
+  const v = JSON.parse(JSON.stringify(P.buildView({ progress: p, now: NOW })));
+  const { main } = await renderAt('/build', v);
+  const whole = main.all().find((n) => n.attrs['aria-label'] === 'Whole build');
+  const table = whole.all().find((n) => n.tagName === 'table');
+  const rows = table.all().filter((n) => n.tagName === 'tr');
+  assert.deepEqual(cellsOf(rows[0]), [['th', 'What'], ['th', 'Before'], ['th', 'After'], ['th', 'How it was measured']]);
+  assert.equal(rows.length, 3);
+  assert.deepEqual(cellsOf(rows[1]).map((c) => c[0]), ['td', 'td', 'td', 'td']);
+  assert.deepEqual(rows[1].children.map((c) => c.className), ['what', 'ba before', 'ba after', 'how']);
+  assert.deepEqual(cellsOf(rows[1]).slice(0, 3).map((c) => c[1]), ['frames over 50 ms, scripted scroll', '4-9', '0-2']);
+  // the which-is-better row: kept, its question as the "what", the two pages in their own columns, its note under it
+  assert.deepEqual(cellsOf(rows[2]).slice(0, 3).map((c) => c[1]), ['blind finger swipe A/B: which page follows your finger betterthe catch pair came out "same"', 'best build 65052c4a', 'this build, in both pairs']);
+  // codes: small grey text, never a coloured chip; the C- ids inside the driver text too
+  assert.deepEqual(table.all().filter((n) => n.className === 'code').map((n) => n.textContent), ['OBSERVED', 'P-062', 'C-038', 'C-039', 'CONFIRMED']);
+  assert.ok(!table.all().some((n) => /\btag\b/.test(n.className)), 'no tag chip in a gain table');
+  assert.match(rows[2].children[3].textContent, /^your finger \(C-038, C-039\) · measured 09:00Z 2026-10-02CONFIRMED$/);
+  // every gain table on the page has the header (each fix in the build, the whole build)
+  const tables = main.all().filter((n) => n.tagName === 'table');
+  assert.equal(tables.length, 2);
+  for (const t of tables) assert.equal(t.all().filter((n) => n.tagName === 'th').length, 4);
+});
+
+test('I-134 the page CSS: no sideways page scroll at <= 900 px; only a table scrolls, inside its own box', () => {
+  const css = HTML.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const rule = (sel) => { const m = css.match(new RegExp(`(?:^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`)); return m ? m[1] : ''; };
+  assert.match(rule('.tablewrap'), /overflow-x: auto/);
+  assert.match(rule('.tablewrap'), /max-width: 100%/);
+  // grid and flex children may shrink below their content (a wide table made the grid track, so the page, wider)
+  assert.match(rule('ul.versions > li'), /min-width: 0/);
+  assert.match(rule('.card'), /min-width: 0/);
+  // a long before or after text wraps in its cell instead of widening the table
+  assert.doesNotMatch(rule('table.nums td.ba'), /nowrap/);
+  assert.match(rule('table.nums .code'), /color: var\(--muted\)/);
+  assert.match(css, /@media \(max-width: 900px\) \{[^}]*\.wrap \{[^}]*padding/);
+});
+
+test('T-101 the /build versions: newest first, numbered by age (1 = the original page), the heading says so', async () => {
+  const vs = [version({ id: 'v0', name: 'Original page', base: true }), version({ id: 'st6', name: 'Stack 6', current: true, previous: 'Original page' }), version({ id: 'gpu', name: 'GPU', toTry: true, previous: 'Stack 6' })];
+  const v = JSON.parse(JSON.stringify(P.buildView({ progress: base(), now: NOW })));
+  v.versions = vs;
+  const { main } = await renderAt('/build', v);
+  const cards = main.all().filter((n) => n.attrs['data-version']);
+  assert.deepEqual(cards.map((c) => c.attrs['data-version']), ['gpu', 'st6', 'v0']);
+  assert.deepEqual(cards.map((c) => c.all().find((n) => n.className === 'vnum').textContent), ['3', '2', '1']);
+  assert.match(main.textContent, /Versions, newest first/);
+  assert.ok(!/oldest first/.test(main.textContent));
 });

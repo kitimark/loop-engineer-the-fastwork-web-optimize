@@ -169,7 +169,7 @@ test('I-061: /build (the best build, the same top bar with "Best build" on), /ap
   } finally { await s.stop(); }
 });
 
-test('T-079: /build shows Versions oldest first (improvement, result vs the previous, cost, hashes, Try-it with the Wi-Fi address now, running or not); text keeps lan', async () => {
+test('T-079, T-101: /build shows Versions newest first (improvement, result vs the previous, cost, hashes, Try-it with the Wi-Fi address now, running or not); text keeps lan', async () => {
   const net = await import('node:net');
   const up = net.createServer((c) => c.destroy());
   await new Promise((r) => up.listen(0, '127.0.0.1', r));
@@ -200,20 +200,21 @@ test('T-079: /build shows Versions oldest first (improvement, result vs the prev
     const sec = pg.document.querySelectorAll('section').find((x) => x.getAttribute('aria-label') === 'Versions');
     assert.ok(sec, 'a Versions section');
     const cards = sec.querySelectorAll('li').filter((x) => x.getAttribute('data-version'));
-    assert.deepEqual(cards.map((c) => c.getAttribute('data-version')), ['v0', 'st6-rb', 'gpu'], 'oldest first');
-    const [c0, c1, c2] = cards.map((c) => c.textContent);
+    assert.deepEqual(cards.map((c) => c.getAttribute('data-version')), ['gpu', 'st6-rb', 'v0'], 'newest first (T-101)');
+    const [c2, c1, c0] = cards.map((c) => c.textContent);
     assert.match(c0, /Original page/); assert.match(c0, /The page as the site serves it\./); assert.match(c0, /js 4606120cf392 · css 27776f3d4138/);
     assert.match(c1, /today’s best build/); assert.ok(!/today’s best build/.test(c2), 'the newest version, a preview, is not the best build');
     assert.match(c2, /to try \(not landed\)/); assert.ok(!/to try/.test(c1)); assert.match(c1, /Adds: Countdown fix/);
     assert.match(c1, /Verdict: smoother/); assert.match(c0, /server: baseline/);
-    assert.match(c1, /vs Original page/); assert.match(c1, /frames over 50 ms/); assert.match(c1, /4-9 → 0-2/); assert.match(c1, /Cost: nothing visible/);
+    assert.match(c1, /vs Original page/); assert.match(c1, /frames over 50 ms/); assert.match(c1, /4-90-2/); assert.match(c1, /Cost: nothing visible/);
     assert.match(c2, /Try it: no page \(not served yet\)/);
-    const a0 = cards[0].querySelectorAll('a').find((a) => /Try it/.test(a.getAttribute('title') || ''));
+    const byId = (id) => cards.find((c) => c.getAttribute('data-version') === id);
+    const a0 = byId('v0').querySelectorAll('a').find((a) => /Try it/.test(a.getAttribute('title') || ''));
     assert.equal(a0.getAttribute('href'), `http://10.9.8.7:${upPort}/`, 'the Wi-Fi address now');
     assert.equal(a0.textContent, `http://10.9.8.7:${upPort}/`);
     assert.equal(a0.getAttribute('target'), '_blank');
     assert.ok(!/not running/.test(c0));
-    const a1 = cards[1].querySelectorAll('a').find((a) => /Try it/.test(a.getAttribute('title') || ''));
+    const a1 = byId('st6-rb').querySelectorAll('a').find((a) => /Try it/.test(a.getAttribute('title') || ''));
     assert.equal(a1.getAttribute('href'), `https://10.9.8.7:${downPort}/?v=2`);
     assert.match(c1, /nothing answers on this port now/);
     const t = node(CON, ['progress'], { env: e }).stdout;
