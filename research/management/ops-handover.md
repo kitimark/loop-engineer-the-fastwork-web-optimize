@@ -2464,7 +2464,7 @@ between tool calls.
 
 ## Peer directory (F-046; keep current, send to every agent that joins)
 
-**Rules for every spawn prompt (send with the directory):** GitHub only through the `gh` CLI, read-only, never plain `curl` (user T-071, memory/github-via-gh.md, a8f1806d; F-203); `--owner` on every wait (I-108); long `--wait` or `lock.mjs run`, never a short-timeout acquire retry (F-202, I-113); `iphone.mjs wda status` before a G hold (I-112).
+**Rules for every spawn prompt (send with the directory):** GitHub only through the `gh` CLI, read-only, never plain `curl` (user T-071, memory/github-via-gh.md, a8f1806d; F-203); `--owner` on every wait (I-108); long `--wait` or `lock.mjs run`, never a short-timeout acquire retry (F-202, I-113); `iphone.mjs wda status` before a G hold (I-112); until ts-threads' merge guard lands, no agent closes or merges a thread before the user has read its last reply (lead 10-04 09:0xZ, user T-089: closed threads hide replies the user hasn't read).
 
 Lead decision 10:35Z: agents work peer to peer; **mgmt-ops is the hub** for everything that is not lead-only (land,
 incident resolution, lock reorder, spawn, user). Role names work only if `ListAgents` shows them; else use the ID.
