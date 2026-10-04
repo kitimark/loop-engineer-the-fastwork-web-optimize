@@ -1,7 +1,8 @@
 // morph-scroll builds (fix-hero-exit-threaded; PROPOSAL: the end-of-page morph follows the scroll on touch phones).
 // Rev 2 (PR-018 rev 2): no morph-gpu rev 2 A and no __rvPrepNow (rev 2 A measured worse on the phone, P-098).
 // Base = the best build, the baseline + one baseline-relative patch:
-//   --base v7  (default) fixes/v7-best/patch.diff       js 8c90da217745 / css 308f0da70c3a  (best build since c3dc73b1)
+//   --base v8  (default since PR-018 rev 7b) fixes/v8-best/patch.diff js 3e3e94cb6e9f / css f836404b3728 (v8 replaced v7)
+//   --base v7            fixes/v7-best/patch.diff       js 8c90da217745 / css 308f0da70c3a  (best build since c3dc73b1)
 //   --base br2           fixes/hero-exit-threaded/patch.diff js 8018ce062d30 / css 71b65c667720 (B-R2, PR-018 rev 1's A)
 // Proposal = the overlay fixes/morph-scroll/overlay (base + the morph-scroll change). Writes immutable snapshots:
 //   msbase-<js12>     the base (= Try-it A)
@@ -23,10 +24,11 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? proces
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const SNAP = join(WT, 'out/snapshots');
 const BASES = {
+  v8: { patch: 'fixes/v8-best/patch.diff', js: '3e3e94cb6e9f', css: 'f836404b3728' },
   v7: { patch: 'fixes/v7-best/patch.diff', js: '8c90da217745', css: '308f0da70c3a' },
   br2: { patch: 'fixes/hero-exit-threaded/patch.diff', js: '8018ce062d30', css: '71b65c667720' },
 };
-const BASE = BASES[arg('--base', 'v7')];
+const BASE = BASES[arg('--base', 'v8')];
 if (!BASE) throw new Error(`--base: one of ${Object.keys(BASES).join(', ')}`);
 const OVL = join(WT, 'fixes/morph-scroll/overlay');
 const PRETTY = resolveTree('site-pretty');

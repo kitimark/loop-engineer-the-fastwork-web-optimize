@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13777,7 +13777,92 @@
+@@ -13915,7 +13915,166 @@
        __osb = () => {
          let e = C() ? `none` : ``;
          e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
@@ -37,6 +37,37 @@
 +      __msTO = 0,
 +      __msV = 0,
 +      __msT = 0,
++      // rev 7: a fast short flick that barely moved the page before lift-off has no known speed: the first scroll frame
++      // after a rest has no fresh previous sample, so rev 6 read it as v = 0 and committed with q = p, sending a flick
++      // from closed back to closed (and from open back to open); and one or two touch frames under-read a short flick's
++      // speed. Now __msVk counts fresh samples since the last rest or touchstart (the first one seeds v instead of
++      // averaging with 0), __msDy keeps the last move, and a lift while the page moves is a flick that goes where it
++      // points (>= 0.3 px/ms, or one fresh move of >= 3 px), like a paging UIScrollView; a slow or held release decides on
++      // the look-ahead as before. A lift at rest at an end (nothing to commit) lets the first glide frame with a known
++      // speed decide (__msLift 2). A fast glide (|v| >= 0.5) whose look-ahead passes the end it is heading for (q >= 1
++      // opening, q <= 0 closing) keeps the iOS momentum (no scrollTo); if it stops short, the slow-tick rule or the 200 ms
++      // rest timer still commits.
++      __msVk = 0,
++      __msDy = 0,
++      // rev 7b (the user's own fast short swipes, C-049): (1) the page scrolls only after the touchend (async
++      // scrolling), so at lift-off a flick looks like a page at rest, and at an end with Safari's toolbar shown the
++      // page rests 40 px (p 0.95 / 0.05) off the end, where the position rule sent a close flick back to open. Now the
++      // finger itself is read (passive touchmove: __msFv px/ms, + = finger up = opening): a finger still moving at
++      // lift-off (last move < 50 ms before the touchend, >= 0.3 px/ms) commits in its direction when that end is >= 0.1
++      // away (a flick out of the extra screen, or toward the end it is at, is left to the rules below). (2) a commit is
++      // kept (__msWant: 1 open, 0 closed, -1 none; for 1.5 s or until reached, cleared at touchstart, so a later
++      // scripted or link scroll is never pulled back): when the scroll comes to rest short of it (on the phone
++      // something knocked the smooth scroll back while the toolbar moved, cause UNRESOLVED), the rest timer aims at it
++      // again (2 tries) instead of deciding anew from the position. (3) a flick's direction is the sign of the smoothed
++      // speed, not of the last frame's step. A finger move > 50 ms after the previous one starts a new finger speed.
++      __msFy = 0,
++      __msFt = 0,
++      __msFv = 0,
++      __msFn = 0,
++      __msFl = 0,
++      __msWant = -1,
++      __msWt = 0,
++      __msTry = 0,
 +      __msLift = 0,
 +      __msGo = 0,
 +      __msArm = () => {
@@ -50,17 +81,52 @@
 +          // decide on where the momentum would take the scroll: + 500 ms of travel at the current speed (iOS momentum
 +          // travels about v x 500 ms: UIScrollView normal deceleration 0.998/ms; rev 4 G records 340-640 ms), so a
 +          // quick flick up at 0.28 opens and a slow pull from open to 0.75 closes; a stale speed (> 100 ms old) counts as 0
-+          q = t > 0 && performance.now() - __msT < 100 ? e + (500 * __msV) / t : e;
-+        e > 0.002 &&
-+          e < 0.998 &&
-+          ((__msGo = 1),
-+          window.scrollTo({ top: q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5) ? n : n - t, behavior: `smooth` }));
++          // f: the page is moving now; k: a flick (>= 0.3 px/ms, or one fresh move of >= 3 px whose speed is not known
++          // yet) goes where it points, like a paging UIScrollView; a slow or held release decides on the look-ahead q
++          f = t > 0 && performance.now() - __msT < 100,
++          k = f && (__msVk ? Math.abs(__msV) >= 0.3 : Math.abs(__msDy) >= 3),
++          q = f && __msVk ? e + (500 * __msV) / t : e,
++          o = k ? (__msVk ? __msV > 0 : __msDir > 0) : q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5),
++          go = (w) => ((__msWant = w ? 1 : 0), (__msWt = performance.now()), (__msGo = 1), window.scrollTo({ top: w ? n : n - t, behavior: `smooth` }));
++        if (!(t > 0)) return;
++        // a kept commit (for 1.5 s, until reached): aim at it again if the scroll came to rest short of it (2 tries).
++        // At or past the end counts as reached: Safari's toolbar showing during a close moves the closed rest 40 px
++        // (p -0.05, still closed), and re-aiming there scrolled the page back 40 px (+0.5 s, rev 7b G run f8a).
++        if (__msWant >= 0 && performance.now() - __msWt < 1500) {
++          if (__msWant ? window.scrollY >= n - 2 : window.scrollY <= n - t + 2) return void (__msWant = -1);
++          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
++        }
++        __msWant = -1;
++        // the finger was still moving at lift-off: go where it points
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1) && ((__msLift = 0), go(__msFl > 0)));
++        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
 +      },
 +      __msTouchEv = (e) => {
++        let c = e.changedTouches && e.changedTouches[0],
++          s = e.timeStamp;
++        if (e.type === `touchmove`)
++          // a move > 50 ms after the last one (the finger was still) starts a new speed instead of diluting it
++          return void (
++            c &&
++            s > __msFt &&
++            (s - __msFt > 50
++              ? ((__msFv = 0), (__msFn = 0))
++              : ((__msFv = (__msFn ? 0.5 * __msFv : 0) + ((__msFn ? 0.5 : 1) * (__msFy - c.clientY)) / Math.max(1, s - __msFt)), __msFn++),
++            (__msFy = c.clientY),
++            (__msFt = s))
++          );
 +        ((__msTouch = e.touches.length),
 +          __msTouch
-+            ? (window.clearTimeout(__msTO), (__msLift = 0), (__msGo = 0))
-+            : ((__msLift = 1), __msArm(), __msSettle()));
++            ? (window.clearTimeout(__msTO),
++              (__msLift = 0),
++              (__msGo = 0),
++              e.type === `touchstart` &&
++                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = c.clientY), (__msFt = s))))
++            : (__msArm(),
++              (__msLift = 2),
++              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
++              __msSettle(),
++              (__msFl = 0)));
 +      },
 +      __msTick = () => {
 +        if (!__msEnd) return;
@@ -69,10 +135,18 @@
 +        (y !== __msY &&
 +          (__msY >= 0 &&
 +            ((__msDir = y > __msY ? 1 : -1),
-+            (__msV = now - __msT < 100 ? 0.5 * __msV + (0.5 * (y - __msY)) / Math.max(1, now - __msT) : 0)),
++            (__msDy = y - __msY),
++            (now - __msT < 100
++              ? ((__msV = (__msVk ? 0.5 * __msV : 0) + ((__msVk ? 0.5 : 1) * (y - __msY)) / Math.max(1, now - __msT)), __msVk++)
++              : ((__msV = 0), (__msVk = 0)))),
 +          (__msY = y),
 +          (__msT = now)),
-+          __msTouch || (__msArm(), __msLift && Math.abs(__msV) < 0.5 && __msSettle()));
++          __msTouch ||
++            (__msArm(),
++            __msLift &&
++              __msVk &&
++              (__msLift > 1 || Math.abs(__msV) < 0.5) &&
++              ((__msLift = 1), __msSettle())));
 +        let t = __msEnd.offsetHeight,
 +          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
 +        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
@@ -93,7 +167,7 @@
        T = (e) => {
          let t = ZM(i, a, e - o);
          ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
-@@ -13826,6 +13911,7 @@
+@@ -13964,6 +14123,7 @@
        __tt = [],
        N = () => {
          d ||
@@ -101,7 +175,7 @@
            ((d = !0),
            window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
            (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
-@@ -13862,7 +13948,8 @@
+@@ -14000,7 +14160,8 @@
        __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
        __pinY = () => Math.min(window.scrollY, __pinMax()),
        L = () => {
@@ -111,7 +185,7 @@
          let e = window.scrollY,
            t = __pinMax();
          (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
-@@ -13877,6 +13964,28 @@
+@@ -14015,6 +14176,28 @@
            )
          : void 0;
      (R && te && te.observe(R), _(), m(), N());
@@ -123,7 +197,7 @@
 +      __msEnd.setAttribute(`aria-hidden`, `true`),
 +      R.after(__msEnd),
 +      // passive: they never block or delay the scroll; they only tell the settle when the finger is down
-+      [`touchstart`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
++      [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
 +      // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
 +      // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
 +      (__msRO = new ResizeObserver(() => {
@@ -140,21 +214,21 @@
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
      // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
      // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
-@@ -13916,6 +14025,11 @@
+@@ -14054,6 +14237,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
 +          __msRO?.disconnect(),
 +          __msEnd?.remove(),
 +          window.clearTimeout(__msTO),
-+          [`touchstart`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
++          [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
 +          document.documentElement.classList.remove(`fw-ms`),
            P(),
            ne(),
            e.removeEventListener(`change`, m),
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -12269,4 +12269,18 @@
+@@ -12317,4 +12317,18 @@
  .start-selling-future.is-visible.is-future-shrinking
    .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
    animation: fw-c-shell-hold 0.95s linear;

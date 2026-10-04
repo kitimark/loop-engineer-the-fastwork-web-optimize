@@ -23,7 +23,10 @@ for (const f of readdirSync(dir).filter((n) => /^[A-Z0-9]+-\d+\.json$/.test(n)).
   for (const seg of run.segments || []) {
     const fr = seg.frames || [], tc = seg.touches || [], mk = seg.marks || [];
     if (!fr.length) continue;
-    const sH = Math.max(...fr.map((x) => x[2] + x[3])), lvh = Math.max(...fr.map((x) => x[3]));
+    // sH = the page end: the most frequent scrollY + ih (rests at the end), not the max: a rubber-band overshoot frame
+    // (iOS reports scrollY past the end while bouncing) made sH 87 px too large and shifted p by 0.107 (rev 7b f8a)
+    const ends = {}; for (const x of fr) if (x[2] + x[3] >= Math.max(...fr.map((z) => z[2] + z[3])) - 300) ends[x[2] + x[3]] = (ends[x[2] + x[3]] || 0) + 1;
+    const sH = +Object.entries(ends).sort((a, b) => b[1] - a[1])[0][0], lvh = Math.max(...fr.map((x) => x[3]));
     const pOf = (x) => (x[2] - (sH - x[3] - lvh)) / lvh;
     const frAt = (t) => { let r = fr[0]; for (const x of fr) { if (x[0] > t) break; r = x; } return r; };
     const yAt = (t) => frAt(t)[2];
