@@ -18,7 +18,7 @@ desktop rest-offset probe found no change (the fee pill's time phase), so its de
 | # | component | state | delta (sha256/12) | owner's build v8 + delta (JS / CSS) |
 |---|---|---|---|---|
 | 1 | PR-018 menu swipe rev 7c (morph-scroll; user accepted 20:12:50Z; landed 42250648) | **in** | `fixes/morph-scroll/delta.diff` 81ac7e1ee500 | 428961bda278 / 659b02f7169d |
-| 2 | double-drive (future + commission cards, T-157; commit 96293d29) | **in**, final (owner's desktop rest-offset probe: no change; y 6500 settle check: card state at rest identical to v8) | `fixes/double-drive/delta.diff` baae6114cd65 | 3076c5a8c9a3 / 2f7197880ffd |
+| 2 | double-drive (future + commission cards, T-157; commit 96293d29) | **in**, final (owner's desktop rest-offset probe: no change; y 6500 settle check: card state at rest identical to v8; phone P-118 NO-WORSE under xcode-serious, 3/3 holds valid: S median V-C -1 at >50 and >34, GM flick-middle 0 at >50) | `fixes/double-drive/delta.diff` baae6114cd65 | 3076c5a8c9a3 / 2f7197880ffd |
 | 3 | scroll-cb alone (split check ebee20a5: v8 + scroll-cb = v8 in Simulator nav parity) | **in** (carry reviewed OK by fix-scroll-cb and fix-double-drive) | `fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff` 3abcd7008e61; carry `scroll-cb-on-v8dd.diff` 7b4a7ee04d85 | 4c48e372ecdd / f836404b3728; v8 + dd + carry bf40f48acd24 / 2f7197880ffd |
 | - | nav-hit-cache | out (when it comes in: its delta plus a glue component for rev 7c's on-dark microtask, fix-nav-morph's glue-ms7c.diff 5d63660a9e62; option (a), agreed 2026-10-05; the delta is the 1-context-line form patch-on-v8-u1.diff 7b5f3947b465, the same changes, because rev 7c's 3-line context meets nav's inserted lines, so the order is fixed: 7c, then nav, then glue; on step 3: nav cf3425e169f0, + glue c211d557e357, per fix-nav-morph): the split puts the Simulator nav-pill lag on it; waits for fix-scroll-cb's task-mode check and fix-nav-morph's real-gesture case | | |
 | 4 | PR-021 Join button rev 3 (fix-nav-earn, cb3c052c) | **in** (user accepted rev 3, final). Pre-check: its delta applies to v9 step 3 with line offsets only (JS 6, CSS 5 hunks offset; v9 + rev 3 = de237379b556 / e1359ab9994a) | `fixes/nav-earn/delta.diff` f214ed00081f | 8df0a9eb3ec7 / 29bade2fe964 |
@@ -116,8 +116,8 @@ question: under the xcode-serious profile, does v9 add slow frames over v8 (a) i
   pixels and work counts in this README; rev 7c's user finger A/B (C-052) is its own landing basis.
 profile: xcode-serious = Xcode Device Conditions Serious, Is Induced = Yes. No heat pre-warm. Gate once at the start and
   once at the end of every hold with thermal-gate.mjs --accept-induced (mgmt-devices, 8e4eacbb); keep the one uncounted
-  load warm-up per arm port (A3/U5); ceiling 44 C battery or Critical (gate exit 3 ends the hold). xcode-serious blocks never pool with real-heat blocks: P-118 is real heat, so v9
-  data and P-118 data do not pool. A decisive check (does induced Serious slow the chip like real heat?) runs first and
+  load warm-up per arm port (A3/U5); ceiling 44 C battery or Critical (gate exit 3 ends the hold). xcode-serious blocks never pool with real-heat blocks. P-118 (double-drive alone) also ran
+  xcode-serious, but it is a different question on other arms, so its numbers are not pooled with v9’s either. A decisive check (does induced Serious slow the chip like real heat?) runs first and
   belongs to iphone-runner; if induced slows nothing, one real-heat confirmation block for the final best build is added later.
 sentinels under xcode-serious: a failing control run (bottom >= 58 fps and scroll >= 44 fps for S/W; held m=1 p95 <= 18 ms for M)
   voids every run since the last passing one, then the block is rerun; no cooling wait (the old "cool to the last passing
