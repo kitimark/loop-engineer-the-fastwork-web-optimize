@@ -184,7 +184,8 @@ try {
     result.regions = region; result.loads = [];
     for (let rep = 0; rep < REPS; rep++)
       for (const vp of arg('--vp', 'mobile,desktop').split(','))
-        for (const arm of rep % 2 ? ['V', 'C'] : ['C', 'V']) result.loads.push({ rep, ...(await countLoad(cdp, arm, S[arm].url, region[arm], vp)) });
+        // --arms C: the harness smoke (C only, not scored)
+        for (const arm of (rep % 2 ? ['V', 'C'] : ['C', 'V']).filter((a) => arg('--arms', 'C,V').split(',').includes(a))) result.loads.push({ rep, ...(await countLoad(cdp, arm, S[arm].url, region[arm], vp)) });
   } else {
     const S = { C: await server('C'), V: await server('V'), VA: await server('VA') }; servers.push(...Object.values(S));
     result.audit = {}; result.states = {};

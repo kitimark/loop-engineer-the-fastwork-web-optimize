@@ -102,6 +102,9 @@ and VA from the committed diff and prints the table.
 **Harnesses** (committed here with this card; sha256/12: `build.mjs` 31379fa08c89, `probe.mjs` c8630550a06b,
 `simcount.mjs` 58fc44c464a2, `patch-on-best.diff` 60d5d0f183b6; any later harness change is listed with its new hash
 and what it changes, before its data):
+- *Harness change 1 (before any V data, after the ops read at 11e26713):* `probe.mjs` gets an `--arms` filter
+  (default `C,V`, so the counted loads are unchanged) for the C-only harness smoke. Nothing it counts changed. New
+  `probe.mjs` hash: in the commit that carries this line, listed under "Smoke" below.
 - `probe.mjs count` (Chrome):
   - headless, no CPU throttle; mobile 430×932 DPR 3 touch, and desktop 1440×900;
   - plain served build (`serve.mjs --https --vendors=local --no-cache`);
@@ -181,6 +184,17 @@ is reported.
   retuning on this card's data.
 - *Counts not lower:* report it as the measured outcome, look at which trigger keeps the test on (a per-trigger tally in
   an exploratory VA run), and re-ticket. No retuning against this card's data.
+
+## Smoke (not scored)
+
+C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
+It was run only to check the harness, and it is not part of P-101's loads.
+- 535 steps.
+- Per step: PrePaint 2.23 (forced 1.00); UpdateLayoutTree 1.36 (forced 1.28); Layout 0.45 (forced 0.38).
+- Nav calls per step: elementsFromPoint 1.00, getComputedStyle 1.00, rects 2.00.
+- No page errors.
+- The harness counts what the card names.
+- The C forced-Layout interval in the card (0.9 to 2.5) looks too high. It stays as registered: no retuning.
 
 ## Risks, conflicts, follow-ups
 
