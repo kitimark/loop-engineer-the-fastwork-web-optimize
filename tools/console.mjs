@@ -159,6 +159,8 @@
 //        # thread printed as TRIAGE <id> "title": <why> plus its NEW messages. Without --triage: every message.
 //   node tools/console.mjs thread escalate <id> --by <owner|desk> --note "what the lead must decide"
 //   node tools/console.mjs thread desk show | desk set <agent> --by lead | desk set --clear --by lead
+//   node tools/console.mjs thread steward show | steward set <agent> --by lead | steward set --clear --by lead
+//     (I-175: the one agent the automated alarm threads go to, idle / stuck step / disk; unset or parked: the lead)
 //        # the desk counts only while it is listening (`thread wait --as <desk>` armed); otherwise the lead is the desk
 //   node tools/console.mjs thread topic list | topic set <tag> --owner <agent> --by lead | topic set <tag> --clear --by lead
 //        # T-051: who answers a topic's threads, before the status-board owner; skipped while that agent is not listening
@@ -442,6 +444,16 @@ async function thread() {
     if (!flag('clear') && !agent) throw new Error('thread desk set <agent> --by lead (or --clear)');
     await RT.setDesk({ agent, by: by() });
     console.log(agent ? `DESK ${agent}: ${RT.deskText({ threads: TH.listThreads() })}` : 'DESK cleared: the lead is the desk');
+    return 0;
+  }
+  if (sub === 'steward') { // I-175 (user T-155 #4/#5): the automated alarm threads go to the steward only, else the lead
+    const rows = async () => { try { return (await import('./lib/status.mjs')).list({ all: true }); } catch { return []; } };
+    if (idArg === 'show' || idArg === undefined) { console.log(`steward: ${RT.stewardText({ statusRows: await rows(), threads: TH.listThreads() })}`); return 0; }
+    if (idArg !== 'set') throw new Error('usage: thread steward show | thread steward set <agent> --by lead | thread steward set --clear --by lead');
+    const agent = flag('clear') ? null : pos[3];
+    if (!flag('clear') && !agent) throw new Error('thread steward set <agent> --by lead (or --clear)');
+    await RT.setSteward({ agent, by: by() });
+    console.log(agent ? `STEWARD ${agent}: ${RT.stewardText({ statusRows: await rows(), threads: TH.listThreads() })}` : 'STEWARD cleared: alarm threads go to the lead');
     return 0;
   }
   if (sub === 'topic') { // T-051: the lead's topic -> owner map, read by the router before the status board

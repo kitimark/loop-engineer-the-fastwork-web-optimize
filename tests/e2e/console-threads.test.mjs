@@ -399,6 +399,12 @@ test('T-050: the API names who listens (toState, backstopMin); a message ticked 
   assert.match(cli('thread', 'topic', 'list').stdout, /^hero-exit -> fix-h \(not listening\)/);
   assert.match(cli('thread', 'escalate', id, '--by', 'fix-gone', '--note', 'needs a decision').stdout, new RegExp(`^ESCALATED ${id}`));
   assert.match(cli('thread', 'desk', 'set', '--clear', '--by', 'lead').stdout, /^DESK cleared/);
+  // I-175: the steward of the automated alarm threads, the lead only
+  assert.match(cli('thread', 'steward', 'show').stdout, /^steward: no steward set: alarm threads \(idle, stuck step, disk\) go to the lead$/m);
+  assert.equal(cli('thread', 'steward', 'set', 'mgmt-devices', '--by', 'fix-gone').code, 1);
+  assert.match(cli('thread', 'steward', 'set', 'mgmt-devices', '--by', 'lead').stdout, /^STEWARD mgmt-devices: mgmt-devices \(set by the lead at .+\): alarm threads \(idle, stuck step, disk\) go to it, not listening now/);
+  assert.match(cli('thread', 'steward', 'show').stdout, /^steward: mgmt-devices \(set by the lead at /);
+  assert.match(cli('thread', 'steward', 'set', '--clear', '--by', 'lead').stdout, /^STEWARD cleared: alarm threads go to the lead$/m);
 });
 
 // ---- I-119 (user T-076): phone links in threads ------------------------------------------------------------------

@@ -10,6 +10,11 @@
 //   - the desk: threads/desk.json {agent, setBy, at}, set by the lead only; it counts only while it is listening
 //     (otherwise the lead is the desk). The desk may assign a thread, only to a listening owner (console-threads assign).
 //   - the topic map: threads/topics.json {<status id or topic tag>: {owner, setBy, at}}, set by the lead only.
+//   - the steward (I-175, user T-155 #4/#5; fixes/AGENT_ROLES.md "Automated threads: who answers"):
+//     threads/steward.json {agent, setBy, at}, set by the lead only. The automated alarm threads (idle phone/Mac, stuck
+//     step, disk) are assigned to it alone, never to worker agents; unset or parked (every status row it owns parked or
+//     finished): no assignee, so the lead's triage wait gets them at once. The lead is never assigned by name (as an
+//     assignee it would count as a listening owner and its triage would wait 10 min).
 //   - deaf(agent) (I-169, user T-152 #3): inside a foreground tool call for more than 30 s (its transcript): not
 //     listening, live wait or not, and busy below.
 //   - busy(agent) (I-164, user T-147): a status row it owns is implementing/testing/measuring, it holds
@@ -39,6 +44,7 @@ const GUARD = 'console-threads';
 const dir = () => join(consoleDir(), 'threads');
 export const deskFile = () => join(dir(), 'desk.json');
 export const topicsFile = () => join(dir(), 'topics.json');
+export const stewardFile = () => join(dir(), 'steward.json');
 
 const agentName = (s, what) => {
   const v = String(s ?? '').trim();
@@ -175,6 +181,62 @@ export async function setDesk({ agent, by }) {
     writeJson(deskFile(), d);
     return a ? d : null;
   });
+}
+
+// ---- the steward of the automated alarm threads (I-175) --------------------------------------------------------
+
+export function getSteward() {
+  const d = readJson(stewardFile());
+  return d && AGENT.test(String(d.agent || '')) ? d : null;
+}
+/** Name the steward (agent) or clear it (agent null). Lead only. */
+export async function setSteward({ agent, by }) {
+  needLead(by, 'names the steward');
+  const a = agent == null ? null : agentName(agent, 'the steward');
+  if (a === LEAD) throw new Error('the lead takes the alarm threads already when no steward is set: use --clear');
+  if (a === USER) throw new Error('the steward is an agent');
+  return withGuard(GUARD, () => {
+    mkdirSync(dir(), { recursive: true });
+    const d = { agent: a, setBy: LEAD, at: iso() };
+    writeJson(stewardFile(), d);
+    return a ? d : null;
+  });
+}
+const OFF_DUTY = new Set(['parked', 'landed', 'done', 'closed-no-fix', 'dropped']);
+/**
+ * Who answers the automated alarm threads now (pure but for the setting): {agent, named, why}. agent: the steward, or
+ * null when none is set or it is parked (it owns status rows and every one is parked or finished; no row: on duty).
+ */
+export function stewardState({ statusRows = [] } = {}) {
+  const d = getSteward();
+  if (!d) return { agent: null, named: null, why: 'no steward set' };
+  const mine = (statusRows || []).filter((r) => r && r.owner === d.agent);
+  if (mine.length && mine.every((r) => OFF_DUTY.has(r.state))) return { agent: null, named: d.agent, why: `${d.agent} is parked` };
+  return { agent: d.agent, named: d.agent, why: '' };
+}
+/** stewardState with the status board read here (all rows). Never throws. */
+export async function alarmSteward({ statusRows } = {}) {
+  let rows = statusRows;
+  if (!rows) { try { rows = (await import('./status.mjs')).list({ all: true }); } catch { rows = []; } }
+  try { return stewardState({ statusRows: rows }); } catch { return { agent: null, named: null, why: 'no steward set' }; }
+}
+/** The assignees of an alarm thread: the steward on duty, else none (the lead's triage). */
+export const stewardTo = (st) => (st?.agent && AGENT.test(st.agent) && st.agent !== LEAD && st.agent !== USER ? [st.agent] : []);
+/** The thread's last-but-one line: who acts. `nudge`: the workers the steward messages (never addressed here). */
+export function stewardLine(st, nudge = []) {
+  if (!st?.agent) return `No steward on duty (${st?.why || 'no steward set'}): the lead handles this thread (I-175).`;
+  const ns = [...new Set((nudge || []).filter((n) => n && n !== st.agent && n !== LEAD && n !== USER))];
+  return `Steward (${st.agent}): ${ns.length ? `nudge ${ns.join(', ')} by message (SendMessage) and answer` : 'answer'} the user here; the lead is the second tier (I-175).`;
+}
+/** `thread steward show`, in plain words. */
+export function stewardText({ statusRows = [], now = Date.now(), waits, threads = [] } = {}) {
+  const st = stewardState({ statusRows });
+  if (!st.named) return 'no steward set: alarm threads (idle, stuck step, disk) go to the lead';
+  if (!st.agent) return `${st.named} is parked: alarm threads go to the lead until it has a live row again`;
+  const d = getSteward();
+  let l = { listening: false, how: '' };
+  try { l = listeningState({ now, waits, threads })(st.agent); } catch {}
+  return `${st.agent} (set by the lead at ${d.at}): alarm threads (idle, stuck step, disk) go to it, ${l.listening ? `listening (${l.how})` : "not listening now (the lead's triage takes them meanwhile)"}; the lead is the second tier`;
 }
 
 /** The lead's topic map {<tag>: {owner, setBy, at}}. */

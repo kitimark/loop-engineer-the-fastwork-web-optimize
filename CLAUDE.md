@@ -594,8 +594,8 @@ node tools/lock.mjs release iphone --owner <topic>
   row in state `waiting` waits on it (`--waiting-on phone|chrome`, or its wait text or note names phone/iPhone, or
   Chrome/measure/lock; never a wait on the user or an incident); exit 0 otherwise. The lead keeps
   `nohup node tools/idle.mjs watch --by lead --interval 60 > out/idle-watch.log 2>&1 &` running (polls >= 30 s): one
-  console thread per idle period, assigned to the desk and the waiting owners, closed when the slot is taken. Only
-  reads the locks; rules in `tools/lib/idle.mjs`. I-155: while an alarm stands, the /status rows of the agents it
+  console thread per idle period, closed when the slot is taken. Only reads the locks; rules in `tools/lib/idle.mjs`.
+  I-155: while an alarm stands, the /status rows of the agents it
   concerns (the holder of an unused lease, the waiting owners of a free slot) carry a red alert, and the watch logs one
   `NOTIFY <agent>` line each. The lease holder is using the phone while it holds chrome-measure (only queued for it is a Mac wait, not use: over
   5 min of it while others wait for the phone alarms; phone-hold v2 T0), or
@@ -605,6 +605,11 @@ node tools/lock.mjs release iphone --owner <topic>
   re-run within 10 min) and acquire without the flag when your part can start. I-165: a lease holder whose only process
   on the lease is a `lock.mjs wait iphone` for over 2 min is `STUCK iphone: …` (an alarm, waiters or not); a holder whose
   own console step waits for the user's Start (its part loading or ready) is a user wait, not idle.
+  **Alarm threads** (idle, stuck step, disk; I-175, user T-155 #4/#5, `fixes/AGENT_ROLES.md` "Automated threads: who
+  answers") are assigned only to the steward the lead keeps (`node tools/console.mjs thread steward set <agent> --by lead`,
+  `steward show`; mgmt-devices today), never to worker agents: the steward nudges them by message. No steward, or the
+  steward parked (every status row it owns parked or finished): no assignee, so the lead's triage gets the thread at once.
+  The watch's `NOTIFY <agent>` lines and the red /status alerts still name the concerned owners.
 - Lock state looks wrong: `lock.mjs doctor`; the lead repairs with `lock.mjs repair … --apply` (audited).
   Never edit the lock JSON by hand.
 - **Say what a hold is for** (I-060, the progress page's "Right now"): `acquire|renew|run` take `--doing "<plain line>"

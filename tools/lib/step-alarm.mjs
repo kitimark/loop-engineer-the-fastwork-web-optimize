@@ -6,8 +6,8 @@
 //
 // One stuck period = one episode (keyed by step, epoch, part, attempt and the last change). Its first sighting prints
 //   STUCK C-037: part 1 (attempt 2) waits on fix-nav-morph for 10 min (gated, waiting: …; nothing since the user's Start over at 06:17Z)
-// and, with --by lead, posts one console thread assigned to the step's owner and the desk (only the lead starts
-// threads; the T-050 router and their `thread wait` reach them). When the step moves on (an ack, the user's Start, an
+// and, with --by lead, posts one console thread assigned to the steward only (I-175; only the lead starts
+// threads; the steward nudges the runner by message). When the step moves on (an ack, the user's Start, an
 // answer, a skip …) the episode ends (ENDED line) and the lead's next pass closes its thread. Names, ids and minutes
 // only: no step title, URL or instructions (Hard rule 12). Read-only on the steps and the locks.
 //   <git-common-dir>/fastwork-mirror/idle/step-alarm.json   ($FW_STATE_DIR/idle/ in tests), under the "step-alarm" guard.
@@ -18,13 +18,12 @@ import { withGuard } from './lock.mjs';
 import { readJson, writeJson, iso } from './store.mjs';
 import { stuckSteps, STUCK_STEP_MIN } from './phone-step.mjs';
 import { createThread, setStatus } from './console-threads.mjs';
-import { getDesk } from './thread-routing.mjs';
+import { alarmSteward, stewardTo, stewardLine } from './thread-routing.mjs';
 
 export const SCHEMA = 'fw-step-alarm/1';
 export { STUCK_STEP_MIN };
 const GUARD = 'step-alarm';
 const CLAIM_TTL_MS = 120000; // a post claim older than this belongs to a poster that died
-const AGENT = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 export const stateFile = () => join(sharedStateDir(), 'idle', 'step-alarm.json');
 export const readState = () => {
   const s = readJson(stateFile());
@@ -36,11 +35,14 @@ const hhmm = (t) => `${iso(t).slice(11, 16)}Z`;
 /** The stdout line for one stuck step. */
 export const stuckLine = (x) => `STUCK ${x.id}: part ${x.part}${x.attempt > 1 ? ` (attempt ${x.attempt})` : ''} waits on ${x.by} for ${x.minutes} min (${x.why}; nothing since ${x.after} at ${hhmm(x.since)})`;
 
-/** The step's owner and the desk (agent names only; never the lead or the user). */
-export const stuckAddressees = (x, desk = null) => [...new Set([x.by, desk].filter((n) => n && n !== 'lead' && n !== 'user' && AGENT.test(n)))];
+/**
+ * The thread's assignees: the steward on duty only (I-175, user T-155 #5: workers, the step's runner included, are
+ * never assignees of an automated thread; the steward nudges them by message). `st`: thread-routing stewardState.
+ */
+export const stuckAddressees = (x, st = null) => stewardTo(st);
 
 /** The console thread for one stuck step: {title, text}. Ids, names and minutes only (Hard rule 12). */
-export function stuckThread(x, { desk = null, min = STUCK_STEP_MIN } = {}) {
+export function stuckThread(x, { steward = null, min = STUCK_STEP_MIN } = {}) {
   const title = `${x.id} part ${x.part} waits on ${x.by} for ${x.minutes} min`;
   // I-140 (T-116, C-045): the user read this thread and asked "what's the problem?": the first line is for them, in
   // plain words with what they can do; the runner's line names the exact ack, with the part's CURRENT attempt (C-045's
@@ -48,9 +50,10 @@ export function stuckThread(x, { desk = null, min = STUCK_STEP_MIN } = {}) {
   const L = [
     `For you: you did nothing wrong. ${/^gated/.test(x.why) ? `The Start button of ${x.id} part ${x.part} stays grey until ${x.by} gets the phone ready` : `${x.id} part ${x.part} says "don't swipe yet" until ${x.by} starts its recording`}, and ${x.by} has not reacted for ${x.minutes} min; it has been told. If you don't want to wait, press "Skip / not now" on the step; it can be brought back later.`,
     `Step ${x.id} (by ${x.by}), part ${x.part}${x.attempt > 1 ? `, attempt ${x.attempt}` : ''}: ${x.why}. Nothing has changed on it since ${x.after} at ${hhmm(x.since)} (${x.minutes} min; the limit is ${min} min), so the user is looking at a step that waits on its runner.`,
-    `${x.by}: ack the part now with its current attempt (node tools/console.mjs ack ${x.id} --by ${x.by} --part ${x.part} --attempt ${x.attempt} --state loading|ready|recording --message "<what you do, ETA>"), or cancel the step. Check the ack's exit code: a STALE-ATTEMPT refusal changes nothing (I-140). A wait armed after the user's Start over: re-arm it with --epoch (header of tools/console.mjs, I-123).`,
+    // I-175: facts for the steward, not a line addressed to the runner (workers are nudged by message)
+    `What unblocks it: ${x.by} acks the part with its current attempt (node tools/console.mjs ack ${x.id} --by ${x.by} --part ${x.part} --attempt ${x.attempt} --state loading|ready|recording --message "<what it does, ETA>"), or cancels the step. The ack's exit code counts: a STALE-ATTEMPT refusal changes nothing (I-140). A wait armed after the user's Start over is re-armed with --epoch (header of tools/console.mjs, I-123).`,
+    stewardLine(steward, [x.by]),
   ];
-  if (desk && desk !== x.by) L.push(`Desk (${desk}): please make sure ${x.by} reacts.`);
   L.push('One message per stuck period; this thread closes by itself when the step moves on (tools/idle.mjs, I-123).');
   return { title, text: L.join('\n') };
 }
@@ -127,9 +130,9 @@ export async function stepPass({ by, log, quietOk = false, now = Date.now(), min
       if (it.news && !lead) log(`NOT POSTED ${it.x.id}: posting needs --by lead (only the lead starts threads); the lead's watch posts it`);
       continue;
     }
-    const desk = getDesk()?.agent || null;
-    const { title, text } = stuckThread(it.x, { desk, min });
-    const to = stuckAddressees(it.x, desk);
+    const steward = await alarmSteward(); // I-175
+    const { title, text } = stuckThread(it.x, { steward, min });
+    const to = stuckAddressees(it.x, steward);
     try {
       const r = await createThread({ by, title, text, ...(to.length ? { to: to.join(',') } : {}) });
       await settleStuck(it.x.key, { thread: r.thread.id, now });

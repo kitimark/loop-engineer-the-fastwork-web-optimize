@@ -2,7 +2,7 @@
 // C-037 (2026-10-04): the user's Start over came 0.5 s before the runner armed `console.mjs wait --until answered`, the
 // runner's lease ran out mid-step and went to the next waiter, which navigated the phone and posted its own step.
 // One test per part: (a) `lock.mjs status` KEPT and the next waiter's acquire waits, (b) `console.mjs wait` REDO at once
-// for a missed Start over and --epoch, (c) `idle.mjs check` STUCK + one thread to the owner and the desk, (d)
+// for a missed Start over and --epoch, (c) `idle.mjs check` STUCK + one thread to the steward (I-175), (d)
 // `iphone.mjs` WAIT before it touches the phone, (f) `console.mjs post` of a phone step needs the lease and no other
 // open phone step. No port 5173, phone (FW_IPHONE_PORT points at a closed port), Chrome, real locks or real store.
 import { test, beforeEach } from 'node:test';
@@ -105,7 +105,7 @@ test('I-123 d: iphone.mjs refuses (WAIT, exit 1) under another owner\'s step bef
   assert.doesNotMatch(node(IPHONE, ['park', '--owner', 'iphone-runner'], { env }).stderr, /WAIT: the user's step/);
 });
 
-test('I-123 c: idle.mjs check says STUCK after 2 min without the runner (exit 3), one thread to the owner and the desk, closed when the step moves on', async () => {
+test('I-123 c: idle.mjs check says STUCK after 2 min without the runner (exit 3), one thread to the steward (I-175: not the runner or the desk), closed when the step moves on', async () => {
   await c037();
   const C = await import('../../tools/lib/console.mjs');
   const at = (min) => new Date(Date.parse(C.get('C-001').updatedAt) + min * 60000).toISOString();
@@ -116,13 +116,15 @@ test('I-123 c: idle.mjs check says STUCK after 2 min without the runner (exit 3)
   assert.match(r.stdout, /^OK iphone: held by fix-nav-morph; the user's step C-001 by fix-nav-morph \(active, part 1\/2 waiting\) is on the phone \(a user wait, not idle\)$/m, 'I-125');
   const TR = await import('../../tools/lib/thread-routing.mjs');
   await TR.setDesk({ agent: 'mgmt-ops-10', by: 'lead' });
+  await TR.setSteward({ agent: 'mgmt-devices', by: 'lead' });
   r = idle(10, '--by', 'lead');
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /^STUCK C-001: part 1 \(attempt 2\) waits on fix-nav-morph for 10 min \(gated, waiting: Start stays off until fix-nav-morph acks ready; nothing since the user's Start over at \d\d:\d\dZ\)$/m);
-  assert.match(r.stdout, /^POSTED T-001 C-001: C-001 part 1 waits on fix-nav-morph for 10 min \(to fix-nav-morph, mgmt-ops-10\)$/m);
+  assert.match(r.stdout, /^POSTED T-001 C-001: C-001 part 1 waits on fix-nav-morph for 10 min \(to mgmt-devices\)$/m);
   const TH = await import('../../tools/lib/console-threads.mjs');
   const t = TH.getThread('T-001');
-  assert.deepEqual(t.assignees, ['fix-nav-morph', 'mgmt-ops-10']);
+  assert.deepEqual(t.assignees, ['mgmt-devices']);
+  assert.match(t.messages[0].text, /^Steward \(mgmt-devices\): nudge fix-nav-morph by message/m);
   assert.doesNotMatch(t.messages[0].text, /invalid|Pair/, 'no URL or step title in the thread');
   r = idle(11, '--by', 'lead');
   assert.equal(r.code, 3);
