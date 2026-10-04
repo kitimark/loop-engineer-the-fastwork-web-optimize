@@ -325,8 +325,21 @@ Session A's rate-1 check (inconclusive under load) is replaced by this one.
 - Static or moving: moving only. At rest V9 = C8 (0 px in every rest and end pair).
 
 What this is: the sub-pixel offset of the path's interpolation. It sits inside the user's position rule (T-030,
-"Position identity" below). The PR-010 reading that a moving-only difference goes to the user is the lead's call. I
-claim no tier for it here. Reduced motion (exact required) is below.
+"Position identity" below).
+
+**Tier: T2** (lead ruling 2026-10-04, `memory/illusion-must-be-pixel-identical.md`). The T2 wide numbers are fill 64,
+edge 128 and 0.5 % of the screen, with a Chrome and a Simulator A/A. V9 stays inside them:
+- Largest shade: 9, an edge difference, under the edge limit of 128 (and the fill limit of 64).
+- Share of the screen: ≤ 0.041 %, under 0.5 %.
+
+The A/A evidence:
+- Simulator: B2's A/A has 8 of 24 shots at delta 1; C's A/A is exact, 0 of 92. Files: `simpx-2026-10-04T03-21-10-943Z.json`,
+  `simpx-2026-10-04T03-26-27-409Z.json`.
+- Chrome: the reduced-motion runs RM1/RM2 have an A/A of 0 of 428 and 2 of 105 shots, max delta 1 (below). The
+  roll-end check's A/A is 1 of 8 rolls at delta 1 (`end-check-V9.json`). The T-034 runs' A/A is 0 at c 31, c 52 and
+  430→375, and 87 px at delta 2 at 375→1440.
+
+Reduced motion (exact required) is below.
 
 **Simulator counts** (`out/cd-roll-ca/sim-counts-2026-10-04T04-01-00-187Z.json`; hero at y 0, 4 s windows, others
 frozen, 2 reps, 4 digit rolls per window; background mean 10 %):

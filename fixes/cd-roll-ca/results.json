@@ -67,7 +67,7 @@
       }
     }
   },
-  "verdict": "V9 (cd-roll-ca on main's strip-tc): less-work counts hold (Chrome countdown rAF 163 -> 6 per 6 s, main frames 205 -> 79; WebKit Sim 132-146 -> 4 per 4 s); pixels: moving-only sub-pixel offset (max delta 9, <= 0.041 % of the screen, Sim); reduced motion exact against the control's A/A (lead ruling); phone P-093 no-worse check and review round 4 pending",
+  "verdict": "V9 (cd-roll-ca on main's strip-tc): less-work counts hold (Chrome countdown rAF 163 -> 6 per 6 s, main frames 205 -> 79; WebKit Sim 132-146 -> 4 per 4 s); pixels: T2 (lead ruling; moving-only sub-pixel offset, max delta 9, <= 0.041 % of the screen, Sim); reduced motion exact against the control's A/A (lead ruling); phone P-093 no-worse check and review round 4 pending",
   "chromeCounts": {
     "note": "4 s at y 0; p2 = every other animation frozen, p1 = paused once (the accent cycle restarts)",
     "base_frozen": {
@@ -2281,7 +2281,7 @@
         "areaCssPx": 166,
         "edgeOrFill": "edge",
         "staticOrMoving": "moving only",
-        "tier": "not claimed (lead's call)"
+        "tier": "T2 (lead ruling 2026-10-04: max delta 9 edge <= 128/fill 64, <= 0.041 % < 0.5 %; A/A Sim B2 8/24 delta 1, C 0/92; Chrome RM 0/428 and 2/105 delta 1, end-check 1/8 delta 1)"
       },
       "reducedMotion": {
         "sim": {
