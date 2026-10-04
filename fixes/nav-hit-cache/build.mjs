@@ -56,6 +56,13 @@ export const BASES = {
     from: [join(WT, 'fixes/v8-best/patch.diff'), { rev: '75466887', path: 'fixes/morph-scroll/delta.diff', sha: '81ac7e1ee500' }],
     patch: join(HERE, 'patch-on-v8ms.diff'), expect: { V: ['9138732704f2', '659b02f7169d'], VA: ['f325bf009cd6', '659b02f7169d'] }, pre: { V: 'nhcms', VA: 'nhcmsa' },
   },
+  // v9-final entry (lead ruling 10-05, ops note B): C = int-v8's v9 step 4 (7c + double-drive + scroll-cb + PR-021 rev 3,
+  // out/v9/snap-de237379b556/V in int-v8's worktree, copied byte-identical to dir; no `from`), V = C + U1 + glue, applied
+  // strictly (patch -F 0), as one diff
+  v9s4: {
+    dir: join(SNAP, 'v9s4-de237379b556'), pin: ['de237379b556', 'e1359ab9994a'],
+    patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['76073ef54064', 'e1359ab9994a'], VA: ['e6323dbf83d3', 'e1359ab9994a'] }, pre: { V: 'nhcv9', VA: 'nhcv9a' },
+  },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
 // cached under out/nav-hit-cache/from/

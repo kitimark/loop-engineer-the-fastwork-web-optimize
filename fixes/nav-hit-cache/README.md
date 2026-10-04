@@ -763,6 +763,69 @@ so 7 loads finished of the 12 planned. Records: `p117/flicker-{1,2}.json`.
   backward scroll step) also shows in C.
 - **Rule for later parity.** A one-step flicker at a threshold is driver jitter, as P-108's v8-vs-v8 diffs already
   showed (20 of them). Judge single steps only together with the live scrollY at the flip.
+- **Status after the lead's ruling (10-05).** The driver-jitter mechanism stays OBSERVED: 4/9 vs 0/5 is not
+  significant, and it is no evidence of no harm either. mgmt-ops-10's second read AGREES (953328a0), with two notes:
+  - backward steps were logged only at flips, so nobody counted them per arm;
+  - this parity ran without scroll-cb.
+  nav-hit-cache + glue go to the v9-final candidate, admitted by the phone flicker gate below. P-117 is superseded.
+
+## Flicker gate for the v9-final ticket (draft for int-v8, 10-05; fixed before any data)
+
+The ticket is v9-final (with nav + glue) against v9 step 4, on the phone, with the G driver. This gate rides on the
+same counted runs: every G run adds `--inject fixes/nav-hit-cache/flicker-inject.mjs`. COUNTS ONLY, no timing claim.
+
+- **Logger** (`flicker-inject.mjs`). A MutationObserver on the class of `.pain` and of `.start-selling-top-nav`. It
+  logs each flip of is-pain-dark / is-on-dark as `[t, kind, on]`, with t = performance.now(), the gesture recorder's
+  clock.
+  - It reads no layout and no scrollY. Position comes from the recorder's own per-frame scrollY.
+  - It records only real changes. Both arms carry the same logger.
+  - It re-installs on every page load.
+  - Checked only on a fake DOM and by the class writers in v9 step 3 (12302 `.pain` toggle, 14774 nav `is-on-dark`).
+    It never ran on the phone.
+- **Metric** (`flicker-gate.mjs`, per kind, summed over each arm's counted runs).
+  - *Blink:* two consecutive flips of one kind whose middle state lasted ≤ K rendered frames. K = 8; twins K = 4 and
+    16.
+  - *Monotone blink:* a blink across which the recorder's scrollY never changed direction, from two frames before the
+    first flip to the second flip.
+  - *Turn blink:* any other blink. In a turn blink the class followed the scroll position back, which is the
+    Simulator mechanism.
+- **Gate.**
+
+  | | test | threshold |
+  |---|---|---|
+  | G1 (hard) | V monotone blinks | = 0 |
+  | G2 (no-worse) | V blinks | ≤ C blinks + 1 |
+  | G3 (no-worse) | median flips per run, each kind | V ≤ C + 2 |
+
+  - **Valid run:** an inject value for every segment, both elements found, no inject error.
+  - **VOID:** fewer than 3 valid runs in an arm, or arms that ran different gesture script hashes.
+  - **Threshold-sensitive:** the K = 8 verdict differs from either twin.
+  - **Exit codes:** 0 PASS, 3 FAIL, 4 VOID, 5 INCONCLUSIVE.
+- **Backward steps (lead ruling A, from ops note A).**
+  - The scorer reads scrollY at every rendered frame (the gesture recorder's frames), not only at flips.
+  - Per run it counts the direction changes and the one-frame step-backs. Per arm it reports the median step-back
+    rate per 1000 moving frames.
+  - A blink count (G2) goes against V only when the two arms' rates match: within a factor 1.5 of each other, or both
+    ≤ 0.5.
+  - G2 failing with rates that differ is INCONCLUSIVE, not PASS.
+  - G1 (monotone blinks) needs no step-back, so it stands either way.
+- **Prediction (before data).**
+  - G1: 0 in both arms. A carried cache value can only delay a change, not make one.
+  - G2: V blinks = C blinks ± 1.
+  - G3: equal medians ± 1.
+  - A G1 FAIL, or a G1 count above 0 in C, falsifies the mechanism and sends the flicker back to triage.
+- **Self-check.** Synthetic records, in scratch only:
+  - a clean block → PASS;
+  - a step-back blink in both arms → PASS (turn blinks);
+  - step-back blinks in V only, step-back rates differ → INCONCLUSIVE;
+  - one monotone blink in V → G1 FAIL;
+  - a run with the nav element missing → VOID run.
+
+```sh
+node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <runner> --label <arm>-<pos> \
+  --inject fixes/nav-hit-cache/flicker-inject.mjs
+node fixes/nav-hit-cache/flicker-gate.mjs --arm C <C runs...> --arm V <V runs...> [--json gate.json]
+```
 
 ## Smoke (not scored)
 
