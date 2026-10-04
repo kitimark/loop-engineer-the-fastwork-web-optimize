@@ -42,6 +42,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-105 second read (iphone-runner, v7 vs v6 phone no-worse, 7035375d): AGREE, WORSE on GH only, threshold-sensitive.**
+  - Ops ran the frozen scorer b9a29ffcc7bb on the runner's items-all.txt. The output matches the runner's table gate
+    for gate: S -1, GF 0, GH +3 (twins +3/+1), GM 0, GE 0; no new cluster.
+  - The H1r files C1-C4 date from inside H1r (14:26:42-14:32Z). The VOID H1's files were overwritten and are not used.
+  - Warm-up read checked by hand: GH without gHV1 is V 9/10 vs C 7, so +2.5. Rates are per-run medians (C 1.35, V
+    1.64 per 100 moving frames).
+  - N1: the GH WORSE rests on frames between 50 and 54 ms. At > 54 the d is +1. V adds four frames of 104-116 ms
+    (scrollY 114-1398); C has none above 86.
+  - N2: n = 3 per arm with a per-run spread of 7-10 is weak evidence of size. Read it as a lead, not a cost.
+  - N3: the gaps the runner recorded (sC overwrite, no V-port warm-up, S holds beside the shared group vs G holds
+    exclusive) do not change the verdict.
+  - Predictions: 6 of 8 in; GH and overall missed. PREDICTIONS row filled.
+  - Follow-up at the lead's order: **P-116 registered**, the v8 GH attribution ticket drafted in
+    research/management/p116-v8-gh-attribution.md. C = v8; X = v8 minus the countdown group; Y = v8 minus rest-script;
+    n = 4. int-v8 fills in the arm and scorer hashes; the lead does the pre-data read.
 - 10-05 **P-107 pre-data (fix-nav-morph, nav-hit-cache P-104 successor, 62e6d234): PASS with notes.**
   - registered P-107 fix-nav-morph nav-hit-cache successor (held since P-104; the card's heading and output folder take
     the id before data).
@@ -130,7 +145,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     P-104 nav-hit-cache rev 2 · P-105 iphone-runner v7 vs v6 · P-106 toolbar-resize ablation ·
     P-107 nav-hit-cache successor (fix-nav-morph, registered 10-05) · P-108 scroll-cb-phone rev 2 · P-109 toolbar-resize Sim bisect ·
     P-110 toolbar-resize trigger/cost split · P-111 v8 vs v7 (int-v8, the lead's read) ·
-    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize). **Next free: P-116.**
+    P-112 v8 M-only attribution (int-v8, ticket to the lead) · P-113 v8 G-H cluster attribution (int-v8, the lead's read) · P-114 v8 vs v7 confirm (int-v8, 81d65025, lead PASS be0d650b) · P-115 toolbar-resize svh/csl/cva split (fix-toolbar-resize) · P-116 v8 GH attribution (int-v8 + iphone-runner, ticket drafted by ops, the lead's read; registered 10-05). **Next free: P-117.**
   - Incident I-161 (opened by me, non-blocking): tests/unit/live-phone.test.mjs fails while the machine's Try-it host
     listens on 6400. It fails after the I-157 fix too, so `npm run test:unit` is red for everyone (1 of 1042).
   - P-100 H1r result: AGREE. O1 RAISED, O2 not enough (paused n 1), O3 1.00 descriptive, all Fair. Ledger row filled.
