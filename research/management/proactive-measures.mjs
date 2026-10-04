@@ -28,7 +28,8 @@ for (const l of fs.readFileSync(path.join(D, 'locks/audit.log'), 'utf8').split('
 let idle = [];
 try {
   idle = fs.readFileSync(path.join(mainCheckout, 'out/idle-watch.log'), 'utf8').split('\n')
-    .filter((l) => /IDLE iphone|STUCK iphone/.test(l) && inWin(l.slice(0, 20)))
+    // the watch logs one "POSTED T-nnn iphone: …" line per alarm thread (older lines: "IDLE iphone" / "STUCK iphone")
+    .filter((l) => /IDLE iphone|STUCK iphone|POSTED T-\d+ iphone:/.test(l) && inWin(l.slice(0, 20)))
     .map((l) => l.match(/for (\d+) min/)?.[1]).filter(Boolean).map(Number);
 } catch {}
 
