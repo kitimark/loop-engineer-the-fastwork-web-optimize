@@ -42,6 +42,24 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-107 result (fix-nav-morph, nav-hit-cache on v8, 64ad0b9b): AGREE, PASS on every part.**
+  - Ops re-scored independently from the raw records in fixes/nav-hit-cache/p107/: counts / steps, not the owner's
+    perStep fields or score-chrome.mjs.
+  - Harness pins match: build 17355c247e9c, probe 8922642a627d, simcount 58fc44c464a2, patch 7bbb6d4212ff.
+  - Served hashes equal the arm table in all 8 Chrome count loads and 4 Simulator loads. No errors in any record.
+  - Judged counts: every V load is below every C load in both viewports, and all 16 interval checks hit. Mobile V
+    makes no getComputedStyle call at all; the key is absent, which counts as 0.
+  - Guards: V is at or below C on all 8, with V − C from −0.055 to −0.001. Simulator: no worse on all three.
+  - Parity: task mode has 0 lag and 0 mismatches in all 5 cases at 10 and 40 px. In raf mode, every mismatch is in a
+    lag frame (inSync 0).
+  - N1: the parity records list no per-load served hash, only the arm table; the probe throws on a wrong one (owner).
+    The count and Simulator records do list it.
+  - N2: the Simulator ran beside load1 up to 116 (I-082). These are counts, with C and V in one C V V C session, so
+    they stand. Say so in the land request.
+  - N3: the hits replicate P-104 (card N4); they are not an independent prediction. PREDICTIONS row filled.
+  - Owed before the land request (card): the short phone no-worse check on its own ops ticket (after P-105 and PR-018
+    rev 7, the lead's order; no P-id yet), the combined VA audit with fix-scroll-cb's patch, and `__nsForce = !0` in
+    any combined build with PR-018.
 - 10-05 **P-115 amendment pre-data (fix-toolbar-resize, C = v8, 7d56ce01): PASS with a note.**
   - Checks:
     - Between the earlier PASS (18fc5ecb) and the rebased be7e2908, the card's folder is unchanged.
