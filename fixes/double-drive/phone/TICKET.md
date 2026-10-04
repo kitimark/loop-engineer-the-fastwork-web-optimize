@@ -46,8 +46,10 @@ drivers: S = `iphone.mjs run --driver scroll --probe std --block P-118 --arm C|V
 scripts (pinned, sha256/12): fixes/double-drive/phone/serve.sh 730fb0718409 (committed in a95e4ea7);
   fixes/double-drive/phone/hold.sh 58d285cb0094 (a copy of P-116's hold.sh b25c8fc83e6f with arms C and V and P-117's
   items; labels p118-*, --block P-118).
-scorer: p118/score.mjs with its self-test, written by int-v8 (lead's order, 21:19Z) on P-116's scorer, which handled an
-  arm with its own CSS; its hash is pinned by int-v8 and read by ops before data. It imports P-105's scorer unchanged
+scorer: fixes/double-drive/phone/p118/score.mjs 652bba12f6a3 and selftest.mjs f2823168094f (sha256/12), written by
+  int-v8 (lead's order, 21:19Z; its commit bb68123d) on P-116's scorer, which handled an arm with its own CSS; ops reads
+  them before data. Run in block order: `node fixes/double-drive/phone/p118/score.mjs <item>:<file> ... --json out.json`
+  (it reads p118-<H>-check-<item>.log beside each run file, as hold.sh writes it). It imports P-105's scorer unchanged
   (b9a29ffcc7bb, refused if changed: scoreS, scoreG, applySentinel, gate, clusters), and its self-test must reproduce
   P-105's S gate (d -1) and GM gate (d 0, no new cluster). Item names as in hold.sh.
   Gates (P-105's, unchanged): S and GM: d = median V − median C of dt > 50 per run, WORSE at d > +2; twins 46 / 54
