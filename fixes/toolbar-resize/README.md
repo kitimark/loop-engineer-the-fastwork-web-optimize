@@ -426,8 +426,10 @@ opens the gap). Mechanism and candidate screening only; a candidate that locates
   - `svh`: `.start-selling-future-card { min-height: <its own computed px> }` (replaces `100svh`, CSS l.3522, width <= 860px;
     the small viewport height is constant while the toolbar moves, so the look is the same in portrait). Tests the S5 lead.
   - `csl`: `contain: layout` on the showcase.
-  - `cva`: `content-visibility: auto; contain-intrinsic-block-size: auto <its measured px>` on the showcase (skips it only
-    while it is off screen).
+  - `cva`: `content-visibility: auto; contain-intrinsic-block-size: auto <its measured px>` on the showcase. Per spec,
+    `auto` always turns on layout, style and paint containment and skips the contents only while the element is not
+    relevant to the user (CONFIRMED, CSS Containment 2, w3.org/TR/css-contain-2/#content-visibility, value `auto`; WebKit
+    assumed to follow it). So cva = csl + style and paint containment + a skip while off screen (ops C1, amended before data).
   - C = v7 with the same injection and no change.
 - **Order (one hold):** C:H1 svh:H1 csl:H1 C:H2 cva:H1 C:H3. Driver `sim-bisect115.mjs` (sha256/12 `91d32f9ac1c6`, a copy of
   sim-bisect110 with the arm list, inject file and folder changed). If the budget stop drops steps, they run in one more
@@ -439,13 +441,20 @@ opens the gap). Mechanism and candidate screening only; a candidate that locates
 - **Scorer and filters:** unchanged, `score-bisect.mjs` `cb6f0c97b81b` (LOCATES <= 0.30, PARTIAL <= 0.70, NONE, GEOMETRY > 2 px,
   replication gate, VOID at 30 % drift). Each gate line is reported next to its call, with n per run. One run per arm:
   indicative.
-- **Predictions:** svh LOCATES ~35 % (NONE ~55 %). csl LOCATES ~35 %, PARTIAL ~20 %. cva PARTIAL ~40 %, NONE ~45 % (the
-  showcase is on screen for much of the hero zone, y ~250-1900).
+- **Predictions** (cva amended before data, ops C1): svh LOCATES ~35 % (NONE ~55 %). csl LOCATES ~35 %, PARTIAL ~20 %.
+  cva's ratio at most csl's (+0.05 noise) ~85 %; cva LOCATES ~50 %.
 - **Reading.**
-  - svh LOCATES: the viewport-unit invalidation (S5) drives it; the fix is a px min-height set once (resize listener for
-    rotation); look check, then phone G.
-  - csl LOCATES: layout containment on the showcase isolates it; look check (pixel-identical rule), then phone G.
-  - cva LOCATES or PARTIAL: helps while off screen only; stacks with v7's far re-skip; look check, then phone G.
+  - svh LOCATES: the card's min-height viewport-unit invalidation (S5) drives it; the fix is a px min-height set once
+    (resize listener for rotation); look check, then phone G. svh NONE refutes only that path (the card's min-height reaching
+    the showcase), not the S5 lead as a whole (ops N1): other svh users stay, e.g. `.start-selling-future` margin-top
+    `calc(1px - 100svh)` (v7 CSS l.2556; baseline l.2368), the hero and pain. Inside the showcase,
+    `.start-selling-profile-shell`'s `100vh` clamp (v7 l.3262-3263; baseline l.3019-3020) is overridden on phones by
+    `height: auto; min-height: 0` (v7 l.3711-3728, in the phone media query at l.3627; checked against the v7 CSS), so it is
+    not a live viewport-unit user there.
+  - csl and cva both LOCATE: layout containment is enough; csl is the candidate.
+  - cva LOCATES and csl NONE: style or paint containment, or the off-screen skip; separate them in the next card.
+  - csl, cva change the box (independent formatting context; paint containment clips overflow): any arm that locates goes to
+    the pixel-identical look check before a phone G check (ops N2).
   - All NONE: the cost is inside the showcase and needs its own split (profile deck children).
 
 ## Scenarios not run
