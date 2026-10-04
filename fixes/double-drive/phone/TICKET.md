@@ -5,9 +5,15 @@ P-117 (research/management/p117-combined-phone-no-worse.md). Only the arms, the 
 There is no counted run before the lead's pre-data read.
 
 ```
-PHONE TICKET P-<ops> · less-work no-worse check: v8 vs v8 + double-drive · runner iphone-runner · builder and verdict
+PHONE TICKET P-118 · less-work no-worse check: v8 vs v8 + double-drive · runner iphone-runner · builder and verdict
   owner fix-double-drive (ops second read) · registered before any phone data
-when: after the Simulator pixel check (set 2 of 2) passes and after P-117; the lead sets the phone order.
+when: the Simulator pixel check (set 2 of 2) passed (0 consistent differences) and left V unchanged. The phone order
+  is the lead's call; P-118 runs first, independent of P-117 (V has neither nav-hit-cache nor scroll-cb).
+V pinned (final, before the lead's read): JS 3076c5a8c9a3 / CSS 2f7197880ffd (full sha256 above). Any change to V's
+  JS or CSS after this voids the lead's signature: re-hash, ops re-checks, the lead re-signs.
+coverage (G part M is the right part): on the phone (430x775 probe) the future card carries .is-future-shrinking at
+  scrollY 1468-2860 of a 5189 page, i.e. the middle, not the end; flick-middle-v1 works y 1900-3800, so it covers that
+  range. The page end (G part E) has no future card shrink. The commission card is compact on phones.
 arms (2):
   C = v8-best: JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16,
                CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43
@@ -35,10 +41,15 @@ holds (each <= 10 min):
   H3 (G part M): sCo wgC wgV gMC1 gMV1 gMV2 gMC2 gMC3 gMV3 sCc
   S n = 4 per arm, C V V C C V V C; every counted C S run is a heat sentinel. G n = 3 per arm. One uncounted warm-up
   per arm port per leg. Then `iphone.mjs park`; the servers stop (serve.sh stop). ~20 min of phone time.
-drivers: S = `iphone.mjs run --driver scroll --probe std --block P-<ops> --arm C|V --run <n>`; G part M =
+drivers: S = `iphone.mjs run --driver scroll --probe std --block P-118 --arm C|V --run <n>`; G part M =
   flick-middle-v1.json (sha256/12 0f97205f1d42, as P-105/P-111/P-117), window mid1 -> end, moving frames only.
-scorer: P-117's scorer (fixes/v8-best/phone/p117/score.mjs on main) with this ticket's arm hashes. It imports P-105's
-  scorer unchanged (scoreS, scoreG, applySentinel, gate, clusters).
+scripts (pinned, sha256/12): fixes/double-drive/phone/serve.sh 730fb0718409 (committed in a95e4ea7);
+  fixes/double-drive/phone/hold.sh 58d285cb0094 (a copy of P-116's hold.sh b25c8fc83e6f with arms C and V and P-117's
+  items; labels p118-*, --block P-118).
+scorer: p118/score.mjs with its self-test, written by int-v8 (lead's order, 21:19Z) on P-116's scorer, which handled an
+  arm with its own CSS; its hash is pinned by int-v8 and read by ops before data. It imports P-105's scorer unchanged
+  (b9a29ffcc7bb, refused if changed: scoreS, scoreG, applySentinel, gate, clusters), and its self-test must reproduce
+  P-105's S gate (d -1) and GM gate (d 0, no new cluster). Item names as in hold.sh.
   Gates (P-105's, unchanged): S and GM: d = median V − median C of dt > 50 per run, WORSE at d > +2; twins 46 / 54
   (threshold-sensitive if a twin's verdict differs); > 34 (twins 30 / 38) reported. GM: any NEW cluster fails (a 250 px
   bin with a > 50 frame in >= 2 V runs and none in C in that bin or a neighbour). Fewer than 3 valid runs per arm:
