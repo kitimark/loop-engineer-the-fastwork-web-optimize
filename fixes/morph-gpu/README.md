@@ -1230,10 +1230,35 @@ f673c6cbc770):
 - Measured against the `fade0` background (314), the close-specific paints go from 195 to 84.
 - The open panel at m = 1 looks the same with the rule (Chrome screenshots of both arms).
 
-**Still to report here:**
-- the Simulator shots at m = 1 and the repeat counts (`close4`);
-- the frozen-frame PR-010 checks of v8 vs v8 + rule (`fixes/v9-best/gates/px-chrome.mjs`, `px-sim.mjs`,
-  `V9_SNAP=out/morph-gpu/pxsnap-f673c6cbc770`).
+**Repeat run and Simulator shots** (2026-10-04 23:19Z; arms: base, + rule, base again; paints / kpx over 1.2 s):
+
+| step | base | + rule | base again |
+|---|---|---|---|
+| close | 329 / 15021 | 204 / 6060 | 337 / 15455 |
+| setclose | 367 / 16090 | 170 / 2786 | 361 / 16040 |
+| glide | 478 / 29330 | 392 / 23565 | 479 / 29341 |
+| open | 139 / 3155 | 126 / 1640 | 141 / 3153 |
+| setopen | 136 / 2590 (max 18/1716) | 83 / 174 (max 3/8) | 119 / 2612 (max 16/1743) |
+
+- These reproduce the first run.
+- The shots after each step (live, not frozen) differ from base by about as much as base differs from itself:
+  - rule vs base: 0.25-0.48 % over 8 levels, and 1.51 % at setopen;
+  - base vs base: 0.43-0.60 %, and 1.31 % at setopen (col-tracks and countdown in motion).
+- The open panel at m = 1 draws the same in all three arms (viewed): title, countdown, both buttons, footer. The rule
+  does not hide the open panel in WebKit.
+
+**Frozen frames, Chrome** (`fixes/v9-best/gates/px-chrome.mjs mobile`, A = v8, V = v8 + rule, `V9_SNAP=
+out/morph-gpu/pxsnap-f673c6cbc770`, 13 stops 0-5346; output in `out/v9/px-mobile-2026-10-04T22-16-45-285Z`):
+- 9 of 13 stops: consistent 0-4 css px².
+- The remaining clusters are both timer loops the gate does not freeze, and their own A/A differs there too:
+  - y 0, 300 and 548: `em.script-accent`, the hero word rotator, up to 2110 css px² (0.53 %). The loads froze on
+    different words ("あなた" in A, "kamu" / "bạn" in V; viewed). V~V2 differs by 1.0 % there. This is v8's known
+    rotator phase (v8-best README; zero with `PX_ALIGN=1`).
+  - y 4856: `#platform`'s ask field, a typing loop at different letters ("Ad|" vs "Contract needs a lawyer|"; viewed).
+    235 css px² (0.06 %).
+- Nothing differs at the header or the panel. Within T2.
+
+**Frozen frames, Simulator** (`px-sim.mjs`, same arms): queued. It was deferred during the phone blocks P-118/P-120.
 
 ## Risks, conflicts, follow-ups
 
