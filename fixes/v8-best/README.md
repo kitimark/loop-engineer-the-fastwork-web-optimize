@@ -361,6 +361,40 @@ apart by the runner. Score: `out/p111/score.json`, scorer 26d944bf93e2, in block
   - P-113 below: faces + glue, and K, against the GH cluster.
   After both, the lead rules on what stays in v8.
 
+## P-112 result (2026-10-04 16:1xZ-16:2xZ, iphone-runner; scored by int-v8): the close falsifier holds; the scorer says CAUSE on O1.f2
+
+H1 and H2 were VALID. All gates were Serious (39.6-39.9 °C), pmcheck passed, and every counted C M run passed its
+sentinel. 4 + 4 valid runs. Score: `out/p112/score.json`, scorer 831ca91ad2a1 (P-111 base 26d944bf93e2). C = v8 −
+rev 3, V = v8.
+
+| key (ms, median of runs) | C (v8 − rev 3) | V (v8) | d | rule |
+|---|---|---|---|---|
+| close.f1 | 27 | 26.5 | −0.5 | ≤ +2: falsifier met |
+| close.f3 | 62 | 62 | 0 | ≤ +2: falsifier met |
+| O1.f1 / O1.f3 | 34 / 60 | 34.5 / 62 | +0.5 / +2.0 | no-worse |
+| O1.f2 | 46.5 | 49 | **+2.5** | WORSE (scored O1 key) |
+| reported: O2.f1 / f2 / f3 | 64.5 / 79.5 / 90.5 | 35.5 / 52.5 / 67 | −29 / −27 / −23.5 | (faster) |
+| reported: O3.f1 / f2 / f3 | 70 / 84 / 97.5 | 35.5 / 52.5 / 66.5 | −34.5 / −31.5 / −31 | (faster) |
+| M moving > 50 / > 34 (count) | 2 / 2 | 0 / 2 | −2 / 0 | no-worse |
+
+- **The question asked (the close start).** The registered falsifier holds: close.f1 and close.f3 are d ≤ +2 ms
+  (−0.5 and 0), and Mmoving is no-worse. **Rev 3 is not the cause of P-111's longer close start.**
+- **The scorer's literal verdict is CAUSE.** Its rule counts any scored Mtweens key, and O1.f2 is +2.5 ms (C runs 47,
+  46, 48, 44; V runs 49, 54, 49, 45). V's mV3 (54) is the high run: without it, d is +2.0, not above the rule. In
+  P-111, O1.f2 was −2 for v8 against v7. Only this pre-registered key fails, and it rests on one run.
+- **The warm opens.** V's warm opens are 23-35 ms faster. C's runs are bimodal (O2.f1 53, 90, 51, 76; O3.f1 54, 89,
+  52, 86); V's are tight (33-38). Rev 3's open gain reproduces.
+- **Mac load (load1, run start/end).** C 2.3-6.2, V 2.0-5.5: a quiet Mac. P-111's M leg ran at 13-140 (C) and 42-119
+  (V) beside heavy shared jobs. Here v8's close is 26.5 / 62 ms; in P-111 it was 30.5 / 63.5, and v7's 28 / 60.
+  Reading (not measured): P-111's close WORSE may come from that load, from another v8 part, or from run spread. One
+  candidate is countdown-faces' panel clock (`__cdPanelShown` flips during the morph), which is in both P-112 arms.
+  P-112 shows only that rev 3 is not it.
+- **Predictions, checked:**
+  - CAUSE for the close (P 0.65): missed. The falsifier held.
+  - Opens faster by ≥ 10 ms (P 0.85): hit.
+  - Sentinels passed first try (P 0.75): hit.
+- **Next:** the lead rules on the trade with P-113. int-v8 has not run any further block.
+
 ## P-113 hero-flick cluster attribution ticket (lead 2026-10-04 16:2xZ), before any P-113 data
 
 Why: P-111's G part H has a new > 50 cluster in v8, in scrollY 2500-2749 (up flicks, phone geometry). Code reading
