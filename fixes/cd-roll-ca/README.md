@@ -1495,6 +1495,14 @@ ops notes (mgmt-ops-10 pre-data read of 592ebb6d: PASS; written here before data
      LAN addresses.
   N3: if the Mac table-reader test forces a p100-lib/p100-rec rev, the new hashes and the diff go to ops before any
      phone data.
+rev 3 (re-ticket 2026-10-04 ~14:35Z, before the rerun's data; lead order after PR-017 rev 5 accepted land-k): the
+  real-page arm is VK (V9 + K, JS b43fe790, the build v8 takes), not V9. Synthetic arms, records, order and gates
+  unchanged. Rerun hold H1r: `ARMS="B P100 VK C8" sh fixes/cd-roll-ca/phone/serve-snap.sh`, then
+  `sh fixes/cd-roll-ca/phone/p100-hold.sh H1r quiet ca paused raf VK C8 C8 VK raf paused ca quiet`.
+  p100-hold.sh sha256 693b818110a4 (real-page URLs looked up per item; a VK item); p100-score.mjs sha256 a7e0861f13a9
+  (VK arm; O3 = VK vs C8 when VK has records, else V9 vs C8; O1/O2 unchanged; dry run on H1's two interrupted
+  records: not enough, as before). p100-rec, p100-lib, serve-snap and thermal-gate keep their hashes. H1's two
+  interrupted records (quiet, ca) stay descriptive only and are not pooled with H1r.
 serving code: the same as the K block (I-131's, 291ee671; the record names serve.mjs's sha256).
 order: the K block first, then this hold on the warm phone, in one lease after fix-morph-gpu's P-098/P-099 (requested
   through ops; the lead sets the phone order).

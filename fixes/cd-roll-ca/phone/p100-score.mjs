@@ -15,15 +15,16 @@
 //   O2 (arch-gpu-lessons: a paused animation keeps its frame-rate request) KEPT when med vsync.lt12_5(paused) >= 0.5 and
 //      med vsync.lt12_5(quiet) <= 0.1; NOT KEPT when med vsync.lt12_5(paused) <= 0.1; else UNCLEAR; "no vsync table"
 //      when the device trace has none.
-//   O3 (descriptive, the user's "B feels smoother"): med fastPerSec and perSec of V9 vs C8 (the real page at y 0),
-//      printed with the ratio; no verdict.
+//   O3 (descriptive, the user's "B feels smoother"): med fastPerSec and perSec of the real-page arm vs C8 (the page at y 0),
+//      printed with the ratio; no verdict. Real-page arm: VK when it has records (re-ticket 2026-10-04, PR-017 land-k),
+//      else V9 (the original ticket).
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const self = createHash('sha256').update(readFileSync(fileURLToPath(import.meta.url))).digest('hex');
-const ARMS = ['quiet', 'ca', 'paused', 'raf', 'V9', 'C8'];
+const ARMS = ['quiet', 'ca', 'paused', 'raf', 'V9', 'VK', 'C8'];
 const med = (a) => { const s = a.filter((x) => typeof x === 'number' && Number.isFinite(x)).sort((x, y) => x - y); if (!s.length) return null; const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const files = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1] === '--json'));
 const recs = files.map((f) => {
@@ -52,10 +53,11 @@ if (enough('paused', 'quiet')) {
   const p = by.paused.vsyncLt, q = by.quiet.vsyncLt;
   O2 = p == null || q == null ? 'no vsync table' : p >= 0.5 && q <= 0.1 ? 'KEPT' : p <= 0.1 ? 'NOT KEPT' : 'UNCLEAR';
 }
-const O3 = enough('V9', 'C8') ? { V9: { fastPerSec: by.V9.fastPerSec, perSec: by.V9.perSec }, C8: { fastPerSec: by.C8.fastPerSec, perSec: by.C8.perSec }, fastRatio: by.C8.fastPerSec ? +(by.V9.fastPerSec / by.C8.fastPerSec).toFixed(2) : null } : 'not enough';
+const RA = by.VK.n ? 'VK' : 'V9';
+const O3 = enough(RA, 'C8') ? { arm: RA, [RA]: { fastPerSec: by[RA].fastPerSec, perSec: by[RA].perSec }, C8: { fastPerSec: by.C8.fastPerSec, perSec: by.C8.perSec }, fastRatio: by.C8.fastPerSec ? +(by[RA].fastPerSec / by.C8.fastPerSec).toFixed(2) : null } : 'not enough';
 console.log(`O1 (CA roll faster than 60 Hz): ${O1}`);
 console.log(`O2 (paused animation keeps the rate): ${O2}`);
-console.log(`O3 (page V9 vs C8, descriptive): ${JSON.stringify(O3)}`);
+console.log(`O3 (page ${RA} vs C8, descriptive): ${JSON.stringify(O3)}`);
 console.log(`scorer sha256 ${self}`);
 const out = opt('--json');
 if (out) writeFileSync(out, JSON.stringify({ scorer: self, records: recs, arms: by, allSerious, O1, O2, O3 }, null, 1));
