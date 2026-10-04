@@ -205,7 +205,13 @@ test('buildView + renderText: the device jobs and the agent lines in the text; c
   // the real stores: a lease with a job, a status row
   assert.equal((await L.tryAcquire('iphone', { owner: 'iphone-runner', kind: 'lease', ttlSec: 600, meta: { url: LAN, job: J.parseJob({ text: 'block B attribution', forWhom: 'illusion-proposals' }) } })).ok, true);
   await S.set('fwreskip', { by: 'fix-scroll-engine', kind: 'fix', title: 'A size write', state: 'waiting', waitingOn: 'phone:G1b slot' });
-  const cv = await P.currentView();
+  // T-079: currentView also reads the repo's fixes/PROGRESS.json, whose versions' Try-it links resolve to this
+  // Mac's Wi-Fi address (localhost page only); pin it to a test address so the check below stays about the lease url
+  const oldLan = process.env.FW_LAN_ADDRESS;
+  process.env.FW_LAN_ADDRESS = '10.9.8.7';
+  let cv;
+  try { cv = await P.currentView(); } finally { if (oldLan === undefined) delete process.env.FW_LAN_ADDRESS; else process.env.FW_LAN_ADDRESS = oldLan; }
+  for (const x of cv.versions || []) if (x.tryIt.url) assert.match(x.tryIt.url, /^https?:\/\/10\.9\.8\.7:\d+\//);
   assert.equal(cv.live.devices.phone.jobs[0].line, 'block B attribution');
   assert.equal(cv.live.devices.phone.jobs[0].byLine.replace(/\d\d:\d\dZ/, 'HH:MMZ'), 'Run by iphone-runner for illusion-proposals, since HH:MMZ.');
   assert.deepEqual(cv.agents.agents.map((x) => [x.owner, x.doing, x.waits]), [['fix-scroll-engine', 'A size write', ['the phone: G1b slot']]]);
