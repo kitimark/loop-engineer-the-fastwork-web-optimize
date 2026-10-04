@@ -570,8 +570,37 @@ counts per viewport; JS C 65052c4a3902 / V 27f23f6a3878, CSS e0f92804c521; score
   (A/A), so `geom` beyond A/A is 0 and item 7(c) passes it.
 - Chrome legs: PASS.
 
-**Simulator and pixels:** pending. They run in exclusive `--no-timing` holds in the gap after P-112 (lead, I-160):
-`out/scroll-cb-phone/run-p108-sim.sh`.
+**Simulator (iOS Simulator, WebKit counts; 8 loads in 4 exclusive `--no-timing` holds, C1 V1 | V2 C2 | C3 V3 | V4 C4;
+valid C 4, V 4):**
+
+| metric per step | C mean (spread) | V mean | V − C (tol) | verdict |
+|---|---|---|---|---|
+| side rAF | 2.269 (0) | 0.521 | −1.748 | PASS (below every C) |
+| side rects | 3.527 (0) | 1.254 | −2.273 | PASS (below every C) |
+| styleRecalcs | 1.533 (0.069) | 1.488 | −0.045 (0.069) | guard PASS |
+| layouts | 3.730 (0.081) | 3.700 | −0.030 (0.081) | guard PASS |
+| forcedLayouts | 2.510 (0.063) | 2.496 | −0.014 (0.063) | guard PASS |
+| **paints (judged)** | 5.552 (0.110) | 5.511 | **−0.041 (0.110)** | guard PASS |
+| renderingFrames | 0.925 (0.022) | 0.904 | −0.020 (0.05) | guard PASS |
+
+- Parity: max C-vs-C1 0 (N_vp 5), V1-V4 0 diffs, 0 beyond A/A, 0 geom; every V deferral value is one C wrote. Not VOID.
+- Paints by section (reported) stay within the C range in every section (commission 310-313 V vs 312-317 C).
+
+**Pixels (`pixcheck.mjs`, headless, C1 V C2, CHECK OK, no new console errors or 404s):** % of pixels vs C1:
+
+| | V top / middle / bottom | C2 top / middle / bottom |
+|---|---|---|
+| mobile | 0.07 / 0.01 / 0 | 0.10 / 0.01 / 0 |
+| desktop | 0.06 / 0 / 0 | 2.53 / 0 / 0 |
+
+V is inside the 0-0.4 % phase-noise band everywhere; the one larger value is C2 against C1 (same build, A/A: the hero's
+animation phase at the top shot), so it says nothing about V.
+
+Final score, exact card 7e command (`score.json` in `out/scroll-cb-phone/p108/`): Paint d (tol) phone +0.043 (0.112),
+phone775 −0.071 (0.297), desk +0.001 (0.05), desk900 +0.010 (0.114), resize −0.038 (0.05), sim −0.041 (0.110); every
+guard passes, parity passes, nothing VOID.
+
+**P-108: PASS** (Chrome, Simulator, pixels). Next: the short phone no-worse check (less-work rule), ticket from ops.
 
 ## Risks, conflicts, follow-ups
 
