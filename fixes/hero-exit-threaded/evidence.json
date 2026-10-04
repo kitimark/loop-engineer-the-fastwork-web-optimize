@@ -1,0 +1,441 @@
+{
+ "schema": "fw-evidence/1",
+ "topic": "hero-exit-threaded",
+ "capMB": 200,
+ "items": [
+  {
+   "path": "out/p074",
+   "why": "P-074 phone block raw run records (gesture + Timeline JSON, holds, gates); behind the P-074 result",
+   "kind": "phone",
+   "for": "README \"P-074\"",
+   "checkout": "iphone-runner"
+  },
+  {
+   "path": "out/p081",
+   "why": "P-081 phone block raw run records (C1 F1 F2 C2, sentinels, holds, gates); behind the P-081 result",
+   "kind": "phone",
+   "for": "README \"P-081 result\"",
+   "checkout": "iphone-runner"
+  },
+  {
+   "path": "out/p088",
+   "why": "P-088 phone block raw run records (C / N / Fb, sentinels, holds, gates, voids); behind the P-088 result",
+   "kind": "phone",
+   "for": "README \"P-088\"",
+   "checkout": "iphone-runner"
+  },
+  {
+   "path": "out/hext/p074",
+   "why": "P-074 scorer output (score-p074.json)",
+   "kind": "result",
+   "for": "README \"P-074\""
+  },
+  {
+   "path": "out/hext/p081",
+   "why": "P-081 scorer outputs (scoreF, framesF, pair-1 sensitivity line)",
+   "kind": "result",
+   "for": "README \"P-081 result\""
+  },
+  {
+   "path": "out/hext/p088",
+   "why": "P-088 registered scorer outputs (scoreF / framesF / fm1F for N and Fb)",
+   "kind": "result",
+   "for": "README \"P-088\""
+  },
+  {
+   "path": "out/hext/fm1F-p081-check.json",
+   "why": "fm1F pre-registration check on P-081 F7 data (disclosed in the P-088 ticket)",
+   "kind": "result",
+   "for": "README \"P-088\""
+  },
+  {
+   "path": "out/hext/f7",
+   "why": "F7 cost card and rest-cost (rc) records",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/ho4a",
+   "why": "F round 9 go-live from rest at y548 counts (N / F7 / Fb / C)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/ho4c",
+   "why": "F round 9 top-band crossing counts (fm1 cost)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/rc9",
+   "why": "F round 9 rest-cost per-frame recalcs (Fb vs C vs N)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/gate",
+   "why": "R2 gate truth table (Sim phone, Sim iPad, Chrome)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sim13-acc.json",
+   "why": "hand-over cost table (sim13)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sim13-handover.json",
+   "why": "hand-over cost per-frame records (sim13)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sim10-acc.json",
+   "why": "rest paint census (sim10)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sim6-acc.json",
+   "why": "rest paint census (sim6)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sim6-par.json",
+   "why": "rest paint census (sim6 parity)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sim7-acc.json",
+   "why": "rest paint census (sim7)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/acc18-acc.json",
+   "why": "paint census arriving from y600 (acc18)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/acc19-acc.json",
+   "why": "paint census (acc19)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/acc20-acc.json",
+   "why": "paint census without LayerTree census (acc20)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/simshot7-prearm.json",
+   "why": "unarmed start frame-by-frame records",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/simshot11-prearm.json",
+   "why": "unarmed start frame-by-frame records (final)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/f7px1/rev5.json",
+   "why": "run f7px1: diff / parity record behind the README verdict that cites f7px1 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/f7px3/rev5.json",
+   "why": "run f7px3: diff / parity record behind the README verdict that cites f7px3 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/f8px1/rev5.json",
+   "why": "run f8px1: diff / parity record behind the README verdict that cites f8px1 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/fin17/acc.json",
+   "why": "run fin17: diff / parity record behind the README verdict that cites fin17 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/fin17/frzshot.json",
+   "why": "run fin17: diff / parity record behind the README verdict that cites fin17 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/frz14/frzshot.json",
+   "why": "run frz14: diff / parity record behind the README verdict that cites frz14 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/frz15/frzshot.json",
+   "why": "run frz15: diff / parity record behind the README verdict that cites frz15 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/par11/parity-1791001887381.json",
+   "why": "run par11: diff / parity record behind the README verdict that cites par11 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/par12/parity-1791006324866.json",
+   "why": "run par12: diff / parity record behind the README verdict that cites par12 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/par13/parity-1791010060102.json",
+   "why": "run par13: diff / parity record behind the README verdict that cites par13 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/par14/parity-1791011668444.json",
+   "why": "run par14: diff / parity record behind the README verdict that cites par14 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/par15/parity-1791013803071.json",
+   "why": "run par15: diff / parity record behind the README verdict that cites par15 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/parstub/parity-1791052035884.json",
+   "why": "run parstub: diff / parity record behind the README verdict that cites parstub (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/px980n/simshot.json",
+   "why": "run px980n: diff / parity record behind the README verdict that cites px980n (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2a/rev2.json",
+   "why": "run r2a: diff / parity record behind the README verdict that cites r2a (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2b/rev2.json",
+   "why": "run r2b: diff / parity record behind the README verdict that cites r2b (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2d/rev2.json",
+   "why": "run r2d: diff / parity record behind the README verdict that cites r2d (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2f/rl.json",
+   "why": "run r2f: diff / parity record behind the README verdict that cites r2f (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2g/rl2.json",
+   "why": "run r2g: diff / parity record behind the README verdict that cites r2g (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2h/rev2.json",
+   "why": "run r2h: diff / parity record behind the README verdict that cites r2h (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2i/rev2.json",
+   "why": "run r2i: diff / parity record behind the README verdict that cites r2i (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/r2j/rev2.json",
+   "why": "run r2j: diff / parity record behind the README verdict that cites r2j (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/rpar1/parity-1791039076406.json",
+   "why": "run rpar1: diff / parity record behind the README verdict that cites rpar1 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/rpar2/parity-1791039164573.json",
+   "why": "run rpar2: diff / parity record behind the README verdict that cites rpar2 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/rpx1/rev5.json",
+   "why": "run rpx1: diff / parity record behind the README verdict that cites rpx1 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/rpx2/rev5.json",
+   "why": "run rpx2: diff / parity record behind the README verdict that cites rpx2 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/rpx3/rev5.json",
+   "why": "run rpx3: diff / parity record behind the README verdict that cites rpx3 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sc16/frzshot.json",
+   "why": "run sc16: diff / parity record behind the README verdict that cites sc16 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/sc16/handover-unarmed.json",
+   "why": "run sc16: diff / parity record behind the README verdict that cites sc16 (frames not kept)",
+   "kind": "result",
+   "for": "README"
+  },
+  {
+   "path": "out/hext/px10",
+   "why": "F round 9 Simulator frozen frames (N / Fb tiers, five numbers), T2 table",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/hext/px11",
+   "why": "F round 9 Simulator frozen frames, y0 fresh load (cue T2)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/hext/px12",
+   "why": "Fb at y50 / y100 / y300 Simulator frames (lead condition 2)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/hext/px13",
+   "why": "R2 vs R phone-path pixel spot check",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/proposal-hext",
+   "why": "PR-011 frozen-frame crops (C, F, diffs) and its pixel JSON",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "PR-011"
+  },
+  {
+   "path": "out/hext/par14-crop-C2-C.png",
+   "why": "parity crop shown in the README (A/A)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/hext/par14-crop-V-C3.png",
+   "why": "parity crop shown in the README (V)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/st6rb2-C-7bf7c4657d21",
+   "why": "control C (st6-rb2) of P-074 / P-081 / P-088",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/hext-V-d48d224adcd4",
+   "why": "P-074 build V",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/hext-V-8e43f3792dbf",
+   "why": "P-081 build F7",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/hext-N-dab6ad826209",
+   "why": "P-088 arm N",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/hext-Fb-71f8872877e7",
+   "why": "P-088 arm Fb",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/hext-R-e3b6fd558dbf",
+   "why": "build R (restack)",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/hext-R2-924be86afac8",
+   "why": "build R2 (land candidate)",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/best-A-65052c4a3902",
+   "why": "swipe A/B side A (best-build)",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/best-BN-1c3bacf36fcd",
+   "why": "swipe A/B side B if N passes",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  },
+  {
+   "path": "out/snapshots/best-BFb-2aca1672e74e",
+   "why": "swipe A/B side B if Fb passes",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README"
+  }
+ ]
+}
