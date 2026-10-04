@@ -765,6 +765,14 @@ Reading, scored with `score-p108.mjs --aa-extra out/scroll-cb-phone/empty-aa`:
   under this driver.
 - Double-drive is provisional until its y 6000 probe. A new dd delta means new arms and a re-run.
 
+Re-queue (22:39Z, before any v9 load): run-v9.sh waited 3600 s for chrome-measure and then timed out at queue #1,
+behind the P-118 phone block, so it produced no data. `out/scroll-cb-phone/run-v9b.sh` 39cc2ff54946 is the same
+script except for:
+- a 4 h queue timeout (`--timeout 14400`);
+- the PIN and HOLD-DONE labels.
+
+Arms, `build.mjs` d190003298c5, simcount 45175dbac676, loads and reading are unchanged.
+
 ## Risks, conflicts, follow-ups
 
 - Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
