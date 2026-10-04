@@ -42,6 +42,17 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-04 10:3xZ Pre-data reads:
+  - **P-099 amendment A1-A5** (lead request, Chrome queue 11 deep): the runs go beside a light shared group (weight 1 only), load1 > 8 at start = VOID. PASS with notes:
+    - N1: no cross-block absolutes;
+    - N2: catch-gap confounder label fixed now ("every V gap above every C gap, or the reverse, and medians > 20 ms apart");
+    - N3: shared-group members per run in the block log.
+    The row gets the amendment sha when it comes. P-098 H1/H2 were VALID (S1 59.6/58.6 fps, Serious 39.0-39.5 °C); H3 is a quiet-Mac exclusive hold.
+  - **P-100** (cd-roll-ca F-212 display rate): PASS, notes N1-N3 (no inspector attached, .trace files stay local, reader rev re-hashed).
+  - **P-102 = K** (cd-roll-ca fewer keyframes): PASS; k-score is P-093's scorer with only the header, usage and EXPECT changed.
+    Owner's order request: one lease after P-098/P-099, the K block, then P-100 (the lead decides).
+  - **P-101** edits read OK at 11e26713. fix-nav-morph was asked to drop its own P-101 ledger row (the ops row is in 7c8b9c91).
+  - **P-103 reserved** for fix-scroll-cb (scroll-cb-phone, frame audit item 2). The plan came only as a message; the committed card was asked for with 9 points (arms/hashes, harnesses, loads, VOID, judged vs guards, intervals, parity and an A/A-flake definition, outcomes, P-101 coupling). Next free: **P-104**.
 - 10-04 10:2xZ **Desk split (lead, user T-104 "is mgmt-ops-10 the bottleneck?"):** `mgmt-desk-1` (spawned 10:17Z) owns the console threads and the PROGRESS pages. mgmt-ops keeps tickets, pre-data and second reads, PREDICTIONS and this log. I handed over the open user items: T-103 and T-104 close once read; T-099 and T-101 wait on I-134; T-100 progress posts; the T-098 format watch.
   - Landed: 4a7f1baa (answer-format rule 5, spawn-rules unread guard) and 85cf0340 (/build box on v6; howToUpdate: build moves with best:true). T-103 was told it is live (#5).
   - Merge backfill (lead, user T-024 #13), done 10:14Z without --force, none refused: T-055/T-057/T-077 into T-024; T-035/T-046/T-067/T-072/T-076/T-079 into T-066; T-078 into T-087; T-024 related to T-085.
