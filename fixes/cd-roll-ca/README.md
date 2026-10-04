@@ -1485,6 +1485,42 @@ tools: crawl-diff.mjs, a trace counter t096-count.mjs and the existing Simulator
   addendum here before the first load.
 ```
 
+### T-096 addendum: tools frozen before the first arm load (2026-10-04 ~11:50Z)
+
+```
+ADDENDUM T-096 · written before any arm load (A, B, A2); the only loads so far are 3 tool checks on the plain
+  baseline copy B (not an arm) · P(H4) 0.85 stays out of the calibration tally (set after the lead's trace data)
+step 1 (adapted, lead approved 2026-10-04 ~11:3xZ): the PR-017 servers on 5422/5423 were stopped at the lead's T-106
+  request before step 1 could crawl them, so step 1 rests on (a) the command lines recorded at stop: both were
+  tools/serve.mjs --root site-pretty with --overlay out/cd-roll-ca/snap/C8 (A, 5422) and --overlay
+  out/cd-roll-ca/snap/V9 (B, 5423), --vendors=local, on serve.mjs from before I-131's fix (immutable cache headers);
+  (b) the served hashes posted with the links (A JS 6fa0e1e8 / CSS 982a747d, B JS 582d120c); (c) today's HASHES.txt
+  check of the copies: OK (C8 JS 6fa0e1e8a221, V9 JS 582d120c9f8f, both CSS 982a747d9263); (d) the 116-path
+  static-graph crawl run on the PR-017 pages before the card (reported to the lead at the time; its script was a
+  scratch file, not committed). crawl-diff.mjs is
+  N/A (not written; nothing left to crawl). H3 reads from (a)-(d): the user's pages served the ticketed copies; the
+  cache question (an older file kept by the browser) is not answerable now and is stated as open, not as ruled out.
+frozen tool hashes (sha256, first 12):
+  fixes/cd-roll-ca/t096-count.mjs   849f26e9f8c5  (step 2 counter)
+  fixes/cd-roll-ca/sim-rollstart.mjs 01351e543210 (step 3 Simulator reader)
+  tools/serve.mjs                   2ee439a95856  (I-131 code: no-cache + ETag, landed 291ee671)
+  tools/lib/cdp.mjs                 f58d75d1179d
+  tools/sim.mjs                     248931edf42d
+tool checks on B (baseline copy, not an arm; out/cd-roll-ca/t096/smoke/, gitignored), what they changed:
+  smoke 1-2: CDP Input.synthesizeScrollGesture repeatCount is the number of EXTRA repeats, so repeatCount 1 scrolled
+    twice (endY 3708 for 1864; CONFIRMED by the CDP Input domain docs, chromedevtools.github.io/devtools-protocol/tot/Input,
+    synthesizeScrollGesture.repeatCount "The number of times to repeat the gesture (default: 0)"): now omitted, endY 1864;
+    Commit is also traced off the main thread: main-thread work (UpdateLayoutTree, Layout, Paint, Commit, Layerize,
+    UpdateLayer) is now counted on the renderer main thread only (Commit 952 -> 480 = BeginMainThreadFrame 480 in R);
+    PipelineReporter reuses its local id (every reporter 0x1) and keeps its state in args.frame_reporter.state: a
+    reporter is now the span from its b to its e on one (renderer pid, tid, id), in ts order (0 -> 545 reporters in R).
+  smoke 3 (B, R window, 8 s, 60 Hz): 480 frames drawn, 545 presented reporters, of which 65 had no main-thread stage
+    (64 of them STATE_PRESENTED_PARTIAL). So "compositor-only" reporters exist on the baseline without any per-cell
+    animation; H1's count is read as written (presented with no SendBeginMainFrameToCommit), and the counter also
+    prints the split by state (compositorOnlyByState), so a PARTIAL-only difference can be told apart. The H1 outcome
+    rule is unchanged.
+```
+
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
 
 ```
