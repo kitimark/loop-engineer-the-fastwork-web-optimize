@@ -216,3 +216,16 @@ Read from iphone-runner's out/p118/runs/hold-H1.log and the per-item check logs 
 - **Other hold checks:** pmset found no sleep inside the hold, and the hold was an exclusive no-timing hold
   (load1 2.7-6.6).
 - **Not checked here:** the scored numbers. Those come at the result read after the last hold.
+
+## Ops check of H2 (iphone-runner, 2026-10-04 22:35-22:39Z): VALID, 4 of 4 checks met
+
+- **PIN line:** the same as H1 (hold.sh 09c0b21eaa0f, TICKET b8d48b0803c7, score.mjs 652bba12f6a3, gate 023caa54),
+  profile xcode-serious.
+- **Pre-warm:** none.
+- **Gates:** start Serious, induced Yes, 34.39-34.5 °C, PASS; end Serious, induced Yes, 34.69 °C, PASS. The ceiling was
+  never near.
+- **Warm-ups:** H2 has none, which is correct. The warm-up is one per arm port per block, and the same server
+  processes and ports as H1 served it (C pid 58543 port 52020, V pid 58545 port 52021), so H1's wC/wV cover it.
+- **Served check:** it ran before each of the 4 items, all ok on the signed arms.
+- **Items:** C5 V6 V7 C8, all exit 0.
+- **pmset:** clean.
