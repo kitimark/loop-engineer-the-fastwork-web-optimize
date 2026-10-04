@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-03T17:50:00Z",
+ "updatedAt": "2026-10-04T04:15:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,11 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T04:05:00Z", "text": "The hero photo sharpness question is closed: you chose keep (PR-015). No code change." },
+  { "at": "2026-10-04T04:02:00Z", "text": "The hero fix's phone check (P-088) failed on both versions: no extra slow frames, but extra work the moment a scroll starts. The lead picked a slimmer version (R2): a short phone check, then your blind swipe test." },
+  { "at": "2026-10-04T04:00:00Z", "text": "The menu-edge measurement (P-091) is running on the phone. Then the hero R2 check, the end-of-page morph (P-092), the countdown roll (P-093) and the resting avatar row (P-094), each a short phone check before it lands." },
+  { "at": "2026-10-04T03:57:00Z", "text": "You kept the resting avatar row (PR-014): the avatar slider rests while it is off-screen. One short phone check (P-094) and it lands." },
+  { "at": "2026-10-04T03:08:00Z", "text": "The countdown digit strips landed on main under the 'does less work' rule (your T-055); they go into the best build next." },
   { "at": "2026-10-03T20:50:00Z", "text": "Your choice on the avatar slider (proposal PR-013): keep the cheaper slider, which removes the slow frames at rest, or match the original exactly. The still faces differ slightly and are not exact with reduce motion on, and the leaving face moves differently." },
   { "at": "2026-10-03T19:45:00Z", "text": "The sharper hero photos at 1440 px with reduce motion turned out to be within the original page's own range (the original sometimes keeps a soft first picture); closed unless you object in T-053." },
   { "at": "2026-10-03T19:25:00Z", "text": "The avatar slider fix (carousel-leaver) is not exact on Safari, and the check found the landed slider build itself draws the resting profile pictures slightly differently on Safari; one bounded attempt to make it exact comes next. The hero restart test (P-088) is ready for when timing resumes." },
@@ -33,12 +38,7 @@
   { "at": "2026-10-03T10:31:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) does far less work at rest in Chrome and the Simulator, and you accepted its look (PR-009, option \"both\"). Next: a short phone check that it is no worse, after the strips' test." },
   { "at": "2026-10-03T10:12:00Z", "text": "Your choice (T-039, B, as a trial): phone tests run with the phone in its real \"Serious\" heat state, checked at each run's start and end, stopping at 44 °C. If the phone won't hold it, we switch to cool starts (A), as you approved." },
   { "at": "2026-10-03T10:05:00Z", "text": "The hero fix's phone trace: the per-frame script is gone on the phone, but a touch start adds some style work, so it goes back to the code. The phone was in its real \"Serious\" heat state, so this counts as hot-phone data." },
-  { "at": "2026-10-03T09:31:00Z", "text": "You chose the strip-tc version of the countdown digit strips (corrected proposal). Its phone check and your finger test come after the hero fix's phone trace." },
-  { "at": "2026-10-03T09:25:00Z", "text": "The hero fix's phone trace got the go-ahead: the build, the trace plan and the warm start all passed their checks. It shows where the hero work happens on the phone, not timing." },
-  { "at": "2026-10-03T09:13:00Z", "text": "Superseded: the heat-reading trial's \"no change under Serious\" doesn't hold. A later check found the phone really in its \"Serious\" heat state at a 38-40 °C start, so its \"normal\" runs were likely Serious too." },
-  { "at": "2026-10-03T08:52:00Z", "text": "You accepted all five suggestions: fixes that make the page do less work can land on work counts plus one short phone no-worse check (the top three smoothness fixes keep the phone and your finger test); phone checks start warm, 38-40 °C." },
-  { "at": "2026-10-03T08:35:00Z", "text": "F3's warm-phone test is done: no version showed the hitch, not even the original, so it can't tell whether F3 cures it. F3 doesn't land on this test; the next step is being decided." },
-  { "at": "2026-10-03T07:20:00Z", "text": "Your 'land' choice on the countdown digit strips is on hold: a check found two things the proposal didn't state (a one-shade difference in Chrome too, and extra layout-shift reports). A corrected proposal comes to you, and you decide again." }
+  { "at": "2026-10-03T09:31:00Z", "text": "You chose the strip-tc version of the countdown digit strips (corrected proposal). Its phone check and your finger test come after the hero fix's phone trace." }
  ],
  "items": [
   {
@@ -66,15 +66,12 @@
    "writeup": "research/gpu-props/README.md",
    "title": "Countdown digits as sliding strips",
    "area": "hero",
-   "state": "testing",
-   "stage": "F",
+   "state": "landed",
+   "stage": "L",
    "fixes": "Each countdown digit becomes one fixed strip of numbers that only slides, in the hero clock and in the menu panel's clock: less redrawing when the clock comes back into view, less graphics memory and fewer style changes.",
-   "felt": {
-    "answer": "not-yet",
-    "text": "not built yet"
-   },
-   "gate": "Looks identical, or within your accepted pixel rule (PR-010; T2 pending a reduced-motion check), then a phone test, your finger test and an independent review.",
-   "next": "The phone check passed at the phone's real \"Serious\" heat state: no new slow frames, far less clock redrawing. It lands only after your finger test (blind swipe A/B), now third in the phone queue, after the hero and end-of-page checks.",
+   "felt": { "answer": "not-yet", "text": "your finger test was waived for the countdown (T-055); your earlier blind swipe picked the original, with low confidence (C-035)" },
+   "gate": "Landed under the 'does less work' rule: fewer redraws and layers, measured; no new slow frames on the phone.",
+   "next": "Landed on main. The integrator adds it to the best build next; the countdown roll (cd-roll-ca) is built on it.",
    "owner": "fix-cd-strip",
    "checks": [{ "id": "P-079", "what": "phone block of strip-tc at the phone's real \"Serious\" heat state: no new slow frames, less clock redrawing", "result": "Yes: slow frames over 50 ms the same as without it (at the top and with the menu pinned); clock repaints in the first second back at the top 21 vs 54; 16 vs 48 clock layers kept in memory. One layout count could not be fully decided but cannot have failed." }],
    "details": [
@@ -89,7 +86,7 @@
     "User accepted PR-008 land-strip 06:52:53Z (confirmed T-030 #18). review-cd-strip-r2 NEEDS-FIX: (1) hero .strip/.cell skipped st6-rb2's scene-pause will-change rule, so 96 hero clock layers stayed up in the paused-but-rendered band (faces: 0); (2) the R-fade rate was pooled across sessions; same sessions: strip-rw 3/26 vs A/A 1/26. New base after the CSS fix: patch 1f3c26a16563, JS 5e37af69bcc4 unchanged, CSS 40078cb2d9cf; re-check, re-card, review round 3, then land. P-072 registered against the new BUILD card before any phone data.",
     "Lead 07:2xZ: acceptance held, nothing lands on it. G7: a Chrome delta-1 class at 0.9 fade (13-83 px; PR-008 said 'Chrome shows nothing') and 4-5 layout-shift deliveries per 5 s vs 2 for the faces (sources unrecorded). G8: 2 vs 2 entries and the same CLS 0.0011 in both arms, all from h1. PR-008 rev 2 after G9 (possibly a CLS-free third option); the user re-decides; P-072 waits; cd-roll-ca pauses queuing. ts-proposal-hold builds proposal hold/unhold and a 'stale: re-decide' state (T-030 #19).",
     "Lead 08:0xZ: S2 + G11 clean for strip-tc (no cdwrap layout shifts; backed layers 16 / 0.39 MB vs faces 48 / 1.18 MB; hero 0 px). G12, S3, G13, G14 next, then PR-008 rev 2's text goes to the lead. PR-008 stays on hold (proposal hold, cd966b7).",
-    "Morph (lead 10-03 15:0xZ): morph-inherit landed (b11f977 + 0ad5407). Before it, st6-rb2 in WebKit left the nav children at --morph 0 and froze the panel fade at 0.924 (F-183/F-184, OBSERVED on phone + Sim). WebKit morph numbers measured on stacks without it are void for the morph region; re-measure on main. Next builds stack on main + morph-inherit. P-079's morph attribution is void there; its top, re-entry and backing results stand."
+    "Morph (lead 10-03 15:0xZ): morph-inherit landed; WebKit morph numbers on stacks without it are void for the morph region (F-183/F-184); P-079's top, re-entry and backing results stand. Landed 10-04 03:08Z (5d1ca102, T-055 basis: cost counts + P-079 no-worse; reduced motion exact, Chrome 0/575, Simulator 0/29); not yet in the best build (65052c4a3902)."
    ]
   },
   {
@@ -97,17 +94,17 @@
    "writeup": "research/gpu-props/README.md",
    "title": "Hero ending run by Safari's scrolling thread",
    "area": "hero",
-   "state": "diagnosing",
-   "stage": "I",
+   "state": "testing",
+   "stage": "F",
    "fixes": "The hero's fade-out as you scroll becomes an animation tied to scrolling that Safari runs off the main thread, in the part of the page that held most of the slow frames in your last finger run.",
    "felt": {
     "answer": "not-yet",
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
-   "next": "Top priority (your T-046). Phone test P-081: it does the scrolling work it should, but restarting after you stop and scroll again costs more than the original. Two cheaper restarts are built; their phone test (P-088) is checked and runs when timing resumes (T-052), then your finger test.",
+   "next": "The lead picked a slimmer version (R2, option 1): built and checked in the Simulator, then a short phone check (P-095, next on the phone after the menu-edge measurement), then your blind swipe test, then it lands.",
    "owner": "fix-hero-exit-threaded",
-   "checks": [],
+   "checks": [ { "id": "P-088", "what": "phone test of the two cheaper restarts (N and Fb) at the phone's real \"Serious\" heat state", "result": "No: no extra slow frames, but both add work the moment your finger starts a scroll (and Fb still redraws at rest), so back to the code." } ],
    "details": [
     "de-gpu T-030 brief 2: re-apply hero-exit-scroll-timeline v2 on st6-rb2; Safari 26.4+ runs scroll-driven animations on the compositor thread (CONFIRMED, WebKit blog and source). ST-1 Timeline split first: v2 once added about +11 ms at y about 700 (cause not yet named, OBSERVED).",
     "C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px hold 63 of 81 moving long frames (>34 ms) in st6-rb2.",
@@ -115,7 +112,8 @@
     "Lead 05:1xZ: frozen frames done: R1 = C's own two raster states, R2 = deck-edge shadow, R3 = the unarmed first frame; trying a scroll-event re-add for R3. F-161 posted.",
     "P-081 ticket d4f1f63: F build (JS 8e43f3792dbf, CSS cc74cd980e72) vs st6-rb2, G hero-pass-v1, C F F C n = 2, T-039 B gate per hold, scoreF 32ed5f4e81f9 + framesF 40d0d302c3f1; ops second read PASS 14:0xZ. Band y 1..780, clear of the page-end morph.",
     "PR-010 wide 15:21Z; PR-011 rev 1 ACCEPTED (accept-both) 15:23:14Z (no rev 2). Tiers for the record (e5bc982, Sim A/A): item 1 passes every T2 number (max 17 on edges, 0.059 % over 8 levels) but is motion-only, so the user's call; item 2 R6 = T3 (max 88 is an edge level, but 1.6 % of screen and 3,894 CSS px at any level, photo detail, motion-only). Both moot: accepted.",
-    "P-081 RESULT f23b583 (ops read PASS, re-scored byte-identical): writer share F 0.014-0.017 vs C 0.76-0.77, band frames no-worse; b-fm MISS (go-live from a rest at y548 repaints, P 9-19 vs 2-5); b-ts load-sensitive. Back to F: P-088 round 9, arms keep-layers / no in-band park, Sim go-live-from-rest case first."
+    "P-081 RESULT f23b583 (ops read PASS, re-scored byte-identical): writer share F 0.014-0.017 vs C 0.76-0.77, band frames no-worse; b-fm MISS (go-live from a rest at y548 repaints, P 9-19 vs 2-5); b-ts load-sensitive. Back to F: P-088 round 9, arms keep-layers / no in-band park, Sim go-live-from-rest case first.",
+    "P-088 RESULT 10-04 04:0xZ (9008402f; ops re-score from raw files matches): holds VALID, 9 counted / 0 void; a in (N 0.016, Fb 0.009-0.019); N fails b-ts and b-fm-rest (paint +5 at go-live), Fb fails b-rest and fm1 >34 +1; band frames no-worse (f50 -1, f34 -8/-6). Lead: option 1, R2 alone, P-095 short no-worse check then the swipe A/B (top-1, phone next after P-091)."
    ]
   },
   {
@@ -130,17 +128,18 @@
     "answer": "not-yet",
     "text": "you judge it in a blind side-by-side look before it goes into a build"
    },
-   "gate": "Within a fraction of a pixel of the original's motion (exact numbers at 60 and 120 Hz), and your blind side-by-side look on the phone, since it is not frame-for-frame identical.",
-   "next": "Waiting for your new decision on the digit strips it builds on; then rebuilt on them, its counted checks start again, and your blind side-by-side look on the phone (you watch, no touching).",
+   "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-093) at the phone's real \"Serious\" heat state.",
+   "next": "Rebuilt on the landed digit strips; its short phone check (P-093) is registered and queued after the end-of-page morph check.",
    "owner": "fix-cd-roll-ca",
-   "checks": [],
+   "checks": [ { "id": "P-093", "what": "short phone check: no new slow frames at the top of the page", "result": "" } ],
    "details": [
     "de-gpu T-030 brief 3: within about 0.08 px of the original's motion; the original itself differs by 3.3 px between 60 and 120 Hz. Parked under the identical-only rule, then started at the user's request (T-030 #10, 00:10Z). Stacks on cd-strip.",
     "Review round 2 PASS with nits (a57444b, JS 673b110d), sign-off held for the hide-check re-analysis (108/247.9 -> 3.29/0.27 px); round 3 PASS (dbb113f, JS 2af461dc). Blind test after cd-strip lands (lead's phone order).",
     "Lead 10-03 04:4xZ: rebuilds as 'cells-only' on cd-strip's strip-rb; the round-3 PASS (dbb113f) covered the earlier build.",
     "Lead 05:1xZ: adapts __crTops to cd-strip's strip-rw wrapper.",
     "Lead 10-03 06:5xZ: counted set stopped until the new strip base (patch 1f3c26a16563, CSS 40078cb2d9cf); sessions so far are first-build data. Rebuild on it and restart the counted set. Simulator count results carry I-082 (SleepWidgetExtension burning a core, load1 37-108) as a caveat.",
-    "PR-010 wide accepted 15:21Z (memory/illusion-must-be-pixel-identical.md): re-tier on resume with the five numbers (was near-identical). T2 lands after the numbers check; a motion-only difference stays a proposal (the blind side-by-side look)."
+    "PR-010 wide accepted 15:21Z (memory/illusion-must-be-pixel-identical.md): re-tier on resume with the five numbers (was near-identical). T2 lands after the numbers check; a motion-only difference stays a proposal (the blind side-by-side look).",
+    "P-093 registered 10-04 03:4xZ (rev 2 3f7ce94a, scorer 57856e3f530a, hold.sh 6bd99cf3909e): V9 = strip-tc + cd-roll-ca vs C8 = strip-tc, driver W, top window, no-worse at dt>50."
    ]
   },
   {
@@ -631,17 +630,62 @@
    "why": "Not felt in the blind test. Only the robot-finger test (P-035) can still show it is measurable.",
    "owner": "de-unknowns-ux",
    "checks": [ { "id": "P-035", "what": "pacing test: blind finger part, then the robot part", "result": "finger part: not felt (both testers); robot part waits for the robot-finger tool fix (I-042)" } ]
+  },
+  {
+   "id": "rest-script",
+   "writeup": "fixes/rest-script/README.md",
+   "title": "Avatar row rests while it is off-screen",
+   "area": "middle",
+   "state": "testing",
+   "stage": "V",
+   "fixes": "The avatar slider in the people section stops its slide work while it is off-screen, so the page does less work at rest and the phone stays cooler.",
+   "felt": { "answer": "not-yet", "text": "you kept it (PR-014); no finger test needed for a 'does less work' fix" },
+   "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-094).",
+   "next": "Its short phone check (P-094) is queued after the countdown roll check; then it lands.",
+   "owner": "fix-rest-script",
+   "checks": [ { "id": "P-094", "what": "short phone check: no new slow frames where it changes the page", "result": "" } ],
+   "details": [
+    "Chrome 430, far at y2796: main frames 31/32 -> 17/17 per 4 s, layouts 4 -> 0, paints 34/39 -> 0/3; near and paused rows the same. PR-014 accepted keep 03:57:01Z. P-094 ticket 8f1e16a0 in ops read (the lead's combine byte check on the best build is owed)."
+   ]
+  },
+  {
+   "id": "morph-gpu",
+   "title": "End-of-page morph on the graphics chip",
+   "area": "end",
+   "state": "testing",
+   "stage": "V",
+   "fixes": "When you push past the end of the page, the bottom panel's grow-and-fade runs as an animation on the graphics chip instead of script every frame.",
+   "felt": { "answer": "not-yet", "text": "not tried by you yet" },
+   "gate": "The 'does less work' rule: its cost counts plus one short phone no-worse check (P-092).",
+   "next": "Its short phone check (P-092) is next on the phone after the hero's R2 check.",
+   "owner": "fix-morph-gpu",
+   "checks": [ { "id": "P-092", "what": "short phone check: no new slow frames during the end-of-page morph", "result": "" } ],
+   "details": [
+    "P-092 registered 10-04 03:1xZ (55064128, frames-n2 f3a50b8ec2dd), N2 reveal, PR-012 row 5."
+   ]
+  },
+  {
+   "id": "nav-morph",
+   "writeup": "fixes/nav-morph/README.md",
+   "title": "Menu edge: what causes the leftover stutter",
+   "area": "end",
+   "state": "diagnosing",
+   "stage": "I",
+   "fixes": "Finds which drawing step makes the leftover slow frames at the menu's edge, so the next fix aims at the right thing.",
+   "felt": { "answer": "not-yet", "text": "a measurement, nothing to feel yet" },
+   "gate": "A clear cause from the phone's timeline; a fix comes after.",
+   "next": "Running on the phone now (P-091).",
+   "owner": "fix-nav-morph",
+   "checks": [ { "id": "P-091", "what": "phone measurement of the menu-edge slow frames", "result": "" } ],
+   "details": [
+    "P-091 registered 10-04 03:1xZ (fixes/nav-morph/README.md ticket rev 2, amendment 4a786165)."
+   ]
   }
  ],
  "upcoming": [
-  { "title": "Try-it: the original page next to today's combined best build", "when": "once the Try-it panel fix lands (I-093)" },
-  { "title": "Your blind finger test of the countdown strips (C-033)", "when": "after the hero (P-081) and end-of-page (P-085) phone checks", "item": "cd-strip" },
-  { "title": "A check of the timer-driven parts with Xcode's \"Serious\" heat state on (you said yes, T-039)", "when": "after the hero fix's phone trace (P-074)" },
-  { "title": "Milestone 2: the same checks with Xcode's \"Serious\" heat state on, and from a hot 42-44 °C start (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
-  { "title": "A rendering cost card for each fix: what each element costs to draw, from Chrome and the Simulator, using the phone less (you asked, T-029 #23)", "when": "the design is done and its method passed a check on the countdown; next, a small tool that makes the cards" },
-  { "title": "Blind side-by-side look at the GPU countdown roll (cd-roll-ca)", "when": "once the digit strips (cd-strip) have landed (you asked for it, T-030 #10)", "item": "cd-roll-ca" },
-  { "title": "Blind swipe test of F3 (middle of the page)", "when": "after F3's drawing-cost check (the warm-phone test was inconclusive)", "item": "f3-arm-scope" },
-  { "title": "Full phone timing run of wave 2 against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
+  { "title": "Your blind swipe test of the hero fix (slim version R2)", "when": "after its short phone check (P-095), next on the phone after the menu-edge measurement", "item": "hero-exit-threaded" },
+  { "title": "Milestone 2: the same checks from a hot 42-44 °C start and with Xcode's \"Serious\" heat state on (you asked, T-039)", "when": "after the first three fixes are smooth at the phone's real \"Serious\" heat state" },
+  { "title": "Full phone timing run of the best build against the original page", "when": "once wave 2 is built and checked (you allowed this one timing run, T-031 #3)", "item": "best-stack" }
  ],
  "build": {
   "name": "Best build (T-046): st6-rb2 plus the idle-animation and menu display fixes",
