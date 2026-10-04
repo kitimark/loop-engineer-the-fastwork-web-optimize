@@ -1067,6 +1067,41 @@ outcome: all of P1-P5 -> a D card plus the user's decision (PR-017's land decisi
   re-register; a second miss parks the item. P4 T0 miss -> stop, report to the lead.
 voids: served JS/CSS hash != addendum; BASELINE-<STATE> other than ok; A/A over the P4 thresholds (the run is
   A/A-limited and goes to the lead); countdown expiry 2026-11-02 05:00Z inside a run.
+
+rev 2 (ops second read R1-R7, 10-04 08:4xZ; still before any build or data). Scoring detail, overrides rev 1 where
+  they differ:
+reps and order (R2): 3 arms C, V, C2 (C2 = a second, separately started server on the same C snapshot copy). Per
+  platform 6 reps per arm in two rotated Latin squares, C V C2 / V C2 C / C2 C V, twice (18 loads per platform, one
+  page load per rep, fresh tab). A rep is valid when its page reached m = 1 and the census probe ran to the end;
+  a verdict needs >= 5 valid reps per arm on that platform, otherwise that platform's predictions are VOID (re-run
+  once, then report).
+A/A spread (R3), one definition for P1-P3: for each measure, spread = max over the paired reps of |C - C2| (reps
+  paired by square position). Cap: a spread over 25 % of C's median voids that measure (A/A-limited, to the lead).
+"less than C" means V's median < C's median minus the spread (P1); "within C +/- spread" means |V median - C median|
+  <= spread (P2); "V <= C + A/A" means V median <= C median + spread (P3).
+P1 windows and counts (R7, R1): per rep, after the panel reaches m = 1 (morph driver's m log, first frame m = 1) plus
+  2 s to settle, 3 consecutive 4 s windows; a rep's value = the median of its 3 windows. Counts: panel-countdown rAF
+  callbacks (the census probe counts callbacks whose stack/target is the panel countdown's spring, by a wrapped
+  requestAnimationFrame tagged at the call site); style recalcs = CDP trace UpdateLayoutTree events in the windows
+  (Chrome), WebKit Timeline RecalculateStyles records (Simulator). Pass: rAF V median <= 10 % of C median AND style
+  recalcs V median < C median - spread.
+P2 tween window (R4): from the first frame with m > 0 to the last frame with m < 1, from the morph driver's m log.
+  getAnimations() census every frame inside it (panel `.cell` elements, playState running). Pass: 0 running in
+  every frame of every valid rep; panel rAF counts in the window within C +/- spread.
+P3 (R4): per rep, Paint records per tween frame = (sum of WebKit Timeline Paint records in the tween window) / (frames
+  in the window); the rep value is that ratio; pass on the medians as above. Layers/backing: the layer census at
+  the tween's middle frame, V = C in every rep.
+tools (R5): scorer `fixes/cd-roll-ca/tools/p097-score.mjs`; census probe `p097-census.mjs` (getAnimations per frame,
+  rAF tag, m log reader); roll-probe (P5) = the existing hero roll-probe extended to the panel selector; pixels
+  `tools/lib` pixel compare used for PR-010 (fill/edge/% numbers); Simulator Timeline reader = the round-4 WebKit
+  reader in this README "WebKit frames, layers and Timeline". All committed, and their sha256 plus the served
+  JS/CSS/patch hashes written into an addendum here, before rep 1. Any change after that voids the reps measured
+  before it.
+calibration (R6): P(all of P1-P5 pass) = 0.45. Miss branches: P1 miss 0.10 (the panel spring runs only half of each
+  second and the census finds other rAF users); P2 miss 0.15 (a roll started in the frame m leaves 1 escapes the
+  gate); P3 miss 0.15 (cdwc repaint at the tween edges); P4 T0 miss 0.05; P5 miss 0.10 (hand-off writes the target,
+  not the current value). P1 point estimate: V panel rAF callbacks per 4 s = 4 (one per roll start), 80 % interval
+  2-12; C reference 100-130 per 4 s.
 ```
 
 ## Risks, conflicts, follow-ups

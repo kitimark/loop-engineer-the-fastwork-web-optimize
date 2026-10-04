@@ -3281,8 +3281,9 @@
       },
       "proposal": {
         "id": "PR-017",
-        "rev": 3,
+        "rev": 4,
         "rev3": "review round 5, text only: 120 Hz row 29.6 CSS px (95 % within 3.2) on two earlier builds, not re-run on V9; 60 Hz labelled Chrome; WebKit first-frame lead row (UNRESOLVED); Simulator memory label",
+        "rev4": "T-085, text only: the console Try-it pages (5959/5960) showed the prerendered 00:00:00:00 in Arc only (Chrome counted); a 116-path crawl of 5959/5960 vs the C8/V9 snapshot copies was byte-identical (only X-Frame-Options/frame-ancestors differ), no storage or service-worker writer in any build: cause outside our builds (Arc per-address state, OBSERVED, not named). Rev 4 lists plain local links (same snapshot copies) in place of the panel.",
         "options": [
           "land",
           "park"
