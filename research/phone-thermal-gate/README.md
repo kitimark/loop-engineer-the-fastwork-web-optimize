@@ -65,3 +65,24 @@ Status words as in CLAUDE.md "Platform claims".
    `setInterval(1000)` gaps of 1020 ms and one-shot timer lateness p90 of 22-26 ms. P-071 (06:21Z) shows 1005 ms and
    3.9 ms. To check an old Timeline the same way, use the one-off reader `out/iphone-runner/tl-timers.mjs` in the
    iphone-runner checkout (not committed).
+
+## Profile xcode-serious (user T-162 #3, 2026-10-04 21:35Z; lead and mgmt-devices R9)
+
+The default test profile from the v9 block on: Xcode's Device Conditions > Thermal State "Serious" (Is Induced = Yes), **no
+heat pre-warm** (211 gate reads: 41 of 109 hold starts were not at real Serious; the 4 pre-warm episodes of 10-04 took
+1.4, 6.6, 19.4 and 30.6 min). P-118 stays as signed (real heat, pre-warm). Condition B (real Serious) and A (Fair) stay
+available; every ticket names its profile and blocks of different profiles never pool.
+
+- `thermal-gate.mjs ... --accept-induced`: PASS = Serious with Is Induced = Yes, battery < max-c (44 C) and not Critical.
+  Real Serious (induced No) exits 7, a Nominal or Fair read exits 2, Critical or the battery ceiling exits 3. The timer grid
+  is recorded and not judged (whether an induced Serious also moves WebKit's timers is UNRESOLVED, see the decisive check
+  below). Each record in `gates.jsonl` and the `GATE` line carry `profile`: `xcode-serious`, `real-serious` or `real-fair`.
+- Verdict logic: `verdict.mjs`; self-test (no device): `node research/phone-thermal-gate/selftest.mjs` (16 cases).
+- Hold shape under xcode-serious: no pre-warm; the gate once at the start and once at the end of the hold; the one uncounted
+  load warm-up per arm port stays (A3/U5: first-load costs, not heat). The condition is on the Mac side (Xcode > Window >
+  Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start) and is torn down when the phone
+  is disconnected from Xcode (WWDC19 s412), so the start-of-hold gate also detects a dropped condition (exit 2).
+- Decisive check before the first block (research/thermal-condition-cli "Decisive local check"): a fixed CPU loop and a GPU
+  animation on a cool phone, condition off and then on. If the induced Serious slows nothing, add one real-heat
+  confirmation block for the final best build only (milestone 2b), not per fix.
+- Measure: phone minutes spent on pre-warm per block, to go to 0.
