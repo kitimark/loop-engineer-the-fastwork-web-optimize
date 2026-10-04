@@ -1,0 +1,337 @@
+{
+ "schema": "fw-evidence/1",
+ "topic": "cd-roll-ca",
+ "capMB": 200,
+ "items": [
+  {
+   "path": "out/cd-roll-ca/snap",
+   "why": "immutable copies of every measured build (C..C8, V..V9) with HASHES.txt; served by serve-snap.sh for the Simulator, Chrome and the P-093 phone block",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README BUILD cards, PHONE TICKET P-093"
+  },
+  {
+   "path": "out/cd-roll-ca/bbcheck",
+   "why": "combine byte check: best-build + cd-strip + cd-roll-ca overlay; countdown region identical to V9",
+   "kind": "build",
+   "fastworkDerived": true,
+   "for": "README combine check, land request"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-04T03-21-10-943Z.json",
+   "why": "session B2 (fade50 step): V9 vs C8 + A/A, layers, end pair",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-04T03-26-27-409Z.json",
+   "why": "session C (hero wrap, carry): V9 vs C8 + exact A/A; extra backed cell at rest",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-04T03-42-38-135Z.json",
+   "why": "rate 1 check: running roll vs paused frames",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-04T04-59-08-829Z.json",
+   "why": "reduced motion exact in the Simulator (0 of 12 differ, A/A 0, 0 animations)",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-33-01-524Z.json",
+   "why": "session A on tc (wrap, wrapUp) + roll end pairs",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-03T10-54-38-590Z.json",
+   "why": "session B1 on tc (carry, two)",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-03T06-47-53-243Z.json",
+   "why": "strip-rw debug run 1 (history table)",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/simpx-2026-10-03T07-10-10-961Z.json",
+   "why": "strip-rw debug run 2 (history table)",
+   "kind": "result",
+   "for": "README \"Resumed list\" / strip-tc / WebKit sections"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/2026-10-04T04-59-08-829Z",
+   "why": "reduced-motion shots behind the exact verdict (Simulator)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README reduced motion"
+  },
+  {
+   "path": "out/cd-roll-ca/simpx/2026-10-04T03-21-10-943Z",
+   "why": "B2 shots behind the five pixel numbers",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README five pixel numbers"
+  },
+  {
+   "path": "out/cd-roll-ca/sim-counts-2026-10-04T04-01-00-187Z.json",
+   "why": "Simulator counts on tc: countdown rAF 132-146 -> 4 per 4 s; layer census incl. long-roll backing cost",
+   "kind": "result",
+   "for": "README Simulator counts, cost lines, F-201"
+  },
+  {
+   "path": "out/cd-roll-ca/sim-counts-2026-10-03T01-28-51-062Z.json",
+   "why": "Simulator counts round 3 (census card)",
+   "kind": "result",
+   "for": "CENSUS card"
+  },
+  {
+   "path": "out/cd-roll-ca/sim-hide-2026-10-04T04-15-29-333Z.json",
+   "why": "hidden tab in the Simulator (tc / round 3 / round 2)",
+   "kind": "result",
+   "for": "README WebKit hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/sim-hide-2026-10-03T03-02-24-452Z.json",
+   "why": "hidden tab in the Simulator (tc / round 3 / round 2)",
+   "kind": "result",
+   "for": "README WebKit hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/sim-hide-2026-10-03T02-34-50-700Z.json",
+   "why": "hidden tab in the Simulator (tc / round 3 / round 2)",
+   "kind": "result",
+   "for": "README WebKit hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60-V6.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-base-h60-C5.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60e.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60d.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60c.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60b.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-base-h60.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-base-headed.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-headed.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-headed2.json",
+   "why": "roll-probe position identity vs the original spring (Chrome)",
+   "kind": "result",
+   "for": "README Position identity"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-base-p2.json",
+   "why": "Chrome comp-check counts (countdown rAF, main frames)",
+   "kind": "result",
+   "for": "README Before / after, CENSUS card"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-build-p2.json",
+   "why": "Chrome comp-check counts (countdown rAF, main frames)",
+   "kind": "result",
+   "for": "README Before / after, CENSUS card"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-C4-p2.json",
+   "why": "Chrome comp-check counts (countdown rAF, main frames)",
+   "kind": "result",
+   "for": "README Before / after, CENSUS card"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-V5-p2.json",
+   "why": "Chrome comp-check counts (countdown rAF, main frames)",
+   "kind": "result",
+   "for": "README Before / after, CENSUS card"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-V6-p2.json",
+   "why": "Chrome comp-check counts (countdown rAF, main frames)",
+   "kind": "result",
+   "for": "README Before / after, CENSUS card"
+  },
+  {
+   "path": "out/cd-roll-ca/hide-C.json",
+   "why": "Chrome hidden-tab check (B1)",
+   "kind": "result",
+   "for": "README Hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/hide-V0.json",
+   "why": "Chrome hidden-tab check (B1)",
+   "kind": "result",
+   "for": "README Hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/hide-V.json",
+   "why": "Chrome hidden-tab check (B1)",
+   "kind": "result",
+   "for": "README Hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/hide-V3.json",
+   "why": "Chrome hidden-tab check (B1)",
+   "kind": "result",
+   "for": "README Hidden tab"
+  },
+  {
+   "path": "out/cd-roll-ca/end-check-V9.json",
+   "why": "Chrome roll end check on tc (last keyframe = inline rest)",
+   "kind": "result",
+   "for": "README strip-tc roll end"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T05-42-49-483Z.json",
+   "why": "Chrome reduced motion RM1 (hero, panel): V9 vs C8 + A/A",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T05-56-38-918Z.json",
+   "why": "Chrome reduced motion RM2 (scrolled hero, panel mid): V9 vs C8 + A/A",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T05-42-49-483Z",
+   "why": "Chrome reduced-motion shots RM1 (the panel +-1 background flips)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/pixels-2026-10-04T05-56-38-918Z",
+   "why": "Chrome reduced-motion shots RM2 (the panel +-1 background flips, A/A too)",
+   "kind": "frames",
+   "fastworkDerived": true,
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-C8-p2.json",
+   "why": "Chrome comp-check C8, 6 s, others frozen",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/comp-check-V9-p2.json",
+   "why": "Chrome comp-check V9, 6 s, others frozen",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-build-h60-V9.json",
+   "why": "roll-probe h60 V9 vs the original spring",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/probe-base-h60-C8.json",
+   "why": "roll-probe base fit on C8 (0 px)",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/hide-V9.json",
+   "why": "Chrome hidden-tab check V9",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/hide-V6.json",
+   "why": "Chrome hidden-tab check V6 (history row)",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/end-check-V9-c375.json",
+   "why": "T-034 roll end at c 31 (375 DPR 3)",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/end-check-V9-c1440.json",
+   "why": "T-034 roll end at c 52 (1440 DPR 1)",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/end-check-V9-rs430to375.json",
+   "why": "T-034 live resize mid-roll 430 -> 375",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/end-check-V9-rs375to1440.json",
+   "why": "T-034 live resize mid-roll 375 -> 1440",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/check/cd-roll-ca/2026-10-04T06-30-37-471Z/check.json",
+   "why": "fix.mjs check --on cd-strip mobile (morph, errors, 4xx, pixel diff)",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  },
+  {
+   "path": "out/cd-roll-ca/r5.log",
+   "why": "the resumed list's run log (part start/exit times)",
+   "kind": "result",
+   "for": "README Resumed list (Chrome)"
+  }
+ ]
+}
