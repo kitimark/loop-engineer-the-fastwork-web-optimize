@@ -154,10 +154,11 @@ and nudges them there). The lead sees every thread anyway and is always the seco
 | idle phone or Mac lock (`idle.mjs watch`, I-105) | mgmt-devices (nudge, move, release by its powers above) | lead (spawns, rules, user decisions) | lead |
 | stuck console step (`lib/step-alarm.mjs`, I-123) | mgmt-devices (messages the step's runner) | lead | lead |
 | disk nearly full (`lib/space-watch.mjs`, I-124) | mgmt-devices (asks the owners of the big out/ folders to prune) | lead | lead |
+| proposal revision overdue (`idle.mjs`, `proposal overdue`, I-177) | lead (names the reviser, asks for `proposal revising` with an eta) | lead | lead |
 | a new kind of automated thread | the lead names its first tier here before the tool ships | lead | lead |
 
-Tool side: I-175 (the three alarms address the first tier and the lead only, read from one setting the lead keeps,
-not the holder or the waiters). Until it lands the lead re-assigns such threads by hand (`thread assign --remove`).
+Tool side: I-175 (the three alarms go to the steward the lead sets, `console.mjs thread steward set mgmt-devices --by lead`;
+no steward on duty = no assignee, the lead's triage wakes at once). Until it lands the lead re-assigns such threads by hand.
 
 ## Status board: who reports what
 
