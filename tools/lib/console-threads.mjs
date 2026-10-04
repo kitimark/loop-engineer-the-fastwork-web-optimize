@@ -8,7 +8,8 @@
 // `console-threads` guard ($FW_STATE_DIR in tests). The store is local and gitignored: the user's text is kept as typed.
 // Agent text (titles, replies, notes) is scrubbed BEFORE it is stored (scrubAgentText: progress.mjs sanitize +
 // redact.mjs; http://localhost links survive), so no LAN address, e-mail, device id or home path an agent echoes ever
-// reaches the page, the event feed or a notification (Hard rule 12).
+// reaches the page, the event feed or a notification (Hard rule 12). I-119: a phone link written http://lan:<port>/<path>
+// is kept as written too (the literal host "lan", never an address); pageThread resolves it for the page at view time.
 //
 // A thread: {id, title, topic?, status: open|closed, createdBy, createdAt, updatedAt, rev, assignees: [agent],
 //   messages: [{n, at, by: 'user'|agent, text, ask?, images?}], reads: {user: n, <agent>: n}, history: [{at, who, action, note?}]}
@@ -38,6 +39,7 @@ import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs
 import { consoleDir, recipients } from './console.mjs';
 import { PERSONAL, sanitize } from './progress.mjs';
 import { redact } from './redact.mjs';
+import { lanAddress } from './lan.mjs';
 import { sniffMedia, sniffBytes, MEDIA_TYPES, LIMITS as PROPOSAL_LIMITS } from './proposal.mjs';
 import { normAnchor, anchorView, itemText as anchorItemText, plainLine } from './console-comments.mjs';
 import { routeOwner, routeContext, listeningState, listeningFn, getDesk, LISTEN_MIN, TRIAGE_ESCALATE_MIN } from './thread-routing.mjs'; // T-050
@@ -75,9 +77,49 @@ export const oneLine = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f\u202
 const LOCAL_URL = /\bhttps?:\/\/(?:localhost|127\.0\.0\.1)(?::\d{1,5})?(?:\/[\w\-./#?=&%~+:]*)?/gi;
 const personalIn = (s) => PERSONAL.some(([name, re]) => name !== 'url' && name !== 'ip address' && (re.lastIndex = 0, re.test(s)));
 
+// I-119 (user T-076): a phone link names the placeholder host `lan` (http://lan:<port>/<path>, like console steps and
+// iphone.mjs, lib/lan.mjs). It is stored exactly as written, never resolved before storing; the page resolves it to the
+// current LAN address only when it shows the thread (pageThread -> lanLinks). Only the literal host "lan", a numeric
+// port 1-65535 and a plain path (optional ?query and #fragment of URL-safe characters, nothing personal in it)
+// qualify; any other form, and every raw IP or .local/.lan host, is scrubbed to <link> as before.
+/** A candidate: `http(s)://lan` and the rest of its token (lanPlaceholder validates it). */
+const LAN_CANDIDATE = /\bhttps?:\/\/lan\b\S*/gi;
+const LAN_VALID = /^https?:\/\/lan:(\d{1,5})(?:\/[A-Za-z0-9\-._~%/]*)?(?:\?[A-Za-z0-9\-._~%/=&+]*)?(?:#[A-Za-z0-9\-._~%/=&+]*)?$/i;
+/** Sentence punctuation after a link is not part of it. */
+const TRAILING = /[.,;:!?)\]}'"]+$/;
+const personalAnyIn = (s) => PERSONAL.some(([name, re]) => name !== 'url' && (re.lastIndex = 0, re.test(s)));
+const IPV4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+
+/** For a candidate token: {url, rest} when it is a valid phone-link placeholder (plus trailing punctuation), else null. */
+function lanPlaceholder(token) {
+  const url = token.replace(TRAILING, '');
+  const m = LAN_VALID.exec(url);
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > 65535) return null;
+  if (personalAnyIn(url.replace(/^https?:\/\/lan:\d+/i, ''))) return null;
+  return { url, rest: token.slice(url.length) };
+}
+
 /**
- * Agent text made safe to store and show: URLs (except localhost ones), IP addresses, .local/.lan hosts, e-mails,
- * device ids and home paths replaced (progress.mjs sanitize, which also runs redact.mjs). Returns {text, scrubbed: [kinds]}.
+ * I-119: the phone-link placeholders of a stored text, in order, each once: [{text, href}]. href is the placeholder
+ * with the LAN address `resolve()` returns now (called at most once per text), or null when it can't be resolved
+ * (resolve throws, or answers something that is not an IPv4 address). Default: lib/lan.mjs lanAddress().
+ */
+export function lanLinks(text, resolve = () => lanAddress()) {
+  const found = [];
+  for (const m of String(text ?? '').matchAll(LAN_CANDIDATE)) {
+    const p = lanPlaceholder(m[0]);
+    if (p && !found.includes(p.url)) found.push(p.url);
+  }
+  if (!found.length) return [];
+  let addr = null;
+  try { const a = resolve(); if (typeof a === 'string' && IPV4.test(a)) addr = a; } catch { /* not available: href null */ }
+  return found.map((u) => ({ text: u, href: addr ? u.replace(/^(https?:\/\/)lan/i, `$1${addr}`) : null }));
+}
+
+/**
+ * Agent text made safe to store and show: URLs (except localhost ones and http://lan:<port>/ phone links, I-119), IP
+ * addresses, .local/.lan hosts, e-mails, device ids and home paths replaced (progress.mjs sanitize, which also runs
+ * redact.mjs). Returns {text, scrubbed: [kinds]}.
  */
 export function scrubAgentText(s) {
   const kept = [];
@@ -86,6 +128,12 @@ export function scrubAgentText(s) {
     if (personalIn(m.replace(/^https?:\/\/[^/]+/i, ''))) return m; // scrubbed below like any URL
     kept.push(m);
     return `\u0000${kept.length - 1}\u0000`;
+  });
+  t = t.replace(LAN_CANDIDATE, (m) => { // I-119: kept as written (the literal host "lan"); any other form scrubbed below
+    const p = lanPlaceholder(m);
+    if (!p) return m;
+    kept.push(p.url);
+    return `\u0000${kept.length - 1}\u0000${p.rest}`;
   });
   // the same steps as progress.mjs sanitize (a unit test holds them equal), one at a time to name what changed
   const scrubbed = new Set();
@@ -275,8 +323,15 @@ export function summary(t, reader = USER, ls = null) {
 }
 
 /** The full thread for the page: messages, the user's read mark; no agents' read marks or history. */
-export function pageThread(t, ls = null) {
-  return { ...summary(t, USER, ls), messages: t.messages.map((m) => ({ n: m.n, at: m.at, by: m.by, text: m.text, ...(m.ask && { ask: true }), ...(m.images?.length && { images: pageImages(t, m) }) })), readUser: t.reads?.user || 0, updatedAt: t.updatedAt };
+export function pageThread(t, ls = null, { lan = () => lanAddress() } = {}) {
+  // I-119: phone links (http://lan:<port>/) resolved now, at view time, at most once per thread; `lan` for the tests.
+  // The stored text keeps the placeholder; a message with such links gets lan: [{text, href|null}] (lanLinks).
+  let got;
+  const once = () => { got ??= (() => { try { return { a: lan() }; } catch (e) { return { e }; } })(); if (got.e) throw got.e; return got.a; };
+  return { ...summary(t, USER, ls), messages: t.messages.map((m) => {
+    const links = lanLinks(m.text, once);
+    return { n: m.n, at: m.at, by: m.by, text: m.text, ...(m.ask && { ask: true }), ...(m.images?.length && { images: pageImages(t, m) }), ...(links.length && { lan: links }) };
+  }), readUser: t.reads?.user || 0, updatedAt: t.updatedAt };
 }
 
 /** Sort for the page: the user's unread or waiting-on-you first, then open before closed, then newest activity. */

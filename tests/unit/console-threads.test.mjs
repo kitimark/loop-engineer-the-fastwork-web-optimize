@@ -574,3 +574,91 @@ test('I-090 threads page: a comment shows its item as a quote with a link back; 
   const l = await threadsPage({ hash: '', list: [T.summary(T.getThread(t.id))] });
   assert.ok(l.ids.threads.textContent.includes('comment on PR-009 option both, shot 2'), l.ids.threads.textContent);
 });
+
+// ---- I-119 (user T-076): phone links in threads: http://lan:<port>/ stored as written, resolved only when shown --------
+// Fake addresses only: the resolver is injected (or FW_LAN_ADDRESS is a made-up 192.168.77.12), never the host's.
+
+const FAKE_LAN = '192.168.77.12';
+const IPV4_ANY = /\b\d{1,3}(?:\.\d{1,3}){3}\b/;
+
+test('I-119 scrubAgentText: http(s)://lan:<port>/<path> is kept as written; raw IPs, .local hosts, e-mails and bad lan forms still scrubbed', () => {
+  for (const ok of ['http://lan:5231/', 'https://lan:5231/', 'http://lan:5231', 'http://lan:1/x', 'http://lan:65535/a/b-c_d.e~f/%20', 'http://lan:5231/?arm=b&v=2', 'http://lan:5231/#top', 'HTTP://LAN:5231/x'])
+    assert.deepEqual(T.scrubAgentText(`Try ${ok} on the phone`), { text: `Try ${ok} on the phone`, scrubbed: [] }, ok);
+  // sentence punctuation after a link is not part of it
+  assert.equal(T.scrubAgentText('A: http://lan:5231/, B: http://lan:5232/. (C: http://lan:5233/)').text, 'A: http://lan:5231/, B: http://lan:5232/. (C: http://lan:5233/)');
+  // the rest of the text is scrubbed as before
+  const s = T.scrubAgentText(`Phone: http://lan:5231/ not http://${FAKE_LAN}:5231/ nor http://my-mac.local:5231/ nor ${FAKE_LAN}; mail someone@example.invalid`);
+  assert.equal(s.text, 'Phone: http://lan:5231/ not <link> nor <link> nor <ip address>; mail <e-mail>');
+  assert.deepEqual(s.scrubbed.sort(), ['e-mail', 'ip address', 'url']);
+  // only a numeric port 1-65535 and a plain path: anything else stays scrubbed, whole
+  for (const bad of ['http://lan/', 'http://lan:0/', 'http://lan:65536/', 'http://lan:99999/', 'http://lan:abc/', 'http://lan:5231x/', 'http://lan:5231/a@example.invalid',
+    `http://lan:5231/?h=${FAKE_LAN}`, 'http://lan:5231/Users/someone/x', 'http://lan:5231/a<b>', 'http://lan:5231/a"b', "http://lan:5231/a'b", 'http://lan:5231/a\\b',
+    'http://lan-host:5231/', 'http://lan.example.invalid:5231/', 'http://user@lan:5231/', 'http://lan:5231@evil.invalid/', 'ftp://lan:5231/', 'http://lan:5231/a b'.split(' ')[0] + 'é'])
+    assert.equal(T.scrubAgentText(`x ${bad} y`).text, 'x <link> y', bad);
+});
+
+test('I-119 lanLinks: the valid placeholders of a text, resolved by the injected resolver; unresolvable -> href null', () => {
+  const text = 'A http://lan:5231/x, B https://lan:5232/?v=2. Not http://lan:0/ nor http://localhost:5559/ nor <link>. A again http://lan:5231/x';
+  assert.deepEqual(T.lanLinks(text, () => FAKE_LAN), [
+    { text: 'http://lan:5231/x', href: `http://${FAKE_LAN}:5231/x` },
+    { text: 'https://lan:5232/?v=2', href: `https://${FAKE_LAN}:5232/?v=2` },
+  ]);
+  let calls = 0;
+  T.lanLinks(text, () => { calls++; return FAKE_LAN; });
+  assert.equal(calls, 1, 'resolved once per text');
+  assert.deepEqual(T.lanLinks(text, () => { throw new Error('no LAN address'); }), [
+    { text: 'http://lan:5231/x', href: null }, { text: 'https://lan:5232/?v=2', href: null },
+  ]);
+  assert.deepEqual(T.lanLinks('no links here', () => { throw new Error('never asked'); }), []);
+  assert.deepEqual(T.lanLinks('http://lan:5231/', () => 'not-an-ip'), [{ text: 'http://lan:5231/', href: null }], 'a resolver answer that is not an IPv4 address is not used');
+});
+
+test('I-119 store: a lan link is stored as written (no address resolved before storing); pageThread resolves it at view time', async () => {
+  const old = process.env.FW_LAN_ADDRESS;
+  process.env.FW_LAN_ADDRESS = FAKE_LAN; // if anything resolved before storing, the address would land in the store
+  try {
+    const n = await T.createThread({ by: 'lead', title: 'Try it on the phone', text: 'A: http://lan:5231/\nB: http://lan:5232/x?arm=b' });
+    assert.deepEqual(n.scrubbed, []);
+    const r = await T.replyAgent(n.thread.id, { by: 'lead', text: `Also https://lan:5233/ and not http://${FAKE_LAN}:5233/` });
+    assert.deepEqual(r.scrubbed, ['url']);
+    const raw = readFileSync(join(state, 'console', 'threads', `${n.thread.id}.json`), 'utf8');
+    assert.doesNotMatch(raw, IPV4_ANY, 'no IP address in the stored thread');
+    const t = T.getThread(n.thread.id);
+    assert.deepEqual(t.messages.map((m) => m.text), ['A: http://lan:5231/\nB: http://lan:5232/x?arm=b', 'Also https://lan:5233/ and not <link>']);
+    // view time: the default resolver (lan.mjs, here FW_LAN_ADDRESS), or an injected one
+    const p = T.pageThread(t);
+    assert.deepEqual(p.messages.map((m) => m.lan), [
+      [{ text: 'http://lan:5231/', href: `http://${FAKE_LAN}:5231/` }, { text: 'http://lan:5232/x?arm=b', href: `http://${FAKE_LAN}:5232/x?arm=b` }],
+      [{ text: 'https://lan:5233/', href: `https://${FAKE_LAN}:5233/` }],
+    ]);
+    assert.equal(p.messages[0].text, 'A: http://lan:5231/\nB: http://lan:5232/x?arm=b', 'the text itself keeps the placeholder');
+    const q = T.pageThread(t, null, { lan: () => { throw new Error('no LAN address'); } });
+    assert.deepEqual(q.messages[1].lan, [{ text: 'https://lan:5233/', href: null }]);
+    const plain = (await T.createThread({ title: 'x', text: 'y', fromPage: true })).thread;
+    assert.ok(!('lan' in T.pageThread(plain, null, { lan: () => { throw new Error('never asked'); } }).messages[0]), 'a message without lan links has no lan key');
+    assert.doesNotMatch(readFileSync(join(state, 'console', 'threads', `${n.thread.id}.json`), 'utf8'), IPV4_ANY, 'viewing stores nothing');
+  } finally { if (old === undefined) delete process.env.FW_LAN_ADDRESS; else process.env.FW_LAN_ADDRESS = old; }
+});
+
+test('I-119 threads page: a lan link opens the address resolved at view time; unresolved: the text and a plain note; only listed links', async () => {
+  const n = await T.createThread({ by: 'lead', title: 'Try it', text: 'A: http://lan:5231/x and the console http://localhost:5559/progress and B: http://lan:5232/' });
+  const view = T.pageThread(T.getThread(n.thread.id), null, { lan: () => FAKE_LAN });
+  const p = await threadsPage({ hash: `#${n.thread.id}`, thread: view });
+  const msg = p.ids['tv-msgs'].children[0];
+  const links = msg.all().filter((x) => x.tagName === 'a').map((a) => [a.textContent, a.href]);
+  assert.deepEqual(links, [[`http://${FAKE_LAN}:5231/x`, `http://${FAKE_LAN}:5231/x`], ['http://localhost:5559/progress', 'http://localhost:5559/progress'], [`http://${FAKE_LAN}:5232/`, `http://${FAKE_LAN}:5232/`]]);
+  assert.equal(msg.all().find((x) => x.className === 'mtext').textContent, `A: http://${FAKE_LAN}:5231/x and the console http://localhost:5559/progress and B: http://${FAKE_LAN}:5232/`);
+  // unresolvable: the placeholder as text with a plain note, no link, no error
+  const off = T.pageThread(T.getThread(n.thread.id), null, { lan: () => { throw new Error('no LAN address'); } });
+  const q = await threadsPage({ hash: `#${n.thread.id}`, thread: off });
+  const m2 = q.ids['tv-msgs'].children[0];
+  assert.deepEqual(m2.all().filter((x) => x.tagName === 'a').map((a) => a.href), ['http://localhost:5559/progress']);
+  assert.equal(m2.all().find((x) => x.className === 'mtext').textContent, 'A: http://lan:5231/x (Wi-Fi address not available) and the console http://localhost:5559/progress and B: http://lan:5232/ (Wi-Fi address not available)');
+  assert.equal(m2.all().filter((x) => x.className === 'lannote').length, 2);
+  // a placeholder the server did not list (an old reply, or a hand-edited store) is plain text, never a link
+  const bare = await threadsPage({ hash: `#${n.thread.id}`, thread: { ...view, messages: view.messages.map((m) => ({ ...m, lan: undefined })) } });
+  assert.deepEqual(bare.ids['tv-msgs'].children[0].all().filter((x) => x.tagName === 'a').map((a) => a.href), ['http://localhost:5559/progress']);
+  // a listed href that is not an http(s) URL is not linked either
+  const evil = await threadsPage({ hash: `#${n.thread.id}`, thread: { ...view, messages: view.messages.map((m) => ({ ...m, lan: [{ text: 'http://lan:5231/x', href: 'javascript:alert(1)' }] })) } });
+  assert.ok(!evil.ids['tv-msgs'].children[0].all().some((x) => x.tagName === 'a' && /^javascript:/.test(x.href)));
+});

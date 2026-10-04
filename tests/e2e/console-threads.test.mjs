@@ -51,7 +51,7 @@ function sse() {
 before(async () => {
   state = tempDir('fw-threads-e2e-');
   notifyLog = join(state, 'notify.log');
-  env = { FW_STATE_DIR: state, FW_CONSOLE_NOTIFY_LOG: notifyLog };
+  env = { FW_STATE_DIR: state, FW_CONSOLE_NOTIFY_LOG: notifyLog, FW_LAN_ADDRESS: '192.168.77.12' }; // I-119: a made-up LAN address
   srv = await startProc(process.execPath, [CON, 'serve', '--port', '0', '--notify'], { env, ready: (s) => { const m = s.match(/^CONSOLE_URL=(\S+)$/m); return m && m[1]; } });
   base = srv.url;
 });
@@ -395,4 +395,28 @@ test('T-050: the API names who listens (toState, backstopMin); a message ticked 
   assert.match(cli('thread', 'topic', 'list').stdout, /^hero-exit -> fix-h \(not listening\)/);
   assert.match(cli('thread', 'escalate', id, '--by', 'fix-gone', '--note', 'needs a decision').stdout, new RegExp(`^ESCALATED ${id}`));
   assert.match(cli('thread', 'desk', 'set', '--clear', '--by', 'lead').stdout, /^DESK cleared/);
+});
+
+// ---- I-119 (user T-076): phone links in threads ------------------------------------------------------------------
+test('I-119: thread new|reply keep http://lan:<port>/ as written (no IP stored); the page API resolves it at view time; thread show prints the placeholder', async () => {
+  const s = cli('thread', 'new', '--by', 'lead', '--title', 'Try it on the phone', '--text', 'A: http://lan:5231/x?arm=a\nB: https://lan:5232/');
+  assert.equal(s.code, 0, s.out);
+  assert.doesNotMatch(s.stdout, /scrubbed/, 'nothing scrubbed');
+  const id = s.stdout.match(/^STARTED (T-\d+)/m)[1];
+  const r = cli('thread', 'reply', id, '--by', 'lead', '--text', 'Not this one: http://192.168.77.12:5233/ but http://lan:5233/');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /scrubbed before storing \(Hard rule 12\): url; for phone links write http:\/\/lan:<port>\//, 'the hint names the safe form');
+  const raw = readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8');
+  assert.doesNotMatch(raw, /\b\d{1,3}(?:\.\d{1,3}){3}\b/, 'no IP address in the stored thread');
+  assert.match(raw, /http:\/\/lan:5231\/x\?arm=a/);
+  const t = (await req(`/api/threads/${id}`)).json.thread;
+  assert.deepEqual(t.messages.map((m) => m.lan), [
+    [{ text: 'http://lan:5231/x?arm=a', href: 'http://192.168.77.12:5231/x?arm=a' }, { text: 'https://lan:5232/', href: 'https://192.168.77.12:5232/' }],
+    [{ text: 'http://lan:5233/', href: 'http://192.168.77.12:5233/' }],
+  ]);
+  assert.equal(t.messages[1].text, 'Not this one: <link> but http://lan:5233/');
+  const show = cli('thread', 'show', id);
+  assert.match(show.stdout, /^ {4}A: http:\/\/lan:5231\/x\?arm=a$/m, 'agents read the placeholder');
+  assert.doesNotMatch(show.stdout, /192\.168\./);
+  assert.doesNotMatch(readFileSync(join(state, 'console', 'threads', `${id}.json`), 'utf8'), /\b\d{1,3}(?:\.\d{1,3}){3}\b/, 'viewing stored nothing');
 });

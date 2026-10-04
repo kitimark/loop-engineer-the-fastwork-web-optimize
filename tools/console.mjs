@@ -69,6 +69,10 @@
 // Threads (ts-console-threads, user request 2026-10-02): the user asks one topic per thread on the page (/threads);
 // the lead, or an agent the lead assigned, replies here. The user's text is printed as typed (their own message to us:
 // never copy it into committed files without scrubbing it); agent text is scrubbed before it is stored (Hard rule 12).
+// Links in agent text: http://localhost:<port>/… is kept; for phone links write http://lan:<port>/<path> (I-119): stored
+// as written with the literal host "lan" and turned into a link to the Mac's current LAN address only when the page
+// shows the thread ("Wi-Fi address not available" when there is none); `thread show` prints the placeholder. A raw IP,
+// a .local/.lan host, or a lan link without a numeric port 1-65535 and a plain path is scrubbed to <link>.
 //   node tools/console.mjs thread wait --as <agent> [--thread T-3] [--timeout 3600] [--json] [--quiet]
 //        # background: exit 0 printing NEW <thread> #<n> by user … for EVERY unread user message in the threads you
 //        # follow (the lead: all; others: the ones assigned to them), then marks them read for you only; 3 TIMEOUT;
@@ -86,6 +90,7 @@
 //   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask] [--image <path> [--caption "…"]]…
 //        # the lead always; others only when assigned ("ask the lead to assign you"). --ask: you need an answer from
 //        # the user (the thread shows "waiting on you"). Prints REPLIED T-003 #4 and anything that was scrubbed.
+//        # For phone links write http://lan:<port>/ (never the address): the page opens the Mac's LAN address (I-119).
 //   node tools/console.mjs thread new --by lead --title "…" --text "…"|--file <f> [--topic <status id>] [--to <agent>] [--ask] [--image …]
 //        # I-089 images: --image <path> repeats (at most 6 per message); a --caption belongs to the --image before it.
 //        # PNG, JPEG, GIF or WebP by content (not by name), at most 15 MB each, copied as is into the local store
@@ -201,7 +206,7 @@ async function thread() {
   };
   const images = () => TH.parseImageArgs(argv); // I-089
   const imgNote = (k) => (k ? ` with ${k} image${k === 1 ? '' : 's'}` : '');
-  const scrubNote = (sc) => (sc && sc.length ? `\nscrubbed before storing (Hard rule 12): ${sc.join(', ')}` : '');
+  const scrubNote = (sc) => (sc && sc.length ? `\nscrubbed before storing (Hard rule 12): ${sc.join(', ')}${sc.includes('url') ? '; for phone links write http://lan:<port>/' : ''}` : ''); // I-119
   if (!sub || sub === 'help') { console.log('see the header of tools/console.mjs (Threads)'); return sub ? 0 : EXIT.usage; }
   if (sub === 'list') {
     if (flag('unread') && !as()) throw new Error('--unread needs --as <agent>');
