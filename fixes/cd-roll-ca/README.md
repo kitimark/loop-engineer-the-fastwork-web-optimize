@@ -1241,7 +1241,7 @@ question: on the phone at real thermal Serious, does K (the same path in 4x fewe
   the page compared with V9? No-worse only; the landing basis is the counts (keyframes per tick, Simulator f1-f3 cell
   paints) and the pixel gates above. Descriptive: whether V9's hero roll-start frames over 50 ms (P-093) shrink.
 ports: three fresh servers (I-131 interim rule: OS-assigned ports, never one that served another build today):
-  `ARMS="B V9 VK" sh fixes/cd-roll-ca/phone/serve-snap.sh` (sha256 f70ef125ead3; plain http per I-003; it checks the copies
+  `ARMS="B V9 VK" sh fixes/cd-roll-ca/phone/serve-snap.sh` (sha256 62b4706c2f86; plain http per I-003; it checks the copies
   against HASHES.txt and the served hashes). One uncounted warm-up load per arm port (A3/U5).
 thermal gate, start method, sleep check: as P-093, unchanged (thermal-gate.mjs 4604218c4041 at the start and end of every
   hold, real Serious, Is Induced = No, ceiling 44 °C/Critical; pre-warm on B, at most 4 runs; pmcheck.mjs d36bd7437b7c).
@@ -1298,7 +1298,7 @@ arms (all at y 0, the page at rest, no scrolling; synthetic page fixes/cd-roll-c
   p100-check.mjs (sha256 ded4935a6e19) checks each synthetic mode in Chrome before the hold (quiet: 0 animations and
   0 writes; ca: running animations; paused: all paused; raf: 0 animations, > 20 writes; no errors).
 holds: one hold after the K block (same lease if ops agrees, else its own turn after fix-morph-gpu's P-098/P-099):
-  `ARMS="B P100 V9 C8" sh fixes/cd-roll-ca/phone/serve-snap.sh` (fresh ports, I-131; sha256 f70ef125ead3), then
+  `ARMS="B P100 V9 C8" sh fixes/cd-roll-ca/phone/serve-snap.sh` (fresh ports, I-131; sha256 62b4706c2f86), then
   `node tools/lock.mjs run chrome-measure --no-timing --max-seconds 900 --owner cd-roll-ca --doing "P-100 display-rate
   hold H1" -- caffeinate -i -s sh fixes/cd-roll-ca/phone/p100-hold.sh H1 quiet ca paused raf V9 C8 C8 V9 raf paused ca
   quiet` (p100-hold.sh sha256 bab745eaaf91; per item: iphone.mjs open, then p100-rec.mjs sha256 c54490cd317c with
