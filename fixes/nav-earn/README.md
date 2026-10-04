@@ -3,15 +3,132 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** built and checked (DOM probe, frozen stills, pixel check, WebKit Simulator); visual change, so a proposal
-(PR-021); **not timed** (memory `defer-timing-focus-call-tree.md`; this is a visual bug, not a cost fix).
-**Base:** v8 (best build, `fixes/v8-best/`, JS `3e3e94cb6e9f` / CSS `f836404b3728`). **This build (rev 2):** JS
-`f93d34915eb5` / CSS `044f52f797e5` (rev 1 was JS unchanged / CSS `9581cd83004c`). Baseline snapshot `b1789284481295-4ad4a84a`.
-**Files touched:** rev 1: `/_app/immutable/assets/2.gBuqKVzi.css` (2 rules, unchanged in rev 2); rev 2 adds one CSS block
-and a 7-line `--earn-in` writer in `/_app/immutable/nodes/2.DyWL8TcE.js` (section "Rev 2"). `delta.diff` = the change on top of v8;
-`patch.diff` = baseline-relative (v8 + this), what `fix.mjs apply` and the proposal's Try-it serve.
-**Driver(s):** Chrome DOM probe (synthetic wheel into the page's own capture listener, per-rAF samples) and the same in
-the iOS Simulator (Safari). No iPhone run (memory `simulator-for-non-perf-phone-jobs.md`).
+**Status:** rev 3 built and checked (Chrome DOM counts per frame, frozen stills, pixel diff vs v8, WebKit Simulator
+Timeline counts); visual change, so a proposal (PR-021 rev 3); **not timed** (memory `defer-timing-focus-call-tree.md`).
+**Base:** v8 (best build, `fixes/v8-best/`, JS `3e3e94cb6e9f` / CSS `f836404b3728`, short sha256 as the probes print it).
+**This build (rev 3):** JS `8df0a9eb3ec7` / CSS `29bade2fe964` (rev 2: JS `f93d34915eb5` / CSS `044f52f797e5`; rev 1: JS
+unchanged / CSS `9581cd83004c`). Baseline snapshot `b1789284481295-4ad4a84a`.
+**Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` and `/_app/immutable/nodes/2.DyWL8TcE.js` (section "Rev 3";
+rev 2's `--earn-in` writer and its CSS are gone). `delta.diff` = the change on top of v8; `patch.diff` = baseline-relative
+(v8 + this), what `fix.mjs apply` and the proposal's Try-it serve.
+**Driver(s):** Chrome DOM probe (scripted scroll steps and glides, synthetic wheel into the page's own capture listener)
+and the iOS Simulator (Safari, Web Inspector Timeline record counts). No iPhone run (memory
+`simulator-for-non-perf-phone-jobs.md`).
+
+## Rev 3 (PR-021 changes-requested on rev 2, T-158): original timers back, drawn without layout
+
+The user on rev 2 (scrubbed summary; full text in PR-021's decision note and thread T-158):
+1. At the end of the page the original's timed hide of the button is gone (rev 1 made it follow the morph).
+2. At the top, the reveal and un-reveal of the button around the hero → people scroll still lags, both ways: not on
+   the GPU yet.
+3. T-158: rev 2 tied the button to the scroll position; on a fast scroll that reads as a laggy animation. The original
+   does not follow the scroll, and neither should the fix.
+
+The lead's spec for rev 3: the original look and timing at both places (timer from the 72 % flip at the top; the
+original hide at the end), the width reserved so nothing lays out per frame, only opacity / clip-path / mask /
+transform animated, no per-frame style writes from script, one class flip per state change; fold in F-243; numbers
+per frame for both directions and the end of the page, Chrome and Simulator.
+
+**Trace (why the original lags).** The button's look is `max-width` / `padding-inline` (0.68 s) and the actions `gap`
+(0.68 s): three layout properties on CSS transitions, so every frame of the 0.68 s grow or shrink is a full nav
+layout (Chrome phone: 43 layouts in the 0.7 s after the 72 % flip, 43 in the hide, vs 1-2 when still; v8 numbers
+below). At the end of the page the same rules are driven by `--morph` every frame while their transitions stay on,
+so every frame restarts them (the double drive, F-222 / research/v8-double-drive). Simulated in
+`scratchpad sim-end.mjs` (the restarted transitions frame by frame, ZM's 680 ms ease-out cubic): the result is the
+same curve as ONE 0.68 s transition started where `--earn-out` reaches 1 (morph 0.2, ~50 ms in) for the hide (max
+error 0.001 of the width), and one started at morph 0 for the show (max error 0.017-0.034). So "the original timer"
+at the end is a plain timer too, and rev 3 can play it as one.
+
+**Change (rev 3, replaces rev 2's top part and rev 1's `transition: none` on the button; rev 1's phone logo rule
+stays).**
+- Layout reserved: the button keeps `max-width: 11rem` (9.5rem phone), `padding: 0`, no background; its dark pill and
+  label move into a new inner `span.start-selling-top-nav-earn-box` (background, radius, `padding-inline` 24 / 16 px).
+  The actions gap is a constant 8 / 4 px. So the nav's layout is the same in every state.
+- The original's geometry is drawn with compositor-friendly properties (CSS ~11946-12010, JS ~13860-13950):
+  - width w(e) = min(W − 2P(1 − e), M·e) (W = the button's full width, P = padding, M = max-width; the original's
+    `max-width` / `padding-inline` pair), shown as `clip-path: inset(0 X round 999px)` on the span and
+    `translate: X` on the button, X = (W − w)/2, so the visible pill has the original's width and right edge;
+  - the language switch: `translate: W − w + G(1 − e)` (the width and gap the original had not grown yet);
+  - e runs on the original's 0.68 s `cubic-bezier(.33, 0, .2, 1)`; a reversal mid-way starts from the current e and
+    takes 680·|Δe| ms (as a reversed CSS transition shortens);
+  - played as one Web Animation per element per state change (button, span, switch; 25 keyframes, linear between
+    them), started by the nav's own effect when the state flips. No script runs per frame.
+- States: shown ↔ hidden. Hidden = `.is-hero-pill` (the top, as before) or the new `.is-earn-hidden` (end of the
+  page: on when morph ≥ 0.2, off when morph is back at 0; the original's own thresholds). The hidden CSS state equals
+  the animations' end (`opacity: 0; translate: 50%`, span `clip-path: inset(0 50%)`, switch translated), so nothing
+  jumps when an animation ends.
+- Opacity keeps the original's transitions on the class flip (0.32 s after 0.12 s; 0.2 s back into the pill). The mask
+  sweep and the sheen are the original's, unchanged.
+- End of page, per frame: the original closes the actions gap with `--morph` (no timer, morph 0-0.2). Rev 3 keeps that
+  as a per-frame `transform` on the switch (`translateX(clamp(morph/0.2) * 8px)`, under `.is-morphing`); `--morph` reaches
+  the switch through the existing F-183 writer list (one entry added). The blur and lift on the button stay per frame
+  as in the original (`filter`, `transform`).
+- The full width W, P, M and G are read by one ResizeObserver on the button (writes `--earn-w` on the actions row when
+  W changes, e.g. phone ↔ desktop media), never per frame.
+- F-243 folded in: `.is-morphing` is now `morph > 0` (was `> 0.001`), so the bar's `:not(.is-morphing)` transitions no
+  longer come back for the close's last ~68 ms and retarget ~5 times.
+- Reduced motion: no Web Animation (the state is set at once, as the original's `transition: none` there).
+
+**Engine facts used (with status).**
+- WebKit can run `opacity`, `transform`, `translate`, `scale`, `rotate`, `filter`, `backdrop-filter` animations as
+  accelerated (Core Animation) animations: CONFIRMED, WebKit main 67847a3bb5 `Source/WebCore/css/CSSProperties.json`
+  (`"animation-wrapper-acceleration": "always"`: opacity line 7589, filter 10835, transform 12786, translate 12934).
+  `clip-path` (4317), `mask-image` (6665) and `mask-position` (6761) have no such key: they animate on the main thread
+  and repaint the button's layer each frame (CONFIRMED by the same file). Whether a given animation actually runs
+  accelerated also depends on `KeyframeEffect::canBeAccelerated` (`KeyframeEffect.cpp` 1973-2038: on the Core Animation
+  path a `steps()` or `linear()`-with-points timing or a non-replace composite blocks it; rev 3 uses plain `linear`,
+  replace). That our Web Animations do run accelerated on the shipped iOS Safari: OBSERVED only where the Simulator
+  numbers below say so; UNRESOLVED on the real iPhone (not run).
+- Chrome composites `translate`, `transform`, `opacity`, `filter` and (Chrome 152+) `clip-path` animations: CONFIRMED,
+  `third_party/blink/renderer/core/animation/compositor_animations.cc` `kCompositableProperties` (lines 78-84);
+  clip-path compositing default-on since commit 1489d51728 (152.0.7951.0). A mixed effect falls back to the main thread
+  as a whole, so rev 3 uses one animation per element and property group.
+- So in WebKit the span's clip is main-thread paint (no layout, no style per frame from script); the original's mask
+  sweep is too, in v8 and rev 3 alike.
+
+**Known approximations (OBSERVED in the stills; small).**
+- The text mask sweep is sized on the reserved width W, not on the growing width; it starts at 0.52 s, when the
+  original is already within ~2 px of W.
+- The original's partial reverse when a morph is opened only to 0-0.2 and let go is not modelled: rev 3 hides only
+  past 0.2 and shows again at 0, the original's own thresholds.
+- End-of-page show: one timer started at morph 0 vs the original's restarts (≤ 0.034 of the width).
+
+**Rev 3 numbers (OBSERVED, Chrome headless, `probe/r3-probe.mjs`, phone 430x775 DPR 3,
+out/nav-earn/r3-2026-10-04T20-59-35-520Z; A = v8, R3 = v8 + rev 3; `Performance.getMetrics` counts over the window,
+divided by the rAF frames in it; not a timing claim).**
+
+| window | frames A / R3 | layouts A | layouts R3 | layouts per frame A → R3 | style recalcs per frame A → R3 |
+|---|---|---|---|---|---|
+| still, full bar (1.5 s) | 91 / 91 | 1 | 2 | 0.01 → 0.02 | 0.99 → 0.99 |
+| still, hero pill (1.5 s) | 91 / 90 | 1 | 3 | 0.01 → 0.03 | 0.99 → 1.00 |
+| top reveal, 0-0.7 s after the 72 % flip | 126 / 129 | 43 | 2 | 0.34 → 0.02 | 0.36 → 0.36 |
+| top reveal, 0.7-1.6 s | 220 / 224 | 1 | 1 | 0 → 0 | 0.25 → 0.25 |
+| top un-reveal, 0-0.7 s | 42 / 43 | 43 | 3 | 1.02 → 0.07 | 1.07 → 1.05 |
+| glide down 0.5 → 0.8 of the hero in 1 s (2.6 s window) | 157 / 156 | 47 | 5 | 0.30 → 0.03 | 1.39 → 1.40 |
+| glide up 0.8 → 0.5 | 312 / 312 | 47 | 6 | 0.15 → 0.02 | 0.70 → 0.70 |
+| end of page, still (1 s) | 60 / 60 | 0 | 0 | 0 → 0 | 1 → 1 |
+| end of page, open (1.5 s) | 182 / 180 | 45 | 41 | 0.25 → 0.23 | 0.50 → 0.50 |
+| end of page, close (1.5 s) | 270 / 270 | 83 | 43 | 0.31 → 0.16 | 0.33 → 0.33 |
+
+- Page errors / failed requests: 0 / 0 in both arms.
+- The ~41-43 layouts left at the end of the page are the morph itself (the bar grows into the end panel: v8's width
+  and height), not the button: the button's share was 4 in the open (A 45 → 41) and 40 in the close, where the
+  original re-grew it on its 0.68 s layout timer after the morph ended (A 83 → 43).
+- Style recalcs per frame do not change: the page restyles every frame for its other animations in both builds; rev 3
+  adds no per-frame style writes (its per-frame values are Web Animations and the existing `--morph`).
+- Desktop (1440x900), the double-drive probe (rev 3 vs rev 2) and the Simulator (WebKit) Timeline counts: pending when
+  rev 3 was posted (lead, roles v3: post once the phone probe passes); they follow in this section and in PR-021.
+
+**Same look (frozen stills, `R3_RATE=0.1` slow motion then frozen per still, `probe/r3-pxdiff.mjs`; nav strip only).**
+Top reveal 0-1500 ms and un-reveal 0-700 ms, every still: A vs R3 differ in ≤ 0.40 % of the strip's pixels by more
+than 64 levels and ≤ 0.31 % by more than 128 (max 212), all of it on the moving language switch (its glyph and
+border edges; likely sub-pixel placement under `translate` vs layout's pixel snapping, OBSERVED, cause not separated), inside the PR-010 wide numbers (fill 64, edge 128, 0.5 %). At rest (0 and ≥ 700 ms): 0 %. End of page: ≤ 1.8 %
+(> 64) / ≤ 1.4 % (> 128) while the morph runs, located on the logo (rev 1's phone logo fix, the part the user kept) and
+on the switch edge; the button itself matches (montages: out/nav-earn/r3-…/mont-phone-*.png).
+
+**Hit testing.** The button takes clicks only in the full-bar state when not morphing (unchanged rules); hidden, it is
+`pointer-events: none` and its reserved slot shows the language switch translated over it (hit testing follows
+transforms), as in the original.
 
 ## Rev 2 (PR-021 changes-requested, T-154): the top-of-page appear follows the scroll too
 
@@ -156,6 +273,12 @@ nav stills of the morph start (0, 16, 33, 50, 67, 100, 150, 200, 300, 450, 700, 
 ## Reproduce
 
 ```sh
+# rev 3 (fixes/nav-earn/overlay = rev 3; A = fixes/v8-best/overlay; R3_RATE = slow-motion rate for the stills)
+node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner <you> -- \
+  node fixes/nav-earn/probe/r3-probe.mjs phone A,R3             # counts per window + frozen nav strips -> out/nav-earn/r3-<tag>
+node fixes/nav-earn/probe/r3-pxdiff.mjs out/nav-earn/r3-<tag>   # A vs R3 strip pixel diff per sequence and still
+node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner <you> -- \
+  node tools/sim.mjs session --functional --owner <you> -- node fixes/nav-earn/probe/r3-sim.mjs A,R3   # WebKit Timeline counts
 node tools/fix.mjs apply v8-best && node tools/fix.mjs apply nav-earn      # or: combine x v8-best fixes/nav-earn/delta.diff
 EP_RATE=0.05 node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner <you> -- \
   node fixes/nav-earn/probe/earn-probe.mjs phone A,A2,B                        # also: tall, desktop; O = plain baseline

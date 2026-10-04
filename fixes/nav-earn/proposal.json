@@ -1,82 +1,82 @@
 {
   "schema": "fw-proposal/1",
-  "title": "Join waitlist button: follows your scroll at the top too; the end of the page stays as in rev 1",
+  "title": "Join waitlist button: the original's own timing back at both places, without moving the layout each frame",
   "area": "whole",
   "topic": "nav-earn",
-  "thread": "T-154",
-  "problem": "Rev 2, answering your notes on rev 1:\n- \"SOOOO ULTRA SMOOTH on the end of page\": kept. The end-of-page part is the same two rules as rev 1, unchanged.\n- \"the button will appear when we scroll down. it still lag a bit\": yes. At the top, the button runs on its own clock.\n- It starts only when the hero is 72 % scrolled, then reaches full width about 0.6 s later.\n- Its text then sweeps in until about 1.5 s, even if you stopped scrolling.\n- \"you didn't apply this on the scroll on the top of page\": correct, rev 1 only changed the end of the page.\n- \"open new thread\": the full trace is in the catch-up thread (T-154).",
-  "idea": "The button now follows your finger at the top too, like at the end of the page:\n1. While the hero goes from 58 % to 72 % scrolled, the button grows from nothing to full: width, fade and the left-to-right text sweep all follow the scroll position.\n2. At 72 %, where the bar used to start its own 0.6 s animation, the button is already full, so nothing jumps or keeps moving.\n3. Scrolling back up shrinks it the same way, with the scroll.\nThe end-of-page part is rev 1, unchanged. The shine that passes over the button keeps its own timing.",
-  "looksSame": "At rest it is the same picture as today's best build (v8).\n- Same: the hero at the top, the full bar further down, the end panel.\n- Different on purpose: the button grows during the scroll just before the bar changes, instead of after it.",
+  "thread": "T-158",
+  "problem": "Rev 3, answering your notes on rev 2 (and thread T-158):\n- \"the animation lost during the end-of-page\": yes, rev 1 and 2 made the button follow the panel. Rev 3 brings back the original's timed hide: the width closes over 0.68 s, the fade takes 0.32 s after 0.12 s.\n- \"the start of the page is not optimize but gpu yet ?\": correct. In the original, the grow and shrink change the button's width and the gap, so the whole bar is laid out again every frame for 0.68 s.\n- \"i still see lag ... when it reveal and un-reveal at the start of the page\": rev 3 keeps the same look and timing but draws it without that per-frame layout (numbers below).\n- T-158 \"could not depends on scroll velocity\": agreed. Rev 3 does not follow the scroll at all. The bar flips at 72 % of the hero as in the original, and the button then runs on the original's 0.68 s timer.\n- Extra (finding F-243, a code from our findings board): at the end of the close, the bar no longer restarts its own width animation about 5 times in the last 68 ms.",
+  "idea": "Same look and timing as the original, drawn without moving the layout:\n1. The button keeps its full width in the bar all the time. The dark pill inside it is cut to the original's width at each moment, and the language switch slides over by the same amount.\n2. Each change (hidden to shown, or back) starts one short animation of that cut and slide on the original's 0.68 s curve. The fade and the text sweep are the original's own.\n3. At the end of the page the button hides on the original's timer once the panel is 20 % open, and comes back the same way when it closes.\nNo script runs per frame while it plays.",
+  "looksSame": "Frame by frame it is the same picture as today's best build (v8).\n- Top of the page, stills every 50-150 ms: at most 0.4 % of the bar's pixels differ, all on the edges of the moving language switch.\n- At rest: identical.\n- End of the page: the logo slides instead of jumping (rev 1, which you kept).",
   "visualDiff": [
-    "Top of the page: the button appears over the last stretch of the hero scroll (58-72 %), following the finger.\n- Before: nothing until 72 %, then a 0.6 s grow and a sweep until 1.5 s.",
-    "A very fast flick that jumps over the whole stretch in one frame shows the old 0.6 s grow (the text shows at once).",
-    "End of page: unchanged from rev 1 (the part you liked)."
+    "Top of the page: nothing intended. The button grows and shrinks on the same timer and curve as today.",
+    "End of the page: the original's timed hide is back (rev 1 and 2 had removed it). Rev 1's logo slide stays.",
+    "While the language switch slides, the edges of its letters can differ by a fraction of a pixel."
   ],
   "gain": [
     {
-      "what": "Top: button full after the bar changes, phone",
-      "before": "582 ms",
-      "after": "0 ms",
+      "what": "Top reveal: layouts per frame",
+      "before": "0.34",
+      "after": "0.02",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome page probe at 430x775: a 1 s scroll from 50 % to 80 % of the hero. Not a smoothness test. B is already full when the bar changes."
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- The 0.7 s after the bar flips at 72 %: 43 layouts before, 2 after."
     },
     {
-      "what": "Top: button full after the bar changes, desktop",
-      "before": "582 ms",
-      "after": "0 ms",
+      "what": "Top un-reveal: layouts per frame",
+      "before": "1.02",
+      "after": "0.07",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "The same probe at 1440x900."
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- The 0.7 s after scrolling back into the hero: 43 layouts before, 3 after."
     },
     {
-      "what": "Top: button gone after the bar changes back",
-      "before": "633 ms",
-      "after": "467 ms",
+      "what": "Hero to people scroll, down: layouts per frame",
+      "before": "0.30",
+      "after": "0.03",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome phone, 1 s scroll back from 80 % to 50 %. B is gone exactly when the scroll leaves the 58-72 % stretch (it follows the finger); A shrinks on its own clock. Desktop 616 vs 450 ms."
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- A 1 s glide from 50 % to 80 % of the hero: 47 layouts before, 5 after."
     },
     {
-      "what": "Top: page layouts in the 0.7 s after the change",
-      "before": "43",
-      "after": "2",
+      "what": "People to hero scroll, up: layouts per frame",
+      "before": "0.15",
+      "after": "0.02",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome phone, layout count from the browser; desktop 42 vs 1. With no scrolling both builds do 1-2."
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- The same glide back: 47 before, 6 after."
     },
     {
-      "what": "Top: largest button size jump per frame",
-      "before": "9.7 px",
-      "after": "5.6 px",
+      "what": "End of page, close: layouts per frame",
+      "before": "0.31",
+      "after": "0.16",
       "better": "better",
       "tag": "OBSERVED",
-      "how": "Chrome phone during the 1 s scroll; desktop 11.2 vs 7.1 px."
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- 1.5 s: 83 before, 43 after; what is left is the panel's own change of size."
     },
     {
-      "what": "End of page: button gone after the grow starts",
-      "before": "617 ms",
-      "after": "0 ms",
-      "better": "better",
-      "tag": "OBSERVED",
-      "how": "Rev 1 numbers, kept: rev 2 keeps those two rules byte for byte. Desktop 618 -> 0 ms, Safari Simulator 610 -> 0 ms."
-    },
-    {
-      "what": "Page errors and missing files",
-      "before": "0",
-      "after": "0",
+      "what": "End of page, open: layouts per frame",
+      "before": "0.25",
+      "after": "0.23",
       "better": "same",
       "tag": "OBSERVED",
-      "how": "Counted in every probe load (phone and desktop)."
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- 1.5 s: 45 before, 41 after; the panel's own change of size."
+    },
+    {
+      "what": "Style work per frame, all of the above",
+      "before": "0.33-1.39",
+      "after": "same",
+      "better": "same",
+      "tag": "OBSERVED",
+      "how": "Same probe. The page restyles every frame for its other animations in both builds; rev 3 adds no per-frame writes."
     }
   ],
-  "risk": "Low: one small style block and 7 lines of script on top of rev 1.\n- The script writes one number on two elements while the hero is 58-72 % scrolled, and only when it changes; outside that stretch it writes nothing.\n- The button now starts to show a bit earlier (at 58 % instead of 72 %); that is what makes it follow the finger.\n- Reduced motion: unchanged (the bar never uses the hero state there).\n- Safari check of rev 2 in the iOS Simulator: still running, result by about 21:10Z in this proposal's comments.\n- Not checked on the real iPhone.",
+  "risk": "Medium-low: about 90 lines of script and 70 of CSS on top of v8.\n- The button gets an inner box for the dark pill (new markup); the click area is the same.\n- Safari draws the cut of the pill on the main thread (paint only, no layout); the slide and the fade can run on the GPU (WebKit source, CONFIRMED). Safari numbers from the iOS Simulator follow in the comments.\n- Reduced motion: no animation, as before.\n- Not checked on the real iPhone; not timed (the numbers count layouts, not frame times).",
   "compare": {
     "a": {
       "label": "Today's best build (v8)"
     },
     "b": {
-      "label": "v8 + rev 2"
+      "label": "v8 + rev 3"
     },
     "view": "side",
     "shots": []

@@ -1,72 +1,122 @@
-# nav-earn rev 2 delta on v8 (T-148, T-154): rev 1's end-of-page CSS unchanged, plus the Join waitlist button
-# following the scroll at the top (JS writes --earn-in over hero progress 0.58 -> 0.72; CSS uses it in the hero-pill state).
+# nav-earn rev 3 delta on v8 (T-148, T-154, T-158): the Join waitlist button keeps its original timed reveal/hide
+# (no scroll-linked writes), drawn on reserved width with translate + clip-path + opacity only; rev 1's end-of-page logo fix kept.
 # Apply on the v8-best build (fixes/v8-best/patch.diff). Contains excerpts of Fastwork's code: local branches only, never push.
 diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -11902,6 +11902,9 @@
- .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
-   transition: none;
+@@ -11888,7 +11888,9 @@
  }
-+.start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-+  transition: none;
+ .start-selling-top-nav-actions.svelte-1dcozpm {
+   align-items: center;
+-  gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
++  /* nav-earn rev 3: the gap is reserved like the Join button's width (see the rev 3 block below); its closing at the
++     top and at the end of the page is drawn by moving the language switch instead */
++  gap: 8px;
+   opacity: 1;
+   pointer-events: auto;
+   flex: none;
+@@ -11928,21 +11930,80 @@
+ .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+   --earn-out: clamp(0, calc(var(--morph) / 0.2), 1);
+   --nav-earn-mask: linear-gradient(90deg, #000 0 46%, transparent 58%);
+-  --earn-layout: calc(var(--nav-expand) * (1 - var(--earn-out)));
+   isolation: isolate;
+   min-width: 0;
+-  max-width: calc(var(--earn-layout) * 11rem);
+-  padding-inline: calc(var(--earn-layout) * 24px);
+-  opacity: calc((1 - var(--earn-out)) * var(--nav-expand));
++  max-width: 11rem;
++  padding: 0;
++  background: none;
++  opacity: 1;
+   filter: blur(calc(var(--earn-out) * 10px));
+   pointer-events: none;
+   transform: translateY(calc(var(--earn-out) * -8px));
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
 +}
- .start-selling-top-nav-btn.svelte-1dcozpm {
-   box-sizing: border-box;
-   color: #fff;
-@@ -11994,6 +11997,51 @@
-     animation: 0.98s cubic-bezier(0.33, 0, 0.2, 1) 0.52s both svelte-1dcozpm-start-selling-nav-earn-sheen;
-   }
- }
-+/* nav-earn rev 2 (T-154): at the top of the page Join waitlist follows the scroll instead of its own clock.
-+   --earn-in (0 -> 1 over hero progress 0.58 -> 0.72, written inline by the nav's scroll callback on the actions row
-+   and the button) drives, in the hero-pill state only, what --nav-expand and the 0.68 s / 0.32 s transitions and the
-+   0.52 s + 0.98 s unmask animation drove after the class flip: the width, padding, gap, fade and the left-to-right
-+   mask sweep, with no transition of their own. At progress 0.72 the pill state ends with everything at its full
-+   value, so the flip changes nothing and the unmask (which would hide the shown button again) is replaced by its
-+   end state (mask kept, at position 0 0: the same pixels as the finished animation, also under the end-of-page
-+   blur). The sheen keeps its own timing. Reduced motion: never in the pill state after load (JS), unchanged. */
-+@property --earn-in {
-+  syntax: "<number>";
-+  inherits: false;
-+  initial-value: 0;
++/* nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button keeps its full width in the layout at all times, and
++   so does the 8px gap before it. Its original look (the dark pill growing from the right edge over 0.68 s with the
++   language switch sliding over, and shrinking back the same way) is drawn without layout: the dark pill and the
++   label sit in .start-selling-top-nav-earn-box, clipped to the original's width at that moment (clip-path) and moved
++   to its centre (translate on the button), and the language switch is moved by the width and gap the original would
++   not have had yet (translate). The nav script starts those three as one Web Animation per change of state (shown
++   <-> hidden), sampled from the original's own formula: width min(label + 2 * padding * e, max-width * e), gap
++   8px * e, e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, and a reversal mid-way takes the
++   shortened time a reversed CSS transition takes. Opacity keeps the original's transitions on one class flip:
++   0.32 s after 0.12 s when it appears and at the end of the page, 0.2 s when it goes back into the hero pill.
++   The mask sweep and the sheen are the original's, unchanged. Hidden states below match the animations' end. */
++.start-selling-top-nav-earn-box.svelte-1dcozpm {
++  box-sizing: border-box;
++  flex: none;
++  justify-content: center;
++  align-items: center;
++  height: 100%;
++  padding-inline: 24px;
++  background: #131922;
++  border-radius: 999px;
++  display: inline-flex;
 +}
-+.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
-+  gap: calc(var(--earn-in) * 8px);
-+  transition: none;
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  opacity: 0;
++  translate: 50% 0;
 +}
-+.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-+  --earn-layout: calc(var(--earn-in) * (1 - var(--earn-out)));
-+  opacity: calc((1 - var(--earn-out)) * var(--earn-in));
-+  transition: none;
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++  clip-path: inset(0 50% round 999px);
++}
++.start-selling-top-nav-actions.svelte-1dcozpm > .start-selling-language-switch-wrap {
++  --morph: inherit;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: calc(var(--earn-w, 0px) + 8px) 0;
++}
++/* at the end of the page the original closed the gap with --morph (no timer) and the width on its timer */
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm:not(.is-hero-pill)
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: var(--earn-w, 0px) 0;
++}
++.start-selling-top-nav.is-morphing.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 8px));
 +}
 +@media (width<=640px) {
-+  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
-+    gap: calc(var(--earn-in) * 4px);
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    translate: calc(var(--earn-w, 0px) + 4px) 0;
 +  }
-+}
-+@media (prefers-reduced-motion: no-preference) {
-+  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-+    -webkit-mask-image: var(--nav-earn-mask);
-+    mask-image: var(--nav-earn-mask);
-+    -webkit-mask-size: 240% 100%;
-+    mask-size: 240% 100%;
-+    -webkit-mask-repeat: no-repeat;
-+    mask-repeat: no-repeat;
-+    -webkit-mask-position: calc((1 - var(--earn-in)) * 100%) 0;
-+    mask-position: calc((1 - var(--earn-in)) * 100%) 0;
++  .start-selling-top-nav.is-morphing.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 4px));
 +  }
-+  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill)
-+    .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-+    animation: none;
-+    -webkit-mask-position: 0 0;
-+    mask-position: 0 0;
-+  }
-+}
- @keyframes svelte-1dcozpm-start-selling-nav-earn-unmask {
-   0% {
-     -webkit-mask-position: 100% 0;
-@@ -12030,7 +12078,7 @@
+ }
+ .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill, .is-morphing)
+   .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+@@ -11950,10 +12011,7 @@
+ }
+ .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: none;
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1),
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1);
+   -webkit-mask-image: none;
+   mask-image: none;
+ }
+@@ -12030,10 +12088,10 @@
      scale: 0.75;
    }
    .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
@@ -74,34 +124,173 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +    transform-origin: calc(50% * var(--morph));
    }
    .start-selling-top-nav-actions.svelte-1dcozpm {
-     gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
+-    gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
++    gap: 4px;
+   }
+   .start-selling-top-nav-btn.svelte-1dcozpm {
+     height: 36px;
+@@ -12043,8 +12101,10 @@
+     line-height: 20px;
+   }
+   .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+-    max-width: calc(var(--earn-layout) * 9.5rem);
+-    padding-inline: calc(var(--earn-layout) * 16px);
++    max-width: 9.5rem;
++  }
++  .start-selling-top-nav-earn-box.svelte-1dcozpm {
++    padding-inline: 16px;
+   }
+ }
+ @media (prefers-reduced-motion: reduce) {
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13849,6 +13849,13 @@
-   }
-   // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
-   let __navEls = {};
-+  // nav-earn rev 2: writer for --earn-in (see `_` in the nav effect); ie / oe are assigned at mount, before the effect runs
-+  let __eiV = -1,
-+    __eiW = (v) => {
-+      if (v === __eiV) return;
-+      __eiV = v;
-+      for (let t of [ie, oe]) t && t.style.setProperty(`--earn-in`, String(v));
-+    };
+@@ -13758,7 +13758,7 @@
+     `<div class="start-selling-morph-panel"><div class="start-selling-morph-backdrop" aria-hidden="true"></div> <div class="start-selling-morph-veil" aria-hidden="true"></div> <div class="start-selling-morph-center"><p class="start-selling-morph-title"> </p> <div class="waitlist-closing-countdown svelte-1dcozpm"><!></div> <div class="start-selling-morph-cta-stack svelte-1dcozpm"><button class="start-selling-morph-cta" type="button"><svg class="solar solar-bell-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M18.7491 9.70957V9.00496C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00496V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z" stroke="currentColor"/><path d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19" stroke="currentColor" stroke-linecap="round"/></svg> </button> <a class="start-selling-morph-cta-rsvp" href="https://f.fastwork.co/demoday" target="_blank" rel="noopener" data-selenium="start-selling.header.link.demo-day"><svg class="solar solar-calendar-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor"/><path d="M7 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M2.5 9H21.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 13H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17.0234H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.0234H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.0234H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> </a></div></div> <footer class="start-selling-morph-footer"><p> </p> <div class="start-selling-morph-footer-end"><p> </p> <span class="start-selling-morph-grad" aria-hidden="true"></span> <a href="https://fastwork.com/privacy"> </a></div></footer></div>`,
+   ),
+   uN = h(
+-    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"> </button></div></div> <!></header>`,
++    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"><span class="start-selling-top-nav-earn-box svelte-1dcozpm"> </span></button></div></div> <!></header>`,
+   );
+ function dN(n, r) {
+   D(r, !0);
+@@ -13823,7 +13823,11 @@
+     x = N(0),
+     w = 0,
+     T,
+-    E = R(() => s(x) > 0.001),
++    // nav-earn rev 3 (F-243): was `> 0.001`. The morph tween (ZM, ease-out cubic over 680 ms) ends on exactly its
++    // target, but on the close it spends its last ~68 ms between 0.001 and 0, where the bar's :not(.is-morphing)
++    // width / background transitions came back on and restarted about 5 times for sub-pixel changes. `> 0` keeps
++    // .is-morphing (transition: none) until the tween's done frame sets 0.
++    E = R(() => s(x) > 0),
+     /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
+     JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
+     __cdPanelShown = R(() => JM(s(x)) > 0.08),
+@@ -13852,6 +13856,94 @@
    function __navEl(e) {
      let t = __navEls[e];
      return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
-@@ -13900,6 +13907,12 @@
-           r = Math.max(1, n.height - window.innerHeight),
-           i = Math.min(r, Math.max(0, -n.top));
-         z(p, i / r >= 0.72);
-+        // nav-earn rev 2 (T-154): Join waitlist follows the scroll in. --earn-in goes 0 -> 1 over hero progress
-+        // 0.58 -> 0.72 (it reaches 1 exactly where the bar leaves its hero-pill state above); the CSS uses it only
-+        // in the hero-pill state. Written only when it changes, so outside that band there are no writes. Written
-+        // on its two readers (the actions row `ie`, the button `oe`), not inherited from the header: WebKit kept
-+        // stale `inherit` values on registered non-inheriting properties (F-183, OBSERVED).
-+        __eiW(Math.round(Math.min(1, Math.max(0, (i / r - 0.58) / 0.14)) * 1e3) / 1e3);
-       },
-       y = () => document.querySelector(`.start-selling-platform`),
-       S = () => {
++  }
++  // nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button's original reveal and hide, drawn without layout.
++  // The button and the gap before it keep their full size in the layout (CSS). When the button's state changes
++  // (shown <-> hidden: the hero pill at the top, .is-earn-hidden at the end of the page), one Web Animation per
++  // element plays the original's geometry, sampled from its own formula: width w(e) = min(label + 2P * e, M * e)
++  // (P padding, M max-width), gap G * e (at the top only; at the end of the page the original closed the gap with
++  // --morph, kept in CSS), e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, started at the original's
++  // trigger (hero progress 0.72 at the top; morph 0.2 going in and 0 coming back at the end of the page, which is
++  // when the original's per-frame restarted transitions settle into one). Animated: translate (button, language
++  // switch) and clip-path (the pill box), nothing that needs layout. A reversal mid-way starts from the current
++  // point and takes the shortened time a reversed CSS transition takes. Sizes come from a ResizeObserver (W, P, M,
++  // G), never read at the flip, so the flip forces no layout. No script runs per frame.
++  let __ewOn = null,
++    __ewPill = null,
++    __ewA = null,
++    __ewRO = null,
++    __ewWr = null,
++    __ewW = 0,
++    __ewP = 24,
++    __ewM = 176,
++    __ewG = 8,
++    __ehV = !1;
++  const __ewBz = ((x1, y1, x2, y2) => {
++    let X = (t) => ((1 + 3 * x1 - 3 * x2) * t * t + (3 * x2 - 6 * x1) * t + 3 * x1) * t,
++      Y = (t) => ((1 + 3 * y1 - 3 * y2) * t * t + (3 * y2 - 6 * y1) * t + 3 * y1) * t;
++    return (x) => {
++      if (x <= 0) return 0;
++      if (x >= 1) return 1;
++      let lo = 0,
++        hi = 1,
++        t = x;
++      for (let i = 0; i < 30; i++) {
++        let v = X(t);
++        if (Math.abs(v - x) < 1e-6) break;
++        v < x ? (lo = t) : (hi = t);
++        t = (lo + hi) / 2;
++      }
++      return Y(t);
++    };
++  })(0.33, 0, 0.2, 1);
++  function __ewWrap() {
++    return __ewWr?.isConnected ? __ewWr : (__ewWr = ie?.querySelector(`:scope > .start-selling-language-switch-wrap`));
++  }
++  function __ewMeasure() {
++    if (!oe?.isConnected) return;
++    let w = oe.offsetWidth;
++    ((__ewM = parseFloat(getComputedStyle(oe).maxWidth) || w),
++      (__ewP = parseFloat(getComputedStyle(__ewBox).paddingLeft) || 0),
++      (__ewG = parseFloat(getComputedStyle(ie).columnGap) || 0));
++    w !== __ewW && ((__ewW = w), ie.style.setProperty(`--earn-w`, `${w}px`));
++  }
++  // .is-earn-hidden: on at morph >= 0.2 (where the original's width / opacity targets reach 0), off at morph 0
++  function __ewEh(m) {
++    return (__ehV = m >= 0.2 ? !0 : m <= 0 ? !1 : __ehV);
++  }
++  function __ewGo(on, pill) {
++    (!__ewRO && typeof ResizeObserver == `function` && oe && ((__ewRO = new ResizeObserver(__ewMeasure)), __ewRO.observe(oe)));
++    let was = __ewPill;
++    __ewPill = pill;
++    if (__ewOn === on) return;
++    let first = __ewOn === null,
++      e0 = on ? 0 : 1;
++    __ewOn = on;
++    if (__ewA) {
++      let t = __ewA.a[0]?.currentTime;
++      (t != null && t < __ewA.d && (e0 = __ewA.e0 + (__ewA.e1 - __ewA.e0) * __ewBz(t / __ewA.d)),
++        __ewA.a.forEach((t) => t.cancel()),
++        (__ewA = null));
++    }
++    let e1 = on ? 1 : 0,
++      d = 680 * Math.abs(e1 - e0),
++      wr = __ewWrap(),
++      W = __ewW;
++    if (first || !W || d < 1 || !oe.animate || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches) return;
++    let gap = pill || was,
++      kb = [],
++      kx = [],
++      kw = [];
++    for (let i = 0; i <= 24; i++) {
++      let e = e0 + (e1 - e0) * __ewBz(i / 24),
++        w = Math.min(W - 2 * __ewP * (1 - e), __ewM * e),
++        X = (W - w) / 2;
++      (kb.push({ translate: `${X}px 0` }),
++        kx.push({ clipPath: `inset(0px ${X}px round 999px)` }),
++        kw.push({ translate: `${W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
++    }
++    let o = { duration: d, easing: `linear` };
++    __ewA = { e0, e1, d, a: [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)].filter(Boolean) };
+   }
+   function ee() {
+     let e = __navEl(`.start-selling-profile-sticky`);
+@@ -14110,8 +14202,10 @@
+     },
+   });
+   var oe = V(ae, 2),
+-    le = e(oe, !0);
+-  (M(oe), M(ie), M(B));
++    // nav-earn rev 3: the label sits in .start-selling-top-nav-earn-box (the dark pill), see __ew below
++    __ewBox = e(oe),
++    le = e(__ewBox, !0);
++  (M(__ewBox), M(oe), M(ie), M(B));
+   // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
+   // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
+   // children when only the header's value changes, so they kept the value from the last class flip (logo not
+@@ -14123,7 +14217,7 @@
+     __mkW = (v) => {
+       if (v === __mkV) return;
+       __mkV = v;
+-      for (let t of [B, re, ie, oe, __mkP]) t && t.style.setProperty(`--morph`, v);
++      for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
+     };
+   var W = V(B, 2),
+     ue = (n) => {
+@@ -14247,7 +14341,9 @@
+           "is-locale-open": s(y),
+           "is-scroll-hidden": s(v) && !s(E),
+           "is-profile-sticky-hidden": s(v) && !s(E),
++          "is-earn-hidden": __ewEh(s(x)),
+         })),
++          __ewGo(!s(O) && !__ehV, s(O)),
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
+           __mkW(e[`--morph`]),
