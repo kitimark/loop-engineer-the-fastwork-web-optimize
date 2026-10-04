@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13449,7 +13449,40 @@
+@@ -13777,6 +13777,38 @@
        __osb = () => {
          let e = C() ? `none` : ``;
          e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
@@ -18,7 +18,6 @@
 +      __msEnd = null,
 +      __msP = -1,
 +      __msRO = null,
-+      __msIO = null,
 +      __msTick = () => {
 +        if (!__msEnd) return;
 +        let t = __msEnd.offsetHeight,
@@ -27,7 +26,7 @@
 +        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
 +        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
 +          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => z(g, F(), !0))));
-       },
++      },
 +      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
 +      __navMorphSet = (t) => {
 +        (n && window.cancelAnimationFrame(n),
@@ -37,11 +36,10 @@
 +          z(x, t, !0),
 +          S(),
 +          C() || I());
-+      },
+       },
        T = (e) => {
          let t = ZM(i, a, e - o);
-         ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
-@@ -13498,6 +13531,7 @@
+@@ -13826,6 +13858,7 @@
        __tt = [],
        N = () => {
          d ||
@@ -49,7 +47,7 @@
            ((d = !0),
            window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
            (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
-@@ -13534,7 +13568,8 @@
+@@ -13862,7 +13895,8 @@
        __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
        __pinY = () => Math.min(window.scrollY, __pinMax()),
        L = () => {
@@ -59,12 +57,11 @@
          let e = window.scrollY,
            t = __pinMax();
          (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
-@@ -13549,6 +13584,32 @@
+@@ -13877,6 +13911,27 @@
            )
          : void 0;
      (R && te && te.observe(R), _(), m(), N());
-+    // morph-scroll setup (touch phones only): the extra screen after #platform, its height var for the sticky top,
-+    // and the reveal's setup (window.__rvPrepNow, morph-gpu rev 2) once that screen is within one viewport
++    // morph-scroll setup (touch phones only): the extra screen after #platform and its height var for the sticky top
 +    __msOn &&
 +      R &&
 +      ((__msEnd = document.createElement(`div`)),
@@ -82,22 +79,17 @@
 +      __msRO.observe(R),
 +      // main (the page's content) grows with lazy content above; body is only one viewport tall here
 +      R.parentElement && __msRO.observe(R.parentElement),
-+      (__msIO = new IntersectionObserver(([e]) => e?.isIntersecting && window.__rvPrepNow?.(), {
-+        rootMargin: `0px 0px 100% 0px`,
-+      })),
-+      __msIO.observe(__msEnd),
 +      document.documentElement.classList.add(`fw-ms`),
 +      __msTick());
 +    window.__navMorphSet = __navMorphSet;
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
      // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
      // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
-@@ -13588,6 +13649,10 @@
+@@ -13916,6 +13971,9 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
 +          __msRO?.disconnect(),
-+          __msIO?.disconnect(),
 +          __msEnd?.remove(),
 +          document.documentElement.classList.remove(`fw-ms`),
            P(),
@@ -105,10 +97,10 @@
            e.removeEventListener(`change`, m),
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -12314,4 +12314,30 @@
-     will-change: opacity;
-     opacity: 0;
-   }
+@@ -12269,4 +12269,30 @@
+ .start-selling-future.is-visible.is-future-shrinking
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
 +}
 +/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
 +   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport

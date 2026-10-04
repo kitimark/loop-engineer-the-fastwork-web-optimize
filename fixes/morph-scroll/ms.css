@@ -1,0 +1,26 @@
+/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
+   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
+   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
+   under the old scrollTo pin while the morph follows the scroll. Proximity snap: .fw-ms-snap0 (end of the page as
+   before, morph 0) and .fw-ms-end (morph 1). */
+html.fw-ms {
+  scroll-snap-type: y proximity;
+}
+html.fw-ms .start-selling-platform {
+  position: sticky;
+  top: calc(100dvh - var(--fw-ms-h, 100dvh));
+}
+.fw-ms-end {
+  position: relative;
+  height: 100lvh;
+  scroll-snap-align: end;
+  pointer-events: none;
+}
+.fw-ms-snap0 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 0;
+  scroll-snap-align: end;
+}

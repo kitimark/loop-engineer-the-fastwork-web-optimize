@@ -1,32 +1,54 @@
 // morph-scroll builds (fix-hero-exit-threaded; PROPOSAL: the end-of-page morph follows the scroll on touch phones).
-// Base = best-build B-R2 (out/snapshots/best-BR2-8018ce062d30) + morph-gpu rev 2 A (fixes/morph-gpu/rev2/delta.diff with
-// __rvPP = !1) + window.__rvPrepNow (fixes/morph-scroll/prepnow.diff, a copy of morph-gpu a02f2b97's rev2/prepnow.diff).
+// Rev 2 (PR-018 rev 2): no morph-gpu rev 2 A and no __rvPrepNow (rev 2 A measured worse on the phone, P-098).
+// Base = the best build, the baseline + one baseline-relative patch:
+//   --base v7  (default) fixes/v7-best/patch.diff       js 8c90da217745 / css 308f0da70c3a  (best build since c3dc73b1)
+//   --base br2           fixes/hero-exit-threaded/patch.diff js 8018ce062d30 / css 71b65c667720 (B-R2, PR-018 rev 1's A)
 // Proposal = the overlay fixes/morph-scroll/overlay (base + the morph-scroll change). Writes immutable snapshots:
-//   msbase-<js12>   the base (control for the proposal's own checks)
-//   msbasehook-<js12> the base + window.__fwMorphSet(m) (morph-gpu's frozen-frame hook, byte for byte)
-//   ms-<js12>       the proposal
-// and fixes/morph-scroll/delta.diff (proposal vs base, for review).   node fixes/morph-scroll/build.mjs
+//   msbase-<js12>     the base (= Try-it A)
+//   msbasehook-<js12> the base + window.__fwMorphSet(m) (morph-gpu's frozen-frame hook, byte for byte; control for frames)
+//   ms-<js12>         the proposal (= Try-it B)
+// and fixes/morph-scroll/delta.diff (proposal vs base, for review).
+//   node fixes/morph-scroll/build.mjs [--base v7|br2] [--seed <delta.diff>]
+// --seed: (re)write the overlay as base + that JS diff (patch, fuzz allowed) + ms.css appended to the CSS, before
+// snapshotting; without it the overlay is taken as it is and must already be built on this base.
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveTree } from '../../tools/lib/paths.mjs';
 const WT = join(dirname(fileURLToPath(import.meta.url)), '../..');
+const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const SNAP = join(WT, 'out/snapshots');
-const BEST = { dir: join(SNAP, 'best-BR2-8018ce062d30'), js: '8018ce062d30', css: '71b65c667720' };
+const BASES = {
+  v7: { patch: 'fixes/v7-best/patch.diff', js: '8c90da217745', css: '308f0da70c3a' },
+  br2: { patch: 'fixes/hero-exit-threaded/patch.diff', js: '8018ce062d30', css: '71b65c667720' },
+};
+const BASE = BASES[arg('--base', 'v7')];
+if (!BASE) throw new Error(`--base: one of ${Object.keys(BASES).join(', ')}`);
 const OVL = join(WT, 'fixes/morph-scroll/overlay');
+const PRETTY = resolveTree('site-pretty');
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
-if (sha(readFileSync(join(BEST.dir, NODE))) !== BEST.js || sha(readFileSync(join(BEST.dir, CSS))) !== BEST.css) throw new Error(`${BEST.dir} is not B-R2`);
+const patchInto = (dir, p, extra = []) => {
+  const r = spawnSync('patch', ['-p1', '-s', '--no-backup-if-mismatch', ...extra, '-d', dir, '-i', p], { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`patch ${p}: ${r.stdout}${r.stderr}`);
+  return r.stdout;
+};
 const tmp = mkdtempSync(join(tmpdir(), 'morph-scroll-'));
-for (const f of [NODE, CSS]) { mkdirSync(join(tmp, dirname(f)), { recursive: true }); writeFileSync(join(tmp, f), readFileSync(join(BEST.dir, f))); }
-const patch = (p) => { const r = spawnSync('patch', ['-p1', '-s', '-d', tmp, '-i', p], { encoding: 'utf8' }); if (r.status !== 0) throw new Error(`patch ${p}: ${r.stdout}${r.stderr}`); };
-patch(join(WT, 'fixes/morph-gpu/rev2/delta.diff'));
-{ const f = join(tmp, NODE), s = readFileSync(f, 'utf8'), PP = '    __rvPP = !0,\n';
-  if (s.split(PP).length !== 2) throw new Error('__rvPP switch not found once'); writeFileSync(f, s.replace(PP, '    __rvPP = !1,\n')); }
-patch(join(WT, 'fixes/morph-scroll/prepnow.diff'));
+for (const f of [NODE, CSS]) { mkdirSync(join(tmp, dirname(f)), { recursive: true }); writeFileSync(join(tmp, f), readFileSync(join(PRETTY, f))); }
+patchInto(tmp, join(WT, BASE.patch));
 const baseJs = readFileSync(join(tmp, NODE), 'utf8'), baseCss = readFileSync(join(tmp, CSS));
+if (sha(baseJs) !== BASE.js || sha(baseCss) !== BASE.css) throw new Error(`base build is ${sha(baseJs)} / ${sha(baseCss)}, expected ${BASE.js} / ${BASE.css}`);
+const seed = arg('--seed');
+if (seed) {
+  // the JS change from the diff; the CSS change is fixes/morph-scroll/ms.css appended to the base CSS
+  const out = patchInto(tmp, seed, ['-F', '3']);
+  writeFileSync(join(tmp, CSS), Buffer.concat([baseCss, readFileSync(join(WT, 'fixes/morph-scroll/ms.css'))]));
+  for (const f of [NODE, CSS]) { mkdirSync(join(OVL, dirname(f)), { recursive: true }); writeFileSync(join(OVL, f), readFileSync(join(tmp, f))); }
+  console.log(`seeded overlay from ${seed}${out ? `\n${out}` : ''}`);
+}
 rmSync(tmp, { recursive: true });
 const AT = '    let ne = dE(L, { manageAnimations: !1 });';
 const HOOK = `    // DEBUG ONLY (morph-inherit frozen frames): hold the morph at m (no spring).\n    window.__fwMorphSet = (m) => {\n      (n && window.cancelAnimationFrame(n), (n = 0), C() || (s = __pinY()), (w = a = i = r = m), z(x, m, !0), S(), __osb(), C() || I());\n    };\n`;

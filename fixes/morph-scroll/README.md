@@ -3,26 +3,31 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** proposal build (motion change, so a user decision; lead ruling T-082 #5 item 1). Nothing timed has run.
+**Status:** proposal build, **rev 2** (PR-018; motion change, so a user decision; lead ruling T-082 #5 item 1). Nothing
+timed has run. Rev 2 (lead, 2026-10-04): rebuilt on the best build without morph-gpu rev 2 A and `__rvPrepNow`, because
+P-098 measured rev 2 A slower on the phone (first open +6.5 ms). The base is v7 (best build since c3dc73b1; the lead
+confirmed v7 over plain B-R2). Before it can join a best build, B must also pass the whole-page fast-flick G check
+(user T-113 #4); phone slot via the lead.
 **Stage:** F (proposal). Stage B (a CSS scroll-driven animation) is out while it is UNRESOLVED.
 **Device class / gate:** touch phones only: not reduced motion, `(hover: none) and (pointer: coarse)`, and the short
-screen side at most 600 px. Desktop, tablets and reduced motion keep today's jack (checked in Chrome at 1440x900).
+screen side at most 600 px. Desktop, tablets and reduced motion keep today's jack (checked in Chrome at 1440x900, rev 1).
 **Driver(s) behind the claims:** Chrome frozen frames (430x932 DPR 3, touch) and Simulator functional sessions
 (scripted `scrollTo`, frozen frames). No G or F driver yet: touch, snap and toolbar effects need one before landing.
-**Owner:** fix-hero-exit-threaded. Coupled to fix-nav-morph (setter and gate, its go-ahead for this proposal build)
-and fix-morph-gpu (rev 2 A and `__rvPrepNow`).
+**Owner:** fix-hero-exit-threaded. Coupled to fix-nav-morph (setter and gate, its go-ahead for this proposal build).
 
-## Builds
+## Builds (rev 2)
 
 | name | what | JS / CSS (sha256, 12) | snapshot |
 |---|---|---|---|
-| A (Try-it A) | best build B-R2: `fixes/hero-exit-threaded/patch.diff` (168233b0a4ae) | 8018ce062d30 / 71b65c667720 | `out/snapshots/best-BR2-8018ce062d30` |
-| msbase | B-R2 + morph-gpu rev 2 A (`fixes/morph-gpu/rev2/delta.diff`, `__rvPP = !1`) + `__rvPrepNow` (`prepnow.diff`) | a0739922588f / 965671668731 | `out/snapshots/msbase-a0739922588f` |
-| msbasehook | msbase + `window.__fwMorphSet(m)` (morph-gpu's frozen-frame hook, byte for byte) | 55bc51690e15 / 965671668731 | control for every frame below |
-| ms (Try-it B) | msbase + this change (`delta.diff`) | see "Current build" | `out/snapshots/ms-<js12>` |
+| msbase (Try-it A) | best build v7: `fixes/v7-best/patch.diff` | 8c90da217745 / 308f0da70c3a | `out/snapshots/msbase-8c90da217745` |
+| msbasehook | msbase + `window.__fwMorphSet(m)` (morph-gpu's frozen-frame hook, byte for byte) | 230ccb4b859a / 308f0da70c3a | control for every frame below |
+| ms (Try-it B) | msbase + this change (`delta.diff`, 131 lines, 14beb60c2e81) | d661831b8797 / cff335191762 | `out/snapshots/ms-d661831b8797` |
 
-`node fixes/morph-scroll/build.mjs` rebuilds all three snapshots from B-R2 and writes `delta.diff` (the proposal
-against msbase). `patch.diff` is the whole stack against the baseline (`node tools/fix.mjs diff morph-scroll`).
+`node fixes/morph-scroll/build.mjs [--base v7|br2] [--seed <abs JS diff>]` rebuilds the three snapshots from the base
+patch (sha-checked) and writes `delta.diff` (the proposal against msbase). `--seed` rewrites the overlay as base + that
+JS diff + `ms.css` (the CSS block) appended. `patch.diff` is the whole stack against the baseline
+(`node tools/fix.mjs diff morph-scroll`, e85393c1a80f). Rev 1 (on B-R2 + morph-gpu rev 2 A + `__rvPrepNow`, ms
+9834ccf0a643 / b829d8e7ae29) is in git history (93d97dad); `prepnow.diff` is kept only as rev 1's record.
 
 ## The idea
 
@@ -38,7 +43,6 @@ the nav pill growing into the dark panel. With this change, on touch phones:
   engine's callback). It is written through `__navMorphSet(p)` (fix-nav-morph's setter: r/x, then `S()`; `b` before
   `x`, so the panel's inert lift comes first).
 - The root gets `scroll-snap-type: y proximity` with snap points at p=0 and p=1.
-- `__rvPrepNow()` (morph-gpu) runs when the extra screen comes within one screen (IntersectionObserver).
 - `N()` and the `scrollTo` pin are skipped under the gate. The page scrolls by itself: no non-passive listener.
 - At p <= 0.2 the nav's backdrop test (`z(g, F())`, is-on-dark) runs again in a microtask after the write, because
   `L`'s `_()` ran it before the write (found in the Simulator: a jump back to p=0 left the nav dark-on-light).
@@ -47,7 +51,29 @@ The motion changes: the morph follows the finger instead of a 680 ms spring, and
 
 ## Checks
 
-### Chrome frozen frames (`frames.mjs`, shared lane, weight probe)
+### Rev 2 (ms-d661831b8797 vs msbasehook-230ccb4b859a, 2026-10-04 ~12:30Z)
+
+Simulator (`out/morph-scroll/sim-rev2/`, `sim-rev2.log`): the same result as rev 1.
+- The scroll-step driver ran 31 steps. #platform's bottom stayed at 774.58-774.59 at every step, `--morph` = p, and the panel was never `inert`.
+- No prep call (`prep: null`, as intended).
+
+| m | B vs A: px > 8 / > 64 / > 128, max | A2 vs A |
+|---|---|---|
+| 0 | 29,884 / 344 / 0, 77 (T3, below) | 0 |
+| 0.25 | 0 | 0 |
+| 0.5 | 782 / 0 / 0, 15 | 1,408 / 0 / 0, 13 |
+| 0.75 | 4,703 / 2,133 / 945, 191 | 5,435 / 2,518 / 1,067, 191 |
+| 1 | 2,519 / 2,224 / 1,975, 224 | 3,060 / 2,540 / 2,215, 224 |
+| before the end | 19,020 / 58 / 0, 78 | 0 |
+
+Chrome frames (`out/morph-scroll/frames-2026-10-04T12-35-52-938Z`, `frames-rev2.log`), 15 positions:
+- B vs A: 607-779 device px over 8 shades (0.02 %) and 302-412 over 128 at every m, max shade 149-187.
+- A2 vs A: 0-222 over 8, max 17.
+- The diff map puts every differing pixel on the EN language label. It sits at x 240-280 CSS at m 0 and moves with the pill to x 360-400 at m 0.7 and 1. The text is drawn about 1 device px apart; nothing else differs.
+- In rev 1's second run the same label also differed base vs base. In this run it did not.
+- OBSERVED, cause unknown. Over the wide rule's edge shade (128), so Chrome is T3 at that label. That is about 70 CSS px².
+
+### Rev 1 (history): Chrome frozen frames (`frames.mjs`, shared lane, weight probe)
 
 430x932 DPR 3, touch; A = msbasehook held by `__fwMorphSet(m)` at the page end, B = ms scrolled to y0 + m*L (snap off
 while positioned), A2 = A again (A/A). m = whole px / 932, 15 positions 0 → 1 → 0.5 → 0.
@@ -67,7 +93,7 @@ level, so it reads as per-load variance in that label. OBSERVED, cause unknown.
 Gate (Chrome): mobile `html.fw-ms` on, #platform sticky, panel `inert` false when open; desktop 1440x900 gate off and
 `__fwMorphDrive` still a function.
 
-### WebKit (fw-sim, iPhone 15 Pro Max Simulator, iOS 26.5; `simcheck.mjs`, functional session)
+### Rev 1 (history): WebKit (fw-sim, iPhone 15 Pro Max Simulator, iOS 26.5; `simcheck.mjs`, functional session)
 
 Arms B (ms), A (msbasehook), A2 (A again). B runs first; A holds the m that B reached. Diffs leave out the status
 bar (top 200 device px). Run `out/morph-scroll/sim-20261004T175019` (build ms-9834ccf0a643); the scroll-step driver
@@ -138,7 +164,7 @@ y 830-1450): it keeps counting between loads. Outside it, B equals A.
 
 ## Pixel tiers
 
-- Chrome: within the A/A pattern at every m, except the EN label above. That label is per-load variance in our data, so it reads as T1/T2.
+- Chrome: equal at every m except the EN label. In rev 1 that label varied between loads. In rev 2, base vs base was 0 there, and B differs at every m with max shade 187. So it is T3 on that label, about 70 CSS px², cause unknown.
 - Safari (Simulator):
   - While the panel covers #platform (m 0.25 to 1): within the A/A pattern.
   - Wherever #platform shows (the closed rest at the end and the screen before it): T3. That is 0.57-0.89 % of the screen, edges only, max shade 78; the sticky layer is explained above.
@@ -164,12 +190,14 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
 - **Coupling with nav-hit-cache** (fix-nav-morph, not landed): it caches the is-on-dark answer in `__nsG` and writes
   it every frame, so this change's microtask `z(g, F())` would be overwritten one frame later. A combined build must
   also set `__nsForce = !0` (or `__nsG = F()`) there (fix-nav-morph, 2026-10-04).
-- **Coupling with morph-gpu:** built on rev 2 A with `__rvPP = !1` plus `__rvPrepNow`; a new morph-gpu revision means
-  a rebuild (build.mjs).
+- **Repaint (rev 2):** without morph-gpu's change, every scroll frame inside the extra screen repaints the whole panel,
+  as today's spring does on every frame of its 680 ms run. The cost per frame is not measured here. If morph-gpu lands a
+  revision that is no slower on the phone, this is rebuilt on it (build.mjs).
+- **Fast-flick G check** (user T-113 #4): needed before B can join a best build; phone slot via the lead.
 - **Not run:** finger/G driver, toolbar collapse, reduced motion in WebKit, iPad, rubber band at the page end, reload
   while scrolled into the extra screen.
 
 ## Files
 
-`build.mjs` (snapshots + delta), `delta.diff`, `prepnow.diff` (copy of morph-gpu a02f2b97 rev2/prepnow.diff),
+`build.mjs` (snapshots + delta), `ms.css` (the CSS block), `delta.diff`, `prepnow.diff` (rev 1 only; copy of morph-gpu a02f2b97 rev2/prepnow.diff),
 `patch.diff`, `frames.mjs` (Chrome frames), `simcheck.mjs` / `simk0.mjs` / `simcheck.sh` (Simulator), `proposal.json`.
