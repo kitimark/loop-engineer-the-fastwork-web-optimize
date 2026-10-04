@@ -65,7 +65,7 @@ others 0. v7's combine with the cd-roll-ca slot now K, plus three parts.
   real value; no effect on the hero's writes, classes, timers or pixels. `__cdSet` is Svelte's `set` (`z`): `s()`'s
   false and the glue's true in one task leave the state true before any effect flush.
 
-## Identity checks (`node fixes/v8-best/check.mjs`, 36/36 ok)
+## Identity checks (`node fixes/v8-best/check.mjs`, 40/40 ok)
 
 Text only (40 checks), best-build's strict applier (exact context, no fuzz), plus a context-trimming applier used only for the
 hero/faces pair (it never changes a +/- line and requires one unique placement):
@@ -88,7 +88,111 @@ hero/faces pair (it never changes a +/- line and requires one unique placement):
   - v8pure − all = best-build;
 - `node --check` on the v8 JS.
 
+## Function: `fix.mjs check` (v8 vs v7, headless Chrome, both viewports; 2026-10-04 15:11Z)
+
+`fixes/v8-best/check.json`; base = `v8-v7base` (v7-best overlay), `--on v8-v7base --viewport both --save`, shared lane.
+
+| viewport | new errors | new 404s | morph reached | elements v7 -> v8 | screenshot diff % top / middle / bottom |
+|---|---|---|---|---|---|
+| mobile 430 | 0 | 0 | yes / yes | 1580 -> 1580 | 0.08 / 0.01 / 0.46 |
+| desktop | 0 | 0 | yes / yes | 1424 -> 1423 | 0.05 / 0 / 0 |
+
+CHECK OK. The live-page diffs are countdown and orbit phase (frozen pixels below decide). Desktop's one element fewer is
+followed up in the frozen-pixel and census runs.
+
 <!-- GATES -->
+
+## P-111 phone no-worse ticket (less-work rule), before any phone data
+
+Lead's id: P-111 (P-110 is toolbar-resize's). Runner: iphone-runner; verdict owner: int-v8. The scripts in
+`fixes/v8-best/phone/` are P-105's (iphone-runner, b9c7d1eb) with the arms changed, the S leg replaced by a W leg and an M
+leg added; the G scripts are P-105's files, byte for byte.
+
+```
+PHONE TICKET P-111 v8-best · less-work no-worse check on the phone (lead rulings 2026-10-04: v7-best C vs v8 V; accent
+  y 0, countdown hero + pastHero rest, morph end-open M; then the whole-page fast-flick G check, T-113 #4)
+  · runner iphone-runner (lead: right after its own P-105 H2) · verdict owner int-v8 · registered before any phone data;
+  no counted run before the lead's pre-data read
+build: V = v8 = fixes/v8-best/patch.diff, served JS 3e3e94cb6e9f4babfd8721b8002eec97220529428741347c661830409b29ab16,
+  CSS f836404b37286ca62be2f95d43a4d724765822576820ed5b54db19c84f123b43 (9 components, glue included; table above).
+control: C = v7 = fixes/v7-best/patch.diff, JS 8c90da2177455718861e4b6a7d5a826671b7946fc61ef9254fd90d37cdcd6f00,
+  CSS 308f0da70c3a64b0dfe1a99cdbd127a77256eef9b0c809583fc328052417c84d. v8 = v7 with V9 -> K, + countdown-faces,
+  + accent exact (CSS), + morph rev 3 (one CSS line), + the heUp glue. Mirror snapshot b1789284481295-4ad4a84a.
+copies: out/p111/snap/{C,V} in int-v8's worktree (`sh fixes/v8-best/phone/serve.sh snap`, from out/v8-best/snap/{A,V},
+  which `node fixes/v8-best/gates/snap.mjs` rebuilds from the committed patches and refuses on any hash difference);
+  read-only, HASHES.txt (full sha256 as above).
+question: at real thermal Serious, does v8 add slow frames compared with v7 (a) at rest at y 0 (accent, hero clock),
+  (b) through the hero, (c) at rest past the hero (countdown-faces holds the hero clock there; v7 rolls it unseen),
+  (d) in the morph open/close at the page end, (e) in whole-page fast flicks? No-worse only. Landing basis: the
+  identity checks, the frozen pixels and the counts in this README.
+ports: `sh fixes/v8-best/phone/serve.sh` (sha256 73c4bf67dba0): three serve.mjs --root site-pretty [--overlay <copy>]
+  --port 0 (OS-assigned, I-131) --latency 150 --vendors=local, plain http (I-003). B = plain baseline (no overlay): the
+  pre-warm and gate-timer page, no counted run on it. Checks the copies against HASHES.txt and the served JS/CSS of all
+  three (B 4606120cf392/27776f3d4138, C 8c90da217745/308f0da70c3a, V 3e3e94cb6e9f/f836404b3728; exit 4 on a wrong one).
+  Started by int-v8 15:14Z, all three ok; ports go to the runner by message, never into a committed file.
+thermal gate, start method, sleep check: as P-105, unchanged (thermal-gate.mjs 4604218c4041 --expect serious --max-c 44
+  --url <B> at the start and end of every hold; pre-warm on B with S runs, at most 4; pmcheck.mjs d36bd7437b7c). A hold
+  counts only if both reads PASS; else VOID, re-run once with the same items. Ceiling 44 °C or Critical: stop and cool.
+  Low Power Mode runs are dropped.
+holds: from int-v8's worktree, `RUNNER=iphone-runner caffeinate -i -s sh <int-v8 worktree>/fixes/v8-best/phone/hold.sh Hn
+  <items>` (hold.sh sha256 9a29f95cf06a) under the iphone lease held by iphone-runner, beside any shared group (lead
+  ruling 13:0xZ). Before every item: serve.sh check (a wrong hash ends the hold VOID) and a lease renew. Last line
+  "HOLD Hn VALID" or "HOLD Hn VOID <why>". An item whose iphone.mjs refuses (WAIT) has no record: void, re-run.
+  W leg   H1: wC wV C1 V2 V3 C4 · H2: C5 V6 V7 C8
+  M leg   H3: mC1 mV2 mV3 mC4 · H4: mC5 mV6 mV7 mC8
+  G leg   H5: sC gFC1 gFV1 gFV2 gFC2 gFC3 gFV3 sC · H6: the same for H · H7: for M · H8: for E
+  then `iphone.mjs park` and `serve.sh stop` (int-v8 stops the servers). Cooling between holds only when the end gate
+  said ceiling (`wait.mjs phone-temp --below auto`, <= 10 min); otherwise back to back.
+W leg (driver W, Timeline off; P-093's driver): `iphone.mjs run --driver window --probe std --block P-111 --to 2700
+  --idle 8 --hold 6 --sentinel 3 --arm C|V --run <n>`: 8 s at rest at y 0, steps to y 2700 (past the hero track;
+  countdown-faces' pastHero is ~2560 in Chrome geometry, the phone sits ~77 px off), 6 s at rest there, 3 s at the
+  bottom. Warm-ups --warmup, one per arm port (A3/U5, also the M leg's); counted C V V C C V V C (n = 4 per arm).
+  Every counted C W run is a heat sentinel (bottom >= 58 fps and scroll >= 44 fps).
+M leg (driver M, Timeline off; P-098's driver): `iphone.mjs run --driver morph --probe std --block P-111 --arm C|V --run
+  <n>`, hold 2000 ms, cycles 3 (6 tweens at the page's max scrollY). Counted C V V C C V V C. Every counted C M run is a
+  heat sentinel (held m=1 p95 <= 18 ms).
+G leg (driver G, Timeline off; P-105's §5.4 parts): `iphone.mjs gesture <script>`, each run reloads the page itself.
+  Scripts (sha256 / GESTURE_HASH, GESTURE_BUDGET_S 150 each), identical to P-105's:
+  - F fresh load: g/flick-fresh-v1.json  076bd7d046b6 / b6a4a96d189b (window fresh-flick -> end)
+  - H hero:       g/flick-hero-v1.json   6ae05e12ace9 / 53a8e657fa28 (window down1 -> end)
+  - M middle:     g/flick-middle-v1.json 0f97205f1d42 / 34e82a3dddcb (window mid1 -> end)
+  - E end:        g/flick-end-v1.json    93a1cf7bb091 / 47c5a1b000fb (window into1 -> end)
+  Per part 3 runs per arm, C V V C C V; an sC S run on C opens and closes each G hold as its heat sentinel (uncounted).
+scorer: `node fixes/v8-best/phone/score.mjs <item>:<file> ... [--json out]` (sha256 26d944bf93e2), in block order over the
+  VALID holds; self-test `node fixes/v8-best/phone/selftest.mjs` (sha256 a4b0fc78d40a, 20 checks OK on synthetic
+  records). Counts per run: dt > 50 (twins > 46, > 54) and dt > 34 (twins > 30, > 38).
+  - W top: [marks.idle start, marks.scroll end) with yEnd < 1000 (P-093's window). W rest: [marks.hold start, end).
+    Both gated: d = median(V) - median(C) of > 50; WORSE when d > +2; threshold-sensitive when a twin differs.
+    W idle (y 0 at rest, inside top): reported.
+  - M (P-098's terms): moving frames (m differs from the previous or next frame's); > 50 WORSE when d > +1, > 34 when
+    d > +2. Tween start frames from the driver rows (f1, f2, f3 for O1-O3, C1-C3; close = per run median of C1-C3):
+    O1.f1, O1.f2, O1.f3, close.f1, close.f3 WORSE when d > +2 ms; others reported.
+  - G per part: moving frames between the part's start mark and end; > 50 gate as W; new cluster (§5.4, lead ruling
+    12:5xZ): fixed 250 px bins of scrollY; a V cluster is a bin with a moving frame > 50 ms in >= 2 valid V runs; NEW when
+    no valid C run has one there or in a neighbouring bin; any new cluster fails even inside +2; > 46 / > 54 reported.
+  - Fewer than 3 valid runs in an arm (per part for G): insufficient.
+void (dropped and listed):
+  - W/M/S: no record; not the item's driver; run error; served JS/CSS not the arm's (meta.served); Low Power Mode;
+    W: no idle/scroll/hold marks; M: no drive mark, no m seen, tween starts != 6, driver tweens not O1 C1 O2 C2 O3 C3.
+  - G: no record; run.aborted; any run.errors entry; missing start or end mark; median moving dt > 25 ms (30 Hz, LPM
+    suspect); the hold's served check before the item not all ok.
+  - Heat: a counted C W run, a counted C M run or an sC run whose sentinel is not pass voids itself and every run (any
+    leg, either arm) since the last passing sentinel. A VOID hold (gate, sleep, served hash) voids all its runs.
+  - An I-127/I-141 inspector drop shows as no record or an aborted run: void, re-run in the same order.
+  Re-runs: at most one extra hold per leg (W/M: C V V C; G: the part's hold again). Then report as it stands.
+verdict: WORSE when any gate (Wtop, Wrest, Mmoving, Mtweens, GF, GH, GM, GE) is WORSE or has a NEW CLUSTER; else
+  insufficient when any is; else no-worse. The report gives per-gate medians, d, the twins and the cluster lists.
+  WORSE -> v8 does not land as is; int-v8 finds the leg's component by the reversal builds and reports to the lead.
+predictions (before data):
+  - W top no-worse: P 0.85 (at y 0 v8 changes the roll keyframes (K) and the accent's CSS; both measured equal or
+    less work in Chrome and the Simulator). W rest no-worse: P 0.9 (v8 does less there: the hero clock is held).
+  - M moving no-worse: P 0.85; M tweens no-worse: P 0.8 (rev 3 removes the fade's repaint from every open and close in
+    the Simulator; the phone's first open is the noisiest key).
+  - G parts no-worse on > 50: F 0.8, H 0.75 (the hero R2 path now also writes the faces state at go-live), M 0.8, E 0.75.
+  - No new cluster in any part: P 0.65. All sentinels pass on the first try: P 0.7. Overall no-worse: P 0.4.
+minutes: ~95 (range 80-130): 8 holds; W runs ~1.4 min, M runs ~0.8 min, G runs ~2 min, each hold + pre-warm and gates
+  (~3 min).
+```
 
 ## Reproduce
 

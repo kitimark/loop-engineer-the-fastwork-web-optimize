@@ -1,0 +1,177 @@
+{
+  "name": "flick-end-v1",
+  "version": 1,
+  "screen": [
+    430,
+    932
+  ],
+  "about": "T-113 (3): get to y >= 3400 with steady drags (not scored), rest, then fast flicks into and through the end of the page (last ~2 screens) and back out, twice. Attribution only.",
+  "params": {
+    "x": 215,
+    "flingPx": 560,
+    "flingMs": 140,
+    "gapMs": 350
+  },
+  "steps": [
+    {
+      "type": "reload",
+      "scrollAfterMs": 0
+    },
+    {
+      "type": "pause",
+      "ms": 2000
+    },
+    {
+      "type": "mark",
+      "name": "approach"
+    },
+    {
+      "type": "repeat",
+      "times": 12,
+      "until": "y>=3400",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": 520,
+          "ms": 600,
+          "profile": "still"
+        },
+        {
+          "type": "pause",
+          "ms": 150
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 4000,
+      "optional": true
+    },
+    {
+      "type": "pause",
+      "ms": 1500
+    },
+    {
+      "type": "mark",
+      "name": "into1"
+    },
+    {
+      "type": "repeat",
+      "times": 4,
+      "until": "y>=5100",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$flingPx",
+          "ms": "$flingMs",
+          "profile": "fling"
+        },
+        {
+          "type": "pause",
+          "ms": "$gapMs"
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "y>=5100",
+      "timeoutMs": 6000
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "pause",
+      "ms": 800
+    },
+    {
+      "type": "mark",
+      "name": "out1"
+    },
+    {
+      "type": "stroke",
+      "dir": "down",
+      "px": "$flingPx",
+      "ms": "$flingMs",
+      "profile": "fling"
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "pause",
+      "ms": 800
+    },
+    {
+      "type": "mark",
+      "name": "into2"
+    },
+    {
+      "type": "repeat",
+      "times": 4,
+      "until": "y>=5100",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$flingPx",
+          "ms": "$flingMs",
+          "profile": "fling"
+        },
+        {
+          "type": "pause",
+          "ms": "$gapMs"
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "y>=5100",
+      "timeoutMs": 6000
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "pause",
+      "ms": 800
+    },
+    {
+      "type": "mark",
+      "name": "out2"
+    },
+    {
+      "type": "stroke",
+      "dir": "down",
+      "px": "$flingPx",
+      "ms": "$flingMs",
+      "profile": "fling"
+    },
+    {
+      "type": "until",
+      "cond": "settled",
+      "timeoutMs": 5000,
+      "optional": true
+    },
+    {
+      "type": "mark",
+      "name": "end"
+    },
+    {
+      "type": "pause",
+      "ms": 1000
+    }
+  ]
+}

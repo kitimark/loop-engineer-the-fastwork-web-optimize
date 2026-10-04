@@ -1,0 +1,41 @@
+{
+  "name": "flick-middle-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "P-105 G leg, part M (protocol §5.4 'the middle'): a slow approach to y >= 1900 (still strokes, no fling), rest, then one fast fling down the page and one fast fling back, three times, over the middle of the page (about y 1900-3800).",
+  "params": { "x": 215, "flingPx": 560, "flingMs": 140, "stillPx": 520, "stillMs": 600 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "repeat", "times": 8, "until": "y>=1900", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$stillPx", "ms": "$stillMs", "profile": "still" },
+      { "type": "pause", "ms": 150 }
+    ] },
+    { "type": "until", "cond": "y>=1900", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "mid1" },
+    { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 600 },
+    { "type": "until", "cond": "y>=1900", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 600 },
+    { "type": "until", "cond": "y>=600", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 600 },
+    { "type": "until", "cond": "y>=1900", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 600 },
+    { "type": "until", "cond": "y>=600", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 600 },
+    { "type": "until", "cond": "y>=1900", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "mark", "name": "end" }
+  ]
+}
