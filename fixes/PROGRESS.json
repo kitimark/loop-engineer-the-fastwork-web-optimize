@@ -1,6 +1,6 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T05:45:00Z",
+ "updatedAt": "2026-10-04T06:10:00Z",
  "updatedBy": "mgmt-ops-10",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-04T06:05:00Z", "text": "The hero's slimmer version (R2) passed its phone check (P-095) at the phone's real heat state: no new slow frames, and fewer frames over 34 ms. Next is your blind swipe test of it." },
   { "at": "2026-10-04T05:40:00Z", "text": "Your new order (T-073): GPU fixes first. Phone: hero check (P-095, running), end-of-page morph (P-092), your blind swipe test of the menu fix, countdown roll (P-093), resting avatar row (P-094). A GPU preview build with the three GPU fixes is being put together for you to try." },
   { "at": "2026-10-04T05:30:00Z", "text": "The menu-edge measurement (P-091) ended without an answer (VOID): its fixed scoring rule could not read 2 of the 4 reference runs. The lead ruled that the menu fix (F3) lands on its earlier phone evidence plus your blind swipe test, which comes right after the hero check on the phone." },
   { "at": "2026-10-04T05:10:00Z", "text": "The menu-edge measurement (P-091) has 6 of its 9 runs. The phone got too hot at the end of the third hold, so its last 3 runs did not count; they are running again now. If the phone gets too hot again, the measurement closes on the 6 runs it has." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T14:05:00Z", "text": "Found a display bug in today's best build on the iPhone: past the end of the page, the menu bar, logo and buttons don't follow the menu's grow animation (phone and simulator; cause not yet known). Comparisons still stand; the fix is being built." },
   { "at": "2026-10-03T12:55:00Z", "text": "The idle-animation fix (glint and sweep on the graphics chip) passed its short phone check at the phone's real \"Serious\" heat state: no worse. One run had a slightly longer first scroll frame, which the fix does not touch." },
   { "at": "2026-10-03T12:20:00Z", "text": "The menu fix (F3) is dropped as a speed fix: what it changes sits in a thin strip at the screen edges, so on the phone it would feel the same as today. A new idea for the menu is being planned." },
-  { "at": "2026-10-03T12:05:00Z", "text": "The countdown digit strips (strip-tc) passed their phone check at the phone's real \"Serious\" heat state: no new slow frames, and much less clock redrawing. Your finger test is next." },
-  { "at": "2026-10-03T10:40:00Z", "text": "You asked for a pixel-tolerance rule; a proposal is being drafted for you (T-042). Until you decide, the rule stays: pixel-identical, or your OK for each fix." }
+  { "at": "2026-10-03T12:05:00Z", "text": "The countdown digit strips (strip-tc) passed their phone check at the phone's real \"Serious\" heat state: no new slow frames, and much less clock redrawing. Your finger test is next." }
  ],
  "items": [
   {
@@ -102,9 +102,9 @@
     "text": "not built yet"
    },
    "gate": "Identical at every scroll position, or within your accepted pixel rule (PR-010); you accepted its look (PR-011, both items, 15:23Z); then its phone test and your finger test.",
-   "next": "The lead picked a slimmer version (R2, option 1): built and checked in the Simulator, then a short phone check (P-095, next on the phone after the menu-edge measurement), then your blind swipe test, then it lands.",
+   "next": "Its short phone check (P-095) passed: no new slow frames, fewer frames over 34 ms. Next: your blind swipe test (the best build against R2), then it lands.",
    "owner": "fix-hero-exit-threaded",
-   "checks": [ { "id": "P-088", "what": "phone test of the two cheaper restarts (N and Fb) at the phone's real \"Serious\" heat state", "result": "No: no extra slow frames, but both add work the moment your finger starts a scroll (and Fb still redraws at rest), so back to the code." } ],
+   "checks": [ { "id": "P-095", "what": "short phone check of the slimmer version (R2) at the phone's real \"Serious\" heat state", "result": "Yes: no new slow frames over 50 ms, and fewer over 34 ms (median 12 vs 27 per run in the hero band); its extra script work stays off. Checked twice from the raw data." }, { "id": "P-088", "what": "phone test of the two cheaper restarts (N and Fb) at the phone's real \"Serious\" heat state", "result": "No: no extra slow frames, but both add work the moment your finger starts a scroll (and Fb still redraws at rest), so back to the code." } ],
    "details": [
     "de-gpu T-030 brief 2: re-apply hero-exit-scroll-timeline v2 on st6-rb2; Safari 26.4+ runs scroll-driven animations on the compositor thread (CONFIRMED, WebKit blog and source). ST-1 Timeline split first: v2 once added about +11 ms at y about 700 (cause not yet named, OBSERVED).",
     "C-026 finger runs (F, one run per arm, OBSERVED): the first ~1000 px hold 63 of 81 moving long frames (>34 ms) in st6-rb2.",
