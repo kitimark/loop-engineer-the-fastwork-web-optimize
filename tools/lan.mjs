@@ -13,7 +13,9 @@
 // en0 first, then by interface name (en1 < en2 < en10), then by address. FW_LAN_ADDRESS=<IPv4> overrides it.
 // Exit 0 printed, 2 usage, 3 no LAN address (Wi-Fi off or not connected).
 import { lanChoice, resolveLanUrl } from './lib/lan.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const opt = (n) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return undefined; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);

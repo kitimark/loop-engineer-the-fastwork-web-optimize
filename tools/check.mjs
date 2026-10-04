@@ -35,7 +35,9 @@ import { launchChrome, CDP, gotoAndSettle, sleep, screenInfoArg, headedUA, tempP
 import { REPO, checkoutId } from './lib/paths.mjs';
 import { requireBaseline, baselineStatus, baselineMeta } from './lib/baseline.mjs';
 import * as lockLib from './lib/lock.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--viewport', '--probe', '--out', '--result', '--owner', '--max-seconds', '--screen-dpr'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') && a.startsWith(`--${n}=`) ? a.slice(n.length + 3) : argv[i + 1]; };

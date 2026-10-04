@@ -56,7 +56,9 @@ import { layerScales, PAINT_SCALE_TAG } from './lib/paint-rects.mjs';
 import { servedGet } from './lib/served-get.mjs';
 import { requireBaseline, baselineStatus, baselineMeta, baselineTag, isSparse } from './lib/baseline.mjs';
 import { lowSpaceWarning, freeSpace, fmtSize } from './lib/space.mjs'; // I-095
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;

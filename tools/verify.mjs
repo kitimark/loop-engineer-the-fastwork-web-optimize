@@ -107,7 +107,9 @@ import { TRACE_START, TRACE_ARM, TRACE_DISARM, BUCKETS, BUCKET_LABELS, attribute
 import { PAINT_BINDING, PAINT_ARM, PAINT_DISARM, PAINT_LAYER_SCALE, PAINT_NOTE, PAINT_UNITS, PAINT_SCALE_TAG, layerScales, streamItem, analyzePaints, topLayerIds, nodeLabel } from './lib/paint-rects.mjs';
 import { longFrameTags } from './lib/frame-tags.mjs';
 import { THRESHOLDS, snapshot, slept, waitQuiet, treeCpuSec, classifyRun, hostInfo, hostClock, stubOutsideTest, procsSnapshot, topProcs, hostPower, hostStateSummary, describeHostState, chromeProfileState } from './lib/host.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const ROOT = REPO;
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };

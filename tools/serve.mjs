@@ -72,7 +72,9 @@ import { parseFrameAncestors } from './lib/framing.mjs';
 import { createMirrorHandler } from './lib/mirror-handler.mjs';
 import { probeHosts, portBusy } from './lib/port-probe.mjs';
 import { recordServer, ownerOf } from './lib/servers.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const ROOT_DIR = REPO;
 const HOME = mirrorHome(); // where the shared baseline (site/, site-pretty/) and out/certs live
 const args = process.argv.slice(2);

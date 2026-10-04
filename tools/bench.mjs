@@ -66,7 +66,9 @@ import { patchHeader, baselineDrift, buildOverlay, listFiles, sha256File, landed
 import { gainVerdict, experimentOutcome, calibrate as calibrateStats, hostBand, fmt } from './lib/bench-stats.mjs';
 import { tierASession, CDP_KINDS, TEST_FAST } from './lib/bench-scenario.mjs';
 import { checkRepeat, combineRepeats, isStalled, baselineChanged, parityDiff, parityVerdict, experimentVerdict, exitCode } from './lib/bench-verdict.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;

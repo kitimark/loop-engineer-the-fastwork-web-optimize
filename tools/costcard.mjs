@@ -32,7 +32,9 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve, relative, basename, isAbsolute } from 'node:path';
 import { buildCard, renderMarkdown, fmt } from './lib/costcard.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits 0 before anything runs (was usage, exit 2)
 const argv = process.argv.slice(2);
 const usage = () => { console.error('usage: node tools/costcard.mjs --records <file|dir>... | --trace <arm>=<file> | --timeline <arm>=<file> [--spec f] [--topic t] [--arms C,V] [--control C] [--aa C2] [--element name] [--event fire:<url>:<line>|mark[:<prefix>]|frame|times:<name>] [--code <url>:<a>-<b>] [--out prefix] (see the header of tools/costcard.mjs)'); process.exit(2); };
 const all = (n) => argv.flatMap((a, i) => (a === `--${n}` ? [argv[i + 1]] : a.startsWith(`--${n}=`) ? [a.slice(n.length + 3)] : []));

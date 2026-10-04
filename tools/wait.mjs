@@ -54,7 +54,9 @@ import { resolve, join, relative, isAbsolute } from 'node:path';
 import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition, phoneTempCondition, parseBelowC, autoBelowC, fmtC, PHONE_TEMP } from './lib/wait.mjs';
 import { startWait, urlText, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs';
 import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every', '--runs-dir', '--driver', '--owner', '--as', '--reason'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };

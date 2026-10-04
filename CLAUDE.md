@@ -263,6 +263,9 @@ npm run test:all      # both
 
 - Agents **may fix bugs in `tools/`** (or work around them) when needed. Every change to `tools/`
   comes with a test that covers it (new or updated in `tests/`), and `npm test` must pass.
+- Every tool takes `--help` (or `-h`, before any `--`): it prints the tool's header comment and exits 0 before
+  anything runs, no server, lock, phone or file (I-152 N10, `tools/lib/help.mjs`). A new tool calls
+  `exitOnHelp(import.meta.url)` right after its imports; `tests/unit/help.test.mjs` checks every tool.
 - If a test fails after an accidental edit, **revert the edit**. Change a test only to reflect a
   genuine, intended behaviour change; never weaken a test just to go green.
 - Tool fixes go in **their own commit**, separate from fix deliverables, and are reported to the lead

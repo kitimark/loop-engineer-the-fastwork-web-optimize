@@ -33,7 +33,9 @@
 import { list, get, post, ack, resolve, claim, waitFor, digest, parseId, stateLabel, claimTag, claimLabel, claimChangeLine } from './lib/finding.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed (piped --json past 64 KB)
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--as', '--kind', '--topics', '--topic', '--title', '--where', '--evidence', '--body', '--since', '--note', '--folded', '--timeout', '--poll', '--claim', '--ref', '--status'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };

@@ -213,7 +213,9 @@ import * as TH from './lib/console-threads.mjs';
 import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk, topic map
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import * as AL from './lib/answer-lint.mjs'; // I-146: the answer-format check on agent text the user reads
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url, { unless: (a) => a[0] === 'thread' || a[0] === 'proposal' }); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt', '--image', '--caption', '--owner', '--epoch', '--ready-grace', '--into', '--progress', '--name', '--summary', '--delete', '--force-format'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };

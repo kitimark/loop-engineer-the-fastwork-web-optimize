@@ -20,13 +20,25 @@
 // No dependencies (Node >= 22). Polite: honours robots.txt, sequential by default (--concurrency N),
 // small delay between requests, caches everything already on disk (content-hashed files are never
 // re-fetched; HTML/analytics.js/version.json are revalidated each run with If-None-Match).
-import { mkdirSync, writeFileSync, readFileSync, existsSync, statSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, statSync, writeSync } from 'node:fs';
 import { dirname, join, resolve, extname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { spawnSync } from 'node:child_process';
 
+// I-152 N10 inline help: --help/-h (before any `--`) prints the header above and exits 0 before anything runs. Inline,
+// not tools/lib/help.mjs: this tool also runs standalone (copied alone, as its tests do).
+{
+  const a = process.argv.slice(2), end = a.indexOf('--');
+  if ((end < 0 ? a : a.slice(0, end)).some((x) => x === '--help' || x === '-h')) {
+    const head = [];
+    for (const l of readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1)) { if (!l.startsWith('//')) break; head.push(l.replace(/^\/\/ ?/, '')); }
+    const b = Buffer.from(`${head.join('\n').trimEnd()}\n`);
+    for (let off = 0; off < b.length;) { try { off += writeSync(1, b, off); } catch (e) { if (e.code !== 'EAGAIN') throw e; } }
+    process.exit(0);
+  }
+}
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(`--${n}`);

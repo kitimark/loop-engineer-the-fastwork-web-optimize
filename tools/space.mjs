@@ -29,7 +29,9 @@ import { mainCheckout } from './lib/paths.mjs';
 import { buildReport, renderText, renderList, spaceRunRefusalNow, fmtSize } from './lib/space.mjs';
 import { runPrune, renderPlan, pruneLogFile } from './lib/space-prune.mjs';
 import { list as boardRows } from './lib/status.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };

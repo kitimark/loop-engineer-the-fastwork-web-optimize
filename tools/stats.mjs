@@ -33,7 +33,9 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tick, summary, frameCounts, sequentialDecision, runsFromJson, blocksFromRuns, assertOneDevice, PHONE_LIKE, blockWarnings, nearByBlock, NEAR_KEYS, placeFrames, METRICS, twinsFor, twinKind, K_FORMS, tickThresholdMs, K34 } from './lib/stats.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const VALUED = new Set(['--c', '--v', '--dir', '--unit', '--predicted', '--min-shift', '--alpha', '--metric', '--device', '--platform', '--phase', '--thresholds', '--min-ms', '--lvh', '--svh', '--inner-height']);

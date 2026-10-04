@@ -81,7 +81,9 @@ import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord, lanSafeText } from './lib/iphone-url.mjs';
 import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
 import { RECORD_JS, recordSummary, recordRun, parsePoll, EXIT_PARTIAL } from './lib/iphone-record.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url, { unless: (a) => a[0] === 'run' }); // I-152 N10: --help prints the header above and exits before anything runs
 let exitCode = 0; // I-141: record exits 6 PARTIAL when it saved only part of a run
 
 const argv = process.argv.slice(2);

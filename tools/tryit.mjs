@@ -25,7 +25,9 @@
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import * as T from './lib/tryit.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const [cmd, ...rest] = process.argv.slice(2);
 const args = rest;
 const opt = (n) => { const i = args.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return undefined; const a = args[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : args[i + 1]; };

@@ -170,7 +170,9 @@ import { resolveLanUrl } from './lib/lan.mjs';
 import { lowSpaceWarning } from './lib/space.mjs'; // I-095: free-space warning in status
 import { fileURLToPath } from 'node:url';
 import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed (status --json past 64 KB)
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
 const own = dd >= 0 ? argv.slice(0, dd) : argv;

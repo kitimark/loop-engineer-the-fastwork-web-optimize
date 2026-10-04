@@ -30,7 +30,9 @@ import { createThread, setStatus } from './lib/console-threads.mjs';
 import { getDesk } from './lib/thread-routing.mjs';
 import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
 import { diskPass } from './lib/space-watch.mjs'; // I-124: disk alarm + auto-clean (FW_SPACE_AUTOPRUNE=0 turns the clean off)
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };

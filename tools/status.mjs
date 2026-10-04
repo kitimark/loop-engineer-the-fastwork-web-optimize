@@ -67,7 +67,9 @@ import { set, setPriority, get, list, buildStatusView, itemView, renderText, sho
 import { gatherLive, readProgress } from './lib/progress.mjs';
 import { runMain } from './lib/exit.mjs'; // I-110, I-117: exit once stdout has flushed
 import { currentAgentView, currentAgentsList, agentText, agentsText, parseAgent } from './lib/agent-view.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file', '--unlink', '--resume-on'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };

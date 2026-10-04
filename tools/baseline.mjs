@@ -13,7 +13,9 @@ import { writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO, isLinkedWorktree, mainCheckout } from './lib/paths.mjs';
 import { PIN_FILE, TREES, SPARSE_PATTERNS, EXIT_BASELINE, readPin, computePin, baselineStatus, isSparse, git } from './lib/baseline.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);

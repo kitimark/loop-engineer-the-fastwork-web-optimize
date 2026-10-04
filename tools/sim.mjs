@@ -90,7 +90,9 @@ import { REPO } from './lib/paths.mjs';
 import * as S from './lib/sim.mjs';
 import { keepAwakeFor } from './lib/awake.mjs';
 import { readWarm, warmFile } from './lib/sim-warm.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const all = process.argv.slice(2);
 const dd = all.indexOf('--');
 const argv = dd >= 0 ? all.slice(0, dd) : all;

@@ -32,7 +32,9 @@ import {
   SCHEMA, SRC, root, outDir, buildDir, appPath, appExe, selftestExe, slug, parseSeconds, outPath, sidecars,
   recordTimeoutSec, openArgs, swiftcArgs, pickIdentity, signatureType, summarizeFrames, summaryLine, holdKind,
 } from './lib/ioscap.mjs';
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--owner', '--seconds', '--label', '--out', '--codec'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : (argv[i + 1] === undefined || argv[i + 1].startsWith('--') ? true : argv[i + 1]); };

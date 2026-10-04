@@ -244,7 +244,7 @@ export async function run(argv, deps = {}) {
   const a = parseArgs(argv);
   const [sub, arg] = a.pos;
   const by = () => a.one('by', a.one('as', process.env.FW_AGENT || process.env.FW_LOCK_OWNER));
-  if (!sub || sub === 'help' || a.flag('help')) { console.log('see the header of tools/lib/proposal-cli.mjs'); return sub ? 0 : EXIT.usage; }
+  if (!sub || sub === 'help' || a.flag('help')) { console.log('see the header of tools/lib/proposal-cli.mjs'); return sub || a.flag('help') ? 0 : EXIT.usage; } // N10: `proposal --help` exits 0
   if (sub === 'post') {
     if (!a.one('file')) throw new Error('--file <proposal.json|md> is required (schema: research/architecture/console-proposals.md)');
     const inp = inputs(a);

@@ -25,7 +25,9 @@ import { readFileSync } from 'node:fs';
 import { open, list, get, update, resolve, announcement, waitFor, parseId } from './lib/incident.mjs';
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import { runMain } from './lib/exit.mjs'; // I-117: exit once stdout has flushed (piped --json past 64 KB)
+import { exitOnHelp } from './lib/help.mjs';
 
+exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
 const VALUED = ['--by', '--title', '--error', '--class', '--cmd', '--output', '--output-file', '--repro', '--env', '--suspect', '--blocking', '--workaround', '--sig', '--status', '--priority', '--assignee', '--affected', '--note', '--commit', '--resolution', '--timeout', '--poll', '--as'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
