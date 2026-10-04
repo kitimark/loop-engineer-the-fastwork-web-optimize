@@ -1164,6 +1164,77 @@ call that open 'cold'; an open after the setup has run is 'warm'.
   - **Insufficient or void:** no claim; cool and re-run the counted part once. A second void goes to the lead.
 - **Expected minutes:** about 20 (15-30).
 
+## Menu close repaint (morph-close-peak, v9 component #6; 2026-10-04/05, counts only, no timing)
+
+Asked by the lead: what repaints in PR-018's 2.3 Mpx closing frame (T-131), and can a one-line compositing change
+remove it. Measured on v8 + PR-018 rev 7b (`out/snapshots/ms-ba256c2a48f8`). Rev 7c changes only the settle, so the
+counts carry over.
+
+**Cause (OBSERVED, counts; the mechanism is supported by WebKit source):**
+- The panel's `.is-morphing` class drops when the morph reaches 0.001. From then on the header's
+  `:not(.is-morphing)` `width 0.68s` transition re-lays out the panel every frame (CSS 11806).
+- The panel is opacity 0 by then. Its separately composited children still repaint every frame: the three
+  col-tracks, the veil, the center and the footer.
+  - Simulator: about 35 frames of 240-440 kpx each after a finger-like close.
+- Why they still paint: WebKit skips drawing only for a layer whose *own* opacity is 0
+  (`RenderLayerBacking::containsPaintedContent` → `mayHaveNonZeroOpacity`, WebKit main 1ad88ea2ba2a). An opacity-0
+  ancestor does not stop its composited children from painting.
+- The same check explains the #platform tile repaint on return from `--morph-fade: 0`, about 1.1 Mpx. Tiles are not
+  drawn at opacity 0 and are drawn again at 1.
+- The 2.3 Mpx frame is partly an artifact of the instant jump: the panel/header repaint (~1.2 Mpx) plus the #platform
+  tiles (~1.1 Mpx).
+- During a finger-like close (`glide`: 20 rAF scrollTo steps), every morph frame costs ~13 paints and ~1.0-1.7 Mpx in
+  every arm: the panel layers and #platform resize with the header. A one-liner does not touch that. A fixed-size panel
+  clipped by the header would change motion, so it would be a proposal.
+
+**Fix:** one rule (`fixes/morph-gpu/close/delta.diff`, 60eba2d73b68, a delta on v8 → JS 3e3e94cb6e9f / CSS
+f673c6cbc770):
+
+```css
+.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel { visibility: hidden; }
+```
+
+- Pixel-identical by construction. `.is-morphing` is `x > 0.001` (JS 13826), and the panel's opacity is
+  `clamp(0, (x - 0.08) / 0.72, 1)` with `--morph = JM(x)` (a clamp). So the panel is fully transparent whenever the
+  rule applies.
+- `GraphicsLayer::setContentsVisible(hasVisibleContent())` (RenderLayerBacking.cpp ~2025, GraphicsLayerCA.cpp
+  `updateContentsVisibility`) suggests hidden layers drop their contents. That is source-backed but inferred: OBSERVED.
+- Behaviour note: while the menu is closed, its buttons leave the tab order and the accessibility tree. In v8 they are
+  focusable while invisible.
+- No descendant of the panel sets `visibility: visible` (checked in v8's CSS).
+
+**Simulator** (`close/close-cause-sim.mjs`, 1 run per arm, paints / kpx over 1.2 s, max frame in parentheses):
+
+| step | v8 + 7b | + rule | `content-visibility` variant | header width transition off (info, fix-nav-morph's lines) |
+|---|---|---|---|---|
+| close (instant) | 323 / 15024 (32/2295) | 198 / 5996 (25/1900) | 162 / 5599 | 153 / 4286 |
+| setclose | 302 / 13639 | 172 / 3165 | 136 / 2691 | 135 / 2370 |
+| glide (finger-like) | 467 / 29025 | 385 / 23495 | 357 / 22979 | 385 / 24311 |
+| open | 138 / 3147 | 128 / 1641 | 125 / 1623 | 142 / 3150 |
+| setopen | 126 / 2634 | 91 / 177 | 95 / 206 | 116 / 2632 |
+
+- Glide tail: base ~35 frames at 240-440 kpx; with the rule ~45 kpx frames.
+- `content-visibility: hidden` gives about the same counts. `visibility` was chosen because it is the plainer
+  property.
+
+**Chrome** (`close/close-cause-chrome.mjs`, paints in 1.2 s; the probe's kpx are invalid, so paints only):
+
+| step | v8 + 7b | + rule | header transition off (info) |
+|---|---|---|---|
+| close | 514 | 401 | 298 |
+| setclose | 509 | 398 | 289 |
+| glide | 508 | 481 | 487 |
+| open / setopen | 413 / 412 | 411 / 410 | 358 / 324 |
+
+- The base's 111 col-track paints after a close are gone.
+- Measured against the `fade0` background (314), the close-specific paints go from 195 to 84.
+- The open panel at m = 1 looks the same with the rule (Chrome screenshots of both arms).
+
+**Still to report here:**
+- the Simulator shots at m = 1 and the repeat counts (`close4`);
+- the frozen-frame PR-010 checks of v8 vs v8 + rule (`fixes/v9-best/gates/px-chrome.mjs`, `px-sim.mjs`,
+  `V9_SNAP=out/morph-gpu/pxsnap-f673c6cbc770`).
+
 ## Risks, conflicts, follow-ups
 
 - **Base.** Built on best-build, which includes morph-inherit. P-085 passed on the iPhone at Serious (main e22dd73:
