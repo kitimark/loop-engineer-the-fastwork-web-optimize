@@ -58,6 +58,9 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
   - N4: the intervals come from P-104's data, so hits are a replication.
   - Ledger row added.
   - Registry: next free P-116.
+  - Rename check OK at bfd2f2e4 (README only, on top of 62e6d234). Heading is now "D card P-107", output goes to p107,
+    and N1-N4 are folded in. N3's channel table says nothing else is cached: is-scroll-hidden = s(v) && !s(E), where E
+    comes from the morph spring, which V does not touch. The loads started after it.
 - 10-05 01:xxZ **P-114 result, ops second read: AGREE, no-worse, so v7 -> v8 after the smoke checks** (int-v8 8830dcbf,
     against the card be0d650b and ruling e0b92985). Re-checked hashes: score 5bbdd2f10cca, base 26d944bf93e2, hold.sh
     6367f45452e4, serve.sh 04b793255e19, selftest c2a86e730417, score.json 377f19c597da.
