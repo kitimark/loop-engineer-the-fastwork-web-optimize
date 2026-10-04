@@ -914,6 +914,15 @@
         "v1": "page read during fling momentum answered only when momentum stopped (2.5-3 s, 3/3); push always on a resting page; every A open warm (F-210)",
         "v2": "4/4 (C A A C) reached the end, opened in the catch touch, closed; every A open warm",
         "phone": "UNRESOLVED whether the phone also waits for the momentum"
+      },
+      "stopRules": {
+        "source": "ops pre-data read N1-N4 + lead ruling, before any P-099 data; text only, scorer hash a493f689422a unchanged",
+        "runIf": "P-098 leaves rev 2 land-eligible: no O1.f1 WORSE, no WORSE or threshold-sensitive closes or f50/f34; else skip (N2)",
+        "ports": "P-098's logged ports if it fell back to 5794-5799 (N3)",
+        "bothWarmupsShort": "no O1 and the catch short of the end in wC and wV: stop before counted runs; report catch gap, catch scrollY, end scrollY as a finding; a longer catch = v3, new ticket rev (rule 1)",
+        "oneWarmupShort": "block goes on; any void counted run stops it at once, no re-run or refill; to the lead (rule 2)",
+        "voidRuns": "report catch gap and catch scrollY from the raw file (N1)",
+        "h1Timing": "last H1 gesture starts by ~750 s; else C4 moves to H2, logged as a hold-layout change (N4)"
       }
     }
   }

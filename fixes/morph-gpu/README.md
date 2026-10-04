@@ -827,6 +827,24 @@ call that open 'cold'; an open after the setup has run is 'warm'.
   - Sentinels are P-098's: an S-driver `--heat-sentinel` run on C's port, bottom ≥ 58 fps and scroll ≥ 44 fps. A
     failing start sentinel: no counted run starts. A failing end sentinel voids every counted run.
   - The G runs carry no M sentinel; heat is judged by the gate and the S sentinels.
+  - H1 timing: the last gesture must start by about 750 s into the hold. If the gate and the sentinel run long,
+    C4 moves to H2; that is logged as a hold-layout change, not a void (ops N4).
+- **Rules added after ops' pre-data read and the lead's ruling** (before any P-099 data; text only, the scorer and its
+  hash are unchanged):
+  - **Run only if P-098 leaves rev 2 land-eligible** (ops N2): no O1.f1 WORSE, and no WORSE or threshold-sensitive
+    result on the closes or on f50 / f34. Otherwise P-099 is skipped and the report says so.
+  - **Ports** (ops N3): if P-098 had to fall back to a port in 5794-5799, P-099 uses P-098's logged ports.
+  - **A short catch.** If the phone answers reads during the momentum, the catch may land far above the end (about
+    2000 px or more). Such a run has no O1, so the scorer voids it ("tweens none") and gives no gap or catch position.
+    The runner therefore reads each warm-up's raw gesture file: the fling-to-catch gap, scrollY at the catch, the
+    end scrollY and whether O1 came.
+    - **Both warm-ups short** (no O1, the catch ended short of the end): stop before the counted runs. Report the gap,
+      the catch scrollY and the end scrollY to the lead and ops as a finding (F-210 REFUTED on the phone). A longer
+      catch would be a v3 gesture, i.e. a new ticket rev that ops reads before any data (lead ruling, rule 1).
+    - **One warm-up short:** the block goes on, but any void counted run stops it at once: no in-place re-run, no
+      refill; reported to the lead (lead ruling, rule 2). This replaces the in-place re-run clause below for this
+      case only.
+    - For any void counted run, the report gives its gap and catch scrollY from the raw file (ops N1).
 - **Scorer**, committed before data: `phone/g-fling.mjs`, sha256 `a493f689422a`:
   `node fixes/morph-gpu/phone/g-fling.mjs C:<file> V:<file> … --served out/morph-gpu/phone/p099-served.json`, with
   the files in block order.
@@ -839,7 +857,8 @@ call that open 'cold'; an open after the setup has run is 'warm'.
     - the logger's CSS tag is not the arm's ('none' C, 'rv2' V);
     - tweens not exactly O1 then C1;
     - O1 not inside the catch touch (from its touchstart to 50 ms after its touchend).
-    - One in-place re-run per position; a second void at one position voids the block.
+    - One in-place re-run per position; a second void at one position voids the block (except after one short
+      warm-up, see above).
   - Scored: O1.f1, O1.f2, O1.f3. Per key, d = median(V) − median(C):
     - 'better' at d ≤ −2 ms with every V run below every C run;
     - 'no-worse' at d ≤ +2 ms;
