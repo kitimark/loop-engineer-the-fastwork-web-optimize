@@ -1,0 +1,193 @@
+# Fix: v7-best (wave integration: v6 + countdown strips + countdown roll + resting avatar row)
+
+> Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
+> Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
+
+**Status:** built and checked by bytes, function, frozen pixels and work counts; **not timed** (memory
+`defer-timing-focus-call-tree.md`); no phone runs here (the lead schedules any phone no-worse check). PROGRESS row
+`v7-best` is `best: false` until the lead signs it.
+**Integrator:** wave-v7 (wave-integrator), 2026-10-04.
+**Build:** `patch.diff` (baseline-relative, 2 files) = JS `8c90da2177455718861e4b6a7d5a826671b7946fc61ef9254fd90d37cdcd6f00`,
+CSS `308f0da70c3a64b0dfe1a99cdbd127a77256eef9b0c809583fc328052417c84d`; baseline snapshot `b1789284481295-4ad4a84a`.
+**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, `/_app/immutable/assets/2.gBuqKVzi.css` (nothing else).
+
+## Components and order
+
+| # | component | patch (sha256/12) | made on | its own build (JS / CSS) |
+|---|---|---|---|---|
+| 1 | best-build (v4) | `fixes/best-build/patch.diff` 9bf4c6e41f11 | baseline | 65052c4a3902 / e0f92804c521 |
+| 2 | hero R2 delta (makes v6 = B-R2) | `fixes/v7-best/hero-r2-delta.diff` a8daa419b791 | best-build | v6 8018ce062d30 / 71b65c667720 |
+| 3 | cd-strip strip-tc (PR-008 rev 2, wi-countdown) | `fixes/cd-strip/patch.diff` 4f2ff4eb9afa | st6-rb2 | 6fa0e1e8a221 / 982a747d9263 |
+| 4 | cd-roll-ca V9 (PR-017, landed 0eb4a101) | `fixes/cd-roll-ca/patch.diff` d48095cc16ff | cd-strip build | 582d120c9f8f / 982a747d9263 |
+| 5 | rest-script v4 (P-094, landed 21c94aaf) | `fixes/rest-script/patch.diff` be2b46a3ceaf | st6-rb2 | 520d5f1139c7 / f523598b2a24 |
+
+- `hero-r2-delta.diff` is the hero-exit-threaded R2 build (`fixes/hero-exit-threaded/patch.diff` 168233b0a4ae,
+  924be86afac8 / cc74cd980e72) minus the morph-inherit build (7c61fe7d0662 / f523598b2a24), i.e. the hero fix alone. On
+  best-build it gives exactly v6-best-br2 (PROGRESS `v6-best-br2`, 8018ce062d30 / 71b65c667720).
+- **cd-roll-ca does not contain cd-strip:** its patch is made on the cd-strip build (it is a delta), so both apply,
+  each once. `fixes/rest-script-live/patch.diff` (71b020744858, baseline-relative) builds the same bytes as
+  `fixes/rest-script/patch.diff` on st6-rb2 (checked), so only the latter is applied.
+- Command: `node tools/fix.mjs combine v7-best best-build fixes/v7-best/hero-r2-delta.diff cd-strip cd-roll-ca rest-script`.
+  **All five applied, no conflicts.** Only line offsets (git apply's exact context): cd-strip CSS +276, rest-script
+  JS +338 (its later hunks), all others 0. Nothing needed resolving, mechanical or semantic.
+- Closest changed lines between the groups (st6-rb2 lines): hero~countdown 317, hero~rest 445, countdown~rest 846,
+  rest~(best minus st6) 182. No two share diff context.
+
+## Identity checks (`node fixes/v7-best/check.mjs`, 30/30 ok, `check.json` there is `fix.mjs check`'s)
+
+Text only, best-build's strict applier (exact context, no fuzz):
+- every input rebuilt from its committed patch equals its owner's hashes (st6-rb2, best-build, morph-inherit,
+  hero R2, v6, cd-strip, cd-roll-ca, rest-script, rest-script-live, gpu-preview, morph-gpu rev 1);
+- all 6 orders of the groups [hero], [strip, roll], [rest] give the same bytes; `fix.mjs combine`'s overlay equals the
+  strict build; `patch.diff` on the baseline equals v7;
+- by reversal, wherever only one component changed the code, v7 is that component's own build byte for byte:
+  v7 − rest − roll − strip = v6 (B-R2); v7 − hero − rest − (best − st6) = cd-roll-ca V9; … − roll = cd-strip build;
+  v7 − hero − roll − strip − (best − st6) = rest-script v4 build; v7 − hero − roll − strip = P-094's best+rest arm
+  (e9b94ba7c560 / e0f92804c521); v7 − rest = gpu-preview − morph-gpu (the same countdown and hero bytes the preview
+  carried); v7 − all four = best-build;
+- `node --check` on the v7 JS.
+
+## Function: `fix.mjs check` (v7 vs v6, headless Chrome, both viewports)
+
+`node tools/fix.mjs check v7-best --on v7-v6base --viewport both --save` (helper overlay `v7-v6base` = best-build +
+hero delta, hashes equal v6). **CHECK OK.** Served overlay hashes verified (8c90da217745 / 308f0da70c3a).
+
+| viewport | new errors | new 404s | morph reached | elements v6 -> v7 | screenshot diff % top / middle / bottom |
+|---|---|---|---|---|---|
+| mobile 430x932 | 0 | 0 | yes | 1532 -> 1580 | 0.12 / 0 / 0.42 |
+| desktop 1440x900 | 0 | 0 | yes | 1375 -> 1424 | 0.05 / 0 / 0 |
+
++48/49 elements are the countdown cells and strips (`span.cdwrap`, `span.cell`, `span.strip`). The diffs are
+check's unfrozen shots (countdown, rotators, orbit phase); the frozen pixel check below is the real comparison.
+
+## Pixels at rest, frozen (illusion rule, PR-010 tolerance report)
+
+`gates/px-chrome.mjs` (Chrome) and `gates/px-sim.mjs` (WebKit Simulator). Arms are read-only snapshot copies built
+by `gates/snap.mjs` from the committed patches (refused on any hash mismatch). Load order A, V, A2, V2; each load has
+its own server (port 0, `--no-cache`, its own origin) and an isolated browser context, and the served JS/CSS are
+hash-checked before the load (I-131: a stale cached file would make the load VOID; none was). `Date.now` frozen at
+one value in every arm, then per stop: scroll, 1.6 s, running non-transition animations paused at 4000 ms and SMIL at
+4 s, screenshot, hit grid. Timer-driven loops (word rotators, the avatar rotator, pain notes) are not frozen: their
+phase is the A/A noise.
+
+Scores per stop: **A~V beyond the A/A mask** (pixels > 8 levels apart where A~A2 is <= 8); and **consistent**: over 8
+in all four cross pairs (A~V, A~V2, A2~V, A2~V2) while neither A/A pair is over 8 there, i.e. a difference of the
+build, not of one load's timer phase. Five numbers: CSS px², % of frame, max level, flat share (3x3 range <= 2),
+where.
+
+**Chrome mobile 430x932 DPR 3, v6 (A) vs v7 (V)** (`px-mobile-…09-37-32`, rescored):
+
+| y | A~V beyond A/A (CSS px²) | consistent: CSS px² / % / max / flat | where | A/A over 8 %, A / V |
+|---|---|---|---|---|
+| 0 | 15 | 0 | | 0.04 / 0.03 |
+| 300 | 3 | 2 / 0.0004 / 33 / 0 (edge) | hero heading | 0.77 / 0.77 |
+| 548 | 0 | 0 | | 0.29 / 0 |
+| 1422 | 11 | 11 / 0.0027 / 38 / 0 (edge) | profile-showcase meta text | 0.76 / 0 |
+| 1913 | 1648 | **56 / 0.014 / 232 / 0.04 (edge, moving)** | `#people` avatar row | 0 / 0.73 |
+| 2403-5346 (8 stops) | 0-150 | 0 | | |
+
+**Control for the avatar row, best + rest-script (P, e9b94ba7c560 / e0f92804c521) vs v7** (`px-mobile-…09-47-11`):
+consistent 0 at y 1913 (and 0 at 12 of 13 stops; y 3875 below). So at the avatar row v7 is exactly what
+rest-script v4 alone does; the v6 -> v7 difference there is rest-script's own change, not an interaction. It is the
+avatar **rotator's phase** at capture, not a static look: every rest-script build's two loads differ there (P/P2 and
+V/V2 both 0.64 % over 8), while v6's two loads were identical (its rotator stood still under the frozen clock).
+rest-script v4's own static checks were Chrome T0 and Simulator T2 (5131 px, max 49, the 4th avatar; user accepted
+PR-014 "keep"). OBSERVED, our setup.
+
+y 3875 (`section.commission .referral-card`, 150 CSS px², max 37): a per-load state, seen on both sides of v7's own
+A/A in the first run (V ≠ V2 there) and as P ≠ V in the second; v6~v7 consistent 0. Within T2 (0.037 %, max 37).
+
+**Chrome desktop 1440x900 DPR 1, v6 vs v7** (`px-desktop-…10-10-01`):
+
+| y | A~V beyond A/A (CSS px²) | consistent | where |
+|---|---|---|---|
+| 0, 300, 548 | 1 / 148 / 5880 (one load: A2~V2 0 / 0 / 21) | 0 | hero heading (script accent drawing phase) |
+| 1739-3416, 5093-8448 | 0-817 | 0 | |
+| 4255 | 4500 (A2~V2 19882) | 123 / 0.0095 % / 237 / 0.94 | `section.pain .pain-note`: pain notes are timer loops (A/A over 8: 2.9 % and 2.6 %); no v7 component touches the pain section |
+
+**WebKit Simulator 430x775 DPR 3, v6 (A) vs v7 (V)** (`gates/px-sim.mjs`, three shared holds: `px-sim-…11-35-54`
+y 0-2796, `…11-38-42` y 3384-5260, control `…11-40-10`). Same scoring. Every v6 first load (A) differed from its
+second load (A2) by 5.2-6.4 % over 8 at every stop, all in two device-row bands (0-176, the status-bar area, and
+794-910): a first-load artefact of the session, not page content (V/V was 0.05-0.70 %). So the A/A mask is wide in
+those rows; the A2~V2 column (second loads only) is the cleaner read there.
+
+| y | A~V beyond A/A (CSS px²) | consistent: CSS px² / % / max / flat | A2~V2 beyond A/A | where | A/A over 8 %, A / V |
+|---|---|---|---|---|---|
+| 0, 300, 548 | 0 | 0 | 0 | | 6.2-6.4 / 0.06 |
+| 1400 | 574 | **199 / 0.050 / 248 / 0.25** | 532 (max 254) | `#people .start-selling-future-card` (the avatar row) | 5.9 / 0.70 |
+| 1913 | 55 | 0 (max 47) | 56 (max 49) | `#people` community pill | 6.0 / 0.08 |
+| 2796 | 50 | 0 | 0 | | 5.2 / 0.06 |
+| 3384, 3875 | 0 | 0 | 21 / 4 | | 5.3 / 0.28, 0.05 |
+| 4365 | 21 | **16 / 0.004 / 197 / 0 (edge)** | 67 | `section#platform` ask-service body (9 CSS px², max 197) and row copy (7, max 11); A2~V2 adds the "earn" row title (57) | 5.3 / 0.05 |
+| 4856, 5260 | 0 | 0 | 0 | | 5.3 / 0.05 |
+
+**Control, best + rest-script (P) vs v7, Simulator** (`…11-40-10`): y 1400 consistent 6 CSS px² (max 184), y 1913
+consistent 0. So the Simulator's y 1400 difference is rest-script v4's own (P is v7 there), as Chrome's y 1913: the
+same avatar row (Simulator y and Chrome y differ by viewport height), the avatar rotator's phase; v7's own two loads
+differ there too (V/V 0.70 %). rest-script v4's own Simulator check was T2, user-accepted (PR-014 "keep").
+
+y 4365: no v7 component touches `section#platform` (its edits in the patch are best-build's, also in v6). Its max
+level 197 on an edge is above the T2 edge level (128), over 16 CSS px² (0.004 %); the A2~V2 pair shows a different
+text row there instead, so it reads as a per-load text state, like Chrome's y 3875. Cause not established, OBSERVED,
+our setup; flagged for the lead.
+
+**Verdict (pixels):** every stop is T0, or within T2, in Chrome (mobile, desktop) and in the Simulator, except:
+(1) the avatar row (Chrome y 1913, Simulator y 1400), which the P control shows is rest-script v4's own accepted
+change (PR-014), not an interaction; (2) two small per-load clusters in sections v7 does not touch (Simulator y 4365,
+16 CSS px², edge max 197; Chrome desktop pain notes, timer loops). No difference traces to cd-strip or cd-roll-ca.
+
+## Work counts (cost card, Chrome, no timing)
+
+de-frame-audit `census.mjs` (430x932 DPR 3 mobile, headless, no throttle; per second) through `gates/census-run.mjs`
+(served hashes checked, each arm on its own https server, a fresh Chrome profile per load). Two loads per build in two
+holds (A,V then V,A); the two numbers per cell are load 1 / load 2.
+
+| window | count | v6 (A) | v7 (V) | read |
+|---|---|---|---|---|
+| rest y 0 | main frames | 49.0 / 49.0 | 40.5 / 42.3 | -7.6 |
+| rest y 0 | rAF fires | 32.6 / 27.5 | 1.0 / 1.2 | the countdown's rAF spring is gone (cd-roll-ca) |
+| rest y 0 | elements restyled | 429 / 412 | 333 / 398 | lower or equal |
+| rest y 0 | paint | 142 / 147 | 146 / 146 | same |
+| rest y 1400 | main frames / rAF | 50.3 / 49.0, 32.7 / 27.0 | 41.8 / 42.6, 1.0 / 1.2 | as at y 0 |
+| rest y 2796 | main frames | 8.2 / 8.7 | 4.2 / 4.2 | -4.3 (rest-script: the avatar row at rest) |
+| rest y 2796 | elements restyled / paint / layout | 123 / 103, 8.7 / 8.7, 1 / 1 | 63 / 57, 2.0 / 1.5, 0 / 0 | about half |
+| rest y 3800 | main frames / rAF | 29.3 / 30.0, 20.3 / 20.3 | 27.2 / 26.7, 17.8 / 17.7 | -2.7 / -2.6 |
+| rest end (y 5346) | main frames / paint | 2.2 / 4.2, 8.8 / 18.2 | 4.2 / 2.2, 17.0 / 8.7 | two states per load, the same set on both sides: no change |
+| scroll top -> end | main frames | 126.1 / 126.0 | 126.1 / 126.2 | 0 |
+| scroll top -> end | style recalcs | 80.5 / 77.5 | 71.8 / 72.0 | -7 |
+| scroll top -> end | elements restyled | 2163 / 2137 | 2180 / 2216 | +48 (A/A 26 and 36): a small cost, the rolling countdown cells |
+| scroll top -> end | paint | 248 / 216 | 220 / 220 | within v6's spread |
+| scroll top -> end | layout / rAF | 21.9 / 21.8, 313 / 313 | 21.6 / 21.8, 305 / 305 | 0 / -8 |
+
+Script calls at rest y 0 (`callsPerSec`): v6 runs `4043:50 i /raf` 32.6 per s (the countdown spring); v7 has none and
+instead 1 `onfinish` per s (cd-roll-ca's per-second roll) and 1 rAF per s. Other timers are the same in both.
+OBSERVED, one load per build per hold, headless Chrome, our setup. The gpu-preview counts (v5, which carried the
+same countdown and hero bytes, plus morph-gpu rev 1) agree on rest y 0: 41.2 main frames, 1.2 rAF.
+
+## Not done here, and caveats
+
+- No timing and no phone runs (the lead's call; the less-work landing rule needs a short phone no-worse check).
+- `__fwMorphDrive` (best-build's morph driver hook) still ships, as in v4-v6.
+- The end-of-page menu animation on the graphics chip (morph-gpu) is **not** in this build. Lead ruling T-030 #32
+  made rev 2 conditional on P-098 and P-099; rev 2 A failed P-098 (first open frame +6.5 ms vs best-build, as rev 1),
+  so it stays out (lead, T-111). For the record, a text-only dry stack had shown rev 2 A
+  (`fixes/morph-gpu/rev2/delta.diff` at 62b44610, c83d382800d7, plus its build.mjs `__rvPP` -> off flip; on
+  best-build = its measured arm ef9d1c9d5fca / f7071e9138ac) applies to v7 with offsets only (JS +495, CSS +173).
+- Gates in `gates/` read `out/v7-best/snap` (gitignored); rebuild it with `node fixes/v7-best/gates/snap.mjs`.
+
+## Reproduce
+
+```sh
+node tools/fix.mjs combine v7-best best-build fixes/v7-best/hero-r2-delta.diff cd-strip cd-roll-ca rest-script
+node fixes/v7-best/check.mjs --json out/v7-best/check.json
+node tools/fix.mjs apply v7-v6base --from best-build,fixes/v7-best/hero-r2-delta.diff
+node tools/lock.mjs run chrome-measure --shared --weight check --max-seconds 300 --owner <you> -- \
+  node tools/fix.mjs check v7-best --on v7-v6base --viewport both --save
+node fixes/v7-best/gates/snap.mjs
+node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner <you> -- node fixes/v7-best/gates/px-chrome.mjs mobile
+node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner <you> -- node fixes/v7-best/gates/px-chrome.mjs mobile A=P,V=V
+node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner <you> -- node fixes/v7-best/gates/px-chrome.mjs desktop
+node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner <you> -- node fixes/v7-best/gates/census-run.mjs A,V
+node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner <you> -- \
+  node tools/sim.mjs session --functional --owner <you> -- node fixes/v7-best/gates/px-sim.mjs
+```

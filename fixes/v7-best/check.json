@@ -1,0 +1,209 @@
+{
+ "topic": "v7-best",
+ "kind": "functional check",
+ "chromeMode": "headless",
+ "createdAt": "2026-10-04T09:36:02.162Z",
+ "git": {
+  "branch": "worktree-agent-a87ff9fcd65ed0df4",
+  "head": "3f391c7d"
+ },
+ "config": {
+  "viewport": "both",
+  "serveArgs": [
+   "--vendors=local",
+   "--https",
+   "--latency",
+   "150"
+  ],
+  "baseline": "site-pretty + fixes/v7-v6base/overlay",
+  "baselineSnapshot": {
+   "snapshot": "b1789284481295-4ad4a84a",
+   "state": "ok"
+  },
+  "stackedOn": "v7-v6base",
+  "browser": "Chrome/154.0.8037.97",
+  "uaOverride": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "screenInfo": {
+   "width": 1512,
+   "height": 982,
+   "dpr": 2,
+   "arg": "--screen-info={0,0 3024x1964 devicePixelRatio=2}"
+  },
+  "lock": {
+   "mode": "reentrant-shared",
+   "weight": 1,
+   "maxSec": 300
+  }
+ },
+ "note": "functional only (headless Chrome): no timing; screenshot diffs compare headless with headless (research/architecture/headless-functional.md). Never a gain verdict: that is fix.mjs ab.",
+ "servedCheck": [
+  {
+   "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+   "source": "overlay",
+   "sha256": "308f0da70c3a64b0dfe1a99cdbd127a77256eef9b0c809583fc328052417c84d"
+  },
+  {
+   "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+   "source": "overlay",
+   "sha256": "8c90da2177455718861e4b6a7d5a826671b7946fc61ef9254fd90d37cdcd6f00"
+  }
+ ],
+ "verdict": "ok",
+ "regressions": {
+  "newErrors": [],
+  "fixedErrors": [],
+  "errorsBothSides": [],
+  "new404s": [],
+  "newFailures": [],
+  "byViewport": {
+   "mobile": {
+    "newErrors": [],
+    "fixedErrors": [],
+    "errorsBothSides": [],
+    "new404s": [],
+    "newFailures": [],
+    "morphReached": {
+     "baseline": true,
+     "patched": true
+    },
+    "screenshotDiffPct": {
+     "top": 0.12,
+     "middle": 0,
+     "bottom": 0.42
+    },
+    "domDiff": {
+     "elements": {
+      "baseline": 1532,
+      "patched": 1580
+     },
+     "added": [
+      "em.is-idle",
+      "span.cdwrap",
+      "span.cell",
+      "span.strip"
+     ],
+     "removed": [
+      "em.is-drawing-in"
+     ]
+    }
+   },
+   "desktop": {
+    "newErrors": [],
+    "fixedErrors": [],
+    "errorsBothSides": [],
+    "new404s": [],
+    "newFailures": [],
+    "morphReached": {
+     "baseline": true,
+     "patched": true
+    },
+    "screenshotDiffPct": {
+     "top": 0.05,
+     "middle": 0,
+     "bottom": 0
+    },
+    "domDiff": {
+     "elements": {
+      "baseline": 1375,
+      "patched": 1424
+     },
+     "added": [
+      "span.cdwrap",
+      "span.cell",
+      "span.strip"
+     ],
+     "removed": [
+      "div.is-sliding"
+     ]
+    }
+   }
+  }
+ },
+ "pages": [
+  {
+   "label": "base",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1532,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/v7-best/2026-10-04T09-33-31-249Z/mobile-base-top.png",
+    "middle": "out/check/v7-best/2026-10-04T09-33-31-249Z/mobile-base-middle.png",
+    "bottom": "out/check/v7-best/2026-10-04T09-33-31-249Z/mobile-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "mobile",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1580,
+   "walk": {
+    "y": 5345,
+    "maxY": 5345,
+    "h": 6277,
+    "steps": 18
+   },
+   "shots": {
+    "top": "out/check/v7-best/2026-10-04T09-33-31-249Z/mobile-fix-top.png",
+    "middle": "out/check/v7-best/2026-10-04T09-33-31-249Z/mobile-fix-middle.png",
+    "bottom": "out/check/v7-best/2026-10-04T09-33-31-249Z/mobile-fix-bottom.png"
+   }
+  },
+  {
+   "label": "base",
+   "viewport": "desktop",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1375,
+   "walk": {
+    "y": 8448,
+    "maxY": 8448,
+    "h": 9348,
+    "steps": 29
+   },
+   "shots": {
+    "top": "out/check/v7-best/2026-10-04T09-33-31-249Z/desktop-base-top.png",
+    "middle": "out/check/v7-best/2026-10-04T09-33-31-249Z/desktop-base-middle.png",
+    "bottom": "out/check/v7-best/2026-10-04T09-33-31-249Z/desktop-base-bottom.png"
+   }
+  },
+  {
+   "label": "fix",
+   "viewport": "desktop",
+   "failures": [],
+   "errors": 0,
+   "notFound": [],
+   "failed": 0,
+   "morphReached": true,
+   "elements": 1424,
+   "walk": {
+    "y": 8448,
+    "maxY": 8448,
+    "h": 9348,
+    "steps": 29
+   },
+   "shots": {
+    "top": "out/check/v7-best/2026-10-04T09-33-31-249Z/desktop-fix-top.png",
+    "middle": "out/check/v7-best/2026-10-04T09-33-31-249Z/desktop-fix-middle.png",
+    "bottom": "out/check/v7-best/2026-10-04T09-33-31-249Z/desktop-fix-bottom.png"
+   }
+  }
+ ],
+ "raw": "out/check/v7-best/2026-10-04T09-33-31-249Z/check-raw.json"
+}

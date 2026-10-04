@@ -1,0 +1,361 @@
+# v7-best component: hero-exit-threaded R2 delta = R2 build (924be86afac8 / cc74cd980e72) - morph-inherit build (7c61fe7d0662 / f523598b2a24)
+# STACKED on the best build (fixes/best-build/patch.diff): best-build + this = B-R2 = v6-best-br2 (8018ce062d30 / 71b65c667720)
+# derived from main fixes/hero-exit-threaded/patch.diff and fixes/morph-inherit/patch.diff with diff -u; contains excerpts of Fastwork's code: local branches only, never push
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4388,6 +4388,118 @@
+       i = 0,
+       a = 0,
+       o = !1,
++      // hero-exit-scroll-timeline: at the phone layout (t: width <= 600 px; d() runs at mount there and with
++      // reduced motion), and where CSS scroll-driven animations are supported, the exit (--exit-opacity /
++      // --exit-scatter) is a CSS animation on the `--hero-exit` view timeline of .hero-track (@supports
++      // block in 2.gBuqKVzi.css): heMode = CSS mode, no per-frame rect read / style write while the page scrolls. Wider layouts
++      // (desktop orbit cards) keep the baseline writer (c -> s): WebKit drew the animated tilted cards up
++      // to 108 levels off the baseline's static draw of equal computed values (width 980, Simulator,
++      // OBSERVED); heOff leaves CSS mode when the layout widens past 600 px.
++      // pointer-events (r < 0.05, i.e. track bottom < 0.05 * track height + 0.95 * innerHeight) comes
++      // from an IntersectionObserver in live CSS mode (parked: s()) whose top rootMargin is that threshold in px, re-armed on
++      // resize (innerHeight and the track height change with the toolbar / viewport).
++      // WebKit only: `GestureEvent` is a WebKit-only interface (Safari 9+, iOS 2+; Chrome and Firefox
++      // none: MDN browser-compat-data api/GestureEvent.json). Blink composites the animated cards/copy
++      // with a slightly different blend than its painted baseline (up to 6 levels, frozen-scroll
++      // harness), so Chrome, Firefox and others keep the baseline JS writer (identical by construction).
++      // CSS mode is parked at rest and live while the page scrolls. Parked (.he-on only): no exit animation
++      // exists, and the hero is drawn exactly as in the baseline, by the baseline's own rules from the inline
++      // --exit-opacity that s() writes (the dE callback runs the baseline writer c() while parked, e.g. on a
++      // resize). Live (.he-css added): the CSS rules key on it. Why park: WebKit invalidates the style of every
++      // element with a relevant scroll-driven animation on every rendering update, moving or not
++      // (WebAnimation::computeRelevance counts a non-monotonic timeline as relevant unless idle;
++      // AnimationTimelinesController ticks every relevant animation; KeyframeEffect::animationDidTick ->
++      // invalidate(); WebKit main 13a1f2916933, CONFIRMED), so with the animations always present every frame
++      // at rest and at the top paid a style recalc the baseline does not (Simulator: 1 per frame vs 0; phone
++      // P-074: touchstart rows +2 RecalculateStyles). Removing the animations (class off) stops it (Simulator:
++      // 0 per frame). heSc goes live on the first scroll event inside the range (finger, wheel, keys,
++      // scrollbar, find-in-page, status-bar tap, script; the scroll event fires before that frame's rendering
++      // update): s() writes the inline value for the current scrollY, then .he-css arrives. A newly added CSS
++      // animation is pending for its first frame, which draws the base values, i.e. that inline value. The
++      // value then stays (stale) while live: every property that reads it is animated while live (cards,
++      // copy, float), except the cue's, which a live rule replaces with its value at --exit-opacity 1 (the
++      // float carries the cue's exit; its base values read the inline value for the pending frame). Before
++      // the range start no exit animation is active and the base values show, so a scroll to y <= top + 30
++      // parks at once (see heSc). heRest parks again 300 ms after the last scroll
++      // event with no finger down: s() writes the value for the final scrollY, then the class goes (no
++      // pending frame on removal). Touchstart only marks the finger down (no style work in its frame).
++      // The copy's shift animation comes with .he-css (live only): a transform animation on .hero-copy,
++      // even inactive, made WebKit repaint the title's script accent about 1.4x as often (Simulator, OBSERVED).
++      // heWrap: CSS mode wraps the scroll cue's label + arrow in one span (.he-bob) that takes the 2.2 s bob,
++      // so .scroll-float carries only the scroll-driven exit (both on one element made WebKit recalculate
++      // style every frame at rest; the bob on the two children separately drew 1-2 levels off). Same layout
++      // (a flex column like the float); Svelte's node references (the label text) stay valid when moved.
++      // The bob rules key on .he-on (parked and live), so parking never moves or restarts the bob.
++      // Touch phones only (the lead, 2026-10-03): GestureEvent also exists in macOS Safari (MAC_GESTURE_EVENTS)
++      // and on iPad, whose windows can be 600 CSS px wide or less; nobody pixel-checked the CSS path there, so
++      // those take the baseline path: a coarse pointer without hover and a screen whose short side is at most
++      // 600 CSS px (iPhone 430; iPad mini 744; Mac displays wider).
++      heCss =
++        `GestureEvent` in window &&
++        !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`) &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
++      heMode = !1,
++      heIn = !0,
++      heIO = null,
++      heTop = 0,
++      heEnd = 1 / 0,
++      heTouch = 0,
++      heR = 0,
++      heLive = () => b.classList.contains(`he-css`),
++      heRT = () => {
++        (window.clearTimeout(heR), (heR = window.setTimeout(heRest, 300)));
++      },
++      // heRest: park (see above). s() first, so the frame that loses the animations has the baseline's
++      // inline value for the final scrollY (also past the end, where the exit is complete).
++      heRest = () => {
++        if (((heR = 0), !heMode || heTouch || !heLive())) return;
++        (s(), b.classList.remove(`he-css`));
++      },
++      heTS = () => {
++        heTouch = 1;
++      },
++      heTE = () => {
++        ((heTouch = 0), heMode && heLive() && heRT());
++      },
++      // heSc: live: keep the rest timer running; at y <= top + 30 park at once (s() for that scrollY, class off).
++      // Parked: go live when the scroll lands at top + 30 < y < end. Below top + 30 the parked dE callback runs
++      // the baseline writer, as in the baseline: there the cue's blur is under 0.7 px, and the float's animated
++      // blur drew the cue up to 78 levels off the baseline at y6 (0 at y30; Simulator, OBSERVED, cause unknown).
++      // Past the end nothing moves in the exit.
++      heSc = (ev) => {
++        if (ev.target !== document || !heMode || e.matches) return;
++        let y = window.scrollY;
++        if (heLive()) return y <= heTop + 30 ? (window.clearTimeout(heR), (heR = 0), s(), b.classList.remove(`he-css`)) : heRT();
++        y > heTop + 30 && y < heEnd && heUp();
++      },
++      // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.
++      heUp = () => {
++        (i && window.cancelAnimationFrame(i), s(), b.classList.add(`he-css`), heRT());
++      },
++      hePE = () => {
++        x.style.pointerEvents = heIn || e.matches ? `` : `none`;
++      },
++      heWrap = () => {
++        let e = x.querySelector(`.scroll-float`);
++        if (!e || e.firstElementChild?.classList.contains(`he-bob`)) return;
++        let t = document.createElement(`span`);
++        for (t.className = `he-bob svelte-1p2vpne`; e.firstChild; ) t.appendChild(e.firstChild);
++        e.appendChild(t);
++      },
++      // heOff: back to the baseline writer when the layout widens past 600 px (rotation, window resize) and
++      // on pageshow (p(); d() re-enters CSS mode where it applies): drop the classes, unwrap the cue (the
++      // baseline's DOM and bob), and write --exit-opacity now (s(), not c()): the media change runs before
++      // this frame's style, so the frame that loses the animations already has the baseline's inline value.
++      heOff = () => {
++        ((heMode = !1), window.clearTimeout(heR), (heR = 0), b.classList.remove(`he-css`, `he-on`));
++        let w = x.querySelector(`.scroll-float > .he-bob`);
++        if (w) {
++          for (; w.firstChild; ) w.parentNode.insertBefore(w.firstChild, w);
++          w.remove();
++        }
++        s();
++      },
+       s = () => {
+         if (((i = 0), e.matches)) {
+           (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
+@@ -4409,9 +4521,19 @@
+           window.clearTimeout(r),
+           (r = 0),
+           C.classList.add(`is-splash-done`),
+-          x.classList.add(`is-ring-splash-done`));
++          x.classList.add(`is-ring-splash-done`),
++          // CSS mode starts parked (the baseline's state: s() for the current scrollY, also mid-hero after a
++          // pageshow, a restored scroll or a layout narrowing to <= 600 px); a later scroll goes live.
++          heCss &&
++            t.matches &&
++            ((heMode = !0),
++            i && window.cancelAnimationFrame(i),
++            (i = 0),
++            s(),
++            heWrap(),
++            b.classList.add(`he-on`)));
+       },
+-      f = (e) => {
++      f =(e) => {
+         let t = e - a,
+           r = O(t),
+           i = j(t);
+@@ -4433,6 +4555,7 @@
+           window.clearTimeout(r),
+           (r = 0),
+           (o = !1),
++          heMode && heOff(),
+           C.classList.add(`is-preparing`),
+           x.classList.add(`is-preparing`),
+           C.classList.remove(`is-splash-done`, `is-expanding`),
+@@ -4461,18 +4584,62 @@
+       };
+     p();
+     let h = () => {
+-      t.matches && d();
++      t.matches ? d() : heMode && heOff();
+     };
+     (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
+-    let g = dE(c, { deferRendering: !0, element: b });
++    // hero-exit-scroll-timeline: live CSS mode skips the baseline writer (the animations draw the exit); parked
++    // and outside CSS mode the dE callback runs it as in the baseline. dE stays registered for its side
++    // effects on the track (scene pause + render deferral).
++    let g = dE(
++        () => {
++          (heMode && heLive()) || c();
++        },
++        { deferRendering: !0, element: b },
++      ),
++      heSync = () => {
++        heMode && heLive() && hePE();
++      };
++    let heArm = () => {
++      heIO && heIO.disconnect();
++      let n = window.innerHeight,
++        t = b.getBoundingClientRect(),
++        r = 0.05 * t.height + 0.95 * n;
++      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)));
++      heIO = new IntersectionObserver(
++        (n) => {
++          for (let e of n) heIn = e.isIntersecting;
++          heSync();
++        },
++        { rootMargin: `${-r}px 0px ${3 * n}px 0px` },
++      );
++      heIO.observe(b);
++    };
++    let heL = { passive: !0, capture: !0 },
++      heEv = [
++        [`touchstart`, heTS],
++        [`touchend`, heTE],
++        [`touchcancel`, heTE],
++        [`scroll`, heSc],
++      ];
+     return (
+-      s(),
++      heCss &&
++        (heArm(),
++        window.addEventListener(`resize`, heArm),
++        e.addEventListener(`change`, heSync),
++        heEv.forEach(([e, t]) => window.addEventListener(e, t, heL))),
++      heMode || s(),
+       () => {
+         (l(),
+           window.clearTimeout(r),
+           i && window.cancelAnimationFrame(i),
+           t.removeEventListener(`change`, h),
+           window.removeEventListener(`pageshow`, m),
++          heIO &&
++            (heIO.disconnect(),
++            window.removeEventListener(`resize`, heArm),
++            e.removeEventListener(`change`, heSync),
++            heEv.forEach(([e, t]) => window.removeEventListener(e, t, heL)),
++            window.clearTimeout(heR)),
+           g());
+       }
+     );
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2153,6 +2153,136 @@
+     top: 83.3333%;
+     left: auto;
+     right: -45px;
++  }
++}
++/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
++   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
++   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
++   Only where the JS switched to CSS mode: on WebKit (GestureEvent) with scroll-driven animations at the
++   phone layout (width <= 600px), once the entrance is over (d() in 2.DyWL8TcE.js), the track gets .he-on
++   (parked: the cue's bob moves to .he-bob, the exit is the baseline's own rules from the inline
++   --exit-opacity the JS writes at rest), and .he-css while the page scrolls (live: these animations; the JS
++   writes nothing per frame). Parking at rest matters because WebKit invalidates the style of every element
++   with a relevant scroll-driven animation on every rendering update, moving or not (WebKit source, see the
++   JS comment). Wider layouts (desktop orbit cards: desktop
++   and iPad Safari, a landscape phone) keep the baseline writer: there WebKit drew the animated tilted cards
++   up to 108 levels off the baseline's static draw of the same computed values (width 980, Simulator,
++   OBSERVED; residual R5). Every other engine keeps the baseline writer and none of these rules apply.
++   Every exit animation starts at contain 0.05% (s) with fill forwards, so at rest at the top of the page
++   none is active and the hero is drawn exactly as in the baseline (the baseline's own rules: blur(0px) on
++   the copy and the cue, no filter on the float). For the first frame after .he-css arrives (the new
++   animations are pending) the JS writes the baseline's inline --exit-opacity, so the base values are the
++   exited ones there too; the JS then leaves it (stale) while live, so every live property that reads it is
++   animated (cards, copy, float) or, on the cue, replaced by its value at --exit-opacity 1 (the float carries
++   the cue's exit, and its base values carry it for the pending frame). The
++   `from` keyframes are the baseline value at s (a + (b - a) * s), so inside the range the value is the
++   baseline's a + (b - a) * p.
++   The copy's shift is a separate transform animation, present only while live (a transform animation on
++   .hero-copy, even inactive, made WebKit repaint the title's script accent about 1.4x as often; Simulator,
++   OBSERVED).
++   The scroll cue's own entrance animates --copy-in (in its opacity and transform), so its exit
++   (fade, shift, blur) runs on its only child, .scroll-float (blur on the cue itself over a composited
++   child drew a wider halo in WebKit; while live the cue draws blur(0px), as the baseline rule at
++   --exit-opacity 1), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
++   around the float's two children in CSS mode (one layer for both, as the baseline's float): an element
++   with both the infinite bob and scroll-driven animations made WebKit recalculate style every frame at
++   rest, and the bob on the two children separately drew the cue 1-2 levels off (Simulator, OBSERVED).
++   opacity/transform/translate animations are separate from the blur ones (compositable); past the end
++   the blur keeps blur(18px) like the baseline, so no filter change when the track reaches its end
++   (#people entry). */
++@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
++  @keyframes svelte-1p2vpne-hero-exit-card {
++    from {
++      opacity: 0.999825;
++      translate: calc(var(--scatter-x) * 0.0005) calc(var(--scatter-y) * 0.0005);
++    }
++    to {
++      opacity: 0.65;
++      translate: var(--scatter-x) var(--scatter-y);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-shift-m {
++    from {
++      transform: translate(-50%, -0.004px);
++    }
++    to {
++      transform: translate(-50%, -8px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade {
++    from {
++      opacity: 0.9995;
++    }
++    to {
++      opacity: 0;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade-up {
++    from {
++      opacity: 0.9995;
++      translate: 0px -0.005px;
++    }
++    to {
++      opacity: 0;
++      translate: 0px -10px;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur {
++    from {
++      filter: blur(0.009px);
++    }
++    to {
++      filter: blur(18px);
++    }
++  }
++  .he-bob.svelte-1p2vpne {
++    flex-direction: column;
++    align-items: center;
++    display: flex;
++  }
++  @media (prefers-reduced-motion: no-preference) {
++    .hero-track.he-css.svelte-1p2vpne {
++      view-timeline-name: --hero-exit;
++      view-timeline-axis: block;
++    }
++    @media (width<=600px) {
++      .hero-track.he-on .scroll-float.svelte-1p2vpne {
++        animation: none;
++      }
++      .hero-track.he-on .scroll-float.svelte-1p2vpne > .he-bob.svelte-1p2vpne {
++        animation: 2.2s ease-in-out infinite svelte-1p2vpne-scroll-float;
++      }
++      .hero-track.he-css .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
++        animation: 1ms linear forwards svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .hero-copy.svelte-1p2vpne {
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
++          1ms linear forwards svelte-1p2vpne-hero-exit-shift-m;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .scroll-cue.svelte-1p2vpne {
++        opacity: var(--copy-in);
++        filter: blur(0px);
++        transform: translate(-50%, calc((1 - var(--copy-in)) * 12px));
++      }
++      .hero-track.he-css .scroll-float.svelte-1p2vpne {
++        opacity: var(--exit-opacity);
++        filter: blur(calc(var(--exit-scatter) * 18px));
++        translate: 0px calc(var(--exit-scatter) * -10px);
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade-up,
++          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .start-selling [data-start-selling-scene="paused"] .scroll-float.svelte-1p2vpne > * {
++        animation-play-state: paused !important;
++      }
++    }
+   }
+ }
+ @media (prefers-reduced-motion: reduce) {
