@@ -393,8 +393,10 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   `sleep`/`until`/`for … sleep` loop**: run it with Bash `run_in_background` and keep working (Claude Code wakes you
   when it exits); with nothing else to do, still run it in the background with a long `--timeout` (thread waits 3500)
   and end your turn: a foreground `--timeout 580` rerun costs a full model turn every 10 min (user T-109). A thread
-  listener runs as ONE persistent Claude Code `Monitor` (a shell loop around `thread wait --as <you> --timeout 3500`
-  that prints only the TRIAGE/NEW lines and the message text), so a message wakes you without a re-arm step. **No
+  listener runs as ONE persistent Claude Code `Monitor` on `node tools/console.mjs thread wait --as <you> [--triage]
+  --monitor --timeout 86400` (I-147): it keeps listening and prints one line per wake, `WAKE <kind> <id> <short text>`
+  (kinds new, triage, escalate, proposal; `end`/`never` when it stops), so every wake, proposal decisions included,
+  reaches you with no grep and no re-arm; `thread show <id>` gives the full text. Never filter its lines. **No
   work, no listener** (user T-109 #29): an agent with no step of its own left parks (status `parked`, final report)
   instead of keeping a wait up; user messages for a parked owner reach the lead's listener (the router's fallback),
   and the lead resumes the owner with SendMessage. Light jobs (routing, lookups, summaries) go to sonnet/haiku helpers

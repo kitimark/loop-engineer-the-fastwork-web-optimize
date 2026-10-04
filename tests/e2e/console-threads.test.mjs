@@ -486,3 +486,27 @@ test('T-024 #13 CLI: thread new SIMILAR (topic or close title) unless --force; m
   assert.equal(cli('thread', 'relate', keep, rel, '--by', 'lead', '--remove').code, 0);
   assert.doesNotMatch(cli('thread', 'list').stdout, new RegExp(`^${keep} .*(merged|related)`, 'm'));
 });
+
+test('I-147: `thread wait --monitor` keeps listening and prints each wake as WAKE lines only (no MET, no stderr states)', async () => {
+  cli('thread', 'wait', '--as', 'lead', '--timeout', '1', '--quiet'); // take what earlier tests left unread
+  const w = cliAsync('thread', 'wait', '--as', 'lead', '--monitor', '--timeout', '7');
+  await sleep(700);
+  const c = await userPost('/api/threads', { title: 'Monitor check', text: 'One\ntwo' });
+  const id = c.json.thread.id;
+  await sleep(3000); // the first wake (1 s settle) is printed and marked read; the listener goes on
+  await userPost(`/api/threads/${id}/reply`, { text: 'Later message' });
+  const r = await w;
+  assert.equal(r.code, 3, r.out);
+  const lines = r.stdout.trim().split('\n');
+  for (const l of lines) assert.match(l, /^WAKE [a-z]+ \S+/, `only WAKE lines: ${l}`);
+  assert.equal(lines.filter((l) => l === `WAKE new ${id} #1 by user: One two`).length, 1, 'the first message once');
+  assert.ok(lines.includes(`WAKE new ${id} #2 by user: Later message`), 'a second wake in the same process');
+  assert.match(lines.at(-1), /^WAKE end lead timeout after \d+ s; re-arm: node tools\/console\.mjs thread wait --as lead --monitor$/);
+  assert.doesNotMatch(r.stderr, /\[thread wait /, 'no state lines: a Monitor may stream stderr too');
+  assert.equal(cli('thread', 'wait', '--as', 'lead', '--timeout', '1', '--quiet').code, 3, 'both marked read');
+  // a closed --thread: one WAKE never line, exit 4
+  assert.equal(cli('thread', 'close', id, '--by', 'lead', '--force').code, 0);
+  const n = cli('thread', 'wait', '--as', 'lead', '--thread', id, '--monitor', '--timeout', '5');
+  assert.equal(n.code, 4, n.out);
+  assert.match(n.stdout, new RegExp(`^WAKE never ${id} ${id} was closed\\n?$`));
+});

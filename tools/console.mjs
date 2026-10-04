@@ -118,6 +118,13 @@
 //        # T-030: also a hold or release of a standing decision and a decision made stale by a revision:
 //        # `PROPOSAL PR-008 on hold, decision accepted under review (not final) by lead …`, `… hold released, decision
 //        # accepted final again …`, `… decision stale (was accepted on rev 1): re-decide on rev 2, revised by …`.
+//   node tools/console.mjs thread wait --as <agent> [--triage] --monitor [--timeout 86400]
+//        # I-147 (PR-020 N2), for a Claude Code Monitor: keeps listening until --timeout (no re-arm) and prints each
+//        # wake as ONE stdout line per event, nothing else (no MET line, no stderr states):
+//        #   WAKE new T-004 #3 by user: <text on one line, cut to 160>   WAKE triage T-009 #2 by user (for the lead): …
+//        #   WAKE escalate T-009 by fix-a: <note>   WAKE proposal PR-019 decided accepted by user at …: <notes>
+//        # last line `WAKE end <you> timeout after N s; re-arm: …` (exit 3) or `WAKE never <thread> <why>` (exit 4).
+//        # Each wake is marked read like a plain wait; `thread show <id>` prints the whole message.
 //   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
 //   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
 //   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask] [--image <path> [--caption "…"]]…
@@ -385,9 +392,26 @@ async function thread() {
       return { met: true, state: `${news.length} thread(s), ${ev.length} proposal decision event(s)`, detail: JSON.stringify({ news, ev }) };
     };
     const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
-    const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+    const monitor = flag('monitor'); // I-147: one WAKE line per event, keeps listening until --timeout; no stderr states
+    const onChange = flag('quiet') || monitor ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
     // I-108: without --thread this is a listener (armed all the time, waits on nobody): marked, and worded as such
     startWait({ tool: 'console.mjs thread wait', owner: w.reader, listener: !opt('thread'), what: w.triage ? 'a thread that needs the lead (triage) or a proposal decision' : opt('thread') ? `a user reply in ${opt('thread')}` : `messages in its console threads${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
+    if (monitor) {
+      const t0 = Date.now();
+      for (;;) {
+        const left = Math.max(0, timeoutSec - (Date.now() - t0) / 1000);
+        const r = await pollUntil(check, { timeoutSec: left, minMs: 500, maxMs: 2000, factor: 1.3 });
+        if (r.result === 'never') { console.log(TH.wakeNeverLine({ id: opt('thread'), why: r.never })); return EXIT.never; }
+        if (r.result !== 'met') { console.log(TH.wakeEndLine({ reader: w.reader, triage: w.triage, waitedSec: Math.round((Date.now() - t0) / 1000) })); return EXIT.timeout; }
+        await new Promise((res) => setTimeout(res, 1000)); // a burst: settle, then print everything unread at once
+        const again = check();
+        const { news, ev } = split(again.met ? again : r);
+        await TH.commitWait(w.reader, news);
+        await PR.commitProposalNews(w.reader, ev);
+        const L = [...news.flatMap((t) => TH.wakeLines(t)), ...ev.map((e) => PR.proposalWakeLine(e))];
+        if (L.length) console.log(L.join('\n'));
+      }
+    }
     const r = await pollUntil(check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
     if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
     if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }

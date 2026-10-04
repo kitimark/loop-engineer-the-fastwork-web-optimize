@@ -1124,6 +1124,14 @@ export function proposalNewsText(e) {
   return L.join('\n');
 }
 
+/** I-147: a proposal decision event as one `WAKE proposal …` line for `thread wait --monitor` (notes on one line, cut). */
+export function proposalWakeLine(e) {
+  const head = proposalNewsText({ ...e, notes: '' }).split('\n')[0].replace(/^PROPOSAL /, '');
+  const notes = e.event === 'undecided' ? '' : String(e.notes ?? '').replace(/\s+/g, ' ').trim();
+  const line = `WAKE proposal ${notes ? `${head}: ${notes}` : head}`;
+  return line.length > 280 ? `${line.slice(0, 279)}…` : line;
+}
+
 // ---- views -------------------------------------------------------------------------------------------
 
 const media = (id, name) => (name ? `/media/${id}/${name}` : undefined);

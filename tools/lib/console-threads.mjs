@@ -942,6 +942,38 @@ export function newsText(t, reader) {
   return L.join('\n');
 }
 
+/**
+ * I-147 (PR-020 N2): `thread wait --monitor` prints every wake as ONE line, `WAKE <kind> <id> <short text>`, so a
+ * Claude Code Monitor streams it with no grep (a TRIAGE/NEW filter dropped the PR-019 decision). Kinds: new (a message
+ * in a followed thread), triage (a message the lead's triage wait picked, with its reason), escalate, proposal, end
+ * (the wait's own --timeout), never. The text is one line, cut to WAKE_TEXT_MAX; `thread show <id>` has the rest.
+ */
+export const WAKE_TEXT_MAX = 160;
+export const wakeShort = (s, max = WAKE_TEXT_MAX) => { const t = oneLine(s); return t.length > max ? `${t.slice(0, max - 1)}…` : t; };
+/** The WAKE lines of one thread news item (from `thread wait`): one per message, then one per escalation. */
+export function wakeLines(t) {
+  const reason = new Map(), esc = [];
+  for (const w of t.why || []) {
+    const m = String(w).match(/^#(\d+) (.*)$/s);
+    if (m) reason.set(Number(m[1]), oneLine(m[2]));
+    else esc.push(String(w).replace(/^escalated /, ''));
+  }
+  const kind = t.why?.length ? 'triage' : 'new';
+  const L = (t.messages || []).map((m) => {
+    const why = reason.get(m.n) || (m.forLead ? 'for the lead' : '');
+    const imgs = m.images?.length ? `[${m.images.length} image${m.images.length > 1 ? 's' : ''}]` : '';
+    const text = [oneLine(m.text), imgs].filter(Boolean).join(' ');
+    return `WAKE ${kind} ${t.id} #${m.n} by ${oneLine(m.by)}${why ? ` (${why})` : ''}: ${wakeShort(text)}`;
+  });
+  for (const e of esc) L.push(`WAKE escalate ${t.id} ${wakeShort(e)}`);
+  return L;
+}
+/** The last line of a --monitor wait that ran out of its --timeout. */
+export const wakeEndLine = ({ reader, triage = false, waitedSec }) =>
+  `WAKE end ${reader} timeout after ${waitedSec} s; re-arm: node tools/console.mjs thread wait --as ${reader}${triage ? ' --triage' : ''} --monitor`;
+/** The last line of a --monitor wait that can never be met (its --thread was closed or merged). */
+export const wakeNeverLine = ({ id, why }) => `WAKE never ${id || '-'} ${wakeShort(why)}`;
+
 /** One line for `thread list`. */
 export function threadLine(t, reader, ls = null) {
   const s = summary(t, reader || USER);
