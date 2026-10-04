@@ -41,7 +41,8 @@
 import { readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, statSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant, queuedWriter, liveReaders } from './lock.mjs';
+import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant, queuedWriter, liveReaders, isUserOwner, release as lockRelease } from './lock.mjs';
+import { sharedStateDir } from './paths.mjs';
 
 export const auditFile = () => join(lockDir(), 'audit.log');
 const files = (r) => ({ holder: `${r}.json`, queue: `${r}.queue.json`, lastGrant: `${r}.last-grant.json`, lastStale: `${r}.last-stale.json`, guard: `${r}.guard` });
@@ -292,8 +293,54 @@ export async function repair(r, { by, reason, apply = false, forceHolder = false
 const liveWaiter = (w, now) => isObj(w) && typeof w.owner === 'string' && !!w.owner && !Number.isNaN(Date.parse(w.lastSeen))
   && now - Date.parse(w.lastSeen) < (w.queueTtlSec ?? 600) * 1000 && (!w.pid || w.kind !== 'process' || pidAlive(w.pid));
 
+// ---- delegated lock powers (incident I-171) ----------------------------------------------------------------------
+// AGENT_ROLES (d0f7aa32) gives the desk (mgmt-desk*, or the agent `console.mjs thread desk set` names) and mgmt-devices
+// two of the lead's lock powers: queue moves inside the board's priority order, and the release of an iphone lease left
+// idle with waiters (after one nudge to its holder: their convention). Both are audited with by and reason.
+
+/** The agent `console.mjs thread desk set` names (lib/thread-routing.mjs deskFile, read without its imports), or null. */
+function deskAgent() {
+  const v = readRaw(join(sharedStateDir(), 'console', 'threads', 'desk.json')).value;
+  return isObj(v) && typeof v.agent === 'string' && v.agent ? v.agent : null;
+}
+/** I-171: a delegate of the lead's lock powers (not the lead itself): mgmt-devices, mgmt-desk*, the desk's agent. */
+export function isLockDelegate(by) {
+  if (typeof by !== 'string' || !by || by === 'lead') return false;
+  return by === 'mgmt-devices' || /^mgmt-desk(-[A-Za-z0-9_.-]+)?$/.test(by) || by === deskAgent();
+}
+const delegateText = () => { const d = deskAgent(); return `mgmt-devices, mgmt-desk*${d ? `, the desk "${d}"` : ''}`; };
+
+/** I-171: owner -> its board rank: the best priority among its open status rows (1 = first), or null (unranked). */
+async function boardRanks() {
+  const S = await import('./status.mjs');
+  const items = S.list({ all: false });
+  return (owner) => {
+    const ps = items.filter((i) => i.owner === owner || (i.aliases || []).includes(owner)).map((i) => i.priority).filter((p) => Number.isInteger(p));
+    return ps.length ? Math.min(...ps) : null;
+  };
+}
+const timingHold = (w) => !w.short && !w.shared && !w.functional && !w.noTiming;
+const rankText = (p) => (p == null ? 'unranked' : `#${p}`);
+/**
+ * I-171: why a delegate's move may not put `a` ahead of `b` (b was ahead of a), or null. `up`: the moved entry is a (it
+ * passes b); else the moved entry is b (it goes behind a). Never past a user step, a queued timing hold (except by the
+ * iphone holder's --no-timing hold, which I-172 moves there by itself), the lead's move, or a better-ranked owner.
+ */
+function delegateBound(a, b, { up, rank, phoneOwner }) {
+  const what = isUserOwner(b.owner) ? 'a user step'
+    : timingHold(b) && !(a.noTiming && !a.short && !a.shared && !a.functional && a.owner === phoneOwner) ? 'a queued timing hold'
+    : b.movedBy === 'lead' ? 'moved by the lead' : null;
+  if (what) return up ? `would pass "${b.owner}", ${what}` : `would put "${b.owner}", ${what}, behind "${a.owner}"`;
+  const ra = rank(a.owner), rb = rank(b.owner);
+  if (rb != null && (ra == null || rb < ra)) {
+    return up ? `would pass "${b.owner}", ranked ${rankText(rb)} on the board (ahead of "${a.owner}", ${rankText(ra)})`
+      : `would put "${b.owner}", ranked ${rankText(rb)} on the board, behind "${a.owner}" (${rankText(ra)})`;
+  }
+  return null;
+}
+
 /** The move as a plan on the files as they are now (throws when it must be refused). */
-function planMove(r, { owner, to, by, now }) {
+function planMove(r, { owner, to, by, now, rank = null }) {
   const dir = lockDir(), F = files(r);
   const qr = readRaw(join(dir, F.queue));
   if (qr.exists && !Array.isArray(qr.value)) throw new Error(`${F.queue} is not a JSON array; run node tools/lock.mjs doctor ${r} first`);
@@ -309,6 +356,16 @@ function planMove(r, { owner, to, by, now }) {
   if (hits.length > 1) throw new Error(`"${owner}" is queued more than once; fix that first: node tools/lock.mjs repair ${r}`);
   if (!Number.isInteger(to) || to < 1 || to > live.length) throw new Error(`--to must be a position from 1 to ${live.length} (the live queue as status shows it), got ${to}`);
   const target = hits[0], from = live.indexOf(target) + 1;
+  if (rank && to !== from) {
+    // I-171: a delegate's move stays inside the priority order; every pair whose order it changes is checked
+    const ph = readRaw(join(dir, files('iphone').holder)).value;
+    const phoneOwner = validHolder(ph) && !staleReason(ph, now) ? ph.owner : null;
+    const pairs = to < from ? live.slice(to - 1, from - 1).map((b) => [target, b, true]) : live.slice(from, to).map((a) => [a, target, false]);
+    for (const [a, b, up] of pairs) {
+      const why = delegateBound(a, b, { up, rank, phoneOwner });
+      if (why) throw new Error(`--by ${by} (a delegate, I-171): moving "${owner}" from #${from} to #${to} ${why}; a delegate moves only inside the board's priority order (ask the lead for this one)`);
+    }
+  }
   const moved = { ...target, movedBy: by, movedAt: iso(now) };
   const others = live.filter((w) => w !== target);
   const after = [...others.slice(0, to - 1), moved, ...others.slice(to - 1)];
@@ -333,20 +390,23 @@ function planMove(r, { owner, to, by, now }) {
  * resource's guard, re-plans, writes the queue atomically and appends one audit line (code "queue-move").
  * Only a waiting entry moves; its `since` is kept and `movedBy`/`movedAt` are recorded in it (also when it is
  * already at `to`: `marked`, I-035; a no-op only for an entry already marked by `by`). Refuses the
- * holder, a non-waiter, a position outside the live queue, and `by` other than "lead".
+ * holder, a non-waiter, a position outside the live queue, and `by` other than "lead" or a delegate (I-171:
+ * isLockDelegate; a delegate's move is bounded by delegateBound, in the dry run too).
  * Returns {resource, owner, from, to, changed, marked, applied, holder, before, after, file, note}.
  */
 export async function moveWaiter(r, { owner, to, by, reason, apply = false } = {}) {
   checkName(r);
-  if (by !== 'lead') throw new Error(`only the lead reorders the queue (--by lead), got --by ${by === undefined ? '(none)' : `"${by}"`}`);
+  const delegate = isLockDelegate(by);
+  if (by !== 'lead' && !delegate) throw new Error(`only the lead reorders the queue (--by lead), or a delegate inside the board's priority order (${delegateText()}; I-171), got --by ${by === undefined ? '(none)' : `"${by}"`}`);
   if (!owner) throw new Error('--move <owner> names the waiting entry to move');
   if (apply && !reason) throw new Error('repair --move --apply needs --reason "<why>" (it goes into the audit log)');
   to = Number(to);
+  const rank = delegate ? await boardRanks() : null;
   const strip = ({ queue, ...p }) => p;
-  if (!apply) return { ...strip(planMove(r, { owner, to, by, now: Date.now() })), applied: false };
+  if (!apply) return { ...strip(planMove(r, { owner, to, by, now: Date.now(), rank })), applied: false };
   return withGuard(r, () => {
     const now = Date.now();
-    const p = planMove(r, { owner, to, by, now });
+    const p = planMove(r, { owner, to, by, now, rank });
     if (!p.changed && !p.marked) return { ...strip(p), applied: false };
     writeJsonAtomic(join(lockDir(), p.file), p.queue);
     const fix = p.changed ? `move "${owner}" from #${p.from} to #${p.to} (since ${p.after[p.to - 1].since} kept)` : `mark "${owner}" (#${p.from}) as moved by ${by}, position kept (I-035)`;
@@ -354,6 +414,47 @@ export async function moveWaiter(r, { owner, to, by, reason, apply = false } = {
       fix, before: p.before.map((w) => w.owner), after: p.after.map((w) => w.owner) });
     return { ...strip(p), applied: true };
   });
+}
+
+/** I-171: the idle minutes from which a delegate may release another owner's iphone lease (the alarm's 5-min limit). */
+export const DELEGATE_RELEASE_MIN = 5;
+/**
+ * I-171: the lead or a delegate releases `owner`'s iphone lease, audited (code "lease-release": by, reason, holder, idle
+ * minutes). The user's own hand test (`user`, `user-*`) goes any time (on the user's "done"). Any other lease only while
+ * the idle alarm counts it idle (lib/idle.mjs assess: no live phone run, no Mac hold of its own, no step the user is on
+ * or that waits for the user's Start) for DELEGATE_RELEASE_MIN minutes or more, with a ready iphone waiter queued, and
+ * no phone block marked on it (I-160). Never a process hold (it ends with its process). The holder record is re-read
+ * right before the release and must be the one assessed (same token).
+ * Returns {released (the holder record), idleMin}.
+ */
+export async function releaseIdleLease(r, { owner, by, reason, now = Date.now() } = {}) {
+  if (r !== 'iphone') throw new Error(`a delegated release takes only the iphone lease (got ${r}); for other locks ask the lead`);
+  if (by !== 'lead' && !isLockDelegate(by)) throw new Error(`only the lead or a delegate (${delegateText()}; I-171) releases another owner's lease, got --by ${by ? `"${by}"` : '(none)'}`);
+  if (!reason) throw new Error('a release for another owner needs --reason "<why>" (it goes into the audit log)');
+  const I = await import('./idle.mjs');
+  const g = I.gather({ now, resources: ['iphone'] })[0];
+  const h = g.st?.holder;
+  if (!h || g.st.stale) throw new Error('iphone is not held');
+  if (h.owner !== owner) throw new Error(`"${owner}" does not hold iphone (holder: "${h.owner}")`);
+  if (h.kind !== 'lease') throw new Error(`"${owner}" holds iphone as a process hold (pid ${h.pid}): it ends with its process; never released for it`);
+  let idleMin = 0;
+  if (!isUserOwner(owner)) {
+    if (h.meta?.block?.id) throw new Error(`a phone block (${h.meta.block.id}) is marked on it (I-160): the runner ends the block; ask the lead`);
+    const a = I.assess('iphone', { ...g, min: DELEGATE_RELEASE_MIN });
+    if (!a.heldIdle) {
+      const use = a.runLive ? 'a phone run of its own is live' : a.chromeUse === 'holds' ? 'it holds chrome-measure (a phone part\'s Mac hold)' : a.userStep ? `the user ${a.userStart ? 'is asked to Start' : 'is on'} its step (${a.userStep})` : 'the idle alarm does not count it idle';
+      throw new Error(`"${owner}" is in use: ${use}`);
+    }
+    idleMin = a.freeMin;
+    if (now - a.since < DELEGATE_RELEASE_MIN * 60000) throw new Error(`"${owner}" is idle ${idleMin} min, under ${DELEGATE_RELEASE_MIN} (since ${iso(a.since)}: ${a.how})`);
+    if (!a.queue.length) throw new Error(`no ready waiter queued for iphone (a --not-ready entry is none, I-155): the lease stays with "${owner}"`);
+  }
+  const cur = readRaw(join(lockDir(), files('iphone').holder)).value;
+  if (!cur || cur.token !== h.token) throw new Error(`the iphone holder changed while it was checked (now ${cur?.owner ? `"${cur.owner}"` : 'none'}); nothing released`);
+  const released = await lockRelease('iphone', { owner });
+  if (!released) throw new Error(`"${owner}" no longer holds iphone; nothing released`);
+  audit({ ts: iso(Date.now()), by, reason, resource: 'iphone', code: 'lease-release', file: files('iphone').holder, owner, idleMin, fix: `release "${owner}"'s ${isUserOwner(owner) ? 'hand-test ' : 'idle '}lease${isUserOwner(owner) ? '' : ` (idle ${idleMin} min, waiters queued)`}`, before: h, after: null });
+  return { released, idleMin };
 }
 
 // ---- leave the queue (backlog, the lead 2026-10-03) ----------------------------------------------------------------

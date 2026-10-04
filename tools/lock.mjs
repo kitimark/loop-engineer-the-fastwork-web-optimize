@@ -26,6 +26,10 @@
 //       (xctrace thermal gate, pre-warm) under your own lease: marks the lease in use (meta.run, lockRun) while <cmd>
 //       runs, so the idle alarm does not call it unused; a phone run inside it gives the marker back at its end.
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
+//   node tools/lock.mjs release iphone --owner <holder> --by lead|mgmt-devices|mgmt-desk*|<the desk> --reason "<why>"
+//       I-171: the lead or a delegate releases another owner's idle lease, audited ("lease-release" in locks/audit.log):
+//       a user/user-* lease any time; any other only while the idle alarm counts it idle >= 5 min (no phone run, no Mac
+//       hold, no user step) with a ready waiter queued and no phone block marked; never a process hold.
 //   node tools/lock.mjs dequeue iphone --owner <topic>          # stop waiting
 //   node tools/lock.mjs leave chrome-measure --owner <o> [--by <who>] [--reason "<why>"] [--json]
 //       removes every waiting entry of <o> at once (exclusive, short, shared reader; process or lease; live or stale) and
@@ -127,7 +131,11 @@
 // The lead reorders the queue by expected gain (fixes/DIRECTION.md; incident I-019):
 //   node tools/lock.mjs repair chrome-measure --move <owner> --to <position> --by lead --reason "<why>" [--apply]
 // Dry run by default (before/after queue). --apply moves that waiting entry under the guard and appends one
-// "queue-move" line to locks/audit.log. Only waiting entries move (never the holder); only --by lead; the
+// "queue-move" line to locks/audit.log. Only waiting entries move (never the holder); only --by lead, or (I-171) a
+// delegate: mgmt-devices, mgmt-desk*, or the agent `console.mjs thread desk set` names. A delegate's move stays inside
+// the board's priority order: it never puts an entry ahead of a user step (user, user-*), a queued timing hold (except
+// the iphone holder's --no-timing hold, as I-172 does), the lead's move or an owner ranked higher on the board
+// (status.mjs priority); refused, dry run included. The
 // entry keeps its `since` and records movedBy/movedAt (status: "moved by lead"; a move to its own position records
 // them too, I-035, and is a no-op only once they are there). Positions are the live
 // queue as status shows it. Waiters keep their entries (and pids) and are granted in the new order; the
@@ -173,12 +181,12 @@ import { appendFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { RUN_PROFILES_ENV, removeRunProfiles } from './lib/cdp.mjs'; // I-106: throwaway profiles a hard kill left
-import { doctor, repair, moveWaiter, leaveQueue, auditFile } from './lib/lock-repair.mjs';
+import { doctor, repair, moveWaiter, leaveQueue, releaseIdleLease, auditFile } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { wrapsPhoneRun } from './lib/disk.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, lockHoldSec, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs'; // I-058: live wait records for the status board
-import { describeHold } from './lib/lock.mjs';
+import { describeHold, isUserOwner } from './lib/lock.mjs';
 import { warmLine, warmSummary } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 import { resolveLanUrl } from './lib/lan.mjs';
@@ -303,7 +311,7 @@ async function main() {
     const apply = flag('apply'), forceHolder = flag('force-holder');
     if (opt('move') !== undefined) {
       if (forceHolder) throw new Error('--move reorders waiting entries only; it does not combine with --force-holder');
-      if (opt('to') === undefined) throw new Error('usage: node tools/lock.mjs repair <resource> --move <owner> --to <position> --by lead --reason "<why>" [--apply]');
+      if (opt('to') === undefined) throw new Error('usage: node tools/lock.mjs repair <resource> --move <owner> --to <position> --by lead|<delegate> --reason "<why>" [--apply]');
       const m = await moveWaiter(resource, { owner: opt('move'), to: Number(opt('to')), by: opt('by'), reason: opt('reason'), apply });
       if (flag('json')) { console.log(JSON.stringify(m, null, 1)); return 0; }
       const what = `"${m.owner}" #${m.from} -> #${m.to}`;
@@ -432,6 +440,13 @@ async function main() {
   }
   if (cmd === 'renew') { const ttlSec = Number(opt('ttl', 900)), h = await renew(resource, { owner, ttlSec, noShorten: flag('no-shorten') }); keepAwake(resource, h); if (meta.job) await describeHold(resource, { owner, job: meta.job }); console.log(`RENEWED ${resource} for "${owner}" until ${h.expiresAt}${h.kept ? ` (kept: already held longer than --ttl ${ttlSec} s)` : ''}${h.capped ? ` (capped: a ${resource} lease ends by acquiredAt + ${LEASE_POLICY[resource].maxHoldSec} s; measure inside one lock.mjs run hold, I-020)` : ''}`); return 0; }
   if (cmd === 'release') {
+    if (opt('by') !== undefined && opt('by') !== owner && !shared && !flag('force')) {
+      // I-171: the lead or a delegate releases another owner's idle iphone lease, audited
+      const x = await releaseIdleLease(resource, { owner, by: opt('by'), reason: opt('reason') });
+      stopAwake(resource, x.released.token);
+      console.log(`RELEASED ${resource} (was "${x.released.owner}"${isUserOwner(x.released.owner) ? ', the user\'s hand test' : `, idle ${x.idleMin} min with waiters`}; by "${opt('by')}"), logged to ${auditFile()}`);
+      return 0;
+    }
     const h = await release(resource, { owner, force: flag('force'), shared });
     if (h?.sharedReader) { console.log(`RELEASED ${resource} (shared reader "${h.owner}"${h.closed ? '; the group closed' : ''})`); return 0; }
     if (h) stopAwake(resource, h.token);
