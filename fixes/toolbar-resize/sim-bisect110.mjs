@@ -35,7 +35,7 @@ for (const s of process.argv.slice(2)) {
   process.env.P110_ARM = m[1] === 'C' ? 'none' : m[1];
   const o = sh(['tools/sim.mjs', 'open', `http://localhost:${st.httpTwin}/`]);
   const g = sh(['tools/sim.mjs', 'gesture', SCRIPT, '--label', `p110-${name}`, '--out', F, '--timeline', TL, '--inject', INJ]);
-  let inj = null; try { inj = JSON.parse(readFileSync(F, 'utf8')).inject?.[0]?.value ?? null; } catch {}
+  let inj = null; try { const gj = JSON.parse(readFileSync(F, 'utf8')); inj = (gj.run?.inject || gj.inject || [])[0]?.value ?? null; } catch {}
   console.log(`SB ${name} open ${o} gesture ${g} t+${Math.round((Date.now() - t0) / 1000)} s inject ${JSON.stringify(inj).slice(0, 300)}`);
   log({ step: s, name, open: o, gesture: g, inject: inj });
 }

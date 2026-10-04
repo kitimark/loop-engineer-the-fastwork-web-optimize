@@ -346,6 +346,14 @@ this pre-data card). It runs after v8's P-111 and PR-018 6d in the phone order. 
 - **Order (one exclusive hold, <= 10 min):** C:H1 nav:H1 pain:H1 C:H2 navpain:H1 ph:H1 C:H3 ps:H1 pc:H1 C:H4. The driver
   `sim-bisect110.mjs` (sha256/12 `93c7459a12cf`) stops before a step when < 45 s of its 520 s budget are left; an arm with
   only one neighbouring C uses it and says so. Served bytes are hashed before the hold (refuses on a mismatch, exit 26).
+- **Applied-arm gate (ops C1, frozen):** `check-inject110.mjs` (sha256/12 `61931a562308`) runs on every run before the
+  calls. An arm run counts only when its gesture file's inject record shows `applied: true`, the arm's rule is in `css`, and,
+  for ph/ps/pc, `heightsBefore[arm] > 0` and the child's class is among `kids` (C runs: record present with arm `none`).
+  Otherwise that arm is INSUFFICIENT (never NONE), and the result reports its inject record.
+- **Dropped steps (ops N1):** if the budget stop drops any steps, they run in one more exclusive hold as
+  `C:H5 <dropped arms> C:H6` with the same scorer and gate, and the result says so.
+- Driver fix before data: `sim-bisect110.mjs` now reads the inject record from `run.inject` (sha256/12 `f77c5e456d17`,
+  replaces `93c7459a12cf`; logging only, the steps are unchanged).
 - **Scorer and filters:** unchanged, `score-bisect.mjs` `cb6f0c97b81b` (LOCATES <= 0.30, PARTIAL <= 0.70, NONE, GEOMETRY > 2 px,
   replication gate, VOID at 30 % drift). One run per arm, so every call is indicative; only phone G feeds a fix.
 - **Predictions:** navpain LOCATES ~80 % (the layout needs a constrained renderer other than the hero). Of nav and pain:
