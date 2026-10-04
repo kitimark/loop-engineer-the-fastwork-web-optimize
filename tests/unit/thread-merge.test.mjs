@@ -240,3 +240,35 @@ test('threadLine: a merged thread names where it went; a kept thread lists what 
   ]);
   assert.deepEqual(T.relatedLines(T.getThread(dup.id)), [`merged into: ${keep.id} [open] Keep`]);
 });
+
+test('T-089 unread check (thread merge / thread close on the CLI): refused while the user has unread replies there, naming each; --force skips it; the page and the alarms are never checked', async () => {
+  const keep = await user('Keep'), dup = await user('Dup');
+  await T.replyAgent(dup.id, { by: 'lead', text: 'The answer: 3 frames over 50 ms' });
+  await T.replyAgent(dup.id, { by: 'lead', text: 'And a second\nnote' });
+  await assert.rejects(T.mergeThread(dup.id, { into: keep.id, by: 'lead', unreadCheck: true }), (e) => {
+    assert.match(e.message, new RegExp(`^${dup.id} has 2 replies the user has not read; merging it into ${keep.id} would take them off the Threads badge \\(T-089\\):\n`));
+    assert.match(e.message, /\n {2}m2 by lead \d{4}-\d\d-\d\dT\d\d:\d\dZ: The answer: 3 frames over 50 ms\n {2}m3 by lead [^\n]*: And a second note\n/);
+    assert.match(e.message, /\nLet the user read them first, or pass --force\.$/);
+    return true;
+  });
+  assert.equal(raw(dup.id).status, 'open');
+  assert.ok(!raw(dup.id).merged && !raw(keep.id).related, 'nothing stored');
+  await assert.rejects(T.setStatus(dup.id, { status: 'closed', by: 'lead', unreadCheck: true }), new RegExp(`${dup.id} has 2 replies the user has not read; closing it would take them off`));
+  assert.equal(raw(dup.id).status, 'open');
+  // one read, one left: named alone
+  await T.markRead(dup.id, 'user', 2);
+  await assert.rejects(T.setStatus(dup.id, { status: 'closed', by: 'lead', unreadCheck: true }), (e) => /has 1 reply the user has not read; closing it would take it off/.test(e.message) && !/ m2 /.test(e.message) && /\n {2}m3 by lead /.test(e.message) && /read it first/.test(e.message));
+  // all read: no refusal
+  await T.markRead(dup.id, 'user');
+  await T.mergeThread(dup.id, { into: keep.id, by: 'lead', unreadCheck: true });
+  assert.equal(raw(dup.id).merged.into, keep.id);
+  // --force (no check), the user's own close from the page, and the alarm closers (no unreadCheck) are not refused
+  const a = await user('A'), b = await user('B'), c = await user('C');
+  for (const t of [a, b, c]) await T.replyAgent(t.id, { by: 'lead', text: 'unread' });
+  await T.mergeThread(a.id, { into: keep.id, by: 'lead' });
+  await T.setStatus(b.id, { status: 'closed', fromPage: true, unreadCheck: true });
+  await T.setStatus(c.id, { status: 'closed', by: 'lead' });
+  assert.deepEqual([a, b, c].map((t) => raw(t.id).status), ['closed', 'closed', 'closed']);
+  // a reopen is never checked
+  await T.setStatus(c.id, { status: 'open', by: 'lead', unreadCheck: true });
+});

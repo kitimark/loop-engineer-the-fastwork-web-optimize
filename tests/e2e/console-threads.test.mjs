@@ -163,7 +163,11 @@ test('assign: only the lead; the assignee wakes on the backlog; a non-assignee i
   assert.match(stdin.stdout, /^REPLIED T-002 #3$/m);
   const show = cli('thread', 'show', id, '--as', 'lead');
   assert.match(show.stdout, /#2 fix-blur at \S+:\n {4}Not yet: review round 2\.\n {2}#3 lead at \S+:\n {4}From stdin,\n {4}two lines\./);
-  const cl = cli('thread', 'close', id, '--by', 'fix-blur', '--note', 'answered');
+  // T-089: the user has not read #2 and #3: close refuses, naming both; --force closes
+  const unread = cli('thread', 'close', id, '--by', 'fix-blur', '--note', 'answered');
+  assert.equal(unread.code, 1);
+  assert.match(unread.stderr, /^T-002 has 2 replies the user has not read; closing it would take them off the Threads badge \(T-089\):\n {2}m2 by fix-blur [^\n]*: Not yet: review round 2\.\n {2}m3 by lead [^\n]*: From stdin, two lines\.\nLet the user read them first, or pass --force\./m);
+  const cl = cli('thread', 'close', id, '--by', 'fix-blur', '--note', 'answered', '--force');
   assert.equal(cl.code, 0, cl.out);
   const page = (await req('/api/threads')).json.threads.find((t) => t.id === id);
   assert.equal(page.state, 'closed');
@@ -440,7 +444,14 @@ test('T-024 #13 CLI: thread new SIMILAR (topic or close title) unless --force; m
   assert.equal(self.code, 1);
   assert.match(self.stderr, /into itself/);
   assert.equal(cli('thread', 'merge', dup, '--into', 'T-999', '--by', 'lead').code, 1);
-  const m = cli('thread', 'merge', dup, '--into', keep, '--by', 'lead', '--note', 'one thread per topic');
+  // T-089: the user has not read the lead's opening message in dup: refused, naming it; --force merges
+  const un = cli('thread', 'merge', dup, '--into', keep, '--by', 'lead');
+  assert.equal(un.code, 1);
+  assert.match(un.stderr, new RegExp(`^${dup} has 1 reply the user has not read; merging it into ${keep} would take it off the Threads badge \\(T-089\\):\n {2}m1 by lead [^\n]*: y\nLet the user read it first, or pass --force\.`, 'm'));
+  const cl = cli('thread', 'close', dup, '--by', 'lead');
+  assert.equal(cl.code, 1);
+  assert.match(cl.stderr, /has 1 reply the user has not read; closing it would/);
+  const m = cli('thread', 'merge', dup, '--into', keep, '--by', 'lead', '--note', 'one thread per topic', '--force');
   assert.equal(m.code, 0, m.stderr);
   assert.match(m.stdout, new RegExp(`^MERGED ${dup} into ${keep}`, 'm'));
   const r = cli('thread', 'relate', keep, rel, '--by', 'lead');

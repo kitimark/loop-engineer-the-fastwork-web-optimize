@@ -120,9 +120,11 @@
 //   node tools/console.mjs thread topic list | topic set <tag> --owner <agent> --by lead | topic set <tag> --clear --by lead
 //        # T-051: who answers a topic's threads, before the status-board owner; skipped while that agent is not listening
 //   `thread list` and `thread show` print each assignee as "fix-x (listening)" or "fix-x (not listening)".
-//   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
+//   node tools/console.mjs thread close <id> --by <agent> [--note "…"] [--force]   |   thread reopen <id> --by <agent>
+//        # T-089: close and merge refuse while the user has replies there they have not read (a closed thread leaves the
+//        # badge, a merged one the list), printing each one (m<n> by <agent> <when>: first words); --force closes anyway.
 // One topic, one thread (user T-024 #13, 2026-10-04): merge a duplicate into the thread that keeps the topic.
-//   node tools/console.mjs thread merge <dup> --into <keep> --by <agent> [--note "…"]
+//   node tools/console.mjs thread merge <dup> --into <keep> --by <agent> [--note "…"] [--force]
 //        # closes <dup> (the page shows "Merged into T-keep" with a link), links both threads (stored in both); prints
 //        # MERGED T-dup into T-keep. --into a merged thread resolves to its final kept thread; a <dup> that already took
 //        # in others passes them on to <keep> (no chains). Refused: a self-merge, an unknown id, a thread already merged
@@ -354,7 +356,7 @@ async function thread() {
     return 0;
   }
   if (sub === 'merge') { // T-024 #13
-    const r = await TH.mergeThread(id, { into: opt('into'), by: by(), note: opt('note') });
+    const r = await TH.mergeThread(id, { into: opt('into'), by: by(), note: opt('note'), unreadCheck: !flag('force') }); // T-089
     console.log(`MERGED ${id} into ${r.into}${r.resolved ? ` (${r.resolved} is merged into ${r.into})` : ''}${r.moved.length ? `; moved along: ${r.moved.join(', ')}` : ''}`);
     return 0;
   }
@@ -370,7 +372,7 @@ async function thread() {
     return 0;
   }
   if (sub === 'close' || sub === 'reopen') {
-    await TH.setStatus(id, { status: sub === 'close' ? 'closed' : 'open', by: by(), note: opt('note') });
+    await TH.setStatus(id, { status: sub === 'close' ? 'closed' : 'open', by: by(), note: opt('note'), unreadCheck: !flag('force') }); // T-089
     console.log(`${sub === 'close' ? 'CLOSED' : 'REOPENED'} ${id}`);
     return 0;
   }

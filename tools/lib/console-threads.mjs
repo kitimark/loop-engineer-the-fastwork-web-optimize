@@ -633,8 +633,27 @@ export async function assign(id, { to, by, remove = false }) {
   });
 }
 
-/** Close (done; still readable) or reopen: the user (page), the lead or an assignee. */
-export async function setStatus(id, { status, by, note, fromPage = false }) {
+/**
+ * T-089 (lead, 2026-10-04): a closed thread leaves the user's badge, and a merged one also leaves the list by default,
+ * so replies the user has not read there would sink out of view (ops' 07:55Z merge did that). `thread close` and
+ * `thread merge` pass unreadCheck (the CLI, unless --force): refused while the user has unread agent replies in the
+ * thread, naming each (m<n>, who, when, the first words). Not checked: the user's own close from the page, a reopen,
+ * and the callers that pass no unreadCheck (the idle, step and disk alarms close their own threads when the condition
+ * clears).
+ */
+function unreadGuard(t, doing) {
+  const u = unreadFor(t, USER);
+  if (!u.length) return;
+  const one = u.length === 1;
+  const lines = u.slice(0, 10).map((m) => `  m${m.n} by ${m.by} ${String(m.at || '').slice(0, 16)}Z: ${oneLine(m.text || (m.images?.length ? '(images)' : '')).slice(0, 80)}`);
+  throw new Error(`${t.id} has ${u.length} ${one ? 'reply' : 'replies'} the user has not read; ${doing} would take ${one ? 'it' : 'them'} off the Threads badge (T-089):\n${lines.join('\n')}${u.length > 10 ? `\n  ... and ${u.length - 10} more` : ''}\nLet the user read ${one ? 'it' : 'them'} first, or pass --force.`);
+}
+
+/**
+ * Close (done; still readable) or reopen: the user (page), the lead or an assignee. `unreadCheck` (the CLI's close
+ * without --force): refuse to close while the user has unread replies there (unreadGuard, T-089).
+ */
+export async function setStatus(id, { status, by, note, fromPage = false, unreadCheck = false }) {
   if (!STATUSES.includes(status)) throw new Error(`status must be one of ${STATUSES.join(', ')}`);
   const who = fromPage ? USER : needAgent(by);
   const nt = note ? scrubAgentText(oneLine(note).slice(0, LIMITS.note)).text : undefined;
@@ -642,6 +661,7 @@ export async function setStatus(id, { status, by, note, fromPage = false }) {
     if (!fromPage && !sees(t, who)) throw new Error(`${who} is not assigned to ${t.id}: ask the lead to assign you`);
     if (t.status === status) throw new Error(`${t.id} is already ${status}`);
     if (t.merged && status === 'open') throw new Error(`${t.id} is merged into ${t.merged.into}: write there${fromPage ? '' : ` (or undo it: node tools/console.mjs thread unmerge ${t.id} --by ${who})`}`);
+    if (unreadCheck && !fromPage && status === 'closed') unreadGuard(t, 'closing it');
     t.status = status;
     t.history.push({ at: now, who, action: status === 'closed' ? 'close' : 'reopen', ...(nt && { note: nt }) });
   });
@@ -701,9 +721,10 @@ const noteOf = (note) => (note ? scrubAgentText(oneLine(note)).text.slice(0, LIM
  * list each other (keep: kind 'merged', dup: 'merged-into') and get a history entry. --into a merged thread resolves to
  * its final kept thread (result.resolved names the one given); a <dup> that is itself a kept thread takes its duplicates
  * along (result.moved: they now point at <keep>), so no chain is stored. Refused: a self-merge, an unknown id, a thread
- * already merged (unmerge it first), a cycle. Returns {thread: dup, into, resolved?, moved: [ids]}.
+ * already merged (unmerge it first), a cycle; with unreadCheck (the CLI, unless --force) a <dup> the user has unread
+ * replies in (unreadGuard, T-089). Returns {thread: dup, into, resolved?, moved: [ids]}.
  */
-export async function mergeThread(dupId, { into, by, note } = {}) {
+export async function mergeThread(dupId, { into, by, note, unreadCheck = false } = {}) {
   const who = needAgent(by);
   if (into == null || into === '') throw new Error('--into <the thread to keep> is required');
   const d0 = parseThreadId(dupId), k0 = parseThreadId(into);
@@ -718,6 +739,7 @@ export async function mergeThread(dupId, { into, by, note } = {}) {
     if (keepId === dup.id) throw new Error(`a cycle: ${k0} is merged into ${dup.id}, so ${dup.id} can't be merged into it`);
     const keep = get(keepId);
     mayLink(who, [dup, keep], 'merge');
+    if (unreadCheck) unreadGuard(dup, `merging it into ${keep.id}`);
     const moved = relatedOf(dup).filter((r) => r.kind === 'merged').map((r) => r.id).filter((id) => id !== keep.id);
     const kids = moved.map((id) => { try { return get(id); } catch { return null; } }).filter((c) => c && c.merged?.into === dup.id);
     // the writes, after every check
