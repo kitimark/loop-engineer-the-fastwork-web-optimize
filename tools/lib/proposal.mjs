@@ -36,6 +36,15 @@
 //   decisionStateOf(p): final | under-review | stale | null (no decision). `wait --until decided` is met by a final one
 //                           only; `show --json`, `list --json`, the page API carry decisionState. Decision events add
 //                           held / unheld (only while a decision stands) and stale (what `thread wait` prints).
+// Revision in progress (I-177, user T-154 #7/#9, 2026-10-04: after a change request the page kept showing that decision
+// for 2 h 8 min (PR-018) with no sign of work, no expected time and no alarm; the lead misused `hold` as a progress note):
+//   markRevising(id, {by: author | lead, note, eta?: ISO | +Nm | +Nh}): only while changes-requested; p.revising =
+//                           {by, at, note, eta?, rev, decisionAt}; the latest replaces it, the history keeps every one
+//                           (action `revising`). revise, an undo of the decision and withdraw clear it. Not a hold: the
+//                           decision buttons stay as they are. revisionStateOf(p): {state: in-progress | not-started,
+//                           nextRev, by, decidedAt, …} on a change request, else null; the page shows "Revision N+1 in
+//                           progress" (note, expected by, time since the decision) or "Revision N+1: not started yet by
+//                           <author>". The alarm on slow ones: tools/lib/proposal-overdue.mjs (`proposal overdue`).
 // Live pages (I-074, user T-028): `live: {patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}` on the proposal (one solution)
 // or on each option names what the console's "Try it" panel serves as B: the baseline + that committed patch (A is the
 // baseline). Validation reads the patch from git (`<ref>:<patch>` in the checkout the command runs in) and keeps its
@@ -720,6 +729,7 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
         extra.push({ at: now, who, action: 'decision-stale', rev, was: old.value, wasRev: old.rev, ...(old.option && { wasOption: old.option }), note: nt.text });
       }
     }
+    delete p.revising; // I-177: rev N+1 is here, the progress mark is done
     if (p.hold && (unhold || publish)) {
       const stands = p.decision && DECIDED.has(p.state);
       extra.push({ at: now, who, action: 'unheld', rev, note: 'released by the revision', ...(stands && { decision: p.decision.value, ...(p.decision.option && { option: p.decision.option }) }) });
@@ -817,6 +827,7 @@ export async function withdrawProposal(id, { by, note }) {
   return change(id, who, 'withdrawn', (p) => {
     if (FINAL.has(p.state)) throw new Error(`${p.id} is ${p.state}`);
     p.state = 'withdrawn';
+    delete p.revising; // I-177
     return { note: note ? scrubText(String(note).slice(0, LIMITS.note)).text : undefined };
   });
 }
@@ -854,6 +865,7 @@ export async function decide(id, { value, notes, rev, option, who = 'user' } = {
     p.state = state;
     p.decision = d;
     p.decisions.push(d);
+    delete p.revising; // I-177: a new decision ends any revision mark
     delete p.staleDecision; // T-030: the re-decision replaces the stale one (which stays in decisions[])
     return { value: state, rev: p.rev, note: nt, ...(picked && { option: picked }) };
   });
@@ -869,6 +881,7 @@ export async function undoDecision(id, { rev, who = 'user' } = {}) {
     const wasOption = p.decision?.option;
     p.state = 'proposed';
     p.decision = null;
+    delete p.revising; // I-177: the change request is undone, so is its revision mark
     return { was, rev: p.rev, ...(wasOption && { wasOption }) };
   });
 }
@@ -886,8 +899,11 @@ export function decisionStateOf(p) {
   return null;
 }
 
-/** A proposal with its decisionState, for `show --json`, `list --json` (not stored: always computed). */
-export const withDecisionState = (p) => ({ ...p, decisionState: decisionStateOf(p) });
+/**
+ * A proposal with its decisionState (T-030) and revisionState (I-177), for `show --json`, `list --json` (not stored:
+ * always computed). The stored progress mark itself is `revising`.
+ */
+export const withDecisionState = (p) => ({ ...p, decisionState: decisionStateOf(p), revisionState: revisionStateOf(p) });
 
 /**
  * Hold a proposal (the lead or its author): {by, note}. The page shows the note on top and disables the decision;
@@ -919,6 +935,64 @@ export async function unholdProposal(id, { by, note } = {}) {
     const stands = p.decision && DECIDED.has(p.state);
     return { rev: p.rev, note: nt, ...(stands && { decision: p.decision.value, ...(p.decision.option && { option: p.decision.option }) }) };
   });
+}
+
+// ---- revision in progress (I-177) ----------------------------------------------------------------------
+
+const ETA_MAX_MS = 7 * 24 * 3600000;
+/**
+ * `--eta`: an ISO time, or +Nm / +Nh from `now`. Returns the ISO string; refuses a time more than a minute in the past
+ * or more than 7 days ahead.
+ */
+export function parseEta(eta, now = Date.now()) {
+  const s = String(eta ?? '').trim();
+  const rel = s.match(/^\+(\d{1,5})\s*(m|min|h)$/i);
+  const t = rel ? now + Number(rel[1]) * (/^h$/i.test(rel[2]) ? 3600000 : 60000) : /^\d{4}-\d\d-\d\dT/.test(s) ? Date.parse(s) : NaN;
+  if (!Number.isFinite(t)) throw new Error(`--eta must be an ISO time or +Nm / +Nh, e.g. +45m (got "${s.slice(0, 40)}")`);
+  if (t < now - 60000) throw new Error(`--eta ${s} is in the past: give the time rev N+1 is expected now`);
+  if (t > now + ETA_MAX_MS) throw new Error(`--eta ${s} is more than 7 days ahead`);
+  return new Date(t).toISOString();
+}
+
+/**
+ * The author (or the lead) says rev N+1 is being worked on: {by, note, eta?} (eta: ISO | +Nm | +Nh, from `now`).
+ * Only while the decision is a change request. p.revising = {by, at, note, eta?, rev, decisionAt}; again replaces it,
+ * the history keeps each one (action `revising`). Not a hold: the decision buttons stay as they are.
+ */
+export async function markRevising(id, { by, note, eta, now = Date.now() } = {}) {
+  const who = needBy(by);
+  if (!note || !String(note).trim()) throw new Error('--note "<the step you are on, in plain words, for the user>" is required');
+  const nt = scrubText(String(note).trim().slice(0, LIMITS.note)).text;
+  const due = eta === undefined || eta === null || eta === '' ? undefined : parseEta(eta, now);
+  return change(id, who, 'revising', (p, at) => {
+    if (p.state !== 'changes-requested' || !p.decision) throw new Error(`${p.id} is ${p.state}, not changes-requested: a revising mark is for the next revision after a change request`);
+    if (who !== p.by && who !== 'lead') throw new Error(`${p.id}: only its author (${p.by}) or the lead marks its next revision (got ${who})`);
+    p.revising = { by: who, at, note: nt, ...(due && { eta: due }), rev: p.rev, decisionAt: p.decision.at };
+    return { rev: p.rev, note: nt, ...(due && { eta: due }) };
+  });
+}
+
+/**
+ * On a change request: {state: in-progress | not-started, nextRev, by (the mark's, else the author), decidedAt, since?,
+ * eta?, note?}; else null.
+ */
+export function revisionStateOf(p) {
+  if (p?.state !== 'changes-requested' || !p.decision) return null;
+  const base = { nextRev: p.rev + 1, decidedAt: p.decision.at };
+  if (!p.revising) return { state: 'not-started', nextRev: base.nextRev, by: p.by, decidedAt: base.decidedAt };
+  const m = p.revising;
+  return { state: 'in-progress', ...base, by: m.by, since: m.at, ...(m.eta && { eta: m.eta }), note: m.note };
+}
+
+const hhmmZ = (t) => `${new Date(t).toISOString().slice(11, 16)}Z`;
+const minSince = (t, now) => Math.max(0, Math.floor((now - Date.parse(t)) / 60000));
+
+/** The `list` suffix: " REVISING rev 3 (by) since 18:10Z, eta 19:00Z: note" | " REV 3 NOT STARTED (by), N min since …". */
+function revisingText(p, now) {
+  const r = revisionStateOf(p);
+  if (!r) return '';
+  if (r.state === 'not-started') return ` REV ${r.nextRev} NOT STARTED (${r.by}), ${minSince(r.decidedAt, now)} min since the change request`;
+  return ` REVISING rev ${r.nextRev} (${r.by}) since ${hhmmZ(r.since)}${r.eta ? `, eta ${hhmmZ(r.eta)}` : ''}: ${clip(r.note, 160)}`;
 }
 
 // ---- waits -------------------------------------------------------------------------------------------
@@ -1146,6 +1220,8 @@ const viewLive = (l) => {
 };
 
 const viewHold = (h) => ({ by: h.by, note: h.note, at: h.at, rev: h.rev });
+/** I-177: the progress mark, only on a change request (a proposal without one is served as before). */
+const viewRevising = (p) => (p.revising && p.state === 'changes-requested' ? { revising: (({ by, at, note, eta, rev, decisionAt }) => ({ by, at, note, ...(eta && { eta }), rev, decisionAt }))(p.revising) } : {});
 /**
  * T-030, for the page: {hold?, decisionState?}; decisionState only when the decision is not final (under-review, stale),
  * so a proposal that was never held nor made stale is served byte for byte as before. (`show --json` always has it.)
@@ -1179,6 +1255,7 @@ export function publicView(p) {
     decision: p.decision, decisions: p.decisions, revisions: p.revisions,
     // T-030: the hold (note on top, decision off) and what the decision is worth now; staleDecision: re-decide
     ...viewDecisionState(p), ...(p.staleDecision && { staleDecision: p.staleDecision }),
+    ...viewRevising(p), // I-177: "Revision N+1 in progress" on top
     createdAt: p.createdAt, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
   };
 }
@@ -1194,17 +1271,18 @@ export function pageProposals() {
     shots: (p.compare?.shots || []).length, proposedAt: p.proposedAt, updatedAt: p.updatedAt,
     ...(p.options?.length && { options: p.options.length }),
     ...viewDecisionState(p), // T-030
+    ...viewRevising(p), // I-177
     ...(p.staleDecision && { staleDecision: { value: p.staleDecision.value, rev: p.staleDecision.rev, ...(p.staleDecision.option && { option: p.staleDecision.option }) } }),
   }));
 }
 
-/** One line for `proposal list`. */
-export function line(p) {
+/** One line for `proposal list`; `now` for the minutes since a change request (I-177). */
+export function line(p, now = Date.now()) {
   const ds = decisionStateOf(p);
   const d = p.decision ? ` -> ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''}${ds === 'under-review' ? ' (under review: not final)' : ''}${p.decision.notes ? ` (notes: ${String(p.decision.notes).split('\n')[0].slice(0, 120)})` : ''}`
     : ds === 'stale' ? ` -> stale: ${p.staleDecision.value}${p.staleDecision.option ? `, option: ${p.staleDecision.option}` : ''} on rev ${p.staleDecision.rev}, re-decide on rev ${p.rev}` : '';
   const hold = p.hold ? ` ON HOLD (${p.hold.by}): ${clip(p.hold.note, 160)}` : ''; // T-030
-  return `${p.id}  [${p.state} rev ${p.rev}${p.hold ? ', on hold' : ''}]  ${p.area}  by ${p.by}: ${p.title}${p.options?.length ? ` (${p.options.length} options)` : ''}${d}${hold}`;
+  return `${p.id}  [${p.state} rev ${p.rev}${p.hold ? ', on hold' : ''}]  ${p.area}  by ${p.by}: ${p.title}${p.options?.length ? ` (${p.options.length} options)` : ''}${d}${revisingText(p, now)}${hold}`;
 }
 
 /** The text block of one solution (the proposal's own, or an option's) for `proposal show`, indented by `ind`. */
@@ -1221,9 +1299,12 @@ const liveText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files
 const liveAText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the panel's A = the baseline + this patch)`;
 
 /** The text of `proposal show`. */
-export function showText(p) {
-  const L = [line(p)];
+export function showText(p, now = Date.now()) {
+  const L = [line(p, now)];
   if (p.hold) L.push(`  ON HOLD by ${p.hold.by} since ${p.hold.at}: ${p.hold.note.replace(/\n/g, '\n    ')}`); // T-030
+  const rs = revisionStateOf(p); // I-177
+  if (rs?.state === 'not-started') L.push(`  REV ${rs.nextRev} NOT STARTED by ${rs.by}: ${minSince(rs.decidedAt, now)} min since the change request at ${rs.decidedAt}`);
+  else if (rs) L.push(`  REVISING rev ${rs.nextRev} by ${rs.by} since ${rs.since}${rs.eta ? `, eta ${rs.eta}` : ''} (${minSince(rs.decidedAt, now)} min since the change request): ${rs.note.replace(/\n/g, '\n    ')}`);
   const ds = decisionStateOf(p);
   if (ds && ds !== 'final') L.push(`  decisionState: ${ds}${ds === 'stale' ? ` (${p.staleDecision.value} on rev ${p.staleDecision.rev}; re-decide on rev ${p.rev})` : ds === 'under-review' ? ' (on hold: kept, not final)' : ''}`);
   if (p.topic) L.push(`  topic: ${p.topic}`);
@@ -1254,7 +1335,7 @@ export function showText(p) {
   }
   if (p.decision) L.push(`  decision: ${p.decision.value}${p.decision.option ? `, option: ${p.decision.option}` : ''} (rev ${p.decision.rev}, ${p.decision.at}, ${p.decision.who})${p.decision.notes ? `: ${p.decision.notes}` : ''}`);
   L.push('  history:');
-  for (const h of p.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.rev ? ` rev ${h.rev}` : ''}${h.value ? ` ${h.value}` : ''}${h.action === 'decision-stale' ? ` (was ${h.was} on rev ${h.wasRev})` : ''}${h.decision ? ` (decision ${h.decision})` : ''}${h.keptDecision ? ` (kept ${h.keptDecision})` : ''}${h.option ? `, option: ${h.option}` : ''}${h.note ? `: ${h.note}` : ''}`);
+  for (const h of p.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.rev ? ` rev ${h.rev}` : ''}${h.value ? ` ${h.value}` : ''}${h.action === 'decision-stale' ? ` (was ${h.was} on rev ${h.wasRev})` : ''}${h.decision ? ` (decision ${h.decision})` : ''}${h.keptDecision ? ` (kept ${h.keptDecision})` : ''}${h.option ? `, option: ${h.option}` : ''}${h.eta ? ` (eta ${h.eta})` : ''}${h.note ? `: ${h.note}` : ''}`);
   return L.join('\n');
 }
 

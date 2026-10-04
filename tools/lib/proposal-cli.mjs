@@ -1,5 +1,5 @@
 // `node tools/console.mjs proposal …` (ts-proposals): post, list, show, revise, publish, withdraw, decide, hold,
-// unhold (T-030) and wait for the user's decision on a design engineer's PoC. Library: ./proposal.mjs; page: /proposals on the console.
+// unhold (T-030), revising and overdue (I-177) and wait for the user's decision on a design engineer's PoC. Library: ./proposal.mjs; page: /proposals on the console.
 // Design: research/architecture/console-proposals.md.
 //
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
@@ -41,6 +41,23 @@
 //        # refuse; not counted as waiting (badge, list --waiting); list/show say "on hold". On a decided proposal the
 //        # decision is kept but under review (decisionState under-review, not final). Again: replaces the note.
 //   proposal unhold <id> --by <agent|lead> [--note "..."]                          # UNHELD PR-008 …
+//   proposal revising <id> --by <author|lead> --note "<the step you are on, plain words>" [--eta <ISO | +Nm | +Nh>]
+//        [--check-format] [--force-format "<reason>"]                    # REVISING PR-018 rev 7 by <you>: <note> (expected by 19:00Z)
+//        # I-177 (user T-154 #7/#9): after the user asks for a change, say that rev N+1 is under way. Only while the
+//        # decision is changes-requested, only by the author or the lead. The page shows "Revision N+1 in progress" on
+//        # top of the proposal: the note, "expected by <time>" (late: "N min late") and the time since the decision.
+//        # Again: the latest replaces the mark, the history keeps each one. Not a hold: use it instead of `hold --note`
+//        # as a progress note (a hold turns the decision buttons off). The note follows the answer format like other
+//        # text fields (I-146: ids explained, short lines). `revise` clears the mark; so do an undo of the decision and
+//        # withdraw. With no mark, the page says "Revision N+1: not started yet by <author>" and the time since the
+//        # decision; list and show print REVISING rev N+1 (<by>) since …, eta … | REV N+1 NOT STARTED (<author>), N min
+//        # since the change request; list --json / show --json carry `revising` (the stored mark) and `revisionState`
+//        # {state: in-progress | not-started, nextRev, by, decidedAt, since?, eta?, note?}.
+//   proposal overdue [--start-min 15] [--json]                           # OVERDUE PR-021 rev 2 (<author>): not started 34 min after …
+//        # I-177: the change requests whose author has not marked them (`revising`) more than --start-min minutes
+//        # after the decision, or whose latest eta has passed (a mark without an eta never alarms). Exit 3 when any
+//        # is listed, 0 when none. Rules: tools/lib/proposal-overdue.mjs. tools/idle.mjs check|watch run the same rule
+//        # in every pass (--proposal-min), and the lead's watch posts one thread per overdue period, assigned to the lead.
 //   proposal live <id> --by <agent> [--option <name>] --patch fixes/<topic>/patch.diff [--ref <git ref, default HEAD>]
 //   proposal live <id> --by <agent> [--option <name>] --none "<why there is no page to try>"     # I-109
 //        # I-074: what the console's "Try it" panel serves as B (A = the baseline): a committed patch, read from git
@@ -103,16 +120,17 @@ import { dirname, resolve } from 'node:path';
 import {
   loadProposalFile, postProposal, reviseProposal, publishProposal, withdrawProposal, decide, listProposals, get, setLive, findOption,
   waitCondition, waitAnyCondition, line, showText, parseProposalId, proposalNewsText, holdProposal, unholdProposal, withDecisionState,
-  liveAWarning,
+  liveAWarning, markRevising,
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
 import * as TALK from './proposal-talk.mjs'; // T-048
 import { pollUntil, parseSec, EXIT, httpGet } from './wait.mjs';
 import { startWait } from './waits.mjs'; // I-058: live wait records for the status board
 import * as AL from './answer-lint.mjs'; // I-146: the answer format on the proposal text the user reads
+import { overdueProposals, overdueLine, startMinutes } from './proposal-overdue.mjs'; // I-177
 import { consoleDir } from './console.mjs';
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-none', '--none', '--force-format']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-none', '--none', '--force-format', '--eta', '--start-min']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -287,6 +305,7 @@ export async function run(argv, deps = {}) {
     return 0;
   }
   if (sub === 'lint' && !arg) return lintStored(undefined, a); // T-126: every stored proposal
+  if (sub === 'overdue') return overdue(a, deps); // I-177
   if (!arg) throw new Error(`usage: node tools/console.mjs proposal ${sub} <id> … (see the header of tools/lib/proposal-cli.mjs)`);
   const id = parseProposalId(arg);
   if (sub === 'phone') return phone(id, a); // I-126 / T-086
@@ -317,6 +336,20 @@ export async function run(argv, deps = {}) {
     console.log(`HELD ${line(p)}`);
     if (p.decision && p.history.at(-1).decision) console.log(`  the decision (${p.decision.value}, rev ${p.decision.rev}) is now under review: kept, but not final; \`proposal wait --until decided\` waits; a revise makes it stale (or --keep-decision)`);
     console.log(`  the page shows the note and the decision buttons are off until: node tools/console.mjs proposal unhold ${p.id} --by <you> (or revise --unhold)`);
+    return 0;
+  }
+  if (sub === 'revising') { // I-177: rev N+1 is under way (only after a change request)
+    const note = a.one('note');
+    if (!note || !String(note).trim()) throw new Error('--note "<the step you are on, in plain words, for the user>" is required');
+    const g = AL.gate(AL.lintFields([{ path: '--note', text: note }], { known: [id] }), { where: `proposal revising ${id}`, check: a.flag('check-format'), force: a.one('force-format'), by: by(), dir: consoleDir() });
+    for (const l of g.out) console.log(l);
+    for (const l of g.err) console.error(l);
+    if (!g.proceed) return g.exit;
+    const p = await markRevising(id, { by: by(), note, eta: a.one('eta'), now: deps.now ?? Date.now() });
+    const m = p.revising;
+    const hh = (t) => `${t.slice(11, 16)}Z`;
+    console.log(`REVISING ${p.id} rev ${p.rev + 1} by ${m.by}: ${m.note}${m.eta ? ` (expected by ${hh(m.eta)})` : ''}`);
+    console.log(`  the Proposals page shows it on top of the proposal, with the time since the change request (${hh(m.decisionAt)}); again replaces it; proposal revise ${p.id} clears it${m.eta ? '' : '; add --eta +<N>m so the user sees when to expect it'}`);
     return 0;
   }
   if (sub === 'unhold') {
@@ -363,6 +396,19 @@ export async function run(argv, deps = {}) {
     return 0;
   }
   throw new Error(`unknown proposal command "${sub}" (see the header of tools/lib/proposal-cli.mjs)`);
+}
+
+/** I-177: `proposal overdue [--start-min 15] [--json]`: exit 3 when a change request is overdue, 0 otherwise. */
+function overdue(a, deps) {
+  const startMin = startMinutes(a.one('start-min'));
+  const now = deps.now ?? Date.now();
+  const items = listProposals();
+  const list = overdueProposals(items, { now, startMin });
+  const open = items.filter((p) => p.state === 'changes-requested').length;
+  if (a.flag('json')) console.log(JSON.stringify({ at: new Date(now).toISOString(), startMin, changeRequests: open, overdue: list }, null, 1));
+  else if (!list.length) console.log(`OK no revision overdue (${open} change request(s) open; limit ${startMin} min to start, or the eta)`);
+  else for (const x of list) console.log(overdueLine(x));
+  return list.length ? 3 : 0;
 }
 
 /** I-126 / T-086: `proposal phone <id> [--option <name>] [--stop]`: the Try-it pages on the iPhone (lib/live-phone.mjs). */

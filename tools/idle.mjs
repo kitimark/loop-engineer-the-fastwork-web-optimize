@@ -3,7 +3,7 @@
 // more than N minutes (the iPhone also: held with no phone run for that long, I-111, unless the user is on the holder's console step, I-125, or the lease is the user's own hand test: owner `user` or `user-*`, I-144) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
 // tools/lib/idle.mjs. Read-only on the locks (never takes, renews or releases one); no iPhone, Chrome or network.
 //
-//   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--step-min 2] [--json]
+//   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--step-min 2] [--proposal-min 15] [--json]
 //        # one shot, at check-ins (lead, ops). One line per resource:
 //        #   IDLE iphone: iPhone free for 14 min (since 03:10Z, released by iphone-runner), over the 5 min limit, while
 //        #     work waits: fix-morph-gpu (queued for it), f3-arm-scope (owner fix-nav-morph; its note names the phone)
@@ -11,7 +11,7 @@
 //        #     fix-nav-morph), over the 5 min limit, while work waits: iphone-runner (queued for it)     # I-111
 //        #   OK chrome-measure: held by "(shared)" | free for 3 min …, no ready work | … under the 10 min limit; waiting: …
 //        # exit 0 nothing idle, 3 alarm (some resource idle over its limit with ready work), 1 usage or error.
-//   node tools/idle.mjs watch --by lead [--interval 60] [--phone-min 5] [--chrome-min 10]
+//   node tools/idle.mjs watch --by lead [--interval 60] [--phone-min 5] [--chrome-min 10] [--step-min 2] [--proposal-min 15]
 //        # long-running (the lead starts it detached: nohup node tools/idle.mjs watch --by lead > out/idle-watch.log 2>&1 &).
 //        # Polls every --interval s (at least 30); prints a line only for a new alarm (IDLE …), its post (POSTED T-…
 //        # or NOT POSTED: …) and the end of an episode (ENDED …). Exit 0 on SIGINT/SIGTERM.
@@ -26,16 +26,24 @@
 // runner (a gated part not ready, a recorded part started without "recording") with no change for more than --step-min
 // minutes (default 2): `STUCK C-037: part 1 (attempt 2) waits on fix-nav-morph for 10 min (…)`, exit 3 in check, one
 // thread per stuck period to the steward (--by lead), ENDED / CLOSED when the step moves on.
+// Overdue revisions (I-177, lib/proposal-overdue.mjs), in the same passes: a proposal the user sent back (changes
+// requested) whose author has not marked rev N+1 under way (`console.mjs proposal revising`) for more than
+// --proposal-min minutes (default 15), or whose mark's eta has passed: `OVERDUE PR-021 rev 2 (de-x): not started 34 min
+// after the change request at 19:42Z (limit 15 min)`, exit 3 in check, one thread per overdue period assigned to the
+// lead directly, not the steward (--by lead; the lead is first tier for proposals and talks to the user; the author is
+// never an assignee), ENDED / CLOSED when it is marked, revised or the decision changes. The same rule alone:
+// `node tools/console.mjs proposal overdue [--start-min 15]`.
 import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, notifyLine, readState } from './lib/idle.mjs';
 import { createThread, setStatus } from './lib/console-threads.mjs';
 import { alarmSteward, stewardTo } from './lib/thread-routing.mjs';
 import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
+import { overduePass, START_MIN as OVERDUE_START_MIN } from './lib/proposal-overdue.mjs'; // I-177: slow revisions
 import { diskPass } from './lib/space-watch.mjs'; // I-124: disk alarm + auto-clean (FW_SPACE_AUTOPRUNE=0 turns the clean off)
 import { exitOnHelp } from './lib/help.mjs';
 
 exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min'];
+const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min', '--proposal-min'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -51,7 +59,7 @@ function minutesOpt(name, def) {
   return n;
 }
 
-const limits = () => ({ iphone: minutesOpt('phone-min', RESOURCES.iphone.defaultMin), 'chrome-measure': minutesOpt('chrome-min', RESOURCES['chrome-measure'].defaultMin), step: minutesOpt('step-min', STUCK_STEP_MIN) });
+const limits = () => ({ iphone: minutesOpt('phone-min', RESOURCES.iphone.defaultMin), 'chrome-measure': minutesOpt('chrome-min', RESOURCES['chrome-measure'].defaultMin), step: minutesOpt('step-min', STUCK_STEP_MIN), proposal: minutesOpt('proposal-min', OVERDUE_START_MIN) });
 
 /** One pass: assess, record (de-duplicated per episode), post / close as the lead. Returns {results, alarm}. */
 async function pass({ by, min, log, quietOk, watching = false }) {
@@ -92,10 +100,12 @@ async function pass({ by, min, log, quietOk, watching = false }) {
     }
   }
   const steps = await stepPass({ by, log, quietOk, now, min: min.step }); // I-123 (c): steps stuck on their runner
+  let revs = { alarm: false }; // I-177: change requests nobody has started, or past their eta
+  try { revs = await overduePass({ by, log, quietOk, now, min: min.proposal }); } catch (e) { log(`PROPOSALS ERROR ${e.message}`); }
   // I-124: the disk (alarm thread under FW_SPACE_ALARM_GB, default 20; with --by lead the auto-clean of lib/space-prune.mjs)
   let disk = null;
   try { disk = await diskPass({ by, log, now, autoClean: watching }); } catch (e) { log(`DISK ERROR ${e.message}`); }
-  return { results, alarm: as.some((a) => a.alarm) || steps.alarm, disk };
+  return { results, alarm: as.some((a) => a.alarm) || steps.alarm || revs.alarm, disk };
 }
 
 async function main() {

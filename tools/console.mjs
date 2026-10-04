@@ -184,7 +184,10 @@
 //   check of `finding.mjs post`): prints SIMILAR T-xxx (<why>): <title>, starts nothing (exit 1); --force starts it.
 //
 // Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
-//   node tools/console.mjs proposal post|list|show|revise|live|phone|publish|withdraw|decide|wait|hold|unhold|talk …   (header of tools/lib/proposal-cli.mjs)
+//   node tools/console.mjs proposal post|list|show|revise|live|phone|publish|withdraw|decide|wait|hold|unhold|revising|overdue|talk …
+//        (header of tools/lib/proposal-cli.mjs)
+//        # I-177: `proposal revising <id> --by <author|lead> --note "<step>" [--eta +45m]` after a change request: the
+//        # page shows "Revision N+1 in progress" (else "not started yet by <author>"); `proposal overdue` lists slow ones.
 //        # T-030: `proposal hold <id> --by <you> --note "…"` stops the user deciding (banner, buttons off) while a card is
 //        # being corrected; a revise after a decision makes it stale (re-decide) unless --keep-decision.
 //        # T-048: the user asks about a proposal under it on the page ("Questions and answers", or Comment on a part):

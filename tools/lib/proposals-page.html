@@ -58,6 +58,12 @@ h2.section { font-size: 15px; color: var(--muted); font-weight: 650; margin: 24p
 .holdbanner p, .stalebanner p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .stalebanner { border-color: var(--accent); background: var(--accent-soft); }
 .stalebanner strong { color: var(--accent); }
+/* I-177: after a change request, whose turn it is: rev N+1 in progress (the author's note, expected time) or not started */
+.revbanner { border-radius: 12px; padding: 12px 16px; margin: 0 0 14px; border: 2px solid var(--accent); background: var(--accent-soft); }
+.revbanner strong { display: block; font-size: 17px; color: var(--accent); }
+.revbanner p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.revbanner.notstarted { border-color: var(--warn); background: var(--warn-soft); }
+.revbanner.notstarted strong { color: var(--warn); }
 .detail h2.title { margin: 4px 0 6px; font-size: 24px; line-height: 1.25; }
 .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
 .block { margin: 16px 0 0; }
@@ -232,6 +238,9 @@ fieldset.optpick input { width: 18px; height: 18px; margin: 0; }
 // Holds and stale decisions (T-030): p.hold {by, note, at} puts a banner with the note on top of the proposal and turns
 // the decision buttons off (the server refuses a decision too); a decision already made is shown "under review". A
 // revision after a decision makes it stale (p.decisionState 'stale', p.staleDecision): a banner asks to decide again.
+// Revision in progress (I-177): after a change request a banner says whose turn it is: p.revising {by, at, note, eta}
+// (`proposal revising`) -> "Revision N+1 in progress", the note, "expected by" (or "N min late"); no mark -> "Revision
+// N+1: not started yet by <author>". Both show the time since the decision, kept counting by tickSince ([data-since]).
 // Questions (T-048): under the proposal, its conversation: the console threads anchored on it (GET
 // /api/proposals/<id>/talk), each with a reply box (POST /api/threads/<T>/reply), and an "Ask a question" box (POST
 // /api/comments with the proposal's anchor). The server hands them to the proposal's author (and the lead reads every
@@ -394,10 +403,11 @@ function renderList(items) {
   function row(p) {
     var chip = p.hold ? el('span', { class: 'chip held', text: 'On hold' + (p.decision ? ' · ' + (STATE_TEXT[p.decision.value] || p.decision.value) + ', under review' : '') })
       : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) });
+    var rv = p.state === 'changes-requested' ? ' · revision ' + (p.rev + 1) + (p.revising ? ' in progress' : ' not started yet') : ''; // I-177
     var a = el('a', { class: 'row' + (p.id === currentId() ? ' cur' : ''), href: '#' + p.id, 'data-anchor': /^PR-\d{1,6}$/.test(p.id) ? p.id : null, 'data-anchor-label': p.title, 'data-comment-to': toNames(p) }, chip, // I-096
       talkChip(p.talk), // T-048
       el('span', { class: 't', text: p.title }),
-      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') + ' · to: ' + toNames(p) }));
+      el('span', { class: 'm', text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + (p.rev > 1 ? ' · revision ' + p.rev : '') + (p.options ? ' · ' + p.options + ' options' : '') + rv + ' · to: ' + toNames(p) }));
     return a;
   }
   box.appendChild(el('h2', { class: 'section', text: 'Waiting for you (' + waiting.length + ')' }));
@@ -910,6 +920,47 @@ function staleBanner(p) {
     el('p', { text: 'You ' + (s.value === 'accepted' ? 'accepted' : s.value === 'rejected' ? 'rejected' : (STATE_TEXT[s.value] || s.value)) + (s.option ? ' "' + optLabel(p, s.option) + '"' : '') + ' revision ' + s.rev + ' on ' + when(s.at) + '. The proposal changed since, so that decision no longer counts (it stays in the history).' }),
     last && last.rev === p.rev ? el('p', { text: 'What changed in revision ' + p.rev + ': ' + last.note }) : null);
 }
+/** I-177: "38 min", "2 h 8 min", "less than a minute": the time from `from` to `now` (ms). */
+function agoText(from, now) {
+  var m = Math.max(0, Math.floor((now - from) / 60000)), h = Math.floor(m / 60);
+  if (m < 1) return 'less than a minute';
+  return h ? h + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '') : m + ' min';
+}
+/** A span that keeps counting (tickSince): "38 min" since `iso`, or with fmt 'late' "(10 min late)" past it. */
+function sinceSpan(iso, now, fmt) {
+  var t = Date.parse(iso);
+  return el('span', { 'data-since': iso, 'data-fmt': fmt || null, text: fmt === 'late' ? '(' + agoText(t, now) + ' late)' : agoText(t, now) });
+}
+function tickSince() {
+  if (!document.querySelectorAll) return;
+  var now = Date.now();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-since]'), function (n) {
+    var t = Date.parse(n.getAttribute('data-since'));
+    if (!isNaN(t)) n.textContent = n.getAttribute('data-fmt') === 'late' ? '(' + agoText(t, now) + ' late)' : agoText(t, now);
+  });
+}
+/** I-177: after a change request: rev N+1 in progress (note, expected by, time since the decision), or not started. */
+function revisingBanner(p, now) {
+  if (!p || p.state !== 'changes-requested' || !p.decision || !p.decision.at) return null;
+  now = now === undefined ? Date.now() : now;
+  var next = p.rev + 1, m = p.revising;
+  var asked = el('p', null, 'You asked for a change ', sinceSpan(p.decision.at, now), ' ago (' + when(p.decision.at) + ').');
+  if (!m) {
+    return el('div', { class: 'revbanner notstarted', role: 'status' },
+      el('strong', { text: 'Revision ' + next + ': not started yet by ' + p.by }),
+      asked,
+      el('p', { class: 'meta', text: p.by + ' has not said yet that it started. The lead is alerted if it does not start within 15 minutes.' }));
+  }
+  var eta = m.eta && Date.parse(m.eta);
+  var meta = el('p', { class: 'meta' }, 'by ' + m.by + ' · since ' + when(m.at) + ' · ',
+    eta ? 'expected by ' + when(m.eta) : 'no expected time given yet',
+    eta && now > eta ? ' ' : null, eta && now > eta ? sinceSpan(m.eta, now, 'late') : null);
+  return el('div', { class: 'revbanner', role: 'status' },
+    el('strong', { text: 'Revision ' + next + ' in progress' }),
+    el('p', { text: m.note }),
+    meta,
+    asked);
+}
 function renderDetail(p, force) {
   var box = document.getElementById('detail');
   if (!p) { stopBlink(); box.replaceChildren(); renderTryIt(null); document.getElementById('decide').replaceChildren(); return; }
@@ -923,6 +974,8 @@ function renderDetail(p, force) {
   var hb = holdBanner(p), sb = staleBanner(p);
   if (hb) card.appendChild(hb);
   if (sb) card.appendChild(sb);
+  var rb = revisingBanner(p); // I-177
+  if (rb) card.appendChild(rb);
   card.appendChild(el('div', { class: 'meta' },
     p.hold ? el('span', { class: 'chip held', text: 'On hold' }) : el('span', { class: 'chip ' + (p.state === 'proposed' ? 'waiting' : p.state), text: p.decisionState === 'stale' ? 'decide again' : (STATE_TEXT[p.state] || p.state) }),
     el('span', { text: p.id + ' · ' + (AREA_TEXT[p.area] || p.area) + ' · by ' + p.by + ' · revision ' + p.rev + ' · ' + when(p.proposedAt || p.createdAt) }),
@@ -1091,6 +1144,7 @@ load().then(function () {
   if (!currentId()) { var first = document.querySelector('#list a.row'); if (first && /waiting/.test(first.firstChild.className)) location.replace(first.getAttribute('href')); }
 });
 setInterval(load, 10000);
+setInterval(tickSince, 30000); // I-177: the time since a change request keeps counting between redraws
 </script>
 </body>
 </html>
