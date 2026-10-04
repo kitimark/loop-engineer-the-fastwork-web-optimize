@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` and `blur-cubic-delta.diff` contain excerpts of Fastwork's code: keep them on local
 > branches, never push.
 
-**Owner:** fix-blur-cubic-v8 (fix owner), 2026-10-04/05. **Status:** Simulator mechanism check done; no timing, no phone.
+**Owner:** fix-blur-cubic-v8 (fix owner), 2026-10-04/05. **Status:** Simulator mechanism check, layer diff and pixel check done; no timing, no phone. Parked (resume on a lead decision).
 **Verdict (OBSERVED, Simulator; Sim ms are structure, never a gain, F-084):** yes. With blur-cubic, v8's frame 2 after
 `#people +is-visible` has a Composite of about **111 Sim ms against 55** without it (n 6 vs 7, no overlap). That is
 the same doubling stack5 showed on the older base RB (C 42-58, V 92-116). The lead's prediction holds: no code conflict,
@@ -120,8 +120,23 @@ to its step, not its frame.
 
 ## Pixel / function check
 
-`node tools/fix.mjs check blur-cubic-v8 --on bcv8-c --save` (shared lane, headless Chrome): see `check.json` /
-the note below.
+`node tools/fix.mjs check blur-cubic-v8 --on bcv8-c --save` ran in the shared lane, headless Chrome, 2026-10-04
+23:08Z. The result is in `check.json`. The V overlay holds only the CSS file: `--on` refuses an overlay file that is
+byte-identical to the base's.
+
+| check | C (v8) → V (v8 + blur-cubic) |
+|---|---|
+| served files | 1 overlay file differs (CSS `265e48039d05`) and is served from the overlay |
+| console errors / 4xx | 0 / 0 on both sides |
+| morph reached | yes, both sides |
+| elements | 1580 → 1580 |
+| screenshot diff, top / middle / bottom | 0.15 / 0.01 / 0.43 % |
+
+- The 0.43 % at the bottom is just over the 0.4 % phase-noise line. v8-best's own check shows the same bottom noise
+  (0.46 %), and v7-best's too (0.42 %).
+- The card is not in the bottom shot, and V changes only the easing during the 0.7/0.9 s filter transitions. The end
+  states stay byte-identical (opacity 0.999, blur(0px), translateY(0)).
+- So the resting card looks the same, and nothing else changes.
 
 ## Files
 
