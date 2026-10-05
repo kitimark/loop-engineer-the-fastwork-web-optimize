@@ -258,7 +258,51 @@ p129-read 06f74f5d19ca, N1); only the block's own C runs (N3).
   finger better, difference 3 of 5.
 - The user accepted this as proof (T-193 #28): no sub-arm attribution. Next is an all-images optimization proposal.
 
-## 6. Pending
+## 6. All-images proposal (PR-025, user T-193 #28, T-197)
+
+Every image on the page counted in Chrome (`img-scroll.mjs`, one load plus a scripted scroll at 430x775 DPR 3; "drawn" =
+a PaintImage for that URL, since an IntersectionObserver misses wall images whose src is set late). Options built by
+`img-build.mjs --option A|B|C` into ignored overlays (sips/avifenc in a `--no-timing` hold; no image bytes are committed
+or in any patch.diff, Hard rule 3). Re-encoding is a visual change, so it is a proposal, not a silent fix.
+
+| option | what | download on a phone | image decodes at load |
+|---|---|---|---|
+| today (C) | | 10.4 MB, 89 files | 36 |
+| A lighter files | resize to 3x the shown size where it is over 1.15x; keep the original when the result is not smaller (5 files); wall template `loading="lazy"` (Safari 15.4, webkit.org/blog/12445) | 6.6 MB, 81 files | 27 |
+| B A + AVIF | A, then AVIF q68 where the URL is a literal in JS/CSS/HTML (Safari iOS 16, webkit.org/blog/13152); 3 runtime-built seller paths right-size only | 4.5 MB, 89 files | 16 |
+| C baked end backgrounds | each end stage's picture + grain + blend flattened into one JPEG at the shown size, at <= 640 px only | 11.0 MB | |
+
+- Chrome scroll counts are the same in all options (draws ~916-920, raster ~970-985, paint ~1298-1368): Chrome can't
+  show C's gain, which is a WebKit paint cost (section 5).
+- Look check (`look-chrome.mjs`, full page every 0.75 viewport): C changes pixels only inside the stage boxes (mostly
+  <= 20 levels); A and B change the avatars at y 2905 (0.06-0.07 %). All three are T3 (proposal) by the pixel rule.
+- PR-025 rev 2 (rev 1 held because 6 resized files had come out bigger) is with the user, with Try-it pages per option.
+  Its text says C may not remove the whole end-screen lag (section 7).
+
+## 7. Pictures vs title sweeps (Chrome census, OBSERVED; finding F-289)
+
+The nobg arm in P-137 also removed the gradient of three animated colour titles (doc, earn, secure; a 4 s
+`background-position` sweep on `background-clip: text`, CSS l.6057-6118). Lead ruling: measure the split before any
+title work. One shared slot, `endbg-chrome.mjs --mode census`, arms C, pictures-off (nobg minus the row-title lines),
+titles-off (the 6 row-title lines only), both-off (nobg); 3 morph positions x 6 at-rest windows + 3+3 toolbar steps.
+Census `out/end-bg/census-2026-10-05T15-02-55-649Z.json` (ignored).
+
+| paints per window at the end (m1) | C | pictures-off | titles-off | both-off |
+|---|---|---|---|---|
+| at rest | 73.5 | 72.7 | 71.7 | 74.0 |
+| step 775 -> 815 | 88.3 | 95.7 | 69.0 | 71.0 |
+| step 815 -> 775 | 100.3 | 100.3 | 112.3 | 107.0 |
+
+- All four arms are the same within their run spread at m0, m0.5 and m1. The secure and organized title spans repaint
+  ~20 times per window in every arm, also with `background-image: none` (the sweep animation keeps invalidating;
+  organized is in no arm).
+- Both-off is the arm that cut phone slow frames 16 -> 3 in P-137, yet its Chrome counts equal C's. So the number of
+  paints is not what differs; what each paint costs is (a picture with blend vs an empty box), and Chrome counts don't
+  measure that. **Chrome counts cannot split pictures from titles** (OBSERVED in our setup).
+- The decisive check needs per-paint cost on WebKit: a phone Timeline block with arms C / pictures-off / titles-off, or
+  Simulator paint durations. Asked of the lead (ticket); no `end-titles` topic until it shows the titles' share.
+
+## 8. Pending
 
 - A Simulator count (WebKit) when no phone block runs.
 - The verdict per image and the ranked candidate fixes, after P-137. Wall candidates known now (bytes or memory, no
