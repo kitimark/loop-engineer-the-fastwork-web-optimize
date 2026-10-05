@@ -2386,7 +2386,7 @@
   },
   "p126": {
     "card": "README: Prediction P-126 (stage 1, registered before reading)",
-    "status": "stage 1 read done (card rev 2: ops PASS c37f7df1, lead signed); result waits for ops' result read",
+    "status": "stage 1 result; ops result read AGREE with R1 (N4 reworded), R2, R4 folded in; ready to land",
     "result": {
       "reader": "read-inval126.mjs 4f920b6450f7 on input 8435065642cc; output p126-read.json",
       "descriptive": "p126-desc.mjs 8db940b3736e (after the frozen read, decides nothing); output p126-desc.json",
@@ -2403,11 +2403,13 @@
         "N1": "NATIVE means only that no page, ext or fwWC script key links; a viewport resize makes more stackless invalidations nearly expected; not evidence the engine is the cause",
         "N2": "CP rate bound assumes Poisson; control var/mean 2.05 (C), 1.41 (R): RRlo optimistic; per-run RR 7.0-9.7 in all 9 runs; heavy median 12 vs control median 1, p99 7",
         "N3": "only RATE-LINKED key inval:native: s 234 over Hw 22/22 (C), s 192 over Hw 20/20 (R)",
-        "N4": "150 fwWC value-changing writes (IO callback) in C: all have a record within 2 ms, nearest stackless for 142; no record keys as fwWC in any capture: stackless includes observer-callback script writes (OBSERVED, cause unknown, UNRESOLVED; decisive check: count-only Simulator page writing from IO callback, rAF, timer)",
+        "N4": "reworded per ops R1: the instrument's view of observer-callback writes is unknown. No record keys as fwWC in any capture. Nearest record within 2 ms: value changes 150/150 (142 stackless), same-value writes 460/460 (447 stackless, ops' control); stamps shifted -25/+25 ms: 41/60 of 150 and 90/155 of 460 (ops). The record is time-locked to the IO callback's moment, not shown to be the write's own invalidation. Open, both UNRESOLVED: (a) WebKit drops the stack for invalidations raised in observer callbacks; (b) the write raises no invalidation and the record is other rendering-update work. Decisive check: count-only Simulator page writing from IO callback, rAF and timer, with value-change and same-value arms (ops' n4ctl.mjs for the matching); not run",
+        "R2ops": "every in-view mid-step frame is heavy (0 light in C and R); out-of-view mid-step frames carry 4.4 native records per frame (R 4.3) vs 1.2 at rest, Layout median 0.9 ms: supports N1",
+        "R4ops": "IO root grows 775 to 815 (K1) while the Layout root box stays 430x775: two different rects; the 775 box is not called the layout viewport",
         "root": "heavy Layout roots 430x775@0,0 in 42 of 42; rest-frame roots at ih 815 also 430x775 (1655 of 2728): view root, rule 6's ih test missed it; frozen call SUBTREE stands"
       },
       "predictions": "6 of 10 (hits 2, 4, 6, 8, 9, 10; misses 1, 3, 5, 7)",
-      "next": "frozen branch NATIVE (root read as VIEW): reference check of WebKit's layout-viewport resize invalidation vs the showcase (P-123 S5), no scene arm; N4 limits it; open for the lead: the N4 count-only check (separate Simulator slot) and the showcase's own IO callbacks as a candidate"
+      "next": "frozen branch NATIVE (root read as VIEW): reference check of WebKit's layout-viewport resize invalidation vs the showcase (P-123 S5), no scene arm; N4 limits it; open for the lead: the N4 count-only check with a same-value arm (separate Simulator slot; ops recommends it before the reference check) and the showcase's own IO callbacks as a candidate neither shown nor excluded"
     },
     "rev2": {
       "C1": "probe-only stacks key as probe (reported as probeLinked, never deciding); other urls key as ext: and decide like page keys; probe-forced Layouts are not SCRIPT",

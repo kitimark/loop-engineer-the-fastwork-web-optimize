@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N4: fwWC's known IO-callback writes leave stackless records (OBSERVED), so NATIVE cannot separate engine work from observer-callback writes; K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; waits for ops' result read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -1458,20 +1458,38 @@ Card rev 2 passed ops' delta read (c37f7df1, notes N1-N3); the lead signed it af
 - **N1 (ops): what NATIVE means here.** A toolbar step resizes the viewport, so more stackless invalidations in step
   frames are nearly expected by construction. NATIVE says only that **no page, ext or fwWC script key links** to the
   heavy frames; it does not show the engine's invalidation is the cause.
-- **N4 (mine, descriptive, weakens N1 further): stackless records include known script writes.** In the C runs the
-  P-125 probe logged 610 `data-fw-wc` writes by fwWC's IntersectionObserver callback (JS l.2742): 150 value changes, 460
-  same-value. All 150 value changes have an invalidation record within 2 ms (nearest record median 0.1 ms before the
-  probe's MutationObserver stamp, p10-p90 -0.41..0.61 ms), and that nearest record is stackless (`native`) for 142 of
-  150 (sceneC 4, fwNearChange 2, probe 2). Over all 9 captures no record keys as `fwWC` at all (census: native 15964,
-  probe 4314, every page key ≤ 78). So in our setup a script attribute write made from an IntersectionObserver callback
-  leaves a stackless record (OBSERVED, cause unknown; whether WebKit's Timeline drops the stack for invalidations raised
-  inside observer callbacks, or the record is raised later from native code, is UNRESOLVED; the decisive local check is
-  a count-only Simulator page that writes one attribute from an IO callback, a rAF and a timer and reads each record's
-  stack). Consequence: `native` here is "no script stack recorded", not "no script". The NATIVE reading cannot tell an
-  engine invalidation from script writes made in observer callbacks.
-  - What still holds: R contains the wc1 runs, which have no fwWC toggles at all (P-125), and the native surplus is the
-    same there (per run RR: C 7.0-9.7, wpx 8.0-9.2, wc1 8.4-9.7). So fwWC's toggles are not the surplus. Other observer
-    callbacks (the showcase's own IOs: `fwNearChange` l.12128 and others) are not excluded.
+- **N4 (descriptive; reworded after ops' result read R1): the instrument's view of observer-callback writes is
+  unknown.**
+  - What we see. In the C runs the P-125 probe logged 610 `data-fw-wc` writes by fwWC's IntersectionObserver callback
+    (JS l.2742): 150 value changes and 460 same-value writes. No record in any of the 9 captures keys as `fwWC`
+    (census: native 15964, probe 4314, every page key ≤ 78).
+  - Matching (nearest ScheduleStyleRecalculation / InvalidateLayout record within 2 ms of the probe's
+    MutationObserver stamp):
+
+    | writes (C) | with a record within 2 ms | nearest record stackless |
+    |---|---|---|
+    | value changes (150) | 150 (100 %; median lag 0.1 ms, p10-p90 -0.41..0.61) | 142 |
+    | same-value (460), ops' control | 460 (100 %) | 447 |
+    | value changes, stamps shifted -25 / +25 ms (ops) | 41 / 60 | |
+    | same-value, shifted -25 / +25 ms (ops) | 90 / 155 | |
+
+    Same-value writes, which may invalidate nothing, match as often as value changes, and shifted stamps match far
+    less. So the record is time-locked to the IO callback's moment, not shown to be the write's own invalidation.
+  - Two explanations remain, both UNRESOLVED: (a) WebKit's Timeline drops the stack for invalidations raised inside
+    observer callbacks; (b) the write raises no invalidation record at all (no selector depends on the attribute, or
+    a same-value skip), and the matched record is other rendering-update work at that moment. The decisive local check
+    is a count-only Simulator page that writes one attribute (a value change and a same-value arm, with and without a
+    selector on it) from an IO callback, a rAF and a timer, and reads each record's stack (ops' matching script:
+    mgmt-ops-10 scratchpad `p126res/n4ctl.mjs`). Not run; it needs its own slot.
+  - So no claim is made about what `native` contains beyond N1. The instrument's view of observer-callback writes is
+    unknown, which leaves observer callbacks (the showcase's own IOs: `fwNearChange` l.12128 and others) neither
+    shown nor excluded.
+  - What holds regardless: R contains the wc1 runs, which have no fwWC toggles at all (P-125), and the native surplus is
+    the same there (per run RR: C 7.0-9.7, wpx 8.0-9.2, wc1 8.4-9.7). So fwWC's toggles are not the surplus.
+- **Ops R2 (descriptive, from ops' result read; supports N1).** Every in-view mid-step frame is heavy (0 light ones in C
+  and in R), so in view "step" and "heavy" cannot be told apart. Out-of-view mid-step frames carry 4.4 native records
+  per frame (R 4.3) against 1.2 at rest, with a Layout median of 0.9 ms: the step raises stackless records without the
+  heavy Layout too.
 - **N2 (ops): the rate bound is optimistic.** The Clopper-Pearson bound on s/(s+r) assumes Poisson counts; records cluster
   within frames. Control frames are overdispersed (variance/mean 2.05 in C, 1.41 in R), so RRlo 7.57 overstates the
   certainty; the >= 2 margin only partly absorbs it. Descriptively the link does not lean on the pooling: every one of the
@@ -1488,6 +1506,9 @@ Card rev 2 passed ops' delta read (c37f7df1, notes N1-N3); the lead signed it af
   descriptively, the heavy Layouts start at the view root, not at a subtree. K1b (VIEW root heights) is empty for the
   same reason. Read the table's "NATIVE with ROOT SUBTREE" branch as "NATIVE with ROOT VIEW" (the subtree box the
   SUBTREE branch asks for is the view itself).
+  - Two different rects (ops R4): K1's IO root grows 775 → 815 with the step, while the Layout root box stays 430x775.
+    The 775 box is not the layout viewport (which K2 makes the IO root); what rect WebKit reports as the Layout root is
+    not checked.
 - **K1: root growth, SUPPORTS.** The showcase IO's rootBounds heights take 15 distinct values over 81 entries, from 775
   to 815, including mid-step values (785-804). So in our setup (Simulator) the implicit IO root follows the toolbar step
   (OBSERVED). The P-125 wpx miss is explained: a px rootMargin on a root that grows 40 px still flips at the same place.
@@ -1509,7 +1530,7 @@ Card rev 2 passed ops' delta read (c37f7df1, notes N1-N3); the lead signed it af
   | 2 | FORCED UPDATE | 60 % | hit |
   | 3 | ROOT VIEW | 55 % | miss as frozen (SUBTREE); the root note shows a view-sized root, a rule miss |
   | 4 | reading NATIVE | 50 % | hit (with N1 and N4) |
-  | 5 | `inval:fwWC` COVERS | 70 % | miss (absent: N4) |
+  | 5 | `inval:fwWC` COVERS | 70 % | miss (absent; why is unknown, N4) |
   | 6 | every scene key NO-LINK or absent | 75 % | hit (absent) |
   | 7 | `ev:resize` COVERS | 65 % | miss (LINKED-PART, 12/22) |
   | 8 | R AGREE | 80 % | hit |
@@ -1519,13 +1540,13 @@ Card rev 2 passed ops' delta read (c37f7df1, notes N1-N3); the lead signed it af
   - Frozen branch: NATIVE (with the root read as VIEW). The table's next step is a reference check of what WebKit's
     layout-viewport resize invalidates, against what in the showcase depends on it (P-123's open S5 question); no scene
     arm. FORCED UPDATE names no reading function.
-  - N4 limits it: stackless records also hold script writes from observer callbacks, so "no scene arm" rests on the
-    scene keys' absence plus P-125's NO-LINK for scene writes, not on proof that no script runs. The Timeline's stacks
-    cannot separate engine work from observer-callback writes; per the card, that instrument is near exhausted for this
-    question.
+  - N4 limits it: the instrument's view of observer-callback writes is unknown (fwWC's known writes left no keyed
+    record, explanation (a) or (b) open). So "no scene arm" rests on the scene keys' absence plus P-125's NO-LINK for
+    scene writes, not on proof that no script runs in the step frames.
   - Open for the lead (no step taken): (a) the reference check above (web and source reading, no hold); (b) the
-    count-only N4 check, which needs its own Simulator slot (shared lane, `--weight simulator`), asked separately; (c) the
-    showcase's own IO callbacks (`fwNearChange` l.12128 and peers) as a candidate the reading cannot exclude.
+    count-only N4 check with a same-value arm, which needs its own Simulator slot (shared lane, `--weight simulator`),
+    asked separately (ops recommends it before (a); the lead decides); (c) the showcase's own IO callbacks
+    (`fwNearChange` l.12128 and peers) as a candidate the reading neither shows nor excludes.
   - The trigger stays OBSERVED, untested.
 - **Pixel and behaviour.** Nothing was built or served; no pixel check applies.
 
