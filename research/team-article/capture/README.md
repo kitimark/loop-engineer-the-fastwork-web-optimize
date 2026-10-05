@@ -322,3 +322,27 @@ from the top to the end of the page. Everything below was fixed, and dry-run on 
 - **Clock check per new scene** runs over the scene's window only (`CLOCK_IN_WINDOW`), since the hero's own animations
   at rest swamp the scroll signal over a whole recording (H2 hA1). c and t/d use the check of the run they are cut from.
 - **Size.** Each MP4 stays under 1 MB: crf 26 to 38, then once more at 85 % of the width (the long full-page clip).
+
+#### Holds H5 and H6 (2026-10-05), and a POST-HOC clock check for scene a
+
+- **H5** (06:59-07:08Z; Serious induced by Xcode throughout, battery 31.9 to 35.8 °C): aA1, aV1, aV2, aA2, pA1 recorded;
+  pV1, pV2, pA2 refused by the gesture driver (the Mac hold had < 150 s left, I-112): the fixed-second waits of the
+  `a` items used the 600 s cap, which the plan had not counted. `hold.sh` now checks the time left before each item
+  (180 s, 260 s for an `a` item) and ends the hold instead (STOP budget, exit 3). **H6** (07:14-07:18Z; Serious,
+  34.2 to 35.6 °C): pV1, pV2, pA2 recorded. aV2 is MAC-LOADED (load1 22.4 at its start) and stays skipped.
+- **The pre-set clock check failed on every clean hero-fade run** (correlation of the capture's motion with the page's
+  scroll speed over the fade window; rule |lag| <= 50 ms, r >= 0.5): aA1 544 ms r 0.41, aV1 252 ms r 0.34, aA2 504 ms
+  r 0.41 (the same lags over the whole run). By the rule, clips a and c were not made.
+- **Reason (OBSERVED, in our setup, cause not confirmed):** in the hero scene most of the screen's motion is the cards'
+  own fade and move, which trail the scroll (more on the original: A's lag ~2x V's), so the motion trace does not
+  follow the scroll speed. The H2 hero run failed the same way (hA1 236 ms r 0.47); the end-of-page runs passed.
+- **POST-HOC replacement (lead's ruling 2026-10-05 ~07:4xZ, after the numbers above were read):** for scene a and the
+  clip c cut from it, the **drag edge**: the first scroll move in the page log after the `fade` mark against the first
+  rise of the capture's motion trace (> 3x its median over the 1-3 s before, + 0.5) within 1.5 s. Every run's edge must
+  lie in 0-150 ms and the two shown runs' edges within 50 ms of each other; the same rule for both arms; the shown runs
+  stay the first clean run per arm (aA1 | aV1). H5: aA1 80 ms, aV1 92 ms, aA2 69 ms (spread 23 ms), so the clock link
+  holds on both arms. The slow-frame strip keeps the page clock: it **leads the video by ~80 ms** (not shifted).
+  `phone-clips.mjs` prints `[POST-HOC EDGE]` on such runs and writes the note into each clip's `clock` field in
+  `clips.json`. The clips are illustrations, not a gain claim.
+- **Scene p** keeps the pre-set correlation; the edge rule (mark `page`) applies only to a run where it fails, and is
+  labelled the same way.

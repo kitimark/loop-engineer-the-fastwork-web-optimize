@@ -172,6 +172,28 @@ export function clockLag(pageFrames, motion, toMovie, { span = 600, step = 4, fr
   return best && { lag: best.lag, r: Math.round(best.r * 1000) / 1000, r0: Math.round((corr(0) ?? NaN) * 1000) / 1000 };
 }
 export const CLOCK_OK = { maxLagMs: 50, minR: 0.5 };
+// POST-HOC clock check (lead's ruling 2026-10-05 ~07:4xZ, after H5's numbers were read; labelled as such in clips.json
+// and the README): the pre-set correlation above failed on every clean hero-fade run (aA1 544 ms r 0.41, aV1 252 ms
+// r 0.34, aA2 504 ms r 0.41). Reason, OBSERVED (in our setup): in the hero scene the screen's motion is mostly the cards'
+// own fade and move, which trail the scroll (more on the original), so it does not track the page's scroll speed.
+// Replacement for scene a (and clip c, cut from it): the drag edge. The first scroll move in the page log after the
+// scene's mark, against the first rise of the capture's motion trace (> 3x its median over the 1-3 s before, + 0.5)
+// within 1.5 s of it: every run's edge must lie in [minMs, maxMs], and the two shown runs' edges within pairMs of each
+// other. Scene p keeps the pre-set correlation and falls back to the edge only if that fails (also labelled).
+// The strip keeps the page clock (the edge says it leads the video by ~80 ms on H5; not shifted).
+export const EDGE = { minMs: 0, maxMs: 150, pairMs: 50 };
+export const EDGE_MARK = { a: 'fade', p: 'page' };
+export const EDGE_PRIMARY = new Set(['a']);
+export function dragEdge(pageFrames, motion, toMovie, markT) {
+  if (!motion?.length || !Number.isFinite(markT)) return null;
+  const i = pageFrames.findIndex(([t, , y], k) => t > markT && k && y !== pageFrames[k - 1][2]);
+  if (i <= 0) return null;
+  const tm = toMovie(pageFrames[i][0]);
+  const rest = motion.filter(([t]) => t >= tm - 3 && t <= tm - 1).map(([, v]) => v).sort((x, y) => x - y);
+  const med = rest[Math.floor(rest.length / 2)] ?? 0;
+  const first = motion.find(([t, v]) => t >= tm - 1.5 && t <= tm + 1.5 && v > 3 * med + 0.5);
+  return first ? Math.round((first[0] - tm) * 1000) : null;
+}
 
 /** ffmpeg metadata text (pts_time + YAVG per frame) -> [[movieS, value]]. Numbers only. */
 export function parseMotion(txt) {
@@ -240,8 +262,15 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   if (!frames.length) return { ...out, error: 'the capture has no frames (ioscap: no frame arrived from the iPhone screen)' };
   const pts0 = frames[0][0];
   const mtxt = join(runs, `${L}.motion.txt`);
-  const lag = existsSync(mtxt) ? clockLag(log.frames, parseMotion(readFileSync(mtxt, 'utf8')), (t) => toPts(t) - pts0,
+  const motion = existsSync(mtxt) ? parseMotion(readFileSync(mtxt, 'utf8')) : null;
+  const lag = motion ? clockLag(log.frames, motion, (t) => toPts(t) - pts0,
     CLOCK_IN_WINDOW.has(scene) ? { from: toPts(a) - pts0, to: toPts(b) - pts0 } : {}) : null;
+  const corrOk = !!lag && Math.abs(lag.lag) <= CLOCK_OK.maxLagMs && lag.r >= CLOCK_OK.minR;
+  const edgeMs = motion && EDGE_MARK[scene] ? dragEdge(log.frames, motion, (t) => toPts(t) - pts0, log.marks[EDGE_MARK[scene]]) : null;
+  const useEdge = EDGE_PRIMARY.has(scene) || (EDGE_MARK[scene] && !corrOk && !!motion);
+  const edgeOk = edgeMs !== null && edgeMs >= EDGE.minMs && edgeMs <= EDGE.maxMs;
+  const method = !useEdge ? 'correlation' : EDGE_PRIMARY.has(scene) ? 'drag edge (post hoc: the pre-set correlation failed on this scene)'
+    : 'drag edge (post hoc fallback: the pre-set correlation failed on this run)';
   const page = counts(log.frames, a, b);
   const cg = captureGaps(cap.frames, toPts(a), toPts(b));
   const capture = counts(cg, -Infinity, Infinity);
@@ -255,7 +284,8 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   const phoneOff = median(vv.filter((r) => r.label.startsWith(`${L}-`) && Number.isFinite(r.macMs) && Number.isFinite(r.wallMs)).map((r) => r.macMs - r.wallMs));
   return { ...out, window: { from: ma, to: mb, ms: Math.round(b - a) }, page, capture: { ...capture, frames: cg.length, rateHz: cap.frames.length / Math.max(1e-6, cap.frames.at(-1)[0] - cap.frames[0][0]) },
     captureDiffers: differs, clock: { lagMs: lag?.lag ?? null, r: lag?.r ?? null, r0: lag?.r0 ?? null, w2uSpreadMs: w2uSpread === null ? null : Math.round(w2uSpread * 1000) / 1000,
-      ok: !!lag && Math.abs(lag.lag) <= CLOCK_OK.maxLagMs && lag.r >= CLOCK_OK.minR, why: existsSync(mtxt) ? null : 'no motion trace (--motion)' },
+      corrOk, edgeMs, method, ok: useEdge ? edgeOk : corrOk,
+      why: !motion ? 'no motion trace (--motion)' : useEdge && !edgeOk ? `drag edge ${edgeMs} ms outside ${EDGE.minMs}-${EDGE.maxMs}` : null },
     movie: { from: toPts(a) - pts0, to: toPts(b) - pts0, written: frames.length, all: cap.frames.length, w: cap.width, h: cap.height },
     profile: prof ? { name: prof.name, start: prof.start?.state ?? prof.start, battC: prof.start?.battC, drift: !!rec.meta.profileDrift } : null,
     viewport: reads.map((r) => ({ label: r.label.slice(L.length + 1), vvH: r.vvH, vvTop: r.vvTop, scale: r.vvScale, innerH: r.innerH })),
@@ -454,7 +484,7 @@ function main() {
     if (r.error) { console.log(`${r.L}: ERROR ${r.error}`); continue; }
     const p = r.page, c = r.capture;
     console.log(`${r.L} ${r.driver} ${r.window.from}->${r.window.to} ${(r.window.ms / 1000).toFixed(1)}s | page >34 ${p.gt34} (twins ${p.gt30}/${p.gt38}) >50 ${p.gt50} (twins ${p.gt46}/${p.gt54}) near ${p.near34}/${p.near50} max ${p.maxMs} frames ${p.frames}`
-      + ` | capture >34 ${c.gt34} >50 ${c.gt50} max ${c.maxMs}${r.captureDiffers ? ' CAPTURE-DIFFERS' : ''} | clock lag ${r.clock.lagMs} ms r ${r.clock.r}${r.clock.ok ? '' : ` CLOCK-CHECK FAIL${r.clock.why ? ` (${r.clock.why})` : ''}`}`
+      + ` | capture >34 ${c.gt34} >50 ${c.gt50} max ${c.maxMs}${r.captureDiffers ? ' CAPTURE-DIFFERS' : ''} | clock lag ${r.clock.lagMs} ms r ${r.clock.r}${r.clock.edgeMs !== null ? ` edge ${r.clock.edgeMs} ms` : ''}${r.clock.method !== 'correlation' ? ' [POST-HOC EDGE]' : ''}${r.clock.ok ? '' : ` CLOCK-CHECK FAIL${r.clock.why ? ` (${r.clock.why})` : ''}`}`
       + (r.region ? ` | ${r.region.name}: lag ${r.region.lagMs} ms r ${r.region.r} stale ${r.region.stalePct}% longest ${r.region.longestStaleMs} ms` : '')
       + ` | mac load1 ${r.mac.load1.join('/')}${r.macLoaded ? ' MAC-LOADED' : ''}`
       + ` | profile ${r.profile?.start ?? '?'} ${r.profile?.battC ?? '?'} C${r.profile?.drift ? ' DRIFT' : ''} | vv ${r.viewport.map((v) => `${v.label} ${v.vvH}/${v.vvTop}`).join(' ')}${r.morph ? ` | morph ${JSON.stringify(r.morph).slice(0, 80)}` : ''}`);
@@ -472,6 +502,12 @@ function main() {
     let A = pick('A'), V = pick('V');
     if (!A || !V) { console.log(`clip ${cl}: no clean run on both arms (A ${A?.L ?? 'none'}, V ${V?.L ?? 'none'}), not made`); continue; }
     if (!A.clock.ok || !V.clock.ok) { console.log(`clip ${cl}: clock check failed (lag ${A.clock.lagMs} / ${V.clock.lagMs} ms), not made`); continue; }
+    const edgeUsed = A.clock.method !== 'correlation' || V.clock.method !== 'correlation';
+    if (edgeUsed && !(Math.abs(A.clock.edgeMs - V.clock.edgeMs) <= EDGE.pairMs)) { console.log(`clip ${cl}: drag edges ${A.clock.edgeMs} / ${V.clock.edgeMs} ms differ by more than ${EDGE.pairMs} ms, not made`); continue; }
+    const clockNote = edgeUsed ? `POST-HOC clock check (lead's ruling 2026-10-05): the pre-set correlation check failed (${[A, V].map((r) => `${r.L} lag ${r.clock.lagMs} ms r ${r.clock.r}`).join('; ')}); `
+      + `OBSERVED reason: the hero cards' motion trails the scroll, so the screen motion does not track scroll speed. Replaced by the drag-edge check `
+      + `(${A.clock.edgeMs} / ${V.clock.edgeMs} ms, each in ${EDGE.minMs}-${EDGE.maxMs}, pair within ${EDGE.pairMs}). The slow-frame strip keeps the page clock: it leads the video by ~${Math.round((A.clock.edgeMs + V.clock.edgeMs) / 2)} ms (not shifted). Illustration, not a gain claim.` : null;
+    if (clockNote) console.log(`clip ${cl}: ${clockNote}`);
     let note = null;
     if (def.window === 'countdown') {
       const cw = countdownWindow([A, V]);
@@ -503,7 +539,7 @@ function main() {
       }
     }
     for (const m of made) {
-      report.clips.push({ ...m, mp4: m.mp4.replace(ROOT + '/', ''), clip: cl, scene: sc, title: TITLES[cl], shown: { A: A.L, V: V.L },
+      report.clips.push({ ...m, mp4: m.mp4.replace(ROOT + '/', ''), clip: cl, scene: sc, title: TITLES[cl], shown: { A: A.L, V: V.L }, clock: { method: A.clock.method === V.clock.method ? A.clock.method : `${A.clock.method} | ${V.clock.method}`, note: clockNote },
         window: { A: [Math.round(A.t0), Math.round(A.t0 + A.D)], V: [Math.round(V.t0), Math.round(V.t0 + V.D)] }, page: { A: A.page, V: V.page },
         crop: def.crop ? { el: def.crop, yA: crop.yA, yV: crop.yV, h: crop.h } : 'page box' });
       console.log(`CLIP ${m.name}.mp4 ${m.bytes} B ${m.width}x${m.height} ${m.seconds}s crf ${m.crf} (${A.L} | ${V.L}) page >34 ${A.page.gt34}/${V.page.gt34} >50 ${A.page.gt50}/${V.page.gt50}`);
@@ -515,6 +551,14 @@ function main() {
 
 function selfTest() {
   let n = 0; const ok = (c, m) => { if (!c) { console.error(`SELF-TEST FAIL: ${m}`); process.exit(1); } n++; };
+  { // drag edge: the page starts moving at 5000 ms (movie 5.0 s), the capture rises 80 ms later
+    const pf = []; for (let t = 0; t <= 8000; t += 16) pf.push([t, 16, t < 5000 ? 0 : (t - 5000) / 10]);
+    const mo = []; for (let t = 0; t <= 8; t += 1 / 60) mo.push([t, t >= 5.08 ? 4 : 0.05]);
+    const e = dragEdge(pf, mo, (t) => t / 1000, 4000);
+    ok(e !== null && e >= 75 && e <= 85, `drag edge 80 ms (${e})`);
+    ok(dragEdge(pf, mo.map(([t]) => [t, 0.05]), (t) => t / 1000, 4000) === null, 'drag edge: no rise, null');
+    ok(dragEdge(pf, mo, (t) => t / 1000, 9000) === null, 'drag edge: no move after the mark, null');
+  }
   const c = counts([[0, 16.7], [20, 31], [60, 40], [120, 55], [170, 47], [200, 50], [230, 34]]);
   ok(c.gt34 === 4 && c.gt50 === 1 && c.gt30 === 6 && c.gt38 === 4 && c.gt46 === 3 && c.gt54 === 1, `counts ${JSON.stringify(c)}`);
   ok(c.near34 === 2 && c.near50 === 2 && c.maxMs === 55, `near bands ${JSON.stringify(c)}`);
