@@ -11,6 +11,7 @@ import { join, dirname } from 'node:path';
 import { REPO as WT, resolveTree } from '../../tools/lib/paths.mjs';
 import { GEO, ARM, TO_DECK, geoDiff, evalAsync } from './geo.mjs';
 import { TABS } from './tabs.mjs';
+import { SWEEP, sweepDiff } from './sweep.mjs';
 const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 const [OUT, OVL] = process.argv.slice(2);
 if (!OUT || !OVL) throw new Error('usage: probe-sim.mjs <out.json> <abs overlay dir> [--arms A,B,...] [--tabs A3,A4] [--states collapse,landscape]');
@@ -19,6 +20,7 @@ const HERE = dirname(new URL(import.meta.url).pathname);
 const ALL = { A: 'a-size-layout.css', B: 'b-strict.css', R: 'r-ratio-only.css', A2: 'a2-stretch.css', A3: 'a3-pad.css', A4: 'a4-cq.css', R3: 'r3-pad-only.css' };
 const ARMS = Object.fromEntries((optv('--arms')?.split(',') || Object.keys(ALL)).map((k) => [k, ALL[k]]));
 const TABARMS = optv('--tabs')?.split(',') || Object.keys(ARMS);
+const SWEEPON = process.argv.includes('--sweep');
 const STATES = optv('--states')?.split(',') || ['collapse', 'landscape'];
 const CSS = Object.fromEntries(Object.entries(ARMS).map(([k, f]) => [k, readFileSync(join(HERE, 'arms', f), 'utf8')]));
 const sim = (...a) => execFileSync(process.execPath, [join(WT, 'tools/sim.mjs'), ...a], { stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' });
@@ -56,6 +58,13 @@ try {
     if (!r || r.error) { console.log(`TABS ${arm} error ${JSON.stringify(r)}`); continue; }
     console.log(`TABS ${arm.padEnd(5)} offsetParent ${r.offsetParent} ol ${r.ol.join(',')}`);
     for (const k of r.cases) console.log(`   k ${k.k} -> tab ${k.j}: before sl ${k.before.sl} act ${k.before.act} | after sl ${k.after.sl} act ${k.after.act} tab ${k.after.tab}`);
+    if (SWEEPON) {
+      await c.evaluate(TO_DECK()); await sleep(400);
+      const w = (res.sweep ||= {})[arm] = await evalAsync(c, SWEEP(), sleep, 120000);
+      const dd = arm === 'base' ? null : sweepDiff(res.sweep.base, w);
+      if (dd) w.vsBase = dd;
+      console.log(`SWEEP ${arm.padEnd(5)} shell ${w.shellSw.map((x) => x.sl).join(',')} tab ${w.tabSw.map((x) => x.sl).join(',')}${dd ? ` | vs base shellEqual ${dd.shellEqual} tabEqual ${dd.tabEqual} shift ${dd.shellShift}` : ''}`);
+    }
   }
   await c.evaluate(ARM(null));
   if (STATES.includes('collapse')) {

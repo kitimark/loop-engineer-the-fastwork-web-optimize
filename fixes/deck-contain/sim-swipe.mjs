@@ -43,7 +43,7 @@ async function main() {
   const [HOLD, ...STEPS] = process.argv.slice(2);
   if (!HOLD || !STEPS.length || STEPS.some((s) => !/^(C|PC|A3|A4|R3):\d+$/.test(s))) { console.error('usage: sim-swipe.mjs <hold> <arm>:<k> ...'); process.exit(2); }
   const BUDGET = +(process.env.SB_BUDGET_S || 500), T0 = Date.now();
-  const DIR = join(WT, 'out/deck-contain/sim', HOLD); mkdirSync(DIR, { recursive: true });
+  const DIR = join(WT, 'out/deck-contain/sim', HOLD); if (existsSync(DIR)) { console.log(`HOLD-EXISTS ${DIR} (rev 1.1 N4: a new hold name, or rename a VOID-HOST folder to <hold>-void1)`); process.exit(27); } mkdirSync(DIR, { recursive: true });
   const runs = join(DIR, 'runs.jsonl');
   const st = join(DIR, `serve-${process.pid}.json`); rmSync(st, { force: true });
   const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', resolveTree('site-pretty'), '--overlay', OVL, '--port', '0', '--no-cache', '--quiet', '--state', st, '--vendors=local'], { stdio: ['ignore', 'ignore', 'inherit'] });

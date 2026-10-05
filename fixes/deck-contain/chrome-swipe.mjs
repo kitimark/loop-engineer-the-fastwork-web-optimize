@@ -7,7 +7,7 @@
 // beginData.dirtyObjects, UpdateLayoutTree events and elementCount, Paint events.
 // usage: node fixes/deck-contain/chrome-swipe.mjs <hold> <base url> <arm>:<k> ...   (arms as in sim-swipe.mjs)
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, mkdirSync, appendFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { loadavg } from 'node:os';
 import { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir, headedUA } from '../../tools/lib/cdp.mjs';
@@ -17,7 +17,7 @@ const HERE = dirname(new URL(import.meta.url).pathname);
 const [HOLD, URL0, ...STEPS] = process.argv.slice(2);
 if (!HOLD || !URL0 || !STEPS.length || STEPS.some((s) => !/^(C|PC|A3|A4|R3):\d+$/.test(s))) { console.error('usage: chrome-swipe.mjs <hold> <url> <arm>:<k> ...'); process.exit(2); }
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
-const DIR = join(WT, 'out/deck-contain/chrome', HOLD); mkdirSync(DIR, { recursive: true });
+const DIR = join(WT, 'out/deck-contain/chrome', HOLD); if (existsSync(DIR)) { console.log(`HOLD-EXISTS ${DIR} (rev 1.1 N4)`); process.exit(27); } mkdirSync(DIR, { recursive: true });
 const runs = join(DIR, 'runs.jsonl');
 const get = async (u) => sha(Buffer.from(await (await fetch(u)).arrayBuffer()));
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

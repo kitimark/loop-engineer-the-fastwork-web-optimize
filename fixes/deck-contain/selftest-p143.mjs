@@ -72,5 +72,30 @@ ok(APPLIED.PC({ contain: 'strict', h: 844 }) && !APPLIED.PC({ contain: 'strict',
 // the arm files' rules (no hard-coded height in A3, A4, R3; PC's 844 is the control)
 const txt = (f) => readFileSync(join(HERE, 'arms', f), 'utf8').replace(/^@media[^{]*\{/m, '');
 ok(!/\d+px/.test(txt('a3-pad.css').replace(/\/\*[\s\S]*?\*\//g, '')) && !/\d+px/.test(txt('a4-cq.css').replace(/\/\*[\s\S]*?\*\//g, '')) && !/\d+px/.test(txt('r3-pad-only.css').replace(/\/\*[\s\S]*?\*\//g, '')), 'no px length in A3, A4, R3 (width<=Npx media features aside)');
+// rev 1.1: N1 sweep comparison and N6 pixel judge
+{
+  const { sweepDiff, SWEEP } = await import('./sweep.mjs');
+  const sw = (...sl) => ({ shellSw: sl.map((s, i) => ({ sl: s, from: 'p' + i, to: 'p' + (i + 1) })), tabSw: sl.map((s, i) => ({ sl: s, from: 'p' + i, to: 'p' + (i + 1) })) });
+  const d0 = sweepDiff(sw(160, 552), sw(168, 560)), d1 = sweepDiff(sw(160, 552), sw(200, 592)), d2 = sweepDiff(sw(160, 552), sw(160));
+  ok(d0.shellEqual && d0.tabEqual, 'sweep: within 8 px is equal');
+  ok(!d1.shellEqual && d1.shellShift.join() === '40,40', 'sweep: a 40 px shift is not equal');
+  ok(!d2.shellEqual && d2.shellShift === null, 'sweep: a missing switch is not equal');
+  ok(/scrollSnapType = 'none'/.test(SWEEP()) && /scrollSnapType = snap/.test(SWEEP()), 'sweep: snap off and restored');
+  const { judge } = await import('./px.mjs');
+  const { deflateSync } = await import('node:zlib');
+  const crcT = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = (b) => { let c = 0xffffffff; for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const chunk = (t, d) => { const l = Buffer.alloc(4); l.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(t), d]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
+  const png = (w, h, f) => { const raw = Buffer.alloc((w * 3 + 1) * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const [r, g, b] = f(x, y); raw.set([r, g, b], y * (w * 3 + 1) + 1 + x * 3); }
+    const ih = Buffer.alloc(13); ih.writeUInt32BE(w, 0); ih.writeUInt32BE(h, 4); ih[8] = 8; ih[9] = 2;
+    return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]); };
+  const flat = png(8, 8, () => [10, 10, 10]), dot = (px, py, v) => png(8, 8, (x, y) => (x === px && y === py ? [v, v, v] : [10, 10, 10]));
+  ok(judge(flat, flat, flat).state === 'T0', 'judge: equal is T0');
+  ok(judge(flat, dot(1, 1, 50), flat).state === 'FAIL', 'judge: arm diff with clean A/A is FAIL');
+  ok(judge(flat, dot(1, 1, 50), dot(1, 1, 30)).state === 'T1', 'judge: arm diff inside the A/A diff is T1');
+  const jf = judge(flat, dot(2, 2, 50), dot(1, 1, 30), [], 1);
+  ok(jf.state === 'FAIL' && jf.largestShade === 40 && jf.beyondPixels === 1 && jf.areaCssPx === 1, 'judge: arm diff outside the A/A diff is FAIL with numbers');
+  ok(judge(flat, dot(2, 2, 50), flat, [[2, 2, 2, 2]]).state === 'T0', 'judge: masked pixel ignored');
+}
 if (bad.length) { console.log('SELFTEST FAIL', bad.join('; ')); process.exit(1); }
 console.log(`SELFTEST ok ${n} checks`);

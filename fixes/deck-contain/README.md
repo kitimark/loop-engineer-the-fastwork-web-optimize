@@ -3,16 +3,17 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft. Card P-143 rev 1 registered before any counted data; waiting for the Opus pre-data read and the lead's signature.
+**Status:** card P-143 rev 1 SIGNED by the lead with notes N1-N8 (ops-reader-P143; recorded a0e7b46d); rev 1.1 addendum below answers them, waiting for the lead delta check before the dry run and S1. No counted data yet.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
 **Driver(s) behind the claims:** Simulator scripted swipe (scrollTo per rAF, T-194's driver), Chrome scripted swipe; phone G later.
 **Prediction:** `fixes/PREDICTIONS.md` P-143 (reserved 2ee939f8 by mgmt-clerk-1).
 **Base:** v9.1d = int-v8's base patch `ce2d32a1bbbb` (f857ea8d `fixes/v9-1d/patch.diff`, the same bytes as
-`fixes/hero-park/base-v9-1d.diff` at db8dc091), served JS `941aa13e5bdf`, CSS `f1997edf5309`. P-142 (v9.2) was not signed
-when this card was written, so the card is on v9.1d. v9.2 adds people-word a and nav-hit-cache U2, neither of which touches
-the deck. Moving to v9.2 needs an addendum with new pins, before any data.
+`fixes/hero-park/base-v9-1d.diff` at db8dc091), served JS `941aa13e5bdf`, CSS `f1997edf5309`. The card stays on v9.1d
+because nothing in it depends on v9.2 (rev 1.1 N2). P-142 is signed (main 21d56125, rev 1.2 pins 2cf32d44): v9.2 = v9.1d +
+people-word + nav-fade (U2 out, CSS `1c4161f56545`); neither touches the deck. Moving to v9.2 would need an addendum with
+new pins, before any data.
 **Target:** best build v9.3.
 **Files touched (planned):** `/_app/immutable/assets/2.gBuqKVzi.css`: the winning arm's rule appended; no JS change.
 
@@ -64,8 +65,8 @@ Simulator (`probe-sim.mjs`, fw-sim 430x775, 15:4xZ):
   - `aspect-ratio` alone (no containment, arm R);
   - `contain: strict` (B);
   - `width: auto` with stretch (A2).
-- So the cause is WebKit's ratio path for this padded flex item, not containment. OBSERVED in our setup, cause unknown; no
-  WebKit bug cited. Posted as F-291.
+- So 688 appears with and without containment (OBSERVED in our setup, cause unknown; no WebKit bug cited). Posted as
+  F-291. (Wording per rev 1.1 N7.)
 - The spec says the ratio applies to the box named by `box-sizing` (CSS Box Sizing 4 §4.1 `aspect-ratio`; MDN "Size
   calculations involving preferred aspect ratio work with the dimensions of the box specified by box-sizing"), CONFIRMED.
   WebKit's result disagrees with that in our setup.
@@ -319,6 +320,118 @@ T0, and keep the deck's behaviour? Is containment needed (A3 vs R3)? Does the co
     layout runs anyway (scroll-event handlers, toolbar steps, IO writes), and the less-work claim is limited to those
     frames.
 
+### Rev 1.1 addendum: the read's notes N1-N8 and the lead's ruling (registered before any counted data)
+
+Rev 1 was read by ops-reader-P143 at d87f7e0f: PASS WITH NOTES N1-N8. The lead signed it with N1-N8 as conditions.
+Rev 1.1 changes no rev 1 prediction, rule, arm or hold. It adds:
+- the N1 checks (P15, P16);
+- the N3 dry run;
+- the N4 guard;
+- the precedence and arithmetic N5 asks for;
+- the N6 pixel judge;
+- the wording fixes N2 and N7, made in place above;
+- the labels N8.
+
+**N1, the offsetParent shift (lead ruling).**
+- Under A3 and A4 the shells' offsetLeft is +36, so be() (l.11750-11761) moves the active-shell switch during a
+  horizontal deck drag by about +36 px of deck scrollLeft.
+  - Base switches at about k x 392 + 160; A3 and A4 at about k x 392 + 196, the true midpoint.
+  - he()'s tab-click overshoot of 36 px (snapped back in base) is skipped.
+- The lead rules these are motion differences the user can see. Under memory `illusion-must-be-pixel-identical` a
+  motion-only difference is a proposal, not "accepted as disclosed".
+- So S1 and S2 run as planned; they are mechanism attribution, and every arm stays measurable.
+- **An arm may land without a proposal only if P15 and P16 below show it equal to base in Chrome and the Simulator.**
+  - An arm that fails them goes to the user as a proposal with Try-it pages.
+  - A compensating variant (e.g. correcting the bleed so offsetLeft reads as in base) is a new arm and needs its own
+    addendum and read.
+- This changes the Decision's build step: "smallest arm that LOCATES, passes rule 6 and keeps tabs.mjs's resting states"
+  becomes "... passes rule 6, P15 and P16". The order R3, then A3, then A4 is unchanged.
+- **P15, tabs** (`tabs.mjs`, unchanged; runners `n1-chrome.mjs` and `probe-sim.mjs --sweep`):
+  - In one page: base, each arm, base again.
+  - Six cases each: centre shell k, click tab j.
+  - Pass per arm and engine: all 6 after-states (scrollLeft, active shell, active tab) equal base and base again.
+- **P16, deck sweep** (`sweep.mjs`, new):
+  - In the same page: scroll snap is switched off inline on the deck (the same for every arm).
+  - The deck's scrollLeft is stepped from 0 across 2 shell pitches (784 px) in 8 px steps; after each step, two rAFs +
+    200 ms (past be()'s 150 ms timer).
+  - Read: the active shell and the active tab. Every switch is recorded (first scrollLeft at which it changed).
+  - be() calls he(id, false), which returns before any deck scroll (l.11699), so nothing fights the sweep.
+  - Pass per arm and engine: `sweepDiff` gives shellEqual and tabEqual (the same switches, each within 8 px of base),
+    and base2 equals base.
+- Where they run:
+  - Chrome 430x775 and 430x932: `n1-chrome.mjs <out> <base url> --h 775|932 --arms A3,A4,R3`, one shared probe slot per
+    height.
+  - Simulator, toolbar expanded: `probe-sim.mjs <out> <base overlay> --arms A3,A4,R3 --tabs A3,A4,R3 --sweep --states
+    none`, in a functional Simulator shared slot.
+  - Both run on every arm that can win the decision, R3 included. They run after S2 and before pixels. They are
+    functional, so they are never a measurement.
+- Predictions (informed by tabs-chrome3 / geo-sim3, see N8):
+
+| # | prediction | pass line | p |
+|---|---|---|---|
+| 15 | P15 passes for A3, A4 and R3 in Chrome (both heights) and the Simulator | all 6 after-states equal base and base2 | 90 % |
+| 16a | P16 fails for A3 and A4 in both engines, with a shift of +36 +- 8 px at each shell switch | `shellShift` all in [28, 44] | 85 % |
+| 16b | P16 passes for R3 in both engines | shellEqual and tabEqual | 90 % |
+
+- Consequence registered now: if 16a holds, A3 and A4 can land only through a user proposal. A3 or A4 alone then lands
+  no build from this card; R3, if it LOCATES and passes, is the build.
+
+**N2.** Fixed in the Base line above. P-142 is signed; v9.2 = v9.1d + people-word + nav-fade, U2 out. The card stays on
+v9.1d.
+
+**N3, budget and C runs.**
+- Rule 1 addition: a C run dropped by the budget stop, or in a VOID-HOST hold, is "not OK". A hold whose last C (C:3,
+  C:6) is dropped is therefore NOT-REPRODUCED. The scorer already does this; it is now stated.
+- To size the risk, the lead allows **one uncounted 2-step dry run before S1**:
+  - hold name `DRY1`, steps `C:0 A3:0`, the same form as S1 (a normal exclusive hold);
+  - only the step times (`stepS`) and load1 are read;
+  - its folder is never passed to the scorer, and it is disclosed in the results.
+  - If the 2 steps take more than 2 x 500/7 s (about 143 s), the holds are split before S1 and the split is sent to the
+    lead as a delta: S1 into `C:1 PC:1 A3:1 C:2` + `C:2b A4:1 R3:1 C:3`, the same for S2. Otherwise S1 and S2 run
+    unchanged.
+
+**N4, run folders.**
+- `sim-swipe.mjs` and `chrome-swipe.mjs` now refuse (exit 27, `HOLD-EXISTS`) when `out/deck-contain/{sim,chrome}/<hold>`
+  already exists, so a run never appends to an old `runs.jsonl`.
+- After a VOID-HOST the folder is renamed `<hold>-void1` before the one re-run (P-141 N2).
+
+**N5, precedence gaps.**
+- P6: insufficient when A3 or PC has no readable ratio; a miss when A3 is GEOMETRY.
+- P13 arithmetic, from the score JSON (the scorer does not compute it):
+  - per A3 run, `layPerF` / the mean `layPerF` of the same two ratio neighbours;
+  - hit when the mean over the A3 runs is in [0.85, 1.15]; insufficient with no valid A3 run.
+- P9 and P10: insufficient when the Chrome hold has fewer than 2 OK C runs, an A3 run is not OK, or the slot is killed
+  at 300 s (exit 124). One re-run to a new folder (`C1b`) is allowed after a kill or a host stop; its result replaces
+  C1, and both are reported.
+
+**N6, pixels.**
+- `px.mjs` `judge()` replaces the UNSTABLE state:
+  - T0: base equals base again, and the arm equals base;
+  - T1: base differs from base again, and every pixel where the arm differs from base lies inside that base-vs-base2
+    diff;
+  - FAIL: anything else.
+- The triple is shot once more while T1, as before.
+- A FAIL reports the memory's five numbers:
+  - largest shade (`largestShade`);
+  - share of the screen beyond A/A (`shareBeyondAA`);
+  - area in CSS px (`areaCssPx`, from the bbox);
+  - edge or fill: read from the saved shots (`px-chrome-fail/`, `px-sim/fail-*`);
+  - static or moving: the pair's mode.
+- Rule 6 now reads: an arm passes pixels with 0 FAIL; T1 pairs are counted and reported.
+- Pixels run for A3, A4 and R3 (`FILES` in both runners).
+- Self-test: 41 checks (rev 1 had 32), adding the sweep comparison and the judge.
+
+**N7.** Wording fixed in place (the F-291 sentence; the padding-box clip, now CONFIRMED by CSS Overflow 3).
+
+**N8, labels.**
+- P1 and P2 are informed by T-194 (post-data for C and PC).
+- P7 is informed by the step-2 geometry.
+- P15 and P16 are informed by tabs-chrome3 / geo-sim3 and by the be() arithmetic.
+- P14 stays outside this card's read: the G1 reader addendum gets its own pre-data read.
+
+**Order after the delta check:** DRY1, S1, S2, Chrome C1, P15/P16 (Chrome, Simulator), px-chrome, px-sim. Nothing is
+scored before S2.
+
 ### Pins (sha256/12; `out/` paths are gitignored)
 
 | file (under `fixes/deck-contain/`) | sha256/12 | role |
@@ -327,18 +440,20 @@ T0, and keep the deck's behaviour? Is containment needed (A3 vs R3)? Does the co
 | `arms/a3-pad.css` | `02588998685b` | A3, candidate |
 | `arms/a4-cq.css` | `cb41934fd049` | A4, alternate |
 | `arms/r3-pad-only.css` | `7dc1abfe2824` | R3, no-containment sibling |
-| `sim-swipe.mjs` | `917816a52212` | Simulator counted driver (S1, S2) |
-| `chrome-swipe.mjs` | `e2907bd65033` | Chrome counts driver (C1) |
+| `sim-swipe.mjs` | `1b8419a51438` | Simulator counted driver (S1, S2) |
+| `chrome-swipe.mjs` | `2384f2dec39f` | Chrome counts driver (C1) |
 | `score-p143.mjs` | `a562b312dabb` | frozen scorer |
-| `selftest-p143.mjs` | `aa6fbf90ba5d` | scorer self-test (`SELFTEST ok 32 checks`) |
+| `selftest-p143.mjs` | `27d4729eac79` | scorer self-test (`SELFTEST ok 41 checks`) |
 | `geo.mjs` | `4963586afcab` | geometry read, arm toggle, `evalAsync` |
 | `tabs.mjs` | `37c19962b29e` | tab-click behaviour check |
-| `px.mjs` | `78069e46aae1` | pixel diff, freeze, clock mask, positions |
-| `px-chrome.mjs` | `26a3d3814e93` | pixels T0, Chrome |
-| `px-sim.mjs` | `4fd33a4c042c` | pixels T0, Simulator |
+| `px.mjs` | `3ed26f490e2b` | pixel diff, freeze, clock mask, positions |
+| `px-chrome.mjs` | `0b0f1776d32b` | pixels T0, Chrome |
+| `px-sim.mjs` | `a17b77dfd20c` | pixels T0, Simulator |
 | `probe-chrome.mjs` | `0d2e2a174279` | step-2 geometry, Chrome |
 | `probe-tabs-chrome.mjs` | `71d4ed91eaf7` | step-2 tabs, Chrome |
-| `probe-sim.mjs` | `ede2d908d3be` | step-2 geometry and tabs, Simulator |
+| `probe-sim.mjs` | `522cc40c1200` | step-2 geometry and tabs; rev 1.1 P15/P16 with `--sweep`, Simulator |
+| `sweep.mjs` | `02fa46054aea` | rev 1.1 P16 deck sweep and `sweepDiff` |
+| `n1-chrome.mjs` | `2bb8c4fa4478` | rev 1.1 P15/P16 runner, Chrome |
 | `collapse-v1.json` | `1f4305ebed83` | Simulator toolbar collapse (count-only gesture) |
 | `deck-g-v1.json` | `456ebec13061` | phone G1 gesture (gesture hash `fe961246a1e6`) |
 | `arms/a-size-layout.css`, `a2-stretch.css`, `b-strict.css`, `r-ratio-only.css` | `e035f8334d28`, `c2775de88736`, `d4a3a79302a0`, `7591c48acc9f` | dropped design arms (step-2 evidence only) |
@@ -359,8 +474,9 @@ Served base pins: JS `941aa13e5bdf`, CSS `f1997edf5309` (`sim-swipe.mjs` `PINS`)
   `position: relative` (l.3802), so no positioned descendant changes its containing block; the geometry diffs show none.
 - **Stacking**: the deck already has `isolation: isolate`, so it is already a stacking context.
 - **A3 specifics**:
-  - The deck's content box is 0 tall and the shells overflow into its padding box. Both engines clip a scroll container at
-    the padding box, so the visible clip is the same; pixels (rule 6) check it.
+  - The deck's content box is 0 tall and the shells overflow into its padding box. A scroll container clips its content at
+    its padding box, CONFIRMED by spec (CSS Overflow 3, `overflow` values `hidden`/`auto`: the content "is clipped to
+    its padding box"), so the visible clip is the same; pixels (rule 6) check it in both engines.
   - `align-items` changes from center to flex-start. With the content box at 0 that keeps the shells at the top, where
     `center` put them before (their height equalled the content height).
 - **A4 specifics**: the chrome gets layout, style and inline-size containment. That makes it a containing block for the

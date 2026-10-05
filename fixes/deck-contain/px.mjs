@@ -25,7 +25,25 @@ export function pxDiff(a, b, masks = []) {
     if (d) { n++; x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } max = Math.max(max, d); }
   return { w: A.w, h: A.h, diffPixels: n, maxChannelDelta: max, maskedPixels: masked, ...(n ? { bbox: [x0, y0, x1, y1] } : {}) };
 }
-export const FREEZE = `(() => { window.__dcPaused = document.getAnimations().filter((a) => a.playState === 'running'); for (const a of window.__dcPaused) { try { a.pause(); } catch {} } return window.__dcPaused.length; })()`;
+// P-143 rev 1.1 N6: judge one triple (base b, arm a, base again b2). T0: base == base2 and arm == base. A pair whose
+// base != base2 is never compared as T0: it is T1 only when every pixel where the arm differs from base also differs
+// between base and base2 (inside the A/A diff), else FAIL. For a FAIL the report numbers (memory
+// illusion-must-be-pixel-identical): largest shade, share of the screen beyond A/A, area in CSS px (bbox / dpr^2);
+// edge-or-fill is read from the saved shots; static-or-moving is the pair's mode (rest / swipe).
+export function judge(b, a, b2, masks = [], dpr = 1) {
+  const B = pngPixels(b), A = pngPixels(a), C = pngPixels(b2);
+  if (A.w !== B.w || A.h !== B.h || C.w !== B.w || C.h !== B.h) return { state: 'FAIL', sizeMismatch: true };
+  let aa = 0, ab = 0, beyond = 0, shade = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (let i = 0; i < B.px.length; i += B.bpp) { const p = i / B.bpp, x = p % B.w, y = (p - x) / B.w;
+    if (masks.some((m) => x >= m[0] && x <= m[2] && y >= m[1] && y <= m[3])) continue;
+    let dab = 0, daa = 0; for (let c = 0; c < 3; c++) { dab = Math.max(dab, Math.abs(B.px[i + c] - A.px[i + c])); daa = Math.max(daa, Math.abs(B.px[i + c] - C.px[i + c])); }
+    if (daa) aa++; if (dab) ab++;
+    if (dab && !daa) { beyond++; shade = Math.max(shade, dab); x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } }
+  const state = beyond ? 'FAIL' : aa ? 'T1' : 'T0';
+  return { state, aaPixels: aa, abPixels: ab, beyondPixels: beyond, ...(beyond ? { largestShade: shade, shareBeyondAA: beyond / (B.w * B.h),
+    areaCssPx: Math.round(((x1 - x0 + 1) * (y1 - y0 + 1)) / (dpr * dpr)), bbox: [x0, y0, x1, y1] } : {}) };
+}
+export const FREEZE =`(() => { window.__dcPaused = document.getAnimations().filter((a) => a.playState === 'running'); for (const a of window.__dcPaused) { try { a.pause(); } catch {} } return window.__dcPaused.length; })()`;
 // resume only what FREEZE paused (a finished animation is never replayed)
 export const UNFREEZE = `(() => { for (const a of window.__dcPaused || []) { try { a.play(); } catch {} } window.__dcPaused = []; return 1; })()`;
 export const CLOCK = `(() => { const t = document.querySelector('.hero-copy [role=timer]'); if (!t) return null; const r = t.getBoundingClientRect();

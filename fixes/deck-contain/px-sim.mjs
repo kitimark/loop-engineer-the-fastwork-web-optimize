@@ -9,13 +9,13 @@ import { existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node
 import { join, dirname } from 'node:path';
 import { REPO as WT, resolveTree } from '../../tools/lib/paths.mjs';
 import { ARM, GEO, evalAsync } from './geo.mjs';
-import { pngPixels, pxDiff, FREEZE, UNFREEZE, CLOCK, POS, STEP_TO, RAF2 } from './px.mjs';
+import { pngPixels, pxDiff, judge, FREEZE, UNFREEZE, CLOCK, POS, STEP_TO, RAF2 } from './px.mjs';
 const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 const OUT = process.argv[2];
 const opt = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const ARMS = (opt('--arms') || 'A3').split(','), STATES = (opt('--states') || 'expanded,collapsed,landscape').split(',');
 const HERE = dirname(new URL(import.meta.url).pathname);
-const FILES = { A3: 'a3-pad.css', A4: 'a4-cq.css' };
+const FILES = { A3: 'a3-pad.css', A4: 'a4-cq.css', R3: 'r3-pad-only.css' };
 const UDID = process.env.FW_SIM_UDID; if (!UDID) { console.error('FW_SIM_UDID not set: run inside tools/sim.mjs session'); process.exit(1); }
 const OVL = join(WT, 'fixes/deck-contain--base/overlay');
 const DIR = join(WT, 'out/deck-contain/px-sim'); mkdirSync(DIR, { recursive: true });
@@ -40,8 +40,8 @@ const runState = async (state) => {
   const pos = await c.evaluate(POS);
   for (const [pk, y] of Object.entries(pos)) for (const mode of ['rest', 'swipe']) for (const arm of ARMS) {
     const css = readFileSync(join(HERE, 'arms', FILES[arm]), 'utf8');
-    let pair = null;
-    for (let attempt = 1; attempt <= 2 && (!pair || pair.state === 'UNSTABLE'); attempt++) {
+    let pair = null, j;
+    for (let attempt = 1; attempt <= 2 && (!pair || pair.state === 'T1'); attempt++) {
       await c.evaluate(UNFREEZE);
       if (mode === 'rest') { await c.evaluate(`scrollTo({ top: ${y}, behavior: 'instant' })`); await sleep(700); } else await evalAsync(c, STEP_TO(y), sleep);
       const frozen = await c.evaluate(FREEZE); await evalAsync(c, RAF2, sleep);
@@ -53,7 +53,7 @@ const runState = async (state) => {
       await c.evaluate(ARM(null)); await evalAsync(c, RAF2, sleep); await sleep(150);
       const b2 = shot();
       const aa = pxDiff(b, b2, masks), ab = pxDiff(b, a, masks);
-      pair = { state: aa.diffPixels ? 'UNSTABLE' : ab.diffPixels ? 'FAIL' : 'T0', view: state, pos: pk, mode, arm, attempt, y: g0.sy, ih: g0.ih, frozen, masks, aa, ab, deckH: [g0.deck.h, g1.deck.h], docH: [g0.docH, g1.docH] };
+      pair = { state: (j = judge(b, a, b2, masks, cal?.scale || 3)).state, judge: j, view: state, pos: pk, mode, arm, attempt, y: g0.sy, ih: g0.ih, frozen, masks, aa, ab, deckH: [g0.deck.h, g1.deck.h], docH: [g0.docH, g1.docH] };
       if (pair.state === 'FAIL') { writeFileSync(join(DIR, `fail-${state}-${pk}-${mode}-${arm}-base.png`), b); writeFileSync(join(DIR, `fail-${state}-${pk}-${mode}-${arm}-arm.png`), a); }
     }
     res.pairs.push(pair);
@@ -86,7 +86,7 @@ try {
 } catch (e) { res.error = String(e.stack || e.message || e); console.log('ERROR', res.error); process.exitCode = 1; }
 finally { try { c?.close(); } catch {} p.kill(); rmSync(st, { force: true }); }
 const by = (x) => res.pairs.filter((q) => q.state === x).length;
-res.summary = { pairs: res.pairs.length, T0: by('T0'), FAIL: by('FAIL'), UNSTABLE: by('UNSTABLE') };
+res.summary = { pairs: res.pairs.length, T0: by('T0'), FAIL: by('FAIL'), T1: by('T1') };
 console.log('SUMMARY', JSON.stringify(res.summary));
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, JSON.stringify(res, null, 1));

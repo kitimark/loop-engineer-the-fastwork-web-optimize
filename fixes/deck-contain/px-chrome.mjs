@@ -1,19 +1,19 @@
 // P-143 pixels, Chrome (headless): T0 parity of arm A3 (and A4) against the base, in place. Per width config and
 // position (top, enter, inview, leave; each at rest and at the end of a 10-frame scripted step, 'swipe'): every Web
 // Animation paused, then shots base -> arm -> base2 with the arm's <style> toggled between them (2 rAF after each
-// toggle). A pair is valid when base2 equals base; else the triple is shot once more; still unequal = UNSTABLE.
+// toggle). A pair is valid when base2 equals base; else the triple is shot once more; still unequal = T1 when every arm-vs-base pixel lies inside the base-vs-base2 diff, else FAIL (rev 1.1 N6).
 // Mask: the hero clock's rect only (+4 CSS px). T0 = 0 differing pixels. Geometry is read at each shot too.
 // usage: node fixes/deck-contain/px-chrome.mjs <out.json> <base url> [--arms A3,A4] [--only cfg,...]
 import { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir, headedUA } from '../../tools/lib/cdp.mjs';
 import { readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { ARM, GEO } from './geo.mjs';
-import { pxDiff, FREEZE, UNFREEZE, CLOCK, POS, STEP_TO, RAF2 } from './px.mjs';
+import { pxDiff, judge, FREEZE, UNFREEZE, CLOCK, POS, STEP_TO, RAF2 } from './px.mjs';
 const [OUT, URL0] = process.argv.slice(2);
 const opt = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const ARMS = (opt('--arms') || 'A3').split(','), ONLY = opt('--only')?.split(',');
 const HERE = dirname(new URL(import.meta.url).pathname);
-const FILES = { A3: 'a3-pad.css', A4: 'a4-cq.css' };
+const FILES = { A3: 'a3-pad.css', A4: 'a4-cq.css', R3: 'r3-pad-only.css' };
 const PX_CFG = [
   ['m430x775', 430, 775, 'mob'], ['m430x815', 430, 815, 'mob'], ['m430x932', 430, 932, 'mob'], ['m390x844', 390, 844, 'mob'],
   ['m375x667', 375, 667, 'mob'], ['m360x780', 360, 780, 'mob'], ['m640x900', 640, 900, 'mob'], ['m641x900', 641, 900, 'mob'],
@@ -42,8 +42,8 @@ try {
       const pos = await page.eval(POS);
       for (const [pk, y] of Object.entries(pos)) for (const mode of ['rest', 'swipe']) for (const arm of ARMS) {
         const css = readFileSync(join(HERE, 'arms', FILES[arm]), 'utf8');
-        let pair = null;
-        for (let attempt = 1; attempt <= 2 && (!pair || pair.state === 'UNSTABLE'); attempt++) {
+        let pair = null, j;
+        for (let attempt = 1; attempt <= 2 && (!pair || pair.state === 'T1'); attempt++) {
           await page.eval(UNFREEZE);
           if (mode === 'rest') { await page.eval(`scrollTo({ top: ${y}, behavior: 'instant' })`); await sleep(700); } else await page.eval(STEP_TO(y));
           const frozen = await page.eval(FREEZE); await page.eval(RAF2);
@@ -55,7 +55,9 @@ try {
           const b2 = await shot(page);
           const aa = pxDiff(b, b2, masks), ab = pxDiff(b, a, masks);
           pair = { cfg: name, pos: pk, mode, arm, attempt, y: g0.sy, frozen, masks, aa, ab, deckH: [g0.deck.h, g1.deck.h], docH: [g0.docH, g1.docH],
-            state: aa.diffPixels ? 'UNSTABLE' : ab.diffPixels ? 'FAIL' : 'T0' };
+            state: (j = judge(b, a, b2, masks, dpr)).state, judge: j };
+          if (pair.state === 'FAIL') { const fd = join(dirname(OUT), 'px-chrome-fail'); mkdirSync(fd, { recursive: true }); const tag = `${name}-${pk}-${mode}-${arm}`.replace(/[^\w.-]/g, '_');
+            writeFileSync(join(fd, `${tag}-base.png`), b); writeFileSync(join(fd, `${tag}-arm.png`), a); writeFileSync(join(fd, `${tag}-base2.png`), b2); }
         }
         res.pairs.push(pair);
         console.log(`${name.padEnd(12)} ${pk.padEnd(6)} ${mode.padEnd(5)} ${arm} ${pair.state.padEnd(8)} y ${pair.y} A/A ${pair.aa.diffPixels} arm ${pair.ab.diffPixels}${pair.ab.bbox ? ' bbox ' + pair.ab.bbox.join(',') : ''} max ${pair.ab.maxChannelDelta} masked ${pair.ab.maskedPixels} deckH ${pair.deckH.join('/')} (try ${pair.attempt})`);
@@ -65,7 +67,7 @@ try {
   }
 } finally { cdp.close(); await ch.close(); try { rmSync(prof, { recursive: true, force: true }); } catch {} }
 const by = (s) => res.pairs.filter((p) => p.state === s).length;
-res.summary = { pairs: res.pairs.length, T0: by('T0'), FAIL: by('FAIL'), UNSTABLE: by('UNSTABLE'), ERROR: res.pairs.filter((p) => p.error).length };
+res.summary = { pairs: res.pairs.length, T0: by('T0'), FAIL: by('FAIL'), T1: by('T1'), ERROR: res.pairs.filter((p) => p.error).length };
 console.log('SUMMARY', JSON.stringify(res.summary));
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, JSON.stringify(res, null, 1));
