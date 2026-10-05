@@ -99,21 +99,45 @@ and was committed before s6 ran.
 4. D3: the V fo and nl records from s6 (which print served hashes) replace s1/s2 in the exact-match check; s1/s2 stay
    only as A/A partners.
 
-Known Simulator counts so far (counts are not changed by the rule; the predictions above stay as committed in 5d91a542):
+Simulator counts, final (counts are not changed by the rule; the predictions above stay as committed in 5d91a542).
+Exact-match records first, A/A partners after the slash; every record of an item gave the same counts:
 
-| item | arm | session / record | counts |
+| item | arm | exact / A/A records | counts |
 |---|---|---|---|
-| fo | C | s4 (`s4-2-R7C-g-flingout-v1.json`) | caught 3 of 3 (minP -0.13 / -0.39 / -0.12, rest -0.03), released 0, pulled back 0 |
-| fo | V | s1 (`s1-1-R7E-g-flingout-v1.json`, old runner) | released 3 of 3, caught 0, pulled back 0; Fv -6.45 / -4.74 / -4.81, travel 560 |
-| nl | C | s3 (`s3-2-R7C-g-nearline-v1.json`) | near-250 caught 3 of 3, near-280 caught 3 of 3, pulled back 0 |
-| nl | V | s2 (`s2-1-R7E-g-nearline-v1.json`, old runner) | near-250: caught 3 of 3 (Fv -2.13 / -2.13 / -2.16, travel 250); near-280: caught 3 of 3 (Fv -2.35 / -2.42 / -2.39, travel 280); pulled back 0 |
-| fs | C | s4 (`s4-1-R7C-g-fastshort-v1.json`) | misses 0, all 12 closes caught, pulled back 0 |
-| fs | V | s3 (`s3-1-R7E-g-fastshort-v1.json`) | misses 0, all 12 closes caught (Fv -0.73 .. -2.92, travel 47-200), pulled back 0 |
-| e4 | C, V | s5 | pending |
+| fo | C | s4-2 / s7-2 | caught 3 of 3 (s4: minP -0.13 / -0.39 / -0.12, rest -0.03), released 0, pulled back 0 |
+| fo | V | s6-1 / s1-1 | released 3 of 3, caught 0, pulled back 0; s6 Fv -2.9 / -4.63 / -4.68 (released by travel 560 >= 300; s1 Fv -6.45 / -4.74 / -4.81) |
+| nl | C | s3-2 / s12-1 | near-250 caught 3 of 3, near-280 caught 3 of 3, pulled back 0 |
+| nl | V | s6-2 / s2-1 | near-250 caught 3 of 3 (s6 Fv -2.13 / -1.8 / -2.16, travel 250); near-280 caught 3 of 3 (Fv -2.42 / -2.37 / -2.53, travel 280); pulled back 0 |
+| fs | C | s4-1 / s7-1 | misses 0, all 12 closes caught, pulled back 0 |
+| fs | V | s3-1 / s10-1 | misses 0, all 12 closes caught (Fv -0.73 .. -2.95, travel 47-200), pulled back 0 |
+| e4 | C | s9-1 / s13-1 | E1 caught, E3 pulled back to open (the E3 miss, both arms), E4 caught; released 0 |
+| e4 | V | s8-1 / s11-1 | E1 caught, E3 pulled back to open, E4 caught (Fv -1.93 / -1.67, travel 200: under both lines, as predicted); released 0 |
 
-Sessions run: s5 e4 C (and V, VOID: budget after a cold boot); s6 V fo and nl; s7 C fs and fo; s8 V e4 (C e4 VOID,
-budget); s9 C e4 (C nl VOID, budget). Still to run: s10 V fs, s11 V e4, s12 C nl, s13 C e4. Compare output for every
-item goes to ops for the final read.
+Released / caught / pulled back to open, V against C: fo 3/0/0 against 0/3/0 (the intended change); nl, fs, e4
+identical. The ticket's "all: pulled back V <= C" line is judged on the phone, not here.
+
+Sessions run: s5 e4 C (VOID by ruling A; its V item VOID, budget after a cold boot); s6 V fo and nl; s7 C fs and fo;
+s8 V e4 (C e4 VOID, budget); s9 C e4 (C nl VOID, budget); s10 V fs; s11 V e4; s12 C nl; s13 C e4 (start state endH 815,
+maxY 6075, first touch 0 / -6.45 / 681, as every other record). Records are in the gitignored `out/morph-scroll/sim7d/`.
+
+**Final compares** (`sim7d-compare.mjs` e2c2bfdad2ba, every item with a C-C and a V-V A/A pair):
+
+| item | C | V | --aa-c | --aa-v | frozen RESULT (exit) | AMEND-b RESULT |
+|---|---|---|---|---|---|---|
+| fo | s4-2 | s6-1 | s7-2 | s1-1 | SAME (0) | SAME |
+| nl | s3-2 | s6-2 | s12-1 | s2-1 | SAME (0) | SAME |
+| fs | s4-1 | s3-1 | s7-1 | s10-1 | SAME (0) | SAME |
+| e4 | s9-1 | s8-1 | s13-1 | s11-1 | **DIFF 4 (2)**: start y on counted strokes 3-6 | SAME: 4 start-y DIFFs exempted |
+
+- e4 under the frozen rule FAILS, as it stands: counted strokes 3-6 (the mid-page flicks) start 20, 43, 42 and 727 px
+  apart C vs V. Page state, program, E1-E4, every lift, prevented = 0 and all five path groups are SAME (C-V shared
+  0.67 / 0.82 / 0.97 / 0.99 / 0.88 against need 0.67 / 0.8 / 0.85 / 0.79 / 0.88; monotone yes).
+- AMEND-b (ruling B): counted stroke 2 already ended 20 px apart (C 2034, V 2014), so strokes 3-6 are past the chain
+  break, and the clean C-C pair s9 vs s13 starts them 118, 181, 182 and 873 px apart (all > 8 px). All four are exempt;
+  nothing else differs.
+- Output version check (command lines and hashes sent to ops): on fo, nl and fs the 777663766071 and 9cb401ffd83d
+  outputs are byte-identical; on all four items the e2c2bfdad2ba output minus `^AMEND-b` lines is byte-identical to
+  9cb401ffd83d's. 777663766071 cannot read e4 (exit 1: the unresolved `$flicks` repeat count the parser fix covers).
 
 **Rulings after e4 data (2026-10-05).**
 - **A (ops, within the frozen rule):** s5 is VOID, both as the exact-match C record and as an A/A partner. Its page
