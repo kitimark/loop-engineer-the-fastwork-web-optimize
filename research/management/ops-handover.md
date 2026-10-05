@@ -85,6 +85,10 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
   - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
   - P-122's F-256 dry run repeats this on the rev 7d build.
+- 10-05 **P-123 SIGNED by the lead** after the ops PASS (443bafa1; ops read landed as 862d8521); the owner was told by the lead.
+  - R8 (lead): the worktree guard refuses running git against the main checkout from a worktree. That guard is the enforcement layer and changes only with the user's OK, so docs-only ops commits keep going to the lead as land requests until the user rules on it.
+  - Tool stack I-188 + I-182 + I-167 landed (main 7386f197, resolved). mgmt-devices was asked to restart its idle watch to pick it up.
+  - P-124: the final read goes to the lead when D1's dry runs on both arms finish; the lead signs then.
 - 10-05 **P-124 interim (fix-hero-exit-threaded 5d91a542): D2-D7 answered; D1 still running, so there is no final read yet.**
   - D2 cause: the gesture budget check refused items before any touch, the output filter hid the refusal, and `;` plus `head` made the session exit 0.
   - sim7d.sh now has fixed snapshots, prints SERVED per arm (EXIT 4 on a wrong hash), and ends with ITEM OK|VOID.
