@@ -365,3 +365,18 @@ from the top to the end of the page. Everything below was fixed, and dry-run on 
   clip's caption (no frame was viewed; I-062).
 - User review: console step C-064 (localhost review page with the three MP4s inline, captions in plain words, the
   post-hoc clock note on clips 1 and 2); answer OK / not OK + notes.
+
+#### Holds H7/H8 (B1/B2, 2026-10-05 08:44-08:56Z) and two more POST-HOC rulings (lead, 09:15Z)
+
+- **H7** (rA, rV, nA1, nV1, nV2, nA2) and **H8** (eA1, eV1, eV2, eA2): 10/10 runs, Serious (Xcode) throughout,
+  battery 36 to 38 °C. H8-eA1 is MAC-LOADED (load1 16.02 at its start) and stays out.
+- **Scene n (clips t and d):** the pre-set correlation failed on the original side (nA1 -68 ms r 0.504, nA2 -12 ms
+  r 0.491; also nV2 -76 ms r 0.539); only nV1 passed (0 ms r 0.54). POST-HOC: scene n falls back to the drag edge at
+  the title stroke (mark `title`): nA1 100, nV1 51, nV2 58, nA2 106 ms; shown pair nA1 | nV1, **49 ms of the 50 ms pair
+  limit**. The carousel mark's edge (392-490 ms) is not usable: the avatars change about every second. Labels:
+  t "the clock check failed on the original side; aligned on the title-stroke drag edge, a post-hoc check, 49 ms of a
+  50 ms limit"; d "no scroll in this window; clock link from the title edge".
+- **Clip e pick, POST-HOC:** the first-clean-run rule took H1-eA2 | H8-eV1 (two holds about 4 h and ~2 °C apart: H8-eA1
+  was MAC-LOADED and the two eA2 runs tie on run number). Rule for e now: first clean run of each arm in the newest hold
+  that has both arms clean (H8-eA2 | H8-eV1). The mixed MP4 was deleted unreviewed. Clips a, c, p keep their pick
+  (p would change to H6-pA2 | H6-pV1 under the new rule; the ruling covers e only).

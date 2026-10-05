@@ -81,7 +81,7 @@ export const CLOCK_IN_WINDOW = new Set(['a', 'p', 'n']);
 // geometry read minus the run's resting scroll y, plus the viewport's screen offset VIEW_Y), so each arm is cut where its
 // own page stopped; the band is padded by CROP_PAD and kept inside the page area.
 export const CLIPS = {
-  a: { scene: 'a', W: 300 }, p: { scene: 'p', W: 260 }, e: { scene: 'e', W: 300 }, s: { scene: 's', W: 300 }, h: { scene: 'h', W: 300 }, f: { scene: 'f', W: 300 },
+  a: { scene: 'a', W: 300 }, p: { scene: 'p', W: 260 }, e: { scene: 'e', W: 300, pick: 'newest-hold' }, s: { scene: 's', W: 300 }, h: { scene: 'h', W: 300 }, f: { scene: 'f', W: 300 },
   c: { scene: 'a', W: 400, crop: 'countdown', window: 'countdown' },
   t: { scene: 'n', W: 400, crop: 'title', window: ['title', -300, 'carousel', 0] },
   d: { scene: 'n', W: 400, crop: 'communityPill', window: ['end', -6000, 'end', 0] },
@@ -182,7 +182,17 @@ export const CLOCK_OK = { maxLagMs: 50, minR: 0.5 };
 // other. Scene p keeps the pre-set correlation and falls back to the edge only if that fails (also labelled).
 // The strip keeps the page clock (the edge says it leads the video by ~80 ms on H5; not shifted).
 export const EDGE = { minMs: 0, maxMs: 150, pairMs: 50 };
-export const EDGE_MARK = { a: 'fade', p: 'page' };
+export const EDGE_MARK = { a: 'fade', p: 'page', n: 'title' };
+// Scene n (lead's ruling 2026-10-05 09:15Z, post hoc): the pre-set correlation failed on the original side (nA1 -68 ms
+// r 0.504, nA2 -12 ms r 0.491); the run falls back to the drag edge at the title stroke (the carousel mark's edge is not
+// usable: the avatars change about every second). Per-clip labels below.
+export const CLOCK_NOTES = {
+  t: 'The clock check failed on the original side; aligned on the title-stroke drag edge, a post-hoc check, {pair} ms of a 50 ms limit.',
+  d: 'No scroll in this window; clock link from the title edge (post hoc: the clock check failed on the original side).',
+};
+// Post-hoc pick fix for clip e (lead's ruling 2026-10-05 09:15Z): the first pick mixed two holds at different
+// temperatures (H1-eA2 | H8-eV1). 'newest-hold': first clean run of each arm in the newest hold that has both arms clean.
+export const PICK_NOTES = { 'newest-hold': 'First clean run of each arm in the newest hold that has both arms clean (post-hoc pick fix: the first pick mixed two holds at different temperatures).' };
 export const EDGE_PRIMARY = new Set(['a']);
 export function dragEdge(pageFrames, motion, toMovie, markT) {
   if (!motion?.length || !Number.isFinite(markT)) return null;
@@ -497,14 +507,21 @@ function main() {
     // Shown run (rule fixed before the hold-2 numbers were read, after the lead's MAC-LOADED rule): the first clean run
     // of each arm by run number (no error, Mac load1 <= 16 at start and end, no profile drift, clock check passed; the
     // clock condition was added after H1 sA1's check failed at 512 ms, and says nothing about its frames); --show N forces run N.
-    const pick = (arm) => all.filter((r) => !r.error && r.scene === sc && r.arm === arm && (opt('show') ? r.run === show : !r.macLoaded && !r.profile?.drift && r.clock.ok))
-      .sort((x, y) => x.run - y.run)[0];
+    const ok = (r) => !r.error && r.scene === sc && (opt('show') ? r.run === show : !r.macLoaded && !r.profile?.drift && r.clock.ok);
+    const holdN = (r) => Number(String(r.hold).replace(/\D/g, ''));
+    let pool = all.filter(ok);
+    if (def.pick === 'newest-hold' && !opt('show')) {
+      const both = [...new Set(pool.map(holdN))].filter((h) => ['A', 'V'].every((a) => pool.some((r) => holdN(r) === h && r.arm === a)));
+      pool = both.length ? pool.filter((r) => holdN(r) === Math.max(...both)) : [];
+    }
+    const pick = (arm) => pool.filter((r) => r.arm === arm).sort((x, y) => x.run - y.run || holdN(x) - holdN(y))[0];
     let A = pick('A'), V = pick('V');
     if (!A || !V) { console.log(`clip ${cl}: no clean run on both arms (A ${A?.L ?? 'none'}, V ${V?.L ?? 'none'}), not made`); continue; }
     if (!A.clock.ok || !V.clock.ok) { console.log(`clip ${cl}: clock check failed (lag ${A.clock.lagMs} / ${V.clock.lagMs} ms), not made`); continue; }
     const edgeUsed = A.clock.method !== 'correlation' || V.clock.method !== 'correlation';
     if (edgeUsed && !(Math.abs(A.clock.edgeMs - V.clock.edgeMs) <= EDGE.pairMs)) { console.log(`clip ${cl}: drag edges ${A.clock.edgeMs} / ${V.clock.edgeMs} ms differ by more than ${EDGE.pairMs} ms, not made`); continue; }
-    const clockNote = edgeUsed ? `POST-HOC clock check (lead's ruling 2026-10-05): the pre-set correlation check failed (${[A, V].map((r) => `${r.L} lag ${r.clock.lagMs} ms r ${r.clock.r}`).join('; ')}); `
+    const pairMs = edgeUsed ? Math.abs(A.clock.edgeMs - V.clock.edgeMs) : null;
+    const clockNote = CLOCK_NOTES[cl] ? CLOCK_NOTES[cl].replace('{pair}', pairMs) : edgeUsed ? `POST-HOC clock check (lead's ruling 2026-10-05): the pre-set correlation check failed (${[A, V].map((r) => `${r.L} lag ${r.clock.lagMs} ms r ${r.clock.r}`).join('; ')}); `
       + `OBSERVED reason: the hero cards' motion trails the scroll, so the screen motion does not track scroll speed. Replaced by the drag-edge check `
       + `(${A.clock.edgeMs} / ${V.clock.edgeMs} ms, each in ${EDGE.minMs}-${EDGE.maxMs}, pair within ${EDGE.pairMs}). The slow-frame strip keeps the page clock: it leads the video by ~${Math.round((A.clock.edgeMs + V.clock.edgeMs) / 2)} ms (not shifted). Illustration, not a gain claim.` : null;
     if (clockNote) console.log(`clip ${cl}: ${clockNote}`);
@@ -539,7 +556,7 @@ function main() {
       }
     }
     for (const m of made) {
-      report.clips.push({ ...m, mp4: m.mp4.replace(ROOT + '/', ''), clip: cl, scene: sc, title: TITLES[cl], shown: { A: A.L, V: V.L }, clock: { method: A.clock.method === V.clock.method ? A.clock.method : `${A.clock.method} | ${V.clock.method}`, note: clockNote },
+      report.clips.push({ ...m, mp4: m.mp4.replace(ROOT + '/', ''), clip: cl, scene: sc, title: TITLES[cl], shown: { A: A.L, V: V.L }, clock: { method: A.clock.method === V.clock.method ? A.clock.method : `${A.clock.method} | ${V.clock.method}`, note: clockNote, edgePairMs: pairMs }, pickRule: PICK_NOTES[def.pick] || 'first clean run of each arm',
         window: { A: [Math.round(A.t0), Math.round(A.t0 + A.D)], V: [Math.round(V.t0), Math.round(V.t0 + V.D)] }, page: { A: A.page, V: V.page },
         crop: def.crop ? { el: def.crop, yA: crop.yA, yV: crop.yV, h: crop.h } : 'page box' });
       console.log(`CLIP ${m.name}.mp4 ${m.bytes} B ${m.width}x${m.height} ${m.seconds}s crf ${m.crf} (${A.L} | ${V.L}) page >34 ${A.page.gt34}/${V.page.gt34} >50 ${A.page.gt50}/${V.page.gt50}`);
