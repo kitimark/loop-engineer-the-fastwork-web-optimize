@@ -72,6 +72,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~12:0xZ **nav-fade D card v2 (29b0a979, fix-nav-fade): ops read PASS with notes N1-N6; SIGNED by the lead with them as
+  conditions.**
+  - Ops checks: committed files = disk; the delta f41d2854aa90 applied to C (647c9ef2b1e2 / e1359ab9994a) gives a03872195d3f /
+    9646fc3da77a, and `node --check` is ok; tools equal main. P1 was checked line by line in WebKit CSSProperties.json
+    (safari-7622.2.11.14-branch, via gh): "always" acceleration at 6578, 9452, 9813, 11154, 11289, 11309 and 11333, none at
+    mask-position 5810 or clip-path 3902. The look is within PR-010 T2 in both engines.
+  - Before batch 9 runs:
+    - N1: pin the probe scripts (probe/ was untracked).
+    - N2: write the batch 9 confirm/void rule before the data.
+  - In the same commit:
+    - N3: claim P5 for the Simulator end Layout rise per frame (C 1.53-1.56, nav-fade 1.64-1.70) and the Chrome topIn layouts
+      (+3 to +7).
+    - N4: align the README and results.json numbers.
+    - N5: rebase from d4830f1e.
+    - N6: name the landing basis: the less-work rule, with the phone no-worse check under its own P-id (P-139 if asked).
+  - Next: fix-nav-fade sends the conditions sha; ops checks N1-N6 before batch 9 (drain slot 3).
 - 10-05 ~11:5xZ **P-136 part 1 FAIL (C5) stands; P-138 goes to fix-nav-morph (post-data); new drain order; P-130 H4 VOID
   (WDA); P-137 signed and running. Next free P-139.**
   - P-136: ops re-scored the Chrome counts from the files (counts.mjs b93a69de05f0, count-chrome.json 67a6b91698e0, A/A
