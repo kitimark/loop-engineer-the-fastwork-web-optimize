@@ -1,0 +1,526 @@
+{
+ "scorer": "fixes/toolbar-resize/score-p125.mjs",
+ "noise": {
+  "medL": 0.1,
+  "msPerS": 0.1
+ },
+ "VOID": false,
+ "reading": "NOT-THE-WINDOW",
+ "coincidenceC": "COVERS",
+ "arms": {
+  "wpx": {
+   "call": "NONE",
+   "runs": [
+    "NONE",
+    "NONE"
+   ],
+   "nSensitive": false,
+   "meanRatio": 0.992
+  },
+  "wc1": {
+   "call": "NONE",
+   "runs": [
+    "NONE",
+    "NONE"
+   ],
+   "nSensitive": false,
+   "meanRatio": 1.045
+  }
+ },
+ "armsCmp": "ARMS-EQUAL",
+ "byArm": {
+  "C": {
+   "fwwc": {
+    "coincidence": {
+     "H": 22,
+     "Hw": 22,
+     "runs": 5,
+     "floor": 10,
+     "h": 1,
+     "hLo": 0.873,
+     "base": 0.047,
+     "call": "COVERS"
+    },
+    "rate": {
+     "s": 92,
+     "Fs": 155,
+     "r": 518,
+     "Fr": 5888,
+     "runs": 5,
+     "floor": 20,
+     "RR": 6.747,
+     "RRlo": 5.549,
+     "linked": true
+    }
+   },
+   "scene": {
+    "coincidence": {
+     "H": 22,
+     "Hw": 0,
+     "runs": 5,
+     "floor": 10,
+     "h": 0,
+     "hLo": 0,
+     "base": 0.022,
+     "call": "NO-LINK"
+    },
+    "rate": {
+     "s": 5,
+     "Fs": 155,
+     "r": 95,
+     "Fr": 5888,
+     "runs": 5,
+     "floor": 20,
+     "RR": 1.999,
+     "RRlo": 0.772,
+     "linked": false
+    }
+   }
+  },
+  "wpx": {
+   "fwwc": {
+    "coincidence": {
+     "H": 10,
+     "Hw": 10,
+     "runs": 2,
+     "floor": 5,
+     "h": 1,
+     "hLo": 0.741,
+     "base": 0.048,
+     "call": "COVERS"
+    },
+    "rate": {
+     "s": 37,
+     "Fs": 63,
+     "r": 207,
+     "Fr": 2312,
+     "runs": 2,
+     "floor": 8,
+     "RR": 6.56,
+     "RRlo": 4.776,
+     "linked": true
+    }
+   },
+   "scene": {
+    "coincidence": {
+     "H": 10,
+     "Hw": 0,
+     "runs": 2,
+     "floor": 5,
+     "h": 0,
+     "hLo": 0,
+     "base": 0.023,
+     "call": "NO-LINK"
+    },
+    "rate": {
+     "s": 2,
+     "Fs": 63,
+     "r": 38,
+     "Fr": 2312,
+     "runs": 2,
+     "floor": 8,
+     "RR": 1.931,
+     "RRlo": 0.332,
+     "linked": false
+    }
+   }
+  },
+  "wc1": {
+   "fwwc": {
+    "coincidence": {
+     "H": 10,
+     "Hw": 6,
+     "runs": 2,
+     "floor": 5,
+     "h": 0.6,
+     "hLo": 0.304,
+     "base": 0.038,
+     "call": "LINKED-PART"
+    },
+    "rate": {
+     "s": 6,
+     "Fs": 63,
+     "r": 125,
+     "Fr": 2294,
+     "runs": 2,
+     "floor": 8,
+     "RR": 1.748,
+     "RRlo": 0.748,
+     "linked": false
+    }
+   },
+   "scene": {
+    "coincidence": {
+     "H": 10,
+     "Hw": 0,
+     "runs": 2,
+     "floor": 5,
+     "h": 0,
+     "hLo": 0,
+     "base": 0.024,
+     "call": "NO-LINK"
+    },
+    "rate": {
+     "s": 4,
+     "Fs": 63,
+     "r": 36,
+     "Fr": 2294,
+     "runs": 2,
+     "floor": 8,
+     "RR": 4.046,
+     "RRlo": 1.316,
+     "linked": false
+    }
+   }
+  }
+ },
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 5,
+    "medL": 21.529,
+    "msPerS": 819.524
+   },
+   "off": {
+    "n": 8,
+    "medL": 21.606,
+    "msPerS": 780.101
+   },
+   "call": null,
+   "secondary": null,
+   "nSensitive": null,
+   "offCall": null,
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  },
+  {
+   "name": "wpx-H1",
+   "arm": "wpx",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 5,
+    "medL": 21.652,
+    "msPerS": 819.491
+   },
+   "off": {
+    "n": 8,
+    "medL": 21.09,
+    "msPerS": 865.778
+   },
+   "ratio": {
+    "medL": 1.004,
+    "msPerS": 1.017
+   },
+   "ratioOff": {
+    "medL": 0.983,
+    "msPerS": 1.085
+   },
+   "call": "NONE",
+   "secondary": "NONE",
+   "nSensitive": false,
+   "offCall": "NONE",
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 4,
+    "medL": 21.608,
+    "msPerS": 792.778
+   },
+   "off": {
+    "n": 6,
+    "medL": 21.29,
+    "msPerS": 815.534
+   },
+   "call": null,
+   "secondary": null,
+   "nSensitive": null,
+   "offCall": null,
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  },
+  {
+   "name": "wc1-H1",
+   "arm": "wc1",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 5,
+    "medL": 22.764,
+    "msPerS": 813.175
+   },
+   "off": {
+    "n": 8,
+    "medL": 21.902,
+    "msPerS": 795.831
+   },
+   "ratio": {
+    "medL": 1.054,
+    "msPerS": 1.028
+   },
+   "ratioOff": {
+    "medL": 1.037,
+    "msPerS": 1.014
+   },
+   "call": "NONE",
+   "secondary": "NONE",
+   "nSensitive": false,
+   "offCall": "NONE",
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 0,
+    "willChange": 27
+   },
+   "drops": 51,
+   "writes": {
+    "fwwc": 65,
+    "scene": 20
+   }
+  },
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 5,
+    "medL": 21.588,
+    "msPerS": 789.288
+   },
+   "off": {
+    "n": 8,
+    "medL": 20.939,
+    "msPerS": 754.012
+   },
+   "call": null,
+   "secondary": null,
+   "nSensitive": null,
+   "offCall": null,
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  },
+  {
+   "name": "wc1-H2",
+   "arm": "wc1",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 5,
+    "medL": 22.374,
+    "msPerS": 804.974
+   },
+   "off": {
+    "n": 8,
+    "medL": 21.04,
+    "msPerS": 812.055
+   },
+   "ratio": {
+    "medL": 1.036,
+    "msPerS": 0.995
+   },
+   "ratioOff": {
+    "medL": 1.005,
+    "msPerS": 1.011
+   },
+   "call": "NONE",
+   "secondary": "NONE",
+   "nSensitive": false,
+   "offCall": "NONE",
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 0,
+    "willChange": 27
+   },
+   "drops": 54,
+   "writes": {
+    "fwwc": 66,
+    "scene": 20
+   }
+  },
+  {
+   "name": "C-H4",
+   "arm": "C",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 4,
+    "medL": 21.599,
+    "msPerS": 829.273
+   },
+   "off": {
+    "n": 7,
+    "medL": 20.932,
+    "msPerS": 852.442
+   },
+   "call": null,
+   "secondary": null,
+   "nSensitive": null,
+   "offCall": null,
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  },
+  {
+   "name": "wpx-H2",
+   "arm": "wpx",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 5,
+    "medL": 21.038,
+    "msPerS": 823.797
+   },
+   "off": {
+    "n": 6,
+    "medL": 20.129,
+    "msPerS": 838.107
+   },
+   "ratio": {
+    "medL": 0.981,
+    "msPerS": 1.008
+   },
+   "ratioOff": {
+    "medL": 0.967,
+    "msPerS": 1.035
+   },
+   "call": "NONE",
+   "secondary": "NONE",
+   "nSensitive": false,
+   "offCall": "NONE",
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  },
+  {
+   "name": "C-H5",
+   "arm": "C",
+   "valid": true,
+   "why": [],
+   "in": {
+    "n": 4,
+    "medL": 21.298,
+    "msPerS": 805.779
+   },
+   "off": {
+    "n": 7,
+    "medL": 20.719,
+    "msPerS": 767.431
+   },
+   "call": null,
+   "secondary": null,
+   "nSensitive": null,
+   "offCall": null,
+   "promo0": {
+    "n": 0,
+    "n0": 0,
+    "willChange": 0
+   },
+   "promo1": {
+    "n": 29,
+    "n0": 23,
+    "willChange": 6
+   },
+   "drops": 0,
+   "writes": {
+    "fwwc": 122,
+    "scene": 20
+   }
+  }
+ ]
+}

@@ -2238,7 +2238,7 @@
   },
   "p125": {
     "card": "README: Prediction P-125 (registered before data)",
-    "status": "card only; waits for ops pre-data read, lead R7 model review and signature; no data",
+    "status": "measured 2026-10-05 (one normal exclusive hold, 01:51-01:57Z); ops pre-data read PASS (196894ca), lead signed; waits for ops result read",
     "arms": {
       "C": "v8 as served (JS 3e3e94cb6e9f)",
       "wpx": "fwWC rootMargin 387.5px 0px 387.5px 0px (JS 6a79036cc108)",
@@ -2252,6 +2252,126 @@
       "selftest": "3cbb931ad9dd",
       "wpxDiff": "24bb62f4b48b",
       "script": "6ae05e12ace9"
+    },
+    "result": {
+      "reading": "NOT-THE-WINDOW",
+      "arms": {
+        "wpx": {
+          "call": "NONE",
+          "runs": [
+            "NONE",
+            "NONE"
+          ],
+          "meanRatio": 0.992,
+          "ratiosMedLMsPerS": [
+            [
+              1.004,
+              1.017
+            ],
+            [
+              0.981,
+              1.008
+            ]
+          ]
+        },
+        "wc1": {
+          "call": "NONE",
+          "runs": [
+            "NONE",
+            "NONE"
+          ],
+          "meanRatio": 1.045,
+          "ratiosMedLMsPerS": [
+            [
+              1.054,
+              1.028
+            ],
+            [
+              1.036,
+              0.995
+            ]
+          ]
+        }
+      },
+      "armsCmp": "ARMS-EQUAL (medL ratios only, ops N2)",
+      "noise": {
+        "medL": 0.1,
+        "msPerS": 0.1,
+        "note": "floor; raw C-to-C < 0.015"
+      },
+      "cMedL": [
+        21.529,
+        21.608,
+        21.588,
+        21.599,
+        21.298
+      ],
+      "coincidenceC": {
+        "fwwc": {
+          "H": 22,
+          "Hw": 22,
+          "hLo": 0.873,
+          "base": 0.047,
+          "call": "COVERS"
+        },
+        "rate": {
+          "s": 92,
+          "Fs": 155,
+          "r": 518,
+          "Fr": 5888,
+          "RR": 6.747,
+          "RRlo": 5.549,
+          "stepLinked": true
+        },
+        "scene": "NO-LINK, not step-linked"
+      },
+      "coincidenceWpx": "COVERS 10/10, STEP-LINKED RR 6.56 (same writes as C: 122 per run)",
+      "coincidenceWc1": "LINKED-PART 6/10 (pass-through \"1\" writes), not step-linked RR 1.75",
+      "promotionAtRead": {
+        "C": {
+          "n": 29,
+          "n0": 23,
+          "willChange": 6
+        },
+        "wpx": {
+          "n": 29,
+          "n0": 23,
+          "willChange": 6
+        },
+        "wc1": {
+          "n": 29,
+          "n0": 0,
+          "willChange": 27
+        }
+      },
+      "wc1Drops": [
+        51,
+        54
+      ],
+      "offScreen": "C off-screen step frames as heavy as in-view (20.7-21.6 ms); NONE in all arm runs",
+      "predictions": {
+        "hits": 7,
+        "of": 10,
+        "misses": [
+          4,
+          5,
+          7
+        ]
+      },
+      "caveats": [
+        "wpx design miss: the px rootMargin did not stop the step-frame writes (122 records per run, as C); likely the root itself grows 40 px on a step (OBSERVED, unchecked); the reading rests on wc1",
+        "ops N1: wc1 changes the toggling and keeps off-screen layers; a non-NONE wc1 would read as toggle or promotion state; it was NONE",
+        "ops N2: ARMS-EQUAL compares medL only",
+        "ops N3: the no-pixel-change argument is OBSERVED (code reading); any build from the window gets the PR-010 pixel A/A before F",
+        "wpx promotion gate passed trivially: promo0 = 0 in every run (the inject installs before fwWC tags elements); equality shows at read",
+        "host loaded: gate granted after 600 s, load1 up to 92, sim background mean 59 % of a core",
+        "pull-to-refresh guard ended the gesture loop early 7 times (C-H1 x2, C-H2, wc1-H1 x2, C-H3, C-H4); every run keeps 4-5 in-view step frames"
+      ],
+      "next": "scene gate not folded into P-125: needs its own P-id (P-126) from ops; its coincidence here is NO-LINK, so read the heavy frames' Timeline style-invalidation records first; the trigger stays OBSERVED",
+      "files": [
+        "p125-score.json",
+        "p125-runs.jsonl"
+      ]
     }
   }
 }

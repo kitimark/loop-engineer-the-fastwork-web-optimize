@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 card (wpx px rootMargin, wc1 pinned) waits for ops' pre-data read and the lead's R7 model review
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; waits for ops' result read; the scene gate next needs its own P-id (P-126)
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -1126,6 +1126,107 @@ R7 model review (the call lean missed in P-110, P-115, P-119 and P-123), the lea
   | `flick-hero-v1.json` | 6ae05e12ace9 |
   | served JS A (v8) / B (wpx) | 3e3e94cb6e9f / 6a79036cc108 |
   | served CSS (both) | f836404b3728 |
+
+## P-125 result (Simulator, Timeline attribution; scored by the frozen `score-p125.mjs` `c52de0edd5d3`)
+
+**Reading: NOT-THE-WINDOW.** The v8 will-change window (`fwWC`, `data-fw-wc`) does fire on the toolbar step, but
+the in-view step relayout stays without it. Removing every window toggle (wc1) leaves the ~21 ms showcase Layout as
+it is. OBSERVED, in our setup (Simulator iPhone 15 Pro Max, `flick-hero-v1`).
+
+- **Hold.** One normal exclusive chrome-measure hold, 01:51-01:57Z 2026-10-05, after fix-morph-gpu and
+  fix-hero-exit-threaded. The host gate waited 600 s and then granted the hold anyway (load1 6-42 while waiting).
+  Order and served bytes as pinned: A js `3e3e94cb6e9f`, B js `6a79036cc108`, css `f836404b3728` on both, inject
+  `8b8c8eac2603`, all from overlay. All 9 steps ran (C-H5 ended at t+334 s of 524 s), no steps dropped, exit 0.
+  - **Host context (descriptive):** load1 77 at SIM_QUIET and up to 92 during the runs. Simulator background mean 59 %
+    of a core, 18 of 34 windows above 60 %. Timeline Layout ms can grow with load; C-to-C noise stayed at the floor (below).
+  - **Pull-to-refresh guard.** The guard ended `flick-hero-v1`'s loop early 7 times: C-H1 (s2, s4), C-H2 (s2),
+    wc1-H1 (s2, s4), C-H3 (s2), C-H4 (s4). Those runs have fewer strokes; every run still has 4-5 in-view step frames
+    (none THIN).
+- **Per run** (medL = median largest Layout per in-view step frame; ratio = medL / msPerS against the neighbouring C mean):
+
+  | run | gate | in-view n | medL ms | ms/s | ratio | off-screen n / medL | fw-wc writes | drops | at read: n / at "0" / will-change |
+  |---|---|---|---|---|---|---|---|---|---|
+  | C-H1 | valid | 5 | 21.53 | 819.5 | | 8 / 21.61 | 122 | 0 | 29 / 23 / 6 |
+  | wpx-H1 | valid | 5 | 21.65 | 819.5 | 1.004 / 1.017 NONE | 8 / 21.09 NONE | 122 | 0 | 29 / 23 / 6 |
+  | C-H2 | valid | 4 | 21.61 | 792.8 | | 6 / 21.29 | 122 | 0 | 29 / 23 / 6 |
+  | wc1-H1 | valid | 5 | 22.76 | 813.2 | 1.054 / 1.028 NONE | 8 / 21.90 NONE | 65 | 51 | 29 / 0 / 27 |
+  | C-H3 | valid | 5 | 21.59 | 789.3 | | 8 / 20.94 | 122 | 0 | 29 / 23 / 6 |
+  | wc1-H2 | valid | 5 | 22.37 | 805.0 | 1.036 / 0.995 NONE | 8 / 21.04 NONE | 66 | 54 | 29 / 0 / 27 |
+  | C-H4 | valid | 4 | 21.60 | 829.3 | | 7 / 20.93 | 122 | 0 | 29 / 23 / 6 |
+  | wpx-H2 | valid | 5 | 21.04 | 823.8 | 0.981 / 1.008 NONE | 6 / 20.13 NONE | 122 | 0 | 29 / 23 / 6 |
+  | C-H5 | valid | 4 | 21.30 | 805.8 | | 7 / 20.72 | 122 | 0 | 29 / 23 / 6 |
+
+  Every run also logged 20 `data-start-selling-scene` writes.
+- **Noise** N = 0.10 for medL and for ms/s: the floor. The raw C-to-C value is below 0.015 (C medL 21.30-21.61 ms).
+- **Arms:**
+  - wpx: NONE (both runs NONE, mean ratio 0.992).
+  - wc1: NONE (both runs NONE, mean ratio 1.045).
+  - No run is N-SENSITIVE (the msPerS band equals the medL band in every run).
+  - ARMS-EQUAL: |0.992 - 1.045| = 0.053 <= N. **ARMS-EQUAL compares medL ratios only** (ops N2), so no difference
+    between the arms is claimed on either metric.
+- **Coincidence (`data-fw-wc`, rule 5): C COVERS.** All 22 heavy in-view frames in the five C runs carry a window
+  write in their own or the previous frame (h 1.00, hLo 0.873), against a rest base of 0.047.
+  - Write rate (rule 6, descriptive): STEP-LINKED. s 92 over 155 moving frames against r 518 over 5888 rest frames:
+    RR 6.75, RRlo 5.55, floor 20.
+  - wpx is the same as C: COVERS (10 of 10) and STEP-LINKED (RR 6.56).
+  - wc1 is LINKED-PART (6 of 10) and not STEP-LINKED (RR 1.75). The writes left in wc1 are the "1" writes the pin lets
+    through; no element is at "0" at read.
+  - `data-start-selling-scene`: NO-LINK and not STEP-LINKED in every arm (descriptive).
+- **What this means.**
+  - The window *is* step-linked: the step moves the IO root and the window rewrites its attributes on the step frames
+    (P-123's 2-3 step writes per run were the visible part; with frames counted per interval it is about 18 records over
+    about 31 moving frames per run).
+  - Two facts together make the window's toggle not the trigger:
+    - wc1 removes every toggle: drops 51/54, no "0" left, 27 elements keep `will-change`, against C's 6.
+    - wc1 still pays the same in-view Layout: 22.4-22.8 ms per frame, ratio 1.036-1.054, inside the noise band.
+  - The full coincidence in C is co-occurrence. The step drives both the window writes and the relayout, and taking the
+    writes away does not take the Layout away.
+- **wpx did not do what the card assumed (a design miss, disclosed).**
+  - The card expected a px margin to stop the window from moving with the toolbar.
+  - It wrote exactly what C wrote: 122 records per run, the same state at read, COVERS and STEP-LINKED like C.
+  - Likely cause (OBSERVED, not checked): the root rectangle itself grows by 40 px on a step, so a px margin only
+    narrows the edge's move (60 px to 40 px), and with a flick's per-frame motion the same frames cross.
+  - So wpx's NONE says nothing about the window. **The reading rests on wc1**, which did remove the toggles. The frozen
+    rule gives NOT-THE-WINDOW either way (wpx NONE, wc1 NONE), and this paragraph says why only wc1 carries the weight.
+- **Ops N1 (two changes in wc1).** wc1 removes the toggle and also keeps the off-screen layers (27 at read against 6).
+  So a non-NONE wc1 would have read as "toggle or promotion state", not as promotion alone. wc1 is NONE, so neither
+  the toggle nor the promotion state shows an effect on the in-view Layout in this setup.
+- **Gate note.** The wpx promotion gate (install count within +-1 of C) passed trivially. The inject installs before
+  `fwWC` tags anything, so `promo0` is 0 in every run of every arm. The equality the gate meant, the same windows at
+  rest, shows instead at read: wpx and C are both 29 / 23 / 6.
+- **Off-screen frames (descriptive).** On v8, off-screen step frames are as heavy as in-view ones (C medL 20.7-21.6 ms).
+  Neither arm changes that (NONE in all four runs). This is as P-119: only the off-screen skip (cva) removed them.
+- **Pixels (ops N3).** No build comes from this probe. The argument that the window's arms cannot change on-screen
+  pixels (toggles only while a box is >= 387.5 px off screen) rests on reading the code and is OBSERVED, not checked
+  against pixels. Any build that grows out of the window gets the PR-010 Chrome + Simulator pixel A/A before F.
+- **Predictions: 7 of 10.**
+
+  | # | prediction | p | result |
+  |---|---|---|---|
+  | 1 | wpx arm call NONE | 65 % | hit (NONE, but see the design miss) |
+  | 2 | wc1 arm call NONE | 55 % | hit |
+  | 3 | reading NOT-THE-WINDOW | 50 % | hit |
+  | 4 | C coincidence NO-LINK | 70 % | **miss** (COVERS, 22/22) |
+  | 5 | C write rate not STEP-LINKED | 80 % | **miss** (RRlo 5.55, s 92 >= 20) |
+  | 6 | both wpx runs pass the gate | 85 % | hit (trivially, `promo0` = 0 everywhere) |
+  | 7 | wc1 promotion at install above C | 90 % | **miss** (0 = 0 at install; above C only at read, 27 vs 6) |
+  | 8 | noise N at the 0.10 floor | 75 % | hit |
+  | 9 | wpx off-screen NONE in both runs | 75 % | hit |
+  | 10 | scene coincidence in C NO-LINK | 65 % | hit |
+
+  The two misses that matter (4, 5) are the same misjudgement. I took P-123's few step-frame writes as "the window
+  rarely writes on steps", but per frame interval it writes on almost every step frame. The reading's lean held because
+  wc1 tested the toggle directly.
+- **Model (R7), next.**
+  - M1 stays the working model (OBSERVED, cause unknown): the relayout starts inside the box or arrives as inherited style.
+  - The window is dropped as a trigger candidate.
+  - The scene gate is the remaining script-write candidate, but its coincidence is NO-LINK (20 writes per run, none
+    step-linked). By the card's own branch, the next step reads the Timeline's style-invalidation records of the heavy
+    frames before an arm on the scene gate.
+  - **Per the lead's R7 note, the scene gate is not folded into P-125: it needs its own P-id (P-126) from ops.**
+  - The trigger stays OBSERVED, untested, in all text.
+- Files: `p125-score.json` (scorer output), `p125-runs.jsonl` (served-bytes and per-run inject records); the raw
+  Timeline and gesture files stay in the gitignored `out/toolbar-resize/sim125/`.
 
 ## Scenarios not run
 
