@@ -1,0 +1,812 @@
+{
+ "card": "P-143 rev 1.1 (signed with N1-N8; delta check PASS at 9ed4844f)",
+ "reading": "NOT REPRODUCED: both holds fail rule 1 (C runs LOW-N, band n < MIN_N 60); no arm is read; P1 miss, P2-P6 and P13 insufficient (precedence rule 8)",
+ "base": {
+  "patch": "ce2d32a1bbbb",
+  "servedJs": "941aa13e5bdf",
+  "servedCss": "f1997edf5309"
+ },
+ "driver": "sim-swipe.mjs 1b8419a51438 (fw-sim, Safari, 430x775, scrollTo 10 px per rAF 0 -> 2600), scorer score-p143.mjs a562b312dabb",
+ "measurementCodeChanged": false,
+ "disclosures": [
+  "DRY1 (uncounted, C:0 A3:0, never scored): its STEP lines printed Layout ms per band frame (C 38.8, A3 26.7) and band n (C 66, A3 116); seen before S1; no rule changed (lead ruling).",
+  "Unread single-run ratios are OBSERVED only, never a result: S1 A3 0.011, A4 0.012, R3 0.012, PC 0.668; S2 A3 0.653, R3 0.648, PC 0.642, A4 0.011.",
+  "Structural observation 1: C runs draw 90-110 RenderingFrames per 260-step swipe (arms 145-260), so their deck band holds 46-64 frames; MIN_N 60 sits at the C runs own edge (4 of 6 C runs LOW-N).",
+  "Structural observation 2: PC (strict + 844 px) read PARTIAL (0.64-0.67) in both holds, not LOCATES as in T-194; its deck is 844 tall vs the base 844.078.",
+  "Observation 3: per-frame Layout ms over the band falls into three levels (C about 38, a middle level about 25, a low level about 0.43) while Layout records per frame stay 2.74-2.90 in every run; the same arm landed on different levels in S1 and S2 (A3 0.43 then 25.6; R3 0.44 then 25.4). OBSERVED in our setup, cause unknown.",
+  "Observation 4: the first step of each session read the deck top 48 px lower (1229.98 vs 1181.98) in DRY1 and S1; S2 C:4 is 1229.984375."
+ ],
+ "holds": {
+  "S1": {
+   "score": {
+    "dir": "out/deck-contain/sim/S1",
+    "runs": [
+     {
+      "step": "C:1",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 46,
+      "L": 37.78,
+      "Lmean": 38.07,
+      "layPerF": 2.83,
+      "load1": [
+       35.4,
+       24.1
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "PC:1",
+      "arm": "PC",
+      "state": "OK",
+      "n": 105,
+      "L": 25.11,
+      "Lmean": 25.27,
+      "layPerF": 2.9,
+      "load1": [
+       24.1,
+       18.64
+      ],
+      "deckH": 844,
+      "docH": 6850,
+      "ratio": 0.668,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "A3:1",
+      "arm": "A3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.48,
+      "layPerF": 2.89,
+      "load1": [
+       18.64,
+       13.79
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.011,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:2",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 59,
+      "L": 37.97,
+      "Lmean": 38.36,
+      "layPerF": 2.8,
+      "load1": [
+       13.79,
+       10.12
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A4:1",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.5,
+      "layPerF": 2.88,
+      "load1": [
+       10.12,
+       8.45
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "R3:1",
+      "arm": "R3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.44,
+      "Lmean": 0.48,
+      "layPerF": 2.9,
+      "load1": [
+       8.45,
+       7.15
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:3",
+      "arm": "C",
+      "state": "OK",
+      "n": 61,
+      "L": 37.6,
+      "Lmean": 37.72,
+      "layPerF": 2.79,
+      "load1": [
+       7.15,
+       6.61
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "NOT-REPRODUCED",
+    "notes": []
+   },
+   "runs": [
+    {
+     "step": "C:1",
+     "applied": true,
+     "frames": 93,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1229.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      35.4,
+      24.1
+     ],
+     "stepS": 27.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "PC:1",
+     "applied": true,
+     "frames": 152,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844,
+     "docH": 6850,
+     "load1": [
+      24.1,
+      18.64
+     ],
+     "stepS": 22.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A3:1",
+     "applied": true,
+     "frames": 259,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      18.64,
+      13.79
+     ],
+     "stepS": 17.5,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:2",
+     "applied": true,
+     "frames": 100,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      13.79,
+      10.12
+     ],
+     "stepS": 25.9,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A4:1",
+     "applied": true,
+     "frames": 260,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      10.12,
+      8.45
+     ],
+     "stepS": 17.8,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "R3:1",
+     "applied": true,
+     "frames": 260,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      8.45,
+      7.15
+     ],
+     "stepS": 17.7,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:3",
+     "applied": true,
+     "frames": 107,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      7.15,
+      6.61
+     ],
+     "stepS": 25.9,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    }
+   ]
+  },
+  "S2": {
+   "score": {
+    "dir": "out/deck-contain/sim/S2",
+    "runs": [
+     {
+      "step": "C:4",
+      "arm": "C",
+      "state": "OK",
+      "n": 64,
+      "L": 39.17,
+      "Lmean": 39.97,
+      "layPerF": 2.86,
+      "load1": [
+       39.35,
+       28.5
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A3:2",
+      "arm": "A3",
+      "state": "OK",
+      "n": 104,
+      "L": 25.59,
+      "Lmean": 26.11,
+      "layPerF": 2.86,
+      "load1": [
+       28.5,
+       21.05
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.653,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "R3:2",
+      "arm": "R3",
+      "state": "OK",
+      "n": 107,
+      "L": 25.37,
+      "Lmean": 25.77,
+      "layPerF": 2.88,
+      "load1": [
+       21.05,
+       15.72
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.648,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "C:5",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 46,
+      "L": 37.7,
+      "Lmean": 37.6,
+      "layPerF": 2.74,
+      "load1": [
+       15.72,
+       13.02
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "PC:2",
+      "arm": "PC",
+      "state": "OK",
+      "n": 105,
+      "L": 25.15,
+      "Lmean": 25.32,
+      "layPerF": 2.86,
+      "load1": [
+       13.02,
+       10.34
+      ],
+      "deckH": 844,
+      "docH": 6850,
+      "ratio": 0.642,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "A4:2",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.5,
+      "layPerF": 2.86,
+      "load1": [
+       10.34,
+       8.92
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.011,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:6",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 56,
+      "L": 38.24,
+      "Lmean": 38.68,
+      "layPerF": 2.79,
+      "load1": [
+       8.92,
+       7.57
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "NOT-REPRODUCED",
+    "notes": []
+   },
+   "runs": [
+    {
+     "step": "C:4",
+     "applied": true,
+     "frames": 110,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1229.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      39.35,
+      28.5
+     ],
+     "stepS": 26.9,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A3:2",
+     "applied": true,
+     "frames": 146,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      28.5,
+      21.05
+     ],
+     "stepS": 22.4,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "R3:2",
+     "applied": true,
+     "frames": 151,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      21.05,
+      15.72
+     ],
+     "stepS": 22.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:5",
+     "applied": true,
+     "frames": 90,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      15.72,
+      13.02
+     ],
+     "stepS": 25.6,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "PC:2",
+     "applied": true,
+     "frames": 145,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844,
+     "docH": 6850,
+     "load1": [
+      13.02,
+      10.34
+     ],
+     "stepS": 22.1,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A4:2",
+     "applied": true,
+     "frames": 260,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      10.34,
+      8.92
+     ],
+     "stepS": 17.6,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:6",
+     "applied": true,
+     "frames": 100,
+     "swipeSteps": 260,
+     "yMax": 2600,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      8.92,
+      7.57
+     ],
+     "stepS": 25.8,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    }
+   ]
+  }
+ },
+ "scoreJson": {
+  "rule": {
+   "LOCATES": 0.3,
+   "PARTIAL": 0.7,
+   "MIN_N": 60,
+   "AA_LO": 0.8,
+   "AA_HI": 1.25,
+   "DRIFT": 0.3,
+   "GEO_DOC": 2,
+   "GEO_DECK": 0.5
+  },
+  "sim": [
+   {
+    "dir": "out/deck-contain/sim/S1",
+    "runs": [
+     {
+      "step": "C:1",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 46,
+      "L": 37.78,
+      "Lmean": 38.07,
+      "layPerF": 2.83,
+      "load1": [
+       35.4,
+       24.1
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "PC:1",
+      "arm": "PC",
+      "state": "OK",
+      "n": 105,
+      "L": 25.11,
+      "Lmean": 25.27,
+      "layPerF": 2.9,
+      "load1": [
+       24.1,
+       18.64
+      ],
+      "deckH": 844,
+      "docH": 6850,
+      "ratio": 0.668,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "A3:1",
+      "arm": "A3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.48,
+      "layPerF": 2.89,
+      "load1": [
+       18.64,
+       13.79
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.011,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:2",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 59,
+      "L": 37.97,
+      "Lmean": 38.36,
+      "layPerF": 2.8,
+      "load1": [
+       13.79,
+       10.12
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A4:1",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.5,
+      "layPerF": 2.88,
+      "load1": [
+       10.12,
+       8.45
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "R3:1",
+      "arm": "R3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.44,
+      "Lmean": 0.48,
+      "layPerF": 2.9,
+      "load1": [
+       8.45,
+       7.15
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:3",
+      "arm": "C",
+      "state": "OK",
+      "n": 61,
+      "L": 37.6,
+      "Lmean": 37.72,
+      "layPerF": 2.79,
+      "load1": [
+       7.15,
+       6.61
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "NOT-REPRODUCED",
+    "notes": []
+   },
+   {
+    "dir": "out/deck-contain/sim/S2",
+    "runs": [
+     {
+      "step": "C:4",
+      "arm": "C",
+      "state": "OK",
+      "n": 64,
+      "L": 39.17,
+      "Lmean": 39.97,
+      "layPerF": 2.86,
+      "load1": [
+       39.35,
+       28.5
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A3:2",
+      "arm": "A3",
+      "state": "OK",
+      "n": 104,
+      "L": 25.59,
+      "Lmean": 26.11,
+      "layPerF": 2.86,
+      "load1": [
+       28.5,
+       21.05
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.653,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "R3:2",
+      "arm": "R3",
+      "state": "OK",
+      "n": 107,
+      "L": 25.37,
+      "Lmean": 25.77,
+      "layPerF": 2.88,
+      "load1": [
+       21.05,
+       15.72
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.648,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "C:5",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 46,
+      "L": 37.7,
+      "Lmean": 37.6,
+      "layPerF": 2.74,
+      "load1": [
+       15.72,
+       13.02
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "PC:2",
+      "arm": "PC",
+      "state": "OK",
+      "n": 105,
+      "L": 25.15,
+      "Lmean": 25.32,
+      "layPerF": 2.86,
+      "load1": [
+       13.02,
+       10.34
+      ],
+      "deckH": 844,
+      "docH": 6850,
+      "ratio": 0.642,
+      "call": "PARTIAL"
+     },
+     {
+      "step": "A4:2",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.5,
+      "layPerF": 2.86,
+      "load1": [
+       10.34,
+       8.92
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.011,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:6",
+      "arm": "C",
+      "state": "LOW-N",
+      "n": 56,
+      "L": 38.24,
+      "Lmean": 38.68,
+      "layPerF": 2.79,
+      "load1": [
+       8.92,
+       7.57
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "NOT-REPRODUCED",
+    "notes": []
+   }
+  ],
+  "arms": [
+   {
+    "arm": "PC",
+    "call": "INSUFFICIENT",
+    "runs": 0
+   },
+   {
+    "arm": "A3",
+    "call": "INSUFFICIENT",
+    "runs": 0
+   },
+   {
+    "arm": "A4",
+    "call": "INSUFFICIENT",
+    "runs": 0
+   },
+   {
+    "arm": "R3",
+    "call": "INSUFFICIENT",
+    "runs": 0
+   }
+  ],
+  "chrome": []
+ }
+}

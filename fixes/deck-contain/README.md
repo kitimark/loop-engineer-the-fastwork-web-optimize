@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** card P-143 rev 1 SIGNED by the lead with notes N1-N8 (ops-reader-P143; recorded a0e7b46d); rev 1.1 addendum below answers them, waiting for the lead delta check before the dry run and S1. No counted data yet.
+**Status:** P-143 rev 1.1 (signed with N1-N8, delta check PASS) ended NOT REPRODUCED under its own rules (see "Result"); the follow-up is card P-146 (`P146.md`). No build, nothing to land.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
@@ -459,6 +459,54 @@ scored before S2.
 | `arms/a-size-layout.css`, `a2-stretch.css`, `b-strict.css`, `r-ratio-only.css` | `e035f8334d28`, `c2775de88736`, `d4a3a79302a0`, `7591c48acc9f` | dropped design arms (step-2 evidence only) |
 
 Served base pins: JS `941aa13e5bdf`, CSS `f1997edf5309` (`sim-swipe.mjs` `PINS`), base patch `ce2d32a1bbbb`.
+
+## Result: P-143 reads NOT REPRODUCED (S1 and S2, frozen scorer; `results.json`)
+
+- Holds:
+  - S1 2026-10-05, 155 s, load1 35 -> 7;
+  - S2 2026-10-06, load1 39 -> 8.
+- Both holds: every arm applied, nothing dropped, no VOID-HOST.
+- Both holds fail rule 1, because C runs are LOW-N (band n < MIN_N 60). So no arm is read.
+- Precedence (rule 8): P1 is a miss; P2-P6 and P13 are insufficient. P7 and P8 are reported in `results.json` and nothing
+  rests on them. Chrome C1, P15/P16 and pixels were not run, because the card ended at S2.
+
+| hold | run | state | band n | L ms (median) | ratio (unread) |
+|---|---|---|---|---|---|
+| S1 | C:1 | LOW-N | 46 | 37.8 | |
+| S1 | PC:1 | OK | 105 | 25.1 | 0.668 |
+| S1 | A3:1 | OK | 162 | 0.43 | 0.011 |
+| S1 | C:2 | LOW-N | 59 | 38.0 | |
+| S1 | A4:1 | OK | 162 | 0.43 | 0.012 |
+| S1 | R3:1 | OK | 162 | 0.44 | 0.012 |
+| S1 | C:3 | OK | 61 | 37.6 | |
+| S2 | C:4 | OK | 64 | 39.2 | |
+| S2 | A3:2 | OK | 104 | 25.6 | 0.653 |
+| S2 | R3:2 | OK | 107 | 25.4 | 0.648 |
+| S2 | C:5 | LOW-N | 46 | 37.7 | |
+| S2 | PC:2 | OK | 105 | 25.2 | 0.642 |
+| S2 | A4:2 | OK | 162 | 0.43 | 0.011 |
+| S2 | C:6 | LOW-N | 56 | 38.2 | |
+
+The ratios are unread: OBSERVED only, never a result. They are listed for the next card's design.
+
+**Disclosed** (lead ruling: no rule change after data):
+- DRY1, uncounted, never scored. Its STEP lines showed Layout ms per band frame: C 38.8, A3 26.7. Band n: C 66, A3 116.
+  These were seen before S1.
+- **Structural 1.** A C run draws only 90-110 RenderingFrames for the 260-step swipe; arm runs draw 145-260. The C band
+  therefore holds 46-64 frames, so MIN_N 60 sits at the C runs' own edge: 4 of the 6 C runs were LOW-N.
+- **Structural 2.** PC (strict + 844 px) read PARTIAL in both holds (0.64-0.67), not LOCATES as in T-194. Its deck is
+  844 tall against the base's 844.078. OBSERVED in our setup, cause unknown.
+- **Observation 3.** Layout ms per band frame falls on three levels: C about 38, a middle level about 25, a low level
+  about 0.43.
+  - Layout records per frame stay at 2.74-2.90 in every run.
+  - The same arm landed on different levels in S1 and S2: A3 0.43 then 25.6; R3 0.44 then 25.4.
+  - The low level comes with every rAF step drawn (259-260 frames); the middle level with 145-152 frames.
+  - OBSERVED in our setup, cause unknown.
+  - This is the main input for P-146: an arm's effect may be bimodal per run, so a single run per arm per hold cannot
+    show it.
+- **Observation 4.** The first step of every session (DRY1 C:0, S1 C:1, S2 C:4) read the deck top 48 px lower than every
+  later step (1229.98 against 1181.98). This was not part of any rule. Effect on the band: the band uses each run's own
+  read.
 
 ## Scenarios not run
 
