@@ -240,3 +240,27 @@ gitignored `out/phone-clips/` and `out/iphone-screen/` until the user has OKed e
   content blurred through the glass bar is UI-process motion and swamps the script-driven colour flip. The ~310 ms S
   lag on both sides is a correlation artefact of a near-constant-speed scroll, not a delay. So these numbers don't show
   a visible late script update, and the article can't claim one from them.
+
+### Nav colour switch overshoot (`phone-clips.mjs --overshoot`, lead 2026-10-05; page log only, OBSERVED)
+
+For each top-bar `is-on-dark` switch in the scripted-scroll runs, this measures how far the scroll has gone past the
+section edge when the class flips, and how late that is.
+- The edge is the lowest switch y over all S runs. That is an upper bound on the true edge, so every overshoot here
+  is a lower bound.
+- Lateness is interpolated between frame stamps. It is only good to about one frame: switches that are on time read
+  −18 to −2 ms.
+
+| switch (edge ≤) | H1 sA1 | H1 sA2 | H1 sV2 | H2 sV1 (MAC-LOADED, drift) |
+|---|---|---|---|---|
+| 1 on dark (2144) | 50 px, 36 ms | 2 px, −15 ms | 0 px, −15 ms | 10 px, −5 ms |
+| 2 off dark (2922) | 180 px, 195 ms | 28 px, 24 ms | 3 px, −12 ms | 0 px, −18 ms |
+| 3 on dark (4117) | 0 px, −16 ms | 7 px, −8 ms | 21 px, −3 ms | 30 px, −2 ms |
+
+- The original was late at 3 of its 6 switches (36, 195 and 24 ms). v8 was on time at all 6.
+- v8's px figures at switch 3 come with on-time lateness, so they show scroll speed, not delay.
+- sA1 failed the video clock check, but that check concerns the capture, not this page-log measure.
+- sV1's Mac load affects the capture, not the phone's own log; its profile drift (the phone ended at Critical) still
+  applies.
+
+Review step: C-058 (user console). It covers `phone-e.mp4` and `phone-s.mp4`; `phone-e-close` was dropped by the lead.
+The review page `out/phone-clips/clips/review.html` has the MP4s inline and is served on 127.0.0.1 only.
