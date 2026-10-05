@@ -136,11 +136,11 @@ and the Simulator; motion-only differences are proposals).
 
 | # | candidate | expected effect (where) | look | status |
 |---|---|---|---|---|
-| F1 + U2 | F1: hide #platform while it is fully faded (`visibility: hidden` when `--morph-fade` = 0, m >= 0.55). U2: fix-nav-morph's hit-test deferral | Chrome: rest open 122 -> 4 paints, step at m 1 85 -> 1, lift + settle 377 -> 157; 14-26 hit tests per open/close gone | T2 at m 0.95 in Chrome (19 css px², edge, max 40), lead-ACCEPTED provided the Simulator leg stays within T2 | built, `fixes/end-morph-f12/`; lands on v9-final (v9.2 NO-LAND); landing gates on int-v8's snapshot queued |
+| F1 + U2 | F1: hide #platform while it is fully faded (`visibility: hidden` when `--morph-fade` = 0, m >= 0.55). U2: fix-nav-morph's hit-test deferral | Chrome: rest open 122 -> 4 paints, step at m 1 85 -> 1, lift + settle 377 -> 157; 14-26 hit tests per open/close gone | T2 at m 0.95 in Chrome (19 css px², edge, max 40), lead-ACCEPTED provided the Simulator leg stays within T2 | built, `fixes/end-morph-f12/`; lands on v9-final (v9.2 NO-LAND); landing gates PASSED at T2 (lead-accepted); phone no-worse card P-152 written, waiting for its pre-data read |
 | F2 | read `scrollY` once per frame in the engine instead of in `__nsOnScroll` | none in Chrome (the forced style pass only moves) | T0 | DROPPED (lead, 2026-10-05) |
 | F3 | padPF: keep #platform's filter outsets constant with a transparent drop-shadow | none (Simulator S1: the approach repaint stays) | - | DROPPED |
-| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`fixes/end-morph-f4/`, JS `839a5a24c0d4`) | Simulator approach: #platform's 80 whole-layer repaints (noPF arm: 204 -> 119 paints, 20.3 -> 4.0 Mpx) | T0 expected: `blur(0px)` draws the same as no filter. The frame where the filter comes back (fade < 1) needs checking: it may repaint once or recomposite, as rev 3's opacity-1 crossing did | Chrome + Simulator pixels and Simulator counts queued (chain 4) |
-| V1 | snap the `--fw-ms-h` write in `__msRO` to device pixels (`fixes/end-morph-v1/`, JS `1d68bc9fb4fe`) | the toolbar-step repaint, if the fractional sticky offset is its trigger (2.4 row 5) | T0 expected | step A (Simulator toolbar strokes, counts only) running: arms C, V1, N (= F1 + U2) |
+| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`arms/f4-on-f12.diff`, JS `839a5a24c0d4` on v9.2) | Simulator approach: #platform 80 -> 0 repaints, 201/199 -> 124 paints, 20.2 -> 4.2 Mpx (5 below) | T0 in Chrome (8 stops) and the Simulator (7 stops), OBSERVED | measured on v9.2; a separate less-work step after F1 + U2 lands (lead, 2026-10-05): port onto v9-final + F1 + U2, own T0/T2 gate and counts, crossing-frame check |
+| V1 | snap the `--fw-ms-h` write in `__msRO` to device pixels (`fixes/end-morph-v1/`, JS `1d68bc9fb4fe`) | the toolbar-step repaint, if the fractional sticky offset is its trigger (2.4 row 5) | T0 expected | DROPPED (lead, 2026-10-05): no effect in the Simulator (step A, 5), and the case it targets can't be produced there |
 | P1 | morph-gpu rev 1 (composited reveal), ported onto 7d | Simulator: 12 -> 2 paints per frame on the M driver (morph-gpu) | T3 motion, PR-012 rev 1 ACCEPTED by the user | ported onto v9.2 here (`fixes/end-morph-p1/`, handover notes); the v9-final port and the card now belong to fix-end-morph-p1 (lead, 2026-10-05) |
 | P2 | close tail: no 0.7 s width/background transition after a scroll-driven close | ~40 frames of header layout + repaint per close | motion-only difference (residual <= the last step) -> proposal | proposal with Try-it |
 | P3 | #platform fade without blur (opacity only), if the step repaint of a blurred layer proves to be the blur | removes #platform's blur work | visible change -> proposal | after the trigger of 2.4 row 5 is known |
@@ -177,7 +177,9 @@ and the Simulator; motion-only differences are proposals).
 
   - **The Simulator does not reproduce the phone's step repaint** (OBSERVED in our setup). At m 1, touch strokes with a
     toolbar transition repaint #platform 0 times, even in C. The open totals are the panel's own layers (center,
-    photo tracks, header), equal with and without touch.
+    photo tracks, header), equal with and without touch. So Simulator results can't stand in for the phone's
+    toolbar-step repaint; only phone runs can answer it (lead, 2026-10-05: P-152's AC1/AV1; a trigger card only if
+    that leaves it open).
   - At m 0, #platform repaints with or without touch: the approach blur repaint of 2.3 (F4's target).
   - **V1 changes nothing** in the Simulator (447 vs 429 closed), and the case it targets can't be produced here. V1 is
     dropped from the less-work build.
@@ -194,6 +196,35 @@ and the Simulator; motion-only differences are proposals).
 
   - F1+U2 gains nothing on the rAF glide: its gains are at rest open and on toolbar steps.
   - P1's counts went to fix-end-morph-p1.
-  If it can't be reproduced, step B is a phone card (P-id via the lead, pre-data read).
-- F1 + U2 landing gates on v9-final (int-v8's pinned snapshot `snap-a6426953727a`, HASHES sha256/12 `0817a71bf0c7`).
-- F4 gates and counts.
+- F1 + U2 landing gates on v9-final: PASSED at T2, lead-accepted (`fixes/end-morph-f12/README.md`).
+- **v9.2 F1 + U2 Simulator pixel rerun** (`px2-sim-f12b-2026-10-05T23-20-06-748Z`, NO-LAND build): the pre stop (m 0,
+  before the zone) showed 724 css px² consistent over all 4 cross pairs (0.18 %, max 192), box 64,112-368,192, on the
+  photo card under the nav (edges of the car image and price text: a sub-pixel content shift, cause unknown). dn0
+  4 css px² (max 16), all other stops 0. The landing build v9-final had pre 0 consistent, and a second v9-final
+  pre/up1/dn0 run (`px2-sim-v9f-pre-r2-2026-10-05T23-36-16-971Z`) again gave pre 0 consistent (one pair 1999 css px²,
+  its A/A over 8 levels 6.5 %: the pre stop is unsettled in the Simulator), up1 0, dn0 4 (max 16). OBSERVED; it bears
+  only on v9.2.
+- **F4 measured on v9.2** (F4 = F1 + U2 + inline `filter: none` at fade >= 1; diff `arms/f4-on-f12.diff`, JS
+  `839a5a24c0d4`, control F1 + U2):
+  - Chrome pixels (`px2-chrome-f4-2026-10-05T23-30-17-813Z`, stops pre, 0.02, 0.05, 0.1, 0.5, 1, dn0.1, dn0): 0
+    consistent at every stop (up1 19 css px² in one pair only). T0, OBSERVED.
+  - Simulator pixels (`px2-sim-f4-2026-10-05T23-32-29-961Z`, 7 stops): 0 consistent at every stop. T0, OBSERVED.
+  - Simulator counts (`em-sim-s3-2026-10-05T23-34-08-000Z.json`, one run per arm, F1 + U2 / F4 / F1 + U2 again):
+
+    | phase | F1 + U2 | F4 | F1 + U2 again |
+    |---|---|---|---|
+    | approach paints | 201 | 124 | 199 |
+    | approach Mpx | 20.2 | 4.2 | 20.2 |
+    | approach, #platform repaints | 80 | 0 | 80 |
+    | open paints | 430 | 454 | 438 |
+    | open style recalcs | 65 | 75 | 76 |
+    | rest open | 33 | 53 | 45 |
+    | close | 407 | 402 | 406 |
+    | rest closed | 7 | 97 | 98 |
+
+  - The approach gain is the one S1's noPF arm predicted (2.3). The open +16-24 paints rest on one run per arm; the
+    frame where the filter comes back (fade < 1) may cost a repaint or a recomposite, as rev 3's opacity-1 crossing
+    did. UNRESOLVED; the decisive check is a per-frame paint list around the crossing, in F4's own step on v9-final.
+  - The rest phases vary between the two control runs as much as against F4 (rest closed 7 vs 98): they don't decide
+    anything.
+  - Next (lead, 2026-10-05): a separate less-work step after F1 + U2 lands, with its own T0/T2 gate and counts.
