@@ -1,0 +1,118 @@
+{
+  "topic": "nav-fade",
+  "kind": "counts-only (no timing A/B: memory defer-timing-focus-call-tree)",
+  "config": {
+    "baselineSnapshot": "b1789284481295-4ad4a84a",
+    "control": {
+      "name": "C = landed v9-final (fixes/v9-best overlay, fix.mjs apply v9-best --reset at main d4830f1e; v9-best patch at 8b5ce9b3)",
+      "js": "647c9ef2b1e2",
+      "css": "e1359ab9994a"
+    },
+    "patched": {
+      "name": "nav-fade (= nav-fade--maskj rebuilt on v9-final)",
+      "js": "a03872195d3f",
+      "css": "9646fc3da77a",
+      "delta": "fixes/nav-fade/nav-fade-on-v9final.diff",
+      "deltaSha256": "f41d2854aa90"
+    },
+    "onV9finalPlus7d": {
+      "base": "main 189ca7ed, JS 1b2eecc66011 / CSS e1359ab9994a",
+      "result": "delta applies cleanly: JS 2ed12145e856 / CSS 9646fc3da77a, node --check ok",
+      "remeasured": false,
+      "why": "7d's 15 changed lines are all in the menu swipe's touch handlers (__msSettle, __msTouchEv, JS 14167-14290); none writes the nav, the Join button or the language switch; the probes send no touch events"
+    },
+    "probe": "fixes/nav-fade/probe/motion.mjs (counts, frozen frames, per-frame geometry geoV 2), parity.mjs, geo.mjs, analyze.mjs; batch8.sh, batch9.sh",
+    "chrome": "430x775 DPR 3 touch, CPU 6x for counts, shared lane (no timing)",
+    "simulator": "iPhone 15 Pro Max Simulator (WebKit) via sim.mjs session --functional, Timeline record counts",
+    "scenes": {
+      "topIn": "jump to the bar state at the top (the 72 % flip, pill -> bar) and hold still: the 0.98 s reveal sweep after 0.52 s",
+      "glideThru": "the same flip during a 2.5 s scroll glide (decoupling run)",
+      "end": "scroll into the end morph (is-earn-hidden and back)"
+    },
+    "measurementCodeChanged": false
+  },
+  "counts": {
+    "chromeJoinPaints": {
+      "note": "batch 8, n=2: paints of every Join layer per scene (C: button 2 + mask layer 61 at topIn; end 38-39 button + 8 mask layer)",
+      "C": { "topIn": [63, 63], "glideThru": [63, 63], "end": [46, 47] },
+      "nav-fade": { "topIn": [2, 2], "glideThru": [2, 2], "end": [40, 41] },
+      "verdict": "better at every scene (ranges do not overlap, n=2)"
+    },
+    "chromeLanguageSwitchPaintsEnd": { "C": [31, 32], "nav-fade": [32, 32], "note": "is-on-dark background/border/color transition, 0.24 s, main thread; not changed" },
+    "chromeStyleRecalcs": {
+      "C": { "topIn": [176, 176], "glideThru": [404, 408], "end": [446, 464] },
+      "nav-fade": { "topIn": [181, 250], "glideThru": [407, 413], "end": [439, 480] },
+      "note": "topIn a few higher in both nav-fade runs (+5; one run +74); not a per-frame cost (~118 sweep frames); cause not traced"
+    },
+    "chromeLayouts": {
+      "C": { "topIn": [62, 65], "glideThru": [70, 71], "end": [133, 134] },
+      "nav-fade": { "topIn": [68, 69], "glideThru": [70, 73], "end": [132, 134] }
+    },
+    "simulator": {
+      "note": "batch 8, n=2, whole-page Timeline records per scene; Simulator batch 9 pending (5 more runs per scene, addendum commit): it confirms or voids the Simulator Paint claim, it does not change the look verdict",
+      "C": { "topIn": { "Paint": [564, 596], "RecalculateStyles": [117, 123], "Layout": [112, 118] }, "end": { "Paint": [956, 1153], "RecalculateStyles": [223, 242], "Layout": [339, 350] } },
+      "nav-fade": { "topIn": { "Paint": [393, 422], "RecalculateStyles": [128, 181], "Layout": [105, 129] }, "end": { "Paint": [966, 1092], "RecalculateStyles": [240, 273], "Layout": [381, 416] } },
+      "verdict": "topIn Paint better (ranges do not overlap, n=2); end Paint overlapping on this base (it did not overlap on v9c, n=3); end layouts higher in nav-fade in both runs (also more frames: 233-245 vs 222-225); recalcs topIn higher in both runs: UNRESOLVED"
+    },
+    "n": "n=2 on the landed v9-final; Simulator batch 9 pending",
+    "earlierAblationsOnV9c": {
+      "note": "batches 5-7, control v9c (= v9-final + the 6-line morph-close-peak rule, CSS bdecf48c5b32); Chrome counted the button's main layer only",
+      "chromeJoinPaints topIn/glide/end": {
+        "C": "60-61 / 61 / 38-41",
+        "maskj (= nav-fade)": "2 / 0 / 39-41",
+        "maski (mask at rest)": "2 / 0 / 74-79",
+        "clip (B)": "61 / 61 / 10-11",
+        "abri (A+B)": "2 / 0 / 10-11",
+        "layer (negative sibling)": "61 / 61 / 33-34"
+      },
+      "simPaint topIn / end (n=3)": {
+        "C": "579-616 / 1152-1189",
+        "maskj": "427-450 / 954-991",
+        "abri": "407-421 / 844-963"
+      }
+    }
+  },
+  "look": {
+    "rule": "PR-010 T2 (fill <= 64, edge <= 128, <= 0.5 % of the screen, <= 2000 css px2; A/A = C vs C2); control = landed v9-final",
+    "chrome": {
+      "frames": 57,
+      "tier": "T2 (every frame T0/T1 or T2)",
+      "perScene": {
+        "topIn sweep (t 720-1440)": { "largestShade": 55, "share": "<= 0.004 %", "cssPx2": 14, "edgeOrFill": "edge", "kind": "moving" },
+        "topIn rest (t 1520-1600)": { "largestShade": 59, "share": "0.005 %", "cssPx2": 15, "edgeOrFill": "edge", "kind": "static (ring at the rounded edge)" },
+        "topOut": "exact (T0/T1)",
+        "endOut": { "largestShade": 24, "share": "0.006 %", "cssPx2": 19, "edgeOrFill": "edge", "kind": "static (nav outline, same at every t)" },
+        "endIn": { "largestShade": 12, "share": "0.002 %", "cssPx2": 7, "edgeOrFill": "edge", "kind": "moving (t 540-720)" }
+      },
+      "reducedMotion": "28 of 33 exact; 5 endOut frames have 2 isolated device px (shade 20, 0.2 css px2) at x 94 and 199 css px, outside the Join button and the switch (A/A 0 in this run)"
+    },
+    "simulator": {
+      "frames": 57,
+      "tier": "T2 (every frame T0/T1 or T2)",
+      "perScene": {
+        "topIn sweep (t 640-1120)": { "largestShade": 68, "largestShadeAt": "t 800, 81 css px2", "share": "<= 0.030 %", "cssPx2": 118, "cssPx2At": "t 960, shade 34", "edgeOrFill": "edge", "kind": "moving" },
+        "topIn rest (t 1200-1600)": { "largestShade": 42, "share": "0.005 %", "cssPx2": "14-19", "edgeOrFill": "edge", "kind": "static (ring)" },
+        "topOut / endOut / endIn": "exact (T0/T1)"
+      },
+      "reducedMotion": "33 of 33 exact"
+    },
+    "geometry": {
+      "note": "abs(nav-fade - C) per frozen frame, device px (DPR 3), worst over all frames; A/A 0 in both engines; criterion: within 1 device px",
+      "chrome": { "maskEdge": 0.01, "joinX": 0, "earnBoxX": 0.01, "earnBoxWidth": 0 },
+      "simulator": { "maskEdge": 0.04, "joinX": 0, "earnBoxX": 0.35, "earnBoxWidth": 0, "note": "earn box x 0.35 during the 0.52 s delay, 0 by t 1360" },
+      "verdict": "every moving part within 1 device px at every frame"
+    },
+    "rejected": "clip (B) and A+B: Simulator over T2 at the hide's first frame (letter stroke 1 device px off, shade 226) and not exact under reduced motion",
+    "probeArtifact": "reveal t=800 ms: WebKit frozen frame shows the button's translate WA past its 680 ms end (C and every arm keeping it); not used"
+  },
+  "regressions": {
+    "consoleErrors": 0,
+    "failedRuns": 0,
+    "morphReached": "not measured (no verify.mjs run)"
+  },
+  "phone": "not yet: slot ticket to mgmt-ops-10 after P-129 and P-130 (Xcode-induced Serious, G driver); P2 (Simulator counts stand in for the phone) UNRESOLVED",
+  "runs": {
+    "chrome": ["out/nav-fade/motion-chrome-p8-2026-10-05T09-50-46-825Z", "motion-chrome-n8a-2026-10-05T10-04-06-747Z", "motion-chrome-n8b-2026-10-05T10-16-35-844Z", "motion-chrome-red8-2026-10-05T10-32-13-492Z"],
+    "simulator": ["motion-sim-p8-2026-10-05T10-38-38-229Z", "motion-sim-t8a-2026-10-05T10-42-07-523Z", "motion-sim-e8a-2026-10-05T10-43-34-777Z", "motion-sim-t8b-2026-10-05T10-47-16-519Z", "motion-sim-e8b-2026-10-05T10-48-07-102Z", "motion-sim-red8-2026-10-05T10-51-02-911Z"]
+  }
+}
