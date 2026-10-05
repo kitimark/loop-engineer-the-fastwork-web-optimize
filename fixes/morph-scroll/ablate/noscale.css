@@ -1,0 +1,3 @@
+/* ablation (counts only): the panel's per-frame scale off (CSS 10963 transform: scale(.96 + .04m)): does a changing
+   ancestor scale make WebKit re-raster the column-track layers at a new contents scale? */
+.start-selling-morph-panel { transform: none !important; }

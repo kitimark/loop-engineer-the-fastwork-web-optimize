@@ -1,0 +1,2 @@
+/* ablation (counts only): the panel's 16 s column drift off (CSS 10994-10999), as the reduced-motion rule does (11235) */
+.start-selling-morph-col-track { animation: none !important; }

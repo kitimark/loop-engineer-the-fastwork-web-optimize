@@ -148,6 +148,7 @@ for (const [i, snap] of SNAPS.entries()) {
       else if (k === 'shot') { const fp = join(OUT, `shots-${STAMP}`, `${i}-${String(run.steps.length).padStart(2, '0')}-${run.steps.at(-1)?.k || 'start'}.png`); mkdirSync(join(OUT, `shots-${STAMP}`), { recursive: true }); execFileSync('xcrun', ['simctl', 'io', 'booted', 'screenshot', fp], { stdio: 'ignore' }); run.shots = [...(run.shots || []), { at: run.steps.length, file: fp, geo: await c.evaluate(GEO) }]; }
       else if (k === 'glide') { await jump(1); await sleep(1500); await measure(k, 'close', `(() => { const a = ${yAt(1)}, b = ${yAt(0)}; let n = 0; const st = () => { n++; window.scrollTo({ top: Math.round(a + (b - a) * Math.min(1, n / 20)), behavior: 'instant' }); if (n < 20) requestAnimationFrame(st); }; requestAnimationFrame(st); })()`); }
       else if (k === 'glideopen') { await jump(0); await sleep(1500); await measure(k, 'open', `(() => { const a = ${yAt(0)}, b = ${yAt(1)}; let n = 0; const st = () => { n++; window.scrollTo({ top: Math.round(a + (b - a) * Math.min(1, n / 20)), behavior: 'instant' }); if (n < 20) requestAnimationFrame(st); }; requestAnimationFrame(st); })()`); }
+      else if (k === 'restopen') { await jump(1); await sleep(1500); await measure(k, 'rest', `0`); }
       else if (k === 'setopen') await measure(k, 'open', `window.__navMorphSet(1)`);
       else if (k === 'setclose') await measure(k, 'close', `window.__navMorphSet(0)`);
       else if (TOG[k]) { await measure(k, 'on', TOG[k][0]); await measure(k, 'off', TOG[k][1]); }
