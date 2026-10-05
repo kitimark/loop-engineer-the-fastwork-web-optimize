@@ -539,7 +539,9 @@ queue entry not refreshed for 10 min is dropped (a `run --short|--shared` proces
 `run` and `acquire`) is served before earlier normal waiters at the next hand-over, never preempts
 the holder, drains all queued short jobs (up to 15 min) before the next normal waiter; a normal waiter
 the lead moved ahead of them goes first, also while its host gate settles (I-011, I-020, I-030;
-any other gated waiter is passed only in its first 120 s at the gate; `FW_GATE_SHORT_PASS` in the short
+any other gated waiter is passed in its first 120 s at the gate, and after that (moved heads too, I-185) only by a
+capped short or shared job whose cap ends >= 120 s before the head's 600 s gate timeout (now + maxSec + 120 <= gate
+start + 600; board priority first; each pass is a `gate-pass` line in locks/audit.log; `--no-timing` never passes); `FW_GATE_SHORT_PASS` in the short
 job's env changes that, 0 = never), and
 ends at N s (`run` kills the command's whole process tree, exit 124, I-024; a short lease expires and
 can't be renewed). A chrome-measure lease defaults to 600 s and ends by 1200 s. Keep polling while you
@@ -572,7 +574,8 @@ Nothing timed starts inside a `--shared` command (verify.mjs, fix.mjs ab, bench 
 `--short` run, `iphone.mjs scroll|record|run|gesture` refuse; they also refuse a `--shared` flag, exit 2); a nested
 `--shared` job re-enters its slot. Simulator mechanism checks: `node tools/lock.mjs run chrome-measure --shared --weight
 simulator --max-seconds 300 --owner <you> -- node tools/sim.mjs session --functional --owner <you> -- <cmd>` (no
-scroll/record/run in it); during a marked phone block it is DEFERRED (I-160, "Phone blocks" below). The lead switches the lane with `lock.mjs shared on|off`; while off, `--shared` runs as an
+scroll/record/run in it; `sim.mjs gesture <script> --count-only` (counts only, no timing; I-184) runs there and in a
+`--no-timing` hold); during a marked phone block it is DEFERRED (I-160, "Phone blocks" below). The lead switches the lane with `lock.mjs shared on|off`; while off, `--shared` runs as an
 exclusive `--short` job.
 
 ```sh
