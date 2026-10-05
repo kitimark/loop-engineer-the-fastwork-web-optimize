@@ -85,6 +85,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
   - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
   - P-122's F-256 dry run repeats this on the rev 7d build.
+- 10-05 **P-123 result read (fix-toolbar-resize a277d934): AGREE with the call WRITE. The prediction scoring is corrected (3 of 5, call lean missed).**
+  - Checked:
+    - the pins on disk equal rev 2;
+    - holds.log: one shared slot 00:58:22-01:00:02Z, exit 0, after the pre-data PASS;
+    - the run log shows served css f836404b3728 / js 3e3e94cb6e9f and inject 9849c25577b9;
+    - ops' re-read of the raw sim123 R1 R2 with read-p123 aa8c9896dc68 is byte-identical to p123-read.json (f7c3da3740ee);
+    - both runs are valid: 30/1260 and 29/999 step/rest frames, ih 775-815. In R1 the pull-to-refresh guard ended one loop early, but validity holds.
+  - Correction: the owner scored prediction 2 as a hit. It was a distribution; its lean was INVAL-ONLY (0.40), and the outcome, WRITE, had 0.15. So the lean missed, and the result is 3 of 5 (1, 4, 5 hit; 2's lean and 3 missed).
+  - Caveat (in the row): with about 30 step frames against 1000-1260 rest frames, the frozen T2 rule passes any key with 2-3 step records.
+    - So WRITE shows writes that coincide with steps, not writes caused by steps.
+    - The IO-rootMargin mechanism (50% of the viewport height moves 20 px per step) is OBSERVED and untested.
+    - At 2-3 step writes per run, it can explain only part of P-119's 4-5 in-view ~21 ms frames.
+  - The vh/svh question stays UNRESOLVED (the clamp hides it). M1 is not falsified.
+  - R7: the author's call lean missed again (P-110, P-115, P-119, P-123), so the lead's model review gates the next card.
+  - The proposed next probe (px rootMargin arm, optional data-fw-wc pinned arm, Simulator Timeline attribution of the in-view step frames) gets P-125 when its card is committed, then an ops pre-data read.
 - 10-05 **P-123 SIGNED by the lead** after the ops PASS (443bafa1; ops read landed as 862d8521); the owner was told by the lead.
   - R8 (lead): the worktree guard refuses running git against the main checkout from a worktree. That guard is the enforcement layer and changes only with the user's OK, so docs-only ops commits keep going to the lead as land requests until the user rules on it.
   - Tool stack I-188 + I-182 + I-167 landed (main 7386f197, resolved). mgmt-devices was asked to restart its idle watch to pick it up.
