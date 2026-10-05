@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; waits for ops' result read; the scene gate next needs its own P-id (P-126)
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 card (stage 1: read the P-125 Timeline captures' invalidation stacks and layout roots, no hold; K1 root-growth check) waits for ops' pre-data read and the lead's R7 review
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -1188,6 +1188,14 @@ it is. OBSERVED, in our setup (Simulator iPhone 15 Pro Max, `flick-hero-v1`).
     narrows the edge's move (60 px to 40 px), and with a flick's per-frame motion the same frames cross.
   - So wpx's NONE says nothing about the window. **The reading rests on wc1**, which did remove the toggles. The frozen
     rule gives NOT-THE-WINDOW either way (wpx NONE, wc1 NONE), and this paragraph says why only wc1 carries the weight.
+- **Ops result read (mgmt-ops-10, 3f95feb9): AGREE, 7 of 10, re-score byte-identical (`p125-score.json` 2a5e45b7d19d).**
+  Ops' notes:
+  - **Scope.** wc1 still makes 65-66 same-value "1" writes per run, and the window's IntersectionObserver callbacks run
+    in every arm. So the reading excludes the window's toggle and its style change (`will-change: auto`), not the IO
+    observation itself or a same-value attribute write.
+  - **Prediction 6 is a vacuous hit.** `promo0` is 0 in every run, so the gate compared nothing.
+  - **The wpx miss** was missed in ops' pre-data read too. "The root grows 40 px on a step" is consistent with the
+    spec, but whether WebKit's IO root follows innerHeight is UNRESOLVED. P-126 checks it as item K1.
 - **Ops N1 (two changes in wc1).** wc1 removes the toggle and also keeps the off-screen layers (27 at read against 6).
   So a non-NONE wc1 would have read as "toggle or promotion state", not as promotion alone. wc1 is NONE, so neither
   the toggle nor the promotion state shows an effect on the in-view Layout in this setup.
@@ -1227,6 +1235,164 @@ it is. OBSERVED, in our setup (Simulator iPhone 15 Pro Max, `flick-hero-v1`).
   - The trigger stays OBSERVED, untested, in all text.
 - Files: `p125-score.json` (scorer output), `p125-runs.jsonl` (served-bytes and per-run inject records); the raw
   Timeline and gesture files stay in the gitignored `out/toolbar-resize/sim125/`.
+
+## Prediction P-126: what invalidates the heavy in-view toolbar-step frames? (stage 1: read the P-125 Timeline captures, no hold; registered before reading)
+
+P-id P-126 (the lead reserved it for the scene gate, 11ffba5f). The lead says: read the heavy frames'
+style-invalidation records first, before any scene-gate arm; read what P-125 already captured, and ask for a hold only
+for what is missing; check the "root grows 40 px" guess as a named, cheap item. Ops (P-125 result read) agrees with
+that order. Gates: this card, then ops' pre-data read, then the lead's R7 review and signature. The trigger stays
+OBSERVED in all text.
+
+- **Question.**
+  - P-125 ruled out the will-change window's toggle (wc1: no toggles, Layout unchanged). It did not rule out the IO
+    observation itself or same-value writes (ops' scope note).
+  - So what invalidates style or layout in the heavy in-view step frames: a script (and which function), or the
+    engine with no script on the stack?
+  - Is the heavy Layout forced by a script read or run in the rendering update? Does it start at the view root or at a
+    subtree?
+- **Data: no new hold.**
+  - Input: the 9 P-125 runs in `out/toolbar-resize/sim125/` (all valid under P-125's gate), plus their Timeline files
+    `tl-*.json` and the inject records in `g-*.json`.
+  - C = the 5 C runs, the primary set. R = wpx + wc1 (4 runs), a replicate set: neither arm changed the Layout
+    (P-125), so it is read the same way and reported descriptively.
+- **What the captures hold (format survey before freezing, disclosed).**
+  - Before writing the reader I counted record types and data keys over all 9 captures; I looked at no per-frame or
+    per-stack content.
+  - WebKit's Timeline gives `ScheduleStyleRecalculation` (10316, 1657 with a stack), `InvalidateLayout` (10302, 5543
+    with a stack), `RecalculateStyles` (11736, 6776 with a stack), `Layout` (12049, each with `data.root`, a quad;
+    6013 with a stack), `EventDispatch` (with `data.type`), `ObserverCallback` (with `data.type`), `TimerFire`,
+    `FireAnimationFrame` and `FunctionCall`.
+  - Unlike Chrome, there are no per-element invalidation reasons. What the records can tell is which script, if any,
+    was on the stack when style or layout was invalidated or forced, and the layout root's box.
+  - So stage 1 asks exactly that, and nothing finer.
+- **Reader** `read-inval126.mjs` (`5ea7520852a8`, frozen; it imports `coincidence` and `cpLower` from `score-p125.mjs`
+  `c52de0edd5d3`, unchanged). Rules, as its header states:
+  1. **Frames as P-125.** HEAVY = moving, y < 3250, in view, largest outermost Layout >= 10 ms. CONTROL = in-view rest
+     frames (not moving, y < 3250, in view). If fewer than 20 of them are pooled, every rest frame with y < 3250 is the
+     control, flagged "wide".
+  2. **Carrying.** A frame carries a feature when a record with it starts in the frame's own interval or the previous
+     frame's (as P-125).
+  3. **Stack key.** The innermost call frame whose url contains `/_app/immutable/`; native frames and the injected
+     probe are skipped. Its line maps to a region of the v8 JS `2.DyWL8TcE.js`, padded by one line because the
+     protocol's line base is taken from the docs, not checked:
+     - fwWC: l.2738-2748
+     - sceneCE: l.2793-2805 (cE)
+     - sceneB: l.2925-2955
+     - sceneC: l.14205-14220
+
+     Any other page line keys as `<file>:<function>@<line>`. No page frame on the stack: `native`.
+  4. **Features.** `inval:<key>` (a ScheduleStyleRecalculation or InvalidateLayout with that key), `ev:<type>`
+     (EventDispatch, e.g. `resize`: the scroll engine `rE` also listens to resize, JS l.2762), and `obs:<type>`
+     (ObserverCallback, so IntersectionObserver callbacks are counted, not excluded).
+  5. **Coincidence per feature,** C pooled, P-125's frozen rule against the CONTROL base: THIN when H < 5; COVERS when
+     Hw >= max(5, 2 x runs) (10 for C), hLo >= 2 x base and h >= 0.8; LINKED-PART when Hw >= floor and hLo >= 2 x base;
+     else NO-LINK.
+  6. **Per heavy Layout:**
+     - PARENT: RECALC when >= 80 % sit directly in RecalculateStyles, else OTHER (parent and top-level ancestor types
+       kept).
+     - FORCED: the Layout's own stack key, else its RecalculateStyles parent's. SCRIPT when >= 80 % have a page key,
+       UPDATE when <= 20 %, else MIXED (keys counted).
+     - ROOT: VIEW when the root quad's box is 0..430 x 0..ih (+-1 px), else SUBTREE (size kept). VIEW when >= 80 %,
+       SUBTREE when <= 20 %, else MIXED.
+  7. **Reading (frozen).** fwWC is reported but cannot decide, because P-125's wc1 removed its toggles without effect.
+
+     | reading | rule |
+     |---|---|
+     | SCRIPT-SOURCE(keys) | some `inval:<page key>` other than fwWC is COVERS or LINKED-PART in C |
+     | NATIVE | no such key, and `inval:native` is COVERS or LINKED-PART in C |
+     | UNCLEAR | anything else (no invalidation record links, or THIN) |
+
+     R gives its own reading: AGREE when it equals C's, else DIFFER (descriptive).
+- **K1, the root-growth check (the P-125 wpx miss; cheap, from data on disk).**
+  - Every inject `io` entry is `[time, in, top, bottom, rootH]` from the showcase IO (rootMargin 0, the same implicit
+    root as `fwWC`'s IO).
+  - SUPPORTS when, pooled over all runs, heights within 1 px of both the runs' min and max innerHeight appear
+    (775 and 815). ONE-HEIGHT when only one appears. NONE when there are no entries.
+  - K1b (descriptive): the distinct heights of VIEW layout roots, which show whether the layout view grows with the
+    step. That is the layout viewport, not necessarily the IO root, so K1b cannot decide K1.
+- **K2 (reference, no hold).** The IntersectionObserver spec's "root intersection rectangle" for an implicit root (the
+  document's viewport), and WebKit's source for the rectangle it uses (`IntersectionObserver.cpp`: layout viewport or
+  visual viewport). Cited with link and line. It is needed for any CONFIRMED wording. Plan:
+  1. W3C IntersectionObserver spec, "root intersection rectangle".
+  2. github.com/WebKit/WebKit `Source/WebCore/page/IntersectionObserver.cpp` and `LocalFrameView` viewport rect getters,
+     with their history.
+  3. Bugs on rootBounds and the iOS dynamic toolbar.
+  4. How our probe could mislead: the io entries come only at crossings, so one height can be pure sampling.
+- **K3 (only if K1 is ONE-HEIGHT or NONE and K2 leaves it open; needs a slot, asked for separately).** A count-only
+  Simulator check in the shared lane (`--weight simulator`, `--functional`, no timing): an IO with thresholds on a
+  sentinel element logs `rootBounds.height` on each callback across a toolbar step. This is the only item that would
+  need lock time; it gets its own approval, not this card's.
+- **Ops' lesson, folded in.** Any arm that grows out of P-126 (a scene-gate pin, or a change to the function the
+  reading names) first gets a pre-data **target check**: a count-only Simulator run in the shared lane that shows the
+  arm changes its target (the targeted writes or invalidations gone or changed, counted per run) before any Timeline
+  hold. An arm that does not change its target is fixed or dropped before data; wpx would have failed this check.
+- **Self-test** `p126-selftest.mjs` (`f3f922b0bbb9`): `SELFTEST PASS (30 checks)`, on synthetic runs only. Checks:
+  - stack keys: inject and native frames skipped, region padding, file check, native, scene regions;
+  - native + fwWC + resize gives NATIVE, with fwWC COVERS reported but not deciding, RECALC / UPDATE / VIEW, and R
+    AGREE;
+  - a scene invalidation on step frames gives SCRIPT-SOURCE(sceneCE);
+  - a scene invalidation in every frame gives NO-LINK, then NATIVE;
+  - a forced layout is keyed `2.DyWL8TcE.js:gBCR@5000`;
+  - a subtree root gives SUBTREE;
+  - no records give UNCLEAR;
+  - a previous-frame record carries;
+  - K1 gives SUPPORTS, ONE-HEIGHT or NONE;
+  - the wide-control fallback;
+  - THIN at 4 heavy frames;
+  - the floors are 10 for 5 runs and 8 for 4.
+- **What each reading leads to (frozen before data).**
+
+  | reading | next step |
+  |---|---|
+  | SCRIPT-SOURCE(sceneCE / sceneB / sceneC) | a scene-gate arm card (pin `data-start-selling-scene`), after the target check above |
+  | SCRIPT-SOURCE(other key) | an arm on that function (new card), same target check |
+  | NATIVE with ROOT VIEW | the step re-lays out from the view root with no script on the stack; next is a reference check of WebKit's layout-viewport resize invalidation (what it dirties) against what in the showcase depends on it (P-123's open S5 question); no scene arm |
+  | NATIVE with ROOT SUBTREE | as above, plus the subtree's box (from the quad) names the layout root |
+  | UNCLEAR | the Timeline cannot see the cause; the lead decides the next instrument |
+
+  FORCED = SCRIPT adds the named reading function as a candidate whatever the reading.
+- **Pixel and behaviour check.** Stage 1 changes nothing: it reads files on disk, and no build comes from it. Any later
+  build gets the PR-010 pixel A/A before F, as P-125 N3.
+- **Predictions (before reading; one probability each; my leans missed in P-110, P-115, P-119, P-123, and P-125's 4/5).**
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | C PARENT RECALC | 80 % |
+  | 2 | C FORCED UPDATE | 60 % |
+  | 3 | C ROOT VIEW | 55 % |
+  | 4 | C reading NATIVE (SCRIPT-SOURCE 40 %, UNCLEAR 15 %) | 45 % |
+  | 5 | `inval:fwWC` COVERS in C (as P-125's writes) | 70 % |
+  | 6 | every scene key NO-LINK or absent in C | 75 % |
+  | 7 | `ev:resize` COVERS in C | 65 % |
+  | 8 | R AGREE | 80 % |
+  | 9 | K1 SUPPORTS | 55 % |
+  | 10 | `inval:native` COVERS in C | 70 % |
+
+  The lean: P-125 showed the step-coincident script writes are not needed for the Layout, and P-123 found no value in
+  the box that flips. So I lean to an engine-side invalidation from the resize itself. But P-125 taught me that "few
+  writes" was wrong, and a forced read in the resize handler (`rE`) would make it SCRIPT. Hence 45 %.
+- **Model, for the lead's R7 review.**
+  - M1 stays (OBSERVED, cause unknown): the relayout starts inside the box or arrives as inherited style.
+  - P-125 removed the window's toggle as a cause. Candidates left: the scene gate's writes (NO-LINK in P-125, as
+    writes); the scroll engine's resize handler `rE` (JS l.2761-2762, it listens to `resize`), and a read it might
+    force; and the engine's own reaction to a layout-viewport height change.
+  - Stage 1 tells these apart only by the stacks on invalidation and layout records, plus the layout root. It cannot
+    say which property or element was invalidated (WebKit's Timeline has no such field).
+  - What would change the model:
+    - SCRIPT-SOURCE or FORCED SCRIPT moves the trigger to a named function.
+    - NATIVE moves it to the engine and makes the scene arm low value.
+    - UNCLEAR says this instrument is exhausted.
+- **Cost.** Stage 1 reads files only: no lock, no Simulator, no phone. K2 is web reading (no personal data). K3 is the
+  only possible lock use, and it is asked for separately.
+- **Pins (sha256/12).**
+
+  | file | hash |
+  |---|---|
+  | `read-inval126.mjs` | 5ea7520852a8 |
+  | `p126-selftest.mjs` | f3f922b0bbb9 |
+  | `score-p125.mjs` (imported) | c52de0edd5d3 |
+  | input: the 18 P-125 capture files, `cat g-*.json tl-*.json` in name order | 8435065642cc (`out/toolbar-resize/sim125/`; `runs.jsonl` = committed `p125-runs.jsonl`) |
 
 ## Scenarios not run
 

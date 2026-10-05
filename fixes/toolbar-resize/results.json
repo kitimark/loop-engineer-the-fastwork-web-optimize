@@ -2238,7 +2238,7 @@
   },
   "p125": {
     "card": "README: Prediction P-125 (registered before data)",
-    "status": "measured 2026-10-05 (one normal exclusive hold, 01:51-01:57Z); ops pre-data read PASS (196894ca), lead signed; waits for ops result read",
+    "status": "measured 2026-10-05; ops result read AGREE 7/10 (3f95feb9, re-score byte-identical 2a5e45b7d19d); landed a28a29ad",
     "arms": {
       "C": "v8 as served (JS 3e3e94cb6e9f)",
       "wpx": "fwWC rootMargin 387.5px 0px 387.5px 0px (JS 6a79036cc108)",
@@ -2371,7 +2371,30 @@
       "files": [
         "p125-score.json",
         "p125-runs.jsonl"
-      ]
+      ],
+      "opsRead": {
+        "call": "AGREE",
+        "commit": "3f95feb9",
+        "rescore": "2a5e45b7d19d",
+        "notes": [
+          "scope: wc1 keeps 65-66 same-value \"1\" writes per run and the IO callbacks run in every arm; the reading excludes the toggle and its style change, not IO observation",
+          "prediction 6 is a vacuous hit (promo0 = 0 everywhere)",
+          "wpx miss also missed in the pre-data read; root growth consistent with the spec, WebKit IO root following innerHeight UNRESOLVED (P-126 K1)"
+        ]
+      }
+    }
+  },
+  "p126": {
+    "card": "README: Prediction P-126 (stage 1, registered before reading)",
+    "status": "card only; waits for ops pre-data read and the lead R7 review and signature; no per-frame content read",
+    "stage1": "read the P-125 Timeline captures (no hold): invalidation stacks, layout parent / forced / root of the heavy in-view step frames",
+    "k1": "root growth from the inject io rootH entries; K2 reference (spec + WebKit source); K3 shared-lane count-only Simulator check only if needed, asked separately",
+    "armRule": "ops lesson: any arm from P-126 gets a pre-data count-only target check that it changes its target",
+    "pins": {
+      "reader": "5ea7520852a8",
+      "selftest": "f3f922b0bbb9",
+      "scorerImported": "c52de0edd5d3",
+      "input": "8435065642cc"
     }
   }
 }
