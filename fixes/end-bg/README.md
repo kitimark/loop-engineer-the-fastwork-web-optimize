@@ -688,6 +688,57 @@ Status of the kit:
   phone).
 - Part 1 is 10 fs runs in 5 holds: about 2300 s of runs plus 2 gates, inside 3600 s.
 
+### P-145 addendum rev 1.1 (ops-reader-P145 pre-data read, 17:13Z: PASS with notes N1-N7 on 1ed950e3; before any data)
+
+This addendum is README-only: no script changes and no re-pin. Where it differs from the card above, this text wins.
+**SIGNED by the lead with N1-N7 as conditions** (N1 accepted as proposed; N6 accepted as a disclosed design limit).
+
+- **N1, void holds.** A hold can end VOID:
+  - exit 3: end gate, or a Mac sleep;
+  - exit 4: hash or setup;
+  - exit 5: start gate, or WDA;
+  - exit 8: a sentinel failed.
+
+  Before the read, the runner moves that hold's g- and tl- records to `out/p145/void/<H>/`. They do not count. The reader
+  reads only what remains in `out/p145/runs`.
+
+  A time-guard VOID (exit 7) that `p145-block.sh` retries whole, and that then ends VALID, is not a void hold. Its first
+  try's files are moved aside by the retry.
+
+  A BLOCK STOP ends the block. A restart counts as block 2 of 2, only on the lead's go.
+- **N2, sentinel numbers.** The G sentinel uses the signed P-129 reader rev 1.1's criteria, as in P-137: fps ≥ 50 and
+  slow share ≤ 6 %. CLAUDE.md's 58 / 44 are the S/W figures. Keeping both S0 and S1 is stricter than the minimum.
+- **N3, scoring precedence.**
+  - P1 or P2 is insufficient when its pair is THIN or the block is VOID.
+  - P5 and P6 are insufficient when the block is VOID, and P6 also when a pair is THIN.
+  - P4 is a hit only if S0 and S1 PASS and no hold ends VOID. The one exception is a time-guard retry that then ends VALID.
+  - P5's range 14-30 is inclusive.
+  - P3 follows the reader's READING line (THIN and VOID score as the "THIN or VOID" row).
+- **N4, informed items.** This card is post-data on P-137 (same C, driver and profile) and on P-144 (same P and T CSS).
+  - P1-P3 are informed by P-137's CAUSE and by P-144's unread M2 numbers.
+  - P5 is informed by P-137's C range.
+  - P4 and P6 are informed by P-137's run.
+- **N5, text corrections.**
+  - Arm P removes every non-title nobg layer, not only pictures: the gradients, the grain with its blend reset, the menu
+    photo wall and the earn nav glow. PICTURES therefore reads "the non-title backgrounds carry the effect", not only
+    "PR-025's image work".
+  - The Falsification NEITHER line is wrong. P + T equals nobg rule for rule (30 rules), and the organized title is in
+    neither arm nor in nobg, so "what only nobg removes" is empty. NEITHER means a joint (non-additive) effect, or one
+    that 3 v 3 runs cannot separate.
+  - The header comment of `sim/titles-off.css` still names images.css. This is cosmetic, so no re-pin.
+- **N6, design limit (disclosed).** T is the first item of its 600 s hold in all three counted runs (H4, H5, H6). C is
+  first once (H3) and P is first once (H7, alone). No grouping of 2 runs per hold balances this across 9 runs. A
+  first-in-hold effect would bias T alone; the reader does not correct for it. Lead condition: the result names this
+  limit next to any T verdict and any reading that involves T (TITLES, BOTH, NEITHER).
+- **N7, two more pins.** Both equal main and appear in every PIN line:
+
+  | file | pin |
+  |---|---|
+  | `research/phone-thermal-gate/thermal-gate.mjs` | ecb403b3ad25 |
+  | `fixes/rest-script/tools/pmcheck.mjs` | d36bd7437b7c |
+
+  Raw hold and gate logs are never committed unscrubbed.
+
 ## 9. Pending
 
 - PR-025: the user's pick, then the phone test of slow frames.
