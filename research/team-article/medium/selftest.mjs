@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { norm, shortDiff, extractExpected, dataUriInfo, loadDraft, verify } from './medium-verify.mjs';
+import { createHash } from 'node:crypto';
+import { norm, shortDiff, extractExpected, dataUriInfo, loadDraft, verify, checkTransfer, report } from './medium-verify.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url)), FX = join(HERE, 'fixtures');
 const run = (...args) => {
@@ -118,8 +119,60 @@ test('draft-snapshot.js is a read-only expression: no network, no edits', () => 
   for (const bad of [/\bfetch\s*\(/, /XMLHttpRequest/, /sendBeacon/, /WebSocket/, /new Image\b/, /cloneNode/, /\.click\s*\(/, /execCommand/,
     /\.(innerHTML|outerHTML|textContent|nodeValue|value|src)\s*=[^=]/, /\.(remove|append|appendChild|prepend|insertBefore|replaceWith|setAttribute|removeAttribute|focus|dispatchEvent)\s*\(/])
     assert.doesNotMatch(code, bad, `draft-snapshot.js must not use ${bad}`);
-  assert.ok(src.split('\n').length <= 80, 'draft-snapshot.js stays under ~80 lines');
+  assert.ok(src.split('\n').length <= 95, 'draft-snapshot.js stays under ~95 lines (~70 plus the 20-line SHA-256)');
   assert.doesNotThrow(() => new Function(src)); // parses as a script (it is pasted, not imported)
+});
+
+test('the in-page SHA-256 of draft-snapshot.js equals node:crypto', () => {
+  const src = readFileSync(join(HERE, 'draft-snapshot.js'), 'utf8');
+  const body = src.split('// sha256 begin')[1].split('// sha256 end')[0].replace(/^[^\n]*\n/, '');
+  const sha256 = new Function(`${body}; return sha256;`)();
+  for (const n of [0, 1, 55, 56, 63, 64, 65, 119, 120, 1000, 70000]) {
+    const b = Buffer.alloc(n).map((_, i) => (i * 131 + n) & 255);
+    assert.equal(sha256(b), createHash('sha256').update(b).digest('hex'), `length ${n}`);
+  }
+  const t = 'It wasn’t “smooth” — 165–174 → ✓';
+  assert.equal(sha256(new TextEncoder().encode(t)), createHash('sha256').update(t, 'utf8').digest('hex'));
+});
+test('transfer: OK on a joined file (even pretty-printed), MISMATCH is an issue, absent is not', () => {
+  const raw = readFileSync(join(FX, 'draft-perfect.json'), 'utf8');
+  assert.equal(checkTransfer(raw).state, 'OK');
+  const r = run(...draft('perfect'), ...short);
+  assert.match(r.out, /^TRANSFER OK \(length \d+, sha256 [0-9a-f]{12}\)$/m); assert.equal(r.last, 'VERIFY PASS');
+  const lost = JSON.parse(raw); lost.blocks[4].text = lost.blocks[4].text.slice(0, -1); // one character lost between parts
+  const t = checkTransfer(lost); assert.equal(t.state, 'MISMATCH'); assert.match(t.line, /^TRANSFER MISMATCH/);
+  const E = extractExpected(readFileSync(join(FX, 'copy.html'), 'utf8'), JSON.parse(readFileSync(join(FX, 'manifest.json'), 'utf8')),
+    JSON.parse(readFileSync(join(FX, 'alt-short.json'), 'utf8')));
+  const ok = JSON.parse(raw); ok.transfer.sha256 = '0'.repeat(64); // blocks fine, but the transfer does not prove it
+  const res = verify(E, loadDraft(ok), { transfer: checkTransfer(ok) });
+  assert.equal(res.issues, 1); assert.match(report(E, loadDraft(ok), res), /TRANSFER MISMATCH[^\n]*\nVERIFY FAIL 1 issues$/);
+  assert.equal(checkTransfer(readFileSync(join(FX, 'draft-broken.json'), 'utf8')).state, 'ABSENT');
+  assert.match(run(...draft('broken'), ...short).out, /^TRANSFER not checked/m);
+});
+test('title first: the banner is expected after the title; a wrong banner is still CHANGED', () => {
+  const html = '<p><em>Educational study:</em> A personal study.</p><h1>The title</h1><p>Body one.</p><p>Body two.</p>';
+  const E = extractExpected(html);
+  assert.deepEqual(E.map((e) => e.type + ':' + e.text), ['h1:The title', 'p:Educational study: A personal study.', 'p:Body one.', 'p:Body two.']);
+  const blk = (type, text, cls = []) => ({ type, text, cls });
+  const good = [blk('h3', 'The title', ['graf--title']), blk('p', 'Educational study: A personal study.'), blk('p', 'Body one.'), blk('p', 'Body two.')];
+  assert.equal(verify(E, loadDraft({ blocks: good })).issues, 0);
+  const wrong = good.map((b) => ({ ...b })); wrong[1].text = 'Educational study: A private study.';
+  const res = verify(E, loadDraft({ blocks: wrong }));
+  assert.equal(res.issues, 1); assert.equal(res.rows[1].state, 'CHANGED'); assert.match(res.rows[1].notes[0], /\[-personal-\]\{\+private\+\}/);
+  const before = [good[1], good[0], good[2], good[3]]; // banner above the title, as in the copy: Medium can't do that
+  const b = verify(E, loadDraft({ blocks: before }));
+  assert.equal(b.issues, 1); assert.deepEqual(b.rows.map((r) => r.state).filter((x) => x !== 'OK'), ['OUT-OF-ORDER']);
+});
+test("Medium's last empty paragraph (graf--trailing) is OK; any other empty p is EXTRA", () => {
+  const E = extractExpected('<h1>T</h1><p>One.</p><p>Two.</p>');
+  const blk = (type, text, cls = []) => ({ type, text, cls });
+  const base = [blk('h3', 'T', ['graf--title']), blk('p', 'One.'), blk('p', 'Two.')];
+  const trailing = blk('p', '', ['graf--p', 'graf--empty', 'graf--trailing']);
+  assert.equal(verify(E, loadDraft({ blocks: [...base, trailing] })).issues, 0);
+  const mid = verify(E, loadDraft({ blocks: [base[0], base[1], trailing, base[2], trailing] }));
+  assert.equal(mid.issues, 1); assert.equal(mid.rows.filter((r) => r.state === 'EXTRA').length, 1); // the middle one only
+  const plainLast = verify(E, loadDraft({ blocks: [...base, blk('p', '', ['graf--p', 'graf--empty'])] }));
+  assert.equal(plainLast.issues, 1); assert.match(plainLast.rows.at(-1).notes[0], /stray empty p/);
 });
 
 let failed = 0;

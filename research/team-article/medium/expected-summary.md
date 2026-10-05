@@ -7,8 +7,8 @@ Regenerate it whenever the copy is rebuilt. The verifier, not this page, decides
 
 | type | count |
 |---|---|
-| p | 43 |
 | h1 | 1 |
+| p | 43 |
 | h2 | 17 |
 | blockquote | 2 |
 | li | 37 |
@@ -16,6 +16,8 @@ Regenerate it whenever the copy is rebuilt. The verifier, not this page, decides
 | total | 116 |
 
 ## Headings in order
+
+Medium puts the title first, so the opening banner paragraph is expected right after the title.
 
 1. (title) Sixteen Milliseconds: Loop Engineering the fastwork.com Scroll
 2. Why I started

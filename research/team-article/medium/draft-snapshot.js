@@ -2,7 +2,9 @@
 // Paste the whole file into the Claude in Chrome javascript tool, in the Medium editor tab. It reads the editor's
 // blocks in order and returns them as a JSON string. It makes no network call and changes nothing on the page:
 // no clicks, no edits, no cloned images (a cloned <img> would fetch). The result also stays in
-// window.__fwDraftSnapshot, so a long result can be read in parts: window.__fwDraftSnapshot.slice(0, 20000), ...
+// window.__fwDraftSnapshot, so a long result can be read in parts: window.__fwDraftSnapshot.slice(0, 1000), ...
+// The last key, transfer {length, sha256}, is computed here over the JSON without it, so medium-verify.mjs can
+// prove that the parts were joined back without a loss (TRANSFER OK / TRANSFER MISMATCH).
 // Save it as out/lead/medium-audit/draft-<UTC>.json in the main checkout, then run medium-verify.mjs on it.
 (() => {
   const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
@@ -63,6 +65,26 @@
   const rootName = root.tagName.toLowerCase() + (root.className ? '.' + String(root.className).trim().split(/\s+/).slice(0, 2).join('.') : '');
   const out = { schema: 'fw-medium-draft/1', takenAt: new Date().toISOString(), host: location.host,
     editor: /\/edit\b/.test(location.pathname) || !!editable, root: rootName, counts, blocks };
-  window.__fwDraftSnapshot = JSON.stringify(out);
+  // sha256 begin: plain synchronous SHA-256 of a byte array (crypto.subtle would make the result a promise)
+  const sha256 = (bytes) => {
+    const K = [], H = [], prime = (n) => { for (let d = 2; d * d <= n; d++) if (n % d === 0) return false; return true; };
+    for (let n = 2, i = 0; i < 64; n++) if (prime(n)) { if (i < 8) H[i] = ((n ** 0.5) % 1) * 2 ** 32 | 0; K[i++] = (Math.cbrt(n) % 1) * 2 ** 32 | 0; }
+    const len = bytes.length, w = new Uint32Array(((len + 72) >> 6) << 4), W = new Uint32Array(64), r = (x, k) => (x >>> k) | (x << (32 - k));
+    for (let i = 0; i < len; i++) w[i >> 2] |= bytes[i] << (24 - (i & 3) * 8);
+    w[len >> 2] |= 0x80 << (24 - (len & 3) * 8); w[w.length - 1] = len * 8; w[w.length - 2] = Math.floor(len / 2 ** 29);
+    for (let o = 0; o < w.length; o += 16) {
+      for (let t = 0; t < 64; t++) W[t] = t < 16 ? w[o + t] : (r(W[t - 2], 17) ^ r(W[t - 2], 19) ^ (W[t - 2] >>> 10)) + W[t - 7] + (r(W[t - 15], 7) ^ r(W[t - 15], 18) ^ (W[t - 15] >>> 3)) + W[t - 16];
+      let [a, b, c, d, e, f, g, h] = H;
+      for (let t = 0; t < 64; t++) {
+        const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[t] + W[t]) | 0, t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      [a, b, c, d, e, f, g, h].forEach((x, i) => { H[i] = (H[i] + x) | 0; });
+    }
+    return H.map((x) => (x >>> 0).toString(16).padStart(8, '0')).join('');
+  };
+  // sha256 end
+  const payload = JSON.stringify(out);
+  window.__fwDraftSnapshot = JSON.stringify({ ...out, transfer: { length: payload.length, sha256: sha256(new TextEncoder().encode(payload)) } });
   return window.__fwDraftSnapshot;
 })();

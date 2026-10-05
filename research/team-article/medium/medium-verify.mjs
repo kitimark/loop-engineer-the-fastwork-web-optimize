@@ -25,11 +25,15 @@
 // how), EXTRA (in the draft, not in the copy; a leading Medium section divider is ignored), OUT-OF-ORDER (same
 // block, other place). Figures also show image / caption / alt / GIF: alt is CUT when the draft alt is a prefix of
 // the expected one (Medium cuts alt text at 500 characters), and an expected alt over 500 is an issue by itself.
+// Medium puts the title first, so the copy's banner paragraph is expected right after the title; Medium's last
+// empty paragraph (class graf--trailing, the very last block) is not EXTRA. A snapshot with transfer {length,
+// sha256} is checked: TRANSFER OK, or TRANSFER MISMATCH (an issue: the parts were not joined back exactly).
 // Last line: VERIFY PASS, or VERIFY FAIL <n> issues. Exit 0 on PASS, 1 on FAIL, 2 on bad input.
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 export const ALT_MAX = 500;
 
@@ -117,14 +121,33 @@ export function extractExpected(html, manifest = { items: [] }, altOverrides = {
     const text = norm(stripTags(inner));
     if (text) out.push({ type: tag, text });
   }
+  // Medium puts the title above everything, so the blocks before the title (the banner) are expected after it
+  const t = out.findIndex((b) => b.type === 'h1');
+  if (t > 0) out.unshift(...out.splice(t, 1));
   return out;
 }
 
 // ---- the draft ----------------------------------------------------------------------------------------------------
-export function loadDraft(raw) {
+export function parseDraft(raw) {
   let d = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (typeof d === 'string') d = JSON.parse(d); // the javascript tool's result saved as a JSON string
   if (!d || !Array.isArray(d.blocks)) throw new Error('draft: no "blocks" array (is this a draft-snapshot.js result?)');
+  return d;
+}
+
+// transfer {length, sha256}: computed in the page over JSON.stringify of the snapshot without it. Re-stringifying
+// the parsed rest gives the same text (JSON.stringify output round-trips), so pretty-printing the file is harmless.
+export function checkTransfer(raw) {
+  const d = parseDraft(raw);
+  if (!d.transfer) return { state: 'ABSENT', line: 'TRANSFER not checked (the snapshot has no length/sha256; older draft-snapshot.js)' };
+  const { transfer, ...rest } = d, payload = JSON.stringify(rest);
+  const got = { length: payload.length, sha256: createHash('sha256').update(payload, 'utf8').digest('hex') };
+  if (got.length === transfer.length && got.sha256 === transfer.sha256) return { state: 'OK', line: `TRANSFER OK (length ${got.length}, sha256 ${got.sha256.slice(0, 12)})` };
+  return { state: 'MISMATCH', line: `TRANSFER MISMATCH: the page sent length ${transfer.length}, sha256 ${String(transfer.sha256).slice(0, 12)}; the file has length ${got.length}, sha256 ${got.sha256.slice(0, 12)} (a part lost, doubled or changed while joining?)` };
+}
+
+export function loadDraft(raw) {
+  const d = parseDraft(raw);
   return d.blocks.map((b, i) => ({ ...b, i, type: String(b.type || 'p').toLowerCase(), text: norm(b.type === 'figure' ? b.caption : b.text),
     caption: norm(b.caption), alt: norm(b.alt) }));
 }
@@ -234,6 +257,7 @@ export function verify(E, D, opts = {}) {
     if (lastE.has(j)) prevE = lastE.get(j);
     if (dUsed.has(j)) { seenContent = true; return; }
     if (d.type === 'hr' && !seenContent) return; // Medium opens every story with a section divider
+    if (j === D.length - 1 && d.type === 'p' && !d.text && (d.cls || []).includes('graf--trailing')) return; // Medium's own last empty line
     seenContent = true;
     const what = d.type === 'figure' ? `figure: ${d.caption || d.alt || '(no caption, no alt)'}` : d.text ? d.text : `(empty ${d.type})`;
     extras.push({ after: prevE, row: { n: null, e: null, d, dIndex: j, state: 'EXTRA', notes: [d.text || d.type === 'figure' ? `draft block ${j + 1}` : `stray empty ${d.type}, draft block ${j + 1}`], what } });
@@ -244,7 +268,8 @@ export function verify(E, D, opts = {}) {
   // notes on OK rows (an image still loading, a GIF accepted by --gif-unknown-ok) are printed, not counted
   const warnings = all.filter((r) => r.state === 'OK').flatMap((r) => r.notes.map((t) => `${r.e?.label || `#${r.n}`}: ${t.replace(/^WARN /, '')}`));
   const issues = all.filter((r) => r.state !== 'OK').length;
-  return { rows: all, issues, warnings };
+  const transfer = opts.transfer || null;
+  return { rows: all, issues: issues + (transfer?.state === 'MISMATCH' ? 1 : 0), warnings, transfer };
 }
 
 // ---- report -------------------------------------------------------------------------------------------------------
@@ -268,6 +293,7 @@ export function report(E, D, res, opts = {}) {
     lines.push(`| ${r.n ?? '+'} | ${type} | ${esc(clip(item, 70))} | ${r.state} | ${p.img || ''} | ${p.cap || ''} | ${p.alt || ''} | ${p.gif || ''} | ${esc(clip(r.notes.join('; '), 160))} |`);
   }
   for (const w of res.warnings) lines.push(`WARN ${w}`);
+  if (res.transfer) lines.push(res.transfer.line);
   lines.push(res.issues === 0 ? 'VERIFY PASS' : `VERIFY FAIL ${res.issues} issues`);
   return lines.join('\n');
 }
@@ -281,7 +307,7 @@ export function expectedSummary(E, src = {}) {
   L.push('## Blocks by type', '', '| type | count |', '|---|---|');
   for (const [k, v] of Object.entries(count)) L.push(`| ${k} | ${v} |`);
   L.push(`| total | ${E.length} |`, '');
-  L.push('## Headings in order', '');
+  L.push('## Headings in order', '', 'Medium puts the title first, so the opening banner paragraph is expected right after the title.', '');
   E.filter((e) => /^h\d$/.test(e.type)).forEach((e, i) => L.push(`${i + 1}. ${e.type === 'h1' ? '(title) ' : ''}${e.text}`));
   L.push('', '## Figures in order', '');
   L.push('Every figure needs the image, the caption and the alt text. GIF items must stay animated GIFs.', '');
@@ -318,10 +344,11 @@ function main(argv) {
   if (argv.includes('--expected-summary')) { console.log(expectedSummary(E, { copy: rel(copy), manifest: rel(man), overrides: rel(ov) })); return 0; }
   const draft = val('--draft');
   if (!draft) { console.error('medium-verify: --draft <snapshot.json> is required (see --help)'); return 2; }
-  let D;
-  try { D = loadDraft(readFileSync(resolve(draft), 'utf8')); } catch (e) { console.error(`medium-verify: ${e.message}`); return 2; }
+  let D, transfer;
+  try { const raw = readFileSync(resolve(draft), 'utf8'); D = loadDraft(raw); transfer = checkTransfer(raw); }
+  catch (e) { console.error(`medium-verify: ${e.message}`); return 2; }
   console.log(`copy: ${rel(copy)}\nmanifest: ${rel(man)}${ov ? `\nalt overrides: ${rel(ov)} (${Object.keys(overrides).join(', ')})` : ''}\ndraft: ${draft}`);
-  const res = verify(E, D, { gifUnknownOk: argv.includes('--gif-unknown-ok') });
+  const res = verify(E, D, { gifUnknownOk: argv.includes('--gif-unknown-ok'), transfer });
   console.log(report(E, D, res, { issuesOnly: argv.includes('--issues-only') }));
   return res.issues === 0 ? 0 : 1;
 }

@@ -68,8 +68,11 @@ GIF or not, caption, alt), code blocks and dividers.
 - Paste the whole file into the Claude in Chrome javascript tool, in the Medium editor tab.
 - The first run may ask for permission. The user approves it. If it is refused, stop and report.
 - It returns one JSON string. Save it unchanged to `out/lead/medium-audit/draft-<UTC>.json` (gitignored).
-- If the result comes back cut short, read it in parts: `window.__fwDraftSnapshot.slice(0, 20000)`, then
-  `.slice(20000, 40000)` and so on, and join the parts before you save.
+- The tool cuts a result at about 1,000 characters. Read it in parts: `window.__fwDraftSnapshot.length`, then
+  `window.__fwDraftSnapshot.slice(0, 1000)`, `.slice(1000, 2000)` and so on. Join the parts exactly, with nothing
+  added or dropped, and save.
+- The result ends with `transfer` (length and SHA-256, computed in the page). The verifier checks it and prints
+  `TRANSFER OK` or `TRANSFER MISMATCH`. A mismatch means a part was lost, doubled or changed: read the parts again.
 - First run: check `root` and `counts` in the result. The script was tested on a Medium-like page, not yet on
   Medium's real editor. If `root` is `body`, or the counts are far from `expected-summary.md`, the editor's markup
   differs. Report it with the first 20 blocks; don't patch the script yourself.
@@ -83,8 +86,10 @@ short diff), `EXTRA` (in the draft, not in the copy, such as a stray empty parag
 block, wrong place). Figures also show image, caption, alt and GIF. Quotes, dashes and spaces that Medium
 changes by itself don't count. The last line is `VERIFY PASS` or `VERIFY FAIL <n> issues`.
 
-If Medium can't keep something from the copy (for example its title must come first), don't hide it. Report the
-row, and the lead decides.
+Two Medium habits are expected and not counted: the title comes first, with the "Educational study" banner
+right after it, and Medium's own empty last line (class `graf--trailing`). Any other empty paragraph is `EXTRA`.
+
+If Medium can't keep something else from the copy, don't hide it. Report the row, and the lead decides.
 
 ## Definition of done
 
