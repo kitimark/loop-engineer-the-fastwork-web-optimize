@@ -72,6 +72,23 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:3xZ **P-137 pre-data read PASS (fix-end-bg card bc1f9ec5; row registered); P-136 SIGNED; ccf67f0c and b28c11de
+  landed; the lead accepted the P-130 wait ruling.**
+  - P-137 checks:
+    - pins = committed blobs = disk; tools equal to main;
+    - snapshots C and V hashed (JS 1b2eecc66011, CSS e1359ab9994a / 38679ce9de15);
+    - reader self-test 8 ok.
+  - P-137 notes:
+    - N1: the P-129 reader import is unpinned; the result read checks 06f74f5d19ca.
+    - N2: THIN and VOID come from the reader, which the card text omits.
+    - N3: the T-194 baseline is informed.
+    - N4: fix-end-bg's worktree holds the snapshots until the block ends.
+    - N5: TAIL re-runs sit outside the C/V order.
+    - N6: phone order.
+  - The lead signs, then lands card and kit together.
+  - Phone order on "phone back" (lead): P-130 H4 + H5 (iphone-runner parks Safari first), then the first signed of
+    P-137, P-134 and P-136 part 2, then the user swipe steps.
+  - The P-130 truncated fallback is used only if the lead rules the phone won't be back today.
 - 10-05 ~11:4xZ **P-130 stopped by the unplug (T-195); ops read ruling: wait for H4 + H5.**
   - State: H1-H3 VALID (8 ms grid). H4 is INTERRUPTED at 11:33:37Z with no record; H5 has not run.
   - Ops ruled before anyone ran p130-read on any run: the read waits for H4 (whole) and then H5, in one continuation
