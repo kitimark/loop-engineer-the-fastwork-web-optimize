@@ -109,7 +109,30 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
-- 10-05 ~21:1xZ **P-150 reserved for fix-end-bg** (mgmt-clerk-1, at the owner's request; no lead order stated, the lead may veto): the PR-025 option B card (lighter files plus AVIF). Cost counts in Chrome and the Simulator, plus a short phone no-worse check (G, xcode-serious) whose risk is the first AVIF decode. Registered before data; the lead spawns the pre-data reader. Next free P-id: P-151.
+- 10-05 ~21:2xZ **P-147 lead ruling on the pre-data read (relayed by mgmt-clerk-1):** rev 1.1 required for N1-N6. N1: two pin sets, set B on v9.2's signed pin 941aa13e5bdf / f1997edf5309, chosen by P-142's read.
+- 10-05 ~21:2xZ **ops-reader-P149 spawned by the lead for P-149 rev 1** (8fc0ab77, fix-deck-contain; the pre-data read; cells come to mgmt-clerk-1).
+- 10-05 ~21:2xZ **Peer directory: fix-end-morph added (lead):** new fix owner (worktree), topic end-morph (the nav morph into the end section, user T-204), base v9.2, Chrome and Simulator mapping, no phone yet. The mgmt-clerk-1 row's next free P-id is now P-151.
+- 10-05 ~21:1xZ **P-147 pre-data read: PASS WITH NOTES N1-N11 (ops-reader-P147).** Card 78ad8c7e + addendum e2aad8df (fix-cd-roll-ca-r4, worktree-agent-a912806c0aa208fd8).
+  - Pins: C 1b2eecc66011 and V 2cfd990c788d (CSS e1359ab9994a) were rebuilt from the baseline. The snapshot HASHES are bb953431f349, and the four kit scripts are equal on disk and at HEAD. tools/ equal main, and SELFTEST PASS 5. No P-147 data and no P-147 hold.
+  - Must be fixed or ruled before the lead signs:
+    - N1 base: the lead rules after P-142. If v9.2 becomes the landing base, re-pin P-147 on it before data, as C' 30f6371751f4 / 1c4161f56545 and V' = C' + the same delta. A strict apply gives 7f292750cb3c (OBSERVED). v9.2's g11 and nf act at the page end, which is the scored window.
+    - N2: hold.sh ignores the warm-up's exit code (a profile refusal would read as a pre-read STOP), and failed counted runs still end in HOLD VALID.
+    - N3: one 2-block budget for every restart reason, a written precedence, and a profile-drift rule.
+    - N4: no phone A/A exists. The +1/+2 margins equal P-093's observed V minus C (the same roll mechanism), so they are informed. The lead signs them as tolerances or adds a C2 A/A arm.
+    - N5: smoke before any counted run: the scorer on a real W record; mread on the phone; one C run with the counted geometry, to check the end-region scroll sentinel (44 fps or more); hold.sh end to end.
+  - Text notes:
+    - N6: the scroll-in changes nothing scored, but the window is arrival plus 12 s, not P-097's settled rest.
+    - N7: the record's m is the nav's value, rounded.
+    - N8: Low Power Mode is not declared.
+    - N9: the naming, v9-final + rev 7d.
+    - N10: the joint p.
+    - N11: any kit change goes to the lead's delta check.
+  - The phone slot comes after P-142's block and swipe A/B, ahead of P-145.
+- 10-05 ~21:1xZ **Lead lines (mgmt-clerk-1, relaying the lead):** PR-026 accepted 21:03Z (priority #2, the P-147 reader spawned, addendum e2aad8df).
+- 10-05 ~21:1xZ **Lead line:** PR-025 accepted 21:04Z with option new-format (priority #3; recipe form, no re-encoded images committed; phone no-worse check required).
+- 10-05 ~21:1xZ **Lead line:** I-212: WDA stale after the reconnect; the lead restarted it at 21:09Z; resolved as a workaround.
+- 10-05 ~21:1xZ **Lead line:** the P-142 block resumed at 21:11Z.
+- 10-05 ~21:1xZ **P-150 reserved for fix-end-bg** (mgmt-clerk-1, at the owner's request; the lead approved it and says he ordered the B card in his ruling): the PR-025 option B card (lighter files plus AVIF). Cost counts in Chrome and the Simulator, plus a short phone no-worse check (G, xcode-serious) whose risk is the first AVIF decode. Registered before data; the lead spawns the pre-data reader. Next free P-id: P-151.
 - 10-05 ~21:0xZ **P-149 reserved for fix-deck-contain** (mgmt-clerk-1, on the lead's order): an instrument 2x2 (DPR x mobile emulation), then R3 vs T2 only in a stable cell, with a multi-pair A/A envelope. Registered before data; the lead spawns the pre-data reader. Next free P-id: P-150.
 - 10-05 ~21:0xZ **P-148 lead line (mgmt-clerk-1, relaying the lead):** "P-148 read CONFIRMED (GATE-FAILED); N2 confirmed by the lead (sign message preceded DRY0); N1 by owner erratum; N5: c[5] keeps rev 1 pins as written, the signed pins are in c[3]". The lead landed the owner's P-148 result as 9800e2d1.
 - 10-05 ~20:5xZ **P-148 result read: CONFIRMED (ops-reader-P148r). GATE-FAILED in both engines: 1 hit (P11), 4 miss (P1, P2, P3, P10), 7 insufficient.** Result 745a8868 (fix-deck-contain, worktree-agent-af8e7e498478cedb7). The pins equal the signed rev 1.1 pins, and only README and results-p148.json changed after the signature. The scorer re-run is identical; SELFTEST-P148 ok 74. Chrome fails G2-G5, at the 12 mobile-emulated DPR-3 configs only; the Simulator fails G3 and G4. Notes: N1 DRY0 Chrome unsettled is 10 of 16, not 11, and the Simulator's DRY0 held item is a timeout, not a frame (text erratum). N2 DRY0 started after the lead landed rev 1.1 and before the signature log commit. N3 the wording should say mobile-emulated DPR 3, because DPR is not isolated. N4 the Simulator's A/A failures are mostly in R3 triples after the arm is removed (OBSERVED). N5 c[5] still names the rev 1 pins. Three misses on one model (P1-P3): the author's team reviews the instrument. The lead rules the next step.
@@ -4026,9 +4049,10 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
-| `mgmt-clerk-1` (name; Sonnet; from 10-05 ~12:4xZ, user T-196) | ops: lead check-in digests, handover log entries, mechanical PREDICTIONS edits (reserved rows, signature and land notes, a reader's verdict text pasted verbatim), P-ids (next free: P-140), relays, the `ops` status row, pin and hash checks (raw results only), docs-only land requests to the lead. Never reads data, gives verdicts, moves queues or holds a lock | alive |
+| `mgmt-clerk-1` (name; Sonnet; from 10-05 ~12:4xZ, user T-196) | ops: lead check-in digests, handover log entries, mechanical PREDICTIONS edits (reserved rows, signature and land notes, a reader's verdict text pasted verbatim), P-ids (next free: P-151), relays, the `ops` status row, pin and hash checks (raw results only), docs-only land requests to the lead. Never reads data, gives verdicts, moves queues or holds a lock | alive |
 | `ops-reader-<P>` (name per read, e.g. `ops-reader-P137`, `ops-reader-P138`; Opus; spawned by the lead) | one pre-data or result read each (Reader brief in this file); sends the finished cell text to mgmt-clerk-1 for the verbatim paste | alive per read (P-137 read done 10-05 ~12:5xZ; ops-reader-P138 is due at the P-138 result) |
 | `fix-deck-contain` (name; spawned ~15:0xZ by the lead; fresh fix owner) | topic deck-contain, target v9.3: size containment on .start-selling-profile-deck so each frame's layout no longer re-measures the deck (T-194 evidence, Simulator, OBSERVED); P-143, a less-work cost card plus pixels T0; replaces fix-hero-exit-threaded as the owner (that agent is parked) | alive |
+| `fix-end-morph` (name; new, fix owner in its own worktree; added 10-05 ~21:2xZ by the lead) | topic end-morph: the nav morph into the end section (user T-204); base v9.2; Chrome and Simulator mapping, no phone yet | alive |
 | `fix-end-bg` (name; spawned 10-05 ~11:1xZ by the lead, user T-193 #10) | end-of-page background images: research and attribution, no edits. P-137 is its real-iPhone no-backgrounds block (T-193 #17). It sends ops its card for the pre-data read; the lead signs | alive (10-05 11:2xZ) |
 | `fix-people-word` (name) | PR-024, the timing proposal for the "People still need people" title word (user T-192). Changes were requested 11:08Z and it is making rev 3. P-135 is earmarked for it if it needs a card | alive (10-05 11:2xZ) |
 | `fix-cd-roll-ca-r4` (name; spawned 10-05 ~07:4xZ by the lead, fresh fix-owner) | P-097 rev 4 on the v9-final base (C = v9-final; V = v9-final + panel clock on the WAAPI roll, m in {0, 1}; C2 A/A). Drafts rev 4 with no data, sends mgmt-ops the sha for the pre-data read, then parks until v9-final lands. Replaces fix-cd-roll-ca (a65f148991747deb7, not resumed) for P-097 | alive: drafting rev 4 (10-05) |
