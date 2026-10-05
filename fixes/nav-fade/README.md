@@ -262,3 +262,15 @@ band. Desktop width not checked (the rules are the same; the button is wider).
   button's width inside the ResizeObserver callback).
 - The button now has `clip-path: inset(0 round 999px)` while not in the pill state. It changes nothing at rest beyond
   the T2 ring above.
+
+## Phone no-worse check (folds into v9.2's P-142 if nav-fade joins; else P-139 for v9.3)
+
+Lead ruling 2026-10-05: if nav-fade joins v9.2, its phone check is part of P-142's G block (int-v8), with no separate
+block. Its windows are read with `phone/nf-read.mjs` (`--selftest` 9/9 ok) from the gesture run records
+(`run.segments[].frames = [t, dt, scrollY, innerHeight]`):
+
+- flipDown and flipUp: the hero progress crosses 0.72, plus 1600 ms;
+- endIn and endOut: the end morph crosses 0.2 in and 0 out, plus 1000 ms, counted only in segments that reach the page end.
+
+It counts dt > 50 and > 34 with the ±4 ms twins and the near bands. In `compare` mode it reports per-arm ranges and
+"no worse" unless V's min is above C's max over 3 or more runs per arm.
