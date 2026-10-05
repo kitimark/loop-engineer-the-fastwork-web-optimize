@@ -2310,6 +2310,57 @@ Run log and disclosures:
 - Host load was high during parts of the run (load1 up to ~117 during rep 1-2 Simulator loads); counts that follow
   frame cadence carry it (sim.mjs SIM_BACKGROUND lines in the logs). No timing is claimed.
 
+Result read and rulings (2026-10-05/06): ops-reader-P097r CONFIRMED the result (re-ran the pinned scorer: deep-equal
+output; pins, selection and the Q5 Chrome pattern checked in the PNGs). Lead's rulings on the three A/A-limited
+questions, each kept labelled A/A-limited: Q1 PASS (V's highest load 4 is far below the lowest C/C2 load 103.5; both
+conditions hold even at spread 31); Q3 PASS (the gate held in all 36 loads on both platforms; V's rAF distance from C is
+inside 25 % of C); Q5 Chrome: no V-caused difference (the same 10 card-corner pixels at +-1 break equality in V and in
+the A/A alike: T1, within A/A; the Simulator is exact in 24 of 24). Q4's layer half has no positive control (0 layers in
+every arm). Tally 8 of 8 scored questions pass (Q2b apart, missed as expected). Landing stays blocked by the card's own
+outcome rule and the illusion rule: the Simulator mid-roll difference (edge 92, 0.024 %) shows only in motion, so it
+goes to the user as a proposal with Try-it (A = current v9-final 1b2eecc66011, B = it + the delta =
+`fixes/cd-roll-panel-try/patch.diff`, JS 2cfd990c788d), then the phone no-worse ticket below.
+
+### PHONE TICKET P-147: the panel clock roll on the iPhone, no-worse check (less-work rule; registered before any data)
+
+```
+PHONE TICKET P-147 · cd-roll-ca panel clock roll (P-097 rev 4.2 follow-up) · fix-cd-roll-ca-r4 · id reserved by
+  mgmt-clerk-1 (2026-10-06) · memory "less-work-landing-rule": a less-work fix lands on counts plus one short phone
+  no-worse check · second read: the lead's pre-data reader
+status: REGISTERED, not started. Order (lead): after the user reconnects the phone, after v9.2's and P-145's phone
+  blocks; only if the user accepts the proposal (PR-026). No timing claim beyond no-worse.
+arms (ticketed builds, served from an immutable snapshot copy made before the first run, hashes in the copy's
+  HASHES.txt and checked per served load):
+  C = current v9-final (baseline + fixes/morph-scroll-v9try/patch.diff): JS 1b2eecc66011, CSS e1359ab9994a.
+  V = C + the P-097 delta (fixes/cd-roll-panel-try/patch.diff 887240c913fb, baseline-relative): JS 2cfd990c788d,
+  CSS e1359ab9994a. If the lead moves the base (e.g. v9.2) before the block, this ticket is re-registered on it first.
+step 0, pre-read (uncounted, no data judged; within the phone hold): per arm, open the page, scroll to the end with the
+  W driver (`iphone.mjs run --driver window --to <page end> --hold 2 --warmup`), then read the panel's --morph (the
+  page's own value, the same read as P-097's S1) twice, 2 s apart, plus scrollY vs the page end. Rule: both reads exactly
+  '1' on both arms -> go on; otherwise STOP and report to the lead (on the phone the gate never opens at rest, so V = C
+  there and the less-work claim does not carry; e.g. Safari's toolbar leaving m just under 1).
+block (protocol v2 §5; profile xcode-serious, the default: no heat pre-warm, no cooling wait; Low Power Mode off and
+  recorded): driver W to the page end, hold 12 s at rest with the menu open (`iphone.mjs run --driver window --to <end>
+  --hold 12 --probe std --block P-147 --arm C|V`); one uncounted warm-up per arm's port; 8 counted runs C V V C C V V
+  C; Safari parked after the block; Timeline off (no attribution runs in this ticket); the heat sentinel per protocol
+  (control runs C: bottom >= 58 fps and scroll >= 44 fps; a failing control voids the runs since the last passing one,
+  then the block restarts once).
+measures, per counted run, the 12 s hold window only:
+  N1 (scored, no-worse) frames with dt > 50 ms: V median <= C median + 1, and twins dt > 46 / dt > 54 reported (a verdict
+     that differs with a twin is "threshold-sensitive").
+  N2 (scored, no-worse) frames with dt > 34 ms: V median <= C median + 2 (twins dt > 30 / > 38 reported).
+  N3 (descriptive, the less-work direction) the probe's inline-style mutation count in the hold window, V vs C (expected
+     V far below C: the spring writes every frame, the roll does not), and the m reads at the start and end of each run.
+  Frames in the near bands (30, 38] / (46, 54] ms are flagged. Phone minShift 4 ms (protocol §5.3).
+outcome: N1 and N2 pass -> the less-work landing rule is met (counts in Chrome and the Simulator from P-097 rev 4.2 +
+  this check), subject to the user's decision on PR-026. N1 or N2 miss -> stop, report to the lead (no land). A VOID
+  block (sentinel twice, a served-hash mismatch, a tool fault twice) -> report to the lead.
+calibration: pre-read stops (m not '1' at rest on the phone) 0.15; N1/N2 pass 0.70; N1 or N2 miss 0.10; VOID 0.05.
+tools: tools/iphone.mjs run (W driver, std probe) as on main at the block, its sha256 written into an addendum with
+  the snapshot hashes before the first counted run; a scorer fixes/cd-roll-ca/p147-score.mjs written and self-tested
+  before the first counted run (counts from the run records only), its sha256 in the same addendum.
+```
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at
