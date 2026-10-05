@@ -3,8 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (counts and look; no timing, memory "defer-timing-focus-call-tree"); counts n=2 on v9-final,
-Simulator batch 9 pending
+**Status:** measured (counts and look; no timing, memory "defer-timing-focus-call-tree"); Chrome counts n=2, Simulator
+counts n=6 (batch 9 complete: R1 CONFIRMED, R5 PASS); phone no-worse check P-139 to come
 **Stage:** D (attribution card below; sent to the lead 2026-10-05, reworked on the landed v9-final the same day)
 **Device class / gate:** phone-only for the visible symptom; the cost removed is Chrome- and Simulator-measurable (paints)
 **Driver(s) behind the claims:** Chrome and iPhone Simulator count probes and frozen-frame look checks; phone G pending
@@ -214,6 +214,33 @@ applies the rule below mechanically to all runs.
 
 At n=2 (batch 8 only) `simcount.mjs` gives: INCOMPLETE; R1 CONFIRMED, R2 within noise, R3 rise, R4 end rise / topIn
 within noise, R5 PASS (topIn W/frame 7.36-8.82 vs 9.44-9.62; end median 7.04 vs 7.30).
+
+## Batch 9 result (addendum, 2026-10-05 ~15:0xZ; rule and scorer as committed in 32e5172f, unchanged)
+
+Runs: `batch9.sh` (5f86f5e7f4f7) did sessions c and d (t9c, e9c, t9d, e9d), then hit the 2 h background-command limit at
+14:01Z while queued for session e; `batch9-rest.sh` ran sessions e and f with the same commands (t9e, e9e, t9f, e9f).
+All 8 sessions exit 0, both arms, 0 errors, 0 failed. (One earlier attempt of the first batch9.sh, session e8c, failed at
+the Safari launch, I-208, before any counts; it is not part of the pool and was not replaced, the rule names t9c-t9f /
+e9c-e9f.) Pooled with batch 8: n=6 per arm and scene. Simulator background per session: mean 8-73 % of a core, load1
+max 17-191 (both arms of a session share it).
+
+`node fixes/nav-fade/probe/simcount.mjs` over the 12 run folders:
+
+| scene | arm | Paint | Layout / frame | Recalc / frame | W / frame (median) | frames |
+|---|---|---|---|---|---|---|
+| topIn | C | 564-610 | 1.17-1.64 | 1.39-2.25 | 9.21-10.89 (9.83) | 83-87 |
+| topIn | nav-fade | 393-438 | 1.24-1.74 | 1.51-2.18 | 7.36-8.82 (8.08) | 83-88 |
+| end | C | 956-1441 | 1.53-1.84 | 1.00-1.09 | 6.84-8.67 (7.84) | 222-251 |
+| end | nav-fade | 966-1184 | 1.57-1.88 | 1.03-1.12 | 6.66-7.70 (7.03) | 233-252 |
+
+Verdicts (complete, n=6):
+- **R1 Simulator topIn Paint: CONFIRMED** (393-438 vs 564-610, no overlap). The Simulator Paint claim stands.
+- R2 end Paint: within noise (no claim).
+- R3 (P4) topIn recalcs per frame: within noise. The n=2 rise did not hold; P4 closes as "no rise at n=6".
+- R4 (P5) layout per frame: within noise at the end and at topIn. The n=2 rise did not hold; P5 closes as "no rise at n=6".
+- **R5 less-work: PASS** (topIn W per frame 7.36-8.82 vs 9.21-10.89, no overlap; end median 7.03 vs 7.84). Note
+  (mgmt-ops-10, 32e5172f conditions check): R5's pass line was written after batch 8's n=2 values were seen, so it is
+  marked "informed".
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize · rubber
 band. Desktop width not checked (the rules are the same; the button is wider).

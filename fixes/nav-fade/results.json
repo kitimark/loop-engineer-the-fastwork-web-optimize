@@ -145,34 +145,52 @@
       }
     },
     "simulator": {
-      "note": "batch 8, n=2, whole-page Timeline records per scene; Simulator batch 9 pending (4 more runs per scene, pooled to n=6, addendum commit): it confirms or voids the Simulator Paint claim, it does not change the look verdict",
+      "note": "whole-page Timeline records per scene, n=6 per arm and scene: batch 8 t8a/t8b/e8a/e8b + batch 9 t9c-t9f/e9c-e9f (batch9.sh sessions c-d, batch9-rest.sh sessions e-f after the 2 h background limit; same commands); all exit 0; scored by probe/simcount.mjs 282e19dbbdc7 under the README \"Batch 9 rule\" (committed 32e5172f before the data)",
       "C": {
         "topIn": {
           "Paint": [
             564,
-            596
+            610
           ],
-          "RecalculateStyles": [
-            117,
-            123
+          "LayoutPerFrame": [
+            1.17,
+            1.64
           ],
-          "Layout": [
-            112,
-            118
+          "RecalcPerFrame": [
+            1.39,
+            2.25
+          ],
+          "WPerFrame": [
+            9.21,
+            10.89
+          ],
+          "WPerFrameMedian": 9.83,
+          "frames": [
+            83,
+            87
           ]
         },
         "end": {
           "Paint": [
             956,
-            1153
+            1441
           ],
-          "RecalculateStyles": [
-            223,
-            242
+          "LayoutPerFrame": [
+            1.53,
+            1.84
           ],
-          "Layout": [
-            339,
-            350
+          "RecalcPerFrame": [
+            1,
+            1.09
+          ],
+          "WPerFrame": [
+            6.84,
+            8.67
+          ],
+          "WPerFrameMedian": 7.84,
+          "frames": [
+            222,
+            251
           ]
         }
       },
@@ -180,35 +198,83 @@
         "topIn": {
           "Paint": [
             393,
-            422
+            438
           ],
-          "RecalculateStyles": [
-            128,
-            181
+          "LayoutPerFrame": [
+            1.24,
+            1.74
           ],
-          "Layout": [
-            105,
-            129
+          "RecalcPerFrame": [
+            1.51,
+            2.18
+          ],
+          "WPerFrame": [
+            7.36,
+            8.82
+          ],
+          "WPerFrameMedian": 8.08,
+          "frames": [
+            83,
+            88
           ]
         },
         "end": {
           "Paint": [
             966,
-            1092
+            1184
           ],
-          "RecalculateStyles": [
-            240,
-            273
+          "LayoutPerFrame": [
+            1.57,
+            1.88
           ],
-          "Layout": [
-            381,
-            416
+          "RecalcPerFrame": [
+            1.03,
+            1.12
+          ],
+          "WPerFrame": [
+            6.66,
+            7.7
+          ],
+          "WPerFrameMedian": 7.03,
+          "frames": [
+            233,
+            252
           ]
         }
       },
-      "verdict": "topIn Paint better (ranges do not overlap, n=2); end Paint overlapping on this base (it did not overlap on v9c, n=3); end layouts higher in nav-fade in both runs (also more frames: 233-245 vs 222-225); recalcs topIn higher in both runs: UNRESOLVED"
+      "background": "sim background mean 8-73 % of a core per session, load1 max 17-191 (both arms of a session share it)",
+      "batch8OnlyN2": {
+        "C": {
+          "topIn": {
+            "Paint": [
+              564,
+              596
+            ]
+          },
+          "end": {
+            "Paint": [
+              956,
+              1153
+            ]
+          }
+        },
+        "nav-fade": {
+          "topIn": {
+            "Paint": [
+              393,
+              422
+            ]
+          },
+          "end": {
+            "Paint": [
+              966,
+              1092
+            ]
+          }
+        }
+      }
     },
-    "n": "n=2 on the landed v9-final; Simulator batch 9 pending",
+    "n": "Chrome n=2 (batch 8); Simulator n=6 (batch 8 + batch 9, complete)",
     "earlierAblationsOnV9c": {
       "note": "batches 5-7, control v9c (= v9-final + the 6-line morph-close-peak rule, CSS bdecf48c5b32); Chrome counted the button's main layer only",
       "chromeJoinPaints topIn/glide/end": {
@@ -241,7 +307,8 @@
           "end": "844-963"
         }
       }
-    }
+    },
+    "verdict": "better on paints: Chrome Join paints (n=2, every scene) and Simulator topIn Paint (n=6, R1 CONFIRMED); Simulator end Paint within noise; recalcs and layouts per frame within noise; net work per frame lower (R5 PASS)"
   },
   "look": {
     "rule": "PR-010 T2 (fill <= 64, edge <= 128, <= 0.5 % of the screen, <= 2000 css px2; A/A = C vs C2); control = landed v9-final",
@@ -351,15 +418,23 @@
     "P1": "CONFIRMED: WebKit CSSProperties.json (safari-7622.2.11.14-branch, via gh) accelerates opacity/filter/backdrop-filter/transform/translate/scale/rotate, not mask-position or clip-path",
     "P2": "UNRESOLVED: Simulator counts stand in for the phone; decisive check = phone no-worse check P-139 (G, xcode-serious)",
     "P3": "OBSERVED probe artifact: t=800 frozen frame of the translate WA past its end in WebKit; not used",
-    "P4": "UNRESOLVED: topIn recalc rise (Chrome 181/250 vs 176/176; Simulator 128-181 vs 117-123); not per frame; cause not traced; batch 9 rule R3",
-    "P5": "UNRESOLVED: layout rise (Simulator end Layout per frame 1.64-1.70 vs 1.53-1.56; Chrome topIn layouts 68-69 vs 62-65); cause not traced; pass line = batch 9 rule R5 (net work per frame)"
+    "P4": "closed at n=6: topIn recalcs per frame within noise (C 1.39-2.25 vs 1.51-2.18); the n=2 rise did not hold",
+    "P5": "closed at n=6: layout per frame within noise (end C 1.53-1.84 vs 1.57-1.88; topIn C 1.17-1.64 vs 1.24-1.74); the n=2 rise did not hold; Chrome topIn layouts n=2 68-69 vs 62-65 not re-measured"
   },
   "landingBasis": "less-work rule (memory less-work-landing-rule): cost-card counts plus a short phone no-worse check, G driver, xcode-serious, ticket P-139",
   "batch9": {
-    "status": "pending (third in the Simulator drain after P-137)",
-    "script": "probe/batch9.sh 5f86f5e7f4f7",
+    "status": "complete (n=6)",
+    "script": "probe/batch9.sh 5f86f5e7f4f7 (sessions c, d) + probe/batch9-rest.sh (sessions e, f, same commands)",
     "scorer": "probe/simcount.mjs 282e19dbbdc7",
-    "rule": "README \"Batch 9 rule\" (committed before any data)",
+    "rule": "README \"Batch 9 rule\" (committed 32e5172f before any data)",
+    "verdicts": {
+      "R1_topInPaint": "CONFIRMED",
+      "R2_endPaint": "within noise",
+      "R3_P4_topInRecalcPerFrame": "within noise",
+      "R4_P5_endLayoutPerFrame": "within noise",
+      "R4_P5_topInLayoutPerFrame": "within noise",
+      "R5_lessWork": "PASS (informed: pass line written after batch 8 n=2 was seen; mgmt-ops-10)"
+    },
     "atN2": {
       "R1_topInPaint": "CONFIRMED",
       "R2_endPaint": "within noise",
@@ -368,6 +443,7 @@
       "R4_P5_topIn": "within noise",
       "R5_lessWork": "PASS",
       "note": "INCOMPLETE (n=2): the claims stay as committed until batch 9"
-    }
+    },
+    "failedNotPooled": "session e8c of the first batch9.sh attempt: Safari launch timeout (I-208), no counts; that attempt was stopped and replaced by the committed batch9.sh before any data"
   }
 }
