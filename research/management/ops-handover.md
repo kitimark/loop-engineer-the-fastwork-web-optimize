@@ -72,6 +72,11 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-125 SIGNED by the lead** (after the pre-data PASS N1-N4, landed 196894ca).
+  - Hold: one normal exclusive chrome-measure hold is OK (600 s, SB_BUDGET_S 520, free windows only, never ahead of int-v8, fix-hero-exit-threaded or a marked phone block).
+  - R7: the scene gate gets descriptive numbers only in P-125. **P-126 is reserved** for the scene-gate card if the reading is NOT-THE-WINDOW. Next free id after that: P-127.
+  - fix-toolbar-resize was resumed by the lead with N1-N3. ops' next step for P-125 is the result read.
+  - ops parks until the P-124 s6-s9 records (P-124 final read, 9930e7e8 rule) or the rev 7d build (P-122 pre-data read, N2 program hashes) arrive.
 - 10-05 **P-125 pre-data read (fix-toolbar-resize b3c5711b, README "Prediction P-125" l.987): PASS with notes N1-N4.**
   - Pins: the five files on disk and their blobs at b3c5711b all hash to the card (inject 8b8c8eac2603, driver 62c34d165a31, scorer c52de0edd5d3, selftest 3cbb931ad9dd, wpx diff 24bb62f4b48b). ops re-ran the selftest: SELFTEST PASS (38 checks).
   - Served bytes: v8-best overlay JS 3e3e94cb6e9f, toolbar-resize overlay JS 6a79036cc108, CSS f836404b3728 in both. The two overlays differ in one file, and that file in one line (JS l.2744, the rootMargin). The arms are as described.
