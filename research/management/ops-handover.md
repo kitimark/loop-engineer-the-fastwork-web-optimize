@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~09:4xZ **P-122 result read: PASS (scored as registered; reproduced)** (int-v8 8dfa43d2 on main e88ff13b; README-only commit; chain d51bf203 = the re-pinned 145fb289, d99af4b5 = H5c rule written before H5c ran).
+  - Pins at 8dfa43d2: score.mjs d1dddb910cd9, selftest122.mjs df0b4fed66e5, hold122.sh ec6cc97f190b = the registered/re-pinned blobs.
+  - Ops re-ran score.mjs on the runner's 43 run files (item:file pairs, gSC3 left out as report only): the 52 output lines equal score-final.txt line for line (order aside); VERDICT insufficient (threshold-sensitive); scorer sha d1dddb910cd9.
+  - Gates: BEHAVIOUR pass (X only via the card's clipped-end exemption), GM no-worse, EX no-worse threshold-sensitive (one 48 ms frame), ES insufficient (V 1 of 2; gSV1/gSV3 path-VOID; 30 ms grid twin agrees), FLICKER no-worse, sentinels first try, R as predicted. 6 of 8 predictions in; overall insufficient (0.30).
+  - Disclosure checks: the post-data scorer rev and the H5c re-run are both disclosed with the data seen; the touch-timestamp cause of the path VOIDs is labelled OBSERVED, cause unknown. Landing basis is the lead's re-signed less-work rule (nothing measures worse), not the registered overall verdict.
+  - PREDICTIONS P-122 row: measured, in?, ratio and lesson filled.
 - 10-05 ~09:3xZ **P-129 runner re-read: PASS** (iphone-runner c8285acd on main 9e1a17fa; c2edaa42 added the driver). Pins on disk = committed: p129-block.sh 0ef3eada69af, p129-hold.sh 50522d504f4e, p129-gates.mjs a06847c64a2e (unchanged).
   - Condition 3 met: p129-block.sh runs inside one `run iphone --block P-129 --max-seconds 3600` per part; two parts split at the H3/H4 pair boundary (budget total ~59 min, over ~55; the lead's 08:57Z allowance, unmarked gap accepted, I-202); each H is its own 600 s chrome-measure --no-timing run; `doing iphone --between 1` after each hold, inside the phone hold.
   - Gates per the lead's 08:59Z ruling: P129_GATE puts them only at each part's edges (H1 start, H3 end, H4 start, end of the tail's last hold): 4 gates.
