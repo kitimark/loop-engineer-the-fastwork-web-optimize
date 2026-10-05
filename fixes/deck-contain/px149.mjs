@@ -6,12 +6,13 @@
 // - Envelope env(p) = the largest level at pixel p over the stop's fresh pairs. Blind pixels: env > 8 (R3 cannot be
 //   counted there, as P-148's A/A > 8).
 // - Stable stop: settled (P-148 G2), >= 3 pairs, blind pixels <= 0.01 % of the frame (P-148's G4 number, applied to
-//   the blind set), no geometry move across the fresh shots (G6). Any-level A/A within the envelope is allowed: it can
-//   only turn a T2 into a T1 label, never pass a pixel above 8 levels.
+//   the blind set), no geometry move across the fresh shots (G6). Any-level A/A within the envelope is allowed.
+//   Outside the blind set, A/A of 1-8 levels can only turn a T2 label into T1. Inside the blind set (capped by this
+//   rule), R3 is not counted toward fill, share or area; judgeEnv reports those pixels (blindAboveEnv, blindMax).
 // - R3 pair (base B = the shot after N0 off, arm A = after R3 on), arm level L(p):
-//   T0: no pixel differs; T1: L(p) <= env(p) everywhere; T2: the pixels above the envelope meet the T2 numbers (largest
-//   shade above the envelope <= 128; "beyond" = L > 8 where env <= 8: fill <= 64, edge <= 128, share <= 0.5 % of the
-//   frame, area <= 2,000 CSS px); T3 otherwise.
+//   T0: no pixel differs; T1: L(p) <= env(p) everywhere; T2 (rev 1.1 N1): the largest shade over every unmasked pixel
+//   <= 128 (as px148.mjs), and over the counted pixels ("beyond" = L > 8 where env <= 8): fill <= 64, edge <= 128,
+//   share <= 0.5 % of the frame, area <= 2,000 CSS px; T3 otherwise.
 import { pngPixels } from './px.mjs';
 import { T2, isFlat } from './px148.mjs';
 
@@ -50,7 +51,7 @@ export const stopStable = (s) => !!(s && s.settled && envStable((s.pairs || []).
 export function judgeEnv(B, A, env, masks = [], dpr = 1, foot = null) {
   B = dec(B); A = dec(A);
   if (A.w !== B.w || A.h !== B.h || env.length !== B.w * B.h) return { tier: 'T3', sizeMismatch: true };
-  let abAny = 0, aboveEnv = 0, beyond = 0, beyondFill = 0, beyondEdge = 0, fillMax = 0, edgeMax = 0, shade = 0, shadeAboveEnv = 0, outsideF = 0;
+  let abAny = 0, aboveEnv = 0, beyond = 0, beyondFill = 0, beyondEdge = 0, fillMax = 0, edgeMax = 0, shade = 0, shadeAboveEnv = 0, outsideF = 0, blindAboveEnv = 0, blindMax = 0;
   let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
   for (let y = 0; y < B.h; y++) for (let x = 0; x < B.w; x++) {
     if (masks.length && inMask(masks, x, y)) continue;
@@ -59,6 +60,7 @@ export function judgeEnv(B, A, env, masks = [], dpr = 1, foot = null) {
     abAny++; if (l > shade) shade = l;
     if (l <= e) continue;
     aboveEnv++; if (l > shadeAboveEnv) shadeAboveEnv = l;
+    if (e > T2.COUNT_LEVEL) { blindAboveEnv++; if (l > blindMax) blindMax = l; }
     if (l > T2.COUNT_LEVEL && e <= T2.COUNT_LEVEL) {
       beyond++;
       if (foot && (x < foot[0] || x > foot[2] || y < foot[1] || y > foot[3])) outsideF++;
@@ -70,9 +72,9 @@ export function judgeEnv(B, A, env, masks = [], dpr = 1, foot = null) {
   let tier;
   if (!abAny) tier = 'T0';
   else if (!aboveEnv) tier = 'T1';
-  else if (fillMax <= T2.FILL && edgeMax <= T2.EDGE && shadeAboveEnv <= T2.EDGE && share <= T2.SHARE && areaCss <= T2.AREA_CSS) tier = 'T2';
+  else if (fillMax <= T2.FILL && edgeMax <= T2.EDGE && shade <= T2.EDGE && share <= T2.SHARE && areaCss <= T2.AREA_CSS) tier = 'T2';
   else tier = 'T3';
-  return { tier, frame, abAny, aboveEnv, largestShade: shade, largestShadeAboveEnv: shadeAboveEnv, beyond, beyondFill, beyondEdge, fillMax, edgeMax,
+  return { tier, frame, abAny, aboveEnv, largestShade: shade, largestShadeAboveEnv: shadeAboveEnv, blindAboveEnv, blindMax, beyond, beyondFill, beyondEdge, fillMax, edgeMax,
     shareBeyond: +share.toFixed(7), areaCssPx: Math.round(areaCss), ...(foot ? { beyondOutsideF: outsideF } : {}), ...(beyond ? { bbox: [x0, y0, x1, y1] } : {}) };
 }
 

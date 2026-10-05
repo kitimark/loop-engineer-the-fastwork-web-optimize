@@ -11,6 +11,7 @@ const RANK = { T0: 0, T1: 1, T2: 2, T3: 3 };
 const worse = (a, b) => (RANK[a] >= RANK[b] ? a : b);
 const key = (s) => `${s.cfg}|${s.pos}|${s.mode}`;
 export const HELD_EXTRA_MAX = 2;
+export const motionCounts = (j) => j.largestShadeAboveEnv > 8;
 const held = (s) => (s ? s.raf + s.timeout : 0);
 // R3's arm phase held more page frames/timeouts than the most of the stop's N0-on phases (margin 2)
 export const heldExtra = (s) => (s.stat?.arm ? held(s.stat.arm) - Math.max(0, ...(s.stat.n0on || []).map(held)) : 0);
@@ -30,7 +31,8 @@ export function score(files) {
     if (eng === 'chrome' && json.part === 'R') rFiles.push({ name, json });
     notRun.push(...(json.notRun || []).map((n) => ({ ...n, file: name })));
     for (const s of json.stops || []) {
-      if (json.configs?.[s.cfg]?.error) { errored.push(`${name} ${key(s)}`); continue; }
+      // rule 1b, and rev 1.1 N10: a top-level error (e.g. the server did not start) counts as an error for every state
+      if (json.error || json.configs?.[s.cfg]?.error) { errored.push(`${name} ${key(s)}`); continue; }
       const k = `${eng}|${key(s)}`;
       if (by.has(k)) throw new Error(`DUPLICATE ${k} (${by.get(k).file}, ${name}): the scorer never picks`);
       by.set(k, { ...s, file: name, eng });
@@ -55,8 +57,8 @@ export function score(files) {
   const plan = rPlan(stable);
   out.plan = plan.map((c) => c.cfg);
   // an R file (an RR2 re-run runs a subset with --only) may run only configs of the plan part L gives
-  for (const f of rFiles) if (!(f.json.plan || []).every((c) => out.plan.includes(c)))
-    { out.verdict = 'PLAN-MISMATCH'; out.reading = `${f.name} ran ${JSON.stringify(f.json.plan)}; part L gives ${JSON.stringify(out.plan)}: the lead rules`; return out; }
+  // (rev 1.1 N5b: decided after NO-STABLE-CELL, in the card's table order)
+  const mismatch = rFiles.find((f) => !(f.json.plan || []).every((c) => out.plan.includes(c)));
   const flags = { geometry: [], rmNotExact: [], motionOnly: [], outsideF: [], heldExtra: [] };
   const judged = [], unjudged = [];
   const judgeStop = (eng, cfg, pos, mode, rm) => {
@@ -79,22 +81,30 @@ export function score(files) {
     const x = judgeStop(r.eng, r.cfg, r.pos, r.mode, r.rm);
     (x.tier ? judged : unjudged).push(x);
   }
-  // motion-only: a swipe stop beyond T1 whose rest stop at the same position is within T1
-  for (const x of judged) if (x.mode === 'swipe' && RANK[x.tier] >= 2) {
+  // motion-only: a swipe stop beyond T1 whose rest stop at the same position is within T1; rev 1.1 N5: only when the
+  // swipe stop has a pixel above 8 levels and above its envelope (largestShadeAboveEnv > 8; every counted "beyond" pixel
+  // is one), so sub-8 sampling noise never trips it; otherwise the swipe stop keeps its own tier
+  for (const x of judged) if (x.mode === 'swipe' && RANK[x.tier] >= 2 && motionCounts(x.j)) {
     const rest = judged.find((y) => y.eng === x.eng && y.cfg === x.cfg && y.pos === x.pos && y.mode === 'rest');
     if (rest && RANK[rest.tier] <= 1) { flags.motionOnly.push(`${x.k} ${x.tier}`); x.tier = 'T3'; }
   }
   const sum = (eng) => { const t = { T0: 0, T1: 0, T2: 0, T3: 0 }; let w = 'T0', wx = null;
     for (const x of judged.filter((y) => y.eng === eng)) { t[x.tier]++; if (!wx || RANK[x.tier] > RANK[wx.tier] || (x.tier === wx.tier && x.j.largestShadeAboveEnv > wx.j.largestShadeAboveEnv)) wx = x; w = worse(w, x.tier); }
     return { judged: judged.filter((y) => y.eng === eng).length, unjudged: unjudged.filter((y) => y.eng === eng).map((y) => `${y.k} ${y.missing ? 'missing' : 'unstable'}`),
-      tiers: t, worstTier: w, worst: wx && RANK[wx.tier] >= 1 ? { stop: wx.k, tier: wx.tier, largestShadeAboveEnv: wx.j.largestShadeAboveEnv, aboveEnv: wx.j.aboveEnv,
+      tiers: t, worstTier: w, worst: wx && RANK[wx.tier] >= 1 ? { stop: wx.k, tier: wx.tier, largestShade: wx.j.largestShade, largestShadeAboveEnv: wx.j.largestShadeAboveEnv, aboveEnv: wx.j.aboveEnv,
+        blindAboveEnv: wx.j.blindAboveEnv, blindMax: wx.j.blindMax, staticOrMoving: wx.mode === 'rest' ? 'static (rest)' : 'moving (swipe end, frozen)',
         beyond: wx.j.beyond, edgeOrFill: wx.j.beyond ? (wx.j.beyondEdge >= wx.j.beyondFill ? 'edge' : 'fill') : 'none (all <= 8 levels)', fillMax: wx.j.fillMax, edgeMax: wx.j.edgeMax,
         shareBeyond: wx.j.shareBeyond, areaCssPx: wx.j.areaCssPx } : null }; };
   out.chrome = sum('chrome'); out.sim = sum('sim'); out.flags = flags;
+  // rev 1.1 N7 (descriptive): A/A per stop in run order within each file, to show whether later stops (after earlier
+  // stops' R3 in the same load) drift: [stop, envPixels, envBlind, stable]
+  out.byIndex = {};
+  for (const x of by.values()) if (!x.cfg.startsWith('L-')) (out.byIndex[`${x.file} ${x.cfg}`] ??= []).push([`${x.pos}/${x.mode}`, x.envPixels, x.envBlind, stopStable(x)]);
   const simStable = Object.fromEntries(Object.values(SIM_GROUPS).flat().map((st) => [st, unjudged.filter((y) => y.k.startsWith(`sim ${st}|`)).length === 0]));
   out.sim.statesFullyJudged = simStable;
   const w = worse(out.chrome.worstTier, out.sim.worstTier);
   if (!stable.length) { out.verdict = 'NO-STABLE-CELL'; out.reading = 'no Chrome cell is stable: R3 is not judged; R3 goes to a look proposal with Try-it panels (Simulator numbers descriptive)'; return out; }
+  if (mismatch) { out.verdict = 'PLAN-MISMATCH'; out.reading = `${mismatch.name} ran ${JSON.stringify(mismatch.json.plan)}; part L gives ${JSON.stringify(out.plan)}: the lead rules`; return out; }
   if (w === 'T3') { out.verdict = 'R3 T3'; out.reading = 'R3 beyond T2 (or reduced motion not exact, geometry, motion-only) at a judged stop: a look proposal, the lead rules'; return out; }
   if (flags.heldExtra.length) { out.verdict = 'R3 UNDECIDED-HELD'; out.reading = 'R3 woke held page callbacks; the arm shot may not show their effect: the lead rules'; return out; }
   if (unjudged.length) { out.verdict = 'R3 UNDECIDED-UNSTABLE'; out.reading = `${unjudged.length} registered stop(s) not judged (unstable or missing): R3 goes to a look proposal with Try-it panels`; return out; }

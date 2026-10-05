@@ -56,6 +56,12 @@ j = judgeEnv(big, bigP, envBig, [], 1); ok(j.areaCssPx === 2001 && j.tier === 'T
 // an envelope above 8 at a pixel takes it out of the T2 counting (as P-148's A/A > 8)
 const envHi = new Uint8Array(W * H).fill(0); for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) envHi[y * W + x] = 9;
 j = judgeEnv(flat, patch(flat, 0, 0, 9, 9, 30), envHi); ok(j.beyond === 0 && j.aboveEnv === 100 && j.tier === 'T2', 'envelope 9: arm 30 above the envelope, not counted as beyond');
+ok(j.blindAboveEnv === 100 && j.blindMax === 30, 'rev 1.1 N2: R3 above the envelope inside the blind set is reported');
+// rev 1.1 N1: the largest shade covers every unmasked pixel (as px148.mjs), also pixels within the envelope
+const envN1 = new Uint8Array(W * H); envN1[0] = 200;
+const armN1 = img(W, H, (x, y) => (x === 0 && y === 0 ? 20 + 150 : x === 50 && y === 50 ? 20 + 20 : 20)), darkN1 = img(W, H, () => 20);
+j = judgeEnv(darkN1, armN1, envN1); ok(j.tier === 'T3' && j.largestShade === 150 && j.largestShadeAboveEnv === 20, 'N1: shade 150 within the envelope + a counted pixel elsewhere = T3');
+ok(judgeEnv(darkN1, img(W, H, (x, y) => (x === 0 && y === 0 ? 170 : 20)), envN1).tier === 'T1', 'N1: shade 150 only within the envelope = T1');
 const dark = img(W, H, () => 20); ok(judgeEnv(dark, patch(dark, 0, 0, 9, 9, 129), envHi).tier === 'T3' && judgeEnv(dark, patch(dark, 0, 0, 9, 9, 128), envHi).tier === 'T2', 'largest shade above the envelope: 128 T2, 129 T3');
 j = judgeEnv(flat, patch(flat, 0, 0, 1, 0, 30), env0, [], 1, [10, 10, 99, 99]); ok(j.beyondOutsideF === 2, 'outside F counted');
 ok(judgeEnv(flat, patch(flat, 0, 0, 9, 9, 200), env0, [[0, 0, 9, 9]]).tier === 'T0', 'mask hides');
@@ -125,6 +131,8 @@ let R = score([Lfile(bad), Rfile(good), Sfile('S1'), Sfile('S2')]);
 ok(R.verdict === 'R3 T0' && R.locator.pattern === 'DPR 3 cells unstable, DPR 1 cells stable' && R.plan.join() === 'R-mob1,R-mob1-rm,R-desk1', 'clean: R3 T0, DPR pattern');
 ok(score([Lfile(['mob3', 'desk3', 'mob1', 'desk1']), Rfile([]), Sfile('S1'), Sfile('S2')]).verdict === 'NO-STABLE-CELL', 'no stable cell');
 ok(score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' && m === 'swipe' ? { tier: 'T2', shade: 40 } : {})), Sfile('S1'), Sfile('S2')]).verdict === 'R3 T3', 'swipe T2 over a T0 rest = motion-only T3');
+R = score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' && m === 'swipe' ? { tier: 'T2', shade: 8 } : {})), Sfile('S1'), Sfile('S2')]);
+ok(R.verdict === 'R3 T2' && R.flags.motionOnly.length === 0, 'rev 1.1 N5: swipe T2 from <= 8 levels above the envelope keeps T2 (not motion-only)');
 R = score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' ? { tier: 'T2', shade: 40 } : {})), Sfile('S1'), Sfile('S2')]);
 ok(R.verdict === 'R3 T2' && R.chrome.worst.tier === 'T2', 'rest and swipe T2: R3 T2');
 ok(score([Lfile(bad), Rfile(good, (c) => (c === 'R-mob1-rm' ? { tier: 'T2' } : {})), Sfile('S1'), Sfile('S2')]).flags.rmNotExact.length === 4, 'reduced motion not exact');
@@ -138,6 +146,11 @@ R = score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-mob1' && p === 'top' &
 ok(R.verdict === 'R3 UNDECIDED-UNSTABLE' && R.chrome.unjudged.join() === 'chrome R-mob1|top|rest unstable', 'an unstable Chrome part-R stop: undecided, named');
 const Rb = Rfile(good); Rb.json.plan = ['R-mob3'];
 ok(score([Lfile(bad), Rb, Sfile('S1'), Sfile('S2')]).verdict === 'PLAN-MISMATCH', 'an R file outside the plan');
+ok(score([Lfile(['mob3', 'desk3', 'mob1', 'desk1']), Rb, Sfile('S1'), Sfile('S2')]).verdict === 'NO-STABLE-CELL', 'rev 1.1 N5b: NO-STABLE-CELL before PLAN-MISMATCH');
+const Se = Sfile('S1'); Se.json.error = 'server did not start';
+R = score([Lfile(bad), Rfile(good), Se, Sfile('S2')]);
+ok(R.verdict === 'R3 UNDECIDED-UNSTABLE' && R.files.erroredStopsIgnored === 16 && R.sim.unjudged.length === 16, 'rev 1.1 N10: a top-level error ignores the whole file');
+ok(score([Lfile(bad), Rfile(good), Sfile('S1'), Sfile('S2')]).byIndex['S1.json landscape'].length === 8, 'rev 1.1 N7: A/A by stop index');
 const Rcut = Rfile(good); Rcut.json.stops = Rcut.json.stops.filter((s) => s.cfg !== 'R-desk1'); Rcut.json.notRun = [{ cfg: 'R-desk1', reason: 'budget: 200 + 40 > 270' }];
 ok(score([Lfile(bad), Rcut, Sfile('S1'), Sfile('S2')]).verdict === 'R3 T0', 'second cell cut by the budget does not block');
 const Rerr = Rfile(good); Rerr.json.configs['R-mob1'] = { error: 'x' };
