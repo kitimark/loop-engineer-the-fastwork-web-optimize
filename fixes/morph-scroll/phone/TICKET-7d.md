@@ -45,7 +45,7 @@ plus the file sha256/12 of each file:
 |---|---|
 | fixes/morph-scroll/sim7d-analyze.mjs (counts) | 5e8c4f587342 |
 | fixes/morph-scroll/msdbg-inject.mjs (probe) | 9d2d119f5cea |
-| fixes/morph-scroll/sim7d-compare.mjs (C vs V start state and path, D1) | 0263ddb5b68a |
+| fixes/morph-scroll/sim7d-compare.mjs (C vs V start state and path, D1; the rule frozen by ops before s6/s7) | 777663766071 |
 | fixes/morph-scroll/sim7d.sh (Simulator dry runs, prints SERVED hashes, D3) | fb357826def1 |
 
 Probe: `--inject fixes/morph-scroll/msdbg-inject.mjs` (V's debug-only touchend log: page Fv, finger travel; a passive
@@ -79,14 +79,41 @@ One prediction per line, each with its probability (fix-hero-exit-threaded's, be
 ## Simulator dry run (F-256, ops D1-D3; count-only, I-184, same scripts and probe)
 
 Sessions run `fixes/morph-scroll/sim7d.sh` (served hashes printed and checked per arm; items VOID on a non-zero exit or
-no record). C vs V: `node fixes/morph-scroll/sim7d-compare.mjs <C> <V>` (start state: toolbar level, endH, maxY, first
-touch y/p; path: counted strokes' start y/p, clientY at touchstart, touchmove count and index-aligned clientY path, lift
-clientY; approach drags reported, not judged, since a released close lowers the next approach's start).
+no record). C vs V: `node fixes/morph-scroll/sim7d-compare.mjs <C> <V> --aa-c <C2> --aa-v <V2>`.
 
-| item | arm | session / record | counts | C vs V |
-|---|---|---|---|---|
-| fo | V | s1 (`s1-1-R7E-g-flingout-v1.json`) | released 3, caught 0, pulled back 0; Fv -6.45 / -4.74 / -4.81, travel 560 | pending C |
-| nl | V | s2 (`s2-1-R7E-g-nearline-v1.json`) | near-250: caught 3 of 3 (Fv -2.13 / -2.13 / -2.16, travel 250); near-280: caught 3 of 3 (Fv -2.35 / -2.42 / -2.39, travel 280); pulled back 0 | pending C |
+**Disclosure: the path rule changed twice after data was seen.** (1) The first rule was strict per counted stroke:
+touchmove count within 2 and index-aligned clientY path within 6 px. On fo it gave a DIFF from one dropped move (V's first
+fling: 8 moves against 12), so (2) the path was aligned in order (a dropped move skipped, DP) instead; that still failed
+where both lists had points the other lacked (fs). (3) The rule then became a shared-points fraction per group of
+identical strokes, with a bar taken from within-record same-arm pairs. All three were seen on s1-s4 data. mgmt-ops-10
+then froze the A/A form below on 2026-10-05, **before** the s6/s7 data; `sim7d-compare.mjs` 777663766071 implements it
+and was committed before s6 ran.
+
+**The frozen rule (ops):**
+1. Exact match per counted stroke, C vs V: start y and p, touchstart clientY, lift clientY; program id, toolbar level,
+   endH, maxY, first touch; prevented touchmoves = 0 on both arms.
+2. Touchmove stream, per group of identical strokes: the C-V shared-points fraction (in order, +-2 px) is at least the
+   lowest same-arm fraction from the A/A pairs of that group (C-C: s7 against s3/s4; V-V: s6 against s1/s2); every
+   stroke monotone; move counts reported, not judged.
+3. Coverage: every item on both arms, e4 included (s5). A group with no A/A pair (C-C or V-V) fails until it has one.
+4. D3: the V fo and nl records from s6 (which print served hashes) replace s1/s2 in the exact-match check; s1/s2 stay
+   only as A/A partners.
+
+Known Simulator counts so far (counts are not changed by the rule; the predictions above stay as committed in 5d91a542):
+
+| item | arm | session / record | counts |
+|---|---|---|---|
+| fo | C | s4 (`s4-2-R7C-g-flingout-v1.json`) | caught 3 of 3 (minP -0.13 / -0.39 / -0.12, rest -0.03), released 0, pulled back 0 |
+| fo | V | s1 (`s1-1-R7E-g-flingout-v1.json`, old runner) | released 3 of 3, caught 0, pulled back 0; Fv -6.45 / -4.74 / -4.81, travel 560 |
+| nl | C | s3 (`s3-2-R7C-g-nearline-v1.json`) | near-250 caught 3 of 3, near-280 caught 3 of 3, pulled back 0 |
+| nl | V | s2 (`s2-1-R7E-g-nearline-v1.json`, old runner) | near-250: caught 3 of 3 (Fv -2.13 / -2.13 / -2.16, travel 250); near-280: caught 3 of 3 (Fv -2.35 / -2.42 / -2.39, travel 280); pulled back 0 |
+| fs | C | s4 (`s4-1-R7C-g-fastshort-v1.json`) | misses 0, all 12 closes caught, pulled back 0 |
+| fs | V | s3 (`s3-1-R7E-g-fastshort-v1.json`) | misses 0, all 12 closes caught (Fv -0.73 .. -2.92, travel 47-200), pulled back 0 |
+| e4 | C, V | s5 | pending |
+
+Planned sessions: s5 e4 C and V; s6 V fo and nl (served hashes; exact match, and V-V A/A against s1/s2); s7 C fs and fo
+(C-C A/A against s4). fs on V and e4 on both arms then still lack an A/A pair: one more run each (s8) before the read.
+Compare output for every item goes to ops for the final read.
 
 D2, session s1's items 2 and 3 (nl on V, fo on R7D): they printed `RUN 2` / `RUN 3` and left no record. The cold boot
 plus settle (~90 s) left too little hold time, so `sim.mjs gesture` refused before any touch (the budget message was cut
