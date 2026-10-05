@@ -72,6 +72,27 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~05:4xZ **P-122 pre-data read: NOT YET** (v9-final vs v8 phone no-worse check; owner int-v8, worktree agent-a068af37646232e05; read requested by the lead, top priority).
+  - Read on the working files: int-v8's branch has only WIP f793e3e1. No P-122 phone data exists: out/p122 holds only snap, sim and split.
+  - Verified:
+    - selftest122 OK 36;
+    - patch.diff 00431ca662cb;
+    - snapshot HASHES 995642091023 (C 3e3e94cb6e9f/f836404b3728, V c3d36476c3ce/bdecf48c5b32), with serve122.sh pinning the same values;
+    - scorer pins on disk (P-120 score fd9ecebcf4d0, gate.mjs 1a1d716698f0, flicker-gate 3c2bd0cb7f09);
+    - every PIN-line hash (v8 score 26d944bf93e2, thermal-gate ecb403b3ad25, verdict 8edb2fc77795, pmcheck d36bd7437b7c, flick-middle-v2 ca38f3627f78, flick-end-v2 4eb4bbc62b43).
+  - The lead's five points:
+    - G only: there is no M leg, and an n item voids the hold.
+    - Profile: xcode-serious, with the thermal gate --accept-induced.
+    - Flicker gate: C = v8.
+    - gM: a path failure makes that run VOID, and the GM gate then reads insufficient (the block is not voided).
+  - Fixes asked for:
+    - F1: the README card is stale (step 4 build, serve.sh/out/pv9, M leg, nav "not in P-122"). Rewrite it for v9-final, pin flick-return-v1 2ddbab3c23a1 and PROG_R 92bcef2b02df, and give new predictions with a p each.
+    - F2: the lead's first-fling distance parity check (> 300 px = behaviour FAIL) is missing from the scorer. On X, check into1 only, because rev 7c's catch shortens V's out-flings by design.
+    - F3: say in the card that flicker C = v8 is the accepted deviation. The lead decides whether INCONCLUSIVE makes the block insufficient.
+    - F4: refuse gRC/wgRC.
+    - F5: split H5, or add an elapsed-time guard. The 900 s is a declared length (OVERDUE, never killed), and recent iphone-runner holds ran 2-9 min.
+    - F6: update the minutes and the hold list.
+  - The P-122 row goes into PREDICTIONS at the delta check, once the predictions are final.
 - 10-05 ~05:2xZ **P-129 SIGNED** by the lead on rev 2: card 01aeed18 on main (b44850f4 rebased), before data. The ops delta check 7ea227bc is on main too.
   - Build confirmed: the 7d research build ms-29c0d537e0c9, served with the TICKET-7d hash check. Reason: the floors and the comparison come from P-124 on that same build, and the card reads where the lag comes from, not what ships.
   - **Queued phone ticket P-129.** Runner: iphone-runner. Profile: Xcode-induced Serious. Driver G, script fs. Block: warm-up E, S0, then E L L E E L L E with Timeline on, then S1, then park.
