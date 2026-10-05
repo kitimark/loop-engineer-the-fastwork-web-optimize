@@ -3,11 +3,11 @@
 # STACKED on fixes/v9-best/overlay: apply v9-best first, then this patch on top of it
 # rebuild the overlay with: node tools/fix.mjs apply countdown-tick-v9 --on v9-best
 # contains excerpts of Fastwork's code: local branches only, never push
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js de237379b556dc898bcabb49f7940c7d5b58c6f920d9089f0c1752bf5c08cd5d
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2
 diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4511,9 +4511,25 @@
+@@ -4429,9 +4429,25 @@
      __cdTimer = 0,
      __cdWait = 0,
      __cdSlow = 0,
@@ -34,7 +34,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          window.clearInterval(__cdSlow),
          (__cdWait = __cdTimer = __cdSlow = 0));
      },
-@@ -4531,11 +4547,12 @@
+@@ -4449,11 +4465,12 @@
        if (!__cdTick || __cdWait || __cdTimer) return;
        (window.clearInterval(__cdSlow), (__cdSlow = 0));
        let n = Date.now();
@@ -49,7 +49,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        );
      },
      /*countdown-faces: while live the clock reads the time of the original's last fire if the stored time is older (it
-@@ -4559,7 +4576,7 @@
+@@ -4477,7 +4494,7 @@
        z(c, Date.now(), !0);
      };
      e();

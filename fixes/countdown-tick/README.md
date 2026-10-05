@@ -202,9 +202,10 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
 - **Profile** xcode-serious. **Driver** G-idle: `phone/idle-p130.json` (GESTURE_HASH 58b3e0b3f502). It reloads, waits 128 s at the
   top with the hero clock on screen and no touch, then does one 40 px still stroke. gesture-run compiles no program
   without a stroke, and this one comes after the window and the end grid read, so nothing counted sees it.
-- **Arms.** C = the landed v9-final: control hash OPEN. int-v8 is rebuilding v9-final without scb (lead, 05:4xZ), so P-122's c3d36476c3ce is not the control; pin JS and CSS from int-v8's new hashes or from main when v9 lands.
+- **Arms.** C = the landed v9-final (main 8b5ce9b3; `fixes/v9-best/patch.diff` 4196eaa61d96, no scroll-cb, no close rule): JS 647c9ef2b1e2 / CSS e1359ab9994a.
   V = C + the countdown-tick delta, rebuilt on v9-final. Both are served from immutable snapshots with a HASHES.txt and
-  a served-hash check before each item. Not built yet: v9-final is not on main as of 2026-10-05 05:40Z.
+  a served-hash check before each item. Built 2026-10-05 ~09:25Z: V JS 6841352e0328 (CSS = C's); `serve.sh snap` and a
+  start + `check` gave B 4606120cf392 / 27776f3d4138, C 647c9ef2b1e2 / e1359ab9994a, V 6841352e0328 / e1359ab9994a.
 - **Logger.** `phone-logger.mjs`: one MutationObserver on `.hero-track [role=timer]`'s `aria-label`, no polling, the
   `--inject` contract. The window is 120 s from the first logged change. A skip is two consecutive values that drop by
   ≥ 2 s (each counts drop − 1).
@@ -249,9 +250,9 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
     l.502-520, `ThreadTimers.cpp`).
   - A 30 ms grid on this phone under Xcode-induced Serious: UNRESOLVED (F-255). The interval's 1020 ms on the phone
     was OBSERVED only at real Serious (P-074). The grid read in every run is the decisive local check.
-- **Runner kit** (`phone/`, everything pinned in `phone/PINS`; control rows OPEN):
+- **Runner kit** (`phone/`, everything pinned in `phone/PINS`):
   - `serve.sh`: snap (C from the v9-final overlay, V = C + the delta by `patch`), HASHES.txt, read-only copies;
-    B/C/V servers on OS ports; `check` before every item. It refuses while a pin is OPEN.
+    B/C/V servers on OS ports; `check` before every item. It refuses while a pin is OPEN, and `snap` refuses a delta other than the pinned DELTA.
   - `hold.sh`: TICKET=P-130 guard; logger, program, GESTURE_HASH and idle-sentinel pins; a start and an end gate
     (`thermal-gate.mjs --expect serious --accept-induced --max-c 44`); the idle sentinel after the start gate; per item open → gesture `--inject` logger →
     park; the I-098 Mac sleep check; VOID exits 3/4/5. One manifest line per run.
@@ -273,10 +274,11 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
 - **Pins** (sha256/12, from the committed files):
   - logger 49d7a6c3da4c, program d7ee0153e439, idle sentinel 51f7a8e38150, reader f1229fd5a0c7, block builder
     357f369b2672 (all in `phone/PINS` or `results.json` → `scripts`);
-  - hold.sh 5ccf5d050098 and serve.sh af443694ea69 (`results.json` → `scripts`);
-  - C and V JS/CSS OPEN until v9-final lands.
-  - Provisional only: int-v8's no-scb v9-final candidate is JS 647c9ef2b1e2 / CSS bdecf48c5b32. The delta applies to
-    it cleanly, giving V JS 6841352e0328.
+  - hold.sh 5ccf5d050098 and serve.sh cc2203ef105e (`results.json` → `scripts`; build pins in `results.json` → `p130Pins`);
+  - C JS 647c9ef2b1e2 / CSS e1359ab9994a (landed v9-final); V JS 6841352e0328 / CSS e1359ab9994a; delta
+    `fixes/countdown-tick-v9/patch.diff` 5bcc05af690c, rebuilt on the landed v9-final (`fix.mjs apply countdown-tick-v9
+    --on v9-best`, then `fix.mjs diff … --on v9-best`). Its 3 hunks are byte-identical to the earlier 8a4a6a16e217
+    (built on step 4, de237379b556); only the base sha and the line offsets (−82) changed.
 
 Chrome functional check of the logger under the shim (`tick-probe.mjs logger`, `out/countdown-tick/logger-*.json`,
 `results.json` → `loggerCheck`):
