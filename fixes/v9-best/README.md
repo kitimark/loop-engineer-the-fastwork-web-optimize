@@ -1037,3 +1037,26 @@ stayed aaa18038 for every hold (H3a-H6): the rev touched score.mjs on disk only 
   VOID it. The flickerFiles case now expects the per-part grouping.
 - **Hashes.** p122/score.mjs 357ee5bbcac7 → d1dddb910cd9; selftest122.mjs 2da28f207b7c → df0b4fed66e5;
   flicker-gate.mjs 3c2bd0cb7f09 (unchanged). mgmt-ops-10 reads the rev and re-pins score.mjs before the full score.
+
+### ES re-run H5c and its grid twin, P-122 (lead ruling 2026-10-05 09:03Z; written BEFORE H5c ran)
+
+Data seen before this ruling: the full score on scorer d1dddb910cd9 (out/p122/score-full.txt): GM no-worse, EX no-worse
+(threshold-sensitive), FLICKER no-worse (M, X, S), parity pass, ES "insufficient (V 1, need 2)": gSV1 (H5a) is
+path-VOID ("out1: out stroke too fast for the slow item (Fv -7.72, travel 180)"; its frames gt50 0, gt34 0).
+
+- **Process gap.** C3 ("a void run gets one re-run at the block end, in H5b") was missed: the runner judges a hold
+  VALID from the hold's own checks (PIN, gates, item exits, sentinels) before the scorer's path gate runs, so gSV1's
+  path VOID was only seen at the full score. A pre-scorer path check inside the hold is a later toolsmith item.
+- **H5c:** `sCo gSC3 gSV3 sCc` in one hold, run by iphone-runner. gSV3 is C3's missed re-run of gSV1; gSC3 is a
+  grid-matched control in the same hold. PIN HEAD for H5c is int-v8's branch head (145fb289 or later): hold122.sh,
+  serve122.sh, the snapshot copies and every file the PIN line hashes other than p122/score.mjs are unchanged since
+  aaa18038; only the scorer moved (the post-data rev above).
+- **ES main verdict (as the card):** V ceiling over the valid V runs {gSV2, gSV3}; gSV1 stays void. The card's C side
+  is {gSC1, gSC2} (ES is a V ceiling: C does not enter its verdict; C is reported under Cref).
+- **ES grid twin (30 ms only):** C {gSC2, gSC3} vs V {gSV2, gSV3}. Since ES judges V only, the twin's V set equals
+  the main's, so the two can differ only if a rule beyond the V ceiling is applied; stated here so the reading is fixed.
+- **Reading:** main and twin agree → that is ES's verdict; they differ → ES "grid-sensitive", read as insufficient.
+- **gSC3 counts in nothing else:** not FLICKER, not parity, not the main ES. The block score is run without gSC3; gSC3
+  is reported in a second, report-only score that includes it.
+- **Grid per S run** (Safari timer at the hold's gates, out/thermal-gate/gates.jsonl): gSC1 8 ms, gSV1 8 ms (void),
+  gSV2 30 ms, gSC2 30 ms (H5b); gSC3 and gSV3 (H5c) as their gate reads (recorded with the result).
