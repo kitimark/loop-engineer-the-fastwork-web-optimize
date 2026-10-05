@@ -109,6 +109,7 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~12:5xZ **P-137 result read: CAUSE (ops-reader-P137).** H1-H7 VALID, sentinels S0 / S1 PASS, no re-runs or VOIDs; pins and served hashes as signed (V CSS 38679ce9de15), profile xcode-serious on every record. >34 per run C 30/17/14/15, V 2/3/3/5 (medians 16 vs 3), twins agree, counts basis. P1 outcome at p 0.08, P2 miss, P3 hit (P2 and P3 informed, N3). Two misses on one model: fix-end-bg's team reviews before the next build. fix-end-bg re-runs the scorer to confirm the same DECISION line; nothing in the read blocks its swipe pair (the drain's only phone job).
 - 10-05 ~12:4xZ **Lead: order after P-137, tool fixes landed, model plan (user T-196).**
   - Tool fixes on main: I-204 and I-206 (ea9fa84c, d5fc98cf), I-207 and I-202 (598ec699). The lead resolves the incidents
     after its npm test on main passes.
