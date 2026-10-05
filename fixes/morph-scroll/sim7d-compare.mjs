@@ -34,13 +34,20 @@ if (!fc || !fv || pos.length !== 2 || aaC.includes(undefined) || aaV.includes(un
 const load = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const C = load(fc), V = load(fv);
 // program stroke list with loop flags, in the compiler's order (fixed repeats unrolled, until-loops kept as one stroke)
-function programStrokes(script) {
+// `$name` repeat counts resolve from the record's compiled params, else the script's (e4's `times: "$flicks"`)
+function programStrokes(script, params = {}) {
   const out = [];
+  const times = (t) => {
+    const v = typeof t === 'string' && t.startsWith('$') ? params[t.slice(1)] : t;
+    const n = Number(v ?? 1);
+    if (!Number.isInteger(n) || n < 0) throw new Error(`repeat times ${t} does not resolve to a count`);
+    return n;
+  };
   const walk = (steps, inLoop) => {
     for (const s of steps) {
       if (s.type === 'stroke') out.push({ id: `s${out.length + 1}`, inLoop });
       else if (s.type === 'repeat' && s.until) walk(s.steps, true);
-      else if (s.type === 'repeat') for (let i = 0; i < (s.times || 1); i++) walk(s.steps, inLoop);
+      else if (s.type === 'repeat') for (let i = 0; i < times(s.times); i++) walk(s.steps, inLoop);
     }
   };
   walk(script.steps, false);
@@ -48,7 +55,7 @@ function programStrokes(script) {
 }
 function view(d, label) {
   const script = load(d.meta.script);
-  const prog = programStrokes(script);
+  const prog = programStrokes(script, { ...(script.params || {}), ...(d.program.params || {}) });
   if (prog.length !== d.program.strokes.length) throw new Error(`${label}: program walk gives ${prog.length} strokes, record has ${d.program.strokes.length}`);
   const loopIds = new Set(prog.filter((s) => s.inLoop).map((s) => s.id));
   const seg = d.run.segments[0];

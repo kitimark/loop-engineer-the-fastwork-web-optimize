@@ -45,7 +45,7 @@ plus the file sha256/12 of each file:
 |---|---|
 | fixes/morph-scroll/sim7d-analyze.mjs (counts) | 5e8c4f587342 |
 | fixes/morph-scroll/msdbg-inject.mjs (probe) | 9d2d119f5cea |
-| fixes/morph-scroll/sim7d-compare.mjs (C vs V start state and path, D1; the rule frozen by ops before s6/s7) | 777663766071 |
+| fixes/morph-scroll/sim7d-compare.mjs (C vs V start state and path, D1; the rule frozen by ops before s6/s7; 777663766071 plus a parser fix for e4's `$flicks` repeat count, rule unchanged, fo/fs output byte-identical) | 9cb401ffd83d |
 | fixes/morph-scroll/sim7d.sh (Simulator dry runs, prints SERVED hashes, D3) | fb357826def1 |
 
 Probe: `--inject fixes/morph-scroll/msdbg-inject.mjs` (V's debug-only touchend log: page Fv, finger travel; a passive
