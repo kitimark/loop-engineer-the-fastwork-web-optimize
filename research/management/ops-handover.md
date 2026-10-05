@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~05:2xZ **P-129 SIGNED** by the lead on rev 2: card 01aeed18 on main (b44850f4 rebased), before data. The ops delta check 7ea227bc is on main too.
+  - Build confirmed: the 7d research build ms-29c0d537e0c9, served with the TICKET-7d hash check. Reason: the floors and the comparison come from P-124 on that same build, and the card reads where the lag comes from, not what ships.
+  - **Queued phone ticket P-129.** Runner: iphone-runner. Profile: Xcode-induced Serious. Driver G, script fs. Block: warm-up E, S0, then E L L E E L L E with Timeline on, then S1, then park.
+  - Slot (lead): after the v9 phone no-worse check and the art-worst-cases redo hold.
+  - Reader after data: `node research/serious-heat/p129-read.mjs <folder> --E E1,E2,E3,E4 --L L1,L2,L3,L4 --S S0,S1`. Ops does the result read.
+  - arch-serious-heat is done (handed back). No owner work is needed until the data exists.
 - 10-05 **P-129 rev 2 delta check: PASS** (arch-serious-heat, commit b44850f4, card research/serious-heat/README.md §5 "P-129 rev 2"). The lead may sign. No data exists: the author's worktree has no out/.
   - Pins on disk match the message: reader p129-read.mjs 88835d4822e9, self-test p129-selftest.mjs 110cc04eb8fb. Ops re-ran the self-test: SELFTEST PASS 48.
   - The diff against main touches only research/serious-heat/.
