@@ -1383,7 +1383,50 @@ first open closed; otherwise record and park.
 withdrawn (mgmt-ops-10 skips the pre-data read), and no ablation was run. F-260, the runway moving the GA 90 %
 scroll event into the open, stays as a known vendor difference for P-122 (int-v8).
 
-## Risks, conflicts, follow-ups
+## Close rule joined onto v9 step 4 (lead 2026-10-05; mechanical join, pixels only, no timing)
+
+The lead asked for the close rule (v9 #6) on two possible step-4 bases. The user then decided v9 goes on with rev 7c
+(T-159 #32), so arm A is the one to land. Arm B (rev 7d) is optional.
+
+**Join** (`v9join/join.mjs`: best-build's strict applier, exact context, no fuzz):
+
+| arm | base | base JS / CSS | V = base + close (JS / CSS) | baseline → V patch |
+|---|---|---|---|---|
+| A | v9 step 4, `fixes/v9-best/patch.diff` (883b6f86b90f, rev 7c) | de237379b556 / e1359ab9994a | de237379b556 / bdecf48c5b32 | d5124af2cfd4 |
+| B | v9 + rev 7d, `fixes/morph-scroll-v9try/patch.diff` @193f6899 (c9cab1a3a6ef) | 5dfb36392d07 / e1359ab9994a | 5dfb36392d07 / bdecf48c5b32 | 23528ca66faf |
+
+- No conflict on either base. The close hunk applies at offset +21; PR-021's CSS sits above it.
+- Order check: v8 + close, then (base − v8), gives the same bytes as base + close. Reversing the close gives back the base.
+- V − base changes exactly the close delta's six added lines. `v9join/close-on-A.diff` (d7ce6edee0eb) is that delta
+  re-based on step 4. Arm B gives the same bytes: rev 7d changes only JS, and step 4 and 7d have the same CSS.
+- Rev 7d's 15 JS lines (the fling-down rule, `__msF0`, a debug push) do not touch `.is-morphing` or the panel's
+  opacity, which the rule relies on.
+
+**Frozen frames, arm A** (`fixes/v9-best/gates`, `V9_SNAP=out/morph-gpu/v9join/snap-A-bdecf48c5b32`, A = step 4, V =
+step 4 + close; `PX_ALIGN=1` in Chrome):
+
+| gate | stops | worst consistent cluster (A~V and A2~V2) | where | verdict |
+|---|---|---|---|---|
+| Chrome mobile (`out/v9/px-mobile-2026-10-05T04-44-36-475Z`) | 13, 0-6278 | 23 css px² (0.006 %) at y 4496 | `#platform` (typing loop) | T2 |
+| Chrome desktop (`out/v9/px-desktop-2026-10-05T04-47-51-464Z`) | 13, 0-8448 | 3148 css px² (0.24 %) at y 4255 | `.pain` sticky notes | T2 |
+| Simulator (`out/v9/px-sim-2026-10-05T05-02-58-326Z`, 2nd run) | 13, 0-6075 | 66 css px² (0.016 %) at y 1364 | the feed's fade and the community pill (timers) | T2 |
+
+- Chrome mobile: 10 of 13 stops are 0. The page end (6278, rev 7c's open end, the panel open) is 0.
+- Chrome desktop y 4255: the pain section's sticky notes run on a timer the gate does not freeze. The four loads froze
+  on different notes (viewed: peach, green, peach, violet). Their own A/A differs there too (A~A2 0.95 %, V~V2 3.1 %).
+  Every other stop is 0-2 css px².
+- No cluster at the header or the panel in either viewport.
+- Simulator, first run (`px-sim-2026-10-05T04-55-11-679Z`): void. Load A2 lost its tab ("never listed … or listed it
+  in several tabs", I-037), so nothing was scored. The second run is complete.
+- Simulator: the 17 css px² at the top left of the shot at y 0, 300 and 548 is the iOS status-bar clock (12:03, 12:03,
+  12:04, 12:05 across the four loads; viewed). The gate labels it as the nav bar because the shot's page top is 0.
+  The rest is the hero rotator (42 css px² at y 548) and the feed fade at y 1364. Stops 1953-6075 are 0-2 css px².
+  The page end (6075, the open panel) is 0.
+- **Verdict, arm A: within PR-010 T2 in Chrome (mobile and desktop) and in the Simulator.** The only clusters are
+  timer phases and the status-bar clock.
+- Arm B has the same CSS bytes, on a JS that differs only in rev 7d's swipe lines, so its frozen frames were not
+  re-shot.
+
 
 - **Base.** Built on best-build, which includes morph-inherit. P-085 passed on the iPhone at Serious (main e22dd73:
   moving >50 21 -> 0.5), so the base holds. If the base changes again, this delta has to be rebuilt and re-checked on
