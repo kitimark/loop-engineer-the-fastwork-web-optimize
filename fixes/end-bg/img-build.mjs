@@ -61,7 +61,10 @@ if (has('A') || has('B')) {
     const tmp = join(DIR, 'tmp' + r.path.replace(/\.[a-z]+$/i, '.png')); mkdirSync(dirname(tmp), { recursive: true });
     run('sips', ['-s', 'format', 'png', ...(shrink ? ['--resampleHeightWidth', String(H), String(W)] : []), src, '--out', tmp]);
     let rel, outBytes;
-    if (toAvif) {
+    // a path built at runtime has no literal reference to rewrite: B then keeps the format and only right-sizes (as A)
+    const literal = [js, css, html].some((s) => s.includes(r.path));
+    if (toAvif && !literal) { log.skipped.push({ path: r.path, why: 'AVIF skipped: no literal reference (built at runtime); right-sized only' }); if (!shrink) continue; }
+    if (toAvif && literal) {
       rel = r.path.replace(/\.(jpe?g|png)$/i, '.avif').slice(1);
       const f = join(OVL, rel); mkdirSync(dirname(f), { recursive: true });
       run('avifenc', ['-q', String(Q), '-s', '6', '-j', '2', tmp, f]); outBytes = statSync(f).size;
@@ -73,6 +76,9 @@ if (has('A') || has('B')) {
       rel = r.path.slice(1); const f = join(OVL, rel); mkdirSync(dirname(f), { recursive: true });
       if (r.format === 'png') copyFileSync(tmp, f); else run('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', String(JPQ), tmp, '--out', f]);
       outBytes = statSync(f).size;
+      // sips writes plain PNGs and its JPEG quality may be above the original's: a smaller picture can be a bigger
+      // file. Then the original stays (no gain in bytes; the decoded size gain alone is not worth a pixel change).
+      if (outBytes >= r.bytes) { rmSync(f); log.skipped.push({ path: r.path, why: `resized file not smaller (${outBytes} >= ${r.bytes}): original kept` }); continue; }
       log.files.push({ path: r.path, to: r.path, from: `${r.w}x${r.h} ${r.bytes}`, out: `${W}x${H} ${outBytes}`, why: `x-need ${r.xNeed}` });
     }
   }
