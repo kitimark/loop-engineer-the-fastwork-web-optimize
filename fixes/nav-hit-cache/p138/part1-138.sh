@@ -12,6 +12,7 @@ cd "$(dirname "$0")/../../.." || exit 2
 P=fixes/nav-hit-cache/p138
 OWNER=${FW_AGENT:-fix-nav-morph}
 red() { perl -pe 's/\b(?:10|172|192)\.\d+\.\d+\.\d+\b/<LAN>/g'; }
+RC=out/p138/rc; mkdir -p out/p138   # the exit of the lock run, not of red (ops N3)
 if [ "$1" = score ]; then
   CH=""; for f in $P/kv-mobile.json $P/kv-desktop.json; do [ -f $f ] && CH="${CH:+$CH,}$f"; done
   AA=""; for f in $P/aa-mobile.json $P/aa-desktop.json; do [ -f $f ] && AA="${AA:+$AA,}$f"; done
@@ -26,19 +27,19 @@ fi
 fresh() { for f in "$@"; do [ -e "$f" ] && { echo "$f exists: refuse (no re-run without the lead's word)"; exit 3; }; done; }
 chrome() { # $1 = base arm, $2 = vp, $3 = out, $4 = what
   echo "START $4 $2 $(date -u +%TZ)"
-  node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner "$OWNER" \
+  { node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner "$OWNER" \
     --doing "nav-hit-cache P-138 part 1: Chrome $4 $2 (counts only)" -- \
-    node fixes/nav-hit-cache/probe.mjs count --base "$1" --ctl v9f7d --reps 3 --vp "$2" --out "$3" 2>&1 | red
-  r=$?; echo "EXIT $4 $2 $r $(date -u +%TZ)"; [ -s "$3" ] || { echo "no record $3: stop"; exit 4; }
+    node fixes/nav-hit-cache/probe.mjs count --base "$1" --ctl v9f7d --reps 3 --vp "$2" --out "$3" 2>&1; echo $? > $RC; } | red
+  r=$(cat $RC); echo "EXIT $4 $2 $r $(date -u +%TZ)"; [ -s "$3" ] || { echo "no record $3: stop"; exit 4; }
 }
 simslot() { # $1 = base arm, $2 = out, $3 = what, rest = arm:rep tokens
   b=$1; o=$2; w=$3; shift 3
   echo "START sim $w $* $(date -u +%TZ)"
-  node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner "$OWNER" \
+  { node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner "$OWNER" \
     --doing "nav-hit-cache P-138 part 1: Simulator $w $* (counts only)" -- \
     node tools/sim.mjs session --functional --owner "$OWNER" -- \
-    node fixes/nav-hit-cache/simcount.mjs "$o" "$@" --base "$b" --ctl v9f7d 2>&1 | red
-  echo "EXIT sim $w $? $(date -u +%TZ)"
+    node fixes/nav-hit-cache/simcount.mjs "$o" "$@" --base "$b" --ctl v9f7d 2>&1; echo $? > $RC; } | red
+  echo "EXIT sim $w $(cat $RC) $(date -u +%TZ)"
 }
 case $1 in
   aa) fresh $P/aa-mobile.json $P/aa-desktop.json

@@ -1124,7 +1124,19 @@ PART1 FAIL (C5 gates). Descriptive only, not part of the verdict:
 Mechanism result, posted as F-283: on touch mobile U2 removes exactly one nav elementsFromPoint per morph-open frame,
 93 per down-scroll, as predicted from the deferred-frame count, with no rise in forced layout or style.
 
-## D card P-138: U2 again, post-data (rev 1, registered before its own data; not signed yet)
+## D card P-138: U2 again, post-data (rev 1, registered before its own data)
+
+**SIGNED by the lead** (10-05, on mgmt-ops-10's pre-data read PASS, PREDICTIONS ops fb97f07d, card 9f89c835) with ops'
+notes N1-N7 as conditions:
+- N1: every p and the A0 cap are informed by P-136; the result read labels C1, C2, C5 and A0 as informed.
+- N2: an A0 miss turns any C1, C6 or C8 miss into INSUFFICIENT; ops reports that miss beside the verdict.
+- N3: `part1-138.sh` EXIT lines now carry the lock run's status (new hash d4b842ea99d0 below), before any data.
+- N4: the parity input is pinned in ops' row: `v9final/parity-u2-2.json` f892a8dea0ae, deferred 187.
+- N5: `p136/score.mjs` prints P-136 in its messages; accepted.
+- N6: `sim-aa.json` (and `sim-kv.json`) are shared by two slots: a failure part-way takes the `.void1.json` move-aside.
+  Order: Chrome steps 1-4 in shared probe slots, the A/A and its tolerances committed before any K / V run;
+  Simulator steps 5-8 in drain slot 5, last.
+- N7: if P-134 lands first, ops delta-checks before any counted run.
 
 **Post-data.** This card follows the seen P-136 C5 FAIL above (lead ruling option (a), 10-05). Everything on it, the
 tolerance rule, the A0 cap and every p, was written knowing P-136's records. Id P-138 from mgmt-ops-10; drain slot 5
@@ -1160,7 +1172,7 @@ counted run (as P-136's N4).
 | `p136/counts.mjs` | b93a69de05f0 | P-136's metrics, VOID rules and pins; imported by `p138/counts.mjs` (refused if changed) |
 | `p138/counts.mjs` | 75a3c8ce735a | part 1 verdicts: the range tolerance, A0, C1-C8, >= 3 loads per arm |
 | `p138/selftest138.mjs` | 046637a88b2f | SELFTEST-138 OK 20 (synthetic): pass; range tolerance, floor 2, A/A median; a P-136-like desktop PrePaint gap inside the range hits C5; a shift beyond it misses C5 (FAIL); a C1 miss; A0 cap miss = INSUFFICIENT, also over a C1 miss; the 5 % edge; A/A or K / V with 2 per arm = no tolerance / insufficient; other bytes VOID (C8 miss); an A/A load not on K bytes VOID; no Simulator = INSUFFICIENT; a Simulator forced-Layout rise misses C7; C2's reference; the P-136 import pin |
-| `p138/part1-138.sh` | 42a764437dc5 | part 1 runner: steps `aa`, `kv`, `sim`, `score`; refuses without TICKET=P-138, refuses `kv` before `aa`, never overwrites a record |
+| `p138/part1-138.sh` | d4b842ea99d0 | part 1 runner: steps `aa`, `kv`, `sim`, `score`; refuses without TICKET=P-138, refuses `kv` before `aa`, never overwrites a record; its EXIT lines carry the lock run's status, not the LAN filter's (ops N3, fixed after the signature and before any data; was 42a764437dc5) |
 | `p136/score.mjs` | 86ee754f0978 | phone scorer, unchanged (same arms and bytes; its messages say P-136); tests in `p136/selftest136.mjs` 4135f1a7752f |
 | `p138/hold138.sh`, `p138/serve138.sh` | ac54aedc3f3d, 7353c8a55996 | copies of `p136/hold136.sh` 89434acd0604 / `p136/serve136.sh` dc3e2ee81d40: ticket, folders (`out/p138/`), labels (`p138-*`) changed, and the PIN line names `p136/score.mjs` |
 
