@@ -472,6 +472,32 @@ rev 1.4 data):**
   passes with it; a 40 px live-max drop fails with it; B null fails every window.
 - sim92 (ce506d1e403e), part1read (c18e5825d812) and rerun14.sh (a4f4608f9d64) unchanged. Then the lead's check, then
   GO for rerun14.sh.
+- **Disclosed (OBSERVED, in our setup, cause unknown):** the smoke's scroll took ~8.8 s, not the estimated ~4.2 s
+  (Simulator rendering slower than 60 Hz while scrolling), and the driver took 263 rAF callbacks for 254 steps (a few
+  frames did not advance scrollY). Both stay inside the floors; neither changes the check.
+
+### Rev 1.4 result: the 1c scroll re-run, and part 1 (lead check of c263104b PASS, GO; ran 18:37:25-18:39:36Z)
+
+**1c scroll: no-worse (floor-0 gate; floor 2 no-worse beside it). PART 1 (with rev 1.4): no-worse**: 1a no-worse,
+1c rest stops no-worse (part 1's records, 53b0af35), 1c scroll no-worse (this line's records). PIN head c263104b
+(rerun14.sh a4f4608f9d64, sim92 ce506d1e403e, sim92check de54a6c03bf9, part1read c18e5825d812, hostgate d800dd5a5ad2,
+HASHES f5f2db042aaf). Three sessions, each one try, exit 0, no VOID-HOST (load1 at step starts 2.4-7.3); 6 loads, every
+check ok, VOID 0, no re-runs. Log `out/v92/part1-r14.log` (165c40303735), records `out/v92/sim/p142-scroll.json`
+(03883bd68013); the reader's lines are at the log's end.
+
+| load | served | frames | y / max | ih | RF | layouts/frame | styleRecalcs/frame | check |
+|---|---|---|---|---|---|---|---|---|
+| F1 | 647c9ef2b1e2 / e1359ab9994a | 266 | 6075 / 6075 | 775 → 775 | 271 | 3.129 | 1.542 | ok |
+| V1 | 941aa13e5bdf / f1997edf5309 | 265 | 6075 / 6075 | 775 → 775 | 269 | 2.952 | 1.532 | ok |
+| V2 | 941aa13e5bdf / f1997edf5309 | 264 | 6075 / 6075 | 775 → 775 | 271 | 2.937 | 1.509 | ok |
+| F2 | 647c9ef2b1e2 / e1359ab9994a | 266 | 6075 / 6075 | 775 → 775 | 270 | 3.100 | 1.515 | ok |
+| F3 | 647c9ef2b1e2 / e1359ab9994a | 264 | 6075 / 6075 | 775 → 775 | 268 | 3.175 | 1.530 | ok |
+| V3 | 941aa13e5bdf / f1997edf5309 | 266 | 6075 / 6075 | 775 → 775 | 275 | 2.964 | 1.502 | ok |
+
+- **layouts/frame:** F 3.100-3.175, V 2.937-2.964: V's min is not above F's max (V is lower: median −0.177, about −6 %)
+  → no-worse at floor 0 (the gate) and at floor 2 (report).
+- **styleRecalcs/frame:** F 1.515-1.542, V 1.502-1.532 (median −0.021) → no-worse at floor 0 and at floor 2.
+- Paint per frame (report): F 7.73-7.80, V 7.62-7.76.
 
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
