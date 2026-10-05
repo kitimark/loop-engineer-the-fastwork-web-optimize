@@ -181,6 +181,145 @@ within 1-9):
   step's width to the pill (a 0.2 px change). Rev 1's `transition-property` override at m 0 skips that transition,
   so the nav snaps to the pill. dn0 vs the fresh up0 = 0 shows that the result looks the same.
 
+## P-153: phone no-worse check of P1, plus one blind swipe A/B (card, registered before any P-153 data)
+
+**Ticket:** P-153 (lead, 2026-10-06; reserved by mgmt-clerk-1 at 840490f4). Stage V of a less-work fix (memory
+"less-work-landing-rule"): the Chrome and Simulator counts above, plus one short phone no-worse check and one blind
+swipe A/B. No gain is claimed from the phone. It runs right after P-152, on the same reconnect.
+
+**Question.** Does P1 make the end-of-page menu morph worse on the iPhone? The morph is the scroll into and out of the
+end menu (open and close), with Safari toolbar steps, driven by a real touch gesture.
+
+**Arms (one change, same base).**
+- Both arms come from int-v8's immutable snapshot `out/emp1v9f/snap-4da641f828bb` (int-v8's commit 89c93bda;
+  HASHES.txt sha256/12 `c5138adb7dd2`). `phone/p153-serve.sh` copies it once into `out/p153/snap`, checks it against
+  HASHES.txt and allows only the four pinned files.
+- C = v9-final + F1 + U2 (int-v8's landing base): JS `a6426953727a`, CSS `e1359ab9994a`.
+- V = C + P1 (`delta.diff` `d310e4d2ba0c`, 0af9e816): JS `4da641f828bb`, CSS `a81b9af7b2c9`. int-v8 checked the
+  other order (v9-final + P1, then F1 + U2) gives the same bytes.
+- B = the plain baseline, only for the thermal gate's timer page.
+- Served by `phone/p153-serve.sh` (P-152's server script, new arms): plain http, `--vendors=local --latency 150`.
+- Both arms' served JS and CSS are hashed before every run (each arm its own CSS pin). A mismatch voids the hold.
+
+**Driver and profile (as P-152).**
+- Driver G: `iphone.mjs gesture` with fs = `fixes/morph-scroll/g-fastshort-v1.json`, compiled program `8737f212c0ff`,
+  E procedure (first touch 4.0-5.5 s after page ready). The same script as P-152, P-137 and T-194: its swipes run to
+  the page bottom and back, through the morph's opens and closes, with Safari toolbar steps.
+- Hold time from `gesture --dry-run`'s `GESTURE_BUDGET_S`; a time guard re-runs a hold whole.
+- Heat profile `xcode-serious` (Xcode Device Conditions, no heat pre-warm). Thermal gate at each phone hold's edges
+  (`--expect serious --max-c 44 --accept-induced`).
+
+**Plan (as P-152; ≤ 2 blocks).**
+- One uncounted warm-up per arm port (WC, WV).
+- Sentinels S0 (start) and S1 (end): Timeline-OFF runs on C, judged by the signed P-129 sentinel rule (moving fps
+  >= 50, slow share <= 6 %). S0 FAIL voids the block; S1 FAIL voids every counted run.
+- 8 counted runs, Timeline on, order C V V C C V V C (EC1, EV1, EV2, EC2, EC3, EV3, EV4, EC4), 4 v 4.
+- Each counted run must pass the P-129 run gates G1-G6; a failed run is re-run once in the tail, at most 2 per block.
+- Attribution AC1, AV1 after S1 (Timeline on, Paint records per moving frame; decide nothing).
+- `p153-block.sh` restarts WDA (stop, start, check) at the start of every part; each hold runs `wda check` before its
+  start gate; Safari is parked after every run and at the end of every part; after each hold `doing iphone --between 1`.
+
+| part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 fs runs at most) |
+|---|---|
+| 1 | H1 WC WV, H2 S0 EC1, H3 EV1 EV2 |
+| 2 | H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7 TAIL (re-runs, then S1), HA AC1 AV1 |
+| S (after the block mark ends) | the blind swipe A/B, its own phone hold |
+
+Runner commands (in the background, after `sh fixes/end-morph-p1/phone/p153-serve.sh start`):
+- `TICKET=P-153 node tools/lock.mjs run iphone --owner iphone-runner --block P-153 --max-seconds 3600 -- sh
+  fixes/end-morph-p1/phone/p153-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2`
+- the same with `H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`
+- then part S: `TICKET=P-153 node tools/lock.mjs run iphone --owner iphone-runner --max-seconds 900 -- sh
+  fixes/end-morph-p1/phone/p153-swipe.sh`
+- Before the read, VOID holds' records move to `out/p153/void/<H>/`.
+
+**Metric** (`phone/p153-read.mjs`, P-152's reader with the new arms; the end-zone metric is unchanged):
+- Per counted run, the signed P-129 reader rev 1.1 (`readRun`, role E) gives the moving frames.
+- End zone = the reader's lastScreen band (scrollY >= maxY - innerHeight). On v9-final that is the morph track
+  (m >= 0) and the screen before it (Chrome geometry, OBSERVED).
+- n = moving end-zone frames; s(th) = those with dt > th, for th 30, 34, 38, 46, 50, 54.
+
+**Decision: NO-WORSE as in P-152** (lead: "whatever bound I sign there after its read, take the same").
+- As registered for P-152 (P-150 rev 1.1's rule), V against C at >34 and at >50 separately. WORSE when EITHER (a)
+  min(V) > max(C), OR (b) median(V) - median(C) > +2 at >34 or > +1 at >50.
+- Rates instead of counts when median n differs by more than 15 %; the bounds then become 2 and 1 divided by median n(C).
+- Twins >30/>38 use the >34 bound, >46/>54 the >50 bound; a twin that disagrees marks the result "threshold-sensitive".
+- NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE; it goes to the lead (block 2 or no landing).
+  INSUFFICIENT: an arm has < 3 valid runs. VOID: a sentinel failed. "Position-confounded" is a label only (lowest V
+  run at a failing threshold opens its hold, EV1 or EV3).
+- **If the lead signs another bound for P-152 after its read,** P-153 takes it: an addendum commit changes `BOUND` in
+  `p153-read.mjs` before any P-153 data, with its new pin in this card.
+
+**The named risk: the first frame of the open.**
+- On best-build, PR-012 rev 1 paid a longer first frame when the menu opens (phone P-092, M driver; the "Phone block
+  P-092: result" and P-098 sections of `fixes/morph-gpu/README.md` at 6f824153):
+  - repeat opens +7 ms (V 62 vs C 55), paid back in the next frame;
+  - the first open per page load V 41 vs C 34.5 ms, n 4, ranges overlapping (40-49 vs 33-49);
+  - rev 2 (P-098) measured the first open at +6.5 ms again, WORSE by its bound V <= C + 2 ms.
+- The likely cause was the reveal's switch-on frame (creating the dark and glass layers, a forced layout read, new
+  layers). P1 keeps that switch-on, so the risk stands on v9-final until the phone shows otherwise.
+- **Reported per run (decides nothing in the NO-WORSE rule):** the first open after page load, O1 = the first frame
+  whose morph value m > 0 after a frame with m <= 0 (m = (scrollY - (maxY - innerHeight)) / innerHeight, each frame's own
+  innerHeight; the track = innerHeight is Chrome geometry, an approximation on the phone). Per run: O1's f1 (its dt),
+  f12 (+ the next frame), f123 (+ the one after), the number of opens and the median f1 of the repeat opens.
+- Per arm: median and range of O1.f1, f12, f123 and of the repeat-open medians. The reader prints
+  **"FIRST-OPEN RISK SEEN"** when median V O1.f1 exceeds median C by more than 2 ms (rev 2's bound). That label goes
+  to the lead with the result; the NO-WORSE outcome stays as decided.
+
+**Falsification line.**
+- Prediction: NO-WORSE PASS, and no FIRST-OPEN RISK SEEN. P1 replaces the per-frame repaints of the morph with a
+  composited clip (Simulator open: paints 442 → 208, painted kpx 34583 → 13337, layouts equal; Chrome raster 581 → 270),
+  and v9-final already carries rev 3's guard, so #platform's opacity never crosses 1 (counted above).
+- A FAIL, or the risk label, means P1 does not land as is. The next step would be moving the switch-on work off the
+  open's first frame (rev 2's idea, which did not help on best-build) or a setup at page load.
+
+**Part S: one blind swipe A/B of the end-of-page menu (F, the user's finger; after the block).**
+- Runs only after the block's last part ended (memory "no-phone-steps-during-blocks"), in the runner's own phone hold,
+  and the console step is posted from inside it (one phone step at a time, I-123).
+- `phone/p153-swipe.sh`: checks the served hashes, flips a coin for the page order (the key goes only into the step's
+  private `--meta` and `out/p153/swipe-key.json`), reads the thermal profile before the user's Start, then posts
+  `console.mjs post --kind swipe-pair` with page 1 / page 2 = C / V in the coin's order and a 1-5 "How different did
+  they feel?" scale.
+- Instructions, plain: "On each page, swipe down to the very end, then swipe up and down there so the menu at the end
+  opens and closes a few times (about 30 seconds). Judge only that end-of-page menu."
+- Runner side per the console protocol: ack loading, `iphone.mjs open`, ack ready, wait for Start, `iphone.mjs record
+  --seconds 45 --poll 5`, ack recording, wait for Done; then the same for page 2; then wait for the answer.
+- Every wait carries `--epoch`; REDO (the user's Start over, or a redo) stops the recorder and resumes at the reset part
+  with its new attempt; NOT-READY re-acks ready.
+- A recorder that does not start within 30 s does not hold the user up: the part is acked "recording" with "not
+  recorded" and the answer still counts.
+- The answer (1 / 2 / same, scale, notes) is unblinded into `out/p153/swipe-answer.json`. Only the pick is printed
+  (`SWIPE PICK C|V|same`); the user's notes stay local.
+- Reading: a pick of C (with any scale) is reported to the lead as a finger-level "worse" next to the block's result.
+  "same" or V is no-worse. The recordings are descriptive only (finger frame rates don't compare with G runs, F-071).
+
+**Kit (pins, sha256/12, at the card commit).** Copies of P-152's kit (fixes/end-morph-f12/phone at d705bdd6) with the
+P-153 arms; the reader adds the first-open read; `p153-swipe.sh` is new.
+
+| file | pin |
+|---|---|
+| `phone/p153-block.sh` | `76e3fd93ee51` |
+| `phone/p153-hold.sh` | `ba0e405b6782` |
+| `phone/p153-serve.sh` | `fbd214f54de0` |
+| `phone/p153-read.mjs` | `ebd8e855bf0e` |
+| `phone/p153-swipe.sh` | `c60e12b0e298` |
+
+- Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e`,
+  `research/serious-heat/p129-read.mjs` `06f74f5d19ca`, fs script `df597802d2f0`, thermal gate `ecb403b3ad25`,
+  pmcheck `d36bd7437b7c`. Every hold prints these in its PIN line.
+- Reader self-test: `node fixes/end-morph-p1/phone/p153-read.mjs --selftest` → `SELFTEST ok (24 checks)`: P-152's 18
+  plus 6 for the first open (O1 at the first m > 0 frame, f12/f123 sums, repeat opens, no open in a run, the risk
+  label at +5 ms, no label at +1.5 ms, no open in an arm).
+- Dry run (2026-10-05 23:41Z, servers up, then stopped): `P153_DRY=1 TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh
+  H1:WC,WV H2:S0,EC1 H3:EV1,EV2 H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`
+  - Every hold: DRY ok. Served: C `a6426953727a` / `e1359ab9994a`, V `4da641f828bb` / `a81b9af7b2c9`, B `4606120cf392`
+    / `27776f3d4138`. Compiled program `8737f212c0ff`, GESTURE_BUDGET_S 229. Gates at H1 (start) and HA (end); TAIL
+    resolved to S1 alone.
+  - `P153_DRY=1 TICKET=P-153 sh fixes/end-morph-p1/phone/p153-swipe.sh`: SWIPE DRY ok (served hashes, coin flip).
+- Reader smoke test on P-137's records (fix-end-bg's out/p137/runs: another question, used only to test parsing): all 8
+  counted runs and both sentinels read; 13 opens per run, O1 f1 16-17 ms in both of P-137's arms. 13 opens per G run
+  means the gesture crosses m = 0 many times (toolbar steps move innerHeight); O1 is the first of them.
+
 ## Risks, conflicts, follow-ups
 
 - **Desktop:** P1 is gated by `matchMedia('(width <= 640px)')` and `@media (width<=640px)`, so it is inert on desktop.
@@ -206,7 +345,9 @@ within 1-9):
     This is rev 1's own state, identical in both, and within T2's fill limit of 64.
 - **Phone:** no iPhone in this session (T-207). The open-start cost rev 1 showed on the phone (P-092: first open
   frame +7 ms) was traced to #platform's opacity crossing 1, which rev 3's guard fixes, and that guard is in v9-final.
-  P1 has not been on the phone on v9-final. A phone no-worse block would need a card from the lead.
+  P1 has not been on the phone on v9-final. Card P-153 above (registered before data) checks it, with the first open
+  after load read per run as the named risk. That rev 3's guard removed the cost is OBSERVED reasoning only, untested on
+  the phone.
 - **Stacking:** P1 stacks with int-v8's v9-final + F1 + U2 with no shared lines (above). The lead decides when.
 - Measurement code was not changed. The gate scripts are copies with credit; `em-p1-px.mjs` adds only the walk limit,
   the stops, the cross scores and `--reduced`.
