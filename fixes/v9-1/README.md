@@ -155,10 +155,11 @@ scorer: fixes/v9-1/phone/score132.mjs, a wrapper that imports P-122's scorer fix
   too; no gate reads C's X runs (EX is a V ceiling, parity and FLICKER take every counted run), so no verdict changes.
   Arm identity: G runs by the served-hash check log before each item (required "ok", else VOID); S sentinels also by
   the record's served map against the re-pinned arm C.
-  Self-test: selftest132.mjs (SELFTEST-132 OK 25): with P-122's arm pins the wrapper reproduces P-122's score-final.json
+  Self-test: selftest132.mjs (SELFTEST-132 OK 27): with P-122's arm pins the wrapper reproduces P-122's score-final.json
   on its 43 run files (verdict, GM/EX/ES, FLICKER per part, parity, per-run voids); with P-132's pins P-122's v8
   sentinels are VOID "served not arm C" and a G run without its check log is VOID; hold132.sh's TICKET guard, part R and
-  unknown items refused, the 420 / 421 s time guard; serve132.sh and score132.mjs pin the same full hashes.
+  unknown items refused, the 420 / 421 s time guard; both scripts cd to the checkout root (a copied 4-level cd sent the first `snap` outside
+  the checkout, caught before any data); serve132.sh and score132.mjs pin the same full hashes.
 verdict: BEHAVIOUR FAIL (own line, leads the block verdict) if the parity counts; frames: WORSE if any gate is WORSE or
   has a NEW cluster; else insufficient if any is; else no-worse. BEHAVIOUR FAIL or WORSE -> int-v8 splits by the
   reversal builds (v9.1 - scb = v9-final + g11, v9.1 - g11 = v9-final + scb; both pinned above) and reports to the lead,
