@@ -72,6 +72,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~09:4xZ **P-130 SIGNED by the lead (09:3xZ)** on the ops final delta check PASS, at C 647c9ef2b1e2 / e1359ab9994a, V 6841352e0328, delta 5bcc05af690c, serve.sh cc2203ef105e. Landed: countdown-tick 12b9ca9a as 5695a744, ops 870faa59 as 4a4e37a2 (55746afc earlier).
+  - Phone order (lead): P-129 first (on C-065 and the lead's go), then P-130. Same xcode-serious profile, no profile pooling.
+  - P-130 runner steps (iphone-runner, in its own checkout on main >= 5695a744; also on the device-plan board row):
+    1. `node tools/fix.mjs apply v9-best --reset` (rebuilds the landed v9-final overlay from fixes/v9-best/patch.diff 4196eaa61d96).
+    2. `CDIR=fixes/v9-best/overlay sh fixes/countdown-tick/phone/serve.sh snap` once (refuses while a pin is OPEN, the snap exists, or the delta is not DELTA 5bcc05af690c; HASHES.txt must read C 647c9ef2b1e2 / e1359ab9994a, V 6841352e0328 / e1359ab9994a).
+    3. `sh fixes/countdown-tick/phone/serve.sh` in the background: starts B, C, V and checks the served hashes (phone URLs stay in the runner's terminal).
+    4. One phone block, 5 parts, each part in its own Mac-quiet no-timing hold (the hold.sh header form): `node tools/lock.mjs run iphone --owner <runner> --block P-130 --max-seconds 3600 -- sh -c 'for P in "H1 wC wV" "H2 gC1 gV1" "H3 gV2 gC2" "H4 gC3 gV3" "H5 gV4 gC4"; do node tools/lock.mjs run chrome-measure --owner <runner> --no-timing --max-seconds 700 --doing "countdown-tick P-130 $P" -- env TICKET=P-130 RUNNER=<runner> caffeinate -i -s sh fixes/countdown-tick/phone/hold.sh $P; done'` (counted order C V V C C V V C). Each part ends "HOLD <H> VALID" or "HOLD <H> VOID <why>"; a VOID part is re-run whole, once, at the end of the block.
+    5. `iphone.mjs park`, `serve.sh stop`, `doing iphone --block none`.
+    6. `node fixes/countdown-tick/p130-block.mjs > out/countdown-tick/p130/block.json`, then `node fixes/countdown-tick/p130-read.mjs out/countdown-tick/p130/block.json` (exit 0 PASS, 1 FAIL, 2 INSUFFICIENT, 3 VOID). Send ops the manifest, block.json and the reader output for the result read.
+    - Deadline: every run must start before 2026-11-02 04:45Z (countdown expiry 05:00Z).
 - 10-05 ~09:3xZ **P-130 final delta check: PASS; row registered (pending the lead's signature)** (countdown-tick 12b9ca9a on worktree-agent-a8dba5b51e224d3ca, rebased on main 9f369b8a, which holds v9-final 8b5ce9b3; land with e36f6124 and db956dd1).
   - Pins on disk equal the committed blobs at 12b9ca9a:
     - delta patch.diff 5bcc05af690c
