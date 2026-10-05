@@ -85,7 +85,28 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
   - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
   - P-122's F-256 dry run repeats this on the rev 7d build.
-- 10-05 **P-123 assigned and pre-data read (fix-hero-exit-threaded, rev 7d phone G count check, a71197fc): NOT YET PASS, conditions D1-D7.**
+- 10-05 **P-123 pre-data read (fix-toolbar-resize 1dc26faa, S5 trigger probe, count-only Simulator): NOT YET PASS, conditions T1-T3.**
+  - OK:
+    - the five pins on disk equal the card;
+    - ops re-ran the self-test: SELFTEST PASS (14 checks);
+    - one arm (v8 as served, served-hash stop exit 26), two runs, no time fields;
+    - the A2 noise control and the B2 repeat are in the flip rule;
+    - the calls and their order are frozen in read-p123.mjs;
+    - the M1 falsifier is stated before the data;
+    - the predictions are complete, and the four call outcomes sum to 1.
+  - T1, list cap: p123-inject.mjs read() keeps the first 400 diff rows, and nFlip and the reader's flips come from that capped list.
+    - Noise rows (carousel, countdown, scroll-bound values) can fill the 400 rows before a real flip, which turns VALUE-FLIP into WRITE or INVAL-ONLY.
+    - Fix: count flips over every element:property, capping only the printed list; or call the run INSUFFICIENT when the list is truncated and has no flip.
+  - T2, WRITE rule: WRITE fires on any MutationObserver write on or in the box in a step frame (stepBoxIn > 0).
+    - The card itself predicts per-frame writes (prediction 5), so a box that is written every frame meets WRITE in any step frame.
+    - Freeze a step-specific rule before the data, e.g. a write key seen in step frames and never in rest frames, or with a per-frame rate at least 2x its rest rate. Print the step and rest frame counts.
+  - T3, scroll confound: the gesture scrolls while the toolbar steps, so a scroll-bound value (an IO class, a transform) can pass A == A2 == C, B == B2 when C's scrollY is close to A's.
+    - The snapshots already record sy.
+    - Freeze one of these rules: a flip counts toward VALUE-FLIP only when its element:property is in the audit's viewport-unit set (or inherits from an ancestor in it); or only when |sy(C) - sy(A)| and |sy(B2) - sy(B)| are large enough that a scroll-bound value would differ.
+    - Report every other flip as scroll-confounded.
+  - Note (not a condition): on iOS, vh is the large viewport and svh the small one, so neither changes with the toolbar; only dvh (or script) values can flip. This is UNRESOLVED in our setup; the probe itself answers it.
+- 10-05 **P-124 assigned and pre-data read (fix-hero-exit-threaded, rev 7d phone G count check, a71197fc): NOT YET PASS, conditions D1-D7.**
+  - P-id collision, lead's ruling: fix-toolbar-resize keeps P-123 (its S5 card, 1dc26faa, committed first); the rev 7d ticket is P-124. Read order: P-124, then P-123.
   - OK:
     - ticket 89b230a05c10 and g7d-hold.sh 29b1e19bc0d2 on disk equal the pins;
     - the four script pins are gesture program hashes (compileScript, compiler 2), and ops recompiled them to the same values;
