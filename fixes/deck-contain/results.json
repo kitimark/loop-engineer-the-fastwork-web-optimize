@@ -14,7 +14,9 @@
   "Structural observation 1: C runs draw 90-110 RenderingFrames per 260-step swipe (arms 145-260), so their deck band holds 46-64 frames; MIN_N 60 sits at the C runs own edge (4 of 6 C runs LOW-N).",
   "Structural observation 2: PC (strict + 844 px) read PARTIAL (0.64-0.67) in both holds, not LOCATES as in T-194; its deck is 844 tall vs the base 844.078.",
   "Observation 3: per-frame Layout ms over the band falls into three levels (C about 38, a middle level about 25, a low level about 0.43) while Layout records per frame stay 2.74-2.90 in every run; the same arm landed on different levels in S1 and S2 (A3 0.43 then 25.6; R3 0.44 then 25.4). OBSERVED in our setup, cause unknown.",
-  "Observation 4: the first step of each session read the deck top 48 px lower (1229.98 vs 1181.98) in DRY1 and S1; S2 C:4 is 1229.984375."
+  "Observation 4: the first step of each session read the deck top 48 px lower (1229.98 vs 1181.98) in DRY1 and S1; S2 C:4 is 1229.984375.",
+  "Reader disclosure: S1 SIM_QUIET was NOT settled at the start (59 s, sim background 67 % of a core, amsengagementd 58 %); DRY1 settled after 43 s (55 %), S2 after 52 s (59 %). The card had no rule on it.",
+  "Reader disclosure: the display was off at the start of all three holds (DRY1, S1, S2: lock warning \"the host is not awake at the start of this hold (display off)\", I-033). The card had no rule on it."
  ],
  "holds": {
   "S1": {
@@ -808,5 +810,6 @@
    }
   ],
   "chrome": []
- }
+ },
+ "signed": "P-143 SIGNED NOT REPRODUCED by the lead after the result read (ops-reader-P143r-P146): 2 hit (P7, P8), 1 miss (P1), 13 insufficient (P2-P6, P13 by precedence; P9-P12, P15, P16 not run, as the card did not require them after rule 1 failed); P14 outside this card read"
 }

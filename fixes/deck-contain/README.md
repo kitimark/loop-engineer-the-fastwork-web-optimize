@@ -489,6 +489,16 @@ Served base pins: JS `941aa13e5bdf`, CSS `f1997edf5309` (`sim-swipe.mjs` `PINS`)
 
 The ratios are unread: OBSERVED only, never a result. They are listed for the next card's design.
 
+**Signed** by the lead as NOT REPRODUCED, after the result read (ops-reader-P143r-P146).
+- Tally: 2 hit (P7, P8), 1 miss (P1), 13 insufficient.
+- The 13 insufficient: P2-P6 and P13 by precedence; P9-P12, P15 and P16 were not run, because the card does not require
+  them after rule 1 fails. P14 is outside this read.
+
+**Reader disclosures** (the card has no rule on either):
+- S1's Simulator never settled before the steps: 59 s, background 67 % of a core, amsengagementd 58 %. DRY1 settled
+  after 43 s and S2 after 52 s.
+- The display was off at the start of all three holds (the lock's I-033 warning).
+
 **Disclosed** (lead ruling: no rule change after data):
 - DRY1, uncounted, never scored. Its STEP lines showed Layout ms per band frame: C 38.8, A3 26.7. Band n: C 66, A3 116.
   These were seen before S1.
