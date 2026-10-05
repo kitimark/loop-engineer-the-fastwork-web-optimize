@@ -1,0 +1,346 @@
+{
+ "loads": [
+  {
+   "arm": "K",
+   "rep": 1,
+   "base": "v9f7d",
+   "ctl": "v9f7d",
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-05T13:22:25.952Z",
+   "served": {
+    "js": "1b2eecc66011",
+    "css": "e1359ab9994a"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6850
+   },
+   "api": {
+    "on": false,
+    "all": {
+     "rect": 2873,
+     "efp": 397
+    },
+    "nav": {
+     "rect": 934,
+     "efp": 397
+    }
+   },
+   "window": {
+    "scroll": {
+     "n": 608,
+     "y": 6075,
+     "max": 6075
+    },
+    "records": 3139,
+    "renderingFrames": 594,
+    "styleRecalcs": 857,
+    "layouts": 2320,
+    "paints": 4305,
+    "forcedStyleRecalcs": 600,
+    "forcedLayouts": 1523,
+    "functionCalls": 5345,
+    "rafs": 2637,
+    "perStep": {
+     "renderingFrames": 0.977,
+     "styleRecalcs": 1.41,
+     "layouts": 3.816,
+     "paints": 7.081,
+     "forcedStyleRecalcs": 0.987,
+     "forcedLayouts": 2.505,
+     "functionCalls": 8.791,
+     "rafs": 4.337
+    }
+   }
+  },
+  {
+   "arm": "V",
+   "rep": 1,
+   "base": "v9f7d",
+   "ctl": "v9f7d",
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-05T13:23:02.604Z",
+   "served": {
+    "js": "1b2eecc66011",
+    "css": "e1359ab9994a"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6850
+   },
+   "api": {
+    "on": false,
+    "all": {
+     "rect": 2877,
+     "efp": 399
+    },
+    "nav": {
+     "rect": 938,
+     "efp": 399
+    }
+   },
+   "window": {
+    "scroll": {
+     "n": 608,
+     "y": 6075,
+     "max": 6075
+    },
+    "records": 2708,
+    "renderingFrames": 607,
+    "styleRecalcs": 893,
+    "layouts": 2343,
+    "paints": 4406,
+    "forcedStyleRecalcs": 615,
+    "forcedLayouts": 1543,
+    "functionCalls": 5403,
+    "rafs": 2700,
+    "perStep": {
+     "renderingFrames": 0.998,
+     "styleRecalcs": 1.469,
+     "layouts": 3.854,
+     "paints": 7.247,
+     "forcedStyleRecalcs": 1.012,
+     "forcedLayouts": 2.538,
+     "functionCalls": 8.887,
+     "rafs": 4.441
+    }
+   }
+  },
+  {
+   "arm": "V",
+   "rep": 2,
+   "base": "v9f7d",
+   "ctl": "v9f7d",
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-05T13:23:42.899Z",
+   "served": {
+    "js": "1b2eecc66011",
+    "css": "e1359ab9994a"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6850
+   },
+   "api": {
+    "on": false,
+    "all": {
+     "rect": 2877,
+     "efp": 399
+    },
+    "nav": {
+     "rect": 938,
+     "efp": 399
+    }
+   },
+   "window": {
+    "scroll": {
+     "n": 608,
+     "y": 6075,
+     "max": 6075
+    },
+    "records": 3194,
+    "renderingFrames": 571,
+    "styleRecalcs": 862,
+    "layouts": 2304,
+    "paints": 4350,
+    "forcedStyleRecalcs": 598,
+    "forcedLayouts": 1508,
+    "functionCalls": 5342,
+    "rafs": 2661,
+    "perStep": {
+     "renderingFrames": 0.939,
+     "styleRecalcs": 1.418,
+     "layouts": 3.789,
+     "paints": 7.155,
+     "forcedStyleRecalcs": 0.984,
+     "forcedLayouts": 2.48,
+     "functionCalls": 8.786,
+     "rafs": 4.377
+    }
+   }
+  },
+  {
+   "arm": "K",
+   "rep": 2,
+   "base": "v9f7d",
+   "ctl": "v9f7d",
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-05T13:45:32.060Z",
+   "served": {
+    "js": "1b2eecc66011",
+    "css": "e1359ab9994a"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6850
+   },
+   "api": {
+    "on": false,
+    "all": {
+     "rect": 2867,
+     "efp": 400
+    },
+    "nav": {
+     "rect": 928,
+     "efp": 400
+    }
+   },
+   "window": {
+    "scroll": {
+     "n": 608,
+     "y": 6075,
+     "max": 6075
+    },
+    "records": 3013,
+    "renderingFrames": 557,
+    "styleRecalcs": 849,
+    "layouts": 2303,
+    "paints": 4309,
+    "forcedStyleRecalcs": 612,
+    "forcedLayouts": 1532,
+    "functionCalls": 5311,
+    "rafs": 2632,
+    "perStep": {
+     "renderingFrames": 0.916,
+     "styleRecalcs": 1.396,
+     "layouts": 3.788,
+     "paints": 7.087,
+     "forcedStyleRecalcs": 1.007,
+     "forcedLayouts": 2.52,
+     "functionCalls": 8.735,
+     "rafs": 4.329
+    }
+   }
+  },
+  {
+   "arm": "K",
+   "rep": 3,
+   "base": "v9f7d",
+   "ctl": "v9f7d",
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-05T13:46:06.829Z",
+   "served": {
+    "js": "1b2eecc66011",
+    "css": "e1359ab9994a"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6850
+   },
+   "api": {
+    "on": false,
+    "all": {
+     "rect": 2887,
+     "efp": 398
+    },
+    "nav": {
+     "rect": 948,
+     "efp": 398
+    }
+   },
+   "window": {
+    "scroll": {
+     "n": 608,
+     "y": 6075,
+     "max": 6075
+    },
+    "records": 3071,
+    "renderingFrames": 574,
+    "styleRecalcs": 885,
+    "layouts": 2340,
+    "paints": 4325,
+    "forcedStyleRecalcs": 605,
+    "forcedLayouts": 1517,
+    "functionCalls": 5331,
+    "rafs": 2657,
+    "perStep": {
+     "renderingFrames": 0.944,
+     "styleRecalcs": 1.456,
+     "layouts": 3.849,
+     "paints": 7.113,
+     "forcedStyleRecalcs": 0.995,
+     "forcedLayouts": 2.495,
+     "functionCalls": 8.768,
+     "rafs": 4.37
+    }
+   }
+  },
+  {
+   "arm": "V",
+   "rep": 3,
+   "base": "v9f7d",
+   "ctl": "v9f7d",
+   "engine": "sim",
+   "tool": "fixes/nav-hit-cache/simcount.mjs",
+   "startedAt": "2026-10-05T13:46:40.400Z",
+   "served": {
+    "js": "1b2eecc66011",
+    "css": "e1359ab9994a"
+   },
+   "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+   "viewport": {
+    "width": 430,
+    "height": 775,
+    "dpr": 3,
+    "docH": 6850
+   },
+   "api": {
+    "on": false,
+    "all": {
+     "rect": 2891,
+     "efp": 400
+    },
+    "nav": {
+     "rect": 952,
+     "efp": 400
+    }
+   },
+   "window": {
+    "scroll": {
+     "n": 608,
+     "y": 6075,
+     "max": 6075
+    },
+    "records": 3171,
+    "renderingFrames": 584,
+    "styleRecalcs": 865,
+    "layouts": 2330,
+    "paints": 4328,
+    "forcedStyleRecalcs": 613,
+    "forcedLayouts": 1539,
+    "functionCalls": 5333,
+    "rafs": 2654,
+    "perStep": {
+     "renderingFrames": 0.961,
+     "styleRecalcs": 1.423,
+     "layouts": 3.832,
+     "paints": 7.118,
+     "forcedStyleRecalcs": 1.008,
+     "forcedLayouts": 2.531,
+     "functionCalls": 8.771,
+     "rafs": 4.365
+    }
+   }
+  }
+ ]
+}

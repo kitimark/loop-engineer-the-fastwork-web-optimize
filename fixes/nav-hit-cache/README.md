@@ -1296,6 +1296,39 @@ Interim score: `counts.mjs` on the Chrome records only. These are not the final 
 | C8 | hit so far | 12 loads, 0 VOIDs |
 | A0, C6, C7 | pending | Simulator steps 5-8 (drain slot 5) |
 
+**Steps 5-8, Simulator** (`part1-138.sh sim`, one run, four shared simulator slots; all exit 0):
+- `p138/sim-aa.json`: A/A, 13:19-13:47Z.
+- `p138/sim-kv.json`: K / V, 13:47-14:23Z.
+- Every load served its pin, 608 steps each, no VOID.
+- Slot 1 logged `SIM_QUIET NOT settled after 58 s`: background load was 79 % of a core, under load1 60. The card has no
+  rule on this, so it is reported only. The tool's I-082 note says counts that follow frame cadence carry this
+  context.
+
+## P-138 result: part 1 PASS
+
+Scored by `p138/counts.mjs` 75a3c8ce735a on all eight records, output `p138/counts-result.json`. N1: C1, C2, C5 and
+A0 are informed by P-136.
+
+| # | verdict | numbers |
+|---|---|---|
+| A0 | hit | every tolerance used is under its cap; the Simulator's are forced Layout 35 (cap ~76) and forced style 17 (cap ~30) |
+| C1 | hit | Chrome mobile nav elementsFromPoint, pairs: K 454 x 3, V 361 x 3, drop 93 each |
+| C2 | hit | drop 93 vs 93.5 (calibration) |
+| C3 | hit | forced Layout K 198 V 196 (tol 6); forced style K 773 V 774 (tol 9) |
+| C4 | hit | 196 < 198 (calibration) |
+| C5 | hit | desktop efpNav 536 / 535 (tol 7), forced Layout 262 / 259 (8), forced style 1245 / 1244 (4), PrePaint 1393 / 1392 (10) |
+| C6 | hit | Simulator nav elementsFromPoint, pairs: K 396 / 398 / 397, V 317 / 316 / 316, drops 79 / 82 / 81 |
+| C7 | hit | Simulator forced Layout K 1523 V 1541 (tol 35); forced RecalculateStyles K 610 V 600 (tol 17) |
+| C8 | hit | 18 counted loads (12 Chrome, 6 Simulator), 0 VOIDs; A/A loads 0 VOIDs |
+
+Descriptive notes (not part of the verdict):
+- **Simulator forced Layout.** It is V +18 over K, inside the A/A range of 35 (1508-1543 on identical bytes).
+- **Simulator drop size.** Its drop (~80) is smaller than Chrome's 93. Its scroll is 608 steps against Chrome's 628,
+  and the drop is measured on another engine. The mechanism matches: one test less per morph-open frame.
+
+Part 2 (short phone no-worse check, P-136's part 2 carried over) is next, in the lead's phone order, with runner
+iphone-runner.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

@@ -1,0 +1,166 @@
+{
+ "scorer": "fixes/nav-hit-cache/p138/counts.mjs",
+ "sha256": "75a3c8ce735a7a63fcbfdc618a874e79f6d55338d90380618ddb5efe1af8e262",
+ "preds": {
+  "A0": {
+   "verdict": "hit",
+   "missing": [],
+   "wide": []
+  },
+  "C1": {
+   "verdict": "hit",
+   "drops": [
+    93,
+    93,
+    93
+   ],
+   "K": [
+    454,
+    454,
+    454
+   ],
+   "V": [
+    361,
+    361,
+    361
+   ]
+  },
+  "C6": {
+   "verdict": "hit",
+   "drops": [
+    79,
+    82,
+    81
+   ],
+   "K": [
+    396,
+    398,
+    397
+   ],
+   "V": [
+    317,
+    316,
+    316
+   ]
+  },
+  "C2": {
+   "verdict": "hit",
+   "drop": 93,
+   "ref": 93.5
+  },
+  "C3": {
+   "verdict": "hit",
+   "forcedLayout": {
+    "K": 198,
+    "V": 196,
+    "tol": 6
+   },
+   "forcedStyle": {
+    "K": 773,
+    "V": 774,
+    "tol": 9
+   }
+  },
+  "C7": {
+   "verdict": "hit",
+   "forcedLayout": {
+    "K": 1523,
+    "V": 1541,
+    "tol": 35
+   },
+   "forcedStyle": {
+    "K": 610,
+    "V": 600,
+    "tol": 17
+   }
+  },
+  "C4": {
+   "verdict": "hit",
+   "K": 198,
+   "V": 196
+  },
+  "C5": {
+   "verdict": "hit",
+   "efpNav": {
+    "K": 536,
+    "V": 535,
+    "tol": 7
+   },
+   "forcedLayout": {
+    "K": 262,
+    "V": 259,
+    "tol": 8
+   },
+   "forcedStyle": {
+    "K": 1245,
+    "V": 1244,
+    "tol": 4
+   },
+   "prePaint": {
+    "K": 1393,
+    "V": 1392,
+    "tol": 10
+   }
+  },
+  "C8": {
+   "verdict": "hit",
+   "loads": 18,
+   "voids": []
+  }
+ },
+ "voids": [],
+ "aaVoids": [],
+ "tol": {
+  "mobile": {
+   "efpNav": {
+    "tol": 2,
+    "median": 454
+   },
+   "forcedLayout": {
+    "tol": 6,
+    "median": 196
+   },
+   "forcedStyle": {
+    "tol": 9,
+    "median": 772.5
+   },
+   "prePaint": {
+    "tol": 5,
+    "median": 1226
+   }
+  },
+  "desktop": {
+   "efpNav": {
+    "tol": 7,
+    "median": 533
+   },
+   "forcedLayout": {
+    "tol": 8,
+    "median": 261.5
+   },
+   "forcedStyle": {
+    "tol": 4,
+    "median": 1244
+   },
+   "prePaint": {
+    "tol": 10,
+    "median": 1396
+   }
+  },
+  "sim": {
+   "efpNav": {
+    "tol": 3,
+    "median": 399
+   },
+   "forcedLayout": {
+    "tol": 35,
+    "median": 1527.5
+   },
+   "forcedStyle": {
+    "tol": 17,
+    "median": 608.5
+   }
+  }
+ },
+ "part1": "PASS"
+}
