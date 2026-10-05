@@ -713,3 +713,96 @@ f1997edf5309, − g11 941aa13e5bdf / e1359ab9994a) are in out/v91d.
 and `nf/chromecount.mjs` (nav-fade's probe and reader, copied unchanged), `phone/serve142.sh`, `phone/hold142.sh`,
 `phone/score142.mjs`, `phone/selftest142.mjs`, `phone/nf-read.mjs` (nav-fade's phone reader, copied unchanged),
 `phone/p122-final-args.txt` (the self-test's replay list), `patch.diff`. Build: `fixes/v9-best/build.mjs --target v92 --with pw,nf`.
+
+## P-151: the P-142 bisect, which v9.1d section makes parts X / S WORSE (card; registered before any P-151 data)
+
+Lead ruling after the P-142 read (22:3xZ): v9.2 NO-LAND; bisect, card first; suspects inside B = v9.1d: **rev 7d,
+scroll-cb (scb), g11**; one phone block per suspect, failing parts only (X, plus S for ES), at most 2 blocks per question,
+xcode-serious, the prebuilt reversal builds; pre-data read before any phone time; phone slot after P-147, before P-150.
+P-id P-151 (reserved by mgmt-clerk-1, e3fde535).
+
+### Why the prediction model missed (P-142 part 2: EX, ES, FLICKER no-worse were three misses on one model)
+
+- **What the predictions assumed.** EX no-worse 0.65, ES no-worse 0.55, FLICKER G1 pass 0.85 were set from P-122 (C = v8,
+  V = v9-final: EX / ES / FLICKER clean) and P-134's design, as if v9.2's three sections only took work away or were
+  neutral at the page end: scb cuts rAF callbacks while scrolling (−35 %, part 1a), g11 only hides the closed panel's
+  children while it is transparent (exactness 0 violations), rev 7d changes only the close fling's lift-off. FLICKER was
+  set high because the two nav-touching fixes (U2, nf) were OUT, i.e. the model took "no nav code changed" for "no new
+  nav flicker".
+- **What it missed.** (1) The comparison's path. P-134 had chosen C = v9-final + 7d so that both arms released the X
+  out-fling the same way; P-142's control is v9-final as landed, without 7d. Its out-flings are caught at the end
+  (840-953 px), V's leave it and travel 4353-4589 px back up the page (P-142 N2). The V-only ceilings (EX, ES) and G1
+  therefore read about four times more moving page in V (about 590 moving frames a run against 140), through the middle
+  and the nav-flip band that P-122's V never crossed in part X. The P-134 card even noted that 7d releases fast X
+  flings; the priors were not moved for it. (2) Where the frames are (descriptive, P-142 records; the scorer's windows
+  decide): two of EX's three > 50 ms frames are right after out2 at y ≈ 5746, the out stroke that closes the menu at
+  the page end (gXV1 55 ms, gXV4 56 ms); the third is in into1 at y 3588 (gXV2 57 ms), a stretch both arms share; ES's
+  one frame is at the page end in into1 (gSV3 52 ms, y ≈ 6114). 4 of the 6 V blinks are on into2 at y 1890-3129, after
+  V's long out-fling. So the model's "page end is cheaper" held for S's catch but not for the close moment, and its
+  flicker prior ignored that scb moves the scroll callback the nav state is updated from (not checked by reading before
+  the card; the bisect asks it).
+- **For the next model.** A gate that is a V-only ceiling needs equal path exposure in both arms, or a prior that scales
+  with the V path; a section that changes when scroll callbacks run is a nav-flicker suspect even when no nav code
+  changes.
+
+### The bisect (P-151)
+
+```
+TICKET P-151 v9-2-bisect · which v9.1d section carries P-142's part 2 WORSE (EX, ES, FLICKER X) · runner int-v8 · verdict
+  owner int-v8 · registered before any P-151 data; no phone time before the pre-data read and the lead's sign
+profile: xcode-serious (Xcode Device Conditions Serious, induced; thermal-gate --accept-induced at every hold's start and
+  end; no pre-warm; ceiling 44 C / Critical; the lead's P-142 mid-block heat ruling applies as written there: >= 43.0 C
+  before a hold -> phone-temp --below 42 first, a ceiling VOID -> cool --below auto, rerun that hold once)
+builds (all prebuilt, immutable copies, served-hash checked before every item):
+  V    v9.2 = v9.1d            941aa13e5bdf / f1997edf5309   out/v91d/att/V (= out/p142/snap/V)
+  S    v9.2 - scroll-cb        1b2eecc66011 / f1997edf5309   out/v91d/att/S
+  G    v9.2 - g11              941aa13e5bdf / e1359ab9994a   out/v91d/att/G
+  C7   v9.2 - scb - g11 = v9-final + rev 7d   1b2eecc66011 / e1359ab9994a   out/v91d/att/C
+  F    v9-final as landed (no 7d)   647c9ef2b1e2 / e1359ab9994a   out/p142/snap/C
+  (out/v91d/att/HASHES.txt deb1e8bdb8ca; out/p142/snap/HASHES.txt as pinned in P-142.) No new build.
+blocks, in this order (one question each; the next starts only if the one before did not name the cause):
+  Q1 scroll-cb:  control S (V - scb), test V.  Parts X and S.
+  Q2 g11:        control G (V - g11), test V.  Parts X and S.
+  Q3 rev 7d:     control F (v9-final), test C7 (v9-final + 7d alone).  Parts X and S.
+  Q1 and Q2 compare like with like: both arms carry 7d, so both release the X out-fling and travel the same path.
+  Q3 cannot: 7d IS the path change (a user-accepted motion, PR-023 rev 5); it asks whether 7d alone, on v9-final,
+  already fails the V-only ceilings and G1, i.e. whether the P-142 WORSE comes with the path 7d opens.
+order, why (pointers from P-142, descriptive):
+  - FLICKER X (V 6 / C 0, twins agree, the firmest WORSE): blinks on into2 in the mid-page / nav band after the long
+    out-fling -> scb first (it changes when the scroll callbacks that drive the nav state run), 7d (exposure) last.
+  - EX (3 frames): two at the out stroke that closes the menu at the page end -> scb (work per scroll frame during the
+    fling) and g11 (the close-peak hide of the panel's children); one in into1 (shared stretch) -> scb.
+  - ES (1 frame, 52 ms, threshold-sensitive) at the page end -> g11, scb.
+  scb is pointed at by all three gates, g11 by two (EX, ES), 7d by the exposure only: Q1, Q2, Q3.
+holds per block (P-142's part X and S holds, unchanged items; arm C = the block's control, arm V = its test):
+  X  Ha sCo wgXC wgXV gXC1 gXV1 gXV2 sCc · Hb sCo gXC2 gXC3 gXV3 sCc · Hc sCo gXV4 gXC4 sCc
+  S  Hd sCo wgSC wgSV gSC1 gSV1 gSV2 sCc · He sCo gSC2 gSV3 gSC3 sCc · Hf sCo gSV4 sCc
+  sentinels sCo / sCc on the block's control (bottom >= 58, scroll >= 44); G items with P-122's flicker logger; the
+  time guard, gates, served-hash check and PIN / PROG lines as hold142.sh; ~40 min a block (P-142's X + S holds took
+  32 min plus gates); Safari parked after every block; no H, no M part.
+kit (committed before the read, as copies of P-142's with the arms, folders and labels changed only): phone/serve151.sh
+  (copies out/v91d/att/{C,G,S,V} and out/p142/snap/C into out/p151/snap, refuses another hash), phone/hold151.sh
+  (TICKET=P-151, block arg Q1|Q2|Q3 picks the arm pair), phone/score151.mjs (P-122's scorer unchanged, d1dddb910cd9,
+  with the block's arm pins), phone/selftest151.mjs.
+gates and reading, per block (the scorer as P-142's, applied to the block's two arms):
+  EX, ES   V ceiling as P-142 (0 frames > 50 ms over the valid test runs; twins > 46 / > 54), reported for BOTH arms
+           (the control's runs are scored with the same window as the test's; in Q1 / Q2 both arms share the path).
+  FLICKER  G1 per part (test monotone blinks 0), G2 / G3 report only; the control's blinks reported.
+  parity   as P-142 (BEHAVIOUR FAIL leads).
+  reproduced: the test arm fails the same gate(s) again in the block (else "not reproduced": report, no cause named;
+           a second block of that question only on the lead's ruling, max 2).
+  cleared by removal: the test fails a gate AND the control passes it, with >= 3 valid control runs in X (2 in S).
+  -> CAUSE <section> for that gate (Q1 / Q2); Q3: "7d alone fails the gate" (the exposure / 7d) or "7d alone passes"
+     (then the WORSE needs scb or g11 together with 7d: INTERACTION, reported as such).
+  both arms fail: the suspect is not the cause alone -> next question. Insufficient (too few valid runs an arm): the
+  planned second block of that question, or the lead.
+outcome: the first question that clears a gate names its cause; every gate is followed to a cause or to INTERACTION /
+  INSUFFICIENT. The cause section goes to its owner (scb fix-scroll-cb, g11 fix-morph-gpu, 7d fix-morph-scroll) and the
+  lead decides (v9.2 minus it under its own short ticket, as P-142's land rules say).
+predictions (int-v8, before any P-151 data; after the model review above):
+  Q1: FLICKER X cleared by removing scb 0.45, not reproduced 0.15, both fail 0.40; EX cleared 0.35, both fail 0.45,
+      not reproduced 0.20; ES reproduced at all 0.40 (threshold-sensitive, one frame).
+  Q2 (if run): EX cleared by removing g11 0.25; FLICKER unchanged by g11 0.85.
+  Q3 (if run): C7 fails G1 0.55, fails EX 0.50 (the exposure reading).
+  Overall: scb named for FLICKER 0.45; INTERACTION or 7d-exposure for EX 0.45.
+```
