@@ -1,0 +1,45 @@
+/* end-bg ablation arm "nobg" (fix-end-bg, user T-193 #12): a TEST build, not a fix. In the last screen of the page
+   (#platform, the end-of-page menu morph, the nav header) every background image, gradient, grain/noise overlay and
+   blurred backdrop photo stops painting. Paint only: boxes, sizes, layout, classes, animations and scripts are left as
+   they are (no display change, no size or position property, no animation property). Solid background colours stay.
+   Not removed (they are blur layers, not backgrounds; measured in T-193 #9 item 4): the filters on #platform, the morph
+   panel and pill, the header's backdrop-filter, drop-shadows. */
+.start-selling-platform-stage,
+.start-selling-platform-stage.is-mesh-bg,
+.start-selling-platform-stage.is-secure-mesh,
+.start-selling-platform-visual.is-paid,
+.start-selling-platform-visual.is-agents.is-figma-bg,
+.start-selling-platform-invoice-doc,
+.start-selling-platform-invoice-stub,
+.start-selling-platform-agents-bubble,
+.start-selling-platform-secure-network-shield-logo,
+.start-selling-platform-secure-network-dash,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-doc,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-earn,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-secure,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-doc::after,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-earn::after,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-secure::after,
+.start-selling-morph-veil,
+.start-selling-morph-footer,
+.start-selling-morph-grad,
+.start-selling-top-nav .start-selling-top-nav-btn.is-earn::after {
+  background-image: none !important;
+}
+.start-selling-platform-stage-grain,
+.start-selling-platform-invoice-sheet::before,
+.start-selling-platform-invoice-sheet::after,
+.start-selling-platform-visual.is-drawn::after,
+.start-selling-platform-visual.is-agents::after {
+  background-image: none !important;
+  mix-blend-mode: normal !important;
+}
+/* blurred backdrop photos in #platform, and the menu's photo wall (the drifting image columns behind the open menu,
+   .start-selling-morph-backdrop): the img boxes and the column drift animation stay, the pictures are not drawn */
+.start-selling-platform-stage-bg,
+.start-selling-platform-service-bg,
+.start-selling-platform-service-quote-bg,
+.start-selling-platform-agents-bg,
+.start-selling-morph-col img {
+  visibility: hidden !important;
+}
