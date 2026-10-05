@@ -3,9 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** built and pinned, **c3d36476c3ce / f1997edf5309**; function and look checks done (below); phone ticket
-**P-132** drafted for the lead's sign and mgmt-ops-10's delta check. **No P-132 data exists.** Not timed (memory
-`defer-timing-focus-call-tree.md`); the phone check is a no-worse check under the less-work rule.
+**Status: superseded by v9.1d (`fixes/v9-1d/`, P-134).** Rev 7d replaced rev 7c on main (PR-023 rev 5 accepted,
+landed 189ca7ed), so the lead retired **P-132** (2026-10-05, "superseded by the PR-023 7d accept"; no P-132 data exists)
+and rebuilt v9.1 on 7d as v9.1d. This build (rev 7c, **c3d36476c3ce / f1997edf5309**) and its checks below stay as
+history; its two PENDING items were stopped by that ruling and are answered on the 7d builds in `fixes/v9-1d/README.md`
+(the y 5090 note: aligned px was consistent 0 for A vs V and v9.1 − scb vs V on 7c, so that diff was load phase).
+Not timed (memory `defer-timing-focus-call-tree.md`).
 **Integrator:** int-v8 (wave-integrator). Board row `v9-1`. Lead instruction 2026-10-05 (after v9-final landed as 8b5ce9b3).
 **Build:** `patch.diff` (ab6d4761d1fc) is baseline-relative over 2 files: JS `c3d36476c3ce04cf…`, CSS `f1997edf5309…`.
 Baseline snapshot `b1789284481295-4ad4a84a`.
@@ -55,8 +58,10 @@ v9.1 is v9-final (fixes/v9-best, landed 8b5ce9b3) plus the two components the le
   y 0, the hero accent). Mobile: consistent 25 css px² (0.0062 %, max 27) at y 4496 (the platform image) and **36 css px²
   (0.009 %, max 232) at y 5090, a 32x16 css px box in the top nav bar** (`div.start-selling-top-nav-bar`); everything
   else 0. Both are far inside 0.5 %. fix-morph-gpu saw a single-pair 40 css px² at the same spot on v9-final + g11 that
-  did not repeat; here it repeats in both pairs. Attribution (PX_ALIGN=1; A vs V, v9.1 − scb vs V, v9.1 − g11 vs V):
-  PENDING-ATT.
+  did not repeat; here it repeats in both pairs. Attribution (PX_ALIGN=1, the word rotator aligned; `out/v91/att.log`,
+  arms out/v91/att A = v9-final, P = v9.1 − scb, Q = v9.1 − g11): **y 5090 consistent 0 in all three** (A vs V, P vs V,
+  Q vs V), so the unaligned 36 css px² was the load phase, not a v9.1 change. Elsewhere consistent 0, except Q vs V
+  y 4496 13 css px² (0.0033 %, the platform image, A/A over8 0.51 % there).
 - **dom-count:** after the walk mobile 1579 / 1579, desktop 1409 / 1409 in all four loads. Mobile t0 differs only in load
   V (1579: the morph panel and a second countdown already mounted at t0) and not in V2 (1382 = A, A2): per-load timing,
   not a change. The only token that differs after the walk is the hero accent's phase (`em.is-idle` in A/A2,
@@ -75,9 +80,10 @@ v9.1 is v9-final (fixes/v9-best, landed 8b5ce9b3) plus the two components the le
   - **scroll-cb's less-work effect shows:** rAF callbacks while scrolling 289 → 187 per s (−35 %) in both pairs;
     main frames, style recalcs, layouts and paints while scrolling unchanged (OBSERVED, Chrome counts).
 - **Simulator fling parity (counts only, `sim.mjs gesture flick-middle-v2.json --count-only --param flingPx=300`,
-  exclusive --no-timing holds; C = v9-final, V = v9.1; order C1 V1 V2 C2 C3 V3, one spare run an arm):** PENDING-PAR.
+  exclusive --no-timing holds; C = v9-final, V = v9.1; order C1 V1 V2 C2 C3 V3, one spare run an arm):** not run on
+  this build (queued, then stopped by the lead's 7d ruling); run on the 7d builds instead (`fixes/v9-1d/README.md`).
 
-## P-132: v9-final vs v9.1, phone no-worse check (DRAFT for mgmt-ops-10's delta check and the lead's sign; no P-132 data)
+## P-132: v9-final vs v9.1, phone no-worse check (RETIRED by the lead 2026-10-05, superseded by P-134; no P-132 data)
 
 Ticket id P-132 (lead, 2026-10-05: P-131 is fix-toolbar-resize's; ops confirms). Phone order (lead): P-129, P-130,
 then P-132. The lead signs after the y 5090 attribution and the Simulator fling parity are in this card and ops' delta

@@ -10,10 +10,15 @@
 //   - node --check on v9's JS; V9_EXPECT when pinned; fixes/v9-best/patch.diff (baseline -> v9) reproduces v9.
 // Writes (unless --dry): fixes/v9-best/overlay/ (gitignored; for fix.mjs check/serve), fixes/v9-best/patch.diff,
 // out/v9/snap-<js12>[-<css12>]/{A,V}/ read-only (A = v8, V = v9; the arm names fixes/v9-best/gates expects) + HASHES.txt (full sha256), out/v9/build.json.
-//   node fixes/v9-best/build.mjs [--dry] [--no-expect] [--only a,b] [--target v9|v91]   (--only: build v8 + just those components, no pin)
+//   node fixes/v9-best/build.mjs [--dry] [--no-expect] [--only a,b] [--target v9|v91|v91d|v92 [--with k,k]]   (--only: build v8 + just those components, no pin)
 // --target v91 (v9.1 = v9-final + scroll-cb + g11 close; lead 2026-10-05 after v9-final landed 8b5ce9b3): the same checks
 // over TARGETS.v91's components, plus g11 as fix-morph-gpu delivered it (on v9-final) = the same bytes; writes
 // fixes/v9-1/overlay, fixes/v9-1/patch.diff, out/v91/ instead. The default (v9) is unchanged.
+// --target v91d (v9.1 on rev 7d; lead 2026-10-05 after rev 7d landed 189ca7ed, P-134): v91's components with ms7c swapped
+// for ms7d (delta.diff read at 189ca7ed; ms7c is now read at d683c637, the last commit with rev 7c's delta). The same
+// checks, plus C = v9.1d - scb - g11 = the landed fixes/morph-scroll-v9try/patch.diff (6d1632eb0ee9) on the baseline, byte
+// for byte (V9D pin), and C + g11 as delivered on v9-final = v9.1d - scb. Writes fixes/v9-1d/{overlay,patch.diff} and
+// out/v91d/snap-<js12>/{A,C,V} (A = v8, C = v9-final + 7d, V = v9.1d). Usage: [--dry] [--only a,b] --target v91d.
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,8 +36,9 @@ const exp = (js, css) => ({ [JS]: js, [CSS]: css });
 // Components in apply order. `delta`: a diff against v8 (path in this checkout, or `rev` for a committed file elsewhere).
 // `file`: sha256/12 of the delta file. `expect`: the owner's build (v8 + delta), as the owner's card states it.
 export const COMPONENTS = [
+  // rev d683c637: delta.diff moved on to rev 7d (4d99f3f2), so 7c is read from the commit that last had it
   { name: 'morph-scroll rev 7c (PR-018, accepted 20:12:50Z; landed 42250648)', key: 'ms7c',
-    delta: 'fixes/morph-scroll/delta.diff', file: '81ac7e1ee500', expect: exp('428961bda278', '659b02f7169d') },
+    rev: 'd683c637a15a498b302f49dfd9f42c2a3a91fb10', delta: 'fixes/morph-scroll/delta.diff', file: '81ac7e1ee500', expect: exp('428961bda278', '659b02f7169d') },
   { name: 'double-drive (future + commission cards, T-157; fix-double-drive, not landed yet)', key: 'dd',
     rev: '96293d29196230e4a9fdc7f95c7284792dc423ea', delta: 'fixes/double-drive/delta.diff', file: 'baae6114cd65',
     expect: exp('3076c5a8c9a3', '2f7197880ffd') },
@@ -82,11 +88,51 @@ export const G11 = { name: 'morph-close-peak g11 close (fix-morph-gpu, v9.1; lan
   onFinal: { delta: 'fixes/morph-gpu/v91/close-v91-on-v9final.diff', file: 'd677884838c7', expect: exp('647c9ef2b1e2', 'f1997edf5309') } };
 // v9.1 as pinned after its build (null: not pinned yet)
 export const V91_EXPECT = exp('c3d36476c3ce', 'f1997edf5309');
-const byKey = (k) => [...COMPONENTS, ...DROPPED, G11].find((c) => c.key === k);
+// Menu rev 7d (PR-023 rev 5, accepted by the user 10:15:50Z; landed 189ca7ed) replaces rev 7c in the shipping base
+// (lead 2026-10-05: P-132 retired, P-134 = v9-final + 7d vs v9.1 + 7d). Its delta against v8 is the morph-scroll
+// owner's delta.diff at 189ca7ed (4d99f3f2's rev 7d; v8 + it = the owner's ms-29c0d537e0c9). In the 7d sets every
+// `after`/`on` that names ms7c names ms7d instead.
+export const MS7D = { name: 'morph-scroll rev 7d (PR-023 rev 5, accepted 10:15:50Z; landed 189ca7ed)', key: 'ms7d',
+  rev: '189ca7ed866cd75f40e82fb678cfe942742dd49f', delta: 'fixes/morph-scroll/delta.diff', file: 'c634e3fbd90b', expect: exp('29c0d537e0c9', '659b02f7169d') };
+// v9-final + 7d as landed (189ca7ed's fixes/morph-scroll-v9try/patch.diff 6d1632eb0ee9, baseline-relative): P-134's C
+export const V9D = { patch: 'fixes/morph-scroll-v9try/patch.diff', rev: '189ca7ed866cd75f40e82fb678cfe942742dd49f', file: '6d1632eb0ee9', expect: exp('1b2eecc66011', 'e1359ab9994a') };
+// v9.1 + 7d as pinned after its build (null: not pinned yet)
+export const V91D_EXPECT = exp('941aa13e5bdf', 'f1997edf5309');
+// v9.2 (lead + user T-199 #3, 2026-10-05): v9.1d + every fix whose rendering count test passed by the 15:00Z freeze
+// (people-word a by the user's accepted proposal, PR-024). Each extra is a delta against C = v9-final + 7d (the
+// shipping base), given either as a delta file (`delta`) or as its owner's baseline-relative patch (`basePatch`: the
+// delta is then derived as C -> the owner's build, and the owner's build must be C + it). `expect`: the owner's build
+// on C; `expectV`: on v9.1d (as the owner checked it). Measured against v9-final as landed (V9F).
+export const EXTRAS = [
+  { name: 'people-word option a (PR-024 rev 3, accepted by the user 11:42:48Z; landed 729754eb)', key: 'pw',
+    rev: '729754ebd64f0bb37f35d0ce3f4e23bf8e9380b5', basePatch: 'fixes/people-word-a/patch.diff', file: 'c1cf11cbc1aa',
+    expect: exp('bf75ce87958c', 'e1359ab9994a') },
+  // 70435f43 replaces b72bd585 (b2ed79bdbab5): adds the parked writer's per-frame skip past the end
+  { name: 'hero-park (fix-hero-exit-threaded 70435f43; card P-140)', key: 'hp',
+    rev: '70435f435bc40add7e531c5bfe632d1dc20b85d8', delta: 'fixes/hero-park/delta.diff', file: '14fb7c20781c',
+    expect: exp('6b28c3b9528e', 'e1359ab9994a'), expectV: exp('8ce731d584d9', 'f1997edf5309') },
+  { name: 'nav-hit-cache U2 on v9-final + 7d (fix-nav-morph 41bae5af; card P-138)', key: 'nhc',
+    rev: '41bae5af', delta: 'fixes/nav-hit-cache/u2-delta-on-v9f7d.diff', file: 'c0d040afe271',
+    expect: exp('c7435c24dc56', 'e1359ab9994a'), expectV: exp('db0bc2262f02', 'f1997edf5309') },
+  // a delta against v9-final (pre-7d); the owner checked it on v9-final, on v9-final + 7d (results.json) and on v9.1d
+  { name: 'nav-fade (fix-nav-fade, card v2 69cf0dc1, conditions N1-N6 on 32e5172f; Chrome counts PASS)', key: 'nf',
+    rev: '32e5172f172ab11250e759072a5adaeb65960238', delta: 'fixes/nav-fade/nav-fade-on-v9final.diff', file: 'f41d2854aa90',
+    expectF: exp('a03872195d3f', '9646fc3da77a'), expect: exp('2ed12145e856', '9646fc3da77a'), expectV: exp('8bbe6a33dfde', '1c4161f56545') },
+];
+export const V9F = { patch: 'fixes/v9-best/patch.diff', rev: '8b5ce9b3', file: '4196eaa61d96', expect: V9_EXPECT };
+// v9.2 as pinned after its build (null: not pinned yet)
+export const V92_EXPECT = null;
+const byKey = (k) => [...COMPONENTS, ...DROPPED, G11, MS7D].find((c) => c.key === k);
+const to7d = (c) => (c.key === 'ms7c' ? MS7D : !c.after && !c.on ? c : { ...c, after: c.after?.map((k) => (k === 'ms7c' ? 'ms7d' : k)), on: c.on?.map((k) => (k === 'ms7c' ? 'ms7d' : k)) });
 export const TARGETS = {
   v9: { label: 'v9', comps: COMPONENTS, expect: V9_EXPECT, dir: 'fixes/v9-best', out: 'out/v9' },
   v91: { label: 'v9.1', comps: ['ms7c', 'dd', 'scb', 'earn', 'nav', 'glue', 'g11'].map(byKey), expect: V91_EXPECT, dir: 'fixes/v9-1', out: 'out/v91' },
+  // P-134's V; its control C (v9-final + 7d) is built here too (the set minus scb and g11) and must equal V9D
+  v91d: { label: 'v9.1d', comps: ['ms7c', 'dd', 'scb', 'earn', 'nav', 'glue', 'g11'].map(byKey).map(to7d), expect: V91D_EXPECT, dir: 'fixes/v9-1d', out: 'out/v91d', final: V9D },
+  // v9.2: v9.1d's set (checked = V91D_EXPECT first), then the extras (--with picks them; default: all of EXTRAS)
+  v92: { label: 'v9.2', comps: ['ms7c', 'dd', 'scb', 'earn', 'nav', 'glue', 'g11'].map(byKey).map(to7d), expect: V92_EXPECT, dir: 'fixes/v9-2', out: 'out/v92', final: V9D, extras: EXTRAS },
 };
+const WITH = argv.includes('--with') ? argv[argv.indexOf('--with') + 1].split(',').filter(Boolean) : null;
 const TKEY = argv.includes('--target') ? argv[argv.indexOf('--target') + 1] : 'v9';
 if (!TARGETS[TKEY]) { console.error(`REFUSED: --target ${TKEY}: have ${Object.keys(TARGETS).join(', ')}`); process.exit(3); }
 const T = TARGETS[TKEY];
@@ -149,13 +195,27 @@ const legal = (order) => order.every((c, i) => (!c.carry?.d || !order.some((x, j
   && (c.after || []).every((k) => order.findIndex((x) => x.key === k) < i));
 const build = (order) => order.reduce((t, c) => strip(apply(dOf(c, order), t, `${c.key}@${order.map((x) => x.key).join('+')}`)), C);
 if (!legal(comps)) die('COMPONENTS order puts a carry before the component it is carried over, or a component before one it must come after');
-const V = build(comps);
+let V = build(comps);
 let orders = perms(comps).slice(1).filter(legal);
 for (const o of orders) if (!same(build(o), V)) die(`order ${o.map((c) => c.key).join(' + ')} gives other bytes than ${comps.map((c) => c.key).join(' + ')}`);
 ok(`${orders.length + 1} legal order(s) of ${comps.length} component(s) give the same bytes (orders with a carry before its base, or against an "after", skipped)`, true, fmt(V));
 for (const j of JOINS) if (j.keys.every((k) => comps.some((x) => x.key === k))) {
   const t = build(comps.filter((x) => j.keys.includes(x.key)));
   ok(`join ${j.name} = ${j.expect[JS]} / ${j.expect[CSS]}`, H(t)[JS] === j.expect[JS] && H(t)[CSS] === j.expect[CSS], fmt(t));
+}
+// P-134's control (7d target): the set minus scb and g11 = v9-final + 7d as landed (its baseline-relative patch,
+// pinned); g11 as delivered on v9-final applies to it too (CSS only; its CSS is v9-final's) and gives the set minus scb
+let FIN = null;
+if (T.final && !ONLY) {
+  FIN = build(comps.filter((x) => x.key !== 'scb' && x !== G11));
+  ok(`C = ${T.label} - scb - g11 = pinned ${T.final.expect[JS]} / ${T.final.expect[CSS]}`, H(FIN)[JS] === T.final.expect[JS] && H(FIN)[CSS] === T.final.expect[CSS], fmt(FIN));
+  const pt = show(T.final.rev, T.final.patch);
+  ok(`${T.final.patch} @${T.final.rev.slice(0, 8)}`, sha(pt) === T.final.file, sha(pt));
+  ok(`${T.final.patch} on the baseline = C, byte for byte`, same(strip(apply(pt, base, 'v9d patch')), FIN));
+  const txt = rd(G11.onFinal.delta);
+  ok(`g11 on v9-final: ${G11.onFinal.delta}`, sha(txt) === G11.onFinal.file, sha(txt));
+  const t = strip(apply(txt, FIN, 'g11-on-C'));
+  ok(`C + g11 (as delivered on v9-final) = ${T.label} - scb`, same(t, build(comps.filter((x) => x.key !== 'scb'))), fmt(t));
 }
 // g11 as fix-morph-gpu delivered it for v9.1 (a delta on v9-final): v9-final (as pinned) + it = this set minus scb,
 // byte for byte, so the v8-based g11 built here is the lead's d677884838c7
@@ -184,16 +244,71 @@ if (comps.length > 1) for (const c of comps) {
   ok(`${T.label} - ${c.key}${dep.length ? ` (and ${dep.map((x) => x.key).join(',')}, which come after it)` : ''} (reverse${carriers.length ? `, via ${carriers.map((x) => x.key).join(',')}'s carry and back` : ''}) = v8 + ${rest.map((x) => x.key).join(' + ') || 'nothing'}`, same(t, build(rest)), fmt(t));
 }
 const work = join(WT, `${T.out}/work`); mkdirSync(work, { recursive: true });
+// v9.2's extras on top of v9.1d (the set above, = V91D_EXPECT). Checks: each extra's file sha; its owner's build = C + it
+// (for a basePatch extra: the owner's patch on the baseline = its pin, and the derived delta C -> it); it applies
+// strictly on v9.1d (= expectV when the owner checked it); every order of the extras gives the same bytes; v9.2 - x
+// (reverse) = v9.1d + the others, for each x; v9.2 minus every extra = v9.1d. Also built: X = C + the extras (the
+// bisect arm without scroll-cb and g11) and F = v9-final as landed (the measurement's control).
+let BASE = null, CX = null, F0 = null, xs = [];
+const derived = {};
+if (T.extras && !ONLY) {
+  ok(`${T.label}'s base = v9.1d = pinned V91D_EXPECT ${V91D_EXPECT[JS]} / ${V91D_EXPECT[CSS]}`, H(V)[JS] === V91D_EXPECT[JS] && H(V)[CSS] === V91D_EXPECT[CSS], fmt(V));
+  BASE = V;
+  xs = T.extras.filter((x) => !WITH || WITH.includes(x.key));
+  if (WITH && xs.length !== WITH.length) die(`--with: unknown key in ${WITH.join(',')} (have ${T.extras.map((x) => x.key).join(',')})`);
+  const fp = show(V9F.rev, V9F.patch);
+  ok(`${V9F.patch} @${V9F.rev}`, sha(fp) === V9F.file, sha(fp));
+  F0 = strip(apply(fp, base, 'v9-final patch'));
+  ok(`F = v9-final as landed = pinned V9_EXPECT ${V9F.expect[JS]} / ${V9F.expect[CSS]}`, H(F0)[JS] === V9F.expect[JS] && H(F0)[CSS] === V9F.expect[CSS], fmt(F0));
+  for (const x of xs) {
+    if (x.basePatch) {
+      const pt = show(x.rev, x.basePatch);
+      ok(`${x.key} owner patch ${x.basePatch} @${x.rev.slice(0, 8)}`, sha(pt) === x.file, sha(pt));
+      const own = strip(apply(pt, base, `${x.key} owner patch`));
+      ok(`${x.key} owner's build (patch on the baseline) = ${x.expect[JS]} / ${x.expect[CSS]}`, H(own)[JS] === x.expect[JS] && H(own)[CSS] === x.expect[CSS], fmt(own));
+      x.text = FILES.map((f) => udiff(FIN[f], own[f], `a/${f}`, `b/${f}`, work)).join('');
+      x.d = parseDiff(x.text);
+      ok(`${x.key} owner's build = C + derived delta (${sha(x.text)})`, same(strip(apply(x.d, FIN, `${x.key} on C`)), own));
+      derived[x.key] = x.text;
+    } else {
+      x.text = show(x.rev, x.delta);
+      ok(`${x.key} delta file ${x.delta} @${x.rev.slice(0, 8)}`, sha(x.text) === x.file, sha(x.text));
+      x.d = parseDiff(x.text);
+      const own = apply(x.d, FIN, `${x.key} on C`);
+      if (x.expect) ok(`${x.key} on C = owner's build ${x.expect[JS]} / ${x.expect[CSS]}`, H(own)[JS] === x.expect[JS] && H(own)[CSS] === x.expect[CSS], `${fmt(own)}${own.offs.length ? ` offsets ${own.offs.join(',')}` : ''}`);
+      else ok(`${x.key} applies strictly on C (no owner pin on C)`, true, `${fmt(own)}${own.offs.length ? ` offsets ${own.offs.join(',')}` : ''}`);
+    }
+    if (x.expectF) { const f = apply(x.d, F0, `${x.key} on v9-final`); ok(`${x.key} on v9-final = owner's build ${x.expectF[JS]} / ${x.expectF[CSS]}`, H(f)[JS] === x.expectF[JS] && H(f)[CSS] === x.expectF[CSS], fmt(f)); }
+    const onV = apply(x.d, BASE, `${x.key} on v9.1d`);
+    if (x.expectV) ok(`${x.key} on v9.1d = owner's check ${x.expectV[JS]} / ${x.expectV[CSS]}`, H(onV)[JS] === x.expectV[JS] && H(onV)[CSS] === x.expectV[CSS], `${fmt(onV)}${onV.offs.length ? ` offsets ${onV.offs.join(',')}` : ''}`);
+    else ok(`${x.key} applies strictly on v9.1d`, true, `${fmt(onV)}${onV.offs.length ? ` offsets ${onV.offs.join(',')}` : ''}`);
+  }
+  const bx = (order, from) => order.reduce((t, x) => strip(apply(x.d, t, `${x.key}@${order.map((y) => y.key).join('+')}`)), from);
+  V = bx(xs, BASE);
+  const xo = perms(xs).slice(1);
+  for (const o of xo) if (!same(bx(o, BASE), V)) die(`extras order ${o.map((x) => x.key).join(' + ')} gives other bytes than ${xs.map((x) => x.key).join(' + ')}`);
+  ok(`${xo.length + 1} order(s) of the extras ${xs.map((x) => x.key).join(', ') || '(none)'} on v9.1d give the same bytes`, true, fmt(V));
+  for (const x of xs) {
+    const t = strip(apply(x.d, V, `${T.label}-${x.key}`, true));
+    ok(`${T.label} - ${x.key} (reverse) = v9.1d + ${xs.filter((y) => y !== x).map((y) => y.key).join(' + ') || 'nothing'}`, same(t, bx(xs.filter((y) => y !== x), BASE)), fmt(t));
+  }
+  const back = [...xs].reverse().reduce((t, x) => strip(apply(x.d, t, `${T.label}-all(${x.key})`, true)), V);
+  ok(`${T.label} minus every extra (reverse) = v9.1d`, same(back, BASE), fmt(back));
+  CX = bx(xs, FIN);
+  ok(`X = C + extras (v9-final + 7d + ${xs.map((x) => x.key).join(' + ')}) built`, true, fmt(CX));
+}
 writeFileSync(join(work, 'v9.mjs'), V[JS]);
 const nc = spawnSync(process.execPath, ['--check', join(work, 'v9.mjs')], { encoding: 'utf8' });
 ok(`node --check (ES module) on ${T.label}'s JS`, nc.status === 0, nc.stderr.trim());
-if (!ONLY && T.expect && !NOEXP) ok(`${T.label} = pinned ${TKEY === 'v9' ? 'V9_EXPECT' : 'V91_EXPECT'} ${T.expect[JS]} / ${T.expect[CSS]}`, H(V)[JS] === T.expect[JS] && H(V)[CSS] === T.expect[CSS], fmt(V));
+if (!ONLY && T.expect && !NOEXP) ok(`${T.label} = pinned ${{ v9: 'V9_EXPECT', v91: 'V91_EXPECT', v91d: 'V91D_EXPECT', v92: 'V92_EXPECT' }[TKEY]} ${T.expect[JS]} / ${T.expect[CSS]}`, H(V)[JS] === T.expect[JS] && H(V)[CSS] === T.expect[CSS], fmt(V));
 let patch = ''; for (const f of FILES) patch += udiff(base[f], V[f], `a/${f}`, `b/${f}`, work);
 ok(`patch.diff (baseline -> ${T.label}) reproduces ${T.label}`, same(strip(apply(patch, base, 'patch.diff')), V), `patch.diff ${sha(patch)}`);
 
 const js12 = H(V)[JS];
+// snapshot arms: A = v8, C = v9-final + 7d (7d targets); v9.2 adds F = v9-final as landed, B = v9.1d, X = C + extras
+const ARMS = { A: C, ...(FIN ? { C: FIN } : {}), ...(BASE ? { F: F0, B: BASE, X: CX } : {}), V };
 const lines = [];
-for (const [arm, t] of Object.entries({ A: C, V })) for (const f of FILES) lines.push(`${full(t[f])}  ${arm}/${f}`);
+for (const [arm, t] of Object.entries(ARMS)) for (const f of FILES) lines.push(`${full(t[f])}  ${arm}/${f}`);
 console.log(`${T.label}${ONLY ? ` (--only ${ONLY.join(',')})` : ''} = ${fmt(V)}  [${comps.map((c) => c.key).join(' + ')}]`);
 console.log(lines.join('\n'));
 if (DRY) { console.log('dry run: nothing written'); process.exit(0); }
@@ -206,7 +321,7 @@ if (existsSync(snap) && !sameSnap(snap)) snap = join(WT, `${T.out}/snap-${js12}-
 if (existsSync(snap) && !sameSnap(snap)) die(`${snap} exists with other content (HASHES.txt differs)`);
 if (existsSync(snap)) console.log(`${snap} exists: kept (immutable; HASHES checked below)`);
 else {
-  for (const [arm, t] of Object.entries({ A: C, V })) for (const f of FILES) { const p = join(snap, arm, f); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, t[f]); chmodSync(p, 0o444); }
+  for (const [arm, t] of Object.entries(ARMS)) for (const f of FILES) { const p = join(snap, arm, f); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, t[f]); chmodSync(p, 0o444); }
   writeFileSync(join(snap, 'HASHES.txt'), lines.join('\n') + '\n'); chmodSync(join(snap, 'HASHES.txt'), 0o444);
 }
 const hs = spawnSync('shasum', ['-a', '256', '-c', '--quiet', 'HASHES.txt'], { cwd: snap, encoding: 'utf8' });
@@ -216,5 +331,7 @@ const ov = join(WT, `${T.dir}/overlay`); rmSync(ov, { recursive: true, force: tr
 for (const f of FILES) { const p = join(ov, f); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, V[f]); }
 writeFileSync(join(WT, `${T.dir}/patch.diff`), patch);
 mkdirSync(join(WT, T.out), { recursive: true });
-writeFileSync(join(WT, `${T.out}/build.json`), JSON.stringify({ target: TKEY, v9: H(V), v9full: { [JS]: full(V[JS]), [CSS]: full(V[CSS]) }, components: comps.map(({ key, name, delta, rev, file, after, on, expect }) => ({ key, name, delta, rev, file, after, on, expect })), patch: sha(patch), snap: snap.slice(WT.length + 1), checks }, null, 2) + '\n');
+// derived extra deltas (C -> owner's build) contain bundle code: kept in out/, never committed
+for (const [k, txt] of Object.entries(derived)) writeFileSync(join(WT, `${T.out}/${k}-delta-on-C.diff`), txt);
+writeFileSync(join(WT, `${T.out}/build.json`), JSON.stringify({ target: TKEY, v9: H(V), v9full: { [JS]: full(V[JS]), [CSS]: full(V[CSS]) }, components: comps.map(({ key, name, delta, rev, file, after, on, expect }) => ({ key, name, delta, rev, file, after, on, expect })), extras: xs.map(({ key, name, delta, basePatch, rev, file, expect, expectV, expectF, text }) => ({ key, name, delta, basePatch, rev, file, expect, expectV, expectF, deltaSha: sha(text) })), arms: Object.fromEntries(Object.entries(ARMS).map(([a, t]) => [a, H(t)])), patch: sha(patch), snap: snap.slice(WT.length + 1), checks }, null, 2) + '\n');
 console.log(`wrote ${T.dir}/overlay, ${T.dir}/patch.diff (${sha(patch)}), ${T.out}/build.json`);
