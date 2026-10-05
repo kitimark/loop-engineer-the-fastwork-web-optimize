@@ -897,11 +897,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2670,9 +2705,58 @@
- function iE() {
+@@ -2671,8 +2706,57 @@
    tE = 0;
    for (let e of $T) e.active && e.callback();
-+}
+ }
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -911,7 +910,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  fwQ = 0;
 +function fwIdle(e) {
 +  return window.requestIdleCallback ? window.requestIdleCallback(e, { timeout: 3e3 }) : window.setTimeout(e, 150);
- }
++}
 +function fwKick() {
 +  fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
 +}
@@ -1525,19 +1524,19 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, r));
      };
    (m(h, (e) => {
-@@ -3893,6 +4366,12 @@
-         },
+@@ -3894,6 +4367,12 @@
          get place() {
            return s(n);
-+        },
+         },
 +        get animate() {
 +          return t.animate;
 +        },
 +        get shown() {
 +          return t.shown;
-         },
++        },
        });
      },
+   ),
 @@ -3920,7 +4399,58 @@
    let a = C(r, `inverse`, 3, !1),
      o = R(WT),
@@ -2404,7 +2403,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13909,185 @@
+@@ -13017,13 +13909,186 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2472,6 +2471,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // again (2 tries) instead of deciding anew from the position. (3) a flick's direction is the sign of the smoothed
 +      // speed, not of the last frame's step. A finger move > 50 ms after the previous one starts a new finger speed.
 +      __msFy = 0,
++      __msF0 = 0,
 +      __msFt = 0,
 +      __msFv = 0,
 +      __msFn = 0,
@@ -2508,11 +2508,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
 +        }
 +        __msWant = -1;
-+        // the finger was still moving at lift-off: go where it points. Rev 7d: a fast fling down (finger >= 5 px/ms)
-+        // is left to its own momentum, so it can carry the page out of the end screen in one fling (a smooth scrollTo
-+        // to the closed rest stopped it there); if it slows inside the screen, the slow-tick rule settles it. The
-+        // user's fastest close from open so far: 4.06 px/ms.
-+        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5) && ((__msLift = 0), go(__msFl > 0)));
++        // the finger was still moving at lift-off: go where it points. Rev 7d: a fling down that is fast (finger
++        // >= 5 px/ms) or long (finger travel >= 300 px since the touchstart) is left to its own momentum, so it can carry
++        // the page out of the end screen in one fling (a smooth scrollTo to the closed rest stopped it there); if it slows
++        // inside the screen, the slow-tick rule settles it. The user's closes from open so far: <= 4.06 px/ms, 74-255 px.
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5 && __msFy - __msF0 < 300) && ((__msLift = 0), go(__msFl > 0)));
 +        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
 +      },
 +      __msTouchEv = (e) => {
@@ -2535,12 +2535,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              (__msLift = 0),
 +              (__msGo = 0),
 +              e.type === `touchstart` &&
-+                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = c.clientY), (__msFt = s))))
++                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = __msF0 = c.clientY), (__msFt = s))))
 +            : (__msArm(),
 +              (__msLift = 2),
 +              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
 +              // DEBUG (rev 7d checks only): logs nothing unless a driver set window.__msDbg = []
-+              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY]),
++              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY, __msFy - __msF0]),
 +              __msSettle(),
 +              (__msFl = 0)));
 +      },
@@ -2592,7 +2592,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14109,9 @@
+@@ -13045,9 +14110,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2604,7 +2604,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14119,58 @@
+@@ -13055,27 +14120,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2670,7 +2670,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +14181,60 @@
+@@ -13086,7 +14182,60 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2732,7 +2732,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,6 +14243,11 @@
+@@ -13095,6 +14244,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -2744,7 +2744,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            P(),
            ne(),
            e.removeEventListener(`change`, m),
-@@ -13102,6 +14255,41 @@
+@@ -13102,6 +14256,41 @@
        }
      );
    });
@@ -2786,7 +2786,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var I = uN();
    let L, te;
    var B = e(I),
-@@ -13118,10 +14306,24 @@
+@@ -13118,10 +14307,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -2811,7 +2811,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14342,7 @@
+@@ -13140,7 +14343,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2820,7 +2820,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14359,16 @@
+@@ -13157,7 +14360,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2838,7 +2838,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14404,8 @@
+@@ -13193,7 +14405,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2848,7 +2848,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14422,7 @@
+@@ -13210,7 +14423,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2857,7 +2857,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13232,6 +14444,7 @@
+@@ -13232,6 +14445,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),

@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13915,7 +13915,172 @@
+@@ -13915,7 +13915,173 @@
        __osb = () => {
          let e = C() ? `none` : ``;
          e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
@@ -62,6 +62,7 @@
 +      // again (2 tries) instead of deciding anew from the position. (3) a flick's direction is the sign of the smoothed
 +      // speed, not of the last frame's step. A finger move > 50 ms after the previous one starts a new finger speed.
 +      __msFy = 0,
++      __msF0 = 0,
 +      __msFt = 0,
 +      __msFv = 0,
 +      __msFn = 0,
@@ -73,7 +74,7 @@
 +      __msGo = 0,
 +      __msArm = () => {
 +        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __msSettle()), 200)));
-+      },
+       },
 +      __msSettle = () => {
 +        if (!__msEnd || __msTouch || __msGo) return;
 +        let t = __msEnd.offsetHeight,
@@ -98,13 +99,13 @@
 +          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
 +        }
 +        __msWant = -1;
-+        // the finger was still moving at lift-off: go where it points. Rev 7d: a fast fling down (finger >= 5 px/ms)
-+        // is left to its own momentum, so it can carry the page out of the end screen in one fling (a smooth scrollTo
-+        // to the closed rest stopped it there); if it slows inside the screen, the slow-tick rule settles it. The
-+        // user's fastest close from open so far: 4.06 px/ms.
-+        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5) && ((__msLift = 0), go(__msFl > 0)));
++        // the finger was still moving at lift-off: go where it points. Rev 7d: a fling down that is fast (finger
++        // >= 5 px/ms) or long (finger travel >= 300 px since the touchstart) is left to its own momentum, so it can carry
++        // the page out of the end screen in one fling (a smooth scrollTo to the closed rest stopped it there); if it slows
++        // inside the screen, the slow-tick rule settles it. The user's closes from open so far: <= 4.06 px/ms, 74-255 px.
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5 && __msFy - __msF0 < 300) && ((__msLift = 0), go(__msFl > 0)));
 +        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
-       },
++      },
 +      __msTouchEv = (e) => {
 +        let c = e.changedTouches && e.changedTouches[0],
 +          s = e.timeStamp;
@@ -125,12 +126,12 @@
 +              (__msLift = 0),
 +              (__msGo = 0),
 +              e.type === `touchstart` &&
-+                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = c.clientY), (__msFt = s))))
++                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = __msF0 = c.clientY), (__msFt = s))))
 +            : (__msArm(),
 +              (__msLift = 2),
 +              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
 +              // DEBUG (rev 7d checks only): logs nothing unless a driver set window.__msDbg = []
-+              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY]),
++              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY, __msFy - __msF0]),
 +              __msSettle(),
 +              (__msFl = 0)));
 +      },
@@ -173,7 +174,7 @@
        T = (e) => {
          let t = ZM(i, a, e - o);
          ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
-@@ -13964,6 +14129,7 @@
+@@ -13964,6 +14130,7 @@
        __tt = [],
        N = () => {
          d ||
@@ -181,7 +182,7 @@
            ((d = !0),
            window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
            (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
-@@ -14000,7 +14166,8 @@
+@@ -14000,7 +14167,8 @@
        __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
        __pinY = () => Math.min(window.scrollY, __pinMax()),
        L = () => {
@@ -191,7 +192,7 @@
          let e = window.scrollY,
            t = __pinMax();
          (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
-@@ -14015,6 +14182,28 @@
+@@ -14015,6 +14183,28 @@
            )
          : void 0;
      (R && te && te.observe(R), _(), m(), N());
@@ -220,7 +221,7 @@
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
      // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
      // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
-@@ -14054,6 +14243,11 @@
+@@ -14054,6 +14244,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),

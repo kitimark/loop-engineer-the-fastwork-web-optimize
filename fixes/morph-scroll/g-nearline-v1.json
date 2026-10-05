@@ -1,0 +1,36 @@
+{
+  "name": "g-nearline-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "PR-018 rev 7d travel margin (lead): fast closes from the open end just under rev 7d's 300 px finger-travel line, at a finger speed below its 5 px/ms line (fling profile, 120 ms: like the user's own closes, <= 4.06 px/ms, 74-255 px). Three of 250 px, then three of 280 px; each should still close (commit to the closed rest), not be released. Compare runs of the same script hash only.",
+  "params": { "x": 215, "nearMs": 120 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": 3000 },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "repeat", "times": 30, "until": "atEnd", "steps": [
+        { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+        { "type": "pause", "ms": 300 }
+      ] },
+      { "type": "until", "cond": "atEnd", "timeoutMs": 4000 },
+      { "type": "pause", "ms": 1200 },
+      { "type": "mark", "name": "near-250" },
+      { "type": "stroke", "dir": "down", "px": 250, "ms": "$nearMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+      { "type": "pause", "ms": 1200 }
+    ] },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "repeat", "times": 30, "until": "atEnd", "steps": [
+        { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+        { "type": "pause", "ms": 300 }
+      ] },
+      { "type": "until", "cond": "atEnd", "timeoutMs": 4000 },
+      { "type": "pause", "ms": 1200 },
+      { "type": "mark", "name": "near-280" },
+      { "type": "stroke", "dir": "down", "px": 280, "ms": "$nearMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+      { "type": "pause", "ms": 1200 }
+    ] },
+    { "type": "mark", "name": "done" }
+  ]
+}
