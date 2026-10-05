@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 count-only card (what inside the showcase reacts to a toolbar step, D's S5) registered, waits for ops' pre-data read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE: no viewport value in the box flips (the profile shells' 100vh is clamped to 743 px); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, untested; waits for ops' result read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -911,6 +911,68 @@ P-id: P-123 (lead's R7 review names it as the next free id; ops confirms it with
   fix-hero-exit-threaded (lead R7).
   - Command: in `sim-p123.mjs`'s header.
   - Output: `out/toolbar-resize/sim123/`, then the read is committed as `p123-read.json`.
+
+## P-123 result (Simulator, count-only, 2026-10-05 ~00:58-01:02Z; one shared slot, functional session)
+
+The lead signed rev 2 (443bafa1) after ops' final pre-data read PASS (T1-T3). The run used the v8 build as served
+(CSS f836404b3728, JS 3e3e94cb6e9f, from the overlay) with inject 9849c25577b9. Both runs are valid. In R1 the
+pull-to-refresh guard ended one loop early, but the run still saw 30 toolbar steps. Read: `p123-read.json`
+(`read-p123.mjs`).
+
+**Probe call: WRITE** (both runs agree). The reading is OBSERVED, in our setup.
+
+| run | frames (step / rest) | ih | attributed flips in the box | other flips (confounded) | A2 noise | step-specific write keys (box+in / anc) | ResizeObserver (step / rest) |
+|---|---|---|---|---|---|---|---|
+| R1 | 30 / 1260 | 775-815 | 0 | 3 (`will-change`) | 1 | 3 / 4 | 0 / 0 |
+| R2 | 29 / 999 | 775-815 | 0 | 0 | 15 | 3 / 4 | 0 / 0 |
+
+- **Values.** No property in or above the box flips with the toolbar (0 attributed flips).
+  - The audit finds 6 viewport-unit elements in the box, all `.start-selling-profile-shell`, plus 2 ancestors.
+  - Their rule is `height` and `min-height: clamp(743px, 100vh - 80px, 820px)`. At these sizes 100vh - 80 stays
+    below 743 px, so the clamp pins both values to 743 px.
+  - So, by S5 (WebKit source), these elements are re-resolved on each step, but their values do not change. This
+    also means the run does not answer ops' vh/svh note: the clamp hides any vh change. It stays UNRESOLVED.
+  - There are no query containers or anchors in or above the box (prediction 3 missed). S7/S8's interleaved layout
+    therefore cannot start inside the box.
+- **Sizes.** The showcase, its children and its two nearest ancestors never change size (0 ResizeObserver entries),
+  as prediction 4 said.
+- **Writes (the call).** The step-specific write keys all come from IntersectionObserver-driven state:
+  - `data-fw-wc` on the two live `.start-selling-profile-shell`s (in the box; 2-3 step records against 7-8 rest
+    records per run, over about 30 step frames and 1000-1260 rest frames) and on `.start-selling-future-card`
+    (an ancestor);
+  - `data-start-selling-scene` on `#profile-showcase`;
+  - `data-start-selling-render`, the `is-visible` class and `data-start-selling-scene` on `#people`.
+- **Candidate trigger (OBSERVED; not yet tested).** `data-fw-wc` is the v8 will-change window (scroll-engine /10,
+  JS l.2730-2748): an IntersectionObserver with `rootMargin: 50% 0px 50% 0px` toggles
+  `[data-fw-wc="0"] { will-change: auto }`.
+  - A percentage root margin follows the viewport height, so a toolbar step moves the window edge by 20 px at
+    each end. A step can therefore flip `will-change: transform` on the profile shells and the card. R1's three
+    confounded flips are exactly that toggle.
+  - Toggling `will-change: transform` changes whether the element makes a stacking context and a containing
+    block. Whether WebKit relayouts the box for that is UNRESOLVED (no reference read yet).
+  - The counts are small: 2-3 step writes per run in the box, against the 4-5 in-view ~21 ms frames per run in
+    P-119. At most it explains part of the cost, and part of its step association may be scroll (T2's rule
+    measures rates, not cause).
+- **Predictions.** Hits:
+  - 1: viewport-unit elements in the box (6);
+  - 2: WRITE, the 15 % branch;
+  - 4: no size change;
+  - 5: A2 noise above 0.
+
+  Miss: 3, query containers or anchors.
+- **M1 (OBSERVED).** M1 is not falsified: the call is not OUTSIDE. Its "starts inside the box" branch now has one
+  concrete form, a script toggle of `will-change` driven by a viewport-relative IntersectionObserver margin.
+- **Next (plan; needs an ops read and a P-id).** One decisive check, look-safe:
+  1. An arm with the same will-change windows, but with the IO `rootMargin` in px (387.5 px = 50 % of 775), so
+     the windows no longer move with the toolbar.
+  2. Optionally a second arm with `data-fw-wc` pinned to 1 on the showcase elements.
+  3. Either arm is read with a Timeline attribution of the in-view step frames (Simulator; per-run Layout of the
+     box, as in P-119 N1).
+
+  The px margin changes no pixels at rest. The window edges move by at most 20 px, so it needs no look gate
+  beyond a parity screenshot.
+- **Files.** `fixes/toolbar-resize/p123-read.json` (reader output, both runs), `results.json` key `p123`. The raw
+  runs are in `out/toolbar-resize/sim123/` (gitignored).
 
 ## Scenarios not run
 

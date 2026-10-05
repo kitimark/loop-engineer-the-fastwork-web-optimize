@@ -2172,5 +2172,64 @@
       "fixes/toolbar-resize/p119-split.json",
       "fixes/toolbar-resize/p119-runs.jsonl"
     ]
+  },
+  "p123": {
+    "card": "README: Prediction P-123 (rev 2, 443bafa1; ops pre-data PASS T1-T3, lead signed)",
+    "build": "v8 (css f836404b3728, js 3e3e94cb6e9f, overlay)",
+    "hold": "one shared slot, weight simulator, functional session, count-only (I-184), 2026-10-05 ~00:58-01:02Z",
+    "pins": {
+      "inject": "9849c25577b9",
+      "driver": "787e8e69b75e",
+      "reader": "aa8c9896dc68",
+      "selftest": "e7cf99d230a3",
+      "script": "6ae05e12ace9"
+    },
+    "call": "WRITE",
+    "runs": {
+      "R1": {
+        "stepFrames": 30,
+        "restFrames": 1260,
+        "attributedFlips": 0,
+        "confoundedFlips": 3,
+        "a2Noise": 1,
+        "stepSpecificBoxIn": 3,
+        "stepSpecificAnc": 4,
+        "roStep": 0,
+        "roRest": 0
+      },
+      "R2": {
+        "stepFrames": 29,
+        "restFrames": 999,
+        "attributedFlips": 0,
+        "confoundedFlips": 0,
+        "a2Noise": 15,
+        "stepSpecificBoxIn": 3,
+        "stepSpecificAnc": 4,
+        "roStep": 0,
+        "roRest": 0
+      }
+    },
+    "audit": {
+      "vuElementsBox": 6,
+      "vuElementsAnc": 2,
+      "rule": ".start-selling-profile-shell height/min-height clamp(743px, 100vh - 80px, 820px) (clamped to 743 px: no flip)",
+      "queryContainersOrAnchors": 0
+    },
+    "predictions": {
+      "hit": [
+        1,
+        "2 (WRITE branch)",
+        4,
+        5
+      ],
+      "miss": [
+        3
+      ]
+    },
+    "reading": "OBSERVED: no value in or above the box flips; step-specific writes are IO-driven state (data-fw-wc will-change window with a 50% rootMargin, data-start-selling-scene/render, is-visible). Candidate trigger: the v8 will-change window IO whose percentage rootMargin moves with innerHeight; untested, small counts (2-3 step writes per run vs 4-5 in-view heavy frames). vh/svh question stays UNRESOLVED (clamp masks it).",
+    "next": "plan: px rootMargin arm (and optionally data-fw-wc pinned) with Timeline attribution of in-view step frames; needs ops read + P-id",
+    "files": [
+      "fixes/toolbar-resize/p123-read.json"
+    ]
   }
 }

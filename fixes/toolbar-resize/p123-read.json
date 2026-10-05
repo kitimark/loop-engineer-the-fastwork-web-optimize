@@ -1,0 +1,275 @@
+{
+  "probe": "WRITE",
+  "runs": [
+    {
+      "run": "R1",
+      "call": "WRITE",
+      "why": [],
+      "frames": {
+        "err": null,
+        "f": 1290,
+        "steps": 30,
+        "stepFrames": 30,
+        "restFrames": 1260,
+        "ih0": 775,
+        "ihMin": 775,
+        "ihMax": 815
+      },
+      "snaps": {
+        "A": {
+          "ih": 775,
+          "sy": 0,
+          "top": 1170,
+          "bottom": 2074,
+          "f": 0
+        },
+        "A2": {
+          "ih": 775,
+          "sy": 0,
+          "top": 1170,
+          "bottom": 2074,
+          "f": 30
+        },
+        "B": {
+          "ih": 815,
+          "sy": 3325,
+          "top": -2203,
+          "bottom": -1299,
+          "f": 222
+        },
+        "C": {
+          "ih": 775,
+          "sy": 2308,
+          "top": -1186,
+          "bottom": -282,
+          "f": 408
+        },
+        "B2": {
+          "ih": 815,
+          "sy": 2707,
+          "top": -1583,
+          "bottom": -679,
+          "f": 813
+        }
+      },
+      "nFlip": 0,
+      "flips": [],
+      "ancFlips": [],
+      "nConfounded": 3,
+      "confounded": [
+        "18:div.start-selling-profile-shell.is-active-shell will-change: transform -> auto",
+        "162:div.start-selling-profile-shell will-change: transform -> auto",
+        "317:div.start-selling-future-card will-change: transform, border-radius -> auto"
+      ],
+      "nNoise": 1,
+      "nAny": 653,
+      "truncated": true,
+      "mo": {
+        "stepBoxIn": 8,
+        "stepAnc": 11,
+        "restBoxIn": 24,
+        "restAnc": 14
+      },
+      "stepWrites": [
+        [
+          "in|18:div.start-selling-profile-shell.is-active-shell|attributes:data-fw-wc",
+          3,
+          7
+        ],
+        [
+          "in|162:div.start-selling-profile-shell|attributes:data-fw-wc",
+          3,
+          7
+        ],
+        [
+          "in|1:section#profile-showcase.start-selling-profile|attributes:data-start-selling-scene",
+          2,
+          2
+        ]
+      ],
+      "ancWrites": [
+        [
+          "anc|318:section#people.start-selling-future.is-visible|attributes:data-start-selling-render",
+          4,
+          2
+        ],
+        [
+          "anc|317:div.start-selling-future-card|attributes:data-fw-wc",
+          2,
+          4
+        ],
+        [
+          "anc|318:section#people.start-selling-future.is-visible|attributes:class=start-selling-future>start-selling-future is-visible",
+          2,
+          0
+        ],
+        [
+          "anc|318:section#people.start-selling-future.is-visible|attributes:data-start-selling-scene",
+          2,
+          2
+        ]
+      ],
+      "ro": {
+        "step": 0,
+        "rest": 0,
+        "top": []
+      },
+      "audit": {
+        "nBox": 317,
+        "nAnc": 7,
+        "nRulesVU": 44,
+        "nVuBox": 6,
+        "nVuAnc": 2,
+        "nHits": 8,
+        "skipped": [],
+        "inline": [],
+        "nCustom": 0,
+        "custom": [],
+        "anims": [],
+        "nQc": 0,
+        "qc": []
+      },
+      "vuBox": [
+        "18:div.start-selling-profile-shell.is-active-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "162:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "309:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "311:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "313:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "315:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}"
+      ]
+    },
+    {
+      "run": "R2",
+      "call": "WRITE",
+      "why": [],
+      "frames": {
+        "err": null,
+        "f": 1028,
+        "steps": 29,
+        "stepFrames": 29,
+        "restFrames": 999,
+        "ih0": 775,
+        "ihMin": 775,
+        "ihMax": 815
+      },
+      "snaps": {
+        "A": {
+          "ih": 775,
+          "sy": 5,
+          "top": 1165,
+          "bottom": 2069,
+          "f": 0
+        },
+        "A2": {
+          "ih": 775,
+          "sy": 5,
+          "top": 1165,
+          "bottom": 2069,
+          "f": 30
+        },
+        "B": {
+          "ih": 815,
+          "sy": 2683,
+          "top": -1557,
+          "bottom": -653,
+          "f": 226
+        },
+        "C": {
+          "ih": 775,
+          "sy": 1457,
+          "top": -335,
+          "bottom": 569,
+          "f": 436
+        },
+        "B2": {
+          "ih": 815,
+          "sy": 2403,
+          "top": -1278,
+          "bottom": -374,
+          "f": 639
+        }
+      },
+      "nFlip": 0,
+      "flips": [],
+      "ancFlips": [],
+      "nConfounded": 0,
+      "confounded": [],
+      "nNoise": 15,
+      "nAny": 645,
+      "truncated": true,
+      "mo": {
+        "stepBoxIn": 6,
+        "stepAnc": 11,
+        "restBoxIn": 26,
+        "restAnc": 14
+      },
+      "stepWrites": [
+        [
+          "in|18:div.start-selling-profile-shell.is-active-shell|attributes:data-fw-wc",
+          2,
+          8
+        ],
+        [
+          "in|162:div.start-selling-profile-shell|attributes:data-fw-wc",
+          2,
+          8
+        ],
+        [
+          "in|1:section#profile-showcase.start-selling-profile|attributes:data-start-selling-scene",
+          2,
+          2
+        ]
+      ],
+      "ancWrites": [
+        [
+          "anc|318:section#people.start-selling-future.is-visible|attributes:data-start-selling-render",
+          4,
+          2
+        ],
+        [
+          "anc|317:div.start-selling-future-card|attributes:data-fw-wc",
+          2,
+          4
+        ],
+        [
+          "anc|318:section#people.start-selling-future.is-visible|attributes:class=start-selling-future>start-selling-future is-visible",
+          2,
+          0
+        ],
+        [
+          "anc|318:section#people.start-selling-future.is-visible|attributes:data-start-selling-scene",
+          2,
+          2
+        ]
+      ],
+      "ro": {
+        "step": 0,
+        "rest": 0,
+        "top": []
+      },
+      "audit": {
+        "nBox": 317,
+        "nAnc": 7,
+        "nRulesVU": 44,
+        "nVuBox": 6,
+        "nVuAnc": 2,
+        "nHits": 8,
+        "skipped": [],
+        "inline": [],
+        "nCustom": 0,
+        "custom": [],
+        "anims": [],
+        "nQc": 0,
+        "qc": []
+      },
+      "vuBox": [
+        "18:div.start-selling-profile-shell.is-active-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "162:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "309:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "311:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "313:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}",
+        "315:div.start-selling-profile-shell <- .start-selling-profile-shell {height:clamp(743px, -80px + 100vh, 820px); min-height:clamp(743px, -80px + 100vh, 820px)}"
+      ]
+    }
+  ]
+}
