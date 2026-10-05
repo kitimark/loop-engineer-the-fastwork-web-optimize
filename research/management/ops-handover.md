@@ -72,6 +72,9 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~12:0xZ **P-138 SIGNED by the lead with N1-N7 as conditions** (fb97f07d landed). Open before step 1: fix-nav-morph
+  tells ops its N3 choice (fix part1-138.sh's EXIT lines with a new hash, which ops re-checks, or keep them disclosed).
+  The lead noted the R5 "informed" caveat for nav-fade's batch 9 read.
 - 10-05 ~12:1xZ **nav-fade conditions check PASS on 32e5172f; P-139 reserved; P-138 pre-data read PASS with notes.**
   - nav-fade (lead's ask, before the Simulator drain ~12:30Z): N1-N6 all met on 32e5172f (rebased on 219ab20f, tools equal
     main). N1: probes tracked; hashes in the card match results.json config.probeSha256 and disk (motion d34355055470,
