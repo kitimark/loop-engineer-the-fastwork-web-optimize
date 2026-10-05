@@ -192,11 +192,19 @@ File: `em-sim-v9f-2026-10-05T23-17-31-791Z.json`. Paint events, C / V / C again:
 - No gain on the glide is expected. F1's gains are at rest open and on toolbar steps, which the Simulator glide doesn't
   drive. The step-A rerun (C, V1, N; fixed script) measures toolbar strokes.
 
-## P-152: phone no-worse check (card, registered before any P-152 data)
+## P-152: phone no-worse check (card rev 1.1, registered before any P-152 data)
 
 **Ticket:** P-152 (lead, 2026-10-05; registered by mgmt-clerk-1). Stage V of a less-work fix (memory
 "less-work-landing-rule"): cost-card counts (above) plus one short phone no-worse check. No gain is claimed from the
 phone.
+
+**Revisions.**
+- Rev 1: commit d705bdd6.
+- Rev 1.1 (2026-10-06): the pre-data read (ops-reader-P152) passed with notes N1-N7. The lead signed N1 and ruled on N2-N7. This revision applies them.
+- Labels:
+  - This card is pre-data for P-152.
+  - The prediction is informed by this build's Chrome and Simulator counts.
+  - N1's calibration is informed by P-137 data from another build (P-137's C was v9-final + 7d; here C is v9-final, 7c).
 
 **Question.** Does F1+U2 make the end-zone morph on the iPhone worse? The end-zone morph is the scroll into and out of
 the end menu, with toolbar steps, driven by a real touch gesture.
@@ -226,7 +234,11 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - 8 counted runs, Timeline on, in the order C V V C C V V C (EC1, EV1, EV2, EC2, EC3, EV3, EV4, EC4).
 - Each counted run must pass the P-129 run gates G1-G6. A failed run is re-run once in the tail, at most 2 re-runs per
   block.
-- At most 2 blocks.
+- A re-run counts only when the first try is INVALID by `readRun`. If the runner flagged a first try only for a non-zero gesture exit, and it is valid by `readRun`, it still counts and its re-run is ignored (N5).
+- At most 2 blocks. Block 2 runs only after a block-1 FAIL and the lead's go (N2):
+  - Before block 2, `TICKET=P-152 sh fixes/end-morph-f12/phone/p152-block.sh ARCHIVE-BLOCK1` moves `out/p152/runs`, the hold logs, the WDA logs and `serve-check.log` to `out/p152/block1/`, then restarts the three servers (§5.1).
+  - Block 2 is judged by itself with the same rule. It is never pooled with block 1.
+- Part 2's end gate (N3): part 2's end thermal gate runs only in HA, after the attribution runs. An HA end-gate failure (over 44 °C, or not Serious), or a missing `hold-HA.log`, voids part 2's counted runs: EC2, EC3, EV3, EV4, EC4 and every re-run. `p152-read.mjs` reads `hold-HA.log` and lists those runs as INVALID "part 2 end gate".
 
 | part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 runs at most) |
 |---|---|
@@ -236,7 +248,8 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 **Runner steps (lead condition 6).**
 - `p152-block.sh` starts every part with `iphone.mjs wda stop`, `wda start`, `wda check` (the I-212 lesson), and stops
   the part if WDA is not READY. Each hold also runs `wda check` before its start gate.
-- Safari is parked after every run and at the end of every part.
+- Safari is parked after every run. `p152-block.sh` also parks it on every exit of a part through an EXIT trap, including a BLOCK STOP on a failed hold or gate (N4).
+- Every part starts with `p152-serve.sh check` and appends its output to `out/p152/serve-check.log`: B, C and V's served JS and CSS hashes, with B `4606120cf392` / `27776f3d4138`. A failed check stops the part before anything runs (N6).
 - The block mark is `lock.mjs run iphone --block P-152 --max-seconds 3600`. After each hold: `doing iphone
   --between 1`.
 - Commands (the runner, in the background, after `sh fixes/end-morph-f12/phone/p152-serve.sh start`):
@@ -251,30 +264,46 @@ the end menu, with toolbar steps, driven by a real touch gesture.
   innerHeight of the scroll (Chrome: endStart 5189 = max 5964 - 775, OBSERVED), so this band is m >= 0.
 - n = moving end-zone frames; s(th) = those with dt > th, for th 30, 34, 38, 46, 50, 54.
 - P-137's after-touchend subset is reported but decides nothing.
+- Per run, the read also reports the near-band counts (N5): (30, 38] = s30 - s38 and (46, 54] = s46 - s54.
 
-**Decision (lead condition 3; P-150 rev 1.1's rule).** V is judged against C, at >34 and at >50 separately.
+**Decision (lead condition 3, rev 1.1: N1 signed by the lead, 2026-10-06).** V is judged against C, at >34 and at >50 separately.
 - WORSE when EITHER:
   - (a) min(V) > max(C); OR
-  - (b) median(V) - median(C) > +2 at >34, or > +1 at >50.
-- Rates are used instead of counts when median n differs by more than 15 % between the arms; the bounds then become 2
-  and 1 divided by median n(C).
-- Twins: >30 and >38 use the >34 bound; >46 and >54 use the >50 bound. A twin that disagrees with its main threshold
-  marks the result "threshold-sensitive".
-- NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE; it goes to the lead (block 2 or no landing).
-- INSUFFICIENT: an arm has fewer than 3 valid runs. VOID: a sentinel failed.
-- "Position-confounded" is added when the lowest V run at a failing threshold opens its hold (EV1, EV3). It is a label
-  only and doesn't change the outcome.
-- The scorer's self-test (`node fixes/end-morph-f12/phone/p152-read.mjs --selftest`, 18 checks) covers each clause
-  alone, both together, both thresholds, the 3-run floor for each arm, the rates switch, the twin flag, the
-  position label, the end-zone filter and the attribution split.
+  - (b) median(V) - median(C) > +2 at >34, or > +1 at >50, AND an exact one-sided permutation p <= 0.05.
+- How p is computed. The statistic is the MEAN difference, as in P-150 rev 1.3 (lead, 2026-10-06). `permP` is copied from fix-end-bg's `fixes/end-bg/phone/p150-read.mjs` at 753366c1.
+  - p is the share of all C(nC + nV, nV) relabelings of the valid runs, into the arms' sizes, whose mean(V') - mean(C') is >= the observed difference.
+  - The observed labelling is included. Ties count against V, that is, in the numerator.
+  - At 4 v 4 the observed split must be among the top 3 of 70.
+- The smallest p, reached at full separation, depends on the run counts:
+
+  | runs (C v V) | relabelings | smallest p | can clause (b) fire? |
+  |---|---|---|---|
+  | 4 v 4 | 70 | 1/70 | yes |
+  | 3 v 4 | 35 | 1/35 | yes |
+  | 3 v 3 | 20 | 0.05 | only at full separation, where (a) fires anyway |
+- Rates are used instead of counts when median n differs by more than 15 % between the arms. The bounds then become 2 and 1 divided by median n(C), and p is computed on the rates the same way.
+- Twins: >30 and >38 use the >34 bound and test; >46 and >54 use the >50 bound and test. A twin that disagrees with its main threshold marks the result "threshold-sensitive".
+- Precedence (N5): VOID > INSUFFICIENT > FAIL / NO-WORSE PASS.
+  - VOID: a sentinel failed or is missing.
+  - INSUFFICIENT: an arm has fewer than 3 valid runs.
+  - NO-WORSE PASS: neither >34 nor >50 is WORSE.
+  - FAIL: either is WORSE; it goes to the lead (block 2, judged by itself, or no landing).
+- Reported, deciding nothing: thresholds whose median bound is exceeded while p > 0.05. Rev 1 would have failed these.
+- "Position-confounded" is added when the lowest V run at a failing threshold opens its hold (EV1, EV3). It is a label only and doesn't change the outcome.
+- EC1 slot (N7, descriptive): the read states whether EC1 is again C's maximum at >34 and >50. In P-137, EC1 (H2, right after S0) was C's maximum at both thresholds: 40 against 25-29, and 15 against 1-5. That is OBSERVED, and on another base (P-137's C was v9-final + 7d; here it is 7c). In the same slot here, EC1 would favour V.
+- The scorer's self-test (`node fixes/end-morph-f12/phone/p152-read.mjs --selftest`, 30 checks) covers:
+  - each clause alone and both together, at both thresholds, including clause (b) with p <= 0.05 and the median bound alone with p > 0.05 (a pass);
+  - the lead's three cases: an A/A of P-137's C runs against a relabeled copy (PASS), P-137 as recorded (PASS), and P-137 with its arms swapped, +21 / +3.5 (FAIL);
+  - `permP` on P-150 rev 1.3's own cases (4 v 4 at 2/70; 3 v 3 at full separation and with a boundary tie), at 3 v 4, and with all values tied;
+  - the 3-run floor for each arm, the rates switch, the twin flag, the position label, the end-zone filter and the attribution split.
 
 **Falsification line (lead condition 4).**
-- Prediction: NO-WORSE PASS. F1 hides #platform only at m >= 0.55, where it is already at opacity 0. U2 removes hit
-  tests.
+- Prediction: NO-WORSE PASS, with p = 0.85 (N5). F1 hides #platform only at m >= 0.55, where it is already at opacity 0, and U2 removes hit tests. The 0.15 covers two things:
+  - the rule's false FAIL rate with no real effect, 3-5 % at 4 v 4 (power note);
+  - the named risk below.
 - The named risk: F1's return-frame restyle could add a slow frame at each open and close. That restyle is +164-171
   styled elements and +24 dirty layout objects in Chrome, and Simulator style recalcs went 78 against 60-62 in open.
-  If it does, (b) catches it at >34 or >50 as a median rise of 1-2 or more per run (each run has several opens and
-  closes).
+  If it does, it shows at >34 or >50 as a median rise of 1-2 or more per run, since each run has several opens and closes. At 4 v 4, the rule catches a rise that small only by separation, or when p <= 0.05 (power note). A small regression can therefore pass, and the card says so.
 - A FAIL means the fix does not land as is. The next step would then be a version that keeps #platform hidden without
   the restyle (for example, hiding only #platform's composited children).
 
@@ -285,19 +314,29 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - Expectation: fewer Paint records per frame at m >= 0.55 on V, from the toolbar-step repaints of #platform that P-137
   showed. Never a gate.
 
-**Power note (OBSERVED, for the reader).** P-137's C arm (v9-final + 7d, same script and profile, 4 runs) had 25-40
-end-zone frames over 34 ms per run and 1-15 over 50 ms. Against that spread, a median bound of +2 / +1 can fail by
-chance. The rule is the lead's and stays as written. A FAIL is read together with the separation clause and the twin
-flag.
+**Power note (OBSERVED; disclosed per the lead's N1 ruling).**
+- P-137's C arm (v9-final + 7d, same script and profile, 4 runs) had 25-40 end-zone frames over 34 ms per run and 1-15 over 50 ms.
+- The pre-data read resampled 4 v 4 blocks from those runs. I re-checked it with this reader's rev 1.1 code, using the mean statistic. Each row is 4000 draws; runs are drawn with replacement, without and with a uniform ±2 added to each count:
 
-**Kit (pins, sha256/12, at the card commit).**
+  | V shifted by (>34 / >50) | FAIL, rev 1 rule (bound only) | FAIL, rev 1.1 rule (bound and p) |
+  |---|---|---|
+  | none (V = C) | 37-41 % | 3.2-5.2 % |
+  | +6 / +2 | 79 % | 34 % |
+  | +10 / +3 | 92-93 % | 44-46 % |
+
+- The reader's numbers were: false FAIL 37-52 % under rev 1 and 3-7 % under rev 1.1; catch rate about 26-34 % at +6 / +2 and 44 % at +10 / +3.
+- So at 4 v 4 and this noise, a PASS does not rule out a regression of a few frames per run. It says no large one showed.
+- These numbers come from another build (7d), read OBSERVED.
+
+**Kit (pins, sha256/12, at the rev 1.1 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
+`2548d4588b0e`, read `005136ea3002`).** Rev 1.1 changes `p152-block.sh` (N2, N4, N6) and `p152-read.mjs` (N1, N3, N5, N7). It does not change `p152-hold.sh` or `p152-serve.sh`.
 
 | file | pin |
 |---|---|
-| `phone/p152-block.sh` | `3a2d0a7716c7` |
+| `phone/p152-block.sh` | `d2d8e37c419d` |
 | `phone/p152-hold.sh` | `b5b38c853340` |
 | `phone/p152-serve.sh` | `2548d4588b0e` |
-| `phone/p152-read.mjs` | `005136ea3002` |
+| `phone/p152-read.mjs` | `adf4e7a27122` |
 
 - Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e` and
   `research/serious-heat/p129-read.mjs` `06f74f5d19ca`.
@@ -310,13 +349,25 @@ flag.
   - Compiled program `8737f212c0ff`, GESTURE_BUDGET_S 229.
   - Thermal gates at start (H1) and end (HA); TAIL resolved to S1 alone.
   - The servers were stopped afterwards.
-- Reader smoke test: on P-137's own records (fix-end-bg's out/p137/runs: a different question, used only to test
+- Rev 1.1 dry run (2026-10-05 23:49Z, servers up), same command:
+  - Every hold: DRY ok.
+  - The part-start serve check was logged in `out/p152/serve-check.log`: B, C and V all ok, B `4606120cf392` / `27776f3d4138`.
+  - Gates at H1 (start) and HA (end); TAIL resolved to S1.
+- `ARCHIVE-BLOCK1` tested on the dry-run files:
+  - It moved `runs/`, the hold logs and `serve-check.log` into `out/p152/block1/` and restarted the servers (hashes ok).
+  - A second call refused (exit 2).
+  - The test archive was then renamed `out/p152/dry-archive-test-1`, so a real ARCHIVE is not refused, and the servers were stopped.
+- What the dry runs did NOT exercise (N6): WDA stop/start/check, the thermal gates, `iphone.mjs park` (the EXIT trap is off in dry mode), and TAIL re-runs (none were needed). They run for the first time in the real block.
+- Reader smoke test (rev 1.1), on P-137's records:
+  - Without a `hold-HA.log` next to the runs folder, part 2's runs read as INVALID "part 2 end gate" and the decision is INSUFFICIENT, as specified.
+  - With a passing `hold-HA.log` fixture, all 8 runs count. The result is NO-WORSE PASS (p 70/70 at >34 and >50), and the EC1 slot lines say yes at both thresholds.
+- Reader smoke test (rev 1): on P-137's own records (fix-end-bg's out/p137/runs: a different question, used only to test
   parsing), the reader read all 8 counted runs and both sentinels, and the attribution read gave plausible splits
   (EC1: 719 frames at m >= 0.55, 675 below).
 
 ## Pending
 
-- v9.2 Simulator pixel rerun before the zone (informational now; on v9-final that stop is 0).
-- Step A rerun (toolbar strokes in the Simulator, fixed layer matching).
-- Phone no-worse check (less-work rule), through the lead. The iPhone is disconnected (T-207); the lead posts the
-  reconnect step. Phone servers: int-v8's `fixes/end-morph-v9f/serve.sh` on the same snapshot.
+- Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
+- P-152, the phone no-worse check (less-work rule):
+  - Rev 1.1 waits for the lead's delta check and signature, then runs through the phone (reconnected, WDA ready).
+  - Phone servers: `phone/p152-serve.sh`, on the copy of int-v8's snapshot.
