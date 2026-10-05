@@ -2400,6 +2400,71 @@ checked before the block: p147-serve.sh ran once on the Mac (21:08Z): C served J
   checked only). A tool fault in the block: VOID, re-run once, then report.
 ```
 
+```
+P-147 REV 1.1 (2026-10-06, before any phone run; answers ops-reader-P147's PASS WITH NOTES N1-N11 with the lead's
+  rulings; nothing has run on the phone; no counted run before the lead signs this rev). Where this rev and the card or
+  the addendum above differ, this rev holds; everything not named here stands as written.
+N1 two pin sets, both snapshotted now (immutable copies, read-only files, worktree out/p147/):
+  set A = v9-final + rev 7d (snap/, HASHES.txt sha256 bb953431f349):
+    C JS 1b2eecc66011 = baseline + fixes/morph-scroll-v9try/patch.diff (6d1632eb0ee9), CSS e1359ab9994a
+    V JS 2cfd990c788d = baseline + fixes/cd-roll-panel-try/patch.diff (887240c913fb), CSS e1359ab9994a
+  set B = v9.2's signed pin = v9.1d (rev 1.3, V92_EXPECT) (snapB/, HASHES.txt sha256 2090c57d843f):
+    C' JS 941aa13e5bdf = baseline + main's fixes/v9-1d/patch.diff, CSS f1997edf5309
+    V' JS 48230d02bbae = C' + the P-097 delta (the same +/- lines), CSS f1997edf5309; applies with no fuzz, node --check
+    ok. The delta's +/- lines, stripped of positions, are byte-equal in P-097 (0a53abca21ff), set A and set B (sha256
+    6e2a9c065d39 all three); v9.1d changes nothing in the delta's regions (v9.1d's last change at line 13504 of its
+    file; the delta's hunks at 4306-4611, 14009 and 14804), so V' - C' is the same change as V - C.
+  choice (lead): P-142's result read decides. v9.2 NO-WORSE and landed -> set B; otherwise set A. The P-id, the
+  measures, the gates and the calibration below are the same for both sets; only the pins differ. The servers, the
+  hold and the scorer take the set as an argument (p147-serve.sh A|B, p147-hold.sh A|B <block>, p147-score.mjs --set
+  A|B): a run served from the other set voids itself (the scorer's served check, set by set).
+N2 the hold checks every exit code. A warm-up that exits non-zero, or a read tool error: HOLD VOID tool fault (no
+  counted run). A counted run that exits non-zero (not 8) is not valid: the same position runs once more at once
+  (label <pos>r, "tool fault: re-run once"); a second failure: HOLD VOID tool fault. Exit 8 (profile refused: misfit
+  or ceiling): HOLD VOID profile.
+N3 budget and precedence: at most 2 blocks for P-147, every restart reason counted (a VOID hold, "not enough", a
+  ceiling stop). Precedence of outcomes: pre-read STOP > VOID or not enough > MISS > gate not shown open (N7) > pass;
+  "threshold-sensitive" is a label only, never an outcome. The ceiling (thermal Critical or battery >= 44 C) stops the
+  block: VOID, counts against the budget. Profile drift (not Xcode-induced Serious at a run's gate, meta.profileDrift)
+  voids that run (scorer). After 2 blocks without a scored outcome: report to the lead, no third block.
+N4 tolerances: N1 (V median dt > 50 <= C + 1) and N2 (dt > 34 <= C + 2) are signed as informed tolerances from P-093
+  (this fix's earlier phone check, hero roll, top window): there a rise of 2 or more in dt > 50 was the falsifier, and
+  the observed V - C was +1 (dt > 50) and +2 (dt > 34). No A/A arm (phone time; lead). Registered report, not a gate:
+  "V's fewest dt > 50 frames above C's most" (scorer vMinAboveCMax50, P-093's pattern) goes to the lead with the verdict.
+N5 smoke before any counted run, uncounted, recorded under out/p147/ (not scored data):
+  (a) the scorer on a real W record: done 2026-10-06 on a K-run record of fixes/cd-roll-ca (pathname served keys, hold
+      marks and mutation rows read; it voided on the served check, as it must for another build).
+  (b) mread on a page: on the Simulator in a functional session (FW_IPHONE_PORT 9232) before the slot; if that cannot
+      run, in the phone slot's smoke hold, which runs it anyway (step 0).
+  (c)+(d) one phone smoke hold before the block, in the same phone slot: p147-hold.sh <SET> smoke = step 0 on both arms
+      (both mread reads), then one C run in the counted geometry (sentinel judged), the scorer on it with the set's
+      pins. Go/no-go, fixed now: that run's scroll phase >= 44 fps and sentinel phase >= 58 fps (meta.sentinel pass) and
+      exit 0 -> SMOKE GO, the block may follow; else SMOKE NO-GO: stop, report to the lead, no block. A smoke hold uses
+      no block number and is not in the budget; a pre-read STOP in the smoke is the ticket's STOP outcome.
+N6 step 0 in the counted geometry: 0a jumps to the page end (warm-up, --sentinel 0) only to read the page end at rest
+  (C's maxY); 0b runs each arm's warm-up in the counted geometry (--from <C's page end - 2400> --to 999999 --idle 3
+  --hold 12 --sentinel 3 --warmup --no-park) and then the GATE read (panel --morph exactly '1' twice, 2 s apart, on both
+  arms; else PRE-READ STOP).
+N7 the record's m column is the top nav's --morph (3 dp), not the panel gate (scorer navM, descriptive). The in-run
+  sign that the gate opened is the hold's inline-style mutation count. Rule "gate not shown open": V's median style
+  mutations in the hold >= C's fewest -> outcome STOP (V = C on the phone; the less-work claim does not carry), after
+  MISS and before pass in the precedence.
+N8 Low Power Mode is declared off: every run passes --low-power off; a run the runner finds in Low Power Mode is void.
+N9 wording: set A's C is "v9-final + rev 7d" (the card's "current v9-final").
+N10 calibration (unchanged numbers, one added): pre-read STOP or gate not shown open 0.15; pass 0.70 (joint: N1 and N2
+  both pass); N1 or N2 MISS 0.10; VOID after the budget 0.03; not enough after the budget 0.02.
+N11 re-pinned files (sha256/12 now; any change before the block's last run voids the block):
+  fixes/cd-roll-ca/phone/p147-serve.sh 98506c0fc127 (takes A|B; refuses a changed snapshot; VOID on a served mismatch)
+  fixes/cd-roll-ca/phone/p147-hold.sh 86ea8946a4b2 (takes A|B and 1|2|smoke; N2, N3, N5, N6, N8)
+  fixes/cd-roll-ca/phone/p147-score.mjs cacdc32fb905 (--set A|B; profile drift void; navM; vMinAboveCMax50;
+    gateNotShownOpen; outcome with the N3 precedence); self-test SELFTEST PASS 8 (adds: the other set's served JS voids;
+    profileDrift voids; gate not shown open -> STOP after MISS, before pass)
+  fixes/cd-roll-ca/phone/p147-mread.mjs f84e43221414 (unchanged)
+  tools as in the addendum (main 4cb1efb2): iphone.mjs b5fe6a546e9a, iphone-run.mjs d37b97750777, iphone-probe.mjs
+    14e975bba5fb, wip.mjs 3dcab04e362a, serve.mjs 7aa33799ee3f, lan.mjs 2284cd07e634, pmcheck.mjs d36bd7437b7c
+slot (lead): right after P-142's block and swipe A/B, ahead of P-145; smoke hold first, then block 1 on the named set.
+```
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at

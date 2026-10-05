@@ -1,14 +1,16 @@
 #!/bin/sh
-# P-147 (PHONE TICKET P-147 in fixes/cd-roll-ca/README.md): serve the immutable snapshot copies out/p147/snap (C =
-# current v9-final JS 1b2eecc66011, V = C + the P-097 delta JS 2cfd990c788d; CSS e1359ab9994a both; HASHES.txt there)
+# P-147 (PHONE TICKET P-147 in fixes/cd-roll-ca/README.md), rev 1.1: serve one pin set's immutable snapshot copies.
+#   set A = out/p147/snap:  C = v9-final + rev 7d JS 1b2eecc66011, V = C + the P-097 delta JS 2cfd990c788d (CSS e1359ab9994a)
+#   set B = out/p147/snapB: C = v9.2 (= v9.1d) JS 941aa13e5bdf, V = C + the same delta JS 48230d02bbae (CSS f1997edf5309)
+#   (HASHES.txt in each)
 # on plain http (I-003), --port 0 (a fresh OS port per start, I-131), latency 150, vendors local. A copy of
 # serve-snap.sh with only the folder, the arms and these lines changed. Nothing here prints the LAN address.
-#   sh fixes/cd-roll-ca/phone/p147-serve.sh        # start C and V, check the served hashes, print ports
-#   sh fixes/cd-roll-ca/phone/p147-serve.sh stop   # stop them
+#   sh fixes/cd-roll-ca/phone/p147-serve.sh A|B        # start C and V of that set, check the served hashes, print ports
+#   sh fixes/cd-roll-ca/phone/p147-serve.sh A|B stop   # stop them
 cd "$(dirname "$0")/../../.." || exit 2
-S=out/p147/snap
+case $1 in A) S=out/p147/snap ;; B) S=out/p147/snapB ;; *) echo "usage: p147-serve.sh A|B [stop]"; exit 2 ;; esac
 ARMS="C V"
-if [ "$1" = stop ]; then
+if [ "$2" = stop ]; then
   for X in $ARMS; do [ -f $S/../serve-$X.pid ] && kill "$(cat $S/../serve-$X.pid)" 2>/dev/null; rm -f $S/../serve-$X.pid; done
   echo stopped; exit 0
 fi

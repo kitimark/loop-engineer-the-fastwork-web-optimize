@@ -1,27 +1,31 @@
 #!/usr/bin/env node
 // p147-score.mjs: P-147 phone no-worse check of the panel clock roll (PHONE TICKET P-147, fixes/cd-roll-ca/README.md).
-// C = current v9-final (JS 1b2eecc66011), V = C + the P-097 delta (JS 2cfd990c788d), CSS e1359ab9994a both. Built on
+// rev 1.1: two pin sets, the lead names one before the block (--set): A = v9-final + rev 7d (C JS 1b2eecc66011, V = C + the
+// P-097 delta JS 2cfd990c788d, CSS e1359ab9994a); B = v9.2 = v9.1d (C JS 941aa13e5bdf, V JS 48230d02bbae, CSS
+// f1997edf5309). Built on
 // k-score.mjs (its W voids, sentinel voiding in block order and served check, with credit); only the window, the
 // thresholds of the rule and the descriptive counts differ. Frame counts only, driver W, Timeline off.
-// usage: node fixes/cd-roll-ca/phone/p147-score.mjs <arm>:<file> ... [--json out.json]     node … --selftest
+// usage: node fixes/cd-roll-ca/phone/p147-score.mjs --set A|B <arm>:<file> ... [--json out.json]     node … --selftest
 //   Pass every W run file of the block in block order (warm-ups may be passed: skipped).
 // Window (fixed before data): hold = frames with t in [marks.hold[0], marks.hold[1]), dt != null: 12 s at the page end
 //   with the menu open (the page's settle after the scroll-in included, as in every arm).
 // Counts per run: dt > 50 (twins > 46, > 54), dt > 34 (twins > 30, > 38); near bands (30, 38] and (46, 54] ms flagged;
-//   descriptive: inline-style mutations (probe types style, same) in the hold rows; m (the probe's --morph column) on
-//   the first and last hold frame.
+//   descriptive: inline-style mutations (probe types style, same) in the hold rows (the in-run sign that the
+//   gate opened); navM = the probe's m column on the first and last hold frame: the TOP NAV's --morph (probe morphEls,
+//   3 dp), not the panel gate.
 // Rule (no-worse): N1 V median(> 50) <= C median(> 50) + 1; N2 V median(> 34) <= C median(> 34) + 2; each twin judged
 //   the same way, a verdict that differs with a twin is "threshold-sensitive". Needs >= 3 valid runs per arm, else
-//   "not enough". Voids (dropped, reported): meta.error; served JS/CSS not the arm's; Low Power Mode; no hold marks; a
+//   "not enough". Voids (dropped, reported): meta.error; served JS/CSS not the arm's; Low Power Mode; meta.profileDrift true; no hold marks; a
 //   C run whose heat sentinel fails or has no data voids itself and every run since the last passing C run.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const self = createHash('sha256').update(readFileSync(fileURLToPath(import.meta.url))).digest('hex');
-export const EXPECT = {
-  C: { js: '1b2eecc66011', css: 'e1359ab9994a' },
-  V: { js: '2cfd990c788d', css: 'e1359ab9994a' },
+export const SETS = {
+  A: { C: { js: '1b2eecc66011', css: 'e1359ab9994a' }, V: { js: '2cfd990c788d', css: 'e1359ab9994a' } },
+  B: { C: { js: '941aa13e5bdf', css: 'f1997edf5309' }, V: { js: '48230d02bbae', css: 'f1997edf5309' } },
 };
+export let EXPECT = SETS.A;
 const NODE = '/_app/immutable/nodes/2.DyWL8TcE.js', CSS = '/_app/immutable/assets/2.gBuqKVzi.css';
 export const TH = { gt50: 50, gt46: 46, gt54: 54, gt34: 34, gt30: 30, gt38: 38 };
 const cnt = (dts) => Object.fromEntries(Object.entries(TH).map(([k, v]) => [k, dts.filter((d) => d > v).length]));
@@ -34,6 +38,7 @@ export function scoreW(j, arm) {
   const sv = m.served || {};
   if (!(pref(sv[NODE], EXPECT[arm].js) && pref(sv[CSS], EXPECT[arm].css))) v.push(`served not arm ${arm} (JS ${sv[NODE] ?? 'none'}, CSS ${sv[CSS] ?? 'none'})`);
   if (m.settings?.lowPowerMode === true || m.lowPowerSuspect) v.push('Low Power Mode');
+  if (m.profileDrift === true) v.push('profile drift (the hold\'s end read does not fit xcode-serious)');
   const h = j.marks?.hold;
   let hold = null;
   if (!h || h[0] == null || h[1] == null) v.push('no hold marks');
@@ -45,7 +50,7 @@ export function scoreW(j, arm) {
     let style = 0, same = 0;
     for (const [k, ...c] of j.mutations?.counts || []) if (rows.has(k)) { if (si >= 0) style += c[si]; if (sa >= 0) same += c[sa]; }
     hold = { frames: dts.length, ...cnt(dts), near34: dts.filter((d) => d > 30 && d <= 38).length, near50: dts.filter((d) => d > 46 && d <= 54).length,
-      styleMut: style, sameMut: same, m: F.length ? [F[0][1][5], F[F.length - 1][1][5]] : null };
+      styleMut: style, sameMut: same, navM: F.length ? [F[0][1][5], F[F.length - 1][1][5]] : null };
   }
   return { arm, label: m.label, warmup: !!m.warmup, void: v, sentinel: m.sentinel ?? null, tempStart: m.battery?.start?.temperatureC ?? null, hold };
 }
@@ -62,13 +67,19 @@ export function applySentinel(list, passOf) {
 }
 export function gate(C, V, minN = 3) {
   const out = { nC: C.length, nV: V.length };
-  if (C.length < minN || V.length < minN) return { ...out, verdict: `not enough (C ${C.length}, V ${V.length}, need ${minN})` };
+  if (C.length < minN || V.length < minN) return { ...out, verdict: `not enough (C ${C.length}, V ${V.length}, need ${minN})`, outcome: 'not enough: restart within the 2-block budget' };
   const d = (k) => median(V.map((x) => x[k])) - median(C.map((x) => x[k]));
   out.delta = Object.fromEntries(Object.keys(TH).map((k) => [k, d(k)]));
   const n1 = (k) => d(k) <= 1, n2 = (k) => d(k) <= 2;
   out.N1 = n1('gt50') ? 'pass' : 'MISS'; out.N1sensitive = [n1('gt46'), n1('gt54')].some((x) => x !== n1('gt50'));
   out.N2 = n2('gt34') ? 'pass' : 'MISS'; out.N2sensitive = [n2('gt30'), n2('gt38')].some((x) => x !== n2('gt34'));
   out.verdict = out.N1 === 'pass' && out.N2 === 'pass' ? 'pass' : 'MISS';
+  // reported to the lead next to the verdict (registered, ops-reader-P147 N4/N7): V's fewest > 50 frames above C's
+  // most (P-093's pattern on the hero roll); the gate not shown open (V's median style mutations not below C's fewest)
+  out.vMinAboveCMax50 = Math.min(...V.map((x) => x.gt50)) > Math.max(...C.map((x) => x.gt50));
+  out.gateNotShownOpen = median(V.map((x) => x.styleMut)) >= Math.min(...C.map((x) => x.styleMut));
+  // outcome, precedence (rev 1.1, lead N3/N7): pre-read STOP (p147-hold.sh) > VOID or not enough > MISS > gate not shown open > pass
+  out.outcome = out.verdict === 'MISS' ? 'MISS' : out.gateNotShownOpen ? 'STOP: gate not shown open (V = C on the phone; the less-work claim does not carry)' : 'pass';
   out.descriptive = { styleMut: [median(C.map((x) => x.styleMut)), median(V.map((x) => x.styleMut))], sameMut: [median(C.map((x) => x.sameMut)), median(V.map((x) => x.sameMut))] };
   return out;
 }
@@ -87,24 +98,32 @@ export function selftest() {
   const r2 = scoreW(run('V', base, { styleRows: 5 }), 'V');
   if (r2.hold.styleMut !== 10 || r2.hold.sameMut !== 5) fail('mutations ' + JSON.stringify(r2.hold)); ok.push('style / same mutations summed over the hold rows');
   if (!scoreW(run('V', base, { served: EXPECT.C }), 'V').void.length) fail('served'); ok.push('served JS of the other arm voids the run');
+  if (!scoreW(run('V', base, { served: SETS.B.V }), 'V').void.length) fail('set'); ok.push('a run of the other pin set voids the run');
+  const pd = run('C', base); pd.meta.profileDrift = true; if (!scoreW(pd, 'C').void.length) fail('drift'); ok.push('meta.profileDrift true voids the run');
   const L = [scoreW(run('C', base), 'C'), scoreW(run('V', base), 'V'), scoreW(run('V', base), 'V'), scoreW(run('C', base, { sentinel: false }), 'C'), scoreW(run('C', base), 'C')];
   applySentinel(L, (r) => r.sentinel?.pass ?? null);
   if (L[0].void.length || !L[1].void.length || !L[2].void.length || !L[3].void.length || L[4].void.length) fail('sentinel ' + JSON.stringify(L.map((r) => r.void)));
   ok.push('a failing C sentinel voids itself and every run since the last passing C');
-  const h = (g50, g34) => ({ gt50: g50, gt46: g50, gt54: g50, gt34: g34, gt30: g34, gt38: g34, styleMut: 0, sameMut: 0 });
-  const g1 = gate([h(1, 3), h(1, 3), h(2, 4)], [h(2, 5), h(2, 5), h(3, 6)]);
+  const h = (g50, g34, sm = 0) => ({ gt50: g50, gt46: g50, gt54: g50, gt34: g34, gt30: g34, gt38: g34, styleMut: sm, sameMut: 0 });
+  const hc = (g50, g34) => h(g50, g34, 400);
+  const g1 = gate([hc(1, 3), hc(1, 3), hc(2, 4)], [h(2, 5), h(2, 5), h(3, 6)]);
   const g2 = gate([h(1, 3), h(1, 3), h(2, 4)], [h(3, 3), h(3, 3), h(3, 3)]);
   const g3 = gate([h(1, 3), h(1, 3)], [h(1, 3), h(1, 3), h(1, 3)]);
-  if (g1.verdict !== 'pass' || g2.N1 !== 'MISS' || !g3.verdict.startsWith('not enough')) fail('gate ' + JSON.stringify([g1, g2, g3]));
+  if (g1.verdict !== 'pass' || g1.outcome !== 'pass' || g2.N1 !== 'MISS' || !g3.verdict.startsWith('not enough')) fail('gate ' + JSON.stringify([g1, g2, g3]));
   ok.push('N1: V median > 50 <= C + 1; N2: V median > 34 <= C + 2; fewer than 3 valid runs per arm: not enough');
+  const g4 = gate([hc(1, 3), hc(1, 3), hc(1, 3)], [hc(1, 3), h(1, 3, 400), h(1, 3, 10)]), g5 = gate([hc(1, 3), hc(1, 3), hc(1, 3)], [h(1, 3, 10), h(1, 3, 10), hc(1, 3)]);
+  if (!g4.outcome.startsWith('STOP') || g4.verdict !== 'pass' || g5.outcome !== 'pass' || g2.outcome !== 'MISS') fail('outcome ' + JSON.stringify([g4.outcome, g5.outcome, g2.outcome]));
+  ok.push('gate not shown open (V median style mutations >= C fewest): STOP after MISS, before pass');
   return ok;
 }
 
 const args = process.argv.slice(2);
 if (args.includes('--selftest')) { const r = selftest(); for (const x of r) console.log('ok', x); console.log(`SELFTEST PASS ${r.length} (sha256 ${self.slice(0, 12)})`); process.exit(0); }
 const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
-const files = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1] === '--json')).map((s) => { const k = s.indexOf(':'); return { arm: s.slice(0, k), file: s.slice(k + 1) }; });
+const files = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && ['--json', '--set'].includes(args[i - 1]))).map((s) => { const k = s.indexOf(':'); return { arm: s.slice(0, k), file: s.slice(k + 1) }; });
 if (files.length) {
+  if (!SETS[opt('--set')]) throw new Error('--set A|B is required (the pin set the lead named)');
+  EXPECT = SETS[opt('--set')];
   for (const f of files) if (!['C', 'V'].includes(f.arm)) throw new Error(`arm must be C or V: ${f.arm}:${f.file}`);
   const runs = [];
   for (const f of files) {
@@ -116,7 +135,7 @@ if (files.length) {
   const W = runs.filter((r) => !r.warmup);
   applySentinel(W, (r) => r.sentinel?.pass ?? null);
   const ok = (arm) => W.filter((r) => r.arm === arm && !r.void.length).map((r) => r.hold);
-  const out = { scorer: 'fixes/cd-roll-ca/phone/p147-score.mjs', sha256: self, runs, gate: gate(ok('C'), ok('V')) };
+  const out = { scorer: 'fixes/cd-roll-ca/phone/p147-score.mjs', sha256: self, set: opt('--set'), expect: EXPECT, runs, gate: gate(ok('C'), ok('V')) };
   for (const r of runs) console.log(`W ${r.label}${r.warmup ? ' (warm-up, skipped)' : ''}: ${r.void.length ? 'VOID ' + r.void.join(' | ') : 'valid'}; start ${r.tempStart ?? '?'} °C; hold ${JSON.stringify(r.hold)}`);
   console.log('gate', JSON.stringify(out.gate));
   if (opt('--json')) writeFileSync(opt('--json'), JSON.stringify(out, null, 1));
