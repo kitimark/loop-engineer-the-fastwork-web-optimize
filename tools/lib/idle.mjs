@@ -11,9 +11,11 @@
 //   - status-board rows that wait on it (readyRows): state "waiting", and
 //       * --waiting-on phone (iphone) / chrome (chrome-measure): that resource, and nothing else is read; else
 //       * a wait on the user or on an incident: none (the row is blocked on something else first); else
-//       * the words of its --waiting-on text and its note: "phone"/"iphone" -> iphone; "chrome", "chrome-measure",
-//         "measure", "measuring", "measurement(s)" -> chrome-measure; "lock(s)" -> chrome-measure unless the phone
-//         is named too. Whole words only: a hyphenated name such as the agent iphone-runner does not count.
+//       * the words of its --waiting-on text: "phone"/"iphone" -> iphone (I-182 follow-up, T-169: never its note, a row
+//         waiting on agent:mgmt-ops-10 whose note said "phone ticket" alarmed); the words of its wait text and its
+//         note: "chrome", "chrome-measure", "measure", "measuring", "measurement(s)" -> chrome-measure; "lock(s)" ->
+//         chrome-measure unless the phone is named too. Whole words only: a hyphenated name such as the agent
+//         iphone-runner does not count.
 //     A row whose owner is already queued for that resource is listed once, as queued.
 //
 // Held but unused (I-111; fix-nav-morph held the lease ~6 min without a phone run while others queued): a held iPhone
@@ -81,7 +83,7 @@ import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, lastRelease, lastGrant, holdsLogFile, withGuard, isGroup, liveReaders } from './lock.mjs';
 import { list as statusList } from './status.mjs';
 import { readJson, writeJson, iso } from './store.mjs';
-import { ownerPhoneStep, readSteps, stepText, isOpen } from './phone-step.mjs';
+import { ownerPhoneStep, readSteps, stepText, isOpen, isPhoneStep, onPhone } from './phone-step.mjs';
 import { listWaits } from './waits.mjs';
 import { stewardLine } from './thread-routing.mjs';
 
@@ -122,9 +124,11 @@ export function rowWaitsOn(row) {
   const out = [];
   const inWait = String(w?.text || ''), inNote = String(row.note || '');
   const where = (re) => (re.test(inWait) ? 'its wait' : re.test(inNote) ? 'its note' : null);
-  const phone = where(PHONE_WORDS);
-  if (phone) out.push({ resource: 'iphone', why: `${phone} names the phone` });
-  const chrome = where(CHROME_WORDS) || (!phone && where(LOCK_WORDS));
+  // T-169 (lead, 2026-10-04 23:16Z): only the wait names the phone; a note that mentions it ("phone ticket") is no wait
+  // I-182 rule 5: a wait on a thermal gate ("cooling, then the phone") is not yet a wait on the phone
+  const phone = PHONE_WORDS.test(inWait);
+  if (phone && !THERMAL_WORDS.test(inWait)) out.push({ resource: 'iphone', why: 'its wait names the phone' });
+  const chrome = where(CHROME_WORDS) || (!phone && !PHONE_WORDS.test(inNote) && where(LOCK_WORDS));
   if (chrome) out.push({ resource: 'chrome-measure', why: `${chrome} names Chrome or a measurement` });
   return out;
 }
@@ -138,21 +142,69 @@ export function waitsOnAgent(row, name) {
   return new RegExp(`(?<![\\w-])${escRe(name)}(?![\\w-])`).test(String(w.text || ''));
 }
 
+// ---- I-182: startable phone work (mgmt-devices' rule, user T-159 #6/#7) -------------------------------------------
+const INACTIVE = new Set(['parked', 'done', 'landed', 'dropped', 'closed-no-fix']);
+const FALLBACK_STATES = new Set(['researching', 'implementing', 'testing', 'measuring', 'waiting']);
+export const HOLD_WORDS = /(?<![\w-])(?:thermal|cool(?:s|ing|down)?|cool-down|temperature|temp|phone-temp|decision)(?![\w-])/i;
+export const THERMAL_WORDS = /(?<![\w-])(?:thermal|cool(?:s|ing|down)?|cool-down|temperature|temp|phone-temp)(?![\w-])/i;
+/** Not startable: the row waits on the user, an incident, the lead (a decision), a decision, or a thermal gate. */
+export function heldBack(row) {
+  const w = row?.waitingOn;
+  if (!w) return false;
+  return w.kind === 'user' || w.kind === 'incident' || w.kind === 'lead' || HOLD_WORDS.test(String(w.text || ''));
+}
 /**
- * Ready work for `r`: {queue: [{owner}], rows: [{id, owner, why}]}; rows whose owner is queued are left out, and so is
- * everything of `exclude` (the holder of a held-idle lease, I-111: its own wait is not someone else's), including a row
- * that waits on the holder itself (I-189: the block's own result row, waiting on agent:<holder>, is no phone waiter).
+ * (a) The row marks startable phone work (status.mjs --phone-next, with --phone-needs none or --arm-neutral): its why,
+ * or null (no mark, a pre-check that may change the arms, an inactive row, or held back by the user/lead/thermal gate).
  */
-export function readyWork(r, { st, rows = [], exclude = null }) {
+export function startableWhy(row) {
+  const m = row?.phoneNext;
+  if (!m?.what || INACTIVE.has(row.state) || heldBack(row)) return null;
+  if (m.needs && !m.armNeutral) return null;
+  return `startable: ${m.what}${m.needs ? `, waits only on ${m.needs} (arm-neutral)` : ''}`;
+}
+/** (c) The unmarked fallback: an active row with no phone mark whose `next` names the phone (counts after 2x the limit). */
+export function unmarkedWhy(row) {
+  if (!row || row.phoneNext || !FALLBACK_STATES.has(row.state) || heldBack(row) || !PHONE_WORDS.test(String(row.next || ''))) return null;
+  return 'its next step names the phone (unmarked)';
+}
+/** (b) An open console step for the phone that has not begun (nobody is on it; lib/phone-step.mjs onPhone). */
+export const stepWaits = (x) => isOpen(x) && isPhoneStep(x) && !onPhone(x);
+/** (c) counts only after the phone has stood idle for twice the limit (a normal "Simulator first" does not alarm). */
+export const UNMARKED_FACTOR = 2;
+/** The work as it counts after `idleMs` of idle phone: unmarked rows only past UNMARKED_FACTOR x the limit. */
+export function gateWork(work, idleMs, min) {
+  if (!work.rows.some((x) => x.unmarked)) return work;
+  const ok = idleMs > UNMARKED_FACTOR * min * 60000;
+  return { ...work, rows: work.rows.filter((x) => ok || !x.unmarked) };
+}
+
+/**
+ * Ready work for `r`: {queue: [{owner}], rows: [{id, owner, why, unmarked?, step?}]}; rows whose owner is queued are
+ * left out, and so is everything of `exclude` (the holder of a held-idle lease, I-111: its own wait is not someone
+ * else's), including a row that waits on the holder itself (I-189: the block's own result row, waiting on
+ * agent:<holder>, is no phone waiter). I-182, for the iPhone also: rows that mark startable phone work (a), open phone
+ * steps nobody is on yet (b), and the unmarked fallback (c, `unmarked: true`; assess counts it via gateWork).
+ */
+export function readyWork(r, { st, rows = [], steps = [], exclude = null }) {
   const queue = [];
   for (const w of st?.queue || []) if (w?.owner && !w.notReady && w.owner !== exclude && !queue.some((x) => x.owner === w.owner)) queue.push({ owner: w.owner }); // I-155: a not-ready waiter is no ready work
   const queued = new Set(queue.map((x) => x.owner));
   const out = [];
+  const phone = r === 'iphone';
   for (const row of rows) {
-    const hit = rowWaitsOn(row).find((x) => x.resource === r);
-    if (!hit || queued.has(row.owner) || (row.aliases || []).some((a) => queued.has(a))) continue;
+    const start = phone ? startableWhy(row) : null;
+    const hit = start ? { why: start } : rowWaitsOn(row).find((x) => x.resource === r);
+    const loose = !hit && phone ? unmarkedWhy(row) : null;
+    if ((!hit && !loose) || queued.has(row.owner) || (row.aliases || []).some((a) => queued.has(a))) continue;
     if (exclude && (row.owner === exclude || (row.aliases || []).includes(exclude) || waitsOnAgent(row, exclude))) continue;
-    out.push({ id: row.id, owner: row.owner, why: hit.why });
+    out.push({ id: row.id, owner: row.owner, why: hit ? hit.why : loose, ...(loose && { unmarked: true }) });
+  }
+  if (phone) {
+    for (const x of steps || []) {
+      if (!stepWaits(x) || !x.by || x.by === exclude || queued.has(x.by) || out.some((o) => o.id === x.id)) continue;
+      out.push({ id: x.id, owner: x.by, why: 'its console step for the phone is posted, not started', step: true });
+    }
   }
   return { queue, rows: out };
 }
@@ -283,8 +335,9 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
   if (f.held && r === 'iphone' && !isGroup(f.holder)) {
     // I-111: a held iPhone lease is idle too while no phone run uses it (heldIdle; since = its last use)
     const holder = f.holder?.owner || '?', holderToken = f.holder?.token || null;
-    const work = readyWork(r, { st, rows, exclude: holder });
-    const ready = work.queue.length > 0 || work.rows.length > 0;
+    const all = readyWork(r, { st, rows, steps, exclude: holder });
+    const isReady = (w) => w.queue.length > 0 || w.rows.length > 0;
+    let work = gateWork(all, 0, min), ready = isReady(work); // I-182: unmarked rows count only on an idle phone, below
     // I-144: a lease the lead took for the user's own hand test (owner `user` or `user-*`) is the user's phone time
     if (isUserLease(holder)) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, userLease: true, freeMin: 0, ...work, ready, alarm: false };
     const use = phoneUse(f.holder, { activity, now, isAlive });
@@ -310,10 +363,11 @@ export function assess(r, { st, rel, grant, holdsEnd, seen, activity = null, row
     if (mq !== null && block && !stuck) return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: false, blockWait: { block, since: mq, min: freeMinutes(mq, now) }, freeMin: 0, ...work, ready, alarm: false };
     const macWait = mq && { since: mq, min: freeMinutes(mq, now) };
     const over = macWait ? now - mq > min * 60000 : now - use.since > min * 60000;
+    work = gateWork(all, now - use.since, min); ready = isReady(work); // I-182 (c)
     return { resource: r, min, held: true, holder, holderToken, runLive: false, heldIdle: true, since: use.since, freeMin: freeMinutes(use.since, now), how: use.how, key: `held:${holderToken || '-'}`, observed: false, ...work, ready,
       ...(sw && { selfWait: { what: sw.what, since: sw.since, min: freeMinutes(sw.since, now) } }), ...(stuck && { stuck: true }), ...(macWait && { macWait }), alarm: stuck || (ready && over) };
   }
-  const work = readyWork(r, { st, rows });
+  const work = gateWork(readyWork(r, { st, rows, steps }), f.held ? 0 : now - f.since, min); // I-182
   const ready = work.queue.length > 0 || work.rows.length > 0;
   if (f.held) return { resource: r, min, held: true, holder: f.holder?.owner || (isGroup(f.holder) ? '(shared)' : '?'), freeMin: 0, ...work, ready, alarm: false };
   const freeMs = now - f.since;
@@ -399,7 +453,9 @@ export function threadFor(a, { steward = null } = {}) {
   const jobs = `${n} ${n === 1 ? 'job waits' : 'jobs wait'}`;
   const waits = [];
   if (a.queue.length) waits.push(`Queued for it: ${a.queue.map((x) => x.owner).join(', ')}.`);
-  if (a.rows.length) waits.push(`Waiting on the status board: ${a.rows.map((x) => `${x.id} (owner ${x.owner}; ${x.why})`).join('; ')}.`);
+  const board = a.rows.filter((x) => !x.step), stepRows = a.rows.filter((x) => x.step); // I-182 (b)
+  if (board.length) waits.push(`Waiting on the status board: ${board.map((x) => `${x.id} (owner ${x.owner}; ${x.why})`).join('; ')}.`);
+  if (stepRows.length) waits.push(`Console steps for the phone: ${stepRows.map((x) => `${x.id} (owner ${x.owner}; ${x.why})`).join('; ')}.`);
   if (a.heldIdle) { // I-111: held, but no phone run
     const L = [`${a.holder} has held the iPhone lease for ${forText(a.freeMin)} without a phone run (iphone.mjs run, scroll, record or gesture; since ${hhmm(a.since)}, ${a.how}). The limit is ${a.min} min.`, ...waits];
     if (a.stuck) L.splice(1, 0, `Its only process on the lease is a wait on that same lease (${a.selfWait.what}, for ${forText(a.selfWait.min)}), which can not end while it holds the lease: stop that wait (I-165).`);

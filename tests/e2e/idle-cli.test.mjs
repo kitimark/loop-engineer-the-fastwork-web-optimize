@@ -89,13 +89,17 @@ test('check: a status-board row waiting on the phone is ready work; without --by
   let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900');
   assert.equal(r.code, 0, r.out);
   assert.equal(lock('release', 'iphone', '--owner', 'runner').code, 0);
-  r = node(ST, ['set', 'morph-gpu', '--by', 'fix-morph-gpu', '--kind', 'fix', '--title', 'Morph on the GPU', '--state', 'waiting', '--waiting-on', 'agent:mgmt-ops-10', '--note', 'queued for the iphone lease behind P-091'], { env });
+  r = node(ST, ['set', 'morph-gpu', '--by', 'fix-morph-gpu', '--kind', 'fix', '--title', 'Morph on the GPU', '--state', 'waiting', '--waiting-on', 'other:queued for the iphone lease behind P-091'], { env });
+  assert.equal(r.code, 0, r.out);
+  // T-169 (I-182 follow-up): a row waiting on an agent whose NOTE only names the phone is no phone waiter
+  r = node(ST, ['set', 'nav-hit', '--by', 'fix-nav-hit', '--kind', 'fix', '--title', 'Nav hit cache', '--state', 'waiting', '--waiting-on', 'agent:mgmt-ops-10', '--note', 'phone ticket after the ops read'], { env });
   assert.equal(r.code, 0, r.out);
   r = node(ST, ['set', 'ops', '--by', 'mgmt-ops-10', '--kind', 'ops', '--title', 'Ops', '--state', 'waiting', '--waiting-on', 'agent:iphone-runner', '--note', 'block running (iphone-runner)'], { env });
   assert.equal(r.code, 0, r.out);
   r = idle(['check', '--by', 'mgmt-ops-10'], 7);
   assert.equal(r.code, 3, r.out);
-  assert.match(r.stdout, /^IDLE iphone: .*while work waits: morph-gpu \(owner fix-morph-gpu; its note names the phone\)$/m);
+  assert.match(r.stdout, /^IDLE iphone: .*while work waits: morph-gpu \(owner fix-morph-gpu; its wait names the phone\)$/m);
+  assert.doesNotMatch(r.stdout, /nav-hit/, 'T-169: a note naming the phone is no wait on it');
   assert.doesNotMatch(r.stdout, /mgmt-ops-10 \(|ops \(owner/, 'iphone-runner as a name is not the phone');
   assert.match(r.stdout, /^NOT POSTED iphone: posting needs --by lead/m);
   assert.equal(idle(['check'], 8).code, 3);
@@ -177,4 +181,28 @@ test('I-189 check: a block-marked holder queued for its next Mac hold is not idl
   r = idle(['check', '--by', 'lead'], 8);
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /^IDLE iphone: iPhone held by runner, which has waited 8 min for its Mac hold .* while work waits: fix-w \(queued for it\)$/m);
+});
+
+// I-182 (user T-159 #6/#7): the iPhone stood free 15+ min while P-117, signed to run next, waited only on Mac-side
+// pre-checks; nothing was queued or marked waiting, so check said "no ready work". A startable mark on the board counts.
+test('I-182 check: a free iPhone and a row with startable phone work (--phone-next, arm-neutral) alarm; a pre-check that may change the arms does not', () => {
+  let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900');
+  assert.equal(r.code, 0, r.out);
+  assert.equal(lock('release', 'iphone', '--owner', 'runner').code, 0);
+  r = node(ST, ['set', 'p117', '--by', 'fix-p', '--kind', 'phone', '--title', 'P-117 block', '--state', 'waiting', '--waiting-on', 'chrome:pre-checks', '--phone-next', 'P-117', '--phone-needs', 'arms change'], { env });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^ADDED p117: waiting; waiting on chrome "pre-checks"; phone next P-117 \(waits on arms change, which may change the arms: not startable yet\)$/m);
+  r = idle(['check'], 6);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^OK iphone: free for 6 min .*no ready work$/m);
+  r = node(ST, ['set', 'p117', '--by', 'fix-p', '--phone-needs', 'Chrome counts', '--arm-neutral'], { env });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /; phone next P-117 \(waits only on Chrome counts, arm-neutral: startable\)$/m);
+  r = idle(['check'], 6);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.stdout, /^IDLE iphone: iPhone free for 6 min .* while work waits: p117 \(owner fix-p; startable: P-117, waits only on Chrome counts \(arm-neutral\)\)$/m);
+  assert.match(node(ST, ['show', 'p117'], { env }).stdout, /phone next: P-117 \(waits only on Chrome counts, arm-neutral: startable\)/);
+  r = node(ST, ['set', 'p117', '--by', 'fix-p', '--phone-next', 'none'], { env });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(idle(['check'], 7).code, 0);
 });

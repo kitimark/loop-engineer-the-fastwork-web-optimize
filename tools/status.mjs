@@ -32,6 +32,14 @@
 //        # --unlink incident:I-0NN[,…] | none: drop a derived "blocked by I-0NN" line when that incident (yours, still
 //        #   open) is not what this workstream waits on (kept across later sets; none restores; I-044). Prints
 //        #   "; unlinked I-0NN". A later --waiting-on incident:I-0NN links it again.
+//        # I-182, startable phone work (the idle alarm counts it as work that waits for the iPhone):
+//        #   --phone-next <ticket|plain text> | none   the next phone job of this row (e.g. P-117; none clears the mark)
+//        #   --phone-needs none|"<pre-check>"          what it still waits on (Chrome counts, Simulator parity, review)
+//        #   --arm-neutral                            that pre-check can not change the arms' bytes
+//        #   Startable = needs none, or arm-neutral: then `idle.mjs` alarms when the iPhone stands free (or held unused)
+//        #   over its limit. A pre-check that can change the arms is a real precondition: leave --arm-neutral off.
+//        #   --phone-next replaces the mark (needs and arm-neutral from that call); --phone-needs / --arm-neutral alone
+//        #   amend it. The board shows "phone next: P-117 (waits only on …, arm-neutral: startable)". Prints "; phone next …".
 //   node tools/status.mjs mine --by <agent>                 # your items (on resume)
 //   node tools/status.mjs list [--all] [--state s] [--kind k] [--owner a] [--json]   # priority order; --all adds finished
 //   node tools/status.mjs show <id> [--json]                # one item with live waits and history
@@ -63,7 +71,7 @@
 // Exit codes: 0 ok, 1 usage or refused (the reason on stderr), 3 check found rows to fix.
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { set, setPriority, get, list, buildStatusView, itemView, renderText, showText, staleText, seedPlan, applySeed, progressData, progressContext, checkLines, sync } from './lib/status.mjs';
+import { set, setPriority, get, list, buildStatusView, itemView, renderText, showText, staleText, seedPlan, applySeed, progressData, progressContext, checkLines, sync, phoneNextView, phoneNextText } from './lib/status.mjs';
 import { gatherLive, readProgress } from './lib/progress.mjs';
 import { runMain } from './lib/exit.mjs'; // I-110, I-117: exit once stdout has flushed
 import { currentAgentView, currentAgentsList, agentText, agentsText, parseAgent } from './lib/agent-view.mjs';
@@ -71,7 +79,7 @@ import { exitOnHelp } from './lib/help.mjs';
 
 exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file', '--unlink', '--resume-on'];
+const VALUED = ['--by', '--state', '--note', '--next', '--waiting-on', '--kind', '--title', '--owner', '--progress', '--refs', '--alias', '--file', '--unlink', '--resume-on', '--phone-next', '--phone-needs'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg, arg2] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -156,12 +164,14 @@ async function main() {
     const r = await set(arg, {
       by: by(), state: opt('state'), note: opt('note'), next: opt('next'), waitingOn: opt('waiting-on'), kind: opt('kind'), title: opt('title'),
       owner: opt('owner'), progress: opt('progress'), refs: opt('refs'), aliases: opt('alias'), unlink: opt('unlink'), resumeOn: opt('resume-on'),
+      phoneNext: opt('phone-next'), phoneNeeds: opt('phone-needs'), armNeutral: flag('arm-neutral') ? true : undefined, // I-182
       branch: branchInfo(), // kept on the owner's own sets only (lib set)
     });
     const it = r.item;
     const ro = it.resumeOn ? `; resumes on ${it.resumeOn.kind}${it.resumeOn.target ? ':' + it.resumeOn.target : ''}` : '';
     const w = ro + (it.waitingOn ? `; waiting on ${it.waitingOn.kind}${it.waitingOn.target ? ':' + it.waitingOn.target : ''}${it.waitingOn.text ? ` "${it.waitingOn.text}"` : ''}` : '')
-      + (opt('unlink') !== undefined && it.unlinked?.length ? `; unlinked ${it.unlinked.join(', ')}` : '');
+      + (opt('unlink') !== undefined && it.unlinked?.length ? `; unlinked ${it.unlinked.join(', ')}` : '')
+      + (opt('phone-next') !== undefined || opt('phone-needs') !== undefined || flag('arm-neutral') ? `; phone next ${it.phoneNext ? phoneNextText(phoneNextView(it.phoneNext)) : 'none'}` : ''); // I-182
     console.log(r.created ? `ADDED ${it.id}: ${it.state}${w}` : `SET ${it.id}: ${it.state}${r.prevState !== it.state ? ` (was ${r.prevState})` : ''}${w}`);
     return 0;
   }
