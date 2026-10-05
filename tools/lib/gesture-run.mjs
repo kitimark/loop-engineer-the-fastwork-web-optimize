@@ -146,11 +146,12 @@ const holds = (cond, s) => (cond.kind === 'atEnd' ? s.y >= s.maxY - 2 : cond.kin
  * that differ by < 1 px (waiting up to `stillTimeoutMs` for momentum to end), both >= the stroke's pull guard
  * (a page still coasting toward the top would otherwise pass a one-sample check and reach 0 mid-stroke).
  */
-export async function runProgram(prog, { wda, page, check = () => {}, morph = null, inject = null, timeline = null, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
+export async function runProgram(prog, { wda, page, check = () => {}, morph = null, inject = null, timeline = null, idleAfterReloadMs = 0, pollMs = 100, settleMs = 300, stillGapMs = 100, stillTimeoutMs = 5000, endZonePx = 150, log = (s) => console.error(s) }) {
   const screenW = prog.screen?.[0] ?? 430;
   const res = { strokes: [], segments: [], untils: [], reloads: [], loops: [], morph: [], errors: [], aborted: null };
   if (inject) res.inject = [];
   if (timeline) res.timeline = []; // --timeline (I-079): timelineRecorder(); one entry per segment
+  if (idleAfterReloadMs > 0) res.idleAfterReloadMs = idleAfterReloadMs; // I-203: only when asked (records unchanged otherwise)
   let seg = null;
   const sync = async () => { const s = await page.state(); if (seg) seg.sync.push([s.macBefore, s.pageT, s.macAfter]); return s; };
   const openSeg = async () => {
@@ -261,6 +262,13 @@ export async function runProgram(prog, { wda, page, check = () => {}, morph = nu
         const s = await openSeg();
         res.reloads.push({ seg: seg.index, readyPageMs: s.pageT, scrollAfterMs: op.scrollAfterMs });
         if (op.scrollAfterMs) await sleep(op.scrollAfterMs);
+        // I-203 --idle-after-reload: after the script's first reload is ready (readyPageMs) and its scrollAfterMs, before
+        // the next step; not an op, so not in the program hash; polls check() like a pause
+        if (idleAfterReloadMs > 0 && op === prog.ops[0]) {
+          res.reloads.at(-1).idleAfterMs = idleAfterReloadMs;
+          const end = Date.now() + idleAfterReloadMs;
+          while (Date.now() < end) { check(); await sleep(Math.min(250, end - Date.now())); }
+        }
       } else if (op.op === 'loop') {
         let passes = 0, why = 'max';
         for (; passes < op.max; passes++) {
@@ -451,7 +459,24 @@ export function settingsEcho(echo) {
  * the lease check uses it, and a run inside its own chrome-measure hold refuses to start without that much time left.
  */
 export const G_RUN_MIN_BUDGET_MS = 150000;
-export const runBudgetMs = (estMs) => Math.max(G_RUN_MIN_BUDGET_MS, Math.round(3 * (Number(estMs) || 0)));
+export const runBudgetMs = (estMs, idleMs = 0) => Math.max(G_RUN_MIN_BUDGET_MS, Math.round(3 * (Number(estMs) || 0))) + (Number(idleMs) || 0); // I-203: + --idle-after-reload
+
+/**
+ * I-203 (P-129's L arm): `--idle-after-reload <ms>` (whole ms 0-60000, default 0 = no idle) from argv. An idle after the
+ * script's own first reload (after readyPageMs, before the next step) that is not part of the program, so the script and
+ * its hash stay the same. Refused (an Error with exitCode 2) when malformed or out of range, or when > 0 and the
+ * program does not start with a reload.
+ */
+export function idleAfterReloadMs(argv, prog) {
+  const i = argv.findIndex((a) => a === '--idle-after-reload' || a.startsWith('--idle-after-reload='));
+  if (i < 0) return 0;
+  const v = argv[i].includes('=') ? argv[i].split('=').slice(1).join('=') : argv[i + 1];
+  const usage = (msg) => Object.assign(new Error(msg), { exitCode: 2 });
+  if (typeof v !== 'string' || !/^\d+$/.test(v) || Number(v) > 60000) throw usage(`--idle-after-reload wants whole ms 0-60000 (got ${v === undefined ? 'nothing' : JSON.stringify(v)}), e.g. --idle-after-reload 20000 (I-203)`);
+  const ms = Number(v);
+  if (ms > 0 && prog.ops[0]?.op !== 'reload') throw usage(`--idle-after-reload needs a script whose first step is a reload (${prog.name}'s first step is ${prog.ops[0]?.op ?? 'nothing'}): it idles after that reload's page is ready (I-203)`);
+  return ms;
+}
 
 /**
  * I-112: ms left in this process's own chrome-measure hold ($FW_LOCK_HELD names its token: a `lock.mjs run`), from a
@@ -516,12 +541,12 @@ export async function gestureCmd({ log = console.log, ...args }) {
   try {
     return await gestureCmdInner({ ...args, log: (s) => log(scrub(s)), scrub });
   } catch (e) {
-    throw new Error(scrub(e?.message ?? e));
+    throw Object.assign(new Error(scrub(e?.message ?? e)), e?.exitCode === 2 ? { exitCode: 2 } : {}); // I-203: a usage refusal keeps exit 2 (other codes unchanged: exit 1)
   }
 }
 
 async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Number(process.env.FW_IPHONE_PORT || 9222), log, scrub, target = null, profileGate = null, countOnly,
-  usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--timeline <out.json>] [--out file] [--dry-run]' }) {
+  usage = 'node tools/iphone.mjs gesture <script.json> --owner <topic> [--label l] [--variant v] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>] [--timeline <out.json>] [--idle-after-reload <ms>] [--out file] [--dry-run]' }) {
   if (!arg) throw new Error(`usage: ${usage}`);
   // I-184: --count-only is the Simulator's (sim.mjs passes countOnly); it runs without a host gate, so nothing timed
   if (flag('count-only') && countOnly === undefined) throw new Error('--count-only is for node tools/sim.mjs gesture only (I-184): the phone stamps its own frames and runs in its own hold (I-056)');
@@ -534,12 +559,14 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   const tlFile = opt('timeline'); // I-079
   if (argv.some((a) => a === '--timeline' || a.startsWith('--timeline=')) && (!tlFile || tlFile.startsWith('--'))) throw new Error('--timeline wants a file: --timeline <out.json>');
   if (tlFile && opt('morph-log')) throw new Error('--timeline and --morph-log: pass one (morph-log\'s own inspector connection takes the tab and restarts the Timeline stopwatch, I-038; an in-page logger goes in --inject, on this connection)');
-  const head = `${prog.name} v${prog.version} hash ${prog.hash.slice(0, 12)} params ${JSON.stringify(prog.params)}: ${prog.strokes.length} strokes, ~${Math.round(prog.estMs / 1000)} s`;
-  const budgetMs = runBudgetMs(prog.estMs); // I-112
+  const idleMs = idleAfterReloadMs(argv, prog); // I-203: before WDA or the page are touched
+  const head = `${prog.name} v${prog.version} hash ${prog.hash.slice(0, 12)} params ${JSON.stringify(prog.params)}: ${prog.strokes.length} strokes, ~${Math.round(prog.estMs / 1000)} s${idleMs ? ` idle after reload ${idleMs} ms` : ''}`;
+  const budgetMs = runBudgetMs(prog.estMs, idleMs); // I-112; I-203: the idle on top
   if (flag('dry-run')) {
     log(head);
     for (const s of prog.strokes) log(`  ${s.id} ${s.dir} ${s.px} px / ${s.ms} ms ${s.profile}${s.holdMs ? ` hold ${s.holdMs}` : ''}: x ${s.x} y ${s.y0}->${s.y1}, peak ${s.peakPxPerS} px/s${s.plateauPxPerS ? ` (plateau ${s.plateauPxPerS} px/s)` : ''}, lift-off ${s.liftoffPxPerS} px/s`);
     log(`GESTURE_HASH ${prog.hash}`);
+    if (idleMs) log(`IDLE_AFTER_RELOAD_MS ${idleMs}  (after the script's first reload is ready, before its next step; not in the hash; I-203)`);
     log(`GESTURE_BUDGET_S ${Math.round(budgetMs / 1000)}  (plan per run on the phone: reload, waits, Timeline and save included; I-112)`);
     return 0;
   }
@@ -584,7 +611,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
     res = await runProgram(prog, {
       wda: session, page,
       morph: morphLog ? morphHook(resolve(morphLog), { owner, label, outBase: out.replace(/\.json$/, '') }) : null,
-      inject, timeline,
+      inject, timeline, idleAfterReloadMs: idleMs,
       check: () => { if (stop.reason) throw new Abort(stop.reason); const why = tg.lost(); if (why) throw new Abort(why); },
     });
   } finally {
@@ -621,7 +648,7 @@ async function gestureCmdInner({ argv, arg, opt, flag, requireLease, port = Numb
   }
   writeFileSync(out, JSON.stringify(doc));
   await tg.saved?.(out); // I-186
-  log(JSON.stringify({ aborted: res.aborted, strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
+  log(JSON.stringify({ aborted: res.aborted, ...(idleMs ? { idleAfterReloadMs: idleMs } : {}), strokes: res.strokes.length, segments: res.segments.length, loops: res.loops, touchmove: doc.summary.touchmove, motion: doc.summary.motion, toolbar: doc.summary.toolbar, pin: (({ perMark, ...p }) => p)(doc.summary.pin), overscroll: doc.summary.overscroll, momentum: doc.summary.momentum, morph: doc.summary.morph, errors: res.errors }, null, 1));
   for (const t of res.timeline || []) log(`timeline seg ${t.seg}: ${t.records} records, offset ${t.offsetMs === null ? 'UNKNOWN' : `${t.offsetMs.toFixed(3)} ms`}${t.epochs > 1 ? `, ${t.epochs} epochs` : ''}${t.errors.length ? `, ${t.errors.length} errors` : ''} -> ${t.file}`); // I-079
   log(`saved ${out}`);
   if (res.aborted) throw new Error(`gesture run aborted: ${res.aborted} (partial data saved in ${out})`);
