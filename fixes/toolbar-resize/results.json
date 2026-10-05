@@ -2212,7 +2212,7 @@
     "audit": {
       "vuElementsBox": 6,
       "vuElementsAnc": 2,
-      "rule": ".start-selling-profile-shell height/min-height clamp(743px, 100vh - 80px, 820px) (clamped to 743 px: no flip)",
+      "rule": ".start-selling-profile-shell height/min-height clamp(743px, 100vh - 80px, 820px) MATCHED but overridden on phones by height: auto; min-height: 0 (v8 CSS l.3757-3774 in the l.3673 media query): no live viewport-unit value in the box (corrected 2026-10-05; the earlier \"clamped to 743 px\" was wrong)",
       "queryContainersOrAnchors": 0
     },
     "predictions": {
@@ -2235,5 +2235,23 @@
     ],
     "caveat": "T2 passes any key with 2-3 step records against ~1000 rest frames: WRITE shows writes coincident with steps, not caused by them; mechanism OBSERVED, untested",
     "opsRead": "mgmt-ops-10: AGREE on WRITE; re-read byte-identical (f7c3da3740ee); P-125 assigned for the next arm"
+  },
+  "p125": {
+    "card": "README: Prediction P-125 (registered before data)",
+    "status": "card only; waits for ops pre-data read, lead R7 model review and signature; no data",
+    "arms": {
+      "C": "v8 as served (JS 3e3e94cb6e9f)",
+      "wpx": "fwWC rootMargin 387.5px 0px 387.5px 0px (JS 6a79036cc108)",
+      "wc1": "data-fw-wc pinned to 1 in the page"
+    },
+    "hold": "one normal exclusive hold (timeline gestures refuse in the shared lane); needs the lead OK",
+    "pins": {
+      "inject": "8b8c8eac2603",
+      "driver": "62c34d165a31",
+      "scorer": "c52de0edd5d3",
+      "selftest": "3cbb931ad9dd",
+      "wpxDiff": "24bb62f4b48b",
+      "script": "6ae05e12ace9"
+    }
   }
 }

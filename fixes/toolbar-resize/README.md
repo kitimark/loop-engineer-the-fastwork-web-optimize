@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE: no viewport value in the box flips (the profile shells' 100vh is clamped to 743 px); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, untested; waits for ops' result read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 card (wpx px rootMargin, wc1 pinned) waits for ops' pre-data read and the lead's R7 model review
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -928,10 +928,17 @@ pull-to-refresh guard ended one loop early, but the run still saw 30 toolbar ste
 
 - **Values.** No property in or above the box flips with the toolbar (0 attributed flips).
   - The audit finds 6 viewport-unit elements in the box, all `.start-selling-profile-shell`, plus 2 ancestors.
-  - Their rule is `height` and `min-height: clamp(743px, 100vh - 80px, 820px)`. At these sizes 100vh - 80 stays
-    below 743 px, so the clamp pins both values to 743 px.
-  - So, by S5 (WebKit source), these elements are re-resolved on each step, but their values do not change. This
-    also means the run does not answer ops' vh/svh note: the clamp hides any vh change. It stays UNRESOLVED.
+  - Their matched rule is `height` and `min-height: clamp(743px, 100vh - 80px, 820px)` (v8 CSS l.3308-3309).
+  - **Correction (2026-10-05, before P-125, no new data).** The audit lists *matched* rules, not cascade winners.
+    On the phone the rule loses: the phone media query (v8 CSS l.3673) sets `height: auto; min-height: 0` on the
+    same elements (l.3757-3774, with `aspect-ratio: 353/764`; P-115's card already noted this). So the shells'
+    used height does not depend on vh at all, and the earlier line "the clamp pins both values to 743 px" was wrong.
+    Read correctly, no element in the box has a live viewport-unit value; the 6 hits are overridden declarations.
+  - Whether WebKit's S5 re-resolution still covers an element whose only viewport-unit declaration lost the
+    cascade is UNRESOLVED (no source read yet; the decisive reference is where WebKit's style builder sets the
+    "uses viewport units" flag: while converting the applied value, or for every matched declaration).
+  - Either way, no value changes. The run does not answer ops' vh/svh note (no live vh user in the box); it
+    stays UNRESOLVED.
   - There are no query containers or anchors in or above the box (prediction 3 missed). S7/S8's interleaved layout
     therefore cannot start inside the box.
 - **Sizes.** The showcase, its children and its two nearest ancestors never change size (0 ResizeObserver entries),
@@ -976,6 +983,149 @@ pull-to-refresh guard ended one loop early, but the run still saw 30 toolbar ste
   beyond a parity screenshot.
 - **Files.** `fixes/toolbar-resize/p123-read.json` (reader output, both runs), `results.json` key `p123`. The raw
   runs are in `out/toolbar-resize/sim123/` (gitignored).
+
+## Prediction P-125: does the v8 will-change window trigger the in-view toolbar-step relayout? (Simulator, registered before data)
+
+P-id from mgmt-ops-10 (P-123 result read: AGREE on WRITE, predictions 3 of 5). Lead: yes in principle to the
+px-rootMargin arm with the optional pinned arm; Simulator only; Timeline attribution; steps 1 and 2 stay deferred; the
+trigger stays OBSERVED in all text until this arm tests it. Order of gates: this card, ops' pre-data read, the lead's
+R7 model review (the call lean missed in P-110, P-115, P-119 and P-123), the lead's signature.
+
+- **Question.** In-view toolbar-step frames each pay a ~21 ms Layout in the showcase (P-119 N1: every in-view moving
+  frame in every C run, 4-6 per run). P-123 found the v8 will-change window (`fwWC`, JS l.2738-2748) among the
+  step-coincident writes: its IntersectionObserver uses `rootMargin: 50% 0px 50% 0px`, so a toolbar step (775 <-> 815)
+  moves each window edge by 20 px and can toggle `[data-fw-wc="0"] { will-change: auto !important }` (CSS l.12270).
+  Does that toggle start the in-view relayout?
+- **Arms** (all on v8; three arms, Simulator iPhone 15 Pro Max, `flick-hero-v1` `6ae05e12ace9` as P-115/P-119/P-123):
+  - **C**: v8 as served (server A: `fixes/v8-best` overlay, JS `3e3e94cb6e9f`, CSS `f836404b3728`).
+  - **wpx**: v8 with one changed line, `rootMargin: 387.5px 0px 387.5px 0px` in `fwWC()` (`p125-wpx.diff`,
+    `24bb62f4b48b`). 387.5 px is 50 % of the scripted innerHeight 775, so the window is the same as C's at 775 and no
+    longer moves with the toolbar (C's is 407.5 px at 815). Served by server B (`fixes/toolbar-resize` overlay = v8 CSS
+    + that JS, `6a79036cc108`); nothing else differs.
+  - **wc1**: v8 as served (server A) with `data-fw-wc` pinned to 1 in the page (`p125-inject.mjs`): at install every
+    `[data-fw-wc="0"]` is set to 1, then any `setAttribute('data-fw-wc', x)` with x != "1" is dropped and counted. The
+    window's CSS rule never matches, so its elements keep their own `will-change` at every position.
+  - Every arm, C included, runs the same inject (`8b8c8eac2603`): the setAttribute wrapper (pass-through in C and wpx),
+    a MutationObserver logging `data-fw-wc` and `data-start-selling-scene` writes with `performance.now()` (the frames'
+    clock), the showcase IntersectionObserver crossing log (rootMargin 0, threshold 0, as P-119), and a promotion count
+    at install and at read (elements with `data-fw-wc`, those at "0", those whose computed `will-change` is not auto;
+    no `getComputedStyle` during the gesture).
+- **Order and runs (one hold):** C:H1 wpx:H1 C:H2 wc1:H1 C:H3 wc1:H2 C:H4 wpx:H2 C:H5. Two replicates per arm, five C
+  runs, mirrored (P-119's layout). Driver `sim-p125.mjs` (`62c34d165a31`, from sim-bisect119): checks both servers'
+  served bytes before any run (exit 26 on a mismatch), starts WDA, then per step `sim.mjs open` on the arm's server and
+  `sim.mjs gesture flick-hero-v1.json --timeline --inject p125-inject.mjs`. Output `out/toolbar-resize/sim125/`. If the
+  budget stop drops steps, they run in one more hold as `C:H6 <dropped> C:H7`, same scorer, and the result says so.
+- **Hold kind (needs the lead's OK).** A gesture with `--timeline` refuses in a functional session, in a `--no-timing`
+  hold and in the shared lane (`sim.mjs` header l.83-91; P-115's correction), so Timeline attribution cannot run in a
+  shared Simulator slot. It needs **one normal exclusive chrome-measure hold**, `--max-seconds 600`, `SB_BUDGET_S=520`,
+  as P-119 (9 runs in about 6 min). Free windows only, never ahead of int-v8, fix-hero-exit-threaded or a marked phone
+  block. Command in `sim-p125.mjs`'s header (both servers start and stop inside the hold).
+- **In-view step frames (frozen, as P-119 N1 / `split-io119.mjs` `1ad22b858eb8`).** The run's longest segment; a frame
+  `[t, dt, y, ih]` covers (t - dt, t]. Moving = innerHeight strictly between the run's min and max. In view = the
+  showcase's last IO entry with time <= t says intersecting. In-view step frame = moving, y < 3250, in view. Per frame:
+  the largest outermost Timeline Layout that starts in its interval (0 if none) and the summed outermost Layout ms.
+  Off-screen step frames (moving, y < 3250, not in view) are scored the same way, descriptive only.
+- **Scorer** `score-p125.mjs` (`c52de0edd5d3`), frozen:
+  1. **Gate** (per run, else INSUFFICIENT, never NONE): inject installed with its IO and write log; >= 100 frames;
+     >= 1 Timeline Layout; `runs.jsonl` puts the run on its arm's server and the served-bytes record matches; C and wpx
+     have 0 drops; wc1 has no `data-fw-wc="0"` at read; wpx starts at ih0 = 775 and its promotion at install is within
+     +-1 of its neighbouring C runs' mean (the windows are the same at rest).
+  2. **Metric:** per run, in-view step frames n, medL (median largest Layout per frame), and msPerS (summed Layout ms
+     per second of those frames). Each arm run is divided by the mean of the nearest valid C run before and after.
+  3. **Noise:** each C run against the mean of its C neighbours; N = the largest |1 - ratio| over the C runs, per
+     metric, floor 0.10 (P-119's C runs give 0.075 per frame and 0.010 per second, so the floor applies). N > 0.30, or fewer than 3 valid C runs: VOID.
+  4. **Bands:** ratio <= 0.30 LOCATES; <= 0.70 PARTIAL; < 1 - N SMALL; <= 1 + N **NONE (within C-to-C noise: no
+     effect claimed)**; else WORSE. Run call = the medL band. A different msPerS band flags N-SENSITIVE (both
+     reported, no effect size claimed). THIN when the run or a neighbouring C run has < 3 in-view step frames. Arm call =
+     the common call of its two replicates, else SPLIT; an INSUFFICIENT or THIN replicate makes the arm that.
+     **Arms within noise of each other:** |mean ratio wpx - mean ratio wc1| <= N is ARMS-EQUAL, and no difference
+     between the arms is claimed; else ARMS-DIFFER.
+  5. **Coincidence (C runs pooled; per key, `data-fw-wc` decides, `data-start-selling-scene` descriptive).** A frame
+     carries a write when a record falls in its own interval or the previous frame's (an IO callback's write takes
+     effect in the next update). Heavy = an in-view step frame with largest Layout >= 10 ms. H heavy frames, Hw
+     carrying. Base b = the share of rest frames carrying. h = Hw / H, hLo = its Clopper-Pearson one-sided 95 % lower
+     bound. Floor F = max(5, 2 x pooled runs) = 10 for five C runs. THIN when H < 5; COVERS when Hw >= F, hLo >= 2b and
+     h >= 0.8; LINKED-PART when Hw >= F and hLo >= 2b; else NO-LINK.
+  6. **Write rate (lead's rule via ops, descriptive, no call uses it):** per arm pooled and per key, s records over Fs
+     moving frames against r records over Fr rest frames; RR = (s/Fs)/(r/Fr); RRlo = the Clopper-Pearson one-sided 95 %
+     lower bound of s/(s+r) as odds, times Fr/Fs. STEP-LINKED when s >= max(8, 4 x pooled runs) (20 for five runs) and
+     RRlo >= 2. P-123's 2-3 step records per run (10-15 pooled) cannot pass. Raw step counts never count toward a call.
+  7. **Reading (frozen, printed by the scorer):**
+
+     | reading | rule |
+     |---|---|
+     | WINDOW-TRIGGER | wpx LOCATES or PARTIAL, and the C coincidence is not NO-LINK |
+     | UNCLEAR (wpx effect without coincidence) | wpx LOCATES or PARTIAL, coincidence NO-LINK |
+     | NOT-THE-WINDOW | wpx NONE, and wc1 NONE or not run |
+     | PROMOTION-STATE | wpx NONE, wc1 LOCATES, PARTIAL or SMALL (the layer state matters, not when it toggles) |
+     | MINOR | wpx SMALL |
+     | UNCLEAR | anything else (WORSE, SPLIT, THIN, INSUFFICIENT, VOID) |
+
+- **Self-test** `p125-selftest.mjs` (`3cbb931ad9dd`): `SELFTEST PASS (38 checks)` on P-119's runs relabelled (C = C,
+  wpx = cct, wc1 = cva), with synthetic write logs and served records. It checks the Clopper-Pearson bound (3/10 ->
+  0.0873), both floors (P-123-level records stay below them, pooled or not), the bands, noise 0.10, wpx NONE and wc1
+  NONE in view with wc1 LOCATES off screen (P-119 N1's numbers), NOT-THE-WINDOW; Layouts scaled by 0.2 in wpx with a
+  write in every moving frame give LOCATES, COVERS and WINDOW-TRIGGER; the same scaling without coincidence gives
+  UNCLEAR; and the gate (wpx promotion mismatch, wpx on server A, wpx at ih 815, wc1 not pinned, drops in C) gives
+  INSUFFICIENT, never NONE.
+- **Pixel and behaviour check (before data; no build comes from this probe).**
+  - **Both arms change only when or whether `will-change` toggles.** The window's IO tests each element's whole box
+    against the viewport grown by the margin, so a toggle happens only while the element lies entirely outside the
+    viewport by >= 387.5 px. wpx moves the toggle point by at most 20 px inside that off-screen band; wc1 removes the
+    toggle. On screen, every window element is at "1" in all three arms, so no on-screen pixel can differ, unless a
+    window element has a `position: fixed` descendant (will-change: transform makes it the containing block). P-119's
+    look probe found no fixed descendant in the showcase; the other window elements are not checked. Not verified
+    against pixels here: any build that grows out of this probe gets the PR-010 Chrome + Simulator A/A pixel check
+    before F (memory: illusions must be pixel-identical).
+  - **wpx at rest:** the gate requires its promotion count at install (ih 775) to equal C's within +-1.
+  - **wc1 changes promotion:** off-screen window elements keep their layers. Logged: promotion at install and at read
+    (C's `n0` > 0 and wc1's `willChange` count above C's are expected), drops, pinned-at-install count. More layers can
+    cost raster and memory off screen; a WORSE in wc1 is read as that, not as a trigger.
+- **Predictions (before data; one probability each; my leans missed in P-110, P-115, P-119 and P-123).**
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | wpx arm call NONE | 65 % |
+  | 2 | wc1 arm call NONE | 55 % |
+  | 3 | reading NOT-THE-WINDOW | 50 % |
+  | 4 | C coincidence (`data-fw-wc`) NO-LINK | 70 % |
+  | 5 | C write rate (`data-fw-wc`) not STEP-LINKED | 80 % |
+  | 6 | both wpx runs pass the gate (promotion at rest equal to C's) | 85 % |
+  | 7 | wc1's promotion count at install above the C runs' | 90 % |
+  | 8 | noise N stays at the 0.10 floor (C as stable as in P-119) | 75 % |
+  | 9 | wpx off-screen call NONE in both runs | 75 % |
+  | 10 | `data-start-selling-scene` coincidence in C NO-LINK (descriptive) | 65 % |
+
+  Why the lean is NONE: P-119 found every in-view step frame heavy (~21 ms, 4-6 per run), while P-123 counted 2-3
+  window writes per run in step frames, so at most a few heavy frames can carry a toggle. A trigger that fires on a
+  few frames cannot explain a cost seen on all of them.
+- **Model, for the lead's R7 review.**
+  - Known (OBSERVED, in our setup): the step's ~21 ms Layout is in the showcase (P-110), nested in RecalculateStyles
+    (D, S8), in every in-view step frame (P-119 N1); containment does not stop it, the off-screen skip does (P-115,
+    P-119). No value in or above the box changes on a step, no size changes, no query container or anchor (P-123).
+  - Corrected: P-123's 6 "viewport-unit" shells have that unit only in a declaration the phone media query overrides
+    (`height: auto; min-height: 0`, v8 CSS l.3757-3774). So no live viewport-unit value in the box is known. Whether
+    S5 still re-resolves them is UNRESOLVED.
+  - M1 (OBSERVED, cause unknown) stays the working model: the relayout starts inside the box or arrives as inherited
+    style. Its candidates now are script writes driven by viewport-relative IntersectionObservers: the will-change
+    window (this card) and the scene gate (`data-start-selling-scene`, its own % rootMargin, `100% 0px` default,
+    `150% 0px` for the deferred sections, JS l.2937-2942 and l.5493; `paused` also sets `will-change: auto` on the card
+    and shells, CSS l.12260-12271). The scene gate gets descriptive coincidence numbers here, no arm.
+  - What would change the model: WINDOW-TRIGGER makes the window's toggle (part of) the trigger; NOT-THE-WINDOW drops
+    the window, and the next card (needs a P-id) asks the same of the scene gate, or reads the Timeline's style
+    invalidation records of the heavy frames if the scene coincidence is also NO-LINK.
+- **Pins (sha256/12).**
+
+  | file | hash |
+  |---|---|
+  | `p125-inject.mjs` | 8b8c8eac2603 |
+  | `sim-p125.mjs` | 62c34d165a31 |
+  | `score-p125.mjs` | c52de0edd5d3 |
+  | `p125-selftest.mjs` | 3cbb931ad9dd |
+  | `p125-wpx.diff` | 24bb62f4b48b |
+  | `flick-hero-v1.json` | 6ae05e12ace9 |
+  | served JS A (v8) / B (wpx) | 3e3e94cb6e9f / 6a79036cc108 |
+  | served CSS (both) | f836404b3728 |
 
 ## Scenarios not run
 

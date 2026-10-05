@@ -1,0 +1,11 @@
+--- v8/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-05 02:20:07
++++ p125-wpx/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-05 08:13:43
+@@ -2741,7 +2741,7 @@
+     (e) => {
+       for (let t of e) t.target.setAttribute(`data-fw-wc`, t.isIntersecting ? `1` : `0`);
+     },
+-    { rootMargin: `50% 0px 50% 0px` },
++    { rootMargin: `387.5px 0px 387.5px 0px` }, // [toolbar-resize P-125 wpx] 50 % of the scripted innerHeight 775, fixed in px: the window no longer moves with the toolbar
+   );
+   for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
+     e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
