@@ -88,6 +88,33 @@ ok(o.O1 === 'CALLER-CUT', 'CALLER-CUT');
 b = base(); b['d1-io-change-sel'].shapes = { 'no-stack': 5 }; o = outcomes(b);
 ok(o.O3 === 'NEVER', 'O3 counts d16 only');
 
+// rule W (rev 2, N2): stackless records after the end mark, capped at the next round / 100 ms
+ok(a2.W.call === 'RAISES' && a2.W.rounds === 30 && a2.W.roundsWithStackless === 30 && a2.W.records === 60, `W counts downstream stackless ${JSON.stringify(a2.W)}`);
+ok(a1.W.call === 'NONE' && a1.W.records === 0, 'W ignores the bracketed records (before the end mark)');
+const w1 = readArm(arm('x', 'raf-change-sel', 16, 30, () => [], { after: (i, t) => [inv(t + 0.003, fr.page)] }));
+ok(w1.W.call === 'NONE', 'W ignores stacked records');
+const w2 = readArm(arm('x', 'raf-change-sel', 16, 30, () => [], { after: (i, t) => (i === 29 ? [inv(t + 0.15, null)] : []) }));
+ok(w2.W.records === 0, 'W: the last round\'s window ends at end mark + 100 ms');
+const w2b = readArm(arm('x', 'raf-change-sel', 16, 30, () => [], { after: (i, t) => (i === 29 ? [inv(t + 0.05, null)] : []) }));
+ok(w2b.W.records === 1, 'W: the last round\'s window holds a record 50 ms later');
+const w2c = readArm(arm('x', 'raf-change-sel', 16, 30, () => [], { after: (i, t) => (i === 0 ? [inv(t + 0.15, null)] : []) }));
+ok(w2c.W.records === 1 && w2c.W.roundsWithStackless === 1, 'W: a record past the next open counts once, for the next round');
+const w3 = readArm(arm('x', 'raf-change-sel', 16, 30, () => [], { after: (i, t) => (i % 2 ? [inv(t + 0.003, null)] : []) }));
+ok(w3.W.call === 'PARTIAL', 'W PARTIAL');
+ok(a4.W.call === 'THIN', 'W THIN without end marks');
+// O7
+const withW = (o, spec, call) => { o[`d16-${spec}`] = { ...o[`d16-${spec}`], W: { call } }; };
+const baseW = (ch, no, sa) => { const o = base(); for (const c of ['io', 'raf', 'timer']) { withW(o, `${c}-change-sel`, ch); withW(o, `${c}-none`, no); withW(o, `${c}-same-sel`, sa); } return o; };
+ok(outcomes(baseW('RAISES', 'NONE', 'NONE')).O7.call === 'DOWNSTREAM-STACKLESS', 'O7 DOWNSTREAM-STACKLESS');
+ok(outcomes(baseW('NONE', 'NONE', 'NONE')).O7.call === 'NONE-DOWNSTREAM', 'O7 NONE-DOWNSTREAM');
+ok(outcomes(baseW('RAISES', 'RAISES', 'NONE')).O7.call === 'BACKGROUND', 'O7 BACKGROUND (none)');
+ok(outcomes(baseW('RAISES', 'NONE', 'RAISES')).O7.call === 'BACKGROUND', 'O7 BACKGROUND (same)');
+ok(outcomes(baseW('PARTIAL', 'NONE', 'NONE')).O7.call === 'MIXED', 'O7 PARTIAL -> MIXED');
+b = baseW('RAISES', 'NONE', 'NONE'); withW(b, 'timer-change-sel', 'NONE'); o = outcomes(b);
+ok(o.O7.call === 'MIXED' && o.O7.byCause.timer === 'NONE-DOWNSTREAM' && o.O7.byCause.io === 'DOWNSTREAM-STACKLESS', 'O7 causes disagree -> MIXED');
+b = baseW('RAISES', 'NONE', 'NONE'); b['d16-raf-none'] = { ...b['d16-raf-none'], raises: 'PARTIAL' }; o = outcomes(b);
+ok(!('raf' in o.O7.byCause) && o.O7.call === 'DOWNSTREAM-STACKLESS', 'O7 skips a VOID cause');
+
 // capture helpers
 ok(PLAN.length === 19 && PLAN.filter((p) => p.depth === 1).length === 4, `plan ${PLAN.length}`);
 const ts = timelineStart(16);

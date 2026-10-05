@@ -1708,11 +1708,11 @@ signature. The trigger stays OBSERVED in all text.
         E=$?; kill $S; exit $E'
     node fixes/toolbar-resize/p127-read.mjs out/toolbar-resize/sim127 --json fixes/toolbar-resize/p127-read.json
     ```
-- **Reader (frozen: `p127-read.mjs` `9f691bfa77eb`; self-test `p127-selftest.mjs` `253346c592e4`, 33 checks pass).**
+- **Reader (frozen, rev 2: `p127-read.mjs` `53e4f4ab3bfd`; self-test `p127-selftest.mjs` `89d309d05aae`, 48 checks pass).**
   - Fields read, and nothing else:
     - per record: `type`, `children` (nesting and sibling order), `data.message` (TimeStamp only),
       `stackTrace.callFrames[].url` and `.functionName`;
-    - `startTime` only for rule T;
+    - `startTime` only for rule T and for rule W's window (ordering only);
     - per arm file: `arm`, `spec`, `depth`, `page.fired`.
     - No `endTime`, no durations.
   - Bracket (structural): a round's records are the siblings strictly between its two marks, with their descendants.
@@ -1731,6 +1731,15 @@ signature. The trigger stays OBSERVED in all text.
     - STACK: PAGE, DOM-ONLY or STACKLESS at >= 80 % of the bracketed records; MIXED otherwise; n/a when there are none.
   - Rule T (descriptive, P-126's N4 form): per round, write time = the open mark's `startTime`. A hit is any invalidation
     record anywhere in the capture within 2 ms. The same is counted at -25 and +25 ms (background).
+  - **Rule W (frozen, rev 2; lead and ops N2): stackless records downstream of a write.** It measures ops C1's follow-up
+    case.
+    - Window per round: from its end mark's `startTime` to the next round's open mark, capped at 100 ms. The last round
+      gets end mark + 100 ms. Windows of two rounds never overlap.
+    - A round counts when at least one stackless (no `stackTrace` frames) ScheduleStyleRecalculation or InvalidateLayout
+      record, anywhere in the capture, starts in (end, end + window].
+    - Call per arm, over rounds with an end mark: RAISES >= 80 %, NONE <= 20 %, PARTIAL in between, THIN under 20 rounds
+      (floor 20).
+    - Reported beside rule T's +-25 ms background (same capture, same arm). The none and same-sel arms are W's controls.
   - **Depth rule (lead).** Depth 16 adds overhead and can move frame boundaries. Per-round counts compare only within the
     same depth: the d16 arms with each other, and the d1 arms only with P-126, by stack shape. Never d1 counts against
     d16 counts.
@@ -1739,17 +1748,21 @@ signature. The trigger stays OBSERVED in all text.
   | outcome | rule | what it means for P-126's NATIVE | next |
   |---|---|---|---|
   | CONTROL | every d16 none arm NONE | a cause whose none arm is not NONE is VOID in every row below | (VOID: fix the page, a new card) |
-  | O1 SEEN-WITH-CALLER | d16-io-change-sel RAISES, PAGE | N4 (a) REFUTED: observer-callback writes keep their caller. Script writes in P-126's step frames sit in the dom-call bucket, not in the no-stack surplus | a depth-16 recapture of the step frames (own card) to name the dom-call callers; the WebKit reference check for the no-stack surplus |
+  | O1 SEEN-WITH-CALLER | d16-io-change-sel RAISES, PAGE | N4 (a) REFUTED: a write's own record keeps its caller, observer callbacks included. So a script write's own record in P-126's step frames sits in the dom-call bucket. Where P-126's no-stack surplus comes from stays open: engine work, or the follow-up of earlier writes (the InvalidateLayout raised later, while style is resolved in the rendering update, has no JS on the stack; prediction 8) (ops C1) | a depth-16 recapture of the step frames (own card) to name the dom-call callers; the no-stack surplus stays open (engine work vs write follow-up) |
   | O1 STACKLESS | RAISES, STACKLESS | (a) SUPPORTED: the no-stack surplus may hold observer-callback writes; NATIVE cannot exclude them | a recapture with marks around the showcase's IO callbacks (`fwNearChange` and peers) |
   | O1 CALLER-CUT | RAISES, DOM-ONLY | even depth 16 loses the caller in IO callbacks; stacks cannot name observer writers | as STACKLESS (marks, not stacks) |
   | O1 UNSEEN | NONE while raf and timer change-sel RAISE | the instrument shows no record for IO-callback writes; P-126 says nothing about them | a write log (MutationObserver) instead of Timeline |
   | O1 NO-RECORD | NONE, and a raf or timer change-sel not RAISES | the test raised nothing: VOID | fix the page |
   | O2 DOM-ONLY-AT-1 | d1 io/raf/timer change-sel all RAISES, DOM-ONLY | D1's (c) confirmed locally: at depth 1 a script write shows one `[native code]` frame | none |
   | O2 PAGE-AT-1 | any d1 change-sel PAGE | (c) REFUTED: D1's split misread the bucket | re-read D1 |
-  | O3 NEVER / SOMETIMES (n) | no-stack bracketed records over the d16 write arms | NEVER: a script write never leaves a stackless record, so P-126's no-stack surplus is not script writes of these kinds. SOMETIMES: it can be (contradicts the source reading; report) | |
+  | O3 NEVER / SOMETIMES (n) | no-stack bracketed records over the d16 write arms | NEVER: a write's own (bracketed) record is never stackless, for these write kinds. It does not say where P-126's no-stack surplus comes from: records raised later as the follow-up of a write (style resolution in the rendering update) carry no stack either (ops C1). SOMETIMES: a write's own record can be stackless (contradicts the source reading; report) | |
   | O4 SILENT / RECORDS | d16 same-sel arms all NONE / any RAISES | SILENT: P-126's 445 of 460 same-value matches were neighbours, and the 2 ms rule does not find a write's own record on a busy page. RECORDS: same-value writes invalidate in our setup (contradicts WebKit main; report) | |
   | O5 GATED / NOT-GATED | d16 change-nosel arms all NONE / any RAISES | GATED: only writes to attributes a selector reads raise records, so showcase writes matter only where a rule reads them | |
   | O6 (descriptive) | rule T on d16-io-change-sel vs d16-io-same-sel | how the 2 ms rule behaves on a quiet page (hits vs +-25 ms) | |
+  | O7 DOWNSTREAM-STACKLESS (rev 2, N2) | per cause with CONTROL OK: rule W on d16 change-sel RAISES, and on d16 none and d16 same-sel NONE; overall = the common value of all OK causes | a script write is followed by stackless records (its follow-up during style resolution). So a stackless surplus can come from script writes, and P-126's no-stack surplus alone is no evidence of engine-only work | the no-stack surplus needs marks or a write log, not stacks, to split writes from engine work |
+  | O7 NONE-DOWNSTREAM | change-sel W NONE | on a quiet page one write raises no stackless follow-up within 100 ms, so the follow-up reading of C1 gets no support here. Limit: first-only records; on a busy frame the follow-up may still merge with other work | the no-stack surplus leans to engine work (still OBSERVED) |
+  | O7 BACKGROUND | change-sel W RAISES, and none or same-sel W RAISES too | stackless records come without the write; W cannot separate follow-up from background | none (W says nothing) |
+  | O7 MIXED / VOID | any PARTIAL or THIN, or causes disagree / no cause with CONTROL OK | no call | |
 
   - **Limits.**
     - InvalidateLayout counts first invalidations only.
@@ -1759,6 +1772,11 @@ signature. The trigger stays OBSERVED in all text.
     - The capture's own `Runtime.evaluate` polls (`runAsync`, every 500 ms) add records outside the brackets. Rule T's
       background measures them.
     - Simulator, not the phone. Any real-iPhone arm is a separate ask with its own ticket (lead).
+    - Write kinds (ops N3): only `setAttribute` from IO, rAF and timer callbacks is tested. Writes to a style property,
+      `classList` and custom properties are not, and the write-up says so.
+    - The bracket assumes Timeline records `performance.mark` as a TimeStamp record (P-125 found its own sync marks that
+      way; no source line cited). The dry gate checks it. If the dry record stops (exit 27), the card is revised; the data
+      is not reinterpreted (ops N1).
 - **Predictions (registered before data).**
 
   | # | prediction | p |
@@ -1773,8 +1791,14 @@ signature. The trigger stays OBSERVED in all text.
   | 8 | in the d16 change-sel arms, <= 20 % of bracketed rounds hold an InvalidateLayout (the layout dirtying comes later, in style resolution, outside the bracket) | 70 % |
   | 9 | io rounds' container is ObserverCallback or FunctionCall in >= 80 % of rounds | 60 % |
   | 10 | O6: io change-sel 2 ms hits >= 80 % of rounds, io same-sel <= 20 % | 60 % |
+  | 11 | O7 DOWNSTREAM-STACKLESS (rev 2; the width change dirties layout during style resolution in the next rendering update, with no JS on the stack) | 65 % |
+
+  Predictions 1-10 are unchanged from rev 1 (97667ac9); 11 is new in rev 2.
 - **Pins.**
-  - page `05ab5364cbc6`, capture `5dae67bd2ab1`, reader `9f691bfa77eb`, self-test `253346c592e4`;
+  - page `05ab5364cbc6`, capture `5dae67bd2ab1`, reader `53e4f4ab3bfd`, self-test `89d309d05aae`;
+  - rev 2 changed the reader (rule W, O7) and the self-test (33 to 48 checks). Rev 1 pins: reader `9f691bfa77eb`,
+    self-test `253346c592e4`. The page and the capture are unchanged, and no data exists yet (`out/toolbar-resize/sim127/`
+    is empty);
   - `tools/lib/wip.mjs` as imported (`TIMELINE_START`, `openTab`, `runAsync`) `3dcab04e362a`.
   - sha256, first 12 hex.
 - **Pixel and behaviour.** It is a test page only. No Fastwork code is changed or served differently, so no pixel check
