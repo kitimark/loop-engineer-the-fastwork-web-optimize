@@ -509,3 +509,59 @@ or arm data:
   If only rev 7d's touchend lines changed, task-mode parity carries over, with a diff note from fix-nav-morph.
   Otherwise fix-nav-morph re-runs parity part 1 (mobile and desktop) on the new V/VA pins. nav-hit-cache's
   patch-on-v9s4.diff (13d29af1) must apply cleanly to the rebuild either way.
+
+**A2 Simulator check (cycles 4, mechanism only; head c57d6a7d, score.mjs fd9ecebcf4d0; records out/pv9/sim/a2-nC.json
+674ee127df1a, a2-nV.json 3954a5579963).** PASS on both arms: the cut is at m 0.001 on driver and probe, the two cuts
+are 0 ms apart, and 6 tweens follow the cut (0→1, 1→0, three times; O1..C3); trimM does not void. The lead re-signed
+A2 on it (main e87cb802). Carried into P-122's pre-data read:
+- **Known difference, not a void.** C and V start in different states: C has 1 open before the first close (8 tweens
+  before the cut), V has 0 (7 tweens). The cut at the first m = 0 after the first close absorbs it: trimM's
+  driver/probe open-count check matched on both arms.
+- **Disclosure.** The first scoring run showed check 3 failing. The cause was the scratch check script, not the data:
+  it read `tween.to`, which records do not carry (a tween has only `from`; the target is 1 − from). After the fix,
+  check 3 passes on both arms. score.mjs's trimM reads `from` only and is unaffected.
+- **Build served.** This check served V = v9 step 4 (JS de237379b556), not the rev 7d rebuild. P-122's F-256 dry run
+  repeats it on the rev 7d build (mgmt-ops-10 re-check, 2026-10-05). rev 7d's own phone G count check is P-124.
+
+**P-121 calibration and pin (C1).** Baseline B only, never an arm; mechanism only, uncounted, disclosed. Every
+record lives under the gitignored out/p121/ and is listed by its sha256/12.
+
+(a) Simulator: 2 shared simulator slots, 00:45-00:56Z, `sim.mjs gesture --count-only` (I-184), so no frame log.
+Traversals and max y below come from the settle ys and stroke start ys. The Simulator samples touches every 17 ms, so
+its Fv does not transfer to the phone.
+
+| item | settle ys | traversals | max y | gate | record |
+|---|---|---|---|---|---|
+| m300 | 2037 / 4258 / 2108 / 4299 / 2109 / 4130 / 1923 | 6 | 4299 | gM pass | sim/m300 8f79bb694d08 |
+| m380 | 2040 / 4812 / 2040 / 4829 / 2058 / 4829 / 2269 | 5 | 4829 | gM pass, marginal | sim/m380 b481c230cad8 |
+| m460 | reaches 5220 twice | 6 | 5220 | gM VOID (end reached) | sim/m460 cdf3989912e9 |
+| efast | out1 Fv −7.2 / 560 px, settle 2364; out2 Fv −13.19 / 560 px, settle 964 | | | gEf pass | sim/efast 59cb106adf96 |
+| eslow | out Fv −1.29 / −1.55, 180 px | | | gEs pass | sim/eslow a9ba6c78d2a7 |
+
+(b) Phone: one no-timing hold, 01:03:45-01:08:41Z, 296 s, exit 0, head e87cb802, profile xcode-serious.
+- Thermal: the start gate passed (Serious, induced, battery 29.4 °C). At the end it was still Serious, induced,
+  32.6 °C, profileDrift false. Slot from mgmt-devices; the lead put it ahead of P-124.
+- Records are full G records, read with gate.mjs. The hold's end stamp (meta.profile.end) rewrote each record after
+  its run line printed a hash, so the hashes here are taken after the hold.
+
+| item | settle ys | traversals | max y | gate | record |
+|---|---|---|---|---|---|
+| m260 | 2005 / 3909 / 2241 / 3757 / 2203 / 3728 / 2115 | 2 | 3909 | gM VOID (< 5) | phone/m260 534021e0d23c |
+| m300 | 2005 / 3917 / 2022 / 3891 / 2075 / 3944 / 2074 | 6 | 3944 | gM pass, marginal (high turns only 91-144 px above 3800) | phone/m300 4ca596f3b76e |
+| **m340** | 2000 / 4165 / 2095 / 4200 / 2095 / 4200 / 2096 | 6 | 4200 | **gM pass**: high turns +365-400 over 3800, low turns 104-105 under 2200, max 800 under 5000 | phone/m340 62e06d7315bb |
+| efast | out1 Fv −6.83 / 560 px, out2 −7.11 / 560 px; released by fv and travel; fromEnd 4487 / 4509; not near-line | | | **gEf pass** | phone/efast c2a8cd30df7f |
+| eslow | out1 Fv −2.23 / 180 px, out2 −2.10 / 180 px; not released; outside the margins | | | **gEs pass** | phone/eslow ad0cd8beaf9b |
+
+Phone flings travel less than the Simulator's (m300: about 1850 px on the phone against about 2000 on the
+Simulator).
+
+**Pinned:**
+- flick-middle-v2: flingPx **340**, flingMs 140. On the phone it is the only length tried with margin on both sides of
+  the band.
+- flick-end-v2: unchanged. Fast out-strokes 560 px / 130 ms, slow out-strokes 180 px / 120 ms, into-flings
+  560 px / 140 ms, gap 350 ms.
+- gate.mjs: unchanged (RULE fv 5, travel 300, margins 0.5 px/ms and 20 px; LEAVE_E 1600).
+
+RULE equals the rev 7d candidate's rule: snapshot ms-29c0d537e0c9, release at Fv ≤ −5 px/ms OR travel ≥ 300 px
+(fix-hero-exit-threaded, Simulator s1/s2). If rev 7d lands with different values, RULE and this pin are redone in a
+new commit, followed by a new read, before any P-122 hold. No arm data exists at this commit.

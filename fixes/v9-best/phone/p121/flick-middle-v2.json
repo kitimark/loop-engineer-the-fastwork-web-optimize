@@ -2,8 +2,8 @@
   "name": "flick-middle-v2",
   "version": 2,
   "screen": [430, 932],
-  "about": "P-121 part M (path-matched, written after H3a2): flick-middle-v1's structure (slow approach to y >= 1900, rest, three up/down fling pairs) with weaker flings, calibrated on baseline B to travel about 2000-2500 px, so every fling swings over the middle (band 2200-3800) and reaches neither end (v8's 5220, v9's end screen). flingPx / flingMs are placeholders until the calibration picks and pins them.",
-  "params": { "x": 215, "flingPx": 360, "flingMs": 140, "stillPx": 520, "stillMs": 600 },
+  "about": "P-121 part M (path-matched, written after H3a2): flick-middle-v1's structure (slow approach to y >= 1900, rest, three up/down fling pairs) with weaker flings, calibrated on baseline B to travel about 2000-2500 px, so every fling swings over the middle (band 2200-3800) and reaches neither end (v8's 5220, v9's end screen). flingPx 340 / flingMs 140 pinned by the P-121 calibration on baseline B (phone hold 2026-10-05 01:03Z: 6 traversals, max y 4200; fixes/v9-best/README.md).",
+  "params": { "x": 215, "flingPx": 340, "flingMs": 140, "stillPx": 520, "stillMs": 600 },
   "steps": [
     { "type": "reload", "scrollAfterMs": 0 },
     { "type": "repeat", "times": 8, "until": "y>=1900", "steps": [

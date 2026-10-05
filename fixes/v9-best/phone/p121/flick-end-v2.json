@@ -2,7 +2,7 @@
   "name": "flick-end-v2",
   "version": 2,
   "screen": [430, 932],
-  "about": "P-121 part E (path-matched, written after H3a2): approach to y >= 3400 with still strokes, rest, fling into the page end (until atEnd: v8's end, v9's open end screen), then one out-fling, twice. Variant speed=fast: a long out-fling (outFastPx >= 300 px finger travel, the fastest fling the compiler allows) that rev 7d's final rule releases; speed=slow: a short out-fling (outSlowPx < 300 px, Fv well inside the threshold) that rev 7d catches at the closed rest, like the user's own closes (74-255 px). Out-stroke parameters are placeholders until the calibration on baseline B picks and pins them.",
+  "about": "P-121 part E (path-matched, written after H3a2): approach to y >= 3400 with still strokes, rest, fling into the page end (until atEnd: v8's end, v9's open end screen), then one out-fling, twice. Variant speed=fast: a long out-fling (outFastPx >= 300 px finger travel, the fastest fling the compiler allows) that rev 7d's final rule releases; speed=slow: a short out-fling (outSlowPx < 300 px, Fv well inside the threshold) that rev 7d catches at the closed rest, like the user's own closes (74-255 px). Parameters pinned by the P-121 calibration on baseline B (phone hold 2026-10-05 01:03Z: fast out strokes Fv -6.8 / -7.1, 560 px, released, leave the end by about 4500 px; slow out strokes Fv -2.2 / -2.1, 180 px, not released; fixes/v9-best/README.md).",
   "params": { "x": 215, "speed": "fast", "flingPx": 560, "flingMs": 140, "gapMs": 350, "outFastPx": 560, "outFastMs": 130, "outSlowPx": 180, "outSlowMs": 120 },
   "steps": [
     { "type": "reload", "scrollAfterMs": 0 },
