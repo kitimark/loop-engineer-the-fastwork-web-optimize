@@ -147,11 +147,33 @@ Dry run (11:33Z, fix-end-bg's checkout): snapshots ok, served hashes ok for both
 budget 229 s, every hold `DRY ok`. Reader self-test `p137-read.mjs --selftest` 8 ok; on T-194's E1 files it reproduces
 T-194's lastScreen after-touchend counts (24 / 19 / 5).
 
-## 4. Pending
+## 4. What repaints on a toolbar step (Chrome census, OBSERVED)
 
-- Chrome census per toolbar step, C vs nobg (paint area and raster per step at 775 → 815), and a Simulator count when no
-  phone block runs: which background repaints on a toolbar step.
-- Verdict per image and ranked candidate fixes, after P-137 and the census.
+Probe `endbg-chrome.mjs --mode census --arms C,nobg,C,nobg` (shared slot, 11:45Z; read `out/end-bg/census-read.mjs`, both
+local). At each morph position the page sits still with the finger down. A ~700 ms control window is followed by a
+toolbar step window (innerHeight 775 → 815 or back), 3 cycles per run, 2 runs per arm, so 6 windows per cell. Chrome's
+emulated resize changes every viewport unit, not only dvh, so it shows more invalidation than WebKit would. These are
+counts, not timing.
+
+| position, step | paints C / nobg | raster tasks C / nobg | layouts | nodes repainted on the step (both arms) |
+|---|---|---|---|---|
+| m0 (menu closed), 775→815 | 12.5 / 12.5 | 12.5 / 11.0 | 5 | page layer, row-title layers, stage artboard, pain-sticky |
+| m0, 815→775 | 12.0 / 12.5 | 11.3 / 8.8 | 5 | same |
+| mhalf, 775→815 | 122 / 128 | 68 / 55 | 6 | + orders card, stage artboard, menu photo wall track, svg |
+| mhalf, 815→775 | 80 / 80 | 109 / 98 | 6 | same |
+| m1 (menu open), 775→815 | 79 / 77 | 29 / 24 | 5 | page layer, row titles |
+| m1, 815→775 | 112 / 109 | 120 / 89 | 12 | + photo wall track (16 paints, ~1.05 M px² clip), header 6 |
+
+- Every toolbar step repaints the same nodes, the same number of times, with or without the backgrounds. The step
+  (layout 5-12 per window, the same in both arms) triggers the repaint, not the pictures.
+- Removing the pictures cuts the raster work of those repaints by 10-26 %, and does not touch the number of paints or
+  layouts. No image decodes ran in any window (D 0): the pictures are decoded once and kept.
+- The biggest repainter at the open menu is the photo wall (`.start-selling-morph-col-track`): 16 paints per shrink step
+  at m1. With nobg its images are hidden, but the track still repaints.
+## 5. Pending
+
+- A Simulator count (WebKit) when no phone block runs.
+- The verdict per image and the ranked candidate fixes, after P-137.
 - How the hero-card fixes worked (re-keep-op: the revealed people card kept in its own layer at rest, so the end-of-reveal
   re-layouts went away; hero-exit-threaded: the hero exit moved to a scroll-driven animation off the main thread): both are
   layer/compositor changes; whether one fits the last screen depends on what P-137 and the census show.
