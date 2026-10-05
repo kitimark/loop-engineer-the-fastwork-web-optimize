@@ -169,3 +169,30 @@ by the old runner's output filter), and the session still exited 0 because the o
 its last pipeline was `head`. s2's second item (fs on V) was refused the same way, and printed it: "needs about 145 s,
 ... leaves 141 s". Neither counts: an item counts only when it left a record. The runner now prints `ITEM ... VOID`
 for such items and exits non-zero.
+
+## Phone result (P-124, 2026-10-05, driver G, profile xcode-serious; counts only)
+
+Holds: H1 02:13Z (foC foV nlV nlC) VALID 400 s; H2 02:20Z (fsV fsC) VALID 348 s; H3 02:34Z (e4C e4V) VALID 282 s.
+Every gate PASS at Serious (induced), battery 29.5 -> 38.1 C; every item OK on its first run (no re-run, no void);
+one warm-up per arm port per hold; Safari parked after every run; served hashes C 428961bda278, V 29c0d537e0c9
+checked per hold. Records `out/morph-scroll/g7d/` (gitignored; sha256/12: H1-foC 2ee6c7e0ccf5, H1-foV 99d325d95a38,
+H1-nlC 4c0ceb994b42, H1-nlV 96032f75d6c7, H2-fsC fed7238ef542, H2-fsV 1fcb1744f9b0, H3-e4C b9d93ddbd194, H3-e4V
+e773d0a39612). Counts: `node fixes/morph-scroll/sim7d-analyze.mjs out/morph-scroll/g7d`.
+
+| item | C (rev 7c) released / caught / pulled back to open | V (rev 7d) released / caught / pulled back to open | V page Fv at lift (px/ms), travel |
+|---|---|---|---|
+| fo | 0 / 3 / 0 (rest -0.03) | **3 / 0 / 0** (left the end, rest -3.04 .. -3.32) | -3.35 / -3.63 / -3.63, travel 560: released by the travel line, not by Fv |
+| nl | 0 / 6 / 0 | 0 / 6 / 0 | near-250 -2.87 .. -2.93; near-280 -3.27 .. -3.32 (travel 250 / 280) |
+| fs | 0 / 12 / 0, misses 0 | 0 / 12 / 0, misses 0 | -0.62 .. -3.06, travel 57-200 (the 450 px slow drags: Fv about 0, caught) |
+| e4 | E1 caught, E3 pulled back to open, E4 caught | E1 caught, E3 pulled back to open, E4 caught | E4 -1.22, travel 200 |
+
+Predictions (5d91a542): 1 fo C caught 3/3 **holds**; 2 fo V released >= 2/3 **holds** (3/3); 3 nl V caught 6/6
+**holds**; 4 nl C caught 6/6 **holds**; 5 fs V misses 0 <= C 0 **holds**; 6 E4 closes on C **holds**; 7 E4 closes on V
+**holds**; 8 pulled back to open V <= C **holds** (V 1, C 1: the E3 small hold on both arms, the known E3 miss; 0
+elsewhere). No near-line close released on V, so the 350 px line is not raised.
+
+Notes for every write-up: the Simulator e4 compare FAILS under the frozen rule (DIFF 4, start y of counted strokes
+3-6) and is SAME only under the lead's AMEND-b (N1); two e4 path groups pass exactly at their bar, 0.67 and 0.88 (N2);
+the Simulator counts are mechanism only, prediction 8 was judged here (N3); the late-flick drift is within-build (N4).
+On the phone V's fo flings reach only -3.6 px/ms page Fv (Simulator: -2.9 .. -6.45), so on this device the 300 px
+travel line, not the -5 px/ms line, is what releases them (OBSERVED, in our setup).
