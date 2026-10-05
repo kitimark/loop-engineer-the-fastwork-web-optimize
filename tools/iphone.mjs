@@ -85,9 +85,13 @@
 // start the run REFUSES, exit 8, and prints what to switch, e.g. "phone is Nominal; set Xcode > Window > Devices and
 // Simulators > the phone > Device Conditions > Thermal State > Serious > Start (leave it on)"; when an Xcode action fixes
 // it, it also posts ONE console action step for the tester (by the run's owner, de-duplicated per owner and profile while
-// it is open) and prints its id (STEP C-…); it does not wait for it. A misfit at the end keeps the data and marks every
-// run record of the hold meta.profileDrift: true. Every record carries meta.profile {name, gate, hold, start, end,
-// drift} (start/end: state, induced, battC, gate code). No CLI can set the Xcode condition (devicectl has none,
+// it is open, and for 30 min after the user answered one unless the condition read changed, I-201) and prints its id
+// (STEP C-…); it does not wait for it. The refusal line ends "(gate <gate> code <n>, reason <reason>, I-186)": reason
+// phone-above-condition (I-201) = Xcode's condition IS Serious and the phone itself is Critical above it: wait for it to
+// drop, no Xcode change, no step (reason codes: lib/thermal-profile.mjs refusalText). A misfit at the end keeps the data
+// and marks every run record of the hold meta.profileDrift: true. Every record carries meta.profile {name, gate, hold,
+// start, end, drift} (start/end: state, induced, condition (the Xcode condition's own level, I-201), battC, gate code).
+// No CLI can set the Xcode condition (devicectl has none,
 // research/thermal-condition-cli). A Simulator session reads nothing (meta.profile.skipped).
 //   node tools/iphone.mjs profile --owner <topic> [--profile serious|fair]   # one read now (your lease): exit 0 fits,
 //        # 8 misfit (+ the step); inside your hold it is the hold's start read, so the first run reads nothing more.

@@ -8,7 +8,8 @@
 // One read (readThermal, ~25 s on the phone): `xcrun xctrace record --instrument 'Thermal State' --device <udid>
 // --all-processes --time-limit 10s` into a temp trace, `xctrace export` of its 'device-thermal-state-intervals' table
 // (parseThermalTable: id/ref resolved, columns by mnemonic, the state from the "Current" track and induced from any
-// "Induced" row, as research/phone-thermal-gate's parseThermalRows after 023caa54), plus one battery read
+// "Induced" row, as research/phone-thermal-gate's parseThermalRows after 023caa54; I-201: plus `condition`, the Induced
+// row's own level, kept in the read and the ledger's start/end records), plus one battery read
 // (idevicediagnostics AppleSmartBattery).
 // It installs nothing and does not touch Safari. Test seams: $FW_XCTRACE (stands in for `xcrun xctrace`),
 // $FW_THERMAL_BATTERY (for idevicediagnostics; else $FW_IDEVICEDIAGNOSTICS), $FW_THERMAL_UDID (else the WDA runner
@@ -25,7 +26,10 @@
 // (`lock.mjs run` calls it when its command ends; `iphone.mjs profile --end` by hand) and stamps every run file of the
 // hold: meta.profile.end, meta.profile.drift and meta.profileDrift (true when the end read does not fit the profile; the
 // data are kept). A start read that does not fit refuses the run (EXIT_PROFILE) and, when the tester can fix it in Xcode,
-// posts ONE console action step for the tester (de-duplicated per owner + profile while it is open).
+// posts ONE console action step for the tester (de-duplicated per owner + profile while it is open, and for 30 min after
+// the user answered one unless the condition read changed, I-201). A Critical phone under Xcode's Serious condition (the
+// condition right, the phone itself above it) refuses with reason phone-above-condition and posts no step (I-201;
+// refusalText lists the reason codes; the exit code stays 8, the gate codes research/phone-thermal-gate's).
 import { execFile } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -101,7 +105,9 @@ const walk = (el, f) => { f(el); for (const c of el.children) walk(c, f); };
 
 /**
  * `xctrace export --xpath …/table[@schema="device-thermal-state-intervals"]` output -> {schema, rows: [{state, induced,
- * track}], state, induced, changed, error}. xctrace writes a repeated value once (id="n" fmt="…") and then as ref="n":
+ * track}], state, induced, condition, changed, error}. `condition` (I-201) is the Xcode condition's own level: the state of
+ * the last "Induced" row (null without one); `state` stays the phone's own (Current) level, which may be above it (06:14Z
+ * 2026-10-05: Current Critical, Induced Serious). xctrace writes a repeated value once (id="n" fmt="…") and then as ref="n":
  * refs are resolved. Columns by schema mnemonic (thermal-state, track-label, is-induced); without a schema, by value.
  * Under Xcode's Device Conditions xctrace writes two rows per interval: track "Current" (the state the device reports,
  * is-induced No) and track "Induced" (is-induced Yes, its cells refs to the Current row's), captured on our phone
@@ -138,7 +144,11 @@ export function parseThermalTable(xml) {
   const cur = labelled ? rows.filter((r) => r.track === 'Current') : rows;
   const flags = rows.map((r) => r.induced).filter(Boolean);
   const induced = flags.includes('Yes') ? 'Yes' : flags.length ? 'No' : null;
-  const out = (state, changed = false, error = null) => ({ schema, rows, state, induced, changed, error });
+  // I-201: the condition's own level, from the last Induced-track row (unlabelled: the last induced row), never folded
+  // into `state`: the lead's read of 2026-10-05 06:14Z had Current Critical under an Induced (Xcode) Serious
+  const ind = rows.filter((r) => (labelled ? r.track === 'Induced' : r.induced === 'Yes') && r.state);
+  const condition = ind.length ? ind[ind.length - 1].state : null;
+  const out = (state, changed = false, error = null) => ({ schema, rows, state, induced, condition, changed, error });
   if (!rows.length) return out(null, false, 'no thermal state row in the trace');
   if (!cur.length) return out(null, false, `no Current-track row (${rows.length} rows)`);
   if (cur.some((r) => !r.state)) return out(null, false, `unresolvable thermal-state cell (${rows.length} rows)`);
@@ -159,7 +169,7 @@ const nodeOr = (bin, args) => (/\.m?js$/.test(bin) ? [process.execPath, [bin, ..
 export async function readThermal({ env = process.env, udid, timeLimitSec = 10, exec = execAsync, now = Date.now } = {}) {
   const t0 = now();
   const at = new Date(t0).toISOString();
-  const done = (x) => ({ at, ms: now() - t0, state: null, induced: null, battC: null, rows: 0, error: null, ...x });
+  const done = (x) => ({ at, ms: now() - t0, state: null, induced: null, condition: null, battC: null, rows: 0, error: null, ...x });
   let id = udid ?? env.FW_THERMAL_UDID;
   if (!id) { try { id = (await import('./wda-runner.mjs')).readConfig().udid; } catch {} }
   if (!id) return done({ error: 'no device: the WDA runner config has no udid (node tools/iphone.mjs wda status)' });
@@ -175,7 +185,7 @@ export async function readThermal({ env = process.env, udid, timeLimitSec = 10, 
       if (ex.code !== 0 || ex.error) out = { error: `xctrace export ${ex.error ? `failed (${ex.error})` : `exit ${ex.code}`}` };
       else {
         const t = parseThermalTable(ex.stdout);
-        out = { state: t.state, induced: t.induced, rows: t.rows.length, ...(t.error ? { error: t.error } : {}) };
+        out = { state: t.state, induced: t.induced, condition: t.condition, rows: t.rows.length, ...(t.error ? { error: t.error } : {}) };
       }
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -213,7 +223,7 @@ export function currentHold({ env = process.env, cm, ip } = {}) {
   return null;
 }
 
-const slim = (read, v) => ({ at: read.at, state: read.state, induced: read.induced, battC: read.battC, code: v.code, why: v.why || null, ...(read.error ? { error: read.error } : {}) });
+const slim = (read, v) => ({ at: read.at, state: read.state, induced: read.induced, condition: read.condition ?? null, battC: read.battC, code: v.code, why: v.why || null, ...(read.error ? { error: read.error } : {}) });
 
 /** The run record's meta.profile for a ledger (or a hold-less read): {name, gate, hold, start, end, drift}. */
 export function profileRecord(lg, { cached = false } = {}) {
@@ -229,18 +239,32 @@ function prune(now) {
   }
 }
 
-/** The refusal of a start read that does not fit: Error with exitCode EXIT_PROFILE, `step` (what the tester sets, or null). */
+/** The refusal of a start read that does not fit: Error with exitCode EXIT_PROFILE, `fix` (what the tester sets in Xcode,
+ *  or null) and `reason` (refusalText's reason code; I-201). */
 export class ProfileRefusal extends Error {
-  constructor(message, { verdict, read, profile, fix } = {}) { super(message); this.exitCode = EXIT_PROFILE; this.verdict = verdict; this.read = read; this.profile = profile; this.fix = fix; }
+  constructor(message, { verdict, read, profile, fix, reason } = {}) { super(message); this.exitCode = EXIT_PROFILE; this.verdict = verdict; this.read = read; this.profile = profile; this.fix = fix; this.reason = reason ?? null; }
 }
 
-/** What the phone shows, in words: "Nominal", "Serious (induced by Xcode)", "Serious (real heat, not induced)". */
-export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? ' (induced by Xcode)' : r.state === 'Serious' && r.induced === 'No' ? ' (real heat, not induced)' : ''}` : 'unknown');
+/** What the phone shows, in words: "Nominal", "Serious (induced by Xcode)", "Serious (real heat, not induced)", and
+ *  (I-201) "Critical (Xcode condition Serious)" when the phone's own state is not the condition's level. */
+export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? (r.condition && r.condition !== r.state ? ` (Xcode condition ${r.condition})` : ' (induced by Xcode)') : r.state === 'Serious' && r.induced === 'No' ? ' (real heat, not induced)' : ''}` : 'unknown');
 
 /**
- * Plain-words refusal for a start read: {line, fix: 'set-serious' | 'stop-condition' | null, hint}. `fix` names the
- * tester's Xcode action (posted as a console step); null when nothing in Xcode fixes it (no read, real heat for fair,
- * the battery ceiling). Pure.
+ * Plain-words refusal for a start read: {line, fix: 'set-serious' | 'stop-condition' | null, reason}. `fix` names the
+ * tester's Xcode action (posted as a console step); null when nothing in Xcode fixes it. The exit code stays EXIT_PROFILE
+ * (8) and the gate codes stay research/phone-thermal-gate's; `reason` tells the cases apart (I-201), also at the end of
+ * the line as "(gate <gate> code <n>, reason <reason>, I-186)":
+ *   no-read                no thermal read (code 1); no step
+ *   condition-critical     the Xcode condition itself is Critical (or its level is unknown) and the phone Critical; step
+ *   condition-wrong        a Critical phone under a condition of the wrong level for the profile (fair: any); step
+ *   phone-above-condition  serious: the condition IS Serious, the phone itself is Critical above it (06:14Z read of
+ *                          2026-10-05); wait for it to drop, NO step: no Xcode change helps
+ *   ceiling                Critical without a condition, or battery >= maxC; cool down, no step
+ *   condition-missing      serious: no Xcode condition (too cool, code 2, or real-heat Serious, code 7); step
+ *   condition-on           fair: an Xcode condition is on (code 4); step (stop it)
+ *   too-hot                fair: real-heat Serious (code 5); cool down, no step
+ *   other                  anything else (the gate's own why)
+ * Pure.
  */
 export function refusalText(profile, read, v, { maxC = MAX_C } = {}) {
   const p = PROFILES[profile];
@@ -249,20 +273,26 @@ export function refusalText(profile, read, v, { maxC = MAX_C } = {}) {
   const setSerious = `set ${XCODE_PATH} > Serious > Start (leave it on), then run again`;
   const stop = `stop it: ${XCODE_PATH} > Stop (leave it off), then run again`;
   const cool = 'let the phone cool: node tools/wait.mjs phone-temp --below auto, then run again';
-  let fix = null, what;
-  if (v.code === 1) what = `could not read the thermal state (${v.why}): is the phone on the cable, unlocked and trusted, and Xcode installed? Retry: node tools/iphone.mjs profile --owner <you> --profile ${profile}`;
-  else if (v.code === 3 && read?.induced === 'Yes' && read.state === 'Critical') { fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = `the Xcode condition is Critical, above the ceiling; ${profile === 'serious' ? setSerious : stop}`; }
-  else if (v.code === 3) what = `at the ceiling (Critical or battery >= ${maxC} C); ${cool}`;
-  else if (profile === 'serious' && (v.code === 2 || v.code === 7)) { fix = 'set-serious'; what = setSerious; }
-  else if (profile === 'fair' && v.code === 4) { fix = 'stop-condition'; what = stop; }
-  else if (profile === 'fair' && v.code === 5) what = `too hot for the fair profile; ${cool}`;
+  const cond = read?.condition ?? null;
+  let fix = null, what, reason = 'other';
+  if (v.code === 1) { reason = 'no-read'; what = `could not read the thermal state (${v.why}): is the phone on the cable, unlocked and trusted, and Xcode installed? Retry: node tools/iphone.mjs profile --owner <you> --profile ${profile}`; }
+  else if (v.code === 3 && read?.induced === 'Yes' && read.state === 'Critical') {
+    if (profile === 'serious' && cond === 'Serious') { reason = 'phone-above-condition'; what = `the phone itself is at ${read.state}, above the Xcode condition ${cond}${batt ? ` (${batt.slice(2)})` : ''}: wait for it to drop, no Xcode change needed; re-read with node tools/iphone.mjs profile --owner <you>`; }
+    else if ((cond ?? 'Critical') === 'Critical') { reason = 'condition-critical'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = `the Xcode condition is Critical, above the ceiling; ${profile === 'serious' ? setSerious : stop}`; }
+    else { reason = 'condition-wrong'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = profile === 'serious' ? `the Xcode condition is ${cond}, not Serious, and the phone is Critical, above the ceiling; ${setSerious}` : `an Xcode condition (${cond}) is on and the phone is Critical, above the ceiling; ${stop}`; }
+  }
+  else if (v.code === 3) { reason = 'ceiling'; what = `at the ceiling (Critical or battery >= ${maxC} C); ${cool}`; }
+  else if (profile === 'serious' && (v.code === 2 || v.code === 7)) { reason = 'condition-missing'; fix = 'set-serious'; what = setSerious; }
+  else if (profile === 'fair' && v.code === 4) { reason = 'condition-on'; fix = 'stop-condition'; what = stop; }
+  else if (profile === 'fair' && v.code === 5) { reason = 'too-hot'; what = `too hot for the fair profile; ${cool}`; }
   else what = v.why || `gate code ${v.code}`;
-  return { line: `${head}; ${what} (gate ${p.gate} code ${v.code}, I-186)`, fix };
+  return { line: `${head}; ${what} (gate ${p.gate} code ${v.code}, reason ${reason}, I-186)`, fix, reason };
 }
 
-/** The console action step for the tester's Xcode fix (I-186): {title, instructions, meta}. */
-export function stepFor({ owner, profile, fix }) {
-  const meta = { phoneProfile: { owner, profile, fix, incident: 'I-186' } };
+/** The console action step for the tester's Xcode fix (I-186): {title, instructions, meta}. meta.phoneProfile.read is the
+ *  condition read the step was posted for ({state, induced, condition}; I-201 de-duplication). */
+export function stepFor({ owner, profile, fix, read = null }) {
+  const meta = { phoneProfile: { owner, profile, fix, incident: 'I-186', read: { state: read?.state ?? null, induced: read?.induced ?? null, condition: read?.condition ?? null } } };
   if (fix === 'stop-condition') {
     return { title: `Xcode: stop the iPhone's thermal condition (test profile ${profile})`, meta,
       instructions: `On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions click Stop. Leave it off. The ${profile} profile wants the phone at Nominal or Fair with no Xcode condition. Then click Done here; ${owner} runs again.` };
@@ -274,23 +304,46 @@ export function stepFor({ owner, profile, fix }) {
 /** An open (pending or active) step this owner already has for this profile, or null. Pure. */
 export const openProfileStep = (steps, { owner, profile }) => steps.find((s) => (s.status === 'pending' || s.status === 'active') && s.meta?.phoneProfile?.owner === owner && s.meta.phoneProfile.profile === profile) || null;
 
+/** I-201: after the tester answered a step, no new one for this long unless the condition read changed. */
+export const STEP_QUIET_MS = 30 * 60000;
+
+/**
+ * I-201: the latest step of this owner and profile the user answered within STEP_QUIET_MS of `now` whose condition read
+ * (meta.phoneProfile.read: induced, condition; the phone's own state does not count) equals `read`'s, or null. Pure.
+ */
+export function recentProfileStep(steps, { owner, profile, read, now = Date.now() }) {
+  const same = (a) => (a?.induced ?? null) === (read?.induced ?? null) && (a?.condition ?? null) === (read?.condition ?? null);
+  const hits = steps.filter((s) => s.status === 'answered' && s.meta?.phoneProfile?.owner === owner && s.meta.phoneProfile.profile === profile)
+    .map((s) => ({ s, at: Date.parse(s.result?.at ?? s.updatedAt ?? '') }))
+    .filter((x) => Number.isFinite(x.at) && now - x.at <= STEP_QUIET_MS)
+    .sort((a, b) => b.at - a.at);
+  return hits.length && same(hits[0].s.meta.phoneProfile.read) ? hits[0].s : null;
+}
+
 /**
  * Post the ONE console action step for the tester, de-duplicated: while an open step of this owner and profile exists,
- * return it ({step, posted: false}); else post it ({step, posted: true}). An action step without a recorded part is not a
- * phone step (lib/phone-step.mjs isPhoneStep), so the I-123 one-phone-step rule does not apply. Atomic under the
- * console store's guard.
+ * return it ({step, posted: false}); when the user answered one within 30 min and the condition read is unchanged
+ * (I-201), return that one ({step, posted: false, recent: true}); else post it ({step, posted: true}). An action step
+ * without a recorded part is not a phone step (lib/phone-step.mjs isPhoneStep), so the I-123 one-phone-step rule does
+ * not apply. Atomic under the console store's guard.
  */
-export async function postProfileStep({ owner, profile, fix }) {
+export async function postProfileStep({ owner, profile, fix, read = null, now = Date.now() }) {
   const C = await import('./console.mjs');
-  const st = stepFor({ owner, profile, fix });
-  let existing = null;
+  const st = stepFor({ owner, profile, fix, read });
+  let existing = null, recent = false;
   try {
     const step = await C.post({ by: owner, kind: 'action', title: st.title, instructions: st.instructions, meta: st.meta }, {
-      refuse: (_s, steps) => { existing = openProfileStep(steps, { owner, profile }); return existing ? `EXISTS ${existing.id}` : null; },
+      refuse: (_s, steps) => {
+        existing = openProfileStep(steps, { owner, profile });
+        if (existing) return `EXISTS ${existing.id}`;
+        existing = recentProfileStep(steps, { owner, profile, read, now });
+        recent = !!existing;
+        return existing ? `ANSWERED ${existing.id}` : null;
+      },
     });
     return { step, posted: true };
   } catch (e) {
-    if (existing) return { step: existing, posted: false };
+    if (existing) return { step: existing, posted: false, ...(recent ? { recent: true } : {}) };
     throw e;
   }
 }
@@ -313,13 +366,16 @@ export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read =
     let msg = t.line;
     if (t.fix && postStep) {
       try {
-        const p = await postStep({ owner, profile, fix: t.fix });
-        msg += `\nSTEP ${p.step.id} ${p.posted ? 'posted' : 'already open'} on the user console for the tester: ${p.step.title}`;
+        const p = await postStep({ owner, profile, fix: t.fix, read: r, now: now() });
+        if (p.recent) {
+          const ago = Math.max(0, Math.round((now() - Date.parse(p.step.result?.at ?? p.step.updatedAt)) / 60000));
+          msg += `\nSTEP ${p.step.id} answered ${ago} min ago and the condition read is unchanged (induced ${r.induced ?? 'unknown'}, condition ${r.condition ?? 'none'}): no new step for 30 min after an answer (I-201)`;
+        } else msg += `\nSTEP ${p.step.id} ${p.posted ? 'posted' : 'already open'} on the user console for the tester: ${p.step.title}`;
       } catch (e) { msg += `\n(no console step: ${e.message})`; }
     }
     // a misfit read invalidates a kept start read of this hold (the next run reads again; its runs stay listed)
     if (old && !old.end) { try { await withGuard(GUARD, () => { const cur = readJson(ledgerFile(key)); if (cur && !cur.end) writeJson(ledgerFile(key), { ...cur, start: slim(r, v) }); }); } catch {} }
-    throw new ProfileRefusal(msg, { verdict: v, read: r, profile, fix: t.fix });
+    throw new ProfileRefusal(msg, { verdict: v, read: r, profile, fix: t.fix, reason: t.reason });
   }
   const lg = { key, hold, owner, profile, gate: PROFILES[profile].gate, start: slim(r, v), end: null, runs: [], createdAt: new Date(now()).toISOString() };
   if (key) {
@@ -387,7 +443,7 @@ export async function closeHold({ resource, token, read = () => readThermal(), l
       let stamped = 0;
       for (const x of lg.runs) if (stampRecord(x.file, end, drift)) stamped++;
       await withGuard(GUARD, () => { const cur = readJson(ledgerFile(lg.key)) || lg; writeJson(ledgerFile(lg.key), { ...cur, end, drift, closedAt: new Date().toISOString() }); });
-      const sum = { profile: lg.profile, gate: lg.gate, start: { state: lg.start.state, induced: lg.start.induced, battC: lg.start.battC }, end: { state: end.state ?? null, induced: end.induced ?? null, battC: end.battC ?? null, code: end.code, ...(end.error ? { error: end.error } : {}) }, drift, runs: lg.runs.length, stamped };
+      const sum = { profile: lg.profile, gate: lg.gate, start: { state: lg.start.state, induced: lg.start.induced, condition: lg.start.condition ?? null, battC: lg.start.battC }, end: { state: end.state ?? null, induced: end.induced ?? null, condition: end.condition ?? null, battC: end.battC ?? null, code: end.code, ...(end.error ? { error: end.error } : {}) }, drift, runs: lg.runs.length, stamped };
       if (!lg.runs.length) continue;
       out.push(sum);
       log(drift

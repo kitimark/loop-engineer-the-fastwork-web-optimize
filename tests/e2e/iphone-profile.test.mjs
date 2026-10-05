@@ -42,7 +42,7 @@ test('serious (the default) is refused on a Fair phone before Safari is touched:
   const out = join(dir, 'r.json');
   let r = await nodeAsync(IPHONE, RUN(out), { env, timeout: 60000 });
   assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, /^REFUSED profile serious \(Serious, induced by Xcode\): phone is Fair, battery 34\.5 C; set Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start \(leave it on\), then run again \(gate xcode-serious code 2, I-186\)$/m);
+  assert.match(r.stderr, /^REFUSED profile serious \(Serious, induced by Xcode\): phone is Fair, battery 34\.5 C; set Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start \(leave it on\), then run again \(gate xcode-serious code 2, reason condition-missing, I-186\)$/m);
   const id = r.stderr.match(/^STEP (C-\d+) posted on the user console/m)?.[1];
   assert.ok(id, r.stderr);
   assert.deepEqual(phone.events().filter((e) => e.evaluate || e.reload), [], 'Safari untouched');
@@ -116,6 +116,33 @@ test('fair passes on a Fair phone: the record carries meta.profile (the start re
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, /^REFUSED profile fair \(Nominal or Fair, not induced\): phone is Serious \(induced by Xcode\), battery 33 C; stop it: Xcode > .* > Stop \(leave it off\)/m);
   assert.match(r.stderr, /^STEP C-\d+ posted on the user console/m);
+});
+
+test('I-201: a Critical phone under Xcode\'s Serious condition (the 06:14Z read) refuses with exit 8 and its own reason, and posts no console step; a Critical condition still posts one, once per answer', async () => {
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
+  writeFileSync(thermal, 'Critical Yes 30.19 Serious\n'); // Current Critical, Induced (the condition) Serious
+  let r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /^REFUSED profile serious \(Serious, induced by Xcode\): phone is Critical \(Xcode condition Serious\), battery 30\.19 C; the phone itself is at Critical, above the Xcode condition Serious \(battery 30\.19 C\): wait for it to drop, no Xcode change needed; re-read with node tools\/iphone\.mjs profile --owner <you> \(gate xcode-serious code 3, reason phone-above-condition, I-186\)$/m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
+  assert.deepEqual(steps().filter((x) => x.meta?.phoneProfile), [], 'no step for the tester');
+  // the condition itself Critical: the step, as before; answered, the same read again posts none
+  writeFileSync(thermal, 'Critical Yes 30.5 Critical\n');
+  r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /the Xcode condition is Critical, above the ceiling; set Xcode > .* \(gate xcode-serious code 3, reason condition-critical, I-186\)$/m);
+  const id = r.stderr.match(/^STEP (C-\d+) posted on the user console/m)?.[1];
+  assert.ok(id, r.stderr);
+  // the user clicks Start and Done on the page (lib calls on this test's store)
+  const C = await import('../../tools/lib/console.mjs');
+  const prev = process.env.FW_STATE_DIR;
+  process.env.FW_STATE_DIR = env.FW_STATE_DIR;
+  try { await C.start(id); await C.done(id); } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
+  assert.equal(steps().find((x) => x.id === id).status, 'answered');
+  r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, new RegExp(`^STEP ${id} answered \\d+ min ago and the condition read is unchanged \\(induced Yes, condition Critical\\): no new step for 30 min after an answer \\(I-201\\)$`, 'm'));
+  assert.equal(steps().filter((x) => x.meta?.phoneProfile).length, 1);
 });
 
 test('inside lock.mjs run chrome-measure --no-timing: the hold\'s first run reads, the rest reuse it; the hold makes the end read, marks drift and logs phoneProfile in holds.log', async () => {

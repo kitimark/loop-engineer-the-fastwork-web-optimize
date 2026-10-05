@@ -191,7 +191,7 @@ test('refusalText / ProfileRefusal: plain words, what to switch in Xcode, exit 8
   const t = (profile, read) => P.refusalText(profile, read, P.profileVerdict(profile, read));
   let r = t('serious', { state: 'Nominal', induced: 'No', battC: 31.2 });
   assert.equal(r.fix, 'set-serious');
-  assert.equal(r.line, 'REFUSED profile serious (Serious, induced by Xcode): phone is Nominal, battery 31.2 C; set Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start (leave it on), then run again (gate xcode-serious code 2, I-186)');
+  assert.equal(r.line, 'REFUSED profile serious (Serious, induced by Xcode): phone is Nominal, battery 31.2 C; set Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start (leave it on), then run again (gate xcode-serious code 2, reason condition-missing, I-186)');
   r = t('serious', { state: 'Serious', induced: 'No', battC: 40 });
   assert.match(r.line, /phone is Serious \(real heat, not induced\), battery 40 C; set Xcode > .* > Serious > Start/);
   assert.equal(r.fix, 'set-serious');
@@ -234,7 +234,7 @@ test('the tester\'s console step: one action step per owner and profile while it
   assert.deepEqual([s.kind, s.by, s.status, s.parts.length, s.parts[0].record], ['action', 'iphone-runner', 'pending', 1, false]);
   assert.match(s.title, /^Xcode: set the iPhone's Thermal State to Serious \(test profile serious\)$/);
   assert.match(s.instructions, /Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions set Condition to Thermal State and Profile to Serious, then click Start\. Leave it on/);
-  assert.deepEqual(s.meta.phoneProfile, { owner: 'iphone-runner', profile: 'serious', fix: 'set-serious', incident: 'I-186' });
+  assert.deepEqual(s.meta.phoneProfile, { owner: 'iphone-runner', profile: 'serious', fix: 'set-serious', incident: 'I-186', read: { state: 'Nominal', induced: 'No', condition: null } });
   assert.match(msgs[0], new RegExp(`\\nSTEP ${s.id} posted on the user console`));
   assert.match(msgs[1], new RegExp(`\\nSTEP ${s.id} already open on the user console`));
   const { isPhoneStep } = await import('../../tools/lib/phone-step.mjs');
@@ -245,12 +245,16 @@ test('the tester\'s console step: one action step per owner and profile while it
   steps = C.list({ pending: true });
   assert.equal(steps.length, 3);
   assert.match(steps[2].title, /stop the iPhone's thermal condition \(test profile fair\)/);
-  // answered (the tester clicked Done): a later misfit posts a new step
+  // answered (the tester clicked Done): a later misfit with the same condition read posts no new step for 30 min (I-201),
+  // after that a new one
   await C.start(s.id);
   await C.done(s.id);
   assert.equal(C.get(s.id).status, 'answered');
+  const mine = () => C.list({ pending: true }).filter((x) => x.meta?.phoneProfile?.owner === 'iphone-runner' && x.meta.phoneProfile.profile === 'serious').length;
   await P.startGate({ owner: 'iphone-runner', hold: hold(), read, log: () => {} }).catch(() => {});
-  assert.equal(C.list({ pending: true }).filter((x) => x.meta?.phoneProfile?.owner === 'iphone-runner' && x.meta.phoneProfile.profile === 'serious').length, 1);
+  assert.equal(mine(), 0);
+  await P.startGate({ owner: 'iphone-runner', hold: hold(), read, log: () => {}, now: () => Date.now() + 31 * 60000 }).catch(() => {});
+  assert.equal(mine(), 1);
   // no Xcode fix (no read): no step
   const n = C.list().length;
   await P.startGate({ owner: 'z', hold: hold(), read: async () => ({ error: 'xctrace record exit 1' }), log: () => {} }).catch(() => {});
@@ -304,4 +308,133 @@ test('currentHold: the lock.mjs run hold named in FW_LOCK_HELD, else the live ip
   assert.deepEqual(P.currentHold({ env: {}, cm, ip }), { resource: 'iphone', token: 'beef00000002', owner: 'runner' });
   assert.equal(P.currentHold({ env: {}, cm, ip: { holder: ip.holder, stale: 'expired' } }), null);
   assert.equal(P.currentHold({ env: {}, cm, ip: { holder: null } }), null);
+});
+
+// I-201: the lead's raw read of 2026-10-05 06:14Z (xctrace export of device-thermal-state-intervals): the Current track
+// Critical (is-induced No, narrative "...with desired state Serious..."), the Induced track Serious (is-induced Yes). The
+// user HAD set Xcode to Serious; the phone itself was above it. Minimal two-row export in xctrace's id/ref shape.
+const XML_0614 = `<?xml version="1.0"?>
+<trace-query-result>
+<node xpath='//trace-toc[1]/run[1]/data[1]/table[2]'><schema name="device-thermal-state-intervals"><col><mnemonic>start</mnemonic></col><col><mnemonic>duration</mnemonic></col><col><mnemonic>thermal-state</mnemonic></col><col><mnemonic>track-label</mnemonic></col><col><mnemonic>is-induced</mnemonic></col><col><mnemonic>narrative</mnemonic></col></schema><row><start-time id="1" fmt="00:00.000.000">0</start-time><duration id="2" fmt="11.04 s">11040000000</duration><thermal-state id="3" fmt="Critical">Critical</thermal-state><string id="4" fmt="Current">Current</string><boolean id="5" fmt="No">0</boolean><narrative id="6" fmt="Critical thermal state with desired state Serious from active device conditions"><thermal-state ref="3"/><narrative-text id="7" fmt=" thermal state with desired state "> thermal state with desired state </narrative-text><thermal-state id="8" fmt="Serious">Serious</thermal-state><narrative-text id="9" fmt=" from active device conditions"> from active device conditions</narrative-text></narrative></row>
+<row><start-time ref="1"/><duration ref="2"/><thermal-state ref="8"/><string id="10" fmt="Induced">Induced</string><boolean id="11" fmt="Yes">1</boolean><narrative id="12" fmt="Serious thermal state device condition active"><thermal-state ref="8"/><narrative-text id="13" fmt=" thermal state device condition active"> thermal state device condition active</narrative-text></narrative></row>
+</node></trace-query-result>`;
+const READ_0614 = { state: 'Critical', induced: 'Yes', condition: 'Serious', battC: 30.19 };
+
+test('I-201 parseThermalTable: the Induced track\'s own level is the condition (06:14Z: Current Critical, Xcode condition Serious)', () => {
+  let t = P.parseThermalTable(XML_0614);
+  assert.deepEqual(t.rows.map((r) => [r.track, r.state, r.induced]), [['Current', 'Critical', 'No'], ['Induced', 'Serious', 'Yes']]);
+  assert.deepEqual([t.state, t.induced, t.condition, t.changed, t.error], ['Critical', 'Yes', 'Serious', false, null]);
+  assert.equal(P.profileVerdict('serious', { ...t, battC: 30.19 }).code, 3, 'gate codes unchanged: a Critical phone is the ceiling (research/phone-thermal-gate)');
+  // the captured export of 2026-10-04: condition Serious; real heat (no Induced row): no condition
+  t = P.parseThermalTable(readFileSync(join(TESTS, 'fixtures', 'thermal-induced-serious-2rows.xml'), 'utf8'));
+  assert.deepEqual([t.state, t.induced, t.condition], ['Serious', 'Yes', 'Serious']);
+  t = P.parseThermalTable(thermalXml([{ state: 'Serious', induced: 'No' }]));
+  assert.deepEqual([t.state, t.induced, t.condition], ['Serious', 'No', null]);
+  // the fake writes a condition other than the phone's state; the last Induced row wins
+  t = P.parseThermalTable(thermalXml([{ state: 'Critical', induced: 'Yes', condition: 'Fair' }, { state: 'Critical', induced: 'Yes', condition: 'Serious' }]));
+  assert.deepEqual([t.state, t.induced, t.condition, t.error], ['Critical', 'Yes', 'Serious', null]);
+  // unlabelled rows: an induced row's state is the condition
+  t = P.parseThermalTable(`<trace-query-result><node><schema name="device-thermal-state-intervals"><col><mnemonic>thermal-state</mnemonic></col><col><mnemonic>is-induced</mnemonic></col></schema><row><thermal-state id="1">Critical</thermal-state><boolean id="2">1</boolean></row></node></trace-query-result>`);
+  assert.deepEqual([t.state, t.induced, t.condition], ['Critical', 'Yes', 'Critical']);
+});
+
+test('I-201 readThermal / ledger: the condition is kept in the read, the start record and the end record', async () => {
+  const exec = async (cmd, args) => {
+    const a = args[0] === 'xctrace' ? args.slice(1) : args;
+    if (a[0] === 'record') return { code: 0, error: null, stdout: '' };
+    if (a[0] === 'export') return { code: 0, error: null, stdout: XML_0614 };
+    return { code: 0, error: null, stdout: '<plist><dict><key>Temperature</key><integer>3019</integer></dict></plist>' };
+  };
+  const r = await P.readThermal({ env: {}, udid: 'DEV-1', exec });
+  assert.deepEqual([r.state, r.induced, r.condition, r.battC, r.error], ['Critical', 'Yes', 'Serious', 30.19, null]);
+  const g = await P.startGate({ owner: 'runner', hold: hold('tok-c'), read: async () => ({ state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 33 }), log: () => {} });
+  assert.equal(g.record().start.condition, 'Serious');
+  assert.equal(P.readLedger(g.key).start.condition, 'Serious');
+  const f = join(tempDir('fw-thermal-cond-'), 'a.json');
+  writeFileSync(f, JSON.stringify({ meta: {} }));
+  await g.saved(f);
+  const s = await P.closeHold({ resource: 'chrome-measure', token: 'tok-c', read: async () => ({ ...READ_0614 }), log: () => {} });
+  assert.deepEqual([s[0].start.condition, s[0].end.condition, s[0].end.state, s[0].drift], ['Serious', 'Serious', 'Critical', true]);
+  assert.equal(JSON.parse(readFileSync(f, 'utf8')).meta.profile.end.condition, 'Serious');
+  assert.equal(P.readLedger(g.key).end.condition, 'Serious');
+});
+
+test('I-201 refusalText: a Critical phone under the right Serious condition is a wait, not an Xcode step; a Critical condition still is', () => {
+  const t = (profile, read) => P.refusalText(profile, read, P.profileVerdict(profile, read));
+  // the 06:14Z read: no step, its own reason
+  let r = t('serious', READ_0614);
+  assert.deepEqual([r.fix, r.reason], [null, 'phone-above-condition']);
+  assert.equal(r.line, 'REFUSED profile serious (Serious, induced by Xcode): phone is Critical (Xcode condition Serious), battery 30.19 C; the phone itself is at Critical, above the Xcode condition Serious (battery 30.19 C): wait for it to drop, no Xcode change needed; re-read with node tools/iphone.mjs profile --owner <you> (gate xcode-serious code 3, reason phone-above-condition, I-186)');
+  assert.doesNotMatch(r.line, /the Xcode condition is Critical|set Xcode/);
+  // the condition itself Critical (or a read without the Induced row's level): the tester's step, as before
+  for (const read of [{ state: 'Critical', induced: 'Yes', condition: 'Critical', battC: 33 }, { state: 'Critical', induced: 'Yes', battC: 33 }]) {
+    r = t('serious', read);
+    assert.deepEqual([r.fix, r.reason], ['set-serious', 'condition-critical'], JSON.stringify(read));
+    assert.match(r.line, /the Xcode condition is Critical, above the ceiling; set Xcode > .* > Serious > Start/);
+  }
+  // a condition wrong for the profile (Fair) under a Critical phone: the step, naming the condition it found
+  r = t('serious', { state: 'Critical', induced: 'Yes', condition: 'Fair', battC: 33 });
+  assert.deepEqual([r.fix, r.reason], ['set-serious', 'condition-wrong']);
+  assert.match(r.line, /phone is Critical \(Xcode condition Fair\), battery 33 C; the Xcode condition is Fair, not Serious, and the phone is Critical, above the ceiling; set Xcode > .* > Serious > Start/);
+  // fair: any condition is wrong, so stop it, whatever its level
+  r = t('fair', READ_0614);
+  assert.deepEqual([r.fix, r.reason], ['stop-condition', 'condition-wrong']);
+  assert.match(r.line, /stop it: Xcode > .* > Stop/);
+  // the other reasons
+  assert.equal(t('serious', { state: 'Nominal', induced: 'No', battC: 31 }).reason, 'condition-missing');
+  assert.equal(t('serious', { state: 'Serious', induced: 'No', battC: 40 }).reason, 'condition-missing');
+  assert.equal(t('serious', { state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 44.5 }).reason, 'ceiling');
+  assert.equal(t('serious', { error: 'x' }).reason, 'no-read');
+  assert.equal(t('fair', { state: 'Fair', induced: 'Yes', condition: 'Fair', battC: 33 }).reason, 'condition-on');
+  assert.equal(t('fair', { state: 'Serious', induced: 'No', battC: 40 }).reason, 'too-hot');
+});
+
+test('I-201 startGate: the 06:14Z read refuses (exit 8, reason phone-above-condition) and posts NO console step', async () => {
+  let posted = 0;
+  const e = await P.startGate({ owner: 'art-worst-cases', hold: hold(), read: async () => ({ ...READ_0614 }), log: () => {}, postStep: async () => { posted++; return { step: { id: 'C-0', title: 'x' }, posted: true }; } }).catch((x) => x);
+  assert.ok(e instanceof P.ProfileRefusal);
+  assert.deepEqual([e.exitCode, e.verdict.code, e.reason, e.fix, posted], [8, 3, 'phone-above-condition', null, 0]);
+  assert.doesNotMatch(e.message, /\nSTEP /);
+  // and with the real console: nothing posted
+  await P.startGate({ owner: 'art-worst-cases', hold: hold(), read: async () => ({ ...READ_0614 }), log: () => {} }).catch(() => {});
+  assert.equal(C.list().length, 0);
+});
+
+test('I-201 the tester\'s step: not posted again within 30 min of an answered one for the same owner and profile, unless the condition read changed', async () => {
+  const owner = 'art-worst-cases';
+  const crit = { state: 'Critical', induced: 'Yes', condition: 'Critical', battC: 31 };
+  const gate = (read, now) => P.startGate({ owner, hold: hold(), read: async () => ({ ...read }), log: () => {}, ...(now ? { now: () => now } : {}) }).catch((x) => x);
+  let e = await gate(crit);
+  const id = e.message.match(/\nSTEP (C-\d+) posted/)?.[1];
+  assert.ok(id, e.message);
+  assert.deepEqual(C.get(id).meta.phoneProfile.read, { state: 'Critical', induced: 'Yes', condition: 'Critical' });
+  await C.start(id);
+  await C.done(id); // the user: "I set it"
+  // the same read again (the change did not show): no new step, the line says why
+  e = await gate(crit);
+  assert.equal(e.exitCode, 8);
+  assert.match(e.message, new RegExp(`\\nSTEP ${id} answered 0 min ago and the condition read is unchanged \\(induced Yes, condition Critical\\): no new step for 30 min after an answer \\(I-201\\)`));
+  assert.equal(C.list().length, 1);
+  // another owner: its own step
+  await P.startGate({ owner: 'x', hold: hold(), read: async () => ({ ...crit }), log: () => {} }).catch(() => {});
+  assert.equal(C.list().length, 2);
+  // the condition read changed (the Xcode condition now Fair): a new step
+  e = await gate({ ...crit, condition: 'Fair' });
+  const id2 = e.message.match(/\nSTEP (C-\d+) posted/)?.[1];
+  assert.ok(id2 && id2 !== id, e.message);
+  await C.start(id2);
+  await C.done(id2);
+  // 31 min after the answers, the same read: a new step
+  e = await gate(crit, Date.now() + 31 * 60000);
+  assert.match(e.message, /\nSTEP C-\d+ posted/);
+  assert.equal(C.list().length, 4);
+  // the pure helper: the window, the read, the profile
+  const ans = { status: 'answered', result: { at: new Date(1e12).toISOString() }, meta: { phoneProfile: { owner: 'o', profile: 'serious', read: { state: 'Critical', induced: 'Yes', condition: 'Critical' } } } };
+  const q = (read, now, profile = 'serious') => P.recentProfileStep([ans], { owner: 'o', profile, read, now });
+  assert.equal(q({ state: 'Critical', induced: 'Yes', condition: 'Critical' }, 1e12 + 29 * 60000), ans);
+  assert.equal(q({ state: 'Serious', induced: 'Yes', condition: 'Critical' }, 1e12 + 29 * 60000), ans, 'the phone\'s own state is not the condition read');
+  assert.equal(q({ state: 'Critical', induced: 'Yes', condition: 'Critical' }, 1e12 + 31 * 60000), null);
+  assert.equal(q({ state: 'Critical', induced: 'Yes', condition: 'Serious' }, 1e12 + 60000), null, 'condition changed');
+  assert.equal(q({ state: 'Critical', induced: 'No', condition: null }, 1e12 + 60000), null, 'condition stopped');
+  assert.equal(q(ans.meta.phoneProfile.read, 1e12, 'fair'), null, 'another profile');
 });
