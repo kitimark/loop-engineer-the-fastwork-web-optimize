@@ -441,7 +441,7 @@ test('I-049: a later exclusive never passes an earlier reader at the hand-over a
   assert.equal((await rd('late', { pid: late.queue.find((x) => x.owner === 'late').pid, now: t0 + 6000 })).next, 'cal', 'cal before the reader queued after it');
 });
 
-test('I-049: age bound: a reader waiting readerMaxWaitSec goes before an exclusive queued ahead of it', async () => {
+test('I-049: age bound: a reader waiting readerMaxWaitSec goes before an exclusive queued ahead of it (not right after a group, I-210)', async () => {
   await on();
   const now = Date.now();
   const iso = (t) => new Date(t).toISOString();
@@ -450,17 +450,76 @@ test('I-049: age bound: a reader waiting readerMaxWaitSec goes before an exclusi
     { owner: 'ab', kind: 'lease', checkout: REPO, since: iso(readerSince - 1000), lastSeen: iso(now), queueTtlSec: 600 },
     { owner: 'fn-b', kind: 'process', pid: pB, checkout: REPO, since: iso(readerSince), lastSeen: iso(now), queueTtlSec: 600, short: true, maxSec: 60, shared: true, weight: 1 },
   ]);
-  // right after a group (its grant spends the short-drain budget), with nobody holding the lock
-  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(L.groupGrant({ token: 'abcdefabcdef' }, now - 20000)));
+  // after a run of exclusive short jobs that spent the short-drain budget (not a group), nobody holding the lock: the
+  // exclusive head has not been passed by a group yet
+  const spent = { owner: 'prev', short: true, maxSec: 300, at: iso(now - 20000), runStart: iso(now - ms(L.SHORT_DRAIN_SEC + 100)), token: 'abcdefabcdef' };
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(spent));
   const bound = ms(L.SHARED_LANE.readerMaxWaitSec);
   writeFileSync(lockFile(`${R}.queue.json`), queue(now - bound + 60000));
   assert.equal(L.status(R).next, 'ab', 'below the bound: the exclusive queued first goes first');
   writeFileSync(lockFile(`${R}.queue.json`), queue(now - bound - 1000));
   assert.equal(L.status(R).next, 'fn-b', 'past the bound: the reader goes before any exclusive');
-  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', now })).ok, false);
+  // I-210: right after a group (its grant spends the short-drain budget) the same aged reader no longer passes the head
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(L.groupGrant({ token: 'abcdefabcdef' }, now - 20000)));
+  assert.equal(L.status(R).next, 'ab', 'right after a group: the exclusive head goes, the aged reader queued after it waits (I-210)');
+  assert.equal((await rd('fn-b', { pid: pB, now })).ok, false);
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(spent));
+  assert.equal((await L.tryAcquire(R, { owner: 'ab', kind: 'lease', now })).ok, false, 'ab is not first: fn-b is aged');
   const b = await rd('fn-b', { pid: pB, now: now + 1000 });
   assert.equal(b.ok, true);
   assert.equal(b.opened, true);
+});
+
+// I-210 (2026-10-05 13:17-13:52Z, 13:50-14:25Z): with a long queue of shared jobs every reader aged past readerMaxWaitSec
+// while an exclusive head (a --no-timing build) waited, and each aged reader opened the next group before it: the head
+// was passed group after group and the lead moved it by hand. An exclusive head now waits for at most ONE group.
+test('I-210: an exclusive head is passed by at most one group: readers queued after it that aged meanwhile no longer jump it', async () => {
+  await on();
+  const now = Date.now();
+  const iso = (t) => new Date(t).toISOString();
+  const aged = now - ms(L.SHARED_LANE.readerMaxWaitSec) - 120000;
+  const pids = { r1: livePid(), r2: livePid(), r3: livePid() };
+  const entry = (owner, since) => ({ owner, kind: 'process', pid: pids[owner], checkout: REPO, since: iso(since), lastSeen: iso(now), queueTtlSec: 600, short: true, maxSec: 60, shared: true, weight: 1 });
+  const ab = { owner: 'ab', kind: 'lease', checkout: REPO, since: iso(aged - 60000), lastSeen: iso(now), queueTtlSec: 600, noTiming: true };
+  // the lock was last held by an exclusive job; the head waited behind it, the aged readers queued after the head
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify({ owner: 'prev', short: false, maxSec: 600, at: iso(now - 20000), token: 'abcdefabcdef' }));
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([ab, entry('r1', aged), entry('r2', aged + 1000)]));
+  // group 1: the first aged reader passes the head once (the I-049 age bound), the batch joins it
+  const g1 = await rd('r1', { pid: pids.r1, now });
+  assert.equal(g1.ok, true);
+  assert.equal(g1.opened, true);
+  const j2 = await rd('r2', { pid: pids.r2, now: now + 1000 });
+  assert.equal(j2.ok, true, 'a reader queued before the group opened joins its batch past the writer');
+  // a third aged reader queues behind the running group
+  const w3 = await rd('r3', { pid: pids.r3, now: now + 2000 });
+  assert.equal(w3.ok, false);
+  const q = JSON.parse(readFileSync(lockFile(`${R}.queue.json`), 'utf8'));
+  q.find((x) => x.owner === 'r3').since = iso(aged + 2000); // as old as the others
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify(q));
+  await L.releaseReader(R, g1.reader.token);
+  await L.releaseReader(R, j2.reader.token);
+  assert.equal(holder(), null);
+  // group 1 ended: the head goes now, not the aged reader r3 queued after it
+  assert.equal(L.status(R).next, 'ab');
+  const r3 = await rd('r3', { pid: pids.r3, now: now + 3000 });
+  assert.equal(r3.ok, false, 'the aged reader waits for the head');
+  assert.equal(r3.next, 'ab');
+  const got = await L.tryAcquire(R, { owner: 'ab', kind: 'lease', noTiming: true, now: now + 3000 });
+  assert.equal(got.ok, true, 'the exclusive head is served after the one group');
+});
+
+test('I-210: a reader queued BEFORE the exclusive head still goes in the next group, aged or not (I-049 FIFO)', async () => {
+  await on();
+  const now = Date.now();
+  const iso = (t) => new Date(t).toISOString();
+  const pB = livePid();
+  const aged = now - ms(L.SHARED_LANE.readerMaxWaitSec) - 120000;
+  writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([
+    { owner: 'fn-b', kind: 'process', pid: pB, checkout: REPO, since: iso(aged), lastSeen: iso(now), queueTtlSec: 600, short: true, maxSec: 60, shared: true, weight: 1 },
+    { owner: 'ab', kind: 'lease', checkout: REPO, since: iso(aged + 1000), lastSeen: iso(now), queueTtlSec: 600 },
+  ]));
+  writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(L.groupGrant({ token: 'abcdefabcdef' }, now - 20000)));
+  assert.equal(L.status(R).next, 'fn-b', 'right after a group, the reader queued before the head goes first');
 });
 
 // I-097 (2026-10-03 16:24-16:34Z): the lead moved iphone-runner's --no-timing phone hold to #1, and readers queued more
@@ -480,7 +539,8 @@ test('I-097: a lead-moved exclusive waiter at the head goes before readers past 
   for (const lg of [L.groupGrant({ token: 'abcdefabcdef' }, now - 20000), { owner: 'w0', short: false, at: iso(now - 60000), token: '0123456789ab' }]) {
     writeFileSync(lockFile(`${R}.last-grant.json`), JSON.stringify(lg));
     writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([runner, ...readers]));
-    assert.equal(L.status(R).next, 'fn-b', `unmoved: the I-049 age bound still serves the old reader first (${lg.owner})`);
+    // I-210: the age bound serves the old reader first after an exclusive hold, not right after a group (the head waited out one)
+    assert.equal(L.status(R).next, lg.shared ? 'iphone-runner' : 'fn-b', `unmoved: the I-049 age bound serves the old reader first, except right after a group (${lg.owner})`);
     writeFileSync(lockFile(`${R}.queue.json`), JSON.stringify([{ ...runner, movedBy: 'lead', movedAt: iso(now - 5000) }, ...readers]));
     assert.equal(L.status(R).next, 'iphone-runner', `moved by the lead: the move wins over the age bound (${lg.owner})`);
     const b = await rd('fn-b', { pid: pB, now });
