@@ -15,7 +15,8 @@
 # --dnd: before the first item, post ONE console action step asking for Do Not Disturb (only while no other phone step
 # is open: console.mjs post refuses otherwise) and wait for the user's Done.
 # Per item: serve.sh check; open the arm's URL; viewport read (vv.mjs, start); clock stamp; ioscap record (background,
-# --out out/iphone-screen/pc-<H>-<item>.mov) until its app says it is recording; clock stamp; the driver; clock stamp;
+# --out out/iphone-screen/pc-<H>-<item>.mov) until its app says it is recording; the ready check (WDA answers and the
+# tab is listed, re-open on failure; added after H1); clock stamp; the driver; clock stamp;
 # viewport read (end); stop the recorder (SIGTERM: it closes the file); park Safari.
 # Clock stamps (stamps.jsonl): Mac wall ns and CLOCK_UPTIME_RAW ns (mach_absolute_time, the host clock the capture's
 # PTS should be on: OBSERVED-to-verify, phone-clips.mjs cross-checks it against the frames' content changes).
@@ -62,6 +63,15 @@ for I in "$@"; do
   CP=$!
   w=0; until grep -q 'recording the iPhone screen' out/iphone-screen/$L.log 2>/dev/null || [ $w -ge 100 ] || ! kill -0 $CP 2>/dev/null; do sleep 0.2; w=$((w + 1)); done
   sleep 1
+  # H1 lesson (eA1, sV1): starting a recording can drop the phone's inspector and WDA links for a few seconds
+  # (OBSERVED, cause unknown; likely the USB link re-forming). Before the driver: WDA answers and the tab is listed
+  # (the viewport read, label -ready, proves both); else re-open the URL and retry, at most 6 tries.
+  k=0
+  until node tools/iphone.mjs wda check > /dev/null 2>&1 && node $P/vv.mjs --port "$PP" --label "$L-ready" --out $O/vv.jsonl > /dev/null 2>> $O/$L.vv.err; do
+    k=$((k + 1)); [ $k -ge 6 ] && break
+    sleep 3; node tools/iphone.mjs open "$U" --owner $R > /dev/null 2>&1
+  done
+  echo "READY $I after $k retries $(date -u +%TZ)"
   stamp "$L-rec"
   case $SC in
     s) node tools/iphone.mjs run --driver scroll --probe std --owner $R --label "$L" --out "$O/$L.json" > "$O/$L.log" 2>&1; r=$? ;;

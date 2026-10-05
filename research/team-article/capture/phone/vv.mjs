@@ -13,7 +13,7 @@ const EXPR = `JSON.stringify((() => { const v = window.visualViewport; const r =
   return { vvH: v ? r(v.height) : null, vvTop: v ? r(v.offsetTop) : null, vvPageTop: v ? r(v.pageTop) : null, vvScale: v ? v.scale : null,
     innerH: innerHeight, innerW: innerWidth, screen: [screen.width, screen.height], y: Math.round(scrollY),
     docH: document.documentElement.scrollHeight, wallMs: Date.now(), perfMs: r(performance.now()) }; })())`;
-const c = await openTab((p) => urlHost(p.url).endsWith(`:${port}`), { tries: 3 });
+const c = await openTab((u) => urlHost(u).endsWith(`:${port}`), { tries: 3 }); // pickTab passes the tab's URL string
 let rec;
 try {
   const v = await c.evaluate(EXPR);

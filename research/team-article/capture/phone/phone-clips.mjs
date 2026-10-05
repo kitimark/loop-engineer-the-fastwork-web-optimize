@@ -16,9 +16,11 @@
 // recorder): printed beside them, and any disagreement in the >34 / >50 counts is flagged CAPTURE-DIFFERS.
 //
 // Clock link: page performance.now() -> Mac wall ms (G: the segment's sync pairs; S: the probe's clock pair), wall ->
-// CLOCK_UPTIME_RAW (the stamps), and UPTIME_RAW == the capture's PTS host clock (assumed; OBSERVED-to-verify). The
-// assumption is checked from numbers: the lag that best lines up the capture's distinct frames with the page's moving
-// frames (searched over ±600 ms) should be near 0; |lag| > 50 ms prints CLOCK-CHECK FAIL and the clip is not made.
+// CLOCK_UPTIME_RAW (the stamps), and UPTIME_RAW == the capture's PTS host clock (OBSERVED: H1 eV1 lag -4 ms, r 0.81).
+// Checked per run from numbers: --motion writes each recording's motion trace (ffmpeg metadata text: the mean frame
+// difference of the page-area box, 108 px grey; no image), and the lag that best correlates it with the page's scroll
+// speed (searched over ±600 ms) must be within 50 ms with r >= 0.5, else CLOCK-CHECK FAIL and the clip is not made.
+// (A first draft used the frames' hash changes; the hero's animations change almost every frame, so that can't work.)
 //
 // Window per scene (fixed before data): e (flick-end-v1) into1 → end; h (flick-hero-v1) down1 → end; f
 // (flick-fresh-v1) fresh-flick → end; s (scripted scroll) scroll start → scroll end + 1 s; each ± 300 ms.
@@ -94,24 +96,36 @@ export function pageLog(rec) {
   return { kind: 'S', frames: fr.map((r) => [r[0], r[1], r.length >= 4 ? r[3] : r[2]]), marks };
 }
 
-/** Lag (ms) that best lines up capture hash changes with page motion; score = P(change | moving) - P(change | still). */
-export function clockLag(pageFrames, capFrames, toPts, { span = 600, step = 8 } = {}) {
-  const mv = []; for (let i = 1; i < pageFrames.length; i++) mv.push([pageFrames[i - 1][0], pageFrames[i][0], pageFrames[i][2] !== pageFrames[i - 1][2]]);
-  if (!mv.length || capFrames.length < 3) return null;
-  const lo = toPts(mv[0][0]), hi = toPts(mv.at(-1)[1]);
-  const chg = []; for (let i = 1; i < capFrames.length; i++) { const p = capFrames[i][0]; if (p >= lo - span / 1000 && p <= hi + span / 1000) chg.push([p, capFrames[i][1] !== capFrames[i - 1][1]]); }
-  const starts = mv.map((m) => toPts(m[0]));
-  const at = (p) => { let a = 0, b = starts.length - 1; if (p < starts[0] || p > toPts(mv.at(-1)[1])) return null; while (a < b) { const m = (a + b + 1) >> 1; if (starts[m] <= p) a = m; else b = m - 1; } return mv[a][2]; };
+/** Lag (ms) that best lines up the capture's motion trace [[movieS, frameDiff]] with the page's scroll speed |dy|/dt
+ *  (Pearson r over the trace, searched over ±span ms). The hash test of the first draft could not work here: the hero's
+ *  compositor animations change almost every captured frame even at rest (H1 eV1: 3173 of 3178 frames distinct). */
+export function clockLag(pageFrames, motion, toMovie, { span = 600, step = 4 } = {}) {
+  if (!motion?.length || pageFrames.length < 3) return null;
+  const pv = []; for (let i = 1; i < pageFrames.length; i++) { const [t, dt, y] = pageFrames[i]; pv.push([toMovie(t), Math.abs(y - pageFrames[i - 1][2]) / Math.max(dt || 0, 1)]); }
+  const at = (x) => { let a = 0, b = pv.length - 1; if (x < pv[0][0] || x > pv[b][0]) return null; while (a < b) { const m = (a + b + 1) >> 1; if (pv[m][0] <= x) a = m; else b = m - 1; } return pv[a][1]; };
+  const corr = (lag) => {
+    const xs = [], ys = []; for (const [tm, v] of motion) { const p = at(tm - lag / 1000); if (p === null) continue; xs.push(v); ys.push(p); }
+    const n = xs.length; if (n < 30) return null;
+    const mx = xs.reduce((s, v) => s + v, 0) / n, my = ys.reduce((s, v) => s + v, 0) / n; let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; syy += (ys[i] - my) ** 2; }
+    return sxx && syy ? sxy / Math.sqrt(sxx * syy) : null;
+  };
   let best = null;
-  for (let lag = -span; lag <= span; lag += step) {
-    let nm = 0, cm = 0, ns = 0, cs = 0;
-    for (const [p, c] of chg) { const m = at(p - lag / 1000); if (m === null) continue; if (m) { nm++; cm += c; } else { ns++; cs += c; } }
-    if (nm < 10 || ns < 10) continue;
-    const score = cm / nm - cs / ns;
-    if (!best || score > best.score + 1e-9) best = { lag, score: Math.round(score * 1000) / 1000, moving: nm, still: ns };
-  }
-  return best;
+  for (let lag = -span; lag <= span; lag += step) { const r = corr(lag); if (r !== null && (!best || r > best.r + 1e-9)) best = { lag, r }; }
+  return best && { lag: best.lag, r: Math.round(best.r * 1000) / 1000, r0: Math.round((corr(0) ?? NaN) * 1000) / 1000 };
 }
+export const CLOCK_OK = { maxLagMs: 50, minR: 0.5 };
+
+/** ffmpeg metadata text (pts_time + YAVG per frame) -> [[movieS, value]]. Numbers only. */
+export function parseMotion(txt) {
+  const mo = []; let t = null;
+  for (const l of String(txt).split('\n')) { const a = /pts_time:([\d.]+)/.exec(l); if (a) t = Number(a[1]); const b = /YAVG=([\d.]+)/.exec(l); if (b && t !== null) { mo.push([t, Number(b[1])]); t = null; } }
+  return mo;
+}
+/** The numbers-only motion trace of a recording: the page-area box only (privacy), 108 px wide, grey, the mean absolute
+ *  difference to the previous frame. Writes text (metadata=print), never an image. Run it inside a lock hold. */
+export const motionArgs = (mov, txt) => ['-hide_banner', '-loglevel', 'error', '-i', mov, '-vf',
+  `${boxFilter()},scale=108:-2,format=gray,tblend=all_mode=difference,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=${txt}`, '-f', 'null', '-'];
 
 export function vvOk(reads) {
   if (!reads.length) return { ok: false, why: 'no viewport read' };
@@ -151,15 +165,17 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   const toPts = (t) => (t + p2w - w2u) / 1000;
   const frames = cap.frames.filter((f) => f[2] !== false);
   const pts0 = frames[0][0];
-  const lag = clockLag(log.frames.filter(([t]) => t >= a && t <= b), cap.frames, toPts);
+  const mtxt = join(runs, `${L}.motion.txt`);
+  const lag = existsSync(mtxt) ? clockLag(log.frames, parseMotion(readFileSync(mtxt, 'utf8')), (t) => toPts(t) - pts0) : null;
   const page = counts(log.frames, a, b);
   const cg = captureGaps(cap.frames, toPts(a), toPts(b));
   const capture = counts(cg, -Infinity, Infinity);
   const differs = Math.abs(capture.gt34 - page.gt34) > Math.max(1, 0.2 * page.gt34) || Math.abs(capture.gt50 - page.gt50) > Math.max(1, 0.2 * page.gt50);
   const prof = rec?.meta?.profile;
-  const reads = vv.filter((r) => r.label === `${L}-start` || r.label === `${L}-end`);
+  const reads = vv.filter((r) => [`${L}-start`, `${L}-ready`, `${L}-end`].includes(r.label));
   return { ...out, window: { from: ma, to: mb, ms: Math.round(b - a) }, page, capture: { ...capture, frames: cg.length, rateHz: cap.frames.length / Math.max(1e-6, cap.frames.at(-1)[0] - cap.frames[0][0]) },
-    captureDiffers: differs, clock: { lagMs: lag?.lag ?? null, score: lag?.score ?? null, w2uSpreadMs: w2uSpread === null ? null : Math.round(w2uSpread * 1000) / 1000, ok: !!lag && Math.abs(lag.lag) <= 50 },
+    captureDiffers: differs, clock: { lagMs: lag?.lag ?? null, r: lag?.r ?? null, r0: lag?.r0 ?? null, w2uSpreadMs: w2uSpread === null ? null : Math.round(w2uSpread * 1000) / 1000,
+      ok: !!lag && Math.abs(lag.lag) <= CLOCK_OK.maxLagMs && lag.r >= CLOCK_OK.minR, why: existsSync(mtxt) ? null : 'no motion trace (--motion)' },
     movie: { from: toPts(a) - pts0, to: toPts(b) - pts0, written: frames.length, all: cap.frames.length, w: cap.width, h: cap.height },
     profile: prof ? { name: prof.name, start: prof.start?.state ?? prof.start, battC: prof.start?.battC, drift: !!rec.meta.profileDrift } : null,
     viewport: reads.map((r) => ({ label: r.label.slice(L.length + 1), vvH: r.vvH, vvTop: r.vvTop, scale: r.vvScale, innerH: r.innerH })),
@@ -226,6 +242,14 @@ function main() {
   const scenes = String(opt('scenes', 'e,s,h,f')).split(',');
   const stamps = readJsonl(join(runs, 'stamps.jsonl')), vv = readJsonl(join(runs, 'vv.jsonl'));
   const labels = [...new Set(stamps.map((s) => s.label.replace(/-(pre|rec|post)$/, '')))];
+  if (flag('motion')) { // numbers-only motion traces for the clock check; run inside a lock hold (CPU work)
+    for (const L of labels) {
+      const mov = join(screen, `${L}.mov`), txt = join(runs, `${L}.motion.txt`);
+      if (!existsSync(mov) || existsSync(txt)) continue;
+      const r = spawnSync('ffmpeg', motionArgs(mov, txt), { encoding: 'utf8' });
+      console.log(`motion ${L}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`);
+    }
+  }
   const all = labels.map((L) => analyse(L, { runs, screen, stamps, vv }));
   const report = { at: new Date().toISOString(), fps, show, box: BOX, runs: [], clips: [] };
   for (const r of all) {
@@ -233,7 +257,7 @@ function main() {
     if (r.error) { console.log(`${r.L}: ERROR ${r.error}`); continue; }
     const p = r.page, c = r.capture;
     console.log(`${r.L} ${r.driver} ${r.window.from}->${r.window.to} ${(r.window.ms / 1000).toFixed(1)}s | page >34 ${p.gt34} (twins ${p.gt30}/${p.gt38}) >50 ${p.gt50} (twins ${p.gt46}/${p.gt54}) near ${p.near34}/${p.near50} max ${p.maxMs} frames ${p.frames}`
-      + ` | capture >34 ${c.gt34} >50 ${c.gt50} max ${c.maxMs}${r.captureDiffers ? ' CAPTURE-DIFFERS' : ''} | clock lag ${r.clock.lagMs} ms score ${r.clock.score}${r.clock.ok ? '' : ' CLOCK-CHECK FAIL'}`
+      + ` | capture >34 ${c.gt34} >50 ${c.gt50} max ${c.maxMs}${r.captureDiffers ? ' CAPTURE-DIFFERS' : ''} | clock lag ${r.clock.lagMs} ms r ${r.clock.r}${r.clock.ok ? '' : ` CLOCK-CHECK FAIL${r.clock.why ? ` (${r.clock.why})` : ''}`}`
       + ` | profile ${r.profile?.start ?? '?'} ${r.profile?.battC ?? '?'} C${r.profile?.drift ? ' DRIFT' : ''} | vv ${r.viewport.map((v) => `${v.label} ${v.vvH}/${v.vvTop}`).join(' ')}${r.morph ? ` | morph ${JSON.stringify(r.morph).slice(0, 80)}` : ''}`);
   }
   if (flag('no-encode')) { if (opt('json')) writeFileSync(resolve(ROOT, opt('json')), JSON.stringify(report, null, 1)); return; }
@@ -246,7 +270,7 @@ function main() {
     const full = { w: SCREEN.w, h: BOX.y1 - BOX.y0, filter: boxFilter() };
     const made = [{ name: `phone-${sc}`, ...encodePair(`phone-${sc}`, A, V, { screen, out, fps, crop: full, W: 300 }) }];
     if (CLOSE[sc]) {
-      const reads = all.filter((r) => !r.error && r.scene === sc).flatMap((r) => vv.filter((x) => x.label === `${r.L}-start` || x.label === `${r.L}-end`));
+      const reads = all.filter((r) => !r.error && r.scene === sc).flatMap((r) => vv.filter((x) => [`${r.L}-start`, `${r.L}-ready`, `${r.L}-end`].includes(x.label)));
       const ok = vvOk(reads);
       if (!ok.ok) console.log(`close-up ${sc}: dropped (${ok.why})`);
       else {
@@ -277,11 +301,14 @@ function selfTest() {
   ok(lg.kind === 'G' && lg.marks.into1 === 1 && lg.frames[1][2] === 5, 'G page log');
   const ls = pageLog({ frames: [[1, null, 0, 0, 775], [17, 16, 0, 9, 775]], marks: { scroll: [1, 17] } });
   ok(ls.kind === 'S' && ls.marks.scroll === 1 && ls.marks['scroll-end'] === 17 && ls.frames[1][2] === 9, 'S page log');
-  // synthetic clock check: page moves 1-2 s and 3-4 s; capture changes only while moving, shifted by +40 ms
-  const pf = []; for (let t = 0; t <= 5000; t += 16) pf.push([t, 16, (t > 1000 && t < 2000) || (t > 3000 && t < 4000) ? t : 0]);
-  const cf = []; let h = 0; for (let t = 0; t <= 5000; t += 16.7) { const p = t - 40; if ((p > 1000 && p < 2000) || (p > 3000 && p < 4000)) h++; cf.push([t / 1000, `h${h}`, true]); }
-  const lag = clockLag(pf, cf, (t) => t / 1000);
-  ok(lag && Math.abs(lag.lag - 40) <= 16, `clock lag ${JSON.stringify(lag)}`);
+  // synthetic clock check: page speed bursts; the capture's motion trace follows them 40 ms late
+  const speed = (t) => (t > 1000 && t < 1400 ? 3 : t > 2500 && t < 2700 ? 6 : t > 3600 && t < 4300 ? 2 : 0);
+  const pf = []; let y = 0; for (let t = 0; t <= 5000; t += 16) { y += speed(t) * 16; pf.push([t, 16, Math.round(y)]); }
+  const mo = []; for (let t = 0; t <= 5000; t += 16.7) mo.push([t / 1000, speed(t - 40) * 0.5 + 0.05]);
+  const lag = clockLag(pf, mo, (t) => t / 1000);
+  ok(lag && Math.abs(lag.lag - 40) <= 16 && lag.r > 0.8, `clock lag ${JSON.stringify(lag)}`);
+  ok(JSON.stringify(parseMotion('frame:0    pts:20      pts_time:0.0333333\nlavfi.signalstats.YAVG=0.144039\nframe:1 pts:30 pts_time:0.05\nlavfi.signalstats.YAVG=0.03\n')) === '[[0.0333333,0.144039],[0.05,0.03]]', 'parse motion');
+  ok(motionArgs('a.mov', 'a.txt').join(' ').includes('crop=w=iw:h=ih*707/932:x=0:y=ih*119/932,scale=108') && motionArgs('a.mov', 'a.txt').at(-2) === 'null', 'motion args: box first, null output');
   ok(vvOk([{ label: 'x-start', vvH: 775, vvTop: 0, vvScale: 1 }, { label: 'x-end', vvH: 815, vvTop: 0, vvScale: 1 }]).ok, 'vv ok');
   ok(!vvOk([{ label: 'x-start', vvH: 700, vvTop: 0, vvScale: 1 }]).ok && !vvOk([{ label: 'x', vvH: 775, vvTop: 12, vvScale: 1 }]).ok && !vvOk([]).ok, 'vv drop');
   ok(boxFilter() === 'crop=w=iw:h=ih*707/932:x=0:y=ih*119/932', `box filter ${boxFilter()}`);
