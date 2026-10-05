@@ -47,6 +47,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 .chip.bad { background: var(--bad-soft); }
 .chip.ok { background: var(--ok-soft); }
 .chip.warn { background: var(--warn-soft); }
+.idle-amber { color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 2px 6px; } /* I-188 */
+.idle-red { color: var(--bad); background: var(--bad-soft); border-radius: 6px; padding: 2px 6px; }
 .chip.muted { background: transparent; border: 1px solid var(--line); color: var(--muted); }
 h2.section { font-size: 15px; color: var(--muted); font-weight: 650; margin: 28px 0 10px; text-transform: uppercase; letter-spacing: .04em; }
 .now { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
@@ -179,7 +181,10 @@ function holder(label, l, d) {
   } else {
     if (l.holder && jobs.length) jobLines(box, jobs[0]);
     else {
-      box.appendChild(el('div', { class: 'v' }, l.holder ? agentLink(l.holder.owner) : 'free'));
+      // I-188: a free lock with jobs in line reads "Idle, N jobs waiting: ..." (amber from 2 min, red from 5); "free" only
+      // with nobody waiting
+      box.appendChild(l.holder ? el('div', { class: 'v' }, agentLink(l.holder.owner))
+        : l.idle ? el('div', { class: 'v' + (l.idle.level ? ' idle-' + l.idle.level : ''), text: l.idle.headline }) : el('div', { class: 'v' }, 'free'));
       if (l.holder) box.appendChild(el('div', { class: 'q', text: 'since ' + hhmm(l.holder.since) }));
       else if (l.handover) box.appendChild(el('div', { class: 'q', text: l.handover.text })); // I-051: a stalled hand-over shows
     }

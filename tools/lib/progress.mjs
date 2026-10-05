@@ -392,7 +392,34 @@ export function lockView(st, now = Date.now()) {
     lane: sw ? { on: !!sw.enabled, cap: sw.cap } : null,
     queue: queue.map((w) => sanitize(w.owner, 60)),
     ...(st.handover && !held ? { handover: handoverView(st.handover) } : {}),
+    ...(!held && queue.length ? { idle: idleView(st.handover, queue.length, now) } : {}),
   };
+}
+
+/** I-188: idle minutes from which the page's headline turns amber / red (user T-165: "free" while 11 jobs waited). */
+export const IDLE_AMBER_MIN = 2, IDLE_RED_MIN = 5;
+/**
+ * I-188: the headline of a free lock with jobs in line: {headline, level: '' | 'amber' | 'red', min}. "Idle, N jobs
+ * waiting: <first> waits for a quiet Mac (<reasons>) since HH:MMZ (N min)" while the host gate holds the next waiter;
+ * "... <first> has not checked in for N s|min" when it stopped polling; "... handing over to <first>" otherwise; the
+ * level from the minutes it has been so (gate wait or not-seen time); `min` null when unknown.
+ */
+function idleView(ho, n, now) {
+  const head = `Idle, ${n} job${n === 1 ? '' : 's'} waiting`;
+  const level = (min) => (min >= IDLE_RED_MIN ? 'red' : min >= IDLE_AMBER_MIN ? 'amber' : '');
+  if (!ho) return { headline: head, level: '', min: null };
+  const to = sanitize(ho.to, 60);
+  if (Array.isArray(ho.gated)) {
+    const t = Date.parse(ho.gatedSince);
+    const min = Number.isFinite(t) ? Math.max(0, Math.floor((now - t) / 60000)) : null;
+    const since = min === null ? '' : ` since ${hhmm(ho.gatedSince)} (${min} min)`;
+    return { headline: `${head}: ${to} waits for a quiet Mac (${ho.gated.map((x) => sanitize(x, 80)).join(', ')})${since}`, level: min === null ? '' : level(min), min };
+  }
+  if (Number.isFinite(ho.notSeenSec)) {
+    const min = Math.floor(ho.notSeenSec / 60);
+    return { headline: `${head}: ${to} has not checked in for ${ho.notSeenSec < 120 ? `${ho.notSeenSec} s` : `${min} min`}`, level: level(min), min };
+  }
+  return { headline: `${head}: handing over to ${to}`, level: '', min: null };
 }
 
 /** I-051: lock.handoverInfo() for the page: whom a free lock is handing over to, and why that waiter has not taken it. */
@@ -882,7 +909,7 @@ function holderText(l, what) {
   if (!l) return `${what}: unknown`;
   // with the lane's switch off and no group it reads as before the lane
   const lane = l.lane?.on ? `; shared lane on, cap ${l.lane.cap}` : '';
-  const h = l.shared ? sharedText(l) : `${l.holder ? `${l.holder.owner} (since ${hhmm(l.holder.since)})` : l.handover ? `free, ${l.handover.text}` : 'free'}${lane}`;
+  const h = l.shared ? sharedText(l) : `${l.holder ? `${l.holder.owner} (since ${hhmm(l.holder.since)})` : l.idle ? l.idle.headline : l.handover ? `free, ${l.handover.text}` : 'free'}${lane}`; // I-188
   return `${what}: ${h}${l.queue.length ? `, ${l.queue.length} waiting (${l.queue.join(', ')})` : ''}`;
 }
 

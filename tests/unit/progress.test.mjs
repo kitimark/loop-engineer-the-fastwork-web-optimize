@@ -293,14 +293,39 @@ test('I-051 lockView: a free lock shows whom it is handing over to and why (gate
     queue: [{ owner: 'fix-c', kind: 'process', pid: 616161, checkout: `${HOME}/wt-c`, since: '2026-10-01T17:05:00Z', lastSeen: '2026-10-01T17:09:50Z' }] });
   const g = P.lockView(free({ to: 'fix-c', gated: ['cpu 32.5 % > 25 %', 'load1 70.8 > 6'], gatedSince: '2026-10-01T17:05:00Z' }), NOW);
   assert.deepEqual(g.handover, { to: 'fix-c', text: 'handing over to fix-c (gated: cpu 32.5 % > 25 %, load1 70.8 > 6)' });
-  assert.equal(chromeLine(free({ to: 'fix-c', gated: ['load1 70.8 > 6'] })), '  Chrome: free, handing over to fix-c (gated: load1 70.8 > 6), 1 waiting (fix-c)');
-  assert.equal(chromeLine(free({ to: 'fix-c', notSeenSec: 42 })), '  Chrome: free, handing over to fix-c (not seen for 42 s), 1 waiting (fix-c)');
-  assert.equal(chromeLine(free({ to: 'fix-c', seenSec: 1 })), '  Chrome: free, handing over to fix-c (seen 1 s ago), 1 waiting (fix-c)');
+  // I-188: the text form's headline says what is true (idle while a job waits), not "free"
+  assert.equal(chromeLine(free({ to: 'fix-c', gated: ['load1 70.8 > 6'] })), '  Chrome: Idle, 1 job waiting: fix-c waits for a quiet Mac (load1 70.8 > 6), 1 waiting (fix-c)');
+  assert.equal(chromeLine(free({ to: 'fix-c', notSeenSec: 42 })), '  Chrome: Idle, 1 job waiting: fix-c has not checked in for 42 s, 1 waiting (fix-c)');
+  assert.equal(chromeLine(free({ to: 'fix-c', seenSec: 1 })), '  Chrome: Idle, 1 job waiting: handing over to fix-c, 1 waiting (fix-c)');
   assert.equal(P.lockView(free(undefined), NOW).handover, undefined, 'no hand-over record: the view is as before');
   assert.ok(!JSON.stringify(g).match(/616161|wt-c|someone-private/));
   // the page shows the same text under "free"
   const page = readFileSync(new URL('../../tools/lib/progress-page.html', import.meta.url), 'utf8');
   assert.match(page, /l\.handover\.text/);
+});
+
+test('I-188 lockView idle: a free lock with jobs in line reads "Idle, N jobs waiting: ..." (gated: waits for a quiet Mac since HH:MM, amber from 2 min, red from 5; not seen; handing over; no record); "free" only with an empty queue; the page shows it', () => {
+  const W = (owner, o = {}) => ({ owner, kind: 'process', pid: 616161, checkout: `${HOME}/wt-c`, since: '2026-10-01T17:00:00Z', lastSeen: '2026-10-01T17:09:50Z', ...o });
+  const free = (handover, queue = [W('fix-c'), W('fix-d', { short: true, maxSec: 60 })]) => ({ resource: 'chrome-measure', stale: null, next: queue.length ? 'fix-c' : null, holder: null, ...(handover ? { handover } : {}), queue });
+  const gated = (since) => P.lockView(free({ to: 'fix-c', gated: ['cpu 47 % > 25 %', 'load1 7.1 > 6'], gatedSince: since }), NOW).idle;
+  assert.deepEqual(gated('2026-10-01T17:05:00Z'), { headline: 'Idle, 2 jobs waiting: fix-c waits for a quiet Mac (cpu 47 % > 25 %, load1 7.1 > 6) since 17:05Z (5 min)', level: 'red', min: 5 });
+  assert.deepEqual([gated('2026-10-01T17:05:01Z').level, gated('2026-10-01T17:05:01Z').min], ['amber', 4], 'just under 5 min: amber');
+  assert.deepEqual([gated('2026-10-01T17:08:00Z').level, gated('2026-10-01T17:08:00Z').min], ['amber', 2], 'from 2 min: amber');
+  assert.deepEqual([gated('2026-10-01T17:08:01Z').level, gated('2026-10-01T17:08:01Z').min], ['', 1], 'under 2 min: plain');
+  const ns = (s) => P.lockView(free({ to: 'fix-c', notSeenSec: s }), NOW).idle;
+  assert.deepEqual(ns(42), { headline: 'Idle, 2 jobs waiting: fix-c has not checked in for 42 s', level: '', min: 0 });
+  assert.deepEqual(ns(150), { headline: 'Idle, 2 jobs waiting: fix-c has not checked in for 2 min', level: 'amber', min: 2 });
+  assert.equal(ns(300).level, 'red');
+  assert.deepEqual(P.lockView(free({ to: 'fix-c', seenSec: 1 }), NOW).idle, { headline: 'Idle, 2 jobs waiting: handing over to fix-c', level: '', min: null });
+  assert.deepEqual(P.lockView(free(null, [W('fix-c')]), NOW).idle, { headline: 'Idle, 1 job waiting', level: '', min: null }, 'no hand-over record');
+  assert.equal(P.lockView(free(null, []), NOW).idle, undefined, 'nobody waits: no idle headline');
+  assert.equal(chromeLine(free(null, [])), '  Chrome: free');
+  assert.equal(chromeLine(free({ to: 'fix-c', gated: ['cpu 47 % > 25 %'], gatedSince: '2026-10-01T17:04:00Z' })), '  Chrome: Idle, 2 jobs waiting: fix-c waits for a quiet Mac (cpu 47 % > 25 %) since 17:04Z (6 min), 2 waiting (fix-c, fix-d)');
+  assert.equal(P.lockView({ ...free({ to: 'fix-c', seenSec: 1 }), holder: { owner: 'fix-x', acquiredAt: '2026-10-01T17:05:00Z' } }, NOW).idle, undefined, 'held: no idle headline');
+  const page = readFileSync(new URL('../../tools/lib/progress-page.html', import.meta.url), 'utf8');
+  assert.match(page, /l\.idle\.headline/);
+  assert.match(page, /idle-amber/);
+  assert.match(page, /idle-red/);
 });
 
 test('I-051 gatherLive: a free chrome-measure lock carries the hand-over record from lock.mjs', async () => {
