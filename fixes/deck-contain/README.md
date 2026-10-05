@@ -5,8 +5,8 @@
 
 **Status:** P-143 ended NOT REPRODUCED (signed). P-146 is CONFIRMED by ops-reader-P146r (11 hit, 4 miss) and landed as
 38c7a33e. Lead ruling: R3 is neither landed as T2 nor proposed yet, because the pixel instrument is unstable. P-148 rev 1
-(`P148.md`, now rev 1.1 after the pre-data read) first makes the instrument stable (motion hold, settle, A/A gate), then judges R3 against T2. It
-waits for the lead's delta check and signature; there is no P-148 data and no build.
+(`P148.md` rev 1.1, signed) ran every registered step and reads GATE-FAILED in both engines. The card ends there and
+R3's pixels stay undecided on this instrument. It waits for the result read and the lead's ruling. No build.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
@@ -619,6 +619,40 @@ the common case only. The result reader (ops-reader-P146r) found base against ba
 (Simulator landscape: `out/deck-contain/px-sim-landscape.json`, leave rest 97,082 px). In Chrome the largest is 565,426
 device px (t1200x900 leave swipe, `out/deck-contain/px-chrome-g3.json`). Both figures are OBSERVED in our setup, cause
 unknown. `results-p146.json` is unchanged; this erratum is the correction (lead ruling on P-148 rev 1 N7).
+
+## Result: P-148 reads GATE-FAILED (`P148.md` rev 1.1, `results-p148.json`)
+
+All 9 registered groups (C1-C6, S1-S3) ran in shared slots, each completing in its first slot (exit 0, no `notRun`, no
+error). Every registered triple is present: 224 in Chrome and 48 in the Simulator. Scorer output:
+`out/deck-contain/score-p148.json`.
+
+| gate check | Chrome | Simulator |
+|---|---|---|
+| G1 complete | pass (224/224) | pass (48/48) |
+| G2 settled | **fail** (108 bases unsettled; median 8 shots) | pass (median 2 shots) |
+| G3 no A/A pixel above 8 levels | **fail** (32 triples, up to 134 px) | **fail** (2 triples, up to 3,013 px) |
+| G4 A/A <= 0.01 % of the frame | **fail** (119 triples, up to 1.95 %) | **fail** (14 triples, up to 1.35 %) |
+| G5 null arm T0/T1 | **fail** (66 of 112 N0 triples are T2) | pass (22 T0, 2 T1) |
+| G6 page did not move | pass | pass |
+
+- **Verdict:** `GATE-FAILED` in both engines. The card ends. The scorer computed nothing about R3, so R3's pixels stay
+  undecided on this instrument.
+- **Where it fails** (OBSERVED, cause unknown, finding F-293):
+  - Chrome: every DPR-3 mobile and tablet config fails; d860x900 and d1440x900 (DPR 1) do not.
+  - Simulator: one-off changes after the base shot (expanded 6, collapsed 6, landscape 2).
+  - DRY0 located the Chrome motion in the frosted nav pill and in shade-1 speckle over the portfolio photos.
+- **Tally** (owner's; the reader confirms): 1 hit, 4 misses, 7 insufficient.
+  - Hit: P11.
+  - Misses: P1, P2, P3 (Chrome N0: 40 T0, 6 T1, 66 T2) and P10. In P10 the clock mask was dropped in 56 Chrome and 8
+    Simulator triples, mostly at the inview position, where it meets the deck footprint.
+  - Insufficient: P4-P9 and P12 (step 2 not computed).
+- **DRY0** (unscored, after the signature; nothing changed after it):
+  - Chrome m430x932: 11 of 16 bases were unsettled. Base vs base-again reached up to 20,527 px (0.56 %), with 2 and 4 px
+    above 8 levels. The nav pill moved up to 29 levels.
+  - Simulator expanded: three one-off changes, the worst 42,858 px (3,057 above 8 levels, shade 111). One page frame
+    was held in the arm phase of 3 triples.
+- **Decision as registered:** no build. The lead rules the next step; no follow-up card before that. Any R3 claim keeps
+  the P-146 first-swipe statement, and the P14 phone G check still waits for the iPhone.
 
 ## Scenarios not run
 
