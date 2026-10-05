@@ -1,0 +1,15 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -10969,6 +10969,12 @@
+ .start-selling-morph.is-expanded .start-selling-morph-panel,
+ .start-selling-top-nav.is-expanded .start-selling-morph-panel {
+   pointer-events: auto;
++}
++/* perf(morph-close-peak): the header's panel is opacity 0 whenever .is-morphing is off (morph <= 0.001), but its
++   composited children (col-tracks, veil, center, footer) still repaint on every frame of the header's 0.68 s width
++   transition after a close. visibility: hidden stops them painting; nothing visible changes. */
++.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel {
++  visibility: hidden;
+ }
+ .start-selling-morph-backdrop {
+   opacity: 0.4;
