@@ -85,6 +85,23 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
   - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
   - P-122's F-256 dry run repeats this on the rev 7d build.
+- 10-05 **P-121 final read at the pinning commit (int-v8 07aaddee, on main as 8f8f78da): PASS with notes N1-N2.**
+  - 8f8f78da carries the same p121 blobs as 07aaddee, and fixes/v9-best is unchanged between the two.
+  - On disk equal to the commit: flick-middle-v2 441d7987 (sha ca38f3627f78), flick-end-v2 9887dca0 (4eb4bbc62b43), gate.mjs b96f1e5e4e0d, selftest-g 51fcc8ef569a. ops re-ran SELFTEST-G: OK 36.
+  - All 10 calibration records under out/p121 hash to the README values (phone hashes taken after the hold, because the end stamp rewrites records; disclosed). They ran on B's port, never on an arm.
+  - holds.log:
+    - Simulator shared slots 00:44:52-00:49:15Z (code 124) and 00:56:17-00:58:21Z (code 0);
+    - phone no-timing hold 01:03:45-01:08:41Z, code 0;
+    - no arm data.
+  - Gate: Serious, induced, at both ends (29.4 then 32.6 C), no drift.
+  - The pin is justified by the phone data:
+    - m340 passes gM with margin on both sides (6 traversals, max 4200);
+    - m300 is marginal; m260 is VOID;
+    - efast releases on both conditions; eslow releases on neither, outside the margins.
+  - RULE fv 5 / travel 300 equals the rev 7d candidate. If rev 7d lands with other values, RULE and the pin are redone with a new read before any P-122 hold.
+  - C5: (a) hit (0.80); (b) open until the F-256 dry run.
+  - N1: the first Simulator slot ended with code 124 (killed at its cap) after m380, efast and eslow had written. The README says only "2 shared slots"; disclose the 124. These records are information only (uncounted, Simulator).
+  - N2: P-122's holds check the compiled program hashes of the pinned scripts as run (flick-middle-v2 at 340: 607b59612abb; flick-end-v2 fast: 21aaafd3a9fd; slow: 7312cdcd2574), not only the file blobs.
 - 10-05 **P-124 D1 path rule (ops ruling to fix-hero-exit-threaded, before the s6/s7 A/A data).**
   - Exact match, per counted stroke, C vs V:
     - start y and p, touchstart clientY, lift clientY;
