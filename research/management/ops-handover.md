@@ -85,6 +85,32 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
   - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
   - P-122's F-256 dry run repeats this on the rev 7d build.
+- 10-05 **P-124 interim (fix-hero-exit-threaded 5d91a542): D2-D7 answered; D1 still running, so there is no final read yet.**
+  - D2 cause: the gesture budget check refused items before any touch, the output filter hid the refusal, and `;` plus `head` made the session exit 0.
+  - sim7d.sh now has fixed snapshots, prints SERVED per arm (EXIT 4 on a wrong hash), and ends with ITEM OK|VOID.
+  - g7d-hold.sh 5521f5004f67: VOID items, one re-run each, then INSUFFICIENT; HOLD VOID with exit 6; stale records moved aside. Stub self-test 1edc28928ccc passes 8 of 8.
+  - The hold plan is now 3 holds (H1 foC foV nlV nlC, H2 fsV fsC, H3 e4C e4V; fs's budget is 229 s). It changed before any data, and the final read checks it.
+  - New pins: sim7d-compare.mjs 0263ddb5b68a, sim7d.sh fb357826def1.
+- 10-05 **P-123 final pre-data read (fix-toolbar-resize rev 2, 443bafa1): PASS.** The probe may queue one shared Simulator slot, in a free window only, never ahead of int-v8 or fix-hero-exit-threaded.
+  - Pins: the on-disk files equal the commit blobs, and the sha256s match the card:
+    - p123-inject 9849c25577b9, read-p123 aa8c9896dc68, p123-selftest e7cf99d230a3 (rev 1 marked superseded);
+    - sim-p123 787e8e69b75e and flick-hero-v1 6ae05e12ace9, unchanged.
+  - ops re-ran the self-test: SELFTEST PASS (18 checks).
+  - No P-123 data exists: out/toolbar-resize has only the synthetic selftest123 fixtures, and holds.log has no fix-toolbar-resize hold after 00:19:23Z.
+  - T1 met:
+    - flips are counted over every element:property;
+    - only the non-flip rows are capped (300);
+    - a flip list over 2000 is INSUFFICIENT (self-tested with 400 noise rows first, and with 2001 flips).
+  - T2 met:
+    - a step-specific key needs >= 2 step records, plus either 0 in rest frames or a per-frame rate >= 2x its rest rate;
+    - WRITE needs >= 1 such key on or in the box;
+    - validity needs >= 2 step frames and >= 1 rest frame, and the reader prints both counts.
+  - T3 met with rule (a):
+    - a flip counts only when it is attributed to the audit's viewport-unit set: its own rule, an inline style, or var() of a viewport-unit custom property; or it inherits from an ancestor in that set with equal values at A and B;
+    - every other flip is listed as scroll-confounded or layout-derived and never decides the call.
+  - The self-test also caught two owner bugs, both fixed before any data:
+    - the attribution looked up the property by index;
+    - the reader's --json output was cut at 64 KB.
 - 10-05 **P-123 pre-data read (fix-toolbar-resize 1dc26faa, S5 trigger probe, count-only Simulator): NOT YET PASS, conditions T1-T3.**
   - OK:
     - the five pins on disk equal the card;
