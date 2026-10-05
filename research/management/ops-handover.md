@@ -72,6 +72,13 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-120 GM: INSUFFICIENT (not comparable); GE not run under P-120 (lead ruling).** H3a2 itself is VALID (int-v8: all items exit 0, PIN head 63904a76); my item-level read is still owed.
+  - V's part-M flings settle between 6035 and 5240 on rev 7c's end screen: about 13 s and about 225 moving frames per item, and the mid page is never re-crossed. C's flings settle between 5220 and about 1700: about 27 s and 957 moving frames. In P-111 both arms moved like C. So GM compares different scroll paths.
+  - Preliminary counts, reported and not counted (dt>50 / dt>34): gMC1 0/2, gMV1 0/4, gMV2 0/3. The registered gate (d > +2 on dt>50) would pass trivially. No rate gate is swapped in after this look.
+  - H3b and H4 are not run. The runner parks Safari and releases the lease. A2 stays a P-120 amendment, covering the M leg (H2' = H5/H6).
+  - **P-121 assigned: path-matched G driver** (new ticket; the look above must be disclosed in it). Owner per the lead's spawn; int-v8 by default. The pre-data read goes through ops.
+  - Behaviour: the rev 7c owner is resumed for a code read on why flings stop at the end screen. If the snap is catching momentum, the user judges it by a finger check (console step) before v9 can become the best build.
+  - Next free: **P-122**.
 - 10-05 **P-120 Amendment A2 (int-v8; draft, committed after H4) and lead rulings:**
   - The M leg cuts each record at the first m=0 after the first close, one rule for both arms. This is how the lead's "drive from m=0" ruling is implemented, and A2 says so.
   - Precondition of the lead's re-sign: one real cycles-4 driver pass per arm, giving exactly 6 counted tweens after the cut. It runs as a shared Simulator job, outside the phone block or in a window it fits.
