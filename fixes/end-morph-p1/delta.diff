@@ -1,0 +1,229 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 04:17:05
++++ b/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 04:56:22
+@@ -14753,6 +14753,145 @@
+       if (v === __mkV) return;
+       __mkV = v;
+       for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
++    };
++  // perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; ported to v9.2 by fix-end-morph from fix-morph-gpu's fixes/morph-gpu/delta.diff): on phones (<= 640 px), while the morph
++  // moves (0.001 < m < 1), the nav keeps its final size and place (data-fw-rv in the CSS) and the box today's nav
++  // has at m (top 16 -> 12 px, width pill -> panel, height 52 px -> panel, radius 32 -> 20 px) is cut out of it by
++  // a clip-path. Nothing inside is laid out again per frame: every part takes its today's place at m by a
++  // transform (bar, logo, actions, the panel's columns, veil, title block, footer), the backdrop columns are
++  // clipped to today's panel height, and the dark colour is a layer at opacity m over the light one (the same
++  // colour as today's color-mix). WebKit applies a changed clip-path on a composited layer as a new shape mask
++  // without repainting the content (RenderElement.cpp: ClipPath -> RecompositeLayer when willCompositeClipPath()).
++  // Settled (m = 0 or 1) the attribute and the inline values are off and the nav is exactly today's.
++  var __rvMq = window.matchMedia(`(width <= 640px)`),
++    __rvOn = !1,
++    __rvV = null,
++    __rvP = null,
++    __rvE = null,
++    __rvD = null,
++    __rvG = null,
++    __rvWf = 0,
++    __rvHf = 0,
++    __rvIx = 16,
++    __rvDpr = 1,
++    __rvF = 0,
++    __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
++    // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
++    __rvFin = () => {
++      __rvF && (cancelAnimationFrame(__rvF), (__rvF = 0));
++      for (let k of [`backdrop-filter`, `-webkit-backdrop-filter`, `transition-property`]) I.style.removeProperty(k);
++      __rvG && !__rvOn && (__rvG.removeAttribute(`data-fw-rv`), __rvG.style.removeProperty(`--morph`));
++    },
++    __rvOff = (v) => {
++      __rvOn = !1;
++      I.removeAttribute(`data-fw-rv`);
++      I.style.removeProperty(`clip-path`);
++      // the clip goes in this frame with no backdrop filter on the nav (the glass, at today's box and blur, stays
++      // one more frame); the nav's own blur comes back next frame (__rvFin)
++      I.style.setProperty(`backdrop-filter`, `none`);
++      I.style.setProperty(`-webkit-backdrop-filter`, `none`);
++      // back at m = 0 the nav's width drops from the panel to the pill while .is-morphing goes: today's
++      // :not(.is-morphing) transition list (background, opacity, transform, visibility, width) must not animate it;
++      // the first four keep their own durations (same order in the reduced-motion list)
++      +v <= 0.001 && I.style.setProperty(`transition-property`, `background, opacity, transform, visibility`);
++      __rvG && __rvG.style.setProperty(`--morph`, v);
++      __rvF = requestAnimationFrame(() => {
++        __rvF = 0;
++        __rvFin();
++        // Safari (iOS Simulator, OBSERVED, cause unknown): after the reveal ends at m = 1 the settled panel stays cut
++        // to the last reveal clip, even with the clip-path gone; switching the nav's backdrop filter off and on once
++        // more, two frames later, clears it. At m = 1 the nav's blur is blur(0px) under an opaque panel, so these two
++        // frames look the same. Not at m = 0 (the pill's blur is visible there; the last clip is the pill itself).
++        +v >= 1 &&
++          (__rvF = requestAnimationFrame(() => {
++            __rvF = 0;
++            if (__rvOn) return;
++            I.style.setProperty(`backdrop-filter`, `none`);
++            I.style.setProperty(`-webkit-backdrop-filter`, `none`);
++            __rvF = requestAnimationFrame(() => ((__rvF = 0), __rvOn || __rvFin()));
++          }));
++      });
++      __rvD && __rvD.style.removeProperty(`opacity`);
++      for (let [t, k] of [[B, `translate`], [re, `left`], [re, `translate`], [ie, `translate`]]) __rvT(t, k, ``);
++      if (__rvE) {
++        __rvT(__rvE.p, `transform-origin`, ``);
++        for (let [t, k] of [[__rvE.b, `transform`], [__rvE.b, `clip-path`], [__rvE.v, `transform`], [__rvE.c, `translate`], [__rvE.f, `translate`]])
++          __rvT(t, k, ``);
++        for (let [e] of __rvE.k) __rvT(e, `translate`, ``);
++      }
++    },
++    __rvW = (v) => {
++      if (v === __rvV) return;
++      __rvV = v;
++      let m = +v;
++      if (!(__rvMq.matches && m > 0.001 && m < 1)) {
++        __rvOn && __rvOff(v);
++        return;
++      }
++      if (!__rvOn) {
++        __rvOn = !0;
++        // switched on again before the second off step ran: finish it now (the reveal's CSS turns the blur off)
++        __rvF && __rvFin();
++        __rvD ||
++          ((__rvD = document.createElement(`div`)), (__rvD.className = `fw-rv-dark`), I.insertBefore(__rvD, B));
++        // the backdrop blur moves to a sibling sized exactly like today's nav (same CSS formulas from --morph): blurred
++        // inside the full-size nav it would also sample the page beyond today's box (a light glow at the pill's edges)
++        __rvG ||
++          ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), I.parentNode.insertBefore(__rvG, I));
++        __rvG.setAttribute(`data-fw-rv`, ``);
++        I.setAttribute(`data-fw-rv`, ``);
++        // one layout read per morph, in the frame that switches the reveal on (that frame lays the nav out anyway)
++        ((__rvWf = I.offsetWidth), (__rvHf = I.offsetHeight));
++        __rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16;
++        __rvDpr = window.devicePixelRatio || 1;
++      }
++      if (__rvP !== __mkP)
++        ((__rvP = __mkP),
++          (__rvE = __mkP && {
++            p: __mkP,
++            b: __mkP.querySelector(`.start-selling-morph-backdrop`),
++            v: __mkP.querySelector(`.start-selling-morph-veil`),
++            c: __mkP.querySelector(`.start-selling-morph-center`),
++            f: __mkP.querySelector(`.start-selling-morph-footer`),
++            // the columns' own offset is a % of their height (today's panel height): kept by a px translate
++            k: [...__mkP.querySelectorAll(`.start-selling-morph-col`)].map((e) => [
++              e,
++              (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100,
++            ]),
++          }));
++      // today's box at m, in the coordinates of the full-size nav (left/top of the full box = 0)
++      let n = 1 - m,
++        Wf = __rvWf,
++        Hf = __rvHf,
++        w = Wf - 8 * n,
++        h = 52 + (Hf - 52) * m,
++        dx = 4 * n,
++        dy = 4 * n,
++        s = w / Wf,
++        px = (e) => `${Math.round(e * 1e4) / 1e4}px`,
++        // whole device pixels for the text-carrying layers (title block, footer, nav bar): today's text is laid
++        // out and drawn on the device-pixel grid, a fractional GPU offset would resample it
++        dp = (e) => px(Math.round(e * __rvDpr) / __rvDpr);
++      I.style.setProperty(
++        `clip-path`,
++        `inset(${px(dy)} ${px(dx)} ${px(Hf - dy - h)} ${px(dx)} round ${px(32 - 12 * m)})`,
++      );
++      __rvD.style.setProperty(`opacity`, String(m));
++      __rvG.style.setProperty(`--morph`, v);
++      B.style.setProperty(`translate`, `0px ${dp(dy)}`);
++      re.style.setProperty(`left`, `0px`);
++      re.style.setProperty(`translate`, `calc(${px(dx + __rvIx + (w / 2 - __rvIx) * m)} - ${50 * m}%) 0px`);
++      ie.style.setProperty(`translate`, `${dp(-dx)} -50%`);
++      if (__rvE) {
++        __rvE.p.style.setProperty(`transform-origin`, `${px(Wf / 2)} ${px(dy + h / 2)}`);
++        // the columns (3 on phones, fixed gaps) scale by w / Wf: widths and positions within 0.1 px of today's
++        __rvT(__rvE.b, `transform`, `translate(${px(dx + 0.03 * (Wf - w))}, ${px(dy)}) scale(${s})`);
++        __rvT(__rvE.b, `clip-path`, `inset(0px 0px ${px(Hf - h / s)} 0px)`);
++        __rvT(__rvE.v, `transform`, `translate(${px(dx)}, ${px(dy)}) scale(${s}, ${h / Hf})`);
++        __rvT(__rvE.c, `translate`, `0px ${dp(dy + h / 2 - Hf / 2)}`);
++        __rvT(__rvE.f, `translate`, `0px ${dp(dy + h - Hf)}`);
++        for (let [e, o] of __rvE.k) __rvT(e, `translate`, `0px ${px(o * (h / s - Hf))}`);
++      }
+     };
+   var W = V(B, 2),
+     ue = (n) => {
+@@ -14882,6 +15021,7 @@
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
+           __mkW(e[`--morph`]),
++          __rvW(e[`--morph`]),
+           k(re, `href`, a()),
+           k(re, `aria-label`, s(o).header.home),
+           k(re, `data-selenium`, SE.header.home),
+--- a/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 04:17:05
++++ b/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 04:56:22
+@@ -12426,4 +12426,70 @@
+   position: relative;
+   height: 100lvh;
+   pointer-events: none;
++}
++
++
++/* perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted; ported to v9.2 by fix-end-morph from fix-morph-gpu). Phones (<= 640 px), only while the morph
++   moves ([data-fw-rv], set by the nav's template effect for 0.001 < m < 1): the nav takes its final size and place,
++   and today's box at m is cut out of it by an inline clip-path; the parts inside follow by inline transforms (JS
++   __rvW). The dark colour is .fw-rv-dark at opacity m over the light background. Settled, the nav is today's. */
++.fw-rv-dark,
++.fw-rv-glass {
++  display: none;
++}
++@media (width<=640px) {
++  .start-selling-top-nav.svelte-1dcozpm[data-fw-rv] {
++    top: 12px;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    border-radius: 0;
++    background: #ffffff1a;
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++    will-change: transform;
++  }
++  /* today's nav box and its backdrop blur, from the same formulas as .start-selling-top-nav at <= 640 px; it paints
++     nothing itself (no background), it only blurs the page under today's box */
++  .fw-rv-glass[data-fw-rv] {
++    --morph: 0;
++    --pill-w: min(984px, calc(100vw - 32px));
++    --pill-h: 52px;
++    --panel-w: calc(100vw - 24px);
++    --panel-h: calc(100vh - 24px);
++    display: block;
++    position: fixed;
++    z-index: 40;
++    left: 50%;
++    top: calc(16px + (12px - 16px) * var(--morph));
++    box-sizing: border-box;
++    width: calc(var(--pill-w) + (var(--panel-w) - var(--pill-w)) * var(--morph));
++    height: calc(var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph));
++    border-radius: calc(32px - 12px * var(--morph));
++    -webkit-backdrop-filter: blur(calc(20px * (1 - var(--morph))));
++    backdrop-filter: blur(calc(20px * (1 - var(--morph))));
++    pointer-events: none;
++    transform: translate(-50%);
++  }
++  .start-selling-top-nav[data-fw-rv] > .fw-rv-dark {
++    display: block;
++    position: absolute;
++    inset: 0;
++    z-index: 0;
++    background: #131922;
++    pointer-events: none;
++    will-change: opacity;
++  }
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-bar,
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-logo,
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-actions,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-col,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-center,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-footer {
++    will-change: transform;
++  }
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-backdrop,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-veil {
++    transform-origin: 0 0;
++    will-change: transform;
++  }
+ }
