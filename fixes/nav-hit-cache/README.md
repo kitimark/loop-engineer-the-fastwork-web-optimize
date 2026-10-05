@@ -917,6 +917,16 @@ re-run on this base. It passed on step 4 and runs on request (one more ~140 s sl
 
 ## D card P-136: U2, the morph-open hit-test deferral (rev 1, registered before its data)
 
+**SIGNED by the lead** (10-05, after ops' pre-data read PASS ccf67f0c on 6d8d400c), with ops' notes N1-N4 as conditions:
+- N1: C2's reference and C1's threshold 40 and p values are informed by parity run 2's deferred count (pre-card
+  evidence); the result read labels them so.
+- N2: the Chrome tolerances rest on one A/A pair per viewport; the Simulator tolerance comes from its own K-K A/A.
+- N3: part 2 follows the lead's phone order (after P-130's H4 / H5 on phone back, alongside P-137 and P-134, first
+  signed first; runner iphone-runner); Simulator slots are DEFERRED during phone blocks.
+- N4: if P-134 lands first, ops delta-checks the re-pinned K / V before any counted run.
+
+Part 1 runs now in the shared lane; part 2 waits for the phone. The card text below is unchanged from 6d8d400c.
+
 Less-work card (memory "less-work-landing-rule"): cost-card counts per event on the full page in Chrome and the
 Simulator, plus one short phone no-worse check. No smoothness claim. Id P-136 from mgmt-ops-10; the lead accepted U2 in
 principle as exact less work (the shown `is-on-dark` value is unchanged) and keeps it out of int-v8's P-134 (v9.1 =
