@@ -139,6 +139,14 @@ maxY 6075, first touch 0 / -6.45 / 681, as every other record). Records are in t
   outputs are byte-identical; on all four items the e2c2bfdad2ba output minus `^AMEND-b` lines is byte-identical to
   9cb401ffd83d's. 777663766071 cannot read e4 (exit 1: the unresolved `$flicks` repeat count the parser fix covers).
 
+**Ops final read (D1), PASS with notes N1-N4 (mgmt-ops-10, 16990e85; finalver.sh reproduced, every exit code, output
+hash and record hash matched).** The phone write-up carries them:
+- N1: e4's frozen DIFF 4 is reported beside the AMEND-b SAME, never instead of it.
+- N2: two e4 path groups pass exactly at their bar: the up 200 px fling (C-V 0.67 = need 0.67) and the down 150 px
+  drag (0.88 = 0.88).
+- N3: the Simulator counts show the mechanism only; prediction 8 (pulled back to open V <= C) is judged on the phone.
+- N4: the late-flick start drift is within-build (s9 against s13, both C, 118-873 px apart), not an arm effect.
+
 **Rulings after e4 data (2026-10-05).**
 - **A (ops, within the frozen rule):** s5 is VOID, both as the exact-match C record and as an A/A partner. Its page
   started in another state after a cold boot (endH 932, maxY 6426, docH 7201; every other record has 815 / 6075 / 6850),
