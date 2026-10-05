@@ -1,0 +1,65 @@
+{
+  "topic": "end-morph-p1",
+  "owner": "fix-end-morph-p1",
+  "what": "PR-012 rev 1 (fix-morph-gpu, accepted by the user 2026-10-04) ported onto v9-final (rev 7c); counts and pixels only, no timing (memory defer-timing-focus-call-tree)",
+  "config": {
+    "baselineSnapshot": "b1789284481295-4ad4a84a",
+    "base": { "name": "v9-final", "js": "647c9ef2b1e2", "css": "e1359ab9994a", "from": "fixes/v9-best/patch.diff 4196eaa61d96" },
+    "patched": { "js": "602aae528fe3", "css": "a81b9af7b2c9", "delta": "fixes/end-morph-p1/delta.diff", "patch": "fixes/end-morph-p1/patch.diff 5380e4a82875" },
+    "rev1Reference": { "rv": "372b99478871 / 257507365449", "rvhook": "81a43009c62d", "base": "best-build 65052c4a3902 / e0f92804c521" },
+    "stackWithF1U2": { "c_f12": "a6426953727a / e1359ab9994a (int-v8 pin)", "c_f12_p1": "4da641f828bb / a81b9af7b2c9", "bothOrdersSame": true, "sharedLines": 0 },
+    "measurementCodeChanged": false,
+    "engines": ["headless Chrome 430x775 and 430x932 DPR 3 mobile touch, no throttle", "iOS Simulator fw-sim 15 Pro Max, Safari 26.5 (functional session)"],
+    "outputs": "out/end-morph-p1/, out/morph-gpu/ in the fix-end-morph-p1 worktree (gitignored)"
+  },
+  "gates": {
+    "a_outsideZone": {
+      "verdict": "PASS",
+      "rule": "0 css px beyond A/A against v9-final; m 0 after a close judged against v9-final's pre-zone render (lead ruling)",
+      "chrome775": { "pre": 0, "up0": 0, "dn0_vs_base_up0": 0, "selftest_all_stops_consistent": 0 },
+      "chrome932": { "pre": 0, "up0": 0, "dn0_vs_base_up0": 0, "post_vs_base_pre_navBand100": 0 },
+      "sim": { "pre": 0, "up0": 0, "dn0_vs_base_up0": 0, "post_sameStop": 0 },
+      "chromeReduced775": { "pre": 0, "up0": 0, "dn0": 0, "post": 0 },
+      "baseOwnPostCloseShift": { "status": "OBSERVED, cause unknown", "chrome775_dn0_vs_up0": 357, "chrome932_dn0_vs_up0": 341, "chrome932_post_vs_pre_navBand": 341, "maxLevel": 236, "boxCss": [304, 16, 416, 64], "what": "Join waitlist label 1 css px off after a close, as on v9.2", "sim": 0, "reduced": 0 }
+    },
+    "b_insideZone": {
+      "verdict": "PASS (same residue as rev 1's accepted render)",
+      "rule": "P1~v9-final vs rev 1~best-build at the same m, same session and scorer; gap within PR-010 numbers where P1 is larger",
+      "consistentCssPx2": {
+        "chrome775": { "0.02": [826, 737], "0.05": [1001, 740], "0.1": [1014, 960], "0.19": [1029, 775], "0.25": [372, 254], "0.5": [977, 1197], "0.8": [10136, 10202], "0.99": [6362, 6376], "1": [0, 0] },
+        "chrome932": { "0.02": [949, 879], "0.05": [891, 813], "0.1": [973, 948], "0.19": [884, 791], "0.25": [214, 126], "0.5": [838, 855], "0.8": [9493, 11643], "0.99": [4027, 5981], "1": [0, 0] },
+        "sim": { "0.02": [451, 507], "0.1": [162, 296], "0.19": [634, 395], "0.5": [969, 1112], "0.99": [5262, 5301], "1": [0, 0] },
+        "chromeReduced775_forced": { "0.5": [5617, 5700], "0.99": [10114, 10022], "1": [164, 164] },
+        "format": "[P1~C, rev1~BB]"
+      },
+      "maxExcessCssPx2": { "chrome": 261, "sim": 239 },
+      "maxLevel": 237
+    },
+    "fProbe": { "verdict": "PASS", "hitAndOnDarkDiffs": 0, "probeY": "44 while data-fw-rv is on (v9-final 47.9 -> 44.8)", "exception": "post stop differs in the A/A load too (load phase)" },
+    "rev3Guard": { "verdict": "PASS", "loadStopsAtOrAbove1": "0 of 60 (775), 0 of 60 (932), 0 of 44 (sim), 0 of 60 (reduced)", "rafFramesAtOrAbove1": "0 of 100 per run, 2 runs per arm; max 0.9999; 12 frames per run with --morph-fade >= 1" }
+  },
+  "counts": {
+    "sim": {
+      "source": "em-sim-s1-2026-10-05T23-18-49-729Z.json (arms C, P1, C2)",
+      "paints_kpx_layouts": {
+        "open": { "C": [442, 34583, 138], "P1": [208, 13337, 138], "C2": [416, 34055, 133] },
+        "close": { "C": [399, 32950, 137], "P1": [117, 11974, 147], "C2": [385, 31922, 132] },
+        "restOpen": { "C": [49, 761, 38], "P1": [50, 762, 39], "C2": [35, 747, 24] },
+        "restClosed": { "C": [90, 2178, 23], "P1": [49, 634, 2], "C2": [87, 2149, 23] },
+        "approach": { "C": [201, 20212, 103], "P1": [210, 20254, 105], "C2": [199, 20206, 103] }
+      }
+    },
+    "chrome775": {
+      "source": "em-v9f-775-* and em-p1-775-* (2 runs each)",
+      "paints_raster_layout": {
+        "open": { "C": [324, 581, 44], "P1": [315, 270, 45] },
+        "close": { "C": [320, 545, 41], "P1": [320, 298, 42] },
+        "restClosed": { "C": [141, 162, 38], "P1": [117, 157, 0] },
+        "liftOpen": { "C": [378, 360, 20], "P1": [376, 202, 21] },
+        "liftClose": { "C": [366, 409, 62], "P1": [373, 334, 24] }
+      },
+      "paintAreaOpen": { "C": 127939, "P1": 146333, "unit": "kpx (Paint event clips)" }
+    }
+  },
+  "notInScope": ["timing (deferred)", "iPhone (disconnected, T-207)", "desktop re-run (P1 inert above 640 px; rev 1 checked 1280)", "Simulator reduced motion", "finger / toolbar"]
+}
