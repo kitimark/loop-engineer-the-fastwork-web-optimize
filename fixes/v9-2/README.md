@@ -1,0 +1,261 @@
+# Fix: v9-2 (v9.2 = v9.1d + people-word a + nav-hit-cache U2 + nav-fade)
+
+> Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
+> Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
+
+**Status:** built and pinned, **6468db04395c / 1c4161f56545** (`V92_EXPECT`); P-142 card below, registered before any
+P-142 data; waiting for the lead's sign and the Opus pre-data read. The iPhone is disconnected: parts 2 and 3 wait for the
+lead's go after the user reconnects it.
+**Integrator:** int-v8 (wave-integrator). Board row `v9-1`. Tasking: user T-199 #3, the lead's plan T-199 #4 (build v9.2
+from every fix whose rendering count test passed, measure it ONCE against v9-final, a P-ticket with land rules and a
+bisect plan, an Opus pre-data read).
+**Build:** `patch.diff` (56e3da590029) is baseline-relative over 2 files: JS `6468db04395c4e1d…`, CSS `1c4161f56545d955…`.
+Baseline snapshot `b1789284481295-4ad4a84a`.
+**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` and `/_app/immutable/assets/2.gBuqKVzi.css`, nothing else.
+
+## What is in it (one pinned line; lead 2026-10-05: "v9.2 = pw + nhc + nf (6468db04395c / 1c4161f56545), pinned as one line")
+
+| key | component | why IN | delta (C = v9-final + rev 7d) |
+|---|---|---|---|
+| (base) | v9.1d = v9-final + rev 7d + scroll-cb + the g11 close rule (`fixes/v9-1d/`, 941aa13e5bdf / f1997edf5309) | P-134 folded into this ticket (lead): v9.1d is the base and the first bisect section | build.mjs `--target v91d` |
+| pw | people-word option a (fix-people-word, landed 729754eb) | the user's accepted proposal PR-024 (motion differs by design; no count pass needed): its pixel gate is against the accepted Try-it B, plus the functional checks inside v9.2 | derived from `fixes/people-word-a/patch.diff` (C → owner build; the derived delta 4f2e04403fd5 = the owner's delta file) |
+| nhc | nav-hit-cache U2 (fix-nav-morph) | P-138 part 1 PASS, confirmed by ops-reader-P138 14:30Z; P-138 part 2 (its phone check) folds into this block | `u2-delta-on-v9f7d.diff` c0d040afe271 @41bae5af |
+| nf | nav-fade (fix-nav-fade, head 31718fc9; delta unchanged since f4c2fa0d) | lead: nav-fade IN after ops-reader-navfade-b9 CONFIRMED 7720ea3a; P-139 (its phone check) is stood in for by this block | `nav-fade-on-v9final.diff` f41d2854aa90 @f4c2fa0d |
+
+OUT at the 15:00Z freeze: hero-park (parked, P-140 closed before data), cd-roll-ca-r4 / P-097 (changes motion: a
+proposal), toolbar-resize (nothing to stack).
+
+## Identity checks (`node fixes/v9-best/build.mjs --target v92`; `out/v92-build-nf.log`, EXIT 0)
+
+The extras are deltas against C (v9-final + rev 7d), checked strictly (no fuzz; CONFLICT stops):
+- each owner's pin on C (pw bf75ce87958c / e1359ab9994a = the accepted Try-it B bytes; nhc c7435c24dc56 / e1359ab9994a;
+  nf 2ed12145e856 / 9646fc3da77a), on v9.1d (pw 35885634a455, offsets 82; nhc db0bc2262f02 / f1997edf5309; nf
+  8bbe6a33dfde / 1c4161f56545) and, for nf, on v9-final as delivered (a03872195d3f / 9646fc3da77a);
+- every order of the extras gives the same bytes; each reversal holds (v9.2 − x = v9.1d + the others); v9.2 minus all
+  extras = v9.1d; X = C + all extras; F = v9-final as landed (`fixes/v9-best/patch.diff` @8b5ce9b3 4196eaa61d96 on the
+  baseline, byte for byte = 647c9ef2b1e2 / e1359ab9994a).
+- `node --check` OK; `patch.diff` reproduces the build.
+
+Snapshot `out/v92/snap-6468db04395c` (HASHES.txt), arms:
+
+| arm | what | JS / CSS |
+|---|---|---|
+| A | v8 | 3e3e94cb6e9f / f836404b3728 |
+| C | v9-final + rev 7d | 1b2eecc66011 / e1359ab9994a |
+| **F** | **v9-final (P-142's control)** | **647c9ef2b1e2 / e1359ab9994a** |
+| B | v9.1d | 941aa13e5bdf / f1997edf5309 |
+| X | C + pw + nhc + nf | 54bc16ddc981 / 9646fc3da77a |
+| Opw / Onhc / Onf | C + that extra alone (Opw = Try-it B) | bf75ce87958c / e1359ab9994a; c7435c24dc56 / e1359ab9994a; 2ed12145e856 / 9646fc3da77a |
+| Mpw / Mnhc / Mnf | v9.2 minus that extra | bd91935f9809 / 1c4161f56545; 30f6371751f4 / 1c4161f56545; 93028be4374f / f1997edf5309 |
+| **V** | **v9.2** | **6468db04395c / 1c4161f56545** |
+
+`out/v92/cmp` holds A = F and V = V for the tools that name arms A/V. Couplings read so far: U2 needs `__msTick`, which
+runs from the nav callback L (v9.1d JS 14576); scroll-cb's gate (scbGate) is used only in commission (3347), future
+(12250) and platform (13459), so it does not stop `__msTick` (OBSERVED by reading). nf and nhc both touch the nav
+template; the strict apply in both orders gives the same bytes.
+
+## Pre-data checks (component gates; shared holds, no timing; `out/v92/looks.log`)
+
+Running when this card was registered (`look92.sh`): g11 exactness on v9.2 (V,F), `fix.mjs check v9-2 --on v9-best
+--viewport both`, U2 T0 px (Mnhc vs V, mobile aligned and desktop), nf T2 px (Mnf vs V; its numbers: fill 0, edge ≤ 68,
+≤ 118 css px², ≤ 0.03 %), pw px (Mpw vs V, mobile aligned) and pw's functional probe on the Try-it B bytes vs v9.2 (the
+word starts 0-1 ms after the card's filter transitionend, resets when is-visible goes off, reduced motion unchanged, 0
+console errors), the rest census v9.1d vs v9.2 (B,V,V2,B2), dom-count v9-final vs v9.2; then `geo92.mjs` (nav-fade's
+flip and end crossings at 430x775) and a `sim92.mjs` smoke on arm C (a non-ticket arm). g11 exactness and fix.mjs check
+had passed (EXIT 0, "CHECK v9-2: ok"). Results are added here when they finish; a failing component gate stops P-142
+before any data and goes to the lead and that fix's owner. fix-nav-morph runs its own U2 parity audit and count slot on
+this snapshot (v9.2 vs Mnhc; records under fixes/nav-hit-cache/v92/).
+
+## P-142: v9-final vs v9.2, counts + one phone block + one blind swipe A/B
+
+Ticket id P-142 (mgmt-clerk-1, registered 5e8b4460). It folds in P-134 (v9.1d's phone check, card in
+`fixes/v9-1d/README.md`, never run), P-138 part 2 (U2's phone check) and stands in for P-139 (nav-fade's phone check).
+
+```
+TICKET P-142 v9-2 · v9-final (F) vs v9.2 (V): part 1 counts (Chrome census, the NF-C nav reveal band, Simulator census),
+  part 2 one G phone block (parts M, X, S as P-134 + part H, the hero flip), part 3 one blind swipe A/B · runner int-v8
+  · verdict owner int-v8 · registered before any P-142 data; no part runs before the lead's sign and the pre-data read
+build: V = v9.2 = fixes/v9-2/patch.diff 56e3da590029 (fixes/v9-best/build.mjs --target v92, V92_EXPECT),
+  JS 6468db04395c4e1da39a5f247804b98e746bb40f12b383c708f902d968128bc9, CSS 1c4161f56545d955d8eb99960530fb1d541dd386bbe0cc746308409d4057d1c4
+control: C = F = v9-final as landed (8b5ce9b3, fixes/v9-best/patch.diff 4196eaa61d96, build.mjs V9F / V9_EXPECT),
+  JS 647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2, CSS e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba
+  V differs from C by: rev 7d, scroll-cb, g11 (= v9.1d), people-word a, nav-hit-cache U2, nav-fade. Mirror snapshot
+  b1789284481295-4ad4a84a. Countdown expiry 2026-11-02 05:00Z: every part runs before it.
+question: does v9.2 do no more rendering work than v9-final (part 1), add no slow frames, class flicker or fling-distance
+  change on the phone (part 2), and does the user not prefer v9-final by finger (part 3)? No-worse / less-work only;
+  landing basis: the less-work rule (memory "less-work-landing-rule"), with the swipe A/B as the finger check.
+```
+
+### Part 1: counts (no timing; `sh fixes/v9-2/part1.sh` in the background, after the sign and the read)
+
+Each step is its own shared hold (≤ 300 s), one queue entry at a time; served hashes checked by every probe; log
+`out/v92/part1.log` (first line PIN: HEAD and sha256/12 of part1.sh, motion.mjs d34355055470, chromecount.mjs
+59e033b57047, sim92.mjs, census-run.mjs, HASHES.txt).
+
+**1a. Chrome census** (`gates/census-run.mjs`, 430x932 mobile, CPU 1x, work counts per s; loads F, V, V2, F2, then V3,
+F3; stops rest-0 / 1400 / 2796 / 3800 / end and the scroll top → end: mainFrames and rafFire per s).
+- Rule per stop and metric (n = 3 an arm): **WORSE** when V's min > F's max AND median(V) − median(F) > max(F's range,
+  10 % of median(F), 2 per s). Else no-worse. A **new rest loop** (a rest stop where every F load is ≤ 5 per s and every
+  V load ≥ 15 per s) is WORSE by itself.
+- Expected from the components' own data (OBSERVED): rafFire while scrolling 289 → ~187 per s (scroll-cb, −35 %);
+  rest-0 ~40 per s in both (the countdown); no rest loop.
+
+**1b. NF-C: the nav reveal band, v9.2 − nav-fade vs v9.2** (lead's rule for P-142: "a rise beyond the A/A spread there
+is a nf no-land in the bisect, even if the Simulator R5 passed"). nav-fade's own probe `fixes/v9-2/nf/motion.mjs`
+(copy of `fixes/nav-fade/probe/motion.mjs` d34355055470 @f4c2fa0d/31718fc9), `--passes counts --scen topIn,glideThru,end`,
+430x775 DPR 3 mobile + touch, CPU 1x (its default; fix-nav-fade's numbers are CPU 1x, corrected in 31718fc9), three runs:
+r1 Mnf, V, Mnf2 · r2 V, Mnf, V2 · r3 Mnf, V, Mnf2 (Mnf 5 loads, V 4). Read with `fixes/v9-2/nf/chromecount.mjs`
+(59e033b57047); a load whose served JS/CSS is not its arm's (Mnf 93028be4374f / f1997edf5309, V 6468db04395c /
+1c4161f56545) is VOID.
+- Metrics: topIn style recalcs and topIn layouts (Performance.getMetrics RecalcStyleCount / LayoutCount deltas over the
+  scene). glideThru and end: reported only, same rule printed.
+- A/A spread s (per metric): the largest of (a) |Mnf − Mnf2| within r1 and within r3, (b) |V − V2| within r2, (c) the range
+  of Mnf over its 5 loads. Floor (stated before data, from Chrome's discrete counting and fix-nav-fade's C repeats 176/176
+  recalcs and 65/62 layouts): 10 recalcs, 5 layouts.
+- **Pass line:** **NF-C FAIL** (= nav-fade no-land in the bisect, whatever the Simulator said) when, for topIn style
+  recalcs OR topIn layouts, V's min > Mnf's max AND median(V) − median(Mnf) > max(s, floor). Else **NF-C PASS**. A metric
+  where fewer than 3 valid loads an arm exist is insufficient; insufficient goes to the lead (one re-run of 1b allowed).
+- What fix-nav-fade saw (n = 2, C vs nav-fade on v9-final, CPU 1x; UNRESOLVED): topIn recalcs 176 / 176 vs 181 / 250,
+  layouts 65 / 62 vs 68 / 69. One run can jump by ~70 recalcs; this rule needs all V loads above all Mnf loads.
+
+**1c. Simulator census** (`fixes/v9-2/sim92.mjs`, WebKit Timeline record counts, no timing; loads F1 V1, V2 F2, F3 V3,
+one functional session each; idle stops rest-0 / 1400 / 2796 / 3800 / end (settle 3 s, 6 s window) and a scripted rAF
+scrollBy 24 px top → end; RenderingFrame, RecalculateStyles, Layout, Paint, Composite, FireAnimationFrame).
+- Rule (n = 3 an arm), per rest stop on RenderingFrame, Layout and RecalculateStyles counts, and on the scroll window's
+  per-frame Layout and RecalculateStyles: the same WORSE rule as 1a (V min > F max AND median diff > max(F range, 10 %
+  of median F, 2 counts)). New rest work (every F load ≤ 2 RenderingFrames in the window, every V load ≥ 10) is WORSE.
+- Paint and Composite: reported only (nav-fade moves paint by design: topIn Paint 564-610 → 393-438, R1 CONFIRMED).
+
+**Part 1 verdict:** WORSE if 1a or 1c is WORSE on any stop/metric; NF-C FAIL is its own line (nf no-land); else
+no-worse (insufficient if any is). Part 1 WORSE or NF-C FAIL → bisect (below) before the phone; the phone block still
+runs on the lead's word if the WORSE is attributed to one section and v9.2 − that section is re-ticketed.
+
+### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
+
+The block reuses P-134's harness unchanged (itself P-132's / P-122's: P-121's path-matched G driver, nav-hit-cache's
+flicker gate, the fling-distance parity rule, the time guard, the gates); the arms, folders and labels change, and one
+part is added (H, the hero flip, nav-fade's windows; P-139's stand-in).
+
+```
+build/control: as above. B = plain baseline (the thermal gate's timer page).
+copies and servers: out/p142/snap/{C,V} (read-only; `sh fixes/v9-2/phone/serve142.sh snap` copies C = F and V from
+  out/v92/snap-6468db04395c/{F,V} and refuses any other hash), fixes/v9-2/phone/serve142.sh (plain http, --port 0,
+  --latency 150, --vendors=local); served-hash check before every item (case C:647c9ef2b1e2:e1359ab9994a|
+  V:6468db04395c:1c4161f56545; exit 4 on a wrong one). Step 1: `serve142.sh snap` (once), then `serve142.sh`.
+profile: xcode-serious (Xcode Device Conditions Serious, induced; thermal-gate.mjs --accept-induced at the start and end
+  of every hold; no pre-warm, no cooling wait; ceiling 44 C or Critical; gate exits 2/3/7 void the hold).
+sentinels: sCo/sCc in every hold (S on C = v9-final, P-122's V arm: bottom >= 58 fps, scroll >= 44 fps); a failing
+  sentinel voids every run since the last passing one (H runs included); the hold is re-run once with the same items.
+checkout: int-v8's worktree; hold142.sh prints one PIN line per hold (ticket, profile, checkout, HEAD, sha256/12 of
+  hold142.sh, score142.mjs, serve142.sh, nf-read.mjs f9631790c0aa, p122/score.mjs d1dddb910cd9, the P-122 gate scripts,
+  the G programs and out/p142/snap/HASHES.txt) and one PROG line per G part (GESTURE_HASH/12 M 607b59612abb,
+  X 21aaafd3a9fd, S 7312cdcd2574 as P-122; H 53a8e657fa28 = fixes/v8-best/phone/g/flick-hero-v1.json 6ae05e12ace9).
+  The values of the registering commit are the pins; any other value voids that hold.
+holds (each inside int-v8's exclusive no-timing chrome-measure hold, max 600 s; GESTURE_BUDGET_S 150 per G run; every G
+  item with --inject flicker-inject.mjs; time guard: no G item starts after elapsed 420 s, else VOID "time", exit 7,
+  re-run whole; at most 5 G runs a hold):
+  part M  H1a sCo wgMC wgMV gMC1 gMV1 gMV2 sCc · H1b sCo gMC2 gMC3 gMV3 sCc · H1c sCo gMV4 gMC4 sCc
+  part X  H2a sCo wgXC wgXV gXC1 gXV1 gXV2 sCc · H2b sCo gXC2 gXC3 gXV3 sCc · H2c sCo gXV4 gXC4 sCc
+  part S  H3a sCo wgSC wgSV gSC1 gSV1 gSV2 sCc · H3b sCo gSC2 gSV3 gSC3 sCc · H3c sCo gSV4 sCc
+  part H  H4a sCo wgHC wgHV gHC1 gHV1 gHV2 sCc · H4b sCo gHC2 gHC3 gHV3 sCc · H4c sCo gHV4 gHC4 sCc
+  usage per hold (the I-168 wrapper with the block mark; between holds `lock.mjs doing iphone --owner int-v8 --between <min>`):
+    TICKET=P-142 RUNNER=int-v8 node tools/lock.mjs run iphone --owner int-v8 --block P-142 --max-seconds 900 -- \
+      node tools/lock.mjs run chrome-measure --owner int-v8 --no-timing --max-seconds 600 --doing "v9.2 P-142 <H>" \
+      -- caffeinate -i -s sh fixes/v9-2/phone/hold142.sh <H> <items>
+  then iphone.mjs park; int-v8 stops the servers after the last hold. No re-runs beyond the sentinel and time-guard
+  rules: the spares are planned up front, not added after data.
+spares: M C 3+1, V 3+1; X C 3+1, V 3+1; S C 3, V 2+2; H C 3+1, V 3+1.
+scorer: fixes/v9-2/phone/score142.mjs. Parts M, X, S: P-122's scorer (d1dddb910cd9, refused if changed) unchanged, arms
+  re-pinned (C = v9-final, V = v9.2): GM (> 50 WORSE d > +2, any NEW 250 px cluster; < 3 valid an arm insufficient),
+  EX and ES (V ceiling: 0 frames > 50 ms in into1..end over all valid V runs; twins > 46 / > 54, threshold-sensitive when
+  one differs; (46, 54] flagged; min valid V 3 for EX, 2 for ES), FLICKER (G1, V monotone blinks 0, per part M, X, S;
+  G2/G3 report only), BEHAVIOUR parity (M's first page-up fling after mid1, X's first stroke after into1; median gap
+  > 300 px AND >= 2 pairs > 300 px in the same direction; the clipped-end rule; fewer than 2 pairs insufficient).
+  Part H (scored in score142.mjs; P-122's refuses H): a counted H run is VOID on no record, aborted, run errors, no or
+  not-ok served check log, median moving dt > 25 ms, or no flipDown and flipUp window; FLICKER_H = the flicker gate on
+  H's runs (not pooled: VOID on its own run count is insufficient).
+  NF (nav-fade's windows; fixes/v9-2/phone/nf-read.mjs = fixes/nav-fade/phone/nf-read.mjs f9631790c0aa, refused if
+  changed; defaults lvh 815, flip window 1600 ms after y crosses 0.72 of the hero track, end windows 1000 ms after the
+  morph m crosses 0.2 in / 0 out): flipDown and flipUp from part H, endIn and endOut from part X; runs = counted runs
+  with a record whose only voids are path-gate ones (C = v9-final has no rev 7d, so P-122's C rule voids C's caught X
+  outs by design; the frames are still good). Per kind: sum per run; **WORSE** when V's min > C's max over >= 3 runs an
+  arm on the > 50 ms count (twins > 46 / > 54: threshold-sensitive); > 34 ms reported; part S's end windows reported.
+  NF WORSE → nf no-land in the bisect.
+  Arm identity: G runs by the served-hash check log before each item (required ok, else VOID); S sentinels by the
+  record's served map against arm C. Self-test: selftest142.mjs, SELFTEST-142 OK 44 (P-122's records through the
+  wrapper reproduce P-122's gates; P-142's pins void P-122's v8 sentinels and equal build.mjs V9_EXPECT / V92_EXPECT;
+  synthetic H records: clean → no-worse, slow flips → WORSE, the void rules, the sentinel chain, too few →
+  insufficient; hold142 guards incl. part H and R refused; the four PROG pins = the compiled programs; serve142 pins).
+  Descriptive, P-122's own X records through NF (C = v8, V = v9-final): endIn / endOut > 50 ms 0-0 in both, 2 end
+  windows a run.
+verdict: BEHAVIOUR FAIL (own line, leads) if the parity counts; frames: WORSE if any of GM, EX, ES, FLICKER, FLICKER_H,
+  NF is WORSE or has a NEW cluster; else insufficient if any is; else no-worse.
+F-260 (report only, every run): y90 = 0.9 docH - vh and when the run first reaches it.
+minutes: ~95 (12 holds; gates included; no pre-warm; gaps between holds extra).
+```
+
+### Part 3: one blind swipe A/B (F, the user's finger; after part 2, inside int-v8's phone hold)
+
+- Posted from inside int-v8's `lock.mjs run iphone` hold, only when no other phone step is open (memory
+  "one-phone-step-at-a-time"; never during a timed block): `node tools/console.mjs post --by int-v8 --kind swipe-pair
+  --url <A> --url2 <B> --meta '{"key":…}'`, A/B order by a coin flip recorded in the key (C = v9-final, V = v9.2; the
+  same out/p142/snap servers, served hashes checked first). Instructions (plain): "Swipe through the whole page on A,
+  then on B, as you normally would: top to the end and back. Which one follows your finger better?" Answers: A / B /
+  same, plus notes.
+- Then `console.mjs wait <id>` in the background per the protocol (ack loading / ready / recording, `--until redo` armed).
+- **Rule:** pass when the user picks V or "same"; **fail** when the user picks C (v9-final). One pair only; a "can't
+  tell" note counts as same. A fail goes to the lead with the user's notes; the bisect below picks the pair to show next.
+
+### Land / no-land / INSUFFICIENT (stated before data)
+
+- **LAND v9.2** (as the next ship build, replacing v9-final) when all hold: the build identity checks (done); every
+  component gate above passes (pixel: U2 T0, nf T2 within its numbers, pw vs Try-it B; g11 exactness; fix.mjs check;
+  dom-count; the rest census); part 1 no-worse and NF-C PASS; part 2 no-worse with no BEHAVIOUR FAIL; part 3 pass.
+- **NO-LAND** (bisect, below) when any of: a component gate fails; part 1 WORSE; NF-C FAIL (nf no-land); part 2 WORSE or
+  BEHAVIOUR FAIL; part 3 fail. A no-land on one section ships v9.2 minus that section only after its own short ticket
+  (the minus builds exist and are pinned: Mpw, Mnhc, Mnf; B = v9.1d).
+- **INSUFFICIENT** (nothing WORSE, something insufficient): to the lead. Allowed without a new ticket: one re-run of a
+  part 1 step that was insufficient (VOID loads), and the planned spares in part 2 only. Anything else is a new ticket
+  line, not an added run. If only part 2 is insufficient and part 1 passed, the lead may land on the less-work rule with
+  the swipe A/B as the finger check, or re-run the insufficient part as a new block (max 2 blocks per question).
+
+### Bisect plan (section by section; every arm prebuilt in out/v92/snap-6468db04395c, served-hash checked)
+
+Sections: **B** v9.1d (itself rev 7d, scroll-cb, g11), **pw**, **nhc**, **nf**. Reversal arms: v9.2 − pw = Mpw, − nhc = Mnhc,
+− nf = Mnf, − all extras = B (v9.1d); C + one extra = Opw, Onhc, Onf. v9.1d's own reversals (− scb 1b2eecc66011 /
+f1997edf5309, − g11 941aa13e5bdf / e1359ab9994a) are in out/v91d.
+
+1. **Counts first, no phone** (cheap, shared probes): for a part 1 WORSE, run the same step on V vs each of B, Mpw, Mnhc,
+   Mnf (n = 3 each, same rule): the section whose removal brings V back inside F's range is the cause; two such
+   sections → both named; none → the interaction, report as such (X vs C + each extra next).
+2. **Map the phone gate to suspects** (order to test, by what each section touches):
+   - NF or FLICKER_H (hero flip / end windows): nf (Mnf), then nhc (U2 runs from the nav callback), then B.
+   - EX / ES (page end): B (rev 7d's release, g11), then nf (the Join hide at the end), then nhc.
+   - GM (middle): B (scroll-cb), then pw (the people-word card), then nhc.
+   - FLICKER M/X/S: nhc first (U2 changes the hit test), then nf, then B.
+   - BEHAVIOUR (parity): B (scroll-cb, rev 7d) only; pw, nhc and nf do not touch scrolling (OBSERVED by reading their
+     deltas).
+3. **Phone bisect:** one block per suspect, v9.2 vs v9.2 − suspect, only the failing gate's part (same harness, a new
+   ticket line each, max 2 blocks per question, sequential rule); the first suspect whose removal clears the gate is the
+   cause and gets the no-land.
+4. **Swipe A/B fail:** one more pair, v9.2 vs v9.1d (B): if the user still picks the other side, the cause is in B
+   (v9.1d's sections; next pair B vs v9-final + 7d); if not, the extras (next pair by the user's notes: hero → Mnf, page
+   end → Mnf/Mnhc, middle cards → Mpw).
+
+### Predictions (int-v8, before any P-142 data)
+
+- Part 1a census: no-worse 0.85 (rafFire −35 % from scroll-cb), WORSE 0.05, insufficient 0.10.
+- NF-C: PASS 0.65, FAIL 0.20 (fix-nav-fade's 181 / 250 vs 176 / 176 could be real), insufficient 0.15.
+- Part 1c Simulator: no-worse 0.75, WORSE 0.10, insufficient 0.15.
+- Part 2: BEHAVIOUR pass 0.75; GM no-worse 0.70; EX no-worse 0.65; ES no-worse 0.55 (insufficient 0.30); FLICKER G1 pass
+  0.80 (U2 is in V); NF no-worse 0.70, insufficient 0.15; sentinels on v9-final pass first try 0.70.
+  Overall part 2: no-worse 0.40, insufficient 0.35, WORSE or BEHAVIOUR FAIL 0.25.
+- Part 3: V or same 0.65, C 0.35.
+- Ticket overall: LAND 0.30, INSUFFICIENT 0.35, NO-LAND 0.35.
+
+### Files (registered with this card)
+
+`fixes/v9-2/part1.sh` (part 1 runner), `sim92.mjs` (Simulator census), `geo92.mjs` (pre-data geometry), `nf/motion.mjs`
+and `nf/chromecount.mjs` (nav-fade's probe and reader, copied unchanged), `phone/serve142.sh`, `phone/hold142.sh`,
+`phone/score142.mjs`, `phone/selftest142.mjs`, `phone/nf-read.mjs` (nav-fade's phone reader, copied unchanged),
+`phone/p122-final-args.txt` (the self-test's replay list), `patch.diff`. Build: `fixes/v9-best/build.mjs --target v92`.

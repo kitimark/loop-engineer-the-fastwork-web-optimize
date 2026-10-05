@@ -115,13 +115,13 @@ export const EXTRAS = [
     rev: '41bae5af', delta: 'fixes/nav-hit-cache/u2-delta-on-v9f7d.diff', file: 'c0d040afe271',
     expect: exp('c7435c24dc56', 'e1359ab9994a'), expectV: exp('db0bc2262f02', 'f1997edf5309') },
   // a delta against v9-final (pre-7d); the owner checked it on v9-final, on v9-final + 7d (results.json) and on v9.1d
-  { name: 'nav-fade (fix-nav-fade, card v2 69cf0dc1, conditions N1-N6 on 32e5172f; Chrome counts PASS)', key: 'nf',
-    rev: '32e5172f172ab11250e759072a5adaeb65960238', delta: 'fixes/nav-fade/nav-fade-on-v9final.diff', file: 'f41d2854aa90',
+  { name: 'nav-fade (fix-nav-fade, card v2 69cf0dc1, conditions N1-N6 on 2d7617c5 (was 32e5172f), batch 9 CONFIRMED; land request at f4c2fa0d)', key: 'nf',
+    rev: 'f4c2fa0d3375f764dab39a8a4cc64d134c4bbac1', delta: 'fixes/nav-fade/nav-fade-on-v9final.diff', file: 'f41d2854aa90',
     expectF: exp('a03872195d3f', '9646fc3da77a'), expect: exp('2ed12145e856', '9646fc3da77a'), expectV: exp('8bbe6a33dfde', '1c4161f56545') },
 ];
 export const V9F = { patch: 'fixes/v9-best/patch.diff', rev: '8b5ce9b3', file: '4196eaa61d96', expect: V9_EXPECT };
 // v9.2 as pinned after its build (null: not pinned yet)
-export const V92_EXPECT = null;
+export const V92_EXPECT = exp('6468db04395c', '1c4161f56545');   // pw + nhc + nf (lead 15:0xZ ruling: nf joins after ops-reader-navfade-b9 CONFIRMED 7720ea3a before P-142's sign); pw + nhc alone was 93028be4374f / f1997edf5309
 const byKey = (k) => [...COMPONENTS, ...DROPPED, G11, MS7D].find((c) => c.key === k);
 const to7d = (c) => (c.key === 'ms7c' ? MS7D : !c.after && !c.on ? c : { ...c, after: c.after?.map((k) => (k === 'ms7c' ? 'ms7d' : k)), on: c.on?.map((k) => (k === 'ms7c' ? 'ms7d' : k)) });
 export const TARGETS = {
@@ -250,7 +250,7 @@ const work = join(WT, `${T.out}/work`); mkdirSync(work, { recursive: true });
 // (reverse) = v9.1d + the others, for each x; v9.2 minus every extra = v9.1d. Also built: X = C + the extras (the
 // bisect arm without scroll-cb and g11) and F = v9-final as landed (the measurement's control).
 let BASE = null, CX = null, F0 = null, xs = [];
-const derived = {};
+const derived = {}, OWN = {}, MINUS = {};
 if (T.extras && !ONLY) {
   ok(`${T.label}'s base = v9.1d = pinned V91D_EXPECT ${V91D_EXPECT[JS]} / ${V91D_EXPECT[CSS]}`, H(V)[JS] === V91D_EXPECT[JS] && H(V)[CSS] === V91D_EXPECT[CSS], fmt(V));
   BASE = V;
@@ -270,6 +270,7 @@ if (T.extras && !ONLY) {
       x.d = parseDiff(x.text);
       ok(`${x.key} owner's build = C + derived delta (${sha(x.text)})`, same(strip(apply(x.d, FIN, `${x.key} on C`)), own));
       derived[x.key] = x.text;
+      OWN[x.key] = own;
     } else {
       x.text = show(x.rev, x.delta);
       ok(`${x.key} delta file ${x.delta} @${x.rev.slice(0, 8)}`, sha(x.text) === x.file, sha(x.text));
@@ -277,6 +278,7 @@ if (T.extras && !ONLY) {
       const own = apply(x.d, FIN, `${x.key} on C`);
       if (x.expect) ok(`${x.key} on C = owner's build ${x.expect[JS]} / ${x.expect[CSS]}`, H(own)[JS] === x.expect[JS] && H(own)[CSS] === x.expect[CSS], `${fmt(own)}${own.offs.length ? ` offsets ${own.offs.join(',')}` : ''}`);
       else ok(`${x.key} applies strictly on C (no owner pin on C)`, true, `${fmt(own)}${own.offs.length ? ` offsets ${own.offs.join(',')}` : ''}`);
+      OWN[x.key] = strip(own);
     }
     if (x.expectF) { const f = apply(x.d, F0, `${x.key} on v9-final`); ok(`${x.key} on v9-final = owner's build ${x.expectF[JS]} / ${x.expectF[CSS]}`, H(f)[JS] === x.expectF[JS] && H(f)[CSS] === x.expectF[CSS], fmt(f)); }
     const onV = apply(x.d, BASE, `${x.key} on v9.1d`);
@@ -290,6 +292,7 @@ if (T.extras && !ONLY) {
   ok(`${xo.length + 1} order(s) of the extras ${xs.map((x) => x.key).join(', ') || '(none)'} on v9.1d give the same bytes`, true, fmt(V));
   for (const x of xs) {
     const t = strip(apply(x.d, V, `${T.label}-${x.key}`, true));
+    MINUS[x.key] = t;
     ok(`${T.label} - ${x.key} (reverse) = v9.1d + ${xs.filter((y) => y !== x).map((y) => y.key).join(' + ') || 'nothing'}`, same(t, bx(xs.filter((y) => y !== x), BASE)), fmt(t));
   }
   const back = [...xs].reverse().reduce((t, x) => strip(apply(x.d, t, `${T.label}-all(${x.key})`, true)), V);
@@ -306,10 +309,12 @@ ok(`patch.diff (baseline -> ${T.label}) reproduces ${T.label}`, same(strip(apply
 
 const js12 = H(V)[JS];
 // snapshot arms: A = v8, C = v9-final + 7d (7d targets); v9.2 adds F = v9-final as landed, B = v9.1d, X = C + extras
-const ARMS = { A: C, ...(FIN ? { C: FIN } : {}), ...(BASE ? { F: F0, B: BASE, X: CX } : {}), V };
+// (v9.2 also: O<key> = C + that extra alone, the owner's build; M<key> = v9.2 minus it; for the per-fix pixel gates)
+const ARMS = { A: C, ...(FIN ? { C: FIN } : {}), ...(BASE ? { F: F0, B: BASE, X: CX } : {}),
+  ...Object.fromEntries(Object.entries(OWN).map(([k, t]) => [`O${k}`, t])), ...Object.fromEntries(Object.entries(MINUS).map(([k, t]) => [`M${k}`, t])), V };
 const lines = [];
 for (const [arm, t] of Object.entries(ARMS)) for (const f of FILES) lines.push(`${full(t[f])}  ${arm}/${f}`);
-console.log(`${T.label}${ONLY ? ` (--only ${ONLY.join(',')})` : ''} = ${fmt(V)}  [${comps.map((c) => c.key).join(' + ')}]`);
+console.log(`${T.label}${ONLY ? ` (--only ${ONLY.join(',')})` : ''} = ${fmt(V)}  [${[...comps.map((c) => c.key), ...xs.map((x) => x.key)].join(' + ')}]`);
 console.log(lines.join('\n'));
 if (DRY) { console.log('dry run: nothing written'); process.exit(0); }
 // A build that changes only the CSS has the same js12 as an earlier one (v9-final without close vs with it): an existing
