@@ -72,6 +72,17 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~09:3xZ **P-130 final delta check: PASS; row registered (pending the lead's signature)** (countdown-tick 12b9ca9a on worktree-agent-a8dba5b51e224d3ca, rebased on main 9f369b8a, which holds v9-final 8b5ce9b3; land with e36f6124 and db956dd1).
+  - Pins on disk equal the committed blobs at 12b9ca9a:
+    - delta patch.diff 5bcc05af690c
+    - serve.sh cc2203ef105e (only change: snap refuses a delta other than the DELTA pin)
+    - unchanged since db956dd1: reader f1229fd5a0c7, block 357f369b2672, hold.sh 5ccf5d050098, idle-raf 51f7a8e38150, logger 49d7a6c3da4c, program idle-p130.json d7ee0153e439
+  - PINS: C_JS 647c9ef2b1e2, C_CSS e1359ab9994a (= v9-best README on 8b5ce9b3; patch.diff there is 4196eaa61d96), V_JS 6841352e0328, DELTA 5bcc05af690c, GESTURE_HASH 58b3e0b3f502.
+  - The delta's 3 hunk bodies equal the old 8a4a6a16e217 byte for byte; only the @@ offsets moved (4511 to 4429, -82).
+  - The snapshot HASHES.txt holds C 647c9ef2b1e2 / e1359ab9994a and V 6841352e0328 / e1359ab9994a.
+  - No data: out/countdown-tick/p130 holds only snap/ (8 files); no p130 JSON newer than PINS.
+  - The card's Verdict and Predictions are unchanged in 12b9ca9a; only the Arms, Runner-kit and Pins lines changed.
+  - PREDICTIONS P-130 row added after P-129. The lead signs it next; then the phone runner (one 3600 s block, 5 parts), then the ops result read.
 - 10-05 ~09:2xZ **Landings and signatures (lead message).**
   - v9-final landed on main as 8b5ce9b3; the P-122 result read (1e9af3b1) landed as 9f369b8a.
   - I-203 (`iphone.mjs gesture --idle-after-reload <ms>`, outside the program hash) landed as f3d4b1ac, resolved. I-204 new, P3 (gesture exits 1 on a thermal-profile refusal where scroll/record exit 8).
