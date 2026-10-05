@@ -1,0 +1,175 @@
+{
+ "perRun": {
+  "C-H1": {
+   "H": 5,
+   "ctrl": 91,
+   "s": 56,
+   "r": 122,
+   "RR": 8.35
+  },
+  "C-H2": {
+   "H": 4,
+   "ctrl": 90,
+   "s": 41,
+   "r": 104,
+   "RR": 8.87
+  },
+  "C-H3": {
+   "H": 5,
+   "ctrl": 80,
+   "s": 54,
+   "r": 89,
+   "RR": 9.71
+  },
+  "C-H4": {
+   "H": 4,
+   "ctrl": 93,
+   "s": 38,
+   "r": 126,
+   "RR": 7.01
+  },
+  "C-H5": {
+   "H": 4,
+   "ctrl": 81,
+   "s": 45,
+   "r": 94,
+   "RR": 9.69
+  },
+  "wpx-H1": {
+   "H": 5,
+   "ctrl": 83,
+   "s": 46,
+   "r": 83,
+   "RR": 9.2
+  },
+  "wpx-H2": {
+   "H": 5,
+   "ctrl": 91,
+   "s": 53,
+   "r": 121,
+   "RR": 7.97
+  },
+  "wc1-H1": {
+   "H": 5,
+   "ctrl": 103,
+   "s": 47,
+   "r": 100,
+   "RR": 9.68
+  },
+  "wc1-H2": {
+   "H": 5,
+   "ctrl": 70,
+   "s": 46,
+   "r": 77,
+   "RR": 8.36
+  }
+ },
+ "native": {
+  "C": {
+   "heavy": {
+    "n": 22,
+    "min": 5,
+    "p25": 7,
+    "median": 12,
+    "p75": 14,
+    "max": 17,
+    "mean": 10.64
+   },
+   "control": {
+    "n": 435,
+    "median": 1,
+    "p90": 2,
+    "p99": 7,
+    "max": 15,
+    "mean": 1.23,
+    "varToMean": 2.05
+   },
+   "controlAtOrAboveHeavyMedian": 0.009,
+   "heavyAboveControlP99": 0.64
+  },
+  "R": {
+   "heavy": {
+    "n": 20,
+    "min": 5,
+    "p25": 7,
+    "median": 10,
+    "p75": 13,
+    "max": 16,
+    "mean": 9.6
+   },
+   "control": {
+    "n": 347,
+    "median": 1,
+    "p90": 2,
+    "p99": 5,
+    "max": 14,
+    "mean": 1.1,
+    "varToMean": 1.41
+   },
+   "controlAtOrAboveHeavyMedian": 0.003,
+   "heavyAboveControlP99": 0.9
+  }
+ },
+ "heavyRootBoxes": {
+  "C": {
+   "430x775@0,0": 22
+  },
+  "R": {
+   "430x775@0,0": 20
+  }
+ },
+ "restRootBoxesByIh": {
+  "ih775": {
+   "430x775": 587,
+   "390x312": 7,
+   "71x52": 445,
+   "398x52": 571,
+   "61x54": 858,
+   "40x44": 706,
+   "42x47": 603,
+   "84x37": 217,
+   "20x20": 3
+  },
+  "ih815": {
+   "430x775": 1655,
+   "398x52": 111,
+   "332x19": 45,
+   "211x410": 4,
+   "212x410": 56,
+   "212x411": 437,
+   "390x312": 363,
+   "430x1630": 47,
+   "211x409": 9,
+   "20x20": 1
+  }
+ },
+ "census": {
+  "native": 15964,
+  "BSBv9QXB.js:Zi@2846": 63,
+  "BSBv9QXB.js:?@3137": 72,
+  "2.DyWL8TcE.js:ee@13860": 34,
+  "probe": 4314,
+  "2.DyWL8TcE.js:?@12092": 2,
+  "sceneC": 9,
+  "2.DyWL8TcE.js:fwNearChange@12128": 48,
+  "2.DyWL8TcE.js:?@4332": 78,
+  "2.DyWL8TcE.js:hePE@4815": 34
+ },
+ "fwWCWrites": {
+  "total": 610,
+  "valueChanges": 150,
+  "sameValue": 460,
+  "changesWithRecordWithin2ms": 150,
+  "nearestKey": {
+   "native": 142,
+   "sceneC": 4,
+   "2.DyWL8TcE.js:fwNearChange@12128": 2,
+   "probe": 2
+  },
+  "lagMs": {
+   "p10": -0.41,
+   "median": 0.1,
+   "p90": 0.61
+  }
+ }
+}

@@ -1,0 +1,1147 @@
+{
+ "reader": "fixes/toolbar-resize/read-inval126.mjs",
+ "C": {
+  "runs": [
+   "C-H1",
+   "C-H2",
+   "C-H3",
+   "C-H4",
+   "C-H5"
+  ],
+  "H": 22,
+  "control": 435,
+  "controlWide": false,
+  "feats": {
+   "ev:finish": {
+    "H": 22,
+    "Hw": 7,
+    "runs": 5,
+    "floor": 10,
+    "h": 0.318,
+    "hLo": 0.16,
+    "base": 0.005,
+    "call": "NO-LINK"
+   },
+   "ev:resize": {
+    "H": 22,
+    "Hw": 12,
+    "runs": 5,
+    "floor": 10,
+    "h": 0.545,
+    "hLo": 0.353,
+    "base": 0.046,
+    "call": "LINKED-PART"
+   },
+   "ev:scroll": {
+    "H": 22,
+    "Hw": 22,
+    "runs": 5,
+    "floor": 10,
+    "h": 1,
+    "hLo": 0.873,
+    "base": 0.837,
+    "call": "NO-LINK"
+   },
+   "ev:touchend": {
+    "H": 22,
+    "Hw": 19,
+    "runs": 5,
+    "floor": 10,
+    "h": 0.864,
+    "hLo": 0.684,
+    "base": 0.002,
+    "call": "COVERS"
+   },
+   "ev:touchmove": {
+    "H": 22,
+    "Hw": 22,
+    "runs": 5,
+    "floor": 10,
+    "h": 1,
+    "hLo": 0.873,
+    "base": 0.002,
+    "call": "COVERS"
+   },
+   "inval:2.DyWL8TcE.js:?@12092": {
+    "H": 22,
+    "Hw": 0,
+    "runs": 5,
+    "floor": 10,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.002,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 22,
+     "r": 1,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:?@4332": {
+    "H": 22,
+    "Hw": 0,
+    "runs": 5,
+    "floor": 10,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.046,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 22,
+     "r": 10,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:ee@13860": {
+    "H": 22,
+    "Hw": 6,
+    "runs": 5,
+    "floor": 10,
+    "h": 0.273,
+    "hLo": 0.126,
+    "base": 0.051,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 6,
+     "Fs": 22,
+     "r": 12,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 9.886,
+     "RRlo": 3.664,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:fwNearChange@12128": {
+    "H": 22,
+    "Hw": 0,
+    "runs": 5,
+    "floor": 10,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.028,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 22,
+     "r": 12,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:hePE@4815": {
+    "H": 22,
+    "Hw": 0,
+    "runs": 5,
+    "floor": 10,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.055,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 22,
+     "r": 14,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:native": {
+    "H": 22,
+    "Hw": 22,
+    "runs": 5,
+    "floor": 10,
+    "h": 1,
+    "hLo": 0.873,
+    "base": 0.86,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 234,
+     "Fs": 22,
+     "r": 535,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 8.648,
+     "RRlo": 7.573,
+     "linked": true
+    }
+   },
+   "inval:probe": {
+    "H": 22,
+    "Hw": 18,
+    "runs": 5,
+    "floor": 10,
+    "h": 0.818,
+    "hLo": 0.631,
+    "base": 0.662,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 21,
+     "Fs": 22,
+     "r": 288,
+     "Fr": 435,
+     "runs": 5,
+     "floor": 20,
+     "RR": 1.442,
+     "RRlo": 0.953,
+     "linked": false
+    }
+   },
+   "obs:IntersectionObserver": {
+    "H": 22,
+    "Hw": 22,
+    "runs": 5,
+    "floor": 10,
+    "h": 1,
+    "hLo": 0.873,
+    "base": 0.559,
+    "call": "NO-LINK"
+   },
+   "obs:MutationObserver": {
+    "H": 22,
+    "Hw": 22,
+    "runs": 5,
+    "floor": 10,
+    "h": 1,
+    "hLo": 0.873,
+    "base": 0.253,
+    "call": "COVERS"
+   },
+   "obs:PerformanceObserver": {
+    "H": 22,
+    "Hw": 9,
+    "runs": 5,
+    "floor": 10,
+    "h": 0.409,
+    "hLo": 0.233,
+    "base": 0.009,
+    "call": "NO-LINK"
+   }
+  },
+  "reading": "NATIVE",
+  "probeLinked": false,
+  "parent": "OTHER",
+  "parentShare": 0.455,
+  "parentTypes": {
+   "Composite": 7,
+   "RecalculateStyles": 10,
+   "RenderingFrame": 5
+  },
+  "topTypes": {
+   "RenderingFrame": 13,
+   "Composite": 8,
+   "RecalculateStyles": 1
+  },
+  "forced": "UPDATE",
+  "forcedShare": 0,
+  "forcedKeys": {
+   "native": 22
+  },
+  "forcedLo": 0,
+  "root": "SUBTREE",
+  "rootShare": 0,
+  "heavy": [
+   {
+    "t": 5436,
+    "y": 885,
+    "ih": 804,
+    "ms": 22.686,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5595,
+    "y": 1728,
+    "ih": 814,
+    "ms": 22.604,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15166,
+    "y": 385,
+    "ih": 788,
+    "ms": 19.751,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15215,
+    "y": 668,
+    "ih": 801,
+    "ms": 19.997,
+    "parentType": "RecalculateStyles",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15265,
+    "y": 996,
+    "ih": 809,
+    "ms": 21.529,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5283,
+    "y": 776,
+    "ih": 804,
+    "ms": 22.473,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5428,
+    "y": 1651,
+    "ih": 814,
+    "ms": 23.599,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14907,
+    "y": 589,
+    "ih": 797,
+    "ms": 20.743,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14962,
+    "y": 1028,
+    "ih": 809,
+    "ms": 19.281,
+    "parentType": "RecalculateStyles",
+    "top": "RecalculateStyles",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5320,
+    "y": 661,
+    "ih": 798,
+    "ms": 20.39,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5466,
+    "y": 1478,
+    "ih": 813,
+    "ms": 23.892,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15010,
+    "y": 421,
+    "ih": 785,
+    "ms": 21.588,
+    "parentType": "RenderingFrame",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15063,
+    "y": 700,
+    "ih": 800,
+    "ms": 21.219,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15203,
+    "y": 1553,
+    "ih": 814,
+    "ms": 24.588,
+    "parentType": "RecalculateStyles",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5239,
+    "y": 543,
+    "ih": 797,
+    "ms": 22.057,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5295,
+    "y": 987,
+    "ih": 809,
+    "ms": 21.142,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14747,
+    "y": 500,
+    "ih": 794,
+    "ms": 22.622,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14797,
+    "y": 888,
+    "ih": 807,
+    "ms": 20.949,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5271,
+    "y": 652,
+    "ih": 800,
+    "ms": 21.871,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5406,
+    "y": 1450,
+    "ih": 813,
+    "ms": 22.432,
+    "parentType": "RecalculateStyles",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 13981,
+    "y": 659,
+    "ih": 801,
+    "ms": 19.632,
+    "parentType": "RecalculateStyles",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14085,
+    "y": 1284,
+    "ih": 812,
+    "ms": 20.725,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   }
+  ]
+ },
+ "R": {
+  "runs": [
+   "wpx-H1",
+   "wpx-H2",
+   "wc1-H1",
+   "wc1-H2"
+  ],
+  "H": 20,
+  "control": 347,
+  "controlWide": false,
+  "feats": {
+   "ev:finish": {
+    "H": 20,
+    "Hw": 0,
+    "runs": 4,
+    "floor": 8,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.006,
+    "call": "NO-LINK"
+   },
+   "ev:resize": {
+    "H": 20,
+    "Hw": 10,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.5,
+    "hLo": 0.302,
+    "base": 0.046,
+    "call": "LINKED-PART"
+   },
+   "ev:scroll": {
+    "H": 20,
+    "Hw": 20,
+    "runs": 4,
+    "floor": 8,
+    "h": 1,
+    "hLo": 0.861,
+    "base": 0.847,
+    "call": "NO-LINK"
+   },
+   "ev:touchend": {
+    "H": 20,
+    "Hw": 15,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.75,
+    "hLo": 0.544,
+    "base": 0.003,
+    "call": "LINKED-PART"
+   },
+   "ev:touchmove": {
+    "H": 20,
+    "Hw": 19,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.95,
+    "hLo": 0.784,
+    "base": 0.003,
+    "call": "COVERS"
+   },
+   "inval:2.DyWL8TcE.js:?@4332": {
+    "H": 20,
+    "Hw": 0,
+    "runs": 4,
+    "floor": 8,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.046,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 20,
+     "r": 8,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:ee@13860": {
+    "H": 20,
+    "Hw": 4,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.2,
+    "hLo": 0.071,
+    "base": 0.046,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 4,
+     "Fs": 20,
+     "r": 8,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 8.675,
+     "RRlo": 2.43,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:fwNearChange@12128": {
+    "H": 20,
+    "Hw": 0,
+    "runs": 4,
+    "floor": 8,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.029,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 20,
+     "r": 10,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:2.DyWL8TcE.js:hePE@4815": {
+    "H": 20,
+    "Hw": 1,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.05,
+    "hLo": 0.003,
+    "base": 0.046,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 1,
+     "Fs": 20,
+     "r": 8,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 2.169,
+     "RRlo": 0.099,
+     "linked": false
+    }
+   },
+   "inval:BSBv9QXB.js:Zi@2846": {
+    "H": 20,
+    "Hw": 0,
+    "runs": 4,
+    "floor": 8,
+    "h": 0,
+    "hLo": 0,
+    "base": 0.003,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 0,
+     "Fs": 20,
+     "r": 1,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 0,
+     "RRlo": 0,
+     "linked": false
+    }
+   },
+   "inval:native": {
+    "H": 20,
+    "Hw": 20,
+    "runs": 4,
+    "floor": 8,
+    "h": 1,
+    "hLo": 0.861,
+    "base": 0.85,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 192,
+     "Fs": 20,
+     "r": 381,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 8.743,
+     "RRlo": 7.523,
+     "linked": true
+    }
+   },
+   "inval:probe": {
+    "H": 20,
+    "Hw": 20,
+    "runs": 4,
+    "floor": 8,
+    "h": 1,
+    "hLo": 0.861,
+    "base": 0.605,
+    "call": "NO-LINK",
+    "rate": {
+     "s": 26,
+     "Fs": 20,
+     "r": 202,
+     "Fr": 347,
+     "runs": 4,
+     "floor": 16,
+     "RR": 2.233,
+     "RRlo": 1.532,
+     "linked": false
+    }
+   },
+   "obs:IntersectionObserver": {
+    "H": 20,
+    "Hw": 20,
+    "runs": 4,
+    "floor": 8,
+    "h": 1,
+    "hLo": 0.861,
+    "base": 0.536,
+    "call": "NO-LINK"
+   },
+   "obs:MutationObserver": {
+    "H": 20,
+    "Hw": 18,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.9,
+    "hLo": 0.717,
+    "base": 0.236,
+    "call": "COVERS"
+   },
+   "obs:PerformanceObserver": {
+    "H": 20,
+    "Hw": 7,
+    "runs": 4,
+    "floor": 8,
+    "h": 0.35,
+    "hLo": 0.177,
+    "base": 0.003,
+    "call": "NO-LINK"
+   }
+  },
+  "reading": "NATIVE",
+  "probeLinked": false,
+  "parent": "OTHER",
+  "parentShare": 0.2,
+  "parentTypes": {
+   "RecalculateStyles": 4,
+   "Composite": 9,
+   "RenderingFrame": 7
+  },
+  "topTypes": {
+   "RenderingFrame": 12,
+   "RecalculateStyles": 1,
+   "Composite": 7
+  },
+  "forced": "UPDATE",
+  "forcedShare": 0,
+  "forcedKeys": {
+   "native": 20
+  },
+  "forcedLo": 0,
+  "root": "SUBTREE",
+  "rootShare": 0,
+  "heavy": [
+   {
+    "t": 5245,
+    "y": 543,
+    "ih": 797,
+    "ms": 21.652,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5316,
+    "y": 979,
+    "ih": 809,
+    "ms": 21.459,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 13816,
+    "y": 493,
+    "ih": 792,
+    "ms": 21.992,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 13869,
+    "y": 772,
+    "ih": 804,
+    "ms": 20.404,
+    "parentType": "RecalculateStyles",
+    "top": "RecalculateStyles",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 13975,
+    "y": 1466,
+    "ih": 814,
+    "ms": 23.496,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5224,
+    "y": 543,
+    "ih": 797,
+    "ms": 21.038,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5275,
+    "y": 882,
+    "ih": 807,
+    "ms": 20.827,
+    "parentType": "RecalculateStyles",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5420,
+    "y": 1636,
+    "ih": 814,
+    "ms": 22.811,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14741,
+    "y": 493,
+    "ih": 793,
+    "ms": 21.158,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14810,
+    "y": 882,
+    "ih": 807,
+    "ms": 19.808,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5355,
+    "y": 659,
+    "ih": 799,
+    "ms": 22.764,
+    "parentType": "RecalculateStyles",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5494,
+    "y": 1466,
+    "ih": 813,
+    "ms": 23.598,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14987,
+    "y": 494,
+    "ih": 787,
+    "ms": 21.02,
+    "parentType": "RenderingFrame",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15040,
+    "y": 777,
+    "ih": 800,
+    "ms": 22.448,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 15181,
+    "y": 1670,
+    "ih": 814,
+    "ms": 23.95,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5276,
+    "y": 659,
+    "ih": 800,
+    "ms": 22.374,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 5422,
+    "y": 1553,
+    "ih": 814,
+    "ms": 23.804,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14775,
+    "y": 488,
+    "ih": 791,
+    "ms": 22.67,
+    "parentType": "Composite",
+    "top": "RenderingFrame",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14824,
+    "y": 747,
+    "ih": 803,
+    "ms": 20.319,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   },
+   {
+    "t": 14932,
+    "y": 1300,
+    "ih": 813,
+    "ms": 21.784,
+    "parentType": "RenderingFrame",
+    "top": "Composite",
+    "forced": "native",
+    "root": "SUBTREE",
+    "box": [
+     430,
+     775
+    ]
+   }
+  ]
+ },
+ "agree": "AGREE",
+ "k1": {
+  "call": "SUPPORTS",
+  "ihMin": 775,
+  "ihMax": 815,
+  "heights": [
+   775,
+   785,
+   787,
+   788,
+   791,
+   792,
+   793,
+   794,
+   797,
+   798,
+   799,
+   800,
+   801,
+   804,
+   815
+  ],
+  "entries": 81
+ },
+ "k1b": {
+  "viewRootHeights": []
+ }
+}
