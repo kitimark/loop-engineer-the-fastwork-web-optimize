@@ -74,6 +74,52 @@ test('gesture --dry-run: compiles and prints the strokes and the hash; needs no 
   assert.match(sd.stdout, /^ {2}s3 down 560 px \/ 4458 ms drag: .*\(plateau 130 px\/s\)/m);
 });
 
+// I-203 (P-129's L arm): --idle-after-reload <ms> idles after the script's first reload without touching the program:
+// same GESTURE_HASH, the idle added to GESTURE_BUDGET_S, refused (exit 2) without a leading reload or out of range.
+test('I-203 gesture --idle-after-reload --dry-run: hash unchanged, the idle reported and added to the budget; refusals exit 2', () => {
+  const f = scriptFile([{ type: 'reload' }, { type: 'pause', ms: 4000 }, S({})]);
+  const plain = node(IPHONE, ['gesture', f, '--dry-run'], { env });
+  const idle = node(IPHONE, ['gesture', f, '--dry-run', '--idle-after-reload', '20000'], { env });
+  assert.equal(plain.code, 0, plain.out);
+  assert.equal(idle.code, 0, idle.out);
+  const hash = (r) => r.stdout.match(/^GESTURE_HASH ([0-9a-f]{64})$/m)[1];
+  const budget = (r) => Number(r.stdout.match(/^GESTURE_BUDGET_S (\d+)/m)[1]);
+  assert.equal(hash(idle), hash(plain), 'the idle is not part of the program hash');
+  assert.equal(hash(idle), compileScript(JSON.parse(readFileSync(f, 'utf8'))).hash);
+  assert.equal(budget(idle), budget(plain) + 20);
+  assert.match(idle.stdout, /^IDLE_AFTER_RELOAD_MS 20000 {2}\(after the script's first reload is ready, before its next step; not in the hash; I-203\)$/m);
+  assert.doesNotMatch(plain.stdout, /IDLE_AFTER_RELOAD/, 'unset: the dry-run output is unchanged');
+  const zero = node(IPHONE, ['gesture', f, '--dry-run', '--idle-after-reload', '0'], { env });
+  assert.equal(zero.stdout, plain.stdout, '0 = today\'s behaviour');
+  const noReload = node(IPHONE, ['gesture', scriptFile([S({})]), '--dry-run', '--idle-after-reload', '20000'], { env });
+  assert.equal(noReload.code, 2, noReload.out);
+  assert.match(noReload.stderr, /--idle-after-reload needs a script whose first step is a reload/);
+  for (const bad of ['60001', 'x']) {
+    const r = node(IPHONE, ['gesture', f, '--dry-run', '--idle-after-reload', bad], { env });
+    assert.equal(r.code, 2, r.out);
+    assert.match(r.stderr, /--idle-after-reload wants whole ms 0-60000/);
+  }
+});
+
+test('I-203 gesture --idle-after-reload on the fake phone: the first touch comes the idle after ready; run.idleAfterReloadMs and the summary line', async () => {
+  const phone = await fakePhone();
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
+  const f = scriptFile([{ type: 'reload' }, S({})]);
+  const out = join(phone.dir, 'idle.json');
+  const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out, '--idle-after-reload', '1500'], { env: phone.env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  const doc = JSON.parse(readFileSync(out, 'utf8'));
+  assert.equal(doc.run.aborted, null);
+  assert.equal(doc.run.idleAfterReloadMs, 1500);
+  assert.equal(doc.run.reloads[0].idleAfterMs, 1500);
+  assert.equal(doc.program.hash, compileScript(JSON.parse(readFileSync(f, 'utf8'))).hash);
+  const ready = doc.run.segments[0].sync[0]; // [macBefore, pageT = readyPageMs, macAfter]
+  assert.equal(ready[1], doc.run.reloads[0].readyPageMs);
+  assert.ok(doc.run.strokes[0].sentAt - ready[2] >= 1500, `first touch ${doc.run.strokes[0].sentAt - ready[2]} ms after ready`);
+  assert.match(r.stdout, /^ "idleAfterReloadMs": 1500,$/m, 'on the run\'s summary line');
+  assert.match(r.stdout, /^GESTURE e2e v1 hash [0-9a-f]{12} .* idle after reload 1500 ms on /m);
+});
+
 test('gesture and wda start refuse without the lease (no --owner, nobody holds it, someone else holds it)', () => {
   const f = scriptFile([S({})]);
   for (const cmd of [['gesture', f], ['wda', 'start']]) {

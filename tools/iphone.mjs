@@ -38,10 +38,13 @@
 //        # gesture --dry-run prints GESTURE_BUDGET_S: plan that per G run (whole run, not only the strokes; I-112)
 //   node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <topic> [--label l]
 //        [--variant asPerformed|slow] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>]
-//        [--timeline <out.json>] [--dry-run]   # tools/lib/gesture-run.mjs; --inject runs an in-page logger on the run's
+//        [--timeline <out.json>] [--idle-after-reload <ms>] [--dry-run]   # tools/lib/gesture-run.mjs; --inject runs an in-page logger on the run's
 //        # own connection (I-038); --timeline records a WebKit Timeline there too, re-armed per page load (Page.disable,
 //        # Page.enable, Timeline.start; F-047), one {syncT, syncTL, recs} file per segment (I-079): attribution runs or
 //        # Timeline blocks only, never mixed with Timeline-off counted runs (protocol v2 §5.2, §5.5)
+//        # --idle-after-reload <ms> (0-60000, default 0; I-203): idle after the script's first reload is ready (readyPageMs),
+//        # before its next step; not in GESTURE_HASH; run.idleAfterReloadMs, added to GESTURE_BUDGET_S; exit 2 unless the
+//        # script starts with a reload
 //   node tools/iphone.mjs safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30]
 //        # quit + relaunch Safari (WDA apps endpoints, else devicectl --terminate-existing), open U if given, wait
 //        # until the proxy lists a page that answers Runtime.evaluate; prints SAFARI_RESTARTED (tools/lib/safari-restart.mjs)
@@ -410,6 +413,6 @@ async function main() {
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'profile') return profileCmd();
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(e?.exitCode || 1); }); // I-186: a profile misfit exits 8
