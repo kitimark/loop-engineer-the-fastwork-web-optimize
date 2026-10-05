@@ -5,8 +5,8 @@
 # starts in a fresh Safari web process: no picture decoded by an earlier run can be reused, and every picture's first
 # decode falls inside the run (the risk this check tests: AVIF's first decode).
 # Builds (immutable snapshots, served by fixes/end-bg/phone/p150-serve.sh on plain http, --vendors=local --latency 150):
-#   C  v9-final + morph-scroll rev 7d                    JS 1b2eecc66011  CSS e1359ab9994a  index site-pretty's  out/p150/serve-C.json
-#   N  C + option B (rebuild-b.mjs, manifest-checked)    JS 049b13ced4e3  CSS e1359ab9994a  index 10919c0334b4    out/p150/serve-N.json
+#   C  v9-final + morph-scroll rev 7d                    JS 1b2eecc66011  CSS e1359ab9994a  index served 3b65ade30d22  out/p150/serve-C.json
+#   N  C + option B (rebuild-b.mjs, manifest-checked)    JS 049b13ced4e3  CSS e1359ab9994a  index served 8630b44e4eab  out/p150/serve-N.json
 #   B  the plain baseline (the thermal gate's timer page)                                                     out/p150/serve-B.json
 # Script fs = fixes/morph-scroll/g-fastshort-v1.json (swipes from the top to the page bottom: every picture comes into
 # view), compiled program pinned 8737f212c0ff (the reader's G6), E procedure (G4 E [4.0, 5.5] s), as P-137.
@@ -32,7 +32,7 @@ R=${RUNNER:-iphone-runner}
 O=out/p150/runs; SV=out/p150
 FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
-C_JS=1b2eecc66011; N_JS=049b13ced4e3; CSS_PIN=e1359ab9994a; N_HTML=10919c0334b4; C_HTML=26e46ddee017
+C_JS=1b2eecc66011; N_JS=049b13ced4e3; CSS_PIN=e1359ab9994a; N_HTML=8630b44e4eab; C_HTML=3b65ade30d22   # SERVED index.html (rev 1.2): --vendors=local injects the vendor shim (tools/lib/mirror-handler.mjs rewriteHtml); files: C 26e46ddee017, N 10919c0334b4
 GM=${P150_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "P150_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/end-bg/phone/p150-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs

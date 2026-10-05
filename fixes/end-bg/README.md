@@ -956,7 +956,7 @@ MB and 36 → 16 decodes. Prediction 7 is informed by P-137's C runs (same C, dr
 | `img/cost-b.mjs` | ab1cd4046ee6 (rev 1.1, self-test 13 ok; rev 1 147a1f0d328a) |
 | `img-scroll.mjs` (unchanged, used by PR-025) | 682d14b8beab |
 | `phone/p150-serve.sh` | a9b059094d07 |
-| `phone/p150-hold.sh` | 1cb0b24aa2ca |
+| `phone/p150-hold.sh` | 78965a854e29 (rev 1.2: served index pins; rev 1 1cb0b24aa2ca) |
 | `phone/p150-block.sh` | d19c744265fa |
 | `phone/p150-read.mjs` | 24b1ed51f58e (rev 1.1, self-test 12 ok; rev 1 382006b9f60e) |
 | `phone/p137-read.mjs` | b6d24ad5e73c |
@@ -1090,3 +1090,32 @@ other pin is unchanged.
   job in that gap, from `locks/holds.log`.
 - **N10 wording.** The manifest's `skipped` lists all 3 seller photos as "AVIF skipped". Two of them are among the 35
   (resized only). The third, `cover.jpg`, needs no resize and is not among the 35.
+
+### P-150 addendum rev 1.2: kit dry run (N1), 2026-10-05
+
+- **Dry run 1 (22:15Z, `--no-timing` hold, no phone): kit fault.**
+  - H1 ended VOID before any run, exit 4: the served index.html hash did not equal the pinned file hash. Served C
+    3b65ade30d22 vs file 26e46ddee017; served N 8630b44e4eab vs file 10919c0334b4.
+  - Cause: with `--vendors=local` the mirror server inserts the vendor shim `<script>` before `/analytics.js`
+    (`tools/lib/mirror-handler.mjs` `rewriteHtml`). This is a fixed text rewrite.
+  - Fix: `phone/p150-hold.sh` now pins the *served* index hashes; the file hashes stay in its comment, and the N
+    snapshot's file is still checked by the manifest (38/38). Re-pinned: `phone/p150-hold.sh` 1cb0b24aa2ca →
+    78965a854e29. No other file changed.
+  - P-145 is not affected: it hashes JS and CSS only.
+- **Dry run 2 (22:40Z, `--no-timing` hold, no phone, head 5c7fd8c1 + the re-pinned hold script): PASS.**
+  - `P150_DRY=1` for H1-H6: all `DRY ok`; block exit 0.
+  - Snapshots: C JS 1b2eecc66011, CSS e1359ab9994a; N JS 049b13ced4e3, CSS e1359ab9994a; N manifest 38/38.
+  - Served, in every hold: C JS 1b2eecc66011, index 3b65ade30d22; N JS 049b13ced4e3, index 8630b44e4eab; CSS
+    e1359ab9994a; N manifest 38/38.
+  - Compiled program fs 8737f212c0ff; GESTURE_BUDGET_S 229.
+  - Plan in the card's order:
+    - H1: WC, WN warm-ups, Timeline off;
+    - H2: S0 sentinel, then EC1;
+    - H3: EN1, EN2;
+    - H4: EC2, EC3;
+    - H5: EN3;
+    - H6: TAIL (no re-runs), then S1.
+  - Gates sit at the edges (H1 start, H6 end), as one part. The real block runs two parts and so has 4 gates.
+  - The PIN lines equal the card's pins, except the re-pinned hold script above.
+  - All servers were stopped after the run.
+- This addendum meets N1. No phone hold of P-150 starts before the lead's delta check of this rev 1.2.
