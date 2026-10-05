@@ -72,6 +72,14 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~10:1xZ **P-097 rev 4.2 pre-data read: PASS with C1-C2 for the addendum** (84a73795 on worktree-agent-a912806c0aa208fd8, child of rev 4.1 d6f1ff6d; README +79 lines, 0 deleted: additive as stated).
+  - Checked: the smoke disclosure (slot, holds.log line, files, the values seen), F-277 with source lines, rev 4.1 items kept and scored with M4 (Q2a not missed, Q2b missed, p miss 0.95), Q2b' classifier frozen from the trace alone (exact-text anchors, refuses another line, leak voids the load, the finish frame stays countdown, never touches Q2a/Q2b counts), G against the C/C2 A/A with the A/A-limited rule, calibration sums to 1.00, outcome table covers Q2b' and G.
+  - Functional check on the smoke traces after the classifier was frozen (09:47:44Z): not a breach, since it ran a frozen tool on data already seen and changed nothing after; but the classifier was not committed at that time, so C1 below carries the proof.
+  - C1: the addendum pins p097-lib.mjs, and rollClassify.toString() of the committed file hashes to 162cc869c642 (ops re-hashes it); otherwise Q2b' is flagged as revised after the functional check.
+  - C2: one line in the addendum disclosing that the Q3, Q4 and Q6 miss p moved after the smoke (0.13 to 0.12, 0.12 to 0.11, 0.08 to 0.07; Q6's hand-off was seen in the smoke). The ledger scores rev 4.1's calibration as registered and rev 4.2's apart.
+  - Reading note for the result: Q2b' and G are smoke-informed; the pre-smoke less-work claim is Q1.
+  - PREDICTIONS P-097 row: c[3] and c[7] carry rev 4.2 as a partial supersession.
+  - P-131: S2/S3 committed at 35094199 (README card and results.json only; no prediction or pin changed; ops checked the diff). The owner queues the signed hold FIFO.
 - 10-05 ~10:0xZ **P-131 SIGNED; landings; P-129 split around a user Try-it.**
   - Landed: ops d6a97cb7 as abc76adf; art-worst-cases' clips as cc18469c.
   - P-131 SIGNED by the lead on the ops read of 97317e32. The owner fixes S2/S3 (text only) first and sends ops the sha; ops checks that only text changed and the pins hold.
