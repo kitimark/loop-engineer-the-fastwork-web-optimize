@@ -1,20 +1,20 @@
 #!/bin/sh
-# P-131 (v9.1 vs v9-final) phone servers: a copy of P-122's fixes/v9-best/phone/serve122.sh with only the C and V
+# P-132 (v9.1 vs v9-final) phone servers: a copy of P-122's fixes/v9-best/phone/serve122.sh with only the C and V
 # arms, the folder and the sources changed. Immutable snapshot copies, plain http (I-003), OS-assigned ports (--port 0,
 # I-131), --latency 150, --vendors=local.
 #   B = the plain baseline (no overlay): the thermal gate's timer page; no counted run on it
-#   C = v9-final (landed 8b5ce9b3)                 (JS 647c9ef2b1e2, CSS e1359ab9994a), copy out/p131/snap/C
+#   C = v9-final (landed 8b5ce9b3)                 (JS 647c9ef2b1e2, CSS e1359ab9994a), copy out/p132/snap/C
 #   V = v9.1 = v9-final + scroll-cb (carry over dd) + the g11 close rule (fix-morph-gpu d677884838c7)
-#                                                  (JS c3d36476c3ce, CSS f1997edf5309), copy out/p131/snap/V
+#                                                  (JS c3d36476c3ce, CSS f1997edf5309), copy out/p132/snap/V
 #   Sources: C out/v9/snap-647c9ef2b1e2-e1359ab9994a/V; V out/v91/snap-c3d36476c3ce/V, written by fixes/v9-best/build.mjs
 #   --target v91 (V91_EXPECT pinned; 420 legal orders give the same bytes, each component reverses, joins match).
-# Usage: sh fixes/v9-1/phone/serve131.sh snap    copy the source once; refuses if out/p131/snap exists or a hash differs
-#        sh fixes/v9-1/phone/serve131.sh         start B C V, check the copies and the served hashes, print ports
-#        sh fixes/v9-1/phone/serve131.sh check   re-check the served hashes of the running servers (exit 4 if wrong)
-#        sh fixes/v9-1/phone/serve131.sh stop    stop them (only these three, by their pid files)
+# Usage: sh fixes/v9-1/phone/serve132.sh snap    copy the source once; refuses if out/p132/snap exists or a hash differs
+#        sh fixes/v9-1/phone/serve132.sh         start B C V, check the copies and the served hashes, print ports
+#        sh fixes/v9-1/phone/serve132.sh check   re-check the served hashes of the running servers (exit 4 if wrong)
+#        sh fixes/v9-1/phone/serve132.sh stop    stop them (only these three, by their pid files)
 # Phone URLs are for the runner's terminal only (tools/lan.mjs); never copy them into a committed file.
 cd "$(dirname "$0")/../../../.." || exit 2
-S=out/p131/snap
+S=out/p132/snap
 SRCC=out/v9/snap-647c9ef2b1e2-e1359ab9994a/V; SRCV=out/v91/snap-c3d36476c3ce/V
 OWNER=${FW_AGENT:-int-v8}
 JS=_app/immutable/nodes/2.DyWL8TcE.js
@@ -52,7 +52,7 @@ if [ "$1" != check ]; then
     echo $! > $S/serve-$A.pid
   done
   for A in B C V; do
-    node tools/wait.mjs serve $S/serve-$A.json --pid "$(cat $S/serve-$A.pid)" --owner "$OWNER" --reason "v9.1 P-131 phone server $A" > /dev/null || { echo "server $A failed, see $S/serve-$A.log"; exit 1; }
+    node tools/wait.mjs serve $S/serve-$A.json --pid "$(cat $S/serve-$A.pid)" --owner "$OWNER" --reason "v9.1 P-132 phone server $A" > /dev/null || { echo "server $A failed, see $S/serve-$A.log"; exit 1; }
   done
 fi
 bad=0
