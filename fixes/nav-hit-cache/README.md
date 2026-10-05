@@ -1243,6 +1243,42 @@ gSV3 sCc; the same VOID rules, gates (GX, ES, FLICKER G1, BEHAVIOUR X) and score
 decides. Part 2 WORSE or BEHAVIOUR FAIL: U2 does not land; the cause is traced first. Part 1 FAIL or INSUFFICIENT: no
 phone part; the lead rules.
 
+### P-138 data log (part 1)
+
+**Steps 1-2, Chrome A/A (committed before any K / V run).** Both A/A records are valid: 6 loads each, K bytes
+1b2eecc66011 / e1359ab9994a in both arms, no page error, 0 A/A VOIDs.
+
+| step | record | when | slot |
+|---|---|---|---|
+| 1 | `p138/aa-mobile.json` | 12:27-12:28Z | 628 steps per load; wall 111 s; queued 934 s first |
+| 2 | `p138/aa-desktop.json` | 12:53-12:55Z | 845 steps per load; wall 143 s |
+
+Step 2 did not come from the same `part1-138.sh aa` run as step 1. That run's desktop step was killed by the 30-min
+cap on background commands while it was still queued: no slot taken, no record. Step 2 then ran alone from a scratch
+copy of the same `chrome()` command (same lock arguments, the same `probe.mjs count --base v9f7d --ctl v9f7d --reps 3
+--vp desktop`), because the runner's `aa` refuses once `aa-mobile.json` exists.
+
+**Tolerances**, from `p138/counts.mjs` 75a3c8ce735a `score()` on the two A/A records alone:
+`p138/aa-tolerances.json`.
+
+| viewport | efpNav | forced Layout | forced UpdateLayoutTree | PrePaint |
+|---|---|---|---|---|
+| mobile (median) | 2 (454) | 6 (196) | 9 (772.5) | 5 (1226) |
+| desktop (median) | 7 (533) | 8 (261.5) | 4 (1244) | 10 (1396) |
+
+**A0, Chrome half:** every tolerance used by C3 and C5 is under its cap:
+
+| count | tolerance | cap |
+|---|---|---|
+| mobile forced Layout | 6 | 9.8 |
+| mobile forced style | 9 | 38.6 |
+| desktop efpNav | 7 | 26.7 |
+| desktop forced Layout | 8 | 13.1 |
+| desktop forced style | 4 | 62.2 |
+| desktop PrePaint | 10 | 69.8 |
+
+A0's Simulator half (C7) waits for steps 5-6.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

@@ -1,0 +1,82 @@
+{
+ "what": "P-138 Chrome A/A tolerances (counts.mjs score(), A/A only; the Simulator A/A comes later in the drain)",
+ "scorer": {
+  "file": "p138/counts.mjs",
+  "sha12": "75a3c8ce735a"
+ },
+ "inputs": {
+  "aa-mobile.json": "1b3cceac1bec",
+  "aa-desktop.json": "84c6f715a064"
+ },
+ "aaVoids": [],
+ "tol": {
+  "mobile": {
+   "efpNav": {
+    "tol": 2,
+    "median": 454
+   },
+   "forcedLayout": {
+    "tol": 6,
+    "median": 196
+   },
+   "forcedStyle": {
+    "tol": 9,
+    "median": 772.5
+   },
+   "prePaint": {
+    "tol": 5,
+    "median": 1226
+   }
+  },
+  "desktop": {
+   "efpNav": {
+    "tol": 7,
+    "median": 533
+   },
+   "forcedLayout": {
+    "tol": 8,
+    "median": 261.5
+   },
+   "forcedStyle": {
+    "tol": 4,
+    "median": 1244
+   },
+   "prePaint": {
+    "tol": 10,
+    "median": 1396
+   }
+  }
+ },
+ "a0Chrome": {
+  "mobile forcedLayout": {
+   "tol": 6,
+   "cap": 9.8,
+   "ok": true
+  },
+  "mobile forcedStyle": {
+   "tol": 9,
+   "cap": 38.625,
+   "ok": true
+  },
+  "desktop efpNav": {
+   "tol": 7,
+   "cap": 26.650000000000002,
+   "ok": true
+  },
+  "desktop forcedLayout": {
+   "tol": 8,
+   "cap": 13.075000000000001,
+   "ok": true
+  },
+  "desktop forcedStyle": {
+   "tol": 4,
+   "cap": 62.2,
+   "ok": true
+  },
+  "desktop prePaint": {
+   "tol": 10,
+   "cap": 69.8,
+   "ok": true
+  }
+ }
+}
