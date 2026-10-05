@@ -2748,6 +2748,17 @@ no shorter stimulus, no larger budget, no second dry run. Nothing else in the ca
     - `split-io119.mjs` `1ad22b858eb8`;
     - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
 
+**Addendum 1 signed** by the lead on mgmt-ops-10's pre-data PASS of 402a6cae (ops' read: e6151b57 on main; 2026-10-05,
+before any Timeline data), with N1-N3 above and these notes for the result read:
+- N4: A2 and B2 have no positive control in their own session (their nvc ran in A1 and B1). The result read says so
+  for every call in A2 and B2.
+- N5: P1 and P11 now cover 8 C runs and 15 runs (was 6 and 13): a slightly harder event at the same p (kept, N1). The
+  result read says so.
+- N6: a hold the budget stop leaves with one C has no drift check. It is reported DRIFT n/a, neither VOID nor a pass.
+
+Queued in the order A1, A2, B1, B2, one at a time, each with its n check right after it; all DEFERRED while P-130's
+phone block is marked. Nothing is scored before the last hold. Then the files go to mgmt-ops-10 for the result read.
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).
