@@ -591,8 +591,26 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
     reads `.hero-track` and the card rects every frame). v9.1d's scroll-cb gates that handler, but the deck still costs
     ~41 ms per frame. The work moves into the rendering update; it does not go away.
   - `content-visibility: auto` saves the cost only while the deck is off screen (2000-2500: 0.6; 0-850: 19); on screen
-    (850-2000) it stays ~42-44 ms. Next probe: which outside write dirties the deck (a `contain: strict` + fixed height arm,
-    and per-writer ablation of the countdown, the carousels and the script accent).
+    (850-2000) it stays ~42-44 ms (parked by the lead until the writer is known).
+  - Per-writer ablation (lead GO; `t194/run-abl.sh`, v9.1d, swipe 0 -> 2000, 14:55Z,
+    out/morph-scroll/t194/swipe-sim-2026-10-05T14-55-27-516Z.json; load1 47-75 during the run, logged per arm):
+
+    | arm | Layout ms / frame | 850-1250 | 1250-2000 |
+    |---|---|---|---|
+    | C1 / C2 (no ablation) | 40.9 / 40.2 | 41.0 / 40.3 | 41.9 / 42.3 |
+    | countdown strips `display: none` | 41.3 | 42.7 | 41.4 |
+    | image `src` swaps blocked (61 writes) | 40.9 | 41.4 | 40.4 |
+    | script accent `display: none` | 40.8 | 41.6 | 42.3 |
+    | avatar carousel `display: none` | 41.3 | 41.2 | 41.1 |
+    | deck `contain: strict; height: 844px` | 3.6 | 0.4 | 0.5 |
+
+    No single writer is the trigger. Size containment is what removes the cost (`contain: layout` alone did not, 14:37Z):
+    each frame's layout pass re-measures the deck's size, and the deck is expensive to measure. Layout invalidations per
+    frame (~1.7 script, ~1.0 engine) are the same in every arm; the script one includes the runner's own `scrollTo`.
+    UNRESOLVED: whether a real finger scroll also dirties layout every frame on the phone (the phone's slow band
+    1250-2000 suggests it); decisive check: a G run with Timeline, InvalidateLayout records in the deck band.
+    A fix would be a less-work cost card (size containment without a hard-coded height, e.g. `contain-intrinsic-size`
+    or a size-independent layout for the deck), pixels T0 or a proposal; not built.
 
 - **Half-open rest:** fixed in rev 4 by the script settle (rev 2/3 could rest at p 0.3-0.7). Rev 6 commits at lift-off
   (touchend) inside the extra screen, deciding on p + 500 ms x the scroll speed; the 200 ms rest timer is the fallback.

@@ -1,0 +1,2 @@
+/* T-194 probe: the deck as a size + layout + paint + style containment boundary with its measured height (844 px) */
+.start-selling-profile-deck { contain: strict !important; height: 844px !important; }

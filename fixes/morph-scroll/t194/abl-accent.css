@@ -1,0 +1,2 @@
+/* T-194 writer ablation (probe only): the script accent (word swaps, span.paint, em class) out of layout */
+em.script-accent { display: none !important; }

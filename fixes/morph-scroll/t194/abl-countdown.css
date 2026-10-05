@@ -1,0 +1,2 @@
+/* T-194 writer ablation (probe only): countdown digit strips out of layout, so their per-tick style writes dirty nothing */
+.countdown { display: none !important; }

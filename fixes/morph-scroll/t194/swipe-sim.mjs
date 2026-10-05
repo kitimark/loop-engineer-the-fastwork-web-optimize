@@ -45,6 +45,7 @@ for (const [i, arm] of ARMS.entries()) {
     if (armCss && arm.css.endsWith('.js')) run.armResult = await c.evaluate(armCss);
     else if (armCss) await c.evaluate(`(() => { const s = document.createElement('style'); s.id = 'sw-arm'; s.textContent = ${JSON.stringify(armCss)}; document.head.appendChild(s); return 1; })()`);
     if (FROM) { await c.evaluate(`window.scrollTo({ top: ${FROM}, behavior: 'instant' })`); await sleep(1500); }
+    run.load1Start = +(await import('node:os')).loadavg()[0].toFixed(2); // P-133 lesson: host load per arm
     run.page = await c.evaluate(`({ ih: innerHeight, docH: document.documentElement.scrollHeight, heOn: !!document.querySelector('.hero-track.he-on'), gesture: 'GestureEvent' in window, arm: !!document.getElementById('sw-arm') })`);
     const recs = [];
     c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
@@ -98,6 +99,8 @@ for (const [i, arm] of ARMS.entries()) {
     }
   } catch (e) { run.error = String(e.stack || e.message || e); console.log(label, 'error', run.error); }
   finally { try { c?.close(); } catch {} p.kill(); rmSync(st, { force: true }); }
+  run.load1End = +(await import('node:os')).loadavg()[0].toFixed(2);
+  console.log(`LOAD ${label} load1 ${run.load1Start} -> ${run.load1End}`);
   res.arms.push(run);
 }
 const f = join(OUT, `swipe-sim-${STAMP}.json`);
