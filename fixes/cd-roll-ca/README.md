@@ -2033,6 +2033,85 @@ order of work after the lead's word: rebase on main with v9-final; tell fix-nav-
   on the landed v9-final; tools and addendum; ops pre-data read of the addendum; then the Chrome and Simulator reps.
 ```
 
+### P-097 rev 4.2: Q2b′ and the total-frames gate, written after one smoke load per arm (2026-10-05)
+
+```
+TICKET P-097 rev 4.2 · supersedes rev 4.1 only where it says so (it adds; it edits nothing above) · lead's ruling
+  2026-10-05 09:4xZ, (a) with ops' terms (mgmt-ops-10) · counts and pixels only, no timing, no phone
+smoke disclosure (POST-SMOKE: Q2b′ and the gate below were written after these two loads were seen):
+  before the addendum, one test-only Chrome census load per arm ran in a shared probe slot (chrome-measure, owner
+  fix-cd-roll-ca-r4, shared, weight 1, 09:36:25-09:37:32Z, 67 s; locks/holds.log line 1645), `p097-census.mjs --arms
+  V,C --settle 3000` (test flags: not a rep). Files, smoke-only, never scored: out/p097/smoke1.log,
+  out/p097/census/rep0-C-2026-10-05T09-36-25-177Z.{json,trace.json.gz}, rep0-V-2026-10-05T09-36-25-177Z.{json,
+  trace.json.gz} (worktree-agent-a912806c0aa208fd8). Seen, per s at the page-end rest (3 windows, M4 counting):
+    C: main frames 28.0 / 29.7 / 28.0, countdown 27.0 / 28.7 / 27.0, other 1 / 1 / 1; countdown rAF 108-142 per 4 s.
+    V: main frames 8.2 / 7.0 / 8.2, countdown 2.25 / 2 / 2.25, other 6 / 5 / 6; countdown rAF 4-5 per 4 s.
+    Both: m '1' at both S1 reads; pass 158 mid rows, 0 running; V hand-off met, jump 0.0005 px.
+  The V trace per 1 s tick: the tick frame (TimerFire, $E's tick at 4512, the roll-start rAF at 4332); 1 script-free
+  frame (UpdateLayoutTree 14 + Paint); about 380 ms with no frame; 3 script-free frames 16.7 ms apart; the finish
+  frame (onfinish at 4270, a countdown frame); 1 script-free frame (UpdateLayoutTree 10) after the cancel.
+  Cause of the last-40-ms frames, CONFIRMED in source: Blink's DocumentTimeline::ScheduleNextService services the
+  timeline on every frame once an animation's next effect change is less than kMinimumDelay = 0.04 s away
+  (third_party/blink/renderer/core/animation/document_timeline.cc, chromium/chromium 6d70de1705fa, line 69
+  `kMinimumDelay = 0.04` and lines 131-135 `if (next_effect_delay < kMinimumDelay) ScheduleServiceOnNextFrame()`).
+  The start-commit frame and the post-cancel restyle are OBSERVED in our setup (trace only). Finding F-277. The same
+  shape on v9's hero roll is OBSERVED-unchecked (int-v8 runs a counts-only check, the lead's approval).
+  Functional check, also disclosed: after the classifier below was written and its self-test passed (09:47:44Z;
+  rollClassify source text sha256 162cc869c642, function.toString(); it does not change after), it ran once on the
+  two smoke traces: C roll 0, other′ 1 / 1
+  / 1, leak 0, orphan 0; V roll 6 / 5 / 6, other′ 0 / 0 / 0, leak 0, orphan 0; its countdown counts equal M4's.
+rev 4.1 predictions after the smoke (kept as registered; scored at the end with rev 4.1's M4 counting):
+  Q1 unchanged, not touched by the smoke.
+  Q2a unchanged and NOT missed at the smoke (V countdown frames 2-2.25/s against its 4/s limit; C 27-29). Q2a is scored
+    with rev 4.1's M4 counting only: the roll-window classifier below applies to Q2b′ alone, so moving roll frames
+    out of "other" can never push Q2a over its limit.
+  Q2b unchanged and MISSED at the smoke (V other 5-6/s against C 1/s + 2), cause F-277. It is still scored at the end
+    and expected out (p miss 0.95). Its registered outcome rule ("stop, report to the lead and int-v8") was carried
+    out pre-data (lead, ops, int-v8 told 09:4xZ); the lead's ruling replaces the stop with Q2b′ and the gate.
+  Q3, Q4, Q5, Q6 unchanged, their text above stands.
+new (rev 4.2, post-smoke):
+  Q2b′ (Chrome, scored, no-worse) other′ frames/s at the page-end rest: no V load above the highest C or C2 load
+     + 2/s, where other′ = M4 frames - M4 countdown frames - roll frames (roll-window classifier, below). Same loads,
+     windows and per-load value (median of the 3 windows) as Q2b. Point V 0/s, 80 % [0, 1.5]; C expected about 1/s
+     with no roll frames (C's panel runs the spring, its hero is held: no roll start or finish calls at rest).
+  roll-window classifier (frozen in p097-lib.mjs rollClassify(), self-test in p097-lib selftest(); sha256 in the
+     addendum), from the Chrome trace alone, on the page renderer main thread (M4's pageMain):
+     anchors, 1-based trace lineNumber in 2.DyWL8TcE.js, found by their exact text in each arm's served file and
+     registered (the tool refuses another line, exit 3): S = `R0.F = requestAnimationFrame((t) => {` (one call per
+     roll, the roll's start-frame callback), F = `Q.A[0].onfinish = () => Q === __crRoll && __crStop();` (one call per
+     roll that runs to its end). C: S 4305, F 4264. V: S 4332, F 4270. Both inside the arm's M4 range.
+     frames = PrePaint events, in time order from the p097-pass-end mark to the end of the last rest window (so a roll
+     that started before w0 is seen from its start); a frame's tasks = M4's top-level tasks whose end lies after the
+     previous PrePaint and at or before this one; a frame is countdown as in M4.
+     state open = 0, after = false; per frame f, in order:
+       (1) f holds a tick (a TimerFire task with a countdown-range FunctionCall) while open > 0: leak += 1, open = 0,
+           after = false;
+       (2) f is a roll frame when it is not an M4 countdown frame, has no task at all, and open > 0 or after;
+       (3) open += the number of S calls in f's tasks; for each F call: open > 0 ? open -= 1 (matched) : orphan += 1;
+       (4) after = f had a matched F call and open == 0.
+     So the roll frames are the script-free frames from a roll's start frame to its finish frame, plus the one
+     script-free frame after the finish frame; a frame with any task is never a roll frame; the finish frame stays an
+     M4 countdown frame. Per window: countdown, roll and other′ frames per s. leak > 0 anywhere in the walk voids the
+     load for Q2b′ (a roll that did not finish before the next tick would move frames that are not its own); orphans
+     are reported. The classifier never changes Q2a's or Q2b's counts.
+  G (Chrome, scored) total-frames gate, the less-work basis that needs no classification: page-end rest main frames/s
+     (M4 page frames, all of them, per load = median of the 3 windows; loads valid for Q1/Q2 incl. the S1 m check),
+     V median <= C median - spread (spread = the C/C2 A/A as for every count: max over valid same-position pairs of
+     |C - C2|, >= 4 valid pairs, a spread over 25 % of C's median makes G A/A-limited, to the lead). Point V 7.5/s,
+     80 % [6, 10]; C about 28-30 (or 60 on a high-level load).
+calibration (rev 4.2; exclusive first-miss outcomes in the order Q1, Q2a, G, Q2b′, Q3, Q4, Q5, Q6; Q2b is scored
+  apart and left out of this order: p miss 0.95; sum 1): all pass 0.42; Q1 0.04; Q2a 0.05; G 0.02; Q2b′ 0.07; Q3 0.12;
+  Q4 0.11; Q5 0.10; Q6 0.07.
+outcome (rev 4.2; replaces rev 4.1's outcome line where they differ): all of Q1, Q2a, G, Q2b′, Q3-Q6 pass -> a D card
+  and the user's decision (PR-017 covered the hero only: a proposal rev or a new proposal with Try-it before any land),
+  then the phone no-worse ticket; Q2b's miss is reported with F-277 next to it. Q1, Q2a or G miss -> dropped (no less
+  work). Q2b′ miss -> stop, report to the lead and int-v8 (V moves frames outside its own rolls). Q3 or Q4 miss -> fix
+  the gate once, re-register (rev 5); a second miss parks the item. Q5 T0 miss -> stop, report to the lead. Q6 miss ->
+  fix the hand-off once, re-register.
+unchanged: arms, reps, order, steps 1-5, voids, the A/A rule, Q3-Q6 text. Lesson (lead, ops): tool smokes run on B,
+  never on the arms, before the addendum.
+```
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at
