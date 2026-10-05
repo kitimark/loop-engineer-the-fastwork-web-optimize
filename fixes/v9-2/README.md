@@ -398,6 +398,27 @@ delta check and go):
 - **The result line:** part 1 = 1a (no-worse) + 1c rest stops (no-worse) + the re-run's 1c scroll item, folded by the rule
   above. Phone part 2 does not depend on it.
 
+**Rev 1.4a (lead rulings with the rev 1.4 delta check PASS on 3915ec27; before any rev 1.4 data; no code change):**
+- **Floor 0 gates the per-frame scroll items** (1c top→end layouts/frame and styleRecalcs/frame): WORSE when V's min > F's
+  max AND median(V) − median(F) > max(F's range, 10 % of median(F)). The registered 2-count floor is reported beside it
+  only (on a per-frame ratio it cannot fail in practice). Stricter than the card, set before data. part1read.mjs already
+  prints both: the floor-0 verdict is its "(report: floor 0 …)" field, which is now the gate; its floor-2 verdict and its
+  PART1 fold line are the report. The result line folds by hand with the floor-0 verdicts.
+- **Disclosure:** the fixed sim92 polls `window.__p142sc` with an inspector evaluate every 250 ms (4 Hz) while the
+  Timeline records, in both arms alike; its cost on the counts is not measured (OBSERVED only: no check of ours
+  isolates it).
+- **Smoke (lead OK):** one fixed-sim92 run on arm C only (no ticket arm), one shared Simulator slot, records
+  `out/v92/sim/smoke-r14.json` (never p142-scroll.json, never counted), log `out/v92/smoke-r14.log`. If the check fails on a
+  real full window, stop (a floor problem to fix before data); if it passes, rerun14.sh runs as pinned.
+- **Smoke result: FAIL, stopped (to the lead; rerun14.sh not started).** C served 1b2eecc66011 / e1359ab9994a; the
+  driver's result never appeared within the 30 s timeout (frames, y, max undefined); the window held RenderingFrames 1804
+  (~60 a second for 30 s), so the page was rendering and the scroll loop ran past the expected ~4.2 s. Not a floor
+  problem: the driver did not finish. Hypothesis (UNRESOLVED, not checked): the driver's stop target `max` is computed once
+  from `innerHeight` at the start; if Safari's toolbar collapses while scrolling, `innerHeight` grows, the reachable max
+  scrollY drops below that target, `scrollY >= max - 1` never holds, and the loop runs to its 2000-frame cap (~33 s at
+  60 Hz), past the 30 s poll timeout. The decisive check is a diagnostic run that logs scrollY, innerHeight and the live max at
+  each poll.
+
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
 The block reuses P-134's harness unchanged (itself P-132's / P-122's: P-121's path-matched G driver, nav-hit-cache's
