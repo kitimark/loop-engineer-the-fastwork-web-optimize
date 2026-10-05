@@ -1,0 +1,59 @@
+Third-party code in tools/ (incident I-199, tools/thermal.mjs: the iPhone's thermal condition)
+
+The files below port or follow code from the projects listed here. Each file's header names its sources. This repo
+stays local (CLAUDE.md Hard rule 2); this notice keeps the licences' attribution terms all the same.
+pymobiledevice3 (GPL-3.0) was read for understanding only; no code was copied from it.
+
+
+1. appium-ios, https://github.com/appium/appium-ios, commit bd9ba5fd86b87035b15023ae46d3bcec928266b5
+   Licence: Apache License, Version 2.0. Copyright JS Foundation and other contributors, https://js.foundation
+   The full licence text: http://www.apache.org/licenses/LICENSE-2.0
+   Changes: rewritten in plain ES modules with no dependencies and reduced to what thermal.mjs uses; NSError kept
+   as an object; the phone's DTX aux header is accepted with any buffer-size field; RSD reached through the address
+   of macOS's own CoreDevice tunnel (netstat + lsof) and not through appium's tunnel registry.
+
+   Ported paths                                                         -> this repo
+   packages/remotexpc/src/services/ios/dvt/dtx-message.ts               -> tools/lib/dtx.mjs
+   packages/remotexpc/src/services/ios/dvt/channel-fragmenter.ts        -> tools/lib/dtx.mjs
+   packages/remotexpc/src/services/ios/dvt/index.ts                     -> tools/lib/dtx.mjs
+   packages/remotexpc/src/services/ios/dvt/nskeyedarchiver-encoder.ts   -> tools/lib/nskeyed.mjs
+   packages/remotexpc/src/services/ios/dvt/nskeyedarchiver-decoder.ts   -> tools/lib/nskeyed.mjs
+   packages/remotexpc/src/services/ios/dvt/instruments/condition-inducer.ts -> tools/lib/condition-inducer.mjs
+   packages/remotexpc/src/lib/plist/binary-plist-parser.ts              -> tools/lib/bplist.mjs
+   packages/remotexpc/src/lib/plist/binary-plist-creator.ts             -> tools/lib/bplist.mjs
+   packages/remotexpc/src/lib/remote-xpc/xpc-protocol.ts                -> tools/lib/rsd.mjs
+   packages/remotexpc/src/lib/remote-xpc/handshake.ts                   -> tools/lib/rsd.mjs
+   packages/remotexpc/src/lib/remote-xpc/handshake-frames.ts            -> tools/lib/rsd.mjs
+   packages/remotexpc/src/lib/remote-xpc/constants.ts                   -> tools/lib/rsd.mjs
+   packages/remotexpc/src/lib/remote-xpc/http2-frame-parser.ts          -> tools/lib/rsd.mjs
+   packages/remotexpc/src/lib/remote-xpc/service-catalog.ts             -> tools/lib/rsd.mjs
+   packages/remotexpc/src/services/ios/base-service.ts (plain TCP to a service, no RSDCheckin for DTX) -> tools/lib/rsd.mjs
+
+
+2. go-ios, https://github.com/danielpaulus/go-ios, commit 273d3e06e803fb6ee95e4df914d8be82c5ee4bb0
+   Followed (behaviour, field names): ios/instruments/devicestate.go (the ConditionInducer group fields, the 120 s
+   enable timeout, a condition ends with the connection that set it) -> tools/lib/condition-inducer.mjs,
+   tools/thermal.mjs; ios/dtx_codec (acking device messages that expect a reply, the aux header's BufferSize field)
+   -> tools/lib/dtx.mjs.
+
+   MIT License
+
+   Copyright (c) 2019 danielpaulus
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
