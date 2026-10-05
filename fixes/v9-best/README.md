@@ -1010,17 +1010,30 @@ stayed aaa18038 for every hold (H3a-H6): the rev touched score.mjs on disk only 
     0 (C 1): pass". Part M alone: G1 / G2 / G3 pass, K=8 PASS (threshold-sensitive: twin K=16 FAIL).
 - **The rev: G1 only, per part.** flicker-gate.mjs runs once per part (M, X, S; R stays out, it is V only) and is
   unchanged (pin 3c2bd0cb7f09). FLICKER passes only when every part's call passes: any part WORSE (G1: V monotone
-  blinks > 0) → WORSE; else any part insufficient → insufficient; else no-worse. Per-part VOID keeps the gate's own
-  rules (fewer than 3 valid runs per arm, mixed scripts within the part); a part with no runs is insufficient. G2, G3
-  and the K twins stay informational. Outputs: one `<json>-flicker-<P>.json` per part, one `FLICKER <P>:` line each.
+  blinks > 0) → WORSE; else any part insufficient → insufficient; else no-worse. A part VOIDs only on mixed scripts
+  within the part (or no G1 line, an unknown exit, no runs); the "≥ 3 valid runs per arm" rule applies to the total
+  valid G runs per arm over M, X and S together (see the lead's correction below). G2, G3 and the K twins stay
+  informational. Outputs: one `<json>-flicker-<P>.json` per part, one `FLICKER <P>:` line each.
+- **Lead correction (08:55Z, made before the full score and before ops' re-pin).** The 08:20Z wording "per-part VOID
+  keeps its own rules (fewer than 3 valid runs per arm, ...)" would VOID part S, which has 2 G runs per arm by design
+  (gSC1, gSC2 / gSV1, gSV2), and FLICKER could never pass; the card's one call needed ≥ 3 per arm over all G runs
+  (8 per arm). Corrected: a part VOIDs only on mixed scripts within the part; ≥ 3 valid runs per arm counts over M, X
+  and S together; G1 must be 0 in every part (= 0 in total). flicker-gate.mjs still VOIDs a 2-run call by its own
+  count rule, so score.mjs reads such a call (its only VOID reason "valid runs C n, V m (need >= 3 each)") on its G1
+  line, and pools the valid counts from the gate's per-run lines. Checked against the real gate's output on part M
+  records already seen (gMC1, gMC2 / gMV1, gMV2: exit 4, count reason only, read as valid C 2 V 2, G1 0 → no-worse).
+  First commit of the rev: fbf85434 (score.mjs 7909c0b44951, never pinned or used to score).
 - **Equivalence.** G1 is "V monotone blinks = 0", a sum of non-negative per-run counts. A sum of non-negative counts
   is 0 exactly when the sum within every part is 0, so "0 summed over all parts" and "0 in every part" decide the
-  same thing: the rev asks the registered G1 question and only removes the VOID the mixed scripts forced. The one
-  stricter point: the gate's "≥ 3 valid runs per arm" now holds per part, not pooled (3 per arm per part, as held).
-- **Self-test.** selftest122.mjs: SELFTEST-122 OK 60 (was 55). New cases, with a stand-in gate that VOIDs on mixed
-  scripts as line 103 does: (1) mixed scripts across M, X and S with V monotone 0: the one combined call VOIDs, the
-  per-part gate passes; (2) one V monotone blink in part X only → FLICKER WORSE (M and S pass); (3) mixed scripts
-  within one part, or a part with no runs → insufficient; (4) WORSE wins over insufficient; (5) a part-X G1 FAIL
-  makes the block WORSE. The flickerFiles case now expects the per-part grouping.
-- **Hashes.** p122/score.mjs 357ee5bbcac7 → 7909c0b44951; selftest122.mjs 2da28f207b7c → 676d841d1b2f;
+  same thing; with the run count pooled as on the card, the rev asks the registered G1 question under the registered
+  count rule and only removes the VOID the mixed scripts forced.
+- **Self-test.** selftest122.mjs: SELFTEST-122 OK 64 (was 55). New cases, with a stand-in gate that prints the real
+  gate's lines and VOIDs as it does (< 3 valid runs an arm; mixed scripts, line 103): (1) mixed scripts across M, X
+  and S with V monotone 0: the one combined call VOIDs, the per-part gate passes; (2) one V monotone blink in part X
+  only → FLICKER WORSE (M and S pass); (3) mixed scripts within one part, or a part with no runs → insufficient;
+  (4) WORSE wins over insufficient; (5) a part-X G1 FAIL makes the block WORSE; (6) part S at 2 runs per arm, as held
+  (8 per arm in total) → no-worse; (7) a V monotone blink in that 2-run part S → WORSE; (8) the pooled count: 1 run per
+  part per arm passes (3 each), 2 valid V runs in total → insufficient; (9) mixed scripts within a 2-run part still
+  VOID it. The flickerFiles case now expects the per-part grouping.
+- **Hashes.** p122/score.mjs 357ee5bbcac7 → d1dddb910cd9; selftest122.mjs 2da28f207b7c → df0b4fed66e5;
   flicker-gate.mjs 3c2bd0cb7f09 (unchanged). mgmt-ops-10 reads the rev and re-pins score.mjs before the full score.

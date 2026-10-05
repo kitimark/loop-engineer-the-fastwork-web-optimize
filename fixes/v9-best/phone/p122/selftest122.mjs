@@ -115,11 +115,17 @@ const loop = h.slice(h.indexOf('for I in "$@"; do\n  case $I in wg*|g*)'));
 ok(loop.length > 0 && /case \$I in wg\*\|g\*\) now=\$\(date \+%s\)\n    if late "\$now"; then echo "HOLD \$H VOID time: [^\n]*"\n      node tools\/iphone.mjs park --owner "\$R" > \/dev\/null 2>&1; exit 7; fi ;; esac\n  sh \$G2\/serve122.sh check/.test(loop) && h.indexOf('late "$now"') < h.indexOf('HOLD $H VALID'), 'time guard checked before every wg/g item, parks and exits 7 (VOID time)');
 const ffs = P.flickerFiles([{ item: 'gMC1', file: 'a', j: {} }, { item: 'gXV2', file: 'b', j: {} }, { item: 'gRV1', file: 'c', j: {} }, { item: 'wgMV', file: 'd', j: {} }, { item: 'sCo', file: 'e', j: {} }, { item: 'gSV1', file: 'f', j: null }]);
 ok(JSON.stringify(ffs) === '{"M":{"C":["a"],"V":[]},"X":{"C":[],"V":["b"]},"S":{"C":[],"V":[]}}', 'flicker input: counted M/X/S G runs with a record, grouped per part; no R, warm-ups or sentinels');
-// post-data scorer rev (lead ruling 08:20Z): the gate runs once per part. fakeGate mirrors flicker-gate.mjs: VOID
-// (exit 4) when the call's runs carry more than one script hash (its line 103), else G1 on the V runs' monotone blinks
-const fakeGate = (blinks = {}) => (Pt, C, V) => {
-  const v = V.reduce((s, f) => s + (blinks[f] ?? 0), 0), mixed = new Set([...C, ...V].map((f) => f.split(':')[0])).size > 1;
-  return mixed ? { status: 4, stdout: `G1 V monotone blinks ${v} (C 0): ${v ? 'FAIL' : 'pass'}\nFLICKER-GATE VOID (K=8)` } : { status: v ? 3 : 0, stdout: G1(v, 0, v ? 'FAIL' : 'PASS') };
+// post-data scorer rev (lead ruling 08:20Z, corrected 08:55Z): the gate runs once per part. fakeGate mirrors
+// flicker-gate.mjs's output: one line per run (valid / VOID), G1 on the valid V runs' monotone blinks, and VOID (exit 4)
+// with its reasons line when an arm has < 3 valid runs or the call's runs carry more than one script hash (line 103)
+const fakeGate = (blinks = {}, bad = []) => (Pt, C, V) => {
+  const ok1 = (f) => !bad.includes(f), v = V.filter(ok1).reduce((s, f) => s + (blinks[f] ?? 0), 0);
+  const runL = (A, fs) => fs.map((f) => `${A} ${f}: ${ok1(f) ? 'valid' : 'VOID no segments'}  pain flips 1 blinks ${A === 'V' ? blinks[f] ?? 0 : 0} (monotone ${A === 'V' ? blinks[f] ?? 0 : 0})`);
+  const vc = C.filter(ok1).length, vv = V.filter(ok1).length, scripts = [...new Set([...C, ...V].map((f) => f.split(':')[0]))], why = [];
+  if (vc < 3 || vv < 3) why.push(`valid runs C ${vc}, V ${vv} (need >= 3 each)`);
+  if (scripts.length > 1) why.push(`gesture script hashes differ: ${scripts.join(', ')}`);
+  const word = why.length ? 'VOID' : v ? 'FAIL' : 'PASS';
+  return { status: why.length ? 4 : v ? 3 : 0, stdout: [...runL('C', C), ...runL('V', V), `G1 V monotone blinks ${v} (C 0): ${v ? 'FAIL' : 'pass'}`, ...(why.length ? [`VOID: ${why.join('; ')}`] : []), `FLICKER-GATE ${word} (K=8)`].join('\n') };
 };
 const fp = (s) => ({ C: [1, 2, 3].map((i) => `${s}:c${i}`), V: [1, 2, 3].map((i) => `${s}:v${i}`) });
 const mixedFF = { M: fp('m'), X: fp('x'), S: fp('s') };
@@ -132,6 +138,17 @@ const fl2 = P.flickerGate({ ...mixedFF, S: { C: ['s:c1', 's2:c2', 's:c3'], V: fp
 const fl3 = P.flickerGate({ M: fp('m'), X: fp('x') }, fakeGate());
 ok(/^insufficient/.test(fl2.verdict) && /^insufficient \(flicker gate VOID\)/.test(fl2.parts.S.verdict) && /^insufficient/.test(fl3.verdict) && /no G runs/.test(fl3.parts.S.verdict), 'flicker rev: mixed scripts within a part, or a part with no runs -> insufficient');
 ok(P.flickerGate(mixedFF, fakeGate({ 'm:v1': 2 })).verdict.startsWith('WORSE') && /^WORSE/.test(P.flickerGate({ ...mixedFF, S: { C: [], V: [] } }, fakeGate({ 'x:v1': 1 })).verdict), 'flicker rev: WORSE wins over insufficient');
+// lead correction 08:55Z: the >= 3 valid runs per arm count is pooled over M, X, S; a part VOIDs only on mixed scripts
+const fp2 = (s) => ({ C: [1, 2].map((i) => `${s}:c${i}`), V: [1, 2].map((i) => `${s}:v${i}`) });
+const asHeld = { M: fp('m'), X: fp('x'), S: fp2('s') };
+const fl4 = P.flickerGate(asHeld, fakeGate());
+ok(fl4.verdict.startsWith('no-worse') && fl4.parts.S.countOnly && fl4.parts.S.verdict.startsWith('no-worse (G1: V monotone blinks 0') && fl4.valid.C === 8 && fl4.valid.V === 8, 'flicker rev (08:55Z): part S at 2 runs per arm (as held: 8 per arm over M, X, S) passes');
+ok(P.flickerGate(asHeld, fakeGate({ 's:v1': 1 })).verdict.startsWith('WORSE') && P.flickerGate(asHeld, fakeGate({ 's:v1': 1 })).parts.S.verdict.startsWith('WORSE'), 'flicker rev (08:55Z): a V monotone blink in a 2-run part S is still WORSE');
+const tiny = { M: { C: ['m:c1'], V: ['m:v1'] }, X: { C: ['x:c1'], V: ['x:v1'] }, S: { C: ['s:c1'], V: ['s:v1'] } };
+const fl5 = P.flickerGate(tiny, fakeGate()), fl6 = P.flickerGate(tiny, fakeGate({}, ['x:v1']));
+ok(fl5.verdict.startsWith('no-worse') && /^insufficient .*need >= 3 each over M, X, S/.test(fl6.verdict) && fl6.valid.V === 2, 'flicker rev (08:55Z): the >= 3 count is pooled: 1 per part per arm passes (3 each), 2 valid V runs in total is insufficient');
+const fl7 = P.flickerGate({ ...asHeld, S: { C: ['s:c1', 's2:c2'], V: fp2('s').V } }, fakeGate());
+ok(/^insufficient/.test(fl7.verdict) && !fl7.parts.S.countOnly && /^insufficient \(flicker gate VOID\)/.test(fl7.parts.S.verdict), 'flicker rev (08:55Z): mixed scripts within a 2-run part still VOID it (count and script reasons together)');
 const blkF = scoreP122([], fl1);
 ok(blkF.gates.FLICKER === fl1 && blkF.verdict === 'WORSE', 'flicker rev: a part-X G1 FAIL makes the block WORSE');
 ok(!('Mmoving' in esOk.gates) && /^insufficient/.test(blk([['gSV1', asArm(eslow, 'V')], ['gSV2', asArm(eslow, 'V')]]).gates.GM.verdict), 'no M gates; GM with no part-M runs is insufficient');

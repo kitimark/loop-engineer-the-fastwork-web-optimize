@@ -73,22 +73,37 @@ export function flickerVerdict(code, stdout = '') {
 // Post-data scorer rev (lead ruling 2026-10-05 ~08:20Z; README "Post-data scorer rev, P-122"): the gate VOIDs when the
 // runs' gesture script hashes differ (flicker-gate.mjs line 103), and parts M, X and S run different scripts, so one
 // call on all three parts could never pass. The gate now runs once per part (M, X, S; R stays out), G1 only decides,
-// and FLICKER passes only when every part's call passes: any part WORSE -> WORSE, else any part insufficient (its
-// own VOID rules: < 3 valid runs an arm, mixed scripts within the part; or no runs) -> insufficient, else no-worse.
-// G2, G3 and the K twins stay reported only. flicker-gate.mjs itself is unchanged (pin 3c2bd0cb7f09).
+// and FLICKER passes only when every part's G1 passes (G1 = 0 in every part = 0 in total): any part WORSE -> WORSE,
+// else any part insufficient -> insufficient, else no-worse. Lead correction 08:55Z (before the full score): a part
+// VOIDs only on mixed scripts within the part (or no G1 line / an unknown exit / no runs); the gate's "fewer than 3
+// valid runs an arm" applies to the total valid G runs per arm over M, X and S together (part S has 2 per arm by
+// design), so a part call whose only VOID reason is its own run count is scored on its G1 line, and the pooled valid
+// counts (from the gate's per-run lines) must reach 3 per arm. G2, G3 and the K twins stay reported only.
+// flicker-gate.mjs itself is unchanged (pin 3c2bd0cb7f09).
 export const FLICKER_PARTS = ['M', 'X', 'S'];
+const COUNT_VOID = /^valid runs C \d+, V \d+ \(need >= 3 each\)$/;
+export function flickerPart(code, stdout = '') {
+  const s = String(stdout), valid = { C: 0, V: 0 };
+  for (const m of s.matchAll(/^([CV]) .*?: valid  /gm)) valid[m[1]]++;
+  const why = (s.match(/^VOID: (.*)$/m)?.[1] ?? '').split('; ').filter(Boolean);
+  const countOnly = code === 4 && why.length > 0 && why.every((w) => COUNT_VOID.test(w));
+  const verdict = countOnly ? `${flickerVerdict(3, s)}; part VOID only on its own run count (pooled over M, X, S, lead 08:55Z)` : flickerVerdict(code, s);
+  return { verdict, valid, countOnly, voidWhy: why };
+}
 export function flickerGate(ff, run) {
-  const parts = {};
+  const parts = {}, valid = { C: 0, V: 0 };
   for (const P of FLICKER_PARTS) {
     const x = ff[P] ?? { C: [], V: [] }, files = { C: x.C.length, V: x.V.length };
     if (!files.C || !files.V) { parts[P] = { verdict: `insufficient (flicker gate: no G runs, C ${files.C} V ${files.V})`, files }; continue; }
-    const r = run(P, x.C, x.V);
-    parts[P] = { verdict: flickerVerdict(r.status, r.stdout), exit: r.status, files, json: r.json ?? null, out: (r.stdout || '').trim().split('\n').slice(-12) };
+    const r = run(P, x.C, x.V), p = flickerPart(r.status, r.stdout);
+    valid.C += p.valid.C; valid.V += p.valid.V;
+    parts[P] = { ...p, exit: r.status, files, json: r.json ?? null, out: (r.stdout || '').trim().split('\n').slice(-12) };
   }
-  const tag = FLICKER_PARTS.map((P) => `${P} ${parts[P].verdict.split(' ')[0]}`).join(', ');
-  const vs = Object.values(parts).map((p) => p.verdict);
-  const verdict = vs.some((v) => /^WORSE/.test(v)) ? `WORSE (per part: ${tag})` : vs.some((v) => /^insufficient/.test(v)) ? `insufficient (per part: ${tag})` : `no-worse (per part: ${tag})`;
-  return { verdict, parts };
+  const tag = FLICKER_PARTS.map((P) => `${P} ${parts[P].verdict.split(' ')[0]}`).join(', ') + `; valid G runs C ${valid.C} V ${valid.V}`;
+  const vs = Object.values(parts).map((p) => p.verdict), short = valid.C < 3 || valid.V < 3;
+  const verdict = vs.some((v) => /^WORSE/.test(v)) ? `WORSE (per part: ${tag})`
+    : vs.some((v) => /^insufficient/.test(v)) || short ? `insufficient (per part: ${tag}${short ? ', need >= 3 each over M, X, S' : ''})` : `no-worse (per part: ${tag})`;
+  return { verdict, parts, valid };
 }
 
 export function parse(item) {
