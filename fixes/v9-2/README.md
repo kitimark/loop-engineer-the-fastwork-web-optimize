@@ -606,7 +606,7 @@ minutes: ~95 (12 holds; gates included; no pre-warm; gaps between holds extra).
 | GM (part M) | 3 / 1 | insufficient (need 3 an arm); path VOID: gMC1 (4 traversals of [2200,3800] < 5), gMV2 / gMV3 / gMV4 (1 traversal) |
 | EX (part X, V ceiling) | V 4 | **WORSE**: 3 frames > 50 ms (twins > 46: 6, > 54: 3; not threshold-sensitive); near band 50, 48, 49 |
 | ES (part S, V ceiling) | V 3 | **WORSE (threshold-sensitive)**: 1 frame > 50 ms (52 ms; > 46: 1, > 54: 0); gSV2 path VOID (out stroke too fast) |
-| FLICKER (G1 per part) | C 11 / V 12 | **WORSE** on part X only: V monotone nav blinks 6 (gXV1 2, gXV2 1, gXV3 1, gXV4 2), C 0 (one valid C file, gXC4); flicker-gate FAIL; M and S no-worse |
+| FLICKER (G1 per part) | C 11 / V 12 | **WORSE** on part X only: V monotone nav blinks 6 (gXV1 2, gXV2 1, gXV3 1, gXV4 2), C 0 (all 4 C X files valid for the flicker gate, which reads G runs whatever their path gate said); flicker-gate FAIL; M and S no-worse |
 | BEHAVIOUR parity | | pass: M first page-up fling gap 17.5 px; X first stroke after into1 gap 2.5 px; S reported only |
 
 **VERDICT WORSE (threshold-sensitive)** (scorer line). By the card's land rules, part 2 WORSE means NO-LAND (bisect);
@@ -616,8 +616,23 @@ the bisect waits for the lead's ruling after the result read.
 rules):** C = v9-final's part X out-flings leave the end by 840-953 px (caught at the end; all four C X runs path-VOID,
 which the card expected: "C = v9-final has no rev 7d, so P-122's C rule voids C's caught X outs by design"), while
 V = v9.2's leave it by 4353-4589 px, back up the page through the nav-flip zone (median nav flips per run C 3, V 13).
-EX is a V-only ceiling and FLICKER X compares V's runs with one C file on a different path. In part M, 3 of 4 V runs
+EX is a V-only ceiling and FLICKER X compares V's runs with C's four runs on a different path (V about 590 moving frames
+a run, C about 140). Erratum (ops-reader-P142p2 N1): the first version of this section said "one valid C file, gXC4";
+the gate read all four C X files. In part M, 3 of 4 V runs
 crossed the [2200,3800] band once (C runs 3-5 times).
+
+**Result read (ops-reader-P142p2, 22:2xZ): CONFIRMED with N1-N5; lead: v9.2 NO-LAND, v9-final stays the best build.**
+- N2 (the path caveat, OBSERVED, does not change the verdict): the card does not make EX or FLICKER X insufficient
+  through C's path-VOIDs (EX / ES are a V-only ceiling; the flicker input ignores path gates; the card's NF line already
+  expected C's caught outs to be path-VOID). Located by the reader: 4 of V's 6 X blinks are at y 1890-3129 on into2,
+  after V's long out-fling; V has about 590 moving frames a run, C about 140; one EX frame (gXV2, 57 ms at y 3588) is in
+  into1, which both arms share.
+- N3: the block's "(threshold-sensitive)" tag comes from ES alone (its 52 ms frame); EX and FLICKER are WORSE under
+  both twins.
+- N4: the H1a rerun and the mid-block heat ruling are recorded here as the runner's statements of the lead's rulings;
+  neither changed counted data. N5: chain.log's AFTER line that repeats the VOID "PASS (same)" now has a CORRECTION
+  line beside it (out/p142/chain.log, 22:31Z).
+- Predictions: EX, ES and FLICKER no-worse were three misses on one model; the bisect card carries the model review.
 
 ### Part 3 result: SKIPPED (console step C-070; 22:11-22:14Z; no preference given, not "same")
 
