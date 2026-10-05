@@ -72,6 +72,18 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-120 CLOSED INSUFFICIENT; P-122 assigned (lead ruling, on ops' recommendation).**
+  - P-120: GM not comparable; M (H2') and GE not run, because the rev 7c V arm is superseded by rev 7d. Its pre-look predictions are scored against the arms they were made for; every gate is unscorable, and overall = insufficient. PREDICTIONS row filled. A2's post-look values are not scored.
+  - **P-122 = v9 step 4 rebuilt with rev 7d vs v8, phone no-worse check (int-v8).**
+    - It adopts A2's procedure and scripts by pin, after the stale-file fix, and P-121's path-matched G driver for its G legs.
+    - Fresh C V V C holds and new arm pins. Predictions are written before any P-122 data.
+    - The lead's signature goes on P-122, not on an amended P-120.
+  - **A2 re-check of 3da81de9, static part: NOT YET PASS.**
+    - Checked OK: blobs and sha256 on disk equal the commit (hold.sh a9ae5d93ee6b, score.mjs fd9ecebcf4d0, selftest.mjs 0e226fd79a81, README 02843f35c1da; serve.sh unchanged); my selftest run gives OK 65. trimM is one rule for both arms (at most 1 open before the cut, cuts at most 50 ms apart, dropped probe tweens equal the driver's, drive mark at the cut, P-111's scoreM/EXPECT/gates untouched). m+n blocks are refused, and the exit-code and no-data voids are present. The disclosure and the pre-look/post-look predictions are in the README.
+    - **Required before any P-122 hold (lead):** the stale-run-file fix. Counted labels are pv9-<item> without the hold id, so a re-run writes the same file (H3a -> H3a2 did). An item that exits 0 but writes nothing would pass `-s` on the old file and be scored. Fix: hold id in the file name, or move the old file aside before each item, plus a self-test case.
+    - Minor: the hold.sh checks (9)/(10) are text matches; "untrimmed records void" is a check by hand. Asked for automated cases.
+    - Still owed: the fix sha and pins, and the Simulator cycles-4 records (one real pass per arm, 6 tweens after the cut, cuts at most 50 ms apart).
+  - Next free: **P-123**.
 - 10-05 **P-120 GM: INSUFFICIENT (not comparable); GE not run under P-120 (lead ruling).** H3a2 itself is VALID (int-v8: all items exit 0, PIN head 63904a76); my item-level read is still owed.
   - V's part-M flings settle between 6035 and 5240 on rev 7c's end screen: about 13 s and about 225 moving frames per item, and the mid page is never re-crossed. C's flings settle between 5220 and about 1700: about 27 s and 957 moving frames. In P-111 both arms moved like C. So GM compares different scroll paths.
   - Preliminary counts, reported and not counted (dt>50 / dt>34): gMC1 0/2, gMV1 0/4, gMV2 0/3. The registered gate (d > +2 on dt>50) would pass trivially. No rate gate is swapped in after this look.
