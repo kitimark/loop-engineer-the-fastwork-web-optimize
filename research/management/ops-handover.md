@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~12:1xZ **P-138 N3 fixed before data** (29a00ef7, fix-nav-morph): part1-138.sh is now d4b842ea99d0 (was
+  42a764437dc5) and its EXIT lines show the lock run's exit (out/p138/rc). Ops diff check: only part1-138.sh and the
+  README changed, every other pin is unchanged, tools equal main. Step 1 (Chrome A/A) started after it.
+- 10-05 ~12:1xZ **P-133 lost its queue place** (fix-toolbar-resize's `lock.mjs run` hit its default 3600 s wait at
+  12:08:42Z; no hold started, no data). Requeued 12:09:15Z with `--wait 14400`, nothing else changed; the lead asked to
+  move it back to first in the post-P-137 drain.
 - 10-05 ~12:0xZ **P-138 SIGNED by the lead with N1-N7 as conditions** (fb97f07d landed). Open before step 1: fix-nav-morph
   tells ops its N3 choice (fix part1-138.sh's EXIT lines with a new hash, which ops re-checks, or keep them disclosed).
   The lead noted the R5 "informed" caveat for nav-fade's batch 9 read.
