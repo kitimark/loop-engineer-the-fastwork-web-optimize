@@ -3,15 +3,20 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** step 4 built (v8 + menu swipe rev 7c + double-drive + scroll-cb via a carry over double-drive + PR-021 Join
-button rev 3, user-accepted). Steps 2 and 4 passed the function check; step 3 passed fix-scroll-cb's Simulator count
-check; step 4's look checks passed. Double-drive is final and phone-cleared (P-118 NO-WORSE). Phone ticket P-120 (arms =
-step 4 with rev 7c) is CLOSED INSUFFICIENT. Step 4 will be rebuilt with morph-scroll rev 7d once it lands, and tested
-under P-122 with P-121's G driver. Not timed (memory
-`defer-timing-focus-call-tree.md`). The phone no-worse check follows the less-work rule (memory `less-work-landing-rule.md`).
-**Integrator:** int-v8 (wave-integrator), from 2026-10-05. Board row `v9-best`, lead priority #2, user T-159 #9.
-**Build:** `patch.diff` is baseline-relative over 2 files: step 4, JS `de237379b556…`, CSS `e1359ab9994a…` (patch.diff
-883b6f86b90f). Baseline snapshot `b1789284481295-4ad4a84a`.
+**Status:** **v9-final built and pinned: 647c9ef2b1e2 / e1359ab9994a** (v8 + menu swipe rev 7c + double-drive + PR-021
+Join button rev 3 + nav-hit-cache U1 + glue; **scroll-cb and the close rule are out of v9**, lead rulings 2026-10-05.
+scroll-cb: dropped after the gM split, a ruling, not a proven cause (the short first fling is load-dependent and also
+seen without scroll-cb, Simulator, OBSERVED). close: with it, Chrome restyles at rest (census mainFrames/s 60 at the top,
+22-34 at 2796; without it 39.3 / 2.2 like v8; OBSERVED, cause unknown). Both rejoin together as one v9.1 follow-up check;
+"v9-final build (without scroll-cb and the close rule)" below). Phone ticket P-122 (v8 vs v9-final, G driver, flicker gate, fling parity) is registered before any
+P-122 data and waits for mgmt-ops-10's delta check and the lead's sign. Earlier: P-120 (step 4) CLOSED INSUFFICIENT;
+**v9 ships with rev 7c** (user's PR-023 decision, 2026-10-05 04:45Z: rev 7d is rebuilt on v9-final after v9 lands; lead
+ruling, user T-159 #32). Known limit: incident I-179 (rev 7c glides back open after a swipe released just past closed, 2
+of 42 swipes), a report case in P-122. Not timed (memory `defer-timing-focus-call-tree.md`). The phone no-worse check
+follows the less-work rule (memory `less-work-landing-rule.md`).
+**Integrator:** int-v8 (wave-integrator), from 2026-10-05. Board row `v9-best`, lead priority #1 (from 2026-10-05 ~04:50Z), user T-159 #9.
+**Build:** `patch.diff` is baseline-relative over 2 files: v9-final, JS `647c9ef2b1e2…`, CSS `e1359ab9994a…` (patch.diff
+4196eaa61d96). Baseline snapshot `b1789284481295-4ad4a84a`.
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` and `/_app/immutable/assets/2.gBuqKVzi.css`, nothing else.
 
 ## Components (each a delta on v8 3e3e94cb6e9f / f836404b3728)
@@ -20,18 +25,19 @@ under P-122 with P-121's G driver. Not timed (memory
 |---|---|---|---|---|
 | 1 | PR-018 menu swipe rev 7c (morph-scroll; user accepted 20:12:50Z; landed 42250648) | **in** | `fixes/morph-scroll/delta.diff` 81ac7e1ee500 | 428961bda278 / 659b02f7169d |
 | 2 | double-drive (future + commission cards, T-157; commit 96293d29) | **in**, final (owner's desktop rest-offset probe: no change; y 6500 settle check: card state at rest identical to v8; phone P-118 NO-WORSE under xcode-serious, 3/3 holds valid: S median V-C -1 at >50 and >34, GM flick-middle 0 at >50) | `fixes/double-drive/delta.diff` baae6114cd65 | 3076c5a8c9a3 / 2f7197880ffd |
-| 3 | scroll-cb alone (split check ebee20a5: v8 + scroll-cb = v8 in Simulator nav parity) | **in** (carry reviewed OK by fix-scroll-cb and fix-double-drive) | `fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff` 3abcd7008e61; carry `scroll-cb-on-v8dd.diff` 7b4a7ee04d85 | 4c48e372ecdd / f836404b3728; v8 + dd + carry bf40f48acd24 / 2f7197880ffd |
-| - | nav-hit-cache | out (when it comes in: its delta plus a glue component for rev 7c's on-dark microtask, fix-nav-morph's glue-ms7c.diff 5d63660a9e62; option (a), agreed 2026-10-05; the delta is the 1-context-line form patch-on-v8-u1.diff 7b5f3947b465, the same changes, because rev 7c's 3-line context meets nav's inserted lines, so the order is fixed: 7c, then nav, then glue; on step 3: nav cf3425e169f0, + glue c211d557e357, per fix-nav-morph): the split puts the Simulator nav-pill lag on it; waits for fix-scroll-cb's task-mode check and fix-nav-morph's real-gesture case | | |
+| 3 | scroll-cb alone (split check ebee20a5: v8 + scroll-cb = v8 in Simulator nav parity) | **out of v9** (lead ruling 2026-10-05, after the gM split: step 4 minus scroll-cb flings like v8, with it the first page-up fling in the middle stops 500-950 px short, Simulator, OBSERVED; `build.mjs` DROPPED; rejoins as a v9.1 step after its owner's mechanism and the same parity check). Was in step 4 via the carry (reviewed OK by fix-scroll-cb and fix-double-drive) | `fixes/v8-best/phone/nsc/scroll-cb-on-v8.diff` 3abcd7008e61; carry `scroll-cb-on-v8dd.diff` 7b4a7ee04d85 | 4c48e372ecdd / f836404b3728; v8 + dd + carry bf40f48acd24 / 2f7197880ffd |
+| 5 | nav-hit-cache U1 + glue (fix-nav-morph) | **in** v9-final (`build.mjs` keys nav, glue; order ms7c, nav, glue by `after`) | `fixes/nav-hit-cache/patch-on-v8-u1.diff` 929268181c61; `glue-ms7c.diff` 5d63660a9e62 | no owner pin on v8 (v8 + U1 = 58f8618fce56); the owner's joined build (arm A on step 4) applied while scroll-cb was in |
+| - | nav-hit-cache (history) | arm A delivered 2026-10-05 ~04:50Z (fix-nav-morph): step 4 + `fixes/nav-hit-cache/patch-on-v9s4.diff` 9814fdad848e (= U1 929268181c61 + glue-ms7c 5d63660a9e62, strict apply) = c3d36476c3ce / e1359ab9994a, parity PASS 5/5 on this step 4 (13d29af1, ops AGREE 820dfe22); enters as step 5 with its own no-worse ticket vs step 4 (flicker gate 814cebd0), not in P-122. Earlier note: out (when it comes in: its delta plus a glue component for rev 7c's on-dark microtask, fix-nav-morph's glue-ms7c.diff 5d63660a9e62; option (a), agreed 2026-10-05; the delta is the 1-context-line form patch-on-v8-u1.diff 7b5f3947b465, the same changes, because rev 7c's 3-line context meets nav's inserted lines, so the order is fixed: 7c, then nav, then glue; on step 3: nav cf3425e169f0, + glue c211d557e357, per fix-nav-morph): the split puts the Simulator nav-pill lag on it; waits for fix-scroll-cb's task-mode check and fix-nav-morph's real-gesture case | | |
 | 4 | PR-021 Join button rev 3 (fix-nav-earn, cb3c052c) | **in** (user accepted rev 3, final). Pre-check: its delta applies to v9 step 3 with line offsets only (JS 6, CSS 5 hunks offset; v9 + rev 3 = de237379b556 / e1359ab9994a) | `fixes/nav-earn/delta.diff` f214ed00081f | 8df0a9eb3ec7 / 29bade2fe964 |
-| 5 | toolbar-resize (P-115) | waits: its Simulator check | | |
-| 6 | morph-close-peak, the menu-close repaint (fix-morph-gpu) | waits: its owner | | |
+| - | toolbar-resize (P-115) | not in v9 (not delivered for v9-final) | | |
+| 6 | morph-close-peak close rule, the menu-close repaint (fix-morph-gpu; landed 48918dd7) | **out of v9** (lead ruling 2026-10-05 ~06:10Z: steady extra style recalc at rest, census mainFrames/s rest-0 / rest-2796 60 / 22-34 with it, 39.3 / 2.2 without, OBSERVED, cause unknown; `build.mjs` DROPPED; rejoins in v9.1 with scroll-cb once fix-morph-gpu fixes or explains it). Was in the first v9-final 647c9ef2b1e2 / bdecf48c5b32 | `fixes/morph-gpu/close/delta.diff` 60eba2d73b68 | 3e3e94cb6e9f / f673c6cbc770 |
 
 Build: `node fixes/v9-best/build.mjs [--dry] [--only a,b]`. To add a fix, add one line to `COMPONENTS` with the owner's delta on v8 and the hashes of its own build, run the script, then pin `V9_EXPECT`.
 
 It writes:
 - `fixes/v9-best/overlay/` (gitignored);
 - `patch.diff`;
-- `out/v9/snap-<js12>/{A,V}`, read-only, with A = v8 and V = v9, plus `HASHES.txt` (full sha256);
+- `out/v9/snap-<js12>[-<css12>]/{A,V}` (the CSS suffix when a `snap-<js12>` with other content exists), read-only, with A = v8 and V = v9, plus `HASHES.txt` (full sha256);
 - `out/v9/build.json`.
 
 ## Identity checks (`build.mjs`, best-build's strict applier: exact context, no fuzz)
@@ -565,3 +571,373 @@ Simulator).
 RULE equals the rev 7d candidate's rule: snapshot ms-29c0d537e0c9, release at Fv ≤ −5 px/ms OR travel ≥ 300 px
 (fix-hero-exit-threaded, Simulator s1/s2). If rev 7d lands with different values, RULE and this pin are redone in a
 new commit, followed by a new read, before any P-122 hold. No arm data exists at this commit.
+
+**Follow-up notes to P-121 (mgmt-ops-10's final read, PASS, 7d264c29; written in this later commit, 8f8f78da is not
+rewritten):**
+- **N1.** The first Simulator sweep slot (00:36Z) ended with exit code 124: `lock.mjs run --max-seconds 300` killed the
+  session at its cap after m380, efast and eslow had been saved; the loop went on in slot 2 (m300, m460). Like every
+  calibration record, the slot-1 records (sim/m380, sim/efast, sim/eslow) are uncounted information.
+- **N2.** P-122's holds check the compiled programs, not only the script files: before the gate, `hold122.sh` compiles
+  each G part in the hold (`iphone.mjs gesture --dry-run`) and VOIDs the hold (exit 4) unless GESTURE_HASH/12 equals the
+  pin: middle (flingPx 340) 607b59612abb, end fast 21aaafd3a9fd, end slow 7312cdcd2574 (and P-122's return script, below).
+
+## P-122: v9 step 4 as built (rev 7c) vs v8, phone no-worse check (FIRST DRAFT, SUPERSEDED: never signed, no P-122 data; retargeted to v9-final in "P-122 (v9-final)" below)
+
+**Why on rev 7c.** The user's PR-023 decision (2026-10-05 04:45Z) keeps rev 7c in v9; rev 7d is rebuilt on v9-final
+after v9 lands. The lead's ruling (user T-159 #32): v9 no longer waits on PR-023, P-122 registers on step 4 as built.
+So P-122's arms are P-120's arms (same snapshot copies, servers and served-hash check), and C6 (the rev 7d byte-diff
+and nav parity note) falls away: nav-hit-cache's parity was measured on this exact step 4 (13d29af1).
+
+**What rev 7c changes for P-121's gates (known before any P-122 data; disclosed).** Rev 7c's touchend rule catches
+every close-direction release from the open end at the closed rest (H3a2, F-258; the cause section under P-120). So on
+V a fast out-fling never leaves the end: P-121's gEf ("released by the rule, leaves the end by >= 1600 px") cannot pass
+on V by design. C4 as written ("gEf released with fromEnd >= 1600 on both arms") was written for the rev 7d arm. P-122
+therefore gates part E by V's own catch path (option (a) below, int-v8's proposal; the lead picks at the sign):
+- **(a) proposed.** gX (P-121's fast items) and gS (slow items) run on both arms. C keeps P-121's path gates and is the
+  reference (reported, not gated: the paths differ by design, catch vs travel on). V's out strokes must still be the
+  scripted strokes (fast: the rule's stroke criteria; slow: neither, with the margins); V's catch is reported
+  ("caught" = fromEnd < 1600), never a void. Gate: the V ceiling, ops' C3 rule for gEs, on both E parts.
+- (b) gEf as registered: INSUFFICIENT on rev 7c; part E answered only on the rev 7d build later.
+- (c) part E dropped from P-122.
+
+```
+PHONE TICKET P-122 v9-best · less-work no-worse check, v8 C vs v9 step 4 V (rev 7c), P-121's path-matched G driver
+  · runner iphone-runner · verdict owner int-v8 · registered before any P-122 data; no counted run before the lead's
+  sign and mgmt-ops-10's pre-data read
+build: V = v9 step 4 = fixes/v9-best/patch.diff 883b6f86b90f (v8 + PR-018 rev 7c + double-drive + scroll-cb + PR-021 rev 3),
+  JS de237379b556dc898bcabb49f7940c7d5b58c6f920d9089f0c1752bf5c08cd5d, CSS e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba
+control: C = v8 = fixes/v8-best/patch.diff, JS 3e3e94cb6e9f…, CSS f836404b3728… (full sha256 in P-120's ticket).
+  Mirror snapshot b1789284481295-4ad4a84a. B = plain baseline (the gate's timer page).
+copies and servers: P-120's, unchanged: out/pv9/snap/{C,V} (read-only, HASHES.txt 46c5a6e38b7a), serve.sh fc643888a9bc
+  (plain http, --port 0, --latency 150, --vendors=local), served-hash check before every item (exit 4 on a wrong one).
+question: under xcode-serious, does v9 step 4 add slow frames over v8 (a) in the menu morph's open/close at the page end
+  (M leg, A2), (b) in flicks through the middle of the page (gM), (c) in flicks into the page end and out again (gX, gS:
+  on V the out-flings are caught at the closed rest by rev 7c; the catch path itself must stay clean)? Plus one report
+  case for rev 7c's known limit I-179 (gR). No-worse only; landing basis as P-120 (less-work rule).
+profile: xcode-serious, as P-120 (Xcode Device Conditions Serious, induced; thermal-gate.mjs --accept-induced at the
+  start and end of every hold; no pre-warm, no cooling wait; ceiling 44 C or Critical; gate exits 2/3/7 void the hold).
+sentinels: every counted C M run (held m=1 p95 <= 18 ms) and sCo/sCc (S on C: bottom >= 58 fps, scroll >= 44 fps); a
+  failing sentinel voids every run since the last passing one; the hold is re-run once with the same items.
+checkout: int-v8's worktree; hold122.sh prints one PIN line per hold (ticket, profile, checkout, HEAD, sha256/12 of
+  hold122.sh, p122/score.mjs, serve.sh, P-120's score.mjs fd9ecebcf4d0, P-111's score.mjs 26d944bf93e2, gate.mjs
+  1a1d716698f0, thermal-gate ecb403b3ad25, verdict 8edb2fc77795, pmcheck d36bd7437b7c, flick-middle-v2 ca38f3627f78,
+  flick-end-v2 4eb4bbc62b43, flick-return-v1 (pinned below), HASHES.txt 46c5a6e38b7a) and one PROG line per G part
+  (N2: compiled program GESTURE_HASH/12 M 607b59612abb, X 21aaafd3a9fd, S 7312cdcd2574, R pinned below). Any other
+  value voids that hold. hold122.sh, score.mjs and selftest122.mjs = the blobs of the registering commit.
+holds (each <= 10 min, inside the runner's exclusive no-timing chrome-measure hold; GESTURE_BUDGET_S 150 per G run):
+  M leg   H1 wC wV nC1 nV2 nV3 nC4 · H2 wC wV nC5 nV6 nV7 nC8   (A2: --cycles 4, the cut at the first m = 0 after the
+          first close; if a hold does not fit 600 s: H1a wC wV nC1 nV2 · H1b wC wV nV3 nC4, H2 the same way)
+  part M  H3a sCo wgMC wgMV gMC1 gMV1 gMV2 sCc · H3b sCo gMC2 gMC3 gMV3 sCc
+  part X  H4a sCo wgXC wgXV gXC1 gXV1 gXV2 sCc · H4b sCo gXC2 gXC3 gXV3 sCc
+  part S  H5 sCo wgSC wgSV gSC1 gSV1 gSV2 gSC2 sCc   (C3: a void run gets one re-run at the block end in its place)
+  part R  H6 sCo wgRV gRV1 gRV2 gRV3 sCc             (V only: v8 has no extra screen; report)
+  then iphone.mjs park; int-v8 stops the servers after the last hold.
+scorer: fixes/v9-best/phone/p122/score.mjs (imports P-120's score.mjs and P-121's gate.mjs, both pinned; P-111's
+  scoreM/scoreG/gate/clusters/applySentinel unchanged). Path gates per run (a failing run is VOID, never scored):
+  gM gateM (>= 5 traversals of [2200, 3800], max y < 5000); gX C gateE fast (released stroke, leaves the end >= 1600 px),
+  V the same stroke criteria only (caught reported); gS gateE slow (both arms); gR >= 1 ret stroke lifts with p in
+  (-0.20, -0.05]. Gates: Mmoving (> 50 WORSE d > +1, > 34 d > +2), Mtweens (O1.f1-f3, close.f1/f3 WORSE d > +2 ms), GM
+  (> 50 WORSE d > +2, any NEW 250 px cluster), EX and ES (V ceiling: 0 frames > 50 ms in the part window into1..end over
+  all valid V runs; twins > 46 / > 54, threshold-sensitive when one differs; (46, 54] flagged; sub-windows out1..into2,
+  out2..end reported; min valid V runs 3 for EX, 2 for ES). R report only: per ret stroke p at lift, lowest p, returned
+  to the open end with no finger down and the delay (finger-returns.mjs's rule: left below p -0.15, back at p >= 0.98).
+  Fewer valid runs than the minimum: insufficient. Self-test: selftest122.mjs (SELFTEST-122 OK, count in the sign request).
+verdict: WORSE if any gate is WORSE or has a NEW cluster; else insufficient if any is; else no-worse. WORSE -> int-v8
+  splits by the reversal builds (v9 minus each of rev 7c, double-drive, scroll-cb, PR-021) and reports to the lead.
+F-260 (report only, every run): the Analytics 90 % depth line y90 = 0.9 docH - vh, the time the run first reaches it,
+  and whether that is inside the scored window. Known vendor difference: v9's 100lvh runway moves the line (Chrome
+  430x932: v8 y 4718, v9 y 5557, inside the first open; gtag's scroll task 65-67 ms at 6x, OBSERVED in Chrome; whether
+  Safari fires it there is not checked). M leg: the A2 cut excludes the first open. gX/gS/gR: into1 crosses y90 inside
+  the window on both arms (each run reloads). A > 50 ms V frame at the first into1 crossing is reported next to the gate.
+predictions (int-v8, before data):
+  Mmoving no-worse 0.65 and Mtweens no-worse 0.30 (A2's post-H1-look values, the same arms; H1's flagged close gap
+    about +10 ms); GM no-worse 0.80 (double-drive alone 0 at > 50 in P-118's GM; the middle path is the same on both
+    arms); EX passes the V ceiling 0.55 and ES 0.60 (the catch path is short and stays near the end, but into1 crosses
+    the first open and F-260's line inside the window); R: at least one return to open among V's in-range ret strokes
+    0.55; every sentinel passes first try 0.75; overall no-worse 0.15, insufficient 0.15, WORSE 0.70.
+minutes: ~70 (H1 ~5, H2 ~5, H3a/b ~8+6, H4a/b ~8+6, H5 ~8, H6 ~6, gates; no pre-warm).
+```
+
+## v9-final build (without scroll-cb and the close rule; lead rulings 2026-10-05 ~05:35Z and ~06:10Z)
+
+`build.mjs` mechanisms added for steps 5 and 6, both covered by the script's checks:
+- `after`: an order constraint. Rev 7c's 3-line context meets nav's inserted lines, so nav comes after 7c and the glue
+  after both. Illegal orders are skipped, and v9 minus X also takes out every component that comes after X.
+- `JOINS`: the owners' joined builds, checked whenever all their keys are in the set.
+- `DROPPED`: components kept in the file with their pins but not built (scroll-cb, the close rule).
+- Snapshot name: `out/v9/snap-<js12>` is reused only when its HASHES.txt lists exactly the build; otherwise the snapshot is
+  `snap-<js12>-<css12>`. The build without close has the same JS as the one with it.
+
+**First v9-final (superseded, never phone-checked):** ms7c + dd + scb (carry over dd) + earn + nav + glue + close =
+c3d36476c3ce / bdecf48c5b32 (patch.diff 00431ca662cb), 05:18Z. All 420 legal orders gave the same bytes, the three joins
+matched (step 4 de237379b556 / e1359ab9994a; fix-nav-morph's arm A c3d36476c3ce / e1359ab9994a; fix-morph-gpu's arm A
+de237379b556 / bdecf48c5b32), CHECK OK (`out/v9/check-final.json`).
+
+**The gM split (Simulator, COUNTS ONLY, `sim.mjs gesture --count-only`, flick-middle-v2 flingPx 300, one run per build;
+out/p122/split; OBSERVED, host load1 up to 176):** the Simulator dry run (P-122 below) showed V's first page-up fling in
+the middle 500-950 px short of C's. Each build is step 4 minus one component (`--only` builds):
+
+| build | settled y after each stroke | first page-up fling |
+|---|---|---|
+| C v8 | 2040 / 4245 / 2041 / 4232 / 2089 / 4280 | 2204 |
+| step 4 (ms7c+dd+scb+earn) | 2040 / 4230 / 2564 / 4756 / 2661 / 4827 | 1666 |
+| first v9-final (step 4 + nav + glue + close) | 2037 / 4227 / 2972 / 5163 / 2973 / 5168 | 1255 |
+| step 4 minus ms7c (0694064c48f8) | 2035 / 4226 / 2971 / 2971 / 758 / 2364 | 1255 |
+| step 4 minus dd (7b16e61bb6cc) | 2040 / 4230 / 3062 / 5220 / 3030 / 5220 | 1168 |
+| step 4 minus scroll-cb (366636504b84) | 2040 / 4258 / 2068 / 4260 / 2237 / 4310 | 2190 |
+| step 4 minus earn (= step 3) | not run (cancelled while still queued; the lead: don't wait for it) | - |
+
+In this one-run-per-build split only the build without scroll-cb gave C's first page-up fling, and the lead dropped
+scroll-cb on that basis. **Correction (fix-scroll-cb, 05:47-06:06Z, the same gM path, 4 shared slots, rotated arms;
+Simulator, OBSERVED):** the short first fling also happens without scroll-cb. First page-up fling in px:
+
+| build | runs |
+|---|---|
+| v8 | 2035, 2190 |
+| step 4 (with scb) | 2191 |
+| step 4 minus scb | 2071 |
+| first v9-final (with scb) | 1777, 2191, 2200 |
+| v9-final with close, minus scb | 1777, 1256, 2191 |
+
+- A short run launches slower and decelerates smoothly; nothing cuts it off.
+- Each short run has a 69-123 ms main-thread frame near liftoff, a 50 ms hole in the touchmoves and a toolbar resize in
+  the same window, with or without scb. Every touch was non-cancelable.
+- No scb code writes scroll position, overflow or scroll-behavior.
+- Whether WebKit launches a slower fling when the main thread is busy is UNRESOLVED (no WebKit source checked).
+- The split's short runs also ran at higher host load (load1 106-167) than its build without scb (49-74).
+
+So the **scroll-cb drop is a lead ruling, not a proven cause**. The first-fling shortfall depends on load and on the
+main thread, and it is seen without scroll-cb (Simulator, OBSERVED). The phone parity rule below counts a gap only when
+the median is over 300 px AND at least 2 of 3 pairs are, which guards against a one-off short fling. **Lead ruling
+(~06:15Z):** scroll-cb stays out of v9 and comes back in v9.1 together with the close rule, so that is one follow-up
+check, not two re-pins.
+
+**Second v9-final (with the close rule; superseded, never phone-checked):** ms7c + dd + earn + nav + glue + close =
+647c9ef2b1e2 / bdecf48c5b32 (patch.diff 3e154c4f44e0), 05:38Z (`out/v9/build-noscb.log`; 120 legal orders, join step 4
+minus scb matches, reversals ok).
+- CHECK OK (`out/v9/check-final2.json`; mobile 1580 → 1581 elements, desktop 1423 → 1423, 0 errors, 0 4xx, morph
+  reached).
+- px-chrome: consistent within 0.31 %.
+- dom-count: the same counts as step 4.
+- Simulator confirm, n = 2 each, host load1 up to 34: first page-up fling C 2190 / 2190, V 2190 / 2191 (pass).
+- **The census showed extra style work at rest** (`out/v9/looks-final2.log`), so the lead dropped the close rule.
+
+**Rest-work split (Chrome, counts only; census = research/design-engineering/frame-audit/census.mjs via
+`gates/census-run.mjs`, headless 430x932 DPR 3, no throttle, 6 s rest windows, one load per row; OBSERVED, cause
+unknown; `out/v9/rest-split.log`, arms in `out/v9/snap-rev/{A,V,N,K}`):**
+
+| build | close rule | rest-0 mainFrames/s | rest-2796 mainFrames/s |
+|---|---|---|---|
+| v8 (3 loads) | no | 38.5 / 39.3 / 38.5 | 2.2 / 3 / 2.2 |
+| step 4 de237379b556 / e1359ab9994a | no | 39.2 | 2 |
+| **v9-final minus close, 647c9ef2b1e2 / e1359ab9994a (= v9-final below)** | no | **39.3** | **2.2** |
+| first v9-final (with scb) | yes | 60 | 31.6 |
+| second v9-final 647c9ef2b1e2 / bdecf48c5b32 (2 loads) | yes | 60 / 60 | 33.6 / 22.5 |
+| v9-final with close, minus nav + glue, 366636504b84 / bdecf48c5b32 | yes | 60.1 | 27 |
+
+- With the close rule (`.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel { visibility: hidden }`),
+  Chrome restyles about every frame at the top and about 30 times a second at 2796.
+- The extra work is styleRecalc only: no layout, paint or rAF at rest-2796. elementsRestyled is 180-270/s vs 17.
+- `document.getAnimations()` at rest (`out/v9/anim-2026-10-05T06-02-01-823Z.json`) lists the same running animations
+  with and without the rule, so no new animation explains it.
+- Sent to fix-morph-gpu (the owner) and posted as F-268.
+- **Lead ruling (~06:10Z): v9-final drops the close rule** ("a steady extra style recalc at rest is a regression we
+  won't ship to the phone"). It comes back in v9.1 once fix-morph-gpu fixes or explains it.
+- The rest-level evidence for v9-final is the row "v9-final minus close": **39.3 / 2.2**, at v8's level (OBSERVED,
+  one load).
+
+**v9-final = 647c9ef2b1e2 / e1359ab9994a** (ms7c + dd + earn + nav + glue; patch.diff 4196eaa61d96, `V9_EXPECT` pinned),
+2026-10-05 ~06:15Z (`out/v9/build-noclose.log`):
+- all 20 legal orders of the 5 components give the same bytes;
+- the join step 4 minus scb (366636504b84 / e1359ab9994a) matches;
+- v9 minus each component (with its dependents) = v8 + the rest:
+  - minus ms7c (and nav, glue) = 74bd1829d9de / 8a739ffb4d3b;
+  - minus dd = 52fecbcfb9ed / 4600f71efb97;
+  - minus earn = 6244c07de295 / 40037dc99f11;
+  - minus nav (and glue) = 366636504b84 / e1359ab9994a;
+  - minus glue = b8f71b099cc5 / e1359ab9994a;
+- every delta file and owner pin checks out (nav and glue apply strictly, with no owner pin on v8 of their own);
+- node --check passes;
+- the snapshot is `out/v9/snap-647c9ef2b1e2-e1359ab9994a`.
+- The CSS is step 4's (e1359ab9994a). Neither scroll-cb, nav nor glue changes CSS, so v9's CSS changes are those of rev
+  7c, double-drive and the Join button.
+
+Function and look checks on this v9-final (`out/v9/looks-final3.log`, 06:09-06:22Z, shared holds, OBSERVED):
+- CHECK OK (`out/check/v9-best/2026-10-05T06-09-33-363Z/`): mobile 1580 → 1581 elements, desktop 1423 → 1423, 0 errors,
+  0 4xx, morph reached on both. Screenshot diff mobile 0.14 / 46.61 / 71.51, desktop 0.08 / 0 / 0, the same as step 4
+  and the earlier v9 builds (rev 7c's 100lvh spacer moves the mobile middle and bottom shots).
+- px-chrome (A/A-gated, two loads per arm): mobile consistent max 0.0927 % (y 548, the hero heading's accent, which
+  differs per load); desktop max 0.0064 % (the language switch). Everything else 0.
+- dom-count: mobile 1578 (v8) → 1579 after the walk, desktop 1409 → 1409, the same as step 4.
+- Census (`gates/census-run.mjs`, one load per arm), mainFrames/s:
+
+  | arm | rest-0 | rest-1400 | rest-2796 | rest-3800 | rest-end |
+  |---|---|---|---|---|---|
+  | A = v8 | 38.8 | 41.5 | 1.8 | 26.2 | 0.2 (y 5346) |
+  | V = v9-final | 40.8 | 42.1 | 1.8 | 26.3 | 29.2 (y 6278) |
+
+  - Rest is at v8's level at the top and at 2796, so the close rule's extra style work is gone (OBSERVED, one load).
+  - rest-end differs because v9's page end is rev 7c's open end (m = 1 after the 100lvh spacer, the panel's running
+    animations; rAF 33/s). The rest-split arms K, N and the close builds show the same 28-29 there, so it is rev 7c's
+    open-end state, not new in this build.
+
+Simulator fling-parity confirm on this v9-final (COUNTS ONLY, `sim.mjs gesture --count-only`, flick-middle-v2 with
+flingPx 300, the P-122 copies `out/p122/snap` served plain http; C = v8, V = v9-final; first page-up fling = settle 2 -
+settle 3, px; load1 from each record's `meta.sim.hostLoad`; OBSERVED):
+
+| run | window | C1 | V1 | C2 | V2 | verdict |
+|---|---|---|---|---|---|---|
+| shared Simulator slot (`out/p122/conf`) | load1 22-128, memory pressure warn | 2073 (21 → 55) | 1368 (72 → 128) | 1132 (124 → 100) | 1779 (93 → 71) | does not count (lead: rerun alone above load1 ~20) |
+| alone, exclusive `--no-timing` hold (`out/p122/conf-alone`) | load1 9-16 | 2190 | 2190 | 2221 | 2157 | **pass** (within 64 px of C) |
+
+- Under load v8 itself came up 1060 px short (C2): the first-fling shortfall depends on load on both arms, so a miss in a
+  loaded window says nothing about v9 (OBSERVED, cause unknown; fix-scroll-cb's earlier runs showed the same without
+  scroll-cb).
+- In the quiet hold all four gM runs crossed the middle 5-6 times, like v8.
+
+## P-122 (v9-final): v8 vs v9-final, phone no-worse check (DRAFT for mgmt-ops-10's delta check and the lead's sign; no P-122 data)
+
+**Retarget (lead, 2026-10-05).** With nav-hit-cache delivered, the phone check runs once, on v9-final, against v8 (the
+ship baseline). The first draft above (V = step 4) was never signed and has no data. The lead then dropped scroll-cb
+(after the gM split) and the close rule (after the rest-work split), so V is the v9-final above (647c9ef2b1e2 /
+e1359ab9994a). It is not the first v9-final (c3d36476c3ce / bdecf48c5b32) or the second (647c9ef2b1e2 / bdecf48c5b32).
+No P-122 data exists for any of them. Changes from the first draft:
+- **V = v9-final** (647c9ef2b1e2 / e1359ab9994a). It is served from new immutable copies, `out/p122/snap` (HASHES.txt
+  375b4561b2fd; the copies of the two earlier builds were moved aside unused), by `p122/serve122.sh` (a copy of P-120's
+  serve.sh with only V, the folder and the source changed; served-hash case `V:647c9ef2b1e2:e1359ab9994a`).
+- **G parts only, no M leg** (no `__fwMorphDrive`). On v9 the panel is already open at the page end (fix-morph-gpu's
+  note), and the lead asked for G gestures. hold122.sh refuses n items (VOID "unknown item"), and the scorer has no
+  Mmoving/Mtweens gates. hold122.sh and score.mjs also refuse gRC/wgRC: part R is V only.
+- **Flicker gate** (nav-hit-cache: `fixes/nav-hit-cache/flicker-gate.mjs` 3c2bd0cb7f09, logger `flicker-inject.mjs`
+  71f7b00ce40b).
+  - Every G run in both arms carries the logger, warm-ups too (`--inject`). The compiled programs are unchanged, checked
+    by dry-run: GESTURE_HASH M 607b59612abb and R 92bcef2b02df with the inject.
+  - Input: the counted G runs of parts M, X and S, **including runs that failed their path gate**. R is V only and
+    stays out.
+  - **Gate (lead ruling F3): G1, V monotone blinks = 0.** G1 FAIL = WORSE.
+  - G2 (V blinks <= C blinks + 1, with the step-back rule), G3 (median flips per kind V <= C + 2) and the gate's own
+    overall word (PASS / FAIL / INCONCLUSIVE) are **reported only**. So INCONCLUSIVE never makes the block insufficient.
+  - VOID (fewer than 3 valid runs an arm, or script hashes that differ), or no G1 line, makes it insufficient.
+  - **Deviation from nav's draft, accepted by the lead:** C = v8 (the ship baseline), not step 4.
+- **Fling-distance parity, BEHAVIOUR (lead rulings F2).**
+  - Distance: per stroke, from the finger's lift (touchend) to the settle (the first frame after which scrollY stays
+    unchanged for 300 ms) or to the next stroke's touchstart, whichever comes first. y comes from the run's own frame log.
+  - Compared: part M's first page-up fling after mark mid1 (the fling that came up short in the Simulator), and part X's
+    first stroke after mark into1. out1/out2 are not compared: rev 7c's catch shortens V's out-flings by design. M's
+    first page-down fling and every other stroke are reported.
+  - Runs: every counted G run of the part with a record, path-voided runs included. Pairs by run number (gMC1 with
+    gMV1, ...).
+  - Counts: |median V - median C| > 300 px **and** at least 2 of the 3 pairs > 300 px in the same direction. A gap in
+    which the shorter side ended at its own arm's end (within 10 px of 0 or docH - innerHeight) does not count: v9's
+    open end is one screen lower than v8's, so X's into fling can run further on V by design.
+  - Fewer than 2 pairs: insufficient, never pass.
+  - Verdict word **BEHAVIOUR FAIL**: printed on its own line and in front of the block verdict ("BEHAVIOUR FAIL; frames
+    <verdict>"), never masked by the frame gates.
+- **gM on V:** if V's path gate fails, part M is reported INSUFFICIENT with the reason (not void, not re-scripted after
+  data; lead ruling).
+- **Time guard (F5, lead ruling):** no G item (wg* or g*) starts when the hold's elapsed time + 240 s (150 s
+  GESTURE_BUDGET_S + 90 s end gate) > 900 s. A late item skips the rest of the hold, parks Safari and exits 7 (HOLD VOID
+  "time"); the hold is then re-run whole. H5 is split in two so no hold comes near it.
+
+**Dry run (F-256; Simulator, COUNTS ONLY, `sim.mjs gesture --count-only`, uncounted; out/p122/sim, out/p122/split).**
+Settled y after each stroke (OBSERVED, Simulator, host load1 up to 176; cause unknown). These runs are on step 4 and on
+the first v9-final, both with scroll-cb:
+
+| item | arm | settles | gM |
+|---|---|---|---|
+| m (flingPx 340) | C v8 | 2040 / 4389 / 2015 / 4494 / 2015 / 4494 / 2092 | pass (6 traversals, max 4494) |
+| m (340) | V step 4 | 1999 / 4505 / **2698** / 5177 / 2737 / 5220 / 2743 | fail (1 traversal, max 5220) |
+| m300 | C v8 | 2040 / 4245 / 2041 / 4232 / 2089 / 4280 / 2686 | pass (5, max 4280) |
+| m300 | V step 4 | 2040 / 4230 / **2564** / 4756 / 2661 / 4827 / 2752 | fail (1, max 4827) |
+| m300 | V first v9-final | 2037 / 4227 / **2972** / 5163 / 2973 / 5168 / 2977 | fail (1, max 5168) |
+
+- On those V builds the **first page-up fling** from about 4200-4500 travelled 500-950 px less than on C. The page-down
+  flings matched, and V's later page-up flings were within about 40 px of C's. The split above first put it on
+  scroll-cb, but fix-scroll-cb's runs show it without scroll-cb too: load and main-thread dependent, cause unknown
+  (OBSERVED, Simulator).
+- **The scroll-cb drop is a lead ruling, not a proven cause.** The first-fling shortfall is load-dependent and is seen
+  without scroll-cb (Simulator, OBSERVED). The parity rule below (median > 300 px AND at least 2 of 3 pairs) guards
+  against a one-off short fling.
+- Confirm on this V (in "v9-final build" above): alone at load1 9-16 the first page-up fling is C 2190 / 2221, V 2190 /
+  2157 (pass); in a shared window at load1 22-128 both arms fell short, v8 too (C 2073 / 1132, V 1368 / 1779). The
+  phone runs record load1 per run, so a miss can be read against its load.
+- Rev 7c's touchend rule does not act there by its code (e = -1.2 at y 4227; its branches need e > -0.1).
+- Part E (gX/gS) and gR, on step 4:
+  - V-ef: out1 from the open end (6035) settled back at 6035 (a return to open, not a catch); out2 was caught at 5260.
+  - V-es: both caught (5220 / 5221).
+  - C-ef left the end (2883, 928); C-es travelled on (4416).
+  - V-r100: each ret stroke lifted at p ≈ -0.12 and glided away to p ≈ -1.1 (4345 / 4346 / 4602), 0 of 3 returns to
+    open in the Simulator.
+  - C-r100: the catch stroke on v8 travels on (3752), as expected.
+
+```
+PHONE TICKET P-122 v9-best · less-work no-worse check, v8 C vs v9-final V (without scroll-cb and the close rule), P-121's path-matched G
+  driver + nav's flicker gate (G1) + the fling-distance parity check · runner iphone-runner · verdict owner int-v8 ·
+  registered before any P-122 data; no counted run before the lead's sign and mgmt-ops-10's delta check
+build: V = v9-final = fixes/v9-best/patch.diff 4196eaa61d96 (v8 + PR-018 rev 7c + double-drive + PR-021 rev 3 +
+  nav-hit-cache U1 + glue; scroll-cb and the close rule dropped by the lead, both back in v9.1; build.mjs V9_EXPECT),
+  JS 647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2, CSS e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba
+control: C = v8 = fixes/v8-best/patch.diff, JS 3e3e94cb6e9f…, CSS f836404b3728… (full sha256 in P-120's ticket).
+  Mirror snapshot b1789284481295-4ad4a84a. B = plain baseline (the gate's timer page).
+copies and servers: out/p122/snap/{C,V} (read-only, HASHES.txt 375b4561b2fd), p122/serve122.sh 0198b72d3ad9 (plain
+  http, --port 0, --latency 150, --vendors=local); served-hash check before every item (exit 4 on a wrong one).
+question: under xcode-serious, does v9-final add slow frames over v8 (a) in flicks through the middle (gM), (b) in flicks
+  into the page end and out again (gX, gS: on V the out-flings are caught at the closed rest by rev 7c; the catch path
+  must stay clean), (c) nav/.pain class flicker (flicker gate G1); and (d) does it change how far a fling travels
+  (parity, BEHAVIOUR)? Plus one report case for rev 7c's known limit I-179 (gR). No-worse only; landing basis: the
+  less-work rule.
+profile: xcode-serious (Xcode Device Conditions Serious, induced; thermal-gate.mjs --accept-induced at the start and end
+  of every hold; no pre-warm, no cooling wait; ceiling 44 C or Critical; gate exits 2/3/7 void the hold).
+sentinels: sCo/sCc in every hold (S on C: bottom >= 58 fps, scroll >= 44 fps); a failing sentinel voids every run since
+  the last passing one; the hold is re-run once with the same items.
+checkout: int-v8's worktree; hold122.sh prints one PIN line per hold (ticket, profile, checkout, HEAD, sha256/12 of
+  hold122.sh, p122/score.mjs, serve122.sh 0198b72d3ad9, flicker-inject.mjs 71f7b00ce40b, flicker-gate.mjs 3c2bd0cb7f09,
+  P-120's score.mjs fd9ecebcf4d0, P-111's score.mjs 26d944bf93e2, gate.mjs 1a1d716698f0, thermal-gate ecb403b3ad25,
+  verdict 8edb2fc77795, pmcheck d36bd7437b7c, flick-middle-v2 ca38f3627f78, flick-end-v2 4eb4bbc62b43, flick-return-v1
+  2ddbab3c23a1, out/p122/snap/HASHES.txt 375b4561b2fd) and one PROG line per G part (N2: GESTURE_HASH/12 M 607b59612abb,
+  X 21aaafd3a9fd, S 7312cdcd2574, R 92bcef2b02df; selftest122 checks PROG_R's value). Any other value voids that hold.
+  hold122.sh, score.mjs and selftest122.mjs = the blobs of the registering commit.
+holds (each inside the runner's exclusive no-timing chrome-measure hold, max 600 s; GESTURE_BUDGET_S 150 per G run;
+  every G item with --inject flicker-inject.mjs; time guard: no G item starts after elapsed 660 s, else VOID "time",
+  exit 7, re-run whole):
+  part M  H3a sCo wgMC wgMV gMC1 gMV1 gMV2 sCc · H3b sCo gMC2 gMC3 gMV3 sCc
+  part X  H4a sCo wgXC wgXV gXC1 gXV1 gXV2 sCc · H4b sCo gXC2 gXC3 gXV3 sCc
+  part S  H5a sCo wgSC wgSV gSC1 gSV1 sCc · H5b sCo gSV2 gSC2 [re-run] sCc   (C3: a void run gets one re-run at the
+          block end in its place, in H5b)
+  part R  H6 sCo wgRV gRV1 gRV2 gRV3 sCc              (V only: v8 has no extra screen; report)
+  usage per hold (the I-168 wrapper with the block mark):
+    TICKET=P-122 node tools/lock.mjs run iphone --owner iphone-runner --block P-122 --max-seconds 900 -- \
+      node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "v9 P-122 <H>" \
+      -- caffeinate -i -s sh fixes/v9-best/phone/p122/hold122.sh <H> <items>
+  then iphone.mjs park; int-v8 stops the servers after the last hold.
+scorer: fixes/v9-best/phone/p122/score.mjs (imports P-120's score.mjs and P-121's gate.mjs, pinned; runs flicker-gate.mjs
+  as a child, pinned). Path gates per run (a failing run is VOID for the frame gates, never scored there): gM gateM
+  (>= 5 traversals of [2200, 3800], max y < 5000); gX C gateE fast (released stroke, leaves the end >= 1600 px), V the
+  same stroke criteria only (caught reported); gS gateE slow (both arms); gR >= 1 ret stroke lifts with p in
+  (-0.20, -0.05].
+  Gates: GM (> 50 WORSE d > +2, any NEW 250 px cluster; fewer than 3 valid V runs: INSUFFICIENT with the path reason),
+  EX and ES (V ceiling: 0 frames > 50 ms in into1..end over all valid V runs; twins > 46 / > 54, threshold-sensitive
+  when one differs; (46, 54] flagged; sub-windows out1..into2, out2..end reported; min valid V runs 3 for EX, 2 for ES),
+  FLICKER (G1 only, above). BEHAVIOUR: the parity above (M's first page-up fling, X's first into1 stroke; median > 300
+  px AND >= 2 of 3 pairs; path-voided runs included). R report only: per ret stroke p at lift, lowest p, returned to
+  the open end with no finger down and the delay (finger-returns.mjs's rule).
+  Self-test: selftest122.mjs (SELFTEST-122 OK 54: parity cases incl. 2 of 3 pairs, 1 of 3, clipped end, next stroke,
+  < 2 pairs; flicker G1-only cases; the late() boundary at 660 / 661 s; PROG_R).
+verdict: BEHAVIOUR FAIL (own line, leads the block verdict) if the parity counts; frames: WORSE if any gate is WORSE or
+  has a NEW cluster; else insufficient if any is; else no-worse. BEHAVIOUR FAIL or WORSE -> int-v8 splits by the
+  reversal builds and reports to the lead and the owners.
+F-260 (report only, every run): y90 = 0.9 docH - vh, the time the run first reaches it, and whether that is inside the
+  scored window (gX/gS/gR: into1 crosses it inside the window on both arms).
+predictions (int-v8, before phone data, after the split and the Simulator confirm on this V):
+  - BEHAVIOUR (parity): pass 0.75, BEHAVIOUR FAIL 0.15, insufficient 0.10. The quiet Simulator confirm matched C within
+    64 px, but the shortfall is load-dependent on both arms, and the phone's flings and the finger-lift rule are untested.
+  - GM: no-worse 0.60, insufficient (V's path gate fails, too few valid V runs) 0.25, WORSE 0.15.
+  - EX: no-worse 0.60, WORSE (a > 50 ms frame on the catch path into1..end) 0.20, insufficient 0.20.
+  - ES: no-worse 0.70, WORSE 0.15, insufficient 0.15.
+  - FLICKER G1 (V monotone blinks 0): pass 0.85, FAIL 0.10, insufficient 0.05.
+  - R (report only): each ret stroke lifts at p near -0.12; at most 1 of 3 returns to open (rev 7c's I-179 limit). 0.6.
+  - Sentinels: every hold passes on the first try 0.70; at least one hold re-run 0.30.
+  - Overall: no-worse 0.45, insufficient 0.30, WORSE or BEHAVIOUR FAIL 0.25.
+minutes: ~60 (7 holds: H3a ~10, H3b ~7, H4a ~10, H4b ~7, H5a ~8, H5b ~7, H6 ~8; gates included; no pre-warm; the
+  runner's gaps between holds extra).
+```

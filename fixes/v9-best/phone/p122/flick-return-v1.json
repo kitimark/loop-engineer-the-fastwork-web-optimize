@@ -1,0 +1,77 @@
+{
+  "name": "flick-return-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "P-122 part R (incident I-179, rev 7c's known limit: a swipe that lifts just past the closed rest, p -0.10 to -0.13, glides away and later scrolls back to the open end with no finger down). Three times: approach as flick-end-v2, fling into the page end (until atEnd), one slow out-stroke (flick-end-v2's slow stroke, 180 px / 120 ms: rev 7c catches it at the closed rest), rest, then a short close-direction fling (retPx / retMs) that lifts just past the closed rest with momentum, then a 3 s watch window (returns came 0.4-1.3 s after the lowest point). On v8 (no extra screen) the same strokes run mid-page: report only. Each watch window ends with a y stamp (until y>=1) so a count-only record shows whether the page went back to the open end. retPx picked by the P-122 Simulator dry run before any phone data.",
+  "params": { "x": 215, "flingPx": 560, "flingMs": 140, "gapMs": 350, "outSlowPx": 180, "outSlowMs": 120, "retPx": 100, "retMs": 100 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": 2000 },
+    { "type": "mark", "name": "approach" },
+    { "type": "repeat", "times": 12, "until": "y>=3400", "steps": [
+      { "type": "stroke", "dir": "up", "px": 520, "ms": 600, "profile": "still" },
+      { "type": "pause", "ms": 150 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+
+    { "type": "mark", "name": "into1" },
+    { "type": "repeat", "times": 4, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 800 },
+    { "type": "mark", "name": "catch1" },
+    { "type": "stroke", "dir": "down", "px": "$outSlowPx", "ms": "$outSlowMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 1000 },
+    { "type": "mark", "name": "ret1" },
+    { "type": "until", "cond": "y>=3000", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "down", "px": "$retPx", "ms": "$retMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 3000 },
+    { "type": "until", "cond": "y>=1", "timeoutMs": 500 },
+
+    { "type": "mark", "name": "into2" },
+    { "type": "repeat", "times": 4, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 800 },
+    { "type": "mark", "name": "catch2" },
+    { "type": "stroke", "dir": "down", "px": "$outSlowPx", "ms": "$outSlowMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 1000 },
+    { "type": "mark", "name": "ret2" },
+    { "type": "until", "cond": "y>=3000", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "down", "px": "$retPx", "ms": "$retMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 3000 },
+    { "type": "until", "cond": "y>=1", "timeoutMs": 500 },
+
+    { "type": "mark", "name": "into3" },
+    { "type": "repeat", "times": 4, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 800 },
+    { "type": "mark", "name": "catch3" },
+    { "type": "stroke", "dir": "down", "px": "$outSlowPx", "ms": "$outSlowMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 1000 },
+    { "type": "mark", "name": "ret3" },
+    { "type": "until", "cond": "y>=3000", "timeoutMs": 2000 },
+    { "type": "stroke", "dir": "down", "px": "$retPx", "ms": "$retMs", "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 3000 },
+    { "type": "until", "cond": "y>=1", "timeoutMs": 500 },
+    { "type": "mark", "name": "end" },
+    { "type": "pause", "ms": 500 }
+  ]
+}
