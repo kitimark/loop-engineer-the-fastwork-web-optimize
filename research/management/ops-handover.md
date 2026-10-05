@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:0xZ **P-133 addendum 1 SIGNED by the lead (402a6cae, conditions N1-N6); e6151b57 landed.**
+  - fix-toolbar-resize has been resumed. It queues holds A1, A2, B1 and B2 one at a time, all DEFERRED during P-130's
+    block.
+  - After the last hold it sends ops the four folders, the n-check JSONs, the gate output and `p133-score-<hold>.json`.
+  - FYI: the lead moved three shared readers (fix-cd-roll-ca-r4, fix-nav-morph, fix-hero-exit-threaded) into int-v8's
+    open group in P-130's first gap, which is audited. P-130 part 2 now starts at about 11:11Z.
 - 10-05 ~11:0xZ **P-133 addendum 1 (four holds) pre-data read PASS; to the lead for signature.**
   - Dry run ~10:53Z: DRY PASS on every check, but the estimate was 78.35 s per step, over the carded 78 s. The rev 1
     design failed its own budget rule, so no data was taken. P10 is a miss on rev 1 and is not rescored.
