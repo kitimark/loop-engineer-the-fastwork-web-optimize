@@ -13,23 +13,28 @@ const RANK = { T0: 0, T1: 1, T2: 2, T3: 3 };
 const worst = (a, b) => (RANK[a] >= RANK[b] ? a : b);
 // page frames and timeouts held during the arm phase beyond those held during the back phase (intervals excluded)
 export const HELD_EXTRA_MAX = 2;
-export const heldExtra = (t) => (t.stat?.arm && t.stat?.back ? (t.stat.arm.raf + t.stat.arm.timeout) - (t.stat.back.raf + t.stat.back.timeout) : 0);
+const held = (s) => s.raf + s.timeout;
+export const heldExtra = (t) => (t.stat?.arm && t.stat?.back ? held(t.stat.arm) - held(t.stat.back) : 0);
+// rev 1.1 N3: also against the null arm's arm phase at the same key (an R3 reaction on both on and off cancels in heldExtra)
+export const heldVsNull = (t, n0) => (t.stat?.arm && n0?.stat?.arm ? held(t.stat.arm) - held(n0.stat.arm) : 0);
 
 // files: [{ name, json }]; returns { engines: { chrome, sim }, verdict, ... } or throws on a duplicate key
 export function score(files) {
-  const by = { chrome: new Map(), sim: new Map() }, used = [], ignored = [];
+  const by = { chrome: new Map(), sim: new Map() }, used = [], ignored = [], erroredIgnored = [];
   for (const { name, json } of files) {
     if (!json || json.complete !== true) { ignored.push(name); continue; }
     const eng = json.tool === 'deck-contain px148-chrome' ? 'chrome' : json.tool === 'deck-contain px148-sim' ? 'sim' : null;
     if (!eng) { ignored.push(name); continue; }
     used.push(name);
     for (const t of json.triples || []) {
+      // rule 1b (rev 1.1 N2): triples of a config that ended with an error are ignored (its RR2 re-run is the record)
+      if (json.configs?.[t.cfg]?.error) { erroredIgnored.push(`${name} ${key(t)}`); continue; }
       const k = key(t);
       if (by[eng].has(k)) throw new Error(`DUPLICATE ${eng} ${k} (${by[eng].get(k).file}, ${name}): the scorer never picks`);
       by[eng].set(k, { ...t, file: name });
     }
   }
-  const out = { files: { used, ignored }, engines: {} };
+  const out = { files: { used, ignored, erroredTriplesIgnored: erroredIgnored.length }, engines: {} };
   for (const eng of ['chrome', 'sim']) {
     const m = by[eng], reg = registeredKeys(eng), all = [...m.values()];
     const missing = reg.filter((k) => !m.has(k)), extra = [...m.keys()].filter((k) => !reg.includes(k));
@@ -60,7 +65,8 @@ export function score(files) {
       if (t.geoArm.length) { tier = 'T3'; flags.geometry.push(`${eng} ${key(t)} ${t.geoArm.join('; ')}`); }
       if (t.cfg.endsWith('-rm') && RANK[tier] > 1) flags.rmNotExact.push(`${eng} ${key(t)} ${tier}`);
       if (t.judge.beyondOutsideF) flags.outsideF.push(`${eng} ${key(t)} ${t.judge.beyondOutsideF}`);
-      if (heldExtra(t) > HELD_EXTRA_MAX) flags.heldExtra.push(`${eng} ${key(t)} +${heldExtra(t)}`);
+      const n0 = m.get(`${t.cfg}|${t.pos}|${t.mode}|N0`), hb = heldExtra(t), hn = heldVsNull(t, n0);
+      if (hb > HELD_EXTRA_MAX || hn > HELD_EXTRA_MAX) flags.heldExtra.push(`${eng} ${key(t)} vs back +${hb}, vs N0 +${hn}`);
       if (t.mode === 'swipe' && RANK[tier] >= 2) {
         const rest = m.get(`${t.cfg}|${t.pos}|rest|R3`);
         if (rest && RANK[rest.judge.tier] <= 1 && !rest.geoArm.length) flags.motionOnly.push(`${eng} ${key(t)} ${tier}`);

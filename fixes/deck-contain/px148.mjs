@@ -5,7 +5,8 @@
 // - A/A = base (b) vs base again (b2); arm difference = base (b) vs arm (a);
 // - beyond A/A (T2 counting): arm level > 8 where the A/A level <= 8;
 // - fill or edge: a pixel is fill when its 3x3 neighbourhood in b varies by 2 levels or less (per channel), else edge;
-// - largest shade: the largest arm level at any pixel where the A/A level is 0 (beyond A/A at any level).
+// - largest shade: the largest arm level at any unmasked pixel (rev 1.1 N1; largestShadeNoAA keeps rev 1's form);
+// - T1 (rev 1.1 N1): no pixel's arm level is above its A/A level.
 // Masks: [[x0, y0, x1, y1], ...] in shot px, inclusive; masked pixels are skipped everywhere.
 import { pngPixels } from './px.mjs';
 
@@ -30,7 +31,7 @@ export function isFlat(X, x, y, flat = T2.FLAT) {
 // decoded-image form, so the self-test can feed synthetic images: { w, h, bpp, px }
 export function judgeImages(B, A, C, masks = [], dpr = 1, foot = null) {
   if (A.w !== B.w || A.h !== B.h || C.w !== B.w || C.h !== B.h) return { tier: 'T3', sizeMismatch: true };
-  let aaAny = 0, aa8 = 0, abAny = 0, abNotInAA = 0, beyond = 0, beyondFill = 0, beyondEdge = 0, fillMax = 0, edgeMax = 0, shade = 0, masked = 0;
+  let aaAny = 0, aa8 = 0, abAny = 0, abNotInAA = 0, abAboveAA = 0, beyond = 0, beyondFill = 0, beyondEdge = 0, fillMax = 0, edgeMax = 0, shade = 0, shadeNoAA = 0, masked = 0;
   let outsideF = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
   for (let y = 0; y < B.h; y++) for (let x = 0; x < B.w; x++) {
     if (masks.length && inMask(masks, x, y)) { masked++; continue; }
@@ -38,7 +39,10 @@ export function judgeImages(B, A, C, masks = [], dpr = 1, foot = null) {
     const daa = level(B.px, C.px, i), dab = level(B.px, A.px, i);
     if (daa) aaAny++; if (daa > T2.COUNT_LEVEL) aa8++;
     if (dab) abAny++;
-    if (dab && !daa) { abNotInAA++; if (dab > shade) shade = dab; }
+    if (dab > shade) shade = dab;
+    // rev 1.1 N1: T1 means at or below A/A at every pixel
+    if (dab > daa) abAboveAA++;
+    if (dab && !daa) { abNotInAA++; if (dab > shadeNoAA) shadeNoAA = dab; }
     if (dab > T2.COUNT_LEVEL && daa <= T2.COUNT_LEVEL) {
       beyond++;
       if (foot && (x < foot[0] || x > foot[2] || y < foot[1] || y > foot[3])) outsideF++;
@@ -49,10 +53,10 @@ export function judgeImages(B, A, C, masks = [], dpr = 1, foot = null) {
   const frame = B.w * B.h, share = beyond / frame, areaCss = beyond / (dpr * dpr);
   let tier;
   if (!abAny) tier = 'T0';
-  else if (!abNotInAA) tier = 'T1';
+  else if (!abAboveAA) tier = 'T1';
   else if (fillMax <= T2.FILL && edgeMax <= T2.EDGE && shade <= T2.EDGE && share <= T2.SHARE && areaCss <= T2.AREA_CSS) tier = 'T2';
   else tier = 'T3';
-  return { tier, frame, masked, aaAny, aa8, abAny, abNotInAA, largestShade: shade, beyond, beyondFill, beyondEdge, fillMax, edgeMax,
+  return { tier, frame, masked, aaAny, aa8, abAny, abNotInAA, abAboveAA, largestShade: shade, largestShadeNoAA: shadeNoAA, beyond, beyondFill, beyondEdge, fillMax, edgeMax,
     shareBeyond: +share.toFixed(7), areaCssPx: Math.round(areaCss), ...(foot ? { beyondOutsideF: outsideF } : {}), ...(beyond ? { bbox: [x0, y0, x1, y1] } : {}) };
 }
 

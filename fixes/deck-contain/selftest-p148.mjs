@@ -114,4 +114,23 @@ r = score(files({ 'sim expanded|inview|rest|R3': held(5, 2) })); ok(r.verdict ==
 r = score(files({ 'sim expanded|inview|rest|R3': held(4, 2) })); ok(r.verdict === 'R3 T0', '+2 held is within the margin; intervals do not count');
 r = score(files({ 'sim expanded|inview|rest|N0': held(9, 0) })); ok(r.verdict === 'R3 T0', 'held counts of the null arm are not an R3 flag');
 r = score(files({ 'sim expanded|inview|rest|R3': { ...held(9, 0), judge: { tier: 'T3' } } })); ok(r.verdict === 'R3 T3', 'T3 stands with held extras');
+// ---- rev 1.1
+// N1: T1 only when no pixel's arm level is above its A/A level; the largest shade covers every unmasked pixel
+const dark = img(W, H, () => 20);
+j = judgeImages(dark, patch(dark, 0, 0, 0, 0, 200), patch(dark, 0, 0, 0, 0, 1), [], 1);
+ok(j.tier === 'T3' && j.abAboveAA === 1 && j.beyond === 1 && j.largestShade === 200, 'A/A 1 vs R3 200: T3, largest shade 200 (rev 1 called it T1)');
+j = judgeImages(dark, patch(dark, 0, 0, 0, 0, 129), patch(dark, 0, 0, 0, 0, 1), [], 1); ok(j.tier === 'T3' && j.largestShade === 129, 'A/A 1, arm 129: largest shade covers it, T3');
+j = judgeImages(flat, patch(flat, 0, 0, 9, 9, 2), patch(flat, 0, 0, 9, 9, 3), [], 1); ok(j.tier === 'T1' && j.abAboveAA === 0, 'arm 2 under A/A 3 = T1');
+j = judgeImages(flat, patch(flat, 0, 0, 9, 9, 60), patch(flat, 0, 0, 9, 9, 50), [], 1); ok(j.largestShade === 60 && j.largestShadeNoAA === 0 && j.tier !== 'T1', 'largest shade where A/A also moves');
+// N2: the scorer ignores every triple of an errored config (rule 1b), so the RR2 file never trips DUPLICATE
+{
+  const base = files(), c = base[0].json, half = c.triples.filter((t) => t.cfg === 'm430x775').slice(0, 5);
+  const errored = { name: 'C1.json', json: { ...c, configs: { m430x775: { error: 'boom' } }, triples: [...c.triples.filter((t) => t.cfg !== 'm430x775'), ...half] } };
+  const rerun = { name: 'C1b.json', json: { tool: c.tool, complete: true, configs: { m430x775: {} }, triples: c.triples.filter((t) => t.cfg === 'm430x775') } };
+  r = score([errored, rerun, base[1]]); ok(r.verdict === 'R3 T0' && r.files.erroredTriplesIgnored === 5, 'errored config ignored, RR2 file completes it');
+  r = score([errored, base[1]]); ok(r.verdict === 'GATE-FAILED' && r.engines.chrome.missing.length === 16, 'errored config without RR2: its keys are missing');
+}
+// N3: HELD-EXTRA also against the null arm's arm phase
+r = score(files({ 'sim expanded|inview|rest|R3': { stat: { arm: { raf: 4, timeout: 0 }, back: { raf: 4, timeout: 0 } } }, 'sim expanded|inview|rest|N0': { stat: { arm: { raf: 1, timeout: 0 }, back: { raf: 1, timeout: 0 } } } }));
+ok(r.verdict === 'R3 UNDECIDED-HELD', 'R3 woke callbacks on both on and off: caught against N0');
 console.log(`SELFTEST-P148 ok ${n} checks`);

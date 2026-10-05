@@ -5,8 +5,8 @@
 
 **Status:** P-143 ended NOT REPRODUCED (signed). P-146 is CONFIRMED by ops-reader-P146r (11 hit, 4 miss) and landed as
 38c7a33e. Lead ruling: R3 is neither landed as T2 nor proposed yet, because the pixel instrument is unstable. P-148 rev 1
-(`P148.md`) is a draft that first makes the instrument stable (motion hold, settle, A/A gate), then judges R3 against T2. It
-waits for the pre-data read and the signature; there is no P-148 data and no build.
+(`P148.md`, now rev 1.1 after the pre-data read) first makes the instrument stable (motion hold, settle, A/A gate), then judges R3 against T2. It
+waits for the lead's delta check and signature; there is no P-148 data and no build.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
@@ -597,7 +597,7 @@ The ratios are unread: OBSERVED only, never a result. They are listed for the ne
 | Simulator | R3 | 24 | 4 | 3 | 17 | 4 | 8 / 17 | 251, 0.104 %, 58976, n/a, static (expanded leave) |
 
 - P11 miss, P12 miss.
-- The pixel instrument is unstable: base against base again often differs by 10k-40k device pixels, up to about 97k device px (Simulator landscape) even with every Web
+- The pixel instrument is unstable: base against base again often differs by 10k-40k device pixels even with every Web
   Animation paused. Most FAILs are shade <= 2 or overlap regions that also move in A/A. OBSERVED in our setup, cause
   unknown.
 - Edge/fill for Chrome comes from a 3x3-block heuristic on the saved shots. The Simulator keeps no base-again shot for a
@@ -613,6 +613,12 @@ The ratios are unread: OBSERVED only, never a result. They are listed for the ne
 - Whether an arm can land as T2 (memory `illusion-must-be-pixel-identical`) or goes to the user as a proposal is the
   lead's ruling after the result read.
 - Any R3 claim carries the first-swipe observation: R3's first swipe was on the ~25 ms level in 3 of 5 runs. OBSERVED.
+
+**Erratum (2026-10-06, after the result read; the text above stays as read).** The A/A range "10k-40k device pixels" is
+the common case only. The result reader (ops-reader-P146r) found base against base again up to about 97k device px
+(Simulator landscape: `out/deck-contain/px-sim-landscape.json`, leave rest 97,082 px). In Chrome the largest is 565,426
+device px (t1200x900 leave swipe, `out/deck-contain/px-chrome-g3.json`). Both figures are OBSERVED in our setup, cause
+unknown. `results-p146.json` is unchanged; this erratum is the correction (lead ruling on P-148 rev 1 N7).
 
 ## Scenarios not run
 

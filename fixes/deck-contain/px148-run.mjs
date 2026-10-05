@@ -72,17 +72,19 @@ export async function triple(io, { cfg, pos, y, mode, arm, css }) {
   }
   const b = curBuf, g0 = await io.ev(GEO);
   const stat = { settle: await io.ev(STAT_RESET) };
-  await io.ev(ARM(css, arm)); await io.ev(RAF2G); await io.sleep(io.armWait); repaused += await io.ev(REPAUSE);
+  // rev 1.1 N3: re-paused animations per phase (an arm-started transition would be frozen mid-way: recorded)
+  const rp = { settle: repaused };
+  await io.ev(ARM(css, arm)); await io.ev(RAF2G); await io.sleep(io.armWait); rp.arm = await io.ev(REPAUSE); repaused += rp.arm;
   const g1 = await io.ev(GEO); const a = await io.shot();
   stat.arm = await io.ev(STAT_RESET);
-  await io.ev(ARM(null)); await io.ev(RAF2G); await io.sleep(io.armWait); repaused += await io.ev(REPAUSE);
+  await io.ev(ARM(null)); await io.ev(RAF2G); await io.sleep(io.armWait); rp.back = await io.ev(REPAUSE); repaused += rp.back;
   const g2 = await io.ev(GEO); const b2 = await io.shot();
   stat.back = await io.ev(STAT_RESET); const flushed = await io.ev(HOLD_OFF);
   const j = judgeImages(cur, pngPixels(a), pngPixels(b2), masks, io.dpr, foot);
   const geoArm = geoDiff(g0, g1), geoAA = geoDiff(g0, g2);
   if (Math.abs(g0.sy - g1.sy) > 0.02) geoArm.push(`sy ${g0.sy} -> ${g1.sy}`);
   if (Math.abs(g0.sy - g2.sy) > 0.02) geoAA.push(`sy ${g0.sy} -> ${g2.sy}`);
-  const rec = { cfg, pos, mode, arm, y: g0.sy, settled, settleShots: shots, hold, repaused, stat, flushed, masks, maskKinds: kept.map((m) => m.kind),
+  const rec = { cfg, pos, mode, arm, y: g0.sy, settled, settleShots: shots, hold, repaused, repausedPhase: rp, stat, flushed, masks, maskKinds: kept.map((m) => m.kind),
     maskDropped: dropped.map((m) => m.kind), foot, geoArm, geoAA, deckH: [g0.deck.h, g1.deck.h], docH: [g0.docH, g1.docH], judge: j, ms: Date.now() - t0 };
   if (j.tier !== 'T0' || !settled || j.aaAny) io.save(`${cfg}-${pos}-${mode}-${arm}`.replace(/[^\w.-]/g, '_'), { b, a, b2 });
   return rec;
