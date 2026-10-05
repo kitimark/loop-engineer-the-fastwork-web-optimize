@@ -31,11 +31,12 @@ test('I-189 (2): a board row waiting on the lease holder (agent target, or its w
   assert.deepEqual(work([row('t1', 'fix-a', { waitingOn: { kind: 'other', text: 'iphone-runner finishes the phone block' } })]), [], 'its wait text names the holder');
   assert.deepEqual(work([row('t2', 'fix-a', { waitingOn: { kind: 'agent', target: 'iphone-runner', text: 'phone runs' } })]), []);
   // a row waiting on someone else (or on the phone itself) still counts; a name that only contains the holder's does not
-  assert.deepEqual(work([row('t3', 'fix-b', { waitingOn: { kind: 'agent', target: 'mgmt-devices' }, note: 'next on the phone' })]), ['t3']);
+  assert.deepEqual(work([row('t3', 'fix-b', { waitingOn: { kind: 'agent', target: 'mgmt-devices', text: 'its slot on the phone' } })]), ['t3']);
   assert.deepEqual(work([row('t4', 'fix-c', { waitingOn: { kind: 'phone' } })]), ['t4']);
   assert.deepEqual(work([row('t5', 'fix-d', { waitingOn: { kind: 'other', text: 'iphone-runner-2 then the phone' } })]), ['t5']);
   // without a holder (a free phone) nothing changes: the row waits on an agent that does not hold the phone
-  assert.deepEqual(D.readyWork('iphone', { st: phone(null), rows: [ddRow] }).rows.map((x) => x.id), ['double-drive-fix']);
+  const t2 = row('t2', 'fix-a', { waitingOn: { kind: 'agent', target: 'iphone-runner', text: 'phone runs' } });
+  assert.deepEqual(D.readyWork('iphone', { st: phone(null), rows: [t2] }).rows.map((x) => x.id), ['t2']);
 });
 
 test('I-189 replay: 22:34Z, marked block P-118, the holder queued for its H2 Mac hold, only its own result row waits: no alarm', () => {

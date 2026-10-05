@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Idle alarm (incident I-105, user T-058 #4): says when the iPhone lease or the chrome-measure lock has stood free for
-// more than N minutes (the iPhone also: held with no phone run for that long, I-111, unless the user is on the holder's console step, I-125, or the lease is the user's own hand test: owner `user` or `user-*`, I-144) while work waits for it (queued waiters, or status-board rows waiting on it). Library and rules:
+// more than N minutes (the iPhone also: held with no phone run for that long, I-111, unless the user is on the holder's console step, I-125, or the lease is the user's own hand test: owner `user` or `user-*`, I-144) while work waits for it (queued waiters, or status-board rows waiting on it: --waiting-on phone|chrome or words in the wait text, never only the note for the phone, T-169; I-182 for the iPhone also rows marked startable with status.mjs --phone-next [--phone-needs none | "<pre-check>" --arm-neutral], open phone steps nobody is on yet, and after 2x the limit an active row whose next step names the phone; I-189: never the holder's own rows, rows waiting on the holder, or a block-marked holder's wait for its next Mac hold). Library and rules:
 // tools/lib/idle.mjs. Read-only on the locks (never takes, renews or releases one); no iPhone, Chrome or network.
 //
 //   node tools/idle.mjs check [--by lead] [--phone-min 5] [--chrome-min 10] [--step-min 2] [--proposal-min 15] [--json]
 //        # one shot, at check-ins (lead, ops). One line per resource:
 //        #   IDLE iphone: iPhone free for 14 min (since 03:10Z, released by iphone-runner), over the 5 min limit, while
-//        #     work waits: fix-morph-gpu (queued for it), f3-arm-scope (owner fix-nav-morph; its note names the phone)
+//        #     work waits: fix-morph-gpu (queued for it), f3-arm-scope (owner fix-nav-morph; its wait names the phone), p117 (owner iphone-runner; startable: P-117)
 //        #   IDLE iphone: iPhone held by fix-nav-morph but unused for 6 min (no phone run since 04:00Z, lease taken by
 //        #     fix-nav-morph), over the 5 min limit, while work waits: iphone-runner (queued for it)     # I-111
 //        #   OK chrome-measure: held by "(shared)" | free for 3 min …, no ready work | … under the 10 min limit; waiting: …

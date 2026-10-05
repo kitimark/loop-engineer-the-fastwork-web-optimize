@@ -25,23 +25,28 @@ test('rowWaitsOn: explicit phone/chrome waits win; user and incident waits never
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'chrome' }, note: 'phone later' })), ['chrome-measure']);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'user', text: 'phone swipe answer' } })), []);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'incident', target: 'I-042' }, note: 'phone run blocked' })), []);
-  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'mgmt-ops-10' }, note: 'queued for the iphone lease behind P-091' })), ['iphone']);
+  // T-169 (I-182 follow-up): a note that names the phone is no wait on it; only --waiting-on phone or the wait text
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'mgmt-ops-10' }, note: 'queued for the iphone lease behind P-091' })), []);
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'mgmt-ops-10' }, note: 'phone ticket P-107 after the ops read' })), []);
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'other', text: 'queued for the iphone lease behind P-091' } })), ['iphone']);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'lead', text: 'phone ticket turn' } })), ['iphone']);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'other', text: 'Chrome slot for the A/B' } })), ['chrome-measure']);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'next: measuring the cost card' })), ['chrome-measure']);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'queued on chrome-measure' })), ['chrome-measure']);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'in the lock queue' })), ['chrome-measure']);
   // "lock" next to the phone is the phone's lease, not Chrome
-  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'phone lock next' })), ['iphone']);
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'phone lock next' })), []);
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'other', text: 'phone lock next' } })), ['iphone']);
   // whole words only: agent names such as iphone-runner, and past tense "measured", do not count
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'iphone-runner' }, note: 'P-088 block running (iphone-runner)' })), []);
   assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'lead', text: 'land request' }, note: 'counts measured on main' })), []);
   // not waiting: nothing, whatever it says
   assert.deepEqual(r({ id: 'a', owner: 'x', state: 'measuring', note: 'on the phone now' }), []);
   assert.deepEqual(r({ id: 'a', owner: 'x', state: 'ready-to-land', waitingOn: { kind: 'phone' } }), []);
-  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'iPhone and Chrome both' })), ['iphone', 'chrome-measure']);
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'agent', target: 'x' }, note: 'iPhone and Chrome both' })), ['chrome-measure']);
+  assert.deepEqual(r(row('a', 'x', { waitingOn: { kind: 'other', text: 'iPhone and Chrome both' } })), ['iphone', 'chrome-measure']);
   assert.match(D.rowWaitsOn(row('a', 'x', { waitingOn: { kind: 'lead', text: 'phone turn' } }))[0].why, /its wait names the phone/);
-  assert.match(D.rowWaitsOn(row('a', 'x', { waitingOn: { kind: 'lead' }, note: 'phone turn' }))[0].why, /its note names the phone/);
+  assert.deepEqual(D.rowWaitsOn(row('a', 'x', { waitingOn: { kind: 'lead' }, note: 'phone turn' })), [], 'T-169: the note alone is no phone wait');
 });
 
 test('readyWork: queued waiters once each; a row whose owner (or alias) is queued is not listed again', () => {
@@ -253,15 +258,15 @@ test('record: a free period that changes start without a holder ends the old epi
 
 test('words: the line and the thread name the resource, minutes and owners; nothing personal; addressees bounded', () => {
   const rel = { owner: 'iphone-runner', token: 'g', at: at(10) }, grant = { token: 'g', at: at(0) };
-  const rows = [row('morph-gpu', 'fix-morph-gpu', { waitingOn: { kind: 'agent', target: 'mgmt-ops-10' }, note: 'queued for the iphone lease, open http://192.168.77.12:5497/' })];
+  const rows = [row('morph-gpu', 'fix-morph-gpu', { waitingOn: { kind: 'other', text: 'queued for the iphone lease' }, note: 'open http://192.168.77.12:5497/ on the phone' })];
   const a = D.assess('iphone', { st: free([{ owner: 'fix-nav-morph' }]), rel, grant, rows, min: 5, now: T0 + 24 * 60000 });
   const line = D.lineFor(a);
-  assert.match(line, /^IDLE iphone: iPhone free for 14 min \(since 03:10Z, released by iphone-runner\), over the 5 min limit, while work waits: fix-nav-morph \(queued for it\), morph-gpu \(owner fix-morph-gpu; its note names the phone\)$/);
+  assert.match(line, /^IDLE iphone: iPhone free for 14 min \(since 03:10Z, released by iphone-runner\), over the 5 min limit, while work waits: fix-nav-morph \(queued for it\), morph-gpu \(owner fix-morph-gpu; its wait names the phone\)$/);
   const { title, text } = D.threadFor(a, { steward: { agent: 'mgmt-devices' } });
   assert.equal(title, 'iPhone free for 14 min while 2 jobs wait');
   assert.match(text, /The iPhone has had no holder for 14 min \(since 03:10Z; released by iphone-runner\)\. The limit is 5 min\./);
   assert.match(text, /Queued for it: fix-nav-morph\./);
-  assert.match(text, /morph-gpu \(owner fix-morph-gpu; its note names the phone\)/);
+  assert.match(text, /morph-gpu \(owner fix-morph-gpu; its wait names the phone\)/);
   // I-175: the steward, not the desk; no line addressed to the waiting owners
   assert.match(text, /^Steward \(mgmt-devices\): nudge fix-nav-morph, fix-morph-gpu by message/m);
   assert.doesNotMatch(text, /Desk \(|^Owners: /m);

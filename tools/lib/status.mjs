@@ -89,7 +89,7 @@ export const WAIT_KINDS = {
 const SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/;
 const AGENT = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$/;
 const REF = /^[A-Z]{1,2}-?\d{1,4}[a-z]?$/;
-const LIMITS = { title: 90, note: 200, next: 200, wait: 160 };
+const LIMITS = { title: 90, note: 200, next: 200, wait: 160, phone: 120 };
 
 export const statusDir = () => join(sharedStateDir(), 'status');
 const fileOf = (id) => join(statusDir(), `${id}.json`);
@@ -272,7 +272,9 @@ function pushHistory(it, entry) {
 /**
  * An agent reports its workstream. Creates the item on first use when `kind` and `title` are given.
  * opts: {by, state, note, next, waitingOn (string; 'none' clears), kind, title, owner, progress, refs, aliases,
- *   unlink ("I-042[,…]": blocking incidents the board stops deriving for this item, kept until 'none'; I-044)}
+ *   unlink ("I-042[,…]": blocking incidents the board stops deriving for this item, kept until 'none'; I-044),
+ *   phoneNext (the next phone ticket or job; 'none' clears the mark), phoneNeeds (the pre-check it still waits on; 'none'
+ *   = nothing), armNeutral (true: that pre-check can not change the arms' bytes) (I-182, the idle alarm's startable work)}
  * `state` given = a full transition report: the self-reported wait becomes what this call gives (cleared if none;
  * 'ready-to-land' defaults to lead:"land request"; 'waiting' needs one). Without `state`, unmentioned fields stay.
  * Returns {item, created, prevState}.
@@ -297,6 +299,13 @@ export async function set(id, opts = {}) {
   const unlink = opts.unlink !== undefined ? parseUnlink(opts.unlink) : undefined;
   const resumeOn = opts.resumeOn !== undefined ? parseResumeOn(opts.resumeOn) : undefined;
   if (resumeOn && v.state !== undefined && v.state !== 'parked') throw new Error('--resume-on goes with --state parked');
+  // I-182: a startable-phone-work mark. --phone-next replaces it (needs and arm-neutral from this call); --phone-needs
+  // or --arm-neutral alone amend the existing one
+  const pn = opts.phoneNext !== undefined ? (opts.phoneNext === null || /^none$/i.test(String(opts.phoneNext).trim()) ? null : plainText(opts.phoneNext, 'phone-next', LIMITS.phone)) : undefined;
+  if (pn === '') throw new Error('--phone-next is empty (a ticket such as P-117, or none)');
+  const pNeeds = opts.phoneNeeds !== undefined ? (opts.phoneNeeds === null || /^none$/i.test(String(opts.phoneNeeds).trim()) ? null : plainText(opts.phoneNeeds, 'phone-needs', LIMITS.phone) || null) : undefined;
+  const pArm = opts.armNeutral === undefined ? undefined : !!opts.armNeutral;
+  if (pn === null && (pNeeds !== undefined || pArm !== undefined)) throw new Error('--phone-needs and --arm-neutral go with a --phone-next mark, not with --phone-next none');
 
   return withGuard(GUARD, () => {
     mkdirSync(statusDir(), { recursive: true });
@@ -311,6 +320,19 @@ export async function set(id, opts = {}) {
     const changes = {};
     const put = (k, x) => { if (x === undefined) return; if (JSON.stringify(it[k] ?? null) !== JSON.stringify(x ?? null)) { changes[k] = x; } it[k] = x; };
     for (const k of ['title', 'kind', 'owner', 'note', 'next', 'progress', 'refs', 'aliases']) put(k, v[k]);
+    // I-182: the startable-phone-work mark
+    if (pn !== undefined || pNeeds !== undefined || pArm !== undefined) {
+      let mark;
+      if (pn === null) mark = null;
+      else if (pn !== undefined) mark = { what: pn, needs: pNeeds ?? null, armNeutral: pArm ?? false };
+      else {
+        if (!it.phoneNext) throw new Error('--phone-needs and --arm-neutral go with a --phone-next mark (give --phone-next <ticket> first)');
+        mark = { what: it.phoneNext.what, needs: pNeeds !== undefined ? pNeeds : it.phoneNext.needs ?? null, armNeutral: pArm ?? !!it.phoneNext.armNeutral };
+      }
+      const same = (a, b) => JSON.stringify(a ? { what: a.what, needs: a.needs ?? null, armNeutral: !!a.armNeutral } : null) === JSON.stringify(b ? { what: b.what, needs: b.needs ?? null, armNeutral: !!b.armNeutral } : null);
+      if (!same(it.phoneNext, mark)) changes.phoneNext = mark;
+      if (mark) it.phoneNext = { ...mark, at: same(it.phoneNext, mark) ? it.phoneNext.at : now }; else delete it.phoneNext;
+    }
     const state = v.state ?? it.state;
     let newWait = it.waitingOn ?? null;
     if (v.state !== undefined) newWait = waitGiven ? wait : null;
@@ -340,7 +362,7 @@ export async function set(id, opts = {}) {
     if (newWait?.kind === 'incident') unl = unl.filter((x) => x !== newWait.target);
     if (JSON.stringify(unl) !== JSON.stringify(it.unlinked || [])) changes.unlinked = unl;
     if (unl.length) it.unlinked = unl; else delete it.unlinked;
-    if (!created && !Object.keys(changes).length) throw new Error('nothing changed (give --state, --note, --next, --waiting-on or another field)');
+    if (!created && !Object.keys(changes).length) throw new Error('nothing changed (give --state, --note, --next, --waiting-on, --phone-next or another field)');
     // I-108: the owner's own branch (tools/status.mjs passes it from the checkout it runs in), never someone else's:
     // landHead = its tip while it has commits of its own, so the board can see that work reach main
     if (opts.branch && by === it.owner) { const b = parseBranch(opts.branch); if (b) it.branch = b; }
@@ -853,6 +875,7 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],
     waitingOnYou: (waiting?.kind === 'user' && !waiting.answered) || derived.some((d) => d.kind === 'user'),
     note: s(it.note, LIMITS.note), next: s(it.next, LIMITS.next),
+    phoneNext: phoneNextView(it.phoneNext, s), // I-182: the startable-phone-work mark (null without one)
     updatedAt: it.updatedAt || it.createdAt || null, updatedBy: s(it.updatedBy || it.createdBy, 80), ageMin,
     // I-108 (3): "may be out of date", with the reasons: no update for staleAfterMin (unless a live wait shows it is
     // current), or what it reports is over (its work is on main, its wait is answered or decided: overFlags)
@@ -905,6 +928,18 @@ export function compareViews(a, b) {
   const ga = GROUP_ORDER.indexOf(a.group), gb = GROUP_ORDER.indexOf(b.group);
   if (ga !== gb) return ga - gb;
   return (a.updatedAt || '') < (b.updatedAt || '') ? 1 : (a.updatedAt || '') > (b.updatedAt || '') ? -1 : a.id < b.id ? -1 : 1;
+}
+
+/** I-182: a row's startable-phone-work mark for the view: {what, needs, armNeutral, startable} or null. */
+export function phoneNextView(m, s = (x, n) => sanitize(x, n)) {
+  if (!m || typeof m !== 'object' || !m.what) return null;
+  const needs = m.needs ? s(m.needs, LIMITS.phone) : null;
+  return { what: s(m.what, LIMITS.phone), needs, armNeutral: !!m.armNeutral, startable: !needs || !!m.armNeutral };
+}
+/** "P-117 (waits only on Chrome counts, arm-neutral: startable)". */
+export function phoneNextText(p) {
+  if (!p.needs) return `${p.what} (nothing left to wait on: startable)`;
+  return p.armNeutral ? `${p.what} (waits only on ${p.needs}, arm-neutral: startable)` : `${p.what} (waits on ${p.needs}, which may change the arms: not startable yet)`;
 }
 
 /** The board: pure, every input passed in. */
@@ -1041,6 +1076,7 @@ export function itemText(v) {
   for (const f of v.flags) L.push(`      ! ${f}`);
   if (v.note) L.push(`      note: ${v.note}`);
   if (v.next) L.push(`      next: ${v.next}`);
+  if (v.phoneNext) L.push(`      phone next: ${phoneNextText(v.phoneNext)}`); // I-182
   if (v.progress) L.push(`      progress item: ${v.progress}`);
   return L.join('\n');
 }
