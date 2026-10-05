@@ -346,3 +346,17 @@ from the top to the end of the page. Everything below was fixed, and dry-run on 
   `clips.json`. The clips are illustrations, not a gain claim.
 - **Scene p** keeps the pre-set correlation; the edge rule (mark `page`) applies only to a run where it fails, and is
   labelled the same way.
+
+#### Clips made after H5/H6 (2026-10-05 ~07:5xZ; `out/phone-clips/clips/`, not published before the user's OK)
+
+| clip | shown runs | length | size | page >34 A/V | page >50 A/V | clock check |
+|---|---|---|---|---|---|---|
+| phone-a (hero fade, page box) | H5-aA1, H5-aV1 | 14.3 s | 602 KB | 82 / 58 | 37 / 26 | POST-HOC drag edge 80 / 92 ms |
+| phone-c (countdown crop, at rest) | H5-aA1, H5-aV1 | 6.0 s | 49 KB | 4 / 0 | 1 / 0 | POST-HOC drag edge (same runs) |
+| phone-p (whole page, page box) | H5-pA1, H6-pV1 | 38.6 s | 827 KB | 157 / 87 | 83 / 51 | pre-set correlation: 8 ms r 0.55 / 8 ms r 0.63 |
+
+- Countdown band check (VIEW_Y): the 395-539 pt band shows 6 digit changes 983-1033 ms apart on both arms, plus one
+  more 217 ms after the last on both (same pattern on both arms, cause not checked); the crop holds the countdown.
+- p: pA2 (not shown) failed the correlation (r 0.49) and passed the edge fallback (127 ms), labelled `[POST-HOC EDGE]`.
+  The shown pair comes from two holds (pA1 H5 at 31.9 °C, pV1 H6 at 34.2 °C; both Serious under Xcode).
+- All three: the capture differs from the page log (CAPTURE-DIFFERS; iOS scrolls in its UI process), as before.
