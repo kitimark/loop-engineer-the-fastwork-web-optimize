@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, to ops for the pre-data read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), to the lead
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -2428,6 +2428,55 @@ lead's signature. No run before the signature. The files keep the prefix `pgp-` 
   - `node fixes/toolbar-resize/check-pgp.mjs out/toolbar-resize/simpgp <runs>`;
   - `node fixes/toolbar-resize/score-bisect.mjs out/toolbar-resize/simpgp <runs> --json fixes/toolbar-resize/pgp-score.json`.
 - **Correction:** my instrument message to the lead said "P-110 card svh". The `svh` arm was P-115's.
+
+### Result P-131: NOT REPRODUCED (rule 1); no arm judged
+
+The lead signed P-131 on ops' pre-data PASS (97317e32). Ops' notes S2 and S3 went in before data at 35094199. The
+hold ran 2026-10-05 10:09:00-10:16:35Z (455 s, queued from 09:52:54Z behind P-129): one normal exclusive hold, all 10 steps in the signed order in 376 s (no budget
+stop, no dropped step). Pins as in the card; served bytes were checked by the driver. The log is in
+`out/toolbar-resize/pgp-hold.log`; the data is in `out/toolbar-resize/simpgp/` (both gitignored).
+
+- **Applied-arm gate** (`check-pgp.mjs`): `INJECT-GATE all applied`. All 10 runs pass.
+  - nvc: the census is empty right after the rule.
+  - nvn: only the fixed nav is left.
+  - tps: only the nav and the hero are left.
+  - tp and vu0: as the card requires.
+- **Scorer** (`score-bisect.mjs` `cb6f0c97b81b`, `pgp-score.json`): `REPLICA false`, `DRIFT 0.032`, `VOID false`.
+  - The replication gate fails on one point only: C-H1 has n = 7 moving hero frames, one below the n >= 8 rule
+    (`thin`, not counted).
+  - The other three C runs count: 22.02, 21.85 and 21.53 ms. C-H1's median, 22.24 ms, sits with them.
+  - By rule 1 the result reads **NOT REPRODUCED on v9**. No arm is judged, and the result goes to the lead before
+    any next card.
+- **Descriptive only; not calls, not judged.** The scorer's ratios use C-H1 as one neighbour:
+
+  | run | n | medL ms | inStyle | ratio | in view / off view ratio (split-io119, `pgp-split.json`) |
+  |---|---|---|---|---|---|
+  | nvc-H1 | 26 | 0.264 | 3 | 0.012 | 0.014 / 0.006 |
+  | nvn-H1 | 17 | 1.197 | 6 | 0.054 | 0.054 / 0.492 |
+  | tps-H1 | 9 | 22.095 | 8 | 1.007 | 1.016 / 0.937 |
+  | tp-H1 | 11 | 19.640 | 8 | 0.895 | 0.983 / 0.901 |
+  | vu0-H1 | 12 | 21.476 | 11 | 0.990 | 1.007 / 0.976 |
+  | tps-H2 | 12 | 22.897 | 10 | 1.056 | 1.085 / 0.986 |
+
+  docH is 6814 -> 6850 in every run, so no GEOMETRY. Several runs logged the gesture's pull-to-refresh guard
+  ending a loop early (13 lines). Earlier holds show the same guard (P-119, P-125, P-128 logs), and it is what keeps
+  per-run n low. Under rule 1 none of these numbers carries a reading. Unjudged, the pattern is:
+  - nvc and nvn are far below C;
+  - tps, tp and vu0 sit at C.
+  These numbers are not evidence until a replicated hold is scored.
+- **Predictions:**
+
+  | # | prediction | p | outcome |
+  |---|---|---|---|
+  | 1 | C replicates | 80 % | **miss**: C-H1 n = 7 |
+  | 2-7 | arm calls | | not scored (rule 1: no arm judged) |
+  | 8 | no arm GEOMETRY | 85 % | hit |
+  | 9 | every run passes the applied-arm gate | 80 % | hit |
+  | 10 | all 10 steps fit in one hold | 70 % | hit (376 s) |
+
+- **Look:** nothing to check. No arm was judged, and tp and vu0 did not locate even descriptively.
+- **Next:** this is the lead's decision (rule 1). I propose no hold of my own. A replication needs a new card, or
+  the lead's OK for a further hold under P-131, as the pre-sign ruling says.
 
 ## Scenarios not run
 

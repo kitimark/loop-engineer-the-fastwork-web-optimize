@@ -1,0 +1,252 @@
+{
+ "helper": "fixes/toolbar-resize/split-io119.mjs",
+ "note": "N1, descriptive only",
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 3,
+     "medLargest": 22.237,
+     "msPerS": 818.634
+    },
+    "off": {
+     "n": 4,
+     "medLargest": 21.36,
+     "msPerS": 843.906
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "nvc-H1",
+   "arm": "nvc",
+   "groups": {
+    "in": {
+     "n": 7,
+     "medLargest": 0.307,
+     "msPerS": 271.32
+    },
+    "off": {
+     "n": 19,
+     "medLargest": 0.134,
+     "msPerS": 174.641
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 0.014,
+    "in.msPerS": 0.337,
+    "off.medLargest": 0.006,
+    "off.msPerS": 0.208
+   }
+  },
+  {
+   "name": "nvn-H1",
+   "arm": "nvn",
+   "groups": {
+    "in": {
+     "n": 7,
+     "medLargest": 1.197,
+     "msPerS": 206.299
+    },
+    "off": {
+     "n": 10,
+     "medLargest": 10.443,
+     "msPerS": 310.195
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 0.054,
+    "in.msPerS": 0.256,
+    "off.medLargest": 0.492,
+    "off.msPerS": 0.37
+   }
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 22.023,
+     "msPerS": 792.569
+    },
+    "off": {
+     "n": 7,
+     "medLargest": 21.076,
+     "msPerS": 833.18
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "tps-H1",
+   "arm": "tps",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 22.417,
+     "msPerS": 810.43
+    },
+    "off": {
+     "n": 5,
+     "medLargest": 20.081,
+     "msPerS": 785.813
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 1.016,
+    "in.msPerS": 1.052,
+    "off.medLargest": 0.937,
+    "off.msPerS": 0.944
+   }
+  },
+  {
+   "name": "tp-H1",
+   "arm": "tp",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 21.674,
+     "msPerS": 793.66
+    },
+    "off": {
+     "n": 7,
+     "medLargest": 19.314,
+     "msPerS": 795.562
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 0.983,
+    "in.msPerS": 1.03,
+    "off.medLargest": 0.901,
+    "off.msPerS": 0.956
+   }
+  },
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 7,
+     "medLargest": 22.086,
+     "msPerS": 748.074
+    },
+    "off": {
+     "n": 8,
+     "medLargest": 21.798,
+     "msPerS": 831.863
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "vu0-H1",
+   "arm": "vu0",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 21.808,
+     "msPerS": 795.612
+    },
+    "off": {
+     "n": 7,
+     "medLargest": 21.145,
+     "msPerS": 840.92
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 1.007,
+    "in.msPerS": 1.042,
+    "off.medLargest": 0.976,
+    "off.msPerS": 1.041
+   }
+  },
+  {
+   "name": "tps-H2",
+   "arm": "tps",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 23.496,
+     "msPerS": 766.159
+    },
+    "off": {
+     "n": 8,
+     "medLargest": 21.359,
+     "msPerS": 832.57
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 1.085,
+    "in.msPerS": 1.003,
+    "off.medLargest": 0.986,
+    "off.msPerS": 1.03
+   }
+  },
+  {
+   "name": "C-H4",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 21.227,
+     "msPerS": 779.504
+    },
+    "off": {
+     "n": 9,
+     "medLargest": 21.528,
+     "msPerS": 784.018
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  }
+ ]
+}
