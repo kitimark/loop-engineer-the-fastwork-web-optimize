@@ -72,6 +72,8 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~07:4xZ **P-122 SIGNED by the lead at aaa18038**; int-v8 has the go (phone runs follow; ops result read after the runner's data). Ops commit bf4ffac7 landed as b164f7e5 (rebased).
+  - P-097: the lead did not resume fix-cd-roll-ca; it spawned a fresh `fix-cd-roll-ca-r4` with the ops rev 4 brief (peer directory row added). It drafts rev 4 with no data, sends ops the sha for the pre-data read, then parks until v9-final lands.
 - 10-05 ~07:3xZ **P-097 routing (lead's ask).** The lead ruled P-097 the next less-work item once v9-final lands, with its base moved to v9-final.
   - Owner today: fix-cd-roll-ca (agent a65f148991747deb7, in this session). It has been idle since 10-04 ~15:5xZ; its board row is "in best build (v8)". It can be resumed with SendMessage, so no spawn is needed.
   - New base means a new rev of the ticket (rev 4), not an addendum. Rev 3's addendum was only for hashes; a new base changes C, V and the C reference.
@@ -3526,6 +3528,7 @@ incident resolution, lock reorder, spawn, user). Role names work only if `ListAg
 | address | owns | state (10-02 12:0xZ by mgmt-ops-7; rows refreshed 10-03 08:2xZ by mgmt-ops-9, 09:4xZ by mgmt-ops-10) |
 |---|---|---|
 | `main` | lead: lands, resolves incidents, reorders locks, spawns, talks to the user | alive |
+| `fix-cd-roll-ca-r4` (name; spawned 10-05 ~07:4xZ by the lead, fresh fix-owner) | P-097 rev 4 on the v9-final base (C = v9-final; V = v9-final + panel clock on the WAAPI roll, m in {0, 1}; C2 A/A). Drafts rev 4 with no data, sends mgmt-ops the sha for the pre-data read, then parks until v9-final lands. Replaces fix-cd-roll-ca (a65f148991747deb7, not resumed) for P-097 | alive: drafting rev 4 (10-05) |
 | `fix-toolbar-resize` (name; spawned 10-04 12:3xZ by the lead, user T-113) | status row `toolbar-resize` (linked to PROGRESS item `t113`): the T-113 hero lag on fast flicks. iphone-runner found 3-5 layouts per frame while Safari's toolbar collapses or expands on v7 (OBSERVED, G driver). It sends ops an ablation ticket for a pre-data read; its phone block comes after P-102's extra hold and P-100 | alive |
 | `fix-nav-morph` (a277ea00c8773c1ea) | nav-hit-cache: P-101 did not pass as registered (forced Layout not lower; ops second read AGREE 12:2xZ). Lead order: T-107 button trace first, then P-104 = rev 2 card (forced PrePaint, PrePaint, eFP, gCS judged; forced Layout a guard; fresh loads; parity + Sim owed) | alive |
 | `af8ba1df07b604ad1` (ts-tryit; the name does not resolve, use the id; spawned 10-04 10:3xZ by the lead, user T-106) | toolsmith: one on-demand Try-it host (start on click) in place of the long-lived per-proposal page servers; per T-106 #9/#11 also a server registry, idle auto-stop (never mid-hold), a console Servers page and an idle.mjs alarm for servers up > 2 h | alive |
