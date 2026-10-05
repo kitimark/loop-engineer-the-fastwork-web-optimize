@@ -72,6 +72,31 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~10:5xZ **P-097 addendum PASS (reps started); P-133 pre-data read PASS, SIGNED; P-136 to fix-nav-morph; next free P-137.**
+  - **P-097 rev 4.2 addendum** (fix-cd-roll-ca-r4 6c4036e9 on 9f369b8a): PASS, no data. Ops checked:
+    - pins = committed blobs = disk; tools equal to main; snapshot HASHES C 647c9ef2b1e2 / V 5c203b483c18;
+    - C1 162cc869c642; C2 both calibrations; SELFTEST PASS 31 (re-run by ops);
+    - B-only fixes gated on `--b` (census l.72-73, sim l.94-95: an arm load still throws);
+    - m == 1 VOID, C2 server and selection rules present;
+    - 7d: reproduced two ways (the committed patch.diff and a C->V diff, `patch` onto 1b2eecc66011). Result JS
+      2cfd990c788d, node --check ok, delta hunks 4224a-4529a / 13850a / 14645a, none in 14167-14290, commutes. A `diff3 -m`
+      merge mis-aligned (JS ac301c844cc4, doubled blocks): use `patch`, not diff3, for such checks.
+  - Reps 1-6 started on this PASS (the lead's sign covers rep 1); lead copied.
+  - Owner notes: rebase before land. The arm path is first exercised in rep 1: a tool fault is VOID, one re-run, then
+    ops; any tool change after rep 1 comes to ops first. Simulator parts DEFERRED during P-130 are expected.
+  - **P-133** (fix-toolbar-resize fd21ff9d, card rev 1): pre-data read PASS, no data (simp133 absent, no dry run).
+    - Pins = blobs = disk; self-tests 38 and 61 ok; overlay JS 1b2eecc66011 / CSS e1359ab9994a; check-n133's filter
+      identical to score-bisect l.38.
+    - Notes N1 (P1-P9 keep P-131's pre-data p values, not re-estimated after its unjudged ratios), N2 (drag-frames
+      assumption untested), N3 (DEFERRED during P-130).
+    - SIGNED by the lead ~10:5xZ with N1-N3 as conditions. Row registered.
+    - Next: dry run, holds A then B after P-130's block, then the ops result read.
+  - **P-136** reserved for fix-nav-morph: nav-hit-cache U2 (F-278), less-work, base v9-final+7d, out of P-134. The lead
+    noted it. Row reserved; the card comes to ops for the pre-data read. Next free **P-137**.
+  - FYI fix-nav-morph (29c58238): nav parity part 1 PASS on v9-final + 7d (C a707f659f650 / V 1b2eecc66011). It covers
+    v9-final too: 647c9ef2b1e2 -> 1b2eecc66011 is only 7d's touch hunks. Record parity-v91-1.json 5537f072e236.
+  - Told iphone-runner the base ruling for P-130 (run on the signed pre-7d snap, claim that base only). The phone read
+    the 8 ms grid at 10:36Z, so P-130's 30 ms-stratum fix claim may come out INSUFFICIENT (no-worse only), as carded.
 - 10-05 ~10:4xZ **P-129 result read: valid block, 2 of 8 in; part A MAIN-LED, part B SPLIT (threshold-sensitive).**
   - Inputs: iphone-runner's report (block done ~10:36Z), run files in worktree-agent-a7696771bf38f1229 out/p129/runs. Ops
     re-ran the self-test (PASS 48) and reader rev 1.1 (06f74f5d19ca, on main) on them: no invalid run, sentinels S0 57.1
