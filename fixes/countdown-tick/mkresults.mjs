@@ -58,7 +58,7 @@ const res = {
     'fixes/countdown-tick/patch.diff': sha('fixes/countdown-tick/patch.diff'),
     'fixes/countdown-tick-v9/patch.diff (delta stacked on v9-best)': sha('fixes/countdown-tick-v9/patch.diff'),
   },
-  scripts: Object.fromEntries(['tick-probe.mjs', 'model.mjs', 'phone-logger.mjs', 'p130-read.mjs'].map((f) => [f, sha(`fixes/countdown-tick/${f}`).slice(0, 12)])),
+  scripts: Object.fromEntries(['tick-probe.mjs', 'model.mjs', 'phone-logger.mjs', 'p130-read.mjs', 'p130-block.mjs', 'phone/idle-p130.json', 'phone/hold.sh', 'phone/serve.sh'].map((f) => [f, sha(`fixes/countdown-tick/${f}`).slice(0, 12)])),
   servedJs: counts[0]?.served,
   counts: perGrid,
   resume: resume && { file: resume.file, grid: resume.grid, hideS: [7.4, 7.85], resumes: resume.resumes,

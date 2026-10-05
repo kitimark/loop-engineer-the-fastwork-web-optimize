@@ -199,7 +199,9 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
 (NOT YET, N1-N9). It runs only after v9 lands (lead), and before the 2026-11-02 05:00Z expiry.
 
 - **Question.** Does the chain remove v9's shown-second skips under heat on the phone, with nothing worse?
-- **Profile** xcode-serious. **Driver** none: idle at the top with the hero clock on screen, no touch.
+- **Profile** xcode-serious. **Driver** G-idle: `phone/idle-p130.json` (GESTURE_HASH 58b3e0b3f502). It reloads, waits 128 s at the
+  top with the hero clock on screen and no touch, then does one 40 px still stroke. gesture-run compiles no program
+  without a stroke, and this one comes after the window and the end grid read, so nothing counted sees it.
 - **Arms.** C = the landed v9-final: control hash OPEN. int-v8 is rebuilding v9-final without scb (lead, 05:4xZ), so P-122's c3d36476c3ce is not the control; pin JS and CSS from int-v8's new hashes or from main when v9 lands.
   V = C + the countdown-tick delta, rebuilt on v9-final. Both are served from immutable snapshots with a HASHES.txt and
   a served-hash check before each item. Not built yet: v9-final is not on main as of 2026-10-05 05:40Z.
@@ -214,11 +216,12 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
   - thermal state not Serious at start or end;
   - hidden > 0;
   - fewer than 100 changes, or a window under 115 s;
+  - the part (hold) VOID: a served-hash check, an open failure, the end gate or the Mac sleep check;
   - the logger installed late (no 'initial' record);
-  - the read earlier than 123 s after the first change;
+  - the read earlier than 123 s after the first change (the logger's own `readAt`, the phone's clock);
   - a grid read missing;
   - started after 04:45Z on 2026-11-02.
-- **Verdict** (`p130-read.mjs`, self-test 20/20). Exit codes: 0 PASS, 1 FAIL, 2 INSUFFICIENT, 3 VOID.
+- **Verdict** (`p130-read.mjs`, self-test 22/22; `p130-block.mjs` builds its input from the holds' manifest, self-test 5/5). Exit codes: 0 PASS, 1 FAIL, 2 INSUFFICIENT, 3 VOID.
   - No-worse, over all valid runs: total V skips ≤ total C skips, and V repeats = 0 in every run.
   - Fix claim, 30ms stratum only: needs ≥ 2 valid C and ≥ 2 valid V runs. It passes when every V run has 0 skips and C
     has > 0. Fewer runs, or C at 0, is INSUFFICIENT.
@@ -244,12 +247,24 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
     l.502-520, `ThreadTimers.cpp`).
   - A 30 ms grid on this phone under Xcode-induced Serious: UNRESOLVED (F-255). The interval's 1020 ms on the phone
     was OBSERVED only at real Serious (P-074). The grid read in every run is the decisive local check.
-- **Still open before data** (ops N3-N5). The hold script needs v9-final's pins first:
-  - TICKET guard, item list, pinned thermal gate at start and end, open → install → idle → read, VOID exits;
-  - the length: 8 × ≥ 123 s plus loads and warm-ups is about 25 min, so `--block P-130 --max-seconds 3600`, or two
-    holds;
-  - the sentinel. This block has no scroll, so a protocol v2 S-run control sentinel would be one more run per end. It
-    is proposed as a deviation for the lead to sign: the thermal gate plus the grid read decide validity here.
+- **Runner kit** (`phone/`, everything pinned in `phone/PINS`; control rows OPEN):
+  - `serve.sh`: snap (C from the v9-final overlay, V = C + the delta by `patch`), HASHES.txt, read-only copies;
+    B/C/V servers on OS ports; `check` before every item. It refuses while a pin is OPEN.
+  - `hold.sh`: TICKET=P-130 guard; logger, program and GESTURE_HASH pins; a start and an end gate
+    (`thermal-gate.mjs --expect serious --accept-induced --max-c 44`); per item open → gesture `--inject` logger →
+    park; the I-098 Mac sleep check; VOID exits 3/4/5. One manifest line per run.
+  - Length: about 150 s per item, so 3 parts in one `--block P-130 --max-seconds 3600` phone hold, each in its own
+    Mac-quiet no-timing hold (declared 700 s): H1 wC wV gC1 gV1, H2 gV2 gC2 gC3, H3 gV3 gV4 gC4. Over the block that is
+    C V V C C V V C. A VOID part is re-run whole, once, at the end.
+  - Sentinel: **deviation for the lead to sign.** This block has no scroll, so a protocol v2 S-run control sentinel
+    would add one more run per part and test frame rate, which is not the question here. Validity is decided by the
+    induced-Serious gate at each part's start and end, plus the per-run grid read.
+- **Pins** (sha256/12, from the committed files):
+  - logger 49d7a6c3da4c, program d7ee0153e439, reader 5b9d38d43bc4, block builder 906ee0f9c98f;
+  - hold.sh and serve.sh as committed (shas in the ticket message);
+  - C and V JS/CSS OPEN until v9-final lands.
+  - Provisional only: int-v8's no-scb v9-final candidate is JS 647c9ef2b1e2 / CSS bdecf48c5b32. The delta applies to
+    it cleanly, giving V JS 6841352e0328.
 
 Chrome functional check of the logger under the shim (`tick-probe.mjs logger`, `out/countdown-tick/logger-*.json`,
 `results.json` → `loggerCheck`):
@@ -289,7 +304,7 @@ At Fair, Chrome's hop gap is its own 4 ms nesting clamp, which lands in the "fai
 - `patch.diff`: baseline patch. `fixes/countdown-tick-v9/patch.diff`: the same change on v9-best.
 - `results.json`: every count, pixel pair, resume check and the model (built by `mkresults.mjs` from
   `out/countdown-tick/*.json`).
-- `tick-probe.mjs` (Chrome probe and the grid shim), `model.mjs` (no-browser model), `phone-logger.mjs` (P-130 logger), `p130-read.mjs` (P-130 reader, `--selftest`),
+- `tick-probe.mjs` (Chrome probe and the grid shim), `model.mjs` (no-browser model), `phone-logger.mjs` (P-130 logger), `p130-read.mjs` (P-130 reader, `--selftest`), `p130-block.mjs` (its input from the manifest), `phone/` (P-130 runner kit: `PINS`, `serve.sh`, `hold.sh`, `idle-p130.json`),
   `mkresults.mjs`.
 - No change to `tools/`. Measurement code untouched; the probe uses `tools/lib/cdp.mjs` and `tools/serve.mjs` as they
   are.

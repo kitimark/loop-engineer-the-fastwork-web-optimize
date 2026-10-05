@@ -1,0 +1,10 @@
+# countdown-tick P-130 build pins (sha256, first 12 hex). OPEN until v9-final lands on main (lead, 2026-10-05).
+# Then: C = the landed v9-final's JS/CSS; V = C + fixes/countdown-tick-v9/patch.diff (CSS = C's). serve.sh refuses OPEN.
+# Provisional, not a pin: int-v8's v9-final candidate without scb (JS 647c9ef2b1e2, CSS bdecf48c5b32) + the delta
+# applies cleanly and gives V JS 6841352e0328 (trial in out/countdown-tick/v9final-try, 05:5xZ).
+C_JS=OPEN
+C_CSS=OPEN
+V_JS=OPEN
+LOGGER=49d7a6c3da4c
+PROGRAM=d7ee0153e439
+GESTURE_HASH=58b3e0b3f502

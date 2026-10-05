@@ -10,6 +10,7 @@
 // change (after the window). From hop 8 on the chain is past WebKit's max nesting level (5), so the gap between hops is
 // the alignment grid: ~30 ms under thermal mitigation, ~8 ms if that is the grid, ~4 ms (the nesting clamp) at Fair.
 // summary.grid = {start, end}, each {p50, min, max} ms of the hop gaps 8..31 (one burst lasts <= 1 s).
+// readAt: the page's Date.now() at the read (same clock as recs; P-130 needs it >= the first change + 123 s).
 export const name = 'countdown-tick-logger';
 export const install = `(() => {
   if (window.__ctLog) return 'already';
@@ -56,5 +57,5 @@ export const read = `(() => {
   const summary = { windowMs: w.length ? w[w.length - 1][0] - t0 : 0, changes: w.length, distinct: new Set(w.map((r) => r[2])).size,
     skips, skipAt: at, repeats, hidden: w.filter((r) => r[3]).length,
     gapMs: gaps.length ? { min: gaps[0], p50: gaps[gaps.length >> 1], max: gaps[gaps.length - 1] } : null, grid: L.grid };
-  return JSON.stringify({ n: L.recs.length, recs: L.recs, summary });
+  return JSON.stringify({ n: L.recs.length, readAt: Date.now(), recs: L.recs, summary });
 })()`;

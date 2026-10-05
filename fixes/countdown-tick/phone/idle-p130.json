@@ -1,0 +1,16 @@
+{
+  "name": "idle-p130",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "countdown-tick P-130: idle. One reload (the --inject logger installs right after it), then 128 s with no touch at the top, hero clock on screen, then one small 'still' up stroke (40 px, 600 ms) that gesture-run needs (it compiles no program without a stroke). The stroke comes after the logger's 120 s window and after its end grid read (121-122 s after the first change), so it touches nothing counted. The read follows the stroke, >= 126 s after the first change (>= 123 s required).",
+  "params": { "endY": 5000 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "mark", "name": "idle" },
+    { "type": "pause", "ms": 64000 },
+    { "type": "pause", "ms": 64000 },
+    { "type": "mark", "name": "after-window" },
+    { "type": "stroke", "dir": "up", "px": 40, "ms": 600, "profile": "still" },
+    { "type": "pause", "ms": 500 }
+  ]
+}

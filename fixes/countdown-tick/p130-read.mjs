@@ -2,10 +2,11 @@
 // strata, the minimums and the P1-P4 checks of the P-130 card (fixes/countdown-tick/README.md "Phone check (P-130)").
 //   node fixes/countdown-tick/p130-read.mjs <block.json>     verdict + JSON; exit 0 PASS, 1 FAIL, 2 INSUFFICIENT, 3 VOID, 4 usage
 //   node fixes/countdown-tick/p130-read.mjs --selftest       synthetic cases; exit 0 when all pass
-// block.json: { ticket: "P-130", runs: [ { item, arm: "C"|"V", counted: true|false, startedAt: ISO, readAt: ms epoch,
-//   thermal: { start, end } (strings from the pinned thermal gate), logger: <phone-logger.mjs read() JSON> } ] }
+// block.json (p130-block.mjs builds it from the holds' manifests): { ticket: "P-130", runs: [ { item, hold, arm: "C"|"V",
+//   counted: true|false, startedAt: ISO, thermal: { start, end } ("serious" when the hold's pinned gate passed, else the
+//   gate's exit), holdVoid: null | "<why>", logger: <phone-logger.mjs read() JSON, with its own readAt> } ] }
 // Rules (all boundaries as written here):
-//   void run: thermal start or end not "serious"; summary.hidden > 0; summary.changes < 100; summary.windowMs < 115000;
+//   void run: the hold is VOID (holdVoid: a served-hash check, the Mac sleep check, an open failure); thermal start or end not "serious"; summary.hidden > 0; summary.changes < 100; summary.windowMs < 115000;
 //     recs[0] not tagged 'initial' (logger installed late); readAt < first change + 123000 (end grid read unfinished);
 //     summary.grid.start or .end missing; startedAt later than 2026-11-02T04:45:00Z (15 min before the countdown expiry).
 //   stratum of a grid read (p50 of the hop gaps, ms): >= 25 "30ms"; [6, 12] "8ms"; < 6 "fair"; (12, 25) "other".
@@ -30,6 +31,7 @@ export const stratumOf = (p50) => (p50 == null ? null : p50 >= 25 ? '30ms' : p50
 
 export function voidReasons(run) {
   const r = [], L = run.logger || {}, s = L.summary || {};
+  if (run.holdVoid) r.push(`hold void: ${run.holdVoid}`);
   if (String(run.thermal?.start).toLowerCase() !== 'serious') r.push(`thermal start ${run.thermal?.start}`);
   if (String(run.thermal?.end).toLowerCase() !== 'serious') r.push(`thermal end ${run.thermal?.end}`);
   if (!(s.hidden === 0)) r.push(`hidden ${s.hidden}`);
@@ -38,7 +40,7 @@ export function voidReasons(run) {
   const recs = L.recs || [];
   if (!recs.length || recs[0][4] !== 'initial') r.push('late install (no initial record)');
   const first = recs.find((x) => x[4] !== 'initial');
-  if (!first || !(run.readAt >= first[0] + 123000)) r.push('read before first change + 123 s');
+  if (!first || !((L.readAt ?? run.readAt) >= first[0] + 123000)) r.push('read before first change + 123 s');
   if (!s.grid?.start || !s.grid?.end) r.push('grid read missing');
   if (!(Date.parse(run.startedAt) <= EXPIRY_GUARD)) r.push('too close to the countdown expiry');
   return r;
@@ -106,6 +108,8 @@ function selftest() {
     ['windowMs < 115000 -> void', B(C2, fake({ arm: 'V', windowMs: 110000 })), (o) => !o.runs[1].valid && o.verdict === 'VOID'],
     ['changes < 100 -> void', B(C2, fake({ arm: 'V', changes: 90 })), (o) => !o.runs[1].valid],
     ['read at 122 s -> void', B(C2, fake({ arm: 'V', readAfter: 122000 })), (o) => !o.runs[1].valid && /123 s/.test(o.runs[1].void.join())],
+    ['hold void -> run void', B(C2, { ...V0, holdVoid: 'served hash' }), (o) => !o.runs[1].valid && o.verdict === 'VOID'],
+    ['logger readAt (phone clock) preferred', B(C2, { ...fake({ arm: 'V' }), readAt: undefined, logger: { ...fake({ arm: 'V' }).logger, readAt: 1.8e12 + 124000 } }), (o) => o.runs[1].valid],
     ['thermal end fair -> void', B(fake({ arm: 'C', skips: 2, thermal: ['serious', 'fair'] }), V0), (o) => !o.runs[0].valid],
     ['after expiry guard -> void', B(C2, fake({ arm: 'V', startedAt: '2026-11-02T04:50:00Z' })), (o) => !o.runs[1].valid],
     ['uncounted warm-up ignored', B({ ...fake({ arm: 'V', skips: 5 }), counted: false }, C2, V0, V0, C2), (o) => o.runs.length === 4 && o.verdict === 'PASS'],
