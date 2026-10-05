@@ -72,6 +72,14 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-130 assigned to fix-countdown-tick** for the countdown-tick phone no-worse check (spec: research/serious-heat/README.md §3.3.1, check 3). The lead runs it later, after v9. The row is registered at the pre-data read, once the full ticket with hashes arrives. Next free P-id: P-131.
+  - Early notes sent with the id:
+    - Count the values with an in-page change logger (a MutationObserver on the timer's aria-label, timestamped), not by polling: polling faster than about 1 Hz is not allowed in a timed block (§5.5).
+    - Define the 120 s window and what counts as "skipped" (a shown-value jump of >= 2 s).
+    - Name the validity rule for an idle (driver none) run: the S/W/M sentinels do not apply.
+    - State the runs per arm and their order (C V V C).
+    - Freeze the reading per timer-grid stratum (30 ms vs 8 ms, read by the thermal gate in every run). With an 8 ms grid only "no worse" is testable.
+    - Put a p on each prediction.
 - 10-05 ~05:0xZ **P-129 pre-data read (arch-serious-heat, card in research/serious-heat/README.md §5 at c8011aa7): NOT YET; P-129 confirmed and registered.**
   - No data exists (no P-129 record; the author's worktree has no out/). The id was free. The predictions (8) are registered as written; any change supersedes them in the row.
   - **C1, a frozen reader before data.** The card has prose rules but no reader. A reader script with a self-test must be pinned by sha before the signature, as in P-126/P-128. It must state how the logger's frame stamps (`t`, page clock) map onto Timeline record times, and gate on that mapping. For example: >= 95 % of counted moving frames have a FireAnimationFrame within ±2 ms after the mapping, otherwise the run is invalid. Part A depends on this alignment: without it, "the work records in the gap" is undefined.
