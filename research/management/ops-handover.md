@@ -109,6 +109,7 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~21:5xZ **P-149 rev 1.2 re-SIGNED by the lead** (mgmt-clerk-1, relaying the lead): motionCounts = beyond > 0; score-p149 34029012286d, selftest-p149 15ee71065fa0, ok 74; landed c26f9062 + dc474e38; part L runs under the rev 1.1 scorer pin, unaffected.
 - 10-05 ~21:4xZ **P-149 rev 1.1 SIGNED by the lead** (mgmt-clerk-1, relaying the lead): delta check passed; landed af2fd2e1, ba9bae92, 5881c802. Pins: px149 c0c0ac786922, score-p149 fa634b6473c4, selftest-p149 1f575c9ec7a5 (ok 72, re-run by the lead). Unchanged: px149-run 62935ce5a21d, px149-chrome d49979b02d71, px149-sim 0e1d68692e6d. N5 read by the lead as motionCounts = largestShadeAboveEnv > 8.
 - 10-05 ~21:3xZ **P-147 rev 1.1 delta check: PASS (ops-reader-P147), with an erratum to the pre-data read.** 7b944dfa (fix-cd-roll-ca-r4).
   - Erratum: the pre-data read's N1 v9.2 numbers (30f6371751f4, V' 7f292750cb3c) were P-142 rev 1.2. Since rev 1.3, v9.2 = v9.1d = 941aa13e5bdf / f1997edf5309, so the lead's set B is correct.
