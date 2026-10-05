@@ -72,6 +72,19 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-128 result read (fix-toolbar-resize 199bec59, cards 4457dbf2 + 41e379d0, on main 65734941): AGREE; reading FWWC-ONLY, 4 of 10 held.**
+  - Rebased card commits are content-identical: `git diff 949c07ee 4457dbf2` and `git diff 2b5eedc8 41e379d0` on `fixes/toolbar-resize` are empty. The result commit touches only README.md and results.json there. The lead's signature (04:09:22Z, rev 2) comes before data: slot 1 was acquired 04:09:57Z, C-H5 was rerun in slot 2 at 04:22Z (holds.log).
+  - Pins on disk = rev 2 card. The ops re-run of p128-read.mjs on sim128 is byte-identical to the owner's read128.json (26bea2d765ff). Served bytes are OK in both slots (JS 3e3e94cb6e9f, CSS f836404b3728, overlay; inject e44cdd1f9e9a; script 6ae05e12ace9). C-H5 failed in slot 1 because sim.mjs's gesture budget refused it, and passed in slot 2 as carded.
+  - The counts support FWWC-ONLY under the frozen rules:
+    - STEP 12, CONTROL 445.
+    - Only setAttribute:fwWC links: presence COVERS 10/12. Its rate spread is 9/5, under 10, so it links by presence only.
+    - gBCR is not step-specific (base ~0.71). setProperty is 0 in STEP.
+    - B1 for all four apis: RRlo 1.48.
+  - The wording holds: D1/R1 scope, rule 8 (no census frame called heavy), and N3 stays OBSERVED.
+  - Main note, power: presence needs 10/12 and rate needs 20 calls, so the once-per-step toggles (nav @14241 RRlo 3.18, start-selling-future @12338 RRlo 2.15) cannot link. FWWC-ONLY means "no other caller at this power".
+  - Lesson: a census card should pre-register a minimum STEP count.
+  - Next: option 2, the depth-16 recapture, or a higher-power census; the lead picks.
+  - The P-128 row is filled. The owner's branch needs a rebase on current main before landing.
 - 10-05 **P-128 rev 2 delta check (fix-toolbar-resize 2b5eedc8, on main 133374f7): PASS; the lead may sign.**
   - Against main only `fixes/toolbar-resize/` changes. Pins on disk = card: inject e44cdd1f9e9a (unchanged), driver 247980631fd9, reader db7dab05773e, selftest c550069e20d2 (re-run by ops: PASS 82). `out/toolbar-resize/sim128/` does not exist.
   - C1 read line by line: `spread.frames` = distinct pooled STEP frames with >= 1 own-interval call (no carry), `spread.runs` = valid runs with one; a rate link counts only when frames >= max(5, 2 x valid runs) and runs >= 3, else RATE-CLUSTERED (printed, never LINKED); presence links unchanged. Self-test covers the clustered-frame, two-run, spread and rev-1 floor cases.
