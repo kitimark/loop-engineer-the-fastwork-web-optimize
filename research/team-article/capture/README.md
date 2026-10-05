@@ -148,3 +148,95 @@ article fragment "Worst cases on the original" with a ranked table of the origin
 clips. `worst-cases-artifact.html` is the same with the MP4s inline (1.4 MB, `PAGES_URL` placeholder in the fallback
 lines). The article's end-of-page result (2 → 0) is an iPhone number, and Chrome has
 about one slow frame there per run on either side.
+
+## Phone clips (T-170 #101): the real iPhone's screen, original | v8
+
+`phone/` records the iPhone 15 Pro Max's screen with `tools/ioscap.mjs` (the only allowed recorder, I-062) while the
+phone robot drives the original page (A, `site-pretty`) or v8 (V, `fixes/v8-best`) with the same input, then crops
+and encodes side-by-side MP4s. Plan approved by the lead with changes (2026-10-05 04:3xZ); everything stays in the
+gitignored `out/phone-clips/` and `out/iphone-screen/` until the user has OKed each MP4.
+
+- `serve.sh snap|start|check|stop`: read-only snapshot copies of both builds (hashes checked before every run), plain
+  http, `--latency 150`.
+- `hold.sh H<n> [--dnd] <items>`: one phone hold. Items `<scene><arm><n>` in C V V C order per scene: `e` end of the
+  page (G, `flick-end-v1`), `s` scripted scroll top to bottom (S, `iphone.mjs run --driver scroll --probe std`), `h`
+  fast flicks through the top card (G, `flick-hero-v1`), `f` flicks right after load (G, `flick-fresh-v1`). Thermal
+  profile **serious** (Xcode heat mode on; the lead's change from fair): every clip is labelled "Xcode heat mode:
+  Serious". The thermal read at the hold's start refuses a misfit.
+- `vv.mjs`: one visualViewport read (height, offsetTop, scale) at the start, after the ready check and at the end
+  of every run.
+- `phone-clips.mjs [--motion] [--no-encode]`: per-run numbers, the traces and the MP4s (`--self-test`: 20 checks).
+
+### What the clip shows, and what it doesn't
+
+- **The strip is the page's own frame log; the video is the screen** (lead's change 1 and article wording). The
+  strip under each panel is drawn from the driver's rAF stamps with the phone thresholds (amber dt > 34 ms, red
+  dt > 50 ms). The capture's distinct-frame gaps over the same window are printed beside them as a cross-check only.
+- **CAPTURE-DIFFERS in every run.** The page log has many slow frames, but the screen capture has almost none. In H1
+  eA2, for example, the page has 62 frames over 50 ms and the capture has 1. The reason:
+  - On iOS, Safari's page scroll view (`WKScrollView`) lives in the UI process, and Core Animation moves it there.
+    A scroll only schedules an asynchronous visible-rect update to the web process, and fixed/sticky layers are
+    repositioned "even when visible content rect updates are deferred". So the screen keeps scrolling at full rate
+    while the page's main thread is late. CONFIRMED by the source (WebKit/WebKit at
+    9eb4e2ad5983af0d494b62b38e55ff9010fb5993):
+    - `Source/WebKit/UIProcess/API/ios/WKWebViewIOS.mm` line 224 (`_scrollView = adoptNS([[WKScrollView alloc]
+      initWithFrame:bounds])`);
+    - lines 2401-2416 (`scrollViewDidScroll:` only calls `_scheduleVisibleContentRectUpdateAfterScrollInView:`);
+    - lines 3132ff (the update is deferred to a CATransaction pre-commit handler);
+    - lines 3391-3400 (`_updateViewportRelativeLayersOutOfBand`);
+    - overflow scrollers are the same: `Source/WebKit/UIProcess/RemoteLayerTree/ios/ScrollingTreeScrollingNodeDelegateIOS.mm`
+      lines 77-96 and 560-566.
+  - That this is what our capture shows stays OBSERVED (our runs only).
+  - What a viewer can see is the script-driven parts arriving late. So each run also gets a numbers-only motion
+    trace of one script-driven region next to the page box: the top bar for e/s, which the original recolours by
+    script over dark sections; the hero card band for h/f. Its lag against the page's scroll speed and its stale
+    frames are reported: the region is "stale" when its change is under 0.25 × its p90 change while the page moves
+    faster than 0.1 px/ms.
+- **Clock.** Page `performance.now()` maps to Mac wall time (G: the sync pairs; S: the probe's clock pair), then to
+  `CLOCK_UPTIME_RAW` (stamps around every run), which is the capture's PTS clock. That last step is OBSERVED: the motion
+  trace of the page box must correlate with the page's scroll speed within ±50 ms at r ≥ 0.5, or the clip is not
+  made (CLOCK-CHECK FAIL).
+- **Crop by geometry (privacy, lead's change 2):** the page-area box is y 119-826 pt of 932, full width: no status
+  bar, and no Safari bar in either position. The end-scene close-up is made only when every viewport read has
+  offsetTop 0, scale 1 and height 770-820; otherwise it is dropped, never widened. Nobody opens or reads a frame or
+  an image from `out/iphone-screen/`, and ffmpeg's only outputs are MP4s and metadata text.
+- **The end menu did not open** in the `flick-end-v1` runs: the records' `morph` is empty. So the e scene shows the
+  end of the page and the flicks out of it, not the menu's opening.
+
+### The holds (2026-10-05)
+
+| hold | runs | thermal (start → end) | Mac load1 | notes |
+|---|---|---|---|---|
+| H1 04:37-04:47Z | eA1 eV1 eV2 eA2 sA1 sV1 sV2 sA2 | Serious 38.29 °C → Serious 40.19 °C | 9.6-16.1 | eA1 and sV1 have no driver record. The recorder start dropped the inspector and WDA links ("fetch failed", "no Safari tab"); OBSERVED, cause unknown, likely the USB link re-forming. eV1 started at 16.1, just over the line. |
+| H2 04:48-04:56Z | hA1 hV1 hV2 hA2 fA1 fV1 fV2 fA2 eA1 sV1 | Serious 40.09 °C → **Critical 41.5 °C** (PROFILE-DRIFT on all 10 records) | 10.0-10.5 for hA1 only; **55-225** for the rest (MAC-LOADED) | hA2: no capture (ioscap app exit 7, "no frame arrived from the iPhone screen"). eA1 and sV1 are the H1 redos, recorded out of C V V C order. |
+
+- **Ready check (added after H1, lead OK):** before each driver, `hold.sh` waits until WDA answers and the tab is
+  listed (a viewport read). On failure it re-opens the URL, up to 6 tries. Every H2 run was ready after 0 retries.
+- **MAC-LOADED** (lead, 2026-10-05): any run with load1 > 16 at its start or end. The lead's rule: never use one for
+  the capture-vs-page comparison, and never publish a drifted run. The clip picks the **first clean run of each arm**
+  (no error, not MAC-LOADED, no profile drift; this rule replaced "run 1" before the clean runs' traces were read).
+  With hold 1 that makes e = eA2 | eV2 and s = sA1 | sV2. h and f have no clean pair, so no clip.
+- **Redo slot (listed, after v9's phone work; the lead slots it):** h (hA1 hV1 hV2 hA2), f (fA1 fV1 fV2 fA2), eA1
+  and sV1, about 8 minutes of runs. Conditions:
+  - The phone part runs inside the runner's own `--no-timing` chrome-measure hold, so no shared or Simulator job
+    runs beside the capture, with `FW_PHONE_REQUIRE_QUIET=1`.
+  - The phone first cools below 40 °C (`wait.mjs phone-temp --below 40`) so the runs stay Serious.
+  - Another ioscap exit 7 opens an incident.
+
+### Clips made (2026-10-05 05:1xZ, hold 1; in `out/phone-clips/clips/`, not published before the user's OK)
+
+| clip | shown | page log >34 / >50 (twins), original → v8 | capture >34 / >50 | clock lag, r | top-bar trace (lag, stale, longest stale) |
+|---|---|---|---|---|---|
+| `phone-e.mp4` (817 kB), `phone-e-close.mp4` (989 kB) | H1 eA2 \| eV2 | 138 (162/128) / 62 (75/54) → 9 (20/4) / 2 (2/1) | 1/1 → 0/0 | −4 ms .70; 4 ms .84 | 4 ms 66 % 3.5 s; 8 ms 73 % 3.1 s |
+| `phone-s.mp4` (930 kB) | H1 sA2 \| sV2 | 19 (24/15) / 9 (12/5) → 5 (8/5) / 1 (3/0) | 0/0 → 0/0 | 4 ms .73; 8 ms .76 | ~316 ms 60 % 1.0 s; ~312 ms 61 % 1.0 s |
+
+- **S-run clock fixed** (0967f805). The probe's clock pair is the phone's own `Date.now()`, about 225 ms behind the
+  Mac's. The offset now comes from the run's own viewport reads. On eV2 that offset agrees with the G sync pairs
+  within 4 ms. sA1 still fails the check (308 ms, r .68) and isn't shown. The "clock passed" condition was added to
+  the pick rule after that failure; it says nothing about the run's frames.
+- **h and f: no clip.** There is no clean pair. hA1 (clean Mac) fails the clock check (236 ms, r .47): the hero
+  animates by itself, so the page box's motion is only loosely tied to scroll (OBSERVED).
+- **The region traces don't separate the arms.** The top-bar r is .44-.59, with 60-73 % stale on both sides. The
+  content blurred through the glass bar is UI-process motion and swamps the script-driven colour flip. The ~310 ms S
+  lag on both sides is a correlation artefact of a near-constant-speed scroll, not a delay. So these numbers don't show
+  a visible late script update, and the article can't claim one from them.
