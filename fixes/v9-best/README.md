@@ -478,3 +478,34 @@ result reports: window length, moving frames, max y, maxScroll, fling settle ys,
 - Fresh C V V C holds: gM ×6, gEf ×6, gEs ×4. H3a2 is disclosed as seen above.
 - Per F-256 (LEAD.md "Slot tickets"), P-122's pre-data read includes a Simulator dry run per arm, on the rev 7d
   arm once it exists, showing the same start state and gesture path for M (cycles 4) and G (v2 scripts).
+
+**Pre-data read (mgmt-ops-10, 2026-10-05): passes with conditions C1-C6.** Answers written before any calibration
+or arm data:
+- **C1, pinning commit.** One commit before any P-122 hold sets flingPx/flingMs, outFast/outSlow and `RULE` (fv,
+  travel, margins) to rev 7d's final rule. It lists the calibration records (the Simulator sweep and the phone hold,
+  baseline B only) with their sha256. ops re-reads that commit (blobs on disk, selftest-g, and no arm data older
+  than the commit) for the final PASS.
+- **C2, gEf cluster rule: option (b).** gEf's path is the 1600 px next to each arm's own end (V about 6075 to 4475,
+  C about 5260 to 3660). P-111's NEW-cluster rule binned absolute scrollY. With that rule every V cluster above 5260
+  (the spacer and end screen) would be NEW, because C has no frames there. So gEf bins clusters by distance from each
+  arm's own end, d = maxScroll − y, with P-111's fixed 250 px bins, its ≥ 2-valid-runs cluster test and its neighbouring-bin clearance applied to d. Clusters binned by absolute y are reported
+  next to them, as information only. Every result reports each arm's y-range (min y, max y, maxScroll) per run.
+- **C3, gEs (n = 2 per arm).**
+  - A void V or C run gets one re-run, at the end of the same block in its slot's place. A second void in an arm
+    makes gEs INSUFFICIENT (reported; it does not by itself fail P-122's other legs).
+  - V's ceiling (dt > 50 = 0, twins > 46 / > 54 reported, (46, 54] flagged) counts the whole part window, from the
+    into1 mark to the end mark. That window includes both out-strokes, the catches and their scrollTo to the closed
+    rest. The out1→into2 and out2→end sub-windows are reported separately.
+- **C4, F-256 dry run.** The Simulator dry run per arm on the rev 7d build must show, on both arms: gM ≥ 5 traversals
+  with max y < 5000, gEf released with fromEnd ≥ 1600 for out1 and out2, and gEs out strokes not released. A failing
+  arm stops P-122 until the scripts are re-calibrated, with a new pin and a new pre-data read.
+- **C5, predictions for P-121's own outcome** (written before the calibration):
+  - P(the calibration finds parameters that pass gM on B): **0.80**. v1's 560 px fling already gives 6 traversals;
+    the risk is a weaker fling that no longer clears 3800 from the lower turn.
+  - P(the F-256 dry run passes every path gate on both arms first try): **0.45**. The risks are Simulator touch
+    sampling (17 ms) moving gEf/gEs strokes across the line, and V's end screen changing where the into-flings stop.
+  - The no-worse predictions for gM, gEf and gEs go in P-122's row.
+- **C6, nav-hit-cache in the P-122 plan (lead's ruling).** Byte-diff the rev 7d rebuild against v9 step 4 first.
+  If only rev 7d's touchend lines changed, task-mode parity carries over, with a diff note from fix-nav-morph.
+  Otherwise fix-nav-morph re-runs parity part 1 (mobile and desktop) on the new V/VA pins. nav-hit-cache's
+  patch-on-v9s4.diff (13d29af1) must apply cleanly to the rebuild either way.
