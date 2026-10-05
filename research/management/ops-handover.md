@@ -71,6 +71,43 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **best-build COMPONENTS**: carousel-leaver and cd-strip each join best-build as one COMPONENTS line once they land (lead 17:5xZ).
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
+## Reader brief (ops-reader-<P>; written by mgmt-ops-10, 10-05 ~12:5xZ; user T-196 #3)
+One Opus reader does one read; mgmt-clerk-1 (Sonnet) gives you raw checks and pastes your final text. Rules:
+protocol v2 (`research/architecture/measurement-protocol-v2.md` §4 cards, §5 phone blocks), CLAUDE.md "Frame
+thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-must-be-pixel-identical`.
+- **Open first:** the owner's card (`fixes/<topic>/README.md`, section "D card P-NNN", at the sha the owner names), the
+  P-NNN row in `fixes/PREDICTIONS.md`, this file's log entries for P-NNN, and the pinned kit (usually `fixes/<topic>/pNNN/`:
+  runner, counts/score script, self-test). Read owner worktrees read-only: write a node script into
+  `<scratchpad>/<your name>/` that runs git via `execFileSync(..., { cwd: <worktree> })`; the guard refuses `git -C`,
+  `cd <worktree> && git` and compound git commands. Never run Chrome, the phone, the Simulator or locks; never touch tools/.
+- **Pre-data read** (before any counted run):
+  1. Pins: every hashed file in the card has sha256[:12] equal on disk and in HEAD; tools/, tests/, package.json equal main
+     (`git diff --stat main HEAD -- tools tests package.json` empty); the scorer's imports are pinned too.
+  2. No data: no `out/<pNNN>/` records and no committed result files for this P-id (logs of DEFERRED waits are fine).
+  3. Re-run the self-test (node, read-only) and quote its line (e.g. `SELFTEST-138 OK 20`).
+  4. Diff any script copied from an earlier card: only ticket, folders, labels and pins may differ.
+  5. Read the rules: every prediction has a p, a metric, a pass line, VOID rules and a precedence (which miss wins);
+     check exit codes and pipes (a `$?` after `| filter` is the filter's), shared record files, re-run rules.
+  6. Label: **post-data** when the card was written after seeing data of the same build (name what it saw); a rule or p
+     set after seeing a value is **informed** (the result read says so per item).
+  7. Verdict: PASS, PASS with notes (N1..Nn, each a condition the lead can sign), or FAIL (what must change). Send it to
+     the owner and the lead; the lead signs. A delta check (new build pin, P-134 landing) repeats 1-4 for the changed pins.
+- **Result read** (after the owner's data commit):
+  1. Records present for every step; pins in the records equal the signed pins; VOIDs per the card's rules only.
+  2. Re-run the pinned scorer yourself on the committed records; your numbers must equal the owner's.
+  3. Score each prediction hit / miss / insufficient exactly as written; no new tolerance, no re-binning. Mark informed
+     items. A sentinel failure voids runs per CLAUDE.md "Sentinel". Phone thresholds: dt > 50 and > 34 ms plus the ±4 ms
+     twins (threshold-sensitive if a twin differs); Chrome in ticks (k≥7, k≥5).
+  4. Descriptive extras are OBSERVED, never scored; a platform claim needs a reference before it is a fact.
+  5. Two misses on one model: say so (the author's team reviews before the next build).
+- **PREDICTIONS.md rows:** `line.split('|')` gives exactly 13 parts; no literal `|` inside a cell (write "or", "/").
+  Card rows use c[1] id, c[2] author and card ref, c[3] date + registration notes (RESERVED, pre-data read, SIGNED,
+  conditions, fixes; append, never rewrite), c[4] build and design, c[5] metric, c[6] rules, c[7] predictions, c[8]
+  measured, c[9] in? per item, c[10] tally and verdict, c[11] lesson. Never restate a registered prediction: supersede it
+  with a new P-id. Edit by a node script that checks the 13 parts before writing.
+- **Where text goes:** your final cell text (c[8]-c[11], c[3] append) and one handover log entry go to mgmt-clerk-1 to
+  paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
+
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
 - 10-05 ~12:4xZ **Lead: order after P-137, tool fixes landed, model plan (user T-196).**
   - Tool fixes on main: I-204 and I-206 (ea9fa84c, d5fc98cf), I-207 and I-202 (598ec699). The lead resolves the incidents
