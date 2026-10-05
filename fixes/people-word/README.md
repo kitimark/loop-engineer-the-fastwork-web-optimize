@@ -3,10 +3,15 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). The `patch.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** proposal (visual-timing change the user asked for, user thread T-192); not a performance fix, no timing A/B
-(memory "defer timing"). The user decides on the console proposal PR-024 (options `a`, `a-phone`; recommended `a`).
-Rev 2 got changes-requested (2026-10-05 11:08Z); this README describes **rev 3** (the word starts when the card's
-fade-in has ended, and resets when the card starts to fade out). Rev 2's design is kept below under "Rev 2 (superseded)".
+**Status:** ready to land. **Decision:** the user ACCEPTED PR-024 rev 3, option `a` (every width), 2026-10-05
+11:42:48Z (decision final). **What lands:** `fixes/people-word-a/patch.diff` (rev 3, full patch vs the baseline =
+v9-final + 7d + A; JS `bf75ce87958c`, CSS `e1359ab9994a` unchanged from v9-final), plus this README.
+**Stage:** a visual-timing change the user asked for (user thread T-192), decided by proposal; not a performance fix,
+no timing A/B (memory "defer timing"), so no `results.json` (no A/B ran; the functional checks are below). Next:
+into the next combined build after v9.1 (P-134), the integrator (int-v8) and ops decide where; the iPhone check comes
+with that build (the phone smoothness of the word's widening right after the fade-in is not measured yet, see Risks).
+**History only (not landing):** option `a-phone` (`fixes/people-word-aphone/patch.diff`, rev 3) and rev 2 of both
+options (commit 7f3fad3b), described below under "Options (rev 3)" and "Rev 2 (superseded)".
 **Owner:** fix-people-word. **Driver behind the claims:** Chrome functional probe (headless, unthrottled, counts and
 class timestamps only). No iPhone use (the phone is in timed blocks).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, the word component `WD`'s effect only (pretty lines
@@ -201,3 +206,8 @@ passes for both option files.
   `e1359ab9994a` on all three, fetched from the Try-it host after the revise; A vs each B differs only in `WD`'s effect
   (hunks inside lines 7001-7083, 16 lines removed, all baseline lines of that effect). `proposal revise` printed the
   same "B does not carry all of A's changes (4 lines)" warning as on rev 2: the I-206 false positive, noted there.
+- **Decision:** accepted, option `a`, rev 3, by the user at 2026-10-05 11:42:48Z (final). Option `a-phone` and rev 2
+  stay in this branch as history only. Landing: `fixes/people-word-a/patch.diff` (v9-final + 7d + A). To stack A on
+  a newer combined build (v9.1 or later), the only change is the `WD` effect hunk group (rev 3 overlay lines
+  7001-7083; `diff` of `fixes/people-word-base/overlay` vs `fixes/people-word-a/overlay`): copy it with
+  `fix.mjs edit <topic> /_app/immutable/nodes/2.DyWL8TcE.js --on <that build>` and re-run the functional checks above.
