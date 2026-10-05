@@ -72,6 +72,20 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~05:4xZ **P-130 rev 1 pre-data read: NOT YET** (countdown-tick phone no-worse check; owner fix-countdown-tick, worktree agent-a8dba5b51e224d3ca). No data exists.
+  - On disk: patch.diff 8a4a6a16e217 ok. Snaps v9 de237379b556/e1359ab9994a and v9tick b1df3c8a0c5a/e1359ab9994a ok.
+  - Nothing is committed on the owner's branch. The logger on disk is 2dc08a6009ec, not the card's 3bf851673eeb.
+  - Fixes sent to the owner:
+    - N1: commit the card, logger, patch, reader and hold script, then re-pin.
+    - N2: the lead's rule is no P-130 phone check before v9 lands, so C = the landed v9-final (c3d36476c3ce/bdecf48c5b32), not step 4. Rebuild V on it and pin it. Serve from snaps with a served-hash check.
+    - N3: a concrete hold script with the TICKET guard, thermal gate at start and end, the idle program hash, VOID exits, and a read at least 123 s after the first change (the end grid probe).
+    - N4: about 25 min of runs is more than 900 s; use --block 3600 or split holds with a time guard.
+    - N5: control sentinel (sCo/sCc), or a deviation the lead signs.
+    - N6: no stratum for a p50 in (12, 25) ms; make the boundaries explicit.
+    - N7: minimum 30 ms-stratum runs per arm (else INSUFFICIENT); spell out the no-worse test and the verdict words.
+    - N8: a committed reader with a selftest.
+    - N9: cite F-266 (nesting level 5, 30 ms alignment); state the claim status of a 30 ms grid on the phone; MutationObserver repeats also count no-op writes.
+  - The row is registered at the delta check.
 - 10-05 ~05:4xZ **P-122 pre-data read: NOT YET** (v9-final vs v8 phone no-worse check; owner int-v8, worktree agent-a068af37646232e05; read requested by the lead, top priority).
   - Read on the working files: int-v8's branch has only WIP f793e3e1. No P-122 phone data exists: out/p122 holds only snap, sim and split.
   - Verified:
