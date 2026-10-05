@@ -806,3 +806,24 @@ predictions (int-v8, before any P-151 data; after the model review above):
   Q3 (if run): C7 fails G1 0.55, fails EX 0.50 (the exposure reading).
   Overall: scb named for FLICKER 0.45; INTERACTION or 7d-exposure for EX 0.45.
 ```
+
+### P-151 kit (committed with the card, before any P-151 data)
+
+| file | sha256/12 | what |
+|---|---|---|
+| fixes/v9-2/phone/serve151.sh | 47f3ef2b1f6b | per-block servers B / C / V from out/p151/snap/<Q>; `snap`, `<Q>`, `check <Q>`, `stop`; served-hash case per block |
+| fixes/v9-2/phone/hold151.sh | 62ba7a43cdcf | hold142.sh with TICKET=P-151, a block argument (Q1/Q2/Q3; refuses when the running servers are another block), labels p151-<Q>-, parts X and S only (M / H / R refused), PIN line with the block's HASHES |
+| fixes/v9-2/phone/score151.mjs | a7f0fa9be9c5 | score142.mjs (8960b2d9a721, refused if changed) with the block's arm pins plus the per-gate bisect reading (EX, ES, FLICKER X, FLICKER S; control pass rules as in the card) |
+| fixes/v9-2/phone/selftest151.mjs | 4dc0eca6054d | SELFTEST-151 OK 32: pins = the copies' HASHES; the reading rules; M / H / R refused; P-142's X + S replayed through --block P142 give P-142's gates; hold151 / serve151 guards |
+
+Snapshot `out/p151/snap` (made by `serve151.sh snap`, read-only): Q1 HASHES 79b821ac0e5e (C = v9.2 − scb, V = v9.2),
+Q2 471153d3d360 (C = v9.2 − g11, V = v9.2), Q3 714adbd82d33 (C = v9-final, V = v9-final + 7d); every file equals the card's
+pins. The replay through score151 on P-142's records (descriptive, it gates nothing here): EX control insufficient
+(v9-final's X outs are caught: path-VOID), ES and FLICKER X "cleared" against v9-final, FLICKER S not reproduced; i.e.
+the reading rules behave as written on known data.
+Runner per block: `sh fixes/v9-2/phone/serve151.sh <Q>`, then the six holds Ha-Hf as in the card, each
+`TICKET=P-151 RUNNER=int-v8 node tools/lock.mjs run iphone --owner int-v8 --block P-151 --max-seconds 900 --keep 120 --
+node tools/lock.mjs run chrome-measure --owner int-v8 --no-timing --max-seconds 600 --doing "P-151 <Q> <H>" -- caffeinate
+-i -s sh fixes/v9-2/phone/hold151.sh <Q> <H> <items>`, the P-142 heat ruling between holds, Safari parked at the block
+end; scoring `node fixes/v9-2/phone/score151.mjs --block <Q> <item>:<file> ... --json out/p151/score-<Q>.json` over the
+block's VALID holds in block order.
