@@ -547,9 +547,151 @@ every exit 0, no VOID-HOST, no dropped step, every check HOLD-OK (`sim/p144-chec
   about 0.5 ms per band frame in every arm; the frame's Composite is about 15-24 ms. The pre-named risk (picture raster
   outside the main thread's recorded Paint) fits this, but nothing here confirms it.
 
+### Prediction P-145: pictures vs title sweeps on the iPhone (G driver, Timeline, xcode-serious; DRAFT for the pre-data read)
+
+Pre-staged on the lead's ruling after P-144 (2026-10-05). It runs after the user reconnects and v9.2's phone block has run.
+It needs the ops pre-data read and the lead's signature before any data.
+
+**Why a phone card.** P-144 is CONTROL-FAILED. The Simulator's WebContent Paint time did not see nobg's effect: nob's
+ratio was 0.86-0.88 (NONE) in every hold, while P-137 showed CAUSE on the phone. P4 and P5 were two misses on one model,
+that Simulator Paint time tracks the phone's end-screen cost (N2). That model failed, and this card does not reuse it. It
+reads the phone's own slow frames with P-137's metric and rule, the read that already found CAUSE for nobg on this device.
+
+**Question.** On the iPhone, in the last screen after the finger lifts: do the slow frames P-137 removed with nobg come
+from the background pictures, from the gradient title sweeps, or from both?
+
+**Arms.** Same base and immutable snapshots, paint only. Arms and files were fixed before P-144's data:
+
+| arm | build | JS | CSS | snapshot |
+|---|---|---|---|---|
+| C | v9-final + morph-scroll 7d (P-137's C) | 1b2eecc66011 | e1359ab9994a | `out/snapshots/endbg-C-e1359ab9994a` |
+| P | C + `sim/pictures-off.css` (2f316f33d828) | 1b2eecc66011 | a9fd8338d8ed | `out/snapshots/endbg-P-a9fd8338d8ed` |
+| T | C + `sim/titles-off.css` (6bc2f3c17007) | 1b2eecc66011 | 8f4d806323a9 | `out/snapshots/endbg-T-8f4d806323a9` |
+
+The snapshots are read-only in fix-end-bg's worktree. P and T are plain concatenations, built like P-137's V. P + T
+covers what nobg removes, except the organized title, which is in no arm (F-290; the mask and animation stay in every
+arm, §7).
+
+**Driver, profile, procedure.** As P-137 (§3):
+- driver G, `fixes/morph-scroll/g-fastshort-v1.json` (df597802d2f0), compiled program 8737f212c0ff, GESTURE_BUDGET_S
+  about 229, E procedure;
+- profile xcode-serious: `thermal-gate.mjs --expect serious --max-c 44 --accept-induced` on server B, at each phone
+  hold's edges; no heat pre-warm and no cooling wait (CLAUDE.md "Sentinel");
+- plain http, `--vendors=local --latency 150`.
+
+**Block** (CLAUDE.md "Phone blocks", "Timeline blocks"). Items, in order:
+- one uncounted warm-up per arm's port (WC, WP, WT, Timeline off, `--warmup`);
+- an uncounted Timeline-OFF sentinel S0 on C after the warm-ups;
+- 9 counted runs, Timeline on in every arm, in a rotated Latin square: EC1 EP1 ET1 | EP2 ET2 EC2 | ET3 EC3 EP3. This is
+  the 3-arm form of C V V C. A Timeline-on C run does not replace S0: the card keeps both sentinels;
+- at most 2 re-runs of counted runs that fail a run gate, then the Timeline-OFF end sentinel S1 on C;
+- no attribution runs.
+
+The sentinel rule and the run gates G1-G6 are the signed P-129 reader rev 1.1's, as in P-137. A failing S0 voids the block
+before any counted run; a failing S1 voids every counted run. 14-16 fs runs in 600 s `--no-timing` holds of at most 2
+runs, inside two `lock.mjs run iphone --block P-145` holds:
+
+```
+part 1: H1 WC,WP | H2 WT,S0 | H3 EC1,EP1 | H4 ET1,EP2 | H5 ET2,EC2      part 2: H6 ET3,EC3 | H7 EP3 | H8 TAIL (re-runs, then S1)
+```
+
+Before every item the served JS and CSS of all three arms are hashed; a mismatch voids the hold.
+
+**Metric and decision: P-137's, unchanged** (`p137-read.mjs` `metric` and `verdict`, imported by `p145-read.mjs`).
+- Per counted run: moving lastScreen frames after a touchend, s(th) for th 30/34/38/46/50/54.
+- Per arm X in {P, T} against C at >34, with at least 3 valid runs per arm:
+  - CAUSE: max X < min C and median X ≤ 0.5 × median C;
+  - CONTRIBUTES: max X < min C, otherwise;
+  - WORSE: min X > max C;
+  - NOT SHOWN: anything else;
+  - THIN: fewer than 3 valid runs.
+- The denominator guard (15 %) and the twins (>30, >38: "threshold-sensitive") apply per pair. >50 is reported and decides
+  nothing.
+- An arm **carries** when its verdict is CAUSE or CONTRIBUTES. Readings:
+  - PICTURES: P carries, T does not;
+  - TITLES: T carries, P does not;
+  - BOTH: both carry;
+  - NEITHER: neither carries;
+  - THIN: an arm is THIN;
+  - VOID: a sentinel failed.
+- With 3 runs per arm, separation needs all 3 X runs below all 3 C runs. That is weaker than P-137's 4 v 4. Readers should
+  weigh a CONTRIBUTES accordingly; the rule does not change.
+- Descriptive, decides nothing:
+  - the class split (busy) and the toolbar-step share;
+  - per counted run, from its Timeline, the median summed Paint and Composite ms over its metric frames (`tlCost`).
+
+**Disclosure (P-144 N4).** P-144's M2 (Composite) ratios were never read: pic 0.66/0.81, tit 0.85/0.94, nob 0.69-0.79,
+C2 0.98-1.01. They did not shape the arms or the rule; both were fixed before that data. They did shape the predictions
+below: they move weight towards pictures. Under P-144's rules they remain OBSERVED, unread numbers.
+
+**Predictions (before data).**
+
+| # | prediction | p |
+|---|---|---|
+| 1 | P vs C at >34: CAUSE | 0.20 |
+| 1 | CONTRIBUTES | 0.35 |
+| 1 | NOT SHOWN | 0.42 |
+| 1 | WORSE | 0.03 |
+| 2 | T vs C at >34: CAUSE | 0.05 |
+| 2 | CONTRIBUTES | 0.20 |
+| 2 | NOT SHOWN | 0.72 |
+| 2 | WORSE | 0.03 |
+| 3 | reading: PICTURES | 0.36 |
+| 3 | TITLES | 0.08 |
+| 3 | BOTH | 0.14 |
+| 3 | NEITHER | 0.32 |
+| 3 | THIN or VOID | 0.10 |
+| 4 | both sentinels PASS and every hold VALID without a second block | 0.80 |
+| 5 | C's median >34 lies within P-137's C range (14-30) | 0.75 |
+| 6 | both pairs decide on counts (no denominator guard) | 0.70 |
+
+Why:
+- The pictures cover far more painted area in the last screen than the three title sweeps (§1, §7).
+- P-144's unread Composite numbers point the same way (disclosed above).
+- NEITHER stays likely. P-137's effect could need both parts at once (joint, not additive): each half alone would then
+  leave C's slow frames in place. This card cannot tell joint from absent, and a NEITHER reading says so.
+
+**Falsification.**
+- PICTURES: the image work in PR-025 is the end-screen lever.
+- TITLES: the sweep animation gets its own fix card (`end-titles`).
+- BOTH: both levers are needed.
+- NEITHER after P-137's CAUSE: the effect is joint, or it sits in what only nobg removes (the organized title, grain
+  layers counted with the pictures). A follow-up needs the lead's decision. No second block of this question without one
+  (sequential rule, at most 2 blocks).
+
+**Kit and pins** (runner: iphone-runner; scripts adapted from P-137's, which were read and run once).
+
+| file | pin |
+|---|---|
+| `phone/p145-serve.sh` | 3caf4f02b3f3 |
+| `phone/p145-hold.sh` | 9e002d44b9a6 |
+| `phone/p145-block.sh` | 794c347a6110 |
+| `phone/p145-read.mjs` | 8882725a5f23 (self-test 11 ok) |
+| `phone/p137-read.mjs` | b6d24ad5e73c |
+| `research/serious-heat/p129-read.mjs` | 06f74f5d19ca |
+| `research/serious-heat/phone/p129-gates.mjs` | a06847c64a2e |
+
+```sh
+sh fixes/end-bg/phone/p145-serve.sh start            # copies + checks the 3 snapshots, starts C, P, T, B (plain http)
+TICKET=P-145 P145_DRY=1 sh fixes/end-bg/phone/p145-block.sh H1:WC,WP H2:WT,S0 H3:EC1,EP1 H4:ET1,EP2 H5:ET2,EC2 H6:ET3,EC3 H7:EP3 H8:TAIL
+TICKET=P-145 node tools/lock.mjs run iphone --owner iphone-runner --block P-145 --max-seconds 3600 -- \
+  sh fixes/end-bg/phone/p145-block.sh H1:WC,WP H2:WT,S0 H3:EC1,EP1 H4:ET1,EP2 H5:ET2,EC2
+TICKET=P-145 node tools/lock.mjs run iphone --owner iphone-runner --block P-145 --max-seconds 3600 -- \
+  sh fixes/end-bg/phone/p145-block.sh H6:ET3,EC3 H7:EP3 H8:TAIL
+node fixes/end-bg/phone/p145-read.mjs out/p145/runs --json out/p145/p145-read.json
+sh fixes/end-bg/phone/p145-serve.sh stop
+```
+
+Status of the kit:
+- Shell syntax was checked.
+- The dry run needs the servers up, so it is the runner's first step after the signature (servers and dry run need no
+  phone).
+- Part 1 is 10 fs runs in 5 holds: about 2300 s of runs plus 2 gates, inside 3600 s.
+
 ## 9. Pending
 
 - PR-025: the user's pick, then the phone test of slow frames.
+- P-145 (draft above): pre-data read and the lead's signature, then the runner's block after v9.2's.
 - The verdict per image and the ranked candidate fixes, after P-137. Wall candidates known now (bytes or memory, no
   frame effect expected): skip columns 4-5 below 640 px (pixel-identical, -2.1 MB fetched); resize graphic-designer.png,
   the only visible oversized wall image (1.22x, -2.2 MB decoded; pixel check needed); trimming the never-seen last
