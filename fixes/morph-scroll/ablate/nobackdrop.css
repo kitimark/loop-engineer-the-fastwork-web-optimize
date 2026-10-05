@@ -1,0 +1,2 @@
+/* ablation (counts only): the header's animated backdrop blur off (CSS 11814-11815) (item 4, part 2) */
+header.start-selling-top-nav { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }

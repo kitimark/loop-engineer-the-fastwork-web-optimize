@@ -1,0 +1,7 @@
+/* ablation (counts only, not a design): the panel laid out once at its open size, anchored top-left inside the header's
+   clip, so a change of the header's width/height no longer relayouts the panel's content (item 3) */
+.start-selling-top-nav .start-selling-morph-panel {
+  inset: 0 auto auto 0 !important;
+  width: var(--panel-w) !important;
+  height: var(--panel-h) !important;
+}

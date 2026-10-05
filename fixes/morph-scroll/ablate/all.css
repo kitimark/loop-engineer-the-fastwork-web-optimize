@@ -1,0 +1,9 @@
+/* ablation (counts only): fixp + nofilter + nobackdrop together */
+.start-selling-top-nav .start-selling-morph-panel {
+  inset: 0 auto auto 0 !important;
+  width: var(--panel-w) !important;
+  height: var(--panel-h) !important;
+}
+.start-selling-morph-panel { filter: none !important; }
+.start-selling-platform { filter: none !important; }
+header.start-selling-top-nav { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }

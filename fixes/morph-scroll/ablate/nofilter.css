@@ -1,0 +1,3 @@
+/* ablation (counts only): the two animated filter blurs off: panel (CSS 10959) and #platform (5702) (item 4, part 1) */
+.start-selling-morph-panel { filter: none !important; }
+.start-selling-platform { filter: none !important; }
