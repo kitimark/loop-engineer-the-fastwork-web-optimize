@@ -1615,5 +1615,562 @@
       "The flick script's pull-to-refresh guard ended its loop early in C-H1, svh-H1, cva-H1 and C-H3 (page near the top); every run kept >= 11 moving frames.",
       "A first hold at 21:54Z was queued --no-timing; sim.mjs refused every gesture; no data (README)."
     ]
+  },
+  "p119": {
+    "card": "README 'Prediction P-119' (C = v8; card 67baa0a0; ops pre-data PASS with notes N1-N4)",
+    "build": {
+      "js": "3e3e94cb6e9f",
+      "css": "f836404b3728"
+    },
+    "hold": "2026-10-05 00:13:49-00:19Z, normal exclusive chrome-measure hold, sim.mjs session (Simulator iPhone 15 Pro Max); sim background mean 41 %, 13/34 windows > 60 %",
+    "pins": {
+      "inject": "ce37284b199d",
+      "gate": "b280e6d5b930",
+      "driver": "c57654440d01",
+      "scorer": "265d0c827b5f",
+      "primary": "score-bisect.mjs cb6f0c97b81b",
+      "split": "1ad22b858eb8 (b090aa1b, 22:49:14Z, before data)",
+      "gesture": "flick-hero-v1 6ae05e12ace9"
+    },
+    "order": [
+      "C-H1",
+      "cct-H1",
+      "C-H2",
+      "cva-H1",
+      "C-H3",
+      "cva-H2",
+      "C-H4",
+      "cct-H2",
+      "C-H5"
+    ],
+    "injectGate": "INJECT-GATE all applied",
+    "lookGate": "LOOK-RISK: 81 descendants outside the box (profile tabs rail), 8 ink sources near edges (box-shadow), box not clipped; applies to cva too (content-visibility:auto always applies paint containment, MDN CONFIRMED)",
+    "calls": {
+      "cct-H1": {
+        "primary": "NONE",
+        "ratio": 1.013,
+        "secondaryRatio": 1.027,
+        "secondaryBand": "NONE",
+        "nSensitive": false,
+        "midRatio": 1.2,
+        "mid": "MID-SAME",
+        "enterL": 21.885,
+        "enterP": 1.802,
+        "cEnterL": 22.499,
+        "cEnterP": 3.189,
+        "enter": "ENTER-OK",
+        "unpaintedProxy": "0/4",
+        "neighbours": [
+          "C-H1",
+          "C-H2"
+        ]
+      },
+      "cva-H1": {
+        "primary": "LOCATES",
+        "ratio": 0.037,
+        "secondaryRatio": 0.331,
+        "secondaryBand": "PARTIAL",
+        "nSensitive": true,
+        "midRatio": 0,
+        "mid": "MID-REMOVES",
+        "enterL": 22.603,
+        "enterP": 3.506,
+        "cEnterL": 21.544,
+        "cEnterP": 1.165,
+        "enter": "ENTER-OK",
+        "unpaintedProxy": "0/4",
+        "neighbours": [
+          "C-H2",
+          "C-H3"
+        ]
+      },
+      "cva-H2": {
+        "primary": "LOCATES",
+        "ratio": 0.036,
+        "secondaryRatio": 0.419,
+        "secondaryBand": "PARTIAL",
+        "nSensitive": true,
+        "midRatio": 0,
+        "mid": "MID-REMOVES",
+        "enterL": 21.761,
+        "enterP": 3.206,
+        "cEnterL": 21.475,
+        "cEnterP": 1.204,
+        "enter": "ENTER-OK",
+        "unpaintedProxy": "2/4",
+        "neighbours": [
+          "C-H3",
+          "C-H4"
+        ]
+      },
+      "cct-H2": {
+        "primary": "NONE",
+        "ratio": 0.988,
+        "secondaryRatio": 1.002,
+        "secondaryBand": "NONE",
+        "nSensitive": false,
+        "midRatio": 1.5,
+        "mid": "MID-SAME",
+        "enterL": 20.86,
+        "enterP": 1.057,
+        "cEnterL": 21.774,
+        "cEnterP": 1.478,
+        "enter": "ENTER-OK",
+        "unpaintedProxy": "0/4",
+        "neighbours": [
+          "C-H4",
+          "C-H5"
+        ]
+      }
+    },
+    "arms": {
+      "cct": "primary NONE | MID-SAME | ENTER-OK | unpainted-proxy 0,0",
+      "cva": "primary LOCATES (N-SENSITIVE: secondary 0.331, 0.419 PARTIAL) | MID-REMOVES | ENTER-OK | unpainted-proxy 0,2"
+    },
+    "primary": {
+      "replica": true,
+      "drift": 0.025,
+      "void": false,
+      "verdicts": {
+        "cct-H1": {
+          "ratio": 1.013,
+          "cMean": 21.176,
+          "neighbours": [
+            "C-H1",
+            "C-H2"
+          ],
+          "call": "NONE"
+        },
+        "cva-H1": {
+          "ratio": 0.037,
+          "cMean": 20.758,
+          "neighbours": [
+            "C-H2",
+            "C-H3"
+          ],
+          "call": "LOCATES"
+        },
+        "cva-H2": {
+          "ratio": 0.036,
+          "cMean": 20.583,
+          "neighbours": [
+            "C-H3",
+            "C-H4"
+          ],
+          "call": "LOCATES"
+        },
+        "cct-H2": {
+          "ratio": 0.988,
+          "cMean": 20.733,
+          "neighbours": [
+            "C-H4",
+            "C-H5"
+          ],
+          "call": "NONE"
+        }
+      }
+    },
+    "runs": [
+      {
+        "name": "C-H1",
+        "secondary": {
+          "n": 15,
+          "layoutMsPerS": 791.729
+        },
+        "mid": {
+          "n": 173,
+          "big": 9
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 22.788,
+          "enterP": 4.908,
+          "unpaintedProxy": 0,
+          "approx": 3
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "cct-H1",
+        "secondary": {
+          "n": 13,
+          "layoutMsPerS": 832.771
+        },
+        "mid": {
+          "n": 236,
+          "big": 12
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 21.885,
+          "enterP": 1.802,
+          "unpaintedProxy": 0,
+          "approx": 3
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "C-H2",
+        "secondary": {
+          "n": 13,
+          "layoutMsPerS": 829.417
+        },
+        "mid": {
+          "n": 234,
+          "big": 11
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 22.209,
+          "enterP": 1.469,
+          "unpaintedProxy": 0,
+          "approx": 3
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "cva-H1",
+        "secondary": {
+          "n": 34,
+          "layoutMsPerS": 274.53
+        },
+        "mid": {
+          "n": 249,
+          "big": 0
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 22.603,
+          "enterP": 3.506,
+          "unpaintedProxy": 0,
+          "approx": 3
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "C-H3",
+        "secondary": {
+          "n": 15,
+          "layoutMsPerS": 827.385
+        },
+        "mid": {
+          "n": 238,
+          "big": 11
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 20.879,
+          "enterP": 0.861,
+          "unpaintedProxy": 0,
+          "approx": 4
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "cva-H2",
+        "secondary": {
+          "n": 34,
+          "layoutMsPerS": 346.803
+        },
+        "mid": {
+          "n": 245,
+          "big": 0
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 21.761,
+          "enterP": 3.206,
+          "unpaintedProxy": 2,
+          "approx": 4
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "C-H4",
+        "secondary": {
+          "n": 14,
+          "layoutMsPerS": 829.843
+        },
+        "mid": {
+          "n": 244,
+          "big": 10
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 22.07,
+          "enterP": 1.546,
+          "unpaintedProxy": 0,
+          "approx": 4
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "cct-H2",
+        "secondary": {
+          "n": 15,
+          "layoutMsPerS": 831.64
+        },
+        "mid": {
+          "n": 232,
+          "big": 15
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 20.86,
+          "enterP": 1.057,
+          "unpaintedProxy": 0,
+          "approx": 3
+        },
+        "gapAtTop": 394.98
+      },
+      {
+        "name": "C-H5",
+        "secondary": {
+          "n": 12,
+          "layoutMsPerS": 829.526
+        },
+        "mid": {
+          "n": 242,
+          "big": 10
+        },
+        "enter": {
+          "n": 4,
+          "enterL": 21.478,
+          "enterP": 1.41,
+          "unpaintedProxy": 0,
+          "approx": 4
+        },
+        "gapAtTop": 394.98
+      }
+    ],
+    "n1Split": [
+      {
+        "name": "C-H1",
+        "arm": "C",
+        "groups": {
+          "in": {
+            "n": 4,
+            "medLargest": 22.384,
+            "msPerS": 827.105
+          },
+          "off": {
+            "n": 11,
+            "medLargest": 21.258,
+            "msPerS": 771.164
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        }
+      },
+      {
+        "name": "cct-H1",
+        "arm": "cct",
+        "groups": {
+          "in": {
+            "n": 5,
+            "medLargest": 21.449,
+            "msPerS": 801.235
+          },
+          "off": {
+            "n": 8,
+            "medLargest": 20.709,
+            "msPerS": 863.973
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        },
+        "ratios": {
+          "in.medLargest": 0.993,
+          "in.msPerS": 0.972,
+          "off.medLargest": 0.99,
+          "off.msPerS": 1.076
+        }
+      },
+      {
+        "name": "C-H2",
+        "arm": "C",
+        "groups": {
+          "in": {
+            "n": 4,
+            "medLargest": 20.821,
+            "msPerS": 821.264
+          },
+          "off": {
+            "n": 9,
+            "medLargest": 20.562,
+            "msPerS": 835.096
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        }
+      },
+      {
+        "name": "cva-H1",
+        "arm": "cva",
+        "groups": {
+          "in": {
+            "n": 4,
+            "medLargest": 20.317,
+            "msPerS": 785.256
+          },
+          "off": {
+            "n": 30,
+            "medLargest": 0.75,
+            "msPerS": 51.537
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        },
+        "ratios": {
+          "in.medLargest": 0.965,
+          "in.msPerS": 0.957,
+          "off.medLargest": 0.036,
+          "off.msPerS": 0.062
+        }
+      },
+      {
+        "name": "C-H3",
+        "arm": "C",
+        "groups": {
+          "in": {
+            "n": 5,
+            "medLargest": 21.296,
+            "msPerS": 820.398
+          },
+          "off": {
+            "n": 10,
+            "medLargest": 20.648,
+            "msPerS": 833.383
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        }
+      },
+      {
+        "name": "cva-H2",
+        "arm": "cva",
+        "groups": {
+          "in": {
+            "n": 5,
+            "medLargest": 21.947,
+            "msPerS": 757.703
+          },
+          "off": {
+            "n": 29,
+            "medLargest": 0.704,
+            "msPerS": 47.444
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        },
+        "ratios": {
+          "in.medLargest": 1.056,
+          "in.msPerS": 0.932,
+          "off.medLargest": 0.034,
+          "off.msPerS": 0.056
+        }
+      },
+      {
+        "name": "C-H4",
+        "arm": "C",
+        "groups": {
+          "in": {
+            "n": 6,
+            "medLargest": 20.261,
+            "msPerS": 805.789
+          },
+          "off": {
+            "n": 8,
+            "medLargest": 20.45,
+            "msPerS": 850.954
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        }
+      },
+      {
+        "name": "cct-H2",
+        "arm": "cct",
+        "groups": {
+          "in": {
+            "n": 5,
+            "medLargest": 21.259,
+            "msPerS": 842.051
+          },
+          "off": {
+            "n": 10,
+            "medLargest": 20.462,
+            "msPerS": 823.781
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        },
+        "ratios": {
+          "in.medLargest": 1.025,
+          "in.msPerS": 1.044,
+          "off.medLargest": 0.985,
+          "off.msPerS": 0.969
+        }
+      },
+      {
+        "name": "C-H5",
+        "arm": "C",
+        "groups": {
+          "in": {
+            "n": 5,
+            "medLargest": 21.218,
+            "msPerS": 807.959
+          },
+          "off": {
+            "n": 7,
+            "medLargest": 21.081,
+            "msPerS": 849.413
+          },
+          "unknown": {
+            "n": 0,
+            "medLargest": null,
+            "msPerS": null
+          }
+        }
+      }
+    ],
+    "n2": "C median largest Layout 20.32-21.69 ms (mean 20.94) vs P-115 20.74-21.27 (mean 20.93): the added IO did not move C",
+    "predictions": {
+      "hits": 6,
+      "misses": [
+        "unpainted proxy >= 1 in each cva run (0 and 2)",
+        "look gate clean (LOOK-RISK)"
+      ]
+    },
+    "reading": "skip is the mechanism, off-screen frames only (N1: off ratio ~0.035, in view ~1.0); M2 refuted for cct; cva not look-clean; un-skip-ahead + look-safe design card needed; in-view cost needs M1 cause (S5); R7 lead review before any build",
+    "files": [
+      "fixes/toolbar-resize/p119-score.json",
+      "fixes/toolbar-resize/p119-split.json",
+      "fixes/toolbar-resize/p119-runs.jsonl"
+    ]
   }
 }

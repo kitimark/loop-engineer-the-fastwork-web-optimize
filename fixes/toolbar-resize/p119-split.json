@@ -1,0 +1,219 @@
+{
+ "helper": "fixes/toolbar-resize/split-io119.mjs",
+ "note": "N1, descriptive only",
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 22.384,
+     "msPerS": 827.105
+    },
+    "off": {
+     "n": 11,
+     "medLargest": 21.258,
+     "msPerS": 771.164
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "cct-H1",
+   "arm": "cct",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 21.449,
+     "msPerS": 801.235
+    },
+    "off": {
+     "n": 8,
+     "medLargest": 20.709,
+     "msPerS": 863.973
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 0.993,
+    "in.msPerS": 0.972,
+    "off.medLargest": 0.99,
+    "off.msPerS": 1.076
+   }
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 20.821,
+     "msPerS": 821.264
+    },
+    "off": {
+     "n": 9,
+     "medLargest": 20.562,
+     "msPerS": 835.096
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "cva-H1",
+   "arm": "cva",
+   "groups": {
+    "in": {
+     "n": 4,
+     "medLargest": 20.317,
+     "msPerS": 785.256
+    },
+    "off": {
+     "n": 30,
+     "medLargest": 0.75,
+     "msPerS": 51.537
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 0.965,
+    "in.msPerS": 0.957,
+    "off.medLargest": 0.036,
+    "off.msPerS": 0.062
+   }
+  },
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 21.296,
+     "msPerS": 820.398
+    },
+    "off": {
+     "n": 10,
+     "medLargest": 20.648,
+     "msPerS": 833.383
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "cva-H2",
+   "arm": "cva",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 21.947,
+     "msPerS": 757.703
+    },
+    "off": {
+     "n": 29,
+     "medLargest": 0.704,
+     "msPerS": 47.444
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 1.056,
+    "in.msPerS": 0.932,
+    "off.medLargest": 0.034,
+    "off.msPerS": 0.056
+   }
+  },
+  {
+   "name": "C-H4",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 6,
+     "medLargest": 20.261,
+     "msPerS": 805.789
+    },
+    "off": {
+     "n": 8,
+     "medLargest": 20.45,
+     "msPerS": 850.954
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  },
+  {
+   "name": "cct-H2",
+   "arm": "cct",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 21.259,
+     "msPerS": 842.051
+    },
+    "off": {
+     "n": 10,
+     "medLargest": 20.462,
+     "msPerS": 823.781
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   },
+   "ratios": {
+    "in.medLargest": 1.025,
+    "in.msPerS": 1.044,
+    "off.medLargest": 0.985,
+    "off.msPerS": 0.969
+   }
+  },
+  {
+   "name": "C-H5",
+   "arm": "C",
+   "groups": {
+    "in": {
+     "n": 5,
+     "medLargest": 21.218,
+     "msPerS": 807.959
+    },
+    "off": {
+     "n": 7,
+     "medLargest": 21.081,
+     "msPerS": 849.413
+    },
+    "unknown": {
+     "n": 0,
+     "medLargest": null,
+     "msPerS": null
+    }
+   }
+  }
+ ]
+}

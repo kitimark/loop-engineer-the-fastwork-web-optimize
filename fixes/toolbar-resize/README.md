@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 card (cct vs cva + entering check) registered, waits for ops' pre-data read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); waits for the lead's R7 model review and ops' read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -668,6 +668,136 @@ exclusive hold. Nothing here drives a build (R7).
   - GEOMETRY, NO-REPLICA or VOID: as in score-bisect; no call.
 - **Gate R7 (lead's instruction, via ops):** lead model review (two-miss rule): after the P-119 read and before cva or cct
   drives any build, the lead reviews the author's model.
+
+## P-119 result (Simulator, 2026-10-05 00:13-00:19Z, one normal exclusive hold; ops pre-data PASS with N1-N4)
+
+- **Hold.** One normal exclusive chrome-measure hold; `sim.mjs session` (Simulator iPhone 15 Pro Max) on the v8 server.
+  - Served build: JS `3e3e94cb6e9f`, CSS `f836404b3728` (from the overlay; checked by the driver).
+  - Inject `ce37284b199d`. Order as registered: C:H1 cct:H1 C:H2 cva:H1 C:H3 cva:H2 C:H4 cct:H2 C:H5. All 9 runs ran;
+    none was dropped. The first run started at 00:13:49Z, after the split helper's pin (b090aa1b, 22:49:14Z).
+  - All pins are unchanged: scorer `265d0c827b5f`, gate `b280e6d5b930`, driver `c57654440d01`, split `1ad22b858eb8`.
+  - Simulator background: mean 41 % of a core, 13 of 34 windows above 60 %. Every arm is compared with neighbouring
+    C runs in the same session.
+  - The gesture's pull-to-refresh guard ended the loop early in 5 runs (C-H3, cva-H2, C-H4, cct-H2, C-H5). Every run
+    still has one segment of 1053-1302 frames reaching y 4033-4131, so coverage is the same in every arm.
+- **Applied gate:** `INJECT-GATE all applied`.
+  - C: no rule, computed contain none, cv visible.
+  - cct: contain `content`.
+  - cva: content-visibility auto, intrinsic size 904.08 px.
+  - Every run has 9 IO entries. docH is 5999 -> 6035 in every run.
+- **Look gate (R1): `LOOK-RISK`**, the same in every run because it is the same DOM. The showcase is `display: flex`,
+  overflow visible, and already a stacking context.
+  - 81 descendants paint outside its box, mostly the profile tabs rail: `div.start-selling-profile-tabs.is-rail-in`
+    and its buttons.
+  - 8 ink sources sit near its edges: box-shadow on `div.start-selling-profile-shell` and the active tab button.
+  - 8 positioned z-index descendants. These are harmless here, since the box is already a stacking context.
+  - No fixed descendants, no absolute descendants with an outside containing block, no counters, no margin collapse,
+    no baseline alignment.
+  - **This applies to cva too, not only cct.** `content-visibility: auto` always turns on layout, style and paint
+    containment; it only adds the skip when the element is not relevant. CONFIRMED by
+    [MDN content-visibility](https://developer.mozilla.org/en-US/docs/Web/CSS/content-visibility), value `auto`:
+    "The element turns on layout containment, style containment, and paint containment"; CSS Containment 2 §4.3
+    "Using content-visibility: auto".
+  - So both forms may clip the rail and the shadows, and **neither call is look-clean**. Under the card's rule both
+    are mechanism-only until a pixel check.
+
+| run | arm | moving frames n | median largest Layout (ms) | primary ratio | secondary (Layout ms/s), ratio | mid big / frames | enter L / P (ms) | unpainted proxy |
+|---|---|---|---|---|---|---|---|---|
+| C-H1 | C | 15 | 21.685 | | 791.7 | 9/173 | 22.79 / 4.91 | 0 |
+| cct-H1 | cct | 13 | 21.449 | 1.013 NONE | 832.8, 1.027 NONE | 12/236, MID-SAME 1.2 | 21.89 / 1.80, ENTER-OK | 0 |
+| C-H2 | C | 13 | 20.666 | | 829.4 | 11/234 | 22.21 / 1.47 | 0 |
+| cva-H1 | cva | 34 | 0.770 | 0.037 LOCATES | 274.5, 0.331 PARTIAL (N-SENSITIVE) | 0/249, MID-REMOVES | 22.60 / 3.51, ENTER-OK | 0 |
+| C-H3 | C | 15 | 20.850 | | 827.4 | 11/238 | 20.88 / 0.86 | 0 |
+| cva-H2 | cva | 34 | 0.736 | 0.036 LOCATES | 346.8, 0.419 PARTIAL (N-SENSITIVE) | 0/245, MID-REMOVES | 21.76 / 3.21, ENTER-OK | 2 |
+| C-H4 | C | 14 | 20.316 | | 829.8 | 10/244 | 22.07 / 1.55 | 0 |
+| cct-H2 | cct | 15 | 20.474 | 0.988 NONE | 831.6, 1.002 NONE | 15/232, MID-SAME 1.5 | 20.86 / 1.06, ENTER-OK | 0 |
+| C-H5 | C | 12 | 21.150 | | 829.5 | 10/242 | 21.48 / 1.41 | 0 |
+
+Scorer summary: REPLICA true, DRIFT 0.025, VOID false.
+
+- **Arm calls (frozen scorer).**
+  - **cct:** primary NONE in both runs; MID-SAME; ENTER-OK; unpainted proxy 0/4 in both runs.
+  - **cva:** primary LOCATES in both runs, but N-SENSITIVE (secondary 0.33 and 0.42, PARTIAL); MID-REMOVES; ENTER-OK;
+    unpainted proxy 0/4 and 2/4.
+- **N1, frames split by the showcase's IO state** (split-io119.mjs, descriptive only, no call). Ratios are against the
+  neighbouring C runs.
+
+| run | in view: n, median largest Layout (ratio), ms/s (ratio) | off screen: n, median largest Layout (ratio), ms/s (ratio) |
+|---|---|---|
+| cct-H1 | 5, 21.45 (0.99), 801 (0.97) | 8, 20.71 (0.99), 864 (1.08) |
+| cct-H2 | 5, 21.26 (1.03), 842 (1.04) | 10, 20.46 (0.99), 824 (0.97) |
+| cva-H1 | 4, 20.32 (0.97), 785 (0.96) | 30, 0.75 (0.036), 52 (0.062) |
+| cva-H2 | 5, 21.95 (1.06), 758 (0.93) | 29, 0.70 (0.034), 47 (0.056) |
+
+  - C runs: 4-6 frames in view, 7-11 off screen, about 21 ms in both groups.
+  - Read: **the skip is the whole mechanism, and only for off-screen frames.** Off screen, cva removes about 96 % of
+    the cost per frame and about 94 % per second.
+  - In view, cva pays the same about 21 ms per toolbar-moving frame as C (ratios 0.93-1.06), on 4-5 such frames per
+    run. This is what makes cva N-SENSITIVE: the per-frame median is set by the many cheap off-screen frames, while the
+    remaining in-view frames carry about 0.33-0.42 of C's Layout time per second of toolbar motion.
+  - cct changes neither group.
+- **N2, C level against P-115.** P-119's C median largest Layout is 20.32-21.69 ms (mean 20.94); P-115's was
+  20.74-21.27 (mean 20.93). The IntersectionObserver that P-119 adds in every arm did not move the C level. This is a
+  read; the ratios above compare only within P-119.
+- **N3, mid-page.** This is the first confirmation from data registered before the run.
+  - C pays 9-11 big (>= 10 ms) Layouts on toolbar-still scroll frames at y >= 3000.
+  - cva pays 0 in both runs (MID-REMOVES).
+  - cct pays 12 and 15 (MID-SAME, ratio 1.2 and 1.5).
+  - What re-lays out the showcase on those frames is still OBSERVED, cause unknown (F-254).
+- **N4, entering.**
+  - Every run had 4 enter events (2 down, 2 up), so there is no ENTER-THIN and the flick-hero events are enough.
+  - 29 of the 36 events matched an update only "approx": the IO entry time was not within 2 ms of a RenderingFrame
+    start, so the last update starting <= T + 2 ms was used. This is the frozen fallback, and it applies alike in
+    every arm.
+  - cva's entering Layout (about 22 ms) equals C's (about 21.5 ms), and its Paint is 3.2-3.5 ms against C's 1.2 ms:
+    ENTER-OK under the frozen line (the Paint difference is under 4 ms).
+  - Catch-up k = 1 in 2 of cva-H2's 4 events. That is the unpainted proxy: the big Layout lands one update after the
+    update that first saw the showcase intersect.
+  - So the shipped Simulator WebKit shows the one-update lag that the WebKit-main source order predicts in 2 of 8 cva
+    events. R4's UNRESOLVED moves to OBSERVED in our setup: present, not in every event.
+- **Falsification line.** It needed ENTER-COST, or an unpainted proxy >= 1 in *both* cva runs. Neither happened (0 and
+  2), so "cva as is enters for free" is not falsified. But under the card's Reading, an unpainted proxy >= 1 in any
+  run sends cva to the "needs an un-skip ahead" branch.
+- **Predictions, scored.** 6 hits, 2 misses:
+
+| prediction | result | hit |
+|---|---|---|
+| cct NONE (60 %) | NONE, both runs | yes |
+| cva LOCATES in both runs (85 %) | LOCATES, both runs | yes |
+| cva N-SENSITIVE in >= 1 run (60 %) | both runs | yes |
+| cva MID-REMOVES (70 %) | yes | yes |
+| cct MID-SAME (55 %) | yes | yes |
+| cva ENTER-OK (50 %) | yes | yes |
+| unpainted proxy >= 1 in each cva run (65 %) | 0 and 2 | no |
+| look gate clean (50 %) | LOOK-RISK | no |
+
+- **Model (R6/R7).**
+  - M2 (the invalidation enters from outside and containment stops it) is REFUTED for cct in this setup: NONE in both
+    runs, in view and off screen.
+  - M1 (the invalidation starts inside the box or arrives as inherited style, and only the skip avoids it) fits every
+    arm. With N1, it also fits the in-view frames: while the showcase is relevant, nothing we tried avoids its about
+    21 ms relayout.
+  - What starts the relayout inside the box is not yet identified. D's S5 (a viewport-dependent value inside the
+    showcase) is the open lead.
+  - Per R7, no build starts until the lead has reviewed this model.
+- **Reading (as registered).** The result lands in the branch "cct NONE, cva LOCATES: the skip is the mechanism", with
+  an unpainted proxy >= 1 in one run. It adds two things the card's Reading did not price in:
+  1. **LOOK-RISK applies to cva's paint containment as well.** A pixel check (Chrome + Simulator A/A, PR-010 T2
+     numbers) must clear cva as is before any build, and probably fails at the rail and the shadows. A look-safe cva
+     needs room for that overflow: a wrapper that contains the overflow, or padding or `overflow-clip-margin`, a design
+     question.
+  2. **N1 caps the gain.** The skip removes the cost only while the showcase is off screen. Toolbar steps with the
+     showcase in view (y about 395-2070 at the top; `gapAtTop` 394.98 px) still pay about 21 ms per frame.
+  - An un-skip margin ahead of the viewport (for the unpainted proxy) must stay smaller than `gapAtTop`, or the skip is
+    off during the top-of-page toolbar steps and the off-screen gain goes as well.
+- **Next (plan; needs the lead's R7 review, an ops read and a P-id):**
+  1. A pixel check of cva as is and cct (Chrome look pre-check, then a Simulator A/A), to size the look risk. It is a
+     read, not a gate for anything else.
+  2. A design card for a look-safe skip with a small un-skip margin.
+  3. A separate question, for the in-view frames: what inside the showcase reacts to the toolbar step (M1, D's S5).
+     This is the only route to the remaining about 21 ms frames.
+- **Files:** `fixes/toolbar-resize/p119-score.json` (scorer output), `p119-split.json` (N1 split),
+  `p119-runs.jsonl` (driver log, served-hash records). `results.json` key `p119`.
 
 ## Scenarios not run
 
