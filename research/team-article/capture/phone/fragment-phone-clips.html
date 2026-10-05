@@ -1,0 +1,39 @@
+<!-- DRAFT (art-worst-cases, 2026-10-05; lead: draft in the worktree only). Replaces the article's section
+     aria-labelledby="ph-title" ("Clips from the real iPhone screen (in progress)") once the user has OK'd the full set
+     (a, c, p from H5/H6, plus t, d, e from Hold B) in one review. src="clip:<name>.mp4" is a placeholder: the MP4s are
+     inlined as data: URIs only at that step (out/phone-clips/clips/, never committed). Numbers: clips.json of
+     2026-10-05 ~07:5xZ; every number is OBSERVED in our setup (page log, real iPhone 15 Pro Max, Serious via Xcode). -->
+<section class="wide surface wc ba" aria-labelledby="ph-title">
+  <p class="dev-badge">Real iPhone 15 Pro Max · Safari · heat level Serious</p>
+  <p class="label" id="ph-title">Clips from the real iPhone screen</p>
+  <p>These clips come from the iPhone itself. A small recorder on the Mac (our own tool, <span class="mono">ioscap</span>) records the phone's screen over the cable. A robot finger gives the original page (left) and v8 (right) the same input. The agents only turn a recording into numbers and never look at its frames; the owner watched each clip before it went in.</p>
+  <p>Each clip shows two things. The video is what the screen showed. The strip under it is the page's own frame log: the time between the page's animation frames, logged by the page itself.</p>
+  <p><strong>The screen stalls far less often than the page's log says</strong> (OBSERVED in our setup; the mechanism is CONFIRMED in WebKit's source). On iOS, Safari's own process moves the scroll view and the fixed bars, and the page's code only hears about the new position afterwards (WebKit source, WKWebViewIOS.mm, commit 9eb4e2ad). So a slow frame in the log shows up as a part that lags behind the scroll, more than as a frozen screen.</p>
+
+  <div class="ba-scene">
+    <div class="res-head"><span>The hero cards fading out: slow drags down from the top</span><span class="v">original · v8</span></div>
+    <video src="clip:phone-a.mp4" controls loop muted playsinline preload="metadata" aria-label="iPhone screen, original page on the left and v8 on the right, slow drags through the hero cards"></video>
+    <div class="res-nums">Page log, original → v8, 14 s: frames over 34 ms 82 → 58, over 50 ms 37 → 26, longest 159 → 111 ms</div>
+    <p class="note">Watch the cards: they fade and slide by script, so on the original they trail the page. Clock note: the strip was lined up by a check we chose after the first numbers (the planned one did not work here, because the cards move on their own); it runs about 0.09 s ahead of the video.</p>
+  </div>
+
+  <div class="ba-scene">
+    <div class="res-head"><span>The countdown clock at rest (cropped)</span><span class="v">original · v8</span></div>
+    <video src="clip:phone-c.mp4" controls loop muted playsinline preload="metadata" aria-label="iPhone screen, the countdown clock, original on the left and v8 on the right"></video>
+    <div class="res-nums">Page log, original → v8, 6 s at rest: frames over 34 ms 4 → 0, over 50 ms 1 → 0, longest 51 → 24 ms</div>
+    <p class="note">Both sides start at the same second of the clock. Nothing scrolls here, yet the original's log still has a few slow frames. This frozen copy of the page counts down to 2 Nov 2026. Same clock note as above.</p>
+  </div>
+
+  <div class="ba-scene">
+    <div class="res-head"><span>The whole page, top to end: slow even drags</span><span class="v">original · v8</span></div>
+    <video src="clip:phone-p.mp4" controls loop muted playsinline preload="metadata" aria-label="iPhone screen, the whole page from top to end, original on the left and v8 on the right"></video>
+    <div class="res-nums">Page log, original → v8, 39 s: frames over 34 ms 157 → 87, over 50 ms 83 → 51, longest 253 → 138 ms</div>
+    <p class="note">The two sides were recorded about 10 minutes apart, both at Serious. One run per side: a picture of the difference, not a measured gain.</p>
+  </div>
+
+  <!-- SLOT t: "People still need people" title (crop), Hold B -->
+  <!-- SLOT d: user avatar carousel (crop), Hold B -->
+  <!-- SLOT e: end of a section, Hold B -->
+
+  <div class="ba-legend" aria-hidden="true"><span><i class="swatch" style="background:#6b7d75"></i>frame on time</span><span><i class="swatch" style="background:#e2b84a"></i>over 34 ms</span><span><i class="swatch" style="background:#ff6b4a"></i>over 50 ms</span></div>
+</section>
