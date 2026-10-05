@@ -72,6 +72,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~12:4xZ **Lead: order after P-137, tool fixes landed, model plan (user T-196).**
+  - Tool fixes on main: I-204 and I-206 (ea9fa84c, d5fc98cf), I-207 and I-202 (598ec699). The lead resolves the incidents
+    after its npm test on main passes.
+  - Order after P-137: first the Simulator drain (1. P-133, 2. P-097 Simulator reps, 3. nav-fade batch 9, 4. hero-exit
+    census, 5. P-138 Simulator steps), then the P-130 tail (H4 + H5), then P-134. During the drain the phone does only
+    fix-end-bg's unmarked swipe pair. This replaces the 11:5xZ drain order.
+  - Model plan: new spawns go to cheaper models where the result does not rest on judgement. iphone-runner moves to
+    Sonnet after the P-130 tail; small tool bugs outside measurement code go to Sonnet; lookups go to Haiku. Fix design,
+    integrator, reviewers and the ops pre-data and result reads stay Opus. The lead may spawn a Sonnet ops clerk for
+    ops bookkeeping (digests, records, relaying).
 - 10-05 ~12:1xZ **P-138 N3 fixed before data** (29a00ef7, fix-nav-morph): part1-138.sh is now d4b842ea99d0 (was
   42a764437dc5) and its EXIT lines show the lock run's exit (out/p138/rc). Ops diff check: only part1-138.sh and the
   README changed, every other pin is unchanged, tools equal main. Step 1 (Chrome A/A) started after it.
