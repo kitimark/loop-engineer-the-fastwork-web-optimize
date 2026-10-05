@@ -31,7 +31,7 @@ before(async () => {
   base = srv.url;
   const r = node(CON, ['post', '--by', 'iphone-runner', '--kind', 'action', '--title', `Open ${LAN} on the phone`, '--url', LAN, '--instructions', `Load ${LAN}`], { env });
   assert.equal(r.code, 0, r.out);
-  const l = node(tool('lock.mjs'), ['acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '600', '--url', LAN], { env });
+  const l = node(tool('lock.mjs'), ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '600', '--url', LAN], { env });
   assert.equal(l.code, 0, l.out);
 });
 after(async () => { await srv?.stop(); });

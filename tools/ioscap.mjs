@@ -26,7 +26,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, renameSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord } from './lib/lock.mjs';
+import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, phoneHolder } from './lib/lock.mjs';
 import { redact } from './lib/redact.mjs';
 import {
   SCHEMA, SRC, root, outDir, buildDir, appPath, appExe, selftestExe, slug, parseSeconds, outPath, sidecars,
@@ -50,13 +50,10 @@ const buildCmd = (o = '<you>') => `node tools/lock.mjs run chrome-measure --owne
 const selftestCmd = (o = '<you>') => `node tools/lock.mjs run chrome-measure --owner ${o} --shared --weight 1 --max-seconds 300 -- node tools/ioscap.mjs selftest`;
 
 function requireLease() {
-  const owner = opt('owner', process.env.FW_LOCK_OWNER);
-  if (!owner || owner === true) throw new Usage('--owner <topic> is required');
-  const s = lockStatus('iphone');
-  if (!s.holder || s.stale || s.holder.owner !== owner) {
-    throw new Refused(`you ("${owner}") don't hold the iphone lease${s.holder ? ` (holder: "${s.holder.owner}"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);
-  }
-  return owner;
+  // I-168: inside `lock.mjs run iphone` the hold's token ($FW_LOCK_HELD) names the holder; else --owner must hold it
+  const o = opt('owner', process.env.FW_LOCK_OWNER);
+  try { return phoneHolder({ owner: o === true ? undefined : o, st: lockStatus('iphone') }); }
+  catch (e) { throw e.usage ? new Usage(e.message) : new Refused(e.message); }
 }
 
 function runSync(bin, args, opts = {}) {

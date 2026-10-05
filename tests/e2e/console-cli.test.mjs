@@ -35,7 +35,7 @@ let phoneHolder = null;
 function holdPhone(by) {
   if (phoneHolder === by) return;
   if (phoneHolder) assert.equal(node(tool('lock.mjs'), ['release', 'iphone', '--owner', phoneHolder], { env }).code, 0);
-  const r = node(tool('lock.mjs'), ['acquire', 'iphone', '--owner', by, '--ttl', '900'], { env });
+  const r = node(tool('lock.mjs'), ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', by, '--ttl', '900'], { env });
   assert.equal(r.code, 0, r.out);
   phoneHolder = by;
 }

@@ -29,8 +29,8 @@ test('status: proxy not reachable is reported, not a crash; lease state shown', 
   assert.match(r.stdout, new RegExp(`^device: \\{"error":"proxy not reachable on :${env.FW_IPHONE_DEVICE_PORT}`, 'm'));
   assert.match(r.stdout, new RegExp(`^tabs: \\[\\{"error":"proxy not reachable on :${env.FW_IPHONE_PORT}`, 'm'));
   assert.match(r.stdout, /^lease: free/m);
-  lock('acquire', 'iphone', '--owner', 'topic-a');
-  lock('acquire', 'iphone', '--owner', 'topic-b');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-a');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-b');
   assert.match(iphone('status').stdout, /^lease: topic-a until .* queue: topic-b$/m);
 });
 
@@ -41,9 +41,9 @@ test('open / scroll / record refuse without the lease (no --owner, nobody holds 
     assert.match(r.stderr, /--owner <topic> is required/);
     r = iphone(...cmd, '--owner', 'me');
     assert.equal(r.code, 1);
-    assert.match(r.stderr, /you \("me"\) don't hold the iphone lease\. Run: node tools\/lock\.mjs acquire iphone --owner me/);
+    assert.match(r.stderr, /you \("me"\) don't hold the iphone lease\. Run: node tools\/lock\.mjs run iphone --owner me -- /);
   }
-  lock('acquire', 'iphone', '--owner', 'someone-else');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'someone-else');
   for (const cmd of [['open', 'https://192.168.1.2:5231/'], ['scroll'], ['record']]) {
     const r = iphone(...cmd, '--owner', 'me');
     assert.equal(r.code, 1);
@@ -52,7 +52,7 @@ test('open / scroll / record refuse without the lease (no --owner, nobody holds 
 });
 
 test('an expired lease does not count, even for its former owner', () => {
-  lock('acquire', 'iphone', '--owner', 'me', '--ttl', '1');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '1');
   const wait = Date.now() + 1300; while (Date.now() < wait); // let the 1 s lease expire
   const r = iphone('scroll', '--owner', 'me');
   assert.equal(r.code, 1);
@@ -60,7 +60,7 @@ test('an expired lease does not count, even for its former owner', () => {
 });
 
 test('with the lease: bad open URL is a usage error; unreachable proxy fails cleanly (FW_LOCK_OWNER works)', () => {
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   let r = iphone('open', 'not-a-url', '--owner', 'me');
   assert.equal(r.code, 1);
   assert.match(r.stderr, /usage: node tools\/iphone\.mjs open <url>/);
@@ -71,7 +71,7 @@ test('with the lease: bad open URL is a usage error; unreachable proxy fails cle
 });
 
 test('I-056: scroll / record refuse (WAIT) beside someone else\'s normal hold, and beside a shared group with --require-quiet, before Safari (by default a shared group only gets a NOTE); the runner\'s own --no-timing hold passes', () => {
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   // past the guard, scroll fails at once on the missing proxy; record retries openTab, so it is cut short (4 s)
   const past = (r) => /fetch failed|ECONNREFUSED|openTab try 1/.test(r.stderr) && !/WAIT/.test(r.stderr);
   const rec = (...a) => node(IPHONE, ['record', '--seconds', '1', '--owner', 'me', ...a], { env, timeout: 4000 });
@@ -116,7 +116,7 @@ test('I-176: scroll --warmup runs beside ANOTHER agent\'s --no-timing hold (NOTE
   // no lease: refused before any guard
   let r = beside('scroll --warmup --owner me');
   assert.match(r.stderr, /you \("me"\) don't hold the iphone lease/);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   r = beside('scroll --owner me');
   assert.match(r.stderr, /^WAIT: chrome-measure is held by "builder" \(a no-timing hold: a build or CPU work\).*--warmup/m, r.out);
   assert.match(r.stdout, /^rc=1$/m);
@@ -173,7 +173,7 @@ test('I-003: open <self-signed https mirror URL> navigates Safari to the plain-h
   const twin = (await infoOf(s)).httpTwin;
   assert.ok(twin > 0, 'serve.mjs --https reports its plain-http twin port');
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['open', lan(s) + 'sub/', '--owner', 'me'], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
   const want = `http://127.0.0.1:${twin}/sub/`;
@@ -187,7 +187,7 @@ test('I-003: open --keep-https that lands on the certificate warning fails loudl
   const s = await mirror(['--https']);
   const twin = (await infoOf(s)).httpTwin;
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me', '--keep-https'], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
   assert.deepEqual(phone.navigations(), [lan(s)]);
@@ -200,7 +200,7 @@ test('I-003: a self-signed https mirror without a twin is refused before touchin
   const s = await mirror(['--https', '--no-http-twin']);
   assert.equal((await infoOf(s)).httpTwin, null);
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me'], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /self-signed/);
@@ -211,7 +211,7 @@ test('I-003: a self-signed https mirror without a twin is refused before touchin
 test('I-003: open <plain http mirror URL> works as before and checks it landed on the mirror', async () => {
   const s = await mirror([]);
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me'], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, new RegExp(`^Safari now on ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
@@ -222,7 +222,7 @@ test('I-073: open http://lan:<port>/ (and lan-host) resolves the placeholder to 
   const s = await mirror(['--https']);
   const port = new URL(s.url).port, twin = (await infoOf(s)).httpTwin;
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const lanEnv = { ...phone.env, FW_LAN_ADDRESS: '127.0.0.1' }; // the fake phone and the mirror live on loopback
   let r = await nodeAsync(IPHONE, ['open', `https://lan:${port}/sub/`, '--owner', 'me'], { env: lanEnv, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
@@ -242,7 +242,7 @@ test('I-037: another app\'s about:blank web view listed before Safari\'s tab is 
   const phone = await fakePhone(['--blank-view']);
   const st = await nodeAsync(IPHONE, ['status'], { env: phone.env, timeout: 20000 });
   assert.match(st.stdout, /^tabs: \[\{"url":"about:blank","title":"","appId":"PID:1304"\},\{"url":"http:\/\/127\.0\.0\.1:9\/start","title":"start","appId":"PID:4242"\}\]$/m, st.out);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['open', lan(s), '--owner', 'me'], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, new RegExp(`^Safari now on ${lan(s).replace(/[./]/g, '\\$&')}$`, 'm'));
@@ -256,12 +256,12 @@ test('I-047: park needs the lease, navigates Safari\'s tab (not another app\'s b
   let r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /you \("me"\) don't hold the iphone lease/);
-  lock('acquire', 'iphone', '--owner', 'someone-else');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'someone-else');
   r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.match(r.stderr, /\(holder: "someone-else"\)/);
   assert.deepEqual(phone.navigations(), [], 'nothing touched without the lease');
   lock('release', 'iphone', '--owner', 'someone-else');
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 0, r.out);
   assert.equal(r.stdout, 'PARKED Safari on about:blank (was http://127.0.0.1:9/start)\n');
@@ -280,7 +280,7 @@ test('I-047: park needs the lease, navigates Safari\'s tab (not another app\'s b
 test('I-077: after a park, open loads the URL in Safari\'s parked tab (the visible one of Safari\'s blank views), never in another app\'s view or Safari\'s hidden one', async () => {
   const s = await mirror([]);
   const phone = await fakePhone(['--blank-view', '--parked-twin']);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   let r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 0, r.out);
   const st = await nodeAsync(IPHONE, ['status'], { env: phone.env, timeout: 20000 });
@@ -300,8 +300,8 @@ test('I-077: no record of Safari\'s app, or a stale one (Safari restarted since 
   const s = await mirror([]);
   const phone = await fakePhone(['--blank-view', '--parked-twin', '--new-pid-on-launch', '--launch-ms=200', '--wda-port=0']);
   const fresh = { ...phone.env, FW_STATE_DIR: tempDir('fw-iphone-') }; // no park recorded here
-  node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: fresh });
-  lock('acquire', 'iphone', '--owner', 'me');
+  node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: fresh });
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   let r = await nodeAsync(IPHONE, ['park', '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 0, r.out);
 
@@ -336,7 +336,7 @@ test('I-060: a phone run marks the lease with what it runs (from --label, or --d
   const phone = await fakePhone(['--page']); // a page model: record's in-page logger runs
   const state = phone.env.FW_STATE_DIR, outDir = tempDir('fw-iphone-out-');
   const leaseFile = () => JSON.parse(readFileSync(join(state, 'locks', 'iphone.json'), 'utf8'));
-  lock('acquire', 'iphone', '--owner', 'me', '--url', 'http://192.168.77.3:5231/');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--url', 'http://192.168.77.3:5231/');
   // a bad --doing is refused before the phone is touched
   let r = await nodeAsync(IPHONE, ['record', '--owner', 'me', '--seconds', '1', '--doing', 'see http://192.168.77.3:5231/'], { env: phone.env, timeout: 20000 });
   assert.equal(r.code, 1, r.out);
@@ -370,7 +370,7 @@ test('I-060: a phone run marks the lease with what it runs (from --label, or --d
 // I-141 (C-045 / C-046: a 45 s finger recording lost whole when its one final read timed out)
 async function recordWith(control, { seconds = 4, after = 1500, extra = [] } = {}) {
   const phone = await fakePhone(['--page']);
-  node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env });
+  node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env });
   const out = join(tempDir('fw-iphone-out-'), 'rec.json');
   const p = await startProc(process.execPath, [IPHONE, 'record', '--owner', 'me', '--seconds', String(seconds), '--poll', '1', '--out', out, ...extra],
     { env: { ...phone.env, FW_RECORD_READ_MS: '800' }, ready: (s) => /^RECORDING/m.test(s), timeout: 30000 });
@@ -433,7 +433,7 @@ test('I-070 (C-024): scroll / record / run / gesture keep the Mac awake for thei
   assert.equal(ip(['scroll', '--owner', 'me']).code, 1);
   assert.equal(ip(['status']).code, 0);
   assert.equal(ip(['gesture', GESTURE, '--dry-run']).code, 0);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'me').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me').code, 0);
   ip(['open', 'not-a-url', '--owner', 'me']);
   ip(['park', '--owner', 'me']);
   await new Promise((r) => setTimeout(r, 300));

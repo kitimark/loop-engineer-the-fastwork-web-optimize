@@ -167,7 +167,7 @@ test('I-123 f: posting a phone step needs the poster\'s iphone lease and no othe
   const step = (by, extra = {}) => C.buildStep({ by, kind: 'swipe-pair', title: 't', url: A, url2: B, ...extra });
   const q = C.buildStep({ by: 'fix-x', kind: 'question', title: 'q' });
   assert.equal(P.postRefusal({ step: q, by: 'fix-x', lease: L.status('iphone') }), null, 'not a phone step');
-  assert.match(P.postRefusal({ step: step('fix-x'), by: 'fix-x', lease: L.status('iphone') }), /needs your iphone lease first: you \("fix-x"\) don't hold it\. Run: node tools\/lock\.mjs acquire iphone --owner fix-x/);
+  assert.match(P.postRefusal({ step: step('fix-x'), by: 'fix-x', lease: L.status('iphone') }), /needs your iphone lease first: you \("fix-x"\) don't hold it\. Post and run the step inside your phone hold: node tools\/lock\.mjs run iphone --owner fix-x -- /);
   assert.equal(P.postRefusal({ step: step('lead'), by: 'lead', lease: L.status('iphone') }), null, 'the lead');
   await L.tryAcquire('iphone', { owner: 'iphone-runner', kind: 'lease', ttlSec: 900 });
   assert.match(P.postRefusal({ step: step('fix-x'), by: 'fix-x', lease: L.status('iphone') }), /\(holder: "iphone-runner"\)/);

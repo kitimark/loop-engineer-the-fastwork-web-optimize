@@ -113,7 +113,7 @@ test('/api/waiting and /api/events: the badge count, a new step within 2 s, sani
   assert.ok(!bodies().some((b) => b.includes('Before the server') && b.startsWith('Console: new step')), 'no notification for a step that was there at start');
 
   // one reminder after --remind (0.03 min = 1.8 s) on the user's turn; none for a gated pair the agent still loads
-  const lease = node(tool('lock.mjs'), ['acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '900'], { env });
+  const lease = node(tool('lock.mjs'), ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '900'], { env });
   assert.equal(lease.code, 0, `a swipe pair's poster holds the iphone lease (I-123): ${lease.out}`);
   const pair = postedId(cli('post', '--by', 'iphone-runner', '--kind', 'swipe-pair', '--title', 'Pair 9', '--url', 'http://a.invalid/', '--url2', 'http://b.invalid/'));
   const rem = await until(() => bodies().find((b) => b.startsWith('Console: still waiting for you | ') && b.includes(`${id}: `)), 5000);

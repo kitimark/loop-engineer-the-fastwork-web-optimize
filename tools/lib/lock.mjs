@@ -124,6 +124,10 @@
 // token. sharedSlot() tells a timed tool (iphone.mjs, sim.mjs) that it runs inside such a slot. With no-timing holds: a
 // shared acquire inside one re-enters it like a short job; a --no-timing acquire inside a slot is refused like any
 // exclusive one; --shared --no-timing is refused.
+// Phone hold v2 T2 (I-168): agents hold the iphone as a process hold of `lock.mjs run iphone` (PHONE_HOLD bounds; the
+// CLI refuses their `acquire iphone`, phoneAcquireRefusal); keepHold turns the hold into a keep lease of the same owner
+// after its command, which that owner's next process hold takes over (same token) or which expires; a process hold
+// without an expiry is not renewed; heldPhoneOwner/phoneHolder tell the phone tools whom the hold is for ($FW_LOCK_HELD).
 import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync, openSync, readSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
@@ -180,6 +184,25 @@ export function staleEnd(h, now = Date.now()) {
   if (h.kind === 'process' && !pidAlive(h.pid)) return Math.max(...[h.acquiredAt, h.lastRunAt, ...(h.uses || []).map((u) => u.to)].map(t).filter((x) => x !== null && x <= now), t(h.acquiredAt) ?? now);
   const exp = t(h.expiresAt) ?? now, grace = t(h.stepGrace?.until);
   return Math.min(now, grace !== null && grace > exp ? grace : exp);
+}
+/**
+ * I-168 (phone-hold v2 T2): `lock.mjs run iphone --keep S` after its command: the process hold `token` of process `pid`
+ * becomes a keep lease of the same owner for keepSec ({keep: {from, until, sec}}, expiresAt = until). Inside it the
+ * owner's next `run iphone` takes the hold over (tryAcquire: same token, a process hold again); otherwise it expires and
+ * the next waiter takes the phone. Returns the kept holder, or null when the hold is not that process's (gone, re-entered).
+ */
+export async function keepHold(r, { token, pid = process.pid, keepSec, now = Date.now() } = {}) {
+  checkName(r);
+  if (!(keepSec > 0)) throw new Error(`keepSec must be > 0 (got ${keepSec})`);
+  return withGuard(r, () => {
+    const h = readJson(holderFile(r), null);
+    if (!h || isGroup(h) || h.token !== token || h.kind !== 'process' || h.pid !== pid) return null;
+    const { pid: _p, ...rest } = h;
+    const until = iso(now + keepSec * 1000);
+    const k = { ...rest, kind: 'lease', expiresAt: until, keep: { from: iso(now), until, sec: keepSec } };
+    writeJson(holderFile(r), k);
+    return k;
+  });
 }
 const HOLDS_TAIL_BYTES = 256 * 1024;
 /** The last HOLDS_TAIL_BYTES of holds.log as parsed lines (a cut first line and bad lines skipped). */
@@ -866,7 +889,7 @@ export async function tryAcquire(r, opts) {
       writeJson(join(lockDir(), `${r}.last-stale.json`), { ...h, staleBecause: reason, clearedAt: new Date(now).toISOString(), clearedBy: owner });
       try { unlinkSync(holderFile(r)); } catch {}
       if (isGroup(h)) endGroupGrant(r, h, now);
-      if (r === 'iphone') noteIphoneEnd(h, { endedAt: staleEnd(h, now), how: `stale: ${reason}` }); // I-167
+      if (r === 'iphone') noteIphoneEnd(h, { endedAt: staleEnd(h, now), how: h.keep ? `keep ended (${h.keep.sec} s after its run, I-168): ${reason}` : `stale: ${reason}` }); // I-167
       h = null;
     }
     if (knownGroup(h)) h = pruneGroup(r, h, now, owner);
@@ -891,6 +914,18 @@ export async function tryAcquire(r, opts) {
     if (inherit) {
       // a descendant of the holder (FW_LOCK_HELD from `lock.mjs run`): runs under the ancestor's hold
       return { ok: true, holder: h, reentrant: true, inherited: true, mode: shared ? 'reentrant-exclusive' : 'reentrant' };
+    }
+    if (same && h.keep && kind === 'process') {
+      // I-168: the owner's next `run iphone` inside its keep window continues the hold (same token, a process hold of
+      // this process again; the OVERDUE clock restarts with the part, partAt). It releases at its end, or keeps again.
+      const { keep: _k, expiresAt: _e, ...rest } = h;
+      const m = { ...(h.meta || {}), ...meta };
+      delete m.run; // the last part's wrapper marker (its process is gone)
+      h = { ...rest, kind: 'process', pid, partAt: iso(now), keeps: (h.keeps || 0) + 1, meta: m };
+      writeJson(holderFile(r), h);
+      const k = q.findIndex((w) => w.owner === owner && !w.shared);
+      if (k >= 0) { q.splice(k, 1); writeJson(queueFile(r), q); }
+      return { ok: true, holder: h, mode: 'exclusive', resumed: true };
     }
     if (same) {
       // re-entrant for the same owner: refresh the TTL (and a new job description, I-060); never shorten the live
@@ -1007,6 +1042,42 @@ export async function tryAcquire(r, opts) {
 export const PHONE_BLOCK_BY = 'phone-block priority';
 /** I-172: a user step's entry (owner `user` or `user-*`): phone-block priority never passes it. */
 export const isUserOwner = (o) => typeof o === 'string' && /^user(-[A-Za-z0-9_.-]+)?$/.test(o);
+/**
+ * I-168 (phone-hold v2 T2): agents hold the iPhone only while a command runs, `lock.mjs run iphone` (a process hold):
+ * --max-seconds defaults to and is capped at maxSec (blockMaxSec with --block <ticket>; past it the hold is OVERDUE and
+ * warns, a phone part is never killed); --keep S (<= keepMaxSec) keeps it for the same owner's next part.
+ */
+export const PHONE_HOLD = Object.freeze({ maxSec: 900, blockMaxSec: 3600, keepMaxSec: 180 });
+/** I-168: the command every phone refusal names. */
+export const phoneRunCmd = (owner = '<you>') => `node tools/lock.mjs run iphone --owner ${owner} [--max-seconds ${PHONE_HOLD.maxSec}] [--keep 120] [--block <ticket>] -- <phone part>`;
+/**
+ * I-168: why `lock.mjs acquire iphone` (a lease) is refused for `owner`, or null. A lease is for the user's own hand test
+ * (`user`, `user-*`), the lead (`lead`: --lead with a --reason, audited) and queueing early (`notReady`, I-155: it never
+ * grants). Library callers (console.mjs steps, phone-hold v2 T3) are not refused: the CLI applies this.
+ */
+export function phoneAcquireRefusal({ owner, lead = false, reason, notReady = false } = {}) {
+  if (lead) return String(reason ?? '').trim() ? null : 'acquire iphone --lead needs --reason "<why>" (audited in locks/audit.log; I-168)';
+  if (notReady || isUserOwner(owner)) return null;
+  return `REFUSED acquire iphone for "${owner}": agents hold the phone only while a command runs (phone hold v2, I-168). Run your phone part as: ${phoneRunCmd(owner)}. It takes the phone when the command starts and gives it back when it exits (--keep S, up to ${PHONE_HOLD.keepMaxSec} s, keeps it for your next part). Not ready yet: node tools/lock.mjs acquire iphone --owner ${owner} --not-ready (keeps your place). A lease is for the user's own test (--owner user-*) and the lead (--lead --reason "...").`;
+}
+/**
+ * I-168: who holds the phone for a phone tool (iphone.mjs, ioscap.mjs, wait.mjs phone-temp): the live iphone holder's
+ * owner when $FW_LOCK_HELD carries its token (the command of a `lock.mjs run iphone`, any --owner), else `owner` when it
+ * holds the phone (any kind: a process hold, a keep window, a lease); null otherwise.
+ */
+export function heldPhoneOwner({ owner, st = status('iphone'), env = process.env } = {}) {
+  const h = st.holder && !st.stale && !isGroup(st.holder) ? st.holder : null;
+  if (!h) return null;
+  if (h.token && parseHeld(env.FW_LOCK_HELD).iphone === h.token) return h.owner;
+  return owner && h.owner === owner ? owner : null;
+}
+/** I-168: heldPhoneOwner, or throws: a usage error (e.usage) without --owner, else the refusal naming the run form. */
+export function phoneHolder({ owner, st = status('iphone'), env = process.env } = {}) {
+  const who = heldPhoneOwner({ owner, st, env });
+  if (who) return who;
+  if (!owner) throw Object.assign(new Error('--owner <topic> is required'), { usage: true });
+  throw new Error(`you ("${owner}") don't hold the iphone lease${st.holder ? ` (holder: "${st.holder.owner}"${st.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs run iphone --owner ${owner} -- <this command> (the phone is yours while it runs; I-168)`);
+}
 /**
  * Inside the guard, for the queue entry `entry` (in `q`) of a --no-timing hold (I-136): while its owner holds the live
  * iphone (a lease, or a process hold), the hold is a phone part's quiet-Mac hold and the phone waits for it, so it
@@ -1291,7 +1362,7 @@ export async function describeHold(r, { owner, job, run, runPid = process.pid, b
     } else if (run) {
       const cur = meta.run && meta.run.pid !== run.pid && pidAlive(meta.run.pid) ? (({ outer, ...x }) => x)(meta.run) : null;
       meta.run = { ...run, ...(cur ? { outer: cur } : {}) };
-      if (!run.lockRun) delete meta.between; // a phone run ends the window (I-160); a lock.mjs run iphone wrapper does not
+      if (!run.lockRun && !run.cooling) delete meta.between; // a phone run ends the window (I-160); a lock.mjs run iphone wrapper or a cooling wait (I-168) does not
     }
     if (block === null) { delete meta.block; delete meta.between; } else if (block && meta.block?.id !== String(block)) meta.block = { id: String(block), at: iso(now) };
     if (betweenMin === 0) delete meta.between; else if (betweenMin) meta.between = { at: iso(now), until: iso(now + betweenMin * 60000) };
@@ -1328,6 +1399,9 @@ export async function renew(r, { owner, ttlSec, noShorten = false }) {
     const h = readJson(holderFile(r), null);
     if (!h || h.owner !== owner || staleReason(h)) throw new Error(`${r} is not held by "${owner}"${h ? ` (holder: ${h.owner}${staleReason(h) ? ', stale' : ''})` : ''}`);
     if (h.short) throw new Error(`${r} is held by "${owner}" as a short job (max ${h.maxSec} s); a short job cannot be renewed`);
+    // I-168: a process hold without an expiry (`lock.mjs run iphone`) ends with its process: nothing to renew (an expiry
+    // set here would make the live hold stale; iphone.mjs run renews before every run)
+    if (h.kind === 'process' && !h.expiresAt) return { ...h, kept: true };
     const want = Date.now() + ttlSec * 1000, cap = capMs(r, h), cur = Date.parse(h.expiresAt) || 0;
     const kept = noShorten && cur >= Math.min(want, cap);
     h.expiresAt = new Date(kept ? Math.min(cur, cap) : Math.min(want, cap)).toISOString();
@@ -1438,7 +1512,8 @@ export async function acquire(r, { owner, kind = 'process', ttlSec, meta, short 
       const rel = () => {
         if (done) return; done = true;
         // synchronous best effort (also used from the 'exit' handler)
-        const drop = () => { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token) { unlinkSync(holderFile(r)); noteRelease(r, h, 'process hold ended'); return h; } return null; };
+        // I-168: a hold this process turned into a keep window (keepHold), or that the owner's next part took over, is not this process's to drop
+        const drop = () => { const h = readJson(holderFile(r), null); if (h && h.token === res.holder.token && !h.keep && (h.kind !== 'process' || h.pid === res.holder.pid)) { unlinkSync(holderFile(r)); noteRelease(r, h, 'process hold ended'); return h; } return null; };
         // a short hold leaves under the guard, so its last-grant record can go with it (I-081); if the guard is not
         // reached in time, the holder goes as before and the record ends at its window (doctor: last-grant-short-outlived)
         const guarded = res.holder.short && withGuardSync(r, () => { try { const h = drop(); if (h) endShortGrant(r, h); } catch {} return true; });

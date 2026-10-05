@@ -237,6 +237,12 @@ function audit(line) {
   appendFileSync(auditFile(), JSON.stringify(line) + '\n');
 }
 
+/** I-168: the lead took an iphone lease with `lock.mjs acquire iphone --lead --reason` (agents hold the phone only in
+ *  `lock.mjs run iphone`): one "lead-lease" line in locks/audit.log per grant. */
+export function auditLeadLease({ owner, reason, holder }) {
+  audit({ ts: iso(Date.now()), by: 'lead', reason, resource: 'iphone', code: 'lead-lease', file: files('iphone').holder, owner, fix: `lease for "${owner}" taken with --lead`, before: null, after: holder });
+}
+
 /**
  * Plan (dry run) or apply the doctor's fixes for one resource.
  * opts: {by, reason, apply=false, forceHolder=false, guardAgeSec, tmpAgeSec}

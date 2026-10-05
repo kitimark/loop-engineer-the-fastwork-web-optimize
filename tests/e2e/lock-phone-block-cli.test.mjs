@@ -15,11 +15,11 @@ const iphone = () => JSON.parse(readFileSync(join(state, 'locks', 'iphone.json')
 
 test('I-160 CLI: --block/--between mark the lease (iphone only, validated); a Simulator session is DEFERRED (exit 3, not queued) until a window fits', () => {
   assert.equal(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
-  const a = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900', '--block', 'P-114');
+  const a = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--ttl', '900', '--block', 'P-114');
   assert.equal(a.code, 0, a.stderr);
   assert.equal(iphone().meta.block.id, 'P-114');
   assert.match(lock('doing', 'chrome-measure', '--owner', 'runner', '--block', 'P-1').stderr, /iphone lease/);
-  assert.match(lock('acquire', 'iphone', '--owner', 'runner', '--between', '5').stderr, /--between is for lock\.mjs doing iphone/);
+  assert.match(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--between', '5').stderr, /--between is for lock\.mjs doing iphone/);
   assert.match(lock('renew', 'iphone', '--owner', 'runner', '--block', 'P-1').stderr, /--block and --between are for/);
   assert.match(lock('doing', 'iphone', '--owner', 'runner', '--block', 'no spaces').stderr, /ticket id/);
   const st = lock('status', 'iphone', '--no-host');
@@ -52,7 +52,7 @@ test('I-160 CLI: --block/--between mark the lease (iphone only, validated); a Si
 
 test('I-160 CLI: `run` of sim.mjs session counts as a Simulator session whatever its weight; deferred runs poll and give up at --timeout', () => {
   assert.equal(lock('shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e').code, 0);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900', '--block', 'P-9').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--ttl', '900', '--block', 'P-9').code, 0);
   const r = lock('run', 'chrome-measure', '--owner', 'sim-b', '--shared', '--weight', '2', '--max-seconds', '60', '--timeout', '1',
     '--', process.execPath, '-e', '/* node tools/sim.mjs session */', 'tools/sim.mjs', 'session');
   assert.notEqual(r.code, 0);

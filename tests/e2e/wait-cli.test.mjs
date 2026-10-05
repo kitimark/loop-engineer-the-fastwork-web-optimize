@@ -200,15 +200,15 @@ test('lock wait: TIMEOUT exit 3 with the state; idle --for needs the lock to sta
 });
 
 test('acquire iphone --wait: a background waiter gets the lease in strict FIFO order when the holder releases', async () => {
-  assert.equal(lock('acquire', 'iphone', '--owner', 'a').code, 0);
-  const b = lockAsync('acquire', 'iphone', '--owner', 'b', '--wait', '30');
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'a').code, 0);
+  const b = lockAsync('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'b', '--wait', '30');
   for (let i = 0; i < 100 && !queue('iphone').includes('b'); i++) await sleep(50);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'c').code, 3, 'c queues behind b');
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'c').code, 3, 'c queues behind b');
   assert.equal(lock('release', 'iphone', '--owner', 'a').code, 0);
   const r = await b;
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^ACQUIRED iphone for "b" until /);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'c').code, 3, 'c still waits: b holds it');
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'c').code, 3, 'c still waits: b holds it');
 });
 
 // I-058 (user T-016): a fixed `wait.mjs time` needs a reason, and every running wait shows on the status board by

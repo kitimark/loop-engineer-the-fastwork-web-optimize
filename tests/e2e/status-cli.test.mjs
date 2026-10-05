@@ -77,7 +77,7 @@ test('seed: dry run then --apply from PROGRESS + a seed file; existing ids skipp
 });
 
 test('derived waits on the board: lock queue, the owner\'s console step, a blocking incident; no LAN address anywhere', async () => {
-  assert.equal(node(tool('lock.mjs'), ['acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '600', '--url', LAN], { env }).code, 0);
+  assert.equal(node(tool('lock.mjs'), ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '600', '--url', LAN], { env }).code, 0);
   assert.equal(node(CON, ['post', '--by', 'ts-x', '--kind', 'action', '--title', `Open ${LAN} on the phone`, '--url', LAN], { env }).code, 0);
   assert.equal(node(tool('incident.mjs'), ['open', '--by', 'fix-nav-morph', '--title', `WDA slow at ${LAN}`, '--error', 'slow', '--blocking', 'yes'], { env }).code, 0);
   const r = st('list');

@@ -37,8 +37,8 @@ test('I-171: repair --move --by mgmt-devices moves inside the order, is refused 
 });
 
 test('I-171: release iphone --owner <holder> --by <delegate> --reason: an idle lease with a waiter goes, audited; a fresh one and a non-delegate are refused', () => {
-  assert.equal(lock('acquire', 'iphone', '--owner', 'fix-x', '--ttl', '3600').code, 0);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'w').code, 3, 'a ready waiter');
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-x', '--ttl', '3600').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'w').code, 3, 'a ready waiter');
   const fresh = lock('release', 'iphone', '--owner', 'fix-x', '--by', 'mgmt-devices', '--reason', 'x');
   assert.equal(fresh.code, 1, fresh.out);
   assert.match(fresh.stderr, /"fix-x" is idle 0 min, under 5/);
@@ -55,8 +55,8 @@ test('I-171: release iphone --owner <holder> --by <delegate> --reason: an idle l
   assert.equal(out.code, 0, out.out);
   assert.match(out.stdout, /^RELEASED iphone \(was "fix-x", idle 7 min with waiters; by "mgmt-devices"\), logged to .*audit\.log/);
   assert.equal(JSON.parse(lock('status', 'iphone', '--json').stdout)[0].holder, null);
-  assert.deepEqual(audit().map((x) => [x.code, x.by, x.owner, x.idleMin, x.reason]), [['lease-release', 'mgmt-devices', 'fix-x', 7, 'idle 7 min after one nudge']]);
+  assert.deepEqual(audit().map((x) => [x.code, x.by, x.owner, x.idleMin, x.reason]), [['lead-lease', 'lead', 'fix-x', undefined, 'test fixture'], ['lease-release', 'mgmt-devices', 'fix-x', 7, 'idle 7 min after one nudge']]); // I-168: the fixture's --lead lease is audited too
   // the holder's own release with --by itself is the plain release (no delegate path)
-  assert.equal(lock('acquire', 'iphone', '--owner', 'w').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'w').code, 0);
   assert.match(lock('release', 'iphone', '--owner', 'w', '--by', 'w').stdout, /^RELEASED iphone \(was "w"\)/);
 });

@@ -23,6 +23,8 @@
 //   Any wait takes --reason "<plain words>" too (I-060): the board and the progress page show a wait whose own text is
 //   a path, regex or pid by its reason ("waiting: the A1 phone block to finish"), else by its kind, never the path.
 //   node tools/wait.mjs phone-temp --below <°C>|auto [--runs-dir out/iphone] [--driver S|W|M] [--every 60] [--timeout 600]
+//        # run by the phone's holder (inside `lock.mjs run iphone`, or --owner holding it) it marks a cooling use of the
+//        # hold for the phone ledger and the idle alarm (I-168)
 //        # phone cooling between blocks (protocol v2 §5.3, user T-009): the iPhone's battery temperature
 //        # (AppleSmartBattery via tools/lib/iphone-run.mjs batteryInfo, over USB) is at or below <°C>. One read
 //        # per --every s (default 60, floor 30), one stderr line per read; MET `phone at X °C <= Y °C`; TIMEOUT
@@ -164,11 +166,26 @@ async function main() {
   const onChange = quiet ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
   // I-058: the board shows this wait while it runs (one record, removed on exit)
   startWait({ tool: `wait.mjs ${cmd}`, owner, what: `${w.plain}${holdSec ? `, held ${holdSec} s` : ''}`, timeoutSec, reason: w.reason ?? ((r) => (r && !r.startsWith('--') ? r : undefined))(String(opt('reason') ?? '').trim()) }); // I-060: any wait may say why (--reason); the board shows that, not a path or regex
+  const cool = cmd === 'phone-temp' ? await markCooling(opt('owner') ?? opt('as') ?? process.env.FW_LOCK_OWNER) : null; // I-168
   const r = await pollUntil(w.check, { timeoutSec, holdSec, onChange, ...(w.minMs && { minMs: w.minMs }), ...(w.maxMs && { maxMs: w.maxMs }) });
+  if (cool) await cool.end();
   if (r.result === 'met') { console.log(`MET ${w.what}: ${r.detail ?? r.state}${holdSec ? ` (held ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return EXIT.met; }
   if (r.result === 'never') { console.log(`${w.never?.word ?? 'NEVER'} ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return w.never?.exit ?? EXIT.never; }
   console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`);
   return EXIT.timeout;
+}
+
+/** I-168: a phone-temp wait by the phone's holder (inside `lock.mjs run iphone`: its token; or --owner holding it) is a
+ *  cooling use of the hold (lib/lock.mjs describeHold, a run marker with cooling: true): the phone ledger counts it as
+ *  cooling and the idle alarm as use. Best effort: no hold, or a failed mark, changes nothing about the wait. */
+async function markCooling(owner) {
+  try {
+    const L = await import('./lib/lock.mjs');
+    const who = L.heldPhoneOwner({ owner });
+    if (!who) return null;
+    await L.describeHold('iphone', { owner: who, run: { text: 'cooling: wait.mjs phone-temp', since: new Date().toISOString(), pid: process.pid, cooling: true } });
+    return { end: () => L.describeHold('iphone', { owner: who, run: null, runPid: process.pid }).catch(() => {}) };
+  } catch { return null; }
 }
 
 runMain(main, { errCode: EXIT.usage });

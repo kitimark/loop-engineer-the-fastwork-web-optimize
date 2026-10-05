@@ -51,7 +51,7 @@ test('safari-restart needs the iphone lease and touches nothing without it', asy
 
 test('via WDA (auto, WDA up): terminate, launch, then the URL loads in the restored tab (no new tab); prints SAFARI_RESTARTED', async () => {
   const ph = await fakePhone();
-  lock(ph.env, 'acquire', 'iphone', '--owner', 'me');
+  lock(ph.env, 'acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const page = `http://127.0.0.1:${await freePort()}/page?x=1`; // nothing listens: Safari shows "Failed to open page" there, still that origin
   const r = node(IPHONE, ['safari-restart', '--owner', 'me', '--url', page], { env: ph.env });
   assert.equal(r.code, 0, r.out);
@@ -70,7 +70,7 @@ test('via WDA (auto, WDA up): terminate, launch, then the URL loads in the resto
 
 test('no --url: Safari comes back on its restored tab; a LAN tab url is printed as lan-host', async () => {
   const ph = await fakePhone();
-  lock(ph.env, 'acquire', 'iphone', '--owner', 'me');
+  lock(ph.env, 'acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = node(IPHONE, ['safari-restart', '--owner', 'me'], { env: ph.env });
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^SAFARI_RESTARTED via wda in \d+ ms: http:\/\/lan-host:5441\/$/m);
@@ -80,7 +80,7 @@ test('no --url: Safari comes back on its restored tab; a LAN tab url is printed 
 
 test('via devicectl: one launch --terminate-existing, the URL in the restored tab; auto falls back to it when WDA is down', async () => {
   const ph = await fakePhone();
-  lock(ph.env, 'acquire', 'iphone', '--owner', 'me');
+  lock(ph.env, 'acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const page = `http://127.0.0.1:${await freePort()}/d`;
   const r = node(IPHONE, ['safari-restart', '--owner', 'me', '--via', 'devicectl', '--url', page], { env: ph.env });
   assert.equal(r.code, 0, r.out);
@@ -99,7 +99,7 @@ test('via devicectl: one launch --terminate-existing, the URL in the restored ta
 
 test('Safari restores no page: the driver opens the URL (WDA /url, devicectl --payload-url); without --url that is an error', async () => {
   const ph = await fakePhone(['--launch-blank']);
-  lock(ph.env, 'acquire', 'iphone', '--owner', 'me');
+  lock(ph.env, 'acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const page = `http://127.0.0.1:${await freePort()}/fresh`;
   const r = node(IPHONE, ['safari-restart', '--owner', 'me', '--url', page, '--timeout', '6'], { env: ph.env });
   assert.equal(r.code, 0, r.out);
@@ -118,7 +118,7 @@ test('Safari restores no page: the driver opens the URL (WDA /url, devicectl --p
 
 test('failures are clear and safe: devicectl naming the UDID, device and a LAN host; Safari never coming back; WDA launch failing', async () => {
   const ph = await fakePhone(['--launch-never']);
-  lock(ph.env, 'acquire', 'iphone', '--owner', 'me');
+  lock(ph.env, 'acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const f = node(IPHONE, ['safari-restart', '--owner', 'me', '--via', 'devicectl'], { env: { ...ph.env, FAKE_APPCTL_FAIL: '1' } });
   assert.equal(f.code, 1);
   assert.match(f.stderr, /safari-restart: devicectl launch --terminate-existing failed \(exit 1\): .*<udid>.*lan-host/);

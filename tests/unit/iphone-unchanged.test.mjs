@@ -22,6 +22,9 @@
 //     exactly as before. open measures nothing.
 //   - requireLease refuses while another owner's console step is on the phone (I-123 d: lib/phone-step.mjs runnerRefusal,
 //     --ignore-step), after the lease check and before anything touches Safari; it measures nothing (RUNNER_GUARD).
+//   - requireLease's lease check is lib/lock.mjs phoneHolder (I-168: inside `lock.mjs run iphone` the hold's token in
+//     $FW_LOCK_HELD names the holder, so a process hold passes as a lease did; the refusal names the run form); it
+//     measures nothing (HOLDER).
 // The 2226d51 pins still hold for the blocks with those lines put back, so everything else in them stays pinned.
 // One intended MEASUREMENT-CODE change (incident I-141, 2026-10-04): `record` runs through lib/iphone-record.mjs
 // (recordRun), which polls the logger every --poll s (default 5 s, 0.2 Hz; 0 = none) and saves as it goes, then does the
@@ -65,7 +68,8 @@ test('iphone.mjs: scroll, record, open, status, PROBE, summarize and requireLeas
   assert.deepEqual(got, PINS);
   const lease = block(src, 'function requireLease() {', '}');
   assert.equal(lease.split(RUNNER_GUARD).length, 2, 'requireLease has the I-123 runner guard, once');
-  assert.equal(sha(lease.replace(RUNNER_GUARD, '')), PINS_BEFORE_I123.requireLease, 'requireLease: only the I-123 guard changed');
+  assert.equal(lease.split(HOLDER[0]).length, 2, 'requireLease takes the holder from phoneHolder (I-168), once');
+  assert.equal(sha(lease.replace(RUNNER_GUARD, '').replace(HOLDER[0], HOLDER[1])), PINS_BEFORE_I123.requireLease, 'requireLease: only the I-123 guard and the I-168 holder check changed');
   for (const [k, changes] of Object.entries(CHANGES)) {
     let b = block(src, `  if (cmd === '${k}') {`, '  }');
     for (const [now, then] of changes) {
@@ -107,14 +111,17 @@ const CHANGES = {
   status: [[STATUS_APPID, STATUS_83B7F7B]],
 };
 const RUNNER_GUARD = "\n  // I-123: never touch the phone under another owner's console step that is on it (begun, not over); the Simulator is\n  // not the phone. --ignore-step C-NNN: a step its owner left behind, named on purpose.\n  const busy = process.env.FW_SIM_SESSION ? null : runnerRefusal({ owner, ignore: opt('ignore-step') });\n  if (busy) throw new Error(busy);";
+/** I-168 [now, as in 2226d51]: the holder check */
+const HOLDER = ["  // I-168: the phone's holder: inside `lock.mjs run iphone` its token ($FW_LOCK_HELD) names it (no --owner needed), else\n  // --owner must hold it; the refusal names the run form\n  const owner = phoneHolder({ owner: opt('owner', process.env.FW_LOCK_OWNER), st: lockStatus('iphone') });",
+  "  const owner = opt('owner', process.env.FW_LOCK_OWNER);\n  const s = lockStatus('iphone');\n  if (!owner) throw new Error('--owner <topic> is required');\n  if (!s.holder || s.stale || s.holder.owner !== owner) {\n    throw new Error(`you (\"${owner}\") don't hold the iphone lease${s.holder ? ` (holder: \"${s.holder.owner}\"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);\n  }"];
 const PINS_BEFORE_I123 = { requireLease: '138ba8339515624d' }; // = 2226d51
 const PINS_83B7F7B = { scroll: '274b5a8facbe7f2f', status: '28dd691408056316', open: 'dabba5b174193021' }; // record: 'f8dea07e65914d49' until I-141
 /** I-141: the 2226d51 logger and stop expressions (as the record block held them before I-141), now in lib/iphone-record.mjs. */
 const RECORD_PINS = { RECORD_JS: '8d5ee37294abb430', RECORD_STOP_JS: 'b24a0eac1e12cfb5' };
 
 const PINS = {
-  requireLease: 'c3fe5c3908d05b4b', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: '88173866305dfab8', record: '93dc03f9721d7b09', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-141: record through lib/iphone-record.mjs; I-186: the thermal profile gate)
+  requireLease: '45455292d3543999', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
+  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: '88173866305dfab8', record: '93dc03f9721d7b09', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-168: its holder check; I-141: record through lib/iphone-record.mjs; I-186: the thermal profile gate)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

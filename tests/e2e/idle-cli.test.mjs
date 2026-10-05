@@ -23,9 +23,9 @@ const lockFiles = () => ['iphone.json', 'iphone.queue.json', 'chrome-measure.jso
 
 /** The iPhone lease was used and released, and fix-w still queues for it (its `acquire --wait 0` kept its place). */
 function phoneReleasedWithWaiter() {
-  let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900');
+  let r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--ttl', '900');
   assert.equal(r.code, 0, r.out);
-  r = lock('acquire', 'iphone', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
+  r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
   assert.equal(r.code, 3, r.out);
   r = lock('release', 'iphone', '--owner', 'runner');
   assert.equal(r.code, 0, r.out);
@@ -69,7 +69,7 @@ test('check: a queued waiter on a free iPhone is an alarm only past the limit; o
   assert.equal(node(CON, ['thread', 'list', '--json'], { env }).stdout.match(/"id": "T-/g).length, 1);
   assert.deepEqual(lockFiles(), before, 'read-only on the locks: holder and queue files unchanged');
   // the slot is taken: the episode ends, its thread closes, exit 0
-  r = lock('acquire', 'iphone', '--owner', 'fix-w', '--ttl', '900');
+  r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-w', '--ttl', '900');
   assert.equal(r.code, 0, r.out);
   // ops' check sees the end first; the thread closes on the lead's next run (only the lead or an assignee may close)
   r = idle(['check', '--by', 'mgmt-ops-10'], 10);
@@ -86,7 +86,7 @@ test('check: a queued waiter on a free iPhone is an alarm only past the limit; o
 });
 
 test('check: a status-board row waiting on the phone is ready work; without --by lead it prints only, and the lead posts later', () => {
-  let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900');
+  let r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--ttl', '900');
   assert.equal(r.code, 0, r.out);
   assert.equal(lock('release', 'iphone', '--owner', 'runner').code, 0);
   r = node(ST, ['set', 'morph-gpu', '--by', 'fix-morph-gpu', '--kind', 'fix', '--title', 'Morph on the GPU', '--state', 'waiting', '--waiting-on', 'other:queued for the iphone lease behind P-091'], { env });
@@ -135,9 +135,9 @@ test('watch: one IDLE line and one post for a new episode; stops on SIGTERM', as
 
 // I-111 (2026-10-04): fix-nav-morph held the lease ~6 min without a phone run while others queued; check said OK.
 test('I-111 check: a held iPhone lease with no phone run past the limit is IDLE while another owner queues; the holder is addressed; release ends it', () => {
-  let r = lock('acquire', 'iphone', '--owner', 'fix-h', '--ttl', '1800');
+  let r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-h', '--ttl', '1800');
   assert.equal(r.code, 0, r.out);
-  r = lock('acquire', 'iphone', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
+  r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
   assert.equal(r.code, 3, r.out);
   const before = lockFiles();
   r = idle(['check', '--by', 'lead'], 4);
@@ -160,13 +160,13 @@ test('I-111 check: a held iPhone lease with no phone run past the limit is IDLE 
 // I-189 (2026-10-04 22:34Z, T-167): between two holds of the marked P-118 block the holder queued for its next Mac hold
 // and the block's own result row (waiting on the holder) made a false IDLE. Marked: exit 0; the same unmarked: exit 3.
 test('I-189 check: a block-marked holder queued for its next Mac hold is not idle; without the mark the Mac-wait alarm stands', () => {
-  let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '1800', '--block', 'P-118');
+  let r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--ttl', '1800', '--block', 'P-118');
   assert.equal(r.code, 0, r.out);
   r = lock('acquire', 'chrome-measure', '--owner', 'mac-x', '--ttl', '1200');
   assert.equal(r.code, 0, r.out);
   r = lock('acquire', 'chrome-measure', '--owner', 'runner', '--wait', '0');
   assert.equal(r.code, 3, r.out);
-  r = lock('acquire', 'iphone', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
+  r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-w', '--ttl', '900', '--wait', '0');
   assert.equal(r.code, 3, r.out);
   r = node(ST, ['set', 'dd-fix', '--by', 'lead', '--kind', 'fix', '--title', 'Double drive', '--state', 'waiting', '--waiting-on', 'agent:runner', '--note', 'P-118 phone runs next'], { env });
   assert.equal(r.code, 0, r.out);
@@ -186,7 +186,7 @@ test('I-189 check: a block-marked holder queued for its next Mac hold is not idl
 // I-182 (user T-159 #6/#7): the iPhone stood free 15+ min while P-117, signed to run next, waited only on Mac-side
 // pre-checks; nothing was queued or marked waiting, so check said "no ready work". A startable mark on the board counts.
 test('I-182 check: a free iPhone and a row with startable phone work (--phone-next, arm-neutral) alarm; a pre-check that may change the arms does not', () => {
-  let r = lock('acquire', 'iphone', '--owner', 'runner', '--ttl', '900');
+  let r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'runner', '--ttl', '900');
   assert.equal(r.code, 0, r.out);
   assert.equal(lock('release', 'iphone', '--owner', 'runner').code, 0);
   r = node(ST, ['set', 'p117', '--by', 'fix-p', '--kind', 'phone', '--title', 'P-117 block', '--state', 'waiting', '--waiting-on', 'chrome:pre-checks', '--phone-next', 'P-117', '--phone-needs', 'arms change'], { env });

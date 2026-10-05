@@ -110,7 +110,7 @@ test('idle: the thread names no worker as addressee; the concerned owners (NOTIF
   const free = { ...a, held: false, heldIdle: false, holder: null };
   const f = D.threadFor(free, { steward: { agent: null, why: 'no steward set' } }).text;
   assert.doesNotMatch(f, /^Owners: /m);
-  assert.match(f, /^What unblocks it: the next of fix-nav-morph, fix-morph-gpu takes it \(node tools\/lock\.mjs acquire iphone --owner <you> \.\.\.\)\.$/m);
+  assert.match(f, /^What unblocks it: the next of fix-nav-morph, fix-morph-gpu takes it \(node tools\/lock\.mjs run iphone --owner <you> \.\.\. -- <phone part>\)\.$/m); // I-168: agents hold the phone only in run
   assert.match(f, /^No steward on duty \(no steward set\): the lead handles this thread/m);
   assert.deepEqual(D.addressees(a), ['fix-hero', 'fix-nav-morph', 'fix-morph-gpu'], 'the concerned owners (NOTIFY lines, board alert) are unchanged');
 });

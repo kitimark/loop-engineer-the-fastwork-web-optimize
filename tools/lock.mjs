@@ -2,7 +2,18 @@
 // Cross-worktree locks for the shared physical resources (see tools/lib/lock.mjs).
 //
 //   node tools/lock.mjs status [resource] [--json]
-//   node tools/lock.mjs acquire iphone --owner <topic> [--ttl 900] [--wait 0] [--url https://lan:5231/] [--note "..."]
+//   node tools/lock.mjs run iphone --owner <you> [--max-seconds 900] [--keep 120] [--block <ticket>] -- <phone part>   # I-168
+//       how agents hold the iPhone (phone hold v2 T2): a process hold, taken when the command starts (strict FIFO) and
+//       given back when it exits. --max-seconds (default and cap 900; up to 3600 with --block, which marks the ticketed
+//       block as `doing --block` does) declares its length: past it the hold is OVERDUE and warns, the part is never
+//       killed. --keep S (1..180): after the command the phone stays yours S s (a keep lease, `status`: KEEP); your next
+//       run iphone before then continues the hold (same token), otherwise it ends by itself. Its command gets
+//       FW_LOCK_HELD=iphone:<token>: iphone.mjs, ioscap.mjs and wait.mjs phone-temp inside it pass as the holder (no
+//       --owner needed); wait.mjs phone-temp marks a cooling use. `renew` does nothing on it (it ends with its process).
+//   node tools/lock.mjs acquire iphone --owner user|user-<x> [--ttl 900] [--wait 0] [--url https://lan:5231/] [--note "..."]
+//       a lease: only for the user's own hand test (owner user / user-*) and the lead (--lead --reason "<why>": any
+//       owner, one "lead-lease" line in locks/audit.log). An agent's acquire iphone exits 2 and names the run form (I-168);
+//       --not-ready (below) stays open to everyone.
 //       --url host `lan` (or `lan-host`): this Mac's LAN address, kept as given and resolved by the phone tools at run time
 //       (lib/lan.mjs, `node tools/lan.mjs`; it changes on a Wi-Fi reconnect, I-073); acquire checks that it resolves now
 //   node tools/lock.mjs renew   iphone --owner <topic> [--ttl 900] [--no-shorten]
@@ -25,6 +36,7 @@
 //   node tools/lock.mjs run iphone --owner <lease holder> -- <cmd>     # I-155: phone-side work that is no phone run
 //       (xctrace thermal gate, pre-warm) under your own lease: marks the lease in use (meta.run, lockRun) while <cmd>
 //       runs, so the idle alarm does not call it unused; a phone run inside it gives the marker back at its end.
+//       Without a lease it is the process hold above (I-168): its marker (hold: true) then is no use on the ledger.
 //   node tools/lock.mjs release iphone --owner <topic> [--force]
 //   node tools/lock.mjs release iphone --owner <holder> --by lead|mgmt-devices|mgmt-desk*|<the desk> --reason "<why>"
 //       I-171: the lead or a delegate releases another owner's idle lease, audited ("lease-release" in locks/audit.log):
@@ -190,12 +202,12 @@ import { appendFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { RUN_PROFILES_ENV, removeRunProfiles } from './lib/cdp.mjs'; // I-106: throwaway profiles a hard kill left
-import { doctor, repair, moveWaiter, leaveQueue, releaseIdleLease, auditFile } from './lib/lock-repair.mjs';
+import { doctor, repair, moveWaiter, leaveQueue, releaseIdleLease, auditFile, auditLeadLease } from './lib/lock-repair.mjs';
 import { keepAwake, stopAwake, wrapsMeasurement, holdAwake, awakeProcesses } from './lib/awake.mjs';
 import { wrapsPhoneRun } from './lib/disk.mjs';
 import { pollUntil, parseSec, parseLockCondition, lockConditionMet, lockConditionText, lockHoldSec, EXIT as WAIT_EXIT } from './lib/wait.mjs';
 import { startWait, waitOwner, UNKNOWN, NO_OWNER_NOTE } from './lib/waits.mjs'; // I-058: live wait records for the status board
-import { describeHold, isUserOwner } from './lib/lock.mjs';
+import { describeHold, isUserOwner, keepHold, PHONE_HOLD, phoneAcquireRefusal } from './lib/lock.mjs'; // I-168: phone hold v2 T2
 import { warmLine, warmSummary } from './lib/sim-warm.mjs';
 import { parseJob } from './lib/hold-job.mjs'; // I-060: what a hold is for
 import { resolveLanUrl } from './lib/lan.mjs';
@@ -211,7 +223,7 @@ const own = dd >= 0 ? argv.slice(0, dd) : argv;
 const rest = dd >= 0 ? argv.slice(dd + 1) : [];
 const opt = (n, d) => { const i = own.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = own[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : own[i + 1]; };
 const flag = (n) => own.includes(`--${n}`);
-const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load', '--join-busy', '--doing', '--text', '--eta-min', '--block', '--between'];
+const VALUED = ['--owner', '--ttl', '--wait', '--url', '--note', '--timeout', '--max-seconds', '--by', '--reason', '--guard-age', '--move', '--to', '--until', '--for', '--weight', '--cap', '--join-load', '--join-busy', '--doing', '--text', '--eta-min', '--block', '--between', '--keep'];
 const pos = own.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(own[i - 1])));
 // `shared on|off <resource>` has one more word
 const [cmd, resource] = pos[0] === 'shared' ? [pos[0], pos[2]] : pos;
@@ -235,7 +247,7 @@ const KILL_GRACE_MS = 3000;
 // A process still running at the bound is named on stderr and in the holds.log line (`survivors`).
 const TREE_GONE_MS = 1500;
 // a normal hold that declared its length (`run --max-seconds`, I-020) and passed it
-const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
+const overdue = (h) => (!h.short && h.meta && h.meta.expectSec && Date.now() > Date.parse(h.partAt || h.acquiredAt) + h.meta.expectSec * 1000 ? ` OVERDUE (past its ${h.meta.expectSec} s; split long measurements into holds of 5-10 min, I-020)` : '');
 
 function fmt(s) {
   const h = s.holder, pad = ' '.repeat(16);
@@ -251,6 +263,7 @@ function fmt(s) {
   }
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}${awakeText(s)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
   if (s.grace) line += `\n${pad}KEPT: ${graceText(s.grace)}`; // I-123: not handed over in the middle of the user's step
+  if (h?.keep && !s.stale) line += `\n${pad}KEEP: "${h.owner}"'s run ended at ${h.keep.from}; the phone stays theirs until ${h.keep.until} (--keep ${h.keep.sec}): their next lock.mjs run iphone continues this hold, else it ends then (I-168)`;
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
   if (s.deferred?.length) line += `\n${pad}deferred by a phone block (I-160; not queued, they poll on): ${s.deferred.map((w) => `${w.owner} (since ${w.since})`).join(', ')}`;
   // the lane's line only while it is in use (review-lock-share N1: with the switch off and nothing shared, status reads as on main)
@@ -380,9 +393,14 @@ async function main() {
   const betweenMin = betweenOpt === undefined ? undefined : Number(betweenOpt);
   const marks = { ...(blockArg !== undefined ? { block: blockArg } : {}), ...(betweenMin !== undefined ? { betweenMin } : {}) };
   const marked = Object.keys(marks).length > 0;
-  if (marked && !['doing', 'acquire'].includes(cmd)) throw new Error('--block and --between are for lock.mjs doing iphone (and --block for acquire iphone)');
+  if (marked && !['doing', 'acquire'].includes(cmd) && !(cmd === 'run' && betweenMin === undefined)) throw new Error('--block and --between are for lock.mjs doing iphone (and --block for run iphone and acquire iphone)');
   if (marked && resource !== 'iphone') throw new Error(`--block and --between mark a phone block on the iphone lease (not ${resource})`);
-  if (cmd === 'acquire' && betweenMin !== undefined) throw new Error('--between is for lock.mjs doing iphone, after a hold of the block ends');
+  if ((cmd === 'acquire' || cmd === 'run') && betweenMin !== undefined) throw new Error('--between is for lock.mjs doing iphone, after a hold of the block ends');
+  // I-168: --keep S (run iphone only): keep the phone for this owner's next part for S s after the command
+  const keepOpt = opt('keep');
+  if (keepOpt !== undefined && (cmd !== 'run' || resource !== 'iphone')) throw new Error('--keep is for lock.mjs run iphone (keep the phone for your next part; I-168)');
+  const keepSec = keepOpt === undefined ? 0 : Number(keepOpt);
+  if (keepOpt !== undefined && !(Number.isInteger(keepSec) && keepSec >= 1 && keepSec <= PHONE_HOLD.keepMaxSec)) throw new Error(`--keep must be whole seconds 1..${PHONE_HOLD.keepMaxSec} (got ${keepOpt}; I-168)`);
   const markLine = (h) => {
     const b = h?.meta?.block, w = h?.meta?.between;
     return b ? `; phone block ${b.id}${w ? `, between holds until ${w.until} (Simulator sessions that fit may start; I-160)` : ', no between-holds window (Simulator sessions wait; I-160)'}` : '';
@@ -399,6 +417,14 @@ async function main() {
   const notReady = flag('not-ready');
   if (notReady && (cmd !== 'acquire' || resource !== 'iphone')) throw new Error('--not-ready is for lock.mjs acquire iphone (queue for the phone before your part can start; I-155)');
   if (notReady && blockArg !== undefined) throw new Error('--not-ready and --block do not combine: mark the block once the lease is yours');
+  // I-168 (phone hold v2 T2): agents hold the phone only while a command runs (`run iphone`); a lease is for the user's
+  // own test (user, user-*), the lead (--lead --reason, audited) and --not-ready queueing. Refused before anything is written.
+  const lead = flag('lead');
+  if (lead && (cmd !== 'acquire' || resource !== 'iphone')) throw new Error('--lead is for lock.mjs acquire iphone (I-168)');
+  if (cmd === 'acquire' && resource === 'iphone') {
+    const no = phoneAcquireRefusal({ owner, lead, reason: opt('reason'), notReady });
+    if (no) { console.error(no); return 2; }
+  }
   if (cmd === 'acquire') {
     const ttlSec = Number(opt('ttl', resource === 'iphone' ? 900 : 0)) || undefined;
     const waitSec = Number(opt('wait', 0));
@@ -438,6 +464,7 @@ async function main() {
     }
     if (res.ok && shared && res.mode === 'short') console.error(OFF_NOTICE(resource));
     if (res.ok && blockArg !== undefined) res.holder = await describeHold(resource, { owner, block: blockArg }); // I-160
+    if (res.ok && lead && !res.reentrant) auditLeadLease({ owner, reason: opt('reason'), holder: res.holder }); // I-168
     if (res.ok) { console.log(`ACQUIRED ${resource} for "${owner}"${res.holder.expiresAt ? ' until ' + res.holder.expiresAt : ''}${res.reentrant ? ' (renewed)' : ''}${sh(res.holder)}${res.holder.gateTimeout ? ' after a host-gate TIMEOUT: the host was not quiet, measurements in this hold are contaminated' : ''}`); console.log(JSON.stringify(res.holder, null, 1)); return 0; }
     if (res.notReady) { console.log(`QUEUED ${resource} (not ready): you ("${owner}") are #${res.position} in the queue and keep the place, but a hand-over serves the next ready waiter (I-155). Run acquire again within 10 min to keep it; without --not-ready when your part can start.`); return 3; }
     if (res.deferred) { console.log(`DEFERRED ${resource}: ${res.why}. You ("${owner}") are not queued while deferred; run acquire again (or --wait) to retry.`); return 3; }
@@ -489,8 +516,12 @@ async function main() {
     if (!rest.length) throw new Error('usage: node tools/lock.mjs run <resource> --owner X -- <cmd> [args]');
     // a normal hold declares its length (I-020): --max-seconds, default NORMAL_HOLD_SEC on chrome-measure; past it the
     // command keeps running (a measurement is never killed), but it warns and `status` shows the hold OVERDUE
-    const expectSec = !short && !shared && (opt('max-seconds') !== undefined || LEASE_POLICY[resource]) ? Number(opt('max-seconds', NORMAL_HOLD_SEC)) : undefined;
+    // I-168: a phone hold (run iphone) declares its length too: default and cap 900 s, 3600 s for a ticketed block (--block)
+    const phone = resource === 'iphone' && !short && !shared;
+    const phoneCap = blockArg ? PHONE_HOLD.blockMaxSec : PHONE_HOLD.maxSec;
+    const expectSec = !short && !shared && (opt('max-seconds') !== undefined || LEASE_POLICY[resource] || phone) ? Number(opt('max-seconds', phone ? PHONE_HOLD.maxSec : NORMAL_HOLD_SEC)) : undefined;
     if (expectSec !== undefined) { if (!(expectSec > 0)) throw new Error(`--max-seconds must be a number of seconds > 0 (got ${opt('max-seconds')})`); meta.expectSec = expectSec; }
+    if (phone && expectSec > phoneCap) throw new Error(`run iphone --max-seconds is at most ${phoneCap} s${blockArg ? ' for a ticketed block' : ` (${PHONE_HOLD.blockMaxSec} s with --block <ticket>)`}: the phone is held only while a phone part runs; split longer work into parts (--keep keeps it between them; I-168)`);
     // I-070: a --no-timing hold is a measurement (keeps the Mac awake) only when its command wraps a phone part or a Sim session
     const awake = noTiming && wrapsMeasurement(rest) ? true : undefined;
     if (wrapsPhoneRun(rest)) meta.phoneRun = true; // I-124: a phone run is never refused for disk space (lead's ruling)
@@ -499,6 +530,7 @@ async function main() {
     const queuedAt = new Date().toISOString(); // I-167: the phone ledger counts the iphone holder's Mac wait from here
     const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight, job, sim } : {}), timeoutSec: Number(opt('timeout', 3600)) });
     if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
+    if (blockArg !== undefined) await describeHold(resource, { owner: holder?.owner ?? owner, block: blockArg }); // I-160 / I-168: run iphone --block <ticket> marks the block
     // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds
     const bounded = short || shared;
     // what the command needs to re-enter this hold: a reader's FW_LOCK_SHARED (never FW_LOCK_HELD, B1), an exclusive
@@ -526,7 +558,7 @@ async function main() {
     // I-155: a `run iphone` under the owner's lease is phone-side work (thermal gate, pre-warm): the lease is in use while it
     // runs (meta.run, lockRun: it keeps a between-holds window; the idle alarm reads it as use)
     const runMark = resource === 'iphone' && child.pid
-      ? describeHold('iphone', { owner, run: { text: String(opt('doing') ?? rest.join(' ')).slice(0, 120), since: new Date().toISOString(), pid: child.pid, lockRun: true } }).then(() => true, () => false)
+      ? describeHold('iphone', { owner, run: { text: String(opt('doing') ?? rest.join(' ')).slice(0, 120), since: new Date().toISOString(), pid: child.pid, lockRun: true, ...(reentrant ? {} : { hold: true }) } }).then(() => true, () => false) // I-168: hold: the command is the hold itself (a process hold), so the ledger counts the runs inside it, not it
       : null;
     // I-024: a short job's tree can leave the command's group (a nested `run --short` detaches its own
     // command), and orphans lose their parent link once the command exits. So every kill also signals each
@@ -639,6 +671,11 @@ async function main() {
       logHold(endedAt, { ...exit, start: powerStart, end: powerEnd, tag: hs.tag });
       if (hs.tag) console.error(`[lock ${resource}] ${hs.tag} during this hold: ${hs.reasons.join('; ')} (T8+, I-033)`);
     } else logHold(endedAt, exit); // a no-timing hold or a shared reader: no display / wake record
+    // I-168: --keep S: the phone stays this owner's for S s (a keep lease); its next run iphone continues the hold
+    if (keepSec && !reentrant && holder?.kind === 'process' && !overran) {
+      const k = await keepHold(resource, { token: holder.token, keepSec }).catch(() => null);
+      if (k) console.error(`[lock ${resource}] kept for "${owner}" ${keepSec} s, until ${k.expiresAt}: your next node tools/lock.mjs run iphone --owner ${owner} before then continues this hold; otherwise it ends by itself (I-168)`);
+    }
     rel();
     return overran ? 124 : code;
   }

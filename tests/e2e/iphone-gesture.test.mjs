@@ -83,7 +83,7 @@ test('gesture and wda start refuse without the lease (no --owner, nobody holds i
     r = node(IPHONE, [...cmd, '--owner', 'me'], { env });
     assert.match(r.stderr, /you \("me"\) don't hold the iphone lease/);
   }
-  lock('acquire', 'iphone', '--owner', 'someone-else');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'someone-else');
   for (const cmd of [['gesture', f], ['wda', 'start']]) assert.match(node(IPHONE, [...cmd, '--owner', 'me'], { env }).stderr, /\(holder: "someone-else"\)/);
 });
 
@@ -99,7 +99,7 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
     S({ dir: 'down', px: 450, ms: 400, profile: 'still' }),
     { type: 'repeat', times: 3, until: 'atTop', steps: [S({ dir: 'down', ms: 140 }), { type: 'pause', ms: 800 }] },
   ], { params: { endY: 1900 } });
-  lock('acquire', 'iphone', '--owner', 'me', '--url', 'http://192.168.0.2:5441/');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--url', 'http://192.168.0.2:5441/');
   const out = join(phone.dir, 'run.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--label', 'e2e', '--out', out], { env: phone.env, timeout: 90000 });
   assert.equal(r.code, 0, r.out);
@@ -184,7 +184,7 @@ test('gesture end to end on the fake phone: strokes as real touches, recorder, m
 
 test('gesture refuses when Safari is not in front: no stroke is sent', async () => {
   const phone = await fakePhone(['--foreground=com.apple.springboard']);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([S({})]), '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /refusing: com\.apple\.springboard is in front, not Safari/);
@@ -194,7 +194,7 @@ test('gesture refuses when Safari is not in front: no stroke is sent', async () 
 
 test('gesture: the WDA runner itself in front is named without its team id (review-gesture 2)', async () => {
   const phone = await fakePhone(['--foreground=fw.wda.abcde12345.WebDriverAgentRunner.xctrunner']);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([S({})]), '--owner', 'me'], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /refusing: <runner-bundle-id>\.xctrunner is in front, not Safari/);
@@ -203,7 +203,7 @@ test('gesture: the WDA runner itself in front is named without its team id (revi
 });
 
 test('gesture: no WDA running is a clean error that says how to start it', async () => {
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const phone = await fakePhone();
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([S({})]), '--owner', 'me'], { env: { ...phone.env, FW_WDA_URL: env.FW_WDA_URL }, timeout: 30000 });
   assert.equal(r.code, 1, r.out);
@@ -214,7 +214,7 @@ test('gesture: no WDA running is a clean error that says how to start it', async
 test('runtime pull-to-refresh guard: a down stroke on a short page is refused before it is sent; partial data saved', async () => {
   const phone = await fakePhone(['--doc-height=1100']); // maxY 285-325: below the 450 px the down stroke needs
   const f = scriptFile([{ type: 'reload' }, S({}), { type: 'until', cond: 'atEnd', timeoutMs: 6000 }, S({ dir: 'down', px: 450, ms: 400, profile: 'still' })]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'guard.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
@@ -228,7 +228,7 @@ test('runtime pull-to-refresh guard: a down stroke on a short page is refused be
 test('pull guard: a down stroke waits for two still samples (momentum after a fling), then goes (review-gesture 5)', async () => {
   const phone = await fakePhone();
   const f = scriptFile([{ type: 'reload' }, S({}), S({ dir: 'down', px: 300, ms: 400, profile: 'still' })]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'still.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
@@ -243,7 +243,7 @@ test('pull guard: a down stroke waits for two still samples (momentum after a fl
 test('pull guard: a page that never comes to rest is refused before the down stroke (review-gesture 5)', async () => {
   const phone = await fakePhone(['--doc-height=1800', '--jitter-at-end']); // maxY 985 collapsed
   const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({}), { type: 'pause', ms: 300 }, S({ dir: 'down', px: 120, ms: 400, profile: 'still' })]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'jitter.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
@@ -260,7 +260,7 @@ test('pull guard: a page that never comes to rest is refused before the down str
 test('an up push at the end starts on a still page: two still samples first (review-gesture-2)', async () => {
   const phone = await fakePhone(['--doc-height=1800']);
   const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({ px: 200, ms: 400, profile: 'still' })]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'endpush.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
@@ -275,7 +275,7 @@ test('an up push at the end starts on a still page: two still samples first (rev
 test('the page hidden mid-run (another app in front) stops before the next stroke (review-gesture 3)', async () => {
   const phone = await fakePhone(['--hide-after-strokes=1']);
   const f = scriptFile([{ type: 'reload' }, S({}), { type: 'pause', ms: 300 }, S({}), S({})]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'hidden.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
@@ -289,7 +289,7 @@ test('the page hidden mid-run (another app in front) stops before the next strok
 
 test('a landscape page (innerWidth != 430) is refused before the first stroke', async () => {
   const phone = await fakePhone(['--width=932']);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([S({})]), '--owner', 'me', '--out', join(phone.dir, 'land.json')], { env: phone.env, timeout: 30000 });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /the page is 932 px wide, the script is for 430 \(portrait\): rotated\? stopped before s1, nothing was sent/);
@@ -299,7 +299,7 @@ test('a landscape page (innerWidth != 430) is refused before the first stroke', 
 test('a lease lost mid-run stops before the next stroke', async () => {
   const phone = await fakePhone();
   const f = scriptFile([{ type: 'reload' }, { type: 'pause', ms: 6000 }, S({})]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const run = nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'lost.json')], { env: phone.env, timeout: 60000 });
   for (let i = 0; i < 100 && !phone.wip().some((e) => e.reloaded); i++) await sleep(100);
   await sleep(1000);
@@ -311,7 +311,7 @@ test('a lease lost mid-run stops before the next stroke', async () => {
 });
 
 test('a lease too short for the run is refused up front', async () => {
-  lock('acquire', 'iphone', '--owner', 'me', '--ttl', '20');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '20');
   const r = node(IPHONE, ['gesture', PROTOCOL, '--owner', 'me'], { env });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /your iphone lease ends in \d+ s, the run needs ~\d+ s: node tools\/lock\.mjs renew iphone --owner me --ttl 900/);
@@ -328,7 +328,7 @@ test('I-112: wda check is a lease-free preflight (0 READY / 3 NOT READY); a gest
   const up = node(IPHONE, ['wda', 'check'], { env: phone.env });
   assert.equal(up.code, 0, up.out);
   assert.match(up.stdout, /^WDA READY build fake os 26\.6\.1$/m);
-  lock('acquire', 'iphone', '--owner', 'me', '--ttl', '900');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '900');
   const f = scriptFile([S({})]);
   const r = node(LOCK, ['run', 'chrome-measure', '--owner', 'me', '--no-timing', '--max-seconds', '60', '--', process.execPath, IPHONE, 'gesture', f, '--owner', 'me'], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
@@ -340,7 +340,7 @@ test('I-112: wda check is a lease-free preflight (0 READY / 3 NOT READY); a gest
 test('a reconnect that fails saves its error without a LAN address or another tab\'s title (review-t1a N1)', async () => {
   const phone = await fakePhone(['--extra-tabs-after-reload']); // after the reload, two tabs on the mirror's host and a private one
   const f = scriptFile([{ type: 'reload' }, S({})]);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'n1.json');
   const r = await nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', out], { env: phone.env, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
@@ -356,7 +356,7 @@ test('a reconnect that fails saves its error without a LAN address or another ta
 test('--morph-log: installed after each page load, read per segment, morph-active stats in the summary', async () => {
   const phone = await fakePhone();
   const mlog = join(phone.dir, 'morph-calls.jsonl');
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'm.json');
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'ml', '--out', out, '--morph-log', join(FIX, 'fake-morph-log.mjs')],
     { env: { ...phone.env, FAKE_MORPH_LOG: mlog }, timeout: 60000 });
@@ -377,7 +377,7 @@ test('--morph-log: installed after each page load, read per segment, morph-activ
 
 test('--morph-log survives morph-log\'s own connection taking the tab from the run\'s connection (one client per page, I-038)', async () => {
   const phone = await fakePhone(['--one-client-per-page']);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'mp.json');
   const t0 = Date.now();
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'mark', name: 'mid' }, { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'mp', '--out', out, '--morph-log', join(FIX, 'fake-morph-log.mjs')],
@@ -403,7 +403,7 @@ test('--morph-log survives morph-log\'s own connection taking the tab from the r
 
 test('--inject (I-038): the logger runs on the run\'s own connection after each page load, read per segment; values and morph stats saved', async () => {
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'inj.json');
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'inj', '--out', out, '--inject', join(FIX, 'fake-inject.mjs')],
     { env: phone.env, timeout: 60000 });
@@ -427,7 +427,7 @@ test('--inject (I-038): the logger runs on the run\'s own connection after each 
 
 test('--timeline (I-079): WebKit Timeline on the run\'s own connection, re-armed after every reload; one file per page load with the sync pair to the recorder\'s clock', async () => {
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const out = join(phone.dir, 'tl-run.json'), tlOut = join(phone.dir, 'tl.json');
   const r = await nodeAsync(IPHONE, ['gesture', scriptFile([{ type: 'reload' }, S({}), { type: 'mark', name: 'mid' }, { type: 'reload' }, S({})]), '--owner', 'me', '--label', 'tl', '--out', out, '--timeline', tlOut, '--inject', join(FIX, 'fake-inject.mjs')],
     { env: phone.env, timeout: 60000 });
@@ -477,7 +477,7 @@ test('--timeline (I-079): WebKit Timeline on the run\'s own connection, re-armed
 
 test('--timeline (I-079) is refused with --morph-log or without a file, before WDA or the page are touched', async () => {
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const f = scriptFile([{ type: 'reload' }, S({})]);
   const run = (...extra) => nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'x.json'), ...extra], { env: phone.env, timeout: 30000 });
   let r = await run('--timeline', join(phone.dir, 'tl.json'), '--morph-log', join(FIX, 'fake-morph-log.mjs'));
@@ -493,7 +493,7 @@ test('--timeline (I-079) is refused with --morph-log or without a file, before W
 
 test('--inject is refused with --morph-log, and a missing or malformed logger is refused, before WDA or the page are touched (I-038)', async () => {
   const phone = await fakePhone();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const f = scriptFile([{ type: 'reload' }, S({})]);
   const run = (...extra) => nodeAsync(IPHONE, ['gesture', f, '--owner', 'me', '--out', join(phone.dir, 'x.json'), ...extra], { env: phone.env, timeout: 30000 });
   let r = await run('--inject', join(FIX, 'fake-inject.mjs'), '--morph-log', join(FIX, 'fake-morph-log.mjs'));
@@ -539,7 +539,7 @@ test('wda build: lease; only inside our own chrome-measure hold (not on a free l
   const wda = (...a) => node(IPHONE, ['wda', ...a], { env: w.env, timeout: 30000 });
   assert.match(wda('build').stderr, /--owner <topic> is required/);
   assert.match(wda('build', '--owner', 'me').stderr, /you \("me"\) don't hold the iphone lease/);
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   let r = wda('status');
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, new RegExp(`^sources: +missing; run: git clone --depth 1 --branch v[0-9.]+ https://github\\.com/appium/WebDriverAgent ${w.home}/WebDriverAgent$`, 'm'));
@@ -609,7 +609,7 @@ test('wda build: lease; only inside our own chrome-measure hold (not on a free l
 test('wda build: SIGTERM to the hold stops xcodebuild\'s whole process group, nothing keeps building after the lock is released (review-gesture-2 B2)', async () => {
   const w = wdaEnv();
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const pids = tempDir('fw-xbslow-');
   const p = await startProc(process.execPath, [LOCK, 'run', 'chrome-measure', '--owner', 'me', '--max-seconds', '600', '--', process.execPath, IPHONE, 'wda', 'build', '--owner', 'me', '--team', 'ABCDE12345', '--udid', '00008130-0011223344556677'],
     { env: { ...w.env, FAKE_XCODEBUILD_SLOW: pids }, ready: () => existsSync(join(pids, 'xb.pid')) && existsSync(join(pids, 'helper.pid')), timeout: 30000 });
@@ -635,7 +635,7 @@ test('wda build: SIGTERM to the hold stops xcodebuild\'s whole process group, no
 test('wda start: a runner that fails to launch is a clean error whose xcodebuild log tail carries no ids (review-gesture 2)', async () => {
   const w = wdaEnv();
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   assert.equal(heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']).code, 0);
   const r = await nodeAsync(IPHONE, ['wda', 'start', '--owner', 'me', '--timeout', '20'], { env: { ...w.env, FAKE_XCODEBUILD_RUN_FAIL: '1' }, timeout: 60000 });
   assert.equal(r.code, 1, r.out);
@@ -649,7 +649,7 @@ test('wda start (lease) runs the runner and iproxy, activates Safari; status see
   const w = wdaEnv();
   w.env.FAKE_IPROXY_DELAY_MS = '700'; // the fake runner is ready without iproxy, so its argv log may come late (I-055)
   mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   assert.equal(heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']).code, 0);
   let r = node(IPHONE, ['wda', 'start'], { env: w.env });
   assert.match(r.stderr, /--owner <topic> is required/);
