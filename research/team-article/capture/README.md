@@ -360,3 +360,8 @@ from the top to the end of the page. Everything below was fixed, and dry-run on 
 - p: pA2 (not shown) failed the correlation (r 0.49) and passed the edge fallback (127 ms), labelled `[POST-HOC EDGE]`.
   The shown pair comes from two holds (pA1 H5 at 31.9 °C, pV1 H6 at 34.2 °C; both Serious under Xcode).
 - All three: the capture differs from the page log (CAPTURE-DIFFERS; iOS scrolls in its UI process), as before.
+- Countdown band, extra change (OBSERVED, cause unchecked): on both shown runs the band shows one more change 217 ms
+  after the sixth digit change, at the same place in both arms' windows. Not checked what it is; not mentioned in the
+  clip's caption (no frame was viewed; I-062).
+- User review: console step C-064 (localhost review page with the three MP4s inline, captions in plain words, the
+  post-hoc clock note on clips 1 and 2); answer OK / not OK + notes.
