@@ -72,51 +72,83 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
-- 10-05 ~11:3xZ **P-097 7d check (owner, scratch, no data); fix-people-word; P-135 earmarked.**
+- 10-05 ~10:4xZ **P-129 result read: valid block, 2 of 8 in; part A MAIN-LED, part B SPLIT (threshold-sensitive).**
+  - Inputs: iphone-runner's report (block done ~10:36Z), run files in worktree-agent-a7696771bf38f1229 out/p129/runs. Ops
+    re-ran the self-test (PASS 48) and reader rev 1.1 (06f74f5d19ca, on main) on them: no invalid run, sentinels S0 57.1
+    fps 1.8 %, S1 56.2 fps 2.1 %, both PASS.
+  - Gates: 6 holds, gate lines at H1 start, H3 end, H4 start and H6 end all PASS. PMSET ok in all 6 holds. TAIL: no
+    re-runs, no `.prev` files.
+  - Crash: no run was re-run or dropped because of it (E1/L1/L2/E2 passed every gate under rev 1.1). H2/H3 logs are in
+    out/p129/part1/, unchanged.
+  - Readings:
+    - **Part A: MAIN-LED** at dt>30/34/38, with busy and busyRF. Not sensitive.
+    - **Part B: SPLIT.** rE 0.188, rL 0.155, per-L 0.188/0.195/0.119/0.122 against 0.141. The pooled HERO criteria are met;
+      only 2 of 4 L runs pass.
+    - Ops twin check (reader's readRun, descriptive): SPLIT at dt>30, **HERO at dt>38**. So part B is **threshold-sensitive**
+      (CLAUDE.md twins rule; the frozen reader prints twins for part A only). LOAD at no twin.
+    - **Part S: 0 of 97.** The matching works: about 47 fires of 200 ms timers per run, none in after-lift slow gaps.
+  - Predictions: 1 in, 2 in (W1 0.224); 3-8 out. Ratio 2 of 8, sum of p 4.85. Row filled.
+  - Disclosures for the lead:
+    - (a) The timer grid read 30 ms at H1/H3/H4 and **8 ms at the H6 end gate** (F-255, UNRESOLVED). No card rule acts on
+      it, and the change time is unknown.
+    - (b) L3/L4 (part 2) hero rates fell to 0.12 while E3/E4 in the same holds stayed at 0.18 (OBSERVED, cause unknown).
+      SPLIT rests on those two runs.
+    - (c) Timeline on adds main-thread work (card limit). The MAIN share's recorder part is UNRESOLVED; the decisive check
+      is a Timeline-off split, which this card does not have.
+  - Answered fix-hero-exit-threaded (T-193):
+    - Part S = no. The last-screen slow frames are RENDER 101 / MIXED 142 / MAIN 0, so none of them is main-thread late in
+      this block (MIXED still holds some main-thread work).
+    - Gave the run file paths. The build is P-124's V (7d research, JS 29c0d537e0c9), not v9-final.
+    - No P-id reserved; next free P-136.
+  - Clock fix: my entries from "P-130 SIGNED" up to "P-097 7d check" carried labels up to an hour late. They are now
+    relabelled from the ops commits' UTC times (d4830f1e 09:35Z ... 74d4579a 10:33Z). The matching time labels in
+    PREDICTIONS (P-097, P-129, P-130, P-131, P-132 c[3]) are corrected too.
+  - Next: the P-133 pre-data read (fix-toolbar-resize fd21ff9d); P-130 after its block; P-097 addendum; P-134.
+- 10-05 ~10:3xZ **P-097 7d check (owner, scratch, no data); fix-people-word; P-135 earmarked.**
   - fix-cd-roll-ca-r4 ran the lead's 7d checks early: site-pretty + morph-scroll-v9try patch = JS 1b2eecc66011; delta 0a53abca21ff applies with no rejects, node --check ok, result JS 2cfd990c788d; changed lines 4224a, 4267, 4285-4330, 4389a, 4421a, 4529a, 13850a, 14645a; V 5c203b483c18 vs 2cfd990c788d differ by exactly 7d's five hunks (the delta and 7d commute). Ops re-verifies at the addendum read.
   - 7d line range: 14167-14290 per the lead's ruling. The owner counted 14170-14292; if that count comes from the 7d build, the two differ by counting base only (the addendum records which). The delta clears both.
   - Addendum still due (after its B-only Simulator smokes, deferred behind the P-129 phone block): C1, C2, the two B-only tool fixes pinned with self-tests, scorer self-test 31 ok.
   - New topic: fix-people-word (user T-192) builds a timing proposal for the "People still need people" title word. Functional checks only, no phone, no timed runs; the user tries it after the phone blocks. If it needs a card id it claims P-135 from ops (earmarked).
   - a3c4ab06 landed ~10:30Z.
-- 10-05 ~11:2xZ **Base ruling for P-130 and P-097 rev 4.2 (lead accepted the ops proposal); landings.**
+- 10-05 ~10:2xZ **Base ruling for P-130 and P-097 rev 4.2 (lead accepted the ops proposal); landings.**
   - Landed: toolbar-resize 35094199 and 888df724 (now fe3e7fa3); ops 42fe246d as 85e9b04c. Lead memory note f99cb6a2: user phone steps are posted with --phone.
   - P-130 and P-097 rev 4.2 run as signed on C = 647c9ef2b1e2 (the pre-7d v9-final); each result claims only that base. No re-pin now.
   - Before either delta lands, its owner shows: (1) it applies cleanly to v9-final 1b2eecc66011 (189ca7ed); (2) node --check passes; (3) a byte-diff showing the delta touches no 7d line (JS 14167-14290). 7d is in the menu settle and both deltas are countdown code, so no overlap is expected; an overlap means a re-based card before landing.
   - The ops result reads of P-130 and P-097 name the base and check these three items before any land request. PREDICTIONS P-130 and P-097 rows carry the ruling in c[3].
-- 10-05 ~11:1xZ **PR-023 rev 7d landed (189ca7ed); v9-final JS moves.**
+- 10-05 ~10:2xZ **PR-023 rev 7d landed (189ca7ed); v9-final JS moves.**
   - fix/morph-scroll-7d landed as 189ca7ed (user accepted 10:15:50Z). v9-final JS 647c9ef2b1e2 to 1b2eecc66011; CSS e1359ab9994a unchanged. Row pr-018-menu-morph landed; fix-hero-exit-threaded parked.
   - P-134 (int-v8) pins 189ca7ed. P-133 (toolbar) design accepted in principle by the lead: drag strokes, at least 4 cycles, two holds; the ops pre-data read comes next.
   - Base question sent to the lead (open): P-130 (signed) and P-097 rev 4.2 (signed) both pin C = the pre-7d v9-final 647c9ef2b1e2 from immutable snapshots. Ops reads them as A/Bs on that base (valid as carded); the claim then holds for the pre-7d base, and each delta needs an apply check on 1b2eecc66011 before it lands. P-133 should pin the new v9-final.
-- 10-05 ~11:0xZ **P-132 RETIRED; P-134 reserved; phone order.** (lead ruling)
+- 10-05 ~10:2xZ **P-132 RETIRED; P-134 reserved; phone order.** (lead ruling)
   - P-132 (int-v8 v9.1 on 7c) is RETIRED, superseded by the user's PR-023 7d accept, with no data taken. PREDICTIONS has a P-132 row marked RETIRED (no predictions were registered).
   - int-v8 rebuilds as P-134: C = v9-final + 7d, V = v9.1 + 7d, scroll-cb and g11 rebased on the 7d delta. It pre-stages now and sends final shas for the ops pre-data read only after 7d lands on main.
   - P-133 = fix-toolbar-resize's fresh card (same arms and rule 1, capture for >= 12 moving frames, pre-scoring n check). Next free P-id: P-135.
   - Phone order: P-129 part 2, P-130, then P-134 in P-132's old slot.
-- 10-05 ~11:0xZ **P-131 result read: PASS (NOT REPRODUCED, scored as carded; reproduced)** (fix-toolbar-resize 888df724 on 35094199, worktree-agent-a59b828cbac654be5).
+- 10-05 ~10:2xZ **P-131 result read: PASS (NOT REPRODUCED, scored as carded; reproduced)** (fix-toolbar-resize 888df724 on 35094199, worktree-agent-a59b828cbac654be5).
   - Pins on disk = card: check-pgp da32f37117f6, score-bisect cb6f0c97b81b, split-io119 1ad22b858eb8, pgp-inject 2cfd9c00b9f1, sim-pgp 73215a3c3912; the result commit touches README, results.json, pgp-score.json and pgp-split.json only.
   - Ops re-ran check-pgp (INJECT-GATE all applied, 10/10), score-bisect (REPLICA false, DRIFT 0.032, VOID false; C-H1 n 7 thin) and split-io119 on out/toolbar-resize/simpgp: both JSONs equal the committed ones (timestamps aside).
   - Rule 1 applied as carded: no arm judged; the ratio table is labelled descriptive and not evidence. Predictions: P1 out, P2-P7 not scored, P8-P10 in. The pull-to-refresh guard cutting loops is disclosed with earlier holds.
   - Lead ruling: closes NR as carded, no rescue, no extra hold; C-H1's n 7 stays a fail under n >= 8. P-133 is reserved for fix-toolbar-resize: a fresh card, same arms and rule, capture sized for >= 12 moving frames per hold, a pre-scoring n check; ops pre-data read before the lead signs. (Next free P-id: see the entry above.)
   - Land request to the lead: 35094199 and 888df724. PREDICTIONS P-131 row filled (measured, in?, ratio, lesson).
-- 10-05 ~10:5xZ **Landings, PR-023 accepted, P-129 part 2 GO.**
+- 10-05 ~10:1xZ **Landings, PR-023 accepted, P-129 part 2 GO.**
   - Landed: P-129 reader rev 1.1 808f6f34 (signed by the lead on the ops PASS) and ops 47f67bc3 as 767f5166. I-205 resolved.
   - C-067 closed; the user accepted PR-023 at 10:15:50Z, so fix-hero-exit-threaded's land request is next.
   - iphone-runner has GO for P-129 part 2 (H4:E3,L3 H5:L4,E4 H6:TAIL), then P-130, with a Mac-queue gap between the blocks.
   - countdown-tick (lead question): nothing pending. The kit landed under rebased shas: e36f6124 as c9c87178, db956dd1 as 9521cc2f, 12b9ca9a as 5695a744; `git diff 12b9ca9a main -- fixes/countdown-tick fixes/countdown-tick-v9` is empty. The original branch shas are simply not ancestors of main. "Owner ended" on its board row is expected: fix-countdown-tick has no step until the P-130 data (the row can be parked with --resume-on land or after P-130).
-- 10-05 ~10:4xZ **P-129 reader rev 1.1 quick read: PASS** (iphone-runner 808f6f34 on worktree-agent-a7696771bf38f1229, rebased on 0e480e56).
+- 10-05 ~10:1xZ **P-129 reader rev 1.1 quick read: PASS** (iphone-runner 808f6f34 on worktree-agent-a7696771bf38f1229, rebased on 0e480e56).
   - Diff: p129-read.mjs only at line 175, the spread `Math.min(...)`/`Math.max(...)` over the Timeline records replaced by a pairwise loop (same results for empty input, NaN and -0); README §5 adds one disclosure paragraph. No rule, threshold, gate or output change. The remaining `Math.min(...TH)` is over a 3-element constant; line 123's spread is an array literal, not call arguments.
   - Hashes: reader 88835d4822e9 to 06f74f5d19ca (committed blob checked); self-test 110cc04eb8fb unchanged, ops re-ran it: SELFTEST PASS 48; phone scripts unchanged.
   - Proof (runner's harness): 74 self-test reader calls byte-identical (32a8f15a0500); dry-run records S9/E9/L9 and P-129 S0 identical; E1/L1/L2/E2 full files crashed under the old reader, and their 500/2000/5000-record cuts are identical old vs new (12 of 12).
   - Ops re-ran p129-gates.mjs (gate lines only, no readings) under rev 1.1: E1, L1, L2, E2 ok (idle 4.602, 21.684, 21.676, 4.604), S0 PASS fps 57.1 slow 0.018; exit 0. No genuine gate failure, so no re-run.
   - Tail: hold-H2.log (8218a7cca83e) and hold-H3.log (fdbfb43f9a87) moved unchanged to out/p129/part1/; their RERUN-NEEDED lines follow only the RangeError. TAIL now reads H4/H5 only; part 2 stays H4:E3,L3 H5:L4,E4 H6:TAIL.
   - For the result read: the final read must use rev 1.1 06f74f5d19ca; name the crash and the moved logs.
-- 10-05 ~10:3xZ **P-129 reader crash (lead FYI; for the P-129 result read).**
+- 10-05 ~10:0xZ **P-129 reader crash (lead FYI; for the P-129 result read).**
   - The frozen reader p129-read.mjs 88835d4822e9 crashes on real runs at line 175 (`Math.min(...)` spread: RangeError, call stack size) in the per-run gate. H2's E1 and L1 were flagged RERUN-NEEDED by the crash; the runs themselves exited 0.
   - Lead ruling to iphone-runner: finish part 1. In the user's Try-it pause, make a mechanical loop fix only (reader rev 1.1, disclosed), proven byte-identical on all self-test fixtures and the dry-run files. Re-read E1, L1, L2 and E2 offline. Tail re-runs only for genuine gate failures.
   - Ops quick read of rev 1.1 when its sha and proof arrive: (1) the diff touches only the min/max spreads (no rule, threshold or gate text); (2) the self-test passes with the same count as 110cc04eb8fb, and outputs are byte-identical on every fixture and dry-run file; (3) the new reader sha is pinned in the card as rev 1.1 with the crash disclosed; (4) every RERUN-NEEDED caused only by the crash is re-read, not re-run.
   - The P-129 result read names the crash, rev 1.1 and its proof, and checks that no run was re-run or dropped because of the crash alone.
-- 10-05 ~10:2xZ **P-097 rev 4.2 SIGNED** by the lead on the ops read, with C1 and C2 as addendum conditions; rep 1 starts on the ops addendum PASS, with no second lead sign. Landed: c370fbc2 and 4af5fed2 (fast-forward).
-- 10-05 ~10:1xZ **P-097 rev 4.2 pre-data read: PASS with C1-C2 for the addendum** (84a73795 on worktree-agent-a912806c0aa208fd8, child of rev 4.1 d6f1ff6d; README +79 lines, 0 deleted: additive as stated).
+- 10-05 ~09:5xZ **P-097 rev 4.2 SIGNED** by the lead on the ops read, with C1 and C2 as addendum conditions; rep 1 starts on the ops addendum PASS, with no second lead sign. Landed: c370fbc2 and 4af5fed2 (fast-forward).
+- 10-05 ~09:5xZ **P-097 rev 4.2 pre-data read: PASS with C1-C2 for the addendum** (84a73795 on worktree-agent-a912806c0aa208fd8, child of rev 4.1 d6f1ff6d; README +79 lines, 0 deleted: additive as stated).
   - Checked: the smoke disclosure (slot, holds.log line, files, the values seen), F-277 with source lines, rev 4.1 items kept and scored with M4 (Q2a not missed, Q2b missed, p miss 0.95), Q2b' classifier frozen from the trace alone (exact-text anchors, refuses another line, leak voids the load, the finish frame stays countdown, never touches Q2a/Q2b counts), G against the C/C2 A/A with the A/A-limited rule, calibration sums to 1.00, outcome table covers Q2b' and G.
   - Functional check on the smoke traces after the classifier was frozen (09:47:44Z): not a breach, since it ran a frozen tool on data already seen and changed nothing after; but the classifier was not committed at that time, so C1 below carries the proof.
   - C1: the addendum pins p097-lib.mjs, and rollClassify.toString() of the committed file hashes to 162cc869c642 (ops re-hashes it); otherwise Q2b' is flagged as revised after the functional check.
@@ -124,12 +156,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
   - Reading note for the result: Q2b' and G are smoke-informed; the pre-smoke less-work claim is Q1.
   - PREDICTIONS P-097 row: c[3] and c[7] carry rev 4.2 as a partial supersession.
   - P-131: S2/S3 committed at 35094199 (README card and results.json only; no prediction or pin changed; ops checked the diff). The owner queues the signed hold FIFO.
-- 10-05 ~10:0xZ **P-131 SIGNED; landings; P-129 split around a user Try-it.**
+- 10-05 ~09:5xZ **P-131 SIGNED; landings; P-129 split around a user Try-it.**
   - Landed: ops d6a97cb7 as abc76adf; art-worst-cases' clips as cc18469c.
   - P-131 SIGNED by the lead on the ops read of 97317e32. The owner fixes S2/S3 (text only) first and sends ops the sha; ops checks that only text changed and the pins hold.
   - The user takes the iPhone for a PR-023 Try-it between P-129's two halves (about 10:12Z, T-190). P-129 part 2 starts after it, with its own start gate.
   - P-132 (int-v8 v9.1): renamed in 60f2f434 (not rebased; no data). Waits on the y 5090 pixel result and the Simulator fling parity (after P-129), then the rebase; ops then reads it pre-data. serve132.sh snap builds out/p132/snap from the C and V source snaps and refuses other hashes; ops asked int-v8 to make snap the runner's step 1 and to say which added result gates the block.
-- 10-05 ~09:5xZ **P-131 pre-data read: PASS** (fix-toolbar-resize, card rev 1 at 8dec6b59 on worktree-agent-a59b828cbac654be5, rebased on 9f369b8a; P-id from the lead's pre-sign ruling, which also accepted the nvn/tps swap for trk/pbx before data).
+- 10-05 ~09:4xZ **P-131 pre-data read: PASS** (fix-toolbar-resize, card rev 1 at 8dec6b59 on worktree-agent-a59b828cbac654be5, rebased on 9f369b8a; P-id from the lead's pre-sign ruling, which also accepted the nvn/tps swap for trk/pbx before data).
   - Pins: committed blobs = disk = card for inject 2cfd9c00b9f1, driver 73215a3c3912, gate da32f37117f6, self-test 2647e1b4a53f, scorer cb6f0c97b81b (= main), split-io119 1ad22b858eb8, flick-hero-v1.json 6ae05e12ace9. Self-test re-run by ops: 61 checks ok. No data: out/toolbar-resize/simpgp is empty.
   - The card has the question, known facts with status words (F-265 OBSERVED; WebKit R1/R2 CONFIRMED with commit and lines), arms with coverage and side effects, a frozen gate (INSUFFICIENT, never NONE), the frozen scorer, rules 1-5 (NOT REPRODUCED, CONTROL-FAILED, reading, look, never a gain), 10 predictions with p.
   - Notes for the owner, before the hold (none changes a prediction): S1 done: 97317e32 (rebased on d4830f1e) adds only the README ruling text and a results.json line, script pins unchanged; S2 define P4/P5 when a tps run fails the gate (use the one valid run's ratio; none valid = P4/P5 not scored); S3 give vu0's "these units do not move with the toolbar" a status word (CSS Values 4 large/small viewport units are static; that iOS vh = lvh needs a reference or OBSERVED).
@@ -139,7 +171,7 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
   - Lead ruling: Q1, Q2a and Q2b stay as registered and are scored (Q2b expected out, disclosed as smoke-informed); Q2a stays on the registered M4 rule (smoke: V countdown 2-2.25/s, under 4); rev 4.2 adds Q2b' (a mechanical roll-window classifier, frozen and self-tested before rep 1) and a total-frames gate (V <= C at the page-end rest). Ops reads rev 4.2 and the addendum pre-data.
   - Lesson: tool smokes go on the plain baseline B, never on the arms, before the addendum.
   - P-129 running: Serious (Xcode-induced) confirmed by the lead 09:41Z; iphone-runner holds the phone since 09:42Z, block P-129, part 1. P-130 follows.
-- 10-05 ~09:4xZ **P-130 SIGNED by the lead (09:3xZ)** on the ops final delta check PASS, at C 647c9ef2b1e2 / e1359ab9994a, V 6841352e0328, delta 5bcc05af690c, serve.sh cc2203ef105e. Landed: countdown-tick 12b9ca9a as 5695a744, ops 870faa59 as 4a4e37a2 (55746afc earlier).
+- 10-05 ~09:3xZ **P-130 SIGNED by the lead (09:3xZ)** on the ops final delta check PASS, at C 647c9ef2b1e2 / e1359ab9994a, V 6841352e0328, delta 5bcc05af690c, serve.sh cc2203ef105e. Landed: countdown-tick 12b9ca9a as 5695a744, ops 870faa59 as 4a4e37a2 (55746afc earlier).
   - Phone order (lead): P-129 first (on C-065 and the lead's go), then P-130. Same xcode-serious profile, no profile pooling.
   - P-130 runner steps (iphone-runner, in its own checkout on main >= 5695a744; also on the device-plan board row):
     1. `node tools/fix.mjs apply v9-best --reset` (rebuilds the landed v9-final overlay from fixes/v9-best/patch.diff 4196eaa61d96).
