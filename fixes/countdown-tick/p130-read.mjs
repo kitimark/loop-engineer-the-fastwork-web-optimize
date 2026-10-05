@@ -6,7 +6,8 @@
 //   counted: true|false, startedAt: ISO, thermal: { start, end } ("serious" when the hold's pinned gate passed, else the
 //   gate's exit), holdVoid: null | "<why>", logger: <phone-logger.mjs read() JSON, with its own readAt> } ] }
 // Rules (all boundaries as written here):
-//   void run: the hold is VOID (holdVoid: a served-hash check, the Mac sleep check, an open failure); thermal start or end not "serious"; summary.hidden > 0; summary.changes < 100; summary.windowMs < 115000;
+//   void run: the hold is VOID (holdVoid: a served-hash check, the Mac sleep check, an open failure); gestureExit not 0
+//     (the gesture run failed, e.g. the stroke after the logger read, or a budget refusal); thermal start or end not "serious"; summary.hidden > 0; summary.changes < 100; summary.windowMs < 115000;
 //     recs[0] not tagged 'initial' (logger installed late); readAt < first change + 123000 (end grid read unfinished);
 //     summary.grid.start or .end missing; startedAt later than 2026-11-02T04:45:00Z (15 min before the countdown expiry).
 //   stratum of a grid read (p50 of the hop gaps, ms): >= 25 "30ms"; [6, 12] "8ms"; < 6 "fair"; (12, 25) "other".
@@ -32,6 +33,7 @@ export const stratumOf = (p50) => (p50 == null ? null : p50 >= 25 ? '30ms' : p50
 export function voidReasons(run) {
   const r = [], L = run.logger || {}, s = L.summary || {};
   if (run.holdVoid) r.push(`hold void: ${run.holdVoid}`);
+  if (run.gestureExit != null && run.gestureExit !== 0) r.push(`gesture exit ${run.gestureExit}`);
   if (String(run.thermal?.start).toLowerCase() !== 'serious') r.push(`thermal start ${run.thermal?.start}`);
   if (String(run.thermal?.end).toLowerCase() !== 'serious') r.push(`thermal end ${run.thermal?.end}`);
   if (!(s.hidden === 0)) r.push(`hidden ${s.hidden}`);
@@ -108,6 +110,8 @@ function selftest() {
     ['windowMs < 115000 -> void', B(C2, fake({ arm: 'V', windowMs: 110000 })), (o) => !o.runs[1].valid && o.verdict === 'VOID'],
     ['changes < 100 -> void', B(C2, fake({ arm: 'V', changes: 90 })), (o) => !o.runs[1].valid],
     ['read at 122 s -> void', B(C2, fake({ arm: 'V', readAfter: 122000 })), (o) => !o.runs[1].valid && /123 s/.test(o.runs[1].void.join())],
+    ['gesture exit 1 after the logger read -> void', B(C2, { ...V0, gestureExit: 1 }), (o) => !o.runs[1].valid && /gesture exit 1/.test(o.runs[1].void.join()) && o.verdict === 'VOID'],
+    ['gesture exit 0 or absent -> valid', B({ ...C2, gestureExit: 0 }, V0), (o) => o.runs[0].valid && o.runs[1].valid],
     ['hold void -> run void', B(C2, { ...V0, holdVoid: 'served hash' }), (o) => !o.runs[1].valid && o.verdict === 'VOID'],
     ['logger readAt (phone clock) preferred', B(C2, { ...fake({ arm: 'V' }), readAt: undefined, logger: { ...fake({ arm: 'V' }).logger, readAt: 1.8e12 + 124000 } }), (o) => o.runs[1].valid],
     ['thermal end fair -> void', B(fake({ arm: 'C', skips: 2, thermal: ['serious', 'fair'] }), V0), (o) => !o.runs[0].valid],

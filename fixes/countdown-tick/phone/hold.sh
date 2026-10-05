@@ -4,10 +4,12 @@
 # fixes/countdown-tick/phone-logger.mjs through gesture --inject. Adapted from toolbar-resize's phone/hold.sh (int-v8's
 # P-114 hold.sh), with credit: S/G items replaced by idle G runs with the logger, the gate made xcode-serious
 # (--accept-induced), no pre-warm (profile xcode-serious has none), a manifest for p130-block.mjs.
-# Runs inside the runner's phone block and a Mac-quiet no-timing hold per part (3 parts; ~150 s per item + ~40 s of gates, so
-# H1 ~640 s, H2/H3 ~490 s; declared 700 s):
+# Runs inside the runner's phone block and a Mac-quiet no-timing hold per part. A gesture run needs GESTURE_BUDGET_S =
+# max(150 s, 3x the estimate) = 397 s left in the hold (idle-p130 estMs 132350; I-112, gesture-run refuses with less),
+# so at most 2 items per part: ~150 s per item + ~60 s of checks and gates = ~360-400 s per part, declared 700 s, and the
+# second item starts with ~500 s left. 5 parts (~35 min with the gaps) plus one re-run fit the 3600 s block:
 #   node tools/lock.mjs run iphone --owner <runner> --block P-130 --max-seconds 3600 -- sh -c '
-#     for P in "H1 wC wV gC1 gV1" "H2 gV2 gC2 gC3" "H3 gV3 gV4 gC4"; do
+#     for P in "H1 wC wV" "H2 gC1 gV1" "H3 gV2 gC2" "H4 gC3 gV3" "H5 gV4 gC4"; do
 #       node tools/lock.mjs run chrome-measure --owner <runner> --no-timing --max-seconds 700 --doing "countdown-tick P-130 $P" -- \
 #         env TICKET=P-130 RUNNER=<runner> caffeinate -i -s sh fixes/countdown-tick/phone/hold.sh $P
 #     done'
@@ -16,7 +18,7 @@
 #        gC<n> / gV<n>  counted run n on C (v9-final) / V (v9-final + countdown-tick)
 # Before every item: the served JS/CSS of B C V are re-checked (serve.sh check; wrong = the part is VOID).
 # Pinned (phone/PINS, refused when different): the logger file, the idle program file and its compiled GESTURE_HASH.
-# A part: start gate (thermal-gate.mjs --expect serious --accept-induced --max-c 44, timer page B), the items, end gate,
+# A part: WDA check (iphone.mjs wda check, the G-runner rule; not ready = VOID, exit 4), start gate (thermal-gate.mjs --expect serious --accept-induced --max-c 44, timer page B), the items, end gate,
 # the I-098 Mac sleep check. Each run's line goes to out/countdown-tick/p130/runs/manifest.jsonl; p130-block.mjs builds
 # block.json from it and p130-read.mjs gives the verdict. A VOID part is re-run whole, once, at the end of the block.
 # Nothing here prints the LAN address (Hard rule 12).
@@ -42,6 +44,7 @@ T0=$(date +%s)
 echo "HOLD $H start $(date -u +%FT%TZ) items $* GESTURE_HASH $GH"
 gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p130-$H-$1" --expect serious --accept-induced --max-c 44 --url "$B"; }
 voidp() { echo "{\"hold\":\"$H\",\"end\":true,\"void\":\"$1\",\"at\":\"$(date -u +%FT%TZ)\"}" >> $M; echo "HOLD $H VOID $1"; exit "$2"; }
+node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1 || voidp "wda check" 4
 gate start; g0=$?
 [ $g0 -eq 0 ] || voidp "start gate exit $g0" 5
 for I in "$@"; do

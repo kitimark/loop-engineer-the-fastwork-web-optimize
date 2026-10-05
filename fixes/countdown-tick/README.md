@@ -216,12 +216,13 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
   - thermal state not Serious at start or end;
   - hidden > 0;
   - fewer than 100 changes, or a window under 115 s;
-  - the part (hold) VOID: a served-hash check, an open failure, the end gate or the Mac sleep check;
+  - the part (hold) VOID: the WDA check, a served-hash check, an open failure, the end gate or the Mac sleep check;
+  - the gesture run's exit not 0 (e.g. the stroke after the logger read failed, or gesture-run refused for budget);
   - the logger installed late (no 'initial' record);
   - the read earlier than 123 s after the first change (the logger's own `readAt`, the phone's clock);
   - a grid read missing;
   - started after 04:45Z on 2026-11-02.
-- **Verdict** (`p130-read.mjs`, self-test 22/22; `p130-block.mjs` builds its input from the holds' manifest, self-test 5/5). Exit codes: 0 PASS, 1 FAIL, 2 INSUFFICIENT, 3 VOID.
+- **Verdict** (`p130-read.mjs`, self-test 24/24; `p130-block.mjs` builds its input from the holds' manifest, self-test 5/5). Exit codes: 0 PASS, 1 FAIL, 2 INSUFFICIENT, 3 VOID.
   - No-worse, over all valid runs: total V skips ≤ total C skips, and V repeats = 0 in every run.
   - Fix claim, 30ms stratum only: needs ≥ 2 valid C and ≥ 2 valid V runs. It passes when every V run has 0 skips and C
     has > 0. Fewer runs, or C at 0, is INSUFFICIENT.
@@ -253,14 +254,17 @@ This is the lead's short no-worse check, ticket P-130 (mgmt-ops-10). The card be
   - `hold.sh`: TICKET=P-130 guard; logger, program and GESTURE_HASH pins; a start and an end gate
     (`thermal-gate.mjs --expect serious --accept-induced --max-c 44`); per item open → gesture `--inject` logger →
     park; the I-098 Mac sleep check; VOID exits 3/4/5. One manifest line per run.
-  - Length: about 150 s per item, so 3 parts in one `--block P-130 --max-seconds 3600` phone hold, each in its own
-    Mac-quiet no-timing hold (declared 700 s): H1 wC wV gC1 gV1, H2 gV2 gC2 gC3, H3 gV3 gV4 gC4. Over the block that is
+  - Length: about 150 s per item. A gesture run needs GESTURE_BUDGET_S = max(150 s, 3x the estimate) = 397 s left in
+    its chrome-measure hold (idle-p130 estimate 132 s; I-112), so a part takes at most 2 items: the second starts with
+    ~500 s of a declared 700 s left. 5 parts, each in its own Mac-quiet no-timing hold (declared 700 s, ~360-400 s
+    used), in one `--block P-130 --max-seconds 3600` phone hold: H1 wC wV (warm-ups only), H2 gC1 gV1, H3 gV2 gC2,
+    H4 gC3 gV3, H5 gV4 gC4. Each part runs `iphone.mjs wda check` before its start gate. Over the block that is
     C V V C C V V C. A VOID part is re-run whole, once, at the end.
   - Sentinel: **deviation for the lead to sign.** This block has no scroll, so a protocol v2 S-run control sentinel
     would add one more run per part and test frame rate, which is not the question here. Validity is decided by the
     induced-Serious gate at each part's start and end, plus the per-run grid read.
 - **Pins** (sha256/12, from the committed files):
-  - logger 49d7a6c3da4c, program d7ee0153e439, reader 5b9d38d43bc4, block builder 906ee0f9c98f;
+  - logger 49d7a6c3da4c, program d7ee0153e439, reader e0909db68ad9, block builder 906ee0f9c98f;
   - hold.sh and serve.sh as committed (shas in the ticket message);
   - C and V JS/CSS OPEN until v9-final lands.
   - Provisional only: int-v8's no-scb v9-final candidate is JS 647c9ef2b1e2 / CSS bdecf48c5b32. The delta applies to
