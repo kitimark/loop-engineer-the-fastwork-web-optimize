@@ -799,6 +799,58 @@ Arms, `build.mjs` d190003298c5, simcount 45175dbac676, loads and reading are unc
 - **Context:** the Simulator background ran above 60 % of a core in 6 of 23 windows (load1 max 86, I-082). The counts are
   per step and C/V equal, so the comparison stands.
 
+## Short first page-up fling in the Simulator (int-v8's finding, 2026-10-05; lead ruling: scb out of v9-final)
+
+int-v8's report (Simulator, count-only, one run per build): with scb, the first page-up fling after a page-down fling
+ended ~950 px short. Examples: v9-final 1255 px, step 4 1666 px; v8 C and step 4 without scb ~2190-2204 px.
+
+**Code read.** No scb hunk writes the scroll position (scrollTo, scrollBy, scrollTop, scrollIntoView), overflow or
+scroll-behavior. The 16 hunks were checked, as diffed between Rs 366636504b84 and step 4 de237379b556. What scb does:
+- gates rAF jobs that write classes and CSS vars;
+- adds passive `resize` listeners (scbSync: a matchMedia read and a dirty flag);
+- adds the half-space IOs;
+- adds profile's scbProfIdle skip.
+
+rest-script's `fwCheck` only calls `fwSync` (classes).
+
+**int-v8's touch streams.** In the short runs (F, Rd, Rm), stroke 6 (the first page-up fling) has 50-67 ms holes in
+its touchmoves, and the page moved 72-130 px during contact. On Rs it moved 259 px. Every touch event is
+non-cancelable (async dispatch) in every run.
+
+**Probe: 10 count-only runs.** `fling-probe.mjs` (`sim.mjs gesture --count-only --inject`) logs scroll, resize,
+section render/scene flips, section heights and the recorder's per-frame scrollY. Setting: int-v8's gM path
+(`p121/flick-middle-v2.json --param flingPx=300`, hash 2a535241dbe9), plain http, latency 150, vendors local. Four
+shared simulator slots, 05:47-06:06Z, every exit 0. Records are in `out/scroll-cb-phone/fling/` (gitignored). "first up" is the
+distance of the first page-up fling, in px.
+
+| build | scb | first up (px) | other flings (px) |
+|---|---|---|---|
+| v8 C 3e3e94cb6e9f | no | 2035, 2190 | 2095-2209 |
+| v9 step 4 de237379b556 | yes | 2191 | 2190-2235 |
+| step 4 minus scb 366636504b84 | no | 2071 | 2190-2199 |
+| v9-final c3d36476c3ce | yes | 1777, 2191, 2200 | 2041-2248 |
+| v9-final minus scb 647c9ef2b1e2 | no | 1777, **1256**, 2191 | 1592-2226 |
+
+- **The short first fling is not scb's (OBSERVED, n = 2-3 per build).** v9 without scb gives it too, and as often:
+  1256 px matches int-v8's 1255. In session p2, v9-final and v9 without scb both gave 1777 px.
+- **Where scb counts.** With scb, the first page-up fling is within 300 px of v8 in 3 of 4 runs:
+  - in: step 4 2191, v9-final 2191 and 2200;
+  - out: v9-final 1777 (p2), 413 px below C-p4 and 258 below C-p3.
+
+  Without scb, 2 of 4 runs are in. So the lead's "n=2 within 300 px" check is met by F-p3 and F-p4, but F-p2 misses.
+  Without scb, N-p2 and N-p3 miss too.
+- **How a short fling looks (OBSERVED, cause unknown).** No cut and no jump: the y path decelerates smoothly from a
+  lower launch speed, with no section-size change or render flip at the stop.
+  - Every short run has a 69-123 ms main-thread frame inside the contact, near liftoff. The touchmoves have a 50 ms
+    hole there, and the page moves only 130 px during contact in N-p3.
+  - Normal runs have no frame above 54 ms in the contact (Rs-p1 has 80 ms and is only a little short).
+  - The toolbar resize (775 -> 808) lands in the same window.
+  - Whether WebKit iOS lowers the fling velocity when the web process is busy during a touch whose events are async
+    is UNRESOLVED. No reference has been checked. A non-passive touchmove listener exists only on `#platform` and the
+    nav header (morph), and these touches are not cancelable.
+- **Host load.** int-v8's short scb runs ran at load1 106-167 and its Rs run at 74-49. These runs ran at load1 12-99,
+  and all arms shared each session.
+
 ## Risks, conflicts, follow-ups
 
 - Follow-up (lead, 2026-10-05; not part of P-117): on v8 the gate still runs rest-script's `fwCheck` on every
