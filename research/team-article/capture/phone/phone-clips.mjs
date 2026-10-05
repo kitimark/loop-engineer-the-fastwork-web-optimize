@@ -43,7 +43,10 @@ const flag = (k) => argv.includes(`--${k}`);
 
 export const SCREEN = { w: 430, h: 932 };
 export const BOX = { y0: 119, y1: 826 };                       // pt, full width
-export const CLOSE = { e: { x0: 0.08, x1: 0.92, y0: 0.22, y1: 0.78 } }; // fractions of BOX
+export const CLOSE_E = { x0: 0.08, x1: 0.92, y0: 0.22, y1: 0.78 }; // fractions of BOX
+// Close-ups: none. The e close-up (CLOSE_E, the end menu's middle) was dropped by the lead (2026-10-05): the menu never
+// opened in flick-end-v1 (morph empty), so a close-up of where it would open misleads. --close-e makes it again.
+export const CLOSE = flag('close-e') ? { e: CLOSE_E } : {};
 // One script-driven region per scene (lead, T-170 #101 change 2b), screen pt, fixed before any region result was read:
 // the top bar (logo and language switch flip colour by script over dark sections; glass, so the content under it also
 // shows through blurred) for e and s; the hero card band (the original fades/moves the cards by script every frame,
@@ -289,6 +292,28 @@ function trace(what, txt, args) {
   console.log(`${what}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`);
 }
 
+// Nav colour overshoot (lead, 2026-10-05, OBSERVED): for each nav colour flip in an S run (the page log's crossings,
+// header `is-on-dark` on/off), how far the scroll is past the section edge when the class flips, and how late that is.
+// The edge isn't in the records, so it is estimated per crossing as the lowest scroll y at which any S run (both arms)
+// flipped it: an upper bound on the true edge, so every overshoot here is a LOWER bound. Late ms: the flip's t minus
+// the moment the scroll reached that edge (interpolated between frame stamps; about ±1 frame).
+export function overshoot(runsByLabel, cls = 'is-on-dark') {
+  const flips = {};
+  for (const [L, rec] of Object.entries(runsByLabel)) {
+    const xs = (rec?.crossings || []).filter((c) => c.kind === 'class' && /top-nav/.test(c.id) && c.value.slice(1) === cls);
+    xs.forEach((c, k) => { (flips[k] ??= []).push({ L, c, frames: rec.frames || [] }); });
+  }
+  return Object.entries(flips).map(([k, list]) => {
+    const edge = Math.min(...list.map((x) => x.c.y));
+    return { k: Number(k), value: list[0].c.value, edge, runs: list.map(({ L, c, frames }) => {
+      // the scroll reaches the edge at t_E, interpolated between consecutive frame stamps (t, yStart)
+      const i = frames.findIndex((f, j) => j > 0 && frames[j - 1][2] < edge && f[2] >= edge);
+      const tE = i > 0 ? frames[i - 1][0] + ((edge - frames[i - 1][2]) / (frames[i][2] - frames[i - 1][2])) * (frames[i][0] - frames[i - 1][0]) : null;
+      return { L, y: c.y, overshootPx: c.y - edge, lateMs: tE === null ? null : Math.round(c.t - tE) };
+    }) };
+  });
+}
+
 function main() {
   const runs = resolve(ROOT, opt('runs', 'out/phone-clips/runs')), out = resolve(ROOT, opt('out', 'out/phone-clips/clips'));
   const screen = resolve(ROOT, 'out/iphone-screen'), fps = Number(opt('fps', 60)), show = Number(opt('show', 1));
@@ -305,6 +330,13 @@ function main() {
       trace(`motion ${L}`, txt, (t) => motionArgs(mov, t));
       if (sc) trace(`region ${L}`, rtxt, (t) => regionArgs(mov, t, REGIONS[sc]));
     }
+  }
+  if (flag('overshoot')) {
+    const recs = {};
+    for (const L of labels.filter((l) => /^pc-H\d+-s/.test(l))) { const f = join(runs, `${L}.json`); if (existsSync(f)) recs[L] = JSON.parse(readFileSync(f, 'utf8')); }
+    const res = overshoot(recs);
+    for (const x of res) for (const r of x.runs) console.log(`flip ${x.k + 1} ${x.value} edge<=${x.edge} | ${r.L}${isClean(join(runs, `${r.L}.json`)) ? '' : ' (MAC-LOADED/drift)'} y ${r.y} overshoot >= ${r.overshootPx} px, late ${r.lateMs} ms`);
+    writeFileSync(join(runs, 'overshoot.json'), JSON.stringify(res, null, 1)); return;
   }
   const all = labels.map((L) => analyse(L, { runs, screen, stamps, vv }));
   const report = { at: new Date().toISOString(), fps, show, box: BOX, runs: [], clips: [] };
@@ -375,8 +407,8 @@ function selfTest() {
   ok(vvOk([{ label: 'x-start', vvH: 775, vvTop: 0, vvScale: 1 }, { label: 'x-end', vvH: 815, vvTop: 0, vvScale: 1 }]).ok, 'vv ok');
   ok(!vvOk([{ label: 'x-start', vvH: 700, vvTop: 0, vvScale: 1 }]).ok && !vvOk([{ label: 'x', vvH: 775, vvTop: 12, vvScale: 1 }]).ok && !vvOk([]).ok, 'vv drop');
   ok(boxFilter() === 'crop=w=iw:h=ih*707/932:x=0:y=ih*119/932', `box filter ${boxFilter()}`);
-  const cfil = closeFilter(CLOSE.e); ok(/^crop=w=iw\*361\.2\/430:h=ih\*395\.9\/932:x=iw\*34\.4\/430:y=ih\*274\.5\/932$/.test(cfil), `close filter ${cfil}`);
-  ok(BOX.y0 + CLOSE.e.y1 * (BOX.y1 - BOX.y0) <= BOX.y1 && CLOSE.e.x1 <= 1, 'close-up inside the box');
+  const cfil = closeFilter(CLOSE_E); ok(/^crop=w=iw\*361\.2\/430:h=ih\*395\.9\/932:x=iw\*34\.4\/430:y=ih\*274\.5\/932$/.test(cfil), `close filter ${cfil}`);
+  ok(BOX.y0 + CLOSE_E.y1 * (BOX.y1 - BOX.y0) <= BOX.y1 && CLOSE_E.x1 <= 1 && !CLOSE.e, 'close-up inside the box, off by default');
   // region follow: a region that changes only every 4th frame while the page moves is ~75 % stale
   const pf2 = []; let y2 = 0; for (let t = 0; t <= 3000; t += 16) { y2 += t > 500 && t < 2500 ? 16 : 0; pf2.push([t, 16, y2]); }
   const steppy = []; for (let i = 0, t = 0; t <= 3000; t += 16.7, i++) steppy.push([t / 1000, t > 500 && t < 2500 ? (i % 4 === 0 ? 2 : 0.01) : 0.01]);
@@ -387,6 +419,11 @@ function selfTest() {
   ok(Object.values(REGIONS).every((r) => r.y0 >= 59 && r.y1 <= 826), 'regions inside the page area');
   const rec = (l0, l1, drift) => ({ meta: { mac: { start: { load1: l0 }, end: { load1: l1 } }, profileDrift: drift } });
   ok(cleanRecord(rec(10, 16, false)) && !cleanRecord(rec(10, 16.1, false)) && !cleanRecord(rec(163, 10, false)) && !cleanRecord(rec(10, 10, true)) && !cleanRecord({}), 'clean record rule');
+  const mk = (ys, t) => ({ crossings: ys.map((y, i) => ({ kind: 'class', id: 'header.start-selling-top-nav', value: i % 2 ? '-is-on-dark' : '+is-on-dark', y, t: t[i] })),
+    frames: [[100, 16, 0], [200, 16, 1000], [300, 16, 2000], [400, 16, 3000], [500, 16, 4000]] });
+  const os = overshoot({ a: mk([2194, 3102], [330, 420]), v: mk([2144, 3050], [316, 406]) });
+  ok(os.length === 2 && os[0].edge === 2144 && os[0].runs[0].overshootPx === 50 && os[0].runs[0].lateMs === 16 && os[0].runs[1].overshootPx === 0
+    && os[0].runs[1].lateMs === 2 && os[1].edge === 3050 && os[1].runs[0].lateMs === 15 && os[1].runs[1].lateMs === 1, `overshoot ${JSON.stringify(os)}`);
   console.log(`phone-clips self-test: ${n} checks ok`);
 }
 
