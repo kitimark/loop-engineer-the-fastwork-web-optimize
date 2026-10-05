@@ -654,6 +654,17 @@ error). Every registered triple is present: 224 in Chrome and 48 in the Simulato
 - **Decision as registered:** no build. The lead rules the next step; no follow-up card before that. Any R3 claim keeps
   the P-146 first-swipe statement, and the P14 phone G check still waits for the iPhone.
 
+**Erratum (2026-10-06, after the result read by ops-reader-P148r; the text above stays as read).** Each item was
+re-checked against `out/deck-contain/p148-dry/C1.json` and `S1.json`.
+- **Chrome DRY0:** 10 of 16 bases were unsettled, not 11. The 20,527 px is 0.57 % of the frame, not 0.56 %.
+- **Simulator DRY0:** the held item in the arm phase of 3 triples was a timeout (`stat.arm.timeout` 1, `raf` 0), not a
+  page frame.
+- **"DPR-3" means "mobile-emulated DPR-3".** In `px148-chrome.mjs` DPR 3 always comes with mobile emulation (touch,
+  mobile UA), so the Chrome split is mobile-emulated DPR-3 configs vs desktop DPR-1 configs. It does not point to DPR as
+  a cause.
+- **The same DRY0 slips are in finding F-293** ("11 of 16", "0.56 %"). Findings are not edited, so this erratum is the
+  correction.
+
 ## Scenarios not run
 
 - Real iPhone, any driver: the phone is disconnected (T-199). G1 and the no-worse check wait for the lead.
