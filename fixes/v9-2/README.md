@@ -460,6 +460,19 @@ rev 1.4 data):**
 - **Order:** this re-pin → the lead's delta check → a new uncounted smoke on C → its lines and B to the lead → the B re-pin
   → the lead's check → GO for rerun14.sh.
 
+**Smoke r14c and rev 1.4d (the B re-pin; before any counted rev 1.4 data):**
+- **Smoke r14c on arm C** (lead GO after the 0a4a65ce delta PASS; uncounted, `out/v92/sim/smoke-r14c.json`, log
+  `out/v92/smoke-r14c.log`): served 1b2eecc66011 / e1359ab9994a; ih0 775, ih1 775; startMax 6075, endMax 6075; stop reason
+  reached the live max (not stalled, not capped); final y 6075; frames 263 (floor 241); RenderingFrames 270 (floor 203);
+  33 polls over ~8.8 s, scrollY rising steadily from 120 to 6075 with innerHeight 775 throughout. The only failed clause
+  was "bound B not set". The toolbar hypothesis stays refuted (no innerHeight change on this programmatic scroll).
+- **B = 10 px** (`sim92check.mjs` de54a6c03bf9, `BOUND_B = 10`): the measured innerHeight change 0, rounded up to the next
+  10 px (lead's rule). With it the smoke's window passes the check.
+- **Self-test** (`selftest142.mjs` 503ac47ad791, SELFTEST-142 OK 61): adds pinned B = 10; the r14c smoke-shaped window
+  passes with it; a 40 px live-max drop fails with it; B null fails every window.
+- sim92 (ce506d1e403e), part1read (c18e5825d812) and rerun14.sh (a4f4608f9d64) unchanged. Then the lead's check, then
+  GO for rerun14.sh.
+
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
 The block reuses P-134's harness unchanged (itself P-132's / P-122's: P-121's path-matched G driver, nav-hit-cache's

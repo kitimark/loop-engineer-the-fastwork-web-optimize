@@ -120,6 +120,12 @@ const cn = scrollCheck(nomove, TB);
 ok(!cn.ok && cn.why.some((w) => /not reached \(4 < 6074\), stalled/.test(w)) && cn.why.includes('frames 11 < 241'), `6 a window stuck at scrollY 4 passes: ${JSON.stringify(cn)}`);
 ok(/behavior: 'instant'/.test(readFileSync('fixes/v9-2/sim92.mjs', 'utf8')), '6 sim92 step is not an instant scrollBy');
 ok(W2.BOUND_B !== null || !scrollCheck(full()).ok, '6 B unset but a window passes');
+ok(!scrollCheck(full(), { B: null }).ok, '6 B null does not fail a window');
+// rev 1.4d: the pinned B is 10 (smoke r14c: innerHeight 775 -> 775); the smoke-shaped window passes with it, a 40 px drop fails
+ok(W2.BOUND_B === 10, `6 pinned BOUND_B ${W2.BOUND_B}, not 10`);
+const smoke = { kind: 'scroll', step: 24, frames: 263, y: 6075, max: 6075, startMax: 6075, endMax: 6075, ih0: 775, ih1: 775, stalled: false, renderingFrames: 270 };
+ok(scrollCheck(smoke).ok, `6 the r14c smoke window fails with the pinned B: ${JSON.stringify(scrollCheck(smoke))}`);
+ok(!scrollCheck(collapse).ok, '6 a 40 px live-max drop passes with the pinned B 10');
 const ld = (arm, rep, w, v) => ({ arm, rep, windows: [w], ...(v ? { void: v } : {}) });
 const six = (wF, wV) => [ld('F', 1, wF), ld('V', 1, wV), ld('V', 2, wV), ld('F', 2, wF), ld('F', 3, wF), ld('V', 3, wV)];
 const sc = (loads) => R.read1cScroll(loads, TB).map((x) => x.verdict);

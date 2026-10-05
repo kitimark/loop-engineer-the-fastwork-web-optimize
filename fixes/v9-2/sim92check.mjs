@@ -14,7 +14,9 @@
 // before the counted run; while it is null every window fails ("bound B not set"), so nothing can count without it.
 // Part 1 (53b0af35) fails: frames, y and max undefined, renderingFrames 31.
 export const FRAC_FRAMES = 0.95, FRAC_RF = 0.8, EST_MAX = 6850 - 775;
-export const BOUND_B = null;
+// Rev 1.4d: B = 10 px. Basis: the uncounted rev 1.4c smoke on arm C (out/v92/sim/smoke-r14c.json) measured innerHeight
+// 775 -> 775 (change 0, toolbar hypothesis refuted), rounded up to the next 10 px by the lead's rule.
+export const BOUND_B = 10;
 export function scrollCheck(w, { B = BOUND_B } = {}) {
   const why = [];
   if (!w || w.kind !== 'scroll') return { ok: false, why: ['no scroll window'] };
