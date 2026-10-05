@@ -75,13 +75,28 @@ export function resolveLivePatch({ patch, ref = 'HEAD', repoDir = process.cwd() 
   return { patch, ref, blob, base: patchBase(text), files: h.files, text };
 }
 
-/** A unified diff's changed lines per file: Map<file, {add: Map<line, n>, del: Map<line, n>}> (blank lines skipped). */
-function changedLines(text) {
+/**
+ * A unified diff's changed lines per file: Map<file, {add: Map<line, n>, del: Map<line, n>}> (blank lines skipped).
+ * `net` (I-206): a line a hunk both removes and adds is dropped from both sides of that hunk: the line is in the
+ * region before and after, git's alignment only placed it among the changed lines (e.g. lines inserted before it),
+ * so a patch built on this one may show it as context. Only within one hunk: a line moved between hunks still counts.
+ */
+function changedLines(text, { net = false } = {}) {
   const out = new Map();
-  let file = null, from = null, inHunk = false, cur = null;
+  let file = null, from = null, inHunk = false, cur = null, hunk = null;
   const bump = (m, l) => { const k = l.replace(/\s+$/, ''); if (k.trim()) m.set(k, (m.get(k) || 0) + 1); };
+  const flush = () => {
+    if (!hunk) return;
+    for (const [k, c] of hunk.add) {
+      const d = net ? Math.min(c, hunk.del.get(k) || 0) : 0;
+      if (c > d) cur.add.set(k, (cur.add.get(k) || 0) + c - d);
+      if (d) hunk.del.set(k, hunk.del.get(k) - d);
+    }
+    for (const [k, c] of hunk.del) if (c) cur.del.set(k, (cur.del.get(k) || 0) + c);
+    hunk = null;
+  };
   for (const l of String(text).split('\n')) {
-    if (l.startsWith('diff --git ')) { inHunk = false; file = from = null; cur = null; continue; }
+    if (l.startsWith('diff --git ')) { flush(); inHunk = false; file = from = null; cur = null; continue; }
     if (!inHunk) {
       if (l.startsWith('--- ')) from = l.slice(4).replace(/^a\//, '');
       else if (l.startsWith('+++ ')) file = l.slice(4) === '/dev/null' ? from : l.slice(4).replace(/^b\//, '');
@@ -89,13 +104,15 @@ function changedLines(text) {
         inHunk = true;
         if (!out.has(file)) out.set(file, { add: new Map(), del: new Map() });
         cur = out.get(file);
+        hunk = { add: new Map(), del: new Map() };
       }
       continue;
     }
-    if (l.startsWith('@@')) continue;
-    if (l.startsWith('+')) bump(cur.add, l.slice(1));
-    else if (l.startsWith('-')) bump(cur.del, l.slice(1));
+    if (l.startsWith('@@')) { flush(); hunk = { add: new Map(), del: new Map() }; continue; }
+    if (l.startsWith('+')) bump(hunk.add, l.slice(1));
+    else if (l.startsWith('-')) bump(hunk.del, l.slice(1));
   }
+  flush();
   return out;
 }
 
@@ -103,9 +120,11 @@ function changedLines(text) {
  * I-093: does B's patch carry A's changes? Both are baseline-relative, so a B built on A repeats every line A adds or
  * removes. Returns [{file, lines}] for the files where some of A's changed lines are missing from B (there the panel's
  * B shows A's change undone or changed); [] when B is a superset of A. A check, not a proof: line multisets per file.
+ * I-206: A's lines that one hunk removes and re-adds are alignment, not changes B must repeat (changedLines `net`);
+ * B's lines count as before (netting B too could warn where B removes a baseline copy of a line A adds).
  */
 export function liveNotCovered(aText, bText) {
-  const A = changedLines(aText), B = changedLines(bText), out = [];
+  const A = changedLines(aText, { net: true }), B = changedLines(bText), out = [];
   for (const [file, a] of A) {
     const b = B.get(file) || { add: new Map(), del: new Map() };
     let n = 0;
