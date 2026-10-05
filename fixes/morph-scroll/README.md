@@ -121,7 +121,11 @@ Simulator counts are mechanism only.
 - OBSERVED, in our setup, cause unknown: on the phone the page reads only -3.35 .. -3.63 px/ms at the lift of the
   560 px flings (Simulator -2.9 .. -6.45; int-v8's touch-log replay of P-121's 560 px / 130 ms strokes on B: -6.83 /
   -7.11). So on this device the travel line, not the speed line, releases them: don't count on the speed line alone.
-- Not yet tested: the user's finger (blind swipe pair rev 7c vs rev 7d, step 4).
+- Ops' phone read (AGREE, 5d08937c), notes: (P1) on the phone rev 7d releases fo only through the 300 px travel
+  branch (Fv reached -3.63 at most; the -5 line never fired); the user's closes travel 74-255 px, a 45 px margin, and
+  nl at 280 px stayed caught. (P2) One run per arm: count agreements, not rates. (P3) The E3 return to open is
+  unchanged on both builds and still UNRESOLVED.
+- Not yet tested: the user's finger (blind swipe pair rev 7c vs rev 7d, step 4, T-175).
 
 ### Rev 7 (7, 7b, 7c; 2026-10-04 ~18:00Z-19:50Z)
 
