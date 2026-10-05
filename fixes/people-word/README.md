@@ -5,22 +5,25 @@
 
 **Status:** proposal (visual-timing change the user asked for, user thread T-192); not a performance fix, no timing A/B
 (memory "defer timing"). The user decides on the console proposal PR-024 (options `a`, `a-phone`; recommended `a`).
+Rev 2 got changes-requested (2026-10-05 11:08Z); this README describes **rev 3** (the word starts when the card's
+fade-in has ended, and resets when the card starts to fade out). Rev 2's design is kept below under "Rev 2 (superseded)".
 **Owner:** fix-people-word. **Driver behind the claims:** Chrome functional probe (headless, unthrottled, counts and
 class timestamps only). No iPhone use (the phone is in timed blocks).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, the word component `WD`'s effect only (pretty lines
-6997-7046 of the v9-final build = baseline 6225-6275).
+6997-7083 of the rev 3 overlay; v9-final 6997-7046 = baseline 6225-6275).
 
 ## Builds (base hashes, sha256 first 12)
 
 | build | dir | how to rebuild | JS `2.DyWL8TcE.js` | CSS `2.gBuqKVzi.css` |
 |---|---|---|---|---|
 | base = shipping v9-final + 7d (main 189ca7ed) | `fixes/people-word-base/` (overlay only, not committed) | `node tools/fix.mjs apply people-word-base --from morph-scroll-v9try` | `1b2eecc66011` | `e1359ab9994a` |
-| A | `fixes/people-word-a/patch.diff` (full patch vs the baseline = v9-final + A) | `node tools/fix.mjs apply people-word-a` | `6788ba9a8009` | `e1359ab9994a` |
-| A-phone | `fixes/people-word-aphone/patch.diff` (full patch vs the baseline = v9-final + A-phone) | `node tools/fix.mjs apply people-word-aphone` | `36dbcef9a12e` | `e1359ab9994a` |
+| A, rev 3 | `fixes/people-word-a/patch.diff` (full patch vs the baseline = v9-final + A) | `node tools/fix.mjs apply people-word-a` | `bf75ce87958c` | `e1359ab9994a` |
+| A-phone, rev 3 | `fixes/people-word-aphone/patch.diff` (full patch vs the baseline = v9-final + A-phone) | `node tools/fix.mjs apply people-word-aphone` | `0c1845cb72c0` | `e1359ab9994a` |
+| (rev 2, superseded) | same paths at commit 7f3fad3b | | A `6788ba9a8009`, A-phone `36dbcef9a12e` | `e1359ab9994a` |
 
 Both option patches are the v9-final patch (`fixes/morph-scroll-v9try/patch.diff`) plus one hunk group in `WD`'s
-effect; the CSS is v9-final's, unchanged. Round trip checked: `apply --from <option>` into a fresh topic rebuilds the
-same hashes. Served from the overlay (`x-mirror-source: overlay` on both files, all three builds).
+effect; the CSS is v9-final's, unchanged. Served from the overlay (`x-mirror-source: overlay`, all three builds,
+hashes as above).
 
 ## Cause (code read, baseline `site-pretty/_app/immutable/nodes/2.DyWL8TcE.js`, 1-based)
 
@@ -33,7 +36,11 @@ same hashes. Served from the overlay (`x-mirror-source: overlay` on both files, 
 - The card fade-in: class `is-visible` on `section.start-selling-future` (JS 11469), set in the section's rAF
   callback when `.hero-track` progress >= 0.72 (JS 11303-11311; v9-final keeps the same formula). Hidden state
   CSS 2393-2404 (visibility hidden, opacity 0, blur 14px, translateY 48px); shown CSS 2405-2414 (opacity 0.7 s,
-  blur 1.6 s, transform 0.9 s). The section is pulled up over the hero's last screen (`margin-top: calc(1px -
+  blur 1.6 s, transform 0.9 s). **On v9-final the fade is shorter** (overlay CSS 2634-2668, a later `transition`
+  declaration in the same rules, from an earlier smoothness fix): fade-in opacity 0.7 s, filter 0.9 s (`linear()`
+  easing), transform 0.9 s, ending at opacity 0.999 / `blur(0px)`; fade-out opacity 0.7 s, filter 0.7 s, transform
+  0.9 s, visibility hidden after 1.6 s. Rev 2's README and proposal text quoted the baseline's 1.6 s blur; wrong for
+  v9-final (corrected in rev 3). The section is pulled up over the hero's last screen (`margin-top: calc(1px -
   100svh)`, CSS 2368), so its heading is on screen long before the hero reaches 0.72.
 - So the two triggers are independent: the heading crosses 35 % at scrollY ~110-120 (Chrome 430x932;
   ~140-150 at 1440x900), the fade starts at the hero's 0.72, scrollY 671 (648 on desktop): 550-570 px later
@@ -44,96 +51,130 @@ same hashes. Served from the overlay (`x-mirror-source: overlay` on both files, 
 
 This is the original site's behaviour; v9-final changes neither trigger (it only caches the 0.72 geometry).
 
-## Options
+## The user's change request on rev 2 (PR-024, 2026-10-05 11:08Z), and how rev 3 answers it
 
-- **A (recommended):** the word's original 1.3 s wait starts when the card is shown (`is-visible` on), at every
-  width. Started when both are true: the heading is in view (the original 0.35 observer, unchanged) and the card is
-  shown. If the card hides again (scrolled back above 0.72) before the word started, the pending wait is cancelled and
-  re-armed for the next show. A word that already started is left alone; the reset/replay stays on the heading
-  leaving the viewport, exactly as before (decided: a reset on "card hidden" would visibly undo the word during the
-  card's 1.6 s fade-out, which the original never does). Mechanism: one MutationObserver on the section's `class`
-  attribute (event-driven: no scroll listener, no rAF, no layout read; it runs only when that class changes).
-- **A-phone:** A only at the site's phone breakpoint (`(max-width: 860px)`, the same query the page uses for its
-  phone layout); wider than that the decision path is the original's (start at the heading's 0.35 crossing), checked
-  equal below. The observer exists on desktop too but does nothing there (both its branches need the phone query or a
-  phone-set wait flag).
-- **B (dropped):** a later IntersectionObserver trigger (higher threshold or a negative bottom rootMargin). The fade
-  is driven by the hero's scroll progress, not by the heading's position, so any heading margin only approximates it,
-  and the distance between the two changes with the viewport height (svh, the iPhone toolbar) and the breakpoint:
-  in Chrome the gap is 550-570 px at 430x932 and ~500 px at 1440x900 (scroll positions above), and the
-  iPhone's 775-815 px viewport changes it again. A ties the word to the fade itself, exactly, at no extra cost, so B adds nothing.
-- Sub-choice "start at the fade end instead of 1.3 s after its start": not offered (no Try-it built for it). With A the
-  word starts 1.3 s after the fade starts, when opacity (0.7 s) and the slide (0.9 s) are done and the blur (1.6 s)
-  is in its last, almost invisible part.
+The note is the user's own text and stays in the console (Hard rule 12; `node tools/console.mjs proposal show PR-024`).
+Its points, as read for rev 3 (the lead's reading, checked against the note):
 
-Unchanged in both: the word's own motion (no CSS change), reduced motion (both classes at once, on the heading's
+1. Trigger "when the text is shown, opacity 1": the word starts when the card's fade-in has **ended** (the card fully
+   opaque, blur gone), read from the browser's own `transitionend` event of the card's `filter` transition (the last
+   of the fade-in transitions to end), not from a fixed timer after the class change. Guard: the heading is still at
+   least 35 % in view (the original IntersectionObserver). No scroll listener, no rAF, no layout read.
+2. "Text display first, then the animation": no extra wait after the fade-in end. Reason: the original 1.3 s wait
+   was there so the title is seen before the "o" changes; the 0.9 s fade-in now does that job, and a further wait
+   only lets the title scroll on (at a gentle ~300 px/s the heading leaves its 35 % line ~1.3 s after the fade starts,
+   so a 1.3 s wait could miss it entirely). Rev 2 started 1.3 s after the fade start, i.e. 0.4 s after the fade-in
+   had already ended on v9-final; rev 3 starts 0.4 s earlier but exactly at the end the user can see. No new option for
+   the wait (the user did not ask for one); the proposal says a pause can be added if wanted.
+3. "Reset in the opposite direction": when the card starts to fade out (`is-visible` goes off, scrolling back up) the
+   word resets (its own closing motion: the width eases back over 0.92 s); the next fade-in plays it again. The reset
+   on the heading leaving stays. A quick in-and-out (card shown < 0.9 s) neither starts nor strands the word.
+
+## Options (rev 3)
+
+- **A (recommended):** every width. Mechanism in `WD`'s effect: a MutationObserver on the section's `class`
+  (`is-visible` on: wait for the fade-in end, with a 1.2 s fallback timer in case no transition runs; off: drop the
+  wait, mark not-shown, reset the word if the heading is in view) and a `transitionend` listener on the card itself,
+  filtered to `event.target === card` and `propertyName === "filter"` (the word's own `.start-selling-future-people-o-vector`
+  also transitions `filter` and its events bubble to the card: excluded by the target check). On the heading's enter
+  (the original observer) the word plays at once if the card is already fully shown, else when the fade-in ends.
+- **A-phone:** A only at the site's phone breakpoint (`(max-width: 860px)`); wider screens keep the original path
+  (1.3 s after the heading's 35 % crossing; reset only on the heading leaving). The observer and listener exist on
+  desktop too and only track the card state there.
+- **B (dropped, as in rev 2):** a later IntersectionObserver trigger only approximates the fade, which is driven by the
+  hero's scroll progress; the gap changes with viewport height and breakpoint (550-570 px at 430x932, ~500 px at
+  1440x900 in Chrome). The fade-end event is exact at no cost.
+
+Unchanged in both: the word's own motion (no CSS change), reduced motion (both classes at once at the heading's
 crossing, as before), the `standalone` path, the hover preview (JS 6217 `j`, gated on `is-expanded` and desktop), the
-replay on leaving, everything else on the page.
+replay after the heading leaves and comes back, everything else on the page.
 
-## Checks (functional, no timing)
+### Rev 2 (superseded)
+
+Rev 2 started the original 1.3 s wait when `is-visible` went on (MutationObserver only; reset only on the heading
+leaving). Patches at commit 7f3fad3b; results in that commit's README.
+
+## Checks (functional, no timing), rev 3
 
 Probe: `out/people-word/probe.mjs` (not committed; headless new Chrome with the headed UA, `--screen-info` pinned,
-unthrottled; run in the shared lane, `lock.mjs run chrome-measure --shared --weight probe --max-seconds 300`, one hold
-per build). Per build: mobile 430x932 DPR 3 touch, mobile with `prefers-reduced-motion: reduce`, desktop 1440x900.
-Scripted stepped scroll (`scrollBy` 30 px / 33 ms): P1 down from the top to 600 px past the fade trigger, hold; P2 back
-to the top (heading leaves) and down again (replay); P3 a quick in-and-out across the trigger (card shown < 0.3 s),
-hold out, then in. A probe MutationObserver logs `is-visible`, `is-stack`, `is-expanded` with `performance.now()`
-and scrollY; a probe IntersectionObserver (threshold 0.35) logs the heading's crossings. Counts: rAF calls,
-MutationObserver / IntersectionObserver constructions and callback runs (wrappers installed before any page script),
-scroll/wheel/touch/resize listeners added.
+unthrottled; shared lane, `lock.mjs run chrome-measure --shared --weight probe --max-seconds 300`; holds at 11:22Z and
+~11:25Z). Per build: mobile 430x932 DPR 3 touch, mobile with `prefers-reduced-motion: reduce`, desktop 1440x900.
+Scripted stepped scroll (`scrollBy` 30 px / 33 ms, ~900 px/s): P1 from the top to 150 px past the fade trigger, hold;
+P2 back to the top and down again (replay); P3 a quick in-and-out across the trigger (card shown 33-67 ms), hold out,
+then in; **P4 (new in rev 3)** with the word open, back up to 100 px above the trigger (card fades out, heading still
+in view), hold 2.5 s, then down again. Logged with `performance.now()`: `is-visible`, `is-stack`, `is-expanded`
+(probe MutationObservers), the heading's 0.35 crossings (probe IntersectionObserver), and **the card's own `filter`
+`transitionend`** (probe listener, `fadeInEnd` / `fadeOutEnd`). Counts: rAF calls, MutationObserver /
+IntersectionObserver constructions and callback runs, scroll/wheel/touch/resize/transitionend listeners added by the
+page (wrappers installed before any page script; the probe's own listener is not counted). All three builds measured
+with the same rev 3 probe (rev 2's numbers came from a probe without P4, so its totals don't compare).
 
-Class timing, ms after the event named (all from one run per cell; P1 = first scroll in, P2 = back to the top and
-in again, P3 = quick in/out then in). OBSERVED, Chrome headless, unthrottled.
+`is-stack` (the word's start), ms after the event named. OBSERVED, Chrome headless, unthrottled, one run per cell.
 
-| build, viewport | P1 `is-stack` | P2 replay `is-stack` | P3 quick in/out (card shown 33-67 ms) | P3 then in | reset on heading leave |
-|---|---|---|---|---|---|
-| base, 430x932 | heading +1301 = fade +635 | heading +1301 = fade +651 | word plays at heading +1300, card hidden | word already open when the card shows | yes |
-| A, 430x932 | fade +1301 | fade +1301 | nothing starts (wait cancelled) | fade +1301 | yes |
-| A-phone, 430x932 | fade +1300 | fade +1301 | nothing starts (wait cancelled) | fade +1300 | yes |
-| base, 1440x900 | heading +1301 = fade +700 | heading +1301 | plays at heading +1300, card hidden | already open | yes |
-| A, 1440x900 | fade +1301 | fade +1301 | nothing starts | fade +1300 | yes |
-| A-phone, 1440x900 | heading +1302 | heading +1300 | plays at heading +1300, card hidden | already open | yes |
+| build, viewport | P1 first scroll | P2 replay | P3 quick in/out | P3 then in | P4 card fades out, heading in view | P4 back in |
+|---|---|---|---|---|---|---|
+| base, 430x932 | fade start +634 (fade end +915) | fade start +635 | plays at heading +1301, card hidden | already open | word stays open | stays open |
+| A, 430x932 | fade end +0 (fade start +913) | fade end +0 (+916) | nothing starts | fade end +0 (+899) | **resets at fade-out start (+1 ms)** | fade end +0 (+916) |
+| A-phone, 430x932 | fade end +0 (+932) | fade end +0 (+916) | nothing starts | fade end +0 (+915) | resets (+1 ms) | fade end +0 (+899) |
+| base, 1440x900 | heading +1301 = fade start +701 | heading +1300 | plays at heading +1300, card hidden | already open | stays open | stays open |
+| A, 1440x900 | fade end +0 (+932) | fade end +0 (+932) | nothing starts | fade end +0 (+915) | resets (+1 ms) | fade end +0 (+915) |
+| A-phone, 1440x900 | heading +1302 | heading +1300 | plays at heading +1300, card hidden | already open | stays open | stays open |
 
-- `is-expanded` follows `is-stack` by 120-122 ms in every cell, as before.
-- A-phone at 1440x900 has the base's decision path and the same class timing (all three phases within 2 ms).
-- Reduced motion (430x932, all three builds): `is-stack` and `is-expanded` set together at the heading crossing,
-  same as base (the card is shown from the start there: the hero track is one screen tall under reduced motion).
+- The card's fade-in ends (`filter` `transitionend`) 899-932 ms after `is-visible` (0.9 s transition plus frame
+  alignment); the word starts in the same task (0-1 ms). `is-expanded` follows `is-stack` by 120-121 ms, as before.
+- Reset: A and A-phone (phone width) reset the word 0-1 ms after `is-visible` goes off (scrollY 641/671 on the way up,
+  P2 and P4); base resets only when the heading leaves (scrollY 101 on the way up). Both keep the reset on the heading
+  leaving.
+- A-phone at 1440x900 equals base: every `is-stack` within 2 ms of the heading crossing +1300, same resets.
+- Reduced motion (430x932, all three builds): `is-stack` and `is-expanded` together at the heading crossing, as before.
 - Console errors: 0 in all 9 runs.
 
-Mechanism counts (whole run, same scripted scroll, counts only):
+Mechanism counts (whole run, same scripted scroll incl. P4, counts only):
 
 | | base | A | A-phone |
 |---|---|---|---|
-| rAF calls, 430x932 | 523 | 522 | 523 |
-| rAF calls, 1440x900 | 509 | 509 | 510 |
+| rAF calls, 430x932 / 1440x900 | 616 / 737 | 618 / 737 | 618 / 739 |
 | MutationObservers created by the page | 4 | 5 | 5 |
 | IntersectionObservers created | 23 | 23 | 23 |
-| scroll/wheel/touch/resize listeners added (430x932 / 1440x900) | 14 / 16 | 14 / 16 | 14 / 16 |
-| MO callback runs, all page observers (430x932 / 1440x900) | 24 / 21 | 31 / 31 | 38 / 38 |
+| listeners added: scroll/wheel/touch/resize | 14 / 16 | 14 / 16 | 14 / 16 |
+| listeners added: transitionend | 1 | 2 | 2 |
+| MO callback runs, all page observers (430x932 / 1440x900) | 53 / 53 | 64 / 60 | 62 / 62 |
 
-The one new observer watches only the section's `class` attribute, which changes on `is-visible` (6 times in this
-run) and `is-future-shrinking`; its callback reads one `classList.contains` and may set or clear one timer, no
-layout read. The total MO callback count includes the page's other observers, whose runs vary between page loads
-(IntersectionObserver callbacks also varied, 54-57 on the phone size), so the difference is not attributed exactly.
-No new scroll listener, no new rAF.
+The new observer watches only the section's `class` (it changes on `is-visible` and `is-future-shrinking`); its
+callback reads one `classList.contains` and sets or clears one timer or resets the word, no layout read. The new
+`transitionend` listener runs once per transition end on the card or its descendants that bubbles up (a target and
+property check). No new scroll listener, no new rAF.
 
-Served-file check (all three servers): `x-mirror-source: overlay` for `2.DyWL8TcE.js` and `2.gBuqKVzi.css`, hashes as
-in the table above. `node --check` passes for both option files.
+Stills (`out/people-word/shots.mjs`, Chrome 430x932, gentle stepped scroll ~300 px/s to 150 px past the trigger,
+full-viewport shots cropped around the title at 0 (taken +0.49 s), 0.9, 1.2, 1.6, 2.0, 3.0 s after `is-visible`): base
+has the word open at every still (it opened 0.65 s before the fade started); A shows the blurred plain title at 0.49 s,
+the sharp title with the "o" just turning at 0.9 s (`is-stack` at +915 ms), the faces at 1.2 s, open from ~2 s.
+
+Served-file check: `x-mirror-source: overlay` for `2.DyWL8TcE.js`, hashes as in the builds table. `node --check`
+passes for both option files.
 
 ## Risks
 
-- A motion-timing change: the user decides (proposal). On phones the word now plays while the card is on screen;
-  before, it played unseen.
-- The word's widening is a layout animation (0.92 s of `grid-template-columns`/`height`). The work is the same as
-  before; it only moves from an unseen moment to a seen one, overlapping the last ~0.3 s of the card's blur fade-in.
-  Phone smoothness during that second is not measured (no timing; phone busy). If the user accepts, a short phone
-  no-worse check of that second is the natural follow-up.
-- A on desktop: the word now waits for the fade there too (the probe: 1301 ms after the fade start instead of 1301 ms after the heading crossing, i.e. ~0.6-0.7 s later at
-  900 px/s; the user saw the desktop as fine, which is why A-phone exists).
-- Coupling: the trigger now reads the section's `is-visible` class (set by the section component's rAF callback,
-  JS 11303-11311, the area morph-scroll-v9try and fix-double-drive touched). A future change that renames or stops
-  toggling `is-visible` must keep the class or the word waits forever on phones (A-phone) / everywhere (A) while the
-  heading is in view. The code falls back to the original path only when the section element is missing.
+- A motion-timing change: the user decides (proposal). On phones the word now plays once the card is fully shown and
+  closes when the card starts to fade out; before, it played unseen and stayed open until the heading left.
+- The word's widening is a layout animation (0.92 s of `grid-template-columns`/`height`); the work is the same as
+  before, now in a seen moment right after the card's fade-in (it no longer overlaps the fade on v9-final). The new
+  reset adds one closing motion per fade-out with the heading in view (the same width transition, reversed). Phone
+  smoothness of either second is not measured (no timing; phone busy). If accepted, a short phone no-worse check of
+  that second is the natural follow-up.
+- A on desktop: the word now waits for the fade-in end there too (~0.2 s later than today at 900 px/s: fade end +0 vs
+  fade start +700) and closes on the fade-out.
+- At a continuous gentle scroll the heading reaches its 35 % leave line ~1.3 s after the fade starts, mid-way through
+  the word's motion, and the original leave reset closes it there (base had the same reset; rev 2 at 1.3 s would
+  often not have started at all). Not changed: the user asked only for the start and the fade-out reset.
+- `transitionend` does not fire when a transition does not run (no computed change, `display: none`) or is cancelled;
+  the 1.2 s fallback covers the first, the class observer the second. Spec: CSS Transitions Level 1, "Transition
+  Events" (https://www.w3.org/TR/css-transitions-1/#transition-events): `transitionend` at completion, `transitioncancel`
+  when a running transition is cancelled (CONFIRMED by the spec text; Safari behaviour not checked on the phone).
+- Coupling: the trigger reads the section's `is-visible` class and the card's `filter` transition (CSS 2634-2668). A
+  change that renames `is-visible` makes the word wait forever while the heading is in view (A everywhere, A-phone on
+  phones); a change that drops the card's `filter` transition only delays the word to the 1.2 s fallback. Posted as a
+  coupling finding.
 
 ## Proposal PR-024
 

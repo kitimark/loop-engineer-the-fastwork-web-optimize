@@ -1097,11 +1097,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2670,9 +2705,58 @@
- function iE() {
+@@ -2671,8 +2706,57 @@
    tE = 0;
    for (let e of $T) e.active && e.callback();
-+}
+ }
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -1122,7 +1121,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    break;
 +  }
 +  fwKick();
- }
++}
 +// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
 +// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
 +// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
@@ -1175,7 +1174,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,8 +2794,91 @@
+@@ -2710,7 +2794,90 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -1220,7 +1219,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
 +// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
 +// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
 +// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
@@ -1264,10 +1263,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
-+}
+ }
  function lE(e) {
    let t = e.getBoundingClientRect();
-   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2923,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -1392,7 +1390,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      }),
      f(t, d),
      H());
-+}
+ }
 +function HEflip(d, dw) {
 +  if (typeof d.animate != `function`) return;
 +  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
@@ -1403,7 +1401,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
 +  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
 +    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
- }
++}
 +// layout-animations: the four gradient row titles sweep background-position forever (repaint every
 +// frame); the engine pauses them only per section (±1 viewport), so also pause each title while it is
 +// off-screen.
@@ -2120,7 +2118,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5438,28 @@
+@@ -4689,12 +5438,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
@@ -2136,7 +2134,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -2148,9 +2146,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5492,15 @@
          ((O = null), z(E, null));
        },
@@ -2175,46 +2174,51 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          window.removeEventListener(`pointermove`, l),
          window.removeEventListener(`pointerup`, u),
          window.removeEventListener(`pointercancel`, u),
-@@ -6227,14 +6999,36 @@
+@@ -6227,6 +6999,21 @@
        t = document.getElementById(`future-heading`),
        n = [],
        r = !1,
-+      // [people-word A] the word's 1.3 s wait starts when the card is shown (.start-selling-future.is-visible,
-+      // set by the section's own scroll handler at hero progress >= 0.72), not when the heading enters: on a
-+      // phone the heading enters ~600 px before the card fades in, so the word had finished while still hidden.
-+      // fwCard: the card's section; fwWait: heading in view, start waits for the card; fwT: the pending 1.3 s timer.
-+      // Event-driven: a MutationObserver on the section's class (no scroll listener, no rAF, no layout read).
-+      fwCard = t?.closest(`.start-selling-future`),
-+      fwWait = !1,
-+      fwT = 0,
-+      fwShown = () => fwCard.classList.contains(`is-visible`),
++      // [people-word A, rev 3] the word plays when its text is fully shown: when the card's fade-in has ended
++      // (transitionend of the card's filter, blur(14px) -> blur(0px), the last of its fade-in transitions to end:
++      // opacity 0.7 s, filter 0.9 s), not 1.3 s after the heading is 35 % in view. On a phone the heading enters
++      // ~560 px before the card fades in (.start-selling-future.is-visible, hero progress >= 0.72), so the word
++      // had finished while the card was still hidden. Mirror for the reset: when the card starts to fade out
++      // (is-visible goes off) the word resets, as it does when the heading leaves. Heading still the guard: the
++      // word plays only while the heading is >= 35 % in view (the original IntersectionObserver, `r`).
++      // Event-driven: one MutationObserver on the section's class, one transitionend listener on the card (no
++      // scroll listener, no rAF, no layout read). fwFb: a fallback if no transition runs (no style change).
++      fwSec = t?.closest(`.start-selling-future`),
++      fwCard = fwSec?.querySelector(`:scope > .start-selling-future-card`),
++      fwShown = () => fwSec.classList.contains(`is-visible`),
++      fwOn = !!fwCard && fwShown(),
++      fwFull = fwOn,
++      fwFb = 0,
        i = () => {
          for (let e of n.splice(0)) window.clearTimeout(e);
--        if ((z(v, null), (w = null), e)) {
-+        if (((fwWait = !1), (fwT = 0), z(v, null), (w = null), e)) {
-           (z(h, !0), z(g, !0));
+         if ((z(v, null), (w = null), e)) {
+@@ -6234,30 +7021,50 @@
            return;
          }
          (z(h, !1), z(g, !1));
-       },
-+      fwStart = () => {
-+        n.push(
-+          (fwT = window.setTimeout(() => {
-+            ((fwT = 0),
-+              z(h, !0),
-+              n.push(
-+                window.setTimeout(() => {
-+                  z(g, !0);
-+                }, 120),
-+              ));
-+          }, 1300)),
-+        );
 +      },
++      fwPlay = () => {
++        (z(h, !0),
++          n.push(
++            window.setTimeout(() => {
++              z(g, !0);
++            }, 120),
++          ));
+       },
        a = () => {
          if ((i(), !e)) {
            if (u()) {
-@@ -6246,18 +7040,24 @@
-               ));
+-            (z(h, !0),
+-              n.push(
+-                window.setTimeout(() => {
+-                  z(g, !0);
+-                }, 120),
+-              ));
++            fwPlay();
              return;
            }
 -          n.push(
@@ -2227,40 +2231,51 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 -                ));
 -            }, 1300),
 -          );
-+          if (fwCard && !fwShown()) {
-+            fwWait = !0;
++          if (fwCard) {
++            fwFull && fwPlay();
 +            return;
 +          }
-+          fwStart();
++          n.push(window.setTimeout(fwPlay, 1300));
          }
        },
-+      // card shown while waiting: start the original 1.3 s wait; card hidden again before the word started
-+      // (scrolled back up within 1.3 s): cancel and wait for the card again. A started word is left alone; the
-+      // reset/replay stays on the heading leaving the viewport, as before.
++      // the card's fade-in has ended (or the fallback fired): play now if the heading is in view, else on its enter
++      fwDone = () => {
++        if ((window.clearTimeout(fwFb), (fwFb = 0), fwFull || !fwShown())) return;
++        ((fwFull = !0), r && !e && !u() && fwPlay());
++      },
++      fwEnd = (ev) => {
++        ev.target === fwCard && ev.propertyName === `filter` && fwDone();
++      },
++      // is-visible on: wait for the fade-in's end (fallback 1.2 s > the 0.9 s filter transition). Off (the fade-out
++      // starts, also within a quick in-and-out): drop the wait and reset the word, so it never plays or stays open
++      // while the card is fading out or hidden.
 +      fwMo =
 +        fwCard &&
 +        new MutationObserver(() => {
-+          if (!r || e || u()) return;
-+          fwShown()
-+            ? fwWait && ((fwWait = !1), fwStart())
-+            : fwT && (window.clearTimeout(fwT), (fwT = 0), (fwWait = !0));
++          let on = fwShown();
++          if (on === fwOn) return;
++          if ((fwOn = on)) {
++            fwFb = window.setTimeout(fwDone, 1200);
++            return;
++          }
++          (window.clearTimeout(fwFb), (fwFb = 0), (fwFull = !1), r && !e && !u() && i());
 +        }),
        o = new IntersectionObserver(
          ([e]) => {
            let t = !!e?.isIntersecting;
-@@ -6266,9 +7066,11 @@
+@@ -6266,9 +7073,11 @@
          { threshold: 0.35 },
        );
      t && o.observe(t);
-+    fwMo && fwMo.observe(fwCard, { attributes: !0, attributeFilter: [`class`] });
++    fwMo && (fwMo.observe(fwSec, { attributes: !0, attributeFilter: [`class`] }), fwCard.addEventListener(`transitionend`, fwEnd));
      let s = dE(A, { element: t, manageAnimations: !1 });
      return () => {
        o.disconnect();
-+      fwMo && fwMo.disconnect();
++      fwMo && (fwMo.disconnect(), fwCard.removeEventListener(`transitionend`, fwEnd), window.clearTimeout(fwFb));
        for (let e of n) window.clearTimeout(e);
        (E(), s());
      };
-@@ -10776,11 +11578,14 @@
+@@ -10776,11 +11585,14 @@
      let t = ie(e);
      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
    }
@@ -2277,7 +2292,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    function le() {
      let e = window.innerHeight * 1.45,
-@@ -11249,7 +12054,7 @@
+@@ -11249,7 +12061,7 @@
  }
  g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
  var dM = h(
@@ -2286,7 +2301,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,12 +12099,95 @@
+@@ -11294,12 +12106,95 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -2382,7 +2397,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        l = () => {
          i = 0;
          let n = document.querySelector(`.hero-track`);
-@@ -11312,10 +12200,17 @@
+@@ -11312,10 +12207,17 @@
          if (g) {
            let t = T(g.getBoundingClientRect(), window.innerHeight),
              n = e.matches ? +(t >= 0.5) : w(t);
@@ -2401,7 +2416,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
          }
          let r = document.querySelector(`.pain`);
-@@ -11325,7 +12220,7 @@
+@@ -11325,7 +12227,7 @@
          }
        },
        u = () => {
@@ -2410,7 +2425,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        f = (e) =>
          new Promise((t) => {
-@@ -11337,22 +12232,33 @@
+@@ -11337,22 +12239,33 @@
          }),
        p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
        m = (e) => {
@@ -2449,7 +2464,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              }
            }
        },
-@@ -11360,14 +12266,20 @@
+@@ -11360,14 +12273,20 @@
      return (
        e.addEventListener(`change`, u),
        t.addEventListener(`change`, u),
@@ -2471,7 +2486,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -11419,11 +12331,15 @@
+@@ -11419,11 +12338,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -2490,7 +2505,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        ),
          f(e, t));
      },
-@@ -11443,7 +12359,7 @@
+@@ -11443,7 +12366,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -2499,7 +2514,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(me));
    var ve = V(me, 2),
-@@ -11994,28 +12910,41 @@
+@@ -11994,28 +12917,41 @@
    ne(() => {
      let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
        t = 0,
@@ -2553,7 +2568,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                  a < 1 && (t = requestAnimationFrame(n)));
              };
            t = requestAnimationFrame(n);
-@@ -12197,14 +13126,9 @@
+@@ -12197,14 +13133,9 @@
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = !1,
        n = 0,
@@ -2570,7 +2585,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        i = () => {
          (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
-@@ -12243,26 +13167,16 @@
+@@ -12243,26 +13174,16 @@
          a = e(r),
          u = e(a),
          d = e(u),
@@ -2606,7 +2621,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13187,12 @@
+@@ -12273,8 +13194,12 @@
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
                "is-active": s(v),
              })),
@@ -2619,7 +2634,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(t, r));
      },
    );
-@@ -12433,21 +13351,28 @@
+@@ -12433,21 +13358,28 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -2650,7 +2665,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      };
    });
    var h = WM();
-@@ -12652,6 +13577,7 @@
+@@ -12652,6 +13584,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -2658,7 +2673,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, i));
      },
    ),
-@@ -12879,7 +13805,7 @@
+@@ -12879,7 +13812,7 @@
      `<div class="start-selling-morph-panel"><div class="start-selling-morph-backdrop" aria-hidden="true"></div> <div class="start-selling-morph-veil" aria-hidden="true"></div> <div class="start-selling-morph-center"><p class="start-selling-morph-title"> </p> <div class="waitlist-closing-countdown svelte-1dcozpm"><!></div> <div class="start-selling-morph-cta-stack svelte-1dcozpm"><button class="start-selling-morph-cta" type="button"><svg class="solar solar-bell-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M18.7491 9.70957V9.00496C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00496V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z" stroke="currentColor"/><path d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19" stroke="currentColor" stroke-linecap="round"/></svg> </button> <a class="start-selling-morph-cta-rsvp" href="https://f.fastwork.co/demoday" target="_blank" rel="noopener" data-selenium="start-selling.header.link.demo-day"><svg class="solar solar-calendar-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor"/><path d="M7 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M2.5 9H21.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 13H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17.0234H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.0234H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.0234H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> </a></div></div> <footer class="start-selling-morph-footer"><p> </p> <div class="start-selling-morph-footer-end"><p> </p> <span class="start-selling-morph-grad" aria-hidden="true"></span> <a href="https://fastwork.com/privacy"> </a></div></footer></div>`,
    ),
    uN = h(
@@ -2667,7 +2682,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    );
  function dN(n, r) {
    D(r, !0);
-@@ -12944,7 +13870,14 @@
+@@ -12944,7 +13877,14 @@
      x = N(0),
      w = 0,
      T,
@@ -2683,7 +2698,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      O = R(() => !s(p) && !s(E)),
      A = R(() => s(O) || s(x) > 0.55);
    function j(e) {
-@@ -12952,17 +13885,126 @@
+@@ -12952,17 +13892,126 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -2715,7 +2730,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  // that shadows the component's bound nav element), so the effect reaches the nav through this function.
 +  function __navNode() {
 +    return T;
-+  }
+   }
 +  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
 +  let __navEls = {};
 +  function __navEl(e) {
@@ -2775,7 +2790,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  // .is-earn-hidden: on at morph >= 0.2 (where the original's width / opacity targets reach 0), off at morph 0
 +  function __ewEh(m) {
 +    return (__ehV = m >= 0.2 ? !0 : m <= 0 ? !1 : __ehV);
-   }
++  }
 +  function __ewGo(on, pill) {
 +    (!__ewRO && typeof ResizeObserver == `function` && oe && ((__ewRO = new ResizeObserver(__ewMeasure)), __ewRO.observe(oe)));
 +    let was = __ewPill;
@@ -2816,7 +2831,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12997,17 +14039,144 @@
+@@ -12997,17 +14046,144 @@
            (window.clearTimeout(l), f());
        };
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
@@ -2967,7 +2982,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        y = () => document.querySelector(`.start-selling-platform`),
        S = () => {
-@@ -13017,13 +14186,186 @@
+@@ -13017,13 +14193,186 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -3156,7 +3171,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14387,9 @@
+@@ -13045,9 +14394,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -3168,7 +3183,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14397,58 @@
+@@ -13055,27 +14404,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -3234,7 +3249,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +14459,77 @@
+@@ -13086,7 +14466,77 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -3313,7 +3328,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,13 +14538,62 @@
+@@ -13095,10 +14545,59 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -3336,9 +3351,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          document.removeEventListener(`transitionrun`, __nsTrRun, !0),
 +          document.removeEventListener(`transitionend`, __nsTrEnd, !0),
 +          document.removeEventListener(`transitioncancel`, __nsTrEnd, !0));
-       }
-     );
-   });
++      }
++    );
++  });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -3371,13 +3386,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-+      }
-+    );
-+  });
-   var I = uN();
-   let L, te;
-   var B = e(I),
-@@ -13116,12 +14608,28 @@
+       }
+     );
+   });
+@@ -13116,12 +14615,28 @@
      },
    });
    var oe = V(ae, 2),
@@ -3408,7 +3420,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14648,7 @@
+@@ -13140,7 +14655,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -3417,7 +3429,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14665,16 @@
+@@ -13157,7 +14672,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -3435,7 +3447,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14710,8 @@
+@@ -13193,7 +14717,8 @@
          M(w),
          M(a),
          l(() => {
@@ -3445,7 +3457,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14728,7 @@
+@@ -13210,7 +14735,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -3454,7 +3466,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13229,9 +14747,12 @@
+@@ -13229,9 +14754,12 @@
            "is-locale-open": s(y),
            "is-scroll-hidden": s(v) && !s(E),
            "is-profile-sticky-hidden": s(v) && !s(E),
