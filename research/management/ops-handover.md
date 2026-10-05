@@ -72,6 +72,11 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~10:5xZ **Landings, PR-023 accepted, P-129 part 2 GO.**
+  - Landed: P-129 reader rev 1.1 808f6f34 (signed by the lead on the ops PASS) and ops 47f67bc3 as 767f5166. I-205 resolved.
+  - C-067 closed; the user accepted PR-023 at 10:15:50Z, so fix-hero-exit-threaded's land request is next.
+  - iphone-runner has GO for P-129 part 2 (H4:E3,L3 H5:L4,E4 H6:TAIL), then P-130, with a Mac-queue gap between the blocks.
+  - countdown-tick (lead question): nothing pending. The kit landed under rebased shas: e36f6124 as c9c87178, db956dd1 as 9521cc2f, 12b9ca9a as 5695a744; `git diff 12b9ca9a main -- fixes/countdown-tick fixes/countdown-tick-v9` is empty. The original branch shas are simply not ancestors of main. "Owner ended" on its board row is expected: fix-countdown-tick has no step until the P-130 data (the row can be parked with --resume-on land or after P-130).
 - 10-05 ~10:4xZ **P-129 reader rev 1.1 quick read: PASS** (iphone-runner 808f6f34 on worktree-agent-a7696771bf38f1229, rebased on 0e480e56).
   - Diff: p129-read.mjs only at line 175, the spread `Math.min(...)`/`Math.max(...)` over the Timeline records replaced by a pairwise loop (same results for empty input, NaN and -0); README §5 adds one disclosure paragraph. No rule, threshold, gate or output change. The remaining `Math.min(...TH)` is over a 3-element constant; line 123's spread is an array literal, not call arguments.
   - Hashes: reader 88835d4822e9 to 06f74f5d19ca (committed blob checked); self-test 110cc04eb8fb unchanged, ops re-ran it: SELFTEST PASS 48; phone scripts unchanged.
