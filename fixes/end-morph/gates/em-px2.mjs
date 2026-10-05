@@ -84,7 +84,9 @@ try {
       let s = null; for (let i = 0; i < 300 && !s; i++) { if (existsSync(st)) try { s = JSON.parse(readFileSync(st, 'utf8')); } catch {} if (!s) await sleep(100); }
       if (!s) throw new Error('server did not start');
       const url = `http://localhost:${s.port}/`;
-      load.served = { js: sha(Buffer.from(await (await fetch(new URL(NODE, url))).arrayBuffer())), css: sha(Buffer.from(await (await fetch(new URL(CSS, url))).arrayBuffer())) };
+      // the state file can appear a moment before the server accepts connections (v9f run 23:01Z: A2 "fetch failed")
+      const get = async (u) => { for (let i = 0; ; i++) { try { return Buffer.from(await (await fetch(u)).arrayBuffer()); } catch (e) { if (i >= 20) throw e; await sleep(250); } } };
+      load.served = { js: sha(await get(new URL(NODE, url))), css: sha(await get(new URL(CSS, url))) };
       c = await open(url, s.port);
       for (let i = 0; i < 40 && (await c.ev('document.readyState')) !== 'complete'; i++) await sleep(500);
       await sleep(2500);
@@ -127,4 +129,6 @@ try {
   writeFileSync(join(OUT, 'px.json'), JSON.stringify(res, null, 1));
   try { cdp && cdp.close(); chrome && (await chrome.close()); } catch {}
   console.log('wrote', join(OUT, 'px.json'));
+  const bad = res.loads.filter((l) => l.void).map((l) => l.arm);
+  if (bad.length) { console.log(`GATE VOID: load(s) ${bad.join(', ')} failed; no stop is scored, re-run`); process.exitCode = 3; }
 }
