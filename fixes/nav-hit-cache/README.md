@@ -1063,6 +1063,38 @@ parity on X, P-122's rule). Reported only: EX (V ceiling on X), GS (G gate on S)
 decides (a re-run of the short part, or landing on Part 1 alone). Part 2 WORSE or BEHAVIOUR FAIL: U2 does not land; the
 cause is traced first (a G run's frames, the flicker logger).
 
+### P-136 part 2 runbook (for iphone-runner; added after the signature, no rule changed)
+
+Everything runs from the nav-hit-cache worktree, `.claude/worktrees/agent-a277ea00c8773c1ea` (branch nav-hit-cache):
+the kit, its tools (equal to main at the rebase) and `out/p136/` are there. The kit was checked on 10-05 at 11:39Z:
+- `out/p136/snap` was made with `serve136.sh snap` (read-only, HASHES.txt = C 1b2eecc66011 / V c7435c24dc56 / CSS
+  e1359ab9994a);
+- `serve136.sh` started B, C and V, served the pinned bytes ("ok" x 3), then stopped them;
+- `iphone.mjs gesture --dry-run` gave GESTURE_HASH 21aaafd3a9fd (X, fast) and 7312cdcd2574 (S, slow), equal to
+  hold136.sh's pins;
+- every file the PIN line names is present.
+
+Steps (in the lead's phone order, after P-130's H4 / H5 on phone back; profile xcode-serious):
+1. `cd` into the worktree and start the servers: `sh fixes/nav-hit-cache/p136/serve136.sh` (background is fine; it
+   prints three `ok` lines and exits; the servers stay up).
+2. Run one hold per command, H1 to H4 in order, each in the background, exactly as the hold136.sh header says:
+   `TICKET=P-136 node tools/lock.mjs run iphone --owner iphone-runner --block P-136 --max-seconds 900 -- node
+   tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "nav U2 P-136 H<n>"
+   -- caffeinate -i -s sh fixes/nav-hit-cache/p136/hold136.sh H<n> <items>`. The items per hold are in the table above.
+   Between holds, run `node tools/lock.mjs doing iphone --owner iphone-runner --between <min>`.
+3. The last line is `HOLD H<n> VALID` or `HOLD H<n> VOID <why>`. A VOID hold is re-run whole, once. A second VOID of the
+   same hold leaves its part short; report it, and do no more runs without a lead ruling. Nothing is re-scripted.
+4. At the end: `sh fixes/nav-hit-cache/p136/serve136.sh stop`, then `node tools/lock.mjs doing iphone --owner
+   iphone-runner --block none`. Tell fix-nav-morph and mgmt-ops-10 which holds were VALID.
+5. Scoring (fix-nav-morph or ops; VALID holds only, block order):
+   `R=out/p136/runs; node fixes/nav-hit-cache/p136/score.mjs sCo:$R/p136-sCo-H1.json gXC1:$R/p136-gXC1.json gXV1:$R/p136-gXV1.json
+   gXV2:$R/p136-gXV2.json sCc:$R/p136-sCc-H1.json sCo:$R/p136-sCo-H2.json gXC2:$R/p136-gXC2.json gXC3:$R/p136-gXC3.json
+   gXV3:$R/p136-gXV3.json gXV4:$R/p136-gXV4.json gXC4:$R/p136-gXC4.json sCc:$R/p136-sCc-H2.json sCo:$R/p136-sCo-H3.json
+   gSC1:$R/p136-gSC1.json gSV1:$R/p136-gSV1.json gSV2:$R/p136-gSV2.json sCc:$R/p136-sCc-H3.json sCo:$R/p136-sCo-H4.json
+   gSC2:$R/p136-gSC2.json gSC3:$R/p136-gSC3.json gSV3:$R/p136-gSV3.json sCc:$R/p136-sCc-H4.json --json
+   fixes/nav-hit-cache/p136/score-final.json`. Warm-ups are not passed. Each run's served check log
+   (`p136-<H>-check-<item>.log`) is found beside its record.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
