@@ -57,6 +57,11 @@ probe slots (2026-10-05 ~22:5x-23:1xZ): a = mobile, desktop; b = mobile-rtl, des
   mobile case and mode: `section#platform` hidden with `--morph-fade` 0 at the page end, visible with fade 1 back at the
   top (no stuck hidden); desktop: no fade written, visible (F1 acts only where the morph runs).
 - `probe.mjs` change (report only, 4fb489fef170): the F1 state read; it changes no audit count.
+- **Edits to fix-nav-morph's tools** (made by int-v8 for this run, credited to fix-nav-morph's nav-hit-cache harness;
+  accepted by the lead while the owner is parked): the additive `v9ff12` base in `fixes/nav-hit-cache/build.mjs` (no
+  other base changed) and the report-only F1 read in `fixes/nav-hit-cache/probe.mjs`. Lead: v9-final + F1 + U2
+  (a6426953727a / e1359ab9994a, HASHES 0817a71bf0c7) is the landing base for fix-end-morph's gates; this commit lands
+  with fix-end-morph's F1 + U2 landing.
 
 ## Not in it
 
