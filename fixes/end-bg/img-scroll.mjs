@@ -100,11 +100,20 @@ async function run(cdp, srv, arm) {
   const all = await page.eval('__imAll()');
   const done = page.waitFor((m) => m.method === 'Tracing.tracingComplete', 90000);
   await page.send('Tracing.end'); await done; offT(); offN();
+  // name the nodes of PaintImage events without a URL (generated images: canvas, gradients-as-image, cross-fade, ...)
+  const noUrl = {};
+  for (const e of ev) if (e.name === 'PaintImage' && !(e.args?.data?.url)) { const id = e.args?.data?.nodeId || 0; noUrl[id] = (noUrl[id] || 0) + 1; }
+  const noUrlNodes = [];
+  await page.send('DOM.getDocument', { depth: 0 }).catch(() => {});
+  for (const [id, n] of Object.entries(noUrl)) { let name = '(no node)';
+    if (+id) try { const { node } = await page.send('DOM.describeNode', { backendNodeId: +id }); const at = node.attributes || []; const o = {}; for (let i = 0; i < at.length; i += 2) o[at[i]] = at[i + 1];
+      name = `${node.localName || node.nodeName}${o.class ? '.' + String(o.class).split(/\s+/).filter((x) => !/^svelte-/.test(x)).slice(0, 3).join('.') : ''}${o.src ? ' src=' + String(o.src).slice(0, 60) : ''}`; } catch { name = '?'; }
+    noUrlNodes.push({ id: +id, n, name, sample: JSON.stringify((ev.find((e) => e.name === 'PaintImage' && (e.args?.data?.nodeId || 0) === +id && !e.args?.data?.url) || {}).args || {}).slice(0, 300) }); }
   await page.close();
   const marks = Object.fromEntries(ev.filter((e) => e.name === 'TimeStamp' && /^im:/.test(e.args?.data?.message || '')).map((e) => [e.args.data.message.slice(3), e.ts]));
-  const first = Math.min(...ev.filter((e) => e.ts > 0).map((e) => e.ts)), last = Math.max(...ev.map((e) => e.ts || 0)) + 1;
+  let first = Infinity, last = 0; for (const e of ev) if (e.ts > 0) { if (e.ts < first) first = e.ts; if (e.ts > last) last = e.ts; } last += 1;
   const images = [...net.values()];
-  return { arm: arm.name, loadMs, nHosts, geo, network: { n: images.length, bytes: images.reduce((s, x) => s + x.bytes, 0), images },
+  return { arm: arm.name, loadMs, nHosts, geo, noUrlNodes, network: { n: images.length, bytes: images.reduce((s, x) => s + x.bytes, 0), images },
     load: summarize(ev, marks.load ?? first, marks.scroll), scroll: summarize(ev, marks.scroll, marks.end ?? last), seen, hosts: all };
 }
 
