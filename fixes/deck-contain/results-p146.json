@@ -1,6 +1,6 @@
 {
  "card": "P-146 rev 1.1 (signed with N1-N7 after the lead delta check, 7162106c, landed as 617a8b73)",
- "scope": "Simulator holds H1-H3 scored. Chrome C1, P15/P16 and pixels follow per the card and are not in this result.",
+ "scope": "Every registered P-146 step: Simulator holds H1-H3, Chrome counts C1, P15/P16 in Chrome (430x775, 430x932) and the Simulator (expanded), pixels in Chrome (14 configs) and the Simulator (expanded, collapsed, landscape).",
  "reading": "All three holds OK (A/A 1.012, 1.014, 1.002; drift 0.006, 0.019, 0.003). PC2 LOCATES in every hold. PC2, A3, A4 and R3 each LOCATE on the median of 3 runs (ratio 0.012-0.013); no arm is BIMODAL per run (rule 4).",
  "predictions": {
   "P1": "hit",
@@ -8,10 +8,16 @@
   "P3": "hit (A4)",
   "P4": "hit (A3)",
   "P5": "miss (R3 LOCATES)",
-  "P6": "miss (no arm BIMODAL per run; all three have 3 valid runs)",
+  "P6": "miss (no arm BIMODAL per run)",
   "P7": "hit",
   "P8": "hit",
-  "P9-P12, P15, P16": "not yet run (card order: Chrome C1, P15/P16, pixels)"
+  "P9": "hit (A3 ratios lay 0.963/0.963, dirty 0.965/0.974, ultEl 0.972/0.978)",
+  "P10": "hit (A3 dirty 0.965, 0.974)",
+  "P11": "miss (A3 Chrome pixels: 56 FAIL of 112 pairs)",
+  "P12": "miss (A3 Simulator pixels: 17 FAIL of 24 pairs)",
+  "P15": "hit (A3, A4, R3 equal base and base2 in all 6 cases, Chrome both heights and Simulator)",
+  "P16a": "hit (A3 and A4 shift +32 px at both switches in both engines; 8 px steps)",
+  "P16b": "hit (R3 equal base in both engines)"
  },
  "predictionsNote": "owner tally; the result reader confirms",
  "driver": "sim-swipe-p146.mjs 65d5aac5f45d, scorer score-p146.mjs bf06d1178073",
@@ -33,7 +39,10 @@
  "disclosures": [
   "The display was off at the start of all three holds (lock I-033 warning), as in P-143. No rule depends on it (rev 1.1 \"Recorded, no rule\").",
   "Reporting bug in the pinned scorer: it computes the per-swipe medians (swipeL, rev 1.1 N3) but its output row omits them. No rule reads them. The per-swipe numbers below were computed by a separate descriptive script over the same runs.jsonl, using the same band; they are descriptive only.",
-  "Per-swipe levels (descriptive, N3): every arm run whose first swipe landed on the middle level (about 25 ms) pooled a second swipe that landed low (about 0.44 ms): H1 R3:1 (s0 25.15, s1 0.43), H2 R3:2 (s0 25.68, s1 0.44), H2 A3:2 (s0 25.32, s1 0.45). The run medians read low because the low swipe has more band frames (162 vs 96-110), as N3 predicted. Across P-143 and P-146, first-or-only swipes on the middle level: R3 3 of 5 runs, A3 2 of 5, A4 0 of 5, PC2 0 of 3, strict+844 2 of 2. Second swipes: always low. OBSERVED in our setup, cause unknown."
+  "Per-swipe levels (descriptive, N3): every arm run whose first swipe landed on the middle level (about 25 ms) pooled a second swipe that landed low (about 0.44 ms): H1 R3:1 (s0 25.15, s1 0.43), H2 R3:2 (s0 25.68, s1 0.44), H2 A3:2 (s0 25.32, s1 0.45). The run medians read low because the low swipe has more band frames (162 vs 96-110), as N3 predicted. Across P-143 and P-146, first-or-only swipes on the middle level: R3 3 of 5 runs, A3 2 of 5, A4 0 of 5, PC2 0 of 3, strict+844 2 of 2. Second swipes: always low. OBSERVED in our setup, cause unknown.",
+  "Chrome pixel group 2 (5 configs) was killed at the 300 s shared-slot cap (exit 124) before writing; it was re-run as three smaller groups (g2p1-3) over the same configs. No pair of the killed run is used.",
+  "Pixel instrument: base-vs-base2 differs in many pairs (often 10k-40k device pixels) although every running Web Animation is paused; something else moves between shots. Per arm, the FAIL counts with largest shade <= 2 and with the FAIL bbox inside / overlapping the same pair base-vs-base2 diff bbox are in pixels.<engine>.<arm>. OBSERVED in our setup, cause unknown.",
+  "Edge-or-fill for the worst Chrome FAILs is a 3x3-block heuristic on the saved shots (fill = some beyond-A/A pixel with all 8 neighbours also beyond); px-sim keeps only base and arm shots for a FAIL, so the Simulator worst FAILs have no edge-or-fill reading."
  ],
  "perSwipe": {
   "H1 W:0": [
@@ -1205,5 +1214,657 @@
    "high": 0,
    "bimodal": false
   }
- ]
+ ],
+ "chromeCounts": [
+  {
+   "dir": "out/deck-contain/chrome/C1",
+   "runs": [
+    {
+     "step": "C:1",
+     "arm": "C",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.264,
+     "dirty": 3.736,
+     "ultEl": 53.764,
+     "paints": 3.938,
+     "deckH": 844.078125,
+     "docH": 7210
+    },
+    {
+     "step": "A3:1",
+     "arm": "A3",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.242,
+     "dirty": 3.506,
+     "ultEl": 49.944,
+     "paints": 4.034,
+     "deckH": 844.078125,
+     "docH": 7210,
+     "layRatio": 0.963,
+     "dirtyRatio": 0.965,
+     "ultElRatio": 0.972
+    },
+    {
+     "step": "A4:1",
+     "arm": "A4",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.242,
+     "dirty": 3.539,
+     "ultEl": 50.32,
+     "paints": 4.062,
+     "deckH": 844.078125,
+     "docH": 7210,
+     "layRatio": 0.963,
+     "dirtyRatio": 0.974,
+     "ultElRatio": 0.98
+    },
+    {
+     "step": "R3:1",
+     "arm": "R3",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.236,
+     "dirty": 3.511,
+     "ultEl": 50.292,
+     "paints": 4.039,
+     "deckH": 844.078125,
+     "docH": 7210,
+     "layRatio": 0.94,
+     "dirtyRatio": 0.966,
+     "ultElRatio": 0.979
+    },
+    {
+     "step": "C:2",
+     "arm": "C",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.247,
+     "dirty": 3.624,
+     "ultEl": 50.258,
+     "paints": 4.067,
+     "deckH": 844.078125,
+     "docH": 7210
+    },
+    {
+     "step": "A3:2",
+     "arm": "A3",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.242,
+     "dirty": 3.539,
+     "ultEl": 50.213,
+     "paints": 4.045,
+     "deckH": 844.078125,
+     "docH": 7210,
+     "layRatio": 0.963,
+     "dirtyRatio": 0.974,
+     "ultElRatio": 0.978
+    },
+    {
+     "step": "R3:2",
+     "arm": "R3",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.242,
+     "dirty": 3.539,
+     "ultEl": 50.236,
+     "paints": 4.045,
+     "deckH": 844.078125,
+     "docH": 7210,
+     "layRatio": 0.963,
+     "dirtyRatio": 0.974,
+     "ultElRatio": 0.978
+    },
+    {
+     "step": "C:3",
+     "arm": "C",
+     "state": "OK",
+     "n": 178,
+     "lay": 0.242,
+     "dirty": 3.539,
+     "ultEl": 50.051,
+     "paints": 4.056,
+     "deckH": 844.078125,
+     "docH": 7210
+    }
+   ],
+   "hold": "OK"
+  }
+ ],
+ "n1": {
+  "chrome775": {
+   "tabs": {
+    "base": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "A3": {
+     "offsetParent": "div.start-selling-profile-deck",
+     "after": "same as base"
+    },
+    "A4": {
+     "offsetParent": "div.start-selling-profile-deck",
+     "after": "same as base"
+    },
+    "R3": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "base2": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    }
+   },
+   "sweep": {
+    "base": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": null
+    },
+    "A3": {
+     "shellSw": [
+      200,
+      592
+     ],
+     "tabSw": [
+      200,
+      592
+     ],
+     "vsBase": {
+      "shellEqual": false,
+      "tabEqual": false,
+      "shellShift": [
+       32,
+       32
+      ],
+      "tabShift": [
+       32,
+       32
+      ]
+     }
+    },
+    "A4": {
+     "shellSw": [
+      200,
+      592
+     ],
+     "tabSw": [
+      200,
+      592
+     ],
+     "vsBase": {
+      "shellEqual": false,
+      "tabEqual": false,
+      "shellShift": [
+       32,
+       32
+      ],
+      "tabShift": [
+       32,
+       32
+      ]
+     }
+    },
+    "R3": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    },
+    "base2": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "chrome932": {
+   "tabs": {
+    "base": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "A3": {
+     "offsetParent": "div.start-selling-profile-deck",
+     "after": "same as base"
+    },
+    "A4": {
+     "offsetParent": "div.start-selling-profile-deck",
+     "after": "same as base"
+    },
+    "R3": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "base2": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    }
+   },
+   "sweep": {
+    "base": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": null
+    },
+    "A3": {
+     "shellSw": [
+      200,
+      592
+     ],
+     "tabSw": [
+      200,
+      592
+     ],
+     "vsBase": {
+      "shellEqual": false,
+      "tabEqual": false,
+      "shellShift": [
+       32,
+       32
+      ],
+      "tabShift": [
+       32,
+       32
+      ]
+     }
+    },
+    "A4": {
+     "shellSw": [
+      200,
+      592
+     ],
+     "tabSw": [
+      200,
+      592
+     ],
+     "vsBase": {
+      "shellEqual": false,
+      "tabEqual": false,
+      "shellShift": [
+       32,
+       32
+      ],
+      "tabShift": [
+       32,
+       32
+      ]
+     }
+    },
+    "R3": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    },
+    "base2": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "simA3R3": {
+   "tabs": {
+    "base": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "A3": {
+     "offsetParent": "div.start-selling-profile-deck",
+     "after": "same as base"
+    },
+    "R3": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "base2": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    }
+   },
+   "sweep": {
+    "base": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": null
+    },
+    "A3": {
+     "shellSw": [
+      200,
+      592
+     ],
+     "tabSw": [
+      200,
+      592
+     ],
+     "vsBase": {
+      "shellEqual": false,
+      "tabEqual": false,
+      "shellShift": [
+       32,
+       32
+      ],
+      "tabShift": [
+       32,
+       32
+      ]
+     }
+    },
+    "R3": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    },
+    "base2": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    }
+   }
+  },
+  "simA4": {
+   "tabs": {
+    "base": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    },
+    "A4": {
+     "offsetParent": "div.start-selling-profile-deck",
+     "after": "same as base"
+    },
+    "base2": {
+     "offsetParent": "div.start-selling-profile-chrome.is-rail-in",
+     "after": "same as base"
+    }
+   },
+   "sweep": {
+    "base": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": null
+    },
+    "A4": {
+     "shellSw": [
+      200,
+      592
+     ],
+     "tabSw": [
+      200,
+      592
+     ],
+     "vsBase": {
+      "shellEqual": false,
+      "tabEqual": false,
+      "shellShift": [
+       32,
+       32
+      ],
+      "tabShift": [
+       32,
+       32
+      ]
+     }
+    },
+    "base2": {
+     "shellSw": [
+      168,
+      560
+     ],
+     "tabSw": [
+      168,
+      560
+     ],
+     "vsBase": {
+      "shellEqual": true,
+      "tabEqual": true,
+      "shellShift": [
+       0,
+       0
+      ],
+      "tabShift": [
+       0,
+       0
+      ]
+     }
+    }
+   }
+  }
+ },
+ "pixels": {
+  "chrome": {
+   "A3": {
+    "pairs": 112,
+    "T0": 44,
+    "T1": 12,
+    "FAIL": 56,
+    "failShadeLe2": 39,
+    "failInsideAAregion": 21,
+    "failOverlapsAAregion": 37,
+    "worst": {
+     "where": "m360x780 inview swipe",
+     "largestShade": 255,
+     "shareBeyondAA": "0.1773 %",
+     "areaCssPx": 3328,
+     "edgeOrFill": "fill",
+     "staticOrMoving": "moving (swipe end)"
+    }
+   },
+   "A4": {
+    "pairs": 112,
+    "T0": 51,
+    "T1": 16,
+    "FAIL": 45,
+    "failShadeLe2": 31,
+    "failInsideAAregion": 17,
+    "failOverlapsAAregion": 31,
+    "worst": {
+     "where": "t1200x900 leave rest",
+     "largestShade": 251,
+     "shareBeyondAA": "0.4988 %",
+     "areaCssPx": 491087,
+     "edgeOrFill": "fill",
+     "staticOrMoving": "static"
+    }
+   },
+   "R3": {
+    "pairs": 112,
+    "T0": 56,
+    "T1": 15,
+    "FAIL": 41,
+    "failShadeLe2": 26,
+    "failInsideAAregion": 16,
+    "failOverlapsAAregion": 34,
+    "worst": {
+     "where": "m430x932 inview rest",
+     "largestShade": 244,
+     "shareBeyondAA": "0.0897 %",
+     "areaCssPx": 3328,
+     "edgeOrFill": "fill",
+     "staticOrMoving": "static"
+    }
+   }
+  },
+  "sim": {
+   "A3": {
+    "pairs": 24,
+    "T0": 4,
+    "T1": 3,
+    "FAIL": 17,
+    "failShadeLe2": 10,
+    "failInsideAAregion": 13,
+    "failOverlapsAAregion": 17,
+    "worst": {
+     "where": "landscape leave swipe",
+     "largestShade": 254,
+     "shareBeyondAA": "0.1131 %",
+     "areaCssPx": 3328,
+     "edgeOrFill": "shots not kept (base2 shot missing)",
+     "staticOrMoving": "moving (swipe end)"
+    }
+   },
+   "A4": {
+    "pairs": 24,
+    "T0": 3,
+    "T1": 7,
+    "FAIL": 14,
+    "failShadeLe2": 2,
+    "failInsideAAregion": 7,
+    "failOverlapsAAregion": 12,
+    "worst": {
+     "where": "landscape leave swipe",
+     "largestShade": 218,
+     "shareBeyondAA": "0.0316 %",
+     "areaCssPx": 2923,
+     "edgeOrFill": "shots not kept (base2 shot missing)",
+     "staticOrMoving": "moving (swipe end)"
+    }
+   },
+   "R3": {
+    "pairs": 24,
+    "T0": 4,
+    "T1": 3,
+    "FAIL": 17,
+    "failShadeLe2": 4,
+    "failInsideAAregion": 8,
+    "failOverlapsAAregion": 17,
+    "worst": {
+     "where": "expanded leave rest",
+     "largestShade": 251,
+     "shareBeyondAA": "0.1044 %",
+     "areaCssPx": 58976,
+     "edgeOrFill": "shots not kept (base2 shot missing)",
+     "staticOrMoving": "static"
+    }
+   }
+  }
+ },
+ "decision": "Under the registered decision no arm is built from this card yet: R3 (first in order) LOCATES, is not BIMODAL per run and passes P15/P16, but has pixel FAILs (Chrome 41 of 112 pairs, Simulator 17 of 24); A3 and A4 also fail P16 (+32 px switch shift). Whether any arm can land as T2 or goes to the user as a proposal is the lead ruling after the result read (lead, 2026-10-06)."
 }

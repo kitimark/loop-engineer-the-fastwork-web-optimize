@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** P-143 rev 1.1 (signed with N1-N8, delta check PASS) ended NOT REPRODUCED under its own rules (see "Result"); the follow-up is card P-146 (`P146.md`). No build, nothing to land.
+**Status:** P-143 ended NOT REPRODUCED (signed). P-146 rev 1.1 (signed) has run every registered step; result below, waiting for the result read and the lead's pixel ruling. No build.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
@@ -561,6 +561,55 @@ The ratios are unread: OBSERVED only, never a result. They are listed for the ne
 - **Next per the card:** Chrome C1, P15/P16 (Chrome and the Simulator), then pixels.
   - Under the decision rule R3 is the first candidate, because it LOCATES and is not BIMODAL per run.
   - Its middle-level first swipes are for the lead to weigh before any build.
+
+## Result: P-146 remaining steps (Chrome counts, N1 checks, pixels; `results-p146.json`)
+
+**Chrome counts C1** (hold OK; A3 ratios against the mean of the C runs):
+
+| measure | A3:1 | A3:2 |
+|---|---|---|
+| Layout | 0.963 | 0.963 |
+| dirtyObjects | 0.965 | 0.974 |
+| UpdateLayoutTree elementCount | 0.972 | 0.978 |
+
+- A4 and R3 are within 0.94-0.98 too.
+- P9 hit, P10 hit: no worse, and dirtyObjects unchanged within ±10 %.
+
+**N1 checks** (P15, P16):
+- **P15, tab clicks:** in Chrome at 430x775 and 430x932 and in the Simulator, A3, A4 and R3 end every one of the 6
+  tab-click cases in the same state as base and base again. P15 hit.
+- **P16, deck sweep:** the active shell and tab switch at deck scrollLeft 168 and 560 in base, base again and R3. A3 and
+  A4 switch at 200 and 592, a +32 px shift measured in 8 px steps, in both engines. P16a hit, P16b hit.
+- Under the lead's N1 ruling, A3 and A4 can therefore only land through a user proposal.
+
+**Pixels** (rule 6 as registered: any FAIL means no T0 claim):
+
+| engine | arm | pairs | T0 | T1 | FAIL | FAIL with shade <= 2 | FAIL inside / overlapping the pair's A/A region | worst FAIL: shade, share beyond A/A, area CSS px, edge/fill, static/moving |
+|---|---|---|---|---|---|---|---|---|
+| Chrome | A3 | 112 | 44 | 12 | 56 | 39 | 21 / 37 | 255, 0.177 %, 3328, fill, moving (m360x780 inview) |
+| Chrome | A4 | 112 | 51 | 16 | 45 | 31 | 17 / 31 | 251, 0.499 %, 491087, fill, static (t1200x900 leave) |
+| Chrome | R3 | 112 | 56 | 15 | 41 | 26 | 16 / 34 | 244, 0.090 %, 3328, fill, static (m430x932 inview) |
+| Simulator | A3 | 24 | 4 | 3 | 17 | 10 | 13 / 17 | 254, 0.113 %, 3328, n/a, moving (landscape leave) |
+| Simulator | A4 | 24 | 3 | 7 | 14 | 2 | 7 / 12 | 218, 0.032 %, 2923, n/a, moving (landscape leave) |
+| Simulator | R3 | 24 | 4 | 3 | 17 | 4 | 8 / 17 | 251, 0.104 %, 58976, n/a, static (expanded leave) |
+
+- P11 miss, P12 miss.
+- The pixel instrument is unstable: base against base again often differs by 10k-40k device pixels even with every Web
+  Animation paused. Most FAILs are shade <= 2 or overlap regions that also move in A/A. OBSERVED in our setup, cause
+  unknown.
+- Edge/fill for Chrome comes from a 3x3-block heuristic on the saved shots. The Simulator keeps no base-again shot for a
+  FAIL, so its edge/fill is n/a.
+- Chrome group 2 was killed at the 300 s cap and re-run as three smaller groups.
+
+**Tally** (owner's; the reader confirms):
+- hits: P1, P2, P3, P4, P7, P8, P9, P10, P15, P16a, P16b;
+- misses: P5, P6, P11, P12.
+
+**Decision as registered:** no arm is built from this card yet.
+- R3 is first in the order. It LOCATES, is not BIMODAL per run, and passes P15 and P16, but it has pixel FAILs.
+- Whether an arm can land as T2 (memory `illusion-must-be-pixel-identical`) or goes to the user as a proposal is the
+  lead's ruling after the result read.
+- Any R3 claim carries the first-swipe observation: R3's first swipe was on the ~25 ms level in 3 of 5 runs. OBSERVED.
 
 ## Scenarios not run
 
