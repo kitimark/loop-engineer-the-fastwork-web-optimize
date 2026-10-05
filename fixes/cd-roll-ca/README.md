@@ -1866,6 +1866,11 @@ TICKET P-097 rev 4 · cd-roll-ca panel clock roll · less-work item #1 · fix-cd
 status: DRAFT, before any build or data. Starts after v9-final lands on main, on the lead's word. Supersedes revs 1-3
   in full: their arms (C = V9, V = V10), predictions P1-P5, calibration and outcome rules no longer apply. Where rev 4
   keeps a rule (reps, A/A spread, voids) it restates it here, so this block reads on its own.
+rev 4.1 (ops pre-data read of f6251d6f: NOT YET, M1-M4 + S1 + 2 notes; text only, still before any build or data;
+  answered in place below): M1 shots move to separate shot loads under the frozen-clock shim (step 4); M2 Chrome
+  exactness takes the 10-04 form with a named mask (Q5); M3 Q4 layers get an A/A rule; M4 the rAF-callback and
+  frame-assignment rules are in the metric definition; S1 m is read before and after the rest windows (step 3, per-rep
+  validity for Q1/Q2); notes: Q2a's C expectation re-worded, the logger's read point named (step 2).
 why now: v9-final rests at the page end with the menu open (rev 7c, PR-018: m = 1 at the end of its 100lvh spacer).
   The panel clock is in view there, ticks once a second (countdown-tick's timeout chain, F-267) and rolls its digits
   on the original rAF spring: v9-final JS 647c9ef2b1e2 line 4326 (`function i`, cd-roll-ca's "no strip yet or no
@@ -1901,21 +1906,42 @@ platforms and slots: Chrome headless, 430x932 DPR 3, touch, no CPU throttle (the
   every arm and rep (protocol §5.2). No iPhone, no timing (memory "defer timing"). The less-work rule's phone no-worse
   check is a separate later ticket (new P-id), after this one passes.
 reps and order (as rev 2-3): per platform 6 reps per arm, two rotated Latin squares C V C2 / V C2 C / C2 C V, twice (18
-  loads per platform, one page load per rep, fresh profile or tab). A rep is valid when the page reached m = 1, the pass
-  and the rest windows ran to the end and the served hashes match the addendum. A verdict needs >= 5 valid reps per arm
-  on that platform; otherwise that platform's predictions are VOID (re-run once, then report).
-per rep, in this order:
+  count loads per platform, one count load per rep, fresh profile or tab; plus the rep's shot loads, step 4). A rep is
+  valid when the page reached m = 1, the pass and the rest windows ran to the end and the served hashes match the
+  addendum; for Q1/Q2 it must also pass the m check in step 3 (S1). A verdict needs >= 5 valid reps per arm on that
+  platform (per prediction, counting the reps valid for it); otherwise that platform's prediction is VOID (re-run once,
+  then report).
+per rep, in this order (steps 1-3 and 5 in the count load, step 4 in separate shot loads):
   1. load at the top, settle 2 s.
   2. pass (logger on): jump to half a viewport above the start of rev 7c's spacer (m = 0); scripted scroll 10 px per
      frame to the page end (m 0 -> 1); at rest, wait for the next roll start, then within 100 ms a scripted pull up of
      0.3 spacer heights at 10 px per frame, and stop; let the page's settle finish (open or closed, logged); logger off.
-     The logger is one rAF per frame that reads m (the panel's `--morph`), getAnimations() on the panel cells and the
-     panel digit's position. It runs in step 2 only.
-  3. scroll to the page end (instant), settle 32 s (int-v8's settle), then the rest windows: 3 consecutive 4 s windows,
-     trace only (no in-page logger, no CDP Animation domain). A rep's value = the median of its 3 windows.
-  4. after the windows: one rest shot (m = 1, between rolls: 300 ms after a roll's finish) and one reduced-motion shot
-     (prefers-reduced-motion emulated, after the next tick); in the Simulator also one mid-roll shot at a fixed time
-     after a roll start (method as simpx.mjs, the time named in the addendum).
+     The logger reads m (the panel's `--morph` as the page writes it), getAnimations() on the panel cells and the panel
+     digit's position once per frame. Read point (ops note): the logger's rAF callback only posts a MessageChannel
+     message, and the read runs in that message task, i.e. after all of the frame's rAF callbacks, their microtasks and
+     the frame's rendering update. On the page-end path m is written by the scroll engine's rAF callback (`dE(L)`, JS
+     14496 -> `L` -> `__msTick` -> `__navMorphSet`, 14410/14316) and on the tween path by the ZM tween's rAF (14326);
+     the gate's Svelte effect flushes in a microtask after the write (F-205). So every read pairs the m that frame
+     painted with the animations left running after it, for both paths, wherever the logger's own rAF sits in the
+     callback order. A timer task (the tick) can run between the frame and the read; it does not write m, so the pair
+     stays consistent. getAnimations() may flush style in that task; it runs in every arm alike and only in step 2.
+     The pass drives the scroll path only (rev 7c's page end); the tween path (wheel at the pin) is covered by the gate
+     reading `x`, not driven or scored here.
+  3. scroll to the page end (instant), settle 32 s (int-v8's settle), read m once (S1), then the rest windows: 3
+     consecutive 4 s windows, trace only (no in-page logger, no CDP Animation domain), then read m again. A rep's value
+     = the median of its 3 windows. m check (S1): both reads exactly 1 (the page's own value, read by one evaluate
+     outside the windows); otherwise the rep is invalid for Q1 and Q2, and is reported with its m values (a gate that
+     never opened is then not scored as "no less work").
+  4. shot loads (M1), separate from the count load, never inside the step 3 windows; per rep, same square position:
+     (a) motion shot load: the frozen-clock shim of simpx.mjs (Simulator) / pixels.mjs (Chrome): virtual Date.now,
+     performance.now and document.timeline.currentTime, and the countdown's rAF stepped by hand at 60 Hz, a tick landing
+     at frame + FR/3, Web Animations started at the virtual change time; scroll to the page end (m = 1), step the
+     virtual clock to the same instant in every arm, then the rest shot at a frame after the roll's end (V: each panel
+     cell animation at or past its end shows its last keyframe = the inline rest place, as simpx/pixels do) and, in the
+     Simulator, the mid-roll shot at a fixed virtual frame after the roll start (V paused at the matching currentTime,
+     as simpx "paused"; the frame named in the addendum). (b) reduced-motion shot load: the same shim with
+     prefers-reduced-motion emulated from load (pixels.mjs RM=1; the Simulator's reduced-motion setting as round 4),
+     shot at the same virtual instant. Every arm's shots are at the same virtual time, so the clock digits match.
   5. descriptive only, after everything counted: one 4 s window with Animation trace events or the CDP Animation domain
      on, for the col-track animations (int-v8's "decisive local check" for the 60 level). Never scored.
 A/A spread (as rev 2-3): spread = max over the valid pairs (same square position) of |C - C2|; a pair with C or C2
@@ -1924,17 +1950,27 @@ A/A spread (as rev 2-3): spread = max over the valid pairs (same square position
   <= spread; "V <= C + A/A" = V median <= C median + spread.
 new metric, page-end rest mainFrames/s (census rest-end): main frames (PrePaint) per second in the step 3 windows,
   counted as research/design-engineering/frame-audit/census.mjs counts them (same trace categories). Each frame is put
-  in one of two classes: countdown frames (a main frame whose rAF, timer or other task contains a FunctionCall in the
-  countdown code: the roll unit `$E` and `cD`, JS 4215-4559 on C; V's ranges in the addendum) and other frames. The
-  hero clock is held off-screen at the page end (countdown-faces), so countdown frames there are the panel clock's
-  plus the shared tick.
+  in one of two classes: countdown frames and other frames. The countdown code = the roll unit `$E` and `cD`, JS
+  4215-4559 on C; V's ranges in the addendum. The hero clock is held off-screen at the page end (countdown-faces), so
+  countdown work there is the panel clock's plus the shared tick. Attribution rules (M4), applied to the trace alone:
+  - a countdown rAF callback = one FireAnimationFrame event on the renderer main thread that contains (by ts and dur,
+    as census.mjs's parentOf) at least one FunctionCall whose url is 2.DyWL8TcE.js and whose line lies in the countdown
+    code; each such FireAnimationFrame counts once, however many FunctionCalls it holds;
+  - a task = a top-level TimerFire, FireAnimationFrame, or other FunctionCall-carrying event on the renderer main
+    thread; it belongs to the first PrePaint (main frame) that starts at or after the task's end, within the same
+    window; a task with no later PrePaint in the window belongs to no frame and is reported as "unframed" per window;
+  - a countdown frame = a main frame with at least one task that contains a FunctionCall in the countdown code; every
+    other main frame is an other frame. A timer task (the tick) that runs between frames therefore marks the next
+    frame, whatever else drives that frame.
 predictions (rev 4; P1-P5 of revs 1-3 are superseded; each scored V vs C against the C/C2 A/A):
   Q1 (Chrome, scored) less script at the page-end rest: countdown rAF callbacks per 4 s window, V median <= 10 % of C
      median AND V median < C median - spread. C expected about 120-150 (reference above). Point V 4 per 4 s, 80 %
      [2, 12] (one roll-start rAF per roll, as on the hero: 8-9 per 8 s in T-096 step 2).
   Q2 (Chrome) page-end rest mainFrames/s:
      Q2a (scored) the spring/tick share goes: countdown frames/s V median <= 4 AND < C median - spread. C expected
-         about 27-30/s (the spring's frames). Point V 2/s, 80 % [1, 4] (the tick's frame and the roll start's frame).
+         at most min(mainFrames/s, spring rAF/s + 1 tick/s), i.e. about 27-38/s (an expectation, not a rule: the spring
+         runs 29-37 rAF/s, but several callbacks can share one frame). Point V 2/s, 80 % [1, 4] (the tick's frame and
+         the roll start's frame).
      Q2b (scored, no-worse) other frames/s: no V load above the highest C or C2 load + 2/s (V adds no new level).
          There is no prediction of the level itself: the 27 vs 60 split is OBSERVED, cause unknown (int-v8: one build
          reads both levels; the panel's col-track transform animations running on the main thread are suspected,
@@ -1946,20 +1982,33 @@ predictions (rev 4; P1-P5 of revs 1-3 are superseded; each scored V vs C against
      frame with 0 < m < 1, in every valid rep; countdown rAF in the pass window (frames with 0 < m < 1: the scroll-in
      and the pull) within C +/- spread.
   Q4 (Simulator, scored) pass frames no worse: Paint records per pass frame (Timeline Paint records in the pass
-     window / RenderingFrames in it) V <= C + A/A; layer count and backing at the pass's middle frame V = C in every
-     rep (an extra backed cell is reported, F-201).
-  Q5 (pixels; memory "Illusions must be pixel-identical": identical or T2, more or motion-only is a proposal): rest
-     shot and reduced-motion shot exact (T0) vs C in Chrome and the Simulator, with A/A C vs C2 at 0; Simulator
-     mid-roll shot within T2 (PR-010 wide numbers: fill 64, edge 128, 0.5 %); Chrome mid-roll reported with the five
-     numbers only (the hero showed edge 222, so a Chrome T2 miss is expected and goes to the user with the panel's
-     motion-difference decision, not as a pass).
+     window / RenderingFrames in it) V <= C + A/A; layer count and backing at the pass's middle frame (M3): per square
+     position V <= max(C, C2) for the layer count and for backing MB; if C and C2 differ in more than 2 of the valid
+     pairs, the layer measure is A/A-limited and goes to the lead (not scored). Any V layer or backed cell beyond
+     max(C, C2) is reported by name (F-201).
+  Q5 (pixels; memory "Illusions must be pixel-identical": identical or T2, more or motion-only is a proposal), shots
+     from the step 4 shot loads:
+     Simulator: rest shot and reduced-motion shot exact (T0) vs C, A/A C vs C2 at 0 (round 4 was exact, 0 of 12); an
+       A/A above 0 makes it A/A-limited (to the lead). Mid-roll shot within T2 (PR-010 wide numbers: fill 64, edge 128,
+       0.5 %).
+     Chrome (M2, the lead's 10-04 ruling in "Reduced motion, Chrome" above: a ±1 checkerboard on the panel's dark
+       background around the digit cards shows in any arm, the A/A included; OBSERVED, cause unknown): rest and
+       reduced-motion shots count as exact when, for V vs C and for C2 vs C alike: (i) no pixel differs outside the
+       named mask M-bg = the panel's background inside the panel rect minus the digit-card rects (each card rect from
+       getBoundingClientRect in the shot load, grown by 0 px; the mask built per shot and stored with it); (ii) no pixel
+       inside M-bg differs by more than 1 in any channel; (iii) the number of V-vs-C shots with any M-bg difference is
+       at most the number of C2-vs-C shots with one, + 2 (the 10-04 counts were 4 vs 2 of 533). Anything inside a card,
+       on a glyph, in the hero or elsewhere on the page breaks T0. Chrome mid-roll is reported with the five numbers
+       only (the hero showed edge 222, so a Chrome T2 miss is expected and goes to the user with the panel's
+       motion-difference decision, not as a pass).
   Q6 (Chrome and Simulator, scored) hand-off: at every valid rep's pull (the first frame with m < 1 while a roll
      runs) the panel digit jumps <= 0.5 CSS px from the previous frame's path value (roll-probe extended to the panel
      selector). A rep whose pull met no running roll is invalid for Q6 only.
 descriptive (never scored): Simulator rest windows (RenderingFrame, FireAnimationFrame, RecalculateStyles, Paint per
-  4 s); m at the page-end rest, exactly 1 or not (if not, the gate never opens there on that platform and V = C; the
-  phone ticket then reads m at rest first, since Safari's toolbar and a fractional scrollY can leave m just under 1;
-  rev 7c already notes a 40 px closed-rest shift from the toolbar); backing at rest (F-201: +1 cell in 3 of 6
+  4 s); the step 3 m reads per rep (the S1 rule makes them a validity check; their values are reported either way:
+  if m is not exactly 1, the gate never opens there and V = C; the phone ticket reads m at rest first, since Safari's
+  toolbar and a fractional scrollY can leave m just under 1; rev 7c already notes a 40 px closed-rest shift from the
+  toolbar); unframed tasks per window (M4); backing at rest (F-201: +1 cell in 3 of 6
   censuses on the hero); the step 5 col-track read; dom-count and console errors (0 new).
 calibration (exclusive first-miss outcomes in the order Q1..Q6; sum 1): all pass 0.40; Q1 0.05 (the hero already shows
   8-9 rAF per 8 s); Q2 0.12 (finish handlers or the cells' layering add countdown or other frames, or the other-frame
@@ -1975,10 +2024,10 @@ voids: served JS/CSS hash != addendum; BASELINE-<STATE> other than ok; A/A over 
   lead); countdown expiry 2026-11-02 05:00Z inside a run; a measurement-code change (verify.mjs, lib/cdp.mjs,
   serve.mjs) between rep 1 and the last rep.
 tools (rev 2 R5, re-targeted; none written yet): scorer `fixes/cd-roll-ca/p097-score.mjs`; Chrome probe
-  `p097-census.mjs` (steps 1-5; rest windows with census.mjs's trace categories and PrePaint/FunctionCall rules plus the
-  per-frame countdown/other split); Simulator probe `p097-sim.mjs` (the same steps in a functional sim session,
-  Timeline reader as "WebKit frames, layers and Timeline"); roll-probe extended to the panel; pixels with the PR-010
-  five-number compare. All committed, their sha256 and the served JS/CSS/delta hashes written into an addendum before
+  `p097-census.mjs` (steps 1-3 and 5; rest windows with census.mjs's trace categories and PrePaint/FunctionCall rules
+  plus the M4 attribution rules); Simulator probe `p097-sim.mjs` (the same steps in a functional sim session, Timeline
+  reader as "WebKit frames, layers and Timeline"); shot loads: pixels.mjs (Chrome) and simpx.mjs (Simulator) extended
+  to the panel at the page end, with the M-bg mask; roll-probe extended to the panel; the PR-010 five-number compare. All committed, their sha256 and the served JS/CSS/delta hashes written into an addendum before
   rep 1; a change after that voids the reps before it.
 order of work after the lead's word: rebase on main with v9-final; tell fix-nav-morph (cdwc) before the edit; build V
   on the landed v9-final; tools and addendum; ops pre-data read of the addendum; then the Chrome and Simulator reps.
