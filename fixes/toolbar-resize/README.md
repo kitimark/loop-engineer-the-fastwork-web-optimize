@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), closed by the lead, ops result read PASS, landed; cause of the low n corrected (fling overshoot past the hero zone, not the guard); P-133 card rev 1 (same arms and rule 1, fresh data, drag cycles sized for n >= 12, two holds, count-only dry run, frozen n check before scoring; base main 189ca7ed = v9-final + 7d, JS 1b2eecc66011) registered before data; signed with addendum 1 (four holds); RESULT REPRODUCED: nvn LOCATES (0.032), tps, tp and vu0 NONE (sticky marks carry the step; a boundary above the sticky hero does not stop it; viewport-unit half closed); predictions 9 of 12; result read CONFIRMED with notes R1-R5 (ops-reader-P133)
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), closed by the lead, ops result read PASS, landed; cause of the low n corrected (fling overshoot past the hero zone, not the guard); P-133 card rev 1 (same arms and rule 1, fresh data, drag cycles sized for n >= 12, two holds, count-only dry run, frozen n check before scoring; base main 189ca7ed = v9-final + 7d, JS 1b2eecc66011) registered before data; signed with addendum 1 (four holds); RESULT REPRODUCED: nvn LOCATES (0.032), tps, tp and vu0 NONE (sticky marks carry the step; a boundary above the sticky hero does not stop it; viewport-unit half closed); predictions 9 of 12; result read CONFIRMED with notes R1-R5 (ops-reader-P133); model review (R4) written; P-141 card rev 1 (which single sticky renderer is enough: hso, pso, fso keep-one arms plus nvn, nvc in every hold, 4 holds of 5 steps, host-load rule load1 > 100 = VOID-HOST) registered before data, to the lead for the pre-data read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -2873,6 +2873,139 @@ Notes on the run:
     - That fits P-109/P-110's "any one viewport-constrained renderer is enough"; untested on this build.
   - A look-safe way to unmark the hero's stickiness during the step.
   - Either needs a new card. Next is the lead's decision.
+
+## Prediction P-141: which single sticky renderer is enough? (Simulator Timeline, registered before data)
+
+**Card rev 1, before any data.** P-id P-141 (mgmt-clerk-1). The lead's GO after P-133's CONFIRMED read covers
+question 1 only. Next: the lead's Opus pre-data read, then his signature. No run before the signature.
+
+- **Question.** On v9-final + 7d, three renderers are sticky in the hero zone at phone width: the hero, `.pain-sticky`
+  and #platform (P-133's census). Making all three relative removes the toolbar-step Layout (nvn, P-133: 0.032).
+  Does any ONE of them, left sticky alone (the fixed nav stays fixed), keep the cost?
+- **Why it matters.** Question 2 (a look-safe way to unmark the hero's stickiness during the step) is worth a card only
+  if the hero alone carries the cost: hso NONE, with pso and fso LOCATES. Otherwise unmarking the hero cannot help
+  while pain or #platform still mark the step. Any look change would be a proposal for the user, never a fix.
+- **What is known** (our own arm data only, per the P-133 model review; no prediction leans on a propagation path):
+  - P-106 (v8, phone G): removing only the hero's stickiness left the cost (NONE).
+  - P-109/P-110 (v8, Simulator): removing nav, pain, or nav+pain left it (NONE); removing every viewport-constrained
+    renderer (nvc) located (0.017).
+  - #platform's sticky (`html.fw-ms .start-selling-platform`, CSS l.12408) is new in v9; v8 had no data on it.
+  - P-133 (v9-final + 7d): nvc 0.000 in both halves, nvn 0.032, a boundary above the sticky hero (tps) NONE.
+  - Why sticky marks make the view-rooted step update reach the showcase is UNRESOLVED (P-133 model review).
+- **Base, stimulus, instrument:** exactly P-133's.
+  - Base: main as of `189ca7ed` (this branch is rebased on `d51cddf5`, which adds docs only), served from the
+    `fixes/morph-scroll-v9try` overlay: JS `1b2eecc66011`, CSS `e1359ab9994a`.
+  - Stimulus: `cycle-hero-v2.json` `59420d90ed02` (18 drags, 4 cycles, y about 1000-2300), unchanged, so there is no
+    dry run. Its dry-run PASS and P-133's 15 runs (n 36-162, 0 guard events) stand for it.
+  - Frame filter and n check: `check-n133.mjs` (unchanged), n >= 8 per run, before scoring.
+  - Scorer: `score-bisect.mjs` `cb6f0c97b81b` (unchanged), per hold against that hold's C runs.
+- **Arms** (`ss-inject.mjs`, built from `pgp-inject.mjs`: same census, showcase IO log, docH and read()):
+
+  | arm | rule | asks |
+  |---|---|---|
+  | C | the injection, no rule | control |
+  | `nvc` | every fixed -> absolute, every sticky -> relative (P-133's rule) | positive control, in every session (N4's lesson) |
+  | `nvn` | every sticky -> relative, fixed kept (P-133's rule) | reference: all three stickies off |
+  | `hso` | every sticky -> relative except the hero | is the hero alone enough? |
+  | `pso` | every sticky -> relative except `.pain-sticky` | is pain alone enough? |
+  | `fso` | every sticky -> relative except #platform | is #platform alone enough? |
+
+  - #platform's rule keeps P-133's `top: auto` wherever #platform is made relative (hso, pso, nvn, nvc).
+  - As in P-133, any other sticky renderer the census still finds after the rule gets an inline `!important`
+    position (`extra`); renderers that appear later are only reported (`vcEnd`).
+  - All arms change the look by construction: mechanism only, never shipped, no pixel check.
+- **Order: four holds of 5 steps.** Each hold has its own C pair and its own nvc. Every keep-one arm and nvn runs twice,
+  in two different holds, in rotated order:
+
+  | hold | steps |
+  |---|---|
+  | S1 | `C:H1 nvc:H1 hso:H1 pso:H1 C:H2` |
+  | S2 | `C:H3 nvc:H2 fso:H1 nvn:H1 C:H4` |
+  | S3 | `C:H5 nvc:H3 pso:H2 fso:H2 C:H6` |
+  | S4 | `C:H7 nvc:H4 nvn:H2 hso:H2 C:H8` |
+
+  - Total: 4 Simulator holds, 20 steps, 8 C runs.
+  - Budget: P-133's dry-run estimate gives 5 x 78.35 + 30 = 421.8 s <= 500 s (`SB_BUDGET_S=500`, `--max-seconds 600`).
+    P-133's real steps took 60-67 s. The driver's budget stop stays as the guard.
+  - The driver accepts only these holds with exactly these steps; anything else exits 2 before any work.
+- **Host-load rule** (the lead's ruling after P-133's R1; registered before data).
+  - Before each step the driver reads load1 (`os.loadavg()`). If it is above 100, the driver stops with exit 28 before
+    that step, and the hold is **VOID-HOST**: not scored. It is re-run once, the same steps, queued at once. A second
+    VOID-HOST for the same hold stops the card; it goes to the lead.
+  - Every step logs load1 at its start and end (`runs.jsonl`); the result reports them.
+  - Why 100: P-133's four holds started at SIM_QUIET load1 39-87 and all replicated, with drift <= 0.056. This rule
+    only catches load beyond anything that produced valid data. Disclosed: the threshold is set from P-133's
+    observed load range, not from its ratios.
+  - Below 100, the C bracket and the drift rule (rule 3) are the guard, as in P-133. The lock's host-gate flags are
+    reported, never gating.
+- **Running and stop rules.**
+  - One FIFO queue entry at a time, in the order S1, S2, S3, S4, each a normal exclusive hold with `--wait 14400`
+    (P-133's lesson).
+  - Each hold's n check runs right after it, before any scoring. A later hold runs whatever the earlier holds' values
+    are. Nothing is scored before the last hold.
+  - **These stop all remaining holds** (to the lead, nothing scored): served bytes wrong (exit 26); the first-run gate
+    (exit 27: inject format, or n < 8 on the hold's first run); HOLD-FAIL in the n check; a second VOID-HOST of one hold.
+  - **These stop only within a hold:**
+    - exit 28 (VOID-HOST), followed by one re-run of that hold;
+    - the budget stop: the hold's dropped steps are logged and not scored, and the next hold still runs.
+  - After the last hold, per hold: the applied-arm gate `check-ss.mjs`, then the scorer, then `split-io119.mjs`
+    (descriptive).
+- **Applied-arm gate** (`check-ss.mjs`, frozen).
+  - C, nvc, nvn: exactly `check-pgp.mjs`'s rules (`da32f37117f6`).
+  - hso, pso, fso: applied, a non-empty rule, and the census right after the rule holds exactly one sticky renderer,
+    the kept one (div.hero..., div.pain-sticky, section#platform). The fixed renderers may stay.
+  - A run that fails is INSUFFICIENT, never NONE.
+- **Rules** (frozen before data):
+  1. **NOT REPRODUCED** if any hold's C runs fail the replication gate (every C counted, inStyle >= half n). No arm is
+     judged.
+  2. **CONTROL-FAILED per hold.** A hold whose nvc does not LOCATE (ratio > 0.30 or not counted) reads none of its
+     other arms; any LOCATES is still reported.
+  3. **VOID per hold:** |last C - first C| / first C > 0.30 (the scorer's rule). A hold left with one C by the budget
+     stop reports DRIFT n/a, neither VOID nor a pass (P-133's N6).
+  4. **Calls per arm, over its two runs** (each against its own hold's C runs):
+     - LOCATES when both runs LOCATE or the mean of the two ratios is <= 0.30;
+     - PARTIAL when the mean is <= 0.70;
+     - NONE otherwise.
+     With one valid run, that run's call stands and the result says "one run".
+  5. **Reference check:** if nvn does not LOCATE, the keep-one reading below is not made (the result conflicts with
+     P-133) and goes to the lead.
+  6. **Reading** (only with rules 1, 2 and 5 passed):
+     - A keep-one arm NONE: that sticky alone keeps the cost. A keep-one arm LOCATES: that sticky alone does not.
+     - hso NONE, pso and fso LOCATES: the hero alone carries it. Question 2 may get a card (a look change is a
+       proposal).
+     - Two or three keep-one arms NONE: no single sticky is the lever ("any one is enough", as on v8). Question 2 is
+       not worth a card, and the toolbar line ends at "remove every sticky", which changes the look and would be a
+       proposal only.
+     - Any PARTIAL is reported as such, with no reading forced.
+  7. A Simulator ratio is never a phone result and never a gain.
+- **Predictions** (registered before data; from our arm data only, per the P-133 model review):
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | C replicates in all four holds | 80 % |
+  | 2 | nvc LOCATES in all four holds | 85 % |
+  | 3 | nvn LOCATES (reference) | 85 % |
+  | 4 | hso NONE (the hero alone keeps it; v8: removing pain and nav kept the cost) | 70 % |
+  | 5 | pso NONE (pain alone keeps it; v8: removing the hero kept the cost) | 65 % |
+  | 6 | fso NONE (#platform alone keeps it; no prior data) | 55 % |
+  | 7 | at least two keep-one arms NONE ("any one is enough") | 70 % |
+  | 8 | no arm GEOMETRY | 85 % |
+  | 9 | every run passes the applied-arm gate | 80 % |
+  | 10 | all four holds pass the n check | 85 % |
+  | 11 | no VOID-HOST hold | 75 % |
+
+- **Pins** (sha256/12):
+  - new: inject `ss-inject.mjs` `8ca27aa0b077`, gate `check-ss.mjs` `b4d331a0cfed`, driver `sim-ss.mjs`
+    `b9a0d09d8e83`;
+  - self-test `ss-selftest.mjs` `9cacb47710f4`: `SELFTEST ok 70 checks`. It covers each arm's rule on a stub DOM with
+    #platform; exactly the kept sticky stays; the fixed nav stays; an unlisted sticky is covered inline; the gate's
+    passes and refusals; the plan (5 steps, own C and nvc per hold, two runs per arm in two holds); the host rule; the
+    first-run gate; and that the reused files are unchanged;
+  - unchanged: `cycle-hero-v2.json` `59420d90ed02`, `check-n133.mjs` `96a1dc5fe288`, `check-pgp.mjs` `da32f37117f6`,
+    `score-bisect.mjs` `cb6f0c97b81b`, `split-io119.mjs` `1ad22b858eb8`;
+  - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
+- **Output.** `out/toolbar-resize/simss/<S1..S4>/` (gitignored). Committed after the last hold:
+  `p141-score-<hold>.json` and `p141-checks.json`.
 
 ## Scenarios not run
 
