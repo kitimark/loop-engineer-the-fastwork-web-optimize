@@ -192,6 +192,128 @@ File: `em-sim-v9f-2026-10-05T23-17-31-791Z.json`. Paint events, C / V / C again:
 - No gain on the glide is expected. F1's gains are at rest open and on toolbar steps, which the Simulator glide doesn't
   drive. The step-A rerun (C, V1, N; fixed script) measures toolbar strokes.
 
+## P-152: phone no-worse check (card, registered before any P-152 data)
+
+**Ticket:** P-152 (lead, 2026-10-05; registered by mgmt-clerk-1). Stage V of a less-work fix (memory
+"less-work-landing-rule"): cost-card counts (above) plus one short phone no-worse check. No gain is claimed from the
+phone.
+
+**Question.** Does F1+U2 make the end-zone morph on the iPhone worse? The end-zone morph is the scroll into and out of
+the end menu, with toolbar steps, driven by a real touch gesture.
+
+**Arms (lead condition 1).**
+- Both arms come from int-v8's immutable snapshot `out/emv9f/snap-a6426953727a` (HASHES.txt sha256/12
+  `0817a71bf0c7`). It is copied once into `out/p152/snap`, checked against HASHES.txt, and limited to the four pinned
+  files.
+- C = v9-final as landed: JS `647c9ef2b1e2`, CSS `e1359ab9994a`.
+- V = C + F1 + U2 (`delta.diff` `befc17cec97f`): JS `a6426953727a`, CSS `e1359ab9994a`.
+- B = the plain baseline, used only for the thermal gate's timer page.
+- Served by `phone/p152-serve.sh` (int-v8's serve.sh, copied): plain http, `--vendors=local --latency 150`.
+- Both arms' served JS and CSS are hashed before every run. A mismatch voids the hold.
+
+**Driver and profile (lead condition 2).**
+- Driver G: `iphone.mjs gesture` with fs = `fixes/morph-scroll/g-fastshort-v1.json`, compiled program
+  `8737f212c0ff`, E procedure (first touch 4.0-5.5 s after page ready). This is the same script as P-137 and T-194.
+  Its swipes run to the page bottom and back, through the morph's open and close, with Safari toolbar steps.
+- Hold time comes from `gesture --dry-run`'s `GESTURE_BUDGET_S`; a time guard re-runs a hold whole.
+- Heat profile `xcode-serious`: Xcode Device Conditions only, never thermal.mjs. A thermal gate runs at each phone
+  hold's edges (`--expect serious --max-c 44 --accept-induced`).
+
+**Plan.**
+- One uncounted warm-up per arm (WC, WV).
+- Sentinels S0 (start) and S1 (end) are Timeline-OFF runs on C, judged by the signed P-129 sentinel rule (moving fps
+  >= 50, slow share <= 6 %). S0 FAIL voids the block. S1 FAIL voids every counted run.
+- 8 counted runs, Timeline on, in the order C V V C C V V C (EC1, EV1, EV2, EC2, EC3, EV3, EV4, EC4).
+- Each counted run must pass the P-129 run gates G1-G6. A failed run is re-run once in the tail, at most 2 re-runs per
+  block.
+- At most 2 blocks.
+
+| part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 runs at most) |
+|---|---|
+| 1 | H1 WC WV, H2 S0 EC1, H3 EV1 EV2 |
+| 2 | H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7 TAIL (re-runs, then S1), HA AC1 AV1 |
+
+**Runner steps (lead condition 6).**
+- `p152-block.sh` starts every part with `iphone.mjs wda stop`, `wda start`, `wda check` (the I-212 lesson), and stops
+  the part if WDA is not READY. Each hold also runs `wda check` before its start gate.
+- Safari is parked after every run and at the end of every part.
+- The block mark is `lock.mjs run iphone --block P-152 --max-seconds 3600`. After each hold: `doing iphone
+  --between 1`.
+- Commands (the runner, in the background, after `sh fixes/end-morph-f12/phone/p152-serve.sh start`):
+  `TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 -- sh
+  fixes/end-morph-f12/phone/p152-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2`, then the same with
+  `H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`. Before the read, VOID holds' records are moved to
+  `out/p152/void/<H>/`.
+
+**Metric** (`phone/p152-read.mjs`):
+- Per counted run, the signed P-129 reader rev 1.1 (`readRun`, role E) gives the moving frames.
+- The end zone is the reader's lastScreen band: scrollY >= maxY - innerHeight. On v9-final the morph track is the last
+  innerHeight of the scroll (Chrome: endStart 5189 = max 5964 - 775, OBSERVED), so this band is m >= 0.
+- n = moving end-zone frames; s(th) = those with dt > th, for th 30, 34, 38, 46, 50, 54.
+- P-137's after-touchend subset is reported but decides nothing.
+
+**Decision (lead condition 3; P-150 rev 1.1's rule).** V is judged against C, at >34 and at >50 separately.
+- WORSE when EITHER:
+  - (a) min(V) > max(C); OR
+  - (b) median(V) - median(C) > +2 at >34, or > +1 at >50.
+- Rates are used instead of counts when median n differs by more than 15 % between the arms; the bounds then become 2
+  and 1 divided by median n(C).
+- Twins: >30 and >38 use the >34 bound; >46 and >54 use the >50 bound. A twin that disagrees with its main threshold
+  marks the result "threshold-sensitive".
+- NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE; it goes to the lead (block 2 or no landing).
+- INSUFFICIENT: an arm has fewer than 3 valid runs. VOID: a sentinel failed.
+- "Position-confounded" is added when the lowest V run at a failing threshold opens its hold (EV1, EV3). It is a label
+  only and doesn't change the outcome.
+- The scorer's self-test (`node fixes/end-morph-f12/phone/p152-read.mjs --selftest`, 18 checks) covers each clause
+  alone, both together, both thresholds, the 3-run floor for each arm, the rates switch, the twin flag, the
+  position label, the end-zone filter and the attribution split.
+
+**Falsification line (lead condition 4).**
+- Prediction: NO-WORSE PASS. F1 hides #platform only at m >= 0.55, where it is already at opacity 0. U2 removes hit
+  tests.
+- The named risk: F1's return-frame restyle could add a slow frame at each open and close. That restyle is +164-171
+  styled elements and +24 dirty layout objects in Chrome, and Simulator style recalcs went 78 against 60-62 in open.
+  If it does, (b) catches it at >34 or >50 as a median rise of 1-2 or more per run (each run has several opens and
+  closes).
+- A FAIL means the fix does not land as is. The next step would then be a version that keeps #platform hidden without
+  the restyle (for example, hiding only #platform's composited children).
+
+**Attribution (lead condition 5; decides nothing).**
+- AC1 and AV1 run after S1, Timeline on.
+- Read: Paint records per moving frame, split at m >= 0.55 (F1's range) and 0 <= m < 0.55, with m from scrollY and
+  innerHeight (Chrome geometry; an approximation on the phone).
+- Expectation: fewer Paint records per frame at m >= 0.55 on V, from the toolbar-step repaints of #platform that P-137
+  showed. Never a gate.
+
+**Power note (OBSERVED, for the reader).** P-137's C arm (v9-final + 7d, same script and profile, 4 runs) had 25-40
+end-zone frames over 34 ms per run and 1-15 over 50 ms. Against that spread, a median bound of +2 / +1 can fail by
+chance. The rule is the lead's and stays as written. A FAIL is read together with the separation clause and the twin
+flag.
+
+**Kit (pins, sha256/12, at the card commit).**
+
+| file | pin |
+|---|---|
+| `phone/p152-block.sh` | `3a2d0a7716c7` |
+| `phone/p152-hold.sh` | `b5b38c853340` |
+| `phone/p152-serve.sh` | `2548d4588b0e` |
+| `phone/p152-read.mjs` | `005136ea3002` |
+
+- Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e` and
+  `research/serious-heat/p129-read.mjs` `06f74f5d19ca`.
+- The runner prints these pins and the other dependencies (fs script, thermal gate, pmcheck, the snapshot files) in
+  every hold's PIN line.
+- Dry run (2026-10-05 23:27Z, servers up): `P152_DRY=1 TICKET=P-152 sh fixes/end-morph-f12/phone/p152-block.sh H1:WC,WV
+  H2:S0,EC1 H3:EV1,EV2 H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`.
+  - Every hold: DRY ok.
+  - Served hashes: C `647c9ef2b1e2`, V `a6426953727a`, CSS `e1359ab9994a`; B `4606120cf392` / `27776f3d4138`.
+  - Compiled program `8737f212c0ff`, GESTURE_BUDGET_S 229.
+  - Thermal gates at start (H1) and end (HA); TAIL resolved to S1 alone.
+  - The servers were stopped afterwards.
+- Reader smoke test: on P-137's own records (fix-end-bg's out/p137/runs: a different question, used only to test
+  parsing), the reader read all 8 counted runs and both sentinels, and the attribution read gave plausible splits
+  (EC1: 719 frames at m >= 0.55, 675 below).
+
 ## Pending
 
 - v9.2 Simulator pixel rerun before the zone (informational now; on v9-final that stop is 0).
