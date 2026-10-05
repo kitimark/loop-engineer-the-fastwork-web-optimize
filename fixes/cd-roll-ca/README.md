@@ -1772,6 +1772,9 @@ item 2 (which other animations next): the main-thread frames that stay at y 0 wi
 
 ## Ticket P-097: panel clock roll (#1), less-work, m-gate (registered before any data)
 
+**Rev 4 (2026-10-05, below the rev 1-3 block) supersedes revs 1-3 in full**: new base C = v9-final, the hold at m = 1 is
+the page-end rest, new predictions Q1-Q6 replace P1-P5. Revs 1-3 stay as history.
+
 ```
 TICKET P-097 cd-roll-ca panel clock roll · less-work item (lead 10-03 12:2xZ, F3 handoff #1 in fixes/nav-morph/README.md
   "Handoff"); id from mgmt-ops-10 (e51b686c, 10-04 07:2xZ). Registered here before any build or data; second read: ops.
@@ -1852,6 +1855,133 @@ N4 P5: every valid rep's first tween start (Chrome and Simulator), pass = the ma
   px. P4: per arm and platform, one rest shot (m = 1, between rolls) and one reduced-motion shot per rep, taken at
   the rep's end after the P1 windows (same square position, so 6 + 6 per arm and platform).
 Timeline: WebKit Timeline is on in every Simulator arm and rep (protocol §5.2), since P1 (descriptive) and P3 read it.
+```
+
+### P-097 rev 4: base v9-final, the page-end rest is the hold (2026-10-05, before any build or data)
+
+```
+TICKET P-097 rev 4 · cd-roll-ca panel clock roll · less-work item #1 · fix-cd-roll-ca-r4 (takes over P-097 from
+  fix-cd-roll-ca) · lead's re-base after int-v8's "Page-end rest split" (10-05) · counts and pixels only, no timing ·
+  second read: ops (mgmt-ops-10)
+status: DRAFT, before any build or data. Starts after v9-final lands on main, on the lead's word. Supersedes revs 1-3
+  in full: their arms (C = V9, V = V10), predictions P1-P5, calibration and outcome rules no longer apply. Where rev 4
+  keeps a rule (reps, A/A spread, voids) it restates it here, so this block reads on its own.
+why now: v9-final rests at the page end with the menu open (rev 7c, PR-018: m = 1 at the end of its 100lvh spacer).
+  The panel clock is in view there, ticks once a second (countdown-tick's timeout chain, F-267) and rolls its digits
+  on the original rAF spring: v9-final JS 647c9ef2b1e2 line 4326 (`function i`, cd-roll-ca's "no strip yet or no
+  path" fallback, comment at 4322), because the per-cell Web Animations roll is hero-only by the test
+  `!__crEl.closest('.inverse')` at 4286-4291. int-v8's page-end rest split (fixes/v9-best/README.md "Page-end rest
+  split", branch worktree-agent-a068af37646232e05 at aaa18038; Chrome census rest-end, one load per arm, OBSERVED in
+  our setup): v9-final 27-60 mainFrames/s vs v8's 0-0.2 at its page end; panel spring 29-37 rAF/s plus 1 tick/s; v8
+  runs the same spring whenever its panel is held open (A-open 31.8/s).
+arms (one snapshot, every arm built and hashed before rep 1):
+  C  = v9-final as landed. Until it lands, the pins: JS 647c9ef2b1e2 / CSS e1359ab9994a (patch.diff 4196eaa61d96,
+       baseline snapshot b1789284481295-4ad4a84a). If the landed bytes differ, the addendum names the landed hashes and
+       marks the C reference below "measured on the pins, not the landed build".
+  V  = C + the panel clock (the `cD` instance with `inverse: !0` in the morph panel, JS 14631-14640) on cd-roll-ca's
+       per-cell Web Animations roll, gated to m in {0, 1}: the `.inverse` exclusion at JS 4289 becomes "the hero, or the
+       panel while m is exactly 0 or 1", where m is the panel's morph value `x` (JS 13840). Every m writer in v9 sets
+       `x` (scroll-linked `__navMorphSet` at 14316-14324, the settle's smooth scroll through it, the ZM tween at 14326),
+       so the gate covers all of them. While 0 < m < 1 the panel keeps the original spring. A roll running when m leaves
+       {0, 1} is handed to the spring at its current value (one write, no restart). The hero path stays byte-identical.
+       CSS expected unchanged (any CSS change is named in the addendum). JS, CSS and delta-on-C hashes go into the
+       addendum before rep 1.
+  C2 = C again on a second, separately started server (same snapshot copy, its own port): the A/A for every count and
+       pixel rule.
+the hold: the hold at m = 1 is now the page-end rest itself (scroll to the end, m = 1 by rev 7c's spacer). No debug
+  morph driver holds the panel open (int-v8: A-open's driver logger runs 60 rAF/s, so its frames do not compare).
+C reference (OBSERVED, int-v8's split on the pins, one load per arm, a 6 s window after a 32 s settle at the end): panel
+  spring about 120-150 rAF callbacks per 4 s (29-37/s), 1 tick/s; mainFrames/s 27-28 (D, E, G; V's earlier full
+  census 29.2) or 60 (V, N, S), the same build reading both levels on different loads.
+why the gate (as rev 1): a layered rolling cell repaints whole when the resizing panel moves it by a sub-pixel offset
+  (cdwc, RenderLayerBacking, CONFIRMED in fixes/nav-morph/README.md); m in {0, 1} means the panel's scale is not
+  changing. The panel cells' layering is fix-nav-morph's cdwc rule: fix-nav-morph is told before any edit.
+platforms and slots: Chrome headless, 430x932 DPR 3, touch, no CPU throttle (the frame-audit census conditions int-v8
+  used), shared probe slots (`--shared --weight probe`); iOS Simulator in shared simulator slots, WebKit Timeline on in
+  every arm and rep (protocol §5.2). No iPhone, no timing (memory "defer timing"). The less-work rule's phone no-worse
+  check is a separate later ticket (new P-id), after this one passes.
+reps and order (as rev 2-3): per platform 6 reps per arm, two rotated Latin squares C V C2 / V C2 C / C2 C V, twice (18
+  loads per platform, one page load per rep, fresh profile or tab). A rep is valid when the page reached m = 1, the pass
+  and the rest windows ran to the end and the served hashes match the addendum. A verdict needs >= 5 valid reps per arm
+  on that platform; otherwise that platform's predictions are VOID (re-run once, then report).
+per rep, in this order:
+  1. load at the top, settle 2 s.
+  2. pass (logger on): jump to half a viewport above the start of rev 7c's spacer (m = 0); scripted scroll 10 px per
+     frame to the page end (m 0 -> 1); at rest, wait for the next roll start, then within 100 ms a scripted pull up of
+     0.3 spacer heights at 10 px per frame, and stop; let the page's settle finish (open or closed, logged); logger off.
+     The logger is one rAF per frame that reads m (the panel's `--morph`), getAnimations() on the panel cells and the
+     panel digit's position. It runs in step 2 only.
+  3. scroll to the page end (instant), settle 32 s (int-v8's settle), then the rest windows: 3 consecutive 4 s windows,
+     trace only (no in-page logger, no CDP Animation domain). A rep's value = the median of its 3 windows.
+  4. after the windows: one rest shot (m = 1, between rolls: 300 ms after a roll's finish) and one reduced-motion shot
+     (prefers-reduced-motion emulated, after the next tick); in the Simulator also one mid-roll shot at a fixed time
+     after a roll start (method as simpx.mjs, the time named in the addendum).
+  5. descriptive only, after everything counted: one 4 s window with Animation trace events or the CDP Animation domain
+     on, for the col-track animations (int-v8's "decisive local check" for the 60 level). Never scored.
+A/A spread (as rev 2-3): spread = max over the valid pairs (same square position) of |C - C2|; a pair with C or C2
+  invalid is dropped; fewer than 4 valid pairs voids that measure; a spread over 25 % of C's median makes that measure
+  A/A-limited (to the lead). "less than C" = V median < C median - spread; "within C +/- spread" = |V median - C median|
+  <= spread; "V <= C + A/A" = V median <= C median + spread.
+new metric, page-end rest mainFrames/s (census rest-end): main frames (PrePaint) per second in the step 3 windows,
+  counted as research/design-engineering/frame-audit/census.mjs counts them (same trace categories). Each frame is put
+  in one of two classes: countdown frames (a main frame whose rAF, timer or other task contains a FunctionCall in the
+  countdown code: the roll unit `$E` and `cD`, JS 4215-4559 on C; V's ranges in the addendum) and other frames. The
+  hero clock is held off-screen at the page end (countdown-faces), so countdown frames there are the panel clock's
+  plus the shared tick.
+predictions (rev 4; P1-P5 of revs 1-3 are superseded; each scored V vs C against the C/C2 A/A):
+  Q1 (Chrome, scored) less script at the page-end rest: countdown rAF callbacks per 4 s window, V median <= 10 % of C
+     median AND V median < C median - spread. C expected about 120-150 (reference above). Point V 4 per 4 s, 80 %
+     [2, 12] (one roll-start rAF per roll, as on the hero: 8-9 per 8 s in T-096 step 2).
+  Q2 (Chrome) page-end rest mainFrames/s:
+     Q2a (scored) the spring/tick share goes: countdown frames/s V median <= 4 AND < C median - spread. C expected
+         about 27-30/s (the spring's frames). Point V 2/s, 80 % [1, 4] (the tick's frame and the roll start's frame).
+     Q2b (scored, no-worse) other frames/s: no V load above the highest C or C2 load + 2/s (V adds no new level).
+         There is no prediction of the level itself: the 27 vs 60 split is OBSERVED, cause unknown (int-v8: one build
+         reads both levels; the panel's col-track transform animations running on the main thread are suspected,
+         unchecked). Rev 4 claims nothing about it.
+     Q2c (descriptive) total mainFrames/s per load with its level (low < 45, high >= 45), styleRecalc/s and paint/s
+         next to it. Arithmetic, not a claim: "V removes the spring/tick share only" means, on loads of the same
+         level, V total = C total - (C countdown frames - V countdown frames).
+  Q3 (Chrome and Simulator, scored) the m-gate holds in the pass: 0 running panel-cell Web Animations in every logged
+     frame with 0 < m < 1, in every valid rep; countdown rAF in the pass window (frames with 0 < m < 1: the scroll-in
+     and the pull) within C +/- spread.
+  Q4 (Simulator, scored) pass frames no worse: Paint records per pass frame (Timeline Paint records in the pass
+     window / RenderingFrames in it) V <= C + A/A; layer count and backing at the pass's middle frame V = C in every
+     rep (an extra backed cell is reported, F-201).
+  Q5 (pixels; memory "Illusions must be pixel-identical": identical or T2, more or motion-only is a proposal): rest
+     shot and reduced-motion shot exact (T0) vs C in Chrome and the Simulator, with A/A C vs C2 at 0; Simulator
+     mid-roll shot within T2 (PR-010 wide numbers: fill 64, edge 128, 0.5 %); Chrome mid-roll reported with the five
+     numbers only (the hero showed edge 222, so a Chrome T2 miss is expected and goes to the user with the panel's
+     motion-difference decision, not as a pass).
+  Q6 (Chrome and Simulator, scored) hand-off: at every valid rep's pull (the first frame with m < 1 while a roll
+     runs) the panel digit jumps <= 0.5 CSS px from the previous frame's path value (roll-probe extended to the panel
+     selector). A rep whose pull met no running roll is invalid for Q6 only.
+descriptive (never scored): Simulator rest windows (RenderingFrame, FireAnimationFrame, RecalculateStyles, Paint per
+  4 s); m at the page-end rest, exactly 1 or not (if not, the gate never opens there on that platform and V = C; the
+  phone ticket then reads m at rest first, since Safari's toolbar and a fractional scrollY can leave m just under 1;
+  rev 7c already notes a 40 px closed-rest shift from the toolbar); backing at rest (F-201: +1 cell in 3 of 6
+  censuses on the hero); the step 5 col-track read; dom-count and console errors (0 new).
+calibration (exclusive first-miss outcomes in the order Q1..Q6; sum 1): all pass 0.40; Q1 0.05 (the hero already shows
+  8-9 rAF per 8 s); Q2 0.12 (finish handlers or the cells' layering add countdown or other frames, or the other-frame
+  level moves); Q3 0.13 (a roll started in the frame m leaves 1 escapes the gate); Q4 0.12 (cdwc repaint at the pass
+  edges); Q5 0.10 (the code's own warning at JS 4286: layered panel cells rasterise glyphs differently; a cell kept
+  layered at rest breaks T0); Q6 0.08 (the hand-off writes the target, not the current value).
+outcome: all pass -> a D card and the user's decision (PR-017 covered the hero clock only: the panel needs a proposal
+  rev or a new proposal with Try-it before any land), then the phone no-worse ticket. Q1 or Q2a miss -> dropped (no
+  less work). Q2b miss -> stop, report to the lead and int-v8 (V moves a level nobody has explained). Q3 or Q4 miss ->
+  fix the gate once, re-register (rev 5); a second miss parks the item. Q5 T0 miss -> stop, report to the lead. Q6 miss
+  -> fix the hand-off once, re-register.
+voids: served JS/CSS hash != addendum; BASELINE-<STATE> other than ok; A/A over the Q5 thresholds (A/A-limited, to the
+  lead); countdown expiry 2026-11-02 05:00Z inside a run; a measurement-code change (verify.mjs, lib/cdp.mjs,
+  serve.mjs) between rep 1 and the last rep.
+tools (rev 2 R5, re-targeted; none written yet): scorer `fixes/cd-roll-ca/p097-score.mjs`; Chrome probe
+  `p097-census.mjs` (steps 1-5; rest windows with census.mjs's trace categories and PrePaint/FunctionCall rules plus the
+  per-frame countdown/other split); Simulator probe `p097-sim.mjs` (the same steps in a functional sim session,
+  Timeline reader as "WebKit frames, layers and Timeline"); roll-probe extended to the panel; pixels with the PR-010
+  five-number compare. All committed, their sha256 and the served JS/CSS/delta hashes written into an addendum before
+  rep 1; a change after that voids the reps before it.
+order of work after the lead's word: rebase on main with v9-final; tell fix-nav-morph (cdwc) before the edit; build V
+  on the landed v9-final; tools and addendum; ops pre-data read of the addendum; then the Chrome and Simulator reps.
 ```
 
 ## Risks, conflicts, follow-ups
