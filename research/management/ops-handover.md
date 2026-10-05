@@ -109,6 +109,19 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~21:2xZ **P-149 pre-data read: PASS WITH NOTES N1-N11 (ops-reader-P149). N1, N5 and N6 block signing until a rev 1.1 with a lead delta check, or the lead's ruling.** Card fixes/deck-contain/P149.md at 8fc0ab77 (fix-deck-contain, worktree-agent-af8e7e498478cedb7). All 6 new pins and the reused P-148 kit are equal on disk and at HEAD (the kit also on main). The overlay is byte for byte P-148's. tools, tests and package.json equal main. No P-149 data. SELFTEST-P149 ok 65. Post-data card: every prediction is informed.
+  - N1: T2's largest shade covers only pixels above the envelope. The memory reading and the P-148 rev 1.1 N1 ruling say it covers every pixel. Fix this, or the lead accepts it as a named deviation.
+  - N2: the blind set (env above 8, at most 40 CSS px per stop) lets R3 pixels above 8 levels pass: up to env as T1, and above env uncounted, with no fill limit. Reword the "never" sentence and report blind-set R3 pixels.
+  - N3: the per-pixel envelope is stricter in place than fix-nav-morph's proposal. The card should also name the other differences: pairs within one load, base-only pairs, and the stability cap.
+  - N4: the empty toggle is sound; pair 1 starts from the settled shot (disclose).
+  - N5: motion-only can turn sub-8 sampling noise (a swipe T2 next to a rest T1) into T3. Limit it to swipe stops with pixels beyond 8 levels, or the lead rules. The card's verdict table should match the code's order (PLAN-MISMATCH first).
+  - N6: no prediction has a p. P4 has no decidable pass line. P5-P8 and P11 need missing and insufficient rules.
+  - N7: every stop after the first in a load, and S1's landscape after 8 expanded R3 stops, follows earlier R3 use. "Fresh" holds per hold, not per load (disclose).
+  - N8: coverage is 430 wide plus the Simulator phone states only. The touch branch up to 1200 and reduced motion in WebKit are not judged, so the decision text must name what is covered.
+  - N9: no DRY0 needed. The owner's L-desk1 DRY0 would inform P1.
+  - N10: a Simulator top-level error writes a complete file that no re-run rule names. Add it to RR2.
+  - N11: the budget estimates are plausible against P-148's slot times. The guard does not include the Simulator's overhead outside the driver; RR1 covers a kill.
+  The lead signs.
 - 10-05 ~21:2xZ **P-147 lead ruling on the pre-data read (relayed by mgmt-clerk-1):** rev 1.1 required for N1-N6. N1: two pin sets, set B on v9.2's signed pin 941aa13e5bdf / f1997edf5309, chosen by P-142's read.
 - 10-05 ~21:2xZ **ops-reader-P149 spawned by the lead for P-149 rev 1** (8fc0ab77, fix-deck-contain; the pre-data read; cells come to mgmt-clerk-1).
 - 10-05 ~21:2xZ **Peer directory: fix-end-morph added (lead):** new fix owner (worktree), topic end-morph (the nav morph into the end section, user T-204), base v9.2, Chrome and Simulator mapping, no phone yet. The mgmt-clerk-1 row's next free P-id is now P-151.
