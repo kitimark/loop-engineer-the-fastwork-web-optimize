@@ -10,7 +10,10 @@
 //   - node --check on v9's JS; V9_EXPECT when pinned; fixes/v9-best/patch.diff (baseline -> v9) reproduces v9.
 // Writes (unless --dry): fixes/v9-best/overlay/ (gitignored; for fix.mjs check/serve), fixes/v9-best/patch.diff,
 // out/v9/snap-<js12>[-<css12>]/{A,V}/ read-only (A = v8, V = v9; the arm names fixes/v9-best/gates expects) + HASHES.txt (full sha256), out/v9/build.json.
-//   node fixes/v9-best/build.mjs [--dry] [--no-expect] [--only a,b]   (--only: build v8 + just those components, no pin)
+//   node fixes/v9-best/build.mjs [--dry] [--no-expect] [--only a,b] [--target v9|v91]   (--only: build v8 + just those components, no pin)
+// --target v91 (v9.1 = v9-final + scroll-cb + g11 close; lead 2026-10-05 after v9-final landed 8b5ce9b3): the same checks
+// over TARGETS.v91's components, plus g11 as fix-morph-gpu delivered it (on v9-final) = the same bytes; writes
+// fixes/v9-1/overlay, fixes/v9-1/patch.diff, out/v91/ instead. The default (v9) is unchanged.
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -66,10 +69,27 @@ export const JOINS = [
   { name: 'fix-nav-morph arm A: step 4 + nav + glue (= step 4 + patch-on-v9s4.diff 9814fdad848e)', keys: ['ms7c', 'dd', 'scb', 'earn', 'nav', 'glue'], expect: exp('c3d36476c3ce', 'e1359ab9994a') },
   { name: 'step 4 minus scb (gM split build Rs, int-v8 2026-10-05; --only ms7c,dd,earn)', keys: ['ms7c', 'dd', 'earn'], expect: exp('366636504b84', 'e1359ab9994a') },
   { name: 'fix-morph-gpu arm A: step 4 + close (= step 4 + close-on-A.diff d7ce6edee0eb)', keys: ['ms7c', 'dd', 'scb', 'earn', 'close'], expect: exp('de237379b556', 'bdecf48c5b32') },
+  { name: 'fix-morph-gpu v9.1 without scb: v9-final + g11 (out/morph-gpu/v91/snap-K91)', keys: ['ms7c', 'dd', 'earn', 'nav', 'glue', 'g11'], expect: exp('647c9ef2b1e2', 'f1997edf5309') },
 ];
 // v9 as pinned after the last component change (null: not pinned yet). Superseded: c3d36476c3ce / bdecf48c5b32 (with scb
 // and close), 647c9ef2b1e2 / bdecf48c5b32 (with close).
 export const V9_EXPECT = exp('647c9ef2b1e2', 'e1359ab9994a');
+// v9.1's close: fix-morph-gpu's g11 (landed 6f824153), a one-shot 0.75 s visibility keyframe on the panel's children in
+// place of the dropped close rule (CSS only). Delivered twice, the same 14 lines: on v8 (built here) and on v9-final (the
+// lead's pin d677884838c7, checked below: v9-final + it = v9.1 without scb).
+export const G11 = { name: 'morph-close-peak g11 close (fix-morph-gpu, v9.1; landed 6f824153)', key: 'g11',
+  delta: 'fixes/morph-gpu/v91/close-v91-on-v8.diff', file: '3ab8a2fbbc68', expect: exp('3e3e94cb6e9f', 'b8cee7b3549b'),
+  onFinal: { delta: 'fixes/morph-gpu/v91/close-v91-on-v9final.diff', file: 'd677884838c7', expect: exp('647c9ef2b1e2', 'f1997edf5309') } };
+// v9.1 as pinned after its build (null: not pinned yet)
+export const V91_EXPECT = exp('c3d36476c3ce', 'f1997edf5309');
+const byKey = (k) => [...COMPONENTS, ...DROPPED, G11].find((c) => c.key === k);
+export const TARGETS = {
+  v9: { label: 'v9', comps: COMPONENTS, expect: V9_EXPECT, dir: 'fixes/v9-best', out: 'out/v9' },
+  v91: { label: 'v9.1', comps: ['ms7c', 'dd', 'scb', 'earn', 'nav', 'glue', 'g11'].map(byKey), expect: V91_EXPECT, dir: 'fixes/v9-1', out: 'out/v91' },
+};
+const TKEY = argv.includes('--target') ? argv[argv.indexOf('--target') + 1] : 'v9';
+if (!TARGETS[TKEY]) { console.error(`REFUSED: --target ${TKEY}: have ${Object.keys(TARGETS).join(', ')}`); process.exit(3); }
+const T = TARGETS[TKEY];
 
 const die = (m) => { console.error(`REFUSED: ${m}`); process.exit(3); };
 const H = (t) => Object.fromEntries(FILES.map((f) => [f, sha(t[f])]));
@@ -97,8 +117,8 @@ const base = Object.fromEntries(FILES.map((f) => [f, readFileSync(join(baseDir, 
 const C = strip(apply(rd('fixes/v8-best/patch.diff'), base, 'v8'));
 ok('v8 = fixes/v8-best/patch.diff on the baseline', H(C)[JS] === '3e3e94cb6e9f' && H(C)[CSS] === 'f836404b3728', fmt(C));
 
-const comps = COMPONENTS.filter((c) => !ONLY || ONLY.includes(c.key));
-if (ONLY && comps.length !== ONLY.length) die(`--only: unknown key in ${ONLY.join(',')} (have ${COMPONENTS.map((c) => c.key).join(',')})`);
+const comps = T.comps.filter((c) => !ONLY || ONLY.includes(c.key));
+if (ONLY && comps.length !== ONLY.length) die(`--only: unknown key in ${ONLY.join(',')} (have ${T.comps.map((c) => c.key).join(',')})`);
 for (const c of comps) for (const k of c.after || []) if (!comps.some((x) => x.key === k)) die(`${c.key} needs ${k} in the set (after: ${c.after.join(',')})`);
 for (const c of comps) {
   c.text = c.rev ? show(c.rev, c.delta) : rd(c.delta);
@@ -137,6 +157,17 @@ for (const j of JOINS) if (j.keys.every((k) => comps.some((x) => x.key === k))) 
   const t = build(comps.filter((x) => j.keys.includes(x.key)));
   ok(`join ${j.name} = ${j.expect[JS]} / ${j.expect[CSS]}`, H(t)[JS] === j.expect[JS] && H(t)[CSS] === j.expect[CSS], fmt(t));
 }
+// g11 as fix-morph-gpu delivered it for v9.1 (a delta on v9-final): v9-final (as pinned) + it = this set minus scb,
+// byte for byte, so the v8-based g11 built here is the lead's d677884838c7
+if (comps.includes(G11) && COMPONENTS.every((c) => comps.includes(c))) {
+  const fin = build(comps.filter((x) => COMPONENTS.includes(x)));
+  ok(`v9-final built here = pinned V9_EXPECT ${V9_EXPECT[JS]} / ${V9_EXPECT[CSS]}`, H(fin)[JS] === V9_EXPECT[JS] && H(fin)[CSS] === V9_EXPECT[CSS], fmt(fin));
+  const txt = rd(G11.onFinal.delta);
+  ok(`g11 on v9-final: ${G11.onFinal.delta}`, sha(txt) === G11.onFinal.file, sha(txt));
+  const t = strip(apply(txt, fin, 'g11-on-v9final'));
+  ok(`v9-final + g11 (as delivered) = ${G11.onFinal.expect[JS]} / ${G11.onFinal.expect[CSS]} = v8 + ${comps.filter((x) => x.key !== 'scb').map((x) => x.key).join(' + ')} here`,
+    H(t)[JS] === G11.onFinal.expect[JS] && H(t)[CSS] === G11.onFinal.expect[CSS] && same(t, build(comps.filter((x) => x.key !== 'scb'))), fmt(t));
+}
 // the components that come after c by constraint (transitively): v9 - c takes them out too
 const deps = (c) => { const out = []; const add = (k) => { for (const x of comps) if ((x.after || []).includes(k) && !out.includes(x)) { out.push(x); add(x.key); } }; add(c.key); return comps.filter((x) => out.includes(x)); };
 if (comps.length > 1) for (const c of comps) {
@@ -150,28 +181,28 @@ if (comps.length > 1) for (const c of comps) {
   t = strip(apply(dOf(c, comps), t, `v9-${c.key}`, true));
   for (const x of carriers) t = strip(apply(x.d, t, `+${x.key}`));
   const rest = comps.filter((x) => x !== c && !dep.includes(x));
-  ok(`v9 - ${c.key}${dep.length ? ` (and ${dep.map((x) => x.key).join(',')}, which come after it)` : ''} (reverse${carriers.length ? `, via ${carriers.map((x) => x.key).join(',')}'s carry and back` : ''}) = v8 + ${rest.map((x) => x.key).join(' + ') || 'nothing'}`, same(t, build(rest)), fmt(t));
+  ok(`${T.label} - ${c.key}${dep.length ? ` (and ${dep.map((x) => x.key).join(',')}, which come after it)` : ''} (reverse${carriers.length ? `, via ${carriers.map((x) => x.key).join(',')}'s carry and back` : ''}) = v8 + ${rest.map((x) => x.key).join(' + ') || 'nothing'}`, same(t, build(rest)), fmt(t));
 }
-const work = join(WT, 'out/v9/work'); mkdirSync(work, { recursive: true });
+const work = join(WT, `${T.out}/work`); mkdirSync(work, { recursive: true });
 writeFileSync(join(work, 'v9.mjs'), V[JS]);
 const nc = spawnSync(process.execPath, ['--check', join(work, 'v9.mjs')], { encoding: 'utf8' });
-ok('node --check (ES module) on v9\'s JS', nc.status === 0, nc.stderr.trim());
-if (!ONLY && V9_EXPECT && !NOEXP) ok(`v9 = pinned V9_EXPECT ${V9_EXPECT[JS]} / ${V9_EXPECT[CSS]}`, H(V)[JS] === V9_EXPECT[JS] && H(V)[CSS] === V9_EXPECT[CSS], fmt(V));
+ok(`node --check (ES module) on ${T.label}'s JS`, nc.status === 0, nc.stderr.trim());
+if (!ONLY && T.expect && !NOEXP) ok(`${T.label} = pinned ${TKEY === 'v9' ? 'V9_EXPECT' : 'V91_EXPECT'} ${T.expect[JS]} / ${T.expect[CSS]}`, H(V)[JS] === T.expect[JS] && H(V)[CSS] === T.expect[CSS], fmt(V));
 let patch = ''; for (const f of FILES) patch += udiff(base[f], V[f], `a/${f}`, `b/${f}`, work);
-ok('patch.diff (baseline -> v9) reproduces v9', same(strip(apply(patch, base, 'patch.diff')), V), `patch.diff ${sha(patch)}`);
+ok(`patch.diff (baseline -> ${T.label}) reproduces ${T.label}`, same(strip(apply(patch, base, 'patch.diff')), V), `patch.diff ${sha(patch)}`);
 
 const js12 = H(V)[JS];
 const lines = [];
 for (const [arm, t] of Object.entries({ A: C, V })) for (const f of FILES) lines.push(`${full(t[f])}  ${arm}/${f}`);
-console.log(`v9${ONLY ? ` (--only ${ONLY.join(',')})` : ''} = ${fmt(V)}  [${comps.map((c) => c.key).join(' + ')}]`);
+console.log(`${T.label}${ONLY ? ` (--only ${ONLY.join(',')})` : ''} = ${fmt(V)}  [${comps.map((c) => c.key).join(' + ')}]`);
 console.log(lines.join('\n'));
 if (DRY) { console.log('dry run: nothing written'); process.exit(0); }
 // A build that changes only the CSS has the same js12 as an earlier one (v9-final without close vs with it): an existing
 // snap-<js12> is reused only when its HASHES.txt lists exactly this build, else the snapshot is snap-<js12>-<css12>.
 const want = lines.join('\n') + '\n';
 const sameSnap = (d) => readFileSync(join(d, 'HASHES.txt'), 'utf8') === want;
-let snap = join(WT, `out/v9/snap-${js12}`);
-if (existsSync(snap) && !sameSnap(snap)) snap = join(WT, `out/v9/snap-${js12}-${H(V)[CSS]}`);
+let snap = join(WT, `${T.out}/snap-${js12}`);
+if (existsSync(snap) && !sameSnap(snap)) snap = join(WT, `${T.out}/snap-${js12}-${H(V)[CSS]}`);
 if (existsSync(snap) && !sameSnap(snap)) die(`${snap} exists with other content (HASHES.txt differs)`);
 if (existsSync(snap)) console.log(`${snap} exists: kept (immutable; HASHES checked below)`);
 else {
@@ -181,9 +212,9 @@ else {
 const hs = spawnSync('shasum', ['-a', '256', '-c', '--quiet', 'HASHES.txt'], { cwd: snap, encoding: 'utf8' });
 ok(`snapshot ${snap.slice(WT.length + 1)} matches HASHES.txt`, hs.status === 0, hs.stdout.trim());
 if (ONLY) { console.log('--only: overlay and patch.diff not written'); process.exit(0); }
-const ov = join(WT, 'fixes/v9-best/overlay'); rmSync(ov, { recursive: true, force: true });
+const ov = join(WT, `${T.dir}/overlay`); rmSync(ov, { recursive: true, force: true });
 for (const f of FILES) { const p = join(ov, f); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, V[f]); }
-writeFileSync(join(WT, 'fixes/v9-best/patch.diff'), patch);
-mkdirSync(join(WT, 'out/v9'), { recursive: true });
-writeFileSync(join(WT, 'out/v9/build.json'), JSON.stringify({ v9: H(V), v9full: { [JS]: full(V[JS]), [CSS]: full(V[CSS]) }, components: comps.map(({ key, name, delta, rev, file, after, on, expect }) => ({ key, name, delta, rev, file, after, on, expect })), patch: sha(patch), snap: snap.slice(WT.length + 1), checks }, null, 2) + '\n');
-console.log(`wrote fixes/v9-best/overlay, fixes/v9-best/patch.diff (${sha(patch)}), out/v9/build.json`);
+writeFileSync(join(WT, `${T.dir}/patch.diff`), patch);
+mkdirSync(join(WT, T.out), { recursive: true });
+writeFileSync(join(WT, `${T.out}/build.json`), JSON.stringify({ target: TKEY, v9: H(V), v9full: { [JS]: full(V[JS]), [CSS]: full(V[CSS]) }, components: comps.map(({ key, name, delta, rev, file, after, on, expect }) => ({ key, name, delta, rev, file, after, on, expect })), patch: sha(patch), snap: snap.slice(WT.length + 1), checks }, null, 2) + '\n');
+console.log(`wrote ${T.dir}/overlay, ${T.dir}/patch.diff (${sha(patch)}), ${T.out}/build.json`);

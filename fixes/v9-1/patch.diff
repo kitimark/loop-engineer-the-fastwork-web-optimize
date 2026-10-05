@@ -1,0 +1,3646 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -20,6 +20,7 @@
+   V as v,
+   W as y,
+   Y as b,
++  X as PMpre,
+   Z as x,
+   _ as S,
+   a as C,
+@@ -2428,6 +2429,7 @@
+       r = 0,
+       i,
+       a = [],
++      fwTo = 0,
+       l = (n) => !t && e && n === r,
+       f = (e, t) =>
+         new Promise((n) => {
+@@ -2440,7 +2442,7 @@
+         }),
+       m = () => {
+         for (let e of a.splice(0)) (window.clearTimeout(e.id), e.resolve(!1));
+-        (n && window.cancelAnimationFrame(n), (n = 0), i?.(!1), (i = void 0));
++        (n && window.cancelAnimationFrame(n), (n = 0), (fwTo &&= (window.clearTimeout(fwTo), 0)), i?.(!1), (i = void 0));
+       },
+       S = (e, t, r, a, o) =>
+         new Promise((s) => {
+@@ -2456,6 +2458,39 @@
+               }
+               let s = Math.min(1, (i - u) / a);
+               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
++            };
++          n = window.requestAnimationFrame(d);
++        }),
++      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
++      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
++      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
++      // every frame again, so each change and the end land in the same frame as with S.
++      fwS2 = (e, t, r, a, o) =>
++        new Promise((s) => {
++          let c = (e) => {
++            (i === c && (i = void 0), s(e));
++          };
++          i = c;
++          let u = performance.now(),
++            d = (i) => {
++              if (!l(e)) {
++                c(!1);
++                return;
++              }
++              let s = Math.min(1, (i - u) / a),
++                p = t + (r - t) * T(s);
++              if ((o(p), s >= 1)) {
++                c(!0);
++                return;
++              }
++              let h = Math.round(p),
++                g = (t - (r < t ? h - 0.5 : h + 0.5)) / (t - r),
++                w = u + a * (g < 1 ? 1 - Math.cbrt(1 - g) : 1) - 50 - performance.now();
++              w > 0
++                ? (fwTo = window.setTimeout(() => {
++                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
++                  }, w))
++                : (n = window.requestAnimationFrame(d));
+             };
+           n = window.requestAnimationFrame(d);
+         }),
+@@ -2486,7 +2521,7 @@
+             (z(b, e, !0), z(C, e / 100));
+           })) ||
+           !(await f(120, e)) ||
+-          !(await S(e, 18, 0, 900, (e) => z(x, e, !0))) ||
++          !(await fwS2(e, 18, 0, 900, (e) => z(x, e, !0))) ||
+           !(await f(1600, e))
+             ? !1
+             : (z(v, !0), f(900, e))
+@@ -2587,7 +2622,7 @@
+               t(te, s(a).commission.earnedFrom),
+               t(B, `$${e ?? ``}`),
+               t(H, `${n ?? ``}%`),
+-              (oe = S(ae, ``, oe, { width: `${s(C) * 100}%` })));
++              (oe = S(ae, ``, oe, { "--fee-progress": `${s(C)}` })));
+           },
+           [() => Math.round(s(b)), () => Math.round(s(x))],
+         ),
+@@ -2671,8 +2706,57 @@
+   tE = 0;
+   for (let e of $T) e.active && e.callback();
+ }
++// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
++// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
++// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
++var fwDef = new Set(),
++  fwBooted = !1,
++  fwArmed = !1,
++  fwQ = 0;
++function fwIdle(e) {
++  return window.requestIdleCallback ? window.requestIdleCallback(e, { timeout: 3e3 }) : window.setTimeout(e, 150);
++}
++function fwKick() {
++  fwArmed && !fwQ && fwDef.size && (fwQ = fwIdle(fwUnskipNext));
++}
++function fwUnskipNext() {
++  fwQ = 0;
++  for (let e of fwDef) {
++    (fwDef.delete(e), e.element?.getAttribute(`data-start-selling-render`) === `deferred` && sE(e, !0));
++    break;
++  }
++  fwKick();
++}
++// [scroll-engine /10] per-element will-change windows (Apple: t - 150vh … b + 50vh): elements whose CSS
++// asks for a layer keep it only from half a viewport before they enter until half a viewport after they
++// leave (CSS: [data-fw-wc="0"] { will-change: auto !important }).
++// [scroll-engine /10e] `.face` removed (F-030): the countdown faces slide in and out of their overflow:hidden digit
++// window, and IntersectionObserver clips by ancestors, so they flipped data-fw-wc continuously (~1,500 writes/s at
++// idle, layer churn in the hero). Their will-change follows the scene gate again, as in wave 1.
++var fwWCSel = `.commission-card, .orbit-card, .hero-copy, .start-selling-future-card, .start-selling-profile-shell, .start-selling-platform-card, .start-selling-platform-stage-artboard, .start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track`,
++  fwWCIO;
++function fwWC() {
++  if (!(`IntersectionObserver` in window)) return;
++  fwWCIO ||= new IntersectionObserver(
++    (e) => {
++      for (let t of e) t.target.setAttribute(`data-fw-wc`, t.isIntersecting ? `1` : `0`);
++    },
++    { rootMargin: `50% 0px 50% 0px` },
++  );
++  for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
++    e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
++}
++function fwBoot() {
++  if (fwBooted) return;
++  fwBooted = !0;
++  let e = () =>
++    window.setTimeout(() => {
++      ((fwArmed = !0), fwKick(), fwIdle(fwWC));
++    }, 500);
++  document.readyState === `complete` ? e() : window.addEventListener(`load`, e, { once: !0 });
++}
+ function aE() {
+-  nE ||
++  (fwBoot(), nE) ||
+     ((nE = !0),
+     window.addEventListener(`scroll`, rE, { passive: !0 }),
+     window.addEventListener(`resize`, rE, { passive: !0 }));
+@@ -2689,7 +2773,7 @@
+ function sE(e, t) {
+   if (!(!e.deferRendering || !e.element)) {
+     if (((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)), t)) {
+-      e.element.setAttribute(`data-start-selling-render`, `active`);
++      (fwDef.delete(e), e.element.setAttribute(`data-start-selling-render`, `active`));
+       return;
+     }
+     e.element.getAttribute(`data-start-selling-render`) !== `deferred` &&
+@@ -2700,7 +2784,7 @@
+               let t = e.element.getBoundingClientRect().height;
+               t > 0 && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`);
+             }
+-            e.element.setAttribute(`data-start-selling-render`, `deferred`);
++            (e.element.setAttribute(`data-start-selling-render`, `deferred`), fwDef.add(e), fwKick());
+           }
+         });
+       }));
+@@ -2710,8 +2794,91 @@
+   (e.manageAnimations &&
+     e.element &&
+     e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
+-    e.active !== t && ((e.active = t), sE(e, t), e.onActiveChange?.(t), t && rE()));
++    e.active !== t &&
++      ((e.active = t),
++      t && sE(e, !0),
++      e.onActiveChange?.(t),
++      t && rE(),
++      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
++      // windows: re-scan once in idle time after a scene activates.
++      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
+ }
++var fwWCQ = 0;
++// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
++// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
++// before it reaches the viewport (WebKit's own content-visibility margin is 0), and it is never re-skipped.
++// Re-skipping changed the section's geometry at the scene gate's edge (gate flap, N9) and tore down and
++// rebuilt its layers on every pass (N10).
++var fwRG = new Map();
++function fwRM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%/, (e, t) => `${Math.max(150, +t + 50)}%`);
++}
++function fwRender(e, t, n) {
++  let r = fwRG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e) if (t.isIntersecting) for (let e of r.elements.get(t.target) ?? []) sE(e, !0);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwRG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
++// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
++// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
++// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
++// layers (w1 did this at the scene gate itself, which flapped: N9). It comes back through fwRender's IO
++// (gate + 50 %) on the way up, so the 0.25 vh band between the two edges is the hysteresis. Sections
++// ahead of the user are never re-skipped (they keep the idle un-skip).
++var fwFarG = new Map();
++function fwFM(e) {
++  return e.replace(/^(\d+(?:\.\d+)?)%.*$/, (e, t) => `${+t + 25}% 0px`);
++}
++function fwReskip(e, t) {
++  !e.deferRendering ||
++    !e.element ||
++    e.active ||
++    e.element.getAttribute(`data-start-selling-render`) === `deferred` ||
++    ((e.renderFrame &&= (window.cancelAnimationFrame(e.renderFrame), 0)),
++    fwDef.delete(e),
++    t > 0 && e.element instanceof HTMLElement && e.element.style.setProperty(`--start-selling-intrinsic-block-size`, `${t}px`),
++    e.element.setAttribute(`data-start-selling-render`, `deferred`));
++}
++function fwFar(e, t, n) {
++  let r = fwFarG.get(n);
++  r ||
++    ((r = {
++      elements: new Map(),
++      observer: new IntersectionObserver(
++        (e) => {
++          for (let t of e)
++            if (!t.isIntersecting && t.boundingClientRect.bottom < 0)
++              for (let e of r.elements.get(t.target) ?? []) fwReskip(e, t.boundingClientRect.height);
++        },
++        { rootMargin: n },
++      ),
++    }),
++    fwFarG.set(n, r));
++  let i = r.elements.get(t);
++  return (
++    i || ((i = new Set()), r.elements.set(t, i), r.observer.observe(t)),
++    i.add(e),
++    () => {
++      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
++    }
++  );
++}
+ function lE(e) {
+   let t = e.getBoundingClientRect();
+   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
+@@ -2756,7 +2923,9 @@
+       onActiveChange: t.onActiveChange,
+       renderFrame: 0,
+     },
+-    r;
++    r,
++    fwRd,
++    fwFd;
+   return (
+     $T.add(n),
+     aE(),
+@@ -2766,9 +2935,16 @@
+     sE(n, n.active),
+     t.onActiveChange?.(n.active),
+     t.element && `IntersectionObserver` in window && (r = uE(n, t.element, t.rootMargin ?? `100% 0px`)),
++    n.deferRendering &&
++      t.element &&
++      `IntersectionObserver` in window &&
++      (fwRd = fwRender(n, t.element, fwRM(t.rootMargin ?? `100% 0px`))),
++    n.deferRendering && t.element && `IntersectionObserver` in window && (fwFd = fwFar(n, t.element, fwFM(fwRM(t.rootMargin ?? `100% 0px`)))),
+     rE(),
+     () => {
+       (r?.(),
++        fwRd?.(),
++        fwFd?.(),
+         n.renderFrame && window.cancelAnimationFrame(n.renderFrame),
+         $T.delete(n),
+         n.manageAnimations && n.element && n.element.removeAttribute(`data-start-selling-scene`),
+@@ -3040,6 +3216,59 @@
+     `<section aria-labelledby="commission-heading"><div class="commission-track"><div class="commission-sticky"><div class="commission-card"><div class="commission-inner"><div class="commission-header"><h2 id="commission-heading"><span class="commission-title-muted"> </span> <span class="commission-title-accent"> <span aria-hidden="true"></span></span></h2></div> <div class="commission-rows"><div class="commission-row is-direct"><div class="commission-visual-column"><div class="client-diagram" aria-hidden="true"><div class="client-pill"><span class="client-faces"></span> <span> </span></div> <img loading="lazy" decoding="async" class="client-arrow" alt=""/> <!></div></div> <div class="commission-copy is-direct-copy"><h3><span> </span> <strong> </strong></h3> <p> </p> <button type="button" class="why-link"> <svg class="why-link-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.33333L10 8L6 12.6667"></path></svg></button></div></div> <div class="commission-divider"><span></span></div> <div class="commission-row is-referral"><div class="commission-visual-column"><!></div> <div class="commission-copy is-referral-copy"><h3><span class="copy-desktop"> </span> <span class="copy-compact"> </span> <strong> </strong></h3> <p> </p></div></div></div></div></div></div> <div class="commission-runway" aria-hidden="true"></div></div></section> <!>`,
+     1,
+   );
++// [scroll-cb-phone] Near-line gate. On phones the commission / future / platform scroll side jobs only
++// flip classes when an edge crosses a fixed viewport line (and track one eased value inside a zone, kept
++// exact for a later switch to desktop). Their dE entries stay registered (P12); what the gate skips is the
++// per-frame rAF trampoline while every edge is far from its line or zone. rows(): [element, edge is top,
++// lo, hi] in viewport-height fractions; two half-space IntersectionObservers per row (top edge: root
++// (-inf, x], bottom edge: root [x, +inf); top/bottom rootMargin percentages resolve against the root
++// height in Blink and WebKit) report when the edge enters or leaves the band (lo, hi). near() is true
++// while any edge is inside its band (or before the first report). Any report calls onChange(); the
++// component then runs its job on the same frame as before when a scroll reached it this frame (poke),
++// else marks itself dirty for its next dE call.
++var scbM = 0.15;
++function scbGate(rows, onChange) {
++  let ios = [],
++    st = [],
++    on = !1,
++    near = !0,
++    big = `100000%`,
++    // top edge: st = [top <= lo, top <= hi]; bottom edge: st = [bottom >= lo, bottom >= hi]
++    calc = (list) => {
++      near = !1;
++      for (let ri = 0; ri < list.length; ri++) {
++        let lo = st[2 * ri],
++          hi = st[2 * ri + 1];
++        if (lo === void 0 || hi === void 0 || (list[ri][1] ? !lo && hi : lo && !hi)) {
++          near = !0;
++          return;
++        }
++      }
++    },
++    stop = () => {
++      for (let e of ios) e.disconnect();
++      ((ios = []), (st = []), (near = !0), (on = !1));
++    },
++    start = () => {
++      if ((stop(), (on = !0), !(`IntersectionObserver` in window))) return;
++      let list = rows().filter((row) => row[0]);
++      list.forEach((row, ri) => {
++        for (let bi = 0; bi < 2; bi++) {
++          let key = 2 * ri + bi,
++            pct = row[2 + bi] * 100,
++            io = new IntersectionObserver(
++              (entries) => {
++                for (let en of entries) st[key] = en.isIntersecting;
++                (calc(list), onChange());
++              },
++              { rootMargin: row[1] ? `${big} ${big} ${pct - 100}% ${big}` : `${-pct}% ${big} ${big} ${big}` },
++            );
++          (io.observe(row[0]), ios.push(io));
++        }
++      });
++    };
++  return { near: () => near, start, stop, on: () => on };
++}
+ function AE(n, r) {
+   D(r, !0);
+   let i = R(WT),
+@@ -3103,8 +3332,38 @@
+       n = 1,
+       r = 0,
+       i = 0,
++      // fix(commission-forced-layout): the three A() queries, parsed once instead of 3 matchMedia() per frame
++      _cq = [
++        `(max-width: 1000px)`,
++        `(max-device-width: 500px)`,
++        `(hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ].map((e) => window.matchMedia(e)),
++      _cc, // last compact value j() ran for
++      _ce, // last written --commission-enter-shrink
++      _cs, // last written --commission-shrink
++      _ch, // last written runway height
++      _co, // [double-drive] last written --fw-co-w (the card's transform-origin weight)
++      _cw, // [double-drive] eased origin weight
++      // [scroll-cb-phone] phone path gate (see scbGate): scbOff mirrors k, kept by the _cq listeners
++      scbOff = _cq.some((e) => e.matches),
++      scbPoke = !1,
++      scbDirty = !0,
++      scbG = scbGate(
++        () => [
++          [u, !0, 0.06 - scbM, 0.995 + scbM],
++          [c, !1, 0.35 - scbM, 0.85 + scbM],
++        ],
++        () => (scbPoke ? (t ||= window.requestAnimationFrame(a)) : (scbDirty = !0)),
++      ),
++      scbSync = () => {
++        ((scbOff = _cq.some((e) => e.matches)), (scbDirty = !0), scbOff ? scbG.on() || scbG.start() : scbG.stop());
++      },
+       a = () => {
+-        if (((t = 0), z(y, A(), !0), !u || !c)) return;
++        ((t = 0), (scbPoke = scbDirty = !1));
++        let k = _cq.some((e) => e.matches);
++        // line-count check j() (Range.getClientRects) only when compact flips; the ResizeObserver on the
++        // h2 covers width/font/text changes. It no longer runs after the style writes every frame.
++        if ((z(y, k, !0), k !== _cc && ((_cc = k), j()), !u || !c)) return;
+         let i = window.innerHeight,
+           o = u.getBoundingClientRect(),
+           l = c.getBoundingClientRect(),
+@@ -3112,19 +3371,42 @@
+           p = E(l, i),
+           m = e.matches ? +(f >= 0.5) : w(f),
+           h = e.matches ? +(p >= 0.5) : w(p);
+-        (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
+-          (r += (h - r) * (e.matches ? 1 : 0.22)),
+-          Math.abs(m - n) < 8e-4 && (n = m),
+-          Math.abs(h - r) < 8e-4 && (r = h),
+-          c.style.setProperty(`--commission-enter-shrink`, String(n)),
+-          c.style.setProperty(`--commission-shrink`, String(Math.max(n, r))),
++        // compact: CSS forces --commission-shrink-scale:1 / radius 0 and hides the runway, so the eased
++        // values are invisible; snap them (no easing loop) and skip the --commission-* writes.
++        (k
++          ? ((n = m), (r = h))
++          : (m > n ? (n = m) : (n += (m - n) * (e.matches ? 1 : 0.22)),
++            (r += (h - r) * (e.matches ? 1 : 0.22)),
++            Math.abs(m - n) < 8e-4 && (n = m),
++            Math.abs(h - r) < 8e-4 && (r = h)),
+           z(g, o.top < i * 0.995 && f > 0.04, !0),
+-          z(v, p > 0.04),
+-          (d.style.height = s(y) || e.matches ? `` : `${i * 0.06}px`),
+-          j(),
+-          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4) && (t = window.requestAnimationFrame(a)));
++          z(v, p > 0.04));
++        // writes only when the value changed (same values as before, no redundant style mutations)
++        let _ve = String(n),
++          _vs = String(Math.max(n, r)),
++          _vh = k || e.matches ? `` : `${i * 0.06}px`,
++          // [double-drive] transform-origin weight (0 top, 1 bottom). The class rule it replaces (bottom =
++          // .shrinking:not(.entering)) switched while r still eased (scale ~0.96, a 20-27 px jump scrolling up).
++          // Target: the same rule on the eased values (0.004672 = w(0.04), the classes' threshold), so at rest
++          // (n = w(f), r = w(p)) it is exactly the class state, and scrolling up it stays 1 until r is back at ~0
++          // (scale ~1). Where the target still flips under a real scale (entering toggling during the exit shrink)
++          // the weight eases there over a few frames like n and r instead of jumping. Reduced motion (n, r are 0/1
++          // steps there) takes the class rule itself and snaps.
++          _wt = (e.matches ? p > 0.04 && !(o.top < i * 0.995 && f > 0.04) : r > 0.004672 && !(n > 0.004672)) ? 1 : 0;
++        ((_cw = _cw === void 0 || e.matches || k ? _wt : _cw + (_wt - _cw) * 0.22),
++          Math.abs(_wt - _cw) < 1e-3 && (_cw = _wt));
++        let _vo = String(_cw);
++        (k ||
++          (_ve !== _ce && c.style.setProperty(`--commission-enter-shrink`, (_ce = _ve)),
++          _vs !== _cs && c.style.setProperty(`--commission-shrink`, (_cs = _vs)),
++          _vo !== _co && u.style.setProperty(`--fw-co-w`, (_co = _vo))),
++          _vh !== _ch && (d.style.height = _ch = _vh),
++          (Math.abs(m - n) >= 8e-4 || Math.abs(h - r) >= 8e-4 || _cw !== _wt) && (t = window.requestAnimationFrame(a)));
+       },
+       o = () => {
++        ((scbPoke = !0), (!scbOff || scbDirty || scbG.near()) && (t ||= window.requestAnimationFrame(a)));
++      },
++      scbRun = () => {
+         t ||= window.requestAnimationFrame(a);
+       },
+       l = new IntersectionObserver(
+@@ -3139,17 +3421,29 @@
+       );
+     l.observe(p);
+     let f = new ResizeObserver(j);
+-    (f.observe(h), a());
+-    let m = dE(o, { deferRendering: !0, element: c });
++    (f.observe(h), a(), scbOff && scbG.start());
++    let m = dE(o, {
++      deferRendering: !0,
++      element: c,
++      // [scroll-cb-phone] leaving the scene gate: the frame's dE call still runs the job once, as before
++      onActiveChange: (e) => {
++        (e || (scbPoke && scbRun()), (scbPoke = !1));
++      },
++    });
++    for (let e of _cq) e.addEventListener(`change`, scbSync);
+     return (
+-      e.addEventListener(`change`, o),
++      e.addEventListener(`change`, scbRun),
++      window.addEventListener(`resize`, scbSync, { passive: !0 }),
+       () => {
+         (t && window.cancelAnimationFrame(t),
+           window.clearTimeout(i),
+           l.disconnect(),
+           f.disconnect(),
+           m(),
+-          e.removeEventListener(`change`, o));
++          scbG.stop(),
++          e.removeEventListener(`change`, scbRun),
++          window.removeEventListener(`resize`, scbSync));
++        for (let e of _cq) e.removeEventListener(`change`, scbSync);
+       }
+     );
+   });
+@@ -3669,7 +3963,8 @@
+   );
+ function HE(t, n) {
+   D(n, !0);
+-  let r = N(-1),
++  let pwAccent,
++    r = N(-1),
+     i = N(`idle`),
+     a,
+     o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
+@@ -3782,9 +4077,48 @@
+           bottom: s(o).paintBottom,
+           left: s(o).paintLeft,
+         })));
++      // layout-animations: the width changes at once (no 0.9 s width transition, i.e. no h1 layout
++      // every frame); the other words of the centred row slide from where they were with a transform,
++      // as the width transition moved them: the accent's centre stays, each side moves half the change.
++      let we = s(o).width;
++      (pwAccent !== void 0 && we !== pwAccent && HEflip(d, we - pwAccent), (pwAccent = we));
+     }),
+     f(t, d),
+     H());
++}
++function HEflip(d, dw) {
++  if (typeof d.animate != `function`) return;
++  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
++  // siblings sit on the RIGHT of the accent and move the other way: flip the sign
++  let x = ((document.documentElement.getAttribute(`dir`) === `rtl` ? -1 : 1) * dw) / 128,
++    o = { duration: 900, easing: `cubic-bezier(0.4, 0, 0.2, 1)` };
++  for (let e = d.previousElementSibling; e; e = e.previousElementSibling)
++    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
++  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
++    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
++}
++// layout-animations: the four gradient row titles sweep background-position forever (repaint every
++// frame); the engine pauses them only per section (±1 viewport), so also pause each title while it is
++// off-screen.
++var PMsweepIO;
++function PMsweepGate(row) {
++  if (!(`IntersectionObserver` in window)) return;
++  PMsweepIO ||= new IntersectionObserver((es) => {
++    for (let e of es) e.target.toggleAttribute(`data-sweep-paused`, !e.isIntersecting);
++  });
++  let ts = row.querySelectorAll(
++    `.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized`,
++  );
++  // [scene-scope RBi40pti] start paused: the first IO callback can land in the frame where #platform turns
++  // content-visibility:auto skipped, and a skipped subtree's style (the pause) waits until it is unskipped
++  // (status: the blocked recalc is CONFIRMED in Chromium source; that it holds back the pause is OBSERVED in Chrome,
++  // q40ti2; WebKit OBSERVED on the phone, T-011, one sweep load per arm)
++  for (let e of ts) (e.setAttribute(`data-sweep-paused`, ``), PMsweepIO.observe(e));
++  // unobserve when the row's each-block item is destroyed ($effect.pre attaches to the row's branch effect;
++  // its returned function is the effect's teardown)
++  PMpre(() => () => {
++    for (let e of ts) PMsweepIO.unobserve(e);
++  });
+ }
+ var UE = { stiffness: 280, damping: 18, mass: 0.3 },
+   WE = 16;
+@@ -3815,8 +4149,148 @@
+   return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
+ }
+ var YE = new xe(`(prefers-reduced-motion: reduce)`, !1),
++  /*countdown-faces: the hero component (fD) shadows N/z/s with its own locals; it reaches state/set/get through these*/
++  __cdState = N,
++  __cdSet = z,
++  __cdGet = s,
+   XE = Array.from({ length: 10 }, (e, t) => t),
+   ZE = h(`<span class="face svelte-1quva9c" aria-hidden="true"> </span>`),
++  /*cd-strip: one static strip per digit, cells 0-9 and a second 0 (the 9 -> 0 wrap), each cell its own layer (CSS).
++  Cell k lands at (k - n)*c, n = v mod 10, re-based on m = __cdStripM(v): the strip moves by -(n - m)*c, an
++  unmoved wrapper holds the cells, cell k at translateY((k - m)*c) inside it. For the two cells inside the digit that is
++  KE(digit, v)*c, the offset the original gives the face of that digit. The text never changes; one transform per
++  digit and frame instead of one per face in view, and one wrapper write when m changes*/
++  __cdStripT = h(
++    `<span class="strip svelte-1quva9c" aria-hidden="true"><span class="cdwrap svelte-1quva9c"><span class="cell svelte-1quva9c">0</span><span class="cell svelte-1quva9c">1</span><span class="cell svelte-1quva9c">2</span><span class="cell svelte-1quva9c">3</span><span class="cell svelte-1quva9c">4</span><span class="cell svelte-1quva9c">5</span><span class="cell svelte-1quva9c">6</span><span class="cell svelte-1quva9c">7</span><span class="cell svelte-1quva9c">8</span><span class="cell svelte-1quva9c">9</span><span class="cell svelte-1quva9c">0</span></span></span>`,
++  ),
++  /*cd-strip: the strip's offset in px for spring value v and cell height c (the one place that maps value to offset)*/
++  __cdStripY = (v, c) => -((((v % 10) + 10) % 10) * c),
++  /*cd-strip: the whole cell nearest to value v. The strip is drawn re-based on it: the strip moves by
++  __cdStripY(v, c) + m*c (under one cell) and cell k by (k - m)*c, so each cell layer sits (k - m)*c from the strip
++  layer: the same geometry as -n*c + k*c without two large offsets that cancel in the layer tree (with them, WebKit's
++  glyph edges differed from the faces' under the hero's fade; observed)*/
++  __cdStripM = (v) => Math.round(((v % 10) + 10) % 10),
++  /*cd-roll-ca: the roll as Web Animations (one per cell it moves, below) instead of a rAF spring. __crPath(from, to) returns [ms, value]
++  points of the path the original shows at 60 Hz: the value at time x after the target change is what its rAF chain
++  (first step GE(x mod T), then whole 60 Hz frames) shows at a frame landing exactly at x. On [kT, kT+16] that is a
++  quadratic in the phase, so it is sampled from 33 phase lanes (0..16 ms, 0.5 ms apart) with as many points as keep
++  linear interpolation within 5e-4 cell, plus a point at every whole frame. Ends at the frame where every lane is
++  done (GE snaps to the target). null when it can't end on the target (the caller keeps the rAF spring). u: the start
++  velocity (0 at a target change; the state after a gap's first frame, see the start-frame callback in $E).
++  cd-roll-ca K (PR-017 follow-up): fewer keyframes, same path. A point [ms, value, Q] with Q set starts a segment that
++  is the exact quadratic v0 + (v1 - v0)*(2Q s + (1 - 2Q) s^2), s = the segment's time fraction (__crQ, below). One
++  Euler step of p ms is quadratic in p, and the frames after it are affine in the state, so the original on
++  [kT, kT+16] is one quadratic in the phase, and on (kT+16, (k+1)T] (a 16 ms step, then one of p - 16 ms) another. A frame
++  whose lanes fit one monotone quadratic to 1e-9 cell becomes 2 keyframes ([kT, Q], [kT+16, Q2]) instead of up to
++  33; extra lanes at 16 + (T-16)*j/4 check the tail. A frame that doesn't fit (lanes snapping to the target in the
++  last frames: a jump under 0.001 cell) keeps the dense points as before. 144 -> 52 keyframes for a one-digit roll,
++  343 -> 66 for 0 -> 9 (WebKit resolves one style and one transform per keyframe at the roll's start)*/
++  __crQ = (v) => {
++    let n = v.length - 1,
++      D = v[n] - v[0],
++      Q = (4 * (v[n / 2] - v[0]) - D) / (2 * D),
++      fit = Math.abs(D) > 1e-6 && Q > -1e-9 && Q < 1 + 1e-9;
++    if (fit) {
++      Q = Math.min(1, Math.max(0, Q));
++      for (let j = 0; j <= n && fit; j++) {
++        let s = j / n;
++        fit = Math.abs(v[0] + D * (2 * Q * s + (1 - 2 * Q) * s * s) - v[j]) < 1e-9;
++      }
++    }
++    return fit ? Q : null;
++  },
++  __crPath = (f, t, u = 0) => {
++    let T = 1e3 / 60,
++      L = [],
++      K = [[0, f]];
++    for (let j = 0; j <= 32; j++) L.push(GE({ value: f, velocity: u }, t, j / 2));
++    for (let j = 1; j <= 3; j++) L.push(GE({ value: f, velocity: u }, t, 16 + ((T - 16) * j) / 4));
++    for (let k = 0; k < 600; k++) {
++      let v = L.map((x) => x.state.value),
++        w = L.every((x) => x.done),
++        Q = __crQ(v.slice(0, 33));
++      if (Q !== null) {
++        K[K.length - 1][2] = Q;
++        K.push([k * T + 16, v[32]]);
++      } else {
++        let q = Math.abs(v[0] - 2 * v[16] + v[32]) / 128,
++          m = 1;
++        for (; m < 32 && (q * (16 / m) ** 2) / 4 > 5e-4; ) m *= 2;
++        for (let j = 1; j <= m; j++) K.push([k * T + (16 * j) / m, v[(32 * j) / m]]);
++      }
++      L = L.map((x) => (x.done ? x : GE(x.state, t, T)));
++      let Q2 = __crQ([v[32], v[33], v[34], v[35], L[0].state.value]);
++      Q2 !== null && (K[K.length - 1][2] = Q2);
++      K.push([(k + 1) * T, L[0].state.value]);
++      if (w) {
++        for (; K.length > 2 && K[K.length - 2][1] === t && K[K.length - 3][2] == null; ) K.splice(K.length - 2, 1);
++        return K.every(([, x]) => x >= 0 && x < 10) ? K : null;
++      }
++    }
++    return null;
++  },
++  /*cd-roll-ca: value of a path at x ms (linear between points, or the segment's quadratic, ends held)*/
++  __crAt = (K, x) => {
++    if (x <= K[0][0]) return K[0][1];
++    for (let j = 1; j < K.length; j++)
++      if (x < K[j][0]) {
++        let [x0, v0, Q] = K[j - 1],
++          s = (x - x0) / (K[j][0] - x0);
++        return v0 + (K[j][1] - v0) * (Q == null ? s : 2 * Q * s + (1 - 2 * Q) * s * s);
++      }
++    return K[K.length - 1][1];
++  },
++  /*cd-roll-ca: the original's spring only moves on rendered frames. While the tab is hidden (and until the first frame
++  after it shows again) it holds the value of the last frame before the hide; __crHideAt / __crNoFrames track that,
++  registered before any countdown mounts, so these listeners run before the countdown's own visibilitychange tick*/
++  __crHideAt = null,
++  __crNoFrames = typeof document < `u` && document.hidden,
++  /*cd-roll-ca: one pending callback (never more) watches for the first frame after a hide or a show. WebKit can run a
++  frame before the visible event (OBSERVED, Simulator): the original's spring moves in it, so a frame that runs while
++  still hidden becomes the new held time and the watch goes on; the first frame while visible ends the hold*/
++  __crHideRaf = 0,
++  __crWatch = () => {
++    cancelAnimationFrame(__crHideRaf);
++    __crHideRaf = requestAnimationFrame((t) => {
++      __crHideRaf = 0;
++      document.hidden ? ((__crHideAt = t), __crWatch()) : (__crNoFrames = !1);
++    });
++  },
++  __crVis =
++    typeof document < `u` &&
++    document.addEventListener(`visibilitychange`, () => {
++      document.hidden &&
++        ((__crHideAt = typeof document.timeline?.currentTime == `number` ? document.timeline.currentTime : performance.now()),
++        (__crNoFrames = !0));
++      __crWatch();
++    }),
++  /*cd-roll-ca: the time of the last frame the original would have run for a roll started at t0, seen at now; a roll
++  none of whose frames has run yet (ran false) is still at its start in the original, hidden or not*/
++  __crClock = (t0, now, ran) => {
++    if (!ran) return t0;
++    if (__crNoFrames) return __crHideAt === null || __crHideAt < t0 ? t0 : Math.min(now, __crHideAt);
++    let x = document.timeline?.currentTime;
++    return typeof x == `number` && x >= t0 && x <= now ? x : now;
++  },
++  /*cd-roll-ca: the cells a roll along path K moves, and their keyframes. On strip-tc (cd-strip) a digit at rest has
++  its strip at 0 and cell k at translateY((k - M)*c) (M = __cdStripM(target), cd-strip's effect, which runs at the target
++  change): its rest place. During a roll every cell that comes within 1.5 cells of the clip gets a Web Animation on that
++  same transform, (k - n)*c = k*c + __cdStripY(n, c) at value n, which overrides the inline rest transform while it
++  runs; the strip stays at 0 and a cell's last keyframe is its rest place. Cells farther away keep their rest
++  transform, at least 1.5 cells out. The roll writes no top, no wrapper and no inline transform*/
++  __crCells = (K) => {
++    let r = [];
++    for (let k = 0; k < 11; k++) {
++      let near = !1;
++      for (let j = 0; j < K.length && !near; j++) {
++        let a = K[j][1],
++          b = K[j + 1] ? K[j + 1][1] : a;
++        near = (Math.min(a, b) <= k && k <= Math.max(a, b)) || Math.min(Math.abs(k - a), Math.abs(k - b)) < 1.5;
++      }
++      near && r.push(k);
++    }
++    return r;
++  },
+   QE = h(
+     `<span class="digit svelte-1quva9c"><span class="spacer svelte-1quva9c" aria-hidden="true">0</span> <!></span>`,
+   );
+@@ -3824,14 +4298,112 @@
+   D(r, !0);
+   let i = R(() => qE(r.value, r.place)),
+     a = N(I(o(() => s(i)))),
+-    c = N(0);
++    c = N(0),
++    /*countdown-idle-raf: false while the countdown is off-screen*/
++    __cdAnimate = R(() => r.animate !== !1),
++    /*countdown-faces: false only while the call site knows the clock is painted fully transparent (the hero at
++    --exit-opacity 0, the panel at opacity 0), written in the same frame as that opacity*/
++    __cdShown = R(() => r.shown !== !1),
++    /*countdown-faces: true while `a` is held (not written) because the clock is neither animated nor shown*/
++    __cdHeld = !1,
++    /*cd-roll-ca: the strip's wrapper (set when it mounts; its children are the cells) and the running roll {K: path,
++    t0, cells: the cells it moves, A: their Animations, F: the start-frame callback, ran}*/
++    __crEl = null,
++    __crRoll = null,
++    /*cd-roll-ca: end the roll; cancelling its animations shows cd-strip's rest transforms again (no frame in between)*/
++    __crStop = () => {
++      let Q = __crRoll;
++      if (!Q) return;
++      __crRoll = null;
++      cancelAnimationFrame(Q.F);
++      Q.A && Q.A.forEach((x) => x.cancel());
++    },
++    /*cd-roll-ca: (re)start the roll's animations at its own t0 (a restart for a new cell height continues in place).
++    Keyword easing linear between the points, or a segment's cubic-bezier (K; composited in Chrome and WebKit). All cells of a roll get the same
++    keyframe offsets and the same startTime. fill both: a frame before t0 shows the start, and the end holds the rest
++    place until the finish handler cancels them*/
++    __crPlay = (C) => {
++      let Q = __crRoll;
++      if (!Q || !__crEl || !(C > 0)) return;
++      Q.A && Q.A.forEach((x) => x.cancel());
++      let K = Q.K,
++        d = K[K.length - 1][0];
++      Q.A = Q.cells.map((k) => {
++        let A = __crEl.children[k].animate(
++          /*K: a quadratic segment as a per-keyframe cubic-bezier, x controls 1/3 and 2/3 (x(s) = s exactly), y controls
++          the degree-elevated quadratic's (2Q/3, 1/3 + 2Q/3), both in [0, 1] for 0 <= Q <= 1: per-keyframe cubic-bezier
++          stays on Core Animation, while linear() with points does not (WebKit KeyframeEffect::canBeAccelerated)*/
++        K.map(([x, v, Q]) => {
++          let f = { offset: x / d, transform: `translateY(${k * C + __cdStripY(v, C)}px)` };
++          Q != null && (f.easing = `cubic-bezier(${1 / 3}, ${(2 * Q) / 3}, ${2 / 3}, ${1 / 3 + (2 * Q) / 3})`);
++          return f;
++        }),
++          { duration: d, easing: `linear`, fill: `both` },
++        );
++        A.startTime = Q.t0;
++        return A;
++      });
++      Q.A[0].onfinish = () => Q === __crRoll && __crStop();
++    };
+   b(() => {
+     let e = s(i);
+-    if (YE.current) {
++    /*countdown-faces: off-screen (or inactive) and painted transparent: hold. No state write, so no strip transform
++    write and no style recalc per tick; any running roll stops (its cells show cd-strip's rest place, unseen)*/
++    if (!YE.current && !s(__cdAnimate) && !s(__cdShown)) {
++      __crStop();
++      __cdHeld = !0;
++      return;
++    }
++    /*countdown-idle-raf: no spring while off-screen; snap like reduced motion. countdown-faces: also the first run
++    after a hold (back on screen, or shown again), so the show frame has the target, as the per-tick snap gives*/
++    if (YE.current || !s(__cdAnimate) || __cdHeld) {
++      __cdHeld = !1;
++      __crStop();
+       z(a, e, !0);
+       return;
+     }
+-    let t = { value: o(() => s(a)), velocity: 0 },
++    /*cd-roll-ca: start value = what the original shows now: the running roll's path at its last frame, else a*/
++    let __crNow = performance.now(),
++      __crFrom = __crRoll ? __crAt(__crRoll.K, __crClock(__crRoll.t0, __crNow, __crRoll.ran) - __crRoll.t0) : o(() => s(a)),
++      /*hero clock only: the panel clock (.countdown.inverse) paints its cells unlayered, and a running compositor
++        animation would layer them (other glyph rasterisation, whole-strip repaints while the morph scales it)*/
++      __crK =
++        __crEl && typeof __crEl.animate == `function` && __crFrom !== e && !__crEl.closest(`.inverse`)
++          ? __crPath(__crFrom, e)
++          : null;
++    __crStop();
++    if (__crK || (__crEl && __crFrom === e)) {
++      __crK && ((__crRoll = { K: __crK, t0: __crNow, cells: __crCells(__crK) }), __crPlay(o(() => s(c))));
++      /*cd-roll-ca: the original's clock starts at its first frame's stamp when that frame began before the change
++        (GE(o - n) with o < n steps nothing and sets n = o); one rAF per roll moves the start there, never per frame.
++        It also marks the roll as having run a frame (see __crClock)*/
++      if (__crK) {
++        let R0 = __crRoll;
++        /*at most one pending callback per digit, like the original: __crStop cancels it (a hidden tab keeps ticking).
++          A first frame more than one 60 Hz frame after the change (a hidden tab, a long task) is one GE call over the
++          whole gap in the original, whose substeps come in another order than the path's (GE(x mod T), then whole
++          frames): the roll is re-keyed from that frame, with the state GE gives there as its start, so it shows what
++          the original shows. Once per roll, only after such a gap*/
++        R0.F = requestAnimationFrame((t) => {
++          if (R0 !== __crRoll) return;
++          R0.ran = !0;
++          if (t < R0.t0) {
++            R0.t0 = t;
++            R0.A && R0.A.forEach((x) => (x.startTime = t));
++          } else if (t - R0.t0 > 1e3 / 60) {
++            let E = R0.K[R0.K.length - 1][1],
++              G = GE({ value: R0.K[0][1], velocity: 0 }, E, t - R0.t0),
++              K = G.done ? null : __crPath(G.state.value, E, G.state.velocity);
++            K ? ((R0.K = K), (R0.t0 = t), (R0.cells = __crCells(K)), __crPlay(o(() => s(c)))) : G.done && __crStop();
++          }
++        });
++      }
++      z(a, e, !0);
++      return;
++    }
++    /*cd-roll-ca: no strip yet or no path: the original rAF spring, from the same start value*/
++    z(a, __crFrom, !0);
++    let t = { value: __crFrom, velocity: 0 },
+       n = performance.now(),
+       r = window.requestAnimationFrame(function i(o) {
+         let s = GE(t, e, o - n);
+@@ -3843,27 +4415,24 @@
+     d = e(u),
+     h = V(d, 2),
+     g = (n) => {
+-      var r = p(),
+-        i = O(r);
+-      (_(
+-        i,
+-        16,
+-        () => XE,
+-        (e) => e,
+-        (n, r) => {
+-          var i = ZE();
+-          let o;
+-          var u = e(i, !0);
+-          (M(i),
+-            l(
+-              (e) => {
+-                ((o = S(i, ``, o, e)), t(u, r));
+-              },
+-              [() => ({ transform: `translateY(${KE(r, s(a)) * s(c)}px)` })],
+-            ),
+-            f(n, i));
+-        },
+-      ),
++      var r = __cdStripT(),
++        w = r.firstChild;
++      let o;
++      /*cd-roll-ca: the roll animates this strip's cells; a new cell height re-keys a running roll at the same t0*/
++      __crEl = w;
++      l((e) => __crPlay(e), [() => s(c)]);
++      (l((e, m) => {
++        /*cd-strip: cell k moved (k - m)*c px by its own transform, as the original moves each face (c = the spacer's
++        integer offsetHeight, m = __cdStripM(v)); no top writes, so nothing moves in layout (a top write is a layout
++        shift); re-runs only when c or m changes (11 writes)*/
++        for (let t = 0; t < 11; t++) w.children[t].style.transform = `translateY(${(t - m) * e}px)`;
++      }, [() => s(c), () => __cdStripM(s(a))]),
++        l(
++          (e) => {
++            o = S(r, ``, o, e);
++          },
++          [() => ({ transform: `translateY(${__cdStripY(s(a), s(c)) + __cdStripM(s(a)) * s(c)}px)` })],
++        ),
+         f(n, r));
+     };
+   (m(h, (e) => {
+@@ -3894,6 +4463,12 @@
+         get place() {
+           return s(n);
+         },
++        get animate() {
++          return t.animate;
++        },
++        get shown() {
++          return t.shown;
++        },
+       });
+     },
+   ),
+@@ -3920,7 +4495,58 @@
+   let a = C(r, `inverse`, 3, !1),
+     o = R(WT),
+     c = N(null),
+-    u = R(() => (s(c) === null ? null : rD(s(c)))),
++    __cdVisible = N(!0),
++    /*countdown-idle-raf: optional `active` prop from the call site (false = mounted but not shown, e.g. opacity 0)*/
++    __cdActive = R(() => r.active !== !1),
++    /*countdown-faces: optional `shown` prop from the call site, false only while the clock is painted at opacity 0,
++    set in the frame that paints it*/
++    __cdShown = R(() => r.shown !== !1),
++    /*countdown-faces: the clock ticks only while a digit of it may be painted: on screen and active (it animates), or
++    shown (opacity > 0). Exactly when no digit is held in $E. Otherwise the interval is stopped: no timer fire, no
++    state write, no frame*/
++    __cdLive = R(() => (s(__cdVisible) && s(__cdActive)) || s(__cdShown)),
++    /*countdown-faces: the interval's phase (the original's k-th fire is due at __cdT0 + k s), its tick, timers*/
++    __cdT0 = 0,
++    __cdTick = null,
++    __cdTimer = 0,
++    __cdWait = 0,
++    __cdSlow = 0,
++    __cdStop = () => {
++      (window.clearTimeout(__cdWait),
++        window.clearInterval(__cdTimer),
++        window.clearInterval(__cdSlow),
++        (__cdWait = __cdTimer = __cdSlow = 0));
++    },
++    /*countdown-faces: while stopped, keep the timer's aria-label (and data-value) honest for a screen reader's virtual
++    cursor at low cost: the value of the original's last fire, once per 60 s and on focusin. The held digits are not
++    written ($E holds them), so this changes two attributes and nothing on screen*/
++    __cdRead = () => {
++      __cdTick && !__cdTimer && !__cdWait && z(c, __cdT0 + Math.floor((Date.now() - __cdT0) / 1e3) * 1e3, !0);
++    },
++    __cdPause = () => {
++      (__cdStop(), __cdTick && (__cdSlow = window.setInterval(__cdRead, 6e4)));
++    },
++    /*countdown-faces: back to live: the next fire at the original's phase, then every second as before*/
++    __cdGo = () => {
++      if (!__cdTick || __cdWait || __cdTimer) return;
++      (window.clearInterval(__cdSlow), (__cdSlow = 0));
++      let n = Date.now();
++      __cdWait = window.setTimeout(
++        () => {
++          ((__cdWait = 0), __cdTick(), (__cdTimer = window.setInterval(__cdTick, 1e3)));
++        },
++        __cdT0 + (Math.floor((n - __cdT0) / 1e3) + 1) * 1e3 - n,
++      );
++    },
++    /*countdown-faces: while live the clock reads the time of the original's last fire if the stored time is older (it
++    is only after a stop): the digits the original shows now, in the same update that makes the clock live again, so
++    the first painted frame already has them and nothing rolls through the skipped seconds. Between fires c is newer*/
++    u = R(() => {
++      let v = s(c);
++      return v === null
++        ? null
++        : rD(s(__cdLive) ? Math.max(v, __cdT0 + Math.floor((Date.now() - __cdT0) / 1e3) * 1e3) : v);
++    }),
+     d = R(() => s(o).waitlist.units),
+     p = R(
+       () =>
+@@ -3933,14 +4559,34 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    ((__cdT0 = Date.now()), (__cdTick = e), s(__cdLive) ? (__cdTimer = window.setInterval(e, 1e3)) : __cdPause());
++    let /*countdown-idle-raf: digits spring only while the countdown is on screen*/
++      __cdIo =
++        typeof IntersectionObserver == `function`
++          ? new IntersectionObserver(
++              (e) => {
++                z(__cdVisible, e[e.length - 1].isIntersecting, !0);
++              },
++              { rootMargin: `64px 0px` },
++            )
++          : null;
+     return (
++      __cdIo?.observe(h),
++      h.addEventListener(`focusin`, __cdRead),
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (__cdStop(),
++          (__cdTick = null),
++          __cdIo?.disconnect(),
++          h.removeEventListener(`focusin`, __cdRead),
++          document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });
++  /*countdown-faces: stop the interval when the clock goes out of sight, restart it at its phase when it comes back*/
++  b(() => {
++    s(__cdLive) ? __cdGo() : __cdPause();
++  });
+   var h = sD();
+   let g;
+   (_(
+@@ -3958,6 +4604,12 @@
+               return s(u)[i];
+             },
+             padStart: i > 0,
++            get animate() {
++              return s(__cdVisible) && s(__cdActive);
++            },
++            get shown() {
++              return s(__cdShown);
++            },
+           });
+         },
+         p = (e) => {
+@@ -4026,7 +4678,11 @@
+         ),
+         f(n, i));
+     },
+-    o = R(WT);
++    o = R(WT),
++    /*countdown-faces: false only while the hero countdown is painted fully transparent: --exit-opacity 0 on div.hero
++    (x; .hero-copy, which holds the countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))). Set in the
++    exit callback below, next to that write, so the frame that paints the clock again already has the target*/
++    __cdHeroShown = __cdState(!0);
+   function c(e) {
+     return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
+   }
+@@ -4160,15 +4816,131 @@
+       i = 0,
+       a = 0,
+       o = !1,
++      // hero-exit-scroll-timeline: at the phone layout (t: width <= 600 px; d() runs at mount there and with
++      // reduced motion), and where CSS scroll-driven animations are supported, the exit (--exit-opacity /
++      // --exit-scatter) is a CSS animation on the `--hero-exit` view timeline of .hero-track (@supports
++      // block in 2.gBuqKVzi.css): heMode = CSS mode, no per-frame rect read / style write while the page scrolls. Wider layouts
++      // (desktop orbit cards) keep the baseline writer (c -> s): WebKit drew the animated tilted cards up
++      // to 108 levels off the baseline's static draw of equal computed values (width 980, Simulator,
++      // OBSERVED); heOff leaves CSS mode when the layout widens past 600 px.
++      // pointer-events (r < 0.05, i.e. track bottom < 0.05 * track height + 0.95 * innerHeight) comes
++      // from an IntersectionObserver in live CSS mode (parked: s()) whose top rootMargin is that threshold in px, re-armed on
++      // resize (innerHeight and the track height change with the toolbar / viewport).
++      // WebKit only: `GestureEvent` is a WebKit-only interface (Safari 9+, iOS 2+; Chrome and Firefox
++      // none: MDN browser-compat-data api/GestureEvent.json). Blink composites the animated cards/copy
++      // with a slightly different blend than its painted baseline (up to 6 levels, frozen-scroll
++      // harness), so Chrome, Firefox and others keep the baseline JS writer (identical by construction).
++      // CSS mode is parked at rest and live while the page scrolls. Parked (.he-on only): no exit animation
++      // exists, and the hero is drawn exactly as in the baseline, by the baseline's own rules from the inline
++      // --exit-opacity that s() writes (the dE callback runs the baseline writer c() while parked, e.g. on a
++      // resize). Live (.he-css added): the CSS rules key on it. Why park: WebKit invalidates the style of every
++      // element with a relevant scroll-driven animation on every rendering update, moving or not
++      // (WebAnimation::computeRelevance counts a non-monotonic timeline as relevant unless idle;
++      // AnimationTimelinesController ticks every relevant animation; KeyframeEffect::animationDidTick ->
++      // invalidate(); WebKit main 13a1f2916933, CONFIRMED), so with the animations always present every frame
++      // at rest and at the top paid a style recalc the baseline does not (Simulator: 1 per frame vs 0; phone
++      // P-074: touchstart rows +2 RecalculateStyles). Removing the animations (class off) stops it (Simulator:
++      // 0 per frame). heSc goes live on the first scroll event inside the range (finger, wheel, keys,
++      // scrollbar, find-in-page, status-bar tap, script; the scroll event fires before that frame's rendering
++      // update): s() writes the inline value for the current scrollY, then .he-css arrives. A newly added CSS
++      // animation is pending for its first frame, which draws the base values, i.e. that inline value. The
++      // value then stays (stale) while live: every property that reads it is animated while live (cards,
++      // copy, float), except the cue's, which a live rule replaces with its value at --exit-opacity 1 (the
++      // float carries the cue's exit; its base values read the inline value for the pending frame). Before
++      // the range start no exit animation is active and the base values show, so a scroll to y <= top + 30
++      // parks at once (see heSc). heRest parks again 300 ms after the last scroll
++      // event with no finger down: s() writes the value for the final scrollY, then the class goes (no
++      // pending frame on removal). Touchstart only marks the finger down (no style work in its frame).
++      // The copy's shift animation comes with .he-css (live only): a transform animation on .hero-copy,
++      // even inactive, made WebKit repaint the title's script accent about 1.4x as often (Simulator, OBSERVED).
++      // heWrap: CSS mode wraps the scroll cue's label + arrow in one span (.he-bob) that takes the 2.2 s bob,
++      // so .scroll-float carries only the scroll-driven exit (both on one element made WebKit recalculate
++      // style every frame at rest; the bob on the two children separately drew 1-2 levels off). Same layout
++      // (a flex column like the float); Svelte's node references (the label text) stay valid when moved.
++      // The bob rules key on .he-on (parked and live), so parking never moves or restarts the bob.
++      // Touch phones only (the lead, 2026-10-03): GestureEvent also exists in macOS Safari (MAC_GESTURE_EVENTS)
++      // and on iPad, whose windows can be 600 CSS px wide or less; nobody pixel-checked the CSS path there, so
++      // those take the baseline path: a coarse pointer without hover and a screen whose short side is at most
++      // 600 CSS px (iPhone 430; iPad mini 744; Mac displays wider).
++      heCss =
++        `GestureEvent` in window &&
++        !!window.CSS?.supports?.(`(animation-timeline: view()) and (animation-range: contain 0% contain 100%)`) &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
++      heMode = !1,
++      heIn = !0,
++      heIO = null,
++      heTop = 0,
++      heEnd = 1 / 0,
++      heTouch = 0,
++      heR = 0,
++      heLive = () => b.classList.contains(`he-css`),
++      heRT = () => {
++        (window.clearTimeout(heR), (heR = window.setTimeout(heRest, 300)));
++      },
++      // heRest: park (see above). s() first, so the frame that loses the animations has the baseline's
++      // inline value for the final scrollY (also past the end, where the exit is complete).
++      heRest = () => {
++        if (((heR = 0), !heMode || heTouch || !heLive())) return;
++        (s(), b.classList.remove(`he-css`));
++      },
++      heTS = () => {
++        heTouch = 1;
++      },
++      heTE = () => {
++        ((heTouch = 0), heMode && heLive() && heRT());
++      },
++      // heSc: live: keep the rest timer running; at y <= top + 30 park at once (s() for that scrollY, class off).
++      // Parked: go live when the scroll lands at top + 30 < y < end. Below top + 30 the parked dE callback runs
++      // the baseline writer, as in the baseline: there the cue's blur is under 0.7 px, and the float's animated
++      // blur drew the cue up to 78 levels off the baseline at y6 (0 at y30; Simulator, OBSERVED, cause unknown).
++      // Past the end nothing moves in the exit.
++      heSc = (ev) => {
++        if (ev.target !== document || !heMode || e.matches) return;
++        let y = window.scrollY;
++        if (heLive()) return y <= heTop + 30 ? (window.clearTimeout(heR), (heR = 0), s(), b.classList.remove(`he-css`)) : heRT();
++        y > heTop + 30 && y < heEnd && heUp();
++      },
++      // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.
++      // v8 glue (countdown-faces x hero R2, F-235): live CSS mode runs s() only here and at park, so the hero clock is
++      // marked shown when going live (s() can compute r = 0 just under a stale heEnd after a toolbar step); heRest's s() sets it at park.
++      heUp = () => {
++        (i && window.cancelAnimationFrame(i), s(), __cdSet(__cdHeroShown, !0), b.classList.add(`he-css`), heRT());
++      },
++      hePE = () => {
++        x.style.pointerEvents = heIn || e.matches ? `` : `none`;
++      },
++      heWrap = () => {
++        let e = x.querySelector(`.scroll-float`);
++        if (!e || e.firstElementChild?.classList.contains(`he-bob`)) return;
++        let t = document.createElement(`span`);
++        for (t.className = `he-bob svelte-1p2vpne`; e.firstChild; ) t.appendChild(e.firstChild);
++        e.appendChild(t);
++      },
++      // heOff: back to the baseline writer when the layout widens past 600 px (rotation, window resize) and
++      // on pageshow (p(); d() re-enters CSS mode where it applies): drop the classes, unwrap the cue (the
++      // baseline's DOM and bob), and write --exit-opacity now (s(), not c()): the media change runs before
++      // this frame's style, so the frame that loses the animations already has the baseline's inline value.
++      heOff = () => {
++        ((heMode = !1), window.clearTimeout(heR), (heR = 0), b.classList.remove(`he-css`, `he-on`));
++        let w = x.querySelector(`.scroll-float > .he-bob`);
++        if (w) {
++          for (; w.firstChild; ) w.parentNode.insertBefore(w.firstChild, w);
++          w.remove();
++        }
++        s();
++      },
+       s = () => {
+         if (((i = 0), e.matches)) {
+-          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
++          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``), __cdSet(__cdHeroShown, !0));
+           return;
+         }
+         let t = b.getBoundingClientRect(),
+           n = Math.max(1, t.height - window.innerHeight),
+           r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
+-        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
++        (x.style.setProperty(`--exit-opacity`, String(r)),
++          (x.style.pointerEvents = r < 0.05 ? `none` : ``),
++          __cdSet(__cdHeroShown, r > 0));
+       },
+       c = () => {
+         i ||= window.requestAnimationFrame(s);
+@@ -4181,9 +4953,19 @@
+           window.clearTimeout(r),
+           (r = 0),
+           C.classList.add(`is-splash-done`),
+-          x.classList.add(`is-ring-splash-done`));
++          x.classList.add(`is-ring-splash-done`),
++          // CSS mode starts parked (the baseline's state: s() for the current scrollY, also mid-hero after a
++          // pageshow, a restored scroll or a layout narrowing to <= 600 px); a later scroll goes live.
++          heCss &&
++            t.matches &&
++            ((heMode = !0),
++            i && window.cancelAnimationFrame(i),
++            (i = 0),
++            s(),
++            heWrap(),
++            b.classList.add(`he-on`)));
+       },
+-      f = (e) => {
++      f =(e) => {
+         let t = e - a,
+           r = O(t),
+           i = j(t);
+@@ -4205,6 +4987,7 @@
+           window.clearTimeout(r),
+           (r = 0),
+           (o = !1),
++          heMode && heOff(),
+           C.classList.add(`is-preparing`),
+           x.classList.add(`is-preparing`),
+           C.classList.remove(`is-splash-done`, `is-expanding`),
+@@ -4233,18 +5016,62 @@
+       };
+     p();
+     let h = () => {
+-      t.matches && d();
++      t.matches ? d() : heMode && heOff();
+     };
+     (t.addEventListener(`change`, h), window.addEventListener(`pageshow`, m));
+-    let g = dE(c, { deferRendering: !0, element: b });
++    // hero-exit-scroll-timeline: live CSS mode skips the baseline writer (the animations draw the exit); parked
++    // and outside CSS mode the dE callback runs it as in the baseline. dE stays registered for its side
++    // effects on the track (scene pause + render deferral).
++    let g = dE(
++        () => {
++          (heMode && heLive()) || c();
++        },
++        { deferRendering: !0, element: b },
++      ),
++      heSync = () => {
++        heMode && heLive() && hePE();
++      };
++    let heArm = () => {
++      heIO && heIO.disconnect();
++      let n = window.innerHeight,
++        t = b.getBoundingClientRect(),
++        r = 0.05 * t.height + 0.95 * n;
++      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)));
++      heIO = new IntersectionObserver(
++        (n) => {
++          for (let e of n) heIn = e.isIntersecting;
++          heSync();
++        },
++        { rootMargin: `${-r}px 0px ${3 * n}px 0px` },
++      );
++      heIO.observe(b);
++    };
++    let heL = { passive: !0, capture: !0 },
++      heEv = [
++        [`touchstart`, heTS],
++        [`touchend`, heTE],
++        [`touchcancel`, heTE],
++        [`scroll`, heSc],
++      ];
+     return (
+-      s(),
++      heCss &&
++        (heArm(),
++        window.addEventListener(`resize`, heArm),
++        e.addEventListener(`change`, heSync),
++        heEv.forEach(([e, t]) => window.addEventListener(e, t, heL))),
++      heMode || s(),
+       () => {
+         (l(),
+           window.clearTimeout(r),
+           i && window.cancelAnimationFrame(i),
+           t.removeEventListener(`change`, h),
+           window.removeEventListener(`pageshow`, m),
++          heIO &&
++            (heIO.disconnect(),
++            window.removeEventListener(`resize`, heArm),
++            e.removeEventListener(`change`, heSync),
++            heEv.forEach(([e, t]) => window.removeEventListener(e, t, heL)),
++            window.clearTimeout(heR)),
+           g());
+       }
+     );
+@@ -4330,7 +5157,11 @@
+     be = e(ye, !0);
+   (M(ye), M(W));
+   var xe = V(W, 2);
+-  cD(xe, {});
++  cD(xe, {
++    get shown() {
++      return __cdGet(__cdHeroShown);
++    },
++  });
+   var Se = V(xe, 2),
+     Ce = e(Se),
+     we = e(Ce),
+@@ -4689,12 +5520,29 @@
+   ne(() => {
+     let e = window.requestAnimationFrame(ce),
+       t = window.matchMedia(o),
+-      n = () => {
+-        F &&= (window.clearInterval(F), 0);
++      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
++      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
++      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
++      fwOn = !1,
++      fwT0 = 0,
++      n = () => {
++        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
+       },
+       r = () => {
+-        F ||= window.setInterval(le, 3e3);
++        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
+       },
++      fwMq = () => {
++        t.matches
++          ? (F &&= (window.clearInterval(F), 0))
++          : fwOn &&
++            !F &&
++            (F = window.setTimeout(
++              () => {
++                ((F = window.setInterval(le, 3e3)), le());
++              },
++              3e3 - ((performance.now() - fwT0) % 3e3),
++            ));
++      },
+       i = new IntersectionObserver(
+         ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
+@@ -4726,10 +5574,15 @@
+         ((O = null), z(E, null));
+       },
+       d = () => {
++        // fix(pain-offscreen-notes): nothing to clear -> skip the per-frame querySelector, the
++        // .commission-card rect read (forced layout after earlier writers) and the no-op reactive
++        // write z(T, []) that re-ran the notes each-block every scroll frame.
++        if (s(T).length === 0) return;
+         let e = document.querySelector(`.commission-card`);
+         e && e.getBoundingClientRect().top < window.innerHeight * 0.995 && z(T, [], !0);
+       };
+     (t.addEventListener(`change`, c),
++      t.addEventListener(`change`, fwMq),
+       window.addEventListener(`pointermove`, l),
+       window.addEventListener(`pointerup`, u),
+       window.addEventListener(`pointercancel`, u));
+@@ -4740,6 +5593,7 @@
+         i.disconnect(),
+         a.disconnect(),
+         t.removeEventListener(`change`, c),
++        t.removeEventListener(`change`, fwMq),
+         window.removeEventListener(`pointermove`, l),
+         window.removeEventListener(`pointerup`, u),
+         window.removeEventListener(`pointercancel`, u),
+@@ -10776,11 +11630,17 @@
+     let t = ie(e);
+     return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+   }
++  // Cache the MediaQueryLists: .matches is live, so behaviour is unchanged, but the per-frame
++  // profile callback no longer builds (and leaves for GC) up to four new MediaQueryLists per frame.
++  let reducedMotionMq, desktopMq;
++  // scroll-cb-phone: once the phone/reduced-motion reset d() has run, further scroll frames repeat
++  // the same idempotent writes; skip their rAF until something that d() depends on changes.
++  let scbProfIdle = !1;
+   function oe() {
+-    return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
++    return (reducedMotionMq ||= window.matchMedia(`(prefers-reduced-motion: reduce)`)).matches;
+   }
+   function ce() {
+-    return !oe() && !s(T) && window.matchMedia(`(min-width: 861px)`).matches;
++    return !oe() && !s(T) && (desktopMq ||= window.matchMedia(`(min-width: 861px)`)).matches;
+   }
+   function le() {
+     let e = window.innerHeight * 1.45,
+@@ -10848,7 +11708,7 @@
+       }, 50));
+   }
+   function ge(e) {
+-    if ((z(C, e, !0), !ce())) {
++    if (((scbProfIdle = !1), z(C, e, !0), !ce())) {
+       s(T) && he(e, !0);
+       return;
+     }
+@@ -10898,7 +11758,7 @@
+       e < r && ((r = e), (n = i));
+     }
+     let i = n?.dataset.profession;
+-    i && i !== s(C) && s(p).some((e) => e.id === i) && (z(C, i, !0), he(i, !1));
++    i && i !== s(C) && s(p).some((e) => e.id === i) && ((scbProfIdle = !1), z(C, i, !0), he(i, !1));
+   }
+   function xe() {
+     !s(T) ||
+@@ -10927,9 +11787,10 @@
+       },
+       f = () => {
+         if (((n = 0), z(T, e.matches, !0), W(), !ce())) {
+-          d();
++          (d(), (scbProfIdle = !0));
+           return;
+         }
++        scbProfIdle = !1;
+         let { shrinkRange: t, professionRange: a, totalRange: m } = le(),
+           _ = 48 - h.getBoundingClientRect().top,
+           y = Math.min(m, Math.max(0, _)),
+@@ -10969,16 +11830,19 @@
+         (A && j && M) || (n = window.requestAnimationFrame(f));
+       },
+       m = () => {
+-        n ||= window.requestAnimationFrame(f);
++        scbProfIdle || (n ||= window.requestAnimationFrame(f));
+       },
++      scbProfWake = () => {
++        ((scbProfIdle = !1), m());
++      },
+       _ = () => {
+-        (z(T, e.matches, !0), he(s(C), s(T)), m());
++        ((scbProfIdle = !1), z(T, e.matches, !0), he(s(C), s(T)), m());
+       },
+       y = dE(m, { element: h });
+     return (
+       x.addEventListener(`scrollend`, be),
+       e.addEventListener(`change`, _),
+-      t.addEventListener(`change`, m),
++      t.addEventListener(`change`, scbProfWake),
+       (n = window.requestAnimationFrame(f)),
+       () => {
+         (n && window.cancelAnimationFrame(n),
+@@ -10987,7 +11851,7 @@
+           y(),
+           x.removeEventListener(`scrollend`, be),
+           e.removeEventListener(`change`, _),
+-          t.removeEventListener(`change`, m),
++          t.removeEventListener(`change`, scbProfWake),
+           (h.style.height = ``));
+       }
+     );
+@@ -11249,7 +12113,7 @@
+ }
+ g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
+ var dM = h(
+-    `<img loading="lazy" decoding="async" class="is-exit" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" class="is-enter" alt=""/>`,
++    `<img loading="lazy" decoding="async" class="st5-lead" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" alt=""/> <img loading="lazy" decoding="async" class="st5-next" alt=""/>`,
+     1,
+   ),
+   fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
+@@ -11294,28 +12158,142 @@
+   ne(() => {
+     let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
+       t = window.matchMedia(`(max-width: 860px)`),
++      // Same query as the CSS rule that forces --future-shrink-scale: 1 / --future-shrink-radius: 0px.
++      shrinkOffMq = window.matchMedia(
++        `(max-width: 860px), (max-device-width: 500px), (hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ),
+       n = [],
+       r = [],
+       i = 0,
+       a = !1,
+       o = 0,
+       c = !1,
++      // [rest-script] the rotator's clock (_ below, with the scene gate's stall and restart) is unchanged, but its
++      // state lives in fwX/fwS and is mirrored into x/S (the 5 slot srcs and .is-sliding) only while the avatar row
++      // is within half a viewport of the screen (fwIO). Coming near, the current state is written before the row
++      // can be seen; a slide in progress resumes at the phase the original shows in that frame: fwStart() is the
++      // start of the slide's first frame (away: the start time of an empty 1 ms animation started with the
++      // slide, fwClk; near: the slide's own animations), and the resumed slide's CSS animations get it, set in the
++      // frame that first shows them (a microtask after Svelte's flush, before style/paint). The original's
++      // animations start at that frame's time, or one frame later when the compositor starts them late (Chrome);
++      // the resumed slide always takes the first. Going away, a running slide is ended (the row is half a
++      // viewport off screen by then).
++      fwX = 0,
++      fwS = !1,
++      fwF0 = 0,
++      fwClk = null,
++      fwNear = !0,
++      fwR = 0,
++      fwIO,
++      fwPin = (t, k = 0) =>
++        queueMicrotask(() => {
++          if (!fwNear || !fwS) return;
++          if (!me.classList.contains(`is-sliding`)) {
++            k < 3 && fwPin(t, k + 1);
++            return;
++          }
++          for (let e of me.getAnimations({ subtree: !0 })) e.startTime = t;
++        }),
++      fwSetX = (v) => {
++        ((fwX = v), fwNear && z(x, v));
++      },
++      fwSetS = (v) => {
++        // far away: an empty 1 ms animation is started with the slide; its start time is the frame after this task,
++        // like the slide's own animations (a zero-length one got the frame before in Chrome, a long one is sampled
++        // every frame), read only on a resume (fwStart), so no script runs per slide. Near: the DOM runs the slide,
++        // and its real start time is read when the row goes away mid-slide (fwNearChange).
++        (v &&
++          !fwS &&
++          ((fwF0 = 0), (fwClk = null), fwNear || ((fwClk = new Animation(new KeyframeEffect(null, null, 1), document.timeline)), fwClk.play())),
++          (fwS = v),
++          fwNear && z(S, v));
++      },
++      fwStart = () => fwF0 || (fwClk && typeof fwClk.startTime == `number` ? fwClk.startTime : 0),
++      fwSync = (b) => {
++        ((fwNear = !0), z(x, fwX), z(S, fwS));
++        fwS && b !== void 0 && fwPin(fwStart() || b);
++      },
++      // Jumps (scrollTo, anchors, history or find-in-page scroll, a resize or rotation) can bring the row from far
++      // away straight into view, where the IO would report it a frame late. Scroll and resize frames reach u in a
++      // rAF of the same rendering update (dE's scroll/resize listener), the ResizeObserver runs after layout and
++      // before paint: both check the row's cached document box (no layout read) and write the state in that frame.
++      fwTop = null,
++      fwH = 0,
++      fwRO,
++      fwCheck = () => {
++        if (fwNear || fwTop === null) return;
++        let t = fwTop - window.scrollY,
++          v = window.innerHeight;
++        t < v * 1.5 && t + fwH > v * -0.5 && fwSync(document.timeline.currentTime);
++      },
++      fwNearChange = (e) => {
++        let t = e[e.length - 1];
++        t && ((fwTop = t.boundingClientRect.top + window.scrollY), (fwH = t.boundingClientRect.height));
++        if (!t?.isIntersecting) {
++          if (fwNear && fwS && !fwF0) {
++            // leaving mid-slide: keep the slide's real start (the engine's own frame) for a resume
++            for (let a of me.getAnimations({ subtree: !0 })) if (typeof a.startTime == `number`) { fwF0 = a.startTime; break; }
++            fwF0 ||= document.timeline.currentTime || 0;
++          }
++          (fwR && (window.cancelAnimationFrame(fwR), (fwR = 0)),
++            fwNear && ((fwNear = !1), s(S) && z(S, !1)));
++          return;
++        }
++        fwNear ||
++          fwR ||
++          (fwS
++            ? (fwR = window.requestAnimationFrame((e) => {
++                ((fwR = 0), fwNear || fwSync(e));
++              }))
++            : fwSync());
++      },
++      // [scroll-cb-phone] phone path gate (see scbGate). Lines: hero-track progress 0.72 (is-visible, a
++      // pixel line from the track height, rebuilt when that changes), card bottom zone 0.35-0.85 (eased
++      // target + is-future-shrinking at 0.83), header top 0.5 px (.pain is-pain-dark).
++      scbOff = shrinkOffMq.matches,
++      scbPoke = !1,
++      scbDirty = !0,
++      scbHero = -1,
++      scbG = scbGate(
++        () => {
++          let e = document.querySelector(`.hero-track`),
++            t = window.innerHeight || 1,
++            n = (-0.72 * Math.max(1, (e ? e.getBoundingClientRect().height : 0) - t)) / t;
++          return [
++            [e, !0, n - scbM, n + scbM],
++            [g, !1, 0.35 - scbM, 0.85 + scbM],
++            [v, !0, -scbM, scbM],
++          ];
++        },
++        () => (scbPoke ? (i ||= window.requestAnimationFrame(l)) : (scbDirty = !0)),
++      ),
++      scbSync = () => {
++        ((scbOff = shrinkOffMq.matches), (scbDirty = !0), scbOff ? scbG.on() || scbG.start() : scbG.stop());
++      },
+       l = () => {
+-        i = 0;
++        ((i = 0), (scbPoke = scbDirty = !1));
+         let n = document.querySelector(`.hero-track`);
+         if (n) {
+           let t = n.getBoundingClientRect(),
+             r = Math.max(1, t.height - window.innerHeight),
+             i = Math.min(r, Math.max(0, -t.top));
+-          z(y, e.matches || i / r >= 0.72, !0);
++          (z(y, e.matches || i / r >= 0.72, !0),
++            scbHero !== (scbHero = r / (window.innerHeight || 1)) && scbG.on() && scbG.start());
+         } else z(y, !0);
+         if (g) {
+           let t = T(g.getBoundingClientRect(), window.innerHeight),
+             n = e.matches ? +(t >= 0.5) : w(t);
++          // Phones/tablets: --future-shrink has no visible effect, so don't write it and don't
++          // keep an easing rAF loop alive. Track the target so a switch to desktop starts from it.
++          if (shrinkOffMq.matches) ((o = n), z(b, t > 0.04));
++          else
+           ((o += (n - o) * (e.matches ? 1 : 0.22)),
+             Math.abs(n - o) < 8e-4 && (o = n),
+             h.style.setProperty(`--future-shrink`, String(o)),
+-            z(b, t > 0.04),
++            // [double-drive] keep .is-future-shrinking while the eased value is still above the class's threshold
++            // (0.004672 = w(0.04)), so a fast scroll up drops it only once the card is back at scale ~1 instead of
++            // handing a 0.96 scale to the 0.9 s transition. At rest o = w(t), so the class is t > 0.04 as before.
++            z(b, t > 0.04 || o > 0.004672),
+             Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
+         }
+         let r = document.querySelector(`.pain`);
+@@ -11325,8 +12303,13 @@
+         }
+       },
+       u = () => {
+-        i ||= window.requestAnimationFrame(l);
++        (fwCheck(), (i ||= window.requestAnimationFrame(l)));
+       },
++      // [scroll-cb-phone, carried onto v8] the gate skips only the job's rAF; rest-script's jump check (fwCheck: a
++      // cached box, no layout read) still runs on every scroll/resize frame, as it does in v8
++      scbU = () => {
++        ((scbPoke = !0), !scbOff || scbDirty || scbG.near() ? u() : fwCheck());
++      },
+       f = (e) =>
+         new Promise((t) => {
+           let r = window.setTimeout(() => {
+@@ -11337,37 +12320,67 @@
+         }),
+       p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
+       m = (e) => {
+-        if (((c = e), e || z(S, !1), e)) {
++        // [rest-script] the original's state freezes while the scene is paused: write it now (the row is far away)
++        // so that a jump straight onto the row paints the frozen state, as the original does
++        if (((c = e), e || (fwSetS(!1), fwNear || z(x, fwX)), e)) {
+           for (let e of r) e();
+           r.length = 0;
+         }
+       },
+       _ = async () => {
+         if (!e.matches)
+-          for (; !a;) {
++          for (
++            fwIO = new IntersectionObserver(fwNearChange, { rootMargin: `50% 0px` }),
++              fwIO.observe(me),
++              (fwRO = new ResizeObserver(() => {
++                let e = me.getBoundingClientRect();
++                ((fwTop = e.top + window.scrollY), (fwH = e.height), fwCheck());
++              })),
++              fwRO.observe(document.documentElement);
++            !a;
++          ) {
+             if ((await p(), a || (await f(800), a))) return;
+             if (c) {
+-              if ((z(S, !0), await f(220), a)) return;
++              if ((fwSetS(!0), await f(220), a)) return;
+               if (!c) {
+-                z(S, !1);
++                fwSetS(!1);
+                 continue;
+               }
+-              (z(x, (s(x) + 1) % d.length), z(S, !1));
++              (fwSetX((fwX + 1) % d.length), fwSetS(!1));
+             }
+           }
+       },
+-      C = dE(u, { deferRendering: !0, element: h, onActiveChange: m });
++      C = dE(scbU, {
++        deferRendering: !0,
++        element: h,
++        // [scroll-cb-phone] leaving the scene gate: the frame's dE call still runs the job once, as before
++        onActiveChange: (e) => {
++          (e || (scbPoke && u()), (scbPoke = !1), m(e));
++        },
++      });
+     return (
+       e.addEventListener(`change`, u),
+       t.addEventListener(`change`, u),
++      shrinkOffMq.addEventListener(`change`, u),
++      shrinkOffMq.addEventListener(`change`, scbSync),
++      window.addEventListener(`resize`, scbSync, { passive: !0 }),
+       _(),
+       l(),
++      scbOff && scbG.start(),
+       () => {
+         a = !0;
+         for (let e of r) e();
+         ((r.length = 0), i && window.cancelAnimationFrame(i));
++        (fwIO?.disconnect(), fwRO?.disconnect(), fwR && window.cancelAnimationFrame(fwR), fwClk?.cancel());
+         for (let e of n) window.clearTimeout(e);
+-        ((n.length = 0), C(), e.removeEventListener(`change`, u), t.removeEventListener(`change`, u));
++        ((n.length = 0),
++          C(),
++          e.removeEventListener(`change`, u),
++          t.removeEventListener(`change`, u),
++          shrinkOffMq.removeEventListener(`change`, u),
++          shrinkOffMq.removeEventListener(`change`, scbSync),
++          window.removeEventListener(`resize`, scbSync),
++          scbG.stop());
+       }
+     );
+   });
+@@ -11419,11 +12432,15 @@
+         i = V(r, 2),
+         a = V(i, 2),
+         o = V(a, 2);
++      /* st5: the 5 slots stay mounted for the page's life; x+1 updates src in place and S toggles
++         .is-sliding on the carousel (the slide runs on permanently layered imgs, see CSS), so neither
++         tick inserts/removes renderers or gains/loses layers */
+       (l(
+-        (e, t, s, c, l) => {
+-          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
++        (a0, a1, a2, a3, a4, sl) => {
++          (k(n, `src`, a0), k(r, `src`, a1), k(i, `src`, a2), k(a, `src`, a3), k(o, `src`, a4));
++          me.classList.toggle(`is-sliding`, sl);
+         },
+-        [() => E(0), () => E(1), () => E(2), () => E(3), () => E(4)],
++        [() => E(0), () => E(1), () => E(2), () => E(3), () => E(4), () => s(S)],
+       ),
+         f(e, t));
+     },
+@@ -11443,7 +12460,7 @@
+         f(e, t));
+     };
+   (m(he, (e) => {
+-    s(S) ? e(ge) : e(_e, -1);
++    e(ge); /* st5: always the persistent 5-slot block (the keyed 4-img `_e` branch is never used) */
+   }),
+     M(me));
+   var ve = V(me, 2),
+@@ -11994,28 +13011,41 @@
+   ne(() => {
+     let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
+       t = 0,
+-      n = 0;
++      n = 0,
++      // [rest-script] the last four rounded values written to p: a frame whose rounded values are all unchanged
++      // skips the write (it would only make a new proxy object and re-run the text effects to write nothing).
++      fwLast = ``;
+     function r() {
+       if (e) {
+         z(p, i, !0);
+         return;
+       }
+       (z(p, { earnedK: 0, orders: 0, rehires: 0, reviews: 0 }, !0),
++        (fwLast = `0,0,0,0`),
+         (n = window.setTimeout(() => {
+           let e = 0,
+             n = (r) => {
+               e ||= r;
+-              let a = m(Math.min(1, (r - e) / 1080));
+-              (z(
+-                p,
+-                {
+-                  earnedK: Math.round(i.earnedK * a),
+-                  orders: Math.round(i.orders * a),
+-                  rehires: Math.round(i.rehires * a),
+-                  reviews: Math.round(i.reviews * a),
+-                },
+-                !0,
+-              ),
++              let a = m(Math.min(1, (r - e) / 1080)),
++                fwV = [
++                  Math.round(i.earnedK * a),
++                  Math.round(i.orders * a),
++                  Math.round(i.rehires * a),
++                  Math.round(i.reviews * a),
++                ],
++                fwK = fwV.join(`,`);
++              (fwK !== fwLast &&
++                ((fwLast = fwK),
++                z(
++                  p,
++                  {
++                    earnedK: fwV[0],
++                    orders: fwV[1],
++                    rehires: fwV[2],
++                    reviews: fwV[3],
++                  },
++                  !0,
++                )),
+                 a < 1 && (t = requestAnimationFrame(n)));
+             };
+           t = requestAnimationFrame(n);
+@@ -12197,14 +13227,9 @@
+     let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
+       t = !1,
+       n = 0,
++      // [platform-idle G1] no <animate> to begin: .is-active starts the glint's CSS animation
+       r = () => {
+-        (z(v, !0),
+-          y().then(() => {
+-            for (let e of d.querySelectorAll(`animate`))
+-              try {
+-                e.beginElement();
+-              } catch {}
+-          }));
++        z(v, !0);
+       },
+       i = () => {
+         (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
+@@ -12243,26 +13268,16 @@
+         a = e(r),
+         u = e(a),
+         d = e(u),
+-        p = V(e(d), 6),
+-        h = (e) => {
+-          var t = DM(),
+-            r = O(t);
+-          (k(r, `keyTimes`, i), k(r, `dur`, `5s`));
+-          var a = V(r);
+-          (k(a, `keyTimes`, i),
+-            k(a, `dur`, `5s`),
+-            l(() => {
+-              (k(r, `values`, o[n]), k(a, `values`, c[n]));
+-            }),
+-            f(e, t));
+-        };
+-      (m(p, (e) => {
+-        s(v) && e(h);
+-      }),
+-        M(d),
+-        M(u));
++        p = V(e(d), 6);
++      // [platform-idle G1] the <animate> pair (DM) is no longer mounted; the if block stays (renders nothing,
++      // as in SSR) so hydration walks the same markers. The glint is a span appended next to the svg (not in
++      // the template, so SSR markup and hydration are unchanged): a clipped, fixed 0..120 gradient strip that
++      // slides as a CSS transform while .is-active (2.gBuqKVzi.css "platform-idle G1").
++      (m(p, (e) => {}), M(d), M(u));
+       var g = V(u);
+-      let _;
++      var G = document.createElement(`span`);
++      G.innerHTML = `<svg viewBox="0 0 120 1" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="secure-network-glint-${n}" gradientUnits="userSpaceOnUse" x1="0" x2="120" y1="0" y2="0"><stop offset="0%" stop-color="#84b5ff" stop-opacity="0"></stop><stop offset="20%" stop-color="#84b5ff" stop-opacity="1"></stop><stop offset="40%" stop-color="#0569ff" stop-opacity="1"></stop><stop offset="60%" stop-color="#ae8eff" stop-opacity="1"></stop><stop offset="80%" stop-color="#ffcca5" stop-opacity="1"></stop><stop offset="100%" stop-color="#ffcca5" stop-opacity="0"></stop></linearGradient></defs><rect width="120" height="1" fill="url(#secure-network-glint-${n})"></rect></svg>`;
++      let _, P;
+       (M(a),
+         M(r),
+         l(() => {
+@@ -12273,8 +13288,12 @@
+             (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
+               "is-active": s(v),
+             })),
++            (P = U(G, 1, `start-selling-platform-secure-network-dash-glint`, null, P, {
++              "is-active": s(v),
++            })),
+             k(g, `stroke`, `url(#secure-network-dash-${n})`));
+         }),
++        r.appendChild(G),
+         f(t, r));
+     },
+   );
+@@ -12433,21 +13452,56 @@
+   ne(() => {
+     let e = 0,
+       t = matchMedia(`(prefers-reduced-motion: reduce)`),
++      // Same query as the CSS rule that forces --platform-shrink-scale: 1 / radius 0 / transform: none.
++      shrinkOffMq = matchMedia(
++        `(max-width: 860px), (max-device-width: 500px), (hover: none) and (pointer: coarse) and (max-width: 1200px)`,
++      ),
++      // [scroll-cb-phone] phone path gate (see scbGate): is-platform-shrinking flips at card bottom 0.83
++      scbOff = shrinkOffMq.matches,
++      scbPoke = !1,
++      scbDirty = !0,
++      scbG = scbGate(
++        () => [[c, !1, 0.83 - scbM, 0.83 + scbM]],
++        () => (scbPoke ? (e ||= requestAnimationFrame(n)) : (scbDirty = !0)),
++      ),
++      scbSync = () => {
++        ((scbOff = shrinkOffMq.matches), (scbDirty = !0), scbOff ? scbG.on() || scbG.start() : scbG.stop());
++      },
+       n = () => {
+-        e = 0;
++        ((e = 0), (scbPoke = scbDirty = !1));
+         let n = c.getBoundingClientRect(),
+           r = innerHeight * 0.85,
+           i = innerHeight * 0.35,
+           a = n.bottom >= r ? 0 : n.bottom <= i ? 1 : (r - n.bottom) / (r - i);
+-        (z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
++        // Phones/tablets: the inline --platform-shrink has no visible effect; skip the per-frame
++        // style-attribute rewrite. is-platform-shrinking (background colour) stays live.
++        (shrinkOffMq.matches || z(u, t.matches ? +(a >= 0.5) : p(a), !0), z(d, a > 0.04));
+       },
+       r = () => {
+         e ||= requestAnimationFrame(n);
++      },
++      scbR = () => {
++        ((scbPoke = !0), (!scbOff || scbDirty || scbG.near()) && r());
+       };
+-    n();
+-    let i = dE(r, { deferRendering: !0, element: o });
++    (n(), scbOff && scbG.start());
++    let i = dE(scbR, {
++      deferRendering: !0,
++      element: o,
++      // [scroll-cb-phone] leaving the scene gate: the frame's dE call still runs the job once, as before
++      onActiveChange: (t) => {
++        (t || (scbPoke && r()), (scbPoke = !1));
++      },
++    });
++    (shrinkOffMq.addEventListener(`change`, r),
++      shrinkOffMq.addEventListener(`change`, scbSync),
++      window.addEventListener(`resize`, scbSync, { passive: !0 }));
+     return () => {
+-      (e && cancelAnimationFrame(e), i());
++      (e && cancelAnimationFrame(e),
++        i(),
++        scbG.stop(),
++        shrinkOffMq.removeEventListener(`change`, r),
++        shrinkOffMq.removeEventListener(`change`, scbSync),
++        window.removeEventListener(`resize`, scbSync));
+     };
+   });
+   var h = WM();
+@@ -12652,6 +13706,7 @@
+               "is-secure-mesh": s(r).id === `document`,
+             })));
+         }),
++        PMsweepGate(i),
+         f(n, i));
+     },
+   ),
+@@ -12879,7 +13934,7 @@
+     `<div class="start-selling-morph-panel"><div class="start-selling-morph-backdrop" aria-hidden="true"></div> <div class="start-selling-morph-veil" aria-hidden="true"></div> <div class="start-selling-morph-center"><p class="start-selling-morph-title"> </p> <div class="waitlist-closing-countdown svelte-1dcozpm"><!></div> <div class="start-selling-morph-cta-stack svelte-1dcozpm"><button class="start-selling-morph-cta" type="button"><svg class="solar solar-bell-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M18.7491 9.70957V9.00496C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00496V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z" stroke="currentColor"/><path d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19" stroke="currentColor" stroke-linecap="round"/></svg> </button> <a class="start-selling-morph-cta-rsvp" href="https://f.fastwork.co/demoday" target="_blank" rel="noopener" data-selenium="start-selling.header.link.demo-day"><svg class="solar solar-calendar-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor"/><path d="M7 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M2.5 9H21.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 13H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17.0234H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.0234H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.0234H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> </a></div></div> <footer class="start-selling-morph-footer"><p> </p> <div class="start-selling-morph-footer-end"><p> </p> <span class="start-selling-morph-grad" aria-hidden="true"></span> <a href="https://fastwork.com/privacy"> </a></div></footer></div>`,
+   ),
+   uN = h(
+-    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"> </button></div></div> <!></header>`,
++    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"><span class="start-selling-top-nav-earn-box svelte-1dcozpm"> </span></button></div></div> <!></header>`,
+   );
+ function dN(n, r) {
+   D(r, !0);
+@@ -12944,7 +13999,14 @@
+     x = N(0),
+     w = 0,
+     T,
+-    E = R(() => s(x) > 0.001),
++    // nav-earn rev 3 (F-243): was `> 0.001`. The morph tween (ZM, ease-out cubic over 680 ms) ends on exactly its
++    // target, but on the close it spends its last ~68 ms between 0.001 and 0, where the bar's :not(.is-morphing)
++    // width / background transitions came back on and restarted about 5 times for sub-pixel changes. `> 0` keeps
++    // .is-morphing (transition: none) until the tween's done frame sets 0.
++    E = R(() => s(x) > 0),
++    /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
++    JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
++    __cdPanelShown = R(() => JM(s(x)) > 0.08),
+     O = R(() => !s(p) && !s(E)),
+     A = R(() => s(O) || s(x) > 0.55);
+   function j(e) {
+@@ -12952,17 +14014,126 @@
+       ? !1
+       : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
+   }
++  // perf(nav-hit-test): same answer as "nav pointer-events:none -> elementFromPoint -> restore", but
++  // without the two inline-style writes (each invalidated the style of the whole nav subtree and forced
++  // a recalc inside the scroll frame). elementsFromPoint lists every hit box top-down; skip the nav's
++  // own boxes except those that stay hit-testable under pointer-events:none on the nav because they set
++  // pointer-events:auto themselves (.start-selling-top-nav-actions, the expanded .start-selling-morph-panel).
+   function F() {
+     let e = T.getBoundingClientRect(),
+       t = e.left + e.width / 2,
+-      n = e.top + Math.min(e.height, 64) / 2,
+-      r = T.style.pointerEvents;
+-    T.style.pointerEvents = `none`;
+-    let i = document.elementFromPoint(t, n);
+-    return ((T.style.pointerEvents = r), j(i));
++      n = e.top + Math.min(e.height, 64) / 2;
++    for (let r of document.elementsFromPoint(t, n))
++      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
++    return j(null);
+   }
++  // perf(nav-hit-cache): the viewport y of F()'s probe point (nav is fixed), measured with the offsets
++  function __navProbeY() {
++    if (!T) return 32;
++    let e = T.getBoundingClientRect();
++    return e.top + Math.min(e.height, 64) / 2;
++  }
++  // perf(nav-hit-cache): the nav element. Inside the scroll effect below, `T` is the morph spring step (a local
++  // that shadows the component's bound nav element), so the effect reaches the nav through this function.
++  function __navNode() {
++    return T;
++  }
++  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
++  let __navEls = {};
++  function __navEl(e) {
++    let t = __navEls[e];
++    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
++  }
++  // nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button's original reveal and hide, drawn without layout.
++  // The button and the gap before it keep their full size in the layout (CSS). When the button's state changes
++  // (shown <-> hidden: the hero pill at the top, .is-earn-hidden at the end of the page), one Web Animation per
++  // element plays the original's geometry, sampled from its own formula: width w(e) = min(label + 2P * e, M * e)
++  // (P padding, M max-width), gap G * e (at the top only; at the end of the page the original closed the gap with
++  // --morph, kept in CSS), e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, started at the original's
++  // trigger (hero progress 0.72 at the top; morph 0.2 going in and 0 coming back at the end of the page, which is
++  // when the original's per-frame restarted transitions settle into one). Animated: translate (button, language
++  // switch) and clip-path (the pill box), nothing that needs layout. A reversal mid-way starts from the current
++  // point and takes the shortened time a reversed CSS transition takes. Sizes come from a ResizeObserver (W, P, M,
++  // G), never read at the flip, so the flip forces no layout. No script runs per frame.
++  let __ewOn = null,
++    __ewPill = null,
++    __ewA = null,
++    __ewRO = null,
++    __ewWr = null,
++    __ewW = 0,
++    __ewP = 24,
++    __ewM = 176,
++    __ewG = 8,
++    __ehV = !1;
++  const __ewBz = ((x1, y1, x2, y2) => {
++    let X = (t) => ((1 + 3 * x1 - 3 * x2) * t * t + (3 * x2 - 6 * x1) * t + 3 * x1) * t,
++      Y = (t) => ((1 + 3 * y1 - 3 * y2) * t * t + (3 * y2 - 6 * y1) * t + 3 * y1) * t;
++    return (x) => {
++      if (x <= 0) return 0;
++      if (x >= 1) return 1;
++      let lo = 0,
++        hi = 1,
++        t = x;
++      for (let i = 0; i < 30; i++) {
++        let v = X(t);
++        if (Math.abs(v - x) < 1e-6) break;
++        v < x ? (lo = t) : (hi = t);
++        t = (lo + hi) / 2;
++      }
++      return Y(t);
++    };
++  })(0.33, 0, 0.2, 1);
++  function __ewWrap() {
++    return __ewWr?.isConnected ? __ewWr : (__ewWr = ie?.querySelector(`:scope > .start-selling-language-switch-wrap`));
++  }
++  function __ewMeasure() {
++    if (!oe?.isConnected) return;
++    let w = oe.offsetWidth;
++    ((__ewM = parseFloat(getComputedStyle(oe).maxWidth) || w),
++      (__ewP = parseFloat(getComputedStyle(__ewBox).paddingLeft) || 0),
++      (__ewG = parseFloat(getComputedStyle(ie).columnGap) || 0));
++    w !== __ewW && ((__ewW = w), ie.style.setProperty(`--earn-w`, `${w}px`));
++  }
++  // .is-earn-hidden: on at morph >= 0.2 (where the original's width / opacity targets reach 0), off at morph 0
++  function __ewEh(m) {
++    return (__ehV = m >= 0.2 ? !0 : m <= 0 ? !1 : __ehV);
++  }
++  function __ewGo(on, pill) {
++    (!__ewRO && typeof ResizeObserver == `function` && oe && ((__ewRO = new ResizeObserver(__ewMeasure)), __ewRO.observe(oe)));
++    let was = __ewPill;
++    __ewPill = pill;
++    if (__ewOn === on) return;
++    let first = __ewOn === null,
++      e0 = on ? 0 : 1;
++    __ewOn = on;
++    if (__ewA) {
++      let t = __ewA.a[0]?.currentTime;
++      (t != null && t < __ewA.d && (e0 = __ewA.e0 + (__ewA.e1 - __ewA.e0) * __ewBz(t / __ewA.d)),
++        __ewA.a.forEach((t) => t.cancel()),
++        (__ewA = null));
++    }
++    let e1 = on ? 1 : 0,
++      d = 680 * Math.abs(e1 - e0),
++      wr = __ewWrap(),
++      W = __ewW;
++    if (first || !W || d < 1 || !oe.animate || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches) return;
++    let gap = pill || was,
++      kb = [],
++      kx = [],
++      kw = [];
++    for (let i = 0; i <= 24; i++) {
++      let e = e0 + (e1 - e0) * __ewBz(i / 24),
++        w = Math.min(W - 2 * __ewP * (1 - e), __ewM * e),
++        X = (W - w) / 2;
++      (kb.push({ translate: `${X}px 0` }),
++        kx.push({ clipPath: `inset(0px ${X}px round 999px)` }),
++        kw.push({ translate: `${W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
++    }
++    let o = { duration: d, easing: `linear` };
++    __ewA = { e0, e1, d, a: [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)].filter(Boolean) };
++  }
+   function ee() {
+-    let e = document.querySelector(`.start-selling-profile-sticky`);
++    let e = __navEl(`.start-selling-profile-sticky`);
+     if (!e) return !1;
+     let t = window.getComputedStyle(e);
+     if (t.position !== `sticky`) return !1;
+@@ -12997,17 +14168,144 @@
+           (window.clearTimeout(l), f());
+       };
+     e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
++    // perf(nav-hit-cache): the nav state (profile-sticky hidden, on-dark theme, hero pill) used to cost a
++    // getComputedStyle + 4 rect reads + an elementsFromPoint hit test on every scroll frame. Now the document
++    // offsets are measured once (__nsMeasure: ResizeObserver on the page root, breakpoint MQ, fonts.ready,
++    // resize) and each frame derives the state from the scroll position captured in the scroll event:
++    // - hero pill: (scrollY - trackTop) >= 0.72 * max(1, trackHeight - innerHeight), the same formula;
++    // - profile sticky: no reads where it can't be stuck (phones: not sticky at all; desktop: outside a window
++    //   around the section); inside the window the same two rect reads as ee(), minus its getComputedStyle;
++    // - theme: the real hit test F() runs only in frames where the probe line crosses a cached section edge
++    //   (+-12 px), inside a section whose shrink/enter class is on (sticky + scaled content moves the hit
++    //   boundary without layout), after any class change on the theme sections, while the morph is active,
++    //   and after a re-measure; otherwise the last answer stands.
++    let __nsY = window.scrollY,
++      __nsVh = window.innerHeight,
++      __nsGeo = null,
++      __nsG = !1,
++      __nsPy = NaN,
++      __nsForce = !0,
++      // perf(nav-hit-cache): running CSS transitions that can move a hit boundary in the theme sections, as target ->
++      // set of property names (transitionrun adds, transitionend/cancel removes; a section target's last end re-measures
++      // the edges: they were measured mid-move, e.g. the future card's reveal). Replaces N12 v5's 1 s re-test timer.
++      __nsTr = new Map(),
++      __nsTail = 0,
++      __nsTrSel = `.hero-track, .hero, .commission, .start-selling-future, .start-selling-platform, .pain`,
++      // paint-only properties never move a hit-test box (opacity-0 boxes still hit); everything else counts
++      __nsPaint =
++        /^(color|background(-color|-image|-position|-size)?|opacity|box-shadow|text-shadow|filter|backdrop-filter|-webkit-backdrop-filter|border(-[a-z]+)?-color|outline-color|fill|stroke|caret-color|text-decoration-color|--)/,
++      __nsTrRun = (e) => {
++        let t = e.target;
++        if (!(t instanceof Element) || __nsPaint.test(e.propertyName) || !(t === __navNode() || t.closest(__nsTrSel))) return;
++        let n = __nsTr.get(t);
++        (n || __nsTr.set(t, (n = new Set())), n.add(e.propertyName));
++      },
++      __nsTrEnd = (e) => {
++        let t = __nsTr.get(e.target);
++        t && (t.delete(e.propertyName), t.size || (__nsTr.delete(e.target), e.target === __navNode() || (__nsGeo = null)), (__nsTail = 1));
++      },
++      __nsMq = window.matchMedia(`(width >= 861px) and (prefers-reduced-motion: no-preference)`),
++      __nsOnScroll = () => {
++        __nsY = window.scrollY;
++      },
++      __nsOnResize = () => {
++        ((__nsVh = window.innerHeight), (__nsY = window.scrollY), (__nsGeo = null));
++      },
++      __nsInvalidate = () => {
++        __nsGeo = null;
++      },
++      __nsMeasure = () => {
++        let y = window.scrollY,
++          R = (e) => {
++            let t = e.getBoundingClientRect();
++            return { t: t.top + y, b: t.bottom + y };
++          },
++          n = { track: null, prof: null, edges: [], probe: 32, zones: [], cls: [...document.querySelectorAll(`.commission, .start-selling-future, .start-selling-platform, .pain`)], sig: `` },
++          r = __navEl(`.hero-track`),
++          i = __navEl(`.start-selling-profile-sticky`);
++        if (((__nsY = y), (__nsVh = window.innerHeight), r)) {
++          let e = R(r);
++          n.track = { t: e.t, h: e.b - e.t };
++        }
++        if (i) {
++          let e = window.getComputedStyle(i),
++            t = i.closest(`#profile-showcase, .start-selling-profile`);
++          // the sticky profile sits inside .start-selling-future-card, which is translated/scaled by scroll-driven
++          // transforms (and transitions), so ee() compares *visual* rects: no closed form matches it. Keep the
++          // real rect test, but only in a window around the section (transform shift < 0.1 x card height,
++          // ~340 px on desktop); outside it ee() is false. On phones the profile is not sticky: no reads at all.
++          // The window starts from the section top, not the sticky's own rect: a re-measure while it is stuck
++          // (mid-scroll, e.g. a deferred section rendering) would give its stuck position.
++          if (e.position === `sticky` && t) {
++            let a = R(t),
++              o = Math.max(window.innerHeight, 600);
++            n.prof = { e: i, s: t, T: Number.parseFloat(e.top), lo: a.t - Number.parseFloat(e.top) - o, hi: a.b + o };
++          }
++        }
++        for (let e of document.querySelectorAll(
++          `.hero-track, .commission, .commission-card, .start-selling-future-card, .pain, .start-selling-platform-card, .start-selling-platform`,
++        )) {
++          let t = R(e);
++          n.edges.push(t.t, t.b);
++        }
++        // moving zones: inside these sections the hit boundary moves with sticky children and scroll-driven
++        // scale transforms (no layout, no ResizeObserver), so the real hit test runs every frame there while
++        // a shrink/enter class is on
++        for (let e of n.cls) e.matches(`.pain`) || n.zones.push({ e, ...R(e) });
++        ((n.probe = __navProbeY()), n.edges.sort((e, t) => e - t), (__nsGeo = n), (__nsForce = !0));
++      },
++      __nsEE = (e) => {
++        let t = __nsGeo.prof;
++        if (!t || !Number.isFinite(t.T) || e < t.lo || e > t.hi) return !1;
++        let n = t.e.getBoundingClientRect(),
++          r = t.s.getBoundingClientRect();
++        return n.top <= t.T + 1 && r.bottom > n.bottom + 1;
++      },
++      __nsCross = (e, t) => {
++        let n = Math.min(e, t) - 12,
++          r = Math.max(e, t) + 12;
++        for (let e of __nsGeo.edges) {
++          if (e > r) return !1;
++          if (e >= n) return !0;
++        }
++        return !1;
++      };
+     let _ = () => {
+-        (z(v, ee(), !0), z(g, F(), !0));
+-        let t = document.querySelector(`.hero-track`);
++        __nsGeo || __nsMeasure();
++        let n = __nsY,
++          r = n + __nsGeo.probe,
++          a = ``,
++          o = !1;
++        // theme classes (shrinking, entering, ...) are toggled by other engine callbacks in the same frame:
++        // compare the class names directly (no layout) instead of waiting for a MutationObserver microtask
++        for (let e of __nsGeo.cls) a += e.className + `|`;
++        // the nav's own classes too (scroll-hidden, hero pill, expanded: they move or resize the probe box)
++        (a += __navNode()?.className ?? ``);
++        for (let e of __nsGeo.zones)
++          if (r >= e.t - 12 && r <= e.b + 12 && /shrink|enter/.test(e.e.className)) {
++            o = !0;
++            break;
++          }
++        (a !== __nsGeo.sig && ((__nsGeo.sig = a), (__nsForce = !0)), z(v, __nsEE(n), !0));
++        // perf(nav-hit-cache): a transition target removed mid-flight never sends transitionend: drop it
++        for (let e of __nsTr.keys()) e.isConnected || __nsTr.delete(e);
++        // the real hit test runs only when the answer can have changed: a forced frame (re-measure, theme class
++        // change), the probe line crossing a cached edge, a moving zone, the morph, a running geometry transition
++        // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
++        let __h =
++          __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
++        (__nsTail > 0 && __nsTail--,
++          // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
++          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
++          (__nsPy = r),
++          z(g, __nsG, !0));
++        let t = __nsGeo.track;
+         if (!t || e.matches) {
+           z(p, !0);
+           return;
+         }
+-        let n = t.getBoundingClientRect(),
+-          r = Math.max(1, n.height - window.innerHeight),
+-          i = Math.min(r, Math.max(0, -n.top));
+-        z(p, i / r >= 0.72);
++        let i = Math.max(1, t.h - __nsVh);
++        z(p, n - t.t >= 0.72 * i);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
+       S = () => {
+@@ -13017,13 +14315,179 @@
+         (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
+       },
+       C = () => w > 0.001 || r > 0.001,
++      // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
++      // the end can't overscroll the page underneath the morph (one style write per morph start/end)
++      __osbV = ``,
++      __osb = () => {
++        let e = C() ? `none` : ``;
++        e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
++      },
++      // perf(morph-scroll, PROPOSAL): on touch phones the end-of-page morph follows the scroll position instead of
++      // the jack. No non-passive touchmove (N) and no scrollTo pin (L): the page scrolls by itself. One extra screen
++      // of scroll (.fw-ms-end, inserted after #platform) holds #platform in place with position: sticky, and the
++      // morph value is how far the page has scrolled into that screen (0..1), written through __navMorphSet (the
++      // same writes the spring T makes per frame: r/x, then S()). Proximity snap at both ends of that screen.
++      // Desktop, reduced motion and screens wider than 600 px keep the jack.
++      __msOn =
++        !e.matches &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
++      __msEnd = null,
++      __msP = -1,
++      __msRO = null,
++      // rev 4: no CSS scroll snap (any snap point on the root makes iOS use fast deceleration for the whole page,
++      // WebKit RemoteScrollingCoordinatorProxyIOS::shouldSetScrollViewDecelerationRateFast). Instead, once the finger
++      // is up and the scroll has come to rest (no scroll for 200 ms) with the morph part open, a smooth scroll
++      // finishes it to an end: open when the last move was opening and p >= 0.3, or closing and p >= 0.7 (0.5 if no
++      // move was seen). The morph follows that scroll like any other.
++      // rev 6: waiting for the rest took 3-5 s after a slow swipe (iOS momentum creeps on for seconds). Now, once the
++      // finger is up, the commit happens as soon as the scroll is slow (|v| < 0.5 px/ms, the momentum tail) or at
++      // lift-off when the finger was still; a fast fling keeps its momentum until it leaves the extra screen or slows.
++      // The 200 ms rest timer stays as the fallback (e.g. a scripted scroll). One commit per lift-off (__msGo).
++      // The open/closed choice uses the position 200 ms ahead at the current speed (rev 6b; 500 ms since rev 6d).
++      // rev 6c: waiting for |v| < 0.5 still took 0.6-0.9 s after a 300 px swipe on the phone; inside the extra screen
++      // the commit now happens at lift-off itself (a lift outside it commits once the momentum enters it and slows).
++      // rev 6d: a 200 ms look-ahead sent a slow pull from open (lifted at 0.755) back to open against its momentum.
++      __msY = -1,
++      __msDir = 0,
++      __msTouch = 0,
++      __msTO = 0,
++      __msV = 0,
++      __msT = 0,
++      // rev 7: a fast short flick that barely moved the page before lift-off has no known speed: the first scroll frame
++      // after a rest has no fresh previous sample, so rev 6 read it as v = 0 and committed with q = p, sending a flick
++      // from closed back to closed (and from open back to open); and one or two touch frames under-read a short flick's
++      // speed. Now __msVk counts fresh samples since the last rest or touchstart (the first one seeds v instead of
++      // averaging with 0), __msDy keeps the last move, and a lift while the page moves is a flick that goes where it
++      // points (>= 0.3 px/ms, or one fresh move of >= 3 px), like a paging UIScrollView; a slow or held release decides on
++      // the look-ahead as before. A lift at rest at an end (nothing to commit) lets the first glide frame with a known
++      // speed decide (__msLift 2). A fast glide (|v| >= 0.5) whose look-ahead passes the end it is heading for (q >= 1
++      // opening, q <= 0 closing) keeps the iOS momentum (no scrollTo); if it stops short, the slow-tick rule or the 200 ms
++      // rest timer still commits.
++      __msVk = 0,
++      __msDy = 0,
++      // rev 7b (the user's own fast short swipes, C-049): (1) the page scrolls only after the touchend (async
++      // scrolling), so at lift-off a flick looks like a page at rest, and at an end with Safari's toolbar shown the
++      // page rests 40 px (p 0.95 / 0.05) off the end, where the position rule sent a close flick back to open. Now the
++      // finger itself is read (passive touchmove: __msFv px/ms, + = finger up = opening): a finger still moving at
++      // lift-off (last move < 50 ms before the touchend, >= 0.3 px/ms) commits in its direction when that end is >= 0.1
++      // away (a flick out of the extra screen, or toward the end it is at, is left to the rules below). (2) a commit is
++      // kept (__msWant: 1 open, 0 closed, -1 none; for 1.5 s or until reached, cleared at touchstart, so a later
++      // scripted or link scroll is never pulled back): when the scroll comes to rest short of it (on the phone
++      // something knocked the smooth scroll back while the toolbar moved, cause UNRESOLVED), the rest timer aims at it
++      // again (2 tries) instead of deciding anew from the position. (3) a flick's direction is the sign of the smoothed
++      // speed, not of the last frame's step. A finger move > 50 ms after the previous one starts a new finger speed.
++      __msFy = 0,
++      __msFt = 0,
++      __msFv = 0,
++      __msFn = 0,
++      __msFl = 0,
++      __msWant = -1,
++      __msWt = 0,
++      __msTry = 0,
++      __msLift = 0,
++      __msGo = 0,
++      __msArm = () => {
++        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __msSettle()), 200)));
++      },
++      __msSettle = () => {
++        if (!__msEnd || __msTouch || __msGo) return;
++        let t = __msEnd.offsetHeight,
++          n = document.documentElement.scrollHeight - window.innerHeight,
++          e = t > 0 ? (window.scrollY - (n - t)) / t : 0,
++          // decide on where the momentum would take the scroll: + 500 ms of travel at the current speed (iOS momentum
++          // travels about v x 500 ms: UIScrollView normal deceleration 0.998/ms; rev 4 G records 340-640 ms), so a
++          // quick flick up at 0.28 opens and a slow pull from open to 0.75 closes; a stale speed (> 100 ms old) counts as 0
++          // f: the page is moving now; k: a flick (>= 0.3 px/ms, or one fresh move of >= 3 px whose speed is not known
++          // yet) goes where it points, like a paging UIScrollView; a slow or held release decides on the look-ahead q
++          f = t > 0 && performance.now() - __msT < 100,
++          k = f && (__msVk ? Math.abs(__msV) >= 0.3 : Math.abs(__msDy) >= 3),
++          q = f && __msVk ? e + (500 * __msV) / t : e,
++          o = k ? (__msVk ? __msV > 0 : __msDir > 0) : q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5),
++          go = (w) => ((__msWant = w ? 1 : 0), (__msWt = performance.now()), (__msGo = 1), window.scrollTo({ top: w ? n : n - t, behavior: `smooth` }));
++        if (!(t > 0)) return;
++        // a kept commit (for 1.5 s, until reached): aim at it again if the scroll came to rest short of it (2 tries).
++        // At or past the end counts as reached: Safari's toolbar showing during a close moves the closed rest 40 px
++        // (p -0.05, still closed), and re-aiming there scrolled the page back 40 px (+0.5 s, rev 7b G run f8a).
++        if (__msWant >= 0 && performance.now() - __msWt < 1500) {
++          if (__msWant ? window.scrollY >= n - 2 : window.scrollY <= n - t + 2) return void (__msWant = -1);
++          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
++        }
++        __msWant = -1;
++        // the finger was still moving at lift-off: go where it points
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1) && ((__msLift = 0), go(__msFl > 0)));
++        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
++      },
++      __msTouchEv = (e) => {
++        let c = e.changedTouches && e.changedTouches[0],
++          s = e.timeStamp;
++        if (e.type === `touchmove`)
++          // a move > 50 ms after the last one (the finger was still) starts a new speed instead of diluting it
++          return void (
++            c &&
++            s > __msFt &&
++            (s - __msFt > 50
++              ? ((__msFv = 0), (__msFn = 0))
++              : ((__msFv = (__msFn ? 0.5 * __msFv : 0) + ((__msFn ? 0.5 : 1) * (__msFy - c.clientY)) / Math.max(1, s - __msFt)), __msFn++),
++            (__msFy = c.clientY),
++            (__msFt = s))
++          );
++        ((__msTouch = e.touches.length),
++          __msTouch
++            ? (window.clearTimeout(__msTO),
++              (__msLift = 0),
++              (__msGo = 0),
++              e.type === `touchstart` &&
++                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = c.clientY), (__msFt = s))))
++            : (__msArm(),
++              (__msLift = 2),
++              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
++              __msSettle(),
++              (__msFl = 0)));
++      },
++      __msTick = () => {
++        if (!__msEnd) return;
++        let y = window.scrollY,
++          now = performance.now();
++        (y !== __msY &&
++          (__msY >= 0 &&
++            ((__msDir = y > __msY ? 1 : -1),
++            (__msDy = y - __msY),
++            (now - __msT < 100
++              ? ((__msV = (__msVk ? 0.5 * __msV : 0) + ((__msVk ? 0.5 : 1) * (y - __msY)) / Math.max(1, now - __msT)), __msVk++)
++              : ((__msV = 0), (__msVk = 0)))),
++          (__msY = y),
++          (__msT = now)),
++          __msTouch ||
++            (__msArm(),
++            __msLift &&
++              __msVk &&
++              (__msLift > 1 || Math.abs(__msV) < 0.5) &&
++              ((__msLift = 1), __msSettle())));
++        let t = __msEnd.offsetHeight,
++          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
++        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
++        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
++        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
++          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
++      },
++      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
++      __navMorphSet = (t) => {
++        (n && window.cancelAnimationFrame(n),
++          (n = 0),
++          t > 0 && z(b, !0),
++          (w = a = i = r = t),
++          z(x, t, !0),
++          S(),
++          C() || I());
++      },
+       T = (e) => {
+         let t = ZM(i, a, e - o);
+-        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), C() || I());
++        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if (((w = t), z(b, !0), __osb(), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -13045,9 +14509,9 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+-        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
++        k(e.deltaY) && (C() || (s = __pinY()), e.preventDefault(), D(e.deltaY));
+       },
+       j = (e) => {
+         c = e.touches[0]?.clientY ?? 0;
+@@ -13055,27 +14519,58 @@
+       M = (e) => {
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+-        ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
++        ((c = t), k(n) && (C() || (s = __pinY()), e.preventDefault(), D(n)));
+       },
++      // mw10e-arm-scope (F3): the touch listeners go on #platform and the nav header instead of the window, so only
++      // those two subtrees are touch-listener targets. At the end of the page #platform fills >= 45 % of the
++      // viewport (O()) and the expanding header covers the rest as m grows, so the morph's touches start on one of
++      // them. wheel stays on the window (desktop wheel over any part of the page still drives the morph). All of
++      // them are armed once at setup, never at the IO edge.
++      __tt = [],
+       N = () => {
+         d ||
++          __msOn ||
+           ((d = !0),
+           window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
++            (t.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
++              t.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          }));
+       },
+       P = () => {
+         d &&
+           ((d = !1),
+           window.removeEventListener(`wheel`, A, !0),
+-          window.removeEventListener(`touchstart`, j, !0),
+-          window.removeEventListener(`touchmove`, M, !0));
++          __tt.forEach((t) => {
++            (t.removeEventListener(`touchstart`, j, !0), t.removeEventListener(`touchmove`, M, !0));
++          }),
++          (__tt = []));
+       },
++      // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
++      // #platform entered the 200% zone (IO below) and removed them when it left. That add is followed by the
++      // ~100 ms iPhone frame at y~1960 (observed). In WebKit's source a window wheel listener triggers a full
++      // style rebuild only when the set of event-region types changes (first wheel listener, first non-passive
++      // one, removal of the last); touch event regions are compiled out on iOS before WebKit 7625. Which listener
++      // costs the frame on the device is unresolved. They are now never removed while the effect lives, and the
++      // zone gate moved into the handlers (k(): `u`), so they act exactly when the original had them attached
++      // (u || C()).
++      // armed once at setup (page load), before any scroll.
+       I = () => {
+-        u || C() ? N() : P();
++        N();
+       },
++      // perf(morph-webkit): the pin fought iOS rubber-band at the end of the page. A morph started during the
++      // overscroll bounce stored s = scrollY > maxY (5312 vs 5220), so every frame scrollTo(s) was clamped to
++      // maxY, scrollY !== s again, and the pin re-fired: scrollY alternated 5220 <-> 5312 at ~13 fps. Now the
++      // pin target is clamped to [0, maxY], and the pin leaves the overscroll range (scrollY > maxY) alone:
++      // iOS springs back to maxY by itself.
++      __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
++      __pinY = () => Math.min(window.scrollY, __pinMax()),
+       L = () => {
+-        (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
++        if ((_(), __msOn)) return void __msTick();
++        if (!C()) return;
++        let e = window.scrollY,
++          t = __pinMax();
++        (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
+       },
+       R = y(),
+       te = R
+@@ -13086,7 +14581,77 @@
+             { rootMargin: `200% 0px` },
+           )
+         : void 0;
+-    (R && te && te.observe(R), _(), m());
++    // perf(nav-hit-cache): re-measure on layout changes (page root size: lazy images, deferred sections,
++    // mounts), breakpoints, fonts and resizes. html/body are height:100%, so the root box never grows with the
++    // content: observe the content root (.start-selling) as well. Geometry transitions in the theme sections
++    // (transitionrun .. transitionend/cancel, capture) keep the real hit test on while they run.
++    let __nsRo = new ResizeObserver(() => __nsMeasure()),
++      __nsRoot = document.querySelector(`.start-selling`);
++    (__nsRo.observe(document.documentElement),
++      __nsRoot && __nsRo.observe(__nsRoot),
++      window.addEventListener(`scroll`, __nsOnScroll, { passive: !0 }),
++      window.addEventListener(`resize`, __nsOnResize, { passive: !0 }),
++      __nsMq.addEventListener(`change`, __nsInvalidate),
++      e.addEventListener(`change`, __nsInvalidate),
++      t.addEventListener(`change`, __nsInvalidate),
++      document.addEventListener(`transitionrun`, __nsTrRun, !0),
++      document.addEventListener(`transitionend`, __nsTrEnd, !0),
++      document.addEventListener(`transitioncancel`, __nsTrEnd, !0),
++      document.fonts?.ready.then(__nsInvalidate));
++    (R && te && te.observe(R), _(), m(), N());
++    // morph-scroll setup (touch phones only): the extra screen after #platform and its height var for the sticky top
++    __msOn &&
++      R &&
++      ((__msEnd = document.createElement(`div`)),
++      (__msEnd.className = `fw-ms-end`),
++      __msEnd.setAttribute(`aria-hidden`, `true`),
++      R.after(__msEnd),
++      // passive: they never block or delay the scroll; they only tell the settle when the finger is down
++      [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
++      // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
++      // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
++      (__msRO = new ResizeObserver(() => {
++        let e = R.getBoundingClientRect().height,
++          t = document.documentElement.scrollHeight - __msEnd.offsetHeight - (__msEnd.getBoundingClientRect().top + window.scrollY);
++        R.style.setProperty(`--fw-ms-h`, `${e + (t > 0 && t < 1 ? t : 0)}px`);
++      })),
++      __msRO.observe(R),
++      // main (the page's content) grows with lazy content above; body is only one viewport tall here
++      R.parentElement && __msRO.observe(R.parentElement),
++      document.documentElement.classList.add(`fw-ms`),
++      __msTick());
++    window.__navMorphSet = __navMorphSet;
++    // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
++    // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
++    // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
++    window.__fwMorphDrive = (o = {}) => {
++      let h = o.hold ?? 2e3,
++        c = o.cycles ?? 3,
++        f = [],
++        l = performance.now(),
++        u = !0,
++        d = (e) => new Promise((t) => setTimeout(t, e)),
++        p = (e) => {
++          (f.push([Math.round(e * 10) / 10, Math.round((e - l) * 10) / 10, Math.round(window.scrollY), Math.round(r * 1e3) / 1e3]), (l = e), u && requestAnimationFrame(p));
++        };
++      return (
++        (window.__fwMD = null),
++        window.scrollTo({ top: __pinMax(), behavior: `instant` }),
++        (async () => {
++          (await d(800), requestAnimationFrame(p), await d(300));
++          for (let e = 0; e < c; e++) (C() || (s = __pinY()), E(1), await d(h), E(0), await d(h));
++          u = !1;
++          let e = (e) => {
++              let t = e.map((e) => e[1]).sort((e, t) => e - t),
++                n = (e) => (t.length ? t[Math.min(t.length - 1, Math.floor(e * t.length))] : null);
++              return { frames: t.length, gt20: t.filter((e) => e > 20).length, gt34: t.filter((e) => e > 34).length, gt50: t.filter((e) => e > 50).length, p50: n(0.5), p95: n(0.95), max: t.at(-1) ?? null };
++            },
++            t = f.slice(1),
++            n = { href: location.href, hold: h, cycles: c, all: e(t), moving: e(t.filter((e) => e[3] > 0.001 && e[3] < 0.999)), atOne: e(t.filter((e) => e[3] >= 0.999)), atZero: e(t.filter((e) => e[3] <= 0.001)), frames: f };
++          return ((window.__fwMD = JSON.stringify(n)), n);
++        })()
++      );
++    };
+     let ne = dE(L, { manageAnimations: !1 });
+     return (
+       e.addEventListener(`change`, m),
+@@ -13095,13 +14660,62 @@
+         (n && window.cancelAnimationFrame(n),
+           window.clearTimeout(l),
+           te?.disconnect(),
++          __msRO?.disconnect(),
++          __msEnd?.remove(),
++          window.clearTimeout(__msTO),
++          [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
++          document.documentElement.classList.remove(`fw-ms`),
+           P(),
+           ne(),
+           e.removeEventListener(`change`, m),
+-          t.removeEventListener(`change`, m));
++          t.removeEventListener(`change`, m),
++          __nsRo.disconnect(),
++          window.removeEventListener(`scroll`, __nsOnScroll),
++          window.removeEventListener(`resize`, __nsOnResize),
++          __nsMq.removeEventListener(`change`, __nsInvalidate),
++          e.removeEventListener(`change`, __nsInvalidate),
++          t.removeEventListener(`change`, __nsInvalidate),
++          document.removeEventListener(`transitionrun`, __nsTrRun, !0),
++          document.removeEventListener(`transitionend`, __nsTrEnd, !0),
++          document.removeEventListener(`transitioncancel`, __nsTrEnd, !0));
+       }
+     );
+   });
++  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
++  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
++  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
++  // 64px nav) and inert, and its images get their src only when the original would have mounted it (b / E).
++  // The mount waits while the user is scrolling (a scroll event in the last 300 ms): it re-arms a 300 ms timer,
++  // so a scroll that starts right after load doesn't get the mount in its first frames (Safari has no rIC).
++  let __mnt = N(!1);
++  ne(() => {
++    let e = 0,
++      t = 0,
++      o = -1e9,
++      i = () => {
++        o = performance.now();
++      },
++      n = () => {
++        performance.now() - o < 300
++          ? (t = window.setTimeout(n, 300))
++          : (window.removeEventListener(`scroll`, i), z(__mnt, !0));
++      },
++      r = () => {
++        window.requestIdleCallback
++          ? (e = window.requestIdleCallback(n, { timeout: 4e3 }))
++          : (t = window.setTimeout(n, 2e3));
++      };
++    return (
++      window.addEventListener(`scroll`, i, { passive: !0 }),
++      document.readyState === `complete` ? r() : window.addEventListener(`load`, r, { once: !0 }),
++      () => {
++        (window.removeEventListener(`load`, r),
++          window.removeEventListener(`scroll`, i),
++          e && window.cancelIdleCallback(e),
++          window.clearTimeout(t));
++      }
++    );
++  });
+   var I = uN();
+   let L, te;
+   var B = e(I),
+@@ -13116,12 +14730,28 @@
+     },
+   });
+   var oe = V(ae, 2),
+-    le = e(oe, !0);
+-  (M(oe), M(ie), M(B));
++    // nav-earn rev 3: the label sits in .start-selling-top-nav-earn-box (the dark pill), see __ew below
++    __ewBox = e(oe),
++    le = e(__ewBox, !0);
++  (M(__ewBox), M(oe), M(ie), M(B));
++  // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
++  // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
++  // children when only the header's value changes, so they kept the value from the last class flip (logo not
++  // centred, earn button not hidden, panel fade frozen). The header's writer now also writes the same value inline
++  // on each of them: the same elements restyle as R4b intended, and nothing depends on WebKit's inherit tracking.
++  // Chrome resolves the same values either way.
++  var __mkP = null,
++    __mkV = null,
++    __mkW = (v) => {
++      if (v === __mkV) return;
++      __mkV = v;
++      for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
++    };
+   var W = V(B, 2),
+     ue = (n) => {
+       var a = lN(),
+         u = e(a);
++      ((__mkP = a), __mkV !== null && a.style.setProperty(`--morph`, __mkV));
+       (_(
+         u,
+         21,
+@@ -13140,7 +14770,7 @@
+               var n = sN();
+               let r;
+               (l(() => {
+-                (k(n, `src`, s(t)[0]), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
++                (k(n, `src`, s(b) || s(E) ? s(t)[0] : void 0), (r = S(n, ``, r, { height: `${s(t)[1] ?? ``}px` })));
+               }),
+                 f(e, n));
+             },
+@@ -13157,7 +14787,16 @@
+         m = e(p, !0);
+       M(p);
+       var h = V(p, 2);
+-      (cD(e(h), { inverse: !0 }), M(h));
++      (cD(e(h), {
++        inverse: !0,
++        get active() {
++          return s(E);
++        },
++        get shown() {
++          return s(__cdPanelShown);
++        },
++      }),
++        M(h));
+       var g = V(h, 2),
+         v = e(g),
+         __ctaBellC = e(v),
+@@ -13193,7 +14832,8 @@
+         M(w),
+         M(a),
+         l(() => {
+-          (k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
++          ((a.inert = !(s(b) || s(E))),
++            k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
+             k(a, `aria-hidden`, s(x) < 0.35),
+             t(m, s(o).header.future),
+             k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
+@@ -13210,7 +14850,7 @@
+         f(n, a));
+     };
+   (m(W, (e) => {
+-    (s(b) || s(E)) && e(ue);
++    (s(b) || s(E) || s(__mnt)) && e(ue);
+   }),
+     M(I),
+     P(
+@@ -13229,9 +14869,12 @@
+           "is-locale-open": s(y),
+           "is-scroll-hidden": s(v) && !s(E),
+           "is-profile-sticky-hidden": s(v) && !s(E),
++          "is-earn-hidden": __ewEh(s(x)),
+         })),
++          __ewGo(!s(O) && !__ehV, s(O)),
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
++          __mkW(e[`--morph`]),
+           k(re, `href`, a()),
+           k(re, `aria-label`, s(o).header.home),
+           k(re, `data-selenium`, SE.header.home),
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -38,7 +38,11 @@
+   width: 100%;
+   min-height: 100%;
+   transform: scale(var(--commission-shrink-scale));
+-  transform-origin: 50% 0;
++  /* double-drive (T-157): the origin is a weight the script writes (0 = top for the enter shrink, 1 = bottom for the
++     exit shrink, in between only while both shrinks are easing). The class switch below flipped it while the eased
++     scale was still ~0.96 when scrolling back up, a 20-27 px one-frame jump; at rest the weight equals the class
++     state (see the script), and without the script it is 0, the old default. */
++  transform-origin: 50% calc(var(--fw-co-w, 0) * 100%);
+   will-change: transform, border-radius;
+   background: #fff;
+   flex: 1;
+@@ -46,9 +50,8 @@
+   position: relative;
+   overflow: clip;
+ }
+-.commission.shrinking:not(.entering) .commission-card {
+-  transform-origin: 50% 100%;
+-}
++/* double-drive (T-157): `.commission.shrinking:not(.entering) .commission-card { transform-origin: 50% 100% }` is now
++   the --fw-co-w weight on .commission-card above. */
+ .commission-runway {
+   background: #fff;
+   width: 100%;
+@@ -564,9 +567,16 @@
+   height: 12px;
+   overflow: hidden;
+ }
++/* layout-animations: the bar keeps its full width; the count-up writes --fee-progress (0-1) and the
++   fill is revealed with clip-path (same pill shape: inset round clamps like border-radius) while the
++   gradient is sized to the visible part, as it was sized to the old width. min 4px = old padding box */
+ .fee-progress > span {
++  --fee-progress-w: max(4px, calc(var(--fee-progress, 0) * 100%));
+   box-sizing: border-box;
+-  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%);
++  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%) 0 0 / var(--fee-progress-w) 100%
++    no-repeat;
++  clip-path: inset(0 calc(100% - var(--fee-progress-w)) 0 0 round 999px);
++  width: 100% !important;
+   border-radius: 999px;
+   flex-direction: column;
+   height: 100%;
+@@ -1227,9 +1237,8 @@
+   position: relative;
+   overflow: visible;
+ }
+-.script-accent.is-drawing-in.svelte-1fn2go6 {
+-  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+-}
++/* layout-animations: no width transition (0.9s of h1 layout per cycle); the width now changes at once
++   and the neighbouring words slide with a transform animation (JS HE, same duration and easing) */
+ .sizer.svelte-1fn2go6 {
+   visibility: hidden;
+   width: 100%;
+@@ -1289,14 +1298,14 @@
+   animation: 0.45s forwards svelte-1fn2go6-fill-out;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-0;
++  animation: 0.6s linear infinite fw-acc-idle-0;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-1:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-1;
++  animation: 0.6s linear infinite fw-acc-idle-1;
+   transform: translate(0.25%, 0.3%);
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-2:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-2;
++  animation: 0.6s linear infinite fw-acc-idle-2;
+   transform: translate(-0.2%, 0.35%);
+ }
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+@@ -1309,6 +1318,18 @@
+   .is-idle-frame-0.svelte-1fn2go6 {
+   opacity: 1;
+ }
++/* accent-ca: (1) the idle boil runs as keyword-linear opacity animations (WebKit iOS 26 never hands a steps()
++   timing to Core Animation, F-048/F-065, so step-end ticked main-thread style and an opacity-flip Layout per step,
++   F-075). The fw-acc-idle-* keyframes switch at exactly the original step-end instants (33.33 %, 66.66 %, end of
++   cycle); each jump is a linear ramp of 1e-6 of the 0.6 s cycle (0.6 us) that ends on the original instant, so
++   every frame is the original's.
++   (2) While drawing, only boil frame 0 is visible (frames 1-2 are opacity 0, rule above); their stroke and fill
++   animations are dropped (a stroke-dashoffset change is an SVG Layout every frame on WebKit, F-097). */
++:is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
++  .is-idle-frame:not(.is-idle-frame-0).svelte-1fn2go6
++  :is(.accent-path, .accent-fill) {
++  animation: none;
++}
+ @keyframes svelte-1fn2go6-stroke-in {
+   0% {
+     stroke-dashoffset: 1px;
+@@ -1335,10 +1356,44 @@
+   }
+ }
+ @keyframes svelte-1fn2go6-fill-out {
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-0 {
++  0%,
++  33.3299% {
++    opacity: 1;
++  }
++  33.33%,
+   to {
+     opacity: 0;
+   }
+ }
++@keyframes fw-acc-idle-1 {
++  0%,
++  33.3299% {
++    opacity: 0;
++  }
++  33.33%,
++  66.6599% {
++    opacity: 1;
++  }
++  66.66%,
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-2 {
++  0%,
++  66.6599% {
++    opacity: 0;
++  }
++  66.66%,
++  to {
++    opacity: 1;
++  }
++}
+ @keyframes svelte-1fn2go6-idle-0 {
+   0%,
+   33.32% {
+@@ -1413,6 +1468,33 @@
+   position: absolute;
+   inset: 0;
+ }
++/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; inside it an uncomposited wrapper of
++   the same box at top -m*c, and each cell is a face's box placed at top k*c in the wrapper (both set by the script),
++   its glyph centred the same way */
++.strip.svelte-1quva9c {
++  will-change: transform;
++  display: block;
++  position: absolute;
++  inset: 0;
++}
++.cdwrap.svelte-1quva9c {
++  display: block;
++  position: absolute;
++  top: 0;
++  left: 0;
++  right: 0;
++  height: 100%;
++}
++.cell.svelte-1quva9c {
++  justify-content: center;
++  align-items: center;
++  display: flex;
++  position: absolute;
++  top: 0;
++  left: 0;
++  right: 0;
++  height: 100%;
++}
+ .number.svelte-1jfovfa {
+   font-variant-numeric: tabular-nums;
+   align-items: center;
+@@ -1520,6 +1602,31 @@
+   inherits: false;
+   initial-value: 0deg;
+ }
++/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
++   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
++   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
++@property --morph-fade {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 1;
++}
++/* [scene-scope R4b] --morph is written inline on the nav header (JS 13614) and read by the header and some of its
++   descendants. Registered non-inheriting, a write restyles only the header plus the elements that take it with an
++   explicit `inherit` (the consumers and the wrappers between them and the header), not the whole nav subtree. */
++@property --morph {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 0;
++}
++.start-selling-top-nav-bar,
++.start-selling-top-nav-logo,
++.start-selling-top-nav-actions,
++.start-selling-top-nav-btn.is-earn,
++.start-selling-morph,
++.start-selling-morph-pill,
++.start-selling-morph-panel {
++  --morph: inherit;
++}
+ .hero-track.svelte-1p2vpne {
+   background: #fff;
+   height: 200vh;
+@@ -2124,6 +2231,136 @@
+     right: -45px;
+   }
+ }
++/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
++   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
++   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
++   Only where the JS switched to CSS mode: on WebKit (GestureEvent) with scroll-driven animations at the
++   phone layout (width <= 600px), once the entrance is over (d() in 2.DyWL8TcE.js), the track gets .he-on
++   (parked: the cue's bob moves to .he-bob, the exit is the baseline's own rules from the inline
++   --exit-opacity the JS writes at rest), and .he-css while the page scrolls (live: these animations; the JS
++   writes nothing per frame). Parking at rest matters because WebKit invalidates the style of every element
++   with a relevant scroll-driven animation on every rendering update, moving or not (WebKit source, see the
++   JS comment). Wider layouts (desktop orbit cards: desktop
++   and iPad Safari, a landscape phone) keep the baseline writer: there WebKit drew the animated tilted cards
++   up to 108 levels off the baseline's static draw of the same computed values (width 980, Simulator,
++   OBSERVED; residual R5). Every other engine keeps the baseline writer and none of these rules apply.
++   Every exit animation starts at contain 0.05% (s) with fill forwards, so at rest at the top of the page
++   none is active and the hero is drawn exactly as in the baseline (the baseline's own rules: blur(0px) on
++   the copy and the cue, no filter on the float). For the first frame after .he-css arrives (the new
++   animations are pending) the JS writes the baseline's inline --exit-opacity, so the base values are the
++   exited ones there too; the JS then leaves it (stale) while live, so every live property that reads it is
++   animated (cards, copy, float) or, on the cue, replaced by its value at --exit-opacity 1 (the float carries
++   the cue's exit, and its base values carry it for the pending frame). The
++   `from` keyframes are the baseline value at s (a + (b - a) * s), so inside the range the value is the
++   baseline's a + (b - a) * p.
++   The copy's shift is a separate transform animation, present only while live (a transform animation on
++   .hero-copy, even inactive, made WebKit repaint the title's script accent about 1.4x as often; Simulator,
++   OBSERVED).
++   The scroll cue's own entrance animates --copy-in (in its opacity and transform), so its exit
++   (fade, shift, blur) runs on its only child, .scroll-float (blur on the cue itself over a composited
++   child drew a wider halo in WebKit; while live the cue draws blur(0px), as the baseline rule at
++   --exit-opacity 1), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
++   around the float's two children in CSS mode (one layer for both, as the baseline's float): an element
++   with both the infinite bob and scroll-driven animations made WebKit recalculate style every frame at
++   rest, and the bob on the two children separately drew the cue 1-2 levels off (Simulator, OBSERVED).
++   opacity/transform/translate animations are separate from the blur ones (compositable); past the end
++   the blur keeps blur(18px) like the baseline, so no filter change when the track reaches its end
++   (#people entry). */
++@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
++  @keyframes svelte-1p2vpne-hero-exit-card {
++    from {
++      opacity: 0.999825;
++      translate: calc(var(--scatter-x) * 0.0005) calc(var(--scatter-y) * 0.0005);
++    }
++    to {
++      opacity: 0.65;
++      translate: var(--scatter-x) var(--scatter-y);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-shift-m {
++    from {
++      transform: translate(-50%, -0.004px);
++    }
++    to {
++      transform: translate(-50%, -8px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade {
++    from {
++      opacity: 0.9995;
++    }
++    to {
++      opacity: 0;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade-up {
++    from {
++      opacity: 0.9995;
++      translate: 0px -0.005px;
++    }
++    to {
++      opacity: 0;
++      translate: 0px -10px;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur {
++    from {
++      filter: blur(0.009px);
++    }
++    to {
++      filter: blur(18px);
++    }
++  }
++  .he-bob.svelte-1p2vpne {
++    flex-direction: column;
++    align-items: center;
++    display: flex;
++  }
++  @media (prefers-reduced-motion: no-preference) {
++    .hero-track.he-css.svelte-1p2vpne {
++      view-timeline-name: --hero-exit;
++      view-timeline-axis: block;
++    }
++    @media (width<=600px) {
++      .hero-track.he-on .scroll-float.svelte-1p2vpne {
++        animation: none;
++      }
++      .hero-track.he-on .scroll-float.svelte-1p2vpne > .he-bob.svelte-1p2vpne {
++        animation: 2.2s ease-in-out infinite svelte-1p2vpne-scroll-float;
++      }
++      .hero-track.he-css .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
++        animation: 1ms linear forwards svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .hero-copy.svelte-1p2vpne {
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
++          1ms linear forwards svelte-1p2vpne-hero-exit-shift-m;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .scroll-cue.svelte-1p2vpne {
++        opacity: var(--copy-in);
++        filter: blur(0px);
++        transform: translate(-50%, calc((1 - var(--copy-in)) * 12px));
++      }
++      .hero-track.he-css .scroll-float.svelte-1p2vpne {
++        opacity: var(--exit-opacity);
++        filter: blur(calc(var(--exit-scatter) * 18px));
++        translate: 0px calc(var(--exit-scatter) * -10px);
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade-up,
++          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .start-selling [data-start-selling-scene="paused"] .scroll-float.svelte-1p2vpne > * {
++        animation-play-state: paused !important;
++      }
++    }
++  }
++}
+ @media (prefers-reduced-motion: reduce) {
+   .hero-track.svelte-1p2vpne {
+     height: auto;
+@@ -2385,6 +2622,10 @@
+   display: flex;
+   position: relative;
+   overflow: clip;
++  /* double-drive (T-157): the shrink's origin on the card itself, so .is-future-shrinking no longer flips it
++     (50% 50% <-> 50% 100%) while the card is still scaled; scrolling up fast that flip jumped the card -105/+175/-77 px.
++     Outside the shrink the card only translates (reveal 48px -> 0) or rests at translateY(0): no visual change. */
++  transform-origin: 50% 100%;
+ }
+ .start-selling-future.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+@@ -2400,22 +2641,50 @@
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
+   transform: translateY(48px);
+ }
+ .start-selling-future.is-visible > .start-selling-future-card {
+   visibility: visible;
+-  opacity: 1;
+-  filter: none;
++  /* Fix candidate `re-keep-op` (hero-exit, P3: re-keep HIT): the reveal ends at opacity 0.999 / blur(0px) /
++     translateY(0) instead of 1 / none / none, so no property crosses its presence boundary at a transition
++     end. On the phone each such crossing cost one 12-18 ms whole-view Layout at flip + 700 / + 900 / + 1150 ms
++     (OBSERVED, in our setup). 0.999 over the white card is visually identical. */
++  opacity: 0.999;
++  filter: blur(0px);
++  transform: translateY(0);
+   pointer-events: auto;
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+ }
+ .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+   transform-origin: 50% 100%;
++  /* double-drive (T-157, the PR-021 move): --future-shrink is already eased per frame by the script, so the 0.9 s
++     transform transition restarted every frame and the card trailed the scroll by 0.7-1.3 s. While the shrink drives
++     transform only opacity and filter keep their transitions (the lists truncate to the first two entries: opacity
++     0.7 s, filter 0.9 s, exactly as above). End values are unchanged. */
++  transition-property: opacity, filter;
+ }
++/* double-drive (T-157), phones and tablets: the CSS below forces --future-shrink-scale: 1 here (same query), so the
++   shrink is scale(1), which looks the same as translateY(0). Keeping translateY(0) means the class toggle changes no
++   computed transform, so the 0.9 s identity transition (scale(1) <-> translateY(0)) no longer starts when the class
++   goes off; the transition-property rule above already stops the one when it goes on. */
++@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
++  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
++    transform: translateY(0);
++  }
++}
+ .start-selling-future-header {
+   z-index: 10;
+   text-align: center;
+@@ -2884,21 +3153,62 @@
+ }
+ .start-selling-avatars.is-carousel img.is-enter {
+   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
++   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
++   advance (32px - 8px overlap) with the same easing, via the independent translate property */
++.start-selling-avatars.is-carousel img.is-exit ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* st5: 5 persistent slots. Every slot keeps its own layer for the page's life (no layer gain/loss when the
++   slide starts or ends); the 5th waits at the pop's start state; .is-sliding (toggled by the rotator) runs the
++   same keyframes, easings and duration as the keyed version */
++.start-selling-avatars.is-carousel img {
++  will-change: transform, translate, opacity;
++  /* st6 (de-pm-hero's no-flip probe): every slot always has a transform and is never fully opaque, so no
++     style change ever flips hasTransform() or opacity isOpaque() (WebKit miscDataChangeRequiresLayout) */
++  transform: scale(1);
++  opacity: 0.999;
++}
++.start-selling-avatars.is-carousel img.st5-next {
++  opacity: 0;
++  transform: scale(0.35);
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++@keyframes avatars-shift {
++  0% {
++    translate: 0;
++  }
++  to {
++    translate: -24px;
++  }
+ }
+ @keyframes avatars-exit {
+   0% {
+-    opacity: 1;
+-    flex-basis: 32px;
+-    width: 32px;
+-    margin-right: -8px;
++    opacity: 0.999;
++    translate: 0;
++    clip-path: ellipse(16px 16px at 50% 50%);
+     transform: scale(1);
+   }
+   to {
+     opacity: 0;
+-    border-width: 0;
+-    flex-basis: 0;
+-    width: 0;
+-    margin-right: 0;
++    translate: -16px;
++    clip-path: ellipse(0px 16px at 50% 50%);
+     transform: scale(0.35);
+   }
+ }
+@@ -2908,7 +3218,7 @@
+     transform: scale(0.35);
+   }
+   to {
+-    opacity: 1;
++    opacity: 0.999;
+     transform: scale(1);
+   }
+ }
+@@ -5390,7 +5700,9 @@
+   box-sizing: border-box;
+   color: #151a23;
+   filter: blur(calc((1 - var(--morph-fade)) * 12px));
+-  opacity: var(--morph-fade);
++  /* [morph-gpu rev 3] never exactly 1: in WebKit (Simulator, OBSERVED) opacity leaving 1 repaints the whole section
++     on the open's first frame (19 paints, 1.05 Mpx); below 1 the fade only re-composites. 0.9999 is < 0.03 of a level. */
++  opacity: min(var(--morph-fade), 0.9999);
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
+@@ -5799,6 +6111,10 @@
+     animation: none;
+   }
+ }
++/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
++.start-selling-platform [data-sweep-paused] {
++  animation-play-state: paused !important;
++}
+ @keyframes start-selling-platform-i-doc-sweep {
+   0% {
+     background-position: 100%;
+@@ -6513,16 +6829,24 @@
+   opacity: 0;
+ }
+ .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+-@keyframes start-selling-cred-card-in {
++@keyframes start-selling-entry-blur-in {
+   0% {
+     filter: blur(8px);
++  }
++  to {
++    filter: blur();
++  }
++}
++@keyframes start-selling-cred-card-in {
++  0% {
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -6812,6 +7136,93 @@
+   opacity: 1;
+   transition: opacity 0.2s;
+ }
++/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
++   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
++   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
++   (meet) scaled the line and the gradient by s = 3.1875/3.2 and shifted them by (94 - 94 s)/2 = 0.18359375px:
++   the clip is that stadium (line 1.6..92.4, width 3.2, round caps, times s, plus the shift), the gradient strip
++   is 120 s = 119.53125px wide, and x1 = v becomes translateX(s v + 0.18359375px). Keyframes = the old values
++   (keyTimes 0;0.2;0.4;0.6;0.8;1, 5 s, linear, from the moment .is-active is set). The glint span is added by
++   NM's each block next to the SSR svg (the svg stays in the DOM for hydration and is not rendered: without its
++   <animate> its gradient sits at x1 -200 / 200, fully transparent over the dash). Opacity and .is-active as the
++   old highlight line. */
++.start-selling-platform-secure-network-dash-svg {
++  display: none;
++}
++.start-selling-platform-secure-network-dash-glint {
++  opacity: 0;
++}
++.start-selling-platform-secure-network-dash-glint.is-active {
++  opacity: 1;
++  transition: opacity 0.2s;
++}
++.start-selling-platform-secure-network-dash-glint {
++  pointer-events: none;
++  width: 94px;
++  height: 3.2px;
++  display: block;
++  position: absolute;
++  top: 0;
++  left: 0;
++  clip-path: path(
++    "M 1.77734375 0 H 92.22265625 A 1.59375 1.59375 0 0 1 92.22265625 3.1875 H 1.77734375 A 1.59375 1.59375 0 0 1 1.77734375 0 Z"
++  );
++}
++.start-selling-platform-secure-network-dash-glint svg {
++  width: 119.53125px;
++  height: 5.2px;
++  display: block;
++  position: absolute;
++  top: -1px;
++  left: 0;
++  overflow: visible;
++}
++.start-selling-platform-secure-network-dash.is-left .start-selling-platform-secure-network-dash-glint.is-active svg {
++  animation: 5s linear infinite start-selling-platform-pi-glint-left;
++}
++.start-selling-platform-secure-network-dash.is-right .start-selling-platform-secure-network-dash-glint.is-active svg {
++  animation: 5s linear infinite start-selling-platform-pi-glint-right;
++}
++@keyframes start-selling-platform-pi-glint-left {
++  0% {
++    transform: translateX(-199.03515625px);
++  }
++  20% {
++    transform: translateX(199.40234375px);
++  }
++  40% {
++    transform: translateX(199.40234375px);
++  }
++  60% {
++    transform: translateX(199.40234375px);
++  }
++  80% {
++    transform: translateX(-199.03515625px);
++  }
++  to {
++    transform: translateX(-199.03515625px);
++  }
++}
++@keyframes start-selling-platform-pi-glint-right {
++  0% {
++    transform: translateX(-199.03515625px);
++  }
++  20% {
++    transform: translateX(-199.03515625px);
++  }
++  40% {
++    transform: translateX(199.40234375px);
++  }
++  60% {
++    transform: translateX(-199.03515625px);
++  }
++  80% {
++    transform: translateX(-199.03515625px);
++  }
++  to {
++    transform: translateX(-199.03515625px);
++  }
++}
+ .start-selling-platform-secure-network-face {
+   box-sizing: border-box;
+   object-fit: cover;
+@@ -7186,7 +7597,8 @@
+     transform: translate(-50%, -50%);
+     animation: none !important;
+   }
+-  .start-selling-platform-secure-network-dash-highlight {
++  .start-selling-platform-secure-network-dash-highlight,
++  .start-selling-platform-secure-network-dash-glint {
+     opacity: 0 !important;
+   }
+ }
+@@ -7509,21 +7921,23 @@
+   opacity: 0;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
+-  animation: 0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in;
++  animation:
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in,
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards start-selling-entry-blur-in;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter
+   .start-selling-platform-profile-reviews
+   .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+ @keyframes start-selling-profile-phone-in {
+   0% {
+-    filter: blur(8px);
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -10556,6 +10970,20 @@
+ .start-selling-top-nav.is-expanded .start-selling-morph-panel {
+   pointer-events: auto;
+ }
++/* perf(morph-close-peak v9.1): the header's panel is opacity 0 whenever .is-morphing is off (morph <= 0.001), but its
++   composited children (col-tracks, veil, center, footer) still repaint on every frame of the header's 0.68 s width
++   transition after a close. Hide them for that window only: a one-shot visibility keyframe on the panel's children
++   (not on the panel: it is a scene element whose animations the scene engine pauses). At rest they are visible again,
++   as before: a hidden, paused col-track animation made Chrome request a main frame every vsync (v9 int census). */
++@keyframes fw-morph-close-hide {
++  0%,
++  100% {
++    visibility: hidden;
++  }
++}
++.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel > * {
++  animation: fw-morph-close-hide 0.75s linear;
++}
+ .start-selling-morph-backdrop {
+   opacity: 0.4;
+   gap: 12px;
+@@ -11101,6 +11529,64 @@
+     -webkit-background-clip: text;
+     background-clip: text;
+     animation: 4s linear infinite start-selling-platform-i-doc-sweep;
++  }
++  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
++     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
++     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
++     No background-position animation, so no style recalc or repaint per frame. Same selectors as above
++     (specificity 0,4,0 / 0,4,1), later in the file, so they win over the content:none rules.
++     Inside @supports (-webkit-mask-clip: text): an engine without text masks (Firefox, MDN BCD) keeps the original
++     background-clip sweep above instead of showing the band as a solid rectangle. */
++  @supports (-webkit-mask-clip: text) {
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure,
++  .start-selling-platform
++    .start-selling-platform-row.is-relationship
++    .start-selling-platform-row-title-organized {
++    background-image: none;
++    animation: none;
++    position: relative;
++    -webkit-mask-image: linear-gradient(#000, #000);
++    -webkit-mask-clip: text;
++  }
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc::after,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn::after,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure::after,
++  .start-selling-platform
++    .start-selling-platform-row.is-relationship
++    .start-selling-platform-row-title-organized::after {
++    content: "";
++    display: block;
++    position: absolute;
++    top: 0;
++    left: 0;
++    width: 300%;
++    height: 100%;
++    pointer-events: none;
++    background-image: linear-gradient(
++      90deg,
++      #fff 0 33.33%,
++      #82bcff 40%,
++      #2483ff 45%,
++      #ff66f4 50%,
++      #ff3029 55%,
++      #fe7b02 60%,
++      #fff 66.67% 100%
++    );
++    animation: 4s linear infinite start-selling-platform-pi-sweep-band;
++  }
++  .start-selling-platform [data-sweep-paused]::after {
++    animation-play-state: paused !important;
++  }
++  }
++}
++@keyframes start-selling-platform-pi-sweep-band {
++  0% {
++    transform: translateX(-66.6667%);
++  }
++  to {
++    transform: translateX(0);
+   }
+ }
+ .start-selling-language-switch-wrap.svelte-1lc7nmb {
+@@ -11437,7 +11923,9 @@
+ }
+ .start-selling-top-nav-actions.svelte-1dcozpm {
+   align-items: center;
+-  gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
++  /* nav-earn rev 3: the gap is reserved like the Join button's width (see the rev 3 block below); its closing at the
++     top and at the end of the page is drawn by moving the language switch instead */
++  gap: 8px;
+   opacity: 1;
+   pointer-events: auto;
+   flex: none;
+@@ -11477,32 +11965,88 @@
+ .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+   --earn-out: clamp(0, calc(var(--morph) / 0.2), 1);
+   --nav-earn-mask: linear-gradient(90deg, #000 0 46%, transparent 58%);
+-  --earn-layout: calc(var(--nav-expand) * (1 - var(--earn-out)));
+   isolation: isolate;
+   min-width: 0;
+-  max-width: calc(var(--earn-layout) * 11rem);
+-  padding-inline: calc(var(--earn-layout) * 24px);
+-  opacity: calc((1 - var(--earn-out)) * var(--nav-expand));
++  max-width: 11rem;
++  padding: 0;
++  background: none;
++  opacity: 1;
+   filter: blur(calc(var(--earn-out) * 10px));
+   pointer-events: none;
+   transform: translateY(calc(var(--earn-out) * -8px));
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
+ }
++/* nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button keeps its full width in the layout at all times, and
++   so does the 8px gap before it. Its original look (the dark pill growing from the right edge over 0.68 s with the
++   language switch sliding over, and shrinking back the same way) is drawn without layout: the dark pill and the
++   label sit in .start-selling-top-nav-earn-box, clipped to the original's width at that moment (clip-path) and moved
++   to its centre (translate on the button), and the language switch is moved by the width and gap the original would
++   not have had yet (translate). The nav script starts those three as one Web Animation per change of state (shown
++   <-> hidden), sampled from the original's own formula: width min(label + 2 * padding * e, max-width * e), gap
++   8px * e, e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, and a reversal mid-way takes the
++   shortened time a reversed CSS transition takes. Opacity keeps the original's transitions on one class flip:
++   0.32 s after 0.12 s when it appears and at the end of the page, 0.2 s when it goes back into the hero pill.
++   The mask sweep and the sheen are the original's, unchanged. Hidden states below match the animations' end. */
++.start-selling-top-nav-earn-box.svelte-1dcozpm {
++  box-sizing: border-box;
++  flex: none;
++  justify-content: center;
++  align-items: center;
++  height: 100%;
++  padding-inline: 24px;
++  background: #131922;
++  border-radius: 999px;
++  display: inline-flex;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  opacity: 0;
++  translate: 50% 0;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++  clip-path: inset(0 50% round 999px);
++}
++.start-selling-top-nav-actions.svelte-1dcozpm > .start-selling-language-switch-wrap {
++  --morph: inherit;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: calc(var(--earn-w, 0px) + 8px) 0;
++}
++/* at the end of the page the original closed the gap with --morph (no timer) and the width on its timer */
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm:not(.is-hero-pill)
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: var(--earn-w, 0px) 0;
++}
++.start-selling-top-nav.is-morphing.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 8px));
++}
++@media (width<=640px) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    translate: calc(var(--earn-w, 0px) + 4px) 0;
++  }
++  .start-selling-top-nav.is-morphing.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 4px));
++  }
++}
+ .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill, .is-morphing)
+   .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: auto;
+ }
+ .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: none;
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1),
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1);
+   -webkit-mask-image: none;
+   mask-image: none;
+ }
+@@ -11579,10 +12123,10 @@
+     scale: 0.75;
+   }
+   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+-    transform-origin: 50%;
++    transform-origin: calc(50% * var(--morph));
+   }
+   .start-selling-top-nav-actions.svelte-1dcozpm {
+-    gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
++    gap: 4px;
+   }
+   .start-selling-top-nav-btn.svelte-1dcozpm {
+     height: 36px;
+@@ -11592,8 +12136,10 @@
+     line-height: 20px;
+   }
+   .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+-    max-width: calc(var(--earn-layout) * 9.5rem);
+-    padding-inline: calc(var(--earn-layout) * 16px);
++    max-width: 9.5rem;
++  }
++  .start-selling-top-nav-earn-box.svelte-1dcozpm {
++    padding-inline: 16px;
+   }
+ }
+ @media (prefers-reduced-motion: reduce) {
+@@ -11751,11 +12297,74 @@
+ html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
+   unicode-bidi: plaintext;
+ }
++/* [scene-scope V1] The paused-scene rules used to match every descendant (`:where(*)`). A rule whose subject is
++   universal makes an attribute change on the scene restyle the whole subtree (WebKit AttributeChangeInvalidation /
++   StyleInvalidator, Blink "invalidates subtree"): 172-399 elements at every scene flip. The subject is now the
++   list of elements that can carry a CSS animation (the subject compound of every `animation`/`animation-name`
++   rule in this file and DialogHeader.css; pseudo-elements were never matched by `:where(*)`), so a flip restyles
++   only those. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
++   animation running while its scene is paused (CPU, not a visual change). */
+ .start-selling [data-start-selling-scene="paused"],
+-.start-selling [data-start-selling-scene="paused"] :where(*) {
+-  will-change: auto !important;
++.start-selling [data-start-selling-scene="paused"] .commission-underline,
++.start-selling [data-start-selling-scene="paused"] .commission-underline path,
++.start-selling [data-start-selling-scene="paused"] .frame-0,
++.start-selling [data-start-selling-scene="paused"] .frame-1,
++.start-selling [data-start-selling-scene="paused"] .frame-2,
++.start-selling [data-start-selling-scene="paused"] .fee-avatar,
++.start-selling [data-start-selling-scene="paused"] .typing-caret,
++.start-selling [data-start-selling-scene="paused"] .accent-path,
++.start-selling [data-start-selling-scene="paused"] .accent-fill,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-0,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-1,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-2,
++.start-selling [data-start-selling-scene="paused"] .orbit-card,
++.start-selling [data-start-selling-scene="paused"] .hero-copy,
++.start-selling [data-start-selling-scene="paused"] .scroll-cue,
++.start-selling [data-start-selling-scene="paused"] .scroll-float,
++.start-selling [data-start-selling-scene="paused"] .pain-note,
++.start-selling [data-start-selling-scene="paused"] .start-selling-people-o-preview,
++.start-selling [data-start-selling-scene="paused"] .start-selling-avatars img,
++.start-selling [data-start-selling-scene="paused"] .start-selling-profile-body,
++.start-selling [data-start-selling-scene="paused"] .record,
++.start-selling [data-start-selling-scene="paused"] .sb-drawer .surface,
++.start-selling [data-start-selling-scene="paused"] .panel.svelte-ty4hd7,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
++.start-selling [data-start-selling-scene="paused"] .start-selling-language-switch-menu,
++.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav-btn,
++.start-selling [data-start-selling-scene="paused"] .sb-tooltip,
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
++.start-selling [data-start-selling-scene="paused"] .sb-button .content,
++.start-selling [data-start-selling-scene="paused"] .sb-button .spinner,
++.start-selling [data-start-selling-scene="paused"] .sb-dialog {
+   animation-play-state: paused !important;
+ }
++/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
++   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
++   from flapping, so the flips happen away from the viewport.
++   [scene-scope V1] the scene arm lists the elements whose CSS asks for will-change (every non-auto
++   `will-change` rule in this file and DialogHeader.css) instead of `:where(*)`, for the same reason as above. */
++.start-selling [data-start-selling-scene="paused"],
++.start-selling [data-start-selling-scene="paused"] .commission-card,
++.start-selling [data-start-selling-scene="paused"] .why-bring-panel,
++.start-selling [data-start-selling-scene="paused"] .face,
++/* cd-strip: the strips and their cells replace the faces, so a paused scene drops their layers the same way */
++.start-selling [data-start-selling-scene="paused"] .strip.svelte-1quva9c,
++.start-selling [data-start-selling-scene="paused"] .cell.svelte-1quva9c,
++.start-selling [data-start-selling-scene="paused"] .orbit-card,
++.start-selling [data-start-selling-scene="paused"] .hero-copy,
++.start-selling [data-start-selling-scene="paused"] .start-selling-future-card,
++.start-selling [data-start-selling-scene="paused"] .start-selling-profile-shell,
++.start-selling [data-start-selling-scene="paused"] .start-selling-platform-card,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
++.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav,
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
++/* [rotator-st6 on RB] st6's persistent slot layers (will-change at .start-selling-avatars.is-carousel img) join
++   the arm, so a paused scene drops them like every other will-change element (scene-scope R4 coupling). */
++.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img,
++.start-selling [data-fw-wc="0"] {
++  will-change: auto !important;
++}
+ .start-selling [data-start-selling-render="deferred"] {
+   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
+   content-visibility: auto;
+@@ -11768,3 +12377,53 @@
+     scroll-behavior: auto;
+   }
+ }
++
++/* perf(morph-webkit, countdown fix, P-017): the morph panel's countdown digit faces get no will-change. With it,
++   the panel scene's flip to active creates ~80 digit layers at the tween start, and on the iPhone those layers were
++   repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
++   the page are unchanged. */
++.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
++  will-change: auto;
++}
++/* cd-strip (panel arm b): the same for the digit strips that replace the faces */
++.start-selling-morph-panel .waitlist-closing-countdown .strip.svelte-1quva9c {
++  will-change: auto;
++}
++/* cd-strip: one layer per cell. WebKit rasterizes a text backing taller than one cell with glyph edges 1-3 levels
++   lighter than a face's (observed, Simulator); a one-cell backing per cell is pixel-identical to the faces. The panel's
++   cells stay unlayered with its strips (cdwc) */
++.cell.svelte-1quva9c {
++  will-change: transform;
++}
++.start-selling-morph-panel .waitlist-closing-countdown .cell.svelte-1quva9c {
++  will-change: auto;
++}
++/* shell-hold-c (wi-stack): while #people starts shrinking (+is-future-shrinking, a 0.9 s scale transition on the card),
++   hide the off-screen profile shells (neither the active shell nor its neighbours) for 0.95 s. WebKit gives every
++   composited descendant of an on-screen transform-animating layer a backing store (GraphicsLayerCA,
++   ancestorWithTransformAnimationIntersectsCoverageRect); a hidden shell paints nothing. The deck clips
++   (overflow: auto hidden), so these shells are never in view; at 1440 they are display: none (no-op). */
++@keyframes fw-c-shell-hold {
++  from,
++  to {
++    visibility: hidden;
++  }
++}
++.start-selling-future.is-visible.is-future-shrinking
++  .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
++  animation: fw-c-shell-hold 0.95s linear;
++}
++/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
++   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
++   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
++   under the old scrollTo pin while the morph follows the scroll. Rev 4: no scroll snap (it made iOS decelerate the
++   whole page fast); a script settles a part-open morph to an end once the scroll rests. */
++html.fw-ms .start-selling-platform {
++  position: sticky;
++  top: calc(100dvh - var(--fw-ms-h, 100dvh));
++}
++.fw-ms-end {
++  position: relative;
++  height: 100lvh;
++  pointer-events: none;
++}
