@@ -301,10 +301,170 @@ Census `out/end-bg/census-2026-10-05T15-02-55-649Z.json` (ignored).
   measure that. **Chrome counts cannot split pictures from titles** (OBSERVED in our setup).
 - The decisive check needs per-paint cost on WebKit: a phone Timeline block with arms C / pictures-off / titles-off, or
   Simulator paint durations. Asked of the lead (ticket); no `end-titles` topic until it shows the titles' share.
+- Correction to "with `background-image: none`" above (found while writing P-144, from the Chrome inventory
+  `out/end-bg/inv-2026-10-05T11-23-24-796Z.json`, OBSERVED): at phone width the sweep titles take the
+  `@supports (-webkit-mask-clip: text)` path, where the span's own background-image is already none and the moving
+  gradient sits on its `::after`, masked to the text. nobg and titles-off set both the span and its `::after` to none
+  (doc, earn, secure); the mask and the animation stay. So "the titles keep repainting with their gradient removed" holds
+  for doc/earn/secure; organized keeps its gradient in every arm.
 
-## 8. Pending
+## 8. Prediction P-144: pictures vs title sweeps, paint time per toolbar step (Simulator Timeline, registered before data)
 
-- A Simulator count (WebKit) when no phone block runs.
+**Card rev 1, before any data.** P-id P-144 (mgmt-clerk-1). Lead ruling on F-289: the cheaper path first; a phone
+Timeline ticket (G, xcode-serious) only if the Simulator can't split them. Next: the lead's Opus pre-data read, then his
+signature. No run, dry run included, before the signature.
+
+- **Question.** On the end screen of C, the nobg arm cut phone slow frames 16 -> 3 (P-137, CAUSE). nobg removes two
+  things: the stage pictures, grain and blend layers (pictures-off, `pic`), and the gradients of three sweeping row
+  titles, doc, earn and secure (titles-off, `tit`). Which of the two carries the paint cost of a toolbar step there?
+- **Why it matters.** PR-025's option C (baked backgrounds) removes only the pictures. If the titles carry a real share,
+  they get their own topic (`end-titles`, a proposal or a pixel-identical compositor version) and the user is told C alone
+  is not expected to remove the lag. Chrome cannot answer it (section 7, F-289).
+- **What is known** (our data only):
+  - P-137 (phone G, xcode-serious): nobg CAUSE at >34 (C median 16, V 3); MIXED-class slow frames vanish.
+  - Chrome census (F-289): paint counts per window equal in C, pic, tit and nobg; no durations.
+  - WebKit (section 5, helper read of WebKit main a1c4dcf7, partly CONFIRMED): the paint walk runs on the WebContent main
+    thread in the rendering update; on iOS DOM rendering goes to the GPU process by default, so the main thread records
+    draw commands and the GPU process rasterizes. **Risk named before data:** WebKit Timeline's Paint records on the
+    WebContent side may show the recording only, not the raster of a picture. Then M1 cannot see nobg's effect, the
+    control fails, and the card ends CONTROL-FAILED (the outcome that sends the question to the phone ticket).
+- **Base.** main as of `d9dabfc7` (this branch rebased on it). C is served from the `fixes/end-bg` overlay: v9-final +
+  morph-scroll rev 7d, JS `1b2eecc66011`, CSS `e1359ab9994a` (the bytes P-137 measured as C). The driver checks the served
+  hashes and `x-mirror-source: overlay` through the http twin before every hold (exit 26).
+- **Arms** (`eb-inject.mjs`, appended as one `<style id="eb-arm">` after every page load, before the Timeline starts;
+  paint-only properties: background-image, mix-blend-mode, visibility; the self-test checks it):
+
+  | arm | CSS | asks |
+  |---|---|---|
+  | C | none | control |
+  | C2 | none (C under another label) | A/A pair: the instrument's noise |
+  | nob | `nobg.css` `d566af712894` (P-137's V) | positive control, in every hold |
+  | pic | `sim/pictures-off.css` (nobg minus its six title lines) | pictures alone |
+  | tit | `sim/titles-off.css` (the six title lines: doc, earn, secure and their `::after`) | the three titles alone |
+
+  pic + tit = nob, selector for selector (self-test). The organized title's sweep and every title's mask and animation
+  stay in all arms. All arms change the look: mechanism only, never shipped, no pixel check.
+- **Applied probes** (counts and booleans, read at the end of each run): the stage grain's background
+  (`.start-selling-platform-stage-grain`) and the secure title's (`.is-payment .start-selling-platform-row-title-secure`,
+  span or `::after`) must be on/off as the arm says, and the style element present only in nob/pic/tit. A run that fails
+  is INSUFFICIENT; a C that fails fails the replication gate.
+- **Stimulus `end-cycle-v1.json`** (compiler hash `c9e62ddadacc`): reload, 3 s idle, drags of 520 px down the page until
+  the end (a runtime loop, cap 20), then 6 cycles at the end: a finger-down drag of 400 px (the page goes up, the toolbar
+  expands) and a finger-up drag of 440 px (back to the end, the toolbar collapses). Drags end at rest. On this build docH
+  is about 6740 and max scroll about 5964, so every cycle stays in the last-screen band. Planned toolbar steps in the band:
+  12 per run.
+- **Instrument and filter** (`p144-lib.mjs`, frozen):
+  - Frames: the longest recorded segment; a frame is BAND-MOVING when innerHeight is strictly between the run's two
+    toolbar states and scrollY >= docH - 2 innerHeight (P-137's last-screen band). n = such frames; a run counts at n >= 8.
+  - A Timeline record belongs to a frame when it starts in (t - dt, t].
+  - **M1 (primary):** per frame, the summed duration of the Paint records (WebKit nests them in Composite); per run, the
+    median over the band-moving frames.
+  - **M2 (pre-registered fallback):** the same with the Composite records (the layer flush that contains the paint walk).
+    M2 replaces M1 for the whole card only when M1's control (or replication) fails in every hold and M2 replicates with
+    its control passing in every hold. Otherwise M2 is reported, never read.
+  - Descriptive only: Paint records per frame, painted area (clip quads).
+  - Ratio = arm metric / mean metric of the nearest C before and after it in its hold. LOCATES <= 0.30, PARTIAL <= 0.70,
+    NONE otherwise (P-133's bands).
+- **Order: three holds of 5 steps**, each with its own C pair and its own nob; pic, tit and C2 twice each, in two holds, in
+  rotated positions:
+
+  | hold | steps |
+  |---|---|
+  | E1 | `C:H1 nob:H1 pic:H1 tit:H1 C:H2` |
+  | E2 | `C:H3 tit:H2 nob:H2 C2:H1 C:H4` |
+  | E3 | `C:H5 C2:H2 pic:H2 nob:H3 C:H6` |
+
+  The driver accepts only these holds with exactly these steps (exit 2 otherwise).
+- **Dry run (count-only, after the signature, before any Timeline data).** `dry-p144.mjs`, one shared Simulator slot, no
+  Timeline, no timing number: one C run and one nob run with the logger. A run passes when: no abort or error; the
+  approach loop ended at the end of the page; 12 cycle strokes; the logger saw >= 8 toolbar steps in the band; the arm's
+  probes are right. It times each step (open + gesture). Rule, from the mean step s (estimate = s + 10):
+  - estimate x 5 + 30 <= 500 s: plan E above;
+  - else estimate x 4 + 30 <= 500 s: plan F, six holds of 4 steps (`C nob X C` / `C X nob C`, X = pic, tit, C2 twice each,
+    nob in every hold; `p144-lib.mjs` PLAN4);
+  - else: the design fails its budget; no data; back to the ops read and the lead.
+  A failing run: DRY FAIL, no Timeline data, the script is revised and the card goes back to the read.
+- **Holds.** Normal exclusive holds, `--max-seconds 600 --wait 14400`, one FIFO entry at a time, in order, in the
+  background; `SB_BUDGET_S=500`; DEFERRED while a phone block is marked. Hold E1 (the others the same with their steps):
+
+  ```sh
+  node tools/lock.mjs run chrome-measure --max-seconds 600 --wait 14400 --owner fix-end-bg -- sh -c \
+    'node tools/fix.mjs serve end-bg > out/end-bg/serve-p144.log 2>&1 & S=$!; \
+     node tools/wait.mjs serve out/serve-end-bg.json --pid $S --owner fix-end-bg --timeout 60 && \
+     SB_BUDGET_S=500 node tools/sim.mjs session --owner fix-end-bg -- \
+       node fixes/end-bg/sim/sim-p144.mjs E1 C:H1 nob:H1 pic:H1 tit:H1 C:H2; E=$?; kill $S; exit $E'
+  ```
+
+  The driver: served bytes (26); per step the host rule, `sim.mjs open`, `sim.mjs gesture end-cycle-v1.json --timeline
+  --inject eb-inject.mjs`; the first-run gate after the first step (C applied, docH0 > 0, n >= 8; else 27); the budget
+  stop (dropped steps logged, not scored).
+- **Host-load rule** (P-141 rev 1.1's, unchanged): load1 > 200 at a step start exits 28 and the hold is VOID-HOST. Its
+  folder moves to `<hold>-void1` (kept, reported, never scored) and the hold re-runs once from an empty folder; a second
+  VOID-HOST of one hold stops the card. 200 is the lead's P-141 value, set from P-133's step-start loads on this host, not
+  from any P-144 number (there is none). load1 at every step's start and end is logged and reported.
+- **Per hold, right after it** (before anything is scored): `check-p144.mjs out/end-bg/simp144 <hold> --json
+  fixes/end-bg/sim/p144-check-<hold>.json`. HOLD-FAIL (exit 3) when a run that ran has no Timeline file, an abort, an
+  error, an approach loop not ended at the end, cycle strokes != 12, or n < 8: the hold is not scored, no rescue, and the
+  remaining holds stop (to the lead). Reported, never failing: n below 12, band toolbar steps, docH, css sha.
+- **Stop rules** (P-141 N3's runner): exit 0 -> the check, then the next hold; exit 28 -> the void folder, one re-run; any
+  other non-zero (26, 27, 2, 124, a lock or wait timeout) or HOLD-FAIL -> stop the remaining holds, to the lead. A later
+  hold runs whatever the earlier holds' values are; nothing is scored before the last hold.
+- **Scoring** (after the last hold): `score-p144.mjs out/end-bg/simp144 E1 E2 E3 --json fixes/end-bg/sim/p144-score.json`.
+- **Rules** (frozen before data, `p144-lib.mjs` scoreHold / armCall / cardReading):
+  1. **NOT REPRODUCED** when any hold's C runs fail the replication gate: every C applied, counted, metric > 0 and Paint in
+     at least half its band-moving frames. No arm is judged.
+  2. **CONTROL-FAILED per hold:** nob not LOCATES or PARTIAL; that hold's other arms are not read (reported). In every
+     hold: the card status is CONTROL-FAILED, which is the "Simulator can't split them" outcome.
+  3. **VOID per hold:** |last C - first C| / first C > 0.30; its arms are not read.
+  4. **A/A:** any C2 run PARTIAL or LOCATES in a read hold: AA-FAILED; no pic/tit reading (reported only). Each C2
+     ratio's distance from 1 is reported as the noise beside the calls.
+  5. **GEOMETRY:** an arm whose final docH differs from a neighbouring C's by > 2 px is not judged.
+  6. **Calls per arm over its runs** in read holds: LOCATES when both LOCATE or the mean ratio <= 0.30; PARTIAL when the
+     mean <= 0.70; NONE otherwise; one valid run: its call, marked "one run".
+  7. **Reading** (rules 1-4 passed): pic LOCATES/PARTIAL and tit NONE: **PICTURES** (no `end-titles` topic; PR-025's
+     option C is the lever on this instrument). tit LOCATES/PARTIAL and pic NONE: **TITLES** (open `end-titles`; tell the
+     lead and the user that C alone is not expected to remove the lag). Both: **BOTH** (open `end-titles` too; both shares
+     reported). Neither while nob passes: **JOINT** (only removing both helps, or the split is not additive; to the lead,
+     no topic).
+  8. A Simulator ratio is never a phone result and never a gain. Descriptive: (1 - pic) + (1 - tit) vs (1 - nob).
+- **Predictions** (registered before data; informed by P-137's result and the Chrome census, the only data seen on these
+  arms):
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | the dry run passes and picks plan E | 65 % |
+  | 2 | all holds pass the n check | 80 % |
+  | 3 | C replicates on M1 in every hold | 70 % |
+  | 4 | nob LOCATES or PARTIAL on M1 in every hold (no metric switch) | 45 % |
+  | 5 | the card ends READ (on M1 or M2) | 50 % |
+  | 6 | given READ: pic LOCATES or PARTIAL | 75 % |
+  | 7 | given READ: tit LOCATES or PARTIAL | 30 % |
+  | 8 | given READ: the reading is PICTURES | 55 % |
+  | 9 | both C2 runs NONE | 85 % |
+  | 10 | no arm GEOMETRY | 90 % |
+  | 11 | every run passes the applied probes | 85 % |
+  | 12 | no VOID-HOST hold | 75 % |
+
+  Scoring precedence (P-141 N5 style): rule 1 fails: P3 a miss, P4-P8 insufficient. CONTROL-FAILED card: P4 a miss, P5 a
+  miss, P6-P8 insufficient. AA-FAILED: P9 a miss, P6-P8 insufficient. PARTIAL counts as a hit for P6 and P7.
+- **Pins** (sha256/12):
+  - stimulus `sim/end-cycle-v1.json` `258b9dadae1e` (compiled program `c9e62ddadacc`);
+  - inject `sim/eb-inject.mjs` `20b18b4de87a`; rules and filter `sim/p144-lib.mjs` `5cc29ba45734`;
+  - driver `sim/sim-p144.mjs` `a86d5b205362`; dry run `sim/dry-p144.mjs` `3ed80224b792`; check `sim/check-p144.mjs`
+    `8e44588002ce`; scorer `sim/score-p144.mjs` `f1c45c4e292b`;
+  - self-test `sim/p144-selftest.mjs` `c8402de03ae7`: `SELFTEST ok 87 checks` (the stimulus compiles to one approach loop
+    and 12 guarded cycle strokes; pic + tit = nob selector for selector, disjoint, paint-only properties; the applied rule
+    per arm; both plans: C bracket, nob in every hold, pic/tit/C2 in two holds; the budget and host thresholds; the band
+    filter and the per-frame metrics on a synthetic record; every call, gate, reading and the metric switch; the dry-run,
+    n-check and first-run gates);
+  - arm CSS: `nobg.css` `d566af712894`, `sim/pictures-off.css` `2f316f33d828`, `sim/titles-off.css` `6bc2f3c17007`;
+  - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
+- **Output.** `out/end-bg/simp144/<hold>/` and `out/end-bg/dry144/` (ignored). Committed after the last hold:
+  `sim/p144-check-<hold>.json`, `sim/p144-score.json`.
+
+## 9. Pending
+
+- PR-025: the user's pick, then the phone test of slow frames.
 - The verdict per image and the ranked candidate fixes, after P-137. Wall candidates known now (bytes or memory, no
   frame effect expected): skip columns 4-5 below 640 px (pixel-identical, -2.1 MB fetched); resize graphic-designer.png,
   the only visible oversized wall image (1.22x, -2.2 MB decoded; pixel check needed); trimming the never-seen last

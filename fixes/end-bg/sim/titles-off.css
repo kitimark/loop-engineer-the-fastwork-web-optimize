@@ -1,0 +1,10 @@
+/* P-144 arm "tit" (titles-off). Split of nobg.css (d566af712894), part "titles": only its sweep-title rules (the gradient text of the #platform row
+   titles and their ::after); the rest of nobg is in images.css. titles + images = nobg. */
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-doc,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-earn,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-secure,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-doc::after,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-earn::after,
+.start-selling-platform .start-selling-platform-row .start-selling-platform-row-title-secure::after {
+  background-image: none !important;
+}

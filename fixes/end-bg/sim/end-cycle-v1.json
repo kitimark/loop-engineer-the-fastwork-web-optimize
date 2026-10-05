@@ -1,0 +1,106 @@
+{
+  "name": "end-cycle-v1",
+  "version": 1,
+  "screen": [
+    430,
+    932
+  ],
+  "about": "P-144 (end-bg): after a 3 s idle at the top, drags down the page until the end (a runtime loop, at most 20 drags of 520 px), then $cycles cycles at the end of the page: a finger-down drag of $backPx (the page goes up, Safari's toolbar expands) and a finger-up drag of $fwdPx (the page goes back down to the end, the toolbar collapses). Drags end at rest (no momentum), so every cycle's toolbar steps happen in the last-screen band (scrollY >= docH - 2 innerHeight; on this build docH about 6740, max scroll about 5964, so the band starts near 5190 and a 400 px back drag stays inside it). Attribution only (Simulator Timeline mechanism ratios), never a gain.",
+  "params": {
+    "x": 215,
+    "approachPx": 520,
+    "approachMs": 600,
+    "backPx": 400,
+    "fwdPx": 440,
+    "dragMs": 600,
+    "idleMs": 3000,
+    "gapMs": 350,
+    "turnMs": 700,
+    "cycles": 6
+  },
+  "steps": [
+    {
+      "type": "reload",
+      "scrollAfterMs": 0
+    },
+    {
+      "type": "mark",
+      "name": "idle"
+    },
+    {
+      "type": "pause",
+      "ms": "$idleMs"
+    },
+    {
+      "type": "mark",
+      "name": "approach"
+    },
+    {
+      "type": "repeat",
+      "times": 20,
+      "until": "atEnd",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$approachPx",
+          "ms": "$approachMs",
+          "profile": "drag"
+        },
+        {
+          "type": "pause",
+          "ms": "$gapMs"
+        }
+      ]
+    },
+    {
+      "type": "until",
+      "cond": "atEnd",
+      "timeoutMs": 10000
+    },
+    {
+      "type": "pause",
+      "ms": 1200
+    },
+    {
+      "type": "mark",
+      "name": "cycles"
+    },
+    {
+      "type": "repeat",
+      "times": "$cycles",
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "down",
+          "px": "$backPx",
+          "ms": "$dragMs",
+          "profile": "drag"
+        },
+        {
+          "type": "pause",
+          "ms": "$turnMs"
+        },
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$fwdPx",
+          "ms": "$dragMs",
+          "profile": "drag"
+        },
+        {
+          "type": "pause",
+          "ms": "$turnMs"
+        }
+      ]
+    },
+    {
+      "type": "mark",
+      "name": "end"
+    },
+    {
+      "type": "pause",
+      "ms": 1000
+    }
+  ]
+}
