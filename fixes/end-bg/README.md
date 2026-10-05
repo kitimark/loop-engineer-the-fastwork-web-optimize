@@ -739,6 +739,25 @@ This addendum is README-only: no script changes and no re-pin. Where it differs 
 
   Raw hold and gate logs are never committed unscrubbed.
 
+### P-145 block 1 (2026-10-05 22:16-22:40Z): BLOCK STOP, no counted data
+
+- **H1 and H2 VALID.**
+  - The start gate passed: xcode-serious, state Serious (Xcode-induced), battery 38.5 → 38.2 °C.
+  - The warm-ups WC, WP and WT ran.
+  - S0 PASSED: 55.5 fps, slow share 0.031.
+- **From H3 on, the phone was too hot to measure.**
+  - The gesture tool's own thermal profile check (I-186, exit 8) refused every counted run: EC1, EP1, ET1, EP2, ET2
+    and EC2. The phone read **Critical**, above the Xcode condition Serious, with the battery at **40.2-40.9 °C**.
+  - No counted record exists.
+  - H5's end gate failed on the ceiling (Critical, battery 40.1 → 39.8 °C): exit 3, a VOID hold, and the block driver
+    stopped (BLOCK STOP).
+- **Lead ruling.**
+  - The STOP is accepted. Block 2 of 2 is a GO, in the phone slot right after P-147.
+  - Block 1's files are moved to `out/p145/block1/` (N1). The dry-run logs are in `out/p145/dry/`.
+  - At block 2's start, inside the phone hold: first `wait.mjs phone-temp --below 38 --timeout 600`, then the profile
+    check (`iphone.mjs profile`). If the phone is still Critical after that, the runner stops and tells the lead. No
+    user step is posted without the lead's go.
+
 ## 9. Pending
 
 - PR-025: the user's pick, then the phone test of slow frames.
