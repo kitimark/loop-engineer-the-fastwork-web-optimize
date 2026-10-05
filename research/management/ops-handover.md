@@ -72,6 +72,19 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:4xZ **P-130 stopped by the unplug (T-195); ops read ruling: wait for H4 + H5.**
+  - State: H1-H3 VALID (8 ms grid). H4 is INTERRUPTED at 11:33:37Z with no record; H5 has not run.
+  - Ops ruled before anyone ran p130-read on any run: the read waits for H4 (whole) and then H5, in one continuation
+    `--block P-130` hold after "phone back", on the same snap, pins, gates and order.
+    - Why: stopping at 2 C + 2 V would change the registered 4 + 4 design. Reading the partial block first would make
+      the continue/stop choice data-informed.
+  - Fallback, fixed now, used only if the lead rules the phone won't be back in time: p130-read on H2-H3 as
+    registered, labelled truncated (stop not data-driven).
+  - The result read discloses the split block.
+  - iphone-runner's servers stay up on the pre-7d snap. Safari was not parked: park it at the start of the
+    continuation hold.
+  - Phone work waits for "phone back": P-130 H4/H5, P-137, P-134, P-136 part 2 and the user swipe steps, in the lead's
+    order.
 - 10-05 ~11:3xZ **P-136 pre-data read PASS (fix-nav-morph U2, card rev 1 6d8d400c); row registered; to the lead for signature.**
   - Pins = committed blobs = disk; tools equal to main.
   - Ops reproduced K 1b2eecc66011 + u2-delta c0d040afe271 = V c7435c24dc56 (with `patch -o`; `node --check` ok).
