@@ -72,6 +72,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-124 final read, D1 (fix-hero-exit-threaded 8240416b): PASS with notes N1-N4; ready for the lead's signature for the phone hold.**
+  - ops re-ran the owner's finalver.sh with all three compare versions (777663766071, 9cb401ffd83d, e2c2bfdad2ba, as pinned at 8240416b). Every exit code and output hash matches the owner's:
+    - fo a22f3727c43f / 0e6a9ba1571f, exit 0;
+    - nl 9e9d079f3d5d / 886bb5ca59ee, exit 0;
+    - fs fdf94416f196 / 95d1626dac5d, exit 0;
+    - e4 c2336efc0624 / adb8e8b8972f, exit 2 (777663 exits 1 on `$flicks`, the known parser gap).
+    - fo, nl and fs give byte-identical output under 777663 and 9cb401. On all four items the e2c2 output minus `^AMEND-b` lines is byte-identical to 9cb401's, so the frozen part of the rule is unchanged.
+  - All 17 records hash to the owner's list (s1-1 378a6db6b72a ... s13-1 6406f4a2bc2e). s5-1 680e72ff8e8a is VOID (ruling A).
+  - Timing: the amendment commit 4020ca2c is 01:46:54Z; s10-1 is written 01:47:58Z, s11 02:00Z, s12 02:02Z, s13 02:04Z. So ruling B was fixed before s11 and s13. s13's start state matches the others (endH 815, maxY 6075).
+  - N1: e4 passes only under the lead's AMEND-b. The frozen verdict, DIFF 4 (start y of counted flicks 3-6: 20, 43, 42 and 727 px apart), is reported beside it in every write-up.
+    - The amendment's conditions hold: counted stroke 2 ended 20 px apart (C 2034, V 2014), and the clean C-C pair s9/s13 starts strokes 3-6 118, 181, 182 and 873 px apart.
+    - E1-E4 match exactly (start, lift, prevented 0), as does the page state.
+  - N2: two e4 path groups pass exactly at their bar: up 200px/140ms fling C-V 0.67, need 0.67; down 150px/1200ms drag 0.88, need 0.88. Borderline; disclose.
+  - N3: the Simulator counts are mechanism only (F-084), not a verdict: fo V released 3/3 and C caught 3/3; nl 0/6/0 on both arms; fs 0/12/0 with no misses; e4 the same on both arms (E1 caught, E3 pulled back to open, E4 caught). Prediction 8 (pulled back V <= C) is left for the phone.
+  - N4: the flick drift (C's late flicks coast farther than V's) is within-build. s9 vs s13 differ by up to 873 px, so it is not an arm effect.
+  - Rulings A (ops) and B (the lead) are recorded in the P-124 row of PREDICTIONS.md, as the lead asked.
 - 10-05 **P-125 result read (fix-toolbar-resize b0d786f3): AGREE, NOT-THE-WINDOW, predictions 7 of 10; with a scope note and an ops miss.**
   - Re-score with the frozen scorer c52de0edd5d3 on out/toolbar-resize/sim125 (9 runs): byte-identical to p125-score.json (2a5e45b7d19d). Pins as signed; p125-runs.jsonl served A 3e3e94cb6e9f / B 6a79036cc108, CSS f836404b3728, inject 8b8c8eac2603. All 9 runs valid, 4-5 in-view step frames each (pull-to-refresh guard ended 7 loops early, disclosed).
   - wc1 is decisive: it drops 51/54 "0" writes (no element at "0" at read), and the in-view Layout ratio is 1.045 against a C-to-C noise below 0.015, far from the 0.70 PARTIAL line. So the will-change toggle is not the trigger, although in C it COVERS 22/22 heavy frames with a STEP-LINKED rate (RR 6.75).
