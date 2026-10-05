@@ -226,3 +226,165 @@ Gaps closed (mgmt-ops-10's pre-data read of 5bd7eb4d, 9b272dd5): G1 PIN line at 
 G3 H2 without warm-ups stated with its condition (same server processes and ports); G4 header P-120 and the lead's
 ruling in place of "provisional / final set"; G5 the one-void-G-run note under the gates; G6 predictions per gate,
 sentinels and overall; G7 the GESTURE_BUDGET_S check before H3/H4 and the pre-stated split.
+
+### Amendment A2: the M leg re-driven from m = 0 (written AFTER H1's data was seen; lead ruling, option B)
+
+**Disclosure.** This amendment was written after H1 ran (2026-10-04 23:29-23:34Z, exit 0, Serious and induced at
+start and end, battery 31.6 → 32.6 C). int-v8 and mgmt-ops-10 both looked at H1's M data before writing it. An earlier
+draft (A1) proposed dropping the M gates after that look. The lead rejected it as choosing the test after seeing the
+data. A2 keeps P-111's M gates unchanged and changes only how the driver's start state is set, the same way in both arms.
+
+**What H1 showed (H1's M leg is VOID; nothing below is counted).** mV2 and mV3 void with "5 tween starts in the probe
+frames, expected 6 | driver tweens C1,O1,C2,O2,C3, expected O1,C1,O2,C2,O3,C3". The cause is a procedure mismatch.
+P-098's driver (`window.__fwMorphDrive`, debug code inside the page JS) first scrolls to `__pinMax()`. On v8 the
+panel is closed there (m = 0 at 5260). On v9, rev 7c makes the page end the open end: its scroll handler (`__msTick`)
+has opened the panel (m = 1 at 6075, after the 100lvh spacer). So V's first tween was a close. mC1 and mC4 are valid
+runs (held m=1 p95 17), but they count only as sentinels. Their tween and moving data are not reused in H2'.
+Flagged figures (not counted, OBSERVED, from 2 void V runs). Sent to the rev 7c owner (fix-hero-exit-threaded) and to
+fix-morph-gpu before step 5:
+
+| H1, flagged, not counted | C = v8 (mC1, mC4) | V = v9 step 4 (mV2, mV3) |
+|---|---|---|
+| close first-frame dt, median (type-matched) | 28.5 ms (31 30 28 27 28 29) | 38.5-40 ms (39 36 41 38; 38.5 without V's first, scroll-opened close) |
+| open first-frame dt, median | 35.5 ms | 37 ms (about +1.5) |
+| moving frames > 34 / > 50 ms | 2 / 0, 2 / 0 | 6 / 1, 6 / 0 |
+
+The close gap (about +10 ms) is above Mtweens' +2 ms limit. If H2' shows it again, P-120 is WORSE on Mtweens. Cause
+UNRESOLVED. The rev 7c owner's suspects, both unchecked: a second morph writer per close frame (`__msTick` beside the
+driver's tween), or the extra 100lvh of layout height. A Chrome call tree of one close frame per arm would separate
+them (after P-120, not part of it).
+
+**The precondition: one uncounted close in both arms.** The lead allowed either a spacer-start start or one uncounted
+close first, whichever needs no per-arm procedure difference. A spacer-start start is impossible without changing the
+arm bytes. The driver re-scrolls to `__pinMax()` itself, and it lives in the page JS, so editing it would change the
+served C/V bytes (S3, and H3/H4 would be superseded). A probe-side driver would be a tools change. So A2 uses the
+uncounted close, with no change to the arms or the tools. **This cut is how the lead's ruling "both arms drive from
+m = 0" is implemented** (wording agreed by the lead): each record is cut at the first m = 0 after the first close, by
+the same rule in both arms, so every counted tween sequence starts from m = 0.
+- **Holds.** Both arms run the identical call: hold.sh item `n<arm><n>`, `iphone.mjs run --driver morph --cycles 4`
+  (hold 2000 ms, as before). Each tween sequence then starts like this:
+  - C: O C, then O C O C O C (8 tweens).
+  - V: C (from rev 7c's open start), then O C O C O C (7 tweens).
+- **Scoring.** score.mjs `trimM` applies one rule to every n record: drop everything up to the first frame at m = 0
+  after the first close. It cuts the driver's rows, the probe frames (the drive mark now starts at the cut) and the
+  probe's tween list alike. It then hands P-111's `scoreM` the counted window: O1 C1 O2 C2 O3 C3 from m = 0, with
+  P-111's EXPECT (6 tweens) and gates unchanged.
+- **Void rules.** A record that does not fit is void ("run error: A2 ..."):
+  - cycles not 4;
+  - no close back to m = 0;
+  - more than one open before the first close;
+  - driver and probe cuts more than 50 ms apart;
+  - dropped probe tweens not equal to dropped driver tweens;
+  - no data: zero moving frames after the cut (also when the item exited 0).
+- **Sentinel.** The C sentinel stays the tool's own (held m=1 p95 <= 18 ms over the run).
+- **Not pooled.** H1's `m` items are refused: hold.sh ends such a hold VOID before its gate, and score.mjs refuses a
+  block that mixes `m` and `n` items. H1's C tween data is not reused.
+
+**Exit-code rule (lead, after H3a).** H3a (23:40Z) printed VALID although WDA was down and every gesture exited 1. From
+the A2 pins on, hold.sh does three things:
+- It runs `iphone.mjs wda check` before the gate of any hold with a G item (I-112). Non-zero means HOLD VOID, no run.
+- It prints `ITEM <I> VOID` for any item that exits non-zero or writes no run file.
+- It ends the hold `HOLD <H> VOID counted item(s) failed: ...` (exit 6) when a counted item (n.., g..) failed. It does
+  this after the end gate and the sleep check, so the log is complete.
+
+An item that exits 0 but leaves no data is void in the scorer too:
+- a missing or empty record (P-111's "no run record" / "no record");
+- an n record with zero moving frames after the cut;
+- a G record with zero moving frames (scrollY changes) in its part window. score.mjs `gNoData` reports this through
+  run.errors, so P-111's scoreG voids it.
+
+**G leg: stopped after H3a2 (lead rulings, 2026-10-05 ~00:00Z).**
+- **H3a is VOID:** WDA was down and every gesture exited 1.
+- **H3a2** (re-run, 23:49-23:56Z, gates PASS 34.7 → 35.8 C, every item exit 0, PIN head 63904a76) is VALID as a
+  record, but its GM numbers are not evidence. On v9, part M's flings take a different path. The settled y after each
+  fling of flick-middle-v1 (OBSERVED, from the records' `untils`):
+  - C (v8) gMC1: 1995, 5220, 1738, 5220, 1702, 5184, 1649. Settles take ~3.2 s.
+  - V (v9) gMV1: 2011, 6035, 5240, 6035, 5240, 6035, 5241. Settles take ~0.5 s. gMV2 is the same.
+  - P-111's two arms (v8 vs v7) both moved like C, with ~26-27 s part-M windows.
+
+  After the first fling, every fast down-fling from v9's page end (6035, rev 7c's open end) stops at the closed rest
+  (~5240), one screen up. So V never re-crosses the middle (people, pain, commission). The windows differ too:
+
+  | H3a2 part M (not evidence) | window | moving frames | > 50 / > 34 ms |
+  |---|---|---|---|
+  | gMC1 (C) | 27.0 s | 957 | 0 / 2 |
+  | gMV1 (V) | 13.2 s | 225 | 0 / 4 |
+  | gMV2 (V) | 13.3 s | 222 | 0 / 3 |
+
+  **GM is INSUFFICIENT (not comparable) for P-120**, not no-worse. The registered absolute counts would compare a long
+  mid-page path with a short end-screen path, which favours V. No rate gate is swapped in after this look.
+- **H3b and H4 are not run.** GE is not run under P-120. Part E (flick-end-v1) flings out of the page end with the
+  same down-fling (560 px / 140 ms) that stopped at ~5240 in part M, so it is affected the same way. This is an
+  inference from H3a2's part-M records; no part-E run was spent on it.
+- **P-121.** A path-matched G driver is registered as its own ticket, with this look disclosed. It will have identical
+  scripts for both arms, a path-coverage gate that VOIDs end-screen runs, and window length and moving frames reported.
+  It is not an amendment to P-120.
+- **The cause (rev 7c owner's code read, OBSERVED + code; lead ruling 2026-10-05).** On v9, a fast fling away from
+  the page end stops after one screen, so leaving the end takes two flings. This is rev 7c's touchend finger rule:
+  from the open end, any close-direction release fires a smooth scrollTo to the closed rest, at any speed. That cancels
+  iOS momentum. It is not a snap. It is a regression from rev 7b, which was never tested for flinging away.
+  - rev 7d will release fast flings (> 5 px/ms). It goes to the Simulator, then G, then the user's finger A/B.
+  - v9 step 4 is rebuilt with rev 7d after it lands. That supersedes this V arm (S3).
+  - So H2' is **not** run on the rev 7c arm. The next phone segment runs against the rev 7d build, with re-registered
+    arms.
+  - A code read of step 4 found that nothing outside rev 7c's own morph-scroll block (JS 14180-14520) reads the
+    `__ms*` state or relies on the scrollTo to the closed rest. double-drive, scroll-cb-phone, hero-exit and
+    nav-hit-test are driven by scroll position or by the touch flag alone.
+  - The A2 cut is still needed on rev 7d unless `__msTick` changes. A drive reaches `__pinMax` with the morph open
+    through the scroll callback's `__msTick`, not through touchend.
+- **P-120's overall verdict** on the rev 7c arm can now only be WORSE (from Mmoving or Mtweens) or insufficient. The
+  no-worse line for the best-build switch also needs P-121.
+
+**Real-driver check before H5 (the lead's re-sign precondition).** One real cycles-4 pass per arm on the Simulator (WebKit),
+run with the committed A2 scorer:
+- How: int-v8's own normal chrome-measure hold, `sim.mjs session` (not functional: `run` is refused there), then
+  `sim.mjs run --driver morph --cycles 4 --arm C|V` on the P-120 servers' C/V ports. It runs right after this commit
+  (the G leg is stopped, so no H4 window is needed).
+- Reported: the cut lands on m = 0; the driver and probe cuts are <= 50 ms apart; 6 counted tweens O1..C3 per arm.
+- No timing number is used. Simulator numbers never pool.
+- The records stay gitignored (out/pv9/sim/).
+
+**H2' (replaces H2; runs only after the Simulator check, mgmt-ops-10's re-check and the lead's re-sign; not on the
+rev 7c arm: the rev 7d rebuild re-registers the arms first, see "G leg" above).**
+- Holds: H5 `wC wV nC1 nV2 nV3 nC4` · H6 `wC wV nC5 nV6 nV7 nC8`. Fresh C V V C C V V C, n = 4 per arm, warm-ups in
+  both holds. If a hold does not fit 600 s: H5a `wC wV nC1 nV2` · H5b `wC wV nV3 nC4` (H6 the same way).
+- Same servers and ports as H1/H3a2, the same served-hash check before every item. The PIN line is checked against
+  the new pins below; everything else is unchanged.
+- M gates (P-111's, unchanged): Mmoving > 50 WORSE when d > +1, > 34 when d > +2. Mtweens O1.f1-f3, close.f1/f3 WORSE
+  when d > +2 ms. Needs >= 3 valid runs per arm.
+
+**Stop rule (lead).** If more than 1 of 4 n runs per arm void for "more than one open before the first close" or
+"cuts more than 50 ms apart", int-v8 stops and reports to the lead. No re-run around it.
+
+**Self-test** (selftest.mjs, SELFTEST OK 65 checks). The 15 P-111 checks are unchanged. The A2 checks, on H1's records:
+- (5) The open-start replay: mV2 and mV3 fail P-111's EXPECT as `m` items, and are void as `n` items (cycles 3).
+- (6) Synthetic cycles-4 replays from H1's real rows, for the self-test only and never scored. Each run's last
+  open..end segment is appended once:
+  - V (open start, 7 tweens) and C (8 tweens) both cut to exactly O1..C3 from m = 0, with no void.
+  - V's counted O1 / C1 equal its original O1 / C2; C's equal its original O2 / C2.
+  - The drive mark starts at the cut.
+  - The driver and probe cuts land on the same frame.
+  - Untrimmed, the same records void (mutation check by hand).
+- (7) The three void rules.
+- (8) A block mixing m and n items is refused.
+- (9) The hold.sh text: n items get `--cycles 4`, m items are refused, and wda check runs before a G hold.
+- (10) VALID is refused on a failed item: a non-zero exit or a missing run file marks the item void, a failed counted
+  item voids the hold, and that check comes before the VALID line. In the scorer these are void: an n item with no
+  record or an empty one, an n item with zero moving frames after the cut, and a G record with zero moving frames (a
+  real P-111 G record is not).
+
+**Pins (A2).** hold.sh, score.mjs and selftest.mjs are the blobs of the amendment commit; their sha256/12 is in the
+re-sign request. serve.sh, P-111's scorer, thermal-gate, verdict, pmcheck, the flick scripts and HASHES.txt are
+unchanged. A PIN line with any other value voids that hold. H1, H3a and H3a2 ran on the original pins (head 63904a76).
+
+**Predictions.** The pre-look values, registered in the ticket above before any data, stand as registered and are
+scored. A2 adds post-H1-look values beside them, not blind (written after the flagged close gap):
+
+| | pre-look (registered) | post-H1-look (A2) |
+|---|---|---|
+| Mmoving no-worse | 0.85 | 0.65 |
+| Mtweens no-worse | 0.75 | 0.30 |
+| GM / GE no-worse | 0.85 / 0.80 | moot: GM insufficient (not comparable), GE not run |
+| overall no-worse / insufficient / WORSE | 0.60 / 0.10 / 0.30 | 0.25 / 0.10 / 0.65 (written before the G ruling; P-120 can now only be insufficient or WORSE) |
+
+If WORSE: the ticket's split by reversal builds, rev 7c first.
