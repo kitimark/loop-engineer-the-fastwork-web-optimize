@@ -1326,6 +1326,14 @@ Descriptive notes (not part of the verdict):
 - **Simulator drop size.** Its drop (~80) is smaller than Chrome's 93. Its scroll is 608 steps against Chrome's 628,
   and the drop is measured on another engine. The mechanism matches: one test less per morph-open frame.
 
+**Result read** (ops-reader-P138, 14:30Z): **PASS confirmed**, with A0 and C1-C8 all hits (9 of 9).
+- The reader reproduced `counts-result.json` byte for byte (f7975786e3fd) and got SELFTEST-138 OK 20.
+- Pins equal the signed pins; 8 shared holds, each exit 0; 0 VOIDs; N1-N7 honoured.
+- The step 2 repeat counts as the card's one repeat. It ran from an unpinned copy of `chrome()`, but its arguments,
+  record and hold line all match.
+- Reported only, OBSERVED: Simulator A/A slot 1, the one where SIM_QUIET did not settle, holds both ends of the forced
+  Layout range (1508 and 1543). Slot 2 alone spans 22, and V's +18 fits that as well.
+
 **Part 2 folds into int-v8's single v9.2 phone block** (lead, per user T-199 #3). There is no separate P-138 phone
 block. `out/p138/snap` is made (`serve138.sh snap ok`) in case the lead rules otherwise.
 
