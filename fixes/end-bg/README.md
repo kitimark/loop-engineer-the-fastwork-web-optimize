@@ -933,13 +933,13 @@ MB and 36 → 16 decodes. Prediction 7 is informed by P-137's C runs (same C, dr
 | `img/b-manifest.json` | 2c44c949d8a8 |
 | `img/patch.diff` | ec40def78cb8 |
 | `img/img-inject.mjs` | 4eebec70e95b (parse-checked) |
-| `img/sim-b.sh` | 661a907d572a |
-| `img/cost-b.mjs` | 147a1f0d328a (self-test 7 ok) |
+| `img/sim-b.sh` | 5aede15c5f9f (rev 1.1; rev 1 661a907d572a) |
+| `img/cost-b.mjs` | ab1cd4046ee6 (rev 1.1, self-test 13 ok; rev 1 147a1f0d328a) |
 | `img-scroll.mjs` (unchanged, used by PR-025) | 682d14b8beab |
 | `phone/p150-serve.sh` | a9b059094d07 |
 | `phone/p150-hold.sh` | 1cb0b24aa2ca |
 | `phone/p150-block.sh` | d19c744265fa |
-| `phone/p150-read.mjs` | 382006b9f60e (self-test 7 ok) |
+| `phone/p150-read.mjs` | 24b1ed51f58e (rev 1.1, self-test 12 ok; rev 1 382006b9f60e) |
 | `phone/p137-read.mjs` | b6d24ad5e73c |
 | `research/serious-heat/p129-read.mjs` | 06f74f5d19ca |
 | `research/serious-heat/phone/p129-gates.mjs` | a06847c64a2e |
@@ -955,6 +955,8 @@ node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds
   node tools/sim.mjs session --functional --owner fix-end-bg -- sh fixes/end-bg/img/sim-b.sh K1 C B
 node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-end-bg -- \
   node tools/sim.mjs session --functional --owner fix-end-bg -- sh fixes/end-bg/img/sim-b.sh K2 B C
+node fixes/end-bg/img/rebuild-b.mjs --check out/snapshots/endbg-B-049b13ced4e3   # rev 1.1 N7: right after the Chrome part
+shasum -a 256 out/snapshots/endbg-C-e1359ab9994a/_app/immutable/nodes/2.DyWL8TcE.js   # 1b2eecc66011
 node fixes/end-bg/img/cost-b.mjs --chrome out/end-bg/images/img-scroll-<stamp>.json --sim out/end-bg/simb --json out/end-bg/cost-b.json
 # phone (iphone-runner)
 sh fixes/end-bg/phone/p150-serve.sh start
@@ -970,3 +972,102 @@ sh fixes/end-bg/phone/p150-serve.sh stop
 Kit status: shell syntax checked; the readers' self-tests pass. The phone kit's dry run (servers, the N manifest check, served hashes, plan;
 no phone) is queued in a `--no-timing` hold behind the P-142 phone block. Its result is sent to the lead and reader, and
 the card is changed only by a dated addendum if the dry run finds a kit fault.
+
+### P-150 addendum rev 1.1 (ops-reader-P150 pre-data read: FAIL, fixable before data; lead rulings F1, F2, N1-N10)
+
+README and three kit files; no data exists. Where this differs from sections 10.1-10.5, this text wins. Re-pinned:
+`img/cost-b.mjs` ab1cd4046ee6, `img/sim-b.sh` 5aede15c5f9f, `phone/p150-read.mjs` 24b1ed51f58e (table above). Every
+other pin is unchanged.
+
+- **F1, cost card code (fixed).**
+  - The Simulator half of R1 read a `bytes` field that the Simulator rows did not carry. It was always false, so the
+    card could never PASS.
+  - The fix has two parts. `simRuns` sets `bytes = encodedBytes`, and `decide` reads `bytes ?? encodedBytes`.
+  - The self-test now builds gesture-like records in a temp folder and reads them through `simRuns` and `counts()`.
+    One case passes rows that carry only `encodedBytes`, 10x apart: PASS, R1 true.
+- **F1, R2 restated.**
+  - **R2 fewer decodes**: Chrome max(B decAll) < min(C decAll). decAll is load plus scroll, so the lazy edit moving wall
+    decodes from the load into the scroll cannot count as fewer.
+  - **"decAll not more"** joins R3's fields. R3 is now decAll, PaintImage, Paint and RasterTask: WORSE when min(B) >
+    max(C).
+  - decLoad is reported and decides nothing.
+  - Prediction 3 now reads: "Chrome decode events over load and scroll: N median < C median, ranges separate (R2)",
+    p 0.70.
+- **F2, phone NO-WORSE (fixed).** At >34 and at >50 separately, N is WORSE when either test holds:
+  - (a) full separation: min(N) > max(C);
+  - (b) the median bound, fixed now: median(N) − median(C) > +2 at >34, or > +1 at >50. These are counts; on the rates
+    basis the bound is 2 / median n(C) and 1 / median n(C).
+
+  The twins use the bound of their main threshold. A FAIL names (a), (b) or both, and goes to the lead: block 2, or not
+  landing.
+- **3 v 3.** The check stays at 3 v 3, as the less-work rule's short no-worse check. This is disclosed against protocol
+  §5.3's 4 v 4 and P-137's 4 v 4: three runs per arm separate less easily, and the median bound covers what separation
+  alone would miss.
+- **N1 dry-run addendum.** No phone hold of P-150 starts before a dated addendum in this card shows:
+  - `P150_DRY` for H1-H6 all `DRY ok`;
+  - the served hashes, index.html included;
+  - the N manifest check 38/38;
+  - GESTURE_BUDGET_S;
+  - the plan in the card's order.
+
+  A kit fault found there means a re-pin and the lead's delta check.
+- **N2 void holds** (level with P-145 rev 1.1 N1).
+  - A hold that ends VOID is one of:
+    - exit 3: end gate, or a Mac sleep;
+    - exit 4: hash or setup;
+    - exit 5: start gate, or WDA;
+    - exit 8: a sentinel failed.
+  - The runner moves that hold's g- and tl- records to `out/p150/void/<H>/` before the read. They never count; the
+    reader reads only `out/p150/runs`.
+  - A time-guard VOID (exit 7) that `p150-block.sh` retries whole, and that then ends VALID, is not a void hold. The
+    retry moves its first try's files aside.
+  - A BLOCK STOP ends the block. A restart is block 2 of 2, on the lead's go. Before it, the runner moves block 1's runs
+    to `out/p150/block1/`, so block 2 is read alone and never pooled.
+- **N3 first-in-hold.** EN1, EC2 and EN3 open their holds: N twice, C once. No two-per-hold grouping balances this, and
+  every item restarts Safari.
+  - The reader lists per counted run its hold and position (from the plan), its start (`meta.date`), the gap since the
+    previous counted or sentinel run, and the battery °C of its phone hold's start read (`meta.profile.start.battC`).
+  - A FAIL whose lowest N run at a failing threshold is EN1 or EN3 is labelled **position-confounded** next to the
+    verdict. The outcome is unchanged.
+- **N4 safari-restart wording.**
+  - The fs script starts with a reload, so each run loads the page twice in one relaunched Safari. Pictures painted by
+    the restart's own load decode before the reload, outside the moving frames.
+  - So the claim is: "no decode from an earlier run is reused". It is not "the first decode falls inside the run".
+  - Safari's HTTP disk cache survives the restart, so this checks decode, not download. Download is covered by the cost
+    card, whose Simulator sessions empty the cache.
+  - That the relaunch gets a new WebContent process: OBSERVED in the tool's design only (`tools/lib/safari-restart.mjs`
+    quits and relaunches the app); no WebKit source is cited.
+  - Whether WebKit's memory cache keeps decoded pictures across loads in one web process: UNRESOLVED. The decisive local
+    check is a Simulator functional session that loads C, runs `sim.mjs safari-restart`, and compares the WebContent
+    process id before and after (a `ps` inside the booted Simulator). It needs no timing.
+- **N5 platform labels.**
+  - "AVIF decode costs more CPU per pixel than JPEG": UNRESOLVED (no reference cited). The phone check measures the
+    outcome.
+  - "WebKit decodes large pictures off the main thread": UNRESOLVED for AVIF on iOS 26. Decisive check: a Timeline run on
+    N looking for decode records on the main thread. It is not part of this card.
+  - "The display:none wall columns are never fetched": OBSERVED in Chrome (PR-025's 430 px loads fetched 81 files, not
+    89, under option A). In Safari it is UNRESOLVED until the cost card's Simulator file count shows it; that count is
+    descriptive.
+  - Lazy loading (Safari 15.4) and AVIF (iOS 16) stay CONFIRMED; the reader re-checked both.
+- **N6 falsification, added.** The lazy edit is a second phone risk: the wall's fetch and decode move into the scroll.
+  A FAIL cannot split AVIF from lazy. The follow-up would be an A-only arm (resize plus lazy, no AVIF) against N.
+- **N7 rule text.**
+  - R4 counts an AVIF decode test that ends 'pending' or 'zero' as a failure, like 'fail'.
+  - R5 counts only gesture exit-0 runs: `sim-b.sh` renames any other record to `<tag>-<arm>.fail.json`. A run whose
+    counter saw `bufferFull > 0` has no counts.
+  - Simulator re-run rule: a session that ends VOID, or leaves an arm without a counted run, is re-run once as K3 (then
+    K4) with the same arm order. Still short of 2 per arm: INSUFFICIENT.
+  - The Chrome part checks no served hashes, so right after it the runner checks the N snapshot with `rebuild-b.mjs
+    --check` (38/38) and the C snapshot's JS (1b2eecc66011). A mismatch voids the Chrome part.
+  - Prediction 1 is insufficient under an INSUFFICIENT card. Prediction 3's "C about 36" is context and is not scored.
+- **N8 post-data labels.** This card is post-data.
+  - Predictions 1-4 are informed by PR-025's Chrome loads of the same builds.
+  - Prediction 7, prediction 8 and the choice of a whole-page metric are informed by P-137's C runs (same C, driver and
+    profile).
+  - The user's Try-it of B (PR-025) is a judgement of looks, not a measurement. It informs nothing here.
+  - No Simulator data on B has been seen: `out/end-bg/simb` does not exist, and PR-025's measurements were Chrome only.
+    Predictions 5 and 6 are uninformed.
+- **N9 gap between the parts.** The read reports the time between part 1's last hold and part 2's first, and every phone
+  job in that gap, from `locks/holds.log`.
+- **N10 wording.** The manifest's `skipped` lists all 3 seller photos as "AVIF skipped". Two of them are among the 35
+  (resized only). The third, `cover.jpg`, needs no resize and is not among the 35.

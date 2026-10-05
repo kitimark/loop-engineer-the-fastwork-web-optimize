@@ -38,7 +38,9 @@ for A in "$@"; do
   F=$O/$TAG-$A.json; rm -f $F
   node tools/sim.mjs open "http://localhost:$(port $A)/" > $O/$TAG-$A-open.log 2>&1 || { kill $PIDS; echo "SIMB $TAG VOID open $A"; exit 4; }
   node tools/sim.mjs gesture fixes/morph-scroll/g-fastshort-v1.json --count-only --inject fixes/end-bg/img/img-inject.mjs --label "imgb-$TAG-$A" --out $F > $O/$TAG-$A.log 2>&1; r=$?
-  echo "RUN $TAG $A exit $r load1 $(sysctl -n vm.loadavg | cut -d' ' -f2) $( [ -s $F ] && echo 'record ok' || echo 'no record')"
+  # only an exit-0 gesture's record counts (card R5): any other record is renamed so cost-b.mjs never reads it
+  [ $r -ne 0 ] && [ -e $F ] && mv $F $O/$TAG-$A.fail.json
+  echo "RUN $TAG $A exit $r load1 $(sysctl -n vm.loadavg | cut -d' ' -f2) $( [ -s $F ] && echo 'record ok' || echo 'no counted record')"
 done
 kill $PIDS 2>/dev/null
 echo "SIMB $TAG DONE"
