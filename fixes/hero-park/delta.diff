@@ -1,0 +1,21 @@
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+index 9c12794f..037e4861 100644
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4895,10 +4895,15 @@ function fD(r, i) {
+       // the baseline writer, as in the baseline: there the cue's blur is under 0.7 px, and the float's animated
+       // blur drew the cue up to 78 levels off the baseline at y6 (0 at y30; Simulator, OBSERVED, cause unknown).
+       // Past the end nothing moves in the exit.
++      // hero-park (T-194): live past end + 40 px also parks at once, finger down or not. Live, the exit's scroll-driven
++      // animations stay relevant, so WebKit recalculates their style on every frame (see above) while the page scrolls
++      // on below the hero (Chrome census: live to y ~2800 on back-to-back strokes); parked past the end the baseline
++      // rules draw the completed exit from the inline value s() writes (r = 0), as heRest's park past the end does.
++      // The 40 px band keeps a scroll that hovers at the end from flipping the class (live again only below the end).
+       heSc = (ev) => {
+         if (ev.target !== document || !heMode || e.matches) return;
+         let y = window.scrollY;
+-        if (heLive()) return y <= heTop + 30 ? (window.clearTimeout(heR), (heR = 0), s(), b.classList.remove(`he-css`)) : heRT();
++        if (heLive()) return y <= heTop + 30 || y >= heEnd + 40 ? (window.clearTimeout(heR), (heR = 0), s(), b.classList.remove(`he-css`)) : heRT();
+         y > heTop + 30 && y < heEnd && heUp();
+       },
+       // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.

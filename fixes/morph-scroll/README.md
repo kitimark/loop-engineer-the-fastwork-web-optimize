@@ -593,6 +593,20 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
   the extra screen pays it more often than the spring's one open per visit. Not measured on the phone. If morph-gpu lands
   a revision that is no slower on the phone, this is rebuilt on it (build.mjs).
 - **Fast-flick G check** (user T-113 #4): needed before B can join a best build; phone slot via the lead.
+- **Options, not built (T-193 items 3/4; lead 2026-10-05: "no menu proposals now … keep them in the README as
+  options").** Simulator repaint counts over a 1.2 s menu open or close (`ablate/split-sim.mjs` + `split-read.mjs`,
+  9291ce27; counts only, no timing, OBSERVED):
+
+  | arm (CSS in `ablate/`) | close: pixels painted | open: pixels painted |
+  |---|---|---|
+  | fixed-size menu panel (`noscale.css`, item 3) | +6 % | +25 % |
+  | blur filters off (item 4; `nofilter.css`, `nobackdrop.css`) | -16 % | -22 % |
+  | column drift paused (`noanim.css`) | -22 % | 0 |
+
+  Item 3 paints less often but more area: no win. A blur option (a smaller radius, or a blur snapped to a few fixed
+  steps) and the drift pause each save about a fifth of the painted pixels, with no evidence yet that either removes
+  a slow frame. The drift pause and a blur change alter the look, so each would go to the user as a proposal with a
+  Try-it, never as a silent fix.
 - **Not run:** finger/G driver, toolbar collapse, reduced motion in WebKit, iPad, rubber band at the page end, reload
   while scrolled into the extra screen.
 
