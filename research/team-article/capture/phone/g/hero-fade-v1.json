@@ -1,0 +1,21 @@
+{
+  "name": "hero-fade-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "T-170 #101 / T-183 scene a (the user's first catch, C-058): the hero cards fading out, and before it scene c (crop): the hero countdown at rest. Load, 1.5 s, mark rest, 12 s at rest at the top (cards in orbit, countdown ticking; hold.sh starts this driver at Mac second :40 of a minute, so the countdown crop's 6 s window starts at the same whole second of the page's clock on both arms and shows the same seconds on both sides; the frozen page counts down to 2026-11-02 05:00Z), then mark fade and three slow drags of 400 px in 2400 ms each (finger on the glass, no momentum, plateau ~178 px/s) with 300 ms between them: the page goes through the hero track (the cards scatter and fade over its first ~850 px), then 1.5 s at rest. Speed fixed here before any capture; same input on both arms.",
+  "params": { "x": 215, "settleMs": 1500, "restMs": 12000, "dragPx": 400, "dragMs": 2400, "gapMs": 300, "drags": 3 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": "$settleMs" },
+    { "type": "mark", "name": "rest" },
+    { "type": "pause", "ms": "$restMs" },
+    { "type": "mark", "name": "fade" },
+    { "type": "repeat", "times": "$drags", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "end" }
+  ]
+}

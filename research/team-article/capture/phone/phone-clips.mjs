@@ -3,7 +3,7 @@
 // image file from a frame and nobody looks at a frame (I-062); the movies are only cropped, scaled and re-encoded.
 //
 //   node research/team-article/capture/phone/phone-clips.mjs [--runs out/phone-clips/runs] [--out out/phone-clips/clips]
-//        [--scenes e,s,h,f] [--show 1] [--fps 60] [--no-encode] [--json <file>]
+//        [--clips a,c,p,d,t,e,s] [--show 1] [--fps 60] [--no-encode] [--json <file>]   (--scenes: old name of --clips)
 //   node research/team-article/capture/phone/phone-clips.mjs --self-test
 //
 // Inputs per run L = pc-<H>-<scene><arm><n> (hold.sh): runs/L.json (the driver's record), out/iphone-screen/L.mov and
@@ -23,7 +23,9 @@
 // (A first draft used the frames' hash changes; the hero's animations change almost every frame, so that can't work.)
 //
 // Window per scene (fixed before data): e (flick-end-v1) into1 → end; h (flick-hero-v1) down1 → end; f
-// (flick-fresh-v1) fresh-flick → end; s (scripted scroll) scroll start → scroll end + 1 s; each ± 300 ms.
+// (flick-fresh-v1) fresh-flick → end; s (scripted scroll) scroll start → scroll end + 1 s; each ± 300 ms. The new scenes
+// (a, p, n) and the clips cut from them (a, c, p, t, d, with crops): CLIPS below. Every clip's label strip says it is the
+// real iPhone 15 Pro Max screen (lead, change 5).
 // Shown run: the first clean run of each arm (no error, Mac load1 <= 16, no profile drift; was run 1 before hold 2's
 // MAC-LOADED runs); all runs' numbers are printed. --motion makes traces for clean runs only (--all-runs: every run;
 // --labels L1,L2: just those).
@@ -53,13 +55,41 @@ export const CLOSE = flag('close-e') ? { e: CLOSE_E } : {};
 // v8 by scroll-driven animations) for h and f. Numbers only (a motion trace), never shown, so it need not sit inside
 // BOX; it stays inside the page area (below the 59 pt status bar, above the bottom bar).
 export const REGIONS = { e: { name: 'top bar', y0: 64, y1: 112 }, s: { name: 'top bar', y0: 64, y1: 112 },
-  h: { name: 'hero card band', y0: 560, y1: 800 }, f: { name: 'hero card band', y0: 560, y1: 800 } };
+  h: { name: 'hero card band', y0: 560, y1: 800 }, f: { name: 'hero card band', y0: 560, y1: 800 },
+  a: { name: 'hero card band', y0: 560, y1: 800 }, p: { name: 'top bar', y0: 64, y1: 112 } };
 export const MAC_LOADED = 16; // load1 above it: the capture may drop or delay frames (lead 2026-10-05 04:5xZ)
-export const WINDOWS = { e: ['into1', 'end'], h: ['down1', 'end'], f: ['fresh-flick', 'end'], s: ['scroll', 'scroll-end'] };
+export const WINDOWS = { e: ['into1', 'end'], h: ['down1', 'end'], f: ['fresh-flick', 'end'], s: ['scroll', 'scroll-end'],
+  a: ['fade', 'end'], p: ['page', 'end'], n: ['title', 'end'] };
+// New scenes (C-058 notes, T-183; lead's plan 2026-10-05 05:3xZ). Their clock check runs over the scene's window only
+// (CLOCK_IN_WINDOW): at rest the hero's own animations swamp the scroll signal (H2 hA1: r .47 over the whole recording).
+export const CLOCK_IN_WINDOW = new Set(['a', 'p', 'n']);
+// Clips: which run scene each clip is cut from, its window and its crop, all fixed before any phone data.
+//   a  the hero cards' fade-out, full page box       (scene a, fade -> end)
+//   c  the countdown at rest, crop                  (scene a, 6 s from the same whole second of the page clock on both arms)
+//   p  the whole page, slow drags, full page box    (scene p, page -> end)
+//   t  the 'People still need people' title, crop   (scene n, title mark - 0.3 s -> carousel mark: the quick stroke that
+//      brings it in, its 'o' animation 1.3 s after it is 35 % visible, and the rest)
+//   d  the user avatar carousel, crop               (scene n, the last 6 s: at rest after the drags)
+// A crop is a full-width screen band around the element where the run's page actually rests (its document y from the
+// geometry read minus the run's resting scroll y, plus the viewport's screen offset VIEW_Y), so each arm is cut where its
+// own page stopped; the band is padded by CROP_PAD and kept inside the page area.
+export const CLIPS = {
+  a: { scene: 'a', W: 300 }, p: { scene: 'p', W: 260 }, e: { scene: 'e', W: 300 }, s: { scene: 's', W: 300 }, h: { scene: 'h', W: 300 }, f: { scene: 'f', W: 300 },
+  c: { scene: 'a', W: 400, crop: 'countdown', window: 'countdown' },
+  t: { scene: 'n', W: 400, crop: 'title', window: ['title', -300, 'carousel', 0] },
+  d: { scene: 'n', W: 400, crop: 'communityPill', window: ['end', -6000, 'end', 0] },
+};
+export const VIEW_Y = 59;   // viewport y 0 on the screen, pt (status bar; OBSERVED assumption, checked per clip: c's 1 Hz)
+export const CROP_PAD = 28; // pt above and below the element
+export const COUNTDOWN = { seconds: 6, restPadMs: 500, fadePadMs: 300, targetIso: '2026-11-02T05:00:00Z' };
 export const PAD_MS = 300, S_TAIL_MS = 1000;
 export const VV_OK = { hMin: 770, hMax: 820 };
 const TITLES = { e: 'End of the page: flicks into the end and out (robot finger)', s: 'Scripted scroll, top to bottom (dark section, section switches)',
-  h: 'Fast flicks through the top card (robot finger)', f: 'Flicks right after load (robot finger)' };
+  h: 'Fast flicks through the top card (robot finger)', f: 'Flicks right after load (robot finger)',
+  a: 'Hero cards fading out: slow drags from the top (robot finger)', p: 'The whole page, top to end: slow even drags (robot finger)',
+  c: 'Countdown clock at rest (crop)', t: "'People still need people' title (crop)", d: 'User avatar carousel at rest (crop)' };
+/** The label strip's first line on every clip (lead, change 5): what the viewer is looking at. */
+export const banner = (profileName) => `Real iPhone 15 Pro Max screen recording (Safari)${profileName === 'serious' ? ' - heat: Serious (Xcode)' : profileName ? ` - heat: ${profileName}` : ''}`;
 
 const median = (a) => { const s = [...a].sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 
@@ -118,7 +148,8 @@ export function pageLog(rec) {
 /** Lag (ms) that best lines up the capture's motion trace [[movieS, frameDiff]] with the page's scroll speed |dy|/dt
  *  (Pearson r over the trace, searched over ±span ms). The hash test of the first draft could not work here: the hero's
  *  compositor animations change almost every captured frame even at rest (H1 eV1: 3173 of 3178 frames distinct). */
-export function clockLag(pageFrames, motion, toMovie, { span = 600, step = 4 } = {}) {
+export function clockLag(pageFrames, motion, toMovie, { span = 600, step = 4, from = -Infinity, to = Infinity } = {}) {
+  motion = motion?.filter(([tm]) => tm >= from && tm <= to);
   if (!motion?.length || pageFrames.length < 3) return null;
   const pv = []; for (let i = 1; i < pageFrames.length; i++) { const [t, dt, y] = pageFrames[i]; pv.push([toMovie(t), Math.abs(y - pageFrames[i - 1][2]) / Math.max(dt || 0, 1)]); }
   const at = (x) => { let a = 0, b = pv.length - 1; if (x < pv[0][0] || x > pv[b][0]) return null; while (a < b) { const m = (a + b + 1) >> 1; if (pv[m][0] <= x) a = m; else b = m - 1; } return pv[a][1]; };
@@ -183,7 +214,7 @@ const readJsonl = (f) => { try { return readFileSync(f, 'utf8').split('\n').filt
 /** Everything about one run: page log, window, clock chain, counts, capture cross-check. */
 export function analyse(L, { runs, screen, stamps, vv }) {
   const rec = readJson(join(runs, `${L}.json`)), cap = readJson(join(screen, `${L}.frames.json`));
-  const m = /^pc-(H\d+)-([eshf])([AV])(\d+)$/.exec(L); if (!m) return { L, error: 'bad label' };
+  const m = /^pc-(H\d+)-([eshfapn])([AV])(\d+)$/.exec(L); if (!m) return { L, error: 'bad label' };
   const [, hold, scene, arm, n] = m;
   const out = { L, hold, scene, arm, run: Number(n), driver: scene === 's' ? 'S' : 'G' };
   if (!rec) return { ...out, error: 'no driver record' };
@@ -202,17 +233,19 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   if (!frames.length) return { ...out, error: 'the capture has no frames (ioscap: no frame arrived from the iPhone screen)' };
   const pts0 = frames[0][0];
   const mtxt = join(runs, `${L}.motion.txt`);
-  const lag = existsSync(mtxt) ? clockLag(log.frames, parseMotion(readFileSync(mtxt, 'utf8')), (t) => toPts(t) - pts0) : null;
+  const lag = existsSync(mtxt) ? clockLag(log.frames, parseMotion(readFileSync(mtxt, 'utf8')), (t) => toPts(t) - pts0,
+    CLOCK_IN_WINDOW.has(scene) ? { from: toPts(a) - pts0, to: toPts(b) - pts0 } : {}) : null;
   const page = counts(log.frames, a, b);
   const cg = captureGaps(cap.frames, toPts(a), toPts(b));
   const capture = counts(cg, -Infinity, Infinity);
   const differs = Math.abs(capture.gt34 - page.gt34) > Math.max(1, 0.2 * page.gt34) || Math.abs(capture.gt50 - page.gt50) > Math.max(1, 0.2 * page.gt50);
   const rtxt = join(runs, `${L}.region.txt`);
-  const region = existsSync(rtxt) ? { name: REGIONS[scene].name, ...regionFollow(log.frames, parseMotion(readFileSync(rtxt, 'utf8')), (t) => toPts(t) - pts0, a, b) } : null;
+  const region = existsSync(rtxt) && REGIONS[scene] ? { name: REGIONS[scene].name, ...regionFollow(log.frames, parseMotion(readFileSync(rtxt, 'utf8')), (t) => toPts(t) - pts0, a, b) } : null;
   const mac = rec?.meta?.mac, load1 = [mac?.start?.load1, mac?.end?.load1].filter(Number.isFinite);
   const macLoaded = load1.some((x) => x > MAC_LOADED);
   const prof = rec?.meta?.profile;
   const reads = vv.filter((r) => [`${L}-start`, `${L}-ready`, `${L}-end`].includes(r.label));
+  const phoneOff = median(vv.filter((r) => r.label.startsWith(`${L}-`) && Number.isFinite(r.macMs) && Number.isFinite(r.wallMs)).map((r) => r.macMs - r.wallMs));
   return { ...out, window: { from: ma, to: mb, ms: Math.round(b - a) }, page, capture: { ...capture, frames: cg.length, rateHz: cap.frames.length / Math.max(1e-6, cap.frames.at(-1)[0] - cap.frames[0][0]) },
     captureDiffers: differs, clock: { lagMs: lag?.lag ?? null, r: lag?.r ?? null, r0: lag?.r0 ?? null, w2uSpreadMs: w2uSpread === null ? null : Math.round(w2uSpread * 1000) / 1000,
       ok: !!lag && Math.abs(lag.lag) <= CLOCK_OK.maxLagMs && lag.r >= CLOCK_OK.minR, why: existsSync(mtxt) ? null : 'no motion trace (--motion)' },
@@ -220,11 +253,75 @@ export function analyse(L, { runs, screen, stamps, vv }) {
     profile: prof ? { name: prof.name, start: prof.start?.state ?? prof.start, battC: prof.start?.battC, drift: !!rec.meta.profileDrift } : null,
     viewport: reads.map((r) => ({ label: r.label.slice(L.length + 1), vvH: r.vvH, vvTop: r.vvTop, scale: r.vvScale, innerH: r.innerH })),
     region, mac: { load1, shared: (mac?.start?.shared || []).map((x) => x.owner) }, macLoaded,
-    morph: rec?.summary?.morph ?? null, log: log.frames.filter(([t]) => t >= a && t <= b), t0: a, D: b - a };
+    morph: rec?.summary?.morph ?? null, log: log.frames.filter(([t]) => t >= a && t <= b), t0: a, D: b - a,
+    // for clips cut from other windows of the same run (c, t, d): the whole page log, its marks and the clock chain
+    frames: log.frames, marks: log.marks, toMovie: (t) => toPts(t) - pts0, phoneWall: phoneOff === null ? null : (t) => t + p2w - phoneOff };
+}
+
+/** A run seen over another window [a, b] of its page clock (clips c, t, d): what encodePair and the counts need. */
+export function view(r, a, b) {
+  return { ...r, t0: a, D: b - a, log: r.frames.filter(([t]) => t >= a && t <= b), page: counts(r.frames, a, b),
+    movie: { ...r.movie, from: r.toMovie(a), to: r.toMovie(b) }, window: { from: `${Math.round(a)}`, to: `${Math.round(b)}`, ms: Math.round(b - a) } };
+}
+/** The page-clock window [a, b] of clip `def` in run r (a mark plus an offset at each end), or null. */
+export function clipWindow(r, def) {
+  if (!Array.isArray(def.window)) return null;
+  const [m0, o0, m1, o1] = def.window, a = r.marks[m0], b = r.marks[m1];
+  return Number.isFinite(a) && Number.isFinite(b) ? [a + o0, b + o1] : null;
+}
+/** Countdown window (lead, change 4): the first whole second of the page's own clock (Date.now) that starts COUNTDOWN.seconds
+ *  inside every run's rest phase [rest + restPadMs, fade - fadePadMs], at the same second of the minute on every run, so
+ *  both sides show the same seconds. Returns {sec, starts: [page ms per run]} or null. r.phoneWall maps page ms -> the
+ *  page's Date.now (the Mac clock minus the phone's offset read by vv.mjs). */
+export function countdownWindow(runs, { seconds, restPadMs, fadePadMs } = COUNTDOWN) {
+  const iv = runs.map((r) => {
+    if (!r.phoneWall || !Number.isFinite(r.marks?.rest) || !Number.isFinite(r.marks?.fade)) return null;
+    const k = r.phoneWall(0); return { k, lo: r.marks.rest + restPadMs + k, hi: r.marks.fade - fadePadMs + k };
+  });
+  if (!iv.length || iv.some((x) => !x)) return null;
+  const startAt = ({ lo, hi }, sec) => { const w0 = Math.ceil(lo / 1000) * 1000, w = w0 + ((((sec - (w0 / 1000)) % 60) + 60) % 60) * 1000; return w + seconds * 1000 <= hi ? w : null; };
+  for (let w = Math.ceil(iv[0].lo / 1000) * 1000; w + seconds * 1000 <= iv[0].hi; w += 1000) {
+    const sec = (w / 1000) % 60, ws = iv.map((x) => startAt(x, sec));
+    if (ws.every((x) => x !== null)) return { sec, starts: ws.map((x, i) => x - iv[i].k) };
+  }
+  return null;
+}
+/** Resting scroll y over the second half of [a, b] (median of the page log's y). */
+export function restY(frames, a, b) { const ys = frames.filter(([t]) => t >= (a + b) / 2 && t <= b).map(([, , y]) => y); return median(ys); }
+/** Screen band (pt) around element el ({docY, h}, document coordinates) when the page rests at scroll y. */
+export function cropBand(el, y, { pad = CROP_PAD, viewY = VIEW_Y, top = VIEW_Y, bottom = BOX.y1 } = {}) {
+  if (!el || !Number.isFinite(el.docY) || !Number.isFinite(y)) return null;
+  const y0 = Math.max(top, Math.round(el.docY - y + viewY - pad)), y1 = Math.min(bottom, Math.round(el.docY + el.h - y + viewY + pad));
+  return y1 - y0 >= 20 ? { y0, y1 } : null;
+}
+/** Two arms' bands -> one crop height (the larger, centred on each band, kept inside the page area). */
+export function pairCrop(bA, bV, { top = VIEW_Y, bottom = BOX.y1 } = {}) {
+  if (!bA || !bV) return null;
+  const h = Math.max(bA.y1 - bA.y0, bV.y1 - bV.y0);
+  const place = (b) => Math.min(bottom - h, Math.max(top, Math.round((b.y0 + b.y1) / 2 - h / 2)));
+  const f = (y0) => `crop=w=iw:h=ih*${h}/${SCREEN.h}:x=0:y=ih*${y0}/${SCREEN.h}`;
+  const yA = place(bA), yV = place(bV);
+  return { w: SCREEN.w, h, yA, yV, filterA: f(yA), filterV: f(yV) };
+}
+/** Element geometry for the crops: document y as read with the page scrolled to it (the parked read: the content below
+ *  the hero sits 48 px higher once the page is scrolled, Simulator 2026-10-05) when there is one, else the read at the top. */
+export function elementAt(rects, name) {
+  const pk = rects?.parked?.[name], b = pk?.rects?.[name];
+  if (b && !b.empty && Number.isFinite(b.y)) return { docY: b.y + pk.y, h: b.h, from: 'parked' };
+  const t = rects?.top?.rects?.[name];
+  return t && !t.empty ? { docY: t.docY, h: t.h, from: 'top' } : null;
+}
+/** Countdown visibility check from numbers (the crop band's motion trace over the clip window): the digit changes are
+ *  isolated spikes about 1 s apart. Returns the spike times (s) merged within 200 ms; ~COUNTDOWN.seconds expected. */
+export function ticks(trace, from, to) {
+  const xs = trace.filter(([t]) => t >= from && t <= to); if (xs.length < 10) return [];
+  const med = median(xs.map(([, v]) => v)), th = Math.max(5 * med, 0.05), out = [];
+  for (const [t, v] of xs) if (v > th && (!out.length || t - out.at(-1) > 0.2)) out.push(t);
+  return out;
 }
 
 // ---- encode (MP4 only) ------------------------------------------------------------------------------------------
-const STRIP_H = 40, HDR_H = 30, GAP = 16, BG = [0x1a, 0x21, 0x1e];
+const STRIP_H = 40, HDR_H = 48, GAP = 16, BG = [0x1a, 0x21, 0x1e];
 const COL = { ok: [0x6b, 0x7d, 0x75], a34: [0xe2, 0xb8, 0x4a], a50: [0xff, 0x6b, 0x4a], line: [0x33, 0x40, 0x3b] };
 /** The strip is drawn from numbers (the page log), never from a frame: a PPM made here is an ffmpeg input only. */
 function stripPPM(file, log, t0, D, W) {
@@ -248,7 +345,7 @@ function ff(args, what) {
   if (r.status !== 0) throw new Error(`ffmpeg (${what}) failed: ${r.stderr.slice(-1500)}`);
 }
 const MAX_BYTES = 1000 * 1000;
-function encodePair(name, A, V, { screen, out, fps, crop, W }) {
+function encodePair(name, A, V, { screen, out, fps, crop, W, note, shrunk = false }) {
   const work = join(out, 'work'); mkdirSync(work, { recursive: true });
   const ratio = (A.movie.h / A.movie.w) || SCREEN.h / SCREEN.w;
   const cw = crop.w, ch = crop.h; // pt
@@ -256,13 +353,14 @@ function encodePair(name, A, V, { screen, out, fps, crop, W }) {
   const D = Math.max(A.D, V.D), Dsec = (D / 1000).toFixed(3);
   writeFileSync(join(work, `${name}-label-A.txt`), `ORIGINAL  run ${A.run}`);
   writeFileSync(join(work, `${name}-label-V.txt`), `v8  run ${V.run}`);
+  writeFileSync(join(work, `${name}-label-B.txt`), note || banner(A.profile?.name));
   stripPPM(join(work, `${name}-A-strip.ppm`), A.log, A.t0, D, W);
   stripPPM(join(work, `${name}-V-strip.ppm`), V.log, V.t0, D, W);
-  const text = (k, x) => FONT ? `,drawtext=fontfile='${FONT}':textfile='${join(work, `${name}-label-${k}.txt`)}':x=${x}:y=9:fontsize=14:fontcolor=0xe2e9e5` : '';
-  const pre = (i) => `[${i}:v]setpts=PTS-STARTPTS,fps=${fps},${crop.filter},scale=${W}:${H}:flags=lanczos,setsar=1,tpad=stop_mode=clone:stop_duration=2`;
+  const text = (k, x, y = 27, size = 14, col = '0xe2e9e5') => FONT ? `,drawtext=fontfile='${FONT}':textfile='${join(work, `${name}-label-${k}.txt`)}':x=${x}:y=${y}:fontsize=${size}:fontcolor=${col}` : '';
+  const pre = (i) => `[${i}:v]setpts=PTS-STARTPTS,fps=${fps},${i ? crop.filterV || crop.filter : crop.filterA || crop.filter},scale=${W}:${H}:flags=lanczos,setsar=1,tpad=stop_mode=clone:stop_duration=2`;
   const fc = [`${pre(0)}[a]`, `${pre(1)}[b]`, `[2:v]fps=${fps},setsar=1[sa]`, `[3:v]fps=${fps},setsar=1[sb]`,
     `[a][sa]vstack[ac]`, `[b][sb]vstack[bc]`, `[ac]pad=${W + GAP}:${H + STRIP_H}:0:0:color=0x1a211e[acp]`, `[acp][bc]hstack[s]`,
-    `[s]pad=iw:ih+${HDR_H}:0:${HDR_H}:color=0x1a211e${text('A', 8)}${text('V', W + GAP + 8)}[h]`,
+    `[s]pad=iw:ih+${HDR_H}:0:${HDR_H}:color=0x1a211e${text('B', '(w-text_w)/2', 7, 13, '0xf2c14e')}${text('A', 8)}${text('V', W + GAP + 8)}[h]`,
     `color=c=white:s=2x${STRIP_H}:r=${fps}[ph]`, `[ph]split[p1][p2]`,
     `[h][p1]overlay=x='min(t/${Dsec},1)*${W - 2}':y=${HDR_H + H}:eval=frame:shortest=0[h1]`,
     `[h1][p2]overlay=x='${W + GAP}+min(t/${Dsec},1)*${W - 2}':y=${HDR_H + H}:eval=frame:shortest=0,format=yuv420p[v]`].join(';');
@@ -274,6 +372,8 @@ function encodePair(name, A, V, { screen, out, fps, crop, W }) {
       '-filter_complex', fc, '-map', '[v]', '-t', Dsec, '-r', String(fps), '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', String(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', mp4], `${name}`);
     if (statSync(mp4).size <= MAX_BYTES) break;
   }
+  // still over 1 MB at the last crf (the long full-page clip): once more at 85 % of the width, same fps
+  if (statSync(mp4).size > MAX_BYTES && !shrunk) return encodePair(name, A, V, { screen, out, fps, crop, W: Math.round((W * 0.85) / 2) * 2, note, shrunk: true });
   return { mp4, bytes: statSync(mp4).size, crf, seconds: Math.round(D / 100) / 10, width: 2 * W + GAP, height: HDR_H + H + STRIP_H };
 }
 
@@ -317,7 +417,9 @@ export function overshoot(runsByLabel, cls = 'is-on-dark') {
 function main() {
   const runs = resolve(ROOT, opt('runs', 'out/phone-clips/runs')), out = resolve(ROOT, opt('out', 'out/phone-clips/clips'));
   const screen = resolve(ROOT, 'out/iphone-screen'), fps = Number(opt('fps', 60)), show = Number(opt('show', 1));
-  const scenes = String(opt('scenes', 'e,s,h,f')).split(',');
+  const scenes = String(opt('clips', opt('scenes', 'a,c,p,d,t,e,s'))).split(',');
+  // element geometry for the crops: the phone's own read when hold.sh made one (rects-phone-<arm>.json), else the Simulator's
+  const geo = (arm) => readJson(join(runs, `rects-phone-${arm}.json`)) || readJson(resolve(ROOT, `out/phone-clips/sim/rects-${arm}.json`));
   const stamps = readJsonl(join(runs, 'stamps.jsonl')), vv = readJsonl(join(runs, 'vv.jsonl'));
   const labels = [...new Set(stamps.map((s) => s.label.replace(/-(pre|rec|post)$/, '')))];
   if (flag('motion')) { // numbers-only motion traces for the clock check; run inside a lock hold (CPU work)
@@ -326,9 +428,9 @@ function main() {
       if (!existsSync(mov)) continue;
       const only = opt('labels')?.split(',');
       if (only ? !only.includes(L) : !flag('all-runs') && !isClean(join(runs, `${L}.json`))) { console.log(`traces ${L}: skipped (MAC-LOADED, profile drift or no record; --all-runs makes them)`); continue; }
-      const sc = /^pc-H\d+-([eshf])/.exec(L)?.[1], rtxt = join(runs, `${L}.region.txt`);
+      const sc = /^pc-H\d+-([eshfapn])/.exec(L)?.[1], rtxt = join(runs, `${L}.region.txt`);
       trace(`motion ${L}`, txt, (t) => motionArgs(mov, t));
-      if (sc) trace(`region ${L}`, rtxt, (t) => regionArgs(mov, t, REGIONS[sc]));
+      if (sc && REGIONS[sc]) trace(`region ${L}`, rtxt, (t) => regionArgs(mov, t, REGIONS[sc]));
     }
   }
   if (flag('overshoot')) {
@@ -352,29 +454,52 @@ function main() {
   }
   if (flag('no-encode')) { if (opt('json')) writeFileSync(resolve(ROOT, opt('json')), JSON.stringify(report, null, 1)); return; }
   mkdirSync(out, { recursive: true });
-  for (const sc of scenes) {
+  for (const cl of scenes) {
+    const def = CLIPS[cl]; if (!def) { console.log(`clip ${cl}: unknown`); continue; }
+    const sc = def.scene;
     // Shown run (rule fixed before the hold-2 numbers were read, after the lead's MAC-LOADED rule): the first clean run
     // of each arm by run number (no error, Mac load1 <= 16 at start and end, no profile drift, clock check passed; the
     // clock condition was added after H1 sA1's check failed at 512 ms, and says nothing about its frames); --show N forces run N.
     const pick = (arm) => all.filter((r) => !r.error && r.scene === sc && r.arm === arm && (opt('show') ? r.run === show : !r.macLoaded && !r.profile?.drift && r.clock.ok))
       .sort((x, y) => x.run - y.run)[0];
-    const A = pick('A'), V = pick('V');
-    if (!A || !V) { console.log(`clip ${sc}: no clean run on both arms (A ${A?.L ?? 'none'}, V ${V?.L ?? 'none'}), not made`); continue; }
-    if (!A.clock.ok || !V.clock.ok) { console.log(`clip ${sc}: clock check failed (lag ${A.clock.lagMs} / ${V.clock.lagMs} ms), not made`); continue; }
-    const full = { w: SCREEN.w, h: BOX.y1 - BOX.y0, filter: boxFilter() };
-    const made = [{ name: `phone-${sc}`, ...encodePair(`phone-${sc}`, A, V, { screen, out, fps, crop: full, W: 300 }) }];
-    if (CLOSE[sc]) {
+    let A = pick('A'), V = pick('V');
+    if (!A || !V) { console.log(`clip ${cl}: no clean run on both arms (A ${A?.L ?? 'none'}, V ${V?.L ?? 'none'}), not made`); continue; }
+    if (!A.clock.ok || !V.clock.ok) { console.log(`clip ${cl}: clock check failed (lag ${A.clock.lagMs} / ${V.clock.lagMs} ms), not made`); continue; }
+    let note = null;
+    if (def.window === 'countdown') {
+      const cw = countdownWindow([A, V]);
+      if (!cw) { console.log(`clip ${cl}: no common whole-second window in both rest phases, not made`); continue; }
+      const ms = COUNTDOWN.seconds * 1000;
+      A = view(A, cw.starts[0], cw.starts[0] + ms); V = view(V, cw.starts[1], cw.starts[1] + ms);
+      note = `Real iPhone 15 Pro Max screen (Safari) - both start at second :${String(cw.sec).padStart(2, '0')} of the page clock - frozen page counts down to 2 Nov 2026`;
+    } else if (def.window) {
+      const wa = clipWindow(A, def), wv = clipWindow(V, def);
+      if (!wa || !wv) { console.log(`clip ${cl}: marks ${def.window[0]}/${def.window[2]} missing, not made`); continue; }
+      A = view(A, ...wa); V = view(V, ...wv);
+    }
+    let crop = { w: SCREEN.w, h: BOX.y1 - BOX.y0, filter: boxFilter() };
+    if (def.crop) {
+      const band = (r) => cropBand(elementAt(geo(r.arm), def.crop), def.window === 'countdown' ? 0 : restY(r.frames, r.t0, r.t0 + r.D));
+      const pc = pairCrop(band(A), band(V));
+      if (!pc) { console.log(`clip ${cl}: no geometry for ${def.crop} (rects-phone-<arm>.json or the Simulator's), not made`); continue; }
+      crop = pc;
+      console.log(`clip ${cl}: crop ${def.crop} band y ${pc.yA}..${pc.yA + pc.h} (A) / ${pc.yV}..${pc.yV + pc.h} (V) pt, rest y ${Math.round(restY(A.frames, A.t0, A.t0 + A.D))} / ${Math.round(restY(V.frames, V.t0, V.t0 + V.D))}`);
+    }
+    const made = [{ name: `phone-${cl}`, ...encodePair(`phone-${cl}`, A, V, { screen, out, fps, crop, W: def.W, note }) }];
+    if (CLOSE[cl]) {
       const reads = all.filter((r) => !r.error && r.scene === sc).flatMap((r) => vv.filter((x) => [`${r.L}-start`, `${r.L}-ready`, `${r.L}-end`].includes(x.label)));
       const ok = vvOk(reads);
-      if (!ok.ok) console.log(`close-up ${sc}: dropped (${ok.why})`);
+      if (!ok.ok) console.log(`close-up ${cl}: dropped (${ok.why})`);
       else {
-        const c = CLOSE[sc], H = BOX.y1 - BOX.y0;
-        made.push({ name: `phone-${sc}-close`, ...encodePair(`phone-${sc}-close`, A, V, { screen, out, fps, crop: { w: (c.x1 - c.x0) * SCREEN.w, h: (c.y1 - c.y0) * H, filter: closeFilter(c) }, W: 360 }) });
+        const c = CLOSE[cl], H = BOX.y1 - BOX.y0;
+        made.push({ name: `phone-${cl}-close`, ...encodePair(`phone-${cl}-close`, A, V, { screen, out, fps, crop: { w: (c.x1 - c.x0) * SCREEN.w, h: (c.y1 - c.y0) * H, filter: closeFilter(c) }, W: 360 }) });
       }
     }
     for (const m of made) {
-      report.clips.push({ ...m, mp4: m.mp4.replace(ROOT + '/', ''), scene: sc, title: TITLES[sc], shown: { A: A.L, V: V.L } });
-      console.log(`CLIP ${m.name}.mp4 ${m.bytes} B ${m.width}x${m.height} ${m.seconds}s crf ${m.crf} (${A.L} | ${V.L})`);
+      report.clips.push({ ...m, mp4: m.mp4.replace(ROOT + '/', ''), clip: cl, scene: sc, title: TITLES[cl], shown: { A: A.L, V: V.L },
+        window: { A: [Math.round(A.t0), Math.round(A.t0 + A.D)], V: [Math.round(V.t0), Math.round(V.t0 + V.D)] }, page: { A: A.page, V: V.page },
+        crop: def.crop ? { el: def.crop, yA: crop.yA, yV: crop.yV, h: crop.h } : 'page box' });
+      console.log(`CLIP ${m.name}.mp4 ${m.bytes} B ${m.width}x${m.height} ${m.seconds}s crf ${m.crf} (${A.L} | ${V.L}) page >34 ${A.page.gt34}/${V.page.gt34} >50 ${A.page.gt50}/${V.page.gt50}`);
     }
   }
   writeFileSync(join(out, 'clips.json'), JSON.stringify(report, null, 1));
@@ -424,6 +549,33 @@ function selfTest() {
   const os = overshoot({ a: mk([2194, 3102], [330, 420]), v: mk([2144, 3050], [316, 406]) });
   ok(os.length === 2 && os[0].edge === 2144 && os[0].runs[0].overshootPx === 50 && os[0].runs[0].lateMs === 16 && os[0].runs[1].overshootPx === 0
     && os[0].runs[1].lateMs === 2 && os[1].edge === 3050 && os[1].runs[0].lateMs === 15 && os[1].runs[1].lateMs === 1, `overshoot ${JSON.stringify(os)}`);
+  // new scenes (C-058 / T-183)
+  const run = (k, rest, fade) => ({ marks: { rest, fade }, phoneWall: (t) => t + k });
+  // A: page t 0 = wall 1_000_000_000_000 (second :40 of its minute); rest 3200 -> fade 15200 (wall :43.2 .. :55.2)
+  // V: 7 min 2.5 s later, rest at wall :44.0 (page 1500 + k2)
+  const kA = 1_000_000_000_000 - (1_000_000_000_000 % 60000) + 40000, kV = kA + 422500;
+  const cw = countdownWindow([run(kA, 3200, 15200), run(kV, 1500, 13500)]);
+  // A's window must start >= :43.7 (rest + 500) -> :44; V's rest + 500 = wall :45.0 + ... -> both start at second :45
+  ok(cw && cw.sec === 45 && kA + cw.starts[0] === kA + 5000 && (kV + cw.starts[1]) % 60000 === 45000, `countdown window ${JSON.stringify(cw)}`);
+  ok(countdownWindow([run(kA, 3200, 8000), run(kV, 1500, 13500)]) === null, 'countdown window: too short a rest -> none');
+  ok(countdownWindow([{ marks: { rest: 1, fade: 2 }, phoneWall: null }]) === null, 'countdown window: no phone clock -> none');
+  const b1 = cropBand({ docY: 364, h: 88 }, 0);
+  ok(b1 && b1.y0 === 364 + VIEW_Y - CROP_PAD && b1.y1 === 364 + 88 + VIEW_Y + CROP_PAD, `crop band ${JSON.stringify(b1)}`);
+  ok(cropBand({ docY: 2050, h: 85 }, 1700).y0 === 2050 - 1700 + VIEW_Y - CROP_PAD && cropBand({ docY: 5000, h: 80 }, 0) === null && cropBand(null, 0) === null, 'crop band: off screen / no geometry');
+  const pc = pairCrop({ y0: 400, y1: 500 }, { y0: 420, y1: 540 });
+  ok(pc.h === 120 && pc.yA === 390 && pc.yV === 420 && pc.filterA === 'crop=w=iw:h=ih*120/932:x=0:y=ih*390/932', `pair crop ${JSON.stringify(pc)}`);
+  ok(pairCrop({ y0: 790, y1: 826 }, { y0: 700, y1: 826 }).yA === BOX.y1 - 126, 'pair crop stays inside the page area');
+  const geo = { top: { rects: { title: { docY: 936, h: 82 }, countdown: { docY: 364.3, h: 88 } } }, parked: { title: { y: 665, rects: { title: { y: 223, h: 82 } } } } };
+  ok(elementAt(geo, 'title').docY === 888 && elementAt(geo, 'title').from === 'parked' && elementAt(geo, 'countdown').docY === 364.3 && elementAt(geo, 'nope') === null, 'element geometry: parked read first');
+  const rn = { marks: { title: 1000, carousel: 7000, end: 20000 } };
+  ok(JSON.stringify(clipWindow(rn, CLIPS.t)) === '[700,7000]' && JSON.stringify(clipWindow(rn, CLIPS.d)) === '[14000,20000]' && clipWindow(rn, CLIPS.a) === null, 'clip windows');
+  ok(restY([[0, 16, 0], [100, 16, 300], [200, 16, 500], [300, 16, 510], [400, 16, 510]], 0, 400) === 510, 'rest y: median of the second half');
+  const tk = []; for (let t = 0; t < 6; t += 1 / 60) tk.push([t, Math.abs(t % 1 - 0.5) < 0.01 ? 2 : 0.02]);
+  ok(ticks(tk, 0, 6).length === 6, `ticks ${ticks(tk, 0, 6).length}`);
+  const vw = view({ frames: [[0, 16, 0], [50, 16, 1], [100, 60, 2]], toMovie: (t) => t / 1000 + 1, movie: { w: 1290, h: 2796 } }, 40, 120);
+  ok(vw.D === 80 && vw.log.length === 2 && vw.movie.from === 1.04 && vw.page.gt50 === 1, `view ${JSON.stringify(vw.page)}`);
+  ok(/^Real iPhone 15 Pro Max screen/.test(banner('serious')) && banner('serious').includes('Serious (Xcode)') && !banner(undefined).includes('heat'), 'banner');
+  ok(Object.values(CLIPS).every((c) => WINDOWS[c.scene]) && CLIPS.c.scene === 'a' && CLIPS.t.scene === 'n' && CLIPS.d.scene === 'n', 'clips cut from known scenes');
   console.log(`phone-clips self-test: ${n} checks ok`);
 }
 

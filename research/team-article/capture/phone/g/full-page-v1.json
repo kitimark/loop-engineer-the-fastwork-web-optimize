@@ -1,0 +1,19 @@
+{
+  "name": "full-page-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "T-183 scene p (the user's add-on: a smooth scroll from the start to the end of the page, full page): load, 2 s at rest, then slow even drags of 560 px in 2000 ms each (finger on the glass, no momentum, plateau ~300 px/s) with 250 ms between them until the page is at its end (y >= 5150 of ~5220), then 1.5 s at rest. Speed fixed here before any capture; same input on both arms. iOS scrolls a G drag itself, like a finger (CAPTURE-DIFFERS, capture README).",
+  "params": { "x": 215, "restMs": 2000, "dragPx": 560, "dragMs": 2000, "gapMs": 250 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": "$restMs" },
+    { "type": "mark", "name": "page" },
+    { "type": "repeat", "times": 12, "until": "y>=5150", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "end" }
+  ]
+}

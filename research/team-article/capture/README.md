@@ -264,3 +264,61 @@ section edge when the class flips, and how late that is.
 
 Review step: C-058 (user console). It covers `phone-e.mp4` and `phone-s.mp4`; `phone-e-close` was dropped by the lead.
 The review page `out/phone-clips/clips/review.html` has the MP4s inline and is served on 127.0.0.1 only.
+
+### Second round: the user's scenes (C-058 notes, T-183; lead's plan 2026-10-05 05:3xZ)
+
+The user rejected both clips (C-058, 05:31Z): they took the first draft (Chrome clips in the article) for the iPhone.
+They named what they want to see side by side on the real phone: the hero card fade-out (first), the end of the
+section, the user carousel, the "People still need people" title, the countdown clock, and (T-183) one smooth scroll
+from the top to the end of the page. Everything below was fixed, and dry-run on the Simulator, before any phone data.
+
+- **Every clip says it is the real iPhone.** The first line of each video's label strip reads "Real iPhone 15 Pro Max
+  screen recording (Safari) - heat: Serious (Xcode)" (lead's change 5), not only this README.
+- **Scenes and clips** (driver G, robot finger, same input on both arms; speeds fixed in the scripts in `phone/g/`):
+
+  | clip | priority | run scene | script | window | picture |
+  |---|---|---|---|---|---|
+  | a hero cards fading out | 1 | a | `g/hero-fade-v1.json` | fade mark to end (3 drags of 400 px in 2.4 s, ~178 px/s) | page box |
+  | p whole page, top to end | 2 | p | `g/full-page-v1.json` | page mark to end (560 px drags in 2 s, ~300 px/s, until y ≥ 5150) | page box |
+  | c countdown at rest | 3 | a | same run as a | 6 s from the same whole second of the page clock on both arms | crop |
+  | d user avatar carousel | 4 | n | `g/people-v1.json` | the last 6 s, at rest | crop |
+  | t "People still need people" | 5 | n | same run as d | the quick stroke that brings it in, its animation, 4.5 s at rest | crop |
+  | e end of the page | 6 | e | `flick-end-v1` (hold 1) | as before | page box |
+  | s nav colour switch | 7 | s | S driver (hold 1 data) | as before | page box |
+
+- **Countdown, same seconds** (lead's change 4). `hold.sh` starts the recorder at Mac second :20-:27 and the driver at
+  :40, so the 12 s rest of scene a spans about :43-:55 of the page's clock. The clip starts at the first whole second
+  of the page's own clock (`Date.now()`, the Mac clock minus the offset `vv.mjs` reads) that is the same second of the
+  minute on both arms and leaves 6 s inside both rest phases. The minutes differ by the time between the runs. The
+  frozen page counts down to 2026-11-02 05:00Z (the clip's label says so).
+- **The title animates once.** Its "o" plays 1.3 s after the heading is 35 % visible and resets when it leaves
+  (IntersectionObserver, JS 6225-6268; OBSERVED on the Simulator: 3 class changes within 0.75 s). So `people-v1` brings
+  it in with one quick stroke that ends at rest (480 px in 700 ms, finger held), and the animation plays in place.
+- **The carousel is the community pill's avatars** (`.start-selling-avatars.is-carousel`, 104x32 px). It changes about
+  every 1.03 s (Simulator, 19 changes in 10 s, enter and exit about 210 ms apart). Other "carousel" candidates on the
+  page: the seller profile showcase and the review-card marquees in the platform section; the user's review settles it.
+- **Hero cards** (Simulator sweep): opacity goes from 1 at the top to 0.65 at y 900 and the cards scatter; after that
+  they move up with the page. Scene a's drags cover y 0 to ~1150.
+- **Crops** are full-width screen bands around the element where each run's page actually came to rest: document y
+  from the geometry read with the page scrolled to it (`rects.mjs`; the content below the hero sits 48 px higher once
+  the page is scrolled, Simulator), minus the run's resting scroll y (median of the second half of the window), plus
+  59 pt (viewport top on the screen; OBSERVED assumption, checked on the countdown clip: its band must show ~6 isolated
+  changes 1 s apart), padded 28 pt. Each arm is cut at its own band; the two bands have the same height. The phone's
+  own geometry read (`hold.sh` item `rA`/`rV`) replaces the Simulator's when present.
+
+  Simulator gesture dry run (counts only, arm A, 2026-10-05 05:50Z; scroll y from the touch records): `full-page-v1`
+  10 drags of ~550 px, 0 to the end (132 px of rubber band on the last one), 35 s from mark to end; `hero-fade-v1`
+  y 0 to 1170, 12 s rest then 13 s of drags; `people-v1` y 50 (title off screen), 520 after the quick stroke, 1730
+  after the drags. WDA-sim took 0.5-1.4 s from a mark to the first touch (the windows start at marks).
+
+  Planned bands (Simulator geometry, before phone data; screen pt of 932, full width 430):
+
+  | crop | element (doc y, height) | resting scroll y | band |
+  |---|---|---|---|
+  | c countdown | 364, 88 | 0 | 395-539 |
+  | t title | 888, 82 | ~520 | ~399-537 |
+  | d community pill (avatars) | 2050, 85 | ~1730 | ~351-492 |
+
+- **Clock check per new scene** runs over the scene's window only (`CLOCK_IN_WINDOW`), since the hero's own animations
+  at rest swamp the scroll signal over a whole recording (H2 hA1). c and t/d use the check of the run they are cut from.
+- **Size.** Each MP4 stays under 1 MB: crf 26 to 38, then once more at 85 % of the width (the long full-page clip).

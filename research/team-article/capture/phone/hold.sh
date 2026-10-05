@@ -12,6 +12,14 @@
 #   s  S  iphone.mjs run --driver scroll --probe std  scripted scroll top to bottom: dark section (~1,970) and switches
 #   h  G  fixes/v8-best/phone/g/flick-hero-v1.json   fast flicks through the top card
 #   f  G  fixes/v8-best/phone/g/flick-fresh-v1.json  flicks right after load
+# New scenes after the user's C-058 notes and T-183 (lead's plan 2026-10-05 05:3xZ; scripts in g/, speeds fixed there
+# before any capture):
+#   a  G  g/hero-fade-v1.json  10 s at rest at the top (also the countdown crop, scene c), then slow drags through the
+#         hero cards' fade-out; the driver starts at Mac second :40 of a minute (wait below), so both arms' countdown
+#         windows can start at the same whole second of the page's clock
+#   p  G  g/full-page-v1.json  slow even drags from the top to the end of the page (full page)
+#   n  G  g/people-v1.json     the 'People still need people' title (scene t) and the avatar carousel (scene d), parked
+#   r  -  rects.mjs            no recording: the crop elements' geometry on the phone -> runs/rects-phone-<arm>.json
 # --dnd: before the first item, post ONE console action step asking for Do Not Disturb (only while no other phone step
 # is open: console.mjs post refuses otherwise) and wait for the user's Done.
 # Per item: serve.sh check; open the arm's URL; viewport read (vv.mjs, start); clock stamp; ioscap record (background,
@@ -56,7 +64,15 @@ for I in "$@"; do
   L=pc-$H-$I
   node tools/iphone.mjs open "$U" --owner $R > /dev/null || { echo "HOLD $H STOP open $A failed at $I"; exit 4; }
   sleep 2
+  if [ "$SC" = r ]; then
+    sleep 3; node $P/rects.mjs --port "$PP" --out $O/rects-phone-$A.json --label "$A" > $O/$L.log 2>&1; r=$?
+    node tools/iphone.mjs park --owner $R > /dev/null 2>&1
+    [ $r -eq 0 ] && ok=$((ok + 1)); echo "RECTS $I exit $r $(date -u +%TZ)"; continue
+  fi
   node $P/vv.mjs --port "$PP" --label "$L-start" --out $O/vv.jsonl > /dev/null 2>> $O/$L.vv.err
+  if [ "$SC" = a ]; then # countdown alignment, part 1: start the recorder at Mac second :20-:27 (wait <= 60 s, nothing recording)
+    python3 -c "import time; s = time.time() % 60; time.sleep(0 if 20 <= s < 28 else (20 - s) % 60)"
+  fi
   stamp "$L-pre"
   rm -f out/iphone-screen/$L.log
   node tools/ioscap.mjs record --owner $R --seconds 150 --label "$L" --out out/iphone-screen/$L.mov > $O/$L.cap.log 2>&1 &
@@ -72,11 +88,17 @@ for I in "$@"; do
     sleep 3; node tools/iphone.mjs open "$U" --owner $R > /dev/null 2>&1
   done
   echo "READY $I after $k retries $(date -u +%TZ)"
+  if [ "$SC" = a ]; then # countdown alignment, part 2: start the driver at Mac second :40 (recorder running)
+    python3 -c "import time; s = time.time() % 60; time.sleep((40 - s) % 60)"
+  fi
   stamp "$L-rec"
   case $SC in
     s) node tools/iphone.mjs run --driver scroll --probe std --owner $R --label "$L" --out "$O/$L.json" > "$O/$L.log" 2>&1; r=$? ;;
     e|h|f)
       case $SC in e) GS=$G/flick-end-v1.json ;; h) GS=$G/flick-hero-v1.json ;; f) GS=$G/flick-fresh-v1.json ;; esac
+      node tools/iphone.mjs gesture "$GS" --owner $R --label "$L" --out "$O/$L.json" > "$O/$L.log" 2>&1; r=$? ;;
+    a|p|n)
+      case $SC in a) GS=$P/g/hero-fade-v1.json ;; p) GS=$P/g/full-page-v1.json ;; n) GS=$P/g/people-v1.json ;; esac
       node tools/iphone.mjs gesture "$GS" --owner $R --label "$L" --out "$O/$L.json" > "$O/$L.log" 2>&1; r=$? ;;
     *) echo "HOLD $H STOP unknown item $I"; kill -TERM $CP; wait $CP; exit 4 ;;
   esac

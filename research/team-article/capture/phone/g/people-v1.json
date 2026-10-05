@@ -1,0 +1,27 @@
+{
+  "name": "people-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "T-170 #101 / T-183 scenes t and d (crops, one run gives both): the 'People still need people' title and, below it in the same section, the user avatar carousel. The title's 'o' animates 1.3 s after the heading is 35 % visible (IntersectionObserver, JS 6225-6268) and resets when it leaves, so the title is brought in with one quick stroke that ends at rest (minjerk, finger held, no momentum) and plays its animation in place: load, 2 s at rest, a 60 px nudge (title still off screen), 1.5 s, mark title, 480 px in 700 ms (page y ~510, title in the upper middle), 4.5 s at rest; mark carousel: drags of 520, 520 and 200 px (2000, 2000, 1000 ms; plateau ~280 px/s) bring the avatar carousel (it changes every ~1.03 s, Simulator watch) to the middle (y ~1700), 6 s at rest; mark end. Speeds fixed here before any capture; same input on both arms.",
+  "params": { "x": 215, "restMs": 2000, "titleHoldMs": 4500, "carouselHoldMs": 6000 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": "$restMs" },
+    { "type": "stroke", "dir": "up", "px": 60, "ms": 400, "profile": "still" },
+    { "type": "until", "cond": "settled", "timeoutMs": 3000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "title" },
+    { "type": "stroke", "dir": "up", "px": 480, "ms": 700, "profile": "still" },
+    { "type": "until", "cond": "settled", "timeoutMs": 3000, "optional": true },
+    { "type": "pause", "ms": "$titleHoldMs" },
+    { "type": "mark", "name": "carousel" },
+    { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+    { "type": "pause", "ms": 250 },
+    { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+    { "type": "pause", "ms": 250 },
+    { "type": "stroke", "dir": "up", "px": 200, "ms": 1000, "profile": "drag" },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": "$carouselHoldMs" },
+    { "type": "mark", "name": "end" }
+  ]
+}
