@@ -3,6 +3,11 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
+**Rev 7d (2026-10-05, candidate for v9 step 4):** rev 7c plus one rule: a close fling at lift-off that is fast (finger
+>= 5 px/ms) or long (finger travel >= 300 px) keeps its own momentum, so it can leave the end screen in one fling (v9
+step 4's regression). Phone G check P-124: fo released 3/3 on rev 7d vs caught 3/3 on rev 7c; near-line, fast-short
+and E1-E4 identical; all 8 predictions held. See "Rev 7d"; the blind swipe pair (step 4) is pending.
+
 **Status:** proposal build, **rev 7c** (PR-018 rev 7, 2026-10-04), on the best build **v8** (which has morph-gpu rev 3). The user picked rev 7c in the blind finger A/B C-052 (42/42 vs 64/85); **accepted by the user** (PR-018 rev 7, 2026-10-04 20:12:50Z); land request with the D and F cards below ("Cards").
 Rev 7 answers the user's rev 6 review (fast short swipes with high acceleration were hard to open and close): the
 user's own swipes were captured on the phone (C-049), the misses traced (async scroll at lift-off, Safari's toolbar
@@ -29,6 +34,8 @@ user's own finger, captured with touches and frames by `finger-capture.mjs`) sin
 |---|---|---|---|
 | msbase (Try-it A) | best build v8: `fixes/v8-best/patch.diff` (has morph-gpu rev 3) | 3e3e94cb6e9f / f836404b3728 | `out/snapshots/msbase-3e3e94cb6e9f` |
 | msbasehook | v8 + `window.__fwMorphSet(m)` (morph-gpu's frozen-frame hook) | 89ceca49d3d0 / f836404b3728 | control for frames |
+| ms rev 7d (candidate, P-124 V) | rev 7c + a close fling at lift-off is released when finger Fv <= -5 px/ms or finger travel >= 300 px (`delta.diff`, dfa06593) | 29c0d537e0c9 / 659b02f7169d | `out/snapshots/ms-29c0d537e0c9` |
+| ms rev 7d WIP (history, Sim R7D) | the 5 px/ms line only (98ed5ab2) | 16f618ba68dc / 659b02f7169d | `out/snapshots/ms-16f618ba68dc` |
 | ms rev 7c (Try-it B) | v8 + this change (`delta.diff`, 250 lines, 81ac7e1ee500): rev 7b + a kept end counts as reached at or past it | 428961bda278 / 659b02f7169d | `out/snapshots/ms-428961bda278` |
 | ms rev 7b on v8 (history) | finger speed at lift-off, kept commit, smoothed direction; closes re-aimed 40 px after the toolbar moved (0.85 s) | ba256c2a48f8 / 659b02f7169d | `out/snapshots/ms-ba256c2a48f8` |
 | ms rev 7 on v8 (the user's "v8, no change" arm, T-146 #11) | rev 7's delta re-applied on v8 | be590dd3766d / 659b02f7169d | `out/snapshots/ms-be590dd3766d` |
@@ -81,6 +88,40 @@ the nav pill growing into the dark panel. With this change, on touch phones:
 The motion changes: the morph follows the finger instead of a 680 ms spring, and the panel can be held half open.
 
 ## Checks
+
+### Rev 7d (2026-10-05; ticket `phone/TICKET-7d.md`, P-124)
+
+**Why.** In v9 step 4 a fast or long close fling from the open end no longer left the end screen in one fling: rev
+7b/7c's lift-off commit smooth-scrolled it to the closed rest and stopped it there. **Change** (`delta.diff`, dfa06593;
+patch.diff 38d1c30bcc18): at lift-off, a close fling (`__msFl < 0`) is left to its own momentum when the finger's
+speed is <= -5 px/ms or its travel since the touchstart (`__msFy - __msF0`) is >= 300 px; if it slows inside the end
+screen, the slow-tick rule settles it as before. Opens, slow lifts and short closes are unchanged. The user's own closes
+from open (C-049/C-052): <= 4.06 px/ms, 74-255 px, so both lines sit above them. The `__msDbg` log is debug only (empty
+unless a driver sets `window.__msDbg = []`).
+
+**Simulator dry run (count-only, I-184; 13 sessions, ops' frozen D1 rule).** C = rev 7c, V = rev 7d, each item with a
+C-C and a V-V A/A pair (`sim7d-compare.mjs` e2c2bfdad2ba). fo, nl, fs: SAME. **e4: DIFF 4 under the frozen rule**
+(start y of counted strokes 3-6, the mid-page flicks, 20-727 px apart); SAME only under the lead's disclosed amendment
+AMEND-b, because the clean C-C pair (s9 vs s13) starts those strokes 118-873 px apart too (within-build drift, not an
+arm effect). Two e4 path groups pass exactly at their bar (C-V 0.67 = need 0.67, 0.88 = 0.88). The path rule changed
+twice on s1-s4 data before ops froze it (disclosed in the ticket); s5 is a disclosed void (cold-boot geometry).
+Simulator counts are mechanism only.
+
+**Phone (G, WDA; profile xcode-serious; 3 holds, all VALID, every gate PASS at Serious; counts only):**
+
+| item | rev 7c released / caught / pulled back to open | rev 7d released / caught / pulled back to open |
+|---|---|---|
+| fo (3 x 560 px / 140 ms closes from open) | 0 / 3 / 0 | **3 / 0 / 0** (left the end, rest p -3.0 .. -3.3) |
+| nl (3 x 250 + 3 x 280 px in 120 ms) | 0 / 6 / 0 | 0 / 6 / 0 |
+| fs (12 short flicks, 60-200 px in 50-90 ms) | 0 / 12 / 0, 0 misses | 0 / 12 / 0, 0 misses |
+| e4 (E1-E4 at the end) | E1 caught, E3 pulled back, E4 caught | same |
+
+- All 8 ticket predictions held, including "pulled back to open V <= C" (1 = 1, the known E3 small-hold miss on both).
+  No near-line close was released, so the 300 px line stays (no 350 px question).
+- OBSERVED, in our setup, cause unknown: on the phone the page reads only -3.35 .. -3.63 px/ms at the lift of the
+  560 px flings (Simulator -2.9 .. -6.45; int-v8's touch-log replay of P-121's 560 px / 130 ms strokes on B: -6.83 /
+  -7.11). So on this device the travel line, not the speed line, releases them: don't count on the speed line alone.
+- Not yet tested: the user's finger (blind swipe pair rev 7c vs rev 7d, step 4).
 
 ### Rev 7 (7, 7b, 7c; 2026-10-04 ~18:00Z-19:50Z)
 
