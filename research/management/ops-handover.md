@@ -72,6 +72,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:0xZ **P-133 addendum 1 (four holds) pre-data read PASS; to the lead for signature.**
+  - Dry run ~10:53Z: DRY PASS on every check, but the estimate was 78.35 s per step, over the carded 78 s. The rev 1
+    design failed its own budget rule, so no data was taken. P10 is a miss on rev 1 and is not rescored.
+  - The lead chose option (b), committed as addendum 402a6cae: four holds A1/A2/B1/B2 of at most 4 steps, 15 steps and
+    8 C runs. The largest hold takes 343.4 s of the 500 s budget. The stimulus and the budget are unchanged.
+  - Ops checked:
+    - pins = committed blobs = disk; tools equal to main; the p133 self-test re-run gives 43 ok;
+    - the driver accepts only the carded steps per hold (exit 2 otherwise);
+    - the scorer's neighbour rule and its first/last-C drift rule both stay inside the folder each hold is scored from.
+  - Rule 2 is changed and written in full: each half's nvc controls both of that half's holds.
+  - Notes for the result read:
+    - N4: A2 and B2 have no positive control from their own session.
+    - N5: P1 and P11 now cover 8 C runs and 15 runs, a harder event at the same p.
+    - N6: a hold left with one C has no drift check; report DRIFT n/a.
+  - The holds stay DEFERRED during P-130's block (N3).
 - 10-05 ~10:5xZ **P-097 addendum PASS (reps started); P-133 pre-data read PASS, SIGNED; P-136 to fix-nav-morph; next free P-137.**
   - **P-097 rev 4.2 addendum** (fix-cd-roll-ca-r4 6c4036e9 on 9f369b8a): PASS, no data. Ops checked:
     - pins = committed blobs = disk; tools equal to main; snapshot HASHES C 647c9ef2b1e2 / V 5c203b483c18;
