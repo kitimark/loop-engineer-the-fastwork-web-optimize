@@ -563,6 +563,76 @@ F-260 (report only, every run): y90 = 0.9 docH - vh and when the run first reach
 minutes: ~95 (12 holds; gates included; no pre-warm; gaps between holds extra).
 ```
 
+### Part 2 run notes (lead rulings and events during the block; for the result read)
+
+- **Start (lead GO 20:56Z, after the iPhone reconnect).** Rebased on main 9800e2d1 (nothing in scope); selftest142
+  OK 61; `serve142.sh snap` copied out/p142/snap (HASHES as pinned); servers B / C / V served-hash ok. Heat method:
+  **Xcode's Device Conditions** (Thermal State Serious, induced), as the card names; `thermal.mjs` was NOT used (the
+  lead's I-199 ruling: a switch to it needs the user's OK; the lead retracted an instruction to use it, 21:0xZ).
+- **Pause (21:00Z, lead: the user asked for the phone, PR-026 / T-202).** The first H1a attempt was stopped after its
+  WDA check, before its start gate and any item: no run file, uncounted.
+- **First H1a attempt after the user (21:04-21:08Z): VOID, I-212.** Start gate PASS (Serious, induced Yes, 36.6 C);
+  sCo and sCc ran; every G item aborted at its first stroke (WDA HTTP 500 `point.x != INFINITY`; the WDA session was
+  stale after the USB reconnect, OBSERVED, lead). The lead restarted WDA (21:09Z) and resolved I-212 (workaround).
+  Lead: rerun H1a whole (a rerun of a VOID hold, not an added run) after one uncounted 1-stroke WDA smoke inside the
+  hold. Smoke 21:10-21:11Z on B: 1 stroke, not aborted, 20 moving frames (`out/p142/runs/p142-wda-smoke.json`).
+  The rerun's hold142 moved the VOID attempt's run files aside (`*.json.prev-H1a-*`); they are not scored.
+- **Holds:** H1a VALID 425 s (21:11-21:19Z), H1b VALID 321 s, H1c VALID 272 s (battery 36.6 -> 41.1 C over part M).
+- **Lead ruling mid-block (21:3xZ, during H2a; no counted data changed by it), the heat ceiling:** the memory rule
+  phone-checks-start-warm keeps "cool before the next hold" at the ceiling under both profiles; xcode-serious's "no
+  cooling wait" means no pre-warm and no wait for a target state, not ignoring the ceiling.
+  1. Before a hold, battery >= 43.0 C: `wait.mjs phone-temp --below 42` (<= 600 s) first. A pause only: arms inside a
+     hold stay balanced, nothing counted changes.
+  2. A ceiling VOID (thermal gate exit 3, at a hold's start or end): cool with `wait.mjs phone-temp --below auto`
+     (<= 10 min), then rerun that hold whole, once (a rerun of a VOID hold, not an added run). A second ceiling VOID on
+     the same hold stops the block: part 2 is reported as it stands.
+  3. The phone hold is kept through the waits (each wait runs inside `lock.mjs run iphone --keep 120`).
+  Every check and wait is logged in out/p142/chain.log (`PRE`, `COOLWAIT` lines). The runner's chain switched to a
+  version with these rules at the H2a / H2b boundary (H2a ran under the first chain, which had no pre-hold check;
+  H2a started at 41.1 C, below 43).
+- **Outcome of the ruling:** no pre-hold read reached 43.0 C (H2b 42.29, H2c 41.5, H3a 41.89, H3b 42.59, H3c 42.89 C),
+  so no cooling wait ran; no gate exited 3, so no ceiling rerun.
+
+### Part 2 result (ran 21:11-22:11Z; scorer as registered; the result read is ops-reader-P142r's)
+
+- **Block:** H1a VALID 425 s, H1b 321 s, H1c 272 s, H2a 418 s, H2b 311 s, H2c 270 s, H3a 390 s, H3b 302 s, H3c 213 s.
+  All 18 sentinels (sCo / sCc) pass; every start and end gate PASS (Serious, induced Yes); battery 36.6-42.9 C (ceiling
+  44, never reached); PMSET OK in every hold; profile xcode-serious via Xcode's Device Conditions (no thermal.mjs).
+- **Scorer:** `node fixes/v9-2/phone/score142.mjs $(cat out/p142/score-args.txt) --json out/p142/score142.json`
+  (score142 8960b2d9a721 wrapping p122/score.mjs d1dddb910cd9; 47 items in block order; out/p142/score142.txt).
+
+| gate | runs valid (C / V) | result |
+|---|---|---|
+| GM (part M) | 3 / 1 | insufficient (need 3 an arm); path VOID: gMC1 (4 traversals of [2200,3800] < 5), gMV2 / gMV3 / gMV4 (1 traversal) |
+| EX (part X, V ceiling) | V 4 | **WORSE**: 3 frames > 50 ms (twins > 46: 6, > 54: 3; not threshold-sensitive); near band 50, 48, 49 |
+| ES (part S, V ceiling) | V 3 | **WORSE (threshold-sensitive)**: 1 frame > 50 ms (52 ms; > 46: 1, > 54: 0); gSV2 path VOID (out stroke too fast) |
+| FLICKER (G1 per part) | C 11 / V 12 | **WORSE** on part X only: V monotone nav blinks 6 (gXV1 2, gXV2 1, gXV3 1, gXV4 2), C 0 (one valid C file, gXC4); flicker-gate FAIL; M and S no-worse |
+| BEHAVIOUR parity | | pass: M first page-up fling gap 17.5 px; X first stroke after into1 gap 2.5 px; S reported only |
+
+**VERDICT WORSE (threshold-sensitive)** (scorer line). By the card's land rules, part 2 WORSE means NO-LAND (bisect);
+the bisect waits for the lead's ruling after the result read.
+
+**Path observation (OBSERVED in our setup, descriptive only; for the reader to judge against the card's own VOID / path
+rules):** C = v9-final's part X out-flings leave the end by 840-953 px (caught at the end; all four C X runs path-VOID,
+which the card expected: "C = v9-final has no rev 7d, so P-122's C rule voids C's caught X outs by design"), while
+V = v9.2's leave it by 4353-4589 px, back up the page through the nav-flip zone (median nav flips per run C 3, V 13).
+EX is a V-only ceiling and FLICKER X compares V's runs with one C file on a different path. In part M, 3 of 4 V runs
+crossed the [2200,3800] band once (C runs 3-5 times).
+
+### Part 3 result: SKIPPED (console step C-070; 22:11-22:14Z; no preference given, not "same")
+
+- Posted from inside int-v8's phone hold after the block (block mark ended; served hashes ok; profile read Serious,
+  induced, 41.4 C). Blind order by `crypto.randomInt`, kept in the step's meta only: page 1 = V, page 2 = C.
+- The user swiped part 1 (22:12:06-22:12:28Z) and part 2 (22:13:02-22:13:34Z), then pressed **Start over** (22:13:43Z),
+  then **skipped** the step (22:14:27Z). No pick was given: **part 3 is SKIPPED** (no preference; not "same", so neither
+  pass nor fail by the card's rule). The user's note in thread T-206, paraphrased by the lead: they were watching the end
+  of the morph and could not tell which page was better.
+- Runner error, disclosed: the runner's script read the answer wait's exit 5 (REDO, the Start over) as an empty answer
+  and logged "SWIPE RESULT C-070 ... PASS (same)" at 22:13:43Z. That line is VOID (a CORRECTION line follows it in
+  out/p142/swipe.log); nothing was reported from it. The resume attempt (attempt 2) found the step skipped.
+- Recordings of the first attempt (supporting only, never a verdict): out/p142/runs/p142-swipe-C-070-p{1,2}-a1.json.
+- Safari parked (22:15Z) and the phone released after it. Whether to re-ask the pair is the lead's call.
+
 ### Part 3: one blind swipe A/B (F, the user's finger; after part 2, inside int-v8's phone hold)
 
 - Posted from inside int-v8's `lock.mjs run iphone` hold, only when no other phone step is open (memory
