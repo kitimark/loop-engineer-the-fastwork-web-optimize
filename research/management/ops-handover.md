@@ -72,6 +72,17 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~04:50Z **nav-hit-cache arm B (v9 + rev 7d): the lead accepted the byte-diff; no parity slot.**
+  - fix-nav-morph's byte-diff from step 4 JS de237379b556 to 7d JS 5dfb36392d07 (fix-hero-exit-threaded 193f6899) has 5 hunks, all on touch paths:
+    - a comment;
+    - the `__msF0` declaration;
+    - the touchend-only lift-off rule in `__msSettle`;
+    - touchstart recording `__msF0`;
+    - an inert `__msDbg` push.
+  - The parity drive uses only scrollTo, so it runs none of these hunks. The nav patch applies with `-F 0`, giving V7d 941aa13e5bdf.
+  - Arm B is moot for now: PR-023 was decided changes-requested at 04:45Z (wait until v9 has landed, then build on v9). 7d gets rebuilt on v9-final as rev 5, and any nav re-check happens on that base.
+  - Arm A (7c, V c3d36476c3ce, parity PASS 13d29af1) stays with int-v8. fix-nav-morph is parked.
+- 10-05 P-128 landed as f699e7ab, e6a3157b and 1ccc4235 (toolbar-resize) and 89edc920 (this read). The cited ids 199bec59, 41e379d0 and 4457dbf2 are content-identical, so they stay. The toolbar row is parked on decision:lead; arch-serious-heat's 04:40Z ranking says split the slow frames before any recapture.
 - 10-05 **P-128 result read (fix-toolbar-resize 199bec59, cards 4457dbf2 + 41e379d0, on main 65734941): AGREE; reading FWWC-ONLY, 4 of 10 held.**
   - Rebased card commits are content-identical: `git diff 949c07ee 4457dbf2` and `git diff 2b5eedc8 41e379d0` on `fixes/toolbar-resize` are empty. The result commit touches only README.md and results.json there. The lead's signature (04:09:22Z, rev 2) comes before data: slot 1 was acquired 04:09:57Z, C-H5 was rerun in slot 2 at 04:22Z (holds.log).
   - Pins on disk = rev 2 card. The ops re-run of p128-read.mjs on sim128 is byte-identical to the owner's read128.json (26bea2d765ff). Served bytes are OK in both slots (JS 3e3e94cb6e9f, CSS f836404b3728, overlay; inject e44cdd1f9e9a; script 6ae05e12ace9). C-H5 failed in slot 1 because sim.mjs's gesture budget refused it, and passed in slot 2 as carded.
