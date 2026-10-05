@@ -29,6 +29,10 @@
 //       `--between <min>` after a hold ends (a session starts only if its --max-seconds ends inside it; the window is shut
 //       while the runner holds or queues for chrome-measure or runs the phone, and ends at its next exclusive hold or phone
 //       run; `--between 0` ends it), or until `--block none` / the lease's end. The lease owner's own sessions are never deferred.
+//       I-202: after a hold that carried the block ended, its owner may still mark --between <min> (and --between 0,
+//       --block none) for 180 s, or while that window is open, as long as nobody else held the phone since: the free
+//       phone then shows the block and its window (status: "phone block <id> of "<owner>": between holds until …"), and
+//       Simulator sessions are deferred by it as above until the window's end. Anyone else is refused ("not held").
 //   node tools/lock.mjs acquire iphone --owner <topic> --not-ready [--wait N]                    # I-155
 //       queue for the phone before your part can start (pre-data read, cooling, a Mac-side gate): your entry keeps its
 //       place but is never served (the next ready waiter is); QUEUED … (not ready), exit 3. Re-run within 10 min to keep
@@ -188,7 +192,12 @@
 // a reader queued ahead of every exclusive waiter joins; readers queued before the group opened may still join for 30 s).
 // A --no-timing run of the iphone holder (a phone part's quiet-Mac hold) queues ahead of every non-phone waiter, timing
 // holds and readers included, never past a user step (user, user-*) or a hand-made move (I-172; I-136 passed only the
-// readers that queued after the lease began); status shows it "moved by phone-block priority". `run --shared` kills its command at --max-seconds like --short (exit 124) and
+// readers that queued after the lease began); status shows it "moved by phone-block priority". I-207: between the block's
+// own parts (the last chrome-measure hold to end was the part owner's, only a shared group granted since) the part gives
+// ONE gap group first: readers queued before the part re-queued (or for 10 min) open or join it (cap, join load / busy),
+// each ending by the gap's end (300 s + 30 s after the gap began, or the running group's end if later; only a reader of
+// --max-seconds <= 300 opens it); then the part goes first. A hand-made move keeps precedence; status shows "phone-block
+// gap: readers queued before … may join if they end by …". `run --shared` kills its command at --max-seconds like --short (exit 124) and
 // gives it FW_LOCK_SHARED=<resource>:<reader token>: a nested shared run re-enters that slot, a nested exclusive one
 // (verify.mjs, fix.mjs ab, bench gain, a normal or --short run) is refused at once. Timing tools refuse --shared.
 // The lane is OFF unless the lead switched it on; while off, --shared runs as an exclusive --short job (same
@@ -196,7 +205,7 @@
 import { spawn } from 'node:child_process';
 import { psTable, descendants, treeState, waitTreeGone } from './lib/proc-tree.mjs'; // I-024, I-099: the command's tree, and the wait until it is gone
 import { graceText } from './lib/phone-step.mjs';
-import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedMaxSec, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText } from './lib/lock.mjs';
+import { tryAcquire, acquire, release, renew, dequeue, status, allStatus, staleReason, heldEnv, RESOURCES, GATED, gateSample, NEXT_POLL_MS, LEASE_POLICY, holdsLogFile, SHARED_LANE, sharedMaxSec, sharedSwitch, setSharedSwitch, isGroup, cpuTimes, cpuBusyPct, handoverText, gapOf } from './lib/lock.mjs';
 import { sample, describe, THRESHOLDS, hostPower, hostStateSummary } from './lib/host.mjs';
 import { appendFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -257,12 +266,15 @@ function fmt(s) {
     // a shared group (ts-lock-share): its readers hold it together
     const used = h.readers.reduce((a, x) => a + (x.weight || 1), 0), n = h.readers.length;
     const writer = s.queue.find((w) => !w.shared);
-    line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}shared by ${n} reader${n === 1 ? '' : 's'} (weight ${used}/${sharedSwitch(s.resource).cap})${writer ? `, joins closed: "${writer.owner}" waits for an exclusive hold` : ''} since ${h.acquiredAt} until ${h.expiresAt}`;
+    const gap = gapOf(h, s.queue); // I-207: this group is the gap of the phone block's next part
+    const joins = gap && gap.part === writer ? `, phone-block gap: readers queued before "${writer.owner}" may join if they end by ${new Date(gap.end).toISOString()}, then it goes first (I-207)` : writer ? `, joins closed: "${writer.owner}" waits for an exclusive hold` : '';
+    line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}shared by ${n} reader${n === 1 ? '' : 's'} (weight ${used}/${sharedSwitch(s.resource).cap})${joins} since ${h.acquiredAt} until ${h.expiresAt}`;
     for (const x of h.readers) line += `\n${pad}reader ${x.owner} (w${x.weight}, ${x.kind === 'process' ? `pid ${x.pid}` : 'lease'}, until ${x.deadline}) checkout ${x.checkout}${x.meta && Object.keys(x.meta).length ? ' ' + JSON.stringify(x.meta) : ''}`;
     if (h.format !== 'rw1') line += `\n${pad}format "${h.format}": unknown to this lock code (it waits as for an exclusive holder)`;
   }
   else line += `${s.stale ? 'STALE (' + s.stale + ') ' : ''}held by "${h.owner}"${sh(h)} [${h.kind}${h.pid ? ' pid ' + h.pid : ''}] since ${h.acquiredAt}${h.expiresAt ? ' until ' + h.expiresAt : ''}${overdue(h)}${awakeText(s)}\n${pad}checkout ${h.checkout}${h.meta && Object.keys(h.meta).length ? '\n' + pad + JSON.stringify(h.meta) : ''}`;
   if (s.grace) line += `\n${pad}KEPT: ${graceText(s.grace)}`; // I-123: not handed over in the middle of the user's step
+  if (s.blockGap) line += `\n${pad}phone block ${s.blockGap.id} of "${s.blockGap.owner}": between holds until ${s.blockGap.between.until} (its hold ended; Simulator sessions that fit may start; I-202)`;
   if (h?.keep && !s.stale) line += `\n${pad}KEEP: "${h.owner}"'s run ended at ${h.keep.from}; the phone stays theirs until ${h.keep.until} (--keep ${h.keep.sec}): their next lock.mjs run iphone continues this hold, else it ends then (I-168)`;
   if (s.queue.length) line += `\n${pad}queue: ${fmtQueue(s.queue)}`;
   if (s.deferred?.length) line += `\n${pad}deferred by a phone block (I-160; not queued, they poll on): ${s.deferred.map((w) => `${w.owner} (since ${w.since})`).join(', ')}`;

@@ -107,7 +107,8 @@
 // anyway), except the readers queued before the group opened, for batchJoinSec. A --no-timing hold of the iphone lease
 // owner (a phone part's quiet-Mac hold) queues ahead of every non-phone waiter (I-172; I-136 passed only the readers that
 // queued after the lease began), never past a user step or a hand-made move, marked movedBy "phone-block priority" like a
-// lead move (I-136, phoneBlockPriority). The group opens at a hand-over like a short job (the short
+// lead move (I-136, phoneBlockPriority); between the block's own parts it first gives one gap group to the readers queued
+// before it (I-207, inBlockGap / gapEligible / gapEnd below). The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
 // first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
 // waiter (I-049: writer preference only closes joins; it does not reorder the queue), except one the lead moved ahead of
@@ -158,7 +159,9 @@ const lastReleaseFile = (r) => join(lockDir(), `${r}.last-release.json`);
  * never fails the release. Old lock code does not write it; readers check it against the last grant.
  */
 function noteRelease(r, h, how, now = Date.now()) {
-  try { writeJson(lastReleaseFile(r), { owner: h?.owner ?? null, token: h?.token ?? null, kind: h?.kind ?? null, acquiredAt: h?.acquiredAt ?? null, at: iso(now), how }); } catch {}
+  // I-202: an iphone hold that carried a phone block keeps it on the record, so its owner can mark the gap after it
+  const block = r === 'iphone' && h?.meta?.block?.id ? { block: h.meta.block } : {};
+  try { writeJson(lastReleaseFile(r), { owner: h?.owner ?? null, token: h?.token ?? null, kind: h?.kind ?? null, acquiredAt: h?.acquiredAt ?? null, at: iso(now), how, ...block }); } catch {}
   if (r === 'iphone') noteIphoneEnd(h, { endedAt: now, how });
 }
 /**
@@ -667,7 +670,8 @@ export function status(r) {
   const next = q.length ? q[nextIndex(q, effectiveLastGrant(readJson(lastGrantFile(r), {}), h), Date.now(), undefined, r)]?.owner ?? null : null;
   const now = Date.now(), grace = h ? stepGrace(h, now) : null; // I-123: a lease kept for its owner's user step
   const df = GATED[r] ? pruneQueue(readJson(deferredFile(r), []), now) : []; // I-160: Simulator sessions a phone block defers
-  const st = { resource: r, holder: h, stale: h ? staleReason(h, now) : null, queue: q, next, ...(grace ? { grace } : {}), ...(df.length ? { deferred: df } : {}) };
+  const bg = r === 'iphone' && (!h || staleReason(h, now)) ? gapBlock(h, now) : null; // I-202: the gap of a block between its holds
+  const st = { resource: r, holder: h, stale: h ? staleReason(h, now) : null, queue: q, next, ...(grace ? { grace } : {}), ...(df.length ? { deferred: df } : {}), ...(bg ? { blockGap: bg } : {}) };
   const ho = handoverInfo(st);
   return ho ? { ...st, handover: ho } : st;
 }
@@ -740,6 +744,13 @@ function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
   // except where I-049 below picks a reader: a reader runs new code, so it takes that turn itself)
   const s = pool.find(([w]) => w.short), n = pool.find(([w]) => !w.short);
   if (!s || !n) return pool[0][1];
+  // I-207: the phone block's next part (phone-block priority) gives its gap to the readers queued before it re-queued (or
+  // queued readerMaxWaitSec) once: the first of them opens the gap group, then the part goes first (gapPass marks the
+  // gap given). Not past a hand-made move ahead of the part (the lead's or a delegate's): that goes first, as before.
+  if (blockPart(n[0]) && !n[0].gapPass && !pool.some(([w], i) => i < n[1] && handMoved(w)) && inBlockGap(r, n[0], lg)) {
+    const g = pool.find(([w]) => gapEligible(w, n[0], now) && (w.maxSec || SHARED_LANE.maxSec) <= PHONE_GAP_SEC);
+    if (g) return g[1];
+  }
   // the lead moved this normal waiter ahead of these short jobs (I-019): its priority wins (I-020), also over the I-049
   // age bound below (I-097: readers queued 10 min passed a moved phone hold at every hand-over while the phone cooled)
   if (n[0].movedBy && n[1] < s[1]) return n[1];
@@ -752,6 +763,56 @@ function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
   if (gatePassDone(n[0], now, T)) return n[1]; // its host gate has waited out the short jobs' pass window (I-030)
   const start = shortRunStart(lg, now) ?? now;
   return now - start + (s[0].maxSec || SHORT_MAX_SEC) * 1000 <= SHORT_DRAIN_SEC * 1000 ? s[1] : n[1];
+}
+
+// ---- I-207: the phone block's gap -----------------------------------------------------------------------------------
+// P-130 (2026-10-05 11:03-11:22Z): the block's next part re-queued at once after each part and, moved by phone-block
+// priority (I-172), went before every reader at every hand-over (a move wins over I-049's 10-min bound, I-097): a reader
+// queued since 11:05:31 waited through the 11:08 and 11:15 gaps. Now each part that waits between the block's own parts
+// (inBlockGap: the last hold to end was its owner's; the block's first part keeps I-172 as is) gives ONE gap group: readers queued before
+// the part's entry (its `since`) or for readerMaxWaitSec open or join it, within the cap and the join load / busy checks,
+// and each ends by the gap's end; then the part goes first. The group is the one running when the part queues, else the
+// one a gap reader opens at the hand-over (only a reader whose cap is at most PHONE_GAP_SEC opens one). The part's queue
+// entry records it (gapPass {at, token}); the part waits at most PHONE_GAP_SEC + batchJoinSec (+ the kill grace) after
+// gapPass.at, or until the running group's own end if that is later. A hand-made move keeps precedence over both.
+/** I-207: the longest reader cap a phone block's gap admits (the opener's --max-seconds; joiners end by gapEnd). */
+export const PHONE_GAP_SEC = 300;
+/** I-207: the queue entry of a phone block's next part (moved by phone-block priority, phoneBlockPriority). */
+const blockPart = (w) => !!w && w.movedBy === PHONE_BLOCK_BY;
+/** I-207: an entry the lead (or a delegate, I-171) moved by hand. */
+const handMoved = (w) => !!w && !!w.movedBy && w.movedBy !== PHONE_BLOCK_BY;
+/** I-207: reader entry `w` may run in the gap of block part `p`: queued before the part, or for readerMaxWaitSec (I-049). */
+function gapEligible(w, p, now) {
+  if (!w || !w.shared || w.notReady) return false;
+  const since = Date.parse(w.since);
+  return since < Date.parse(p.since) || now - since >= SHARED_LANE.readerMaxWaitSec * 1000;
+}
+/** I-207: when the gap group `h` of block part `p` must end (ms): the later of its readers' deadlines and the gap window. */
+export function gapEnd(h, p) {
+  const win = Date.parse(p.gapPass.at) + (PHONE_GAP_SEC + SHARED_LANE.batchJoinSec + SHARED_LANE.killGraceSec) * 1000;
+  return Math.max(win, ...(h.readers || []).map((x) => Date.parse(x.deadline)).filter(Number.isFinite));
+}
+/** I-207: the block part in `q` whose gap is the group `h` ({part, end}), or null. */
+export function gapOf(h, q) {
+  const p = isGroup(h) ? (q || []).find((w) => blockPart(w) && w.gapPass?.token === h.token) : null;
+  return p ? { part: p, end: gapEnd(h, p) } : null;
+}
+/**
+ * I-207: block part `p` waits in a gap between its own parts: the last hold of `r` to end was its owner's (its previous
+ * part; <r>.last-release.json, noteRelease), and nothing but a shared group was granted since (`lg`: the last grant). Its
+ * first part, queued behind someone else's hold, keeps I-172's plain priority.
+ */
+function inBlockGap(r, p, lg) {
+  const lr = readJson(lastReleaseFile(r), null);
+  if (!lr || lr.owner !== p.owner) return false;
+  const gAt = Date.parse(lg?.at);
+  return !(gAt > Date.parse(lr.at)) || lg.shared === true || lg.owner === GROUP_OWNER;
+}
+/** I-207: inside the guard: the group `h` (just opened, or running when the part queued) is the gap of every block part in `q` without one that waits in a gap. */
+function giveGap(r, q, h, lg, now) {
+  let n = 0;
+  for (const w of q) if (blockPart(w) && !w.gapPass && inBlockGap(r, w, lg)) { w.gapPass = { at: iso(now), token: h.token }; n++; }
+  return n;
 }
 
 /** The short jobs' pass window at a normal waiter's host gate (I-030): gateShortPassSec, at most the cap. */
@@ -1030,8 +1091,13 @@ export async function tryAcquire(r, opts) {
       ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}),
       ...(mine >= 0 && q[mine].readyAt && !notReady ? { readyAt: q[mine].readyAt } : {}) }; // I-167: when a --not-ready entry turned ready
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
+    if (mine >= 0 && q[mine].gapPass) entry.gapPass = q[mine].gapPass; // I-207: the gap this part gave
     if (mine >= 0) q[mine] = entry; else q.push(entry);
-    if (GATED[r] && noTiming && !short && !shared) q = phoneBlockPriority(q, entry, now); // I-136
+    if (GATED[r] && noTiming && !short && !shared) {
+      q = phoneBlockPriority(q, entry, now); // I-136
+      if (knownGroup(h) && blockPart(entry)) giveGap(r, [entry], h, seen, now); // I-207: a group running when the part re-queues is its gap
+      if (!blockPart(entry)) delete entry.gapPass;
+    }
     writeJson(queueFile(r), q);
     if (r === 'iphone' && h && !isGroup(h) && observeWaiters(h, q, now)) writeJson(holderFile(r), h); // I-167: a waiter seen on the hold
     return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)]?.owner ?? null, mode: short ? 'short' : 'exclusive', ...(notReady ? { notReady: true } : {}) };
@@ -1047,7 +1113,8 @@ export const isUserOwner = (o) => typeof o === 'string' && /^user(-[A-Za-z0-9_.-
  * --max-seconds defaults to and is capped at maxSec (blockMaxSec with --block <ticket>; past it the hold is OVERDUE and
  * warns, a phone part is never killed); --keep S (<= keepMaxSec) keeps it for the same owner's next part.
  */
-export const PHONE_HOLD = Object.freeze({ maxSec: 900, blockMaxSec: 3600, keepMaxSec: 180 });
+export const PHONE_HOLD = Object.freeze({ maxSec: 900, blockMaxSec: 3600, keepMaxSec: 180,
+  gapMarkSec: 180 }); // I-202: the block owner may mark --between (or --block none) this long after its phone hold ended
 /** I-168: the command every phone refusal names. */
 export const phoneRunCmd = (owner = '<you>') => `node tools/lock.mjs run iphone --owner ${owner} [--max-seconds ${PHONE_HOLD.maxSec}] [--keep 120] [--block <ticket>] -- <phone part>`;
 /**
@@ -1120,8 +1187,52 @@ export const BLOCK_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
 const deferredFile = (r) => join(lockDir(), `${r}.deferred.json`);
 /** The phone block on the live iphone lease ({owner, id, since, between, run}), or null. `ph`: the iphone holder record. */
 export function phoneBlock(ph = readJson(holderFile('iphone'), null), now = Date.now()) {
-  if (!ph || staleReason(ph, now) || !ph.meta?.block?.id) return null;
-  return { owner: ph.owner, id: ph.meta.block.id, since: ph.meta.block.at ?? null, between: ph.meta.between || null, run: ph.meta.run || null };
+  if (ph && !isGroup(ph) && !staleReason(ph, now)) {
+    if (!ph.meta?.block?.id) return null;
+    return { owner: ph.owner, id: ph.meta.block.id, since: ph.meta.block.at ?? null, between: ph.meta.between || null, run: ph.meta.run || null };
+  }
+  return gapBlock(ph, now); // I-202: no live phone hold: the gap its block owner marked after it, if any
+}
+// ---- I-202: the between-holds window after a block's phone hold ended ------------------------------------------------
+// P-122 (2026-10-05 08:42Z): with one `run iphone` per part, the phone is not held between parts, and `doing iphone
+// --between` refused ("not held"), so neither the board nor the Simulator deferral saw the gap. Now the owner of an iphone
+// hold that carried a block (meta.block) may, within PHONE_HOLD.gapMarkSec of its end and while nobody else held the
+// phone since, mark the gap: --between <min> opens the window (iphone.block-gap.json {owner, token, block, endedAt,
+// between}), --between 0 shuts it, --block none drops the record. While no hold is live and that ended hold is still the
+// last one, phoneBlock() returns the block with that window until its `until` (status: `blockGap`); a live hold's own
+// marks win. Everyone else is refused as before.
+const blockGapFile = () => join(lockDir(), 'iphone.block-gap.json');
+/** I-202: the last iphone hold that ended ({owner, token, block, endedAt}): a stale holder still on file, else the release record; null while one is live. */
+function endedPhoneHold(ph, now) {
+  if (ph && !isGroup(ph)) return staleReason(ph, now) ? { owner: ph.owner, token: ph.token, block: ph.meta?.block ?? null, endedAt: staleEnd(ph, now) } : null;
+  const lr = readJson(lastReleaseFile('iphone'), null);
+  return lr && lr.owner ? { owner: lr.owner, token: lr.token, block: lr.block ?? null, endedAt: Date.parse(lr.at) } : null;
+}
+/** I-202: the block of the gap record while its window is open and its hold is still the last one that ended, or null. */
+function gapBlock(ph, now) {
+  const g = readJson(blockGapFile(), null);
+  if (!g?.between || !(now < Date.parse(g.between.until))) return null;
+  const e = endedPhoneHold(ph, now);
+  if (!e || e.token !== g.token || e.owner !== g.owner) return null;
+  return { owner: g.owner, id: g.block.id, since: g.block.at ?? null, between: g.between, run: null, gap: true };
+}
+/**
+ * I-202, inside the iphone guard (`h`: the holder file, absent or stale): `doing iphone --between|--block none` by
+ * `owner` after its block's hold ended. Returns a holder-like record ({owner, meta: {block, between}, gap: true}) or null
+ * when not allowed (the caller refuses as before).
+ */
+function markBlockGap(h, { owner, block, betweenMin, now }) {
+  const e = endedPhoneHold(h, now);
+  if (!e || e.owner !== owner || !e.block?.id) return null;
+  const f = blockGapFile(), g0 = readJson(f, null);
+  const mine = g0 && g0.token === e.token && g0.owner === owner ? g0 : null;
+  const open = mine?.between && now < Date.parse(mine.between.until);
+  if (!(now - e.endedAt <= PHONE_HOLD.gapMarkSec * 1000 || open)) return null;
+  if (block === null) { try { unlinkSync(f); } catch {} return { owner, gap: true, meta: {} }; }
+  const g = { owner, token: e.token, block: e.block, endedAt: iso(e.endedAt) };
+  if (betweenMin) g.between = { at: iso(now), until: iso(now + betweenMin * 60000) };
+  writeJson(f, g);
+  return { owner, gap: true, meta: { block: g.block, ...(g.between ? { between: g.between } : {}) } };
 }
 /**
  * Inside the chrome-measure guard: why the Simulator session of `owner` (bounded by `maxSec`) may not start now, or null.
@@ -1233,9 +1344,16 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     const inBatch = mine >= 0 && Date.parse(q[mine].since) <= Date.parse(h.openedAt) && now - Date.parse(h.openedAt) <= SHARED_LANE.batchJoinSec * 1000;
     // I-097: an exclusive waiter the lead moved ahead of this reader closes joins for the opening batch too: the group
     // only drains, and the moved hold is served at its end
-    const moved = q.slice(0, mine >= 0 ? mine : q.length).find((w) => !w.shared && w.movedBy);
-    if (moved) return wait(`joins closed: "${moved.owner}" waits for an exclusive hold, moved ahead by ${moved.movedBy} (I-097)`);
-    if (writer && !inBatch) return wait(`joins closed: "${writer.owner}" waits for an exclusive hold (writer preference)`);
+    const before = q.slice(0, mine >= 0 ? mine : q.length);
+    const moved = before.find((w) => !w.shared && w.movedBy);
+    // I-207: this group is the gap of the phone block's next part (gapPass), and no hand-made move waits ahead: a reader
+    // queued before that part (or for readerMaxWaitSec) joins past it and past the writers behind it, if it ends by the
+    // gap's end
+    const gp = blockPart(moved) && moved.gapPass?.token === h.token && mine >= 0 && gapEligible(q[mine], moved, now) && !before.some((w) => !w.shared && handMoved(w)) ? moved : null;
+    const gEnd = gp ? gapEnd(h, gp) : null;
+    if (gp && readerDeadline(kind, now, maxSec) > gEnd) return wait(`joins closed: this job's ${maxSec} s would end after the phone block's gap (the group of "${gp.owner}"'s gap ends ${iso(gEnd)}; I-207): it waits for the next gap`);
+    if (moved && !gp) return wait(`joins closed: "${moved.owner}" waits for an exclusive hold, moved ahead by ${moved.movedBy} (I-097)`);
+    if (writer && !inBatch && !gp) return wait(`joins closed: "${writer.owner}" waits for an exclusive hold (writer preference)`);
     // I-185: an in-batch join past a timing writer held at its host gate past the pass window is a gate pass: only when
     // this reader's cap ends before the writer's settling window (gateFits), and it is audited like one
     const joinPass = writer && gateHeldPastWindow(writer, now, T) ? writer : null;
@@ -1244,7 +1362,9 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
     // I-049 head-of-line: a reader that fits may pass readers ahead that do not fit now, while each of them has waited
     // less than readerBypassSec; past that the group drains for them. A reader ahead that fits is never passed.
     const used = h.readers.reduce((a, x) => a + (x.weight || 1), 0);
+    // (I-207: in a gap only the readers ahead that may join it now count)
     const ahead = q.slice(0, mine >= 0 ? mine : q.length).find((w) => w.shared && fresh(w)
+      && (!gp || (gapEligible(w, gp, now) && readerDeadline(w.kind, now, w.maxSec || SHARED_LANE.maxSec) <= gEnd))
       && (used + (w.weight || 1) <= cap || now - Date.parse(w.since) >= SHARED_LANE.readerBypassSec * 1000));
     if (ahead) return wait(`"${ahead.owner}" queued first (readers join in queue order)`);
     if (used + weight > cap) return wait(`the shared group is full (weight ${used}/${cap}; this job needs ${weight})`);
@@ -1280,6 +1400,7 @@ function readerAttempt(r, { h, q, seen, now, owner, kind, pid, meta, maxSec, wei
   writeJson(holderFile(r), g);
   writeJson(lastGrantFile(r), groupGrant(g, now));
   leaveQueue();
+  if (giveGap(r, q, g, seen, now)) writeJson(queueFile(r), q); // I-207: a phone block part waiting in its gap: this group is it
   if (fitPass) auditGatePass(r, { owner, head: fitPass, maxSec, now });
   return { ok: true, holder: g, reader: x, mode: 'shared', opened: true };
 }
@@ -1370,7 +1491,13 @@ export async function describeHold(r, { owner, job, run, runPid = process.pid, b
   };
   return withGuard(r, () => {
     const h = readJson(holderFile(r), null);
-    if (!h || staleReason(h, now)) throw new Error(`${r} is not held${h ? ` (the last holder "${h.owner}" is stale)` : ''}: describe a job on your own live hold (node tools/lock.mjs status ${r})`);
+    if (!h || staleReason(h, now)) {
+      // I-202: the block owner marks the gap after its phone hold ended (only --between, --block none)
+      const gapOnly = r === 'iphone' && job === undefined && run === undefined && (betweenMin !== undefined || block === null) && (block === undefined || block === null);
+      const g = gapOnly ? markBlockGap(h, { owner, block, betweenMin, now }) : null;
+      if (g) return g;
+      throw new Error(`${r} is not held${h ? ` (the last holder "${h.owner}" is stale)` : ''}: describe a job on your own live hold (node tools/lock.mjs status ${r})${r === 'iphone' && gapOnly ? `; --between and --block none after a hold work only for the owner of the block's last hold, within ${PHONE_HOLD.gapMarkSec} s of its end or while its window is open (I-202)` : ''}`);
+    }
     if (knownGroup(h)) {
       const live = liveReaders(h, now);
       if (!live.some((x) => x.owner === owner)) throw new Error(`${r}: the shared group has no reader "${owner}" (readers ${readerList(h)})`);
