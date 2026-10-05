@@ -72,7 +72,14 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
-- 10-05 ~09:4xZ **P-122 result read: PASS (scored as registered; reproduced)** (int-v8 8dfa43d2 on main e88ff13b; README-only commit; chain d51bf203 = the re-pinned 145fb289, d99af4b5 = H5c rule written before H5c ran).
+- 10-05 ~09:2xZ **Landings and signatures (lead message).**
+  - v9-final landed on main as 8b5ce9b3; the P-122 result read (1e9af3b1) landed as 9f369b8a.
+  - I-203 (`iphone.mjs gesture --idle-after-reload <ms>`, outside the program hash) landed as f3d4b1ac, resolved. I-204 new, P3 (gesture exits 1 on a thermal-profile refusal where scroll/record exit 8).
+  - P-097 rev 4.1 SIGNED by the lead on the ops pre-data PASS (Chrome + Simulator only, no phone, no timing). Before its first run ops reads the hash-list addendum (tool, served JS/CSS and delta hashes; must include the m == 1 read in each shot load).
+  - int-v8 builds v9.1 on 8b5ce9b3; fix-hero-exit-threaded resumes PR-023 rev 5 on 8b5ce9b3.
+  - P-130: final check on 8b5ce9b3 started; the kit (countdown-tick, db956dd1) still has PINS C_JS / C_CSS / V_JS OPEN and the countdown-tick-v9 delta needs its rebuild via `fix.mjs apply --on v9-best` on the landed v9-final; ops asked fix-countdown-tick for both. Row registers after that check.
+  - P-129 still waits on C-065 (user restores Serious) and the lead's go.
+- 10-05 ~09:1xZ **P-122 result read: PASS (scored as registered; reproduced)** (int-v8 8dfa43d2 on main e88ff13b; README-only commit; chain d51bf203 = the re-pinned 145fb289, d99af4b5 = H5c rule written before H5c ran).
   - Pins at 8dfa43d2: score.mjs d1dddb910cd9, selftest122.mjs df0b4fed66e5, hold122.sh ec6cc97f190b = the registered/re-pinned blobs.
   - Ops re-ran score.mjs on the runner's 43 run files (item:file pairs, gSC3 left out as report only): the 52 output lines equal score-final.txt line for line (order aside); VERDICT insufficient (threshold-sensitive); scorer sha d1dddb910cd9.
   - Gates: BEHAVIOUR pass (X only via the card's clipped-end exemption), GM no-worse, EX no-worse threshold-sensitive (one 48 ms frame), ES insufficient (V 1 of 2; gSV1/gSV3 path-VOID; 30 ms grid twin agrees), FLICKER no-worse, sentinels first try, R as predicted. 6 of 8 predictions in; overall insufficient (0.30).
