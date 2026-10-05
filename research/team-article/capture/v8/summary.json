@@ -1,0 +1,348 @@
+{
+ "at": "2026-10-05T02:51:28.292Z",
+ "chrome": "Chrome/154.0.8037.98",
+ "viewport": {
+  "width": 430,
+  "height": 932,
+  "deviceScaleFactor": 3,
+  "mobile": true,
+  "screenWidth": 430,
+  "screenHeight": 932
+ },
+ "cpu": 6,
+ "latency": 150,
+ "fps": 30,
+ "panelWidth": 216,
+ "build": {
+  "name": "v8-best",
+  "label": "v8",
+  "source": "fixes/v8-best/patch.diff",
+  "patchSha12": "7df5f08e036e",
+  "files": [
+   {
+    "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+    "sha12": "f836404b3728"
+   },
+   {
+    "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+    "sha12": "3e3e94cb6e9f"
+   }
+  ]
+ },
+ "baseline": {
+  "snapshot": "b1789284481295-4ad4a84a",
+  "state": "ok"
+ },
+ "load1Start": 4.7,
+ "load1End": 5.4,
+ "encoded": {
+  "hero": {
+   "mp4": "hero.mp4",
+   "mp4Bytes": 194121,
+   "crf": 27,
+   "seconds": 5.5,
+   "width": 448,
+   "height": 538
+  },
+  "switch": {
+   "mp4": "switch.mp4",
+   "mp4Bytes": 200482,
+   "crf": 27,
+   "seconds": 4,
+   "width": 448,
+   "height": 538
+  },
+  "end": {
+   "mp4": "end.mp4",
+   "mp4Bytes": 241867,
+   "crf": 27,
+   "seconds": 11.3,
+   "width": 448,
+   "height": 538
+  }
+ },
+ "scenes": {
+  "hero": {
+   "title": "Top of the page: 2 s at rest, then a scroll through the hero to 1,500 px",
+   "runs": 3,
+   "orders": [
+    [
+     "before",
+     "after"
+    ],
+    [
+     "after",
+     "before"
+    ],
+    [
+     "before",
+     "after"
+    ]
+   ],
+   "sides": {
+    "before": {
+     "shownRun": 3,
+     "shown": {
+      "frames": 441,
+      "k5": 6,
+      "k7": 2,
+      "maxMs": 93
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 441,
+       "k5": 5,
+       "k7": 3,
+       "maxMs": 91
+      },
+      {
+       "run": 2,
+       "frames": 463,
+       "k5": 2,
+       "k7": 1,
+       "maxMs": 83
+      },
+      {
+       "run": 3,
+       "frames": 441,
+       "k5": 6,
+       "k7": 2,
+       "maxMs": 93
+      }
+     ],
+     "startY": 0,
+     "endY": 1684.5,
+     "screencastFrames": 524,
+     "rafFrames": 512,
+     "seconds": 5.2
+    },
+    "after": {
+     "shownRun": 1,
+     "shown": {
+      "frames": 507,
+      "k5": 2,
+      "k7": 0,
+      "maxMs": 50
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 507,
+       "k5": 2,
+       "k7": 0,
+       "maxMs": 50
+      },
+      {
+       "run": 2,
+       "frames": 486,
+       "k5": 2,
+       "k7": 0,
+       "maxMs": 42
+      },
+      {
+       "run": 3,
+       "frames": 465,
+       "k5": 5,
+       "k7": 4,
+       "maxMs": 67
+      }
+     ],
+     "startY": 0,
+     "endY": 1691.5,
+     "screencastFrames": 526,
+     "rafFrames": 576,
+     "seconds": 5.2
+    }
+   }
+  },
+  "switch": {
+   "title": "The section switch about 2,600 px down: a scroll from 1,900 to 3,400 px",
+   "runs": 3,
+   "orders": [
+    [
+     "after",
+     "before"
+    ],
+    [
+     "before",
+     "after"
+    ],
+    [
+     "after",
+     "before"
+    ]
+   ],
+   "sides": {
+    "before": {
+     "shownRun": 2,
+     "shown": {
+      "frames": 282,
+      "k5": 5,
+      "k7": 2,
+      "maxMs": 100
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 288,
+       "k5": 4,
+       "k7": 2,
+       "maxMs": 100
+      },
+      {
+       "run": 2,
+       "frames": 282,
+       "k5": 5,
+       "k7": 2,
+       "maxMs": 100
+      },
+      {
+       "run": 3,
+       "frames": 267,
+       "k5": 7,
+       "k7": 2,
+       "maxMs": 109
+      }
+     ],
+     "startY": 1900,
+     "endY": 3583.5,
+     "screencastFrames": 365,
+     "rafFrames": 350,
+     "seconds": 3.7
+    },
+    "after": {
+     "shownRun": 1,
+     "shown": {
+      "frames": 385,
+      "k5": 1,
+      "k7": 1,
+      "maxMs": 67
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 385,
+       "k5": 1,
+       "k7": 1,
+       "maxMs": 67
+      },
+      {
+       "run": 2,
+       "frames": 394,
+       "k5": 1,
+       "k7": 1,
+       "maxMs": 66
+      },
+      {
+       "run": 3,
+       "frames": 384,
+       "k5": 1,
+       "k7": 1,
+       "maxMs": 67
+      }
+     ],
+     "startY": 1900,
+     "endY": 3602.5,
+     "screencastFrames": 345,
+     "rafFrames": 457,
+     "seconds": 3.7
+    }
+   }
+  },
+  "end": {
+   "title": "The end of the page: the last 1,100 px, then four touch drags past the end (the menu morph)",
+   "runs": 3,
+   "orders": [
+    [
+     "before",
+     "after"
+    ],
+    [
+     "after",
+     "before"
+    ],
+    [
+     "before",
+     "after"
+    ]
+   ],
+   "sides": {
+    "before": {
+     "shownRun": 2,
+     "shown": {
+      "frames": 1127,
+      "k5": 3,
+      "k7": 0,
+      "maxMs": 50
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 1150,
+       "k5": 5,
+       "k7": 1,
+       "maxMs": 100
+      },
+      {
+       "run": 2,
+       "frames": 1127,
+       "k5": 3,
+       "k7": 0,
+       "maxMs": 50
+      },
+      {
+       "run": 3,
+       "frames": 1144,
+       "k5": 2,
+       "k7": 0,
+       "maxMs": 42
+      }
+     ],
+     "startY": 4208,
+     "endY": 5345,
+     "screencastFrames": 1079,
+     "rafFrames": 1194,
+     "seconds": 11
+    },
+    "after": {
+     "shownRun": 3,
+     "shown": {
+      "frames": 1254,
+      "k5": 1,
+      "k7": 1,
+      "maxMs": 84
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 1233,
+       "k5": 1,
+       "k7": 1,
+       "maxMs": 92
+      },
+      {
+       "run": 2,
+       "frames": 1246,
+       "k5": 1,
+       "k7": 1,
+       "maxMs": 83
+      },
+      {
+       "run": 3,
+       "frames": 1254,
+       "k5": 1,
+       "k7": 1,
+       "maxMs": 84
+      }
+     ],
+     "startY": 4245,
+     "endY": 5345,
+     "screencastFrames": 1078,
+     "rafFrames": 1325,
+     "seconds": 10.9
+    }
+   }
+  }
+ }
+}
