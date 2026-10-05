@@ -42,10 +42,10 @@ the next free `research/<nn>-…` number.
    (expected); worse than the best single one, or new `regressions`, is interference. Only then
    measure leave-one-out combinations (`fix.mjs combine all-wave<N>--minus-<t> …`, then `ab`); each
    costs about 6 minutes of exclusive lock, so ask the lead before more than two.
-4. **iPhone** (`CLAUDE.md` "Shared devices"; queue for the lease with `lock.mjs acquire iphone … --wait 3600`
-   in the background, no retry loop): with the `iphone` lease, `iphone.mjs scroll` on the
-   baseline and the combined overlay; for touch-only topics ask the lead for a finger test. Release
-   the lease right after. If the phone is unavailable, say so in the README instead of skipping silently.
+4. **iPhone** (`CLAUDE.md` "Shared devices"; queue for the phone with `lock.mjs run iphone --owner <you> -- sh -c '<scroll baseline; scroll combined>'`
+   in the background, no retry loop): `iphone.mjs scroll` on the
+   baseline and the combined overlay inside that hold; for touch-only topics ask the lead for a finger test. The hold
+   ends with the command. If the phone is unavailable, say so in the README instead of skipping silently.
 5. **Write** `fixes/all-wave<N>/README.md` from `fixes/_template/README.md`: topics and order,
    conflicts and how each was resolved, the combined table pasted from `results.json` `markdown`,
    interactions, iPhone notes, risks. Then `research/<nn>-wave<N>-results/README.md`: what the wave
@@ -75,5 +75,5 @@ the next free `research/<nn>-…` number.
 ## Never
 
 Edit another topic's `fixes/<topic>/` files, the baseline, or the enforcement layer; land or merge;
-use the iPhone without the lease or chrome-devtools MCP; run CPU-heavy work while someone else holds
+use the iPhone outside a `run iphone` hold or chrome-devtools MCP; run CPU-heavy work while someone else holds
 `chrome-measure`.

@@ -52,7 +52,7 @@ you were given. This file adds how to work; it doesn't repeat the steps or the r
    (Bash `run_in_background`) and read, plan or write while it waits for the `chrome-measure` lock.
    Wait with commands that exit by themselves, never a `sleep` loop: your server with
    `node tools/wait.mjs serve out/serve-<topic>.json`, the lock read-only with `node tools/lock.mjs wait
-   chrome-measure --until …`, the iPhone with `lock.mjs acquire iphone … --wait 3600` in the background.
+   chrome-measure --until …`, the iPhone with `lock.mjs run iphone --owner <you> -- <part>` in the background (FIFO; held only while it runs).
    Keep the machine quiet while anyone holds the lock (no builds, `npx`, extra Chromes, big greps in
    loops): the holder's numbers depend on it, and `results.json` records the host load.
 6. **Commit only** `fixes/<topic>/README.md`, `patch.diff`, `results.json`, plus tool fixes with
@@ -102,7 +102,7 @@ You may spawn subagents for reading work so your own context stays on the fix. G
 
 ## Talking to others
 
-- The lead: iPhone lease acquired/released and finger-test requests (protocol in `CLAUDE.md`
+- The lead: iPhone acquired/released and finger-test requests (protocol in `CLAUDE.md`
   "Shared devices"), incidents you opened ("incident I-004 opened …", `fixes/INCIDENTS.md`), scope
   questions, and your final report (or a `BLOCKED on <id>` report when an incident leaves you
   nothing to do).

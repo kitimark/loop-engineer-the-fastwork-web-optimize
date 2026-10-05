@@ -99,9 +99,10 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
 8. **No chrome-devtools MCP performance traces.** Use `verify.mjs`, `fix.mjs ab`, `tools/lib/cdp.mjs`.
    *Why:* throttled MCP traces hang for about an hour and ignore the lock. *Enforced:* deny rules on
    `mcp__chrome-devtools__performance_*`.
-9. **The iPhone only while you hold the `iphone` lease**; finger tests go through the lead.
-   *Why:* one physical device, one page at a time. *Enforced:* `iphone.mjs open|scroll|record` refuse
-   without the lease; the protocol is convention. Details: "Shared devices".
+9. **The iPhone only inside your phone hold** (`node tools/lock.mjs run iphone --owner <you> -- <part>`); finger tests go through the lead.
+   *Why:* one physical device, one page at a time. *Enforced:* `iphone.mjs open|scroll|record|run|gesture` and `ioscap.mjs record` refuse
+   outside a phone hold; `lock.mjs acquire iphone` refuses agents (exit 2), except the user (`user`, `user-*`), the lead
+   (`--lead --reason`, audited) and `--not-ready` queueing (I-168). Details: "Shared devices".
 10. **Port 5173 is the main session's.** MUST NOT use or kill it; worktrees serve on `--port auto`
     (5200-5999); kill only processes you started. *Why:* the user's own mirror server.
     *Enforced:* `serve.mjs` defaults to `--port auto` in a worktree; otherwise convention.
@@ -353,7 +354,7 @@ Team conventions (messages go to the owner of the question, see "Agent communica
   No normal hold longer than ~10 min (`run --max-seconds`, default 600; past it `status` shows OVERDUE):
   split longer work into separate holds and requeue after each.
 - **Use the iPhone while you wait for Chrome.** The phone renders by itself, so an iPhone check barely
-  loads the Mac and runs in parallel with Chrome measurements (lease, plain http per I-003).
+  loads the Mac and runs in parallel with Chrome measurements (`lock.mjs run iphone`, plain http per I-003).
 
 ## Agent communication
 
@@ -586,13 +587,15 @@ node tools/lock.mjs run chrome-measure --shared --weight npm-test --max-seconds 
 # iPhone (one page at a time, ios_webkit_debug_proxy on :9221/:9222, LAN https://lan:<port>/ or the twin's http://lan:<twin>/):
 #   host `lan`: the Mac's LAN address, resolved at run time (I-073); `node tools/lan.mjs [--url --port N]` prints it.
 #   It changes on a Wi-Fi reconnect: never type it, and never write it into a committed file (Hard rule 12).
-node tools/lock.mjs acquire iphone --owner <topic> --ttl 900 --url https://lan:<port>/ --wait 3600   # in the background
-#   exit 0 = yours (the lease runs from now); exit 3 = still busy after --wait, your place is kept: run it again
-node tools/iphone.mjs open https://lan:<port>/ --owner <topic>    # navigates Safari (location.href)
-node tools/iphone.mjs scroll --owner <topic> --label patched                 # scripted scroll, ~60 s
-node tools/iphone.mjs record --owner <topic> --seconds 25 --label finger     # human finger scroll (see below)
-node tools/lock.mjs renew iphone --owner <topic> --ttl 900                   # if you need longer
-node tools/lock.mjs release iphone --owner <topic>
+node tools/lock.mjs run iphone --owner <topic> [--keep 120] [--max-seconds 900] -- sh -c '<phone part>'   # in the background; FIFO; held only while it runs (I-168)
+#   --max-seconds default and cap 900 s (3600 with --block <ticket>); past it OVERDUE, never killed
+#   --keep S (<=180): your next run iphone within S s continues the same hold; else it ends by itself
+#   inside it: node tools/iphone.mjs open|scroll|record ... (the hold's token names you; --owner optional)
+#   acquire iphone: only the user (user, user-*), the lead (--lead --reason "...", audited) and --not-ready queueing
+#   (these run inside the sh -c above:)
+node tools/iphone.mjs open https://lan:<port>/    # navigates Safari (location.href)
+node tools/iphone.mjs scroll --label patched                 # scripted scroll, ~60 s
+node tools/iphone.mjs record --seconds 25 --label finger     # human finger scroll (see below)
 ```
 
 - **Idle alarm** (I-105, user T-058): `node tools/idle.mjs check [--phone-min 5] [--chrome-min 10]` at every
@@ -606,10 +609,10 @@ node tools/lock.mjs release iphone --owner <topic>
   concerns (the holder of an unused lease, the waiting owners of a free slot) carry a red alert, and the watch logs one
   `NOTIFY <agent>` line each. The lease holder is using the phone while it holds chrome-measure (only queued for it is a Mac wait, not use: over
   5 min of it while others wait for the phone alarms; phone-hold v2 T0), or
-  while `node tools/lock.mjs run iphone --owner <you> -- <cmd>` runs under its lease (wrap phone-side work that is no
+  while `node tools/lock.mjs run iphone --owner <you> -- <cmd>` runs (a `run iphone` hold is in use while its command runs; wrap phone-side work that is no
   phone run in it: xctrace thermal gate, pre-warm). Not ready yet (pre-data read, cooling)? Don't take the lease:
   queue with `node tools/lock.mjs acquire iphone --owner <you> --not-ready` (keeps your place, never served, exit 3;
-  re-run within 10 min) and acquire without the flag when your part can start. I-165: a lease holder whose only process
+  re-run within 10 min) and start `lock.mjs run iphone` when your part can start. I-165: a lease holder whose only process
   on the lease is a `lock.mjs wait iphone` for over 2 min is `STUCK iphone: …` (an alarm, waiters or not); a holder whose
   own console step waits for the user's Start (its part loading or ready) is a user wait, not idle.
   **Alarm threads** (idle, stuck step, disk; I-175, user T-155 #4/#5, `fixes/AGENT_ROLES.md` "Automated threads: who
@@ -626,8 +629,8 @@ node tools/lock.mjs release iphone --owner <topic>
   change, run 3 of 9" [--for …] [--eta-min N] | --clear`. Without it the page shows your board note.
   `iphone.mjs scroll|record|run|gesture` mark their own run (from `--label`, or `--doing`). Plain words, nothing personal.
 
-iPhone protocol on top of the lease:
-1. Acquire the lease, then message the lead: "iPhone acquired for <topic>: <LAN URL>".
+iPhone protocol (phone holds, I-168):
+1. Run your phone part inside `lock.mjs run iphone`, then message the lead: "iPhone in use for <topic>: <LAN URL>".
 2. Scripted checks: `iphone.mjs scroll` for baseline and patched URLs (`fix.mjs serve` for each, or
    `serve.mjs --root site-pretty --port auto --https` for the plain baseline).
 3. Finger test (touch scroll-jack, toolbar resize, blind swipe A/B): post it to the **user console**, not the
@@ -644,20 +647,19 @@ iPhone protocol on top of the lease:
    `REDO` (reset the phone, wait for the new Start; `wait --until redo` in the background during a long part); label
    files with the `attempt` in the MET JSON and pass `ack --attempt N` so a late ack from an old try is refused.
    One phone step at a time (I-123, memory "one-phone-step-at-a-time"): post a swipe-pair, `--record` or `--phone`
-   step only while you hold the iphone lease and no other phone step is open (`post` refuses otherwise; the lead is
+   step only from inside your phone hold, and only while no other phone step is open (`post` refuses otherwise; the lead is
    exempt). From part 1 keep `wait <id> --until redo` armed in the background; re-arm a wait with `--epoch <last epoch
    you saw>` (a wait armed after a missed Start over exits 5 REDO at once). While your step is on the phone the lock
-   keeps your lease up to 10 min past expiry (`lock.mjs status`: KEPT); renew anyway. `iphone.mjs` refuses (WAIT)
+   keeps your hold up to 10 min past its end (`lock.mjs status`: KEPT). `iphone.mjs` refuses (WAIT)
    while another agent's step is on the phone (`--ignore-step <id>` only for an abandoned step); `idle.mjs check`
    prints STUCK when a step waits on its runner > 2 min (`--step-min`), and the lead's watch posts one thread.
-4. Release and message the lead "iPhone released (<topic>)". Never hold it while idle; never
-   navigate the phone without the lease; waiters queue with `acquire iphone --wait` (first come first served,
-   no hand-made retry loops).
+4. The hold ends when your command exits (or after `--keep`); message the lead "iPhone released (<topic>)". Never hold the
+   phone while idle; waiters queue FIFO in `run iphone`, no hand-made retry loops.
 
 iPhone screen recorder (I-062; user T-018/T-019): only `tools/ioscap.mjs` may record the phone's screen. Its app
 (`out/ioscap/ioscap.app`, built by `ioscap.mjs build` in a `--no-timing` hold) opens nothing but the iOS screen
 device; QuickTime, camera listing, ffmpeg avfoundation, imagesnap and `screencapture -v` are denied (git-guard),
-and nobody opens the Mac camera. `record --owner <you> --seconds N` (max 600) needs the `iphone` lease, refuses in a
+and nobody opens the Mac camera. `record --seconds N` (max 600) runs inside your phone hold (`lock.mjs run iphone`), refuses in a
 `--shared` slot and prints numbers only (frames, distinct-frame rate, PTS gaps): nobody views frames. The first
 run (`--first-run`, the macOS Camera prompt) is the lead's only, with the user's console OK and the user watching.
 Output stays in the checkout's gitignored `out/iphone-screen/` (`.mov`, `.frames.json`, `.result.json`, `.json`):
@@ -667,10 +669,10 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
 - **Blocks.** Only ticketed builds, served from immutable snapshot copies. A block: one question, one named control
   on the same base, one uncounted warm-up run per arm's port (A3/U5), then ≤9 counted runs in C V V C C V V C order (3 arms: a rotated
   Latin square); park Safari (`iphone.mjs park`) after every block; between blocks cool with `node tools/wait.mjs phone-temp --below auto` (≤10 min, protocol §5.3); at most 2 blocks per question (sequential rule, §5.3).
-- **Block marks (I-160; the runner's steps).** At the block start: `node tools/lock.mjs doing iphone --owner <you>
-  --block <ticket>` (or `acquire iphone … --block <ticket>`). After each hold of the block: `doing iphone --owner <you>
+- **Block marks (I-160; the runner's steps).** At the block start: `node tools/lock.mjs run iphone --owner <you> --block <ticket> --max-seconds 3600 [--keep 120] -- <block>`
+  (or `doing iphone --owner <you> --block <ticket>` inside it). After each hold of the block: `doing iphone --owner <you>
   --between <min>` (the gap until your next hold; your next chrome-measure hold or phone run ends it). At the end: `doing
-  iphone --owner <you> --block none`, or release the lease. While the block is marked, a Simulator session (`--shared
+  iphone --owner <you> --block none`, or let the hold end. While the block is marked, a Simulator session (`--shared
   --weight simulator`, or a `run` of `sim.mjs session`) neither joins nor opens a shared group: it prints `DEFERRED`
   (acquire: exit 3; run/--wait: polls on, out of the queue; `lock.mjs status` lists it) and starts only in a window its
   `--max-seconds` fits into while you neither hold nor queue for chrome-measure, or after the block. The warm
