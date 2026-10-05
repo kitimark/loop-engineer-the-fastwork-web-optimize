@@ -275,8 +275,23 @@ function currentId() { var h = decodeURIComponent(location.hash.slice(1)); retur
 // http://<IPv4>:<port>[/?#…], nothing else becomes a phone link.
 var LAN_HREF = /^https?:\/\/\d{1,3}(?:\.\d{1,3}){3}:\d{1,5}(?:[\/?#][A-Za-z0-9\-._~%\/?#=&+]*)?$/;
 var LOCAL_LINK = /\bhttps?:\/\/(?:localhost|127\.0\.0\.1)(?::\d{1,5})?(?:\/[\w\-./#?=&%~+:]*)?/g;
+// I-191: a claude.ai artifact link, as tools/lib/artifact-link.mjs keeps it (the same three rules; a unit test compares)
+var ARTIFACT_CANDIDATE = /(?<![^\s(\[{<'"`*|])https:\/\/claude\.ai\/\S*/g;
+var ARTIFACT_VALID = /^https:\/\/claude\.ai\/(?:artifact\/[A-Za-z0-9_-]{6,64}|code\/artifact\/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$/;
+var TRAILING = /[.,;:!?)\]}'"]+$/;
+/** The first artifact link in s from i: {at, len, art}, or null; a look-alike is skipped (stays text). */
+function nextArtifact(s, i) {
+  for (;;) {
+    ARTIFACT_CANDIDATE.lastIndex = i; var m = ARTIFACT_CANDIDATE.exec(s);
+    if (!m) return null;
+    var u = m[0].replace(TRAILING, '');
+    if (ARTIFACT_VALID.test(u)) return { at: m.index, len: u.length, art: u };
+    i = m.index + m[0].length;
+  }
+}
 /**
- * I-126: a thread message's text (T-048 questions and answers) with only localhost links and the server's phone links
+ * I-126: a thread message's text (T-048 questions and answers) with only localhost links, claude.ai artifact links
+ * (I-191) and the server's phone links
  * made clickable, everything else as text; the same rules as threads-page.html richText. `lan`: the message's
  * [{text: the placeholder link (host "lan"), href: resolved | null}] (pageThread): a resolved one opens this Mac's LAN
  * address now, an unresolved one stays text with a plain note; a placeholder the server did not list stays text.
@@ -287,6 +302,8 @@ function linkText(node, text, lan) {
   for (;;) {
     LOCAL_LINK.lastIndex = i; m = LOCAL_LINK.exec(s);
     var best = m ? { at: m.index, len: m[0].length, local: m[0] } : null;
+    var art = nextArtifact(s, i);
+    if (art && (!best || art.at < best.at)) best = art;
     items.forEach(function (l) {
       var at = s.indexOf(l.text, i);
       if (at >= 0 && (!best || at < best.at || (at === best.at && l.text.length > best.len))) best = { at: at, len: l.text.length, lan: l };
@@ -294,6 +311,7 @@ function linkText(node, text, lan) {
     if (!best) break;
     if (best.at > i) node.appendChild(document.createTextNode(s.slice(i, best.at)));
     if (best.local) node.appendChild(el('a', { href: best.local, rel: 'noreferrer', text: best.local }));
+    else if (best.art) node.appendChild(el('a', { href: best.art, target: '_blank', rel: 'noreferrer', title: 'claude.ai artifact (opens in a new tab)', text: best.art }));
     else if (typeof best.lan.href === 'string' && LAN_HREF.test(best.lan.href)) {
       node.appendChild(el('a', { href: best.lan.href, target: '_blank', rel: 'noreferrer', title: 'Phone link (' + best.lan.text + '), with this Mac\'s Wi-Fi address now', text: best.lan.href }));
     } else {

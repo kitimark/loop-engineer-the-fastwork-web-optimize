@@ -70,6 +70,7 @@ import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { sanitize, PERSONAL } from './progress.mjs';
 import { redact } from './redact.mjs';
+import { keepArtifactLinks } from './artifact-link.mjs';
 import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, liveNotCovered, notCoveredWarning, LIVE_PATCH, BLOB } from './live.mjs';
 import { patchHeader } from './bench-overlay.mjs';
 
@@ -116,12 +117,15 @@ export function isLocalUrl(u) {
 
 /**
  * Scrub one text: URLs other than localhost, IP addresses, *.local/*.lan hosts, e-mail, device ids, home paths
- * (progress.mjs PERSONAL) and account/device ids (redact.mjs). Localhost URLs are kept. Returns {text, found: [kind]}.
+ * (progress.mjs PERSONAL) and account/device ids (redact.mjs). Localhost URLs and claude.ai artifact links (I-191,
+ * artifact-link.mjs) are kept. Returns {text, found: [kind]}.
  */
 export function scrubText(s) {
   if (s == null) return { text: s, found: [] };
   const keep = [];
   let t = String(s).replace(/[\u0001\u0002]/g, '').replace(LOCAL_URL, (m) => { keep.push(m); return `\u0001${keep.length - 1}\u0002`; });
+  // I-191: https://claude.ai/artifact/<id> and /code/artifact/<uuid> kept as written (artifact-link.mjs); others scrubbed
+  t = keepArtifactLinks(t, (u) => { keep.push(u); return `\u0001${keep.length - 1}\u0002`; });
   const found = [];
   for (const [name, re] of PERSONAL) { re.lastIndex = 0; const n = (t.match(re) || []).length; for (let i = 0; i < n; i++) found.push(name); }
   // Other URLs become <link> here, keeping closing punctuation that follows them ("(seen on http://…/)" keeps

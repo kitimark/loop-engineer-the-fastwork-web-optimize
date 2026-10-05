@@ -13,6 +13,7 @@ import net from 'node:net';
 import { tempDir, git, request } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
 import { checkMarkdown } from './md-cases.mjs';
+import { ARTIFACT_OK, ARTIFACT_BAD } from './artifact-cases.mjs';
 
 const FAKE_LAN = '192.0.2.44';
 let L, PH, P, T, fx, repo;
@@ -231,6 +232,17 @@ test('I-126 page: talk messages turn http://lan:<port>/ into the resolved link (
   // a placeholder the server did not list, and a listed href that is no http(s)://<IPv4>:<port> URL: plain text
   const bare = pg.talkThread({ ...t, messages: [{ ...msg, lan: [{ text: 'http://lan:5231/', href: 'javascript:alert(1)' }] }] }, { id: 'PR-017' });
   assert.deepEqual(links(bare.all().find((x) => x.className === 'mt')), [['http://localhost:5559/proposals', 'http://localhost:5559/proposals']]);
+});
+
+test('I-191 page: talk messages make a claude.ai artifact link clickable (new tab), as the Threads page; look-alikes stay text', () => {
+  const pg = page();
+  const [u, c] = [ARTIFACT_OK[0], ARTIFACT_OK[4]];
+  const text = `Review ${u}, code ${c}. Not ${ARTIFACT_BAD.join(' ')} but http://localhost:5559/proposals`;
+  const box = pg.talkThread({ id: 'T-090', status: 'open', state: 'answered', to: ['de-hero'], messages: [{ by: 'de-hero', at: '2026-10-04T07:00:00.000Z', text }] }, { id: 'PR-017' });
+  const mt = box.all().find((x) => x.className === 'mt');
+  assert.deepEqual(mt.all().filter((x) => x.tagName === 'a').map((a) => [a.textContent, a.attrs.href, a.attrs.target, a.attrs.rel]),
+    [[u, u, '_blank', 'noreferrer'], [c, c, '_blank', 'noreferrer'], ['http://localhost:5559/proposals', 'http://localhost:5559/proposals', undefined, 'noreferrer']]);
+  assert.equal(mt.textContent, text);
 });
 
 test('I-129 page (user T-091): talk messages render pipe tables, "- " bullets and **bold** as the Threads page, as DOM nodes only', async () => {
