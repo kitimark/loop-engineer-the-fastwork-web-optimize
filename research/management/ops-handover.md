@@ -72,6 +72,19 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~06:3xZ **P-130 rev 3 delta check: R1-R3 resolved; NOT YET on the lead's two additions** (commit 07a83136 on worktree-agent-a8dba5b51e224d3ca). No data exists.
+  - Verified:
+    - Committed files equal the disk files: reader e0909db68ad9, hold.sh 884a332d0b66.
+    - Unchanged: logger 49d7a6c3da4c, program d7ee0153e439, GESTURE_HASH 58b3e0b3f502, block builder 906ee0f9c98f, serve.sh af443694ea69, v9 delta 8a4a6a16e217.
+    - Selftests re-run: 24/24 and 5/5.
+  - The three rev 2 points are done:
+    - R1: 5 parts of at most 2 items. The 2nd item starts with ~490 s left, more than the 397 s budget.
+    - R2: wda check before the start gate (VOID, exit 4).
+    - R3: a nonzero gestureExit voids the run.
+  - Lead's ruling: N5 sentinel deviation SIGNED, plus an idle rAF gate. Each part's start gate reads the idle page's rAF over 5 s and needs at least 58 fps, else the part is VOID. It must be a pinned script outside tools/, read once.
+  - The countdown-tick-v9 delta (8a4a6a16e217, built on step 4 de237379b556) must be rebuilt on the landed v9-final (`fix.mjs apply --on v9-best`). After that, fill C_JS, C_CSS and V_JS.
+  - The next delta check comes after v9-final lands. The P-130 row goes into PREDICTIONS only after a PASS.
+  - The lead landed 8e277f67 and 3bda2d4e as records only (2e3c2911, 6d679acd). The fix joins a build only after P-130.
 - 10-05 ~06:0xZ **P-130 rev 2 delta check: NOT YET** (commit 3bda2d4e on worktree-agent-a8dba5b51e224d3ca). No data exists.
   - Checked OK:
     - Pins match on disk: logger 49d7a6c3da4c, program d7ee0153e439, GESTURE_HASH 58b3e0b3f502 (recomputed), p130-read 5b9d38d43bc4, p130-block 906ee0f9c98f, hold.sh 8d5895b04d74, serve.sh af443694ea69.
