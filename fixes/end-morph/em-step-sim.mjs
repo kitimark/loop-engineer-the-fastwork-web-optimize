@@ -73,11 +73,24 @@ try {
     for (const l of L) out.set(l.layerId, { name: await nameOf(l), pc: l.paintCount || 0, w: Math.round(l.bounds?.width || 0), h: Math.round(l.bounds?.height || 0) });
     return out;
   };
+  // LayerTree layer ids are per inspector session (a reconnect gives every layer a new id) while paintCount is the
+  // layer's lifetime count. So match by id first, then by node name + size, then by a unique node name; only a layer
+  // with no match is new (its d is its lifetime count). (Fixes the first version, whose stroke counts were lifetime
+  // counts: F-299 refuted.)
   const diff = (a, b) => {
-    const out = [];
-    for (const [id, l] of b) { const d = l.pc - (a.get(id)?.pc || 0); if (d > 0 || !a.has(id)) out.push({ layer: l.name, d, isNew: !a.has(id), w: l.w, h: l.h }); }
-    let gone = 0; for (const id of a.keys()) if (!b.has(id)) gone++;
-    return { nBefore: a.size, nAfter: b.size, gone, total: out.reduce((x, y) => x + y.d, 0), painted: out.sort((x, y) => y.d - x.d).slice(0, 16) };
+    const out = [], used = new Set();
+    const key = (l) => `${l.name}|${l.w}x${l.h}`;
+    const byKey = new Map(), byName = new Map();
+    for (const [id, l] of a) { if (!byKey.has(key(l))) byKey.set(key(l), []); byKey.get(key(l)).push(id); if (!byName.has(l.name)) byName.set(l.name, []); byName.get(l.name).push(id); }
+    let viaId = 0, viaKey = 0, viaName = 0;
+    const take = (ids) => { const id = (ids || []).find((x) => !used.has(x)); if (id !== undefined) used.add(id); return id; };
+    const pending = [];
+    for (const [id, l] of b) if (a.has(id) && !used.has(id)) { used.add(id); viaId++; pending.push([l, a.get(id)]); } else pending.push([l, null]);
+    for (const p of pending) if (!p[1]) { const id = take(byKey.get(key(p[0]))); if (id !== undefined) { p[1] = a.get(id); viaKey++; } }
+    for (const p of pending) if (!p[1]) { const ids = byName.get(p[0].name) || []; if (ids.length === 1) { const id = take(ids); if (id !== undefined) { p[1] = a.get(id); viaName++; } } }
+    for (const [l, m] of pending) { const d = l.pc - (m?.pc || 0); if (d > 0 || !m) out.push({ layer: l.name, d, isNew: !m, w: l.w, h: l.h }); }
+    let gone = 0; for (const id of a.keys()) if (!used.has(id)) gone++;
+    return { nBefore: a.size, nAfter: b.size, match: { viaId, viaKey, viaName }, gone, total: out.reduce((x, y) => x + y.d, 0), painted: out.sort((x, y) => y.d - x.d).slice(0, 16) };
   };
   let g = JSON.parse(await c.evaluate(GEO));
   if (!g.t) throw new Error('no .fw-ms-end (7d off)');
@@ -87,7 +100,12 @@ try {
     const y = pos === 'open' ? g.max : g.endStart - Math.round(0.3 * g.ih);
     await c.evaluate(`(window.scrollTo({ top: ${y}, behavior: 'instant' }), 0)`); await sleep(pos === 'open' ? 2500 : 1500);
     r.before = JSON.parse(await c.evaluate(GEO));
+    const A0 = await layers();
+    // self-check of the cross-session matching: reconnect with no gesture; r.reconnect should be ~0 paints, 0 new
+    try { c.close(); } catch {} c = null;
+    await sleep(800); await connect(); await sleep(1500);
     const A = await layers();
+    r.reconnect = diff(A0, A);
     try { c.close(); } catch {} c = null;
     const gr = spawnSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'gesture', GESTURE, '--count-only', '--label', `em-${ARM}-${pos}`], { encoding: 'utf8', timeout: 150000 });
     const line = (gr.stdout || '').split('\n').find((x) => x.startsWith('COUNT_ONLY '));
@@ -111,7 +129,8 @@ try {
     r.control = diff(B2, C);
     const show = (d) => JSON.stringify(d.painted.slice(0, 8).map((x) => `${x.layer}${x.isNew ? '*' : ''}:${x.d} ${x.w}x${x.h}`));
     console.log(ARM, pos, 'toolbar transitions', r.gesture.counts?.toolbar?.transitions ?? JSON.stringify(r.gesture.tail), '| vvh', r.before.vvh, '->', r.afterGesture.vvh, '| msH', r.before.msH, 'pTop', r.before.pTop, '->', r.afterGesture.pTop);
-    console.log('  strokes total', r.strokes.total, show(r.strokes));
+    console.log('  reconnect check total', r.reconnect.total, 'match', JSON.stringify(r.reconnect.match), 'gone', r.reconnect.gone, show(r.reconnect));
+    console.log('  strokes total', r.strokes.total, 'match', JSON.stringify(r.strokes.match), 'gone', r.strokes.gone, show(r.strokes));
     console.log('  control total', r.control.total, show(r.control));
   }
 } catch (e) { res.error = String(e.stack || e.message || e); console.log(ARM, 'error', res.error); }

@@ -158,14 +158,24 @@ and the Simulator; motion-only differences are proposals).
 
 - Step A: Simulator toolbar strokes with arms C, V1 and N (`em-step-sim.mjs`). Arm C
   (`out/end-morph/em-step-sim-end-morph-2026-10-05T22-52-18-912Z.json`):
-  - At m 1 (open, #platform at opacity 0), the 8 touch strokes (1 toolbar transition) repaint #platform's 430x1880
-    layer 1015 times. The same scroll distances without touch repaint it 0 times. So the Simulator reproduces the
-    phone's touch/step repaint (OBSERVED in our setup, cause unknown).
-  - At m 0 both runs repaint it: strokes 418 (7 transitions), control 594. That is the approach repaint of 2.3.
-  - Caveat: during the stroke phase every layer got a new id (gone 55 of 55 closed, 44 of 44 open; the control phase
-    0). So the stroke counts are paintCounts since the layers were made, and include their first paint. That cannot
-    explain 1015 paints over ~1320 frames.
+  - **First run invalid (F-299 REFUTED, pitfall F-300).** The script closed the inspector connection around the
+    gesture. LayerTree ids are per session, so every layer looked new, and the stroke counts were lifetime
+    paintCounts since page load. The decisive sign: arm N's #platform is `visibility: hidden`, yet it showed 1070.
+    The control phase (same session) is valid. At m 1 the control repaints #platform 0 times in all arms; at m 0 it
+    repaints it 594-600 times, which is the approach repaint of 2.3.
+  - The script now matches layers by id, then node + size, then unique name, and runs a no-gesture reconnect
+    self-check. Rerun of C, V1, N queued (chain 5).
   - V1 and N decide: if V1 removes the repaint at T0, it joins F1 + U2.
+- S2 Simulator counts on v9.2 (`em-sim-s2-2026-10-05T23-00-27-826Z.json`). Cells are paint events / kpx:
+
+  | phase | C | F1+U2 | P1 |
+  |---|---|---|---|
+  | open | 438 / 34276 | 431 / 33590 | 155 / 10096 |
+  | rest open | 45 / 757 | 33 / 497 | 49 / 761 |
+  | close | 387 / 32195 | 407 / 33207 | 87 / 9938 |
+
+  - F1+U2 gains nothing on the rAF glide: its gains are at rest open and on toolbar steps.
+  - P1's counts went to fix-end-morph-p1.
   If it can't be reproduced, step B is a phone card (P-id via the lead, pre-data read).
 - F1 + U2 landing gates on v9-final (int-v8's pinned snapshot `snap-a6426953727a`, HASHES sha256/12 `0817a71bf0c7`).
 - F4 gates and counts.
