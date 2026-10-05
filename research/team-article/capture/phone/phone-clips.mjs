@@ -24,12 +24,14 @@
 //
 // Window per scene (fixed before data): e (flick-end-v1) into1 → end; h (flick-hero-v1) down1 → end; f
 // (flick-fresh-v1) fresh-flick → end; s (scripted scroll) scroll start → scroll end + 1 s; each ± 300 ms.
-// Shown run: run 1 of each arm (fixed before data); all runs' numbers are printed.
+// Shown run: the first clean run of each arm (no error, Mac load1 <= 16, no profile drift; was run 1 before hold 2's
+// MAC-LOADED runs); all runs' numbers are printed. --motion makes traces for clean runs only (--all-runs: every run;
+// --labels L1,L2: just those).
 // Crop (privacy, lead's change 2): the page-area box y 119-826 pt of 932, full width, by geometry (no status bar, no
 // Safari bar in either position). The close-up (scene e only: the middle of that box, where the end menu opens) is made
 // only when every run's viewport read (start and end) has offsetTop 0, scale 1 and height 770-820 (page area covering
 // the box); otherwise it is dropped, never widened.
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -188,6 +190,7 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   if (p2w === null || w2u === null) return { ...out, error: 'no clock link (sync pairs or stamps missing)' };
   const toPts = (t) => (t + p2w - w2u) / 1000;
   const frames = cap.frames.filter((f) => f[2] !== false);
+  if (!frames.length) return { ...out, error: 'the capture has no frames (ioscap: no frame arrived from the iPhone screen)' };
   const pts0 = frames[0][0];
   const mtxt = join(runs, `${L}.motion.txt`);
   const lag = existsSync(mtxt) ? clockLag(log.frames, parseMotion(readFileSync(mtxt, 'utf8')), (t) => toPts(t) - pts0) : null;
@@ -265,6 +268,21 @@ function encodePair(name, A, V, { screen, out, fps, crop, W }) {
   return { mp4, bytes: statSync(mp4).size, crf, seconds: Math.round(D / 100) / 10, width: 2 * W + GAP, height: HDR_H + H + STRIP_H };
 }
 
+/** A run is clean when its driver record exists and shows Mac load1 <= MAC_LOADED at start and end and no profile drift. */
+export function cleanRecord(rec) {
+  const m = rec?.meta?.mac; if (!m) return false;
+  return [m.start?.load1, m.end?.load1].every((x) => Number.isFinite(x) && x <= MAC_LOADED) && !rec.meta.profileDrift;
+}
+const isClean = (file) => { try { return cleanRecord(JSON.parse(readFileSync(file, 'utf8'))); } catch { return false; } };
+/** Write a trace via <txt>.part and rename on success, so a killed hold never leaves a half trace that looks done. */
+function trace(what, txt, args) {
+  if (existsSync(txt)) return;
+  const part = `${txt}.part`; rmSync(part, { force: true });
+  const r = spawnSync('ffmpeg', args(part), { encoding: 'utf8' });
+  if (r.status === 0 && existsSync(part)) renameSync(part, txt);
+  console.log(`${what}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`);
+}
+
 function main() {
   const runs = resolve(ROOT, opt('runs', 'out/phone-clips/runs')), out = resolve(ROOT, opt('out', 'out/phone-clips/clips'));
   const screen = resolve(ROOT, 'out/iphone-screen'), fps = Number(opt('fps', 60)), show = Number(opt('show', 1));
@@ -275,9 +293,11 @@ function main() {
     for (const L of labels) {
       const mov = join(screen, `${L}.mov`), txt = join(runs, `${L}.motion.txt`);
       if (!existsSync(mov)) continue;
-      if (!existsSync(txt)) { const r = spawnSync('ffmpeg', motionArgs(mov, txt), { encoding: 'utf8' }); console.log(`motion ${L}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`); }
+      const only = opt('labels')?.split(',');
+      if (only ? !only.includes(L) : !flag('all-runs') && !isClean(join(runs, `${L}.json`))) { console.log(`traces ${L}: skipped (MAC-LOADED, profile drift or no record; --all-runs makes them)`); continue; }
       const sc = /^pc-H\d+-([eshf])/.exec(L)?.[1], rtxt = join(runs, `${L}.region.txt`);
-      if (sc && !existsSync(rtxt)) { const r = spawnSync('ffmpeg', regionArgs(mov, rtxt, REGIONS[sc]), { encoding: 'utf8' }); console.log(`region ${L}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`); }
+      trace(`motion ${L}`, txt, (t) => motionArgs(mov, t));
+      if (sc) trace(`region ${L}`, rtxt, (t) => regionArgs(mov, t, REGIONS[sc]));
     }
   }
   const all = labels.map((L) => analyse(L, { runs, screen, stamps, vv }));
@@ -295,9 +315,12 @@ function main() {
   if (flag('no-encode')) { if (opt('json')) writeFileSync(resolve(ROOT, opt('json')), JSON.stringify(report, null, 1)); return; }
   mkdirSync(out, { recursive: true });
   for (const sc of scenes) {
-    const pick = (arm) => all.find((r) => !r.error && r.scene === sc && r.arm === arm && r.run === show);
+    // Shown run (rule fixed before the hold-2 numbers were read, after the lead's MAC-LOADED rule): the first clean run
+    // of each arm by run number (no error, Mac load1 <= 16 at start and end, no profile drift); --show N forces run N.
+    const pick = (arm) => all.filter((r) => !r.error && r.scene === sc && r.arm === arm && (opt('show') ? r.run === show : !r.macLoaded && !r.profile?.drift))
+      .sort((x, y) => x.run - y.run)[0];
     const A = pick('A'), V = pick('V');
-    if (!A || !V) { console.log(`clip ${sc}: no run ${show} on both arms, not made`); continue; }
+    if (!A || !V) { console.log(`clip ${sc}: no clean run on both arms (A ${A?.L ?? 'none'}, V ${V?.L ?? 'none'}), not made`); continue; }
     if (!A.clock.ok || !V.clock.ok) { console.log(`clip ${sc}: clock check failed (lag ${A.clock.lagMs} / ${V.clock.lagMs} ms), not made`); continue; }
     const full = { w: SCREEN.w, h: BOX.y1 - BOX.y0, filter: boxFilter() };
     const made = [{ name: `phone-${sc}`, ...encodePair(`phone-${sc}`, A, V, { screen, out, fps, crop: full, W: 300 }) }];
@@ -354,6 +377,8 @@ function selfTest() {
   ok(rs.stalePct > 60 && rs.longestStaleMs >= 45 && rm.stalePct < 5, `region follow ${JSON.stringify(rs)} ${JSON.stringify(rm)}`);
   ok(regionArgs('a.mov', 'r.txt', REGIONS.s).join(' ').includes('crop=w=iw:h=ih*48/932:x=0:y=ih*64/932') && regionArgs('a.mov', 'r.txt', REGIONS.s).at(-2) === 'null', 'region args');
   ok(Object.values(REGIONS).every((r) => r.y0 >= 59 && r.y1 <= 826), 'regions inside the page area');
+  const rec = (l0, l1, drift) => ({ meta: { mac: { start: { load1: l0 }, end: { load1: l1 } }, profileDrift: drift } });
+  ok(cleanRecord(rec(10, 16, false)) && !cleanRecord(rec(10, 16.1, false)) && !cleanRecord(rec(163, 10, false)) && !cleanRecord(rec(10, 10, true)) && !cleanRecord({}), 'clean record rule');
   console.log(`phone-clips self-test: ${n} checks ok`);
 }
 
