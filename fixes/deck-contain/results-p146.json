@@ -1,0 +1,1209 @@
+{
+ "card": "P-146 rev 1.1 (signed with N1-N7 after the lead delta check, 7162106c, landed as 617a8b73)",
+ "scope": "Simulator holds H1-H3 scored. Chrome C1, P15/P16 and pixels follow per the card and are not in this result.",
+ "reading": "All three holds OK (A/A 1.012, 1.014, 1.002; drift 0.006, 0.019, 0.003). PC2 LOCATES in every hold. PC2, A3, A4 and R3 each LOCATE on the median of 3 runs (ratio 0.012-0.013); no arm is BIMODAL per run (rule 4).",
+ "predictions": {
+  "P1": "hit",
+  "P2": "hit",
+  "P3": "hit (A4)",
+  "P4": "hit (A3)",
+  "P5": "miss (R3 LOCATES)",
+  "P6": "miss (no arm BIMODAL per run; all three have 3 valid runs)",
+  "P7": "hit",
+  "P8": "hit",
+  "P9-P12, P15, P16": "not yet run (card order: Chrome C1, P15/P16, pixels)"
+ },
+ "predictionsNote": "owner tally; the result reader confirms",
+ "driver": "sim-swipe-p146.mjs 65d5aac5f45d, scorer score-p146.mjs bf06d1178073",
+ "measurementCodeChanged": false,
+ "environment": {
+  "H1": {
+   "simQuiet": "settled after 37 s (28 % of a core)",
+   "displayAtStart": "off (I-033 warning)"
+  },
+  "H2": {
+   "simQuiet": "settled after 47 s (26 %)",
+   "displayAtStart": "off (I-033 warning)"
+  },
+  "H3": {
+   "simQuiet": "settled after 43 s (14 %)",
+   "displayAtStart": "off (I-033 warning)"
+  }
+ },
+ "disclosures": [
+  "The display was off at the start of all three holds (lock I-033 warning), as in P-143. No rule depends on it (rev 1.1 \"Recorded, no rule\").",
+  "Reporting bug in the pinned scorer: it computes the per-swipe medians (swipeL, rev 1.1 N3) but its output row omits them. No rule reads them. The per-swipe numbers below were computed by a separate descriptive script over the same runs.jsonl, using the same band; they are descriptive only.",
+  "Per-swipe levels (descriptive, N3): every arm run whose first swipe landed on the middle level (about 25 ms) pooled a second swipe that landed low (about 0.44 ms): H1 R3:1 (s0 25.15, s1 0.43), H2 R3:2 (s0 25.68, s1 0.44), H2 A3:2 (s0 25.32, s1 0.45). The run medians read low because the low swipe has more band frames (162 vs 96-110), as N3 predicted. Across P-143 and P-146, first-or-only swipes on the middle level: R3 3 of 5 runs, A3 2 of 5, A4 0 of 5, PC2 0 of 3, strict+844 2 of 2. Second swipes: always low. OBSERVED in our setup, cause unknown."
+ ],
+ "perSwipe": {
+  "H1 W:0": [
+   {
+    "s": 0,
+    "n": 43,
+    "L": 37.17
+   }
+  ],
+  "H1 C:1": [
+   {
+    "s": 0,
+    "n": 65,
+    "L": 37.59
+   },
+   {
+    "s": 1,
+    "n": 47,
+    "L": 37.67
+   },
+   {
+    "s": 2,
+    "n": 50,
+    "L": 37.95
+   }
+  ],
+  "H1 PC2:1": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.46
+   }
+  ],
+  "H1 A3:1": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.44
+   }
+  ],
+  "H1 C:2": [
+   {
+    "s": 0,
+    "n": 56,
+    "L": 38.21
+   },
+   {
+    "s": 1,
+    "n": 59,
+    "L": 38.33
+   },
+   {
+    "s": 2,
+    "n": 58,
+    "L": 37.83
+   }
+  ],
+  "H1 R3:1": [
+   {
+    "s": 0,
+    "n": 96,
+    "L": 25.15
+   },
+   {
+    "s": 1,
+    "n": 162,
+    "L": 0.43
+   }
+  ],
+  "H1 A4:1": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.44
+   }
+  ],
+  "H1 C:3": [
+   {
+    "s": 0,
+    "n": 55,
+    "L": 37.2
+   },
+   {
+    "s": 1,
+    "n": 56,
+    "L": 37.54
+   },
+   {
+    "s": 2,
+    "n": 48,
+    "L": 37.67
+   }
+  ],
+  "H2 W:0": [
+   {
+    "s": 0,
+    "n": 58,
+    "L": 38.8
+   }
+  ],
+  "H2 C:4": [
+   {
+    "s": 0,
+    "n": 54,
+    "L": 37.89
+   },
+   {
+    "s": 1,
+    "n": 48,
+    "L": 38.39
+   },
+   {
+    "s": 2,
+    "n": 57,
+    "L": 38.89
+   }
+  ],
+  "H2 A4:2": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.47
+   }
+  ],
+  "H2 R3:2": [
+   {
+    "s": 0,
+    "n": 106,
+    "L": 25.68
+   },
+   {
+    "s": 1,
+    "n": 162,
+    "L": 0.44
+   }
+  ],
+  "H2 C:5": [
+   {
+    "s": 0,
+    "n": 59,
+    "L": 38.89
+   },
+   {
+    "s": 1,
+    "n": 59,
+    "L": 38.87
+   },
+   {
+    "s": 2,
+    "n": 53,
+    "L": 37.77
+   }
+  ],
+  "H2 A3:2": [
+   {
+    "s": 0,
+    "n": 110,
+    "L": 25.32
+   },
+   {
+    "s": 1,
+    "n": 162,
+    "L": 0.45
+   }
+  ],
+  "H2 PC2:2": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.45
+   }
+  ],
+  "H2 C:6": [
+   {
+    "s": 0,
+    "n": 60,
+    "L": 37.78
+   },
+   {
+    "s": 1,
+    "n": 54,
+    "L": 37.59
+   },
+   {
+    "s": 2,
+    "n": 53,
+    "L": 37.88
+   }
+  ],
+  "H3 W:0": [
+   {
+    "s": 0,
+    "n": 60,
+    "L": 37.25
+   }
+  ],
+  "H3 C:7": [
+   {
+    "s": 0,
+    "n": 56,
+    "L": 37.94
+   },
+   {
+    "s": 1,
+    "n": 59,
+    "L": 37.48
+   },
+   {
+    "s": 2,
+    "n": 53,
+    "L": 38.02
+   }
+  ],
+  "H3 R3:3": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.46
+   }
+  ],
+  "H3 PC2:3": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.46
+   }
+  ],
+  "H3 C:8": [
+   {
+    "s": 0,
+    "n": 59,
+    "L": 37.55
+   },
+   {
+    "s": 1,
+    "n": 63,
+    "L": 38.14
+   }
+  ],
+  "H3 A4:3": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.43
+   }
+  ],
+  "H3 A3:3": [
+   {
+    "s": 0,
+    "n": 162,
+    "L": 0.43
+   }
+  ],
+  "H3 C:9": [
+   {
+    "s": 0,
+    "n": 50,
+    "L": 37.71
+   },
+   {
+    "s": 1,
+    "n": 54,
+    "L": 36.86
+   },
+   {
+    "s": 2,
+    "n": 49,
+    "L": 38.66
+   }
+  ]
+ },
+ "holds": {
+  "H1": {
+   "score": {
+    "dir": "out/deck-contain/sim146/H1",
+    "runs": [
+     {
+      "step": "C:1",
+      "arm": "C",
+      "state": "OK",
+      "n": 162,
+      "L": 37.72,
+      "Lmean": 37.96,
+      "layPerF": 2.78,
+      "load1": [
+       26.9,
+       10.61
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "PC2:1",
+      "arm": "PC2",
+      "state": "OK",
+      "n": 162,
+      "L": 0.46,
+      "Lmean": 0.47,
+      "layPerF": 2.8,
+      "load1": [
+       10.61,
+       8.87
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "A3:1",
+      "arm": "A3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.44,
+      "Lmean": 0.54,
+      "layPerF": 2.89,
+      "load1": [
+       8.87,
+       7.79
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:2",
+      "arm": "C",
+      "state": "OK",
+      "n": 173,
+      "L": 38.05,
+      "Lmean": 38.2,
+      "layPerF": 2.79,
+      "load1": [
+       7.79,
+       7.73
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "R3:1",
+      "arm": "R3",
+      "state": "OK",
+      "n": 258,
+      "L": 0.49,
+      "Lmean": 9.78,
+      "layPerF": 2.87,
+      "load1": [
+       7.73,
+       7.38
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.013,
+      "call": "LOCATES"
+     },
+     {
+      "step": "A4:1",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.44,
+      "Lmean": 0.51,
+      "layPerF": 2.87,
+      "load1": [
+       7.38,
+       7.37
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:3",
+      "arm": "C",
+      "state": "OK",
+      "n": 159,
+      "L": 37.49,
+      "Lmean": 37.9,
+      "layPerF": 2.79,
+      "load1": [
+       7.37,
+       5.57
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "OK",
+    "notes": [
+     "A/A C:2 1.012"
+    ],
+    "drift": 0.006
+   },
+   "runs": [
+    {
+     "step": "W:0",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 43,
+     "poolStopped": null,
+     "deckTop": 1229.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      38.08,
+      26.9
+     ],
+     "stepS": 26.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:1",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      26.9,
+      10.61
+     ],
+     "stepS": 77.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "PC2:1",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      10.61,
+      8.87
+     ],
+     "stepS": 17.4,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A3:1",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      8.87,
+      7.79
+     ],
+     "stepS": 17.6,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:2",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 173,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      7.79,
+      7.73
+     ],
+     "stepS": 77.8,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "R3:1",
+     "applied": true,
+     "swipes": 2,
+     "bandN": 258,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      7.73,
+      7.38
+     ],
+     "stepS": 40.1,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A4:1",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      7.38,
+      7.37
+     ],
+     "stepS": 17.7,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:3",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 159,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      7.37,
+      5.57
+     ],
+     "stepS": 76.9,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    }
+   ]
+  },
+  "H2": {
+   "score": {
+    "dir": "out/deck-contain/sim146/H2",
+    "runs": [
+     {
+      "step": "C:4",
+      "arm": "C",
+      "state": "OK",
+      "n": 159,
+      "L": 38.37,
+      "Lmean": 38.56,
+      "layPerF": 2.79,
+      "load1": [
+       27.24,
+       10.95
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A4:2",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.47,
+      "Lmean": 0.54,
+      "layPerF": 2.9,
+      "load1": [
+       10.95,
+       9.07
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "R3:2",
+      "arm": "R3",
+      "state": "OK",
+      "n": 268,
+      "L": 0.49,
+      "Lmean": 10.52,
+      "layPerF": 2.84,
+      "load1": [
+       9.07,
+       10.18
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.013,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:5",
+      "arm": "C",
+      "state": "OK",
+      "n": 171,
+      "L": 38.55,
+      "Lmean": 38.61,
+      "layPerF": 2.78,
+      "load1": [
+       10.18,
+       9.48
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A3:2",
+      "arm": "A3",
+      "state": "OK",
+      "n": 272,
+      "L": 0.5,
+      "Lmean": 10.6,
+      "layPerF": 2.86,
+      "load1": [
+       9.48,
+       6.05
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.013,
+      "call": "LOCATES"
+     },
+     {
+      "step": "PC2:2",
+      "arm": "PC2",
+      "state": "OK",
+      "n": 162,
+      "L": 0.45,
+      "Lmean": 0.46,
+      "layPerF": 2.86,
+      "load1": [
+       6.05,
+       5.54
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:6",
+      "arm": "C",
+      "state": "OK",
+      "n": 167,
+      "L": 37.66,
+      "Lmean": 37.97,
+      "layPerF": 2.8,
+      "load1": [
+       5.54,
+       4.76
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "OK",
+    "notes": [
+     "A/A C:5 1.014"
+    ],
+    "drift": 0.019
+   },
+   "runs": [
+    {
+     "step": "W:0",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 58,
+     "poolStopped": null,
+     "deckTop": 1229.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      39.03,
+      27.24
+     ],
+     "stepS": 26.9,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:4",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 159,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      27.24,
+      10.95
+     ],
+     "stepS": 77.7,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A4:2",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      10.95,
+      9.07
+     ],
+     "stepS": 17.6,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "R3:2",
+     "applied": true,
+     "swipes": 2,
+     "bandN": 268,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      9.07,
+      10.18
+     ],
+     "stepS": 40,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:5",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 171,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      10.18,
+      9.48
+     ],
+     "stepS": 77.8,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A3:2",
+     "applied": true,
+     "swipes": 2,
+     "bandN": 272,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      9.48,
+      6.05
+     ],
+     "stepS": 39.8,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "PC2:2",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      6.05,
+      5.54
+     ],
+     "stepS": 17.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:6",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 167,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      5.54,
+      4.76
+     ],
+     "stepS": 77.6,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    }
+   ]
+  },
+  "H3": {
+   "score": {
+    "dir": "out/deck-contain/sim146/H3",
+    "runs": [
+     {
+      "step": "C:7",
+      "arm": "C",
+      "state": "OK",
+      "n": 168,
+      "L": 37.78,
+      "Lmean": 37.85,
+      "layPerF": 2.79,
+      "load1": [
+       25.26,
+       11.45
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "R3:3",
+      "arm": "R3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.46,
+      "Lmean": 0.51,
+      "layPerF": 2.9,
+      "load1": [
+       11.45,
+       9.44
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "PC2:3",
+      "arm": "PC2",
+      "state": "OK",
+      "n": 162,
+      "L": 0.46,
+      "Lmean": 0.48,
+      "layPerF": 2.83,
+      "load1": [
+       9.44,
+       9.26
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.012,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:8",
+      "arm": "C",
+      "state": "OK",
+      "n": 122,
+      "L": 37.79,
+      "Lmean": 37.94,
+      "layPerF": 2.75,
+      "load1": [
+       9.26,
+       6.66
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     },
+     {
+      "step": "A4:3",
+      "arm": "A4",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.51,
+      "layPerF": 2.89,
+      "load1": [
+       6.66,
+       6.35
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.011,
+      "call": "LOCATES"
+     },
+     {
+      "step": "A3:3",
+      "arm": "A3",
+      "state": "OK",
+      "n": 162,
+      "L": 0.43,
+      "Lmean": 0.47,
+      "layPerF": 2.86,
+      "load1": [
+       6.35,
+       5.35
+      ],
+      "deckH": 844.078125,
+      "docH": 6850,
+      "ratio": 0.011,
+      "call": "LOCATES"
+     },
+     {
+      "step": "C:9",
+      "arm": "C",
+      "state": "OK",
+      "n": 153,
+      "L": 37.65,
+      "Lmean": 37.91,
+      "layPerF": 2.82,
+      "load1": [
+       5.35,
+       4.34
+      ],
+      "deckH": 844.078125,
+      "docH": 6850
+     }
+    ],
+    "hold": "OK",
+    "notes": [
+     "A/A C:8 1.002"
+    ],
+    "drift": 0.003
+   },
+   "runs": [
+    {
+     "step": "W:0",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 60,
+     "poolStopped": null,
+     "deckTop": 1229.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      35.08,
+      25.26
+     ],
+     "stepS": 26.1,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:7",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 168,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      25.26,
+      11.45
+     ],
+     "stepS": 77.4,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "R3:3",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      11.45,
+      9.44
+     ],
+     "stepS": 17.7,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "PC2:3",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      9.44,
+      9.26
+     ],
+     "stepS": 17.4,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:8",
+     "applied": true,
+     "swipes": 2,
+     "bandN": 122,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      9.26,
+      6.66
+     ],
+     "stepS": 51.6,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A4:3",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      6.66,
+      6.35
+     ],
+     "stepS": 17.5,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "A3:3",
+     "applied": true,
+     "swipes": 1,
+     "bandN": 162,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      6.35,
+      5.35
+     ],
+     "stepS": 17.5,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    },
+    {
+     "step": "C:9",
+     "applied": true,
+     "swipes": 3,
+     "bandN": 153,
+     "poolStopped": null,
+     "deckTop": 1181.984375,
+     "deckH": 844.078125,
+     "docH": 6850,
+     "load1": [
+      5.35,
+      4.34
+     ],
+     "stepS": 77.3,
+     "served": {
+      "js": "941aa13e5bdf",
+      "css": "f1997edf5309"
+     }
+    }
+   ]
+  }
+ },
+ "arms": [
+  {
+   "arm": "PC2",
+   "call": "LOCATES",
+   "runs": 3,
+   "ratios": [
+    0.012,
+    0.012,
+    0.012
+   ],
+   "median": 0.012,
+   "mean": 0.012,
+   "low": 3,
+   "high": 0,
+   "bimodal": false
+  },
+  {
+   "arm": "A3",
+   "call": "LOCATES",
+   "runs": 3,
+   "ratios": [
+    0.012,
+    0.013,
+    0.011
+   ],
+   "median": 0.012,
+   "mean": 0.012,
+   "low": 3,
+   "high": 0,
+   "bimodal": false
+  },
+  {
+   "arm": "A4",
+   "call": "LOCATES",
+   "runs": 3,
+   "ratios": [
+    0.012,
+    0.012,
+    0.011
+   ],
+   "median": 0.012,
+   "mean": 0.012,
+   "low": 3,
+   "high": 0,
+   "bimodal": false
+  },
+  {
+   "arm": "R3",
+   "call": "LOCATES",
+   "runs": 3,
+   "ratios": [
+    0.013,
+    0.013,
+    0.012
+   ],
+   "median": 0.013,
+   "mean": 0.013,
+   "low": 3,
+   "high": 0,
+   "bimodal": false
+  }
+ ]
+}

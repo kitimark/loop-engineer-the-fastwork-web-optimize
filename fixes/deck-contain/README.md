@@ -518,6 +518,50 @@ The ratios are unread: OBSERVED only, never a result. They are listed for the ne
   later step (1229.98 against 1181.98). This was not part of any rule. Effect on the band: the band uses each run's own
   read.
 
+## Result: P-146 Simulator holds H1-H3 (`P146.md` rev 1.1, `results-p146.json`; Chrome, N1 checks and pixels follow)
+
+- Holds: H1-H3 on 2026-10-06, scored by the frozen `score-p146.mjs`.
+- All three holds OK:
+
+| hold | A/A | drift | Simulator settle | display at start |
+|---|---|---|---|---|
+| H1 | 1.012 | 0.006 | settled 37 s | off |
+| H2 | 1.014 | 0.019 | settled 47 s | off |
+| H3 | 1.002 | 0.003 | settled 43 s | off |
+
+- Every step applied its arm. No step was dropped, no pool was stopped by the budget, and there was no GEOMETRY or
+  POOL-MISMATCH. C runs pooled 2-3 swipes to 122-173 band frames.
+
+| arm | ratios H1, H2, H3 | median | call | BIMODAL (per run) |
+|---|---|---|---|---|
+| PC2 (control) | 0.012, 0.012, 0.012 | 0.012 | LOCATES in every hold | no |
+| A3 | 0.012, 0.013, 0.011 | 0.012 | LOCATES | no |
+| A4 | 0.012, 0.012, 0.011 | 0.012 | LOCATES | no |
+| R3 | 0.013, 0.013, 0.012 | 0.013 | LOCATES | no |
+
+- C stays at about 38 ms Layout per band frame; every arm and PC2 at about 0.44 ms.
+- Removing the deck's content work (PC2) removes the per-frame cost. A content-free definite height removes it too, with
+  or without containment (R3), in this Simulator mechanism ratio. That is never a gain and never a phone result.
+- Predictions (owner tally; the reader confirms):
+  - hits: P1, P2, P3 (A4), P4 (A3), P7, P8;
+  - misses: P5 (R3 LOCATES) and P6 (no arm BIMODAL per run);
+  - not yet run: P9-P12, P15, P16.
+- **Per swipe** (descriptive, N3; not read by any rule):
+  - Three arm runs started with a middle-level swipe (about 25 ms) and pooled a low second swipe: H1 R3:1, H2 R3:2,
+    H2 A3:2.
+  - Across P-143 and P-146, first or only swipes landed on the middle level as follows: R3 3 of 5, A3 2 of 5, A4 0 of 5,
+    PC2 0 of 3, strict + 844 2 of 2.
+  - Second swipes were always low.
+  - OBSERVED in our setup, cause unknown.
+  - The run medians read low, as N3 predicted.
+- **Disclosed:**
+  - The display was off at the start of every hold (no rule).
+  - The pinned scorer computes the per-swipe medians but leaves them out of its output; they were computed by a separate
+    descriptive script over the same records.
+- **Next per the card:** Chrome C1, P15/P16 (Chrome and the Simulator), then pixels.
+  - Under the decision rule R3 is the first candidate, because it LOCATES and is not BIMODAL per run.
+  - Its middle-level first swipes are for the lead to weigh before any build.
+
 ## Scenarios not run
 
 - Real iPhone, any driver: the phone is disconnected (T-199). G1 and the no-worse check wait for the lead.
