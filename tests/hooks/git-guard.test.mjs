@@ -208,9 +208,11 @@ ALLOW.push(
   'node tools/lock.mjs run chrome-measure --owner t',
 );
 
-// I-115 (user T-071): GitHub is read with the logged-in gh CLI; plain curl/wget to GitHub hosts asks the user
-// (unauthenticated fetches hit GitHub's rate limit). localhost, other hosts and gh itself are untouched.
-const GITHUB_ASK = [
+// I-115 (user T-071): GitHub is read with the logged-in gh CLI (unauthenticated fetches hit GitHub's rate limit).
+// I-200 (user T-184 #3): curl/wget to GitHub hosts is refused with the gh recipe; it asked the user before, which put a
+// permission prompt in front of the user whenever an agent forgot the rule. localhost, other hosts, the *.github.io
+// docs sites and gh itself are untouched.
+const GITHUB_DENY = [
   'curl https://github.com/WebKit/WebKit/blob/main/Source/WebCore/page/FrameView.cpp',
   'curl -sL https://api.github.com/repos/WebKit/WebKit/commits/abc123',
   'curl -s https://raw.githubusercontent.com/sveltejs/svelte/main/README.md',
@@ -235,6 +237,7 @@ const GITHUB_ASK = [
   'node tools/lock.mjs run chrome-measure --owner t -- curl -s https://raw.githubusercontent.com/a/b/main/c.js',
   "node tools/lock.mjs run chrome-measure --owner t --shared --weight 1 -- sh -c 'curl -s https://api.github.com/x | head'",
   'curl -s http://localhost:5200/ https://github.com/a/b',
+  'curl -s https://objects.githubusercontent.com/a',
 ];
 const GITHUB_ALLOW = [
   'curl -sk https://localhost:5200/_app/immutable/nodes/2.DyWL8TcE.js',
@@ -243,7 +246,12 @@ const GITHUB_ALLOW = [
   'curl -s https://developer.mozilla.org/en-US/docs/Web/API/Element/scroll',
   'curl -s https://notgithub.com/a https://github.com.example.org/b',
   'wget https://webkit.org/blog/',
+  // *.github.io are documentation sites (specs, CDP docs), not GitHub source or API (I-200)
+  'curl -s https://w3c.github.io/csswg-drafts/',
+  'curl -s https://chromedevtools.github.io/devtools-protocol/tot/Page/',
+  'wget https://github.io/x',
   'gh api repos/WebKit/WebKit/contents/Source/WebCore/page/FrameView.cpp?ref=abc123',
+  "gh api -H 'Accept: application/vnd.github.raw+json' 'repos/WebKit/WebKit/contents/Source/WebCore/page/FrameView.cpp?ref=abc123'",
   'gh api repos/sveltejs/svelte/commits/abc123',
   'gh search code "scrollend" --repo WebKit/WebKit',
   'gh issue view 1 --repo sveltejs/svelte',
@@ -251,34 +259,95 @@ const GITHUB_ALLOW = [
   'grep -rn "raw.githubusercontent.com" memory/',
   'git remote -v',
 ];
-for (const c of GITHUB_ASK) {
-  test(`ask (I-115 curl/wget to GitHub): ${JSON.stringify(c)}`, () => {
+const assertGhReason = (reason) => {
+  assert.match(reason, /refused/);
+  assert.match(reason, /gh CLI/);
+  assert.match(reason, /memory\/github-via-gh\.md/);
+  assert.match(reason, /T-071/);
+  assert.match(reason, /gh api repos\/<o>\/<r>\/contents\/<path>\?ref=<sha>/);
+};
+for (const c of GITHUB_DENY) {
+  test(`deny (I-115/I-200 curl/wget to GitHub): ${JSON.stringify(c)}`, () => {
     const r = runHook(bash(c));
-    assert.equal(r.decision, 'ask');
-    const reason = JSON.parse(r.stdout).hookSpecificOutput.permissionDecisionReason;
-    assert.match(reason, /gh CLI/);
-    assert.match(reason, /memory\/github-via-gh\.md/);
-    assert.match(reason, /T-071/);
-    assert.match(reason, /gh api repos\/<o>\/<r>\/contents\/<path>\?ref=<sha>/);
+    assert.equal(r.decision, 'deny');
+    assert.equal(r.stdout, '', 'a refusal, never an ask prompt');
+    assertGhReason(r.stderr);
   });
 }
 for (const c of GITHUB_ALLOW) test(`allow (I-115 not GitHub, or gh): ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'allow'));
-test('I-115: an unparseable command that curls GitHub asks; one that curls elsewhere stays allowed', () => {
-  assert.equal(runHook(bash('curl -s "https://raw.githubusercontent.com/a/b/main/c.js')).decision, 'ask');
+test('I-200: an unparseable command that curls GitHub is refused with the gh recipe; one that curls elsewhere stays allowed', () => {
+  const r = runHook(bash('curl -s "https://raw.githubusercontent.com/a/b/main/c.js'));
+  assert.equal(r.decision, 'deny');
+  assertGhReason(r.stderr);
   assert.equal(runHook(bash('curl -s "https://localhost:5200/')).decision, 'allow');
+  assert.equal(runHook(bash('curl -s "https://w3c.github.io/x')).decision, 'allow');
 });
-// existing gh publishing denies are not loosened, and a deny still wins over the GitHub ask
+test('I-200: the deny names a ready gh command for a raw or blob file URL', () => {
+  const raw = runHook(bash('curl -s https://raw.githubusercontent.com/WebKit/WebKit/main/Source/WebCore/animation/KeyframeEffect.cpp'));
+  assert.match(raw.stderr, /gh api -H 'Accept: application\/vnd\.github\.raw\+json' 'repos\/WebKit\/WebKit\/contents\/Source\/WebCore\/animation\/KeyframeEffect\.cpp\?ref=main'/);
+  const blob = runHook(bash('curl -sL https://github.com/sveltejs/svelte/blob/abc123/packages/svelte/src/index.js'));
+  assert.match(blob.stderr, /'repos\/sveltejs\/svelte\/contents\/packages\/svelte\/src\/index\.js\?ref=abc123'/);
+  assert.doesNotMatch(runHook(bash('curl -s https://api.github.com/rate_limit')).stderr, /For this file/);
+});
+// existing gh publishing denies are not loosened
 DENY.push(
   'gh repo create me/mirror --private',
   'gh gist create notes.md',
   'curl -s https://api.github.com/x && git push',
 );
-test('I-115: settings.json asks before WebFetch to GitHub; gh publishing stays denied', () => {
-  const { ask = [], deny = [] } = JSON.parse(readFileSync(join(ROOT, '.claude', 'settings.json'), 'utf8')).permissions;
-  for (const d of ['github.com', 'api.github.com', 'raw.githubusercontent.com', 'codeload.github.com', 'gist.github.com']) {
-    assert.ok(ask.includes(`WebFetch(domain:${d})`), d);
-  }
+const GH_HOSTS = ['github.com', 'api.github.com', 'raw.githubusercontent.com', 'codeload.github.com', 'gist.github.com', 'gist.githubusercontent.com'];
+test('I-200: settings.json denies WebFetch to GitHub (no ask left) and routes WebFetch through git-guard; gh publishing stays denied', () => {
+  const settings = JSON.parse(readFileSync(join(ROOT, '.claude', 'settings.json'), 'utf8'));
+  const { ask = [], deny = [] } = settings.permissions;
+  for (const d of GH_HOSTS) assert.ok(deny.includes(`WebFetch(domain:${d})`), d);
+  assert.deepEqual(ask.filter((r) => /github/i.test(r)), [], 'no GitHub rule asks the user');
+  assert.deepEqual(deny.filter((r) => /github\.io/i.test(r)), [], 'docs sites on *.github.io stay allowed');
+  const web = settings.hooks.PreToolUse.filter((h) => h.matcher === 'WebFetch');
+  assert.equal(web.length, 1);
+  assert.ok(web[0].hooks.some((h) => h.type === 'command' && h.args?.some((a) => a.endsWith('/.claude/hooks/git-guard.mjs'))));
   for (const r of ['Bash(gh repo create *)', 'Bash(gh pr create *)', 'Bash(gh pr merge *)', 'Bash(gh gist create *)']) assert.ok(deny.includes(r), r);
+});
+
+// I-200: WebFetch to a GitHub host is refused by the hook WITH the gh recipe (a settings deny alone gives no hint)
+const webfetch = (url) => ({ ...bash('x'), tool_name: 'WebFetch', tool_input: { url, prompt: 'summarize' } });
+const WEBFETCH_DENY = [
+  'https://raw.githubusercontent.com/WebKit/WebKit/main/Source/WebCore/animation/KeyframeEffect.cpp',
+  'https://github.com/WebKit/WebKit/blob/main/Source/WebCore/page/FrameView.cpp',
+  'https://api.github.com/repos/WebKit/WebKit/commits/abc123',
+  'https://codeload.github.com/a/b/zip/refs/heads/main',
+  'https://gist.github.com/someone/0123abcd',
+  'https://gist.githubusercontent.com/someone/0123abcd/raw/x',
+  'https://objects.githubusercontent.com/x',
+  'HTTPS://GitHub.com/x/y',
+  'http://github.com./a/b',
+  'https://user@github.com:443/a/b',
+];
+const WEBFETCH_ALLOW = [
+  'https://w3c.github.io/csswg-drafts/css-scroll-snap/',
+  'https://chromedevtools.github.io/devtools-protocol/tot/Page/',
+  'https://developer.mozilla.org/en-US/docs/Web/API/Element/scroll',
+  'https://webkit.org/blog/',
+  'https://notgithub.com/a',
+  'https://github.com.example.org/b',
+  'https://source.chromium.org/chromium/chromium/src/+/main:cc/',
+  'not a url',
+];
+for (const u of WEBFETCH_DENY) {
+  test(`deny (I-200 WebFetch to GitHub): ${u}`, () => {
+    const r = runHook(webfetch(u));
+    assert.equal(r.decision, 'deny');
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /WebFetch/);
+    assertGhReason(r.stderr);
+  });
+}
+for (const u of WEBFETCH_ALLOW) test(`allow (I-200 WebFetch elsewhere): ${u}`, () => assert.equal(runHook(webfetch(u)).decision, 'allow'));
+test('I-200: a WebFetch deny names the ready gh command for a raw file', () => {
+  const r = runHook(webfetch('https://raw.githubusercontent.com/WebKit/WebKit/main/Source/WebCore/animation/KeyframeEffect.cpp'));
+  assert.match(r.stderr, /gh api -H 'Accept: application\/vnd\.github\.raw\+json' 'repos\/WebKit\/WebKit\/contents\/Source\/WebCore\/animation\/KeyframeEffect\.cpp\?ref=main'/);
+});
+test('I-200: a WebFetch input without a url passes (the settings deny is the backstop)', () => {
+  assert.equal(runHook({ ...bash('x'), tool_name: 'WebFetch', tool_input: {} }).decision, 'allow');
 });
 
 for (const c of DENY) test(`deny: ${JSON.stringify(c)}`, () => assert.equal(runHook(bash(c)).decision, 'deny'));
