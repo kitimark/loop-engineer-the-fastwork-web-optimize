@@ -72,6 +72,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~05:0xZ **P-129 pre-data read (arch-serious-heat, card in research/serious-heat/README.md §5 at c8011aa7): NOT YET; P-129 confirmed and registered.**
+  - No data exists (no P-129 record; the author's worktree has no out/). The id was free. The predictions (8) are registered as written; any change supersedes them in the row.
+  - **C1, a frozen reader before data.** The card has prose rules but no reader. A reader script with a self-test must be pinned by sha before the signature, as in P-126/P-128. It must state how the logger's frame stamps (`t`, page clock) map onto Timeline record times, and gate on that mapping. For example: >= 95 % of counted moving frames have a FireAnimationFrame within ±2 ms after the mapping, otherwise the run is invalid. Part A depends on this alignment: without it, "the work records in the gap" is undefined.
+  - **C2, a RenderingFrame self-span twin.** Excluding Composite's own span is right: §4.1 cites WebKit source showing that on Apple platforms it wraps the CA commit flush (CONFIRMED). But RenderingFrame also counts only through its children. If its self-span holds uninstrumented main-thread work (UNRESOLVED), RENDER is over-called. Report part A twice, with and without RenderingFrame self-span in busy. A reading that differs between the two is "attribution-sensitive" and decides nothing.
+  - **C3, the driver-G sentinel rule.** The card cites CLAUDE.md's bottom >= 58 / scroll >= 44, which is defined for S/W. Name the G sentinel rule explicitly: P-124's own rule, or moving fps >= 44 as in earlier G cards. Name the Timeline-off sentinel metric too.
+  - **C4, a per-run idle gate and part B floors.**
+    - (b) A dry run is not enough. Every counted L run needs first touch − readyPageMs in [20, 23] s, and every E run must sit in P-124's start range; a run outside is invalid and re-run within the 2-block cap.
+    - (c) LOAD's absolute <= 4 % with a 3-of-4 per-run spread is granular. At about 20 hero frames per run, one slow frame is 5 %.
+    - Set the floor from P-124's fs hero moving frames per run (data that exists; bands.mjs): require >= 25 moving hero frames per counted run, or apply the per-run spread only to the relative criterion (<= half of E pooled). Fix it before data.
+  - Notes:
+    - N1: word busy as "the union of each work record's overlap with the gap", so nested records are not double counted.
+    - N2: prediction 2's denominator is moving frames, all bands.
+    - N3: prediction 6 is scored only with >= 10 toolbar-step slow frames, else "untestable" (counted as a miss).
+    - N4: PR-023 was decided changes-requested at 04:45Z, so 7d is superseded (rev 5 on v9-final). Using P-124's 7d build keeps the reference profile and part S; the card's own fallback is v8-best without S. The lead picks before signing.
+    - N5: the runner is unnamed. Whoever runs must serve the ms-29c0d537e0c9 snapshot with the TICKET-7d hash check, and art-worst-cases' clip holds come first (lead).
+  - Next: the author's rev 2 (C1-C4, N1-N3), then an ops delta check, then the lead's signature.
 - 10-05 ~04:50Z **nav-hit-cache arm B (v9 + rev 7d): the lead accepted the byte-diff; no parity slot.**
   - fix-nav-morph's byte-diff from step 4 JS de237379b556 to 7d JS 5dfb36392d07 (fix-hero-exit-threaded 193f6899) has 5 hunks, all on touch paths:
     - a comment;
