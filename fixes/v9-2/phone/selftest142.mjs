@@ -114,6 +114,11 @@ const stall = { ...full(), frames: 140, y: 3000, max: 6035, endMax: 6035, ih1: 8
 const cs = scrollCheck(stall, TB);
 ok(!cs.ok && cs.why.some((w) => /live max scrollY not reached .*stalled/.test(w)), `6 stall mid-page passes: ${JSON.stringify(cs)}`);
 ok(!scrollCheck({ ...collapse, max: 5975, endMax: 5975, y: 5975 }, TB).ok, '6 a drop of 100 px > B 50 passes');
+// rev 1.4c: the r14b smoke's shape (smooth scroll-behavior: scrollY never passes a few px, stalled) is VOID
+const nomove = { ...full(), frames: 11, y: 4, renderingFrames: 13, stalled: true };
+const cn = scrollCheck(nomove, TB);
+ok(!cn.ok && cn.why.some((w) => /not reached \(4 < 6074\), stalled/.test(w)) && cn.why.includes('frames 11 < 241'), `6 a window stuck at scrollY 4 passes: ${JSON.stringify(cn)}`);
+ok(/behavior: 'instant'/.test(readFileSync('fixes/v9-2/sim92.mjs', 'utf8')), '6 sim92 step is not an instant scrollBy');
 ok(W2.BOUND_B !== null || !scrollCheck(full()).ok, '6 B unset but a window passes');
 const ld = (arm, rep, w, v) => ({ arm, rep, windows: [w], ...(v ? { void: v } : {}) });
 const six = (wF, wV) => [ld('F', 1, wF), ld('V', 1, wV), ld('V', 2, wV), ld('F', 2, wF), ld('F', 3, wF), ld('V', 3, wV)];

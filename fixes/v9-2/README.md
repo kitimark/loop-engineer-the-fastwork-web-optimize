@@ -447,6 +447,19 @@ rev 1.4 data):**
   frames without reaching the bottom). Proposed fix (for the lead): `scrollBy({ top: 24, behavior: 'instant' })`, with the
   rest of rev 1.4b unchanged, then a new smoke on C after the delta check.
 
+**Rev 1.4c (lead ruling: the one-line fix; before any counted rev 1.4 data):**
+- **Driver (`sim92.mjs` ce506d1e403e):** the step is `scrollBy({ top: 24, behavior: 'instant' })`. Why: the page's own
+  `html { scroll-behavior: smooth; }` makes a programmatic scroll without an explicit behavior smooth (CSSOM View,
+  CONFIRMED: https://drafts.csswg.org/cssom-view/#propdef-scroll-behavior); its effect on this page in the Simulator
+  (scrollY stuck near 0, r14b smoke) is OBSERVED. A finger scroll is not governed by scroll-behavior, so the instant 24 px
+  step per frame is the registered intent (a steady scroll top → end). Everything else in rev 1.4b is unchanged.
+- **Self-test (`selftest142.mjs` 13d509f53402, SELFTEST-142 OK 57):** adds the r14b shape (scrollY never past 4 px,
+  stalled, 11 frames) → VOID, and checks that sim92's step is an instant scrollBy.
+- **B (lead's rule, before the smoke):** if the new smoke shows ih0 = ih1, B = 10 (measured change 0, rounded up to the
+  next 10 px); if it shows a real change, that change rounded up. Pinned in a follow-up one-constant re-pin.
+- **Order:** this re-pin → the lead's delta check → a new uncounted smoke on C → its lines and B to the lead → the B re-pin
+  → the lead's check → GO for rerun14.sh.
+
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
 The block reuses P-134's harness unchanged (itself P-132's / P-122's: P-121's path-matched G driver, nav-hit-cache's

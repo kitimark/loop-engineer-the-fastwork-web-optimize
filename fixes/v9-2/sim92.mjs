@@ -23,6 +23,10 @@
 // driver re-reads the live max (scrollHeight - innerHeight) every frame and stops there, or when scrollY has not moved
 // for 10 frames (stalled), or at 2000 frames; it records startMax, endMax (= max), innerHeight at start and end. Every
 // poll also logs scrollY, innerHeight and the live max into the window's `polls` (diagnostics).
+// Rev 1.4c (lead, after the r14b smoke stalled at scrollY 0 with innerHeight unchanged): the page CSS has `html {
+// scroll-behavior: smooth; }`, which a programmatic scroll without an explicit behavior follows (CSSOM View, CONFIRMED;
+// its effect on this page in the Simulator OBSERVED), so each frame's scrollBy restarted a smooth scroll. The step is now
+// `scrollBy({ top: STEP, behavior: 'instant' })` (a steady 24 px a frame, the registered intent).
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -47,7 +51,7 @@ const SCROLL = `new Promise((res) => { const de = document.documentElement; cons
   let n = 0, last = -1, still = 0;
   const f = () => { n++; const liveMax = de.scrollHeight - innerHeight; still = scrollY === last ? still + 1 : 0; last = scrollY;
     if (scrollY >= liveMax - 1 || still >= 10 || n > 2000) return res({ frames: n, y: scrollY, max: liveMax, startMax, endMax: liveMax, ih0, ih1: innerHeight, stalled: still >= 10, capped: n > 2000 });
-    scrollBy(0, ${STEP}); requestAnimationFrame(f); };
+    scrollBy({ top: ${STEP}, behavior: 'instant' }); requestAnimationFrame(f); };
   requestAnimationFrame(f); })`;
 const POLLX = '({ sc: window.__p142sc, y: scrollY, ih: innerHeight, liveMax: document.documentElement.scrollHeight - innerHeight })';
 const count = (recs) => {
