@@ -72,6 +72,10 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~07:0xZ **Lead rulings and landings.**
+  - Landed: 28f4196a, and countdown-tick e36f6124/db956dd1 as c9c87178 and 9521cc2f (main 9521cc2f). fix-countdown-tick stays parked until v9-final lands.
+  - scb also stays out of v9. v9.1 = v9 + scb + a fixed close.
+  - The iPhone is at Xcode-induced Critical. User step C-059 asks for Serious. Hold A of art-worst-cases and P-122 both wait on it.
 - 10-05 ~06:5xZ **Lead ruling: v9-final = ms7c+dd+earn+nav+glue WITHOUT close.**
   - Target pins: JS 647c9ef2b1e2 (unchanged), CSS e1359ab9994a (not bdecf48c5b32).
   - Reason: close adds resting style recalc, 60 vs 38.5 mainFrames/s at rest-0 and about 30 vs 2.2 at rest-2796 (OBSERVED).
