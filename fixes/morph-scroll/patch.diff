@@ -1904,7 +1904,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5424,28 @@
+@@ -4689,12 +5424,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
@@ -1921,7 +1921,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1933,9 +1933,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5478,15 @@
          ((O = null), z(E, null));
        },
@@ -2403,7 +2404,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          if (!t || e.matches) {
            z(p, !0);
            return;
-@@ -13017,13 +13909,179 @@
+@@ -13017,13 +13909,185 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2418,7 +2419,8 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // the jack. No non-passive touchmove (N) and no scrollTo pin (L): the page scrolls by itself. One extra screen
 +      // of scroll (.fw-ms-end, inserted after #platform) holds #platform in place with position: sticky, and the
 +      // morph value is how far the page has scrolled into that screen (0..1), written through __navMorphSet (the
-+      // same writes the spring T makes per frame: r/x, then S()). Proximity snap at both ends of that screen.
++      // same writes the spring T makes per frame: r/x, then S()). No CSS snap (since rev 4): when the scroll comes to
++      // rest part-open, a script (__msSettle) settles the morph to one end.
 +      // Desktop, reduced motion and screens wider than 600 px keep the jack.
 +      __msOn =
 +        !e.matches &&
@@ -2506,8 +2508,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
 +        }
 +        __msWant = -1;
-+        // the finger was still moving at lift-off: go where it points
-+        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1) && ((__msLift = 0), go(__msFl > 0)));
++        // the finger was still moving at lift-off: go where it points. Rev 7d: a fast fling down (finger >= 5 px/ms)
++        // is left to its own momentum, so it can carry the page out of the end screen in one fling (a smooth scrollTo
++        // to the closed rest stopped it there); if it slows inside the screen, the slow-tick rule settles it. The
++        // user's fastest close from open so far: 4.06 px/ms.
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5) && ((__msLift = 0), go(__msFl > 0)));
 +        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
 +      },
 +      __msTouchEv = (e) => {
@@ -2534,6 +2539,8 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +            : (__msArm(),
 +              (__msLift = 2),
 +              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
++              // DEBUG (rev 7d checks only): logs nothing unless a driver set window.__msDbg = []
++              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY]),
 +              __msSettle(),
 +              (__msFl = 0)));
 +      },
@@ -2585,7 +2592,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14103,9 @@
+@@ -13045,9 +14109,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2597,7 +2604,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14113,58 @@
+@@ -13055,27 +14119,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2663,7 +2670,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +14175,60 @@
+@@ -13086,7 +14181,60 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2725,7 +2732,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,10 +14237,50 @@
+@@ -13095,6 +14243,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -2737,10 +2744,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            P(),
            ne(),
            e.removeEventListener(`change`, m),
-           t.removeEventListener(`change`, m));
-+      }
-+    );
-+  });
+@@ -13102,6 +14255,41 @@
+       }
+     );
+   });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -2773,10 +2780,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-       }
-     );
-   });
-@@ -13118,10 +14300,24 @@
++      }
++    );
++  });
+   var I = uN();
+   let L, te;
+   var B = e(I),
+@@ -13118,10 +14306,24 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -2801,7 +2811,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14336,7 @@
+@@ -13140,7 +14342,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2810,7 +2820,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14353,16 @@
+@@ -13157,7 +14359,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2828,7 +2838,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14398,8 @@
+@@ -13193,7 +14404,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2838,7 +2848,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14416,7 @@
+@@ -13210,7 +14422,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2847,7 +2857,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13232,6 +14438,7 @@
+@@ -13232,6 +14444,7 @@
          })),
            k(I, `aria-label`, s(o).header.primary),
            (te = S(I, ``, te, e)),

@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -13915,7 +13915,166 @@
+@@ -13915,7 +13915,172 @@
        __osb = () => {
          let e = C() ? `none` : ``;
          e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
@@ -9,7 +9,8 @@
 +      // the jack. No non-passive touchmove (N) and no scrollTo pin (L): the page scrolls by itself. One extra screen
 +      // of scroll (.fw-ms-end, inserted after #platform) holds #platform in place with position: sticky, and the
 +      // morph value is how far the page has scrolled into that screen (0..1), written through __navMorphSet (the
-+      // same writes the spring T makes per frame: r/x, then S()). Proximity snap at both ends of that screen.
++      // same writes the spring T makes per frame: r/x, then S()). No CSS snap (since rev 4): when the scroll comes to
++      // rest part-open, a script (__msSettle) settles the morph to one end.
 +      // Desktop, reduced motion and screens wider than 600 px keep the jack.
 +      __msOn =
 +        !e.matches &&
@@ -97,10 +98,13 @@
 +          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
 +        }
 +        __msWant = -1;
-+        // the finger was still moving at lift-off: go where it points
-+        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1) && ((__msLift = 0), go(__msFl > 0)));
++        // the finger was still moving at lift-off: go where it points. Rev 7d: a fast fling down (finger >= 5 px/ms)
++        // is left to its own momentum, so it can carry the page out of the end screen in one fling (a smooth scrollTo
++        // to the closed rest stopped it there); if it slows inside the screen, the slow-tick rule settles it. The
++        // user's fastest close from open so far: 4.06 px/ms.
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5) && ((__msLift = 0), go(__msFl > 0)));
 +        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
-+      },
+       },
 +      __msTouchEv = (e) => {
 +        let c = e.changedTouches && e.changedTouches[0],
 +          s = e.timeStamp;
@@ -125,6 +129,8 @@
 +            : (__msArm(),
 +              (__msLift = 2),
 +              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
++              // DEBUG (rev 7d checks only): logs nothing unless a driver set window.__msDbg = []
++              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY]),
 +              __msSettle(),
 +              (__msFl = 0)));
 +      },
@@ -153,7 +159,7 @@
 +        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
 +        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
 +          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => z(g, F(), !0))));
-       },
++      },
 +      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
 +      __navMorphSet = (t) => {
 +        (n && window.cancelAnimationFrame(n),
@@ -167,7 +173,7 @@
        T = (e) => {
          let t = ZM(i, a, e - o);
          ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
-@@ -13964,6 +14123,7 @@
+@@ -13964,6 +14129,7 @@
        __tt = [],
        N = () => {
          d ||
@@ -175,7 +181,7 @@
            ((d = !0),
            window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
            (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
-@@ -14000,7 +14160,8 @@
+@@ -14000,7 +14166,8 @@
        __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
        __pinY = () => Math.min(window.scrollY, __pinMax()),
        L = () => {
@@ -185,7 +191,7 @@
          let e = window.scrollY,
            t = __pinMax();
          (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
-@@ -14015,6 +14176,28 @@
+@@ -14015,6 +14182,28 @@
            )
          : void 0;
      (R && te && te.observe(R), _(), m(), N());
@@ -214,7 +220,7 @@
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
      // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
      // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
-@@ -14054,6 +14237,11 @@
+@@ -14054,6 +14243,11 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),

@@ -1,0 +1,25 @@
+{
+  "name": "g-flingout-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "PR-018 rev 7d (end-screen fling trap, v9 step 4): from the open end of the page, flick-middle-v1's fast fling down (560 px in 140 ms, fling profile) three times; each should carry the page out of the extra screen in one fling and not come back to open. Between flings: slow drags back to the end. Compare runs of the same script hash only.",
+  "params": { "x": 215, "flingPx": 560, "flingMs": 140 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": 3000 },
+    { "type": "repeat", "times": 3, "steps": [
+      { "type": "mark", "name": "approach" },
+      { "type": "repeat", "times": 30, "until": "atEnd", "steps": [
+        { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+        { "type": "pause", "ms": 300 }
+      ] },
+      { "type": "until", "cond": "atEnd", "timeoutMs": 4000 },
+      { "type": "pause", "ms": 1500 },
+      { "type": "mark", "name": "fling-out" },
+      { "type": "stroke", "dir": "down", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+      { "type": "pause", "ms": 2000 }
+    ] },
+    { "type": "mark", "name": "done" }
+  ]
+}
