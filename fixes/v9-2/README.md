@@ -323,6 +323,31 @@ scrollBy 24 px top → end; RenderingFrame, RecalculateStyles, Layout, Paint, Co
 no-worse (insufficient if any is). Part 1 WORSE or NF-C FAIL → bisect (below) before the phone; the phone block still
 runs on the lead's word if the WORSE is attributed to one section and v9.2 − that section is re-ticketed.
 
+### Part 1 result (v9-final vs v9.2 = v9.1d; lead GO after the rev 1.3 delta PASS; ran 17:46:06-17:59:44Z)
+
+**PART 1: no-worse** (0 WORSE lines; NF-C not run: nf OUT, rev 1.3). Ran at head 53b0af35 (PIN line; part1.sh
+cbe46b389e2f, HASHES f5f2db042aaf); 5 steps, each one try, every exit 0, no VOID-HOST (load1 at step starts 2.2-14.5).
+Every load served its arm (F 647c9ef2b1e2 / e1359ab9994a, V 941aa13e5bdf / f1997edf5309); Simulator loads 6, VOID 0.
+Read by `fixes/v9-2/part1read.mjs` (5e8591510912; the registered rules, N6 record selection), output
+`out/v92/part1-read.txt`; records `out/v92/part1.log` (f594ed3e4601) and `out/v92/sim/p142.json` (06f1a0e71dcf).
+
+| 1a Chrome census (per s, F / V, n = 3 each) | F | V | verdict |
+|---|---|---|---|
+| rest-0 mainFrames | 39, 39.5, 38.6 | 39.6, 38.5, 38.6 | no-worse |
+| rest-1400 mainFrames | 41.6, 41.3, 42.1 | 41.6, 40.8, 41.3 | no-worse |
+| rest-2796 mainFrames | 2.2 ×3 | 2.2 ×3 | no-worse |
+| rest-3800 mainFrames / rafFire | 26.0-26.2 / 17.5-17.8 | 26.0-28.3 / 17.5-17.8 | no-worse |
+| rest-end mainFrames / rafFire | 28-29.3 / 27-32.8 | 28-29 / 29-37 | no-worse (rafFire d −0.3, thr 5.8) |
+| scroll top → end mainFrames | 110.7-111 | 110.7-111 | no-worse |
+| scroll top → end rafFire | 288.8, 289.2, 289 | 186.8, 186.8, 187 | no-worse (−35 %, as expected from scroll-cb) |
+
+No new rest loop. 1c Simulator census (WebKit Timeline counts, 6 s windows, F / V n = 3): every rest stop's
+RenderingFrame, Layout and RecalculateStyles and the scroll window's per-frame Layout / RecalculateStyles no-worse (largest
+median diffs: rest-2796 RenderingFrames +22 vs threshold 20 and RecalculateStyles +23 vs 19, both with V's min 197 / 135
+not above F's max 212 / 149, so no-worse by the rule; scroll per-frame +0.06 vs 0.26). Paint and Composite (report):
+equal within a few counts at every stop. The scroll window's per-frame rule was read with the floor 0 (a 2-count floor on
+a per-frame ratio is moot); with the floor 2 the verdict is the same.
+
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
 The block reuses P-134's harness unchanged (itself P-132's / P-122's: P-121's path-matched G driver, nav-hit-cache's
