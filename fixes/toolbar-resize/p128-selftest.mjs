@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { install, read as readExpr } from './p128-inject.mjs';
 import { parseLine, callerKey, helperKey, entryKey, features, loadRun, readSet, read } from './p128-read.mjs';
-import { formatOk } from './sim-p128.mjs';
+import { formatOk, runGateWhy, ownFramesLeft } from './sim-p128.mjs';
 
 let n = 0; const fails = [];
 const ok = (c, msg) => { n++; if (!c) fails.push(msg); };
@@ -166,6 +166,8 @@ const fmt = { api: 'setAttribute', stk: 'chunk', per: 1, every: 7, changed: 0 };
   v.calls[v.calls.length - 1].f.push(stepIdx[19]); runs[0].run.inject[0].value = JSON.stringify(v);
   const r2 = go(runs);
   ok(r2.feats['setAttribute:2.DyWL8TcE.js:setA@9000'].rate.linked, 'rate floor: 20 RATE-LINKED');
+  eq(r2.feats['setAttribute:2.DyWL8TcE.js:setA@9000'].spread, { frames: 20, runs: 1, need: 10, ok: false }, 'C1: 20 frames in 1 run is no spread');
+  ok(r2.feats['setAttribute:2.DyWL8TcE.js:setA@9000'].rateClustered, 'C1: one-run rate link reads RATE-CLUSTERED');
 }
 { // carry: a call in the frame before a step frame carries it
   const runs = five({ stepCalls: [fmt], restCalls: [fmt] });
@@ -192,6 +194,53 @@ const fmt = { api: 'setAttribute', stk: 'chunk', per: 1, every: 7, changed: 0 };
   ok(r.runs.every((x) => !x.valid) || r.reading === 'THIN', 'no-step runs');
   const r2 = go(five({ stepCalls: [fmt], restCalls: [fmt], view: 0 }));
   ok(r2.controlWide && r2.reading === 'THIN', `out of view: wide control and THIN (${r2.reading})`);
+}
+
+// ---- rev 2 (ops pre-data read, C1 and N1): a rate link decides only when spread over >= max(5, 2 x runs) STEP frames
+// and >= 3 runs. Rest frames carry the feature every other frame (base ~1), so presence never links in these cases.
+const restEven = { api: 'setAttribute', stk: 'a', per: 1, every: 2 };
+const FA = 'setAttribute:2.DyWL8TcE.js:setA@9000';
+{ // C1: one clustered frame per run (30 calls in the last step frame of a block) is not deciding
+  const runs = five({ stepCalls: [fmt], restCalls: [fmt] });
+  for (const g of runs) { const v = JSON.parse(g.run.inject[0].value); v.calls.push({ api: 'setAttribute', name: 'x', changed: 1, stack: STK.a, f: Array(30).fill(44) }); g.run.inject[0].value = JSON.stringify(v); }
+  const r = go(runs), f = r.feats[FA];
+  ok(f.rate.linked && f.call === 'NO-LINK', `C1 cluster: rate-linked by count, no presence link (${f.call}, ${f.rate.linked})`);
+  eq(f.spread, { frames: 5, runs: 5, need: 10, ok: false }, 'C1 cluster: 5 frames < 10');
+  ok(f.rateClustered && !f.linked, 'C1 cluster: RATE-CLUSTERED, not LINKED');
+  eq(r.reading, 'NONE-LINKED', 'C1: one clustered frame per run is not deciding');
+  ok(!r.detail[FA], 'C1 cluster: no LINKED detail');
+}
+{ // C1: spread over many frames but only 2 runs is not deciding
+  const runs = five({ stepCalls: [fmt], restCalls: [restEven, fmt] });
+  runs.splice(0, 2, ...[0, 1].map(() => mkRun({ stepCalls: [{ api: 'setAttribute', stk: 'a', per: 8 }, fmt], restCalls: [restEven, fmt] })));
+  const r = go(runs), f = r.feats[FA];
+  ok(f.rate.linked && f.call === 'NO-LINK', `C1 two runs: rate-linked, no presence (${f.call}, RRlo ${f.rate.RRlo})`);
+  eq([f.spread.frames, f.spread.runs, f.spread.ok], [50, 2, false], 'C1 two runs: 50 frames, 2 runs < 3');
+  ok(f.rateClustered && !f.linked, 'C1 two runs: RATE-CLUSTERED');
+  eq(r.reading, 'NONE-LINKED', 'C1: a rate link in 2 runs is not deciding');
+}
+{ // C1: a spread rate link (every step frame of 5 runs) decides; N1 splits control into y-moved and still frames
+  const runs = Array.from({ length: 5 }, () => mkRun({ stepCalls: [{ api: 'setAttribute', stk: 'a', per: 4 }, fmt], restCalls: [restEven, fmt] }));
+  for (const g of runs) { const v = JSON.parse(g.run.inject[0].value); v.fr = v.fr.map((x, k) => (k % 80 >= 50 && k % 80 < 60 ? [x[0], 1000 + k, x[2]] : x)); g.run.inject[0].value = JSON.stringify(v); }
+  const r = go(runs), f = r.feats[FA];
+  ok(f.rate.linked && f.call === 'NO-LINK' && f.spread.ok && !f.rateClustered && f.linked, `C1 spread: RATE-LINKED and spread (${f.call}, ${JSON.stringify(f.spread)})`);
+  eq([f.spread.frames, f.spread.runs], [125, 5], 'C1 spread: 125 frames in 5 runs');
+  eq(r.reading, `NAMED(${FA})`, 'C1: a spread rate link is deciding');
+  const sp = r.detail[FA].scrollSplit;
+  eq([sp.step.frames, sp.step.perFrame], [125, 4], 'N1: step calls per frame');
+  ok(sp.controlMoved.frames > 0 && sp.controlStill.frames > 0 && sp.controlMoved.frames + sp.controlStill.frames === r.control, `N1: control split moved ${sp.controlMoved.frames} + still ${sp.controlStill.frames} = CONTROL ${r.control}`);
+  ok(sp.controlMoved.perFrame > 0.3 && sp.controlMoved.perFrame < 0.7 && sp.controlStill.perFrame > 0.3 && sp.controlStill.perFrame < 0.7, `N1: both control rates ~0.5 (${sp.controlMoved.perFrame}, ${sp.controlStill.perFrame})`);
+}
+{ // N2: the driver's run-1 gate is the reader's run gate; N3: own frames left
+  const good = JSON.parse(mkRun({ stepCalls: [fmt], restCalls: [fmt] }).run.inject[0].value);
+  eq(runGateWhy(good), [], 'N2 gate: a good run passes');
+  eq(runGateWhy(null), ['no inject value'], 'N2 gate: no value');
+  eq(runGateWhy({ ...good, wrapped: ['setAttribute'], ioInstalled: false }), ['wrappers missing', 'no showcase IO'], 'N2 gate: wrappers and IO');
+  eq(runGateWhy({ ...good, fr: good.fr.slice(0, 50) }), ['< 100 frames'], 'N2 gate: < 100 frames');
+  eq(runGateWhy({ ...good, fr: good.fr.map((x) => [815, x[1], x[2]]) }), ['no toolbar step (ih range < 30)'], 'N2 gate: no toolbar step');
+  eq(runGateWhy({ ...good, calls: [{ stack: ['rec@'], f: [1] }] }), ['no page stack line'], 'N2 gate: no page stack line');
+  eq(runGateWhy({ ...good, installs: 0 }), ['not installed'], 'N2 gate: not installed');
+  eq([ownFramesLeft(good), ownFramesLeft({ calls: [{ stack: ['w@p128-inject.js:3:1', `f@${N}:1:1`], f: [1, 2] }, { stack: [`f@${N}:1:1`], f: [3] }] })], [0, 2], 'N3 ownFramesLeft counts calls with a wrapper line');
 }
 
 if (fails.length) { console.log(`SELFTEST FAIL (${fails.length} of ${n})\n  ` + fails.join('\n  ')); process.exit(1); }

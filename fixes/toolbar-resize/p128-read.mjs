@@ -29,7 +29,11 @@
 //   score-p125.mjs c52de0edd5d3, as P-126 rules 5 and 5b): presence THIN when H < 5, COVERS when Hw >= max(5, 2 x runs),
 //   hLo >= 2 x base and h >= 0.8, LINKED-PART when Hw >= floor and hLo >= 2 x base, else NO-LINK (base = share of
 //   CONTROL frames carrying); rate s = calls in STEP frames, Fs = STEP frames, r / Fr the same over CONTROL, RATE-LINKED
-//   when s >= max(8, 4 x runs) and RRlo >= 2. LINKED = COVERS, LINKED-PART or RATE-LINKED.
+//   when s >= max(8, 4 x runs) and RRlo >= 2.
+//   C1 (rev 2, ops pre-data read): rate counts calls, and DOM calls cluster (one loop of 20+ calls in one STEP frame
+//   would pass). A RATE-LINKED feature links only when its STEP calls fall in >= max(5, 2 x runs) distinct STEP frames
+//   (own interval) and in >= 3 valid runs; otherwise it reads RATE-CLUSTERED (descriptive, never links).
+//   LINKED = COVERS, LINKED-PART, or RATE-LINKED with that spread.
 // READING (frozen; a deciding feature "counts" when its caller is not probe or native):
 //   NAMED(<features>)  some counting deciding feature whose caller is not fwWC is LINKED
 //   FWWC-ONLY          no such feature, and a deciding feature with caller fwWC is LINKED (P-125's wc1 removed fwWC's
@@ -40,13 +44,16 @@
 //   rateRule STEP vs CONTROL); pageShare (deciding-api calls in STEP frames with a "/_app/immutable/" line); per LINKED
 //   feature its names (attribute / property / token), ENTRY and HELPER keys, and per-run s, r, RR (ops N2: records
 //   cluster, so the pooled bound is optimistic); the cousins and unchanged writes, LINKED or not.
+//   N1 (rev 2, ops): per LINKED feature, calls per frame in STEP frames, in CONTROL frames whose y moved since the
+//   previous frame (scrolling at a settled toolbar) and in CONTROL frames whose y did not (still): STEP frames are the
+//   flick's earliest and fastest frames, so a scroll-driven caller can link too; this tells an arm card which.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { coincidence, rateRule } from './score-p125.mjs';
 import { REGIONS } from './read-inval126.mjs';
-import { formatOk, injectValue } from './sim-p128.mjs';
+import { injectValue, runGateWhy, DECIDE_APIS } from './sim-p128.mjs';
 
-export const DECIDE_APIS = ['setAttribute', 'toggle', 'setProperty', 'gBCR'];
+export { DECIDE_APIS };
 export const COUSINS = ['removeAttribute', 'toggleAttribute', 'add', 'remove', 'replace', 'removeProperty'];
 const GATE = { js: '3e3e94cb6e9f', css: 'f836404b3728' };
 const r3 = (x) => (x == null || !Number.isFinite(x) ? x ?? null : Math.round(x * 1000) / 1000);
@@ -92,17 +99,8 @@ export function servedOk(dir) {
 export function loadRun(dir, name, { served = servedOk(dir) } = {}) {
   const F = join(dir, `g-${name}.json`);
   const v = existsSync(F) ? injectValue(JSON.parse(readFileSync(F, 'utf8'))) : null;
-  const why = [];
-  if (!v) why.push('no inject value');
-  else {
-    if (!(v.installs >= 1)) why.push('not installed');
-    if (!DECIDE_APIS.every((a) => (v.wrapped || []).includes(a))) why.push('wrappers missing');
-    if (!v.ioInstalled) why.push('no showcase IO');
-    if ((v.fr || []).length < 100) why.push('< 100 frames');
-    if (!formatOk(v)) why.push('no page stack line');
-  }
+  const why = runGateWhy(v); // the same run gate sim-p128 applies after run 1 (ops N2)
   const fr = v?.fr || [], ihs = fr.map((x) => x[0]), lo = ihs.length ? Math.min(...ihs) : null, hi = ihs.length ? Math.max(...ihs) : null;
-  if (v && !(hi - lo >= 30)) why.push('no toolbar step (ih range < 30)');
   if (!served) why.push('served bytes record missing or wrong');
   const frames = fr.map(([ih, y, view]) => ({ ih, y, view, moving: ih > lo && ih < hi, cnt: new Map() }));
   const meta = new Map();
@@ -126,11 +124,13 @@ export function loadRun(dir, name, { served = servedOk(dir) } = {}) {
     q.step = q.moving && q.y < 3250 && q.view === 1;
     q.ctrl = !q.moving && q.y < 3250 && q.view === 1;
     q.ctrlWide = !q.moving && q.y < 3250;
+    q.yMoved = i > 0 && q.y !== frames[i - 1].y;
   });
   return { name, valid: why.length === 0, why, frames, lo, hi, meta };
 }
 
-const linked = (c) => !!c && (c.call === 'COVERS' || c.call === 'LINKED-PART' || !!c.rate?.linked);
+const presence = (c) => !!c && (c.call === 'COVERS' || c.call === 'LINKED-PART');
+const linked = (c) => presence(c) || (!!c?.rate?.linked && !!c?.spread?.ok);
 const top = (mp, n = 3) => [...(mp || new Map()).entries()].sort((a, b) => b[1] - a[1]).slice(0, n);
 
 export function readSet(all) {
@@ -145,6 +145,10 @@ export function readSet(all) {
     const Hw = S.filter((q) => q.carry.has(f)).length, base = C.length ? C.filter((q) => q.carry.has(f)).length / C.length : 0;
     feats[f] = coincidence(S.length, Hw, base, k);
     feats[f].rate = rateRule(sum(S, f), S.length, sum(C, f), C.length, k);
+    const frames = S.filter((q) => q.cnt.get(f)).length, runsWith = runs.filter((R) => R.frames.some((q) => q.step && q.cnt.get(f))).length;
+    const need = Math.max(5, 2 * k);
+    feats[f].spread = { frames, runs: runsWith, need, ok: frames >= need && runsWith >= 3 };
+    feats[f].rateClustered = feats[f].rate.linked && !feats[f].spread.ok;
     feats[f].linked = linked(feats[f]);
     feats[f].deciding = isDeciding(f) && counts(callerOf(f));
   }
@@ -164,7 +168,9 @@ export function readSet(all) {
   for (const f of Object.keys(feats).filter((x) => feats[x].linked)) {
     const meta = new Map(); for (const R of runs) { const m = R.meta.get(f); if (!m) continue; for (const key of ['names', 'entry', 'helper']) { if (!meta.has(key)) meta.set(key, new Map()); for (const [a, b] of m[key]) meta.get(key).set(a, (meta.get(key).get(a) || 0) + b); } }
     const perRun = runs.map((R) => { const s = sum(R.frames.filter((q) => q.step), f), Fs = R.frames.filter((q) => q.step).length, Cs = R.frames.filter((q) => (wide ? q.ctrlWide : q.ctrl)), r = sum(Cs, f); return { run: R.name, s, Fs, r, Fr: Cs.length, RR: Fs && r ? r3((s / Fs) / (r / Cs.length)) : null }; });
-    detail[f] = { names: top(meta.get('names')), entry: top(meta.get('entry')), helper: top(meta.get('helper')), perRun };
+    const per = (arr) => ({ calls: sum(arr, f), frames: arr.length, perFrame: arr.length ? r3(sum(arr, f) / arr.length) : null });
+    const scrollSplit = { step: per(S), controlMoved: per(C.filter((q) => q.yMoved)), controlStill: per(C.filter((q) => !q.yMoved)) };
+    detail[f] = { names: top(meta.get('names')), entry: top(meta.get('entry')), helper: top(meta.get('helper')), perRun, scrollSplit };
   }
   return {
     runs: all.map((R) => ({ run: R.name, valid: R.valid, why: R.why, frames: R.frames.length, lo: R.lo, hi: R.hi, step: R.frames.filter((q) => q.step).length, control: R.frames.filter((q) => q.ctrl).length })),
@@ -182,6 +188,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   console.log(`P-128 READING: ${res.reading}  (valid runs ${res.valid}, STEP ${res.STEP}, control ${res.control}${res.controlWide ? ' wide' : ''}, pageShare ${res.pageShare})`);
   for (const r of res.runs) console.log(`  ${r.run}: ${r.valid ? 'valid' : 'INVALID ' + r.why.join('; ')} frames ${r.frames} ih ${r.lo}-${r.hi} step ${r.step} control ${r.control}`);
   console.log('  B1: ' + DECIDE_APIS.map((a) => `${a} ${res.B1[a].s}/${res.B1[a].Fs} vs ${res.B1[a].r}/${res.B1[a].Fr} RR ${res.B1[a].RR} RRlo ${res.B1[a].RRlo}${res.B1[a].linked ? ' RATE-LINKED' : ''}`).join(' | '));
-  for (const [f, c] of Object.entries(res.feats).filter(([, c]) => c.linked)) console.log(`  LINKED ${f}${c.deciding ? '' : ' (descriptive)'}: presence ${c.call} ${c.Hw}/${c.H} base ${c.base}; rate ${c.rate.s}/${c.rate.Fs} vs ${c.rate.r}/${c.rate.Fr} RR ${c.rate.RR} RRlo ${c.rate.RRlo}${c.rate.linked ? ' RATE-LINKED' : ''}; names ${JSON.stringify(res.detail[f].names)} entry ${JSON.stringify(res.detail[f].entry)}`);
+  for (const [f, c] of Object.entries(res.feats).filter(([, c]) => c.rateClustered && !c.linked)) console.log(`  RATE-CLUSTERED ${f}: rate ${c.rate.s}/${c.rate.Fs} vs ${c.rate.r}/${c.rate.Fr} RRlo ${c.rate.RRlo}, in ${c.spread.frames} STEP frames (need ${c.spread.need}) and ${c.spread.runs} runs (need 3)`);
+  for (const [f, c] of Object.entries(res.feats).filter(([, c]) => c.linked)) console.log(`  LINKED ${f}${c.deciding ? '' : ' (descriptive)'}: presence ${c.call} ${c.Hw}/${c.H} base ${c.base}; rate ${c.rate.s}/${c.rate.Fs} vs ${c.rate.r}/${c.rate.Fr} RR ${c.rate.RR} RRlo ${c.rate.RRlo}${c.rate.linked ? ' RATE-LINKED' : ''}; spread ${c.spread.frames} frames / ${c.spread.runs} runs; per frame step ${res.detail[f].scrollSplit.step.perFrame} controlMoved ${res.detail[f].scrollSplit.controlMoved.perFrame} controlStill ${res.detail[f].scrollSplit.controlStill.perFrame}; names ${JSON.stringify(res.detail[f].names)} entry ${JSON.stringify(res.detail[f].entry)}`);
   if (out) writeFileSync(out, JSON.stringify(res, null, 1) + '\n');
 }

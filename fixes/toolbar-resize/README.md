@@ -1954,8 +1954,13 @@ stays empty until then. The trigger stays OBSERVED in all text.
 - **Runs (one shared slot, weight simulator, 300 s; `sim-p128.mjs`).** `fix.mjs serve v8-best` (JS `3e3e94cb6e9f`, CSS
   `f836404b3728`, both from the overlay; else exit 26), `wda start`, then C:H1..C:H5. Each run is `sim.mjs open` plus
   `sim.mjs gesture flick-hero-v1.json --count-only --inject p128-inject.mjs`.
-  - **Format gate:** after the first run its record must hold >= 1 call whose stack has a `/_app/immutable/` line with
-    `:line:col`, else STOP exit 27 before any further run.
+  - **Run-1 gate (rev 2, ops N2):** after the first run its record must pass the reader's run gate (`runGateWhy`,
+    shared by driver and reader): an inject value, installs >= 1, the four deciding wrappers, the showcase IO, >= 100
+    frames, an innerHeight range >= 30 px, and >= 1 call whose stack has a `/_app/immutable/` line with `:line:col`.
+    Else STOP exit 27 before any further run. (Rev 1 checked only the stack format here.)
+  - **Wrapper frames (rev 2, ops N3):** every run logs `ownFramesLeft`, the calls whose stack still holds a
+    `p128-inject.js` line, i.e. whether JSC dropped the wrapper's frames by sourceURL. Logged only: the caller key skips
+    to the innermost page line either way.
   - **Budget stop** at < 45 s left (`SB_BUDGET_S=250`). Dropped runs go into one more shared slot under the same names,
     and the result says so.
   - **Command (in `sim-p128.mjs`'s header):** `node tools/lock.mjs run chrome-measure --shared --weight simulator
@@ -1997,8 +2002,12 @@ stays empty until then. The trigger stays OBSERVED in all text.
      - presence (THIN when H < 5; COVERS when Hw >= 10, hLo >= 2 x base and h >= 0.8; LINKED-PART when Hw >= 10 and
        hLo >= 2 x base; else NO-LINK);
      - rate: calls in STEP frames against CONTROL frames, RATE-LINKED when s >= 20 and RRlo >= 2.
+     - **Spread (rev 2, ops C1).** The rate counts calls, and DOM calls cluster: one loop of 20 calls in one STEP frame
+       would clear the floor. A RATE-LINKED feature links only when its calls fall in >= max(5, 2 x runs) = 10
+       distinct STEP frames (own interval, no carry) and in >= 3 valid runs. Otherwise it reads **RATE-CLUSTERED**,
+       descriptive, never LINKED.
 
-     LINKED = COVERS, LINKED-PART or RATE-LINKED.
+     LINKED = COVERS, LINKED-PART, or RATE-LINKED with the spread.
   6. **Reading (frozen).** A deciding feature counts unless its caller is `probe` or `native`.
 
      | reading | rule |
@@ -2015,7 +2024,13 @@ stays empty until then. The trigger stays OBSERVED in all text.
      - Per LINKED feature: its attribute, property or token names, ENTRY and HELPER, and per-run s, r and RR (ops N2:
        calls cluster within frames, so the pooled bound is optimistic).
      - The cousins and the unchanged writes, LINKED or not.
-- **Self-test** `p128-selftest.mjs`: `SELFTEST PASS (57 checks)`, synthetic data only.
+     - The RATE-CLUSTERED features (rate, spread frames and runs).
+     - **Rev 2, ops N1:** per LINKED feature, calls per frame in STEP frames, in CONTROL frames whose y moved since the
+       previous frame, and in CONTROL frames whose y did not. STEP frames are the earliest and fastest frames of the
+       flick, so a caller driven by scrolling can link to them as well. This split tells an arm card which it is.
+  8. **Wording (ops answer a).** STEP frames here are chosen without a Layout test. The write-up never calls a census
+     frame heavy; the link to P-125/P-126's heavy frames is only that they were the same in-view step frames.
+- **Self-test** `p128-selftest.mjs`: `SELFTEST PASS (82 checks)`, synthetic data only.
   - The inject itself, in a node vm with a stub DOM:
     - pass-through;
     - the changed flags for a value change and a same value, toggle, setProperty, gBCR and the cousins;
@@ -2039,6 +2054,14 @@ stays empty until then. The trigger stays OBSERVED in all text.
     - the gate (missing wrappers, no toolbar step, no IO, served-bytes mismatch, no page stack line) giving
       INSUFFICIENT, never NONE-LINKED;
     - THIN, and the wide control out of view.
+  - Rev 2 (ops C1, N1-N3):
+    - one clustered frame per run (30 calls in one STEP frame of each of 5 runs: 5 frames < 10) reads RATE-CLUSTERED,
+      not deciding, NONE-LINKED;
+    - a rate link spread over 50 STEP frames of only 2 runs reads RATE-CLUSTERED, NONE-LINKED;
+    - a rate link in every STEP frame of 5 runs (presence NO-LINK at a high base) is LINKED and NAMED;
+    - the rev-1 rate-floor case (20 calls in run 1 only) is RATE-CLUSTERED;
+    - N1's split of CONTROL into y-moved and still frames sums to CONTROL;
+    - `runGateWhy` for each gate reason, and `ownFramesLeft`.
 - **What each reading leads to (frozen before data).**
 
   | reading | next step |
@@ -2093,13 +2116,24 @@ stays empty until then. The trigger stays OBSERVED in all text.
   | file | hash |
   |---|---|
   | `p128-inject.mjs` | e44cdd1f9e9a |
-  | `sim-p128.mjs` | e1df2c982108 |
-  | `p128-read.mjs` | 881d93fe1d45 |
-  | `p128-selftest.mjs` | c8bc6f4a6910 (57 checks) |
+  | `sim-p128.mjs` | 247980631fd9 (rev 2; rev 1 e1df2c982108) |
+  | `p128-read.mjs` | db7dab05773e (rev 2; rev 1 881d93fe1d45) |
+  | `p128-selftest.mjs` | c550069e20d2 (82 checks; rev 1 c8bc6f4a6910, 57) |
   | `flick-hero-v1.json` | 6ae05e12ace9 |
   | `score-p125.mjs` (imported) | c52de0edd5d3 |
   | `read-inval126.mjs` (imported) | 4f920b6450f7 |
   | served JS / CSS (v8-best overlay) | 3e3e94cb6e9f / f836404b3728 |
+
+- **Rev 2 (mgmt-ops-10's pre-data read of rev 1: PASS with condition C1; on main as 133374f7).** Applied before any data:
+  - C1, the spread condition on rate links (rule 5) and RATE-CLUSTERED, with self-test cases; the reader and self-test
+    re-pinned;
+  - N1, the y-moved and still CONTROL rates per LINKED feature (rule 7, descriptive);
+  - N2, run 1's STOP 27 applies the reader's whole run gate (one shared function);
+  - N3, `ownFramesLeft` logged per run;
+  - N4, rebased on main before the re-pin.
+  - Ops' answers: STEP without a Layout test is fine under rule 8's wording; the caller key and the format gate stand.
+    Predictions stay as registered (prediction 3, NAMED, 65 %).
+  - No data has been taken. Next: ops' delta check of rev 2, then the lead's signature, then the slot.
 
 ## Scenarios not run
 

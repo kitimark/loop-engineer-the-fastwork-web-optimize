@@ -10,8 +10,11 @@
 //        node fixes/toolbar-resize/sim-p128.mjs C:H1 C:H2 C:H3 C:H4 C:H5; E=$?; kill $S; exit $E'
 // Steps: 1. served bytes (JS, CSS: hash and x-mirror-source overlay; exit 26 on a mismatch); 2. wda start; 3. per run:
 // sim.mjs open the page, sim.mjs gesture flick-hero-v1.json (6ae05e12ace9) --count-only --inject p128-inject.mjs;
-// after the FIRST run a format gate: its inject record must hold >= 1 call whose stack has a line with
-// "/_app/immutable/" and a :line:col, else STOP exit 27 before any further run; 4. budget stop (< 45 s left: the
+// after the FIRST run a gate (rev 2, ops N2: the reader's run gate without the served record, runGateWhy below):
+// an inject value, installs >= 1, the four deciding wrappers, the showcase IO, >= 100 frames, an innerHeight range
+// >= 30 px, and >= 1 call whose stack has a "/_app/immutable/" line with :line:col; else STOP exit 27 before any
+// further run. Every run logs ownFramesLeft (ops N3): the calls whose stack still holds a p128-inject.js line, i.e.
+// whether JSC dropped the wrapper's frames by sourceURL (the caller key does not depend on it); 4. budget stop (< 45 s left: the
 // remaining runs are logged as dropped and run in one more slot under the same names).
 // Output: out/toolbar-resize/sim128/ g-<run>.json (the gesture record, run.inject[].value), runs.jsonl.
 import { spawnSync } from 'node:child_process';
@@ -29,6 +32,21 @@ export function formatOk(value) {
   let v = value; if (typeof v === 'string') { try { v = JSON.parse(v); } catch { return false; } }
   return !!v && Array.isArray(v.calls) && v.calls.some((c) => (c.stack || []).some((l) => l.includes('/_app/immutable/') && /:\d+:\d+$/.test(l)));
 }
+export const DECIDE_APIS = ['setAttribute', 'toggle', 'setProperty', 'gBCR'];
+// the run gate shared with p128-read.mjs (rev 2, ops N2): [] when the inject value passes, else the reasons
+export function runGateWhy(v) {
+  const why = [];
+  if (!v) return ['no inject value'];
+  if (!(v.installs >= 1)) why.push('not installed');
+  if (!DECIDE_APIS.every((a) => (v.wrapped || []).includes(a))) why.push('wrappers missing');
+  if (!v.ioInstalled) why.push('no showcase IO');
+  const ihs = (v.fr || []).map((x) => x[0]);
+  if (ihs.length < 100) why.push('< 100 frames');
+  if (!(ihs.length && Math.max(...ihs) - Math.min(...ihs) >= 30)) why.push('no toolbar step (ih range < 30)');
+  if (!formatOk(v)) why.push('no page stack line');
+  return why;
+}
+export const ownFramesLeft = (v) => (v?.calls || []).filter((c) => (c.stack || []).some((l) => l.includes('p128-inject.js'))).reduce((n, c) => n + c.f.length, 0);
 export function injectValue(g) {
   const segs = g?.run?.inject || [];
   let best = null;
@@ -60,7 +78,9 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
     let v = null; try { v = injectValue(JSON.parse(readFileSync(F, 'utf8'))); } catch {}
     const brief = v ? { installs: v.installs, wrapped: v.wrapped?.length, io: v.ioInstalled, frames: v.fr?.length, sigs: v.calls?.length, calls: (v.calls || []).reduce((n, c) => n + c.f.length, 0) } : null;
     console.log(`SB ${name} open ${o} gesture ${g} t+${Math.round((Date.now() - t0) / 1000)} s ${JSON.stringify(brief)}`);
-    log({ step: s, name, port, open: o, gesture: g, inject: brief, formatOk: v ? formatOk(v) : false });
-    if (i === 0 && !(v && formatOk(v))) { console.log('STOP format: the first run holds no call with a page stack line (/_app/immutable/ ...:line:col)'); process.exit(27); }
+    const why = runGateWhy(v), own = ownFramesLeft(v);
+    console.log(`  gate ${why.length ? why.join('; ') : 'ok'}; ownFramesLeft ${own}`);
+    log({ step: s, name, port, open: o, gesture: g, inject: brief, gate: why, ownFramesLeft: own });
+    if (i === 0 && why.length) { console.log(`STOP gate after run 1: ${why.join('; ')}`); process.exit(27); }
   }
 }
