@@ -915,6 +915,144 @@ The raf entries are the same harness-lag frames as on step 4: the mobile theme e
 and the desktop one is [4968, …, 4928], the future card's bottom edge. Part 2 (desktop-rtl, mobile-rtl, mobile-shift) was not
 re-run on this base. It passed on step 4 and runs on request (one more ~140 s slot).
 
+## D card P-136: U2, the morph-open hit-test deferral (rev 1, registered before its data)
+
+Less-work card (memory "less-work-landing-rule"): cost-card counts per event on the full page in Chrome and the
+Simulator, plus one short phone no-worse check. No smoothness claim. Id P-136 from mgmt-ops-10; the lead accepted U2 in
+principle as exact less work (the shown `is-on-dark` value is unchanged) and keeps it out of int-v8's P-134 (v9.1 =
+scroll-cb + g11 on 7d). Origin: finding F-278 (acked).
+
+**What U2 changes.** On touch phones (`__msEnd` exists only there), while the morph is open (`C()`), the nav theme hit
+test in `_()` runs before `__msTick` writes the new morph value, so its answer is never the one that shows:
+- at m <= 0.2, `__msTick` tests again after its write (two tests per frame on K, the second one shows);
+- above 0.2, `is-on-dark` is `g || m > 0.2`, dark whatever `g` is.
+
+U2 skips the test in `_()` in those frames (`__nsMsPend`, and `__nsForce` so the first frame after the morph closes
+tests), and `__msTick` queues its microtask test when the value changed or a test was deferred, keyed on `r` (the value
+`x` holds). Result: 1 test per frame at m <= 0.2 and 0 above, instead of 2 and 1. Desktop, reduced motion and wide
+screens never take the branch. Delta (3 sites, 38 lines): `u2-delta-on-v9f7d.diff`.
+
+**Arms**, checked as served (sha256/12; CSS e1359ab9994a in every arm).
+
+| arm | JS | built how |
+|---|---|---|
+| K (control) = C here: v9-final + rev 7d, main 189ca7ed | 1b2eecc66011 | `build.mjs --base v9f7d`: v9f7d's C a707f659f650 (v9-final + 7d minus nav, reverse strict apply) + `patch-on-v9s4.diff` 9814fdad848e. The same bytes as main's: v9-final 647c9ef2b1e2 + `fixes/morph-scroll-v9try/patch.diff` 6d1632eb0ee9 (ada7f461, landed 189ca7ed) |
+| V = K + U2 | c7435c24dc56 | `build.mjs --base v9f7du2`: a707f659f650 + `patch-on-v9f7d-u2.diff` dfd77e2172ef (nav + glue + U2 in one); equals K + `u2-delta-on-v9f7d.diff` c0d040afe271 |
+| VA = V + debug audit hook (parity only) | 99911b228855 | `build.mjs --base v9f7du2` (HOOK_U2 + `__nhcX`) |
+
+The bytes ops registered the id with (V 79883c8c950e, delta b23ea949296a) are superseded before any counted data: the
+microtask test was keyed on `e` (the scroll-derived value), which misses a frame where the spring `T` drives `x` (the
+debug morph driver) with `e` unchanged. Now keyed on `r`. If P-134 lands first, this card is rebased on it and K / V
+re-pinned, and ops gets the new bytes before any counted run.
+
+**Pre-card evidence** (disclosed; not in the predictions):
+- Parity run 1 on 79883c8c950e (`v9final/parity-u2-1-void.json`) is VOID: the U2 audit hook threw (`s` is
+  `window.scrollY` inside the effect, not the runtime getter), so no deferred frame was audited. The t / n audits ran
+  (0 mismatches) but do not count.
+- Parity run 2 on c7435c24dc56 (`v9final/parity-u2-2.json`, VA 99911b228855 / e1359ab9994a as served, no page
+  error, 196 s): PASS. Every deferred frame was audited two microtasks later against a fresh test: 187 deferred at 10 px
+  steps (down and up) and 47 at 40 px, in both mobile and mobile-shift, 0 mismatches (`dmis`); desktop 0 deferred (the
+  branch is never taken). The task-driven modes show 0 lag frames and 0 theme / sticky / pill mismatches. The rAF modes
+  show the same harness entries as every earlier parity run (pill [2, 0] each; theme [1, 0] at 40 px, y 2238 / 2258 /
+  4968; none in sync), so nothing new.
+- The Chrome count instrument's A/A self-test (`p136/selftest-count-aa.json`, K vs K): PASS. 8 loads
+  (11:22-11:25Z, shared probe slot, 160 s wall; probe.mjs and build.mjs as pinned below), all served 1b2eecc66011 /
+  e1359ab9994a, no page error, 628 steps mobile and 845 desktop in every load. Medians K vs V: mobile efpNav 454.5 vs
+  454, forced Layout 200.5 vs 197, forced UpdateLayoutTree 774 vs 772.5; desktop efpNav 536 vs 536.5, forced Layout 262
+  vs 259.5, forced UpdateLayoutTree 1245 vs 1244.5. The tolerances come from this record and are now fixed: mobile
+  efpNav 2, forced Layout 7, forced style 3, PrePaint 15; desktop 2, 5, 2, 4.
+
+**Instruments** (sha256/12; any change is listed here with its new hash before its data).
+
+| file | hash | what |
+|---|---|---|
+| `build.mjs` | 746b136c1564 | arms K, V, VA (bases v9f7d, v9f7du2, expect pins) |
+| `probe.mjs` | 8172549d566a | `count --base v9f7du2 --ctl v9f7d`: arms K, V; per load a top-to-bottom scripted scroll, 10 px per rAF; trace counts (PrePaint, UpdateLayoutTree, Layout; forced = inside a script event) and API counts (elementsFromPoint, getBoundingClientRect, getComputedStyle; total and from the nav code region) |
+| `simcount.mjs` | 57cbf40c547f | Simulator: `--base v9f7du2 --ctl v9f7d`, the same scroll; Timeline (forced RecalculateStyles / Layout inside script records) and, new for this card, elementsFromPoint / getBoundingClientRect calls, total and nav region |
+| `p136/counts.mjs` | b93a69de05f0 | the count verdicts below, from the two records |
+| `p136/score.mjs` | 86ee754f0978 | phone scorer; imports P-122's `fixes/v9-best/phone/p122/score.mjs` d1dddb910cd9 (refused if changed) |
+| `p136/selftest136.mjs` | 4135f1a7752f | SELFTEST-136 OK 60. Part 1 (synthetic): items, pins, check log; counts.mjs on synthetic records (all hit = PASS; a pair dropping < 40 misses C1; a desktop forced-Layout shift beyond tol misses C5; a load serving other bytes is VOID; no Simulator record = INSUFFICIENT, never a pass; an A/A not on K bytes gives no tolerance). Part 2 (P-122's own X / S records relabeled: per-run voids, EX, ES, flicker G1 per part and BEHAVIOUR X equal P-122's score-final; GX by its rule; negatives) |
+| `p136/hold136.sh`, `p136/serve136.sh` | 89434acd0604, dc3e2ee81d40 | copies of P-122's hold122.sh ec6cc97f190b / serve122.sh 0198b72d3ad9: items, arms, folders changed only |
+
+Self-tests: `probe.mjs count --base v9f7d --ctl v9f7d` serves the same bytes as K and V (A/A); `simcount.mjs` the same
+with `K:1 V:1` (its A/A runs in the first Simulator slot, before the counted loads, and is reported with them); P-107's
+loads showed the instrument sees the nav cache itself (v8, nav elementsFromPoint per step C 0.998 vs V 0.641 mobile,
+0.999 vs 0.672 desktop; every V load below every C load).
+
+### Part 1: cost-card counts (Chrome and Simulator)
+
+Loads: Chrome `probe.mjs count --base v9f7du2 --ctl v9f7d --reps 2 --vp mobile,desktop` (order K V, then V K, per
+viewport; mobile 430x932 DPR 3 touch, desktop 1440x900), one shared probe slot (<= 300 s); Simulator `simcount.mjs
+<rec> K:1 V:1 V:2 K:2 --base v9f7du2 --ctl v9f7d`, one shared simulator slot. A load whose served hashes are not its
+arm's, or with a page error, is VOID (`probe.mjs` stops the run with no record on wrong bytes; `counts.mjs` checks
+again), and the run is repeated once in the next slot; a second VOID leaves the part insufficient. The records go to
+`p136/count-chrome.json` and `p136/count-sim.json` (the Simulator A/A to `p136/count-sim-aa.json`), scored by
+`node fixes/nav-hit-cache/p136/counts.mjs --chrome p136/count-chrome.json --aa p136/selftest-count-aa.json --sim
+p136/count-sim.json --sim-aa p136/count-sim-aa.json --json p136/counts-result.json`.
+
+Per load: `efpNav` (nav-region elementsFromPoint calls over the scroll), forced Layout and forced style recalcs
+(UpdateLayoutTree / RecalculateStyles inside script), and steps. Per arm the median over its 2 loads. A/A tolerance
+`tol(k)` = max(2, 2 x the |K - V| of the A/A self-test load pair for that count and viewport).
+
+| # | prediction | judged on | p |
+|---|---|---|---|
+| C1 | Chrome mobile: efpNav(K) - efpNav(V) >= 40 per load, each load pair | per pair | 0.85 |
+| C2 | Chrome mobile: that drop is within 25 % of the morph-open frame count on the down scroll, `deferred` from parity run 2 (task10 mobile) / 2 | medians | 0.70 |
+| C3 | Chrome mobile: forced Layout and forced UpdateLayoutTree, V <= K + tol | medians | 0.85 |
+| C4 | Chrome mobile: forced Layout V < K (strictly fewer) | medians | 0.55 |
+| C5 | Chrome desktop: efpNav, forced Layout, forced UpdateLayoutTree, PrePaint all within tol (U2 is inert there) | medians | 0.85 |
+| C6 | Simulator: efpNav(K) - efpNav(V) >= 40 per load | per pair | 0.75 |
+| C7 | Simulator: forced Layout and forced RecalculateStyles, V <= K + tol | medians | 0.80 |
+| C8 | no page error in any V load, every load served its pin | all | 0.95 |
+
+Part 1 passes when C1, C3, C5, C6, C7 and C8 hold (C2 and C4 are calibration predictions, scored, not gating). A
+Simulator part that cannot run (the touch path not taken: `deferred` audit not available there, so C6 is the check) is
+"insufficient", never a pass.
+
+### Part 2: short phone no-worse check
+
+Ticket P-136, runner iphone-runner (fix-nav-morph never uses the iPhone), profile xcode-serious (default since T-162 #3;
+never pooled with another profile), driver G (WDA gesture, P-121's path-matched `fixes/v9-best/phone/p121/flick-end-v2.json`
+4eb4bbc62b43: part X speed=fast, part S speed=slow; compiled-program pins X 21aaafd3a9fd, S 7312cdcd2574). U2 acts only
+at the page end (the morph), so parts M and R are not run. Every G run carries `flicker-inject.mjs` 71f7b00ce40b.
+
+Holds (each one `lock.mjs run iphone --block P-136` with an exclusive no-timing chrome-measure hold inside, as P-122):
+
+| hold | items |
+|---|---|
+| H1 | sCo wgXC wgXV gXC1 gXV1 gXV2 sCc |
+| H2 | sCo gXC2 gXC3 gXV3 gXV4 gXC4 sCc |
+| H3 | sCo wgSC wgSV gSC1 gSV1 gSV2 sCc |
+| H4 | sCo gSC2 gSC3 gSV3 sCc |
+
+Order C V V C C V V C on X (4 a side, one spare each), C V V C C V on S (3 a side, one spare each: P-122's lesson, part
+S had no spare and two path VOIDs left ES short).
+
+VOID rules (as P-122): a hold is VOID on its wda check, a compiled-program pin, the start or end thermal gate, a Mac
+sleep or dark wake (pmcheck), a failed counted item, or the time guard (no G item after 420 s); a VOID hold is re-run
+whole, once; a second VOID of the same hold leaves its part short (insufficient), no further runs without a lead
+ruling. A run is VOID on P-111's record rules, the served check log not naming K 1b2eecc66011 and V c7435c24dc56, the
+path gate (P-121's; X: C leaves the end by >= 1600 px, V's out strokes meet the release rule; S: neither, both arms),
+or a failing sentinel (sCo / sCc, voids every run since the last passing one). Never re-scripted after data.
+
+Gates (`p136/score.mjs`): GX (P-111's G gate on X, > 50 WORSE when the V - C median is up by more than 2, NEW 250 px
+cluster fails, twins 46 / 54, >= 3 valid a side); ES (P-122's V ceiling on S, 0 frames > 50 ms in into1..end, >= 2 valid
+V); FLICKER (G1, V monotone blinks 0 in X and in S; >= 3 valid runs a side pooled over X and S); BEHAVIOUR (fling
+parity on X, P-122's rule). Reported only: EX (V ceiling on X), GS (G gate on S), S parity.
+
+| # | prediction | p |
+|---|---|---|
+| P1 | GX no-worse | 0.80 (WORSE 0.10, insufficient 0.10) |
+| P2 | ES no-worse | 0.65 (WORSE 0.15, insufficient 0.20) |
+| P3 | FLICKER G1 pass (no-worse) | 0.85 (WORSE 0.10, insufficient 0.05) |
+| P4 | BEHAVIOUR X pass | 0.90 (FAIL 0.03, insufficient 0.07) |
+| P5 | every sentinel passes first try | 0.70 |
+| P6 | overall no-worse | 0.55 (insufficient 0.30, WORSE or BEHAVIOUR FAIL 0.15) |
+
+**Landing.** Part 1 passes and Part 2 is no-worse: U2 is proposed to land (lead). Part 2 insufficient: the lead
+decides (a re-run of the short part, or landing on Part 1 alone). Part 2 WORSE or BEHAVIOUR FAIL: U2 does not land; the
+cause is traced first (a G run's frames, the flicker logger).
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

@@ -75,6 +75,12 @@ export const BASES = {
     dir: join(SNAP, 'v9f7d-a707f659f650'), pin: ['a707f659f650', 'e1359ab9994a'],
     patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['1b2eecc66011', 'e1359ab9994a'], VA: ['de8c7fc68c56', 'e1359ab9994a'] }, pre: { V: 'nhcv9f7d', VA: 'nhcv9f7da' },
   },
+  // U2 (F-278): v9f7d's V plus the morph deferral (while the morph is open on touch phones, _() leaves the hit test to
+  // __msTick: one test per frame at m <= 0.2 instead of two, none above). Same C; the diff is C -> V + U2 in one
+  v9f7du2: {
+    dir: join(SNAP, 'v9f7d-a707f659f650'), pin: ['a707f659f650', 'e1359ab9994a'], hook: 'u2',
+    patch: join(HERE, 'patch-on-v9f7d-u2.diff'), expect: { V: ['c7435c24dc56', 'e1359ab9994a'], VA: ['99911b228855', 'e1359ab9994a'] }, pre: { V: 'nhcu2', VA: 'nhcu2a' },
+  },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
 // cached under out/nav-hit-cache/from/
@@ -147,6 +153,22 @@ const HOOK_V8 =
   '                return Math.min(u, Math.max(0, -w.top)) / u >= 0.72;\n' +
   '              })(__navEl(`.hero-track`)))),\n';
 
+// U2 bases (hook: 'u2'): a frame whose test _() deferred to __msTick (morph open, touch phones; __nsMsPend) counts as
+// d and is audited on what shows, after __msTick's own test: two microtasks later (this one is queued before
+// __msTick's), the class value (g || m > 0.2) vs (F() || m > 0.2), as an m entry tagged 'd'. Inside the effect the
+// runtime getter s is shadowed (s = window.scrollY), so g is read as __nsG (its only writers in this component set
+// both) and m as the effect's r through __nhcX (every write of x in the effect is z(x, r) or r = t; z(x, t)),
+// defined by HOOK_U2_X at the line that defines _ (u2 parity run 1 threw `s is not a function` there, void)
+const HOOK_U2 = HOOK_V8.replace(
+  '            __h\n              ? window.__nhcAudit.t++\n              : (window.__nhcAudit.n++,',
+  '            __h\n              ? window.__nhcAudit.t++\n              : __nsMsPend\n' +
+  '              ? ((window.__nhcAudit.d = (window.__nhcAudit.d || 0) + 1),\n' +
+  '                ((y0, y1) => queueMicrotask(() => queueMicrotask(() => ((q, w) => q !== w && window.__nhcAudit.m.push([y0, q, w, y1, `d`]))(__nsG || __nhcX() > 0.2, F() || __nhcX() > 0.2))))(\n' +
+  '                  Math.round(__nsY), Math.round(window.scrollY)))\n' +
+  '              : (window.__nhcAudit.n++,');
+if (HOOK_U2 === HOOK_V8) throw new Error('HOOK_U2: anchor not found in HOOK_V8');
+const HOOK_U2_AT = '    let _ = () => {\n        __nsGeo || __nsMeasure();\n';
+const HOOK_U2_X = '    // DEBUG ONLY (nav-hit-cache VA arm, never lands): the morph value x (= r) for the U2 audit\n    const __nhcX = () => r;\n';
 const read = (dir, f) => readFileSync(join(dir, f));
 
 function writeSnap(name, tree) {
@@ -178,8 +200,13 @@ export function build({ quiet = false, expect = true, base = 'v8' } = {}) {
     const v = Object.fromEntries(FILES.map((f) => [f, read(tmp, f)]));
     const js = v[JS].toString('utf8');
     if (js.split(HOOK_AT).length !== 2) throw new Error('audit hook anchor not unique');
-    const HOOK = base === 'best' ? HOOK_BEST : HOOK_V8;
-    const va = { ...v, [JS]: Buffer.from(js.replace(HOOK_AT, HOOK + HOOK_AT)) };
+    const HOOK = base === 'best' ? HOOK_BEST : B.hook === 'u2' ? HOOK_U2 : HOOK_V8;
+    let vjs = js.replace(HOOK_AT, HOOK + HOOK_AT);
+    if (B.hook === 'u2') {
+      if (vjs.split(HOOK_U2_AT).length !== 2) throw new Error('u2 audit anchor (let _) not unique');
+      vjs = vjs.replace(HOOK_U2_AT, HOOK_U2_X + HOOK_U2_AT);
+    }
+    const va = { ...v, [JS]: Buffer.from(vjs) };
     const arms = { C: { dir: C_DIR, js: B.pin[0], css: B.pin[1] } };
     for (const [k, t, pre] of [['V', v, B.pre.V], ['VA', va, B.pre.VA]]) {
       const h = [sha(t[JS]), sha(t[CSS])];

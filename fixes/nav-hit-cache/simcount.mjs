@@ -2,7 +2,11 @@
 // Run from the worktree root inside a functional sim session:
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-nav-morph -- \
 //     node tools/sim.mjs session --functional --owner fix-nav-morph -- node fixes/nav-hit-cache/simcount.mjs <records.json> C:1 V:1 V:2 C:2
-// Arms from ./build.mjs (C best build, V = C + nav-hit-cache). Each load: its own server on a new port (own origin, F-115),
+//     [--base <b>] [--ctl <b>]
+// Arms from ./build.mjs (C best build, V = C + nav-hit-cache; --base picks the build.mjs base, default v8; --ctl <b> adds
+// arm K = that base's V, e.g. --base v9f7du2 --ctl v9f7d: K = v9-final + 7d with nav-hit-cache, V = K + U2, P-136).
+// API counter (P-136): document.elementsFromPoint / getBoundingClientRect calls in the scroll window, all and from the nav
+// code region (stack line inside it, as probe.mjs count), wrapped after the load settles. Each load: its own server on a new port (own origin, F-115),
 // plain http, `sim.mjs open`, settle. Window: Timeline (Page.disable -> Page.enable -> Timeline.start, F-047) over a
 // scripted scroll top -> bottom, 10 px per rAF. Counted in the record tree: RenderingFrame, RecalculateStyles, Layout,
 // Paint, and RecalculateStyles / Layout nested inside a script record (FunctionCall, FireAnimationFrame, EventDispatch,
@@ -15,9 +19,19 @@ import { WT, JS, CSS, build } from './build.mjs';
 
 const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
-const [outPath, ...order] = process.argv.slice(2);
-if (!outPath || !order.length) { console.error('usage: simcount.mjs <records.json> C:1 V:1 ...'); process.exit(1); }
-const ARMS = build({ quiet: true });
+const argv = process.argv.slice(2), flag = (k) => { const i = argv.indexOf(k); if (i < 0) return null; const v = argv[i + 1]; argv.splice(i, 2); return v; };
+const BASE_NAME = flag('--base') || 'v8', CTL = flag('--ctl');
+const [outPath, ...order] = argv;
+if (!outPath || !order.length) { console.error('usage: simcount.mjs <records.json> C:1 V:1 ... [--base <b>] [--ctl <b>]'); process.exit(1); }
+const ARMS = build({ quiet: true, base: BASE_NAME });
+if (CTL) ARMS.K = build({ quiet: true, base: CTL }).V;
+const navRegion = (dir) => { const l = readFileSync(join(dir, JS), 'utf8').split('\n');
+  const a = l.findIndex((x) => x.includes('perf(nav-hit-test): same answer')), b = l.findIndex((x) => x.includes('let ne = dE(L, { manageAnimations: !1 });'));
+  if (a < 0 || b < 0) throw new Error('nav region markers not found in ' + dir); return [a + 1, b + 1]; };
+const COUNTER = ([lo, hi]) => `(() => { if (window.__nc) return 0; const C = window.__nc = { on: false, all: {}, nav: {} }; const re = /2\\.DyWL8TcE\\.js:(\\d+):/g;
+  const wrap = (o, name, key) => { const f = o[name]; o[name] = function (...a) { if (C.on) { C.all[key] = (C.all[key] || 0) + 1; const s = new Error().stack || ''; let m; re.lastIndex = 0;
+    while ((m = re.exec(s))) { const ln = +m[1]; if (ln >= ${lo} && ln <= ${hi}) { C.nav[key] = (C.nav[key] || 0) + 1; break; } } } return f.apply(this, a); }; };
+  wrap(Element.prototype, 'getBoundingClientRect', 'rect'); wrap(Document.prototype, 'elementsFromPoint', 'efp'); return 1; })()`;
 const BASE = resolveTree('site-pretty');
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const D = join(WT, 'out/nav-hit-cache/sim'); mkdirSync(D, { recursive: true });
@@ -33,7 +47,7 @@ for (const L of order) {
   const st = join(D, `serve-sim-${arm}.json`); rmSync(st, { force: true });
   const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', BASE, '--overlay', ARMS[arm].dir, '--port', '0', '--quiet', '--no-cache',
     '--state', st, '--vendors=local', '--no-http-twin'], { cwd: WT, stdio: ['ignore', 'ignore', 'inherit'] });
-  const load = { arm, rep: Number(rep), engine: 'sim', tool: 'fixes/nav-hit-cache/simcount.mjs', startedAt: new Date().toISOString() };
+  const load = { arm, rep: Number(rep), base: BASE_NAME, ctl: CTL, engine: 'sim', tool: 'fixes/nav-hit-cache/simcount.mjs', startedAt: new Date().toISOString() };
   let c = null;
   try {
     let s = null; for (let i = 0; i < 100 && !s; i++) { await sleep(200); if (existsSync(st)) try { s = JSON.parse(readFileSync(st, 'utf8')); } catch {} }
@@ -55,7 +69,8 @@ for (const L of order) {
     await c.send('Timeline.start', { maxCallStackDepth: 0 });
     await sleep(300);
     // WebKit's Runtime.evaluate ignores awaitPromise (tools/lib/wip.mjs): start the scroll, then poll its result at ~1 Hz
-    await c.evaluate(`(window.__nhcScroll = null, ${SCROLL}.then((r) => { window.__nhcScroll = r; }), 0)`);
+    await c.evaluate(COUNTER(navRegion(ARMS[arm].dir)));
+    await c.evaluate(`(window.__nhcScroll = null, (window.__nc.on = true), ${SCROLL}.then((r) => { window.__nc.on = false; window.__nhcScroll = r; }), 0)`);
     let sc = null;
     for (let j = 0; j < 120 && !sc; j++) { await sleep(1000); sc = await c.evaluate('window.__nhcScroll'); }
     if (!sc) throw new Error('scroll did not finish in 120 s');
@@ -75,6 +90,7 @@ for (const L of order) {
     };
     for (const r of recs) walk(r, false);
     const steps = sc && sc.n ? sc.n : null;
+    load.api = await c.evaluate('JSON.stringify(window.__nc)').then((x) => JSON.parse(x));
     load.window = { scroll: sc, records: recs.length, ...n,
       perStep: steps ? Object.fromEntries(Object.entries(n).map(([k, v]) => [k, Math.round((v / steps) * 1000) / 1000])) : null };
   } catch (e) { load.void = 'error: ' + String(e.message || e); }
@@ -82,5 +98,5 @@ for (const L of order) {
   const rec = existsSync(outPath) ? JSON.parse(readFileSync(outPath, 'utf8')) : { loads: [] };
   rec.loads.push(load); writeFileSync(outPath, JSON.stringify(rec, null, 1));
   const w = load.window || {};
-  console.log(arm, rep, JSON.stringify(load.served || {}), load.void || '', `steps ${w.scroll?.n} RF ${w.renderingFrames} RS ${w.styleRecalcs} (forced ${w.forcedStyleRecalcs}) L ${w.layouts} (forced ${w.forcedLayouts}) P ${w.paints}`, JSON.stringify(w.perStep || {}));
+  console.log(arm, rep, JSON.stringify(load.served || {}), load.void || '', `steps ${w.scroll?.n} RF ${w.renderingFrames} RS ${w.styleRecalcs} (forced ${w.forcedStyleRecalcs}) L ${w.layouts} (forced ${w.forcedLayouts}) P ${w.paints}`, JSON.stringify(w.perStep || {}), 'api', JSON.stringify(load.api || {}));
 }

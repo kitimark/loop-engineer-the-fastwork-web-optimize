@@ -1,0 +1,347 @@
+{
+ "part": "parity",
+ "date": "2026-10-05T10:48:16.310Z",
+ "browser": "Chrome/154.0.8037.98",
+ "arms": {
+  "C": {
+   "js": "a707f659f650",
+   "css": "e1359ab9994a"
+  },
+  "V": {
+   "js": "79883c8c950e",
+   "css": "e1359ab9994a"
+  },
+  "VA": {
+   "js": "145c1e5f481a",
+   "css": "e1359ab9994a"
+  }
+ },
+ "base": "v9f7du2",
+ "audit": {
+  "mobile": {
+   "task10": {
+    "steps": 1256,
+    "tested": 669,
+    "cached": 400,
+    "deferred": 187,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 314,
+    "tested": 190,
+    "cached": 77,
+    "deferred": 47,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1256,
+    "tested": 735,
+    "cached": 334,
+    "deferred": 187,
+    "lagFrames": 1244,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      678,
+      true,
+      false,
+      668
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 314,
+    "tested": 189,
+    "cached": 78,
+    "deferred": 47,
+    "lagFrames": 308,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      2238,
+      true,
+      false,
+      2198
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      678,
+      true,
+      false,
+      638
+     ]
+    ]
+   },
+   "served": [
+    "145c1e5f481a",
+    "e1359ab9994a"
+   ],
+   "errors": [
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function"
+   ]
+  },
+  "desktop": {
+   "task10": {
+    "steps": 1690,
+    "tested": 1104,
+    "cached": 586,
+    "deferred": 0,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 424,
+    "tested": 372,
+    "cached": 52,
+    "deferred": 0,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1690,
+    "tested": 1174,
+    "cached": 516,
+    "deferred": 0,
+    "lagFrames": 1664,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      650
+     ],
+     [
+      648,
+      true,
+      false,
+      638
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 424,
+    "tested": 371,
+    "cached": 53,
+    "deferred": 0,
+    "lagFrames": 407,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      4968,
+      true,
+      false,
+      4928
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      648,
+      true,
+      false,
+      608
+     ]
+    ]
+   },
+   "served": [
+    "145c1e5f481a",
+    "e1359ab9994a"
+   ],
+   "errors": []
+  },
+  "mobile-shift": {
+   "task10": {
+    "steps": 1316,
+    "tested": 736,
+    "cached": 393,
+    "deferred": 187,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 330,
+    "tested": 195,
+    "cached": 88,
+    "deferred": 47,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1316,
+    "tested": 735,
+    "cached": 394,
+    "deferred": 187,
+    "lagFrames": 1304,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      678,
+      true,
+      false,
+      668
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 330,
+    "tested": 193,
+    "cached": 90,
+    "deferred": 47,
+    "lagFrames": 324,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      2258,
+      true,
+      false,
+      2218
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      698,
+      true,
+      false,
+      658
+     ]
+    ]
+   },
+   "served": [
+    "145c1e5f481a",
+    "e1359ab9994a"
+   ],
+   "errors": [
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function",
+    "exception: TypeError: s is not a function"
+   ]
+  }
+ },
+ "wallMs": 203431
+}

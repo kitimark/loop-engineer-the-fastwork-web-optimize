@@ -38,6 +38,10 @@ const OUT = arg('--out', join(OUTD, `probe-${PART}-${Date.now()}.json`));
 const BASE = resolveTree('site-pretty');
 const BASE_NAME = arg('--base', 'v8');
 const ARMS = build({ quiet: true, base: BASE_NAME });
+// --ctl <b> (count part, P-136): arm K = base <b>'s V (e.g. --base v9f7du2 --ctl v9f7d: K = v9-final + 7d with nav-hit-cache,
+// V = K + U2); the count arms default to K,V then. Self-test (A/A): --base v9f7d --ctl v9f7d serves the same bytes as K and V.
+const CTL = arg('--ctl', null);
+if (CTL) ARMS.K = build({ quiet: true, base: CTL }).V;
 const VP = {
   mobile: { width: 430, height: 932, deviceScaleFactor: 3, mobile: true },
   desktop: { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false },
@@ -161,7 +165,7 @@ async function audit(cdp, url, name, opt) {
       const A = await page.eval('JSON.parse(JSON.stringify(window.__nhcAudit))');
       // inSync: the frame's scroll-event position was the live scrollY (entries carry scrollY as their 4th field)
       const sync = (l) => l.filter((x) => x.length < 4 || x[0] === x[3]).length;
-      out[mode + px] = { steps: down.n + up.n, tested: A.t, cached: A.n, lagFrames: BASE_NAME === 'best' ? null : A.lag,
+      out[mode + px] = { steps: down.n + up.n, tested: A.t, cached: A.n, deferred: A.d ?? 0, deferredMismatches: A.m.filter((x) => x[4] === `d`).length, lagFrames: BASE_NAME === 'best' ? null : A.lag,
         mismatches: A.m.length, mismatchesInSync: sync(A.m), first: A.m.slice(0, 10),
         sticky: A.v.length, stickyInSync: sync(A.v), stickyFirst: A.v.slice(0, 10),
         pill: A.p.length, pillInSync: sync(A.p), pillFirst: A.p.slice(0, 10) };
@@ -170,7 +174,7 @@ async function audit(cdp, url, name, opt) {
   out.errors = page.errors.slice(0, 5);
   await page.close();
   console.log('audit', name, JSON.stringify(Object.fromEntries(Object.entries(out).map(([k, o]) => [k, k === 'errors' || k === 'served' ? o
-    : { steps: o.steps, lag: o.lagFrames, theme: [o.mismatches, o.mismatchesInSync], sticky: [o.sticky, o.stickyInSync], pill: [o.pill, o.pillInSync], first: [...o.first, ...o.stickyFirst, ...o.pillFirst].slice(0, 3) }]))));
+    : { steps: o.steps, tested: o.tested, cached: o.cached, deferred: o.deferred, dmis: o.deferredMismatches, lag: o.lagFrames, theme: [o.mismatches, o.mismatchesInSync], sticky: [o.sticky, o.stickyInSync], pill: [o.pill, o.pillInSync], first: [...o.first, ...o.stickyFirst, ...o.pillFirst].slice(0, 3) }]))));
   return out;
 }
 
@@ -219,13 +223,14 @@ const result = { part: PART, date: new Date().toISOString(), browser: chrome.bro
 const T0 = Date.now();
 try {
   if (PART === 'count') {
-    const S = { C: await server('C'), V: await server('V') }; servers.push(...Object.values(S));
-    const region = { C: navRegion(ARMS.C.dir), V: navRegion(ARMS.V.dir) };
-    result.regions = region; result.loads = [];
+    const AR = arg('--arms', CTL ? 'K,V' : 'C,V').split(',');
+    const S = {}, region = {};
+    for (const a of new Set(AR)) { S[a] = await server(a); servers.push(S[a]); region[a] = navRegion(ARMS[a].dir); }
+    result.ctl = CTL; result.regions = region; result.loads = [];
     for (let rep = 0; rep < REPS; rep++)
       for (const vp of arg('--vp', 'mobile,desktop').split(','))
         // --arms C: the harness smoke (C only, not scored)
-        for (const arm of (rep % 2 ? ['V', 'C'] : ['C', 'V']).filter((a) => arg('--arms', 'C,V').split(',').includes(a))) result.loads.push({ rep, ...(await countLoad(cdp, arm, S[arm].url, region[arm], vp)) });
+        for (const arm of rep % 2 ? [...AR].reverse() : AR) result.loads.push({ rep, ...(await countLoad(cdp, arm, S[arm].url, region[arm], vp)) });
   } else if (PART === 'diag') {
     // --at mobile:2240,desktop:4960 [--win 160]
     const S = { VA: await server('VA') }; servers.push(...Object.values(S));
