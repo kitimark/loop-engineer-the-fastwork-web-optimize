@@ -1258,7 +1258,20 @@ out/morph-gpu/pxsnap-f673c6cbc770`, 13 stops 0-5346; output in `out/v9/px-mobile
     235 css px² (0.06 %).
 - Nothing differs at the header or the panel. Within T2.
 
-**Frozen frames, Simulator** (`px-sim.mjs`, same arms): queued. It was deferred during the phone blocks P-118/P-120.
+**Frozen frames, Simulator** (`fixes/v9-best/gates/px-sim.mjs`, same arms, 2026-10-05 00:34Z, 13 stops 0-5260; output in
+`out/v9/px-sim-2026-10-05T00-34-14-624Z`):
+- 11 of 13 stops: consistent 0-3 css px².
+- y 300: 98 css px² (0.02 %).
+- y 0: 1889 css px² (0.47 %, max 212), all of it on the hero line `p.svelte-1p2vpne` ("what … can do"). The rotator
+  froze mid-stroke in A, V and V2 and idle on another word in A2 (viewed). Same cause as in Chrome.
+- y 3267: 72 css px² in the commission fee visual, also in A2~V2 at 0.21 %.
+- Header and nav bar: 0-2 css px² at every stop, never consistent.
+- Within T2 in both engines; the only clusters are timer phases.
+
+**Verdict:** the rule passes PR-010 T2 in Chrome and the Simulator. It is pixel-identical by construction.
+- Sent to int-v8 as v9 component #6 (2026-10-05).
+- Its phone evidence goes into its own no-worse ticket, v9-final vs step 4 (int-v8). Use G gestures, not
+  `__fwMorphDrive` from the page end: on v9 the panel is already open there.
 
 ## Risks, conflicts, follow-ups
 
