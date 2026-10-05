@@ -12,12 +12,15 @@
 // RECORDS: every Timeline record, at t = startTime * 1000 - offsetMs (the frames' clock), with its ancestor chain.
 //   A frame CARRIES a feature when a record with it starts in the frame's own interval or the previous frame's (as
 //   P-125 rule 5).
-// STACK KEY: the first call frame (innermost first, as WebKit lists them) whose url contains "/_app/immutable/" (the
-//   page's own JS; native frames, the injected probe and other urls are skipped). Its line maps to a REGION (ranges in
+// STACK KEY (rev 2, ops C1): the first call frame (innermost first, as WebKit lists them) whose url contains
+//   "/_app/immutable/" (the page's own JS). Its line maps to a REGION (ranges in
 //   the v8 JS, 2.DyWL8TcE.js, padded by one line on each side because the protocol's line base is taken from the docs,
 //   not checked here): fwWC 2738-2748 (the will-change window), sceneCE 2793-2805 (cE, the scene gate's setter),
 //   sceneB 2925-2955 and sceneC 14205-14220 (the other scene-attribute writers), rE 2700-2737 is NOT used (no frozen
-//   range); any other page line keys as `<file>:<function>@<line>`. No page frame: `native`.
+//   range); any other page line keys as `<file>:<function>@<line>`. No page frame: the first frame with another url
+//   (not "[native code]") keys as `ext:<file>:<function>@<line>` (decides like a page key); else, when a frame has an
+//   empty url (the injected probe, evaluated without a sourceURL), `probe` (reported, never deciding); else `native`
+//   (no stack, or only native frames).
 // FEATURES per frame:
 //   inval:<key>  a ScheduleStyleRecalculation or InvalidateLayout record with that stack key (`native` = no page frame)
 //   ev:<type>    an EventDispatch of that type (resize, scroll, ...)
@@ -28,15 +31,22 @@
 //   root         Layout.data.root (8 numbers, a quad): VIEW when its bounding box is x 0..430, y 0..ih of the frame
 //                (+-1 px), else SUBTREE (box size kept)
 // CALLS (C runs pooled; wpx + wc1 pooled as the replicate set R, descriptive):
-//   per feature: coincidence() imported from score-p125.mjs (frozen): THIN when H < 5; COVERS when Hw >= max(5, 2 x runs),
+//   per feature, presence: coincidence() imported from score-p125.mjs (frozen): THIN when H < 5; COVERS when Hw >= max(5, 2 x runs),
 //     hLo >= 2 x base and h >= 0.8; LINKED-PART when Hw >= floor and hLo >= 2 x base; else NO-LINK. Base = share of
-//     CONTROL frames carrying the feature.
+//     CONTROL frames carrying the feature (printed for every feature).
+//   per inval:<key>, RATE (rev 2, ops C2; P-125 rule 6 form, rateRule() imported from score-p125.mjs): s = records with
+//     that key starting in the heavy frames' OWN intervals, Fs = heavy frames; r = the same in the CONTROL frames' own
+//     intervals, Fr = control frames; RR = (s/Fs)/(r/Fr), RRlo = Clopper-Pearson 95 % lower bound of s/(s+r) as odds
+//     x Fr/Fs; RATE-LINKED when s >= max(8, 4 x runs) and RRlo >= 2. (Presence saturates when a key sits in most
+//     control frames, e.g. ~1 stackless invalidation per frame: then hLo >= 2 x base cannot hold; the rate still can.)
+//   LINKED = COVERS, LINKED-PART or RATE-LINKED.
 //   PARENT: RECALC when >= 80 % of heavy Layouts sit directly in RecalculateStyles, else OTHER (shares kept).
-//   FORCED: SCRIPT when >= 80 % of heavy Layouts have a page stack key, UPDATE when <= 20 %, else MIXED.
+//   FORCED: SCRIPT when >= 80 % of heavy Layouts have a page or ext stack key (probe and native excluded), UPDATE when <= 20 %, else MIXED.
 //   ROOT: VIEW when >= 80 % VIEW, SUBTREE when <= 20 %, else MIXED.
 // READING (frozen; fwWC is reported but cannot decide, P-125's wc1 removed its toggles without effect):
-//   SCRIPT-SOURCE(<keys>)  some inval:<page key> other than fwWC is COVERS or LINKED-PART in C
-//   NATIVE                 no such key, and inval:native is COVERS or LINKED-PART in C
+//   SCRIPT-SOURCE(<keys>)  some inval:<page or ext key> other than fwWC is LINKED in C
+//   NATIVE                 no such key, and inval:native is LINKED in C
+//   (inval:probe is reported with probeLinked, never deciding: the probe's own work is not the page's)
 //   UNCLEAR                otherwise (no invalidation record links to the heavy frames, or THIN)
 //   R (wpx + wc1) gives its own reading; AGREE when equal to C's, else DIFFER (descriptive).
 // K1 (root growth, the P-125 wpx miss): per run, the showcase IO entries' rootBounds heights (inject `io` [time, in,
@@ -44,22 +54,29 @@
 //   appear; ONE-HEIGHT when only one appears; NONE when no entries. K1b (descriptive): distinct heights of VIEW roots.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { coincidence, cpLower } from './score-p125.mjs';
+import { coincidence, cpLower, rateRule } from './score-p125.mjs';
 
 export const REGIONS = [['fwWC', 2738, 2748], ['sceneCE', 2793, 2805], ['sceneB', 2925, 2955], ['sceneC', 14205, 14220]];
 const r3 = (x) => (x == null || !Number.isFinite(x) ? x ?? null : Math.round(x * 1000) / 1000);
 
 export function stackKey(st) {
   const fr = st?.callFrames || [];
+  let ext = null, probe = false;
   for (const f of fr) {
     const url = f.url || '';
-    if (!url.includes('/_app/immutable/')) continue;
-    const ln = f.lineNumber;
-    for (const [k, a, b] of REGIONS) if (url.includes('2.DyWL8TcE.js') && ln >= a - 1 && ln <= b + 1) return k;
-    return `${url.split('/').pop()}:${f.functionName || '?'}@${ln}`;
+    if (url.includes('/_app/immutable/')) {
+      const ln = f.lineNumber;
+      for (const [k, a, b] of REGIONS) if (url.includes('2.DyWL8TcE.js') && ln >= a - 1 && ln <= b + 1) return k;
+      return `${url.split('/').pop()}:${f.functionName || '?'}@${ln}`;
+    }
+    if (url === '[native code]') continue;
+    if (!url) { probe = true; continue; }
+    if (!ext) ext = `ext:${url.split('/').pop() || url}:${f.functionName || '?'}@${f.lineNumber}`;
   }
-  return 'native';
+  return ext || (probe ? 'probe' : 'native');
 }
+// keys that may decide a SCRIPT-SOURCE reading: page keys other than fwWC, and ext keys
+export const decides = (key) => key !== 'native' && key !== 'probe' && key !== 'fwWC';
 
 export function quadBox(q) {
   if (!Array.isArray(q) || q.length < 8) return null;
@@ -87,7 +104,7 @@ export function loadRun(dir, name) {
   for (const r of tl.recs || []) walk2(r, [], null);
   const frames = fr.map(([t, dt, y, ih]) => {
     let st = null; for (const e of io) { if (e[0] <= t) st = e[1]; else break; }
-    return { t, dt, y, ih, moving: ih > lo && ih < hi, view: st, feats: new Set(), layouts: [] };
+    return { t, dt, y, ih, moving: ih > lo && ih < hi, view: st, feats: new Set(), cnt: new Map(), layouts: [] };
   });
   const idxOf = (w) => { let a = 0, b = frames.length - 1; if (!frames.length || w <= frames[0].t - frames[0].dt || w > frames[b].t) return -1; while (a < b) { const m = (a + b) >> 1; if (frames[m].t < w) a = m + 1; else b = m; } return w > frames[a].t - frames[a].dt ? a : -1; };
   for (const r of recs) {
@@ -97,7 +114,7 @@ export function loadRun(dir, name) {
     if (r.type === 'ScheduleStyleRecalculation' || r.type === 'InvalidateLayout') f = `inval:${stackKey(r.stack)}`;
     else if (r.type === 'EventDispatch') f = `ev:${r.data.type}`;
     else if (r.type === 'ObserverCallback') f = `obs:${r.data.type}`;
-    if (f) frames[i].feats.add(f);
+    if (f) { frames[i].feats.add(f); frames[i].cnt.set(f, (frames[i].cnt.get(f) || 0) + 1); }
   }
   frames.forEach((q, i) => {
     q.carry = new Set([...q.feats, ...(i ? frames[i - 1].feats : [])]);
@@ -130,20 +147,25 @@ export function readSet(runs) {
   for (const f of [...keys].sort()) {
     const Hw = H.filter((q) => q.carry.has(f)).length, base = C.length ? C.filter((q) => q.carry.has(f)).length / C.length : 0;
     feats[f] = coincidence(H.length, Hw, base, k);
+    if (f.startsWith('inval:')) {
+      const sum = (arr) => arr.reduce((m, q) => m + (q.cnt.get(f) || 0), 0);
+      feats[f].rate = rateRule(sum(H), H.length, sum(C), C.length, k);
+    }
   }
   const info = H.map(heavyInfo), n = info.length;
   const parentRecalc = info.filter((x) => x.parentType === 'RecalculateStyles').length;
-  const scripted = info.filter((x) => x.forced !== 'native').length;
+  const scripted = info.filter((x) => x.forced !== 'native' && x.forced !== 'probe').length;
   const viewN = info.filter((x) => x.root === 'VIEW').length;
   const parent = n < 5 ? 'THIN' : parentRecalc / n >= 0.8 ? 'RECALC' : 'OTHER';
   const forced = n < 5 ? 'THIN' : share3(scripted, n, 0.8, 0.2, 'SCRIPT', 'UPDATE', 'MIXED');
   const root = n < 5 ? 'THIN' : share3(viewN, n, 0.8, 0.2, 'VIEW', 'SUBTREE', 'MIXED');
-  const linked = (c) => c === 'COVERS' || c === 'LINKED-PART';
-  const src = Object.entries(feats).filter(([f, c]) => f.startsWith('inval:') && f !== 'inval:native' && f !== 'inval:fwWC' && linked(c.call)).map(([f]) => f.slice(6));
-  const reading = src.length ? `SCRIPT-SOURCE(${src.join(',')})` : linked(feats['inval:native']?.call) ? 'NATIVE' : 'UNCLEAR';
+  const linked = (c) => !!c && (c.call === 'COVERS' || c.call === 'LINKED-PART' || !!c.rate?.linked);
+  const src = Object.entries(feats).filter(([f, c]) => f.startsWith('inval:') && decides(f.slice(6)) && linked(c)).map(([f]) => f.slice(6));
+  const reading = src.length ? `SCRIPT-SOURCE(${src.join(',')})` : linked(feats['inval:native']) ? 'NATIVE' : 'UNCLEAR';
+  const probeLinked = linked(feats['inval:probe']);
   const count = (arr, key) => arr.reduce((m, x) => ((m[x[key]] = (m[x[key]] || 0) + 1), m), {});
   return {
-    runs: runs.map((R) => R.name), H: n, control: C.length, controlWide: wide, feats, reading,
+    runs: runs.map((R) => R.name), H: n, control: C.length, controlWide: wide, feats, reading, probeLinked,
     parent, parentShare: n ? r3(parentRecalc / n) : null, parentTypes: count(info, 'parentType'), topTypes: count(info, 'top'),
     forced, forcedShare: n ? r3(scripted / n) : null, forcedKeys: count(info, 'forced'), forcedLo: r3(cpLower(scripted, n)),
     root, rootShare: n ? r3(viewN / n) : null, heavy: info,
@@ -173,10 +195,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const o = read(dir, names);
   for (const [lab, s] of [['C', o.C], ['R', o.R]]) {
     if (!s) continue;
-    console.log(`${lab} (${s.runs.join(' ')}): H ${s.H}, control ${s.control}${s.controlWide ? ' (wide)' : ''} | READING ${s.reading}`);
+    console.log(`${lab} (${s.runs.join(' ')}): H ${s.H}, control ${s.control}${s.controlWide ? ' (wide)' : ''} | READING ${s.reading} | probeLinked ${s.probeLinked}`);
     console.log(`  parent ${s.parent} (${s.parentShare}) ${JSON.stringify(s.parentTypes)} top ${JSON.stringify(s.topTypes)}`);
     console.log(`  forced ${s.forced} (${s.forcedShare}) ${JSON.stringify(s.forcedKeys)} | root ${s.root} (${s.rootShare})`);
-    for (const [f, v] of Object.entries(s.feats)) console.log(`  ${f.padEnd(44)} ${v.call.padEnd(11)} Hw ${v.Hw}/${v.H} hLo ${v.hLo} base ${v.base}`);
+    for (const [f, v] of Object.entries(s.feats)) console.log(`  ${f.padEnd(44)} ${v.call.padEnd(11)} Hw ${v.Hw}/${v.H} hLo ${v.hLo} base ${v.base}${v.rate ? ` | rate s ${v.rate.s}/${v.rate.Fs} r ${v.rate.r}/${v.rate.Fr} RR ${v.rate.RR} RRlo ${v.rate.RRlo} floor ${v.rate.floor} ${v.rate.linked ? 'RATE-LINKED' : 'no-rate-link'}` : ''}`);
   }
   console.log(`AGREE ${o.agree} | K1 ${o.k1.call} heights ${JSON.stringify(o.k1.heights)} (ih ${o.k1.ihMin}-${o.k1.ihMax}, ${o.k1.entries} entries) | K1b VIEW root heights ${JSON.stringify(o.k1b.viewRootHeights)}`);
   if (jsonOut) writeFileSync(jsonOut, JSON.stringify(o, null, 1) + '\n');

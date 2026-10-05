@@ -1244,6 +1244,15 @@ for what is missing; check the "root grows 40 px" guess as a named, cheap item. 
 that order. Gates: this card, then ops' pre-data read, then the lead's R7 review and signature. The trigger stays
 OBSERVED in all text.
 
+- **Rev 2 (ops' pre-data read NOT YET PASS, 1eec3977; still no per-frame content read).**
+  - C1: a stack holding only the injected probe's frames keyed as `native`. It now keys as `probe`, which is reported
+    (`probeLinked`) and never decides. Probe-forced Layouts no longer count as SCRIPT.
+  - C2: with ~1 stackless invalidation per frame, a feature present in half or more of the control frames could never
+    pass the presence rule (hLo >= 2 x base), so NATIVE was unreachable by construction. Every `inval:<key>` now also
+    gets a per-frame RATE test in P-125 rule 6's form (rule 5b below), symmetric for native and script keys. The base
+    is printed for every feature.
+  - Predictions 4 and 10 revised (allowed by ops). Reader and self-test re-pinned.
+
 - **Question.**
   - P-125 ruled out the will-change window's toggle (wc1: no toggles, Layout unchanged). It did not rule out the IO
     observation itself or same-value writes (ops' scope note).
@@ -1266,41 +1275,53 @@ OBSERVED in all text.
   - Unlike Chrome, there are no per-element invalidation reasons. What the records can tell is which script, if any,
     was on the stack when style or layout was invalidated or forced, and the layout root's box.
   - So stage 1 asks exactly that, and nothing finer.
-- **Reader** `read-inval126.mjs` (`5ea7520852a8`, frozen; it imports `coincidence` and `cpLower` from `score-p125.mjs`
-  `c52de0edd5d3`, unchanged). Rules, as its header states:
+- **Reader** `read-inval126.mjs` (`4f920b6450f7`, rev 2, frozen; it imports `coincidence`, `cpLower` and `rateRule` from
+  `score-p125.mjs` `c52de0edd5d3`, unchanged). Rules, as its header states:
   1. **Frames as P-125.** HEAVY = moving, y < 3250, in view, largest outermost Layout >= 10 ms. CONTROL = in-view rest
      frames (not moving, y < 3250, in view). If fewer than 20 of them are pooled, every rest frame with y < 3250 is the
      control, flagged "wide".
   2. **Carrying.** A frame carries a feature when a record with it starts in the frame's own interval or the previous
      frame's (as P-125).
-  3. **Stack key.** The innermost call frame whose url contains `/_app/immutable/`; native frames and the injected
-     probe are skipped. Its line maps to a region of the v8 JS `2.DyWL8TcE.js`, padded by one line because the
+  3. **Stack key.** The innermost call frame whose url contains `/_app/immutable/` (the page's own JS). Its line maps
+     to a region of the v8 JS `2.DyWL8TcE.js`, padded by one line because the
      protocol's line base is taken from the docs, not checked:
      - fwWC: l.2738-2748
      - sceneCE: l.2793-2805 (cE)
      - sceneB: l.2925-2955
      - sceneC: l.14205-14220
 
-     Any other page line keys as `<file>:<function>@<line>`. No page frame on the stack: `native`.
+     Any other page line keys as `<file>:<function>@<line>`. No page frame on the stack (rev 2, C1):
+     - the first frame with another url (not `[native code]`) keys as `ext:<file>:<function>@<line>` and decides like
+       a page key;
+     - else, a frame with an empty url (the injected probe, evaluated without a sourceURL) gives `probe`: reported,
+       never deciding;
+     - else `native` (no stack, or native frames only).
   4. **Features.** `inval:<key>` (a ScheduleStyleRecalculation or InvalidateLayout with that key), `ev:<type>`
      (EventDispatch, e.g. `resize`: the scroll engine `rE` also listens to resize, JS l.2762), and `obs:<type>`
      (ObserverCallback, so IntersectionObserver callbacks are counted, not excluded).
   5. **Coincidence per feature,** C pooled, P-125's frozen rule against the CONTROL base: THIN when H < 5; COVERS when
      Hw >= max(5, 2 x runs) (10 for C), hLo >= 2 x base and h >= 0.8; LINKED-PART when Hw >= floor and hLo >= 2 x base;
-     else NO-LINK.
+     else NO-LINK. The base is printed for every feature.
+
+     5b. **Rate per `inval:<key>` (rev 2, C2; P-125 rule 6's form, `rateRule` imported).** s = records with that key
+     starting in the heavy frames' own intervals, Fs = heavy frames; r = the same over the CONTROL frames, Fr = control
+     frames. RR = (s/Fs)/(r/Fr); RRlo = the Clopper-Pearson 95 % lower bound of s/(s+r), as odds, x Fr/Fs. RATE-LINKED
+     when s >= max(8, 4 x runs) (20 for C, 16 for R) and RRlo >= 2. Own intervals only, so no record counts twice.
+     It applies to native and script keys alike. **LINKED** = COVERS, LINKED-PART or RATE-LINKED.
   6. **Per heavy Layout:**
      - PARENT: RECALC when >= 80 % sit directly in RecalculateStyles, else OTHER (parent and top-level ancestor types
        kept).
-     - FORCED: the Layout's own stack key, else its RecalculateStyles parent's. SCRIPT when >= 80 % have a page key,
-       UPDATE when <= 20 %, else MIXED (keys counted).
+     - FORCED: the Layout's own stack key, else its RecalculateStyles parent's. SCRIPT when >= 80 % have a page or ext
+       key (`probe` and `native` excluded), UPDATE when <= 20 %, else MIXED (keys counted).
      - ROOT: VIEW when the root quad's box is 0..430 x 0..ih (+-1 px), else SUBTREE (size kept). VIEW when >= 80 %,
        SUBTREE when <= 20 %, else MIXED.
   7. **Reading (frozen).** fwWC is reported but cannot decide, because P-125's wc1 removed its toggles without effect.
+     `probe` is reported (`probeLinked`) but cannot decide: the probe's own work is not the page's.
 
      | reading | rule |
      |---|---|
-     | SCRIPT-SOURCE(keys) | some `inval:<page key>` other than fwWC is COVERS or LINKED-PART in C |
-     | NATIVE | no such key, and `inval:native` is COVERS or LINKED-PART in C |
+     | SCRIPT-SOURCE(keys) | some `inval:<page or ext key>` other than fwWC is LINKED in C |
+     | NATIVE | no such key, and `inval:native` is LINKED in C |
      | UNCLEAR | anything else (no invalidation record links, or THIN) |
 
      R gives its own reading: AGREE when it equals C's, else DIFFER (descriptive).
@@ -1327,8 +1348,15 @@ OBSERVED in all text.
   reading names) first gets a pre-data **target check**: a count-only Simulator run in the shared lane that shows the
   arm changes its target (the targeted writes or invalidations gone or changed, counted per run) before any Timeline
   hold. An arm that does not change its target is fixed or dropped before data; wpx would have failed this check.
-- **Self-test** `p126-selftest.mjs` (`f3f922b0bbb9`): `SELFTEST PASS (30 checks)`, on synthetic runs only. Checks:
-  - stack keys: inject and native frames skipped, region padding, file check, native, scene regions;
+- **Self-test** `p126-selftest.mjs` (`c7ca7eb2ef09`, rev 2): `SELFTEST PASS (43 checks)`, on synthetic runs only.
+  Checks:
+  - stack keys: a page frame wins over inject and native frames, region padding, file check, native, scene regions;
+  - rev 2, C1: a probe-only stack (`[inj]`, `[native, inj]`) keys `probe`; another url keys `ext:`; probe-linked
+    invalidations give `probeLinked` and UNCLEAR, never NATIVE; a probe-forced Layout is not SCRIPT;
+  - rev 2, C2: native in every control frame (base 1) is presence NO-LINK, and at 4 records per heavy frame it is
+    RATE-LINKED and the reading is NATIVE; at an equal rate it stays unlinked (UNCLEAR); a script key decides by rate
+    as well; the rate floor (20 for C, 16 for R) is met exactly at s = floor and missed below it; rates only on
+    `inval:` keys;
   - native + fwWC + resize gives NATIVE, with fwWC COVERS reported but not deciding, RECALC / UPDATE / VIEW, and R
     AGREE;
   - a scene invalidation on step frames gives SCRIPT-SOURCE(sceneCE);
@@ -1361,17 +1389,17 @@ OBSERVED in all text.
   | 1 | C PARENT RECALC | 80 % |
   | 2 | C FORCED UPDATE | 60 % |
   | 3 | C ROOT VIEW | 55 % |
-  | 4 | C reading NATIVE (SCRIPT-SOURCE 40 %, UNCLEAR 15 %) | 45 % |
+  | 4 | C reading NATIVE (SCRIPT-SOURCE 35 %, UNCLEAR 15 %; rev 2, was 45 % before NATIVE was reachable by rate) | 50 % |
   | 5 | `inval:fwWC` COVERS in C (as P-125's writes) | 70 % |
   | 6 | every scene key NO-LINK or absent in C | 75 % |
   | 7 | `ev:resize` COVERS in C | 65 % |
   | 8 | R AGREE | 80 % |
   | 9 | K1 SUPPORTS | 55 % |
-  | 10 | `inval:native` COVERS in C | 70 % |
+  | 10 | `inval:native` RATE-LINKED in C (rev 2; was "COVERS", which ops showed is likely unreachable at ~1 stackless invalidation per frame) | 60 % |
 
   The lean: P-125 showed the step-coincident script writes are not needed for the Layout, and P-123 found no value in
   the box that flips. So I lean to an engine-side invalidation from the resize itself. But P-125 taught me that "few
-  writes" was wrong, and a forced read in the resize handler (`rE`) would make it SCRIPT. Hence 45 %.
+  writes" was wrong, and a forced read in the resize handler (`rE`) would make it SCRIPT. Hence 50 %.
 - **Model, for the lead's R7 review.**
   - M1 stays (OBSERVED, cause unknown): the relayout starts inside the box or arrives as inherited style.
   - P-125 removed the window's toggle as a cause. Candidates left: the scene gate's writes (NO-LINK in P-125, as
@@ -1389,8 +1417,8 @@ OBSERVED in all text.
 
   | file | hash |
   |---|---|
-  | `read-inval126.mjs` | 5ea7520852a8 |
-  | `p126-selftest.mjs` | f3f922b0bbb9 |
+  | `read-inval126.mjs` | 4f920b6450f7 (rev 2; rev 1 was 5ea7520852a8) |
+  | `p126-selftest.mjs` | c7ca7eb2ef09 (rev 2; rev 1 was f3f922b0bbb9) |
   | `score-p125.mjs` (imported) | c52de0edd5d3 |
   | input: the 18 P-125 capture files, `cat g-*.json tl-*.json` in name order | 8435065642cc (`out/toolbar-resize/sim125/`; `runs.jsonl` = committed `p125-runs.jsonl`) |
 

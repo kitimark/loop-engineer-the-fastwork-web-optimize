@@ -2386,13 +2386,19 @@
   },
   "p126": {
     "card": "README: Prediction P-126 (stage 1, registered before reading)",
-    "status": "card only; waits for ops pre-data read and the lead R7 review and signature; no per-frame content read",
+    "status": "card rev 2 (ops pre-data read NOT YET PASS 1eec3977: C1 probe key, C2 rate test); waits for ops delta read and the lead R7 review and signature; no per-frame content read",
+    "rev2": {
+      "C1": "probe-only stacks key as probe (reported as probeLinked, never deciding); other urls key as ext: and decide like page keys; probe-forced Layouts are not SCRIPT",
+      "C2": "every inval key also gets rateRule (P-125 rule 6 form, own intervals, heavy vs control, floor max(8, 4 x runs), RRlo >= 2); LINKED = COVERS, LINKED-PART or RATE-LINKED; base printed for every feature",
+      "predictions": "4: NATIVE 50 % (was 45 %); 10: inval:native RATE-LINKED in C 60 % (was COVERS 70 %)",
+      "rev1Pins": { "reader": "5ea7520852a8", "selftest": "f3f922b0bbb9" }
+    },
     "stage1": "read the P-125 Timeline captures (no hold): invalidation stacks, layout parent / forced / root of the heavy in-view step frames",
     "k1": "root growth from the inject io rootH entries; K2 reference (spec + WebKit source); K3 shared-lane count-only Simulator check only if needed, asked separately",
     "armRule": "ops lesson: any arm from P-126 gets a pre-data count-only target check that it changes its target",
     "pins": {
-      "reader": "5ea7520852a8",
-      "selftest": "f3f922b0bbb9",
+      "reader": "4f920b6450f7",
+      "selftest": "c7ca7eb2ef09",
       "scorerImported": "c52de0edd5d3",
       "input": "8435065642cc"
     }

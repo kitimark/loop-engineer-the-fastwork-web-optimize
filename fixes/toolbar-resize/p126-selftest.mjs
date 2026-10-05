@@ -23,6 +23,9 @@ ok(stackKey(st([pf(2737)])) === 'fwWC' && stackKey(st([pf(2749)])) === 'fwWC', '
 ok(stackKey(st([pf(2750, 'x')])) === '2.DyWL8TcE.js:x@2750', 'outside every region keys by file:function@line');
 ok(stackKey(st([{ ...pf(2742), url: 'http://localhost:1/_app/immutable/chunks/X.js' }])) === 'X.js:?@2742', 'region only in the v8 nodes file');
 ok(stackKey(st([nat])) === 'native' && stackKey(null) === 'native', 'no page frame -> native');
+ok(stackKey(st([inj])) === 'probe' && stackKey(st([nat, inj])) === 'probe', 'C1: probe-only stack -> probe, not native');
+const ext = { functionName: 'f', url: 'https://cdn.example/lib/x.js', scriptId: '5', lineNumber: 3, columnNumber: 1 };
+ok(stackKey(st([nat, inj, ext])) === 'ext:x.js:f@3' && stackKey(st([ext, pf(2742)])) === 'fwWC', 'other urls key as ext:, a page frame still wins');
 ok(stackKey(st([pf(2796)])) === 'sceneCE' && stackKey(st([pf(14210)])) === 'sceneC', 'scene regions');
 const qb = quadBox([0, 0, 430, 0, 430, 775, 0, 775]);
 ok(qb && qb.x1 === 430 && qb.y1 === 775, 'quad box');
@@ -43,6 +46,10 @@ function build(dir, name, sc) {
     if (moving && !sc.thinAfter3?.(i)) {
       const L = { startTime: mid + 0.001, endTime: mid + 0.022, type: 'Layout', data: { root: sc.subtree ? [0, 100, 430, 100, 430, 300, 0, 300] : [0, 0, 430, 0, 430, ih, 0, ih] }, children: [] };
       if (sc.forced) L.stackTrace = st([pf(5000, 'gBCR')]);
+      if (sc.forcedProbe) L.stackTrace = st([nat, inj]);
+      for (let j = 0; j < (sc.nativeN || 0); j++) ch.push({ startTime: mid - 0.002 - j * 0.0001, type: 'InvalidateLayout', data: {}, children: [] });
+      for (let j = 0; j < (sc.pageN || 0); j++) ch.push({ startTime: mid - 0.002 - j * 0.0001, type: 'ScheduleStyleRecalculation', data: {}, stackTrace: st([pf(7000, 'rate')]), children: [] });
+      if (sc.probe) ch.push({ startTime: mid - 0.003, type: 'ScheduleStyleRecalculation', data: {}, stackTrace: st([nat, inj]), children: [] });
       ch.push({ startTime: mid, endTime: mid + 0.023, type: 'RecalculateStyles', data: {}, children: [L] });
       if (sc.native) ch.push({ startTime: mid - 0.002, type: 'ScheduleStyleRecalculation', data: {}, children: [] });
       if (sc.fwwc) ch.push({ startTime: mid - 0.003, type: 'ScheduleStyleRecalculation', data: {}, stackTrace: st([nat, inj, pf(2742)]), children: [] });
@@ -51,6 +58,8 @@ function build(dir, name, sc) {
     } else {
       ch.push({ startTime: mid, endTime: mid + 0.002, type: 'Layout', data: { root: [0, 0, 430, 0, 430, ih, 0, ih] }, children: [] });
       if (sc.native && i % 10 === 0) ch.push({ startTime: mid - 0.002, type: 'ScheduleStyleRecalculation', data: {}, children: [] });
+      if (sc.nativeN) ch.push({ startTime: mid - 0.002, type: 'InvalidateLayout', data: {}, children: [] });
+      if (sc.pageN) ch.push({ startTime: mid - 0.002, type: 'ScheduleStyleRecalculation', data: {}, stackTrace: st([pf(7000, 'rate')]), children: [] });
       if (sc.sceneEverywhere) ch.push({ startTime: mid - 0.004, type: 'InvalidateLayout', data: {}, stackTrace: st([pf(2796)]), children: [] });
     }
     if (sc.sceneEverywhere && moving) ch.push({ startTime: mid - 0.004, type: 'InvalidateLayout', data: {}, stackTrace: st([pf(2796)]), children: [] });
@@ -111,6 +120,26 @@ try {
   const T = scen('T', { native: true, thinAfter3: (i) => !(i >= 50 && i < 51) });
   ok(T.C.H === 5 && T.R.H === 4, `T: 1 heavy frame per run (got ${T.C.H}/${T.R.H})`);
   ok(T.R.parent === 'THIN' && T.R.reading === 'UNCLEAR', `T: R with 4 heavy frames is THIN, UNCLEAR (got ${T.R.parent} ${T.R.reading})`);
+
+  // --- rev 2 (ops C1, C2)
+  ok(A.C.feats['inval:native'].rate?.linked === true && A.C.feats['inval:native'].rate.floor === 20 && A.R.feats['inval:native'].rate.floor === 16, 'rate on inval keys, floor max(8, 4 x runs)');
+  ok(!('rate' in A.C.feats['ev:resize']), 'rate only on inval keys');
+  const Pr = scen('Pr', { probe: true });
+  ok(Pr.C.feats['inval:probe']?.call === 'COVERS' && Pr.C.probeLinked === true && Pr.C.reading === 'UNCLEAR', `C1: probe-linked work never decides (got ${Pr.C.feats['inval:probe']?.call} ${Pr.C.reading})`);
+  ok(!Pr.C.feats['inval:native'], 'C1: probe work is not counted as native');
+  const N = scen('N', { nativeN: 4 });
+  ok(N.C.feats['inval:native'].base === 1 && N.C.feats['inval:native'].call === 'NO-LINK', `C2: native in every control frame saturates presence (base ${N.C.feats['inval:native'].base}, ${N.C.feats['inval:native'].call})`);
+  ok(N.C.feats['inval:native'].rate.linked === true && N.C.reading === 'NATIVE', `C2: 4x native rate on step frames -> RATE-LINKED, NATIVE (RRlo ${N.C.feats['inval:native'].rate.RRlo}, ${N.C.reading})`);
+  const N1 = scen('N1', { nativeN: 1 });
+  ok(N1.C.feats['inval:native'].rate.linked === false && N1.C.reading === 'UNCLEAR', `C2: equal native rate -> no link, UNCLEAR (RR ${N1.C.feats['inval:native'].rate.RR}, ${N1.C.reading})`);
+  const S = scen('S', { nativeN: 1, pageN: 4 });
+  ok(S.C.feats['inval:2.DyWL8TcE.js:rate@7000'].call === 'NO-LINK' && S.C.reading === 'SCRIPT-SOURCE(2.DyWL8TcE.js:rate@7000)', `C2: the rate decides script keys too (got ${S.C.reading})`);
+  const T2 = scen('T2', { nativeN: 4, thinAfter3: (i) => !(i >= 50 && i < 51) });
+  ok(T2.C.feats['inval:native'].rate.s === 20 && T2.C.feats['inval:native'].rate.linked === true && T2.R.feats['inval:native'].rate.s === 16 && T2.R.feats['inval:native'].rate.linked === true, `rate floor reached exactly (C s ${T2.C.feats['inval:native'].rate.s}, R s ${T2.R.feats['inval:native'].rate.s})`);
+  const T3 = scen('T3', { nativeN: 3, thinAfter3: (i) => !(i >= 50 && i < 51) });
+  ok(T3.C.feats['inval:native'].rate.s === 15 && T3.C.feats['inval:native'].rate.linked === false, `below the rate floor -> no link (s ${T3.C.feats['inval:native'].rate.s})`);
+  const Fp = scen('Fp', { native: true, forcedProbe: true });
+  ok(Fp.C.forced === 'UPDATE' && Fp.C.forcedKeys.probe === 120, `a probe-forced Layout is not SCRIPT (got ${Fp.C.forced})`);
 } finally { rmSync(root, { recursive: true, force: true }); }
 if (fails.length) { console.log(`SELFTEST FAIL (${fails.length} of ${n})`); for (const f of fails) console.log('  ' + f); process.exit(1); }
 console.log(`SELFTEST PASS (${n} checks)`);
