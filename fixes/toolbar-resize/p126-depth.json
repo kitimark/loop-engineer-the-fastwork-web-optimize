@@ -1,0 +1,242 @@
+{
+ "depth": {
+  "no-stack": 13418,
+  "frames:1": 7200
+ },
+ "sets": {
+  "C": {
+   "heavyFrames": 22,
+   "controlFrames": 435,
+   "rule5b": {
+    "dom-call": {
+     "rate": {
+      "s": 53,
+      "Fs": 22,
+      "r": 129,
+      "Fr": 435,
+      "runs": 5,
+      "floor": 20,
+      "RR": 8.124,
+      "RRlo": 6.106,
+      "linked": true
+     },
+     "presence": {
+      "H": 22,
+      "Hw": 21,
+      "runs": 5,
+      "floor": 10,
+      "h": 0.955,
+      "hLo": 0.802,
+      "base": 0.223,
+      "call": "COVERS"
+     }
+    },
+    "no-stack": {
+     "rate": {
+      "s": 181,
+      "Fs": 22,
+      "r": 406,
+      "Fr": 435,
+      "runs": 5,
+      "floor": 20,
+      "RR": 8.815,
+      "RRlo": 7.572,
+      "linked": true
+     },
+     "presence": {
+      "H": 22,
+      "Hw": 22,
+      "runs": 5,
+      "floor": 10,
+      "h": 1,
+      "hLo": 0.873,
+      "base": 0.657,
+      "call": "NO-LINK"
+     }
+    }
+   },
+   "heavy": {
+    "no-stack": {
+     "n": 181,
+     "perFrame": 8.23
+    },
+    "native-code:setAttribute": {
+     "n": 21,
+     "perFrame": 0.95
+    },
+    "native-code:toggle": {
+     "n": 13,
+     "perFrame": 0.59
+    },
+    "native-code:getBoundingClientRect": {
+     "n": 10,
+     "perFrame": 0.45
+    },
+    "native-code:setProperty": {
+     "n": 9,
+     "perFrame": 0.41
+    }
+   },
+   "control": {
+    "no-stack": {
+     "n": 406,
+     "perFrame": 0.93
+    },
+    "native-code:toggle": {
+     "n": 56,
+     "perFrame": 0.13
+    },
+    "native-code:setAttribute": {
+     "n": 49,
+     "perFrame": 0.11
+    },
+    "native-code:setProperty": {
+     "n": 10,
+     "perFrame": 0.02
+    },
+    "native-code:animate": {
+     "n": 7,
+     "perFrame": 0.02
+    },
+    "native-code:before": {
+     "n": 2,
+     "perFrame": 0
+    },
+    "native-code:remove": {
+     "n": 2,
+     "perFrame": 0
+    },
+    "native-code:cancel": {
+     "n": 2,
+     "perFrame": 0
+    },
+    "native-code:getAnimations": {
+     "n": 1,
+     "perFrame": 0
+    }
+   },
+   "fwWCWrites": {
+    "valueChange": {
+     "n": 150,
+     "nearest": {
+      "no-stack": 12,
+      "native-code:setAttribute": 122,
+      "native-code:toggle": 4,
+      "native-code:remove": 3,
+      "page-or-ext": 6,
+      "native-code:cancel": 1,
+      "empty-url:loop": 2
+     },
+     "setAttributeWithin2ms": 137
+    },
+    "sameValue": {
+     "n": 460,
+     "nearest": {
+      "no-stack": 80,
+      "native-code:setAttribute": 353,
+      "native-code:toggle": 7,
+      "native-code:remove": 1,
+      "page-or-ext": 5,
+      "native-code:cancel": 1,
+      "empty-url:loop": 8,
+      "native-code:getBoundingClientRect": 4,
+      "native-code:setProperty": 1
+     },
+     "setAttributeWithin2ms": 445
+    }
+   }
+  },
+  "R": {
+   "heavyFrames": 20,
+   "controlFrames": 347,
+   "rule5b": {
+    "dom-call": {
+     "rate": {
+      "s": 24,
+      "Fs": 20,
+      "r": 77,
+      "Fr": 347,
+      "runs": 4,
+      "floor": 16,
+      "RR": 5.408,
+      "RRlo": 3.543,
+      "linked": true
+     },
+     "presence": {
+      "H": 20,
+      "Hw": 16,
+      "runs": 4,
+      "floor": 8,
+      "h": 0.8,
+      "hLo": 0.599,
+      "base": 0.182,
+      "call": "COVERS"
+     }
+    },
+    "no-stack": {
+     "rate": {
+      "s": 168,
+      "Fs": 20,
+      "r": 304,
+      "Fr": 347,
+      "runs": 4,
+      "floor": 16,
+      "RR": 9.588,
+      "RRlo": 8.141,
+      "linked": true
+     },
+     "presence": {
+      "H": 20,
+      "Hw": 20,
+      "runs": 4,
+      "floor": 8,
+      "h": 1,
+      "hLo": 0.861,
+      "base": 0.64,
+      "call": "NO-LINK"
+     }
+    }
+   },
+   "heavy": {
+    "no-stack": {
+     "n": 168,
+     "perFrame": 8.4
+    },
+    "native-code:toggle": {
+     "n": 10,
+     "perFrame": 0.5
+    },
+    "native-code:setAttribute": {
+     "n": 9,
+     "perFrame": 0.45
+    },
+    "native-code:setProperty": {
+     "n": 5,
+     "perFrame": 0.25
+    }
+   },
+   "control": {
+    "no-stack": {
+     "n": 304,
+     "perFrame": 0.88
+    },
+    "native-code:toggle": {
+     "n": 40,
+     "perFrame": 0.12
+    },
+    "native-code:setAttribute": {
+     "n": 24,
+     "perFrame": 0.07
+    },
+    "native-code:setProperty": {
+     "n": 8,
+     "perFrame": 0.02
+    },
+    "native-code:animate": {
+     "n": 5,
+     "perFrame": 0.01
+    }
+   }
+  }
+ }
+}

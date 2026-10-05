@@ -1550,6 +1550,85 @@ Card rev 2 passed ops' delta read (c37f7df1, notes N1-N3); the lead signed it af
   - The trigger stays OBSERVED, untested.
 - **Pixel and behaviour.** Nothing was built or served; no pixel check applies.
 
+## P-126 addendum D1 (2026-10-05, descriptive, written after the result; changes no frozen call)
+
+The P-125 captures that P-126 read were taken with stacks cut to one frame. The frozen reader assumed full stacks. So
+its `native` key mixed two different things. The frozen calls stand as computed, but what NATIVE means is compromised.
+
+- **Cause: the capture depth.**
+  - Our code: `tools/lib/wip.mjs` l.267-268, `TIMELINE_START` sends `Timeline.start {maxCallStackDepth: 1}`
+    (`gesture --timeline` uses it).
+  - WebKit: `Source/JavaScriptCore/inspector/protocol/Timeline.json` l.78, "Samples JavaScript stack traces up to
+    maxCallStackDepth, defaults to 5" (file commit `7af6d5a321879450ab6d21f113e233e957caf14f`). Also
+    `InspectorTimelineAgent.cpp` `internalStart` l.172-177 (file commit `9a8a5f7d36ab`) stores the depth.
+  - Status: the depth cut is CONFIRMED.
+  - In the data, all 9 runs hold 13418 invalidation records with no stackTrace and 7200 with a 1-frame stack, and none
+    with more. A script call into a DOM function keeps only its innermost frame (`setAttribute [native code]` and the
+    like). The reader skips `[native code]` frames, so it keyed those records `native`, the same key as the records
+    that have no stack.
+- **A missing stackTrace means no JS frame was on the stack, at any depth.**
+  - `TimelineRecordFactory::createGenericRecord`, `Source/WebCore/inspector/TimelineRecordFactory.cpp` l.46-57 (file
+    commit `f7dd925a68af`): a record gets `stackTrace` only when `createScriptCallStack(...)` returns a non-empty stack.
+  - `createScriptCallStack`, `Source/JavaScriptCore/inspector/ScriptCallStackFactory.cpp` l.105-120 (file commit
+    `9a8a5f7d36ab`): it walks from `vm.topCallFrame` and is empty when there is no global object or no top frame. The
+    depth only truncates the walk (l.70-80). It skips implementation-private (builtin) frames (l.68).
+  - Both invalidation records ask for a stack: `PageTimelineAgent.cpp` (file commit `3941d977dc3a`)
+    `willInvalidateLayout` l.195-208 and `didScheduleStyleRecalculation` l.243-250 call `appendRecord(..., true)`.
+  - So the 8.23 vs 0.93 per-frame no-stack surplus is not hidden by the depth cut. Status: CONFIRMED (WebKit main
+    source).
+  - Caveats: the Simulator's Safari build was not checked against these exact lines. A write made only from a private
+    builtin frame would also leave no stack.
+- **Side note from the same source, for P-127.** `willInvalidateLayout` returns early when the renderer already needs
+  layout (l.197-198). So an InvalidateLayout record marks the first invalidation of a clean renderer, not every write
+  (CONFIRMED, source).
+- **The `native` key split by shape** (`p126-depth.mjs` `8ac787c8c83a`, output `p126-depth.json` `bd3cfe4551f6`;
+  records in each frame's own interval, per frame):
+
+  | bucket | C heavy (22 frames) | C control (435) | R heavy (20) | R control (347) |
+  |---|---|---|---|---|
+  | no stack | 181 (8.23) | 406 (0.93) | 168 (8.40) | 304 (0.88) |
+  | one `[native code]` frame (DOM call, caller cut) | 53 (2.41) | 129 (0.30) | 24 (1.20) | 77 (0.22) |
+  | of which `setAttribute` / `toggle` / `getBoundingClientRect` / `setProperty` | 21 / 13 / 10 / 9 | 49 / 56 / 0 / 10 | 9 / 10 / 0 / 5 | 24 / 40 / 0 / 8 |
+
+- **Rule 5b on each bucket.** These are the frozen `rateRule` and `coincidence` (from `score-p125.mjs` `c52de0edd5d3`),
+  applied descriptively to two keys the frozen reader did not have:
+
+  | bucket | set | s/Fs | r/Fr | RR | RRlo | floor | rate | presence (Hw/H, base) |
+  |---|---|---|---|---|---|---|---|---|
+  | DOM call | C | 53/22 | 129/435 | 8.12 | 6.11 | 20 | RATE-LINKED | COVERS (21/22, 0.22) |
+  | DOM call | R | 24/20 | 77/347 | 5.41 | 3.54 | 16 | RATE-LINKED | COVERS (16/20, 0.18) |
+  | no stack | C | 181/22 | 406/435 | 8.82 | 7.57 | 20 | RATE-LINKED | NO-LINK (22/22, 0.66; saturates) |
+  | no stack | R | 168/20 | 304/347 | 9.59 | 8.14 | 16 | RATE-LINKED | NO-LINK (20/20, 0.64) |
+
+- **What this does to the P-126 reading.**
+  - The DOM-call bucket alone passes rule 5b. With its own key it would have taken the SCRIPT-SOURCE branch.
+  - So under a depth-aware key, P-126 reads as script-called invalidations whose caller is unknown, beside a larger
+    surplus with no JS on the stack at all. It does not plainly read NATIVE.
+  - The frozen calls stand as computed (NATIVE, FORCED UPDATE, PARENT OTHER, ROOT SUBTREE with the root note).
+    "NATIVE" means "no page or ext frame was visible at depth 1", not "no script".
+  - FORCED UPDATE has the same limit: a forced Layout whose stack is one `[native code]` frame (a layout read, say)
+    keys `native` too. The call was not re-read here.
+  - The no-stack surplus (about 7.3 more records per heavy frame than at rest in C, 7.5 in R) is not script on the stack:
+    no JS frame was running when it was recorded (CONFIRMED source; see the caveats). What schedules it (the
+    engine's resize path, or deferred work from earlier script) is open.
+- **N4 gets a third explanation (c), and it covers most matches.** The fwWC write log against the nearest record within
+  2 ms (`p126-depth.json` `fwWCWrites`; ops' control `p126-n4ctl.mjs` `605214d05180`, copied in with relative imports,
+  reproduces ops' 150/150 and 460/460):
+
+  | fwWC writes | n | nearest record is a `setAttribute` `[native code]` frame | nearest is no-stack | any `setAttribute` record within 2 ms |
+  |---|---|---|---|---|
+  | value changes | 150 | 122 | 12 | 137 |
+  | same-value writes | 460 | 353 | 80 | 445 |
+
+  - (c): the write did leave a record. The record kept only its `setAttribute` frame, so it keyed `native`. N4's
+    "stackless" matches are mostly this.
+  - Same-value writes also sit next to `setAttribute` records (445 of 460). Two readings stay open: a same-value
+    `setAttribute` schedules a style recalc too, or the neighbour is another write in the same batch. Status: UNRESOLVED.
+    P-127 decides it: one write per round, an arm without a selector, and a no-write arm.
+  - (a) and (b) as worded in N4 are not refuted. (c) means they are no longer needed for most matches.
+- **Ops lesson (from ops).** The pre-data and result reads never checked the capture depth either. Ops logged it.
+- **Findings board.** F-261 (posted before this addendum) names the pitfall. F-262 adds the source confirmation and is tagged to every topic whose scripts read Timeline stacks.
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).
