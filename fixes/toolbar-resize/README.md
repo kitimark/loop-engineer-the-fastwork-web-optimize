@@ -2133,7 +2133,107 @@ stays empty until then. The trigger stays OBSERVED in all text.
   - N4, rebased on main before the re-pin.
   - Ops' answers: STEP without a Layout test is fine under rule 8's wording; the caller key and the format gate stand.
     Predictions stay as registered (prediction 3, NAMED, 65 %).
-  - No data has been taken. Next: ops' delta check of rev 2, then the lead's signature, then the slot.
+  - Ops' delta check of rev 2: PASS (65734941; self-test re-run PASS 82, pins match, no data). **Signed by the lead
+    2026-10-05T04:09:22Z** on rev 2 (2b5eedc8). The data was taken after the signature.
+
+## Result P-128: in-page stack census (Simulator, count-only; rev 2 signed 04:09:22Z)
+
+**Reading (frozen reader rev 2, db7dab05773e): FWWC-ONLY.** In the in-view toolbar-step frames, the only deciding
+feature that links is `setAttribute:fwWC` (the `data-fw-wc` write at JS 2742), which P-125 already showed is not the
+trigger. No other wrapped caller links. Per the frozen table, next is option 2 (split P-126's no-stack surplus into
+write follow-up and engine work) or the literal depth-16 Timeline recapture; the lead picks. Everything below is
+OBSERVED, in the Simulator, on v8 (v8-best overlay), in one gesture script (D1), and covers only the wrapped functions.
+Census frames are rAF intervals chosen without a Layout test; none of them is called heavy here (rule 8).
+
+- **Runs.** Slot 1 (shared, weight simulator): C-H1..C-H4 passed the gate. C-H5's gesture was refused by `sim.mjs`'s own
+  budget guard (about 49 s needed, 30 s left in the hold), so it recorded no inject value. As carded, C-H5 ran in a
+  second shared slot under the same name and passed. Served bytes: JS 3e3e94cb6e9f and CSS f836404b3728, from the
+  overlay, in both slots. Inject e44cdd1f9e9a, script 6ae05e12ace9. The gesture tool's pull-to-refresh guard ended
+  one or two "back to top" loops early in C-H2..C-H5 (page at y 47-139). All runs still crossed the toolbar range
+  (ih 775-815). Simulator background CPU was high in slot 1 (mean 79 % of a core, load1 up to 90; slot 2 mean 65 %).
+  Under I-082 the per-frame counts carry that context, though no timing is read here.
+
+  | run | frames | STEP | CONTROL | calls (all apis) |
+  |---|---|---|---|---|
+  | C-H1 | 1111 | 1 | 44 | 3125 |
+  | C-H2 | 1121 | 2 | 77 | 2959 |
+  | C-H3 | 1203 | 2 | 92 | 3285 |
+  | C-H4 | 1190 | 2 | 102 | 3290 |
+  | C-H5 | 984 | 5 | 130 | 1758 |
+  | pooled | | **12** | 445 | |
+
+- **Power (the main limit of this reading).**
+  - Only 12 STEP frames were pooled. That clears the THIN rule (>= 5), but it leaves the presence rule needing a
+    feature in >= 10 of the 12 frames, and the rate rule needing >= 20 calls.
+  - So FWWC-ONLY says: no other wrapped caller makes calls in almost every STEP frame, or 20+ step-frame calls with
+    RRlo >= 2.
+  - A caller that writes once per toolbar step stays below both floors (see "below the floors").
+- **Linked feature.** `setAttribute:fwWC`:
+  - presence COVERS (10/12, base 0.142);
+  - rate 29/12 against 52/445, RR 20.7, RRlo 13.7;
+  - names `data-fw-wc` (29), entry `2.DyWL8TcE.js:?@2742`.
+  - Its C1 spread is 9 STEP frames over 5 runs, under the 10 needed. On rate alone it would read RATE-CLUSTERED; it
+    links by presence.
+  - N1: calls per frame are 2.42 in STEP frames, 0.145 in CONTROL frames where y moved, and 0.011 in still CONTROL
+    frames.
+  - Per run (s/Fs against r/Fr): 4/1 vs 9/44, 7/2 vs 11/77, 6/2 vs 10/92, 2/2 vs 12/102, 10/5 vs 10/130.
+- **Not linked (deciding apis, descriptive).**
+  - gBCR callers in 8-10 of the 12 STEP frames (`F@13843`, `_@13899`, `l@12151/12157/12171`) are about as frequent at
+    rest (base ~0.71; rate RRlo 0.6-0.8). They are frame-loop reads, not step-specific.
+  - No changed `setProperty` was made in any STEP frame (0/12; 30 in CONTROL).
+  - sceneCE: 1/12 (prediction 8 holds).
+- **Below the floors (descriptive; one call per run, in one STEP frame of each of the 5 runs; spread 5 frames / 5 runs).**
+  - `toggle@12338` (the `start-selling-future` section's `is-visible` / `is-future-shrinking` classes): 5/12 against
+    32/445, RRlo 2.15.
+  - `toggle@14241` (the top nav's class set, `is-scroll-hidden` among them): 5/12 against 21/445, RRlo 3.18.
+  - The cousin `removeAttribute@14257/14258` (the nav button's `tabindex` / `aria-hidden`): 5/12 against 5/445.
+  - These sit at the toolbar step at a step-to-rest ratio near fwWC's. At one call per run they cannot link with 5
+    runs, and nothing here says they raise Layout (R1).
+- **B1 (the bucket check, descriptive).**
+
+  | api | STEP | CONTROL | RRlo | |
+  |---|---|---|---|---|
+  | setAttribute | 34/12 | 293/445 | 3.11 | RATE-LINKED |
+  | toggle | 10/12 | 85/445 | 2.29 | under the floor of 20 |
+  | setProperty | 0/12 | 30/445 | 0 | |
+  | gBCR | 45/12 | 1443/445 | 0.89 | |
+  | all four | 89/12 | 1851/445 | 1.48 | not linked |
+
+  pageShare 1 (89/89 deciding calls in STEP frames have a page line).
+- **N3, wrapper frames (OBSERVED, in our setup, cause unknown).**
+  - `ownFramesLeft` was 0 in every run, but that is no evidence that the frames were stripped. Every recorded stack
+    starts with url-less lines (`stack@`, `note@`, `@`, `@`): JSC did not attach the `//# sourceURL=p128-inject.js`
+    name to the frames of the Runtime.evaluate script in `Error().stack`, so the strip did not fire.
+  - The caller key is unaffected: it takes the innermost `/_app/immutable/nodes/` line, which is line 5 for the fwWC
+    write.
+  - Effect: of the 16 kept lines, 4 are the wrapper's. About 6-11 % of calls per run hit the 16-line cap, so their
+    ENTRY (descriptive) can be cut short.
+  - Not checked against WebKit docs or source. It stays OBSERVED and decides nothing here.
+- **Predictions (registered before data): 4 of 10 held.**
+
+  | # | prediction | p | outcome |
+  |---|---|---|---|
+  | 1 | all 5 runs pass the gate | 80 % | hit (C-H5 after its re-run in slot 2) |
+  | 2 | all 5 runs fit in one shared slot | 65 % | miss (C-H5 refused by sim.mjs's gesture budget) |
+  | 3 | reading NAMED | 65 % | miss (FWWC-ONLY) |
+  | 4 | `setAttribute:fwWC` LINKED | 75 % | hit (COVERS 10/12) |
+  | 5 | a `gBCR:<caller>` LINKED | 55 % | miss (base ~0.71 at rest) |
+  | 6 | a `toggle:<caller>` LINKED | 40 % | miss (best 5/12, s 5 < 20) |
+  | 7 | a `setProperty:<caller>` LINKED | 45 % | miss (0 in STEP) |
+  | 8 | no scene-region caller LINKED | 80 % | hit |
+  | 9 | B1 pooled RATE-LINKED | 80 % | miss (RRlo 1.48) |
+  | 10 | pageShare >= 0.95 | 80 % | hit (1.0) |
+
+  The lean on NAMED missed again: P-126's gBCR and setProperty records in the step frames have no step-specific
+  wrapped caller at this power.
+- **What this does not show.**
+  - No caller of the step's heavy Layout is named.
+  - The fwWC link repeats P-125's write coincidence, and P-125's wc1 arm already removed fwWC without effect.
+  - The once-per-step class toggles (nav, start-selling-future) are candidates only. A card that wants them needs
+    either more step frames (more runs or a script with more toolbar steps) or a count-only target arm.
+- **Files.** `out/toolbar-resize/sim128/` (gitignored: `g-C-H1..5.json`, `runs.jsonl`, `read128.json`), slot logs
+  `out/toolbar-resize/run128.log` and `run128b.log`. Reader output: `node fixes/toolbar-resize/p128-read.mjs
+  out/toolbar-resize/sim128 C-H1 C-H2 C-H3 C-H4 C-H5`.
 
 ## Scenarios not run
 
