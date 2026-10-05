@@ -29,7 +29,9 @@ let idle = [];
 try {
   idle = fs.readFileSync(path.join(mainCheckout, 'out/idle-watch.log'), 'utf8').split('\n')
     // the watch logs one "POSTED T-nnn iphone: …" line per alarm thread (older lines: "IDLE iphone" / "STUCK iphone")
-    .filter((l) => /IDLE iphone|STUCK iphone|POSTED T-\d+ iphone:/.test(l) && inWin(l.slice(0, 20)))
+    .filter((l) => /IDLE iphone|STUCK iphone|POSTED T-\d+ iphone:/.test(l) && inWin(l.slice(0, 20)));
+  // one alarm logs an IDLE line and a POSTED line at the same stamp: count each stamp once
+  idle = [...new Map(idle.map((l) => [l.slice(0, 20), l])).values()]
     .map((l) => l.match(/for (\d+) min/)?.[1]).filter(Boolean).map(Number);
 } catch {}
 
