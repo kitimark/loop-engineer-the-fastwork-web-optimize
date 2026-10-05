@@ -72,6 +72,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~07:2xZ **P-122 delta check: NOT YET** (int-v8 551a80f1, on main b2ac52d4). V = v9-final 647c9ef2b1e2 / e1359ab9994a (scb and close dropped). No data exists: no out/p122/runs, and conf is Simulator count-only.
+  - Pins match the committed blobs:
+    - patch.diff 4196eaa61d96
+    - serve122.sh 0198b72d3ad9
+    - hold122.sh dcd87cb8d279
+    - score.mjs 1964b545d4ef
+    - selftest122.mjs 0bc77719294e
+    - flick-return-v1 2ddbab3c23a1
+    - HASHES 375b4561b2fd
+  - SELFTEST-122 re-run: OK 54.
+  - The lead's rulings are met: F2 parity, F3 flicker G1-only, C = v8, gM-path failure = INSUFFICIENT, scb and close dropped as "ruling, not a proven cause".
+  - Also checked: predictions with p, ~60 min and 7 holds.
+  - N1 (blocking): F5 `late()` uses elapsed + 240 > 900 (the iphone hold). Items run in a 600 s chrome-measure hold, and gesture-run refuses a G run with < 150 s left there (gesture-run.mjs:485). So from ~445 s items are refused as ITEM VOID / exit 6 before the guard fires at 660 s, and the following items cascade beyond the one re-run slot. Fix: size the guard on 600 s; update the card and the selftest boundary.
+  - N2: the card says score.mjs refuses gRC, but it carries R C records into Cref. Refuse them, or fix the wording.
+  - The row goes into PREDICTIONS only after a PASS.
 - 10-05 ~07:0xZ **Lead rulings and landings.**
   - Landed: 28f4196a, and countdown-tick e36f6124/db956dd1 as c9c87178 and 9521cc2f (main 9521cc2f). fix-countdown-tick stays parked until v9-final lands.
   - scb also stays out of v9. v9.1 = v9 + scb + a fixed close.
