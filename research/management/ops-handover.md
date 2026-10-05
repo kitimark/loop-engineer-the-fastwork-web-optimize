@@ -72,6 +72,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:1xZ **PR-023 rev 7d landed (189ca7ed); v9-final JS moves.**
+  - fix/morph-scroll-7d landed as 189ca7ed (user accepted 10:15:50Z). v9-final JS 647c9ef2b1e2 to 1b2eecc66011; CSS e1359ab9994a unchanged. Row pr-018-menu-morph landed; fix-hero-exit-threaded parked.
+  - P-134 (int-v8) pins 189ca7ed. P-133 (toolbar) design accepted in principle by the lead: drag strokes, at least 4 cycles, two holds; the ops pre-data read comes next.
+  - Base question sent to the lead (open): P-130 (signed) and P-097 rev 4.2 (signed) both pin C = the pre-7d v9-final 647c9ef2b1e2 from immutable snapshots. Ops reads them as A/Bs on that base (valid as carded); the claim then holds for the pre-7d base, and each delta needs an apply check on 1b2eecc66011 before it lands. P-133 should pin the new v9-final.
+- 10-05 ~11:0xZ **P-132 RETIRED; P-134 reserved; phone order.** (lead ruling)
+  - P-132 (int-v8 v9.1 on 7c) is RETIRED, superseded by the user's PR-023 7d accept, with no data taken. PREDICTIONS has a P-132 row marked RETIRED (no predictions were registered).
+  - int-v8 rebuilds as P-134: C = v9-final + 7d, V = v9.1 + 7d, scroll-cb and g11 rebased on the 7d delta. It pre-stages now and sends final shas for the ops pre-data read only after 7d lands on main.
+  - P-133 = fix-toolbar-resize's fresh card (same arms and rule 1, capture for >= 12 moving frames, pre-scoring n check). Next free P-id: P-135.
+  - Phone order: P-129 part 2, P-130, then P-134 in P-132's old slot.
+- 10-05 ~11:0xZ **P-131 result read: PASS (NOT REPRODUCED, scored as carded; reproduced)** (fix-toolbar-resize 888df724 on 35094199, worktree-agent-a59b828cbac654be5).
+  - Pins on disk = card: check-pgp da32f37117f6, score-bisect cb6f0c97b81b, split-io119 1ad22b858eb8, pgp-inject 2cfd9c00b9f1, sim-pgp 73215a3c3912; the result commit touches README, results.json, pgp-score.json and pgp-split.json only.
+  - Ops re-ran check-pgp (INJECT-GATE all applied, 10/10), score-bisect (REPLICA false, DRIFT 0.032, VOID false; C-H1 n 7 thin) and split-io119 on out/toolbar-resize/simpgp: both JSONs equal the committed ones (timestamps aside).
+  - Rule 1 applied as carded: no arm judged; the ratio table is labelled descriptive and not evidence. Predictions: P1 out, P2-P7 not scored, P8-P10 in. The pull-to-refresh guard cutting loops is disclosed with earlier holds.
+  - Lead ruling: closes NR as carded, no rescue, no extra hold; C-H1's n 7 stays a fail under n >= 8. P-133 is reserved for fix-toolbar-resize: a fresh card, same arms and rule, capture sized for >= 12 moving frames per hold, a pre-scoring n check; ops pre-data read before the lead signs. (Next free P-id: see the entry above.)
+  - Land request to the lead: 35094199 and 888df724. PREDICTIONS P-131 row filled (measured, in?, ratio, lesson).
 - 10-05 ~10:5xZ **Landings, PR-023 accepted, P-129 part 2 GO.**
   - Landed: P-129 reader rev 1.1 808f6f34 (signed by the lead on the ops PASS) and ops 47f67bc3 as 767f5166. I-205 resolved.
   - C-067 closed; the user accepted PR-023 at 10:15:50Z, so fix-hero-exit-threaded's land request is next.
