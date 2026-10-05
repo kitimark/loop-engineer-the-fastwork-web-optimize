@@ -20,6 +20,21 @@
 //                                      throttled reload, 3 fast flicks 0.3 s after DOMContentLoaded, no rest). A flick is
 //                                      a 560 px touch swipe in 140 ms (Input.synthesizeScrollGesture, touch, 4,000 px/s,
 //                                      preventFling false, so the page flings on), down flicks 350 ms apart, up 1,200 ms
+//   --crop <selector>                  cut every clip of the run to that element (T-170 #87; otherwise only the scenes with
+//                                      their own crop selector are cut): the union of the matching elements' viewport
+//                                      boxes, read at the start (before the screencast) and the end (after it) of both
+//                                      shown runs (a scene's cropAt can keep only the start or the end reads), plus
+//                                      --crop-margin, clamped to the viewport; both sides get the same
+//                                      rectangle (capture.json scenes.<s>.crop). Done in the encode step (ffmpeg crop +
+//                                      scale, MP4 only, no image output). A cropped scene's screencast is taken at
+//                                      --crop-dpr px per CSS px (default 2, 860 px wide instead of 432; it costs more on
+//                                      both sides), and its panel is --crop-zoom x the CSS size (default 2, at most
+//                                      420 x 640, widened to 240 when the height allows)
+//   --crop-margin 16                   CSS px around the element's box
+//   --keep-frames                      keep the screencast JPEGs in --out/frames after encoding (gitignored out/, never
+//                                      viewed or committed) so a later --phase encode (another --fps) needs no recapture;
+//                                      without it encode deletes them and a later --phase encode refuses
+//   --self-test                        check the crop geometry and exit (no Chrome, no lock)
 //   --phase all|capture|encode         capture = Chrome only (frames + capture.json); encode = ffmpeg from capture.json
 //   --runs 3                           runs per side and scene; the clip shows each side's median run, the snippet
 //                                      lists every run's counts
@@ -80,6 +95,11 @@ const CPU = Number(opt('cpu', 6));
 const LATENCY = Number(opt('latency', 150));
 const RUNS = Math.max(1, Number(opt('runs', 3)));
 const HOLD_S = Math.min(600, Math.max(60, Number(opt('hold-seconds', 480))));
+const CROP_SEL = opt('crop', null);                                   // overrides the scenes' own crop selector
+const CROP_MARGIN = Math.max(0, Number(opt('crop-margin', 16)));      // CSS px around the element's box
+const CROP_ZOOM = Math.max(1, Number(opt('crop-zoom', 2)));           // panel px per CSS px of the crop
+const CROP_DPR = Math.min(3, Math.max(1, Number(opt('crop-dpr', 2))));// screencast px per CSS px when cropping
+const KEEP_FRAMES = flag('keep-frames');
 const buildName = existsSync(resolve(BUILD)) ? basename(resolve(BUILD)).replace(/\.diff$/, '') : BUILD;
 const LABEL = opt('label', buildName.replace(/-best$/, ''));
 const OUT = resolve(REPO, opt('out', join('out', 'before-after', buildName.replace(/[^\w.-]+/g, '_'))));
@@ -97,6 +117,13 @@ const SCENES = {
   // (fixes/v8-best/phone/g/flick-hero-v1.json and flick-fresh-v1.json), not tuned on the result
   fling: { title: 'Fast flicks at the top: 3 s at rest, then fast flicks down past 1,800 px and back to the top, twice', start: null, rest: 3000, kind: 'flicks', cycles: 2, flickToY: 1800 },
   load: { title: 'Right after load: a reload, then three fast flicks 0.3 s after the page is ready, with no rest', start: null, kind: 'fresh', flicks: 3, afterReadyMs: 300 },
+  // the four trouble spots (T-170 #87): each clip cut to one element; inputs chosen before any capture, not tuned.
+  // cropAt: which box reads make the rectangle (start = before the input, end = after it, default both). The cards
+  // start low on the screen and leave it (start box only); the menu's middle exists only once the menu is open (end)
+  cards: { title: 'The hero cards as the hero scrolls out: 2 s at rest, then a scroll to 1,500 px (the hero scene\'s input)', start: null, rest: 2000, stopY: 1500, morph: false, crop: '.mobile-deck .orbit-card', cropAt: 'start' },
+  nav: { title: 'The top bar as the sections pass under it: 1 s at rest, then a scroll from the top to the bottom', start: null, rest: 1000, stopY: null, morph: false, crop: '.start-selling-top-nav' },
+  countdown: { title: 'The countdown at the top, at rest: 6 s, no input', start: null, rest: 6000, kind: 'rest', crop: '.hero-copy .countdown' },
+  menu: { title: 'The end-of-page menu: the last 1,100 px, then four touch drags past the end (the end scene\'s input)', start: 'end-1100', rest: 500, stopY: null, morph: true, crop: '.start-selling-morph-center', cropAt: 'end' },
 };
 // One flick = the phone scripts' stroke: a 560 px touch swipe in 140 ms (4,000 px/s; CDP's synthetic swipe moves at a
 // constant speed, the phone's fling profile speeds up to its lift-off), and the page keeps going on its own (fling
@@ -105,12 +132,54 @@ const FLICK = { x: 215, px: 560, speed: 4000, gapMs: 350, upGapMs: 1200, fingerU
 const SCENE_LIST = opt('scenes', 'hero,switch,end').split(',').map((s) => s.trim()).filter(Boolean);
 for (const s of SCENE_LIST) if (!SCENES[s]) die(`unknown scene "${s}" (known: ${Object.keys(SCENES).join(', ')})`);
 
+// union of boxes, plus the margin, clamped to the viewport, to whole CSS px
+function cropRect(boxes, margin, vw = VP.width, vh = VP.height) {
+  const b = boxes.filter(Boolean);
+  if (!b.length) return null;
+  const x0 = Math.max(0, Math.floor(Math.min(...b.map((r) => r.x)) - margin)), y0 = Math.max(0, Math.floor(Math.min(...b.map((r) => r.y)) - margin));
+  const x1 = Math.min(vw, Math.ceil(Math.max(...b.map((r) => r.x + r.w)) + margin)), y1 = Math.min(vh, Math.ceil(Math.max(...b.map((r) => r.y + r.h)) + margin));
+  return x1 - x0 >= 8 && y1 - y0 >= 8 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+}
+// the panel size for a crop: zoom x the CSS size, widened to 240 when the height allows (the header label needs it);
+// even numbers for H.264. A wide, flat crop (w >= 2.5 h: the top bar, the countdown) is stacked (original above, the
+// build below) at up to 840 x 320 per panel; any other is side by side at up to 420 x 640
+function cropPanel(c, zoom) {
+  const stack = c.w >= 2.5 * c.h, maxW = stack ? 840 : 420, maxH = stack ? 320 : 640;
+  const z = Math.min(zoom, maxW / c.w, maxH / c.h), even = (v) => Math.max(2, Math.round(v / 2) * 2);
+  let w = even(c.w * z), h = even(c.h * z);
+  if (w < 240) { const k = Math.min(240 / w, maxH / h); w = even(w * k); h = even(h * k); }
+  return { w, h, stack };
+}
+// ffmpeg crop in the frame's own pixels: iw / viewport width = screencast px per CSS px
+const cropFilter = (c, vw = VP.width) => `crop=w=iw*${c.w}/${vw}:h=iw*${c.h}/${vw}:x=iw*${c.x}/${vw}:y=iw*${c.y}/${vw}`;
+
+
+// --self-test: the crop geometry (no Chrome, no lock, no files): exit 0 when every check holds
+if (flag('self-test')) {
+  const eq = (a, b, what) => { if (JSON.stringify(a) !== JSON.stringify(b)) { console.error(`self-test FAIL ${what}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`); process.exit(1); } };
+  eq(cropRect([{ x: 100, y: 50, w: 100, h: 40 }], 16), { x: 84, y: 34, w: 132, h: 72 }, 'one box + margin');
+  eq(cropRect([{ x: 100, y: 50, w: 100, h: 40 }, { x: 150, y: 500, w: 10, h: 10 }], 0), { x: 100, y: 50, w: 100, h: 460 }, 'union');
+  eq(cropRect([{ x: -20, y: -30, w: 500, h: 2000 }], 16), { x: 0, y: 0, w: 430, h: 932 }, 'clamped to the viewport');
+  eq(cropRect([null, { x: 10.4, y: 20.6, w: 50.2, h: 30.1 }], 0), { x: 10, y: 20, w: 51, h: 31 }, 'null skipped, outward rounding');
+  eq(cropRect([null, null], 16), null, 'nothing matched');
+  eq(cropRect([{ x: 429, y: 10, w: 40, h: 40 }], 0), null, 'too thin after clamping');
+  eq(cropPanel({ w: 150, h: 70 }, 2), { w: 300, h: 140, stack: false }, 'zoom 2');
+  eq(cropPanel({ w: 430, h: 300 }, 2), { w: 420, h: 294, stack: false }, 'capped at 420 wide');
+  eq(cropPanel({ w: 200, h: 900 }, 2), { w: 142, h: 640, stack: false }, 'the height cap wins over the min width');
+  eq(cropPanel({ w: 60, h: 40 }, 2), { w: 240, h: 160, stack: false }, 'small crop widened to 240');
+  eq(cropPanel({ w: 430, h: 84 }, 2), { w: 840, h: 164, stack: true }, 'a flat bar is stacked, up to 840 wide');
+  eq(cropPanel({ w: 408, h: 126 }, 2), { w: 816, h: 252, stack: true }, 'stacked at zoom 2');
+  eq(cropFilter({ x: 84, y: 34, w: 132, h: 72 }), 'crop=w=iw*132/430:h=iw*72/430:x=iw*84/430:y=iw*34/430', 'ffmpeg crop');
+  console.log('before-after self-test: 13 checks ok');
+  process.exit(0);
+}
+
 // ---- the lock: run only inside a chrome-measure hold (or take one) ---------------------------------------------------
 function holdState() {
   const tok = parseHeld(process.env.FW_LOCK_HELD)['chrome-measure'];
   const h = lockStatus('chrome-measure').holder;
   if (!tok || !h || h.token !== tok) return null;
-  return { owner: h.owner, noTiming: !!h.noTiming };
+  return { owner: h.owner, noTiming: !!h.noTiming, gate: h.gate ?? null, gateTimeout: !!h.gateTimeout };
 }
 const slot = timedInSlotRefusal('before-after.mjs');
 if (slot && PHASE !== 'encode') die(slot);
@@ -128,6 +197,9 @@ if (!held || (held.noTiming && PHASE !== 'encode')) {
   process.exit(r.status ?? 1);
 }
 console.log(`before-after: inside the chrome-measure hold of "${held.owner}"${held.noTiming ? ' (no-timing)' : ''}; phase ${PHASE}; out ${relative(REPO, OUT)}`);
+// a timing hold granted after a host-gate TIMEOUT ran on a busy Mac: its runs would be contaminated, so capture refuses
+// (exit 3) and the caller requeues; the gate record goes into capture.json either way
+if (PHASE !== 'encode' && held.gateTimeout) die(`the chrome-measure hold was granted after a host-gate TIMEOUT (${JSON.stringify(held.gate)}): the Mac was not quiet, so no capture; requeue`, 3);
 mkdirSync(OUT, { recursive: true });
 
 // ---- the after side: an overlay dir from a fix name, a patch or a dir ------------------------------------------------
@@ -194,6 +266,11 @@ const moveTo = (y) => `new Promise(async (res) => { const target = ${y}; while (
   window.scrollBy({ top: Math.sign(d) * Math.min(Math.abs(d), 300), behavior: 'instant' }); await new Promise((r) => setTimeout(r, 60));
   if (scrollY + innerHeight >= document.documentElement.scrollHeight - 1 && d > 0) break; } res(scrollY); })`;
 
+// ---- crop: the union of the matching elements' boxes (viewport CSS px), read only outside the recorded window -------
+const boxExpr = (sel) => `(() => { const r = [...document.querySelectorAll(${JSON.stringify(sel)})].map((e) => e.getBoundingClientRect())
+  .filter((b) => b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight && b.right > 0 && b.left < innerWidth);
+  if (!r.length) return null; const x0 = Math.min(...r.map((b) => b.left)), y0 = Math.min(...r.map((b) => b.top));
+  return { x: x0, y: y0, w: Math.max(...r.map((b) => b.right)) - x0, h: Math.max(...r.map((b) => b.bottom)) - y0, n: r.length }; })()`;
 // ---- flick scenes: driven from here over CDP (touch swipes with fling), the page's scrollY polled between swipes ----
 async function flick(page, dir, strokes) {
   const y0 = await page.eval('scrollY'), t = Date.now();
@@ -245,11 +322,15 @@ async function captureOne(cdp, url, sc) {
       frames.push({ ts: metadata.timestamp * 1000, data });
       page.send('Page.screencastFrameAck', { sessionId }).catch(() => {});
     });
+    const cropSel = CROP_SEL ?? sc.crop ?? null;
+    const boxStart = cropSel ? await page.eval(boxExpr(cropSel)) : null;
     await page.eval(LOGGER);
-    await page.send('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: PANEL_W * 2, maxHeight: Math.round(PANEL_W * 2 * VP.height / VP.width), everyNthFrame: 1 });
+    const scW = cropSel ? VP.width * CROP_DPR : PANEL_W * 2;
+    await page.send('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: scW, maxHeight: Math.round(scW * VP.height / VP.width), everyNthFrame: 1 });
     await sleep(600);
     let act;
     if (sc.kind === 'flicks') { const t0 = await page.eval(nowExpr); await sleep(sc.rest); act = await flickCycles(page, sc, t0); }
+    else if (sc.kind === 'rest') { const t0 = await page.eval(nowExpr); await sleep(sc.rest); act = { t0, tScrollEnd: await page.eval(nowExpr), ticks: 0, y: await page.eval('scrollY') }; }
     else act = await page.eval(action(sc), { timeout: 300000 });
     if (sc.morph) {
       await sleep(400);
@@ -265,7 +346,8 @@ async function captureOne(cdp, url, sc) {
     off();
     await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className ?? null`);
-    return { startY, t0: act.t0, tScrollEnd: act.tScrollEnd, tEnd, ticks: act.ticks, endY: act.y, frames, log, morphState, ...(act.strokes ? { strokes: act.strokes } : {}) };
+    const crop = cropSel ? { selector: cropSel, boxStart, boxEnd: await page.eval(boxExpr(cropSel)), screencastWidth: scW } : null;
+    return { startY, t0: act.t0, tScrollEnd: act.tScrollEnd, tEnd, ticks: act.ticks, endY: act.y, frames, log, morphState, ...(act.strokes ? { strokes: act.strokes } : {}), ...(crop ? { crop } : {}) };
   } finally {
     await page.close();
   }
@@ -323,7 +405,7 @@ async function capture() {
   if (ch.headless) die('Chrome runs headless: refused (a headless compositor is not what the page shows)', 2);
   const cdp = await CDP.connect(ch.wsUrl);
   const meta = { at: new Date().toISOString(), owner: OWNER, chrome: ch.browser, viewport: VP, cpu: CPU, latency: LATENCY, fps: FPS, panelWidth: PANEL_W,
-    build: { name: buildName, label: LABEL, ...overlay, dir: undefined }, baselineTree: BASE_TREE, baseline: servers.before.baseline ?? null, load1Start: Math.round(loadavg()[0] * 10) / 10, scenes: {} };
+    build: { name: buildName, label: LABEL, ...overlay, dir: undefined }, baselineTree: BASE_TREE, baseline: servers.before.baseline ?? null, hostGate: held.gate, load1Start: Math.round(loadavg()[0] * 10) / 10, scenes: {} };
   try {
     await cdp.send('Security.setIgnoreCertificateErrors', { ignore: true }).catch(() => {});
     console.log('Chrome warm-up 8 s'); await sleep(8000);
@@ -354,7 +436,13 @@ async function capture() {
         sides[side] = { ...pick, allRuns: runs[side].map((r) => ({ run: r.run, ...r.counts })) };
         console.log(`  ${name} ${side}: shows run ${pick.run} (median of ${RUNS} by >=54 ms, >=37.5 ms, max)`);
       }
-      meta.scenes[name] = { title: sc.title, orders, runs: RUNS, sides };
+      const crop = sides.before.crop ? { selector: sides.before.crop.selector, margin: CROP_MARGIN, zoom: CROP_ZOOM,
+        at: CROP_SEL ? 'both' : (sc.cropAt ?? 'both'),
+        rect: cropRect(['before', 'after'].flatMap((k) => { const c = sides[k].crop, at = CROP_SEL ? 'both' : (sc.cropAt ?? 'both');
+          return [at !== 'end' ? c?.boxStart : null, at !== 'start' ? c?.boxEnd : null]; }), CROP_MARGIN) } : null;
+      if (crop && !crop.rect) die(`scene ${name}: crop selector ${crop.selector} matched no visible element at the start or end of the shown runs`, 1);
+      if (crop) console.log(`  ${name} crop ${crop.selector}: ${JSON.stringify(crop.rect)} CSS px (union of both shown runs' ${crop.at === 'both' ? 'start and end' : crop.at} boxes, +${CROP_MARGIN} px, clamped)`);
+      meta.scenes[name] = { title: sc.title, orders, runs: RUNS, sides, ...(crop ? { crop } : {}) };
     }
   } finally {
     cdp.close();
@@ -405,13 +493,16 @@ const mb = (b) => `${(b / 1024 / 1024).toFixed(2)} MB`;
 
 function encode(meta) {
   if (spawnSync('ffmpeg', ['-version']).status !== 0) die('ffmpeg not found (brew install ffmpeg)', 1);
-  const W = PANEL_W, H = Math.round((W * VP.height) / VP.width / 2) * 2, work = join(OUT, 'work');
+  const W0 = PANEL_W, H0 = Math.round((W0 * VP.height) / VP.width / 2) * 2, work = join(OUT, 'work');
   mkdirSync(work, { recursive: true });
   writeFileSync(join(work, 'label-before.txt'), 'BEFORE  original page');
   writeFileSync(join(work, 'label-after.txt'), `AFTER  ${meta.build.label}`);
   const out = {};
   for (const name of Object.keys(meta.scenes)) {
     const s = meta.scenes[name], A = s.sides.before, B = s.sides.after;
+    // a cropped scene: both sides cut to the same viewport rectangle (CSS px), scaled to its own panel size
+    const cp = s.crop?.rect ? cropPanel(s.crop.rect, s.crop.zoom ?? CROP_ZOOM) : null;
+    const W = cp ? cp.w : W0, H = cp ? cp.h : H0, pre = cp ? `${cropFilter(s.crop.rect)},` : '', stack = !!cp?.stack;
     const D = Math.max(A.tEnd - A.t0, B.tEnd - B.t0) + 300;
     const inputs = [];
     for (const [k, side] of [['before', A], ['after', B]]) {
@@ -421,31 +512,39 @@ function encode(meta) {
     }
     const Dsec = (D / 1000).toFixed(3), text = (k, x) => FONT ? `,drawtext=fontfile='${FONT}':textfile='${join(work, `label-${k}.txt`)}':x=${x}:y=9:fontsize=14:fontcolor=0xe2e9e5` : '';
     const fc = [
-      `[0:v]fps=${FPS},scale=${W}:${H}:flags=lanczos,setsar=1[a]`, `[1:v]fps=${FPS},scale=${W}:${H}:flags=lanczos,setsar=1[b]`,
+      `[0:v]fps=${FPS},${pre}scale=${W}:${H}:flags=lanczos,setsar=1[a]`, `[1:v]fps=${FPS},${pre}scale=${W}:${H}:flags=lanczos,setsar=1[b]`,
       `[2:v]fps=${FPS},setsar=1[sa]`, `[3:v]fps=${FPS},setsar=1[sb]`,
       `[a][sa]vstack[ac]`, `[b][sb]vstack[bc]`,
-      `[ac]pad=${W + GAP}:${H + STRIP_H}:0:0:color=0x1a211e[acp]`, `[acp][bc]hstack[s]`,
-      `[s]pad=iw:ih+${HDR_H}:0:${HDR_H}:color=0x1a211e${text('before', 8)}${text('after', W + GAP + 8)}[h]`,
+      ...(stack ? [ // original above, the build below, each with its own label row
+        `[ac]pad=${W}:${HDR_H + H + STRIP_H + GAP}:0:${HDR_H}:color=0x1a211e${text('before', 8)}[acp]`,
+        `[bc]pad=${W}:${HDR_H + H + STRIP_H}:0:${HDR_H}:color=0x1a211e${text('after', 8)}[bcp]`, `[acp][bcp]vstack[h]`,
+      ] : [
+        `[ac]pad=${W + GAP}:${H + STRIP_H}:0:0:color=0x1a211e[acp]`, `[acp][bc]hstack[s]`,
+        `[s]pad=iw:ih+${HDR_H}:0:${HDR_H}:color=0x1a211e${text('before', 8)}${text('after', W + GAP + 8)}[h]`,
+      ]),
       `color=c=white:s=2x${STRIP_H}:r=${FPS}[ph]`, `[ph]split[p1][p2]`,
       `[h][p1]overlay=x='min(t/${Dsec},1)*${W - 2}':y=${HDR_H + H}:eval=frame:shortest=0[h1]`,
-      `[h1][p2]overlay=x='${W + GAP}+min(t/${Dsec},1)*${W - 2}':y=${HDR_H + H}:eval=frame:shortest=0,format=yuv420p[v]`,
+      stack ? `[h1][p2]overlay=x='min(t/${Dsec},1)*${W - 2}':y=${2 * HDR_H + 2 * H + STRIP_H + GAP}:eval=frame:shortest=0,format=yuv420p[v]`
+        : `[h1][p2]overlay=x='${W + GAP}+min(t/${Dsec},1)*${W - 2}':y=${HDR_H + H}:eval=frame:shortest=0,format=yuv420p[v]`,
     ].join(';');
     const mp4 = join(OUT, `${name}.mp4`);
     for (const crf of [27, 30, 33, 36]) {
     ff(['-f', 'concat', '-safe', '0', '-i', join(work, `${name}-before.ffconcat`), '-f', 'concat', '-safe', '0', '-i', join(work, `${name}-after.ffconcat`),
       '-loop', '1', '-i', join(work, `${name}-before-strip.ppm`), '-loop', '1', '-i', join(work, `${name}-after-strip.ppm`),
       '-filter_complex', fc, '-map', '[v]', '-t', Dsec, '-r', String(FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', String(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', mp4], `${name} mp4`);
-      out[name] = { mp4, D, crf, w: 2 * W + GAP, h: HDR_H + H + STRIP_H };
+      out[name] = { mp4, D, crf, ...(stack ? { w: W, h: 2 * (HDR_H + H + STRIP_H) + GAP } : { w: 2 * W + GAP, h: HDR_H + H + STRIP_H }), ...(cp ? { crop: s.crop.rect, stacked: stack } : {}) };
       if (size(mp4) <= MAX_BYTES) break;
     }
     console.log(`  ${name}.mp4 ${mb(size(mp4))} (${(D / 1000).toFixed(1)} s, ${out[name].w}x${out[name].h}, crf ${out[name].crf})${size(mp4) > MAX_BYTES ? ` OVER the ${mb(MAX_BYTES)} cap` : ''}`);
   }
   writeSnippets(meta, out);
-  meta.encoded = Object.fromEntries(Object.entries(out).map(([k, o]) => [k, { mp4: basename(o.mp4), mp4Bytes: size(o.mp4), crf: o.crf, seconds: Math.round(o.D / 100) / 10, width: o.w, height: o.h }]));
-  // the screencast frames are intermediate files nobody views (lead's ruling): delete them, keep the MP4s and the
-  // per-frame times (capture.json: screencast stamps and the rAF log behind the strips)
-  rmSync(join(OUT, 'frames'), { recursive: true, force: true });
+  meta.encoded = Object.fromEntries(Object.entries(out).map(([k, o]) => [k, { mp4: basename(o.mp4), mp4Bytes: size(o.mp4), crf: o.crf, fps: FPS, seconds: Math.round(o.D / 100) / 10, width: o.w, height: o.h, ...(o.crop ? { crop: o.crop } : {}) }]));
   rmSync(work, { recursive: true, force: true });
+  // the screencast frames are intermediate files nobody views (lead's ruling): delete them, keep the MP4s and the
+  // per-frame times (capture.json: screencast stamps and the rAF log behind the strips). --keep-frames leaves them in
+  // the gitignored out/ dir so a later --phase encode (another --fps or crop) needs no recapture
+  if (KEEP_FRAMES) { writeFileSync(join(OUT, 'capture.json'), JSON.stringify(meta, null, 1)); return; }
+  rmSync(join(OUT, 'frames'), { recursive: true, force: true });
   for (const s of Object.values(meta.scenes)) for (const side of Object.values(s.sides)) { side.frames = side.frames.map((f) => f.ts); side.framesDeleted = true; }
   writeFileSync(join(OUT, 'capture.json'), JSON.stringify(meta, null, 1));
 }
@@ -477,11 +576,11 @@ ${Object.keys(out).map((n) => sceneBlock(n, media)).join('\n')}
   <figcaption id="ba-cap">Left, the original page (the frozen copy we measure against); right, ${esc(meta.build.label)}. Both ran in Chrome on the Mac, emulating the iPhone's screen (430×932, touch) with the page's main thread slowed ${meta.cpu}×. That is the setting that reproduces the phone's scripted-scroll stutter counts. Both sides got the same script${(meta.scenes[Object.keys(out)[0]].runs ?? 1) > 1 ? `, ${meta.scenes[Object.keys(out)[0]].runs} runs each, and each clip shows that side's middle run (by its slow-frame count)` : ', one run each'}; both clocks start at the first input, so where one side freezes, that page drew no new frame. The strip under each clip is that run's frame times: a bar's width is how long the frame took. This is an illustration, not a measurement. The screen capture costs work on both sides, and the numbers in this article come from repeated A/B runs. It can't show a finger on the glass, how the phone really feels, or costs that only Safari has. Several ${esc(meta.build.label)} changes only act in Safari (the hero's CSS mode, the animations Safari runs on its scroll thread), so Chrome understates them. Captured ${date}${meta.baseline?.snapshot ? `, baseline snapshot ${esc(meta.baseline.snapshot)}` : ''}.</figcaption>
 </figure>
 `;
-  const dims = (o) => `width="${o.w}" height="${o.h}"`;
-  const alt = (name) => `Side by side: ${meta.scenes[name].title.toLowerCase()}, original page on the left, ${meta.build.label} on the right, with each run's frame times underneath`;
-  writeFileSync(join(OUT, 'snippet-pages.html'), fig((name, o) => `<video src="media/${basename(o.mp4)}" ${dims(o)} autoplay muted loop playsinline controls preload="metadata" aria-label="${esc(alt(name))}"></video>`));
+  const dims = (o) => `width="${o.w}" height="${o.h}"${o.crop ? ` style="max-width: ${Math.round((o.w * (o.stacked ? 1 : 1.25)) / 16 * 10) / 10}rem"` : ''}`;
+  const alt = (name, o) => `${o?.stacked ? 'One above the other' : 'Side by side'}: ${meta.scenes[name].title.toLowerCase()}, original page ${o?.stacked ? 'above' : 'on the left'}, ${meta.build.label} ${o?.stacked ? 'below' : 'on the right'}, with each run's frame times underneath`;
+  writeFileSync(join(OUT, 'snippet-pages.html'), fig((name, o) => `<video src="media/${basename(o.mp4)}" ${dims(o)} autoplay muted loop playsinline controls preload="metadata" aria-label="${esc(alt(name, o))}"></video>`));
   // the single-file artifact: the MP4s inline as data: URIs, with a visible fallback line to the Pages copy
-  writeFileSync(join(OUT, 'snippet-artifact.html'), fig((name, o) => `<video src="data:video/mp4;base64,${readFileSync(o.mp4).toString('base64')}" ${dims(o)} autoplay muted loop playsinline controls aria-label="${esc(alt(name))}"></video>
+  writeFileSync(join(OUT, 'snippet-artifact.html'), fig((name, o) => `<video src="data:video/mp4;base64,${readFileSync(o.mp4).toString('base64')}" ${dims(o)} autoplay muted loop playsinline controls aria-label="${esc(alt(name, o))}"></video>
     <p class="note">If the clip doesn't play here, watch it on the <a href="${esc(PAGES_URL.replace(/\/?$/, '/'))}media/${basename(o.mp4)}">published copy</a>.</p>`));
   for (const f of ['snippet-pages.html', 'snippet-artifact.html']) console.log(`  ${f} ${mb(size(join(OUT, f)))}`);
 }
@@ -493,6 +592,8 @@ if (PHASE === 'encode') {
   const f = join(OUT, 'capture.json');
   if (!existsSync(f)) die(`--phase encode: no ${relative(REPO, f)} (run --phase capture first)`);
   meta = JSON.parse(readFileSync(f, 'utf8'));
+  const gone = Object.entries(meta.scenes).filter(([, s]) => Object.values(s.sides).some((d) => d.framesDeleted));
+  if (gone.length) die(`--phase encode: the screencast frames of ${gone.map(([n]) => n).join(', ')} were deleted by an earlier encode (capture.json framesDeleted); recapture (with --keep-frames to allow later re-encodes)`, 1);
 } else {
   meta = await capture();
 }

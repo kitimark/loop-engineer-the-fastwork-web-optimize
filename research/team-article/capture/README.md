@@ -72,6 +72,20 @@ carries the page about 2,900 px, and the call returns when the glide ends (2.3 s
 the 6x throttle, the rAF logger is injected before the document's first script, and the clip starts at the first
 flick. `capture.json` keeps every flick (direction, scrollY before, call time).
 
+**Cropped scenes** (T-170 #87, "the four trouble spots"): a scene with a crop selector, or any scene run with
+`--crop <selector>`, is cut to that element. The script reads the union of the matching elements' viewport boxes
+(`getBoundingClientRect`) twice per run, before the screencast starts and after it stops, so the reads add no work to
+the recorded window. The clip's rectangle is the union of both shown runs' boxes, plus `--crop-margin` (16 CSS px),
+clamped to the viewport; both sides get the same rectangle (`capture.json` `scenes.<s>.crop`). The cut is made in the
+encode step (ffmpeg `crop` + `scale`, MP4 only, no image output). A cropped scene's screencast is taken at 2 px per
+CSS px (`--crop-dpr`, 860 px wide instead of 432) so the zoom stays sharp; that costs a little more on both sides.
+The panel is `--crop-zoom` (2) times the CSS size, at most 420 x 640. `--self-test` checks the crop geometry
+without Chrome.
+
+`--keep-frames` keeps the screencast JPEGs in `out/<run>/frames/` after encoding (gitignored, never viewed or
+committed), so a later `--phase encode` with another `--fps` or crop needs no recapture. Without it the encode step
+deletes them, and a later `--phase encode` on that capture refuses.
+
 Each side of each scene gets a fresh isolated context, a load and a settle. The page is then moved to the
 scene's start in 300 px steps (unthrottled), throttled, and recorded.
 
@@ -81,7 +95,10 @@ the clip is neither a lucky nor an unlucky run. The snippet lists every run's co
 every run's counts. The unshown runs' frames are deleted at capture time.
 
 Encoding:
-- Each side's frames are laid on a 30 fps grid by their stamps: a grid slot shows the latest frame drawn by then.
+- Each side's frames are laid on an `--fps` grid (30 by default, 60 for the T-170 #89 captures) by their stamps: a
+  grid slot shows the latest frame drawn by then. The screencast delivers 80-94 frames/s and the page draws 81-115
+  (lead, T-170 #89, from the v8 capture), so even a 60 fps clip drops frames and can't show Chrome's 120 Hz frames
+  one to one; the strip shows every frame.
 - The strip under each panel is that run's rAF log. Bar width is the frame's duration and height is its dt, up to
   100 ms. Colors: grey for on-time frames, amber for k>=5 (dt >= 37.5 ms), red for k>=7 (dt >= 54.17 ms), the
   study's Chrome thresholds.
@@ -97,8 +114,8 @@ Encoding:
   cost, WebKit-only costs, the real phone's feel, or a finger on the glass (CLAUDE.md, claims-audit §2.6).
 - **Chrome understates part of the work.** Several v8 changes act only in Safari: the hero's live CSS mode
   (WebKit touch phones only), and the animations moved to where Safari can run them on its scroll thread.
-- **The video can't show every hitch.** A 30 fps video can't show a hitch shorter than about two of its frames;
-  the strip shows those.
+- **The video can't show every hitch.** A 30 fps video can't show a hitch shorter than about two of its frames,
+  and a 60 fps one can't show Chrome's 120 Hz frames one to one; the strip shows every frame.
 - **No phone at all.** The iPhone, its screen recorder (`tools/ioscap.mjs`, user T-018) and the Simulator are not
   used.
 
@@ -106,9 +123,11 @@ Encoding:
 
 - **Lock:** chrome-measure is held for any Chrome or encoder work (Hard rule 7). The capture runs in one hold
   under 8 minutes; phone-block holds go first.
+- **Quiet Mac:** a capture hold granted after a host-gate TIMEOUT (the Mac never got quiet in 600 s) refuses with
+  exit 3 and captures nothing; requeue. `capture.json` `hostGate` keeps the gate record of the hold.
 - **No image output from an encoder** (git-guard I-064; lead ruling 2026-10-05). The only ffmpeg output is
-  H.264 MP4. The screencast JPEGs are intermediate files nobody views, and the encode step deletes them;
-  `capture.json` keeps only their timestamps.
+  H.264 MP4. The screencast JPEGs are intermediate files nobody views, and the encode step deletes them
+  (unless `--keep-frames`); `capture.json` keeps only their timestamps.
 - **What gets committed:** media over 2 MB stays in `out/`. The baseline is only read: the after side's overlay
   is built in `out/` with `git apply` from the build's `patch.diff`.
 
