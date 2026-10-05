@@ -72,6 +72,17 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **P-129 rev 2 delta check: PASS** (arch-serious-heat, commit b44850f4, card research/serious-heat/README.md §5 "P-129 rev 2"). The lead may sign. No data exists: the author's worktree has no out/.
+  - Pins on disk match the message: reader p129-read.mjs 88835d4822e9, self-test p129-selftest.mjs 110cc04eb8fb. Ops re-ran the self-test: SELFTEST PASS 48.
+  - The diff against main touches only research/serious-heat/.
+  - C1: a frozen reader with gates G1-G6 (Timeline present and stopped; end-mark drift <= 2 ms; FireAnimationFrame alignment >= 95 % plus median lag within 2 ms; idle window; one segment; fs hash 8737f212c0ff), and the clock mapping is written out.
+  - C2: the busyRF twin is in place. When busy and busyRF differ, the result is ATTRIBUTION-SENSITIVE and decides nothing.
+  - C3: the sentinels S0 and S1 are named (Timeline-off E runs, fps >= 50, slow share <= 6 %). A failing S0 voids the block; a failing S1 voids every counted run.
+  - C4: the G4 idle windows, the part B floor (>= 25 moving hero frames per run) and the relative-only per-run spread are all in.
+  - N1-N5 are applied. The runner is iphone-runner. Re-runs happen once each, at the block end, at most 2 per block.
+  - Predictions 1-8 are unchanged in substance: 1 now names S0/S1, and 2 and 6 carry the N2/N3 wording.
+  - For the lead at signing: the build is 7d (ms-29c0d537e0c9). That is a research build, superseded for shipping (PR-023 goes to rev 5 on v9-final). Ops left the choice to the lead, so the lead confirms it.
+  - The P-129 row is updated (c[3], c[4] and the reader column).
 - 10-05 **P-130 assigned to fix-countdown-tick** for the countdown-tick phone no-worse check (spec: research/serious-heat/README.md §3.3.1, check 3). The lead runs it later, after v9. The row is registered at the pre-data read, once the full ticket with hashes arrives. Next free P-id: P-131.
   - Early notes sent with the id:
     - Count the values with an in-page change logger (a MutationObserver on the timer's aria-label, timestamped), not by polling: polling faster than about 1 Hz is not allowed in a timed block (§5.5).
