@@ -27,3 +27,7 @@ the steps from different agents conflict and block each other.
 a stuck-ready alarm, a refusal to open the phone over another agent's step, and `post` refusing a second
 phone step. Until they land, the runner and the lead check by hand. Related: [[user-steps-first]],
 [[no-phone-steps-during-blocks]], [[console-step-wait-yourself]].
+
+**2026-10-05 (lead).** Any step that has the user handle the iPhone (a Try-it, an Xcode heat step) is posted with
+`--phone`, by the lead too. Without it the idle alarm does not see the user on the phone: C-065 and C-067 were posted
+without it and caused the two phone idle alarms of 09:25-10:25Z (25 and 13 min, T-163 #22).
