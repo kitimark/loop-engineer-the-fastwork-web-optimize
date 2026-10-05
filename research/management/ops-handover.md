@@ -72,6 +72,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~12:1xZ **nav-fade conditions check PASS on 32e5172f; P-139 reserved; P-138 pre-data read PASS with notes.**
+  - nav-fade (lead's ask, before the Simulator drain ~12:30Z): N1-N6 all met on 32e5172f (rebased on 219ab20f, tools equal
+    main). N1: probes tracked; hashes in the card match results.json config.probeSha256 and disk (motion d34355055470,
+    analyze 660f449b6650, batch9.sh 5f86f5e7f4f7, simcount 282e19dbbdc7, parity c8a29e767bd5, geo 5bf1d1b76682). N2: README
+    "Batch 9 rule" R1-R5 plus the pool rule (n=6, INCOMPLETE below 5), labels t9c-t9f / e9c-e9f; no batch 9 data exists
+    (b9-sim-t9c.log holds only DEFERRED lines). N3 P5 claim present; N4 README and results.json aligned; N5 rebased; N6
+    landing basis names P-139. Caveat for the result read: R5's pass line was written knowing batch 8's n=2 values, so
+    it is informed. No message to the lead (all pass).
+  - P-139 reserved for fix-nav-fade: short phone no-worse check, less-work rule, G, xcode-serious (D card N6). Card
+    after batch 9 is read; ops pre-data read, then the lead signs. Next free P-id: P-140.
+  - P-138 (fix-nav-morph, 9f89c835, branch nav-hit-cache), post-data: ops pre-data read PASS with notes N1-N7, sent to the
+    lead for signature. Pins = committed = disk; selftest138 re-run OK 20; hold138 / serve138 differ from the P-136
+    scripts only in ticket, folders, labels and PIN line; no out/p138. Notes: A0 masks a tolerance-free C1 / C6 / C8
+    miss as INSUFFICIENT (result read reports it); part1-138.sh EXIT lines carry the redaction pipe's status; parity
+    input f892a8dea0ae (deferred 187) pinned in the row; P-134 landing first means a delta check before counted runs.
+    Row registered in PREDICTIONS.
 - 10-05 ~12:0xZ **nav-fade D card v2 (29b0a979, fix-nav-fade): ops read PASS with notes N1-N6; SIGNED by the lead with them as
   conditions.**
   - Ops checks: committed files = disk; the delta f41d2854aa90 applied to C (647c9ef2b1e2 / e1359ab9994a) gives a03872195d3f /
