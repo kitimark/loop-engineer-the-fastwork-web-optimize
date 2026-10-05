@@ -98,9 +98,22 @@ What it says (OBSERVED in our setup):
   a 20-frame rAF glide repaints #platform's 430x1880 layer 22-28 times (gone with `filter: none` on #platform and the
   panel), the 3 photo tracks 32-41 times each (still there with the panel fixed-size alone, and with the panel's scale
   off alone), the header ~50, the panel's center/veil/footer ~40. Rest open: only the panel clock repaints (~1/frame).
-- v9.2 arms (this topic; `em-sim.mjs`, arms in `arms/`): PENDING, the Simulator is deferred while P-142's phone block
-  runs (I-160). Arms: C, C2 (A/A), noPF (#platform filter off), padPF (candidate below), fixall (panel fixed size, no
-  scale, constant header width), noPnF (panel filter off).
+- v9.2 arms S1 (`em-sim.mjs --label s1`, `out/end-morph/em-sim-s1-2026-10-05T22-42-01-078Z.json`, 30 steps per
+  phase; C2 = C again, as an A/A). Paint events / painted Mpx per phase:
+
+  | arm | approach | #platform repaints in the approach (430x1880 layer) | open | close |
+  |---|---|---|---|---|
+  | C | 204 / 20.3 | 80 | 439 / 34.2 | 389 |
+  | C2 (A/A) | 206 | (same as C) | 416 | 381 |
+  | noPF (#platform `filter: none`) | **119 / 4.0** | **0** | 408 / 28.7 | 350 / 25.2 |
+  | padPF (constant filter outsets) | 201 / 20.1 | still there | - | - |
+
+  - In the Simulator, #platform's blurred layer repaints whole on every approach frame. This happens even at
+    fade 1, where the blur is 0 px. Without the filter it doesn't. OBSERVED in our setup, cause unknown. The phone
+    showed this repaint only on toolbar steps (2.2), so the Simulator's main-thread `scrollTo` glide may differ from the
+    phone's async scrolling here (UNRESOLVED).
+  - padPF does not remove it, so the cause is not the filter outsets changing. F3 is dropped.
+  - Open and close are within ~25 paints of the C/C2 spread with noPF, so the gain is in the approach.
 - Note: the Simulator's per-frame #platform repaint does not show on the phone without a toolbar step (2.2): the
   Simulator glide (main-thread `scrollTo`) and the phone (async scrolling) may differ here. UNRESOLVED.
 
@@ -123,10 +136,12 @@ and the Simulator; motion-only differences are proposals).
 
 | # | candidate | expected effect (where) | look | status |
 |---|---|---|---|---|
-| F1 | hide #platform while it is fully faded: `visibility: hidden` when `--morph-fade` = 0 (m >= 0.55) | removes #platform's step repaints in the panel bin (stage artboard, secure-network parts) | T0 by construction (opacity 0 already); a11y: #platform leaves the accessibility tree while the menu is open (pointer-events are already none) | to build; Chrome rest check needed (F-268 / F-272: a hidden subtree with paused animations made Chrome request frames) |
-| F2 | JS less work: read `scrollY` once per frame in the engine instead of in `__nsOnScroll`; U2 (skip the nav hit test while the morph is open, fix-nav-morph's, eligible for v9.3) | ~1 forced style pass per scroll event, ~93 hit tests per down-scroll | T0 (behaviour) | small; Chrome counts only |
-| F3 | padPF: keep #platform's filter outsets constant with a transparent drop-shadow | only if the per-frame blur repaint exists on the phone (2.3 says the phone shows it on steps only) | Chrome: 0 px over 8 at m 0.05 (other positions pending) | Simulator arm pending; low priority |
-| P1 | morph-gpu rev 1 (composited reveal: the header at final size cut by `clip-path`, parts moved by transforms), ported onto 7d | removes the per-frame repaint of the photo wall, header, center, veil, footer (Simulator: 12 -> 2 paints per frame on the M driver) | T3 motion, but PR-012 rev 1 was ACCEPTED by the user; it was kept out only for a +7 ms first-open frame, later traced to #platform's opacity crossing 1 (fixed by rev 3, in v9.2) | needs a re-port by fix-morph-gpu and the lead's decision; then Simulator counts + a phone card |
+| F1 + U2 | F1: hide #platform while it is fully faded (`visibility: hidden` when `--morph-fade` = 0, m >= 0.55). U2: fix-nav-morph's hit-test deferral | Chrome: rest open 122 -> 4 paints, step at m 1 85 -> 1, lift + settle 377 -> 157; 14-26 hit tests per open/close gone | T2 at m 0.95 in Chrome (19 css px², edge, max 40), lead-ACCEPTED provided the Simulator leg stays within T2 | built, `fixes/end-morph-f12/`; lands on v9-final (v9.2 NO-LAND); landing gates on int-v8's snapshot queued |
+| F2 | read `scrollY` once per frame in the engine instead of in `__nsOnScroll` | none in Chrome (the forced style pass only moves) | T0 | DROPPED (lead, 2026-10-05) |
+| F3 | padPF: keep #platform's filter outsets constant with a transparent drop-shadow | none (Simulator S1: the approach repaint stays) | - | DROPPED |
+| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`fixes/end-morph-f4/`, JS `839a5a24c0d4`) | Simulator approach: #platform's 80 whole-layer repaints (noPF arm: 204 -> 119 paints, 20.3 -> 4.0 Mpx) | T0 expected: `blur(0px)` draws the same as no filter. The frame where the filter comes back (fade < 1) needs checking: it may repaint once or recomposite, as rev 3's opacity-1 crossing did | Chrome + Simulator pixels and Simulator counts queued (chain 4) |
+| V1 | snap the `--fw-ms-h` write in `__msRO` to device pixels (`fixes/end-morph-v1/`, JS `1d68bc9fb4fe`) | the toolbar-step repaint, if the fractional sticky offset is its trigger (2.4 row 5) | T0 expected | step A (Simulator toolbar strokes, counts only) running: arms C, V1, N (= F1 + U2) |
+| P1 | morph-gpu rev 1 (composited reveal), ported onto 7d | Simulator: 12 -> 2 paints per frame on the M driver (morph-gpu) | T3 motion, PR-012 rev 1 ACCEPTED by the user | ported onto v9.2 here (`fixes/end-morph-p1/`, handover notes); the v9-final port and the card now belong to fix-end-morph-p1 (lead, 2026-10-05) |
 | P2 | close tail: no 0.7 s width/background transition after a scroll-driven close | ~40 frames of header layout + repaint per close | motion-only difference (residual <= the last step) -> proposal | proposal with Try-it |
 | P3 | #platform fade without blur (opacity only), if the step repaint of a blurred layer proves to be the blur | removes #platform's blur work | visible change -> proposal | after the trigger of 2.4 row 5 is known |
 
@@ -141,6 +156,16 @@ and the Simulator; motion-only differences are proposals).
 
 ## 5. Pending
 
-- Simulator arms on v9.2 (deferred by P-142).
-- padPF pixel check at the other morph positions (Chrome), then the Simulator.
-- The trigger of #platform's toolbar-step repaint (phone-only; a card after the lead's go).
+- Step A: Simulator toolbar strokes with arms C, V1 and N (`em-step-sim.mjs`). Arm C
+  (`out/end-morph/em-step-sim-end-morph-2026-10-05T22-52-18-912Z.json`):
+  - At m 1 (open, #platform at opacity 0), the 8 touch strokes (1 toolbar transition) repaint #platform's 430x1880
+    layer 1015 times. The same scroll distances without touch repaint it 0 times. So the Simulator reproduces the
+    phone's touch/step repaint (OBSERVED in our setup, cause unknown).
+  - At m 0 both runs repaint it: strokes 418 (7 transitions), control 594. That is the approach repaint of 2.3.
+  - Caveat: during the stroke phase every layer got a new id (gone 55 of 55 closed, 44 of 44 open; the control phase
+    0). So the stroke counts are paintCounts since the layers were made, and include their first paint. That cannot
+    explain 1015 paints over ~1320 frames.
+  - V1 and N decide: if V1 removes the repaint at T0, it joins F1 + U2.
+  If it can't be reproduced, step B is a phone card (P-id via the lead, pre-data read).
+- F1 + U2 landing gates on v9-final (int-v8's pinned snapshot `snap-a6426953727a`, HASHES sha256/12 `0817a71bf0c7`).
+- F4 gates and counts.

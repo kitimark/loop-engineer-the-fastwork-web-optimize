@@ -3,8 +3,11 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** built; Chrome counts and Chrome frozen-frame pixels done; Simulator counts and pixels queued (deferred
-while P-142's phone block runs). No timing run, no phone run.
+**Status:** built on v9.2. Done: Chrome counts on the final build, Chrome pixels (gate self-tested), Simulator
+pixels. Simulator counts are queued. No timing run and no phone run. v9.2 is NO-LAND (lead, 2026-10-05), so this
+change lands on v9-final (JS `647c9ef2b1e2`, CSS `e1359ab9994a`, engine 7c). There `delta.diff` applies with `patch -F0`
+(offsets -159 / -7), giving trial JS `a6426953727a`, which is the same file as int-v8's trial. The landing gates run on
+int-v8's pinned v9-final snapshot.
 **Stage:** F (build) of a less-work candidate for v9.3 (lead ruling 2026-10-05: "F1 + U2", F2 dropped).
 **Device class / gate:** phone-only, render-bound. Landing per memory "less-work-landing-rule": cost-card counts, then
 a short phone no-worse check (later in the phone queue, through the lead).
@@ -44,26 +47,40 @@ unchanged with `patch -p1`.
 
 ## Cost card (Chrome, counts only)
 
-`fixes/end-morph/em-chrome.mjs --toolbar`, 430x775 DPR 3, touch, no throttle, one shared slot, 2026-10-05 21:57-21:59Z.
-F1+F2+U2 build `25feb20a9f45` (`out/end-morph/em-f12-775-2026-10-05T21-57-33-586Z.json`) against v9.2
-(`em-v92r3-775-2026-10-05T21-58-19-288Z.json`). F2 is dropped from the build; its only effect in these counts is where
-the forced style pass is attributed (a re-run on `3625c64871fa` is pending). Totals per phase:
+Run: `fixes/end-morph/em-chrome.mjs --toolbar`, Chrome 154, 430x775 DPR 3, touch, no throttle, one shared slot.
+- Final build `3625c64871fa` (F1 + U2): `out/end-morph/em-f1u2-775-2026-10-05T22-41-02-487Z.json`.
+- v9.2 base: `em-v92r3-775-2026-10-05T21-58-19-288Z.json`.
+- An earlier run on F1+F2+U2 (`em-f12-775-...21-57-33`) agrees within a few counts.
 
-| phase (frames) | Paint events v9.2 -> F12 | styled elements | dirty layout objects | `F()` in `_()` |
-|---|---|---|---|---|
-| open (40) | 324 -> 259 | 1404 -> 1556 | 160 -> 184 | 14 -> 0 |
-| rest open (40) | **122 -> 4** | 402 -> 394 | 0 -> 0 | - |
-| close (40) | 320 -> 285 | 1074 -> 1224 | 131 -> 148 | - |
-| lift + settle to open (90) | **377 -> 163** | 1176 -> 1321 | 60 -> 84 | 11 -> 0 |
-| drag close (20) | - | - | - | 17 -> 0 |
-| toolbar step up at m = 1 (30) | **85 -> 1** | 226 -> 226 | 13 -> 13 | - |
+Totals per phase, v9.2 -> F1+U2. Phases not listed are equal within 2 counts (approach, rest closed, drag open, lift +
+settle to closed, every step at m 0).
+
+| phase (frames) | Paint events | paint area (Mpx) | styled elements | dirty layout objects | hit tests `F()` from `_()` |
+|---|---|---|---|---|---|
+| open (40) | 324 -> 259 | 128 -> 126 | 1404 -> 1580 | 160 -> 184 | 14 -> 0 |
+| rest open (40) | **122 -> 4** | **113 -> 9** | 402 -> 399 | 0 -> 0 | - |
+| close (40) | 320 -> 285 | 129 -> 126 | 1074 -> 1245 | 131 -> 155 | 26 -> 0 |
+| lift + settle to open (90) | **377 -> 157** | **266 -> 127** | 1176 -> 1273 | 60 -> 84 | 11 -> 0 |
+| drag close (20) | 163 -> 124 | 64 -> 61 | 410 -> 660 | 57 -> 81 | 17 -> 0 |
+| toolbar step up at m 0.5 (30) | **122 -> 14** | **86 -> 17** | 336 -> 420 | 16 -> 40 | - |
+| toolbar step up at m 1 (30) | **85 -> 1** | **84 -> 3** | 226 -> 226 | 13 -> 13 | - |
+| toolbar step down at m 1 (30) | 125 -> 41 | 86 -> 39 | 417 -> 320 | 34 -> 34 | - |
+
+Notes on the table:
+- **Forced style passes are unchanged** (open 62 -> 62, close 76 -> 77). U2 removes the hit tests from `_()`
+  (`getBoundingClientRect` + `elementsFromPoint`), but the forced style pass they paid moves to `__msTick`'s
+  `window.scrollY` read (`style __msTick:14467`, 14 in open, 27 in close). Chrome's style is already dirty from the
+  animations by rAF time. So in Chrome, U2 saves hit tests, not style passes. WebKit's `scrollY` forces style +
+  layout anyway (2.4 in `fixes/end-morph/README.md`, CONFIRMED).
+- At m 0.5 the toolbar step pushes m past 0.55, so F1 hides #platform there too. Stepping down from m 0.5 stays below
+  0.55: 117 -> 117.
 
 - **One-off cost of F1 (the return frame):** each crossing of fade 0 restyles the #platform subtree once: about +150
   styled elements and +24 dirty layout objects per open and per close (rows open, close, lift). It falls in one frame
   (hide at m 0.55 going in; show at m < 0.55 coming back). The show frame also repaints #platform (it was not painted
   while hidden): the open/close Paint totals above already include it.
-- **Rest check (F-268 / F-272):** no new main frames at rest open: style recalcs 39 of 40 frames in both builds (the
-  panel's own animations run frames anyway), raster 14 vs 11.
+- **Rest check (F-268 / F-272):** no new main frames at rest open. Both builds: style recalcs 39 of 40 frames (the
+  panel's own animations run frames anyway), commits 39, rAF 49 vs 50, raster 11 vs 12.
 - **a11y:** while hidden, #platform is out of the accessibility tree; that is only while the menu covers it
   (m >= 0.55, the panel is `aria-hidden` only below m 0.35). Its pointer-events were already `none` there.
 
@@ -82,11 +99,23 @@ up, 0.5 / 0.1 / 0 coming back (`out/end-morph/px2-chrome-f12-2026-10-05T22-04-23
   is a T2 difference (edge, max 40 < 128, 0.0056 % < 0.5 %), not T0. Nothing at m 0.8, 0.99, 1.
 - **Lead ruling (2026-10-05):** m 0.95 is ACCEPTED as T2 (within PR-010's fill 64 / edge 128 / 0.5 % / 2,000 css px),
   provided the Simulator leg also stays within T2. The compositing cause stays OBSERVED, cause unknown.
-- Self-test of the gate (v9.2 against itself) and the Simulator leg: queued.
+- Gate self-test, Chrome (v9.2 against itself, same 18 stops): 0 consistent at every stop
+  (`px2-chrome-selftest-2026-10-05T22-15-17-612Z`).
+
+Simulator (fw-sim iPhone 15 Pro Max, `--engine sim`, 7 stops: pre, m 0.1 / 0.6 / 0.95 / 1 going up, 0.5 / 0 coming back):
+- Self-test (`px2-sim-selftest-2026-10-05T22-48-44-833Z`): 0 consistent at every stop. Before the zone, the A/A pairs
+  differ by 7 % (over 8 levels) in the photo cards under the nav. Those cards are still changing there in the Simulator.
+- F1+U2 (`px2-sim-f12-2026-10-05T22-50-36-447Z`): **0 at m 0.1, 0.6, 0.95, 1 and 0.5 coming back**. m 0 coming back:
+  4 css px², max 16 (fill), in the secure-network card.
+- Before the zone: 73 css px² consistent, max 134, on the photo card's image under the nav. In one of the two V loads
+  the next card ("Legal consult") is already in view (V/V 4.9 %). At this stop F1+U2's code path is the same as v9.2's
+  (m 0, fade 1, no inline visibility; the STATE of all four loads is equal). So this reads as the noisy region the
+  self-test shows, caught by chance in both V loads. That is OBSERVED. A rerun is queued (chain 4) to settle it before
+  this leg is claimed within T2.
 
 ## Pending
 
-- Gate self-test (Chrome, Simulator); Simulator pixels (must stay within T2) and counts (layer paintCount per phase,
-  the return frame).
-- Chrome counts re-run on the final build `3625c64871fa` (without F2).
-- Phone no-worse check (later, through the lead), less-work rule.
+- Simulator pixel rerun before the zone; Simulator counts (layer paintCount per phase, the return frame).
+- Landing gates on int-v8's pinned v9-final snapshot: Chrome em-px2, Simulator em-px2, Chrome counts, cost card.
+- Phone no-worse check (less-work rule). The iPhone is disconnected (T-207); the lead posts the reconnect step when
+  the card is ready.
