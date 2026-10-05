@@ -3,7 +3,8 @@
 # (rev 1.2, U2 OUT); fixes/v9-2/README.md "P-142"): one phone hold. A copy of P-134's fixes/v9-1d/phone/hold134.sh (itself
 # P-132's / P-122's hold122.sh with the same gates, guards and item grammar) with the ticket, the folders, the labels
 # (p142-) and the servers (serve142.sh) changed, and one part added: G parts M, X, S as P-134 plus H (nav-fade's hero
-# flip, P-139's stand-in); part R stays dropped. Scripts:
+# flip, P-139's stand-in); part R stays dropped. Rev 1.3a (lead, pre-data; v9.2 = v9.1d, nf OUT): part H is DROPPED
+# too: an H item is refused like R (exit 4, no run); PROG_H / flick-hero-v1 stay below for the record only. Scripts:
 #   M = p121/flick-middle-v2.json, X = p121/flick-end-v2.json speed=fast, S = the same speed=slow,
 #   H = fixes/v8-best/phone/g/flick-hero-v1.json (T-113: 3 s idle at the top, fast flicks down through the hero to
 #       y >= 1800 and back to the top, twice: four 0.72 hero flips a run).
@@ -58,8 +59,9 @@ PARTS=""
 for I in "$@"; do case $I in
   w[CV]|sC[oc]) ;;
   wgR*|gR*) echo "HOLD $H VOID item $I: P-142 has no part R (no run)"; exit 4 ;;
-  wg[MXSH][CV]) PARTS="$PARTS $(echo "$I" | cut -c3)" ;;
-  g[MXSH][CV][0-9]*) PARTS="$PARTS $(echo "$I" | cut -c2)" ;;
+  wgH*|gH*) echo "HOLD $H VOID item $I: P-142 rev 1.3a has no part H (nf OUT; no run)"; exit 4 ;;
+  wg[MXS][CV]) PARTS="$PARTS $(echo "$I" | cut -c3)" ;;
+  g[MXS][CV][0-9]*) PARTS="$PARTS $(echo "$I" | cut -c2)" ;;
   *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;;
 esac; done
 if [ -n "$PARTS" ]; then
@@ -83,8 +85,8 @@ for I in "$@"; do
     wC) A=C; K=S; EX="--warmup --arm C"; L=p142-wC-$H ;;
     wV) A=V; K=S; EX="--warmup --arm V"; L=p142-wV-$H ;;
     sC[oc]) A=C; K=S; EX="--warmup --heat-sentinel --arm C"; L=p142-$I-$H ;;
-    wg[MXSH][CV]) P=$(echo "$I" | cut -c3); A=$(echo "$I" | cut -c4); K=G; L=p142-$I-$H ;;
-    g[MXSH][CV][0-9]*) P=$(echo "$I" | cut -c2); A=$(echo "$I" | cut -c3); K=G; L=p142-$I ;;
+    wg[MXS][CV]) P=$(echo "$I" | cut -c3); A=$(echo "$I" | cut -c4); K=G; L=p142-$I-$H ;;
+    g[MXS][CV][0-9]*) P=$(echo "$I" | cut -c2); A=$(echo "$I" | cut -c3); K=G; L=p142-$I ;;
   esac
   case $A in C) U=$CU ;; V) U=$VU ;; esac
   [ -e "$O/$L.json" ] && { mv "$O/$L.json" "$O/$L.json.prev-$H-$(date +%s)" || { echo "HOLD $H VOID cannot move aside $O/$L.json"; exit 4; }
@@ -98,7 +100,7 @@ for I in "$@"; do
   echo "RUN $I exit $r $(date -u +%TZ) load1 $(sysctl -n vm.loadavg | cut -d' ' -f2)"
   if [ $r -ne 0 ] || [ ! -s "$O/$L.json" ]; then
     echo "ITEM $I VOID exit $r$( [ -s "$O/$L.json" ] || echo ', no run file')"
-    case $I in g[MXSH][CV][0-9]*) BAD="$BAD $I" ;; esac
+    case $I in g[MXS][CV][0-9]*) BAD="$BAD $I" ;; esac
   fi
 done
 gate end; g=$?

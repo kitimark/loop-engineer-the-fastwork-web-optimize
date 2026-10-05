@@ -19,8 +19,11 @@
 //                  Per window kind: nf-read's compare (sum per run, >= 3 runs an arm; WORSE only if V's min > C's max).
 //                  The gate reads the > 50 ms count (twins > 46 / > 54: threshold-sensitive); the > 34 ms count is
 //                  reported only. Part S's end windows are reported only. NF WORSE -> nav-fade no-land in the bisect.
-// Block verdict: BEHAVIOUR FAIL (own line, leads) if the parity counts; frames: WORSE if any gate (GM, EX, ES, FLICKER,
-// FLICKER_H, NF) is WORSE or has a NEW cluster; else insufficient if any is; else no-worse.
+// Rev 1.3a (lead ruling, pre-data, after rev 1.3 put nf OUT: v9.2 = v9.1d): part H and the NF gate are DROPPED (both were
+// there only for nav-fade, which has no arm now). score142() refuses any H item (wgH*/gH*: throws; the CLI exits 3) and
+// computes neither FLICKER_H nor NF; the H / NF helpers below stay for the record and are not called. Nothing else changed.
+// Block verdict: BEHAVIOUR FAIL (own line, leads) if the parity counts; frames: WORSE if any gate (GM, EX, ES, FLICKER)
+// is WORSE or has a NEW cluster; else insufficient if any is; else no-worse.
 //   node fixes/v9-2/phone/score142.mjs <item>:<file> ... [--json out.json]   (block order, VALID holds only)
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -130,15 +133,11 @@ export function flickerH(entries, hRuns, run) {
   return { ...p, exit: r.status, files: { C: f.C.length, V: f.V.length }, json: r.json ?? null, out: (r.stdout || '').trim().split('\n').slice(-12) };
 }
 
-export function score142(entries, flicker = null, runFlicker = null) {
-  const mxs = entries.filter((e) => !isH(e.item));
-  const out = Q.scoreP122(mxs, flicker);
-  const hRuns = entries.filter((e) => isH(e.item)).map((e) => scoreH(e.item, e.j, e.checkLog, e.j ? e.file : null)).filter(Boolean);
-  chainH(entries, out.runs, hRuns);
-  out.runs = out.runs.concat(hRuns);
-  if (runFlicker) out.gates.FLICKER_H = flickerH(entries, hRuns, runFlicker);
-  out.gates.NF = nfGate(entries, out.runs.filter((r) => r.part !== 'H'), hRuns);
-  out.reported.H = hRuns.map((r) => ({ item: r.item, void: r.void, moving: r.moving, flips: r.flips }));
+export const H_DROPPED = 'part H dropped in P-142 rev 1.3a (nf OUT)';
+export function score142(entries, flicker = null) {
+  const h = entries.filter((e) => isH(e.item)).map((e) => e.item);
+  if (h.length) throw new Error(`${H_DROPPED}: refuse ${h.join(', ')}`);
+  const out = Q.scoreP122(entries, flicker);
   const vs = Object.values(out.gates).map((g) => g.verdict);
   let verdict = vs.some((x) => /^(WORSE|NEW CLUSTER)/.test(x)) ? 'WORSE' : vs.some((x) => /^insufficient/.test(x)) ? 'insufficient' : 'no-worse';
   if (out.reported.parity.verdict === 'BEHAVIOUR FAIL') verdict = `BEHAVIOUR FAIL; frames ${verdict}`;
@@ -156,19 +155,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const fj = fbase ? `${fbase}-flicker-${P}.json` : null;
     return { ...spawnSync(process.execPath, [Q.FLICKER, '--arm', 'C', ...C, '--arm', 'V', ...V, ...(fj ? ['--json', fj] : [])], { encoding: 'utf8' }), json: fj };
   };
-  const mxs = entries.filter((e) => !isH(e.item));
-  const out = score142(entries, Q.flickerGate(Q.flickerFiles(mxs), runF), runF);
+  if (entries.some((e) => isH(e.item))) { console.error(`${H_DROPPED}: refuse ${entries.filter((e) => isH(e.item)).map((e) => e.item).join(', ')}`); process.exit(3); }
+  const out = score142(entries, Q.flickerGate(Q.flickerFiles(entries), runF));
   for (const r of out.runs) {
     const what = r.kind === 'S' ? `sentinel ${JSON.stringify(r.sentinel?.pass ?? null)}`
-      : r.part === 'H' ? `moving ${JSON.stringify(r.moving ?? null)} flips ${JSON.stringify(r.flips ?? null)}`
       : `${JSON.stringify(r.window ?? r.counts)}${r.path?.outs ? '; outs ' + JSON.stringify(r.path.outs.map((o) => [o.name, o.fv, o.travel, o.fromEnd])) : ''}`;
     console.log(`${r.item}: ${r.void.length ? 'VOID ' + r.void.join(' | ') : 'valid'}; ${what}${r.f260 ? `; f260 ${JSON.stringify(r.f260)}` : ''}`);
   }
-  for (const [k, g] of Object.entries(out.gates)) if (k !== 'NF') console.log(`${k}: ${JSON.stringify({ ...g, parts: undefined })}`);
+  for (const [k, g] of Object.entries(out.gates)) console.log(`${k}: ${JSON.stringify({ ...g, parts: undefined })}`);
   for (const [P, x] of Object.entries(out.gates.FLICKER.parts)) console.log(`FLICKER ${P}: ${x.verdict}${x.files ? ` (files C ${x.files.C} V ${x.files.V})` : ''}`);
-  for (const [k, x] of Object.entries(out.gates.NF.kinds)) console.log(`NF ${k} (part ${x.part}): ${x.verdict}; > 50 C ${JSON.stringify(x.gt50.C)} V ${JSON.stringify(x.gt50.V)}; > 34 (report) ${x.gt34Report}; windows C ${JSON.stringify(x.windowsC)} V ${JSON.stringify(x.windowsV)}`);
-  console.log(`NF part S end windows (report only): ${JSON.stringify(out.gates.NF.sReport)}`);
-  console.log(`NF: ${out.gates.NF.verdict}`);
   for (const [P, x] of Object.entries(out.reported.parity.parts)) {
     const runs = x.runs.C.concat(x.runs.V).map((r) => `${r.item} ${r.compared ? `${r.compared.d}${r.compared.clipped ? ' clipped' : ''} (${r.compared.how})` : '-'}`).join(' | ');
     console.log(`parity ${P} (OBSERVED, lift to settle or next stroke): ${x.compared ? `${x.compared}: median C ${x.C} V ${x.V} gap ${x.gap}; pairs ${JSON.stringify((x.pairs || []).map((q) => [q.n, q.gap, q.counts]))}; ${x.verdict}` : 'reported only'}${x.firstDown ? `; first page-down (report) C ${x.firstDown.C} V ${x.firstDown.V}` : ''}; runs ${runs}`);

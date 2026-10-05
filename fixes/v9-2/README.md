@@ -235,7 +235,7 @@ the same bytes, A/A and V/V included, over 2,000 css px²) differ only at y 1739
   superseded by this one; the card text stays as registered.
 - **Left for the lead (not changed):** part 2's part H (the hero flip, added for nav-fade) and score142's NF gate (the
   nav-fade windows) now ask a v9.1d-vs-v9-final question nobody needs for landing; they stay as registered unless the
-  lead drops them.
+  lead drops them. (The lead dropped both: rev 1.3a below.)
 
 | file (rev 1.3) | sha256/12 |
 |---|---|
@@ -252,6 +252,32 @@ the same bytes, A/A and V/V included, over 2,000 css px²) differ only at y 1739
 | fixes/v9-2/pre/pw92.sh | 9989193659db (rev 1.2 fix: an empty probe result exits 5, VOID; was 472f81e00ded) |
 | fixes/v9-2/pre/samebytes.sh | be51a7217478 |
 | out/v92/snap-941aa13e5bdf/HASHES.txt | f5f2db042aaf |
+
+### Rev 1.3a: part H and the NF gate dropped (lead ruling after the rev 1.3 delta check PASS; pre-data scope reduction)
+
+- **Lead (~17:5xZ):** "Delta check of P-142 rev 1.3 (53b0af35): PASS. ... The nf OUT call stands by the rule as written ...
+  Ruling: drop part 2's part H (the hero flip) and score142's NF gate. Both were added only for nav-fade, so with nf OUT
+  they have no arm. This is a pre-data scope reduction: disclose it in the README and change no other rule." GO for part
+  1 as registered at 53b0af35 (started then, before this edit; part1.sh is untouched here).
+- **What changed (phone kit only; no part 2 data exists):**
+  - `hold142.sh`: H items (wgH*, gH*) are refused like part R (HOLD VOID, exit 4, no run); the item patterns are
+    [MXS]. PROG_H and flick-hero-v1 stay in the file for the record only (still pinned in the PIN line, never run).
+  - `score142.mjs`: `score142()` refuses any H item (throws; the CLI exits 3) and computes neither FLICKER_H nor NF; the
+    gates are GM, EX, ES, FLICKER; the block verdict is BEHAVIOUR FAIL (leads) / WORSE / insufficient / no-worse over those
+    four. The H / NF helpers and the nf-read pin stay in the file, unused.
+  - `selftest142.mjs`: the H / NF checks became refusal checks (score142 refuses gHC1, gHV2, wgHC; hold142 refuses wgHV,
+    gHV1, gHC2 and a hold mixing M and H); with P-122's pins the wrapper's gates are exactly GM, EX, ES, FLICKER and its
+    block verdict equals P-122's score-final.json. **SELFTEST-142 OK 38** (was 44: the H / NF synthetic checks are gone).
+- **Part 2 as now planned:** holds H1a-c (M), H2a-c (X), H3a-c (S) exactly as registered; H4a-c (part H) and their spares
+  (H C 3+1, V 3+1) are dropped: 9 holds, ~70 min. In the card block below, part H, FLICKER_H and NF are superseded by
+  this section; every other part 2 rule (sentinels, gates, time guard, items, spares of M / X / S, scorer pins) is
+  unchanged. The bisect rows that name NF / FLICKER_H no longer apply (nf is not in V).
+
+| file (rev 1.3a) | sha256/12 |
+|---|---|
+| fixes/v9-2/phone/hold142.sh | aa4b9baae11e (was a9e0cbb38d8c) |
+| fixes/v9-2/phone/score142.mjs | 8960b2d9a721 (was bf977770727c) |
+| fixes/v9-2/phone/selftest142.mjs | 380d04acefe0 (was 5d4d06937b6e) |
 
 ### Part 1: counts (no timing; `sh fixes/v9-2/part1.sh` in the background, after the sign and the read)
 
