@@ -571,6 +571,29 @@ gain needs a phone ticket (timing is deferred) and the user's swipe A/B.
 
 ## Risks, conflicts, follow-ups
 
+- **T-194 profile-deck layout (Simulator, counts; ms descriptive, F-084; all OBSERVED in our setup, cause unknown).**
+  Scripted swipe 0 -> 2500 (`t194/swipe-sim.mjs`, 10 px per rAF, 430x775; out/morph-scroll/t194/swipe-sim-2026-10-05T14-37-48-280Z.json):
+
+  | arm | Layout / frame | Layout ms / frame | 2000-2500 ms / frame |
+  |---|---|---|---|
+  | v9-final + 7d (1b2eecc66011) | 3.07 | 41.6 | 42.0 |
+  | v9.1d (941aa13e5bdf) | 2.77 | 41.2 | 41.9 |
+  | v9.1d + `contain: layout` on `.start-selling-profile-deck` | 2.80 | 41.5 | 40.8 |
+  | v9.1d + `content-visibility: auto; contain-intrinsic-size: auto 844px` on the deck | 2.66 | 18.5 | 0.6 |
+
+  - Freezing the deck (`content-visibility: hidden`, 13:26Z run) took v9 from 40.1 to 0.6 ms per frame, so the deck subtree
+    is the cost.
+  - A DOM-write census during the v9.1d swipe (`t194/mut-census.js`) found 400 mutations, only 4 inside the deck (a
+    `data-fw-wc` flip). Nothing writes into the deck per frame; it is laid out again because something outside dirties
+    layout. The top outside writers: countdown digit cells (`span.cell` style, 176), carousel image `src` swaps (66),
+    the script accent (`span.paint`, 40), the avatar carousel class (16).
+  - In v9, 247 of the view-rooted layouts (4.8 s) were forced inside the future section's scroll handler `l()` (JS 12161
+    reads `.hero-track` and the card rects every frame). v9.1d's scroll-cb gates that handler, but the deck still costs
+    ~41 ms per frame. The work moves into the rendering update; it does not go away.
+  - `content-visibility: auto` saves the cost only while the deck is off screen (2000-2500: 0.6; 0-850: 19); on screen
+    (850-2000) it stays ~42-44 ms. Next probe: which outside write dirties the deck (a `contain: strict` + fixed height arm,
+    and per-writer ablation of the countdown, the carousels and the script accent).
+
 - **Half-open rest:** fixed in rev 4 by the script settle (rev 2/3 could rest at p 0.3-0.7). Rev 6 commits at lift-off
   (touchend) inside the extra screen, deciding on p + 500 ms x the scroll speed; the 200 ms rest timer is the fallback.
   Not checked: touching the screen while the settle glides; the user's own finger (F), whose speeds differ from the
