@@ -72,6 +72,11 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~10:0xZ **P-131 SIGNED; landings; P-129 split around a user Try-it.**
+  - Landed: ops d6a97cb7 as abc76adf; art-worst-cases' clips as cc18469c.
+  - P-131 SIGNED by the lead on the ops read of 97317e32. The owner fixes S2/S3 (text only) first and sends ops the sha; ops checks that only text changed and the pins hold.
+  - The user takes the iPhone for a PR-023 Try-it between P-129's two halves (about 10:12Z, T-190). P-129 part 2 starts after it, with its own start gate.
+  - P-132 (int-v8 v9.1): renamed in 60f2f434 (not rebased; no data). Waits on the y 5090 pixel result and the Simulator fling parity (after P-129), then the rebase; ops then reads it pre-data. serve132.sh snap builds out/p132/snap from the C and V source snaps and refuses other hashes; ops asked int-v8 to make snap the runner's step 1 and to say which added result gates the block.
 - 10-05 ~09:5xZ **P-131 pre-data read: PASS** (fix-toolbar-resize, card rev 1 at 8dec6b59 on worktree-agent-a59b828cbac654be5, rebased on 9f369b8a; P-id from the lead's pre-sign ruling, which also accepted the nvn/tps swap for trk/pbx before data).
   - Pins: committed blobs = disk = card for inject 2cfd9c00b9f1, driver 73215a3c3912, gate da32f37117f6, self-test 2647e1b4a53f, scorer cb6f0c97b81b (= main), split-io119 1ad22b858eb8, flick-hero-v1.json 6ae05e12ace9. Self-test re-run by ops: 61 checks ok. No data: out/toolbar-resize/simpgp is empty.
   - The card has the question, known facts with status words (F-265 OBSERVED; WebKit R1/R2 CONFIRMED with commit and lines), arms with coverage and side effects, a frozen gate (INSUFFICIENT, never NONE), the frozen scorer, rules 1-5 (NOT REPRODUCED, CONTROL-FAILED, reading, look, never a gain), 10 predictions with p.
