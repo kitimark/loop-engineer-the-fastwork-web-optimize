@@ -1,0 +1,1110 @@
+{
+ "tool": "fixes/end-bg/img/rebuild-b.mjs",
+ "proposal": "PR-025 option new-format (B)",
+ "builtBy": "fixes/end-bg/img-build.mjs --option B",
+ "versions": {
+  "avifenc": "1.3.0 (aom [enc/dec]:3.13.1)",
+  "sips": "sips-316",
+  "macOS": "26.2 (25C56)"
+ },
+ "settings": {
+  "avifenc": [
+   "-q",
+   "68",
+   "-s",
+   "6",
+   "-j",
+   "2"
+  ],
+  "jpegQ": 90,
+  "intermediate": "sips -s format png [--resampleHeightWidth H W] <src> --out <tmp.png>"
+ },
+ "totals": {
+  "pictures": 35,
+  "srcBytes": 5587773,
+  "outBytes": 812362,
+  "overlayFiles": 38
+ },
+ "skipped": [
+  {
+   "path": "/selling/sellers/photographer/cover.jpg",
+   "why": "AVIF skipped: no literal reference (built at runtime); right-sized only"
+  },
+  {
+   "path": "/selling/sellers/photographer/post-tuna.jpg",
+   "why": "AVIF skipped: no literal reference (built at runtime); right-sized only"
+  },
+  {
+   "path": "/selling/sellers/photographer/service-strawberry.jpg",
+   "why": "AVIF skipped: no literal reference (built at runtime); right-sized only"
+  }
+ ],
+ "edits": {
+  "urls": [
+   {
+    "from": "/selling/commission/avatar-john.jpg",
+    "to": "/selling/commission/avatar-john.avif"
+   },
+   {
+    "from": "/selling/commission/client-avatar-1.png",
+    "to": "/selling/commission/client-avatar-1.avif"
+   },
+   {
+    "from": "/selling/commission/client-avatar-2.png",
+    "to": "/selling/commission/client-avatar-2.avif"
+   },
+   {
+    "from": "/selling/commission/client-avatar-3.png",
+    "to": "/selling/commission/client-avatar-3.avif"
+   },
+   {
+    "from": "/selling/hero/bold-cover.jpg",
+    "to": "/selling/hero/bold-cover.avif"
+   },
+   {
+    "from": "/selling/hero/leobeer-cover.jpg",
+    "to": "/selling/hero/leobeer-cover.avif"
+   },
+   {
+    "from": "/selling/hero/mod-avatar.jpg",
+    "to": "/selling/hero/mod-avatar.avif"
+   },
+   {
+    "from": "/selling/hero/mod-cover.jpg",
+    "to": "/selling/hero/mod-cover.avif"
+   },
+   {
+    "from": "/selling/hero/weng-avatar.jpg",
+    "to": "/selling/hero/weng-avatar.avif"
+   },
+   {
+    "from": "/selling/hero/weng-cover.jpg",
+    "to": "/selling/hero/weng-cover.avif"
+   },
+   {
+    "from": "/selling/media/avatar-cat.png",
+    "to": "/selling/media/avatar-cat.avif"
+   },
+   {
+    "from": "/selling/media/cover-cafe.jpg",
+    "to": "/selling/media/cover-cafe.avif"
+   },
+   {
+    "from": "/selling/media/post-1.png",
+    "to": "/selling/media/post-1.avif"
+   },
+   {
+    "from": "/selling/media/post-2.png",
+    "to": "/selling/media/post-2.avif"
+   },
+   {
+    "from": "/selling/media/post-3.png",
+    "to": "/selling/media/post-3.avif"
+   },
+   {
+    "from": "/selling/media/service-cafe.png",
+    "to": "/selling/media/service-cafe.avif"
+   },
+   {
+    "from": "/selling/media/service-kitchen.png",
+    "to": "/selling/media/service-kitchen.avif"
+   },
+   {
+    "from": "/selling/platform/features/secure/network/portrait-left.png",
+    "to": "/selling/platform/features/secure/network/portrait-left.avif"
+   },
+   {
+    "from": "/selling/platform/features/secure/network/portrait-right.png",
+    "to": "/selling/platform/features/secure/network/portrait-right.avif"
+   },
+   {
+    "from": "/selling/profile/portfolio-1.jpg",
+    "to": "/selling/profile/portfolio-1.avif"
+   },
+   {
+    "from": "/selling/roles/architect.png",
+    "to": "/selling/roles/architect.avif"
+   },
+   {
+    "from": "/selling/roles/graphic-designer.png",
+    "to": "/selling/roles/graphic-designer.avif"
+   },
+   {
+    "from": "/selling/sellers/ai-automation/avatar.jpg",
+    "to": "/selling/sellers/ai-automation/avatar.avif"
+   },
+   {
+    "from": "/selling/sellers/ai-video-editor/avatar.jpg",
+    "to": "/selling/sellers/ai-video-editor/avatar.avif"
+   },
+   {
+    "from": "/selling/sellers/graphic-designer/avatar.jpg",
+    "to": "/selling/sellers/graphic-designer/avatar.avif"
+   },
+   {
+    "from": "/selling/sellers/photographer/avatar.jpg",
+    "to": "/selling/sellers/photographer/avatar.avif"
+   },
+   {
+    "from": "/selling/sellers/reviewers/r5.jpg",
+    "to": "/selling/sellers/reviewers/r5.avif"
+   },
+   {
+    "from": "/selling/sellers/sound-composer/avatar.jpg",
+    "to": "/selling/sellers/sound-composer/avatar.avif"
+   },
+   {
+    "from": "/selling/sellers/sound-composer/post-maynila.jpg",
+    "to": "/selling/sellers/sound-composer/post-maynila.avif"
+   },
+   {
+    "from": "/selling/sellers/sound-composer/post-orchestra.jpg",
+    "to": "/selling/sellers/sound-composer/post-orchestra.avif"
+   },
+   {
+    "from": "/selling/sellers/sound-composer/post-you-me-me.jpg",
+    "to": "/selling/sellers/sound-composer/post-you-me-me.avif"
+   },
+   {
+    "from": "/selling/sellers/ux-ui-designer/avatar.jpg",
+    "to": "/selling/sellers/ux-ui-designer/avatar.avif"
+   },
+   {
+    "from": "/selling/sellers/web-developer/avatar.jpg",
+    "to": "/selling/sellers/web-developer/avatar.avif"
+   }
+  ],
+  "lazy": {
+   "from": "var sN = h(`<img loading=\"eager\" decoding=\"async\" alt=\"\"/>`)",
+   "to": "var sN = h(`<img loading=\"lazy\" decoding=\"async\" alt=\"\"/>`)"
+  }
+ },
+ "code": {
+  "_app/immutable/nodes/2.DyWL8TcE.js": {
+   "base": "fixes/end-bg/overlay/_app/immutable/nodes/2.DyWL8TcE.js",
+   "baseSha256": "1b2eecc660111822b119cf06edcc8676ce5c303a8981915792d1b93cf1b88428",
+   "refs": {
+    "/selling/commission/avatar-john.jpg": 2,
+    "/selling/commission/client-avatar-1.png": 1,
+    "/selling/commission/client-avatar-2.png": 1,
+    "/selling/commission/client-avatar-3.png": 2,
+    "/selling/hero/bold-cover.jpg": 1,
+    "/selling/hero/leobeer-cover.jpg": 1,
+    "/selling/hero/mod-avatar.jpg": 1,
+    "/selling/hero/mod-cover.jpg": 1,
+    "/selling/hero/weng-avatar.jpg": 1,
+    "/selling/hero/weng-cover.jpg": 1,
+    "/selling/media/avatar-cat.png": 3,
+    "/selling/media/cover-cafe.jpg": 2,
+    "/selling/media/post-1.png": 2,
+    "/selling/media/post-2.png": 3,
+    "/selling/media/post-3.png": 3,
+    "/selling/media/service-cafe.png": 1,
+    "/selling/media/service-kitchen.png": 2,
+    "/selling/profile/portfolio-1.jpg": 1,
+    "/selling/roles/architect.png": 1,
+    "/selling/roles/graphic-designer.png": 1,
+    "/selling/sellers/ai-video-editor/avatar.jpg": 1,
+    "/selling/sellers/reviewers/r5.jpg": 1,
+    "/selling/sellers/ux-ui-designer/avatar.jpg": 1
+   },
+   "lazy": true,
+   "outSha256": "049b13ced4e360f6dc1f0e7e5bd42c6a9043baad01e4d5ce75f8613acc9c73dd"
+  },
+  "_app/immutable/assets/2.gBuqKVzi.css": {
+   "base": "fixes/end-bg/overlay/_app/immutable/assets/2.gBuqKVzi.css",
+   "baseSha256": "e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba",
+   "refs": {},
+   "lazy": false,
+   "outSha256": "e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba"
+  },
+  "index.html": {
+   "base": "site-pretty/index.html",
+   "baseSha256": "26e46ddee0170a68dfcd140fc0f89148ae4b536a69323d6f0c778a4d68881164",
+   "refs": {
+    "/selling/commission/avatar-john.jpg": 2,
+    "/selling/commission/client-avatar-1.png": 1,
+    "/selling/commission/client-avatar-2.png": 1,
+    "/selling/commission/client-avatar-3.png": 3,
+    "/selling/hero/bold-cover.jpg": 2,
+    "/selling/hero/leobeer-cover.jpg": 2,
+    "/selling/hero/mod-avatar.jpg": 2,
+    "/selling/hero/mod-cover.jpg": 2,
+    "/selling/hero/weng-avatar.jpg": 2,
+    "/selling/hero/weng-cover.jpg": 2,
+    "/selling/media/avatar-cat.png": 3,
+    "/selling/media/post-2.png": 1,
+    "/selling/media/post-3.png": 1,
+    "/selling/media/service-kitchen.png": 1,
+    "/selling/platform/features/secure/network/portrait-left.png": 1,
+    "/selling/platform/features/secure/network/portrait-right.png": 1,
+    "/selling/sellers/ai-automation/avatar.jpg": 1,
+    "/selling/sellers/ai-video-editor/avatar.jpg": 2,
+    "/selling/sellers/graphic-designer/avatar.jpg": 2,
+    "/selling/sellers/photographer/avatar.jpg": 2,
+    "/selling/sellers/reviewers/r5.jpg": 2,
+    "/selling/sellers/sound-composer/avatar.jpg": 3,
+    "/selling/sellers/sound-composer/post-maynila.jpg": 1,
+    "/selling/sellers/sound-composer/post-orchestra.jpg": 1,
+    "/selling/sellers/sound-composer/post-you-me-me.jpg": 1,
+    "/selling/sellers/ux-ui-designer/avatar.jpg": 2,
+    "/selling/sellers/web-developer/avatar.jpg": 1
+   },
+   "lazy": false,
+   "outSha256": "10919c0334b4f7bff01f5a6e4e057be6bb42c42aa6d9744abde853481816be66"
+  }
+ },
+ "pictures": [
+  {
+   "src": "/selling/commission/avatar-john.jpg",
+   "srcSha256": "adb612e3c7081066a16bbbf1638d2cd0e073b02a0801bb87befdc6db9a45a5a8",
+   "srcPx": [
+    320,
+    480
+   ],
+   "srcBytes": 24246,
+   "op": {
+    "resize": [
+     87,
+     130
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/commission/avatar-john.avif",
+   "outPx": [
+    87,
+    130
+   ],
+   "outBytes": 2306,
+   "outSha256": "6f1a69fc8881f9a109b61128af67167489b7c48b70e7280768f69da5f615f13d",
+   "refs": 4,
+   "why": "x-need 3.7 + AVIF"
+  },
+  {
+   "src": "/selling/commission/client-avatar-1.png",
+   "srcSha256": "4eae3d38c118cfec9440cab08d71572794e825b55681c74f8f4822a9b1437418",
+   "srcPx": [
+    319,
+    479
+   ],
+   "srcBytes": 24571,
+   "op": {
+    "resize": [
+     84,
+     127
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/commission/client-avatar-1.avif",
+   "outPx": [
+    84,
+    127
+   ],
+   "outBytes": 2334,
+   "outSha256": "a18d6c033ed8a10964b2b0ee2a0d102e2714c61cbeb64b6d0f333ddc050ea0b7",
+   "refs": 2,
+   "why": "x-need 3.8 + AVIF"
+  },
+  {
+   "src": "/selling/commission/client-avatar-2.png",
+   "srcSha256": "b1837da3f15469eda479686e805fc739794804f7ebd793cf3171f16d48e05656",
+   "srcPx": [
+    349,
+    479
+   ],
+   "srcBytes": 26047,
+   "op": {
+    "resize": [
+     85,
+     116
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/commission/client-avatar-2.avif",
+   "outPx": [
+    85,
+    116
+   ],
+   "outBytes": 2213,
+   "outSha256": "c1ad74285ed9cc178f1bbf57686aeb1a4ae42210284ccae0249da022337bdaf6",
+   "refs": 2,
+   "why": "x-need 4.15 + AVIF"
+  },
+  {
+   "src": "/selling/commission/client-avatar-3.png",
+   "srcSha256": "e7d7b1ffb83b3286b815099942752929be8ca40008bbb4d2e5cfb03621a562dc",
+   "srcPx": [
+    320,
+    480
+   ],
+   "srcBytes": 24553,
+   "op": {
+    "resize": [
+     84,
+     126
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/commission/client-avatar-3.avif",
+   "outPx": [
+    84,
+    126
+   ],
+   "outBytes": 1837,
+   "outSha256": "70ef569585fdf54382f6d09a747d1d5db32f100b519bcd6b75129c9a62b8076d",
+   "refs": 5,
+   "why": "x-need 3.81 + AVIF"
+  },
+  {
+   "src": "/selling/hero/bold-cover.jpg",
+   "srcSha256": "d1a0f52f20ab3cefeb693405b4803010a3d58f5d364ddac5b5ca6c0198900c26",
+   "srcPx": [
+    656,
+    656
+   ],
+   "srcBytes": 77242,
+   "op": {
+    "resize": [
+     476,
+     476
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/hero/bold-cover.avif",
+   "outPx": [
+    476,
+    476
+   ],
+   "outBytes": 29444,
+   "outSha256": "c19710ef996fc494ca355725330d329b9fffe21f2f57a9a6f0997d2128504004",
+   "refs": 3,
+   "why": "x-need 1.38 + AVIF"
+  },
+  {
+   "src": "/selling/hero/leobeer-cover.jpg",
+   "srcSha256": "58d26d25949c395a43391c91249a8a945743daf2f2c8fe8890c81a4f26941baf",
+   "srcPx": [
+    1200,
+    1148
+   ],
+   "srcBytes": 212309,
+   "op": {
+    "resize": [
+     354,
+     339
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/hero/leobeer-cover.avif",
+   "outPx": [
+    354,
+    339
+   ],
+   "outBytes": 17739,
+   "outSha256": "b6892b457f62c7d39116b5604cbc132ec79458b31e156df61510e8c0cd26c733",
+   "refs": 3,
+   "why": "x-need 3.39 + AVIF"
+  },
+  {
+   "src": "/selling/hero/mod-avatar.jpg",
+   "srcSha256": "89dae936a2f9f0dfd791d7077bb209e69cd2d6778d63c4dbf7b8132c633af970",
+   "srcPx": [
+    300,
+    300
+   ],
+   "srcBytes": 11423,
+   "op": {
+    "resize": [
+     91,
+     91
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/hero/mod-avatar.avif",
+   "outPx": [
+    91,
+    91
+   ],
+   "outBytes": 1643,
+   "outSha256": "7a20aa3aca59d93d24452d0779d6779135358404c22c14b5360ff032376d2664",
+   "refs": 3,
+   "why": "x-need 3.33 + AVIF"
+  },
+  {
+   "src": "/selling/hero/mod-cover.jpg",
+   "srcSha256": "92ad87ce08543205fe6c9be295f278c5450a5f2b9e4ee790f8e0c3320e1033f8",
+   "srcPx": [
+    741,
+    1047
+   ],
+   "srcBytes": 77147,
+   "op": {
+    "resize": [
+     479,
+     676
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/hero/mod-cover.avif",
+   "outPx": [
+    479,
+    676
+   ],
+   "outBytes": 17609,
+   "outSha256": "1077d9b2baa1d8f7f55b484d34415a635c59f4f28c5884b6faca17a5360aa754",
+   "refs": 3,
+   "why": "x-need 1.55 + AVIF"
+  },
+  {
+   "src": "/selling/hero/weng-avatar.jpg",
+   "srcSha256": "87fabfeb7be459ca74b523fcd8fd2d551ef5c5d86df8de24fd98a21ab19096e2",
+   "srcPx": [
+    320,
+    322
+   ],
+   "srcBytes": 19849,
+   "op": {
+    "resize": [
+     66,
+     67
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/hero/weng-avatar.avif",
+   "outPx": [
+    66,
+    67
+   ],
+   "outBytes": 1633,
+   "outSha256": "890e28e05c09cec3a7fd9b90bf67cd0d54a0240001512cd289fe86e3689a9de8",
+   "refs": 3,
+   "why": "x-need 4.85 + AVIF"
+  },
+  {
+   "src": "/selling/hero/weng-cover.jpg",
+   "srcSha256": "4307a07a11348cbab143c31b3419a4c056cdb963e1edba253391beb59960c640",
+   "srcPx": [
+    1090,
+    994
+   ],
+   "srcBytes": 56863,
+   "op": {
+    "resize": [
+     366,
+     334
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/hero/weng-cover.avif",
+   "outPx": [
+    366,
+    334
+   ],
+   "outBytes": 5251,
+   "outSha256": "4799eb48924c75967066e41b443eca3c66784677400b531ed62cf350e5167d05",
+   "refs": 3,
+   "why": "x-need 2.98 + AVIF"
+  },
+  {
+   "src": "/selling/media/avatar-cat.png",
+   "srcSha256": "f7d0187b995f2b2a354d9786e8e5195eaddeeb33d310c4781a79ef6f6831a215",
+   "srcPx": [
+    341,
+    512
+   ],
+   "srcBytes": 297281,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/media/avatar-cat.avif",
+   "outPx": [
+    341,
+    512
+   ],
+   "outBytes": 15566,
+   "outSha256": "3e0eab226703a71478811dd74d5e932e2917c27f46d1852a119aa4bfa5cce481",
+   "refs": 6,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/media/cover-cafe.jpg",
+   "srcSha256": "943cbae0e46ca7712bf0bc494a95255f45741f9fe9e2b628536f6f3b9e6f5a05",
+   "srcPx": [
+    960,
+    539
+   ],
+   "srcBytes": 401736,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/media/cover-cafe.avif",
+   "outPx": [
+    960,
+    539
+   ],
+   "outBytes": 68015,
+   "outSha256": "dc308bfcab9871e44aa06d732621d5363709f5b029fdf661fa00dc19e426cd33",
+   "refs": 2,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/media/post-1.png",
+   "srcSha256": "6f3a2ba2932cb318120464f2f3b02574d0c9e0d303321b94a9cfff345e144475",
+   "srcPx": [
+    368,
+    447
+   ],
+   "srcBytes": 259368,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/media/post-1.avif",
+   "outPx": [
+    368,
+    447
+   ],
+   "outBytes": 19812,
+   "outSha256": "5ece83f324401ee329b82db5497666621c6b709107e765f2fd1464288ef5a22f",
+   "refs": 2,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/media/post-2.png",
+   "srcSha256": "bca98f1c4c000cb9815e4224f46db894b1defce1c57a544a2ce75ac91dd1ffa0",
+   "srcPx": [
+    368,
+    460
+   ],
+   "srcBytes": 227403,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/media/post-2.avif",
+   "outPx": [
+    368,
+    460
+   ],
+   "outBytes": 14128,
+   "outSha256": "70b575e5a71022a630a01f66dacf267bd3246b8a48bcc77dc3594fa2c499f2e1",
+   "refs": 4,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/media/post-3.png",
+   "srcSha256": "246eef11779ba946e5047e4ecafef52f6e8a44400e7b6e104eab73bf26c11304",
+   "srcPx": [
+    341,
+    512
+   ],
+   "srcBytes": 272340,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/media/post-3.avif",
+   "outPx": [
+    341,
+    512
+   ],
+   "outBytes": 11062,
+   "outSha256": "685d1d332d7f3ecd0a80c4db242f9e98925bbe298c96920b6db2572a4204afa0",
+   "refs": 4,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/media/service-cafe.png",
+   "srcSha256": "329f26db76cb3092f04245c92cdcc2693e9820bdf8bf50326912ff112571a373",
+   "srcPx": [
+    480,
+    270
+   ],
+   "srcBytes": 296930,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/media/service-cafe.avif",
+   "outPx": [
+    480,
+    270
+   ],
+   "outBytes": 23386,
+   "outSha256": "15ab358cd66280a99fc8834f90ffbfe9769620c7a5a6a32a573523b55d8e9862",
+   "refs": 1,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/media/service-kitchen.png",
+   "srcSha256": "8c4404db5ba9948fe832c8afed238424f0242b02121f6a04df14b3c2f1582df5",
+   "srcPx": [
+    410,
+    512
+   ],
+   "srcBytes": 374491,
+   "op": {
+    "resize": [
+     289,
+     361
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/media/service-kitchen.avif",
+   "outPx": [
+    289,
+    361
+   ],
+   "outBytes": 11776,
+   "outSha256": "e9300f739bb7f88a2b87b6b34c7c6d77c51089cdad0f0399d95894ab808cd8db",
+   "refs": 3,
+   "why": "x-need 1.42 + AVIF"
+  },
+  {
+   "src": "/selling/platform/features/secure/network/portrait-left.png",
+   "srcSha256": "adb612e3c7081066a16bbbf1638d2cd0e073b02a0801bb87befdc6db9a45a5a8",
+   "srcPx": [
+    320,
+    480
+   ],
+   "srcBytes": 24246,
+   "op": {
+    "resize": [
+     176,
+     264
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/platform/features/secure/network/portrait-left.avif",
+   "outPx": [
+    176,
+    264
+   ],
+   "outBytes": 4744,
+   "outSha256": "bd945691bcc70d12bc241d4598b28eba096c0135ef61603fe4139d04d29a35d9",
+   "refs": 1,
+   "why": "x-need 1.82 + AVIF"
+  },
+  {
+   "src": "/selling/platform/features/secure/network/portrait-right.png",
+   "srcSha256": "efc74cf1bf798bf8a5217d35163e6d69028f62833664d713a37985101cab93ec",
+   "srcPx": [
+    320,
+    480
+   ],
+   "srcBytes": 38049,
+   "op": {
+    "resize": [
+     176,
+     264
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/platform/features/secure/network/portrait-right.avif",
+   "outPx": [
+    176,
+    264
+   ],
+   "outBytes": 7932,
+   "outSha256": "5f6724a560b0dc0b75e8fb7b2354d57be00e6569dcbc7d22502a9ff2aed1b158",
+   "refs": 1,
+   "why": "x-need 1.82 + AVIF"
+  },
+  {
+   "src": "/selling/profile/portfolio-1.jpg",
+   "srcSha256": "763866f588d74a8a4e496162f13ba668296c1e6b9f7da0168cb3f058033da6a4",
+   "srcPx": [
+    960,
+    540
+   ],
+   "srcBytes": 281809,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/profile/portfolio-1.avif",
+   "outPx": [
+    960,
+    540
+   ],
+   "outBytes": 39768,
+   "outSha256": "9aacaab078b46b9737a44ced6bb1c8d4b543298972fb6af2e4805b6038edc43a",
+   "refs": 1,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/roles/architect.png",
+   "srcSha256": "2a2deb4be62c1570ac769f81c780e6eb337e797a262abbeda1c44ebca1dc53eb",
+   "srcPx": [
+    1282,
+    1282
+   ],
+   "srcBytes": 324825,
+   "op": {
+    "resize": null,
+    "encode": "avif"
+   },
+   "out": "/selling/roles/architect.avif",
+   "outPx": [
+    1282,
+    1282
+   ],
+   "outBytes": 60758,
+   "outSha256": "877272cfd6b5275dd57defededf75dc071da6b8ccd1eea5677a10e37c5f95185",
+   "refs": 1,
+   "why": "AVIF"
+  },
+  {
+   "src": "/selling/roles/graphic-designer.png",
+   "srcSha256": "ffad46b8bd7412d50dbeb2370ef2747cc92a637ac5fa613a7d02409e8501aadf",
+   "srcPx": [
+    1282,
+    1282
+   ],
+   "srcBytes": 439555,
+   "op": {
+    "resize": [
+     1002,
+     1002
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/roles/graphic-designer.avif",
+   "outPx": [
+    1002,
+    1002
+   ],
+   "outBytes": 63165,
+   "outSha256": "9bc755dd982cac95d190c08c6d68c26c3542c92c88a4beab577d14dc32dc6e89",
+   "refs": 1,
+   "why": "x-need 1.28 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/ai-automation/avatar.jpg",
+   "srcSha256": "da8ec4575335c26b6d3c047da8a1ecc4530acc543362ecfcf4c7289b73a3faf0",
+   "srcPx": [
+    480,
+    480
+   ],
+   "srcBytes": 33686,
+   "op": {
+    "resize": [
+     96,
+     96
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/ai-automation/avatar.avif",
+   "outPx": [
+    96,
+    96
+   ],
+   "outBytes": 2060,
+   "outSha256": "918ab572bc7c8bda641bdb5c4184229443eab2e9df595233afe2f6f9cc79960a",
+   "refs": 1,
+   "why": "x-need 5 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/ai-video-editor/avatar.jpg",
+   "srcSha256": "a801ea1b76b2404103b7c4ad41906c4b5e43910425679d16c73cf60fbdb5dc94",
+   "srcPx": [
+    480,
+    480
+   ],
+   "srcBytes": 28910,
+   "op": {
+    "resize": [
+     67,
+     67
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/ai-video-editor/avatar.avif",
+   "outPx": [
+    67,
+    67
+   ],
+   "outBytes": 1272,
+   "outSha256": "1b86332031f9778e4444150cc180694f2cfaf86806aa89c353e6b3860abcb5d2",
+   "refs": 3,
+   "why": "x-need 7.27 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/graphic-designer/avatar.jpg",
+   "srcSha256": "ae5c2d0f36a216402157136a17002bdb744adaea6a3a4300c9b22cda5b584314",
+   "srcPx": [
+    480,
+    480
+   ],
+   "srcBytes": 43359,
+   "op": {
+    "resize": [
+     96,
+     96
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/graphic-designer/avatar.avif",
+   "outPx": [
+    96,
+    96
+   ],
+   "outBytes": 2804,
+   "outSha256": "80110e1909c9e8e20d4ac4e6ce45271ddfca11e66ac7c28129dad356b3b76179",
+   "refs": 2,
+   "why": "x-need 5 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/photographer/avatar.jpg",
+   "srcSha256": "bd380fdf88f9851b9b81b15966e623bfe8f03861309eb6d912340425aa3ce3ba",
+   "srcPx": [
+    730,
+    732
+   ],
+   "srcBytes": 83341,
+   "op": {
+    "resize": [
+     178,
+     178
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/photographer/avatar.avif",
+   "outPx": [
+    178,
+    178
+   ],
+   "outBytes": 4676,
+   "outSha256": "12187e0db61865131bc66838777e6d596872cc622d7c264a68648fd8c1ddf881",
+   "refs": 2,
+   "why": "x-need 4.12 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/photographer/post-tuna.jpg",
+   "srcSha256": "379260895390283df70d586a16f90de5f3786da7bd3140f74697e9839c5ae672",
+   "srcPx": [
+    988,
+    1400
+   ],
+   "srcBytes": 324659,
+   "op": {
+    "resize": [
+     526,
+     745
+    ],
+    "encode": "jpeg"
+   },
+   "out": "/selling/sellers/photographer/post-tuna.jpg",
+   "outPx": [
+    526,
+    745
+   ],
+   "outBytes": 146591,
+   "outSha256": "37f4a9c1b3e3fa03101ec6d0ccf097113e98f264a8932b09bc805179f945eb88",
+   "refs": 0,
+   "why": "x-need 1.88"
+  },
+  {
+   "src": "/selling/sellers/photographer/service-strawberry.jpg",
+   "srcSha256": "8f760b8fa8b0cd4be139c1cf68675b1d42a3e17bebe18ae244788003ec205f0c",
+   "srcPx": [
+    1320,
+    1747
+   ],
+   "srcBytes": 424584,
+   "op": {
+    "resize": [
+     555,
+     735
+    ],
+    "encode": "jpeg"
+   },
+   "out": "/selling/sellers/photographer/service-strawberry.jpg",
+   "outPx": [
+    555,
+    735
+   ],
+   "outBytes": 101965,
+   "outSha256": "7204b85387ca8063ac5f1ebae67cf8468fe5725715fc084d3dd91fc87edd3a9e",
+   "refs": 0,
+   "why": "x-need 2.38"
+  },
+  {
+   "src": "/selling/sellers/reviewers/r5.jpg",
+   "srcSha256": "8f00037500f4a5a3e3cb1994622ca0fbd67bd1a00a965d5e1a12209c32bfbc72",
+   "srcPx": [
+    320,
+    320
+   ],
+   "srcBytes": 17598,
+   "op": {
+    "resize": [
+     74,
+     74
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/reviewers/r5.avif",
+   "outPx": [
+    74,
+    74
+   ],
+   "outBytes": 1668,
+   "outSha256": "4c64e3f36bd61265c50934bcd21c57954d9b71863bfeb7d8c43c34d3cd2b3dd9",
+   "refs": 3,
+   "why": "x-need 4.37 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/sound-composer/avatar.jpg",
+   "srcSha256": "8232a33ff779bb0186adbc07018363b9ddc9834d64666fcf91c86bc770fea0e5",
+   "srcPx": [
+    640,
+    640
+   ],
+   "srcBytes": 30717,
+   "op": {
+    "resize": [
+     177,
+     177
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/sound-composer/avatar.avif",
+   "outPx": [
+    177,
+    177
+   ],
+   "outBytes": 1881,
+   "outSha256": "d8f0e86fdb5678c89a46e136b0884ce54297c386210374b0cfd31ddfac874f57",
+   "refs": 3,
+   "why": "x-need 3.62 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/sound-composer/post-maynila.jpg",
+   "srcSha256": "7955d76b20a5d9f6d57273074d54c3be4fb56ab8ad0a79ce757a48c07771d860",
+   "srcPx": [
+    683,
+    1024
+   ],
+   "srcBytes": 286527,
+   "op": {
+    "resize": [
+     526,
+     788
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/sound-composer/post-maynila.avif",
+   "outPx": [
+    526,
+    788
+   ],
+   "outBytes": 75326,
+   "outSha256": "4f7188229d31087134551eb89153ba546d6df023411029cfcf9effe3ff45960c",
+   "refs": 1,
+   "why": "x-need 1.3 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/sound-composer/post-orchestra.jpg",
+   "srcSha256": "405802d0d167cc4df89da72296326193de29452b29d06b042979ef71922c95da",
+   "srcPx": [
+    1600,
+    1067
+   ],
+   "srcBytes": 323367,
+   "op": {
+    "resize": [
+     527,
+     351
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/sound-composer/post-orchestra.avif",
+   "outPx": [
+    527,
+    351
+   ],
+   "outBytes": 15474,
+   "outSha256": "3429b8dcf50496200e3895a3bb9e5561785afefcd510410c93c56465aa7b8d2b",
+   "refs": 1,
+   "why": "x-need 3.04 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/sound-composer/post-you-me-me.jpg",
+   "srcSha256": "9937b867ff0d031c31cb6b7d0247d5756c3edaeab4157b846c4fb6a66630ff79",
+   "srcPx": [
+    850,
+    1200
+   ],
+   "srcBytes": 94988,
+   "op": {
+    "resize": [
+     525,
+     741
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/sound-composer/post-you-me-me.avif",
+   "outPx": [
+    525,
+    741
+   ],
+   "outBytes": 31595,
+   "outSha256": "7a26b0fe881c86abc392a1be9e5d19e9baca594bfa44c08b756ac0946e37bb38",
+   "refs": 1,
+   "why": "x-need 1.62 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/ux-ui-designer/avatar.jpg",
+   "srcSha256": "49fbda987cb1d2521e0bd4e0862f852bdce717449d2fa3461ab76984ed539636",
+   "srcPx": [
+    640,
+    640
+   ],
+   "srcBytes": 67305,
+   "op": {
+    "resize": [
+     91,
+     91
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/ux-ui-designer/avatar.avif",
+   "outPx": [
+    91,
+    91
+   ],
+   "outBytes": 2450,
+   "outSha256": "8caa0bf798d1e04494270c7dd33656135adf4ff6bae5b73f378d020ac8d54785",
+   "refs": 3,
+   "why": "x-need 7.11 + AVIF"
+  },
+  {
+   "src": "/selling/sellers/web-developer/avatar.jpg",
+   "srcSha256": "06b8c6ee4a9e6d8b41deedbe3824c322d54b642d7ffe6f9ae083e2f0b7442914",
+   "srcPx": [
+    480,
+    480
+   ],
+   "srcBytes": 36449,
+   "op": {
+    "resize": [
+     96,
+     96
+    ],
+    "encode": "avif"
+   },
+   "out": "/selling/sellers/web-developer/avatar.avif",
+   "outPx": [
+    96,
+    96
+   ],
+   "outBytes": 2479,
+   "outSha256": "942c4cf4f4b21fd324b0189965443816ad5613243de73985db506cf0582125c9",
+   "refs": 1,
+   "why": "x-need 5 + AVIF"
+  }
+ ]
+}

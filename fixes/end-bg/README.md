@@ -742,7 +742,9 @@ This addendum is README-only: no script changes and no re-pin. Where it differs 
 ## 9. Pending
 
 - PR-025: the user's pick, then the phone test of slow frames.
-- P-145 (draft above): pre-data read and the lead's signature, then the runner's block after v9.2's.
+- P-145 (signed, dry run ok): the runner's block after v9.2's.
+- PR-025 option B (accepted 21:04Z): card P-150 in section 10. Pre-data read and signature, then the cost card, then
+  the phone check after P-147 and P-145.
 - The verdict per image and the ranked candidate fixes, after P-137. Wall candidates known now (bytes or memory, no
   frame effect expected): skip columns 4-5 below 640 px (pixel-identical, -2.1 MB fetched); resize graphic-designer.png,
   the only visible oversized wall image (1.22x, -2.2 MB decoded; pixel check needed); trimming the never-seen last
@@ -751,3 +753,220 @@ This addendum is README-only: no script changes and no re-pin. Where it differs 
 - How the hero-card fixes worked (re-keep-op: the revealed people card kept in its own layer at rest, so the end-of-reveal
   re-layouts went away; hero-exit-threaded: the hero exit moved to a scroll-driven animation off the main thread): both are
   layer/compositor changes; whether one fits the last screen depends on what P-137 and the census show.
+
+## 10. PR-025 option B: recipe, cost card and phone no-worse check (P-150, registered before data)
+
+The user accepted PR-025 with option B, "new-format" (lighter files plus AVIF), 2026-10-05 21:04Z. The lead ruled:
+- the less-work landing rule applies: cost-card counts, plus a required short phone no-worse check whose named risk is
+  AVIF's first decode;
+- heat: Xcode Device Conditions only;
+- the deliverable is a recipe; no re-encoded image is ever committed;
+- B does not claim the end-screen slow frames (P-145 keeps that question).
+
+### 10.1 What B is, and the recipe
+
+- **Pictures.** 35 phone-visible pictures change:
+  - 27 are over 1.15x what their largest phone box needs at DPR 3 and are resized to that need (16.1 → 4.0 million
+    source pixels, 4.1x fewer);
+  - 33 are re-saved as AVIF, and every literal reference to them is rewritten (the CSS has none, so it is unchanged).
+    PR-025's text said 32; the overlay the user tried has 33, equal to the manifest;
+  - 2 of the 3 seller photos whose paths are built at run time keep their format and are only resized. The third needs
+    no resize and is unchanged (`skipped` in the manifest).
+
+  Their bytes: 5,587,773 → 812,362.
+- **Code.** The menu photo wall's `<img>` template goes from `loading="eager"` to `loading="lazy"`. Its columns 4-5 are
+  `display: none` below 640 px, so a phone never fetches them. Safari supports lazy images since 15.4 (CONFIRMED,
+  webkit.org/blog/12445) and AVIF since Safari 16 / iOS 16 (CONFIRMED, webkit.org/blog/13152).
+- **Builds.**
+
+  | arm | JS | CSS | index.html |
+  |---|---|---|---|
+  | C | 1b2eecc66011 | e1359ab9994a | site-pretty's (26e46ddee017) |
+  | N (= B) | 049b13ced4e3 | e1359ab9994a (unchanged) | 10919c0334b4 |
+
+- **Recipe (committed).**
+  - `img/rebuild-b.mjs`: `--make-manifest`, `--build <dir> [--base-overlay d]` and `--check <overlay>`.
+  - `img/b-manifest.json`, per picture:
+    - the source path, its sha256 in the frozen `site/`, its size and bytes;
+    - the operation: the resample size and the encoder;
+    - the output path, size, bytes and sha256.
+
+    It also records the URL edits with their replacement count per code file, the lazy edit, and each code file's base
+    and output sha256.
+  - Encoders, exact versions: avifenc 1.3.0 (aom 3.13.1), `-q 68 -s 6 -j 2`; sips-316, JPEG quality 90, PNG
+    intermediate; macOS 26.2 (25C56).
+  - `--build` refuses (exit 4) on other encoder versions or another baseline source.
+  - `img/patch.diff` holds only the text changes, C → B: JS, CSS (empty) and index.html.
+  - Images live only in gitignored folders: `out/end-bg/opt-B`, `out/end-bg/img-b-r1`, and the read-only snapshot
+    `out/snapshots/endbg-B-049b13ced4e3`.
+- **Rebuild check (done, no data).** `--build out/end-bg/img-b-r1` ran in a `--no-timing` hold (21:10Z) and printed
+  `CHECK MATCH 38/38`. So the recipe is deterministic on this Mac. `--check` on the Try-it overlay the user judged
+  (`fixes/end-bg-img-b/overlay`) also matches 38/38: the build that lands is the one the user accepted.
+- **Another base.** On another base (e.g. v9.2), `--build --base-overlay <its overlay>` re-applies the same text edits.
+  The picture shas must still match; the code shas differ, and the script prints a NOTE for each.
+
+### 10.2 Cost card (Chrome and Simulator, counts only)
+
+The full page, load plus one scroll to the bottom. Arms C and N are served from the read-only snapshots
+`out/snapshots/endbg-C-e1359ab9994a` and `out/snapshots/endbg-B-049b13ced4e3`.
+- **Chrome.** `img-scroll.mjs --arms C=<C snapshot>,B=<N snapshot> --runs 3`, i.e. 3 rounds with the arms alternating
+  (C B, B C, C B). Headless, 430x775 DPR 3, touch, CPU 1x, cache off. Shared lane, probe weight, ≤ 300 s.
+- **Simulator.** `img/sim-b.sh` in two functional sessions: K1 C then B, K2 B then C. Each session is one page load
+  plus the fs gesture `--count-only`, with the in-page counter `img/img-inject.mjs`, which records:
+  - Resource Timing picture bytes (`encodedBodySize`) and the number of files;
+  - a WebKit decode test of every fetched AVIF (`new Image()` then `decode()`);
+  - broken `<img>` elements.
+
+  Shared lane, simulator weight, ≤ 300 s each. Safari's HTTP cache is emptied at every session start (sim.mjs).
+- **Rules** (`img/cost-b.mjs`, self-test 7 ok; N against C):
+
+  | rule | name | test |
+  |---|---|---|
+  | R1 | less download | Chrome max(N image bytes) < min(C), and Simulator max(N bytes) < min(C) |
+  | R2 | fewer decodes | Chrome max(N decode events during the load) < min(C) |
+  | R3 | no more redraw | PaintImage, Paint and RasterTask during the scroll (Chrome): WORSE when min(N) > max(C); NO-WORSE when no field is WORSE |
+  | R4 | works | every N run: Chrome image responses all 200; Simulator 0 AVIF decode failures, at least 1 AVIF fetched, broken `<img>` ≤ C's in the same session |
+  | R5 | enough data | Chrome ≥ 3 runs per arm, Simulator ≥ 2 per arm |
+
+  Card outcomes, in this order:
+  - INSUFFICIENT: R5 fails;
+  - BROKEN: R4 fails;
+  - WORSE: R3 is WORSE (named per field);
+  - PASS: R1, R2, R3 and R4 all hold;
+  - NOT-LESS: anything else.
+- **Kit check.** The first Simulator session doubles as a kit check. If it ends VOID for a kit reason (a server, WDA, a
+  hash), the kit is fixed and re-pinned before any count is read.
+
+### 10.3 Phone no-worse check P-150 (G driver, xcode-serious; after P-142, P-147 and P-145 in the lead's order)
+
+**Question.** On the iPhone, is option B worse than C while pictures first appear? The named risk is AVIF's first
+decode.
+
+**Arms.** C and N, from the read-only snapshots above. The runner's `p150-serve.sh` copies them and checks them: N also
+file by file against the manifest (38/38).
+
+**Procedure.** As P-137:
+- driver G, `fixes/morph-scroll/g-fastshort-v1.json` (df597802d2f0), compiled program 8737f212c0ff, E procedure;
+- profile xcode-serious: thermal gate `--expect serious --max-c 44 --accept-induced` at each phone hold's edges; no heat
+  pre-warm and no cooling wait;
+- plain http, `--vendors=local --latency 150`.
+
+Changed from P-137:
+- **Every item opens with `iphone.mjs safari-restart --url`** instead of `open`. Each run then starts in a fresh Safari
+  web process, so no picture decoded by an earlier run can be reused, and each picture's first decode falls inside the
+  run. Whether WebKit's memory cache would otherwise keep decoded pictures across loads in one web process is
+  UNRESOLVED; the restart makes the design independent of it.
+- **The served hashes include index.html.** N's page references the AVIF files from both JS and index.html.
+
+**Block** (CLAUDE.md "Phone blocks", "Timeline blocks"). Items, in order:
+- one uncounted warm-up per arm's port (WC, WN; Timeline off, `--warmup`);
+- an uncounted Timeline-OFF sentinel S0 on C;
+- 6 counted Timeline-on runs in C N N C C N order (EC1 EN1 EN2 EC2 EC3 EN3);
+- at most 2 re-runs, then the Timeline-OFF end sentinel S1 on C.
+
+The sentinel and run gates G1-G6 are the signed P-129 reader rev 1.1's: fps ≥ 50 and slow share ≤ 6 % (the G figures;
+P-145 N2). The run is split over two `lock.mjs run iphone --block P-150` holds:
+
+```
+part 1: H1 WC,WN | H2 S0,EC1 | H3 EN1,EN2          part 2: H4 EC2,EC3 | H5 EN3 | H6 TAIL (re-runs, then S1)
+```
+
+**VOID holds** (P-145 N1's rule, carried over). A hold that ends VOID (exit 3, 4, 5 or 8) has its g- and tl- records
+moved to `out/p150/void/<H>/` before the read, and they never count. A BLOCK STOP ends the block; a restart is block 2
+of 2, on the lead's go.
+
+**Design limit (disclosed).** The counted runs that come first in their 600 s hold are EN1, EC2 and EN3: N twice, C
+once. The result names this next to the verdict.
+
+**Metric and decision** (`phone/p150-read.mjs`, self-test 7 ok).
+- Whole page, because pictures first appear all down the page: every moving frame of a counted run; n = their number;
+  s(th) = those with dt > th, th 30/34/38/46/50/54.
+- P-137's rule `verdict` compares N against C at >34 and at >50, with the 15 % denominator guard.
+- **NO-WORSE PASS:** neither >34 nor >50 is WORSE (min N > max C). **FAIL:** either is WORSE, named.
+  **INSUFFICIENT:** an arm has fewer than 3 valid runs. **VOID:** a sentinel failed.
+- Twins (>30/>38 for >34, >46/>54 for >50): when a twin's worse-or-not differs from its main threshold, the result is
+  "threshold-sensitive". That is reported and does not change the outcome.
+- A better reading (CAUSE / CONTRIBUTES) is reported and claims nothing: B is not a smoothness fix.
+- P-137's lastScreen-after-touchend counts and the class split are descriptive.
+
+### 10.4 Predictions P-150 (before data)
+
+| # | prediction | p |
+|---|---|---|
+| 1 | cost card PASS | 0.85 |
+| 2 | Chrome image bytes: N median within ±10 % of 4.5 MB, C median within ±10 % of 10.4 MB | 0.85 |
+| 3 | Chrome decode events during the load: N median ≤ 20 (C about 36) | 0.75 |
+| 4 | R3 NO-WORSE | 0.90 |
+| 5 | Simulator: every fetched AVIF decodes (0 failures in every N run) | 0.95 |
+| 6 | Simulator bytes separate (R1's Simulator half) | 0.90 |
+| 7 | phone: NO-WORSE PASS | 0.75 |
+| 7 | FAIL | 0.10 |
+| 7 | INSUFFICIENT or VOID | 0.15 |
+| 8 | phone >34 verdict N vs C: NOT SHOWN | 0.70 |
+| 9 | phone result threshold-sensitive | 0.25 |
+
+Scoring precedence:
+- An INSUFFICIENT or BROKEN cost card makes predictions 2-6 insufficient, except prediction 5 under BROKEN (scored as
+  usual).
+- A VOID or INSUFFICIENT phone result scores prediction 7's third row and makes predictions 8 and 9 insufficient.
+
+**Informed.** Predictions 1-4 are informed by PR-025's own Chrome measurement: one load per build, OBSERVED, 10.4 → 4.5
+MB and 36 → 16 decodes. Prediction 7 is informed by P-137's C runs (same C, driver and profile).
+
+**Why.**
+- The bytes and decodes come straight from the files: N fetches the same pictures, smaller.
+- Redraw counts follow repaints, not file size; PR-025 measured 916 vs 918 PaintImage.
+- On the phone, AVIF decode is more CPU per pixel than JPEG. But the decoded pixel count drops with the resize (35
+  pictures, 4.1x fewer source pixels on the 27 resized ones), and WebKit decodes large pictures off the main thread when it
+  can (UNRESOLVED for AVIF on iOS 26; the check measures the outcome, not the path).
+
+**Falsification.**
+- FAIL: B does not land as is. The decode cost is then the next question: per-picture first-appearance frames, and AVIF
+  vs the right-sized JPEG of option A.
+- NOT-LESS: the less-work premise is wrong for that count; the rule's other half is not enough to land.
+
+### 10.5 Kit and pins
+
+| file | pin |
+|---|---|
+| `img/rebuild-b.mjs` | 4d168feb8298 (self-test 5 ok) |
+| `img/b-manifest.json` | 2c44c949d8a8 |
+| `img/patch.diff` | ec40def78cb8 |
+| `img/img-inject.mjs` | 4eebec70e95b (parse-checked) |
+| `img/sim-b.sh` | 661a907d572a |
+| `img/cost-b.mjs` | 147a1f0d328a (self-test 7 ok) |
+| `img-scroll.mjs` (unchanged, used by PR-025) | 682d14b8beab |
+| `phone/p150-serve.sh` | a9b059094d07 |
+| `phone/p150-hold.sh` | 1cb0b24aa2ca |
+| `phone/p150-block.sh` | d19c744265fa |
+| `phone/p150-read.mjs` | 382006b9f60e (self-test 7 ok) |
+| `phone/p137-read.mjs` | b6d24ad5e73c |
+| `research/serious-heat/p129-read.mjs` | 06f74f5d19ca |
+| `research/serious-heat/phone/p129-gates.mjs` | a06847c64a2e |
+| `research/phone-thermal-gate/thermal-gate.mjs` | ecb403b3ad25 |
+| `fixes/rest-script/tools/pmcheck.mjs` | d36bd7437b7c |
+| `fixes/morph-scroll/g-fastshort-v1.json` | df597802d2f0 |
+
+```sh
+# cost card (fix-end-bg; Chrome then Simulator, shared lane)
+node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner fix-end-bg -- \
+  node fixes/end-bg/img-scroll.mjs --arms C=out/snapshots/endbg-C-e1359ab9994a,B=out/snapshots/endbg-B-049b13ced4e3 --runs 3
+node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-end-bg -- \
+  node tools/sim.mjs session --functional --owner fix-end-bg -- sh fixes/end-bg/img/sim-b.sh K1 C B
+node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-end-bg -- \
+  node tools/sim.mjs session --functional --owner fix-end-bg -- sh fixes/end-bg/img/sim-b.sh K2 B C
+node fixes/end-bg/img/cost-b.mjs --chrome out/end-bg/images/img-scroll-<stamp>.json --sim out/end-bg/simb --json out/end-bg/cost-b.json
+# phone (iphone-runner)
+sh fixes/end-bg/phone/p150-serve.sh start
+TICKET=P-150 P150_DRY=1 sh fixes/end-bg/phone/p150-block.sh H1:WC,WN H2:S0,EC1 H3:EN1,EN2 H4:EC2,EC3 H5:EN3 H6:TAIL
+TICKET=P-150 node tools/lock.mjs run iphone --owner iphone-runner --block P-150 --max-seconds 3600 -- \
+  sh fixes/end-bg/phone/p150-block.sh H1:WC,WN H2:S0,EC1 H3:EN1,EN2
+TICKET=P-150 node tools/lock.mjs run iphone --owner iphone-runner --block P-150 --max-seconds 3600 -- \
+  sh fixes/end-bg/phone/p150-block.sh H4:EC2,EC3 H5:EN3 H6:TAIL
+node fixes/end-bg/phone/p150-read.mjs out/p150/runs --json out/p150/p150-read.json
+sh fixes/end-bg/phone/p150-serve.sh stop
+```
+
+Kit status: shell syntax checked; the readers' self-tests pass. The phone kit's dry run (servers, the N manifest check, served hashes, plan;
+no phone) is queued in a `--no-timing` hold behind the P-142 phone block. Its result is sent to the lead and reader, and
+the card is changed only by a dated addendum if the dry run finds a kit fault.
