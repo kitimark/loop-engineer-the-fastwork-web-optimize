@@ -18,7 +18,9 @@ export const call = (r) => r == null ? 'n/a' : r <= RULE.LOCATES ? 'LOCATES' : r
 export function band(rec) { const d = rec.deck; if (!d || !rec.frames) return []; return rec.frames.filter((f) => f.y > d.top - d.ih && f.y < d.bottom); }
 export function readHold(dir) {
   const f = join(dir, 'runs.jsonl'); if (!existsSync(f)) return { dir, runs: [], missing: true };
-  return { dir, runs: readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((r) => !/:0$/.test(r.step || '')) }; // P-146: <arm>:0 is the uncounted warm-up step
+  const runs = readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((r) => !/:0$/.test(r.step || '')); // P-146: <arm>:0 is the uncounted warm-up step
+  const m = join(dir, 'hold.json'); const registered = existsSync(m) ? JSON.parse(readFileSync(m, 'utf8')).steps : null; // rev 1.1: the driver's registered steps
+  return { dir, runs, registered };
 }
 // one run's validity: not dropped, no error, arm applied, swipe passed the deck's bottom, n >= MIN_N
 export function runState(rec) {
@@ -33,13 +35,17 @@ export function runState(rec) {
   return 'OK';
 }
 export function scoreSimHold(h) {
-  const runs = h.runs.map((r) => ({ ...r, state: runState(r), n: band(r).length, L: med(band(r).map((f) => f.layMs)), Lmean: mean(band(r).map((f) => f.layMs)), layPerF: mean(band(r).map((f) => f.lay)) }));
+  const runs = h.runs.map((r) => ({ ...r, state: runState(r), n: band(r).length, L: med(band(r).map((f) => f.layMs)), swipeL: [...new Set(band(r).map((f) => f.s ?? 0))].map((s) => ({ s, n: band(r).filter((f) => (f.s ?? 0) === s).length, L: +med(band(r).filter((f) => (f.s ?? 0) === s).map((f) => f.layMs)).toFixed(3) })), Lmean: mean(band(r).map((f) => f.layMs)), layPerF: mean(band(r).map((f) => f.lay)) }));
   const out = { dir: h.dir, runs: [], hold: 'OK', notes: [] };
   if (h.missing) { out.hold = 'MISSING'; return out; }
+  // rev 1.1 (read N1): a hold lacking a record for any registered step (other than <arm>:0) is NOT-REPRODUCED
+  const missingSteps = (h.registered || []).filter((s) => !/:0$/.test(s) && !h.runs.some((r) => r.step === s));
+  if (missingSteps.length) { out.missingSteps = missingSteps; out.notes.push(`missing steps ${missingSteps.join(' ')}`); }
   if (runs.some((r) => r.state === 'VOID-HOST')) { out.hold = 'VOID-HOST'; }
   const C = runs.filter((r) => r.arm === 'C');
   const cOk = C.filter((r) => r.state === 'OK');
   // replication gate: every C run OK, >= 2 of them; A/A: each inner C vs the mean of its outer neighbours; drift first -> last
+  if (out.hold === 'OK' && (missingSteps.length || h.registered === null)) { out.hold = 'NOT-REPRODUCED'; if (h.registered === null) out.notes.push('no hold.json manifest'); }
   if (out.hold === 'OK') {
     if (cOk.length < 2 || cOk.length !== C.length) out.hold = 'NOT-REPRODUCED';
     else {

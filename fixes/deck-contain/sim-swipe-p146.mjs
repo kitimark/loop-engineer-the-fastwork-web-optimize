@@ -40,6 +40,11 @@ export const APPLIED = {
   R3: (d) => d.contain === 'none' && d.pb > 0 && d.ct === 'normal',
 };
 export const HOST_MAX = 200, TO = 2600, PX = 10;
+// P-146 rev 1.1 (read N1): the per-step budget drop as a pure function, so the self-test exercises it
+export function budgetDrop(hold, step, elapsed, swipeEst, budget) {
+  if (swipeEst == null || elapsed + swipeEst <= budget) return null;
+  return { rec: { hold, step, dropped: 'budget', elapsed, est: swipeEst }, line: `DROPPED ${step} budget ${elapsed.toFixed(0)} + ${swipeEst.toFixed(0)} > ${budget}` };
+}
 const OVL = join(WT, 'fixes/deck-contain--base/overlay');
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSSF = '_app/immutable/assets/2.gBuqKVzi.css';
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
@@ -53,6 +58,7 @@ async function main() {
   const BUDGET = +(process.env.SB_BUDGET_S || 500), T0 = Date.now();
   const DIR = join(WT, 'out/deck-contain/sim146', HOLD); if (existsSync(DIR)) { console.log(`HOLD-EXISTS ${DIR} (rev 1.1 N4: a new hold name, or rename a VOID-HOST folder to <hold>-void1)`); process.exit(27); } mkdirSync(DIR, { recursive: true });
   const runs = join(DIR, 'runs.jsonl');
+  writeFileSync(join(DIR, 'hold.json'), JSON.stringify({ hold: HOLD, steps: STEPS, startedAt: new Date().toISOString() })); // rev 1.1: the registered steps, for the scorer's missing-step rule
   const st = join(DIR, `serve-${process.pid}.json`); rmSync(st, { force: true });
   const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', resolveTree('site-pretty'), '--overlay', OVL, '--port', '0', '--no-cache', '--quiet', '--state', st, '--vendors=local'], { stdio: ['ignore', 'ignore', 'inherit'] });
   let code = 0, swipeEst = null; // P-146: the budget is checked per swipe (a step starts only if one swipe fits; pooling stops when the next would not)
@@ -65,7 +71,8 @@ async function main() {
     for (const [i, step] of STEPS.entries()) {
       const [arm] = step.split(':');
       const elapsed = (Date.now() - T0) / 1000;
-      if (swipeEst != null && elapsed + swipeEst > BUDGET) { const rec = { hold: HOLD, step, dropped: "budget", elapsed, est: swipeEst }; appendFileSync(runs, JSON.stringify(rec) + '\n'); console.log('DROPPED', step, 'budget', elapsed.toFixed(0), '+', est.toFixed(0), '>', BUDGET); continue; }
+      const drop = budgetDrop(HOLD, step, elapsed, swipeEst, BUDGET);
+      if (drop) { appendFileSync(runs, JSON.stringify(drop.rec) + '\n'); console.log(drop.line); continue; }
       const load1Start = +loadavg()[0].toFixed(2);
       if (load1Start > HOST_MAX) { console.log(`VOID-HOST load1 ${load1Start} > ${HOST_MAX} before ${step}`); appendFileSync(runs, JSON.stringify({ hold: HOLD, step, voidHost: load1Start }) + '\n'); code = 28; return; }
       const t1 = Date.now();
@@ -127,7 +134,7 @@ async function main() {
         const yMax = sw.at(-1)?.[1] ?? null;
         rec.swipe = { steps: Math.min(rec.swipe?.steps ?? Infinity, sw.length), yMax: Math.min(rec.swipe?.yMax ?? Infinity, yMax ?? -1) };
         rec.swipes.push({ s: sIdx, steps: sw.length, yMax, frames: frames.length, top: deck.top, h: deck.h, docH: deck.docH, applied: APPLIED[arm](deck) });
-        rec.frames.push(...frames);
+        rec.frames.push(...frames.map((f) => ({ ...f, s: sIdx }))); // rev 1.1 (read N3): the swipe index, for per-swipe medians
         writeFileSync(join(DIR, `tl-${step.replace(':', '-')}-s${sIdx}.json`), JSON.stringify({ offsetMs: off, sw, recs }));
       } catch (e) { rec.error = String(e.stack || e.message || e); }
       finally { try { c?.close(); } catch {} }

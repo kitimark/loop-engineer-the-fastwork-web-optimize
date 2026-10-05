@@ -47,6 +47,21 @@ try {
   if (loadHold) ok(!loadHold(dir).runs.some((r) => r.step === 'W:0'), 'W:0 excluded by the loader');
   else ok(/:0\$\/\.test/.test(readFileSync(join(HERE, 'score-p146.mjs'), 'utf8')), 'loader excludes :0 steps');
 } finally { rmSync(dir, { recursive: true, force: true }); }
+// 6b rev 1.1 (read N1): the budget-drop branch, and a hold missing a registered step
+{
+  const { budgetDrop } = await import('./sim-swipe-p146.mjs');
+  ok(budgetDrop('H1', 'A4:1', 400, null, 500) === null && budgetDrop('H1', 'A4:1', 400, 90, 500) === null, 'budgetDrop: no estimate or fits -> null');
+  const d = budgetDrop('H1', 'A4:1', 420, 90.4, 500);
+  ok(d && d.rec.dropped === 'budget' && d.rec.est === 90.4 && d.line === 'DROPPED A4:1 budget 420 + 90 > 500', 'budgetDrop: past the budget -> record and log line, no throw');
+  const reg = ['W:0', 'C:1', 'PC2:1', 'A3:1', 'C:2', 'R3:1', 'A4:1', 'C:3'];
+  const full = [run('C:1', 40), run('PC2:1', 0.4), run('A3:1', 0.5), run('C:2', 40), run('R3:1', 0.5), run('A4:1', 0.5), run('C:3', 40)];
+  ok(scoreSimHold({ dir: 'm0', runs: full, registered: reg }).hold === 'OK', 'all registered steps present -> OK');
+  const cut = scoreSimHold({ dir: 'm1', runs: full.slice(0, 5), registered: reg });
+  ok(cut.hold === 'NOT-REPRODUCED' && cut.missingSteps.join() === 'A4:1,C:3', 'hold cut after R3:1 -> NOT-REPRODUCED, missing A4:1 C:3');
+  ok(scoreSimHold({ dir: 'm2', runs: full, registered: null }).hold === 'NOT-REPRODUCED', 'no hold.json manifest -> NOT-REPRODUCED');
+  const dropped = scoreSimHold({ dir: 'm3', runs: [...full.slice(0, 5), { step: 'A4:1', arm: 'A4', dropped: 'budget' }, run('C:3', 40)], registered: reg });
+  ok(dropped.hold === 'OK' && !dropped.missingSteps, 'a budget-dropped arm has a record: not missing');
+}
 // 7 driver arms and applied forms
 ok(ARMS.PC2 === 'pc2-cv-hidden.css' && ARMS.W === null && ARMS.C === null, 'PC2 and W arms');
 ok(/content-visibility:\s*hidden/.test(readFileSync(join(HERE, 'arms', ARMS.PC2), 'utf8')) && !/\d+px/.test(readFileSync(join(HERE, 'arms', ARMS.PC2), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/@media[^{]*/, '')), 'PC2: content-visibility hidden, no px length outside the media query');
