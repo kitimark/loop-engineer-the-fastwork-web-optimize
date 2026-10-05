@@ -122,9 +122,14 @@ test('T8+ (I-033): a chrome-measure `run` logs display / wake / display-sleep as
   assert.doesNotMatch(r.stderr, /HOST-DISPLAY-CHANGED|no display-sleep assertion/, 'one state throughout, assertion held');
   l = log();
   assert.deepEqual([l[2].owner, l[2].tag, l[2].start.display, l[2].start.fullWake], ['asleep', null, 'off', false]);
-  // other resources: nothing recorded
+  // other resources: no display / wake record (an iphone hold writes only its I-167 phone ledger line)
   assert.equal(lock({}, 'run', 'iphone', '--owner', 'p', '--', ...cmd).code, 5);
-  assert.equal(log().length, 3);
+  l = log();
+  assert.equal(l.filter((x) => x.resource === 'chrome-measure').length, 3);
+  const ph = l.filter((x) => x.resource === 'iphone');
+  assert.equal(ph.length, 1, 'I-167: one phone ledger line');
+  assert.ok(ph[0].ledger, 'it is the ledger line');
+  assert.deepEqual([ph[0].start, ph[0].end], [undefined, undefined], 'no display / wake state on it');
 });
 
 test('run --no-timing (ts-lock-bundle): granted on a busy host without the gate, shown as no-timing; a timing run inside refuses, a short one runs; a holds.log line without display / wake state', () => {

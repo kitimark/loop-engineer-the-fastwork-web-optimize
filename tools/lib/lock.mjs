@@ -9,6 +9,9 @@
 //   <git-common-dir>/fastwork-mirror/locks/<resource>.guard/       short mutex around every read-modify-write
 //   <git-common-dir>/fastwork-mirror/locks/<resource>.last-release.json   who left the holder file last, and when (I-105:
 //     tools/idle.mjs reads how long a lock has stood free; written on release, a process hold's end, the last reader)
+//   <git-common-dir>/fastwork-mirror/locks/holds.log   one JSON line per chrome-measure `run` hold (tools/lock.mjs), and one
+//     ledger line per iphone hold or lease at its end (I-167: its seconds by cause, lib/phone-ledger.mjs; the holder record
+//     carries the marks: `uses` from describeHold's run marks, `waiters` from other owners' polls)
 //
 // Two kinds of holder:
 //   - process: held by a running process (pid). Stale as soon as that pid is gone (crash-safe), or
@@ -121,7 +124,7 @@
 // token. sharedSlot() tells a timed tool (iphone.mjs, sim.mjs) that it runs inside such a slot. With no-timing holds: a
 // shared acquire inside one re-enters it like a short job; a --no-timing acquire inside a slot is refused like any
 // exclusive one; --shared --no-timing is refused.
-import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync } from 'node:fs';
+import { mkdirSync, rmdirSync, statSync, readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, appendFileSync, openSync, readSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
 import { randomBytes } from 'node:crypto';
@@ -129,8 +132,9 @@ import { sharedStateDir, REPO } from './paths.mjs';
 import { THRESHOLDS, sample, quiet } from './host.mjs';
 import { keepAwake, stopAwake, awakeHold } from './awake.mjs'; // I-070: measurement holds only (user C-024)
 import { warmSummary, reapWarm, reapWarmSync, reapNote, settleSec, gateReapMs } from './sim-warm.mjs';
-import { stepGrace } from './phone-step.mjs'; // I-123: an iphone lease does not run out under the user's step
+import { stepGrace, readSteps } from './phone-step.mjs'; // I-123: an iphone lease does not run out under the user's step
 import { timingDiskRefusal } from './disk.mjs'; // I-124: no new timing hold on a nearly full disk
+import { phoneLedger, observeWaiters, openUse, closeUse } from './phone-ledger.mjs'; // I-167: one holds.log line per iphone hold
 
 export const RESOURCES = {
   'chrome-measure': 'Mac CPU during a throttled Chrome measurement (tools/verify.mjs, tools/fix.mjs ab)',
@@ -151,6 +155,44 @@ const lastReleaseFile = (r) => join(lockDir(), `${r}.last-release.json`);
  */
 function noteRelease(r, h, how, now = Date.now()) {
   try { writeJson(lastReleaseFile(r), { owner: h?.owner ?? null, token: h?.token ?? null, kind: h?.kind ?? null, acquiredAt: h?.acquiredAt ?? null, at: iso(now), how }); } catch {}
+  if (r === 'iphone') noteIphoneEnd(h, { endedAt: now, how });
+}
+/**
+ * I-167 (phone-hold v2 T1): the ledger line of iphone holder `h` ending at `endedAt` (lib/phone-ledger.mjs): its run
+ * marks and waiter sightings (on the record), the iphone queue now (a last sighting), the holder's chrome-measure lines
+ * in holds.log and its live chrome-measure holder / queue entry, its console steps. Synchronous (an exit handler calls it).
+ */
+export function iphoneLedger(h, { endedAt = Date.now(), how = 'open' } = {}) {
+  const queue = pruneQueue(readJson(queueFile('iphone'), []), Date.now());
+  let mac = null, steps = [];
+  try { mac = status('chrome-measure'); } catch {}
+  try { steps = readSteps(); } catch {}
+  return phoneLedger(h, { endedAt, how, queue, macLines: holdsTailLines(), mac, steps });
+}
+/** I-167: append the ledger line of iphone holder `h` to holds.log (best effort: a failed write never fails the release). */
+export function noteIphoneEnd(h, { endedAt = Date.now(), how }) {
+  if (!h || isGroup(h)) return;
+  try { appendFileSync(holdsLogFile(), JSON.stringify(iphoneLedger(h, { endedAt, how })) + '\n'); } catch {}
+}
+/** I-167: when a stale iphone holder ended: a lease at its expiry (or the end of its step grace, I-123), a process at its last mark. */
+export function staleEnd(h, now = Date.now()) {
+  const t = (s) => { const x = Date.parse(s); return Number.isFinite(x) ? x : null; };
+  if (h.kind === 'process' && !pidAlive(h.pid)) return Math.max(...[h.acquiredAt, h.lastRunAt, ...(h.uses || []).map((u) => u.to)].map(t).filter((x) => x !== null && x <= now), t(h.acquiredAt) ?? now);
+  const exp = t(h.expiresAt) ?? now, grace = t(h.stepGrace?.until);
+  return Math.min(now, grace !== null && grace > exp ? grace : exp);
+}
+const HOLDS_TAIL_BYTES = 256 * 1024;
+/** The last HOLDS_TAIL_BYTES of holds.log as parsed lines (a cut first line and bad lines skipped). */
+function holdsTailLines() {
+  let text;
+  try {
+    const f = holdsLogFile(), size = statSync(f).size;
+    if (size <= HOLDS_TAIL_BYTES) text = readFileSync(f, 'utf8');
+    else { const fd = openSync(f, 'r'); try { const buf = Buffer.alloc(HOLDS_TAIL_BYTES); readSync(fd, buf, 0, buf.length, size - buf.length); text = buf.toString('utf8'); text = text.slice(text.indexOf('\n') + 1); } finally { closeSync(fd); } }
+  } catch { return []; }
+  const out = [];
+  for (const l of text.split('\n')) { if (!l.trim()) continue; try { out.push(JSON.parse(l)); } catch {} }
+  return out;
 }
 /** The last release record of `r` (noteRelease), or null. */
 export const lastRelease = (r) => (checkName(r), readJson(lastReleaseFile(r), null));
@@ -224,7 +266,8 @@ export const isGroup = (h) => !!(h && h.shared === true);
 const knownGroup = (h) => isGroup(h) && h.format === SHARED_FORMAT && Array.isArray(h.readers);
 const iso = (t) => new Date(t).toISOString();
 export const hostAlertsFile = () => join(lockDir(), 'host-alerts.log');
-/** One JSON line per chrome-measure `lock.mjs run` hold: display / wake / assertion at its start and end (T8+, I-033). */
+/** One JSON line per chrome-measure `lock.mjs run` hold: display / wake / assertion at its start and end (T8+, I-033);
+ * and one ledger line per iphone hold or lease at its end (I-167, noteIphoneEnd, lib/phone-ledger.mjs). */
 export const holdsLogFile = () => join(lockDir(), 'holds.log');
 export const GATE_REAP_TRIES = 2; // review-i063 n1: failed warm-Simulator shutdowns at the host gate before its wait ends (WAIT)
 const GATE_FRESH_MS = 60000; // a waiter's gate record counts as "waiting for quiet" while refreshed within this
@@ -823,6 +866,7 @@ export async function tryAcquire(r, opts) {
       writeJson(join(lockDir(), `${r}.last-stale.json`), { ...h, staleBecause: reason, clearedAt: new Date(now).toISOString(), clearedBy: owner });
       try { unlinkSync(holderFile(r)); } catch {}
       if (isGroup(h)) endGroupGrant(r, h, now);
+      if (r === 'iphone') noteIphoneEnd(h, { endedAt: staleEnd(h, now), how: `stale: ${reason}` }); // I-167
       h = null;
     }
     if (knownGroup(h)) h = pruneGroup(r, h, now, owner);
@@ -889,7 +933,7 @@ export async function tryAcquire(r, opts) {
     // the switch went off while this shared job waited as a reader: its reader entry becomes this entry, in place (N10)
     if (shared && mine < 0) mine = q.findIndex((w) => w.shared && sameWaiter(w, owner, kind, pid));
     // I-155: an acquire without --not-ready marks its entry ready (in place) before the hand-over picks the next waiter
-    if (mine >= 0 && q[mine].notReady && !notReady) { const { notReady: _, ...w } = q[mine]; q[mine] = w; }
+    if (mine >= 0 && q[mine].notReady && !notReady) { const { notReady: _, ...w } = q[mine]; q[mine] = { ...w, readyAt: new Date(now).toISOString() }; } // I-167: readyAt
     const ni = q.length ? nextIndex(q, seen, now, owner, r, T) : -1;
     // short jobs are exempt from the host gate: the first short waiter may pass a head normal waiter held by it
     // (not one the lead moved, and only early in its gate wait: gateHolding, I-030); past that window, a short job whose
@@ -948,11 +992,13 @@ export async function tryAcquire(r, opts) {
     // busy (or someone else is served first): join / refresh the queue
     const entry = { owner, kind, pid: kind === 'process' ? pid : undefined, checkout: REPO, since: mine >= 0 ? q[mine].since : new Date(now).toISOString(), lastSeen: new Date(now).toISOString(), queueTtlSec, ...(short ? { short: true, maxSec } : {}), ...(shared ? { functional: true, weight } : {}), ...(noTiming ? { noTiming: true } : {}), ...(notReady ? { notReady: true } : {}), // I-155
       // a gate wait survives a short job granted in between, so short jobs can't stretch the gate's cap
-      ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}) };
+      ...(mine >= 0 && q[mine].gate ? { gate: q[mine].gate } : {}),
+      ...(mine >= 0 && q[mine].readyAt && !notReady ? { readyAt: q[mine].readyAt } : {}) }; // I-167: when a --not-ready entry turned ready
     if (mine >= 0 && q[mine].movedBy) Object.assign(entry, { movedBy: q[mine].movedBy, movedAt: q[mine].movedAt }); // a lead's reorder (I-019, lock-repair.mjs)
     if (mine >= 0) q[mine] = entry; else q.push(entry);
     if (GATED[r] && noTiming && !short && !shared) q = phoneBlockPriority(q, entry, now); // I-136
     writeJson(queueFile(r), q);
+    if (r === 'iphone' && h && !isGroup(h) && observeWaiters(h, q, now)) writeJson(holderFile(r), h); // I-167: a waiter seen on the hold
     return { ok: false, holder: h, position: q.indexOf(entry) + 1, queue: q, next: q[nextIndex(q, seen, now, owner, r, T)]?.owner ?? null, mode: short ? 'short' : 'exclusive', ...(notReady ? { notReady: true } : {}) };
   });
 }
@@ -1264,6 +1310,7 @@ export async function describeHold(r, { owner, job, run, runPid = process.pid, b
     if (h.owner !== owner) throw new Error(`${r} is held by "${h.owner}", not "${owner}": only the holder describes its job`);
     // I-111: a phone run's start or end (its own marker) stamps the holder's last use, read by the idle alarm (lib/idle.mjs)
     if (run || (run === null && h.meta?.run && h.meta.run.pid === runPid)) h.lastRunAt = new Date(now).toISOString();
+    if (r === 'iphone') { if (run) openUse(h, run, now); else if (run === null) closeUse(h, runPid, now); } // I-167: the ledger's run marks
     h.meta = apply(h.meta);
     writeJson(holderFile(r), h);
     return h;

@@ -94,7 +94,8 @@
 // --no-timing holds (builds), queue or gate waits. The holder record says `awake: true`, the holds.log line `awake`, and
 // `status` shows "keeping Mac awake" (with the per-process assertions). FW_NO_CAFFEINATE=1 turns it off (lib/awake.mjs).
 // Every chrome-measure `run` hold (exclusive, short, no-timing, shared reader; not a re-entry) writes one JSON line to
-// locks/holds.log at its end (I-056 (d)): owner, mode, weight / maxSec (shared), acquiredAt, endedAt, durationSec and
+// locks/holds.log at its end (I-056 (d)): owner, mode, weight / maxSec (shared), queuedAt (when `run` began to wait, I-167),
+// acquiredAt, endedAt, durationSec and
 // the exit code (124 with killed: "max-seconds" when --max-seconds stopped it, 130 with the signal when `run` was
 // signalled; survivors: [pid, ...] when a process of the killed tree still ran 1.5 s after the SIGKILL, I-099;
 // profilesRemoved: n when the kill left throwaway Chrome profiles that `run` removed, I-106). A timing or short hold's line also records the display on/off, FullWake/DarkWake, power source and whether a
@@ -104,6 +105,10 @@
 // ledger (lib/thermal-profile.mjs), the hold makes the phone's END read after its command (~25 s, still inside the hold),
 // stamps the hold's run records (meta.profile.end, meta.profileDrift) and adds phoneProfile: [{profile, gate, start, end,
 // drift, runs, stamped}] to its holds.log line. The exit code stays the command's.
+// Every iphone hold or lease (a release, a process hold's end, a stale lease cleared, a repair) writes one ledger line to
+// holds.log too (I-167, lib/phone-ledger.mjs): resource "iphone", ledger 1, kind, and its seconds by cause (runSec,
+// coolingSec, userWaitSec, macHoldSec, macWaitSec, idleSec with idleBefore/Between/AfterSec, waitersPresentSec,
+// idleWaitersSec, macWaitWaitersSec); `node tools/idle.mjs report --day` sums a day of them.
 //
 // DISK-LOW (I-124, lead's ruling 2026-10-04): under FW_TIMING_MIN_FREE_GB free (default 8; 0 = off) a NEW timing hold of
 // chrome-measure is refused (error, its queue entry dropped) with how to free space (space.mjs prune / report, the folder
@@ -491,6 +496,7 @@ async function main() {
     if (wrapsPhoneRun(rest)) meta.phoneRun = true; // I-124: a phone run is never refused for disk space (lead's ruling)
     // I-160: a Simulator session (--weight simulator, or a command that runs sim.mjs session) waits out a phone block
     const sim = shared && (job === 'simulator' || /\bsim\.mjs['"]?\s+session\b/.test(rest.join(' ')));
+    const queuedAt = new Date().toISOString(); // I-167: the phone ledger counts the iphone holder's Mac wait from here
     const { release: rel, holder, reader, reentrant, mode, env: lockEnv } = await acquire(resource, { owner, kind: 'process', meta, short, maxSec, noTiming, awake, ...(shared ? { shared, weight, job, sim } : {}), timeoutSec: Number(opt('timeout', 3600)) });
     if (shared && mode === 'short') console.error(OFF_NOTICE(resource));
     // a shared run (or its off-mode stand-in, an exclusive short) is bounded like a short one: killed at --max-seconds
@@ -572,7 +578,7 @@ async function main() {
       if (!logged) return;
       const line = { at: new Date().toISOString(), resource, owner, short: !!short || mode === 'short', mode, ...(noTiming ? { noTiming: true } : {}), ...(shared ? { functional: true, weight: reader?.weight ?? weight, maxSec } : {}),
         awake: mode !== 'shared' && !!holder?.awake, // I-070: this hold kept the Mac awake (a measurement hold)
-        acquiredAt: holdStart, endedAt: new Date(end).toISOString(), durationSec: Math.round((end - Date.parse(holdStart)) / 100) / 10, ...rec };
+        queuedAt, acquiredAt: holdStart, endedAt: new Date(end).toISOString(), durationSec: Math.round((end - Date.parse(holdStart)) / 100) / 10, ...rec };
       try { appendFileSync(holdsLogFile(), JSON.stringify(line) + '\n'); } catch {}
     };
     // a bounded run's tree gets the max-seconds path's grace (KILL_GRACE_MS) to clean up (temp Chrome profiles, I-095)

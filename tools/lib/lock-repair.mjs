@@ -41,7 +41,7 @@
 import { readFileSync, writeFileSync, renameSync, unlinkSync, readdirSync, statSync, appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant, queuedWriter, liveReaders, isUserOwner, release as lockRelease } from './lock.mjs';
+import { lockDir, withGuard, pidAlive, staleReason, SHORT_MAX_SEC, SHORT_DRAIN_SEC, RESOURCES, SHARED_LANE, SHARED_FORMAT, isGroup, groupWith, groupGrant, queuedWriter, liveReaders, isUserOwner, release as lockRelease, noteIphoneEnd, staleEnd } from './lock.mjs';
 import { sharedStateDir } from './paths.mjs';
 
 export const auditFile = () => join(lockDir(), 'audit.log');
@@ -272,6 +272,7 @@ export async function repair(r, { by, reason, apply = false, forceHolder = false
       else if (op.kind === 'unlink-holder') {
         writeJsonAtomic(P(files(r).lastStale), { ...op.record, clearedAt: ts, clearedBy: `lock.mjs repair (${by})` });
         unlinkSync(f);
+        if (r === 'iphone') noteIphoneEnd(op.record, { endedAt: staleEnd(op.record, now), how: `repair (${by}): ${op.record.staleBecause}` }); // I-167: its ledger line
       }
       else if (op.kind === 'write-queue' || op.kind === 'write-grant' || op.kind === 'write-holder') writeJsonAtomic(f, op.value);
     }

@@ -33,6 +33,12 @@
 // lead directly, not the steward (--by lead; the lead is first tier for proposals and talks to the user; the author is
 // never an assignee), ENDED / CLOSED when it is marked, revised or the decision changes. The same rule alone:
 // `node tools/console.mjs proposal overdue [--start-min 15]`.
+//   node tools/idle.mjs report --day [YYYY-MM-DD] [--json]                                     # I-167, phone-hold v2 T1
+//        # the phone ledger of one UTC day (default today): every iphone hold or lease that ended that day (one holds.log
+//        # line each, written by lib/lock.mjs at its end), plus the open hold so far, by cause: phone runs, cooling, the
+//        # user (steps, hand tests), Mac holds, Mac wait, idle (before the first use = H-early, between uses = H-gap,
+//        # after the last use = H-done), and how much of the idle and Mac wait had a ready waiter queued; by owner and per
+//        # hold. Read-only. Rules: tools/lib/phone-ledger.mjs. Exit 0, 1 usage.
 import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, notifyLine, readState } from './lib/idle.mjs';
 import { createThread, setStatus } from './lib/console-threads.mjs';
 import { alarmSteward, stewardTo } from './lib/thread-routing.mjs';
@@ -40,10 +46,13 @@ import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
 import { overduePass, START_MIN as OVERDUE_START_MIN } from './lib/proposal-overdue.mjs'; // I-177: slow revisions
 import { diskPass } from './lib/space-watch.mjs'; // I-124: disk alarm + auto-clean (FW_SPACE_AUTOPRUNE=0 turns the clean off)
 import { exitOnHelp } from './lib/help.mjs';
+import { ledgerReport, reportText } from './lib/phone-ledger.mjs'; // I-167: the phone ledger's day
+import { status as lockStatus, iphoneLedger, staleEnd, holdsLogFile } from './lib/lock.mjs';
+import { openSync, readSync, fstatSync, closeSync } from 'node:fs';
 
 exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
-const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min', '--proposal-min'];
+const VALUED = ['--by', '--phone-min', '--chrome-min', '--interval', '--step-min', '--proposal-min', '--day'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -108,8 +117,44 @@ async function pass({ by, min, log, quietOk, watching = false }) {
   return { results, alarm: as.some((a) => a.alarm) || steps.alarm || revs.alarm, disk };
 }
 
+const LEDGER_READ_BYTES = 32 * 1024 * 1024; // holds.log grows ~100 KB a day: this tail covers months
+/** The parsed lines of the last LEDGER_READ_BYTES of holds.log ([] without the file). */
+function readHolds() {
+  let fd;
+  try { fd = openSync(holdsLogFile(), 'r'); } catch { return []; }
+  try {
+    const size = fstatSync(fd).size, start = Math.max(0, size - LEDGER_READ_BYTES), buf = Buffer.alloc(size - start);
+    readSync(fd, buf, 0, buf.length, start);
+    let text = buf.toString('utf8');
+    if (start > 0) text = text.slice(text.indexOf('\n') + 1);
+    const out = [];
+    for (const l of text.split('\n')) { if (!l.trim()) continue; try { out.push(JSON.parse(l)); } catch {} }
+    return out;
+  } finally { closeSync(fd); }
+}
+
+/** I-167: `report --day [YYYY-MM-DD]`: the phone ledger of one UTC day. */
+function report() {
+  if (!argv.some((a) => a === '--day' || a.startsWith('--day='))) throw new Error('usage: node tools/idle.mjs report --day [YYYY-MM-DD] [--json] (a UTC day, default today)');
+  const v = opt('day');
+  const now = clock();
+  const day = v === undefined || v.startsWith('--') ? new Date(now).toISOString().slice(0, 10) : v;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(`${day}T00:00:00Z`))) throw new Error(`--day must be a UTC date YYYY-MM-DD (got "${v}")`);
+  const lines = readHolds();
+  // the holder now: a live one is the open hold so far; a stale one ended (its line comes when it is cleared)
+  const st = lockStatus('iphone'), h = st.holder;
+  let open = null;
+  if (h && !st.stale) open = iphoneLedger(h, { endedAt: now, how: 'open' });
+  else if (h && !lines.some((l) => l.resource === 'iphone' && l.token && l.token === h.token)) lines.push(iphoneLedger(h, { endedAt: staleEnd(h, now), how: `stale (${st.stale}), not cleared yet` }));
+  const rep = ledgerReport(lines, { day, open });
+  if (flag('json')) console.log(JSON.stringify(rep, null, 1));
+  else for (const l of reportText(rep)) console.log(l);
+  return EXIT.ok;
+}
+
 async function main() {
-  if (!cmd || cmd === 'help' || flag('help')) { console.log('usage: node tools/idle.mjs check|watch … (see the header of tools/idle.mjs)'); return cmd ? EXIT.ok : EXIT.usage; }
+  if (!cmd || cmd === 'help' || flag('help')) { console.log('usage: node tools/idle.mjs check|watch|report … (see the header of tools/idle.mjs)'); return cmd ? EXIT.ok : EXIT.usage; }
+  if (cmd === 'report') return report();
   const by = opt('by');
   if (by !== undefined && !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/.test(by)) throw new Error(`bad --by "${by}" (an agent name, e.g. lead)`);
   const min = limits();
@@ -135,7 +180,7 @@ async function main() {
     log('STOPPED');
     return EXIT.ok;
   }
-  throw new Error(`unknown command "${cmd}" (check or watch; see the header of tools/idle.mjs)`);
+  throw new Error(`unknown command "${cmd}" (check, watch or report; see the header of tools/idle.mjs)`);
 }
 
 main().then((c) => { process.exitCode = c; }, (e) => { console.error(e.message || e); process.exitCode = EXIT.usage; });
