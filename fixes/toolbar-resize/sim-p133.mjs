@@ -8,7 +8,7 @@
 //     'node tools/fix.mjs serve morph-scroll-v9try > out/toolbar-resize/serve133.log 2>&1 & S=$!; \
 //      node tools/wait.mjs serve out/serve-morph-scroll-v9try.json --pid $S --owner fix-toolbar-resize --timeout 60 && \
 //      SB_BUDGET_S=500 node tools/sim.mjs session --owner fix-toolbar-resize -- \
-//        node fixes/toolbar-resize/sim-p133.mjs <hold A|B> <step> ...; E=$?; kill $S; exit $E'
+//        node fixes/toolbar-resize/sim-p133.mjs <hold A1|A2|B1|B2> <step> ...; E=$?; kill $S; exit $E'
 // step = <arm>:H<n>, arm C (control) | nvc | nvn | tps | tp | vu0. Steps: 1. served bytes through the http twin (hash +
 // x-mirror-source overlay; exit 26 on a mismatch); 2. wda start; 3. per run: sim.mjs open, sim.mjs gesture
 // cycle-hero-v2.json --timeline --inject pgp-inject.mjs (arm via $PGP_ARM); 4. after the FIRST run, a format and count
@@ -26,7 +26,10 @@ const WT = new URL('../..', import.meta.url).pathname;
 const STATE = join(WT, 'out/serve-morph-scroll-v9try.json');
 const WANT = { css: 'e1359ab9994a', js: '1b2eecc66011' };
 export const ARMS = ['C', 'nvc', 'nvn', 'tps', 'tp', 'vu0'];
-export const HOLDS = ['A', 'B'];
+// P-133 addendum 1 (lead's option b, after the dry run's 78.35 s estimate): four holds of at most 4 steps, each with its own C.
+export const PLAN = { A1: ['C:H1', 'nvc:H1', 'nvn:H1', 'C:H2'], A2: ['C:H3', 'tps:H1', 'C:H4'], B1: ['C:H5', 'nvc:H2', 'tp:H1', 'C:H6'], B2: ['C:H7', 'vu0:H1', 'tps:H2', 'C:H8'] };
+export const HOLDS = Object.keys(PLAN);
+export const MAX_STEPS = 4;
 const INJ = join(WT, 'fixes/toolbar-resize/pgp-inject.mjs');
 const SCRIPT = join(WT, 'fixes/toolbar-resize/cycle-hero-v2.json');
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
@@ -51,7 +54,8 @@ export const firstRunWhy = (v, n) => {
 };
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [hold, ...steps] = process.argv.slice(2);
-  if (!HOLDS.includes(hold)) { console.log(`usage: sim-p133.mjs <A|B> <step> ... (got hold ${hold})`); process.exit(2); }
+  if (!HOLDS.includes(hold)) { console.log(`usage: sim-p133.mjs <A1|A2|B1|B2> <step> ... (got hold ${hold})`); process.exit(2); }
+  if (steps.join(' ') !== PLAN[hold].join(' ') || steps.length > MAX_STEPS) { console.log(`STOP steps for hold ${hold} must be the carded ${PLAN[hold].join(' ')} (got ${steps.join(' ')})`); process.exit(2); }
   const D = join(WT, 'out/toolbar-resize/simp133', hold); mkdirSync(D, { recursive: true });
   const injSha = sha(readFileSync(INJ)), scriptSha = sha(readFileSync(SCRIPT));
   const t0 = Date.now(), budget = Number(process.env.SB_BUDGET_S || 285) * 1000;

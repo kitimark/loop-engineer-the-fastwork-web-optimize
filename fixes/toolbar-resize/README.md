@@ -2644,6 +2644,110 @@ drops tps:H2 from hold B, as carded), then hold A, then hold B unless A stops at
     61 checks), scorer `score-bisect.mjs` `cb6f0c97b81b`, `split-io119.mjs` `1ad22b858eb8`;
   - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
 
+### P-133 dry run (count-only; shared Simulator slot, 2026-10-05 ~10:53Z): DRY PASS, design budget FAILED
+
+- Both C runs pass every dry-run criterion: 18/18 strokes, no error or abort, 0 guard-ended loops and 0 guard errors,
+  8/8 toolbar transitions as planned. (The count-only records hold no frame log, so no n is known yet.)
+- Step times: run 1 74.3 s (open 10.1 + gesture 64.2), run 2 62.4 s (open 4.7 + gesture 57.7). Mean 68.35 s, so the
+  carded estimate is 68.35 + 10 = **78.35 s**. Six steps then need 6 x 78.35 + 30 = 500.1 s > 500 s, so the card's
+  rule says the design fails its budget: no data, back to ops and the lead.
+- Context, no claim: the slot was shared and the host was loaded (load1 up to 106; the Simulator's background
+  processes up to 148 % of a core); run 1's open took twice run 2's.
+- Files: `out/toolbar-resize/dry133/` (`dry.json`, `dry-C-1.json`, `dry-C-2.json`), log `out/toolbar-resize/dry133.log`
+  (gitignored).
+
+### P-133 addendum 1: four holds of at most 4 steps (lead's option b; registered before data)
+
+**Why.** The dry run's estimate is 78.35 s per step, over the carded 78 s limit, with the 500 s budget unchanged. The
+lead chose to split the holds (option b). The stimulus, the 500 s budget and the failed dry run stay as they are:
+no shorter stimulus, no larger budget, no second dry run. Nothing else in the card changes.
+
+- **Hold layout.** At most 4 steps per hold. Each hold starts and ends with its own C. The arms keep the carded order
+  (A's arms, then B's) and the two nvc runs stay where they were:
+
+  | hold | steps | estimate (4 x 78.35 + 30 at most) |
+  |---|---|---|
+  | A1 | `C:H1 nvc:H1 nvn:H1 C:H2` | 343 s |
+  | A2 | `C:H3 tps:H1 C:H4` | 265 s |
+  | B1 | `C:H5 nvc:H2 tp:H1 C:H6` | 343 s |
+  | B2 | `C:H7 vu0:H1 tps:H2 C:H8` | 343 s |
+
+  - Carded A was `C nvc nvn C tps C` and carded B `C nvc tp C vu0 tps C`. A C is added where a hold boundary cut
+    between two arms, so there are 8 C runs (was 6) and C names are renumbered H1-H8.
+  - **Total: 4 Simulator holds, 15 steps** (was 2 holds, 13 steps).
+  - Each hold is self-contained: its own served-bytes check, first-run gate and folder
+    (`out/toolbar-resize/simp133/A1`, `A2`, `B1`, `B2`). Every arm run has a C run before and after it in its own hold,
+    so the scorer's neighbour rule (nearest C before and after, within the folder it is given) never reaches into
+    another hold.
+  - The driver accepts only these four holds with exactly these steps; anything else exits 2 before any work.
+- **Budget.** The largest hold is 4 steps: 4 x 78.35 + 30 = 343.4 s <= 500 s, unchanged budget (A2: 3 x 78.35 + 30 =
+  265.1 s). The dry run's PASS stands because the stimulus is unchanged, so there is no new dry run. The driver's budget
+  stop stays as the guard: it drops a hold's remaining steps when the time left is under the longest step + 15 s.
+- **The tps:H2 drop.** The carded "estimate > 67 s: B drops tps:H2" and "> 78 s: the design fails" rules were written
+  for the 6- and 7-step holds and no longer apply. No step is dropped before data. P4/P5 use both tps runs (tps:H1 in
+  A2, tps:H2 in B2); P-131's S2 note still covers a tps run that fails the applied-arm gate.
+- **Running and stop rules.**
+  - One FIFO queue entry at a time, in the order A1, A2, B1, B2. Each hold is a normal exclusive hold
+    (`--max-seconds 600`, `SB_BUDGET_S=500`, the card's command with `sim-p133.mjs <hold> <its steps>`).
+  - Right after each hold, its n check (`check-n133.mjs`, frames only) runs, before any scoring. HOLD-FAIL means no
+    rescue.
+  - A later hold runs whatever the earlier holds' Layout values or ratios are. Nothing is scored until the last hold
+    has run or the card has stopped.
+  - **These stop all remaining holds** (the card goes to the lead; nothing is scored):
+    - served bytes wrong (exit 26);
+    - the first-run gate (exit 27: inject format, or n < 8 on the hold's first run);
+    - HOLD-FAIL in the n check.
+  - **This stops only within a hold:** the budget stop. That hold's dropped steps are logged and not scored, and the
+    next hold still runs. A make-up hold needs the lead's OK.
+  - After the last hold, per hold: the applied-arm gate, the scorer, then `split-io119.mjs`.
+- **Pooling: no Layout times pool across holds; only per-hold calls combine.**
+  - Each hold is scored alone by the frozen scorer (`score-bisect.mjs <hold folder> <its runs>`). Its arms' ratios
+    use only its own C runs. No C or arm value from one hold enters another hold's ratio. Why: Simulator times compare
+    only within one session (P-109's instrument).
+  - **Rule 1 (unchanged in kind, now over four holds):** NOT REPRODUCED fires when any one hold's C runs fail the
+    replication gate (every C counted, inStyle >= half n). No arm in any hold is then judged.
+  - **Rule 2 (a judgment change, written in full):** the card had one nvc per hold. With four holds there are still
+    two nvc runs.
+    - nvc:H1 (hold A1) is the positive control for holds A1 and A2. nvc:H2 (hold B1) is the positive control for holds
+      B1 and B2.
+    - If nvc:H1 does not LOCATE (its ratio against A1's C runs above 0.30, or not counted), the arms of A1 and A2
+      (nvn:H1, tps:H1) are CONTROL-FAILED. If nvc:H2 does not LOCATE, the arms of B1 and B2 (tp:H1, vu0:H1, tps:H2)
+      are CONTROL-FAILED. A CONTROL-FAILED arm is not read, though any LOCATES is still reported.
+    - Why: nvc asks a question about the build: does removing every viewport-constrained renderer still remove the
+      step Layout on v9-final + 7d? Each hold's own health is checked by its replication gate and its VOID. Adding nvc
+      runs to A2 and B2 would change the carded arms; the lead kept them as carded.
+  - **Rule 3 (per hold, a single pair):** VOID when |last C - first C| / first C > 0.30 over the hold's medianLargest.
+    That is the scorer's own rule (its first and last C), which in a 2-C hold is its one pair of C runs. A VOID hold's
+    arms are not judged; the other holds stand.
+  - **Rule 4 (confirmed):** tps takes one run from each of two holds (tps:H1 in A2, tps:H2 in B2), each against its
+    own hold's C runs. tps LOCATES when both do, or when the mean of the two ratios is <= 0.30.
+  - **Rule 6:** HOLD-FAIL in any hold stops the card before scoring (see stop rules).
+- **Predictions.** None restated or re-estimated (N1).
+  - **P10 is decided:** the result read scores it as a miss on the rev 1 design (that design failed its own budget
+    rule). It is not rescored on the split.
+  - Where a prediction says "both holds", it reads over the new layout: P1 and P11 over all four holds, P2 over both
+    nvc runs.
+  - No new prediction.
+- **Disclosures.**
+  - The design change follows a failed gate. No Timeline data, Layout value, ratio or frame count has been seen: the
+    dry run is count-only and its records hold no frame log.
+  - The dry run ran with load1 peaking at 106. No timing claim rests on it; it only set the budget estimate the
+    carded rule asked for.
+  - N1-N3 still apply. N3: everything is DEFERRED while P-130's phone block is marked (it started about 10:54Z).
+- **Pins changed** (sha256/12):
+  - driver `sim-p133.mjs` `a93170496013` (the four-hold plan and the step check);
+  - self-test `p133-selftest.mjs` `9bf8b6ef945a`: `SELFTEST ok 43 checks` (adds: at most 4 steps per hold, a C at
+    each end, arm order as carded, unique names and 8 C runs, a 4-step hold fits 500 s at 78.35 s).
+  - Unchanged:
+    - stimulus `cycle-hero-v2.json` `59420d90ed02`;
+    - n check `check-n133.mjs` `96a1dc5fe288`;
+    - dry run `dry-p133.mjs` `470cd5c593c2`;
+    - inject `pgp-inject.mjs` `2cfd9c00b9f1`;
+    - gate `check-pgp.mjs` `da32f37117f6`;
+    - scorer `score-bisect.mjs` `cb6f0c97b81b`;
+    - `split-io119.mjs` `1ad22b858eb8`;
+    - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).

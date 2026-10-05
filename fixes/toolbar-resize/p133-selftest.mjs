@@ -4,7 +4,7 @@
 // n check, dry-p133.mjs's count-only criteria. No browser, no lock, no Simulator. node fixes/toolbar-resize/p133-selftest.mjs -> "SELFTEST ok N checks".
 import { readFileSync } from 'node:fs';
 import { compileScript } from '../../tools/lib/gesture.mjs';
-import { movingHeroN, firstRunWhy, ARMS, HOLDS } from './sim-p133.mjs';
+import { movingHeroN, firstRunWhy, ARMS, HOLDS, PLAN, MAX_STEPS } from './sim-p133.mjs';
 import { checkRun, N_MIN, N_TARGET } from './check-n133.mjs';
 import { dryWhy, strokeWallS, STROKES, MIN_TRANSITIONS, Y_LO, Y_HI } from './dry-p133.mjs';
 let n = 0, bad = 0;
@@ -45,7 +45,13 @@ ok(firstRunWhy(v, 12).length === 0, 'first-run gate passes a good run');
 ok(firstRunWhy(v, 7).some((w) => /n 7 < 8/.test(w)), 'first-run gate stops at n 7');
 ok(firstRunWhy(null, 12).includes('no inject value'), 'first-run gate stops without an inject value');
 ok(firstRunWhy({ ...v, ioInstalled: false }, 12).includes('no showcase IO'), 'first-run gate: no IO');
-ok(ARMS.join() === 'C,nvc,nvn,tps,tp,vu0' && HOLDS.join() === 'A,B', 'arms and holds');
+ok(ARMS.join() === 'C,nvc,nvn,tps,tp,vu0' && HOLDS.join() === 'A1,A2,B1,B2', 'arms and holds (addendum 1)');
+const allSteps = HOLDS.flatMap((h) => PLAN[h]);
+ok(HOLDS.every((h) => PLAN[h].length <= MAX_STEPS && MAX_STEPS === 4), 'every hold has at most 4 steps');
+ok(HOLDS.every((h) => PLAN[h][0].startsWith('C:') && PLAN[h][PLAN[h].length - 1].startsWith('C:')), 'every hold starts and ends with its own C');
+ok(allSteps.filter((s) => !s.startsWith('C:')).join(' ') === 'nvc:H1 nvn:H1 tps:H1 nvc:H2 tp:H1 vu0:H1 tps:H2', 'arm order as carded (A then B)');
+ok(new Set(allSteps).size === allSteps.length && allSteps.filter((s) => s.startsWith('C:')).length === 8, 'run names unique; 8 C runs');
+ok(4 * 78.35 + 30 <= 500, 'a 4-step hold fits the 500 s budget at the dry-run estimate');
 // --- n check ----------------------------------------------------------------------------------------------------------
 ok(N_MIN === 8 && N_TARGET === 12, 'thresholds 8 and 12');
 const r12 = checkRun(g(twelve), 18);
