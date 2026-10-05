@@ -111,7 +111,8 @@
 // before it (I-207, inBlockGap / gapEligible / gapEnd below). The group opens at a hand-over like a short job (the short
 // lane, its drain budget, I-030 and lead moves apply to reader entries); right after a group, the exclusive waiters go
 // first, but never before a reader queued ahead of them, and a reader queued readerMaxWaitSec goes before any exclusive
-// waiter (I-049: writer preference only closes joins; it does not reorder the queue), except one the lead moved ahead of
+// waiter (I-049: writer preference only closes joins; it does not reorder the queue; I-210: not right after a group, so an
+// exclusive head waits for at most one group and aged readers queued after it no longer jump it again), except one the lead moved ahead of
 // it (I-097: a lead move wins over that age bound, and such a waiter closes joins for the opening batch too, so the
 // running group only drains and the moved hold is served at its end). A reader's command gets FW_LOCK_SHARED=<r>:<reader token>, never FW_LOCK_HELD: a nested shared acquire re-enters
 // that slot (if it is no heavier than the slot), an exclusive one is refused at once (B1); readers are keyed by token,
@@ -755,8 +756,11 @@ function nextIndex(q, lg, now = Date.now(), caller, r, T = THRESHOLDS) {
   // age bound below (I-097: readers queued 10 min passed a moved phone hold at every hand-over while the phone cooled)
   if (n[0].movedBy && n[1] < s[1]) return n[1];
   // I-049 (shared readers starved): a reader that waited readerMaxWaitSec goes before any exclusive waiter not moved
+  // I-210: not right after a shared group (its grant record, groupGrant: `shared`): the exclusive head has just waited out one
+  // group, so a reader that aged queued after it no longer jumps it again, group after group (13:17-13:52Z: 4 hand-moves in
+  // 1 h). A reader queued before the head still goes first by the FIFO rule below.
   const rd = pool.find(([w]) => w.shared);
-  if (rd && now - Date.parse(rd[0].since) >= SHARED_LANE.readerMaxWaitSec * 1000) return rd[1];
+  if (rd && !lg?.shared && now - Date.parse(rd[0].since) >= SHARED_LANE.readerMaxWaitSec * 1000) return rd[1];
   // I-049: an exclusive waiter never passes a reader queued before it (not after a group, not by its gate): writer
   // preference only closes joins to a running group. The short-lane entries go in queue order (s is at or before rd).
   if (rd && rd[1] < n[1]) return s[1];

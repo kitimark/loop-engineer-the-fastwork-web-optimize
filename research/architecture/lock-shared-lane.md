@@ -333,7 +333,8 @@ Rule now (`nextIndex`, test-first in tests/unit/lock-shared.test.mjs "I-049"):
   a group, and not through its gate pass window. The short-lane entries go in queue order. Writer preference only
   closes joins to a running group; it does not reorder the queue. Earlier exclusive waiters still go first after a
   group, and readers still pass later normal waiters through the short lane, as before.
-- **Age bound.** A reader queued `readerMaxWaitSec` (600 s) goes before any exclusive waiter at the next hand-over.
+- **Age bound.** A reader queued `readerMaxWaitSec` (600 s) goes before any exclusive waiter at the next hand-over,
+  except right after a shared group (I-210, below).
 - A lead move (`movedBy`) of an exclusive waiter ahead of the short-lane entries wins over FIFO and over the age
   bound (I-097, 6deb294); such a waiter also closes joins for the opening batch, so a running group only drains and
   the moved hold goes next.
@@ -341,6 +342,17 @@ Rule now (`nextIndex`, test-first in tests/unit/lock-shared.test.mjs "I-049"):
   and test-chrome-fn (w1, waiting since 22:30Z) behind it could not either. Now a reader that fits may join past fresh
   readers ahead that do not fit now, as long as each of them has waited less than `readerBypassSec` (300 s). After
   that the group drains for the head. A reader ahead that fits is never passed.
+
+- **I-210: an exclusive head waits for at most one group.** Seen live 2026-10-05: with a long queue of shared Simulator
+  and probe jobs every reader soon aged past 600 s, and each aged reader queued after an exclusive head (a `--no-timing`
+  build, a normal hold) opened the next group before it: fix-end-bg waited 13:17-13:52Z, int-v8 13:50-14:25Z, and the
+  lead hand-moved four heads in an hour. Now the age bound does not apply at a hand-over right after a shared group
+  (`nextIndex`: the last-grant record is the group's, `groupGrant`, `shared: true`; it stays until the next grant). The
+  head has then waited out one group, so it goes first (the short-drain budget is spent, as before). The age bound still
+  lets the first aged reader pass the head once, after an exclusive or short hold, and that group is the one group. A
+  reader queued before the head is untouched: it goes first by FIFO, aged or not, and may still open or join the next
+  group. Lead moves (I-097), the phone block's gap (I-207), the short lane (I-011/I-020/I-030) and host-gate passes
+  (I-185) are unchanged. Test: tests/unit/lock-shared.test.mjs "I-210".
 
 Mixed versions: where the new rule picks a reader and pre-I-049 code picks the normal waiter, each takes its own turn,
 and the guard settles the race. One mutual wait stays possible until every worktree rebases: a pre-I-049 reader defers
