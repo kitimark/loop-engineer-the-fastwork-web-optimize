@@ -6,7 +6,11 @@
 **Rev 7d (2026-10-05, candidate for v9 step 4):** rev 7c plus one rule: a close fling at lift-off that is fast (finger
 >= 5 px/ms) or long (finger travel >= 300 px) keeps its own momentum, so it can leave the end screen in one fling (v9
 step 4's regression). Phone G check P-124: fo released 3/3 on rev 7d vs caught 3/3 on rev 7c; near-line, fast-short
-and E1-E4 identical; all 8 predictions held. See "Rev 7d"; the blind swipe pair (step 4) is pending.
+and E1-E4 identical; all 8 predictions held. See "Rev 7d".
+**Rev 7d accepted by the user** (PR-023 rev 5, 2026-10-05 10:15:50Z, no notes), after trying it on the phone on
+v9-final (Try-it A v9-final JS 647c9ef2b1e2, B v9-final + rev 7d JS 1b2eecc66011, patch 6d1632eb0ee9; build in
+`fixes/morph-scroll-v9try/`). Rev 7d replaces rev 7c: `patch.diff` here is v8 + rev 7d (JS 29c0d537e0c9), the swap onto
+v9-final is the 15-line delta in `fixes/morph-scroll-v9try/`. Land request to the lead; v9.1 takes the swap.
 
 **Status:** proposal build, **rev 7c** (PR-018 rev 7, 2026-10-04), on the best build **v8** (which has morph-gpu rev 3). The user picked rev 7c in the blind finger A/B C-052 (42/42 vs 64/85); **accepted by the user** (PR-018 rev 7, 2026-10-04 20:12:50Z); land request with the D and F cards below ("Cards").
 Rev 7 answers the user's rev 6 review (fast short swipes with high acceleration were hard to open and close): the
