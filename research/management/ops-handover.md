@@ -72,6 +72,17 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~07:3xZ **P-097 routing (lead's ask).** The lead ruled P-097 the next less-work item once v9-final lands, with its base moved to v9-final.
+  - Owner today: fix-cd-roll-ca (agent a65f148991747deb7, in this session). It has been idle since 10-04 ~15:5xZ; its board row is "in best build (v8)". It can be resumed with SendMessage, so no spawn is needed.
+  - New base means a new rev of the ticket (rev 4), not an addendum. Rev 3's addendum was only for hashes; a new base changes C, V and the C reference.
+- 10-05 ~07:3xZ **P-122 re-check: PASS** (int-v8 aaa18038 on 551a80f1). Registered in PREDICTIONS.
+  - N1: late() is now elapsed + 180 > 600, so no G item starts after 420 s. The card, holds line and selftest boundary (420 / 421) are updated, and the thin margin is noted.
+  - N2: score.mjs parse() refuses gRC and wgRC; Cref covers X and S only; a new selftest case covers it.
+  - Hashes (committed = disk): hold122.sh ec6cc97f190b, score.mjs 357ee5bbcac7, selftest122.mjs 2da28f207b7c.
+  - Unchanged: serve122.sh 0198b72d3ad9, patch 4196eaa61d96, HASHES 375b4561b2fd.
+  - SELFTEST-122 re-run: OK 55. No data exists.
+  - The page-end rest split and its "open items" line are OBSERVED and not a gate. No ticket field or prediction changed.
+  - Next: the lead's sign, then the runner.
 - 10-05 ~07:2xZ **P-122 delta check: NOT YET** (int-v8 551a80f1, on main b2ac52d4). V = v9-final 647c9ef2b1e2 / e1359ab9994a (scb and close dropped). No data exists: no out/p122/runs, and conf is Simulator count-only.
   - Pins match the committed blobs:
     - patch.diff 4196eaa61d96
