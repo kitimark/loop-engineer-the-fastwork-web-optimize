@@ -1344,6 +1344,31 @@ block. `out/p138/snap` is made (`serve138.sh snap ok`) in case the lead rules ot
 - `patch -p1 -F0` applies it exactly. The result JS is db0bc2262f02, and `node --check` passes.
 - U2 on v9.1d has no counts of its own: P-138 measured it on v9f7d.
 
+## U2 parity on v9.2 (P-142 pre-data for int-v8; gates nothing)
+
+**Build.** v9.2 = v9.1d + people-word a + nav-fade + U2, from int-v8's `out/v92/snap-6468db04395c`:
+- C = Mnhc, which is v9.2 minus U2 (30f6371751f4 / 1c4161f56545).
+- `patch-on-v92m-u2.diff` (7372cb4c3ea1) is Mnhc → V. It holds exactly U2's changed lines.
+- `build.mjs` base `v92u2` rebuilds V as 6468db04395c, and builds the audit build VA as c82af1308fb7.
+- `build.mjs` is now 433f71fa037e. P-138 pinned it at 746b136c1564; the change only adds the base, and P-138's arms
+  still rebuild with their pinned hashes.
+
+**Parity:** `v92/parity-u2-a.json` (mobile, desktop) and `v92/parity-u2-b.json` (mobile-shift), two shared probe
+slots, every case served VA, no page error.
+
+| | 10 px steps | 40 px steps |
+|---|---|---|
+| deferred frames, mobile and mobile-shift | 187 | 47 |
+| deferred frames, desktop | 0 | 0 |
+| deferral mismatches (dmis), every case | 0 | 0 |
+
+- These equal parity run 2 on v9f7d (`v9final/parity-u2-2.json`).
+- Task modes: 0 lag frames and 0 theme / sticky / pill mismatches.
+- rAF modes: the same harness entries as every earlier parity run (pill up to 2, theme 1 at 40 px), none in sync.
+- So U2 behaves the same beside scroll-cb, people-word a and nav-fade. This is OBSERVED, from this run only.
+
+**Not run:** the Mnhc vs V count slot. It was stopped when the lead parked the agent (usage, 15:16Z), with no record.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

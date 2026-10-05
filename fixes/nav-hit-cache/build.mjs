@@ -81,6 +81,13 @@ export const BASES = {
     dir: join(SNAP, 'v9f7d-a707f659f650'), pin: ['a707f659f650', 'e1359ab9994a'], hook: 'u2',
     patch: join(HERE, 'patch-on-v9f7d-u2.diff'), expect: { V: ['c7435c24dc56', 'e1359ab9994a'], VA: ['99911b228855', 'e1359ab9994a'] }, pre: { V: 'nhcu2', VA: 'nhcu2a' },
   },
+  // v9.2 with nav-fade (P-142, int-v8): C = v9.2 minus U2 (int-v8's out/v92/snap-6468db04395c/Mnhc, copied
+  // byte-identical to dir; keeps nav-fade), V = C + U2 (patch-on-v92m-u2.diff = Mnhc -> V, the same changed lines as
+  // u2-delta-on-v9f7d.diff) = v9.2. (Superseded before any data: snap-93028be4374f, Mnhc 35885634a455, without nav-fade.)
+  v92u2: {
+    dir: join(SNAP, 'v92m-30f6371751f4'), pin: ['30f6371751f4', '1c4161f56545'], hook: 'u2',
+    patch: join(HERE, 'patch-on-v92m-u2.diff'), expect: { V: ['6468db04395c', '1c4161f56545'] }, pre: { V: 'nhcv92', VA: 'nhcv92a' },
+  },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
 // cached under out/nav-hit-cache/from/

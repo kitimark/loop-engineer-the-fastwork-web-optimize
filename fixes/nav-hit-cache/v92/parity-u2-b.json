@@ -1,0 +1,131 @@
+{
+ "part": "parity",
+ "date": "2026-10-05T15:15:01.566Z",
+ "browser": "Chrome/154.0.8037.98",
+ "arms": {
+  "C": {
+   "js": "30f6371751f4",
+   "css": "1c4161f56545"
+  },
+  "V": {
+   "js": "6468db04395c",
+   "css": "1c4161f56545"
+  },
+  "VA": {
+   "js": "c82af1308fb7",
+   "css": "1c4161f56545"
+  }
+ },
+ "base": "v92u2",
+ "audit": {
+  "mobile-shift": {
+   "task10": {
+    "steps": 1316,
+    "tested": 759,
+    "cached": 370,
+    "deferred": 187,
+    "deferredMismatches": 0,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 330,
+    "tested": 200,
+    "cached": 83,
+    "deferred": 47,
+    "deferredMismatches": 0,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1316,
+    "tested": 759,
+    "cached": 370,
+    "deferred": 187,
+    "deferredMismatches": 0,
+    "lagFrames": 1303,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      678,
+      true,
+      false,
+      668
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 330,
+    "tested": 198,
+    "cached": 85,
+    "deferred": 47,
+    "deferredMismatches": 0,
+    "lagFrames": 325,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      2258,
+      true,
+      false,
+      2218
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      698,
+      true,
+      false,
+      658
+     ]
+    ]
+   },
+   "served": [
+    "c82af1308fb7",
+    "1c4161f56545"
+   ],
+   "errors": []
+  }
+ },
+ "wallMs": 65182
+}
