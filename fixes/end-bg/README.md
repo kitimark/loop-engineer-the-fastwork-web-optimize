@@ -487,6 +487,9 @@ Text only: no pinned file changes, so the pins above stand. Where this addendum 
   no end-bg arm). In that whole run Paint records summed to about 0.28 s against about 13 s of Composite, and every Paint
   record sat inside a Composite. It is not an end-screen capture and not C or nob of this card, but it informed the M1/M2
   choice and P4. F-290 (the Chrome inventory) informed the title probe and tit's selectors.
+  `research/image-cost` §0 (Simulator: Paint about 0.25 s against about 8 s of Composite per scroll) says the same; I
+  can't rule out having read it before this card (an earlier part of my session is only a summary to me), so it is
+  labelled as seen, informing M1/M2 and P4 too.
 - **N5, text.** `chooseMetric`'s comment says "every hold that replicates on M1"; the code and the card use every hold.
   The card wins.
 - **N6, what tit removes.** tit and nob remove the moving gradient only. The `::after` box, its animation, the span's
