@@ -2491,6 +2491,17 @@ stop, no dropped step). Pins as in the card; served bytes were checked by the dr
 **Card rev 1, before any data.** P-id P-133 (the lead). Next: mgmt-ops-10's pre-data read, then the lead's signature.
 No run, dry run included, before the signature.
 
+**Signed** by the lead on mgmt-ops-10's pre-data PASS of fd21ff9d (2026-10-05, before any data). The signature carries
+ops' notes for the result read:
+- N1: P1-P9 keep P-131's p values, set before P-131's data. Their author has since seen P-131's unjudged ratios, so
+  the result read labels them the belief from before P-131, kept and not re-estimated.
+- N2: "a drag transition gives at least as many frames as a fling" is OBSERVED in no run. The first-run gate (n >= 8)
+  and P11 carry that risk.
+- N3: the dry run and both holds are DEFERRED while P-130's phone block is marked.
+
+The lead's order: the dry run first (an estimate over 78 s stops the card before data and goes to the lead; over 67 s
+drops tps:H2 from hold B, as carded), then hold A, then hold B unless A stops at a gate or fails the n check.
+
 - **Basis (lead, 2026-10-05, after P-131's NOT REPRODUCED):**
   - P-131 stays closed as carded. Nothing from its data is reused or pooled here: no run, no ratio, no C value.
   - A new card with the same arms and the same rule 1, on all fresh data.
