@@ -958,7 +958,7 @@ MB and 36 → 16 decodes. Prediction 7 is informed by P-137's C runs (same C, dr
 | `phone/p150-serve.sh` | a9b059094d07 |
 | `phone/p150-hold.sh` | 78965a854e29 (rev 1.2: served index pins; rev 1 1cb0b24aa2ca) |
 | `phone/p150-block.sh` | d19c744265fa |
-| `phone/p150-read.mjs` | 24b1ed51f58e (rev 1.1, self-test 12 ok; rev 1 382006b9f60e) |
+| `phone/p150-read.mjs` | b5d113ef3760 (rev 1.3, self-test 17 ok; rev 1.1 24b1ed51f58e, rev 1 382006b9f60e) |
 | `phone/p137-read.mjs` | b6d24ad5e73c |
 | `research/serious-heat/p129-read.mjs` | 06f74f5d19ca |
 | `research/serious-heat/phone/p129-gates.mjs` | a06847c64a2e |
@@ -1119,3 +1119,33 @@ other pin is unchanged.
   - The PIN lines equal the card's pins, except the re-pinned hold script above.
   - All servers were stopped after the run.
 - This addendum meets N1. No phone hold of P-150 starts before the lead's delta check of this rev 1.2.
+
+### P-150 addendum rev 1.3: the no-worse rule's clause (b) gets a permutation test (lead ruling, before any data)
+
+- **Why.** P-152's pre-data reader resampled P-137's C runs (OBSERVED, its data, our setup). The rev 1.1 rule, full
+  separation OR the median bound +2/+1, FAILs a no-change V = C in 37-52 % of 4 v 4 blocks at this noise. The median
+  bound alone is too loose a test of "worse".
+- **Clause (b), new.** The median bound (median(N) − median(C) > +2 at >34, > +1 at >50) **and** an exact one-sided
+  permutation p ≤ 0.05.
+  - The statistic is N's mean minus C's mean over the valid runs of the threshold. The test runs over every relabeling
+    of those runs into groups of the arms' sizes.
+  - p is the share of relabelings whose statistic is ≥ the observed one; ties count against N.
+  - On the rates basis the same test runs on s/n, with the bound scaled by median n(C), as before.
+- **Unchanged.** Clause (a), full separation (min N > max C), stays. Either clause makes that threshold WORSE. The
+  twins use their main threshold's bound and the same test.
+- **Power limit (disclosed).** 3 v 3 has only 20 relabelings, so p ≤ 0.05 needs the observed labeling to be the unique
+  top one, and that is full separation. At this card's 3 v 3, clause (b) therefore adds nothing to clause (a): the check
+  fails only on full separation. A no-change N passes unless chance alone separates the arms (at most 1 in 20 per
+  threshold). A real regression that leaves one N run at or below max(C) also passes.
+
+  That is the cost of a short no-worse check, and it is stated here rather than hidden. Clause (b) is kept for a block
+  whose re-runs leave other arm sizes. At 4 v 4 there are 70 relabelings, so p ≤ 0.05 needs the observed one among the
+  top 3.
+- **Self-test (`phone/p150-read.mjs`, 17 ok).**
+  - Passes: V = C with the same values relabelled; the bound-only case C 14/15/30 vs N 25/28/29 (median +13, p 4/20);
+    median +3 with p > 0.05.
+  - Fails: a clear regression, on both clauses (p 1/20); a 4 v 4 case with the bound and p 2/70 but no separation.
+  - A 3 v 3 tie at the boundary gives p > 0.05.
+- **Re-pinned:** `phone/p150-read.mjs` 24b1ed51f58e → b5d113ef3760. Nothing else changed.
+- **Predictions.** They are left as registered (rev 1.1): this is a rule change before any phone data. Prediction 7's
+  FAIL row now means "WORSE under rev 1.3".

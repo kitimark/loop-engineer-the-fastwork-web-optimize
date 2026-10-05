@@ -14,8 +14,13 @@
 // DECISION (rev 1.1, lead F2 ruling; N against C, at least 3 valid runs per arm (3 v 3, the less-work rule's short
 //   check; protocol §5.3 and P-137 use 4 v 4), both sentinels PASS). At >34 and at >50 separately, WORSE when EITHER
 //   (a) full separation, P-137's `verdict` WORSE: min(N) > max(C); OR
-//   (b) the median bound: median(N) - median(C) > +2 at >34, > +1 at >50 (counts; on the rates basis the bound is
-//       2 / median n(C) and 1 / median n(C)).
+//   (b) rev 1.3 (lead ruling after P-152's reader resampled P-137's C runs: the median bound alone FAILs a no-change
+//       V = C in 37-52 % of 4 v 4 blocks): the median bound median(N) - median(C) > +2 at >34, > +1 at >50 (counts; on
+//       the rates basis 2 / median n(C) and 1 / median n(C)) AND an exact one-sided permutation p <= 0.05: over every
+//       relabeling of the valid runs into groups of the arms' sizes, p = share of relabelings whose N-group mean minus
+//       C-group mean is >= the observed one (ties count against N). Power limit: 3 v 3 has only 20 relabelings, so
+//       p <= 0.05 needs the observed labeling to be the unique top one, which is full separation; (b) then adds nothing
+//       to (a) at 3 v 3 and is kept for a block with re-runs that leaves other arm sizes.
 //   Otherwise P-137's CAUSE / CONTRIBUTES / NOT SHOWN is reported (no gain claim). Denominator guard 15 %: rates s/n.
 //   NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE (named, with (a) and/or (b)); a FAIL goes to the
 //   lead (block 2 or not landing). INSUFFICIENT: an arm has < 3 valid runs. VOID: a sentinel failed.
@@ -42,6 +47,22 @@ export function wholePage(r) {
 }
 export const BOUND = { 30: 2, 34: 2, 38: 2, 46: 1, 50: 1, 54: 1 };
 export const FIRST_IN_HOLD = ['EN1', 'EN3'];
+export const P_MAX = 0.05;
+/** Exact one-sided permutation p for "N higher than C" on the mean difference; ties count against N. */
+export function permP(c, x) {
+  const all = [...c, ...x], n = all.length, k = x.length, mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+  const obs = mean(x) - mean(c), eps = 1e-9;
+  let tot = 0, ge = 0;
+  const pick = (start, chosen) => {
+    if (chosen.length === k) {
+      const inX = new Set(chosen), xs = chosen.map((i) => all[i]), cs = all.filter((_, i) => !inX.has(i));
+      tot++; if (mean(xs) - mean(cs) >= obs - eps) ge++; return;
+    }
+    for (let i = start; i <= n - (k - chosen.length); i++) pick(i + 1, [...chosen, i]);
+  };
+  pick(0, []);
+  return { p: ge / tot, ge, tot };
+}
 export function decideNoWorse(c, x, names = null) {
   const nC = med(c.map((m) => m.n)), nX = med(x.map((m) => m.n));
   const denomShift = nC ? Math.abs(nX - nC) > 0.15 * nC : false;
@@ -51,31 +72,39 @@ export function decideNoWorse(c, x, names = null) {
   if (at[34] === 'THIN') return { result: 'INSUFFICIENT', basis, at };
   const bound = (th) => (denomShift ? BOUND[th] / nC : BOUND[th]);
   const diff = Object.fromEntries(TH.map((th) => [th, med(x.map((m) => val(m, th))) - med(c.map((m) => val(m, th)))]));
-  const why = (th) => [at[th] === 'WORSE' ? 'separated' : null, diff[th] > bound(th) ? `median +${+diff[th].toFixed(4)} > +${+bound(th).toFixed(4)}` : null].filter(Boolean);
+  const perm = Object.fromEntries(TH.map((th) => [th, permP(c.map((m) => val(m, th)), x.map((m) => val(m, th)))]));
+  const bOn = (th) => diff[th] > bound(th) && perm[th].p <= P_MAX;
+  const why = (th) => [at[th] === 'WORSE' ? 'separated' : null, bOn(th) ? `median +${+diff[th].toFixed(4)} > +${+bound(th).toFixed(4)}, p ${+perm[th].p.toFixed(4)} (${perm[th].ge}/${perm[th].tot})` : null].filter(Boolean);
   const isW = (th) => why(th).length > 0;
   const worse = [34, 50].filter(isW);
   const sensitive = isW(30) !== isW(34) || isW(38) !== isW(34) || isW(46) !== isW(50) || isW(54) !== isW(50);
   let confounded = false;
   if (worse.length && names) for (const th of worse) { const vs = x.map((m) => val(m, th)), lo = Math.min(...vs); if (FIRST_IN_HOLD.includes(names[vs.indexOf(lo)])) confounded = true; }
-  return { result: worse.length ? `FAIL (WORSE at ${worse.map((t) => `>${t} [${why(t).join(', ')}]`).join('; ')})` : 'NO-WORSE PASS', sensitive, confounded, basis, diff, at };
+  return { result: worse.length ? `FAIL (WORSE at ${worse.map((t) => `>${t} [${why(t).join('; ')}]`).join('; ')})` : 'NO-WORSE PASS', sensitive, confounded, basis, diff, perm: Object.fromEntries(TH.map((th) => [th, +perm[th].p.toFixed(4)])), at };
 }
 function selftest() {
   const ok = (a, b, m) => { if (a !== b) { console.log(`SELFTEST FAIL ${m}: ${a} != ${b}`); process.exit(1); } };
   const mk = (s34, s50 = 2, n = 900) => ({ n, s: { 30: s34 + 4, 34: s34, 38: Math.max(0, s34 - 4), 46: s50 + 1, 50: s50, 54: Math.max(0, s50 - 1) } });
   const C = [mk(20), mk(22), mk(19)];
   ok(decideNoWorse(C, [mk(21), mk(20), mk(23)]).result, 'NO-WORSE PASS', 'overlap, median +1');
-  ok(decideNoWorse([mk(14), mk(15), mk(30)], [mk(25), mk(28), mk(29)]).result.startsWith('FAIL (WORSE at >34 [median'), true, 'median bound catches the reader case');
-  ok(decideNoWorse(C, [mk(23), mk(18), mk(25)]).result.startsWith('FAIL'), true, 'median +3 > +2');
+  ok(decideNoWorse(C, [mk(22), mk(19), mk(20)]).result, 'NO-WORSE PASS', 'rev 1.3: V = C (same values relabelled) passes');
+  ok(decideNoWorse([mk(14), mk(15), mk(30)], [mk(25), mk(28), mk(29)]).result, 'NO-WORSE PASS', 'rev 1.3: bound-only case (median +13, p 4/20) passes on p');
+  ok(decideNoWorse(C, [mk(23), mk(18), mk(25)]).result, 'NO-WORSE PASS', 'rev 1.3: median +3 > +2 but p > 0.05 passes');
+  ok(JSON.stringify(permP([10, 11, 12, 21], [20, 22, 23, 30])), JSON.stringify({ p: 2 / 70, ge: 2, tot: 70 }), 'permP 4 v 4: 2 of 70 relabelings');
+  { const r = decideNoWorse([mk(10), mk(11), mk(12), mk(21)], [mk(20), mk(22), mk(23), mk(30)]);
+    ok(r.result, 'FAIL (WORSE at >34 [median +11 > +2, p 0.0286 (2/70)])', 'rev 1.3: 4 v 4 bound AND p without separation fails'); }
+  ok(permP([1, 2, 3], [4, 5, 6]).p, 0.05, '3 v 3: full separation is the only p <= 0.05');
+  ok(permP([1, 2, 4], [4, 5, 6]).p > 0.05, true, '3 v 3: a tie at the boundary gives p > 0.05 (ties against N)');
   ok(decideNoWorse(C, [mk(30), mk(28), mk(31)], ['EN1', 'EN2', 'EN3']).confounded, false, 'lowest N is EN2: not confounded');
   ok(decideNoWorse(C, [mk(27), mk(28), mk(31)], ['EN1', 'EN2', 'EN3']).confounded, true, 'lowest N is EN1: position-confounded');
-  ok(decideNoWorse(C, [mk(30), mk(28), mk(31)]).result, 'FAIL (WORSE at >34 [separated, median +10 > +2])', 'worse 34 both ways');
+  ok(decideNoWorse(C, [mk(30), mk(28), mk(31)]).result, 'FAIL (WORSE at >34 [separated; median +10 > +2, p 0.05 (1/20)])', 'clear regression fails both ways');
   ok(decideNoWorse([mk(20), mk(21), mk(22)], [mk(23), mk(23), mk(23)]).result, 'FAIL (WORSE at >34 [separated])', 'separation alone, median +2 within bound');
-  ok(decideNoWorse(C, [mk(20, 6), mk(21, 7), mk(19, 5)]).result, 'FAIL (WORSE at >50 [separated, median +4 > +1])', 'worse 50');
+  ok(decideNoWorse(C, [mk(20, 6), mk(21, 7), mk(19, 5)]).result, 'FAIL (WORSE at >50 [separated; median +4 > +1, p 0.05 (1/20)])', 'worse 50');
   ok(decideNoWorse(C, [mk(10), mk(9), mk(11)]).result, 'NO-WORSE PASS', 'better is a pass');
   ok(decideNoWorse(C, [mk(21), mk(20)]).result, 'INSUFFICIENT', 'thin');
   ok(decideNoWorse(C, [mk(30, 2, 500), mk(28, 2, 500), mk(31, 2, 500)]).basis.startsWith('rates'), true, 'denominator guard');
   ok(wholePage({ rows: [{ dt: 40 }, { dt: 16 }, { dt: 60 }] }).s[34], 2, 'whole page count');
-  console.log('SELFTEST ok (12 checks)');
+  console.log('SELFTEST ok (17 checks)');
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const a = process.argv.slice(2);
