@@ -15,7 +15,8 @@
 //   P1 functional: the step pattern below in every arm, and 0 console errors in every arm
 //      C, C2, C3: E-400 live, E+60 live, E+20 live, E-100 live, E+300 live, top parked, rest parked
 //      V:         E-400 live, E+60 parked, E+20 parked, E-100 live, E+300 parked, top parked, rest parked
-//   P2 pixels: T0 at E+60, E+300, E+700 (0 counted px beyond the A/A; masks as sim-park). No T2 path on this card.
+//   P2 pixels: T0 at E+60, E+300, E+700: 0 counted px beyond the A/A and 0 px moving only in V (vOnlyMoving, rev 2b N2;
+//      masks as sim-park). No T2 path on this card.
 //   P3 past and below: (a) V live <= 2 in past, 0 in below; every C arm live >= 0.9 x frames in both;
 //      (b) sched: V < cmin - tol in both; (c) rs: V <= cmax + tol in both; (d) lay: V <= cmax + tol in both
 //      (rev 2, after the uncounted dry run, informed: (b) was V <= cmin - 0.5, the dry run cut 0.17-0.30 per frame;
@@ -46,7 +47,7 @@ export function score(res) {
   const bk = { hero: BANDS.hero, past: BANDS.past, below: below(A.C.bands || {}) };
   for (const a of ARMS) for (const [n, k] of Object.entries(bk)) {
     const f = k && A[a].bands?.[k]?.frames;
-    if (!(f >= 5)) { out.valid = false; out.why.push(`arm ${a} band ${n} has ${f || 0} frames (< 5)`); }
+    if (!(f >= 5)) { out.valid = false; out.why.push(`arm ${a} band ${n} has ${f || 0} frames (< 5; a scored band: hero, past, below)`); }
   }
   if (!out.valid) return { ...out, verdict: 'VOID' };
   // P1
@@ -64,7 +65,10 @@ export function score(res) {
   const p2 = [];
   for (const pos of ['E+60', 'E+300', 'E+700']) {
     const px = res[`pixels ${pos}`];
-    if (!px) p2.push(`${pos} no pixel record`); else if (px.beyondAA !== 0) p2.push(`${pos} ${px.beyondAA} px beyond A/A (max ${px.beyondAAmax}, >8: ${px.beyondAAover8})`);
+    if (!px) p2.push(`${pos} no pixel record`); else {
+      if (px.beyondAA !== 0) p2.push(`${pos} ${px.beyondAA} px beyond A/A (max ${px.beyondAAmax}, >8: ${px.beyondAAover8})`);
+      if (px.vOnlyMoving !== 0) p2.push(`${pos} ${px.vOnlyMoving ?? 'no'} px moving only in V (max ${px.vOnlyMovingMax})`);
+    }
   }
   out.items.P2 = { pass: p2.length === 0, misses: p2 };
   // tolerances
@@ -110,7 +114,7 @@ function selftest() {
       [BANDS.past]: band(70, isV ? 1 : 70, isV ? 0.6 : 1.2, isV ? 0.2 : 1.1, 3.0), 'below track end..2400': band(80, isV ? 0 : 80, isV ? 0.6 : 1.2, isV ? 0.2 : 1.1, 3.0) },
     ...o,
   });
-  const px = { beyondAA: 0, beyondAAmax: 0, beyondAAover8: 0 };
+  const px = { beyondAA: 0, beyondAAmax: 0, beyondAAover8: 0, vOnlyMoving: 0, vOnlyMovingMax: 0 };
   const good = () => ({ arms: { C: arm(false), V: arm(true), C2: arm(false), C3: arm(false) }, 'pixels E+60': { ...px }, 'pixels E+300': { ...px }, 'pixels E+700': { ...px } });
   ok(score(good()).verdict, 'PASS', 'good run');
   const r1 = good(); r1.arms.V.void = 'served x'; ok(score(r1).verdict, 'VOID', 'void arm');
@@ -118,6 +122,8 @@ function selftest() {
   const r3 = good(); r3.arms.V.steps[1][2] = true; ok(score(r3).items.P1.pass, false, 'V live at E+60');
   const r4 = good(); r4.arms.C2.consoleErrors = ['x']; ok(score(r4).verdict, 'FAIL', 'console error');
   const r5 = good(); r5['pixels E+300'].beyondAA = 3; ok(score(r5).items.P2.pass, false, 'pixels beyond A/A');
+  const r13 = good(); r13['pixels E+700'].vOnlyMoving = 12; ok(score(r13).items.P2.pass, false, 'motion only in V');
+  const r14 = good(); delete r14['pixels E+60'].vOnlyMoving; ok(score(r14).items.P2.pass, false, 'no V-only motion record');
   const r6 = good(); r6.arms.V.bands[BANDS.past].liveFrames = 3; ok(score(r6).items.P3.pass, false, 'V live 3 in past');
   const r7 = good(); r7.arms.V.bands[BANDS.past] = band(70, 1, 0.6, 1.1, 3.0); ok(score(r7).items.P3.pass, false, 'sched not cut');
   const r11 = good(); r11.arms.V.bands[BANDS.past] = band(70, 1, 0.6, 0.2, 3.5); ok(score(r11).items.P3.pass, false, 'V more layouts past the end');

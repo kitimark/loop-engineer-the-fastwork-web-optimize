@@ -1,8 +1,10 @@
-# Ticket: hero-park cost card, P-140 rev 2 (fix-hero-exit-threaded, 2026-10-05, before any counted data)
+# Ticket: hero-park cost card, P-140 rev 2b (fix-hero-exit-threaded, 2026-10-05, before any counted data)
 
 P-number: P-140 (mgmt-clerk-1). Rev 1's pre-data read: FAIL, fixable before data (ops-reader-P140, items F1-F7, notes N1-N2).
-Rev 2 answers each item (table at the end). Re-read: a fresh ops-reader-P140, routed by mgmt-clerk-1. Lead signature:
-pending. No counted run until both are done. Nobody else signs.
+Rev 2 answers each item (table at the end). Re-read of rev 2 (ops-reader-P140b, 70435f43): PASS with notes N1-N7; the
+lead SIGNED rev 2 with N1-N7 as conditions. Rev 2b is rev 2 plus those conditions (N1, N2, N3, N5, N7 in kit and text;
+N4 struck; N6 below). Gate: an ops check of rev 2b (brief steps 1-4 plus N1/N2 in the code), then the counted run.
+Nobody else signs.
 Rule: less-work landing rule (memory `less-work-landing-rule`; the lead, T-198 #3): cost-card counts. This card makes no
 smoothness claim.
 Scope (the lead, user T-199 #3): this card is **part 1 only** (Simulator counts, functional, pixels). The phone no-worse
@@ -41,8 +43,8 @@ and one blind swipe A/B for every fix in v9.2. hero-park joins v9.2 only if part
 | v9.1d base patch (int-v8, P-134 base), committed copy | `fixes/hero-park/base-v9-1d.diff` | ce2d32a1bbbb |
 | hero-park on v9.1d | `fixes/hero-park/delta.diff` | 14fb7c20781c |
 | hero-park + v9.1d on the baseline | `fixes/hero-park/patch.diff` | 60a3af326659 |
-| runner | `fixes/hero-park/sim-park.mjs` | 989c265774ed |
-| scorer | `fixes/hero-park/score-park.mjs` | eecea296d7f3 |
+| runner | `fixes/hero-park/sim-park.mjs` | 3854e494eda3 |
+| scorer | `fixes/hero-park/score-park.mjs` | f6f21e018625 |
 | pixel probe (evidence for the freeze change, decides nothing) | `fixes/hero-park/probe-px.mjs` | 41639127bc00 |
 
 | arm | build | JS | CSS |
@@ -51,7 +53,7 @@ and one blind swipe A/B for every fix in v9.2. hero-park joins v9.2 only if part
 | V | v9.1d + delta.diff (`patch -p1 -F0`) | 8ce731d584d9 | f1997edf5309 |
 
 - delta.diff also applies with no fuzz on v9-final + 7d (JS 1b2eecc66011, giving 6b28c3b9528e, `node --check` ok).
-- N2: if int-v8 re-pins its v9.1d base, ops re-runs that apply check and the V hash before any counted run.
+- Rev 2 re-read N2: if int-v8 re-pins its v9.1d base, ops re-runs that apply check and the V hash before any counted run.
 - Rev 1's V (be22bf861949, delta b2ed79bdbab5) is withdrawn.
 
 ## Run
@@ -61,14 +63,21 @@ and one blind swipe A/B for every fix in v9.2. hero-park joins v9.2 only if part
   - Arms C, V, C2, C3, each on its own server, served hashes checked against the pins.
   - Per arm, a touch-shaped synthetic `touchstart` (one touch in `touches`). Rev 1's bare `Event` threw in the
     menu-snap handler (`e.touches.length`) in every arm.
+  - N1 (rev 2b): every arm sends the same touchstart right before the swipe, so all four arms (C3, which skips the
+    pixel block, included) swipe with the finger marked down.
+  - N7 (rev 2b): the runner's log and record start with the checkout's HEAD commit and the sha256 of sim-park,
+    score-park, delta, base and patch (`KIT {...}`); the served JS/CSS hashes are checked per arm as before.
 - Labels: `--label dry` runs are uncounted; their numbers are listed under "Dry runs" and decide nothing. `--label counted`
   is the first run after the lead's signature, and only that run decides.
-- VOID (exit 3) when any of these happens. The owner then re-runs the whole run once. A second VOID makes the card
+- VOID when any of these happens (N3). The owner then re-runs the whole run once. A second VOID makes the card
   INSUFFICIENT.
+  - the runner exits 3, 124 (the 300 s slot cap) or any code other than 0, or writes no sim-park.json;
   - a served-hash mismatch;
   - a thrown arm;
   - a swipe that stops short of TO (2400);
-  - a band with fewer than 5 frames in any arm.
+  - a scored band (hero, past, below) with fewer than 5 frames in any arm (edge has 2-4 frames and is not scored).
+- The decision is the scorer's `PART1 <verdict>` line (a scorer crash also exits 1, so the exit code alone is not the
+  decision). Where this text and the scorer's code differ, the scorer wins.
 - Any change to the kit after the signature is a delta: a new rev, re-read and re-signed.
 
 ## Bands and the live flag
@@ -89,13 +98,14 @@ and one blind swipe A/B for every fix in v9.2. hero-park joins v9.2 only if part
 - Rates are per frame: rs (outermost RecalculateStyles), sched (engine-scheduled style invalidations), lay (outermost
   Layout).
 - Tolerance per band and rate: tol = the largest |Ci - Cj| over the three A/A pairs (C,C2), (C,C3), (C2,C3), no floor.
-  cmin and cmax are taken over C, C2, C3. No tolerance comes from a single pair, and no item needs exact equality.
+  cmin and cmax are taken over C, C2, C3. No tolerance comes from a single pair. N4: when the three C arms agree,
+  tol is 0 and the item asks for exact equality (or, one-sided, no more than C); no floor is added.
 - Simulator ms are reported, never judged.
 
 | item | prediction (gating) | p |
 |---|---|---|
 | P1 functional | C, C2, C3: live at E-400, E+60, E+20, E-100, E+300; parked at the top and after the rest. V: live at E-400, parked at E+60 and E+20, live at E-100, parked at E+300, at the top and after the rest. 0 console errors in every arm | 0.85 |
-| P2 pixels | T0 at E+60, E+300 and E+700: 0 counted pixels of V vs C beyond the A/A (masks as in the runner, hero clock box masked). No T2 path on this card | 0.75 |
+| P2 pixels | T0 at E+60, E+300 and E+700: 0 counted pixels of V vs C beyond the A/A, and (N2, rev 2b) 0 pixels moving only in V (V's own two shots differ where neither C nor C2 moves; outside the status bar and the clock boxes). Masks as in the runner, hero clock box masked. No T2 path on this card | 0.75 |
 | P3 past and below | (a) V live ≤ 2 frames in past and 0 in below; every C arm live ≥ 0.9 × frames in both. (b) sched V < cmin - tol in both. (c) rs V ≤ cmax + tol in both. (d) lay V ≤ cmax + tol in both | 0.7 |
 | P4 hero band | rs, sched and lay of V each within [cmin - tol, cmax + tol] (nothing changes before the end) | 0.85 |
 
@@ -120,12 +130,37 @@ and one blind swipe A/B for every fix in v9.2. hero-park joins v9.2 only if part
     at E+300 and E+700. A probe without the freeze (`probe-px.mjs`, 13:58Z) showed the same page in both arms at E+300
     and E+700, finger down and lifted. Its remaining differences were the spinning record in the profile card and the
     toolbar blur over it.
-- Dry run 2 (rev 2 kit) runs before the re-read. Its numbers are added below and decide nothing.
+  - N5: dry run 1 at E+60 also had 953,114 px beyond the A/A (31.3 % of the counted screen), all at most 4 levels (0 over
+    8). probe-px sampled only E+300 and E+700, so this one is not directly explained. Belief (not checked): the same
+    t = 0 freeze, catching a fade or blur under the hero at a different phase per arm (low-level, screen-wide).
+  - N5: dry run 1 ran an intermediate, uncommitted runner (a/b shots and mask, edge band to E+50, TO 2800, arms C, V,
+    C2), not rev 1's committed sim-park.
+  - Labels (rev 2 re-read): post-data for the C build 941aa13e5bdf (dry run 1 measured C and C2); pre-data for V
+    8ce731d584d9 (dry run 1 and probe-px ran an earlier V; the overlay was rewritten at 14:01Z). P1-P4 are each
+    informed by dry run 1.
+- Dry run 2a (14:18Z) ran the rev 2 kit before N1/N2 (sim-park 989c265774ed). It had started before the re-read
+  arrived; its numbers are listed below and decide nothing. The N1/N2/N7 changes came from the re-read, not from it.
+- N6: dry run 2b runs on the rev 2b kit, uncounted; its numbers go below before the counted run. Any rule, p or kit
+  change after seeing them is rev 3.
 
 ## Dry runs (uncounted)
 
 - Dry run 1: `out/hero-park/sim/2026-10-05T13-42-20-599Z/` (rev 1 kit; numbers above).
-- Dry run 2: (added before the re-read).
+- Dry run 2a: `out/hero-park/sim/2026-10-05T14-18-59-256Z/` (rev 2 kit, sim-park 989c265774ed, V 8ce731d584d9; scored
+  with score-park f6f21e018625 after the fact): **PART1 FAIL** (uncounted, decides nothing).
+  - P1 in: every step as predicted in all four arms, 0 console errors (the touch-shaped event fixed rev 1's error).
+  - P2 out, small: beyond A/A at E+60 9,017 px (0.30 %, max 2 levels), E+300 1 px (max 1), E+700 4,473 px (0.13 %,
+    max 2); A/A 0 px at E+60 and E+300. (No V-only-motion count: that runner predates N2.) Within the PR-010 T2 wide
+    numbers, but this card has no T2 path. Unchecked belief: V parked draws the completed exit through the baseline's
+    rules, C live through the animations' end keyframes; C after its own rest park was not shot.
+  - P3 out on (d): Layout per frame past 3.28 (C 2.52-2.61), below 3.81 (C 3.10-3.24). Layout ms per frame about equal
+    (past 47 vs 43, below 43 vs 42; descriptive). The extra records are layouts forced inside the runner's own swipe
+    step (its scrollTo in rAF, about 0.4 per frame, 2 ms per frame) plus tiny text-box layouts: in V, something dirties
+    layout before the runner's step; in C it does not. (a), (b), (c) in: V live 1 frame past E+40 and 0 below; sched
+    0.96 / 0.86 vs 1.00; rs 1.04 / 1.00 vs 1.04-1.20.
+  - P4 out: hero sched V 1.025 vs C exactly 1.000 in all three (tol 0, N4).
+  - RecalculateStyles ms past E+40 (descriptive, Simulator): C 121-185 ms over 23-28 frames, V 24 ms over 25 frames.
+- Dry run 2b: (added before the counted run).
 
 ## Rev 1 read items and where rev 2 answers them
 

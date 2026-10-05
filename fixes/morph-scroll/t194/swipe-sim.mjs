@@ -57,6 +57,9 @@ for (const [i, arm] of ARMS.entries()) {
     for (let k = 0; k < 200 && !(await c.evaluate('window.__swDone')); k++) await sleep(250);
     await sleep(1000);
     const sw = await c.evaluate('window.__sw');
+    // an arm file may define window.__armAfter (e.g. a mutation tally): its result is read after the swipe
+    run.armAfter = await c.evaluate('typeof window.__armAfter === "function" ? window.__armAfter() : null');
+    if (run.armAfter) console.log(`ARM ${label} after ${JSON.stringify(run.armAfter).slice(0, 3000)}`);
     await c.send('Timeline.stop').catch(() => {});
     await sleep(1500);
     const syncTL = findTimeStamp(recs, 'sw-sync');

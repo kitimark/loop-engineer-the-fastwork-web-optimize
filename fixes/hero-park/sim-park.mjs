@@ -12,8 +12,10 @@
 //   2 pixels (C, V, C2): at E+60, E+300, E+700 (clamped to track end - 60): scrollTo, 300 + 700 ms, then freeze: finite
 //     time-based animations and transitions finish(), infinite ones pause at t = 0, videos pause at 0 s (scroll-driven
 //     animations untouched); 400 ms; two `simctl io screenshot` 300 ms apart. Mask: status bar (top 59 CSS px), the hero
-//     clock box, pixels that differ between an arm's own two shots. Counted: V vs C beyond the A/A (C2 vs C). T0 = 0 px.
-//   3 counts: scripted swipe 0 -> TO, 10 px per rAF (scrollTo, scroll events fire), WebKit Timeline (maxCallStackDepth
+//     clock box, pixels that differ between an arm's own two shots. Counted: V vs C beyond the A/A (C2 vs C), and (rev 2b, N2)
+//     vOnlyMoving = pixels that move in V's own two shots where neither C nor C2 moves. T0 = both 0.
+//   3 counts (rev 2b, N1: a touchstart right before it in every arm, so all four swipe with the finger down):
+//     scripted swipe 0 -> TO, 10 px per rAF (scrollTo, scroll events fire), WebKit Timeline (maxCallStackDepth
 //     4). Bands by the frame's scrollY: hero [0, E), edge [E, E+40), past [E+40, track end), below [track end, TO]. Per
 //     band: frames, frames whose swipe sample read .he-css (sampled right after scrollTo, before that step's scroll
 //     event: a park shows one 10 px step late), outermost RecalculateStyles (+ ms), engine-scheduled style invalidations
@@ -70,6 +72,10 @@ const shot = (tag) => { const f = join(OUT, `${String(++shotN).padStart(3, '0')}
 const diffMap = (a, b, skipRows) => { const n = a.w * a.h, d = new Uint8Array(n); for (let i = skipRows * a.w; i < n; i++) { const p = i * a.bpp, q = i * b.bpp; d[i] = Math.max(Math.abs(a.px[p] - b.px[q]), Math.abs(a.px[p + 1] - b.px[q + 1]), Math.abs(a.px[p + 2] - b.px[q + 2])); } return d; };
 
 const res = { tool: 'hero-park sim-park', label: LABEL, startedAt: STAMP, to: TO, arms: {} };
+// N7 (rev 2b): the log and the record start with git HEAD and the kit files' sha256 (first 12 hex)
+res.kit = { head: (() => { try { return execFileSync('git', ['-C', WT, 'rev-parse', '--short=8', 'HEAD'], { encoding: 'utf8' }).trim(); } catch { return null; } })() };
+for (const k of ['sim-park.mjs', 'score-park.mjs', 'delta.diff', 'base-v9-1d.diff', 'patch.diff']) { try { res.kit[k] = sha(readFileSync(join(WT, 'fixes/hero-park', k))); } catch { res.kit[k] = null; } }
+console.log(`KIT ${JSON.stringify(res.kit)} label ${LABEL}`);
 const shots = {};
 let voided = false;
 for (const arm of ARMS) {
@@ -125,6 +131,8 @@ for (const arm of ARMS) {
     }
     }
     // 3 counts: scripted swipe 0 -> TO (finger still down)
+    // N1 (rev 2b): every arm swipes with the finger marked down (C3 skips the pixel block and its touchstart)
+    await ev(TOUCH('touchstart'));
     await go(0); await sleep(800);
     const recs = []; c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
     for (const [m, prm] of [['Page.disable', {}], ['Page.enable', {}], ['Timeline.enable', {}], ['Timeline.setInstruments', { instruments: ['Timeline'] }], ['Timeline.start', { maxCallStackDepth: 4 }]]) await c.send(m, prm);
@@ -182,14 +190,19 @@ if (shots.C) {
     if (!V || !C2 || V.a.w !== C.a.w || C2.a.w !== C.a.w) continue;
     const w = C.a.w, h = C.a.h, n = w * h, mask = new Uint8Array(n);
     for (let i = 0; i < skip * w; i++) mask[i] = 1;
-    for (const X of [C, V, C2]) { const m = diffMap(X.a, X.b, 0); for (let i = 0; i < n; i++) if (m[i]) mask[i] = 1;
-      if (X.box) { const [bx, by, bw, bh] = X.box.map((v) => Math.round(v * S)); for (let y = Math.max(0, by); y < Math.min(h, by + bh); y++) for (let x = Math.max(0, bx); x < Math.min(w, bx + bw); x++) mask[y * w + x] = 1; } }
+    // N2 (rev 2b): pixels that move only in V (V a != b where neither C nor C2 moves), outside the status bar and the
+    // clock boxes, are counted separately (vOnlyMoving): the moving mask would otherwise hide a motion-only difference.
+    for (const X of [C, V, C2]) if (X.box) { const [bx, by, bw, bh] = X.box.map((v) => Math.round(v * S)); for (let y = Math.max(0, by); y < Math.min(h, by + bh); y++) for (let x = Math.max(0, bx); x < Math.min(w, bx + bw); x++) mask[y * w + x] = 1; }
+    const mv = { C: diffMap(C.a, C.b, 0), V: diffMap(V.a, V.b, 0), C2: diffMap(C2.a, C2.b, 0) };
+    let vOnlyMoving = 0, vOnlyMovingMax = 0;
+    for (let i = 0; i < n; i++) if (!mask[i] && mv.V[i] && !mv.C[i] && !mv.C2[i]) { vOnlyMoving++; if (mv.V[i] > vOnlyMovingMax) vOnlyMovingMax = mv.V[i]; }
+    for (const m of Object.values(mv)) for (let i = 0; i < n; i++) if (m[i]) mask[i] = 1;
     const dv = diffMap(C.a, V.a, 0), da = diffMap(C.a, C2.a, 0);
     let masked = 0, vAny = 0, vBeyond = 0, vBeyond8 = 0, vMax = 0, vMaxBeyond = 0, aAny = 0, aMax = 0;
     for (let i = 0; i < n; i++) { if (mask[i]) { masked++; continue; } if (da[i]) { aAny++; if (da[i] > aMax) aMax = da[i]; } if (dv[i]) { vAny++; if (dv[i] > vMax) vMax = dv[i]; if (!da[i]) { vBeyond++; if (dv[i] > 8) vBeyond8++; if (dv[i] > vMaxBeyond) vMaxBeyond = dv[i]; } } }
     const tot = n - masked;
-    res[`pixels ${name}`] = { screen: [w, h], masked, counted: tot, VvsC: vAny, VvsCmax: vMax, beyondAA: vBeyond, beyondAApct: +(100 * vBeyond / tot).toFixed(4), beyondAAover8: vBeyond8, beyondAAmax: vMaxBeyond, AA: aAny, AAmax: aMax, T0: vBeyond === 0 };
-    console.log(`PIXELS ${name}: masked ${masked} of ${n}; V vs C ${vAny} px (max ${vMax}); beyond A/A ${vBeyond} px (${res[`pixels ${name}`].beyondAApct} %, >8: ${vBeyond8}, max ${vMaxBeyond}); A/A C2 vs C ${aAny} px (max ${aMax}); ${vBeyond === 0 ? 'T0' : 'NOT T0'}`);
+    res[`pixels ${name}`] = { screen: [w, h], masked, counted: tot, VvsC: vAny, VvsCmax: vMax, beyondAA: vBeyond, beyondAApct: +(100 * vBeyond / tot).toFixed(4), beyondAAover8: vBeyond8, beyondAAmax: vMaxBeyond, AA: aAny, AAmax: aMax, vOnlyMoving, vOnlyMovingMax, T0: vBeyond === 0 && vOnlyMoving === 0 };
+    console.log(`PIXELS ${name}: masked ${masked} of ${n}; V vs C ${vAny} px (max ${vMax}); beyond A/A ${vBeyond} px (${res[`pixels ${name}`].beyondAApct} %, >8: ${vBeyond8}, max ${vMaxBeyond}); A/A C2 vs C ${aAny} px (max ${aMax}); moving only in V ${vOnlyMoving} px (max ${vOnlyMovingMax}); ${vBeyond === 0 && vOnlyMoving === 0 ? 'T0' : 'NOT T0'}`);
   }
 }
 writeFileSync(join(OUT, 'sim-park.json'), JSON.stringify(res, null, 1));
