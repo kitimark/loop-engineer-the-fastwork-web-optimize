@@ -85,6 +85,25 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
     - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
   - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
   - P-122's F-256 dry run repeats this on the rev 7d build.
+- 10-05 **P-124 D1 path rule (ops ruling to fix-hero-exit-threaded, before the s6/s7 A/A data).**
+  - Exact match, per counted stroke, C vs V:
+    - start y and p, touchstart clientY, lift clientY;
+    - program id, toolbar level, endH, maxY, first touch;
+    - prevented touchmoves = 0 on both arms.
+  - Touchmove stream, per group of identical strokes:
+    - the C-V shared-points fraction (in order, +-2 px) must be at least the lowest same-arm A/A fraction in that group (C-C from s7 against s3/s4, V-V from s6 against s1/s2);
+    - each stroke is monotone;
+    - move counts are reported, not judged (WDA sends 3 pointer moves and the OS synthesizes the stream).
+  - e4 is required on both arms (s5). A group with no A/A pair fails until it has one.
+  - D3: the s6 V records (served hashes printed) replace s1/s2 for the exact match; s1/s2 stay only as A/A partners.
+  - Disclosed:
+    - the owner changed the path rule twice after seeing data (strict, then in-order, then shared fraction);
+    - the Sim counts are known (C fo caught 3/3, nl 6/6, fs 0 misses; V fo released 3/3, nl 6/6, fs 0 misses). The phone predictions stay as committed in 5d91a542.
+- 10-05 **P-125 pre-data read requirement (lead): the write-based pass rule must compare per-frame rates, not raw step counts.**
+  - The ratio is (step records / step frames) over (rest records / rest frames), with a floor frozen before the data: a minimum number of step records, or a lower confidence bound on the ratio.
+  - The point: 2-3 records that merely coincide with steps must not pass, as they did in P-123.
+  - Sent to fix-toolbar-resize. The ops pre-data read checks it.
+  - The lead agrees with the P-123 scoring fix (3 of 5), and R7's model review gates P-125's card.
 - 10-05 **P-123 result read (fix-toolbar-resize a277d934): AGREE with the call WRITE. The prediction scoring is corrected (3 of 5, call lean missed).**
   - Checked:
     - the pins on disk equal rev 2;
