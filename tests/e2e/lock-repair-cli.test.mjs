@@ -64,7 +64,7 @@ test('repair: dry run by default (nothing changes), --apply needs --by/--reason,
 });
 
 test('repair --force-holder prints the holder; refuses the live iphone lease; removes another live holder', () => {
-  assert.equal(lock('acquire', 'iphone', '--owner', 'phone-topic').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'phone-topic').code, 0);
   const before = bytes();
   const r = lock('repair', 'iphone', '--by', 'lead', '--reason', 'x', '--apply', '--force-holder');
   assert.equal(r.code, 1, r.out);

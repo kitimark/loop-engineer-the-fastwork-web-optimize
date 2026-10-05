@@ -468,7 +468,7 @@ export function threadFor(a, { steward = null } = {}) {
   const title = `${R.short} free for ${forText(a.freeMin)} while ${jobs}`;
   const L = [`${R.name[0].toUpperCase()}${R.name.slice(1)} has had no holder for ${forText(a.freeMin)} (since ${hhmm(a.since)}; ${a.how}). The limit is ${a.min} min.`, ...waits];
   const next = addressees(a);
-  L.push(`What unblocks it: ${next.length ? `the next of ${next.join(', ')}` : 'the next owner'} takes it${a.resource === 'iphone' ? ' (node tools/lock.mjs acquire iphone --owner <you> ...)' : ' (its queued hold, or node tools/lock.mjs run chrome-measure ...)'}.`);
+  L.push(`What unblocks it: ${next.length ? `the next of ${next.join(', ')}` : 'the next owner'} takes it${a.resource === 'iphone' ? ' (node tools/lock.mjs run iphone --owner <you> ... -- <phone part>)' : ' (its queued hold, or node tools/lock.mjs run chrome-measure ...)'}.`);
   L.push(stewardLine(steward, next));
   L.push('One message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105).');
   return { title, text: L.join('\n') };

@@ -98,7 +98,7 @@
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
-import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold } from './lib/lock.mjs';
+import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold, phoneHolder } from './lib/lock.mjs';
 import { keepAwakeFor } from './lib/awake.mjs';
 import { runnerRefusal } from './lib/phone-step.mjs';
 import { parseJob, phoneRunText } from './lib/hold-job.mjs';
@@ -122,12 +122,9 @@ const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
 
 function requireLease() {
-  const owner = opt('owner', process.env.FW_LOCK_OWNER);
-  const s = lockStatus('iphone');
-  if (!owner) throw new Error('--owner <topic> is required');
-  if (!s.holder || s.stale || s.holder.owner !== owner) {
-    throw new Error(`you ("${owner}") don't hold the iphone lease${s.holder ? ` (holder: "${s.holder.owner}"${s.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${owner}`);
-  }
+  // I-168: the phone's holder: inside `lock.mjs run iphone` its token ($FW_LOCK_HELD) names it (no --owner needed), else
+  // --owner must hold it; the refusal names the run form
+  const owner = phoneHolder({ owner: opt('owner', process.env.FW_LOCK_OWNER), st: lockStatus('iphone') });
   // I-123: never touch the phone under another owner's console step that is on it (begun, not over); the Simulator is
   // not the phone. --ignore-step C-NNN: a step its owner left behind, named on purpose.
   const busy = process.env.FW_SIM_SESSION ? null : runnerRefusal({ owner, ignore: opt('ignore-step') });

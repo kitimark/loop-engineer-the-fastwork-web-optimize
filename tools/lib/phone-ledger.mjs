@@ -11,7 +11,8 @@
 // hold ended, stale: …), and the hold's seconds split into causes that add up to durationSec (each second goes to the
 // first cause that covers it, in this order):
 //   runSec      a phone run (iphone.mjs scroll|record|run|gesture marks it, lib/lock.mjs describeHold), or phone-side
-//               work under the lease (`lock.mjs run iphone -- <cmd>`, I-155)
+//               work under the lease (`lock.mjs run iphone -- <cmd>`, I-155); a `run iphone` command that is the hold
+//               itself (a process hold, I-168) is not: only the runs and cooling waits inside it count
 //   coolingSec  a cooling wait marked on the hold (a run mark with cooling: true; wait.mjs phone-temp marks it from T2 on)
 //   userWaitSec the user's time: a console step of the holder from its first part loading / ready / Start until it is
 //               answered, skipped or cancelled; the whole hold of a `user` / `user-*` owner (the user's own hand test)
@@ -61,8 +62,10 @@ export function ledgerKind(h) {
 
 // ---- marks on the holder record (lib/lock.mjs calls these inside the iphone guard) ----------------------------------
 
-/** A phone run (or cooling wait) of `run` ({pid, cooling?}) started at `now`: open a use on holder `h`. */
+/** A phone run (or cooling wait) of `run` ({pid, cooling?}) started at `now`: open a use on holder `h`. The marker of a
+ *  `lock.mjs run iphone` command that is the hold itself (hold: true, I-168) is no use: the runs and waits inside it are. */
 export function openUse(h, run, now = Date.now()) {
+  if (run?.hold) return h;
   const uses = Array.isArray(h.uses) ? h.uses : [];
   uses.push({ k: run.cooling ? 'cooling' : 'run', from: iso(now), ...(run.pid ? { pid: run.pid } : {}) });
   while (uses.length > MAX_USES) {

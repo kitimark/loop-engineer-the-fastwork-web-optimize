@@ -92,7 +92,7 @@ export function postRefusal({ step, by, lease, steps = readSteps() } = {}) {
   if (!isPhoneStep(step) || by === 'lead') return null;
   const h = lease?.holder;
   if (!h || lease.stale || h.owner !== by) {
-    return `a phone step (${step.kind === 'swipe-pair' ? 'swipe pair' : step.phone ? '--phone' : 'a recorded part'}) needs your iphone lease first: you ("${by}") don't hold it${h ? ` (holder: "${h.owner}"${lease.stale ? ', stale' : ''})` : ''}. Run: node tools/lock.mjs acquire iphone --owner ${by} --ttl 900 --wait 3600, then post (incident I-123)`;
+    return `a phone step (${step.kind === 'swipe-pair' ? 'swipe pair' : step.phone ? '--phone' : 'a recorded part'}) needs your iphone lease first: you ("${by}") don't hold it${h ? ` (holder: "${h.owner}"${lease.stale ? ', stale' : ''})` : ''}. Post and run the step inside your phone hold: node tools/lock.mjs run iphone --owner ${by} -- sh -c '<post, wait, record>' (incident I-123; agents hold the phone only while a command runs, I-168)`;
   }
   const other = steps.find((x) => isOpen(x) && isPhoneStep(x));
   if (other) return `another phone step is open: ${stepText(other)}. One phone step at a time (incident I-123): wait for it (node tools/console.mjs wait ${other.id} --until answered), or ask ${other.by} to cancel it`;

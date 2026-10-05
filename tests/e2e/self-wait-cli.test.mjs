@@ -9,7 +9,7 @@ const LOCK = tool('lock.mjs');
 test('I-165 CLI: wait --until mine --for 60 on the own lease exits 0 at once with a NOTE; --for still holds for another owner\'s hold', () => {
   const env = { FW_STATE_DIR: tempDir('fw-selfwait-e2e-') };
   const lock = (...a) => node(LOCK, a, { env });
-  assert.equal(lock('acquire', 'iphone', '--owner', 'fix-h', '--ttl', '900').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-h', '--ttl', '900').code, 0);
   const t0 = Date.now();
   const w = lock('wait', 'iphone', '--until', 'mine', '--for', '60', '--owner', 'fix-h', '--timeout', '20');
   assert.equal(w.code, 0, w.stdout + w.stderr);

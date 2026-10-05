@@ -18,9 +18,9 @@ const at = (min) => new Date(T0 + min * 60000).toISOString();
 const line = (owner, a, b, x = {}) => ({ at: at(b), resource: 'iphone', ledger: 1, owner, kind: 'lease', token: 'abcdefabcdef', how: 'release', acquiredAt: at(a), endedAt: at(b), durationSec: (b - a) * 60, runSec: 0, coolingSec: 0, userWaitSec: 0, macHoldSec: 0, macWaitSec: 0, idleSec: 0, idleBeforeSec: 0, idleBetweenSec: 0, idleAfterSec: 0, waitersPresentSec: 0, idleWaitersSec: 0, macWaitWaitersSec: 0, ...x });
 
 test('I-167: a released iphone lease leaves one ledger line; a chrome-measure run line carries queuedAt', () => {
-  let r = node(LOCK, ['acquire', 'iphone', '--owner', 'fix-x', '--ttl', '900'], { env });
+  let r = node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-x', '--ttl', '900'], { env });
   assert.equal(r.code, 0, r.out);
-  r = node(LOCK, ['acquire', 'iphone', '--owner', 'fix-y', '--ttl', '900'], { env });
+  r = node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-y', '--ttl', '900'], { env });
   assert.equal(r.code, 3, r.out);
   r = node(LOCK, ['release', 'iphone', '--owner', 'fix-x'], { env });
   assert.equal(r.code, 0, r.out);
@@ -67,7 +67,7 @@ test('I-167: idle.mjs report --day sums the day\'s holds by cause, by owner and 
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /^PHONE LEDGER 2026-09-19 .*1 hold, held 60 min/m);
   // --day without a date: today (UTC); the open hold (a live lease) is in it so far
-  r = node(LOCK, ['acquire', 'iphone', '--owner', 'fix-live', '--ttl', '900'], { env });
+  r = node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-live', '--ttl', '900'], { env });
   assert.equal(r.code, 0, r.out);
   r = node(IDLE, ['report', '--day'], { env });
   assert.equal(r.code, 0, r.out);

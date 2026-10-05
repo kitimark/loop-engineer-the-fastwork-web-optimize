@@ -22,7 +22,7 @@ const postPair = (by) => con('post', '--by', by, '--kind', 'swipe-pair', '--titl
 
 /** C-001 by fix-nav-morph (holding the lease): both parts done, then the user's Start over; the runner has not acted since. */
 async function c037() {
-  ok(lock('acquire', 'iphone', '--owner', 'fix-nav-morph', '--ttl', '900'));
+  ok(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'fix-nav-morph', '--ttl', '900'));
   assert.match(ok(postPair('fix-nav-morph')).stdout, /^POSTED C-001/m);
   process.env.FW_STATE_DIR = state; // the user's clicks, as the page sends them (lib calls on the same store)
   const C = await import('../../tools/lib/console.mjs');
@@ -39,11 +39,11 @@ async function c037() {
 test('I-123 f: post of a phone step needs the poster\'s lease and no other open phone step; the lead and questions are exempt', () => {
   let r = postPair('fix-x');
   assert.equal(r.code, 1, r.out);
-  assert.match(r.stderr, /needs your iphone lease first: you \("fix-x"\) don't hold it\. Run: node tools\/lock\.mjs acquire iphone --owner fix-x/);
+  assert.match(r.stderr, /needs your iphone lease first: you \("fix-x"\) don't hold it\. Post and run the step inside your phone hold: node tools\/lock\.mjs run iphone --owner fix-x -- /);
   r = con('post', '--by', 'fix-x', '--kind', 'action', '--title', 'Hold the phone', '--phone');
   assert.equal(r.code, 1, '--phone marks a phone step');
   ok(con('post', '--by', 'fix-x', '--kind', 'question', '--title', 'Phone charged?'));
-  ok(lock('acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '900'));
+  ok(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '900'));
   assert.match(ok(postPair('iphone-runner')).stdout, /^POSTED C-002/m);
   r = con('post', '--by', 'iphone-runner', '--kind', 'action', '--title', 'Finger scroll', '--record');
   assert.equal(r.code, 1, r.out);
@@ -79,18 +79,18 @@ test('I-123 a: lock.mjs status says KEPT for a lease that ran out under its owne
   let r = ok(lock('status'));
   assert.match(r.stdout, /^iphone +held by "fix-nav-morph"/m);
   assert.match(r.stdout, /KEPT: lease ran out at .*; kept for its owner's step C-001 on the phone until .* \(I-123\)/);
-  r = lock('acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '900', '--wait', '0');
+  r = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '900', '--wait', '0');
   assert.equal(r.code, 3, r.out);
   assert.match(readFileSync(join(state, 'locks', 'step-grace.log'), 'utf8'), /"owner":"fix-nav-morph".*"step":"C-001".*"seenBy":"iphone-runner"/);
   await C.skip('C-001');
-  r = ok(lock('acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '900', '--wait', '0'));
+  r = ok(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '900', '--wait', '0'));
   assert.match(r.stdout, /^ACQUIRED iphone for "iphone-runner"/m);
 });
 
 test('I-123 d: iphone.mjs refuses (WAIT, exit 1) under another owner\'s step before it touches the phone; its own runner and --ignore-step pass', async () => {
   const C = await c037();
   ok(lock('release', 'iphone', '--owner', 'fix-nav-morph')); // say the lease went to the next waiter anyway
-  ok(lock('acquire', 'iphone', '--owner', 'iphone-runner', '--ttl', '900'));
+  ok(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--ttl', '900'));
   for (const args of [['open', 'http://page-c.invalid:5403/'], ['park'], ['scroll'], ['record', '--seconds', '1']]) {
     const r = node(IPHONE, [...args, '--owner', 'iphone-runner'], { env });
     assert.equal(r.code, 1, `${args[0]}: ${r.out}`);

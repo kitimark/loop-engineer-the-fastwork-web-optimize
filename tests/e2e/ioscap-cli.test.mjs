@@ -29,8 +29,8 @@ test('record refuses without the iphone lease (no --owner, nobody holds it, some
   assert.match(r.stderr, /--owner <topic> is required/);
   r = ioscap(['record', '--owner', 'me']);
   assert.equal(r.code, 1);
-  assert.match(r.stderr, /you \("me"\) don't hold the iphone lease\. Run: node tools\/lock\.mjs acquire iphone --owner me/);
-  lock('acquire', 'iphone', '--owner', 'someone-else');
+  assert.match(r.stderr, /you \("me"\) don't hold the iphone lease\. Run: node tools\/lock\.mjs run iphone --owner me -- /);
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'someone-else');
   r = ioscap(['record', '--owner', 'me']);
   assert.equal(r.code, 1);
   assert.match(r.stderr, /\(holder: "someone-else"\)/);
@@ -39,7 +39,7 @@ test('record refuses without the iphone lease (no --owner, nobody holds it, some
 
 test('record refuses inside a --shared (functional) hold, before anything else', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   let r = ioscap(['record', '--owner', 'me'], { FW_LOCK_SHARED: 'chrome-measure:abcdef012345' });
   assert.equal(r.code, 2);
   assert.match(r.stderr, /refusing: ioscap\.mjs record is a timing run, and this process runs inside a shared \(functional\) slot/);
@@ -51,7 +51,7 @@ test('record refuses inside a --shared (functional) hold, before anything else',
 
 test('record: --seconds is capped at 600 and must be positive', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   for (const s of ['601', '3600', '0', '-1', 'x']) {
     const r = ioscap(['record', '--owner', 'me', '--seconds', s]);
     assert.equal(r.code, 2, s);
@@ -62,7 +62,7 @@ test('record: --seconds is capped at 600 and must be positive', () => {
 
 test('record: output only directly inside out/iphone-screen/ as .mov', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   for (const o of ['/tmp/x.mov', join(root, 'x.mov'), 'out/iphone-screen/../x.mov', 'out/iphone-screen/sub/x.mov', 'out/iphone-screen/x.mp4', `${process.env.HOME}/Movies/x.mov`]) {
     const r = ioscap(['record', '--owner', 'me', '--seconds', '2', '--out', o]);
     assert.equal(r.code, 2, o);
@@ -72,7 +72,7 @@ test('record: output only directly inside out/iphone-screen/ as .mov', () => {
 });
 
 test('record: refuses when the app is not built', () => {
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = ioscap(['record', '--owner', 'me', '--seconds', '2']);
   assert.equal(r.code, 1);
   assert.match(r.stderr, /the recorder app is not built: node tools\/lock\.mjs run chrome-measure --owner me --no-timing --max-seconds 600 -- node tools\/ioscap\.mjs build/);
@@ -80,7 +80,7 @@ test('record: refuses when the app is not built', () => {
 
 test('record: starts the app through LaunchServices, prints paths and numbers only, writes the summary', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = ioscap(['record', '--owner', 'me', '--seconds', '2', '--label', 'look']);
   assert.equal(r.code, 0, r.out);
   const [a] = opened();
@@ -104,7 +104,7 @@ test('record: starts the app through LaunchServices, prints paths and numbers on
 
 test('record: never asked -> the app ends without opening anything unless --first-run; --first-run passes the flag', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   let r = ioscap(['record', '--owner', 'me', '--seconds', '2'], { FAKE_IOSCAP_TCC: 'notDetermined' });
   assert.equal(r.code, 3, r.out);
   assert.match(r.stdout, /never asked/);
@@ -122,7 +122,7 @@ test('record: never asked -> the app ends without opening anything unless --firs
 
 test('record: no iPhone screen -> exit 1, no fallback, nothing recorded', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   const r = ioscap(['record', '--owner', 'me', '--seconds', '2'], { FAKE_IOSCAP_DEVICE: 'none' });
   assert.equal(r.code, 1);
   assert.match(r.stdout, /no iPhone screen appeared/);
@@ -131,7 +131,7 @@ test('record: no iPhone screen -> exit 1, no fallback, nothing recorded', () => 
 
 test('record: beside someone else\'s normal chrome-measure hold it waits (phoneGuard, I-056)', () => {
   fakeApp();
-  lock('acquire', 'iphone', '--owner', 'me');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
   assert.equal(lock('acquire', 'chrome-measure', '--owner', 'ab-run', '--ttl', '60').code, 0);
   const r = ioscap(['record', '--owner', 'me', '--seconds', '2']);
   assert.equal(r.code, 1);

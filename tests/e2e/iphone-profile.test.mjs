@@ -38,7 +38,7 @@ const RUN = (out, ...a) => ['run', '--driver', 'window', '--probe', 'std', '--ow
 test('serious (the default) is refused on a Fair phone before Safari is touched: exit 8, what to switch in Xcode, ONE console step for the tester', async () => {
   const phone = await fakePhone();
   env.FW_IPHONE_PORT = phone.port;
-  assert.equal(lock('acquire', 'iphone', '--owner', 'me', '--ttl', '300').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
   const out = join(dir, 'r.json');
   let r = await nodeAsync(IPHONE, RUN(out), { env, timeout: 60000 });
   assert.equal(r.code, 8, r.out);
@@ -74,7 +74,7 @@ test('serious (the default) is refused on a Fair phone before Safari is touched:
 test('fair passes on a Fair phone: the record carries meta.profile (the start read); one read per hold; iphone.mjs profile --end stamps the end read', async () => {
   const phone = await fakePhone();
   env.FW_IPHONE_PORT = phone.port;
-  assert.equal(lock('acquire', 'iphone', '--owner', 'me', '--ttl', '300').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
   const a = join(dir, 'a.json'), b = join(dir, 'b.json');
   let r = await nodeAsync(IPHONE, RUN(a, '--profile', 'fair'), { env, timeout: 60000 });
   assert.equal(r.code, 0, r.out);
@@ -107,7 +107,7 @@ test('fair passes on a Fair phone: the record carries meta.profile (the start re
   r = node(IPHONE, ['profile', '--owner', 'me'], { env });
   assert.equal(r.code, 1);
   assert.match(r.stderr, /don't hold the iphone lease/);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'me', '--ttl', '300').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
   writeFileSync(thermal, 'Serious Yes 33\n');
   r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
   assert.equal(r.code, 0, r.out);
@@ -122,7 +122,7 @@ test('inside lock.mjs run chrome-measure --no-timing: the hold\'s first run read
   const phone = await fakePhone();
   env.FW_IPHONE_PORT = phone.port;
   writeFileSync(thermal, 'Serious Yes 33\n');
-  assert.equal(lock('acquire', 'iphone', '--owner', 'me', '--ttl', '300').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
   const a = join(dir, 'a.json'), b = join(dir, 'b.json');
   const q = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
   const cmd = [process.execPath, IPHONE, ...RUN(a)].map(q).join(' ') + ` && printf 'Nominal No 31\\n' > ${q(thermal)} && ` + [process.execPath, IPHONE, ...RUN(b)].map(q).join(' ');

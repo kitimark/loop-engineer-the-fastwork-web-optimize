@@ -47,15 +47,15 @@ test('lan.mjs: no LAN address is exit 3 with a clear message; usage errors are e
 test('lock.mjs acquire iphone --url http://lan:<port>/: kept as given in the lease (resolved by the phone tools at run time); refused when it cannot resolve now', () => {
   const state = tempDir('fw-lan-lock-');
   const lock = (args, extra) => node(LOCK, args, { env: { FW_STATE_DIR: state, ...extra } });
-  let r = lock(['acquire', 'iphone', '--owner', 'me', '--url', 'http://lan:5231/'], { FW_LAN_IFACES: '{}' });
+  let r = lock(['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--url', 'http://lan:5231/'], { FW_LAN_IFACES: '{}' });
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /no LAN address/);
   assert.doesNotMatch(lock(['status', 'iphone']).stdout, /"me"/, 'nothing acquired');
-  r = lock(['acquire', 'iphone', '--owner', 'me', '--url', 'http://lan:5231/'], { FW_LAN_IFACES: IFACES });
+  r = lock(['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--url', 'http://lan:5231/'], { FW_LAN_IFACES: IFACES });
   assert.equal(r.code, 0, r.out);
   assert.deepEqual(JSON.parse(readFileSync(join(state, 'locks', 'iphone.json'), 'utf8')).meta, { url: 'http://lan:5231/' });
   // renew never re-checks it (a lease is never lost to a Wi-Fi blip); a real address is accepted as before
   assert.equal(lock(['renew', 'iphone', '--owner', 'me', '--url', 'http://lan:5231/'], { FW_LAN_IFACES: '{}' }).code, 0);
   assert.equal(lock(['release', 'iphone', '--owner', 'me']).code, 0);
-  assert.equal(lock(['acquire', 'iphone', '--owner', 'me', '--url', 'http://192.168.1.20:5231/'], { FW_LAN_IFACES: '{}' }).code, 0);
+  assert.equal(lock(['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--url', 'http://192.168.1.20:5231/'], { FW_LAN_IFACES: '{}' }).code, 0);
 });

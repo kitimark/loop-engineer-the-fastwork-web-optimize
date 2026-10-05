@@ -67,7 +67,7 @@ test('usage: --shared needs --max-seconds, never with --short / --no-timing, not
   const nt = lock('run', 'chrome-measure', '--shared', '--no-timing', '--max-seconds', '10', '--owner', 'a', '--', 'true');
   assert.equal(nt.code, 1, nt.out);
   assert.match(nt.stderr, /--shared and --no-timing do not combine/);
-  assert.match(lock('acquire', 'iphone', '--shared', '--max-seconds', '10', '--owner', 'a').stderr, /iphone/);
+  assert.match(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--shared', '--max-seconds', '10', '--owner', 'a').stderr, /iphone/);
   assert.match(lock('run', 'chrome-measure', '--shared', '--max-seconds', '10', '--weight', '7', '--owner', 'a', '--', 'true').stderr, /weight/);
 });
 

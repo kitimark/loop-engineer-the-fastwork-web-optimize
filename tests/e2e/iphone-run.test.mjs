@@ -50,7 +50,7 @@ test('run: --help prints the usage without a lease; a bad driver or a missing le
   r = await run(['--driver', 'scroll', '--owner', 'me']);
   assert.equal(r.code, 1);
   assert.match(r.stderr, /you \("me"\) don't hold the iphone lease/);
-  lock('acquire', 'iphone', '--owner', 'someone-else');
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'someone-else');
   r = await run(['--driver', 'scroll', '--owner', 'me']);
   assert.equal(r.code, 1);
   assert.match(r.stderr, /\(holder: "someone-else"\)/);
@@ -58,7 +58,7 @@ test('run: --help prints the usage without a lease; a bad driver or a missing le
 
 test('run --driver window: reload, settle, probe + driver, one JSON with meta, uncapped counts at y~1960, crossings, served hashes; lease renewed; <= 1 Hz polling', async () => {
   const phone = await fakePhone();
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me', '--ttl', '120'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '120'], { env: phone.env }).code, 0);
   const state = join(dir, 'state.js');
   writeFileSync(state, `({ imgs: document.querySelectorAll('img').length });\n`);
   const out = join(dir, 'w.json');
@@ -127,7 +127,7 @@ test('run --driver window: reload, settle, probe + driver, one JSON with meta, u
 
 test('run --driver scroll and --driver morph: phases to the bottom; morph tweens and the build\'s summaries', async () => {
   const phone = await fakePhone(['--doc-height=1500', '--morph']);
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
   let out = join(dir, 's.json');
   let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--y-source', 'scroll', '--no-battery', '--no-park', '--out', out], phone.env); // --no-park: the morph run below reuses the page (I-047)
   assert.equal(r.code, 0, r.out);
@@ -163,7 +163,7 @@ test('run --driver scroll and --driver morph: phases to the bottom; morph tweens
 
 test('run --driver morph on a build without __fwMorphDrive: exit 1, the partial run is saved with meta.error', async () => {
   const phone = await fakePhone();
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
   const out = join(dir, 'bad.json');
   const r = await run(['--driver', 'morph', '--owner', 'me', '--settle', '0', '--hold', '100', '--cycles', '1', '--out', out], phone.env);
   assert.equal(r.code, 1, r.out);
@@ -175,7 +175,7 @@ test('run --driver morph on a build without __fwMorphDrive: exit 1, the partial 
 
 test('run during a normal chrome-measure hold: WAIT, Safari untouched; a short-lane hold or --allow-during-measure runs', async () => {
   const phone = await fakePhone(['--doc-height=1200']);
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
   assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'fix-ab'], { env: phone.env }).code, 0);
   const args = ['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0'];
   let r = await run([...args, '--out', join(dir, 'a.json')], phone.env);
@@ -195,7 +195,7 @@ test('run during a normal chrome-measure hold: WAIT, Safari untouched; a short-l
 test('I-056: run beside a shared group: by default it runs with a NOTE and meta.mac; --require-quiet / FW_PHONE_REQUIRE_QUIET=1 WAIT, Safari untouched; inside the runner\'s own lock.mjs run --no-timing hold it runs', async () => {
   const phone = await fakePhone(['--doc-height=1200']);
   const e = { ...phone.env, FW_LOCK_LOAD1: '5.5' }; // the run records load1: never the host's (I-057)
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: e }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: e }).code, 0);
   assert.equal(node(LOCK, ['shared', 'on', 'chrome-measure', '--by', 'lead', '--reason', 'e2e'], { env: e }).code, 0);
   assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--shared', '--weight', '3', '--max-seconds', '120', '--owner', 'sim-x'], { env: e }).code, 0);
   const args = ['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0'];
@@ -227,7 +227,7 @@ test('I-056: run beside a shared group: by default it runs with a NOTE and meta.
 
 test('I-047: a control run records the heat-sentinel verdict next to the battery and ends with Safari parked; the next run asks for open; --no-park keeps the page', async () => {
   const phone = await fakePhone(['--doc-height=1500']);
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
   let out = join(dir, 'keep.json');
   let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.3', '--arm', 'V', '--no-park', '--out', out], phone.env);
   assert.equal(r.code, 0, r.out);
@@ -261,7 +261,7 @@ test('I-047: a control run records the heat-sentinel verdict next to the battery
 
 test('I-075: served hashes are fetched for a local page (default unchanged); --no-served and a non-local page skip the fetch and record why', async () => {
   let phone = await fakePhone(['--doc-height=1500']);
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
   const gets = () => phone.events().filter((e) => e.get);
   let out = join(dir, 'local.json');
   let r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--no-battery', '--no-park', '--out', out], phone.env);
@@ -291,7 +291,7 @@ test('I-075: served hashes are fetched for a local page (default unchanged); --n
 
 test('run while Safari shows the certificate warning: refused with the open hint, no reload', async () => {
   const phone = await fakePhone(['--cert-warning']);
-  assert.equal(node(LOCK, ['acquire', 'iphone', '--owner', 'me'], { env: phone.env }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
   const r = await run(['--driver', 'scroll', '--owner', 'me', ...SHORT], phone.env);
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /certificate warning .*node tools\/iphone\.mjs open <url> --owner me \(incident I-003\)/);

@@ -18,7 +18,7 @@ const statusJson = (r) => JSON.parse(lock('status', r, '--json').stdout)[0];
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 
 test('acquire / busy / status / renew / release exit codes and messages', () => {
-  const a = lock('acquire', 'iphone', '--owner', 'topic-a', '--url', 'https://192.168.1.2:5231/', '--note', 'hi');
+  const a = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-a', '--url', 'https://192.168.1.2:5231/', '--note', 'hi');
   assert.equal(a.code, 0, a.out);
   assert.match(a.stdout, /^ACQUIRED iphone for "topic-a" until /);
   const h = holder('iphone');
@@ -26,11 +26,11 @@ test('acquire / busy / status / renew / release exit codes and messages', () => 
   assert.deepEqual(h.meta, { url: 'https://192.168.1.2:5231/', note: 'hi' });
   assert.ok(Math.abs(Date.parse(h.expiresAt) - Date.now() - 900000) < 10000, 'iphone default TTL is 900 s');
 
-  const again = lock('acquire', 'iphone', '--owner', 'topic-a', '--ttl', '60');
+  const again = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-a', '--ttl', '60');
   assert.equal(again.code, 0);
   assert.match(again.stdout, /\(renewed\)/);
 
-  const b = lock('acquire', 'iphone', '--owner', 'topic-b');
+  const b = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-b');
   assert.equal(b.code, 3, b.out);
   assert.match(b.stdout, /BUSY iphone: held by "topic-a".*You \("topic-b"\) are #1 in the queue/);
 
@@ -65,8 +65,8 @@ test('acquire / busy / status / renew / release exit codes and messages', () => 
   assert.match(lock('release', 'iphone', '--owner', 'topic-a').stdout, /was not held/);
 
   // topic-b is head of the queue: a newcomer must not get it, topic-b does
-  assert.equal(lock('acquire', 'iphone', '--owner', 'topic-c').code, 3);
-  assert.equal(lock('acquire', 'iphone', '--owner', 'topic-b').code, 0);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-c').code, 3);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'topic-b').code, 0);
   assert.equal(lock('dequeue', 'iphone', '--owner', 'topic-c').code, 0);
   assert.deepEqual(statusJson('iphone').queue, []);
   assert.equal(lock('release', 'iphone', '--force').code, 0, '--force needs no owner');
@@ -74,8 +74,8 @@ test('acquire / busy / status / renew / release exit codes and messages', () => 
 });
 
 test('usage errors exit 1 (2 never collides with 3 = busy)', () => {
-  assert.equal(lock('acquire', 'iphone').code, 1);
-  assert.match(lock('acquire', 'iphone').stderr, /--owner <name> is required/);
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture').code, 1);
+  assert.match(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture').stderr, /--owner <name> is required/);
   assert.equal(lock('acquire').code, 1);
   assert.equal(lock('frobnicate', 'iphone', '--owner', 'x').code, 1);
   assert.equal(lock('acquire', 'Bad_Name', '--owner', 'x').code, 1);
@@ -83,7 +83,7 @@ test('usage errors exit 1 (2 never collides with 3 = busy)', () => {
   assert.equal(help.code, 0);
   assert.match(help.stdout, /chrome-measure: /);
   // FW_LOCK_OWNER stands in for --owner
-  assert.equal(node(LOCK, ['acquire', 'iphone'], { env: { ...env, FW_LOCK_OWNER: 'from-env' } }).code, 0);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture'], { env: { ...env, FW_LOCK_OWNER: 'from-env' } }).code, 0);
   assert.equal(holder('iphone').owner, 'from-env');
 });
 
@@ -141,7 +141,7 @@ test('I-020: a chrome-measure lease defaults to a TTL and is capped; "use lock.m
   assert.equal(big.code, 1);
   assert.match(big.stderr, /capped at 1200 s.*lock\.mjs run chrome-measure --owner <topic> -- sh -c/);
   assert.equal(holder('chrome-measure'), null);
-  const iphone = lock('acquire', 'iphone', '--owner', 'phone', '--ttl', '2400');
+  const iphone = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'phone', '--ttl', '2400');
   assert.equal(iphone.code, 0, 'the iphone lease has no such cap');
 });
 
@@ -531,7 +531,7 @@ test('run with a forged, stale or other-resource FW_LOCK_HELD still queues behin
 });
 
 test('I-060: --doing [--for] [--eta-min] on acquire / renew / run describe the hold; `doing` updates or clears it mid-hold; only the holder; nothing personal', () => {
-  const a = lock('acquire', 'iphone', '--owner', 'iphone-runner', '--url', 'https://192.168.77.2:5231/', '--doing', 'timing test for the blur change, run 1 of 9', '--for', 'wi-stack', '--eta-min', '40');
+  const a = lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--url', 'https://192.168.77.2:5231/', '--doing', 'timing test for the blur change, run 1 of 9', '--for', 'wi-stack', '--eta-min', '40');
   assert.equal(a.code, 0, a.out);
   let job = holder('iphone').meta.job;
   assert.deepEqual([job.text, job.for, Math.round((Date.parse(job.etaAt) - Date.parse(job.at)) / 60000)], ['timing test for the blur change, run 1 of 9', 'wi-stack', 40]);
@@ -558,7 +558,7 @@ test('I-060: --doing [--for] [--eta-min] on acquire / renew / run describe the h
     assert.match(r.stderr, re);
   }
   assert.equal(holder('iphone').meta.job.text, 'park and cool down');
-  assert.equal(lock('acquire', 'iphone', '--owner', 'iphone-runner', '--doing', 'x', '--for', 'a@b.invalid').code, 1, 'refused before anything is written');
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'iphone-runner', '--doing', 'x', '--for', 'a@b.invalid').code, 1, 'refused before anything is written');
   // --clear
   const c = lock('doing', 'iphone', '--owner', 'iphone-runner', '--clear');
   assert.equal(c.code, 0, c.out);
