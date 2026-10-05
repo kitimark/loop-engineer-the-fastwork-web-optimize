@@ -125,3 +125,16 @@ test('I-184 --count-only: the Simulator\'s only (iphone.mjs passes no countOnly:
   assert.equal(leased, 0, 'refused before the lease or the session is checked');
   await assert.rejects(gestureCmd({ ...cli(['/nonexistent/s.json']), requireLease }), /ENOENT/, 'without --count-only nothing changes (the script is read first)');
 });
+
+test('I-204 gestureCmd: a thermal-profile refusal (I-186) keeps its exit code 8 through the error wrapper, like scroll and record; other codes still exit 1', async () => {
+  const { ProfileRefusal, EXIT_PROFILE } = await import('../../tools/lib/thermal-profile.mjs');
+  const { writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const f = join(tempDir('fw-gexit-'), 's.json');
+  writeFileSync(f, JSON.stringify({ name: 'exit8', version: 1, screen: [430, 932], steps: [{ type: 'stroke', dir: 'up', px: 300, ms: 300, profile: 'still' }] }));
+  const cli = { argv: [f], arg: f, opt: (n, d) => d, flag: () => false, log: () => {}, requireLease: () => 'me' };
+  const refusing = { preflight: async () => { throw new ProfileRefusal('REFUSED profile serious: phone is Nominal', { reason: 'nominal' }); } };
+  await assert.rejects(gestureCmd({ ...cli, target: refusing }), (e) => EXIT_PROFILE === 8 && e.exitCode === 8 && /REFUSED profile serious/.test(e.message));
+  const other = { preflight: async () => { throw Object.assign(new Error('boom'), { exitCode: 5 }); } };
+  await assert.rejects(gestureCmd({ ...cli, target: other }), (e) => e.exitCode === undefined && /boom/.test(e.message), 'codes other than 2 and 8 keep exit 1 (unchanged)');
+});

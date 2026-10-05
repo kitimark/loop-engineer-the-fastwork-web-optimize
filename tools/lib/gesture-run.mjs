@@ -29,6 +29,7 @@ import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeText } from './iph
 import { tryResolveLanUrl } from './lan.mjs';
 import { redact } from './redact.mjs';
 import { readConfig, WDA_REF } from './wda-runner.mjs';
+import { EXIT_PROFILE } from './thermal-profile.mjs';
 
 /** The files whose code shapes a gesture run's stimulus and numbers (review-gesture 6: recorded per run). */
 export const TOOL_FILES = ['tools/iphone.mjs', 'tools/lib/gesture.mjs', 'tools/lib/gesture-run.mjs', 'tools/lib/gesture-rec.mjs', 'tools/lib/wda.mjs', 'tools/lib/wda-runner.mjs', 'tools/lib/wip.mjs'];
@@ -541,7 +542,8 @@ export async function gestureCmd({ log = console.log, ...args }) {
   try {
     return await gestureCmdInner({ ...args, log: (s) => log(scrub(s)), scrub });
   } catch (e) {
-    throw Object.assign(new Error(scrub(e?.message ?? e)), e?.exitCode === 2 ? { exitCode: 2 } : {}); // I-203: a usage refusal keeps exit 2 (other codes unchanged: exit 1)
+    // I-203: a usage refusal keeps exit 2; I-204: a thermal-profile refusal (I-186) keeps exit 8, like scroll and record (other codes: exit 1)
+    throw Object.assign(new Error(scrub(e?.message ?? e)), [2, EXIT_PROFILE].includes(e?.exitCode) ? { exitCode: e.exitCode } : {});
   }
 }
 
