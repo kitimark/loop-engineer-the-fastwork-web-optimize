@@ -7,7 +7,7 @@
 //   3. hold132.sh: TICKET guard, part R refused, unknown items refused, M/X/S accepted, the 420 s time guard;
 //   4. serve132.sh and score132.mjs pin the same full hashes, and the served-hash case names them.
 // Prints SELFTEST-132 OK <n> or the failures (exit 1); SKIP (exit 2) when the P-122 records are missing.
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -64,6 +64,14 @@ const lateDef = hold.match(/^late\(\) \{.*\}$/m)?.[0];
 const lr = lateDef ? spawnSync('sh', ['-c', `T0=1000; ${lateDef}; for t in 1420 1421; do late $t && echo late || echo ok; done`], { encoding: 'utf8' }).stdout.trim() : '';
 ok(lr === 'ok\nlate', `3 time guard: ${JSON.stringify(lr)}`);
 ok(/^S=out\/p132\/snap; O=out\/p132\/runs;/m.test(hold) && /\[ "\$TICKET" = P-132 \]/.test(hold), '3 hold132 folders or ticket');
+
+// 3b. both scripts cd to this checkout's root (they sit 3 levels deep; the P-122 originals 4: a copied depth sent the
+//     first `serve132.sh snap` to .claude/worktrees/out, caught and fixed before any data)
+for (const f of ['hold132.sh', 'serve132.sh']) {
+  const cdl = readFileSync(join(here, f), 'utf8').match(/^cd "\$\(dirname "\$0"\)[^\n]*$/m)?.[0];
+  const pwd = cdl ? spawnSync('sh', ['-c', `${cdl} && pwd -P`, join(here, f)], { encoding: 'utf8' }).stdout.trim() : '';
+  ok(pwd === realpathSync(root), `3b ${f} cds to ${pwd || 'nothing'}, not the checkout root`);
+}
 
 // 4. serve132.sh pins
 const srv = readFileSync(join(here, 'serve132.sh'), 'utf8');

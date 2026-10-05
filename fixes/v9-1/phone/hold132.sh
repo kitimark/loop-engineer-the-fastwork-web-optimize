@@ -25,7 +25,7 @@
 #   wg<P>C / wg<P>V      uncounted G warm-up of part P (M | X | S)
 #   g<P>C<n> / g<P>V<n>  counted G run n of part P
 # Last line: "HOLD <H> VALID" (exit 0) or "HOLD <H> VOID <why>" (exit 3/4/5/6; 7 = time guard). Nothing here prints the LAN address.
-cd "$(dirname "$0")/../../../.." || exit 2
+cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-132 ] || { echo "TICKET is not P-132: no run"; exit 2; }
 H=$1; shift
 R=${RUNNER:-iphone-runner}

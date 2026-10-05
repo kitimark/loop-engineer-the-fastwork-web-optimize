@@ -13,7 +13,7 @@
 #        sh fixes/v9-1/phone/serve132.sh check   re-check the served hashes of the running servers (exit 4 if wrong)
 #        sh fixes/v9-1/phone/serve132.sh stop    stop them (only these three, by their pid files)
 # Phone URLs are for the runner's terminal only (tools/lan.mjs); never copy them into a committed file.
-cd "$(dirname "$0")/../../../.." || exit 2
+cd "$(dirname "$0")/../../.." || exit 2
 S=out/p132/snap
 SRCC=out/v9/snap-647c9ef2b1e2-e1359ab9994a/V; SRCV=out/v91/snap-c3d36476c3ce/V
 OWNER=${FW_AGENT:-int-v8}

@@ -100,6 +100,14 @@ copies and servers: out/p132/snap/{C,V} (read-only; `serve132.sh snap` copies C 
   and V from out/v91/snap-c3d36476c3ce/V and refuses on any other hash), fixes/v9-1/phone/serve132.sh (a copy of
   serve122.sh with C, V, the folder and the sources changed; plain http, --port 0, --latency 150, --vendors=local);
   served-hash check before every item (case C:647c9ef2b1e2:e1359ab9994a|V:c3d36476c3ce:f1997edf5309; exit 4 on a wrong one).
+  Runner's step 1: `sh fixes/v9-1/phone/serve132.sh snap` (once), then `sh fixes/v9-1/phone/serve132.sh` (start B C V).
+  The snap is per checkout: int-v8's worktree has both source snaps and made out/p132/snap there (2026-10-05, "snap
+  ok", HASHES.txt as the pins above). A runner in another checkout needs the two source snaps copied in, or rebuilds
+  them with `node fixes/v9-best/build.mjs` (v9-final, V9_EXPECT) and `--target v91` (V91_EXPECT), which refuse any
+  other bytes; `snap` refuses any hash but the pins either way.
+pre-data evidence (descriptive only, gates nothing in this block): the build identity checks, fix.mjs check, px-chrome
+  with its y 5090 attribution, dom-count, the census and the Simulator fling parity ("Function and look checks" above).
+  The block's gates are only GM, EX, ES, FLICKER G1 and the phone parity (BEHAVIOUR), as below.
 question: under xcode-serious, does v9.1 add slow frames over v9-final (a) in flicks through the middle (gM: scroll-cb
   acts on scrolling), (b) in flicks into the page end and out again (gX, gS: the out strokes close the menu, where g11
   hides the panel's children for 0.75 s), (c) nav/.pain class flicker (flicker gate G1); and (d) does it change how far
