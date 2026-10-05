@@ -1,0 +1,67 @@
+{
+ "scorer": "fixes/toolbar-resize/score-bisect.mjs",
+ "runs": [
+  {
+   "name": "C-H3",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 48,
+   "medianLargest": 22.658,
+   "inStyle": 44,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "tps-H1",
+   "arm": "tps",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 48,
+   "medianLargest": 21.856,
+   "inStyle": 44,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "C-H4",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 48,
+   "medianLargest": 21.969,
+   "inStyle": 47,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  }
+ ],
+ "replica": true,
+ "drift": 0.03,
+ "void": false,
+ "verdicts": {
+  "tps-H1": {
+   "ratio": 0.979,
+   "cMean": 22.314,
+   "neighbours": [
+    "C-H3",
+    "C-H4"
+   ],
+   "call": "NONE"
+  }
+ }
+}

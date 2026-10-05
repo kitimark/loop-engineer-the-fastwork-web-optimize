@@ -1,0 +1,92 @@
+{
+ "scorer": "fixes/toolbar-resize/score-bisect.mjs",
+ "runs": [
+  {
+   "name": "C-H5",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 45,
+   "medianLargest": 22.518,
+   "inStyle": 43,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "nvc-H2",
+   "arm": "nvc",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 162,
+   "medianLargest": 0,
+   "inStyle": 2,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "tp-H1",
+   "arm": "tp",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 49,
+   "medianLargest": 22.165,
+   "inStyle": 46,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "C-H6",
+   "arm": "C",
+   "ih": [
+    775,
+    815
+   ],
+   "n": 46,
+   "medianLargest": 22.395,
+   "inStyle": 44,
+   "counted": true,
+   "docH": [
+    6814,
+    6850
+   ]
+  }
+ ],
+ "replica": true,
+ "drift": 0.005,
+ "void": false,
+ "verdicts": {
+  "nvc-H2": {
+   "ratio": 0,
+   "cMean": 22.457,
+   "neighbours": [
+    "C-H5",
+    "C-H6"
+   ],
+   "call": "LOCATES"
+  },
+  "tp-H1": {
+   "ratio": 0.987,
+   "cMean": 22.457,
+   "neighbours": [
+    "C-H5",
+    "C-H6"
+   ],
+   "call": "NONE"
+  }
+ }
+}
