@@ -72,6 +72,26 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~06:5xZ **Lead ruling: v9-final = ms7c+dd+earn+nav+glue WITHOUT close.**
+  - Target pins: JS 647c9ef2b1e2 (unchanged), CSS e1359ab9994a (not bdecf48c5b32).
+  - Reason: close adds resting style recalc, 60 vs 38.5 mainFrames/s at rest-0 and about 30 vs 2.2 at rest-2796 (OBSERVED).
+  - int-v8 re-pins V and P-122, reruns the Simulator parity and sends the sha. The P-122 delta check checks these pins.
+  - The P-130 C pins follow the landed v9-final.
+- 10-05 ~06:5xZ **P-130 idle sentinel check: OK; only the v9-final step is left** (db956dd1 on top of e36f6124, worktree-agent-a8dba5b51e224d3ca, rebased on 76a9ccea). No data exists.
+  - Committed files equal the disk files:
+    - idle-raf.mjs 51f7a8e38150 (pinned as IDLERAF in PINS)
+    - hold.sh 5ccf5d050098
+    - p130-block.mjs 357f369b2672
+    - p130-read.mjs f1229fd5a0c7
+  - Unchanged: logger 49d7a6c3da4c, program d7ee0153e439, serve.sh af443694ea69.
+  - Selftests re-run: 8/8, 25/25 and 6/6.
+  - hold.sh order: pin check, wda check, start gate, then the idle sentinel on page C (5 s of rAF, read back once, at least 58 fps, else VOID exit 5). IRF defaults to null, so a VOID end line before the sentinel stays valid JSON.
+  - The fps goes into the end line, and the builder and reader carry it. The 2nd item starts with ~470 s left, more than the 397 s budget.
+  - Still open:
+    - C_JS, C_CSS and V_JS are OPEN.
+    - The countdown-tick-v9 delta must be rebuilt on the landed v9-final.
+    - The final delta check covers only that. The P-130 row goes into PREDICTIONS only after it.
+  - The owner is parked until v9-final lands; the lead resumes it.
 - 10-05 ~06:3xZ **P-130 rev 3 delta check: R1-R3 resolved; NOT YET on the lead's two additions** (commit 07a83136 on worktree-agent-a8dba5b51e224d3ca). No data exists.
   - Verified:
     - Committed files equal the disk files: reader e0909db68ad9, hold.sh 884a332d0b66.
