@@ -436,6 +436,16 @@ rev 1.4 data):**
   815, live max 6075 → 6035, reached; passes with a test B of 50), a stall mid-page (y 3000, stalled; VOID), a drop of 100
   px > B (fails), and B unset → every window fails.
 - **rerun14.sh unchanged** (a4f4608f9d64; its PIN line records the new sim92 / sim92check / part1read hashes).
+- **Smoke r14b on arm C (uncounted, `out/v92/sim/smoke-r14b.json`, log `out/v92/smoke-r14b.log`): toolbar hypothesis
+  REFUTED, stopped (to the lead; no counted run, B not set).** ih0 775, ih1 775 (no innerHeight change), startMax 6075,
+  endMax 6075, stop reason `stalled` (scrollY 0 for 10 frames), frames 11, RenderingFrames 13; the one poll (252 ms) saw
+  scrollY 4. The driver's `scrollBy(0, 24)` does not move the page by 24 px a frame: the page CSS has `html {
+  scroll-behavior: smooth; }` (2.gBuqKVzi.css, pretty line 11739; `auto` only under prefers-reduced-motion), and a
+  programmatic scroll without an explicit behavior follows the element's scroll-behavior (CSSOM View, scroll-behavior
+  property: https://drafts.csswg.org/cssom-view/#propdef-scroll-behavior; CONFIRMED for the rule, its effect here
+  OBSERVED). Each frame's call restarts a smooth scroll, so scrollY barely moves. That also explains the first smoke (2000
+  frames without reaching the bottom). Proposed fix (for the lead): `scrollBy({ top: 24, behavior: 'instant' })`, with the
+  rest of rev 1.4b unchanged, then a new smoke on C after the delta check.
 
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
