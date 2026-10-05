@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); waits for the lead's R7 model review and ops' read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 count-only card (what inside the showcase reacts to a toolbar step, D's S5) registered, waits for ops' pre-data read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -775,7 +775,8 @@ Scorer summary: REPLICA true, DRIFT 0.025, VOID false.
   - M2 (the invalidation enters from outside and containment stops it) is REFUTED for cct in this setup: NONE in both
     runs, in view and off screen.
   - M1 (the invalidation starts inside the box or arrives as inherited style, and only the skip avoids it) fits every
-    arm. With N1, it also fits the in-view frames: while the showcase is relevant, nothing we tried avoids its about
+    arm. M1 is OBSERVED (in our setup, cause unknown): it rests on our Simulator runs only, and no reference names the
+    trigger yet. The lead accepted it as the working model (R7 review, 2026-10-05); P-123 tests it. With N1, it also fits the in-view frames: while the showcase is relevant, nothing we tried avoids its about
     21 ms relayout.
   - What starts the relayout inside the box is not yet identified. D's S5 (a viewport-dependent value inside the
     showcase) is the open lead.
@@ -798,6 +799,101 @@ Scorer summary: REPLICA true, DRIFT 0.025, VOID false.
      This is the only route to the remaining about 21 ms frames.
 - **Files:** `fixes/toolbar-resize/p119-score.json` (scorer output), `p119-split.json` (N1 split),
   `p119-runs.jsonl` (driver log, served-hash records). `results.json` key `p119`.
+
+## Prediction P-123: what inside the showcase reacts to a toolbar step (D's S5; count-only, registered before data)
+
+P-id: P-123 (lead's R7 review names it as the next free id; ops confirms it with the pre-data read).
+
+- **Question.** On a toolbar step (innerHeight 775 <-> 815), which value or read inside
+  `#people .start-selling-future-card > .start-selling-future-showcase` changes, or what starts its ~21 ms in-view
+  relayout? This is step 3 of the R7 review, run first.
+- **Why these four reads.**
+  - S5 (WebKit source, CONFIRMED above): on a viewport size change, WebKit re-resolves the style of every element whose
+    style uses any viewport unit, whether or not the value changes.
+  - S7/S8 (CONFIRMED above): a Layout nested inside RecalculateStyles is the interleaved layout. It runs only for an
+    unresolved query container or an anchor-positioned element.
+  - So the probe lists:
+    1. the box's viewport-unit elements;
+    2. the values that really flip;
+    3. script writes in step frames;
+    4. query containers and anchors in and above the box.
+- **Design.** COUNT-ONLY. Simulator, `sim.mjs gesture --count-only` (I-184) in a functional session, in a shared
+  slot (weight simulator, `--max-seconds 300`). One arm: the v8 build as served, no rule. Two runs (R1, R2) of
+  `flick-hero-v1`, the P-115/P-119 script. No Timeline and no time values: frame indices and counts only.
+  `p123-inject.mjs` records, per run:
+  1. **audit** (at install): the CSS rules that match the box (the showcase and its descendants, 316 elements in
+     P-119) or its ancestors and use a viewport unit (`[sld]?v(h|w|i|b|min|max)`) or `env()`. It also lists inline
+     styles with such units, custom properties holding one, running animations whose keyframes hold one, and query
+     containers or anchors (`container-type` other than normal, `anchor-name`, `position-anchor`).
+  2. **values**: full computed-style snapshots of the same elements at five points:
+     - A: at load (ih0);
+     - A2: still at ih0, at least 30 frames later and before any step (the no-step noise control);
+     - B: first new innerHeight of at least ih0 + 20, held 3 frames;
+     - C: back at ih0, held 3 frames;
+     - B2: high again.
+
+     A property flips with the toolbar when A == A2 == C, B == B2 and A != B. If B2 is missing, C == A is enough
+     (partial flip).
+  3. **writes**: MutationObserver records (attributes, with style diffs per property, and childList) on the box,
+     inside it, or on its ancestors. Each record counts as "step" when innerHeight changed since the last rAF, else
+     "rest".
+  4. **sizes**: ResizeObserver entries on the box, its children and its two nearest ancestors, split the same way.
+- **Validity (per run; else INSUFFICIENT).** Both must hold:
+  - the inject installed without an error, and snapshots A, B and C were taken;
+  - at least 2 toolbar steps were seen, with ihMax - ihMin >= 20.
+- **Call per run** (`read-p123.mjs`, frozen; the first rule that matches wins):
+
+  | call | rule |
+  |---|---|
+  | VALUE-FLIP | at least one property of an element in the box flips |
+  | WRITE | no flip, and at least one script write on or in the box in a step frame |
+  | INVAL-ONLY | no flip, no step write, and at least one element in the box matches a viewport-unit rule (the S5 set; values unchanged) |
+  | OUTSIDE | none of these |
+
+  - Probe call: the two runs agree. For VALUE-FLIP, their flipping element:property sets must also overlap. Else
+    the call is SPLIT.
+  - Ancestor flips, writes and sizes are always listed but never decide the call.
+- **Predictions (before data).**
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | at least one element in the box uses a viewport unit (e.g. `.start-selling-profile-shell` height `clamp(743px, 100vh - 80px, 820px)`, `.start-selling-future-card` min-height `100svh`, an ancestor) | 85 % |
+  | 2 | probe call VALUE-FLIP | 35 % |
+  | 2 | INVAL-ONLY | 40 % |
+  | 2 | WRITE | 15 % |
+  | 2 | OUTSIDE | 10 % |
+  | 3 | at least one query container or anchor in the box or among its ancestors (S7/S8's interleaved layout needs one) | 60 % |
+  | 4 | ResizeObserver: the showcase's own height does not change on a step (its 904 px is not viewport-bound) | 70 % |
+  | 5 | A2 noise > 0 (carousel and countdown write every frame), so the A2 control matters | 80 % |
+
+- **What falsifies M1 (OBSERVED).** OUTSIDE, with no ancestor flip of an inherited property and no step write on an
+  ancestor. Nothing in or above the box would then react to the step, and the in-view relayout would need a cause
+  that is neither in the box nor inherited. M1 is then dropped, and the next read is the S3 path (viewport-constrained
+  renderers), which cct did not block.
+- **Reading.**
+  - VALUE-FLIP names the value: the fix is to pin that value (e.g. an svh or px form), checked pixel-identical.
+  - WRITE names the script: the fix is to skip the write when unchanged.
+  - INVAL-ONLY with a query container in the box: the fix candidates are to take the viewport unit off the
+    container's subtree, or to resolve the container's size without the unit.
+  - INVAL-ONLY without one: re-resolved style should give an equal style and no layout. The cost is then unexplained
+    by S5 alone, and the D card stays open on it.
+- **Pins (sha256/12).**
+
+  | file | hash |
+  |---|---|
+  | `p123-inject.mjs` | 501b0261da31 |
+  | `sim-p123.mjs` | 787e8e69b75e |
+  | `read-p123.mjs` | 2a32093959f3 |
+  | `p123-selftest.mjs` | f9098cfaec1e |
+  | `flick-hero-v1.json` | 6ae05e12ace9 |
+
+  - Served bytes (v8): CSS f836404b3728, JS 3e3e94cb6e9f, from the overlay. The driver stops (exit 26) otherwise.
+  - Self-test: `node fixes/toolbar-resize/p123-selftest.mjs` gives SELFTEST PASS (14 checks: diff classes, noise,
+    tallies, reader calls, no time fields).
+- **Slot.** One shared slot (weight simulator, 300 s, functional session). Free slots only, never ahead of int-v8 or
+  fix-hero-exit-threaded (lead R7).
+  - Command: in `sim-p123.mjs`'s header.
+  - Output: `out/toolbar-resize/sim123/`, then the read is committed as `p123-read.json`.
 
 ## Scenarios not run
 
