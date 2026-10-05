@@ -1326,8 +1326,15 @@ Descriptive notes (not part of the verdict):
 - **Simulator drop size.** Its drop (~80) is smaller than Chrome's 93. Its scroll is 608 steps against Chrome's 628,
   and the drop is measured on another engine. The mechanism matches: one test less per morph-open frame.
 
-Part 2 (short phone no-worse check, P-136's part 2 carried over) is next, in the lead's phone order, with runner
-iphone-runner.
+**Part 2 folds into int-v8's single v9.2 phone block** (lead, per user T-199 #3). There is no separate P-138 phone
+block. `out/p138/snap` is made (`serve138.sh snap ok`) in case the lead rules otherwise.
+
+**For v9.2:** `u2-delta-on-v91d.diff` (8b5206c8b206) is U2 against v9.1d.
+- Base: v9-final + 7d + scroll-cb + g11, int-v8's `fixes/v9-1d` overlay JS 941aa13e5bdf.
+- It changes the same lines as `u2-delta-on-v9f7d.diff` c0d040afe271, 159 lines lower: hunks at 14190 / 14294 /
+  14475.
+- `patch -p1 -F0` applies it exactly. The result JS is db0bc2262f02, and `node --check` passes.
+- U2 on v9.1d has no counts of its own: P-138 measured it on v9f7d.
 
 ## Smoke (not scored)
 
