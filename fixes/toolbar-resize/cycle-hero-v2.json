@@ -1,0 +1,122 @@
+{
+  "name": "cycle-hero-v2",
+  "version": 2,
+  "screen": [
+    430,
+    932
+  ],
+  "about": "P-133 (toolbar-resize): after a 3 s idle at the top, two drags down into the page (scrollY about 1090), then $cycles cycles of $perPhase drags down and $perPhase drags back up, all inside the hero zone (scrollY about 1000-2300 < 3250). Drag strokes end at rest (no momentum), so every toolbar collapse and expand happens inside the zone, and every down stroke has a guaranteed scrollY >= 560 (the compiler static model; no pull-to-refresh guard end expected). Replaces flick-hero-v1, whose flings overshot to y 4100+ and left the expands outside the zone (P-131). Attribution only.",
+  "params": {
+    "x": 215,
+    "dragPx": 560,
+    "dragMs": 600,
+    "idleMs": 3000,
+    "gapMs": 350,
+    "turnMs": 700,
+    "cycles": 4,
+    "perPhase": 2
+  },
+  "steps": [
+    {
+      "type": "reload",
+      "scrollAfterMs": 0
+    },
+    {
+      "type": "mark",
+      "name": "idle"
+    },
+    {
+      "type": "pause",
+      "ms": "$idleMs"
+    },
+    {
+      "type": "mark",
+      "name": "leadin"
+    },
+    {
+      "type": "repeat",
+      "times": 2,
+      "steps": [
+        {
+          "type": "stroke",
+          "dir": "up",
+          "px": "$dragPx",
+          "ms": "$dragMs",
+          "profile": "drag"
+        },
+        {
+          "type": "pause",
+          "ms": "$gapMs"
+        }
+      ]
+    },
+    {
+      "type": "pause",
+      "ms": "$turnMs"
+    },
+    {
+      "type": "repeat",
+      "times": "$cycles",
+      "steps": [
+        {
+          "type": "mark",
+          "name": "down"
+        },
+        {
+          "type": "repeat",
+          "times": "$perPhase",
+          "steps": [
+            {
+              "type": "stroke",
+              "dir": "up",
+              "px": "$dragPx",
+              "ms": "$dragMs",
+              "profile": "drag"
+            },
+            {
+              "type": "pause",
+              "ms": "$gapMs"
+            }
+          ]
+        },
+        {
+          "type": "pause",
+          "ms": "$turnMs"
+        },
+        {
+          "type": "mark",
+          "name": "up"
+        },
+        {
+          "type": "repeat",
+          "times": "$perPhase",
+          "steps": [
+            {
+              "type": "stroke",
+              "dir": "down",
+              "px": "$dragPx",
+              "ms": "$dragMs",
+              "profile": "drag"
+            },
+            {
+              "type": "pause",
+              "ms": "$gapMs"
+            }
+          ]
+        },
+        {
+          "type": "pause",
+          "ms": "$turnMs"
+        }
+      ]
+    },
+    {
+      "type": "mark",
+      "name": "end"
+    },
+    {
+      "type": "pause",
+      "ms": 1000
+    }
+  ]
+}

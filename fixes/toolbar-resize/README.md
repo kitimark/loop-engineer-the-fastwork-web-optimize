@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), to the lead
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), closed by the lead, ops result read PASS, landed; cause of the low n corrected (fling overshoot past the hero zone, not the guard); P-133 card rev 1 (same arms and rule 1, fresh data, drag cycles sized for n >= 12, two holds, count-only dry run, frozen n check before scoring; base main 189ca7ed = v9-final + 7d, JS 1b2eecc66011) registered before data, to ops for the pre-data read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -2477,6 +2477,161 @@ stop, no dropped step). Pins as in the card; served bytes were checked by the dr
 - **Look:** nothing to check. No arm was judged, and tp and vu0 did not locate even descriptively.
 - **Next:** this is the lead's decision (rule 1). I propose no hold of my own. A replication needs a new card, or
   the lead's OK for a further hold under P-131, as the pre-sign ruling says.
+- **Correction (2026-10-05, after ops' result read; changes no call, no number):** the line above that says the
+  pull-to-refresh guard "is what keeps per-run n low" is wrong. Mapping each P-131 run's toolbar-moving stretches by
+  scrollY (frames only, `sizing133.mjs` in my scratchpad) shows the cause is the stimulus:
+  - every flick-hero-v1 down loop is one fling from y 0 to y 3950-4380, past the hero zone (y < 3250);
+  - so 19 of the 20 expands start at y >= 3950, and only 1-7 of their 7-18 frames fall in the zone;
+  - the collapses start near the top (y 6-651) and give 2-7 frames each (median 4);
+  - the guard only ends the up loops near the top, after the expand is over, so it costs no counted frame.
+  `results.json` `pgp.result.correction` says the same. The lead ruled on the right cause (P-133 below).
+
+## Prediction P-133: P-131's arms again, on fresh data sized for n (Simulator Timeline, registered before data)
+
+**Card rev 1, before any data.** P-id P-133 (the lead). Next: mgmt-ops-10's pre-data read, then the lead's signature.
+No run, dry run included, before the signature.
+
+- **Basis (lead, 2026-10-05, after P-131's NOT REPRODUCED):**
+  - P-131 stays closed as carded. Nothing from its data is reused or pooled here: no run, no ratio, no C value.
+  - A new card with the same arms and the same rule 1, on all fresh data.
+  - The cause gets fixed at design time: each run's capture is sized for at least 12 moving hero frames, and the
+    card says how.
+  - A frozen check fails a hold before scoring when a run has n < 8; guard-ended loops are counted and reported.
+  - Accepted in principle: drag strokes in y about 650-2350, at least 4 collapse/expand cycles per run, two holds
+    each with its own C runs and nvc control, a count-only Simulator dry run before data (I-184), the per-hold n
+    check before scoring.
+  - A plain rerun in the same order is not accepted.
+- **Question, arms, rules 1-5:** as in P-131 above (same `pgp-inject.mjs`, same `check-pgp.mjs`, same frozen
+  scorer), with the changes listed here. C = the served build with the same injection and no rule.
+- **Base.** main as of `189ca7ed` (this branch is rebased on `a3c4ab06`, which adds docs only): v9-final with
+  morph-scroll rev 7d, served from the `fixes/morph-scroll-v9try` overlay (`node tools/fix.mjs apply
+  morph-scroll-v9try`; gitignored, built in my worktree). Served bytes: JS `1b2eecc66011`, CSS `e1359ab9994a`.
+  - Re-checked against P-131's base (JS `647c9ef2b1e2`, CSS `e1359ab9994a`):
+    - CSS: byte-identical (same hash). Every renderer line in P-131's "v9-final facts" stands as written
+      (l.701, 2873, 10879, 11822; l.1646, 2538, 4412; l.12408; `.hero-track` height l.1632).
+    - JS: `diff` of the two files changes only l.14170-14292 (the morph settle `__msF0`, the fling rule, a debug hook),
+      and the two overlays differ in no other file.
+    - `html.fw-ms` is still set at morph setup: l.14469 on 7d (l.14462 before), removed at l.14515 (l.14508).
+  - The 7d change is in the morph code (settle and fling rule), not in the hero or showcase code. It is not
+    assumed neutral: C runs on 7d, so every ratio is within 7d.
+- **Stimulus: `cycle-hero-v2.json`** (replaces flick-hero-v1; 18 drag strokes, ~28 s of script time).
+  - Reload, 3 s idle at the top, then 2 drags down into the page (lead-in), then 4 cycles of 2 drags down and 2 drags
+    back up. Drag 560 px in 600 ms, `profile: drag` (ends at rest, no momentum), 350 ms between drags, 700 ms at
+    each turn.
+  - Planned scrollY range, by the compiler's static model: about 1000-2300, all below 3250. Every down-the-page
+    phase and every back-up phase happens inside the hero zone.
+  - Planned toolbar transitions per run: 8 (the lead-in collapses; each cycle's back-up phase expands; cycles 2-4's
+    down phase collapses again; cycle 1's down phase starts collapsed).
+  - Pull-to-refresh guard: every finger-down stroke (page up) is guaranteed scrollY >= 560 by the compiler's static
+    model (each finger-up drag adds at least 545), and the runner re-checks it on a still page before each one. The
+    script has no `until` loop (every `repeat` is unrolled), so **a guard-ended loop cannot occur**; a runtime guard
+    failure would throw, send nothing more, and fail the run (strokes < 18).
+- **Sizing for n >= 12** (evidence: P-131's frame log only, frames per toolbar-moving stretch and their scrollY; no
+  Layout value, no ratio, no C value):
+  - P-131's collapses (fling start, y 6-651): 2-7 frames each, median 4, all in the zone.
+  - P-131's expands: 5-18 frames each (median 10), but 19 of 20 started at y >= 3950, outside the zone.
+  - P-133 puts all 8 transitions in the zone: 4 collapses and 4 expands. With P-131's per-stretch counts: worst
+    case 4 x 2 + 4 x 5 = 28, typical 4 x 4 + 4 x 10 = 56, against the target 12 and the rule 8.
+  - Assumption, stated: a drag-driven transition gives at least as many frames as a fling-driven one (OBSERVED in
+    no run; a slower scroll should not shorten Safari's toolbar move, cause unknown). The count-only dry run cannot
+    check n (it keeps no frame log); the driver's first-run gate checks n >= 8 on each hold's first run.
+- **Dry run (count-only, before any Timeline data; after the signature).** `dry-p133.mjs`, one shared Simulator slot,
+  in the background, no inject, no Timeline, no timing number:
+
+  ```sh
+  node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-toolbar-resize -- sh -c \
+    'node tools/fix.mjs serve morph-scroll-v9try > out/toolbar-resize/serve133d.log 2>&1 & S=$!; \
+     node tools/wait.mjs serve out/serve-morph-scroll-v9try.json --pid $S --owner fix-toolbar-resize --timeout 60 && \
+     node tools/sim.mjs session --functional --owner fix-toolbar-resize -- node fixes/toolbar-resize/dry-p133.mjs; \
+     E=$?; kill $S; exit $E'
+  ```
+
+  - Two C runs. A run passes when: all 18 strokes were sent; no error and no abort; no guard-ended loop and no guard
+    error; >= 8 toolbar transitions (summary count); every finger-down stroke started at scrollY 560-3000 (its still
+    read).
+  - `DRY PASS` (exit 0): the holds may queue. `DRY FAIL` (exit 3): no Timeline data; the script is revised and the
+    card goes back to ops' read and the lead.
+  - It records each run's step time (open + gesture). Step estimate for a Timeline run = the mean dry step + 10 s
+    (an allowance for Timeline capture and write; P-131's Timeline steps took ~36 s).
+- **Order: two holds, each self-contained** (own C runs, own nvc, own folder):
+  - Hold A, 6 steps: `C:H1 nvc:H1 nvn:H1 C:H2 tps:H1 C:H3`.
+  - Hold B, 7 steps: `C:H4 nvc:H2 tp:H1 C:H5 vu0:H1 tps:H2 C:H6`.
+  - Budget (driver `SB_BUDGET_S=500`): with a ~60 s step, A is ~380 s and B ~440 s.
+  - Pre-registered from the dry run, before data: step estimate x 7 + 30 > 500 s (estimate > 67 s): B drops `tps:H2`
+    (B = `C:H4 nvc:H2 tp:H1 C:H5 vu0:H1 C:H6`; P4/P5 then use tps:H1 alone). Estimate x 6 + 30 > 500 s (> 78 s): the
+    design fails its budget; no data; back to ops and the lead.
+  - The driver's budget stop stays as a guard: steps it drops are logged and not scored; an arm left with one C
+    neighbour is scored against that one (the scorer's rule). A further hold needs the lead's OK.
+  - Hold B runs after hold A whatever A's ratios are. It does not run when A stopped at a gate (served bytes 26,
+    first-run gate 27) or A's n check is HOLD-FAIL: the card then goes to the lead.
+- **Holds.** Normal exclusive holds, `--max-seconds 600`, FIFO, in the background, nobody moved; DEFERRED while a
+  phone block is marked (P-129, P-130). Hold A (B: `B` and its 7 steps):
+
+  ```sh
+  node tools/lock.mjs run chrome-measure --max-seconds 600 --owner fix-toolbar-resize -- sh -c \
+    'node tools/fix.mjs serve morph-scroll-v9try > out/toolbar-resize/serve133.log 2>&1 & S=$!; \
+     node tools/wait.mjs serve out/serve-morph-scroll-v9try.json --pid $S --owner fix-toolbar-resize --timeout 60 && \
+     SB_BUDGET_S=500 node tools/sim.mjs session --owner fix-toolbar-resize -- \
+       node fixes/toolbar-resize/sim-p133.mjs A C:H1 nvc:H1 nvn:H1 C:H2 tps:H1 C:H3; E=$?; kill $S; exit $E'
+  ```
+
+  Driver `sim-p133.mjs` (from sim-pgp `73215a3c3912`): served bytes JS `1b2eecc66011` and CSS `e1359ab9994a` from the
+  overlay, else exit 26; after the first run, the format gate plus **n >= 8** (the scorer's frame filter), else exit
+  27 before any further run; the budget stop; per step it logs n.
+- **Per hold, in this order, before anything else is read** (folder `out/toolbar-resize/simp133/<A|B>`, runs = the
+  steps the hold ran, in hold order):
+  1. **n check, frozen** (`check-n133.mjs`):
+     `node fixes/toolbar-resize/check-n133.mjs out/toolbar-resize/simp133/A C-H1 nvc-H1 nvn-H1 C-H2 tps-H1 C-H3 --strokes 18 --json fixes/toolbar-resize/p133-n-A.json`.
+     - A run fails on: no frames, n < 8 moving hero frames, an aborted gesture, strokes != 18, a missing file.
+     - Any failing run: `HOLD-FAIL`, exit 3. The hold is not scored, there is no rescue (no rerun, no dropped run, no
+       re-filter), and it goes to the lead.
+     - Reported for every run, never failing: n below the target 12, toolbar transitions, the highest moving-frame y,
+       guard-ended loops (0 by construction), guard errors, other errors.
+  2. Applied-arm gate `check-pgp.mjs` (unchanged).
+  3. Scorer `score-bisect.mjs` (unchanged, `cb6f0c97b81b`) with `--json fixes/toolbar-resize/p133-score-<A|B>.json`.
+  4. `split-io119.mjs` (unchanged; descriptive).
+- **Rules** (P-131's rules 1-5, applied to two holds):
+  1. **NOT REPRODUCED** if either hold's C runs fail the replication gate. No arm in either hold is judged.
+  2. **CONTROL-FAILED per hold**: a hold whose nvc does not LOCATE reads none of its other arms (any LOCATES is still
+     reported).
+  3. **VOID per hold**: C drift > 30 % voids that hold's arms.
+  4. Reading as in P-131 rule 3. tps uses its two runs (one per hold): LOCATES when both do or the mean of the two
+     ratios is <= 0.30. nvn is in hold A only.
+  5. Look and status as in P-131 rules 4 and 5: tp or vu0 LOCATES or PARTIAL goes to the pixel check first; a
+     Simulator ratio is never a phone result and never a gain.
+  6. **HOLD-FAIL** (n check) stops the card before scoring, as above. It is a design failure, not NOT REPRODUCED.
+- **Predictions** (registered before data):
+  - P1-P9 carry P-131's values unchanged. They were set before any P-131 data, and P-131's ratios (including the
+    unjudged ones) informed none of them.
+  - P-131's frame counts informed P11 (disclosed in "Sizing" above).
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | C replicates in both holds (replication gate passes in A and in B) | 80 % |
+  | 2 | nvc LOCATES in both holds | 80 % |
+  | 3 | nvn LOCATES | 55 % |
+  | 4 | tps LOCATES (rule 4) | 40 % |
+  | 5 | tps ratio (mean of the valid tps runs) within 0.10 of nvn's | 50 % |
+  | 6 | tp NONE | 70 % |
+  | 7 | vu0 NONE | 85 % |
+  | 8 | no arm GEOMETRY | 85 % |
+  | 9 | every run passes the applied-arm gate | 80 % |
+  | 10 | the dry run passes, and no step is dropped (pre-registered or budget stop) | 70 % |
+  | 11 | both holds pass the n check | 85 % |
+  | 12 | 0 guard-ended loops and 0 guard errors in every run | 95 % |
+
+  P-131's S2 note applies to P4/P5 (one valid tps run: its ratio; none: not scored, P9 still counts it).
+- **Pins** (sha256/12):
+  - stimulus `cycle-hero-v2.json` `59420d90ed02`;
+  - driver `sim-p133.mjs` `96e0edaaa0d7`;
+  - n check `check-n133.mjs` `96a1dc5fe288`;
+  - dry run `dry-p133.mjs` `470cd5c593c2`;
+  - self-test `p133-selftest.mjs` `bfae80e65988`: `SELFTEST ok 38 checks` (the script compiles to 18 drags, 8
+    finger-down strokes each carrying the runtime guard at 560, the static guard and zone hold, >= 4 cycles; the frame
+    filter and first-run gate; the n check's pass, flag and fail cases; the dry-run criteria);
+  - unchanged: inject `pgp-inject.mjs` `2cfd9c00b9f1`, gate `check-pgp.mjs` `da32f37117f6` (with `pgp-selftest.mjs`,
+    61 checks), scorer `score-bisect.mjs` `cb6f0c97b81b`, `split-io119.mjs` `1ad22b858eb8`;
+  - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
 
 ## Scenarios not run
 
