@@ -109,6 +109,7 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~20:2xZ **P-148 lead ruling on the rev 1 pre-data read** (mgmt-clerk-1, relaying the lead). Not signed. Rev 1.1 is required for N1 (strict T1 per pixel, largest shade over all pixels) and N2 (the scorer drops an errored config's triples). N3 is adopted (an N0 arm-phase compare plus a re-paused count). N4: P7 under UNDECIDED-HELD is not scored; an errored config counts against P11 only if it errors again after RR2. N5: the geometric footprint is accepted and named as a deviation. N6 goes into the known limits. N7: revert the P-146 text edits and append a dated erratum; the 565k figure is marked OBSERVED with its source, or dropped. Signing waits on rev 1.1 and the lead's delta check, and DRY0 stays blocked until then.
 - 10-05 ~20:1xZ **P-148 pre-data read: PASS with notes N1-N7 (ops-reader-P148); N1 and N2 block DRY0 until rev 1.1 and a lead delta check.** Card fixes/deck-contain/P148.md at b672f94c (fix-deck-contain, worktree-agent-af8e7e498478cedb7).
   - Pins: all 12 card pins and the 3 overlay files are equal on disk and at HEAD.
   - tools/, tests/ and package.json equal main. The P-146 helpers (px.mjs, geo.mjs, collapse-v1.json) and arms/ are unchanged.
