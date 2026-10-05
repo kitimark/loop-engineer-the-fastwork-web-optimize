@@ -65,6 +65,7 @@ you were given. This file adds how to work; it doesn't repeat the steps or the r
    RESOLVED"), `git rebase main` in your worktree between steps, never during a running A/B; never
    `git merge main`. You never merge into `main` yourself: the lead lands your branch
    with rebase + `git merge --ff-only` (`CLAUDE.md` "Hard rules").
+8. GitHub (source, raw files, issues, commits): only `gh api repos/<o>/<r>/contents/<path>?ref=<sha>` / `gh search code` / `gh issue view`, read-only; WebFetch and curl to GitHub hosts are refused (memory/github-via-gh.md).
 
 ## Working method
 
