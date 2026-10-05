@@ -4,7 +4,9 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir, freePort, request, sleep } from '../helpers.mjs';
+import net from 'node:net';
+import { tempDir, request, sleep } from '../helpers.mjs';
+import { portBusy } from '../../tools/lib/port-probe.mjs';
 import { makeFixtureHome, PAGE_JS, PAGE_CSS } from '../fixtures/baseline.mjs';
 
 let T, fx, ov, base;
@@ -14,14 +16,20 @@ before(async () => {
   fx = makeFixtureHome(home);
   process.env.FW_MIRROR_HOME = home;
   process.env.FW_STATE_DIR = join(tempDir('fw-tryit-state-'), 'state');
+  // I-193: this file's own port-claims file (its fake probe calls every port free, and it expects exact ports); the
+  // claims are still shared by every registry of this run, so the two-registry test below sees them
+  process.env.FW_TRYIT_CLAIMS = join(tempDir('fw-tryit-claims-'), 'claims.json');
   T = await import('../../tools/lib/tryit.mjs');
   ov = join(home, 'ov');
   mkdirSync(join(ov, PAGE_JS, '..'), { recursive: true });
   writeFileSync(join(ov, PAGE_JS), '/* try-it overlay */\n');
-  base = await freePort();
+  // I-195: never in the OS's ephemeral range (macOS 49152-65535; freePort() handed out one there): every parallel
+  // listen(0) and outgoing connection takes the ports right after it, so a range there met another run's listener
+  base = 20000 + Math.floor(Math.random() * 20000);
 });
 after(() => { for (const h of hosts) h.close(); });
-const free = async () => null;
+const free = async () => null; // registry-only tests: nothing listens, exact ports
+const probe = (p) => portBusy(p); // tests whose host listens: the real probe, so a port another process listens on is skipped (I-195)
 const range = () => ({ from: base, to: base + 9 });
 
 test('registry: names, ports (lowest free, kept on update, explicit, never 5173/5559 or another build\'s), stop and remove', async () => {
@@ -50,6 +58,23 @@ test('registry: names, ports (lowest free, kept on update, explicit, never 5173/
   T.removeBuild('best-build');
 });
 
+test('I-193: two registries on one Mac (two npm test runs, each its own $FW_STATE_DIR) never pick the same free port before either listens', async () => {
+  const r = { from: base + 20, to: base + 29 }; // nothing listens yet: the probe calls every port free in both
+  const mine = process.env.FW_STATE_DIR;
+  const a = await T.addBuild({ name: 'run-a', range: r, busy: free });
+  try {
+    try {
+      process.env.FW_STATE_DIR = join(tempDir('fw-tryit-state2-'), 'state');
+      const b = await T.addBuild({ name: 'run-b', range: r, busy: free });
+      assert.notEqual(b.entry.port, a.entry.port, 'the other registry\'s fresh pick counts as taken');
+      const c = await T.addBuild({ name: 'run-c', range: r, busy: free });
+      assert.equal(new Set([a.entry.port, b.entry.port, c.entry.port]).size, 3);
+    } finally { process.env.FW_STATE_DIR = mine; }
+    const again = await T.addBuild({ name: 'run-a2', range: r, busy: free });
+    assert.notEqual(again.entry.port, a.entry.port, 'its own registry keeps run-a\'s port');
+  } finally { T.removeBuild('run-a'); T.removeBuild('run-a2'); }
+});
+
 /** A host on 127.0.0.1 with a fake clock; mounts count, the handler answers with the build's name and mount number. */
 function fakeHost(opts = {}) {
   let t = 1000; const mounts = [];
@@ -63,9 +88,26 @@ function fakeHost(opts = {}) {
 }
 async function until(f, ms = 3000) { for (const end = Date.now() + ms; Date.now() < end; await sleep(20)) { const v = f(); if (v) return v; } throw new Error('timeout'); }
 
+test('I-195: a build the host tests serve never lands on a port another process listens on, and their range is outside the OS ephemeral range', async () => {
+  assert.ok(range().from >= 1024 && range().to < 49152, `range ${range().from}-${range().to}`);
+  let occupied = null; const other = net.createServer(); // stands in for a parallel run's server
+  for (let p = range().from; p <= range().to && occupied == null; p++) {
+    if (await portBusy(p)) continue;
+    if (await new Promise((done) => { other.once('error', () => done(false)); other.listen({ port: p, host: '0.0.0.0', exclusive: true }, () => done(true)); })) occupied = p;
+  }
+  assert.ok(occupied, 'a free port to occupy');
+  const { H } = fakeHost();
+  try {
+    const { entry } = await T.addBuild({ name: 'i195', range: { from: occupied, to: range().to }, busy: probe });
+    assert.notEqual(entry.port, occupied);
+    H.poll();
+    await until(() => H.status().i195?.listening);
+  } finally { T.removeBuild('i195'); H.poll(); other.close(); }
+});
+
 test('host: a cheap listener per build; files mounted on the first request, dropped after idleMs, re-mounted on the next; config change drops the mount', async () => {
   const { H, mounts, tick } = fakeHost();
-  const { entry } = await T.addBuild({ name: 'b1', overlays: [ov], range: range(), busy: free });
+  const { entry } = await T.addBuild({ name: 'b1', overlays: [ov], range: range(), busy: probe });
   H.poll();
   await until(() => H.status().b1?.listening);
   assert.deepEqual(mounts, [], 'nothing mounted before a request');
@@ -90,7 +132,7 @@ test('host: a cheap listener per build; files mounted on the first request, drop
 
 test('host: a stopped build answers every page with a Start page (no-store); POST /__tryit/start serves it again and returns to the page', async () => {
   const { H, mounts } = fakeHost();
-  const { entry } = await T.addBuild({ name: 'b2', overlays: [ov], range: range(), busy: free, label: 'Best <build>' });
+  const { entry } = await T.addBuild({ name: 'b2', overlays: [ov], range: range(), busy: probe, label: 'Best <build>' });
   T.setStopped('b2', true);
   H.poll();
   await until(() => H.status().b2?.listening);
@@ -119,7 +161,7 @@ test('host: a port in use is reported and retried; a mount that fails answers 50
   assert.match(H.status().b3.error, /port \d+ is in use \(something listens on 127\.0\.0\.1:\d+\)/);
   T.removeBuild('b3'); H.poll();
   const { H: H2 } = fakeHost({ mount: () => { throw new Error('BASELINE-MODIFIED: test'); } });
-  const { entry } = await T.addBuild({ name: 'b4', range: range(), busy: free });
+  const { entry } = await T.addBuild({ name: 'b4', range: range(), busy: probe });
   H2.poll();
   await until(() => H2.status().b4?.listening);
   const r = await request(`http://127.0.0.1:${entry.port}/`);
@@ -132,7 +174,7 @@ test('host: a port in use is reported and retried; a mount that fails answers 50
 
 test('host + the real mirror handler: overlay and baseline files, x-mirror-source, Cache-Control no-store on every file (I-131), /__mirror/info', async () => {
   const { H } = fakeHost({ mount: T.mountBuild });
-  const { entry } = await T.addBuild({ name: 'real', overlays: [ov], range: range(), busy: free });
+  const { entry } = await T.addBuild({ name: 'real', overlays: [ov], range: range(), busy: probe });
   H.poll();
   await until(() => H.status().real?.listening);
   const url = `http://127.0.0.1:${entry.port}`;
@@ -156,7 +198,7 @@ test('host + the real mirror handler: overlay and baseline files, x-mirror-sourc
 test('ensureHost/waitServed/buildRows: host.json names a live host; rows say served | idle | stopped | host-down', async () => {
   assert.equal(T.readHost(), null);
   assert.deepEqual(T.buildRows(), []);
-  await T.addBuild({ name: 'r1', range: range(), busy: free });
+  await T.addBuild({ name: 'r1', range: range(), busy: probe });
   assert.equal(T.buildRows()[0].state, 'host-down');
   // this process plays the host: host.json + status.json as runHost writes them
   const { H } = fakeHost({ onStatus: (builds) => writeFileSync(T.statusFile(), JSON.stringify({ pid: process.pid, builds })) });

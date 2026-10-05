@@ -113,6 +113,17 @@ test('keep: a folder a running process holds open, or names on its command line;
   assert.deepEqual(paths(plan()), [d]);
 });
 
+test('I-192: a process naming the same out/ folder of ANOTHER checkout (absolute path) does not keep this one; relative and own absolute names still do', () => {
+  const d = shots(join(wtA, 'out', 'bench', 'shots'));
+  // the other npm test run's prune makes thumbnails from its own temp repo's frames
+  const foreign = [{ pid: 999998, command: `sips -Z 320 /private/var/folders/x/T/fw-other-repo/.claude/worktrees/px-wt/out/bench/shots/frame-001.png --out /t/a.png` }];
+  assert.deepEqual(paths(plan({ procs: foreign })), [d], 'another checkout\'s folder of the same name');
+  assert.deepEqual(paths(plan({ procs: [{ pid: 999997, command: 'node probe.mjs --out other/out/bench/shots' }] })), [d]);
+  for (const command of [`node probe.mjs --out ./out/bench/shots/x.png`, `node probe.mjs --out=out/bench/shots`, `node probe.mjs "out/bench/shots"`, `sips ${join(d, 'frame-001.png')}`, `node probe.mjs out/bench/shots`]) {
+    assert.match(keptWhy(plan({ procs: [{ pid: 999996, command }] }), d), /a running process names it/, command);
+  }
+});
+
 test('keep: recordings and phone records (iphone-screen, ioscap, iphone), certs, Try-it pages', () => {
   for (const top of ['iphone-screen', 'ioscap', 'iphone', 'certs', 'tryit']) shots(join(join(root, 'main', 'out'), top, 'x'));
   put(join(root, 'main', 'out', 'iphone-screen', 'run.mov'), 'MOV');

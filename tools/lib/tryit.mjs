@@ -13,11 +13,16 @@
 // its port and answers every page with a Start page: one tap (POST /__tryit/start) serves it again.
 // Try-it pages always send Cache-Control: no-store (I-131: no browser keeps another build's copy of a hashed file).
 // Ports: 6400-6599 by default (no serve.mjs used them before, so no browser holds a stale copy there), never 5173/5559.
+// I-193: a port is picked by a probe and listened on later by the host, another process. The registry guard keeps
+// builds of one registry apart, not two registries on one Mac (two `npm test` runs, each with its own $FW_STATE_DIR,
+// both took 6410): every auto-picked port is also claimed in a Mac-wide file (/tmp/fastwork-tryit-port-claims.json),
+// and another registry's claim younger than CLAIM_TTL_MS counts as taken (by then its host listens, and the probe sees it).
 // FW_TRYIT_HOST=127.0.0.1 keeps the host off the Wi-Fi (the tests); anything but 0.0.0.0 / 127.0.0.1 is refused.
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, openSync, closeSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, renameSync, rmSync, rmdirSync, openSync, closeSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { REPO, sharedStateDir, resolveTree } from './paths.mjs';
 import { withGuard } from './lock.mjs';
@@ -67,6 +72,38 @@ export function listBuilds() {
   return names.sort().map((f) => readJson(join(buildsDir(), f))).filter((e) => validEntry(e) && existsSync(buildFile(e.name)));
 }
 export function getBuild(name) { const e = readJson(buildFile(name)); return validEntry(e) && e.name === name ? e : null; }
+// ---- I-193: Mac-wide port claims ------------------------------------------------------------------------------------
+export const CLAIM_TTL_MS = 120000;
+// $FW_TRYIT_CLAIMS: another file, for unit tests that pick ports with a fake probe and expect exact ones
+export const claimsFile = () => (process.env.FW_TRYIT_CLAIMS ? resolve(process.env.FW_TRYIT_CLAIMS) : join(existsSync('/tmp') ? '/tmp' : tmpdir(), 'fastwork-tryit-port-claims.json'));
+const freshClaims = (now = Date.now()) => {
+  const all = readJson(claimsFile());
+  const out = {};
+  if (all && typeof all === 'object') for (const [p, c] of Object.entries(all)) if (c && now - Date.parse(c.at) < CLAIM_TTL_MS) out[p] = c;
+  return out;
+};
+/** Ports another registry claimed in the last CLAIM_TTL_MS. */
+const claimedElsewhere = () => { const me = sharedStateDir(); return new Set(Object.entries(freshClaims()).filter(([, c]) => c.state !== me).map(([p]) => Number(p))); };
+/** Claim `port` for this registry: true, or false when another registry holds a fresh claim on it. */
+async function claimPort(port, name) {
+  const g = `${claimsFile()}.guard`;
+  for (let i = 0; ; i++) { // mkdir is atomic (like lib/lock.mjs withGuard, which lives in one state dir)
+    try { mkdirSync(g); break; } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      try { if (Date.now() - statSync(g).mtimeMs > 10000) { rmdirSync(g); continue; } } catch { /* gone */ }
+      if (i > 2000) throw new Error(`Try-it port claims guard ${g} stuck`);
+      await sleep(5 + Math.random() * 20);
+    }
+  }
+  try {
+    const all = freshClaims(), me = sharedStateDir(), c = all[port];
+    if (c && c.state !== me) return false;
+    all[port] = { state: me, name, pid: process.pid, at: new Date().toISOString() };
+    writeJson(claimsFile(), all);
+    return true;
+  } finally { try { rmdirSync(g); } catch { /* gone */ } }
+}
+
 /** What decides the served bytes: a change drops the mount. */
 const configKey = (e) => JSON.stringify([e.root, e.overlays, e.vendors, e.latency]);
 
@@ -85,6 +122,7 @@ export async function addBuild({ name, root = 'site-pretty', overlays = [], vend
   if (label != null && (typeof label !== 'string' || label.length > 120)) throw new Error('label: plain text, at most 120 characters');
   if (port != null && (!Number.isInteger(port) || port < 1024 || port > 65535 || RESERVED.has(port))) throw new Error(`port: 1024-65535, not ${[...RESERVED].join('/')} (got ${port})`);
   // withGuard runs its callback synchronously: probe free ports outside it, then re-check and write inside it
+  const lost = new Set(); // ports another registry claimed first (I-193)
   for (let attempt = 0; attempt < 5; attempt++) {
     const all = listBuilds();
     const old = all.find((e) => e.name === name) || null;
@@ -92,8 +130,10 @@ export async function addBuild({ name, root = 'site-pretty', overlays = [], vend
     if (port != null && taken.has(port)) throw new Error(`port ${port} is already the Try-it build "${all.find((e) => e.port === port).name}"`);
     let p = old && port == null ? old.port : port;
     if (p == null) {
-      for (let c = range.from; c <= range.to && p == null; c++) if (!taken.has(c) && !RESERVED.has(c) && !(await busy(c))) p = c;
+      const elsewhere = claimedElsewhere();
+      for (let c = range.from; c <= range.to && p == null; c++) if (!taken.has(c) && !RESERVED.has(c) && !lost.has(c) && !elsewhere.has(c) && !(await busy(c))) p = c;
       if (p == null) throw new Error(`no free Try-it port in ${range.from}-${range.to} (node tools/tryit.mjs rm <name> frees one)`);
+      if (!(await claimPort(p, name))) { lost.add(p); continue; }
     }
     const r = await withGuard('tryit-registry', () => {
       const now = listBuilds();

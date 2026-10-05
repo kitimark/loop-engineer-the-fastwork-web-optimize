@@ -96,6 +96,21 @@ function filesUnder(d, max = 200) {
 }
 
 /**
+ * Does `command` name path `n` (followed by the end, a separator, a space or a quote)? I-192: a relative name
+ * (`out/pixels/old`) counts only as an argument of its own (at the start, after a space, a quote or '=', optionally as
+ * `./out/...`), never inside an absolute path of another checkout (a concurrent run's `sips /tmp/other/.../out/pixels/old/f0.png`).
+ */
+export function commandNames(command, n, relative = false) {
+  const word = (c) => c === undefined || /[\s"'=]/.test(c);
+  for (let i = command.indexOf(n); i >= 0; i = command.indexOf(n, i + 1)) {
+    const after = command[i + n.length];
+    if (!(after === undefined || after === sep || after === ' ' || after === '"' || after === "'")) continue;
+    if (!relative || word(command[i - 1]) || (command.slice(i - 2, i) === './' && word(command[i - 3]))) return true;
+  }
+  return false;
+}
+
+/**
  * The dry-run plan. opts: {mainRoot, now, maxAgeMs (default a day), cites, procs, open (paths held open), scratchRoots,
  * tmpRoot, mainRef, committed (Set of hashes, for tests)}. Returns {candidates[], kept[], bytes}: a candidate is
  * {cls, path, show, bytes, why, images?}; a kept entry {cls, path, show, why} says why something that looked
@@ -122,7 +137,7 @@ export function planPrune(opts) {
     // a command line may name it absolutely or relative to its checkout (serve.mjs --root out/snapshots/<name>)
     const rel = relOut(p);
     const names = [p, ...(rel ? [rel] : [])];
-    const pr = procs.find((x) => x.pid !== process.pid && names.some((n) => x.command.includes(n + sep) || x.command.endsWith(n) || x.command.includes(n + ' ') || x.command.includes(n + '"') || x.command.includes(n + "'")));
+    const pr = procs.find((x) => x.pid !== process.pid && names.some((n) => commandNames(x.command, n, n !== p)));
     return pr ? `a running process names it (pid ${pr.pid})` : null;
   };
   const age = (p, depth) => now - newestMtime(p, depth);
