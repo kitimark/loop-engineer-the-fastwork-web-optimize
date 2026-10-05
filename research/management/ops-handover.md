@@ -72,6 +72,13 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~10:4xZ **P-129 reader rev 1.1 quick read: PASS** (iphone-runner 808f6f34 on worktree-agent-a7696771bf38f1229, rebased on 0e480e56).
+  - Diff: p129-read.mjs only at line 175, the spread `Math.min(...)`/`Math.max(...)` over the Timeline records replaced by a pairwise loop (same results for empty input, NaN and -0); README §5 adds one disclosure paragraph. No rule, threshold, gate or output change. The remaining `Math.min(...TH)` is over a 3-element constant; line 123's spread is an array literal, not call arguments.
+  - Hashes: reader 88835d4822e9 to 06f74f5d19ca (committed blob checked); self-test 110cc04eb8fb unchanged, ops re-ran it: SELFTEST PASS 48; phone scripts unchanged.
+  - Proof (runner's harness): 74 self-test reader calls byte-identical (32a8f15a0500); dry-run records S9/E9/L9 and P-129 S0 identical; E1/L1/L2/E2 full files crashed under the old reader, and their 500/2000/5000-record cuts are identical old vs new (12 of 12).
+  - Ops re-ran p129-gates.mjs (gate lines only, no readings) under rev 1.1: E1, L1, L2, E2 ok (idle 4.602, 21.684, 21.676, 4.604), S0 PASS fps 57.1 slow 0.018; exit 0. No genuine gate failure, so no re-run.
+  - Tail: hold-H2.log (8218a7cca83e) and hold-H3.log (fdbfb43f9a87) moved unchanged to out/p129/part1/; their RERUN-NEEDED lines follow only the RangeError. TAIL now reads H4/H5 only; part 2 stays H4:E3,L3 H5:L4,E4 H6:TAIL.
+  - For the result read: the final read must use rev 1.1 06f74f5d19ca; name the crash and the moved logs.
 - 10-05 ~10:3xZ **P-129 reader crash (lead FYI; for the P-129 result read).**
   - The frozen reader p129-read.mjs 88835d4822e9 crashes on real runs at line 175 (`Math.min(...)` spread: RangeError, call stack size) in the per-run gate. H2's E1 and L1 were flagged RERUN-NEEDED by the crash; the runs themselves exited 0.
   - Lead ruling to iphone-runner: finish part 1. In the user's Try-it pause, make a mechanical loop fix only (reader rev 1.1, disclosed), proven byte-identical on all self-test fixtures and the dry-run files. Re-read E1, L1, L2 and E2 offline. Tail re-runs only for genuine gate failures.
