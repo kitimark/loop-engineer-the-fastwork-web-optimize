@@ -1,0 +1,1255 @@
+{
+ "topic": "countdown-tick",
+ "kind": "counts + frozen-frame pixel identity (no timing A/B, no gain claim; less-work landing rule)",
+ "config": {
+  "chrome": "headless Chrome, 430x932 DPR 3 mobile + touch, no CPU throttle (counts only), serve --vendors=local --https --latency 150 --no-cache, all arms of a run side by side in one browser, shared lane (--shared --weight probe)",
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "timerGrid": "forced by an init-script model of WebKit DOMTimer (fixes/countdown-tick/tick-probe.mjs header): nesting level >= 5 rounds the fire time up to a multiple of GRID ms on performance.now(); a repeating timer re-arms at its actual fire time + interval. GRID=30 = thermal mitigation, GRID=0 = Fair (WebKit re-arm semantics kept)",
+  "measurementCode": "no change to tools/ (verify.mjs, lib/cdp.mjs, fix.mjs ab untouched); the probe uses tools/lib/cdp.mjs and tools/serve.mjs as they are",
+  "expiry": "all runs before 2026-11-02 05:00Z (the probe refuses within 15 min of it)"
+ },
+ "arms": {
+  "orig": "baseline snapshot",
+  "tick": "baseline + fixes/countdown-tick/patch.diff",
+  "v9": "v9 step 4 (fixes/v9-best/patch.diff on main: JS de237379b556, CSS e1359ab9994a)",
+  "v9tick": "v9 step 4 + fixes/countdown-tick-v9/patch.diff (delta on v9)"
+ },
+ "patches": {
+  "fixes/countdown-tick/patch.diff": "70e04ee606dfa73601f2d3ecd05561aa6235911108722be5b8d2c8949c2f1762",
+  "fixes/countdown-tick-v9/patch.diff (delta stacked on v9-best)": "8a4a6a16e217ecb2630bf2fd9f49a3f6780ac78b5c7c4dff02d65b8aa1ff8c79"
+ },
+ "scripts": {
+  "tick-probe.mjs": "7a105bc9c1b5",
+  "model.mjs": "66e194bc60cd",
+  "phone-logger.mjs": "2dc08a6009ec",
+  "p130-read.mjs": "3dd6d8d80eba"
+ },
+ "servedJs": {
+  "orig": {
+   "_app/immutable/nodes/2.DyWL8TcE.js": "4606120cf392",
+   "_app/immutable/assets/2.gBuqKVzi.css": "27776f3d4138"
+  },
+  "tick": {
+   "_app/immutable/nodes/2.DyWL8TcE.js": "bc69889b97b6",
+   "_app/immutable/assets/2.gBuqKVzi.css": "27776f3d4138"
+  },
+  "v9": {
+   "_app/immutable/nodes/2.DyWL8TcE.js": "de237379b556",
+   "_app/immutable/assets/2.gBuqKVzi.css": "e1359ab9994a"
+  },
+  "v9tick": {
+   "_app/immutable/nodes/2.DyWL8TcE.js": "b1df3c8a0c5a",
+   "_app/immutable/assets/2.gBuqKVzi.css": "e1359ab9994a"
+  }
+ },
+ "counts": {
+  "grid30": {
+   "runs": [
+    {
+     "file": "out/countdown-tick/counts-2026-10-05T05-15-30-338Z.json",
+     "from": "2026-10-05T05:15:45.762Z",
+     "seconds": 240.005,
+     "load1": [
+      8.49609375,
+      9.91259765625
+     ]
+    },
+    {
+     "file": "out/countdown-tick/counts-2026-10-05T05-19-46-402Z.json",
+     "from": "2026-10-05T05:20:08.257Z",
+     "seconds": 240.004,
+     "load1": [
+      9.91259765625,
+      156.609375
+     ]
+    },
+    {
+     "file": "out/countdown-tick/counts-2026-10-05T05-25-14-449Z.json",
+     "from": "2026-10-05T05:25:52.067Z",
+     "seconds": 240.002,
+     "load1": [
+      167.32373046875,
+      150.87744140625
+     ]
+    }
+   ],
+   "arms": {
+    "orig": {
+     "seconds": 720,
+     "clockFires": 707,
+     "skippedSeconds": 14,
+     "repeatedSeconds": 0,
+     "labelSkips": 14,
+     "wrongValue": 0,
+     "lateIn0to40": 0,
+     "lateMinMs": 130,
+     "lateMaxMs": 5012,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 235,
+       "skipped": 5,
+       "repeated": 0,
+       "late": [
+        130,
+        4812
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "interval@3936/1000"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 236,
+       "skipped": 5,
+       "repeated": 0,
+       "late": [
+        175,
+        4876
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "interval@3936/1000"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 236,
+       "skipped": 4,
+       "repeated": 0,
+       "late": [
+        311,
+        5012
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "interval@3936/1000"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 58.92,
+     "skippedPer10min": 11.67,
+     "repeatedPer10min": 0
+    },
+    "tick": {
+     "seconds": 720,
+     "clockFires": 720,
+     "skippedSeconds": 0,
+     "repeatedSeconds": 0,
+     "labelSkips": 0,
+     "wrongValue": 0,
+     "lateIn0to40": 720,
+     "lateMinMs": 2,
+     "lateMaxMs": 31,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        2,
+        26
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "timeout@3946/1000",
+        "timeout@3946/999",
+        "timeout@3946/998",
+        "timeout@3946/997",
+        "timeout@3946/977",
+        "timeout@3946/987",
+        "timeout@3946/978",
+        "timeout@3946/988",
+        "timeout@3946/986",
+        "timeout@3946/996",
+        "timeout@3946/976",
+        "timeout@3946/985",
+        "timeout@3946/995",
+        "timeout@3946/975",
+        "timeout@3946/984",
+        "timeout@3946/994",
+        "timeout@3946/974"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        7,
+        31
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "timeout@3946/1000",
+        "timeout@3946/999",
+        "timeout@3946/983",
+        "timeout@3946/993",
+        "timeout@3946/973",
+        "timeout@3946/992",
+        "timeout@3946/972",
+        "timeout@3946/991",
+        "timeout@3946/971",
+        "timeout@3946/982",
+        "timeout@3946/990",
+        "timeout@3946/981",
+        "timeout@3946/970",
+        "timeout@3946/969",
+        "timeout@3946/980",
+        "timeout@3946/988",
+        "timeout@3946/979"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        5,
+        28
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "timeout@3946/1000",
+        "timeout@3946/999",
+        "timeout@3946/998",
+        "timeout@3946/993",
+        "timeout@3946/973",
+        "timeout@3946/984",
+        "timeout@3946/972",
+        "timeout@3946/983",
+        "timeout@3946/992",
+        "timeout@3946/974",
+        "timeout@3946/994",
+        "timeout@3946/982",
+        "timeout@3946/975",
+        "timeout@3946/985",
+        "timeout@3946/995",
+        "timeout@3946/976"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 60,
+     "skippedPer10min": 0,
+     "repeatedPer10min": 0
+    },
+    "v9": {
+     "seconds": 720,
+     "clockFires": 707,
+     "skippedSeconds": 14,
+     "repeatedSeconds": 0,
+     "labelSkips": 14,
+     "wrongValue": 0,
+     "lateIn0to40": 0,
+     "lateMinMs": 106,
+     "lateMaxMs": 4986,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 236,
+       "skipped": 5,
+       "repeated": 0,
+       "late": [
+        106,
+        4808
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "interval@4562/1000",
+        "interval@4527/60000"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 235,
+       "skipped": 5,
+       "repeated": 0,
+       "late": [
+        190,
+        4873
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "interval@4562/1000",
+        "interval@4527/60000"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 236,
+       "skipped": 4,
+       "repeated": 0,
+       "late": [
+        287,
+        4986
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "interval@4562/1000",
+        "interval@4527/60000"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 58.92,
+     "skippedPer10min": 11.67,
+     "repeatedPer10min": 0
+    },
+    "v9tick": {
+     "seconds": 720,
+     "clockFires": 720,
+     "skippedSeconds": 0,
+     "repeatedSeconds": 0,
+     "labelSkips": 0,
+     "wrongValue": 0,
+     "lateIn0to40": 720,
+     "lateMinMs": 1,
+     "lateMaxMs": 33,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        6,
+        30
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "timeout@4522/1000",
+        "timeout@4522/998",
+        "timeout@4522/999",
+        "timeout@4522/983",
+        "timeout@4522/994",
+        "timeout@4522/973",
+        "timeout@4522/982",
+        "timeout@4522/993",
+        "timeout@4522/974",
+        "timeout@4522/972",
+        "timeout@4522/992",
+        "interval@4543/60000",
+        "timeout@4522/984",
+        "timeout@4522/971",
+        "timeout@4522/991",
+        "timeout@4522/990",
+        "timeout@4522/970",
+        "timeout@4522/981"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        1,
+        31
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "timeout@4522/1000",
+        "timeout@4522/998",
+        "timeout@4522/999",
+        "timeout@4522/990",
+        "timeout@4522/961",
+        "timeout@4522/978",
+        "timeout@4522/989",
+        "timeout@4522/980",
+        "timeout@4522/979",
+        "timeout@4522/970",
+        "timeout@4522/969",
+        "timeout@4522/981",
+        "interval@4543/60000",
+        "timeout@4522/988",
+        "timeout@4522/977",
+        "timeout@4522/976",
+        "timeout@4522/997",
+        "timeout@4522/986",
+        "timeout@4522/987",
+        "timeout@4522/996",
+        "timeout@4522/975"
+       ]
+      },
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        4,
+        33
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "timeout@4522/1000",
+        "timeout@4522/999",
+        "timeout@4522/973",
+        "timeout@4522/984",
+        "timeout@4522/994",
+        "timeout@4522/974",
+        "timeout@4522/983",
+        "timeout@4522/993",
+        "timeout@4522/981",
+        "timeout@4522/985",
+        "interval@4543/60000",
+        "timeout@4522/975",
+        "timeout@4522/995",
+        "timeout@4522/986",
+        "timeout@4522/976",
+        "timeout@4522/996",
+        "timeout@4522/971",
+        "timeout@4522/972",
+        "timeout@4522/982",
+        "timeout@4522/967",
+        "timeout@4522/992"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 60,
+     "skippedPer10min": 0,
+     "repeatedPer10min": 0
+    }
+   }
+  },
+  "grid0": {
+   "runs": [
+    {
+     "file": "out/countdown-tick/counts-2026-10-05T05-31-53-675Z.json",
+     "from": "2026-10-05T05:32:22.251Z",
+     "seconds": 240.002,
+     "load1": [
+      50.7900390625,
+      15.77880859375
+     ]
+    }
+   ],
+   "arms": {
+    "orig": {
+     "seconds": 240,
+     "clockFires": 240,
+     "skippedSeconds": 0,
+     "repeatedSeconds": 0,
+     "labelSkips": 0,
+     "wrongValue": 0,
+     "lateIn0to40": 24,
+     "lateMinMs": 13,
+     "lateMaxMs": 247,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        13,
+        247
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "interval@3936/1000"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 60,
+     "skippedPer10min": 0,
+     "repeatedPer10min": 0
+    },
+    "tick": {
+     "seconds": 240,
+     "clockFires": 240,
+     "skippedSeconds": 0,
+     "repeatedSeconds": 0,
+     "labelSkips": 0,
+     "wrongValue": 0,
+     "lateIn0to40": 240,
+     "lateMinMs": 0,
+     "lateMaxMs": 3,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        0,
+        3
+       ],
+       "timersOnPage": [
+        1
+       ],
+       "sites": [
+        "timeout@3946/1000",
+        "timeout@3946/998",
+        "timeout@3946/999",
+        "timeout@3946/996",
+        "timeout@3946/997"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 60,
+     "skippedPer10min": 0,
+     "repeatedPer10min": 0
+    },
+    "v9": {
+     "seconds": 240,
+     "clockFires": 239,
+     "skippedSeconds": 0,
+     "repeatedSeconds": 0,
+     "labelSkips": 0,
+     "wrongValue": 0,
+     "lateIn0to40": 30,
+     "lateMinMs": 18,
+     "lateMaxMs": 265,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 239,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        18,
+        265
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "interval@4562/1000",
+        "interval@4527/60000"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 59.75,
+     "skippedPer10min": 0,
+     "repeatedPer10min": 0
+    },
+    "v9tick": {
+     "seconds": 240,
+     "clockFires": 240,
+     "skippedSeconds": 0,
+     "repeatedSeconds": 0,
+     "labelSkips": 0,
+     "wrongValue": 0,
+     "lateIn0to40": 240,
+     "lateMinMs": 0,
+     "lateMaxMs": 3,
+     "perRun": [
+      {
+       "s": 240,
+       "fires": 240,
+       "skipped": 0,
+       "repeated": 0,
+       "late": [
+        0,
+        3
+       ],
+       "timersOnPage": [
+        1,
+        2
+       ],
+       "sites": [
+        "timeout@4522/1000",
+        "timeout@4522/999",
+        "timeout@4522/998",
+        "interval@4543/60000",
+        "timeout@4522/997",
+        "timeout@4522/996"
+       ]
+      }
+     ],
+     "errors": 0,
+     "firesPer60s": 60,
+     "skippedPer10min": 0,
+     "repeatedPer10min": 0
+    }
+   }
+  }
+ },
+ "resume": {
+  "file": "out/countdown-tick/resume-2026-10-05T05-14-04-916Z.json",
+  "grid": 30,
+  "hideS": [
+   7.4,
+   7.85
+  ],
+  "resumes": {
+   "v9": [
+    {
+     "back": 1791177285759,
+     "firstLabelAfter": {
+      "dt": 9,
+      "secs": 2418315
+     },
+     "liveChainValue": 2418315,
+     "equal": true,
+     "nextFire": {
+      "dt": 383,
+      "secs": 2418314
+     },
+     "labelChangesWhileHidden": 0
+    },
+    {
+     "back": 1791177320915,
+     "firstLabelAfter": {
+      "dt": 19,
+      "secs": 2418280
+     },
+     "liveChainValue": 2418280,
+     "equal": true,
+     "nextFire": {
+      "dt": 226,
+      "secs": 2418279
+     },
+     "labelChangesWhileHidden": 0
+    }
+   ],
+   "v9tick": [
+    {
+     "back": 1791177285759,
+     "firstLabelAfter": {
+      "dt": 11,
+      "secs": 2418315
+     },
+     "liveChainValue": 2418315,
+     "equal": true,
+     "nextFire": {
+      "dt": 411,
+      "secs": 2418314
+     },
+     "labelChangesWhileHidden": 0
+    },
+    {
+     "back": 1791177320917,
+     "firstLabelAfter": {
+      "dt": 19,
+      "secs": 2418280
+     },
+     "liveChainValue": 2418280,
+     "equal": true,
+     "nextFire": {
+      "dt": 254,
+      "secs": 2418279
+     },
+     "labelChangesWhileHidden": 0
+    }
+   ]
+  },
+  "note": "after each scroll back to the top, the first label change equals the value of the live chain at that second (v9tick: exact by construction; v9: equals countdown-faces model value T0 + floor((now-T0)/1000) s, which its drifting interval would not show under the grid). Skipped seconds in this run are the hidden stretches (clock off screen, no writes), not visible skips."
+ },
+ "pixels": {
+  "file": "out/countdown-tick/pixels-2026-10-05T05-13-35-314Z.json",
+  "grid": 0,
+  "pairs": [
+   {
+    "a": "orig",
+    "b": "orig2",
+    "label": "27 days, 23 hours, 46 mins, 2 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "orig2",
+    "label": "27 days, 23 hours, 46 mins, 1 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "orig2",
+    "label": "27 days, 23 hours, 46 mins, 0 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "orig2",
+    "label": "27 days, 23 hours, 45 mins, 59 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "orig2",
+    "label": "27 days, 23 hours, 45 mins, 58 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "orig2",
+    "label": "27 days, 23 hours, 45 mins, 57 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "tick",
+    "label": "27 days, 23 hours, 46 mins, 2 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "tick",
+    "label": "27 days, 23 hours, 46 mins, 1 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "tick",
+    "label": "27 days, 23 hours, 46 mins, 0 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "tick",
+    "label": "27 days, 23 hours, 45 mins, 59 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "tick",
+    "label": "27 days, 23 hours, 45 mins, 58 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "tick",
+    "label": "27 days, 23 hours, 45 mins, 57 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "v9",
+    "b": "v9tick",
+    "label": "27 days, 23 hours, 46 mins, 3 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "v9",
+    "b": "v9tick",
+    "label": "27 days, 23 hours, 46 mins, 2 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "v9",
+    "b": "v9tick",
+    "label": "27 days, 23 hours, 46 mins, 1 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "v9",
+    "b": "v9tick",
+    "label": "27 days, 23 hours, 46 mins, 0 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "v9",
+    "b": "v9tick",
+    "label": "27 days, 23 hours, 45 mins, 59 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "v9",
+    "b": "v9tick",
+    "label": "27 days, 23 hours, 45 mins, 58 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "v9",
+    "label": "27 days, 23 hours, 46 mins, 2 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "v9",
+    "label": "27 days, 23 hours, 46 mins, 1 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "v9",
+    "label": "27 days, 23 hours, 46 mins, 0 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "v9",
+    "label": "27 days, 23 hours, 45 mins, 59 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   },
+   {
+    "a": "orig",
+    "b": "v9",
+    "label": "27 days, 23 hours, 45 mins, 58 seconds",
+    "bytesEqual": true,
+    "diffPixels": 0,
+    "maxChannelDelta": 0,
+    "size": [
+     1128,
+     264
+    ]
+   }
+  ],
+  "note": "hero clock clip at rest (two byte-equal shots in a row, same label before and after), paired across arms by equal aria-label; orig/orig2 is the A/A"
+ },
+ "loggerCheck": [
+  {
+   "file": "out/countdown-tick/logger-2026-10-05T05-26-08-155Z.json",
+   "grid": 30,
+   "window": {
+    "from": "2026-10-05T05:26:26.207Z",
+    "seconds": 128.011
+   },
+   "probe": {
+    "v9": {
+     "skipped": 2,
+     "fires": 126,
+     "late": [
+      113,
+      2613
+     ]
+    },
+    "v9tick": {
+     "skipped": 0,
+     "fires": 128,
+     "late": [
+      1,
+      25
+     ]
+    }
+   },
+   "logger": {
+    "v9": {
+     "windowMs": 119338,
+     "changes": 118,
+     "distinct": 118,
+     "skips": 2,
+     "skipAt": [
+      [
+       39,
+       39778,
+       2417575,
+       2417573
+      ],
+      [
+       89,
+       90779,
+       2417524,
+       2417522
+      ]
+     ],
+     "repeats": 0,
+     "hidden": 0,
+     "gapMs": {
+      "min": 1010,
+      "p50": 1020,
+      "max": 1030
+     },
+     "grid": {
+      "start": {
+       "at": 1791177986958,
+       "p50": 30.1,
+       "min": 4.8,
+       "max": 30.7
+      },
+      "end": {
+       "at": 1791178109027,
+       "p50": 29.9,
+       "min": 4.6,
+       "max": 31.1
+      }
+     }
+    },
+    "v9tick": {
+     "windowMs": 119998,
+     "changes": 121,
+     "distinct": 121,
+     "skips": 0,
+     "skipAt": [],
+     "repeats": 0,
+     "hidden": 0,
+     "gapMs": {
+      "min": 982,
+      "p50": 991,
+      "max": 1025
+     },
+     "grid": {
+      "start": {
+       "at": 1791177986908,
+       "p50": 29.9,
+       "min": 4.8,
+       "max": 30.8
+      },
+      "end": {
+       "at": 1791178108887,
+       "p50": 30.1,
+       "min": 28.3,
+       "max": 30.9
+      }
+     }
+    }
+   },
+   "note": "functional check of phone-logger.mjs (P-130) under the Chrome grid shim: its counts vs the probe own"
+  },
+  {
+   "file": "out/countdown-tick/logger-2026-10-05T05-29-56-681Z.json",
+   "grid": 0,
+   "window": {
+    "from": "2026-10-05T05:30:16.627Z",
+    "seconds": 128.346
+   },
+   "probe": {
+    "v9": {
+     "skipped": 0,
+     "fires": 128,
+     "late": [
+      10,
+      150
+     ]
+    },
+    "v9tick": {
+     "skipped": 0,
+     "fires": 128,
+     "late": [
+      0,
+      3
+     ]
+    }
+   },
+   "logger": {
+    "v9": {
+     "windowMs": 119130,
+     "changes": 120,
+     "distinct": 120,
+     "skips": 0,
+     "skipAt": [],
+     "repeats": 0,
+     "hidden": 0,
+     "gapMs": {
+      "min": 988,
+      "p50": 1001,
+      "max": 1015
+     },
+     "grid": {
+      "start": {
+       "at": 1791178216775,
+       "p50": 4.7,
+       "min": 4.5,
+       "max": 5.4
+      },
+      "end": {
+       "at": 1791178338224,
+       "p50": 4.6,
+       "min": 4.2,
+       "max": 5.8
+      }
+     }
+    },
+    "v9tick": {
+     "windowMs": 119997,
+     "changes": 121,
+     "distinct": 121,
+     "skips": 0,
+     "skipAt": [],
+     "repeats": 0,
+     "hidden": 0,
+     "gapMs": {
+      "min": 984,
+      "p50": 1000,
+      "max": 1015
+     },
+     "grid": {
+      "start": {
+       "at": 1791178216787,
+       "p50": 4.6,
+       "min": 4.3,
+       "max": 11.9
+      },
+      "end": {
+       "at": 1791178338488,
+       "p50": 4.6,
+       "min": 4.1,
+       "max": 5.5
+      }
+     }
+    }
+   },
+   "note": "functional check of phone-logger.mjs (P-130) under the Chrome grid shim: its counts vs the probe own"
+  }
+ ],
+ "model": {
+  "file": "fixes/countdown-tick/model.mjs",
+  "jitter2ms": {
+   "orig grid0": {
+    "loads": 1000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 0.596,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "59.6 %",
+    "worstLoadSkips": 1
+   },
+   "orig grid30": {
+    "loads": 10000,
+    "firesPer60s": 58.8,
+    "skipsPer10min": 11.678,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "100.0 %",
+    "worstLoadSkips": 12
+   },
+   "chain grid0": {
+    "loads": 1000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 0.152,
+    "repeatsPer10min": 0.152,
+    "loadsWithAnySkipOrRepeat": "0.1 %",
+    "worstLoadSkips": 152
+   },
+   "chain grid30": {
+    "loads": 10000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 3.972,
+    "repeatsPer10min": 3.958,
+    "loadsWithAnySkipOrRepeat": "2.5 %",
+    "worstLoadSkips": 199
+   },
+   "nominal grid0": {
+    "loads": 1000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 0,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "0.0 %",
+    "worstLoadSkips": 0
+   },
+   "nominal grid30": {
+    "loads": 10000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 0,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "0.0 %",
+    "worstLoadSkips": 0
+   }
+  },
+  "jitter20ms": {
+   "orig grid0": {
+    "loads": 1000,
+    "firesPer60s": 59.37,
+    "skipsPer10min": 5.936,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "100.0 %",
+    "worstLoadSkips": 7
+   },
+   "orig grid30": {
+    "loads": 10000,
+    "firesPer60s": 58.8,
+    "skipsPer10min": 11.717,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "100.0 %",
+    "worstLoadSkips": 12
+   },
+   "chain grid0": {
+    "loads": 1000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 1.992,
+    "repeatsPer10min": 1.994,
+    "loadsWithAnySkipOrRepeat": "1.9 %",
+    "worstLoadSkips": 154
+   },
+   "chain grid30": {
+    "loads": 10000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 4.155,
+    "repeatsPer10min": 4.14,
+    "loadsWithAnySkipOrRepeat": "4.2 %",
+    "worstLoadSkips": 198
+   },
+   "nominal grid0": {
+    "loads": 1000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 0,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "0.0 %",
+    "worstLoadSkips": 0
+   },
+   "nominal grid30": {
+    "loads": 10000,
+    "firesPer60s": 59.9,
+    "skipsPer10min": 0,
+    "repeatsPer10min": 0,
+    "loadsWithAnySkipOrRepeat": "0.0 %",
+    "worstLoadSkips": 0
+   }
+  },
+  "note": "'chain' = spec 3.3.1 as first written (tick writes Date.now()); 'nominal' = the shipped form (tick writes T0 + k s)"
+ }
+}

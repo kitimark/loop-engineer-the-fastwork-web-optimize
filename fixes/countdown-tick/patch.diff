@@ -1,0 +1,40 @@
+# fastwork mirror fix: countdown-tick
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply countdown-tick
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3933,11 +3933,29 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    let t = window.setInterval(e, 1e3);
++    /*countdown-tick: the 1 s tick as a timeout chain on the interval's own phase (__ctT0 = when the interval would have
++    started): fire k is aimed at __ctT0 + k s and writes that time, so the digits are the original's at second k (as at
++    Fair) however late the fire lands. A repeating interval re-arms at its actual fire time + 1 s (WebKit), so under a
++    timer grid (30 ms when thermally mitigated) it drifts ~20 ms/s and skips a shown second about every 50 s; the chain
++    re-aims every fire and never drifts. Writing the aimed time, not Date.now(), keeps a late fire from crossing a
++    second boundary. Same one state write per second, same expiry behaviour (rD clamps at 0, the tick goes on)*/
++    let __ctT0 = Date.now(),
++      __ctK = 1,
++      t = 0,
++      __ctArm = () => {
++        t = window.setTimeout(__ctFire, __ctT0 + __ctK * 1e3 - Date.now());
++      },
++      __ctFire = () => {
++        /*the second this fire is for: k as aimed (also when it fires a little early), or the clock's own second when
++        the fire is over 1 s late (throttled background tab) or the clock was set back*/
++        let k = Math.floor((Date.now() - __ctT0) / 1e3);
++        (k === __ctK - 1 && (k = __ctK), (__ctK = k + 1), __ctArm(), z(c, __ctT0 + k * 1e3, !0));
++      };
++    __ctArm();
+     return (
+       document.addEventListener(`visibilitychange`, e),
+       () => {
+-        (window.clearInterval(t), document.removeEventListener(`visibilitychange`, e));
++        (window.clearTimeout(t), document.removeEventListener(`visibilitychange`, e));
+       }
+     );
+   });

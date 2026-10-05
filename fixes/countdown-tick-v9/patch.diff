@@ -1,0 +1,60 @@
+# fastwork mirror fix: countdown-tick-v9
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/v9-best/overlay: apply v9-best first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply countdown-tick-v9 --on v9-best
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js de237379b556dc898bcabb49f7940c7d5b58c6f920d9089f0c1752bf5c08cd5d
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4511,9 +4511,25 @@
+     __cdTimer = 0,
+     __cdWait = 0,
+     __cdSlow = 0,
++    /*countdown-tick: the 1 s tick as a timeout chain on the interval's phase: fire k is aimed at __cdT0 + k s (__cdK)
++    and writes that time, so the digits are the original's at second k (as at Fair) however late the fire lands. A
++    repeating interval re-arms at its actual fire time + 1 s (WebKit), so under a timer grid (30 ms when thermally
++    mitigated) it drifts ~20 ms/s and skips a shown second about every 50 s; the chain re-aims every fire and never
++    drifts. Writing the aimed time, not Date.now(), keeps a late fire from crossing a second boundary, and is the time
++    __cdRead and u already use. Same one state write per second, same expiry behaviour (rD clamps at 0, ticks go on)*/
++    __cdK = 0,
++    __cdArm = () => {
++      __cdTimer = window.setTimeout(__cdFire, __cdT0 + __cdK * 1e3 - Date.now());
++    },
++    __cdFire = () => {
++      /*the second this fire is for: k as aimed (also when it fires a little early), or the clock's own second when the
++      fire is over 1 s late (throttled background tab) or the clock was set back. Arm first, then write*/
++      let k = Math.floor((Date.now() - __cdT0) / 1e3);
++      (k === __cdK - 1 && (k = __cdK), (__cdK = k + 1), __cdArm(), z(c, __cdT0 + k * 1e3, !0));
++    },
+     __cdStop = () => {
+       (window.clearTimeout(__cdWait),
+-        window.clearInterval(__cdTimer),
++        window.clearTimeout(__cdTimer),
+         window.clearInterval(__cdSlow),
+         (__cdWait = __cdTimer = __cdSlow = 0));
+     },
+@@ -4531,11 +4547,12 @@
+       if (!__cdTick || __cdWait || __cdTimer) return;
+       (window.clearInterval(__cdSlow), (__cdSlow = 0));
+       let n = Date.now();
++      __cdK = Math.floor((n - __cdT0) / 1e3) + 1;
+       __cdWait = window.setTimeout(
+         () => {
+-          ((__cdWait = 0), __cdTick(), (__cdTimer = window.setInterval(__cdTick, 1e3)));
++          ((__cdWait = 0), __cdFire());
+         },
+-        __cdT0 + (Math.floor((n - __cdT0) / 1e3) + 1) * 1e3 - n,
++        __cdT0 + __cdK * 1e3 - n,
+       );
+     },
+     /*countdown-faces: while live the clock reads the time of the original's last fire if the stored time is older (it
+@@ -4559,7 +4576,7 @@
+       z(c, Date.now(), !0);
+     };
+     e();
+-    ((__cdT0 = Date.now()), (__cdTick = e), s(__cdLive) ? (__cdTimer = window.setInterval(e, 1e3)) : __cdPause());
++    ((__cdT0 = Date.now()), (__cdTick = e), s(__cdLive) ? ((__cdK = 1), __cdArm()) : __cdPause());
+     let /*countdown-idle-raf: digits spring only while the countdown is on screen*/
+       __cdIo =
+         typeof IntersectionObserver == `function`
