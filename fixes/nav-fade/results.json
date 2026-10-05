@@ -418,8 +418,8 @@
     "P1": "CONFIRMED: WebKit CSSProperties.json (safari-7622.2.11.14-branch, via gh) accelerates opacity/filter/backdrop-filter/transform/translate/scale/rotate, not mask-position or clip-path",
     "P2": "UNRESOLVED: Simulator counts stand in for the phone; decisive check = phone no-worse check P-139 (G, xcode-serious)",
     "P3": "OBSERVED probe artifact: t=800 frozen frame of the translate WA past its end in WebKit; not used",
-    "P4": "closed at n=6: topIn recalcs per frame within noise (C 1.39-2.25 vs 1.51-2.18); the n=2 rise did not hold",
-    "P5": "closed at n=6: layout per frame within noise (end C 1.53-1.84 vs 1.57-1.88; topIn C 1.17-1.64 vs 1.24-1.74); the n=2 rise did not hold; Chrome topIn layouts n=2 68-69 vs 62-65 not re-measured"
+    "P4": "Simulator part within noise at n=6 (C 1.39-2.25 vs 1.51-2.18 per frame); Chrome part (topIn recalcs 181/250 vs 176/176, n=2) UNRESOLVED, not re-measured",
+    "P5": "Simulator part within noise at n=6 (end C 1.53-1.84 vs 1.57-1.88; topIn C 1.17-1.64 vs 1.24-1.74 per frame); Chrome part (topIn layouts 68-69 vs 62-65, n=2) UNRESOLVED, not re-measured"
   },
   "landingBasis": "less-work rule (memory less-work-landing-rule): cost-card counts plus a short phone no-worse check, G driver, xcode-serious, ticket P-139",
   "batch9": {
@@ -444,6 +444,7 @@
       "R5_lessWork": "PASS",
       "note": "INCOMPLETE (n=2): the claims stay as committed until batch 9"
     },
-    "failedNotPooled": "session e8c of the first batch9.sh attempt: Safari launch timeout (I-208), no counts; that attempt was stopped and replaced by the committed batch9.sh before any data"
+    "failedNotPooled": "session e8c of the first batch9.sh attempt (before the rule was committed in 32e5172f): Safari launch timeout (I-208), no counts; that attempt was stopped and replaced by the committed batch9.sh before any data; not in the pool",
+    "resultRead": "ops-reader-navfade-b9 15:0xZ: CONFIRMED with notes N1-N6 (N1 P4/P5 wording, N3 excluded-attempt wording fixed here; N2 informed; N4 no host clause, dropping t9d or e9d changes no verdict; N5 no probe sha in records; N6 rebase before landing)"
   }
 }

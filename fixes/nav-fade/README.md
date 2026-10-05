@@ -220,7 +220,8 @@ within noise, R5 PASS (topIn W/frame 7.36-8.82 vs 9.44-9.62; end median 7.04 vs 
 Runs: `batch9.sh` (5f86f5e7f4f7) did sessions c and d (t9c, e9c, t9d, e9d), then hit the 2 h background-command limit at
 14:01Z while queued for session e; `batch9-rest.sh` ran sessions e and f with the same commands (t9e, e9e, t9f, e9f).
 All 8 sessions exit 0, both arms, 0 errors, 0 failed. (One earlier attempt of the first batch9.sh, session e8c, failed at
-the Safari launch, I-208, before any counts; it is not part of the pool and was not replaced, the rule names t9c-t9f /
+the Safari launch, I-208, before any counts; that attempt ran before the rule was committed (32e5172f) and was
+stopped and replaced by the committed batch9.sh before any data; it is not part of the pool, the rule names t9c-t9f /
 e9c-e9f.) Pooled with batch 8: n=6 per arm and scene. Simulator background per session: mean 8-73 % of a core, load1
 max 17-191 (both arms of a session share it).
 
@@ -236,8 +237,10 @@ max 17-191 (both arms of a session share it).
 Verdicts (complete, n=6):
 - **R1 Simulator topIn Paint: CONFIRMED** (393-438 vs 564-610, no overlap). The Simulator Paint claim stands.
 - R2 end Paint: within noise (no claim).
-- R3 (P4) topIn recalcs per frame: within noise. The n=2 rise did not hold; P4 closes as "no rise at n=6".
-- R4 (P5) layout per frame: within noise at the end and at topIn. The n=2 rise did not hold; P5 closes as "no rise at n=6".
+- R3 (P4) topIn recalcs per frame: within noise. The Simulator part is within noise at n=6 (the n=2 rise did not
+  hold); the Chrome part (topIn recalcs 181/250 vs 176/176, n=2) is outside this rule and stays UNRESOLVED, not re-measured.
+- R4 (P5) layout per frame: within noise at the end and at topIn. The Simulator part is within noise at n=6; the Chrome
+  part (topIn layouts 68-69 vs 62-65, n=2) is outside this rule and stays UNRESOLVED, not re-measured.
 - **R5 less-work: PASS** (topIn W per frame 7.36-8.82 vs 9.21-10.89, no overlap; end median 7.03 vs 7.84). Note
   (mgmt-ops-10, 32e5172f conditions check): R5's pass line was written after batch 8's n=2 values were seen, so it is
   marked "informed".
@@ -274,3 +277,9 @@ block. Its windows are read with `phone/nf-read.mjs` (`--selftest` 9/9 ok) from 
 
 It counts dt > 50 and > 34 with the ±4 ms twins and the near bands. In `compare` mode it reports per-arm ranges and
 "no worse" unless V's min is above C's max over 3 or more runs per arm.
+
+Result read (ops-reader-navfade-b9, 2026-10-05 15:0xZ): CONFIRMED with notes. Its re-run of simcount.mjs gives the
+same numbers; the served pins match in all 24 arm-runs. Notes kept here: R1-R5 were written after batch 8 (2 of the 6
+runs) was seen, and the 4 fresh runs alone give the same R1 and R5 (OBSERVED). The rule has no host clause: t9d and e9d
+ran with a busy Simulator, and dropping either changes no verdict (OBSERVED). The records carry no probe sha;
+motion.mjs's mtime predates batch 8.
