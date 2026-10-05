@@ -462,6 +462,38 @@ signature. No run, dry run included, before the signature.
 - **Output.** `out/end-bg/simp144/<hold>/` and `out/end-bg/dry144/` (ignored). Committed after the last hold:
   `sim/p144-check-<hold>.json`, `sim/p144-score.json`.
 
+### P-144 addendum rev 1.1 (ops-reader-P144 pre-data read, 15:31Z: PASS with notes N1-N7; before any data)
+
+Text only: no pinned file changes, so the pins above stand. Where this addendum and the card differ, the addendum holds.
+
+- **N1, plan bound to the dry run.** The plan is the one written in `out/end-bg/dry144/dry.json` (`plan`: E or F),
+  committed with the results as `sim/p144-dry.json`. Only that plan's full hold set runs and is scored (E1-E3, or F1-F6);
+  plans never mix; no counted hold runs before `dry.json` exists with DRY PASS. The score command names exactly that
+  plan's holds.
+- **N2, dropped steps.** A hold in which the budget stop dropped any step is HOLD-FAIL: not read, the remaining holds
+  stop, to the lead (the card's "scored against one C" and "drift n/a" cases no longer arise).
+- **N3, precedence cases the card left open:**
+  - (a) DRY FAIL or a failed design budget: P1 a miss, P2-P12 insufficient; no data.
+  - (b) Plan F picked: P1 a miss; the card continues.
+  - (c) The card stops on a HOLD-FAIL (n, or a dropped step per N2) or a second VOID-HOST: the card is INCOMPLETE. P2 is
+    a miss for an n failure, P12 a miss for a second VOID-HOST; everything else insufficient; earlier holds are not
+    read alone.
+  - (d) No hold usable only because of drift (every non-VOID hold failing nothing else): the status is **VOID**, not the
+    CONTROL-FAILED that `cardReading` prints. P4 is scored from each hold's own control, P5 a miss, P6-P8 insufficient.
+  - (e) Status READ with reading INSUFFICIENT: P5 a miss, P6-P8 insufficient.
+- **N4, what informed the card (disclosure).** Before M1 was made primary, M2 the fallback and P4 set at 45 %, I read one
+  Simulator Timeline file with the scratch scripts `out/end-bg/sim/tltypes.mjs` and `tlnest.mjs` (about 15:12Z):
+  toolbar-resize's P-133 capture `simp133/A1/tl-C-H1.json` (fix-toolbar-resize's worktree; the hero zone, v9-final + 7d,
+  no end-bg arm). In that whole run Paint records summed to about 0.28 s against about 13 s of Composite, and every Paint
+  record sat inside a Composite. It is not an end-screen capture and not C or nob of this card, but it informed the M1/M2
+  choice and P4. F-290 (the Chrome inventory) informed the title probe and tit's selectors.
+- **N5, text.** `chooseMetric`'s comment says "every hold that replicates on M1"; the code and the card use every hold.
+  The card wins.
+- **N6, what tit removes.** tit and nob remove the moving gradient only. The `::after` box, its animation, the span's
+  text mask and the organized title's sweep stay in every arm. A tit call is about the titles' gradient paint, not about
+  the sweep's layer or animation cost.
+- **N7, base.** The branch is rebased on main `598d9efa` (docs only after `d9dabfc7`: the P-144 reservation).
+
 ## 9. Pending
 
 - PR-025: the user's pick, then the phone test of slow frames.
