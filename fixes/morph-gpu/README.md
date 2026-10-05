@@ -1372,11 +1372,16 @@ ATTRIBUTION morph-first-open · cluster: menu open 1 per page load (page end) ·
   | Chrome decodes an image at its first raster, and checker-images async ones (CheckerImageTracker) | OBSERVED (our trace) | cc/tiles/checker_image_tracker.cc, to verify | the mechanism in Chrome |
   | img.decode() fills the same cache the raster uses and keeps it until the open (Chrome, WebKit iOS 26.6.1) | UNRESOLVED | decisive check = arm P's mechanism check | the whole fix |
   | WebKit's cold first-open rects are the panel's first raster incl. image decode | OBSERVED (Simulator counts) | Simulator Timeline with decode records | the phone relevance |
-6 lead: –
+6 lead: dropped, not signed (2026-10-05). Reason: in Chrome the cost runs off the main thread, and the phone
+  (P-092/P-098) shows no first-open penalty.
 Owner's view: a weak candidate. In Chrome the cost is off the main thread, and the phone's first-frame data (C 34.5
 vs 55 ms) does not show a first-open penalty. I would run arm P's Chrome counts check only if the lead wants the
 first open closed; otherwise record and park.
 ```
+
+**Status: located, closed with no fix.** Reopen only if a phone run shows a first-open penalty. The card is
+withdrawn (mgmt-ops-10 skips the pre-data read), and no ablation was run. F-260, the runway moving the GA 90 %
+scroll event into the open, stays as a known vendor difference for P-122 (int-v8).
 
 ## Risks, conflicts, follow-ups
 
