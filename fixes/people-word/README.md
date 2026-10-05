@@ -194,3 +194,10 @@ passes for both option files.
   the same `morph-scroll-v9try/patch.diff` (blob c5365637, commit ada7f461); the served Try-it JS files A vs B differ
   in 7 hunks, all inside lines 7001-7043 (`WD`'s effect), 11 lines removed (baseline lines of that effect), 41 (a) /
   43 (a-phone) added; nothing of A is missing from B. Noted in I-206 and in PR-024 rev 2 (note only, no content change).
+- **Rev 3** (2026-10-05, after the user's changes-requested at 11:08Z): `proposal revise` with the user's note quoted
+  in full and answered point by point (see "The user's change request" above), the corrected fade duration, new stills
+  (`out/people-word/r3/shots/crop/`, 0.49 / 0.9 / 1.2 / 3.0 s after `is-visible`) and the rev 3 gains. Try-it: A =
+  the v9-final build (JS `1b2eecc66011`), option a's B JS `bf75ce87958c`, option a-phone's B JS `0c1845cb72c0`, CSS
+  `e1359ab9994a` on all three, fetched from the Try-it host after the revise; A vs each B differs only in `WD`'s effect
+  (hunks inside lines 7001-7083, 16 lines removed, all baseline lines of that effect). `proposal revise` printed the
+  same "B does not carry all of A's changes (4 lines)" warning as on rev 2: the I-206 false positive, noted there.
