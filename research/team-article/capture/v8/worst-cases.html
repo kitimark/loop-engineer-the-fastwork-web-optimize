@@ -1,0 +1,56 @@
+<!-- worst-cases: written by art-worst-cases for the article's "Before and after" section (T-170 #75/#76), 2026-10-05.
+     Clips: research/team-article/capture/before-after.mjs --scenes fling,load --runs 3 --build v8-best (baseline
+     b1789284481295-4ad4a84a vs fixes/v8-best/patch.diff, JS 3e3e94cb6e9f), counts in worst-summary.json.
+     Phone rows: our own records, sources in the last column. Every number is OBSERVED in our setup. -->
+<style>
+.wc { display: grid; gap: 1rem; }
+.wc-scroll { overflow-x: auto; }
+.wc table { border-collapse: collapse; width: 100%; min-width: 46rem; font-size: 0.86rem; }
+.wc th, .wc td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--grid); }
+.wc th { font: 600 0.75rem/1.4 var(--mono); letter-spacing: 0.04em; color: var(--ink-soft); }
+.wc td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wc td.src { font: 400 0.75rem/1.4 var(--mono); color: var(--ink-soft); }
+.wc .tag { font: 600 0.7rem/1 var(--mono); color: var(--ink-soft); letter-spacing: 0.06em; }
+.ba { display: grid; gap: 1.25rem; }
+.ba-scene { display: grid; gap: 0.45rem; }
+.ba-scene video { width: 100%; max-width: 35rem; height: auto; display: block; margin-inline: auto; border: 1px solid var(--grid); border-radius: 6px; background: #1a211e; }
+.ba-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.88rem; color: var(--ink-soft); }
+</style>
+<section class="wide surface wc" aria-labelledby="wc-title">
+  <p class="label" id="wc-title">Worst cases on the original</p>
+  <p>You asked where the original page lagged most. We went back through every recording we have of the original. The ranking is by the longest frames and by how many slow frames came with them. Most of the worst cases are on the iPhone, and several need a finger or a hot phone, so we can only describe them. Chrome can replay two of them: fast flicks, and flicks the moment the page has loaded. Those two are the clips below. All numbers are OBSERVED in our setup. A frame over 50 ms is one the eye can catch as a stutter.</p>
+  <div class="wc-scroll">
+  <table>
+    <thead><tr><th>#</th><th>What you do, and where</th><th>Device and input</th><th>Worst frame</th><th>Frames over 50 ms</th><th>v8 there</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Keep pushing up at the end of the page, so the menu opens (the morph)</td><td>iPhone, finger, cool phone; iPhone, robot driver at Serious heat</td><td class="n">218 ms</td><td class="n">75 in one finger pass; 21 per robot run</td><td>Robot driver: 0 in 4 of 4 runs (v8 vs v7). An earlier build took the original's 21 to 0.5.</td><td class="src">fixes/iphone-wave2/README.md:136-137; fixes/morph-inherit/README.md:335; fixes/v8-best/README.md:623-646</td></tr>
+      <tr><td class="n">2</td><td>Scroll through the middle, about 1,970 px down, where the dark section comes in</td><td>iPhone, finger; iPhone, scripted scroll</td><td class="n">152 ms</td><td class="n">18 in the middle in one finger pass; one 112-146 ms frame in every scripted run</td><td>v8 has the fix (F3) that alone kept that spot under 34 ms in 4 of 4 runs</td><td class="src">fixes/iphone-wave2/README.md:34-60, 136, 488-497</td></tr>
+      <tr><td class="n">3</td><td>Fast flicks down through the top card and back up, twice</td><td>iPhone, robot flicks, Serious heat (39.6-41 °C)</td><td class="n">100 ms</td><td class="n">18-28 per run (median 21)</td><td>7-9 per run, in a later block (not side by side)</td><td class="src">T-113 robot-flick records 2026-10-04, scored by frames that moved; fixes/v8-best/README.md:643</td></tr>
+      <tr><td class="n">4</td><td>Fast flicks the moment the page has loaded</td><td>iPhone, robot flicks, Serious heat</td><td class="n">124 ms</td><td class="n">5-7 per run (median 6)</td><td>3 per run, in a later block (not side by side)</td><td class="src">T-113 records; fixes/v8-best/README.md:326</td></tr>
+      <tr><td class="n">5</td><td>Scroll past the section switches, about 2,700-3,000 px down</td><td>iPhone, scripted scroll, first load</td><td class="n">129 ms</td><td class="n">4 frames of 111-129 ms in 1 of 3 runs</td><td>Style work at the switch: 18-25 ms → 0.4-0.5 ms (iPhone Timeline)</td><td class="src">fixes/iphone-wave2/README.md:63-64; fixes/PROGRESS.json (v3)</td></tr>
+      <tr><td class="n">6</td><td>Scroll out of the top card</td><td>iPhone, finger</td><td class="n">107 ms</td><td class="n">12 in the first 900 px of one pass</td><td>The top-card change (v6) took frames over 34 ms from 27 to 12 per run</td><td class="src">fixes/iphone-wave2/README.md:136; this article, V6</td></tr>
+      <tr><td class="n">7</td><td>A plain scripted scroll on a hot phone</td><td>iPhone, scripted scroll, 42 °C (Serious)</td><td class="n">195 ms</td><td class="n">11-16 per run</td><td>Not tested hot on the phone yet</td><td class="src">nav-morph P-091 heat runs early-w2, early-w6</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Left out: runs where the phone had already slowed itself to 30 frames a second from heat. One of them had a 1.3 s frame. That shows a throttled phone, not the page.</p>
+  <p class="note"><span class="tag">IPHONE, MEASURED</span> Safari's bottom bar shrinking and growing under a finger is the one case we can't replay at all. In our robot-flick runs the slowest frames fall while the bar moves. The page then lays itself out several times in one frame. Why is UNRESOLVED, and v8 has no fix for it yet. Chrome has no such bar, and a scripted scroll never moves it.</p>
+  <p class="note">The phone numbers for v8 in rows 3 and 4 come from a later test against v7, on another day. They are not a side-by-side test against the original. A full phone timing run of v8 against the original is still on the list.</p>
+</section>
+<figure class="wide surface shot ba" aria-labelledby="wc-cap">
+  <p class="label">Worst cases in Chrome: the same fast flicks, original page vs v8</p>
+  <div class="ba-scene">
+    <div class="res-head"><span>Fast flicks: 3 s at rest at the top, then fast flicks down past 1,800 px and back to the top, twice</span><span class="v">original · v8</span></div>
+    <video src="media/fling.mp4" width="448" height="538" autoplay muted loop playsinline controls preload="metadata" aria-label="Side by side: fast flicks down the page and back to the top, twice, original page on the left, v8 on the right, with each run's frame times underneath"></video>
+    <div class="res-nums">Shown runs, original → v8: frames of 54 ms or more 4 → 2, of 37.5 ms or more 15 → 9, longest 109 → 59 ms. All 3 runs, 54 ms or more: 6, 3, 4 → 6, 2, 2; 37.5 ms or more: 20, 14, 15 → 22, 9, 7</div>
+    <p class="note">No clear difference in Chrome. The runs overlap: v8's first run had as many slow frames as the original's worst. On the iPhone the same flicks differ much more (row 3).</p>
+  </div>
+  <div class="ba-scene">
+    <div class="res-head"><span>Right after load: a reload, then three fast flicks about 0.3 s after the page is ready, with no rest</span><span class="v">original · v8</span></div>
+    <video src="media/load.mp4" width="448" height="538" autoplay muted loop playsinline controls preload="metadata" aria-label="Side by side: a reload, then three fast flicks right away that carry the page to the bottom, original page on the left, v8 on the right, with each run's frame times underneath"></video>
+    <div class="res-nums">Shown runs, original → v8: frames of 54 ms or more 14 → 3, of 37.5 ms or more 26 → 8, longest 125 → 116 ms. All 3 runs, 54 ms or more: 9, 14, 17 → 9, 3, 2; 37.5 ms or more: 23, 26, 36 → 16, 8, 8</div>
+    <p class="note">Here v8 had fewer slow frames in two of three runs. The first run was equal at 9. Three flicks carry the page all the way to the bottom in about 3 s, so this clip covers the whole page while it is still loading.</p>
+  </div>
+  <div class="ba-legend" aria-hidden="true"><span><i class="swatch" style="background:#6b7d75"></i>frame on time</span><span><i class="swatch" style="background:#e2b84a"></i>37.5 ms or more (k ≥ 5)</span><span><i class="swatch" style="background:#ff6b4a"></i>54 ms or more (k ≥ 7)</span><span>white line: playhead</span></div>
+  <figcaption id="wc-cap">The input is the phone robot's own flick, chosen before we captured anything: a 560 px touch swipe in 0.14 s, after which the page keeps gliding. The two scripts are the phone's flick tests, replayed in Chrome. Chrome glides farther than the iPhone: one flick carries the page about 2,900 px. The setting is the one we always use: Chrome on the Mac, the iPhone's screen size with touch, the main thread slowed 6×. In the load clip the page also loads with the main thread slowed. Each side ran 3 times, and each clip shows that side's middle run; both clocks start at the first flick. It is an illustration, not a measurement. Chrome can't show the bottom bar, the heat, a real finger or costs that only Safari has. Captured 2026-10-05, baseline snapshot b1789284481295-4ad4a84a.</figcaption>
+</figure>

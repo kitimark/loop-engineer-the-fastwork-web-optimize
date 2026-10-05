@@ -1,0 +1,370 @@
+{
+ "at": "2026-10-05T03:28:01.971Z",
+ "owner": "art-worst-cases",
+ "chrome": "Chrome/154.0.8037.98",
+ "viewport": {
+  "width": 430,
+  "height": 932,
+  "deviceScaleFactor": 3,
+  "mobile": true,
+  "screenWidth": 430,
+  "screenHeight": 932
+ },
+ "cpu": 6,
+ "latency": 150,
+ "fps": 30,
+ "panelWidth": 216,
+ "build": {
+  "name": "v8-best",
+  "label": "v8",
+  "source": "fixes/v8-best/patch.diff",
+  "patchSha12": "7df5f08e036e",
+  "files": [
+   {
+    "path": "/_app/immutable/assets/2.gBuqKVzi.css",
+    "sha12": "f836404b3728"
+   },
+   {
+    "path": "/_app/immutable/nodes/2.DyWL8TcE.js",
+    "sha12": "3e3e94cb6e9f"
+   }
+  ]
+ },
+ "baselineTree": "site-pretty",
+ "baseline": {
+  "snapshot": "b1789284481295-4ad4a84a",
+  "state": "ok"
+ },
+ "load1Start": 6,
+ "scenes": {
+  "fling": {
+   "title": "Fast flicks at the top: 3 s at rest, then fast flicks down past 1,800 px and back to the top, twice",
+   "orders": [
+    [
+     "before",
+     "after"
+    ],
+    [
+     "after",
+     "before"
+    ],
+    [
+     "before",
+     "after"
+    ]
+   ],
+   "runs": 3,
+   "sides": {
+    "before": {
+     "startY": 0,
+     "t0": 1791171020399.5,
+     "tScrollEnd": 1791171041038.1,
+     "tEnd": 1791171041851.2,
+     "ticks": 5,
+     "endY": 0,
+     "frames": 1917,
+     "morphState": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-hero-pill",
+     "strokes": [
+      {
+       "dir": "down",
+       "y0": 0,
+       "callMs": 2375
+      },
+      {
+       "dir": "up",
+       "y0": 2897,
+       "callMs": 2334
+      },
+      {
+       "dir": "up",
+       "y0": 3.5,
+       "callMs": 655
+      },
+      {
+       "dir": "down",
+       "y0": 0,
+       "callMs": 2317
+      },
+      {
+       "dir": "up",
+       "y0": 2895,
+       "callMs": 2283
+      }
+     ],
+     "run": 3,
+     "frameDir": "frames/fling-before-run3",
+     "counts": {
+      "frames": 1870,
+      "k5": 15,
+      "k7": 4,
+      "maxMs": 109
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 1834,
+       "k5": 20,
+       "k7": 6,
+       "maxMs": 100
+      },
+      {
+       "run": 2,
+       "frames": 1868,
+       "k5": 14,
+       "k7": 3,
+       "maxMs": 91
+      },
+      {
+       "run": 3,
+       "frames": 1870,
+       "k5": 15,
+       "k7": 4,
+       "maxMs": 109
+      }
+     ],
+     "framesDeleted": true,
+     "rafFrames": 1942
+    },
+    "after": {
+     "startY": 0,
+     "t0": 1791170961681.3,
+     "tScrollEnd": 1791170984160.5999,
+     "tEnd": 1791170984975.7,
+     "ticks": 6,
+     "endY": 0,
+     "frames": 2014,
+     "morphState": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-hero-pill",
+     "strokes": [
+      {
+       "dir": "down",
+       "y0": 0,
+       "callMs": 2350
+      },
+      {
+       "dir": "up",
+       "y0": 2913,
+       "callMs": 2321
+      },
+      {
+       "dir": "up",
+       "y0": 3,
+       "callMs": 668
+      },
+      {
+       "dir": "down",
+       "y0": 0,
+       "callMs": 2313
+      },
+      {
+       "dir": "up",
+       "y0": 2912,
+       "callMs": 2309
+      },
+      {
+       "dir": "up",
+       "y0": 18.5,
+       "callMs": 677
+      }
+     ],
+     "run": 2,
+     "frameDir": "frames/fling-after-run2",
+     "counts": {
+      "frames": 2170,
+      "k5": 9,
+      "k7": 2,
+      "maxMs": 59
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 1604,
+       "k5": 22,
+       "k7": 6,
+       "maxMs": 91
+      },
+      {
+       "run": 2,
+       "frames": 2170,
+       "k5": 9,
+       "k7": 2,
+       "maxMs": 59
+      },
+      {
+       "run": 3,
+       "frames": 1786,
+       "k5": 7,
+       "k7": 2,
+       "maxMs": 75
+      }
+     ],
+     "framesDeleted": true,
+     "rafFrames": 2234
+    }
+   }
+  },
+  "load": {
+   "title": "Right after load: a reload, then three fast flicks 0.3 s after the page is ready, with no rest",
+   "orders": [
+    [
+     "after",
+     "before"
+    ],
+    [
+     "before",
+     "after"
+    ],
+    [
+     "after",
+     "before"
+    ]
+   ],
+   "runs": 3,
+   "sides": {
+    "before": {
+     "startY": 0,
+     "tReady": 1791171106603.9001,
+     "t0": 1791171106887.3,
+     "tScrollEnd": 1791171110747.8,
+     "tEnd": 1791171112253.7002,
+     "ticks": 3,
+     "endY": 5345,
+     "frames": 502,
+     "morphState": null,
+     "strokes": [
+      {
+       "dir": "down",
+       "y0": 0,
+       "callMs": 1115
+      },
+      {
+       "dir": "down",
+       "y0": 3714.5,
+       "callMs": 970
+      },
+      {
+       "dir": "down",
+       "y0": 5345,
+       "callMs": 645
+      }
+     ],
+     "loadEventEndMs": 1705,
+     "run": 2,
+     "frameDir": "frames/load-before-run2",
+     "counts": {
+      "frames": 355,
+      "k5": 26,
+      "k7": 14,
+      "maxMs": 125
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 419,
+       "k5": 23,
+       "k7": 9,
+       "maxMs": 92
+      },
+      {
+       "run": 2,
+       "frames": 355,
+       "k5": 26,
+       "k7": 14,
+       "maxMs": 125
+      },
+      {
+       "run": 3,
+       "frames": 349,
+       "k5": 36,
+       "k7": 17,
+       "maxMs": 158
+      }
+     ],
+     "framesDeleted": true,
+     "rafFrames": 389
+    },
+    "after": {
+     "startY": 0,
+     "tReady": 1791171119983.6,
+     "t0": 1791171120061.9001,
+     "tScrollEnd": 1791171125069.9001,
+     "tEnd": 1791171126571.3,
+     "ticks": 3,
+     "endY": 5345,
+     "frames": 550,
+     "morphState": null,
+     "strokes": [
+      {
+       "dir": "down",
+       "y0": 0,
+       "callMs": 1556
+      },
+      {
+       "dir": "down",
+       "y0": 2785.5,
+       "callMs": 1728
+      },
+      {
+       "dir": "down",
+       "y0": 5345,
+       "callMs": 672
+      }
+     ],
+     "loadEventEndMs": 1721,
+     "run": 2,
+     "frameDir": "frames/load-after-run2",
+     "counts": {
+      "frames": 509,
+      "k5": 8,
+      "k7": 3,
+      "maxMs": 116
+     },
+     "allRuns": [
+      {
+       "run": 1,
+       "frames": 437,
+       "k5": 16,
+       "k7": 9,
+       "maxMs": 108
+      },
+      {
+       "run": 2,
+       "frames": 509,
+       "k5": 8,
+       "k7": 3,
+       "maxMs": 116
+      },
+      {
+       "run": 3,
+       "frames": 574,
+       "k5": 8,
+       "k7": 2,
+       "maxMs": 92
+      }
+     ],
+     "framesDeleted": true,
+     "rafFrames": 518
+    }
+   }
+  }
+ },
+ "load1End": 6.8,
+ "encoded": {
+  "fling": {
+   "mp4": "fling.mp4",
+   "mp4Bytes": 756986,
+   "crf": 27,
+   "seconds": 23.6,
+   "width": 448,
+   "height": 538
+  },
+  "load": {
+   "mp4": "load.mp4",
+   "mp4Bytes": 326519,
+   "crf": 27,
+   "seconds": 6.8,
+   "width": 448,
+   "height": 538
+  }
+ },
+ "input": "flick = CDP Input.synthesizeScrollGesture, touch, 560 px at 4,000 px/s, preventFling false; Chrome ports of fixes/v8-best/phone/g/flick-hero-v1.json (fling) and flick-fresh-v1.json (load)"
+}

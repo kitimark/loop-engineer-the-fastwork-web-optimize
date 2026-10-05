@@ -60,6 +60,17 @@ Scenes (`--scenes`, default `hero,switch,end`; `full` is one top-to-menu run):
 | hero | top | 2 s at rest, then a scroll to 1,500 px |
 | switch | 1,900 px | a scroll to 3,400 px, through the section switch at about 2,600 px |
 | end | 1,100 px above the bottom | a scroll to the bottom, then 4 touch drags (the menu morph) |
+| fling | top | 3 s at rest, then fast flicks down until past 1,800 px, flicks back up to the top, twice (`fixes/v8-best/phone/g/flick-hero-v1.json`) |
+| load | top | a warm load, then CPU 6x, a reload, and 3 fast flicks 350 ms apart from about 0.3 s after DOMContentLoaded (`flick-fresh-v1.json`) |
+
+`fling` and `load` (T-170 #75/#76, worst cases) run only when named in `--scenes`. They port the phone robot's own
+flick scripts, chosen before any capture and not tuned on the result. A flick is the scripts' stroke: a 560 px touch
+swipe in 140 ms (`Input.synthesizeScrollGesture`, touch, 4,000 px/s, `preventFling: false`, so the page keeps
+gliding), sent from Node with scrollY polled between flicks. Down flicks are 350 ms apart, up flicks 1,200 ms. CDP's
+swipe moves at a constant speed, while the phone's speeds up to its lift-off. Chrome's glide goes farther: one flick
+carries the page about 2,900 px, and the call returns when the glide ends (2.3 s). In `load` the page also loads under
+the 6x throttle, the rAF logger is injected before the document's first script, and the clip starts at the first
+flick. `capture.json` keeps every flick (direction, scrollY before, call time).
 
 Each side of each scene gets a fresh isolated context, a load and a settle. The page is then moved to the
 scene's start in 300 px steps (unthrottled), throttled, and recorded.
@@ -106,8 +117,15 @@ Encoding:
 | dir | build | captured | shown-run counts, frames of 54 ms or more (original → build), all 3 runs |
 |---|---|---|---|
 | `v8/` | `fixes/v8-best` (JS 3e3e94cb6e9f, CSS f836404b3728), baseline b1789284481295-4ad4a84a | 2026-10-05, Chrome, 3 runs | hero 2 → 0 (3,1,2 → 0,0,4); switch 2 → 1 (2,2,2 → 1,1,1); end 0 → 1 (1,0,0 → 1,1,1) |
+| `v8/` worst cases | the same | 2026-10-05 03:28Z, Chrome, 3 runs | fling 4 → 2 (6,3,4 → 6,2,2: runs overlap, no clear difference); load 14 → 3 (9,14,17 → 9,3,2) |
 
 `v8/` holds the three MP4s (`media/`, 0.6 MB together), both snippets (the artifact one carries the MP4s as data:
 URIs, 0.85 MB, and a `PAGES_URL` placeholder in its fallback line) and `summary.json` (every run's counts). In
-Chrome the end scene shows no gain. The article's end-of-page result (2 → 0) is an iPhone number, and Chrome has
+Chrome the end scene shows no gain.
+
+The worst-case capture (`--scenes fling,load --out out/before-after/v8-best-worst`) added `media/fling.mp4` (0.72 MB)
+and `media/load.mp4` (0.31 MB), `worst-summary.json` (counts and flicks, no frame stamps) and `worst-cases.html`: the
+article fragment "Worst cases on the original" with a ranked table of the original's worst phone recordings and the two
+clips. `worst-cases-artifact.html` is the same with the MP4s inline (1.4 MB, `PAGES_URL` placeholder in the fallback
+lines). The article's end-of-page result (2 → 0) is an iPhone number, and Chrome has
 about one slow frame there per run on either side.

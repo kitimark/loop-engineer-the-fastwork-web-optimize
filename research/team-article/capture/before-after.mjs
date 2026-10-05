@@ -13,7 +13,13 @@
 //   --label <text>                     the after side's name in the video and snippet (default: the build's name
 //                                      without "-best", e.g. v8)
 //   --out <dir>                        output dir (default out/before-after/<build>; inside this checkout's gitignored out/)
-//   --scenes hero,switch,end           which scenes (default all three; `full` = one top-to-menu run)
+//   --scenes hero,switch,end           which scenes (default all three; `full` = one top-to-menu run). Worst-case scenes
+//                                      (T-170 #75/#76), Chrome ports of the phone's G-driver flick scripts, only when named:
+//                                      `fling` (fixes/v8-best/phone/g/flick-hero-v1.json: 3 s at rest, fast flicks down
+//                                      past 1,800 px and back to the top, twice) and `load` (flick-fresh-v1.json: a
+//                                      throttled reload, 3 fast flicks 0.3 s after DOMContentLoaded, no rest). A flick is
+//                                      a 560 px touch swipe in 140 ms (Input.synthesizeScrollGesture, touch, 4,000 px/s,
+//                                      preventFling false, so the page flings on), down flicks 350 ms apart, up 1,200 ms
 //   --phase all|capture|encode         capture = Chrome only (frames + capture.json); encode = ffmpeg from capture.json
 //   --runs 3                           runs per side and scene; the clip shows each side's median run, the snippet
 //                                      lists every run's counts
@@ -26,6 +32,7 @@
 //                                      capture/all, a --no-timing hold for encode). Without it the script refuses to
 //                                      run outside a chrome-measure hold (FW_LOCK_HELD naming the current holder).
 //   --owner <name>                     lock and server owner (default art-beforeafter)
+//   --hold-seconds 480                 --take-lock's capture hold cap (60-600; encode holds stay 300)
 //
 // Method: one headed Chrome (tools/lib/cdp.mjs launchChrome), viewport 430x932 DPR 3 with touch emulation, CPU throttle
 // 6x, served by tools/serve.mjs --vendors=local --https --latency 150 on --port auto. Per scene and side: a fresh
@@ -72,6 +79,7 @@ const PAGES_URL = opt('pages-url', 'PAGES_URL');
 const CPU = Number(opt('cpu', 6));
 const LATENCY = Number(opt('latency', 150));
 const RUNS = Math.max(1, Number(opt('runs', 3)));
+const HOLD_S = Math.min(600, Math.max(60, Number(opt('hold-seconds', 480))));
 const buildName = existsSync(resolve(BUILD)) ? basename(resolve(BUILD)).replace(/\.diff$/, '') : BUILD;
 const LABEL = opt('label', buildName.replace(/-best$/, ''));
 const OUT = resolve(REPO, opt('out', join('out', 'before-after', buildName.replace(/[^\w.-]+/g, '_'))));
@@ -85,7 +93,15 @@ const SCENES = {
   switch: { title: 'The section switch about 2,600 px down: a scroll from 1,900 to 3,400 px', start: 1900, rest: 500, stopY: 3400, morph: false },
   end: { title: 'The end of the page: the last 1,100 px, then four touch drags past the end (the menu morph)', start: 'end-1100', rest: 500, stopY: null, morph: true },
   full: { title: 'The whole page: 2 s at rest, a scroll to the bottom, then four touch drags past the end', start: null, rest: 2000, stopY: null, morph: true },
+  // worst cases (T-170 #75/#76): Chrome ports of the phone's own G-driver flick scripts, chosen before any capture
+  // (fixes/v8-best/phone/g/flick-hero-v1.json and flick-fresh-v1.json), not tuned on the result
+  fling: { title: 'Fast flicks at the top: 3 s at rest, then fast flicks down past 1,800 px and back to the top, twice', start: null, rest: 3000, kind: 'flicks', cycles: 2, flickToY: 1800 },
+  load: { title: 'Right after load: a reload, then three fast flicks 0.3 s after the page is ready, with no rest', start: null, kind: 'fresh', flicks: 3, afterReadyMs: 300 },
 };
+// One flick = the phone scripts' stroke: a 560 px touch swipe in 140 ms (4,000 px/s; CDP's synthetic swipe moves at a
+// constant speed, the phone's fling profile speeds up to its lift-off), and the page keeps going on its own (fling
+// allowed). Down flicks 350 ms apart, up flicks 1,200 ms apart, as in the phone scripts. Finger up = page down.
+const FLICK = { x: 215, px: 560, speed: 4000, gapMs: 350, upGapMs: 1200, fingerUpFrom: 760, fingerDownFrom: 200, maxPerLeg: 6 };
 const SCENE_LIST = opt('scenes', 'hero,switch,end').split(',').map((s) => s.trim()).filter(Boolean);
 for (const s of SCENE_LIST) if (!SCENES[s]) die(`unknown scene "${s}" (known: ${Object.keys(SCENES).join(', ')})`);
 
@@ -104,7 +120,7 @@ if (!held || (held.noTiming && PHASE !== 'encode')) {
     die(`refusing: ${held ? 'this is a --no-timing hold; a capture needs a normal (timing) chrome-measure hold' : 'not inside a chrome-measure hold'} (Hard rule 7). Add --take-lock, or run:\n  node tools/lock.mjs run chrome-measure --owner ${OWNER} --max-seconds 480 --doing "before/after capture for the article" -- node ${relative(REPO, SELF)} ${argv.join(' ')}`);
   }
   const rest = argv.filter((a) => a !== '--take-lock');
-  const lockArgs = ['tools/lock.mjs', 'run', 'chrome-measure', '--owner', OWNER, '--max-seconds', PHASE === 'encode' ? '300' : '480',
+  const lockArgs = ['tools/lock.mjs', 'run', 'chrome-measure', '--owner', OWNER, '--max-seconds', PHASE === 'encode' ? '300' : String(HOLD_S),
     ...(PHASE === 'encode' ? ['--no-timing'] : []), '--doing', `before/after ${PHASE === 'encode' ? 'encode' : 'capture'} for the article (baseline vs ${buildName})`,
     '--', process.execPath, SELF, ...rest];
   console.log(`before-after: taking the chrome-measure hold: node ${lockArgs.join(' ')}`);
@@ -178,6 +194,31 @@ const moveTo = (y) => `new Promise(async (res) => { const target = ${y}; while (
   window.scrollBy({ top: Math.sign(d) * Math.min(Math.abs(d), 300), behavior: 'instant' }); await new Promise((r) => setTimeout(r, 60));
   if (scrollY + innerHeight >= document.documentElement.scrollHeight - 1 && d > 0) break; } res(scrollY); })`;
 
+// ---- flick scenes: driven from here over CDP (touch swipes with fling), the page's scrollY polled between swipes ----
+async function flick(page, dir, strokes) {
+  const y0 = await page.eval('scrollY'), t = Date.now();
+  await page.send('Input.synthesizeScrollGesture', { x: FLICK.x, y: dir === 'down' ? FLICK.fingerUpFrom : FLICK.fingerDownFrom,
+    yDistance: dir === 'down' ? -FLICK.px : FLICK.px, speed: FLICK.speed, gestureSourceType: 'touch', preventFling: false, repeatCount: 1 });
+  strokes.push({ dir, y0, callMs: Date.now() - t });
+}
+async function settled(page, timeoutMs = 5000) { // scrollY unchanged over 3 polls 100 ms apart, or the timeout
+  const end = Date.now() + timeoutMs;
+  let last = await page.eval('scrollY'), still = 0;
+  while (Date.now() < end && still < 3) { await sleep(100); const y = await page.eval('scrollY'); still = y === last ? still + 1 : 0; last = y; }
+  return last;
+}
+async function flickCycles(page, sc, t0) { // flick-hero-v1: down until y >= flickToY, settle, up until the top, settle, rest 1 s
+  const strokes = [];
+  for (let c = 0; c < sc.cycles; c++) {
+    for (let i = 0; i < FLICK.maxPerLeg && (await page.eval('scrollY')) < sc.flickToY; i++) { await flick(page, 'down', strokes); await sleep(FLICK.gapMs); }
+    await settled(page);
+    for (let i = 0; i < FLICK.maxPerLeg && (await page.eval('scrollY')) > 0; i++) { await flick(page, 'up', strokes); await sleep(FLICK.upGapMs); }
+    await settled(page);
+    await sleep(1000);
+  }
+  return { t0, tScrollEnd: await page.eval(nowExpr), ticks: strokes.length, y: await page.eval('scrollY'), strokes };
+}
+
 async function captureOne(cdp, url, sc) {
   const page = await cdp.newIsolatedPage();
   try {
@@ -188,6 +229,7 @@ async function captureOne(cdp, url, sc) {
     await page.send('Page.bringToFront');
     await gotoAndSettle(page, url, { quietMs: 2000 });
     await sleep(1500);
+    if (sc.kind === 'fresh') return await captureFresh(page, sc);
     let startY = 0;
     if (sc.start !== null) {
       const y = sc.start === 'end-1100' ? await page.eval('document.documentElement.scrollHeight - innerHeight - 1100') : sc.start;
@@ -206,7 +248,9 @@ async function captureOne(cdp, url, sc) {
     await page.eval(LOGGER);
     await page.send('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: PANEL_W * 2, maxHeight: Math.round(PANEL_W * 2 * VP.height / VP.width), everyNthFrame: 1 });
     await sleep(600);
-    const act = await page.eval(action(sc), { timeout: 300000 });
+    let act;
+    if (sc.kind === 'flicks') { const t0 = await page.eval(nowExpr); await sleep(sc.rest); act = await flickCycles(page, sc, t0); }
+    else act = await page.eval(action(sc), { timeout: 300000 });
     if (sc.morph) {
       await sleep(400);
       for (let i = 0; i < 4; i++) await page.send('Input.synthesizeScrollGesture', { x: 215, y: 700, yDistance: -500, speed: 1200, gestureSourceType: 'touch', repeatCount: 1 });
@@ -221,10 +265,46 @@ async function captureOne(cdp, url, sc) {
     off();
     await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     const morphState = await page.eval(`document.querySelector('.start-selling-top-nav')?.className ?? null`);
-    return { startY, t0: act.t0, tScrollEnd: act.tScrollEnd, tEnd, ticks: act.ticks, endY: act.y, frames, log, morphState };
+    return { startY, t0: act.t0, tScrollEnd: act.tScrollEnd, tEnd, ticks: act.ticks, endY: act.y, frames, log, morphState, ...(act.strokes ? { strokes: act.strokes } : {}) };
   } finally {
     await page.close();
   }
+}
+
+// flick-fresh-v1: the page is loaded once (warm cache, as the phone's reload), then throttled and reloaded; 300 ms after
+// the new document is ready (DOMContentLoaded; the phone waits for readyState != loading) come 3 down flicks 350 ms
+// apart, a settle (up to 5 s) and 1.5 s at rest. The rAF logger is in the page from its first script on; the
+// screencast starts at DOMContentLoaded; the clip and the counts start at the first flick.
+async function captureFresh(page, sc) {
+  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: LOGGER });
+  await page.send('Emulation.setCPUThrottlingRate', { rate: CPU });
+  await sleep(1000);
+  const frames = [];
+  const off = page.on((m) => {
+    if (m.method !== 'Page.screencastFrame') return;
+    const { data, metadata, sessionId } = m.params;
+    frames.push({ ts: metadata.timestamp * 1000, data });
+    page.send('Page.screencastFrameAck', { sessionId }).catch(() => {});
+  });
+  const ready = page.waitFor((m) => m.method === 'Page.domContentEventFired', 60000);
+  await page.send('Page.reload', { ignoreCache: false });
+  await ready;
+  const readyMac = Date.now(), tReady = await page.eval(nowExpr);
+  await page.send('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: PANEL_W * 2, maxHeight: Math.round(PANEL_W * 2 * VP.height / VP.width), everyNthFrame: 1 });
+  await sleep(Math.max(0, sc.afterReadyMs - (Date.now() - readyMac)));
+  const strokes = [], t0 = await page.eval(nowExpr);
+  for (let i = 0; i < sc.flicks; i++) { if (i) await sleep(FLICK.gapMs); await flick(page, 'down', strokes); }
+  await settled(page);
+  const tScrollEnd = await page.eval(nowExpr);
+  await sleep(1500);
+  const tEnd = await page.eval(nowExpr);
+  await page.send('Page.stopScreencast');
+  await page.eval('window.__ba.on = false');
+  const log = await page.eval('window.__ba.log');
+  off();
+  await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  const loadMs = await page.eval(`Math.round(performance.getEntriesByType('navigation')[0]?.loadEventEnd ?? 0)`);
+  return { startY: 0, tReady, t0, tScrollEnd, tEnd, ticks: strokes.length, endY: await page.eval('scrollY'), frames, log, morphState: null, strokes, loadEventEndMs: loadMs };
 }
 
 const kOf = (dt) => Math.round(dt / (1000 / 120));
@@ -391,7 +471,7 @@ function writeSnippets(meta, out) {
 .ba-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.88rem; color: var(--ink-soft); }
 </style>
 <figure class="wide surface shot ba" aria-labelledby="ba-cap">
-  <p class="label">Before and after: the same scripted scroll, original page vs ${esc(meta.build.label)}</p>
+  <p class="label">Before and after: the same scripted ${Object.keys(out).some((n) => SCENES[n]?.kind) ? 'input' : 'scroll'}, original page vs ${esc(meta.build.label)}</p>
 ${Object.keys(out).map((n) => sceneBlock(n, media)).join('\n')}
   <div class="ba-legend" aria-hidden="true"><span><i class="swatch" style="background:#6b7d75"></i>frame on time</span><span><i class="swatch" style="background:#e2b84a"></i>37.5 ms or more (k ≥ 5)</span><span><i class="swatch" style="background:#ff6b4a"></i>54 ms or more (k ≥ 7)</span><span>white line: playhead</span></div>
   <figcaption id="ba-cap">Left, the original page (the frozen copy we measure against); right, ${esc(meta.build.label)}. Both ran in Chrome on the Mac, emulating the iPhone's screen (430×932, touch) with the page's main thread slowed ${meta.cpu}×. That is the setting that reproduces the phone's scripted-scroll stutter counts. Both sides got the same script${(meta.scenes[Object.keys(out)[0]].runs ?? 1) > 1 ? `, ${meta.scenes[Object.keys(out)[0]].runs} runs each, and each clip shows that side's middle run (by its slow-frame count)` : ', one run each'}; both clocks start at the first input, so where one side freezes, that page drew no new frame. The strip under each clip is that run's frame times: a bar's width is how long the frame took. This is an illustration, not a measurement. The screen capture costs work on both sides, and the numbers in this article come from repeated A/B runs. It can't show a finger on the glass, how the phone really feels, or costs that only Safari has. Several ${esc(meta.build.label)} changes only act in Safari (the hero's CSS mode, the animations Safari runs on its scroll thread), so Chrome understates them. Captured ${date}${meta.baseline?.snapshot ? `, baseline snapshot ${esc(meta.baseline.snapshot)}` : ''}.</figcaption>
