@@ -2241,6 +2241,75 @@ measurement code: no change to verify.mjs, lib/cdp.mjs, serve.mjs or fix.mjs ab 
   9f369b8a); the P-097 tools are topic-local (fixes/cd-roll-ca/), counts and pixels only, no timing.
 ```
 
+### P-097 rev 4.2 result (2026-10-05 10:51-17:31Z; counts and pixels only, no timing; OBSERVED, in our setup)
+
+Scored by `p097-score.mjs` (c4e9f50f26e3) exactly as registered; full output committed as
+`fixes/cd-roll-ca/p097-score-final.json` (raw loads stay in the worktree's gitignored out/p097/: census/, px/, sim/,
+logs reps-*.log). Base: pre-7d v9-final C 647c9ef2b1e2 only (lead's ruling); the result claims nothing about 7d or
+v9.1d. 18 loads per kind per platform (6 reps x C, V, C2), every load served the pinned hashes, one tool set per
+platform (no measurement-code change), no voids. Labels (lead): G and Q2b′ are smoke-informed; the pre-smoke less-work
+claim is Q1.
+
+Outcome under the registered first-miss order: **no MISS; Q1, Q3 and Q5 are A/A-limited (to the lead)**; Q2a, G, Q2b′,
+Q4, Q6 pass; Q2b (scored apart) MISS as expected (F-277).
+
+| Q | status | V | C | C2 | A/A spread (pairs) | rule |
+|---|---|---|---|---|---|---|
+| Q1 countdown rAF / 4 s (Chrome) | AA-LIMITED | 4 (all loads 3.99-4) | 107.4 (103.9-139.9) | 108.4 (103.5-133.9) | 31.0 (6) > 25 % of 107.4 | V <= 10 % of C and < C - spread |
+| Q2a countdown frames/s | pass | 2 (all 2) | 26.4 | 27.0 | 1.0 (6) | V <= 4 and < C - spread |
+| G total frames/s (smoke-informed) | pass | 6 (5.99-6.99) | 27.4 | 28.1 | 1.0 (6) | V < C - spread |
+| Q2b′ other′ frames/s (smoke-informed) | pass | max 0 | max 1 | max 2.25 | - | no V load > 2.25 + 2 |
+| Q2b other frames/s (apart) | MISS | 4-4.99 | 1 | 0.99-2.25 | - | no V load > 2.25 + 2 |
+| Q3 gate: running cells at 0 < m < 1 | pass | 0 in 12/12 loads | 0 | 0 | - | 0 in every valid load, both platforms |
+| Q3 pass countdown rAF, Chrome | AA-LIMITED | 91.5 | 81 | 97 (58-116) | 35 (6) > 20.3 | within C +/- spread |
+| Q3 pass countdown rAF, Simulator | AA-LIMITED | 78.5 | 88 | 62 (55-102) | 44 (6) > 22 | within C +/- spread |
+| Q4 Paint per pass frame (Simulator) | pass | 10.17 | 10.26 | 9.89 | 0.87 (6) | V <= C + spread |
+| Q4 layers at the pass middle (M3) | pass | 0 layers, 0 MB (6/6) | 0 | 0 | C/C2 differ in 0 of 6 | V <= max(C, C2) |
+| Q5 Simulator rest / reduced motion | pass | exact 6/6 + 6/6 | - | A/A exact 12/12 | - | T0 |
+| Q5 Simulator mid-roll (frame 8) | pass | edge 92, fill 0, beyond 867 px = 0.024 %, 96 CSS px² (all 6 reps identical) | - | A/A 0 | - | T2 wide |
+| Q5 Chrome rest | AA-LIMITED | (i) broken in 2/6 (rep 2, 5) | - | (i) broken in 1/6 (rep 5) | - | (i), (ii), (iii) for V and C2 alike |
+| Q5 Chrome reduced motion | AA-LIMITED | (i) broken in 1/6 (rep 2) | - | (i) broken in 1/6 (rep 1) | - | as above |
+| Q5 Chrome mid-roll (descriptive) | - | max channel diff 1 in 6/6, beyond A/A 0 | - | - | - | five numbers only |
+| Q6 hand-off jump | pass | Chrome max 0.001 px (6/6 met), Simulator 0 (6/6) | - | - | - | <= 0.5 CSS px |
+
+Q5 Chrome, the A/A break (OBSERVED, in our setup, cause unknown; scored as the card says, no new tolerance): every
+differing pixel in every Chrome rest and reduced-motion compare differs by exactly 1 in a channel. The ones that break
+(i) are always the same 10 device pixels inside the digit-card rects: the rounded bottom-left corners of card 1 (x 23-30)
+and card 3 (x 599-606), device y 257-264 of the 1152 x 288 clip (pixels (23,257) (24,258) (26,260) (29,263) (30,264) and
+the same at x + 576). The rest are background pixels on device row 10 (x 56, 344, 519, 632, 1095), inside M-bg at 1.
+The pattern is the same in C2 vs C (rest rep 5, reduced-motion rep 1) and in V vs C (rest reps 2 and 5,
+reduced-motion rep 2; both reduced-motion rep 2 attempts show it). (iii): V shots with any M-bg difference 6 vs C2 6
+(rest), 4 vs 3 (reduced motion), within + 2.
+
+Descriptive (never scored):
+- Chrome page-end rest, every load at the low level (< 45/s): style recalcs/s V 6 vs C 27.4 / C2 28.1; paint
+  events/s V 24 vs C 123 / C2 127; 0 unframed tasks, 0 console errors in every load; roll classifier leak 0, orphan 0
+  in all 18 loads.
+- Simulator page-end rest (WebKit Timeline, per s, medians): RenderingFrame V 59.95 / C 59.98 / C2 59.98 (the Simulator
+  renders at 60 in every arm); FireAnimationFrame = countdown rAF V 1 / C 26.5 / C2 32.8; RecalculateStyles V 6.6 /
+  C 26.5 / C2 26.7; Layout V 2.75 / C 26.5 / C2 26.7; Paint V 7.4 / C 26.7 / C2 26.7. m read '1' at both S1 reads in
+  all 36 count loads.
+- Q4 M3: the layer read found 0 layers for the panel clock's strips and cells in every arm at m ~ 0.507 (the gate
+  keeps V on the spring there). That the read would see a layered panel cell was not checked positively (no arm has
+  one at that frame).
+
+Run log and disclosures:
+- Platforms ran apart (lead 11:50Z, via ops): Chrome reps 1-6 10:51-15:08Z, Simulator reps 1-6 13:00-17:31Z, each in
+  its own square order; no registered rule pairs a Chrome and a Simulator load of the same rep.
+- Tool fault, VOID, re-run once: rep 2 Chrome reduced-motion C2 (12:53Z): the page logged "Failed to fetch dynamically
+  imported module .../entry/start.DcMWjqAs.js", never hydrated (m null), the shot step threw. Re-run 15:08Z clean (C2
+  used from it; C and V from the first attempt, by the selection rule).
+- Runner aborts (mine, not tool faults; no load data lost or picked): my background runner hit the harness's 2 h cap
+  three times. (a) 12:51Z: rep 1 Simulator count pos 1 timed out in the lock queue (lock.mjs run's 3600 s default)
+  before it got a slot; re-queued. (b) 15:00Z: the Simulator session of rep 2 pos 3 (C) was killed after boot,
+  before its load wrote anything; the session died without shutting fw-sim down (the 15:01-15:09Z Simulator leak,
+  pid 45326), so my next 5 Simulator steps were refused before taking a slot ("already Booted") and wrote nothing.
+  (c) a Chrome step queued at 13:32Z was killed before it got a slot. After (b) the runner never starts a step that
+  could outlive its cap, waits for a running step on abort, and shuts down a leaked fw-sim after every Simulator step.
+- Order deviation: rep 3's Simulator count positions ran 3 (V, 15:10Z), then 1 (C2), then 2 (C), because of (b).
+- Host load was high during parts of the run (load1 up to ~117 during rep 1-2 Simulator loads); counts that follow
+  frame cadence carry it (sim.mjs SIM_BACKGROUND lines in the logs). No timing is claimed.
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at
