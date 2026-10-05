@@ -7,8 +7,9 @@
 38c7a33e. Lead ruling: R3 is neither landed as T2 nor proposed yet, because the pixel instrument is unstable. P-148 rev 1
 (`P148.md` rev 1.1, signed) ran every registered step and reads GATE-FAILED in both engines. The card ends there and
 R3's pixels stay undecided on this instrument. The result read CONFIRMED it (landed 9800e2d1). P-149 rev 1.1 (`P149.md`,
-signed) locates the Chrome A/A motion in a 2x2 and judges R3 only at stable stops against a multi-pair A/A envelope; its 4
-shared slots run when chrome-measure is free. No build.
+signed) locates the Chrome A/A motion in a 2x2 and judges R3 only at stable stops against a multi-pair A/A envelope; L, R
+and S1 ran; S2 did not (parked 2026-10-05 22:45Z on the lead's order, user T-204 #4: the end-of-page nav morph is the
+only focus). Interim numbers below; no verdict until S2 runs. No build.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
@@ -677,8 +678,34 @@ multi-pair A/A envelope, and build the Simulator A/A from fresh base pairs (read
 - **Part R**: R3 in the first stable cell (rest and swipe, plus reduced motion) and the next one if the budget allows.
 - **Simulator**: expanded + landscape (S1), collapsed (S2), R3 at every stop after its fresh pairs.
 - No stable cell, or any registered stop unstable: R3 goes to a look proposal with Try-it panels.
-- 4 shared slots (3 when no cell is stable). Self-test `selftest-p149.mjs`: 72 checks (rev 1.1).
+- 4 shared slots (3 when no cell is stable). Self-test `selftest-p149.mjs`: 74 checks (rev 1.2, signed).
 
+## Interim: P-149 parked with S2 not run (`P149.md` rev 1.2; no result read yet)
+
+Ran under the signed card on the frozen snapshot and P-148's instrument overlay. Data: `out/deck-contain/p149/`
+(L.json, R.json, S1.json); scorer output `out/deck-contain/score-p149.json` (rev 1.2). Part L ran under the rev 1.1
+scorer pin (no R3 in it).
+- **Part L** (21:37Z, 80 s): pattern "DPR 3 cells unstable, DPR 1 cells stable". mob3: 2 of 4 stops stable; desk3: 1
+  of 4. Every failure is unsettled. mob3 also had up to 0.59 % of the frame changing at any level, max level 14. mob1 and
+  desk1: 4 of 4 stable, zero A/A pixels in all 24 pairs. Elements at the strongest A/A tiles (places only, no cause):
+  orbit cards, `#people`, images, the audio card, the top nav bar, the pain note.
+- **Part R** (21:44Z, 60 s): R3 T0 at all 20 Chrome stops (mob1 rest and swipe, mob1 reduced motion, desk1 rest and
+  swipe). No pixel and no geometry moved. DPR-3 Chrome stays unjudged.
+- **S1** (Simulator expanded + landscape, 143 s): 15 of 16 stops stable. R3 T0 at 13 and T2 at 2 (expanded inview swipe
+  40 px and expanded leave swipe 4 px, shade 1, nothing counted). Expanded inview rest is unstable: its first fresh pair
+  (starting from the settled shot) differs at 42,796 px, 3,022 of them above 8 levels, max 102, at images
+  (`img.label-img`); pairs 2 and 3 are zero. OBSERVED, cause unknown. S1's first launch was deferred by P-142's phone
+  block until Claude Code's background limit stopped it; it never started and left no data.
+- **S2** (collapsed): not run. The park stopped its slot at 254 s, before the driver wrote its file (write-once: no data).
+- **Scorer now:** R3 UNDECIDED-UNSTABLE (1 unstable Simulator stop, 8 missing). This is provisional: the card's
+  verdict needs S2. The expanded inview rest instability alone already gives UNDECIDED-UNSTABLE unless the lead rules
+  otherwise.
+- **Predictions so far:** P1, P2, P3, P7 and P11 hit. P6 is already a miss (a present stop is unstable). P5 and P8 wait
+  for S2; P9 and P10 are clean so far.
+- **On resume:** run S2 in one shared Simulator slot (RR1 does not apply: neither stopped launch wrote a file), then
+  score, write `results-p149.json` and the result section.
+
+## Scenarios not run
 
 - Real iPhone, any driver: the phone is disconnected (T-199). G1 and the no-worse check wait for the lead.
 - iPad Simulators (touch branch up to 1200 wide): Chrome's touch emulation covers the 768-1200 geometry only.
