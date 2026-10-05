@@ -55,12 +55,12 @@ export function read1cRest(loads) {
   return out;
 }
 // 1c scroll item: only windows passing scrollCheck count
-export function read1cScroll(loads) {
-  const valid = (l) => { const w = l.windows.find((x) => x.kind === 'scroll'); return w && !l.void && scrollCheck(w).ok ? w : null; };
+export function read1cScroll(loads, opts = {}) { // opts.B: the bound (default sim92check's pinned BOUND_B)
+  const valid = (l) => { const w = l.windows.find((x) => x.kind === 'scroll'); return w && !l.void && scrollCheck(w, opts).ok ? w : null; };
   const pick = (arm) => loads.filter((l) => l.arm === arm).map(valid).filter(Boolean).slice(0, N);
   const WF = pick('F'), WV = pick('V');
-  const failed = loads.filter((l) => { const w = l.windows.find((x) => x.kind === 'scroll'); return !w || !scrollCheck(w).ok; })
-    .map((l) => `${l.arm}${l.rep}: ${(scrollCheck(l.windows.find((x) => x.kind === 'scroll')).why || []).join(', ')}`);
+  const failed = loads.filter((l) => { const w = l.windows.find((x) => x.kind === 'scroll'); return !w || !scrollCheck(w, opts).ok; })
+    .map((l) => `${l.arm}${l.rep}: ${(scrollCheck(l.windows.find((x) => x.kind === 'scroll'), opts).why || []).join(', ')}`);
   return [['layouts/frame', (w) => w.perFrame.layouts], ['styleRecalcs/frame', (w) => w.perFrame.styleRecalcs]]
     .map(([k, f]) => ({ item: `1c top->end ${k}`, ...rule(WF.map(f), WV.map(f)), floor0: rule(WF.map(f), WV.map(f), 0).verdict, failedChecks: failed }));
 }

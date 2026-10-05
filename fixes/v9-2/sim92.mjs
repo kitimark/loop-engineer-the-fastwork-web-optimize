@@ -19,6 +19,10 @@
 // every 250 ms (timeout 30 s), then stops the Timeline at once; the window must pass sim92check.mjs's scrollCheck (max
 // scrollY reached, frames and y defined, frames and RenderingFrames above floors from a full-window estimate), else the
 // load is VOID. `--scroll-only` (first argument after the records file) skips the idle stops (the rev 1.4 re-run).
+// Rev 1.4b (lead, after the arm-C smoke timed out: the driver's stop target was computed once from innerHeight): the
+// driver re-reads the live max (scrollHeight - innerHeight) every frame and stops there, or when scrollY has not moved
+// for 10 frames (stalled), or at 2000 frames; it records startMax, endMax (= max), innerHeight at start and end. Every
+// poll also logs scrollY, innerHeight and the live max into the window's `polls` (diagnostics).
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -39,9 +43,13 @@ const TYPES = { renderingFrames: 'RenderingFrame', styleRecalcs: 'RecalculateSty
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const D = join(WT, 'out/v92/sim'); mkdirSync(D, { recursive: true });
 const STOPS = [['rest-0', '0'], ['rest-1400', '1400'], ['rest-2796', '2796'], ['rest-3800', '3800'], ['rest-end', 'document.documentElement.scrollHeight']];
-const SCROLL = `new Promise((res) => { const max = document.documentElement.scrollHeight - innerHeight; let n = 0;
-  const f = () => { n++; if (scrollY >= max - 1 || n > 2000) return res({ frames: n, y: scrollY, max }); scrollBy(0, ${STEP}); requestAnimationFrame(f); };
+const SCROLL = `new Promise((res) => { const de = document.documentElement; const startMax = de.scrollHeight - innerHeight, ih0 = innerHeight;
+  let n = 0, last = -1, still = 0;
+  const f = () => { n++; const liveMax = de.scrollHeight - innerHeight; still = scrollY === last ? still + 1 : 0; last = scrollY;
+    if (scrollY >= liveMax - 1 || still >= 10 || n > 2000) return res({ frames: n, y: scrollY, max: liveMax, startMax, endMax: liveMax, ih0, ih1: innerHeight, stalled: still >= 10, capped: n > 2000 });
+    scrollBy(0, ${STEP}); requestAnimationFrame(f); };
   requestAnimationFrame(f); })`;
+const POLLX = '({ sc: window.__p142sc, y: scrollY, ih: innerHeight, liveMax: document.documentElement.scrollHeight - innerHeight })';
 const count = (recs) => {
   const n = Object.fromEntries(Object.keys(TYPES).map((k) => [k, 0])); const rev = Object.fromEntries(Object.entries(TYPES).map(([k, v]) => [v, k]));
   const walk = (r) => { if (!r) return; if (rev[r.type]) n[rev[r.type]]++; for (const ch of r.children || []) walk(ch); };
@@ -77,9 +85,9 @@ for (const L of order) {
     await c.evaluate('(scrollTo({ top: 0, behavior: "instant" }), 0)'); await sleep(SETTLE);
     await start();
     await c.evaluate(`(window.__p142sc = null, ${SCROLL}.then((r) => { window.__p142sc = r; }), 0)`);
-    let sc = null; const t0 = Date.now();
-    while (!sc && Date.now() - t0 < SCROLL_TIMEOUT) { await sleep(POLL); sc = await c.evaluate('window.__p142sc'); }
-    const w = { kind: 'scroll', stop: 'top->end', step: STEP, ...(sc || { timeout: SCROLL_TIMEOUT }), ...(await stop()) };
+    let sc = null; const t0 = Date.now(), polls = [];
+    while (!sc && Date.now() - t0 < SCROLL_TIMEOUT) { await sleep(POLL); const q = await c.evaluate(POLLX); sc = q && q.sc; polls.push({ t: Date.now() - t0, y: q?.y, ih: q?.ih, liveMax: q?.liveMax }); }
+    const w = { kind: 'scroll', stop: 'top->end', step: STEP, ...(sc || { timeout: SCROLL_TIMEOUT }), ...(await stop()), polls };
     w.check = scrollCheck(w);
     load.windows.push(w);
     if (!w.check.ok) load.void = 'scroll check: ' + w.check.why.join('; ');
@@ -87,5 +95,5 @@ for (const L of order) {
   finally { try { c && c.close(); } catch {} p.kill(); rmSync(st, { force: true }); }
   const rec = existsSync(outPath) ? JSON.parse(readFileSync(outPath, 'utf8')) : { loads: [] };
   rec.loads.push(load); writeFileSync(outPath, JSON.stringify(rec, null, 1));
-  console.log(arm, rep, JSON.stringify(load.served || {}), load.void || '', load.windows.map((w) => `${w.stop} RF${w.renderingFrames} RS${w.styleRecalcs} L${w.layouts} P${w.paints}${w.kind === 'scroll' ? ` perFrame ${JSON.stringify(w.perFrame)} frames ${w.frames} y ${w.y}/${w.max} check ${w.check?.ok ? 'ok' : 'FAIL'}` : ''}`).join(' | '));
+  console.log(arm, rep, JSON.stringify(load.served || {}), load.void || '', load.windows.map((w) => `${w.stop} RF${w.renderingFrames} RS${w.styleRecalcs} L${w.layouts} P${w.paints}${w.kind === 'scroll' ? ` perFrame ${JSON.stringify(w.perFrame)} frames ${w.frames} y ${w.y}/${w.max} startMax ${w.startMax} endMax ${w.endMax} ih ${w.ih0}->${w.ih1} stalled ${w.stalled} check ${w.check?.ok ? 'ok' : 'FAIL ' + w.check?.why.join('; ')}` : ''}`).join(' | '));
 }

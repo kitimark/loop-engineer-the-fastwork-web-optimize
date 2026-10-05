@@ -94,20 +94,30 @@ ok(srv.includes(`C:${P142.C.js.slice(0, 12)}:${P142.C.css.slice(0, 12)}|V:${P142
 ok(/^S=out\/p142\/snap/m.test(srv) && /SRCC=out\/v92\/snap-941aa13e5bdf\/F; SRCV=out\/v92\/snap-941aa13e5bdf\/V/.test(srv), '5 serve142 folders');
 
 // 6. rev 1.4: sim92's scroll-window check and part1read.mjs's insufficient branch (part 1's truncation must fail)
-const { scrollCheck } = await import(join(root, 'fixes/v9-2/sim92check.mjs'));
+const W2 = await import(join(root, 'fixes/v9-2/sim92check.mjs')), { scrollCheck } = W2;
 const R = await import(join(root, 'fixes/v9-2/part1read.mjs'));
 const trunc = { kind: 'scroll', stop: 'top->end', step: 24, renderingFrames: 31, layouts: 31, styleRecalcs: 33, perFrame: { layouts: 1, styleRecalcs: 1.065 } };
-const full = (pf = 0.75) => ({ kind: 'scroll', stop: 'top->end', step: 24, frames: 255, y: 6075, max: 6075, renderingFrames: 262, layouts: Math.round(262 * pf), styleRecalcs: Math.round(262 * pf), perFrame: { layouts: pf, styleRecalcs: pf } });
+const TB = { B: 50 }; // a test bound; the pinned BOUND_B is set from the arm-C smoke (rev 1.4b)
+const full = (pf = 0.75) => ({ kind: 'scroll', stop: 'top->end', step: 24, frames: 255, y: 6075, max: 6075, startMax: 6075, endMax: 6075, ih0: 775, ih1: 775, renderingFrames: 262, layouts: Math.round(262 * pf), styleRecalcs: Math.round(262 * pf), perFrame: { layouts: pf, styleRecalcs: pf } });
 const ct = scrollCheck(trunc);
 ok(!ct.ok && ct.why.includes('frames undefined') && ct.why.some((w) => /renderingFrames 31 < 203/.test(w)), `6 truncated window passes the check: ${JSON.stringify(ct)}`);
-ok(scrollCheck(full()).ok, `6 full window fails: ${JSON.stringify(scrollCheck(full()))}`);
-ok(!scrollCheck({ ...full(), y: 5000 }).ok, '6 max scrollY not reached passes');
-ok(!scrollCheck({ ...full(), frames: 200 }).ok, '6 frames under the floor passes');
-ok(!scrollCheck({ ...full(), renderingFrames: 150 }).ok, '6 renderingFrames under the floor passes');
-ok(!scrollCheck({ ...full(), timeout: 30000, frames: undefined, y: undefined }).ok, '6 timeout passes');
+ok(scrollCheck(full(), TB).ok, `6 full window fails: ${JSON.stringify(scrollCheck(full(), TB))}`);
+ok(!scrollCheck({ ...full(), y: 5000 }, TB).ok, '6 max scrollY not reached passes');
+ok(!scrollCheck({ ...full(), frames: 200 }, TB).ok, '6 frames under the floor passes');
+ok(!scrollCheck({ ...full(), renderingFrames: 150 }, TB).ok, '6 renderingFrames under the floor passes');
+ok(!scrollCheck({ ...full(), timeout: 30000, frames: undefined, y: undefined }, TB).ok, '6 timeout passes');
+// rev 1.4b: toolbar collapse (innerHeight 775 -> 815, live max 6075 -> 6035, reached) passes; a stall mid-page is VOID;
+// a collapse larger than B fails; with B unset (the pinned null) every window fails
+const collapse = { ...full(), frames: 253, y: 6035, max: 6035, endMax: 6035, ih1: 815 };
+ok(scrollCheck(collapse, TB).ok, `6 toolbar collapse fails: ${JSON.stringify(scrollCheck(collapse, TB))}`);
+const stall = { ...full(), frames: 140, y: 3000, max: 6035, endMax: 6035, ih1: 815, stalled: true };
+const cs = scrollCheck(stall, TB);
+ok(!cs.ok && cs.why.some((w) => /live max scrollY not reached .*stalled/.test(w)), `6 stall mid-page passes: ${JSON.stringify(cs)}`);
+ok(!scrollCheck({ ...collapse, max: 5975, endMax: 5975, y: 5975 }, TB).ok, '6 a drop of 100 px > B 50 passes');
+ok(W2.BOUND_B !== null || !scrollCheck(full()).ok, '6 B unset but a window passes');
 const ld = (arm, rep, w, v) => ({ arm, rep, windows: [w], ...(v ? { void: v } : {}) });
 const six = (wF, wV) => [ld('F', 1, wF), ld('V', 1, wV), ld('V', 2, wV), ld('F', 2, wF), ld('F', 3, wF), ld('V', 3, wV)];
-const sc = (loads) => R.read1cScroll(loads).map((x) => x.verdict);
+const sc = (loads) => R.read1cScroll(loads, TB).map((x) => x.verdict);
 ok(sc(six(trunc, trunc)).every((v) => /^insufficient/.test(v)), `6 truncated part-1-shaped loads not insufficient: ${sc(six(trunc, trunc))}`);
 ok(sc(six(full(), full())).every((v) => v === 'no-worse'), `6 full equal loads not no-worse: ${sc(six(full(), full()))}`);
 ok(sc(six(full(0.75), full(3.2))).every((v) => v === 'WORSE'), `6 V +2.45 per frame not WORSE: ${sc(six(full(0.75), full(3.2)))}`);

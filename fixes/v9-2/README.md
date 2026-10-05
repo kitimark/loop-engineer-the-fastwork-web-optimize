@@ -419,6 +419,24 @@ delta check and go):
   60 Hz), past the 30 s poll timeout. The decisive check is a diagnostic run that logs scrollY, innerHeight and the live max at
   each poll.
 
+**Rev 1.4b (lead ruling: the fix and the diagnostics in one re-pin, then a new uncounted smoke on C; before any counted
+rev 1.4 data):**
+- **Driver (`sim92.mjs` f21b2c8bca92):** re-reads the live max (scrollHeight − innerHeight) every frame and stops at it, or
+  when scrollY has not moved for 10 frames (`stalled`), or at 2000 frames (`capped`); records startMax, endMax (= max) and
+  innerHeight at start and end (ih0, ih1). Each 250 ms poll also logs scrollY, innerHeight and the live max into the
+  window's `polls`.
+- **Check (`sim92check.mjs` 72710fb51f81):** frames and y defined; frames ≥ 241 and RenderingFrames ≥ 203 from startMax
+  (floor(0.95 / 0.8 × ceil(startMax / 24))); y ≥ live max − 1 at the end; endMax ≥ startMax − B; no timeout. **B is not
+  set yet** (`BOUND_B = null`: every window fails "bound B not set", so nothing can count until it is pinned). B will be
+  the smoke's measured innerHeight change (ih1 − ih0), rounded up to the next 10 px, written here with its basis and pinned
+  before the counted run (a re-pin, to the lead's delta check). If the smoke shows no toolbar change, the hypothesis is
+  refuted: stop, to the lead, before any counted run.
+- **Reader (`part1read.mjs` c18e5825d812):** passes the bound through (default the pinned B); otherwise as rev 1.4 / 1.4a.
+- **Self-test (`selftest142.mjs` 6b2602cc8f99, SELFTEST-142 OK 55):** adds a toolbar-collapse window (innerHeight 775 →
+  815, live max 6075 → 6035, reached; passes with a test B of 50), a stall mid-page (y 3000, stalled; VOID), a drop of 100
+  px > B (fails), and B unset → every window fails.
+- **rerun14.sh unchanged** (a4f4608f9d64; its PIN line records the new sim92 / sim92check / part1read hashes).
+
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 
 The block reuses P-134's harness unchanged (itself P-132's / P-122's: P-121's path-matched G driver, nav-hit-cache's
