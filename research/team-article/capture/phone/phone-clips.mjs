@@ -42,6 +42,14 @@ const flag = (k) => argv.includes(`--${k}`);
 export const SCREEN = { w: 430, h: 932 };
 export const BOX = { y0: 119, y1: 826 };                       // pt, full width
 export const CLOSE = { e: { x0: 0.08, x1: 0.92, y0: 0.22, y1: 0.78 } }; // fractions of BOX
+// One script-driven region per scene (lead, T-170 #101 change 2b), screen pt, fixed before any region result was read:
+// the top bar (logo and language switch flip colour by script over dark sections; glass, so the content under it also
+// shows through blurred) for e and s; the hero card band (the original fades/moves the cards by script every frame,
+// v8 by scroll-driven animations) for h and f. Numbers only (a motion trace), never shown, so it need not sit inside
+// BOX; it stays inside the page area (below the 59 pt status bar, above the bottom bar).
+export const REGIONS = { e: { name: 'top bar', y0: 64, y1: 112 }, s: { name: 'top bar', y0: 64, y1: 112 },
+  h: { name: 'hero card band', y0: 560, y1: 800 }, f: { name: 'hero card band', y0: 560, y1: 800 } };
+export const MAC_LOADED = 16; // load1 above it: the capture may drop or delay frames (lead 2026-10-05 04:5xZ)
 export const WINDOWS = { e: ['into1', 'end'], h: ['down1', 'end'], f: ['fresh-flick', 'end'], s: ['scroll', 'scroll-end'] };
 export const PAD_MS = 300, S_TAIL_MS = 1000;
 export const VV_OK = { hMin: 770, hMax: 820 };
@@ -124,6 +132,22 @@ export function parseMotion(txt) {
 }
 /** The numbers-only motion trace of a recording: the page-area box only (privacy), 108 px wide, grey, the mean absolute
  *  difference to the previous frame. Writes text (metadata=print), never an image. Run it inside a lock hold. */
+/** Region trace: same as motionArgs over a full-width band [y0, y1] pt of the screen. */
+export const regionArgs = (mov, txt, r) => ['-hide_banner', '-loglevel', 'error', '-i', mov, '-vf',
+  `crop=w=iw:h=ih*${r.y1 - r.y0}/${SCREEN.h}:x=0:y=ih*${r.y0}/${SCREEN.h},scale=108:-2,format=gray,tblend=all_mode=difference,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=${txt}`, '-f', 'null', '-'];
+/** How a region follows the scroll: lag/r of its trace vs page speed, and stale frames (region still while the page
+ *  moves: its change < 25 % of its own 90th-percentile change during motion), with the longest stale run in ms. */
+export function regionFollow(pageFrames, region, toMovie, a, b) {
+  const lag = clockLag(pageFrames, region, toMovie);
+  const pv = []; for (let i = 1; i < pageFrames.length; i++) { const [t, dt, y] = pageFrames[i]; pv.push([toMovie(t), Math.abs(y - pageFrames[i - 1][2]) / Math.max(dt || 0, 1)]); }
+  const at = (x) => { let lo = 0, hi = pv.length - 1; if (!pv.length || x < pv[0][0] || x > pv[hi][0]) return null; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (pv[m][0] <= x) lo = m; else hi = m - 1; } return pv[lo][1]; };
+  const mov = region.filter(([tm]) => tm >= toMovie(a) && tm <= toMovie(b)).map(([tm, v]) => [tm, v, at(tm)]).filter(([, , sp]) => sp !== null && sp > 0.1);
+  if (mov.length < 10) return { lagMs: lag?.lag ?? null, r: lag?.r ?? null, movingFrames: mov.length, stalePct: null, longestStaleMs: null };
+  const vs = mov.map(([, v]) => v).sort((x, y) => x - y), p90 = vs[Math.floor(0.9 * (vs.length - 1))], th = 0.25 * p90;
+  let stale = 0, run = 0, runStart = null, longest = 0;
+  for (const [tm, v] of mov) { if (v < th) { stale++; if (runStart === null) runStart = tm; longest = Math.max(longest, (tm - runStart) * 1000 + 16.7); } else runStart = null; }
+  return { lagMs: lag?.lag ?? null, r: lag?.r ?? null, movingFrames: mov.length, stalePct: Math.round((stale / mov.length) * 1000) / 10, longestStaleMs: Math.round(longest) };
+}
 export const motionArgs = (mov, txt) => ['-hide_banner', '-loglevel', 'error', '-i', mov, '-vf',
   `${boxFilter()},scale=108:-2,format=gray,tblend=all_mode=difference,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=${txt}`, '-f', 'null', '-'];
 
@@ -171,6 +195,10 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   const cg = captureGaps(cap.frames, toPts(a), toPts(b));
   const capture = counts(cg, -Infinity, Infinity);
   const differs = Math.abs(capture.gt34 - page.gt34) > Math.max(1, 0.2 * page.gt34) || Math.abs(capture.gt50 - page.gt50) > Math.max(1, 0.2 * page.gt50);
+  const rtxt = join(runs, `${L}.region.txt`);
+  const region = existsSync(rtxt) ? { name: REGIONS[scene].name, ...regionFollow(log.frames, parseMotion(readFileSync(rtxt, 'utf8')), (t) => toPts(t) - pts0, a, b) } : null;
+  const mac = rec?.meta?.mac, load1 = [mac?.start?.load1, mac?.end?.load1].filter(Number.isFinite);
+  const macLoaded = load1.some((x) => x > MAC_LOADED);
   const prof = rec?.meta?.profile;
   const reads = vv.filter((r) => [`${L}-start`, `${L}-ready`, `${L}-end`].includes(r.label));
   return { ...out, window: { from: ma, to: mb, ms: Math.round(b - a) }, page, capture: { ...capture, frames: cg.length, rateHz: cap.frames.length / Math.max(1e-6, cap.frames.at(-1)[0] - cap.frames[0][0]) },
@@ -179,6 +207,7 @@ export function analyse(L, { runs, screen, stamps, vv }) {
     movie: { from: toPts(a) - pts0, to: toPts(b) - pts0, written: frames.length, all: cap.frames.length, w: cap.width, h: cap.height },
     profile: prof ? { name: prof.name, start: prof.start?.state ?? prof.start, battC: prof.start?.battC, drift: !!rec.meta.profileDrift } : null,
     viewport: reads.map((r) => ({ label: r.label.slice(L.length + 1), vvH: r.vvH, vvTop: r.vvTop, scale: r.vvScale, innerH: r.innerH })),
+    region, mac: { load1, shared: (mac?.start?.shared || []).map((x) => x.owner) }, macLoaded,
     morph: rec?.summary?.morph ?? null, log: log.frames.filter(([t]) => t >= a && t <= b), t0: a, D: b - a };
 }
 
@@ -245,9 +274,10 @@ function main() {
   if (flag('motion')) { // numbers-only motion traces for the clock check; run inside a lock hold (CPU work)
     for (const L of labels) {
       const mov = join(screen, `${L}.mov`), txt = join(runs, `${L}.motion.txt`);
-      if (!existsSync(mov) || existsSync(txt)) continue;
-      const r = spawnSync('ffmpeg', motionArgs(mov, txt), { encoding: 'utf8' });
-      console.log(`motion ${L}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`);
+      if (!existsSync(mov)) continue;
+      if (!existsSync(txt)) { const r = spawnSync('ffmpeg', motionArgs(mov, txt), { encoding: 'utf8' }); console.log(`motion ${L}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`); }
+      const sc = /^pc-H\d+-([eshf])/.exec(L)?.[1], rtxt = join(runs, `${L}.region.txt`);
+      if (sc && !existsSync(rtxt)) { const r = spawnSync('ffmpeg', regionArgs(mov, rtxt, REGIONS[sc]), { encoding: 'utf8' }); console.log(`region ${L}: ${r.status === 0 ? 'ok' : `ffmpeg exit ${r.status}`}`); }
     }
   }
   const all = labels.map((L) => analyse(L, { runs, screen, stamps, vv }));
@@ -258,6 +288,8 @@ function main() {
     const p = r.page, c = r.capture;
     console.log(`${r.L} ${r.driver} ${r.window.from}->${r.window.to} ${(r.window.ms / 1000).toFixed(1)}s | page >34 ${p.gt34} (twins ${p.gt30}/${p.gt38}) >50 ${p.gt50} (twins ${p.gt46}/${p.gt54}) near ${p.near34}/${p.near50} max ${p.maxMs} frames ${p.frames}`
       + ` | capture >34 ${c.gt34} >50 ${c.gt50} max ${c.maxMs}${r.captureDiffers ? ' CAPTURE-DIFFERS' : ''} | clock lag ${r.clock.lagMs} ms r ${r.clock.r}${r.clock.ok ? '' : ` CLOCK-CHECK FAIL${r.clock.why ? ` (${r.clock.why})` : ''}`}`
+      + (r.region ? ` | ${r.region.name}: lag ${r.region.lagMs} ms r ${r.region.r} stale ${r.region.stalePct}% longest ${r.region.longestStaleMs} ms` : '')
+      + ` | mac load1 ${r.mac.load1.join('/')}${r.macLoaded ? ' MAC-LOADED' : ''}`
       + ` | profile ${r.profile?.start ?? '?'} ${r.profile?.battC ?? '?'} C${r.profile?.drift ? ' DRIFT' : ''} | vv ${r.viewport.map((v) => `${v.label} ${v.vvH}/${v.vvTop}`).join(' ')}${r.morph ? ` | morph ${JSON.stringify(r.morph).slice(0, 80)}` : ''}`);
   }
   if (flag('no-encode')) { if (opt('json')) writeFileSync(resolve(ROOT, opt('json')), JSON.stringify(report, null, 1)); return; }
@@ -314,6 +346,14 @@ function selfTest() {
   ok(boxFilter() === 'crop=w=iw:h=ih*707/932:x=0:y=ih*119/932', `box filter ${boxFilter()}`);
   const cfil = closeFilter(CLOSE.e); ok(/^crop=w=iw\*361\.2\/430:h=ih\*395\.9\/932:x=iw\*34\.4\/430:y=ih\*274\.5\/932$/.test(cfil), `close filter ${cfil}`);
   ok(BOX.y0 + CLOSE.e.y1 * (BOX.y1 - BOX.y0) <= BOX.y1 && CLOSE.e.x1 <= 1, 'close-up inside the box');
+  // region follow: a region that changes only every 4th frame while the page moves is ~75 % stale
+  const pf2 = []; let y2 = 0; for (let t = 0; t <= 3000; t += 16) { y2 += t > 500 && t < 2500 ? 16 : 0; pf2.push([t, 16, y2]); }
+  const steppy = []; for (let i = 0, t = 0; t <= 3000; t += 16.7, i++) steppy.push([t / 1000, t > 500 && t < 2500 ? (i % 4 === 0 ? 2 : 0.01) : 0.01]);
+  const smooth = steppy.map(([t]) => [t, t > 0.5 && t < 2.5 ? 1 : 0.01]);
+  const rs = regionFollow(pf2, steppy, (t) => t / 1000, 0, 3000), rm = regionFollow(pf2, smooth, (t) => t / 1000, 0, 3000);
+  ok(rs.stalePct > 60 && rs.longestStaleMs >= 45 && rm.stalePct < 5, `region follow ${JSON.stringify(rs)} ${JSON.stringify(rm)}`);
+  ok(regionArgs('a.mov', 'r.txt', REGIONS.s).join(' ').includes('crop=w=iw:h=ih*48/932:x=0:y=ih*64/932') && regionArgs('a.mov', 'r.txt', REGIONS.s).at(-2) === 'null', 'region args');
+  ok(Object.values(REGIONS).every((r) => r.y0 >= 59 && r.y1 <= 826), 'regions inside the page area');
   console.log(`phone-clips self-test: ${n} checks ok`);
 }
 
