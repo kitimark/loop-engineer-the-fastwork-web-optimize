@@ -526,12 +526,28 @@ footer { font-size: 0.88rem; color: var(--ink-soft); display: grid; gap: 0.5rem;
      Phone rows: our own records, sources in the last column. Every number is OBSERVED in our setup. -->
 <style>
 .wc { display: grid; gap: 1rem; }
-.wc-scroll { overflow-x: auto; }
-.wc table { border-collapse: collapse; width: 100%; min-width: 46rem; font-size: 0.86rem; }
-.wc th, .wc td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--grid); }
-.wc th { font: 600 0.75rem/1.4 var(--mono); letter-spacing: 0.04em; color: var(--ink-soft); }
-.wc td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.wc td.src { font: 400 0.75rem/1.4 var(--mono); color: var(--ink-soft); }
+.wc-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.wc-row { display: grid; grid-template-columns: 2rem minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.1fr); grid-template-areas: "rank what worst over" "rank v8 v8 v8" "rank src src src"; gap: 0.35rem 1.25rem; padding: 0.9rem 0; border-top: 1px solid var(--grid); }
+.wc-row:last-child { border-bottom: 1px solid var(--grid); }
+.wc-rank { grid-area: rank; font: 600 1.25rem/1.2 var(--display); color: var(--late); font-variant-numeric: tabular-nums; }
+.wc-what { grid-area: what; display: grid; gap: 0.15rem; }
+.wc-title { margin: 0; font-weight: 600; line-height: 1.35; }
+.wc-dev { margin: 0; font-size: 0.82rem; color: var(--ink-soft); }
+.wc-k { display: block; font: 600 0.66rem/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.wc-worst { grid-area: worst; display: grid; gap: 0.2rem; align-content: start; }
+.wc-ms { font: 600 1.15rem/1.2 var(--mono); font-variant-numeric: tabular-nums; color: var(--late); }
+.wc-bar { position: relative; display: block; height: 6px; border-radius: 3px; background: var(--grid); max-width: 10rem; }
+.wc-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--late); }
+.wc-bar::after { content: ""; position: absolute; left: 22.7%; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.wc-over { grid-area: over; display: grid; gap: 0.15rem; align-content: start; font: 400 0.85rem/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+.wc-v8 { grid-area: v8; margin: 0.25rem 0 0; font-size: 0.9rem; }
+.wc-v8 .wc-k { display: inline; margin-right: 0.5rem; color: var(--signal); }
+.wc-src { grid-area: src; margin: 0; font: 400 0.7rem/1.4 var(--mono); color: var(--ink-soft); overflow-wrap: anywhere; }
+.wc-legend { display: flex; align-items: center; gap: 0.6rem; margin: 0; font-size: 0.82rem; color: var(--ink-soft); }
+.wc-legend .wc-bar { width: 5rem; flex: none; }
+@media (max-width: 40rem) {
+  .wc-row { grid-template-columns: 1.6rem minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "rank what what" "rank worst over" "rank v8 v8" "rank src src"; }
+}
 .wc .tag { font: 600 0.7rem/1 var(--mono); color: var(--ink-soft); letter-spacing: 0.06em; }
 .ba { display: grid; gap: 1.25rem; }
 .ba-scene { display: grid; gap: 0.45rem; }
@@ -541,20 +557,65 @@ footer { font-size: 0.88rem; color: var(--ink-soft); display: grid; gap: 0.5rem;
 <section class="wide surface wc" aria-labelledby="wc-title">
   <p class="label" id="wc-title">Ranked, from our own recordings</p>
   <p>You asked where the original page lagged most. We went back through every recording we have of the original. The ranking is by the longest frames and by how many slow frames came with them. Most of the worst cases are on the iPhone. All numbers are OBSERVED in our setup. A frame over 50 ms is one the eye can catch as a stutter.</p>
-  <div class="wc-scroll">
-  <table>
-    <thead><tr><th>#</th><th>What you do, and where</th><th>Device and input</th><th>Worst frame</th><th>Frames over 50 ms</th><th>v8 there</th><th>Source</th></tr></thead>
-    <tbody>
-      <tr><td class="n">1</td><td>Keep pushing up at the end of the page, so the menu opens (the morph)</td><td>iPhone, finger, cool phone; iPhone, robot driver at Serious heat</td><td class="n">218 ms</td><td class="n">75 in one finger pass; 21 per robot run</td><td>Robot driver: 0 in 4 of 4 runs (v8 vs v7). An earlier build took the original's 21 to 0.5.</td><td class="src">fixes/iphone-wave2/README.md:136-137; fixes/morph-inherit/README.md:335; fixes/v8-best/README.md:623-646</td></tr>
-      <tr><td class="n">2</td><td>Scroll through the middle, about 1,970 px down, where the dark section comes in</td><td>iPhone, finger; iPhone, scripted scroll</td><td class="n">152 ms</td><td class="n">18 in the middle in one finger pass; one 112-146 ms frame in every scripted run</td><td>v8 has the fix (F3) that alone kept that spot under 34 ms in 4 of 4 runs</td><td class="src">fixes/iphone-wave2/README.md:34-60, 136, 488-497</td></tr>
-      <tr><td class="n">3</td><td>Fast flicks down through the top card and back up, twice</td><td>iPhone, robot flicks, Serious heat (39.6-41 °C)</td><td class="n">100 ms</td><td class="n">18-28 per run (median 21)</td><td>7-9 per run, in a later block (not side by side)</td><td class="src">robot-flick records of 4 Oct (the owner's fast-flick request), scored by frames that moved; fixes/v8-best/README.md:643</td></tr>
-      <tr><td class="n">4</td><td>Fast flicks the moment the page has loaded</td><td>iPhone, robot flicks, Serious heat</td><td class="n">124 ms</td><td class="n">5-7 per run (median 6)</td><td>3 per run, in a later block (not side by side)</td><td class="src">the same robot-flick records; fixes/v8-best/README.md:326</td></tr>
-      <tr><td class="n">5</td><td>Scroll past the section switches, about 2,700-3,000 px down</td><td>iPhone, scripted scroll, first load</td><td class="n">129 ms</td><td class="n">4 frames of 111-129 ms in 1 of 3 runs</td><td>Style work at the switch: 18-25 ms → 0.4-0.5 ms (iPhone Timeline)</td><td class="src">fixes/iphone-wave2/README.md:63-64; fixes/PROGRESS.json (v3)</td></tr>
-      <tr><td class="n">6</td><td>Scroll out of the top card</td><td>iPhone, finger</td><td class="n">107 ms</td><td class="n">12 in the first 900 px of one pass</td><td>The top-card change (v6) took frames over 34 ms from 27 to 12 per run</td><td class="src">fixes/iphone-wave2/README.md:136; this article, V6</td></tr>
-      <tr><td class="n">7</td><td>A plain scripted scroll on a hot phone</td><td>iPhone, scripted scroll, 42 °C (Serious)</td><td class="n">195 ms</td><td class="n">11-16 per run</td><td>Not tested hot on the phone yet</td><td class="src">nav-morph heat runs (prediction P-091), runs early-w2 and early-w6</td></tr>
-    </tbody>
-  </table>
-  </div>
+  <p class="wc-legend"><span class="wc-bar" aria-hidden="true"><i style="width:100%"></i></span> worst frame, on one scale up to 220 ms; the tick marks 50 ms, about where the eye catches a stutter</p>
+  <ol class="wc-list">
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 1">1</span>
+      <div class="wc-what"><p class="wc-title">End of the page: keep pushing up so the menu opens (the morph)</p><p class="wc-dev">iPhone · finger, cool phone; robot, Serious heat</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">218 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:99.1%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>75 in one finger pass</span><span>21 per robot run</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>0 in 4 of 4 robot runs (v8 vs v7). An earlier build already took the original's 21 to 0.5.</p>
+      <p class="wc-src">Source: fixes/iphone-wave2/README.md:136-137; fixes/morph-inherit/README.md:335; fixes/v8-best/README.md:623-646</p>
+    </li>
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 2">2</span>
+      <div class="wc-what"><p class="wc-title">The middle, about 1,970 px down, where the dark section comes in</p><p class="wc-dev">iPhone · finger; scripted scroll</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">152 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:69.1%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>18 in one finger pass</span><span>one of 112-146 ms in every scripted run</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>Has the fix (F3) that alone kept this spot under 34 ms in 4 of 4 runs.</p>
+      <p class="wc-src">Source: fixes/iphone-wave2/README.md:34-60, 136, 488-497</p>
+    </li>
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 3">3</span>
+      <div class="wc-what"><p class="wc-title">Fast flicks down through the top card and back up, twice</p><p class="wc-dev">iPhone · robot flicks, Serious heat (39.6-41 °C)</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">100 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:45.5%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>18-28 per run (median 21)</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>7-9 per run, in a later block (not side by side).</p>
+      <p class="wc-src">Source: robot-flick records of 4 Oct (the owner's fast-flick request), scored by frames that moved; fixes/v8-best/README.md:643</p>
+    </li>
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 4">4</span>
+      <div class="wc-what"><p class="wc-title">Fast flicks the moment the page has loaded</p><p class="wc-dev">iPhone · robot flicks, Serious heat</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">124 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:56.4%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>5-7 per run (median 6)</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>3 per run, in a later block (not side by side).</p>
+      <p class="wc-src">Source: the same robot-flick records; fixes/v8-best/README.md:326</p>
+    </li>
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 5">5</span>
+      <div class="wc-what"><p class="wc-title">Past the section switches, about 2,700-3,000 px down</p><p class="wc-dev">iPhone · scripted scroll, first load</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">129 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:58.6%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>4 frames of 111-129 ms, in 1 of 3 runs</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>Style work at the switch went from 18-25 ms to 0.4-0.5 ms (iPhone Timeline).</p>
+      <p class="wc-src">Source: fixes/iphone-wave2/README.md:63-64; fixes/PROGRESS.json (v3)</p>
+    </li>
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 6">6</span>
+      <div class="wc-what"><p class="wc-title">Scrolling out of the top card</p><p class="wc-dev">iPhone · finger</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">107 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:48.6%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>12 in the first 900 px of one pass</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>The top-card change (v6) cut frames over 34 ms from 27 to 12 per run.</p>
+      <p class="wc-src">Source: fixes/iphone-wave2/README.md:136; this article, V6</p>
+    </li>
+    <li class="wc-row">
+      <span class="wc-rank" aria-label="Rank 7">7</span>
+      <div class="wc-what"><p class="wc-title">A plain scripted scroll on a hot phone</p><p class="wc-dev">iPhone · scripted scroll, 42 °C (Serious)</p></div>
+      <div class="wc-worst"><span class="wc-k">Worst frame</span><span class="wc-ms">195 ms</span><span class="wc-bar" aria-hidden="true"><i style="width:88.6%"></i></span></div>
+      <div class="wc-over"><span class="wc-k">Frames over 50 ms</span><span>11-16 per run</span></div>
+      <p class="wc-v8"><span class="wc-k">v8 there</span>Not tested hot on the phone yet.</p>
+      <p class="wc-src">Source: nav-morph heat runs (prediction P-091), runs early-w2 and early-w6</p>
+    </li>
+  </ol>
   <p class="note">Left out: runs where the phone had already slowed itself to 30 frames a second from heat. One of them had a 1.3 s frame. That frame says more about the throttled phone than about the page.</p>
   <p class="note"><span class="tag">IPHONE, MEASURED</span> Safari's bottom bar shrinking and growing under a finger is a case Chrome can't replay: Chrome has no such bar, and a scripted scroll never moves it. In our robot-flick runs many of the slowest frames fall while the bar moves, and the page lays itself out several times in one frame. Under heat, about 1 in 7 slow frames sits at such a step. In the iPhone Simulator, the heavy layout in those frames runs with no page script on its stack, inside WebKit's own work between two frames. A count of the page functions that run in those frames found only one write, and an earlier test had already shown that write is not the trigger. That count had little power (12 frames), so a rarer caller could still hide. So far it looks like WebKit's own work when the visible area changes (OBSERVED, Simulator; which WebKit task it is stays UNRESOLVED). v8 has no fix for it. That work comes after v9.</p>
   <p class="note">The phone numbers for v8 in rows 3 and 4 come from a later test against v7, on another day. They are no side-by-side test against the original. A full phone timing run of the best build against the original is still on the list.</p>
