@@ -1273,6 +1273,111 @@ out/morph-gpu/pxsnap-f673c6cbc770`, 13 stops 0-5346; output in `out/v9/px-mobile
 - Its phone evidence goes into its own no-worse ticket, v9-final vs step 4 (int-v8). Use G gestures, not
   `__fwMorphDrive` from the page end: on v9 the panel is already open there.
 
+## The menu's first open after page load (lead decision 2026-10-05; Chrome call tree + counts, no timing claim)
+
+**Question.** What makes the menu's first open after page load cost more than the 2nd and 3rd opens?
+
+**Answer (Chrome, OBSERVED in our setup).**
+- The main thread does **not** do more style, layout or paint on the first open. Its counts are equal to or lower
+  than the 2nd and 3rd opens.
+- Two things happen only on the first open:
+  1. the panel's images are decoded for the first time;
+  2. in PR-018 builds only, one Google tag task runs.
+
+**Probe.** `first-open/first-open-chrome.mjs`.
+- Setup: headless Chrome at 430x932, DPR 3, touch, CPU 6x while tracing.
+- Each load scrolls to the page end without opening the menu. It then waits for the panel's idle mount plus 3 s.
+  All 21 panel images were loaded and `decoding=async` before the trace.
+- Then it runs 3 opens and 3 closes.
+- Windows run from 150 ms before each open start to 1.5 s after it.
+- Arms (2 loads each):
+  - **m**: v8 (msbase-3e3e94cb6e9f) with the phone's M driver (`__fwMorphDrive`, hold 2.5 s);
+  - **s**: v8 + PR-018 7b (ms-ba256c2a48f8), driven by a 30-frame scroll glide p 0 → 1 and back.
+- Holds: one normal FIFO hold, 2026-10-05 01:36Z. The first hold (01:26Z) was lost to a probe bug that the
+  rerun fixed.
+- Raw data and results: `out/morph-gpu/first-open/first-open-chrome-2026-10-05T01-36-28-938Z.json` and
+  `raw-…-{0,1}-{0,1}.json.gz`.
+- Readers:
+  - `open1-diff.mjs`: event names whose count or ms differs most between open 1 and opens 2-3;
+  - `decode-breakdown.mjs`: image decode events by thread and offset;
+  - `open-frames.mjs`: main frames after the open start;
+  - `event-stacks.mjs`: JS stacks inside one event type.
+
+Main-thread counts per open window (2 loads):
+
+| arm | open | style recalcs (elements) | layouts (dirty objects) | paints | image decodes (worker threads) |
+|---|---|---|---|---|---|
+| m (v8) | 1 | 150-156 (1584-1602) | 73-75 (395-406) | 575-576 | **15 + 5 checkered** |
+| m (v8) | 2 | 157-164 (1679) | 73-83 (398-453) | 591-621 | 0 |
+| m (v8) | 3 | 161-166 (1697-1698) | 85 (464) | 625-630 | 0 |
+| s (PR-018) | 1 | 90-100 (1254-1368) | 60-67 (337-365) | 442-496 | **15 + 5 checkered** |
+| s (PR-018) | 2 | 95-97 (1347-1443) | 71-74 (383-395) | 473-496 | 0 |
+| s (PR-018) | 3 | 92-103 (1295-1296) | 73 (391) | 466-474 | 0 |
+
+**1. First decode of the panel images, both arms and every load.**
+- What runs:
+  - 15 GPU-raster image decodes (`GpuImageDecodeCache::DecodeImage`), 45-50 ms in total;
+  - 5 deferred, "checker-imaged" decodes (`CheckerImageTracker::DeferImageDecode` →
+    `ImageController::ProcessNextImageDecodeOnWorkerThread`), about 22 ms.
+- Where: on raster worker threads, not the main thread (the 6x throttle does not apply to those threads).
+- When: from +41 to +130 ms into the open with the M driver. With the glide they spread out to +552 ms, as the
+  columns come into view.
+- Why only once: before the first open the panel was never drawn (opacity 0), so its images were never rastered.
+  After that the decodes are cached: opens 2 and 3 have none.
+- The open frame itself is a little longer on the first open: 28-29 ms against 19-26 ms at 6x.
+  - That is n = 2 and noisy; open 2 of load 0 was 26 ms.
+  - The extra time is native work ("(program)" in the profile), not JS.
+
+**2. One Google tag task, PR-018 builds only.**
+- What: one `scrollend` dispatch in open 1 of 65-67 ms at 6x, at +147/152 ms. All of its stack is the Google tag
+  (`gtag js?id=G-…` and `gtm.js`). Opens 2 and 3 have the same `scrollend` events at 0.0 ms.
+- Google documents the enhanced-measurement scroll event as firing "the first time a user reaches the bottom of each
+  page (i.e., when a 90% vertical depth becomes visible)" (support.google.com/analytics/answer/9216061; doc
+  CONFIRMED, read 2026-10-05).
+- Why it lands in the open:
+  - PR-018 adds the `.fw-ms-end` runway (t = 932 px), so the 90 % line moves to y 5557, which is p 0.23 inside the
+    morph zone. The probe stopped at p 0, which is 87.1 % depth.
+  - On v8 the 90 % line (y 4718) is crossed on the way down, before the end, so this task never falls in an open.
+- That this task is that scroll event is OBSERVED: it is a gtag stack, it runs once, and it comes at the first
+  `scrollend` past 90 %.
+- It is vendor code, so there is no page fix that keeps the analytics unchanged. It is reported to the morph-scroll
+  owner and to int-v8 for v9 (v9 has PR-018 rev 7c, the same runway).
+
+**How this fits the earlier data.**
+- Simulator (WebKit): the cold first open repaints 32 rects (4 layouts, 430x512 tile-sized rects over y 4608-5690)
+  against 10 on warm opens in rev 3. A first raster of the panel, images included, fits that. WebKit's own decode
+  path is not checked.
+- Phone (M driver, P-092/P-098): the first open's first frame was not longer than the repeat opens' first frames:
+  C 34.5 against 55 ms. The first-only work above is off the main thread in Chrome, and on the phone it has not
+  shown up as a longer first frame.
+
+**D card, draft for the pre-data read (mgmt-ops-10), then the lead.**
+
+```
+ATTRIBUTION morph-first-open · cluster: menu open 1 per page load (page end) · verdict LOCATED (not NAMED)
+1 pipeline stage: raster wait + allocation (first image decode of the panel's 15 visible images + 5 checker-imaged),
+  off the main thread in Chrome; main-thread style/layout/paint counts NOT higher on open 1 (table above).
+  PR-018 builds add one script task (gtag scroll event, vendor; not this card's fix).
+2 code: the panel images get src at b (IO 200 % zone) and stay undrawn (panel opacity 0, scene paused) until E(1) /
+  p > 0; JS 2.DyWL8TcE.js (v8) 14151 (src), 14231 (mount). The decode is the engine's, at first raster.
+3 ablations (planned, none run yet; one block, control v8 msbase-3e3e94cb6e9f):
+  | arm | removes | role | mechanism check | result |
+  | P: img.decode() on the panel's images once at the idle mount (no visual change) | first-raster decode | positive | Chrome: decode events in open 1 → 0 (or ≤ opens 2-3); Simulator: cold first-open rects 32 → warm level | – |
+  | N: same call on 15 off-panel images of #platform | nothing in the panel | negative sibling | Chrome: open 1 still 15 decodes | – |
+  axis: time since load (decode cache age) · decoupling run: open 1 at +10 s and +60 s after the mount (does the
+  decode cache keep the images; Chrome GpuImageDecodeCache and WebKit both evict under budget)
+4 device class: unknown. In Chrome it is off the main thread. On the phone the first open's first frame was not
+  longer (M driver). The phone would need a Timeline segment card (A1) before any F.
+5 platform claims relied on:
+  | Chrome decodes an image at its first raster, and checker-images async ones (CheckerImageTracker) | OBSERVED (our trace) | cc/tiles/checker_image_tracker.cc, to verify | the mechanism in Chrome |
+  | img.decode() fills the same cache the raster uses and keeps it until the open (Chrome, WebKit iOS 26.6.1) | UNRESOLVED | decisive check = arm P's mechanism check | the whole fix |
+  | WebKit's cold first-open rects are the panel's first raster incl. image decode | OBSERVED (Simulator counts) | Simulator Timeline with decode records | the phone relevance |
+6 lead: –
+Owner's view: a weak candidate. In Chrome the cost is off the main thread, and the phone's first-frame data (C 34.5
+vs 55 ms) does not show a first-open penalty. I would run arm P's Chrome counts check only if the lead wants the
+first open closed; otherwise record and park.
+```
+
 ## Risks, conflicts, follow-ups
 
 - **Base.** Built on best-build, which includes morph-inherit. P-085 passed on the iPhone at Serious (main e22dd73:
