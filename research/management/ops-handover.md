@@ -72,6 +72,11 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:2xZ **Base ruling for P-130 and P-097 rev 4.2 (lead accepted the ops proposal); landings.**
+  - Landed: toolbar-resize 35094199 and 888df724 (now fe3e7fa3); ops 42fe246d as 85e9b04c. Lead memory note f99cb6a2: user phone steps are posted with --phone.
+  - P-130 and P-097 rev 4.2 run as signed on C = 647c9ef2b1e2 (the pre-7d v9-final); each result claims only that base. No re-pin now.
+  - Before either delta lands, its owner shows: (1) it applies cleanly to v9-final 1b2eecc66011 (189ca7ed); (2) node --check passes; (3) a byte-diff showing the delta touches no 7d line (JS 14167-14290). 7d is in the menu settle and both deltas are countdown code, so no overlap is expected; an overlap means a re-based card before landing.
+  - The ops result reads of P-130 and P-097 name the base and check these three items before any land request. PREDICTIONS P-130 and P-097 rows carry the ruling in c[3].
 - 10-05 ~11:1xZ **PR-023 rev 7d landed (189ca7ed); v9-final JS moves.**
   - fix/morph-scroll-7d landed as 189ca7ed (user accepted 10:15:50Z). v9-final JS 647c9ef2b1e2 to 1b2eecc66011; CSS e1359ab9994a unchanged. Row pr-018-menu-morph landed; fix-hero-exit-threaded parked.
   - P-134 (int-v8) pins 189ca7ed. P-133 (toolbar) design accepted in principle by the lead: drag strokes, at least 4 cycles, two holds; the ops pre-data read comes next.
