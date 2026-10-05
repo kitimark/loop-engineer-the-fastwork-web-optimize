@@ -2441,5 +2441,18 @@
       "incident": "I-198 (P3 ask: gesture --timeline stack-depth option; not needed for P-127)",
       "pins": {"depthScript":"8ac787c8c83a","depthOutput":"bd3cfe4551f6","n4ctl":"605214d05180","scorerImported":"c52de0edd5d3"}
     }
+  },
+  "p127": {
+    "card": "README Prediction P-127 (registered before data)",
+    "status": "card; waiting for ops pre-data read, then the lead signs",
+    "design": "count-only Simulator functional session, shared slot (weight simulator, max 300 s); own inspector connection sets Timeline depth (16 main arms, 1 for 4 arms); tools/ unchanged",
+    "timelineStart": {"d16":[["Page.disable",{}],["Page.enable",{}],["Timeline.enable",{}],["Timeline.setInstruments",{"instruments":["Timeline"]}],["Timeline.start",{"maxCallStackDepth":16}]],"d1":"same with maxCallStackDepth 1"},
+    "arms": "d16: {io,raf,timer} x {change-sel, same-sel, none, change-nosel, same-nosel}; d1: io/raf/timer-change-sel, io-same-sel; 30 rounds, 100 ms apart; dry record raf-change-sel d16 5 rounds (STOP 27 without a >= 2-frame bracketed record)",
+    "fieldsRead": "type, children, data.message (TimeStamp), stackTrace.callFrames[].url/functionName; startTime only for rule T; arm/spec/depth/page.fired",
+    "depthRule": "per-round counts compare only within the same depth: d16 with d16; d1 only with P-126 (stack shape)",
+    "outcomes": ["CONTROL","O1 SEEN-WITH-CALLER|STACKLESS|CALLER-CUT|UNSEEN|NO-RECORD|MIXED","O2 DOM-ONLY-AT-1|PAGE-AT-1|MIXED","O3 NEVER|SOMETIMES(n)","O4 SILENT|RECORDS","O5 GATED|NOT-GATED","O6 rule T descriptive"],
+    "limits": ["InvalidateLayout counts first invalidations only (PageTimelineAgent l.197-198)","ScheduleStyleRecalculation only when no recalc is pending (Document.cpp l.2761-2772)","runAsync evaluate polls add records outside brackets","Simulator only; a real-iPhone arm is a separate ask"],
+    "predictions": [["dry passes",0.9],["CONTROL OK",0.85],["O1 SEEN-WITH-CALLER",0.75],["O2 DOM-ONLY-AT-1",0.85],["O3 NEVER",0.8],["O4 SILENT",0.8],["O5 GATED",0.8],["d16 change-sel IL rounds <= 20 %",0.7],["io container ObserverCallback/FunctionCall >= 80 %",0.6],["O6 io change >= 80 %, same <= 20 %",0.6]],
+    "pins": {"page":"05ab5364cbc6","capture":"5dae67bd2ab1","reader":"9f691bfa77eb","selftest":"253346c592e4","wipImported":"3dcab04e362a"}
   }
 }

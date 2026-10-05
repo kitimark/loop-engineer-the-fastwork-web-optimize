@@ -1629,6 +1629,157 @@ its `native` key mixed two different things. The frozen calls stand as computed,
 - **Ops lesson (from ops).** The pre-data and result reads never checked the capture depth either. Ops logged it.
 - **Findings board.** F-261 (posted before this addendum) names the pitfall. F-262 adds the source confirmation and is tagged to every topic whose scripts read Timeline stacks.
 
+## Prediction P-127: how does WebKit's Timeline record a write from an observer callback? (Simulator, count-only, registered before data)
+
+P-id P-127 (assigned by ops, 5d08937c). The lead chose the design: a count-only check of observer-callback writes in the
+Simulator shared lane. The capture script lives here and sets the Timeline depth on its own inspector connection
+(tools/ unchanged; the `--stack-depth` ask is I-198, P3). Gates: this card, then ops' pre-data read, then the lead's
+signature. The trigger stays OBSERVED in all text.
+
+- **Question.** P-126's NATIVE reading rests on how the instrument shows script writes. On a quiet test page, how does
+  WebKit's Timeline record one attribute write made from:
+  - an IntersectionObserver callback;
+  - a requestAnimationFrame callback;
+  - a timer callback?
+  It asks four things:
+  1. Does the write raise a record?
+  2. Does the record keep the page caller at depth 16?
+  3. What does the record show at depth 1?
+  4. Does a same-value write, or a write to an attribute no selector reads, raise anything?
+- **Why.**
+  - N4 left (a) "stacks dropped in observer callbacks" and (b) "the write raised no record" open.
+  - Addendum D1 added (c) "the caller was cut at depth 1".
+  - P-126's same-value fwWC writes sat next to `setAttribute` records 445 of 460 times; this is UNRESOLVED.
+  - Only a write we control, with its records found by structure, separates these.
+- **What WebKit main's source says** (CONFIRMED for WebKit main; the Simulator's build is not checked, so P-127 is the
+  local check):
+  - A same-value `setAttribute` does no style invalidation. `Element::setAttributeInternal` runs
+    `AttributeChangeInvalidation` only when `newValue != oldValue` (`Source/WebCore/dom/Element.cpp` l.2350-2353), and
+    `attributeChanged` returns early on equal values (l.2444-2445) (file commit `74af04025b3b`).
+  - An attribute change invalidates style only when a rule's features name the attribute
+    (`Source/WebCore/style/AttributeChangeInvalidation.cpp` l.44-61, file commit `aeb822d74e8b`).
+  - ScheduleStyleRecalculation is recorded only when the style-recalc timer is not already running
+    (`Source/WebCore/dom/Document.cpp` `scheduleStyleRecalc` l.2761-2772, file commit `10740b3a1fa5`).
+  - InvalidateLayout counts first invalidations only. It records nothing when the renderer already needs layout
+    (`PageTimelineAgent.cpp` l.197-198).
+  - A record's stack is the visible JS stack up to the depth; it is absent when no JS frame is on the stack (addendum D1).
+- **Design (COUNT-ONLY; no durations, no timing).**
+  - Page `p127-page.html` (`05ab5364cbc6`), no Fastwork code. The capture copies it into this topic's overlay as
+    `/p127/index.html` and checks the served bytes (exit 26 on a mismatch).
+    - Three boxes: `#tsel` (attribute `data-sel`, read by the rule `.t[data-sel="b"] { width: 120px }`), `#tnosel`
+      (attribute `data-nosel`, read by no rule) and `#iotarget` (the IO target, always in view).
+    - One round:
+      - io: a new IntersectionObserver per round; its first callback disconnects it and does the round;
+      - raf: one rAF callback;
+      - timer: one `setTimeout(..., 0)` callback.
+    - Rounds start 100 ms apart. The round itself is `performance.mark('p127:<spec>:<i>')`, the write (in function
+      `p127write`), then `performance.mark('p127end:<spec>:<i>')`.
+    - Write kinds:
+      - change: `b`/`a` alternating, so every write changes the value;
+      - same: always `a`, the value already set;
+      - none: marks only.
+  - Arms, in this order (`PLAN` in `p127-capture.mjs` `5dae67bd2ab1`), 30 rounds each:
+
+    | depth | arms (spec = cause-kind-attr) |
+    |---|---|
+    | 16 (15 arms) | {io, raf, timer} x change-sel; x same-sel; x none; x change-nosel; x same-nosel |
+    | 1 (4 arms) | io-change-sel, raf-change-sel, timer-change-sel, io-same-sel |
+
+  - Per arm, on the capture's own inspector connection (one connection for the whole run), in order:
+    1. `__p127.reset()` (both attributes `a`), then two rAFs.
+    2. Timeline start: exactly wip.mjs `TIMELINE_START` with only the depth replaced: `Page.disable {}`, `Page.enable {}`,
+       `Timeline.enable {}`, `Timeline.setInstruments {instruments: ['Timeline']}`,
+       `Timeline.start {maxCallStackDepth: 16}` (depth-1 arms: `{maxCallStackDepth: 1}`).
+    3. `__p127.run(spec, 30, 100)`.
+    4. `Timeline.stop`, then wait for `recordingStopped` (at most 3 s) and drain 500 ms.
+    The records are saved as sent (`out/toolbar-resize/sim127/tl-<arm>.json`).
+  - **Dry record first (uncounted; ops' condition).** Arm `raf-change-sel` at depth 16, 5 rounds. The run continues only
+    when at least one bracketed invalidation record has >= 2 stack frames. Otherwise STOP exit 27, before any counted arm.
+    The stack-length histogram goes to `runs.jsonl`. This proves both that depth 16 gives multi-frame stacks and that the
+    bracket is found.
+  - Lane and cost: one shared slot, weight simulator, `--max-seconds 300`, in a functional session (no
+    scroll/record/run). About 6 s per arm, 19 arms plus the dry record, about 2 min after the session settles. The
+    capture stops itself 12 s before its 200 s budget (`SB_BUDGET_S`) and keeps the arms done so far.
+    ```sh
+    node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-toolbar-resize -- \
+      sh -c 'node tools/fix.mjs serve toolbar-resize > out/toolbar-resize/serve127.log 2>&1 & S=$!; \
+        node tools/wait.mjs serve out/serve-toolbar-resize.json --pid $S --owner fix-toolbar-resize --timeout 60 && \
+        node tools/sim.mjs session --functional --owner fix-toolbar-resize -- node fixes/toolbar-resize/p127-capture.mjs; \
+        E=$?; kill $S; exit $E'
+    node fixes/toolbar-resize/p127-read.mjs out/toolbar-resize/sim127 --json fixes/toolbar-resize/p127-read.json
+    ```
+- **Reader (frozen: `p127-read.mjs` `9f691bfa77eb`; self-test `p127-selftest.mjs` `253346c592e4`, 33 checks pass).**
+  - Fields read, and nothing else:
+    - per record: `type`, `children` (nesting and sibling order), `data.message` (TimeStamp only),
+      `stackTrace.callFrames[].url` and `.functionName`;
+    - `startTime` only for rule T;
+    - per arm file: `arm`, `spec`, `depth`, `page.fired`.
+    - No `endTime`, no durations.
+  - Bracket (structural): a round's records are the siblings strictly between its two marks, with their descendants.
+    The two marks must be siblings in the same parent, else the round is unbracketed. Container = the parent's type.
+  - Shape of a ScheduleStyleRecalculation / InvalidateLayout record:
+    - page: a frame on `/p127/`;
+    - dom-call: frames, none of them page, the first one `[native code]`;
+    - no-stack;
+    - other.
+  - Per-arm counts: rounds fired, marks, bracketed rounds, rounds with >= 1 record (and with a ScheduleStyleRecalculation
+    or an InvalidateLayout), records by type and shape, stack lengths, page share, records whose stack names
+    `p127write` or the callback.
+  - Calls per arm:
+    - RAISES: bracketed >= 20 and >= 80 % of them hold a record. NONE: <= 20 %. PARTIAL: in between. THIN: < 20
+      bracketed.
+    - STACK: PAGE, DOM-ONLY or STACKLESS at >= 80 % of the bracketed records; MIXED otherwise; n/a when there are none.
+  - Rule T (descriptive, P-126's N4 form): per round, write time = the open mark's `startTime`. A hit is any invalidation
+    record anywhere in the capture within 2 ms. The same is counted at -25 and +25 ms (background).
+  - **Depth rule (lead).** Depth 16 adds overhead and can move frame boundaries. Per-round counts compare only within the
+    same depth: the d16 arms with each other, and the d1 arms only with P-126, by stack shape. Never d1 counts against
+    d16 counts.
+- **Outcome table (frozen; computed by `outcomes()` in the reader).**
+
+  | outcome | rule | what it means for P-126's NATIVE | next |
+  |---|---|---|---|
+  | CONTROL | every d16 none arm NONE | a cause whose none arm is not NONE is VOID in every row below | (VOID: fix the page, a new card) |
+  | O1 SEEN-WITH-CALLER | d16-io-change-sel RAISES, PAGE | N4 (a) REFUTED: observer-callback writes keep their caller. Script writes in P-126's step frames sit in the dom-call bucket, not in the no-stack surplus | a depth-16 recapture of the step frames (own card) to name the dom-call callers; the WebKit reference check for the no-stack surplus |
+  | O1 STACKLESS | RAISES, STACKLESS | (a) SUPPORTED: the no-stack surplus may hold observer-callback writes; NATIVE cannot exclude them | a recapture with marks around the showcase's IO callbacks (`fwNearChange` and peers) |
+  | O1 CALLER-CUT | RAISES, DOM-ONLY | even depth 16 loses the caller in IO callbacks; stacks cannot name observer writers | as STACKLESS (marks, not stacks) |
+  | O1 UNSEEN | NONE while raf and timer change-sel RAISE | the instrument shows no record for IO-callback writes; P-126 says nothing about them | a write log (MutationObserver) instead of Timeline |
+  | O1 NO-RECORD | NONE, and a raf or timer change-sel not RAISES | the test raised nothing: VOID | fix the page |
+  | O2 DOM-ONLY-AT-1 | d1 io/raf/timer change-sel all RAISES, DOM-ONLY | D1's (c) confirmed locally: at depth 1 a script write shows one `[native code]` frame | none |
+  | O2 PAGE-AT-1 | any d1 change-sel PAGE | (c) REFUTED: D1's split misread the bucket | re-read D1 |
+  | O3 NEVER / SOMETIMES (n) | no-stack bracketed records over the d16 write arms | NEVER: a script write never leaves a stackless record, so P-126's no-stack surplus is not script writes of these kinds. SOMETIMES: it can be (contradicts the source reading; report) | |
+  | O4 SILENT / RECORDS | d16 same-sel arms all NONE / any RAISES | SILENT: P-126's 445 of 460 same-value matches were neighbours, and the 2 ms rule does not find a write's own record on a busy page. RECORDS: same-value writes invalidate in our setup (contradicts WebKit main; report) | |
+  | O5 GATED / NOT-GATED | d16 change-nosel arms all NONE / any RAISES | GATED: only writes to attributes a selector reads raise records, so showcase writes matter only where a rule reads them | |
+  | O6 (descriptive) | rule T on d16-io-change-sel vs d16-io-same-sel | how the 2 ms rule behaves on a quiet page (hits vs +-25 ms) | |
+
+  - **Limits.**
+    - InvalidateLayout counts first invalidations only.
+    - ScheduleStyleRecalculation counts the first schedule while no recalc is pending. On a busy frame (P-126's step
+      frames), later writes in the same frame leave no record of their own. So P-127's per-round counts give the shape
+      of a write's record, not a rate that transfers to P-126.
+    - The capture's own `Runtime.evaluate` polls (`runAsync`, every 500 ms) add records outside the brackets. Rule T's
+      background measures them.
+    - Simulator, not the phone. Any real-iPhone arm is a separate ask with its own ticket (lead).
+- **Predictions (registered before data).**
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | the dry record passes (a bracketed record with >= 2 frames) | 90 % |
+  | 2 | CONTROL OK for io, raf and timer | 85 % |
+  | 3 | O1 SEEN-WITH-CALLER | 75 % |
+  | 4 | O2 DOM-ONLY-AT-1 | 85 % |
+  | 5 | O3 NEVER | 80 % |
+  | 6 | O4 SILENT (source) | 80 % |
+  | 7 | O5 GATED (source) | 80 % |
+  | 8 | in the d16 change-sel arms, <= 20 % of bracketed rounds hold an InvalidateLayout (the layout dirtying comes later, in style resolution, outside the bracket) | 70 % |
+  | 9 | io rounds' container is ObserverCallback or FunctionCall in >= 80 % of rounds | 60 % |
+  | 10 | O6: io change-sel 2 ms hits >= 80 % of rounds, io same-sel <= 20 % | 60 % |
+- **Pins.**
+  - page `05ab5364cbc6`, capture `5dae67bd2ab1`, reader `9f691bfa77eb`, self-test `253346c592e4`;
+  - `tools/lib/wip.mjs` as imported (`TIMELINE_START`, `openTab`, `runAsync`) `3dcab04e362a`.
+  - sha256, first 12 hex.
+- **Pixel and behaviour.** It is a test page only. No Fastwork code is changed or served differently, so no pixel check
+  applies.
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).
