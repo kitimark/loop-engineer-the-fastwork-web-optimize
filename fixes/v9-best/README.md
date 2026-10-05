@@ -5,8 +5,9 @@
 
 **Status:** step 4 built (v8 + menu swipe rev 7c + double-drive + scroll-cb via a carry over double-drive + PR-021 Join
 button rev 3, user-accepted). Steps 2 and 4 passed the function check; step 3 passed fix-scroll-cb's Simulator count
-check; step 4's look checks are running. Double-drive is final and phone-cleared (P-118 NO-WORSE). Phone scripts for
-the v9 ticket are in `phone/` (draft, arms = step 4). Not timed (memory
+check; step 4's look checks passed. Double-drive is final and phone-cleared (P-118 NO-WORSE). Phone ticket P-120 (arms =
+step 4 with rev 7c) is CLOSED INSUFFICIENT. Step 4 will be rebuilt with morph-scroll rev 7d once it lands, and tested
+under P-122 with P-121's G driver. Not timed (memory
 `defer-timing-focus-call-tree.md`). The phone no-worse check follows the less-work rule (memory `less-work-landing-rule.md`).
 **Integrator:** int-v8 (wave-integrator), from 2026-10-05. Board row `v9-best`, lead priority #2, user T-159 #9.
 **Build:** `patch.diff` is baseline-relative over 2 files: step 4, JS `de237379b556…`, CSS `e1359ab9994a…` (patch.diff
@@ -132,6 +133,26 @@ With two or more components, the script also checks:
 - Expected from step 1: rev 7c changes motion only. It keeps rev 2's still frames, which are T3 on `#platform` in Safari (see the morph-scroll README, "Pixel tiers"). Frozen frames at rest should match v8 within T2 in Chrome.
 
 ## Phone no-worse ticket P-120 (less-work rule; id from mgmt-ops-10; registered before any phone data)
+
+**CLOSED INSUFFICIENT (lead ruling 2026-10-05 ~00:20Z; ops-handover 06f33a91).** Every gate is unscorable:
+- **GM** is not comparable (rev 7c's end screen, "G leg" below).
+- **M and GE** were not run, because the rev 7d rebuild supersedes the rev 7c V arm.
+
+What each hold left:
+
+| hold | result |
+|---|---|
+| H1 | V morph runs void; C runs only sentinels |
+| H3a | void (WDA down) |
+| H3a2 | a valid record, not evidence |
+| H3b, H4, H2' | not run |
+
+The pre-look predictions are scored against these arms: the overall result is "insufficient", the 0.10 branch. A2's
+post-look values are not scored. The A2 procedure and scripts (3da81de9, plus the stale-run-file fix 60a271d7) carry
+over by pin to **P-122** (v9 step 4 rebuilt with rev 7d, vs v8), whose G legs use P-121's path-matched driver.
+
+Lesson (ops, in the P-120 row): in the pre-data read, a Simulator dry run per driver checks that V reaches the same
+start state and gesture path as C. Pinned scripts alone caught neither the open start nor the end-screen path.
 
 Lead ruling (2026-10-04 ~23:15Z): the block registers on v9 step 4 now (rev 7c + double-drive + scroll-cb via its carry
 + PR-021 rev 3; JS de237379b556 / CSS e1359ab9994a). nav-hit-cache, toolbar-resize and morph-close-peak do not enter
