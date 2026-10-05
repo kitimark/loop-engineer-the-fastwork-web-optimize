@@ -72,6 +72,22 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:5xZ **P-136 part 1 FAIL (C5) stands; P-138 goes to fix-nav-morph (post-data); new drain order; P-130 H4 VOID
+  (WDA); P-137 signed and running. Next free P-139.**
+  - P-136: ops re-scored the Chrome counts from the files (counts.mjs b93a69de05f0, count-chrome.json 67a6b91698e0, A/A
+    9d80c7d462f0) and got the owner's output. C1-C4 and C8 hit. C5 missed: desktop PrePaint K 1403.5 vs V 1398, a gap of 5.5 against tol 4.
+  - Descriptive (OBSERVED): the gap is all in PrePaint.frame; the identical-bytes A/A spans 997-1005 there; the U2 branch never runs on
+    desktop. Lead ruling ~11:52Z, option (a): the FAIL stands as registered and U2 does not land on this card. C6, C7 and part 2 are cancelled.
+  - P-138 is reserved for fix-nav-morph, labelled post-data: a desktop PrePaint tolerance from an A/A of at least 3 pairs, then a fresh K/V.
+    It carries the C6/C7 Simulator counts and part 2. ops does the pre-data read, then the lead signs.
+  - Drain after P-137 (the lead makes the moves): fix-toolbar-resize P-133, fix-cd-roll-ca-r4 P-097 Simulator reps, fix-nav-fade
+    batch 9, fix-hero-exit-threaded census, P-138 if signed. All four owners were told.
+  - P-130: the continuation H4 at 11:48:16Z was VOID before any run, because WDA was unreachable after the unplug. H1-H3 stay VALID.
+    The tail (H4 + H5) runs after P-137 in one --block P-130 hold.
+  - P-137 SIGNED (~11:4xZ, landed 32b66e81). Part 1 of the block started at 11:48:21Z.
+  - I-208 (fix-nav-fade: simctl launch of Safari timed out on a fresh boot; env, not blocking) was relayed to the lead.
+    P-097: Chrome reps 2-6 run apart from the Simulator reps. The lead accepted this; ops checks at the read that no rule needs both in the same rep.
+  - Pending: the nav-fade D card v2 read (29b0a979).
 - 10-05 ~11:3xZ **P-137 pre-data read PASS (fix-end-bg card bc1f9ec5; row registered); P-136 SIGNED; ccf67f0c and b28c11de
   landed; the lead accepted the P-130 wait ruling.**
   - P-137 checks:
