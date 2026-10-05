@@ -1124,6 +1124,113 @@ PART1 FAIL (C5 gates). Descriptive only, not part of the verdict:
 Mechanism result, posted as F-283: on touch mobile U2 removes exactly one nav elementsFromPoint per morph-open frame,
 93 per down-scroll, as predicted from the deferred-frame count, with no rise in forced layout or style.
 
+## D card P-138: U2 again, post-data (rev 1, registered before its own data; not signed yet)
+
+**Post-data.** This card follows the seen P-136 C5 FAIL above (lead ruling option (a), 10-05). Everything on it, the
+tolerance rule, the A0 cap and every p, was written knowing P-136's records. Id P-138 from mgmt-ops-10; drain slot 5
+after P-137 for its Simulator steps, only if signed by then. mgmt-ops-10 does the pre-data read, then the lead signs.
+Nothing below runs before the signature.
+
+What is new against P-136 (everything else is P-136's card, carried over unchanged):
+1. **The tolerance rule, fixed now, before the A/A runs** (`p138/counts.mjs`): `tol(k, vp)` = max(2, max - min of
+   count k over all loads of that viewport's A/A, both arms, identical K bytes). The A/A needs at least 3 valid loads
+   per arm (3 pairs), else that viewport has no tolerance. P-136's rule (2 x one pair's median gap) is dropped.
+2. **A0, a cap on the tolerances (gating).** Every tolerance C3, C5 or C7 uses must be <= max(5, 5 % of that count's
+   A/A median). A wider one means the A/A is too noisy to call "unchanged": A0 misses, part 1 is INSUFFICIENT whatever
+   C1-C8 say (never a pass, never a fail), and the lead decides. The 5 % was chosen knowing P-136's A/A (mobile forced
+   Layout 194-202 on identical bytes, ~4 %).
+3. **A fresh A/A first, then a fresh K / V**, 3 pairs per viewport each, on the same arms and pins as P-136 (K
+   1b2eecc66011, V c7435c24dc56, CSS e1359ab9994a; no change). Every arm needs >= 3 valid loads.
+4. **The Simulator gets 3 pairs too** (A/A and K / V), in two slots each, last in the drain.
+
+**Reused from P-136 only as context, not scored:** `p136/count-chrome.json` (67a6b91698e0, P-136's K / V),
+`p136/selftest-count-aa.json` (9d80c7d462f0, P-136's one-pair A/A), `p136/counts-result.json` (its FAIL). No P-136 load
+enters a P-138 tolerance or verdict. **Reused as an input:** parity run 2 `v9final/parity-u2-2.json` (C2's reference,
+deferred 187 / 2, as on P-136, ops N1). **Reused as instruments, unchanged:** `probe.mjs`, `simcount.mjs`, `build.mjs`,
+`p136/counts.mjs` (P-138's scorer imports its metrics and VOID rules, pinned), `p136/score.mjs` (phone scoring).
+
+If P-134 lands first: this card is rebased on it, K / V re-pinned, and ops delta-checks the new bytes before any
+counted run (as P-136's N4).
+
+**Instruments** (sha256/12; any change is listed here with its new hash before its data).
+
+| file | hash | what |
+|---|---|---|
+| `build.mjs`, `probe.mjs`, `simcount.mjs` | 746b136c1564, 8172549d566a, 57cbf40c547f | as P-136 |
+| `p136/counts.mjs` | b93a69de05f0 | P-136's metrics, VOID rules and pins; imported by `p138/counts.mjs` (refused if changed) |
+| `p138/counts.mjs` | 75a3c8ce735a | part 1 verdicts: the range tolerance, A0, C1-C8, >= 3 loads per arm |
+| `p138/selftest138.mjs` | 046637a88b2f | SELFTEST-138 OK 20 (synthetic): pass; range tolerance, floor 2, A/A median; a P-136-like desktop PrePaint gap inside the range hits C5; a shift beyond it misses C5 (FAIL); a C1 miss; A0 cap miss = INSUFFICIENT, also over a C1 miss; the 5 % edge; A/A or K / V with 2 per arm = no tolerance / insufficient; other bytes VOID (C8 miss); an A/A load not on K bytes VOID; no Simulator = INSUFFICIENT; a Simulator forced-Layout rise misses C7; C2's reference; the P-136 import pin |
+| `p138/part1-138.sh` | 42a764437dc5 | part 1 runner: steps `aa`, `kv`, `sim`, `score`; refuses without TICKET=P-138, refuses `kv` before `aa`, never overwrites a record |
+| `p136/score.mjs` | 86ee754f0978 | phone scorer, unchanged (same arms and bytes; its messages say P-136); tests in `p136/selftest136.mjs` 4135f1a7752f |
+| `p138/hold138.sh`, `p138/serve138.sh` | ac54aedc3f3d, 7353c8a55996 | copies of `p136/hold136.sh` 89434acd0604 / `p136/serve136.sh` dc3e2ee81d40: ticket, folders (`out/p138/`), labels (`p138-*`) changed, and the PIN line names `p136/score.mjs` |
+
+### Part 1: cost-card counts (Chrome and Simulator)
+
+Steps, in this order, each its own shared slot (counts only, nothing timed), run by fix-nav-morph:
+
+| step | slot | command (inside `p138/part1-138.sh`) | record |
+|---|---|---|---|
+| 1 | probe, <= 300 s | `probe.mjs count --base v9f7d --ctl v9f7d --reps 3 --vp mobile` (A/A, K bytes both arms) | `p138/aa-mobile.json` |
+| 2 | probe | the same, `--vp desktop` | `p138/aa-desktop.json` |
+| 3 | probe | `probe.mjs count --base v9f7du2 --ctl v9f7d --reps 3 --vp mobile` (K / V) | `p138/kv-mobile.json` |
+| 4 | probe | the same, `--vp desktop` | `p138/kv-desktop.json` |
+| 5, 6 | simulator, last in the drain | `simcount.mjs p138/sim-aa.json K:1 V:1 V:2`, then `K:2 K:3 V:3`, `--base v9f7d --ctl v9f7d` (A/A) | `p138/sim-aa.json` |
+| 7, 8 | simulator | the same with `--base v9f7du2` (K / V) | `p138/sim-kv.json` |
+
+Commands: `TICKET=P-138 sh fixes/nav-hit-cache/p138/part1-138.sh aa` (steps 1-2), `... kv` (3-4), `... sim` (5-8), then
+`sh fixes/nav-hit-cache/p138/part1-138.sh score` (= `node p138/counts.mjs --chrome p138/kv-mobile.json,p138/kv-desktop.json
+--aa p138/aa-mobile.json,p138/aa-desktop.json --sim p138/sim-kv.json --sim-aa p138/sim-aa.json --json
+p138/counts-result.json`). probe.mjs order per viewport: K V, V K, K V; pairs are taken in record order.
+
+VOID rules as P-136: a load whose served hashes are not its arm's (A/A: K's in both arms), or with a page error, is VOID
+(probe.mjs stops on wrong bytes; counts.mjs checks again). A step with a VOID load or no record is repeated once in the
+next slot (its record moved aside as `<name>.void1.json`, kept, not scored); a second VOID leaves that part
+insufficient, no further runs without a lead ruling. The Chrome A/A (steps 1-2) runs and is committed before step 3.
+
+| # | prediction | judged on | p |
+|---|---|---|---|
+| A0 | every tolerance C3 / C5 / C7 use is <= max(5, 5 % of its A/A median) | A/A ranges | 0.75 |
+| C1 | Chrome mobile: efpNav(K) - efpNav(V) >= 40, each of the 3 pairs | per pair | 0.97 |
+| C2 | Chrome mobile: that drop within 25 % of parity run 2's deferred / 2 (93.5) | medians | 0.93 |
+| C3 | Chrome mobile: forced Layout and forced UpdateLayoutTree, V <= K + tol | medians | 0.90 |
+| C4 | Chrome mobile: forced Layout V < K (strictly) | medians | 0.50 |
+| C5 | Chrome desktop: efpNav, forced Layout, forced UpdateLayoutTree, PrePaint all within tol (U2 is inert there) | medians | 0.75 |
+| C6 | Simulator: efpNav(K) - efpNav(V) >= 40, each of the 3 pairs | per pair | 0.75 |
+| C7 | Simulator: forced Layout and forced RecalculateStyles, V <= K + tol | medians | 0.80 |
+| C8 | no page error in any load, every load served its pin | all | 0.95 |
+
+Part 1 passes when A0, C1, C3, C5, C6, C7 and C8 hold; C2 and C4 are calibration, scored, not gating. A0 not a hit
+makes part 1 INSUFFICIENT; otherwise any gating miss is FAIL, any insufficient is INSUFFICIENT. A Simulator part that
+cannot run is insufficient, never a pass. Overall part 1: PASS 0.40, INSUFFICIENT 0.35, FAIL 0.25.
+
+Why these p (post-data): C1 / C2 rest on P-136's exact 93 / 93 drop. C5 is lower than C1 because P-136's desktop
+loads on K bytes ranged 528-537 on efpNav and 1396-1405 on PrePaint: a 3-pair A/A may come out narrower than the K / V
+spread. A0 is 0.75 because P-136's mobile forced Layout on K bytes already ranged 194-202 against a cap of ~10, and the
+Simulator's spread is unknown.
+
+### Part 2: short phone no-worse check (carried over from P-136)
+
+Only after part 1 PASSES. P-136's part 2 card and runbook unchanged, with ticket P-138, `p138/hold138.sh` and
+`p138/serve138.sh`, run files `out/p138/runs/p138-*`, and `TICKET=P-138 ... --block P-138` in every hold command:
+runner iphone-runner (fix-nav-morph never uses the iPhone), profile xcode-serious (never pooled), driver G on P-121's
+`flick-end-v2.json` (X fast 21aaafd3a9fd, S slow 7312cdcd2574), `flicker-inject.mjs` on every G run; holds H1 sCo wgXC
+wgXV gXC1 gXV1 gXV2 sCc | H2 sCo gXC2 gXC3 gXV3 gXV4 gXC4 sCc | H3 sCo wgSC wgSV gSC1 gSV1 gSV2 sCc | H4 sCo gSC2 gSC3
+gSV3 sCc; the same VOID rules, gates (GX, ES, FLICKER G1, BEHAVIOUR X) and scorer `p136/score.mjs` (scored into
+`p138/score-final.json`). The phone order is the lead's; Simulator slots are DEFERRED during phone blocks.
+
+| # | prediction | p |
+|---|---|---|
+| P1 | GX no-worse | 0.80 (WORSE 0.10, insufficient 0.10) |
+| P2 | ES no-worse | 0.65 (WORSE 0.15, insufficient 0.20) |
+| P3 | FLICKER G1 pass (no-worse) | 0.85 (WORSE 0.10, insufficient 0.05) |
+| P4 | BEHAVIOUR X pass | 0.90 (FAIL 0.03, insufficient 0.07) |
+| P5 | every sentinel passes first try | 0.70 |
+| P6 | overall no-worse | 0.55 (insufficient 0.30, WORSE or BEHAVIOUR FAIL 0.15) |
+
+**Landing**, as P-136: part 1 PASS and part 2 no-worse, U2 is proposed to land (lead). Part 2 insufficient: the lead
+decides. Part 2 WORSE or BEHAVIOUR FAIL: U2 does not land; the cause is traced first. Part 1 FAIL or INSUFFICIENT: no
+phone part; the lead rules.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
