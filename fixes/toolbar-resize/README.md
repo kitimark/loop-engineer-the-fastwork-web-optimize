@@ -1915,6 +1915,192 @@ signature. The trigger stays OBSERVED in all text.
   - O7: splitting P-126's no-stack surplus into write follow-up and engine work needs marks or a write log
     (MutationObserver), not stacks.
 
+## Prediction P-128: which JS functions make the DOM calls in the in-view toolbar-step frames? (Simulator, count-only census, registered before data)
+
+P-id P-128 (the lead, after P-127's O1: "name the callers of the script writes"). The lead first asked for a depth-16
+recapture of P-126's step frames. That cannot run in the shared lane as tools/ stands:
+- the step frames need a WDA gesture;
+- in a functional session, `sim.mjs gesture --count-only` refuses `--timeline` (I-184: "a WebKit Timeline is timing");
+- a second inspector connection next to the gesture's own is the I-038 failure (one client per page);
+- the gesture's own `--timeline` is fixed at depth 1 (I-198, P3).
+
+So the lead chose (2026-10-05) an in-page stack census instead: shared lane, count-only, v8-best overlay, 5 runs of
+`flick-hero-v1`, frozen reader. The literal Timeline recapture stays a later option if the census leaves the caller
+question open. Gates: this card, then mgmt-ops-10's pre-data read, then the lead's signature. `out/toolbar-resize/sim128/`
+stays empty until then. The trigger stays OBSERVED in all text.
+
+- **Question.** P-126 addendum D1 split the depth-1 `native` key. A DOM-call bucket of invalidation records with one
+  `[native code]` frame is RATE-LINKED to the heavy in-view step frames (C: 53 over 22 frames, against 129 over 435
+  control frames, RR 8.12). Four functions fill it: `setAttribute` 21, `classList.toggle` 13, `getBoundingClientRect`
+  10, `style.setProperty` 9. Their JS callers were cut off by the depth. Which page functions make those four calls more
+  often in the in-view step frames than at rest, and do they change anything when they do?
+- **Instrument: an in-page census, not a Timeline** (`p128-inject.mjs`, through the gesture tool's own `--inject` on its
+  own connection, as P-125's logger).
+  - **Wrappers** on the prototypes, all pass-through.
+    - Deciding: `Element.setAttribute`, `DOMTokenList.toggle`, `CSSStyleDeclaration.setProperty` (each records whether
+      it changed the attribute, the class state, or the value and priority) and `Element.getBoundingClientRect` (a read).
+    - Descriptive only (the cousins, never deciding): `removeAttribute`, `toggleAttribute`, `classList.add` / `remove` /
+      `replace`, `style.removeProperty`.
+  - **Stack.** Each wrapped call records `new Error().stack`, its own frames stripped (the install expression carries
+    `//# sourceURL=p128-inject.js`), at most 16 lines, urls cut to the path from `/_app/` (no host).
+  - **Frames.** A rAF loop pushes `[innerHeight, round(scrollY), view]` each tick. `view` is the showcase IO's latest
+    `isIntersecting` (IO root = viewport, rootMargin 0, threshold 0, as P-125). A call made while k ticks have been
+    logged belongs to frame k. **No timestamps anywhere**: calls bin by rAF order.
+  - **The wrappers change what they wrap.** Each wrapped call now also runs the wrapper and `new Error().stack`. This is a
+    counted check, never a timing number, and the record holds no time. The extra work can shift frame pacing, so the
+    per-frame counts are counts under the census, not under the plain page. Calls made through a reference the page
+    took before the inject installed bypass the wrapper (an undercount). Direct property sets (`el.style.x = …`,
+    `el.className = …`) are not wrapped.
+- **Runs (one shared slot, weight simulator, 300 s; `sim-p128.mjs`).** `fix.mjs serve v8-best` (JS `3e3e94cb6e9f`, CSS
+  `f836404b3728`, both from the overlay; else exit 26), `wda start`, then C:H1..C:H5. Each run is `sim.mjs open` plus
+  `sim.mjs gesture flick-hero-v1.json --count-only --inject p128-inject.mjs`.
+  - **Format gate:** after the first run its record must hold >= 1 call whose stack has a `/_app/immutable/` line with
+    `:line:col`, else STOP exit 27 before any further run.
+  - **Budget stop** at < 45 s left (`SB_BUDGET_S=250`). Dropped runs go into one more shared slot under the same names,
+    and the result says so.
+  - **Command (in `sim-p128.mjs`'s header):** `node tools/lock.mjs run chrome-measure --shared --weight simulator
+    --max-seconds 300 --owner fix-toolbar-resize -- sh -c '<serve v8-best; wait.mjs serve; SB_BUDGET_S=250 sim.mjs
+    session --functional -- node fixes/toolbar-resize/sim-p128.mjs C:H1 … C:H5; kill the server>'`. It runs in the
+    background (fg-guard).
+- **Reader** `p128-read.mjs` (frozen; imports `coincidence` and `rateRule` from `score-p125.mjs` `c52de0edd5d3` and
+  `REGIONS` from `read-inval126.mjs` `4f920b6450f7`, unchanged). Rules, as its header states:
+  1. **Gate per run** (a run that fails is not read). The run must have:
+     - an inject value (the segment with the most frames) with installs >= 1;
+     - the four deciding wrappers installed;
+     - the showcase IO installed;
+     - >= 100 frames;
+     - an innerHeight range >= 30 px (a toolbar step happened);
+     - >= 1 call with a page stack line;
+     - `runs.jsonl`'s served record at JS `3e3e94cb6e9f` and CSS `f836404b3728`, both from the overlay.
+
+     Fewer than 3 valid runs: INSUFFICIENT.
+  2. **Frames.**
+     - STEP = moving (lo < ih < hi), y < 3250, view 1. This is P-125's in-view step frame without its Layout test, because
+       no duration is read here. P-126 ops R2 found every in-view mid-step frame heavy in all 9 P-125 runs, so STEP stands
+       in for HEAVY as a geometry class. It says nothing about cost.
+     - CONTROL = not moving, y < 3250, view 1 (this includes scrolling frames at a settled toolbar). When fewer than 20 are
+       pooled, CONTROL is every not-moving frame with y < 3250 ("wide").
+     - A frame carries a feature when it or the previous frame has a call with it.
+  3. **Caller key.**
+     - The innermost stack line in `/_app/immutable/nodes/` (the route's component code, so a Svelte runtime helper in
+       `chunks/` does not hide its caller). In `2.DyWL8TcE.js` it maps to P-126's regions (fwWC, sceneCE, sceneB,
+       sceneC; padded by 1), else `<file>:<fn>@<line>`.
+     - With no nodes line: the innermost `/_app/immutable/` line.
+     - Else the first other url as `ext:…`.
+     - Else `probe` (frames without a url: injected code such as the gesture recorder) or `native`.
+     - HELPER (the innermost page line) and ENTRY (the outermost page line) are descriptive.
+  4. **Features.**
+     - Deciding: `setAttribute:<caller>`, `toggle:<caller>`, `setProperty:<caller>` (changed calls only) and
+       `gBCR:<caller>` (every call).
+     - Descriptive: the cousins (changed only) and `same:<api>:<caller>` (unchanged writes, any api).
+  5. **Links.** C pooled, P-126 rules 5 and 5b unchanged:
+     - presence (THIN when H < 5; COVERS when Hw >= 10, hLo >= 2 x base and h >= 0.8; LINKED-PART when Hw >= 10 and
+       hLo >= 2 x base; else NO-LINK);
+     - rate: calls in STEP frames against CONTROL frames, RATE-LINKED when s >= 20 and RRlo >= 2.
+
+     LINKED = COVERS, LINKED-PART or RATE-LINKED.
+  6. **Reading (frozen).** A deciding feature counts unless its caller is `probe` or `native`.
+
+     | reading | rule |
+     |---|---|
+     | NAMED(features) | some counting deciding feature whose caller is not fwWC is LINKED |
+     | FWWC-ONLY | none such, and a deciding feature with caller fwWC is LINKED (P-125's wc1 removed fwWC's toggles without effect) |
+     | NONE-LINKED | no counting deciding feature is LINKED |
+     | THIN | < 5 STEP frames pooled |
+     | INSUFFICIENT | < 3 valid runs |
+
+  7. **Descriptive (no call uses it).**
+     - B1, the bucket check: per deciding api, all callers pooled, `rateRule` STEP vs CONTROL.
+     - pageShare: the share of deciding-api calls in STEP frames with a page line.
+     - Per LINKED feature: its attribute, property or token names, ENTRY and HELPER, and per-run s, r and RR (ops N2:
+       calls cluster within frames, so the pooled bound is optimistic).
+     - The cousins and the unchanged writes, LINKED or not.
+- **Self-test** `p128-selftest.mjs`: `SELFTEST PASS (57 checks)`, synthetic data only.
+  - The inject itself, in a node vm with a stub DOM:
+    - pass-through;
+    - the changed flags for a value change and a same value, toggle, setProperty, gBCR and the cousins;
+    - frame binning before the first rAF and after it;
+    - own-frame stripping by sourceURL;
+    - <= 16 lines.
+  - The stack keys on JSC-format lines:
+    - a nodes line wins over a chunk helper;
+    - HELPER and ENTRY;
+    - the fwWC and sceneCE regions and their padding;
+    - chunk-only, ext, probe and native.
+  - The reader on synthetic runs:
+    - NAMED for a changed write in every STEP frame;
+    - unchanged writes and cousins LINKED but never deciding;
+    - FWWC-ONLY;
+    - a probe caller never deciding;
+    - gBCR deciding without a changed flag;
+    - an equal rate at rest giving NONE-LINKED;
+    - the rate floor (19 not linked, 20 linked);
+    - the previous-frame carry counting for presence and not for rate;
+    - the gate (missing wrappers, no toolbar step, no IO, served-bytes mismatch, no page stack line) giving
+      INSUFFICIENT, never NONE-LINKED;
+    - THIN, and the wide control out of view.
+- **What each reading leads to (frozen before data).**
+
+  | reading | next step |
+  |---|---|
+  | NAMED(f) | for each named function, an arm card. Its first gate is a count-only target check in the shared lane: the arm removes or defers that call in step frames, counted by this census. Only then a card asks whether the heavy Layout goes (that needs a Timeline or Layout count and its own hold). Any build gets the PR-010 pixel A/A before F. |
+  | FWWC-ONLY or NONE-LINKED | the step frames' DOM calls have no caller beyond fwWC (known not to be the trigger, P-125). Next is option 2 (split P-126's no-stack surplus into write follow-up and engine work: marks or a write log), or the literal depth-16 Timeline recapture (I-198 plus one exclusive hold); the lead picks. |
+  | THIN or INSUFFICIENT | the missing runs go in one more shared slot; if it stays, the lead decides. |
+
+- **Scope (carried over: lead D1, ops N3, ops R1-R3 from the P-127 result read).**
+  - **R1, the setAttribute-only limit.** P-127 links a call to an invalidation record only for a changed `setAttribute`
+    on an attribute a selector reads. For a changed `toggle` or `setProperty`, and for a `getBoundingClientRect` read,
+    nothing here or in P-127 shows that it raises a ScheduleStyleRecalculation or InvalidateLayout record. So P-126's
+    dom-call bucket is not read as "all script writes". A NAMED feature names a function whose DOM calls are more frequent
+    in step frames. It does not name a cause of the heavy Layout.
+  - **R2.** O7 says nothing about busy frames, and STEP frames are busy. This census reads no Timeline record, stackless
+    or otherwise, so it does not try to tell a write's follow-up from engine work. That split is option 2, still waiting.
+  - **R3.** There is no Timeline in this card, so nothing needs disabling between runs. If the later Timeline recapture
+    comes, it disables Timeline between arms.
+  - **D1.** Every reading is OBSERVED, in the Simulator, on v8, in one gesture script. It covers only what the wrappers
+    see (rule above).
+- **Frame binning differs from P-125 (disclosed).**
+  - P-125 binned by stamps, a frame covering (t - dt, t] with the IO entry time <= t.
+  - Here a frame is the interval between two rAF callbacks of the census loop, and `view` is the IO state at that rAF.
+    IO callbacks are delivered after the update, so `view` can lag one frame at a crossing.
+  - Page rAF callbacks that run after the census loop's callback in the same tick bin into the next frame. The
+    previous-frame carry absorbs this for presence; the rate counts each call once.
+- **Pixel and behaviour.** No build comes from this card. The wrappers pass every call through and change no value
+  (self-test). Nothing is served beyond the v8-best overlay.
+- **Predictions (before data; one probability each; my leans missed in P-110, P-115, P-119, P-123, P-125 (4/5) and
+  P-126 (held 6 of 10); P-127 held 11 of 11).**
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | all 5 runs pass the gate | 80 % |
+  | 2 | all 5 runs fit in one shared slot (no budget stop) | 65 % |
+  | 3 | reading NAMED (some deciding non-fwWC caller LINKED) | 65 % |
+  | 4 | `setAttribute:fwWC` LINKED (reported; P-125's write coincidence was COVERS) | 75 % |
+  | 5 | a `gBCR:<caller>` is LINKED (P-126 D1: 10 such records in heavy frames, 0 in 435 control frames) | 55 % |
+  | 6 | a `toggle:<caller>` is LINKED | 40 % |
+  | 7 | a `setProperty:<caller>` is LINKED | 45 % |
+  | 8 | no scene-region caller (sceneCE, sceneB, sceneC) is LINKED | 80 % |
+  | 9 | B1 pooled over the four apis is RATE-LINKED (the census sees the bucket's step surplus) | 80 % |
+  | 10 | pageShare >= 0.95 (the step frames' deciding calls come from page code, not the probe or ext) | 80 % |
+
+  Why the lean is NAMED: the bucket's gBCR and setProperty records sit almost only in step frames (P-126 D1). The
+  census counts every call, not only the first invalidation, so s should clear the floor of 20 that the records missed.
+  Against it: a step-linked caller may be the scroll engine's resize path, called from a chunk with no nodes line. That
+  still names a caller (a chunk key), so it does not lower NAMED.
+- **Cost.** One shared Simulator slot (about 4-5 min), no exclusive hold, no phone, no timing number.
+- **Pins (sha256/12).**
+
+  | file | hash |
+  |---|---|
+  | `p128-inject.mjs` | e44cdd1f9e9a |
+  | `sim-p128.mjs` | e1df2c982108 |
+  | `p128-read.mjs` | 881d93fe1d45 |
+  | `p128-selftest.mjs` | c8bc6f4a6910 (57 checks) |
+  | `flick-hero-v1.json` | 6ae05e12ace9 |
+  | `score-p125.mjs` (imported) | c52de0edd5d3 |
+  | `read-inval126.mjs` (imported) | 4f920b6450f7 |
+  | served JS / CSS (v8-best overlay) | 3e3e94cb6e9f / f836404b3728 |
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).
