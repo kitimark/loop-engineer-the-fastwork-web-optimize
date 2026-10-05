@@ -1095,6 +1095,35 @@ Steps (in the lead's phone order, after P-130's H4 / H5 on phone back; profile x
    fixes/nav-hit-cache/p136/score-final.json`. Warm-ups are not passed. Each run's served check log
    (`p136-<H>-check-<item>.log`) is found beside its record.
 
+## P-136 result: part 1 FAIL as registered (C5); U2 does not land on this card
+
+The lead ruled option (a), 10-05 ~12:00Z: the FAIL stands. The Simulator counts (C6, C7) and part 2 on the phone are
+cancelled under P-136; the runbook above is not run. mgmt-ops-10 re-scored the same output from the files.
+
+Chrome counts: `p136/count-chrome.json` (67a6b91698e0), 8 loads, 11:41-11:44Z, one shared probe slot, wall 187 s, every
+load on its pin, no page error. Scored by `p136/counts.mjs` b93a69de05f0 with the A/A `p136/selftest-count-aa.json`
+(9d80c7d462f0); output `p136/counts-result.json`.
+
+| # | verdict | numbers (per load; medians unless "pairs") |
+|---|---|---|
+| C1 | hit | mobile nav elementsFromPoint, pairs: K 454 / 454, V 361 / 361, drop 93 / 93 (>= 40) |
+| C2 | hit | drop 93 vs 93.5 (parity run 2's deferred 187 / 2; pre-card informed, ops N1) |
+| C3 | hit | mobile forced Layout K 199 V 198.5 (tol 7); forced UpdateLayoutTree K 788.5 V 774 (tol 3) |
+| C4 | hit | forced Layout 198.5 < 199 (a trivial margin) |
+| C5 | **MISS** | desktop PrePaint K 1403.5 V 1398, gap 5.5 > tol 4; efpNav 531 vs 533 (tol 2), forced Layout 260.5 vs 263 (tol 5), forced UpdateLayoutTree 1244.5 vs 1244.5 (tol 2) |
+| C6, C7 | not run | cancelled by the ruling |
+| C8 | hit | 8 loads, 0 voids |
+
+PART1 FAIL (C5 gates). Descriptive only, not part of the verdict:
+- The C5 gap is all in PrePaint.frame (rendered-frame paints): K 1007 / 1006 vs V 1002 / 1000. Forced PrePaint is K 398
+  / 396 vs V 397 / 397.
+- In the A/A, identical bytes ranged 997-1005 on PrePaint.frame. The tolerance came from one pair's median gap (ops
+  N2).
+- U2's branch is never taken on desktop (parity run 2: desktop deferred 0).
+
+Mechanism result, posted as F-283: on touch mobile U2 removes exactly one nav elementsFromPoint per morph-open frame,
+93 per down-scroll, as predicted from the deferred-frame count, with no rise in forced layout or style.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

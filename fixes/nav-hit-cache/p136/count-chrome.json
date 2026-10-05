@@ -1,0 +1,445 @@
+{
+ "part": "count",
+ "date": "2026-10-05T11:41:32.630Z",
+ "browser": "Chrome/154.0.8037.98",
+ "arms": {
+  "C": {
+   "js": "a707f659f650",
+   "css": "e1359ab9994a"
+  },
+  "V": {
+   "js": "c7435c24dc56",
+   "css": "e1359ab9994a"
+  },
+  "VA": {
+   "js": "99911b228855",
+   "css": "e1359ab9994a"
+  },
+  "K": {
+   "js": "1b2eecc66011",
+   "css": "e1359ab9994a"
+  }
+ },
+ "ctl": "v9f7d",
+ "regions": {
+  "K": [
+   13858,
+   14503
+  ],
+  "V": [
+   13858,
+   14516
+  ]
+ },
+ "loads": [
+  {
+   "rep": 0,
+   "arm": "K",
+   "vp": "mobile",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "steps": 628,
+   "max": 6278,
+   "ms": 10505,
+   "counts": {
+    "UpdateLayoutTree.frame": 118,
+    "UpdateLayoutTree.forced": 804,
+    "PrePaint.frame": 761,
+    "PrePaint.forced": 454,
+    "Layout.forced": 202,
+    "Paint.frame": 2723,
+    "Layout.frame": 113
+   },
+   "perStep": {
+    "Layout.forced": 0.322,
+    "Layout.frame": 0.18,
+    "Paint.frame": 4.336,
+    "PrePaint.forced": 0.723,
+    "PrePaint.frame": 1.212,
+    "UpdateLayoutTree.forced": 1.28,
+    "UpdateLayoutTree.frame": 0.188
+   },
+   "prePaintPerStep": 1.935,
+   "layoutPerStep": 0.502,
+   "styleRecalcPerStep": 1.468,
+   "api": {
+    "all": {
+     "rect": 3382,
+     "efp": 454,
+     "gcs": 7
+    },
+    "nav": {
+     "rect": 973,
+     "efp": 454,
+     "gcs": 7
+    },
+    "navPerStep": {
+     "rect": 1.549,
+     "efp": 0.723,
+     "gcs": 0.011
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 0,
+   "arm": "V",
+   "vp": "mobile",
+   "served": [
+    "c7435c24dc56",
+    "e1359ab9994a"
+   ],
+   "steps": 628,
+   "max": 6278,
+   "ms": 10504,
+   "counts": {
+    "UpdateLayoutTree.frame": 118,
+    "UpdateLayoutTree.forced": 775,
+    "PrePaint.frame": 756,
+    "PrePaint.forced": 361,
+    "Layout.forced": 200,
+    "Paint.frame": 2634,
+    "Layout.frame": 113
+   },
+   "perStep": {
+    "Layout.forced": 0.318,
+    "Layout.frame": 0.18,
+    "Paint.frame": 4.194,
+    "PrePaint.forced": 0.575,
+    "PrePaint.frame": 1.204,
+    "UpdateLayoutTree.forced": 1.234,
+    "UpdateLayoutTree.frame": 0.188
+   },
+   "prePaintPerStep": 1.779,
+   "layoutPerStep": 0.498,
+   "styleRecalcPerStep": 1.422,
+   "api": {
+    "all": {
+     "rect": 3198,
+     "efp": 361,
+     "gcs": 7
+    },
+    "nav": {
+     "rect": 787,
+     "efp": 361,
+     "gcs": 7
+    },
+    "navPerStep": {
+     "rect": 1.253,
+     "efp": 0.575,
+     "gcs": 0.011
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 0,
+   "arm": "K",
+   "vp": "desktop",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "steps": 845,
+   "max": 8448,
+   "ms": 14105,
+   "counts": {
+    "UpdateLayoutTree.frame": 46,
+    "PrePaint.frame": 1007,
+    "UpdateLayoutTree.forced": 1245,
+    "PrePaint.forced": 398,
+    "Layout.forced": 263,
+    "Paint.frame": 2112,
+    "Layout.frame": 39
+   },
+   "perStep": {
+    "Layout.forced": 0.311,
+    "Layout.frame": 0.046,
+    "Paint.frame": 2.499,
+    "PrePaint.forced": 0.471,
+    "PrePaint.frame": 1.192,
+    "UpdateLayoutTree.forced": 1.473,
+    "UpdateLayoutTree.frame": 0.054
+   },
+   "prePaintPerStep": 1.663,
+   "layoutPerStep": 0.357,
+   "styleRecalcPerStep": 1.528,
+   "api": {
+    "all": {
+     "rect": 5462,
+     "gcs": 16,
+     "efp": 534
+    },
+    "nav": {
+     "rect": 2368,
+     "gcs": 16,
+     "efp": 534
+    },
+    "navPerStep": {
+     "rect": 2.802,
+     "gcs": 0.019,
+     "efp": 0.632
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 0,
+   "arm": "V",
+   "vp": "desktop",
+   "served": [
+    "c7435c24dc56",
+    "e1359ab9994a"
+   ],
+   "steps": 845,
+   "max": 8448,
+   "ms": 14083,
+   "counts": {
+    "UpdateLayoutTree.forced": 1245,
+    "PrePaint.frame": 1002,
+    "PrePaint.forced": 397,
+    "Paint.frame": 2094,
+    "Layout.forced": 263,
+    "UpdateLayoutTree.frame": 45,
+    "Layout.frame": 39
+   },
+   "perStep": {
+    "Layout.forced": 0.311,
+    "Layout.frame": 0.046,
+    "Paint.frame": 2.478,
+    "PrePaint.forced": 0.47,
+    "PrePaint.frame": 1.186,
+    "UpdateLayoutTree.forced": 1.473,
+    "UpdateLayoutTree.frame": 0.053
+   },
+   "prePaintPerStep": 1.656,
+   "layoutPerStep": 0.357,
+   "styleRecalcPerStep": 1.527,
+   "api": {
+    "all": {
+     "rect": 5447,
+     "efp": 533,
+     "gcs": 15
+    },
+    "nav": {
+     "rect": 2353,
+     "efp": 533,
+     "gcs": 15
+    },
+    "navPerStep": {
+     "rect": 2.785,
+     "efp": 0.631,
+     "gcs": 0.018
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 1,
+   "arm": "V",
+   "vp": "mobile",
+   "served": [
+    "c7435c24dc56",
+    "e1359ab9994a"
+   ],
+   "steps": 628,
+   "max": 6278,
+   "ms": 10459,
+   "counts": {
+    "UpdateLayoutTree.frame": 118,
+    "UpdateLayoutTree.forced": 773,
+    "PrePaint.frame": 770,
+    "PrePaint.forced": 361,
+    "Paint.frame": 2678,
+    "Layout.forced": 197,
+    "Layout.frame": 113
+   },
+   "perStep": {
+    "Layout.forced": 0.314,
+    "Layout.frame": 0.18,
+    "Paint.frame": 4.264,
+    "PrePaint.forced": 0.575,
+    "PrePaint.frame": 1.226,
+    "UpdateLayoutTree.forced": 1.231,
+    "UpdateLayoutTree.frame": 0.188
+   },
+   "prePaintPerStep": 1.801,
+   "layoutPerStep": 0.494,
+   "styleRecalcPerStep": 1.419,
+   "api": {
+    "all": {
+     "rect": 3208,
+     "gcs": 8,
+     "efp": 361
+    },
+    "nav": {
+     "rect": 799,
+     "gcs": 8,
+     "efp": 361
+    },
+    "navPerStep": {
+     "rect": 1.272,
+     "gcs": 0.013,
+     "efp": 0.575
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 1,
+   "arm": "K",
+   "vp": "mobile",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "steps": 628,
+   "max": 6278,
+   "ms": 10467,
+   "counts": {
+    "UpdateLayoutTree.frame": 118,
+    "UpdateLayoutTree.forced": 773,
+    "PrePaint.frame": 777,
+    "PrePaint.forced": 454,
+    "Layout.forced": 196,
+    "Paint.frame": 2674,
+    "Layout.frame": 113
+   },
+   "perStep": {
+    "Layout.forced": 0.312,
+    "Layout.frame": 0.18,
+    "Paint.frame": 4.258,
+    "PrePaint.forced": 0.723,
+    "PrePaint.frame": 1.237,
+    "UpdateLayoutTree.forced": 1.231,
+    "UpdateLayoutTree.frame": 0.188
+   },
+   "prePaintPerStep": 1.96,
+   "layoutPerStep": 0.492,
+   "styleRecalcPerStep": 1.419,
+   "api": {
+    "all": {
+     "rect": 3394,
+     "gcs": 8,
+     "efp": 454
+    },
+    "nav": {
+     "rect": 985,
+     "gcs": 8,
+     "efp": 454
+    },
+    "navPerStep": {
+     "rect": 1.568,
+     "gcs": 0.013,
+     "efp": 0.723
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 1,
+   "arm": "V",
+   "vp": "desktop",
+   "served": [
+    "c7435c24dc56",
+    "e1359ab9994a"
+   ],
+   "steps": 845,
+   "max": 8448,
+   "ms": 14078,
+   "counts": {
+    "UpdateLayoutTree.forced": 1244,
+    "PrePaint.frame": 1000,
+    "PrePaint.forced": 397,
+    "Paint.frame": 2089,
+    "Layout.forced": 263,
+    "UpdateLayoutTree.frame": 45,
+    "Layout.frame": 39
+   },
+   "perStep": {
+    "Layout.forced": 0.311,
+    "Layout.frame": 0.046,
+    "Paint.frame": 2.472,
+    "PrePaint.forced": 0.47,
+    "PrePaint.frame": 1.183,
+    "UpdateLayoutTree.forced": 1.472,
+    "UpdateLayoutTree.frame": 0.053
+   },
+   "prePaintPerStep": 1.653,
+   "layoutPerStep": 0.357,
+   "styleRecalcPerStep": 1.525,
+   "api": {
+    "all": {
+     "rect": 5447,
+     "efp": 533,
+     "gcs": 15
+    },
+    "nav": {
+     "rect": 2353,
+     "efp": 533,
+     "gcs": 15
+    },
+    "navPerStep": {
+     "rect": 2.785,
+     "efp": 0.631,
+     "gcs": 0.018
+    }
+   },
+   "errors": []
+  },
+  {
+   "rep": 1,
+   "arm": "K",
+   "vp": "desktop",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "steps": 845,
+   "max": 8448,
+   "ms": 14071,
+   "counts": {
+    "UpdateLayoutTree.forced": 1244,
+    "PrePaint.frame": 1006,
+    "PrePaint.forced": 396,
+    "Paint.frame": 2083,
+    "Layout.forced": 258,
+    "UpdateLayoutTree.frame": 45,
+    "Layout.frame": 39
+   },
+   "perStep": {
+    "Layout.forced": 0.305,
+    "Layout.frame": 0.046,
+    "Paint.frame": 2.465,
+    "PrePaint.forced": 0.469,
+    "PrePaint.frame": 1.191,
+    "UpdateLayoutTree.forced": 1.472,
+    "UpdateLayoutTree.frame": 0.053
+   },
+   "prePaintPerStep": 1.659,
+   "layoutPerStep": 0.351,
+   "styleRecalcPerStep": 1.525,
+   "api": {
+    "all": {
+     "rect": 5437,
+     "efp": 528,
+     "gcs": 15
+    },
+    "nav": {
+     "rect": 2343,
+     "efp": 528,
+     "gcs": 15
+    },
+    "navPerStep": {
+     "rect": 2.773,
+     "efp": 0.625,
+     "gcs": 0.018
+    }
+   },
+   "errors": []
+  }
+ ],
+ "wallMs": 187417
+}

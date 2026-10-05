@@ -1,0 +1,99 @@
+{
+ "scorer": "fixes/nav-hit-cache/p136/counts.mjs",
+ "sha256": "b93a69de05f0f3c174eef411ebeb7a3370a70710003f08c475de69fed0b1d8a4",
+ "preds": {
+  "C1": {
+   "verdict": "hit",
+   "drops": [
+    93,
+    93
+   ],
+   "K": [
+    454,
+    454
+   ],
+   "V": [
+    361,
+    361
+   ]
+  },
+  "C6": {
+   "verdict": "insufficient",
+   "n": 0
+  },
+  "C2": {
+   "verdict": "hit",
+   "drop": 93,
+   "ref": 93.5
+  },
+  "C3": {
+   "verdict": "hit",
+   "forcedLayout": {
+    "K": 199,
+    "V": 198.5,
+    "tol": 7
+   },
+   "forcedStyle": {
+    "K": 788.5,
+    "V": 774,
+    "tol": 3
+   }
+  },
+  "C7": {
+   "verdict": "insufficient",
+   "tol": null
+  },
+  "C4": {
+   "verdict": "hit",
+   "K": 199,
+   "V": 198.5
+  },
+  "C5": {
+   "verdict": "miss",
+   "efpNav": {
+    "K": 531,
+    "V": 533,
+    "tol": 2
+   },
+   "forcedLayout": {
+    "K": 260.5,
+    "V": 263,
+    "tol": 5
+   },
+   "forcedStyle": {
+    "K": 1244.5,
+    "V": 1244.5,
+    "tol": 2
+   },
+   "prePaint": {
+    "K": 1403.5,
+    "V": 1398,
+    "tol": 4
+   }
+  },
+  "C8": {
+   "verdict": "hit",
+   "loads": 8,
+   "voids": []
+  }
+ },
+ "voids": [],
+ "tol": {
+  "mobile": {
+   "efpNav": 2,
+   "efpAll": 2,
+   "forcedLayout": 7,
+   "forcedStyle": 3,
+   "prePaint": 15
+  },
+  "desktop": {
+   "efpNav": 2,
+   "efpAll": 2,
+   "forcedLayout": 5,
+   "forcedStyle": 2,
+   "prePaint": 4
+  },
+  "sim": null
+ },
+ "part1": "FAIL"
+}
