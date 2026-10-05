@@ -1,0 +1,11 @@
+/* deck-contain P-146 positive control PC2: the deck keeps A3's content-free height (so docH and the band stay the
+   base's) and its content is skipped with content-visibility: hidden, so no layout work happens inside the deck at all.
+   It changes the look (the deck is blank); a control is never a candidate. Same media query as the mobile deck block. */
+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
+  .start-selling-profile-deck {
+    height: 0;
+    padding-block: 0 calc(100% * 764 / 353);
+    align-items: flex-start;
+    content-visibility: hidden;
+  }
+}
