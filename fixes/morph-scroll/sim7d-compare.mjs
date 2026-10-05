@@ -19,7 +19,9 @@
 // INFO only: docH, played and approach strokes, passes per `until atEnd` loop (outcome-dependent by design: a released
 // close leaves the page lower, so the next approach takes more drags), the earlier strict per-stroke rule (touchmove count
 // <= 2 apart and in-order aligned path <= 6 px), within-record same-arm fractions, A/A records' own start lines.
-// Tolerances: scrollY 8 px, p 0.02, clientY 4 px. No times are compared. Exit 0 SAME, 2 DIFF, 1 usage.
+// AMEND-b lines (the lead's disclosed amendment for e4's mid-page flicks, see the block before RESULT) are printed beside
+// the frozen verdict and never change it or the exit code.
+// Tolerances: scrollY 8 px, p 0.02, clientY 4 px. No times are compared. Exit 0 SAME, 2 DIFF, 1 usage (frozen verdict).
 import { readFileSync } from 'node:fs';
 const args = process.argv.slice(2), pos = [], aaC = [], aaV = [];
 for (let i = 0; i < args.length; i++) {
@@ -74,9 +76,10 @@ function view(d, label) {
     const prevented = mine.filter((t) => t[1] === 'm' && t[4]).length;
     const t1 = k + 1 < starts.length ? starts[k + 1][0][0] : Infinity;
     const after = (v.scroll || []).filter((s) => end && s[0] >= end[0] && s[0] < t1);
-    const rest = after.length ? P(after[after.length - 1][1]) : end ? P(end[5]) : null;
+    const restY = after.length ? after[after.length - 1][1] : end ? end[5] : null;
+    const rest = restY === null ? null : P(restY);
     const mark = [...(seg.marks || [])].reverse().find((m) => m[0] <= t0[0]);
-    const kn = d.run.strokes[k].kin || {}; return { k, id: played[k], kin: `${kn.dir} ${kn.px}px/${kn.ms}ms ${kn.profile}`, loop: loopIds.has(played[k]), mark: mark ? mark[1] : null, y0: t0[5], p0: P(t0[5]), c0: t0[6], moves, prevented, cEnd: end ? end[6] : null, rest };
+    const kn = d.run.strokes[k].kin || {}; return { k, id: played[k], kin: `${kn.dir} ${kn.px}px/${kn.ms}ms ${kn.profile}`, loop: loopIds.has(played[k]), mark: mark ? mark[1] : null, y0: t0[5], p0: P(t0[5]), c0: t0[6], moves, prevented, cEnd: end ? end[6] : null, rest, restY };
   });
   const allMoves = tch.filter((t) => t[1] === 'm');
   return { prevAll: allMoves.filter((t) => t[4]).length, cancelAll: allMoves.filter((t) => t[3]).length, nMoves: allMoves.length, hash: d.program.hash.slice(0, 12), vh0: seg.vh0, ih: v.ih, docH: seg.docH, endH: v.endH, maxY: v.maxY, played, strokes, loops: (d.run.loops || []).map((l) => l.passes) };
@@ -123,14 +126,19 @@ const cc = c.strokes.filter((s) => !s.loop), cw = w.strokes.filter((s) => !s.loo
 line('counted strokes (program ids in order)', cc.map((s) => s.id).join(' ') === cw.map((s) => s.id).join(' '), `${cc.length}: ${cc.map((s) => s.id).join(' ')}`, `${cw.length}: ${cw.map((s) => s.id).join(' ')}`);
 // 1. per counted stroke, exact match (judged): id, mark, start scrollY / p, clientY at touchstart and at lift, no prevented
 // touchmove on either arm. The strict rule (count <= 2 apart, aligned path <= 6 px) is printed as INFO only.
-let differed = false, strict = 0;
+let differed = false, strict = 0, chainBreak = null;
+const amend = [];
 for (let i = 0; i < Math.min(cc.length, cw.length); i++) {
   const a = cc[i], b = cw[i];
   const n = Math.min(a.moves.length, b.moves.length);
   let idx = 0; for (let j = 0; j < n; j++) idx = Math.max(idx, Math.abs(a.moves[j] - b.moves[j]));
   const path = alignMax(a.moves, b.moves);
-  const start = a.id === b.id && a.mark === b.mark && Math.abs(a.y0 - b.y0) <= 8 && Math.abs(a.p0 - b.p0) <= 0.02 && Math.abs(a.c0 - b.c0) <= 4
+  const other = a.id === b.id && a.mark === b.mark && Math.abs(a.c0 - b.c0) <= 4
     && a.cEnd !== null && b.cEnd !== null && Math.abs(a.cEnd - b.cEnd) <= 4 && a.prevented === 0 && b.prevented === 0;
+  const yp = Math.abs(a.y0 - b.y0) <= 8 && Math.abs(a.p0 - b.p0) <= 0.02;
+  const start = other && yp;
+  amend.push({ i, a, b, start, other, yp, chainBreak });
+  if (!chainBreak && (a.restY === null || b.restY === null || Math.abs(a.restY - b.restY) > 8)) chainBreak = { i, a: a.restY, b: b.restY };
   const st = start && Math.abs(a.moves.length - b.moves.length) <= 2 && path <= 6;
   if (!st) strict++;
   line(`counted ${i + 1} ${a.id} @${a.mark} start/lift/prevented`, start,
@@ -177,5 +185,23 @@ for (const [kin, g] of groups) {
     `${g.V.length} strokes, moves ${g.V.map((s) => s.moves.length).join(' ')}; A/A V-V min ${r2s(aaVV)} (${g.AV.length} partner strokes, moves ${g.AV.map((s) => s.moves.length).join(' ') || '-'})`,
     `C-V shared min ${r2s(bt)}, need ${missing.length ? missing.join(', ') + ': FAILS until it has one' : r2s(need)}; monotone ${mono ? 'yes' : 'NO'}; INFO within-record C ${r2s(mn(within(g.C)))} V ${r2s(mn(within(g.V)))}`);
 }
+// AMEND-b: the lead's disclosed amendment (2026-10-05, ruled after e4 data from s5/s8/s9 was seen, fixed before the s13
+// data; ops' recommendation; option (a) rejected). The frozen verdict above stays the reported one; AMEND-b lines are
+// printed beside it (`grep -v '^AMEND-b'` gives the frozen output unchanged). Under it a counted stroke's start y / p is
+// judged only while every earlier counted stroke ended (rest scrollY) within +-8 px C vs V; id, mark, touchstart and lift
+// clientY, prevented = 0, path and monotone stay judged on every stroke. A stroke whose start y/p is exempted that way
+// counts only if the clean C-C pair (C against every --aa-c record) also starts that stroke more than 8 px apart;
+// otherwise its frozen DIFF stands. No --aa-c record: nothing is exempted.
+let exempt = 0;
+for (const s of amend) {
+  if (s.start || !s.other || s.yp) continue;
+  const tag = `AMEND-b counted ${s.i + 1} ${s.a.id} @${s.a.mark}`;
+  if (!s.chainBreak) { console.log(`${tag}: start y DIFF stands (every earlier counted stroke ended within 8 px)`); continue; }
+  const cc2 = ac.map(({ f, v }) => { const t = v.strokes.filter((x) => !x.loop)[s.i]; return { f: base(f), d: t ? Math.abs(t.y0 - s.a.y0) : null }; });
+  const ccOk = cc2.length > 0 && cc2.every((x) => x.d !== null && x.d > 8);
+  if (ccOk) exempt++;
+  console.log(`${tag}: ${ccOk ? 'start y exempt' : 'start y DIFF stands'} (earlier counted stroke ${s.chainBreak.i + 1} ended C ${s.chainBreak.a} | V ${s.chainBreak.b}; C-C start y apart: ${cc2.map((x) => `${x.f} ${x.d === null ? '-' : x.d} px`).join(', ') || 'no --aa-c record'}; needs > 8 px)`);
+}
+console.log(`AMEND-b RESULT ${diffs - exempt ? `DIFF ${diffs - exempt}` : 'SAME'} (${exempt} start-y DIFF(s) exempted; applies only as the lead ruled, beside the frozen RESULT)`);
 console.log(`RESULT ${diffs ? `DIFF ${diffs}` : 'SAME'} (${base(fc)} vs ${base(fv)}; frozen rule, A/A C ${ac.length} V ${av.length} record(s)); INFO strict per-stroke rule: ${strict ? `DIFF ${strict}` : 'same'}`);
 process.exit(diffs ? 2 : 0);

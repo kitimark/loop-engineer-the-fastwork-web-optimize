@@ -45,7 +45,7 @@ plus the file sha256/12 of each file:
 |---|---|
 | fixes/morph-scroll/sim7d-analyze.mjs (counts) | 5e8c4f587342 |
 | fixes/morph-scroll/msdbg-inject.mjs (probe) | 9d2d119f5cea |
-| fixes/morph-scroll/sim7d-compare.mjs (C vs V start state and path, D1; the rule frozen by ops before s6/s7; 777663766071 plus a parser fix for e4's `$flicks` repeat count, rule unchanged, fo/fs output byte-identical) | 9cb401ffd83d |
+| fixes/morph-scroll/sim7d-compare.mjs (C vs V start state and path, D1; the rule frozen by ops before s6/s7; 777663766071 plus a parser fix for e4's `$flicks` repeat count, rule unchanged, fo/fs output byte-identical; then the lead's AMEND-b lines beside the frozen verdict, which output minus `^AMEND-b` lines keeps byte-identical) | e2c2bfdad2ba |
 | fixes/morph-scroll/sim7d.sh (Simulator dry runs, prints SERVED hashes, D3) | fb357826def1 |
 
 Probe: `--inject fixes/morph-scroll/msdbg-inject.mjs` (V's debug-only touchend log: page Fv, finger travel; a passive
@@ -111,9 +111,25 @@ Known Simulator counts so far (counts are not changed by the rule; the predictio
 | fs | V | s3 (`s3-1-R7E-g-fastshort-v1.json`) | misses 0, all 12 closes caught (Fv -0.73 .. -2.92, travel 47-200), pulled back 0 |
 | e4 | C, V | s5 | pending |
 
-Planned sessions: s5 e4 C and V; s6 V fo and nl (served hashes; exact match, and V-V A/A against s1/s2); s7 C fs and fo
-(C-C A/A against s4). fs on V and e4 on both arms then still lack an A/A pair: one more run each (s8) before the read.
-Compare output for every item goes to ops for the final read.
+Sessions run: s5 e4 C (and V, VOID: budget after a cold boot); s6 V fo and nl; s7 C fs and fo; s8 V e4 (C e4 VOID,
+budget); s9 C e4 (C nl VOID, budget). Still to run: s10 V fs, s11 V e4, s12 C nl, s13 C e4. Compare output for every
+item goes to ops for the final read.
+
+**Rulings after e4 data (2026-10-05).**
+- **A (ops, within the frozen rule):** s5 is VOID, both as the exact-match C record and as an A/A partner. Its page
+  started in another state after a cold boot (endH 932, maxY 6426, docH 7201; every other record has 815 / 6075 / 6850),
+  and a partner that starts from another state lowers the C-C bar V must clear. s9 is the exact-match C e4 record; s13
+  (one more C e4 run, same start-state check) is the C-C partner. s5 is a disclosed void, like the budget voids.
+- **B (the lead, disclosed amendment, made after the s5/s8/s9 e4 data was seen and before the s13 data):** under the
+  frozen rule e4 FAILS start y on counted strokes 3-6 (mid-page flicks, whose start depends on how far the previous fling
+  coasted); that frozen verdict is reported as it stands in every write-up. The amendment, option (b): a counted
+  stroke's start y / p is judged only while every earlier counted stroke ended within +-8 px C vs V. It applies only
+  where the clean C-C pair (s9 vs s13) also starts that stroke more than 8 px apart; where s9 and s13 stay within 8 px
+  and V differs, the frozen FAIL stands. Path, lift, prevented = 0 and monotone stay checked on every stroke, and E1-E4
+  must match exactly. Option (a), dropping the start check on counted strokes, was rejected.
+- `sim7d-compare.mjs` e2c2bfdad2ba prints the amendment as `AMEND-b` lines and an `AMEND-b RESULT` line beside the frozen
+  `RESULT` (exit code = the frozen verdict); its output minus the `AMEND-b` lines is byte-identical to 9cb401ffd83d's
+  (checked on fo and fs), and 9cb401ffd83d's is byte-identical to 777663766071's on fo and fs.
 
 D2, session s1's items 2 and 3 (nl on V, fo on R7D): they printed `RUN 2` / `RUN 3` and left no record. The cold boot
 plus settle (~90 s) left too little hold time, so `sim.mjs gesture` refused before any touch (the budget message was cut
