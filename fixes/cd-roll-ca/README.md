@@ -2361,6 +2361,45 @@ tools: tools/iphone.mjs run (W driver, std probe) as on main at the block, its s
   before the first counted run (counts from the run records only), its sha256 in the same addendum.
 ```
 
+```
+ADDENDUM P-147 (2026-10-06, before any phone run; the user accepted PR-026 21:03Z, lead: priority #2 after v9.2, phone
+  slot after P-142's block and swipe A/B, ahead of P-145; pre-data reader ops-reader-P147). Nothing below has run on
+  the phone. The base question (stay on v9-final or re-register on v9.2) is held for the reader's ruling.
+snapshot (immutable copy, read-only files, worktree out/p147/snap/, HASHES.txt sha256 bb953431f349):
+  C/_app/immutable/nodes/2.DyWL8TcE.js 1b2eecc66011 = baseline + fixes/morph-scroll-v9try/patch.diff (6d1632eb0ee9)
+  V/_app/immutable/nodes/2.DyWL8TcE.js 2cfd990c788d = baseline + fixes/cd-roll-panel-try/patch.diff (887240c913fb)
+  C/ and V/ _app/immutable/assets/2.gBuqKVzi.css e1359ab9994a
+tools (sha256/12 of the committed files; any change before the block's last run voids the block):
+  fixes/cd-roll-ca/phone/p147-serve.sh 7e00cfe8ec8a (serves C and V from the snapshot, plain http, port 0, latency 150,
+    vendors local; refuses a changed snapshot; VOID on a served-JS mismatch)
+  fixes/cd-roll-ca/phone/p147-hold.sh 744a9966517e (the whole block in one phone hold; steps below)
+  fixes/cd-roll-ca/phone/p147-mread.mjs f84e43221414 (step 0 read: panel --morph twice 2 s apart + the page end, via
+    tools/lib/wip.mjs on the device proxy; inspector attached only for that read, never in a counted run)
+  fixes/cd-roll-ca/phone/p147-score.mjs c4ca1126f6d6 (scorer; built on k-score.mjs)
+  tools/iphone.mjs b5fe6a546e9a, tools/lib/iphone-run.mjs d37b97750777, tools/lib/iphone-probe.mjs 14e975bba5fb,
+  tools/lib/wip.mjs 3dcab04e362a, tools/serve.mjs 7aa33799ee3f, tools/lan.mjs 2284cd07e634,
+  fixes/rest-script/tools/pmcheck.mjs d36bd7437b7c (main 4cb1efb2)
+heat: Xcode Device Conditions only (iphone.mjs run's default --profile serious, gate xcode-serious); never thermal.mjs,
+  no heat pre-warm, no cooling wait (memory "phone-checks-start-warm").
+steps as run by p147-hold.sh (they make the card's "W to the page end" concrete; nothing scored changes):
+  0. per arm, C then V: open; one uncounted W warm-up (the card's warm-up per arm's port) that jumps to the page end
+     (--from 999999 --to 999999 --idle 3 --hold 2 --sentinel 0 --warmup --no-park); then p147-mread.mjs. Both arms '1'
+     at both reads -> go on; else HOLD VOID pre-read, no counted run, STOP and report to the lead.
+  1. counted runs C1 V2 V3 C4 C5 V6 V7 C8: open; W --from <C's page end at rest, from step 0, minus 2400> --to 999999
+     (clamped by the driver to the page end - 5) --idle 3 --hold 12 --sentinel 3. Why a 2400 px scroll-in instead of a
+     jump: W's heat sentinel needs frames in its scroll phase (scroll >= 44 fps) and its sentinel phase (>= 58 fps); a
+     run with no scroll frames has sentinel "no data", which voids it. The scored window is the 12 s hold at the end.
+  2. the I-098 sleep check over the hold (pmcheck.mjs); a Mac sleep voids the hold.
+  scorer: node fixes/cd-roll-ca/phone/p147-score.mjs C:<run> V:<run> … in block order; N1, N2 and voids as the card.
+self-test: `node fixes/cd-roll-ca/phone/p147-score.mjs --selftest` -> SELFTEST PASS 5 (sha256 c4ca1126f6d6): hold
+  window counts with twins and near bands; style / same mutations summed over the hold rows; a served JS of the other
+  arm voids the run; a failing C sentinel voids itself and every run since the last passing C; N1 (V <= C + 1), N2
+  (V <= C + 2), fewer than 3 valid runs per arm "not enough".
+checked before the block: p147-serve.sh ran once on the Mac (21:08Z): C served JS 1b2eecc66011, V 2cfd990c788d, CSS
+  e1359ab9994a both; stopped again. Not exercised (no phone use until the slot): p147-hold.sh and p147-mread.mjs (syntax
+  checked only). A tool fault in the block: VOID, re-run once, then report.
+```
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at
