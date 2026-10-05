@@ -29,6 +29,10 @@
 # Clock stamps (stamps.jsonl): Mac wall ns and CLOCK_UPTIME_RAW ns (mach_absolute_time, the host clock the capture's
 # PTS should be on: OBSERVED-to-verify, phone-clips.mjs cross-checks it against the frames' content changes).
 # Nothing here prints or stores the LAN address outside out/ (Hard rule 12); nobody views a frame (I-062).
+# Hold budget (added after H5, lead 2026-10-05 07:1xZ): before each item, the time left in the Mac hold (HOLD_CAP s,
+# default 600, counted from this script's start) must cover the gesture budget (150 s, I-112) plus ~30 s of set-up,
+# plus 80 s more for an 'a' item (its fixed-second waits); else the hold ends (STOP budget, exit 3) and the rest
+# is requeued in a new hold. H5 lost pV1, pV2, pA2 to the driver's own refusal, because the 'a' waits used the cap.
 # Last line: "HOLD <H> DONE <n ok>/<n items>" (exit 0), or "HOLD <H> STOP <why>" (exit 3/4/8).
 cd "$(dirname "$0")/../../../.." || exit 2
 H=$1; shift
@@ -55,9 +59,12 @@ if [ "$1" = --dnd ]; then
   node tools/console.mjs wait "$ID" --until answered --timeout 900 > $O/pc-$H-dnd-wait.log 2>&1 || { tail -1 $O/pc-$H-dnd-wait.log; echo "HOLD $H STOP DND step $ID not answered"; exit 3; }
   echo "DND step $ID answered $(date -u +%TZ)"
 fi
-n=0; ok=0
+n=0; ok=0; T0=$(date +%s); CAP=${HOLD_CAP:-600}
 for I in "$@"; do
   n=$((n + 1))
+  case $I in a*) NEED=260 ;; r*) NEED=30 ;; *) NEED=180 ;; esac
+  LEFT=$((CAP - ($(date +%s) - T0)))
+  [ $LEFT -lt $NEED ] && { echo "HOLD $H STOP budget: $LEFT s left in the Mac hold, $I needs $NEED s; requeue from $I ($ok/$((n - 1)) done)"; exit 3; }
   sh $P/serve.sh check > $O/pc-$H-check-$I.log 2>&1 || { echo "HOLD $H STOP served hash check failed before $I"; exit 4; }
   SC=$(echo "$I" | cut -c1); A=$(echo "$I" | cut -c2)
   [ "$A" = A ] && { U=$AU; PP=$PA; } || { U=$VU; PP=$PV; }

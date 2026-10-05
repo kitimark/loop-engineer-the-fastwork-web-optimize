@@ -42,6 +42,13 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 const argv = process.argv.slice(2);
 const opt = (k, d = null) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : d; };
 const flag = (k) => argv.includes(`--${k}`);
+// --help / -h: print the header comment and exit before any ffmpeg (added after an unknown --help ran a full encode
+// outside a hold, 2026-10-05 07:2xZ).
+if (argv.includes('--help') || argv.includes('-h')) {
+  const src = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+  console.log(src.slice(0, src.findIndex((l) => !l.startsWith('//'))).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  process.exit(0);
+}
 
 export const SCREEN = { w: 430, h: 932 };
 export const BOX = { y0: 119, y1: 826 };                       // pt, full width
@@ -579,4 +586,5 @@ function selfTest() {
   console.log(`phone-clips self-test: ${n} checks ok`);
 }
 
-if (flag('self-test')) selfTest(); else main();
+// Run only as a script: an import (a diagnostic that reuses analyse/clockLag) must not start an encode.
+if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) { if (flag('self-test')) selfTest(); else main(); }
