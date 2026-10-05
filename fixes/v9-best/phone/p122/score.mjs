@@ -70,6 +70,26 @@ export function flickerVerdict(code, stdout = '') {
   if (![0, 3, 5].includes(code) || !g1) return `insufficient (flicker-gate exit ${code}${g1 ? '' : ', no G1 line'})`;
   return g1[3] === 'pass' ? `no-worse (G1: V monotone blinks 0, C ${g1[2]})${rep}` : `WORSE (G1: V monotone blinks ${g1[1]}, C ${g1[2]})${rep}`;
 }
+// Post-data scorer rev (lead ruling 2026-10-05 ~08:20Z; README "Post-data scorer rev, P-122"): the gate VOIDs when the
+// runs' gesture script hashes differ (flicker-gate.mjs line 103), and parts M, X and S run different scripts, so one
+// call on all three parts could never pass. The gate now runs once per part (M, X, S; R stays out), G1 only decides,
+// and FLICKER passes only when every part's call passes: any part WORSE -> WORSE, else any part insufficient (its
+// own VOID rules: < 3 valid runs an arm, mixed scripts within the part; or no runs) -> insufficient, else no-worse.
+// G2, G3 and the K twins stay reported only. flicker-gate.mjs itself is unchanged (pin 3c2bd0cb7f09).
+export const FLICKER_PARTS = ['M', 'X', 'S'];
+export function flickerGate(ff, run) {
+  const parts = {};
+  for (const P of FLICKER_PARTS) {
+    const x = ff[P] ?? { C: [], V: [] }, files = { C: x.C.length, V: x.V.length };
+    if (!files.C || !files.V) { parts[P] = { verdict: `insufficient (flicker gate: no G runs, C ${files.C} V ${files.V})`, files }; continue; }
+    const r = run(P, x.C, x.V);
+    parts[P] = { verdict: flickerVerdict(r.status, r.stdout), exit: r.status, files, json: r.json ?? null, out: (r.stdout || '').trim().split('\n').slice(-12) };
+  }
+  const tag = FLICKER_PARTS.map((P) => `${P} ${parts[P].verdict.split(' ')[0]}`).join(', ');
+  const vs = Object.values(parts).map((p) => p.verdict);
+  const verdict = vs.some((v) => /^WORSE/.test(v)) ? `WORSE (per part: ${tag})` : vs.some((v) => /^insufficient/.test(v)) ? `insufficient (per part: ${tag})` : `no-worse (per part: ${tag})`;
+  return { verdict, parts };
+}
 
 export function parse(item) {
   // part R is V only (hold122.sh refuses wgRC / gRC<n> too): a C record of part R is refused, never scored or carried
@@ -281,10 +301,10 @@ export function parity(entries) {
   return out;
 }
 
-// the flicker gate's input: counted G runs of parts M, X, S per arm (files), whatever their path gate said
+// the flicker gate's input: counted G runs of parts M, X, S per part and arm (files), whatever their path gate said
 export const flickerFiles = (entries) => {
-  const f = { C: [], V: [] };
-  for (const e of entries) { const p = parse(e.item); if (p && !p.warmup && p.kind === 'G' && 'MXS'.includes(p.part) && e.j) f[p.arm].push(e.file); }
+  const f = Object.fromEntries(FLICKER_PARTS.map((P) => [P, { C: [], V: [] }]));
+  for (const e of entries) { const p = parse(e.item); if (p && !p.warmup && p.kind === 'G' && FLICKER_PARTS.includes(p.part) && e.j) f[p.part][p.arm].push(e.file); }
   return f;
 };
 
@@ -292,13 +312,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const args = process.argv.slice(2), ji = args.indexOf('--json'), jsonOut = ji >= 0 ? args[ji + 1] : null;
   V9S.pin(P122);
   const entries = V9S.loadEntries(args.filter((a, i) => !a.startsWith('--') && !(ji >= 0 && i === ji + 1)));
-  const ff = flickerFiles(entries);
-  let flicker = { verdict: `insufficient (flicker gate: no G runs, C ${ff.C.length} V ${ff.V.length})` };
-  if (ff.C.length && ff.V.length) {
-    const fj = (jsonOut || '/dev/null') === '/dev/null' ? null : jsonOut.replace(/\.json$/, '') + '-flicker.json';
-    const r = spawnSync(process.execPath, [FLICKER, '--arm', 'C', ...ff.C, '--arm', 'V', ...ff.V, ...(fj ? ['--json', fj] : [])], { encoding: 'utf8' });
-    flicker = { verdict: flickerVerdict(r.status, r.stdout), exit: r.status, files: { C: ff.C.length, V: ff.V.length }, json: fj, out: (r.stdout || '').trim().split('\n').slice(-12) };
-  }
+  const fbase = (jsonOut || '/dev/null') === '/dev/null' ? null : jsonOut.replace(/\.json$/, '');
+  const flicker = flickerGate(flickerFiles(entries), (P, C, V) => {
+    const fj = fbase ? `${fbase}-flicker-${P}.json` : null;
+    return { ...spawnSync(process.execPath, [FLICKER, '--arm', 'C', ...C, '--arm', 'V', ...V, ...(fj ? ['--json', fj] : [])], { encoding: 'utf8' }), json: fj };
+  });
   const out = scoreP122(entries, flicker);
   for (const r of out.runs) {
     const what = r.kind === 'M' ? `moving ${JSON.stringify(r.moving)}; held m=1 p95 ${r.atOneP95}` : r.kind === 'S' ? `sentinel ${JSON.stringify(r.sentinel?.pass ?? null)}`
@@ -306,6 +324,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.log(`${r.item}: ${r.void.length ? 'VOID ' + r.void.join(' | ') : 'valid'}; ${what}; f260 ${JSON.stringify(r.f260 ?? null)}`);
   }
   for (const [k, g] of Object.entries(out.gates)) console.log(`${k}: ${JSON.stringify(g)}`);
+  for (const [P, x] of Object.entries(out.gates.FLICKER.parts)) console.log(`FLICKER ${P}: ${x.verdict}${x.files ? ` (files C ${x.files.C} V ${x.files.V})` : ''}`);
   console.log(`R (report): ${JSON.stringify(out.reported.R)}`);
   for (const [P, x] of Object.entries(out.reported.parity.parts)) {
     const runs = x.runs.C.concat(x.runs.V).map((r) => `${r.item} ${r.compared ? `${r.compared.d}${r.compared.clipped ? ' clipped' : ''} (${r.compared.how})` : '-'}`).join(' | ');

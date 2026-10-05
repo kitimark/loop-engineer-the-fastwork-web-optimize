@@ -990,3 +990,37 @@ open items:
     runs whenever its panel is open (A-open 31.8/s). The 60 level (3 of 7 rev 7c loads) is unexplained. It does not block
     this behaviour check; it blocks landing v9 until it is explained or removed (lead). Scoped fix candidate: P-097.
 ```
+
+### Post-data scorer rev, P-122 (lead ruling 2026-10-05 ~08:20Z, option (a); written after H3a-H4b were scored and after H6 ended)
+
+Disclosed: this rev was written after phone data was seen. It fixes a design bug in the scorer, not the data. PIN HEAD
+stayed aaa18038 for every hold (H3a-H6): the rev touched score.mjs on disk only after H6 had ended (08:41Z).
+
+- **The bug.** score.mjs ran nav-hit-cache's flicker gate once, on the counted G runs of parts M, X and S together. The
+  gate VOIDs a call whose runs carry more than one gesture script hash (`fixes/nav-hit-cache/flicker-gate.mjs` line
+  103: ``if (scripts.size > 1) voidWhy.push(`gesture script hashes differ: ...`)``). Parts M, X and S run three
+  different scripts by design (GESTURE_HASH M 607b59612abb, X 21aaafd3a9fd, S 7312cdcd2574), so the combined call
+  could never pass: FLICKER was "insufficient (flicker gate VOID)" on any full block, whatever the blinks. The
+  self-test had no mixed-script case, so the pre-data read could not see it.
+- **Data seen before the rev** (interim, pinned scorer 357ee5bbcac7, out/p122/interim-M.txt and interim-MX.txt):
+  - GM no-worse (Δgt50 0, Δgt46 −2); EX no-worse, threshold-sensitive (V gt50 0, gt46 1: one 48 ms frame).
+  - Parity M pass (median C 1836, V 1783, gap −53); parity X pass via the clipped-end rule (C 1187, V 2058; pairs
+    775 / 871 / 987; every run clipped).
+  - FLICKER on M + X: VOID ("gesture script hashes differ: 607b5961…, 21aaafd3…"); its G1 line read "V monotone blinks
+    0 (C 1): pass". Part M alone: G1 / G2 / G3 pass, K=8 PASS (threshold-sensitive: twin K=16 FAIL).
+- **The rev: G1 only, per part.** flicker-gate.mjs runs once per part (M, X, S; R stays out, it is V only) and is
+  unchanged (pin 3c2bd0cb7f09). FLICKER passes only when every part's call passes: any part WORSE (G1: V monotone
+  blinks > 0) → WORSE; else any part insufficient → insufficient; else no-worse. Per-part VOID keeps the gate's own
+  rules (fewer than 3 valid runs per arm, mixed scripts within the part); a part with no runs is insufficient. G2, G3
+  and the K twins stay informational. Outputs: one `<json>-flicker-<P>.json` per part, one `FLICKER <P>:` line each.
+- **Equivalence.** G1 is "V monotone blinks = 0", a sum of non-negative per-run counts. A sum of non-negative counts
+  is 0 exactly when the sum within every part is 0, so "0 summed over all parts" and "0 in every part" decide the
+  same thing: the rev asks the registered G1 question and only removes the VOID the mixed scripts forced. The one
+  stricter point: the gate's "≥ 3 valid runs per arm" now holds per part, not pooled (3 per arm per part, as held).
+- **Self-test.** selftest122.mjs: SELFTEST-122 OK 60 (was 55). New cases, with a stand-in gate that VOIDs on mixed
+  scripts as line 103 does: (1) mixed scripts across M, X and S with V monotone 0: the one combined call VOIDs, the
+  per-part gate passes; (2) one V monotone blink in part X only → FLICKER WORSE (M and S pass); (3) mixed scripts
+  within one part, or a part with no runs → insufficient; (4) WORSE wins over insufficient; (5) a part-X G1 FAIL
+  makes the block WORSE. The flickerFiles case now expects the per-part grouping.
+- **Hashes.** p122/score.mjs 357ee5bbcac7 → 7909c0b44951; selftest122.mjs 2da28f207b7c → 676d841d1b2f;
+  flicker-gate.mjs 3c2bd0cb7f09 (unchanged). mgmt-ops-10 reads the rev and re-pins score.mjs before the full score.
