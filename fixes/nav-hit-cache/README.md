@@ -885,6 +885,36 @@ CSS e1359ab9994a; every load served VA's pin; no page errors.
   c3d36476c3ce only in rev 7d's morph-scroll touchend lines. Any other differing line voids the carry-over: re-run
   `probe.mjs parity` on the new base.
 
+## Parity on v9-final + rev 7d, the v9.1 base (10-05; record `v9final/parity-v91-1.json`)
+
+PR-023 chose menu rev 7d (rev 5, accepted 10:15:50Z), so v9.1 stacks on v9-final + 7d (fix-hero-exit-threaded ada7f461,
+`fixes/morph-scroll-v9try/patch.diff` 6d1632eb0ee9, JS 1b2eecc66011). The carry-over above did not apply. v9-final as
+landed (8b5ce9b3, 647c9ef2b1e2) dropped scroll-cb and the close rule, so its bytes differ from the PASS build
+c3d36476c3ce by scroll-cb's lines (201 diff lines), not only by 7d's touch lines. That meant a re-run.
+
+**Bytes (build.mjs bases `v9f`, `v9f7d`).** For each build, C = the build minus nav, by reverse strict apply of
+`patch-on-v9s4.diff` (9814fdad848e). Applying that diff again gives the build back exactly.
+
+| base | build (V) | C = V minus nav | VA |
+|---|---|---|---|
+| v9f (v9-final) | 647c9ef2b1e2 | 366636504b84 (int-v8's pinned "step 4 minus scb" join) | 48552ea6cfba |
+| v9f7d (v9-final + 7d) | 1b2eecc66011 | a707f659f650 | de8c7fc68c56 |
+
+The CSS is e1359ab9994a throughout. diff(647c9ef2b1e2 to 1b2eecc66011) is only rev 7d's 5 touch-path hunks: comment,
+`__msF0` declaration, the lift-off rule, touchstart's `__msF0`, and the inert `__msDbg` log. The parity drive fires no
+touch events, so the v9f7d run covers v9-final as shipped too.
+
+**PASS** (10:37Z, shared probe slot, 140 s, served VA's pin, no page errors):
+
+| case | task10 | task40 | raf10 (report only) | raf40 (report only) |
+|---|---|---|---|---|
+| mobile | 0 lag, 0 / 0 / 0 | 0 lag, 0 / 0 / 0 | pill 2 (0 in sync) | theme 1, pill 1 (0 in sync) |
+| desktop | same | same | pill 2 (0 in sync) | theme 1, pill 2 (0 in sync) |
+
+The raf entries are the same harness-lag frames as on step 4: the mobile theme entry is again [2238, dark, not, 2198],
+and the desktop one is [4968, …, 4928], the future card's bottom edge. Part 2 (desktop-rtl, mobile-rtl, mobile-shift) was not
+re-run on this base. It passed on step 4 and runs on request (one more ~140 s slot).
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

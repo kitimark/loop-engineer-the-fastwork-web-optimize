@@ -63,6 +63,18 @@ export const BASES = {
     dir: join(SNAP, 'v9s4-de237379b556'), pin: ['de237379b556', 'e1359ab9994a'],
     patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['c3d36476c3ce', 'e1359ab9994a'], VA: ['33bf2744db57', 'e1359ab9994a'] }, pre: { V: 'nhcv9', VA: 'nhcv9a' },
   },
+  // v9-final as landed (8b5ce9b3; scroll-cb and the close rule dropped): C = v9-final minus nav (reverse strict apply of
+  // patch-on-v9s4.diff) = 366636504b84, int-v8's pinned "step 4 minus scb" join; V = C + the same diff = v9-final
+  v9f: {
+    dir: join(SNAP, 'v9f-366636504b84'), pin: ['366636504b84', 'e1359ab9994a'],
+    patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['647c9ef2b1e2', 'e1359ab9994a'], VA: ['48552ea6cfba', 'e1359ab9994a'] }, pre: { V: 'nhcv9f', VA: 'nhcv9fa' },
+  },
+  // v9.1 base: v9-final + menu rev 7d (PR-023 accepted rev 5; fix-hero-exit-threaded ada7f461, patch 6d1632eb0ee9, JS
+  // 1b2eecc66011); C = that minus nav, the same way; V = C + the same diff = 1b2eecc66011
+  v9f7d: {
+    dir: join(SNAP, 'v9f7d-a707f659f650'), pin: ['a707f659f650', 'e1359ab9994a'],
+    patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['1b2eecc66011', 'e1359ab9994a'], VA: ['de8c7fc68c56', 'e1359ab9994a'] }, pre: { V: 'nhcv9f7d', VA: 'nhcv9f7da' },
+  },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
 // cached under out/nav-hit-cache/from/
@@ -80,7 +92,7 @@ function fromFile(e) {
 }
 const baseOf = (b) => {
   const B = BASES[b];
-  if (!B) throw new Error(`unknown base ${b} (v8 | v8sc | v8ms | best)`);
+  if (!B) throw new Error(`unknown base ${b} (see BASES)`);
   return B;
 };
 // v8's C is not kept anywhere else: build it once from the baseline snapshot + fixes/v8-best/patch.diff
