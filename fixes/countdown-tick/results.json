@@ -16,7 +16,8 @@
  },
  "patches": {
   "fixes/countdown-tick/patch.diff": "70e04ee606dfa73601f2d3ecd05561aa6235911108722be5b8d2c8949c2f1762",
-  "fixes/countdown-tick-v9/patch.diff (delta stacked on v9-best)": "8a4a6a16e217ecb2630bf2fd9f49a3f6780ac78b5c7c4dff02d65b8aa1ff8c79"
+  "fixes/countdown-tick-v9/patch.diff (delta stacked on v9-best), first build on v9 step 4 de237379b556": "8a4a6a16e217ecb2630bf2fd9f49a3f6780ac78b5c7c4dff02d65b8aa1ff8c79",
+  "fixes/countdown-tick-v9/patch.diff (rebuilt on landed v9-final 647c9ef2b1e2, main 8b5ce9b3; P-130 pin)": "5bcc05af690c52a31ce289af7112996c7de5144dd2b10877766b3b03119bde24"
  },
  "scripts": {
   "tick-probe.mjs": "7a105bc9c1b5",
@@ -26,7 +27,7 @@
   "p130-block.mjs": "357f369b2672",
   "phone/idle-p130.json": "d7ee0153e439",
   "phone/hold.sh": "5ccf5d050098",
-  "phone/serve.sh": "af443694ea69",
+  "phone/serve.sh": "cc2203ef105e",
   "phone/idle-raf.mjs": "51f7a8e38150"
  },
  "servedJs": {
@@ -1256,5 +1257,15 @@
    }
   },
   "note": "'chain' = spec 3.3.1 as first written (tick writes Date.now()); 'nominal' = the shipped form (tick writes T0 + k s)"
+ },
+ "p130Pins": {
+  "C_JS": "647c9ef2b1e2",
+  "C_CSS": "e1359ab9994a",
+  "V_JS": "6841352e0328",
+  "V_CSS": "e1359ab9994a",
+  "DELTA": "5bcc05af690c",
+  "B_JS": "4606120cf392",
+  "B_CSS": "27776f3d4138",
+  "note": "serve.sh snap + start + check, 2026-10-05 ~09:25Z: all served hashes ok"
  }
 }

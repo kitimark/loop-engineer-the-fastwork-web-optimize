@@ -1,10 +1,13 @@
-# countdown-tick P-130 build pins (sha256, first 12 hex). OPEN until v9-final lands on main (lead, 2026-10-05).
-# Then: C = the landed v9-final's JS/CSS; V = C + fixes/countdown-tick-v9/patch.diff (CSS = C's). serve.sh refuses OPEN.
-# Provisional, not a pin: int-v8's v9-final candidate without scb (JS 647c9ef2b1e2, CSS bdecf48c5b32) + the delta
-# applies cleanly and gives V JS 6841352e0328 (trial in out/countdown-tick/v9final-try, 05:5xZ).
-C_JS=OPEN
-C_CSS=OPEN
-V_JS=OPEN
+# countdown-tick P-130 build pins (sha256, first 12 hex). Filled 2026-10-05 after v9-final landed on main (8b5ce9b3).
+# C = the landed v9-final: fixes/v9-best/patch.diff 4196eaa61d96 rebuilt with `fix.mjs apply v9-best --reset`
+#     (= int-v8's pinned 647c9ef2b1e2 / e1359ab9994a, no scroll-cb, no close rule).
+# V = C + fixes/countdown-tick-v9/patch.diff (DELTA, rebuilt on C with `fix.mjs apply countdown-tick-v9 --on v9-best`,
+#     then `fix.mjs diff countdown-tick-v9 --on v9-best`; same 3 hunks as 8a4a6a16e217, only the base sha and offsets moved);
+#     V CSS = C CSS. serve.sh snap builds V by `patch` and refuses unless the snapshot hashes equal these pins.
+C_JS=647c9ef2b1e2
+C_CSS=e1359ab9994a
+V_JS=6841352e0328
+DELTA=5bcc05af690c
 LOGGER=49d7a6c3da4c
 PROGRAM=d7ee0153e439
 GESTURE_HASH=58b3e0b3f502

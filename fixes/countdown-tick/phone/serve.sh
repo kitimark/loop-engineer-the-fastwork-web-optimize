@@ -20,6 +20,7 @@ case "$CJ$CC$VJ" in *OPEN*|"") echo "PINS OPEN: the control is not pinned yet (v
 if [ "$1" = snap ]; then
   [ -e $S ] && { echo "$S exists: refuse (immutable)"; exit 3; }
   [ -n "$CDIR" ] && [ -f "$CDIR/$N" ] && [ -f "$CDIR/$A" ] || { echo "CDIR must hold the v9-final $N and $A"; exit 1; }
+  [ "$(shasum -a 256 fixes/countdown-tick-v9/patch.diff | cut -c1-12)" = "$(pin DELTA)" ] || { echo "delta is not the pinned $(pin DELTA): refuse"; exit 3; }
   for X in C V; do mkdir -p $S/$X/_app/immutable/nodes $S/$X/_app/immutable/assets; cp "$CDIR/$N" $S/$X/$N; cp "$CDIR/$A" $S/$X/$A; done
   (cd $S/V && patch -p1 --no-backup-if-mismatch < ../../../../../fixes/countdown-tick-v9/patch.diff) || { echo "delta does not apply: refuse"; exit 3; }
   (cd $S && shasum -a 256 C/$N C/$A V/$N V/$A > HASHES.txt)
