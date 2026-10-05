@@ -164,8 +164,26 @@ and the Simulator; motion-only differences are proposals).
     The control phase (same session) is valid. At m 1 the control repaints #platform 0 times in all arms; at m 0 it
     repaints it 594-600 times, which is the approach repaint of 2.3.
   - The script now matches layers by id, then node + size, then unique name, and runs a no-gesture reconnect
-    self-check. Rerun of C, V1, N queued (chain 5).
-  - V1 and N decide: if V1 removes the repaint at T0, it joins F1 + U2.
+    self-check.
+  - **Rerun, valid** (`em-step-sim-end-morph{,-v1,-f12}-2026-10-05T23-2*.json`). The reconnect self-check matched every
+    layer by node + size, 0-2 gone. Over its ~2.3 s rest it repainted 11-15 paints closed and 80-95 open, all of them
+    the panel's center (its clock).
+
+    | arm | closed, strokes (7 toolbar transitions) | closed, control | open m 1, strokes | open, control |
+    |---|---|---|---|---|
+    | C | #platform 429, total 573 | #platform 600, total 824 | #platform 0, total 2103 | #platform 0, total 2088 |
+    | V1 (snapped `--fw-ms-h`) | #platform 447, total 612 | 600 / 824 | #platform 0, total 1908 | 0 / 2131 |
+    | N (F1+U2) | #platform 438, total 595 | 600 / 824 | #platform 0, total 2100 | 0 / 2045 |
+
+  - **The Simulator does not reproduce the phone's step repaint** (OBSERVED in our setup). At m 1, touch strokes with a
+    toolbar transition repaint #platform 0 times, even in C. The open totals are the panel's own layers (center,
+    photo tracks, header), equal with and without touch.
+  - At m 0, #platform repaints with or without touch: the approach blur repaint of 2.3 (F4's target).
+  - **V1 changes nothing** in the Simulator (447 vs 429 closed), and the case it targets can't be produced here. V1 is
+    dropped from the less-work build.
+  - Step B (the phone) would be the only way to see the trigger. Proposal to the lead: no separate card. P-152's
+    attribution runs (AC1, AV1: Paint records per frame at m >= 0.55) already show whether F1 removes it on the
+    phone.
 - S2 Simulator counts on v9.2 (`em-sim-s2-2026-10-05T23-00-27-826Z.json`). Cells are paint events / kpx:
 
   | phase | C | F1+U2 | P1 |
