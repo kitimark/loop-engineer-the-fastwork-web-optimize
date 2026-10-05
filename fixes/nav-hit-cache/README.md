@@ -1435,6 +1435,24 @@ The runs:
 U2 still cuts one nav hit test per morph-open frame beside scroll-cb and nav-fade: −93 per load, as on v9f7d. Forced
 layout and style stay within 1-3 of M.
 
+**Lead ruling on this prep (10-05, after 83c14d93).**
+- U2 is eligible for v9.3. Under the memory rule ("Illusions must be pixel-identical") the T2 judgment is "beyond
+  A/A". At y 2120, Chrome M vs V (max 170) is not beyond M vs M (max 207), and the Simulator gives 0 at both stops.
+- This does not reopen v9.2: U2 stays out of v9.2, and v9.2's phone part stays as signed.
+- Posted as F-294 (kind measurement; topics nav-hit-cache, deck-contain, all), linked to F-293 (deck-contain: Chrome
+  shots change under a full hold) and acked F-293 as related. The per-load phase is OBSERVED in our setup, cause
+  unresolved.
+
+**Proposal for the v9.3 card: A/A pairs per stop for the nav pixel judgment (no card written).** One A/A pair per stop
+is not enough: in the 16 loads above, a single same-build pair ranged from under 128 to 207 at y 2120.
+- Per arm, 6 loads at each judged stop (y 2120 nav, y 6278 CTA, and y 5684 where the CTA state also showed). That
+  gives at least 3 disjoint A/A pairs per arm per stop, so 6 A/A pairs per stop across C and V.
+- The A/A envelope per stop is the max over all A/A pairs, for both the edge level and the cluster size.
+- The C vs V pairs (3 disjoint, plus every cross pair for the spread) fail T2 only when they go beyond that envelope.
+- Same rule on the Simulator: 3 A/A pairs per arm per stop. It stays the decisive cross-check because it settles
+  (0 at both stops here).
+- Loads interleave C V C V ... in one hold, so a phase drift over the hold hits both arms.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
