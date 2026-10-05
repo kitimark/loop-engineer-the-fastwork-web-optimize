@@ -93,7 +93,7 @@ cause not traced.
 
 Simulator (WebKit), whole-page Timeline Paint records per scene:
 
-Simulator (WebKit), whole-page Timeline records per scene, batch 8, n=2 (batch 9, 5 more runs per scene, pending: it
+Simulator (WebKit), whole-page Timeline records per scene, batch 8, n=2 (batch 9, 4 more runs per scene, pending, rule below: it
 confirms or voids the Simulator Paint claim; it does not change the look verdict):
 
 | scene | C Paint | nav-fade Paint | C recalcs / layouts | nav-fade recalcs / layouts |
@@ -152,16 +152,17 @@ Probe notes:
 v9c's CSS (bdecf48c5b32) differs from the landed v9-final only by a 6-line rule on the morph panel's visibility; the
 nav rules are identical. These ablations were run there:
 
-| arm | removes | Chrome Join paints topIn / glide / end | Sim topIn Paint |
-|---|---|---|---|
-| C (v9c) | - | 60-61 / 61 / 38-41 | 564-616 |
-| **maskj** (= nav-fade) | sweep repaint, mask only while sweeping | 2 / 0 / 39-41 | 427-450 |
-| `--maskr` / `--maski` | sweep repaint, mask left at rest | 2-3 / 0 / 59-79 | 412-459 |
-| `--clip` (B) | the clip WA's repaint (clip on carrier spans) | 61 / 61 / 10-11 | 564-600 |
-| `--abr` / `--abri` (A+B) | both | 2 / 0 / 10-11 | 389-434 |
-| `--layer` (negative sibling) | nothing: `will-change: transform` on the button | 61 / 61 / 33-34 | 590-620 |
+| arm | removes | Chrome Join paints topIn / glide / end | Sim topIn Paint, batches 5-6 (n=4) | Sim topIn Paint, batch 7 (n=3) |
+|---|---|---|---|---|
+| C (v9c) | - | 60-61 / 61 / 38-41 | 564-602 | 579-616 |
+| **maskj** (= nav-fade) | sweep repaint, mask only while sweeping | 2 / 0 / 39-41 | - | 427-450 |
+| `--maskr` / `--maski` | sweep repaint, mask left at rest | 2-3 / 0 / 59-79 (maskr and maski together; maski alone 74-79) | 412-459 | - |
+| `--clip` (B) | the clip WA's repaint (clip on carrier spans) | 61 / 61 / 10-11 | 564-600 | - |
+| `--abr` / `--abri` (A+B) | both | 2 / 0 / 10-11 | 389-434 (abr and abri together) | abri 407-421 |
+| `--layer` (negative sibling) | nothing: `will-change: transform` on the button | 61 / 61 / 33-34 | 590-620 | - |
 
-(Chrome counted only the button's main layer there; batch 8 counts every Join layer, hence 63 vs 61.)
+(Chrome counted only the button's main layer there; batch 8 counts every Join layer, hence 63 vs 61. Simulator end
+Paint, batch 7, n=3: C 1152-1189, maskj 954-991, abri 844-963.)
 
 ## Cards (protocol v2)
 
@@ -180,8 +181,39 @@ counts on v9-final (n=2): Chrome Join paints 63 -> 2 (topIn, glide), 46-47 -> 40
   393-422, end overlapping; Simulator batch 9 pending (confirms or voids the Simulator Paint claim only)
 claims: P1 CONFIRMED (WebKit CSSProperties.json); P2 Simulator counts stand in for the phone: UNRESOLVED, decisive check =
   phone slot (G); P3 t=800 frozen-frame shift: OBSERVED probe artifact; P4 the topIn recalc rise (Chrome 181/250 vs
-  176/176, Simulator 128-181 vs 117-123): UNRESOLVED, not per frame, cause not traced
+  176/176, Simulator 128-181 vs 117-123): UNRESOLVED, not per frame, cause not traced; P5 the layout rise (Simulator end
+  Layout per frame 1.64-1.70 vs 1.53-1.56, i.e. 381-416 over 233-245 frames vs 339-350 over 222-225; Chrome topIn
+  layouts +3 to +7, 68-69 vs 62-65): UNRESOLVED, cause not traced; pass line = batch 9 rule R5 (net work per frame)
+landing basis: less-work rule (memory less-work-landing-rule): cost-card counts (this card + batch 9) plus a short phone
+  no-worse check, G driver, xcode-serious profile, under its own ticket P-139 (asked of mgmt-ops-10)
+probes (sha-256, first 12): motion.mjs d34355055470, analyze.mjs 660f449b6650, batch9.sh 5f86f5e7f4f7, simcount.mjs
+  282e19dbbdc7, parity.mjs c8a29e767bd5, geo.mjs 5bf1d1b76682
 ```
+
+## Batch 9 rule (committed before any batch 9 data)
+
+Batch 9 is `probe/batch9.sh`: 4 Simulator sessions per scene (topIn t9c-t9f, end e9c-e9f, alternating), each session
+both arms (C first, then nav-fade, as in batch 8), on the same base, probe and Simulator as batch 8. `probe/simcount.mjs`
+applies the rule below mechanically to all runs.
+
+- **Pool:** batch 8 (t8a, t8b, e8a, e8b) and batch 9 pool to n=6 per arm and scene (same base, same probe sha, same
+  Simulator). The batch 7 runs (v9c base) do not pool. A run that fails (no counts, errors) is listed and not
+  replaced; no completed run is dropped. With fewer than 5 completed runs per arm and scene the result is
+  INCOMPLETE and the claims stay as committed at n=2.
+- **Ranges:** "lower" = nav-fade's max below C's min; "higher" = nav-fade's min above C's max; else "within noise".
+- **R1, Simulator topIn Paint (the claim batch 9 confirms or voids):** CONFIRMED if lower; else VOID, and the
+  Simulator Paint claim is withdrawn (the Chrome paint claim stands on its own).
+- **R2, Simulator end Paint:** better if lower, WORSE if higher, else within noise (no claim either way).
+- **R3 (P4), topIn RecalculateStyles per frame:** lower / rise / within noise. A rise keeps P4 UNRESOLVED as to cause.
+- **R4 (P5), Layout per frame, end and topIn:** lower / rise / within noise, reported as is.
+- **R5, less-work pass line (P5):** W = (Paint + Layout + RecalculateStyles) / frames per run and scene. PASS when
+  topIn W is lower (ranges do not overlap) and end W's median for nav-fade is at or below C's. Otherwise FAIL: no
+  less-work landing claim; the lead decides. ("frames" = the probe's rAF frame count in the scene window: a scene that
+  renders more frames does more work in total without doing more per frame.)
+- Batch 9 does not change the look verdict.
+
+At n=2 (batch 8 only) `simcount.mjs` gives: INCOMPLETE; R1 CONFIRMED, R2 within noise, R3 rise, R4 end rise / topIn
+within noise, R5 PASS (topIn W/frame 7.36-8.82 vs 9.44-9.62; end median 7.04 vs 7.30).
 
 **Scenarios not run:** idle after scroll · reload while scrolled · early input · scroll up · toolbar resize · rubber
 band. Desktop width not checked (the rules are the same; the button is wider).
