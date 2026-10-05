@@ -12,6 +12,8 @@
 # block, each re-run once as <run>r, then S1. One re-run: H<n> "<r> S1"; two: H<n> "<r1> <r2>" and H<n+1> "S1"; none: "S1".
 # A hold that exits 7 (its time guard) is re-run whole once; any other non-zero exit stops the driver (exit = the hold's).
 # Logs: out/p129/hold-<H>.log (an earlier one moved aside). After each hold: doing iphone --between 1.
+# Thermal gates (the lead 08:59Z): only at this phone hold's edges, via P129_GATE: the first hold "start", the last
+# "end" (a part with one hold: "both"), every middle hold "none"; with two parts that is 4 gates in the block.
 # P129_DRY=1: calls p129-hold.sh directly (its dry mode: pins and plan only, no lock, no phone).
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-129 ] || { echo "TICKET is not P-129: no run"; exit 2; }
@@ -21,20 +23,27 @@ mkdir -p $LG
 hold() { # H items...
   h=$1; shift
   [ -e $LG/hold-$h.log ] && mv $LG/hold-$h.log $LG/hold-$h.log.prev-$(date +%s)
-  if [ "$P129_DRY" = 1 ]; then sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?
-  else node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "P-129 $h: $*" -- \
+  if [ "$P129_DRY" = 1 ]; then P129_GATE=$GMODE sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?
+  else P129_GATE=$GMODE node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "P-129 $h: $*" -- \
       caffeinate -i -s sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?; fi
-  echo "$h ($*) exit $e: $(grep -E '^HOLD .* (VALID|VOID|DRY)' $LG/hold-$h.log | tail -1)"
+  echo "$h ($*) gates $GMODE exit $e: $(grep -E '^HOLD .* (VALID|VOID|DRY)' $LG/hold-$h.log | tail -1)"
   grep -E '^(RERUN-NEEDED|SENTINEL|GATES .* INVALID|ITEM .* VOID)' $LG/hold-$h.log
   [ "$P129_DRY" = 1 ] || node tools/lock.mjs doing iphone --owner "$R" --between 1 > /dev/null 2>&1
   return $e
 }
-run1() { # H items...: one hold, a time-guard VOID (7) re-run whole once
+FIRST=1
+gmode() { # last(0|1) -> the hold's P129_GATE: gates only at this phone hold's edges (lead 08:59Z)
+  if [ $FIRST = 1 ] && [ $1 = 1 ]; then echo both; elif [ $FIRST = 1 ]; then echo start; elif [ $1 = 1 ]; then echo end; else echo none; fi; }
+run1() { # last(0|1) H items...: one hold, a time-guard VOID (7) re-run whole once
+  GMODE=$(gmode $1); shift
   hold "$@"; e=$?
   [ $e -eq 7 ] && { echo "RETRY $1 (time guard)"; hold "$@"; e=$?; }
   [ $e -ne 0 ] && { echo "BLOCK STOP at $1 exit $e"; exit $e; }
+  FIRST=0
 }
+i=0
 for spec in "$@"; do
+  i=$((i + 1)); LAST=0; [ $i -eq $# ] && LAST=1
   H=${spec%%:*}; items=$(echo "${spec#*:}" | tr ',' ' ')
   if [ "$items" = TAIL ]; then
     RR=$(for f in $LG/hold-H2.log $LG/hold-H3.log $LG/hold-H4.log $LG/hold-H5.log; do [ -e $f ] && sed -n 's/^RERUN-NEEDED \([^(]*\) (.*/\1/p' $f; done | tr ' ' '\n' | grep -E '^[EL][1-4]$' | awk '!s[$0]++' )
@@ -42,9 +51,9 @@ for spec in "$@"; do
     [ "$n" -gt 2 ] && echo "RERUN over the cap: $(echo $RR) need one; the first 2 are re-run (card: at most 2 per block), the rest stay invalid"
     R1=$(echo "$RR" | sed -n 1p); R2=$(echo "$RR" | sed -n 2p)
     echo "TAIL re-runs: ${R1:-none}${R2:+ $R2} (as ${R1:+${R1}r}${R2:+ ${R2}r}), then S1"
-    if [ -z "$R1" ]; then run1 $H S1
-    elif [ -z "$R2" ]; then run1 $H ${R1}r S1
-    else run1 $H ${R1}r ${R2}r; N=H$(( ${H#H} + 1 )); run1 $N S1; fi
-  else run1 $H $items; fi
+    if [ -z "$R1" ]; then run1 $LAST $H S1
+    elif [ -z "$R2" ]; then run1 $LAST $H ${R1}r S1
+    else run1 0 $H ${R1}r ${R2}r; N=H$(( ${H#H} + 1 )); run1 $LAST $N S1; fi
+  else run1 $LAST $H $items; fi
 done
 echo "BLOCK PART DONE: $*"

@@ -9,9 +9,10 @@
 # Script fs = fixes/morph-scroll/g-fastshort-v1.json, compiled program pinned 8737f212c0ff (G6), for E and L alike: L adds
 # only `--idle-after-reload 17000` (I-203: idle after the script's own reload, outside the program hash), so its first
 # touch lands about 17 + 4.6 = 21.6 s after page ready (G4 L [20, 23] s; E's is about 4.6 s, G4 E [4.0, 5.5] s).
-# Usage (the lead's ruling Q2: chrome-measure --no-timing holds of 600 s under one --block P-129 phone mark, as P-122):
-#   TICKET=P-129 node tools/lock.mjs run iphone --owner iphone-runner --block P-129 --max-seconds 900 -- \
-#     node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-129 <H>" -- \
+# Usage: started only by research/serious-heat/phone/p129-block.sh, which runs inside ONE phone hold with the block mark
+# (`lock.mjs run iphone --block P-129 --max-seconds 3600`; the lead's 08:57Z condition 3, two such holds split at a pair
+# boundary when the budget total is over ~55 min) and starts each hold as its own 600 s chrome-measure --no-timing run:
+#   node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-129 <H>" -- \
 #     caffeinate -i -s sh research/serious-heat/phone/p129-hold.sh <H> <items>
 # Plan (2 fs runs per 600 s hold: GESTURE_BUDGET_S 229, + the idle for L):
 #   H1 W S0 | H2 E1 L1 | H3 L2 E2 | H4 E3 L3 | H5 L4 E4 | H6 <re-runs, at most 2 per block> S1 (H7 S1 when 2 re-runs)
@@ -28,6 +29,9 @@
 # voids the block before any counted run, a failing S1 voids every counted run (exit 8).
 # Time guard (as P-122's F5): no fs item starts when elapsed + its budget + 30 s > 600 (gesture-run refuses with less
 # left in the 600 s hold, I-112): the rest is skipped, Safari parked, exit 7, the hold is re-run whole.
+# P129_GATE=start|end|both|none (default both): which thermal gates this hold runs. The block driver sets it so that the
+# gates sit at each phone hold's edges only (the lead 08:59Z: start of part 1's first hold, end of part 1's last, start
+# of part 2's first, end of part 2's last; 4 gates, none in the middle holds; the card's rule plus the split, I-154).
 # P129_DRY=1: pins, compiled-program and served-hash checks and the plan only; no gate, no phone command.
 # Last line: "HOLD <H> VALID <s> s" (exit 0) or "HOLD <H> VOID <why>" (2 usage, 3 end gate / Mac sleep, 4 setup, 5 start
 # gate / WDA, 7 time guard, 8 sentinel FAIL). Nothing here prints the LAN address (Hard rule 12).
@@ -40,6 +44,8 @@ O=out/p129/runs; SV=out/p129; SNAP=out/snapshots/ms-29c0d537e0c9
 FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css; JS_PIN=29c0d537e0c9; CSS_PIN=659b02f7169d
 LIDLE=17000; LFLAG="--idle-after-reload $LIDLE"
+GM=${P129_GATE:-both}
+case $GM in start|end|both|none) ;; *) echo "P129_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=research/serious-heat/phone/p129-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs
 mkdir -p $O
 for I in "$@"; do case $I in W|S0|S1|E[1-4]|L[1-4]|E[1-4]r|L[1-4]r) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
@@ -49,7 +55,7 @@ served() { curl -s "http://127.0.0.1:$PV/$1" | shasum -a 256 | cut -c1-12; }
 hashok() { [ "$(served $JS)" = $JS_PIN ] && [ "$(served $CSS)" = $CSS_PIN ]; }
 pins() { for f in "$@"; do printf ' %s=%s' "$f" "$(shasum -a 256 "$f" | cut -c1-12)"; done; }
 T0=$(date +%s)
-echo "HOLD $H (P-129) start $(date -u +%FT%TZ) items $*"
+echo "HOLD $H (P-129) start $(date -u +%FT%TZ) items $* gates $GM"
 echo "PIN $H P-129 profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF $GATES research/serious-heat/p129-read.mjs research/serious-heat/p129-selftest.mjs $FS \
   research/phone-thermal-gate/thermal-gate.mjs research/phone-thermal-gate/verdict.mjs fixes/rest-script/tools/pmcheck.mjs \
@@ -77,8 +83,8 @@ node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
 BU=$(node tools/lan.mjs --url --port "$PB") && VU=$(node tools/lan.mjs --url --port "$PV") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
 gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p129-$H-$1" --expect serious --max-c 44 --accept-induced --url "$BU"; }
-gate start; g=$?
-[ $g -ne 0 ] && { echo "HOLD $H VOID start gate exit $g (no run)"; exit 5; }
+case $GM in start|both) gate start; g=$?
+  [ $g -ne 0 ] && { echo "HOLD $H VOID start gate exit $g (no run)"; exit 5; } ;; *) echo "GATE start skipped (P129_GATE=$GM)" ;; esac
 RERUN=""; SFAIL=""
 for I in "$@"; do
   case $I in L*) B=$sL ;; *) B=$sE ;; esac
@@ -101,12 +107,12 @@ for I in "$@"; do
   case $I in
     W) [ $r -ne 0 ] && echo "ITEM W exit $r (uncounted warm-up; the hold goes on)" ;;
     S[01]) node $GATES $O $I; s=$?
-      [ $s -ne 0 ] && { SFAIL="$SFAIL $I"; [ $I = S0 ] && { gate end > /dev/null 2>&1; echo "HOLD $H VOID SENTINEL S0 FAIL: the block is void before any counted run"; exit 8; }; } ;;
+      [ $s -ne 0 ] && { SFAIL="$SFAIL $I"; [ $I = S0 ] && { echo "HOLD $H VOID SENTINEL S0 FAIL: the block is void before any counted run"; exit 8; }; } ;;
     *) if [ $r -ne 0 ] || [ ! -s "$O/$F.json" ]; then echo "ITEM $I VOID exit $r$( [ -s "$O/$F.json" ] || echo ', no run file')"; RERUN="$RERUN $I"
        else node $GATES $O $I || RERUN="$RERUN $I"; fi ;;
   esac
 done
-gate end; g=$?
+g=0; case $GM in end|both) gate end; g=$? ;; *) echo "GATE end skipped (P129_GATE=$GM)" ;; esac
 node fixes/rest-script/tools/pmcheck.mjs "$T0" "$(date +%s)"; p=$?
 [ -n "$RERUN" ] && echo "RERUN-NEEDED$RERUN (one re-run each in the last hold, before S1; at most 2 per block)"
 [ $g -ne 0 ] && { echo "HOLD $H VOID end gate exit $g"; exit 3; }
