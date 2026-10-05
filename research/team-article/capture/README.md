@@ -100,3 +100,14 @@ Encoding:
   `capture.json` keeps only their timestamps.
 - **What gets committed:** media over 2 MB stays in `out/`. The baseline is only read: the after side's overlay
   is built in `out/` with `git apply` from the build's `patch.diff`.
+
+## Captures
+
+| dir | build | captured | shown-run counts, frames of 54 ms or more (original → build), all 3 runs |
+|---|---|---|---|
+| `v8/` | `fixes/v8-best` (JS 3e3e94cb6e9f, CSS f836404b3728), baseline b1789284481295-4ad4a84a | 2026-10-05, Chrome, 3 runs | hero 2 → 0 (3,1,2 → 0,0,4); switch 2 → 1 (2,2,2 → 1,1,1); end 0 → 1 (1,0,0 → 1,1,1) |
+
+`v8/` holds the three MP4s (`media/`, 0.6 MB together), both snippets (the artifact one carries the MP4s as data:
+URIs, 0.85 MB, and a `PAGES_URL` placeholder in its fallback line) and `summary.json` (every run's counts). In
+Chrome the end scene shows no gain. The article's end-of-page result (2 → 0) is an iPhone number, and Chrome has
+about one slow frame there per run on either side.
