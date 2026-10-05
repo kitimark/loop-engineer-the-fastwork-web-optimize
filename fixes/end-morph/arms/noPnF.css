@@ -1,0 +1,2 @@
+/* end-morph ablation (counts only, changes the look): the menu panel's per-frame blur off (CSS 10959). */
+.start-selling-morph-panel { filter: none !important; }
