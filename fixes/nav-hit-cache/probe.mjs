@@ -31,7 +31,7 @@ const { launchChrome, CDP, gotoAndSettle, tempProfileDir, sleep } = await import
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const PART = process.argv[2];
-if (!['count', 'parity'].includes(PART)) { console.error('usage: probe.mjs count|parity [--reps N] [--out f]'); process.exit(1); }
+if (!['count', 'parity', 'diag'].includes(PART)) { console.error('usage: probe.mjs count|parity|diag [--reps N] [--out f]'); process.exit(1); }
 const REPS = Number(arg('--reps', '2'));
 const OUTD = join(WT, 'out/nav-hit-cache'); mkdirSync(OUTD, { recursive: true });
 const OUT = arg('--out', join(OUTD, `probe-${PART}-${Date.now()}.json`));
@@ -174,6 +174,43 @@ async function audit(cdp, url, name, opt) {
   return out;
 }
 
+// part "diag" (arm VA, task mode): replays the parity audit's task10 then task40 sequence and, at each 40 px step
+// whose scrollY lies in --at <y>±<win> (both directions), records what the nav probe line hits: the hit chain under it
+// (outside the nav), fresh edges near it, the theme section classes and running animations; tags the steps whose frame
+// added an audit mismatch. Diagnosis only (no verdict).
+const DIAG_REC = (lo, hi) => `(() => { const y = Math.round(scrollY); if (y < ${lo} || y > ${hi}) return null;
+  const nav = document.querySelector('header.start-selling-top-nav'); const nr = nav.getBoundingClientRect();
+  const cx = nr.left + nr.width / 2, py = nr.top + Math.min(nr.height, 64) / 2;
+  const d = (e) => { const r = e.getBoundingClientRect(); return (e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 3).join('.')) + ' ' + Math.round(r.top + scrollY) + '..' + Math.round(r.bottom + scrollY); };
+  const chain = document.elementsFromPoint(cx, py).filter((e) => !nav.contains(e) || e.closest('.start-selling-top-nav-actions, .start-selling-morph-panel')).slice(0, 4).map(d);
+  const line = py + scrollY, edges = [];
+  for (const e of document.querySelectorAll('.hero-track, .commission, .commission-card, .start-selling-future-card, .pain, .start-selling-platform-card, .start-selling-platform')) { const r = e.getBoundingClientRect(); for (const v of [r.top + scrollY, r.bottom + scrollY]) if (Math.abs(v - line) < 120) edges.push([[...e.classList][0], Math.round(v)]); }
+  const cls = [...document.querySelectorAll('.commission, .start-selling-future, .start-selling-platform, .pain')].map((e) => e.className.replace(/svelte-[a-z0-9]+/g, '').trim());
+  const anims = document.getAnimations().filter((a) => a.playState === 'running').map((a) => (a.effect?.target ? [...a.effect.target.classList][0] : '?') + ':' + (a.transitionProperty || a.animationName || 'wa')).slice(0, 8);
+  return { y, line: Math.round(line), chain, edges, cls, anims, nav: nav.className.replace(/svelte-[a-z0-9]+/g, '').trim(), m: window.__nhcAudit.m.length }; })()`;
+async function diag(cdp, url, name, at, win) {
+  const vp = name.split('-')[0];
+  const INIT = 'window.__nhcAudit = { t: 0, n: 0, lag: 0, m: [], v: [], p: [] }';
+  const page = await openPage(cdp, 'VA', url, vp, { pre: [INIT + ';'] });
+  const out = { name, at, win, steps: [] };
+  for (const px of [10, 40]) {
+    await page.eval(`scrollTo({ top: 0, behavior: 'instant' })`); await page.eval(RAF3);
+    await page.eval(`(${INIT}, 0)`);
+    for (const to of ['1e9', '0']) {
+      const rec = px === 40 ? DIAG_REC(at - win, at + win) : 'null';
+      const r = await page.eval(`new Promise((res) => { const max = document.documentElement.scrollHeight - innerHeight; const goal = Math.max(0, Math.min(max, ${to}));
+        let y = scrollY, n = 0; const dir = goal >= y ? 1 : -1; const L = [];
+        const step = () => { const q = ${rec}; q && L.push({ dir, ...q }); y = dir > 0 ? Math.min(goal, y + ${px}) : Math.max(goal, y - ${px}); scrollTo({ top: y, behavior: 'instant' }); n++;
+          if (y !== goal && n < 5000) requestAnimationFrame(() => setTimeout(step, 0)); else requestAnimationFrame(() => requestAnimationFrame(() => { const q2 = ${rec}; q2 && L.push({ dir, ...q2 }); res({ n, L, m: window.__nhcAudit.m }); })); };
+        requestAnimationFrame(() => setTimeout(step, 0)); })`, { timeout: 120000 });
+      if (px === 40) { out.steps.push(...r.L); out['m' + to] = r.m; }
+    }
+  }
+  out.errors = page.errors.slice(0, 5);
+  await page.close();
+  return out;
+}
+
 const servers = [];
 const chrome = await launchChrome({ port: 0, profileDir: tempProfileDir(join(WT, 'out/nav-hit-cache/chrome'), 'nhc-' + PART), headless: true, windowSize: '1440,932', args: ['--ignore-certificate-errors'] });
 const cdp = await CDP.connect(chrome.wsUrl);
@@ -189,6 +226,12 @@ try {
       for (const vp of arg('--vp', 'mobile,desktop').split(','))
         // --arms C: the harness smoke (C only, not scored)
         for (const arm of (rep % 2 ? ['V', 'C'] : ['C', 'V']).filter((a) => arg('--arms', 'C,V').split(',').includes(a))) result.loads.push({ rep, ...(await countLoad(cdp, arm, S[arm].url, region[arm], vp)) });
+  } else if (PART === 'diag') {
+    // --at mobile:2240,desktop:4960 [--win 160]
+    const S = { VA: await server('VA') }; servers.push(...Object.values(S));
+    result.base = BASE_NAME; result.diag = {};
+    for (const spec of arg('--at', 'mobile:2240').split(',')) { const [name, at] = spec.split(':');
+      result.diag[name] = await diag(cdp, S.VA.url, name, Number(at), Number(arg('--win', '160'))); }
   } else {
     const S = { VA: await server('VA') }; servers.push(...Object.values(S));
     result.base = BASE_NAME; result.audit = {};

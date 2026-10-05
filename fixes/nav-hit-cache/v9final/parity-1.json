@@ -1,0 +1,223 @@
+{
+ "part": "parity",
+ "date": "2026-10-04T23:56:09.399Z",
+ "browser": "Chrome/154.0.8037.97",
+ "arms": {
+  "C": {
+   "js": "de237379b556",
+   "css": "e1359ab9994a"
+  },
+  "V": {
+   "js": "c3d36476c3ce",
+   "css": "e1359ab9994a"
+  },
+  "VA": {
+   "js": "33bf2744db57",
+   "css": "e1359ab9994a"
+  }
+ },
+ "base": "v9s4",
+ "audit": {
+  "mobile": {
+   "task10": {
+    "steps": 1256,
+    "tested": 856,
+    "cached": 400,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 314,
+    "tested": 237,
+    "cached": 77,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1256,
+    "tested": 922,
+    "cached": 334,
+    "lagFrames": 1245,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      670,
+      false,
+      true,
+      680
+     ],
+     [
+      678,
+      true,
+      false,
+      668
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 314,
+    "tested": 236,
+    "cached": 78,
+    "lagFrames": 306,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      2238,
+      true,
+      false,
+      2198
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      678,
+      true,
+      false,
+      638
+     ]
+    ]
+   },
+   "served": [
+    "33bf2744db57",
+    "e1359ab9994a"
+   ],
+   "errors": []
+  },
+  "desktop": {
+   "task10": {
+    "steps": 1690,
+    "tested": 1115,
+    "cached": 575,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "task40": {
+    "steps": 424,
+    "tested": 372,
+    "cached": 52,
+    "lagFrames": 0,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 0,
+    "pillInSync": 0,
+    "pillFirst": []
+   },
+   "raf10": {
+    "steps": 1690,
+    "tested": 1178,
+    "cached": 512,
+    "lagFrames": 1664,
+    "mismatches": 0,
+    "mismatchesInSync": 0,
+    "first": [],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      650
+     ],
+     [
+      648,
+      true,
+      false,
+      638
+     ]
+    ]
+   },
+   "raf40": {
+    "steps": 424,
+    "tested": 371,
+    "cached": 53,
+    "lagFrames": 406,
+    "mismatches": 1,
+    "mismatchesInSync": 0,
+    "first": [
+     [
+      4968,
+      true,
+      false,
+      4928
+     ]
+    ],
+    "sticky": 0,
+    "stickyInSync": 0,
+    "stickyFirst": [],
+    "pill": 2,
+    "pillInSync": 0,
+    "pillFirst": [
+     [
+      640,
+      false,
+      true,
+      680
+     ],
+     [
+      648,
+      true,
+      false,
+      608
+     ]
+    ]
+   },
+   "served": [
+    "33bf2744db57",
+    "e1359ab9994a"
+   ],
+   "errors": []
+  }
+ },
+ "wallMs": 134718
+}

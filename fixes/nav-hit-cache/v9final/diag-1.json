@@ -1,0 +1,1207 @@
+{
+ "part": "diag",
+ "date": "2026-10-04T23:43:52.745Z",
+ "browser": "Chrome/154.0.8037.97",
+ "arms": {
+  "C": {
+   "js": "de237379b556",
+   "css": "e1359ab9994a"
+  },
+  "V": {
+   "js": "76073ef54064",
+   "css": "e1359ab9994a"
+  },
+  "VA": {
+   "js": "e6323dbf83d3",
+   "css": "e1359ab9994a"
+  }
+ },
+ "base": "v9s4",
+ "diag": {
+  "mobile": {
+   "name": "mobile",
+   "at": 2240,
+   "win": 160,
+   "steps": [
+    {
+     "dir": 1,
+     "y": 2080,
+     "line": 2122,
+     "chain": [
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262",
+      "div.pain-sticky 2080..3012",
+      "section.pain.is-pain-dark 1330..4126"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-future-card:filter",
+      "start-selling-future-card:opacity",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-unmask",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-sheen",
+      "accent-path:svelte-1fn2go6-stroke-in",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "start-selling-profile-shell:fw-c-shell-hold"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 2120,
+     "line": 2162,
+     "chain": [
+      "div.start-selling-future-community-proof 2128..2170",
+      "div.start-selling-future-community-pill 2128..2214",
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-future-card:filter",
+      "start-selling-future-card:opacity",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-unmask",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-sheen",
+      "accent-path:svelte-1fn2go6-stroke-in",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "start-selling-profile-shell:fw-c-shell-hold"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 2160,
+     "line": 2202,
+     "chain": [
+      "button. 2186..2214",
+      "div.start-selling-future-community-pill 2128..2214",
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-future-card:filter",
+      "start-selling-future-card:opacity",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-unmask",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-sheen",
+      "accent-path:svelte-1fn2go6-stroke-in",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "start-selling-profile-shell:fw-c-shell-hold"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 2200,
+     "line": 2242,
+     "chain": [
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262",
+      "div.pain-sticky 2200..3132",
+      "section.pain.is-pain-dark 1330..4126"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-future-card:filter",
+      "start-selling-future-card:opacity",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-unmask",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-sheen",
+      "accent-path:svelte-1fn2go6-stroke-in",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "start-selling-profile-shell:fw-c-shell-hold"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 2240,
+     "line": 2282,
+     "chain": [
+      "div.pain-sticky 2240..3172",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-future-card:filter",
+      "start-selling-future-card:opacity",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-unmask",
+      "start-selling-top-nav-btn:svelte-1dcozpm-start-selling-nav-earn-sheen",
+      "accent-path:svelte-1fn2go6-stroke-in",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "start-selling-profile-shell:fw-c-shell-hold"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 2280,
+     "line": 2322,
+     "chain": [
+      "div.pain-sticky 2280..3212",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "start-selling-future-card:filter"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 2320,
+     "line": 2362,
+     "chain": [
+      "div.pain-sticky 2320..3252",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "start-selling-future-card:filter"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 2360,
+     "line": 2402,
+     "chain": [
+      "div.pain-sticky 2360..3292",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "start-selling-future-card:filter"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 2400,
+     "line": 2442,
+     "chain": [
+      "div.pain-sticky 2400..3332",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "start-selling-future-card:filter"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2398,
+     "line": 2440,
+     "chain": [
+      "div.pain-sticky 2398..3330",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "fee-visual-beat:opacity",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2358,
+     "line": 2400,
+     "chain": [
+      "div.pain-sticky 2358..3290",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "fee-visual-beat:opacity",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2318,
+     "line": 2360,
+     "chain": [
+      "div.pain-sticky 2318..3250",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "fee-visual-beat:opacity",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2278,
+     "line": 2320,
+     "chain": [
+      "div.pain-sticky 2278..3210",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "fee-visual-beat:opacity",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2238,
+     "line": 2280,
+     "chain": [
+      "div.pain-sticky 2238..3170",
+      "div.pain-hold 2262..4126",
+      "section.pain.is-pain-dark 1330..4126",
+      "main.svelte-q2j1fg 0..7210"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "fee-visual-beat:opacity",
+      "scroll-float:svelte-1p2vpne-scroll-float",
+      "record:vinyl-spin",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2198,
+     "line": 2240,
+     "chain": [
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262",
+      "div.pain-sticky 2198..3130",
+      "section.pain.is-pain-dark 1330..4126"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "fee-visual-beat:opacity"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2158,
+     "line": 2200,
+     "chain": [
+      "button. 2186..2214",
+      "div.start-selling-future-community-pill 2128..2214",
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "fee-visual-beat:opacity"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 2118,
+     "line": 2160,
+     "chain": [
+      "div.start-selling-future-community-proof 2128..2170",
+      "div.start-selling-future-community-pill 2128..2214",
+      "div.start-selling-future-card 933..2262",
+      "section.start-selling-future.is-visible.is-future-shrinking 933..2262"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       2262
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission compact",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color",
+      "fee-visual-beat:opacity"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    }
+   ],
+   "m1e9": [
+    [
+     2240,
+     false,
+     true,
+     2240
+    ]
+   ],
+   "m0": [
+    [
+     2240,
+     false,
+     true,
+     2240
+    ]
+   ],
+   "errors": []
+  },
+  "desktop": {
+   "name": "desktop",
+   "at": 4960,
+   "win": 160,
+   "steps": [
+    {
+     "dir": 1,
+     "y": 4800,
+     "line": 4848,
+     "chain": [
+      "div.start-selling-future-card 1201..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985",
+      "div.pain-sticky 4800..5700",
+      "section.pain.is-pain-dark 4085..6785"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:transform",
+      "start-selling-profile-body:profile-fade",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 4840,
+     "line": 4888,
+     "chain": [
+      "span. 4881..4899",
+      "div.start-selling-future-community-pill 4869..4911",
+      "div.start-selling-future-card 1210..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-profile-body:profile-fade",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 4880,
+     "line": 4928,
+     "chain": [
+      "div.start-selling-future-card 1217..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985",
+      "div.pain-sticky 4880..5780",
+      "section.pain.is-pain-dark 4085..6785"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-profile-body:profile-fade",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 4920,
+     "line": 4968,
+     "chain": [
+      "div.start-selling-future-card 1222..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985",
+      "div.pain-sticky 4920..5820",
+      "section.pain.is-pain-dark 4085..6785"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-profile-body:profile-fade",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 0
+    },
+    {
+     "dir": 1,
+     "y": 4960,
+     "line": 5008,
+     "chain": [
+      "div.pain-sticky 4960..5860",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-profile-body:profile-fade",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 5000,
+     "line": 5048,
+     "chain": [
+      "div.pain-sticky 5000..5900",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 5040,
+     "line": 5088,
+     "chain": [
+      "div.pain-sticky 5040..5940",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 5080,
+     "line": 5128,
+     "chain": [
+      "div.pain-sticky 5080..5980",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": 1,
+     "y": 5120,
+     "line": 5168,
+     "chain": [
+      "div.pain-sticky 5120..6020",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 5088,
+     "line": 5136,
+     "chain": [
+      "div.pain-sticky 5088..5988",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "fee-visual-beat:opacity",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 5048,
+     "line": 5096,
+     "chain": [
+      "div.pain-sticky 5048..5948",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "fee-visual-beat:opacity",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 5008,
+     "line": 5056,
+     "chain": [
+      "div.pain-sticky 5008..5908",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission entering",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "fee-visual-beat:opacity",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 4968,
+     "line": 5016,
+     "chain": [
+      "div.pain-sticky 4968..5868",
+      "div.pain-hold 4985..6785",
+      "section.pain.is-pain-dark 4085..6785",
+      "main.svelte-q2j1fg 0..9348"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "fee-visual-beat:opacity",
+      "underline-frame:three-frame-zero",
+      "underline-frame:three-frame-one",
+      "underline-frame:three-frame-two",
+      "zero-frame:three-frame-zero",
+      "zero-frame:three-frame-one",
+      "zero-frame:three-frame-two"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 4928,
+     "line": 4976,
+     "chain": [
+      "div.start-selling-future-card 1241..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985",
+      "div.pain-sticky 4928..5828",
+      "section.pain.is-pain-dark 4085..6785"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 4888,
+     "line": 4936,
+     "chain": [
+      "div.start-selling-future-card 1241..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985",
+      "div.pain-sticky 4888..5788",
+      "section.pain.is-pain-dark 4085..6785"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 4848,
+     "line": 4896,
+     "chain": [
+      "span. 4882..4900",
+      "div.start-selling-future-community-pill 4870..4912",
+      "div.start-selling-future-card 1241..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985"
+     ],
+     "edges": [
+      [
+       "start-selling-future-card",
+       4985
+      ]
+     ],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    },
+    {
+     "dir": -1,
+     "y": 4808,
+     "line": 4856,
+     "chain": [
+      "div.start-selling-future-card 1241..4985",
+      "section.start-selling-future.is-visible.is-future-shrinking 901..4985",
+      "div.pain-sticky 4808..5708",
+      "section.pain.is-pain-dark 4085..6785"
+     ],
+     "edges": [],
+     "cls": [
+      "start-selling-future is-visible is-future-shrinking",
+      "pain is-pain-dark",
+      "commission",
+      "start-selling-platform is-platform-shrink-track is-visible"
+     ],
+     "anims": [
+      "start-selling-top-nav:background-color",
+      "start-selling-top-nav-logo:color",
+      "start-selling-language-switch:background-color",
+      "start-selling-language-switch:border-bottom-color",
+      "start-selling-language-switch:border-left-color",
+      "start-selling-language-switch:border-right-color",
+      "start-selling-language-switch:border-top-color",
+      "start-selling-language-switch:color"
+     ],
+     "nav": "start-selling-top-nav  is-hero-chrome-ready",
+     "m": 1
+    }
+   ],
+   "m1e9": [
+    [
+     4960,
+     false,
+     true,
+     4960
+    ]
+   ],
+   "m0": [
+    [
+     4960,
+     false,
+     true,
+     4960
+    ]
+   ],
+   "errors": []
+  }
+ },
+ "wallMs": 72145
+}

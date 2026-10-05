@@ -61,7 +61,7 @@ export const BASES = {
   // strictly (patch -F 0), as one diff
   v9s4: {
     dir: join(SNAP, 'v9s4-de237379b556'), pin: ['de237379b556', 'e1359ab9994a'],
-    patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['76073ef54064', 'e1359ab9994a'], VA: ['e6323dbf83d3', 'e1359ab9994a'] }, pre: { V: 'nhcv9', VA: 'nhcv9a' },
+    patch: join(HERE, 'patch-on-v9s4.diff'), expect: { V: ['c3d36476c3ce', 'e1359ab9994a'], VA: ['33bf2744db57', 'e1359ab9994a'] }, pre: { V: 'nhcv9', VA: 'nhcv9a' },
   },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and

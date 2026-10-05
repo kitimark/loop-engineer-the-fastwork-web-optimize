@@ -696,7 +696,7 @@ both nav-hit-cache and rev 7c are in.
 | file | what | sha256 (12) |
 |---|---|---|
 | `patch-on-v8.diff` | the nav delta on v8, 3 context lines (U3) | 7bbb6d4212ff |
-| `patch-on-v8-u1.diff` | the same change with 1 context line (U1), for strict apply on top of 7c | 7b5f3947b465 |
+| `patch-on-v8-u1.diff` | the same change with 1 context line (U1), for strict apply on top of 7c | 7b5f3947b465; since 10-05 929268181c61 (the re-measure fix, see "Parity on v9 step 4") |
 | `glue-ms7c.diff` | rev 7c's microtask line -> `(z(g, (__nsG = F()), !0), (__nsForce = !0))`, one hunk | 5d63660a9e62 |
 | `patch-on-v8ms.diff` | v8 + 7c -> nav + glue in one diff (build.mjs base `v8ms`) | af661eba2c7c |
 
@@ -826,6 +826,60 @@ node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <ru
   --inject fixes/nav-hit-cache/flicker-inject.mjs
 node fixes/nav-hit-cache/flicker-gate.mjs --arm C <C runs...> --arm V <V runs...> [--json gate.json]
 ```
+
+## Parity on v9 step 4 + nav + glue (lead ruling B, 10-05; records in `v9final/`)
+
+The ruling: re-run the task-mode parity audit on v9 step 4 (de237379b556 / e1359ab9994a) + U1 + glue before
+nav-hit-cache enters v9-final. `probe.mjs parity --base v9s4`, shared probe slots, Chrome 154, no CPU throttle.
+
+**First run: FAIL** (`v9final/parity-1-pre.json`, VA e6323dbf83d3, 23:24Z). Task10 was clean in both viewports. Task40
+had 1 in-sync theme mismatch per viewport, on the way down:
+
+| case | step | V | real hit test |
+|---|---|---|---|
+| mobile | y 2240 | not dark | dark |
+| desktop | y 4960 | not dark | dark |
+
+**Diagnosis** (`probe.mjs diag`, `v9final/diag-1.json`). The probe replays the audit and logs the hit chain under the
+probe line, the fresh edges, the classes and the running animations around those steps.
+- Both mismatches are the first step whose probe line lies past the future card's bottom: 2262 on mobile (line
+  2282), 4985 on desktop (line 5008). There the hit moves from the card to `.pain-sticky`, which is dark.
+- The next step tests again and is correct, so each viewport has exactly one mismatch.
+- **Cause:** the cache measured the card's bottom edge while the card still sat at its reveal transform,
+  `translateY(48px)` (`.start-selling-future:not(.is-visible)`). So the cached edge was 48 px low, about 2310 / 5033.
+  - When `is-visible` arrived, the 0.9 s transform transition kept the real test running, and its `transitionend`
+    added one tail frame. Nothing re-measured the edges.
+  - The 40 px step 2242 -> 2282 (crossing window 2230-2294) therefore missed the stale edge. The 10 px steps stayed
+    inside the moving zone's ±12 px margin, which hid the miss.
+- **Why only now:** before double-drive, `.is-visible.is-future-shrinking` restarted the card's 0.9 s transform
+  transition every frame. That kept the real test on through the whole shrink. Double-drive (T-157) removed that
+  transition (`transition-property: opacity, filter`), so the cache now relied on the stale edge. nhcms has no
+  double-drive and stayed clean.
+- **Fix (U1):** when a theme-section target's last tracked geometry transition ends, the edges are re-measured
+  (`__nsGeo = null`; the next frame measures, on the layout F() forces in that frame anyway). The nav's own
+  transitions don't re-measure: they move no section edge, and the probe line is re-read after every test.
+  - The change is one line plus a 3-line comment rewrite, so the hunk line counts are unchanged.
+  - It is in both `patch-on-v8-u1.diff` (929268181c61) and `patch-on-v9s4.diff` (9814fdad848e).
+  - U1, then `glue-ms7c.diff` (5d63660a9e62, unchanged), applied strictly onto step 4 gives exactly V.
+
+**Re-run: PASS** (`v9final/parity-1.json` 23:56Z, `v9final/parity-2.json` 00:05Z). V c3d36476c3ce, VA 33bf2744db57,
+CSS e1359ab9994a; every load served VA's pin; no page errors.
+
+| case | task10 | task40 | raf10 (report only) | raf40 (report only) |
+|---|---|---|---|---|
+| mobile | 0 lag, 0 / 0 / 0 | 0 lag, 0 / 0 / 0 | pill 2 (0 in sync) | theme 1, pill 2 (0 in sync) |
+| desktop | same | same | same | same |
+| desktop-rtl | same | same | same | same |
+| mobile-rtl | same | same | same | same |
+| mobile-shift | same | same | same | same |
+
+- The task columns read lag frames, then theme / sticky / pill mismatches.
+- The raf40 theme entry is the same card-bottom crossing, met on the way up in a lag frame. The cache answered for its
+  scroll-event position (2238, line past the edge, dark). The audit's F() saw the live scrollY one step earlier (2198,
+  not dark). It is the harness lag, not a cache miss: in sync 0.
+- **Touch input:** the parity drive moves the page only by `scrollTo` (tasks or rAF). The mobile cases emulate touch,
+  but no touch event ever fires, so no fling from the page end. A morph-scroll change limited to touchend (rev 7d)
+  does not change what this audit runs.
 
 ## Smoke (not scored)
 

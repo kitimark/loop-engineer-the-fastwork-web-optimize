@@ -39,9 +39,9 @@
 +      __nsG = !1,
 +      __nsPy = NaN,
 +      __nsForce = !0,
-+      // perf(nav-hit-cache): running CSS transitions that can move a hit boundary in the theme sections, as
-+      // target -> set of property names (transitionrun adds, transitionend/cancel removes). Replaces N12 v5's
-+      // "keep testing for 1 s after any test" timer, which in continuous scrolling tested every frame.
++      // perf(nav-hit-cache): running CSS transitions that can move a hit boundary in the theme sections, as target ->
++      // set of property names (transitionrun adds, transitionend/cancel removes; a section target's last end re-measures
++      // the edges: they were measured mid-move, e.g. the future card's reveal). Replaces N12 v5's 1 s re-test timer.
 +      __nsTr = new Map(),
 +      __nsTail = 0,
 +      __nsTrSel = `.hero-track, .hero, .commission, .start-selling-future, .start-selling-platform, .pain`,
@@ -56,7 +56,7 @@
 +      },
 +      __nsTrEnd = (e) => {
 +        let t = __nsTr.get(e.target);
-+        t && (t.delete(e.propertyName), t.size || __nsTr.delete(e.target), (__nsTail = 1));
++        t && (t.delete(e.propertyName), t.size || (__nsTr.delete(e.target), e.target === __navNode() || (__nsGeo = null)), (__nsTail = 1));
 +      },
 +      __nsMq = window.matchMedia(`(width >= 861px) and (prefers-reduced-motion: no-preference)`),
 +      __nsOnScroll = () => {
