@@ -72,6 +72,21 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:3xZ **P-136 pre-data read PASS (fix-nav-morph U2, card rev 1 6d8d400c); row registered; to the lead for signature.**
+  - Pins = committed blobs = disk; tools equal to main.
+  - Ops reproduced K 1b2eecc66011 + u2-delta c0d040afe271 = V c7435c24dc56 (with `patch -o`; `node --check` ok).
+  - The P-122 scorer pin d1dddb910cd9 matches on the branch and on main.
+  - Self-test: PART1 OK 24, and OK 60 with `--records` pointing at P-122's runs (int-v8's worktree copy,
+    out/p122/runs).
+  - The reserved bytes 79883c8c950e / b23ea949296a are superseded before any counted data.
+  - Notes:
+    - N1: C2's reference, and C1's threshold 40 and p values, are informed by parity run 2's deferred count (pre-card
+      evidence); the result read labels them so.
+    - N2: the Chrome tolerances rest on one A/A pair per viewport; the Simulator tolerance comes from its same-slot
+      K-K A/A.
+    - N3: part 2 follows the lead's phone order, and Simulator slots are DEFERRED during blocks.
+    - N4: if P-134 lands first, ops delta-checks the re-pinned K/V before any counted run.
+  - P-130's block-end wait is armed (block-run.log, `^PART H5`).
 - 10-05 ~11:2xZ **P-137 goes to fix-end-bg (T-193 #10/#17, the real-iPhone no-backgrounds block); next free P-138.**
   - The card is due ~11:5xZ. Ops does the pre-data read, then the lead signs.
   - Lead ruling: no new phone block before ~12:15Z unless the Simulator queue is empty, so the backlog drains first
