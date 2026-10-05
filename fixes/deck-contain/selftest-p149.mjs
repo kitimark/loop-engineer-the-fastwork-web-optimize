@@ -8,7 +8,7 @@ import { stop, N0_CSS, WHO } from './px149-run.mjs';
 import { HOLD_ON, HOLD_OFF, REPAUSE, RAF2G, STAT_RESET, DECK } from './px148-run.mjs';
 import { GEO } from './geo.mjs';
 import { CLOCK } from './px.mjs';
-import { score, heldExtra, pattern } from './score-p149.mjs';
+import { score, heldExtra, pattern, motionCounts } from './score-p149.mjs';
 let n = 0; const ok = (c, m) => { assert.ok(c, m); n++; };
 
 // ---- images
@@ -116,9 +116,9 @@ ok(typeof WHO([[1, 2]]) === 'string' && N0_CSS.startsWith('/*'), 'WHO and N0 sni
 new Function(`return ${WHO([[1, 2]])}`); n++;
 
 // ---- scorer
-const sStop = (eng, cfg, pos, mode, { stable = true, tier = 'T0', geoArm = [], held = 0, shade = 0 } = {}) => ({ cfg, pos, mode, settled: stable, stable, frame: 100,
+const sStop = (eng, cfg, pos, mode, { stable = true, tier = 'T0', geoArm = [], held = 0, shade = 0, beyond = 0 } = {}) => ({ cfg, pos, mode, settled: stable, stable, frame: 100,
   pairs: [0, 1, 2].map(() => ({ aaAny: stable ? 0 : 50, aa8: stable ? 0 : 5, max: stable ? 0 : 30 })), geoFresh: [], envPixels: stable ? 0 : 50, envBlind: stable ? 0 : 5, envMax: stable ? 0 : 30,
-  ...(cfg.startsWith('L-') ? {} : { arm: 'R3', judge: { tier, largestShadeAboveEnv: shade, aboveEnv: 0, beyond: 0, beyondEdge: 0, beyondFill: 0, shareBeyond: 0, areaCssPx: 0 },
+  ...(cfg.startsWith('L-') ? {} : { arm: 'R3', judge: { tier, largestShadeAboveEnv: shade, aboveEnv: 0, beyond, beyondEdge: 0, beyondFill: 0, shareBeyond: 0, areaCssPx: 0 },
     geoArm, stat: { n0on: [{ raf: 1, timeout: 0 }], arm: { raf: 1 + held, timeout: 0 } } }) });
 const Lfile = (bad = []) => ({ name: 'L.json', json: { tool: 'deck-contain px149-chrome', part: 'L', complete: true, configs: {}, notRun: [],
   stops: CELLS.flatMap((c) => POSITIONS.map((p) => sStop('chrome', `L-${c.cell}`, p, 'rest', { stable: !bad.includes(c.cell) }))) } });
@@ -130,9 +130,16 @@ const good = ['mob1', 'desk1'], bad = ['mob3', 'desk3'];
 let R = score([Lfile(bad), Rfile(good), Sfile('S1'), Sfile('S2')]);
 ok(R.verdict === 'R3 T0' && R.locator.pattern === 'DPR 3 cells unstable, DPR 1 cells stable' && R.plan.join() === 'R-mob1,R-mob1-rm,R-desk1', 'clean: R3 T0, DPR pattern');
 ok(score([Lfile(['mob3', 'desk3', 'mob1', 'desk1']), Rfile([]), Sfile('S1'), Sfile('S2')]).verdict === 'NO-STABLE-CELL', 'no stable cell');
-ok(score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' && m === 'swipe' ? { tier: 'T2', shade: 40 } : {})), Sfile('S1'), Sfile('S2')]).verdict === 'R3 T3', 'swipe T2 over a T0 rest = motion-only T3');
+ok(score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' && m === 'swipe' ? { tier: 'T2', shade: 40, beyond: 3 } : {})), Sfile('S1'), Sfile('S2')]).verdict === 'R3 T3', 'swipe T2 with counted pixels over a T0 rest = motion-only T3');
 R = score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' && m === 'swipe' ? { tier: 'T2', shade: 8 } : {})), Sfile('S1'), Sfile('S2')]);
 ok(R.verdict === 'R3 T2' && R.flags.motionOnly.length === 0, 'rev 1.1 N5: swipe T2 from <= 8 levels above the envelope keeps T2 (not motion-only)');
+// rev 1.2 (lead ruling on N5): blind-set noise (A/A 9, R3 10) does not trip motion-only; one counted pixel does
+const envB = new Uint8Array(W * H); envB[0] = 9;
+const jBlind = judgeEnv(flat, img(W, H, (x, y) => (x === 0 && y === 0 ? 138 : 128)), envB);
+const jOne = judgeEnv(flat, img(W, H, (x, y) => (x === 0 && y === 0 ? 138 : x === 5 && y === 5 ? 140 : 128)), envB);
+ok(jBlind.tier === 'T2' && jBlind.largestShadeAboveEnv === 10 && jBlind.beyond === 0 && !motionCounts(jBlind) && jOne.beyond === 1 && motionCounts(jOne), 'rev 1.2: motionCounts = beyond > 0 (blind A/A 9 / R3 10 does not count)');
+R = score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' && m === 'swipe' ? { tier: 'T2', shade: 10, beyond: 0 } : {})), Sfile('S1'), Sfile('S2')]);
+ok(R.verdict === 'R3 T2' && R.flags.motionOnly.length === 0, 'rev 1.2: swipe T2 with shade 10 above the envelope but no counted pixel keeps T2');
 R = score([Lfile(bad), Rfile(good, (c, p, m) => (c === 'R-desk1' && p === 'top' ? { tier: 'T2', shade: 40 } : {})), Sfile('S1'), Sfile('S2')]);
 ok(R.verdict === 'R3 T2' && R.chrome.worst.tier === 'T2', 'rest and swipe T2: R3 T2');
 ok(score([Lfile(bad), Rfile(good, (c) => (c === 'R-mob1-rm' ? { tier: 'T2' } : {})), Sfile('S1'), Sfile('S2')]).flags.rmNotExact.length === 4, 'reduced motion not exact');

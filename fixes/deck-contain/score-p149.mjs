@@ -11,7 +11,7 @@ const RANK = { T0: 0, T1: 1, T2: 2, T3: 3 };
 const worse = (a, b) => (RANK[a] >= RANK[b] ? a : b);
 const key = (s) => `${s.cfg}|${s.pos}|${s.mode}`;
 export const HELD_EXTRA_MAX = 2;
-export const motionCounts = (j) => j.largestShadeAboveEnv > 8;
+export const motionCounts = (j) => j.beyond > 0;
 const held = (s) => (s ? s.raf + s.timeout : 0);
 // R3's arm phase held more page frames/timeouts than the most of the stop's N0-on phases (margin 2)
 export const heldExtra = (s) => (s.stat?.arm ? held(s.stat.arm) - Math.max(0, ...(s.stat.n0on || []).map(held)) : 0);
@@ -81,9 +81,9 @@ export function score(files) {
     const x = judgeStop(r.eng, r.cfg, r.pos, r.mode, r.rm);
     (x.tier ? judged : unjudged).push(x);
   }
-  // motion-only: a swipe stop beyond T1 whose rest stop at the same position is within T1; rev 1.1 N5: only when the
-  // swipe stop has a pixel above 8 levels and above its envelope (largestShadeAboveEnv > 8; every counted "beyond" pixel
-  // is one), so sub-8 sampling noise never trips it; otherwise the swipe stop keeps its own tier
+  // motion-only: a swipe stop beyond T1 whose rest stop at the same position is within T1; rev 1.2 (lead ruling on N5):
+  // only when the swipe stop has a counted pixel (beyond > 0: above 8 levels where the envelope is <= 8, exactly T2's
+  // counted pixels), so neither sub-8 noise nor the blind set (envelope > 8) trips it; otherwise it keeps its own tier
   for (const x of judged) if (x.mode === 'swipe' && RANK[x.tier] >= 2 && motionCounts(x.j)) {
     const rest = judged.find((y) => y.eng === x.eng && y.cfg === x.cfg && y.pos === x.pos && y.mode === 'rest');
     if (rest && RANK[rest.tier] <= 1) { flags.motionOnly.push(`${x.k} ${x.tier}`); x.tier = 'T3'; }
