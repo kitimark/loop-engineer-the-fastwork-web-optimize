@@ -109,6 +109,22 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~21:4xZ **P-149 rev 1.1 SIGNED by the lead** (mgmt-clerk-1, relaying the lead): delta check passed; landed af2fd2e1, ba9bae92, 5881c802. Pins: px149 c0c0ac786922, score-p149 fa634b6473c4, selftest-p149 1f575c9ec7a5 (ok 72, re-run by the lead). Unchanged: px149-run 62935ce5a21d, px149-chrome d49979b02d71, px149-sim 0e1d68692e6d. N5 read by the lead as motionCounts = largestShadeAboveEnv > 8.
+- 10-05 ~21:3xZ **P-147 rev 1.1 delta check: PASS (ops-reader-P147), with an erratum to the pre-data read.** 7b944dfa (fix-cd-roll-ca-r4).
+  - Erratum: the pre-data read's N1 v9.2 numbers (30f6371751f4, V' 7f292750cb3c) were P-142 rev 1.2. Since rev 1.3, v9.2 = v9.1d = 941aa13e5bdf / f1997edf5309, so the lead's set B is correct.
+  - Pins:
+    - Kit: equal on disk and at HEAD; tools equal main; SELFTEST PASS 8.
+    - Set A: HASHES bb953431f349.
+    - Set B: HASHES 2090c57d843f. Its C equals P-142's served V; its V 48230d02bbae equals a strict apply (fuzz 0) of the P-097 delta.
+  - No data. N1-N11 are all answered.
+  - Minor:
+    - A counted profile refusal exits 6 without the explicit Safari park.
+    - The hold is about 10-11 min (estimated), against a 900 s no-timing cap.
+    - The smoke should report C's hold style-mutation level, because the gate-not-shown-open rule relies on it.
+  - Next: the lead signs; the smoke hold, then block 1 on the set P-142's read names.
+  - Lead (relayed): the delta read passed, minors d1-d3 sent to the owner; this erratum is appended to c[3] and the log.
+- 10-05 ~21:3xZ **P-147 rev 1.1 SIGNED by the lead** (mgmt-clerk-1, relaying the lead): delta check passed; landed 39a98205 + 2e38085d. Pins: serve 98506c0fc127, hold 86ea8946a4b2, score cacdc32fb905 (selftest PASS 8, re-run by the lead), mread f84e43221414. Set A or B is named by the lead after P-142's read. Order: smoke, then block 1.
+- 10-05 ~21:3xZ **P-149 lead rulings on the pre-data read (relayed by mgmt-clerk-1):** rev 1.1 required for N1 (largest shade over all pixels), N2 (wording plus report R3 in the blind set), N5 (motion-only only beyond the envelope; verdict order NO-STABLE-CELL first), N6 (a p for every prediction; P4 decidable or descriptive; missing-data rules) and N10 (a Simulator top-level error goes into RR2). N3, N4, N7, N8 and N11 are accepted with disclosures; N9: no DRY0.
 - 10-05 ~21:2xZ **P-149 pre-data read: PASS WITH NOTES N1-N11 (ops-reader-P149). N1, N5 and N6 block signing until a rev 1.1 with a lead delta check, or the lead's ruling.** Card fixes/deck-contain/P149.md at 8fc0ab77 (fix-deck-contain, worktree-agent-af8e7e498478cedb7). All 6 new pins and the reused P-148 kit are equal on disk and at HEAD (the kit also on main). The overlay is byte for byte P-148's. tools, tests and package.json equal main. No P-149 data. SELFTEST-P149 ok 65. Post-data card: every prediction is informed.
   - N1: T2's largest shade covers only pixels above the envelope. The memory reading and the P-148 rev 1.1 N1 ruling say it covers every pixel. Fix this, or the lead accepts it as a named deviation.
   - N2: the blind set (env above 8, at most 40 CSS px per stop) lets R3 pixels above 8 levels pass: up to env as T1, and above env uncounted, with no fill limit. Reword the "never" sentence and report blind-set R3 pixels.
