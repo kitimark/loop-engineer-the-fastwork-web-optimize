@@ -2112,6 +2112,135 @@ unchanged: arms, reps, order, steps 1-5, voids, the A/A rule, Q3-Q6 text. Lesson
   never on the arms, before the addendum.
 ```
 
+### P-097 rev 4.2 addendum: builds, tools and rules frozen before rep 1 (2026-10-05)
+
+```
+ADDENDUM P-097 rev 4.2 · fix-cd-roll-ca-r4 · written before rep 1; ops (mgmt-ops-10) reads it and PASSes before rep 1.
+  Nothing below changes after rep 1 starts; any tool change after that goes to ops before a re-run (ops, 10-05).
+builds (immutable snapshot copy out/p097/snap-5c203b483c18/, HASHES.txt there; every load checks the served bytes):
+  C  = v9-final: JS 2.DyWL8TcE.js sha256 647c9ef2b1e2 (= fixes/v9-best/overlay on main 8b5ce9b3), CSS 2.gBuqKVzi.css
+       e1359ab9994a. Baseline snapshot b1789284481295-4ad4a84a.
+  V  = C + the panel gate: JS 5c203b483c18, CSS e1359ab9994a (unchanged). Delta on C: fixes/cd-roll-panel/patch.diff
+       sha256 0a53abca21ff, committed in this commit (ops checks the committed blob).
+  C2 = the C directory of the same snapshot on a second, separately started server (its own port, started per load like
+       every arm); the A/A. A C2 load whose served bytes differ from C's pins is VOID like any arm.
+tools (sha256 prefix of each committed file; p097-lib toolShas() records the same prefixes in every output, and the
+  scorer voids a platform whose loads carry two different sets: the measurement-code constancy check):
+  fixes/cd-roll-ca/p097-lib.mjs      1e483fb01076   (M4 attribute, rollClassify, logger, servers, shim, pixel rules)
+  fixes/cd-roll-ca/p097-census.mjs   fbf15f2ac186   (Chrome count loads, steps 1-3 and 5)
+  fixes/cd-roll-ca/p097-px.mjs       76f999a665bd   (Chrome shot loads, step 4, --rm)
+  fixes/cd-roll-ca/p097-sim.mjs      3af767f9ea8e   (Simulator count / shot / rm loads)
+  fixes/cd-roll-ca/p097-score.mjs    c4e9f50f26e3   (scorer; not in toolShas: it reads outputs, it makes none)
+  fixes/cd-roll-ca/strip-read.mjs    efb513e9c56d   (the logger's digit read, imported by p097-lib)
+  tools/serve.mjs 7aa33799ee3f, tools/lib/cdp.mjs f58d75d1179d, tools/lib/wip.mjs 3dcab04e362a, tools/sim.mjs
+  a72d69199de7 (main 9f369b8a, unchanged on this branch); tools/lib/paths.mjs 9d75c8444edc (path lookup only).
+  Simulator loads by session (each session's cap is 300 s and includes the boot): count loads one square position per
+  session (--pos k; one load took 30 s with a 3 s settle, so about 60 s plus the pass with the 32 s settle); shot and
+  rm loads all three positions of a rep in one session (about 20 s each).
+C1 (lead's condition): the committed rollClassify (fixes/cd-roll-ca/p097-lib.mjs, `rollClassify.toString()`) hashes to
+  sha256 162cc869c642, the value recorded when it was frozen (09:47:44Z, rev 4.2 block above). Check:
+  node -e "import('./fixes/cd-roll-ca/p097-lib.mjs').then(m=>console.log(require('crypto').createHash('sha256').update(m.rollClassify.toString()).digest('hex').slice(0,12)))"
+C2 (lead's condition, calibration): rev 4.2's calibration moved 0.01 each out of Q3 (0.13 -> 0.12), Q4 (0.12 -> 0.11)
+  and Q6 (0.08 -> 0.07) after the smoke, into the new G (0.02) and Q2b′ (0.07) with Q1 0.05 -> 0.04 and the old Q2
+  0.12 -> Q2a 0.05; all pass 0.40 -> 0.42. Both calibrations are kept (rev 4.1 above, rev 4.2 above) and ops scores
+  them separately.
+labels in the result (lead): Q2b′ and G are smoke-informed; the pre-smoke less-work claim is Q1.
+base (lead's ruling via ops, 10-05 after PR-023 7d landed in 189ca7ed, v9-final JS now 1b2eecc66011, CSS unchanged):
+  rev 4.2 runs as signed on C = 647c9ef2b1e2 (v9-final before 7d); no re-pin, the snapshot stays. The result claims
+  that base only. Before any land request: the delta applies cleanly to 1b2eecc66011, passes node --check, and touches
+  no 7d line (JS 14167-14290, byte-diff); an overlap needs a re-based card first.
+  Done now (no data, scratch only): baseline site-pretty + main's fixes/morph-scroll-v9try/patch.diff = JS 1b2eecc66011
+  (CSS e1359ab9994a); the delta 0a53abca21ff applies with `patch -p1` without rejects; node --check OK; result JS
+  2cfd990c788d. Byte-diff 1b2eecc66011 -> +delta: changes at 4224a, 4267, 4285-4330, 4389a, 4421a, 4529a, 13850a,
+  14645a only. 7d's own lines are 14170-14292 in that file; source: `diff` of C 647c9ef2b1e2 vs 1b2eecc66011, hunks
+  14170c14170,14171 / 14221a14223 / 14258,14259c14260,14264 / 14282c14287 / 14285a14291,14292 (the ruling's 14167-14290
+  is the same change with patch context; either range clears the nearest delta hunks 13850a and 14645a). Byte-diff V 5c203b483c18 -> 2cfd990c788d =
+  exactly 7d's five hunks (14215, 14266a, 14303-14304, 14327, 14330a): the delta and 7d commute.
+M4 ranges and anchors (1-based lines of 2.DyWL8TcE.js, checked by text in each arm's served file; a mismatch exits 3):
+  countdown range C 4215-4559, V 4215-4598 ($E's first line .. the line before `function fD(`);
+  roll anchors S (`R0.F = requestAnimationFrame((t) => {`) C 4305, V 4332; F (`Q.A[0].onfinish = () => Q === __crRoll
+  && __crStop();`) C 4264, V 4270. Frozen-clock shim range (shot loads): `var UE = { stiffness` .. the line before
+  `var lD = h(`: C 4041-4552 by text, V 4041-4591 (read from the file per load); stack lines read: Chrome 2-3, WebKit 1-3.
+per-load m == 1 check and its VOID rule:
+  count loads (Chrome census, Simulator count): m is read on the panel (its inline --morph, as the page writes it) once
+    after the 32 s settle and once after the 3 rest windows (S1); both must read exactly '1', else the load is invalid
+    for Q1, Q2a, Q2b, Q2b′ and G (still counted for Q3, Q4, Q6, which read the pass) and is reported with its m values.
+  shot loads (Chrome px, Simulator shot / rm): m is read right before each shot; a shot whose m is not exactly '1' is
+    VOID (Q5 counts only non-VOID shots); the load first waits up to 5 s for m == '1' after the scroll (rm: after
+    window.__navMorphSet(1), the page's own writer, opens the panel in every arm alike).
+selection and re-runs (scorer): per kind (census, px, px --rm, sim count, sim shot, sim rm), rep and arm, the first
+  attempt without a tool fault (fatal or missing output) is the rep's load; one re-run allowed, later attempts ignored and
+  listed. A tool fault in rep 1: VOID, re-run once, then report (ops). Validity per prediction is read from that one load,
+  never picked per prediction. Test outputs (test: true; --b, --arms, --settle) and rep 0 are never read.
+mid-roll frame: MID = 8 (frame 8 of 60 Hz after the tick at G + FR/3) in Chrome and the Simulator; rest shot at REST =
+  90; settle at R0 = 3d 04h 12m 40s, change to R1 = ...39.
+Simulator loads: one sim.mjs session (shared simulator slot, max 300 s) runs one or more square positions of one rep
+  (--pos), in the rep's square order; the rm loads run in a session with --reduce-motion on.
+M3 layer read: the Simulator pass holds at the first logged frame with m >= 0.5 (the logger's holdM), reads
+  LayerTree.layersForNode for the panel clock's strips and cells, then resumes (every arm alike).
+B smokes (ops 10-05: the plain baseline, site-pretty without overlay, test flag --b, shared slots, outputs marked test
+  and never scored), all under owner fix-cd-roll-ca-r4, shared chrome-measure slots, locks/holds.log lines:
+    1656  probe w1, 10:04:08-10:04:54Z, exit 0: census --b --settle 3000 (FATAL: logger "no panel timer", see fix 1),
+          px --b, px --b --rm (shots taken and read back; VOID by the m rule, B's m reads '');
+    1660  probe w1, 10:16:38-10:17:07Z, exit 1: census --b after fix 1 (ran to the end and wrote its file; then the
+          summary print crashed, see fix 2);
+    1662  simulator w3, 10:17:07-10:18:59Z, exit 0: sim --b --mode count --settle 3000 (pass skipped by fix 1, rest
+          windows on the Timeline clock read);
+    1669  probe w1, 10:37:09-10:37:42Z, exit 0: census --b --settle 3000 after fix 2 (rest windows, M4 attribution,
+          rollClassify walk, step 5 all ran; exit 0);
+    1673  simulator w3, 10:41:32-10:41:59Z, exit 0: sim --b --mode shot (shim, calibration marker, mid and rest crops);
+    1677  simulator w3, 10:42:48-10:43:28Z, exit 0: sim --b --mode rm in a --reduce-motion on session.
+  Files (worktree out/p097/, test: true, rep 0, never scored): census/rep0-B-2026-10-05T10-04-08-320Z, -10-16-38-919Z,
+    -10-37-09-771Z (.json, .trace.json.gz); px/rep0-2026-10-05T10-04-17-124Z/, px/rep0-rm-2026-10-05T10-04-35-263Z/;
+    sim/rep0-count-B-2026-10-05T10-18-23-485Z.json, sim/rep0-shot-B-2026-10-05T10-41-38-764Z*, sim/rep0-rm-B-2026-10-05T10-43-03-409Z*;
+    logs smokeB-chrome.log, smokeB-2.log, smokeB-3.log. The scorer's readers ran on all of them (p097-score.mjs
+    --b-smoke: every file parsed, every PNG read back; B's per-load values come out null since B has no fw-ms mode).
+  Every tool's committed bytes above ran in at least one of these smokes (census after fix 2 in 1669; sim after fix 1
+    in 1662/1673/1677; px and lib unchanged since 1656).
+  B-only tool fixes (found by the smokes, before this commit; both change the --b path only, arm loads are unaffected):
+    fix 1 (p097-census.mjs, p097-sim.mjs): when the logger returns anything but 'ok' the tool still throws (the load is
+      FATAL) unless --b is given; with --b it records pass.skipped and goes on to the rest windows (census also sets the
+      p097-pass-end mark, sim reads the layer tree once and stops the Timeline). For an arm the logger either returns
+      'ok' and the pass runs exactly as before (same statements, now inside an else block), or the load is FATAL as
+      before. The census analysis fills an empty log only when the pass left none, which only a --b load can do.
+    fix 2 (p097-census.mjs): the summary print reads `res.pass.settledAt?.m`; settledAt is always set when the pass
+      ran, so the printed text of an arm load is unchanged. Print only.
+    Self-tests after both fixes: p097-lib selftest 20 ok, p097-score --selftest 31 ok (below); neither file's
+    functions changed (rollClassify still 162cc869c642).
+  Not exercised before rep 1 (B has no rev 7c spacer, no fw-ms mode, no panel --morph and no strip roll): the fw-ms
+  pass with the logger, the m == 1 waits (B's m reads '' so its shots are VOID by the rule above), the panel roll
+  (anchors, rollClassify on real roll frames: only its functional check on the smoke traces, disclosed above), the
+  scorer's comparisons on arm data (its self-test only).
+self-tests (outputs, at freeze):
+  `node fixes/cd-roll-ca/p097-score.mjs --selftest` (runs p097-lib selftest() first) -> SELFTEST PASS 31:
+  lib: two countdown calls in one rAF count once | page frames on the page main thread only | census rule counts every
+  PrePaint | a tick between frames marks the next frame | a task with no later PrePaint in its window is unframed | line
+  4560 (fD) is outside the countdown range | hand-off jump = |ty - path(t)| at the first m < 1 frame | mid rows: 0 < m < 1
+  only | linear keyframe segment | cubic-bezier(1/3, 2Q/3, 2/3, 1/3+2Q/3) equals the build's quadratic segment | roll
+  window: start commit, last-40-ms frames and the frame after the finish are roll; the finish frame is countdown; frames
+  before and after are other | a script-carrying frame inside a roll window stays other | a roll not finished by the
+  next tick is a leak and voids Q2b′ | no roll start (C's spring): no roll frames; a finish without a start is an orphan
+  | PNG write/read round trip is exact | M-bg: a +-1 background pixel is allowed and counted | M-bg: any difference
+  inside a digit card breaks T0 | M-bg: a background difference of 2 breaks T0 | five numbers: fill vs edge from A's 3x3
+  span, beyond A/A, T2 wide limits | T0 exact.
+  scorer: selection: first attempt without a tool fault, one re-run, later attempts ignored; test, rep 0 and B never
+  scored | pins: C2 is checked against the C directory; one differing prefix voids | less: V < C - spread and V <= 10 %
+  of C; spread = max |C - C2| over the pairs | less: V over 10 % of C misses | less with abs: V median over 4/s misses |
+  fewer than 5 valid loads or 4 valid pairs: VOID | A/A spread over 25 % of C median: A/A-limited | within: |V - C| >
+  spread misses | no-worse level: no V load above the highest C or C2 load + 2/s | per-load: median of 3 windows; the m
+  check gates Q1/Q2/G only; a leak voids Q2b′ only | Q4 layers: V <= max(C, C2) per position, extra backed cells named;
+  C/C2 differing in > 2 pairs: A/A-limited.
+scorer rules not spelled out above (they follow the registered text): Q3 per platform = 0 running cells in the mid
+  rows of every valid load of every arm AND countdown rAF in the mid segments within C +/- spread (Chrome
+  passMidCountdownRaf, Simulator passMid.countdownRaf); Q3 needs both platforms. Q6 per platform over V's loads whose
+  pull met a running roll (>= 5), max jump <= 0.5 CSS px; both platforms. Q5 Simulator mid T2 uses fiveNum with
+  frameDevicePx = the Simulator screenshot's full pixel count (the shot's calibration screen) and dpr = its scale; Chrome
+  mid uses 430 x 932 x 9 and dpr 3 (descriptive). A prediction's status is pass, MISS, VOID or AA-LIMITED; the outcome is
+  the first MISS in the order Q1, Q2a, G, Q2b′, Q3, Q4, Q5, Q6 (Q2b apart); VOID or AA-LIMITED ones go to the lead.
+measurement code: no change to verify.mjs, lib/cdp.mjs, serve.mjs or fix.mjs ab on this branch (rebased on main
+  9f369b8a); the P-097 tools are topic-local (fixes/cd-roll-ca/), counts and pixels only, no timing.
+```
+
 ## Risks, conflicts, follow-ups
 
 - Not frame-identical while digits roll: Chrome mid-roll frames are beyond T2 (shade 222), and the path differs at

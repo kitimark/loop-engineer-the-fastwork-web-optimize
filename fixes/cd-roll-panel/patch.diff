@@ -1,0 +1,161 @@
+# fastwork mirror fix: cd-roll-panel
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/v9-best/overlay: apply v9-best first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply cd-roll-panel --on v9-best
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -4222,6 +4222,12 @@
+     /*countdown-faces: false only while the call site knows the clock is painted fully transparent (the hero at
+     --exit-opacity 0, the panel at opacity 0), written in the same frame as that opacity*/
+     __cdShown = R(() => r.shown !== !1),
++    /*cd-roll-panel (P-097): true only for the panel clock while the morph rests at m = 0 or 1 (the hero passes no
++    `still`: always false, and its gate below never reads it)*/
++    __cdStill = R(() => r.still === !0),
++    /*cd-roll-panel: the target of the effect's last run, and the spring's state when its effect run was torn down*/
++    __crLast = null,
++    __crSp = null,
+     /*countdown-faces: true while `a` is held (not written) because the clock is neither animated nor shown*/
+     __cdHeld = !1,
+     /*cd-roll-ca: the strip's wrapper (set when it mounts; its children are the cells) and the running roll {K: path,
+@@ -4264,7 +4270,13 @@
+       Q.A[0].onfinish = () => Q === __crRoll && __crStop();
+     };
+   b(() => {
+-    let e = s(i);
++    let e = s(i),
++      /*cd-roll-panel: a run without a target change (on the panel clock: the morph left or reached an end, or the
++      panel was shown or hidden) and the spring state the previous run left (taken once)*/
++      __crSame = e === __crLast,
++      __crSpring = __crSp;
++    __crLast = e;
++    __crSp = null;
+     /*countdown-faces: off-screen (or inactive) and painted transparent: hold. No state write, so no strip transform
+     write and no style recalc per tick; any running roll stops (its cells show cd-strip's rest place, unseen)*/
+     if (!YE.current && !s(__cdAnimate) && !s(__cdShown)) {
+@@ -4282,16 +4294,31 @@
+     }
+     /*cd-roll-ca: start value = what the original shows now: the running roll's path at its last frame, else a*/
+     let __crNow = performance.now(),
+-      __crFrom = __crRoll ? __crAt(__crRoll.K, __crClock(__crRoll.t0, __crNow, __crRoll.ran) - __crRoll.t0) : o(() => s(a)),
+-      /*hero clock only: the panel clock (.countdown.inverse) paints its cells unlayered, and a running compositor
+-        animation would layer them (other glyph rasterisation, whole-strip repaints while the morph scales it)*/
++      __crPanel = !!__crEl && !!__crEl.closest(`.inverse`),
++      __crX = __crRoll ? __crClock(__crRoll.t0, __crNow, __crRoll.ran) - __crRoll.t0 : 0,
++      __crFrom = __crRoll ? __crAt(__crRoll.K, __crX) : o(() => s(a)),
++      /*cd-roll-panel: the start velocity. A target change starts from rest, as the original's spring does. A panel
++        run without one replaces a motion the original would just continue (its spring knows no m), so the new motion
++        keeps its velocity: the roll path's slope over its last 1 ms, or the torn-down spring's state. The hero: 0, as before*/
++      __crU =
++        __crPanel && __crSame
++          ? __crRoll
++            ? (__crFrom - __crAt(__crRoll.K, __crX - 1)) * 1e3
++            : __crSpring && !(__crFrom === e)
++              ? __crSpring.velocity
++              : 0
++          : 0,
++      /*the panel clock (.countdown.inverse) paints its cells unlayered, and a running compositor animation would
++        layer them (other glyph rasterisation, whole-strip repaints while the morph scales it). cd-roll-panel (P-097):
++        so it rolls on Web Animations only while the morph rests at an end (still: m exactly 0 or 1, no scale
++        change); while 0 < m < 1 it keeps the original rAF spring. The hero: unchanged*/
+       __crK =
+-        __crEl && typeof __crEl.animate == `function` && __crFrom !== e && !__crEl.closest(`.inverse`)
+-          ? __crPath(__crFrom, e)
++        __crEl && typeof __crEl.animate == `function` && __crFrom !== e && (!__crPanel || s(__cdStill))
++          ? __crPath(__crFrom, e, __crU)
+           : null;
+     __crStop();
+     if (__crK || (__crEl && __crFrom === e)) {
+-      __crK && ((__crRoll = { K: __crK, t0: __crNow, cells: __crCells(__crK) }), __crPlay(o(() => s(c))));
++      __crK && ((__crRoll = { K: __crK, t0: __crNow, cells: __crCells(__crK), u: __crU }), __crPlay(o(() => s(c))));
+       /*cd-roll-ca: the original's clock starts at its first frame's stamp when that frame began before the change
+         (GE(o - n) with o < n steps nothing and sets n = o); one rAF per roll moves the start there, never per frame.
+         It also marks the roll as having run a frame (see __crClock)*/
+@@ -4310,24 +4337,28 @@
+             R0.A && R0.A.forEach((x) => (x.startTime = t));
+           } else if (t - R0.t0 > 1e3 / 60) {
+             let E = R0.K[R0.K.length - 1][1],
+-              G = GE({ value: R0.K[0][1], velocity: 0 }, E, t - R0.t0),
++              G = GE({ value: R0.K[0][1], velocity: R0.u }, E, t - R0.t0),
+               K = G.done ? null : __crPath(G.state.value, E, G.state.velocity);
+-            K ? ((R0.K = K), (R0.t0 = t), (R0.cells = __crCells(K)), __crPlay(o(() => s(c)))) : G.done && __crStop();
++            K
++              ? ((R0.K = K), (R0.t0 = t), (R0.u = G.state.velocity), (R0.cells = __crCells(K)), __crPlay(o(() => s(c))))
++              : G.done && __crStop();
+           }
+         });
+       }
+       z(a, e, !0);
+       return;
+     }
+-    /*cd-roll-ca: no strip yet or no path: the original rAF spring, from the same start value*/
++    /*cd-roll-ca: no strip yet or no path: the original rAF spring, from the same start value. cd-roll-panel: also the
++      panel clock while 0 < m < 1 (a roll running when m leaves an end hands over here at its value and velocity); the
++      teardown leaves the spring's state for the next run (taken only by a panel run without a target change)*/
+     z(a, __crFrom, !0);
+-    let t = { value: __crFrom, velocity: 0 },
++    let t = { value: __crFrom, velocity: __crU },
+       n = performance.now(),
+       r = window.requestAnimationFrame(function i(o) {
+         let s = GE(t, e, o - n);
+         ((n = o), (t = s.state), z(a, t.value, !0), s.done || (r = window.requestAnimationFrame(i)));
+       });
+-    return () => window.cancelAnimationFrame(r);
++    return () => (window.cancelAnimationFrame(r), (__crSp = t));
+   });
+   var u = QE(),
+     d = e(u),
+@@ -4387,6 +4418,9 @@
+         get shown() {
+           return t.shown;
+         },
++        get still() {
++          return t.still;
++        },
+       });
+     },
+   ),
+@@ -4419,6 +4453,8 @@
+     /*countdown-faces: optional `shown` prop from the call site, false only while the clock is painted at opacity 0,
+     set in the frame that paints it*/
+     __cdShown = R(() => r.shown !== !1),
++    /*cd-roll-panel (P-097): optional `still` prop (true: the panel clock while the morph rests at m = 0 or 1)*/
++    __cdStill = R(() => r.still === !0),
+     /*countdown-faces: the clock ticks only while a digit of it may be painted: on screen and active (it animates), or
+     shown (opacity > 0). Exactly when no digit is held in $E. Otherwise the interval is stopped: no timer fire, no
+     state write, no frame*/
+@@ -4527,6 +4563,9 @@
+             },
+             get shown() {
+               return s(__cdShown);
++            },
++            get still() {
++              return s(__cdStill);
+             },
+           });
+         },
+@@ -13848,6 +13887,12 @@
+     /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
+     JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
+     __cdPanelShown = R(() => JM(s(x)) > 0.08),
++    /*cd-roll-panel (P-097): the morph rests at an end (m exactly 0 or 1; at 1 the panel is the page-end rest). Only
++    then may the panel clock roll on Web Animations; a boolean, so it changes only at the two ends, not per frame*/
++    __cdPanelStill = R(() => {
++      let v = JM(s(x));
++      return v === 0 || v === 1;
++    }),
+     O = R(() => !s(p) && !s(E)),
+     A = R(() => s(O) || s(x) > 0.55);
+   function j(e) {
+@@ -14636,6 +14681,9 @@
+         get shown() {
+           return s(__cdPanelShown);
+         },
++        get still() {
++          return s(__cdPanelStill);
++        },
+       }),
+         M(h));
+       var g = V(h, 2),
