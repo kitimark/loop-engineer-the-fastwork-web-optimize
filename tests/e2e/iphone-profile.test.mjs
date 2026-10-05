@@ -118,31 +118,43 @@ test('fair passes on a Fair phone: the record carries meta.profile (the start re
   assert.match(r.stderr, /^STEP C-\d+ posted on the user console/m);
 });
 
-test('I-201: a Critical phone under Xcode\'s Serious condition (the 06:14Z read) refuses with exit 8 and its own reason, and posts no console step; a Critical condition still posts one, once per answer', async () => {
+test('I-201: a Critical phone under Xcode\'s Serious condition (the 06:14Z read) refuses with exit 8 and its own reason; a cool battery gets ONE restart step per 30 min, a warm one none; a changed condition read gets its own step', async () => {
   assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
-  writeFileSync(thermal, 'Critical Yes 30.19 Serious\n'); // Current Critical, Induced (the condition) Serious
-  let r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  const profile = () => node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  const HINT = 'the phone itself reads Critical above the Xcode condition Serious; if the battery is cool \\(< 38 °C\\), stop the Xcode condition, wait until a re-read shows below Critical \\(about 2 min\\), then start Serious again; otherwise wait for it to cool; re-read with node tools/iphone\\.mjs profile --owner <you> \\(gate xcode-serious code 3, reason phone-above-condition, I-186\\)';
+  // warm battery: the hint, no step
+  writeFileSync(thermal, 'Critical Yes 40 Serious\n'); // Current Critical, Induced (the condition) Serious
+  let r = profile();
   assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, /^REFUSED profile serious \(Serious, induced by Xcode\): phone is Critical \(Xcode condition Serious\), battery 30\.19 C; the phone itself is at Critical, above the Xcode condition Serious \(battery 30\.19 C\): wait for it to drop, no Xcode change needed; re-read with node tools\/iphone\.mjs profile --owner <you> \(gate xcode-serious code 3, reason phone-above-condition, I-186\)$/m);
+  assert.match(r.stderr, new RegExp(`^REFUSED profile serious \\(Serious, induced by Xcode\\): phone is Critical \\(Xcode condition Serious\\), battery 40 C; ${HINT}$`, 'm'));
   assert.doesNotMatch(r.stderr, /^STEP /m);
   assert.deepEqual(steps().filter((x) => x.meta?.phoneProfile), [], 'no step for the tester');
-  // the condition itself Critical: the step, as before; answered, the same read again posts none
-  writeFileSync(thermal, 'Critical Yes 30.5 Critical\n');
-  r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  // the 06:14Z read, battery 30.19 C: the restart step, once
+  writeFileSync(thermal, 'Critical Yes 30.19 Serious\n');
+  r = profile();
   assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, /the Xcode condition is Critical, above the ceiling; set Xcode > .* \(gate xcode-serious code 3, reason condition-critical, I-186\)$/m);
-  const id = r.stderr.match(/^STEP (C-\d+) posted on the user console/m)?.[1];
+  assert.match(r.stderr, new RegExp(`^REFUSED profile serious \\(Serious, induced by Xcode\\): phone is Critical \\(Xcode condition Serious\\), battery 30\\.19 C; ${HINT}$`, 'm'));
+  const id = r.stderr.match(/^STEP (C-\d+) posted on the user console for the tester: Xcode: stop, then restart the iPhone's Serious thermal condition/m)?.[1];
   assert.ok(id, r.stderr);
-  // the user clicks Start and Done on the page (lib calls on this test's store)
+  r = profile();
+  assert.match(r.stderr, new RegExp(`^STEP ${id} already open`, 'm'));
+  // the user clicks Start and Done on the page (lib calls on this test's store); the same read again: no new step
   const C = await import('../../tools/lib/console.mjs');
   const prev = process.env.FW_STATE_DIR;
   process.env.FW_STATE_DIR = env.FW_STATE_DIR;
   try { await C.start(id); await C.done(id); } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
   assert.equal(steps().find((x) => x.id === id).status, 'answered');
-  r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  r = profile();
   assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, new RegExp(`^STEP ${id} answered \\d+ min ago and the condition read is unchanged \\(induced Yes, condition Critical\\): no new step for 30 min after an answer \\(I-201\\)$`, 'm'));
+  assert.match(r.stderr, new RegExp(`^STEP ${id} answered \\d+ min ago and the condition read is unchanged \\(induced Yes, condition Serious\\): no new step for 30 min after an answer \\(I-201\\)$`, 'm'));
   assert.equal(steps().filter((x) => x.meta?.phoneProfile).length, 1);
+  // the condition itself Critical (a changed condition read): the set-Serious step, as before
+  writeFileSync(thermal, 'Critical Yes 30.5 Critical\n');
+  r = profile();
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /the Xcode condition is Critical, above the ceiling; set Xcode > .* \(gate xcode-serious code 3, reason condition-critical, I-186\)$/m);
+  assert.match(r.stderr, /^STEP C-\d+ posted on the user console for the tester: Xcode: set the iPhone's Thermal State to Serious/m);
+  assert.equal(steps().filter((x) => x.meta?.phoneProfile).length, 2);
 });
 
 test('inside lock.mjs run chrome-measure --no-timing: the hold\'s first run reads, the rest reuse it; the hold makes the end read, marks drift and logs phoneProfile in holds.log', async () => {

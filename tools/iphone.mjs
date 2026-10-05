@@ -87,8 +87,9 @@
 // it, it also posts ONE console action step for the tester (by the run's owner, de-duplicated per owner and profile while
 // it is open, and for 30 min after the user answered one unless the condition read changed, I-201) and prints its id
 // (STEP C-…); it does not wait for it. The refusal line ends "(gate <gate> code <n>, reason <reason>, I-186)": reason
-// phone-above-condition (I-201) = Xcode's condition IS Serious and the phone itself is Critical above it: wait for it to
-// drop, no Xcode change, no step (reason codes: lib/thermal-profile.mjs refusalText). A misfit at the end keeps the data
+// phone-above-condition (I-201) = Xcode's condition IS Serious and the phone itself is Critical above it: battery < 38 C,
+// stop the condition, wait ~2 min for a re-read below Critical, start Serious again (step restart-condition, at most once
+// per 30 min); else wait for it to cool, no step (reason codes: lib/thermal-profile.mjs refusalText). A misfit at the end keeps the data
 // and marks every run record of the hold meta.profileDrift: true. Every record carries meta.profile {name, gate, hold,
 // start, end, drift} (start/end: state, induced, condition (the Xcode condition's own level, I-201), battC, gate code).
 // No CLI can set the Xcode condition (devicectl has none,

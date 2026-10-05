@@ -359,13 +359,21 @@ test('I-201 readThermal / ledger: the condition is kept in the read, the start r
   assert.equal(P.readLedger(g.key).end.condition, 'Serious');
 });
 
-test('I-201 refusalText: a Critical phone under the right Serious condition is a wait, not an Xcode step; a Critical condition still is', () => {
+test('I-201 refusalText: a Critical phone under the right Serious condition: restart the condition when the battery is cool, else wait to cool; a Critical condition still gets set-Serious', () => {
   const t = (profile, read) => P.refusalText(profile, read, P.profileVerdict(profile, read));
-  // the 06:14Z read: no step, its own reason
+  const HINT = 'the phone itself reads Critical above the Xcode condition Serious; if the battery is cool (< 38 °C), stop the Xcode condition, wait until a re-read shows below Critical (about 2 min), then start Serious again; otherwise wait for it to cool; re-read with node tools/iphone.mjs profile --owner <you>';
+  // the 06:14Z read (battery 30.19 C, cool): the restart step (follow-up: the episode of 2026-10-05, OBSERVED)
   let r = t('serious', READ_0614);
-  assert.deepEqual([r.fix, r.reason], [null, 'phone-above-condition']);
-  assert.equal(r.line, 'REFUSED profile serious (Serious, induced by Xcode): phone is Critical (Xcode condition Serious), battery 30.19 C; the phone itself is at Critical, above the Xcode condition Serious (battery 30.19 C): wait for it to drop, no Xcode change needed; re-read with node tools/iphone.mjs profile --owner <you> (gate xcode-serious code 3, reason phone-above-condition, I-186)');
+  assert.deepEqual([r.fix, r.reason], ['restart-condition', 'phone-above-condition']);
+  assert.equal(r.line, `REFUSED profile serious (Serious, induced by Xcode): phone is Critical (Xcode condition Serious), battery 30.19 C; ${HINT} (gate xcode-serious code 3, reason phone-above-condition, I-186)`);
   assert.doesNotMatch(r.line, /the Xcode condition is Critical|set Xcode/);
+  // a warm battery (>= 38 C) or none read: the same hint, no step (wait for it to cool)
+  for (const battC of [38, 41.2, null]) {
+    r = t('serious', { ...READ_0614, battC });
+    assert.deepEqual([r.fix, r.reason], [null, 'phone-above-condition'], String(battC));
+    assert.ok(r.line.includes(HINT), r.line);
+  }
+  assert.equal(P.COOL_C, 38);
   // the condition itself Critical (or a read without the Induced row's level): the tester's step, as before
   for (const read of [{ state: 'Critical', induced: 'Yes', condition: 'Critical', battC: 33 }, { state: 'Critical', induced: 'Yes', battC: 33 }]) {
     r = t('serious', read);
@@ -389,15 +397,35 @@ test('I-201 refusalText: a Critical phone under the right Serious condition is a
   assert.equal(t('fair', { state: 'Serious', induced: 'No', battC: 40 }).reason, 'too-hot');
 });
 
-test('I-201 startGate: the 06:14Z read refuses (exit 8, reason phone-above-condition) and posts NO console step', async () => {
-  let posted = 0;
-  const e = await P.startGate({ owner: 'art-worst-cases', hold: hold(), read: async () => ({ ...READ_0614 }), log: () => {}, postStep: async () => { posted++; return { step: { id: 'C-0', title: 'x' }, posted: true }; } }).catch((x) => x);
+test('I-201 startGate: the 06:14Z read refuses (exit 8, reason phone-above-condition) with ONE restart step per 30 min; a warm battery posts none', async () => {
+  const owner = 'art-worst-cases';
+  const gate = (read, now) => P.startGate({ owner, hold: hold(), read: async () => ({ ...read }), log: () => {}, ...(now ? { now: () => now } : {}) }).catch((x) => x);
+  // warm battery: no step
+  let e = await gate({ ...READ_0614, battC: 40 });
   assert.ok(e instanceof P.ProfileRefusal);
-  assert.deepEqual([e.exitCode, e.verdict.code, e.reason, e.fix, posted], [8, 3, 'phone-above-condition', null, 0]);
+  assert.deepEqual([e.exitCode, e.verdict.code, e.reason, e.fix], [8, 3, 'phone-above-condition', null]);
   assert.doesNotMatch(e.message, /\nSTEP /);
-  // and with the real console: nothing posted
-  await P.startGate({ owner: 'art-worst-cases', hold: hold(), read: async () => ({ ...READ_0614 }), log: () => {} }).catch(() => {});
   assert.equal(C.list().length, 0);
+  // cool battery: the restart step
+  e = await gate(READ_0614);
+  assert.deepEqual([e.exitCode, e.reason, e.fix], [8, 'phone-above-condition', 'restart-condition']);
+  const id = e.message.match(/\nSTEP (C-\d+) posted on the user console for the tester: (.*)$/)?.[1];
+  assert.ok(id, e.message);
+  const s = C.get(id);
+  assert.equal(s.title, 'Xcode: stop, then restart the iPhone\'s Serious thermal condition (test profile serious)');
+  assert.match(s.instructions, /reads Critical although Xcode's condition is Serious and the battery is cool \(30\.19 C\).*under Device Conditions click Stop\. Wait about 2 minutes.*set Condition to Thermal State and Profile to Serious, then click Start\. Leave it on/);
+  assert.deepEqual(s.meta.phoneProfile, { owner, profile: 'serious', fix: 'restart-condition', incident: 'I-186', read: { state: 'Critical', induced: 'Yes', condition: 'Serious' } });
+  // open: not posted again; answered: not again within 30 min (same condition read), again after
+  e = await gate(READ_0614);
+  assert.match(e.message, new RegExp(`\\nSTEP ${id} already open`));
+  await C.start(id);
+  await C.done(id);
+  e = await gate(READ_0614);
+  assert.match(e.message, new RegExp(`\\nSTEP ${id} answered 0 min ago and the condition read is unchanged \\(induced Yes, condition Serious\\)`));
+  assert.equal(C.list().length, 1);
+  e = await gate(READ_0614, Date.now() + 31 * 60000);
+  assert.match(e.message, /\nSTEP C-\d+ posted/);
+  assert.equal(C.list().length, 2);
 });
 
 test('I-201 the tester\'s step: not posted again within 30 min of an answered one for the same owner and profile, unless the condition read changed', async () => {

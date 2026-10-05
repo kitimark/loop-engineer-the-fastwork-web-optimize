@@ -28,8 +28,10 @@
 // data are kept). A start read that does not fit refuses the run (EXIT_PROFILE) and, when the tester can fix it in Xcode,
 // posts ONE console action step for the tester (de-duplicated per owner + profile while it is open, and for 30 min after
 // the user answered one unless the condition read changed, I-201). A Critical phone under Xcode's Serious condition (the
-// condition right, the phone itself above it) refuses with reason phone-above-condition and posts no step (I-201;
-// refusalText lists the reason codes; the exit code stays 8, the gate codes research/phone-thermal-gate's).
+// condition right, the phone itself above it) refuses with reason phone-above-condition: with a cool battery (< 38 C)
+// the step asks to stop the condition, wait ~2 min and start Serious again (fix restart-condition, OBSERVED remedy), else
+// no step, wait to cool (I-201; refusalText lists the reason codes; the exit code stays 8, the gate codes
+// research/phone-thermal-gate's).
 import { execFile } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -42,6 +44,8 @@ import { writeJson, readJson } from './store.mjs';
  *  for `iphone.mjs profile --end`). Distinct from 1 (error / WAIT), 2 (refused in a shared slot), 3 (wda check), 6 (PARTIAL). */
 export const EXIT_PROFILE = 8;
 export const MAX_C = 44;
+/** I-201: below this battery temperature a Critical phone under Xcode's Serious condition gets the restart-condition step. */
+export const COOL_C = 38;
 export const DEFAULT_PROFILE = 'serious';
 export const XCODE_PATH = 'Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State';
 export const PROFILES = Object.freeze({
@@ -258,7 +262,14 @@ export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? 
  *   condition-critical     the Xcode condition itself is Critical (or its level is unknown) and the phone Critical; step
  *   condition-wrong        a Critical phone under a condition of the wrong level for the profile (fair: any); step
  *   phone-above-condition  serious: the condition IS Serious, the phone itself is Critical above it (06:14Z read of
- *                          2026-10-05); wait for it to drop, NO step: no Xcode change helps
+ *                          2026-10-05). Battery < COOL_C (38 C): stop the condition, wait until a re-read shows below
+ *                          Critical (~2 min), start Serious again; step fix 'restart-condition' (once per 30 min,
+ *                          postProfileStep). Battery warm or unread: wait for it to cool, no step.
+ *                          OBSERVED in our setup, one episode, cause unknown (lead, 2026-10-05): under Serious with a
+ *                          30 C battery the phone read Critical 04:56-06:44Z, also after a quick Stop/Start at 06:30Z;
+ *                          after Stop it read Critical (06:44), Serious (06:45), Nominal (06:46) with no condition;
+ *                          after Start Serious at 06:53 it read Serious twice. So "wait for it to drop" under the
+ *                          condition did not end it; a Stop, a ~2 min wait and a new Start did.
  *   ceiling                Critical without a condition, or battery >= maxC; cool down, no step
  *   condition-missing      serious: no Xcode condition (too cool, code 2, or real-heat Serious, code 7); step
  *   condition-on           fair: an Xcode condition is on (code 4); step (stop it)
@@ -277,7 +288,11 @@ export function refusalText(profile, read, v, { maxC = MAX_C } = {}) {
   let fix = null, what, reason = 'other';
   if (v.code === 1) { reason = 'no-read'; what = `could not read the thermal state (${v.why}): is the phone on the cable, unlocked and trusted, and Xcode installed? Retry: node tools/iphone.mjs profile --owner <you> --profile ${profile}`; }
   else if (v.code === 3 && read?.induced === 'Yes' && read.state === 'Critical') {
-    if (profile === 'serious' && cond === 'Serious') { reason = 'phone-above-condition'; what = `the phone itself is at ${read.state}, above the Xcode condition ${cond}${batt ? ` (${batt.slice(2)})` : ''}: wait for it to drop, no Xcode change needed; re-read with node tools/iphone.mjs profile --owner <you>`; }
+    if (profile === 'serious' && cond === 'Serious') {
+      reason = 'phone-above-condition';
+      if (typeof read.battC === 'number' && read.battC < COOL_C) fix = 'restart-condition';
+      what = `the phone itself reads Critical above the Xcode condition Serious; if the battery is cool (< ${COOL_C} °C), stop the Xcode condition, wait until a re-read shows below Critical (about 2 min), then start Serious again; otherwise wait for it to cool; re-read with node tools/iphone.mjs profile --owner <you>`;
+    }
     else if ((cond ?? 'Critical') === 'Critical') { reason = 'condition-critical'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = `the Xcode condition is Critical, above the ceiling; ${profile === 'serious' ? setSerious : stop}`; }
     else { reason = 'condition-wrong'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = profile === 'serious' ? `the Xcode condition is ${cond}, not Serious, and the phone is Critical, above the ceiling; ${setSerious}` : `an Xcode condition (${cond}) is on and the phone is Critical, above the ceiling; ${stop}`; }
   }
@@ -293,6 +308,11 @@ export function refusalText(profile, read, v, { maxC = MAX_C } = {}) {
  *  condition read the step was posted for ({state, induced, condition}; I-201 de-duplication). */
 export function stepFor({ owner, profile, fix, read = null }) {
   const meta = { phoneProfile: { owner, profile, fix, incident: 'I-186', read: { state: read?.state ?? null, induced: read?.induced ?? null, condition: read?.condition ?? null } } };
+  if (fix === 'restart-condition') { // I-201: the phone reads Critical under the right Serious condition, battery cool
+    const batt = typeof read?.battC === 'number' ? ` (${read.battC} C)` : '';
+    return { title: `Xcode: stop, then restart the iPhone's Serious thermal condition (test profile ${profile})`, meta,
+      instructions: `The iPhone reads Critical although Xcode's condition is Serious and the battery is cool${batt}. On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions click Stop. Wait about 2 minutes (until the phone is below Critical), then set Condition to Thermal State and Profile to Serious, then click Start. Leave it on (keep the cable in). Then click Done here; ${owner} reads it again and runs.` };
+  }
   if (fix === 'stop-condition') {
     return { title: `Xcode: stop the iPhone's thermal condition (test profile ${profile})`, meta,
       instructions: `On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions click Stop. Leave it off. The ${profile} profile wants the phone at Nominal or Fair with no Xcode condition. Then click Done here; ${owner} runs again.` };
