@@ -497,6 +497,52 @@ Text only: no pinned file changes, so the pins above stand. Where this addendum 
   the sweep's layer or animation cost.
 - **N7, base.** The branch is rebased on main `598d9efa` (docs only after `d9dabfc7`: the P-144 reservation).
 
+### Result P-144: CONTROL-FAILED on M1 (the Simulator's Paint time does not see nobg's effect); no reading
+
+Owner's read, for the official result read. Dry run (count-only, 2026-10-05, before the holds): DRY PASS, C 69.4 s and
+nob 69.1 s per step, mean 69.3 s, plan E (`sim/p144-dry.json`, N1). Holds E1-E3, one normal exclusive hold each,
+16:11-16:52Z,
+every exit 0, no VOID-HOST, no dropped step, every check HOLD-OK (`sim/p144-check-E1..E3.json`). Score:
+`score-p144.mjs out/end-bg/simp144 E1 E2 E3` -> `sim/p144-score.json`.
+
+| hold | run | n | M1 paint ms | M1 ratio, call | M2 composite ms | M2 ratio (not read) |
+|---|---|---|---|---|---|---|
+| E1 | C-H1 | 100 | 0.638 | | 23.6 | |
+| E1 | nob-H1 | 135 | 0.514 | 0.882 NONE | 14.8 | 0.685 |
+| E1 | pic-H1 | 137 | 0.406 | 0.696 PARTIAL | 14.2 | 0.657 |
+| E1 | tit-H1 | 121 | 0.522 | 0.895 NONE | 18.4 | 0.854 |
+| E1 | C-H2 | 114 | 0.528 | | 19.5 | |
+| E2 | C-H3 | 116 | 0.545 | | 20.0 | |
+| E2 | tit-H2 | 123 | 0.499 | 0.902 NONE | 18.2 | 0.938 |
+| E2 | nob-H2 | 129 | 0.484 | 0.874 NONE | 15.2 | 0.785 |
+| E2 | C2-H1 | 124 | 0.560 | 1.012 NONE | 19.0 | 0.982 |
+| E2 | C-H4 | 118 | 0.562 | | 18.7 | |
+| E3 | C-H5 | 114 | 0.562 | | 19.1 | |
+| E3 | C2-H2 | 111 | 0.544 | 0.957 NONE | 19.5 | 1.010 |
+| E3 | pic-H2 | 134 | 0.523 | 0.920 NONE | 15.7 | 0.814 |
+| E3 | nob-H3 | 133 | 0.489 | 0.860 NONE | 14.8 | 0.768 |
+| E3 | C-H6 | 117 | 0.575 | | 19.4 | |
+
+- **Rules.** Rule 1: C replicates in every hold on M1 (drift 0.172 / 0.031 / 0.023, no VOID). Rule 2: nob is NONE on M1
+  in every hold (0.882 / 0.874 / 0.860), so every hold is CONTROL-FAILED and the card status is **CONTROL-FAILED**. The
+  metric switch does not apply: on M2 the control passes in E1 only (0.685; E2 0.785, E3 0.768), so M2 stays reported,
+  not read. No pic/tit call, no reading; `end-titles` is not opened by this card.
+- **What it means (the card's pre-named outcome):** the Simulator's WebKit Timeline cannot split pictures from titles on
+  this instrument; the question goes to the phone Timeline ticket (G, xcode-serious) as the lead ruled.
+- **Descriptive only, decides nothing:** nob's M1 effect is small (about -13 %) next to P-137's phone effect. On M2
+  (Composite, the flush that holds the paint walk) every nob and pic run is lower than its C neighbours (0.66-0.81) and
+  the tit runs less so (0.85, 0.94); C2 stays at 0.98-1.01. These are unread numbers under the card's rules, not a
+  split; they may inform the phone ticket's design (disclosed if they do). Paint records per frame 12-13, painted area
+  about 0.83-0.96 million px per frame in every arm. Every run passed the applied probes; docH 6814 -> 6850 in all.
+- **Host:** load1 at step starts 7.7-106.4 (all below 200); the Simulator's background was settled at session start.
+- **Predictions** (scored with N3's precedence: a CONTROL-FAILED card makes P4 and P5 misses and P6-P8 insufficient):
+  P1 hit (DRY PASS, plan E). P2 hit (all holds pass the n check, n 100-137). P3 hit (C replicates on M1). P4 miss.
+  P5 miss. P6-P8 insufficient. P9 hit (C2 NONE in both runs: 1.012, 0.957). P10 hit (no GEOMETRY). P11 hit (every run
+  applied). P12 hit (no VOID-HOST). 7 hits, 2 misses, 3 insufficient.
+- **Mechanism note (OBSERVED in our setup, cause unknown):** WebKit Timeline Paint records on the WebContent side sum to
+  about 0.5 ms per band frame in every arm; the frame's Composite is about 15-24 ms. The pre-named risk (picture raster
+  outside the main thread's recorded Paint) fits this, but nothing here confirms it.
+
 ## 9. Pending
 
 - PR-025: the user's pick, then the phone test of slow frames.

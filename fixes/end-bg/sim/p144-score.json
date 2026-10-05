@@ -1,0 +1,597 @@
+{
+ "scorer": "fixes/end-bg/sim/score-p144.mjs",
+ "metric": "m1",
+ "holds": [
+  {
+   "hold": "E1",
+   "runs": [
+    {
+     "name": "C-H1",
+     "arm": "C",
+     "applied": true,
+     "n": 100,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.638,
+     "m2": 23.631,
+     "paintFrames": 96,
+     "compFrames": 98,
+     "medPaints": 13,
+     "medAreaK": 916.99
+    },
+    {
+     "name": "nob-H1",
+     "arm": "nob",
+     "applied": true,
+     "n": 135,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.514,
+     "m2": 14.777,
+     "paintFrames": 132,
+     "compFrames": 135,
+     "medPaints": 12,
+     "medAreaK": 877
+    },
+    {
+     "name": "pic-H1",
+     "arm": "pic",
+     "applied": true,
+     "n": 137,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.406,
+     "m2": 14.167,
+     "paintFrames": 133,
+     "compFrames": 134,
+     "medPaints": 12,
+     "medAreaK": 827.053
+    },
+    {
+     "name": "tit-H1",
+     "arm": "tit",
+     "applied": true,
+     "n": 121,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.522,
+     "m2": 18.42,
+     "paintFrames": 115,
+     "compFrames": 121,
+     "medPaints": 13,
+     "medAreaK": 866.107
+    },
+    {
+     "name": "C-H2",
+     "arm": "C",
+     "applied": true,
+     "n": 114,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.528,
+     "m2": 19.498,
+     "paintFrames": 112,
+     "compFrames": 114,
+     "medPaints": 13,
+     "medAreaK": 878.368
+    }
+   ],
+   "m1": {
+    "metric": "m1",
+    "replica": true,
+    "drift": 0.172,
+    "void": false,
+    "control": false,
+    "verdicts": {
+     "nob-H1": {
+      "arm": "nob",
+      "ratio": 0.882,
+      "cMean": 0.583,
+      "neighbours": [
+       "C-H1",
+       "C-H2"
+      ],
+      "call": "NONE"
+     },
+     "pic-H1": {
+      "arm": "pic",
+      "ratio": 0.696,
+      "cMean": 0.583,
+      "neighbours": [
+       "C-H1",
+       "C-H2"
+      ],
+      "call": "PARTIAL"
+     },
+     "tit-H1": {
+      "arm": "tit",
+      "ratio": 0.895,
+      "cMean": 0.583,
+      "neighbours": [
+       "C-H1",
+       "C-H2"
+      ],
+      "call": "NONE"
+     }
+    }
+   },
+   "m2": {
+    "metric": "m2",
+    "replica": true,
+    "drift": 0.175,
+    "void": false,
+    "control": true,
+    "verdicts": {
+     "nob-H1": {
+      "arm": "nob",
+      "ratio": 0.685,
+      "cMean": 21.565,
+      "neighbours": [
+       "C-H1",
+       "C-H2"
+      ],
+      "call": "PARTIAL"
+     },
+     "pic-H1": {
+      "arm": "pic",
+      "ratio": 0.657,
+      "cMean": 21.565,
+      "neighbours": [
+       "C-H1",
+       "C-H2"
+      ],
+      "call": "PARTIAL"
+     },
+     "tit-H1": {
+      "arm": "tit",
+      "ratio": 0.854,
+      "cMean": 21.565,
+      "neighbours": [
+       "C-H1",
+       "C-H2"
+      ],
+      "call": "NONE"
+     }
+    }
+   }
+  },
+  {
+   "hold": "E2",
+   "runs": [
+    {
+     "name": "C-H3",
+     "arm": "C",
+     "applied": true,
+     "n": 116,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.545,
+     "m2": 20.027,
+     "paintFrames": 112,
+     "compFrames": 114,
+     "medPaints": 13,
+     "medAreaK": 877.137
+    },
+    {
+     "name": "tit-H2",
+     "arm": "tit",
+     "applied": true,
+     "n": 123,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.499,
+     "m2": 18.189,
+     "paintFrames": 119,
+     "compFrames": 121,
+     "medPaints": 13,
+     "medAreaK": 864.91
+    },
+    {
+     "name": "nob-H2",
+     "arm": "nob",
+     "applied": true,
+     "n": 129,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.484,
+     "m2": 15.224,
+     "paintFrames": 126,
+     "compFrames": 129,
+     "medPaints": 12,
+     "medAreaK": 873.134
+    },
+    {
+     "name": "C2-H1",
+     "arm": "C2",
+     "applied": true,
+     "n": 124,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.56,
+     "m2": 19.042,
+     "paintFrames": 121,
+     "compFrames": 123,
+     "medPaints": 13,
+     "medAreaK": 957.55
+    },
+    {
+     "name": "C-H4",
+     "arm": "C",
+     "applied": true,
+     "n": 118,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.562,
+     "m2": 18.743,
+     "paintFrames": 112,
+     "compFrames": 118,
+     "medPaints": 12,
+     "medAreaK": 887.06
+    }
+   ],
+   "m1": {
+    "metric": "m1",
+    "replica": true,
+    "drift": 0.031,
+    "void": false,
+    "control": false,
+    "verdicts": {
+     "tit-H2": {
+      "arm": "tit",
+      "ratio": 0.902,
+      "cMean": 0.554,
+      "neighbours": [
+       "C-H3",
+       "C-H4"
+      ],
+      "call": "NONE"
+     },
+     "nob-H2": {
+      "arm": "nob",
+      "ratio": 0.874,
+      "cMean": 0.554,
+      "neighbours": [
+       "C-H3",
+       "C-H4"
+      ],
+      "call": "NONE"
+     },
+     "C2-H1": {
+      "arm": "C2",
+      "ratio": 1.012,
+      "cMean": 0.554,
+      "neighbours": [
+       "C-H3",
+       "C-H4"
+      ],
+      "call": "NONE"
+     }
+    }
+   },
+   "m2": {
+    "metric": "m2",
+    "replica": true,
+    "drift": 0.064,
+    "void": false,
+    "control": false,
+    "verdicts": {
+     "tit-H2": {
+      "arm": "tit",
+      "ratio": 0.938,
+      "cMean": 19.385,
+      "neighbours": [
+       "C-H3",
+       "C-H4"
+      ],
+      "call": "NONE"
+     },
+     "nob-H2": {
+      "arm": "nob",
+      "ratio": 0.785,
+      "cMean": 19.385,
+      "neighbours": [
+       "C-H3",
+       "C-H4"
+      ],
+      "call": "NONE"
+     },
+     "C2-H1": {
+      "arm": "C2",
+      "ratio": 0.982,
+      "cMean": 19.385,
+      "neighbours": [
+       "C-H3",
+       "C-H4"
+      ],
+      "call": "NONE"
+     }
+    }
+   }
+  },
+  {
+   "hold": "E3",
+   "runs": [
+    {
+     "name": "C-H5",
+     "arm": "C",
+     "applied": true,
+     "n": 114,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.562,
+     "m2": 19.124,
+     "paintFrames": 110,
+     "compFrames": 114,
+     "medPaints": 13,
+     "medAreaK": 957.55
+    },
+    {
+     "name": "C2-H2",
+     "arm": "C2",
+     "applied": true,
+     "n": 111,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.544,
+     "m2": 19.467,
+     "paintFrames": 107,
+     "compFrames": 111,
+     "medPaints": 13,
+     "medAreaK": 942.654
+    },
+    {
+     "name": "pic-H2",
+     "arm": "pic",
+     "applied": true,
+     "n": 134,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.523,
+     "m2": 15.683,
+     "paintFrames": 127,
+     "compFrames": 134,
+     "medPaints": 12,
+     "medAreaK": 874.954
+    },
+    {
+     "name": "nob-H3",
+     "arm": "nob",
+     "applied": true,
+     "n": 133,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.489,
+     "m2": 14.807,
+     "paintFrames": 131,
+     "compFrames": 133,
+     "medPaints": 12,
+     "medAreaK": 881.14
+    },
+    {
+     "name": "C-H6",
+     "arm": "C",
+     "applied": true,
+     "n": 117,
+     "counted": true,
+     "ih": [
+      775,
+      815
+     ],
+     "docH": [
+      6814,
+      6850
+     ],
+     "m1": 0.575,
+     "m2": 19.42,
+     "paintFrames": 111,
+     "compFrames": 113,
+     "medPaints": 13,
+     "medAreaK": 884.922
+    }
+   ],
+   "m1": {
+    "metric": "m1",
+    "replica": true,
+    "drift": 0.023,
+    "void": false,
+    "control": false,
+    "verdicts": {
+     "C2-H2": {
+      "arm": "C2",
+      "ratio": 0.957,
+      "cMean": 0.569,
+      "neighbours": [
+       "C-H5",
+       "C-H6"
+      ],
+      "call": "NONE"
+     },
+     "pic-H2": {
+      "arm": "pic",
+      "ratio": 0.92,
+      "cMean": 0.569,
+      "neighbours": [
+       "C-H5",
+       "C-H6"
+      ],
+      "call": "NONE"
+     },
+     "nob-H3": {
+      "arm": "nob",
+      "ratio": 0.86,
+      "cMean": 0.569,
+      "neighbours": [
+       "C-H5",
+       "C-H6"
+      ],
+      "call": "NONE"
+     }
+    }
+   },
+   "m2": {
+    "metric": "m2",
+    "replica": true,
+    "drift": 0.015,
+    "void": false,
+    "control": false,
+    "verdicts": {
+     "C2-H2": {
+      "arm": "C2",
+      "ratio": 1.01,
+      "cMean": 19.272,
+      "neighbours": [
+       "C-H5",
+       "C-H6"
+      ],
+      "call": "NONE"
+     },
+     "pic-H2": {
+      "arm": "pic",
+      "ratio": 0.814,
+      "cMean": 19.272,
+      "neighbours": [
+       "C-H5",
+       "C-H6"
+      ],
+      "call": "NONE"
+     },
+     "nob-H3": {
+      "arm": "nob",
+      "ratio": 0.768,
+      "cMean": 19.272,
+      "neighbours": [
+       "C-H5",
+       "C-H6"
+      ],
+      "call": "NONE"
+     }
+    }
+   }
+  }
+ ],
+ "card": {
+  "status": "CONTROL-FAILED",
+  "reading": null,
+  "arms": {
+   "C2": {
+    "call": "INSUFFICIENT",
+    "runs": 0,
+    "mean": null
+   },
+   "pic": {
+    "call": "INSUFFICIENT",
+    "runs": 0,
+    "mean": null
+   },
+   "tit": {
+    "call": "INSUFFICIENT",
+    "runs": 0,
+    "mean": null
+   },
+   "nob": {
+    "call": "NONE",
+    "runs": 3,
+    "mean": 0.872
+   }
+  }
+ },
+ "additivity": null
+}

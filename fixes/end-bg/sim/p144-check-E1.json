@@ -1,0 +1,82 @@
+{
+ "hold": "E1",
+ "runs": [
+  {
+   "name": "C-H1",
+   "arm": "C",
+   "n": 100,
+   "belowTarget": false,
+   "why": [],
+   "applied": true,
+   "appliedWhy": [],
+   "bandSteps": 18,
+   "cssSha": null,
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "nob-H1",
+   "arm": "nob",
+   "n": 135,
+   "belowTarget": false,
+   "why": [],
+   "applied": true,
+   "appliedWhy": [],
+   "bandSteps": 18,
+   "cssSha": "d566af712894",
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "pic-H1",
+   "arm": "pic",
+   "n": 137,
+   "belowTarget": false,
+   "why": [],
+   "applied": true,
+   "appliedWhy": [],
+   "bandSteps": 18,
+   "cssSha": "2f316f33d828",
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "tit-H1",
+   "arm": "tit",
+   "n": 121,
+   "belowTarget": false,
+   "why": [],
+   "applied": true,
+   "appliedWhy": [],
+   "bandSteps": 18,
+   "cssSha": "6bc2f3c17007",
+   "docH": [
+    6814,
+    6850
+   ]
+  },
+  {
+   "name": "C-H2",
+   "arm": "C",
+   "n": 114,
+   "belowTarget": false,
+   "why": [],
+   "applied": true,
+   "appliedWhy": [],
+   "bandSteps": 18,
+   "cssSha": null,
+   "docH": [
+    6814,
+    6850
+   ]
+  }
+ ],
+ "dropped": [],
+ "fail": false
+}
