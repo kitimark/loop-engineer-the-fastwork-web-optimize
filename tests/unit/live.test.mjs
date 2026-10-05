@@ -451,6 +451,28 @@ test('I-093 liveNotCovered: B built on A repeats every line A adds or removes; m
   assert.deepEqual(L.liveNotCovered(D, D), []);
 });
 
+test('I-206 liveNotCovered: a line A removes and re-adds in one hunk (diff alignment, e.g. lines inserted before it) is no change B must repeat; a B that lacks A still warns', () => {
+  const diff = (file, ...hunks) => `diff --git a/${file} b/${file}\n--- a/${file}\n+++ b/${file}\n${hunks.map((h) => `@@ -1,5 +1,5 @@\n${h}\n`).join('')}`;
+  // baseline:  t = m(o),\n  n = () => {\n    old();\n  },
+  // A inserts two lines before `n = () => {` and changes its body; git aligned `n = () => {` as removed and re-added
+  // (the shape of morph-scroll-v9try's patch: `-      n = () => {` ... `+      n = () => {`, `-      (l(` ... `+      (l(`)
+  const A = diff('2.js', '   t = m(o),\n-  n = () => {\n-    old();\n+  // [a] note\n+  fwOn = !1,\n+  n = () => {\n+    fwOn = !1, old();\n   },');
+  // B = A + B's own line elsewhere; for B git aligned `n = () => {` as context (people-word-a's patch)
+  const B = diff('2.js', '   t = m(o),\n+  // [a] note\n+  fwOn = !1,\n   n = () => {\n-    old();\n+    fwOn = !1, old();\n   },', ' x\n+  // [b] own\n y');
+  assert.deepEqual(L.liveNotCovered(A, B), [], 'B carries A: the re-added line is A\'s alignment, not a change');
+  assert.deepEqual(L.liveNotCovered(A, A), []);
+  // a B that lacks A (only its own line): A's real changes are still missing; the aligned pair does not count
+  const own = diff('2.js', ' x\n+  // [b] own\n y');
+  assert.deepEqual(L.liveNotCovered(A, own), [{ file: '2.js', lines: 4 }], 'old() removed, note, fwOn and the new body added');
+  // a B on A that undid A's body change: still warns for exactly those lines
+  const undone = diff('2.js', '   t = m(o),\n+  // [a] note\n+  fwOn = !1,\n   n = () => {\n     old();\n   },', ' x\n+  // [b] own\n y');
+  assert.deepEqual(L.liveNotCovered(A, undone), [{ file: '2.js', lines: 2 }], 'old() kept, new body missing');
+  // the pair cancels only inside one hunk: a line A moves from one hunk to another is still a change B must carry
+  const moved = diff('2.js', ' a\n-  moved();\n b', ' c\n+  moved();\n d');
+  assert.deepEqual(L.liveNotCovered(moved, own), [{ file: '2.js', lines: 2 }]);
+  assert.deepEqual(L.liveNotCovered(moved, moved), []);
+});
+
 test('I-093 normalize and setLive warn (not refuse) when B does not carry all of A\'s changes; no warning when B is built on A', async () => {
   commitPatch('on-css', makePatch('on-css', { [PAGE_CSS]: fx.prettyFiles[PAGE_CSS] + '/* PoC css */\n', [PAGE_JS]: fx.prettyFiles[PAGE_JS] + '/* built on css-only */\n' }));
   let n = P.normalize(sample({ live: { patch: 'fixes/on-css/patch.diff', a: { patch: 'fixes/css-only/patch.diff' } } }), { repoDir: repo, draft: true });
