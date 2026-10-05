@@ -7,8 +7,8 @@
 38c7a33e. Lead ruling: R3 is neither landed as T2 nor proposed yet, because the pixel instrument is unstable. P-148 rev 1
 (`P148.md` rev 1.1, signed) ran every registered step and reads GATE-FAILED in both engines. The card ends there and
 R3's pixels stay undecided on this instrument. The result read CONFIRMED it (landed 9800e2d1). P-149 rev 1.1 (`P149.md`,
-read PASS WITH NOTES, notes answered) locates the Chrome A/A motion in a 2x2 and judges R3 only at stable stops against a multi-pair A/A envelope; it
-waits for the pre-data read and the lead's signature. No P-149 data. No build.
+signed) locates the Chrome A/A motion in a 2x2 and judges R3 only at stable stops against a multi-pair A/A envelope; its 4
+shared slots run when chrome-measure is free. No build.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
