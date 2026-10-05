@@ -4,7 +4,8 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** built and pinned, **6468db04395c / 1c4161f56545** (`V92_EXPECT`); P-142 card below, registered before any
-P-142 data; waiting for the lead's sign and the Opus pre-data read. The iPhone is disconnected: parts 2 and 3 wait for the
+P-142 data (58269015); pre-data read PASS with N1-N7 (ops-reader-P142); **SIGNED by the lead** with N1-N7 as conditions
+(rev 1.1 below); no part 1 run until N1-N4 are done and the lead's delta check passes. The iPhone is disconnected: parts 2 and 3 wait for the
 lead's go after the user reconnects it.
 **Integrator:** int-v8 (wave-integrator). Board row `v9-1`. Tasking: user T-199 #3, the lead's plan T-199 #4 (build v9.2
 from every fix whose rendering count test passed, measure it ONCE against v9-final, a P-ticket with land rules and a
@@ -25,7 +26,7 @@ Baseline snapshot `b1789284481295-4ad4a84a`.
 OUT at the 15:00Z freeze: hero-park (parked, P-140 closed before data), cd-roll-ca-r4 / P-097 (changes motion: a
 proposal), toolbar-resize (nothing to stack).
 
-## Identity checks (`node fixes/v9-best/build.mjs --target v92`; `out/v92-build-nf.log`, EXIT 0)
+## Identity checks (`node fixes/v9-best/build.mjs --target v92 --with pw,nhc,nf`; `out/v92-build-nf.log`, EXIT 0)
 
 The extras are deltas against C (v9-final + rev 7d), checked strictly (no fuzz; CONFLICT stops):
 - each owner's pin on C (pw bf75ce87958c / e1359ab9994a = the accepted Try-it B bytes; nhc c7435c24dc56 / e1359ab9994a;
@@ -75,7 +76,8 @@ Ticket id P-142 (mgmt-clerk-1, registered 5e8b4460). It folds in P-134 (v9.1d's 
 TICKET P-142 v9-2 · v9-final (F) vs v9.2 (V): part 1 counts (Chrome census, the NF-C nav reveal band, Simulator census),
   part 2 one G phone block (parts M, X, S as P-134 + part H, the hero flip), part 3 one blind swipe A/B · runner int-v8
   · verdict owner int-v8 · registered before any P-142 data; no part runs before the lead's sign and the pre-data read
-build: V = v9.2 = fixes/v9-2/patch.diff 56e3da590029 (fixes/v9-best/build.mjs --target v92, V92_EXPECT),
+build: V = v9.2 = fixes/v9-2/patch.diff 56e3da590029 (fixes/v9-best/build.mjs --target v92 --with pw,nhc,nf, V92_EXPECT;
+  without --with, EXTRAS also brings in hp and the build fails V92_EXPECT),
   JS 6468db04395c4e1da39a5f247804b98e746bb40f12b383c708f902d968128bc9, CSS 1c4161f56545d955d8eb99960530fb1d541dd386bbe0cc746308409d4057d1c4
 control: C = F = v9-final as landed (8b5ce9b3, fixes/v9-best/patch.diff 4196eaa61d96, build.mjs V9F / V9_EXPECT),
   JS 647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2, CSS e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba
@@ -85,6 +87,49 @@ question: does v9.2 do no more rendering work than v9-final (part 1), add no slo
   change on the phone (part 2), and does the user not prefer v9-final by finger (part 3)? No-worse / less-work only;
   landing basis: the less-work rule (memory "less-work-landing-rule"), with the swipe A/B as the finger check.
 ```
+
+### Rev 1.1: pre-data read amendments (ops-reader-P142, 15:3xZ: PASS with notes N1-N7) and the lead's rulings at the sign; added before any part 1 data
+
+- **N1 (rebase):** the branch is rebased on main before any part runs (it was 67 commits behind; tools/ and tests/ differ:
+  I-202, I-204, I-206, I-207, I-209, I-210), after the queued pre-data probes finish (they run this checkout's tools; no
+  rebase under a running job). Then the lead's delta check (steps 1-4: build identity, kit pins, SELFTEST-142) on the rebased
+  head; the PIN lines (part 1, every phone hold) name the head they ran on.
+- **N2 (component pass lines; lead rulings at the sign, rev 1.1):**
+  - **U2: T2, not T0.** The mobile U2 px run (ended 15:26:45Z, 2 s before 58269015) showed consistent residues at y 2120
+    (6 css px²) and y 6278 (23 css px²), both pairs, A/A 0 %, so a T0 line set now would be informed. The gate is the
+    standing PR-010 T2 numbers, which predate the data (not informed): consistent fill ≤ 64, edge ≤ 128, ≤ 0.5 % of the
+    stop, Chrome (px-chrome, mobile aligned + desktop) AND Simulator (px-sim, frozen frames at rest) A/A-gated, Mnhc vs V.
+    fix-nav-morph is asked to explain the two spots (OBSERVED). **U2 fails T2 → U2 OUT of v9.2** (a proposal or v9.3),
+    and v9.2 becomes the matching minus-one build (Mnhc, 30f6371751f4 / 1c4161f56545) under a re-pinned card.
+  - **nf: T2 with the PR-010 numbers** (the same, Chrome + Simulator, Mnf vs V); nav-fade's own tighter numbers (fill 0,
+    edge ≤ 68, ≤ 118 css px², ≤ 0.03 %) are descriptive only. Fail → nf OUT (v9.2 = Mnf).
+  - **people-word vs the accepted Try-it B:** pass = (a) v9.2's word hunk is byte-identical to the Try-it B build's hunk,
+    AND (b) at rest, v9.2 vs v9.2 − pw (Mpw) shows 0 px outside the word band (px-chrome mobile aligned; motion excluded by
+    the user's decision), AND (c) the functional probe on V gives the same events as on Try-it B (Opw). Any miss → pw OUT.
+    (a) is checked: `diff -U0` Mpw → V and C → Opw give the same 69 changed JS lines, byte for byte (hunk headers aside:
+    line offsets differ), and pw leaves the CSS unchanged (Mpw CSS = V CSS) → **(a) PASS**.
+  - Simulator legs added for rev 1.1: `fixes/v9-2/pre/simpx.sh` (px-sim A=Mnhc,V=V and A=Mnf,V=V, after the sim92 smoke).
+- **N3 (order):** part 1 starts only after every component gate result (g11 exactness, fix.mjs check, U2 T2 Chrome +
+  Simulator, nf T2 Chrome + Simulator, pw (a)-(c), rest census, dom-count, geo92, the sim92 smoke) is written into this
+  card and passes, or the failing fix is OUT and the card is re-pinned to the minus-one build. The gate runners are
+  committed in `fixes/v9-2/pre/` (copies of the scratch scripts that ran; sha256/12: look92.sh a79c8d0d8159,
+  g11exact92.mjs 5a7180ed9241, pw92.sh 13b21a035db9, pw-probe.mjs 923112f9b554 (fix-people-word's probe), geo92.sh
+  a1ba37b4d9ad, simsmoke.sh f6fdf5bf9fbb, simpx.sh a9586dd44f0b); the results name them again.
+- **N4 (host clause for part 1; lead ruling, as P-141 rev 1.1):** load1 > 200 at a step's start → that step is
+  VOID-HOST, its record folder / files are moved to a `-void1` name, and the step is re-run once; a second VOID-HOST
+  stops part 1 (to the lead). Otherwise no host VOID; load1 is logged at the start and end of every step (part1.sh).
+  The check runs inside each step's hold (`fixes/v9-2/hostgate.sh`, exit 9 before the step's command, so a VOID-HOST step
+  writes no record; anything it did write is moved to `-void1`).
+- **N6 (records and re-runs):** 1a's records are only the files part1.sh lists as `RECORD` lines for that step (census-run
+  writes beside older out/v9/census-* files); NF-C's likewise (out/nav-fade/motion-chrome-nfc*). sim92 appends to
+  out/v92/sim/p142.json: a re-run of an insufficient step appends new loads; the read uses each arm's first 3 non-VOID
+  loads in log order, so a re-run only replaces VOID loads. 1a, NF-C and 1c have no pinned scorer: the result read
+  recomputes them from the records with the rules above. Precedence: within NF-C (and within 1a / 1c), one metric FAIL /
+  WORSE plus another insufficient = FAIL / WORSE.
+- **N7 (labels):** pre-data for v9.2. INFORMED: the NF-C floor (10 recalcs / 5 layouts) and the 1a / 1c expectations
+  (from nav-fade's n = 2 Chrome counts and the components' own data), the part 2 predictions (from P-122 / P-138). Not informed: the U2 and nf gates (PR-010
+  T2 numbers, which predate the data; no T0 line was adopted after the U2 mobile run). The queued rest census (B vs V: v9.1d vs v9.2) previews V's rest stops before
+  1a; 1a's rules were registered first (58269015), so 1a is not informed by it.
 
 ### Part 1: counts (no timing; `sh fixes/v9-2/part1.sh` in the background, after the sign and the read)
 
@@ -255,7 +300,7 @@ f1997edf5309, − g11 941aa13e5bdf / e1359ab9994a) are in out/v91d.
 
 ### Files (registered with this card)
 
-`fixes/v9-2/part1.sh` (part 1 runner), `sim92.mjs` (Simulator census), `geo92.mjs` (pre-data geometry), `nf/motion.mjs`
+`fixes/v9-2/part1.sh` (part 1 runner), `hostgate.sh` (its host clause), `pre/` (the pre-data gate runners), `sim92.mjs` (Simulator census), `geo92.mjs` (pre-data geometry), `nf/motion.mjs`
 and `nf/chromecount.mjs` (nav-fade's probe and reader, copied unchanged), `phone/serve142.sh`, `phone/hold142.sh`,
 `phone/score142.mjs`, `phone/selftest142.mjs`, `phone/nf-read.mjs` (nav-fade's phone reader, copied unchanged),
-`phone/p122-final-args.txt` (the self-test's replay list), `patch.diff`. Build: `fixes/v9-best/build.mjs --target v92`.
+`phone/p122-final-args.txt` (the self-test's replay list), `patch.diff`. Build: `fixes/v9-best/build.mjs --target v92 --with pw,nhc,nf`.
