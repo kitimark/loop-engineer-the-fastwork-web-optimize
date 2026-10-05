@@ -16,7 +16,10 @@
 // close, driver and probe cuts apart; (8) a block mixing m and n items is refused; (9) hold.sh runs n items with
 // --cycles 4, refuses m items, runs wda check before a G hold; (10) VALID refused on a failed item (hold.sh: non-zero
 // exit or no run file -> ITEM VOID, a failed counted item -> HOLD VOID before the VALID line; scorer: no record, an
-// empty record, zero moving frames in an n record after the cut or in a G record's part window; needs P-111's gMC1).
+// empty record, zero moving frames in an n record after the cut or in a G record's part window; needs P-111's gMC1);
+// (11) mgmt-ops-10's A2 re-check: the synthetic cycles-4 records scored untrimmed void; hold.sh run for real in a temp
+// stub checkout (stub iphone/lock/lan/gate/serve/pmcheck, no device): VALID clean, an earlier run file moved aside and
+// a re-run item without a new file void (exit 6), a G item exiting 1 voids the hold, an m item stops it before any run.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -141,4 +144,41 @@ check('A2: a G record with zero moving frames is void', () => {
 });
 check('A2: an empty or missing G record is void', () => { assert.ok(run('gMC1', null).void.length > 0); assert.ok(run('gEV1', {}).void.length > 0); });
 check('hold.sh: wda check before a G hold', () => assert.match(hold, /iphone\.mjs wda check/));
+// (11) mgmt-ops-10's A2 re-check: (a) the same synthetic cycles-4 records, scored untrimmed (as P-111 m items), void;
+// (b) hold.sh run for real in a stub checkout (stubbed iphone/lock/lan/gate/serve/pmcheck; nothing touches a device):
+// an earlier hold's run file is moved aside, so a re-run item that exits 0 but writes nothing is void, not scored stale
+for (const x of ['mV2', 'mV3', 'mC1', 'mC4'])
+  check(`${x} synthetic cycles 4, untrimmed as an m item: void (driver tweens)`, () => assert.ok(run(x, extend(load(x))).void.some((s) => /driver tweens .*expected O1,C1,O2,C2,O3,C3/.test(s))));
+{
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { spawnSync } = await import('node:child_process');
+  const T = mkdtempSync(join(tmpdir(), 'pv9-hold-')), put = (p, s) => { mkdirSync(dirname(join(T, p)), { recursive: true }); writeFileSync(join(T, p), s); };
+  const ok = 'process.exit(0)\n';
+  put('tools/lan.mjs', 'console.log("http://stub:1/")\n'); put('tools/lock.mjs', ok);
+  put('research/phone-thermal-gate/thermal-gate.mjs', ok); put('fixes/rest-script/tools/pmcheck.mjs', ok);
+  put('fixes/v9-best/phone/serve.sh', 'exit 0\n'); put('fixes/v9-best/phone/hold.sh', hold);
+  for (const a of 'BCV') put(`out/pv9/snap/serve-${a}.json`, '{"port":1}');
+  // iphone.mjs stub: run/gesture write --out unless the label is in STUB_NOFILE; exit STUB_EXIT_<label> (default 0)
+  put('tools/iphone.mjs', `const a = process.argv.slice(2), v = (k) => a[a.indexOf(k) + 1];
+if (a[0] === 'run' || a[0] === 'gesture') { const l = v('--label');
+  if (!(process.env.STUB_NOFILE || '').split(',').includes(l)) (await import('node:fs')).writeFileSync(v('--out'), JSON.stringify({ stub: 'new', label: l }));
+  process.exit(Number(process.env['STUB_EXIT_' + l.replace(/-/g, '_')] || 0)); }
+process.exit(0);
+`);
+  const O = join(T, 'out/pv9/runs');
+  const hs = (env, ...items) => spawnSync('sh', [join(T, 'fixes/v9-best/phone/hold.sh'), ...items], { encoding: 'utf8', env: { ...process.env, TICKET: 'P-TEST', RUNNER: 'stub', ...env } });
+  try {
+    const a = hs({}, 'H9', 'wC', 'wV', 'nC1', 'nV2');
+    check('hold.sh stub: a clean hold is VALID', () => { assert.equal(a.status, 0, a.stdout + a.stderr); assert.match(a.stdout, /HOLD H9 VALID/); });
+    const b = hs({ STUB_NOFILE: 'pv9-nC1' }, 'H10', 'wC', 'wV', 'nC1', 'nV2');
+    check('hold.sh stub: a re-run item with no new file moves the old one aside', () => assert.match(b.stdout, /MOVED pv9-nC1\.json aside/));
+    check('hold.sh stub: ... and is void, never scored stale', () => { assert.match(b.stdout, /ITEM nC1 VOID exit 0, no run file/); assert.match(b.stdout, /HOLD H10 VOID counted item\(s\) failed: nC1/); assert.equal(b.status, 6); });
+    check('hold.sh stub: the earlier file is kept as .prev-<hold>-<epoch>', () => assert.ok(readdirSync(O).some((x) => /^pv9-nC1\.json\.prev-H10-\d+$/.test(x))));
+    const c = hs({ STUB_EXIT_pv9_gMV1: '1' }, 'H11', 'sCo', 'gMC1', 'gMV1', 'sCc');
+    check('hold.sh stub: a counted G item exiting 1 voids the hold (H3a)', () => { assert.match(c.stdout, /ITEM gMV1 VOID exit 1/); assert.equal(c.status, 6); assert.doesNotMatch(c.stdout, /VALID/); });
+    const d = hs({}, 'H12', 'wC', 'mC1');
+    check('hold.sh stub: an m item ends the hold before anything runs', () => { assert.equal(d.status, 4); assert.doesNotMatch(d.stdout, /^RUN /m); });
+  } finally { rmSync(T, { recursive: true, force: true }); }
+}
 console.log(`SELFTEST OK ${n} checks`);

@@ -39,6 +39,8 @@
 # Item exits (A2, lead ruling after H3a): an item that exits non-zero or writes no run file is void ("ITEM <I> VOID");
 # any void counted item (n.., g..) voids the hold (exit 6, after the end gate and sleep check so the log is complete);
 # a void warm-up or sentinel item is reported and left to the scorer (a sentinel without data voids its runs).
+# Before each item an existing run file of the same label (an earlier hold's: counted labels carry no hold id) is moved
+# to <label>.json.prev-<H>-<epoch> ("MOVED ..."), so the run-file test sees only this run's file (mgmt-ops-10, A2 re-check).
 # Gate exits: 0 PASS; 2 condition dropped or Nominal/Fair; 3 ceiling (Critical or battery >= 44 C); 7 real heat instead
 # of the Xcode condition (another profile, never pooled); any non-zero voids the hold (P-116's failure path). A failing
 # sentinel (scored later) voids every run since the last passing one; the block is rerun with no cooling wait.
@@ -87,6 +89,10 @@ for I in "$@"; do
     *) echo "HOLD $H VOID unknown item $I"; exit 4 ;;
   esac
   case $A in C) U=$CU ;; V) U=$VU ;; esac
+  # A2 (mgmt-ops-10's re-check): counted labels carry no hold id, so a re-run hold reuses the file name; move an
+  # earlier file aside first, so the run-file test below sees only this run's file (never a void hold's record)
+  [ -e "$O/$L.json" ] && { mv "$O/$L.json" "$O/$L.json.prev-$H-$(date +%s)" || { echo "HOLD $H VOID cannot move aside $O/$L.json"; exit 4; }
+    echo "MOVED $L.json aside (an earlier hold's file)"; }
   [ "$K" = G ] && case $P in M) SC=$G/flick-middle-v1.json ;; E) SC=$G/flick-end-v1.json ;; esac
   node tools/iphone.mjs open "$U" --owner "$R" > /dev/null || { echo "HOLD $H VOID open $A failed at $I"; exit 4; }
   case $K in
