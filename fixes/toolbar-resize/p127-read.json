@@ -1,0 +1,701 @@
+{
+ "arms": {
+  "d1-io-change-sel": {
+   "arm": "d1-io-change-sel",
+   "spec": "io-change-sel",
+   "depth": 1,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 30,
+   "roundsWithSSR": 30,
+   "roundsWithIL": 0,
+   "records": {
+    "ScheduleStyleRecalculation": 30
+   },
+   "shapes": {
+    "dom-call": 30
+   },
+   "stackLengths": {
+    "1": 30
+   },
+   "pageShare": 0,
+   "callerNamed": 0,
+   "raises": "RAISES",
+   "stack": "DOM-ONLY",
+   "T": {
+    "n": 30,
+    "hit2ms": 29,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 30,
+    "records": 30,
+    "call": "RAISES"
+   }
+  },
+  "d1-io-same-sel": {
+   "arm": "d1-io-same-sel",
+   "spec": "io-same-sel",
+   "depth": 1,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d1-raf-change-sel": {
+   "arm": "d1-raf-change-sel",
+   "spec": "raf-change-sel",
+   "depth": 1,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 30,
+   "roundsWithSSR": 30,
+   "roundsWithIL": 0,
+   "records": {
+    "ScheduleStyleRecalculation": 30
+   },
+   "shapes": {
+    "dom-call": 30
+   },
+   "stackLengths": {
+    "1": 30
+   },
+   "pageShare": 0,
+   "callerNamed": 0,
+   "raises": "RAISES",
+   "stack": "DOM-ONLY",
+   "T": {
+    "n": 30,
+    "hit2ms": 30,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 30,
+    "records": 30,
+    "call": "RAISES"
+   }
+  },
+  "d1-timer-change-sel": {
+   "arm": "d1-timer-change-sel",
+   "spec": "timer-change-sel",
+   "depth": 1,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 30,
+   "roundsWithSSR": 30,
+   "roundsWithIL": 0,
+   "records": {
+    "ScheduleStyleRecalculation": 30
+   },
+   "shapes": {
+    "dom-call": 30
+   },
+   "stackLengths": {
+    "1": 30
+   },
+   "pageShare": 0,
+   "callerNamed": 0,
+   "raises": "RAISES",
+   "stack": "DOM-ONLY",
+   "T": {
+    "n": 30,
+    "hit2ms": 29,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 30,
+    "records": 30,
+    "call": "RAISES"
+   }
+  },
+  "d16-io-change-nosel": {
+   "arm": "d16-io-change-nosel",
+   "spec": "io-change-nosel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-io-change-sel": {
+   "arm": "d16-io-change-sel",
+   "spec": "io-change-sel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 30,
+   "roundsWithSSR": 30,
+   "roundsWithIL": 0,
+   "records": {
+    "ScheduleStyleRecalculation": 30
+   },
+   "shapes": {
+    "page": 30
+   },
+   "stackLengths": {
+    "4": 30
+   },
+   "pageShare": 1,
+   "callerNamed": 30,
+   "raises": "RAISES",
+   "stack": "PAGE",
+   "T": {
+    "n": 30,
+    "hit2ms": 30,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 30,
+    "records": 30,
+    "call": "RAISES"
+   }
+  },
+  "d16-io-none": {
+   "arm": "d16-io-none",
+   "spec": "io-none",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-io-same-nosel": {
+   "arm": "d16-io-same-nosel",
+   "spec": "io-same-nosel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-io-same-sel": {
+   "arm": "d16-io-same-sel",
+   "spec": "io-same-sel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-raf-change-nosel": {
+   "arm": "d16-raf-change-nosel",
+   "spec": "raf-change-nosel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-raf-change-sel": {
+   "arm": "d16-raf-change-sel",
+   "spec": "raf-change-sel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 30,
+   "roundsWithSSR": 30,
+   "roundsWithIL": 0,
+   "records": {
+    "ScheduleStyleRecalculation": 30
+   },
+   "shapes": {
+    "page": 30
+   },
+   "stackLengths": {
+    "4": 30
+   },
+   "pageShare": 1,
+   "callerNamed": 30,
+   "raises": "RAISES",
+   "stack": "PAGE",
+   "T": {
+    "n": 30,
+    "hit2ms": 30,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 30,
+    "records": 30,
+    "call": "RAISES"
+   }
+  },
+  "d16-raf-none": {
+   "arm": "d16-raf-none",
+   "spec": "raf-none",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-raf-same-nosel": {
+   "arm": "d16-raf-same-nosel",
+   "spec": "raf-same-nosel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-raf-same-sel": {
+   "arm": "d16-raf-same-sel",
+   "spec": "raf-same-sel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-timer-change-nosel": {
+   "arm": "d16-timer-change-nosel",
+   "spec": "timer-change-nosel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-timer-change-sel": {
+   "arm": "d16-timer-change-sel",
+   "spec": "timer-change-sel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 30,
+   "roundsWithSSR": 30,
+   "roundsWithIL": 0,
+   "records": {
+    "ScheduleStyleRecalculation": 30
+   },
+   "shapes": {
+    "page": 30
+   },
+   "stackLengths": {
+    "4": 30
+   },
+   "pageShare": 1,
+   "callerNamed": 30,
+   "raises": "RAISES",
+   "stack": "PAGE",
+   "T": {
+    "n": 30,
+    "hit2ms": 30,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 30,
+    "records": 30,
+    "call": "RAISES"
+   }
+  },
+  "d16-timer-none": {
+   "arm": "d16-timer-none",
+   "spec": "timer-none",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-timer-same-nosel": {
+   "arm": "d16-timer-same-nosel",
+   "spec": "timer-same-nosel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  },
+  "d16-timer-same-sel": {
+   "arm": "d16-timer-same-sel",
+   "spec": "timer-same-sel",
+   "depth": 16,
+   "fired": 30,
+   "marks": 30,
+   "bracketed": 30,
+   "containers": {
+    "FunctionCall": 30
+   },
+   "roundsWithRecord": 0,
+   "roundsWithSSR": 0,
+   "roundsWithIL": 0,
+   "records": {},
+   "shapes": {},
+   "stackLengths": {},
+   "pageShare": null,
+   "callerNamed": 0,
+   "raises": "NONE",
+   "stack": "n/a",
+   "T": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "W": {
+    "rounds": 30,
+    "roundsWithStackless": 0,
+    "records": 0,
+    "call": "NONE"
+   }
+  }
+ },
+ "outcomes": {
+  "control": {
+   "io": "OK",
+   "raf": "OK",
+   "timer": "OK"
+  },
+  "O1": "SEEN-WITH-CALLER",
+  "O2": "DOM-ONLY-AT-1",
+  "O3": "NEVER",
+  "O4": "SILENT",
+  "O5": "GATED",
+  "O6": {
+   "change": {
+    "n": 30,
+    "hit2ms": 30,
+    "minus25": 0,
+    "plus25": 0
+   },
+   "same": {
+    "n": 30,
+    "hit2ms": 0,
+    "minus25": 0,
+    "plus25": 0
+   }
+  },
+  "O7": {
+   "call": "DOWNSTREAM-STACKLESS",
+   "byCause": {
+    "io": "DOWNSTREAM-STACKLESS",
+    "raf": "DOWNSTREAM-STACKLESS",
+    "timer": "DOWNSTREAM-STACKLESS"
+   }
+  }
+ }
+}

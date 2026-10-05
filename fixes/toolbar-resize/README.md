@@ -1830,6 +1830,91 @@ signature. The trigger stays OBSERVED in all text.
 - **Pixel and behaviour.** It is a test page only. No Fastwork code is changed or served differently, so no pixel check
   applies.
 
+## Result P-127 (Simulator, count-only; run 2026-10-05 03:34Z, rev 3 signed 03:33:13Z)
+
+- **Run.**
+  - Shared slot, Simulator weight, functional session (fw-sim 15 Pro Max). Capture `e93886c95d56`, page `503385ed36a8`, page
+    script `457f3abc43f1`.
+  - Both served files matched and came from the overlay; `__p127` was ready.
+  - The dry record passed: 5 bracketed records, each with a 4-frame stack.
+  - All 19 counted arms ran. Every arm fired 30 of 30 rounds, and all 30 were bracketed.
+  - Simulator background: mean 72 % of a core (sim.mjs `SIM_BACKGROUND`). These are counts, not timings, so this is
+    context only.
+  - Every arm after the dry record logged `Timeline.enable: Timeline domain already enabled`: the domain stayed enabled
+    from the arm before. `Timeline.start` still ran at each arm's depth: d16 arms show 4-frame stacks, d1 arms 1-frame.
+    The command list sent is the one in the card.
+  - The rev 2 attempt (`sim127-rev2-attempt1/`, no Timeline) is never counted.
+- **Reader output** (frozen reader `53e4f4ab3bfd`; `p127-read.json` `310a987080f8`):
+
+  | arms | bracketed rounds with a record | stack | frames | rule T 2 ms hits (+-25 ms) | rule W |
+  |---|---|---|---|---|---|
+  | d16 change-sel: io, raf, timer | 30/30 each (ScheduleStyleRecalculation 30, InvalidateLayout 0): RAISES | PAGE | 4 | 30/30 (0, 0) | 30/30: RAISES |
+  | d16 same-sel, none, change-nosel, same-nosel: x io, raf, timer (12 arms) | 0/30 each: NONE | n/a | | 0/30 (0, 0) | 0/30: NONE |
+  | d1 change-sel: io, raf, timer | 30/30 each (ScheduleStyleRecalculation 30): RAISES | DOM-ONLY | 1 | io 29, raf 30, timer 29 (0, 0) | 30/30: RAISES |
+  | d1 io-same-sel | 0/30: NONE | n/a | | 0/30 | 0/30: NONE |
+
+  The container is FunctionCall in 30 of 30 rounds of every arm, IO included.
+- **Outcomes** (`outcomes()`):
+
+  | outcome | result |
+  |---|---|
+  | CONTROL | OK for io, raf and timer |
+  | O1 | SEEN-WITH-CALLER |
+  | O2 | DOM-ONLY-AT-1 |
+  | O3 | NEVER (0 stackless bracketed records) |
+  | O4 | SILENT |
+  | O5 | GATED |
+  | O6 | io change-sel 30/30 hits, io same-sel 0/30, background 0 at +-25 ms |
+  | O7 | DOWNSTREAM-STACKLESS for io, raf and timer |
+
+- **Predictions: all 11 hold.**
+
+  | # | prediction | p | result |
+  |---|---|---|---|
+  | 1 | dry passes | 90 % | holds (5 records, 4 frames) |
+  | 2 | CONTROL OK | 85 % | holds |
+  | 3 | O1 SEEN-WITH-CALLER | 75 % | holds |
+  | 4 | O2 DOM-ONLY-AT-1 | 85 % | holds |
+  | 5 | O3 NEVER | 80 % | holds |
+  | 6 | O4 SILENT | 80 % | holds |
+  | 7 | O5 GATED | 80 % | holds |
+  | 8 | d16 change-sel: <= 20 % of bracketed rounds hold an InvalidateLayout | 70 % | holds (0 %) |
+  | 9 | io container ObserverCallback or FunctionCall >= 80 % | 60 % | holds (FunctionCall 100 %) |
+  | 10 | O6: io change >= 80 %, same <= 20 % | 60 % | holds (100 %, 0 %) |
+  | 11 | O7 DOWNSTREAM-STACKLESS | 65 % | holds |
+
+- **What it means for P-126's NATIVE** (the frozen table's meanings; OBSERVED in our setup, Simulator, one quiet test page):
+  - O1: a script write's own record keeps its page caller at depth 16, observer callbacks included. N4 (a) "stacks
+    dropped in observer callbacks" is REFUTED locally. At depth 1 the same record shows one `[native code]` frame (O2), so
+    addendum D1's (c) is confirmed locally. Script writes' own records in P-126's step frames therefore sit in the
+    dom-call bucket.
+  - O7: every changing write was followed by one stackless InvalidateLayout record, and no none or same-value round was.
+    So a stackless surplus can come from script writes, and P-126's no-stack surplus alone is no evidence of engine-only
+    work (ops C1).
+  - O3: a write's own record was never stackless. That says nothing about where P-126's no-stack surplus comes from (C1).
+  - O4 and O5: same-value writes, and writes to an attribute no selector reads, raise no record. This matches WebKit main's
+    source (CONFIRMED, card) and is now OBSERVED locally. A showcase write matters only where it changes a value that a
+    rule reads.
+  - O6: on a quiet page, the 2 ms rule finds every changing write and no same-value write, with no background. P-126's
+    busy step frames break this (first-only records), so the rule's P-126 counts stay neighbour counts.
+- **Descriptive add-on (post hoc, not frozen, decides nothing; `p127-desc.mjs` `2e9c140738ce`).** In all six change-sel
+  arms (d16 and d1), every rule-W record is an InvalidateLayout nested in RenderingFrame > RecalculateStyles. It starts
+  0.0-0.4 ms after the round's end mark (one IO round at 6.1 ms). So the follow-up is the layout dirtying from style
+  resolution (the `width` change) in the rendering update right after the write. That is prediction 8's mechanism,
+  OBSERVED. For the timer cause the rendering update came within 0.4 ms of the callback, not at a later display tick: in
+  our setup, cause unknown.
+- **Scope (lead D1, ops N3).**
+  - O7 came out DOWNSTREAM-STACKLESS, so D1's NONE-DOWNSTREAM limit is not triggered, but the same scope holds for every
+    reading above: one `setAttribute` per round, on one element, on a quiet page, in the Simulator. All of it is OBSERVED.
+  - Not tested: style-property, `classList` and custom-property writes; busy frames, where first-only
+    ScheduleStyleRecalculation and InvalidateLayout hide later writes; the real iPhone.
+  - The page script is unchanged code from rev 2's inline script (not byte-identical: a 4-line header and one indent level
+    less).
+- **Next (from the frozen table; each needs its own card and the lead's go).**
+  - O1: a depth-16 recapture of P-126's step frames, to name the dom-call callers.
+  - O7: splitting P-126's no-stack surplus into write follow-up and engine work needs marks or a write log
+    (MutationObserver), not stacks.
+
 ## Scenarios not run
 
 idle after scroll · reload while scrolled · early input · scroll up · rubber band (this topic is the toolbar resize).
