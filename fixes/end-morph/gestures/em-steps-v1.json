@@ -1,0 +1,18 @@
+{
+  "name": "em-steps-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "end-morph step A (fix-end-morph, lead GO 2026-10-05): toolbar steps in the end zone, Simulator, counts only. No reload: the page is placed by em-step-sim.mjs before the run (closed rest above the zone, or open at the end). Pairs of slow strokes: finger down (the page scrolls up, Safari's toolbar shows) then finger up (the page scrolls down, the toolbar hides), each followed by a pause so the 7d settle has ended before the next stroke.",
+  "params": { "x": 215, "px": 90, "ms": 380 },
+  "steps": [
+    { "type": "until", "cond": "y>=2000", "timeoutMs": 1000 },
+    { "type": "mark", "name": "steps" },
+    { "type": "repeat", "times": 4, "steps": [
+      { "type": "stroke", "dir": "down", "px": "$px", "ms": "$ms", "profile": "minjerk" },
+      { "type": "pause", "ms": 1100 },
+      { "type": "stroke", "dir": "up", "px": "$px", "ms": "$ms", "profile": "minjerk" },
+      { "type": "pause", "ms": 1100 }
+    ] },
+    { "type": "mark", "name": "end" }
+  ]
+}
