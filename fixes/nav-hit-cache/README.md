@@ -1279,6 +1279,23 @@ copy of the same `chrome()` command (same lock arguments, the same `probe.mjs co
 
 A0's Simulator half (C7) waits for steps 5-6.
 
+**Steps 3-4, Chrome K / V** (`part1-138.sh kv`, one run; both records valid):
+- `p138/kv-mobile.json`: 6 loads, 12:58-13:05Z (slot wall 108 s), 628 steps per load.
+- `p138/kv-desktop.json`: 6 loads, 13:05-13:17Z (slot wall 151 s), 845 steps per load.
+- Every load served its arm's pin (K 1b2eecc66011, V c7435c24dc56, CSS e1359ab9994a), with no page error.
+
+Interim score: `counts.mjs` on the Chrome records only. These are not the final verdict, which needs the Simulator.
+
+| # | interim | numbers |
+|---|---|---|
+| C1 | hit | mobile nav elementsFromPoint, pairs: K 454 / 454 / 454, V 361 / 361 / 361, drop 93 each |
+| C2 | hit | drop 93 vs 93.5 |
+| C3 | hit | forced Layout K 198 V 196 (tol 6); forced style K 773 V 774 (tol 9) |
+| C4 | hit | 196 < 198 |
+| C5 | hit | desktop efpNav 536 / 535 (tol 7), forced Layout 262 / 259 (8), forced style 1245 / 1244 (4), PrePaint 1393 / 1392 (10) |
+| C8 | hit so far | 12 loads, 0 VOIDs |
+| A0, C6, C7 | pending | Simulator steps 5-8 (drain slot 5) |
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).
