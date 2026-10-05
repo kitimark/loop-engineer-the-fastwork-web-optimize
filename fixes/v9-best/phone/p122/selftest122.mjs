@@ -21,6 +21,8 @@ const asArm = (j, A) => { const k = clone(j); k.meta = k.meta || {}; k.meta.serv
 ok(parse('wC').warmup && parse('wgRV').warmup && parse('gXV2').part === 'X' && parse('nC3').kind === 'M' && parse('sCo').kind === 'S', 'item parse');
 let threw = false; try { parse('gEV1'); } catch { threw = true; } ok(threw, 'P-120 part E item refused');
 threw = false; try { parse('mC1'); } catch { threw = true; } ok(threw, 'H1 m item refused');
+// N2 (ops delta check on 551a80f1): part R is V only, so score.mjs refuses its C items like hold122.sh does
+ok(['gRC1', 'wgRC'].every((i) => { try { parse(i); return false; } catch (e) { return /part R is V only/.test(e.message); } }) && parse('gRV1').part === 'R', 'part R C items (gRC<n>, wgRC) refused by score.mjs, V items parsed');
 
 const need = ['out/p121/phone/m340.json', 'out/p121/phone/efast.json', 'out/p121/phone/eslow.json', 'out/pv9/runs/pv9-gMV1.json', 'out/pv9/runs/pv9-gMC1.json'];
 if (!need.every((p) => existsSync(join(root, p)))) { console.log(`SELFTEST-122 SKIP records missing (${need.filter((p) => !existsSync(join(root, p))).join(', ')})`); process.exit(2); }
@@ -107,8 +109,8 @@ ok(P.flickerVerdict(3, G1(2, 0, 'FAIL')).startsWith('WORSE (G1: V monotone blink
 ok(P.flickerVerdict(4, G1(0, 0, 'VOID')).startsWith('insufficient') && P.flickerVerdict(1, '').startsWith('insufficient') && P.flickerVerdict(0, 'no g1 here').startsWith('insufficient'), 'flicker: VOID, a usage error or no G1 line -> insufficient');
 // F5 time guard: late() from hold122.sh, run at the 900 s boundary (elapsed + 240 > 900), and where the loop calls it
 const lateDef = h.match(/^late\(\) \{.*\}$/m)?.[0];
-const lr = lateDef ? spawnSync('sh', ['-c', `T0=1000; ${lateDef}; for t in 1660 1661 1000; do late $t && echo late || echo ok; done`], { encoding: 'utf8' }).stdout.trim().split('\n') : [];
-ok(lateDef === 'late() { [ $(( $1 - T0 + 240 )) -gt 900 ]; }' && JSON.stringify(lr) === '["ok","late","ok"]', 'time guard: elapsed 660 s may start a G item (660 + 240 = 900), 661 s may not');
+const lr = lateDef ? spawnSync('sh', ['-c', `T0=1000; ${lateDef}; for t in 1420 1421 1000; do late $t && echo late || echo ok; done`], { encoding: 'utf8' }).stdout.trim().split('\n') : [];
+ok(lateDef === 'late() { [ $(( $1 - T0 + 180 )) -gt 600 ]; }' && JSON.stringify(lr) === '["ok","late","ok"]', 'time guard (sized on the 600 s chrome-measure hold, N1): elapsed 420 s may start a G item (420 + 150 + 30 = 600), 421 s may not');
 const loop = h.slice(h.indexOf('for I in "$@"; do\n  case $I in wg*|g*)'));
 ok(loop.length > 0 && /case \$I in wg\*\|g\*\) now=\$\(date \+%s\)\n    if late "\$now"; then echo "HOLD \$H VOID time: [^\n]*"\n      node tools\/iphone.mjs park --owner "\$R" > \/dev\/null 2>&1; exit 7; fi ;; esac\n  sh \$G2\/serve122.sh check/.test(loop) && h.indexOf('late "$now"') < h.indexOf('HOLD $H VALID'), 'time guard checked before every wg/g item, parks and exits 7 (VOID time)');
 const ffs = P.flickerFiles([{ item: 'gMC1', file: 'a', j: {} }, { item: 'gXV2', file: 'b', j: {} }, { item: 'gRV1', file: 'c', j: {} }, { item: 'wgMV', file: 'd', j: {} }, { item: 'sCo', file: 'e', j: {} }, { item: 'gSV1', file: 'f', j: null }]);

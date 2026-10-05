@@ -15,9 +15,11 @@
 #   TICKET=P-122 node tools/lock.mjs run iphone --owner iphone-runner --block P-122 --max-seconds 900 -- \
 #     node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 \
 #     --doing "v9 P-122 H3a" -- caffeinate -i -s sh fixes/v9-best/phone/p122/hold122.sh H3a sCo wgMC wgMV gMC1 gMV1 gMV2 sCc
-# Time guard (ops F5, lead ruling): no G item (wg* or g*) starts when elapsed + 240 s (150 s GESTURE_BUDGET_S + 90 s end
-# gate) > 900 s: the rest of the hold's items are skipped, Safari is parked, the hold is VOID "time" (exit 7) and is
-# re-run whole (late() below; selftest122 runs it).
+# Time guard (ops F5, lead ruling; sized on the 600 s chrome-measure hold after ops' N1 on 551a80f1): no G item (wg* or
+# g*) starts when elapsed + 180 s (150 s GESTURE_BUDGET_S, which gesture-run needs left in its own 600 s hold, + 30 s for
+# the time before T0, the served-hash check and the open) > 600 s, i.e. after 420 s: the rest of the hold's items are
+# skipped, Safari is parked, the hold is VOID "time" (exit 7) and is re-run whole (late() below; selftest122 runs it).
+# The end gate (up to ~90 s) may then run past 600 s: the hold shows OVERDUE, nothing is killed.
 # Items:
 #   wC / wV              uncounted S load warm-up on that arm's port
 #   sCo / sCc            uncounted S sentinel on C opening / closing a G hold (labels per hold)
@@ -41,7 +43,7 @@ B=$(node tools/lan.mjs --url --port "$(port B)") || exit 2
 CU=$(node tools/lan.mjs --url --port "$(port C)") || exit 2
 VU=$(node tools/lan.mjs --url --port "$(port V)") || exit 2
 T0=$(date +%s)
-late() { [ $(( $1 - T0 + 240 )) -gt 900 ]; }
+late() { [ $(( $1 - T0 + 180 )) -gt 600 ]; }
 echo "HOLD $H ($TICKET) start $(date -u +%FT%TZ) items $*"
 pins() { for f in "$@"; do printf ' %s=%s' "$f" "$(shasum -a 256 "$f" | cut -c1-12)"; done; }
 echo "PIN $H $TICKET profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
@@ -73,7 +75,7 @@ gate start; g=$?
 BAD=""
 for I in "$@"; do
   case $I in wg*|g*) now=$(date +%s)
-    if late "$now"; then echo "HOLD $H VOID time: $I would start at $((now - T0)) s (+ 240 > 900), items from $I on skipped; re-run the hold whole"
+    if late "$now"; then echo "HOLD $H VOID time: $I would start at $((now - T0)) s (+ 180 > 600), items from $I on skipped; re-run the hold whole"
       node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; exit 7; fi ;; esac
   sh $G2/serve122.sh check > "$O/p122-$H-check-$I.log" 2>&1 || { echo "HOLD $H VOID served hash check failed before $I"; exit 4; }
   case $I in

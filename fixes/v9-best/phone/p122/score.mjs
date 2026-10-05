@@ -72,6 +72,8 @@ export function flickerVerdict(code, stdout = '') {
 }
 
 export function parse(item) {
+  // part R is V only (hold122.sh refuses wgRC / gRC<n> too): a C record of part R is refused, never scored or carried
+  if (/^(wg|g)RC(\d+)?$/.test(item)) throw new Error(`part R is V only: ${item} refused`);
   if (/^w[CV]$/.test(item) || /^wg[MXSR][CV]$/.test(item)) return { warmup: true };
   if (/^sC[oc]$/.test(item)) return { kind: 'S', arm: 'C' };
   let m = item.match(/^n([CV])(\d+)$/); if (m) return { kind: 'M', arm: m[1], run: +m[2] };
@@ -185,7 +187,7 @@ export function scoreP122(entries, flicker = null) {
   const rV = G('R', 'V');
   const reported = {
     R: { nV: rV.length, enough: rV.length >= MIN.R, strokesInRange: rV.reduce((a, r) => a + r.path.inRange, 0), returned: rV.reduce((a, r) => a + r.path.returned, 0), ceiling: ceiling(rV, 1) },
-    Cref: Object.fromEntries(['X', 'S', 'R'].map((P) => [P, G(P, 'C').map((r) => ({ item: r.item, window: r.window, outs: r.path?.outs }))])),
+    Cref: Object.fromEntries(['X', 'S'].map((P) => [P, G(P, 'C').map((r) => ({ item: r.item, window: r.window, outs: r.path?.outs }))])),
   };
   if (flicker) gates.FLICKER = flicker;
   const par = parity(entries);

@@ -777,9 +777,47 @@ Function and look checks on this v9-final (`out/v9/looks-final3.log`, 06:09-06:2
   | V = v9-final | 40.8 | 42.1 | 1.8 | 26.3 | 29.2 (y 6278) |
 
   - Rest is at v8's level at the top and at 2796, so the close rule's extra style work is gone (OBSERVED, one load).
-  - rest-end differs because v9's page end is rev 7c's open end (m = 1 after the 100lvh spacer, the panel's running
-    animations; rAF 33/s). The rest-split arms K, N and the close builds show the same 28-29 there, so it is rev 7c's
-    open-end state, not new in this build.
+  - rest-end is new relative to v8 (lead, 06:4xZ): v8 rests at 0.2 at its page end, every v9 build at 28-60. It blocks
+    landing v9 until it is explained or removed. The split below names it.
+
+Page-end rest split (lead, 2026-10-05 06:4xZ; `out/v9/restend2.log`; census rest-end only, counts only, no timing; shared
+probe holds 06:50-07:26Z, one load per arm, load1 10-46; the window starts after a 32 s settle at the page end, so ~34 s
+after load like the full census's rest-end; snapshot copies `out/v9/snap-restend`, HASHES.txt, served hashes checked;
+OBSERVED in our setup):
+
+| arm | rev 7c | page end y | mainFrames/s | styleRecalc/s | paint/s | rAF/s | panel clock spring (JS `i`, rAF) | clock tick (timer) |
+|---|---|---|---|---|---|---|---|---|
+| A = v8 | out | 5346 | 0 | 0 | 0 | 0 | 0 | 0 |
+| M = v9 − rev 7c | out | 5346 | 0.2 | 0.2 | 0.7 | 0 | 0 | 0 |
+| S = v8 + rev 7c alone | in | 6278 | 60 | 60 | 252.5 | 30 | 30 | 1 |
+| V = v9-final | in | 6278 | 60.1 | 60.1 | 258.9 | 37.1 | 37.1 | 1 |
+| D = v9 − double-drive | in | 6278 | 27.2 | 27.2 | 126.9 | 36.8 | 36.8 | 1 |
+| E = v9 − earn | in | 6278 | 28.3 | 28.3 | 128.6 | 31.7 | 31.7 | 1 |
+| N = v9 − nav, glue | in | 6278 | 60 | 60 | 255.2 | 31.7 | 31.7 | 1 |
+| G = v9 − glue | in | 6278 | 27.3 | 27.3 | 121.9 | 29 | 29 | 1 |
+| A-open = v8, panel held open by `__fwMorphDrive` | out | 5346 | 60 (driver) | 87.1 | 255 | 91.8 | 31.8 | 1 |
+
+- **Component: rev 7c (PR-018, morph-scroll) exposes it; the work itself is the morph panel's clock.** It comes in
+  with rev 7c alone (S) and goes with it (M); no other component changes it. Rev 7c makes the page end the open end
+  (m = 1 after its 100lvh spacer), so the panel's countdown (`cD` with `inverse`, `active` = E, `shown` =
+  `__cdPanelShown`) is shown at rest there. It then ticks once a second (`e`, the 1 s interval) and rolls its digits on
+  the original rAF spring (`i`, cd-roll-ca's "no strip yet or no path" fallback; cd-roll-ca's strip roll is hero-only),
+  at 29-37 calls/s.
+- **v8 runs the same work whenever its panel is open.** A-open (v8, panel opened and held by the debug driver): the same
+  spring at 31.8/s plus the 1/s tick; the driver's own rAF logger (`p`, 60/s) makes its frame count not comparable. v8
+  never rests open at its page end, so its rest-end shows nothing.
+- **Running animations** (`getAnimations()` at the end, A/V/M/S): the arms with rev 7c add 3 morph `col-track` CSS
+  animations (16 s, infinite, transform); otherwise the same 5 platform animations as v8.
+- **Two levels in the rev 7c arms (OBSERVED, cause unknown):** 27-28 frames/s (D, E, G; the earlier full census of V:
+  29.2) or 60 frames/s (V, N, S) with the same spring and tick counts. The extra ~30 style recalcs/s have no JS callback
+  in the page bundle. The same build reads both levels (V: 29.2 earlier, 60.1 here), so this varies per load, not per
+  build. Suspect, unchecked: the panel's `col-track` transform animations ticking on the main thread in some loads (not
+  composited). Decisive local check: the trace's Animation events (compositeFailed) or the CDP Animation domain in the
+  same window.
+- **Scoped fix:** P-097 (fix-cd-roll-ca, registered, not started): the panel clock on cd-roll-ca's per-cell Web
+  Animations roll, gated to m in {0, 1}; its P1 predicts panel rAF ≤ 10 % of C at the hold. It is cd-roll-ca's code, not
+  rev 7c's. A rest gate that stops the panel clock at the open end would change what the user sees (a frozen clock), so
+  it would be a proposal, not a fix. The 60 frames/s level needs its own cause first.
 
 Simulator fling-parity confirm on this v9-final (COUNTS ONLY, `sim.mjs gesture --count-only`, flick-middle-v2 with
 flingPx 300, the P-122 copies `out/p122/snap` served plain http; C = v8, V = v9-final; first page-up fling = settle 2 -
@@ -807,7 +845,8 @@ No P-122 data exists for any of them. Changes from the first draft:
   serve.sh with only V, the folder and the source changed; served-hash case `V:647c9ef2b1e2:e1359ab9994a`).
 - **G parts only, no M leg** (no `__fwMorphDrive`). On v9 the panel is already open at the page end (fix-morph-gpu's
   note), and the lead asked for G gestures. hold122.sh refuses n items (VOID "unknown item"), and the scorer has no
-  Mmoving/Mtweens gates. hold122.sh and score.mjs also refuse gRC/wgRC: part R is V only.
+  Mmoving/Mtweens gates. hold122.sh and score.mjs also refuse gRC/wgRC: part R is V only (score.mjs's parse throws on
+  them since ops' N2 on 551a80f1, so no part R C record reaches the scorer or its Cref).
 - **Flicker gate** (nav-hit-cache: `fixes/nav-hit-cache/flicker-gate.mjs` 3c2bd0cb7f09, logger `flicker-inject.mjs`
   71f7b00ce40b).
   - Every G run in both arms carries the logger, warm-ups too (`--inject`). The compiled programs are unchanged, checked
@@ -835,9 +874,13 @@ No P-122 data exists for any of them. Changes from the first draft:
     <verdict>"), never masked by the frame gates.
 - **gM on V:** if V's path gate fails, part M is reported INSUFFICIENT with the reason (not void, not re-scripted after
   data; lead ruling).
-- **Time guard (F5, lead ruling):** no G item (wg* or g*) starts when the hold's elapsed time + 240 s (150 s
-  GESTURE_BUDGET_S + 90 s end gate) > 900 s. A late item skips the rest of the hold, parks Safari and exits 7 (HOLD VOID
-  "time"); the hold is then re-run whole. H5 is split in two so no hold comes near it.
+- **Time guard (F5, lead ruling; resized after mgmt-ops-10's N1 on 551a80f1):** each item runs inside the runner's
+  600 s chrome-measure hold, and gesture-run refuses a G run with less than GESTURE_BUDGET_S (150 s) left in that hold.
+  So no G item (wg* or g*) starts when the hold's elapsed time + 180 s (150 s + 30 s for the time before T0, the
+  served-hash check and the open) > 600 s, i.e. after 420 s. A late item skips the rest of the hold, parks Safari and
+  exits 7 (HOLD VOID "time"); the hold is then re-run whole. The end gate may then run the hold past 600 s (OVERDUE,
+  nothing is killed). The ~10 min estimates for H3a/H4a put their last G item at about 375-400 s, so the guard should
+  not fire in a normal hold, **but the margin is thin** (20-45 s); H5 is split in two so it stays well inside.
 
 **Dry run (F-256; Simulator, COUNTS ONLY, `sim.mjs gesture --count-only`, uncounted; out/p122/sim, out/p122/split).**
 Settled y after each stroke (OBSERVED, Simulator, host load1 up to 176; cause unknown). These runs are on step 4 and on
@@ -898,7 +941,7 @@ checkout: int-v8's worktree; hold122.sh prints one PIN line per hold (ticket, pr
   X 21aaafd3a9fd, S 7312cdcd2574, R 92bcef2b02df; selftest122 checks PROG_R's value). Any other value voids that hold.
   hold122.sh, score.mjs and selftest122.mjs = the blobs of the registering commit.
 holds (each inside the runner's exclusive no-timing chrome-measure hold, max 600 s; GESTURE_BUDGET_S 150 per G run;
-  every G item with --inject flicker-inject.mjs; time guard: no G item starts after elapsed 660 s, else VOID "time",
+  every G item with --inject flicker-inject.mjs; time guard: no G item starts after elapsed 420 s, else VOID "time",
   exit 7, re-run whole):
   part M  H3a sCo wgMC wgMV gMC1 gMV1 gMV2 sCc · H3b sCo gMC2 gMC3 gMV3 sCc
   part X  H4a sCo wgXC wgXV gXC1 gXV1 gXV2 sCc · H4b sCo gXC2 gXC3 gXV3 sCc
@@ -921,8 +964,8 @@ scorer: fixes/v9-best/phone/p122/score.mjs (imports P-120's score.mjs and P-121'
   FLICKER (G1 only, above). BEHAVIOUR: the parity above (M's first page-up fling, X's first into1 stroke; median > 300
   px AND >= 2 of 3 pairs; path-voided runs included). R report only: per ret stroke p at lift, lowest p, returned to
   the open end with no finger down and the delay (finger-returns.mjs's rule).
-  Self-test: selftest122.mjs (SELFTEST-122 OK 54: parity cases incl. 2 of 3 pairs, 1 of 3, clipped end, next stroke,
-  < 2 pairs; flicker G1-only cases; the late() boundary at 660 / 661 s; PROG_R).
+  Self-test: selftest122.mjs (SELFTEST-122 OK 55: parity cases incl. 2 of 3 pairs, 1 of 3, clipped end, next stroke,
+  < 2 pairs; flicker G1-only cases; the late() boundary at 420 / 421 s; part R C items refused by score.mjs; PROG_R).
 verdict: BEHAVIOUR FAIL (own line, leads the block verdict) if the parity counts; frames: WORSE if any gate is WORSE or
   has a NEW cluster; else insufficient if any is; else no-worse. BEHAVIOUR FAIL or WORSE -> int-v8 splits by the
   reversal builds and reports to the lead and the owners.
@@ -940,4 +983,10 @@ predictions (int-v8, before phone data, after the split and the Simulator confir
   - Overall: no-worse 0.45, insufficient 0.30, WORSE or BEHAVIOUR FAIL 0.25.
 minutes: ~60 (7 holds: H3a ~10, H3b ~7, H4a ~10, H4b ~7, H5a ~8, H5b ~7, H6 ~8; gates included; no pre-warm; the
   runner's gaps between holds extra).
+open items:
+  - page-end rest work (OBSERVED, Chrome census, counts only; "Page-end rest split" above): resting at v9's page end
+    runs 27-60 main frames/s vs v8's 0-0.2 at its page end. Rev 7c brings it (S in, M out) by making the page end the
+    open end; the work is the morph panel's clock (1/s tick + the original rAF digit spring, 29-37/s), the same work v8
+    runs whenever its panel is open (A-open 31.8/s). The 60 level (3 of 7 rev 7c loads) is unexplained. It does not block
+    this behaviour check; it blocks landing v9 until it is explained or removed (lead). Scoped fix candidate: P-097.
 ```
