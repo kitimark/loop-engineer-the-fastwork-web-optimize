@@ -109,6 +109,25 @@ thresholds" and "Platform claims", memory `less-work-landing-rule`, `illusion-mu
   paste verbatim; your verdict goes to the owner and the lead by SendMessage. Time labels from `date -u`.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~15:4xZ **P-142 SIGNED by the lead with N1-N7.** Rulings: U2 is not T0 (mobile diffs 6/23 css px² seen); U2 and nf gate on the PR-010 T2 numbers (fill 64, edge 128, 0.5 %); pw pass = word hunk byte-identical to Try-it B, 0 px outside the word band at rest, functional probe equal; part 1 host clause load1 > 200 = VOID-HOST, one re-run; no part 1 run before rebase, delta check and all component gates. Pre-data read (ops-reader-P142) pasted in the entry below; int-v8 rebases, then an ops delta check.
+- 10-05 15:3xZ **P-142 pre-data read: PASS with notes N1-N7 (ops-reader-P142).** int-v8 card 58269015 (branch worktree-agent-a068af37646232e05).
+  Checked:
+  - Strict git apply (no fuzz) from site-pretty reproduces V 6468db04395c / 1c4161f56545, F 647c9ef2b1e2 / e1359ab9994a (@8b5ce9b3 4196eaa61d96), B 941aa13e5bdf / f1997edf5309 and C 1b2eecc66011.
+  - All 6 orders of pw, nhc and nf give V. Mpw, Mnhc and Mnf are each v9.2 minus one, equal to B plus the other two. V minus all = B.
+  - u2-delta-on-v91d 8b5206c8b206 gives the same db0bc2262f02 on B. nf's delta f41d2854aa90 is the same at f4c2fa0d and 31718fc9.
+  - The kit is the same on disk and at HEAD; the nf copies equal nav-fade's files at 31718fc9.
+  - score142 wraps P-122's scorer d1dddb910cd9 unchanged, and its imports are pinned. SELFTEST-142 OK 44.
+  - No P-142 data. The sim smoke runs on arm C only (smoke.json).
+  - No tolerance comes from one A/A pair. CPU 1x is the same everywhere.
+  Notes:
+  - N1: the branch is 67 commits behind main and tools differ (I-202 to I-210). Rebase, then a delta check of steps 1-4.
+  - N2: the pixel pass lines are not stated. The U2 T0 metric is undefined, and the mobile U2 run (15:26:45Z, before the card) shows consistent diffs of 6 and 23 css px2 at y 2120 and y 6278, so the definition is informed and the lead rules on it. For nf T2, the card says "its numbers" while the lead's rule says PR-010. pw against Try-it B has no rule.
+  - N3: part 1 waits for every component gate. The gate runners are uncommitted scratch scripts; record their hashes.
+  - N4: part 1 has no host clause.
+  - N5: the build command lacks --with pw,nhc,nf (the default would include hp).
+  - N6: record folders, re-run replacement and the precedence of a FAIL plus an insufficient.
+  - N7: informed labels.
+  Next: the lead rules on N2 and N4 and signs; int-v8 rebases; then an ops delta check.
 - 10-05 ~15:3xZ **P-144 SIGNED by the lead with N1-N7 as conditions.** N1-N3 are written rules in a README-only rev 1.1 (no code guards, no re-pin; the result reader enforces them); the lead checks rev 1.1 is README-only before the dry run; N4: the owner names the Timeline file read by tltypes/tlnest and labels informed items. Pre-data read (ops-reader-P144) pasted in the entry below.
 - 10-05 15:31Z **P-144 pre-data read: PASS with notes N1-N7 (ops-reader-P144).** Owner HEAD 46afb577 (worktree-agent-a79a177eb14781f17, on main 598d9efa). Pins equal on disk and at HEAD; tools/tests/package.json equal main; no simp144/dry144 data; SELFTEST ok 87 checks; the host rule equals P-141 rev 1.1. pic + tit = nob was checked selector by selector and declaration by declaration; tit covers the ::after sweep band (F-290); the dry run is count-only (no Timeline); M2's switch is mechanical. Conditions: N1 the plan comes from the committed dry.json, one plan's full hold set, never mixed; N2 a budget-dropped step = HOLD-FAIL; N3 precedence for DRY FAIL/budget FAIL (P1 miss, rest insufficient), plan F (P1 miss), a stopped card (INCOMPLETE), all holds VOID (read as VOID, not the scorer's CONTROL-FAILED; P5 miss) and READ with an INSUFFICIENT reading (P5 miss); N4 informed labels add research/image-cost section 0 and name the Timeline files of the owner's tltypes/tlnest scratch reads. Text only: N5 the chooseMetric comment, N6 tit removes the gradient paint only, N7 the rebase sha. If README text only, no re-pin; code guards need a delta check. Sent to fix-end-bg; the lead signs.
 - 10-05 ~15:1xZ **P-144 reserved for fix-end-bg** (mgmt-clerk-1; the owner asked, lead ruling on F-289 as stated by the owner): a Simulator Timeline paint-duration attribution card for the end screen. Arms C, pictures-off, titles-off, nobg as the positive control, plus an A/A C2 pair; 3 normal exclusive holds of 5 steps; base v9-final + 7d (JS 1b2eecc66011, CSS e1359ab9994a). Registered before data; the lead's Opus pre-data read comes before any run. Next free P-id: P-145.
