@@ -2311,7 +2311,7 @@ lead's signature. No run before the signature. The files keep the prefix `pgp-` 
   | `nvn` | every sticky renderer → relative; the fixed ones stay | do the fixed renderers alone (R2: simplified path) keep the step Layout? | changed; mechanism only |
   | `tps` | `.hero-track { contain: size layout }` with the hero still sticky; every other sticky → relative | is a boundary above the sticky hero as good as removing its stickiness (compare nvn)? | the other stickies change; mechanism only. A look-safe form needs its own card |
   | `tp` | `.hero-track` and `section.pain` get `contain: size layout`; pain also gets `contain-intrinsic-block-size: <measured px>`; no position change | the shippable shape (trk+pbx): boundaries above the hero and pain stickies; #platform's sticky and the fixed nav stay | look-safe by design; pixel check first if it locates |
-  | `vu0` | vh/svh/lvh layout values of the big subtrees pinned to their own computed px at load (12 declarations; dvh users left) | the cheap closer for the viewport-unit half | identical in portrait (these units do not move with the toolbar); pixel check first if it locates |
+  | `vu0` | vh/svh/lvh layout values of the big subtrees pinned to their own computed px at load (12 declarations; dvh users left) | the cheap closer for the viewport-unit half | expected identical in portrait: svh/lvh are static by definition (CONFIRMED, CSS Values 4 §6.1.2 viewport variants: small and large viewport sizes do not change with UA interfaces); default `vh` staying fixed while the iOS toolbar moves is OBSERVED in our setup (P-115, P-123; WebKit S4 only shows vh comes from a separate override than dvh, no reference cited); the pixel check decides the look, first if it locates |
 
   - **Coverage.** nvc, nvn and tps cover every viewport-constrained renderer the census finds, not only the listed
     selectors. Any renderer still found after the rule gets an inline `!important` position and is listed in `extra`.
@@ -2410,6 +2410,10 @@ lead's signature. No run before the signature. The files keep the prefix `pgp-` 
   | 8 | no arm GEOMETRY | 85 % |
   | 9 | every run passes the applied-arm gate | 80 % |
   | 10 | all 10 steps fit in one hold | 70 % |
+
+  Scoring note (ops' pre-data read S2, before data; no prediction changed): if one of the two tps runs fails the
+  applied-arm gate, P4 and P5 use the one valid tps run's ratio; with no valid tps run, P4 and P5 are not scored
+  (P9 still counts the failure).
 
 - **Pins** (sha256/12):
   - inject `pgp-inject.mjs` `2cfd9c00b9f1`;
