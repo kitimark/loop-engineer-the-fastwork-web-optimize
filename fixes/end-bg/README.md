@@ -539,6 +539,10 @@ every exit 0, no VOID-HOST, no dropped step, every check HOLD-OK (`sim/p144-chec
   P1 hit (DRY PASS, plan E). P2 hit (all holds pass the n check, n 100-137). P3 hit (C replicates on M1). P4 miss.
   P5 miss. P6-P8 insufficient. P9 hit (C2 NONE in both runs: 1.012, 0.957). P10 hit (no GEOMETRY). P11 hit (every run
   applied). P12 hit (no VOID-HOST). 7 hits, 2 misses, 3 insufficient.
+- **Official read and lead ruling.** ops-reader-P144r (2026-10-05 17:00Z): CONFIRMED with notes N1-N4 (pins, dry run
+  before E1, check and score re-run deep-equal, M2 switch applied correctly). Lead ruling on N1: P9 is **insufficient**,
+  not a hit (no hold was read, so the per-run C2 calls score nothing). Final tally: **6 hits, 2 misses, 4
+  insufficient.** N2: P4 and P5 are two misses on one model (the Simulator's Paint time should see nobg); it did not.
 - **Mechanism note (OBSERVED in our setup, cause unknown):** WebKit Timeline Paint records on the WebContent side sum to
   about 0.5 ms per band frame in every arm; the frame's Composite is about 15-24 ms. The pre-named risk (picture raster
   outside the main thread's recorded Paint) fits this, but nothing here confirms it.
