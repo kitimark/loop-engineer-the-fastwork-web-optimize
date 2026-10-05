@@ -409,3 +409,72 @@ scored. A2 adds post-H1-look values beside them, not blind (written after the fl
 | overall no-worse / insufficient / WORSE | 0.60 / 0.10 / 0.30 | 0.25 / 0.10 / 0.65 (written before the G ruling; P-120 can now only be insufficient or WORSE) |
 
 If WORSE: the ticket's split by reversal builds, rev 7c first.
+
+## P-121: path-matched G driver (DRAFT for the pre-data read; written AFTER H3a2's G records were seen)
+
+**Disclosure.** P-121 was written after H3a2 (P-120's G hold, 2026-10-04 23:49-23:56Z) was seen. Those records showed
+that flick-middle-v1 takes different paths on the two arms. Settled y after each fling (OBSERVED, from the records'
+`untils`):
+- C gMC1: 1995, 5220, 1738, 5220, 1702, 5184, 1649.
+- V gMV1: 2011, 6035, 5240, 6035, 5240, 6035, 5241 (gMV2 the same).
+
+| H3a2 run | part-M window | moving frames | traversals of [2200, 3800] |
+|---|---|---|---|
+| C gMC1 | 27.0 s | 957 | 6 |
+| V gMV1 / gMV2 | 13.2 / 13.3 s | 225 / 222 | 1 / 1 |
+
+P-111's 12 G records (v8 vs v7) all cover their paths: part M has 6 traversals in 25.0-27.6 s with 766-903 moving
+frames, and part E has 3 traversals in 16.2-17.5 s. The lead ruled P-121 a new ticket, not an amendment to P-120
+(P-120 closed INSUFFICIENT). P-122 (v9 step 4 rebuilt with rev 7d, vs v8) uses it for its G legs.
+
+**Fling speed (OBSERVED, F-258; replay only, no new run).** The page's own `__msFv` (rev 7c/7d JS
+14290-14300) was replayed on the G records' touch logs. v1's "fling" stroke (560 px / 140 ms, nominal lift-off
+6.6 px/ms) lifts off at 3.0-7.4 px/ms (close direction −3.2 to −6.3). This straddles rev 7d's first rule
+(Fv ≤ −5). rev 7d's rule is now Fv ≤ −5 OR finger travel ≥ 300 px since touchstart (fix-hero-exit-threaded, from
+this replay; not final). All P-121 thresholds come from rev 7d's final rule, registered with P-122.
+
+**Scripts** (`phone/p121/`). The parameters are placeholders until the calibration picks and pins them:
+- `flick-middle-v2.json` (part M, items gM): flick-middle-v1's structure with weaker flings, calibrated to travel
+  about 2000-2500 px. Each fling swings over the middle (about 1900 to 4200), so it reaches neither v8's end (5220)
+  nor v9's end screen. Even on rev 7d, v1's up-fling would reach V's open end (6035) but v8's 5220.
+- `flick-end-v2.json` (part E), variant `speed`:
+  - **fast** (items gEf): long out-flings (560 px of finger travel, the fastest lift-off the compiler allows) that
+    rev 7d's rule releases.
+  - **slow** (items gEs): short out-flings (under 300 px of travel, Fv well inside the threshold) that rev 7d catches
+    at the closed rest, like the user's own closes (74-255 px).
+  - Into-flings run until `atEnd`, so each arm starts at its own end.
+
+**Gates per run** (`phone/p121/gate.mjs`). A failing run is VOID and not scored. Next to the gate counts, every
+result reports: window length, moving frames, max y, maxScroll, fling settle ys, and each flick's Fv and travel.
+- **gM:** at least 5 traversals of [2200, 3800], and max y < 5000 in both arms. A run that reaches either end is VOID.
+- **gEf:** for each out-fling (marks out1, out2):
+  - the out stroke must meet the release rule (Fv ≤ −fv OR travel ≥ travel), else VOID "not released by the rule";
+  - the fling must leave the end: maxScroll − min y until the next mark ≥ 1600 px, else VOID "path not covered";
+  - a stroke within 0.5 px/ms or 20 px of either line is flagged near-line.
+  - gEf is gated no-worse like P-111's GE: dt > 50, median difference ≤ 2, with the twins.
+- **gEs:** each out stroke must meet neither condition, with those margins, else VOID "too fast for the slow item".
+  - On V an absolute ceiling applies: dt > 50 = 0 in the part window. The ±4 ms twins (> 46, > 54) are reported, and
+    frames in (46, 54] are flagged. A hitch inside V's own smooth scrollTo to the closed rest is user-visible.
+  - Otherwise gEs is report-only (per arm: counts, window, moving frames, settle y, Fv, travel). The paths differ by
+    design: V catches, C travels on.
+
+**Self-test** (`phone/p121/selftest-g.mjs`, SELFTEST-G OK 36):
+1. The Fv replay matches the page's formula on hand-made touches.
+2. H3a2's V gMV1/gMV2 VOID on traversals (1) and max y (6035). H3a2's C gMC1 and P-111's six part-M records cover
+   the band (≥ 5 traversals) but VOID on max y ≥ 5000 (v1 reaches v8's end, which is why v2 exists). A synthetic
+   mid-page copy passes.
+3. P-111's six part-E records pass gEf (released by travel 560, leave the end by 3342-3672 px). A synthetic caught
+   copy VOIDs, and so does a rule they don't meet.
+4. The same records VOID as gEs ("too fast"); a synthetic short stroke passes. A near-line stroke (Fv −5.37) is flagged.
+
+**Calibration** (lead OK; mechanism only, uncounted, disclosed; baseline B only, never an arm):
+- **(a) Simulator.** A sweep in int-v8's own normal hold (`sim.mjs gesture` is refused in functional sessions): the
+  middle travel versus flingPx/flingMs, plus the gEf/gEs out-strokes' Fv and travel.
+- **(b) Phone.** One uncounted calibration hold (slot via mgmt-devices, no-timing, the thermal gate at its start).
+  The Simulator samples touches every 17 ms against the phone's 9 ms, so Fv does not transfer.
+- The chosen parameters are pinned in this README and the scripts before any P-122 hold.
+
+**Items, order, pre-data read.**
+- Fresh C V V C holds: gM ×6, gEf ×6, gEs ×4. H3a2 is disclosed as seen above.
+- Per F-256 (LEAD.md "Slot tickets"), P-122's pre-data read includes a Simulator dry run per arm, on the rev 7d
+  arm once it exists, showing the same start state and gesture path for M (cycles 4) and G (v2 scripts).

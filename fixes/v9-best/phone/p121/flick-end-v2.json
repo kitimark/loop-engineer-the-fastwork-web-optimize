@@ -1,0 +1,45 @@
+{
+  "name": "flick-end-v2",
+  "version": 2,
+  "screen": [430, 932],
+  "about": "P-121 part E (path-matched, written after H3a2): approach to y >= 3400 with still strokes, rest, fling into the page end (until atEnd: v8's end, v9's open end screen), then one out-fling, twice. Variant speed=fast: a long out-fling (outFastPx >= 300 px finger travel, the fastest fling the compiler allows) that rev 7d's final rule releases; speed=slow: a short out-fling (outSlowPx < 300 px, Fv well inside the threshold) that rev 7d catches at the closed rest, like the user's own closes (74-255 px). Out-stroke parameters are placeholders until the calibration on baseline B picks and pins them.",
+  "params": { "x": 215, "speed": "fast", "flingPx": 560, "flingMs": 140, "gapMs": 350, "outFastPx": 560, "outFastMs": 130, "outSlowPx": 180, "outSlowMs": 120 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": 2000 },
+    { "type": "mark", "name": "approach" },
+    { "type": "repeat", "times": 12, "until": "y>=3400", "steps": [
+      { "type": "stroke", "dir": "up", "px": 520, "ms": 600, "profile": "still" },
+      { "type": "pause", "ms": 150 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+    { "type": "pause", "ms": 1500 },
+    { "type": "mark", "name": "into1" },
+    { "type": "repeat", "times": 4, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 800 },
+    { "type": "mark", "name": "out1" },
+    { "type": "stroke", "dir": "down", "px": "$outFastPx", "ms": "$outFastMs", "profile": "fling", "when": { "speed": "fast" } },
+    { "type": "stroke", "dir": "down", "px": "$outSlowPx", "ms": "$outSlowMs", "profile": "fling", "when": { "speed": "slow" } },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 800 },
+    { "type": "mark", "name": "into2" },
+    { "type": "repeat", "times": 4, "until": "atEnd", "steps": [
+      { "type": "stroke", "dir": "up", "px": "$flingPx", "ms": "$flingMs", "profile": "fling" },
+      { "type": "pause", "ms": "$gapMs" }
+    ] },
+    { "type": "until", "cond": "atEnd", "timeoutMs": 6000 },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "pause", "ms": 800 },
+    { "type": "mark", "name": "out2" },
+    { "type": "stroke", "dir": "down", "px": "$outFastPx", "ms": "$outFastMs", "profile": "fling", "when": { "speed": "fast" } },
+    { "type": "stroke", "dir": "down", "px": "$outSlowPx", "ms": "$outSlowMs", "profile": "fling", "when": { "speed": "slow" } },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "mark", "name": "end" },
+    { "type": "pause", "ms": 1000 }
+  ]
+}
