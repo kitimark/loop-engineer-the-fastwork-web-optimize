@@ -1,0 +1,50 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 04:17:05
++++ b/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 05:02:39
+@@ -14190,6 +14190,8 @@
+       // the edges: they were measured mid-move, e.g. the future card's reveal). Replaces N12 v5's 1 s re-test timer.
+       __nsTr = new Map(),
+       __nsTail = 0,
++      // perf(nav-hit-cache U2): _() deferred its test to __msTick this frame (the morph is open)
++      __nsMsPend = !1,
+       __nsTrSel = `.hero-track, .hero, .commission, .start-selling-future, .start-selling-platform, .pain`,
+       // paint-only properties never move a hit-test box (opacity-0 boxes still hit); everything else counts
+       __nsPaint =
+@@ -14294,6 +14296,12 @@
+         // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
+         let __h =
+           __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
++        // perf(nav-hit-cache U2, F-278): while the morph is open on touch phones (__msEnd is set only there), L runs
++        // __msTick right after this and writes the new morph value. A test here sees the panel at the last value and is
++        // never the answer that shows: at m <= 0.2 __msTick tests again after its write (one test, not two), above 0.2
++        // the class is dark whatever g is (is-on-dark = g || m > 0.2). So defer it to __msTick, and force the first
++        // frame after the morph closes.
++        __h && __msEnd && C() && ((__h = !1), (__nsMsPend = !0), (__nsForce = !0));
+         (__nsTail > 0 && __nsTail--,
+           // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
+           __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
+@@ -14312,7 +14320,8 @@
+         let e = y();
+         if (!e) return;
+         let t = QM(r);
+-        (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
++        // perf(end-morph F1): fully faded (opacity 0), #platform is hidden, so a toolbar step can't repaint its layers
++        (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``), (e.style.visibility = t <= 0 ? `hidden` : ``));
+       },
+       C = () => w > 0.001 || r > 0.001,
+       // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
+@@ -14475,8 +14484,13 @@
+           e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+-        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
+-          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
++        // nav-hit-cache U2: also when _() deferred its test to here this frame and the value did not change. The test is
++        // keyed on r, the value that shows (x), not e: after __navMorphSet(e) r is e, and when e did not change r is
++        // what x holds (also when the spring T drives x, e.g. the debug morph driver).
++        let __c = ((e = e > 0 ? (e < 1 ? e : 1) : 0), e !== __msP);
++        (__c && ((__msP = e), __navMorphSet(e)),
++          (__c || __nsMsPend) && r <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0))),
++          (__nsMsPend = !1));
+       },
+       // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
+       __navMorphSet = (t) => {
