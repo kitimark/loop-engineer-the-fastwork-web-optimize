@@ -1,11 +1,11 @@
 #!/bin/sh
 # P-142 part 1 (counts, no timing; fixes/v9-2/README.md "P-142"): Chrome census, the NF-C nav reveal band, the Simulator
-# whole-page census. C = F = v9-final, V = v9.2, Mnf = v9.2 - nav-fade; arms from out/v92/snap-6468db04395c (HASHES.txt
+# whole-page census. C = F = v9-final, V = v9.2, Mnf = v9.2 - nav-fade; arms from out/v92/snap-30f6371751f4 (HASHES.txt
 # checked here and served hashes checked by every probe). Each step is its own shared hold (<= 300 s; one queue entry at a
 # time). Committed before any part 1 data; runs only after the lead's sign and the pre-data read. Log out/v92/part1.log.
 #   sh fixes/v9-2/part1.sh            (in the background)
 cd "$(dirname "$0")/../.." || exit 2
-S=out/v92/snap-6468db04395c
+S=out/v92/snap-30f6371751f4
 L=out/v92/part1.log
 mkdir -p out/v92/sim
 (cd $S && shasum -a 256 -c --quiet HASHES.txt) || { echo "SNAPSHOT CHANGED: refuse" >> $L; exit 3; }

@@ -5,9 +5,9 @@
 #   B = the plain baseline (no overlay): the thermal gate's timer page; no counted run on it
 #   C = v9-final as landed (8b5ce9b3; fixes/v9-best/patch.diff 4196eaa61d96, build.mjs V9F / V9_EXPECT)
 #                                                  (JS 647c9ef2b1e2, CSS e1359ab9994a), copy out/p142/snap/C
-#   V = v9.2 = v9.1d + people-word a + nav-hit-cache U2 + nav-fade (build.mjs --target v92, V92_EXPECT)
-#                                                  (JS 6468db04395c, CSS 1c4161f56545), copy out/p142/snap/V
-#   Sources: out/v92/snap-6468db04395c/{F,V}, written by fixes/v9-best/build.mjs --target v92 (F is checked = the landed
+#   V = v9.2 = v9.1d + people-word a + nav-fade (build.mjs --target v92 --with pw,nf, V92_EXPECT; rev 1.2, U2 OUT)
+#                                                  (JS 30f6371751f4, CSS 1c4161f56545), copy out/p142/snap/V
+#   Sources: out/v92/snap-30f6371751f4/{F,V}, written by fixes/v9-best/build.mjs --target v92 (F is checked = the landed
 #   v9-final patch on the baseline byte for byte; V = the pinned V92_EXPECT; all orders give the same bytes).
 # Usage: sh fixes/v9-2/phone/serve142.sh snap    copy the source once; refuses if out/p142/snap exists or a hash differs
 #        sh fixes/v9-2/phone/serve142.sh         start B C V, check the copies and the served hashes, print ports
@@ -16,13 +16,13 @@
 # Phone URLs are for the runner's terminal only (tools/lan.mjs); never copy them into a committed file.
 cd "$(dirname "$0")/../../.." || exit 2
 S=out/p142/snap
-SRCC=out/v92/snap-6468db04395c/F; SRCV=out/v92/snap-6468db04395c/V
+SRCC=out/v92/snap-30f6371751f4/F; SRCV=out/v92/snap-30f6371751f4/V
 OWNER=${FW_AGENT:-int-v8}
 JS=_app/immutable/nodes/2.DyWL8TcE.js
 CSS=_app/immutable/assets/2.gBuqKVzi.css
 CJ=647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2
 CC=e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba
-VJ=6468db04395c4e1da39a5f247804b98e746bb40f12b383c708f902d968128bc9
+VJ=30f6371751f4a83029629484b791a53c4231bec57565c80bfea9e0e42f1c5794
 VC=1c4161f56545d955d8eb99960530fb1d541dd386bbe0cc746308409d4057d1c4
 if [ "$1" = snap ]; then
   [ -e $S ] && { echo "$S exists: refuse (immutable)"; exit 3; }
@@ -62,7 +62,7 @@ for A in B C V; do
   J=$(curl -s http://localhost:$P/$JS | shasum -a 256 | cut -c1-12)
   C=$(curl -s http://localhost:$P/$CSS | shasum -a 256 | cut -c1-12)
   case "$A:$J:$C" in
-    B:4606120cf392:27776f3d4138|C:647c9ef2b1e2:e1359ab9994a|V:6468db04395c:1c4161f56545) ok=ok ;;
+    B:4606120cf392:27776f3d4138|C:647c9ef2b1e2:e1359ab9994a|V:30f6371751f4:1c4161f56545) ok=ok ;;
     *) ok=WRONG; bad=1 ;;
   esac
   echo "$A pid $(cat $S/serve-$A.pid) port $P served JS $J CSS $C $ok"

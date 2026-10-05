@@ -12,7 +12,7 @@
 // Run (shared lane, functional session; counts only):
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner int-v8 -- \
 //     node tools/sim.mjs session --functional --owner int-v8 -- node fixes/v9-2/sim92.mjs <records.json> F:1 V:1 F:2
-// SNAP: env P142_SNAP (default out/v92/snap-6468db04395c).
+// SNAP: env P142_SNAP (default out/v92/snap-30f6371751f4).
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -23,7 +23,7 @@ const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 const [outPath, ...order] = process.argv.slice(2);
 if (!outPath || !order.length) { console.error('usage: sim92.mjs <records.json> ARM:rep ...'); process.exit(2); }
-const SNAP = join(WT, process.env.P142_SNAP || 'out/v92/snap-6468db04395c');
+const SNAP = join(WT, process.env.P142_SNAP || 'out/v92/snap-30f6371751f4');
 const JS = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const HX = Object.fromEntries(readFileSync(join(SNAP, 'HASHES.txt'), 'utf8').trim().split('\n').map((l) => l.split(/\s+/)).map(([h, p]) => [p, h.slice(0, 12)]));
 const SETTLE = 3000, WIN = 6000, STEP = 24;

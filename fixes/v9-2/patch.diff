@@ -25,13 +25,10 @@
        },
        S = (e, t, r, a, o) =>
          new Promise((s) => {
-@@ -2456,6 +2458,39 @@
-               }
-               let s = Math.min(1, (i - u) / a);
-               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
-+            };
-+          n = window.requestAnimationFrame(d);
-+        }),
+@@ -2459,6 +2461,39 @@
+             };
+           n = window.requestAnimationFrame(d);
+         }),
 +      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
 +      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
 +      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
@@ -62,9 +59,12 @@
 +                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
 +                  }, w))
 +                : (n = window.requestAnimationFrame(d));
-             };
-           n = window.requestAnimationFrame(d);
-         }),
++            };
++          n = window.requestAnimationFrame(d);
++        }),
+       E = async (e) => (
+         z(y, !0),
+         z(v, !1),
 @@ -2486,7 +2521,7 @@
              (z(b, e, !0), z(C, e / 100));
            })) ||
@@ -83,10 +83,11 @@
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2671,8 +2706,57 @@
+@@ -2670,9 +2705,58 @@
+ function iE() {
    tE = 0;
    for (let e of $T) e.active && e.callback();
- }
++}
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -126,7 +127,7 @@
 +  );
 +  for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
 +    e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
-+}
+ }
 +function fwBoot() {
 +  if (fwBooted) return;
 +  fwBooted = !0;
@@ -160,7 +161,7 @@
            }
          });
        }));
-@@ -2710,8 +2794,91 @@
+@@ -2710,7 +2794,90 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -173,7 +174,7 @@
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
- }
++}
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -249,10 +250,9 @@
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
-+}
+ }
  function lE(e) {
    let t = e.getBoundingClientRect();
-   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2923,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -478,7 +478,7 @@
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,10 +4077,49 @@
+@@ -3782,9 +4077,48 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -490,7 +490,7 @@
      }),
      f(t, d),
      H());
- }
++}
 +function HEflip(d, dw) {
 +  if (typeof d.animate != `function`) return;
 +  // html[dir=rtl]: .hero-title is row-reverse inside `.start-selling { direction: ltr }`, so the previous
@@ -524,10 +524,9 @@
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
-+}
+ }
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
- function GE(e, t, n, r = UE) {
 @@ -3815,8 +4149,148 @@
    return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
  }
@@ -912,7 +911,7 @@
      d = R(() => s(o).waitlist.units),
      p = R(
        () =>
-@@ -3933,13 +4559,33 @@
+@@ -3933,14 +4559,34 @@
        z(c, Date.now(), !0);
      };
      e();
@@ -941,13 +940,14 @@
 +          document.removeEventListener(`visibilitychange`, e));
        }
      );
-+  });
+   });
 +  /*countdown-faces: stop the interval when the clock goes out of sight, restart it at its phase when it comes back*/
 +  b(() => {
 +    s(__cdLive) ? __cdGo() : __cdPause();
-   });
++  });
    var h = sD();
    let g;
+   (_(
 @@ -3958,6 +4604,12 @@
                return s(u)[i];
              },
@@ -1217,7 +1217,7 @@
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5520,28 @@
+@@ -4689,12 +5520,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
@@ -1234,7 +1234,7 @@
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1246,9 +1246,10 @@
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5574,15 @@
          ((O = null), z(E, null));
        },
@@ -1295,7 +1296,7 @@
        i = () => {
          for (let e of n.splice(0)) window.clearTimeout(e);
          if ((z(v, null), (w = null), e)) {
-@@ -6235,40 +7104,62 @@
+@@ -6235,29 +7104,49 @@
          }
          (z(h, !1), z(g, !1));
        },
@@ -1329,15 +1330,15 @@
 -                ));
 -            }, 1300),
 -          );
+-        }
+-      },
 +          if (fwCard) {
 +            fwFull && fwPlay();
 +            return;
 +          }
 +          n.push(window.setTimeout(fwPlay, 1300));
-         }
-       },
--      o = new IntersectionObserver(
--        ([e]) => {
++        }
++      },
 +      // the card's fade-in has ended (or the fallback fired): play now if the heading is in view, else on its enter
 +      fwDone = () => {
 +        if ((window.clearTimeout(fwFb), (fwFb = 0), fwFull || !fwShown())) return;
@@ -1360,11 +1361,10 @@
 +          }
 +          (window.clearTimeout(fwFb), (fwFb = 0), (fwFull = !1), r && !e && !u() && i());
 +        }),
-+      o = new IntersectionObserver(
-+        ([e]) => {
+       o = new IntersectionObserver(
+         ([e]) => {
            let t = !!e?.isIntersecting;
-           (t && !r && a(), !t && r && i(), (r = t));
-         },
+@@ -6266,9 +7155,11 @@
          { threshold: 0.35 },
        );
      t && o.observe(t);
@@ -1707,12 +1707,13 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
+-      (l(
+-        (e, t, s, c, l) => {
+-          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
 +      /* st5: the 5 slots stay mounted for the page's life; x+1 updates src in place and S toggles
 +         .is-sliding on the carousel (the slide runs on permanently layered imgs, see CSS), so neither
 +         tick inserts/removes renderers or gains/loses layers */
-       (l(
--        (e, t, s, c, l) => {
--          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
++      (l(
 +        (a0, a1, a2, a3, a4, sl) => {
 +          (k(n, `src`, a0), k(r, `src`, a1), k(i, `src`, a2), k(a, `src`, a3), k(o, `src`, a4));
 +          me.classList.toggle(`is-sliding`, sl);
@@ -1978,13 +1979,13 @@
 +  // that shadows the component's bound nav element), so the effect reaches the nav through this function.
 +  function __navNode() {
 +    return T;
-   }
++  }
 +  // perf(nav-hit-test): cache the per-frame querySelector lookups (re-query when detached / missing)
 +  let __navEls = {};
 +  function __navEl(e) {
 +    let t = __navEls[e];
 +    return t?.isConnected ? t : (__navEls[e] = document.querySelector(e));
-+  }
+   }
 +  // nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button's original reveal and hide, drawn without layout.
 +  // The button and the gap before it keep their full size in the layout (CSS). When the button's state changes
 +  // (shown <-> hidden: the hero pill at the top, .is-earn-hidden at the end of the page), one Web Animation per
@@ -2084,7 +2085,7 @@
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12997,17 +14210,152 @@
+@@ -12997,17 +14210,144 @@
            (window.clearTimeout(l), f());
        };
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
@@ -2110,8 +2111,6 @@
 +      // the edges: they were measured mid-move, e.g. the future card's reveal). Replaces N12 v5's 1 s re-test timer.
 +      __nsTr = new Map(),
 +      __nsTail = 0,
-+      // perf(nav-hit-cache U2): _() deferred its test to __msTick this frame (the morph is open)
-+      __nsMsPend = !1,
 +      __nsTrSel = `.hero-track, .hero, .commission, .start-selling-future, .start-selling-platform, .pain`,
 +      // paint-only properties never move a hit-test box (opacity-0 boxes still hit); everything else counts
 +      __nsPaint =
@@ -2218,12 +2217,6 @@
 +        // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
 +        let __h =
 +          __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
-+        // perf(nav-hit-cache U2, F-278): while the morph is open on touch phones (__msEnd is set only there), L runs
-+        // __msTick right after this and writes the new morph value. A test here sees the panel at the last value and is
-+        // never the answer that shows: at m <= 0.2 __msTick tests again after its write (one test, not two), above 0.2
-+        // the class is dark whatever g is (is-on-dark = g || m > 0.2). So defer it to __msTick, and force the first
-+        // frame after the morph closes.
-+        __h && __msEnd && C() && ((__h = !1), (__nsMsPend = !0), (__nsForce = !0));
 +        (__nsTail > 0 && __nsTail--,
 +          // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
 +          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
@@ -2243,7 +2236,7 @@
        },
        y = () => document.querySelector(`.start-selling-platform`),
        S = () => {
-@@ -13017,13 +14365,191 @@
+@@ -13017,13 +14357,186 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -2407,13 +2400,8 @@
 +          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
 +        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
 +        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
-+        // nav-hit-cache U2: also when _() deferred its test to here this frame and the value did not change. The test is
-+        // keyed on r, the value that shows (x), not e: after __navMorphSet(e) r is e, and when e did not change r is
-+        // what x holds (also when the spring T drives x, e.g. the debug morph driver).
-+        let __c = ((e = e > 0 ? (e < 1 ? e : 1) : 0), e !== __msP);
-+        (__c && ((__msP = e), __navMorphSet(e)),
-+          (__c || __nsMsPend) && r <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0))),
-+          (__nsMsPend = !1));
++        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
++          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
 +      },
 +      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
 +      __navMorphSet = (t) => {
@@ -2437,7 +2425,7 @@
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14571,9 @@
+@@ -13045,9 +14558,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -2449,7 +2437,7 @@
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14581,58 @@
+@@ -13055,27 +14568,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -2515,7 +2503,7 @@
        },
        R = y(),
        te = R
-@@ -13086,7 +14643,77 @@
+@@ -13086,7 +14630,77 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -2594,7 +2582,7 @@
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,10 +14722,59 @@
+@@ -13095,10 +14709,59 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -2655,7 +2643,7 @@
        }
      );
    });
-@@ -13116,12 +14792,32 @@
+@@ -13116,12 +14779,32 @@
      },
    });
    var oe = V(ae, 2),
@@ -2690,7 +2678,7 @@
        (_(
          u,
          21,
-@@ -13140,7 +14836,7 @@
+@@ -13140,7 +14823,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2699,7 +2687,7 @@
                }),
                  f(e, n));
              },
-@@ -13157,7 +14853,16 @@
+@@ -13157,7 +14840,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2717,7 +2705,7 @@
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14898,8 @@
+@@ -13193,7 +14885,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2727,7 +2715,7 @@
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14916,7 @@
+@@ -13210,7 +14903,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2736,7 +2724,7 @@
    }),
      M(I),
      P(
-@@ -13229,9 +14935,12 @@
+@@ -13229,9 +14922,12 @@
            "is-locale-open": s(y),
            "is-scroll-hidden": s(v) && !s(E),
            "is-profile-sticky-hidden": s(v) && !s(E),

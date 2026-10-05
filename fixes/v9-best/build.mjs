@@ -121,7 +121,7 @@ export const EXTRAS = [
 ];
 export const V9F = { patch: 'fixes/v9-best/patch.diff', rev: '8b5ce9b3', file: '4196eaa61d96', expect: V9_EXPECT };
 // v9.2 as pinned after its build (null: not pinned yet)
-export const V92_EXPECT = exp('6468db04395c', '1c4161f56545');   // pw + nhc + nf (lead 15:0xZ ruling: nf joins after ops-reader-navfade-b9 CONFIRMED 7720ea3a before P-142's sign); pw + nhc alone was 93028be4374f / f1997edf5309
+export const V92_EXPECT = exp('30f6371751f4', '1c4161f56545');   // P-142 rev 1.2: pw + nf, build with --with pw,nf (U2 OUT: T2 fail at y 2120, lead ~16:0xZ); rev 1.1 pinned pw + nhc + nf = 6468db04395c / 1c4161f56545, pw + nhc alone 93028be4374f / f1997edf5309
 const byKey = (k) => [...COMPONENTS, ...DROPPED, G11, MS7D].find((c) => c.key === k);
 const to7d = (c) => (c.key === 'ms7c' ? MS7D : !c.after && !c.on ? c : { ...c, after: c.after?.map((k) => (k === 'ms7c' ? 'ms7d' : k)), on: c.on?.map((k) => (k === 'ms7c' ? 'ms7d' : k)) });
 export const TARGETS = {

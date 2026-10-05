@@ -1,6 +1,6 @@
 #!/bin/sh
-# P-142 v9.2 phone no-worse check (C = v9-final as landed 8b5ce9b3; V = v9.2 = v9.1d + people-word a + nav-hit-cache U2
-# + nav-fade; fixes/v9-2/README.md "P-142"): one phone hold. A copy of P-134's fixes/v9-1d/phone/hold134.sh (itself
+# P-142 v9.2 phone no-worse check (C = v9-final as landed 8b5ce9b3; V = v9.2 = v9.1d + people-word a + nav-fade
+# (rev 1.2, U2 OUT); fixes/v9-2/README.md "P-142"): one phone hold. A copy of P-134's fixes/v9-1d/phone/hold134.sh (itself
 # P-132's / P-122's hold122.sh with the same gates, guards and item grammar) with the ticket, the folders, the labels
 # (p142-) and the servers (serve142.sh) changed, and one part added: G parts M, X, S as P-134 plus H (nav-fade's hero
 # flip, P-139's stand-in); part R stays dropped. Scripts:

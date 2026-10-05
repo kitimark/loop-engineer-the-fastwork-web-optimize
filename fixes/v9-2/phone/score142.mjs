@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // P-142 scorer (v9.2 phone no-worse check: C = v9-final as landed 8b5ce9b3 vs V = v9.2 = v9.1d + people-word a +
-// nav-hit-cache U2 + nav-fade; fixes/v9-2/README.md "P-142"). Written before any P-142 data. A wrapper:
+// nav-fade (rev 1.2: U2 OUT); fixes/v9-2/README.md "P-142"). Written before any P-142 data. A wrapper:
 //   parts M, X, S  every rule is P-122's scorer fixes/v9-best/phone/p122/score.mjs, imported unchanged and refused if
 //                  changed (pin below), as P-134's score134.mjs; only the arm pins differ:
 //                  GM (C vs V on part M, >= 3 valid an arm), EX (V ceiling on X, >= 3 valid V), ES (V ceiling on S,
@@ -48,7 +48,7 @@ const self = sha(fileURLToPath(import.meta.url));
 // V92_EXPECT)
 export const P142 = {
   C: { js: '647c9ef2b1e2bd7bb0f3a3f3c93cb69e2991744e91f8df48d276bbc7feab55f2', css: 'e1359ab9994a67cab41dc313806037dba1d93817bd6a31918d3b23de78db87ba' },
-  V: { js: '6468db04395c4e1da39a5f247804b98e746bb40f12b383c708f902d968128bc9', css: '1c4161f56545d955d8eb99960530fb1d541dd386bbe0cc746308409d4057d1c4' },
+  V: { js: '30f6371751f4a83029629484b791a53c4231bec57565c80bfea9e0e42f1c5794', css: '1c4161f56545d955d8eb99960530fb1d541dd386bbe0cc746308409d4057d1c4' },
 };
 export const MIN_NF = 3;
 const isH = (item) => /^(wg|g)H/.test(item);
