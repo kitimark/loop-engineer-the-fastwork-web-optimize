@@ -3,7 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** P-143 ended NOT REPRODUCED (signed). P-146 rev 1.1 (signed) has run every registered step; result below, waiting for the result read and the lead's pixel ruling. No build.
+**Status:** P-143 ended NOT REPRODUCED (signed). P-146 is CONFIRMED by ops-reader-P146r (11 hit, 4 miss) and landed as
+38c7a33e. Lead ruling: R3 is neither landed as T2 nor proposed yet, because the pixel instrument is unstable. P-148 rev 1
+(`P148.md`) is a draft that first makes the instrument stable (motion hold, settle, A/A gate), then judges R3 against T2. It
+waits for the pre-data read and the signature; there is no P-148 data and no build.
 **Stage:** less-work cost card (protocol v2 §4 + rendering cost card); no build yet, no counted run.
 **Device class / gate:** WebKit layout (Simulator Timeline mechanism ratio) + Chrome counts + pixels T0; landing under the
 less-work rule (memory `less-work-landing-rule`); phone G attribution run through the lead once the iPhone is reconnected.
@@ -594,7 +597,7 @@ The ratios are unread: OBSERVED only, never a result. They are listed for the ne
 | Simulator | R3 | 24 | 4 | 3 | 17 | 4 | 8 / 17 | 251, 0.104 %, 58976, n/a, static (expanded leave) |
 
 - P11 miss, P12 miss.
-- The pixel instrument is unstable: base against base again often differs by 10k-40k device pixels even with every Web
+- The pixel instrument is unstable: base against base again often differs by 10k-40k device pixels, up to about 97k device px (Simulator landscape) even with every Web
   Animation paused. Most FAILs are shade <= 2 or overlap regions that also move in A/A. OBSERVED in our setup, cause
   unknown.
 - Edge/fill for Chrome comes from a 3x3-block heuristic on the saved shots. The Simulator keeps no base-again shot for a
