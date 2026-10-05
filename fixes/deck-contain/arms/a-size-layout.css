@@ -1,0 +1,12 @@
+/* deck-contain arm A (the fix candidate): the profile deck's height comes from its width and the shells' aspect
+   ratio (353/764), not from measuring its content, and the deck is a size + layout containment boundary. Same media
+   query as the mobile deck block. content-box + width 100% keeps the border box (padding-inline bleed and negative
+   margins unchanged), so the content box is the shells' width and the ratio gives the shells' height. */
+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
+  .start-selling-profile-deck {
+    box-sizing: content-box;
+    width: 100%;
+    aspect-ratio: 353 / 764;
+    contain: size layout;
+  }
+}

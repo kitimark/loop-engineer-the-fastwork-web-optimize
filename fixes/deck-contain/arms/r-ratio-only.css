@@ -1,0 +1,8 @@
+/* deck-contain arm R (mechanism sibling): arm A's content-independent height without any containment */
+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
+  .start-selling-profile-deck {
+    box-sizing: content-box;
+    width: 100%;
+    aspect-ratio: 353 / 764;
+  }
+}

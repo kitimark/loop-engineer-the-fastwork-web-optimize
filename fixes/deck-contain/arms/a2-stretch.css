@@ -1,0 +1,10 @@
+/* deck-contain arm A2: as A, but the deck's width comes from the column flexbox's stretch (width: auto; the negative margins
+   give the same border box) instead of width: 100%. Probe: WebKit gave A's content-box ratio a height of 688 instead of 844. */
+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
+  .start-selling-profile-deck {
+    box-sizing: content-box;
+    width: auto;
+    aspect-ratio: 353 / 764;
+    contain: size layout;
+  }
+}

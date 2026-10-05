@@ -1,0 +1,86 @@
+{
+ "name": "deck-g-v1",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "P-143 G attribution (UNRESOLVED question): does a real touch scroll lay the profile deck out on every frame? After a reload and 3 s idle at the top: slow finger drags down the page until the deck has passed (y >= 2300; the finger on the glass, no momentum), then one fast fling back up (momentum through the deck band). Run with --timeline on the base and on the fix build; attribution only, never a gain.",
+ "params": {
+  "x": 215,
+  "dragPx": 300,
+  "dragMs": 700,
+  "flingPx": 560,
+  "flingMs": 140,
+  "idleMs": 3000,
+  "gapMs": 400
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "mark",
+   "name": "idle"
+  },
+  {
+   "type": "pause",
+   "ms": "$idleMs"
+  },
+  {
+   "type": "mark",
+   "name": "drag-down"
+  },
+  {
+   "type": "repeat",
+   "times": 12,
+   "until": "y>=2300",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": "$dragPx",
+     "ms": "$dragMs",
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": "$gapMs"
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "y>=2300",
+   "timeoutMs": 8000
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 5000,
+   "optional": true
+  },
+  {
+   "type": "mark",
+   "name": "fling-up"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": "$flingPx",
+   "ms": "$flingMs",
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 6000,
+   "optional": true
+  }
+ ]
+}

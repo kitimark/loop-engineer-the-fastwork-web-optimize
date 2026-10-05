@@ -1,0 +1,9 @@
+/* deck-contain arm B: arm A with contain: strict (size layout paint style), the predecessor's untested rule */
+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
+  .start-selling-profile-deck {
+    box-sizing: content-box;
+    width: 100%;
+    aspect-ratio: 353 / 764;
+    contain: strict;
+  }
+}

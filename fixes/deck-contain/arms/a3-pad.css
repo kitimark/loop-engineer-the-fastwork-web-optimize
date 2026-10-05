@@ -1,0 +1,12 @@
+/* deck-contain arm A3: no aspect-ratio on the deck. Its height is a block-end padding of 764/353 of its containing block's
+   width (the profile chrome's content box = the shells' width; percentage padding resolves against the containing block's
+   inline size), its content box is 0 tall, and the shells start at its top (they keep their own ratio height). Size + layout
+   containment as in A. */
+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
+  .start-selling-profile-deck {
+    height: 0;
+    padding-block: 0 calc(100% * 764 / 353);
+    align-items: flex-start;
+    contain: size layout;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "deck-contain-collapse-v1",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "deck-contain geometry probe: two slow finger drags up (the page scrolls down ~600 px, ends at rest), so Safari collapses its toolbar. No reload. Geometry only (count-only run).",
+  "params": { "x": 215, "dragPx": 300, "dragMs": 600, "gapMs": 400 },
+  "steps": [
+    { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+    { "type": "pause", "ms": "$gapMs" },
+    { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true }
+  ]
+}
