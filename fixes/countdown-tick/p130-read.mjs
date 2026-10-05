@@ -7,7 +7,8 @@
 //   gate's exit), holdVoid: null | "<why>", logger: <phone-logger.mjs read() JSON, with its own readAt> } ] }
 // Rules (all boundaries as written here):
 //   void run: the hold is VOID (holdVoid: a served-hash check, the Mac sleep check, an open failure); gestureExit not 0
-//     (the gesture run failed, e.g. the stroke after the logger read, or a budget refusal); thermal start or end not "serious"; summary.hidden > 0; summary.changes < 100; summary.windowMs < 115000;
+//     (the gesture run failed, e.g. the stroke after the logger read, or a budget refusal); idleRafFps (the part's idle
+//     sentinel, phone/idle-raf.mjs) present and < 58 (hold.sh already voids that part; checked again here); thermal start or end not "serious"; summary.hidden > 0; summary.changes < 100; summary.windowMs < 115000;
 //     recs[0] not tagged 'initial' (logger installed late); readAt < first change + 123000 (end grid read unfinished);
 //     summary.grid.start or .end missing; startedAt later than 2026-11-02T04:45:00Z (15 min before the countdown expiry).
 //   stratum of a grid read (p50 of the hop gaps, ms): >= 25 "30ms"; [6, 12] "8ms"; < 6 "fair"; (12, 25) "other".
@@ -34,6 +35,7 @@ export function voidReasons(run) {
   const r = [], L = run.logger || {}, s = L.summary || {};
   if (run.holdVoid) r.push(`hold void: ${run.holdVoid}`);
   if (run.gestureExit != null && run.gestureExit !== 0) r.push(`gesture exit ${run.gestureExit}`);
+  if (run.idleRafFps != null && !(run.idleRafFps >= 58)) r.push(`idle sentinel ${run.idleRafFps} fps < 58`);
   if (String(run.thermal?.start).toLowerCase() !== 'serious') r.push(`thermal start ${run.thermal?.start}`);
   if (String(run.thermal?.end).toLowerCase() !== 'serious') r.push(`thermal end ${run.thermal?.end}`);
   if (!(s.hidden === 0)) r.push(`hidden ${s.hidden}`);
@@ -54,7 +56,7 @@ export function read(block) {
     const s = r.logger?.summary || {}, vr = voidReasons(r);
     const a = stratumOf(s.grid?.start?.p50), b = stratumOf(s.grid?.end?.p50);
     return { item: r.item, arm: r.arm, valid: vr.length === 0, void: vr, stratum: a && a === b ? a : 'mixed',
-      skips: s.skips, repeats: s.repeats, gapP50: s.gapMs?.p50, grid: [s.grid?.start?.p50, s.grid?.end?.p50] };
+      skips: s.skips, repeats: s.repeats, gapP50: s.gapMs?.p50, grid: [s.grid?.start?.p50, s.grid?.end?.p50], idleRafFps: r.idleRafFps ?? null };
   });
   const ok = runs.filter((r) => r.valid), C = ok.filter((r) => r.arm === 'C'), V = ok.filter((r) => r.arm === 'V');
   const sum = (xs) => xs.reduce((t, r) => t + r.skips, 0);
@@ -111,6 +113,8 @@ function selftest() {
     ['changes < 100 -> void', B(C2, fake({ arm: 'V', changes: 90 })), (o) => !o.runs[1].valid],
     ['read at 122 s -> void', B(C2, fake({ arm: 'V', readAfter: 122000 })), (o) => !o.runs[1].valid && /123 s/.test(o.runs[1].void.join())],
     ['gesture exit 1 after the logger read -> void', B(C2, { ...V0, gestureExit: 1 }), (o) => !o.runs[1].valid && /gesture exit 1/.test(o.runs[1].void.join()) && o.verdict === 'VOID'],
+    ['idle sentinel 57.5 fps -> void; 58 passes; shown per run', B({ ...C2, idleRafFps: 57.5 }, { ...V0, idleRafFps: 58 }),
+      (o) => !o.runs[0].valid && /idle sentinel 57.5/.test(o.runs[0].void.join()) && o.runs[1].valid && o.runs[1].idleRafFps === 58],
     ['gesture exit 0 or absent -> valid', B({ ...C2, gestureExit: 0 }, V0), (o) => o.runs[0].valid && o.runs[1].valid],
     ['hold void -> run void', B(C2, { ...V0, holdVoid: 'served hash' }), (o) => !o.runs[1].valid && o.verdict === 'VOID'],
     ['logger readAt (phone clock) preferred', B(C2, { ...fake({ arm: 'V' }), readAt: undefined, logger: { ...fake({ arm: 'V' }).logger, readAt: 1.8e12 + 124000 } }), (o) => o.runs[1].valid],
