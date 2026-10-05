@@ -30,12 +30,13 @@ export const install = () => `(() => { try {
   const where = (el) => (el === sc ? 'box' : sc.contains(el) ? 'in' : el.contains(sc) ? 'anc' : 'out');
   const key = (el) => (idx.has(el) ? idx.get(el) + ':' : '') + lab(el);
   // 1. audit
-  const rules = [], customVU = new Set(), skipped = [];
+  const rules = [], varRules = [], customVU = new Set(), skipped = [];
   const walk = (list, cond) => {
     for (const r of list) {
       if (r.type === 1) {
-        const decl = []; for (let i = 0; i < r.style.length; i++) { const p = r.style[i], v = r.style.getPropertyValue(p); if (VU.test(v)) { decl.push(p + ':' + v.slice(0, 60)); if (p.startsWith('--')) customVU.add(p); } }
-        if (decl.length) rules.push({ sel: r.selectorText, cond, decl });
+        const decl = [], props = [], vars = []; for (let i = 0; i < r.style.length; i++) { const p = r.style[i], v = r.style.getPropertyValue(p); if (VU.test(v)) { decl.push(p + ':' + v.slice(0, 60)); props.push(p); if (p.startsWith('--')) customVU.add(p); } else for (const m of v.matchAll(/var\\((--[\\w-]+)/g)) vars.push([p, m[1], v.slice(0, 60)]); }
+        if (decl.length) rules.push({ sel: r.selectorText, cond, decl, props, via: 'unit' });
+        if (vars.length) varRules.push({ sel: r.selectorText, cond, vars });
       } else if (r.cssRules) {
         const c = r.media ? r.media.mediaText : r.conditionText !== undefined ? r.conditionText : r.type === 7 ? 'keyframes' : '';
         if (r.type === 7) continue;
@@ -45,16 +46,18 @@ export const install = () => `(() => { try {
     }
   };
   for (const s of document.styleSheets) { try { walk(s.cssRules, ''); } catch (e) { skipped.push(String(s.href).slice(-40)); } }
+  // rules that use a custom property holding a viewport unit (via var()) count as viewport-unit rules too
+  for (const r of varRules) { const vs = r.vars.filter(([, n]) => customVU.has(n)); if (vs.length) rules.push({ sel: r.sel, cond: r.cond, decl: vs.map(([p, n, v]) => p + ':' + v), props: vs.map(([p]) => p), via: 'var' }); }
   const hits = [];
   for (const r of rules) {
     for (const part of r.sel.split(',')) {
       const pseudo = /::?(before|after|marker|placeholder|selection|first-line|first-letter|backdrop)/.test(part);
       const base = part.replace(/::?(before|after|marker|placeholder|selection|first-line|first-letter|backdrop)\\b/g, '').trim() || '*';
       let m = []; try { m = els.filter((e) => e.matches(base)); } catch { continue; }
-      for (const e of m) hits.push({ el: key(e), where: where(e), sel: part.trim().slice(0, 120), cond: r.cond.slice(0, 80), pseudo, decl: r.decl.slice(0, 6) });
+      for (const e of m) hits.push({ el: key(e), where: where(e), sel: part.trim().slice(0, 120), cond: r.cond.slice(0, 80), pseudo, via: r.via, props: r.props, decl: r.decl.slice(0, 6) });
     }
   }
-  const inline = els.filter((e) => VU.test(e.getAttribute('style') || '')).map((e) => ({ el: key(e), where: where(e), style: e.getAttribute('style').slice(0, 160) }));
+  const inline = els.filter((e) => VU.test(e.getAttribute('style') || '')).map((e) => ({ el: key(e), where: where(e), style: e.getAttribute('style').slice(0, 160), props: e.getAttribute('style').split(';').filter((d) => VU.test(d)).map((d) => d.split(':')[0].trim()) }));
   const custom = [];
   for (const e of els) { const cs = getComputedStyle(e); for (const p of customVU) { const v = cs.getPropertyValue(p); if (v && VU.test(v)) custom.push({ el: key(e), where: where(e), prop: p, v: v.trim().slice(0, 60) }); } }
   const anims = [];
@@ -106,14 +109,27 @@ export const install = () => `(() => { try {
     if (st.f < 200000) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
-  window.__p123 = { sel: SEL, audit, names, els: els.map(key), st, mo, ro };
+  window.__p123 = { sel: SEL, audit, names, els: els.map(key), parent: els.map((e) => (idx.has(e.parentElement) ? idx.get(e.parentElement) : -1)), hitsAll: hits, st, mo, ro };
   return 'ok';
   } catch (e) { window.__p123 = { error: String((e && e.stack) || e).slice(0, 400) }; return 'error'; }
 })()`;
 export const read = () => `(() => {
   const P = window.__p123; if (!P || P.error) return JSON.stringify(P || { error: 'not installed' });
   const S = P.st.snaps, order = ['A', 'A2', 'B', 'C', 'B2'];
-  const diffs = []; let nAny = 0;
+  // T3 (ops pre-data read): a flip is attributed only when its element:property is in the audit's viewport-unit set,
+  // or the element inherits that property's value from an ancestor that is (same value as that ancestor at A and B)
+  const ALIAS = { 'block-size': 'height', 'min-block-size': 'min-height', 'max-block-size': 'max-height', 'inline-size': 'width', 'min-inline-size': 'min-width', 'max-inline-size': 'max-width', top: 'inset', right: 'inset', bottom: 'inset', left: 'inset' };
+  const vuProps = P.els.map(() => new Set());
+  for (const h of P.hitsAll || []) if (!h.pseudo) for (const p of h.props || []) vuProps[Number(h.el.split(':')[0])].add(p);
+  for (const h of P.audit.inline || []) for (const p of h.props || []) vuProps[Number(h.el.split(':')[0])].add(p);
+  const has = (e, p) => { for (const d of vuProps[e]) if (d === p || p.startsWith(d + '-') || ALIAS[p] === d || ALIAS[d] === p || (ALIAS[p] && d.startsWith(ALIAS[p] + '-'))) return true; return false; };
+  const attributed = (e, p) => { // p: index into P.names
+    const name = P.names[p];
+    if (has(e, name)) return 'own';
+    for (let a = P.parent[e]; a >= 0; a = P.parent[a]) if (has(a, name) && S.A.vals[a][p] === S.A.vals[e][p] && S.B.vals[a][p] === S.B.vals[e][p]) return 'inherited:' + P.els[a];
+    return null;
+  };
+  const flips = [], rows = []; let nAny = 0, nFlip = 0, nFlipPartial = 0, nNoise = 0, nVuFlip = 0;
   if (S.A && S.B) {
     for (let e = 0; e < P.els.length; e++) for (let p = 0; p < P.names.length; p++) {
       const v = order.map((k) => (S[k] ? S[k].vals[e][p] : null));
@@ -123,14 +139,22 @@ export const read = () => `(() => {
       const noise = a2 !== null && a2 !== a;
       const flip = !noise && a !== b && c !== null && c === a && b2 !== null && b2 === b;
       const flipPartial = !noise && a !== b && (c === null || c === a) && (b2 === null || b2 === b) && !flip;
-      if (diffs.length < 400) diffs.push({ el: P.els[e], prop: P.names[p], v: v.map((x) => (x === null ? null : String(x).slice(0, 70))), flip, flipPartial, noise });
+      nNoise += noise ? 1 : 0; nFlip += flip ? 1 : 0; nFlipPartial += flipPartial ? 1 : 0;
+      const row = { el: P.els[e], prop: P.names[p], v: v.map((x) => (x === null ? null : String(x).slice(0, 70))), flip, flipPartial, noise };
+      if (flip || flipPartial) { row.attr = attributed(e, p); if (row.attr) nVuFlip++; if (flips.length < 2000) flips.push(row); }
+      else if (rows.length < 300) rows.push(row);
     }
   }
+  // T2: per-frame write rates in step vs rest frames, per write key (full map, no cap)
+  const stepFrames = P.st.steps, restFrames = Math.max(0, P.st.f - P.st.steps);
+  const keys = new Map();
+  for (const [k, n] of P.mo) { const i = k.indexOf('|'), s = k.slice(0, i), base = k.slice(i + 1); const o = keys.get(base) || { step: 0, rest: 0 }; o[s] += n; keys.set(base, o); }
+  const stepSpecific = [...keys.entries()].filter(([, o]) => o.step >= 2 && (o.rest === 0 || (stepFrames > 0 && restFrames > 0 && o.step / stepFrames >= 2 * (o.rest / restFrames)))).map(([k, o]) => [k, o.step, o.rest]).sort((x, y) => y[1] - x[1]);
   const tally = (m) => [...m.entries()].sort((x, y) => y[1] - x[1]).slice(0, 60);
   const snapMeta = Object.fromEntries(order.filter((k) => S[k]).map((k) => [k, { ih: S[k].ih, sy: S[k].sy, top: S[k].top, bottom: S[k].bottom, f: S[k].f }]));
   const sum = (m, pre) => [...m.entries()].filter(([k]) => k.startsWith(pre)).reduce((s, [, n]) => s + n, 0);
-  return JSON.stringify({ sel: P.sel, audit: P.audit, nNames: P.names.length, frames: { err: P.st.err || null, f: P.st.f, steps: P.st.steps, ih0: P.st.ih0, ihMin: P.st.ihMin, ihMax: P.st.ihMax }, snaps: snapMeta,
-    diff: { nAny, nFlip: diffs.filter((d) => d.flip).length, nFlipPartial: diffs.filter((d) => d.flipPartial).length, nNoise: diffs.filter((d) => d.noise).length, truncated: nAny > diffs.length, list: diffs },
-    mo: { stepBoxIn: sum(P.mo, 'step|box') + sum(P.mo, 'step|in'), stepAnc: sum(P.mo, 'step|anc'), restBoxIn: sum(P.mo, 'rest|box') + sum(P.mo, 'rest|in'), restAnc: sum(P.mo, 'rest|anc'), top: tally(P.mo) },
+  return JSON.stringify({ sel: P.sel, audit: P.audit, nNames: P.names.length, frames: { err: P.st.err || null, f: P.st.f, steps: P.st.steps, stepFrames, restFrames, ih0: P.st.ih0, ihMin: P.st.ihMin, ihMax: P.st.ihMax }, snaps: snapMeta,
+    diff: { nAny, nFlip, nFlipPartial, nVuFlip, nNoise, flipsTruncated: nFlip + nFlipPartial > flips.length, flips, rowsTruncated: nAny - nFlip - nFlipPartial > rows.length, rows },
+    mo: { stepBoxIn: sum(P.mo, 'step|box') + sum(P.mo, 'step|in'), stepAnc: sum(P.mo, 'step|anc'), restBoxIn: sum(P.mo, 'rest|box') + sum(P.mo, 'rest|in'), restAnc: sum(P.mo, 'rest|anc'), stepSpecific: stepSpecific.slice(0, 80), nStepSpecific: stepSpecific.length, top: tally(P.mo) },
     ro: { step: sum(P.ro, 'step'), rest: sum(P.ro, 'rest'), top: tally(P.ro) } });
 })()`;

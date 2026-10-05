@@ -845,11 +845,25 @@ P-id: P-123 (lead's R7 review names it as the next free id; ops confirms it with
 
   | call | rule |
   |---|---|
-  | VALUE-FLIP | at least one property of an element in the box flips |
-  | WRITE | no flip, and at least one script write on or in the box in a step frame |
+  | VALUE-FLIP | at least one ATTRIBUTED property of an element in the box flips (T3 below) |
+  | WRITE | no attributed flip, and at least one STEP-SPECIFIC write key on or in the box (T2 below) |
   | INVAL-ONLY | no flip, no step write, and at least one element in the box matches a viewport-unit rule (the S5 set; values unchanged) |
   | OUTSIDE | none of these |
 
+  - **Ops pre-data conditions (mgmt-ops-10, 2026-10-05), frozen before data:**
+    - **T1, list cap.** Flips are counted over every element:property. Only the other rows are capped (300 printed).
+      A flip list over its own cap (2000) makes the run INSUFFICIENT.
+    - **T2, step-specific writes.** A write key (target, attribute, style property) is step-specific when it has
+      at least 2 records in step frames and either none in rest frames, or a per-step-frame rate at least 2x its
+      per-rest-frame rate. Step and rest frame counts are printed. A write seen in every frame (carousel,
+      countdown) is not step-specific.
+    - **T3, scroll confound, rule (a).** A flip counts only when its element:property is in the audit's
+      viewport-unit set, or when the element inherits it from an ancestor that is (same value as that ancestor at
+      A and at B). The set is: own matched rule, inline style, or a var() of a viewport-unit custom property;
+      logical aliases and shorthand prefixes count. Every other flip is listed as "scroll-confounded or
+      layout-derived" and never decides the call.
+    - Ops' note (UNRESOLVED in our setup; the probe answers it): on iOS, vh is the large viewport and svh the
+      small one, so neither should flip. Only dvh or script values can flip.
   - Probe call: the two runs agree. For VALUE-FLIP, their flipping element:property sets must also overlap. Else
     the call is SPLIT.
   - Ancestor flips, writes and sizes are always listed but never decide the call.
@@ -881,15 +895,18 @@ P-id: P-123 (lead's R7 review names it as the next free id; ops confirms it with
 
   | file | hash |
   |---|---|
-  | `p123-inject.mjs` | 501b0261da31 |
+  | `p123-inject.mjs` | 9849c25577b9 |
   | `sim-p123.mjs` | 787e8e69b75e |
-  | `read-p123.mjs` | 2a32093959f3 |
-  | `p123-selftest.mjs` | f9098cfaec1e |
+  | `read-p123.mjs` | aa8c9896dc68 |
+  | `p123-selftest.mjs` | e7cf99d230a3 |
   | `flick-hero-v1.json` | 6ae05e12ace9 |
 
   - Served bytes (v8): CSS f836404b3728, JS 3e3e94cb6e9f, from the overlay. The driver stops (exit 26) otherwise.
-  - Self-test: `node fixes/toolbar-resize/p123-selftest.mjs` gives SELFTEST PASS (14 checks: diff classes, noise,
-    tallies, reader calls, no time fields).
+  - Self-test: `node fixes/toolbar-resize/p123-selftest.mjs` gives SELFTEST PASS (18 checks). It covers T1 (flips
+    counted past 400 noise rows; over the cap is INSUFFICIENT), T2 (an every-frame write is not step-specific, a
+    step-only one is), T3 (own and inherited attribution; an unattributed transform flip is confounded), the reader's
+    calls, and no time fields. Rev 1 pins (501b0261da31 / 2a32093959f3 / f9098cfaec1e, commit 1dc26faa) are
+    superseded.
 - **Slot.** One shared slot (weight simulator, 300 s, functional session). Free slots only, never ahead of int-v8 or
   fix-hero-exit-threaded (lead R7).
   - Command: in `sim-p123.mjs`'s header.
