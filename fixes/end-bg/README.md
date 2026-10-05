@@ -3,11 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). The test overlays contain excerpts of Fastwork's code: they stay local and are never committed.
 
-**Status:** research (no fix). **Stage:** R → I (attribution). **Owner:** fix-end-bg.
+**Status:** research (no fix). **Stage:** I (attribution): P-137 says CAUSE (§5); next, which part (sub-arm card).
+**Owner:** fix-end-bg.
 **Question (user T-193 #10/#12):** do the background images in the last screen cause the end-of-page lag, and would an
 "optimize it like the hero card" treatment help?
 **Driver(s):** Chrome probes (counts only, shared lane), phone G (`iphone.mjs gesture`) for the P-137 block.
-**Prediction:** `fixes/PREDICTIONS.md` P-137 (card below; registration pending the ops pre-data read).
+**Prediction:** `fixes/PREDICTIONS.md` P-137 (card §3, signed; result §5).
 **Base:** C = v9-final + morph-scroll rev 7d (`fix.mjs apply --from morph-scroll-v9try`), JS 1b2eecc66011, CSS e1359ab9994a.
 
 ## 1. What is in the last screen (Chrome inventory, OBSERVED)
@@ -20,7 +21,7 @@ positions pre / m0 / mhalf / m1 of the 7d menu morph), summary `fixes/end-bg/inv
 | what (selector) | source | intrinsic | shown at | bytes | decoded (w·h·4) | sizing |
 |---|---|---|---|---|---|---|
 | menu photo wall (`.start-selling-morph-col img`, CSS l.10973-11021, will-change transform, 16 s drift) | roles/*.png x5 | 1282x1282 | ~138 px wide columns | 325-440 KB each | 6.6 MB each, ~33 MB | %, column flow |
-| same wall | post-*, portfolio-*, cover-cafe, work-*, service-* (15 more) | 341x512 to 960x540 | same | 86-402 KB | 0.7-2.1 MB each | same |
+| same wall | post-*, portfolio-*, cover-cafe, work-*, service-*, avatar-cat (16 more, list in §1.1) | 341x512 to 960x540 | same | 84-392 KB | 0.5-3.4 MB each | same |
 | agents mesh (`.start-selling-platform-invoice-sheet::before`) | agents/mesh.jpg | 1280x1024 | cover in 640x512, opacity 0.5 | 338 KB | 5.2 MB | px |
 | grain overlay (`::after`, stage-grain) | platform/grain.png | 256x256 | tiled at 128 px, mix-blend overlay | 100 KB | 0.26 MB | px |
 | stage mesh (`.start-selling-platform-stage.is-mesh-bg`) | radial gradients + grain | n/a | 390x311 | n/a | n/a | px |
@@ -33,6 +34,55 @@ Large non-image painters in the same screen (blur layers, not backgrounds, out o
 (l.10957); the header's `backdrop-filter: blur(calc(20px * (1 - var(--morph))))` (l.11792), which is the only painter whose
 box changes between 775 and 815 (751 → 791 at m1). Nothing in the last screen uses `background-attachment: fixed`; no
 background size depends on vh. T-193 #9 item 4 measured the blur layers (paints -16/-22 % without them).
+
+### 1.1 The menu photo wall in detail (user T-193 #23)
+
+The wall is 5 columns (`c`, JS 13784-13831, each with a `--col-offset` and a list of `[src, height px]`), built by the
+templates `cN`/`sN` (JS 13772-13773: `<img loading="eager" decoding="async">`). Its `src` is set only once the menu shows
+(`s(b) || s(E)`, JS 14621), and the box height comes from the list (`height: …px`). CSS l.11000-11005: `object-fit:
+cover`, `width: 100%`, radius 12 px; the column is 138.1 CSS px wide at 430 px, so 414 device px at DPR 3. The image is a
+plain `<img>` without `srcset` (the live site serves the same PNG/JPEG files here, research/image-cost §1). Files measured
+on the snapshot with `sips`/`stat`; "x need" = intrinsic ÷ what cover needs at DPR 3 (> 1: larger than any phone screen
+shows).
+
+| column | image (under /selling/) | intrinsic | box CSS px | KB | x need | decoded MB |
+|---|---|---|---|---|---|---|
+| 1 | media/post-1.png | 368x447 | 138x360 | 253 | 0.41 | 0.7 |
+| 1 | media/cover-cafe.jpg | 960x539 | 138x212 | 392 | 0.85 | 2.1 |
+| 1 | roles/graphic-designer.png | 1282x1282 | 138x349 | 429 | 1.22 | 6.6 |
+| 1 | media/service-kitchen.png | 410x512 | 138x167 | 366 | 0.99 | 0.8 |
+| 1 | work/work-a.jpg | 736x920 | 138x212 | 126 | 1.45 | 2.7 |
+| 2 | media/post-2.png | 368x460 | 138x360 | 222 | 0.43 | 0.7 |
+| 2 | profile/portfolio-1.jpg | 960x540 | 138x360 | 275 | 0.50 | 2.1 |
+| 2 | media/post-4.jpg | 819x1024 | 138x360 | 145 | 0.95 | 3.4 |
+| 2 | roles/architect.png | 1282x1282 | 138x224 | 317 | 1.91 | 6.6 |
+| 3 | media/avatar-cat.png | 341x512 | 138x295 | 290 | 0.58 | 0.7 |
+| 3 | media/post-3.png | 341x512 | 138x527 | 266 | 0.32 | 0.7 |
+| 3 | work/work-c.jpg | 735x893 | 138x394 | 84 | 0.76 | 2.6 |
+| 3 | media/service-cafe.png | 480x270 | 138x360 | 290 | 0.25 | 0.5 |
+| 4 | roles/software-engineer.png | 1282x1282 | 138x360 | 396 | 1.19 | 6.6 |
+| 4 | media/post-5.jpg | 735x893 | 138x443 | 84 | 0.67 | 2.6 |
+| 4 | work/work-e.jpg | 736x1042 | 138x221 | 134 | 1.57 | 3.1 |
+| 4 | profile/portfolio-2.jpg | 960x540 | 138x525 | 351 | 0.34 | 2.1 |
+| 5 | roles/web-developer.png | 1282x1281 | 138x360 | 357 | 1.19 | 6.6 |
+| 5 | profile/portfolio-3.jpg | 960x540 | 138x360 | 369 | 0.50 | 2.1 |
+| 5 | work/work-f.jpg | 600x848 | 138x417 | 90 | 0.68 | 2.0 |
+| 5 | roles/project-manager.png | 1282x1281 | 138x360 | 328 | 1.19 | 6.6 |
+
+- **Only 10 can ever be seen on a phone** (user hint T-193 #25). At `width <= 640px` columns 4 and 5 are `display: none`
+  (C's CSS l.11302 media, rule l.11400; baseline l.10888/10986): 8 images, 2.1 MB, still fetched because the `<img>` is
+  `loading="eager"`. In the 3 shown columns the column is shifted by `translateY(--col-offset)`, a % of its own height,
+  which is the panel height H, and the track drifts ±56 px; the backdrop clips at H. Solving which items ever enter
+  [0, H] (H 402 / 751 / 791): work-a, architect and service-cafe never do at H ≤ 791 (architect misses by 8 px). At H 908
+  (Chrome's 430x932) 2 of them do, so Chrome at 932 shows 12. This matches the inventory's 10 in view at 775/815.
+- 21 images, 5.4 MB on the wire, 61.7 MB decoded at intrinsic size. Only 7 are larger than a DPR 3 screen needs (the 5
+  roles PNGs, 1.19-1.91x, and work-a/work-e, 1.45-1.57x); resizing those 7 to their need gives 45.8 MB (-16 MB). 12 are
+  already smaller than the need (upscaled on the phone).
+- 10 PNGs are photos (222-429 KB); JPEG/WebP/AVIF would cut bytes, not decoded memory.
+- The Chrome census (§4) saw no decode in any toolbar-step window: once decoded, the wall costs raster, not decode. The
+  earlier WebKit study (research/image-cost §0) found the first-paint decode in WebKit is the only size-dependent cost,
+  and that images are not what makes frames slow on this page (Paint 0.25 s against Composite 8 s and Layout 11 s per
+  scroll, Simulator, OBSERVED).
 
 ## 2. The ablation arm "nobg" and its fairness (Chrome, OBSERVED)
 
@@ -170,10 +220,52 @@ counts, not timing.
   layouts. No image decodes ran in any window (D 0): the pictures are decoded once and kept.
 - The biggest repainter at the open menu is the photo wall (`.start-selling-morph-col-track`): 16 paints per shrink step
   at m1. With nobg its images are hidden, but the track still repaints.
-## 5. Pending
+## 5. P-137 result (phone, G driver, xcode-serious; owner's cross-check read, the official ops read pending)
+
+Block 2026-10-05 11:51-12:47Z by iphone-runner: 7/7 holds VALID, no tail re-runs (N5: nothing ran outside the C V V C
+order), sentinels S0 PASS (55.7 fps, slow 0.033) and S1 PASS (52.7, 0.055), every thermal gate Serious (Xcode-induced),
+battery 36.8 → 39.3 °C. Read `node fixes/end-bg/phone/p137-read.mjs <runner>/out/p137/runs` (reader b6d24ad5e73c on
+p129-read 06f74f5d19ca, N1); only the block's own C runs (N3).
+
+| run | arm | n | >30 | >34 | >38 | >46 | >50 | >54 | busy MAIN / RENDER / MIXED at >34 | toolbar-step share |
+|---|---|---|---|---|---|---|---|---|---|---|
+| EC1 | C | 364 | 36 | 30 | 24 | 15 | 15 | 12 | 3 / 5 / 22 | 0.60 |
+| EV1 | V | 428 | 5 | 2 | 1 | 0 | 0 | 0 | 2 / 0 / 0 | 0.50 |
+| EV2 | V | 431 | 6 | 3 | 3 | 1 | 1 | 1 | 2 / 0 / 1 | 0.67 |
+| EC2 | C | 387 | 23 | 17 | 9 | 3 | 0 | 0 | 5 / 2 / 10 | 0.88 |
+| EC3 | C | 392 | 23 | 14 | 7 | 5 | 3 | 2 | 2 / 3 / 9 | 0.79 |
+| EV3 | V | 424 | 5 | 3 | 1 | 0 | 0 | 0 | 3 / 0 / 0 | 0.67 |
+| EV4 | V | 428 | 8 | 5 | 3 | 1 | 1 | 0 | 4 / 1 / 0 | 0.80 |
+| EC4 | C | 390 | 29 | 15 | 10 | 2 | 2 | 1 | 4 / 3 / 8 | 0.87 |
+
+- **Verdict CAUSE** at >34: max(V) 5 < min(C) 14, median V 3 ≤ 0.5 × median C 16. Twins >30 (26 vs 5.5) and >38 (9.5 vs 2):
+  CAUSE, so not threshold-sensitive. Counts basis: median n 388.5 vs 428 (+10 %, under the 15 % guard).
+- >50 (reported only): C median 2.5, V 0.5; NOT SHOWN at >50/>54 (EC2 has 0), CAUSE at >46.
+- What goes away: the MIXED slow frames (49 of 76 at >34 on C, 1 of 13 on V); MAIN-class ones stay (14 vs 11). Paint of
+  these layers costs main-side time on the iPhone far beyond what Chrome's census shows (OBSERVED; WebKit mechanism
+  being checked against source).
+- Predictions: #1 CAUSE (registered p 0.08) happened; #2 (V median ≥ 10) failed; #3 (V toolbar-step share ≥ 60 %) held
+  (median 0.67, pooled 9/13). Both misses rest on one wrong model: that removing paint deletes only RENDER-class frames.
+  On the iPhone it also deletes MIXED ones.
+- The official read (ops-reader-P137) gives the same DECISION line and per-run numbers.
+- WebKit mechanism (helper read of WebKit main a1c4dcf7, partly CONFIRMED): the paint walk runs on the WebContent main
+  thread inside the rendering update (`RemoteLayerTreeDrawingArea::flushLayers`, `RemoteLayerBackingStoreCollection::
+  paintReachableBackingStoreContents` paints the stores serially). On iOS DOM rendering goes to the GPU process by default
+  (`ENABLE_GPU_PROCESS_DOM_RENDERING_BY_DEFAULT`, PlatformEnableCocoa.h), so the main thread records draw commands and the
+  GPU process rasterizes. A layer whose size changes gets a new backing store (`ensureBackingStore` clears it): a full
+  repaint. Whether GPU replay back-pressure stalls the next update: UNRESOLVED.
+- User blind swipe pair C-069 (12:53-12:56Z, coin-flipped order): the user picked V (no backgrounds) as following the
+  finger better, difference 3 of 5.
+- The user accepted this as proof (T-193 #28): no sub-arm attribution. Next is an all-images optimization proposal.
+
+## 6. Pending
 
 - A Simulator count (WebKit) when no phone block runs.
-- The verdict per image and the ranked candidate fixes, after P-137.
+- The verdict per image and the ranked candidate fixes, after P-137. Wall candidates known now (bytes or memory, no
+  frame effect expected): skip columns 4-5 below 640 px (pixel-identical, -2.1 MB fetched); resize graphic-designer.png,
+  the only visible oversized wall image (1.22x, -2.2 MB decoded; pixel check needed); trimming the never-seen last
+  items is height-dependent (not identical above H 791): proposal at most.
+- Method note for other topics: `research/element-ablation/README.md`.
 - How the hero-card fixes worked (re-keep-op: the revealed people card kept in its own layer at rest, so the end-of-reveal
   re-layouts went away; hero-exit-threaded: the hero exit moved to a scroll-driven animation off the main thread): both are
   layer/compositor changes; whether one fits the last screen depends on what P-137 and the census show.
