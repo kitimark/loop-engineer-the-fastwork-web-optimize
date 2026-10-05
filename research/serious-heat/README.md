@@ -566,6 +566,24 @@ Timeline file carries `offsetMs = syncTL·1000 − syncT` from a `performance.ma
 | N4/N5 | build = 7d research build ms-29c0d537e0c9 with TICKET-7d's hash check, not a ship build; runner iphone-runner |
 | also | G5 (one segment), G6 (fs program hash) added; part B THIN changed from "< 40 hero frames" to "< 3 runs per procedure in part B" |
 
+**Rev 2.1 addendum (the lead's ruling, 08:50Z; before any data).** It supersedes rev 2 only where stated. Nothing
+else changes: reader, self-test, gates, rules, floors and predictions stay as pinned above.
+- **Why.** The `fs` script reloads the page and then pauses 4000 ms, so its first touch always lands about 4.6 s after
+  page ready. Rev 2's "the runner waits before starting the gesture" cannot reach G4's L window (20-23 s): every L run
+  would be invalid. Editing the script's pause would change its program hash and fail G6.
+- **L runs:** `iphone.mjs gesture --idle-after-reload <ms>` (I-203, toolsmith ts-idle-reload). It idles after the
+  reload, outside the program hash, and the run record keeps the value.
+  - The value puts the first touch 20-23 s after page ready: about 16000 ms. iphone-runner takes the exact value from
+    its dry run, and every L run of the block uses that one value.
+- **E runs (counted, warm-up and both sentinels):** no `--idle-after-reload`.
+- **G4 and G6 are unchanged.** G4 still checks the first touch against page ready in each record, so a wrong idle value
+  makes the run invalid. G6 still requires `8737f212c0ff`.
+- **Block shape:** one block mark (`--block`) over the whole block, with its runs split into 600 s chrome-measure
+  `--no-timing` holds. Each hold holds at most 2 runs (fs budget 229 s per run, I-112). Runs keep their order: warm-up,
+  S0, E L L E E L L E, re-runs, S1. `doing iphone --between <min>` between holds. The thermal gate runs at the start of
+  the first hold and the end of the last. Up to 13 runs means about 7 holds.
+- I-203 must land on main before the first run. The block runs on a tools version that has it.
+
 ## 6. Open items and limits
 
 - Every rate in §2 is from one build pair (PR-018 rev 7d count check) and one robot script set. The time-since-load
