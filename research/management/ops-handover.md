@@ -72,6 +72,16 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~06:0xZ **P-130 rev 2 delta check: NOT YET** (commit 3bda2d4e on worktree-agent-a8dba5b51e224d3ca). No data exists.
+  - Checked OK:
+    - Pins match on disk: logger 49d7a6c3da4c, program d7ee0153e439, GESTURE_HASH 58b3e0b3f502 (recomputed), p130-read 5b9d38d43bc4, p130-block 906ee0f9c98f, hold.sh 8d5895b04d74, serve.sh af443694ea69.
+    - Selftests re-run: 22/22 and 5/5.
+    - P1-P4 are unchanged, and N1-N9 are answered.
+  - R1 (blocking): the I-112 budget is 397 s (estMs 132350 x 3). In a 700 s no-timing hold the 3rd item of each part is refused, which loses 4 of the 8 counted runs. Fix: at most 2 items per part (5 parts), or a void-the-part time guard.
+  - R2: add `iphone.mjs wda check` before the gate (G-runner rule).
+  - R3: the reader ignores gestureExit. Void a run when it is nonzero, and add a selftest case.
+  - For the lead: sign the N5 sentinel deviation (idle block, gates plus the grid read in place of an S-run sentinel). C_JS, C_CSS and V_JS stay OPEN until v9-final lands.
+  - The row goes into PREDICTIONS only after a PASS.
 - 10-05 ~05:4xZ **P-130 rev 1 pre-data read: NOT YET** (countdown-tick phone no-worse check; owner fix-countdown-tick, worktree agent-a8dba5b51e224d3ca). No data exists.
   - On disk: patch.diff 8a4a6a16e217 ok. Snaps v9 de237379b556/e1359ab9994a and v9tick b1df3c8a0c5a/e1359ab9994a ok.
   - Nothing is committed on the owner's branch. The logger on disk is 2dc08a6009ec, not the card's 3bf851673eeb.
