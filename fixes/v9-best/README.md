@@ -8,8 +8,10 @@ Join button rev 3 + nav-hit-cache U1 + glue; **scroll-cb and the close rule are 
 scroll-cb: dropped after the gM split, a ruling, not a proven cause (the short first fling is load-dependent and also
 seen without scroll-cb, Simulator, OBSERVED). close: with it, Chrome restyles at rest (census mainFrames/s 60 at the top,
 22-34 at 2796; without it 39.3 / 2.2 like v8; OBSERVED, cause unknown). Both rejoin together as one v9.1 follow-up check;
-"v9-final build (without scroll-cb and the close rule)" below). Phone ticket P-122 (v8 vs v9-final, G driver, flicker gate, fling parity) is registered before any
-P-122 data and waits for mgmt-ops-10's delta check and the lead's sign. Earlier: P-120 (step 4) CLOSED INSUFFICIENT;
+"v9-final build (without scroll-cb and the close rule)" below). **Phone ticket P-122 (v8 vs v9-final) done: block
+verdict insufficient (ES: V 1 of 2 valid); landing basis re-signed by the lead under the less-work rule: GM, EX
+(threshold-sensitive) and FLICKER no-worse, parity pass, no gate WORSE, no BEHAVIOUR FAIL** ("P-122 result" at the
+end). Earlier: P-120 (step 4) CLOSED INSUFFICIENT;
 **v9 ships with rev 7c** (user's PR-023 decision, 2026-10-05 04:45Z: rev 7d is rebuilt on v9-final after v9 lands; lead
 ruling, user T-159 #32). Known limit: incident I-179 (rev 7c glides back open after a swipe released just past closed, 2
 of 42 swipes), a report case in P-122. Not timed (memory `defer-timing-focus-call-tree.md`). The phone no-worse check
@@ -777,8 +779,11 @@ Function and look checks on this v9-final (`out/v9/looks-final3.log`, 06:09-06:2
   | V = v9-final | 40.8 | 42.1 | 1.8 | 26.3 | 29.2 (y 6278) |
 
   - Rest is at v8's level at the top and at 2796, so the close rule's extra style work is gone (OBSERVED, one load).
-  - rest-end is new relative to v8 (lead, 06:4xZ): v8 rests at 0.2 at its page end, every v9 build at 28-60. It blocks
-    landing v9 until it is explained or removed. The split below names it.
+  - rest-end is new relative to v8 (lead, 06:4xZ): v8 rests at 0.2 at its page end, every v9 build at 28-60. The split
+    below names it. **Lead ruling (07:4xZ): v9 does not wait for P-097.** The page-end rest work is rev 7c's accepted
+    design (the panel clock is visible and ticking at the open end, the same work v8 does with its panel open). Open
+    item, OBSERVED: page-end rest 27-60 mainFrames/s from the visible panel clock; scoped fix P-097, after v9 lands, on
+    top of v9-final (ops routes it).
 
 Page-end rest split (lead, 2026-10-05 06:4xZ; `out/v9/restend2.log`; census rest-end only, counts only, no timing; shared
 probe holds 06:50-07:26Z, one load per arm, load1 10-46; the window starts after a 32 s settle at the page end, so ~34 s
@@ -811,13 +816,44 @@ OBSERVED in our setup):
 - **Two levels in the rev 7c arms (OBSERVED, cause unknown):** 27-28 frames/s (D, E, G; the earlier full census of V:
   29.2) or 60 frames/s (V, N, S) with the same spring and tick counts. The extra ~30 style recalcs/s have no JS callback
   in the page bundle. The same build reads both levels (V: 29.2 earlier, 60.1 here), so this varies per load, not per
-  build. Suspect, unchecked: the panel's `col-track` transform animations ticking on the main thread in some loads (not
-  composited). Decisive local check: the trace's Animation events (compositeFailed) or the CDP Animation domain in the
-  same window.
+  build. The first suspect (the panel's `col-track` animations on the main thread) is out: they are composited in
+  both levels ("The 60-vs-27 level" below).
 - **Scoped fix:** P-097 (fix-cd-roll-ca, registered, not started): the panel clock on cd-roll-ca's per-cell Web
   Animations roll, gated to m in {0, 1}; its P1 predicts panel rAF ≤ 10 % of C at the hold. It is cd-roll-ca's code, not
   rev 7c's. A rest gate that stops the panel clock at the open end would change what the user sees (a frozen clock), so
-  it would be a proposal, not a fix. The 60 frames/s level needs its own cause first.
+  it would be a proposal, not a fix. The rev 7c owner (fix-hero-exit-threaded) agrees: rev 7c itself runs nothing at
+  rest (`__msTick` only from the scroll handler, `__msArm` one 200 ms timeout, passive touch listeners, `__msRO` only on a
+  resize), and no rev 7c-side option removes the clock's work without changing the accepted design.
+
+The 60-vs-27 level (lead ruling 2, 07:3xZ; `out/v9/animtrace.log`; V = v9-final × 4 loads, one shared probe hold
+07:31-07:35Z; the same rest-end window plus the trace's `blink.animations` Animation events (state, compositeFailed,
+unsupportedProperties) and the page's own `getAnimations()` list with each target's will-change at the window's end;
+counts only, OBSERVED in our setup):
+
+| load | mainFrames/s | styleRecalc/s | elementsRestyled/s | paint/s | panel clock spring/s | col-track ×3 (trace) | running only in this load (page list) | other differences (trace) |
+|---|---|---|---|---|---|---|---|---|
+| V1 | 59.9 | 59.9 | 636.1 | 251.6 | 26 | composited | `vinyl-spin` (feed card record, will-change auto), `scroll-float` (scroll cue, will-change auto) | future-card filter + opacity not composited (compositeFailed 135168 / 131072); one unnamed animation (131072) |
+| V2 | 27.3 | 27.3 | 328.7 | 124.3 | 31.7 | composited | none (scroll-cue `copy-in` and feed `panel-in` paused) | future-card opacity composited, filter 4096 |
+| V3 | 27.3 | 27.3 | 328.7 | 124.6 | 31.7 | composited | none (as V2) | as V2 |
+| V4 | 27.3 | 27.3 | 320.5 | 123.9 | 31 | composited | none (as V2) | as V2 |
+
+- **The col-track suspect is out in this run:** the morph panel's 3 `col-track` animations are composited in all 4 loads,
+  the 60 load included. So the extra ~30 frames/s is not the panel's marquee.
+- **What differs in the 60 load:** two infinite CSS animations run there and in no 27 load: the feed card's spinning
+  record (`vinyl-spin`, 4 s, rotate) and the scroll cue's `scroll-float`, both on targets with will-change auto. The
+  future card's filter/opacity animations also fail to composite there. Every load also runs the same main-thread
+  animations as v8 (the platform glints and the nav earn unmask, border/color/mask properties); v8 rests at 0 with those, so
+  they are not it. Which of the 60-load differences drives the per-frame style recalc is not decided (OBSERVED, cause
+  unknown). The earlier V load at 60.1 (restend2) also listed `vinyl-spin` as running.
+- **Lead (07:5xZ):** the trace cleared the col-tracks. The candidates (`vinyl-spin`, `scroll-float`, the future card's
+  non-composited filter/opacity) are a separate less-work item, not part of v9 or v9.1. v9.1 = v9-final + scroll-cb +
+  fix-morph-gpu's g11 close (landed on main 6f824153; `fixes/morph-gpu/v91/close-v91-on-v9final.diff` d677884838c7,
+  CSS e1359ab9994a -> f1997edf5309), built after the P-122 block ends.
+- **Not rev 7c's code and not a v9 blocker** (lead): these are page animations (feed card, scroll cue, future card)
+  whose state differs per load at the page end. Decisive local check, later: in a load that reads 60, pause one candidate
+  at a time (`getAnimations()` filter + `pause()`) inside the window and recount, or record UpdateLayoutTree with
+  `disabled-by-default-devtools.timeline.invalidationTracking` to name the restyled elements. The compositeFailed bit
+  values are Chrome's internal failure-reason flags; we did not decode them against the source (UNRESOLVED).
 
 Simulator fling-parity confirm on this v9-final (COUNTS ONLY, `sim.mjs gesture --count-only`, flick-middle-v2 with
 flingPx 300, the P-122 copies `out/p122/snap` served plain http; C = v8, V = v9-final; first page-up fling = settle 2 -
@@ -987,8 +1023,10 @@ open items:
   - page-end rest work (OBSERVED, Chrome census, counts only; "Page-end rest split" above): resting at v9's page end
     runs 27-60 main frames/s vs v8's 0-0.2 at its page end. Rev 7c brings it (S in, M out) by making the page end the
     open end; the work is the morph panel's clock (1/s tick + the original rAF digit spring, 29-37/s), the same work v8
-    runs whenever its panel is open (A-open 31.8/s). The 60 level (3 of 7 rev 7c loads) is unexplained. It does not block
-    this behaviour check; it blocks landing v9 until it is explained or removed (lead). Scoped fix candidate: P-097.
+    runs whenever its panel is open (A-open 31.8/s). Page-end rest 27-60 mainFrames/s from the visible panel clock;
+    scoped fix P-097, after v9 lands, on top of v9-final. Lead ruling (07:4xZ): rev 7c's accepted design, v9 does not
+    wait for P-097. The 60 level (4 of 11 rev 7c loads): the col-track animations are composited in both levels; the
+    60 load also runs the feed record's spin and the scroll cue's float, cause not decided ("The 60-vs-27 level").
 ```
 
 ### Post-data scorer rev, P-122 (lead ruling 2026-10-05 ~08:20Z, option (a); written after H3a-H4b were scored and after H6 ended)
@@ -1060,3 +1098,52 @@ path-VOID ("out1: out stroke too fast for the slow item (Fv -7.72, travel 180)";
   is reported in a second, report-only score that includes it.
 - **Grid per S run** (Safari timer at the hold's gates, out/thermal-gate/gates.jsonl): gSC1 8 ms, gSV1 8 ms (void),
   gSV2 30 ms, gSC2 30 ms (H5b); gSC3 and gSV3 (H5c) as their gate reads (recorded with the result).
+
+### P-122 result (v9-final vs v8, phone, xcode-serious; scorer d1dddb910cd9, re-pinned by mgmt-ops-10 at 145fb289)
+
+**Block verdict, as scored: insufficient (ES: V 1 of 2 valid)** (threshold-sensitive via EX). No gate WORSE, no
+BEHAVIOUR FAIL, every sentinel passed.
+
+**Landing basis, re-signed by the lead (2026-10-05 ~09:10Z, less-work rule; the lead tells the user):** GM, EX
+(threshold-sensitive) and FLICKER no-worse, parity pass, every sentinel passes, no gate WORSE, no BEHAVIOUR FAIL. The
+less-work rule asks that v9-final "does not measure worse", and nothing does. No gate was changed after the data and
+there is no further re-run.
+
+| gate | verdict | numbers |
+|---|---|---|
+| GM (gM, middle flicks) | no-worse | C 3 / V 3 valid; Δgt50 0, Δgt46 −2, Δgt54 0; no new 250 px cluster |
+| EX (gX, into the end and out) | no-worse (threshold-sensitive) | V 3 valid: gt50 0, gt46 1 (one 48 ms frame), gt54 0 |
+| ES (gS, slow strokes) | insufficient (V 1, need 2) | valid V: gSV2 only (gt50 0, gt46 1: 48 ms); gSV1 and gSV3 path-VOID |
+| FLICKER (G1 per part) | no-worse | V monotone blinks 0 in M, X and S (C: M 0, X 1, S 0); valid G runs pooled C 8, V 9 |
+| BEHAVIOUR (parity) | pass | M first page-up fling after mid1: median C 1836, V 1783, gap −53 (pairs −124 / −95 / −53) |
+
+- **Parity X passes only via the clipped-end exemption.** First stroke after into1: median C 1187, V 2058, gap 871
+  (pairs 775 / 871 / 987); every run on both arms ended clipped at its own end. The card's rule: "A gap in which the
+  shorter side ended at its own arm's end (within 10 px of 0 or docH - innerHeight) does not count: v9's open end is
+  one screen lower than v8's, so X's into fling can run further on V by design."
+- **Conditions.** Holds H3a-H6 VALID (iphone-runner: PIN HEAD aaa18038, every item exit 0, gates Serious (induced),
+  PMSET ok, no re-runs). H5c (sCo gSC3 gSV3 sCc, lead 09:03Z, rule committed before it ran in 09d798bb) VALID, 262 s,
+  PIN HEAD 09d798bb (hold122.sh ec6cc97f190b and its pinned files unchanged since aaa18038; only score.mjs moved, to
+  d1dddb910cd9). Safari timer grid per hold (out/thermal-gate/gates.jsonl): 8 ms for H3a, H3b, H4a, H4b, H5a (grid30
+  0-0.01); 30 ms for H5b, H6, H5c (grid30 0.86-0.95). No part is grid-split: M and X 8 ms only; S per run gSC1 8,
+  gSV1 8 (void), gSV2 30, gSC2 30, gSC3 30, gSV3 30 (void); R (V only) 30 ms.
+- **ES grid twin (30 ms only, C {gSC2, gSC3} vs V {gSV2, gSV3}):** insufficient (V 1), the same as the main ES, so
+  they agree.
+- **Report only (not scored):** the path-voided V runs' frames: gSV1 gt50 0, gt34 0; gSV3 gt50 0, gt34 2. gSC3 (grid
+  control, H5c): valid, gt50 1, gt46 1, gt54 1, gt34 1; out strokes Fv −2.22 / −2.42 (out/p122/score-final-withC3.txt,
+  report only; gSC3 counts in nothing).
+- **The path VOIDs are a touch-timestamp artifact (OBSERVED, in our setup, cause unknown).** The driver's finger moves
+  are identical on every gS run of both arms (the last six touchmove dy are 8, 19, 25, 24, 23, 13 px); only the touch
+  timestamps differ. P-121's gate.mjs strokes() (lines 18-24) weights each new move half, so a tiny dt at the last
+  move dominates Fv: gSV1 out1 last dt 1 ms → Fv −7.72; gSV3 out2 last dt 2 ms → Fv −4.57 (VOID at ≤ −4.5). The
+  last-move dt is 1-2 ms on 2 of 6 V out strokes and 0 of 6 C (C's last dt 8-10 ms, Fv −2.2 to −2.7). One candidate:
+  late touch delivery at V's busier page end (27-60 main frames/s, the P-097 item). Routed: to fix-cd-roll-ca-r4
+  (P-097) and as a P-121 gate item (a robust Fv, e.g. the median of the last 3 moves) for a later toolsmith; findings
+  board.
+- **R (report only, I-179):** 3 V runs, 9 ret strokes lift at p −0.125 to −0.131 (lowest p −0.88 to −1.006), 0 returned
+  to the open end; 6 frames > 50 ms over the 3 runs (53, 54, 53 ms near-band and 3 more > 54), all in H6 (30 ms grid).
+- **Predictions** (int-v8, before data): BEHAVIOUR pass 0.75 → pass; GM no-worse 0.60 → no-worse; EX no-worse 0.60 →
+  no-worse; ES no-worse 0.70 → insufficient; FLICKER G1 pass 0.85 → pass; sentinels all first try 0.70 → yes; overall
+  no-worse 0.45 → insufficient (landed on the re-signed basis).
+- Outputs (gitignored): out/p122/score-final.txt/.json (the block score), score-final-flicker-{M,X,S}.json,
+  score-final-withC3.txt/.json (report only).
