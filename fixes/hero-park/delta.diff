@@ -1,8 +1,16 @@
-diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
-index 9c12794f..037e4861 100644
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -4895,10 +4895,15 @@ function fD(r, i) {
+@@ -4874,6 +4874,9 @@
+       heEnd = 1 / 0,
+       heTouch = 0,
+       heR = 0,
++      // hero-park: heZ = the last s() wrote r = 0 (exit complete); heIh = innerHeight when heArm took heEnd
++      heZ = !1,
++      heIh = 0,
+       heLive = () => b.classList.contains(`he-css`),
+       heRT = () => {
+         (window.clearTimeout(heR), (heR = window.setTimeout(heRest, 300)));
+@@ -4895,10 +4898,15 @@
        // the baseline writer, as in the baseline: there the cue's blur is under 0.7 px, and the float's animated
        // blur drew the cue up to 78 levels off the baseline at y6 (0 at y30; Simulator, OBSERVED, cause unknown).
        // Past the end nothing moves in the exit.
@@ -19,3 +27,43 @@ index 9c12794f..037e4861 100644
          y > heTop + 30 && y < heEnd && heUp();
        },
        // heUp: go live (see above): the inline value for this scrollY covers the new animations' pending frame.
+@@ -4931,14 +4939,15 @@
+         s();
+       },
+       s = () => {
+-        if (((i = 0), e.matches)) {
++        if (((i = 0), (heZ = !1), e.matches)) {
+           (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``), __cdSet(__cdHeroShown, !0));
+           return;
+         }
+         let t = b.getBoundingClientRect(),
+           n = Math.max(1, t.height - window.innerHeight),
+           r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
+-        (x.style.setProperty(`--exit-opacity`, String(r)),
++        ((heZ = r === 0),
++          x.style.setProperty(`--exit-opacity`, String(r)),
+           (x.style.pointerEvents = r < 0.05 ? `none` : ``),
+           __cdSet(__cdHeroShown, r > 0));
+       },
+@@ -5022,9 +5031,11 @@
+     // hero-exit-scroll-timeline: live CSS mode skips the baseline writer (the animations draw the exit); parked
+     // and outside CSS mode the dE callback runs it as in the baseline. dE stays registered for its side
+     // effects on the track (scene pause + render deferral).
++    // hero-park: parked at least 40 px past the end, with r = 0 already written and the innerHeight heEnd was taken at,
++    // the writer would write r = 0 again: skip it (its rect read forced a layout per frame, Simulator dry run, OBSERVED).
+     let g = dE(
+         () => {
+-          (heMode && heLive()) || c();
++          (heMode && (heLive() || (heZ && window.scrollY >= heEnd + 40 && window.innerHeight === heIh))) || c();
+         },
+         { deferRendering: !0, element: b },
+       ),
+@@ -5036,7 +5047,7 @@
+       let n = window.innerHeight,
+         t = b.getBoundingClientRect(),
+         r = 0.05 * t.height + 0.95 * n;
+-      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)));
++      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)), (heIh = n));
+       heIO = new IntersectionObserver(
+         (n) => {
+           for (let e of n) heIn = e.isIntersecting;

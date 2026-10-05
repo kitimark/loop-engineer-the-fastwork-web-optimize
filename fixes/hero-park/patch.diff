@@ -1056,13 +1056,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        S = (e, t, r, a, o) =>
          new Promise((s) => {
-@@ -2456,6 +2458,39 @@
-               }
-               let s = Math.min(1, (i - u) / a);
-               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
-+            };
-+          n = window.requestAnimationFrame(d);
-+        }),
+@@ -2459,6 +2461,39 @@
+             };
+           n = window.requestAnimationFrame(d);
+         }),
 +      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
 +      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
 +      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
@@ -1093,9 +1090,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
 +                  }, w))
 +                : (n = window.requestAnimationFrame(d));
-             };
-           n = window.requestAnimationFrame(d);
-         }),
++            };
++          n = window.requestAnimationFrame(d);
++        }),
+       E = async (e) => (
+         z(y, !0),
+         z(v, !1),
 @@ -2486,7 +2521,7 @@
              (z(b, e, !0), z(C, e / 100));
            })) ||
@@ -1205,7 +1205,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
-+}
+ }
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -1237,7 +1237,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
- }
++}
 +// [scroll-engine /10c] far re-skip, behind the user only: a rendered section that is more than its
 +// un-skip margin + 25 % (1.75 vh for the default 100 % gate, 2.25 vh for .pain's 150 %) ABOVE the viewport
 +// goes back to content-visibility (its height comes from the IO entry, no forced layout), which drops its
@@ -1510,7 +1510,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      i = N(`idle`),
      a,
      o = R(() => (s(r) < 0 ? LE : (RE[s(r)] ?? LE))),
-@@ -3782,9 +4077,48 @@
+@@ -3782,10 +4077,49 @@
            bottom: s(o).paintBottom,
            left: s(o).paintLeft,
          })));
@@ -1533,7 +1533,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    e.animate([{ transform: `translateX(${x}em)` }, { transform: `none` }], o);
 +  for (let e = d.nextElementSibling; e; e = e.nextElementSibling)
 +    e.animate([{ transform: `translateX(${-x}em)` }, { transform: `none` }], o);
-+}
+ }
 +// layout-animations: the four gradient row titles sweep background-position forever (repaint every
 +// frame); the engine pauses them only per section (±1 viewport), so also pause each title while it is
 +// off-screen.
@@ -1556,9 +1556,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  PMpre(() => () => {
 +    for (let e of ts) PMsweepIO.unobserve(e);
 +  });
- }
++}
  var UE = { stiffness: 280, damping: 18, mass: 0.3 },
    WE = 16;
+ function GE(e, t, n, r = UE) {
 @@ -3815,8 +4149,148 @@
    return Array.from({ length: r }, (e, t) => 10 ** (r - t - 1));
  }
@@ -2006,7 +2007,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    function c(e) {
      return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
    }
-@@ -4160,15 +4816,136 @@
+@@ -4160,15 +4816,140 @@
        i = 0,
        a = 0,
        o = !1,
@@ -2068,6 +2069,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      heEnd = 1 / 0,
 +      heTouch = 0,
 +      heR = 0,
++      // hero-park: heZ = the last s() wrote r = 0 (exit complete); heIh = innerHeight when heArm took heEnd
++      heZ = !1,
++      heIh = 0,
 +      heLive = () => b.classList.contains(`he-css`),
 +      heRT = () => {
 +        (window.clearTimeout(heR), (heR = window.setTimeout(heRest, 300)));
@@ -2130,8 +2134,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        s();
 +      },
        s = () => {
-         if (((i = 0), e.matches)) {
+-        if (((i = 0), e.matches)) {
 -          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``));
++        if (((i = 0), (heZ = !1), e.matches)) {
 +          (x.style.setProperty(`--exit-opacity`, `1`), (x.style.pointerEvents = ``), __cdSet(__cdHeroShown, !0));
            return;
          }
@@ -2139,13 +2144,14 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            n = Math.max(1, t.height - window.innerHeight),
            r = 1 - Math.min(n, Math.max(0, -t.top)) / n;
 -        (x.style.setProperty(`--exit-opacity`, String(r)), (x.style.pointerEvents = r < 0.05 ? `none` : ``));
-+        (x.style.setProperty(`--exit-opacity`, String(r)),
++        ((heZ = r === 0),
++          x.style.setProperty(`--exit-opacity`, String(r)),
 +          (x.style.pointerEvents = r < 0.05 ? `none` : ``),
 +          __cdSet(__cdHeroShown, r > 0));
        },
        c = () => {
          i ||= window.requestAnimationFrame(s);
-@@ -4181,9 +4958,19 @@
+@@ -4181,9 +4962,19 @@
            window.clearTimeout(r),
            (r = 0),
            C.classList.add(`is-splash-done`),
@@ -2167,7 +2173,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          let t = e - a,
            r = O(t),
            i = j(t);
-@@ -4205,6 +4992,7 @@
+@@ -4205,6 +4996,7 @@
            window.clearTimeout(r),
            (r = 0),
            (o = !1),
@@ -2175,7 +2181,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            C.classList.add(`is-preparing`),
            x.classList.add(`is-preparing`),
            C.classList.remove(`is-splash-done`, `is-expanding`),
-@@ -4233,18 +5021,62 @@
+@@ -4233,18 +5025,64 @@
        };
      p();
      let h = () => {
@@ -2187,9 +2193,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    // hero-exit-scroll-timeline: live CSS mode skips the baseline writer (the animations draw the exit); parked
 +    // and outside CSS mode the dE callback runs it as in the baseline. dE stays registered for its side
 +    // effects on the track (scene pause + render deferral).
++    // hero-park: parked at least 40 px past the end, with r = 0 already written and the innerHeight heEnd was taken at,
++    // the writer would write r = 0 again: skip it (its rect read forced a layout per frame, Simulator dry run, OBSERVED).
 +    let g = dE(
 +        () => {
-+          (heMode && heLive()) || c();
++          (heMode && (heLive() || (heZ && window.scrollY >= heEnd + 40 && window.innerHeight === heIh))) || c();
 +        },
 +        { deferRendering: !0, element: b },
 +      ),
@@ -2201,7 +2209,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      let n = window.innerHeight,
 +        t = b.getBoundingClientRect(),
 +        r = 0.05 * t.height + 0.95 * n;
-+      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)));
++      ((heTop = t.top + window.scrollY), (heEnd = heTop + Math.max(1, t.height - n)), (heIh = n));
 +      heIO = new IntersectionObserver(
 +        (n) => {
 +          for (let e of n) heIn = e.isIntersecting;
@@ -2241,7 +2249,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            g());
        }
      );
-@@ -4330,7 +5162,11 @@
+@@ -4330,7 +5168,11 @@
      be = e(ye, !0);
    (M(ye), M(W));
    var xe = V(W, 2);
@@ -2254,7 +2262,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5525,28 @@
+@@ -4689,11 +5531,28 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
@@ -2286,7 +2294,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        i = new IntersectionObserver(
          ([e]) => {
-@@ -4726,10 +5579,15 @@
+@@ -4726,10 +5585,15 @@
          ((O = null), z(E, null));
        },
        d = () => {
@@ -2302,7 +2310,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        window.addEventListener(`pointermove`, l),
        window.addEventListener(`pointerup`, u),
        window.addEventListener(`pointercancel`, u));
-@@ -4740,6 +5598,7 @@
+@@ -4740,6 +5604,7 @@
          i.disconnect(),
          a.disconnect(),
          t.removeEventListener(`change`, c),
@@ -2310,7 +2318,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          window.removeEventListener(`pointermove`, l),
          window.removeEventListener(`pointerup`, u),
          window.removeEventListener(`pointercancel`, u),
-@@ -10776,11 +11635,17 @@
+@@ -10776,11 +11641,17 @@
      let t = ie(e);
      return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
    }
@@ -2330,7 +2338,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    function le() {
      let e = window.innerHeight * 1.45,
-@@ -10848,7 +11713,7 @@
+@@ -10848,7 +11719,7 @@
        }, 50));
    }
    function ge(e) {
@@ -2339,7 +2347,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        s(T) && he(e, !0);
        return;
      }
-@@ -10898,7 +11763,7 @@
+@@ -10898,7 +11769,7 @@
        e < r && ((r = e), (n = i));
      }
      let i = n?.dataset.profession;
@@ -2348,7 +2356,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }
    function xe() {
      !s(T) ||
-@@ -10927,9 +11792,10 @@
+@@ -10927,9 +11798,10 @@
        },
        f = () => {
          if (((n = 0), z(T, e.matches, !0), W(), !ce())) {
@@ -2360,16 +2368,16 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          let { shrinkRange: t, professionRange: a, totalRange: m } = le(),
            _ = 48 - h.getBoundingClientRect().top,
            y = Math.min(m, Math.max(0, _)),
-@@ -10969,16 +11835,19 @@
+@@ -10969,16 +11841,19 @@
          (A && j && M) || (n = window.requestAnimationFrame(f));
        },
        m = () => {
 -        n ||= window.requestAnimationFrame(f);
 +        scbProfIdle || (n ||= window.requestAnimationFrame(f));
-+      },
+       },
 +      scbProfWake = () => {
 +        ((scbProfIdle = !1), m());
-       },
++      },
        _ = () => {
 -        (z(T, e.matches, !0), he(s(C), s(T)), m());
 +        ((scbProfIdle = !1), z(T, e.matches, !0), he(s(C), s(T)), m());
@@ -2383,7 +2391,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (n = window.requestAnimationFrame(f)),
        () => {
          (n && window.cancelAnimationFrame(n),
-@@ -10987,7 +11856,7 @@
+@@ -10987,7 +11862,7 @@
            y(),
            x.removeEventListener(`scrollend`, be),
            e.removeEventListener(`change`, _),
@@ -2392,7 +2400,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            (h.style.height = ``));
        }
      );
-@@ -11249,7 +12118,7 @@
+@@ -11249,7 +12124,7 @@
  }
  g([`pointerdown`, `pointermove`, `pointerup`, `click`]);
  var dM = h(
@@ -2401,7 +2409,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,28 +12163,142 @@
+@@ -11294,28 +12169,142 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -2547,7 +2555,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
          }
          let r = document.querySelector(`.pain`);
-@@ -11325,8 +12308,13 @@
+@@ -11325,8 +12314,13 @@
          }
        },
        u = () => {
@@ -2562,7 +2570,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        f = (e) =>
          new Promise((t) => {
            let r = window.setTimeout(() => {
-@@ -11337,37 +12325,67 @@
+@@ -11337,37 +12331,67 @@
          }),
        p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
        m = (e) => {
@@ -2637,7 +2645,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -11419,11 +12437,15 @@
+@@ -11419,11 +12443,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -2656,7 +2664,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        ),
          f(e, t));
      },
-@@ -11443,7 +12465,7 @@
+@@ -11443,7 +12471,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -2665,7 +2673,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(me));
    var ve = V(me, 2),
-@@ -11994,28 +13016,41 @@
+@@ -11994,28 +13022,41 @@
    ne(() => {
      let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
        t = 0,
@@ -2719,7 +2727,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                  a < 1 && (t = requestAnimationFrame(n)));
              };
            t = requestAnimationFrame(n);
-@@ -12197,14 +13232,9 @@
+@@ -12197,14 +13238,9 @@
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = !1,
        n = 0,
@@ -2736,7 +2744,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        i = () => {
          (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
-@@ -12243,26 +13273,16 @@
+@@ -12243,26 +13279,16 @@
          a = e(r),
          u = e(a),
          d = e(u),
@@ -2772,7 +2780,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13293,12 @@
+@@ -12273,8 +13299,12 @@
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
                "is-active": s(v),
              })),
@@ -2785,7 +2793,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(t, r));
      },
    );
-@@ -12433,21 +13457,56 @@
+@@ -12433,21 +13463,56 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -2847,7 +2855,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      };
    });
    var h = WM();
-@@ -12652,6 +13711,7 @@
+@@ -12652,6 +13717,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -2855,7 +2863,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, i));
      },
    ),
-@@ -12879,7 +13939,7 @@
+@@ -12879,7 +13945,7 @@
      `<div class="start-selling-morph-panel"><div class="start-selling-morph-backdrop" aria-hidden="true"></div> <div class="start-selling-morph-veil" aria-hidden="true"></div> <div class="start-selling-morph-center"><p class="start-selling-morph-title"> </p> <div class="waitlist-closing-countdown svelte-1dcozpm"><!></div> <div class="start-selling-morph-cta-stack svelte-1dcozpm"><button class="start-selling-morph-cta" type="button"><svg class="solar solar-bell-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M18.7491 9.70957V9.00496C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00496V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z" stroke="currentColor"/><path d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19" stroke="currentColor" stroke-linecap="round"/></svg> </button> <a class="start-selling-morph-cta-rsvp" href="https://f.fastwork.co/demoday" target="_blank" rel="noopener" data-selenium="start-selling.header.link.demo-day"><svg class="solar solar-calendar-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor"/><path d="M7 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M2.5 9H21.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 13H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17.0234H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.0234H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.0234H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> </a></div></div> <footer class="start-selling-morph-footer"><p> </p> <div class="start-selling-morph-footer-end"><p> </p> <span class="start-selling-morph-grad" aria-hidden="true"></span> <a href="https://fastwork.com/privacy"> </a></div></footer></div>`,
    ),
    uN = h(
@@ -2864,7 +2872,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    );
  function dN(n, r) {
    D(r, !0);
-@@ -12944,7 +14004,14 @@
+@@ -12944,7 +14010,14 @@
      x = N(0),
      w = 0,
      T,
@@ -2880,7 +2888,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      O = R(() => !s(p) && !s(E)),
      A = R(() => s(O) || s(x) > 0.55);
    function j(e) {
-@@ -12952,17 +14019,126 @@
+@@ -12952,17 +14025,126 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -2901,7 +2909,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    for (let r of document.elementsFromPoint(t, n))
 +      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
 +    return j(null);
-+  }
+   }
 +  // perf(nav-hit-cache): the viewport y of F()'s probe point (nav is fixed), measured with the offsets
 +  function __navProbeY() {
 +    if (!T) return 32;
@@ -2960,7 +2968,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  })(0.33, 0, 0.2, 1);
 +  function __ewWrap() {
 +    return __ewWr?.isConnected ? __ewWr : (__ewWr = ie?.querySelector(`:scope > .start-selling-language-switch-wrap`));
-   }
++  }
 +  function __ewMeasure() {
 +    if (!oe?.isConnected) return;
 +    let w = oe.offsetWidth;
@@ -3013,7 +3021,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12997,17 +14173,144 @@
+@@ -12997,17 +14179,144 @@
            (window.clearTimeout(l), f());
        };
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
@@ -3164,7 +3172,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        y = () => document.querySelector(`.start-selling-platform`),
        S = () => {
-@@ -13017,13 +14320,186 @@
+@@ -13017,13 +14326,186 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -3353,7 +3361,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14521,9 @@
+@@ -13045,9 +14527,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -3365,7 +3373,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14531,58 @@
+@@ -13055,27 +14537,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -3431,7 +3439,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +14593,77 @@
+@@ -13086,7 +14599,77 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -3510,7 +3518,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,10 +14672,59 @@
+@@ -13095,13 +14678,62 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -3533,9 +3541,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          document.removeEventListener(`transitionrun`, __nsTrRun, !0),
 +          document.removeEventListener(`transitionend`, __nsTrEnd, !0),
 +          document.removeEventListener(`transitioncancel`, __nsTrEnd, !0));
-+      }
-+    );
-+  });
+       }
+     );
+   });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -3568,10 +3576,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-       }
-     );
-   });
-@@ -13116,12 +14742,28 @@
++      }
++    );
++  });
+   var I = uN();
+   let L, te;
+   var B = e(I),
+@@ -13116,12 +14748,28 @@
      },
    });
    var oe = V(ae, 2),
@@ -3602,7 +3613,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14782,7 @@
+@@ -13140,7 +14788,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -3611,7 +3622,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14799,16 @@
+@@ -13157,7 +14805,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -3629,7 +3640,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14844,8 @@
+@@ -13193,7 +14850,8 @@
          M(w),
          M(a),
          l(() => {
@@ -3639,7 +3650,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14862,7 @@
+@@ -13210,7 +14868,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -3648,7 +3659,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13229,9 +14881,12 @@
+@@ -13229,9 +14887,12 @@
            "is-locale-open": s(y),
            "is-scroll-hidden": s(v) && !s(E),
            "is-profile-sticky-hidden": s(v) && !s(E),

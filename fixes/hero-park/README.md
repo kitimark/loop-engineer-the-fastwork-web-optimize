@@ -9,7 +9,7 @@
 **Driver(s) behind the claims:** Simulator scripted swipe (counts); phone G for the no-worse check
 **Owner:** fix-hero-exit-threaded
 **Base:** v9.1d (int-v8, P-134 base): JS 941aa13e5bdf, CSS f1997edf5309 (`fixes/v9-1d/patch.diff` ce2d32a1bbbb, int-v8's)
-**V:** v9.1d + hero-park: JS be22bf861949, CSS f1997edf5309 (unchanged)
+**V:** v9.1d + hero-park: JS 8ce731d584d9, CSS f1997edf5309 (unchanged). Rev 2 (after dry run 1) adds the writer skip past the end; rev 1 V be22bf861949 / delta b2ed79bdbab5 withdrawn
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only, one hunk: JS 4895-4909 in v9.1d (4813-4827 in v9-final + 7d),
 the hero's `heSc` scroll listener and its comment.
 
@@ -35,8 +35,8 @@ does not flip the class. Expected visual: identical (T0) past the end; checked b
 - `heSc` is a plain `scroll` listener on window (capture, passive), not the scroll engine's (`dE`/`iE`) callback, so
   scroll-cb's rAF cuts (int-v8, v9.1d) do not change when it parks. Its hunk is outside int-v8's reserved ranges (scroll-cb
   JS 3219-3446, 11636-11854, 12249-12383, 13459-13504; g11; people-word a).
-- `delta.diff` applies with `patch -p1` (no fuzz) on v9.1d and on v9-final + 7d (checked: V be22bf861949 on v9.1d,
-  c036d875f16c on v9-final + 7d, `node --check` ok).
+- `delta.diff` applies with `patch -p1` (no fuzz) on v9.1d and on v9-final + 7d (checked: V 8ce731d584d9 on v9.1d,
+  6b28c3b9528e on v9-final + 7d, `node --check` ok; delta 14fb7c20781c, patch 60a3af326659).
 
 ## Files
 
