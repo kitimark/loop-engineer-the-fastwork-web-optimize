@@ -31,9 +31,26 @@
     <p class="note">The two sides were recorded about 10 minutes apart, both at Serious. One run per side: a picture of the difference, not a measured gain.</p>
   </div>
 
-  <!-- SLOT t: "People still need people" title (crop), Hold B -->
-  <!-- SLOT d: user avatar carousel (crop), Hold B -->
-  <!-- SLOT e: end of a section, Hold B -->
+  <div class="ba-scene">
+    <div class="res-head"><span>The 'People still need people' title (cropped)</span><span class="v">original · v8</span></div>
+    <video src="clip:phone-t.mp4" controls loop muted playsinline preload="metadata" aria-label="iPhone screen, the 'People still need people' title, original on the left and v8 on the right"></video>
+    <div class="res-nums">Page log, original → v8, 7.6 s: frames over 34 ms 5 → 2, over 50 ms 0 → 0</div>
+    <p class="note">A quick stroke brings the title in; about 1.3 s later its 'o' animates. Clock note: the clock check failed on the original side; aligned on the title-stroke drag edge, a post-hoc check, 49 ms of a 50 ms limit.</p>
+  </div>
+
+  <div class="ba-scene">
+    <div class="res-head"><span>The user avatar carousel at rest (cropped)</span><span class="v">original · v8</span></div>
+    <video src="clip:phone-d.mp4" controls loop muted playsinline preload="metadata" aria-label="iPhone screen, the user avatar carousel, original on the left and v8 on the right"></video>
+    <div class="res-nums">Page log, original → v8, 6 s at rest: frames over 34 ms 19 → 0, over 50 ms 5 → 0</div>
+    <p class="note">The page stands still; the avatars change about once a second. Clock note: no scroll in this window; clock link from the title edge (a post-hoc check).</p>
+  </div>
+
+  <div class="ba-scene">
+    <div class="res-head"><span>The end of the page: two flicks in and out</span><span class="v">original · v8</span></div>
+    <video src="clip:phone-e.mp4" controls loop muted playsinline preload="metadata" aria-label="iPhone screen, flicks into the end of the page and out, original on the left and v8 on the right"></video>
+    <div class="res-nums">Page log, original → v8, 18 s: frames over 34 ms 100 → 7, over 50 ms 61 → 1</div>
+    <p class="note">Both sides come from the same hold, about a minute apart. Pick note: we fixed the pick rule after the first pick mixed two holds recorded hours apart.</p>
+  </div>
 
   <div class="ba-legend" aria-hidden="true"><span><i class="swatch" style="background:#6b7d75"></i>frame on time</span><span><i class="swatch" style="background:#e2b84a"></i>over 34 ms</span><span><i class="swatch" style="background:#ff6b4a"></i>over 50 ms</span></div>
 </section>
