@@ -443,6 +443,15 @@ runner serves that snapshot with TICKET-7d's hash check (JS and CSS hashes befor
 rule text; the bullets below restate it.
 `node research/serious-heat/p129-read.mjs <folder> --E E1,E2,E3,E4 --L L1,L2,L3,L4 --S S0,S1 [--json out.json]`.
 Any change after the first counted run is a new card.
+**Reader rev 1.1 (disclosed, mechanical; the lead's ruling after part 1, 2026-10-05).** In part 1 the frozen reader
+crashed on every real Timeline run (E1, L1, L2, E2): `Math.min(...)`/`Math.max(...)` spread over the flattened Timeline
+records (line 175, 7.6-8.6k top-level records) threw `RangeError: Maximum call stack size exceeded`. The runs themselves
+exited 0. Rev 1.1 (sha256/12 `06f74f5d19ca`) only replaces that one spread with a loop of pairwise `Math.min`/`Math.max`
+(the same result); no rule, threshold, gate or output format changed. The self-test is unchanged (`110cc04eb8fb`,
+`SELFTEST PASS 48`). Proof: old and new outputs are byte-identical on every self-test fixture (74 reader calls), on the
+dry-run records (P-124's S9, E9, L9) and on S0, and on E1/L1/L2/E2 cut to 500, 2000 or 5000 Timeline records. The old
+reader crashes on the full E1/L1/L2/E2 files, so those have no old output to compare. Under rev 1.1, E1, L1, L2 and E2
+pass every run gate, so none is re-run.
 
 **Clock mapping (C1).** Frame stamps `t` are the page's `performance.now()` (the recorder's rAF timestamp). The
 Timeline file carries `offsetMs = syncTL·1000 − syncT` from a `performance.mark` TimeStamp

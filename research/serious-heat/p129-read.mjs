@@ -172,7 +172,10 @@ export function readRun(g, tl, role) {
   if (share < GATE.align) why.push(`G3 alignment ${(share * 100).toFixed(1)} % < ${GATE.align * 100} %`);
   const med = lags[lags.length >> 1];
   if (lags.length && Math.abs(med) > GATE.medLag) why.push(`G3 median lag ${med.toFixed(2)} ms outside +-${GATE.medLag}`);
-  const tlLo = Math.min(...flat.map((r) => r.a)), tlHi = Math.max(...flat.map((r) => r.b));
+  // reader rev 1.1 (mechanical, the lead's ruling after P-129 part 1): a loop instead of Math.min(...)/Math.max(...)
+  // spread, which overflowed the call stack on a real Timeline's record count; pairwise Math.min/max keeps the exact result.
+  let tlLo = Infinity, tlHi = -Infinity;
+  for (const r of flat) { tlLo = Math.min(tlLo, r.a); tlHi = Math.max(tlHi, r.b); }
   const touchEnds = (seg.touches || []).filter((e) => e[1] === 'e').map((e) => e[0]);
   const installs200 = new Set(flat.filter((r) => r.type === 'TimerInstall' && r.data.timeout === 200).map((r) => r.data.timerId));
   const t0w = (role === 'E' ? ready : t1?.[0]) ?? NaN; // missing: G4 already failed the run
