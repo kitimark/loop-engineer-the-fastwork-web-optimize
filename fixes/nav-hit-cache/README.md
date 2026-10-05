@@ -880,6 +880,10 @@ CSS e1359ab9994a; every load served VA's pin; no page errors.
 - **Touch input:** the parity drive moves the page only by `scrollTo` (tasks or rAF). The mobile cases emulate touch,
   but no touch event ever fires, so no fling from the page end. A morph-scroll change limited to touchend (rev 7d)
   does not change what this audit runs.
+- **Carry-over to the rev 7d rebuild of v9 (lead, 10-05).** This PASS holds for v9 rebuilt with morph-scroll rev 7d +
+  U1 (929268181c61) + glue (5d63660a9e62), with no re-run, given a byte-diff note: the rebuilt V may differ from
+  c3d36476c3ce only in rev 7d's morph-scroll touchend lines. Any other differing line voids the carry-over: re-run
+  `probe.mjs parity` on the new base.
 
 ## Smoke (not scored)
 
