@@ -4,7 +4,7 @@
 > Fastwork). The `patch.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
 **Status:** proposal (visual-timing change the user asked for, user thread T-192); not a performance fix, no timing A/B
-(memory "defer timing"). The user decides on the console proposal __PR__.
+(memory "defer timing"). The user decides on the console proposal PR-024 (options `a`, `a-phone`; recommended `a`).
 **Owner:** fix-people-word. **Driver behind the claims:** Chrome functional probe (headless, unthrottled, counts and
 class timestamps only). No iPhone use (the phone is in timed blocks).
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js`, the word component `WD`'s effect only (pretty lines
@@ -134,3 +134,22 @@ in the table above. `node --check` passes for both option files.
   JS 11303-11311, the area morph-scroll-v9try and fix-double-drive touched). A future change that renames or stops
   toggling `is-visible` must keep the class or the word waits forever on phones (A-phone) / everywhere (A) while the
   heading is in view. The code falls back to the original path only when the section element is missing.
+
+## Proposal PR-024
+
+- Posted 2026-10-05 by fix-people-word; options `a` (A: every width) and `a-phone` (phones and tablets only);
+  recommended `a`. B option (later observer trigger) dropped, reason above. Stills: Chrome 430x932, gentle stepped
+  scroll (~300 px/s), full-viewport shots cropped around the title at 0.5 / 1.2 / 1.6 / 3.0 s after `is-visible`
+  (base: the word already open at 0.5 s, it ended 0.53 s before the fade started; A: plain "people" until 1.3 s, faces
+  coming in at 1.6 s). A-phone reuses A's stills (same code path at phone width). Probe and stills scripts:
+  `out/people-word/probe.mjs`, `out/people-word/shots.mjs` (not committed).
+- Try-it (console's Try-it host, plain http, I-126/I-143): A = base build (live A patch
+  `fixes/morph-scroll-v9try/patch.diff`), B = `fixes/people-word-a/patch.diff` or `fixes/people-word-aphone/patch.diff`.
+  Served hashes checked: A JS `1b2eecc66011`, option a JS `6788ba9a8009`, option a-phone JS `36dbcef9a12e`, CSS
+  `e1359ab9994a` on all three. Phone Try-it after the current phone blocks; the lead tells the user when.
+- `proposal post` warned that B "does not carry all of A's changes (4 lines)"; the overlays show B = A plus this
+  hunk group only (`diff` of the two JS files: 11 removed lines, all baseline lines of `WD`'s effect). Reported as
+  incident I-206 (tool, not blocking, triaged P3). Lead's check before any Try-it, done: main and this branch carry
+  the same `morph-scroll-v9try/patch.diff` (blob c5365637, commit ada7f461); the served Try-it JS files A vs B differ
+  in 7 hunks, all inside lines 7001-7043 (`WD`'s effect), 11 lines removed (baseline lines of that effect), 41 (a) /
+  43 (a-phone) added; nothing of A is missing from B. Noted in I-206 and in PR-024 rev 2 (note only, no content change).
