@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); PGP card rev 1 (page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, to ops for the pre-data read
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -2234,6 +2234,189 @@ Census frames are rAF intervals chosen without a Layout test; none of them is ca
 - **Files.** `out/toolbar-resize/sim128/` (gitignored: `g-C-H1..5.json`, `runs.jsonl`, `read128.json`), slot logs
   `out/toolbar-resize/run128.log` and `run128b.log`. Reader output: `node fixes/toolbar-resize/p128-read.mjs
   out/toolbar-resize/sim128 C-H1 C-H2 C-H3 C-H4 C-H5`.
+
+## Prediction PGP (P-id from ops): page-side arms on the viewport-constrained renderers, v9-final (Simulator Timeline, registered before data)
+
+**Card rev 1, before any data.** Next: mgmt-ops-10's pre-data read (and a P-id), then the lead's signature. No run
+before the signature. The files use the neutral prefix `pgp-` until the P-id is known.
+
+- **Basis (lead, 2026-10-05 ~09:3xZ, then the instrument choice):**
+  - The script-caller line is closed (P-128).
+  - The page-side gpu-props arm gets its own card, on choice A (P-109's instrument):
+    - Simulator Timeline;
+    - median largest Layout on the toolbar-moving hero frames;
+    - each arm divided by its neighbouring C runs.
+  - It is a **within-session mechanism ratio, never a gain** (F-084). It is the Safari layout attribution that the
+    timing-deferral memory allows.
+  - Hold: one normal exclusive hold of <= 10 min per stage, FIFO, nobody moved for it. It defers while P-129's phone
+    block is marked.
+  - Approved arms: trk, pbx, trk+pbx, vu0, and nvc (positive control, mechanism only).
+  - For any arm that locates, the pixel check comes first.
+  - The viewport-unit half is mostly answered (P-106 `dvh`, P-110, P-115 `svh`, P-123). vu0 is a cheap closer, not a
+    main bet.
+  - The first ruling named a count-only stage 1. My instrument message showed that count-only cannot see where Layout
+    cost goes, and the lead chose A. So this card has no count-only stage.
+- **Question.**
+  - On v9-final, which viewport-constrained renderers carry the toolbar step's heavy Layout to the showcase?
+  - Does a layout boundary (`contain: size layout`) above the sticky ones stop it, with their look kept?
+- **What is known.**
+  - Removing renderers:
+    - P-109 nvc (hero, nav and pain made non-viewport-constrained together): LOCATES, ratio 0.017.
+    - Every subset was NONE: P-106 `sticky` (the hero alone, phone), and P-110 nav, pain and nav+pain (Simulator).
+  - The cost is the showcase (P-110 ps, ratio 0.032).
+  - Containing the showcase does nothing (P-115 csl, P-119 cct). Only skipping it while it is off screen helps (P-119
+    cva).
+  - The working model M1 (R7, OBSERVED) says the box's own containment does not block the invalidation. This card puts
+    boundaries on the stickies' ancestors, not around the showcase.
+  - F-265 (arch-serious-heat): the step Layout runs in WebKit's Composite window with no JS on the stack, which fits the
+    engine's viewport-change path. It stays **OBSERVED, in our setup**; this card cites no WebKit source for it.
+- **WebKit source** (CONFIRMED; WebKit main `2d9f94fae5f57d291987f98c980ecab42dba6d29`, fetched with `gh api`; S1-S10
+  above):
+  - S2/S3: a change in the layout-viewport size marks every fixed or sticky renderer `setNeedsLayout()`.
+  - R1: `isLayoutBoundary` returns true for a renderer with both layout and size containment
+    ([RenderObject.cpp l.519-559, test at l.533](https://github.com/WebKit/WebKit/blob/2d9f94fae5f57d291987f98c980ecab42dba6d29/Source/WebCore/rendering/RenderObject.cpp#L519-L559)).
+    A box with `overflow: visible` is never a boundary without it (l.539-543).
+  - R2: `markContainingBlocksForLayout`
+    ([l.596-658](https://github.com/WebKit/WebKit/blob/2d9f94fae5f57d291987f98c980ecab42dba6d29/Source/WebCore/rendering/RenderObject.cpp#L596-L658)):
+    - an in-flow renderer (sticky is in flow) sets `normalChildNeedsLayout` up its container chain and stops at the
+      first layout boundary (l.637-649);
+    - an out-of-flow renderer (fixed) sets `outOfFlowChildNeedsLayout` on its containing block, and above that marks
+      only simplified normal-flow layout (l.622-636).
+  - **UNRESOLVED** (no source read covers it): what the S2 forced layout then visits, and why it reaches the showcase.
+    The arms test it here.
+- **v9-final facts.** Read from the v9 CSS `e1359ab9994a`, served from the `fixes/v9-best` overlay.
+  - Viewport-constrained at phone width:
+    - fixed: `.why-bring` (l.701), `.start-selling-people-o-preview` (l.2873), `.start-selling-morph` (l.10879),
+      `.start-selling-top-nav` (l.11822);
+    - sticky: `.hero` (l.1646, top 0), `.pain-sticky` (l.2538, top 0), `.action-footer` (l.4412, <= 860 px).
+  - **New in v9:** `html.fw-ms .start-selling-platform { position: sticky; top: calc(100dvh - var(--fw-ms-h)) }`
+    (l.12408). `html.fw-ms` is set by JS on touch phones at morph setup.
+  - `.commission-sticky` (>= 1001 px) and `.start-selling-profile-sticky` (>= 861 px) are listed, and are harmless at
+    phone width.
+  - Each run's census records which of these are rendered.
+- **Arms.**
+  - Applied in the page by `pgp-inject.mjs`, after each load and before the Timeline starts (as in P-110 and P-115).
+  - C = v9-final with the same injection and no rule.
+
+  | arm | rule | asks | look |
+  |---|---|---|---|
+  | `nvc` | every fixed renderer → absolute, every sticky one → relative (the #platform rule also gets `top: auto`) | positive control on v9: does removing all S3 marks still remove the step Layout? | changed; mechanism only |
+  | `nvn` | every sticky renderer → relative; the fixed ones stay | do the fixed renderers alone (R2: simplified path) keep the step Layout? | changed; mechanism only |
+  | `tps` | `.hero-track { contain: size layout }` with the hero still sticky; every other sticky → relative | is a boundary above the sticky hero as good as removing its stickiness (compare nvn)? | the other stickies change; mechanism only. A look-safe form needs its own card |
+  | `tp` | `.hero-track` and `section.pain` get `contain: size layout`; pain also gets `contain-intrinsic-block-size: <measured px>`; no position change | the shippable shape (trk+pbx): boundaries above the hero and pain stickies; #platform's sticky and the fixed nav stay | look-safe by design; pixel check first if it locates |
+  | `vu0` | vh/svh/lvh layout values of the big subtrees pinned to their own computed px at load (12 declarations; dvh users left) | the cheap closer for the viewport-unit half | identical in portrait (these units do not move with the toolbar); pixel check first if it locates |
+
+  - **Coverage.** nvc, nvn and tps cover every viewport-constrained renderer the census finds, not only the listed
+    selectors. Any renderer still found after the rule gets an inline `!important` position and is listed in `extra`.
+    Renderers that appear later are only reported, in `vcEnd`.
+  - **Side effect, stated:** removing #platform's sticky also removes one dvh user (its `top`).
+  - **Containment details.**
+    - `.hero-track` keeps its box under `contain: size layout`: it already has `height: 200vh` (l.1632).
+    - Layout containment makes it an independent formatting context and a containing block for fixed and absolute
+      descendants. The census and the pixel check see that.
+    - Pain's intrinsic block size keeps its height. The gate checks both heights.
+- **Deviation from the approved list** (the lead signs or refuses it):
+  - This card runs nvn and tps in place of trk alone and pbx alone. It keeps tp (= trk+pbx), vu0 and nvc.
+  - Why: removing any one of the hero, nav or pain marks was NONE on v8 (P-106 hero; P-110 nav, pain, nav+pain).
+    - trk alone is the look-safe form of P-106's hero arm; pbx alone is that of P-110's pain arm.
+    - Both are predicted NONE (~80 %), so they would add little.
+  - What nvn and tps decide instead:
+    - whether the fixed renderers alone keep the cost (R2 says they mark only the simplified path);
+    - whether a boundary works as well as removing stickiness, which is what a look-safe shape would need.
+  - **Literal alternative.** The driver and the gate also take `trk` and `pbx`. If the lead signs the literal list:
+    - order `C:H1 nvc:H1 trk:H1 C:H2 pbx:H1 tp:H1 C:H3 vu0:H1 tp:H2 C:H4`;
+    - added predictions: trk NONE 80 %, pbx NONE 80 %.
+- **Order (one hold, 10 runs):** `C:H1 nvc:H1 nvn:H1 C:H2 tps:H1 tp:H1 C:H3 vu0:H1 tps:H2 C:H4`.
+  - tps gets the replicate as the decisive new arm.
+  - Steps dropped by the budget stop are logged. A further hold (`C:H5 <dropped> C:H6`) needs the lead's OK, and the
+    result says so.
+- **Hold.** One normal exclusive hold, `--max-seconds 600`, FIFO, run in the background; no phone, no Chrome timing:
+
+  ```sh
+  node tools/lock.mjs run chrome-measure --max-seconds 600 --owner fix-toolbar-resize -- sh -c \
+    'node tools/fix.mjs serve v9-best > out/toolbar-resize/servepgp.log 2>&1 & S=$!; \
+     node tools/wait.mjs serve out/serve-v9-best.json --pid $S --owner fix-toolbar-resize --timeout 60 && \
+     SB_BUDGET_S=500 node tools/sim.mjs session --owner fix-toolbar-resize -- \
+       node fixes/toolbar-resize/sim-pgp.mjs C:H1 nvc:H1 nvn:H1 C:H2 tps:H1 tp:H1 C:H3 vu0:H1 tps:H2 C:H4; E=$?; kill $S; exit $E'
+  ```
+
+  The driver `sim-pgp.mjs` (from sim-bisect115 `4e1077d555cd`) checks, in order:
+  1. Served bytes through the http twin: JS `647c9ef2b1e2` and CSS `e1359ab9994a`, both from the overlay. Otherwise
+     it stops with exit 26.
+  2. After C:H1, a first-run format gate: an inject value, the showcase IO, a census and docH. Otherwise it stops with
+     exit 27 before any further run.
+  3. The budget stop.
+- **Applied-arm gate** (frozen, `check-pgp.mjs`, run before the scorer):
+  - Every run: the arm matches; the IO is installed; a census exists; docH moved by <= 2 px when the rule went in.
+  - Non-C runs, in addition: `applied` and a non-empty rule, plus per arm:
+    - nvc: no fixed or sticky renderer left in the census right after the rule;
+    - nvn: no sticky renderer left;
+    - tps: `.hero-track`'s computed `contain` has size and layout, and only the hero is still sticky;
+    - tp: `.hero-track` and `section.pain` both have size and layout, and both heights are unchanged (+-0.5 px);
+    - vu0: the four key pins are present as px (`.hero-track` height, `.hero` height, `.pain-hold` height,
+      `.start-selling-future-card` min-height).
+  - A run that fails is INSUFFICIENT, never NONE, and its record is reported.
+  - Reported, never gating: `vcEnd`, skipped vu0 pins, and fw-ms at install and at the end.
+- **Scorer** (frozen, unchanged): `score-bisect.mjs` `cb6f0c97b81b`.
+  - Moving hero frames: ih strictly between the run's two values, and y < 3250.
+  - Per run: the median largest Layout and inStyle; a run counts when n >= 8.
+  - Ratio = arm / mean of the nearest C runs before and after.
+  - Calls: LOCATES <= 0.30, PARTIAL <= 0.70, NONE above.
+  - GEOMETRY: docH1 differs from a neighbouring C by > 2 px.
+  - Replication gate: every C run counted, with inStyle >= half.
+  - VOID: C drifts > 30 %.
+  - Indicative: one run per arm (two for tps).
+  - `split-io119.mjs` (`1ad22b858eb8`) splits the moving frames by whether the showcase is in or out of view
+    (descriptive, as in P-119).
+- **Rules frozen before data:**
+  1. **NOT REPRODUCED.** If the C runs fail the replication gate on v9, no arm is judged. The result reads NOT
+     REPRODUCED on v9 and goes to the lead before any next card.
+  2. **CONTROL-FAILED.** If nvc does not LOCATE on v9, a NONE from nvn, tps, tp or vu0 means nothing (the v9 trigger
+     differs from v8's), and the result goes to the lead. Any LOCATES is still reported.
+  3. **Reading** (only with the replication gate passed and nvc LOCATES):
+     - nvn LOCATES: the fixed renderers alone do not keep the cost; the sticky marks carry it.
+     - nvn NONE: a fixed renderer alone keeps it, or the forced layout reaches the showcase with no sticky. Boundaries
+       above stickies cannot help, and the line goes back to the lead.
+     - tps LOCATES (both runs, or the mean of the two ratios <= 0.30) and nvn LOCATES: a boundary above the hero is as
+       good as removing its stickiness. A look-safe form is a new card.
+     - tps NONE and nvn LOCATES: the hero's stickiness carries the cost past the boundary, so the path is not the climb
+       in R2. The result says so.
+     - tp LOCATES or PARTIAL: the shippable candidate. Next come the pixel check (rule 4) and then a phone G check under
+       its own card.
+     - vu0 NONE closes the viewport-unit half for these subtrees. vu0 LOCATES goes to the pixel check.
+  4. **Look.** Any arm that could ship (tp and vu0; trk and pbx in the literal order) and LOCATES or is PARTIAL gets
+     the pixel check before anything else. It must be pixel-identical, or within PR-010's numbers (fill 64, edge 128,
+     0.5 %, Chrome + Simulator A/A); otherwise it becomes a proposal. nvc, nvn and tps change the look by
+     construction: mechanism only, never shipped.
+  5. A Simulator ratio is never a phone result and never a gain.
+- **Predictions** (registered before data):
+
+  | # | prediction | p |
+  |---|---|---|
+  | 1 | C replicates on v9 (replication gate passes) | 80 % |
+  | 2 | nvc LOCATES | 80 % |
+  | 3 | nvn LOCATES | 55 % |
+  | 4 | tps LOCATES (rule 3) | 40 % |
+  | 5 | tps ratio within 0.10 of nvn's | 50 % |
+  | 6 | tp NONE (#platform's sticky and the fixed nav still marked) | 70 % |
+  | 7 | vu0 NONE | 85 % |
+  | 8 | no arm GEOMETRY | 85 % |
+  | 9 | every run passes the applied-arm gate | 80 % |
+  | 10 | all 10 steps fit in one hold | 70 % |
+
+- **Pins** (sha256/12):
+  - inject `pgp-inject.mjs` `2cfd9c00b9f1`;
+  - driver `sim-pgp.mjs` `73215a3c3912`;
+  - gate `check-pgp.mjs` `da32f37117f6`;
+  - self-test `pgp-selftest.mjs` `2647e1b4a53f`: 61 checks (each arm's rule on a stub DOM, gate refusals, first-run
+    gate);
+  - scorer `score-bisect.mjs` `cb6f0c97b81b`;
+  - script `flick-hero-v1.json` `6ae05e12ace9`;
+  - served v9-final: JS `647c9ef2b1e2`, CSS `e1359ab9994a` (overlay built with `node tools/fix.mjs apply v9-best`).
+- **Output.** `out/toolbar-resize/simpgp/` (gitignored). Then:
+  - `node fixes/toolbar-resize/check-pgp.mjs out/toolbar-resize/simpgp <runs>`;
+  - `node fixes/toolbar-resize/score-bisect.mjs out/toolbar-resize/simpgp <runs> --json fixes/toolbar-resize/pgp-score.json`.
+- **Correction:** my instrument message to the lead said "P-110 card svh". The `svh` arm was P-115's.
 
 ## Scenarios not run
 
