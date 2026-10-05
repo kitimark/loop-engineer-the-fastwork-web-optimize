@@ -72,6 +72,12 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 ~11:3xZ **P-097 7d check (owner, scratch, no data); fix-people-word; P-135 earmarked.**
+  - fix-cd-roll-ca-r4 ran the lead's 7d checks early: site-pretty + morph-scroll-v9try patch = JS 1b2eecc66011; delta 0a53abca21ff applies with no rejects, node --check ok, result JS 2cfd990c788d; changed lines 4224a, 4267, 4285-4330, 4389a, 4421a, 4529a, 13850a, 14645a; V 5c203b483c18 vs 2cfd990c788d differ by exactly 7d's five hunks (the delta and 7d commute). Ops re-verifies at the addendum read.
+  - 7d line range: 14167-14290 per the lead's ruling. The owner counted 14170-14292; if that count comes from the 7d build, the two differ by counting base only (the addendum records which). The delta clears both.
+  - Addendum still due (after its B-only Simulator smokes, deferred behind the P-129 phone block): C1, C2, the two B-only tool fixes pinned with self-tests, scorer self-test 31 ok.
+  - New topic: fix-people-word (user T-192) builds a timing proposal for the "People still need people" title word. Functional checks only, no phone, no timed runs; the user tries it after the phone blocks. If it needs a card id it claims P-135 from ops (earmarked).
+  - a3c4ab06 landed ~10:30Z.
 - 10-05 ~11:2xZ **Base ruling for P-130 and P-097 rev 4.2 (lead accepted the ops proposal); landings.**
   - Landed: toolbar-resize 35094199 and 888df724 (now fe3e7fa3); ops 42fe246d as 85e9b04c. Lead memory note f99cb6a2: user phone steps are posted with --phone.
   - P-130 and P-097 rev 4.2 run as signed on C = 647c9ef2b1e2 (the pre-7d v9-final); each result claims only that base. No re-pin now.
