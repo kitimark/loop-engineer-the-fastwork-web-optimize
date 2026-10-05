@@ -1,0 +1,23 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -10948,6 +10948,20 @@
+ .start-selling-morph.is-expanded .start-selling-morph-panel,
+ .start-selling-top-nav.is-expanded .start-selling-morph-panel {
+   pointer-events: auto;
++}
++/* perf(morph-close-peak v9.1): the header's panel is opacity 0 whenever .is-morphing is off (morph <= 0.001), but its
++   composited children (col-tracks, veil, center, footer) still repaint on every frame of the header's 0.68 s width
++   transition after a close. Hide them for that window only: a one-shot visibility keyframe on the panel's children
++   (not on the panel: it is a scene element whose animations the scene engine pauses). At rest they are visible again,
++   as before: a hidden, paused col-track animation made Chrome request a main frame every vsync (v9 int census). */
++@keyframes fw-morph-close-hide {
++  0%,
++  100% {
++    visibility: hidden;
++  }
++}
++.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel > * {
++  animation: fw-morph-close-hide 0.75s linear;
+ }
+ .start-selling-morph-backdrop {
+   opacity: 0.4;

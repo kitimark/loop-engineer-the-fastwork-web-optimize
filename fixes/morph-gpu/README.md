@@ -1427,6 +1427,117 @@ step 4 + close; `PX_ALIGN=1` in Chrome):
 - Arm B has the same CSS bytes, on a JS that differs only in rev 7d's swipe lines, so its frozen frames were not
   re-shot.
 
+## Rest recalcs from the close rule, and v9.1's close (g11) (lead 2026-10-05; counts and pixels, no timing)
+
+v9-final shipped without the close rule (`.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel
+{ visibility: hidden }`), because int-v8's census found it added style recalcs at rest. The lead asked for the cause
+and for a close that keeps the rest level of v8 / v9-final. Arms: K = v9-final (JS 647c9ef2b1e2, CSS e1359ab9994a,
+int-v8's `snap-rev/K`), V = K + the old rule. Probes: `close/rest-recalc-chrome.mjs` (main frames, styles, paints per
+second at rest, 2.5 s windows), `close/close-cause-chrome.mjs` / `close-cause-sim.mjs` (what repaints during a
+close), `close/close-frames-chrome.mjs` (live per-frame state plus frozen shots across the close).
+
+**Cause (OBSERVED in our setup, Chrome 154; the Chromium mechanism is UNRESOLVED).**
+- The panel's three `div.start-selling-morph-col-track` run `start-selling-morph-col-up/down` (16 s, alternate). The
+  scene engine pauses them through `[data-start-selling-scene="paused"]` (`animation-play-state: paused !important`).
+  The panel itself is a scene element (JS ~14677 sets its `data-start-selling-scene`).
+- With the old rule, those paused animations sit under `visibility: hidden`. Chrome then asks for a main frame on
+  every vsync (60 per s at y 0, 22-57 at y 2796, against K's 40-46 and 2-3). Each frame only restyles the running
+  page animations (Animation-type invalidations); no layout, paint or script is added.
+- References read through `gh` (chromium/chromium main e668174b265e; not a confirmation): `pending_animations.cc`
+  136-143 re-queues an animation whose compositor start was deferred (`PreCommit` false; TODO crbug.com/397451098),
+  and `PendingAnimations::Add` schedules a frame (`ScheduleAnimation`); `compositor_animations.cc` ~565 handles
+  "hidden animations that do not paint". Whether a paused, hidden animation loops through that path was not traced.
+  The decisive local check would be a Chromium build with logging in `PendingAnimations::Update`.
+
+**Bisect and candidates** (Chrome counts: main frames per s at rest; close paints in the 1.2 s after a scroll close):
+
+| arm | what it hides while not `.is-morphing` | rest y 0 | rest y 2796 | close paints (area) | outcome |
+|---|---|---|---|---|---|
+| K | nothing | 40-46 | 1.7-3 | 362-368 (40.0 T px) | base |
+| V | the panel (old rule) | 60 | 22-57 | 252-257 (20.0 T) | rest loop |
+| T4 | the col-tracks only | 41-45 | 2.3 | 366 | no gain: the gain needs the col-tracks hidden |
+| g3 | `animation: none` on the col-tracks | 40 | 2.3 | 257 | resets the col-track phase on every open: a visual change (proposal), dropped |
+| g9 / g10 | the panel, keeping will-change / for 0.75 s only | 60 | 33-56 | | rest loop again; g10's own keyframe is paused by the scene rule on the panel |
+| **g11** | **the panel's 4 children, for 0.75 s only** | **46-47** | **2** | **271-275 (21.1 T)** | **chosen** |
+
+(g1, g5, g7: will-change and child variants of the same idea; each kept the rest loop or lost the gain.)
+
+**g11** (the v9.1 delta, 14 added CSS lines after `.start-selling-top-nav.is-expanded .start-selling-morph-panel
+{ pointer-events: auto; }`):
+
+```css
+@keyframes fw-morph-close-hide { 0%, 100% { visibility: hidden; } }
+.start-selling-top-nav:not(.is-morphing) .start-selling-morph-panel > * { animation: fw-morph-close-hide 0.75s linear; }
+```
+
+- It hides the panel's four children (backdrop, veil, center, footer) for 0.75 s after `.is-morphing` goes off,
+  which covers the header's 0.68 s `width` transition (CSS 11827-11834). None of the four has its own animation, and
+  none is a scene element, so the scene engine does not pause the keyframe. At rest they are visible again, as in K,
+  so no hidden paused animation exists and the rest loop does not start. The col-track animations are untouched:
+  their phase is kept.
+- While `.is-morphing` is off the panel's opacity is `clamp(0, (m − 0.08) / 0.72, 1)` = 0, so the hidden children
+  were never visible in K either (checked per frame below).
+
+**Results, real v9.1 build** (`out/morph-gpu/v91/snap-K91`: JS 647c9ef2b1e2, CSS f1997edf5309), against K:
+
+| check | K | v9.1 | source |
+|---|---|---|---|
+| rest y 0, main frames/s (paired ABBA, 6 pairs, injected g11) | median 41.6 (34.4-46.8) | median 44.8 (34.4-46.8) | `out/morph-gpu/rest/rr12.log` |
+| rest y 0 / 2796 / end, main frames/s (real build) | 46.4 / 2 / 0.4 | 46 / 1.6 / 0.4 | `rest-recalc-chrome-2026-10-05T07-27-31-764Z.json` |
+| Chrome close paints, scroll close (area) | 368 (40.0 T) | 270 (21.1 T) | `close-cause-chrome-2026-10-05T07-28-17-187Z.json` |
+| Chrome glide / set-close paints | 413 / 0 | 401 / 0 | same |
+| Simulator close paints (count / kpx), 2 runs | 301-336 / 13.5-15.1 k | 207-211 / 4.9-5.0 k | `out/morph-gpu/v91/ccs.log` |
+| Simulator glide | 496 / 29.7 k | 399 / 23.8 k | same |
+
+- Paired rest y 0 (lead condition 1): differences g11 − K per pair −0.8, +7.6, −8.8, +6.4, +3.6, +3.6 (median +3.6,
+  4 up / 2 down). g11's median lies inside K's spread: noise. The real build's single loads agree (46 vs 46.4).
+- WebKit keeps the old rule's full gain (V: 196-218 / 4.5-6.1 k).
+
+**Pixels across the close** (lead condition 2; `close/close-frames-chrome.mjs`, Chrome 430x932 DPR 3, loads A, V,
+A2, V2; modes `setclose` (close set at rest at the page end) and `close` (a scroll close)):
+- Live, per rAF for 1.5 s: K's panel opacity is 0 on every frame with `.is-morphing` off (setclose 91/91 frames, scroll
+  close 86/87 and 90/91; the remaining frame is the last one before the switch). So K never shows the four children
+  during the close; hiding them changes no pixel.
+- Frozen: every animation is paused at the first frame without `.is-morphing`, then the close's own animations are
+  set to T = 0, 50, 100, 200, ... 1200 ms. Real build, scroll close: 0 css px² beyond A/A at all 15 T (max shade 2).
+  Set close: A~V 0 at all 15 T. In that first run, load V2 had frozen about 28 css px higher on the page than the
+  other three (the whole shot shifted; viewed), so V~V2 differed on 45 % of the screen and masked A2~V2. A repeat
+  (`out/morph-gpu/v91/cf-set2.log`) has all four loads in place: 0 consistent px at all 15 T, V~V2 0-0.0003 %.
+  The injected g11 runs gave the same (0 at all T, both modes).
+- In V the children read hidden at T ≤ 740 and visible from 760 (the 0.75 s keyframe); in A they are visible
+  throughout. Opacity stays 0 in both.
+
+**Still frames** (`fixes/v9-best/gates`, `V9_SNAP=out/morph-gpu/v91/pxsnap`, A = K, V = v9.1):
+
+| gate | stops | worst consistent cluster | where | verdict |
+|---|---|---|---|---|
+| Chrome mobile, `PX_ALIGN=1` (`out/v9/px-mobile-2026-10-05T07-37-14-180Z`) | 13, 0-6278 | 0 at every stop (max shade 19) | | T1 |
+| Chrome desktop (`out/v9/px-desktop-2026-10-05T07-25-27-707Z`) | 13, 0-8448 | 402 css px² (0.031 %, max 43, edge) at y 1739 | the feed image (fade timer) | T2 |
+| Simulator (`out/v9/px-sim-2026-10-05T07-28-39-476Z`, + repeat) | 13, 0-6075 | 77 css px² (0.019 %, max 210) at y 3131; 0 in the repeat | the referral card's "$N /100" counter (timer) | T2 |
+
+- Chrome mobile: a first run without `PX_ALIGN` (`px-mobile-2026-10-05T07-20-35-546Z`) had the hero word rotator at
+  y 0-548 (up to 432 css px², max 144, under `h1#start-selling-heading`), v8's known rotator phase; aligned, it is 0.
+  The single-pair A~V 40 css px² at the nav bar at y 5090 is not in A2~V2 (0), so not consistent.
+- No cluster at the header or the panel in any gate. The status-bar clock gives the Simulator's 4 css px² at the top
+  of every stop (shade 255, as in the step-4 run above).
+- Simulator y 3131: the referral card's earned counter is a setTimeout chain started by an IntersectionObserver
+  (JS ~2476-2505: 420 ms, typing, 180 + 480 ms, then a 1.1 s count 0 → 100). The four loads froze at different
+  points: $29 and $7 in the two K loads, $0 in both v9.1 loads (viewed; in the step-4 run all four read $0). The
+  count is driven by script timers, which the CSS keyframe does not touch, and Chrome mobile shows 0 there. A repeat
+  at y 0 and 3131 (`out/v9/px-sim-2026-10-05T07-40-51-123Z`): consistent 0 at both, A2~V2 0; the counter now
+  differs only in the single A~V pair (another phase). So it is load phase, not this change.
+
+**The v9.1 delta** (CSS only; the JS is unchanged):
+
+| diff | base CSS → v9.1 CSS | JS | sha256 (12) |
+|---|---|---|---|
+| `v91/close-v91-on-v9final.diff` (`@@ -10969,6 +10969,20 @@`) | e1359ab9994a → f1997edf5309 | 647c9ef2b1e2 | d677884838c7 |
+| `v91/close-v91-on-v8.diff` (`@@ -10948,6 +10948,20 @@`) | f836404b3728 → b8cee7b3549b | 3e3e94cb6e9f | 3ab8a2fbbc68 |
+
+- int-v8 builds v9.1 from the first one, together with scroll-cb. The second is the same 14 lines on v8.
+- Not covered: the iPhone (no phone run; the Simulator counts are WebKit's paint side only), reduced motion (the
+  keyframe is not motion; `visibility` is discrete), and the Chromium mechanism above.
+
 
 - **Base.** Built on best-build, which includes morph-inherit. P-085 passed on the iPhone at Serious (main e22dd73:
   moving >50 21 -> 0.5), so the base holds. If the base changes again, this delta has to be rebuilt and re-checked on
