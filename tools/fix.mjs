@@ -226,7 +226,7 @@ function cmdDiff(t, { quiet = false } = {}) {
   ];
   const parts = [];
   let add = 0, del = 0;
-  const same = [];
+  const same = [], binary = [];
   for (const rel of files) {
     const b = underlying(rel), o = join(overlayDir(t), rel);
     const exists = existsSync(b);
@@ -235,6 +235,7 @@ function cmdDiff(t, { quiet = false } = {}) {
     if (r.status === 0) { same.push(rel); continue; }
     if (r.status !== 1) die(`diff failed for ${rel}: ${r.stderr}`);
     const body = r.stdout;
+    if (/^Binary files .* differ$/m.test(body)) binary.push(rel); // I-209: diff -u carries no bytes
     for (const l of body.split('\n')) { if (l.startsWith('+') && !l.startsWith('+++')) add++; else if (l.startsWith('-') && !l.startsWith('---')) del++; }
     parts.push(`diff --git a/${rel} b/${rel}\n${exists ? '' : 'new file mode 100644\n'}${body}`);
   }
@@ -244,6 +245,8 @@ function cmdDiff(t, { quiet = false } = {}) {
   if (!quiet) {
     console.log(`wrote ${relative(REPO, out)}: ${parts.length} file(s), +${add} -${del} lines`);
     if (same.length) console.log(`note: unchanged overlay copies (delete them to keep the overlay minimal): ${same.join(', ')}`);
+    // I-209: a re-encoded image is "Binary files differ" here, never its bytes (Hard rule 3); a proposal's Try-it can still show it
+    if (binary.length) console.log(`note: binary files differ and are not carried by patch.diff (Binary files differ): ${binary.join(', ')}\n  for a proposal's Try-it, point it at the local overlay: node tools/console.mjs proposal post|revise ... --live-overlay fixes/${t}/overlay (or: proposal live <id> --overlay fixes/${t}/overlay)`);
   }
   return { file: out, files: parts.length, add, del };
 }

@@ -56,6 +56,10 @@
 // CLI: --live-a-patch <path> [--live-a-ref <ref>] next to --live-patch; `proposal live` takes --a-patch/--a-ref (or
 // the same --live-a-* names). B should be built on A (its baseline-relative patch repeats A's changes); when some of A's
 // changed lines are missing from B, post/revise/live warn (not refuse: an option may rework part of A on purpose).
+// I-209: `live: {overlay: "fixes/<topic>/overlay"}` (or --live-overlay <dir>, `proposal live --overlay <dir>`; for A:
+// `a: {overlay}`, --live-a-overlay, --a-overlay) instead of a patch: a patch.diff cannot carry a re-encoded image (`diff -u`:
+// "Binary files differ") and committing the bytes breaks Hard rule 3. The local overlay directory is copied into the console
+// store (tools/lib/live.mjs; 200 MB limit), never committed; stored as {overlay, blob (content hash), base, files}.
 // I-109 (user T-063 #2): every solution the user sees carries a Try-it entry. `live: {none: "<why>"}` (at most 300
 // characters, scrubbed) says why an option has no page to try (e.g. "keep the original": B = A); the panel shows that
 // reason in the Try-it spot. post (not --draft), revise to a non-draft state, and publish refuse a proposal (or an
@@ -71,7 +75,7 @@ import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs
 import { sanitize, PERSONAL } from './progress.mjs';
 import { redact } from './redact.mjs';
 import { keepArtifactLinks } from './artifact-link.mjs';
-import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, liveNotCovered, notCoveredWarning, LIVE_PATCH, BLOB } from './live.mjs';
+import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, liveNotCovered, notCoveredWarning, LIVE_PATCH, LIVE_OVERLAY, BLOB, resolveLiveOverlay, storeLiveOverlay, liveOverlayDir } from './live.mjs';
 import { patchHeader } from './bench-overlay.mjs';
 
 export const SCHEMA = 'fw-proposal/1';
@@ -169,8 +173,8 @@ function mdSection(out, head, text) {
 }
 
 const splitHead = (p) => { const nl = p.indexOf('\n'); return [(nl < 0 ? p : p.slice(0, nl)).trim(), (nl < 0 ? '' : p.slice(nl + 1)).trim()]; };
-/** A Markdown "live:" value: a patch path, or "none: <why>" (I-109). */
-const liveMd = (v) => { const m = String(v).match(/^none\s*:\s*(.*)$/i); return m ? { none: m[1] } : { patch: v }; };
+/** A Markdown "live:" value: a patch path, an overlay directory (I-209), or "none: <why>" (I-109). */
+const liveMd = (v) => { const m = String(v).match(/^none\s*:\s*(.*)$/i); return m ? { none: m[1] } : LIVE_OVERLAY.test(String(v).trim()) ? { overlay: String(v).trim() } : { patch: v }; };
 const labelUrl = (v) => { const [label, url] = v.split('|').map((x) => x.trim()); return { label, ...(url && { url }) }; };
 
 /**
@@ -276,9 +280,11 @@ const list = (v) => (v == null || v === '' ? [] : Array.isArray(v) ? v : [v]);
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const hasMedia = (m) => !!(m && (m.shots?.length || m.video?.a || m.video?.both));
 /** I-109: what a proposal without a Try-it entry is told (post, revise to a non-draft state, publish). */
-export const LIVE_REQUIRED = 'required: a Try-it panel (user T-063, I-109): --live-patch fixes/<topic>/patch.diff (or "live": {"patch": …} in the file), or, when there is no page to try, --live-none "<why>" ("live": {"none": "<why>"})';
+export const LIVE_REQUIRED = 'required: a Try-it panel (user T-063, I-109): --live-patch fixes/<topic>/patch.diff (or "live": {"patch": …} in the file; --live-overlay fixes/<topic>/overlay for a change a patch cannot carry, such as an image), or, when there is no page to try, --live-none "<why>" ("live": {"none": "<why>"})';
 const absent = (v) => v === undefined || v === null || v === '';
-const liveFlag = (l) => (l?.none !== undefined ? '--live-none' : '--live-patch');
+const liveFlag = (l) => (l?.none !== undefined ? '--live-none' : l?.overlay !== undefined ? '--live-overlay' : '--live-patch');
+/** A live entry's name for people: its patch path, or (I-209) its overlay directory. */
+export const liveName = (x) => x.patch ?? x.overlay;
 /** An option name: what `decide --option` and the decision carry. */
 export const OPTION_NAME = /^[a-z0-9][a-z0-9._-]{0,39}$/;
 
@@ -409,6 +415,15 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
    */
   const LIVE_SHAPE = '{patch: "fixes/<topic>/patch.diff", ref?: "HEAD"}';
   const liveEntry = (v, path) => {
+    if (v.overlay !== undefined) { // I-209: a local overlay directory instead of a patch
+      if (v.patch !== undefined) { E.push(`${path}: either overlay or patch, not both`); return undefined; }
+      if (v.blob !== undefined) {
+        const ok = BLOB.test(String(v.blob)) && LIVE_OVERLAY.test(String(v.overlay)) && existsSync(`${liveOverlayDir(v.blob)}.ready`);
+        if (!ok) { E.push(`${path}.blob: not an overlay in the console store; give {overlay} instead`); return undefined; }
+        return { overlay: v.overlay, blob: v.blob, base: v.base === 'site' ? 'site' : 'site-pretty', files: Array.isArray(v.files) ? v.files : [] };
+      }
+      try { const r = resolveLiveOverlay({ overlay: v.overlay, repoDir }); return { overlay: r.overlay, blob: r.blob, base: r.base, files: r.files, src: r.dir }; } catch (e) { E.push(`${path}.overlay: ${e.message}`); return undefined; }
+    }
     if (v.blob !== undefined) {
       const text = BLOB.test(String(v.blob)) && LIVE_PATCH.test(String(v.patch)) ? storedLivePatch(v.blob) : null;
       if (text === null) { E.push(`${path}.blob: not a patch in the console store; give {patch, ref} instead`); return undefined; }
@@ -419,7 +434,7 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
   /** I-093: B's entry, plus its own A (`v.a`, resolved the same way, on B's base tree) when given. */
   const liveOf = (v, path, aPath = `${path}.a`) => {
     if (v === undefined || v === null || v === '') return undefined;
-    if (typeof v === 'string') v = { patch: v };
+    if (typeof v === 'string') v = LIVE_OVERLAY.test(v) ? { overlay: v } : { patch: v };
     if (!isObj(v)) { E.push(`${path}: ${LIVE_SHAPE}`); return undefined; }
     if (v.none !== undefined) { // I-109: no page to try, and why
       const extra = Object.keys(v).filter((k) => k !== 'none');
@@ -429,14 +444,14 @@ export function normalize(raw, { baseDir = process.cwd(), shotsA = [], shotsB = 
     }
     const b = liveEntry(v, path);
     if (v.a === undefined || v.a === null || v.a === '') return b;
-    const av = typeof v.a === 'string' ? { patch: v.a } : v.a;
+    const av = typeof v.a === 'string' ? (LIVE_OVERLAY.test(v.a) ? { overlay: v.a } : { patch: v.a }) : v.a;
     if (!isObj(av)) { E.push(`${aPath}: ${LIVE_SHAPE}`); return b; }
     if (av.a !== undefined && av.a !== null) { E.push(`${aPath}.a: A has no A of its own (A = the baseline + one patch)`); return b; }
     const a = liveEntry(av, aPath);
     if (!a || !b) return b;
-    if (a.base !== b.base) { E.push(`${aPath}: A (${a.patch}) was made on ${a.base}/, B (${b.patch}) on ${b.base}/: both must be on the same base tree (site-pretty or site)`); return b; }
-    // a warning, not an error: an option may rework part of A on purpose
-    const w = notCoveredWarning(liveNotCovered(a.text ?? storedLivePatch(a.blob) ?? '', b.text ?? storedLivePatch(b.blob) ?? ''), a.patch, b.patch);
+    if (a.base !== b.base) { E.push(`${aPath}: A (${liveName(a)}) was made on ${a.base}/, B (${liveName(b)}) on ${b.base}/: both must be on the same base tree (site-pretty or site)`); return b; }
+    // a warning, not an error: an option may rework part of A on purpose (only patches have changed lines to compare)
+    const w = a.patch && b.patch ? notCoveredWarning(liveNotCovered(a.text ?? storedLivePatch(a.blob) ?? '', b.text ?? storedLivePatch(b.blob) ?? ''), a.patch, b.patch) : null;
     if (w) warnings.push(`${aPath}: ${w}`);
     return { ...b, a };
   };
@@ -550,8 +565,11 @@ function storeMedia(id, rev, media, pre = '') {
 /** I-074: keep freshly read live patches in the store (by blob) and drop their text from the fields. */
 function persistLives(f) {
   for (const x of [f, ...(f.options || [])]) {
-    if (x.live && x.live.text !== undefined) { storeLivePatch(x.live.blob, x.live.text); delete x.live.text; }
-    if (x.live?.a && x.live.a.text !== undefined) { storeLivePatch(x.live.a.blob, x.live.a.text); delete x.live.a.text; } // I-093
+    for (const l of [x.live, x.live?.a]) { // I-093: A too
+      if (!l) continue;
+      if (l.text !== undefined) { storeLivePatch(l.blob, l.text); delete l.text; }
+      if (l.src !== undefined) { storeLiveOverlay({ blob: l.blob, files: l.files, dir: l.src }); delete l.src; } // I-209
+    }
   }
 }
 
@@ -755,7 +773,7 @@ export async function reviseProposal(id, { by, note, raw, baseDir, shotsA = [], 
  * I-093: `a: {patch, ref}` (or a patch path) sets A too: the baseline + that patch, on B's base tree. Without it the
  * entry has no A (A = the plain baseline); --clear removes both.
  */
-export async function setLive(id, { by, option, patch, ref, a, none, clear = false, repoDir = process.cwd() } = {}) {
+export async function setLive(id, { by, option, patch, ref, overlay, a, none, clear = false, repoDir = process.cwd() } = {}) {
   const who = needBy(by);
   const cur = get(id);
   if (cur.state === 'withdrawn') throw new Error(`${cur.id} is withdrawn`);
@@ -764,7 +782,7 @@ export async function setLive(id, { by, option, patch, ref, a, none, clear = fal
   if (!names.length && option != null && option !== '') throw new Error(`${cur.id} has no options (--option is for a proposal with options)`);
   if (names.length && !findOption(cur, option)) throw new Error(`no option "${option}" in ${cur.id} (options: ${names.join(', ')})`);
   // I-109: --none "<why>": no page to try for this option, and why (shown in the Try-it spot)
-  if (none != null && (clear || (patch != null && patch !== '') || (a != null && a !== ''))) throw new Error('--none "<why>" stands alone: no --patch, --a-patch or --clear with it');
+  if (none != null && (clear || (patch != null && patch !== '') || (overlay != null && overlay !== '') || (a != null && a !== ''))) throw new Error('--none "<why>" stands alone: no --patch, --overlay, --a-patch or --clear with it');
   if (none != null) {
     const w = scrubText(String(none).replace(/\r\n/g, '\n').trim());
     if (!w.text) throw new Error('--none: say why there is no page to try (e.g. "keep the original: B = A")');
@@ -777,34 +795,40 @@ export async function setLive(id, { by, option, patch, ref, a, none, clear = fal
       return { ...(p.options?.length && { option: target.name }), note: `no live pages: ${w.text}` };
     });
   }
-  if (!clear && (patch == null || patch === '')) throw new Error('--patch fixes/<topic>/patch.diff is required (or --none "<why>", or --clear)');
+  const has = (v) => v != null && v !== '';
+  if (!clear && !has(patch) && !has(overlay)) throw new Error('--patch fixes/<topic>/patch.diff is required (or --overlay fixes/<topic>/overlay, --none "<why>", or --clear)');
+  if (has(patch) && has(overlay)) throw new Error('--overlay or --patch, not both');
   let entry = null;
-  const av = typeof a === 'string' ? { patch: a } : a;
-  if (clear && av != null && av.patch != null && av.patch !== '') throw new Error('--clear removes B and its A: give no --a-patch with it');
-  if (!clear) { try { entry = resolveLivePatch({ patch, ref: ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`--patch: ${e.message}`); } }
-  let aEntry = null;
-  if (!clear && av != null && av.patch != null && av.patch !== '') {
-    try { aEntry = resolveLivePatch({ patch: av.patch, ref: av.ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`--a-patch: ${e.message}`); }
-    if (aEntry.base !== entry.base) throw new Error(`--a-patch: A (${aEntry.patch}) was made on ${aEntry.base}/, B (${entry.patch}) on ${entry.base}/: both must be on the same base tree (site-pretty or site)`);
+  const av = typeof a === 'string' ? (LIVE_OVERLAY.test(a) ? { overlay: a } : { patch: a }) : a;
+  if (clear && av != null && (has(av.patch) || has(av.overlay))) throw new Error('--clear removes B and its A: give no --a-patch with it');
+  if (!clear) {
+    try { entry = has(overlay) ? resolveLiveOverlay({ overlay, repoDir }) : resolveLivePatch({ patch, ref: ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`${has(overlay) ? '--overlay' : '--patch'}: ${e.message}`); }
   }
-  const keep = (x) => ({ patch: x.patch, ref: x.ref, blob: x.blob, base: x.base, files: x.files });
+  let aEntry = null;
+  if (!clear && av != null && (has(av.patch) || has(av.overlay))) {
+    if (has(av.patch) && has(av.overlay)) throw new Error('--a-overlay or --a-patch, not both');
+    try { aEntry = has(av.overlay) ? resolveLiveOverlay({ overlay: av.overlay, repoDir }) : resolveLivePatch({ patch: av.patch, ref: av.ref ?? 'HEAD', repoDir }); } catch (e) { throw new Error(`${has(av.overlay) ? '--a-overlay' : '--a-patch'}: ${e.message}`); }
+    if (aEntry.base !== entry.base) throw new Error(`--a-patch: A (${liveName(aEntry)}) was made on ${aEntry.base}/, B (${liveName(entry)}) on ${entry.base}/: both must be on the same base tree (site-pretty or site)`);
+  }
+  const keep = (x) => (x.overlay !== undefined ? { overlay: x.overlay, blob: x.blob, base: x.base, files: x.files } : { patch: x.patch, ref: x.ref, blob: x.blob, base: x.base, files: x.files });
+  const store = (x) => (x.overlay !== undefined ? storeLiveOverlay(x) : storeLivePatch(x.blob, x.text));
   return change(cur.id, who, 'live', (p) => {
     if (p.state === 'withdrawn') throw new Error(`${p.id} is withdrawn`);
     const target = p.options?.length ? findOption(p, option) : p;
     if (!target) throw new Error(`no option "${option}" in ${p.id}`);
     if (clear) delete target.live;
     else {
-      storeLivePatch(entry.blob, entry.text);
-      if (aEntry) storeLivePatch(aEntry.blob, aEntry.text);
+      store(entry);
+      if (aEntry) store(aEntry);
       target.live = { ...keep(entry), ...(aEntry && { a: keep(aEntry) }) };
     }
-    return { ...(p.options?.length && { option: target.name }), note: clear ? 'live B removed' : `live B: ${entry.patch} @ ${entry.blob.slice(0, 12)}${aEntry ? `; A: ${aEntry.patch} @ ${aEntry.blob.slice(0, 12)}` : ''}` };
+    return { ...(p.options?.length && { option: target.name }), note: clear ? 'live B removed' : `live B: ${liveName(entry)} @ ${entry.blob.slice(0, 12)}${aEntry ? `; A: ${liveName(aEntry)} @ ${aEntry.blob.slice(0, 12)}` : ''}` };
   });
 }
 
 /** I-093: a stored live entry's "B does not carry all of A's changes" warning (from the stored patches), or null. */
 export function liveAWarning(live) {
-  if (!live?.a) return null;
+  if (!live?.a || !live.patch || !live.a.patch) return null; // overlays have no changed lines to compare (I-209)
   return notCoveredWarning(liveNotCovered(storedLivePatch(live.a.blob) ?? '', storedLivePatch(live.blob) ?? ''), live.a.patch, live.patch);
 }
 
@@ -1216,7 +1240,7 @@ const media = (id, name) => (name ? `/media/${id}/${name}` : undefined);
 const viewShots = (id, c) => (c.shots || []).map((s) => ({ caption: s.caption, a: media(id, s.a), b: media(id, s.b), aSize: s.aSize, bSize: s.bSize }));
 const viewVideo = (id, v) => (v ? { a: media(id, v.a), b: media(id, v.b), both: media(id, v.both) } : undefined);
 /** I-074: what the page needs to know about a live B (the console serves it; no paths beyond the patch name). */
-const viewLiveOne = (l) => (l && BLOB.test(String(l.blob)) ? { patch: l.patch, version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
+const viewLiveOne = (l) => (l && BLOB.test(String(l.blob)) ? { patch: liveName(l), version: l.blob.slice(0, 12), files: (l.files || []).length } : undefined);
 /** I-093: plus `a` ({patch, version, files}) when the entry names its own A. */
 const viewLive = (l) => {
   if (l && typeof l.none === 'string') return { none: l.none }; // I-109: no page to try, and why
@@ -1298,9 +1322,9 @@ function solutionText(s, ind) {
   return L;
 }
 
-const liveText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the console's "Try it" panel serves it)`;
+const liveText = (l) => `${liveName(l)} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the console's "Try it" panel serves it)`;
 /** I-093: the `live A:` line when the entry names its own A (else A is the plain baseline: no line). */
-const liveAText = (l) => `${l.patch} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the panel's A = the baseline + this patch)`;
+const liveAText = (l) => `${liveName(l)} @ ${String(l.blob).slice(0, 12)} (${(l.files || []).length} file(s) on ${l.base || 'site-pretty'}; the panel's A = the baseline + this patch)`;
 
 /** The text of `proposal show`. */
 export function showText(p, now = Date.now()) {

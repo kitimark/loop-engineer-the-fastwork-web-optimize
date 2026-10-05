@@ -4,7 +4,7 @@
 //
 //   proposal post --by <agent> --file <proposal.json|md> [--shot-a <img> --shot-b <img> [--caption "<where>"]]…
 //        [--video <clip of both> | --video-a <clip> --video-b <clip>] [--option <name>] [--draft]   # POSTED PR-001: <title>
-//        [--live-patch fixes/<topic>/patch.diff [--live-a-patch <path>] | --live-none "<why>"] [--check-format] [--force-format "<reason>"]
+//        [--live-patch fixes/<topic>/patch.diff [--live-a-patch <path>] | --live-overlay fixes/<topic>/overlay [--live-a-overlay <dir>] | --live-none "<why>"] [--check-format] [--force-format "<reason>"]
 //        [--no-phone]
 //        # I-146: the text fields (title, problem, idea, looksSame, risk, visualDiff, gain what/how, labels, why, none,
 //        # captions; on revise also --note) follow the answer format (tools/lib/answer-lint.mjs, kind field): every id
@@ -59,6 +59,10 @@
 //        # is listed, 0 when none. Rules: tools/lib/proposal-overdue.mjs. tools/idle.mjs check|watch run the same rule
 //        # in every pass (--proposal-min), and the lead's watch posts one thread per overdue period, assigned to the lead.
 //   proposal live <id> --by <agent> [--option <name>] --patch fixes/<topic>/patch.diff [--ref <git ref, default HEAD>]
+//        # I-209: --overlay fixes/<topic>/overlay instead of --patch (also --live-overlay on post/revise; A: --a-overlay /
+//        # --live-a-overlay): a LOCAL, gitignored overlay directory, for changes a patch.diff cannot carry (a re-encoded
+//        # image is "Binary files differ" there; committing the bytes would break Hard rule 3). It is copied into the
+//        # console store (refused over 200 MB), never committed; run it in the worktree that has the overlay
 //   proposal live <id> --by <agent> [--option <name>] --none "<why there is no page to try>"     # I-109
 //        # I-074: what the console's "Try it" panel serves as B (A = the baseline): a committed patch, read from git
 //        # here (`<ref>:<patch>` in this checkout) and kept in the console store; any state but withdrawn, no new
@@ -120,7 +124,7 @@ import { dirname, resolve } from 'node:path';
 import {
   loadProposalFile, postProposal, reviseProposal, publishProposal, withdrawProposal, decide, listProposals, get, setLive, findOption,
   waitCondition, waitAnyCondition, line, showText, parseProposalId, proposalNewsText, holdProposal, unholdProposal, withDecisionState,
-  liveAWarning, markRevising,
+  liveAWarning, markRevising, liveName,
 } from './proposal.mjs';
 import { runningServer } from './console-server.mjs';
 import * as TALK from './proposal-talk.mjs'; // T-048
@@ -130,7 +134,7 @@ import * as AL from './answer-lint.mjs'; // I-146: the answer format on the prop
 import { overdueProposals, overdueLine, startMinutes } from './proposal-overdue.mjs'; // I-177
 import { consoleDir } from './console.mjs';
 
-const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-none', '--none', '--force-format', '--eta', '--start-min']);
+const VALUED = new Set(['--by', '--file', '--shot-a', '--shot-b', '--caption', '--video', '--video-a', '--video-b', '--note', '--notes', '--value', '--until', '--timeout', '--since', '--as', '--option', '--live-patch', '--live-ref', '--patch', '--ref', '--live-a-patch', '--live-a-ref', '--a-patch', '--a-ref', '--live-overlay', '--live-a-overlay', '--overlay', '--a-overlay', '--live-none', '--none', '--force-format', '--eta', '--start-min']);
 
 export function parseArgs(argv) {
   const multi = {}, pos = [], flags = new Set();
@@ -158,6 +162,23 @@ async function serverUrl() {
   return r.status === 200 ? s.url : null;
 }
 
+/** The live entry the post/revise flags name (I-074, I-093, I-109, I-209), or undefined. Throws on a contradiction. */
+export function liveFromArgs(a) {
+  const ov = a.one('live-overlay'), pa = a.one('live-patch'), aOv = a.one('live-a-overlay'), aPa = a.one('live-a-patch');
+  if (ov && pa) throw new Error('--live-overlay or --live-patch, not both');
+  if (aOv && aPa) throw new Error('--live-a-overlay or --live-a-patch, not both');
+  if (a.one('live-ref') && !pa) throw new Error('--live-ref goes with --live-patch fixes/<topic>/patch.diff');
+  // I-093: --live-a-patch names A (the baseline + that patch) next to B
+  if (a.one('live-a-ref') && !aPa) throw new Error('--live-a-ref goes with --live-a-patch fixes/<topic>/patch.diff');
+  if ((aPa || aOv) && !(pa || ov)) throw new Error(`${aOv ? '--live-a-overlay' : '--live-a-patch'} (A) goes with --live-patch fixes/<topic>/patch.diff or --live-overlay fixes/<topic>/overlay (B)`);
+  const aSide = aOv ? { a: { overlay: aOv } } : aPa ? { a: { patch: aPa, ref: a.one('live-a-ref', 'HEAD') } } : {};
+  // I-109: --live-none "<why>": this proposal (option) has no page to try, and the Try-it spot says why
+  if (a.one('live-none') !== undefined && (pa || ov)) throw new Error(`--live-none "<why>" or ${ov ? '--live-overlay <dir>' : '--live-patch <path>'}, not both`);
+  if (a.one('live-none') !== undefined) return { none: a.one('live-none') };
+  if (ov) return { overlay: ov, ...aSide }; // I-209
+  return pa ? { patch: pa, ref: a.one('live-ref', 'HEAD'), ...aSide } : undefined; // I-074
+}
+
 function inputs(a) {
   const file = a.one('file');
   const raw = file ? loadProposalFile(resolve(file)) : undefined;
@@ -165,15 +186,7 @@ function inputs(a) {
   if (a.one('video')) video.both = a.one('video');
   if (a.one('video-a')) video.a = a.one('video-a');
   if (a.one('video-b')) video.b = a.one('video-b');
-  if (a.one('live-ref') && !a.one('live-patch')) throw new Error('--live-ref goes with --live-patch fixes/<topic>/patch.diff');
-  // I-093: --live-a-patch names A (the baseline + that patch) next to B
-  if (a.one('live-a-ref') && !a.one('live-a-patch')) throw new Error('--live-a-ref goes with --live-a-patch fixes/<topic>/patch.diff');
-  if (a.one('live-a-patch') && !a.one('live-patch')) throw new Error('--live-a-patch (A) goes with --live-patch fixes/<topic>/patch.diff (B)');
-  const aSide = a.one('live-a-patch') ? { a: { patch: a.one('live-a-patch'), ref: a.one('live-a-ref', 'HEAD') } } : {};
-  // I-109: --live-none "<why>": this proposal (option) has no page to try, and the Try-it spot says why
-  if (a.one('live-none') !== undefined && a.one('live-patch')) throw new Error('--live-none "<why>" or --live-patch <path>, not both');
-  const live = a.one('live-none') !== undefined ? { none: a.one('live-none') }
-    : a.one('live-patch') ? { patch: a.one('live-patch'), ref: a.one('live-ref', 'HEAD'), ...aSide } : undefined; // I-074
+  const live = liveFromArgs(a);
   return { raw, baseDir: file ? dirname(resolve(file)) : process.cwd(), shotsA: a.many('shot-a'), shotsB: a.many('shot-b'), captions: a.many('caption'), video, option: a.one('option'), live };
 }
 
@@ -361,9 +374,10 @@ export async function run(argv, deps = {}) {
   if (sub === 'live') {
     // I-093: --a-patch (or --live-a-patch) [--a-ref] names A next to B; without it A is the plain baseline
     const aPatch = a.one('a-patch', a.one('live-a-patch')), aRef = a.one('a-ref', a.one('live-a-ref'));
+    const aOverlay = a.one('a-overlay', a.one('live-a-overlay')); // I-209
     if (aRef && !aPatch) throw new Error('--a-ref goes with --a-patch fixes/<topic>/patch.diff');
     const none = a.one('none', a.one('live-none')); // I-109
-    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch', a.one('live-patch')), ref: a.one('ref', a.one('live-ref')), ...(aPatch && { a: { patch: aPatch, ref: aRef ?? 'HEAD' } }), ...(none !== undefined && { none }), clear: a.flag('clear') });
+    const p = await setLive(id, { by: by(), option: a.one('option'), patch: a.one('patch', a.one('live-patch')), overlay: a.one('overlay', a.one('live-overlay')), ref: a.one('ref', a.one('live-ref')), ...(aOverlay ? { a: { overlay: aOverlay } } : aPatch && { a: { patch: aPatch, ref: aRef ?? 'HEAD' } }), ...(none !== undefined && { none }), clear: a.flag('clear') });
     const t = p.options?.length ? findOption(p, a.one('option')) : p;
     if (t?.live?.none !== undefined) {
       console.log(`LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: no live pages (${t.live.none}); the "Try it" spot shows this reason`);
@@ -371,11 +385,11 @@ export async function run(argv, deps = {}) {
       if (u) console.log(`on the user console ${new URL(`proposals#${p.id}`, u).href}`);
       return 0;
     }
-    if (!t?.live && p.state !== 'draft') console.error(`warning: ${p.id}${p.options?.length ? ` option ${t?.name}` : ''} now has no Try-it entry, which every posted proposal needs (I-109): give one with --patch, or --none "<why>"`);
-    const aText = t?.live?.a ? `; A = baseline + ${t.live.a.patch} @ ${t.live.a.blob.slice(0, 12)} (${t.live.a.files.length} file(s))` : '';
+    if (!t?.live && p.state !== 'draft') console.error(`warning: ${p.id}${p.options?.length ? ` option ${t?.name}` : ''} now has no Try-it entry, which every posted proposal needs (I-109): give one with --patch, --overlay, or --none "<why>"`);
+    const aText = t?.live?.a ? `; A = baseline + ${liveName(t.live.a)} @ ${t.live.a.blob.slice(0, 12)} (${t.live.a.files.length} file(s))` : '';
     const warn = liveAWarning(t?.live);
     if (warn) console.error(`warning: ${warn}`);
-    console.log(t?.live ? `LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: B = baseline + ${t.live.patch} @ ${t.live.blob.slice(0, 12)} (${t.live.files.length} file(s))${aText}; the console's "Try it" panel serves it` : `LIVE ${p.id}${p.options?.length ? ` option ${t?.name}` : ''}: removed`);
+    console.log(t?.live ? `LIVE ${p.id}${p.options?.length ? ` option ${t.name}` : ''}: B = baseline + ${liveName(t.live)} @ ${t.live.blob.slice(0, 12)} (${t.live.files.length} file(s))${aText}; the console's "Try it" panel serves it` : `LIVE ${p.id}${p.options?.length ? ` option ${t?.name}` : ''}: removed`);
     const u = await serverUrl();
     if (u) console.log(`on the user console ${new URL(`proposals#${p.id}`, u).href}`);
     if (t?.live?.blob) await autoPhones(p, a, deps, p.options?.length ? t.name : undefined); // I-143

@@ -14,7 +14,7 @@ import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { tempDir, node, tool, startProc, request, git, sleep } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
-import { writePng } from '../fixtures/fake-media.mjs';
+import { writePng, pngBytes } from '../fixtures/fake-media.mjs';
 
 const CON = tool('console.mjs');
 let fx, repo, state, env, srv, base, src;
@@ -360,6 +360,47 @@ test('I-143 (user T-119): post, revise, publish and live start the phone pages t
   // Hard rule 12: no address in any output or the registry
   for (const f of readdirSync(join(state, 'tryit', 'builds'))) assert.ok(!readFileSync(join(state, 'tryit', 'builds', f), 'utf8').includes(FAKE_LAN), f);
   for (const o of outs) assert.ok(!o.includes(FAKE_LAN), o);
+});
+
+test('I-209: post --live-overlay with a re-encoded image: B serves the exact bytes (x-mirror-source: overlay), A does not; the store holds the copy, the proposal and the repo history do not', async () => {
+  const png = pngBytes(8, 6, [10, 20, 30]);
+  const ovDir = join(repo, 'fixes', 'endimg', 'overlay', 'img');
+  mkdirSync(ovDir, { recursive: true });
+  writeFileSync(join(ovDir, 'end.png'), png);
+  const id = postedId(cli('post', '--by', 'de-x', '--file', writeProposal('p-ov.json', proposal({ title: 'Image overlay' })), '--live-overlay', 'fixes/endimg/overlay', '--no-phone'));
+  assert.match(cli('show', id).stdout, /live B: fixes\/endimg\/overlay @ [0-9a-f]{12} \(1 file\(s\) on site-pretty/);
+  const view = json(await request(new URL(`/api/proposals/${id}`, base).href)).proposal;
+  assert.deepEqual(Object.keys(view.live).sort(), ['files', 'patch', 'version']);
+  assert.equal(view.live.patch, 'fixes/endimg/overlay');
+  const stored = readFileSync(join(state, 'console', 'proposals', `${id}.json`));
+  assert.equal(stored.includes(png.subarray(0, 16).toString('latin1')), false, 'no image bytes in the proposal');
+  const r = await postJson(`/api/live/${id}/start`, {});
+  assert.equal(r.status, 200, r.text);
+  const u = json(r);
+  const b = await request(u.b + 'img/end.png');
+  assert.equal(b.status, 200);
+  assert.equal(b.headers['x-mirror-source'], 'overlay');
+  assert.ok(Buffer.compare(b.raw, png) === 0, 'B serves the overlay image byte for byte');
+  assert.equal((await request(u.a + 'img/end.png')).status, 404, 'A is the baseline: no such image');
+  assert.equal((await request(u.b + PAGE_JS.slice(1))).headers['x-mirror-source'], 'base', 'files outside the overlay come from the baseline');
+  // the copy lives in the console store (inside .git), and nothing about it is tracked by the repo
+  assert.ok(readdirSync(join(state, 'console', 'live', 'overlays')).some((f) => f.endsWith('.ready')));
+  assert.equal(git(repo, 'status', '--porcelain', '--', 'fixes/endimg').includes('endimg'), true, 'the overlay stays untracked here');
+  assert.equal(git(repo, 'log', '--oneline', '--all', '--', 'fixes/endimg').trim(), '', 'never committed');
+  // bad overlays: a clear error, nothing posted
+  const bad = cli('post', '--by', 'de-x', '--file', writeProposal('p-ov2.json', proposal({ title: 'Bad overlay' })), '--live-overlay', 'fixes/nowhere/overlay', '--no-phone');
+  assert.equal(bad.code, 1);
+  assert.match(bad.out, /--live-overlay\.overlay: fixes\/nowhere\/overlay is not a directory/);
+  const both = cli('post', '--by', 'de-x', '--file', writeProposal('p-ov3.json', proposal({ title: 'Both' })), '--live-overlay', 'fixes/endimg/overlay', '--live-patch', 'fixes/demo/patch.diff');
+  assert.equal(both.code, 1);
+  assert.match(both.out, /--live-overlay or --live-patch, not both/);
+  // `proposal live --overlay` on the same proposal (a changed image is a new version; the old copy stays)
+  writeFileSync(join(ovDir, 'end.png'), pngBytes(8, 6, [200, 20, 30]));
+  const l = cli('live', id, '--by', 'de-x', '--overlay', 'fixes/endimg/overlay', '--no-phone');
+  assert.equal(l.code, 0, l.out);
+  assert.match(l.stdout, /^LIVE PR-\d+: B = baseline \+ fixes\/endimg\/overlay @ [0-9a-f]{12} \(1 file\(s\)\)/m);
+  const u2 = json(await postJson(`/api/live/${id}/start`, {}));
+  assert.ok(Buffer.compare((await request(u2.b + 'img/end.png')).raw, pngBytes(8, 6, [200, 20, 30])) === 0, 'B restarted on the new version');
 });
 
 test('the console\'s exit stops its page servers', async () => {

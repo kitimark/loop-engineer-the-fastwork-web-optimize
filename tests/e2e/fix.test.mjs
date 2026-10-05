@@ -268,3 +268,22 @@ test('the overlays are gitignored: only README.md / patch.diff show up as change
   assert.match(st, /fixes\/t1\/README\.md/);
   assert.doesNotMatch(st, /^.. out\//m);
 });
+
+test('I-209 diff: a binary overlay file is listed in a note (patch.diff cannot carry it; the Try-it takes it from the overlay), text files are unaffected', () => {
+  assert.equal(wt('new', 'bin-note').code, 0);
+  assert.equal(wt('edit', 'bin-note', PAGE_CSS).code, 0);
+  writeFileSync(ov('bin-note', PAGE_CSS), fx.prettyFiles[PAGE_CSS] + '/* text change */\n');
+  const text = wt('diff', 'bin-note');
+  assert.equal(text.code, 0, text.out);
+  assert.doesNotMatch(text.stdout, /binary/i, 'no note when every changed file is text');
+  mkdirSync(ov('bin-note', '/img'), { recursive: true });
+  writeFileSync(ov('bin-note', '/img/end.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 1, 2, 3, 0xff]));
+  const d = wt('diff', 'bin-note');
+  assert.equal(d.code, 0, d.out);
+  assert.match(d.stdout, /^wrote fixes\/bin-note\/patch\.diff: 2 file\(s\), \+1 -0 lines$/m, 'the output format is unchanged');
+  assert.match(d.stdout, /^note: binary files differ and are not carried by patch\.diff \(Binary files differ\): img\/end\.png$/m);
+  assert.match(d.stdout, /--live-overlay fixes\/bin-note\/overlay/, 'the note names the way to show them in a proposal');
+  const patch = readFileSync(join(repo.wt, 'fixes', 'bin-note', 'patch.diff'), 'utf8');
+  assert.ok(!patch.includes('\u0089PNG'), 'no image bytes in the patch');
+  rmSync(join(repo.wt, 'fixes', 'bin-note'), { recursive: true, force: true });
+});

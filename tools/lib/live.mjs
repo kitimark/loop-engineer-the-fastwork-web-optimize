@@ -12,14 +12,20 @@
 // --frame-ancestors <the console's origins>. It reuses them, restarts B for another patch, and kills them (only its
 // own children) after `idleMs` (10 min) without a panel open (the page pings every minute while it is open) and when
 // the console exits. measuringNow(): a timing hold on chrome-measure (the panel shows a note; it never blocks).
+// I-209: the entry may name a local overlay directory instead of a patch ({overlay: "fixes/<topic>/overlay"}): a patch.diff
+// cannot carry a re-encoded image (`diff -u` says "Binary files differ"), and committing the bytes would break Hard rule 3.
+// The directory is copied into <console>/live/overlays/<blob>/ at post time (blob = a hash of its relative paths and
+// bytes, so the store entry is immutable and the rest of this file, which only knows blobs, serves it unchanged:
+// overlay files first, `x-mirror-source: overlay`, everything else from the baseline). Nothing of it is committed:
+// the proposal stores the path, the hash and the file list. Refused over MAX_OVERLAY_BYTES (200 MB).
 // I-093: the entry may name its own A, {patch, ref?, a: {patch, ref?}}: A = the baseline + a.patch (e.g. the current
 // best build, so a fix stacked on it shows only its own changes in B). A is read, stored and built exactly like B
 // (same path/ref rules, blob store, drift check, no stacked patches), on the same base tree as B; open({aBlob}) serves
 // A from its overlay and restarts A when the A blob changes. Without `a`, A is the plain baseline as before.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, renameSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, renameSync, copyFileSync, readdirSync, lstatSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHash } from 'node:crypto';
 import { REPO, sharedStateDir, resolveTree } from './paths.mjs';
 import { patchHeader, baselineDrift } from './bench-overlay.mjs';
 import { status as lockStatus, isGroup } from './lock.mjs';
@@ -28,6 +34,10 @@ import { status as lockStatus, isGroup } from './lock.mjs';
 export const LIVE_PATCH = /^fixes\/[a-z0-9][a-z0-9-]{1,60}\/patch\.diff$/;
 /** A git ref the patch is read from (default HEAD of the checkout the command runs in). */
 export const LIVE_REF = /^(?!-)[A-Za-z0-9._/@{}~^-]{1,100}$/;
+/** A live overlay path: a fix's local, gitignored overlay directory (I-209). */
+export const LIVE_OVERLAY = /^fixes\/[a-z0-9][a-z0-9-]{1,60}\/overlay$/;
+/** The size guard of a live overlay copy: 200 MB ($FW_LIVE_OVERLAY_MAX_BYTES lowers it, for the tests). */
+export const MAX_OVERLAY_BYTES = 200 * 1024 * 1024;
 export const BLOB = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 export const DEFAULT_IDLE_SEC = 600;
 const BASES = new Set(['site-pretty', 'site']);
@@ -47,6 +57,56 @@ function gitEnv(extra = {}) {
   return { ...env, ...extra };
 }
 function git(cwd, args, extra) { return spawnSync('git', args, { cwd, env: gitEnv(extra), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }); }
+
+/**
+ * I-209: read a fix's local overlay directory: {overlay, blob, base, files, size, dir}. blob = sha1 over the sorted
+ * (relative path, size, bytes) of every file (the shape of a git blob id, so it fits everything keyed by blob); base is
+ * site-pretty, where `fix.mjs edit` copies from. Throws a plain error: bad path, not a directory, no file, a symlink,
+ * over MAX_OVERLAY_BYTES. Nothing is written.
+ */
+export function resolveLiveOverlay({ overlay, repoDir = process.cwd() }) {
+  if (typeof overlay !== 'string' || !LIVE_OVERLAY.test(overlay)) throw new Error(`must be a fix's overlay directory, fixes/<topic>/overlay (got ${JSON.stringify(overlay)})`);
+  const dir = join(repoDir, overlay);
+  let st = null;
+  try { st = lstatSync(dir); } catch { /* missing */ }
+  if (!st || !st.isDirectory()) throw new Error(`${overlay} is not a directory in ${repoDir === process.cwd() ? 'this checkout' : repoDir} (fix.mjs edit <topic> <file> makes it; run this from the worktree that has it)`);
+  const max = Number(process.env.FW_LIVE_OVERLAY_MAX_BYTES) > 0 ? Number(process.env.FW_LIVE_OVERLAY_MAX_BYTES) : MAX_OVERLAY_BYTES;
+  const files = [];
+  let size = 0;
+  const walk = (d, rel) => {
+    for (const e of readdirSync(d, { withFileTypes: true }).sort((x, y) => (x.name < y.name ? -1 : 1))) {
+      const r = rel ? `${rel}/${e.name}` : e.name, f = join(d, e.name);
+      if (e.isSymbolicLink()) throw new Error(`${overlay}/${r} is a symbolic link; the overlay must hold plain files`);
+      if (e.isDirectory()) walk(f, r);
+      else if (e.isFile() && e.name !== '.DS_Store') {
+        size += lstatSync(f).size;
+        if (size > max) throw new Error(`${overlay} is ${size} bytes, over the ${max} byte limit for a live overlay copy (${Math.round(max / 1048576)} MB); keep only the changed files in the overlay`);
+        files.push(r);
+      }
+    }
+  };
+  walk(dir, '');
+  if (!files.length) throw new Error(`${overlay} has no file`);
+  files.sort();
+  const h = createHash('sha1');
+  for (const r of files) { const b = readFileSync(join(dir, r)); h.update(`${r}\0${b.length}\0`); h.update(b); }
+  return { overlay, blob: h.digest('hex'), base: 'site-pretty', files, size, dir };
+}
+
+/** I-209: copy a resolved overlay into the store (once per blob, atomically); returns the stored dir. */
+export function storeLiveOverlay(r) {
+  const dest = overlayOf(r.blob);
+  if (existsSync(`${dest}.ready`) && existsSync(dest)) return dest;
+  const tmp = `${dest}.tmp-${process.pid}-${randomBytes(3).toString('hex')}`;
+  rmSync(tmp, { recursive: true, force: true });
+  try {
+    for (const f of r.files) { mkdirSync(dirname(join(tmp, f)), { recursive: true }); copyFileSync(join(r.dir, f), join(tmp, f)); }
+    rmSync(dest, { recursive: true, force: true });
+    renameSync(tmp, dest);
+    writeFileSync(`${dest}.ready`, new Date().toISOString() + '\n');
+  } catch (e) { rmSync(tmp, { recursive: true, force: true }); throw e; }
+  return dest;
+}
 
 /** The tree a patch was made against (`# baseline: site-pretty/` from fix.mjs diff; default site-pretty). */
 export function patchBase(text) {
