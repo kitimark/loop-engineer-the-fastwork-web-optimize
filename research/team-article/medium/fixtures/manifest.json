@@ -1,0 +1,32 @@
+{
+  "schema": "fw-medium-visuals/2",
+  "items": [
+    {
+      "n": 1,
+      "file": "v01-ruler.png",
+      "kind": "png",
+      "caption": "What \"smooth\" means: one frame is 16.7 ms.",
+      "alt": "A scale from 0 to 60 ms with the 16.7 ms frame marked.",
+      "width": 1400,
+      "height": 504
+    },
+    {
+      "n": 2,
+      "file": "v02-timeline.png",
+      "kind": "png",
+      "caption": "How the loop was steered, in UTC.",
+      "alt": "Timeline, UTC. Step 1: the loop measured, patched and proved one more thing. Step 2: the loop measured, patched and proved one more thing. Step 3: the loop measured, patched and proved one more thing. Step 4: the loop measured, patched and proved one more thing. Step 5: the loop measured, patched and proved one more thing. Step 6: the loop measured, patched and proved one more thing. Step 7: the loop measured, patched and proved one more thing. Step 8: the loop measured, patched and proved one more thing. Step 9: the loop measured, patched and proved one more thing. Step 10: the loop measured, patched and proved one more thing. Step 11: the loop measured, patched and proved one more thing. Step 12: the loop measured, patched and proved one more thing. Step 13: the loop measured, patched and proved one more thing. Step 14: the loop measured, patched and proved one more thing. Step 15: the loop measured, patched and proved one more thing. Step 16: the loop measured, patched and proved one more thing. Step 17: the loop measured, patched and proved one more thing. Step 18: the loop measured, patched and proved one more thing. Step 19: the loop measured, patched and proved one more thing. Step 20: the loop measured, patched and proved one more thing. Step 21: the loop measured, patched and proved one more thing. Step 22: the loop measured, patched and proved one more thing. Step 23: the loop measured, patched and proved one more thing. Step 24: the loop measured, patched and proved one more thing. Step 25: the loop measured, patched and proved one more thing. Step 26: the loop measured, patched and proved one more thing. Step 27: the loop measured, patched and proved one more thing. Step 28: the loop measured, patched and proved one more thing. Step 29: the loop measured, patched and proved one more thing. Step 30: the loop measured, patched and proved one more thing.",
+      "width": 1400,
+      "height": 2362
+    },
+    {
+      "n": 3,
+      "file": "v03-pace.gif",
+      "kind": "animated gif",
+      "caption": "Same thumb motion, two frame rhythms.",
+      "alt": "Animated: two dots follow the same thumb motion.",
+      "width": 1400,
+      "height": 342
+    }
+  ]
+}

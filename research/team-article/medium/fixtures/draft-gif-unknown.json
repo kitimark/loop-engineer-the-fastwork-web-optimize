@@ -1,0 +1,206 @@
+{
+ "schema": "fw-medium-draft/1",
+ "takenAt": "2026-10-05T04:00:00.000Z",
+ "host": "medium.com",
+ "editor": true,
+ "root": "div.postArticle-content",
+ "counts": {},
+ "blocks": [
+  {
+   "type": "hr",
+   "text": "",
+   "sectionDivider": true
+  },
+  {
+   "type": "h3",
+   "text": "Sixteen Milliseconds: a fixture",
+   "cls": [
+    "graf--h3",
+    "graf--title"
+   ]
+  },
+  {
+   "type": "p",
+   "text": "Draft 2 · a story in two voices",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "h3",
+   "text": "Why I started",
+   "cls": [
+    "graf--h3"
+   ]
+  },
+  {
+   "type": "p",
+   "text": "It started with a headline. It wasn’t what it seemed — a rebrand, not a shutdown.",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "p",
+   "text": "My first reaction was wow. The site said “smooth” and meant it.",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "blockquote",
+   "text": "fix animation until the website renders SOOOOO ULTRA SMOOTH",
+   "cls": [
+    "graf--blockquote"
+   ]
+  },
+  {
+   "type": "figure",
+   "caption": "What \"smooth\" means: one frame is 16.7 ms.",
+   "alt": "A scale from 0 to 60 ms with the 16.7 ms frame marked.",
+   "cls": [
+    "graf--figure"
+   ],
+   "img": {
+    "present": true,
+    "host": "miro.medium.com",
+    "file": "1*a1.png",
+    "complete": true,
+    "naturalWidth": 700,
+    "naturalHeight": 252,
+    "dataWidth": 1400,
+    "dataHeight": 504,
+    "gif": false,
+    "gifWhy": "data-image-id",
+    "alt": "A scale from 0 to 60 ms with the 16.7 ms frame marked."
+   }
+  },
+  {
+   "type": "h3",
+   "text": "How the team worked",
+   "cls": [
+    "graf--h3"
+   ]
+  },
+  {
+   "type": "p",
+   "text": "One agent could not hold all of that, so each part got its own owner.",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "li",
+   "list": "ul",
+   "text": "5 days, 30 September to 5 October"
+  },
+  {
+   "type": "li",
+   "list": "ul",
+   "text": "~130 named agents with a row on the board"
+  },
+  {
+   "type": "li",
+   "list": "ul",
+   "text": "1,655 commits, all on this Mac"
+  },
+  {
+   "type": "figure",
+   "caption": "How the loop was steered, in UTC.",
+   "alt": "Timeline of the loop: the goal, six hints, two finger tests and the breakthrough.",
+   "cls": [
+    "graf--figure"
+   ],
+   "img": {
+    "present": true,
+    "host": "miro.medium.com",
+    "file": "1*a2.png",
+    "complete": true,
+    "naturalWidth": 700,
+    "naturalHeight": 1181,
+    "dataWidth": 1400,
+    "dataHeight": 2362,
+    "gif": false,
+    "gifWhy": "data-image-id",
+    "alt": "Timeline of the loop: the goal, six hints, two finger tests and the breakthrough."
+   }
+  },
+  {
+   "type": "p",
+   "text": "The phone has a lease: one holder, one page at a time.",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "figure",
+   "caption": "The Agents page at 00:50 UTC on day five.",
+   "alt": "The console’s Agents page with nine agents",
+   "cls": [
+    "graf--figure"
+   ],
+   "img": {
+    "present": true,
+    "host": "miro.medium.com",
+    "file": "1*a3.jpeg",
+    "complete": true,
+    "naturalWidth": 400,
+    "naturalHeight": 300,
+    "dataWidth": 800,
+    "dataHeight": 600,
+    "gif": false,
+    "gifWhy": "data-image-id",
+    "alt": "The console’s Agents page with nine agents"
+   }
+  },
+  {
+   "type": "h4",
+   "text": "Before and after",
+   "cls": [
+    "graf--h4"
+   ]
+  },
+  {
+   "type": "p",
+   "text": "Numbers are one thing; here is what they look like, 165-174 k px down to 55-70 k px.",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "figure",
+   "caption": "Same thumb motion, two frame rhythms.",
+   "alt": "Animated: two dots follow the same thumb motion.",
+   "cls": [
+    "graf--figure"
+   ],
+   "img": {
+    "present": true,
+    "host": "miro.medium.com",
+    "file": "1*a4",
+    "complete": true,
+    "naturalWidth": 700,
+    "naturalHeight": 171,
+    "dataWidth": 1400,
+    "dataHeight": 342,
+    "gif": null,
+    "gifWhy": "no mime, id or file extension",
+    "alt": "Animated: two dots follow the same thumb motion."
+   }
+  },
+  {
+   "type": "p",
+   "text": "Strip under each clip: grey, frame on time; red, 54 ms or more.",
+   "cls": [
+    "graf--p"
+   ]
+  },
+  {
+   "type": "p",
+   "text": "The rest of this story is told by the lead agent.",
+   "cls": [
+    "graf--p"
+   ]
+  }
+ ]
+}
