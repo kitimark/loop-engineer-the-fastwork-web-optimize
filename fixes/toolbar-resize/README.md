@@ -874,7 +874,7 @@ P-id: P-123 (lead's R7 review names it as the next free id; ops confirms it with
   | 1 | at least one element in the box uses a viewport unit (e.g. `.start-selling-profile-shell` height `clamp(743px, 100vh - 80px, 820px)`, `.start-selling-future-card` min-height `100svh`, an ancestor) | 85 % |
   | 2 | probe call VALUE-FLIP | 35 % |
   | 2 | INVAL-ONLY | 40 % |
-  | 2 | WRITE | 15 % |
+  | 2 | WRITE | 15 % (ops' result read: T2 passes any key with 2-3 step records against ~1000 rest frames, so WRITE means coincident with steps, not caused by them) |
   | 2 | OUTSIDE | 10 % |
   | 3 | at least one query container or anchor in the box or among its ancestors (S7/S8's interleaved layout needs one) | 60 % |
   | 4 | ResizeObserver: the showcase's own height does not change on a step (its 904 px is not viewport-bound) | 70 % |
@@ -953,13 +953,16 @@ pull-to-refresh guard ended one loop early, but the run still saw 30 toolbar ste
   - The counts are small: 2-3 step writes per run in the box, against the 4-5 in-view ~21 ms frames per run in
     P-119. At most it explains part of the cost, and part of its step association may be scroll (T2's rule
     measures rates, not cause).
-- **Predictions.** Hits:
-  - 1: viewport-unit elements in the box (6);
-  - 2: WRITE, the 15 % branch;
-  - 4: no size change;
-  - 5: A2 noise above 0.
-
-  Miss: 3, query containers or anchors.
+- **Predictions, scored: 3 of 5** (ops' result read, mgmt-ops-10, 2026-10-05; corrected from "4 of 5").
+  - Hits: 1 (viewport-unit elements in the box: 6), 4 (no size change), 5 (A2 noise above 0).
+  - Misses: 2 and 3. Prediction 2 was a spread over four calls whose lean was INVAL-ONLY (40 %); WRITE had 15 %.
+    The lean missed, so WRITE coming out is not a hit. 3: no query containers or anchors.
+  - R7: the call lean has now missed in P-110, P-115, P-119 and P-123, so the lead's model review gates the next card.
+- **Caveat (ops, also in the predictions row).** A run has about 30 step frames against 1000-1260 rest frames. With
+  that split, T2's frozen rule (>= 2 step records and >= 2x the rest rate) passes any key with 2-3 step records. So
+  WRITE shows writes that happen at the same time as steps, not writes the steps cause. The mechanism (the 50 %
+  rootMargin window moving 20 px per step) is OBSERVED and untested, and at 2-3 step writes per run it can explain at
+  most part of P-119's 4-5 in-view ~21 ms frames. P-125 compares per-frame rates with a frozen floor instead.
 - **M1 (OBSERVED).** M1 is not falsified: the call is not OUTSIDE. Its "starts inside the box" branch now has one
   concrete form, a script toggle of `will-change` driven by a viewport-relative IntersectionObserver margin.
 - **Next (plan; needs an ops read and a P-id).** One decisive check, look-safe:

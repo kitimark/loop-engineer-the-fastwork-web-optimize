@@ -2216,20 +2216,24 @@
       "queryContainersOrAnchors": 0
     },
     "predictions": {
+      "scored": "3 of 5 (ops result read; corrected from 4 of 5)",
       "hit": [
         1,
-        "2 (WRITE branch)",
         4,
         5
       ],
       "miss": [
+        "2 (lean INVAL-ONLY 40 %; WRITE was 15 %)",
         3
-      ]
+      ],
+      "r7": "call lean missed in P-110, P-115, P-119, P-123: the lead's model review gates the next card"
     },
     "reading": "OBSERVED: no value in or above the box flips; step-specific writes are IO-driven state (data-fw-wc will-change window with a 50% rootMargin, data-start-selling-scene/render, is-visible). Candidate trigger: the v8 will-change window IO whose percentage rootMargin moves with innerHeight; untested, small counts (2-3 step writes per run vs 4-5 in-view heavy frames). vh/svh question stays UNRESOLVED (clamp masks it).",
     "next": "plan: px rootMargin arm (and optionally data-fw-wc pinned) with Timeline attribution of in-view step frames; needs ops read + P-id",
     "files": [
       "fixes/toolbar-resize/p123-read.json"
-    ]
+    ],
+    "caveat": "T2 passes any key with 2-3 step records against ~1000 rest frames: WRITE shows writes coincident with steps, not caused by them; mechanism OBSERVED, untested",
+    "opsRead": "mgmt-ops-10: AGREE on WRITE; re-read byte-identical (f7c3da3740ee); P-125 assigned for the next arm"
   }
 }
