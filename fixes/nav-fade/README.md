@@ -76,7 +76,7 @@ value, so it cannot make anything jump.
 
 ## Before / after (counts, no timing; control = landed v9-final)
 
-Chrome (430x775 DPR 3, CPU 6x, shared lane), paints of the Join button's layers per scene (button + its mask layer in C;
+Chrome (430x775 DPR 3, CPU 1x: motion.mjs default, no --cpu passed; an earlier text said 6x in error; shared lane), paints of the Join button's layers per scene (button + its mask layer in C;
 button in nav-fade), batch 8, n=2:
 
 | scene | C | nav-fade |

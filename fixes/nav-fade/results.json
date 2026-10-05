@@ -22,7 +22,7 @@
       "why": "7d's 15 changed lines are all in the menu swipe's touch handlers (__msSettle, __msTouchEv, JS 14167-14290); none writes the nav, the Join button or the language switch; the probes send no touch events"
     },
     "probe": "fixes/nav-fade/probe/ (committed): motion.mjs, parity.mjs, geo.mjs, analyze.mjs, simcount.mjs; batch1-9.sh",
-    "chrome": "430x775 DPR 3 touch, CPU 6x for counts, shared lane (no timing)",
+    "chrome": "430x775 DPR 3 touch, CPU 1x (motion.mjs default; no --cpu was passed in any batch: corrected 2026-10-05, the earlier text said 6x), shared lane (no timing)",
     "simulator": "iPhone 15 Pro Max Simulator (WebKit) via sim.mjs session --functional, Timeline record counts",
     "scenes": {
       "topIn": "jump to the bar state at the top (the 72 % flip, pill -> bar) and hold still: the 0.98 s reveal sweep after 0.52 s",
