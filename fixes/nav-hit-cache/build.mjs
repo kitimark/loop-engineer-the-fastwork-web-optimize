@@ -88,6 +88,13 @@ export const BASES = {
     dir: join(SNAP, 'v92m-30f6371751f4'), pin: ['30f6371751f4', '1c4161f56545'], hook: 'u2',
     patch: join(HERE, 'patch-on-v92m-u2.diff'), expect: { V: ['6468db04395c', '1c4161f56545'] }, pre: { V: 'nhcv92', VA: 'nhcv92a' },
   },
+  // v9-final + F1 + U2 (int-v8 for fix-end-morph, lead ruling 10-05 ~22:5xZ: U2 parity on v9-final's 7c engine before the
+  // pin): C = v9-final as landed (647c9ef2b1e2, copied byte-identical from int-v8's out/p142/snap/C), V = C + fix-end-morph's
+  // end-morph-f12/delta.diff (F1 + U2, befc17cec97f, applied strictly; the copy in this folder is that file)
+  v9ff12: {
+    dir: join(SNAP, 'v9f-647c9ef2b1e2'), pin: ['647c9ef2b1e2', 'e1359ab9994a'], hook: 'u2',
+    patch: join(HERE, 'patch-on-v9f-f12.diff'), expect: { V: ['a6426953727a', 'e1359ab9994a'] }, pre: { V: 'nhcv9ff12', VA: 'nhcv9ff12a' },
+  },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
 // cached under out/nav-hit-cache/from/

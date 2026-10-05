@@ -149,6 +149,10 @@ async function doShift(page) {
   await page.eval(`window.scrollTo({ top: Math.round(document.documentElement.scrollHeight / 2), behavior: 'instant' })`);
   await page.eval(RAF3); await page.eval(SHIFT); await page.eval(RAF3);
 }
+// end-morph F1 state (report only, int-v8 for fix-end-morph, v9ff12): the element S() writes --morph-fade on (#platform),
+// its inline --morph-fade and its computed visibility, read after the down pass (page end) and after the up pass (top)
+const F1STATE = `(() => { const e = [...document.querySelectorAll('[style]')].find((x) => x.style.getPropertyValue('--morph-fade') !== '') || document.getElementById('platform');
+  if (!e) return null; return { el: e.tagName.toLowerCase() + (e.id ? '#' + e.id : ''), y: Math.round(scrollY), fade: e.style.getPropertyValue('--morph-fade'), inlineVis: e.style.visibility, vis: getComputedStyle(e).visibility }; })()`;
 async function audit(cdp, url, name, opt) {
   const vp = name.split('-')[0];
   const INIT = 'window.__nhcAudit = { t: 0, n: 0, lag: 0, m: [], v: [], p: [] }';
@@ -160,15 +164,18 @@ async function audit(cdp, url, name, opt) {
       await page.eval(`scrollTo({ top: 0, behavior: 'instant' })`); await page.eval(RAF3);
       await page.eval(`(${INIT}, 0)`);
       const down = await page.eval(SCROLL('1e9', px, mode), { timeout: 120000 });
+      await page.eval(RAF3);
+      const f1Down = await page.eval(F1STATE);
       const up = await page.eval(SCROLL('0', px, mode), { timeout: 120000 });
       await page.eval(RAF3);
+      const f1Up = await page.eval(F1STATE);
       const A = await page.eval('JSON.parse(JSON.stringify(window.__nhcAudit))');
       // inSync: the frame's scroll-event position was the live scrollY (entries carry scrollY as their 4th field)
       const sync = (l) => l.filter((x) => x.length < 4 || x[0] === x[3]).length;
       out[mode + px] = { steps: down.n + up.n, tested: A.t, cached: A.n, deferred: A.d ?? 0, deferredMismatches: A.m.filter((x) => x[4] === `d`).length, lagFrames: BASE_NAME === 'best' ? null : A.lag,
         mismatches: A.m.length, mismatchesInSync: sync(A.m), first: A.m.slice(0, 10),
         sticky: A.v.length, stickyInSync: sync(A.v), stickyFirst: A.v.slice(0, 10),
-        pill: A.p.length, pillInSync: sync(A.p), pillFirst: A.p.slice(0, 10) };
+        pill: A.p.length, pillInSync: sync(A.p), pillFirst: A.p.slice(0, 10), f1: { down: f1Down, up: f1Up } };
     }
   out.served = page.served; // this load's served JS / CSS hashes (checked against VA's pin in openPage)
   out.errors = page.errors.slice(0, 5);
