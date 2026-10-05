@@ -72,6 +72,18 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **Rule from the P-120 lesson (lead):** the pre-data read of a phone ticket includes a Simulator dry run per arm, showing the same driver start state and gesture path (start m, tween order, settle ys, moving frames). Posted as finding F-256 (measurement) and added to fixes/LEAD.md "Slot tickets" under "Stages and gates". Ops asks for it at every phone pre-data read from now on, starting with P-121 and P-122.
+- 10-05 **A2 stale-run-file fix (int-v8 60a271d7, own commit on 3da81de9): static re-check PASS.** Only the Simulator cycles-4 records are still owed.
+  - The commit touches only fixes/v9-best/phone/hold.sh and selftest.mjs. On disk: hold.sh blob 53c84f2f6b6a / sha256 dbd2e69fc6e1, selftest.mjs 3ad70bb6b6ad / 6ddc9dc874a6. score.mjs fd9ecebcf4d0, serve.sh fc643888a9bc and README 02843f35c1da are unchanged.
+  - hold.sh moves an existing <label>.json aside to .prev-<H>-<epoch> before each item; a failed move ends the hold VOID (exit 4). The scorer takes explicit item:file pairs, so the .prev files are never read.
+  - Self-test: my own run gives SELFTEST OK 75. The new section runs the real hold.sh in a temp stub checkout with no device:
+    - a clean hold is VALID;
+    - a re-run item that writes no file is moved aside and voided (exit 6);
+    - a G item that exits 1 voids the hold (the H3a case);
+    - an m item stops the hold before any RUN line;
+    - the untrimmed synthetic records void;
+    - and, per int-v8, the self-test fails when the move is disabled.
+  - These pins carry into P-122 by reference once its registering commit is read.
 - 10-05 **P-120 CLOSED INSUFFICIENT; P-122 assigned (lead ruling, on ops' recommendation).**
   - P-120: GM not comparable; M (H2') and GE not run, because the rev 7c V arm is superseded by rev 7d. Its pre-look predictions are scored against the arms they were made for; every gate is unscorable, and overall = insufficient. PREDICTIONS row filled. A2's post-look values are not scored.
   - **P-122 = v9 step 4 rebuilt with rev 7d vs v8, phone no-worse check (int-v8).**

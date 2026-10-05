@@ -166,7 +166,9 @@ is open, sending the lead the same line at the same moment; the lead may veto. O
 ONE named control on the same base and its hashes; the driver (S/W/M/G/F); the one question; the prediction id;
 the "if X then Y" decision for each outcome; the probe set; the served ports, each with one uncounted warm-up load
 (every arm, control included, not one per block: browser caches are per origin, arch-unknowns U5); expected
-minutes. mgmt-ops validates it, the lead
+minutes. The pre-data read of a phone ticket includes a Simulator dry run per arm showing the same driver start state
+and gesture path (start m, tween order, settle ys, moving frames): the V build's own code can change both, and pinned
+scripts do not catch it (P-120, F-256, lead 2026-10-05). mgmt-ops validates it, the lead
 ranks the queue (by [`DIRECTION.md`](DIRECTION.md)). **Reorders only at block boundaries**; a running block is
 never interrupted. A rejected ticket gets its reason in one message. Block rules (warm-up, sentinel, ≤9 counted
 runs, ABBA order, max 2 blocks): `CLAUDE.md` "Shared devices" and protocol §5, plus (amendments A3-A6): warm-up
