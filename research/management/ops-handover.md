@@ -72,6 +72,73 @@ Lead 10-03 15:1xZ: don't wake a parked agent only for a note; add it here and se
 - **Console /build sideways scroll** (lead 10-04 09:1xZ; not urgent, not an incident): at widths <= 900 px the /build page scrolls horizontally because of its page content, the same before and after I-130 (794f60af). Probe: ts-i130's worktree, out/ts-i130/probe.mjs (gitignored; copy it before that worktree goes). A toolsmith item when a console change is next scheduled.
 
 ## mgmt-ops-10 log (from 10-03 08:2xZ, newest first)
+- 10-05 **A2 re-check (int-v8 3da81de9 + 60a271d7, Simulator cycles-4 per arm at c57d6a7d): PASS.**
+  - Records: a2-nC.json 674ee127df1a and a2-nV.json 3954a5579963 match int-v8's hashes; score.mjs is fd9ecebcf4d0 and hold.sh dbd2e69fc6e1, both unchanged.
+  - Served: C JS 3e3e94cb6e9f, V JS de237379b556 (v9 step 4; rev 7d isn't built yet).
+  - ops ran trimM on both records:
+    - no A2 void;
+    - the driver and probe cuts are 0 ms apart in both arms;
+    - 6 tweens remain after the cut (0->1, 1->0, three times) in both arms.
+  - Disclosed, OBSERVED: the start states still differ, as on the phone in H1.
+    - C's tween list starts 0->1, so it opens once before the first close; 2 tweens are dropped.
+    - V's starts 1->0, so its first move is a close; 1 tween is dropped.
+    - The cut absorbs this by design (lead: the cut is how "drive from m=0" is implemented).
+  - int-v8's own check script first read a tween.to field that the records don't carry; it fixed the script. trimM reads only from.
+  - P-122's F-256 dry run repeats this on the rev 7d build.
+- 10-05 **P-123 assigned and pre-data read (fix-hero-exit-threaded, rev 7d phone G count check, a71197fc): NOT YET PASS, conditions D1-D7.**
+  - OK:
+    - ticket 89b230a05c10 and g7d-hold.sh 29b1e19bc0d2 on disk equal the pins;
+    - the four script pins are gesture program hashes (compileScript, compiler 2), and ops recompiled them to the same values;
+    - the snapshots on disk: C JS 428961bda278, V JS 29c0d537e0c9, CSS 659b02f7169d in both;
+    - C to V diff: the touchend release rule (Fv <= -5 or travel >= 300), __msF0, and one debug push at lift-off guarded by window.__msDbg;
+    - the predictions are count rules written before any phone data, and the categories are defined in sim7d-analyze.mjs (lines 7, 44, 53-60);
+    - the profile and the gate lines follow xcode-serious.
+  - D1 (F-256, per arm): a Simulator dry run on both arms for every item (fo, nl, fs, e4), showing the same start state (start y, m at first touch, toolbar level) and gesture path (strokes, per-stroke startY, aligned touchmoves) on C and V.
+    - Done so far: fo on V (s1).
+    - Pending: nl and fs on V (s2), every item on C, and e4 on either arm.
+    - If V's start state or path differs from C's, or V is not ms-29c0d537e0c9, the ticket is void.
+  - D2: s1 listed 3 items (fo R7E, nl R7E, fo R7D), left 1 record, and exited 0.
+    - sim7d.sh joins the items with ';' and filters their output, so a session exit 0 doesn't prove that an item ran.
+    - Account for items 2-3. Dry-run reads count only items with a record.
+  - D3: sim7d.sh serves R7E from an env-overridable directory and checks no hash. Each dry-run session must print the served JS hash per arm, as g7d-hold.sh does.
+  - D4: lead's exit-code rule. In g7d-hold.sh, a gesture that exits non-zero or leaves no record makes its item VOID, and the hold cannot print VALID while a counted item is void. State the re-run rule: one re-run at the hold end, else the item is INSUFFICIENT.
+  - D5: stale files. Before each item, move an existing $O/$H-$I.json aside, as int-v8 did in 60a271d7.
+  - D6: pins in the ticket.
+    - Name the hash kind: program hash.
+    - Add the file sha256s: fo 97eda447f36b, nl 83b2ed71b6b7, fs df597802d2f0, e4 c6cee2ac416e, sim7d-analyze.mjs 5e8c4f587342, msdbg-inject.mjs 9d2d119f5cea.
+  - D7: predictions.
+    - Give one probability per line.
+    - Add C's branch for fo: C not caught 3 of 3 means the control did not reproduce rev 7c's catch, so fo is unscorable, not a V pass.
+    - State that fs and e4 run once per arm.
+  - The lead's line stands: the 350 px change goes to the lead only if nl releases on the phone.
+- 10-05 **P-119 result read (fix-toolbar-resize ecce93b4): AGREE.** PREDICTIONS row filled (6 of 8 in).
+  - Checked:
+    - re-score with score-p119 265d0c827b5f is byte-identical (2b6dff6be920) to p119-score.json and the raw score.json;
+    - re-run of split-io119 1ad22b858eb8 is byte-identical (af547c37ce72) to p119-split.json and the raw split.json;
+    - p119-selftest PASS; the pinned files are unchanged since 67baa0a0;
+    - holds.log: one exclusive hold 00:12:38-00:19:23Z, exit 0; the first run (00:13:49Z) comes after the split helper's pin (22:49:14Z).
+  - N1-N4 met:
+    - N1: the IO split is reported per run, descriptive; "skip is the mechanism" is read for the off-screen frames only;
+    - N2: the C level against P-115 is a read (mean 20.94 vs 20.93 ms); the ratios stay within P-119;
+    - N3: MID-REMOVES / MID-SAME are confirmed from P-119's own data; P-115 is not cited as support;
+    - N4: 4 enter events in every run, no ENTER-THIN, so no flick-middle hold is needed.
+  - Notes for the next card:
+    - 29 of 36 enter events matched by the frozen "approx" fallback; a card that rests on ENTER needs an exact match rate first;
+    - the unpainted proxy fired in cva-H2 (k = 1 in 2 of 4 events), so under the card's Reading cva goes to the "needs an un-skip ahead" branch;
+    - R4 moves from UNRESOLVED to OBSERVED (in our setup), not CONFIRMED.
+  - R7: the author's leans missed again (look gate, proxy), so the lead's model review gates any build. The three proposed next steps (pixel check, look-safe skip design card, in-view S5 question) each need a P-id and an ops pre-data read; none is assigned yet.
+- 10-05 **P-121 conditions answered (int-v8 c57d6a7d, before any calibration data): C1-C6 accepted.** C2: option (b), gEf clusters bin by d = maxScroll - y with P-111's 250 px bins, absolute-y clusters as information only. C3: one re-run per void at the block end, a second void makes gEs INSUFFICIENT; V's ceiling counts into1 to end. C5: 0.80 / 0.45, now in the row. holds.log shows no int-v8 hold after the commit. The final PASS comes at the pinning commit (C1).
+- 10-05 **P-121 pre-data read (int-v8 7427a8c7, design): PASS WITH CONDITIONS.** The final read comes at the pinning commit. PREDICTIONS row added.
+  - OK:
+    - blobs on disk equal the commit (gate.mjs b96f1e5e4e0d, selftest-g.mjs 51fcc8ef569a), and my own run gives SELFTEST-G OK 36;
+    - the H3a2 look is disclosed, and calibration runs on B only (uncounted, disclosed);
+    - the gM, gEf and gEs gates read as described, and the Fv replay matches the page's formula as described.
+  - C1: a pinning commit (fling, out-stroke and RULE values from rev 7d's final rule, plus the calibration record hashes) before any P-122 hold; ops re-reads it.
+  - C2: the gEf cluster rule. P-111's NEW cluster bins absolute scrollY (v8-best/phone/score.mjs 198-203). V's path (about 6075 to 4475) covers the end-screen region above C's maxScroll 5260, where C has no frames, so any V cluster there is NEW automatically. int-v8 must choose before data: (a) keep that and say a V cluster there fails by design, or (b) bin by distance from each arm's own end. Each arm's y-range per run is reported.
+  - C3: gEs runs n = 2 per arm; state the void rule (one re-run, or insufficient) and the exact window for V's dt > 50 = 0 ceiling.
+  - C4: the F-256 dry run per arm on rev 7d covers every path gate on both arms.
+  - C5: P-121's own predictions, written before the calibration: (a) calibration finds gM-passing params on B; (b) the dry run passes first try. The gM, gEf and gEs no-worse predictions go in P-122's row.
+  - C6: the P-122 plan's nav-hit-cache condition is updated to the byte-diff-first ruling.
 - 10-05 **nav-hit-cache parity on v9 step 4 + nav + glue, second read: AGREE, PASS** (fix-nav-morph; on main as 814cebd0 and 13d29af1).
   - The record hashes on main match the owner's message: parity-1-pre ac7b7a97e9d2, diag-1 4b185b0264cc, parity-1 ae5d0b1bd948, parity-2 18fd6a40bfa1. The arms in the records: C de237379b556 / e1359ab9994a (step 4); first run V 76073ef54064 and VA e6323dbf83d3; after the U1 fix, V c3d36476c3ce and VA 33bf2744db57 (CSS e1359ab9994a throughout).
   - Task gate: in all 5 cases (mobile, desktop, desktop-rtl, mobile-rtl, mobile-shift), task10 and task40 show lagFrames 0, mismatches 0, in-sync 0, sticky 0 and pill 0.
