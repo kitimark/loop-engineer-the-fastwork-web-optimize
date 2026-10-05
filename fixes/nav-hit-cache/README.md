@@ -1369,6 +1369,72 @@ slots, every case served VA, no page error.
 
 **Not run:** the Mnhc vs V count slot. It was stopped when the lead parked the agent (usage, 15:16Z), with no record.
 
+## v9.3 prep: the two v9.2 pixel spots are load phase, not U2 (10-05, 20:15-20:34Z; records in `v93/`)
+
+**Why U2 was ruled out of v9.2.** int-v8's px-chrome mobile run compared M (v9.2 minus U2, 30f6371751f4) with V
+(v9.2, 6468db04395c) and found two spots:
+- y 2120, the nav bar (css 64,0-160,16): consistent across both pairs, max level 192. That is over the T2 edge limit
+  of 128, so U2 was ruled out.
+- y 6278, the morph CTA: 23 css px², max level 19.
+
+**Tests.** No timing anywhere. Every run is in a shared slot (probe or simulator), and all use the same snapshot
+files. The arms:
+- **M**: v9.2 minus U2, 30f6371751f4.
+- **V**: v9.2, 6468db04395c.
+- **N**: V's bytes with U2's one deferral line made dead (`__h && !1 && C()`), f368b7d1dd3b. N has V's bytes and
+  M's behaviour.
+
+The runs:
+1. `v93/stopstate.mjs` (a70f0507eca9): px-chrome's load and stop procedure. At each stop it records the nav and CTA
+   classes, computed styles, animations, and a clip of each spot. One load each of M, V and N (`v93/stopstate-1.json`).
+2. int-v8's `fixes/v9-best/gates/px-chrome.mjs`, unchanged, with `PX_ALIGN=1`, run three times: M vs V, M vs N, and
+   M vs M (identical bytes). Scores are in `v93/px-chrome-summary.json`, which also holds int-v8's original run. No
+   screenshots or hit grids are committed.
+3. `v93/spotpairs.mjs` (06ec601652f7): within each spot's box, every pair of the 16 loads of those four runs
+   (`v93/spotpairs.txt`).
+4. px-sim (WebKit Simulator), unchanged: M vs V at stops 1526, 2120, 5684 and 6278 (`v93/px-sim-summary.json`).
+
+**Results.** "Consistent" means the cluster appears in both pairs (A~V and A2~V2).
+
+| run | y 2120 nav bar | y 6278 morph CTA |
+|---|---|---|
+| int-v8, M vs V | consistent 6 css px², max 192 | consistent 23 css px², max 19 |
+| M vs V, re-run | consistent 14, max 170 | 0 |
+| M vs N (U2 dead) | consistent 3, max 132 | 23, max 19 in one pair |
+| M vs M (identical bytes) | single pair max 207, consistent 0 | 0 here, but y 5684 shows the CTA cluster consistent (23 css px², max 19) |
+| px-sim M vs V | consistent 0 (A/A over8 ~5 %) | consistent 0 |
+| stopstate, one load each of M / V / N | clip identical, all state fields identical | clip identical, all state fields identical |
+
+**What the load pairs show:**
+- **y 2120.** The 16 loads fall into 9 exact-pixel states, and the groups mix arms (M with V, V with N, ...).
+  - Same-build pairs exceed 128 in 38 of 52 cases.
+  - So the spot is a per-load phase of something in the nav bar region: a few discrete states, independent of the
+    build. Even a byte-identical build fails T2 there.
+- **y 6278.** There are two states, 202 px apart at max level 19 (the CTA text area).
+  - The second state appeared in 3 of 5 loads carrying V's bytes (V and N), and in 0 of 11 M loads at this stop.
+  - M reaches the same cluster at y 5684 in the identical-bytes run.
+  - So it is a page-end load-timing state that the byte change may shift. It is not U2's logic: N never runs it.
+
+**Conclusion (OBSERVED, our setup; which loop or animation draws each state is UNRESOLVED).**
+- Neither spot comes from U2's behaviour, and both fail on builds that cannot run U2.
+- **There is no U2 variant to make: U2 as is behaves T0.**
+- The T2 check at these two stops is not decisive. The decisive local check for each spot's cause is to log, per stop,
+  every running timer loop and animation in the spot's box, across 6+ loads of one build.
+
+**Count: M vs V nav counts on v9.2 with nav-fade** (`probe.mjs count --base v92u2 --reps 3 --vp mobile`,
+`v93/count-mobile.json`). 6 loads, every one served its pin, 628 steps, no page error.
+
+| | M (v9.2 − U2) | V (v9.2) |
+|---|---|---|
+| nav elementsFromPoint | 446 / 446 / 446 | 352 / 353 / 353 (−93 / −94 per pair) |
+| nav getBoundingClientRect | 897 / 909 / 909 | 709 / 723 / 723 (−188 / −186) |
+| forced Layout | 168 / 168 / 170 | 171 / 167 / 170 |
+| forced UpdateLayoutTree | 773 x 3 | 774 / 775 / 776 |
+| PrePaint (forced + frame) | 1210 / 1218 / 1210 | 1114 / 1117 / 1124 |
+
+U2 still cuts one nav hit test per morph-open frame beside scroll-cb and nav-fade: −93 per load, as on v9f7d. Forced
+layout and style stay within 1-3 of M.
+
 ## Smoke (not scored)
 
 C only, mobile, 1 load (`probe.mjs` 506d1f0397d7, `--arms C --reps 1 --vp mobile`, 10-04 10:37Z, shared probe slot).

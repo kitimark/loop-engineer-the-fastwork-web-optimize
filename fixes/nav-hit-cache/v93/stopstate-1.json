@@ -1,0 +1,4588 @@
+{
+ "tool": "fixes/nav-hit-cache/v93/stopstate.mjs",
+ "arms": [
+  "M",
+  "V",
+  "N"
+ ],
+ "dirs": {
+  "M": "v92m-30f6371751f4",
+  "V": "nhcv92-6468db04395c",
+  "N": "nhcv92n"
+ },
+ "startedAt": "2026-10-05T20:18:31.166Z",
+ "loads": [
+  {
+   "arm": "M",
+   "i": 0,
+   "errors": [],
+   "stops": [
+    {
+     "y": 0,
+     "scrollY": 0,
+     "frozen": 5,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 300,
+     "scrollY": 300,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 548,
+     "scrollY": 548,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 1526,
+     "scrollY": 1526,
+     "frozen": 6,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 2120,
+     "scrollY": 2120,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "clip": "b3530efc4b72"
+    },
+    {
+     "y": 2714,
+     "scrollY": 2714,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 2796,
+     "scrollY": 2796,
+     "frozen": 0,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 3308,
+     "scrollY": 3308,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 3902,
+     "scrollY": 3902,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 4496,
+     "scrollY": 4496,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 5090,
+     "scrollY": 5090,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 5684,
+     "scrollY": 6278,
+     "frozen": 4,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "running",
+        1600,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "running",
+        1600,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "running",
+        1600,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 6278,
+     "scrollY": 6278,
+     "frozen": 0,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "clip": "492a81e439b1"
+    }
+   ],
+   "served": {
+    "js": "30f6371751f4",
+    "css": "1c4161f56545"
+   }
+  },
+  {
+   "arm": "V",
+   "i": 1,
+   "errors": [],
+   "stops": [
+    {
+     "y": 0,
+     "scrollY": 0,
+     "frozen": 5,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 300,
+     "scrollY": 300,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 548,
+     "scrollY": 548,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 1526,
+     "scrollY": 1526,
+     "frozen": 6,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 2120,
+     "scrollY": 2120,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "clip": "b3530efc4b72"
+    },
+    {
+     "y": 2714,
+     "scrollY": 2714,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 2796,
+     "scrollY": 2796,
+     "frozen": 0,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 3308,
+     "scrollY": 3308,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 3902,
+     "scrollY": 3902,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 4496,
+     "scrollY": 4496,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 5090,
+     "scrollY": 5090,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 5684,
+     "scrollY": 6278,
+     "frozen": 4,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "running",
+        1600,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "running",
+        1600,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "running",
+        1600,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 6278,
+     "scrollY": 6278,
+     "frozen": 0,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "clip": "492a81e439b1"
+    }
+   ],
+   "served": {
+    "js": "6468db04395c",
+    "css": "1c4161f56545"
+   }
+  },
+  {
+   "arm": "N",
+   "i": 2,
+   "errors": [],
+   "stops": [
+    {
+     "y": 0,
+     "scrollY": 0,
+     "frozen": 5,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 300,
+     "scrollY": 300,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 548,
+     "scrollY": 548,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-pill is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 1526,
+     "scrollY": 1526,
+     "frozen": 12,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 2120,
+     "scrollY": 2120,
+     "frozen": 7,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "clip": "b3530efc4b72"
+    },
+    {
+     "y": 2714,
+     "scrollY": 2714,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 2796,
+     "scrollY": 2796,
+     "frozen": 0,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 3308,
+     "scrollY": 3308,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 3902,
+     "scrollY": 3902,
+     "frozen": 1,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 4496,
+     "scrollY": 4496,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 5090,
+     "scrollY": 5090,
+     "frozen": 3,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark",
+      "navStyle": "--morph: 0;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        0,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 5684,
+     "scrollY": 6278,
+     "frozen": 4,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "running",
+        1583,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "running",
+        1583,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "running",
+        1583,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     }
+    },
+    {
+     "y": 6278,
+     "scrollY": 6278,
+     "frozen": 0,
+     "pre": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "state": {
+      "nav": "start-selling-top-nav svelte-1dcozpm is-hero-chrome-ready is-on-dark is-morphing is-earn-hidden is-expanded",
+      "navStyle": "--morph: 1;",
+      "barCls": "start-selling-top-nav-bar svelte-1dcozpm",
+      "bar": {
+       "background-color": "rgba(0, 0, 0, 0)",
+       "color": "rgb(23, 23, 23)",
+       "opacity": "1",
+       "backdrop-filter": "none",
+       "box-shadow": "none",
+       "transform": "none",
+       "border-bottom-color": "rgb(23, 23, 23)"
+      },
+      "ctaCls": "start-selling-morph-cta",
+      "cta": {
+       "opacity": "1",
+       "color": "rgb(43, 49, 59)",
+       "background-color": "rgb(239, 242, 247)",
+       "transform": "none",
+       "filter": "none",
+       "box-shadow": "none",
+       "border-color": "rgb(43, 49, 59)"
+      },
+      "ctaStyle": null,
+      "anNav": [
+       [
+        "CSSAnimation",
+        "svelte-1dcozpm-start-selling-nav-earn-sheen",
+        "finished",
+        1500,
+        "fw-nf-mki svelte-1dcozpm"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-down",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ],
+       [
+        "CSSAnimation",
+        "start-selling-morph-col-up",
+        "paused",
+        4000,
+        "start-selling-morph-col-track"
+       ]
+      ],
+      "anCta": [],
+      "root": "fw-ms"
+     },
+     "clip": "492a81e439b1"
+    }
+   ],
+   "served": {
+    "js": "f368b7d1dd3b",
+    "css": "1c4161f56545"
+   }
+  }
+ ],
+ "browser": "Chrome/154.0.8037.98",
+ "ys": [
+  0,
+  300,
+  548,
+  1526,
+  2120,
+  2714,
+  2796,
+  3308,
+  3902,
+  4496,
+  5090,
+  5684,
+  6278
+ ],
+ "docHeight": 7210,
+ "endedAt": "2026-10-05T20:20:27.151Z"
+}

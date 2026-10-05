@@ -1,0 +1,255 @@
+{
+ "MvsV": {
+  "tool": "fixes/v9-best/gates/px-sim.mjs",
+  "dirs": {
+   "A": "M",
+   "V": "V"
+  },
+  "startedAt": "2026-10-05T20:31:08.284Z",
+  "endedAt": "2026-10-05T20:32:23.927Z",
+  "ys": [
+   1526,
+   2120,
+   5684,
+   6278
+  ],
+  "loads": [
+   {
+    "arm": "A",
+    "build": "M",
+    "served": {
+     "js": "30f6371751f4",
+     "css": "1c4161f56545"
+    },
+    "errors": 0
+   },
+   {
+    "arm": "V",
+    "build": "V",
+    "served": {
+     "js": "6468db04395c",
+     "css": "1c4161f56545"
+    },
+    "errors": 0
+   },
+   {
+    "arm": "A2",
+    "build": "M",
+    "served": {
+     "js": "30f6371751f4",
+     "css": "1c4161f56545"
+    },
+    "errors": 0
+   },
+   {
+    "arm": "V2",
+    "build": "V",
+    "served": {
+     "js": "6468db04395c",
+     "css": "1c4161f56545"
+    },
+    "errors": 0
+   }
+  ],
+  "stops": [
+   {
+    "y": 1526,
+    "AV": {
+     "maxLevel": 255,
+     "beyondCssPx2": 189,
+     "flatShare": 0.555,
+     "clusters": [
+      {
+       "cssPx2": 189,
+       "maxLevel": 255,
+       "bboxCss": [
+        48,
+        576,
+        176,
+        624
+       ],
+       "under": "section#people.start-selling-future.is-visible > div.start-selling-future-community-pill"
+      }
+     ]
+    },
+    "A2V2": {
+     "maxLevel": 255,
+     "beyondCssPx2": 41,
+     "flatShare": 0.068,
+     "clusters": [
+      {
+       "cssPx2": 41,
+       "maxLevel": 235,
+       "bboxCss": [
+        48,
+        576,
+        160,
+        624
+       ],
+       "under": "section#people.start-selling-future.is-visible > div.start-selling-future-community-pill"
+      }
+     ]
+    },
+    "consistent": {
+     "maxLevel": 179,
+     "beyondCssPx2": 1,
+     "flatShare": 0,
+     "clusters": [
+      {
+       "cssPx2": 1,
+       "maxLevel": 72,
+       "bboxCss": [
+        80,
+        592,
+        96,
+        624
+       ],
+       "under": "section#people.start-selling-future.is-visible > div.start-selling-future-card"
+      },
+      {
+       "cssPx2": 0,
+       "maxLevel": 11,
+       "bboxCss": [
+        48,
+        592,
+        64,
+        608
+       ],
+       "under": "section#people.start-selling-future.is-visible > div.start-selling-future-community-pill"
+      },
+      {
+       "cssPx2": 0,
+       "maxLevel": 127,
+       "bboxCss": [
+        112,
+        608,
+        128,
+        624
+       ],
+       "under": "section#people.start-selling-future.is-visible > div.start-selling-future-card"
+      }
+     ]
+    },
+    "AA": {
+     "maxLevel": 255,
+     "over8Pct": 5.9659
+    },
+    "VV": {
+     "maxLevel": 255,
+     "over8Pct": 0.8153
+    }
+   },
+   {
+    "y": 2120,
+    "AV": {
+     "maxLevel": 255,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "A2V2": {
+     "maxLevel": 255,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "consistent": {
+     "maxLevel": 0,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "AA": {
+     "maxLevel": 255,
+     "over8Pct": 5.2596
+    },
+    "VV": {
+     "maxLevel": 255,
+     "over8Pct": 0.0632
+    }
+   },
+   {
+    "y": 5684,
+    "AV": {
+     "maxLevel": 255,
+     "beyondCssPx2": 45,
+     "flatShare": 0.342,
+     "clusters": [
+      {
+       "cssPx2": 45,
+       "maxLevel": 255,
+       "bboxCss": [
+        48,
+        16,
+        112,
+        48
+       ],
+       "under": "div.start-selling-top-nav-bar.svelte-1dcozpm"
+      }
+     ]
+    },
+    "A2V2": {
+     "maxLevel": 1,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "consistent": {
+     "maxLevel": 1,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "AA": {
+     "maxLevel": 255,
+     "over8Pct": 5.2484
+    },
+    "VV": {
+     "maxLevel": 255,
+     "over8Pct": 0.0632
+    }
+   },
+   {
+    "y": 6278,
+    "AV": {
+     "maxLevel": 255,
+     "beyondCssPx2": 45,
+     "flatShare": 0.342,
+     "clusters": [
+      {
+       "cssPx2": 45,
+       "maxLevel": 255,
+       "bboxCss": [
+        48,
+        16,
+        112,
+        48
+       ],
+       "under": "div.start-selling-top-nav-bar.svelte-1dcozpm"
+      }
+     ]
+    },
+    "A2V2": {
+     "maxLevel": 1,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "consistent": {
+     "maxLevel": 1,
+     "beyondCssPx2": 0,
+     "flatShare": null,
+     "clusters": []
+    },
+    "AA": {
+     "maxLevel": 255,
+     "over8Pct": 5.2484
+    },
+    "VV": {
+     "maxLevel": 255,
+     "over8Pct": 0.0632
+    }
+   }
+  ]
+ }
+}
