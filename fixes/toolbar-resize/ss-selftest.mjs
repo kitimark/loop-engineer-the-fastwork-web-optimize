@@ -88,7 +88,7 @@ ok(HOLDS.every((h) => PLAN[h][0].startsWith('C:') && PLAN[h].at(-1).startsWith('
 for (const a of ['hso', 'pso', 'fso', 'nvn']) { const hs = HOLDS.filter((h) => PLAN[h].some((s) => s.startsWith(a + ':'))); ok(all.filter((s) => s.startsWith(a + ':')).length === 2 && hs.length === 2, `${a}: two runs in two different holds`); }
 ok(new Set(all).size === all.length && all.filter((s) => s.startsWith('C:')).length === 8 && all.length === 20, 'unique names, 8 C, 20 steps');
 ok(5 * 78.35 + 30 <= 500, 'a 5-step hold fits 500 s at the P-133 dry-run estimate');
-ok(HOST_MAX === 100 && hostWhy(100).length === 0 && hostWhy(100.1).length === 1, 'host rule: load1 > 100 stops');
+ok(HOST_MAX === 200 && hostWhy(154).length === 0 && hostWhy(200).length === 0 && hostWhy(200.1).length === 1, 'host rule (rev 1.1): load1 > 200 stops; P-133 ~154 passes');
 ok(firstRunWhy({ ioInstalled: true, vc1: [], docH0: 6814 }, 12).length === 0 && firstRunWhy({ ioInstalled: true, vc1: [], docH0: 6814 }, 7).length === 1, 'first-run gate: n >= 8');
 const sha = (p) => createHash('sha256').update(readFileSync(new URL(p, import.meta.url))).digest('hex').slice(0, 12);
 ok(sha('./cycle-hero-v2.json') === '59420d90ed02' && sha('./check-n133.mjs') === '96a1dc5fe288' && sha('./score-bisect.mjs') === 'cb6f0c97b81b' && sha('./check-pgp.mjs') === 'da32f37117f6', 'reused files unchanged (stimulus, n check, scorer, pgp gate)');

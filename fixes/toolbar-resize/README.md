@@ -4,7 +4,7 @@
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
 **Status:** measured (P-106 ablation block run 2026-10-04 13:19-13:45Z); no shippable fix yet
-**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), closed by the lead, ops result read PASS, landed; cause of the low n corrected (fling overshoot past the hero zone, not the guard); P-133 card rev 1 (same arms and rule 1, fresh data, drag cycles sized for n >= 12, two holds, count-only dry run, frozen n check before scoring; base main 189ca7ed = v9-final + 7d, JS 1b2eecc66011) registered before data; signed with addendum 1 (four holds); RESULT REPRODUCED: nvn LOCATES (0.032), tps, tp and vu0 NONE (sticky marks carry the step; a boundary above the sticky hero does not stop it; viewport-unit half closed); predictions 9 of 12; result read CONFIRMED with notes R1-R5 (ops-reader-P133); model review (R4) written; P-141 card rev 1 (which single sticky renderer is enough: hso, pso, fso keep-one arms plus nvn, nvc in every hold, 4 holds of 5 steps, host-load rule load1 > 100 = VOID-HOST) registered before data, to the lead for the pre-data read
+**Stage:** D signed by lead 2026-10-04 14:02Z (LOCATED); P-109 + P-110 Simulator bisects: cost = #people's showcase (0.03), trigger = any viewport-constrained renderer (no single one); indicative; P-115 on v8: content-visibility:auto on the showcase LOCATES (0.036), contain:layout and svh pin NONE; P-115 read AGREE (ops); P-119 (ops pre-data PASS): cct NONE, cva LOCATES (0.036/0.037) but N-SENSITIVE: the skip removes the cost only off screen, in-view frames still ~21 ms; look gate LOOK-RISK (applies to cva's paint containment too); R7 review (lead, 2026-10-05): M2 refuted, M1 accepted as the working model (OBSERVED); P-123 (count-only, S5) result: WRITE (ops read AGREE; predictions 3 of 5): no viewport value in the box flips (the shells' 100vh clamp is overridden on phones by `height: auto`, corrected); step-specific writes are IntersectionObserver state, among them the v8 will-change window `data-fw-wc` (rootMargin 50 %, moves with the toolbar): candidate trigger, OBSERVED, untested; P-125 (ops pre-data PASS, lead signed; one Simulator hold 2026-10-05): NOT-THE-WINDOW: the will-change window writes on step frames (C coincidence COVERS 22/22) but pinning it (wc1: no toggles) leaves the in-view Layout unchanged (ratio 1.045, NONE); wpx did not stop the writes (design miss, disclosed); predictions 7 of 10; ops result read AGREE (3f95feb9), landed a28a29ad; P-126 (card rev 2, ops PASS, lead signed; stage 1 read the P-125 captures, no hold): NATIVE (only `inval:native` links, by rate, RRlo 7.57, Hw 22/22; no page script key links; FORCED UPDATE; heavy roots are the 430x775 view box, frozen call SUBTREE is a rule miss), R AGREE; N1: NATIVE means only that no script key links; N4: the instrument's view of observer-callback writes is unknown (fwWC's known writes leave no keyed record; same-value writes match records as often, so dropped stacks vs no invalidation are both UNRESOLVED); K1 SUPPORTS (IO root follows the step, OBSERVED; root = layoutViewportRect, CONFIRMED in WebKit source); predictions 6 of 10; ops result read AGREE with N4 reworded (R1), R2 and R4 folded in; P-128 FWWC-ONLY (script-caller line closed by the lead); P-131 card rev 1 (was PGP; swap nvn/tps accepted by the lead before data; page-side arms on the viewport-constrained renderers, v9-final, Simulator Timeline mechanism ratio) registered before data, signed by the lead on ops' pre-data PASS; result NOT REPRODUCED (rule 1: C-H1 n = 7 < 8; all runs gated; no arm judged), closed by the lead, ops result read PASS, landed; cause of the low n corrected (fling overshoot past the hero zone, not the guard); P-133 card rev 1 (same arms and rule 1, fresh data, drag cycles sized for n >= 12, two holds, count-only dry run, frozen n check before scoring; base main 189ca7ed = v9-final + 7d, JS 1b2eecc66011) registered before data; signed with addendum 1 (four holds); RESULT REPRODUCED: nvn LOCATES (0.032), tps, tp and vu0 NONE (sticky marks carry the step; a boundary above the sticky hero does not stop it; viewport-unit half closed); predictions 9 of 12; result read CONFIRMED with notes R1-R5 (ops-reader-P133); model review (R4) written; P-141 card rev 1 (which single sticky renderer is enough: hso, pso, fso keep-one arms plus nvn, nvc in every hold, 4 holds of 5 steps, host-load rule load1 > 100 = VOID-HOST) registered before data; pre-data read PASS with N1-N6 (ops-reader-P141); signed by the lead with N1-N6 (HOST_MAX 200, rev 1.1), gated on a delta check of the changed pins
 **Device class / gate:** touch-only / phone-only (Safari's toolbar resize does not exist in Chrome's emulation)
 **Driver(s) behind the claims:** phone G (WDA flick scripts `flick-hero-v1`, `flick-end-v1`) with Timeline; S sentinels
 **Prediction:** P-106 (this card, section "Prediction P-106"; ops pre-data read requested)
@@ -3006,6 +3006,50 @@ question 1 only. Next: the lead's Opus pre-data read, then his signature. No run
   - served build: JS `1b2eecc66011`, CSS `e1359ab9994a`.
 - **Output.** `out/toolbar-resize/simss/<S1..S4>/` (gitignored). Committed after the last hold:
   `p141-score-<hold>.json` and `p141-checks.json`.
+
+### P-141 addendum rev 1.1 (ops-reader-P141 pre-data read: PASS with N1-N6; the lead's rulings; before any data)
+
+The lead **signed P-141 with N1-N6 as conditions**, gated on a delta check of the changed pins after this commit. No
+hold runs before that check passes. Where this addendum and the card above differ, this addendum holds.
+
+- **N1, host-load threshold (my error, corrected).**
+  - The card based "100" on P-133's SIM_QUIET load1 (39-87), but that is the load at the moment the Simulator
+    settled.
+  - The load near P-133's step starts was higher (`.git/fastwork-mirror/sim/background.jsonl`): about 143-154 at
+    A1 C:H1, about 128 at A1 nvc:H1, 94.5 at A2 C:H4. A1 replicated and gave nvc 0.000 and nvn 0.032.
+  - The lead's ruling, option (a): **HOST_MAX = 200**, "set after P-133, just above the highest step-start load
+    (~154) at which P-133 produced valid, replicating data; not derived from any ratio".
+  - The rest of the host-load rule stands: a step start above 200 exits 28, the hold is VOID-HOST, it is re-run once,
+    and a second VOID-HOST of one hold stops the card.
+- **N2, re-run folder.** Before a VOID-HOST re-run, the hold's folder `out/toolbar-resize/simss/<hold>` is moved to
+  `<hold>-void1`. That folder is kept and reported, never scored. The re-run starts from an empty folder, so no step
+  file is skipped and the first-run gate runs again. The n check, the gate and the scorer read the re-run folder only.
+- **N3, the hold runner** (unpinned orchestration; it only calls the pinned tools). It logs every exit code.
+  - exit 0: run the hold's n check (HOLD-FAIL, exit 3: stop all remaining holds, to the lead); then the next hold.
+  - exit 28: apply N2, then re-run that hold once. A second 28 stops the card (to the lead).
+  - any other non-zero (26, 27, 1, 124, a lock or wait timeout): stop the remaining holds, to the lead.
+- **N4, informed by P-133.** This card was written after P-133's result, on the same build, instrument and stimulus.
+  - P4 (hso NONE) is informed by P-133's tps run, which already left only the hero sticky, plus `contain: size layout`
+    on `.hero-track`, and came out NONE (0.979 / 0.972). That is hso with containment added. The card cited only v8.
+  - P1-P3 and P8-P10 are informed by P-133's clean outcomes.
+  - P11 and the host threshold are informed by P-133's load.
+  - No p is changed (they are as registered in rev 1).
+- **N5, scoring precedence.**
+  - Rule 1 fails: P1 is a miss, P2-P7 are insufficient.
+  - Rule 5 fails (nvn does not LOCATE): P3 is a miss, P4-P7 are insufficient.
+  - A CONTROL-FAILED, VOID or VOID-HOST hold drops its arm runs. The one-run rule applies; with no run left, the item
+    is insufficient.
+  - PARTIAL counts as a miss for P4-P6.
+  - A GEOMETRY run is not valid, and it is a miss for P8.
+  - P7 is insufficient when the arms that got a call cannot settle it.
+  - P9 and P10 count the scored holds only.
+- **N6, reported beside each ratio, OBSERVED and never scored:** each run's n (P-133's R5: about 3x n in the removing
+  arms) and load1 at each step's start and end.
+- **Pins changed** (sha256/12):
+  - driver `sim-ss.mjs` `b9a0d09d8e83` -> `d981b973fa70`: HOST_MAX 200 and its comment; nothing else changed;
+  - self-test `ss-selftest.mjs` `9cacb47710f4` -> `693e3215a3ad`: `SELFTEST ok 70 checks`. The host check now reads
+    "load1 > 200 stops; ~154 passes".
+  - Unchanged: `ss-inject.mjs` `8ca27aa0b077`, `check-ss.mjs` `b4d331a0cfed`, and every reused pin in the card.
 
 ## Scenarios not run
 

@@ -30,7 +30,9 @@ export const ARMS = ['C', 'nvc', 'nvn', 'hso', 'pso', 'fso'];
 export const PLAN = { S1: ['C:H1', 'nvc:H1', 'hso:H1', 'pso:H1', 'C:H2'], S2: ['C:H3', 'nvc:H2', 'fso:H1', 'nvn:H1', 'C:H4'], S3: ['C:H5', 'nvc:H3', 'pso:H2', 'fso:H2', 'C:H6'], S4: ['C:H7', 'nvc:H4', 'nvn:H2', 'hso:H2', 'C:H8'] };
 /** Host-load rule (registered before data): a step may not start while load1 > HOST_MAX; the driver stops (exit 28) and
  *  the hold is VOID-HOST (re-run once). */
-export const HOST_MAX = 100;
+// rev 1.1 (lead ruling on ops-reader-P141 N1): 200, set after P-133, just above the highest step-start load1 (~154) at which
+// P-133 produced valid, replicating data; not derived from any ratio.
+export const HOST_MAX = 200;
 export const hostWhy = (load1) => (load1 > HOST_MAX ? [`load1 ${load1} > ${HOST_MAX}`] : []);
 export const HOLDS = Object.keys(PLAN);
 export const MAX_STEPS = 5;
