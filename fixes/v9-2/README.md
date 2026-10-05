@@ -1,17 +1,19 @@
-# Fix: v9-2 (v9.2 = v9.1d + people-word a + nav-fade)
+# Fix: v9-2 (v9.2 = v9.1d; rev 1.3: U2, people-word a and nav-fade OUT)
 
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** P-142 **rev 1.2**: v9.2 re-pinned to **30f6371751f4 / 1c4161f56545** (`V92_EXPECT`) after **U2 went OUT** (T2
-fail at y 2120, lead's rule; "Rev 1.2" below). Card registered before any P-142 data (58269015, rebased c1ed6ab6); pre-data
+**Status:** P-142 **rev 1.3**: v9.2 re-pinned to **941aa13e5bdf / f1997edf5309 = v9.1d** (`V92_EXPECT`): U2 OUT (rev 1.2),
+pw OUT and nf OUT at the component gates (lead R1-R6, R2 reading B; "Rev 1.3" below). Rev 1.2 pinned 30f6371751f4 /
+1c4161f56545 (v9.1d + pw + nf) after **U2 went OUT** (T2 fail at y 2120, lead's rule; "Rev 1.2" below). Card registered before any P-142 data (58269015, rebased c1ed6ab6); pre-data
 read PASS with N1-N7 (ops-reader-P142); **SIGNED by the lead** with N1-N7 as conditions. No part 1 run until every
 component gate on the new V passes and the lead's delta check passes. The iPhone is disconnected: parts 2 and 3 wait for
 the lead's go after the user reconnects it.
 **Integrator:** int-v8 (wave-integrator). Board row `v9-1`. Tasking: user T-199 #3, the lead's plan T-199 #4 (build v9.2
 from every fix whose rendering count test passed, measure it ONCE against v9-final, a P-ticket with land rules and a
 bisect plan, an Opus pre-data read).
-**Build:** `patch.diff` (973f3f8442cc) is baseline-relative over 2 files: JS `30f6371751f4a830…`, CSS `1c4161f56545d955…`.
+**Build:** `patch.diff` (ce2d32a1bbbb, rev 1.3) is baseline-relative over 2 files: JS `941aa13e5bdf0b7a…`, CSS
+`f1997edf5309…` (rev 1.2: 973f3f8442cc, 30f6371751f4a830… / 1c4161f56545d955…).
 Baseline snapshot `b1789284481295-4ad4a84a`. Branch rebased on main (N1) before this build.
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` and `/_app/immutable/assets/2.gBuqKVzi.css`, nothing else.
 
@@ -201,6 +203,55 @@ the same bytes, A/A and V/V included, over 2,000 css px²) differ only at y 1739
 - **Resulting build:** reading A: **v9.2 = v9.1d** (arm B, 941aa13e5bdf / f1997edf5309). Reading B with the Simulator
   cluster ruled out: v9.2 = v9.1d + nf (arm Mpw, 8bbe6a33dfde / 1c4161f56545). Either way the card is re-pinned and part 1
   waits for the lead's go.
+
+### Rev 1.3: lead ruling on R2 (reading B), the Simulator geometry check, v9.2 = v9.1d (no part 1 data yet)
+
+- **The lead's R2 ruling, verbatim** (~17:3xZ): "Lead ruling on P-142 R2: reading B. R1 defines the same-bytes run as
+  the A/A test of the both-pairs mask. A stop where loads of identical bytes differ in one element by more than 2 000
+  css px² (the feed img at desk 1739 / 2577: 7 498 / 5 855) is a stop the mask cannot judge. That makes 1739 and 2577
+  UNJUDGEABLE, and nf passes Chrome there by R3: the residues lie outside the nav. I resolved R2's wording, which was
+  ambiguous on this point, by R1's stated purpose." Both readings and their builds are in the section above: reading A
+  → v9.2 = v9.1d; reading B → v9.2 = v9.1d + nf if the Simulator cluster is excluded, else v9.1d.
+- **The Simulator cluster, by the lead's mechanical rule** ("exclude it only by a mechanical geometry check, not from
+  the frames": the box must lie entirely outside the web content's rect, above the content top, using the screenshot's
+  content offset the tool already knows; if any of it lies inside, it counts and nf fails):
+  - The px-sim record (`out/v9/px-sim-2026-10-05T17-01-35-729Z/px.json`) has `top: 0`, `calibrationRow: 0`: px-sim's
+    magenta calibration bar (fixed, top 0) was found from screenshot row 0, so the content top it knows is css y 0.
+  - The cluster box is css x 96-112, y 16-48 (device rows 48-144) at y 2796-6075: entirely below the content top 0,
+    so **inside the content rect → it counts → shade 255 > 128 edge / 64 fill → nf T2 FAIL in the Simulator → nf OUT.**
+  - Disclosed, not used for the call (OBSERVED, in our setup, cause unknown): in `calibration.png` the magenta covers
+    device rows 0-194 (65 css px) for a 6 css px bar, the status-bar clock and the camera cut-out drawn over it; so the
+    recorded content top may be the status-bar tint, not the page's top edge. Settling that needs a new Simulator run;
+    per the ruling none is made without the lead's OK.
+- **Outcome:** U2 OUT (rev 1.2), pw OUT ((b) at y 2120 and y 4496, both CLEAN), nf OUT (Simulator, above).
+  **v9.2 = v9.1d**, `node fixes/v9-best/build.mjs --target v92 --with ''` (no extras; `out/v92-build-r13.log`, EXIT 0):
+  JS `941aa13e5bdf0b7a…`, CSS `f1997edf5309…` (= V91D_EXPECT, = arm B of rev 1.2), patch.diff ce2d32a1bbbb, snapshot
+  `out/v92/snap-941aa13e5bdf` (arms A, C, F, B, X, V; HASHES.txt f5f2db042aaf). P-142 now measures v9-final vs v9.1d,
+  which is P-134's question (folded in here since rev 1.0).
+- **Re-pinned (rev 1.3):** `V92_EXPECT` 941aa13e5bdf / f1997edf5309; serve142.sh (V source and full hashes, served-hash
+  case); score142.mjs `P142.V`; selftest142.mjs (serve142 folders; SELFTEST-142 OK 44); part1.sh, sim92.mjs, geo92.mjs
+  (snapshot). **part1.sh drops step 2 (NF-C)**: nf is OUT and the snapshot has no Mnf arm; steps 1 (Chrome census) and
+  3 (Simulator census) and every rule of them are unchanged. The registered build line in the P-142 card block above is
+  superseded by this one; the card text stays as registered.
+- **Left for the lead (not changed):** part 2's part H (the hero flip, added for nav-fade) and score142's NF gate (the
+  nav-fade windows) now ask a v9.1d-vs-v9-final question nobody needs for landing; they stay as registered unless the
+  lead drops them.
+
+| file (rev 1.3) | sha256/12 |
+|---|---|
+| fixes/v9-best/build.mjs | d25885e2d428 |
+| fixes/v9-2/patch.diff | ce2d32a1bbbb |
+| fixes/v9-2/part1.sh | cbe46b389e2f |
+| fixes/v9-2/hostgate.sh | d800dd5a5ad2 (unchanged) |
+| fixes/v9-2/sim92.mjs | 2d2e7cdc00f9 |
+| fixes/v9-2/geo92.mjs | bf1b2ed6bee1 |
+| fixes/v9-2/phone/serve142.sh | 5eb8a96daa16 |
+| fixes/v9-2/phone/hold142.sh | a9e0cbb38d8c (unchanged) |
+| fixes/v9-2/phone/score142.mjs | bf977770727c |
+| fixes/v9-2/phone/selftest142.mjs | 5d4d06937b6e |
+| fixes/v9-2/pre/pw92.sh | 9989193659db (rev 1.2 fix: an empty probe result exits 5, VOID; was 472f81e00ded) |
+| fixes/v9-2/pre/samebytes.sh | be51a7217478 |
+| out/v92/snap-941aa13e5bdf/HASHES.txt | f5f2db042aaf |
 
 ### Part 1: counts (no timing; `sh fixes/v9-2/part1.sh` in the background, after the sign and the read)
 

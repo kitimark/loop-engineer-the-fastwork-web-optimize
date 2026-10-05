@@ -121,7 +121,7 @@ export const EXTRAS = [
 ];
 export const V9F = { patch: 'fixes/v9-best/patch.diff', rev: '8b5ce9b3', file: '4196eaa61d96', expect: V9_EXPECT };
 // v9.2 as pinned after its build (null: not pinned yet)
-export const V92_EXPECT = exp('30f6371751f4', '1c4161f56545');   // P-142 rev 1.2: pw + nf, build with --with pw,nf (U2 OUT: T2 fail at y 2120, lead ~16:0xZ); rev 1.1 pinned pw + nhc + nf = 6468db04395c / 1c4161f56545, pw + nhc alone 93028be4374f / f1997edf5309
+export const V92_EXPECT = exp('941aa13e5bdf', 'f1997edf5309');   // P-142 rev 1.3: v9.2 = v9.1d (pw OUT on (b), nf OUT on the Simulator nav-box residue; lead R1-R6 + R2 reading B, ~17:4xZ), build with --with '' (no extras); rev 1.2 pinned pw + nf = 30f6371751f4 / 1c4161f56545, build with --with pw,nf (U2 OUT: T2 fail at y 2120, lead ~16:0xZ); rev 1.1 pinned pw + nhc + nf = 6468db04395c / 1c4161f56545, pw + nhc alone 93028be4374f / f1997edf5309
 const byKey = (k) => [...COMPONENTS, ...DROPPED, G11, MS7D].find((c) => c.key === k);
 const to7d = (c) => (c.key === 'ms7c' ? MS7D : !c.after && !c.on ? c : { ...c, after: c.after?.map((k) => (k === 'ms7c' ? 'ms7d' : k)), on: c.on?.map((k) => (k === 'ms7c' ? 'ms7d' : k)) });
 export const TARGETS = {

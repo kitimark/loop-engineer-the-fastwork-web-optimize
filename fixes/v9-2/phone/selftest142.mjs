@@ -138,7 +138,7 @@ const srv = readFileSync(join(here, 'serve142.sh'), 'utf8');
 const v = (k) => srv.match(new RegExp(`^${k}=([0-9a-f]{64})$`, 'm'))?.[1];
 ok(v('CJ') === P142.C.js && v('CC') === P142.C.css && v('VJ') === P142.V.js && v('VC') === P142.V.css, '5 serve142 full hashes differ from score142 pins');
 ok(srv.includes(`C:${P142.C.js.slice(0, 12)}:${P142.C.css.slice(0, 12)}|V:${P142.V.js.slice(0, 12)}:${P142.V.css.slice(0, 12)}`), '5 served-hash case');
-ok(/^S=out\/p142\/snap/m.test(srv) && /SRCC=out\/v92\/snap-30f6371751f4\/F; SRCV=out\/v92\/snap-30f6371751f4\/V/.test(srv), '5 serve142 folders');
+ok(/^S=out\/p142\/snap/m.test(srv) && /SRCC=out\/v92\/snap-941aa13e5bdf\/F; SRCV=out\/v92\/snap-941aa13e5bdf\/V/.test(srv), '5 serve142 folders');
 
 console.log(bad.length ? `SELFTEST-142 FAIL ${bad.length} of ${n}\n  ${bad.join('\n  ')}` : `SELFTEST-142 OK ${n}`);
 process.exit(bad.length ? 1 : 0);

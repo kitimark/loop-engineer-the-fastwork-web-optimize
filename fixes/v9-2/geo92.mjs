@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const WT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 const { launchChrome, CDP, gotoAndSettle, sleep, tempProfileDir } = await import(join(WT, 'tools/lib/cdp.mjs'));
-const SNAP = join(WT, process.env.P142_SNAP || 'out/v92/snap-30f6371751f4');
+const SNAP = join(WT, process.env.P142_SNAP || 'out/v92/snap-941aa13e5bdf');
 const HX = Object.fromEntries(readFileSync(join(SNAP, 'HASHES.txt'), 'utf8').trim().split('\n').map((l) => l.split(/\s+/)).map(([h, p]) => [p, h.slice(0, 12)]));
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
