@@ -325,7 +325,10 @@ runs on the lead's word if the WORSE is attributed to one section and v9.2 − t
 
 ### Part 1 result (v9-final vs v9.2 = v9.1d; lead GO after the rev 1.3 delta PASS; ran 17:46:06-17:59:44Z)
 
-**PART 1: no-worse** (0 WORSE lines; NF-C not run: nf OUT, rev 1.3). Ran at head 53b0af35 (PIN line; part1.sh
+**PART 1: INSUFFICIENT** (lead ruling (ii), after ops-reader-P142p1's read; "Rev 1.4" below): 1a no-worse, 1c rest
+stops no-worse, **1c scroll INSUFFICIENT** (its window was truncated: not the registered item). As first written (04a229fc)
+this section said "no-worse (0 WORSE lines)"; that was wrong for 1c scroll and is kept below, struck by this line.
+NF-C not run (nf OUT, rev 1.3). Ran at head 53b0af35 (PIN line; part1.sh
 cbe46b389e2f, HASHES f5f2db042aaf); 5 steps, each one try, every exit 0, no VOID-HOST (load1 at step starts 2.2-14.5).
 Every load served its arm (F 647c9ef2b1e2 / e1359ab9994a, V 941aa13e5bdf / f1997edf5309); Simulator loads 6, VOID 0.
 Read by `fixes/v9-2/part1read.mjs` (5e8591510912; the registered rules, N6 record selection), output
@@ -342,11 +345,58 @@ Read by `fixes/v9-2/part1read.mjs` (5e8591510912; the registered rules, N6 recor
 | scroll top → end rafFire | 288.8, 289.2, 289 | 186.8, 186.8, 187 | no-worse (−35 %, as expected from scroll-cb) |
 
 No new rest loop. 1c Simulator census (WebKit Timeline counts, 6 s windows, F / V n = 3): every rest stop's
-RenderingFrame, Layout and RecalculateStyles and the scroll window's per-frame Layout / RecalculateStyles no-worse (largest
+RenderingFrame, Layout and RecalculateStyles no-worse; [superseded: the scroll window's per-frame Layout / RecalculateStyles
+"no-worse" came from a ~0.5 s top slice, see Rev 1.4] (largest
 median diffs: rest-2796 RenderingFrames +22 vs threshold 20 and RecalculateStyles +23 vs 19, both with V's min 197 / 135
 not above F's max 212 / 149, so no-worse by the rule; scroll per-frame +0.06 vs 0.26). Paint and Composite (report):
 equal within a few counts at every stop. The scroll window's per-frame rule was read with the floor 0 (a 2-count floor on
 a per-frame ratio is moot); with the floor 2 the verdict is the same.
+
+### Rev 1.4: the 1c scroll window was truncated; "1c-scroll re-run" ticket line (lead ruling, before any of its data)
+
+- **What went wrong (int-v8's bug, OBSERVED in the code and the records, CONFIRMED against tools/lib/wip.mjs's own note
+  that WebKit ignores awaitPromise):** `sim92.mjs` line 71 did `const sc = await c.evaluate(SCROLL)` with SCROLL a page
+  Promise; the inspector returned the unawaited Promise, so `frames` / `y` were never recorded and the Timeline stopped
+  after the fixed 500 ms sleep. Every scroll window in both arms has RenderingFrame 31 (~744 px of 6075, the top ~12 %),
+  and `part1.log` prints `frames undefined` for all six loads.
+- **The sign I missed:** the pre-data sim92 smoke on arm C (`out/v92/looks-r12.log`, rev 1.2 gates) already printed
+  `top->end RF31 ... frames undefined`; I read it as "works" and did not check the scroll window's frame count.
+- **ops-reader-P142p1's reader finding:** `part1read.mjs` (5e8591510912, written after the data, as N6 allows) had no
+  insufficient branch and no n = 3 check, so the card's "insufficient if any is" and the N6 precedence were absent and the
+  truncated window went unflagged; and it read the per-frame scroll items with floor 0 where the card registers 2 counts.
+- **Lead ruling (ii):** the ~12 % slice is not the registered item, so 1c scroll is INSUFFICIENT and part 1 is
+  INSUFFICIENT until this line runs.
+
+**The new ticket line, P-142 rev 1.4 "1c-scroll re-run"** (registered here before any of its data; runs after the lead's
+delta check and go):
+- **Fix (`sim92.mjs` 63137bdf4129):** the page stores the driver's result in `window.__p142sc`; Node polls it every 250 ms
+  (timeout 30 s) and stops the Timeline as soon as it is set (the 500 ms tail is gone). `--scroll-only` skips the idle stops.
+- **Hard check per load (`sim92check.mjs` 94bfa2e9bb52, used by sim92 and the reader):** full-window estimate, written now:
+  docH 6850 at 430x775 → max scrollY 6075 → ceil(6075 / 24) = 254 scrollBy steps, 255 rAF callbacks, ~4.2 s at 60 Hz, at
+  least one RenderingFrame per callback. A load passes only if `frames` and `y` are defined, `y ≥ max − 1`, `frames ≥
+  floor(0.95 × steps)` (241) and RenderingFrames ≥ floor(0.8 × steps) (203), steps from the load's own max (from the
+  estimate when max is missing), and no timeout. A failing load is VOID. Part 1's six windows fail it (frames, y and max
+  undefined; RenderingFrames 31 < 203).
+- **VOID re-runs:** one per VOID load (rep + 10), in a fourth session after the three; a second VOID leaves its arm short
+  of 3 valid loads → INSUFFICIENT.
+- **Reader (`part1read.mjs` 37ef9feb4e28):** an insufficient branch (fewer than 3 valid loads an arm on any item → that item
+  INSUFFICIENT; part 1 = WORSE if any item is WORSE, else INSUFFICIENT if any is, else no-worse); a 1c scroll window counts
+  only if it passes the check; `--scroll <records>` takes the 1c scroll item from the re-run's records, 1a and the 1c rest
+  stops from part 1's. The no-worse rule is the card's, with the registered 2-count floor everywhere; on a per-frame ratio
+  that floor means WORSE needs a rise of more than 2 per frame, so the floor-0 verdict is printed beside it as a report
+  only (the lead may rule otherwise before the data). Re-read of part 1's own records with it: **PART1 INSUFFICIENT**
+  (`out/v92/part1-read-r14.txt`; 1a and 1c rest stops no-worse, 1c scroll insufficient, F 0 / V 0 valid).
+- **Scope and runner (`rerun14.sh` a4f4608f9d64):** the scroll window only, F vs V, n = 3, sessions F:1 V:1 · V:2 F:2 ·
+  F:3 V:3 (~7 min), each its own shared simulator hold through `hostgate.sh` (N4 host clause unchanged); log
+  `out/v92/part1-r14.log` (PIN line: HEAD and the five sha256/12), records `out/v92/sim/p142-scroll.json` (refuses if it
+  exists); ends with the reader's line and R14DONE.
+- **Self-test (`selftest142.mjs` d2ee1249f29d, SELFTEST-142 OK 51):** section 6: the part-1-shaped truncated window fails
+  the check (frames undefined, RenderingFrames 31 < 203), a full window passes, short scroll / few frames / few
+  RenderingFrames / timeout fail; the reader scores six truncated loads INSUFFICIENT, six equal full loads no-worse, V
+  +2.45 per frame WORSE, two valid V loads INSUFFICIENT and a valid rep-12 re-run restores n = 3; 1a with one load an arm
+  is insufficient.
+- **The result line:** part 1 = 1a (no-worse) + 1c rest stops (no-worse) + the re-run's 1c scroll item, folded by the rule
+  above. Phone part 2 does not depend on it.
 
 ### Part 2: one G phone block (after the lead's go; the iPhone reconnected)
 

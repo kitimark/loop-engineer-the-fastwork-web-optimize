@@ -13,6 +13,12 @@
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner int-v8 -- \
 //     node tools/sim.mjs session --functional --owner int-v8 -- node fixes/v9-2/sim92.mjs <records.json> F:1 V:1 F:2
 // SNAP: env P142_SNAP (default out/v92/snap-941aa13e5bdf).
+// Rev 1.4 (lead ruling, P-142 part 1 read by ops-reader-P142p1): part 1's scroll window was truncated: `c.evaluate(SCROLL)`
+// returned the Promise unawaited (WebKit ignores awaitPromise, tools/lib/wip.mjs), so Timeline stopped ~0.5 s in (RF 31,
+// frames undefined, ~12 % of the page). Now the page stores the driver's result in window.__p142sc and Node polls it
+// every 250 ms (timeout 30 s), then stops the Timeline at once; the window must pass sim92check.mjs's scrollCheck (max
+// scrollY reached, frames and y defined, frames and RenderingFrames above floors from a full-window estimate), else the
+// load is VOID. `--scroll-only` (first argument after the records file) skips the idle stops (the rev 1.4 re-run).
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -21,12 +27,14 @@ import { fileURLToPath } from 'node:url';
 const WT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
-const [outPath, ...order] = process.argv.slice(2);
+const { scrollCheck } = await import(join(WT, 'fixes/v9-2/sim92check.mjs'));
+const argv = process.argv.slice(2), SCROLL_ONLY = argv.includes('--scroll-only');
+const [outPath, ...order] = argv.filter((a) => a !== '--scroll-only');
 if (!outPath || !order.length) { console.error('usage: sim92.mjs <records.json> ARM:rep ...'); process.exit(2); }
 const SNAP = join(WT, process.env.P142_SNAP || 'out/v92/snap-941aa13e5bdf');
 const JS = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const HX = Object.fromEntries(readFileSync(join(SNAP, 'HASHES.txt'), 'utf8').trim().split('\n').map((l) => l.split(/\s+/)).map(([h, p]) => [p, h.slice(0, 12)]));
-const SETTLE = 3000, WIN = 6000, STEP = 24;
+const SETTLE = 3000, WIN = 6000, STEP = 24, POLL = 250, SCROLL_TIMEOUT = 30000;
 const TYPES = { renderingFrames: 'RenderingFrame', styleRecalcs: 'RecalculateStyles', layouts: 'Layout', paints: 'Paint', composites: 'Composite', rafs: 'FireAnimationFrame' };
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const D = join(WT, 'out/v92/sim'); mkdirSync(D, { recursive: true });
@@ -45,7 +53,7 @@ for (const L of order) {
   const [arm, rep] = L.split(':');
   const st = join(D, `serve-sim-${arm}-${process.pid}.json`); rmSync(st, { force: true });
   const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', resolveTree('site-pretty'), '--overlay', join(SNAP, arm), '--port', '0', '--quiet', '--no-cache', '--state', st, '--vendors=local', '--no-http-twin'], { cwd: WT, stdio: ['ignore', 'ignore', 'inherit'] });
-  const load = { arm, rep: Number(rep), engine: 'sim', tool: 'fixes/v9-2/sim92.mjs', startedAt: new Date().toISOString(), windows: [] };
+  const load = { arm, rep: Number(rep), engine: 'sim', tool: 'fixes/v9-2/sim92.mjs', scrollOnly: SCROLL_ONLY, startedAt: new Date().toISOString(), windows: [] };
   let c = null;
   try {
     let s = null; for (let i = 0; i < 100 && !s; i++) { await sleep(200); if (existsSync(st)) try { s = JSON.parse(readFileSync(st, 'utf8')); } catch {} }
@@ -61,19 +69,23 @@ for (const L of order) {
     const recs = []; c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
     const start = async () => { await c.send('Page.disable'); await c.send('Page.enable'); await c.send('Timeline.enable').catch(() => {}); await c.send('Timeline.setInstruments', { instruments: ['Timeline'] }); recs.length = 0; await c.send('Timeline.start', { maxCallStackDepth: 0 }); };
     const stop = async () => { await c.send('Timeline.stop'); await sleep(1000); return count(recs); };
-    for (const [name, y] of STOPS) {
+    for (const [name, y] of SCROLL_ONLY ? [] : STOPS) {
       await c.evaluate(`(scrollTo({ top: ${y}, behavior: "instant" }), 0)`); await sleep(SETTLE);
       await start(); await sleep(WIN);
       load.windows.push({ kind: 'idle', stop: name, ms: WIN, y: await c.evaluate('scrollY'), ...(await stop()) });
     }
     await c.evaluate('(scrollTo({ top: 0, behavior: "instant" }), 0)'); await sleep(SETTLE);
     await start();
-    const sc = await c.evaluate(SCROLL);
-    await sleep(500);
-    load.windows.push({ kind: 'scroll', stop: 'top->end', step: STEP, ...sc, ...(await stop()) });
+    await c.evaluate(`(window.__p142sc = null, ${SCROLL}.then((r) => { window.__p142sc = r; }), 0)`);
+    let sc = null; const t0 = Date.now();
+    while (!sc && Date.now() - t0 < SCROLL_TIMEOUT) { await sleep(POLL); sc = await c.evaluate('window.__p142sc'); }
+    const w = { kind: 'scroll', stop: 'top->end', step: STEP, ...(sc || { timeout: SCROLL_TIMEOUT }), ...(await stop()) };
+    w.check = scrollCheck(w);
+    load.windows.push(w);
+    if (!w.check.ok) load.void = 'scroll check: ' + w.check.why.join('; ');
   } catch (e) { load.void = 'error: ' + String(e.message || e); }
   finally { try { c && c.close(); } catch {} p.kill(); rmSync(st, { force: true }); }
   const rec = existsSync(outPath) ? JSON.parse(readFileSync(outPath, 'utf8')) : { loads: [] };
   rec.loads.push(load); writeFileSync(outPath, JSON.stringify(rec, null, 1));
-  console.log(arm, rep, JSON.stringify(load.served || {}), load.void || '', load.windows.map((w) => `${w.stop} RF${w.renderingFrames} RS${w.styleRecalcs} L${w.layouts} P${w.paints}${w.kind === 'scroll' ? ` perFrame ${JSON.stringify(w.perFrame)} frames ${w.frames}` : ''}`).join(' | '));
+  console.log(arm, rep, JSON.stringify(load.served || {}), load.void || '', load.windows.map((w) => `${w.stop} RF${w.renderingFrames} RS${w.styleRecalcs} L${w.layouts} P${w.paints}${w.kind === 'scroll' ? ` perFrame ${JSON.stringify(w.perFrame)} frames ${w.frames} y ${w.y}/${w.max} check ${w.check?.ok ? 'ok' : 'FAIL'}` : ''}`).join(' | '));
 }

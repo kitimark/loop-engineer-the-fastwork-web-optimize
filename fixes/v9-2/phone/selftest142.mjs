@@ -93,5 +93,32 @@ ok(v('CJ') === P142.C.js && v('CC') === P142.C.css && v('VJ') === P142.V.js && v
 ok(srv.includes(`C:${P142.C.js.slice(0, 12)}:${P142.C.css.slice(0, 12)}|V:${P142.V.js.slice(0, 12)}:${P142.V.css.slice(0, 12)}`), '5 served-hash case');
 ok(/^S=out\/p142\/snap/m.test(srv) && /SRCC=out\/v92\/snap-941aa13e5bdf\/F; SRCV=out\/v92\/snap-941aa13e5bdf\/V/.test(srv), '5 serve142 folders');
 
+// 6. rev 1.4: sim92's scroll-window check and part1read.mjs's insufficient branch (part 1's truncation must fail)
+const { scrollCheck } = await import(join(root, 'fixes/v9-2/sim92check.mjs'));
+const R = await import(join(root, 'fixes/v9-2/part1read.mjs'));
+const trunc = { kind: 'scroll', stop: 'top->end', step: 24, renderingFrames: 31, layouts: 31, styleRecalcs: 33, perFrame: { layouts: 1, styleRecalcs: 1.065 } };
+const full = (pf = 0.75) => ({ kind: 'scroll', stop: 'top->end', step: 24, frames: 255, y: 6075, max: 6075, renderingFrames: 262, layouts: Math.round(262 * pf), styleRecalcs: Math.round(262 * pf), perFrame: { layouts: pf, styleRecalcs: pf } });
+const ct = scrollCheck(trunc);
+ok(!ct.ok && ct.why.includes('frames undefined') && ct.why.some((w) => /renderingFrames 31 < 203/.test(w)), `6 truncated window passes the check: ${JSON.stringify(ct)}`);
+ok(scrollCheck(full()).ok, `6 full window fails: ${JSON.stringify(scrollCheck(full()))}`);
+ok(!scrollCheck({ ...full(), y: 5000 }).ok, '6 max scrollY not reached passes');
+ok(!scrollCheck({ ...full(), frames: 200 }).ok, '6 frames under the floor passes');
+ok(!scrollCheck({ ...full(), renderingFrames: 150 }).ok, '6 renderingFrames under the floor passes');
+ok(!scrollCheck({ ...full(), timeout: 30000, frames: undefined, y: undefined }).ok, '6 timeout passes');
+const ld = (arm, rep, w, v) => ({ arm, rep, windows: [w], ...(v ? { void: v } : {}) });
+const six = (wF, wV) => [ld('F', 1, wF), ld('V', 1, wV), ld('V', 2, wV), ld('F', 2, wF), ld('F', 3, wF), ld('V', 3, wV)];
+const sc = (loads) => R.read1cScroll(loads).map((x) => x.verdict);
+ok(sc(six(trunc, trunc)).every((v) => /^insufficient/.test(v)), `6 truncated part-1-shaped loads not insufficient: ${sc(six(trunc, trunc))}`);
+ok(sc(six(full(), full())).every((v) => v === 'no-worse'), `6 full equal loads not no-worse: ${sc(six(full(), full()))}`);
+ok(sc(six(full(0.75), full(3.2))).every((v) => v === 'WORSE'), `6 V +2.45 per frame not WORSE: ${sc(six(full(0.75), full(3.2)))}`);
+const short = six(full(), full()); short[2] = ld('V', 2, trunc, 'scroll check: frames undefined');
+ok(sc(short).every((v) => /^insufficient/.test(v)), `6 two valid V loads not insufficient: ${sc(short)}`);
+const fixed = [...short, ld('V', 12, full())];
+ok(sc(fixed).every((v) => v === 'no-worse'), `6 a valid re-run (rep + 10) does not restore n = 3: ${sc(fixed)}`);
+const c1a = R.read1a([{ arm: 'F', windows: [{ label: 'rest-0', perSec: { mainFrames: 39, rafFire: 1 } }] }, { arm: 'V', windows: [{ label: 'rest-0', perSec: { mainFrames: 39, rafFire: 1 } }] }]);
+ok(c1a.every((x) => /^insufficient/.test(x.verdict)), '6 1a with one load an arm not insufficient');
+const p1 = R.readPart1({ chrome: [], sim: six(trunc, trunc) });
+ok(p1.verdict === 'INSUFFICIENT', `6 part 1 with truncated scroll windows: ${p1.verdict}`);
+
 console.log(bad.length ? `SELFTEST-142 FAIL ${bad.length} of ${n}\n  ${bad.join('\n  ')}` : `SELFTEST-142 OK ${n}`);
 process.exit(bad.length ? 1 : 0);
