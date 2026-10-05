@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { readFileSync, existsSync, writeFileSync, readdirSync, truncateSync } from 'node:fs';
 import { tempDir, TOOLS } from '../helpers.mjs';
 import { checkMarkdown } from './md-cases.mjs';
+import { ARTIFACT_OK, ARTIFACT_BAD } from './artifact-cases.mjs';
 
 const T = await import('../../tools/lib/console-threads.mjs');
 let state;
@@ -690,6 +691,50 @@ test('I-119 threads page: a lan link opens the address resolved at view time; un
   // a listed href that is not an http(s) URL is not linked either
   const evil = await threadsPage({ hash: `#${n.thread.id}`, thread: { ...view, messages: view.messages.map((m) => ({ ...m, lan: [{ text: 'http://lan:5231/x', href: 'javascript:alert(1)' }] })) } });
   assert.ok(!evil.ids['tv-msgs'].children[0].all().some((x) => x.tagName === 'a' && /^javascript:/.test(x.href)));
+});
+
+// ---- I-191 (user T-170 #9): claude.ai artifact links in agent texts: kept as written, clickable on the page ----------
+
+test('I-191 scrubAgentText: https://claude.ai/artifact/<id> and /code/artifact/<uuid> are kept as written; look-alikes scrubbed whole', () => {
+  for (const ok of ARTIFACT_OK) assert.deepEqual(T.scrubAgentText(`Review ${ok} please`), { text: `Review ${ok} please`, scrubbed: [] }, ok);
+  const u = ARTIFACT_OK[0], c = ARTIFACT_OK[4];
+  // sentence punctuation after a link is not part of it
+  assert.equal(T.scrubAgentText(`See ${u}. Or (${c}), "${u}"! Seen ${u}?`).text, `See ${u}. Or (${c}), "${u}"! Seen ${u}?`);
+  for (const bad of ARTIFACT_BAD) assert.deepEqual(T.scrubAgentText(`x ${bad} y`), { text: 'x <link> y', scrubbed: ['url'] }, bad);
+  // beside the other kept forms; the rest scrubbed as before
+  const s = T.scrubAgentText(`${u} http://lan:5231/ http://localhost:5559/threads http://${FAKE_LAN}:5231/ someone@example.invalid`);
+  assert.equal(s.text, `${u} http://lan:5231/ http://localhost:5559/threads <link> <e-mail>`);
+});
+
+test('I-191 store: an artifact link in a reply is stored as written; the threads page links it (new tab), never a look-alike', async () => {
+  const [u, c] = [ARTIFACT_OK[0], ARTIFACT_OK[4]];
+  const n = await T.createThread({ by: 'lead', title: 'Team article', text: `Please review: ${u}.` });
+  assert.deepEqual(n.scrubbed, []);
+  const r = await T.replyAgent(n.thread.id, { by: 'lead', text: `Code view: ${c}, not ${ARTIFACT_BAD[0]}` });
+  assert.deepEqual(r.scrubbed, ['url']);
+  assert.deepEqual(T.getThread(n.thread.id).messages.map((m) => m.text), [`Please review: ${u}.`, `Code view: ${c}, not <link>`]);
+  const isOwn = (a) => !a.href.startsWith('/agent/');
+  const p = await threadsPage({ hash: `#${n.thread.id}`, thread: T.pageThread(T.getThread(n.thread.id), null, { lan: () => FAKE_LAN }) });
+  const own = p.ids['tv-msgs'].children.map((m) => m.all().filter((x) => x.tagName === 'a' && isOwn(x)));
+  assert.deepEqual(own.map((l) => l.map((a) => [a.textContent, a.href, a.target, a.rel])), [[[u, u, '_blank', 'noreferrer']], [[c, c, '_blank', 'noreferrer']]]);
+  assert.equal(p.ids['tv-msgs'].children[0].all().find((x) => x.className === 'mtext').textContent, `Please review: ${u}.`);
+  // the user's own text is stored as typed: a look-alike there stays text on the page, a valid one becomes a link
+  const typed = `${ARTIFACT_BAD.join(' ')} and in **bold ${u}** then http://localhost:5559/progress`;
+  const v = T.pageThread((await T.createThread({ title: 'x', text: typed, fromPage: true })).thread, null, { lan: () => FAKE_LAN });
+  const q = await threadsPage({ hash: `#${v.id}`, thread: v });
+  assert.deepEqual(q.ids['tv-msgs'].children[0].all().filter((x) => x.tagName === 'a' && isOwn(x)).map((a) => a.href), [u, 'http://localhost:5559/progress']);
+});
+
+test('I-191: the Threads and Proposals pages carry the same artifact rules as tools/lib/artifact-link.mjs', async () => {
+  const A = await import('../../tools/lib/artifact-link.mjs');
+  for (const f of ['threads-page.html', 'proposals-page.html']) {
+    const html = readFileSync(join(TOOLS, 'lib', f), 'utf8');
+    for (const name of ['ARTIFACT_CANDIDATE', 'ARTIFACT_VALID', 'TRAILING']) {
+      const m = html.match(new RegExp(`\\nvar ${name} = (/.*/[a-z]*);\\n`));
+      assert.ok(m, `${f}: var ${name}`);
+      assert.equal(String(new Function(`return ${m[1]};`)()), String(A[name]), `${f}: ${name}`);
+    }
+  }
 });
 
 // ---- T-024 #13: merged and related threads on the page --------------------------------------------------------------

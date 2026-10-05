@@ -50,6 +50,7 @@ import { consoleDir, recipients } from './console.mjs';
 import { PERSONAL, sanitize } from './progress.mjs';
 import { redact } from './redact.mjs';
 import { lanAddress } from './lan.mjs';
+import { TRAILING, keepArtifactLinks } from './artifact-link.mjs'; // I-191: TRAILING = sentence punctuation after a link
 import { sniffMedia, sniffBytes, MEDIA_TYPES, LIMITS as PROPOSAL_LIMITS } from './proposal.mjs';
 import { normAnchor, anchorView, itemText as anchorItemText, plainLine } from './console-comments.mjs';
 import { routeOwner, routeContext, listeningState, listeningFn, getDesk, loadBusy, LISTEN_MIN, TRIAGE_ESCALATE_MIN } from './thread-routing.mjs'; // T-050, I-164
@@ -96,8 +97,6 @@ const personalIn = (s) => PERSONAL.some(([name, re]) => name !== 'url' && name !
 /** A candidate: `http(s)://lan` and the rest of its token (lanPlaceholder validates it). */
 const LAN_CANDIDATE = /\bhttps?:\/\/lan\b\S*/gi;
 const LAN_VALID = /^https?:\/\/lan:(\d{1,5})(?:\/[A-Za-z0-9\-._~%/]*)?(?:\?[A-Za-z0-9\-._~%/=&+]*)?(?:#[A-Za-z0-9\-._~%/=&+]*)?$/i;
-/** Sentence punctuation after a link is not part of it. */
-const TRAILING = /[.,;:!?)\]}'"]+$/;
 const personalAnyIn = (s) => PERSONAL.some(([name, re]) => name !== 'url' && (re.lastIndex = 0, re.test(s)));
 const IPV4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
 
@@ -128,7 +127,8 @@ export function lanLinks(text, resolve = () => lanAddress()) {
 }
 
 /**
- * Agent text made safe to store and show: URLs (except localhost ones and http://lan:<port>/ phone links, I-119), IP
+ * Agent text made safe to store and show: URLs (except localhost ones, http://lan:<port>/ phone links, I-119, and
+ * claude.ai artifact links, I-191), IP
  * addresses, .local/.lan hosts, e-mails, device ids and home paths replaced (progress.mjs sanitize, which also runs
  * redact.mjs). Returns {text, scrubbed: [kinds]}.
  */
@@ -146,6 +146,8 @@ export function scrubAgentText(s) {
     kept.push(p.url);
     return `\u0000${kept.length - 1}\u0000${p.rest}`;
   });
+  // I-191: https://claude.ai/artifact/<id> and /code/artifact/<uuid> kept as written (artifact-link.mjs); others scrubbed
+  t = keepArtifactLinks(t, (u) => { kept.push(u); return `\u0000${kept.length - 1}\u0000`; });
   // the same steps as progress.mjs sanitize (a unit test holds them equal), one at a time to name what changed
   const scrubbed = new Set();
   for (const [name, re] of PERSONAL) {

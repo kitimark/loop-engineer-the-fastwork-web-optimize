@@ -7,6 +7,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 
 import { join } from 'node:path';
 import { tempDir } from '../helpers.mjs';
 import { writePng, writeMp4, pngBytes } from '../fixtures/fake-media.mjs';
+import { ARTIFACT_OK, ARTIFACT_BAD } from './artifact-cases.mjs';
 
 const LAN = 'https://192.168.77.12:5612/';
 let P, dir;
@@ -59,6 +60,19 @@ test('scrubText: LAN addresses, other URLs, e-mail, home paths and ids go; local
   // closing punctuation after a scrubbed URL stays; the address does not
   assert.equal(P.scrubText(`Keep it (seen on ${LAN}).`).text, 'Keep it (seen on <link>).');
   assert.equal(P.scrubText('see https://192.168.77.12:5612/a?b=1, then').text, 'see <link>, then');
+});
+
+test('I-191 scrubText: a claude.ai artifact link is kept as written (sentence punctuation after it is not part of it); look-alikes scrubbed whole', () => {
+  for (const ok of ARTIFACT_OK) assert.deepEqual(P.scrubText(`Review ${ok} please`), { text: `Review ${ok} please`, found: [] }, ok);
+  const u = ARTIFACT_OK[0];
+  assert.equal(P.scrubText(`See ${u}. Or (${u}), "${u}"! Seen ${u}?`).text, `See ${u}. Or (${u}), "${u}"! Seen ${u}?`);
+  for (const bad of ARTIFACT_BAD) {
+    const r = P.scrubText(`x ${bad} y`);
+    assert.equal(r.text, 'x <link> y', bad);
+    assert.ok(r.found.includes('url'), bad);
+  }
+  // the rest of the text is scrubbed as before
+  assert.equal(P.scrubText(`${u} and https://192.168.77.12:5612/ and someone@example.invalid`).text, `${u} and <link> and <e-mail>`);
 });
 
 test('isLocalUrl: localhost, 127.0.0.1 and [::1] only', () => {
