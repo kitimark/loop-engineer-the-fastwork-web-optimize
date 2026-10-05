@@ -155,6 +155,53 @@ question: does v9.2 do no more rendering work than v9-final (part 1), add no slo
 - **Unchanged:** every rule of rev 1.0 / 1.1 (part 1 rules, NF-C pass line and floor, host clause, the phone block, the
   swipe A/B, land / no-land / INSUFFICIENT), now on the new V. Part 2's FLICKER gate keeps its role (no U2 in V).
 
+### Rev 1.2 gate results, the same-bytes run (lead R1-R6) and the resulting build (no part 1 data yet)
+
+Component gates (`look92b.sh`, `out/v92/looks-r12.log`, LOOK92B-DONE 17:10:20Z):
+
+| gate | result |
+|---|---|
+| g11 exactness (V, F) | EXIT 0 |
+| fix.mjs check v9-2 --on v9-best | CHECK OK (elements mobile 1581 → 1583, desktop 1423 → 1425; 0 errors) |
+| nf T2 Chrome mobile (Mnf vs V, aligned) | every both-pairs spot within T2 (largest 15 css px² at y 2120, nav, edge 58; 0 fill) |
+| nf T2 Chrome desktop | y 4255: 13,879 css px² both-pairs, fill 236 (section.pain > div.pain-sticky, the cycling sticky notes) → T2 FAIL as written; y 1739 / 2577: 4,627 / 3,561 css px² (section.feed img, edge 118) → over the 2,000 css px² element cap; Join button y 5932 / 6771 / 7609 edge 119 (within) |
+| nf T2 Simulator (px-sim Mnf vs V) | both-pairs clusters 4-17 css px² per stop; within T2 except one 4 css px² cluster (shade 255) at css 96-112 x 16-48, y 2796-6075, attributed to the nav bar by position: it is the Simulator's status-bar recording clock (frames show "0:02" / "0:03" / "0:04", the A frame the recording pill), not page content (OBSERVED, from the frames) |
+| pw (b) Chrome mobile (Mpw vs V, aligned) | y 2120: 3 css px² both-pairs in the nav bar (edge 70); y 4496: 1 css px² in the platform text (p.is-desc, edge 11): both outside the word band → (b) fails as written |
+| pw (c) functional | first run void (empty result, pw92.sh bug, fixed: an empty result now exits 5); re-run in samebytes.sh, see below |
+| rest census B vs V | V ≈ B (rest-0 ~39, rest-2796 ~2, rest-end 27-28; scroll rafFire ~187-189, mainFrames ~110; no rest loop) |
+| dom-count F vs V | V +2 elements (span.fw-nf-mk, span.fw-nf-mki), mobile and desktop |
+| geo92 (430x775) | F and V identical (hero pill off 560 / on 556; end is-morphing 5192, is-earn-hidden 5344, both off 5187) |
+| sim92 smoke (arm C) | works |
+
+Same-bytes run (lead R1: px-chrome A=V,V=V, mobile aligned + desktop, n = 1 each, shared slots; runner
+`fixes/v9-2/pre/samebytes.sh` be51a7217478, pw92.sh 9989193659db; `out/v92/samebytes.log`, SAMEBYTES-DONE 17:29:15Z;
+records `out/v9/px-mobile-2026-10-05T17-13-56-214Z`, `out/v9/px-desktop-2026-10-05T17-19-32-470Z`):
+
+| stop | both-pairs (consistent) | A~V beyond A/A, largest element | A/A, V/V raw (> 8 levels) | R2 status |
+|---|---|---|---|---|
+| mobile y 2120 | 0 | 1 css px² (A2~V2 65, nav bar) | ~152 / ~383 css px² (nav bar) | CLEAN |
+| mobile y 4496 | 0 | 101 css px² (platform img) | ~281 / ~506 css px² | CLEAN |
+| desktop y 1739 | 0 | 0 | 7,498 / 7,498 css px² (feed img, max 113) | CLEAN as reported; UNJUDGEABLE if A/A counts |
+| desktop y 2577 | 0 | 0 | 5,855 / 5,855 css px² (feed img, max 118) | CLEAN as reported; UNJUDGEABLE if A/A counts |
+| desktop y 4255 | 0 | 8,575 css px² (section.pain > div.pain-note.extra, max 222) | 3.24 % / 2.92 % of the stop | UNJUDGEABLE (element > 2,000) |
+
+Reading A (R2 on the beyond-A/A residues as px-chrome reports them) and reading B (any element differing between loads of
+the same bytes, A/A and V/V included, over 2,000 css px²) differ only at y 1739 / 2577; the lead picks the reading.
+
+- **pw: OUT under both readings.** y 2120 and y 4496 are CLEAN, so (b) stands as written (R4): 3 + 1 css px² outside the
+  word band. (c), read from the record (R6): the word events are the same set in all three runs and in the same order on
+  mobile and desktop; on mobile reduced-motion headIO+ / stack+ / expanded+ fire within 1 ms in a different order
+  (B 3027/3027/3028, V 3004/3004/3005); word classes at the 1.0-3.0 s shots are equal; listener and observer counts
+  differ (V: resize@window 6 vs 3, IO 35 vs 23 on mobile) from v9.1d and nf, not pw. (c) is moot: pw is OUT on (b).
+- **nf: reading A → OUT** (y 1739 / 2577 CLEAN, 4,627 / 3,561 css px² > the element cap); y 4255 is UNJUDGEABLE either way
+  and its residue (pain section) is outside the nav, so it alone would not fail nf (R3). **Reading B → nf passes Chrome**
+  (all three desktop stops UNJUDGEABLE, residues outside the nav), and stays in only if the Simulator status-bar cluster
+  (inside the nav's box by position, not page pixels) is ruled out; R1 covered Chrome only, so that is the lead's call.
+- **U2 stays OUT** (R5: y 2120 mobile CLEAN).
+- **Resulting build:** reading A: **v9.2 = v9.1d** (arm B, 941aa13e5bdf / f1997edf5309). Reading B with the Simulator
+  cluster ruled out: v9.2 = v9.1d + nf (arm Mpw, 8bbe6a33dfde / 1c4161f56545). Either way the card is re-pinned and part 1
+  waits for the lead's go.
+
 ### Part 1: counts (no timing; `sh fixes/v9-2/part1.sh` in the background, after the sign and the read)
 
 Each step is its own shared hold (≤ 300 s), one queue entry at a time; served hashes checked by every probe; log

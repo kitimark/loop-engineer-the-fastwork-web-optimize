@@ -13,7 +13,11 @@ node tools/wait.mjs serve $O/serve-Opw.json --pid $P1 --owner int-v8 --reason "P
 node tools/wait.mjs serve $O/serve-V.json --pid $P2 --owner int-v8 --reason "P-142 people-word probe server V" --timeout 60 > $O/url-V.txt
 U1=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$O/serve-Opw.json','utf8')).url)")
 U2=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$O/serve-V.json','utf8')).url)")
-node $O/probe.mjs $O/probe-v92-$(basename $S).json   # out/v92pw/probe.mjs = fixes/v9-2/pre/pw-probe.mjs (923112f9b554; it imports ../../tools, so it runs from out/v92pw) "B=$U1" "V=$U2"
+# out/v92pw/probe.mjs = fixes/v9-2/pre/pw-probe.mjs (923112f9b554; it imports ../../tools, so it runs from out/v92pw).
+# rev 1.2 fix: the first rev 1.2 run (16:52Z) had this comment inside the command line, so the targets were dropped
+# and the probe wrote "results": [] with exit 0; refuse an empty result from now on.
+node $O/probe.mjs $O/probe-v92-$(basename $S).json "B=$U1" "V=$U2"
 E=$?
+grep -q '"label"' $O/probe-v92-$(basename $S).json || { echo "pw probe: no results (VOID)"; E=5; }
 kill $P1 $P2
 exit $E
