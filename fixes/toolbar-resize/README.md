@@ -1664,8 +1664,9 @@ signature. The trigger stays OBSERVED in all text.
     (`PageTimelineAgent.cpp` l.197-198).
   - A record's stack is the visible JS stack up to the depth; it is absent when no JS frame is on the stack (addendum D1).
 - **Design (COUNT-ONLY; no durations, no timing).**
-  - Page `p127-page.html` (`05ab5364cbc6`), no Fastwork code. The capture copies it into this topic's overlay as
-    `/p127/index.html` and checks the served bytes (exit 26 on a mismatch).
+  - Page `p127-page.html` (`503385ed36a8`) with its script `p127-page.js` (`457f3abc43f1`, rev 3), no Fastwork code. The
+    capture copies them into this topic's overlay as `/p127/index.html` and `/p127/p127.js` and checks both served bytes
+    and sources (exit 26 on a mismatch). It then waits until `window.__p127` is an object (STOP exit 28 after 10 s).
     - Three boxes: `#tsel` (attribute `data-sel`, read by the rule `.t[data-sel="b"] { width: 120px }`), `#tnosel`
       (attribute `data-nosel`, read by no rule) and `#iotarget` (the IO target, always in view).
     - One round:
@@ -1678,7 +1679,7 @@ signature. The trigger stays OBSERVED in all text.
       - change: `b`/`a` alternating, so every write changes the value;
       - same: always `a`, the value already set;
       - none: marks only.
-  - Arms, in this order (`PLAN` in `p127-capture.mjs` `5dae67bd2ab1`), 30 rounds each:
+  - Arms, in this order (`PLAN` in `p127-capture.mjs` `e93886c95d56`), 30 rounds each:
 
     | depth | arms (spec = cause-kind-attr) |
     |---|---|
@@ -1794,8 +1795,33 @@ signature. The trigger stays OBSERVED in all text.
   | 11 | O7 DOWNSTREAM-STACKLESS (rev 2; the width change dirties layout during style resolution in the next rendering update, with no JS on the stack) | 65 % |
 
   Predictions 1-10 are unchanged from rev 1 (97667ac9); 11 is new in rev 2.
+- **Rev 3 (after rev 2's signature, before any data): the page script could not run.**
+  - The signed rev 2 run (2026-10-05 03:22Z, shared slot, Simulator) stopped before the dry record. The first
+    `__p127.reset()` failed with `ReferenceError: Can't find variable: __p127`. No Timeline was started, and no arm and no
+    dry record exist. The attempt's log is kept outside `sim127/` (`out/toolbar-resize/sim127-rev2-attempt1/`, gitignored),
+    so `sim127/` is empty again.
+  - Cause 1: the mirror server sends every HTML page with `content-security-policy: ... script-src 'self'`
+    (`tools/lib/mirror-handler.mjs` `localCsp`, the default for a page with no production CSP; seen in the served headers).
+    Without `'unsafe-inline'`, a nonce or a hash, a CSP blocks inline `<script>` (CONFIRMED: CSP Level 3 §6.7.3.3 "Does element
+    match source list for type and source?" and §4.2.3, https://www.w3.org/TR/CSP3/#match-element-to-source-list; MDN `script-src`,
+    `'unsafe-inline'`). Rev 2's page script was inline.
+  - Cause 2: the capture's readiness loop took `typeof __p127` as ready. That is the string `"undefined"`, which is truthy,
+    so it did not catch the blocked script.
+  - Fix, text and code only:
+    - the script moves unchanged into `p127-page.js`, served as `/p127/p127.js`; the page loads it with
+      `<script src="p127.js">` (same origin, allowed by `'self'`);
+    - the capture copies and checks both files, and waits for `typeof window.__p127 === 'object'`, else STOP 28.
+  - Unchanged: the reader and self-test (a page frame is still any url containing `/p127/`, and `/p127/p127.js` does),
+    every rule, outcome and prediction, the plan, rounds, gap and depth. The function names the reader matches
+    (`p127write`, `p127round`, `p127io`, `p127raf`, `p127timer`) are unchanged.
+  - Checked before re-sign: the served headers (HTML with `script-src 'self'`, JS `application/javascript` from the
+    overlay) and the script in a node stub (every cause and kind fires its rounds). No browser run.
 - **Pins.**
-  - page `05ab5364cbc6`, capture `5dae67bd2ab1`, reader `53e4f4ab3bfd`, self-test `89d309d05aae`;
+  - page `503385ed36a8`, page script `457f3abc43f1` (new), capture `e93886c95d56`, reader `53e4f4ab3bfd`,
+    self-test `89d309d05aae`;
+  - rev 3 changed the page (script moved out), added the page script and changed the capture (copies both files,
+    readiness check). Rev 2 pins: page `05ab5364cbc6`, capture `5dae67bd2ab1`. The reader and self-test are unchanged
+    from rev 2;
   - rev 2 changed the reader (rule W, O7) and the self-test (33 to 48 checks). Rev 1 pins: reader `9f691bfa77eb`,
     self-test `253346c592e4`. The page and the capture are unchanged, and no data exists yet (`out/toolbar-resize/sim127/`
     is empty);
