@@ -83,11 +83,17 @@ export function captureGaps(capFrames, a, b) {
 }
 
 /** Offsets: page ms -> wall ms (median over sync pairs [macBefore, pageT, macAfter], or one clock pair). */
-export function pageToWall(rec) {
+// S runs: the probe's clock pair is the PHONE's Date.now(), and the phone's wall clock is not the Mac's (H1: the
+// phone ~225 ms behind; the motion check failed at lag 224-236 ms until this). The run's own viewport reads give the
+// phone-to-Mac offset (Mac Date.now() on return minus the page's Date.now(); median). G runs need none: their sync
+// pairs are Mac stamps. Found by the clock check (H1 S runs), and checked against eV2: sync median and its end read
+// agree within 4 ms.
+export function pageToWall(rec, vvReads = []) {
   const seg = rec?.run?.segments?.[0];
   if (seg?.sync?.length) return median(seg.sync.map(([b, p, a]) => (a + b) / 2 - p));
   const clk = rec?.pre?.clock || rec?.page?.clock || rec?.clock || rec?.result?.clock;
-  if (clk && Number.isFinite(clk.wallMs) && Number.isFinite(clk.perfMs)) return clk.wallMs - clk.perfMs;
+  const off = median(vvReads.filter((r) => Number.isFinite(r.macMs) && Number.isFinite(r.wallMs)).map((r) => r.macMs - r.wallMs));
+  if (clk && Number.isFinite(clk.wallMs) && Number.isFinite(clk.perfMs) && off !== null) return clk.wallMs - clk.perfMs + off;
   return null;
 }
 
@@ -183,7 +189,7 @@ export function analyse(L, { runs, screen, stamps, vv }) {
   const [ma, mb] = WINDOWS[scene], a0 = log.marks[ma], b0 = log.marks[mb];
   if (!Number.isFinite(a0) || !Number.isFinite(b0)) return { ...out, error: `marks ${ma}/${mb} missing (have ${Object.keys(log.marks).join(',')})` };
   const a = a0 - PAD_MS, b = b0 + PAD_MS + (scene === 's' ? S_TAIL_MS : 0);
-  const p2w = pageToWall(rec);
+  const p2w = pageToWall(rec, vv.filter((r) => r.label.startsWith(`${L}-`)));
   const st = stamps.filter((s) => s.label.startsWith(`${L}-`));
   const w2u = median(st.map((s) => s.wallNs / 1e6 - s.upRawNs / 1e6));
   const w2uSpread = st.length ? Math.max(...st.map((s) => s.wallNs / 1e6 - s.upRawNs / 1e6)) - Math.min(...st.map((s) => s.wallNs / 1e6 - s.upRawNs / 1e6)) : null;
@@ -316,8 +322,9 @@ function main() {
   mkdirSync(out, { recursive: true });
   for (const sc of scenes) {
     // Shown run (rule fixed before the hold-2 numbers were read, after the lead's MAC-LOADED rule): the first clean run
-    // of each arm by run number (no error, Mac load1 <= 16 at start and end, no profile drift); --show N forces run N.
-    const pick = (arm) => all.filter((r) => !r.error && r.scene === sc && r.arm === arm && (opt('show') ? r.run === show : !r.macLoaded && !r.profile?.drift))
+    // of each arm by run number (no error, Mac load1 <= 16 at start and end, no profile drift, clock check passed; the
+    // clock condition was added after H1 sA1's check failed at 512 ms, and says nothing about its frames); --show N forces run N.
+    const pick = (arm) => all.filter((r) => !r.error && r.scene === sc && r.arm === arm && (opt('show') ? r.run === show : !r.macLoaded && !r.profile?.drift && r.clock.ok))
       .sort((x, y) => x.run - y.run)[0];
     const A = pick('A'), V = pick('V');
     if (!A || !V) { console.log(`clip ${sc}: no clean run on both arms (A ${A?.L ?? 'none'}, V ${V?.L ?? 'none'}), not made`); continue; }
@@ -351,7 +358,8 @@ function selfTest() {
   const g = captureGaps([[0, 'a'], [0.016, 'a'], [0.033, 'b'], [0.1, 'c'], [0.117, 'c']], 0, 1);
   ok(g.length === 2 && Math.round(g[0][1]) === 33 && Math.round(g[1][1]) === 67, `capture gaps ${JSON.stringify(g)}`);
   ok(pageToWall({ run: { segments: [{ sync: [[1000, 10, 1002], [2000, 1010, 2004], [3000, 2010, 3000]] }] } }) === 991, 'sync median');
-  ok(pageToWall({ pre: { clock: { wallMs: 5000, perfMs: 1200 } } }) === 3800, 'probe clock pair');
+  ok(pageToWall({ pre: { clock: { wallMs: 5000, perfMs: 1200 } } }, [{ macMs: 9225, wallMs: 9000 }, { macMs: 9330, wallMs: 9100 }, { macMs: 9440, wallMs: 9200 }]) === 4030, 'probe clock pair + phone-to-Mac offset');
+  ok(pageToWall({ pre: { clock: { wallMs: 5000, perfMs: 1200 } } }) === null, 'probe clock pair without an offset read: no link');
   const lg = pageLog({ run: { segments: [{ frames: [[1, 16, 0, 775], [17, 16, 5, 775]], marks: [[1, 'into1'], [17, 'end']] }] } });
   ok(lg.kind === 'G' && lg.marks.into1 === 1 && lg.frames[1][2] === 5, 'G page log');
   const ls = pageLog({ frames: [[1, null, 0, 0, 775], [17, 16, 0, 9, 775]], marks: { scroll: [1, 17] } });
