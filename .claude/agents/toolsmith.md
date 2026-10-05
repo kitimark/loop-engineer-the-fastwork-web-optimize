@@ -88,3 +88,4 @@ short-lane queue place, console steps and blocking incidents show by themselves.
 - Run `mirror.mjs`, `prettify.mjs`, chrome-devtools MCP tools, `iphone.mjs`, or CPU-heavy loops
   while someone holds `chrome-measure` (`node tools/lock.mjs status`).
 - Fix a second bug you find on the way: report it (`node tools/incident.mjs open …`) and stay on yours.
+- GitHub (source, raw files, issues, commits): only `gh api repos/<o>/<r>/contents/<path>?ref=<sha>` / `gh search code` / `gh issue view`, read-only; WebFetch and curl to GitHub hosts are refused (memory/github-via-gh.md).
