@@ -1,0 +1,8 @@
+/* end-morph candidate (T0 if the hypothesis holds): keep #platform's filter outsets constant while it blurs.
+   blur(r) with r = (1 - fade) * 12px, plus a fully transparent drop-shadow whose radius is 12px - r while r > 0
+   (0 at rest, so the filter stays an identity at fade 1). The shadow draws nothing; total outsets stay ~constant.
+   Tests whether the per-frame #platform repaint comes from the blur's changing outsets (bounds/offset change). */
+.start-selling-platform {
+  filter: blur(calc((1 - var(--morph-fade)) * 12px))
+    drop-shadow(0 0 min(calc(var(--morph-fade) * 12px), calc((1 - var(--morph-fade)) * 12000px)) transparent) !important;
+}
