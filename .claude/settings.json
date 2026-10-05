@@ -57,13 +57,7 @@
       "Edit(/tools/ioscap.mjs)",
       "Edit(/.claude/worktrees/*/tools/ioscap.mjs)",
       "Edit(/tools/lib/ioscap.mjs)",
-      "Edit(/.claude/worktrees/*/tools/lib/ioscap.mjs)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:codeload.github.com)",
-      "WebFetch(domain:gist.github.com)",
-      "WebFetch(domain:gist.githubusercontent.com)"
+      "Edit(/.claude/worktrees/*/tools/lib/ioscap.mjs)"
     ],
     "deny": [
       "mcp__chrome-devtools__performance_start_trace",
@@ -139,7 +133,13 @@
       "mcp__serena__write_memory",
       "mcp__serena__edit_memory",
       "mcp__serena__delete_memory",
-      "mcp__serena__rename_memory"
+      "mcp__serena__rename_memory",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:codeload.github.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:gist.githubusercontent.com)"
     ]
   },
   "hooks": {
@@ -157,6 +157,17 @@
             "type": "command",
             "command": "node",
             "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/fg-guard.mjs"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/git-guard.mjs"],
             "timeout": 10
           }
         ]

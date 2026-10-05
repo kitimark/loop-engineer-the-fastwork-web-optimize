@@ -14,7 +14,9 @@
 //     setting FW_BASELINE_UPDATE / FW_BASELINE_ALLOW_MODIFIED (VAR=..., export, env): the user's decision
 //     to commit a new baseline snapshot or to measure a modified one (CLAUDE.md Hard rules 3-4)
 //     node tools/ioscap.mjs record --first-run (the run that shows the macOS Camera prompt, incident I-062)
-//     curl/wget to github.com, its subdomains or *.githubusercontent.com: read GitHub with gh (incident I-115, user T-071)
+//   deny, with the gh recipe: curl/wget to github.com, its subdomains or *.githubusercontent.com (incident I-115,
+//     user T-071; refused instead of asked since I-200, user T-184 #3), and WebFetch to those hosts (this hook also
+//     runs on WebFetch; the settings.json WebFetch deny rules are the backstop). *.github.io docs sites stay allowed.
 //   deny, recording routes other than tools/ioscap.mjs (incident I-062, user T-018/T-019): QuickTime Player
 //     (osascript, open), system_profiler SPCameraDataType (or a full report), ffmpeg -f avfoundation, imagesnap,
 //     screencapture -v/-V/-g/-G, inline swift/python/ruby/perl/osascript scripts using the capture APIs,
@@ -552,11 +554,35 @@ function analyzeCmd(cmd, ctx, findings, depth) {
 
 // ---------------------------------------------------------------- GitHub through gh (incident I-115, user T-071)
 // Agents fetched GitHub with unauthenticated curl and hit its rate limit; the logged-in gh CLI has a far higher
-// one. curl/wget naming a GitHub host (github.com and its subdomains, *.githubusercontent.com) asks the user.
+// one. curl/wget naming a GitHub host (github.com and its subdomains, *.githubusercontent.com) and WebFetch to one
+// are refused with the gh recipe (I-200, user T-184 #3: an ask put a permission prompt in front of the user whenever
+// an agent forgot the rule; a settings deny alone tells the agent nothing). *.github.io (docs sites) is not GitHub.
 // Known limits: a URL that reaches curl only at run time (a variable, stdin of xargs, curl -K/--config, wget -i)
-// is not seen; WebFetch is covered by ask rules in .claude/settings.json, not here.
+// is not seen.
 const GH_HOW = 'Use the gh CLI for GitHub (memory/github-via-gh.md, user T-071): gh api repos/<o>/<r>/contents/<path>?ref=<sha>';
+const GH_MORE = "; raw file text: gh api -H 'Accept: application/vnd.github.raw+json' 'repos/<o>/<r>/contents/<path>?ref=<sha>'; also gh api repos/<o>/<r>/commits/<sha>, gh search code '<q>' --repo <o>/<r>, gh issue view <n> --repo <o>/<r> (read-only)";
 const GITHUB_HOST = /(^|\.)(github\.com|githubusercontent\.com)$/;
+/** The refusal for a fetch of `url` by `what` (curl, wget, WebFetch): the recipe, plus a ready gh command for a file URL. */
+const ghRefusal = (what, url) => `${what} to ${urlHost(url)} is refused (incident I-200; GitHub is read only through gh, never curl/wget/WebFetch). ${GH_HOW}${GH_MORE}.${ghFileHint(url)}`;
+/** A ready gh command for raw.githubusercontent.com/<o>/<r>/<ref>/<path> or github.com/<o>/<r>/blob|raw/<ref>/<path>; '' otherwise. */
+function ghFileHint(url) {
+  let u;
+  try { u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : `https://${url}`); } catch { return ''; }
+  const host = u.hostname.toLowerCase().replace(/\.$/, '');
+  const p = u.pathname.split('/').filter(Boolean);
+  let o, r, ref, path;
+  if (host === 'raw.githubusercontent.com' && p.length >= 4) {
+    [o, r] = p;
+    const named = p[2] === 'refs' && ['heads', 'tags'].includes(p[3]); // raw/<o>/<r>/refs/heads/<branch>/<path>
+    ref = named ? p[4] : p[2];
+    path = p.slice(named ? 5 : 3).join('/');
+  } else if (host === 'github.com' && p.length >= 5 && ['blob', 'raw'].includes(p[2])) {
+    [o, r, , ref] = p;
+    path = p.slice(4).join('/');
+  }
+  if (!ref || !path || [o, r, ref, path].some((s) => /['\s]/.test(s))) return '';
+  return ` For this file: gh api -H 'Accept: application/vnd.github.raw+json' 'repos/${o}/${r}/contents/${path}?ref=${ref}'`;
+}
 /** The host of a URL-like word (scheme optional, as curl/wget accept), lower-cased; null when it has none. */
 function urlHost(word) {
   const m = /^(?:[a-z][a-z0-9+.-]*:\/\/)?(?:[^/@\s]*@)?(\[[^\]]*\]|[^/:?#\s@]+)/i.exec(word);
@@ -566,7 +592,7 @@ const isGithubUrl = (word) => GITHUB_HOST.test(urlHost(word) ?? '');
 function analyzeFetch(prog, argv, findings) {
   const words = argv.slice(1).map((a) => (/^--url=/.test(a) ? a.slice(6) : a));
   const hit = words.find((a) => !a.startsWith('-') && isGithubUrl(a));
-  if (hit) findings.push(ask(`\`${prog}\` to ${urlHost(hit)}: ${GH_HOW}`));
+  if (hit) findings.push(deny(ghRefusal(`\`${prog}\``, hit)));
 }
 // Raw-text form, used only when the command could not be parsed.
 const looksGithubFetch = (text) => /\b(curl|wget)\b/.test(text) && /(^|[\s'"=/@.])(github\.com|[a-z0-9-]+\.github\.com|[a-z0-9-]+\.githubusercontent\.com)\b/i.test(text);
@@ -756,6 +782,11 @@ async function main() {
     if (looksGuarded(raw)) block('git-guard: could not parse the hook input; blocking because it mentions a guarded git/gh operation.');
     process.exit(0);
   }
+  if (input?.tool_name === 'WebFetch') { // I-200: refused with the gh recipe; the settings deny rules are the backstop
+    const url = input?.tool_input?.url;
+    if (typeof url === 'string' && isGithubUrl(url.trim())) block(`git-guard: ${ghRefusal('WebFetch', url.trim())}`);
+    process.exit(0);
+  }
   if (input?.tool_name !== 'Bash') process.exit(0);
   const command = input?.tool_input?.command;
   if (typeof command !== 'string' || !command.trim()) process.exit(0);
@@ -764,8 +795,8 @@ async function main() {
     res = analyze(command, { cwd: input.cwd });
   } catch (e) {
     if (looksGuarded(command)) block(`git-guard could not parse this command (${e.message}) and it mentions a guarded git/gh operation (merge/pull/push). Rewrite it as a plain command without nested quoting. ${HOW}`);
-    if (looksGithubFetch(command)) res = ask(`could not parse this command (${e.message}) and it seems to curl/wget GitHub. ${GH_HOW}`);
-    else process.exit(0);
+    if (looksGithubFetch(command)) block(`git-guard could not parse this command (${e.message}) and it seems to curl/wget GitHub, which is refused (incident I-200). ${GH_HOW}${GH_MORE}.`);
+    process.exit(0);
   }
   if (res.decision === 'deny') block(`git-guard: ${res.reason}`);
   if (res.decision === 'ask') {
