@@ -1,0 +1,32 @@
+{
+ "res": [
+  {
+   "arm": "C",
+   "open": {
+    "code": 0,
+    "s": 4.9
+   },
+   "gesture": {
+    "code": 0,
+    "s": 64.5
+   },
+   "stepS": 69.4,
+   "why": []
+  },
+  {
+   "arm": "nob",
+   "open": {
+    "code": 0,
+    "s": 5
+   },
+   "gesture": {
+    "code": 0,
+    "s": 64.1
+   },
+   "stepS": 69.1,
+   "why": []
+  }
+ ],
+ "meanStepS": 69.3,
+ "plan": "E"
+}
