@@ -341,11 +341,12 @@ the end menu, with toolbar steps, driven by a real touch gesture.
   - The standalone gate runs right after the stop, in the same phone hold, and is logged to `out/p152/end-gate-after-HA.log`: `node research/phone-thermal-gate/thermal-gate.mjs --owner iphone-runner --label p152-HA-end-standalone --expect serious --max-c 44 --accept-induced --url <B's LAN URL from tools/lan.mjs>`.
   - Otherwise part 2 is VOID.
   - Rev 1.2's reader applies this rule (`part2Status`): the last "HOLD HA" line decides, and the standalone gate's last "ENDGATE PASS|FAIL" line.
-  - Part-2 command (rev 1.2):
+  - Part-2 command (rev 1.2; the Safari restart first is I-214's workaround, lead 2026-10-06; it is uncounted and
+    runs before the part's WDA restart, as the successful part-1 retry did by hand):
 
     ```
     TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 -- \
-      sh -c 'sh fixes/end-morph-f12/phone/p152-block.sh H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1; e=$?; sh fixes/end-morph-f12/phone/p152-endgate.sh; exit $e'
+      sh -c 'node tools/iphone.mjs safari-restart --owner iphone-runner --url "$(node tools/lan.mjs --url --port <B port, from out/p152/serve-B.json>)" --timeout 60; sh fixes/end-morph-f12/phone/p152-block.sh H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1; e=$?; sh fixes/end-morph-f12/phone/p152-endgate.sh; exit $e'
     ```
 
     `p152-endgate.sh` does nothing when HA ended VALID, when HA's own end gate ran, or when `hold-HA.log` is missing.
