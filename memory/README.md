@@ -2,6 +2,7 @@
 
 Every agent:
 - [Verify platform claims](verify-platform-claims.md): probe-found browser behaviour stays OBSERVED until a doc, source or bug confirms it; rule text in CLAUDE.md "Platform claims"
+- [Read source first](read-source-first.md): if the answer is in open source code (WebKit, Chromium, libraries), read it directly via gh (read-only) before probing or web searching, and cite path + line
 - [User tasks via console](user-tasks-via-console.md): user steps go into the local console (Start, answer, next), never relayed through the lead's chat
 - [Console steps: wait yourself](console-step-wait-yourself.md): post a step, arm `console.mjs wait <id>` in its own background call in the same turn
 - [User steps first](user-steps-first.md): a posted user step takes the phone next; no cooling or Mac-quiet gate on it
