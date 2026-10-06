@@ -691,11 +691,22 @@ Commands (the runner's, Bash `run_in_background`, timeout 7200000):
 | F (C + F1 only) | 7 / 9 / 10 | 0 / 0 / 0 | 26 / 24 / 27 |
 | U (C + U2 only) | 12 / 0 / 5 | 2 / 0 / 2 | 80 / 21 / 47 |
 
-- **SPLIT: UNRESOLVED (partial).**
-  - **P1 holds.** F−C CB34 median is +9 (at least 8), with the ranges separated. F1 alone reproduces P-152's closing-band excess (V was 23/21/21/14 against C 6/3/5/7 there). So F1's re-show while closing is the cost.
-  - **P2 fails.** U−C CB34 median is +5 (the limit is 3). U is mixed: EU2 equals C, EU1 and EU3 are high (end zone 80 and 47).
+- **SPLIT: UNRESOLVED (partial).** Confirmed by ops-reader-P155 on every number. Lead ruling 11:33Z: U2 does not land, F1 stays out, block 2 does not run.
+  - **P1 holds, threshold-sensitive.** F−C CB34 median is +9 (at least 8), with the ranges separated.
+    - F1 alone reproduces P-152's closing-band excess only in part: +9 here against +15.5 in P-152 (V 23/21/21/14 against C 6/3/5/7).
+  - **P2 fails, threshold-sensitive.** U−C CB34 median is +5 (the limit is 3). U is mixed: EU2 equals C, while EU1 and EU3 are high (end zone 80 and 47). Why U bursts stays UNRESOLVED; no more phone time on it now (lead).
+  - **The CB twins** (N1: computed after the data, a label only; scratch `p155-twins.mjs`):
+
+    | threshold | C | F | U | F−C | P1 | U−C | P2 |
+    |---|---|---|---|---|---|---|---|
+    | > 30 ms | 1/5/0 | 11/12/12 | 15/0/14 | +11 | holds | +13 | fails |
+    | > 34 ms | 0/2/0 | 7/9/10 | 12/0/5 | +9 | holds | +5 | fails |
+    | > 38 ms | 0/1/0 | 4/6/0 | 5/0/2 | +4 | fails (EF3 0 overlaps) | +2 | holds |
+
+    Both P1 and P2 flip at the 38 ms twin.
 - **U2's end-zone no-worse rule (decides U2's landing, with P2): PASS.**
-  - The median U−C at >34 is +22 and exceeds the +2 bound, but the permutation p is 4/20 (above 0.05). So it is "not WORSE" under the rule, which is weak at 3 v 3 (disclosed).
+  - The median U−C exceeds the bound at all 6 thresholds: +37, +22, +21, +16, +13 and +9 at >30, 34, 38, 46, 50 and 54.
+  - No permutation p reaches 0.05 (3/20 to 4/20). So under the rule it is "not WORSE", which is weak at 3 v 3 (disclosed); the PASS does not mean "no worse in fact".
   - Under ruling 2 (PASS and P2), **U2 does not land**: P2 fails.
 - **F1 against C, by the same rule (decides nothing):** NO-WORSE PASS.
 - **Block 2 does not run** (ruling 1: only on VOID or INSUFFICIENT).
@@ -850,7 +861,11 @@ The diffs are against v9-final (`out/p155/snap/C`), in `fade/`. The snapshot cop
   - (b)'s overlay reads opacity 1 − fade (0.546 at fade 0.454). The section's filter is `none` and its opacity 1.
 - **What Chrome cannot show:** the expected saving is compositor/render-server work (5 compositor animations kept alive at opacity 0), not main-thread work. Only the phone can show whether it matters.
 
-**Pixel check (c)**, `em-px2.mjs --engine chrome`, PR-010 multi-pair A/A (A = C, V = c, 430x775, 18 stops): every stop has 0 css px² consistent, A~V beyond A/A 0, max 3 (`out/end-morph/px2-chrome-pf-c-2026-10-06T10-05-48-123Z`). The tool freezes running animations at 4000 ms. So the only difference (c) can make, the sweep and glint phase after a return from fade 0, is outside this check by design. It is the same as the existing IO sweep gate.
+**Simulator pixel check (c)**, `em-px2.mjs --engine sim` (fw-sim, PR-010 A/A, 18 stops, about 11:25Z): 0 consistent at up0.8 to up1 and at dn0.5 to dn0, where (c) acts or has just resumed. From "pre" to up0.6 the check finds 45 css px² consistent (0.011 %, flat 0.037), always the same box, css 48-112 x 16-48, under `.start-selling-top-nav-bar` (the nav logo).
+- That box is outside #platform, and it is there at "pre", where (c) is inert (fade 1, no attribute). So it is load noise in the nav, not (c).
+- It is within T2 either way: fill 45 of 64 css px², 0.011 % of 0.5 %.
+
+**Chrome pixel check (c)**, `em-px2.mjs --engine chrome`, PR-010 multi-pair A/A (A = C, V = c, 430x775, 18 stops): every stop has 0 css px² consistent, A~V beyond A/A 0, max 3 (`out/end-morph/px2-chrome-pf-c-2026-10-06T10-05-48-123Z`). The tool freezes running animations at 4000 ms. So the only difference (c) can make, the sweep and glint phase after a return from fade 0, is outside this check by design. It is the same as the existing IO sweep gate.
 
 ### 5. T-215: what runs at the page end that nobody sees (census, v9-final, Chrome, OBSERVED in our setup)
 
