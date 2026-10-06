@@ -165,6 +165,15 @@ So the post stop is never quiet: nav bar and price, over 1.3 % A/A in every run.
 at other stops with identical bytes on both sides. The residues in the table above are within that noise. The cause is
 OBSERVED only: post-close animations, and sub-pixel anti-aliasing at the nav bar.
 
+**Lead ruling (2026-10-06, on 64a59016):** v10 is **identical to the nolift Try-it build within A/A noise (T2)**. This
+is not a "0 px" result:
+
+- the leftovers (dn0.5: 2 device px; post: 15 device px) are smaller than the A/A residues on identical bytes;
+- they are far inside T2 (fill 64, edge 128, 0.5 %).
+
+The same reading applies to N against the measured build (post: 165 device px). Nolift's +5 restOpen paints (counts
+below) are logged as OBSERVED, cause not traced, and do not block.
+
 ### Chrome counts
 
 - Tool: `fixes/v10/em-chrome.mjs`, a copy of fix-end-morph-p1's em-chrome.mjs, credited.
