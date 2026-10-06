@@ -8,13 +8,19 @@
 //   4. a real 24x24 change in V is still found (A~V beyond A/A > 0) when the formats are mixed;
 //   5. a palette PNG and a size mismatch are refused with an error.
 // Pixels only, nothing run. Writes its PNGs to <dir> (default out/pxlib-check, gitignored).
-//   node fixes/v9-best/gates/pxlib-check.mjs [dir]      exit 0 all pass, 1 a check failed
+//   node fixes/v9-best/gates/pxlib-check.mjs [dir] [--lib <pxlib.mjs>]   exit 0 all pass, 1 a check failed
+// --lib: the copy to check (default this folder's pxlib.mjs; the v8-best and v7-best copies carry the same fix).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
-import { pngPixels, delta, scoreStop } from './pxlib.mjs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const dir = process.argv[2] || 'out/pxlib-check';
+const av = process.argv.slice(2), li = av.indexOf('--lib');
+const LIB = li >= 0 ? pathToFileURL(resolve(av.splice(li, 2)[1])).href : new URL('./pxlib.mjs', import.meta.url).href;
+const { pngPixels, delta, scoreStop } = await import(LIB);
+console.log(`pxlib under test: ${LIB}`);
+const dir = av[0] || 'out/pxlib-check';
 mkdirSync(dir, { recursive: true });
 const CRC = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
 const crc = (b) => { let c = 0xffffffff; for (const x of b) c = CRC[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
