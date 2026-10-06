@@ -551,6 +551,36 @@ The lead's terms at signing:
 - Every part runs in the background with the 2 h limit and `--keep 120`.
 - No Instruments trace in this block. The pause-at-fade-0 variant gets a Chrome cost card after P-155; it decides nothing now.
 
+The lead re-signed at 09:30Z, before any data, after ops-reader-P155's pre-data read: CLEAN in pins, arms, reader and block, with 4 doc items to fix first. These rulings override the text below where they differ.
+1. **Block 2** runs only if block 1 is VOID or INSUFFICIENT; a block 1 with any outcome stands. Block 2 is read alone and never pooled. It needs a kit delta (an archive path like `p152-block.sh` 56-64) checked by the lead before it runs.
+2. **U2 lands only if BOTH** its end-zone no-worse rule PASSES **and** P2 holds (U − C median CB34 <= +3). An outcome "U2", or a P2 miss, keeps U2 out whatever the no-worse result.
+   - U2's no-worse result decides even if F is INSUFFICIENT; C and U need 3 valid runs each.
+   - The reader computes P2 only when all three arms have 3 valid runs. If F is short, P2 is taken from the reader's printed CB34 lists for C and U, the same medians by hand. No code change: the reader's pin stays `100cdaca75de`.
+3. **Disclosed, the cyclic carry-over in the order.** The run before each counted run is fixed by arm:
+   - F always follows C (EF1 after EC1, EF3 after EC3);
+   - U follows F (EU1 after EF1, EU2 after EF2);
+   - C follows U (EC2 after EU2, EC3 after EU3).
+   - The part openers are EC1 (after S0, also on C), EF2 and EU3.
+   - Time positions are balanced: each arm's mean position is 5 of 9.
+   - A carry-over from the previous arm (heat, Safari state) can't be told apart from the arm effect here. Every hold starts after Safari is parked and the phone has cooled below 38 °C, which limits it.
+4. **The owner's probabilities, written before data (subjective):**
+
+| | probability |
+|---|---|
+| P1 holds | 0.55 |
+| P2 holds | 0.80 |
+| Outcome "F1 re-show" | 0.45 |
+| Outcome "UNRESOLVED (partial)" | 0.30 |
+| Outcome "neither alone" | 0.20 |
+| Outcome "U2" | 0.05 |
+| U2 NO-WORSE PASS | 0.80 |
+| U2 lands (PASS and P2) | 0.70 |
+
+   - P1 is not higher because P-152's size is likely its high end (ops-reader-P152), and 3 v 3 needs full separation.
+
+- **N1:** the closing-band ±4 ms twins (CB30 / CB38 for CB34, CB46 / CB54 for CB50) are computed after the data with the same `closingBand`. "Threshold-sensitive" there is a label only and changes no outcome.
+- **N5:** CB50 decides nothing; it is reported.
+
 **Question:** is F1 or U2 behind V's extra slow frames on the way down at 0.2 <= m < 0.55 in P-152 block 2?
 The suspect is F1, which un-hides #platform as its fade-in starts. U2 is not suspected.
 
