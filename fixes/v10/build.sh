@@ -29,6 +29,9 @@
 #   than 947c88282561): the new arms' pins; required unless DRY
 #   DRY=1  every route, the byte compare, code parity and node --check on temp copies; prints every hash, pins only what
 #          is known or given, writes nothing (the dry-check of the order)
+#   NAV=<d>|none NAV_SHA=<sha12> [NAV_NAME=<label>]  replaces F1+U2 (the P-152 split, lead 09:05Z): another nav delta in
+#          its place (e.g. U2-only), or none; R3 is skipped then (the nolift arm as tried carries F1+U2), and the
+#          F1+U2-based intermediate pins become printed hashes
 #   N = C + F1+U2 + P1 [+ P1b]; V = N + nolift [+ I-219]. Routes with the options:
 #   R1  C + F1+U2 + P1 [+ P1b] + nolift [+ I-219]
 #   R1b C + nolift + P1 + F1+U2 [+ P1b] [+ I-219]   (P1b after F1+U2 here too: the draft (b) part edits next to F1+U2's
@@ -71,10 +74,16 @@ if [ -n "$P1B" ]; then
   [ $# -eq 0 ] || { echo "P1B_SHA has more hashes than P1B has files: refuse"; exit 3; }
 fi
 if [ -n "$I219" ]; then get "$I219" $T/i219.diff "$I219_SHA" "I-219"; I219L=$T/i219.diff; fi
+NAVL=$F12; NAVN="F1+U2"; ALT=
+if [ -n "$NAV" ]; then
+  ALT=1
+  if [ "$NAV" = none ]; then NAVL=""; NAVN="no F1+U2"
+  else get "$NAV" $T/nav.diff "$NAV_SHA" "nav delta (in place of F1+U2)"; NAVL=$T/nav.diff; NAVN=${NAV_NAME:-nav delta}; fi
+fi
 apl() { d=$1; shift; for x in "$@"; do ap $d $x; done; }
 N_JS12=f5068db34a32; N_CSS12=a81b9af7b2c9; V_JS12=f5068db34a32; V_CSS12=a4ed5432f2f7; CI_JS12=; CI_CSS12=
-[ -n "$P1BL" ] && { N_JS12=${PIN_N%/*}; N_CSS12=${PIN_N#*/}; [ -n "$PIN_N" ] || N_JS12= N_CSS12=; }
-[ -n "$P1BL$I219L" ] && { V_JS12=${PIN_V%/*}; V_CSS12=${PIN_V#*/}; [ -n "$PIN_V" ] || V_JS12= V_CSS12=; }
+[ -n "$P1BL$ALT" ] && { N_JS12=${PIN_N%/*}; N_CSS12=${PIN_N#*/}; [ -n "$PIN_N" ] || N_JS12= N_CSS12=; }
+[ -n "$P1BL$I219L$ALT" ] && { V_JS12=${PIN_V%/*}; V_CSS12=${PIN_V#*/}; [ -n "$PIN_V" ] || V_JS12= V_CSS12=; }
 if [ -n "$I219L" ]; then
   if [ -n "$PIN_CI" ]; then CI_JS12=${PIN_CI%/*}; CI_CSS12=${PIN_CI#*/}
   elif [ "$I219_SHA" = 947c88282561 ]; then CI_JS12=30d41592a308; CI_CSS12=e1359ab9994a; fi
@@ -88,23 +97,28 @@ tree() { mkdir -p $1/_app/immutable/nodes $1/_app/immutable/assets; cp $2/$JS $1
 ap() { (cd $1 && patch -p1 -s -F 0 -N < "$OLDPWD/$2") || { echo "$2 does not apply strictly on $1: refuse"; exit 3; }; rm -f $1/$JS.orig $1/$CSS.orig; }
 git show 9f9f703f:fixes/joinwl-nolift/patch.diff > $T/nolift-arm.diff || exit 3
 [ "$(h $T/nolift-arm.diff)" = bec7169bd7cc ] || { echo "joinwl-nolift/patch.diff @9f9f703f is not bec7169bd7cc: refuse"; exit 3; }
-echo "R1: C + F1+U2 + P1${P1BL:+ + P1b} + nolift${I219L:+ + I-219}"
+echo "R1: C + $NAVN + P1${P1BL:+ + P1b} + nolift${I219L:+ + I-219}"
 tree $T/c $BASE; ap $T/c $REV7D; pin $T/c 1b2eecc66011 e1359ab9994a "C (baseline + rev 7d build)"
-tree $T/r1 $T/c; ap $T/r1 $F12; pin $T/r1 738bc075f7f8 e1359ab9994a "C + F1+U2"
-ap $T/r1 $P1; pin $T/r1 f5068db34a32 a81b9af7b2c9 "C + F1+U2 + P1"
-if [ -n "$P1BL" ]; then apl $T/r1 $P1BL; stage $T/r1 "N = C + F1+U2 + P1 + P1b" $N_JS12 $N_CSS12; fi
+tree $T/r1 $T/c; apl $T/r1 $NAVL
+if [ -z "$ALT" ]; then pin $T/r1 738bc075f7f8 e1359ab9994a "C + F1+U2"; elif [ -n "$NAVL" ]; then stage $T/r1 "C + $NAVN"; fi
+ap $T/r1 $P1
+if [ -n "$P1BL" ]; then
+  if [ -z "$ALT" ]; then pin $T/r1 f5068db34a32 a81b9af7b2c9 "C + F1+U2 + P1"; else stage $T/r1 "C + $NAVN + P1"; fi
+  apl $T/r1 $P1BL
+fi
+stage $T/r1 "N = C + $NAVN + P1${P1BL:+ + P1b}" $N_JS12 $N_CSS12
 tree $T/n $T/r1
 ap $T/r1 $NL
 if [ -n "$I219L" ]; then
-  if [ -z "$P1BL" ]; then stage $T/r1 "N + nolift" f5068db34a32 a4ed5432f2f7; else stage $T/r1 "N + nolift"; fi
+  if [ -z "$P1BL$ALT" ]; then stage $T/r1 "N + nolift" f5068db34a32 a4ed5432f2f7; else stage $T/r1 "N + nolift"; fi
   ap $T/r1 $I219L
 fi
 stage $T/r1 "V = N + nolift${I219L:+ + I-219}" $V_JS12 $V_CSS12
-echo "R1b: C + nolift + P1 + F1+U2${P1BL:+ + P1b}${I219L:+ + I-219}"
+echo "R1b: C + nolift + P1 + $NAVN${P1BL:+ + P1b}${I219L:+ + I-219}"
 tree $T/r1b $T/c; ap $T/r1b $NL; pin $T/r1b 1b2eecc66011 edc20be46534 "C + nolift"
 ap $T/r1b $P1; pin $T/r1b 291f70523bd6 a4ed5432f2f7 "C + nolift + P1"
-ap $T/r1b $F12
-[ -n "$P1BL" ] && { stage $T/r1b "C + nolift + P1 + F1+U2"; apl $T/r1b $P1BL; }
+apl $T/r1b $NAVL
+[ -n "$P1BL" ] && { stage $T/r1b "C + nolift + P1 + $NAVN"; apl $T/r1b $P1BL; }
 [ -n "$I219L" ] && { stage $T/r1b "... ${P1BL:++ P1b}"; ap $T/r1b $I219L; }
 stage $T/r1b "V (other order)" $V_JS12 $V_CSS12
 echo "R2 / R3: rev 7d's diff on the measured build${P1BL:+ + P1b} + nolift${I219L:+ + I-219}, and on the nolift arm the user tried"
@@ -112,24 +126,28 @@ tree $T/v9 $BASE; ap $T/v9 $V9F; pin $T/v9 647c9ef2b1e2 e1359ab9994a "v9-final"
 cmp -s $T/v9/$CSS $T/c/$CSS || { echo "rev 7d changes the CSS: R2 does not cover it: refuse"; exit 3; }
 diff -u --label a/$JS --label b/$JS $T/v9/$JS $T/c/$JS > $T/rev7d.diff; [ $? -eq 1 ] || { echo "rev 7d diff failed: refuse"; exit 3; }
 echo "  rev 7d diff (v9-final -> C): $(h $T/rev7d.diff), $(grep -c '^@@' $T/rev7d.diff) hunks"
-tree $T/r2 $T/v9; ap $T/r2 $F12; pin $T/r2 a6426953727a e1359ab9994a "v9-final + F1+U2"
-ap $T/r2 $P1; pin $T/r2 4da641f828bb a81b9af7b2c9 "v9-final + F1+U2 + P1 (measured)"
+tree $T/r2 $T/v9; apl $T/r2 $NAVL; [ -z "$ALT" ] && pin $T/r2 a6426953727a e1359ab9994a "v9-final + F1+U2"
+ap $T/r2 $P1
+if [ -z "$ALT" ]; then pin $T/r2 4da641f828bb a81b9af7b2c9 "v9-final + F1+U2 + P1 (measured)"; else stage $T/r2 "v9-final + $NAVN + P1"; fi
 [ -n "$P1BL" ] && { apl $T/r2 $P1BL; stage $T/r2 "measured + P1b"; }
 ap $T/r2 $T/rev7d.diff; stage $T/r2 "measured${P1BL:+ + P1b} + rev 7d (= N)" $N_JS12 $N_CSS12
 ap $T/r2 $NL; [ -n "$I219L" ] && ap $T/r2 $I219L
 stage $T/r2 "measured${P1BL:+ + P1b} + rev 7d + nolift${I219L:+ + I-219}" $V_JS12 $V_CSS12
+ROUTES="r1b r2 r3"
+if [ -n "$ALT" ]; then ROUTES="r1b r2"; echo "  R3 skipped: the nolift arm as tried carries F1+U2"; else
 tree $T/r3 $BASE; ap $T/r3 $T/nolift-arm.diff; pin $T/r3 4da641f828bb a4ed5432f2f7 "nolift arm as tried (Try-it option B)"
 [ -n "$P1BL" ] && apl $T/r3 $P1BL
 ap $T/r3 $T/rev7d.diff; [ -n "$I219L" ] && ap $T/r3 $I219L
 stage $T/r3 "nolift arm${P1BL:+ + P1b} + rev 7d${I219L:+ + I-219}" $V_JS12 $V_CSS12
-for r in r1b r2 r3; do for f in $JS $CSS; do cmp -s $T/r1/$f $T/$r/$f || { echo "route $r differs on $f: refuse"; exit 3; }; done; done
-echo "  R1 = R1b = R2 = R3, byte for byte"
+fi
+for r in $ROUTES; do for f in $JS $CSS; do cmp -s $T/r1/$f $T/$r/$f || { echo "route $r differs on $f: refuse"; exit 3; }; done; done
+echo "  R1 = $(echo $ROUTES | tr r R | sed 's/ / = /g'), byte for byte"
 if [ -n "$I219L" ]; then
   echo "CI: C + I-219"
   tree $T/ci $T/c; ap $T/ci $I219L; stage $T/ci "CI = C + I-219" $CI_JS12 $CI_CSS12
 fi
 echo "code parity: C -> V vs the stacked deltas; N -> V vs nolift${I219L:+ + I-219}${I219L:+; C -> CI vs I-219}"
-node fixes/v10/codeparity.mjs $T/c $T/r1 $F12 $P1 $P1BL $NL $I219L || { echo "code parity failed: refuse"; exit 3; }
+node fixes/v10/codeparity.mjs $T/c $T/r1 $NAVL $P1 $P1BL $NL $I219L || { echo "code parity failed: refuse"; exit 3; }
 node fixes/v10/codeparity.mjs $T/n $T/r1 $NL $I219L || { echo "code parity (N -> V) failed: refuse"; exit 3; }
 if [ -n "$I219L" ]; then node fixes/v10/codeparity.mjs $T/c $T/ci $I219L || { echo "code parity (C -> CI) failed: refuse"; exit 3; }; fi
 for a in c n r1 ${I219L:+ci}; do node --check $T/$a/$JS || { echo "$a fails node --check: refuse"; exit 3; }; done
