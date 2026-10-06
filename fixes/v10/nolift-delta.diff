@@ -1,0 +1,11 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11959,7 +11959,7 @@
+   opacity: 1;
+   filter: blur(calc(var(--earn-out) * 10px));
+   pointer-events: none;
+-  transform: translateY(calc(var(--earn-out) * -8px));
++  /* joinwl-nolift (user T-204 #10/#13): no 8px rise at the end of the page (was translateY(earn-out * -8px)) */
+   transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
