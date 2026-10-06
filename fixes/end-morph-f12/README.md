@@ -529,6 +529,87 @@ AC1 and AV1), not U2 (its range is clean, and it removes work).
   fully, so the layers are back before the fade-in. That is a new variant and needs its own cost card, pixels and
   phone check.
 
+## Split block (DRAFT ticket, for the lead to sign or drop with the F1+U2 ruling; written before any data)
+
+**Question:** is F1 or U2 behind V's extra slow frames on the way down at 0.2 <= m < 0.55 in P-152 block 2?
+The suspect is F1, which un-hides #platform as its fade-in starts. U2 is not suspected.
+
+**Arms** (immutable copies in `out/split/snap/{C,F,U}`, read-only, `HASHES.txt` sha256/12 `6a368e804fb0`; CSS
+`e1359ab9994a` in all three):
+
+| arm | build | JS sha256/12 | how it was made |
+|---|---|---|---|
+| C | v9-final, as P-152's C | `647c9ef2b1e2` | copy of `out/p152/snap/C` |
+| F | C + F1 only | `b1c1320fde83` | `split/f1-only.diff` (`ac63c37da60a`, delta.diff hunk 3) with `patch -F0` |
+| U | C + U2 only | `4389044c1ec4` | `split/u2-only.diff` (`2f69e5532ad3`, delta.diff hunks 1, 2, 4) with `patch -F0` |
+
+Byte checks:
+- C + F1 + U2 gives `a6426953727a` in both orders, which is P-152's V. So the two halves are exactly V's change and nothing else.
+- `node --check` passes on both arms.
+- F differs from C in 3 lines (1 out, 2 in) and U in 17.
+
+**Metric** (new, found in P-152's data; this block is its confirmatory test, and P-152's runs are never pooled with it):
+- CB34 is the number of moving end-zone frames going down (scrollY below the previous frame) at 0.2 <= m < 0.55 with dt > 34.
+  CB50 is the same with dt > 50.
+- m is the reader's value, (scrollY - (maxY - innerHeight)) / innerHeight.
+- For reference, P-152's CB34 was C 6 / 3 / 5 / 7 (median 5.5) and V 23 / 21 / 21 / 14 (median 21).
+- Reported per arm but deciding nothing: the P-152 end-zone counts (>30 ... >54) and the Timeline main-thread totals on the CB frames.
+
+**Predictions** (bounds fixed now):
+- P1, F1 is the cause: F − C median CB34 >= +8, and every F run above every C run (3 v 3, exact one-sided permutation p = 1/20).
+- P2, U2 is not: U − C median CB34 <= +3 (P-152's C spread is ±2 around its median, plus 1).
+- How the outcomes read:
+
+| outcome | reading |
+|---|---|
+| P1 and P2 both hold | F1's re-show is the cause in our setup. The off-main-thread mechanism stays UNRESOLVED. |
+| F − C <= +3, and U − C >= +8 with U separated | U2 is the cause; the suspect is refuted. |
+| F − C <= +3 and U − C <= +3 | Neither half alone: an interaction, or a P-152 artifact. UNRESOLVED. |
+| anything else | UNRESOLVED (partial). |
+
+- **U2 alone, no-worse read on the same block** (for landing U2 by itself under the less-work rule): P-152's rule on the U arm against C, end zone >34 and >50.
+  - WORSE when the runs are separated, or when the median exceeds +2 / +1 with p <= 0.05.
+  - Disclosed: 3 v 3 is weaker than P-152's 4 v 4, because p = 0.05 needs the most extreme ordering. The lead decides whether a PASS here is enough.
+
+**Order, profile, holds:** profile xcode-serious and driver G (WDA gesture, the same program and pin as P-152, `g-fastshort-v1.json` `df597802d2f0`). Rev 1.4 hold rules unchanged:
+- one item per hold;
+- Safari parked, cooling below 38 °C (900 s cap) and a WDA check before every hold;
+- start and end thermal gates; Critical or over 44 °C voids that hold and stops the block;
+- each part runs in the background with the 2 h limit.
+
+The holds:
+- part 1: H1 WC, H2 WF, H3 WU (uncounted warm-ups, one per arm's port), H4 S0.
+- part 2: H5 EC1, H6 EF1, H7 EU1.
+- part 3: H8 EF2, H9 EU2, H10 EC2.
+- part 4: H11 EU3, H12 EC3, H13 EF3.
+- part 5: TAIL (one re-run per hold, then S1).
+
+Over parts 2-4 the order is a rotated Latin square: each arm once in each position, and each arm opens one part. Timeline stays on in every counted run, and there are no separate attribution runs. The sentinels follow P-152's rule (control C). At most 2 blocks for this question.
+
+**Kit (not built yet):** p152's block, hold, serve and read scripts adapted to three arms (C, F, U on three servers plus B), with these pins and a reader self-test. I build it after the lead's go, then do a dry run and a pre-data read as with P-152.
+
+### Plan: the higher-m F1 variant (not built)
+
+- **Proposed change:** set `visibility: hidden` only at m >= m_h = 0.75, instead of at fade 0 (m >= 0.55).
+- **Why nothing changes on screen:** #platform draws nothing for all m >= 0.55 whatever the panel does.
+  - `opacity: min(var(--morph-fade), 0.9999)` and `filter: blur(...)` sit on `.start-selling-platform` (C's CSS 5698-5705).
+  - fade = `QM(m)` = 1 − min(1, m / KM) with KM = 0.55 (C's JS 13579 and 13595-13597).
+  - So opacity is exactly 0 from m 0.55 up, and the panel's coverage is not needed for the proof.
+- **The cost:** F1's saving is lost at 0.55 <= m < 0.75, where toolbar steps repaint #platform again, as in C.
+- **What it buys:** the layers come back while #platform is still invisible, before its fade-in. That gives (0.75 − 0.55) / speed of lead time.
+- **Why I expect only a partial fix:** P-152's records (exploratory) say this won't cover the cost.
+  - Closing speed from m 0.55 to 0.2 has a median of 2.2-3.3 m/s (range 0.3-6.7), so m_h = 0.75 buys about 60-90 ms.
+  - V's extra slow closing frames span about 400 ms after the un-hide:
+
+    | time after the un-hide | 0-50 ms | 50-100 ms | 100-200 ms | 200-400 ms | 400-800 ms |
+    |---|---|---|---|---|---|
+    | C slow closing frames | 2 | 1 | 7 | 8 | 0 |
+    | V slow closing frames | 25 | 9 | 20 | 14 | 8 |
+
+  - Even m_h = 1 buys only about 150 ms at median speed.
+- **A variant more likely to work:** keep #platform's layers alive and only stop what repaints them at opacity 0 (pause its animations at fade 0). It costs no rebuild, but needs its own Chrome cost card first.
+- **Either variant** needs a cost card, a pixel check and a phone check. The split block above comes first.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
