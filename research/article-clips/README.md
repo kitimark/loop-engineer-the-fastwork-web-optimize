@@ -8,6 +8,10 @@ vv.mjs; README "Phone clips"), which the user approved in C-064 and C-066.
 What is new this time: the robot finger replays **the user's own finger gesture**, captured on the original, instead of
 our hand-written strokes. Every clip: left original, right v10, same robot input, real iPhone 15 Pro Max screen.
 
+**Lead decisions (2026-10-06, after 3c875df5):** v10 is built on the landed v9-final base, JS 1b2eecc66011 (with 7d);
+the clips use normal room heat with the Xcode condition off (profile `fair`); the "hero carousel" question goes to the
+user in T-211 (posted by the lead), not in a phone step, so U1 is only the finger scroll.
+
 ## 1. Tools: capture the finger, replay it with WDA
 
 What exists (read in the code, 2026-10-06):
