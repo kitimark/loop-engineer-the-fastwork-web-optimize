@@ -486,6 +486,49 @@ Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H
   - Attribution (decides nothing): paints per frame AC1 11.74 (m high) / 11.18 (low), AV1 11.71 / 11.11; the less-work saving seen in Chrome and the Simulator does not show as fewer paints here.
   - The phone no-worse check is not met as registered. The lead rules on the next step; this is block 2 of 2 for P-152.
 
+### P-152: where V's extra slow frames are, and the suspected cause (after the read; exploratory, decides nothing)
+
+Written at the lead's request while ops-reader-P152 recomputes the read. Same records (out/p152/runs), no phone; scripts in
+the scratchpad (`p152-mbins.mjs`, `p152-tltypes.mjs`), not committed. m is the reader's morph value (track = innerHeight,
+an approximation on the phone). OBSERVED in our setup.
+
+Slow end-zone frames (dt > 34), per counted run, by m:
+
+| m range | C (EC1-EC4) | V (EV1-EV4) |
+|---|---|---|
+| 0 to 0.2 (U2's range) | 10 / 10 / 12 / 11 | 16 / 10 / 11 / 10 |
+| 0.2 to 0.55 | 10 / 10 / 11 / 15 | **35 / 29 / 30 / 21** |
+| 0.55 to 1 (#platform hidden in V) | 8 / 10 / 13 / 9 | 25 / 3 / 17 / 9 |
+| frames that cross m 0.55 | 0-2 | 1-3 |
+
+- The gap is in 0.2 <= m < 0.55: all four V runs are above every C run (separated). At m < 0.2, where U2 acts, the arms
+  are the same. At m >= 0.55 V is mixed (EV1 and EV3 high, EV2 and EV4 at or below C). The crossing frame itself
+  (F1's one-off hide or show) holds only 1-3 slow frames per run.
+- In 0.2 <= m < 0.55 it is the **closing direction**: going down, dt > 34 is C 6 / 3 / 5 / 7 and V 23 / 21 / 21 / 14
+  (separated); going up, C 4 / 7 / 6 / 8 and V 12 / 8 / 9 / 7 (overlapping). Closing through this range is the first
+  stretch after F1 removes `visibility: hidden` (m < 0.55) and #platform fades back in (`--morph-fade` > 0).
+- **The main thread does less there in V, not more.** Timeline records summed over those closing frames (all four
+  runs per arm; C 1080 frames, V 1027): Layout 904 -> 759 ms, Paint 588 -> 499 ms, scripts (FunctionCall) 845 ->
+  524 ms, Composite (WebKit's layer flush) 11234 -> 9639 ms; RenderingFrame totals equal (20257 vs 20339 ms). So the
+  extra time sits outside what Web Inspector's Timeline records for the page: the UI-process side, i.e. the Core
+  Animation commit and rasterization of the layers that come back.
+
+**Suspected cause (UNRESOLVED): F1's re-show, not U2.** When #platform loses `visibility: hidden` on the way down, its
+composited parts (stage artboard, secure-network parts, the tiles) come back, and the frames that follow pay to
+rebuild them outside the page's main thread, while the section fades in. In C these layers never left: the section
+was only at opacity 0. In Chrome the same return frame showed one restyle of the subtree (+150 elements, +24 layout
+objects) and one repaint, all on the main thread (cost card above). On the phone the cost is spread over several
+frames and is not on the main thread, so the cost card could not show it. Not layout (less in V), not paint counts (equal per frame in
+AC1 and AV1), not U2 (its range is clean, and it removes work).
+
+- What would decide it: an F1-only vs U2-only split on the phone (one block, same C), or an Instruments Core Animation
+  trace of the closing stretch on the phone (commit and render-server time per frame), C vs V. Both need the phone and
+  the lead's slot.
+- What it suggests if confirmed: land U2 alone (its range shows no cost, and it only removes work), or move F1's
+  re-show off the fade frames. One option is to un-hide #platform at a higher m while the panel still covers it
+  fully, so the layers are back before the fade-in. That is a new variant and needs its own cost card, pixels and
+  phone check.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
