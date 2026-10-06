@@ -22,19 +22,23 @@
 #   EC<n> / EA<n>    part A counted run on C / A, n 1-4, fs, Timeline on                -> g-EC<n>.json + tl-EC<n>.json
 #   BC<n> / BA<n>    part B counted run on C / A, n 1-2, park30, Timeline on            -> g-BC<n>.json + tl-BC<n>.json
 #   <item>r          the one re-run of a counted run that failed a run gate
+#   PC               the uncounted pilot (rev 2, the lead's 10:15Z ruling): park30 on C, Timeline on, gated by
+#                    pA-read.mjs --gates (G1-G7, G7 = the park gates); in its own hold H0 before the block; a failed
+#                    pilot voids its hold (exit 9) and the block does not start      -> g-PC.json + tl-PC.json
 # Gates after each run (gate lines only, no counts): part A and sentinels by research/serious-heat/phone/p129-gates.mjs
 # (role E / S), part B by fixes/end-morph-p1/phone/pA-read.mjs --gates (P-129's gates with G6 = the park30 hash).
 # Time guard: no item starts when elapsed + its program's budget + 30 s > 600: the rest is skipped, Safari parked,
 # exit 7, the hold is re-run whole.
 # P156_GATE=start|end|both|none (default both). P156_DRY=1: pins, compiled-program and served-hash checks, plan only.
+# P156_DIR (default out/p156): the servers' state, snapshot copy, hold logs and runs/ (a dry run uses its own folder).
 # Last line: "HOLD <H> VALID <s> s" (exit 0) or "HOLD <H> VOID <why>" (2 usage, 3 end gate / Mac sleep, 4 setup, 5 start
-# gate / WDA, 7 time guard, 8 sentinel FAIL). Nothing here prints the LAN address (Hard rule 12).
+# gate / WDA, 7 time guard, 8 sentinel FAIL, 9 pilot FAIL). Nothing here prints the LAN address (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-156 ] || { echo "TICKET is not P-156: no run"; exit 2; }
 H=$1; shift
 [ -n "$H" ] && [ $# -gt 0 ] || { echo "usage: TICKET=P-156 sh fixes/end-morph-p1/phone/p156-hold.sh <H> <items>"; exit 2; }
 R=${RUNNER:-iphone-runner}
-O=out/p156/runs; SV=out/p156
+SV=${P156_DIR:-out/p156}; O=$SV/runs
 FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
 PK=fixes/end-morph-p1/phone/g-park30-v1.json; PROG_PK=6f9209453750
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
@@ -49,7 +53,7 @@ GM=${P156_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "P156_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/end-morph-p1/phone/p156-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs; RD=fixes/end-morph-p1/phone/pA-read.mjs
 mkdir -p $O
-for I in "$@"; do case $I in WC|WA|S0|S1|E[CA][1-4]|E[CA][1-4]r|B[CA][12]|B[CA][12]r) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
+for I in "$@"; do case $I in PC|WC|WA|S0|S1|E[CA][1-4]|E[CA][1-4]r|B[CA][12]|B[CA][12]r) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)"; }
 PC=$(port C) && PA=$(port A) && PB=$(port B) || { echo "HOLD $H VOID no server state in $SV (start fixes/end-morph-p1/phone/p156-serve.sh first) (no run)"; exit 4; }
 served() { curl -s "http://127.0.0.1:$1/$2" | shasum -a 256 | cut -c1-12; }
@@ -75,6 +79,7 @@ late() { [ $(( $(date +%s) - T0 + $1 + 30 )) -gt 600 ]; }
 arm() { case $1 in WA|EA*|BA*) echo A ;; *) echo C ;; esac; }
 if [ "$P156_DRY" = 1 ]; then
   for I in "$@"; do case $I in W*) echo "PLAN $I warm-up on $(arm $I) fs Timeline-off --warmup g-$I-$H.json" ;; S*) echo "PLAN $I sentinel on C fs Timeline-off g-$I.json" ;;
+    PC) echo "PLAN PC pilot (uncounted) on C park30 Timeline-on g-PC.json tl-PC.json, gates G1-G7" ;;
     E*) echo "PLAN $I part A counted on $(arm $I) fs Timeline-on g-$I.json tl-$I.json" ;; B*) echo "PLAN $I part B counted on $(arm $I) park30 Timeline-on g-$I.json tl-$I.json" ;; esac; done
   echo "HOLD $H DRY ok"; exit 0
 fi
@@ -84,16 +89,16 @@ BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --p
 gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p156-$H-$1" --expect serious --max-c 44 --accept-induced --url "$BU"; }
 case $GM in start|both) gate start; g=$?
   [ $g -ne 0 ] && { echo "HOLD $H VOID start gate exit $g (no run)"; exit 5; } ;; *) echo "GATE start skipped (P156_GATE=$GM)" ;; esac
-RERUN=""; SFAIL=""
+RERUN=""; SFAIL=""; PFAIL=""
 for I in "$@"; do
-  case $I in B*) P=$PK; BS=$sB ;; *) P=$FS; BS=$sE ;; esac
+  case $I in B*|PC) P=$PK; BS=$sB ;; *) P=$FS; BS=$sE ;; esac
   if late "$BS"; then echo "HOLD $H VOID time: $I would start at $(( $(date +%s) - T0 )) s (+ $BS + 30 > 600), items from $I on skipped; re-run the hold whole"
     node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; exit 7; fi
   hashok || { echo "HOLD $H VOID served hash changed before $I"; exit 4; }
   case $I in
     W*) F=g-$I-$H; EX="--warmup"; TL="" ;;
     S[01]) F=g-$I; EX=""; TL="" ;;
-    E*|B*) F=g-$I; EX=""; TL="--timeline $O/tl-$I.json" ;;
+    E*|B*|PC) F=g-$I; EX=""; TL="--timeline $O/tl-$I.json" ;;
   esac
   [ "$(arm $I)" = A ] && U=$AU || U=$CU
   for f in "$O/$F.json" "$O/tl-$I.json"; do
@@ -105,6 +110,8 @@ for I in "$@"; do
   echo "RUN $I arm $(arm $I) exit $r $(date -u +%TZ) load1 $(sysctl -n vm.loadavg | cut -d' ' -f2)"
   case $I in
     W*) [ $r -ne 0 ] && echo "ITEM $I exit $r (uncounted warm-up; the hold goes on)" ;;
+    PC) if [ $r -ne 0 ] || [ ! -s "$O/$F.json" ]; then PFAIL="gesture exit $r"; else node $RD --gates $O PC || PFAIL="park30 gates"; fi
+      [ -n "$PFAIL" ] && echo "PILOT FAIL ($PFAIL)" || echo "PILOT ok" ;;
     S[01]) node $GATES $O $I; s=$?
       [ $s -ne 0 ] && { SFAIL="$SFAIL $I"; [ $I = S0 ] && { echo "HOLD $H VOID SENTINEL S0 FAIL: the block is void before any counted run"; exit 8; }; } ;;
     *) if [ $r -ne 0 ] || [ ! -s "$O/$F.json" ]; then echo "ITEM $I VOID exit $r$( [ -s "$O/$F.json" ] || echo ', no run file')"; RERUN="$RERUN $I"
@@ -117,4 +124,5 @@ node fixes/rest-script/tools/pmcheck.mjs "$T0" "$(date +%s)"; p=$?
 [ $g -ne 0 ] && { echo "HOLD $H VOID end gate exit $g"; exit 3; }
 [ $p -ne 0 ] && { echo "HOLD $H VOID Mac sleep or dark wake in the hold (I-098)"; exit 3; }
 [ -n "$SFAIL" ] && { echo "HOLD $H VOID SENTINEL$SFAIL FAIL: every counted run of the block is void"; exit 8; }
+[ -n "$PFAIL" ] && { echo "HOLD $H VOID PILOT FAIL ($PFAIL): the block does not start; report to the lead"; exit 9; }
 echo "HOLD $H VALID $(($(date +%s) - T0)) s"

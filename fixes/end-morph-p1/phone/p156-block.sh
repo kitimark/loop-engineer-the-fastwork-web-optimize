@@ -1,11 +1,14 @@
 #!/bin/sh
 # P-156 block driver (card: fixes/end-morph-p1b-a/README.md "Phone card P-156"). A copy of this topic's P-153 rev 1.3
-# driver (fixes/end-morph-p1/phone/p153-block.sh: a WDA restart and a fresh Safari at every part start, the servers'
+# driver (fixes/end-morph-p1/phone/p153-block.sh: WDA ensured (rev 2: I-220's `wda ensure`) at every part start, the servers'
 # check, Safari parked on every exit and before every cooling wait, at most ONE counted run per hold) with the P-156
 # names, the arms C / A, part B items, and no attribution part. Runs inside ONE phone hold with the block mark and
 # starts the block's 600 s chrome-measure --no-timing holds in order (p156-hold.sh).
 # Start the servers first: P156_BASE=1|0 sh fixes/end-morph-p1/phone/p156-serve.sh start (the base P-155 lands).
+# P156_DIR (default out/p156) is passed on to p156-serve.sh and p156-hold.sh (a dry run uses its own folder).
 # Usage (the runner, in the background), one block = parts of at most ~50 min:
+#   ... p156-block.sh H0:PC                                                                    (part 0, rev 2: the
+#       uncounted park30 pilot on C; a PILOT FAIL (hold exit 9) stops here and the block does not start)
 #   TICKET=P-156 node tools/lock.mjs run iphone --owner iphone-runner --block P-156 --max-seconds 3600 --keep 120 -- \
 #     sh fixes/end-morph-p1/phone/p156-block.sh H1:WC H2:WA H3:S0 H4:EC1 H5:EA1                 (part 1)
 #   ... p156-block.sh H6:EA2 H7:EC2 H8:EC3 H9:EA3                                              (part 2)
@@ -21,7 +24,7 @@
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-156 ] || { echo "TICKET is not P-156: no run"; exit 2; }
 [ $# -gt 0 ] || { echo "usage: TICKET=P-156 sh fixes/end-morph-p1/phone/p156-block.sh H<n>:<item>[,<item>] ... [H<n>:TAIL]"; exit 2; }
-R=${RUNNER:-iphone-runner}; LG=out/p156; HS=fixes/end-morph-p1/phone/p156-hold.sh; SS=fixes/end-morph-p1/phone/p156-serve.sh
+R=${RUNNER:-iphone-runner}; LG=${P156_DIR:-out/p156}; export P156_DIR=$LG; HS=fixes/end-morph-p1/phone/p156-hold.sh; SS=fixes/end-morph-p1/phone/p156-serve.sh
 mkdir -p $LG
 for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^[EB][CA][1-4]r?$')
   [ "$it" -gt 1 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it counted runs (at most 1 per hold)"; exit 2; }; done
@@ -43,14 +46,42 @@ cool() { # H
 { echo "== $(date -u +%FT%TZ) part start: $*"; sh $SS check; } >> $LG/serve-check.log 2>&1 \
   || { echo "BLOCK STOP: p156-serve.sh check failed (see $LG/serve-check.log)"; exit 4; }
 echo "SERVE CHECK ok: $(tail -4 $LG/serve-check.log | grep -c ' ok (base') of 3 servers"
+# rev 2 (I-220, ts-i220's 2d6d7327): `wda ensure` instead of stop/start/check. Exit 0: go on (Safari restarted only when
+# the line says "restarted"); exit 4 WDA REPLUG NEEDED: post a re-plug console step, wait for its Done, ensure again
+# (at most 2 re-plugs); exit 3 (or anything else): BLOCK STOP.
+replug() { # why
+  P=$(node tools/console.mjs post --by "$R" --kind action --phone --no-record --no-gate --topic end-morph-p1 \
+    --title "P-156: re-plug the iPhone cable" \
+    --instructions "The phone lost its USB link to the Mac. Unplug the iPhone's cable, plug it back in, keep the phone unlocked, then press Done." 2>&1)
+  id=$(echo "$P" | sed -n 's/^POSTED \(C-[0-9]*\).*/\1/p')
+  [ -n "$id" ] || { echo "BLOCK STOP: re-plug step not posted ($P)"; exit 5; }
+  echo "REPLUG step $id posted ($1)"
+  node tools/console.mjs wait "$id" --until done --timeout 1800 --quiet; w=$?
+  [ $w -eq 0 ] || { echo "BLOCK STOP: re-plug step $id not done (wait exit $w)"; exit 5; }
+  echo "REPLUG $id done"
+}
 if [ "$P156_DRY" != 1 ]; then
-  { node tools/iphone.mjs wda stop; node tools/iphone.mjs wda start --owner "$R"; node tools/iphone.mjs wda check; } > $LG/wda-restart-$(date +%s).log 2>&1 \
-    || { echo "BLOCK STOP: wda stop/start/check failed (see $LG/wda-restart-*.log)"; exit 5; }
-  echo "WDA restarted and READY"
-  PB=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$LG/serve-B.json','utf8')).port)")
-  node tools/iphone.mjs safari-restart --owner "$R" --url "$(node tools/lan.mjs --url --port "$PB")" --timeout 60 > $LG/safari-restart-$(date +%s).log 2>&1 \
-    || { echo "BLOCK STOP: safari-restart failed (see $LG/safari-restart-*.log)"; exit 5; }
-  echo "SAFARI restarted"
+  k=0
+  while :; do
+    WL=$LG/wda-ensure-$(date +%s).log
+    node tools/iphone.mjs wda ensure --owner "$R" > $WL 2>&1; e=$?
+    last=$(tail -1 $WL)
+    case $e in
+      0) echo "WDA ensure: $last"; break ;;
+      4) k=$((k + 1)); [ $k -gt 2 ] && { echo "BLOCK STOP: WDA REPLUG NEEDED after 2 re-plugs ($last)"; exit 5; }
+         replug "$last" ;;
+      *) echo "BLOCK STOP: wda ensure exit $e ($last; see $WL)"; exit 5 ;;
+    esac
+  done
+  case $last in *restarted*)
+    PB=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$LG/serve-B.json','utf8')).port)")
+    node tools/iphone.mjs safari-restart --owner "$R" --url "$(node tools/lan.mjs --url --port "$PB")" --timeout 60 > $LG/safari-restart-$(date +%s).log 2>&1 \
+      || { echo "BLOCK STOP: safari-restart failed (see $LG/safari-restart-*.log)"; exit 5; }
+    echo "SAFARI restarted (WDA was restarted)" ;;
+  *) echo "SAFARI kept (WDA kept)" ;;
+  esac
+else
+  echo "WDA ensure (dry: not run)"
 fi
 hold() { # H items...
   h=$1; shift

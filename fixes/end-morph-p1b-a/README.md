@@ -98,9 +98,19 @@ C / V / A:
 | | V0 = C0 + P1 | a145c7de6507 | a81b9af7b2c9 |
 | | A0 = V0 + (a) | 888ed8eb2d15 | cfb8b8c5b019 |
 
-The hydration and rotation checks below ran on the previous A1, ed44af454a92. The current A1 differs from it only in two
-`aria-hidden` attributes on P1's dark and glass layers, which are created when the reveal turns on, long after hydration.
-The attributes were added after the accessibility diff (below).
+**Frozen build** (lead ruling 10:15Z): A1 f83aa54c2acc / A0 888ed8eb2d15, CSS cfb8b8c5b019 (overlay JS 901439d5222c,
+`delta-js.diff` 27408c23ede4, `delta-css.diff` d20484088a03). The builds before it: A1 ed44af454a92, then 09d1f5b62384
+(adds `aria-hidden` on P1's dark and glass layers), then f83aa54c2acc (adds the observer's width check, below).
+
+**Which build each Chrome gate ran on:**
+
+| gate | A build | where |
+|---|---|---|
+| exact size, switch-on attribution, frame counts, is-on-dark | first review build, overlay JS 79a0bd83eb06 (on P-153's C) | "Gates" above |
+| hydration, install and rotation (first round) | A1 ed44af454a92 | below |
+| accessibility re-run, idle triple (2 rounds) | A1 09d1f5b62384 | below |
+| install and rotation, exact size (after the width check) | A1 f83aa54c2acc (frozen) | Phone card, "RO callback change" |
+| hydration, accessibility, idle triple (re-run on the freeze) | A1 f83aa54c2acc (frozen) | "Re-run on the frozen A1" below |
 
 Delta files: `delta-js.diff` 27408c23ede4 (V -> A, 4 hunks), `delta-css.diff` d20484088a03. They apply with `-F 0` on
 both bases. The overlay here (on P-153's C, which has F1) is JS 901439d5222c, CSS cfb8b8c5b019.
@@ -191,7 +201,28 @@ headless 430x932, non-ignored nodes as role and name, countdown digits masked; o
 - End: equal in round 2. C's round 1 (40 / 76.6) is the outlier.
 - **Reading: no idle cost from A**, with the stated reasons above for the two top/mid differences.
 
-## Phone card P-156 (DRAFT for the lead's signature; reserved by mgmt-clerk-1; runs after P-155; predictions fixed before any data)
+**Re-run on the frozen A1** (f83aa54c2acc vs C1 fe7c668d35e8; each in its own shared probe hold of 60 s or less, 10:22-10:33Z):
+- Hydration (`hydrate-probe.mjs cost --builds C,F`, one load each; out/i219/cost-2026-10-06T10-22-57-677Z): 0
+  `Failed to hydrate` / `hydration_mismatch` in both; survivors 992 of 1517 (C1) vs 992 of 1518 (A1); the header is
+  the same node in both. Same as on ed44.
+- Accessibility tree (out/end-morph-p1/p1b/a11y-2026-10-06T10-27-21-268Z.json): A's tree and focusable list equal C's
+  in all four states (top, m 0.5 with the reveal on, m 1, m 0 above the end track), same nodes, same order.
+- Idle triple (one round per arm; out/end-morph-p1/p1b/idletriple-2026-10-06T10-32-25-309Z.json for C,
+  idletriple-2026-10-06T10-32-57-227Z.json for A), per second:
+
+  | spot | arm | callbacks | rAF | timers | observers | events | writes (style) | nodes |
+  |---|---|---|---|---|---|---|---|---|
+  | top | C / A | 6.6 / 6.8 | 1 / 1.2 | 4 / 4 | 1.6 / 1.6 | 4.6 / 4.6 | 16.8 / 19 (13.4 / 15.6) | 2.4 / 2.4 |
+  | mid | C / A | 2 / 2 | 0 / 0 | 2 / 2 | 0 / 0 | 27.6 / 25.8 | 7 / 7 | 0 / 0 |
+  | end | C / A | 32.8 / 28 | 31.8 / 27 | 1 / 1 | 0 / 0 | 1 / 1 | 47 / 40 | 0 / 0 |
+
+  The same picture as on 09d1: observers equal; the top's +2.2 writes and +0.2 rAF per second are the countdown roll's
+  extra tick (idle-who above); mid events now lower in A (carousel phase); end lower in A. No idle cost from A.
+
+## Phone card P-156 (rev 2, DRAFT for the lead's signature; reserved by mgmt-clerk-1; runs after P-155; predictions fixed before any data)
+
+Rev 2 takes the lead's FIX-FIRST list after ops-reader-P156 (2026-10-06 10:15Z): frozen build, part B windows, Pr4's two
+parts, park gates and a pilot, the base ledger, block 2, the +4 ms bounds, the dry runs, and the non-blocking items.
 
 **Question:** on the landing base, does A = P1 + (a):
 - open the end zone's first frame no slower than C;
@@ -215,7 +246,15 @@ frame.
   every hold, start and end gates, a hold at Critical or over 44 °C is void;
 - the runner's scripts: `fixes/end-morph-p1/phone/p156-serve.sh`, `p156-hold.sh` and `p156-block.sh`, copies of
   P-153's with the arms C / A and part B. `P156_BASE=1|0` picks the base at the first server start; the served hashes
-  are pinned per base. `P156_DRY=1` checks the pins and the plan with no phone.
+  are pinned per base. `P156_DRY=1` checks the pins and the plan with no phone. `P156_DIR` puts the servers, the
+  snapshot copy, the hold logs and the runs in their own folder (default `out/p156`).
+- **WDA at every part start** (I-220, ts-i220's 2d6d7327, lands on main after P-155; I rebase before the dry runs):
+  `iphone.mjs wda ensure`. Exit 0 goes on, and Safari is restarted only when the line says "restarted". Exit 4 (WDA
+  REPLUG NEEDED) posts a re-plug step on the console, waits for its Done and runs ensure again, at most twice. Exit 3
+  stops the block.
+- **Base, fixed before H1.** The base goes into the P-156 ledger (mgmt-clerk-1) before H1: B1 if P-155 lands U2, else
+  B0. It never changes, block 2 included. The reader takes it as `--base 1|0` and voids the read when any hold log's
+  start line names another base, or a hold with runs served other pins than that base's.
 - **Part A** (first open, end zone, closing band): `fixes/morph-scroll/g-fastshort-v1.json`, P-153's program
   (GESTURE_HASH 8737f212c0ff, budget 229 s).
 - **Part B** (after a 30 s park near the end): `fixes/end-morph-p1/phone/g-park30-v1.json` (new; GESTURE_HASH
@@ -225,13 +264,19 @@ frame.
   - At the end again, 30 s with no touch, a close fling.
   - So each run has two closes and one open after a park.
 - Holds, one counted run each:
+  - part 0: H0 PC, the uncounted pilot: one part B run on C, Timeline on, run gates G1-G7 (G7, the park gates, below).
+    It runs before part 1 on the free phone (user T-204 #35: a free iPhone may be used for any end-of-page test). A
+    pilot that fails (hold exit 9) stops here: the block does not start, and I report to the lead;
   - part 1: H1 WC, H2 WA, H3 S0, H4 EC1, H5 EA1;
   - part 2: H6 EA2, H7 EC2, H8 EC3, H9 EA3;
   - part 3: H10 EA4, H11 EC4, H12 BC1, H13 BA1;
   - part 4: H14 BA2, H15 BC2, H16 TAIL (at most 2 re-runs), then S1.
   - Part A is C A A C C A A C (4 v 4); part B is C A A C (2 v 2); the sentinels run on C.
+- **Block 2** only after block 1 is VOID or INCOMPLETE (a prediction INSUFFICIENT or NOT READ). It is read alone, in its
+  own folder (`P156_DIR=out/p156-b2`), never pooled with block 1; same base, scripts and pins.
 
-**Metrics** (reader: `fixes/end-morph-p1/phone/pA-read.mjs`, written before data, `--selftest` 18 checks, `--gates` for part B's run gates; it imports P-153's
+**Metrics** (reader: `fixes/end-morph-p1/phone/pA-read.mjs` rev 2, written before data, `--selftest` 40 checks, `--gates`
+for part B's run gates and the pilot; it imports P-153's
 `p153-read.mjs` for the shared rules and copies P-155's closing band, which is not on main):
 - **O1.f1, O1.f2, O1.f3 and f123** (their sum): the first open after load, P-153's definition (f1 = the gap before the
   first frame with m > 0, f2 and f3 the next two gaps).
@@ -239,11 +284,22 @@ frame.
 - CB34 / CB50: P-155's closing band, frames at 0.2 <= m < 0.55 while closing with dt over 34 / 50 ms. Part A: all
   closes. Part B: only the closes after a park (CBp34 / CBp50).
 - Part B: Op.f2, the f2 of each open after a park.
-- Heat per run: battery °C and thermal state at the start and end of every hold (the runner's gate lines), plus the
-  run's start time and the gap since the previous hold.
-- Census, phone side: part A's moving frames, binned by 250 px of scrollY over the whole pass. A bin is worse when its
-  median is up by 1 or more frames over 34 ms, or by 1 frame per run over 50 ms. Reported per arm; it decides nothing
-  alone.
+- **Part B windows:** each close or open window runs from its mark to the next touchstart after its own stroke (the
+  first touchstart at or after the mark), or to the end of the record. So P1's CBp counts only the close after the
+  park, not the 450 px drag-close that follows the re-approach (no park before it).
+- **Park gates (G7, part B runs and the pilot):** in each 30 s park, from its mark to the next mark (plus the last
+  frame before it), no moving frame; m >= 0.99 at the open parks (P1, P3) and m <= 0 at the closed park (P2), with
+  P-153's opens() form of m (lvh = the run's largest innerHeight). All three parks must be there. A run that fails G7
+  is INVALID like any run gate.
+- Arming frame: N/A for A. It is (b)'s concept (AB moves the layer work into an approach frame); A has no such frame,
+  and the reader has no arming metric.
+- Work, descriptive: busy, busyRF and cls (P-129's gapWork and classify) of the O1.f2 frame and of every CB and CBp
+  frame over 34 ms, from the run's Timeline.
+- Heat per run: battery °C and thermal state at the start and end gate of the run's hold (`meta.profile.start` and
+  `.end`; one counted run per hold), plus the run's start time.
+- Census, phone side: part A's moving frames, binned by 250 px of scrollY over the whole pass. A bin is worse when the
+  median over runs of A - C is +1 or more frames over 34 ms, or over 50 ms. Frame counts only: the Chrome-tick (dt)
+  criterion is dropped on the phone, and the median dt difference is printed. It decides nothing alone.
 
 **Prior data** (exploratory, decides nothing; P-153 on the F1+U2 base):
 
@@ -254,24 +310,30 @@ frame.
 | CB50 per run | 1 / 1 / 1 / 2 | 0 / 0 / 0 / 0 |
 
 **Predictions** (bounds fixed now):
-- **Pr1, first open:** median A O1.f2 - median C O1.f2 <= +2 ms. Expected inside: Chrome put A's switch-on at C's level,
-  open f2 16.9 vs C 16.8 ms. If A - C > +2, the WebKit cost of P1's first frame is not the forced read: (b) is
-  reconsidered, the lead's condition. f1, f3 and f123 are reported next to f2 and decide nothing.
+- **Pr1, first open:** median A O1.f2 - median C O1.f2 <= +4 ms (the phone minShift, protocol §5.3; rev 1 had +2).
+  P-153's +10 ms (V 41 vs C 31) still fails it. Read on at least 3 first opens per arm; a valid run with no first open
+  is named in the Pr1 line, never dropped silently. Expected inside: Chrome put A's switch-on at C's level, open f2
+  16.9 vs C 16.8 ms. If A - C > +4, the WebKit cost of P1's first frame is not the forced read: (b) is reconsidered,
+  the lead's condition. f123 is printed next to f2 in the Pr1 line; f1, f3 and f123 decide nothing.
 - **Pr2, end zone no-worse:** P-153's rule unchanged. WORSE when the runs are fully separated, or when the median is
   up by more than +2 at >34 or +1 at >50 with permutation p <= 0.05. Expected PASS, A at or below C, as P-153's V.
+  The reader prints the rule's threshold-sensitive flag (the ±4 ms twins) in the Pr2 line.
 - **Pr3, closing band (part A):** median CB34 A - C <= +3. Expected below C, as V was (5 vs 11).
-- **Pr4, after a park (part B):** median CBp34 A - C <= +2 per run, and median Op.f2 A - C <= +2 ms. A holds nothing
+- **Pr4, after a park (part B):** median CBp34 A - C <= +2 per run, and median Op.f2 A - C <= +4 ms (rev 2; rev 1 had
+  +2). The two parts decide separately: a CBp34 miss fails Pr4 by itself. Op.f2 is read only when every valid part-B
+  run of each arm (2 per arm) has a value; otherwise Op.f2, and so Pr4 if CBp34 holds, is NOT READ. No median drops a
+  run (rev 2: a missing value makes the median missing). A holds nothing
   while parked: the reveal is off at m = 0 and m = 1, and the probe's observer is idle (`rotate.mjs`: no callback
   without a size change). So a park should change nothing.
-- **Probabilities** (the author's, before data):
+- **Probabilities** (the author's, before data; rev 2 after the bounds moved to +4 ms):
 
   | prediction | p | why |
   |---|---|---|
-  | Pr1 | 0.55 | Chrome removes the whole +9 ms of V's switch-on frame. On WebKit, P-153's +10 ms may be partly layer creation or paint, which (a) does not touch. |
+  | Pr1 | 0.6 (rev 1 at +2 ms: 0.55) | Chrome removes the whole +9 ms of V's switch-on frame. On WebKit, P-153's +10 ms may be partly layer creation or paint, which (a) does not touch. |
   | Pr2 | 0.85 | A does in the end zone what V did, and V passed P-153 below C. |
   | Pr3 | 0.85 | P1 already holds the layers during every close: CB34 V 5 vs C 11. |
-  | Pr4 | 0.75 | A holds nothing while parked. The risk is WebKit dropping backing stores after idle and paying for them on the next close more in A (bigger layers) than in C. |
-  | all four | 0.35 | not independent: Pr2 and Pr3 move together. |
+  | Pr4 | 0.8 (rev 1: 0.75) | A holds nothing while parked. The risk is WebKit dropping backing stores after idle and paying for them on the next close more in A (bigger layers) than in C. |
+  | all four | 0.4 (rev 1: 0.35) | not independent: Pr2 and Pr3 move together. |
 - **RO callback change** (lead, after fix-panel-height's dvh counts): the observer reads `--nav-bar-inset-x` only when
   the probe's width changed. The value comes only from the `(width <= 640px)` rule (CSS 12094/12104), so a height-only
   change reads no style; with a dvh panel that means every toolbar step. It writes nothing while the reveal is off;
@@ -287,14 +349,23 @@ frame.
 |---|---|
 | Pr1-Pr4 hold | A removes P1's first-open risk at no closing or end-zone cost: land request for v10. |
 | Pr1 fails, others hold | WebKit's first-frame cost is not the forced read. P1's end-zone gain stands; the lead decides between P1 alone and reviving (b). |
-| Pr2 or Pr3 fails | A is worse than C at the end: no landing. Read the Timeline attribution runs. |
+| Pr2 or Pr3 fails | A is worse than C at the end: no landing. This block has no attribution runs; the work columns are descriptive, and an attribution ticket follows if the lead asks. |
 | Pr4 fails, others hold | a park makes the next close or open slow on WebKit (e.g. layers dropped after idle): attribution before landing. |
+| Pr1 and Pr4 both fail, Pr2 and Pr3 hold | A neither removes P1's first-open cost on WebKit nor stays even after a park: no landing of A; the lead decides between P1 alone and (b). |
+| FAIL with predictions not read | the failing prediction's row applies; the ones not read are named and get no verdict. |
+| INCOMPLETE (a prediction INSUFFICIENT or NOT READ, none fails) | no verdict on those; block 2, read alone, same base. |
+| VOID (a sentinel, the base or pin check, the pilot, a cooling stop) | nothing is read; block 2, read alone, after the cause is fixed. |
 
 **Not run (scenarios this card does not cover):**
 - real heat, the first-open test from 42-44 °C (milestone 2), and the Fair no-worse check;
 - finger runs (F) and the blind swipe A/B;
 - rotation on the phone (Chrome-only gate above);
 - the collapsed-toolbar geometry (430x815), and fix-panel-height's svh/dvh panel;
+- parks longer than 30 s, and a park with the screen locked or Safari in the background;
+- after a park, drags and the 60 / 200 px flings (part B runs only the 120 px fling);
+- a park in the middle of the morph (0 < m < 1; the page's snap leaves none in these scripts);
+- a reload or back navigation that restores the scroll into the end track;
+- the observer under the phone's real toolbar resize with the panel at dvh (Chrome checked height steps only);
 - reduced motion, VoiceOver;
 - the language menu open during the morph;
 - a back/forward-cache restore;
@@ -304,7 +375,14 @@ frame.
 ## Not done
 
 - P-156 (reserved by mgmt-clerk-1, PREDICTIONS row on main) needs the lead's signature and the pre-data ops-reader.
-- The block scripts are written and syntax-checked (`sh -n`); `P156_DRY=1` needs the servers, so it runs once the base is known.
+- `P156_DRY=1` (preview, before the rebase onto I-220's fix): both bases, every part (H0 pilot, H1-H16 with TAIL), all
+  17 holds `DRY ok`; pins, compiled programs (fs 8737f212c0ff budget 229 s, park30 6f9209453750 budget 327 s) and
+  served hashes match (base 1: C fe7c668d35e8 / A f83aa54c2acc; base 0: C 387a2b38790b / A 888ed8eb2d15); the reader's
+  base check passes with the right `--base` and voids with the other (out/p1b/dry-pre-base1.log, dry-pre-base0.log).
+  The final dry run follows after the rebase onto main with 2d6d7327 (`wda ensure`).
+- Reader smoke test on real data (decides nothing): P-153 block 2's records with V renamed A read FAIL Pr1, f2 A - C
+  +10 ms > +4 (f123 +0.5 ms), Pr2 NO-WORSE PASS (not threshold-sensitive), Pr3 holds (CB34 -6): the +4 ms bound still
+  catches P-153's first-open risk (out/p1b/smoke).
 - The 250 px census, Chrome side: `fixes/end-morph-p1/p1b/census-run.sh` (C1 vs A1, verify.mjs --frame-log, 6x), one
   timing hold of 300 s or less. It runs after P-155 (the lead allows no timing hold during the phone block). The phone
   side comes from P-156 part A (pA-read.mjs).

@@ -11,10 +11,11 @@
 # Usage: P156_BASE=1|0 sh fixes/end-morph-p1/phone/p156-serve.sh start   copy (first time), start B C A, check, print ports
 #        sh fixes/end-morph-p1/phone/p156-serve.sh check    re-check the copy and the served hashes (exit 4 if wrong)
 #        sh fixes/end-morph-p1/phone/p156-serve.sh stop     stop these three servers (by their pid files)
-# State: out/p156/serve-{B,C,A}.json (ports), .pid, .log. Phone URLs only via tools/lan.mjs; never copy the LAN address
+# State: out/p156/serve-{B,C,A}.json (ports), .pid, .log; P156_DIR=<folder> uses that folder instead (dry runs).
+# Phone URLs only via tools/lan.mjs; never copy the LAN address
 # into a committed file (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
-S=out/p156; D=$S/snap
+S=${P156_DIR:-out/p156}; D=$S/snap
 OWNER=${FW_AGENT:-iphone-runner}
 JS=_app/immutable/nodes/2.DyWL8TcE.js
 CSS=_app/immutable/assets/2.gBuqKVzi.css

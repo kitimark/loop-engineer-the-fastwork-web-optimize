@@ -292,8 +292,134 @@
    "build": "JS 901439d5222c, A1 f83aa54c2acc, A0 888ed8eb2d15",
    "rotate": "out/end-morph-p1/p1b/rotate-2026-10-06T10-03-45-445Z.json (same states, 3 RO callbacks, 0 errors)",
    "exact": "out/end-morph-p1/p1b/exact-2026-10-06T10-04-08-265Z.json (size equal 775/815/932; clip exact after height-only steps with the reveal on)"
+  },
+  "frozenBuild": {
+   "A1": "f83aa54c2acc",
+   "A0": "888ed8eb2d15",
+   "css": "cfb8b8c5b019",
+   "overlayJs": "901439d5222c",
+   "deltaJs": "27408c23ede4",
+   "deltaCss": "d20484088a03"
+  },
+  "gateBuilds": {
+   "exactSize, switchOnAttribution, frameCounts, isOnDarkPerFrame": "first review build, overlay JS 79a0bd83eb06",
+   "hydration, installAndRotation (round 1)": "A1 ed44af454a92",
+   "a11yDiff re-run, idleTriple (2 rounds)": "A1 09d1f5b62384",
+   "installAndRotation + exactSize after roWidthCheck": "A1 f83aa54c2acc",
+   "frozenRerun (hydration, a11y, idle)": "A1 f83aa54c2acc"
+  },
+  "frozenRerun": {
+   "build": "A1 f83aa54c2acc vs C1 fe7c668d35e8",
+   "hydration": {
+    "file": "out/i219/cost-2026-10-06T10-22-57-677Z",
+    "hydrateMsgs": [
+     0,
+     0
+    ],
+    "survivors": [
+     "992/1517",
+     "992/1518"
+    ],
+    "headerSameNode": [
+     true,
+     true
+    ]
+   },
+   "a11y": {
+    "file": "out/end-morph-p1/p1b/a11y-2026-10-06T10-27-21-268Z.json",
+    "equalInAllFourStates": true
+   },
+   "idleTriple": {
+    "files": [
+     "out/end-morph-p1/p1b/idletriple-2026-10-06T10-32-25-309Z.json",
+     "out/end-morph-p1/p1b/idletriple-2026-10-06T10-32-57-227Z.json"
+    ],
+    "perSec": {
+     "top": {
+      "C": {
+       "callbacks": 6.6,
+       "raf": 1,
+       "obs": 1.6,
+       "events": 4.6,
+       "writes": 16.8
+      },
+      "A": {
+       "callbacks": 6.8,
+       "raf": 1.2,
+       "obs": 1.6,
+       "events": 4.6,
+       "writes": 19
+      }
+     },
+     "mid": {
+      "C": {
+       "callbacks": 2,
+       "raf": 0,
+       "obs": 0,
+       "events": 27.6,
+       "writes": 7
+      },
+      "A": {
+       "callbacks": 2,
+       "raf": 0,
+       "obs": 0,
+       "events": 25.8,
+       "writes": 7
+      }
+     },
+     "end": {
+      "C": {
+       "callbacks": 32.8,
+       "raf": 31.8,
+       "obs": 0,
+       "events": 1,
+       "writes": 47
+      },
+      "A": {
+       "callbacks": 28,
+       "raf": 27,
+       "obs": 0,
+       "events": 1,
+       "writes": 40
+      }
+     }
+    },
+    "reading": "no idle cost from A; top +2.2 writes/s = countdown roll phase (as on 09d1)"
+   }
   }
  },
- "phoneCard": "P-156 DRAFT in README.md with probabilities (Pr1 0.55, Pr2 0.85, Pr3 0.85, Pr4 0.75, all 0.35); reader fixes/end-morph-p1/phone/pA-read.mjs; G programs g-fastshort-v1 (8737f212c0ff) and g-park30-v1 (6f9209453750)",
+ "phoneCard": {
+  "ticket": "P-156",
+  "rev": 2,
+  "status": "DRAFT for the lead signature",
+  "reader": "fixes/end-morph-p1/phone/pA-read.mjs rev 2 (selftest 40 checks)",
+  "programs": {
+   "fs": "8737f212c0ff",
+   "park30": "6f9209453750"
+  },
+  "bounds": {
+   "Pr1 f2 ms": 4,
+   "Pr3 CB34": 3,
+   "Pr4 CBp34": 2,
+   "Pr4 Op.f2 ms": 4
+  },
+  "probabilities": {
+   "Pr1": 0.6,
+   "Pr2": 0.85,
+   "Pr3": 0.85,
+   "Pr4": 0.8,
+   "all": 0.4
+  },
+  "rev2": "stroke windows; Pr4 parts decide separately; strict median; park gates G7; pilot H0 PC; --base ledger check; WDA ensure (I-220); P156_DIR; heat start/end, work, f123, sensitive flag, census counts only",
+  "dryRun": {
+   "preview": [
+    "out/p1b/dry-pre-base1.log",
+    "out/p1b/dry-pre-base0.log"
+   ],
+   "result": "both bases, 17 holds DRY ok",
+   "final": "after rebase onto 2d6d7327"
+  },
+  "smoke": "P-153 block 2 records (V as A): FAIL Pr1 f2 +10 > +4; Pr2 PASS; Pr3 holds"
+ },
  "measurementCodeChanged": false
 }
