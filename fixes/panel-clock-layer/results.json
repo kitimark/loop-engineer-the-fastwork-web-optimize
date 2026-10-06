@@ -1,0 +1,24 @@
+{
+  "topic": "panel-clock-layer",
+  "owner": "arch-compositor-morph",
+  "kind": "pixel gates + Chrome cost card (no timing)",
+  "build": { "base": "v9-final (out/cm/C: JS 647c9ef2b1e2, CSS e1359ab9994a)", "patched": "CSS 0f57e05f96cb (delta.diff, iOS-only @supports rule)" },
+  "gates": {
+    "chrome": { "when": "2026-10-06T11:20Z", "tool": "fixes/compositor-morph/gates/cm-px2.mjs --engine chrome --h 932", "loads": 4, "stops": ["pre", "up0.55", "up1"], "consistentPct": [0, 0, 0], "maxLevel": [0, 0, 0], "ruleActive": false, "verdict": "pass" },
+    "simulator": { "when": "2026-10-06T11:23Z", "tool": "fixes/compositor-morph/gates/cm-px2.mjs --engine sim", "loads": 4, "stops": ["pre", "up0.55", "up1", "dn0"], "consistentPct": [0, 0, 0, 0], "consistentMaxLevel": [1, 1, 3, 0], "aaOver8Pct": [0.7458, 0.0199, 0.0199, 0.0199], "ruleActive": true, "verdict": "pass" },
+    "limits": "PR-010 wide numbers: fill 64, edge 128, 0.5 %"
+  },
+  "unscopedVariantsChromeUp1": [
+    { "variant": ".countdown translateZ(0)", "pct": 0.0861, "maxLevel": 162, "under": "span.label" },
+    { "variant": ".unit translateZ(0)", "pct": 0.0861, "maxLevel": 162, "under": "span.label" },
+    { "variant": ".countdown will-change: opacity", "pct": 0.0861, "maxLevel": 162, "under": "span.label" },
+    { "variant": ".countdown will-change: transform", "pct": 0.1505, "maxLevel": 224, "under": "span.cell" },
+    { "variant": ".face translateZ(0)", "pct": 0.1057, "maxLevel": 224, "under": "span.cell" }
+  ],
+  "costCardChrome": {
+    "note": "repainted area = layer size x paint count, an upper bound (OBSERVED: LayerTree.layerPainted never fires on Chrome 154); Chrome itself is unchanged by the scoped rule",
+    "C": { "m1AreaPerSec": [9220000, 9584848], "m055AreaPerSec": [5400000, 6245032], "repaintedLayer": "div.start-selling-morph-veil 406x908, 25-26/s" },
+    "layerUnscoped": { "m1AreaPerSec": [827200, 830000], "m055AreaPerSec": [943008, 980000], "repaintedLayer": "div.countdown.inverse 376x88, 25/s" }
+  },
+  "measurementCodeChanged": false
+}

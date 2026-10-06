@@ -1,0 +1,19 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css (v9-final)
++++ b/_app/immutable/assets/2.gBuqKVzi.css (panel-clock-layer)
+@@ -12412,4 +12412,16 @@
+   position: relative;
+   height: 100lvh;
+   pointer-events: none;
++}
++/* panel-clock-layer (arch-compositor-morph, T-215 census by fix-end-morph): the morph panel's countdown rolls its digit
++   strips ~25 times a second while the panel is open (JS 4328 rAF spring); unlayered, every roll frame repaints the
++   layer it paints into, the panel's veil layer (406 x 908 at m 1 in our Chrome card). Its own layer, sized to the clock, keeps
++   those repaints to the clock. The digits stay main-thread (cd-roll-ca). iOS WebKit only (-webkit-touch-callout is an
++   iOS-only property): WebKit snaps a layer to device pixels and paints its content at the renderer's subpixel offset
++   (RenderLayerBacking m_subpixelOffsetFromRenderer), so the glyphs keep their pixels; Chrome draws a new layer's text
++   up to 1 device px off (T2 edge 162-224 at m 1 in every layer variant), so Chrome keeps today's painting. */
++@supports (-webkit-touch-callout: none) {
++  .start-selling-morph-panel .waitlist-closing-countdown .countdown.svelte-1666oc5 {
++    transform: translateZ(0);
++  }
+ }
