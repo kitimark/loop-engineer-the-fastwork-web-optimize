@@ -3,9 +3,19 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and the `delta-*.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** P-156 block 1 read (B0): **FAIL Pr1** (first-open f2 A - C +11 ms > +4), Pr2-Pr4 hold; the lead decides
-between P1 alone and reviving (b) (section "P-156 read"). The v10 candidate "A = P1 + (a)" (lead ruling 2026-10-06
-09:35Z; P1b (b) parked). Measured in Chrome:
+**Status:** **A = P1 + (a) goes into v10; (b) stays parked** (lead ruling after the P-156 read d450632e, outcome "Pr1
+fails, others hold"). P-156 block 1 (B0): FAIL Pr1, Pr2-Pr4 hold (section "P-156 read"). The lead's reasons: the goal
+metric is frames over 50 ms (target 0), and A takes the end zone from a median of 2 per run to 0 in every run (>34 ms
+down by a median of 7), with Pr3 and Pr4 holding; the cost is one first-open frame under 50 ms, once per first open; (b)
+still has three open problems (the language-menu clip, Simulator pixels while armed, unmeasured layer memory); A is
+the arm that passed this block, and (a) removes the forced read in Chrome.
+
+**Known cost (for v10's card):** first-open +11 ms (O1.f2 37.5 vs 26.5 ms, phone, P-156). One frame per first open,
+over 34 ms but under 50 ms; over the first three frames +3.5 ms (f123 65.5 vs 62). Cause UNRESOLVED (likely the first
+composite of P1's layers); a follow-up Timeline attribution run of O1 is queued, not blocking (P1c only if it shows a
+cheap pre-warm).
+
+The v10 candidate "A = P1 + (a)" (lead ruling 2026-10-06 09:35Z; P1b (b) parked). Measured in Chrome:
 - values, trace counts, states and pixels, and one clean headed timing hold;
 - after the rework: hydration on the i219-fixed base, install, rotation, teardown.
 
