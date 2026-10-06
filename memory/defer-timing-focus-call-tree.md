@@ -4,7 +4,7 @@ description: "no timing A/Bs or phone gain blocks except the listed exceptions"
 type: project
 audience: every agent
 since: 2026-10-01
-updated: 2026-10-02
+updated: 2026-10-06
 ---
 
 **Rule (user direction, 2026-10-01 19:27Z).** Timing/performance measurement is deferred. Work on the Chrome call tree
@@ -26,6 +26,8 @@ Revisit when the user lifts the deferral.
 - 2026-10-02 21:57Z (T-027 #5): the user asked the two highest-gain fixes to move; the lead picked hero-carousel st6
   and f3-arm-scope. Their phone timing tests (st6 scripted at rest, F3 P-036 robot finger) may run, queued after G2
   and P-065.
+- 2026-10-06 10:02Z (T-204 #35): the user allows phone tests and proofs of the end-of-page optimization whenever the
+  iPhone is free (see the Simulator note). Phone gain blocks still need a signed card (protocol v2).
 - Everything else stays deferred unless the user lifts it.
 
 Related: [simulator-for-non-perf-phone-jobs](simulator-for-non-perf-phone-jobs.md), [verify-platform-claims](verify-platform-claims.md).
