@@ -10,6 +10,9 @@
 // safari-restart's calls (POST /wda/apps/terminate, /wda/apps/launch, /url) switch the foreground app and call onApp(kind, body).
 // I-087: GET / POST /session/:id/orientation like FBOrientationCommands.m (PORTRAIT, LANDSCAPE, the two UIA_ names;
 // GET answers PORTRAIT or LANDSCAPE), state.orientation; `--orientation-fail` / {failOrientation: true} answers 500.
+// I-227: POST /session/:id/wda/apps/state answers XCUIApplicationState (4 in front, 3 running, 1 not running);
+// {unauthorized} / FAKE_WDA_UNAUTHORIZED=1: activate, launch and state answer XCTest's Code 41 (HTTP 400); {locked} /
+// FAKE_WDA_LOCKED=1: SpringBoard in front and activate leaves it there (the lock screen).
 //   node tests/fixtures/fake-wda.mjs --port=0 [--latency=MS] [--playback] [--fail-actions=N,M] [--foreground=<bundleId>]
 //     prints FAKE_WDA_PORT=<port>; env FAKE_WDA_LOG=<file> appends one JSON line per call.
 import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
@@ -35,11 +38,13 @@ export function validateActions(body) {
   return null;
 }
 
-export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failActions = [], foreground = 'com.apple.mobilesafari', onStroke, onApp, failApp = null, failOrientation = false, log } = {}) {
+export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failActions = [], foreground = 'com.apple.mobilesafari', onStroke, onApp, failApp = null, failOrientation = false, log,
+  unauthorized = process.env.FAKE_WDA_UNAUTHORIZED === '1', locked = process.env.FAKE_WDA_LOCKED === '1' } = {}) {
   const calls = [];
   const sessions = new Set();
   let nActions = 0, nSession = 0;
-  const state = { foreground, latencyMs, failActions: new Set(failActions), down: false, running: new Set([foreground]), orientation: 'PORTRAIT' };
+  if (locked) foreground = 'com.apple.springboard';
+  const state = { foreground, latencyMs, failActions: new Set(failActions), down: false, running: new Set([foreground]), orientation: 'PORTRAIT', unauthorized, locked };
   const server = http.createServer((req, res) => {
     let raw = '';
     req.on('data', (d) => (raw += d));
@@ -64,7 +69,12 @@ export function startFakeWda({ port = 0, latencyMs = 0, playback = false, failAc
         return send(200, { sessionId: id, capabilities: { device: 'iphone' } }, id);
       }
       if (req.method === 'POST' && sub === '/appium/settings') return send(200, { ...(body?.settings || {}) }, sid);
-      if (req.method === 'POST' && sub === '/wda/apps/activate') { state.foreground = body?.bundleId; return send(200, null, sid); }
+      // I-227: unauthorized = a locked phone or UI Automation off (XCTest's Code 41 on app calls, as WDA's launch answered
+      // it: FBApplicationMissingException -> HTTP 400 invalid argument); locked = activate answers OK but SpringBoard (the
+      // lock screen) stays in front
+      if (state.unauthorized && req.method === 'POST' && ['/wda/apps/activate', '/wda/apps/launch', '/wda/apps/state'].includes(sub)) return err(400, 'invalid argument', 'Error Domain=XCTDaemonErrorDomain Code=41 "Not authorized for performing UI testing actions." UserInfo={NSLocalizedDescription=Not authorized for performing UI testing actions.}');
+      if (req.method === 'POST' && sub === '/wda/apps/activate') { if (!state.locked) state.foreground = body?.bundleId; return send(200, null, sid); }
+      if (req.method === 'POST' && sub === '/wda/apps/state') return send(200, state.foreground === body?.bundleId ? 4 : state.running.has(body?.bundleId) ? 3 : 1, sid);
       if (req.method === 'GET' && (sub === '/wda/activeAppInfo' || req.url === '/wda/activeAppInfo')) return send(200, { pid: 4242, bundleId: state.foreground, name: state.foreground === 'com.apple.mobilesafari' ? 'Safari' : state.foreground, processArguments: { args: [], env: {} } }, sid ?? null);
       // safari-restart: quit / start an app, open a URL in it (onApp lets the fake proxy follow; failApp: 'terminate'|'launch'|'url' fails that call)
       if (req.method === 'POST' && ['/wda/apps/terminate', '/wda/apps/launch', '/url'].includes(sub)) {

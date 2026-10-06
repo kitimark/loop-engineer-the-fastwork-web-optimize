@@ -53,10 +53,12 @@ test('an allowlist, not a denylist: exactly the calls wda.mjs makes; anything el
   for (const [m, p] of [['GET', '/status'], ['POST', '/session'], ['POST', `/session/${sid}/appium/settings`], ['POST', `/session/${sid}/wda/apps/activate`],
     ['GET', `/session/${sid}/wda/activeAppInfo`], ['POST', `/session/${sid}/actions`], ['DELETE', `/session/${sid}`],
     // safari-restart (tools/lib/safari-restart.mjs): quit and start Safari, open a URL in it
-    ['POST', `/session/${sid}/wda/apps/terminate`], ['POST', `/session/${sid}/wda/apps/launch`], ['POST', `/session/${sid}/url`]]) assert.ok(allowed(m, p), `${m} ${p}`);
+    ['POST', `/session/${sid}/wda/apps/terminate`], ['POST', `/session/${sid}/wda/apps/launch`], ['POST', `/session/${sid}/url`],
+    // I-227 (iphone.mjs preflight): Safari's app state, a read
+    ['POST', `/session/${sid}/wda/apps/state`]]) assert.ok(allowed(m, p), `${m} ${p}`);
   const refused = [
     ['POST', '/status'], ['GET', '/session'], ['DELETE', '/session'], ['GET', `/session/${sid}/actions`], ['DELETE', `/session/${sid}/actions`],
-    ['GET', `/session/${sid}/url`], ['POST', '/url'], ['POST', '/wda/apps/launchUnattached'], ['POST', `/session/${sid}/wda/apps/state`], ['GET', `/session/${sid}/wda/apps/list`],
+    ['GET', `/session/${sid}/url`], ['POST', '/url'], ['POST', '/wda/apps/launchUnattached'], ['GET', `/session/${sid}/wda/apps/state`], ['POST', '/wda/apps/state'], ['GET', `/session/${sid}/wda/apps/list`],
     ['POST', `/session/${sid}/wda/apps/terminate/x`], ['GET', `/session/${sid}/screenshot`],
     ['POST', `/session/${sid}/wda/keys`], ['POST', `/session/${sid}/wda/lock`], ['POST', '/wda/shutdown'], ['GET', '/wda/healthcheck'],
     ['GET', '/status?x=1'], ['GET', '/status/'], ['POST', `/session/${sid}/actions/../source`], ['POST', `/session/${sid}/../source/actions`],
@@ -69,7 +71,7 @@ test('an allowlist, not a denylist: exactly the calls wda.mjs makes; anything el
   // a refused path is named without ids (Hard rule 12): a session UUID is scrubbed
   await assert.rejects(request('GET', `/session/${sid}/source`, undefined, { base: w.url }), (e) => !e.message.includes(sid) && /<uuid>/.test(e.message));
   assert.equal(w.calls.length, 0, 'nothing reached WDA');
-  assert.deepEqual(ALLOWED.map(([m]) => m), ['GET', 'POST', 'POST', 'POST', 'GET', 'POST', 'POST', 'POST', 'POST', 'DELETE']);
+  assert.deepEqual(ALLOWED.map(([m]) => m), ['GET', 'POST', 'POST', 'POST', 'GET', 'POST', 'POST', 'POST', 'POST', 'POST', 'DELETE']);
 });
 
 test('errors: an injected 500, a 400 for a mouse pointer, an unknown session, latency past the timeout, nothing listening', async () => {
@@ -125,7 +127,7 @@ test('I-087 orientation: Simulator only. A session marked simulator on a non-810
   assert.equal(allowed('GET', `/session/${sid}/source`, { simulator: true }), false, 'simulator: true opens nothing else');
   assert.equal(allowed('POST', '/orientation', { simulator: true }), false, 'only within a session');
   assert.equal(SIM_ONLY.length, 2);
-  assert.equal(ALLOWED.length, 10, 'the phone allowlist is unchanged');
+  assert.equal(ALLOWED.length, 11, 'the phone allowlist is unchanged (by the orientation calls; I-227 added POST wda/apps/state)');
   assert.equal(PHONE_WDA_PORT, 8100);
   assert.equal(simulatorBase('http://127.0.0.1:8101'), true);
   for (const b of ['http://127.0.0.1:8100', 'http://localhost:8100/', 'http://127.0.0.1', 'not a url']) assert.equal(simulatorBase(b), false, b);

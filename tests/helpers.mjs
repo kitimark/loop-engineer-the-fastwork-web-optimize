@@ -127,6 +127,7 @@ export function cleanEnv(extra = {}) {
   env.FW_ANSWER_LINT = 'off'; // I-146: test texts skip the answer-format lint (honoured only with $FW_STATE_DIR); its own tests pass 'on'
   env.FW_PROPOSAL_PHONE = 'off'; // I-143: proposal post/revise/publish/live start no Try-it host unless a test asks ('on')
   env.FW_TRANSCRIPTS_DIR = 'off'; // I-152: never the machine's Claude Code transcripts; a test passes its fixture dir
+  env.FW_USBMUXD_SOCKET = 'off'; // I-227: a WDA runner start never asks the Mac's usbmuxd; a test passes its fake's socket
   delete env.FW_NO_CAFFEINATE; // I-070: a test that passes the fake gets it, whatever the caller's shell says
   // I-186: a phone run's thermal-profile read never reaches the real phone, xctrace or libimobiledevice: the fake reads
   // Serious, induced by Xcode (the default profile passes), battery 33.5 C; a test passes FAKE_THERMAL_* or its own fake

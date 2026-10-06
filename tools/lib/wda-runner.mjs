@@ -36,6 +36,8 @@
 //                                60 when load1 > cores). Last line, exit: `WDA READY (kept|restarted...)` 0,
 //                                `WDA REPLUG NEEDED: <why>` 4 (post a re-plug step, then re-run), `WDA NOT READY: <why>` 3
 //   wda stop                     kill our runner and iproxy (no lease: cleanup must always work)
+// I-227: every runner start records the phone's USB attach (usbmuxd DeviceID, lib/usbmux.mjs) in its pidfile
+// (usbAttach), so `iphone.mjs preflight` (lib/iphone-preflight.mjs) can tell a runner that predates a re-plug.
 // Test doubles: $FW_XCODEBUILD, $FW_IPROXY, $FW_IDEVICE_ID, $FW_IDEVICEINFO, $FW_SECURITY name the executables.
 // Everything printed goes through redact() (tools/lib/redact.mjs, Hard rule 12): no full team id, UDID,
 // runner bundle id, device name, Apple Account e-mail or signing-identity name, also not in xcodebuild log tails.
@@ -47,6 +49,7 @@ import { sharedStateDir } from './paths.mjs';
 import { status as lockStatus, parseHeld, staleReason, pidAlive } from './lock.mjs';
 import { status as wdaStatus, createSession, WDA_URL, SAFARI } from './wda.mjs';
 import { redact } from './redact.mjs';
+import { usbAttach } from './usbmux.mjs';
 
 export const WDA_REF = 'v16.13.6'; // appium/WebDriverAgent tag, 2026-09-30; V0 confirms it launches on iOS 26.6.1
 export const WDA_GIT = 'https://github.com/appium/WebDriverAgent';
@@ -160,14 +163,14 @@ function isOurs(rec) {
   const r = spawnSync('ps', ['-o', 'command=', '-p', String(rec.pid)], { encoding: 'utf8' });
   return r.status === 0 && r.stdout.includes(rec.match);
 }
-function startDetached(name, cmd, args, { log, match, owner }) {
+function startDetached(name, cmd, args, { log, match, owner, extra = {} }) {
   mkdirSync(stateDir(), { recursive: true });
   const logOffset = fileSize(log); // I-220: where this start's lines begin in the shared, appended log
   const fd = openSync(log, 'a');
   const p = spawn(cmd, args, { detached: true, stdio: ['ignore', fd, fd] });
   closeSync(fd);
   p.unref();
-  const rec = { pid: p.pid, name, cmd: redact([cmd, ...args].join(' '), readConfig()).replace(/id=[0-9A-Fa-f-]{8,}/g, 'id=<udid>').replace(/-u [0-9A-Fa-f-]{8,}/, '-u <udid>'), match, log, logOffset, owner, startedAt: new Date().toISOString() };
+  const rec = { pid: p.pid, name, cmd: redact([cmd, ...args].join(' '), readConfig()).replace(/id=[0-9A-Fa-f-]{8,}/g, 'id=<udid>').replace(/-u [0-9A-Fa-f-]{8,}/, '-u <udid>'), match, log, logOffset, owner, startedAt: new Date().toISOString(), ...extra };
   writeFileSync(pidFile(name), JSON.stringify(rec, null, 1));
   // I-220: a ledger of every process this tool started, so a clean stop also ends one whose pidfile is gone
   appendFileSync(ledgerFile(), JSON.stringify({ pid: rec.pid, name, match, startedAt: rec.startedAt }) + '\n');
@@ -296,6 +299,11 @@ function killStale(log) {
   }
   rmSync(ledgerFile(), { force: true });
 }
+/** I-227: the runner's pidfile keeps the phone's USB attach (usbmuxd DeviceID) at its start; null: no verdict then. */
+async function runnerExtra(cfg) { const a = await usbAttach(cfg.udid).catch(() => null); return { usbAttach: a?.listed ? a.id : null }; }
+async function startRunner(cfg, x, owner) {
+  return startDetached('runner', exe('xcodebuild', 'FW_XCODEBUILD'), runnerArgs({ xctestrun: x, udid: cfg.udid }), { log: join(wdaHome(), 'runner.log'), match: 'test-without-building', owner, extra: await runnerExtra(cfg) });
+}
 async function cleanStop(log) { await stopOne('runner', log); await stopOne('iproxy', log); killStale(log); }
 const startIproxy = (cfg, owner) => startDetached('iproxy', exe('iproxy', 'FW_IPROXY'), iproxyArgs({ udid: cfg.udid }), { log: join(wdaHome(), 'iproxy.log'), match: '8100', owner });
 /**
@@ -331,10 +339,16 @@ const readyLine = (how, st) => `WDA READY (${how}) build ${st?.build?.version ??
  * start the runner, retrying once after a clean stop on the automation-mode timeout. The last line is the verdict:
  * `WDA READY (...)` exit 0, `WDA REPLUG NEEDED: ...` exit 4, `WDA NOT READY: ...` exit 3.
  */
-async function ensureCmd({ opt, flag, requireLease, log }) {
+async function ensureCmd(args) { return (await ensureRunner(args)).code; }
+/**
+ * ensure's steps, with its verdict: {code, kind: 'ready'|'replug'|'not-ready', how (READY: kept / restarted ...), why}.
+ * `fresh` (I-227, iphone.mjs preflight): a reason to replace even a READY runner (a re-plug since it started): a clean
+ * stop and a new runner, never the iproxy-only shortcut. The printed lines are ensure's own.
+ */
+export async function ensureRunner({ opt, flag = () => false, requireLease, log, fresh = null }) {
   const owner = requireLease();
   const st0 = await wdaStatus().catch(() => null);
-  if (st0?.ready) { log(readyLine('kept, no restart', st0)); return 0; }
+  if (st0?.ready && !fresh) { log(readyLine('kept, no restart', st0)); return { code: 0, kind: 'ready', how: 'kept' }; }
   const cfg = readConfig();
   const x = findXctestrun();
   if (!x || !cfg.udid) throw new Error('no WDA build yet: node tools/iphone.mjs wda build');
@@ -342,13 +356,13 @@ async function ensureCmd({ opt, flag, requireLease, log }) {
   const fwdSec = opt('forward-wait', null) != null ? Number(opt('forward-wait')) : forwardWaitSec();
   const noRetry = flag('no-retry');
   const again = `node tools/iphone.mjs wda ensure --owner ${owner}`;
-  const replug = async (why) => { await cleanStop(log); log(`WDA REPLUG NEEDED: ${why}. Re-plug the iPhone cable (phone unlocked), then re-run: ${again}`); return EXIT_REPLUG; };
+  const replug = async (why, kind = 'no-usb') => { await cleanStop(log); log(`WDA REPLUG NEEDED: ${why}. Re-plug the iPhone cable (phone unlocked), then re-run: ${again}`); return { code: EXIT_REPLUG, kind: 'replug', why: kind }; };
   const notReady = async (why, run) => {
     await cleanStop(log);
     const t = run ? startText(run, null).runner.trim().split('\n').filter((l) => l.trim()).slice(-8) : [];
     for (const l of t) log(`  | ${scrubAddr(l)}`);
     log(`WDA NOT READY: ${why}. Unlocked phone? UI Automation enabled? Runner trusted? Re-run: ${again}`);
-    return 3;
+    return { code: 3, kind: 'not-ready', why };
   };
   // 1. usbmux first: without the phone on USB, iproxy has nothing to forward to, whatever xcodebuild manages
   let usb = usbList(cfg.udid);
@@ -356,31 +370,32 @@ async function ensureCmd({ opt, flag, requireLease, log }) {
   if (usb && !usb.listed) return replug(`the iPhone is not on USB for usbmux (idevice_id -l lists ${usb.count} device${usb.count === 1 ? '' : 's'}, not this one, for ${usbWait} s)`);
   // 2. our runner is up and reported its server: only the forward is down
   const run0 = readPid('runner');
-  if (run0 && isOurs(run0) && run0.logOffset != null && SIG.serverUrl.test(startText(run0, null).runner)) {
+  if (!fresh && run0 && isOurs(run0) && run0.logOffset != null && SIG.serverUrl.test(startText(run0, null).runner)) {
     const r = await iproxyOnly({ cfg, owner, run: run0, fwdSec, log });
-    if (r.ready) { await frontSafari(); log(readyLine('restarted iproxy only', r.st)); return 0; }
+    if (r.ready) { await frontSafari(); log(readyLine('restarted iproxy only', r.st)); return { code: 0, kind: 'ready', how: 'restarted iproxy only' }; }
     if (r.kind === 'no-usb') return replug(`${REASON['no-usb']} while the runner is up`);
     log(`iproxy restart did not help (${REASON[r.kind] || r.kind}): restarting the runner`);
   }
   // 3. a fresh runner; once more after a clean stop when XCTest timed out enabling automation mode
-  let why = run0 && isOurs(run0) ? 'it was not ready' : 'it was not running';
+  let why = fresh || (run0 && isOurs(run0) ? 'it was not ready' : 'it was not running');
   for (let attempt = 1; ; attempt++) {
     await cleanStop(log);
     if (attempt > 1 && retryWait > 0) await sleep(retryWait * 1000);
-    const run = startDetached('runner', exe('xcodebuild', 'FW_XCODEBUILD'), runnerArgs({ xctestrun: x, udid: cfg.udid }), { log: join(wdaHome(), 'runner.log'), match: 'test-without-building', owner });
+    const run = await startRunner(cfg, x, owner);
     startIproxy(cfg, owner);
     let r = await waitUp({ run, timeoutSec, fwdSec });
     if (!r.ready && r.kind === 'forward') r = await iproxyOnly({ cfg, owner, run, fwdSec, log });
     if (r.ready) {
       await frontSafari();
-      log(readyLine(attempt > 1 ? `restarted after one retry: ${why}` : `restarted: ${why}`, r.st));
-      return 0;
+      const how = attempt > 1 ? `restarted after one retry: ${why}` : `restarted: ${why}`;
+      log(readyLine(how, r.st));
+      return { code: 0, kind: 'ready', how };
     }
     log(`WDA start ${attempt} failed: ${REASON[r.kind] || r.kind}`);
     if (r.kind === 'no-usb') return replug(`${REASON['no-usb']}${SIG.serverUrl.test(startText(run, null).runner) ? ' while the runner is up' : ''}`);
     if (r.kind !== 'automation-timeout') return notReady(REASON[r.kind] || r.kind, run);
-    if (noRetry) return replug('XCTest timed out enabling automation mode (no retry)');
-    if (attempt >= 2) return replug('XCTest timed out enabling automation mode twice (a start and one retry after a clean stop)');
+    if (noRetry) return replug('XCTest timed out enabling automation mode (no retry)', 'automation-timeout');
+    if (attempt >= 2) return replug('XCTest timed out enabling automation mode twice (a start and one retry after a clean stop)', 'automation-timeout');
     why = REASON['automation-timeout'];
     log(`retrying once after a clean stop${retryWait > 0 ? ` and ${retryWait} s` : ''}`);
   }
@@ -465,7 +480,7 @@ async function wdaCmdInner({ sub, opt, flag = () => false, requireLease, log }) 
     }
     await stopOne('runner', log); await stopOne('iproxy', log);
     const rlog = join(wdaHome(), 'runner.log');
-    startDetached('runner', exe('xcodebuild', 'FW_XCODEBUILD'), runnerArgs({ xctestrun: x, udid: cfg.udid }), { log: rlog, match: 'test-without-building', owner });
+    await startRunner(cfg, x, owner); // logs to rlog
     startDetached('iproxy', exe('iproxy', 'FW_IPROXY'), iproxyArgs({ udid: cfg.udid }), { log: join(wdaHome(), 'iproxy.log'), match: '8100', owner });
     const deadline = Date.now() + Number(opt('timeout', 120)) * 1000;
     let st = null;
@@ -495,3 +510,7 @@ async function wdaCmdInner({ sub, opt, flag = () => false, requireLease, log }) 
 }
 
 export { stateDir as wdaStateDir };
+/** I-227 (iphone.mjs preflight): our runner's pidfile record ({pid, usbAttach, startedAt, ...} and ours: still our
+ *  process) or null; and whether this iproxy's log (since its start) saw usbmux without the phone. */
+export function runnerRecord() { const r = readPid('runner'); return r ? { ...r, ours: isOurs(r) } : null; }
+export function iproxyLostUsb() { const ip = readPid('iproxy'); return !!ip && ip.logOffset != null && SIG.noUsb.test(readFrom(ip.log, ip.logOffset)); }

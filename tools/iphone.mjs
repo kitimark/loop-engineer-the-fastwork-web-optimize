@@ -51,6 +51,14 @@
 //        # --idle-after-reload <ms> (0-60000, default 0; I-203): idle after the script's first reload is ready (readyPageMs),
 //        # before its next step; not in GESTURE_HASH; run.idleAfterReloadMs, added to GESTURE_BUDGET_S; exit 2 unless the
 //        # script starts with a reload
+//   node tools/iphone.mjs preflight --owner <topic> [--settle 60] [--usb-wait 20] [--timeout 120] [--forward-wait S]
+//        # I-227, in the runner's phone hold before a block's first start gate (kits: NW_PREFLIGHT): names a re-plugged
+//        # phone's traps up front (tools/lib/iphone-preflight.mjs). The phone on USB (usbmuxd); a WDA runner started before
+//        # the current USB attach is replaced by a fresh one (I-212's stale runner), one that is down started (wda ensure's
+//        # steps), then --settle s (I-225); automation authorized (Safari to the front + its app state, no Code 41,
+//        # Safari in front: not locked); at most one Safari page (I-037). Last line `PREFLIGHT OK: ...` exit 0, or
+//        # `PREFLIGHT <KIND>: <what the user must do>`: WDA 3, REPLUG 4 (cable), AUTH 10 (unlock the phone, Settings >
+//        # Developer > Enable UI Automation), TABS 11 (close the other Safari tabs), PROXY 12 (ios_webkit_debug_proxy)
 //   node tools/iphone.mjs safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30]
 //        # quit + relaunch Safari (WDA apps endpoints, else devicectl --terminate-existing), open U if given, wait
 //        # until the proxy lists a page that answers Runtime.evaluate; prints SAFARI_RESTARTED (tools/lib/safari-restart.mjs)
@@ -109,7 +117,7 @@
 //   node tools/iphone.mjs profile --owner <topic> --end                      # the hold's end read now; exit 8 on drift
 // Exit codes: 0 ok, 1 error or WAIT, 2 refused in a shared slot, 3 WDA NOT READY (wda check|ensure), 4 WDA REPLUG NEEDED
 // (wda ensure: re-plug the cable, then re-run), 6 PARTIAL (record),
-// 8 PROFILE (the phone's thermal state does not fit --profile).
+// 8 PROFILE (the phone's thermal state does not fit --profile), preflight (I-227): 3 WDA, 4 REPLUG, 10 AUTH, 11 TABS, 12 PROXY.
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
@@ -417,6 +425,10 @@ async function main() {
     if ((arg === 'check' || arg === 'ensure') && c) { await clearMark(); process.exit(c); } // I-112: 3 = WDA NOT READY; I-220: ensure 4 = WDA REPLUG NEEDED
     return c;
   }
+  if (cmd === 'preflight') { // I-227: the re-plug traps, named before a block's first start gate (lib/iphone-preflight.mjs)
+    exitCode = await (await import('./lib/iphone-preflight.mjs')).preflightCmd({ opt, flag, requireLease, port: PORT });
+    return;
+  }
   if (cmd === 'safari-restart') {
     requireLease();
     await restartSafari(opt('url', null));
@@ -424,6 +436,6 @@ async function main() {
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'profile') return profileCmd();
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | preflight --owner <topic> [--settle 60] | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(e?.exitCode || 1); }); // I-186: a profile misfit exits 8

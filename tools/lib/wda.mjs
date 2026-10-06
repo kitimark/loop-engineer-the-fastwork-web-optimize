@@ -13,6 +13,9 @@
 //   POST /session/:id/actions                      one stroke (W3C pointer actions, pointerType touch)
 //   POST /session/:id/wda/apps/terminate|launch    quit / start Safari (safari-restart, tools/lib/safari-restart.mjs)
 //   POST /session/:id/url                          open a URL in Safari (XCUIDevice openUrl:withApplication:)
+//   POST /session/:id/wda/apps/state               I-227 (iphone.mjs preflight): Safari's XCUIApplicationState (0 unknown,
+//                                                  1 not running, 2 suspended, 3 background, 4 foreground; WDA v16.13.6
+//                                                  FBSession.m applicationStateWithBundleId: a read, nothing on screen)
 //   DELETE /session/:id                            end the session
 //   GET|POST /session/:id/orientation              SIMULATOR ONLY (incident I-087): read / set PORTRAIT or LANDSCAPE
 //                                                  (FBOrientationCommands.m, XCUIDevice orientation); refused unless
@@ -40,6 +43,7 @@ export const ALLOWED = Object.freeze([
   ['POST', `/session/${SID}/wda/apps/terminate`],
   ['POST', `/session/${SID}/wda/apps/launch`],
   ['POST', `/session/${SID}/url`],
+  ['POST', `/session/${SID}/wda/apps/state`],
   ['DELETE', `/session/${SID}`],
 ].map(([m, p]) => [m, new RegExp(`^${p}$`)]));
 /** Simulator-only calls (I-087): the device rotation. Never on the phone (request() checks the target). */
@@ -59,6 +63,12 @@ export function simulatorBase(base) {
   try { u = new URL(base); } catch { return false; }
   return !!u.port && Number(u.port) !== PHONE_WDA_PORT;
 }
+
+/** XCUIApplicationState values (XCTest's XCUIApplication.h). */
+export const APP_STATE = Object.freeze({ unknown: 0, notRunning: 1, suspended: 2, background: 3, foreground: 4 });
+/** I-227: XCTest refused a UI action because automation is not authorized: the phone is locked or Settings > Developer >
+ *  Enable UI Automation is off (XCTDaemonErrorDomain Code=41 "Not authorized for performing UI testing actions."). */
+export const isNotAuthorized = (e) => /XCTDaemonErrorDomain\s+Code=41|Not authorized for performing UI testing actions/i.test(String(e?.message ?? e ?? ''));
 
 export class WdaError extends Error {
   constructor(message, { status, error, path } = {}) { super(message); this.status = status; this.error = error; this.path = path; }
@@ -118,6 +128,8 @@ export async function createSession(opts = {}) {
     terminate: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/terminate`, { bundleId }, { ...opts, timeoutMs: 30000 }),
     launch: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/launch`, { bundleId, shouldWaitForQuiescence: false }, { ...opts, timeoutMs: 60000 }),
     openUrl: (url, bundleId = SAFARI) => request('POST', `/session/${id}/url`, { url, bundleId }, { ...opts, timeoutMs: 30000 }),
+    /** I-227: the app's XCUIApplicationState (APP_STATE), a read. */
+    appState: (bundleId = SAFARI) => request('POST', `/session/${id}/wda/apps/state`, { bundleId }, opts),
     /** Simulator only (I-087; request() refuses it on the phone): 'PORTRAIT' or 'LANDSCAPE'. */
     orientation: () => request('GET', `/session/${id}/orientation`, undefined, opts),
     /** Simulator only (I-087): rotate to 'portrait' | 'landscape' (or WDA's PORTRAIT / LANDSCAPE). */
