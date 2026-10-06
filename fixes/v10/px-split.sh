@@ -9,6 +9,9 @@
 # Usage (worktree root, in the background):
 #   sh fixes/v10/px-split.sh <chrome|sim> <A dir> <V dir> <label> [--identical] [g1 g2 g3 g4]
 # Logs out/v10/<engine>-px-<label>-<g>.log; MAXS (default 180) caps each hold.
+# Simulator with MAXS <= 120 (lead 2026-10-06 10:47Z): a 120 s session fits about two of the four ~20 s loads after boot,
+# quiet wait and cleanup, so each group runs in sessions of its missing loads (em-px --arms/--out, saved after every
+# load) until all four are in, at most 6 sessions; fixes/v10/pxmissing.mjs names the missing ones.
 cd "$(dirname "$0")/../.." || exit 2
 OWNER=${FW_AGENT:-int-v8}; MAXS=${MAXS:-180}
 ENG=$1; A=$2; V=$3; LAB=$4; shift 4
@@ -28,7 +31,16 @@ for G in $GRPS; do
     *) echo "group $G?"; exit 2 ;;
   esac
   L=out/v10/$ENG-px-$LAB-$G.log
-  if [ $ENG = sim ]; then
+  if [ $ENG = sim ] && [ "$MAXS" -le 120 ]; then
+    OUTD=out/v10/px-sim-sim-$LAB-$G-$(date -u +%Y-%m-%dT%H-%M-%SZ); : > $L; n=0
+    while M=$(node fixes/v10/pxmissing.mjs $OUTD) && [ -n "$M" ] && [ $n -lt 6 ]; do
+      n=$((n + 1)); echo "session $n: arms $M" >> $L
+      node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds $MAXS --owner "$OWNER" --doing "v10 parity: Simulator pixels $LAB $G, loads $M (pixels only)" -- \
+        node tools/sim.mjs session --functional --owner "$OWNER" -- node fixes/v10/gates/em-px.mjs --engine sim --a $A --v $V --label sim-$LAB-$G --ms $MS --down "$DN" --arms $M --out $OUTD >> $L 2>&1
+      echo "session $n EXIT $?" >> $L
+    done
+    [ -z "$M" ]
+  elif [ $ENG = sim ]; then
     node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds $MAXS --owner "$OWNER" --doing "v10 parity: Simulator pixels $LAB $G (pixels only)" -- \
       node tools/sim.mjs session --functional --owner "$OWNER" -- node fixes/v10/gates/em-px.mjs --engine sim --a $A --v $V --label sim-$LAB-$G --ms $MS --down "$DN" > $L 2>&1
   else

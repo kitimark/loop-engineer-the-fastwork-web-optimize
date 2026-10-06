@@ -55,7 +55,10 @@ const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const tag = new Date().toISOString().replace(/[:.]/g, '-');
-const OUT = join(WT, 'out/v10', `px-${ENGINE}-${LABEL}-${tag}`); mkdirSync(OUT, { recursive: true });
+// int-v8 (2026-10-06, lead: Simulator holds <= 120 s): --arms runs a subset of the four loads and --out names the folder,
+// so one gate can be split over several sessions (A,V then A2,V2 into the same --out): each run keeps the loads already
+// in <out>/px.json (other arms), adds its own, and scores the stops once all four loads are there.
+const OUT = arg('--out') ? resolve(WT, arg('--out')) : join(WT, 'out/v10', `px-${ENGINE}-${LABEL}-${tag}`); mkdirSync(OUT, { recursive: true });
 const F = Date.parse('2026-10-04T12:00:00Z') + 500;
 const FREEZE = `JSON.stringify((() => { let n = 0, s = 0; for (const a of document.getAnimations()) { try { if (a instanceof CSSTransition) continue; if (a.playState !== 'running') continue; a.pause(); a.currentTime = 4000; n++; } catch {} }
   for (const svg of document.querySelectorAll('svg')) { try { if (svg.animationsPaused && !svg.animationsPaused()) { svg.pauseAnimations(); svg.setCurrentTime(4); s++; } } catch {} } return { anims: n, smil: s }; })())`;
@@ -93,10 +96,19 @@ async function open(url, port) {
 }
 
 const ARMS = ['A', 'V', 'A2', 'V2'];
+const RUN = arg('--arms', ARMS.join(',')).split(',').filter(Boolean);
+if (RUN.some((a) => !ARMS.includes(a))) throw new Error(`--arms: a subset of ${ARMS}`);
+const PREV = existsSync(join(OUT, 'px.json')) ? JSON.parse(readFileSync(join(OUT, 'px.json'), 'utf8')) : null;
 const res = { tool: 'fixes/v10/gates/em-px.mjs (int-v8; copy of fix-end-morph-p1 em-p1-px.mjs @0af9e816, from fix-end-morph em-px2.mjs)', engine: ENGINE, reduced: REDUCED, h: ENGINE === 'sim' ? null : H, dpr: 3, dirs: DIR, arms: ARMS, startedAt: new Date().toISOString(), load1: loadavg()[0], F, loads: [], stops: [] };
 const shots = {};
+if (PREV) { // loads of other arms from an earlier session into the same --out (their shots are in OUT)
+  if (JSON.stringify(PREV.dirs) !== JSON.stringify(DIR) || JSON.stringify(PREV.stopKeys || []) !== JSON.stringify(STOPS.map((x) => x.k))) throw new Error(`${OUT}/px.json is another gate (dirs or stops differ)`);
+  res.sessions = PREV.sessions || [{ startedAt: PREV.startedAt, endedAt: PREV.endedAt, arms: PREV.loads.map((l) => l.arm) }];
+  for (const l of PREV.loads) if (!RUN.includes(l.arm) && !l.void) { res.loads.push(l); for (const x of l.stops) if (x.hits) (shots[x.k] ||= {})[l.arm] = { file: join(OUT, `${l.arm}-${x.k}.png`), hits: x.hits }; }
+}
+res.stopKeys = STOPS.map((x) => x.k);
 try {
-  for (const arm of ARMS) {
+  for (const arm of RUN) {
     const d = DIR[arm.replace(/\d+$/, '')];
     const st = join(OUT, `serve-${arm}.json`); rmSync(st, { force: true });
     const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', resolveTree('site-pretty'), '--overlay', d, '--port', '0', '--quiet', '--no-cache', '--state', st, '--vendors=local', '--no-http-twin'], { stdio: ['ignore', 'ignore', 'inherit'] });
@@ -136,11 +148,12 @@ try {
         const state = JSON.parse(await c.ev(STATE));
         const f = join(OUT, `${arm}-${S.k}.png`); const ok = await c.shot(f);
         const hits = JSON.parse(await c.ev(HITS));
-        (shots[S.k] ||= {})[arm] = { file: f, hits }; load.stops.push({ k: S.k, m: S.m, y, state, frozen: fr, ok });
+        (shots[S.k] ||= {})[arm] = { file: f, hits }; load.stops.push({ k: S.k, m: S.m, y, state, frozen: fr, ok, hits });
       }
       load.errors = JSON.parse(await c.ev('JSON.stringify(window.__pxErr || [])'));
     } catch (e) { load.void = 'error: ' + String(e.stack || e); console.log(arm, 'error', load.void); }
-    finally { try { c && (await c.close()); } catch {} p.kill(); rmSync(st, { force: true }); res.loads.push(load); }
+    finally { try { c && (await c.close()); } catch {} p.kill(); rmSync(st, { force: true }); res.loads.push(load);
+      if (!load.void) writeFileSync(join(OUT, 'px.json'), JSON.stringify({ ...res, partial: true }, null, 1)); }
     console.log(`load ${arm}: served ${JSON.stringify(load.served)} ${load.stops.length} stops, errors ${JSON.stringify(load.errors || [])}`);
     for (const x of load.stops) console.log(`  ${x.k.padEnd(7)} y ${x.y} ${JSON.stringify(x.state)}`);
   }
@@ -163,6 +176,8 @@ try {
   }
 } finally {
   res.endedAt = new Date().toISOString(); res.load1End = loadavg()[0];
+  res.sessions = [...(res.sessions || []), { startedAt: res.startedAt, endedAt: res.endedAt, arms: RUN }];
+  res.loads.sort((a, b) => ARMS.indexOf(a.arm) - ARMS.indexOf(b.arm));
   writeFileSync(join(OUT, 'px.json'), JSON.stringify(res, null, 1));
   try { cdp && cdp.close(); chrome && (await chrome.close()); } catch {}
   console.log('wrote', join(OUT, 'px.json'));
