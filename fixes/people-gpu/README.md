@@ -29,8 +29,10 @@ rules before `.start-selling-future-people-o.is-standalone` (X2 overlay 2752-277
 | O closes | 59 | - | P: 25-29 | P: 9.5 Mpx |
 
 - Separately (not this patch): at rest at the title the Simulator shows 104 layouts per 2 s, 56 of them from the
-  hero's accent word under the 0.999 card (pg-why bisect) and ~10 whole-view layouts per 2 s from outside the hero
-  and #people. The hero part is `fixes/hero-covered-pause` (H1c); the rest is a bisect in progress.
+  hero's accent word under the 0.999 card. With the probe fixed (its resume step had also played animations the
+  page pauses itself), pausing the hero track alone leaves 2 layouts per 2 s, and the nav, feed, pain and commission
+  add nothing: the earlier "~10 whole-view layouts from outside" was that artifact. The hero part is
+  `fixes/hero-covered-pause` (H1c, signed).
 
 ## What changed
 
@@ -62,12 +64,13 @@ AnimationEffect.cpp 393-395, DocumentTimeline.cpp 349-408).
 |---|---|---|---|---|
 | O opens | Chrome layouts | 56 | 4 | (as X1) |
 | O closes | Chrome layouts | 59 | 6 | (as X1) |
-| O opens, rest of page paused | Simulator layouts | 30 | 15 | pending |
-| O opens, rest of page paused | Simulator paints / px | 153 / 4.6 M | 42 / 0.3 M | pending |
-| O closes, rest of page paused | Simulator layouts / px | 25 / 9.5 M | 11 / 2.7 M | pending |
+| O opens, rest of page paused | Simulator layouts | 30 | 15 | 8 |
+| O opens, rest of page paused | Simulator paints / px | 153 / 4.6 M | 41 / 0.35 M | 25 / 0.35 M |
+| O closes, rest of page paused | Simulator layouts / px | 25 / 9.5 M | 11 / 3.4 M | 10 / 2.6 M |
 
-X1's remaining 15 Simulator layouts sit at the face fade ends (opacity reaching 1); X2 targets them. X2's Simulator
-counts are queued (one Simulator job at a time during int-v8's phone block).
+X1's remaining Simulator layouts sat at the face fade ends (opacity reaching 1); X2 rests those fades at 0.9999 and
+opens with 8. The X1 and X2 columns come from one session (`out/people-gpu/pgs-s4-x1P-x2P-2026-10-06T17-39-00-626Z.json`,
+X1 js 9e66ff0696b4 / css 92dd4cba9ba8); the v10+CM column from the gate-1 session.
 
 ## Pixels (gate: PR-010 multi-pair A, V, A2, V2; frozen frames, animations seeked)
 

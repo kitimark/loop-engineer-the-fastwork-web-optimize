@@ -22,6 +22,14 @@ const GROUPS = arg('--groups') === 'outside' ? [
   ['+ feed', '.hero-track, .start-selling-top-nav, section.feed'],
   ['+ pain, commission', '.hero-track, .start-selling-top-nav, section.feed, section.pain, section.commission'],
   ['outside #people', 'body > *:not(#people)'],
+] : arg('--groups') === 'pain' ? [
+  // the 'outside' bisect left ~10 whole-view layouts per 2 s in section.pain + section.commission: split them
+  // (re-run with the fixed resume: only the probe's own pauses are played again)
+  ['none', null],
+  ['hero track', '.hero-track'],
+  ['hero track + nav + feed', '.hero-track, .start-selling-top-nav, section.feed'],
+  ['+ pain', '.hero-track, .start-selling-top-nav, section.feed, section.pain'],
+  ['+ commission (no pain)', '.hero-track, .start-selling-top-nav, section.feed, section.commission'],
 ] : [
   ['none', null],
   ['hero accent', '.accent-path, .hero-title'],
@@ -31,11 +39,13 @@ const GROUPS = arg('--groups') === 'outside' ? [
   ['outside #people', 'body > *:not(#people)'],
 ];
 const PAUSE = (sel) => `(() => { document.getElementById('pg-why')?.remove(); window.__pgSel = ${JSON.stringify(sel)}; if (!window.__pgAnimate) { const o = Element.prototype.animate; window.__pgAnimate = o;
-    Element.prototype.animate = function (...a) { const x = o.apply(this, a); try { if (window.__pgSel && this.closest(window.__pgSel) && !this.closest('#people')) x.pause(); } catch {} return x; }; }
+    Element.prototype.animate = function (...a) { const x = o.apply(this, a); try { if (window.__pgSel && this.closest(window.__pgSel) && !this.closest('#people')) x.pause(), (window.__pgPaused ||= []).push(x); } catch {} return x; }; }
   let n = 0; if (window.__pgSel) { const s = document.createElement('style'); s.id = 'pg-why'; const q = window.__pgSel.split(',').map((x) => x.trim()); s.textContent = q.map((x) => x + ':not(#people *), ' + x + ' *:not(#people *), ' + x + ' *::before, ' + x + ' *::after').join(', ') + ' { animation-play-state: paused !important; }'; document.head.append(s);
-    for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; try { if (t && t.closest && t.closest(window.__pgSel) && !t.closest('#people') && a.playState === 'running') { a.pause(); n++; } } catch {} } }
+    for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; try { if (t && t.closest && t.closest(window.__pgSel) && !t.closest('#people') && a.playState === 'running') { a.pause(); (window.__pgPaused ||= []).push(a); n++; } } catch {} } }
   return n; })()`;
-const RESUMEALL = `(() => { for (const a of document.getAnimations()) { try { if (a.playState === 'paused') a.play(); } catch {} } return 1; })()`;
+// resume only what this probe paused (an earlier version played every paused animation, also the ones the page
+// pauses itself off screen, which made its own whole-view layouts)
+const RESUMEALL = `(() => { for (const a of (window.__pgPaused || []).splice(0)) { try { if (a.playState === 'paused') a.play(); } catch {} } return 1; })()`;
 const ANIMS = `(() => { return document.getAnimations().filter((a) => a.playState === 'running').map((a) => { const t = a.effect && a.effect.target; const r = t && t.getBoundingClientRect ? t.getBoundingClientRect() : null;
   return [a.constructor.name, a.transitionProperty || a.animationName || 'waapi', t ? t.tagName.toLowerCase() + '.' + String(t.className && t.className.baseVal !== undefined ? t.className.baseVal : t.className).replace(/svelte-\\w+/g, '').trim().split(/\\s+/).slice(0, 2).join('.') : '?',
     r ? Math.round(r.width) + 'x' + Math.round(r.height) + '@' + Math.round(r.top) : '', r && r.bottom > 0 && r.top < innerHeight ? 'on' : 'off', t && t.closest && t.closest('#people') ? 'people' : 'out'].join(' '); }); })()`;

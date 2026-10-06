@@ -3,8 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured in Chrome (functional + pixels: identical); Simulator rest counts pending
-**Stage:** F; lands as a less-work fix (memory "less-work landing rule"): counts + a short device no-worse check
+**Status:** measured; signed by the lead 2026-10-06 as a less-work delta (covered 65 -> 2 layouts, 74 -> 0 paints,
+pixels identical, no jump, countdown equal) for int-v8's next build (v10 + V13 + H1c), where it gets the short phone
+no-worse check in that build's block
+**Stage:** F done; V (phone no-worse) in the build after v10
 **Device class / gate:** render-bound / WebKit layout and paint at rest (Simulator counts), pixels identical
 **Driver(s) behind the claims:** Chrome functional probe (430x775 DPR 3), iOS Simulator Timeline rest counts
 **Topic:** user T-215 ("stop invisible animations") + T-224; lead's delta for fix-people-gpu (scene-scope area)
@@ -61,8 +63,30 @@ pixel and Simulator results are void. Every gate log now prints both fingerprint
 
 ## Simulator rest counts (layouts / paints per 2 s)
 
-Pending (queued, one Simulator job at a time during int-v8's phone block): top, covered (card 120 px past the top
-edge), page end, top again, A vs H1c (`gates/hh-sim.mjs`).
+iOS Simulator (Safari 26.5), 430x775, one load per build, 2 s Timeline windows at rest (`gates/hh-sim.mjs`,
+`out/people-gpu/hh-sim-h1c-2026-10-06T17-37-46-050Z.json`); counts only, Simulator ms are not judged:
+
+| window | build | hero anims running / paused | frames | layouts (roots) | paints |
+|---|---|---|---|---|---|
+| top (hero shown) | A v10+CM | 5 / 0 | 60 | 47 (84x37: 42) | 86 |
+| | H1c | 5 / 0 | 56 | 48 (84x37: 43) | 70 |
+| covered (card 120 px past its top edge) | A | 7 / 0 | 80 | **65** (64x51: 53) | **74** |
+| | H1c | 0 / 5 | 27 | **2** (104x32) | **0** |
+| page end (hero off screen) | A | 1 / 3 | 121 | 60 (1250x1250) | 60 |
+| | H1c | 0 / 6 | 121 | 55 (1250x1250) | 55 |
+| top again | A | 5 / 0 | 121 | 69 | 78 |
+| | H1c | 5 / 0 | 121 | 52 | 62 |
+
+- Covered: the hero's accent word (64x51 roots, every frame) and the rest stop: 65 -> 2 layouts, 74 -> 0 paints.
+- Top / top again: the hero is visible and runs in both builds (differences are phase noise).
+- Page end: unchanged in kind. Every layout is rooted at the compositor morph's corner clipper (`.fw-cm-c`, 1250x1250
+  there) with 20x38 / 38x38 paints, likely the end panel's countdown ticking (arch-compositor-morph, not traced);
+  not the hero. Finding F-321.
+
+Bisect of the rest at the title (`gates/pg-why.mjs --groups pain`, fixed probe): nothing paused 81 layouts per 2 s;
+the hero track paused 2; adding the nav, the feed, pain or commission changes nothing (2). So at the title everything
+beyond 2 layouts per 2 s is the hero, which this delta stops. (An earlier bisect showed ~10 whole-view layouts per
+2 s from pain/commission: a probe artifact, its resume step also played animations the page pauses itself.)
 
 **Scenarios not run:** reload while covered · early input · finger · toolbar resize · real iPhone (the device
 no-worse check comes with the build after v10).
