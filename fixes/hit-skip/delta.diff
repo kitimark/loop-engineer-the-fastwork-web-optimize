@@ -1,0 +1,17 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 20:09:07
++++ b/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 20:09:58
+@@ -14133,8 +14133,13 @@
+         // the real hit test runs only when the answer can have changed: a forced frame (re-measure, theme class
+         // change), the probe line crossing a cached edge, a moving zone, the morph, a running geometry transition
+         // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
++        // hit-skip: on touch phones (__msOn), while the morph stands past 0.2 the answer cannot show
++        // (is-on-dark = g || m > 0.2), and its elementsFromPoint forced a layout in about half the morph frames
++        // (compositor-morph, P-157 Simulator stacks). Skip it there. __msTick re-tests (queueMicrotask) after any
++        // write that brings m to <= 0.2, so the shown answer is the same; r > 0.2 too, in case the spring moved m.
+         let __h =
+-          __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
++          !(__msOn && __msP > 0.2 && r > 0.2) &&
++          (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0);
+         (__nsTail > 0 && __nsTail--,
+           // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
+           __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),

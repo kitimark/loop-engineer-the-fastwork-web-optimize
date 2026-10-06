@@ -1,0 +1,27 @@
+{
+  "topic": "hit-skip",
+  "kind": "counts-and-pixels (no timing; memory defer-timing-focus-call-tree)",
+  "base": { "name": "C = v9-final + menu rev 7d", "js": "1b2eecc66011", "css": "e1359ab9994a" },
+  "build": { "name": "HS = C + delta.diff", "js": "f40adc603373", "css": "e1359ab9994a" },
+  "decisionRule": "lead 2026-10-06 13:10Z: lands in v10 only if HS < HSC in total layouts on the Simulator",
+  "simulatorLayouts": {
+    "tool": "out/cm/lay/lay-sim.mjs (not committed): iOS 26.5 Simulator Safari, Timeline with stacks, WDA finger strokes",
+    "pairs": [
+      { "HSC": { "frames": 907, "layouts": 656, "inScript": 399 }, "HS": { "frames": 939, "layouts": 621, "inScript": 302 } },
+      { "HSC": { "frames": 877, "layouts": 610, "inScript": 349 }, "HS": { "frames": 918, "layouts": 573, "inScript": 297 } }
+    ],
+    "verdict": "HS < HSC in both pairs (rule met); no A/A pair, gap ~5-6 %"
+  },
+  "chromeCounts": {
+    "tool": "fixes/compositor-morph/gates/cm-chrome.mjs, 430x775, medians per frame",
+    "open": { "HSC": { "style": 2, "layout": 1, "paint": 7, "raster": 15, "forced": [61, 10] }, "HS": { "style": 2, "layout": 1, "paint": 7, "raster": 15, "forced": [62, 10] } },
+    "close": { "HSC": { "style": 3, "layout": 1, "paint": 7, "raster": 13, "forced": [76, 11] }, "HS": { "style": 3, "layout": 1, "paint": 7, "raster": 14, "forced": [77, 11] } },
+    "verdict": "same (expected: the cost is WebKit's)"
+  },
+  "pixels": {
+    "chrome": { "tool": "fixes/compositor-morph/gates/cm-px2.mjs (PR-010 A, V, A2, V2; captureScreenshot 3x, 430x932)", "maxConsistentPct": 0.0057, "maxLevel": 19, "verdict": "T0 within PR-010 (fill 64, edge 128, 0.5 %)" },
+    "simulator": { "tool": "fixes/compositor-morph/gates/cm-px2.mjs --engine sim (PR-010 A, V, A2, V2; iOS 26.5 Simulator, 1290x2796)", "stops": ["pre", "up0.25", "up0.5", "up1", "dn0"], "maxConsistentPct": 0, "aaFloorPct": 0.0124, "verdict": "T0: no consistent difference" }
+  },
+  "measurementCodeChanged": false,
+  "notes": "One session per arm on the Simulator; Simulator ms are never judged (F-084). A short phone no-worse check comes with v10."
+}
