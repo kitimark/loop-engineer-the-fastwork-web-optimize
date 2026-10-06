@@ -1,0 +1,145 @@
+# fastwork mirror fix: people-gpu
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/people-gpu-base/overlay: apply people-gpu-base first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply people-gpu --on people-gpu-base
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 62743920fe1ab063d232b0313b7d3d04475fa7dc88ab41fde29b51be168cdfbf
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js a33a6c7c1f2b2968e017261fda5f19924b6f86ae9019252653cee9d61200ec3b
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2748,6 +2748,26 @@
+   grid-template-columns: minmax(0, 5.25em);
+   height: 1.0833em;
+   overflow: visible;
++}
++/* people-gpu (user T-224): the FLIP mode of the "o" (data-fw-po, set by the O's effect on phones only): the size
++   changes at once, the title's parts slide by `translate` (JS); "hold" keeps the open size while the parts slide back. */
++.start-selling-future-people-o[data-fw-po] {
++  transition: none;
++}
++.start-selling-future-people-o[data-fw-po="hold"] {
++  grid-template-columns: minmax(0, 5.25em);
++  height: 1.0833em;
++}
++/* people-gpu X2: in the FLIP mode the O's opacity fades rest at 0.9999 instead of 1 (vector o closed, faces and stack
++   open), so no fade crosses opacity 1, which in WebKit costs a layout and a repaint of the element at each end
++   (FINDINGS F-225/F-102, StyleDifference.cpp opacity-to-or-from-opaque). 0.9999 of a level is below one 8-bit step. */
++.start-selling-future-people-o[data-fw-po] .start-selling-future-people-o-vector,
++.start-selling-future-people-o[data-fw-po].is-stack .start-selling-future-people-o-stack,
++.start-selling-future-people-o[data-fw-po].is-stack .start-selling-future-people-o-face {
++  opacity: 0.9999;
++}
++.start-selling-future-people-o[data-fw-po].is-stack .start-selling-future-people-o-vector {
++  opacity: 0;
+ }
+ .start-selling-future-people-o.is-standalone {
+   align-self: center;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -6929,6 +6929,89 @@
+     `<span><span class="start-selling-future-people-o-stage"><img loading="lazy" decoding="async" class="start-selling-future-people-o-vector" src="/selling/people-wordmark/o.svg" alt="" width="26" height="26" draggable="false" aria-hidden="true"/> <span class="start-selling-future-people-o-stack"></span></span> <!></span> <!>`,
+     1,
+   );
++/* people-gpu (user T-224): on phones the "o" no longer widens by a 0.92 s grid-template-columns/height transition
++   (a layout of the title every frame). The O takes its new size at once and the title's parts slide by `translate`
++   (FLIP without reads, FINDINGS T5): the words row is centred, so the parts before the O move by half the width change
++   (DX = (5.25em - 0.6042em) / 2) and the parts after it by minus half, the O also by half the height change
++   (DY = (1.0833em - 1.0417em) / 2), with the transition's own duration and easing. Closing keeps the open size
++   (data-fw-po="hold") while the parts slide back, then takes the closed size in the frame the slide ends, so the O's
++   clip moves exactly as the shrinking box did. v = 0 is the open place, 1 the closed place. An interrupted slide
++   turns around from where it is, its duration scaled by the distance left (as a reversed CSS transition).
++   Phones only ((max-width: 860px), the title's own breakpoint), ltr, no reduced motion; elsewhere today's path. */
++function __poFlip(O) {
++  if (!O || typeof O.animate != `function` || !O.parentNode) return () => {};
++  let W = O.parentNode,
++    mq = window.matchMedia(`(max-width: 860px)`),
++    rm = window.matchMedia(`(prefers-reduced-motion: reduce)`),
++    on = !1,
++    exp = O.classList.contains(`is-expanded`),
++    A = [],
++    seg = null,
++    DUR = 920,
++    EASE = `cubic-bezier(0.22, 1, 0.36, 1)`,
++    DX = (5.25 - 0.6042) / 2,
++    DY = (1.0833 - 1.0417) / 2;
++  const parts = () => {
++      let b = [],
++        a = [],
++        x = b;
++      for (let c of W.children) c === O ? (x = a) : c.classList.contains(`fw-po-t`) && x.push(c);
++      return [b, a];
++    },
++    // v now: from the running slide (its eased progress), else the resting place
++    now = () => {
++      if (seg && A.length) {
++        let p = A[0].effect.getComputedTiming().progress;
++        if (p != null) return seg.from + (seg.to - seg.from) * p;
++      }
++      return exp ? 0 : 1;
++    },
++    stop = () => {
++      for (let x of A) x.cancel();
++      ((A = []), (seg = null), O.getAttribute(`data-fw-po`) === `hold` && O.setAttribute(`data-fw-po`, ``));
++    },
++    // slide v from -> to; the layout is the open size during it (is-expanded, or the hold while closing)
++    slide = (from, to) => {
++      for (let x of A) x.cancel();
++      let [b, a] = parts(),
++        o = { duration: DUR * Math.abs(to - from), easing: EASE, fill: `both` },
++        k = (s, y) => [{ translate: `${s * DX * from}em ${y * DY * from}em` }, { translate: `${s * DX * to}em ${y * DY * to}em` }];
++      ((seg = { from, to }),
++        (A = [...b.map((e) => e.animate(k(1, 0), o)), O.animate(k(1, 1), o), ...a.map((e) => e.animate(k(-1, 0), o))]));
++      let mine = A;
++      A[0].onfinish = () => {
++        if (A !== mine) return;
++        // closed: take the closed size and drop the slide in the same frame (both give the same place)
++        to === 1 && O.setAttribute(`data-fw-po`, ``);
++        for (let x of A) x.cancel();
++        ((A = []), (seg = null));
++      };
++    },
++    flip = () => {
++      let x = O.classList.contains(`is-expanded`);
++      if (x === exp) return;
++      let v = now();
++      if (((exp = x), !on)) return;
++      x ? (O.setAttribute(`data-fw-po`, ``), v > 0 ? slide(v, 0) : stop()) : v < 1 ? (O.setAttribute(`data-fw-po`, `hold`), slide(v, 1)) : stop();
++    },
++    set = () => {
++      let m = mq.matches && !rm.matches && getComputedStyle(W).direction === `ltr`;
++      if (m === on) return;
++      if ((stop(), (on = m))) {
++        for (let n of [...W.childNodes])
++          if (n.nodeType === 3 && n.nodeValue.trim()) {
++            let s = document.createElement(`span`);
++            ((s.className = `fw-po-t`), W.insertBefore(s, n), s.appendChild(n));
++          }
++        O.setAttribute(`data-fw-po`, ``);
++      } else O.removeAttribute(`data-fw-po`);
++    },
++    mo = new MutationObserver(flip);
++  (set(), mo.observe(O, { attributes: !0, attributeFilter: [`class`] }), mq.addEventListener(`change`, set), rm.addEventListener(`change`, set));
++  return () => {
++    (mo.disconnect(), mq.removeEventListener(`change`, set), rm.removeEventListener(`change`, set), stop());
++  };
++}
+ function WD(r, i) {
+   D(i, !0);
+   let a = [
+@@ -7038,11 +7121,12 @@
+         { threshold: 0.35 },
+       );
+     t && o.observe(t);
+-    let s = dE(A, { element: t, manageAnimations: !1 });
++    let s = dE(A, { element: t, manageAnimations: !1 }),
++      __poOff = __poFlip(ee);
+     return () => {
+       o.disconnect();
+       for (let e of n) window.clearTimeout(e);
+-      (E(), s());
++      (E(), s(), __poOff());
+     };
+   });
+   var F = UD(),

@@ -1,0 +1,197 @@
+# fastwork mirror fix: hero-covered-pause
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/people-gpu-base/overlay: apply people-gpu-base first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-covered-pause --on people-gpu-base
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 62743920fe1ab063d232b0313b7d3d04475fa7dc88ab41fde29b51be168cdfbf
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js a33a6c7c1f2b2968e017261fda5f19924b6f86ae9019252653cee9d61200ec3b
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3879,6 +3879,72 @@
+   VE = h(
+     `<em><span class="sizer svelte-1fn2go6" aria-hidden="true"></span> <span class="frame svelte-1fn2go6" aria-hidden="true"><span class="paint svelte-1fn2go6"></span></span></em>`,
+   );
++/* hero-covered-pause (people-gpu; user T-215 "stop invisible animations", T-224): the hero keeps animating while it
++   cannot be seen: under the #people card (pulled up over the hero's last screen, opacity 0.999 once shown) or off
++   screen. One signal, hidden = (the card's top edge at or above the viewport's top AND the card shown AND its fade-in
++   ended) OR (no part of .hero-track in the viewport). Two IntersectionObservers (no reads), the section's class and
++   the card's own filter transitionend (as people-word A). While hidden: every time-based animation in the hero
++   (CSS animations and transitions, pseudo-elements, WAAPI) is paused where it is and played on from there when it
++   shows again (no jump; scroll-driven ones, the exit, are left alone); the accent word cycle holds its timer
++   (resumed with the time it had left); the hero countdown stops ticking (cD's own active/shown: it shows the right
++   time again in the frame it comes back, without rolling through the skipped seconds). */
++var __hhHidden = !1,
++  __hhSubs = new Set(),
++  __hhPaused = [];
++function __hhSub(f) {
++  return (__hhSubs.add(f), f(__hhHidden), () => __hhSubs.delete(f));
++}
++function __hhInit(track) {
++  let sec = document.querySelector(`section.start-selling-future`),
++    card = sec && sec.querySelector(`.start-selling-future-card`);
++  if (!track || !sec || !card || typeof IntersectionObserver != `function`) return () => {};
++  let on = !0,
++    top = !1,
++    vis = sec.classList.contains(`is-visible`),
++    done = vis,
++    fb = 0,
++    set = () => {
++      let h = (top && vis && done) || !on;
++      if (h === __hhHidden) return;
++      if ((__hhHidden = h)) {
++        for (let a of track.getAnimations({ subtree: !0 }))
++          a.timeline === document.timeline && a.playState === `running` && (a.pause(), __hhPaused.push(a));
++      } else for (let a of __hhPaused.splice(0)) a.playState === `paused` && a.play();
++      for (let f of __hhSubs) f(h);
++    },
++    // the card's top edge at or above the viewport's top: a zero-height root at the top edge (an edge-adjacent
++    // intersection counts, IntersectionObserver spec "compute the intersection")
++    io1 = new IntersectionObserver(
++      (e) => {
++        ((top = e[e.length - 1].isIntersecting), set());
++      },
++      { rootMargin: `0px 0px -100% 0px` },
++    ),
++    io2 = new IntersectionObserver((e) => {
++      ((on = e[e.length - 1].isIntersecting), set());
++    }),
++    shown = () => {
++      ((done = !0), window.clearTimeout(fb), (fb = 0), set());
++    },
++    te = (e) => {
++      e.target === card && e.propertyName === `filter` && vis && shown();
++    },
++    mo = new MutationObserver(() => {
++      let v = sec.classList.contains(`is-visible`);
++      v !== vis &&
++        ((vis = v), window.clearTimeout(fb), (fb = 0), (done = !1), v && (fb = window.setTimeout(shown, 1200)), set());
++    });
++  return (
++    io1.observe(card),
++    io2.observe(track),
++    card.addEventListener(`transitionend`, te),
++    mo.observe(sec, { attributes: !0, attributeFilter: [`class`] }),
++    () => {
++      (io1.disconnect(), io2.disconnect(), mo.disconnect(), card.removeEventListener(`transitionend`, te), window.clearTimeout(fb));
++      ((on = !0), (top = !1), set());
++    }
++  );
++}
+ function HE(t, n) {
+   D(n, !0);
+   let pwAccent,
+@@ -3898,39 +3964,59 @@
+       o = -1,
+       s = `idle`,
+       c = !0,
++      // hero-covered-pause: the pending step and when it is due, so a hide holds it and a show resumes it with the
++      // time it had left (its CSS animation was paused at the same moment)
++      __hhFn = null,
++      __hhDue = 0,
++      __hhLeft = -1,
++      __hhIn = !0,
++      __hhT = (f, ms) => {
++        ((__hhFn = f), (__hhDue = performance.now() + ms), (e = window.setTimeout(f, ms)));
++      },
+       l = () => {
+         if (!(n || !t)) {
+           if ((window.clearTimeout(e), s === `idle`)) {
+             let r = c && o < 0 ? 2200 : 1250;
+             (o < 0 && (c = !1),
+-              (e = window.setTimeout(() => {
++              __hhT(() => {
+                 n || !t || ((s = `draw-out`), z(i, `draw-out`), l());
+-              }, r)));
++              }, r));
+             return;
+           }
+           if (s === `draw-out`) {
+-            e = window.setTimeout(() => {
++            __hhT(() => {
+               n || !t || ((o = u(o)), z(r, o, !0), (s = `draw-in`), z(i, `draw-in`), l());
+             }, 900);
+             return;
+           }
+-          e = window.setTimeout(() => {
++          __hhT(() => {
+             n || !t || ((s = `idle`), z(i, `idle`), l());
+           }, 900);
+         }
+       },
+       d = new IntersectionObserver(
+         ([n]) => {
+-          let r = !!n?.isIntersecting;
+-          r !== t && ((t = r), window.clearTimeout(e), t && l());
++          __hhIn = !!n?.isIntersecting;
++          let r = __hhIn && !__hhHidden;
++          r !== t && ((t = r), window.clearTimeout(e), (__hhLeft = -1), t && l());
+         },
+         { rootMargin: `100% 0px` },
+-      );
++      ),
++      __hhOff = __hhSub((h) => {
++        let r = __hhIn && !h;
++        if (r === t) return;
++        if (((t = r), !r)) {
++          (window.clearTimeout(e), (__hhLeft = __hhFn ? Math.max(0, __hhDue - performance.now()) : -1));
++          return;
++        }
++        __hhLeft >= 0 && __hhFn ? __hhT(__hhFn, __hhLeft) : l();
++        __hhLeft = -1;
++      });
+     return (
+       d.observe(a),
+       l(),
+       () => {
+-        ((n = !0), d.disconnect(), window.clearTimeout(e));
++        ((n = !0), d.disconnect(), window.clearTimeout(e), __hhOff());
+       }
+     );
+   });
+@@ -4600,7 +4686,10 @@
+     /*countdown-faces: false only while the hero countdown is painted fully transparent: --exit-opacity 0 on div.hero
+     (x; .hero-copy, which holds the countdown, has opacity calc(var(--copy-in) * var(--exit-opacity))). Set in the
+     exit callback below, next to that write, so the frame that paints the clock again already has the target*/
+-    __cdHeroShown = __cdState(!0);
++    __cdHeroShown = __cdState(!0),
++    /*hero-covered-pause: the hero is hidden (under the #people card or off screen)*/
++    __cdHeroHid = __cdState(!1),
++    __cdHeroHidOff = __hhSub((h) => __cdSet(__cdHeroHid, h, !0));
+   function c(e) {
+     return [e.role ? s(o).hero.professions[e.role] : null, e.location].filter(Boolean).join(` · `);
+   }
+@@ -4964,6 +5053,7 @@
+       );
+       heIO.observe(b);
+     };
++    let __hhK = null;
+     let heL = { passive: !0, capture: !0 },
+       heEv = [
+         [`touchstart`, heTS],
+@@ -4978,8 +5068,11 @@
+         e.addEventListener(`change`, heSync),
+         heEv.forEach(([e, t]) => window.addEventListener(e, t, heL))),
+       heMode || s(),
++      // hero-covered-pause: the hidden signal (the #people card is mounted with the page, before this effect runs)
++      (__hhK = __hhInit(b)),
+       () => {
+         (l(),
++          __hhK(),
+           window.clearTimeout(r),
+           i && window.cancelAnimationFrame(i),
+           t.removeEventListener(`change`, h),
+@@ -5076,8 +5169,12 @@
+   (M(ye), M(W));
+   var xe = V(W, 2);
+   cD(xe, {
++    // hero-covered-pause: not shown and not active while the hero is hidden (under the #people card or off screen)
+     get shown() {
+-      return __cdGet(__cdHeroShown);
++      return __cdGet(__cdHeroShown) && !__cdGet(__cdHeroHid);
++    },
++    get active() {
++      return !__cdGet(__cdHeroHid);
+     },
+   });
+   var Se = V(xe, 2),
