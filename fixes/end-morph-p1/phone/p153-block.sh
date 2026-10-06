@@ -42,6 +42,8 @@
 #       Warm-ups and S0 get their own holds before the counted ones; S1 its own hold at the end.
 #   (3) the end-gate rule stays: Critical (or over 44 °C) at a hold's end voids that hold's run and stops the block.
 #   (4) the run order and the C/V balance stay as signed (rev 1.2); only the holds split.
+#   Lead ruling during block 2 (05:14Z): Safari is parked (iphone.mjs park) before every cooling wait; the hold's end
+#   gate had left B's timer page open, and the phone warmed 39.0 -> 40.19 °C in the first 600 s wait before H2.
 #   Removed against rev 1.2: the cooling gap after a hold whose end gate read >= 41.5 °C (superseded by (1)) and
 #   P153_COOL_FIRST (superseded by (1); the variable is ignored).
 cd "$(dirname "$0")/../../.." || exit 2
@@ -70,6 +72,8 @@ coolwait() { # below timeout why
 # rev 1.3 (1): below 38 °C before every hold; one more 600 s wait; still not: the block is VOID (exit 6)
 cool() { # H
   [ "$P153_DRY" = 1 ] && { echo "COOL $1 (dry: no wait)"; return 0; }
+  # lead ruling 05:14Z (block 2): Safari parked during every cooling wait (the end gate leaves B's timer page open)
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1 && echo "PARKED Safari before cooling for $1" || echo "PARK before $1 failed (the wait goes on)"
   coolwait 38 600 "cooling before $1" && return 0
   coolwait 38 600 "cooling before $1, second wait" && return 0
   echo "BLOCK STOP VOID: the phone did not cool below 38 °C in 2 x 600 s before $1 (block VOID, not scored)"; exit 6

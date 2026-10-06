@@ -334,7 +334,12 @@ last, runs only under these heat rules:
   their own holds (WC and WV in two holds: H1 of block 1 rose 3.5 °C over the two warm-ups, so from 38 °C the pair
   would end near the Critical zone, and rule (3) would stop the block on an uncounted run). The sentinel S0 has its
   own hold before the counted ones; S1 its own hold at the end. HA keeps its two attribution runs (uncounted; an HA
-  end-gate FAIL voids only them, and HA is the last hold).
+  end-gate FAIL voids only them, and HA is the last hold). Lead at signing: accepted; if HA's end gate reads Critical,
+  only the attribution is void and the verdict stands.
+- Signed by the lead at 04:2xZ, 2026-10-06 (delta check on 9810588d: only fixes/end-morph-p1 changed, pins on disk equal
+  the commit, SELFTEST 49 re-run, `out/p153/runs` empty). The warm-up split was accepted. The 04:17Z `wda stop` of the
+  stub test (below) broke Hard rule 9 (the phone only inside a phone hold): harmless and disclosed; a later stub test
+  puts no real phone tool on PATH.
 - **(3) The end-gate rule stays:** Critical (or over 44 °C) at a hold's end voids that hold's run and stops the block.
 - **(4) Run order and C/V balance as signed:** C V V C C V V C (EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4); only the holds split.
 - Removed: rev 1.2's cooling gap (>= 41.5 °C → below 40) and `P153_COOL_FIRST`, both superseded by (1).
@@ -683,6 +688,53 @@ the rest as rev 1.2. Rev 1.2 pins (block 1 ran on them): block `78062de712d3`, h
   - Archived 2026-10-06 04:12Z (`ARCHIVE-BLOCK1`; servers restarted, served hashes ok): `out/p153/block1/` holds runs,
     hold logs, WDA logs, serve-check.log, and (moved by hand) cooling.log, part1*.log, the Safari restart logs,
     void-0342/ and read-part1-stop.json.
+- 2026-10-06 04:25Z, block 2 part 1, first try (rev 1.3, signed): **void before any cooling, gate or run, not counted;
+  block 2 still unused** (lead ruling).
+  - The serve check was ok for 3 of 3 servers. The part's WDA stop/start/check failed: runner.log "Failed to initialize
+    for UI testing: Timed out while enabling automation mode", WDA NOT READY. BLOCK STOP exit 5, Safari parked by the
+    EXIT trap, no hold log, `out/p153/runs` empty.
+  - The same symptom as I-215 (phone most likely locked; OBSERVED, cause unknown), here with no cooling wait before it;
+    the 04:17Z stub-test `wda stop` had also left WDA down. Incident I-217 (lead: likely a duplicate of I-215).
+  - Remedy: the lead's step C-075 (the user unlocks the iPhone and checks Auto-Lock is Never). Part 1 then reruns once
+    with the same command on the lead's message.
+- 2026-10-06 04:38:53Z, block 2 part 1, second try (after C-075, done 04:38:36Z): **stopped at H1's start gate, no run.**
+  - The serve check was ok for 3 of 3 servers. WDA restarted READY and Safari restarted. Cooling MET at once (35.59 °C).
+  - H1's start gate (04:42Z): state **Critical**, induced Yes, battery 36.09 → 36.19 °C → FAIL ceiling (Critical).
+    HOLD H1 VOID start gate (no run), BLOCK STOP exit 5, Safari parked by the EXIT trap. No g-/tl- record.
+  - As signed, there was no retry. It is the same picture as the 03:42Z attempt (I-201 "phone-above-condition": a cool
+    phone at Critical with the Xcode condition on; OBSERVED, cause unknown). Logs moved to `out/p153/void-0442/` and
+    `out/p153/part1-void-0442.log`.
+  - Lead ruling: **void at H1's start gate with no run, not counted; block 2 still unused.** The lead re-reads the heat
+    state (read-only profile reads) and lets the phone settle after the unlock; part 1 reruns once on the lead's message
+    when a read gives "Serious (induced)" (else the Xcode condition is restarted with the user, as at 03:52Z).
+- 2026-10-06 04:54:28Z, block 2 part 1, third try (lead's go after C-077/C-078; lead read 04:54Z "Serious (induced by
+  Xcode), battery 36 C"): **block 2 runs.**
+  - The serve check was ok, WDA READY, Safari restarted, cooling MET at once (36.09 °C).
+  - H1 (04:58:29Z): start gate Serious, induced Yes, 37.19 → 37.29 °C, PASS; WC exit 0; end gate Serious, 38.69 →
+    38.89 °C, PASS; HOLD H1 VALID 231 s.
+  - Cooling before H2: TIMEOUT after 600 s, the battery **rose** 39.0 → 40.19 °C; the second wait started 05:12:38Z.
+  - **Lead ruling (about 05:14Z):** the phone warms between holds instead of cooling. The lead's guess (not checked):
+    Safari still showing a page (its timer or countdown keeps running) plus the Xcode condition. Park Safari now, inside
+    the runner's own hold, and keep it parked during every cooling wait from here on. Each hold opens its page before its
+    run (the start gate opens B's timer page), so no counted run changes. If the phone is still above 38 °C when the
+    second wait ends, the block stops (no retry) and the lead rules how to resume. No change to the Xcode condition, no
+    phone step.
+  - Done 05:13:58Z: `iphone.mjs park --owner iphone-runner` → "PARKED Safari on about:blank (was B's timer page, port
+    61878)". So during the wait Safari showed B's thermal-gate timer page: the hold parks Safari after each run, but its
+    end gate opens B's timer page afterwards and leaves it there (`p153-hold.sh`: park after the gesture, then the end
+    gate). Battery read 05:14:21Z: 40.19 °C, not charging (external power connected, IsCharging false, 80 %).
+  - The second wait MET at 05:21:39Z (38.0 °C; parked, 40.19 → 38.0 °C in about 8 min). H2 (05:21:40Z): start gate
+    Serious, induced Yes, 38.0 → 37.79 °C, PASS; WV started.
+  - **Part 1 was killed at about 05:24:28Z, inside H2's WV warm-up:** the runner's own error, the background job ran
+    with the 30-min default limit instead of the 2 h maximum. No end gate, no HOLD line for H2; a partial
+    `g-WV-H2.json` (uncounted, never read). No sentinel or counted run had run. The iphone hold (and block mark) ended.
+  - Kit change (lead ruling 05:14Z): `p153-block.sh` parks Safari before every cooling wait (block pin e8b6e70be8ee →
+    fb184e21613e; hold and read unchanged). Accepted by the lead (diff read: only the park before the cooling wait and
+    the ruling comment).
+  - Lead ruling: the killed H2 attempt (killed 05:24:25Z by the Bash 30-min default limit; holds.log durationSec 1800)
+    is **void, no counted run lost**. H1 (WC) stays valid; the partial g-WV-H2 is moved aside and never read. Part 1
+    resumes with H2:WV H3:S0 H4:EC1 H5:EV1 (H2 rerun whole), from the commit with the new pin; every part runs as a
+    background job with the 2 h limit, and a part that could pass 2 h is split.
 
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 
