@@ -28,7 +28,7 @@ if [ ! -e $TRY ]; then # the nolift arm as the user tried it, built once from th
   (cd $TRY.tmp && patch -p1 -s -F 0 -N < ../../../out/v10/nolift-arm.diff) || { echo "nolift arm does not apply: refuse"; exit 3; }
   rm -f $TRY.tmp/$JS.orig $TRY.tmp/$CSS.orig
   [ "$(h $TRY.tmp/$JS)" = 4da641f828bb ] && [ "$(h $TRY.tmp/$CSS)" = a4ed5432f2f7 ] || { echo "nolift arm is not 4da641f828bb / a4ed5432f2f7: refuse"; exit 3; }
-  chmod -R a-w $TRY.tmp && mv $TRY.tmp $TRY
+  mv $TRY.tmp $TRY && chmod -R a-w $TRY/_app   # (rename first: a read-only directory can't be renamed)
 fi
 [ "$(h $TRY/$JS)" = 4da641f828bb ] && [ "$(h $TRY/$CSS)" = a4ed5432f2f7 ] || { echo "$TRY changed: refuse"; exit 3; }
 PARTS=${*:-fling px-nl px-tryit px-meas px-v10 px-v9f cnt-v10 cnt-n cnt-meas cnt-1b2e cnt-647c}

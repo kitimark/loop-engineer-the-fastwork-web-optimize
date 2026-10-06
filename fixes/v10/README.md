@@ -1,62 +1,84 @@
-# v10: main's v9-final (rev 7d) + F1+U2 + P1
+# v10: main's v9-final (rev 7d) + F1+U2 + P1 + PR-027 nolift
 
-int-v8. The lead accepted the plan and asked for a pre-stage on 2026-10-06. PR-027 is not in: the user has not picked an
-option yet, and its overlap and apply check comes when they do.
+int-v8. The lead accepted the plan and asked for a pre-stage on 2026-10-06. The user then picked PR-027 option
+"nolift", and the lead added it.
 
 v10 lands only after the P-153 (P1) and P-152 (F1+U2) reads pass. If either fails, v10 drops that delta and the lead
 re-rules.
 
-## Arms (immutable snapshot `out/v10/snap-f5068db34a32`, HASHES.txt sha256/12 **e30901263912**)
+**Verdict (Chrome; Simulator pending):**
+
+- code parity: 0 differences;
+- U2 parity on the rev 7d engine: PASS;
+- fling-out: PASS;
+- nolift changes only the earn button;
+- v10 matches the measured builds and the nolift Try-it build within the pixel gate's own A/A noise;
+- the stack's effect is the same on both bases at all 20 stops.
+
+## Arms (immutable snapshot `out/v10/snap-f5068db34a32-a4ed5432f2f7`, HASHES.txt sha256/12 **0f91ea014cb3**)
 
 | arm | build | JS | CSS |
 |---|---|---|---|
-| C | v9-final on main since 189ca7ed: baseline + `fixes/morph-scroll-v9try/patch.diff` (6d1632eb0ee9), rev 7d | 1b2eecc66011 | e1359ab9994a |
-| V | C + F1+U2 (befc17cec97f, `fixes/nav-hit-cache/patch-on-v9f-f12.diff`) + P1 (d310e4d2ba0c, `fixes/end-morph-p1-v9f/p1-delta.diff`) | f5068db34a32 | a81b9af7b2c9 |
+| C | main's v9-final since 189ca7ed: baseline + `fixes/morph-scroll-v9try/patch.diff` (6d1632eb0ee9), rev 7d | 1b2eecc66011 | e1359ab9994a |
+| N | C + F1+U2 + P1: v10 before nolift (the pre-stage, d37aacb0) | f5068db34a32 | a81b9af7b2c9 |
+| V | **v10** = N + nolift | f5068db34a32 | a4ed5432f2f7 |
 
 Full V hashes:
 
 - JS f5068db34a32d5c930b4e4c7d9f175be2b0299dd6c644978b34eed44c1ae2662
-- CSS a81b9af7b2c90b2b095364542c8d2d2bfe5b92bbab5de463066fdd76c51f0684
+- CSS a4ed5432f2f7e32bf20c37ff602fb4895948d3eb42ef42a7a00b214bf1b793ad
+
+The deltas:
+
+| delta | file | sha256/12 | source |
+|---|---|---|---|
+| F1+U2 | `fixes/nav-hit-cache/patch-on-v9f-f12.diff` | befc17cec97f | fix-end-morph's `end-morph-f12/delta.diff` @293876b8 |
+| P1 | `fixes/end-morph-p1-v9f/p1-delta.diff` | d310e4d2ba0c | fix-end-morph-p1's `end-morph-p1/delta.diff` @0af9e816 |
+| nolift | `fixes/v10/nolift-delta.diff` | 074e4667190a | extracted here (below) |
+
+**The nolift delta** is CSS only. It deletes `transform: translateY(calc(var(--earn-out) * -8px))` from
+`.start-selling-top-nav-btn.is-earn` and leaves a comment in its place: the button no longer rises 8 px.
+
+- Extraction: the measured build 4da641f828bb's CSS (a81b9af7b2c9) diffed against the CSS of the arm the user tried,
+  `fixes/joinwl-nolift/patch.diff` @9f9f703f (bec7169bd7cc).
+- That arm is 4da641f828bb / a4ed5432f2f7: its JS is exactly the measured build's.
 
 ## Build: `sh fixes/v10/build.sh`
 
-Every apply is `patch -p1 -F 0`: offsets are allowed, fuzz is not. Every intermediate step is pinned. V is built by three
-routes, and all three give the same bytes:
+Every apply is `patch -p1 -F 0`: offsets are allowed, fuzz is not. Every step is pinned. V is built by four routes, and
+all four give the same bytes:
 
-| route | steps | pins |
-|---|---|---|
-| R1 | C, then F1+U2, then P1 | C + F1+U2 = 738bc075f7f8 / e1359ab9994a |
-| R1b | C, then P1, then F1+U2 | C + P1 = 291f70523bd6 / a81b9af7b2c9 |
-| R2 | rev 7d's own diff (v9-final 647c9ef2b1e2 to C; JS only, 4 hunks, 326167f95dc6), applied on the measured P-152/P-153 build v9-final + F1+U2 + P1 = 4da641f828bb / a81b9af7b2c9 | the measured bytes plus only rev 7d |
+| route | steps |
+|---|---|
+| R1 | C, then F1+U2 (738bc075f7f8 / e1359ab9994a), then P1 (= N), then nolift |
+| R1b | C, then nolift (1b2eecc66011 / edc20be46534), then P1 (291f70523bd6 / a4ed5432f2f7), then F1+U2 |
+| R2 | rev 7d's own diff (v9-final 647c9ef2b1e2 to C: JS only, 4 hunks, 326167f95dc6) on the measured build 4da641f828bb, then nolift |
+| R3 | rev 7d's own diff on the nolift arm exactly as the user tried it (baseline + `joinwl-nolift/patch.diff` @9f9f703f) |
 
-On top of R1, F1+U2 applies at offset -159 lines. That offset comes from the delta's own hunk headers, so it is the same
-on v9-final. P1's JS applies at +21 and its CSS exactly.
+**Code parity** (`fixes/v10/codeparity.mjs`, multisets of removed and added lines, context ignored):
 
-**Code parity** (`fixes/v10/codeparity.mjs`): C to V's changed lines equal the union of the two deltas' changed lines,
-compared as multisets. Context is ignored, so offsets don't count.
+| comparison | file | lines removed | lines added | differences |
+|---|---|---|---|---|
+| C to V vs F1+U2 + P1 + nolift | JS | 3 | 157 | 0 |
+| C to V vs F1+U2 + P1 + nolift | CSS | 1 | 66 | 0 |
+| N to V vs nolift | CSS | 1 | 1 | 0 |
 
-| file | lines removed | lines added | differences |
-|---|---|---|---|
-| JS | 3 | 157 | 0 |
-| CSS | 0 | 65 | 0 |
-
-Negative control: the same check of C against the measured build (which has no rev 7d) fails with 15 differences, all
-rev 7d's lines.
+Negative control: C against the measured build (no rev 7d) fails with 15 differences, all of them rev 7d's lines.
 
 The build refuses when:
 
 - the baseline is not the pinned snapshot;
-- any of the four patch files is not its pinned hash;
-- any step is off its pin;
+- a patch file is not its pinned hash;
+- a step is off its pin;
 - the routes differ;
 - code parity fails;
 - V fails `node --check`;
 - the snapshot holds extra files;
-- the snapshot already exists (immutable).
+- the snapshot already exists.
 
 ## Overlap with rev 7d
 
-Line numbers below are v9-final's, from `diff -U0`.
+Line numbers are v9-final's, from `diff -U0`.
 
 - **rev 7d:**
   - 14170: comment;
@@ -73,23 +95,99 @@ Line numbers below are v9-final's, from `diff -U0`.
 - **P1:**
   - JS: after 14589 (139 lines) and after 14718;
   - CSS: after 12414 / 12415.
+- **nolift:** CSS 11962 only.
 
-The changes are disjoint at the line level. The nearest pair is F1 at 14156 and rev 7d at 14170, 14 lines apart. But rev
-7d and U2 work on the same morph-scroll machinery:
+All of these are disjoint at the line level. The nearest pair is F1 at 14156 and rev 7d at 14170, 14 lines apart.
+
+- On R1, F1+U2 applies at offset -159. That offset comes from the delta's own hunk headers, so it is the same on v9-final.
+- P1 applies at +21 in the JS and exactly in the CSS.
+- nolift applies exactly.
+
+rev 7d and U2 work on the same morph-scroll machinery (code reading, OBSERVED), hence the fling-out probe:
 
 - rev 7d lets a fast fling-down leave the end screen by its own momentum;
-- U2 moves the nav hit test into `__msTick` while the morph is open, and forces the first frame after a close.
+- U2 moves the nav hit test into `__msTick` while the morph is open.
 
-So the parity checks below include a fling-out. That rests on a code reading only (OBSERVED).
+## Parity results (shared lane only: probe holds, 300 s each; nothing timed)
 
-## Parity checks
+### U2 parity on the rev 7d engine: PASS
 
-These run in the shared lane only (`--shared`, probe weight). Nothing is timed.
+- Tool: `fixes/nav-hit-cache/probe.mjs parity --base v10u2`; base added for fix-nav-morph's tool, credited (5a4340a0).
+- Builds: C = 1b2eecc66011 + P1 (291f70523bd6), V = N, VA = N + the audit hook (f71b57bcff8a).
+- Coverage: 5 cases (mobile, desktop, desktop-rtl, mobile-rtl, mobile-shift), task and raf modes at 10 and 40 px.
+- Results:
+  - 0 deferred mismatches (187 or 47 deferred frames per mobile run);
+  - theme and pill entries only in raf mode, with 0 in sync (the same pattern as the v9-final PASS);
+  - F1 state: hidden at the end, visible at the top;
+  - 0 errors.
+- Runner: `fixes/v10/parity.sh`.
+- Nolift is not in VA: it only changes a transform on the earn button, which has `pointer-events: none`.
 
-- U2 parity on the v10 engine: `fixes/nav-hit-cache` base `v10u2`, C = 1b2eecc66011 + P1, V = v10.
-- Chrome pixels at the morph stops: v10 against the measured 4da641f828bb.
-- Chrome counts: v10 and 1b2eecc66011 against 4da641f828bb and 647c9ef2b1e2.
-- A rev 7d fling-out probe.
-- Simulator pixels and counts when a window opens.
+### Fling-out probe: PASS
 
-Results are added below as they come in.
+- Tool: `fixes/v10/flingout.mjs`. Builds C, V and VA of base v10u2. 430x775, touch, hover:none / pointer:coarse.
+- Synthetic finger from open (m = 1). Each step runs in a task after a frame (input order).
+- rev 7d's own lift log confirms which path each scenario took.
+
+| scenario | finger | path taken | end state, all three builds |
+|---|---|---|---|
+| fast | v -6.0 px/ms, 4 moves, 400 px | left to momentum | left the end screen (y 4943 < endStart 5189), m 0 |
+| slow | v -1.8 px/ms, 3 moves, 90 px | the old smooth close | the closed rest exactly (y 5189), m 0 |
+
+- VA audit: 0 theme mismatches and 0 deferred mismatches (fast: 9 deferred frames; slow: 28).
+- is-on-dark at rest is the same in C, V and VA; it never flipped during the fling.
+- 0 errors.
+
+### Chrome pixels at the morph stops
+
+- Tool: `fixes/v10/gates/em-px.mjs`, a copy of fix-end-morph-p1's em-p1-px.mjs @0af9e816, credited.
+- Its STATE also reads the earn button's rect.
+- 430x775 DPR 3. 20 stops: pre, up0..up1, dn0.5/0.1/0, post.
+- Each run makes four loads (A, V, A2, V2). "Consistent" is the PR-010 score: a difference over 8 levels in all four
+  cross pairs while neither A/A pair is.
+- Region checks: `fixes/v10/nlregion.mjs`. Runner: `fixes/v10/chrome.sh`.
+
+| check | result |
+|---|---|
+| nolift: N vs V | differs only at up0.02-up0.19 (10.8k-31.3k device px). Every cluster is inside the earn button's rect + 28 px. 18 other stops are identical, except post: 11 css px² at the nav bar and p.is-price |
+| v10 vs the nolift Try-it build | identical at 18 of 20 stops. dn0.5: 2 device px (max level 18, nav bar). post: 15 device px (max 46, nav bar) |
+| N vs the measured build 4da641f828bb | identical at 19 of 20 stops; post: 165 device px (nav bar / price) |
+| effect cross-check (C to N vs v9-final to measured; `fixes/v10/effectcmp.mjs`) | **match at all 20 stops**: same stops differ, same largest-cluster box, amounts within 0.2-0.8 % |
+
+**Noise floor (A/A, `fixes/v10/aa.sh`).** The Try-it build was put through the same gate against itself, twice.
+
+| A/A run | stops with a consistent residue |
+|---|---|
+| 1 | post: 30,315 device px |
+| 2 | post: 121 device px; up0.8: 18; up0.95: 170 |
+
+So the post stop is never quiet: nav bar and price, over 1.3 % A/A in every run. Small consistent residues also appear
+at other stops with identical bytes on both sides. The residues in the table above are within that noise. The cause is
+OBSERVED only: post-close animations, and sub-pixel anti-aliasing at the nav bar.
+
+### Chrome counts
+
+- Tool: `fixes/v10/em-chrome.mjs`, a copy of fix-end-morph-p1's em-chrome.mjs, credited.
+- 430x775, one step per frame, touch held.
+- Each cell: paints / paint area / raster tasks.
+
+| phase | v10 | v10 pre-nolift | measured 4da641 | main 1b2e | v9-final 647c |
+|---|---|---|---|---|---|
+| open | 250 / 144.4M / 280 | 250 / 144.4M / 272 | 250 / 144.4M / 270 | 324 / 127.9M / 581 | 324 / 127.9M / 582 |
+| restOpen | 15 / 20.9M / 11 | 10 / 15.1M / 15 | 10 / 15.1M / 16 | 122 / 113.3M / 12 | 122 / 113.3M / 11 |
+| close | 287 / 147.3M / 296 | 285 / 144.4M / 306 | 285 / 144.4M / 305 | 320 / 128.8M / 554 | 320 / 128.8M / 542 |
+| liftOpen | 165 / 152.6M / 210 | 161 / 146.8M / 202 | 159 / 143.9M / 202 | 377 / 265.6M / 358 | 377 / 265.6M / 359 |
+| liftClose | 372 / 281.3M / 328 | 373 / 281.3M / 330 | 373 / 281.3M / 343 | 366 / 270.5M / 411 | 366 / 270.5M / 407 |
+
+- **The stack does the same on both bases.** v10 pre-nolift = the measured build, and main = v9-final, within a few
+  raster tasks.
+- **nolift costs a little paint.** restOpen goes from 10 to 15 paints (+5.8M px), and other phases gain 0 to +4 paints.
+  OBSERVED; the cause is not traced. It is still far below main's 122 paints in restOpen.
+- #platform opacity sample (rev 3's guard): 0 frames at or above 1 in all five builds.
+
+### Simulator: pending
+
+- Runner: `fixes/v10/sim.sh`, in shared simulator holds.
+- Pixels: the nolift region check, and v10 vs the Try-it build.
+- Counts: `fixes/v10/em-sim.mjs`, a copy of fix-end-morph-p1's, credited.
+- These are DEFERRED while a phone block is marked (P-153 block 2 at the time of writing) and run in the next window.
