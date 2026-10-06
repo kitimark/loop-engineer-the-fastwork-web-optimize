@@ -3,8 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and the `delta-*.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** draft. Both options built; Chrome counts and Chrome pixels done; the Simulator part (overflow per toolbar
-state, dvh work per toolbar frame, the per-frame dvh check) is queued behind phone block P-155. Then a proposal with
+**Status:** draft. Both options built; Chrome counts and pixels done; Simulator run AD1 done (overflow with the toolbar
+shown, T2 shots, the per-frame dvh check, mid-page counts); the collapsed-toolbar state, S, and dvh's cost with the panel
+open while the toolbar moves wait for the next Simulator slot (after P-155 part 2). Then a proposal with
 Try-it for the user (look change: memory "proposal-try-it-required").
 **Stage:** F (build + counts). User report T-204 #20; the user wants it in v10 (T-204 #22).
 **Device class / gate:** phone-only look (iOS Safari's toolbar; Chrome's emulation has no small/large viewport).
@@ -88,26 +89,67 @@ rAFs (`ph-chrome.mjs`). D = the panel follows each step (what dvh does on iOS); 
 - Paint areas from the trace are not reported (clip quads of composited layers are unbounded in this trace).
 - Host load1 4.3-6.9 during the runs (counts, not timing).
 
-## WebKit: does dvh follow every toolbar frame? (pending the Simulator)
+## WebKit: does dvh follow every toolbar frame? Yes (source + Simulator check below)
 
 - By code, likely yes: `LocalFrameView::setLayoutViewportOverrideRect` (LocalFrameView.cpp 1969-1991) forces
   `TriggerLayoutOrNot::Yes` whenever the layout viewport's size changes (1978-1979) and then calls
   `document->updateViewportUnitsOnResize()` (1988-1990), and `sizeForCSSDynamicViewportUnits` returns that override
   rect's size (7232-7235). The `m_isInStableState && !isChangingObscuredInsetsInteractively` gate in
   `WebPage::updateVisibleContentRects` (WebPageCocoa.mm 4196-4208) only decides the trigger for unchanged sizes.
-  Status: **OBSERVED by code reading only**; whether Safari changes the layout viewport size on every toolbar frame
-  (fix-toolbar-resize saw innerHeight step through 775 -> 815 on the phone) is decided by the Simulator check.
+  The Simulator check (next section) shows dvh taking a new value in every frame the toolbar moves: **CONFIRMED**.
 - Decisive check (`ph-sim.mjs --probe`): fixed hidden 100dvh / 100svh / 100lvh / 100vh probes, rect per rAF plus a
   ResizeObserver, through finger strokes that collapse and show the toolbar: distinct heights and RO callbacks per
   transition.
 
-## Simulator (pending: queued as a shared simulator slot, deferred during P-155)
+## Simulator (fw-sim 15 Pro Max, iOS 26.5, Safari 26.5; run AD1 2026-10-06 09:53Z, functional shared slot)
 
-`ph-sim.mjs` per arm A, S, D: the open end state with the toolbar shown (scripted scroll) and collapsed (a WDA stroke):
-innerHeight, visualViewport, unit probe heights, the nav's rect and its overflow past the visible bottom, two frozen
-screenshots each (A/A); then WebKit Timeline counts (Layout, RecalculateStyles, Paint, ObserverCallback) per finger
-stroke at the end (toolbar shows / hides while the panel is open or closes a little) and mid-page, with a rAF logger
-(toolbar-moving frames, nav heights from a ResizeObserver, morphing frames).
+`ph-sim.mjs` per arm: the open end state with the toolbar shown (scripted scroll to the end), geometry + two frozen
+shots; WDA strokes; WebKit Timeline counts per stroke; the per-frame unit probe. Raw: `out/ph/sim-AD1-*/` (gitignored).
+
+**Overflow at the open end state, toolbar shown** (innerHeight 775 = visualViewport height):
+
+| arm | 100vh | 100svh | 100lvh | 100dvh | nav top | nav bottom | past the visible bottom |
+|---|---|---|---|---|---|---|---|
+| A (vh, today) | 814.98 | 775 | 814.98 | 775 | 12 | 802.98 | **+27.98 px** (overflows) |
+| D (dvh) | 814.98 | 775 | 814.98 | 775 | 12 | 763 | -12 (12 px gap, like the top) |
+| S (svh) | - | - | - | - | - | 763 expected (svh = 775) | not run yet |
+
+- vh = lvh = 814.98 with the toolbar shown: the Simulator agrees with the WebKit source (vh = large viewport).
+- Shots (`A-shown-1.png`, `D-shown-1.png`): in A the panel's rounded bottom corners and the footer's "Privacy Policy"
+  line sit under Safari's bottom toolbar; in D the whole panel is visible with a 12 px margin, as at the top.
+
+**Toolbar collapsed: not reached in AD1.** At the page's maximum scroll a finger stroke cannot scroll, and Safari kept
+its toolbar (innerHeight stayed 775 through every stroke at the end). `ph-sim.mjs` now reaches the end by finger
+strokes from above the morph zone, so the toolbar collapses on the way (next run, after the lead's go).
+
+**T2 pixels, toolbar shown, D vs A** (`px3.mjs --top 59 --files`: the Simulator shot starts with the 59 css px status
+bar, skipped; A/A = two shots of A 0.7 s apart, frozen clock): 0 device px over 8 levels in A/A; D differs from A beyond
+A/A in 65,407 css px, all inside the box x 12-418, page y 12-775 (screenshot y 71-834): exactly the panel's box up to the
+visible bottom. Nothing outside the panel box changes. Inside it, everything placed from the panel height moves: the
+centre block (title, countdown, buttons) up ~20 px (h/2), the footer up 40 px, the photo-wall columns (their offset is a %
+of the panel height). That is the look change the user decides on.
+
+**dvh follows every toolbar frame: CONFIRMED** (WebKit source above + the decisive check, mid-page, 4 transitions,
+probes 100dvh/svh/lvh/vh at position:fixed, rect read per rAF + ResizeObserver):
+
+| transition | frames | innerHeight values | 100dvh values | svh / lvh / vh | dvh RO callbacks | frames with dvh = innerHeight |
+|---|---|---|---|---|---|---|
+| hide 1 | 200 | 8 | 10 | 775 / 814.98 / 814.98 | 9 | 200 of 200 |
+| show 1 | 195 | 9 | 11 | same | 10 | 195 of 195 |
+| hide 2 | 199 | 8 | 9 | same | 8 | 199 of 199 |
+| show 2 | 200 | 11 | 13 | same | 12 | 200 of 200 |
+
+So with dvh the panel's height changes 8-12 times per toolbar show or hide, once per frame the toolbar moves; vh, svh
+and lvh never change.
+
+**Mid-page cost of dvh (panel closed, pill):** WebKit Timeline per finger stroke that moves the toolbar (5-10
+toolbar-moving frames each), A vs D: layouts 26/35/30/26 vs 31/26/24/35, style recalcs 46/36/39/37 vs 52/36/33/39, paints
+67/92/88/84 vs 76/84/76/89 (the same within stroke-to-stroke spread); ResizeObserver callbacks 0 vs 7/11/9/10 (P1b's
+`.fw-rv-size` probe, one per toolbar-moving frame; no write).
+
+**Open or morphing panel while the toolbar moves:** not measured yet (AD1's end strokes did not move the toolbar, see
+above); this is where dvh relayouts and repaints the panel per toolbar frame. Next Simulator run (A, S, D) after P-155
+part 2.
 
 ## Risks, conflicts, follow-ups
 
@@ -117,6 +159,8 @@ stroke at the end (toolbar shows / hides while the panel is open or closes a lit
   callback per toolbar frame anywhere on the page (fix-end-morph-p1 can skip its work while the reveal is off if the
   Simulator shows the callback as non-trivial).
 - Integration: int-v8's `fixes/v10/build.sh` slot `PANELH=<delta> PANELH_SHA=<sha12>` (after P1b, before nolift).
+  int-v8 (dry run): both deltas from aa507a8e apply strictly on every v10 base (nav F1+U2 / U2-only / none; P1b (a) /
+  (a)+(b) / none; I-219 on top), CSS 0546615f27ea (dvh) / 75c30c18d971 (svh) reproduce, code parity 0, no JS change.
 - Tablets (641-1200 px touch) keep `min(820px, calc(100vh - 40px))`; on an iPad in landscape the same overflow may
   occur. Not in this topic's scope; noted for the lead.
 - Scripts here: `build.mjs`, `mk-tryit.mjs`, `ph-chrome.mjs`, `ph-sim.mjs`, `px3.mjs`, `mk-results.mjs`.

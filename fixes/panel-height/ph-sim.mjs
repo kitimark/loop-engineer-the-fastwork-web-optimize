@@ -6,12 +6,12 @@
 //   1. load, walk the page (scripted scrolls never move Safari's toolbar), scroll to the end (m = 1, toolbar SHOWN):
 //      geometry (innerHeight, visualViewport, 100vh/svh/lvh/dvh probe heights, nav and panel rects, overflow =
 //      nav bottom - visible bottom), Date.now frozen + CSS animations paused, two screenshots (A/A).
-//   2. WDA-sim stroke: finger up 300 px at the end (the page is at its max: Safari collapses the toolbar): the same
+//   2. from endStart - 300, finger strokes up 380 px into the end (Safari collapses its toolbar while the content scrolls): the same
 //      geometry and two shots, toolbar COLLAPSED. Animations resumed after the shots.
 //   3. Count phases with WebKit Timeline on (record counts only) and a rAF logger (innerHeight, scrollY, the nav's
 //      --morph, its height from a ResizeObserver; no layout reads):
-//        endShow   at the end, toolbar collapsed: finger down 140 px (Safari shows the toolbar; the page scrolls up a bit)
-//        endHide   finger up 320 px (back to the end, toolbar collapses)   (endShow/endHide x2)
+//        endShow   at the end, toolbar collapsed: finger down 160 px (Safari shows the toolbar; the page scrolls up a bit, the panel starts to close)
+//        endHide   finger up 380 px (back to the end, toolbar collapses)   (endShow/endHide x2)
 //        midShow / midHide   the same two strokes at scrollY ~2400 (pill state, m = 0): P1b's probe still exists there
 //      Per phase: RenderingFrame count, Layout / RecalculateStyles / Paint (count, kpx) records, ObserverCallback
 //      records by type, script records; logger: frames, toolbar-moving frames (min < innerHeight < max), distinct
@@ -38,6 +38,7 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? proces
 const ARMS = (arg('--arms') || 'A,S,D').split(',').filter(Boolean);
 const PROBE = process.argv.includes('--probe');
 const CYCLES = Number(arg('--cycles', '2'));
+const MIDC = Number(arg('--mid-cycles', String(CYCLES)));
 const LABEL = arg('--label', ARMS.join(''));
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const OUT = join(WT, 'out/ph', `sim-${LABEL}-${STAMP}`); mkdirSync(OUT, { recursive: true });
@@ -144,14 +145,18 @@ try {
       run.shots.shown = [shot(`${key}-shown-1`), (await sleep(700), shot(`${key}-shown-2`))];
       run.geo.shownAfterShots = JSON.parse(await c.evaluate(GEO));
       await c.evaluate(RESUME);
-      // 2. collapse the toolbar at the end
-      await W.actions(stroke('up', 300)); await sleep(1800);
+      // 2. reach the end with the toolbar collapsed: at the page's max a stroke cannot scroll, so Safari keeps its
+      // toolbar (run AD1); instead start above the morph zone and scroll into the end by finger strokes (the content
+      // scrolls, so Safari collapses the toolbar on the way), up to 5 strokes until scrollY reaches the max
+      { const g = run.geo.shown; await c.evaluate(`(window.scrollTo({ top: ${g.endStart - 300}, behavior: 'instant' }), 0)`); await sleep(1200);
+        run.collapseStrokes = [];
+        for (let k = 0; k < 5; k++) { await W.actions(stroke('up', 380)); await sleep(1500); const q = JSON.parse(await c.evaluate(`JSON.stringify([Math.round(scrollY), innerHeight, document.documentElement.scrollHeight - innerHeight])`)); run.collapseStrokes.push(q); if (q[0] >= q[2] - 1) break; } }
       run.geo.collapsed = JSON.parse(await c.evaluate(GEO));
       await c.evaluate(FREEZE); await sleep(400);
       run.shots.collapsed = [shot(`${key}-collapsed-1`), (await sleep(700), shot(`${key}-collapsed-2`))];
       run.geo.collapsedAfterShots = JSON.parse(await c.evaluate(GEO));
       await c.evaluate(RESUME);
-      console.log(key, 'served', JSON.stringify(run.served), 'safari', run.ua);
+      console.log(key, 'served', JSON.stringify(run.served), 'safari', run.ua, 'collapse strokes [y, ih, max]', JSON.stringify(run.collapseStrokes));
       for (const k of ['shown', 'collapsed']) { const g = run.geo[k]; console.log(key, k.padEnd(9), 'y', g.y, 'max', g.max, 'ih', g.ih, 'vv', g.vvH, 'units', JSON.stringify(g.units), 'm', g.m, 'rv', g.rv, 'nav', JSON.stringify(g.nav), 'overflow', g.overflow, 'gapBottom', g.gapBottom, 'footerBottom', g.footer?.bottom); }
       // 3. count phases (Timeline on)
       await c.evaluate(LOGGER);
@@ -161,11 +166,11 @@ try {
       const syncT = await c.evaluate(timelineSyncJs('ph-sync'));
       const phase = async (name, fn) => { const t0 = await c.evaluate('performance.now()'); await fn(); await sleep(1500); const t1 = await c.evaluate('performance.now()'); run.phases[name] = { t0, t1 }; };
       for (let k = 1; k <= CYCLES; k++) {
-        await phase(`endShow${k}`, () => W.actions(stroke('down', 140)));
-        await phase(`endHide${k}`, () => W.actions(stroke('up', 320)));
+        await phase(`endShow${k}`, () => W.actions(stroke('down', 160)));
+        await phase(`endHide${k}`, () => W.actions(stroke('up', 380)));
       }
       await c.evaluate(`(window.scrollTo({ top: 2400, behavior: 'instant' }), 0)`); await sleep(1200);
-      for (let k = 1; k <= CYCLES; k++) {
+      for (let k = 1; k <= MIDC; k++) {
         await phase(`midHide${k}`, () => W.actions(stroke('up', 300)));
         await phase(`midShow${k}`, () => W.actions(stroke('down', 140)));
       }
