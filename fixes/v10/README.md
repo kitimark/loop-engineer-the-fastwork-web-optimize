@@ -6,6 +6,13 @@ int-v8. The lead accepted the plan and asked for a pre-stage on 2026-10-06. The 
 v10 lands only after the P-153 (P1) and P-152 (F1+U2) reads pass. If either fails, v10 drops that delta and the lead
 re-rules.
 
+**Update 2026-10-06 (lead 11:33Z-11:50Z): the arms below are the pre-stage, not the v10 that will be built.**
+- P-152 failed and P-155 confirmed it, so F1 and U2 are out.
+- CLOCK is closed-no-fix, and PANELH is deferred.
+- v10 = rev 7d + #platform pause (c) + P1 [+ P1b (a)] + nolift + I-219, NAV=none. P-156 decides P1 + P1b (a) as a pair.
+- The rebuild waits for the lead's go after P-156. Its three outcomes are under "The v10 rebuild" below.
+- The pixel results below were measured on the pre-stage arms (snapshot 0f91ea014cb3): N = C + F1+U2 + P1, V = N + nolift.
+
 **Verdict (Chrome only so far; the Simulator counts and the Simulator A/A are required and still pending):**
 
 - code parity: 0 differences (script PASS);
@@ -248,9 +255,54 @@ below) are logged as OBSERVED, cause not traced, and do not block.
   nolift cost (OBSERVED). Either way it is far below main's 122.
 - #platform opacity sample (rev 3's guard): 0 frames at or above 1 in all five builds.
 
-### Simulator: pending
+### Simulator pixels (fw-sim 15 Pro Max; shared simulator holds, pixels only)
 
-- Runner: `fixes/v10/sim.sh`, in shared simulator holds.
-- Pixels: the nolift region check, and v10 vs the Try-it build.
-- Counts: `fixes/v10/em-sim.mjs`, a copy of fix-end-morph-p1's, credited.
-- These are DEFERRED while a phone block is marked (P-153 block 2 at the time of writing) and run in the next window.
+- Runner: `fixes/v10/px-split.sh sim`. It runs em-px in half groups (two up stops each, plus pre, up0 and post).
+  - It uses resumable sessions: em-px `--arms`/`--out`, and `pxmissing.mjs` names the loads still missing.
+  - Sessions were capped at 120 s, or 300 s when no phone block was marked.
+  - `pxscore.mjs` scores a group whose last session hit its cap after the last load.
+- **Page offset.** Simulator shots are the whole screen (1290x2796), and the page starts 59 css px below the top (the
+  status bar).
+  - Proof (`simtop.mjs`): the edges of the nolift diff match the earn button's rects + 59 within 1 px.
+  - `nlregion.mjs --top 59` moves the button region by that offset.
+  - It sets aside clusters wholly above the page top as "status bar, not judged". The status-bar clock changes by the
+    minute, so loads from different sessions differ there on identical bytes (nolift g4c: 47 px at every stop).
+- **Scorer fix (F-314, f5826c5b + 353ee6aa).** pxlib now decodes every shot to RGBA. No v10 gate folder mixes RGB and
+  RGBA shots, so no score changed.
+
+**Nolift (N vs V; `nlregion --top 59`):**
+
+- Every consistent difference is inside the earn button's region (+28 css px), except the post stop and one up0.05
+  cluster.
+  - The up0.05 cluster is 660 px, level 38, at the left of the header.
+  - The post differences sit on the #platform card: 0 to 15993 px per group (0.44 % of the screen at most).
+- g2b is a script PASS; every other group fails on exactly one stop (post, or up0.05 in g1a).
+
+**v10 vs the nolift Try-it build:** identical at every stop except post in g1, g2, g3a and g4c:
+
+| group | post consistent |
+|---|---|
+| g1 | 9 px |
+| g2 | **287 px** |
+| g3a | 7 px |
+| g4c | **41566 px** (1.15 % of the screen) |
+
+**The post stop is not quiet on identical bytes (Simulator A/A, V against itself; detached, groups g2a-g4c still deferred
+by the phone block):**
+
+| A/A group | result |
+|---|---|
+| g1a | identical at all 5 stops |
+| g1b | identical, except post: **418 px** consistent (`nlregion --identical`: post DIFFERS) |
+
+So identical bytes already leave 418 px at post. The 287 px Try-it reading at g2's post is **smaller than that A/A
+residue and is not a real difference**. The 41566 px reading at g4c waits for the A/A at g4c.
+
+- The post card shifts −5..+3 device px vertically between loads (`postshift.mjs`), also between loads of the same build.
+- At g4c, A and A2 happened to align while V and V2 sat +2/+3. That is how a shift reads as "consistent" there.
+- Cause OBSERVED only: the post-close position of the card varies by a few device px per load.
+
+### Simulator counts: pending
+
+- `fixes/v10/em-sim.mjs` (a copy of fix-end-morph-p1's, credited) runs on the real v10 arms after the rebuild (lead
+  11:34Z: the counts on the old arms were skipped).
