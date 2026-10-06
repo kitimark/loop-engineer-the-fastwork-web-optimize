@@ -657,6 +657,18 @@ Commands (the runner's, Bash `run_in_background`, timeout 7200000):
 - `TICKET=P-155 node tools/lock.mjs run iphone --owner iphone-runner --block P-155 --max-seconds 3600 --keep 120 -- sh fixes/end-morph-f12/phone/p155-block.sh H1:WC H2:WF H3:WU H4:S0`
 - then `... H5:EC1 H6:EF1 H7:EU1`, `... H8:EF2 H9:EU2 H10:EC2`, `... H11:EU3 H12:EC3 H13:EF3`, `... H14:TAIL`.
 
+### P-155 block 1 log
+
+| time (Z) | event |
+|---|---|
+| 09:26:23 | Part 1 started (H1 WC, H2 WF, H3 WU, H4 S0). |
+| 09:47:31 | Part 1 ended with exit 0: H1-H4 all VALID (232 / 228 / 229 / 219 s); sentinel S0 PASS (fps 55, slow 0.035). Log `out/p155/part1.log`. |
+| 09:47:45 | Part 2 started (H5 EC1, H6 EF1, H7 EU1), inside the 120 s keep window. |
+| 09:49:50 | Part 2 STOP, exit 5, before H5's start gate. WDA did not come back after its restart: "Failed to initialize for UI testing: Timed out while enabling automation mode" (`out/p155/wda-restart-1791280069.log`). No hold ran, so none is void. Reported to the lead first. The lead counts it as I-220 (third today). |
+| 09:51:41 | The user re-plugged the phone (console step C-083) and restarted the Xcode thermal condition. Lead: "phone ready", rerun part 2 unchanged; a start gate that does not read Serious (induced) stops the part. |
+| 09:53:07 | Part 2 rerun started, unchanged (H5 EC1, H6 EF1, H7 EU1). Log `out/p155/part2r.log`; the stopped try's log is `out/p155/part2.log`. |
+| 09:55:05 | Part 2 rerun STOP, exit 5, before H5 again. This time the WDA runner started on the device, but the local forward on port 8100 never became reachable (`out/p155/wda-restart-1791280384.log`). No hold ran. Reported to the lead first; waiting for its go. |
+
 ### Plan: the higher-m F1 variant (not built)
 
 - **Proposed change:** set `visibility: hidden` only at m >= m_h = 0.75, instead of at fade 0 (m >= 0.55).
@@ -678,6 +690,76 @@ Commands (the runner's, Bash `run_in_background`, timeout 7200000):
   - Even m_h = 1 buys only about 150 ms at median speed.
 - **A variant more likely to work:** keep #platform's layers alive and only stop what repaints them at opacity 0 (pause its animations at fade 0). It costs no rebuild, but needs its own Chrome cost card first.
 - **Either variant** needs a cost card, a pixel check and a phone check. The split block above comes first.
+
+## T-204 #32: what #platform does while it fades (analysis and options; no phone, decides nothing)
+
+The question (the user's): does #platform's fade in and out during the morph cost frames? The fade is on
+`.start-selling-platform` (v9-final CSS 5698-5705): `filter: blur(calc((1 - var(--morph-fade)) * 12px))` and
+`opacity: min(var(--morph-fade), 0.9999)`. `--morph-fade` is registered non-inheriting (CSS 1608) and is written inline
+by S() (JS 14156) as QM(m) = 1 - min(1, m / 0.55). So the section fades over 0 < m < 0.55 and is at opacity 0 for
+m >= 0.55. Line numbers are v9-final's (`out/p155/snap/C`); the baseline's are CSS 5389-5393 and JS 13017.
+
+### 1. What #platform renders across the fade (Chrome, OBSERVED in our setup)
+
+Probe: `fade-probe.mjs` / `fade-probe2.mjs` (scratch). It runs headless at 430x932 DPR 3 with touch, no throttle,
+counts only, in the shared lane, on v9-final (C). It reads the LayerTree, the running animations and the computed
+filter and opacity at each m. Static parks snap to m 0 or 1: the morph-scroll settle moves a resting page to an end.
+So the mid-fade rows (fade-probe2) are read 130-200 ms after the scroll, before the settle.
+
+| m | fade | blur | #platform layers (all draw) | running animations | #platform repaints |
+|---|---|---|---|---|---|
+| 0 | 1 | 0 px | 40 | 5 | 0 in 1 s |
+| 0.05 / 0.2 / 0.35 / 0.5 | 0.91 / 0.64 / 0.36 / 0.09 | 1.1 / 4.4 / 7.6 / 10.9 px | 40 | 5 | 0 / 3 / 3 / 3 (the 3 in-view title mask layers, once after the fade change) |
+| 0.7 and 1 | 0 | 12 px | 40 | 5 | 0 in 1 s |
+
+- **Layers:** the same 40 at every m. Their compositing reasons: ActiveTransformAnimation 24, ActiveOpacityAnimation 17, WillChangeTransform 11, StickyPosition 1, Overlap 1.
+  - On the Simulator (WebKit) the platform-idle census found 26 layers (`fixes/platform-idle/README.md` "Layers and memory").
+- **Running animations at every m, fade 0 included:** the 3 title sweep bands (`pi-sweep-band` on `::after`, 4 s linear, infinite) and the 2 secure-network glints (`pi-glint-left/right`, 5 s, infinite).
+  - Their gates are IntersectionObservers (sweep gate JS 4022-4040; glint IO >= 0.35, JS 13100-13116).
+  - An IntersectionObserver does not look at opacity (inferred). So at opacity 0 the section stays `visibility: visible`, and the 5 animations keep running.
+  - This is F-182's point, now confirmed for this build in Chrome.
+- **Other animations:** 24 in total, the rest finished one-shots. At m = -0.3 the agents caret also runs.
+- **No section-wide repaint:**
+  - The animations are compositor animations (transform and opacity): they repaint nothing while idle.
+  - The 3 in-view title mask layers (`mask-clip: text`) repaint once after each fade change (OBSERVED, cause unknown).
+- **No backdrop-filter is rendered inside #platform.** `.agents-card-chat`'s `blur(6px)` (CSS 10765) has no element in the JS.
+  - Over #platform sit the nav glass `backdrop-filter: blur(20px * (1 - m))` (CSS 11814) and the panel's own blur and opacity (CSS 10959-10963).
+- **Images inside:** `service-bg.jpg` 576x1024 and `service-quote/bg.png` 736x1349 behind a `filter: blur(16px)` stage bg (CSS 6686), the grain tile 256x256 with `mix-blend-mode: overlay`, and the hex rings 557x615. There is no video and no canvas. (Map by a read-only helper; lines verified on the ones cited.)
+
+### 2. Per-frame cost in the fade band (P-152 C = v9-final, Timeline, G driver; exploratory)
+
+Slow share = moving lastScreen frames with dt > 34 ms. Composite is WebKit's main-thread layer flush, per frame. Each cell gives the slow share, then the Composite time.
+
+| m band | closing | opening |
+|---|---|---|
+| 0-0.2 (fade 1 to 0.64) | 2.6 %, 11.32 ms | 8.1 %, 10.78 ms |
+| 0.2-0.55 (fade 0.64 to 0) | 1.9 %, 10.40 ms | 2.5 %, 7.70 ms |
+| 0.55-1 (fade 0, invisible) | 0.9 %, 9.24 ms | 2.3 %, 9.12 ms |
+
+- **Before the zone (opening):** Composite 4.17 ms per frame. Paint is 0.4-0.55 ms per frame everywhere.
+- **P-153's C (v9-final + F1 + U2), closing 0.2-0.55:** 4.4 % slow.
+- **Reading:**
+  - The fade band is somewhat worse than the invisible band, by 1-2 ms of Composite and 1-6 points of slow share.
+  - The hot spot is the morph start, opening m 0-0.2.
+  - The whole zone flushes at about twice the page's Composite cost even with #platform invisible (m >= 0.55). The nav panel and #platform's 26-40 live layers are both in that flush, and the Timeline cannot split them.
+  - The Timeline shows only the main thread. The blur's GPU cost is not in these numbers (a full-viewport blur of a 26-40 layer group, radius up to 36 device px, under the nav's backdrop blur).
+  - So the user's instinct is plausible, but it is not shown by this data.
+
+### 3. Options (to build as a proposal with Try-it; none built yet)
+
+| option | what changes | pixels | what it could save | risk |
+|---|---|---|---|---|
+| (c) pause at fade 0 | an attribute set by S() when fade = 0 pauses every animation under #platform (`animation-play-state: paused`); layers stay | identical while invisible. On the way back the sweeps and glints resume from their paused phase, like the existing IO sweep gate | the 5 running compositor animations at m >= 0.55 (render-server work, not main thread) | lowest. No layer rebuild, unlike F1's `visibility: hidden` (P-152 FAIL, suspected re-show cost; P-155 is splitting it now) |
+| (a) pause while fading | the same pause from fade < 1 (m > 0) | NOT identical: the sweeps and glints freeze while the section is still visible and blurring | the same, plus the fade band | small visible difference; Try-it needed |
+| (b) flat overlay over a static #platform | drop the section's filter and opacity; fade in an overlay of the background colour (opacity 1 - fade) between #platform and the nav (z-index below 40), plus (c)'s pause | NOT identical: no blur. The opacity part is exact only if what is behind #platform is one flat colour (to check) | the full-viewport animated group blur, which is the biggest GPU candidate | visible difference (sharp text fading instead of blurred); Try-it needed |
+| (d) scroll-driven fade (arch-compositor-morph's idea) | `animation-timeline: --fwms; animation-range: entry 0% entry 55%` on #platform instead of S()'s inline write | identical by construction | one inline style write and one element restyle per frame. Small: `--morph-fade` is already non-inheriting | WebKit restyles every element with a scroll-driven animation on each update (F-157, KeyframeEffect.cpp per arch). #platform itself has no infinite animation, so this is probably small. UNRESOLVED on WebKit |
+
+- **Order I propose:**
+  1. (c) first: identical, cheap, and orthogonal to P-155.
+  2. Then (b), the only option aimed at the blur.
+  3. (a) only if (c) shows a gain and the user accepts frozen sweeps during the fade.
+- **Before any phone check:** a Chrome cost card per option (layers, running animations, repaints; counts only), plus pixel stops (PR-010) for (c) and (d).
+- **Ownership:** arch-compositor-morph's nav plan does not touch `.start-selling-platform` or CSS 5698-5705. An overlay for (b) must stay below the nav's z-index 40, so the nav glass still samples it.
 
 ## Pending
 
