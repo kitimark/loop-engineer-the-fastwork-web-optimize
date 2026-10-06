@@ -15,6 +15,13 @@ rev 2's `--earn-in` writer and its CSS are gone). `delta.diff` = the change on t
 and the iOS Simulator (Safari, Web Inspector Timeline record counts). No iPhone run (memory
 `simulator-for-non-perf-phone-jobs.md`).
 
+**Known issue, fixed separately (I-219, 2026-10-06, `fixes/i219-hydrate/`):** rev 3 put
+`span.start-selling-top-nav-earn-box` into the nav template `uN`, but the server HTML has only the label text in the
+button. So hydration ran `e(textNode, !0)`, which appends into a Text node (HierarchyRequestError, "Failed to hydrate").
+Svelte then dropped the server DOM and mounted the whole page again at every load, on every build since rev 3 (rev 7d
+included). `fixes/i219-hydrate/delta.diff` puts the baseline button back in the template and creates the span from
+script right after the hydration walk. The DOM is the same, and Chrome pixels are identical to rev 7d. Pitfall F-306.
+
 ## Rev 3 (PR-021 changes-requested on rev 2, T-158): original timers back, drawn without layout
 
 The user on rev 2 (scrubbed summary; full text in PR-021's decision note and thread T-158):

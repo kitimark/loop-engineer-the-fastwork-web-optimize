@@ -1,0 +1,31 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13775,7 +13775,7 @@
+     `<div class="start-selling-morph-panel"><div class="start-selling-morph-backdrop" aria-hidden="true"></div> <div class="start-selling-morph-veil" aria-hidden="true"></div> <div class="start-selling-morph-center"><p class="start-selling-morph-title"> </p> <div class="waitlist-closing-countdown svelte-1dcozpm"><!></div> <div class="start-selling-morph-cta-stack svelte-1dcozpm"><button class="start-selling-morph-cta" type="button"><svg class="solar solar-bell-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M18.7491 9.70957V9.00496C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00496V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z" stroke="currentColor"/><path d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19" stroke="currentColor" stroke-linecap="round"/></svg> </button> <a class="start-selling-morph-cta-rsvp" href="https://f.fastwork.co/demoday" target="_blank" rel="noopener" data-selenium="start-selling.header.link.demo-day"><svg class="solar solar-calendar-linear cta-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor"/><path d="M7 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 4V2.5" stroke="currentColor" stroke-linecap="round"/><path d="M2.5 9H21.5" stroke="currentColor" stroke-linecap="round"/><path d="M17 13H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17.0234H17.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.0234H12.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.0234H7.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg> </a></div></div> <footer class="start-selling-morph-footer"><p> </p> <div class="start-selling-morph-footer-end"><p> </p> <span class="start-selling-morph-grad" aria-hidden="true"></span> <a href="https://fastwork.com/privacy"> </a></div></footer></div>`,
+   ),
+   uN = h(
+-    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"><span class="start-selling-top-nav-earn-box svelte-1dcozpm"> </span></button></div></div> <!></header>`,
++    `<header><div class="start-selling-top-nav-bar svelte-1dcozpm"><a class="start-selling-top-nav-logo svelte-1dcozpm"><!></a> <div class="start-selling-top-nav-actions svelte-1dcozpm"><!> <button class="start-selling-top-nav-btn is-earn svelte-1dcozpm" type="button"> </button></div></div> <!></header>`,
+   );
+ function dN(n, r) {
+   D(r, !0);
+@@ -14578,10 +14578,15 @@
+     },
+   });
+   var oe = V(ae, 2),
+-    // nav-earn rev 3: the label sits in .start-selling-top-nav-earn-box (the dark pill), see __ew below
+-    __ewBox = e(oe),
+-    le = e(__ewBox, !0);
+-  (M(__ewBox), M(oe), M(ie), M(B));
++    le = e(oe, !0);
++  (M(oe), M(ie), M(B));
++  // nav-earn rev 3: the label sits in .start-selling-top-nav-earn-box (the dark pill), see __ew below.
++  // i219-hydrate (I-219): the span is not in the template (uN) any more. The server HTML has the label as the button's
++  // only child, so hydrating a template span ran `$(textNode, !0)`, which appended into a Text node
++  // (HierarchyRequestError) and made Svelte drop the server DOM and mount the whole page again. Hydration now walks
++  // the baseline's button > text, and the span is created here and wraps that text node: the same DOM as before.
++  var __ewBox = document.createElement(`span`);
++  ((__ewBox.className = `start-selling-top-nav-earn-box svelte-1dcozpm`), oe.insertBefore(__ewBox, le), __ewBox.appendChild(le));
+   // perf(morph-inherit, F-183): R4b registers --morph as non-inheriting and the children below take it with an
+   // explicit `--morph: inherit`. WebKit (Safari 26.5, Simulator and iPhone, OBSERVED) does not re-resolve those
+   // children when only the header's value changes, so they kept the value from the last class flip (logo not

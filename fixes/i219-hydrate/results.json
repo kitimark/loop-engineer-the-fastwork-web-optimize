@@ -1,0 +1,1076 @@
+{
+ "topic": "i219-hydrate",
+ "incident": "I-219",
+ "baselineSnapshot": "b1789284481295-4ad4a84a",
+ "base": {
+  "name": "C = baseline + fixes/morph-scroll-v9try/patch.diff (rev 7d, 6d1632eb0ee9)",
+  "js": "1b2eecc66011",
+  "css": "e1359ab9994a"
+ },
+ "build": {
+  "name": "F = C + fixes/i219-hydrate/delta.diff",
+  "js": "30d41592a308",
+  "css": "e1359ab9994a",
+  "deltaDiff": "947c88282561",
+  "patchDiff": "b9ce26511dc7"
+ },
+ "onV10": {
+  "V": "f5068db34a32 / a4ed5432f2f7",
+  "VplusDelta": "111d8e02968d / a4ed5432f2f7",
+  "apply": "patch -p1 -F 0, offset only"
+ },
+ "verdict": "hydration succeeds (0 Failed to hydrate in 4/4 F loads vs 4/4 C loads warning); server DOM kept; Chrome DOM and pixel parity with C (whole page 8 stops consistent 0; end zone 20 stops: 19 consistent 0, post stop 330 css px2 in 1 of 4 groups, page phase under the nav); no timing claim",
+ "method": "Chrome headless 430x932 DPR 3 mobile + touch, plain http --vendors=local --latency 150 --no-cache; cost loads CPU 6x with trace + screencast; dom loads unthrottled; shared probe holds <= 180 s (P-152 phone block ran); measurement tools unchanged",
+ "loadCostTrace": {
+  "run": "cost-2026-10-06T07-41-07-573Z",
+  "note": "one traced load per build at 6x; durations indicative only",
+  "B": {
+   "dclMs": 4329,
+   "remountTask": null,
+   "longestTasksBeforeDcl": [
+    {
+     "atMs": 3086,
+     "ms": 367,
+     "layouts": 2,
+     "recalcs": 1
+    },
+    {
+     "atMs": 3666,
+     "ms": 351,
+     "layouts": 12,
+     "recalcs": 23
+    },
+    {
+     "atMs": 4021,
+     "ms": 255,
+     "layouts": 5,
+     "recalcs": 5
+    }
+   ],
+   "all": {
+    "Layout": {
+     "n": 137,
+     "ms": 572
+    },
+    "UpdateLayoutTree": {
+     "n": 312,
+     "ms": 356
+    },
+    "Paint": {
+     "n": 496,
+     "ms": 259
+    },
+    "PrePaint": {
+     "n": 293,
+     "ms": 260
+    },
+    "RunTask": {
+     "n": 2683,
+     "ms": 4005
+    },
+    "FunctionCall": {
+     "n": 516,
+     "ms": 548
+    },
+    "EvaluateScript": {
+     "n": 8,
+     "ms": 580
+    },
+    "v8.compile": {
+     "n": 8,
+     "ms": 1
+    }
+   },
+   "firstSecond": {
+    "Layout": {
+     "n": 1,
+     "ms": 1
+    },
+    "UpdateLayoutTree": {
+     "n": 1,
+     "ms": 0
+    },
+    "Paint": {
+     "n": 0,
+     "ms": 0
+    },
+    "PrePaint": {
+     "n": 0,
+     "ms": 0
+    },
+    "RunTask": {
+     "n": 138,
+     "ms": 54
+    },
+    "FunctionCall": {
+     "n": 1,
+     "ms": 4
+    },
+    "EvaluateScript": {
+     "n": 0,
+     "ms": 0
+    },
+    "v8.compile": {
+     "n": 0,
+     "ms": 0
+    }
+   }
+  },
+  "C": {
+   "dclMs": 4543,
+   "remountTask": {
+    "atMs": 3730,
+    "ms": 482,
+    "inside": {
+     "Layout": {
+      "n": 13,
+      "ms": 47
+     },
+     "UpdateLayoutTree": {
+      "n": 20,
+      "ms": 53
+     },
+     "Paint": {
+      "n": 0,
+      "ms": 0
+     },
+     "PrePaint": {
+      "n": 2,
+      "ms": 11
+     },
+     "FunctionCall": {
+      "n": 89,
+      "ms": 13
+     },
+     "EvaluateScript": {
+      "n": 0,
+      "ms": 0
+     },
+     "v8.compile": {
+      "n": 0,
+      "ms": 0
+     }
+    }
+   },
+   "longestTasksBeforeDcl": [
+    {
+     "atMs": 3730,
+     "ms": 482,
+     "layouts": 13,
+     "recalcs": 20
+    },
+    {
+     "atMs": 3188,
+     "ms": 341,
+     "layouts": 2,
+     "recalcs": 1
+    },
+    {
+     "atMs": 4216,
+     "ms": 277,
+     "layouts": 6,
+     "recalcs": 5
+    }
+   ],
+   "all": {
+    "Layout": {
+     "n": 61,
+     "ms": 523
+    },
+    "UpdateLayoutTree": {
+     "n": 251,
+     "ms": 367
+    },
+    "Paint": {
+     "n": 405,
+     "ms": 267
+    },
+    "PrePaint": {
+     "n": 227,
+     "ms": 225
+    },
+    "RunTask": {
+     "n": 2469,
+     "ms": 3933
+    },
+    "FunctionCall": {
+     "n": 361,
+     "ms": 524
+    },
+    "EvaluateScript": {
+     "n": 8,
+     "ms": 580
+    },
+    "v8.compile": {
+     "n": 8,
+     "ms": 1
+    }
+   },
+   "firstSecond": {
+    "Layout": {
+     "n": 1,
+     "ms": 1
+    },
+    "UpdateLayoutTree": {
+     "n": 1,
+     "ms": 0
+    },
+    "Paint": {
+     "n": 0,
+     "ms": 0
+    },
+    "PrePaint": {
+     "n": 0,
+     "ms": 0
+    },
+    "RunTask": {
+     "n": 137,
+     "ms": 58
+    },
+    "FunctionCall": {
+     "n": 1,
+     "ms": 3
+    },
+    "EvaluateScript": {
+     "n": 0,
+     "ms": 0
+    },
+    "v8.compile": {
+     "n": 0,
+     "ms": 0
+    }
+   }
+  },
+  "F": {
+   "dclMs": 4547,
+   "remountTask": null,
+   "longestTasksBeforeDcl": [
+    {
+     "atMs": 3835,
+     "ms": 386,
+     "layouts": 13,
+     "recalcs": 20
+    },
+    {
+     "atMs": 3285,
+     "ms": 344,
+     "layouts": 2,
+     "recalcs": 1
+    },
+    {
+     "atMs": 4226,
+     "ms": 261,
+     "layouts": 6,
+     "recalcs": 5
+    }
+   ],
+   "all": {
+    "Layout": {
+     "n": 57,
+     "ms": 481
+    },
+    "UpdateLayoutTree": {
+     "n": 265,
+     "ms": 361
+    },
+    "Paint": {
+     "n": 432,
+     "ms": 291
+    },
+    "PrePaint": {
+     "n": 242,
+     "ms": 220
+    },
+    "RunTask": {
+     "n": 2494,
+     "ms": 3954
+    },
+    "FunctionCall": {
+     "n": 308,
+     "ms": 524
+    },
+    "EvaluateScript": {
+     "n": 8,
+     "ms": 609
+    },
+    "v8.compile": {
+     "n": 8,
+     "ms": 1
+    }
+   },
+   "firstSecond": {
+    "Layout": {
+     "n": 1,
+     "ms": 1
+    },
+    "UpdateLayoutTree": {
+     "n": 1,
+     "ms": 0
+    },
+    "Paint": {
+     "n": 0,
+     "ms": 0
+    },
+    "PrePaint": {
+     "n": 0,
+     "ms": 0
+    },
+    "RunTask": {
+     "n": 112,
+     "ms": 62
+    },
+    "FunctionCall": {
+     "n": 1,
+     "ms": 4
+    },
+    "EvaluateScript": {
+     "n": 0,
+     "ms": 0
+    },
+    "v8.compile": {
+     "n": 0,
+     "ms": 0
+    }
+   }
+  }
+ },
+ "loads": [
+  {
+   "run": "cost-2026-10-06T07-39-17-816Z",
+   "mode": "cost",
+   "build": "B",
+   "served": [
+    "4606120cf392",
+    "27776f3d4138"
+   ],
+   "hydrateWarnings": 0,
+   "firstWarning": null,
+   "bigMutations": [],
+   "removedElsTotal": 66,
+   "addedElsTotal": 13086,
+   "parsedSurvivors": null,
+   "bodyElements": 1272,
+   "headerIsParsedNode": null,
+   "dclMs": 4510,
+   "metrics": {
+    "Nodes": 3160,
+    "LayoutCount": 154,
+    "RecalcStyleCount": 376,
+    "LayoutDurationMs": 619,
+    "RecalcStyleDurationMs": 437,
+    "ScriptDurationMs": 1088,
+    "TaskDurationMs": 4560,
+    "JSHeapUsedMB": 9.9
+   },
+   "note": "first probe version: survivor marker taken at DOMContentLoaded, after the re-mount; ignore survivors"
+  },
+  {
+   "run": "cost-2026-10-06T07-39-17-816Z",
+   "mode": "cost",
+   "build": "C",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 1,
+   "firstWarning": "Failed to hydrate:  HierarchyRequestError: Failed to execute 'appendChild' on 'Node': This node type does not support this method.\n    at Ln",
+   "bigMutations": [
+    {
+     "t": 4968,
+     "added": 1665,
+     "removed": 1005,
+     "beforeDcl": true
+    },
+    {
+     "t": 7349,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 1021,
+   "addedElsTotal": 13164,
+   "parsedSurvivors": null,
+   "bodyElements": 1516,
+   "headerIsParsedNode": null,
+   "dclMs": 5608,
+   "metrics": {
+    "Nodes": 6435,
+    "LayoutCount": 49,
+    "RecalcStyleCount": 323,
+    "LayoutDurationMs": 671,
+    "RecalcStyleDurationMs": 512,
+    "ScriptDurationMs": 1133,
+    "TaskDurationMs": 5469,
+    "JSHeapUsedMB": 12.1
+   },
+   "note": "first probe version: survivor marker taken at DOMContentLoaded, after the re-mount; ignore survivors"
+  },
+  {
+   "run": "cost-2026-10-06T07-39-17-816Z",
+   "mode": "cost",
+   "build": "F",
+   "served": [
+    "30d41592a308",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 0,
+   "firstWarning": null,
+   "bigMutations": [
+    {
+     "t": 7822,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 25,
+   "addedElsTotal": 13145,
+   "parsedSurvivors": null,
+   "bodyElements": 1517,
+   "headerIsParsedNode": null,
+   "dclMs": 5026,
+   "metrics": {
+    "Nodes": 3673,
+    "LayoutCount": 48,
+    "RecalcStyleCount": 346,
+    "LayoutDurationMs": 563,
+    "RecalcStyleDurationMs": 498,
+    "ScriptDurationMs": 1148,
+    "TaskDurationMs": 5310,
+    "JSHeapUsedMB": 11.8
+   },
+   "note": "first probe version: survivor marker taken at DOMContentLoaded, after the re-mount; ignore survivors"
+  },
+  {
+   "run": "cost-2026-10-06T07-41-07-573Z",
+   "mode": "cost",
+   "build": "C",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 1,
+   "firstWarning": "Failed to hydrate:  HierarchyRequestError: Failed to execute 'appendChild' on 'Node': This node type does not support this method.\n    at Ln",
+   "bigMutations": [
+    {
+     "t": 4197,
+     "added": 1665,
+     "removed": 1005,
+     "beforeDcl": true
+    },
+    {
+     "t": 6466,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 1015,
+   "addedElsTotal": 14905,
+   "parsedSurvivors": 8,
+   "bodyElements": 1516,
+   "headerIsParsedNode": false,
+   "dclMs": 4543,
+   "metrics": {
+    "Nodes": 6423,
+    "LayoutCount": 49,
+    "RecalcStyleCount": 313,
+    "LayoutDurationMs": 498,
+    "RecalcStyleDurationMs": 409,
+    "ScriptDurationMs": 996,
+    "TaskDurationMs": 4290,
+    "JSHeapUsedMB": 11.2
+   }
+  },
+  {
+   "run": "cost-2026-10-06T07-41-07-573Z",
+   "mode": "cost",
+   "build": "F",
+   "served": [
+    "30d41592a308",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 0,
+   "firstWarning": null,
+   "bigMutations": [
+    {
+     "t": 6735,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 25,
+   "addedElsTotal": 12777,
+   "parsedSurvivors": 992,
+   "bodyElements": 1517,
+   "headerIsParsedNode": true,
+   "dclMs": 4547,
+   "metrics": {
+    "Nodes": 3676,
+    "LayoutCount": 45,
+    "RecalcStyleCount": 317,
+    "LayoutDurationMs": 458,
+    "RecalcStyleDurationMs": 415,
+    "ScriptDurationMs": 1036,
+    "TaskDurationMs": 4323,
+    "JSHeapUsedMB": 11.7
+   }
+  },
+  {
+   "run": "cost-2026-10-06T07-41-07-573Z",
+   "mode": "cost",
+   "build": "B",
+   "served": [
+    "4606120cf392",
+    "27776f3d4138"
+   ],
+   "hydrateWarnings": 0,
+   "firstWarning": null,
+   "bigMutations": [],
+   "removedElsTotal": 62,
+   "addedElsTotal": 13058,
+   "parsedSurvivors": 992,
+   "bodyElements": 1271,
+   "headerIsParsedNode": true,
+   "dclMs": 4329,
+   "metrics": {
+    "Nodes": 3150,
+    "LayoutCount": 141,
+    "RecalcStyleCount": 370,
+    "LayoutDurationMs": 569,
+    "RecalcStyleDurationMs": 413,
+    "ScriptDurationMs": 1045,
+    "TaskDurationMs": 4340,
+    "JSHeapUsedMB": 10.1
+   }
+  },
+  {
+   "run": "dom-2026-10-06T07-46-03-198Z",
+   "mode": "dom",
+   "build": "C",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 1,
+   "firstWarning": "Failed to hydrate:  HierarchyRequestError: Failed to execute 'appendChild' on 'Node': This node type does not support this method.\n    at Ln",
+   "bigMutations": [
+    {
+     "t": 3320,
+     "added": 1665,
+     "removed": 1005,
+     "beforeDcl": true
+    },
+    {
+     "t": 6185,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 1044,
+   "addedElsTotal": 17725,
+   "parsedSurvivors": 8,
+   "bodyElements": 1516,
+   "headerIsParsedNode": false,
+   "dclMs": 3702,
+   "metrics": null
+  },
+  {
+   "run": "dom-2026-10-06T07-46-03-198Z",
+   "mode": "dom",
+   "build": "F",
+   "served": [
+    "30d41592a308",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 0,
+   "firstWarning": null,
+   "bigMutations": [
+    {
+     "t": 6095,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 48,
+   "addedElsTotal": 16464,
+   "parsedSurvivors": 969,
+   "bodyElements": 1517,
+   "headerIsParsedNode": true,
+   "dclMs": 3625,
+   "metrics": null
+  },
+  {
+   "run": "dom-2026-10-06T07-46-03-198Z",
+   "mode": "dom",
+   "build": "C2",
+   "served": [
+    "1b2eecc66011",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 1,
+   "firstWarning": "Failed to hydrate:  HierarchyRequestError: Failed to execute 'appendChild' on 'Node': This node type does not support this method.\n    at Ln",
+   "bigMutations": [
+    {
+     "t": 3145,
+     "added": 1665,
+     "removed": 1005,
+     "beforeDcl": true
+    },
+    {
+     "t": 5998,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 1044,
+   "addedElsTotal": 17725,
+   "parsedSurvivors": 8,
+   "bodyElements": 1516,
+   "headerIsParsedNode": false,
+   "dclMs": 3530,
+   "metrics": null
+  },
+  {
+   "run": "dom-2026-10-06T07-46-03-198Z",
+   "mode": "dom",
+   "build": "F2",
+   "served": [
+    "30d41592a308",
+    "e1359ab9994a"
+   ],
+   "hydrateWarnings": 0,
+   "firstWarning": null,
+   "bigMutations": [
+    {
+     "t": 6096,
+     "added": 425,
+     "removed": 4
+    }
+   ],
+   "removedElsTotal": 48,
+   "addedElsTotal": 16464,
+   "parsedSurvivors": 969,
+   "bodyElements": 1517,
+   "headerIsParsedNode": true,
+   "dclMs": 3606,
+   "metrics": null
+  }
+ ],
+ "domParity": {
+  "run": "dom-2026-10-06T07-46-03-198Z",
+  "CvsC2": "identical",
+  "FvsF2": "identical",
+  "CvsF": [
+   "language switch aria-controls c1 (C, client id after re-mount) vs s1 (F, server id, as baseline)",
+   "SvelteKit inline start <script> kept in F (removed in C by textContent = \"\")"
+  ],
+  "styleAttrs": "49 inline style attributes differ in serialization only (server text in F, CSSOM re-serialization in C)",
+  "pageStops": [
+   {
+    "f": "0",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0.0007
+   },
+   {
+    "f": "0.04",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0
+   },
+   {
+    "f": "0.1",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0
+   },
+   {
+    "f": "0.2",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 4,
+    "aaOver8Pct": 0
+   },
+   {
+    "f": "0.3",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0
+   },
+   {
+    "f": "0.45",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0
+   },
+   {
+    "f": "0.6",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0.0002
+   },
+   {
+    "f": "0.75",
+    "consistentCssPx2": 0,
+    "AVcssPx2": 0,
+    "aaOver8Pct": 0.0002
+   }
+  ]
+ },
+ "endZonePx": [
+  {
+   "group": "g1",
+   "served": [
+    {
+     "arm": "A",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "A2",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V2",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    }
+   ],
+   "stops": [
+    {
+     "k": "pre",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0.0003,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.02",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.05",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.1",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.15",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "post",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 6,
+     "aaOver8Pct": 5.6242,
+     "vvOver8Pct": 0.6895
+    }
+   ]
+  },
+  {
+   "group": "g2",
+   "served": [
+    {
+     "arm": "A",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "A2",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V2",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    }
+   ],
+   "stops": [
+    {
+     "k": "pre",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.19",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.25",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.4",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.5",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "post",
+     "consistentCssPx2": 330,
+     "consistentPct": 0.0989,
+     "consistentMax": 128,
+     "aaOver8Pct": 1.2826,
+     "vvOver8Pct": 0.6895
+    }
+   ]
+  },
+  {
+   "group": "g3",
+   "served": [
+    {
+     "arm": "A",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "A2",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V2",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    }
+   ],
+   "stops": [
+    {
+     "k": "pre",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 2,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.54",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.6",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 2,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.8",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 2,
+     "aaOver8Pct": 0.0058,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.95",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0.0028,
+     "vvOver8Pct": 0.0056
+    },
+    {
+     "k": "post",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 4.5184,
+     "vvOver8Pct": 0
+    }
+   ]
+  },
+  {
+   "group": "g4",
+   "served": [
+    {
+     "arm": "A",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "A2",
+     "js": "1b2eecc66011",
+     "css": "e1359ab9994a",
+     "errors": []
+    },
+    {
+     "arm": "V2",
+     "js": "30d41592a308",
+     "css": "e1359ab9994a",
+     "errors": []
+    }
+   ],
+   "stops": [
+    {
+     "k": "pre",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0.0001,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 2,
+     "aaOver8Pct": 0.0003,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up0.99",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "up1",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "dn0.5",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "dn0.1",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "dn0",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 1,
+     "aaOver8Pct": 0,
+     "vvOver8Pct": 0
+    },
+    {
+     "k": "post",
+     "consistentCssPx2": 0,
+     "consistentPct": 0,
+     "consistentMax": 0,
+     "aaOver8Pct": 2.109,
+     "vvOver8Pct": 2.109
+    }
+   ]
+  }
+ ]
+}
