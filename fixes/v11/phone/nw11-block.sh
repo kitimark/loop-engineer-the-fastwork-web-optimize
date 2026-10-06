@@ -5,8 +5,9 @@
 #   - part start (lead; I-227, I-212, I-225): a FRESH WDA session (iphone.mjs wda stop, wda start, wda check) instead of
 #     `wda ensure`, then a 60 s settle, then a tab check: Safari parked and exactly ONE tab listed by iphone.mjs status;
 #     a WDA start failure or another tab count stops the part before any hold (BLOCK STOP, exit 5: message the lead, who
-#     posts the user step: unlock / UI Automation / close tabs). NW_PREFLIGHT=<cmd> runs that command instead of these
-#     three steps (for ts-i227's phone preflight tool once it lands; exit 0 = go);
+#     posts the user step: unlock / UI Automation / close tabs). Default since 9b6d7c0d: NW_PREFLIGHT='node tools/iphone.mjs
+#     preflight --owner <runner>' (ts-i227; it does the WDA, settle and tab steps itself; exit 4 USB, 10 unlock/UI
+#     Automation, 11 tabs, 12 proxy, 3 WDA: BLOCK STOP 5 naming the user step); NW_PREFLIGHT= (empty) uses the three steps;
 #   - ceiling cooling (lead: "cool to <= 39.5 C only at the ceiling"): no cooling between holds; when a hold ends VOID at
 #     a thermal gate (nw11-hold.sh exit 3 or 5), Safari is parked, wait.mjs phone-temp --below 39.5 --timeout 600 runs
 #     (cooling.log), and the hold is re-run whole once; a second gate VOID, or no cooling in 600 s: BLOCK STOP (exit 6).
@@ -59,7 +60,10 @@
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = v11-nw ] || { echo "TICKET is not v11-nw: no run"; exit 2; }
 [ $# -gt 0 ] || { echo "usage: TICKET=v11-nw sh fixes/v11/phone/nw11-block.sh H<n>:<item>[,<item>] ... [H<n>:TAIL]"; exit 2; }
-R=${RUNNER:-int-v11}; LG=${NW_DIR:-out/v11nw}; export NW_DIR=$LG; HS=fixes/v11/phone/nw11-hold.sh; SS=fixes/v11/phone/nw11-serve.sh
+R=${RUNNER:-int-v11}; LG=${NW_DIR:-out/v11nw}; export NW_DIR=$LG
+# ts-i227's preflight (9b6d7c0d, lead 18:3xZ) is the default part start; NW_PREFLIGHT= (empty) falls back to the fresh
+# WDA + settle + tab check below
+NW_PREFLIGHT=${NW_PREFLIGHT-node tools/iphone.mjs preflight --owner $R}; HS=fixes/v11/phone/nw11-hold.sh; SS=fixes/v11/phone/nw11-serve.sh
 mkdir -p $LG
 for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^[EB][CAD][1-5]r?$')
   [ "$it" -gt 1 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it counted runs (at most 1 per hold)"; exit 2; }; done
@@ -130,8 +134,15 @@ if [ "$NW_DRY" != 1 ] && [ "${NW_ENSURE:-0}" = 1 ]; then
 elif [ "$NW_DRY" != 1 ]; then
   # v11 (lead): a fresh WDA session, a 60 s settle and a tab check at every part start (I-227, I-212, I-225)
   if [ -n "$NW_PREFLIGHT" ]; then
-    sh -c "$NW_PREFLIGHT" > $LG/preflight-$(date +%s).log 2>&1 || { echo "BLOCK STOP: preflight failed ($NW_PREFLIGHT; see $LG/preflight-*.log): message the lead"; exit 5; }
-    echo "PREFLIGHT ok ($NW_PREFLIGHT)"
+    PL=$LG/preflight-$(date +%s).log
+    sh -c "$NW_PREFLIGHT" > $PL 2>&1; pf=$?
+    grep -E '^usb: ' $PL | tail -1
+    if [ $pf -ne 0 ]; then
+      case $pf in 4) why="phone not on USB: re-plug the cable" ;; 10) why="unlock the phone, Settings > Developer > Enable UI Automation" ;;
+        11) why="close the other Safari tabs" ;; 12) why="ios_webkit_debug_proxy down" ;; 3) why="WDA not ready" ;; *) why="see the log" ;; esac
+      echo "BLOCK STOP: PREFLIGHT exit $pf ($why): $(tail -1 $PL | cut -c1-160) (message the lead; see $PL)"; exit 5
+    fi
+    echo "PREFLIGHT ok: $(tail -1 $PL | cut -c1-160)"
   else
     WL=$LG/wda-fresh-$(date +%s).log
     node tools/iphone.mjs park --owner "$R" > $WL 2>&1

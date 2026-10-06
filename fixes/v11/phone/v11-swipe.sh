@@ -5,7 +5,7 @@
 # fix-end-morph-p1's p153-swipe.sh rev 1.1) with: the arms C and V11 from the v11 snapshot, served by
 # fixes/v11/phone/v11-serve.sh (out/v11phone, plain http, served hashes checked and logged first), ticket v11-swipe,
 # folder out/v11swipe, the lead's go as V11_S_GO=lead, the pins of both arms in every step's meta. Unchanged: a fresh WDA
-# session and Safari before the first pair (I-227: wda stop / start, then 60 s), a thermal profile read logged, never a
+# session and Safari before the first pair (I-227: since 9b6d7c0d iphone.mjs preflight), a thermal profile read logged, never a
 # gate (memory user-steps-first); three pairs, each its own console swipe-pair step posted from inside the runner's phone
 # hold (I-123): C/V11 and V11/C (a coin decides which first) and a catch pair C/C (a second coin places it); forced
 # choice 1 or 2; "not sure" in the notes = no pick; each side recorded (iphone.mjs record 45 s), records descriptive only.
@@ -41,9 +41,13 @@ echo "$KEY" > $SV/swipe-key.json
 node tools/iphone.mjs profile --owner "$R" > $SV/swipe-profile.log 2>&1; echo "PROFILE read exit $? (logged only, no gate): $(tail -1 $SV/swipe-profile.log | cut -c1-120)"
 # a fresh WDA session and Safari before the first pair (I-227), then 60 s (I-225)
 node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
-node tools/iphone.mjs wda stop > $SV/wda.log 2>&1; node tools/iphone.mjs wda start --owner "$R" >> $SV/wda.log 2>&1 || { echo "SWIPE STOP wda start failed (see $SV/wda.log; nothing posted)"; exit 5; }
-node tools/iphone.mjs wda check >> $SV/wda.log 2>&1 || { echo "SWIPE STOP wda check failed (nothing posted)"; exit 5; }
-echo "WDA fresh; SETTLE 60 s (I-225)"; sleep 60
+# ts-i227's preflight (9b6d7c0d, lead 18:3xZ): fresh WDA when the runner predates the USB attach, 60 s settle,
+# automation authorized, Safari in front, at most one page. Exit 4 USB, 10 unlock / UI Automation, 11 tabs, 12 proxy,
+# 3 WDA: nothing is posted; the lead posts the user step.
+node tools/iphone.mjs preflight --owner "$R" > $SV/preflight.log 2>&1; pf=$?
+grep -E '^usb: ' $SV/preflight.log | tail -1
+[ $pf -eq 0 ] || { echo "SWIPE STOP PREFLIGHT exit $pf: $(tail -1 $SV/preflight.log | cut -c1-160) (nothing posted; message the lead)"; exit 5; }
+echo "PREFLIGHT ok: $(tail -1 $SV/preflight.log | cut -c1-160)"
 js() { node -e "const j=JSON.parse(process.argv[1]);const v=j[process.argv[2]];console.log(v ?? '')" "$1" "$2"; }
 att() { node -e "const j=JSON.parse(process.argv[1]);console.log(j.attempts[process.argv[2]-1])" "$1" "$2"; }
 echo '{"pairs":{}}' > $SV/swipe-answer.json
