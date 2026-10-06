@@ -15,7 +15,8 @@
 -> JS `111d8e02968d`, CSS unchanged.
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` only: the nav template `uN` (C line 13778) and the start of
 `dN`'s nav walk (C lines 14580-14584).
-**Driver(s):** Chrome only (headless, 430x932 DPR 3, mobile + touch). No phone and no Simulator (P-152 ran).
+**Driver(s):** Chrome (headless, 430x932 DPR 3, mobile + touch) for counts and pixels; the iOS Simulator (fw-sim,
+Mobile Safari) for a functional check (hydration and a morph open/close). No iPhone.
 Short sha256 values (12 hex), as the probes print them.
 
 ## Why it fails (cause CONFIRMED in Chrome)
@@ -33,7 +34,11 @@ Short sha256 values (12 hex), as the probes print them.
 - **Recovery** (`vi`, `BSBv9QXB.js:2203-2232`): it logs `Failed to hydrate: HierarchyRequestError …`, clears the
   target (`Bn`: `textContent = ""`) and mounts the whole page again from the client templates.
 
-What the probe shows (`probe/hydrate-probe.mjs`, 4 loads of C and 4 of F; the counts are the same in every load):
+What the probe shows (`probe/hydrate-probe.mjs`, 4 loads of C and 4 of F). The warning, the burst and the removals
+are the same in every load. The survivor and header rows come from the 3 C and 3 F loads of the final probe version,
+which marks elements as the parser inserts them. The first run (cost-…07-39-17) marked them at DOMContentLoaded,
+after the re-mount had already happened, so its survivor figure (86.6 % for both C and F) does not measure this; it
+is kept in `results.json` with a note.
 
 | per load | B (plain baseline) | C (main today) | F (this fix) |
 |---|---|---|---|
@@ -61,7 +66,8 @@ indicative, from a shared hold, not a timing result):
 **Visible flash:** none in Chrome. The screencast (`probe/frames.mjs`) shows the server-rendered page at about 3.5 s,
 and from then on every frame up to the first content change differs by 0.16 % or less from the one before. The
 re-mount produces no blank or changed frame. The next big change, at about 4.3-4.5 s (fonts, countdown digits,
-images), comes at the same point in B, C and F. Safari was not checked (P-152 ran).
+images), comes at the same point in B, C and F. No flash check was run in Safari; the Simulator checked function
+only.
 
 **Not a speed problem in Chrome.** The real costs are 100 ms (6x) of wasted work at load, and the fact that since
 nav-earn rev 3 every later build ran its client-side code against client clones rather than the hydrated server DOM.
@@ -75,7 +81,7 @@ nav-earn rev 3 every later build ran its client-side code against client clones 
    `oe.insertBefore(__ewBox, le)`, `__ewBox.appendChild(le)`.
    - Hydrating or mounting, the result is button > span.start-selling-top-nav-earn-box > text, as C mounts it.
    - `__ewBox` is still the variable that nav-earn's `__ewMeasure` / `__ewGo` read.
-   - The label's text node `le` is still the node that `t(le, …)` (JS 14732) writes.
+   - The label's text node `le` is still the node that `t(le, …)` writes (JS 14732 in C, 14737 in F).
 
 ## Parity
 
@@ -99,7 +105,23 @@ nav-earn rev 3 every later build ran its client-side code against client clones 
 - **No page errors** in any of the 16 gate loads; the nav's `--morph` reaches 1 at up1 in every load; the earn button's
   rect is the same in all four loads at every stop (e.g. [296, 24, 406, 60] at pre / up0).
 - **Countdown, morph panel, dark pill:** identical in every end-zone frame.
-- **Not run:** Simulator / Safari parity (DEFERRED during P-152), desktop and prefers-reduced-motion. The change is
+- **Simulator** (fw-sim, Mobile Safari; `probe/sim-check.mjs`; two functional shared holds at 08:20Z and 08:23Z,
+  no timing):
+  - **Hydration:**
+    - C, cold Safari: logs `Failed to hydrate`.
+    - C, warm Safari (2nd run): the replayed console held only one message, so no warning shows there. The DOM still
+      shows the re-mount in both runs: the start script is gone and the language switch has the client id `c1`.
+    - F: no warning in either run; the start script is kept and the language switch keeps the server id `s1`, as on
+      the baseline.
+  - **Earn button:** the outerHTML is identical in C and F.
+  - **Morph open and close** (2nd run, held synthetic touch, page scrolled to m 1 and back): C and F give identical
+    states at pre, open and closed.
+    - At m 1: header `is-morphing is-expanded is-earn-hidden`, and F-183's inline `--morph: 1` on the bar, logo,
+      actions, earn button and language wrap. Panel opacity 1, earn opacity 0, earn box background `rgb(19, 25, 34)`.
+    - Back at closed: `--morph` 0 everywhere and earn opacity 1.
+    - So rev 7d's WebKit-only path works on the hydrated DOM.
+    - Not reached: the m 0.5 stop (the page settled back to above the zone in both builds).
+- **Not run:** Simulator pixels, desktop and prefers-reduced-motion. The change is
   structural and has no media branch: desktop and reduced-motion run the same `dN` and the same template.
 
 ## Risks, conflicts, follow-ups
@@ -113,8 +135,7 @@ nav-earn rev 3 every later build ran its client-side code against client clones 
 - **v10:** int-v8 can stack `delta.diff` on N and V as the last step (pins above).
 - **Finding:** F-306 (pitfall): never change a template's static structure against the server HTML; add elements from
   script after hydration, and check every build's console for `Failed to hydrate` and `hydration_mismatch`.
-- **Phone:** a Safari or iPhone console check that the warning is gone is still to do when the phone is free. Safari
-  runs the same Svelte runtime, so the same throw is expected there.
+- **Phone:** the Simulator now confirms the fix in Mobile Safari (see Parity). A real iPhone check is optional.
 
 ## Reproduce
 

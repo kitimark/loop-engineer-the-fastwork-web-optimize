@@ -1072,5 +1072,276 @@
     }
    ]
   }
- ]
+ ],
+ "simulator": {
+  "engine": "fw-sim (iPhone 15 Pro Max Simulator, Mobile Safari), functional shared hold, no timing",
+  "run1": {
+   "at": "2026-10-06T08:20:48.333Z",
+   "loads": [
+    {
+     "build": "C",
+     "hydrateMsgs": 1,
+     "consoleMsgs": 2,
+     "startScriptKept": false,
+     "ariaControls": "c1",
+     "earn": "<button class=\"start-selling-top-nav-btn is-earn svelte-1dcozpm\" type=\"button\" tabindex=\"-1\" aria-hidden=\"true\" data-selenium=\"start-selling.header.button.get-started\" style=…><span class=\"start-selling-top-nav-earn-box svelte-1dcozpm\">Join waitlist</span></button>",
+     "pre": {
+      "y": 500,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-pill is-hero-chrome-ready",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "0",
+      "earnRect": [
+       351,
+       24,
+       110,
+       36
+      ]
+     },
+     "open1": null,
+     "closed": {
+      "y": 4485,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "1",
+      "earnRect": [
+       296,
+       24,
+       110,
+       36
+      ]
+     }
+    },
+    {
+     "build": "F",
+     "hydrateMsgs": 0,
+     "consoleMsgs": 1,
+     "startScriptKept": true,
+     "ariaControls": "s1",
+     "earn": "<button class=\"start-selling-top-nav-btn is-earn svelte-1dcozpm\" type=\"button\" tabindex=\"-1\" aria-hidden=\"true\" data-selenium=\"start-selling.header.button.get-started\" style=…><span class=\"start-selling-top-nav-earn-box svelte-1dcozpm\">Join waitlist</span></button>",
+     "pre": {
+      "y": 500,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-pill is-hero-chrome-ready",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "0",
+      "earnRect": [
+       351,
+       24,
+       110,
+       36
+      ]
+     },
+     "open1": null,
+     "closed": {
+      "y": 4485,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "1",
+      "earnRect": [
+       296,
+       24,
+       110,
+       36
+      ]
+     }
+    }
+   ],
+   "same": {
+    "earn": true,
+    "pre": true,
+    "open": true,
+    "closed": true
+   },
+   "note": "morph not opened in run 1 (no held touch; the page settled back)"
+  },
+  "run2": {
+   "at": "2026-10-06T08:23:50.976Z",
+   "loads": [
+    {
+     "build": "C",
+     "hydrateMsgs": 0,
+     "consoleMsgs": 1,
+     "startScriptKept": false,
+     "ariaControls": "c1",
+     "earn": "<button class=\"start-selling-top-nav-btn is-earn svelte-1dcozpm\" type=\"button\" tabindex=\"-1\" aria-hidden=\"true\" data-selenium=\"start-selling.header.button.get-started\" style=…><span class=\"start-selling-top-nav-earn-box svelte-1dcozpm\">Join waitlist</span></button>",
+     "pre": {
+      "y": 500,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-pill is-hero-chrome-ready",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "0",
+      "earnRect": [
+       351,
+       24,
+       110,
+       36
+      ]
+     },
+     "open1": {
+      "y": 6075,
+      "m": "1",
+      "cls": "start-selling-top-nav  is-hero-chrome-ready is-on-dark is-morphing is-expanded is-earn-hidden",
+      "inline": {
+       "bar": "1",
+       "logo": "1",
+       "actions": "1",
+       "earn": "1",
+       "wrap": "1"
+      },
+      "panelOpacity": "1",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "0",
+      "earnRect": [
+       355,
+       12,
+       110,
+       36
+      ]
+     },
+     "closed": {
+      "y": 4485,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "1",
+      "earnRect": [
+       296,
+       24,
+       110,
+       36
+      ]
+     }
+    },
+    {
+     "build": "F",
+     "hydrateMsgs": 0,
+     "consoleMsgs": 1,
+     "startScriptKept": true,
+     "ariaControls": "s1",
+     "earn": "<button class=\"start-selling-top-nav-btn is-earn svelte-1dcozpm\" type=\"button\" tabindex=\"-1\" aria-hidden=\"true\" data-selenium=\"start-selling.header.button.get-started\" style=…><span class=\"start-selling-top-nav-earn-box svelte-1dcozpm\">Join waitlist</span></button>",
+     "pre": {
+      "y": 500,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-pill is-hero-chrome-ready",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "0",
+      "earnRect": [
+       351,
+       24,
+       110,
+       36
+      ]
+     },
+     "open1": {
+      "y": 6075,
+      "m": "1",
+      "cls": "start-selling-top-nav  is-hero-chrome-ready is-on-dark is-morphing is-expanded is-earn-hidden",
+      "inline": {
+       "bar": "1",
+       "logo": "1",
+       "actions": "1",
+       "earn": "1",
+       "wrap": "1"
+      },
+      "panelOpacity": "1",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "0",
+      "earnRect": [
+       355,
+       12,
+       110,
+       36
+      ]
+     },
+     "closed": {
+      "y": 4485,
+      "m": "0",
+      "cls": "start-selling-top-nav  is-hero-chrome-ready is-on-dark",
+      "inline": {
+       "bar": "0",
+       "logo": "0",
+       "actions": "0",
+       "earn": "0",
+       "wrap": "0"
+      },
+      "panelOpacity": "0",
+      "earnBoxBg": "rgb(19, 25, 34)",
+      "earnOpacity": "1",
+      "earnRect": [
+       296,
+       24,
+       110,
+       36
+      ]
+     }
+    }
+   ],
+   "same": {
+    "earn": true,
+    "pre": true,
+    "open": true,
+    "closed": true
+   },
+   "note": "warm Safari: the console replay held 1 message per load, so C shows no warning here; the DOM markers still show its re-mount"
+  }
+ }
 }
