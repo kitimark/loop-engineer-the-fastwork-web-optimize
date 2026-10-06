@@ -529,16 +529,20 @@
  ],
  "phoneCard": {
   "ticket": "P-153",
-  "rev": "1.2",
+  "rev": "1.3",
   "pins": {
-   "block": "78062de712d3",
-   "hold": "ba0e405b6782",
+   "block": "e8b6e70be8ee",
+   "hold": "27ab0bf57adb",
    "serve": "fbd214f54de0",
-   "read": "d28c6a20a931",
+   "read": "09a930910631",
    "swipe": "64af4ef79ad7"
   },
+  "pinsRev12": { "block": "78062de712d3", "hold": "ba0e405b6782", "read": "d28c6a20a931" },
   "snapshot": "out/emp1v9f/snap-4da641f828bb HASHES c5138adb7dd2",
-  "mirrors": "P-152 rev 1.3 (e3c1a254): gates on every hold, per-hold validity, cooling gap at >= 41.5 C, <= 2 counted runs per hold, block 2 after cooling to 38 C, Safari restart per part (I-214)"
+  "mirrors": "P-152 rev 1.3 (e3c1a254): gates on every hold, per-hold validity, cooling gap at >= 41.5 C, <= 2 counted runs per hold, block 2 after cooling to 38 C, Safari restart per part (I-214)",
+  "rev13": "lead ruling after block 1 went VOID on heat (= P-152 rev 1.4): cool below 38 C before every hold (600 s, one more 600 s, else block VOID), at most 1 counted run per hold, warm-ups and S0 and S1 in their own holds, end-gate rule unchanged, order C V V C C V V C unchanged; reason OBSERVED, cause unknown: under induced Serious Critical returns near 41.5-42 C after about 2 G runs from 39 C",
+  "block1": "VOID (heat: H2 end gate Critical 41.9 C), counts as block 1, archived unscored in out/p153/block1/",
+  "block2Holds": "part 1 H1 WC, H2 WV, H3 S0, H4 EC1, H5 EV1; part 2 H6 EV2, H7 EC2, H8 EC3, H9 EV3; part 3 H10 EV4, H11 EC4, H12 TAIL (one re-run per hold, then S1); part 4 HA AC1 AV1"
  },
  "measurementCodeChanged": false
 }

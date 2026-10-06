@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// P-153 reader (frozen before data; card: fixes/end-morph-p1/README.md "P-153", rev 1.2). Phone no-worse check of end-morph
+// P-153 reader (frozen before data; card: fixes/end-morph-p1/README.md "P-153", rev 1.3). Phone no-worse check of end-morph
 // P1 (PR-012 rev 1's composited clip reveal by fix-morph-gpu, ported onto v9-final + F1 + U2):
 //   C (v9-final + F1 + U2, JS a6426953727a, CSS e1359ab9994a) vs V (C + P1, JS 4da641f828bb, CSS a81b9af7b2c9).
 // REV 1.1: a copy of fix-end-morph's P-152 rev 1.1 reader (fixes/end-morph-f12/phone/p152-read.mjs adf4e7a27122 at
@@ -8,6 +8,12 @@
 // P-152 delta (part 2 counts only after "HOLD HA VALID", or a standalone end gate after an HA stop).
 // REV 1.2: P-152 rev 1.3's hold validity (fix-end-morph, p152-read.mjs 11ab8b9496b0 at e3c1a254: holdStatus, its
 // self-test cases and its read lines, P-152 -> P-153), replacing rev 1.1's part-2 rule (part2Gate).
+// REV 1.3 (lead ruling after block 1 went VOID on heat, 2026-10-06; = P-152 rev 1.4): one counted run per hold, the
+//   phone cooled below 38 °C before every hold. The decision rule and holdStatus are unchanged; changed: the per-run
+//   plan labels (PLAN below: S0 H3, EC1 H4, EV1 H5, EV2 H6, EC2 H7, EC3 H8, EV3 H9, EV4 H10, EC4 H11, re-runs and S1
+//   H12+) and the position label: every counted run now opens its own hold after the same cooling wait, so no run is
+//   "first in hold" against another (FIRST_IN_HOLD = [], the label cannot fire; the rule is kept as a parameter and
+//   its self-test cases pass the rev 1.2 list explicitly).
 // A pure reader: no device, no measurement.
 //   node fixes/end-morph-p1/phone/p153-read.mjs <folder> [--json out.json]      (folder: out/p153/runs)
 //   node fixes/end-morph-p1/phone/p153-read.mjs --selftest
@@ -50,15 +56,15 @@
 //   only end gate.
 //   Twins (>30/>38 use the >34 bound, >46/>54 the >50 bound): a twin whose WORSE-or-not differs from its main
 //   threshold marks the result "threshold-sensitive" (reported; PASS/FAIL unchanged).
-//   A FAIL whose lowest V run at a failing threshold opens its hold (EV1 or EV3) is labelled "position-confounded"
-//   (P-150 N3; the outcome is unchanged).
+//   A FAIL whose lowest V run at a failing threshold opens its hold (rev 1.2: EV1 or EV3) is labelled "position-confounded"
+//   (P-150 N3; the outcome is unchanged). Rev 1.3: every counted run opens its hold, so the list is empty.
 // ATTRIBUTION (AC1, AV1 only; decides nothing): Timeline Paint records (any depth) that start inside a moving frame's gap
 //   (t - dt, t], split by the frame's morph value m = (scrollY - (maxY - innerHeight)) / innerHeight: m >= 0.55 (the
 //   range where F1 hides #platform) and 0 <= m < 0.55. Per arm: frames, Paint records, Paint records per frame.
 //   The geometry (track = innerHeight) is OBSERVED in Chrome; on the phone it is an approximation.
 // PER RUN (descriptive): hold and position (the card's plan), start (meta.date), gap since the previous counted or
 //   sentinel run, battery °C at its phone hold's start (meta.profile.start.battC), the near-band counts
-//   (30, 38] = s30 - s38 and (46, 54] = s46 - s54. EC1 SLOT (N7, descriptive): whether EC1 (H2, right after S0) is again
+//   (30, 38] = s30 - s38 and (46, 54] = s46 - s54. EC1 SLOT (N7, descriptive): whether EC1 (rev 1.3: H4, the hold after S0's) is again
 //   C's maximum at >34 and >50, as it was in P-137 (OBSERVED there; P-137's C was v9-final + 7d, here C is
 //   v9-final + F1 + U2).
 // FIRST OPEN (the named risk; reported per run, decides nothing in the rule above; rev 1.1 after ops-reader-P153 N1-N3):
@@ -102,7 +108,7 @@ export function afterTouchend(g, r) {
 /** separation verdict (P-137's `verdict`, WORSE branch used here). */
 export function separated(c, v) { return c.length >= 3 && v.length >= 3 && Math.min(...v) > Math.max(...c); }
 export const BOUND = { 30: 2, 34: 2, 38: 2, 46: 1, 50: 1, 54: 1 };
-export const FIRST_IN_HOLD = ['EV1', 'EV3'];
+export const FIRST_IN_HOLD = []; // rev 1.3: one counted run per hold (rev 1.2: ['EV1', 'EV3'])
 export const FIRST_OPEN_BOUND_MS = 2;
 /** Opens of one run (FIRST OPEN above). */
 export function opens(g) {
@@ -170,7 +176,7 @@ export function permP(c, x) {
   pick(0, []);
   return { p: ge / tot, ge, tot };
 }
-export function decideNoWorse(c, x, names = null) {
+export function decideNoWorse(c, x, names = null, fih = FIRST_IN_HOLD) {
   const nC = med(c.map((m) => m.n)), nX = med(x.map((m) => m.n));
   const basisRates = c.length && x.length && nC ? Math.abs(nX - nC) > 0.15 * nC : false;
   const basis = basisRates ? `rates (median n C ${nC}, V ${nX})` : `counts (median n C ${nC}, V ${nX})`;
@@ -186,7 +192,7 @@ export function decideNoWorse(c, x, names = null) {
   const worse = [34, 50].filter(isW);
   const sensitive = isW(30) !== isW(34) || isW(38) !== isW(34) || isW(46) !== isW(50) || isW(54) !== isW(50);
   let confounded = false;
-  if (worse.length && names) for (const th of worse) { const vs = x.map((m) => val(m, th)), lo = Math.min(...vs); if (FIRST_IN_HOLD.includes(names[vs.indexOf(lo)])) confounded = true; }
+  if (worse.length && names) for (const th of worse) { const vs = x.map((m) => val(m, th)), lo = Math.min(...vs); if (fih.includes(names[vs.indexOf(lo)])) confounded = true; }
   // reported, decides nothing: thresholds whose median bound is exceeded while p > 0.05 (rev 1 would have failed them)
   const boundOnly = TH.filter((th) => diff[th] > bound(th) + 1e-12 && perm[th].p > P_MAX + 1e-12).map((th) => `>${th} ${fmtP(th)}`);
   const p = Object.fromEntries(TH.map((th) => [th, `${perm[th].ge}/${perm[th].tot}`]));
@@ -240,8 +246,9 @@ function selftest() {
   ok(decideNoWorse(C, [mk(21), mk(20)]).result, 'INSUFFICIENT', 'under 3 valid V runs');
   ok(decideNoWorse(C.slice(0, 2), [mk(21), mk(20), mk(22)]).result, 'INSUFFICIENT', 'under 3 valid C runs');
   ok(decideNoWorse(C, [mk(30, 2, 200), mk(28, 2, 200), mk(31, 2, 200), mk(29, 2, 200)]).basis.startsWith('rates'), true, 'denominator guard');
-  ok(decideNoWorse(C, [mk(30), mk(28), mk(31), mk(29)], ['EV1', 'EV2', 'EV3', 'EV4']).confounded, false, 'lowest V is EV2: not confounded');
-  ok(decideNoWorse(C, [mk(27), mk(28), mk(31), mk(29)], ['EV1', 'EV2', 'EV3', 'EV4']).confounded, true, 'lowest V is EV1: position-confounded');
+  ok(decideNoWorse(C, [mk(30), mk(28), mk(31), mk(29)], ['EV1', 'EV2', 'EV3', 'EV4'], ['EV1', 'EV3']).confounded, false, 'rev 1.2 list: lowest V is EV2: not confounded');
+  ok(decideNoWorse(C, [mk(27), mk(28), mk(31), mk(29)], ['EV1', 'EV2', 'EV3', 'EV4'], ['EV1', 'EV3']).confounded, true, 'rev 1.2 list: lowest V is EV1: position-confounded');
+  ok(decideNoWorse(C, [mk(27), mk(28), mk(31), mk(29)], ['EV1', 'EV2', 'EV3', 'EV4']).confounded, false, 'rev 1.3 (one counted run per hold): never position-confounded');
   // twins: >34 worse by +3 while >38 (s34-4 clipped at 0 in C? no) moves the same; build a case where only >30 crosses
   const tw = (s30, s34) => ({ n: 300, s: { 30: s30, 34: s34, 38: s34, 46: 2, 50: 2, 54: 2 } });
   const Ct = [tw(20, 10), tw(21, 10), tw(20, 11), tw(21, 10)];
@@ -295,7 +302,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dir = a[0], jsonOut = a.includes('--json') ? a[a.indexOf('--json') + 1] : null;
   const load = (f) => (existsSync(join(dir, f)) ? JSON.parse(readFileSync(join(dir, f), 'utf8')) : null);
   const out = { sentinels: {}, runs: {}, invalid: {}, attribution: {} }, per = { C: [], V: [] }, names = { C: [], V: [] }, fo = { C: [], V: [] };
-  const PLAN = { S0: 'H2/1', EC1: 'H2/2', EV1: 'H3/1', EV2: 'H3/2', EC2: 'H4/1', EC3: 'H4/2', EV3: 'H5/1', EV4: 'H5/2', EC4: 'H6/1', S1: 'H7+/last' };
+  const PLAN = { S0: 'H3', EC1: 'H4', EV1: 'H5', EV2: 'H6', EC2: 'H7', EC3: 'H8', EV3: 'H9', EV4: 'H10', EC4: 'H11', S1: 'H12+ (last)' }; // rev 1.3: one run per hold
   const t0 = (g) => (g?.meta?.date ? Date.parse(g.meta.date) : null);
   const starts = [];
   // rev 1.2 (P-152 rev 1.3): each run counts only when its own hold ended VALID
@@ -315,7 +322,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const r = readRun(g, tl, 'E');
       if (r.why.length) { out.invalid[name] = r.why; continue; }
       used = name; const w = endZone(r), at = afterTouchend(g, r), f = firstOpen(g);
-      out.runs[name] = { arm, ...w, afterTouchend: at, firstOpen: f, hold: PLAN[name] || 'H7+ (re-run)', start: g.meta?.date ?? null, battC: g.meta?.profile?.start?.battC ?? null };
+      out.runs[name] = { arm, ...w, afterTouchend: at, firstOpen: f, hold: PLAN[name] || 'H12+ (re-run)', start: g.meta?.date ?? null, battC: g.meta?.profile?.start?.battC ?? null };
       starts.push([name, t0(g)]); per[arm].push(w); names[arm].push(base); fo[arm].push(f); break;
     }
     if (!used) out.invalid[base] ||= ['no valid try'];
@@ -339,6 +346,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   { const F = out.firstOpen, d = (k) => `${k} C ${F[k].C ? `${F[k].C.median} (${F[k].C.min}-${F[k].C.max})` : '-'} V ${F[k].V ? `${F[k].V.median} (${F[k].V.min}-${F[k].V.max})` : '-'} diff ${F[k].diff ?? '-'}`;
     console.log(`FIRST OPEN (named risk; decides nothing) ${F.label}: ${d('f2')} | ${d('f1')} | ${d('f12')} | ${d('f123')} | full repeat opens f2 medians C ${F.repeatFullF2.C?.median ?? '-'} V ${F.repeatFullF2.V?.median ?? '-'} ms`); }
   console.log(`ATTRIBUTION (decides nothing) ${JSON.stringify(out.attribution)}`);
-  console.log('NOTE first-in-hold (disclosed): EV1, EC2, EV3 and EC4 open their holds (V twice, C twice)');
+  console.log('NOTE rev 1.3: every counted run opens its own hold after cooling below 38 C (no first-in-hold position effect between runs)');
   if (jsonOut) writeFileSync(jsonOut, JSON.stringify(out, null, 1));
 }

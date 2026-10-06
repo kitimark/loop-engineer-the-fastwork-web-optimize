@@ -19,9 +19,12 @@
 # (`lock.mjs run iphone --block P-153 --max-seconds 3600`), each hold its own 600 s chrome-measure --no-timing run:
 #   TICKET=P-153 node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-153 <H>" -- \
 #     caffeinate -i -s sh fixes/end-morph-p1/phone/p153-hold.sh <H> <items>
-# Plan (2 fs runs per 600 s hold, GESTURE_BUDGET_S about 229):
-#   part 1: H1 WC WV | H2 S0 EC1 | H3 EV1 EV2       part 2: H4 EC2 EC3 | H5 EV3 EV4 | H6 EC4 | H7 <re-runs, max 2> S1 | HA AC1 AV1
-#   (counted order C V V C C V V C, 4 v 4; sentinels on C; a gate at each phone hold's edges; attribution after S1)
+# Plan (card rev 1.3: at most ONE counted run per 600 s hold, the phone below 38 °C before every hold; GESTURE_BUDGET_S
+# about 229):
+#   part 1: H1 WC | H2 WV | H3 S0 | H4 EC1 | H5 EV1      part 2: H6 EV2 | H7 EC2 | H8 EC3 | H9 EV3
+#   part 3: H10 EV4 | H11 EC4 | H12.. <re-runs, max 2, one per hold> | S1 in its own hold      part 4: HA AC1 AV1
+#   (counted order C V V C C V V C, 4 v 4; sentinels on C; a start and an end gate on every hold; attribution after S1)
+#   (rev 1-1.2: 2 fs runs per hold, H1 WC WV | H2 S0 EC1 | H3 EV1 EV2 | H4 EC2 EC3 | H5 EV3 EV4 | H6 EC4 | H7 .. S1 | HA)
 # Items:
 #   WC / WV        uncounted warm-up on C's / V's port: E procedure, Timeline off, --warmup     -> g-WC-<H>.json / g-WV-<H>.json
 #   S0 / S1        sentinel on C: E procedure, Timeline off                                       -> g-S0.json / g-S1.json
@@ -34,8 +37,8 @@
 # failing S1 voids every counted run (exit 8). Attribution items are never re-run and never void a hold.
 # Time guard: no fs item starts when elapsed + its budget + 30 s > 600: the rest is skipped, Safari parked, exit 7, the
 # hold is re-run whole.
-# P153_GATE=start|end|both|none (default both): which thermal gates this hold runs (the block driver sets it so that the
-# gates sit at each phone hold's edges only). P153_DRY=1: pins, compiled-program and served-hash checks and the plan only.
+# P153_GATE=start|end|both|none (default both): which thermal gates this hold runs (the block driver sets both on every
+# hold since rev 1.2). P153_DRY=1: pins, compiled-program and served-hash checks and the plan only.
 # Last line: "HOLD <H> VALID <s> s" (exit 0) or "HOLD <H> VOID <why>" (2 usage, 3 end gate / Mac sleep, 4 setup, 5 start
 # gate / WDA, 7 time guard, 8 sentinel FAIL). Nothing here prints the LAN address (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2

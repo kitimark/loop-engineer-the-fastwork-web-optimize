@@ -254,7 +254,7 @@ within 1-9):
   step's width to the pill (a 0.2 px change). Rev 1's `transition-property` override at m 0 skips that transition,
   so the nav snaps to the pill. dn0 vs the fresh up0 = 0 shows that the result looks the same.
 
-## P-153: phone no-worse check of P1, plus a blind swipe A/B (card rev 1.2, registered before any P-153 data)
+## P-153: phone no-worse check of P1, plus a blind swipe A/B (card rev 1.3; rev 1-1.2 registered before any P-153 data, rev 1.3 after the VOID block 1, before block 2)
 
 **Ticket:** P-153 (lead, 2026-10-06; reserved by mgmt-clerk-1 at 840490f4). Stage V of a less-work fix (memory
 "less-work-landing-rule"): the Chrome and Simulator counts above, plus one short phone no-worse check and a blind swipe
@@ -320,6 +320,47 @@ Critical at the end gate):
   moves `out/p153/void`. `p153-read.mjs` takes P-152 rev 1.3's `holdStatus`, its self-test cases and its read lines.
   `p153-hold.sh`, `p153-serve.sh` and `p153-swipe.sh` are unchanged (P-152 rev 1.3 did not change its hold either).
 
+**Rev 1.3 (2026-10-06, after block 1 went VOID on heat, before block 2; signed rev 1.2 was 388454e5; = P-152 rev 1.4).**
+The lead's ruling: block 1 is VOID (heat) and counts as block 1, archived unscored in `out/p153/block1/`. Block 2, the
+last, runs only under these heat rules:
+- **Why (disclosed; OBSERVED in our setup, cause unknown):** under induced Serious, Critical returns near 41.5-42 °C
+  after about 2 G runs from 39 °C (P-153 block 1: H2 went 39.3 → 41.9 °C over S0 and EC1, Critical at its end gate;
+  P-152's block 1 climbed the same way). The rev 1.2 cooling gap (only after an end gate >= 41.5 °C) never fired.
+- **(1) Cool before EVERY hold.** `wait.mjs phone-temp --below 38 --timeout 600` (logged in `out/p153/cooling.log`),
+  before every hold, the time-guard re-run of a hold included; then the hold's own `wda check` (the I-215 lesson: it
+  follows every cooling wait), then its start gate. Not MET (TIMEOUT, or UNAVAILABLE on a failed read): one more
+  600 s wait. Still not MET: BLOCK STOP, the block is **VOID and not scored** (exit 6).
+- **(2) At most ONE counted run per hold.** The driver refuses a plan with more before anything runs. The warm-ups get
+  their own holds (WC and WV in two holds: H1 of block 1 rose 3.5 °C over the two warm-ups, so from 38 °C the pair
+  would end near the Critical zone, and rule (3) would stop the block on an uncounted run). The sentinel S0 has its
+  own hold before the counted ones; S1 its own hold at the end. HA keeps its two attribution runs (uncounted; an HA
+  end-gate FAIL voids only them, and HA is the last hold).
+- **(3) The end-gate rule stays:** Critical (or over 44 °C) at a hold's end voids that hold's run and stops the block.
+- **(4) Run order and C/V balance as signed:** C V V C C V V C (EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4); only the holds split.
+- Removed: rev 1.2's cooling gap (>= 41.5 °C → below 40) and `P153_COOL_FIRST`, both superseded by (1).
+- Reader: the decision rule and `holdStatus` are unchanged. The per-run plan labels follow the new holds. The
+  "position-confounded" label can no longer fire: every counted run now opens its own hold after the same cooling wait
+  (`FIRST_IN_HOLD` is empty; the rule stays as a parameter, and its self-test cases pass the rev 1.2 list).
+- Hold list of block 2 (four phone holds, each `lock.mjs run iphone --owner iphone-runner --block P-153 --max-seconds
+  3600 --keep 120`; every H a 600 s chrome-measure `--no-timing` hold after its cooling wait):
+
+  | part | holds |
+  |---|---|
+  | 1 | H1 WC, H2 WV, H3 S0, H4 EC1, H5 EV1 |
+  | 2 | H6 EV2, H7 EC2, H8 EC3, H9 EV3 |
+  | 3 | H10 EV4, H11 EC4, H12 TAIL: each re-run (at most 2 per block) in its own hold H12, H13, then S1 in the next hold |
+  | 4 | HA AC1 AV1 (attribution, after S1) |
+
+- **Time estimate** (block 1's holds: setup and start gate about 45 s, one G run about 2.2 min, end gate about 45 s;
+  heat about +1.5 °C per G run with its gates; cooling about 0.5 °C/min, OBSERVED in P-152's log): a one-run hold
+  about 4 min plus about 3-4 min of cooling back to 38 °C, so about 8 min per hold.
+  - part 1: about 42 min (5 holds plus the WDA and Safari restart; the first cooling wait depends on the phone's
+    temperature at the start); part 2: about 33 min; part 3: about 25 min with no re-run, up to about 41 min with two;
+    part 4: about 11 min.
+  - Block 2: about **1 h 50 min**, up to about 2 h 10 min with two re-runs. Each part stays under its 3600 s phone
+    hold unless cooling runs long (the hold then shows OVERDUE; it is never killed). Worst case per hold before a VOID:
+    2 x 600 s of cooling.
+
 **Labels.**
 - This card is pre-data for P-153.
 - The NO-WORSE prediction is informed by this build's Chrome and Simulator counts (above).
@@ -328,6 +369,9 @@ Critical at the end gate):
 - The first-open definition (f2, the repeat split, lvh) and its prediction are informed by the reader smoke test on
   P-137's records (below).
 - Pr2's p (0.25, rev 1.2) is informed by P-152's heat VOID (P-152 block 1, same script and profile).
+- Rev 1.3's heat rules are informed by P-153's block 1 (VOID on heat, unscored: its gate temperatures were used; no
+  counted run's end-zone counts were read, since EC1 was INVALID by its hold) and P-152's block 1. Pr2 stays at p 0.25 (rev 1.3): less heat per hold, but more end gates
+  and a new VOID path (cooling not reached in 2 x 600 s).
 
 **Question.** Does P1 make the end-of-page menu morph worse on the iPhone? The morph is the scroll into and out of the
 end menu (open and close), with Safari toolbar steps, driven by a real touch gesture.
@@ -365,30 +409,37 @@ end menu (open and close), with Safari toolbar steps, driven by a real touch ges
     check stops the part before anything runs;
   - then restarts WDA (stop, start, check);
   - parks Safari after every run and on every exit (an EXIT trap: the end, a stop, an error).
-- Each hold runs `wda check` before its start gate. After each hold: `doing iphone --between 1`.
+- Each hold (rev 1.3) first waits for the phone below 38 °C, then runs `wda check` before its start gate. After each
+  hold: `doing iphone --between 5` (rev 1.2: 1).
 - **Hold validity (rev 1.2):** every run counts only when its own hold ended `HOLD <H> VALID`, that is, with its start
-  and end gate passed (see "Rev 1.2" above). An end-gate FAIL voids that hold's runs and stops the block. After a hold
-  whose end gate read >= 41.5 °C, a cooling gap (`wait.mjs phone-temp --below 40 --timeout 600`) runs before the next.
+  and end gate passed (see "Rev 1.2" above). An end-gate FAIL voids that hold's runs and stops the block. (Rev 1.2's
+  cooling gap after an end gate >= 41.5 °C is replaced in rev 1.3 by cooling below 38 °C before every hold.)
   - Rev 1.1's part-2 end gate (in HA only, plus the standalone `ENDGATE`) and its alignment note (the last `HOLD HA`
     line vs any `HOLD HA VALID` line) are superseded. `holdStatus` reads the last `HOLD <H>` line of each hold log.
 - **Block 2 (N2, only on the lead's word after a FAIL, an INSUFFICIENT or a VOID block 1):**
   - `TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh ARCHIVE-BLOCK1` moves block 1 into `out/p153/block1/`:
     runs, hold logs, WDA logs, serve-check.log and void records. It then restarts the three servers.
   - It refuses when `block1/` exists, so there are at most 2 blocks. A VOID block 1 counts as one of them.
-  - Block 2 runs the same two parts. Its part 1 starts with `P153_COOL_FIRST=38`, as block 1's does. It is read from
-    `out/p153/runs` by itself, never pooled with block 1.
+  - Block 1 ran rev 1.2 and is VOID (heat), archived 2026-10-06 04:12Z. Block 2, the last, runs rev 1.3's four parts
+    (hold list in "Rev 1.3" above). It is read from `out/p153/runs` by itself, never pooled with block 1.
 
-| part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 fs runs at most) |
+| part | holds (rev 1.3: each a 600 s chrome-measure `--no-timing` hold after cooling below 38 °C, 1 counted run at most) |
 |---|---|
-| 1 | H1 WC WV, H2 S0 EC1, H3 EV1 EV2 |
-| 2 | H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7 TAIL (re-runs, then S1), HA AC1 AV1 |
+| 1 | H1 WC, H2 WV, H3 S0, H4 EC1, H5 EV1 |
+| 2 | H6 EV2, H7 EC2, H8 EC3, H9 EV3 |
+| 3 | H10 EV4, H11 EC4, H12 TAIL (each re-run in its own hold, then S1 in its own hold) |
+| 4 | HA AC1 AV1 |
 | S (only after a NO-WORSE PASS and the lead's go) | three blind swipe pairs, the runner's own phone hold |
 
-Runner commands (in the background, after `sh fixes/end-morph-p1/phone/p153-serve.sh start`):
-- `P153_COOL_FIRST=38 TICKET=P-153 node tools/lock.mjs run iphone --owner iphone-runner --block P-153 --max-seconds
-  3600 -- sh fixes/end-morph-p1/phone/p153-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2` (part 1 of every block)
-- `TICKET=P-153 node tools/lock.mjs run iphone …` with `H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1` (part 2)
-- block 2 only after `ARCHIVE-BLOCK1` and the lead's word, the same two commands
+(Rev 1.2's plan, run by block 1: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7
+TAIL, HA AC1 AV1.)
+
+Runner commands for block 2 (in the background, after `sh fixes/end-morph-p1/phone/p153-serve.sh start`; only after
+the lead signs rev 1.3):
+- `TICKET=P-153 node tools/lock.mjs run iphone --owner iphone-runner --block P-153 --max-seconds 3600 --keep 120 -- sh
+  fixes/end-morph-p1/phone/p153-block.sh H1:WC H2:WV H3:S0 H4:EC1 H5:EV1` (part 1)
+- the same with `H6:EV2 H7:EC2 H8:EC3 H9:EV3` (part 2), `H10:EV4 H11:EC4 H12:TAIL` (part 3), `HA:AC1,AV1` (part 4);
+  each part only after the previous one ended `BLOCK PART DONE`
 - part S (see below): `TICKET=P-153 P153_S_GO=lead node tools/lock.mjs run iphone --owner iphone-runner --max-seconds
   900 -- sh fixes/end-morph-p1/phone/p153-swipe.sh`
 - Before the read, VOID holds' records move to `out/p153/void/<H>/`.
@@ -416,7 +467,8 @@ Runner commands (in the background, after `sh fixes/end-morph-p1/phone/p153-serv
 - Precedence: VOID (a sentinel failed or is missing) > INSUFFICIENT (an arm has < 3 valid runs) > FAIL / NO-WORSE PASS.
   - NO-WORSE PASS: neither >34 nor >50 is WORSE.
   - FAIL: either is WORSE. It goes to the lead: block 2, judged by itself, or no landing.
-  - "Position-confounded" is a label only: the lowest V run at a failing threshold opens its hold (EV1 or EV3).
+  - "Position-confounded" is a label only: the lowest V run at a failing threshold opens its hold (rev 1.2: EV1 or
+    EV3). Rev 1.3: every counted run opens its own hold, so the label cannot fire.
 - A re-run `<run>r` counts only when the first try is INVALID by readRun. A first try that the runner flagged only for
   a non-zero gesture exit, but that is valid by readRun, still counts, and its re-run is ignored.
 - **Power note (OBSERVED, from P-152 rev 1.1's resampling of P-137's C runs; another build, 7d):**
@@ -429,7 +481,8 @@ Runner commands (in the background, after `sh fixes/end-morph-p1/phone/p153-serv
 
   At 4 v 4 and this noise, a PASS does not rule out a regression of a few frames per run. It says only that no large
   one showed. The first-open read and part S are reported next to it.
-- **Self-test** (`node fixes/end-morph-p1/phone/p153-read.mjs --selftest`, 48 checks in rev 1.2). P-152's cases:
+- **Self-test** (`node fixes/end-morph-p1/phone/p153-read.mjs --selftest`, 49 checks in rev 1.3, 48 in
+  rev 1.2; rev 1.3 adds: with one counted run per hold, a lowest V run on EV1 is not position-confounded). P-152's cases:
   - a V = C resample (P-137's C runs against a relabeled copy of themselves) passes;
   - P-137 as recorded passes;
   - a clear regression (P-137's arms swapped, +21 / +3.5) FAILs at both thresholds (p 1/70 and 3/70);
@@ -526,17 +579,31 @@ perception-tests-touch-ab).**
 
   Last line of the script: `SWIPE RESULT real AB <pick> / BA <pick>, catch <pick>; landing by part S: ok | NOT …`.
 
-**Kit (pins, sha256/12, at the rev 1.2 commit).** Rev 1 pins: block `76e3fd93ee51`, hold `ba0e405b6782`, serve
+**Kit (pins, sha256/12, at the rev 1.3 commit).** Rev 1 pins: block `76e3fd93ee51`, hold `ba0e405b6782`, serve
 `fbd214f54de0`, read `ebd8e855bf0e`, swipe `c60e12b0e298`. Rev 1.1 pins: block `06f6fbe62d5e`, read `b29d7b28c94b`,
-the rest as rev 1.2.
+the rest as rev 1.2. Rev 1.2 pins (block 1 ran on them): block `78062de712d3`, hold `ba0e405b6782`, read
+`d28c6a20a931`, serve and swipe as rev 1.3.
 
-| file | rev 1.2 pin | source |
+| file | rev 1.3 pin | source |
 |---|---|---|
-| `phone/p153-block.sh` | `78062de712d3` | P-152 rev 1.3's driver (4b8c70324a81), names changed, archive also moves `void` |
-| `phone/p153-hold.sh` | `ba0e405b6782` | unchanged from rev 1 (P-152's hold, new arms; P-152 rev 1.1-1.3 didn't change its hold) |
+| `phone/p153-block.sh` | `e8b6e70be8ee` | rev 1.2's (78062de712d3): cooling below 38 °C before every hold (one more 600 s wait, then VOID exit 6), at most 1 counted run per hold, TAIL one re-run per hold then S1 alone, RERUN scan over every current hold log, cooling gap and `P153_COOL_FIRST` removed, `--between 5` |
+| `phone/p153-hold.sh` | `27ab0bf57adb` | rev 1.2's (ba0e405b6782), header comments only (the plan); no code change |
 | `phone/p153-serve.sh` | `fbd214f54de0` | unchanged from rev 1 |
-| `phone/p153-read.mjs` | `d28c6a20a931` | rev 1.1's reader (b29d7b28c94b) with P-152 rev 1.3's `holdStatus` for `part2Gate` |
+| `phone/p153-read.mjs` | `09a930910631` | rev 1.2's (d28c6a20a931): plan labels, empty `FIRST_IN_HOLD` (a parameter now), NOTE line, one self-test case; rule and `holdStatus` unchanged |
 | `phone/p153-swipe.sh` | `64af4ef79ad7` | unchanged from rev 1.1 (three pairs, guards, PIN) |
+
+- Dry run (rev 1.3, 2026-10-06 04:15-04:18Z, servers up): `P153_DRY=1 … p153-block.sh` with the four parts of block 2:
+  serve check 3 of 3, every hold DRY ok with "gates both" (H1-H11, HA). TAIL with two fake `RERUN-NEEDED` lines (EC1 in
+  hold-H4.log, EV1 in hold-H5.log) gave H12 EC1r, H13 EV1r, H14 S1; with one (EV3) H12 EV3r, H13 S1; with none H12 S1.
+  A 2-counted-run hold (`H4:EC1,EV1`) is refused before anything runs (PLAN REFUSED, exit 2). The PIN lines show block
+  `e8b6e70be8ee`, hold `27ab0bf57adb`, read `09a930910631`. Dry logs moved to `out/p153/dry13-logs/`.
+- Cooling stub test (rev 1.3; a stub `node` first in PATH answering `wait.mjs` with a set exit code, and the phone and
+  lock tools with exit 0; no phone, no lock): TIMEOUT then UNAVAILABLE before H1 → `BLOCK STOP VOID … not scored`,
+  exit 6, no hold started; TIMEOUT then MET before H1 and MET before H2 → both holds started, part done, exit 0.
+  - Disclosed: the first try of this test ran with the stub not executable, so the real `iphone.mjs wda stop` ran
+    (04:17Z, outside any phone hold; it stopped the WDA runner and iproxy) and `wda start` refused without the lease.
+    No phone hold, gate or run was active (the iphone lease was block 1's stale one); every part starts with its own
+    WDA stop/start/check, so block 2 is not affected.
 
 - Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e`,
   `research/serious-heat/p129-read.mjs` `06f74f5d19ca`, fs script `df597802d2f0`, thermal gate `ecb403b3ad25`,
@@ -611,6 +678,11 @@ the rest as rev 1.2.
     way (36.1 → 43.0 °C in 18 min). Under induced Serious, Critical comes back above about 41.5-42 °C (OBSERVED, cause
     unknown).
   - The lead decides: block 2 (after `ARCHIVE-BLOCK1`, cooling to 38 °C first), or a change to the heat rules.
+  - Lead ruling (after the 04:07Z stop): block 1 is VOID (heat) and counts as block 1, archived unscored. Block 2, the last, runs only
+    under rev 1.3's heat rules, after the lead signs rev 1.3.
+  - Archived 2026-10-06 04:12Z (`ARCHIVE-BLOCK1`; servers restarted, served hashes ok): `out/p153/block1/` holds runs,
+    hold logs, WDA logs, serve-check.log, and (moved by hand) cooling.log, part1*.log, the Safari restart logs,
+    void-0342/ and read-part1-stop.json.
 
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 
