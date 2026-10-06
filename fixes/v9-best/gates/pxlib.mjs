@@ -8,19 +8,38 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 
+/**
+ * Decodes an 8-bit, non-interlaced RGB or RGBA PNG and always returns RGBA (bpp 4; an RGB file gets alpha 255), with
+ * srcBpp = the file's own 3 or 4. 2026-10-06 (F-314, arch-compositor-morph): it used to return the file's own bpp, and
+ * delta()/score() index both images with the first one's bpp, so an RGBA shot (Chrome's Page.captureScreenshot writes
+ * RGBA when any pixel is not opaque) against an RGB shot compared misaligned bytes: 0.05 % real read as 60-88 %.
+ * Any other PNG (palette, grey, 16-bit, interlaced) is refused with an error, not misread.
+ */
 export function pngPixels(buf) {
   let o = 8, w, h, bpp, idat = [];
   while (o < buf.length) { const len = buf.readUInt32BE(o), type = buf.toString('ascii', o + 4, o + 8), d = buf.subarray(o + 8, o + 8 + len);
-    if (type === 'IHDR') { w = d.readUInt32BE(0); h = d.readUInt32BE(4); bpp = d[9] === 6 ? 4 : 3; } else if (type === 'IDAT') idat.push(d); o += 12 + len; }
-  const raw = inflateSync(Buffer.concat(idat)); const stride = w * bpp; const px = Buffer.alloc(h * stride);
+    if (type === 'IHDR') {
+      w = d.readUInt32BE(0); h = d.readUInt32BE(4);
+      if (d[8] !== 8 || (d[9] !== 2 && d[9] !== 6) || d[12] !== 0) throw new Error(`pngPixels: only 8-bit non-interlaced RGB/RGBA PNGs (bit depth ${d[8]}, colour type ${d[9]}, interlace ${d[12]})`);
+      bpp = d[9] === 6 ? 4 : 3;
+    } else if (type === 'IDAT') idat.push(d); o += 12 + len; }
+  const raw = inflateSync(Buffer.concat(idat)); const stride = w * bpp; const src = Buffer.alloc(h * stride);
   for (let y = 0; y < h; y++) { const f = raw[y * (stride + 1)], line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
-    for (let x = 0; x < stride; x++) { const a = x >= bpp ? px[y * stride + x - bpp] : 0, b = y ? px[(y - 1) * stride + x] : 0, c = x >= bpp && y ? px[(y - 1) * stride + x - bpp] : 0;
+    for (let x = 0; x < stride; x++) { const a = x >= bpp ? src[y * stride + x - bpp] : 0, b = y ? src[(y - 1) * stride + x] : 0, c = x >= bpp && y ? src[(y - 1) * stride + x - bpp] : 0;
       let v = line[x]; if (f === 1) v += a; else if (f === 2) v += b; else if (f === 3) v += (a + b) >> 1; else if (f === 4) { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
-      px[y * stride + x] = v & 255; } }
-  return { w, h, bpp, px };
+      src[y * stride + x] = v & 255; } }
+  if (bpp === 4) return { w, h, bpp: 4, srcBpp: 4, px: src };
+  const px = Buffer.alloc(w * h * 4);
+  for (let p = 0, i = 0, j = 0; p < w * h; p++, i += 3, j += 4) { px[j] = src[i]; px[j + 1] = src[i + 1]; px[j + 2] = src[i + 2]; px[j + 3] = 255; }
+  return { w, h, bpp: 4, srcBpp: 3, px };
 }
-/** per-pixel max channel difference */
-export const delta = (X, Y) => { const n = X.w * X.h, d = new Uint8Array(n); for (let p = 0, i = 0; p < n; p++, i += X.bpp) { let m = 0; for (let c = 0; c < 3; c++) { const v = Math.abs(X.px[i + c] - Y.px[i + c]); if (v > m) m = v; } d[p] = m; } return d; };
+/** per-pixel max channel difference (RGB; each image indexed with its own bpp; sizes must match) */
+export const delta = (X, Y) => {
+  if (X.w !== Y.w || X.h !== Y.h) throw new Error(`delta: image sizes differ (${X.w}x${X.h} vs ${Y.w}x${Y.h})`);
+  const n = X.w * X.h, d = new Uint8Array(n);
+  for (let p = 0, i = 0, j = 0; p < n; p++, i += X.bpp, j += Y.bpp) { let m = 0; for (let c = 0; c < 3; c++) { const v = Math.abs(X.px[i + c] - Y.px[j + c]); if (v > m) m = v; } d[p] = m; }
+  return d;
+};
 export const aa = (d) => { let m = 0, o = 0; for (const v of d) { if (v > m) m = v; if (v > 8) o++; } return { maxLevel: m, over8Pct: +(100 * o / d.length).toFixed(4) }; };
 /**
  * X~Y beyond the A/A mask: pixels > 8 levels in X~Y where the A/A pair is <= 8. Flat = the 3x3 range of X's luma <= 2.
