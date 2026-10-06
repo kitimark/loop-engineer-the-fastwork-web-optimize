@@ -27,6 +27,10 @@ const { scoreStop, line, pngPixels } = await import(join(WT, 'fixes/v9-best/gate
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
 const ENGINE = arg('--engine', 'chrome');
+// --capture screencast (Chrome): shoot the compositor frame (Page.startScreencast at 3x) instead of Page.captureScreenshot,
+// whose path erased the CM card corners at m 1 to alpha 0 while the screencast frame of the same state was clean (pxEP4,
+// 2026-10-06, OBSERVED)
+const CAPTURE = arg('--capture', 'screenshot');
 const DIR = { A: resolve(WT, arg('--a', 'fixes/end-morph/overlay')), V: resolve(WT, arg('--v', '')) };
 if (!arg('--v')) throw new Error('--v <overlay dir>');
 const H = Number(arg('--h', '775'));
@@ -73,7 +77,7 @@ async function open(url, port) {
   await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'hover', value: 'none' }, { name: 'pointer', value: 'coarse' }] }).catch(() => {});
   await chrome.C.gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 });
-  return { ev: (js) => page.eval(js, { timeout: 90000 }), shot: async (f) => { const { data } = await page.send('Page.captureScreenshot', { format: 'png' }); writeFileSync(f, Buffer.from(data, 'base64')); return true; }, close: () => page.close() };
+  return { ev: (js) => page.eval(js, { timeout: 90000 }), shot: async (f) => { if (CAPTURE === 'screencast') { const w = page.waitFor((m) => m.method === 'Page.screencastFrame', 8000); await page.send('Page.startScreencast', { format: 'png', maxWidth: 430 * 3, maxHeight: H * 3, everyNthFrame: 1 }); const m = await w; await page.send('Page.screencastFrameAck', { sessionId: m.params.sessionId }).catch(() => {}); await page.send('Page.stopScreencast').catch(() => {}); writeFileSync(f, Buffer.from(m.params.data, 'base64')); return true; } const { data } = await page.send('Page.captureScreenshot', { format: 'png' }); writeFileSync(f, Buffer.from(data, 'base64')); return true; }, close: () => page.close() };
 }
 
 const ARMS = ['A', 'V', 'A2', 'V2'];

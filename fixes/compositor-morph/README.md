@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft prototype (CM v1) on v9-final. Nothing here lands without the user's pick (user T-204 #27/#29):
+**Status:** CM v1.2 on v9-final, gated (counts, pixels, corners); goes to the user as a proposal with Try-it. Nothing here lands without the user's pick (user T-204 #27/#29):
 the look differs from today in small ways (listed below), so it goes to the user as a proposal with Try-it.
 **Owner:** arch-compositor-morph. **Stage:** research + F (prototype, gates). No timing (memory
 defer-timing-focus-call-tree); counts, layers and pixels only.
@@ -81,7 +81,9 @@ CM, phones only (`html.fw-cm`, width <= 640 px, touch phones where morph-scroll 
 |---|---|---|
 | C = v9-final (7c) | baseline + `fixes/v9-best/patch.diff` (the A arm, a copy in `out/cm/C`) | 647c9ef2b1e2 / e1359ab9994a |
 | CM v1 | C + the first CM change | 0c6860678741 / 85fbec678324 |
-| **CM v1.1** | CM v1 + two fixes found by the after-close probe (below): `html.fw-cm-out` holds off the nav's width / background transitions on the frame `.is-morphing` drops; the Join button keeps today's unmask animation in its list, so it no longer replays; `delta.diff` (this folder) | **887b4cde06eb / 2948d49e47c6** |
+| CM v1.1 | CM v1 + two fixes found by the after-close probe (below): `html.fw-cm-out` holds off the nav's width / background transitions on the frame `.is-morphing` drops; the Join button keeps today's unmask animation in its list, so it no longer replays (the P-157 phone build) | 887b4cde06eb / 2948d49e47c6 |
+| CM v1.2 (pre end fix) | v1.1 + the hit test skipped while the CM morph stands past 0.2 (below) | b131d0a92404 / 2948d49e47c6 |
+| **CM v1.2** | + the end fix (`__cmK` bucket `t >= 1`, below); `delta.diff` (this folder) | **b9d2eceae44a / 2948d49e47c6** |
 
 `patch.diff` is baseline-relative (v9-final + CM, `fix.mjs diff`); `delta.diff` is the CM change alone, against C.
 Earlier gate runs in this README name the build they measured (CM v1 had JS 4335ca5e6cad before the
@@ -189,4 +191,140 @@ one V run past a fail bound fails the row. The block
 names no frame-time or fps prediction; the P-129 gates and the sentinel (bottom ≥ 58 and scroll ≥ 44 fps) only
 decide validity.
 
-PENDING-SECTIONS
+## P-157 results (iPhone 15 Pro Max, G driver, xcode-serious; read by ops-reader-P157, fixes/PREDICTIONS.md P-157 c[8]-c[11])
+
+All 8 counted runs VALID (P-129 gates E ok, served hashes ok in every hold, TAIL none), end sentinel S1 PASS (fps
+54.3, slow 0.039). H7 (EC3) was cut by the owner's session ending (API errors, I-221) before any data and re-run
+fresh in part 2. Morph frames per run: C 1389-1434, V 1468-1475.
+
+| per morph frame (share of frames with any) | C (EC1-EC4) | V = CM v1.1 (EV1-EV4) | row | verdict |
+|---|---|---|---|---|
+| Layout | 2.23-2.38 (0.93-0.96) | 1.00-1.04 (0.58-0.59) | P1 / P4 | **MISS / MISS** (separated from C, but every V run past the fail bounds 0.6 / 0.3) |
+| Paint | 11.45-12.01 (0.95-0.98) | 3.19-3.28 (0.68-0.70) | P2 | **HIT** (0.28-0.29 x the lowest C run, separated) |
+| style recalcs | 1.82-1.90 (0.89-0.97) | 2.13-2.18 (0.93-0.94) | P3 | **HIT** (the style pass stays, as step 1 says) |
+
+Row A (probe page, uncounted, moved frames): AN (no animation) Layout 0.389 / style share 0.277; AS (scroll-driven)
+0.371 / 0.855; AR (rAF writes) 0.377 / 0.917: **HIT**. On the phone a threaded scroll-driven animation restyles every
+frame and adds no layout of its own (OBSERVED, matches the WebKit source read in step 1).
+
+So on the phone CM cut Paint to about a quarter and Layout to less than half; the prediction "Layout ~0" is refuted.
+POST HOC (not in the card, decides nothing): median frame time 17 ms in all 8 runs; share of morph frames > 34 ms
+V 0.014-0.015 vs C 0.015-0.024, > 50 ms V 0.001-0.003 vs C 0.002-0.005: the ranges overlap, **no frame-time
+separation** under G at xcode-serious (a small V tendency at most, inside the ±4 ms twin noise).
+
+## Where V's remaining Layout comes from (Simulator, stacks)
+
+The phone Timeline records carry no stacks (0 of ~12.5k), so the source was traced in the iOS Simulator
+(`out/cm/lay/lay-sim.mjs`, not committed: Safari Timeline with `maxCallStackDepth` 12, WDA finger strokes up through the
+zone and back, every Layout inside script grouped by stack). CM v1.1, 922 rendering frames, 291 script-forced layouts:
+
+| forced layouts | stack |
+|---|---|
+| 158 | `elementsFromPoint` < `F` 13867 < `_` 14140 < `L` < scroll engine `iE` 2707 (nav-hit-cache's backdrop hit test) |
+| 44 | `__msTick` 14291 (`window.scrollY`, it pays for whatever layout is dirty at that point) |
+| (style only) | `getBoundingClientRect` < `a` 3301 |
+
+C (v9-final) had 132 + 194 (F's `getBoundingClientRect` and `elementsFromPoint`) + 24 from the same places. On the
+phone tl the rAF-forced layouts sit at m > 0.35. `_()` re-runs F() on every morph frame (`C()` is true while m > 0),
+yet the answer cannot show while m > 0.2: the nav's `is-on-dark` class is `g || m > 0.2` (JS 14716).
+
+**v1.2** skips that hit test while the CM morph stands past 0.2 (`__cmLive && __msP > 0.2 && r > 0.2`; `r` is the spring's value, in case the debug driver moves m). Below 0.2 it runs as
+before, and `__msTick` already re-tests (queueMicrotask F()) after a write that brings m to <= 0.2, so the class the
+user sees is the same. The same skip on today's build (no CM) is the separate delta `fixes/hit-skip/`.
+
+**v1.2 end fix** (found by the screencast gate below): `__cmSet` writes the Svelte state x (classes and `--morph`)
+only when a bucket of `__cmK` changes, and the last bucket opened at qM 0.92. So after a normal scroll to the end, x
+stayed at the value where t crossed 0.92 (0.9496 in the gate), and the still frame at m 1 differed from today by
+~2 % (a straight jump to m 1 gave 0.19 %). v1.2 adds one bucket, `t >= 1`: x is exactly 1 at the end, where the 7d
+settle rests. It costs one Svelte update per arrival at the end; nothing changes below m 1 (checked below).
+
+## v1.2 results (Chrome counts, Simulator counts, pixels, corners)
+
+### Chrome, work per morph frame (`gates/cm-chrome.mjs`, 430x775, 40-step open/close, medians per frame)
+
+| phase | C = v9-final | v1.2 |
+|---|---|---|
+| open: style / layout / paint / raster | 2 / 1 / 7 / 15 | 3 / 0 / 3 / 3 |
+| close: style / layout / paint / raster | 3 / 1 / 7 / 13 | 3 / 0 / 3 / 2 |
+| forced layouts in script, open / close | 10 / 11 | 5 / 3 |
+| layers at m 0.5 / m 1 (est. MB) | 68 / 68 (342 / 366) | 82 / 82 (387 / 387) |
+
+(`out/compositor-morph/em-C-775-…13-31-44…json`, `em-CM12-775-…13-32-14…json`, v1.2 before the end fix; the end
+fix adds one Svelte update at m 1 only.) CM keeps ~14 more layers (+~44 MB est.) while the morph stands.
+
+### Simulator (WebKit, iOS 26.5, rAF-stepped, `gates/cm-sim.mjs`, counts only, one run per arm)
+
+| phase | C = v9-final | v1.1 (P-157 build) | v1.2 | v1.2 + end fix |
+|---|---|---|---|---|
+| open (40-41 frames): paints / kpx / layouts / styles | 559 / 45495 / 181 / 91 | 193 / 13213 / 138 / 86 | 179 / 12755 / 136 / 79 | 145 / 10917 / 125 / 68 |
+| close (40 frames): paints / kpx / layouts / styles | 505 / 42765 / 174 / 60 | 114 / 13532 / 123 / 90 | 120 / 13367 / 116 / 92 | 88 / 11462 / 119 / 74 (39 frames) |
+| layers after open | 44 | 56 | 56 | 56 |
+
+v1.2 is at parity with v1.1 (the gain on the phone, P-157, was measured on v1.1), and paints about a third of C.
+
+### Forced layouts by stack (Simulator, WDA finger strokes, `out/cm/lay/lay-sim.mjs`, one session per arm)
+
+| arm | frames | layouts | inside script |
+|---|---|---|---|
+| HSC = v9-final+7d | 907 | 656 | 399 |
+| HS = v9-final+7d + hit-skip (`fixes/hit-skip/`) | 939 | 621 | 302 |
+| V12 = CM v1.2 | 934 | 547 | 314 |
+| V13 = V12 + no `window.scrollY`/geometry reads in `__msTick` (attribution arm, `out/cm/V13`) | 953 | 483 | 181 |
+
+V12's largest stack left is `__msTick` 14295 (`window.scrollY`, 119 calls with work, 64 of them forced Layout): WebKit
+lays out on a `scrollY` read whenever scrollY != 0 (CONFIRMED: Source/WebCore/page/LocalDOMWindow.cpp 1477-1481,
+safari-7624.5.1.11-branch, `updateLayoutIgnorePendingStylesheets`). V13 passes the engine's y into `__msTick` and
+caches the geometry (cleared by the existing ResizeObserver): 64 fewer forced layouts, 133 fewer inside script. It is
+the next less-work candidate, a separate delta, not part of this proposal.
+
+### Pixels
+
+Chrome, PR-010 multi-pair (A, V, A2, V2), A = v9-final. Two capture paths:
+- `Page.captureScreenshot` (3x): at m 1 it showed transparent (alpha 0) bottom card corners, 1282 px, in V only,
+  switching on and off between repaints. The screencast frame of the same state (`Page.startScreencast`) was clean
+  (corners = page background), see "Corners" below. So the gate now uses `--capture screencast`.
+- Screencast frames come out at 1x (430x932) even when 3x is asked for (headless Chrome, OBSERVED), so they are scored
+  against the screencast A/A floor, which was 0 % over 8 at every stop (A vs A2 and V vs V2).
+
+A~V share of pixels over 8 levels (consistent in all four cross pairs; screencast, 1x):
+
+| stop | pre | 0.02 | 0.05 | 0.1 | 0.15 | 0.19 | 0.25 | 0.4 | 0.5 | 0.54 | 0.6 | 0.8 | 0.95 | 0.99 | 1 | down 0.5 | 0.1 | 0 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| % | 0.02 | 3.07 | 0.72 | 0.98 | 1.54 | 0.81 | 0.56 | 0.80 | 0.71 | 1.00 | 1.95 | 4.42 | 6.90 | 3.02 | 1.99 (0.19 by a jump) | 0.64 | 0.94 | 0.16 |
+
+What differs, in plain words: in the early morph (m 0.02-0.4) the nav bar's top-left (logo and pill edge) is drawn
+slightly differently; from m 0.8 on the whole card's content sits up to ~1 px off and the blurred photos behind it
+differ a little. At m 0.8 (3x screenshot): 3.2 % of pixels differ by more than 8 levels, 0.93 % by more than 64, 0.32 %
+by more than 128. So CM is not pixel-identical; it is a proposal for the user to judge (Try-it), not an illusion fix.
+
+The m 1 cell depends on how the page gets there (Chrome only):
+- After a jump straight to m 1 the frame differs from today by 0.19 %; after scrolling up through 0.95 and 0.99,
+  by 1.99 %, on text edges (title, countdown, buttons, footer).
+- A dump of every element in the nav (computed transform, translate, opacity, filter, rect, animations) is the same on
+  both paths except two hidden (display:none) columns. So it is not a style or DOM difference.
+- Code lead (chromium main 39d5b374, read via gh): cc keeps a layer's raster scale and raster translation while its
+  transform animates ("Keep the non-ideal raster translation unchanged for transform animations to avoid
+  re-rasterization during animation", cc/layers/picture_layer_impl.cc 1120-1123; maximum animation scale 1257-1269).
+  A scroll-driven animation never finishes, so text rastered at m 0.95 is kept at m 1: OBSERVED + code lead,
+  UNRESOLVED as the cause.
+- Safari (Simulator, the same slow path, `out/cm/pxSimPath`): 0.108 % vs today at m 1, the same as a straight jump
+  (0.068 %). Chrome/Android-only look issue; a possible later remedy (not in this build): let the layer re-raster once
+  m rests at 1 (e.g. drop the transform animation's layer hint there).
+- The end fix changed nothing below m 1: the frames before and after it are equal at m 0.95, 0.99, 1 (jump) and down
+  0.5 / 0 (max 0-2 levels), and at down 0.1 within its V/V noise (0.04 %).
+
+### Corners at m 1
+
+- Chrome `captureScreenshot`: 1282 alpha-0 px at the bottom card corners; turned on and off by unrelated repaints
+  (toggling `--morph`, the panel filter, u3's backdrop-filter; none decides it). Screencast frame of the same state:
+  0 non-opaque px, corners = page background (`out/cm/pxEP4`). OBSERVED, one headless run.
+- Code lead (chromium main via gh, read by map-cm-chromium-src, no commit pinned): `captureScreenshot` is a forced
+  redraw plus surface copy (content/browser/devtools/protocol/page_handler.cc ~1420/1630,
+  render_widget_host_impl.cc 2371-2400), not the scanned-out frame; the only clears are `ClearOutsideBackdropBounds`
+  for backdrop-filter quads (components/viz/service/display/skia_renderer.cc 964-1010, clear TRANSPARENT 975-981,
+  rounded bounds 870-881). With the rounded `.fw-cm-c` clippers as the backdrop bounds this would erase outside the
+  rounded rect if the backdrop layer misbehaves: UNRESOLVED (inference). It fits V12nr (clipper radius 0): 0 alpha px.
+- Safari (Simulator, `out/cm/pxK12s`): clean, A~V = 0 px over 8 in a 40x45 css px box at each bottom corner; whole
+  frame 0.068 %.
+- F-309's corner part (backdrop clipped by the outermost rounded clip) is REFUTED as the cause (the corners are a
+  capture-path effect). Known issue in the proposal: "Chrome screenshot-only artifact; the displayed frame is clean".

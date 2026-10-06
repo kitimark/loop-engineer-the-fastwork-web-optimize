@@ -1145,10 +1145,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        S = (e, t, r, a, o) =>
          new Promise((s) => {
-@@ -2459,6 +2461,39 @@
-             };
-           n = window.requestAnimationFrame(d);
-         }),
+@@ -2456,6 +2458,39 @@
+               }
+               let s = Math.min(1, (i - u) / a);
+               (o(t + (r - t) * T(s)), s < 1 ? (n = window.requestAnimationFrame(d)) : c(!0));
++            };
++          n = window.requestAnimationFrame(d);
++        }),
 +      // [rest-script] S for a tween shown only as Math.round(value) (the % count, 18 -> 0): same clock, easing and
 +      // per-frame math as S, but between two changes of the rounded value it sleeps (setTimeout) until 50 ms before
 +      // the next change (or the end) instead of running rAF frames that draw nothing new. From the wake on it runs
@@ -1179,12 +1182,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +                    ((fwTo = 0), (n = window.requestAnimationFrame(d)));
 +                  }, w))
 +                : (n = window.requestAnimationFrame(d));
-+            };
-+          n = window.requestAnimationFrame(d);
-+        }),
-       E = async (e) => (
-         z(y, !0),
-         z(v, !1),
+             };
+           n = window.requestAnimationFrame(d);
+         }),
 @@ -2486,7 +2521,7 @@
              (z(b, e, !0), z(C, e / 100));
            })) ||
@@ -1203,11 +1203,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            },
            [() => Math.round(s(b)), () => Math.round(s(x))],
          ),
-@@ -2670,9 +2705,58 @@
- function iE() {
+@@ -2671,8 +2706,57 @@
    tE = 0;
    for (let e of $T) e.active && e.callback();
-+}
+ }
 +// [scroll-engine /10] W1: a deferred section's first render (style + layout + paint + layers) costs one
 +// long frame (#platform: ~45 ms style/layout at 6x). Do it in idle time after load, one section per idle
 +// slice, instead of while the user scrolls into it. The IO un-skip (fwRender) stays as the fallback.
@@ -1247,7 +1246,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +  );
 +  for (let e of document.querySelectorAll(`.start-selling :is(${fwWCSel})`))
 +    e.hasAttribute(`data-fw-wc`) || (e.setAttribute(`data-fw-wc`, `1`), fwWCIO.observe(e));
- }
++}
 +function fwBoot() {
 +  if (fwBooted) return;
 +  fwBooted = !0;
@@ -1281,7 +1280,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            }
          });
        }));
-@@ -2710,8 +2794,91 @@
+@@ -2710,7 +2794,90 @@
    (e.manageAnimations &&
      e.element &&
      e.element.setAttribute(`data-start-selling-scene`, t ? `active` : `paused`),
@@ -1294,7 +1293,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // [scroll-engine /10b] elements mounted after the first scan (e.g. orbit cards) join the will-change
 +      // windows: re-scan once in idle time after a scene activates.
 +      t && fwArmed && !fwWCQ && (fwWCQ = fwIdle(() => ((fwWCQ = 0), fwWC())))));
- }
++}
 +var fwWCQ = 0;
 +// [scene-gating] N9/N10: render deferral is one-way. A section starts deferred (content-visibility) only
 +// when it is inactive at mount; our own IO at the scene margin +50 % (>= 150 %) un-skips it once, well
@@ -1370,10 +1369,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (i.delete(e), i.size || (r.observer.unobserve(t), r.elements.delete(t)));
 +    }
 +  );
-+}
+ }
  function lE(e) {
    let t = e.getBoundingClientRect();
-   return t.bottom >= -window.innerHeight && t.top <= window.innerHeight * 2;
 @@ -2756,7 +2923,9 @@
        onActiveChange: t.onActiveChange,
        renderFrame: 0,
@@ -2226,23 +2224,24 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5438,28 @@
+@@ -4689,12 +5438,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
+-      n = () => {
+-        F &&= (window.clearInterval(F), 0);
 +      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
 +      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
 +      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
 +      fwOn = !1,
 +      fwT0 = 0,
-       n = () => {
--        F &&= (window.clearInterval(F), 0);
++      n = () => {
 +        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
        },
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -2254,9 +2253,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5492,15 @@
          ((O = null), z(E, null));
        },
@@ -2496,13 +2496,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
--      (l(
--        (e, t, s, c, l) => {
--          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
 +      /* st5: the 5 slots stay mounted for the page's life; x+1 updates src in place and S toggles
 +         .is-sliding on the carousel (the slide runs on permanently layered imgs, see CSS), so neither
 +         tick inserts/removes renderers or gains/loses layers */
-+      (l(
+       (l(
+-        (e, t, s, c, l) => {
+-          (k(n, `src`, e), k(r, `src`, t), k(i, `src`, s), k(a, `src`, c), k(o, `src`, l));
 +        (a0, a1, a2, a3, a4, sl) => {
 +          (k(n, `src`, a0), k(r, `src`, a1), k(i, `src`, a2), k(a, `src`, a3), k(o, `src`, a4));
 +          me.classList.toggle(`is-sliding`, sl);
@@ -2838,7 +2837,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12997,17 +14009,144 @@
+@@ -12997,17 +14009,148 @@
            (window.clearTimeout(l), f());
        };
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
@@ -2968,8 +2967,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +        // the real hit test runs only when the answer can have changed: a forced frame (re-measure, theme class
 +        // change), the probe line crossing a cached edge, a moving zone, the morph, a running geometry transition
 +        // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
++        // compositor-morph v1.2: while the CM morph is past m 0.2 the answer cannot show (is-on-dark = g || m > 0.2)
++        // and its elementsFromPoint forced a layout in about half the morph frames (P-157, Simulator stacks); skip it
++        // there. Below 0.2 it runs as before, and __msTick re-tests after its write when m drops to <= 0.2.
 +        let __h =
-+          __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
++          !(__cmLive && __msP > 0.2 && r > 0.2) &&
++          (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0);
 +        (__nsTail > 0 && __nsTail--,
 +          // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
 +          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
@@ -2989,7 +2992,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        y = () => document.querySelector(`.start-selling-platform`),
        S = () => {
-@@ -13017,13 +14156,405 @@
+@@ -13017,13 +14160,407 @@
          (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
        },
        C = () => w > 0.001 || r > 0.001,
@@ -3172,8 +3175,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      __cmG = null,
 +      __cmSt = null,
 +      __cmCss = ``,
++      // the last bucket (t >= 1): the morph's end is a resting place (the 7d settle stops there), so x and --morph must be
++      // exactly today's 1 there, not the value at which t crossed qM (a still frame at m 1 differed by ~2 % otherwise)
 +      __cmK = (t) =>
-+        `${+(t > 0)}${+(t > 0.08)}${+(t >= 0.2)}${+(t > 0.2)}${+(t < 0.35)}${+(t > 0.4)}${+(t > 0.55)}${+(t > qM)}`,
++        `${+(t > 0)}${+(t > 0.08)}${+(t >= 0.2)}${+(t > 0.2)}${+(t < 0.35)}${+(t > 0.4)}${+(t > 0.55)}${+(t > qM)}${+(t >= 1)}`,
 +      // the wrappers: c0 > u0 > c1 > u1 > c2 > u2 > c3 > u3 (glass) > [dark, the header's own children]
 +      __cmDom = () => {
 +        let h = __navNode();
@@ -3397,7 +3402,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +14576,9 @@
+@@ -13045,9 +14582,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -3409,7 +3414,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +14586,58 @@
+@@ -13055,27 +14592,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -3475,7 +3480,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +14648,80 @@
+@@ -13086,7 +14654,80 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -3557,7 +3562,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,10 +14730,59 @@
+@@ -13095,10 +14736,59 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -3618,7 +3623,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -13116,12 +14800,28 @@
+@@ -13116,12 +14806,28 @@
      },
    });
    var oe = V(ae, 2),
@@ -3649,7 +3654,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14840,7 @@
+@@ -13140,7 +14846,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -3658,7 +3663,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14857,16 @@
+@@ -13157,7 +14863,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -3676,7 +3681,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14902,8 @@
+@@ -13193,7 +14908,8 @@
          M(w),
          M(a),
          l(() => {
@@ -3686,7 +3691,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14920,7 @@
+@@ -13210,7 +14926,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -3695,7 +3700,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13229,9 +14939,12 @@
+@@ -13229,9 +14945,12 @@
            "is-locale-open": s(y),
            "is-scroll-hidden": s(v) && !s(E),
            "is-profile-sticky-hidden": s(v) && !s(E),

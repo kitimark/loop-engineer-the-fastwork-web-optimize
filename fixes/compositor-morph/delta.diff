@@ -1,6 +1,20 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js (v9-final)
-+++ b/_app/immutable/nodes/2.DyWL8TcE.js (CM v1.1)
-@@ -14310,8 +14310,234 @@
++++ b/_app/immutable/nodes/2.DyWL8TcE.js (CM v1.2)
+@@ -14133,8 +14133,12 @@
+         // the real hit test runs only when the answer can have changed: a forced frame (re-measure, theme class
+         // change), the probe line crossing a cached edge, a moving zone, the morph, a running geometry transition
+         // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
++        // compositor-morph v1.2: while the CM morph is past m 0.2 the answer cannot show (is-on-dark = g || m > 0.2)
++        // and its elementsFromPoint forced a layout in about half the morph frames (P-157, Simulator stacks); skip it
++        // there. Below 0.2 it runs as before, and __msTick re-tests after its write when m drops to <= 0.2.
+         let __h =
+-          __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
++          !(__cmLive && __msP > 0.2 && r > 0.2) &&
++          (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0);
+         (__nsTail > 0 && __nsTail--,
+           // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
+           __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
+@@ -14310,8 +14314,236 @@
          // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
          // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
          ((e = e > 0 ? (e < 1 ? e : 1) : 0),
@@ -30,8 +44,10 @@
 +      __cmG = null,
 +      __cmSt = null,
 +      __cmCss = ``,
++      // the last bucket (t >= 1): the morph's end is a resting place (the 7d settle stops there), so x and --morph must be
++      // exactly today's 1 there, not the value at which t crossed qM (a still frame at m 1 differed by ~2 % otherwise)
 +      __cmK = (t) =>
-+        `${+(t > 0)}${+(t > 0.08)}${+(t >= 0.2)}${+(t > 0.2)}${+(t < 0.35)}${+(t > 0.4)}${+(t > 0.55)}${+(t > qM)}`,
++        `${+(t > 0)}${+(t > 0.08)}${+(t >= 0.2)}${+(t > 0.2)}${+(t < 0.35)}${+(t > 0.4)}${+(t > 0.55)}${+(t > qM)}${+(t >= 1)}`,
 +      // the wrappers: c0 > u0 > c1 > u1 > c2 > u2 > c3 > u3 (glass) > [dark, the header's own children]
 +      __cmDom = () => {
 +        let h = __navNode();
@@ -236,7 +252,7 @@
        // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
        __navMorphSet = (t) => {
          (n && window.cancelAnimationFrame(n),
-@@ -14460,6 +14686,9 @@
+@@ -14460,6 +14692,9 @@
        // main (the page's content) grows with lazy content above; body is only one viewport tall here
        R.parentElement && __msRO.observe(R.parentElement),
        document.documentElement.classList.add(`fw-ms`),
@@ -247,7 +263,7 @@
      window.__navMorphSet = __navMorphSet;
      // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
 --- a/_app/immutable/assets/2.gBuqKVzi.css (v9-final)
-+++ b/_app/immutable/assets/2.gBuqKVzi.css (CM v1.1)
++++ b/_app/immutable/assets/2.gBuqKVzi.css (CM v1.2)
 @@ -12412,4 +12412,118 @@
    position: relative;
    height: 100lvh;
