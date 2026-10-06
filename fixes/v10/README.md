@@ -6,14 +6,23 @@ int-v8. The lead accepted the plan and asked for a pre-stage on 2026-10-06. The 
 v10 lands only after the P-153 (P1) and P-152 (F1+U2) reads pass. If either fails, v10 drops that delta and the lead
 re-rules.
 
-**Verdict (Chrome; Simulator pending):**
+**Verdict (Chrome only so far; the Simulator counts and the Simulator A/A are required and still pending):**
 
-- code parity: 0 differences;
-- U2 parity on the rev 7d engine: PASS;
-- fling-out: PASS;
-- nolift changes only the earn button;
-- v10 matches the measured builds and the nolift Try-it build within the pixel gate's own A/A noise;
-- the stack's effect is the same on both bases at all 20 stops.
+- code parity: 0 differences (script PASS);
+- U2 parity on the rev 7d engine: PASS (script);
+- fling-out: PASS (script);
+- the stack's effect is the same on both bases at all 20 stops (script EFFECT MATCH).
+
+The script did **not** pass the pixel checks. `nlregion.mjs` printed NLREGION FAIL in all three runs:
+
+| run | what failed |
+|---|---|
+| px-nl | the post stop: 99 device px outside the button |
+| px-tryit | 2 stops: dn0.5, 2 px; post, 15 px |
+| px-meas | 1 stop: post, 165 px |
+
+"Nolift changes only the earn button" and "identical to the Try-it build / the measured build" are the lead's ruling:
+**within the gate's A/A noise (T2)**, based on the A/A runs below. They are not a script PASS, and not 0 px.
 
 ## Arms (immutable snapshot `out/v10/snap-f5068db34a32-a4ed5432f2f7`, HASHES.txt sha256/12 **0f91ea014cb3**)
 
@@ -114,6 +123,7 @@ rev 7d and U2 work on the same morph-scroll machinery (code reading, OBSERVED), 
 
 - Tool: `fixes/nav-hit-cache/probe.mjs parity --base v10u2`; base added for fix-nav-morph's tool, credited (5a4340a0).
 - Builds: C = 1b2eecc66011 + P1 (291f70523bd6), V = N, VA = N + the audit hook (f71b57bcff8a).
+- **The arm named "V" in this run's JSON is N**, f5068db34a32 / a81b9af7b2c9, without nolift. It is not v10's V.
 - Coverage: 5 cases (mobile, desktop, desktop-rtl, mobile-rtl, mobile-shift), task and raf modes at 10 and 40 px.
 - Results:
   - 0 deferred mismatches (187 or 47 deferred frames per mobile run);
@@ -126,6 +136,8 @@ rev 7d and U2 work on the same morph-scroll machinery (code reading, OBSERVED), 
 ### Fling-out probe: PASS
 
 - Tool: `fixes/v10/flingout.mjs`. Builds C, V and VA of base v10u2. 430x775, touch, hover:none / pointer:coarse.
+- **"V" in `flingout.json` is N** (f5068db34a32 / a81b9af7b2c9, no nolift), and VA is N + the audit hook. Nolift was not
+  in the fling probe.
 - Synthetic finger from open (m = 1). Each step runs in a task after a frame (input order).
 - rev 7d's own lift log confirms which path each scenario took.
 
@@ -147,11 +159,11 @@ rev 7d and U2 work on the same morph-scroll machinery (code reading, OBSERVED), 
   cross pairs while neither A/A pair is.
 - Region checks: `fixes/v10/nlregion.mjs`. Runner: `fixes/v10/chrome.sh`.
 
-| check | result |
+| check | result (nlregion script verdict in brackets) |
 |---|---|
-| nolift: N vs V | differs only at up0.02-up0.19 (10.8k-31.3k device px). Every cluster is inside the earn button's rect + 28 px. 18 other stops are identical, except post: 11 css px² at the nav bar and p.is-price |
-| v10 vs the nolift Try-it build | identical at 18 of 20 stops. dn0.5: 2 device px (max level 18, nav bar). post: 15 device px (max 46, nav bar) |
-| N vs the measured build 4da641f828bb | identical at 19 of 20 stops; post: 165 device px (nav bar / price) |
+| nolift: N vs V | [NLREGION FAIL: 1 stop] differs only at up0.02-up0.19 (10.8k-31.3k device px). Every cluster is inside the earn button's rect + 28 px. The other stops are identical, except post: 99 device px (11 css px²) at the nav bar and p.is-price, outside the button |
+| v10 vs the nolift Try-it build | [NLREGION FAIL: 2 stops] identical at 18 of 20 stops. dn0.5: 2 device px (max level 18, nav bar). post: 15 device px (max 46, nav bar) |
+| N vs the measured build 4da641f828bb | [NLREGION FAIL: 1 stop] identical at 19 of 20 stops; post: 165 device px (nav bar / price) |
 | effect cross-check (C to N vs v9-final to measured; `fixes/v10/effectcmp.mjs`) | **match at all 20 stops**: same stops differ, same largest-cluster box, amounts within 0.2-0.8 % |
 
 **Noise floor (A/A, `fixes/v10/aa.sh`).** The Try-it build was put through the same gate against itself, twice.
