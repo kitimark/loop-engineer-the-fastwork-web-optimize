@@ -22,7 +22,12 @@ What exists (read in the code, 2026-10-06):
   fitted by hand from human scroll curves (`research/architecture/finger-simulation.md` §4.1: strokes 1.0-1.6 s, peaks
   2500-5700 px/s, momentum tau ~0.43 s).
 
-Proposed toolsmith job (one incident, test-first, own commit, landed on main before phase 2):
+**Update 2026-10-06: landed as incident I-218, 6179d922 on main** (npm test 2385/2385). `iphone.mjs record --touches`
+captures the touches (with clientX) next to the frames; `tools/gesture-from-record.mjs <record>` writes the script
+(strokes cut at <= 560 px / 5 s at the finger's own times, fling at the finger's lift-off speed, `--overhead-ms` takes the
+robot's start latency off the pauses) and prints the scroll curve the script should produce (EXPECT); `--compare <user>
+<replay> --max-dy <px>` is the fidelity check of item 3 (VERDICT OK|MISS, exit 3 on a miss). The hand-fit fallback below
+is no longer needed. What was proposed (kept for the record):
 1. `iphone.mjs record --touches`: install `gesture-rec.mjs`'s RECORDER_JS (frames + passive touch listeners; add
    clientX) instead of RECORD_JS, and save `touches` in the record. Without the flag, record is byte-for-byte unchanged
    (test pins the injected text). It changes what runs in the page, so it is called out as measurement code; it only
