@@ -1,0 +1,65 @@
+--- out/p155/snap/C/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 16:11:49
++++ out/fade/snap/b/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 16:59:55
+@@ -14149,11 +14149,15 @@
+         z(p, n - t.t >= 0.72 * i);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
++      // [platform-fade b = c + overlay] at fade 0 #platform is covered, but its IO-gated idle animations (title sweeps, glints)
++      // keep running: an attribute pauses every animation under it (CSS [data-fw-pf-paused]); written only on a crossing
++      __pfP = !1,
+       S = () => {
+         let e = y();
+         if (!e) return;
+         let t = QM(r);
+         (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
++        t === 0 !== __pfP && ((__pfP = t === 0) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
+       },
+       C = () => w > 0.001 || r > 0.001,
+       // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
+--- out/p155/snap/C/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 16:11:49
++++ out/fade/snap/b/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 17:04:04
+@@ -5706,6 +5706,14 @@
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
++}
++/* [platform-fade c] fade 0 (here: fully covered by the overlay): pause #platform's infinite idle animations (as in
++   option c). Set by S() only on a crossing of fade 0. */
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized),
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized)::after,
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track, .start-selling-platform-secure-network-dash-glint svg),
++.start-selling-platform[data-fw-pf-paused] .start-selling-platform-agents-ask-field span.is-caret::after {
++  animation-play-state: paused !important;
+ }
+ .start-selling-platform > .start-selling-platform-shell {
+   flex-direction: column;
+@@ -12408,6 +12416,29 @@
+   position: sticky;
+   top: calc(100dvh - var(--fw-ms-h, 100dvh));
+ }
++/* [platform-fade b] (touch phones, the morph-scroll build) no group blur and no group opacity on #platform: it stays
++   still, and a flat overlay of the page background (#f5f5f3, .start-selling) fades in over its visible part instead.
++   Same colour maths as the opacity fade (bg over content at 1 - fade); the blur is gone (a visible change). The overlay
++   sits inside #platform's own stacking context (sticky), so it stays under the nav (z-index 40). */
++html.fw-ms .start-selling-platform {
++  filter: none;
++  opacity: 1;
++}
++html.fw-ms .start-selling-platform::after {
++  content: "";
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  height: 100lvh;
++  z-index: 2147483647;
++  background: #f5f5f3;
++  /* --morph-fade is registered non-inheriting (scene-scope R4a): take the section's value explicitly */
++  --morph-fade: inherit;
++  opacity: calc(1 - var(--morph-fade));
++  will-change: opacity;
++  pointer-events: none;
++}
+ .fw-ms-end {
+   position: relative;
+   height: 100lvh;

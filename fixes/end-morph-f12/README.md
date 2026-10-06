@@ -668,6 +668,49 @@ Commands (the runner's, Bash `run_in_background`, timeout 7200000):
 | 09:51:41 | The user re-plugged the phone (console step C-083) and restarted the Xcode thermal condition. Lead: "phone ready", rerun part 2 unchanged; a start gate that does not read Serious (induced) stops the part. |
 | 09:53:07 | Part 2 rerun started, unchanged (H5 EC1, H6 EF1, H7 EU1). Log `out/p155/part2r.log`; the stopped try's log is `out/p155/part2.log`. |
 | 09:55:05 | Part 2 rerun STOP, exit 5, before H5 again. This time the WDA runner started on the device, but the local forward on port 8100 never became reachable (`out/p155/wda-restart-1791280384.log`). No hold ran. Reported to the lead first; waiting for its go. |
+| 09:57-09:58 | Lead: the Mac sat at load1 70-95 during that try; rerun once chrome-measure has been idle for 60 s. That wait was MET at 09:58:05Z. |
+| 09:58:25 | Part 2, second rerun, started (log `out/p155/part2r2.log`). |
+| 10:00:26 | STOP, exit 5, before H5: the same WDA failure (runner up on the device, port 8100 not reachable; `out/p155/wda-restart-1791280704.log`), with load1 about 8-16. No hold ran. This was the third WDA failure, so I stopped and handed it to the lead, as ordered. |
+| 10:0x-10:12 | Lead: usbmux saw no iPhone on USB (0 devices) while CoreDevice still reached it, so the runner started but iproxy had nothing to forward. Re-plug steps C-084 and C-085 followed. The USB link was back at 10:12:37Z, on another Type-C port. |
+| 10:13:22 | `idevice_id -l` counted 1 device. Part 2, third rerun, started unchanged (log `out/p155/part2r3.log`). My queued Simulator pixel job was dropped first, so nothing of mine held the Mac before H5. |
+| 10:32:26 | Part 2 ended with exit 0: H5 EC1, H6 EF1, H7 EU1 all VALID (231 / 222 / 228 s). The T-215 census (about 25 s, shared w1) ran in the gap. |
+| 10:33:16 | Part 3 started (H8 EF2, H9 EU2, H10 EC2). |
+| 10:51:30 | Part 3 ended with exit 0: all VALID (230 / 234 / 229 s). The census of C against (c) at m 1 ran in the gap. |
+| 10:52:19 | Part 4 started (H11 EU3, H12 EC3, H13 EF3). |
+| 11:11:18 | Part 4 ended with exit 0: all VALID (234 / 226 / 222 s). |
+| 11:11:3x | Part 5 started (H14 TAIL). |
+| 11:13:3x | Part 5 STOP, exit 5, before any hold: WDA "Timed out while enabling automation mode" (`out/p155/wda-restart-1791285092.log`). USB showed 1 device. No run gate had failed, so only S1 was left. A pre-S1 read gave VOID (no S1), FYI only. |
+| 11:14:51 | Lead go: one retry in my own phone hold with `wda stop`, a 10 s pause, `wda start` and `wda check`, then part 5 unchanged (`out/p155/part5r.log`). WDA came up READY. |
+| 11:19:5x | H14 S1 VALID 235 s; sentinel S1 PASS (fps 55.3, slow 0.032). Block 1 complete: 14 of 14 holds VALID, both sentinels PASS. |
+
+### P-155 result (block 1; the read is `phone/p155-read.mjs`, `results-p155.json`; the lead and ops-reader-P155 confirm)
+
+| arm | CB34 per run | CB50 (reported only) | end zone >34 per run |
+|---|---|---|---|
+| C (v9-final) | 0 / 2 / 0 | 0 / 0 / 0 | 25 / 30 / 22 |
+| F (C + F1 only) | 7 / 9 / 10 | 0 / 0 / 0 | 26 / 24 / 27 |
+| U (C + U2 only) | 12 / 0 / 5 | 2 / 0 / 2 | 80 / 21 / 47 |
+
+- **SPLIT: UNRESOLVED (partial).**
+  - **P1 holds.** F−C CB34 median is +9 (at least 8), with the ranges separated. F1 alone reproduces P-152's closing-band excess (V was 23/21/21/14 against C 6/3/5/7 there). So F1's re-show while closing is the cost.
+  - **P2 fails.** U−C CB34 median is +5 (the limit is 3). U is mixed: EU2 equals C, EU1 and EU3 are high (end zone 80 and 47).
+- **U2's end-zone no-worse rule (decides U2's landing, with P2): PASS.**
+  - The median U−C at >34 is +22 and exceeds the +2 bound, but the permutation p is 4/20 (above 0.05). So it is "not WORSE" under the rule, which is weak at 3 v 3 (disclosed).
+  - Under ruling 2 (PASS and P2), **U2 does not land**: P2 fails.
+- **F1 against C, by the same rule (decides nothing):** NO-WORSE PASS.
+- **Block 2 does not run** (ruling 1: only on VOID or INSUFFICIENT).
+- **Timeline on CB frames, total ms (decides nothing):**
+
+  | arm | Composite | RecalculateStyles | Layout |
+  |---|---|---|---|
+  | C | 6906 | 718 | 621 |
+  | F | 5615 | 591 | 475 |
+  | U | 7472 | 799 | 652 |
+
+- **Kit and profile:**
+  - Kit unchanged through the block: p155-serve `144a9315147b`, p155-hold `92987c1153fd`, p155-block `a8f6bba6fe2c`, p155-read `100cdaca75de`.
+  - Profile xcode-serious. The user restarted the Xcode condition at 09:51Z, after re-plug C-083.
+  - Parts 2 and 5 needed WDA retries (I-220, plus the USB re-plugs C-083 to C-085). No counted hold ran under a failed start.
 
 ### Plan: the higher-m F1 variant (not built)
 
@@ -760,6 +803,89 @@ Slow share = moving lastScreen frames with dt > 34 ms. Composite is WebKit's mai
   3. (a) only if (c) shows a gain and the user accepts frozen sweeps during the fade.
 - **Before any phone check:** a Chrome cost card per option (layers, running animations, repaints; counts only), plus pixel stops (PR-010) for (c) and (d).
 - **Ownership:** arch-compositor-morph's nav plan does not touch `.start-selling-platform` or CSS 5698-5705. An overlay for (b) must stay below the nav's z-index 40, so the nav glass still samples it.
+
+### 4. Built: (c), (a), (b) on v9-final (lead go 10:0xZ; overlay copies only)
+
+The diffs are against v9-final (`out/p155/snap/C`), in `fade/`. The snapshot copies are in `out/fade/snap/{c,a,b}`.
+
+| option | diff | served JS / CSS (sha256/12) |
+|---|---|---|
+| (c) pause at fade 0 | `fade/c-pause-at-0.diff` | `db7257e81859` / `192f62c106d1` |
+| (a) pause while fading | `fade/a-pause-while-fading.diff` | `5545cf9f70bd` / `f125b8924aa4` |
+| (b) overlay + (c)'s pause | `fade/b-overlay.diff` | `c9663b4e1c5b` / `4af2cf8911e9` |
+
+- **JS:** S() (JS 14156) toggles `data-fw-pf-paused` on `.start-selling-platform`.
+  - It writes only on a crossing: fade 0 for (c) and (b), fade < 1 for (a).
+  - The written state is held in `__pfP`, so S()'s per-frame call adds one comparison.
+- **CSS:** `animation-play-state: paused !important` under that attribute, only on the infinite idle animations:
+  - the 4 sweeping titles and their `::after` bands;
+  - the cred, currency and review marquees;
+  - the glint svgs;
+  - the agents caret `::after`.
+- **Why only those:**
+  - Card r1 paused every animation under #platform (`*`, `::before`, `::after`).
+  - Chrome then dropped 18 of the 40 layers (the finished one-shot entrances lost their active-animation reason). It did not re-promote them on the way back.
+  - In that run the reopen step repainted 36 times against C's 3 (OBSERVED, cause unknown). That is the F1-like re-show cost to avoid, so r2 narrowed the list.
+- **(b)** applies to `html.fw-ms` only (touch phones). There #platform loses its filter and opacity and gets a `::after` overlay:
+  - #f5f5f3, the `.start-selling` background, the only thing behind #platform;
+  - `bottom: 0; height: 100lvh`, z-index max inside #platform's own sticky stacking context, so it stays under the nav;
+  - `opacity: calc(1 - var(--morph-fade))`, with `--morph-fade: inherit`, since the property is registered non-inheriting;
+  - `will-change: opacity`, `pointer-events: none`.
+  - Desktop keeps the blur and opacity fade.
+
+**Chrome cost card** (`fade-card.mjs`, scratch): headless 430x932 DPR 3 with touch, no throttle, counts only. Path m 0 → 0.3 → 0.8 (settles to 1, fade 0, held 1 s) → 0.3 → 0. Run r2 at about 10:05Z.
+
+| arm, stop | running anims under #platform | #platform layers | repaints in the stop | style recalcs / layouts in the stop |
+|---|---|---|---|---|
+| C, fade 0 | 5 | 40 | 0 | 65 / 16 |
+| c, fade 0 | 0 (6 paused) | 40 | 0 | 65 / 16 |
+| C, back to 0.3 | 5 | 40 | 36 (r1: 3) | 16 / 2 |
+| c, back to 0.3 | 5 | 40 | 6 | 10 / 2 |
+| a, 0.3 (both ways) | 0 | 40 | 0 / 0 | 12 / 1, 16 / 2 |
+| b, 0.3 | 5 | 41 (+ overlay) | 24 / 34 | 14 / 2, 19 / 3 |
+
+- **Reading:**
+  - (c) does exactly what it says. At fade 0 no #platform animation runs, the layers are unchanged and nothing is added to style or layout.
+  - Repaints on the reopen step vary from run to run (C 3 in r1, 36 in r2). They are no signal.
+  - (b)'s overlay reads opacity 1 − fade (0.546 at fade 0.454). The section's filter is `none` and its opacity 1.
+- **What Chrome cannot show:** the expected saving is compositor/render-server work (5 compositor animations kept alive at opacity 0), not main-thread work. Only the phone can show whether it matters.
+
+**Pixel check (c)**, `em-px2.mjs --engine chrome`, PR-010 multi-pair A/A (A = C, V = c, 430x775, 18 stops): every stop has 0 css px² consistent, A~V beyond A/A 0, max 3 (`out/end-morph/px2-chrome-pf-c-2026-10-06T10-05-48-123Z`). The tool freezes running animations at 4000 ms. So the only difference (c) can make, the sweep and glint phase after a return from fade 0, is outside this check by design. It is the same as the existing IO sweep gate.
+
+### 5. T-215: what runs at the page end that nobody sees (census, v9-final, Chrome, OBSERVED in our setup)
+
+The user's idea (T-215, on T-204 #34): stop every animation that cannot be seen, e.g. the countdown and everything behind the open panel.
+
+**Census setup** (`census.mjs`, scratch):
+- Headless at 430x932 DPR 3 with touch, CPU 1x, in the idle-triple setup (headed UA, focus emulation). Counts only.
+- 3 s per stop. m 0.55 is held with em-px2's synthetic touch.
+- A document-start shim keys every rAF, timer and observer callback by its registration site, and every DOM write by its target. Every running animation is listed.
+- Each target is classed as visible, covered (its centre hits the nav panel), offscreen, or hidden (an opacity-0, display-none or visibility-hidden ancestor).
+- LayerTree paintCount deltas are taken per layer.
+- Run in the gap between P-155 parts 2 and 3. Log: `out/fade/census-C.log`.
+
+| stop | running animations | JS callbacks /s | DOM writes /s | layers repainted /s |
+|---|---|---|---|---|
+| m 0 | #platform: 3 title sweep bands and 2 glints, all visible | none | none | 3 title mask layers, 60 each |
+| m 0.55 | the same 5: 2 visible, 3 covered by the 65 %-opaque panel. Panel: 3 column tracks | rAF JS 4328 about 25; setInterval(1000) JS 4454: 1; rAF JS 4326: 1 | span.strip style 26, span.cell style 11, countdown data-value and aria-label 1 each | `.start-selling-morph-veil` 806x1046: 26; 2 glint svgs: 6 each |
+| m 1 | the same 5, all hidden under #platform's opacity 0. Panel: 3 column tracks | the same | the same | `.start-selling-morph-veil` 812x1816: 26 |
+
+- **The countdown in the open panel is the panel's own clock** (`.countdown.inverse`), and it is visible, so it must keep running.
+  - Its digit roll is the original rAF spring (JS 4328), by cd-roll-ca's choice (JS 4286-4291): a compositor roll would put its cells on layers and change glyph rasterisation.
+  - Each frame of the roll writes strip styles and repaints the whole veil layer.
+  - Pausing does not apply. Paint containment or a small own layer for the clock might, after a pixel check (finding posted).
+- **The hero countdown and every other section** are already gated at the page end: no callback in 3 s (the hero clock's slow read is 1 per minute).
+- **So the unseen work at the page end** is only #platform's 5 infinite animations at opacity 0, which is option (c) above.
+  - The countdown rule asked for (recompute from the clock, never skip a visible second) already holds for the hero clock (`__cdPause` / `__cdGo`, JS 4441-4456).
+  - (c) does not touch any clock.
+- **(c) at m 1:** census, the same setup, C then c, in the gap between parts 3 and 4 (`out/fade/census-m1-Cc.log`).
+
+| arm | running animations | of them unseen | JS callbacks /s | DOM writes /s | layers | repainted /s |
+|---|---|---|---|---|---|---|
+| C | 8 | 5 (#platform, opacity 0) | 26.3 + 1 + 1 | 26.3 + 11 + 1 + 1 | 68 | veil 26.3 |
+| c | 3 (panel columns) | 0 | 25.7 + 1 + 1 | 26.7 + 11 + 1 + 1 | 68 | veil 26.7 |
+
+  So (c) removes every unseen animation at m 1. It adds no JS callback, write or layer; the rest is the visible panel clock.
 
 ## Pending
 
