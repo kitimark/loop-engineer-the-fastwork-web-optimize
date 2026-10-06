@@ -8,7 +8,10 @@
 // Inputs: v9-final JS = out/em1/c-2.DyWL8TcE.js (647c9ef2b1e2, P1's build base); U2 = the v9-final -> P-153 C diff
 // without F1's hunk (#platform visibility); P1 = fixes/end-morph-p1/delta.diff; P1b = fixes/end-morph-p1b-a/delta-*.diff,
 // fixes/end-morph-p1b-ab/delta-*-on-a.diff. CSS: C's e1359ab9994a (v9-final's; F1 and U2 change no CSS), P1 and P1b on it.
-//   node fixes/end-morph-p1/p1b/snap.mjs [--out out/p1b/snap]
+//   node fixes/end-morph-p1/p1b/snap.mjs [--no-i219] [--out dir]
+// Default (lead 09:35Z): out/p1b/snapi, every base with fix-i219-hydrate (main fd36b0c5), arms C / V / A on B1 and B0
+// (A = V + P1b (a), the deferred phones-only probe with teardown). --no-i219: the 09:30Z set (out/p1b/snap, C / V / AB);
+// note its (b) delta was cut against the 09:30Z (a), so after the (a) rework --no-i219 needs the old (a) delta.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, existsSync, chmodSync, rmSync } from 'node:fs';
@@ -17,7 +20,8 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 const WT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const argv = process.argv.slice(2);
-const OUT = resolve(WT, argv.includes('--out') ? argv[argv.indexOf('--out') + 1] : 'out/p1b/snap');
+const I219 = !argv.includes('--no-i219');
+const OUT = resolve(WT, argv.includes('--out') ? argv[argv.indexOf('--out') + 1] : I219 ? 'out/p1b/snapi' : 'out/p1b/snap');
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSSF = '_app/immutable/assets/2.gBuqKVzi.css';
 const sha = (s) => createHash('sha256').update(s).digest('hex').slice(0, 12);
 const T = mkdtempSync(join(tmpdir(), 'p1bsnap-'));
@@ -54,9 +58,19 @@ function bNoU2(js) {
   return out.replace(anchor, anchor + ARM);
 }
 const builds = {};
-const C1 = apply(V9F, U2, 'U2'); const V1 = apply(C1, part(P1, 'js'), 'P1 on B1'); const AB1 = apply(apply(V1, Aj, 'P1b (a) on B1'), Bj, 'P1b (b) on B1');
-const C0 = V9F; const V0 = apply(C0, part(P1, 'js'), 'P1 on B0'); const AB0 = bNoU2(apply(V0, Aj, 'P1b (a) on B0'));
-Object.assign(builds, { C1: [C1, CSS0], V1: [V1, cssV], AB1: [AB1, cssAB], C0: [C0, CSS0], V0: [V0, cssV], AB0: [AB0, cssAB] });
+if (I219) {
+  // default (lead 09:35Z): every base carries fix-i219-hydrate (main fd36b0c5, fixes/i219-hydrate/delta.diff); arms
+  // C / V / A, A = V + P1b (a); (b) is parked
+  const I = read('fixes/i219-hydrate/delta.diff');
+  const C1 = apply(apply(V9F, U2, 'U2'), I, 'i219 on B1'), C0 = apply(V9F, I, 'i219 on B0');
+  const V1 = apply(C1, part(P1, 'js'), 'P1 on B1'), V0 = apply(C0, part(P1, 'js'), 'P1 on B0');
+  const A1 = apply(V1, Aj, 'P1b (a) on B1'), A0 = apply(V0, Aj, 'P1b (a) on B0');
+  Object.assign(builds, { C1: [C1, CSS0], V1: [V1, cssV], A1: [A1, cssA], C0: [C0, CSS0], V0: [V0, cssV], A0: [A0, cssA] });
+} else {
+  const C1 = apply(V9F, U2, 'U2'); const V1 = apply(C1, part(P1, 'js'), 'P1 on B1'); const AB1 = apply(apply(V1, Aj, 'P1b (a) on B1'), Bj, 'P1b (b) on B1');
+  const C0 = V9F; const V0 = apply(C0, part(P1, 'js'), 'P1 on B0'); const AB0 = bNoU2(apply(V0, Aj, 'P1b (a) on B0'));
+  Object.assign(builds, { C1: [C1, CSS0], V1: [V1, cssV], AB1: [AB1, cssAB], C0: [C0, CSS0], V0: [V0, cssV], AB0: [AB0, cssAB] });
+}
 // checks: AB1 == the AB overlay minus F1's line; AB0 differs from AB1 only by U2
 const lines = [];
 for (const [n, [js, css]] of Object.entries(builds)) {

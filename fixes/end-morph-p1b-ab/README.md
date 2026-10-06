@@ -3,8 +3,15 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and the `delta-*.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** measured in Chrome: values, states, pixels, trace counts and one clean headed frame-timing hold (all 5
-lead conditions answered for Chrome). The Simulator gates and a phone card are still to do ("Not done").
+**Status: (b) PARKED** (lead ruling 2026-10-06 09:35Z, after review-p1b NEEDS-WORK). The reasons:
+- the language-menu clip;
+- the Simulator pixel differences while armed;
+- the layer memory while armed, never measured.
+
+It comes back only if A (= P1 + (a), `fixes/end-morph-p1b-a/`, the v10 candidate) misses the f2 bound on the phone.
+The numbers below stay as measured. Note that `delta-js-on-a.diff` was cut against the first (a) build (79a0bd83eb06),
+before (a)'s rework. Measured in Chrome: values, states, pixels, trace counts and one clean headed frame-timing hold,
+plus the Simulator gates.
 **Stage:** F (build + Chrome gates), lead GO 2026-10-06 (the P1b cost card after P-153's FIRST-OPEN RISK SEEN,
 `fixes/end-morph-p1/README.md` "Lead ruling (07:05Z)").
 **Builds:** C = v9-final + F1 + U2 (JS a6426953727a, CSS e1359ab9994a); V = C + P1 (JS 4da641f828bb, CSS a81b9af7b2c9);
@@ -264,74 +271,13 @@ Checks:
   after `e = t > 0 ? ... : 0;`.
 - `node --check` passes on all six.
 
-## Phone card (DRAFT, no P-id; runs after P-155; predictions written before any data)
+## Phone card
 
-**Question:** on the base P-155 picks (B1 if U2 lands, else B0), does P1 + P1b:
-- open the end zone's first frame no slower than C;
-- stay no-worse in the end zone;
-- add no slow closing frames by holding the reveal's layers (about 40 MB, Chrome estimate) while armed?
-
-**Arms:** C = the base's control (C1 or C0), X = AB1 or AB0 (table above), served from the immutable copies.
-
-**Driver and profile:**
-- driver G with P-152/P-153's gesture program and pin (`g-fastshort-v1.json` df597802d2f0);
-- profile xcode-serious;
-- rev 1.4 hold rules: one counted run per hold, Safari parked and cooling before every hold, thermal gates, the
-  2 h background limit per part;
-- sentinels S0/S1 on C.
-- Order: warm-ups WC, WX, then S0; counted C X X C C X X C (4 v 4), then TAIL and S1.
-
-**Part B, the armed-layer check** (new, two holds per arm, order SC1 SX1 SX2 SC2, after part A):
-- the gesture sits armed near the end: scroll to e = -0.5, rest 8 s with no touch, open to m 0.8, rest 2 s, close to
-  m 0, rest 3 s; three times per run;
-- it needs a new G program (`g-sitclose-v1`, built and dry-run with `gesture --dry-run` before the lead signs);
-- on C the same positions are idle, with nothing held.
-
-**Metrics** (reader = P-153's `p153-read.mjs` plus P-155's CB34):
-- O1.f2: first open, P-153's definition.
-- End zone: moving last-screen frames at >34 and >50, plus twins.
-- CB34 / CB50: P-155's definition, closing frames at 0.2 <= m < 0.55 with dt > 34 / > 50. Counted in part A, and
-  separately in part B's closes.
-- Band34: moving frames in the approach band, -1 <= e < 0, with dt > 34.
-- Part B: sit34, frames over 34 ms during the armed rests (static; the expected count is 0).
-
-**Prior data (exploratory, decides nothing):** P-153's runs, read again with CB34 (on the F1+U2 base):
-
-| | runs | median |
-|---|---|---|
-| C CB34 | 11 / 10 / 11 / 16 | 11 |
-| V (+ P1) CB34 | 4 / 5 / 7 / 5 | 5 |
-| C CB50 | 1 / 1 / 1 / 2 | 1 |
-| V CB50 | 0 / 0 / 0 / 0 | 0 |
-
-P1 already holds the same layers during every close. CB34 went down with it, not up.
-
-**Predictions** (bounds fixed now):
-- **Pr1, first open:** median X O1.f2 - median C O1.f2 <= +2 ms, so no FIRST-OPEN RISK. In P-153, C was 31 and V
-  41 ms. Chrome puts X's switch-on in the approach, and X's open frame at C's level. If X - C > +2: P1b did not move
-  WebKit's cost, and the cause there is not the forced read or the layer build seen in Chrome.
-- **Pr2, end zone no-worse:** P-153's rule unchanged. WORSE when the runs are separated, or when the median exceeds
-  +2 at >34 or +1 at >50 with p <= 0.05. Expected PASS with X below C, as in P-153's V.
-- **Pr3, armed layers on the close:** X - C median CB34 <= +3 (part A, 4 v 4). The F1-like signature,
-  X - C >= +8 with every X run above every C run, reads **ARMED-LAYER COST SEEN**: X does not land, whatever Pr1/Pr2
-  say. Part B is reported per arm and decides nothing alone.
-- **Pr4, approach:** X - C median Band34 <= +2, with no X run separated above C (the arming frame adds at most one
-  frame).
-
-**Outcomes:**
-
-| outcome | reading |
-|---|---|
-| Pr1-Pr4 hold | P1b removes P1's first-open risk at no closing or approach cost: land request. |
-| Pr1 fails, others hold | the first-open cost on WebKit is elsewhere: back to attribution (Timeline on O1). |
-| Pr3 or Pr4 fails | arming costs on the phone: drop (b), and consider (a) alone (its look and frames equal P1's). |
-| Pr2 fails | P1b is worse than C in the end zone: no landing; read part A's Timeline. |
-
-**Heat:** record the battery temperature and thermal state per hold. A hold at Critical or over 44 °C is void (rev
-1.4). X holding its layers while armed is expected to add no per-frame work; part B's rests show whether it does.
+The P1b (a)+(b) card drafted here is withdrawn with (b) (lead ruling 09:35Z). The phone card for A, with the
+same G program for part A and P-153's CB34 prior, is in `fixes/end-morph-p1b-a/README.md` "Phone card".
 
 ## Not done
 
-- Simulator gates (pixels at m = 0 and through the approach, is-on-dark, WebKit's clip-path recomposite at m = 0)
-  after P-152's block.
-- Phone: P1b needs its own phone card (first-open f2, no-worse) before landing.
+- Nothing for (b) while it is parked. Before it could come back: its delta must be re-cut on the reworked (a), and the
+  three review points need answers (the language-menu clip, the armed Simulator pixels, the armed layer memory on
+  the phone).
