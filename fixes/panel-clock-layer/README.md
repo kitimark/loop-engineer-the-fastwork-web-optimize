@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** both gates pass (Chrome 0 diff with the rule inactive; Simulator T2 0 % consistent). Offered for a v10 slot
+**Status:** closed, no fix: the pixel gates pass, but the iOS cost card shows no gain (WebKit already repaints only the digit). Was offered for a v10 slot
 (lead, 11:18Z). **Owner:** arch-compositor-morph (lead's item; census by fix-end-morph, T-215). No timing claim.
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only (+11 lines at the end). The CSS works on v9-final
 and on the v10 base: one selector the morph panel already has, no JS.
@@ -77,6 +77,19 @@ is WebKit.
 | Chrome (rule inactive) | 0 % | 0-2 | pass |
 | Simulator (rule active) | 0 % | 1-3 | pass |
 
-What we do not have yet: a WebKit count of the gain itself (repaints per second of the veil vs the clock). The
-Simulator gate checked pixels, not layers. The phone's Timeline would show it as Paint records per frame in the open
-panel. Candidate for a later attribution run, after the CM block.
+## iOS cost card: no gain (Simulator, OBSERVED, in our setup)
+
+`out/cm/clock/clock-sim.mjs` (not committed), iOS 26.5 Simulator, panel open at m 1 with a held synthetic touch,
+Timeline for 3 s, 2026-10-06 11:37-11:38Z:
+
+| build | Paint records/s | painted area/s (clip boxes) | the per-tick repaint |
+|---|---|---|---|
+| v9-final | 31.7 | 262k | a 20x38 rect (the changed digit), 77 of 95 paints |
+| + clock layer | 37 | 379k | an 18x38 rect, 76 of 111 paints |
+
+WebKit already repaints only the changed digit's rect, about 26 times a second, so there is no whole-veil repaint on
+iOS for a clock layer to remove; with the layer it paints a few more records. The Chrome "veil 406 x 908" figure is
+the layer's size times its paint count (an upper bound), not what WebKit does. Under the less-work landing rule this
+is not less work. **Verdict: closed, no fix** (recommended to the lead 11:44Z; the pixel gates pass but are moot).
+The m 0.55 window did not record (the script left Timeline enabled between windows); m 1 is the panel's open state,
+where the clock ticks.

@@ -137,7 +137,7 @@ Layers (LayerTree, composited layers that draw content; memory = area x 9 x 4 by
 CM adds 14 layers (6 that draw) and about 21-45 MB of estimated backing store while the morph is on (the eight
 wrappers, the dark layer and the full-size glass are composited); none before the zone.
 
-## Phone card (ticket draft; predictions frozen before any phone data, 2026-10-06 11:15Z, row A revised 11:50Z)
+## Phone card (ticket draft; predictions frozen before any phone data, 2026-10-06 11:15Z, row A revised 11:36Z)
 
 **Question (one):** under the G driver (WDA robot finger, the E procedure of P-152/P-155), does CM v1.1 remove the
 WebKit main thread's per-frame Layout and most of its Paint in the morph frames, while the per-frame style pass
@@ -145,7 +145,7 @@ stays (step 1)? Counts from Safari's Timeline, no timing claim (memory defer-tim
 
 | item | value |
 |---|---|
-| arms | C = v9-final (control), V = CM v1.1, same base; snapshot `out/cm/snap` (read-only, rebuilt 11:36Z for v1.1), `HASHES.txt` 8926d9f97923 (C JS 647c9ef2b1e2 CSS e1359ab9994a, V JS 887b4cde06eb CSS 2948d49e47c6, probe P index.html fab9522e5c50 probe.js 657015b37fee), checked by `phone/cm-serve.sh` before every start and part |
+| arms | C = v9-final (control), V = CM v1.1, same base; snapshot `out/cm/snap` (read-only, rebuilt 11:31:12Z for v1.1), `HASHES.txt` 8926d9f97923 (C JS 647c9ef2b1e2 CSS e1359ab9994a, V JS 887b4cde06eb CSS 2948d49e47c6, probe P index.html fab9522e5c50 probe.js 657015b37fee), checked by `phone/cm-serve.sh` before every start and part |
 | servers | `phone/cm-serve.sh start`: plain http (I-003), `--latency 150 --vendors=local`, B (thermal gate page), C, V, P (probe) |
 | driver / script | G, `fixes/morph-scroll/g-fastshort-v1.json`, compiled program 8737f212c0ff, GESTURE_BUDGET_S 229; probe `phone/g-probe-v1.json`, 7ff27a2413c8, GESTURE_BUDGET_S 150 |
 | profile | xcode-serious (no heat pre-warm, no cooling wait; `CM_COOL=0`), the sentinel decides validity |
@@ -156,7 +156,12 @@ stays (step 1)? Counts from Safari's Timeline, no timing claim (memory defer-tim
 | budget per hold | E/W/S items 229 s (P-155's holds of the same script took 219-234 s); A items 150 s; 14 holds, about 1.5-1.8 h with the restarts; three phone holds of at most 3600 s each (11-13 holds in one would need under ~4.6 min per hold): part 1 = WC WV EC1 EV1 EV2 EC2 EC3 (7 holds, ~45 min), part 2 = EV3 EV4 EC4 TAIL S1 (4-7 holds), part 3 = AN AS AR (3 holds, ~15 min); a hold whose next item would end past 600 s is VOID (7) and re-run once |
 | reader | `phone/cm-read.mjs` (`--selftest` 6 checks): morph frames = rows in the lastScreen band that moved with 0 < m < 1 (P-155's `mOf`); per frame the Layout / Paint / RecalculateStyles records that start in (t - dt, t]; P-129 run gates role E. Probe runs: every moved frame, ungated |
 
-Calibration (not this block's data): P-155's C runs read with the same reader (EC1-EC3, fix-end-morph's runs):
+**Signed as P-157** by the lead, 2026-10-06 11:41Z (conditions: real time of the row A revision; the clock items;
+this calibration note). Phone order: after P-156.
+
+Calibration (not this block's data, and another profile: P-155's holds cooled the phone below 38 °C before each
+hold, rev 1.4, while P-157 runs xcode-serious with no cooling wait; so it only sets the scale of the predictions,
+and every comparison stays within P-157): P-155's C runs read with the same reader (EC1-EC3, fix-end-morph's runs):
 per morph frame Layout 2.32-2.38, Paint 11.6-12.2, RecalculateStyles 1.85-1.92; share of morph frames with any
 Layout 0.95-0.96, Paint 0.97-0.98, style 0.89-0.93; ~1430 morph frames per run.
 
@@ -170,10 +175,10 @@ Predictions (each judged on the valid counted runs, at least 3 per arm; "separat
 | P4 | share of morph frames with any Layout | V ≤ 0.15 | V > 0.3 |
 | A | probe (uncounted, attribution), judged against AN (the same page without the animation) | AS: style share ≥ 0.8 and ≥ AN's share + 0.5; AS Layout per moved frame ≤ AN's + 0.15; AR: style share ≥ 0.8 (rAF writes) | AS style share < 0.5 (WebKit skips the per-tick restyle under a threaded scroll: then step 1 row 5 is REFUTED in practice; cite and re-read the source) |
 
-Revision note (11:50Z, before any phone data): row A first said "AS Layout ≤ 0.1, AN style ≤ 0.1 per frame" in
+Revision note (written 11:35-11:36Z, committed 11:36:51Z in 64bca5a3, before any phone data; an earlier draft of this line said 11:50Z by mistake): row A first said "AS Layout ≤ 0.1, AN style ≤ 0.1 per frame" in
 absolute numbers. The Simulator probe (11:31Z, WDA strokes) shows the probe page itself lays out and restyles in some
 frames without any animation (AN: 0.30 layouts and 0.26 style recalcs per frame; AS: 0.37 and 1.32, style in every
-frame), so A is now judged against AN. P1-P4 are unchanged. V changed from CM v1 to v1.1 at 11:36Z: the two fixes act
+frame), so A is now judged against AN. P1-P4 are unchanged. V changed from CM v1 to v1.1 (overlay 11:21-11:24Z, snapshot 11:31:12Z): the two fixes act
 only on the frame the morph ends, outside the counted morph frames (0 < m < 1).
 
 Between the marks (P1 0.3-0.6, P2 0.5-0.8, P3 0.5-0.8): "partial", reported as such, no landing claim. The block
