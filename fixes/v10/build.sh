@@ -38,6 +38,9 @@
 #          right after the nav base and before P1 in every route (R1b: after its nav step; R3: on the nolift arm)
 #   CLOCK="<d>" CLOCK_SHA="<sha12>"   arch-compositor-morph's panel-clock-layer (CSS, iOS-only @supports rule): applied after
 #          P1, P1b and panel-h, before nolift, in every route (part of N)
+#   PIN_A0=<js12>/<css12>   route R4 (lead 15:00Z, P-156 ruling): the build the phone measured, v9-final + I-219 + P1 + P1b
+#          (fix-end-morph-p1's A0 on base B0; 888ed8eb2d15 / cfb8b8c5b019 for P1b (a) d52d14cd), pinned, then + pause + rev 7d's
+#          diff + nolift must give V byte for byte. Needs I219 and P1B (and not P1=none); panel-h and clock are not in A0.
 #   P1=none   v10 without P1 (lead 11:50Z: P-156 judges C + P1 + P1b (a) as a pair; if it fails, v10 ships without P1):
 #          no P1 step in any route (P1B is refused with it: P1b sits on P1); R1b's "C + nolift + P1" pin and R2's measured
 #          pin become printed hashes, and R3 is skipped (the nolift arm as tried carries P1). Any other P1 value refuses.
@@ -173,6 +176,15 @@ apl $T/r3 $PSL
 [ -n "$P1BL" ] && apl $T/r3 $P1BL
 ap $T/r3 $T/rev7d.diff; [ -n "$I219L" ] && ap $T/r3 $I219L
 stage $T/r3 "nolift arm$PBN + rev 7d${I219L:+ + I-219}" $V_JS12 $V_CSS12
+fi
+if [ -n "$PIN_A0" ]; then
+  [ -n "$I219L" ] && [ -n "$P1B" ] && [ -n "$P1L" ] && [ -z "$PHL$CKL" ] || { echo "PIN_A0 needs I219 and P1B, without P1=none, panel-h or clock: refuse"; exit 3; }
+  echo "R4: the phone's A0 (v9-final + I-219 + P1 + P1b) + pause + rev 7d + nolift"
+  tree $T/r4 $T/v9; ap $T/r4 $I219L; ap $T/r4 $P1L; apl $T/r4 $P1BL
+  pin $T/r4 ${PIN_A0%/*} ${PIN_A0#*/} "A0 = v9-final + I-219 + P1 + P1b (the P-156 phone build)"
+  apl $T/r4 $PSL; ap $T/r4 $T/rev7d.diff; ap $T/r4 $NL
+  stage $T/r4 "A0 + pause + rev 7d + nolift" $V_JS12 $V_CSS12
+  ROUTES="$ROUTES r4"
 fi
 for r in $ROUTES; do for f in $JS $CSS; do cmp -s $T/r1/$f $T/$r/$f || { echo "route $r differs on $f: refuse"; exit 3; }; done; done
 echo "  R1 = $(echo $ROUTES | tr r R | sed 's/ / = /g'), byte for byte"
