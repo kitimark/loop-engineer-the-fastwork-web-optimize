@@ -391,6 +391,10 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 | `phone/p152-read.mjs` | `11ab8b9496b0` (rev 1.3; rev 1.2 `597bd8bd9e30`, rev 1.1 `adf4e7a27122`) |
 | `phone/p152-endgate.sh` | `04c156f84403` (rev 1.2; not used from rev 1.3) |
 
+- Doc gap in `p152-read.mjs` rev 1.3 (`11ab8b9496b0`), found by fix-end-morph-p1 on 2026-10-06; comment only, no code effect.
+  - The rev 1.3 edit also deleted the header's two comment lines on twins ("threshold-sensitive") and "position-confounded".
+  - The code still applies both rules exactly as this card's Decision section states.
+  - The reader stays as signed during block 2, because every hold's PIN line pins it. The two lines go back in after the block, as a comment-only change for the lead's delta check.
 - Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e` and
   `research/serious-heat/p129-read.mjs` `06f74f5d19ca`.
 - The runner prints these pins and the other dependencies (fs script, thermal gate, pmcheck, the snapshot files) in
