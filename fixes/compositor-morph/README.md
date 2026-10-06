@@ -148,7 +148,7 @@ stays (step 1)? Counts from Safari's Timeline, no timing claim (memory defer-tim
 | arms | C = v9-final (control), V = CM v1.1, same base; snapshot `out/cm/snap` (read-only, rebuilt 11:31:12Z for v1.1), `HASHES.txt` 8926d9f97923 (C JS 647c9ef2b1e2 CSS e1359ab9994a, V JS 887b4cde06eb CSS 2948d49e47c6, probe P index.html fab9522e5c50 probe.js 657015b37fee), checked by `phone/cm-serve.sh` before every start and part |
 | servers | `phone/cm-serve.sh start`: plain http (I-003), `--latency 150 --vendors=local`, B (thermal gate page), C, V, P (probe) |
 | driver / script | G, `fixes/morph-scroll/g-fastshort-v1.json`, compiled program 8737f212c0ff, GESTURE_BUDGET_S 229; probe `phone/g-probe-v1.json`, 7ff27a2413c8, GESTURE_BUDGET_S 150 |
-| profile | xcode-serious (no heat pre-warm, no cooling wait; `CM_COOL=0`), the sentinel decides validity |
+| profile | xcode-serious (no heat pre-warm, no cooling wait), the sentinel decides validity. `cm-block.sh` defaults to `CM_COOL=1` (a cooling wait below 38 °C before every hold), so **every P-157 block command sets `CM_COOL=0`**: `CM_TICKET=P-157 CM_COOL=0 node tools/lock.mjs run iphone --owner arch-compositor-morph --block P-157 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone/cm-block.sh <part's holds>` |
 | order | WC, WV (uncounted warm-ups, Timeline off, `--warmup`), EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 (counted, Timeline on), TAIL (at most 2 re-runs of runs that failed a P-129 run gate), S1 (uncounted Timeline-off end sentinel on C), then AN AS AR (attribution, probe page `?v=none|sda|raf`, Timeline on, uncounted) |
 | holds | one item per 600 s chrome-measure `--no-timing` hold inside one phone hold `--block <ticket> --max-seconds 3600` (`phone/cm-block.sh`, a copy of P-155's runner); before every hold: park Safari, WDA check (else `wda ensure`); every part starts with the served-hash check, `iphone.mjs wda ensure` (I-220, 5803d436: keeps a ready WDA; exit 4 = re-plug, the block stops and the lead is told) and a Safari restart (I-214) |
 | kit pins (sha256/12) | `phone/cm-hold.sh` 14d205b17331, `phone/cm-block.sh` 4d7accc06889, `phone/cm-serve.sh` 66c9f9ff4e53, `phone/cm-read.mjs` bed0fe10d768, `g-fastshort-v1.json` df597802d2f0, `phone/g-probe-v1.json` 05c8bda33b07, `p129-gates.mjs` a06847c64a2e, `p129-read.mjs` 06f74f5d19ca, `thermal-gate.mjs` ecb403b3ad25, `pmcheck.mjs` d36bd7437b7c; every hold prints them (`PIN` line) |
@@ -157,7 +157,8 @@ stays (step 1)? Counts from Safari's Timeline, no timing claim (memory defer-tim
 | reader | `phone/cm-read.mjs` (`--selftest` 6 checks): morph frames = rows in the lastScreen band that moved with 0 < m < 1 (P-155's `mOf`); per frame the Layout / Paint / RecalculateStyles records that start in (t - dt, t]; P-129 run gates role E. Probe runs: every moved frame, ungated |
 
 **Signed as P-157** by the lead, 2026-10-06 11:41Z (conditions: real time of the row A revision; the clock items;
-this calibration note). Phone order: after P-156.
+this calibration note). Phone order: after P-156. **The clock items were dropped** (lead, 11:46Z): the panel-clock
+layer showed no iOS gain (fixes/panel-clock-layer/README.md), so P-157 has no clock no-worse items.
 
 Calibration (not this block's data, and another profile: P-155's holds cooled the phone below 38 °C before each
 hold, rev 1.4, while P-157 runs xcode-serious with no cooling wait; so it only sets the scale of the predictions,
@@ -181,7 +182,10 @@ frames without any animation (AN: 0.30 layouts and 0.26 style recalcs per frame;
 frame), so A is now judged against AN. P1-P4 are unchanged. V changed from CM v1 to v1.1 (overlay 11:21-11:24Z, snapshot 11:31:12Z): the two fixes act
 only on the frame the morph ends, outside the counted morph frames (0 < m < 1).
 
-Between the marks (P1 0.3-0.6, P2 0.5-0.8, P3 0.5-0.8): "partial", reported as such, no landing claim. The block
+Between the marks (P1 0.3-0.6, P2 0.5-0.8, P3 0.5-0.8, P4 0.15-0.3): "partial", reported as such, no landing
+claim. Row A is partial when it is neither pass nor fail (reported, no landing claim). P1-P4 are judged per V run:
+every valid V run must meet the pass bound (P3 and P4 included), and P1/P2 also need "separated" as defined above;
+one V run past a fail bound fails the row. The block
 names no frame-time or fps prediction; the P-129 gates and the sentinel (bottom ≥ 58 and scroll ≥ 44 fps) only
 decide validity.
 
