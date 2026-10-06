@@ -1,25 +1,25 @@
 #!/bin/sh
 # v10 no-worse phone check (int-v8, lead 2026-10-06 15:36Z: "a short phone no-worse check on V vs C in your own hold,
 # profile xcode-serious, no cooling wait"). A copy of fix-end-morph-p1's P-156 kit (fixes/end-morph-p1/phone/p156-*.sh,
-# credited) with: the arms C = main's C (rev 7d, 1b2eecc66011 / e1359ab9994a) and A = v10's V (61257aa0969a / fb9f6aa28ad4)
-# from out/v10/snap-61257aa0969a-fb9f6aa28ad4, ticket v10-nw, folder out/v10nw, env NW_*; the arm letter A is kept so
+# credited) with: the arms C = main's C (rev 7d, 1b2eecc66011 / e1359ab9994a) and A = v10 + CM's V (a33a6c7c1f2b / 62743920fe1a)
+# from out/v10/snap-a33a6c7c1f2b-62743920fe1a, ticket v10cm-nw, folder out/v10cmnw, env NW_*; the arm letter A is kept so
 # pA-read.mjs and the gates read it unchanged. Part A (fs) only. The original header follows.
 # P-156 runner (card: fixes/end-morph-p1b-a/README.md "Phone card P-156"): one hold of the P-156 block, the phone check of
 # A = C + P1 + P1b (a) against C on the landing base. A copy of this topic's P-153 runner (p153-hold.sh, rev 1.3: one
 # counted run per 600 s hold, start and end thermal gates, served-hash and compiled-program pins, stale files moved
 # aside, time guard, Mac sleep check) with: the arms C / A, a second program for part B (g-park30-v1), and no
 # attribution items.
-# Builds (out/v10nw/snap, served by fixes/v10/phone/nw-serve.sh on plain http, --vendors=local --latency 150):
-#   C, A  the base in out/v10nw/snap/BASE (1: C1 fe7c668d35e8 / A1 f83aa54c2acc; 0: C0 387a2b38790b / A0 888ed8eb2d15;
-#         CSS C e1359ab9994a, A cfb8b8c5b019)                                    out/v10nw/serve-{C,A}.json
-#   B     the plain baseline (the thermal gate's timer page)                     out/v10nw/serve-B.json
+# Builds (out/v10cmnw/snap, served by fixes/v10/phone/nw-serve.sh on plain http, --vendors=local --latency 150):
+#   C, A  the base in out/v10cmnw/snap/BASE (1: C1 fe7c668d35e8 / A1 f83aa54c2acc; 0: C0 387a2b38790b / A0 888ed8eb2d15;
+#         CSS C e1359ab9994a, A cfb8b8c5b019)                                    out/v10cmnw/serve-{C,A}.json
+#   B     the plain baseline (the thermal gate's timer page)                     out/v10cmnw/serve-B.json
 # Both arms' served JS and CSS are hashed before every item; a mismatch voids the hold (exit 4).
 # Programs: part A fs = fixes/morph-scroll/g-fastshort-v1.json (pinned 8737f212c0ff, P-153's), part B park30 =
 # fixes/end-morph-p1/phone/g-park30-v1.json (pinned 6f9209453750; 30 s rests at the end, open and closed). Both start with
 # P-153's E procedure (reload, 4 s, first touch; G4 E [4.0, 5.5] s).
 # Usage: started only by fixes/v10/phone/nw-block.sh, inside a phone hold with the block mark
-# (`lock.mjs run iphone --block v10-nw --max-seconds 3600`), each hold its own 600 s chrome-measure --no-timing run:
-#   TICKET=v10-nw node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-156 <H>" -- \
+# (`lock.mjs run iphone --block v10cm-nw --max-seconds 3600`), each hold its own 600 s chrome-measure --no-timing run:
+#   TICKET=v10cm-nw node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-156 <H>" -- \
 #     caffeinate -i -s sh fixes/v10/phone/nw-hold.sh <H> <items>
 # Items:
 #   WC / WA          uncounted warm-up on C / A: fs, Timeline off, --warmup              -> g-WC-<H>.json / g-WA-<H>.json
@@ -35,22 +35,22 @@
 # Time guard: no item starts when elapsed + its program's budget + 30 s > 600: the rest is skipped, Safari parked,
 # exit 7, the hold is re-run whole.
 # NW_GATE=start|end|both|none (default both). NW_DRY=1: pins, compiled-program and served-hash checks, plan only.
-# NW_DIR (default out/v10nw): the servers' state, snapshot copy, hold logs and runs/ (a dry run uses its own folder).
+# NW_DIR (default out/v10cmnw): the servers' state, snapshot copy, hold logs and runs/ (a dry run uses its own folder).
 # Last line: "HOLD <H> VALID <s> s" (exit 0) or "HOLD <H> VOID <why>" (2 usage, 3 end gate / Mac sleep, 4 setup, 5 start
 # gate / WDA, 7 time guard, 8 sentinel FAIL, 9 pilot FAIL). Nothing here prints the LAN address (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
-[ "$TICKET" = v10-nw ] || { echo "TICKET is not v10-nw: no run"; exit 2; }
+[ "$TICKET" = v10cm-nw ] || { echo "TICKET is not v10cm-nw: no run"; exit 2; }
 H=$1; shift
-[ -n "$H" ] && [ $# -gt 0 ] || { echo "usage: TICKET=v10-nw sh fixes/v10/phone/nw-hold.sh <H> <items>"; exit 2; }
+[ -n "$H" ] && [ $# -gt 0 ] || { echo "usage: TICKET=v10cm-nw sh fixes/v10/phone/nw-hold.sh <H> <items>"; exit 2; }
 R=${RUNNER:-iphone-runner}
-SV=${NW_DIR:-out/v10nw}; O=$SV/runs
+SV=${NW_DIR:-out/v10cmnw}; O=$SV/runs
 FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
 PK=fixes/end-morph-p1/phone/g-park30-v1.json; PROG_PK=6f9209453750
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 [ -e $SV/snap/BASE ] || { echo "HOLD $H VOID no snapshot copy (start nw-serve.sh first) (no run)"; exit 4; }
 [ "$(cat $SV/snap/BASE)" = v10 ] || { echo "HOLD $H VOID unknown base (no run)"; exit 4; }
-C_JS=1b2eecc66011; A_JS=61257aa0969a
-C_CSS=e1359ab9994a; A_CSS=fb9f6aa28ad4
+C_JS=1b2eecc66011; A_JS=a33a6c7c1f2b
+C_CSS=e1359ab9994a; A_CSS=62743920fe1a
 GM=${NW_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "NW_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/v10/phone/nw-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs; RD=fixes/end-morph-p1/phone/pA-read.mjs
@@ -62,8 +62,8 @@ served() { curl -s "http://127.0.0.1:$1/$2" | shasum -a 256 | cut -c1-12; }
 hashok() { [ "$(served $PC $JS)" = $C_JS ] && [ "$(served $PC $CSS)" = $C_CSS ] && [ "$(served $PA $JS)" = $A_JS ] && [ "$(served $PA $CSS)" = $A_CSS ]; }
 pins() { for f in "$@"; do printf ' %s=%s' "$f" "$(shasum -a 256 "$f" | cut -c1-12)"; done; }
 T0=$(date +%s)
-echo "HOLD $H (v10-nw) start $(date -u +%FT%TZ) items $* gates $GM base $(cat $SV/snap/BASE)"
-echo "PIN $H v10-nw profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
+echo "HOLD $H (v10cm-nw) start $(date -u +%FT%TZ) items $* gates $GM base $(cat $SV/snap/BASE)"
+echo "PIN $H v10cm-nw profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF fixes/v10/phone/nw-block.sh fixes/v10/phone/nw-serve.sh $RD fixes/end-morph-p1/phone/p153-read.mjs \
   $GATES research/serious-heat/p129-read.mjs $FS $PK research/phone-thermal-gate/thermal-gate.mjs fixes/rest-script/tools/pmcheck.mjs \
   $SV/snap/C/$JS $SV/snap/C/$CSS $SV/snap/A/$JS $SV/snap/A/$CSS)"
@@ -88,7 +88,7 @@ fi
 node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
 BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --port "$PC") && AU=$(node tools/lan.mjs --url --port "$PA") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
-gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "v10nw-$H-$1" --expect serious --max-c 44 --accept-induced --url "$BU"; }
+gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "v10cmnw-$H-$1" --expect serious --max-c 44 --accept-induced --url "$BU"; }
 case $GM in start|both) gate start; g=$?
   [ $g -ne 0 ] && { echo "HOLD $H VOID start gate exit $g (no run)"; exit 5; } ;; *) echo "GATE start skipped (NW_GATE=$GM)" ;; esac
 RERUN=""; SFAIL=""; PFAIL=""
@@ -107,7 +107,7 @@ for I in "$@"; do
     [ -e "$f" ] && { mv "$f" "$f.prev-$H-$(date +%s)" || { echo "HOLD $H VOID cannot move aside $f"; exit 4; }; echo "MOVED $(basename "$f") aside (an earlier hold's file)"; }
   done
   node tools/iphone.mjs open "$U" --owner "$R" > /dev/null || { echo "HOLD $H VOID open failed at $I"; exit 4; }
-  node tools/iphone.mjs gesture $P $EX $TL --owner "$R" --label "v10nw-$H-$I" --out "$O/$F.json" > "$O/$F.log" 2>&1; r=$?
+  node tools/iphone.mjs gesture $P $EX $TL --owner "$R" --label "v10cmnw-$H-$I" --out "$O/$F.json" > "$O/$F.log" 2>&1; r=$?
   node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
   echo "RUN $I arm $(arm $I) exit $r $(date -u +%TZ) load1 $(sysctl -n vm.loadavg | cut -d' ' -f2)"
   case $I in

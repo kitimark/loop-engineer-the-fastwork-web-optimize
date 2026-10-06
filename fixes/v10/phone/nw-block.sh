@@ -1,8 +1,8 @@
 #!/bin/sh
 # v10 no-worse phone check (int-v8, lead 2026-10-06 15:36Z: "a short phone no-worse check on V vs C in your own hold,
 # profile xcode-serious, no cooling wait"). A copy of fix-end-morph-p1's P-156 kit (fixes/end-morph-p1/phone/p156-*.sh,
-# credited) with: the arms C = main's C (rev 7d, 1b2eecc66011 / e1359ab9994a) and A = v10's V (61257aa0969a / fb9f6aa28ad4)
-# from out/v10/snap-61257aa0969a-fb9f6aa28ad4, ticket v10-nw, folder out/v10nw, env NW_*; the arm letter A is kept so
+# credited) with: the arms C = main's C (rev 7d, 1b2eecc66011 / e1359ab9994a) and A = v10 + CM's V (a33a6c7c1f2b / 62743920fe1a)
+# from out/v10/snap-a33a6c7c1f2b-62743920fe1a, ticket v10cm-nw, folder out/v10cmnw, env NW_*; the arm letter A is kept so
 # pA-read.mjs and the gates read it unchanged. Part A (fs) only. The original header follows.
 # P-156 block driver (card: fixes/end-morph-p1b-a/README.md "Phone card P-156"). A copy of this topic's P-153 rev 1.3
 # driver (fixes/end-morph-p1/phone/p153-block.sh: WDA ensured (rev 2: I-220's `wda ensure`) at every part start, the servers'
@@ -10,22 +10,22 @@
 # names, the arms C / A, part B items, and no attribution part. Runs inside ONE phone hold with the block mark and
 # starts the block's 600 s chrome-measure --no-timing holds in order (p156-hold.sh).
 # Start the servers first: P156_BASE=1|0 sh fixes/v10/phone/nw-serve.sh start (the base P-155 lands).
-# NW_DIR (default out/v10nw) is passed on to p156-serve.sh and p156-hold.sh (a dry run uses its own folder).
+# NW_DIR (default out/v10cmnw) is passed on to p156-serve.sh and p156-hold.sh (a dry run uses its own folder).
 # Usage (the runner, in the background), one block = parts of at most ~50 min:
 #   ... p156-block.sh H0:PC                                                                    (part 0, rev 2: the
 #       uncounted park30 pilot on C; a PILOT FAIL (hold exit 9) stops here and the block does not start)
-#   TICKET=v10-nw node tools/lock.mjs run iphone --owner iphone-runner --block v10-nw --max-seconds 3600 --keep 120 -- \
+#   TICKET=v10cm-nw node tools/lock.mjs run iphone --owner iphone-runner --block v10cm-nw --max-seconds 3600 --keep 120 -- \
 #     sh fixes/v10/phone/nw-block.sh H1:WC H2:WA H3:S0 H4:EC1 H5:EA1                 (part 1)
 #   ... p156-block.sh H6:EA2 H7:EC2 H8:EC3 H9:EA3                                              (part 2)
 #   ... p156-block.sh H10:EA4 H11:EC4 H12:BC1 H13:BA1                                          (part 3)
 #   ... p156-block.sh H14:BA2 H15:BC2 H16:TAIL                                                 (part 4)
 # (part A counted C A A C C A A C; part B C A A C; sentinels on C: S0 before the counted runs, S1 last in its own hold)
-# H<n>:TAIL = the counted runs named in RERUN-NEEDED lines of out/v10nw/hold-H*.log, at most 2 per block, each re-run once
+# H<n>:TAIL = the counted runs named in RERUN-NEEDED lines of out/v10cmnw/hold-H*.log, at most 2 per block, each re-run once
 # as <run>r in its own hold, then S1 in the next hold.
 # Cooling (kit change after P-156 block 1, lead 2026-10-06, map-p156-gaps: the wait cost 13 of 107 min): OFF by default,
 # as the xcode-serious rule says (no cooling wait; the sentinel decides validity; memory phone-checks-start-warm).
 # NW_COOL=1 restores block 1's behaviour: Safari parked, then before EVERY hold wait.mjs phone-temp --below 38
-# --timeout 600 (logged in out/v10nw/cooling.log); not MET: one more 600 s wait; still not: BLOCK STOP, VOID (exit 6).
+# --timeout 600 (logged in out/v10cmnw/cooling.log); not MET: one more 600 s wait; still not: BLOCK STOP, VOID (exit 6).
 # The ceiling stays in both modes: each hold's start and end gate (--max-c 44, Critical) voids that hold and stops the
 # block (p156-hold.sh exit 3/5). With cooling off nothing runs between holds, so the next hold's chrome-measure
 # `lock run` is queued right after the previous one ends (no park in between; p156-hold.sh parks Safari after every
@@ -35,9 +35,9 @@
 # block resumes from that hold with one uncounted warm-up per arm first (the lead's ruling after block 1).
 # NW_DRY=1: calls p156-hold.sh directly (its dry mode: pins and plan only, no lock, no phone, no cooling wait).
 cd "$(dirname "$0")/../../.." || exit 2
-[ "$TICKET" = v10-nw ] || { echo "TICKET is not v10-nw: no run"; exit 2; }
-[ $# -gt 0 ] || { echo "usage: TICKET=v10-nw sh fixes/v10/phone/nw-block.sh H<n>:<item>[,<item>] ... [H<n>:TAIL]"; exit 2; }
-R=${RUNNER:-iphone-runner}; LG=${NW_DIR:-out/v10nw}; export NW_DIR=$LG; HS=fixes/v10/phone/nw-hold.sh; SS=fixes/v10/phone/nw-serve.sh
+[ "$TICKET" = v10cm-nw ] || { echo "TICKET is not v10cm-nw: no run"; exit 2; }
+[ $# -gt 0 ] || { echo "usage: TICKET=v10cm-nw sh fixes/v10/phone/nw-block.sh H<n>:<item>[,<item>] ... [H<n>:TAIL]"; exit 2; }
+R=${RUNNER:-iphone-runner}; LG=${NW_DIR:-out/v10cmnw}; export NW_DIR=$LG; HS=fixes/v10/phone/nw-hold.sh; SS=fixes/v10/phone/nw-serve.sh
 mkdir -p $LG
 for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^[EB][CA][1-4]r?$')
   [ "$it" -gt 1 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it counted runs (at most 1 per hold)"; exit 2; }; done

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // v10 no-worse check (int-v8, lead 2026-10-06 15:36Z): a copy of fix-end-morph-p1's fixes/end-morph-p1/phone/pA-read.mjs
-// (rev 2, credited) that also knows the base "v10" (C = main's rev 7d C 1b2eecc66011 / e1359ab9994a, A = v10's V
-// 61257aa0969a / fb9f6aa28ad4; holds from fixes/v10/phone/nw-hold.sh, start line "(v10-nw)"). Metrics, predictions and
+// (rev 2, credited) that also knows the base "v10" (C = main's rev 7d C 1b2eecc66011 / e1359ab9994a, A = v10 + CM's V
+// a33a6c7c1f2b / 62743920fe1a; holds from fixes/v10/phone/nw-hold.sh, start line "(v10cm-nw)"). Metrics, predictions and
 // gates are unchanged. Part A only in this check, so Pr4 (part B) reads INSUFFICIENT by design. Original header:
 // A-card reader (fix-end-morph-p1; card: fixes/end-morph-p1b-a/README.md "Phone card", written before any data; the lead
 // signs it). C (the landing base's control) vs A = C + P1 + P1b (a). A pure reader: no device, no measurement.
@@ -64,7 +64,7 @@ const { endZone, decideNoWorse, holdStatus, opens, firstOpen, firstOpenSummary, 
 export const med = (a) => { if (!a.length || a.some((x) => x == null)) return null; const s = [...a].sort((x, y) => x - y); const n = s.length; return n % 2 ? s[n >> 1] : (s[n / 2 - 1] + s[n / 2]) / 2; };
 export const BOUNDS = { f2: 4, cb34: 3, cbp34: 2, opf2: 4 };
 /** Served pins per base (p156-serve.sh / p156-hold.sh): C JS, C CSS, A JS, A CSS. */
-export const PINS = { 1: ['fe7c668d35e8', 'e1359ab9994a', 'f83aa54c2acc', 'cfb8b8c5b019'], 0: ['387a2b38790b', 'e1359ab9994a', '888ed8eb2d15', 'cfb8b8c5b019'], v10: ['1b2eecc66011', 'e1359ab9994a', '61257aa0969a', 'fb9f6aa28ad4'] };
+export const PINS = { 1: ['fe7c668d35e8', 'e1359ab9994a', 'f83aa54c2acc', 'cfb8b8c5b019'], 0: ['387a2b38790b', 'e1359ab9994a', '888ed8eb2d15', 'cfb8b8c5b019'], v10: ['1b2eecc66011', 'e1359ab9994a', 'a33a6c7c1f2b', '62743920fe1a'] };
 /** g-park30-v1's compiled program hash (gesture --dry-run GESTURE_HASH). */
 export const PARK_HASH = '6f9209453750';
 /** opens()' morph value (lvh = the run's largest innerHeight). */
@@ -103,7 +103,7 @@ export function baseCheck(logs, base) {
   const miss = [], p = PINS[base];
   if (!p) return [`--base ${base} is not 1, 0 or v10`];
   for (const [h, text] of Object.entries(logs)) {
-    const st = text.match(/^HOLD \S+ \((?:P-156|v10-nw)\) start .* base (\S+)\s*$/m);
+    const st = text.match(/^HOLD \S+ \((?:P-156|v10cm-nw)\) start .* base (\S+)\s*$/m);
     if (!st) miss.push(`hold ${h}: no start line with a base`);
     else if (st[1] !== String(base)) miss.push(`hold ${h}: base ${st[1]}, the ledger says ${base}`);
     if (/^RUN /m.test(text)) {

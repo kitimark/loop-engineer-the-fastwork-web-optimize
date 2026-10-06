@@ -41,6 +41,10 @@
 #   HS="<d>" HS_SHA="<sha12>"   arch-compositor-morph's hit-skip (fixes/hit-skip/delta.diff dee89e00eb7a @737d2337: one condition
 #          in the nav hit test, cut against rev 7d's C): in R1/R1b right after pause (before P1), in R2/R3/R4 right after
 #          rev 7d's diff (it is rev 7d code); part of N, counted in code parity
+#   CM="<d> [<d> ...]" CM_SHA="<sha12> [...]"   compositor-morph (PR-030, accepted by the user 15:49Z; lead 15:50Z): CM v1.2
+#          without its hit-test hunk (hit-skip covers it: __cmSup needs __msOn) plus arch-compositor-morph's gate that keeps
+#          P1's reveal off while CM renders; applied after nolift and before I-219 in every route (not part of N), its
+#          files in the given order, each checked against its hash, counted in code parity
 #   PIN_A0=<js12>/<css12>   route R4 (lead 15:00Z, P-156 ruling): the build the phone measured, v9-final + I-219 + P1 + P1b
 #          (fix-end-morph-p1's A0 on base B0; 888ed8eb2d15 / cfb8b8c5b019 for P1b (a) d52d14cd), pinned, then + pause + rev 7d's
 #          diff + nolift must give V byte for byte. Needs I219 and P1B (and not P1=none); panel-h and clock are not in A0.
@@ -100,6 +104,17 @@ PSL=""; [ -n "$PAUSE" ] && { get "$PAUSE" $T/pause.diff "$PAUSE_SHA" "#platform 
 PSN="${PSL:+ + pause}"
 HSL=""; [ -n "$HS" ] && { get "$HS" $T/hs.diff "$HS_SHA" "hit-skip (arch-compositor-morph)"; HSL=$T/hs.diff; }
 PSN="$PSN${HSL:+ + hit-skip}"
+CML=""
+if [ -n "$CM" ]; then
+  set -- $CM_SHA; i=0
+  for s in $CM; do
+    i=$((i + 1)); [ $# -ge 1 ] || { echo "CM_SHA has no hash for $s: refuse"; exit 3; }
+    get "$s" $T/cm-$i.diff $1 "compositor-morph ($i)"; CML="$CML $T/cm-$i.diff"; shift
+  done
+  [ $# -eq 0 ] || { echo "CM_SHA has more hashes than CM has files: refuse"; exit 3; }
+  CML=$(echo $CML)
+fi
+CMN="${CML:+ + CM}"
 NAVL=$F12; NAVN="F1+U2"; ALT=
 if [ -n "$NAV" ]; then
   ALT=1
@@ -115,7 +130,7 @@ fi
 apl() { d=$1; shift; for x in "$@"; do ap $d $x; done; }
 N_JS12=f5068db34a32; N_CSS12=a81b9af7b2c9; V_JS12=f5068db34a32; V_CSS12=a4ed5432f2f7; CI_JS12=; CI_CSS12=
 [ -n "$P1BL$ALT$PSL$HSL" ] && { N_JS12=${PIN_N%/*}; N_CSS12=${PIN_N#*/}; [ -n "$PIN_N" ] || N_JS12= N_CSS12=; }
-[ -n "$P1BL$I219L$ALT$PSL$HSL" ] && { V_JS12=${PIN_V%/*}; V_CSS12=${PIN_V#*/}; [ -n "$PIN_V" ] || V_JS12= V_CSS12=; }
+[ -n "$P1BL$I219L$ALT$PSL$HSL$CML" ] && { V_JS12=${PIN_V%/*}; V_CSS12=${PIN_V#*/}; [ -n "$PIN_V" ] || V_JS12= V_CSS12=; }
 if [ -n "$I219L" ]; then
   if [ -n "$PIN_CI" ]; then CI_JS12=${PIN_CI%/*}; CI_CSS12=${PIN_CI#*/}
   elif [ "$I219_SHA" = 947c88282561 ]; then CI_JS12=30d41592a308; CI_CSS12=e1359ab9994a; fi
@@ -136,7 +151,7 @@ aps() { d=$1; shift; for x in "$@"; do rm -rf $T/prev; tree $T/prev $d; ap $d $x
   PARN=$((PARN + 1)); done; }
 git show 9f9f703f:fixes/joinwl-nolift/patch.diff > $T/nolift-arm.diff || exit 3
 [ "$(h $T/nolift-arm.diff)" = bec7169bd7cc ] || { echo "joinwl-nolift/patch.diff @9f9f703f is not bec7169bd7cc: refuse"; exit 3; }
-echo "R1: C + $NAVN$PSN$P1N$PBN + nolift${I219L:+ + I-219}"
+echo "R1: C + $NAVN$PSN$P1N$PBN + nolift$CMN${I219L:+ + I-219}"
 tree $T/c $BASE; ap $T/c $REV7D; pin $T/c 1b2eecc66011 e1359ab9994a "C (baseline + rev 7d build)"
 tree $T/r1 $T/c; aps $T/r1 $NAVL
 if [ -z "$ALT" ]; then pin $T/r1 738bc075f7f8 e1359ab9994a "C + F1+U2"; elif [ -n "$NAVL" ]; then stage $T/r1 "C + $NAVN"; fi
@@ -150,19 +165,21 @@ fi
 stage $T/r1 "N = C + $NAVN$PSN$P1N$PBN" $N_JS12 $N_CSS12
 tree $T/n $T/r1
 aps $T/r1 $NL
+[ -n "$CML" ] && { stage $T/r1 "N + nolift"; aps $T/r1 $CML; }
 if [ -n "$I219L" ]; then
-  if [ -z "$P1BL$ALT$PSL$HSL" ]; then stage $T/r1 "N + nolift" f5068db34a32 a4ed5432f2f7; else stage $T/r1 "N + nolift"; fi
+  if [ -z "$P1BL$ALT$PSL$HSL$CML" ]; then stage $T/r1 "N + nolift" f5068db34a32 a4ed5432f2f7; else stage $T/r1 "N + nolift$CMN"; fi
   aps $T/r1 $I219L
 fi
-stage $T/r1 "V = N + nolift${I219L:+ + I-219}" $V_JS12 $V_CSS12
-echo "R1b: C + nolift$P1N + $NAVN$PSN$PBN${I219L:+ + I-219}"
+stage $T/r1 "V = N + nolift$CMN${I219L:+ + I-219}" $V_JS12 $V_CSS12
+echo "R1b: C + nolift$P1N + $NAVN$PSN$PBN$CMN${I219L:+ + I-219}"
 tree $T/r1b $T/c; ap $T/r1b $NL; pin $T/r1b 1b2eecc66011 edc20be46534 "C + nolift"
 [ -n "$P1L" ] && { ap $T/r1b $P1L; pin $T/r1b 291f70523bd6 a4ed5432f2f7 "C + nolift + P1"; }
 apl $T/r1b $NAVL $PSL $HSL; [ -z "$P1L" ] && stage $T/r1b "C + nolift$P1N + $NAVN$PSN"
 [ -n "$P1BL" ] && { stage $T/r1b "C + nolift$P1N + $NAVN"; apl $T/r1b $P1BL; }
-[ -n "$I219L" ] && { stage $T/r1b "...$PBN"; ap $T/r1b $I219L; }
+[ -n "$CML" ] && { stage $T/r1b "...$PBN"; apl $T/r1b $CML; }
+[ -n "$I219L" ] && { stage $T/r1b "...$PBN$CMN"; ap $T/r1b $I219L; }
 stage $T/r1b "V (other order)" $V_JS12 $V_CSS12
-echo "R2 / R3: rev 7d's diff on the measured build$PBN + nolift${I219L:+ + I-219}, and on the nolift arm the user tried"
+echo "R2 / R3: rev 7d's diff on the measured build$PBN + nolift$CMN${I219L:+ + I-219}, and on the nolift arm the user tried"
 tree $T/v9 $BASE; ap $T/v9 $V9F; pin $T/v9 647c9ef2b1e2 e1359ab9994a "v9-final"
 cmp -s $T/v9/$CSS $T/c/$CSS || { echo "rev 7d changes the CSS: R2 does not cover it: refuse"; exit 3; }
 diff -u --label a/$JS --label b/$JS $T/v9/$JS $T/c/$JS > $T/rev7d.diff; [ $? -eq 1 ] || { echo "rev 7d diff failed: refuse"; exit 3; }
@@ -173,23 +190,23 @@ apl $T/r2 $PSL
 if [ -z "$ALT$PSL$HSL" ]; then pin $T/r2 4da641f828bb a81b9af7b2c9 "v9-final + F1+U2 + P1 (measured)"; else stage $T/r2 "v9-final + $NAVN${PSL:+ + pause}$P1N"; fi
 [ -n "$P1BL" ] && { apl $T/r2 $P1BL; stage $T/r2 "measured$PBN"; }
 ap $T/r2 $T/rev7d.diff; apl $T/r2 $HSL; stage $T/r2 "measured$PBN + rev 7d (= N)" $N_JS12 $N_CSS12
-ap $T/r2 $NL; [ -n "$I219L" ] && ap $T/r2 $I219L
-stage $T/r2 "measured$PBN + rev 7d + nolift${I219L:+ + I-219}" $V_JS12 $V_CSS12
+ap $T/r2 $NL; apl $T/r2 $CML; [ -n "$I219L" ] && ap $T/r2 $I219L
+stage $T/r2 "measured$PBN + rev 7d + nolift$CMN${I219L:+ + I-219}" $V_JS12 $V_CSS12
 ROUTES="r1b r2 r3"
 if [ -n "$ALT" ]; then ROUTES="r1b r2"; echo "  R3 skipped: the nolift arm as tried carries F1+U2 and P1"; else
 tree $T/r3 $BASE; ap $T/r3 $T/nolift-arm.diff; pin $T/r3 4da641f828bb a4ed5432f2f7 "nolift arm as tried (Try-it option B)"
 apl $T/r3 $PSL
 [ -n "$P1BL" ] && apl $T/r3 $P1BL
-ap $T/r3 $T/rev7d.diff; apl $T/r3 $HSL; [ -n "$I219L" ] && ap $T/r3 $I219L
-stage $T/r3 "nolift arm$PBN + rev 7d${I219L:+ + I-219}" $V_JS12 $V_CSS12
+ap $T/r3 $T/rev7d.diff; apl $T/r3 $HSL $CML; [ -n "$I219L" ] && ap $T/r3 $I219L
+stage $T/r3 "nolift arm$PBN + rev 7d$CMN${I219L:+ + I-219}" $V_JS12 $V_CSS12
 fi
 if [ -n "$PIN_A0" ]; then
   [ -n "$I219L" ] && [ -n "$P1B" ] && [ -n "$P1L" ] && [ -z "$PHL$CKL" ] || { echo "PIN_A0 needs I219 and P1B, without P1=none, panel-h or clock: refuse"; exit 3; }
   echo "R4: the phone's A0 (v9-final + I-219 + P1 + P1b) + pause + rev 7d + nolift"
   tree $T/r4 $T/v9; ap $T/r4 $I219L; ap $T/r4 $P1L; apl $T/r4 $P1BL
   pin $T/r4 ${PIN_A0%/*} ${PIN_A0#*/} "A0 = v9-final + I-219 + P1 + P1b (the P-156 phone build)"
-  apl $T/r4 $PSL; ap $T/r4 $T/rev7d.diff; apl $T/r4 $HSL; ap $T/r4 $NL
-  stage $T/r4 "A0 + pause + rev 7d${HSL:+ + hit-skip} + nolift" $V_JS12 $V_CSS12
+  apl $T/r4 $PSL; ap $T/r4 $T/rev7d.diff; apl $T/r4 $HSL; ap $T/r4 $NL; apl $T/r4 $CML
+  stage $T/r4 "A0 + pause + rev 7d${HSL:+ + hit-skip} + nolift$CMN" $V_JS12 $V_CSS12
   ROUTES="$ROUTES r4"
 fi
 for r in $ROUTES; do for f in $JS $CSS; do cmp -s $T/r1/$f $T/$r/$f || { echo "route $r differs on $f: refuse"; exit 3; }; done; done
