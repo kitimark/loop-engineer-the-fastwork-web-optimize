@@ -287,20 +287,33 @@ below) are logged as OBSERVED, cause not traced, and do not block.
 | g3a | 7 px |
 | g4c | **41566 px** (1.15 % of the screen) |
 
-**The post stop is not quiet on identical bytes (Simulator A/A, V against itself; detached, groups g2a-g4c still deferred
-by the phone block):**
+**The post stop is not quiet on identical bytes.** Simulator A/A, V against itself, all 9 groups, 12:24-15:20Z, in 120
+s sessions. The table shows the post stop; "shift" is the post card's vertical offset of V/A2/V2 against A in device
+px, from `postshift.mjs`.
 
-| A/A group | result |
-|---|---|
-| g1a | identical at all 5 stops |
-| g1b | identical, except post: **418 px** consistent (`nlregion --identical`: post DIFFERS) |
+| A/A group | every other stop | post consistent | shift V/A2/V2 |
+|---|---|---|---|
+| g1a | identical | 0 | 2/2/0 |
+| g1b | identical | **418 px** | 0/1/0 |
+| g2a | identical | 46 px | −4/−3/−1 |
+| g2b | identical | 0 | −3/−4/0 |
+| g3a | identical | 23 px | 1/3/6 |
+| g3b | identical | **51892 px** (1.44 % of the screen) | 2/0/2 |
+| g4a | identical | 0 | 0/1/−1 |
+| g4b | identical | 0 | 2/1/0 |
+| g4c | identical | 0 | −6/0/0 |
 
-So identical bytes already leave 418 px at post. The 287 px Try-it reading at g2's post is **smaller than that A/A
-residue and is not a real difference**. The 41566 px reading at g4c waits for the A/A at g4c.
-
-- The post card shifts −5..+3 device px vertically between loads (`postshift.mjs`), also between loads of the same build.
-- At g4c, A and A2 happened to align while V and V2 sat +2/+3. That is how a shift reads as "consistent" there.
-- Cause OBSERVED only: the post-close position of the card varies by a few device px per load.
+- Every stop except post is identical in all 9 groups, so the Simulator is quiet there.
+- Post leaves up to 51892 px on identical bytes. Both Try-it post readings are **below that A/A residue and are not
+  real differences**: 287 px at g2 and 41566 px at g4c.
+- Mechanism: the post card sits a few device px higher or lower per load (−6..+6 here; −5..+3 in the earlier runs), on
+  the same build too. When A and A2 happen to align while V and V2 sit together elsewhere, the shift passes the
+  "consistent" filter.
+  - g3b's 51892 px is exactly that: A and A2 at 0, V and V2 at +2.
+  - Try-it g4c's 41566 px had the same pattern: A and A2 at 0, V and V2 at +2/+3.
+- Cause of the per-load offset: OBSERVED only (the post-close settle position varies by a few device px per load).
+- Split sessions put the A/A pairs of a group in different sessions. That loosens nothing in the page; the status-bar
+  clock above the page is set aside.
 
 ### Simulator counts: pending
 
