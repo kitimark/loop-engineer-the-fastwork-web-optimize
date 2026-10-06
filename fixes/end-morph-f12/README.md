@@ -474,6 +474,18 @@ Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H
   - The serve check was ok, cooling was skipped (below 38 °C), and WDA and Safari restarted. No warm-up and no counted run. Safari was parked by the EXIT trap.
   - Cause (OBSERVED): a cool phone reading Critical with induced Yes points at the Xcode Device Condition. The lead posted C-072 (stop the condition, wait 2 min, start Thermal State Serious). Part 1 reruns when C-072 is done; its start gate must read Serious, and a second Critical stops the block with no retry.
 
+- 2026-10-06 07:07-08:49Z, **block 2 (rev 1.4 + park, block pin a60e0c9fe0a6), complete: 14 of 14 holds VALID.**
+  - Part 1 07:07-07:32Z (after C-079), part 2 07:33-07:53Z, part 3 07:54-08:14Z: H1-H10 VALID. Every gate read Serious with induced Yes, battery 34.89-38.59 °C, none Critical. Before every hold: Safari parked, cooling met at once, WDA ready.
+  - Part 4, first start 08:15Z: the part-start WDA restart failed (automation-mode timeout, BUILD INTERRUPTED), exit 5, before any hold or gate; nothing counted lost (incident I-220, lead). The log is `out/p152/block2-r15-part4-stop0815.log`.
+  - Part 4 rerun 08:26-08:49Z (after the C-082 re-plug): H11 EC4, H12 S1 (TAIL: no re-runs), H15 AC1, H16 AV1 VALID. The phone went to the user (T-214) at 08:49:37Z with no keep.
+  - EC4 ran after a 1052 s gap at 34.79 °C (the re-plug pause); the other counted runs had 362-507 s gaps at 36.89-37.69 °C.
+- **Read (p152-read.mjs pin 74ffb1031287, on out/p152/runs; `results-p152.json`): DECISION FAIL, V WORSE than C, threshold-sensitive.**
+  - Sentinels: S0 PASS (fps 55.4, slow 0.031), S1 PASS (fps 54.9, slow 0.037).
+  - End zone, per run, frames dt>34 / dt>50: C 28/1, 30/4, 36/8, 35/3; V 76/24, 42/4, 58/14, 40/10. Median V-C: >34 +17.5 (p 1/70, separated), >50 +8.5 (p 3/70); both bounds exceeded, so WORSE at both registered thresholds. Twins: >30 +15.5 (p 5/70), >38 +15, >46 +9.5 (p 3/70), >54 +5.5 (p 4/70).
+  - Disclosed as signed: EV1 and EV3 are the "position-confounded" slot (the first V run of parts 2 and 3), and they carry the two largest V counts (76/24 and 58/14). The other two V runs (42/4, 40/10) are also above every C run at >34, and at or above C's median at >50, so the slot does not explain the whole gap (descriptive, decides nothing).
+  - Attribution (decides nothing): paints per frame AC1 11.74 (m high) / 11.18 (low), AV1 11.71 / 11.11; the less-work saving seen in Chrome and the Simulator does not show as fewer paints here.
+  - The phone no-worse check is not met as registered. The lead rules on the next step; this is block 2 of 2 for P-152.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
