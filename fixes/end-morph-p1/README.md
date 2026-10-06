@@ -565,6 +565,18 @@ the rest as rev 1.2.
   - O1: f1 16-17 ms and f2 23-32 ms in both arms;
   - 13 opens per run, of which 0-1 are full repeats.
 
+## P-153 block log
+
+- 2026-10-06 03:24:11Z, part 1, first try: **void before anything ran, not counted as a block** (lead ruling).
+  - The serve check was ok for 3 of 3 servers.
+  - The cooling wait (`P153_COOL_FIRST=38`) got no battery reading: `idevicediagnostics` exit 1, UNAVAILABLE after one
+    read. The driver stopped with exit 6. Its text "did not cool below 38 °C in 900 s" is the driver's generic message
+    for any non-zero cooling wait; here the cause was the missing reading, not heat.
+  - There was no WDA restart, no gate and no run. Safari was parked by the EXIT trap, and `out/p153/runs` stayed empty.
+  - Cause: the iPhone was off USB (`iphone.mjs status`: no device; WebKit proxy :9222 refused), incident I-216.
+    The user was trying PR-012 by hand at the time.
+  - Next: part 1 reruns once with the same command when a battery read works again.
+
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 
 Gate (b) failed T2, so P1 on v9-final goes back to the user as a revision of PR-012 (accepted rev 1 was P1 on
