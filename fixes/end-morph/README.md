@@ -139,7 +139,7 @@ and the Simulator; motion-only differences are proposals).
 | F1 + U2 | F1: hide #platform while it is fully faded (`visibility: hidden` when `--morph-fade` = 0, m >= 0.55). U2: fix-nav-morph's hit-test deferral | Chrome: rest open 122 -> 4 paints, step at m 1 85 -> 1, lift + settle 377 -> 157; 14-26 hit tests per open/close gone | T2 at m 0.95 in Chrome (19 css px², edge, max 40), lead-ACCEPTED provided the Simulator leg stays within T2 | built, `fixes/end-morph-f12/`; lands on v9-final (v9.2 NO-LAND); landing gates PASSED at T2 (lead-accepted); phone no-worse card P-152 written, waiting for its pre-data read |
 | F2 | read `scrollY` once per frame in the engine instead of in `__nsOnScroll` | none in Chrome (the forced style pass only moves) | T0 | DROPPED (lead, 2026-10-05) |
 | F3 | padPF: keep #platform's filter outsets constant with a transparent drop-shadow | none (Simulator S1: the approach repaint stays) | - | DROPPED |
-| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`arms/f4-on-f12.diff`, JS `839a5a24c0d4` on v9.2) | Simulator approach: #platform 80 -> 0 repaints, 201/199 -> 124 paints, 20.2 -> 4.2 Mpx (5 below) | T0 in Chrome (8 stops) and the Simulator (7 stops), OBSERVED | measured on v9.2; ported onto v9-final + F1 + U2 as code only (`arms/f4-on-v9f-f12.diff`, JS `2ff5084cd4eb`, not measured); a separate less-work step after F1 + U2 lands (lead, 2026-10-05): own T0/T2 gate and counts, crossing-frame check (5) |
+| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`arms/f4-on-f12.diff`, JS `839a5a24c0d4` on v9.2) | Simulator approach: #platform 80 -> 0 repaints, 201/199 -> 124 paints, 20.2 -> 4.2 Mpx (5 below) | T0 in Chrome (8 stops) and the Simulator (7 stops), OBSERVED | measured on v9.2; on v9-final + F1 + U2 (`arms/f4-on-v9f-f12.diff`, JS `2ff5084cd4eb`): Chrome T0, Simulator pre stop 2.15 % (beyond T2), counts mixed (5); PARKED behind F1 + U2 landing (lead, 2026-10-06), P-154 reserved, no card |
 | V1 | snap the `--fw-ms-h` write in `__msRO` to device pixels (`fixes/end-morph-v1/`, JS `1d68bc9fb4fe`) | the toolbar-step repaint, if the fractional sticky offset is its trigger (2.4 row 5) | T0 expected | DROPPED (lead, 2026-10-05): no effect in the Simulator (step A, 5), and the case it targets can't be produced there |
 | P1 | morph-gpu rev 1 (composited reveal), ported onto 7d | Simulator: 12 -> 2 paints per frame on the M driver (morph-gpu) | T3 motion, PR-012 rev 1 ACCEPTED by the user | ported onto v9.2 here (`fixes/end-morph-p1/`, handover notes); the v9-final port and the card now belong to fix-end-morph-p1 (lead, 2026-10-05) |
 | P2 | close tail: no 0.7 s width/background transition after a scroll-driven close | ~40 frames of header layout + repaint per close | motion-only difference (residual <= the last step) -> proposal | proposal with Try-it |
@@ -241,3 +241,47 @@ and the Simulator; motion-only differences are proposals).
     5. Chrome counts (`em-chrome.mjs`): no change expected; the less-work rule's cost card.
     6. The phone no-worse check, a card of its own through the lead, after F1 + U2 lands. F4 removes WebKit work only, so the phone, not Chrome, is the place it can matter.
   - Nothing of this touches the P-152 kit or its pins.
+- **F4 on v9-final + F1 + U2, measured 2026-10-06 01:08-01:15Z: steps 1-3 above, all in the shared lane
+  (probe / simulator weight, nothing timed). All OBSERVED. Lead ruling: F4 is PARKED behind F1 + U2 landing;
+  P-154 stays reserved, no card yet; (a) or (c) below is decided after F1 + U2 lands, with the phone result.**
+  - Builds served (hash-checked on every load): A = F1 + U2 (P-152's V, JS `a6426953727a`), V = F4
+    (JS `2ff5084cd4eb`); CSS `e1359ab9994a` on both.
+  - Pixels (`gates/em-px2.mjs`, 430x775, multi-pair A/A over 8 levels; "consistent" = in all 4 cross pairs and not
+    in the A/A pairs):
+
+    | engine | stops | result | run (out/, gitignored) |
+    |---|---|---|---|
+    | Chrome | 8 | all 0 consistent (T0); up1 has 22 css px² in one cross pair only | `px2-chrome-f4v9f-2026-10-06T01-08-05-411Z` |
+    | Simulator | 7 | 6 stops 0; **pre (m 0, fade 1): 8625 css px² consistent, 2.15 %, max 193, flat 0.485**, box css 64,64-368,192 (the platform card under `p.is-title`); A/A 0.0755 % | `px2-sim-f4v9f-2026-10-06T01-11-12-497Z` |
+
+    The Simulator pre stop is beyond T2 (0.5 %, fill 64): **F4 on v9-final is not pixel-identical in WebKit.** On v9.2
+    the same stop was 0, so v9-final's platform card setup (pain-underlay shrink, `transform: scale(...)` with origin
+    50% 0 and `will-change: transform`, CSS 5851-5906) is the likely difference. What the difference looks like
+    (`shift.mjs` and `sharp.mjs` in the scratchpad, on the A, A2, V and V2 shots):
+    - not a translation: the card's top edge matches (best shift 0), its bottom edge sits 4 device px (about 1.3 css
+      px) higher in F4;
+    - the image tone differs (mean |diff| 12-15 in the image boxes, also at the best shift);
+    - F4 is slightly sharper: mean gradient 5.22/5.21 (V, V2) against 5.01/5.03 (A, A2).
+  - Hypothesis, **UNRESOLVED**: under #platform's `blur(0px)` filter, WebKit re-rasterizes the scaled card at each
+    scale (these may be the approach's 80 #platform repaints that F4 removes); with `filter: none`, Core Animation
+    scales the card's cached bitmap instead. If that holds, the look change and the saving are one mechanism.
+    Decisive local check (option c below): a variant that keeps `blur(0px)` while `--platform-shrink` is fractional
+    and drops it only at scale 1; if its pre stop is 0 and its approach repaints come back, the hypothesis holds.
+  - Probe artifact, not a bug: `em-sim.mjs`'s "applied" line read `platformFilterAtHalf: none` for F4. The probe sets
+    `--morph-fade` 0.5 at the top of the page while F4's inline `filter: none` (set at fade 1) is still on, so the
+    inline value wins. On a real scroll `S()` clears it below fade 1; the up0.1 and up0.6 pixel stops being 0 shows
+    the blur comes back.
+  - Simulator counts, **EXPLORATORY** (`em-sim.mjs`, two sessions: V F4 V and F4 V F4; 3 runs per arm; decides
+    nothing):
+
+    | arm | approach paints / kpx | open paints (styles) | rest open | close | rest closed |
+    |---|---|---|---|---|---|
+    | F1 + U2 | 214 / 21250, 202 / 20095, 203 / 20316 | 449 (67), 456 (67), 449 (66) | 43, 41, 54 | 418, 418, 419 | 109, 110, 117 |
+    | F4 | 125 / 4391, 124 / 4270, 122 / 4274 | 473 (67), 469 (69), 469 (65) | 43, 40, 45 | 406, 406, 406 | 134, 127, 126 |
+
+    Approach: about -85 paints and -16 Mpx (#platform's repaints gone; the top layers are the header and #document
+    instead). Open +13 to +24, rest closed +10 to +25, close -12. The ranges separate in every phase but rest open, so
+    the net benefit is not a clean saving.
+  - Options after F1 + U2 lands: (a) F4 as a look-change proposal with Try-it pages (the Simulator shows the card 1.3
+    px shorter at its bottom edge and slightly sharper); (c) the variant above, which likely gives up most of the
+    approach saving. Steps 4-6 of the list above wait for that decision.
