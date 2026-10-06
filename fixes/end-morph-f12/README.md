@@ -441,6 +441,10 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 
 - 2026-10-06 00:04-00:22Z, part 1 retry: H1 VALID (start gate PASS, 36.1 °C), H2 VALID (S0 PASS, fps 55.5; EC1 gates ok), H3: EV1 and EV2 gates ok, then the end gate FAILed the ceiling (Critical, 43.0 °C), so H3 is VOID and the block stopped. Safari was parked.
 - Lead ruling (~00:24Z): block 1 is VOID as a whole (no passing gate after H1's start). It was archived with `ARCHIVE-BLOCK1` at 00:25Z and is 1 of 2 blocks. Cooling to 38 °C started at 00:25Z, in its own phone hold, logged in `out/p152/cooling.log`.
+- 00:39Z onward: the WDA restart after cooling timed out twice. The phone had likely auto-locked (I-215). The lead posted console step C-071 (unlock, Auto-Lock Never), done at 03:17Z.
+- Block 2 attempt at 03:18Z: H1 start gate Critical at 35.29 °C, induced Yes, VOID before any run; not counted (lead ruling).
+  - The serve check was ok, cooling was skipped (below 38 °C), and WDA and Safari restarted. No warm-up and no counted run. Safari was parked by the EXIT trap.
+  - Cause (OBSERVED): a cool phone reading Critical with induced Yes points at the Xcode Device Condition. The lead posted C-072 (stop the condition, wait 2 min, start Thermal State Serious). Part 1 reruns when C-072 is done; its start gate must read Serious, and a second Critical stops the block with no retry.
 
 ## Pending
 
