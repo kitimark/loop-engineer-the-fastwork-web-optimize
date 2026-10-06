@@ -34,7 +34,7 @@ fi
 PARTS=${*:-fling px-nl px-tryit px-meas px-v10 px-v9f cnt-v10 cnt-n cnt-meas cnt-1b2e cnt-647c}
 hold() { # hold <part> <doing> <cmd...>
   P=$1; D=$2; shift 2
-  node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner "$OWNER" --doing "v10 parity: $D (counts and pixels only)" -- "$@" > out/v10/chrome-$P.log 2>&1
+  node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds ${MAXS:-300} --owner "$OWNER" --doing "v10 parity: $D (counts and pixels only)" -- "$@" > out/v10/chrome-$P.log 2>&1
   echo "$P EXIT $?" | tee -a out/v10/chrome-$P.log
 }
 pxjson() { sed -n 's/^wrote \(.*px\.json\)$/\1/p' out/v10/chrome-$1.log | tail -1; }

@@ -173,6 +173,17 @@ rev 7d and U2 work on the same morph-scroll machinery (code reading, OBSERVED), 
 | 1 | post: 30,315 device px |
 | 2 | post: 121 device px; up0.8: 18; up0.95: 170 |
 
+**A/A on v10's V itself** (review-v10 request), with A = V = out/v10/snap-…/V:
+
+| run | result |
+|---|---|
+| 1 (full, 20 stops) | identical at all 20 stops (NLREGION PASS) |
+| 2 (`px-split.sh`, group g4 only, 180 s hold) | pre, up0, up0.99, up1, dn0.5, dn0.1, dn0 identical; post 32 device px, nav bar (NLREGION FAIL: 1 stop) |
+
+So on identical bytes dn0.5 was 0 px in both runs. The 2 px dn0.5 residue against the Try-it build is **not**
+reproduced by an A/A at dn0.5 itself. What backs it is the general size of A/A residues at other stops (Try-it A/A:
+18 px at up0.8, 170 px at up0.95) and T2. post differs on identical bytes in 3 of 4 A/A runs.
+
 So the post stop is never quiet: nav bar and price, over 1.3 % A/A in every run. Small consistent residues also appear
 at other stops with identical bytes on both sides. The residues in the table above are within that noise. The cause is
 OBSERVED only: post-close animations, and sub-pixel anti-aliasing at the nav bar.
@@ -202,8 +213,16 @@ below) are logged as OBSERVED, cause not traced, and do not block.
 
 - **The stack does the same on both bases.** v10 pre-nolift = the measured build, and main = v9-final, within a few
   raster tasks.
-- **nolift costs a little paint.** restOpen goes from 10 to 15 paints (+5.8M px), and other phases gain 0 to +4 paints.
-  OBSERVED; the cause is not traced. It is still far below main's 122 paints in restOpen.
+- **Nolift's apparent paint cost did not repeat.** The first run gave restOpen 15 paints for v10 vs 10 for pre-nolift.
+  The repeat (review-v10 request, 180 s holds) gave the reverse:
+
+  | build | restOpen paints, run 1 | restOpen paints, run 2 |
+  |---|---|---|
+  | v10 | 15 (20.9M px) | 10 (15.1M px) |
+  | pre-nolift | 10 (15.1M px) | 16 (18.0M px) |
+
+  The other phases are within ±2 paints between runs. So the +5 is run-to-run noise in restOpen (10-16 paints), not a
+  nolift cost (OBSERVED). Either way it is far below main's 122.
 - #platform opacity sample (rev 3's guard): 0 frames at or above 1 in all five builds.
 
 ### Simulator: pending
