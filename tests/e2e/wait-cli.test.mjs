@@ -108,9 +108,26 @@ test('wait phone-temp: MET at once when cool, TIMEOUT with the last reading, UNA
   assert.equal(calls(), 2, 'the check at the 1 s deadline reuses the first read (30 s floor)');
   for (const r of [m, t]) assert.doesNotMatch(r.out, /FAKESERIAL|Serial|192\.168\./, 'no device ids or LAN addresses');
 
-  const u = node(WAIT, ['phone-temp', '--below', '38'], { env: { ...env, FW_IDEVICEDIAGNOSTICS: join(state, 'no-such-idevicediagnostics') } });
+  // I-223: a failed read asks usbmux ($FW_IDEVICE_ID, the phone of $FW_WDA_HOME/config.json); never the host's own
+  // Stand-ins that start fast (a fresh script's first exec costs ~0.5 s on macOS: "after 1 s"): /bin/echo prints one
+  // line ("-l"), i.e. one USB device, which counts as the phone when no udid is configured; /usr/bin/true prints none.
+  const noCfg = join(state, 'wda-none'), withCfg = join(state, 'wda');
+  mkdirSync(noCfg, { recursive: true });
+  mkdirSync(withCfg, { recursive: true });
+  writeFileSync(join(withCfg, 'config.json'), JSON.stringify({ udid: '00008130-0011223344556677' }));
+  const u = node(WAIT, ['phone-temp', '--below', '38'], { env: { ...env, FW_WDA_HOME: noCfg, FW_IDEVICE_ID: '/bin/echo', FW_IDEVICEDIAGNOSTICS: join(state, 'no-such-idevicediagnostics') } });
   assert.equal(u.code, 1, u.out);
-  assert.equal(u.stdout, 'UNAVAILABLE phone-temp: battery temperature unavailable (idevicediagnostics: ENOENT) (after 0 s)\n');
+  assert.equal(u.stdout, 'UNAVAILABLE phone-temp: battery temperature unavailable (idevicediagnostics: ENOENT) (after 0 s)\n', 'on usbmux: as before');
+
+  // I-223: the phone is not on usbmux -> UNAVAILABLE (exit 1, as before) after --usb-wait, naming the re-plug; no ids
+  const n = node(WAIT, ['phone-temp', '--below', '38', '--usb-wait', '1'], { env: { ...env, FW_WDA_HOME: withCfg, FW_IDEVICE_ID: '/usr/bin/true', FW_IDEVICEDIAGNOSTICS: '/usr/bin/false' } });
+  assert.equal(n.code, 1, n.out);
+  assert.match(n.stdout, /^UNAVAILABLE phone-temp: battery temperature unavailable \(idevicediagnostics exit 1\): the iPhone is not on USB for usbmux \(idevice_id -l lists 0 devices, not this one, for 1 s\); re-plug the cable \(phone unlocked\) \(after [12] s\)\n$/);
+  assert.doesNotMatch(n.out, /00008130/, 'no device ids');
+  const bad = node(WAIT, ['phone-temp', '--below', '38', '--usb-wait', '999'], { env: { ...env, ...iddEnv } });
+  assert.equal(bad.code, 1, bad.out);
+  assert.match(bad.stderr, /--usb-wait must be a number of seconds from 0 to 120/);
+  assert.equal(bad.stdout, '');
 
   const before = calls();
   for (const args of [['phone-temp'], ['phone-temp', '--below', 'hot'], ['phone-temp', '--below', '38', '--runs-dir', state], ['phone-temp', '--below', 'auto', '--driver', 'X'], ['phone-temp', '--below', '38', '--driver', 'M'], ['phone-temp', '--below', '38', '--every', '10'], ['phone-temp', '--below', '38', '--every', 'x'], ['phone-temp', '--below', '38', '--timeout', 'soon']]) {

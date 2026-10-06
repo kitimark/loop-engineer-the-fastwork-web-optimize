@@ -341,6 +341,53 @@ test('phoneTempCondition: no first reading -> never (unavailable) at once; later
   assert.equal(r.never, 'battery temperature unavailable (no Temperature in the battery reading)');
 });
 
+// I-223: on 2026-10-06 the iPhone dropped off usbmux at 13:33:46Z (idevicediagnostics exit 1, idevice_id -l: 0) and
+// phone-temp said UNAVAILABLE only at 13:35:46Z, after 3 failed reads at 60 s, naming no cause. A failed read now asks
+// usbmux (idevice_id -l) at once: not listed for --usb-wait s -> UNAVAILABLE with "not on USB ... re-plug".
+/** A fake usbmux list: one item per call, the number of listed devices (true/false: this phone listed or not). */
+function fakeUsb(seq) {
+  const calls = [];
+  const usb = () => { const v = seq[Math.min(calls.length, seq.length - 1)]; calls.push(v); return v === null ? null : { count: v ? 1 : 0, listed: !!v }; };
+  return { usb, calls };
+}
+test('I-223 phoneTempCondition: a failed read with the iPhone off usbmux ends at the first failed read plus --usb-wait, naming re-plug', async () => {
+  let c = clock();
+  let b = fakeBattery([38.1, 38.2, 'idevicediagnostics exit 1']);
+  let u = fakeUsb([false]);
+  let r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now, usb: u.usb, usbWaitMs: 20000, usbPollMs: 2000, sleep: c.sleep }), c);
+  assert.equal(r.result, 'never', 'no device on usbmux: no 2 more minutes of failed reads');
+  assert.equal(r.never, 'battery temperature unavailable (idevicediagnostics exit 1): the iPhone is not on USB for usbmux (idevice_id -l lists 0 devices, not this one, for 20 s); re-plug the cable (phone unlocked)');
+  assert.equal(b.calls.length, 3);
+  assert.equal(u.calls.length, 11, 'usbmux asked at once and every 2 s for 20 s');
+  assert.equal(r.waitedSec, 120 + 20, 'the third read (120 s) plus the 20 s usb wait, not 240 s');
+
+  // the first read already fails (the 13:35:46Z second wait): same verdict, same cause
+  c = clock();
+  r = await coolPoll(phoneTempCondition(38, { read: fakeBattery(['idevicediagnostics exit 1']).read, now: c.now, usb: fakeUsb([false]).usb, usbWaitMs: 4000, usbPollMs: 2000, sleep: c.sleep }), c);
+  assert.equal(r.result, 'never');
+  assert.match(r.never, /not on USB for usbmux \(idevice_id -l lists 0 devices, not this one, for 4 s\); re-plug the cable/);
+
+  // usbmux lists it again within --usb-wait (a re-enumeration): the read is retried once and the wait goes on
+  c = clock();
+  b = fakeBattery([38.5, 'idevicediagnostics exit 1', 37.6]);
+  u = fakeUsb([false, false, true]);
+  const seen = [];
+  r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now, usb: u.usb, usbWaitMs: 20000, usbPollMs: 2000, sleep: c.sleep }), c, { onChange: (s) => seen.push(s) });
+  assert.equal(r.result, 'met');
+  assert.deepEqual(seen, ['read 1: 38.5 °C > 38.0 °C', 'read 2: 37.6 °C <= 38.0 °C'], 'the retried read counts as read 2');
+
+  // usbmux lists the phone (or cannot be asked: no idevice_id): the old rule, 3 failed reads in a row
+  for (const seq of [[true], [null]]) {
+    c = clock();
+    b = fakeBattery([39, 'gone', 'gone', 'gone']);
+    r = await coolPoll(phoneTempCondition(38, { read: b.read, now: c.now, usb: fakeUsb(seq).usb, sleep: c.sleep }), c);
+    assert.equal(r.result, 'never', String(seq));
+    assert.equal(r.never, 'battery temperature unavailable (gone; 3 failed reads in a row)', String(seq));
+    assert.equal(r.waitedSec, 180, String(seq));
+  }
+  assert.equal(PHONE_TEMP.usbWaitSec, 20, 'default --usb-wait: the same 20 s as wda ensure (I-220)');
+});
+
 // ---- phone-temp --below auto (incident I-047): the last passing heat sentinel today minus 0.5 degC, 38 if none -------
 
 /** A run record in `dir` like `iphone.mjs run` writes (meta first, a frame list), file time = its run time. */

@@ -202,7 +202,7 @@ export function gitCondition({ cwd = process.cwd(), ref = 'main', contains, path
  * `wait.mjs phone-temp` defaults: one battery read per minute (floor 30 s: protocol §5.5 keeps phone polling
  * gentle), at most 10 min of cooling, and the wait gives up after 3 failed reads in a row.
  */
-export const PHONE_TEMP = Object.freeze({ everySec: 60, minEverySec: 30, timeoutSec: 600, maxFailedReads: 3, fallbackC: 38, autoMarginC: 0.5, morphCapC: 39.5 });
+export const PHONE_TEMP = Object.freeze({ everySec: 60, minEverySec: 30, timeoutSec: 600, maxFailedReads: 3, fallbackC: 38, autoMarginC: 0.5, morphCapC: 39.5, usbWaitSec: 20, usbPollSec: 2 });
 
 /** A temperature as text: 38 -> "38.0", 37.4 -> "37.4", 38.59 -> "38.59" (the battery reports 1/100 degC). */
 export const fmtC = (x) => Number(x).toFixed(2).replace(/(\.\d)0$/, '$1');
@@ -279,17 +279,34 @@ export function autoBelowC(dirs, { driver = null, ...opts } = {}) {
  * is its own state ("read N: X °C > Y °C"), so the wait logs one line per read. A check sooner than `minGapMs`
  * after the last read reuses it (pollUntil cuts its last pause to the deadline). No first reading, or
  * `maxFailed` failed reads in a row: never (the CLI prints UNAVAILABLE, exit 1).
+ * I-223: `usb()` (optional) asks usbmux for the phone, {count, listed} or null when it can't be asked (wda-runner's
+ * usbmuxList, `idevice_id -l`). After a failed read it is asked at once and every `usbPollMs` for `usbWaitMs`: still not
+ * listed -> never at once, naming the cause and the re-plug (no more 3 reads at 60 s); listed again (a re-enumeration)
+ * -> the read is retried once. Listed all along, or no answer: the rule above.
  */
-export function phoneTempCondition(belowC, { read, now = Date.now, minGapMs = PHONE_TEMP.minEverySec * 1000, maxFailed = PHONE_TEMP.maxFailedReads } = {}) {
+export function phoneTempCondition(belowC, { read, now = Date.now, minGapMs = PHONE_TEMP.minEverySec * 1000, maxFailed = PHONE_TEMP.maxFailedReads,
+  usb = null, usbWaitMs = PHONE_TEMP.usbWaitSec * 1000, usbPollMs = PHONE_TEMP.usbPollSec * 1000, sleep = sleepMs } = {}) {
   let n = 0, okReads = 0, failed = 0, lastAt = null, last = null;
   const limit = fmtC(belowC);
-  return () => {
+  const readOnce = () => { try { return read(); } catch (e) { return { error: e.message || String(e) }; } };
+  const tempOf = (b) => (b && !b.error && typeof b.temperatureC === 'number' && Number.isFinite(b.temperatureC) ? b.temperatureC : null);
+  return async () => {
     if (last && now() - lastAt < minGapMs) return last;
     lastAt = now();
     n++;
-    let b;
-    try { b = read(); } catch (e) { b = { error: e.message || String(e) }; }
-    const t = b && !b.error && typeof b.temperatureC === 'number' && Number.isFinite(b.temperatureC) ? b.temperatureC : null;
+    let b = readOnce();
+    let t = tempOf(b);
+    if (t === null && usb) {
+      const end = now() + usbWaitMs;
+      let u = usb(), waited = false;
+      while (u && !u.listed && now() < end) { await sleep(usbPollMs); waited = true; u = usb(); }
+      if (u && !u.listed) {
+        const why = b?.error || 'no Temperature in the battery reading';
+        last = { met: false, state: `read ${n}: failed (${why}; not on USB)`, never: `battery temperature unavailable (${why}): the iPhone is not on USB for usbmux (idevice_id -l lists ${u.count} device${u.count === 1 ? '' : 's'}, not this one, for ${Math.round(usbWaitMs / 1000)} s); re-plug the cable (phone unlocked)` };
+        return last;
+      }
+      if (u?.listed && waited) { b = readOnce(); t = tempOf(b); } // back on usbmux after a wait: read once more
+    }
     if (t === null) {
       failed++;
       const why = b?.error || 'no Temperature in the battery reading';

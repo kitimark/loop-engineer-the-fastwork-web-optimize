@@ -265,15 +265,15 @@ const REASON = {
 export function forwardWaitSec({ base = 30, load1 = loadavg()[0], cpus: n = cpus().length } = {}) {
   return load1 > n ? base * 2 : base;
 }
-/** `idevice_id -l` output: how many USB devices usbmux lists, and whether `udid` is one. */
+/** `idevice_id -l` output: how many USB devices usbmux lists, and whether `udid` is one (no udid configured: any, I-223). */
 export function parseUsbList(stdout, udid) {
   const ids = String(stdout || '').split('\n').map((s) => s.trim()).filter(Boolean);
-  return { count: ids.length, listed: ids.includes(udid) };
+  return { count: ids.length, listed: udid ? ids.includes(udid) : ids.length > 0 };
 }
 /** A log line without IPv4 addresses but loopback (the runner prints the phone's LAN address in ServerURLHere; Hard rule 12). */
 export const scrubAddr = (s) => String(s).replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (a) => (a === '127.0.0.1' ? a : '<addr>'));
 /** usbmux's USB device list now: {count, listed}, or null when idevice_id is missing or fails (no verdict). */
-function usbList(udid) {
+export function usbList(udid = readConfig().udid) {
   const r = spawnSync(exe('idevice_id', 'FW_IDEVICE_ID'), ['-l'], { encoding: 'utf8', timeout: 10000 });
   return r.status === 0 ? parseUsbList(r.stdout, udid) : null;
 }

@@ -150,4 +150,7 @@ test('I-220: forwardWaitSec waits longer for the USB forward on a loaded Mac; pa
   assert.deepEqual(parseUsbList('00008130-0011223344556677\n', '00008130-0011223344556677'), { count: 1, listed: true });
   assert.deepEqual(parseUsbList('', '00008130-0011223344556677'), { count: 0, listed: false });
   assert.deepEqual(parseUsbList(' 00008110-00AABBCCDDEEFF00 \n\n', '00008130-0011223344556677'), { count: 1, listed: false });
+  // I-223: no WDA config yet (wait.mjs phone-temp asks usbmux too): any USB device counts
+  assert.deepEqual(parseUsbList('00008110-00AABBCCDDEEFF00\n', undefined), { count: 1, listed: true });
+  assert.deepEqual(parseUsbList('', undefined), { count: 0, listed: false });
 });

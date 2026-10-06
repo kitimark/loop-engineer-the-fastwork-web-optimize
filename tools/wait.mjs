@@ -22,14 +22,17 @@
 //        # and shows on the status board next to the wait.
 //   Any wait takes --reason "<plain words>" too (I-060): the board and the progress page show a wait whose own text is
 //   a path, regex or pid by its reason ("waiting: the A1 phone block to finish"), else by its kind, never the path.
-//   node tools/wait.mjs phone-temp --below <°C>|auto [--runs-dir out/iphone] [--driver S|W|M] [--every 60] [--timeout 600]
+//   node tools/wait.mjs phone-temp --below <°C>|auto [--runs-dir out/iphone] [--driver S|W|M] [--every 60] [--timeout 600] [--usb-wait 20]
 //        # run by the phone's holder (inside `lock.mjs run iphone`, or --owner holding it) it marks a cooling use of the
 //        # hold for the phone ledger and the idle alarm (I-168)
 //        # phone cooling between blocks (protocol v2 §5.3, user T-009): the iPhone's battery temperature
 //        # (AppleSmartBattery via tools/lib/iphone-run.mjs batteryInfo, over USB) is at or below <°C>. One read
 //        # per --every s (default 60, floor 30), one stderr line per read; MET `phone at X °C <= Y °C`; TIMEOUT
 //        # after --timeout (default 600 = the 10 min cap: go on, the sentinel decides); UNAVAILABLE exit 1 when
-//        # no reading comes (no device, no libimobiledevice) or 3 reads in a row fail. --below auto (I-047): the
+//        # no reading comes (no device, no libimobiledevice) or 3 reads in a row fail. I-223: after a failed read it
+//        # asks usbmux (`idevice_id -l`, the WDA config's phone) at once and for --usb-wait s (default 20, 0-120): still
+//        # not listed -> UNAVAILABLE at once, "…: the iPhone is not on USB for usbmux (…); re-plug the cable (phone
+//        # unlocked)"; listed again -> one more read. --below auto (I-047): the
 //        # battery temperature (end of run) of the last passing heat sentinel today minus 0.5 °C, 38 when there
 //        # is none; sentinels are the run records with meta.sentinel.pass true (`iphone.mjs run`) in --runs-dir
 //        # (default out/iphone of this checkout; comma-separated for several); one stderr line names the source.
@@ -60,7 +63,7 @@ import { exitOnHelp } from './lib/help.mjs';
 
 exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
-const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every', '--runs-dir', '--driver', '--owner', '--as', '--reason'];
+const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every', '--runs-dir', '--driver', '--owner', '--as', '--reason', '--usb-wait'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, ...pos] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
@@ -127,7 +130,7 @@ async function build() {
     return { what: `time ${new Date(at).toISOString()}`, plain: `a fixed timer until ${new Date(at).toISOString().slice(11, 16)}Z`, reason, check: timeCondition(at), defTimeout: Math.max(0, (at - Date.now()) / 1000) + 5, maxMs: 30000 };
   }
   if (cmd === 'phone-temp') {
-    if (opt('below') === undefined) throw new Error('usage: node tools/wait.mjs phone-temp --below <°C>|auto [--runs-dir out/iphone] [--driver S|W|M] [--every 60] [--timeout 600] (see the header of tools/wait.mjs)');
+    if (opt('below') === undefined) throw new Error('usage: node tools/wait.mjs phone-temp --below <°C>|auto [--runs-dir out/iphone] [--driver S|W|M] [--every 60] [--timeout 600] [--usb-wait 20] (see the header of tools/wait.mjs)');
     let belowC = parseBelowC(opt('below'));
     const every = opt('every') !== undefined ? parseSec(opt('every')) : PHONE_TEMP.everySec;
     if (!(every >= PHONE_TEMP.minEverySec)) throw new Error(`--every must be a number of seconds >= ${PHONE_TEMP.minEverySec} (keep phone polling gentle, protocol §5.5), got ${opt('every')}`);
@@ -135,6 +138,10 @@ async function build() {
     const driver = opt('driver') === undefined ? null : String(opt('driver')).toUpperCase();
     if (driver !== null && !['S', 'W', 'M'].includes(driver)) throw new Error(`--driver is the next block's driver: S, W or M (got ${opt('driver')})`);
     const { batteryInfo } = await import('./lib/iphone-run.mjs'); // only here: the other waits don't load the phone code
+    const usbWait = opt('usb-wait') !== undefined ? parseSec(opt('usb-wait')) : PHONE_TEMP.usbWaitSec;
+    if (!(usbWait >= 0 && usbWait <= 120)) throw new Error(`--usb-wait must be a number of seconds from 0 to 120, got ${opt('usb-wait')}`);
+    const { usbList } = await import('./lib/wda-runner.mjs'); // I-223: a failed read asks usbmux (idevice_id -l) for the phone
+    const usbOpts = { usb: () => usbList(), usbWaitMs: usbWait * 1000 };
     if (belowC === 'auto') {
       const { REPO } = await import('./lib/paths.mjs');
       const dirs = opt('runs-dir') !== undefined ? String(opt('runs-dir')).split(',').filter(Boolean).map((d) => resolve(d)) : [join(REPO, 'out', 'iphone')];
@@ -145,9 +152,9 @@ async function build() {
         ? `auto: --below ${fmtC(belowC)} °C = ${fmtC(a.source.temperatureC)} °C (battery after the last passing heat sentinel today, ${rel(a.source.file)}, ${new Date(a.source.at).toISOString().slice(11, 19)}Z) - ${fmtC(PHONE_TEMP.autoMarginC)}`
         : `auto: --below ${fmtC(belowC)} °C (no passing heat sentinel with a battery reading today in ${dirs.map(rel).join(', ')}; ${a.scanned} record(s) from today read)`);
       if (a.capped) console.error(`auto: --driver M: capped at ${fmtC(belowC)} °C (M blocks start at or below ${fmtC(PHONE_TEMP.morphCapC)} °C)`);
-      return { what: 'phone-temp --below auto', plain: `the phone to cool to ${fmtC(belowC)} °C or below (auto)`, check: phoneTempCondition(belowC, { read: batteryInfo }), defTimeout: PHONE_TEMP.timeoutSec, minMs: every * 1000, maxMs: every * 1000, never: { word: 'UNAVAILABLE', exit: EXIT.usage } };
+      return { what: 'phone-temp --below auto', plain: `the phone to cool to ${fmtC(belowC)} °C or below (auto)`, check: phoneTempCondition(belowC, { read: batteryInfo, ...usbOpts }), defTimeout: PHONE_TEMP.timeoutSec, minMs: every * 1000, maxMs: every * 1000, never: { word: 'UNAVAILABLE', exit: EXIT.usage } };
     }
-    return { what: 'phone-temp', plain: `the phone to cool to ${fmtC(belowC)} °C or below`, check: phoneTempCondition(belowC, { read: batteryInfo }), defTimeout: PHONE_TEMP.timeoutSec, minMs: every * 1000, maxMs: every * 1000, never: { word: 'UNAVAILABLE', exit: EXIT.usage } };
+    return { what: 'phone-temp', plain: `the phone to cool to ${fmtC(belowC)} °C or below`, check: phoneTempCondition(belowC, { read: batteryInfo, ...usbOpts }), defTimeout: PHONE_TEMP.timeoutSec, minMs: every * 1000, maxMs: every * 1000, never: { word: 'UNAVAILABLE', exit: EXIT.usage } };
   }
   throw new Error(cmd ? `unknown wait "${cmd}": file, serve, url, pid, git, time or phone-temp (see the header of tools/wait.mjs)` : 'usage: node tools/wait.mjs file|serve|url|pid|git|time|phone-temp … [--timeout 3600] (see the header of tools/wait.mjs)');
 }
