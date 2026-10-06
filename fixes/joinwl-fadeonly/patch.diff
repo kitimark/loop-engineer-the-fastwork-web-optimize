@@ -1,1086 +1,3 @@
-# fastwork mirror fix: joinwl-fadeonly
-# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
-# rebuild the overlay with: node tools/fix.mjs apply joinwl-fadeonly
-# contains excerpts of Fastwork's code: local branches only, never push
-# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
-# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 4606120cf3925f872ebb1a7a5e7731ad74d4d190781ee7952cf4440ed18acff5
-diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
---- a/_app/immutable/assets/2.gBuqKVzi.css
-+++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -38,7 +38,11 @@
-   width: 100%;
-   min-height: 100%;
-   transform: scale(var(--commission-shrink-scale));
--  transform-origin: 50% 0;
-+  /* double-drive (T-157): the origin is a weight the script writes (0 = top for the enter shrink, 1 = bottom for the
-+     exit shrink, in between only while both shrinks are easing). The class switch below flipped it while the eased
-+     scale was still ~0.96 when scrolling back up, a 20-27 px one-frame jump; at rest the weight equals the class
-+     state (see the script), and without the script it is 0, the old default. */
-+  transform-origin: 50% calc(var(--fw-co-w, 0) * 100%);
-   will-change: transform, border-radius;
-   background: #fff;
-   flex: 1;
-@@ -46,9 +50,8 @@
-   position: relative;
-   overflow: clip;
- }
--.commission.shrinking:not(.entering) .commission-card {
--  transform-origin: 50% 100%;
--}
-+/* double-drive (T-157): `.commission.shrinking:not(.entering) .commission-card { transform-origin: 50% 100% }` is now
-+   the --fw-co-w weight on .commission-card above. */
- .commission-runway {
-   background: #fff;
-   width: 100%;
-@@ -564,9 +567,16 @@
-   height: 12px;
-   overflow: hidden;
- }
-+/* layout-animations: the bar keeps its full width; the count-up writes --fee-progress (0-1) and the
-+   fill is revealed with clip-path (same pill shape: inset round clamps like border-radius) while the
-+   gradient is sized to the visible part, as it was sized to the old width. min 4px = old padding box */
- .fee-progress > span {
-+  --fee-progress-w: max(4px, calc(var(--fee-progress, 0) * 100%));
-   box-sizing: border-box;
--  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%);
-+  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%) 0 0 / var(--fee-progress-w) 100%
-+    no-repeat;
-+  clip-path: inset(0 calc(100% - var(--fee-progress-w)) 0 0 round 999px);
-+  width: 100% !important;
-   border-radius: 999px;
-   flex-direction: column;
-   height: 100%;
-@@ -1227,9 +1237,8 @@
-   position: relative;
-   overflow: visible;
- }
--.script-accent.is-drawing-in.svelte-1fn2go6 {
--  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
--}
-+/* layout-animations: no width transition (0.9s of h1 layout per cycle); the width now changes at once
-+   and the neighbouring words slide with a transform animation (JS HE, same duration and easing) */
- .sizer.svelte-1fn2go6 {
-   visibility: hidden;
-   width: 100%;
-@@ -1289,14 +1298,14 @@
-   animation: 0.45s forwards svelte-1fn2go6-fill-out;
- }
- .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
--  animation: 0.6s step-end infinite svelte-1fn2go6-idle-0;
-+  animation: 0.6s linear infinite fw-acc-idle-0;
- }
- .is-idle.svelte-1fn2go6 .is-idle-frame-1:where(.svelte-1fn2go6) {
--  animation: 0.6s step-end infinite svelte-1fn2go6-idle-1;
-+  animation: 0.6s linear infinite fw-acc-idle-1;
-   transform: translate(0.25%, 0.3%);
- }
- .is-idle.svelte-1fn2go6 .is-idle-frame-2:where(.svelte-1fn2go6) {
--  animation: 0.6s step-end infinite svelte-1fn2go6-idle-2;
-+  animation: 0.6s linear infinite fw-acc-idle-2;
-   transform: translate(-0.2%, 0.35%);
- }
- :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
-@@ -1309,6 +1318,18 @@
-   .is-idle-frame-0.svelte-1fn2go6 {
-   opacity: 1;
- }
-+/* accent-ca: (1) the idle boil runs as keyword-linear opacity animations (WebKit iOS 26 never hands a steps()
-+   timing to Core Animation, F-048/F-065, so step-end ticked main-thread style and an opacity-flip Layout per step,
-+   F-075). The fw-acc-idle-* keyframes switch at exactly the original step-end instants (33.33 %, 66.66 %, end of
-+   cycle); each jump is a linear ramp of 1e-6 of the 0.6 s cycle (0.6 us) that ends on the original instant, so
-+   every frame is the original's.
-+   (2) While drawing, only boil frame 0 is visible (frames 1-2 are opacity 0, rule above); their stroke and fill
-+   animations are dropped (a stroke-dashoffset change is an SVG Layout every frame on WebKit, F-097). */
-+:is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
-+  .is-idle-frame:not(.is-idle-frame-0).svelte-1fn2go6
-+  :is(.accent-path, .accent-fill) {
-+  animation: none;
-+}
- @keyframes svelte-1fn2go6-stroke-in {
-   0% {
-     stroke-dashoffset: 1px;
-@@ -1335,10 +1356,44 @@
-   }
- }
- @keyframes svelte-1fn2go6-fill-out {
-+  to {
-+    opacity: 0;
-+  }
-+}
-+@keyframes fw-acc-idle-0 {
-+  0%,
-+  33.3299% {
-+    opacity: 1;
-+  }
-+  33.33%,
-   to {
-     opacity: 0;
-   }
- }
-+@keyframes fw-acc-idle-1 {
-+  0%,
-+  33.3299% {
-+    opacity: 0;
-+  }
-+  33.33%,
-+  66.6599% {
-+    opacity: 1;
-+  }
-+  66.66%,
-+  to {
-+    opacity: 0;
-+  }
-+}
-+@keyframes fw-acc-idle-2 {
-+  0%,
-+  66.6599% {
-+    opacity: 0;
-+  }
-+  66.66%,
-+  to {
-+    opacity: 1;
-+  }
-+}
- @keyframes svelte-1fn2go6-idle-0 {
-   0%,
-   33.32% {
-@@ -1412,6 +1467,33 @@
-   display: flex;
-   position: absolute;
-   inset: 0;
-+}
-+/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; inside it an uncomposited wrapper of
-+   the same box at top -m*c, and each cell is a face's box placed at top k*c in the wrapper (both set by the script),
-+   its glyph centred the same way */
-+.strip.svelte-1quva9c {
-+  will-change: transform;
-+  display: block;
-+  position: absolute;
-+  inset: 0;
-+}
-+.cdwrap.svelte-1quva9c {
-+  display: block;
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  right: 0;
-+  height: 100%;
-+}
-+.cell.svelte-1quva9c {
-+  justify-content: center;
-+  align-items: center;
-+  display: flex;
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  right: 0;
-+  height: 100%;
- }
- .number.svelte-1jfovfa {
-   font-variant-numeric: tabular-nums;
-@@ -1519,6 +1601,31 @@
-   syntax: "<angle>";
-   inherits: false;
-   initial-value: 0deg;
-+}
-+/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
-+   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
-+   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
-+@property --morph-fade {
-+  syntax: "<number>";
-+  inherits: false;
-+  initial-value: 1;
-+}
-+/* [scene-scope R4b] --morph is written inline on the nav header (JS 13614) and read by the header and some of its
-+   descendants. Registered non-inheriting, a write restyles only the header plus the elements that take it with an
-+   explicit `inherit` (the consumers and the wrappers between them and the header), not the whole nav subtree. */
-+@property --morph {
-+  syntax: "<number>";
-+  inherits: false;
-+  initial-value: 0;
-+}
-+.start-selling-top-nav-bar,
-+.start-selling-top-nav-logo,
-+.start-selling-top-nav-actions,
-+.start-selling-top-nav-btn.is-earn,
-+.start-selling-morph,
-+.start-selling-morph-pill,
-+.start-selling-morph-panel {
-+  --morph: inherit;
- }
- .hero-track.svelte-1p2vpne {
-   background: #fff;
-@@ -2122,7 +2229,137 @@
-     top: 83.3333%;
-     left: auto;
-     right: -45px;
-+  }
-+}
-+/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
-+   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
-+   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
-+   Only where the JS switched to CSS mode: on WebKit (GestureEvent) with scroll-driven animations at the
-+   phone layout (width <= 600px), once the entrance is over (d() in 2.DyWL8TcE.js), the track gets .he-on
-+   (parked: the cue's bob moves to .he-bob, the exit is the baseline's own rules from the inline
-+   --exit-opacity the JS writes at rest), and .he-css while the page scrolls (live: these animations; the JS
-+   writes nothing per frame). Parking at rest matters because WebKit invalidates the style of every element
-+   with a relevant scroll-driven animation on every rendering update, moving or not (WebKit source, see the
-+   JS comment). Wider layouts (desktop orbit cards: desktop
-+   and iPad Safari, a landscape phone) keep the baseline writer: there WebKit drew the animated tilted cards
-+   up to 108 levels off the baseline's static draw of the same computed values (width 980, Simulator,
-+   OBSERVED; residual R5). Every other engine keeps the baseline writer and none of these rules apply.
-+   Every exit animation starts at contain 0.05% (s) with fill forwards, so at rest at the top of the page
-+   none is active and the hero is drawn exactly as in the baseline (the baseline's own rules: blur(0px) on
-+   the copy and the cue, no filter on the float). For the first frame after .he-css arrives (the new
-+   animations are pending) the JS writes the baseline's inline --exit-opacity, so the base values are the
-+   exited ones there too; the JS then leaves it (stale) while live, so every live property that reads it is
-+   animated (cards, copy, float) or, on the cue, replaced by its value at --exit-opacity 1 (the float carries
-+   the cue's exit, and its base values carry it for the pending frame). The
-+   `from` keyframes are the baseline value at s (a + (b - a) * s), so inside the range the value is the
-+   baseline's a + (b - a) * p.
-+   The copy's shift is a separate transform animation, present only while live (a transform animation on
-+   .hero-copy, even inactive, made WebKit repaint the title's script accent about 1.4x as often; Simulator,
-+   OBSERVED).
-+   The scroll cue's own entrance animates --copy-in (in its opacity and transform), so its exit
-+   (fade, shift, blur) runs on its only child, .scroll-float (blur on the cue itself over a composited
-+   child drew a wider halo in WebKit; while live the cue draws blur(0px), as the baseline rule at
-+   --exit-opacity 1), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
-+   around the float's two children in CSS mode (one layer for both, as the baseline's float): an element
-+   with both the infinite bob and scroll-driven animations made WebKit recalculate style every frame at
-+   rest, and the bob on the two children separately drew the cue 1-2 levels off (Simulator, OBSERVED).
-+   opacity/transform/translate animations are separate from the blur ones (compositable); past the end
-+   the blur keeps blur(18px) like the baseline, so no filter change when the track reaches its end
-+   (#people entry). */
-+@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
-+  @keyframes svelte-1p2vpne-hero-exit-card {
-+    from {
-+      opacity: 0.999825;
-+      translate: calc(var(--scatter-x) * 0.0005) calc(var(--scatter-y) * 0.0005);
-+    }
-+    to {
-+      opacity: 0.65;
-+      translate: var(--scatter-x) var(--scatter-y);
-+    }
-+  }
-+  @keyframes svelte-1p2vpne-hero-exit-shift-m {
-+    from {
-+      transform: translate(-50%, -0.004px);
-+    }
-+    to {
-+      transform: translate(-50%, -8px);
-+    }
-+  }
-+  @keyframes svelte-1p2vpne-hero-exit-fade {
-+    from {
-+      opacity: 0.9995;
-+    }
-+    to {
-+      opacity: 0;
-+    }
-+  }
-+  @keyframes svelte-1p2vpne-hero-exit-fade-up {
-+    from {
-+      opacity: 0.9995;
-+      translate: 0px -0.005px;
-+    }
-+    to {
-+      opacity: 0;
-+      translate: 0px -10px;
-+    }
-+  }
-+  @keyframes svelte-1p2vpne-hero-exit-blur {
-+    from {
-+      filter: blur(0.009px);
-+    }
-+    to {
-+      filter: blur(18px);
-+    }
-   }
-+  .he-bob.svelte-1p2vpne {
-+    flex-direction: column;
-+    align-items: center;
-+    display: flex;
-+  }
-+  @media (prefers-reduced-motion: no-preference) {
-+    .hero-track.he-css.svelte-1p2vpne {
-+      view-timeline-name: --hero-exit;
-+      view-timeline-axis: block;
-+    }
-+    @media (width<=600px) {
-+      .hero-track.he-on .scroll-float.svelte-1p2vpne {
-+        animation: none;
-+      }
-+      .hero-track.he-on .scroll-float.svelte-1p2vpne > .he-bob.svelte-1p2vpne {
-+        animation: 2.2s ease-in-out infinite svelte-1p2vpne-scroll-float;
-+      }
-+      .hero-track.he-css .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
-+        animation: 1ms linear forwards svelte-1p2vpne-hero-exit-card;
-+        animation-timeline: --hero-exit;
-+        animation-range: contain 0.05% contain 100%;
-+      }
-+      .hero-track.he-css .hero-copy.svelte-1p2vpne {
-+        animation:
-+          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
-+          1ms linear forwards svelte-1p2vpne-hero-exit-shift-m;
-+        animation-timeline: --hero-exit, --hero-exit;
-+        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
-+      }
-+      .hero-track.he-css .scroll-cue.svelte-1p2vpne {
-+        opacity: var(--copy-in);
-+        filter: blur(0px);
-+        transform: translate(-50%, calc((1 - var(--copy-in)) * 12px));
-+      }
-+      .hero-track.he-css .scroll-float.svelte-1p2vpne {
-+        opacity: var(--exit-opacity);
-+        filter: blur(calc(var(--exit-scatter) * 18px));
-+        translate: 0px calc(var(--exit-scatter) * -10px);
-+        animation:
-+          1ms linear forwards svelte-1p2vpne-hero-exit-fade-up,
-+          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
-+        animation-timeline: --hero-exit, --hero-exit;
-+        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
-+      }
-+      .start-selling [data-start-selling-scene="paused"] .scroll-float.svelte-1p2vpne > * {
-+        animation-play-state: paused !important;
-+      }
-+    }
-+  }
- }
- @media (prefers-reduced-motion: reduce) {
-   .hero-track.svelte-1p2vpne {
-@@ -2385,6 +2622,10 @@
-   display: flex;
-   position: relative;
-   overflow: clip;
-+  /* double-drive (T-157): the shrink's origin on the card itself, so .is-future-shrinking no longer flips it
-+     (50% 50% <-> 50% 100%) while the card is still scaled; scrolling up fast that flip jumped the card -105/+175/-77 px.
-+     Outside the shrink the card only translates (reveal 48px -> 0) or rests at translateY(0): no visual change. */
-+  transform-origin: 50% 100%;
- }
- .start-selling-future.is-future-shrinking > .start-selling-future-card {
-   transform: scale(var(--future-shrink-scale));
-@@ -2400,22 +2641,50 @@
-     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-     visibility 0s linear 1.6s;
-+  transition:
-+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-+    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-+    visibility 0s linear 1.6s;
-   transform: translateY(48px);
- }
- .start-selling-future.is-visible > .start-selling-future-card {
-   visibility: visible;
--  opacity: 1;
--  filter: none;
-+  /* Fix candidate `re-keep-op` (hero-exit, P3: re-keep HIT): the reveal ends at opacity 0.999 / blur(0px) /
-+     translateY(0) instead of 1 / none / none, so no property crosses its presence boundary at a transition
-+     end. On the phone each such crossing cost one 12-18 ms whole-view Layout at flip + 700 / + 900 / + 1150 ms
-+     (OBSERVED, in our setup). 0.999 over the white card is visually identical. */
-+  opacity: 0.999;
-+  filter: blur(0px);
-+  transform: translateY(0);
-   pointer-events: auto;
-   transition:
-     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
-+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-+  transition:
-+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-+    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
-     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
- }
- .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
-   transform: scale(var(--future-shrink-scale));
-   transform-origin: 50% 100%;
-+  /* double-drive (T-157, the PR-021 move): --future-shrink is already eased per frame by the script, so the 0.9 s
-+     transform transition restarted every frame and the card trailed the scroll by 0.7-1.3 s. While the shrink drives
-+     transform only opacity and filter keep their transitions (the lists truncate to the first two entries: opacity
-+     0.7 s, filter 0.9 s, exactly as above). End values are unchanged. */
-+  transition-property: opacity, filter;
- }
-+/* double-drive (T-157), phones and tablets: the CSS below forces --future-shrink-scale: 1 here (same query), so the
-+   shrink is scale(1), which looks the same as translateY(0). Keeping translateY(0) means the class toggle changes no
-+   computed transform, so the 0.9 s identity transition (scale(1) <-> translateY(0)) no longer starts when the class
-+   goes off; the transition-property rule above already stops the one when it goes on. */
-+@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
-+  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
-+    transform: translateY(0);
-+  }
-+}
- .start-selling-future-header {
-   z-index: 10;
-   text-align: center;
-@@ -2884,21 +3153,62 @@
- }
- .start-selling-avatars.is-carousel img.is-enter {
-   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
-+}
-+/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
-+   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
-+   advance (32px - 8px overlap) with the same easing, via the independent translate property */
-+.start-selling-avatars.is-carousel img.is-exit ~ img {
-+  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
- }
-+.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
-+  animation:
-+    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
-+    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
-+}
-+/* st5: 5 persistent slots. Every slot keeps its own layer for the page's life (no layer gain/loss when the
-+   slide starts or ends); the 5th waits at the pop's start state; .is-sliding (toggled by the rotator) runs the
-+   same keyframes, easings and duration as the keyed version */
-+.start-selling-avatars.is-carousel img {
-+  will-change: transform, translate, opacity;
-+  /* st6 (de-pm-hero's no-flip probe): every slot always has a transform and is never fully opaque, so no
-+     style change ever flips hasTransform() or opacity isOpaque() (WebKit miscDataChangeRequiresLayout) */
-+  transform: scale(1);
-+  opacity: 0.999;
-+}
-+.start-selling-avatars.is-carousel img.st5-next {
-+  opacity: 0;
-+  transform: scale(0.35);
-+}
-+.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
-+  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
-+}
-+.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
-+  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
-+}
-+.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
-+  animation:
-+    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
-+    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
-+}
-+@keyframes avatars-shift {
-+  0% {
-+    translate: 0;
-+  }
-+  to {
-+    translate: -24px;
-+  }
-+}
- @keyframes avatars-exit {
-   0% {
--    opacity: 1;
--    flex-basis: 32px;
--    width: 32px;
--    margin-right: -8px;
-+    opacity: 0.999;
-+    translate: 0;
-+    clip-path: ellipse(16px 16px at 50% 50%);
-     transform: scale(1);
-   }
-   to {
-     opacity: 0;
--    border-width: 0;
--    flex-basis: 0;
--    width: 0;
--    margin-right: 0;
-+    translate: -16px;
-+    clip-path: ellipse(0px 16px at 50% 50%);
-     transform: scale(0.35);
-   }
- }
-@@ -2908,7 +3218,7 @@
-     transform: scale(0.35);
-   }
-   to {
--    opacity: 1;
-+    opacity: 0.999;
-     transform: scale(1);
-   }
- }
-@@ -5390,7 +5700,9 @@
-   box-sizing: border-box;
-   color: #151a23;
-   filter: blur(calc((1 - var(--morph-fade)) * 12px));
--  opacity: var(--morph-fade);
-+  /* [morph-gpu rev 3] never exactly 1: in WebKit (Simulator, OBSERVED) opacity leaving 1 repaints the whole section
-+     on the open's first frame (19 paints, 1.05 Mpx); below 1 the fade only re-composites. 0.9999 is < 0.03 of a level. */
-+  opacity: min(var(--morph-fade), 0.9999);
-   width: 100%;
-   padding: 0 56px 144px;
-   display: block;
-@@ -5799,6 +6111,10 @@
-     animation: none;
-   }
- }
-+/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
-+.start-selling-platform [data-sweep-paused] {
-+  animation-play-state: paused !important;
-+}
- @keyframes start-selling-platform-i-doc-sweep {
-   0% {
-     background-position: 100%;
-@@ -6513,16 +6829,24 @@
-   opacity: 0;
- }
- .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
--  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
-+  animation:
-+    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
-+    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
- }
--@keyframes start-selling-cred-card-in {
-+@keyframes start-selling-entry-blur-in {
-   0% {
-     filter: blur(8px);
-+  }
-+  to {
-+    filter: blur();
-+  }
-+}
-+@keyframes start-selling-cred-card-in {
-+  0% {
-     opacity: 0;
-     transform: translateY(18px) scale(0.96);
-   }
-   to {
--    filter: blur();
-     opacity: 1;
-     transform: translateY(0) scale(1);
-   }
-@@ -6809,8 +7133,95 @@
-   opacity: 0;
- }
- .start-selling-platform-secure-network-dash-highlight.is-active {
-+  opacity: 1;
-+  transition: opacity 0.2s;
-+}
-+/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
-+   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
-+   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
-+   (meet) scaled the line and the gradient by s = 3.1875/3.2 and shifted them by (94 - 94 s)/2 = 0.18359375px:
-+   the clip is that stadium (line 1.6..92.4, width 3.2, round caps, times s, plus the shift), the gradient strip
-+   is 120 s = 119.53125px wide, and x1 = v becomes translateX(s v + 0.18359375px). Keyframes = the old values
-+   (keyTimes 0;0.2;0.4;0.6;0.8;1, 5 s, linear, from the moment .is-active is set). The glint span is added by
-+   NM's each block next to the SSR svg (the svg stays in the DOM for hydration and is not rendered: without its
-+   <animate> its gradient sits at x1 -200 / 200, fully transparent over the dash). Opacity and .is-active as the
-+   old highlight line. */
-+.start-selling-platform-secure-network-dash-svg {
-+  display: none;
-+}
-+.start-selling-platform-secure-network-dash-glint {
-+  opacity: 0;
-+}
-+.start-selling-platform-secure-network-dash-glint.is-active {
-   opacity: 1;
-   transition: opacity 0.2s;
-+}
-+.start-selling-platform-secure-network-dash-glint {
-+  pointer-events: none;
-+  width: 94px;
-+  height: 3.2px;
-+  display: block;
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  clip-path: path(
-+    "M 1.77734375 0 H 92.22265625 A 1.59375 1.59375 0 0 1 92.22265625 3.1875 H 1.77734375 A 1.59375 1.59375 0 0 1 1.77734375 0 Z"
-+  );
-+}
-+.start-selling-platform-secure-network-dash-glint svg {
-+  width: 119.53125px;
-+  height: 5.2px;
-+  display: block;
-+  position: absolute;
-+  top: -1px;
-+  left: 0;
-+  overflow: visible;
-+}
-+.start-selling-platform-secure-network-dash.is-left .start-selling-platform-secure-network-dash-glint.is-active svg {
-+  animation: 5s linear infinite start-selling-platform-pi-glint-left;
-+}
-+.start-selling-platform-secure-network-dash.is-right .start-selling-platform-secure-network-dash-glint.is-active svg {
-+  animation: 5s linear infinite start-selling-platform-pi-glint-right;
-+}
-+@keyframes start-selling-platform-pi-glint-left {
-+  0% {
-+    transform: translateX(-199.03515625px);
-+  }
-+  20% {
-+    transform: translateX(199.40234375px);
-+  }
-+  40% {
-+    transform: translateX(199.40234375px);
-+  }
-+  60% {
-+    transform: translateX(199.40234375px);
-+  }
-+  80% {
-+    transform: translateX(-199.03515625px);
-+  }
-+  to {
-+    transform: translateX(-199.03515625px);
-+  }
-+}
-+@keyframes start-selling-platform-pi-glint-right {
-+  0% {
-+    transform: translateX(-199.03515625px);
-+  }
-+  20% {
-+    transform: translateX(-199.03515625px);
-+  }
-+  40% {
-+    transform: translateX(199.40234375px);
-+  }
-+  60% {
-+    transform: translateX(-199.03515625px);
-+  }
-+  80% {
-+    transform: translateX(-199.03515625px);
-+  }
-+  to {
-+    transform: translateX(-199.03515625px);
-+  }
- }
- .start-selling-platform-secure-network-face {
-   box-sizing: border-box;
-@@ -7186,7 +7597,8 @@
-     transform: translate(-50%, -50%);
-     animation: none !important;
-   }
--  .start-selling-platform-secure-network-dash-highlight {
-+  .start-selling-platform-secure-network-dash-highlight,
-+  .start-selling-platform-secure-network-dash-glint {
-     opacity: 0 !important;
-   }
- }
-@@ -7509,21 +7921,23 @@
-   opacity: 0;
- }
- .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
--  animation: 0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in;
-+  animation:
-+    0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in,
-+    0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards start-selling-entry-blur-in;
- }
- .start-selling-platform-profile:not(.is-static).is-enter
-   .start-selling-platform-profile-reviews
-   .start-selling-platform-cred-card {
--  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
-+  animation:
-+    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
-+    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
- }
- @keyframes start-selling-profile-phone-in {
-   0% {
--    filter: blur(8px);
-     opacity: 0;
-     transform: translateY(18px) scale(0.96);
-   }
-   to {
--    filter: blur();
-     opacity: 1;
-     transform: translateY(0) scale(1);
-   }
-@@ -11101,6 +11515,64 @@
-     -webkit-background-clip: text;
-     background-clip: text;
-     animation: 4s linear infinite start-selling-platform-i-doc-sweep;
-+  }
-+  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
-+     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
-+     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
-+     No background-position animation, so no style recalc or repaint per frame. Same selectors as above
-+     (specificity 0,4,0 / 0,4,1), later in the file, so they win over the content:none rules.
-+     Inside @supports (-webkit-mask-clip: text): an engine without text masks (Firefox, MDN BCD) keeps the original
-+     background-clip sweep above instead of showing the band as a solid rectangle. */
-+  @supports (-webkit-mask-clip: text) {
-+  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc,
-+  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn,
-+  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure,
-+  .start-selling-platform
-+    .start-selling-platform-row.is-relationship
-+    .start-selling-platform-row-title-organized {
-+    background-image: none;
-+    animation: none;
-+    position: relative;
-+    -webkit-mask-image: linear-gradient(#000, #000);
-+    -webkit-mask-clip: text;
-+  }
-+  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc::after,
-+  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn::after,
-+  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure::after,
-+  .start-selling-platform
-+    .start-selling-platform-row.is-relationship
-+    .start-selling-platform-row-title-organized::after {
-+    content: "";
-+    display: block;
-+    position: absolute;
-+    top: 0;
-+    left: 0;
-+    width: 300%;
-+    height: 100%;
-+    pointer-events: none;
-+    background-image: linear-gradient(
-+      90deg,
-+      #fff 0 33.33%,
-+      #82bcff 40%,
-+      #2483ff 45%,
-+      #ff66f4 50%,
-+      #ff3029 55%,
-+      #fe7b02 60%,
-+      #fff 66.67% 100%
-+    );
-+    animation: 4s linear infinite start-selling-platform-pi-sweep-band;
-+  }
-+  .start-selling-platform [data-sweep-paused]::after {
-+    animation-play-state: paused !important;
-+  }
-+  }
-+}
-+@keyframes start-selling-platform-pi-sweep-band {
-+  0% {
-+    transform: translateX(-66.6667%);
-+  }
-+  to {
-+    transform: translateX(0);
-   }
- }
- .start-selling-language-switch-wrap.svelte-1lc7nmb {
-@@ -11437,7 +11909,9 @@
- }
- .start-selling-top-nav-actions.svelte-1dcozpm {
-   align-items: center;
--  gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
-+  /* nav-earn rev 3: the gap is reserved like the Join button's width (see the rev 3 block below); its closing at the
-+     top and at the end of the page is drawn by moving the language switch instead */
-+  gap: 8px;
-   opacity: 1;
-   pointer-events: auto;
-   flex: none;
-@@ -11477,32 +11951,88 @@
- .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
-   --earn-out: clamp(0, calc(var(--morph) / 0.2), 1);
-   --nav-earn-mask: linear-gradient(90deg, #000 0 46%, transparent 58%);
--  --earn-layout: calc(var(--nav-expand) * (1 - var(--earn-out)));
-   isolation: isolate;
-   min-width: 0;
--  max-width: calc(var(--earn-layout) * 11rem);
--  padding-inline: calc(var(--earn-layout) * 24px);
--  opacity: calc((1 - var(--earn-out)) * var(--nav-expand));
--  filter: blur(calc(var(--earn-out) * 10px));
-+  max-width: 11rem;
-+  padding: 0;
-+  background: none;
-+  opacity: 1;
-+  /* joinwl-fadeonly (user T-204 #10/#13): at the end of the page the button only fades, like its hide into the hero
-+     pill; the original rose 8px (translateY(earn-out * -8px)) and blurred 10px at full opacity before the fade */
-   pointer-events: none;
--  transform: translateY(calc(var(--earn-out) * -8px));
--  transition:
--    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
--    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
--    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
-+  transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
-   position: relative;
-   overflow: hidden;
- }
-+/* nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button keeps its full width in the layout at all times, and
-+   so does the 8px gap before it. Its original look (the dark pill growing from the right edge over 0.68 s with the
-+   language switch sliding over, and shrinking back the same way) is drawn without layout: the dark pill and the
-+   label sit in .start-selling-top-nav-earn-box, clipped to the original's width at that moment (clip-path) and moved
-+   to its centre (translate on the button), and the language switch is moved by the width and gap the original would
-+   not have had yet (translate). The nav script starts those three as one Web Animation per change of state (shown
-+   <-> hidden), sampled from the original's own formula: width min(label + 2 * padding * e, max-width * e), gap
-+   8px * e, e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, and a reversal mid-way takes the
-+   shortened time a reversed CSS transition takes. Opacity keeps the original's transitions on one class flip:
-+   0.32 s after 0.12 s when it appears and at the end of the page, 0.2 s when it goes back into the hero pill.
-+   The mask sweep and the sheen are the original's, unchanged. Hidden states below match the animations' end. */
-+.start-selling-top-nav-earn-box.svelte-1dcozpm {
-+  box-sizing: border-box;
-+  flex: none;
-+  justify-content: center;
-+  align-items: center;
-+  height: 100%;
-+  padding-inline: 24px;
-+  background: #131922;
-+  border-radius: 999px;
-+  display: inline-flex;
-+}
-+.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
-+.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-+  opacity: 0;
-+  translate: 50% 0;
-+}
-+.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm),
-+.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
-+  clip-path: inset(0 50% round 999px);
-+}
-+.start-selling-top-nav-actions.svelte-1dcozpm > .start-selling-language-switch-wrap {
-+  --morph: inherit;
-+}
-+.start-selling-top-nav.is-hero-pill.svelte-1dcozpm
-+  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
-+  > .start-selling-language-switch-wrap {
-+  translate: calc(var(--earn-w, 0px) + 8px) 0;
-+}
-+/* at the end of the page the original closed the gap with --morph (no timer) and the width on its timer */
-+.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm:not(.is-hero-pill)
-+  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
-+  > .start-selling-language-switch-wrap {
-+  translate: var(--earn-w, 0px) 0;
-+}
-+.start-selling-top-nav.is-morphing.svelte-1dcozpm
-+  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
-+  > .start-selling-language-switch-wrap {
-+  transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 8px));
-+}
-+@media (width<=640px) {
-+  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
-+    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
-+    > .start-selling-language-switch-wrap {
-+    translate: calc(var(--earn-w, 0px) + 4px) 0;
-+  }
-+  .start-selling-top-nav.is-morphing.svelte-1dcozpm
-+    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
-+    > .start-selling-language-switch-wrap {
-+    transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 4px));
-+  }
-+}
- .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill, .is-morphing)
-   .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-   pointer-events: auto;
- }
- .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
-   pointer-events: none;
--  transition:
--    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
--    opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1),
--    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
-+  transition: opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1);
-   -webkit-mask-image: none;
-   mask-image: none;
- }
-@@ -11579,10 +12109,10 @@
-     scale: 0.75;
-   }
-   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
--    transform-origin: 50%;
-+    transform-origin: calc(50% * var(--morph));
-   }
-   .start-selling-top-nav-actions.svelte-1dcozpm {
--    gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
-+    gap: 4px;
-   }
-   .start-selling-top-nav-btn.svelte-1dcozpm {
-     height: 36px;
-@@ -11592,9 +12122,11 @@
-     line-height: 20px;
-   }
-   .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
--    max-width: calc(var(--earn-layout) * 9.5rem);
--    padding-inline: calc(var(--earn-layout) * 16px);
-+    max-width: 9.5rem;
-   }
-+  .start-selling-top-nav-earn-box.svelte-1dcozpm {
-+    padding-inline: 16px;
-+  }
- }
- @media (prefers-reduced-motion: reduce) {
-   .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
-@@ -11751,11 +12283,74 @@
- html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
-   unicode-bidi: plaintext;
- }
-+/* [scene-scope V1] The paused-scene rules used to match every descendant (`:where(*)`). A rule whose subject is
-+   universal makes an attribute change on the scene restyle the whole subtree (WebKit AttributeChangeInvalidation /
-+   StyleInvalidator, Blink "invalidates subtree"): 172-399 elements at every scene flip. The subject is now the
-+   list of elements that can carry a CSS animation (the subject compound of every `animation`/`animation-name`
-+   rule in this file and DialogHeader.css; pseudo-elements were never matched by `:where(*)`), so a flip restyles
-+   only those. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
-+   animation running while its scene is paused (CPU, not a visual change). */
- .start-selling [data-start-selling-scene="paused"],
--.start-selling [data-start-selling-scene="paused"] :where(*) {
--  will-change: auto !important;
-+.start-selling [data-start-selling-scene="paused"] .commission-underline,
-+.start-selling [data-start-selling-scene="paused"] .commission-underline path,
-+.start-selling [data-start-selling-scene="paused"] .frame-0,
-+.start-selling [data-start-selling-scene="paused"] .frame-1,
-+.start-selling [data-start-selling-scene="paused"] .frame-2,
-+.start-selling [data-start-selling-scene="paused"] .fee-avatar,
-+.start-selling [data-start-selling-scene="paused"] .typing-caret,
-+.start-selling [data-start-selling-scene="paused"] .accent-path,
-+.start-selling [data-start-selling-scene="paused"] .accent-fill,
-+.start-selling [data-start-selling-scene="paused"] .is-idle-frame-0,
-+.start-selling [data-start-selling-scene="paused"] .is-idle-frame-1,
-+.start-selling [data-start-selling-scene="paused"] .is-idle-frame-2,
-+.start-selling [data-start-selling-scene="paused"] .orbit-card,
-+.start-selling [data-start-selling-scene="paused"] .hero-copy,
-+.start-selling [data-start-selling-scene="paused"] .scroll-cue,
-+.start-selling [data-start-selling-scene="paused"] .scroll-float,
-+.start-selling [data-start-selling-scene="paused"] .pain-note,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-people-o-preview,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-avatars img,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-profile-body,
-+.start-selling [data-start-selling-scene="paused"] .record,
-+.start-selling [data-start-selling-scene="paused"] .sb-drawer .surface,
-+.start-selling [data-start-selling-scene="paused"] .panel.svelte-ty4hd7,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-language-switch-menu,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav-btn,
-+.start-selling [data-start-selling-scene="paused"] .sb-tooltip,
-+.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
-+.start-selling [data-start-selling-scene="paused"] .sb-button .content,
-+.start-selling [data-start-selling-scene="paused"] .sb-button .spinner,
-+.start-selling [data-start-selling-scene="paused"] .sb-dialog {
-   animation-play-state: paused !important;
- }
-+/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
-+   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
-+   from flapping, so the flips happen away from the viewport.
-+   [scene-scope V1] the scene arm lists the elements whose CSS asks for will-change (every non-auto
-+   `will-change` rule in this file and DialogHeader.css) instead of `:where(*)`, for the same reason as above. */
-+.start-selling [data-start-selling-scene="paused"],
-+.start-selling [data-start-selling-scene="paused"] .commission-card,
-+.start-selling [data-start-selling-scene="paused"] .why-bring-panel,
-+.start-selling [data-start-selling-scene="paused"] .face,
-+/* cd-strip: the strips and their cells replace the faces, so a paused scene drops their layers the same way */
-+.start-selling [data-start-selling-scene="paused"] .strip.svelte-1quva9c,
-+.start-selling [data-start-selling-scene="paused"] .cell.svelte-1quva9c,
-+.start-selling [data-start-selling-scene="paused"] .orbit-card,
-+.start-selling [data-start-selling-scene="paused"] .hero-copy,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-future-card,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-profile-shell,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-platform-card,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-morph,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
-+.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav,
-+.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
-+/* [rotator-st6 on RB] st6's persistent slot layers (will-change at .start-selling-avatars.is-carousel img) join
-+   the arm, so a paused scene drops them like every other will-change element (scene-scope R4 coupling). */
-+.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img,
-+.start-selling [data-fw-wc="0"] {
-+  will-change: auto !important;
-+}
- .start-selling [data-start-selling-render="deferred"] {
-   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
-   content-visibility: auto;
-@@ -11766,5 +12361,120 @@
- @media (prefers-reduced-motion: reduce) {
-   html {
-     scroll-behavior: auto;
-+  }
-+}
-+
-+/* perf(morph-webkit, countdown fix, P-017): the morph panel's countdown digit faces get no will-change. With it,
-+   the panel scene's flip to active creates ~80 digit layers at the tween start, and on the iPhone those layers were
-+   repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
-+   the page are unchanged. */
-+.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
-+  will-change: auto;
-+}
-+/* cd-strip (panel arm b): the same for the digit strips that replace the faces */
-+.start-selling-morph-panel .waitlist-closing-countdown .strip.svelte-1quva9c {
-+  will-change: auto;
-+}
-+/* cd-strip: one layer per cell. WebKit rasterizes a text backing taller than one cell with glyph edges 1-3 levels
-+   lighter than a face's (observed, Simulator); a one-cell backing per cell is pixel-identical to the faces. The panel's
-+   cells stay unlayered with its strips (cdwc) */
-+.cell.svelte-1quva9c {
-+  will-change: transform;
-+}
-+.start-selling-morph-panel .waitlist-closing-countdown .cell.svelte-1quva9c {
-+  will-change: auto;
-+}
-+/* shell-hold-c (wi-stack): while #people starts shrinking (+is-future-shrinking, a 0.9 s scale transition on the card),
-+   hide the off-screen profile shells (neither the active shell nor its neighbours) for 0.95 s. WebKit gives every
-+   composited descendant of an on-screen transform-animating layer a backing store (GraphicsLayerCA,
-+   ancestorWithTransformAnimationIntersectsCoverageRect); a hidden shell paints nothing. The deck clips
-+   (overflow: auto hidden), so these shells are never in view; at 1440 they are display: none (no-op). */
-+@keyframes fw-c-shell-hold {
-+  from,
-+  to {
-+    visibility: hidden;
-   }
- }
-+.start-selling-future.is-visible.is-future-shrinking
-+  .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
-+  animation: fw-c-shell-hold 0.95s linear;
-+}
-+/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
-+   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
-+   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
-+   under the old scrollTo pin while the morph follows the scroll. Rev 4: no scroll snap (it made iOS decelerate the
-+   whole page fast); a script settles a part-open morph to an end once the scroll rests. */
-+html.fw-ms .start-selling-platform {
-+  position: sticky;
-+  top: calc(100dvh - var(--fw-ms-h, 100dvh));
-+}
-+.fw-ms-end {
-+  position: relative;
-+  height: 100lvh;
-+  pointer-events: none;
-+}
-+
-+/* perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1). Phones (<= 640 px), only while the morph
-+   moves ([data-fw-rv], set by the nav's template effect for 0.001 < m < 1): the nav takes its final size and place,
-+   and today's box at m is cut out of it by an inline clip-path; the parts inside follow by inline transforms (JS
-+   __rvW). The dark colour is .fw-rv-dark at opacity m over the light background. Settled, the nav is today's. */
-+.fw-rv-dark,
-+.fw-rv-glass {
-+  display: none;
-+}
-+@media (width<=640px) {
-+  .start-selling-top-nav.svelte-1dcozpm[data-fw-rv] {
-+    top: 12px;
-+    width: var(--panel-w);
-+    height: var(--panel-h);
-+    border-radius: 0;
-+    background: #ffffff1a;
-+    -webkit-backdrop-filter: none;
-+    backdrop-filter: none;
-+    will-change: transform;
-+  }
-+  /* today's nav box and its backdrop blur, from the same formulas as .start-selling-top-nav at <= 640 px; it paints
-+     nothing itself (no background), it only blurs the page under today's box */
-+  .fw-rv-glass[data-fw-rv] {
-+    --morph: 0;
-+    --pill-w: min(984px, calc(100vw - 32px));
-+    --pill-h: 52px;
-+    --panel-w: calc(100vw - 24px);
-+    --panel-h: calc(100vh - 24px);
-+    display: block;
-+    position: fixed;
-+    z-index: 40;
-+    left: 50%;
-+    top: calc(16px + (12px - 16px) * var(--morph));
-+    box-sizing: border-box;
-+    width: calc(var(--pill-w) + (var(--panel-w) - var(--pill-w)) * var(--morph));
-+    height: calc(var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph));
-+    border-radius: calc(32px - 12px * var(--morph));
-+    -webkit-backdrop-filter: blur(calc(20px * (1 - var(--morph))));
-+    backdrop-filter: blur(calc(20px * (1 - var(--morph))));
-+    pointer-events: none;
-+    transform: translate(-50%);
-+  }
-+  .start-selling-top-nav[data-fw-rv] > .fw-rv-dark {
-+    display: block;
-+    position: absolute;
-+    inset: 0;
-+    z-index: 0;
-+    background: #131922;
-+    pointer-events: none;
-+    will-change: opacity;
-+  }
-+  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-bar,
-+  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-logo,
-+  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-actions,
-+  .start-selling-top-nav[data-fw-rv] .start-selling-morph-col,
-+  .start-selling-top-nav[data-fw-rv] .start-selling-morph-center,
-+  .start-selling-top-nav[data-fw-rv] .start-selling-morph-footer {
-+    will-change: transform;
-+  }
-+  .start-selling-top-nav[data-fw-rv] .start-selling-morph-backdrop,
-+  .start-selling-top-nav[data-fw-rv] .start-selling-morph-veil {
-+    transform-origin: 0 0;
-+    will-change: transform;
-+  }
-+}
-diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
 @@ -20,6 +20,7 @@
@@ -3602,3 +2519,1078 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
            k(re, `href`, a()),
            k(re, `aria-label`, s(o).header.home),
            k(re, `data-selenium`, SE.header.home),
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -38,7 +38,11 @@
+   width: 100%;
+   min-height: 100%;
+   transform: scale(var(--commission-shrink-scale));
+-  transform-origin: 50% 0;
++  /* double-drive (T-157): the origin is a weight the script writes (0 = top for the enter shrink, 1 = bottom for the
++     exit shrink, in between only while both shrinks are easing). The class switch below flipped it while the eased
++     scale was still ~0.96 when scrolling back up, a 20-27 px one-frame jump; at rest the weight equals the class
++     state (see the script), and without the script it is 0, the old default. */
++  transform-origin: 50% calc(var(--fw-co-w, 0) * 100%);
+   will-change: transform, border-radius;
+   background: #fff;
+   flex: 1;
+@@ -46,9 +50,8 @@
+   position: relative;
+   overflow: clip;
+ }
+-.commission.shrinking:not(.entering) .commission-card {
+-  transform-origin: 50% 100%;
+-}
++/* double-drive (T-157): `.commission.shrinking:not(.entering) .commission-card { transform-origin: 50% 100% }` is now
++   the --fw-co-w weight on .commission-card above. */
+ .commission-runway {
+   background: #fff;
+   width: 100%;
+@@ -564,9 +567,16 @@
+   height: 12px;
+   overflow: hidden;
+ }
++/* layout-animations: the bar keeps its full width; the count-up writes --fee-progress (0-1) and the
++   fill is revealed with clip-path (same pill shape: inset round clamps like border-radius) while the
++   gradient is sized to the visible part, as it was sized to the old width. min 4px = old padding box */
+ .fee-progress > span {
++  --fee-progress-w: max(4px, calc(var(--fee-progress, 0) * 100%));
+   box-sizing: border-box;
+-  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%);
++  background: linear-gradient(90deg, #0569ff 0%, #ae8eff 50%, #ffcca5 100%) 0 0 / var(--fee-progress-w) 100%
++    no-repeat;
++  clip-path: inset(0 calc(100% - var(--fee-progress-w)) 0 0 round 999px);
++  width: 100% !important;
+   border-radius: 999px;
+   flex-direction: column;
+   height: 100%;
+@@ -1227,9 +1237,8 @@
+   position: relative;
+   overflow: visible;
+ }
+-.script-accent.is-drawing-in.svelte-1fn2go6 {
+-  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+-}
++/* layout-animations: no width transition (0.9s of h1 layout per cycle); the width now changes at once
++   and the neighbouring words slide with a transform animation (JS HE, same duration and easing) */
+ .sizer.svelte-1fn2go6 {
+   visibility: hidden;
+   width: 100%;
+@@ -1289,14 +1298,14 @@
+   animation: 0.45s forwards svelte-1fn2go6-fill-out;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-0:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-0;
++  animation: 0.6s linear infinite fw-acc-idle-0;
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-1:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-1;
++  animation: 0.6s linear infinite fw-acc-idle-1;
+   transform: translate(0.25%, 0.3%);
+ }
+ .is-idle.svelte-1fn2go6 .is-idle-frame-2:where(.svelte-1fn2go6) {
+-  animation: 0.6s step-end infinite svelte-1fn2go6-idle-2;
++  animation: 0.6s linear infinite fw-acc-idle-2;
+   transform: translate(-0.2%, 0.35%);
+ }
+ :is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
+@@ -1309,6 +1318,18 @@
+   .is-idle-frame-0.svelte-1fn2go6 {
+   opacity: 1;
+ }
++/* accent-ca: (1) the idle boil runs as keyword-linear opacity animations (WebKit iOS 26 never hands a steps()
++   timing to Core Animation, F-048/F-065, so step-end ticked main-thread style and an opacity-flip Layout per step,
++   F-075). The fw-acc-idle-* keyframes switch at exactly the original step-end instants (33.33 %, 66.66 %, end of
++   cycle); each jump is a linear ramp of 1e-6 of the 0.6 s cycle (0.6 us) that ends on the original instant, so
++   every frame is the original's.
++   (2) While drawing, only boil frame 0 is visible (frames 1-2 are opacity 0, rule above); their stroke and fill
++   animations are dropped (a stroke-dashoffset change is an SVG Layout every frame on WebKit, F-097). */
++:is(.is-drawing-in:where(.svelte-1fn2go6), .is-drawing-out:where(.svelte-1fn2go6))
++  .is-idle-frame:not(.is-idle-frame-0).svelte-1fn2go6
++  :is(.accent-path, .accent-fill) {
++  animation: none;
++}
+ @keyframes svelte-1fn2go6-stroke-in {
+   0% {
+     stroke-dashoffset: 1px;
+@@ -1335,10 +1356,44 @@
+   }
+ }
+ @keyframes svelte-1fn2go6-fill-out {
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-0 {
++  0%,
++  33.3299% {
++    opacity: 1;
++  }
++  33.33%,
+   to {
+     opacity: 0;
+   }
+ }
++@keyframes fw-acc-idle-1 {
++  0%,
++  33.3299% {
++    opacity: 0;
++  }
++  33.33%,
++  66.6599% {
++    opacity: 1;
++  }
++  66.66%,
++  to {
++    opacity: 0;
++  }
++}
++@keyframes fw-acc-idle-2 {
++  0%,
++  66.6599% {
++    opacity: 0;
++  }
++  66.66%,
++  to {
++    opacity: 1;
++  }
++}
+ @keyframes svelte-1fn2go6-idle-0 {
+   0%,
+   33.32% {
+@@ -1412,6 +1467,33 @@
+   display: flex;
+   position: absolute;
+   inset: 0;
++}
++/* cd-strip: the strip takes the faces' box (inset 0 in .digit) and their layer; inside it an uncomposited wrapper of
++   the same box at top -m*c, and each cell is a face's box placed at top k*c in the wrapper (both set by the script),
++   its glyph centred the same way */
++.strip.svelte-1quva9c {
++  will-change: transform;
++  display: block;
++  position: absolute;
++  inset: 0;
++}
++.cdwrap.svelte-1quva9c {
++  display: block;
++  position: absolute;
++  top: 0;
++  left: 0;
++  right: 0;
++  height: 100%;
++}
++.cell.svelte-1quva9c {
++  justify-content: center;
++  align-items: center;
++  display: flex;
++  position: absolute;
++  top: 0;
++  left: 0;
++  right: 0;
++  height: 100%;
+ }
+ .number.svelte-1jfovfa {
+   font-variant-numeric: tabular-nums;
+@@ -1519,6 +1601,31 @@
+   syntax: "<angle>";
+   inherits: false;
+   initial-value: 0deg;
++}
++/* [scene-scope R4a] --morph-fade is written inline on .start-selling-platform (JS 13279) and read only by that
++   element's own filter/opacity (this file, .start-selling-platform). Unregistered, it inherits, so every write
++   restyles the whole platform subtree; registered non-inheriting, only the element itself changes. */
++@property --morph-fade {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 1;
++}
++/* [scene-scope R4b] --morph is written inline on the nav header (JS 13614) and read by the header and some of its
++   descendants. Registered non-inheriting, a write restyles only the header plus the elements that take it with an
++   explicit `inherit` (the consumers and the wrappers between them and the header), not the whole nav subtree. */
++@property --morph {
++  syntax: "<number>";
++  inherits: false;
++  initial-value: 0;
++}
++.start-selling-top-nav-bar,
++.start-selling-top-nav-logo,
++.start-selling-top-nav-actions,
++.start-selling-top-nav-btn.is-earn,
++.start-selling-morph,
++.start-selling-morph-pill,
++.start-selling-morph-panel {
++  --morph: inherit;
+ }
+ .hero-track.svelte-1p2vpne {
+   background: #fff;
+@@ -2122,7 +2229,137 @@
+     top: 83.3333%;
+     left: auto;
+     right: -45px;
++  }
++}
++/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
++   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
++   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
++   Only where the JS switched to CSS mode: on WebKit (GestureEvent) with scroll-driven animations at the
++   phone layout (width <= 600px), once the entrance is over (d() in 2.DyWL8TcE.js), the track gets .he-on
++   (parked: the cue's bob moves to .he-bob, the exit is the baseline's own rules from the inline
++   --exit-opacity the JS writes at rest), and .he-css while the page scrolls (live: these animations; the JS
++   writes nothing per frame). Parking at rest matters because WebKit invalidates the style of every element
++   with a relevant scroll-driven animation on every rendering update, moving or not (WebKit source, see the
++   JS comment). Wider layouts (desktop orbit cards: desktop
++   and iPad Safari, a landscape phone) keep the baseline writer: there WebKit drew the animated tilted cards
++   up to 108 levels off the baseline's static draw of the same computed values (width 980, Simulator,
++   OBSERVED; residual R5). Every other engine keeps the baseline writer and none of these rules apply.
++   Every exit animation starts at contain 0.05% (s) with fill forwards, so at rest at the top of the page
++   none is active and the hero is drawn exactly as in the baseline (the baseline's own rules: blur(0px) on
++   the copy and the cue, no filter on the float). For the first frame after .he-css arrives (the new
++   animations are pending) the JS writes the baseline's inline --exit-opacity, so the base values are the
++   exited ones there too; the JS then leaves it (stale) while live, so every live property that reads it is
++   animated (cards, copy, float) or, on the cue, replaced by its value at --exit-opacity 1 (the float carries
++   the cue's exit, and its base values carry it for the pending frame). The
++   `from` keyframes are the baseline value at s (a + (b - a) * s), so inside the range the value is the
++   baseline's a + (b - a) * p.
++   The copy's shift is a separate transform animation, present only while live (a transform animation on
++   .hero-copy, even inactive, made WebKit repaint the title's script accent about 1.4x as often; Simulator,
++   OBSERVED).
++   The scroll cue's own entrance animates --copy-in (in its opacity and transform), so its exit
++   (fade, shift, blur) runs on its only child, .scroll-float (blur on the cue itself over a composited
++   child drew a wider halo in WebKit; while live the cue draws blur(0px), as the baseline rule at
++   --exit-opacity 1), and the float's 2.2 s bob moves to .he-bob, a span the JS wraps
++   around the float's two children in CSS mode (one layer for both, as the baseline's float): an element
++   with both the infinite bob and scroll-driven animations made WebKit recalculate style every frame at
++   rest, and the bob on the two children separately drew the cue 1-2 levels off (Simulator, OBSERVED).
++   opacity/transform/translate animations are separate from the blur ones (compositable); past the end
++   the blur keeps blur(18px) like the baseline, so no filter change when the track reaches its end
++   (#people entry). */
++@supports (animation-timeline: view()) and (animation-range: contain 0% contain 100%) {
++  @keyframes svelte-1p2vpne-hero-exit-card {
++    from {
++      opacity: 0.999825;
++      translate: calc(var(--scatter-x) * 0.0005) calc(var(--scatter-y) * 0.0005);
++    }
++    to {
++      opacity: 0.65;
++      translate: var(--scatter-x) var(--scatter-y);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-shift-m {
++    from {
++      transform: translate(-50%, -0.004px);
++    }
++    to {
++      transform: translate(-50%, -8px);
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade {
++    from {
++      opacity: 0.9995;
++    }
++    to {
++      opacity: 0;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-fade-up {
++    from {
++      opacity: 0.9995;
++      translate: 0px -0.005px;
++    }
++    to {
++      opacity: 0;
++      translate: 0px -10px;
++    }
++  }
++  @keyframes svelte-1p2vpne-hero-exit-blur {
++    from {
++      filter: blur(0.009px);
++    }
++    to {
++      filter: blur(18px);
++    }
+   }
++  .he-bob.svelte-1p2vpne {
++    flex-direction: column;
++    align-items: center;
++    display: flex;
++  }
++  @media (prefers-reduced-motion: no-preference) {
++    .hero-track.he-css.svelte-1p2vpne {
++      view-timeline-name: --hero-exit;
++      view-timeline-axis: block;
++    }
++    @media (width<=600px) {
++      .hero-track.he-on .scroll-float.svelte-1p2vpne {
++        animation: none;
++      }
++      .hero-track.he-on .scroll-float.svelte-1p2vpne > .he-bob.svelte-1p2vpne {
++        animation: 2.2s ease-in-out infinite svelte-1p2vpne-scroll-float;
++      }
++      .hero-track.he-css .mobile-deck.svelte-1p2vpne .orbit-card:where(.svelte-1p2vpne) {
++        animation: 1ms linear forwards svelte-1p2vpne-hero-exit-card;
++        animation-timeline: --hero-exit;
++        animation-range: contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .hero-copy.svelte-1p2vpne {
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade,
++          1ms linear forwards svelte-1p2vpne-hero-exit-shift-m;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .hero-track.he-css .scroll-cue.svelte-1p2vpne {
++        opacity: var(--copy-in);
++        filter: blur(0px);
++        transform: translate(-50%, calc((1 - var(--copy-in)) * 12px));
++      }
++      .hero-track.he-css .scroll-float.svelte-1p2vpne {
++        opacity: var(--exit-opacity);
++        filter: blur(calc(var(--exit-scatter) * 18px));
++        translate: 0px calc(var(--exit-scatter) * -10px);
++        animation:
++          1ms linear forwards svelte-1p2vpne-hero-exit-fade-up,
++          1ms linear forwards svelte-1p2vpne-hero-exit-blur;
++        animation-timeline: --hero-exit, --hero-exit;
++        animation-range: contain 0.05% contain 100%, contain 0.05% contain 100%;
++      }
++      .start-selling [data-start-selling-scene="paused"] .scroll-float.svelte-1p2vpne > * {
++        animation-play-state: paused !important;
++      }
++    }
++  }
+ }
+ @media (prefers-reduced-motion: reduce) {
+   .hero-track.svelte-1p2vpne {
+@@ -2385,6 +2622,10 @@
+   display: flex;
+   position: relative;
+   overflow: clip;
++  /* double-drive (T-157): the shrink's origin on the card itself, so .is-future-shrinking no longer flips it
++     (50% 50% <-> 50% 100%) while the card is still scaled; scrolling up fast that flip jumped the card -105/+175/-77 px.
++     Outside the shrink the card only translates (reveal 48px -> 0) or rests at translateY(0): no visual change. */
++  transform-origin: 50% 100%;
+ }
+ .start-selling-future.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+@@ -2400,22 +2641,50 @@
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+     visibility 0s linear 1.6s;
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 1.6s;
+   transform: translateY(48px);
+ }
+ .start-selling-future.is-visible > .start-selling-future-card {
+   visibility: visible;
+-  opacity: 1;
+-  filter: none;
++  /* Fix candidate `re-keep-op` (hero-exit, P3: re-keep HIT): the reveal ends at opacity 0.999 / blur(0px) /
++     translateY(0) instead of 1 / none / none, so no property crosses its presence boundary at a transition
++     end. On the phone each such crossing cost one 12-18 ms whole-view Layout at flip + 700 / + 900 / + 1150 ms
++     (OBSERVED, in our setup). 0.999 over the white card is visually identical. */
++  opacity: 0.999;
++  filter: blur(0px);
++  transform: translateY(0);
+   pointer-events: auto;
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+ }
+ .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+   transform-origin: 50% 100%;
++  /* double-drive (T-157, the PR-021 move): --future-shrink is already eased per frame by the script, so the 0.9 s
++     transform transition restarted every frame and the card trailed the scroll by 0.7-1.3 s. While the shrink drives
++     transform only opacity and filter keep their transitions (the lists truncate to the first two entries: opacity
++     0.7 s, filter 0.9 s, exactly as above). End values are unchanged. */
++  transition-property: opacity, filter;
+ }
++/* double-drive (T-157), phones and tablets: the CSS below forces --future-shrink-scale: 1 here (same query), so the
++   shrink is scale(1), which looks the same as translateY(0). Keeping translateY(0) means the class toggle changes no
++   computed transform, so the 0.9 s identity transition (scale(1) <-> translateY(0)) no longer starts when the class
++   goes off; the transition-property rule above already stops the one when it goes on. */
++@media (width<=860px), (device-width<=500px), (hover: none) and (pointer: coarse) and (width<=1200px) {
++  .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
++    transform: translateY(0);
++  }
++}
+ .start-selling-future-header {
+   z-index: 10;
+   text-align: center;
+@@ -2884,21 +3153,62 @@
+ }
+ .start-selling-avatars.is-carousel img.is-enter {
+   animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
++   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
++   advance (32px - 8px overlap) with the same easing, via the independent translate property */
++.start-selling-avatars.is-carousel img.is-exit ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
+ }
++.start-selling-avatars.is-carousel img.is-exit ~ img.is-enter {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++/* st5: 5 persistent slots. Every slot keeps its own layer for the page's life (no layer gain/loss when the
++   slide starts or ends); the 5th waits at the pop's start state; .is-sliding (toggled by the rotator) runs the
++   same keyframes, easings and duration as the keyed version */
++.start-selling-avatars.is-carousel img {
++  will-change: transform, translate, opacity;
++  /* st6 (de-pm-hero's no-flip probe): every slot always has a transform and is never fully opaque, so no
++     style change ever flips hasTransform() or opacity isOpaque() (WebKit miscDataChangeRequiresLayout) */
++  transform: scale(1);
++  opacity: 0.999;
++}
++.start-selling-avatars.is-carousel img.st5-next {
++  opacity: 0;
++  transform: scale(0.35);
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
++  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
++}
++.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img.st5-next {
++  animation:
++    0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift,
++    0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
++}
++@keyframes avatars-shift {
++  0% {
++    translate: 0;
++  }
++  to {
++    translate: -24px;
++  }
++}
+ @keyframes avatars-exit {
+   0% {
+-    opacity: 1;
+-    flex-basis: 32px;
+-    width: 32px;
+-    margin-right: -8px;
++    opacity: 0.999;
++    translate: 0;
++    clip-path: ellipse(16px 16px at 50% 50%);
+     transform: scale(1);
+   }
+   to {
+     opacity: 0;
+-    border-width: 0;
+-    flex-basis: 0;
+-    width: 0;
+-    margin-right: 0;
++    translate: -16px;
++    clip-path: ellipse(0px 16px at 50% 50%);
+     transform: scale(0.35);
+   }
+ }
+@@ -2908,7 +3218,7 @@
+     transform: scale(0.35);
+   }
+   to {
+-    opacity: 1;
++    opacity: 0.999;
+     transform: scale(1);
+   }
+ }
+@@ -5390,7 +5700,9 @@
+   box-sizing: border-box;
+   color: #151a23;
+   filter: blur(calc((1 - var(--morph-fade)) * 12px));
+-  opacity: var(--morph-fade);
++  /* [morph-gpu rev 3] never exactly 1: in WebKit (Simulator, OBSERVED) opacity leaving 1 repaints the whole section
++     on the open's first frame (19 paints, 1.05 Mpx); below 1 the fade only re-composites. 0.9999 is < 0.03 of a level. */
++  opacity: min(var(--morph-fade), 0.9999);
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
+@@ -5799,6 +6111,10 @@
+     animation: none;
+   }
+ }
++/* layout-animations: set by JS (PMsweepGate) while a sweeping title is off-screen */
++.start-selling-platform [data-sweep-paused] {
++  animation-play-state: paused !important;
++}
+ @keyframes start-selling-platform-i-doc-sweep {
+   0% {
+     background-position: 100%;
+@@ -6513,16 +6829,24 @@
+   opacity: 0;
+ }
+ .start-selling-platform-cred:not(.is-static).is-enter .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+-@keyframes start-selling-cred-card-in {
++@keyframes start-selling-entry-blur-in {
+   0% {
+     filter: blur(8px);
++  }
++  to {
++    filter: blur();
++  }
++}
++@keyframes start-selling-cred-card-in {
++  0% {
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -6809,8 +7133,95 @@
+   opacity: 0;
+ }
+ .start-selling-platform-secure-network-dash-highlight.is-active {
++  opacity: 1;
++  transition: opacity 0.2s;
++}
++/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
++   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
++   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
++   (meet) scaled the line and the gradient by s = 3.1875/3.2 and shifted them by (94 - 94 s)/2 = 0.18359375px:
++   the clip is that stadium (line 1.6..92.4, width 3.2, round caps, times s, plus the shift), the gradient strip
++   is 120 s = 119.53125px wide, and x1 = v becomes translateX(s v + 0.18359375px). Keyframes = the old values
++   (keyTimes 0;0.2;0.4;0.6;0.8;1, 5 s, linear, from the moment .is-active is set). The glint span is added by
++   NM's each block next to the SSR svg (the svg stays in the DOM for hydration and is not rendered: without its
++   <animate> its gradient sits at x1 -200 / 200, fully transparent over the dash). Opacity and .is-active as the
++   old highlight line. */
++.start-selling-platform-secure-network-dash-svg {
++  display: none;
++}
++.start-selling-platform-secure-network-dash-glint {
++  opacity: 0;
++}
++.start-selling-platform-secure-network-dash-glint.is-active {
+   opacity: 1;
+   transition: opacity 0.2s;
++}
++.start-selling-platform-secure-network-dash-glint {
++  pointer-events: none;
++  width: 94px;
++  height: 3.2px;
++  display: block;
++  position: absolute;
++  top: 0;
++  left: 0;
++  clip-path: path(
++    "M 1.77734375 0 H 92.22265625 A 1.59375 1.59375 0 0 1 92.22265625 3.1875 H 1.77734375 A 1.59375 1.59375 0 0 1 1.77734375 0 Z"
++  );
++}
++.start-selling-platform-secure-network-dash-glint svg {
++  width: 119.53125px;
++  height: 5.2px;
++  display: block;
++  position: absolute;
++  top: -1px;
++  left: 0;
++  overflow: visible;
++}
++.start-selling-platform-secure-network-dash.is-left .start-selling-platform-secure-network-dash-glint.is-active svg {
++  animation: 5s linear infinite start-selling-platform-pi-glint-left;
++}
++.start-selling-platform-secure-network-dash.is-right .start-selling-platform-secure-network-dash-glint.is-active svg {
++  animation: 5s linear infinite start-selling-platform-pi-glint-right;
++}
++@keyframes start-selling-platform-pi-glint-left {
++  0% {
++    transform: translateX(-199.03515625px);
++  }
++  20% {
++    transform: translateX(199.40234375px);
++  }
++  40% {
++    transform: translateX(199.40234375px);
++  }
++  60% {
++    transform: translateX(199.40234375px);
++  }
++  80% {
++    transform: translateX(-199.03515625px);
++  }
++  to {
++    transform: translateX(-199.03515625px);
++  }
++}
++@keyframes start-selling-platform-pi-glint-right {
++  0% {
++    transform: translateX(-199.03515625px);
++  }
++  20% {
++    transform: translateX(-199.03515625px);
++  }
++  40% {
++    transform: translateX(199.40234375px);
++  }
++  60% {
++    transform: translateX(-199.03515625px);
++  }
++  80% {
++    transform: translateX(-199.03515625px);
++  }
++  to {
++    transform: translateX(-199.03515625px);
++  }
+ }
+ .start-selling-platform-secure-network-face {
+   box-sizing: border-box;
+@@ -7186,7 +7597,8 @@
+     transform: translate(-50%, -50%);
+     animation: none !important;
+   }
+-  .start-selling-platform-secure-network-dash-highlight {
++  .start-selling-platform-secure-network-dash-highlight,
++  .start-selling-platform-secure-network-dash-glint {
+     opacity: 0 !important;
+   }
+ }
+@@ -7509,21 +7921,23 @@
+   opacity: 0;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter .start-selling-platform-profile-phone {
+-  animation: 0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in;
++  animation:
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) both start-selling-profile-phone-in,
++    0.62s cubic-bezier(0.16, 1, 0.3, 1) backwards start-selling-entry-blur-in;
+ }
+ .start-selling-platform-profile:not(.is-static).is-enter
+   .start-selling-platform-profile-reviews
+   .start-selling-platform-cred-card {
+-  animation: start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both;
++  animation:
++    start-selling-cred-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) both,
++    start-selling-entry-blur-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) var(--cred-enter-delay, 0s) backwards;
+ }
+ @keyframes start-selling-profile-phone-in {
+   0% {
+-    filter: blur(8px);
+     opacity: 0;
+     transform: translateY(18px) scale(0.96);
+   }
+   to {
+-    filter: blur();
+     opacity: 1;
+     transform: translateY(0) scale(1);
+   }
+@@ -11101,6 +11515,64 @@
+     -webkit-background-clip: text;
+     background-clip: text;
+     animation: 4s linear infinite start-selling-platform-i-doc-sweep;
++  }
++  /* [platform-idle G3] the sweep moves on the compositor: the word keeps its glyphs as a text mask
++     (-webkit-mask-clip: text covers exactly what background-clip: text covered) and the same 300 % gradient
++     slides under it as a ::after band, translateX(-2/3 of the band) -> 0 = background-position 100% -> 0%.
++     No background-position animation, so no style recalc or repaint per frame. Same selectors as above
++     (specificity 0,4,0 / 0,4,1), later in the file, so they win over the content:none rules.
++     Inside @supports (-webkit-mask-clip: text): an engine without text masks (Firefox, MDN BCD) keeps the original
++     background-clip sweep above instead of showing the band as a solid rectangle. */
++  @supports (-webkit-mask-clip: text) {
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure,
++  .start-selling-platform
++    .start-selling-platform-row.is-relationship
++    .start-selling-platform-row-title-organized {
++    background-image: none;
++    animation: none;
++    position: relative;
++    -webkit-mask-image: linear-gradient(#000, #000);
++    -webkit-mask-clip: text;
++  }
++  .start-selling-platform .start-selling-platform-row.is-document .start-selling-platform-row-title-doc::after,
++  .start-selling-platform .start-selling-platform-row.is-discovered .start-selling-platform-row-title-earn::after,
++  .start-selling-platform .start-selling-platform-row.is-payment .start-selling-platform-row-title-secure::after,
++  .start-selling-platform
++    .start-selling-platform-row.is-relationship
++    .start-selling-platform-row-title-organized::after {
++    content: "";
++    display: block;
++    position: absolute;
++    top: 0;
++    left: 0;
++    width: 300%;
++    height: 100%;
++    pointer-events: none;
++    background-image: linear-gradient(
++      90deg,
++      #fff 0 33.33%,
++      #82bcff 40%,
++      #2483ff 45%,
++      #ff66f4 50%,
++      #ff3029 55%,
++      #fe7b02 60%,
++      #fff 66.67% 100%
++    );
++    animation: 4s linear infinite start-selling-platform-pi-sweep-band;
++  }
++  .start-selling-platform [data-sweep-paused]::after {
++    animation-play-state: paused !important;
++  }
++  }
++}
++@keyframes start-selling-platform-pi-sweep-band {
++  0% {
++    transform: translateX(-66.6667%);
++  }
++  to {
++    transform: translateX(0);
+   }
+ }
+ .start-selling-language-switch-wrap.svelte-1lc7nmb {
+@@ -11437,7 +11909,9 @@
+ }
+ .start-selling-top-nav-actions.svelte-1dcozpm {
+   align-items: center;
+-  gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
++  /* nav-earn rev 3: the gap is reserved like the Join button's width (see the rev 3 block below); its closing at the
++     top and at the end of the page is drawn by moving the language switch instead */
++  gap: 8px;
+   opacity: 1;
+   pointer-events: auto;
+   flex: none;
+@@ -11477,32 +11951,88 @@
+ .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+   --earn-out: clamp(0, calc(var(--morph) / 0.2), 1);
+   --nav-earn-mask: linear-gradient(90deg, #000 0 46%, transparent 58%);
+-  --earn-layout: calc(var(--nav-expand) * (1 - var(--earn-out)));
+   isolation: isolate;
+   min-width: 0;
+-  max-width: calc(var(--earn-layout) * 11rem);
+-  padding-inline: calc(var(--earn-layout) * 24px);
+-  opacity: calc((1 - var(--earn-out)) * var(--nav-expand));
+-  filter: blur(calc(var(--earn-out) * 10px));
++  max-width: 11rem;
++  padding: 0;
++  background: none;
++  opacity: 1;
++  /* joinwl-fadeonly (user T-204 #10/#13): at the end of the page the button only fades, like its hide into the hero
++     pill; the original rose 8px (translateY(earn-out * -8px)) and blurred 10px at full opacity before the fade */
+   pointer-events: none;
+-  transform: translateY(calc(var(--earn-out) * -8px));
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
+ }
++/* nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button keeps its full width in the layout at all times, and
++   so does the 8px gap before it. Its original look (the dark pill growing from the right edge over 0.68 s with the
++   language switch sliding over, and shrinking back the same way) is drawn without layout: the dark pill and the
++   label sit in .start-selling-top-nav-earn-box, clipped to the original's width at that moment (clip-path) and moved
++   to its centre (translate on the button), and the language switch is moved by the width and gap the original would
++   not have had yet (translate). The nav script starts those three as one Web Animation per change of state (shown
++   <-> hidden), sampled from the original's own formula: width min(label + 2 * padding * e, max-width * e), gap
++   8px * e, e on the original's 0.68 s cubic-bezier(0.33, 0, 0.2, 1) timer, and a reversal mid-way takes the
++   shortened time a reversed CSS transition takes. Opacity keeps the original's transitions on one class flip:
++   0.32 s after 0.12 s when it appears and at the end of the page, 0.2 s when it goes back into the hero pill.
++   The mask sweep and the sheen are the original's, unchanged. Hidden states below match the animations' end. */
++.start-selling-top-nav-earn-box.svelte-1dcozpm {
++  box-sizing: border-box;
++  flex: none;
++  justify-content: center;
++  align-items: center;
++  height: 100%;
++  padding-inline: 24px;
++  background: #131922;
++  border-radius: 999px;
++  display: inline-flex;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++  opacity: 0;
++  translate: 50% 0;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++  clip-path: inset(0 50% round 999px);
++}
++.start-selling-top-nav-actions.svelte-1dcozpm > .start-selling-language-switch-wrap {
++  --morph: inherit;
++}
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: calc(var(--earn-w, 0px) + 8px) 0;
++}
++/* at the end of the page the original closed the gap with --morph (no timer) and the width on its timer */
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm:not(.is-hero-pill)
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: var(--earn-w, 0px) 0;
++}
++.start-selling-top-nav.is-morphing.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 8px));
++}
++@media (width<=640px) {
++  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    translate: calc(var(--earn-w, 0px) + 4px) 0;
++  }
++  .start-selling-top-nav.is-morphing.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 4px));
++  }
++}
+ .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill, .is-morphing)
+   .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: auto;
+ }
+ .start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: none;
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1),
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  transition: opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1);
+   -webkit-mask-image: none;
+   mask-image: none;
+ }
+@@ -11579,10 +12109,10 @@
+     scale: 0.75;
+   }
+   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+-    transform-origin: 50%;
++    transform-origin: calc(50% * var(--morph));
+   }
+   .start-selling-top-nav-actions.svelte-1dcozpm {
+-    gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
++    gap: 4px;
+   }
+   .start-selling-top-nav-btn.svelte-1dcozpm {
+     height: 36px;
+@@ -11592,9 +12122,11 @@
+     line-height: 20px;
+   }
+   .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
+-    max-width: calc(var(--earn-layout) * 9.5rem);
+-    padding-inline: calc(var(--earn-layout) * 16px);
++    max-width: 9.5rem;
+   }
++  .start-selling-top-nav-earn-box.svelte-1dcozpm {
++    padding-inline: 16px;
++  }
+ }
+ @media (prefers-reduced-motion: reduce) {
+   .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
+@@ -11751,11 +12283,74 @@
+ html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
+   unicode-bidi: plaintext;
+ }
++/* [scene-scope V1] The paused-scene rules used to match every descendant (`:where(*)`). A rule whose subject is
++   universal makes an attribute change on the scene restyle the whole subtree (WebKit AttributeChangeInvalidation /
++   StyleInvalidator, Blink "invalidates subtree"): 172-399 elements at every scene flip. The subject is now the
++   list of elements that can carry a CSS animation (the subject compound of every `animation`/`animation-name`
++   rule in this file and DialogHeader.css; pseudo-elements were never matched by `:where(*)`), so a flip restyles
++   only those. animation-play-state is not inherited, so an unlisted element only differs by keeping a CSS
++   animation running while its scene is paused (CPU, not a visual change). */
+ .start-selling [data-start-selling-scene="paused"],
+-.start-selling [data-start-selling-scene="paused"] :where(*) {
+-  will-change: auto !important;
++.start-selling [data-start-selling-scene="paused"] .commission-underline,
++.start-selling [data-start-selling-scene="paused"] .commission-underline path,
++.start-selling [data-start-selling-scene="paused"] .frame-0,
++.start-selling [data-start-selling-scene="paused"] .frame-1,
++.start-selling [data-start-selling-scene="paused"] .frame-2,
++.start-selling [data-start-selling-scene="paused"] .fee-avatar,
++.start-selling [data-start-selling-scene="paused"] .typing-caret,
++.start-selling [data-start-selling-scene="paused"] .accent-path,
++.start-selling [data-start-selling-scene="paused"] .accent-fill,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-0,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-1,
++.start-selling [data-start-selling-scene="paused"] .is-idle-frame-2,
++.start-selling [data-start-selling-scene="paused"] .orbit-card,
++.start-selling [data-start-selling-scene="paused"] .hero-copy,
++.start-selling [data-start-selling-scene="paused"] .scroll-cue,
++.start-selling [data-start-selling-scene="paused"] .scroll-float,
++.start-selling [data-start-selling-scene="paused"] .pain-note,
++.start-selling [data-start-selling-scene="paused"] .start-selling-people-o-preview,
++.start-selling [data-start-selling-scene="paused"] .start-selling-avatars img,
++.start-selling [data-start-selling-scene="paused"] .start-selling-profile-body,
++.start-selling [data-start-selling-scene="paused"] .record,
++.start-selling [data-start-selling-scene="paused"] .sb-drawer .surface,
++.start-selling [data-start-selling-scene="paused"] .panel.svelte-ty4hd7,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
++.start-selling [data-start-selling-scene="paused"] .start-selling-language-switch-menu,
++.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav-btn,
++.start-selling [data-start-selling-scene="paused"] .sb-tooltip,
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
++.start-selling [data-start-selling-scene="paused"] .sb-button .content,
++.start-selling [data-start-selling-scene="paused"] .sb-button .spinner,
++.start-selling [data-start-selling-scene="paused"] .sb-dialog {
+   animation-play-state: paused !important;
+ }
++/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
++   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
++   from flapping, so the flips happen away from the viewport.
++   [scene-scope V1] the scene arm lists the elements whose CSS asks for will-change (every non-auto
++   `will-change` rule in this file and DialogHeader.css) instead of `:where(*)`, for the same reason as above. */
++.start-selling [data-start-selling-scene="paused"],
++.start-selling [data-start-selling-scene="paused"] .commission-card,
++.start-selling [data-start-selling-scene="paused"] .why-bring-panel,
++.start-selling [data-start-selling-scene="paused"] .face,
++/* cd-strip: the strips and their cells replace the faces, so a paused scene drops their layers the same way */
++.start-selling [data-start-selling-scene="paused"] .strip.svelte-1quva9c,
++.start-selling [data-start-selling-scene="paused"] .cell.svelte-1quva9c,
++.start-selling [data-start-selling-scene="paused"] .orbit-card,
++.start-selling [data-start-selling-scene="paused"] .hero-copy,
++.start-selling [data-start-selling-scene="paused"] .start-selling-future-card,
++.start-selling [data-start-selling-scene="paused"] .start-selling-profile-shell,
++.start-selling [data-start-selling-scene="paused"] .start-selling-platform-card,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph,
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track,
++.start-selling [data-start-selling-scene="paused"] .start-selling-top-nav,
++.start-selling [data-start-selling-scene="paused"] .ring.svelte-16rtsv6,
++/* [rotator-st6 on RB] st6's persistent slot layers (will-change at .start-selling-avatars.is-carousel img) join
++   the arm, so a paused scene drops them like every other will-change element (scene-scope R4 coupling). */
++.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img,
++.start-selling [data-fw-wc="0"] {
++  will-change: auto !important;
++}
+ .start-selling [data-start-selling-render="deferred"] {
+   contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
+   content-visibility: auto;
+@@ -11766,5 +12361,120 @@
+ @media (prefers-reduced-motion: reduce) {
+   html {
+     scroll-behavior: auto;
++  }
++}
++
++/* perf(morph-webkit, countdown fix, P-017): the morph panel's countdown digit faces get no will-change. With it,
++   the panel scene's flip to active creates ~80 digit layers at the tween start, and on the iPhone those layers were
++   repainted in 76 % of the frames in each tween's first 450 ms (observed); without it, 0 %. Countdowns elsewhere on
++   the page are unchanged. */
++.start-selling-morph-panel .waitlist-closing-countdown .face.svelte-1quva9c {
++  will-change: auto;
++}
++/* cd-strip (panel arm b): the same for the digit strips that replace the faces */
++.start-selling-morph-panel .waitlist-closing-countdown .strip.svelte-1quva9c {
++  will-change: auto;
++}
++/* cd-strip: one layer per cell. WebKit rasterizes a text backing taller than one cell with glyph edges 1-3 levels
++   lighter than a face's (observed, Simulator); a one-cell backing per cell is pixel-identical to the faces. The panel's
++   cells stay unlayered with its strips (cdwc) */
++.cell.svelte-1quva9c {
++  will-change: transform;
++}
++.start-selling-morph-panel .waitlist-closing-countdown .cell.svelte-1quva9c {
++  will-change: auto;
++}
++/* shell-hold-c (wi-stack): while #people starts shrinking (+is-future-shrinking, a 0.9 s scale transition on the card),
++   hide the off-screen profile shells (neither the active shell nor its neighbours) for 0.95 s. WebKit gives every
++   composited descendant of an on-screen transform-animating layer a backing store (GraphicsLayerCA,
++   ancestorWithTransformAnimationIntersectsCoverageRect); a hidden shell paints nothing. The deck clips
++   (overflow: auto hidden), so these shells are never in view; at 1440 they are display: none (no-op). */
++@keyframes fw-c-shell-hold {
++  from,
++  to {
++    visibility: hidden;
+   }
+ }
++.start-selling-future.is-visible.is-future-shrinking
++  .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
++  animation: fw-c-shell-hold 0.95s linear;
++}
++/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
++   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
++   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
++   under the old scrollTo pin while the morph follows the scroll. Rev 4: no scroll snap (it made iOS decelerate the
++   whole page fast); a script settles a part-open morph to an end once the scroll rests. */
++html.fw-ms .start-selling-platform {
++  position: sticky;
++  top: calc(100dvh - var(--fw-ms-h, 100dvh));
++}
++.fw-ms-end {
++  position: relative;
++  height: 100lvh;
++  pointer-events: none;
++}
++
++/* perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1). Phones (<= 640 px), only while the morph
++   moves ([data-fw-rv], set by the nav's template effect for 0.001 < m < 1): the nav takes its final size and place,
++   and today's box at m is cut out of it by an inline clip-path; the parts inside follow by inline transforms (JS
++   __rvW). The dark colour is .fw-rv-dark at opacity m over the light background. Settled, the nav is today's. */
++.fw-rv-dark,
++.fw-rv-glass {
++  display: none;
++}
++@media (width<=640px) {
++  .start-selling-top-nav.svelte-1dcozpm[data-fw-rv] {
++    top: 12px;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    border-radius: 0;
++    background: #ffffff1a;
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++    will-change: transform;
++  }
++  /* today's nav box and its backdrop blur, from the same formulas as .start-selling-top-nav at <= 640 px; it paints
++     nothing itself (no background), it only blurs the page under today's box */
++  .fw-rv-glass[data-fw-rv] {
++    --morph: 0;
++    --pill-w: min(984px, calc(100vw - 32px));
++    --pill-h: 52px;
++    --panel-w: calc(100vw - 24px);
++    --panel-h: calc(100vh - 24px);
++    display: block;
++    position: fixed;
++    z-index: 40;
++    left: 50%;
++    top: calc(16px + (12px - 16px) * var(--morph));
++    box-sizing: border-box;
++    width: calc(var(--pill-w) + (var(--panel-w) - var(--pill-w)) * var(--morph));
++    height: calc(var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph));
++    border-radius: calc(32px - 12px * var(--morph));
++    -webkit-backdrop-filter: blur(calc(20px * (1 - var(--morph))));
++    backdrop-filter: blur(calc(20px * (1 - var(--morph))));
++    pointer-events: none;
++    transform: translate(-50%);
++  }
++  .start-selling-top-nav[data-fw-rv] > .fw-rv-dark {
++    display: block;
++    position: absolute;
++    inset: 0;
++    z-index: 0;
++    background: #131922;
++    pointer-events: none;
++    will-change: opacity;
++  }
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-bar,
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-logo,
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-actions,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-col,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-center,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-footer {
++    will-change: transform;
++  }
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-backdrop,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-veil {
++    transform-origin: 0 0;
++    will-change: transform;
++  }
++}
