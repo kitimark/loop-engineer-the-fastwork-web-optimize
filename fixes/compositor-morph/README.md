@@ -328,3 +328,51 @@ The m 1 cell depends on how the page gets there (Chrome only):
   frame 0.068 %.
 - F-309's corner part (backdrop clipped by the outermost rounded clip) is REFUTED as the cause (the corners are a
   capture-path effect). Known issue in the proposal: "Chrome screenshot-only artifact; the displayed frame is clean".
+
+## CM in v10 (PR-030 accepted by the user 15:49Z; integration with int-v8)
+
+- `cm-on-v10.diff`: CM v1.2 cut against v10's V (61257aa0969a / fb9f6aa28ad4) → JS a33a6c7c1f2b, CSS 62743920fe1a
+  (int-v8's "new V", byte-equal). Three decisions:
+  - CM's own hit-test skip is dropped: hit-skip's `!(__msOn && __msP > 0.2 && r > 0.2)` covers it (`__cmSup` needs
+    `__msOn`).
+  - P1's reveal and P1b (a)'s size probe stay off where CM runs: `__rvW` and `__rvSzInit` check `html.fw-cm` (CM's
+    locals are not visible there; `__cmMq` and `__rvMq` are both `(width <= 640px)`, so exactly one of the two runs).
+  - nolift: CM's `v.earn` loses its `translateY(-8e)` (it was written inline and into the generated keyframes, so it
+    brought the 8 px rise back over nolift's CSS).
+  - pause (c) and I-219: no interaction found.
+- The morph driver (M, `__fwMorphDrive`) does not drive CM: it tweens x with `E()` at a fixed bottom scroll, never calls
+  `__cmSet` / `__cmPrep`, and CM's keyframes stay at progress 1. No user path calls `E()` in 7c mode (`N()` arms wheel
+  and touch only when `!__msOn`). M-driver frames on a CM build (fix-end-morph's pfa runs, 15:36-15:38Z) are not
+  evidence about CM; use S, W or G.
+
+### The first-open frame and (c1)
+
+- P-157 G runs (CM v1.1, Timeline on, `out/cm/openframes.mjs`): every V run has one 79-82 ms frame at m ~0.06, the first
+  open of the page load. In EV1: the open frame runs 45 ms of script in the shared scroll rAF dispatcher `iE` (JS 2705),
+  in which a `getBoundingClientRect` forces a 27 ms style recalc and a 7 ms layout; the next frame has 27 ms of style
+  and 31 ms of composite. The first open is also where CM generated its keyframes and read the logo width and bar
+  inset. Later opens: 38-50 ms, with a 14-17 ms forced layout in the same place. C's opens: 10-48 ms, no such frame.
+- (c1) `c1-on-cm-v10.diff` (JS b8b194b7ff56, CSS 62743920fe1a): once the page has been still for 300 ms after load and
+  the panel has mounted, read the logo width, bar inset and column offsets and generate the keyframes (`__cmWarm`,
+  a passive scroll listener and a timer, both removed when done or on teardown); `__cmPrep` keeps reading what is
+  missing (the fallback). The logo width is intrinsic and the inset depends only on the viewport, so the values equal
+  what `__cmPrep` read.
+- Simulator, cold (the timed open is the first of the load; `cm-sim.mjs --cold`), new V vs c1: keyframes before the
+  open 0 / 39155 chars; first open frame 36 paints 2765 kpx (30 / 2657 in a second run) vs 12 paints 1122 kpx (as any
+  later open); open phase 197 / 13681 vs 185 / 13330 paints / kpx; rest and close equal.
+- Pixels, Chrome screencast, 4 loads: 0 % at pre, 0.02, 0.5, 1, down 0 (T0).
+- (c2), deferring CM's inline writes to a microtask after the dispatcher's reads, was tried and dropped: forced
+  layouts and styles did not change (Simulator, `forced L/S`). The forced reads per frame come from outside CM (`n` at
+  JS 13330, once per frame; `__msTick` at 14307, 31 per open; `F` at 13864/13867), the V13 item.
+- In int-v8's v10 block as arm D (lead, 16:3xZ).
+- Rest at m 1 restyles every frame (Simulator restOpen: 72 styles in 72 frames). CM's scroll-driven animations are
+  finished there; the running animations at rest are 4 time-based ones: the panel's three column marquees
+  (`start-selling-morph-col-up/down`) and the hero's orbit (`hero-cta-orbit`, offscreen). Which one restyles:
+  UNRESOLVED; decisive check: a rest probe pausing each in turn.
+
+### Gate change (`gates/cm-sim.mjs`)
+
+`--cold` (no warm-up open; the walk stops two screens before the end), `--stack N` (Timeline call stacks N deep;
+forced Layout / RecalculateStyles records counted per phase by their script frames, `forcedBy`), per-frame forced
+counts (`fLayouts`, `fStyles`: nested in a script record), the first three frames per phase in the log, the running
+animations after each rest phase, and the keyframes' size before the timed phases.

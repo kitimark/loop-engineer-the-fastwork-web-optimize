@@ -1,0 +1,66 @@
+--- out/cm/v10try/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 22:54:44
++++ out/cm/v10c1/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 23:21:36
+@@ -14539,6 +14539,42 @@
+         for (let [k, p] of Object.entries(V)) if (E[k]) for (let a of Object.keys(p)) E[k].style.removeProperty(a);
+         __cmLive = !1;
+       },
++      // (c1) the geometry the keyframes need (logo width, bar inset, the panel's column offsets) and the keyframes
++      // themselves, read and generated once the page has been still for 300 ms after load (the panel mounts at idle
++      // too, perf(morph-panel-lazy-mount)), not in the first open frame (iPhone Timeline, P-157 V runs: the first open
++      // ran 45 ms of script and a 27 ms style + 31 ms composite frame after it, ~80 ms frames at m ~0.06 in every run).
++      // The logo's width is intrinsic (scale and translate don't change offsetWidth) and the inset depends only on
++      // the viewport width, so reading them early gives the values __cmPrep would read; __cmPrep still reads what is
++      // missing (the fallback when the end of the page comes first).
++      __cmWarmQ = 0,
++      __cmWarmT = -1e9,
++      __cmWarmN = 0,
++      __cmWarmScroll = () => {
++        __cmWarmT = performance.now();
++      },
++      __cmWarmArm = (ms) => {
++        __cmWarmQ || (__cmWarmQ = window.setTimeout(__cmWarm, ms));
++      },
++      __cmWarmEnd = () => {
++        (window.clearTimeout(__cmWarmQ), (__cmWarmQ = 0), window.removeEventListener(`scroll`, __cmWarmScroll));
++      },
++      __cmWarm = () => {
++        __cmWarmQ = 0;
++        // not a phone width (the fallback in __cmPrep covers a later rotation), or the morph already started
++        if (!__cmOn() || __cmLive) return void __cmWarmEnd();
++        if (performance.now() - __cmWarmT < 300) return void __cmWarmArm(300);
++        let D = __cmDom(),
++          G = __cmG;
++        // the panel's size comes from the ResizeObserver in __cmDom; the columns exist once the panel has mounted
++        let cols = D ? D.u[3].querySelectorAll(`.start-selling-morph-col`) : [];
++        if (!D || !G || !G.W || !cols.length) return void (++__cmWarmN < 60 ? __cmWarmArm(1e3) : __cmWarmEnd());
++        let lg = D.u[3].querySelector(__cmSel.logo),
++          br = D.u[3].querySelector(__cmSel.bar);
++        (G.L == null && lg && (G.L = lg.offsetWidth),
++          G.ix == null && br && (G.ix = parseFloat(getComputedStyle(br).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        G.cols = [...cols].map((e) => (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100);
++        (__cmGen(), __cmWarmEnd());
++      },
+       // __navMorphSet's writes, but the Svelte state x (classes, inert, aria, tabindex, --morph) only when a threshold
+       // is crossed; r / w / a / i (C(), S(), the settle) keep the exact value
+       __cmSet = (t) => {
+@@ -14707,7 +14743,11 @@
+       document.documentElement.classList.add(`fw-ms`),
+       // compositor-morph: the view timeline (CSS) and the wrappers exist from load, so the first morph frame only flips
+       // the class
+-      __cmSup && (document.documentElement.classList.add(`fw-cm`), __cmDom()),
++      __cmSup &&
++        (document.documentElement.classList.add(`fw-cm`),
++        __cmDom(),
++        window.addEventListener(`scroll`, __cmWarmScroll, { passive: !0 }),
++        __cmWarmArm(2e3)),
+       __msTick());
+     window.__navMorphSet = __navMorphSet;
+     // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
+@@ -14750,6 +14790,7 @@
+           window.clearTimeout(l),
+           te?.disconnect(),
+           __msRO?.disconnect(),
++          __cmWarmEnd(),
+           __msEnd?.remove(),
+           window.clearTimeout(__msTO),
+           [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),

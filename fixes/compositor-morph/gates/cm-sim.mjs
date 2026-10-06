@@ -26,6 +26,13 @@ const ARMS = (arg('--arms') || '').split(',').filter(Boolean).map((x) => { const
 if (!ARMS.length) throw new Error('--arms <abs overlay dir>[@css][,...]');
 const N = Number(arg('--steps', '40'));
 const LABEL = arg('--label', 'v92');
+// --cold: no warm-up open and close before the timed phases (the timed open is the first of the page load)
+const COLD = process.argv.includes('--cold');
+// --stack N: Timeline call stacks N deep (default 1, as TIMELINE_START); forced Layout / style records then name their
+// script frames (function@line:col of the served file), counted per phase as forcedBy
+const STACK = Number(arg('--stack', '1'));
+// running animations at a rest phase (target, name, timeline kind, play state), read after the phase window
+const ANIMS = `(() => document.getAnimations().filter((a) => a.playState === 'running').map((a) => { const e = a.effect && a.effect.target; const k = e ? (e.nodeName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.replace(/svelte-\\w+/g, '').trim().split(/\\s+/).slice(0, 2).join('.') : '')) : '?'; return k + ' ' + (a.animationName || a.id || a.constructor.name) + ' ' + (a.timeline ? a.timeline.constructor.name : 'none'); }))()`;
 const OUT = join(WT, 'out/compositor-morph'); mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
@@ -41,33 +48,36 @@ const RUN = (ys) => `(() => { const ys = ${JSON.stringify(ys)}; let k = 0; const
   window.__emDone = 0; requestAnimationFrame(f); return performance.now(); })()`;
 
 function phaseStats(recs, a, b) {
-  const frames = []; const script = {};
+  const frames = []; const script = {}; const forcedBy = {};
   for (const r of recs) {
     if (r.type !== 'RenderingFrame') continue;
     const t = r.startTime * 1000; if (t < a || t >= b) continue;
-    const o = { at: +(t - a).toFixed(1), paints: 0, kpx: 0, layouts: 0, styles: 0, composite: 0, rects: [] };
-    const walk = (x) => {
+    const o = { at: +(t - a).toFixed(1), paints: 0, kpx: 0, layouts: 0, styles: 0, composite: 0, fLayouts: 0, fStyles: 0, rects: [] };
+    // fLayouts / fStyles: Layout / RecalculateStyles nested in a script record (forced by a read in script)
+    const walk = (x, inJs) => {
       if (x.type === 'Paint') { o.paints++; if (x.data?.clip) { const q = box(x.data.clip); o.kpx += (q.w * q.h) / 1e3; o.rects.push(q); } }
-      else if (x.type === 'Layout') o.layouts++;
-      else if (x.type === 'RecalculateStyles') o.styles++;
+      if (inJs && (x.type === 'Layout' || x.type === 'RecalculateStyles')) { const cf = (x.stackTrace?.callFrames || x.data?.stackTrace?.callFrames || []).filter((q) => q.url && q.url !== '[native code]').slice(0, 3).map((q) => `${q.functionName || '(anon)'}@${q.lineNumber}:${q.columnNumber}`).join('<') || '(no js frame)'; const k = `${x.type === 'Layout' ? 'L' : 'S'} ${cf}`; forcedBy[k] = (forcedBy[k] || 0) + 1; }
+      if (x.type === 'Layout') (o.layouts++, inJs && o.fLayouts++);
+      else if (x.type === 'RecalculateStyles') (o.styles++, inJs && o.fStyles++);
       else if (x.type === 'Composite') o.composite++;
       else if (/^(FunctionCall|EventDispatch|TimerFire|FireAnimationFrame|ObserverCallback|EvaluateScript)$/.test(x.type)) { const k = x.type + (x.data?.type ? ':' + x.data.type : '') + (x.data?.functionName ? ':' + x.data.functionName : ''); script[k] = (script[k] || 0) + 1; }
-      for (const ch of x.children || []) walk(ch);
+      const js = inJs || /^(FunctionCall|EventDispatch|TimerFire|FireAnimationFrame|ObserverCallback|EvaluateScript)$/.test(x.type);
+      for (const ch of x.children || []) walk(ch, js);
     };
-    walk(r); o.kpx = Math.round(o.kpx); frames.push(o);
+    walk(r, false); o.kpx = Math.round(o.kpx); frames.push(o);
   }
   // rects: the biggest 6 per frame, keyed by size, counted over the phase
   const rectKinds = {};
   for (const f of frames) { for (const q of f.rects) { const k = `${q.w}x${q.h}@${q.x},${q.y}`; rectKinds[k] = (rectKinds[k] || 0) + 1; } delete f.rects; }
   const sum = (k) => frames.reduce((s, f) => s + f[k], 0);
   const med = (k) => { const s = frames.map((f) => f[k]).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
-  return { nFrames: frames.length, paints: sum('paints'), kpx: sum('kpx'), layouts: sum('layouts'), styles: sum('styles'), composite: sum('composite'),
+  return { nFrames: frames.length, paints: sum('paints'), kpx: sum('kpx'), layouts: sum('layouts'), styles: sum('styles'), composite: sum('composite'), fLayouts: sum('fLayouts'), fStyles: sum('fStyles'),
     framesWithLayout: frames.filter((f) => f.layouts > 0).length, framesWithPaint: frames.filter((f) => f.paints > 0).length,
     median: { paints: med('paints'), kpx: med('kpx'), layouts: med('layouts'), styles: med('styles') },
-    topRects: Object.fromEntries(Object.entries(rectKinds).sort((x, y) => y[1] - x[1]).slice(0, 14)), script: Object.fromEntries(Object.entries(script).sort((x, y) => y[1] - x[1]).slice(0, 14)), frames };
+    topRects: Object.fromEntries(Object.entries(rectKinds).sort((x, y) => y[1] - x[1]).slice(0, 14)), script: Object.fromEntries(Object.entries(script).sort((x, y) => y[1] - x[1]).slice(0, 14)), forcedBy: Object.fromEntries(Object.entries(forcedBy).sort((x, y) => y[1] - x[1]).slice(0, 12)), frames };
 }
 
-const res = { tool: 'fixes/compositor-morph/gates/cm-sim.mjs (from fix-end-morph em-sim.mjs)', label: LABEL, startedAt: new Date().toISOString(), steps: N, arms: [] };
+const res = { tool: 'fixes/compositor-morph/gates/cm-sim.mjs (from fix-end-morph em-sim.mjs)', label: LABEL, cold: COLD, stack: STACK, startedAt: new Date().toISOString(), steps: N, arms: [] };
 for (const [i, arm] of ARMS.entries()) {
   const armCss = arm.css ? readFileSync(arm.css, 'utf8') : null;
   const st = join(OUT, `serve-ems-${i}-${process.pid}.json`); rmSync(st, { force: true });
@@ -92,18 +102,24 @@ for (const [i, arm] of ARMS.entries()) {
       return { armStyle: !!document.getElementById('em-arm'), platformFilterAtHalf: pf, panelFilter: pn ? getComputedStyle(pn).filter : null, panelTransform: pn ? getComputedStyle(pn).transform : null,
         pillW: h ? getComputedStyle(h).getPropertyValue('--pill-w') : null, safari: navigator.userAgent.replace(/.*Version\\/([\\d.]+).*/, '$1') }; })()`);
     console.log(basename(arm.dir) + (arm.css ? '@' + basename(arm.css) : ''), 'applied', JSON.stringify(run.applied));
-    for (const f of [0.2, 0.4, 0.6, 0.8, 1]) { await c.evaluate(`(window.scrollTo(0, document.documentElement.scrollHeight * ${f}), 0)`); await sleep(700); }
+    // --cold: the walk stops two screens before the end, so the timed open is the first of the page load
+    if (COLD) { for (const f of [0.25, 0.5, 0.75, 1]) { const g0 = await c.evaluate(GEO); await c.evaluate(`(window.scrollTo(0, ${Math.round(f * (g0.endStart - 2 * g0.ih))}), 0)`); await sleep(700); } }
+    else for (const f of [0.2, 0.4, 0.6, 0.8, 1]) { await c.evaluate(`(window.scrollTo(0, document.documentElement.scrollHeight * ${f}), 0)`); await sleep(700); }
     let g = await c.evaluate(GEO);
     if (!g.t) throw new Error('no .fw-ms-end: the 7d mode is off in this build or device');
     run.geo0 = g;
-    // warm-up: one open and close, then park before the approach
-    await c.evaluate(`(window.scrollTo({ top: ${g.max}, behavior: 'instant' }), 0)`); await sleep(1500);
-    await c.evaluate(`(window.scrollTo({ top: ${g.endStart}, behavior: 'instant' }), 0)`); await sleep(1500);
+    // warm-up: one open and close, then park before the approach (not with --cold)
+    if (!COLD) {
+      await c.evaluate(`(window.scrollTo({ top: ${g.max}, behavior: 'instant' }), 0)`); await sleep(1500);
+      await c.evaluate(`(window.scrollTo({ top: ${g.endStart}, behavior: 'instant' }), 0)`); await sleep(1500);
+    }
     await c.evaluate(`(window.scrollTo({ top: ${g.endStart - 2 * g.ih}, behavior: 'instant' }), 0)`); await sleep(1500);
     g = await c.evaluate(GEO);
+    run.kfBefore = await c.evaluate("(() => { const k = document.getElementById('fw-cm-kf'); return k ? k.textContent.length : 0; })()");
+    console.log(run.arm, 'keyframes before the timed phases (chars)', run.kfBefore);
     const recs = [];
     c.on((m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); });
-    for (const [m, prm] of TIMELINE_START) await c.send(m, prm);
+    for (const [m, prm] of TIMELINE_START) await c.send(m, m === 'Timeline.start' ? { ...prm, maxCallStackDepth: STACK } : prm);
     await c.send('LayerTree.enable');
     const syncT = await c.evaluate(timelineSyncJs('ems-sync'));
     const names = new Map();
@@ -137,7 +153,7 @@ for (const [i, arm] of ARMS.entries()) {
       if (ys) { t0 = await c.evaluate(RUN(ys)); t1 = await waitDone(); await sleep(150); }
       else { t0 = await c.evaluate('performance.now()'); await sleep(restMs); t1 = await c.evaluate('performance.now()'); }
       const b = await layers();
-      run.phases[name] = { t0, t1, geo: await c.evaluate(GEO), layers: await diff(a, b) };
+      run.phases[name] = { t0, t1, geo: await c.evaluate(GEO), layers: await diff(a, b), anims: ys ? undefined : await c.evaluate(ANIMS) };
     };
     const { endStart, t, max, ih } = g;
     await phase('approach', lin(endStart - ih, endStart, 30));
@@ -154,8 +170,11 @@ for (const [i, arm] of ARMS.entries()) {
     for (const [name, ph] of Object.entries(run.phases)) {
       ph.tl = phaseStats(recs, ph.t0 + off, (ph.t1 ?? ph.t0) + off + (name.startsWith('rest') ? 0 : 50));
       const s = ph.tl;
-      console.log(run.arm, name.padEnd(11), 'p', ph.geo.p, 'hdrH', ph.geo.hdrH, '| frames', s.nFrames, 'paints', s.paints, 'kpx', s.kpx, 'layouts', s.layouts, `(${s.framesWithLayout} fr)`, 'styles', s.styles,
+      console.log(run.arm, name.padEnd(11), 'p', ph.geo.p, 'hdrH', ph.geo.hdrH, '| frames', s.nFrames, 'paints', s.paints, 'kpx', s.kpx, 'layouts', s.layouts, `(${s.framesWithLayout} fr)`, 'styles', s.styles, 'forced L/S', `${s.fLayouts}/${s.fStyles}`,
+        '| f0-2', s.frames.slice(0, 3).map((f) => `p${f.paints}/${f.kpx}k L${f.layouts}(${f.fLayouts}) S${f.styles}(${f.fStyles})`).join(' '),
         '| layers', ph.layers.nBefore, '->', ph.layers.nAfter, JSON.stringify(ph.layers.painted.slice(0, 8).map((x) => `${x.layer}${x.isNew ? '*' : ''}:${x.d} ${x.w}x${x.h}`)));
+      if (STACK > 1 && Object.keys(s.forcedBy).length) console.log(run.arm, name.padEnd(11), 'forced by', JSON.stringify(s.forcedBy));
+      if (ph.anims) console.log(run.arm, name.padEnd(11), 'running animations', ph.anims.length, JSON.stringify(ph.anims.slice(0, 12)));
     }
     writeFileSync(join(OUT, `tl-ems-${i}-${STAMP}.json`), JSON.stringify({ offsetMs: off, recs }));
   } catch (e) { run.error = String(e.stack || e.message || e); console.log(run.arm, 'error', run.error); }

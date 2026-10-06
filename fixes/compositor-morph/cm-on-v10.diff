@@ -1,0 +1,399 @@
+--- _app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 22:28:02
++++ <this worktree>/out/cm/v10try/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 22:54:44
+@@ -14326,7 +14326,236 @@
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+         ((e = e > 0 ? (e < 1 ? e : 1) : 0),
+-          e !== __msP && ((__msP = e), __navMorphSet(e), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
++          e !== __msP && ((__msP = e), __cmOn() ? __cmSet(e) : (__cmLive && __cmClear(), __navMorphSet(e)), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
++      },
++      // perf(compositor-morph, PROPOSAL; arch-compositor-morph): touch phones (7c mode) with scroll-driven animations and
++      // width <= 640 px. The nav's morph is drawn by scroll-driven CSS animations of transform / opacity / filter /
++      // backdrop-filter only, on a named view timeline over the extra screen (.fw-ms-end, 100lvh tall: cover 0% .. cover 100lvh
++      // = 7c's m = (y - (max - t)) / t; not entry 0%..100%, which ends early when the toolbar makes the viewport shorter
++      // than 100lvh, Simulator OBSERVED), which WebKit 26.4+ runs threaded (UI process) and Chrome on the compositor. The nav
++      // takes its final size (CSS, .is-morphing under html.fw-cm); today's box at m (top 16 -> 12 px, width pill ->
++      // panel, height 52 px -> panel, radius min(32 - 12m, h/2)) is cut out by four nested overflow:hidden corner
++      // clippers, each moved to its corner and scaled to the radius (k = r / 32), each with a counter-transformed child,
++      // so the content keeps its place; every part inside takes today's place at m by a transform (P1's formulas).
++      // Per frame the script no longer writes --morph: the Svelte state x changes only when m crosses a threshold the
++      // template uses (0, 0.08, 0.2, 0.35, 0.4, 0.55, qM), so the classes, inert, aria and tabindex flip where they did.
++      // The animations' values come from one function (__cmVals): inline for the frame the class arrives in (a new
++      // scroll-driven animation is pending for one frame, F-162), and as generated @keyframes for every other frame.
++      __cmMq = window.matchMedia(`(width <= 640px)`),
++      __cmSup =
++        __msOn && !!window.CSS?.supports?.(`(timeline-scope: --a) and (animation-range: cover 0% cover 100lvh)`),
++      __cmOn = () => __cmSup && __cmMq.matches,
++      __cmKv = ``,
++      __cmLive = !1,
++      __cmD = null,
++      __cmG = null,
++      __cmSt = null,
++      __cmCss = ``,
++      // the last bucket (t >= 1): the morph's end is a resting place (the 7d settle stops there), so x and --morph must be
++      // exactly today's 1 there, not the value at which t crossed qM (a still frame at m 1 differed by ~2 % otherwise)
++      __cmK = (t) =>
++        `${+(t > 0)}${+(t > 0.08)}${+(t >= 0.2)}${+(t > 0.2)}${+(t < 0.35)}${+(t > 0.4)}${+(t > 0.55)}${+(t > qM)}${+(t >= 1)}`,
++      // the wrappers: c0 > u0 > c1 > u1 > c2 > u2 > c3 > u3 (glass) > [dark, the header's own children]
++      __cmDom = () => {
++        let h = __navNode();
++        if (!h) return null;
++        if (__cmD && __cmD.h === h && __cmD.c[0].isConnected) return __cmD;
++        let mk = (k, c) => {
++            let d = document.createElement(`div`);
++            // F-307: no new nodes in the accessibility tree (the wrappers are role none, the dark layer and the size
++            // probe are hidden)
++            return ((d.className = c), d.setAttribute(`data-fw-cm`, k), d.setAttribute(/^[cu]/.test(k) ? `role` : `aria-hidden`, /^[cu]/.test(k) ? `none` : `true`), d);
++          },
++          c = [0, 1, 2, 3].map((i) => mk(`c${i}`, `fw-cm-c`)),
++          u = [0, 1, 2, 3].map((i) => mk(`u${i}`, `fw-cm-u`)),
++          dk = mk(`dk`, `fw-cm-dk`),
++          ms = mk(`ms`, `fw-cm-ms`);
++        for (let i = 0; i < 4; i++) (c[i].appendChild(u[i]), i < 3 && u[i].appendChild(c[i + 1]));
++        (u[3].append(dk, ...h.childNodes), h.append(c[0], ms));
++        // the panel's size (CSS --panel-w / --panel-h at this viewport) without a forced layout in the morph frames
++        new ResizeObserver(([e]) => {
++          let b = e.borderBoxSize?.[0],
++            W = b ? b.inlineSize : e.contentRect.width,
++            H = b ? b.blockSize : e.contentRect.height;
++          W > 0 && H > 0 && (!__cmG || __cmG.W !== W || __cmG.H !== H) && ((__cmG = { ...(__cmG || {}), W, H }), __cmGen());
++        }).observe(ms);
++        return (__cmD = { h, c, u, dk, ms });
++      },
++      // today's nav at m, as transforms on the full-size nav (P1's formulas, fix-morph-gpu PR-012 rev 1)
++      __cmVals = (m, G) => {
++        let W = G.W,
++          H = G.H,
++          n = 1 - m,
++          dx = 4 * n,
++          dy = 4 * n,
++          w = W - 8 * n,
++          h = 52 + (H - 52) * m,
++          r = Math.min(32 - 12 * m, h / 2, w / 2),
++          k = r / 32,
++          s = w / W,
++          e = Math.min(1, m / 0.2),
++          o = Math.min(1, Math.max(0, (m - 0.08) / 0.72)),
++          oy = dy + h / 2,
++          q = (x) => +x.toFixed(4),
++          px = (x) => `${q(x)}px`,
++          P = [
++            [dx, dy],
++            [dx + w - W, dy],
++            [dx, dy + h - H],
++            [dx + w - W, dy + h - H],
++          ],
++          v = {};
++        P.forEach(([x, y], i) => {
++          v[`c${i}`] = { transform: `translate(${px(x)}, ${px(y)}) scale(${q(k)})` };
++          v[`u${i}`] = { transform: `scale(${+(1 / k).toFixed(6)}) translate(${px(-x)}, ${px(-y)})` };
++        });
++        // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8)
++        Object.assign(v.u3, { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` });
++        v.dk = { opacity: `${q(m)}` };
++        v.bar = { translate: `0px ${px(dy)}` };
++        v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
++        v.act = { transform: `translateX(${px(-dx)})` };
++        // joinwl-nolift (PR-027, user T-204 #10/#13): no 8 px rise, as in today's CSS with nolift
++        v.earn = { filter: `blur(${px(10 * e)})` };
++        v.lang = { transform: `translateX(${px(4 * e)})` };
++        v.panel = {
++          opacity: `${q(o)}`,
++          filter: `blur(${px(12 * (1 - o))})`,
++          transform: `translate(${px(W / 2)}, ${px(oy)}) scale(${q(0.96 + 0.04 * m)}) translate(${px(-W / 2)}, ${px(-oy)})`,
++        };
++        v.bd = { transform: `translate(${px(dx + 0.03 * (W - w))}, ${px(dy)}) scale(${+s.toFixed(6)})` };
++        v.veil = { transform: `translate(${px(dx)}, ${px(dy)}) scale(${+s.toFixed(6)}, ${+(h / H).toFixed(6)})` };
++        v.ctr = { translate: `0px ${px(dy + h / 2 - H / 2)}` };
++        v.ftr = { translate: `0px ${px(dy + h - H)}` };
++        (G.cols || []).forEach((f, j) => (v[`col${j}`] = { translate: `0px ${px(f * ((h * W) / w - H))}` }));
++        return v;
++      },
++      // the element (or selector, for the generated rules) of each key
++      __cmSel = {
++        dk: `.fw-cm-dk`,
++        bar: `.start-selling-top-nav-bar`,
++        logo: `.start-selling-top-nav-logo`,
++        act: `.start-selling-top-nav-actions`,
++        earn: `.start-selling-top-nav-btn.is-earn`,
++        lang: `.start-selling-top-nav-actions > .start-selling-language-switch-wrap`,
++        panel: `.start-selling-morph-panel`,
++        bd: `.start-selling-morph-backdrop`,
++        veil: `.start-selling-morph-veil`,
++        ctr: `.start-selling-morph-center`,
++        ftr: `.start-selling-morph-footer`,
++      },
++      __cmQ = (key) =>
++        /^[cu]\d$/.test(key)
++          ? `[data-fw-cm="${key}"]`
++          : /^col\d+$/.test(key)
++            ? `.start-selling-morph-col:nth-child(${+key.slice(3) + 1})`
++            : __cmSel[key],
++      // keyframe offsets per key: the kinks of each formula; a fine grid where the value is not linear in m
++      __cmGrid = (key, G) => {
++        let mk = 6 / ((G.H - 52) / 2 + 12),
++          lin = (a, b, N) => Array.from({ length: N + 1 }, (_, i) => a + ((b - a) * i) / N);
++        return /^u\d$/.test(key)
++          ? [...lin(0, mk, 16), ...lin(mk, 1, 72)]
++          : /^c\d$/.test(key)
++            ? [0, mk, 1]
++            : key === `earn` || key === `lang`
++              ? [0, 0.2, 1]
++              : key === `panel`
++                ? [0, 0.08, 0.8, 1]
++                : key === `logo`
++                  ? lin(0, 1, 8)
++                  : /^col/.test(key)
++                    ? lin(0, 1, 16)
++                    : [0, 1];
++      },
++      __cmGen = () => {
++        let G = __cmG;
++        if (!G || !G.W || G.L == null) return;
++        let sc = `html.fw-cm .start-selling-top-nav.is-morphing`,
++          v0 = __cmVals(0, G),
++          out = ``;
++        for (let key of Object.keys(v0)) {
++          let fr = [...new Set(__cmGrid(key, G).map((x) => +x.toFixed(6)))].sort((a, b) => a - b),
++            body = fr
++              .map((m) => {
++                let p = __cmVals(m, G)[key];
++                return `${+(m * 100).toFixed(4)}%{${Object.entries(p)
++                  .map(([a, b]) => `${a}:${b}`)
++                  .join(`;`)}}`;
++              })
++              .join(``);
++          out += `@keyframes fw-cm-${key}{${body}}${sc} ${__cmQ(key)}{animation:fw-cm-${key} linear both;animation-timeline:--fwms;animation-range:cover 0% cover 100lvh}`;
++          /*the Join button keeps today's one-shot unmask (CSS 12065) in its list, so the same animation runs on (matched by
++            name) instead of restarting when .is-morphing comes and goes*/
++          key === `earn` &&
++            (out += `@media (prefers-reduced-motion:no-preference){${sc}:not(.is-hero-pill) ${__cmQ(key)}{animation:fw-cm-${key} linear both,0.98s cubic-bezier(0.33,0,0.2,1) 0.52s both svelte-1dcozpm-start-selling-nav-earn-unmask;animation-timeline:--fwms,auto;animation-range:cover 0% cover 100lvh,normal}}`);
++        }
++        if (out === __cmCss) return;
++        __cmCss = out;
++        __cmSt || ((__cmSt = document.createElement(`style`)), (__cmSt.id = `fw-cm-kf`), document.head.appendChild(__cmSt));
++        __cmSt.textContent = out;
++      },
++      // the parts that exist now (the panel mounts lazily), by key
++      __cmEls = () => {
++        let D = __cmD,
++          o = {};
++        if (!D) return o;
++        D.c.forEach((e, i) => (o[`c${i}`] = e));
++        D.u.forEach((e, i) => (o[`u${i}`] = e));
++        for (let [k, s] of Object.entries(__cmSel)) {
++          let e = D.u[3].querySelector(s);
++          e && (o[k] = e);
++        }
++        D.u[3].querySelectorAll(`.start-selling-morph-col`).forEach((e, j) => (o[`col${j}`] = e));
++        return o;
++      },
++      // going live (the frame the nav starts morphing): DOM, geometry, keyframes, and inline values for this frame
++      __cmPrep = (t) => {
++        let D = __cmDom();
++        if (!D) return;
++        let G = __cmG || { W: 0, H: 0 };
++        if (!G.W) {
++          let b = D.ms.getBoundingClientRect();
++          ((G.W = b.width), (G.H = b.height));
++        }
++        let lg = D.u[3].querySelector(__cmSel.logo),
++          br = D.u[3].querySelector(__cmSel.bar);
++        (G.L == null && lg && (G.L = lg.offsetWidth),
++          G.ix == null && br && (G.ix = parseFloat(getComputedStyle(br).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        G.cols = [...D.u[3].querySelectorAll(`.start-selling-morph-col`)].map(
++          (e) => (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100,
++        );
++        __cmG = G;
++        __cmGen();
++        let E = __cmEls(),
++          V = __cmVals(t, G);
++        for (let [k, p] of Object.entries(V)) if (E[k]) for (let [a, b] of Object.entries(p)) E[k].style.setProperty(a, b);
++        __cmLive = !0;
++      },
++      __cmClear = () => {
++        if (!__cmG) return void (__cmLive = !1);
++        let E = __cmEls(),
++          V = __cmVals(0, __cmG);
++        for (let [k, p] of Object.entries(V)) if (E[k]) for (let a of Object.keys(p)) E[k].style.removeProperty(a);
++        __cmLive = !1;
++      },
++      // __navMorphSet's writes, but the Svelte state x (classes, inert, aria, tabindex, --morph) only when a threshold
++      // is crossed; r / w / a / i (C(), S(), the settle) keep the exact value
++      __cmSet = (t) => {
++        (n && window.cancelAnimationFrame(n), (n = 0), t > 0 && z(b, !0), (w = a = i = r = t));
++        let k = __cmK(t);
++        if (k !== __cmKv) {
++          let was = __cmKv;
++          /*leaving .is-morphing: the nav jumps from its CM size back to today's box, so the :not(.is-morphing) width and
++            background transitions would run (0.68 / 0.7 s); today's tween reaches the box first. html.fw-cm-out holds
++            them off for the flip's frame (CSS), two frames later the list is today's again (no value changes then)*/
++          t <= 0 &&
++            was[0] === `1` &&
++            (document.documentElement.classList.add(`fw-cm-out`),
++            requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
++          ((__cmKv = k), t > 0 ? (was[0] === `1` && __cmLive) || __cmPrep(t) : __cmClear(), z(x, t, !0));
++        }
++        (S(), C() || I());
+       },
+       // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
+       __navMorphSet = (t) => {
+@@ -14476,6 +14705,9 @@
+       // main (the page's content) grows with lazy content above; body is only one viewport tall here
+       R.parentElement && __msRO.observe(R.parentElement),
+       document.documentElement.classList.add(`fw-ms`),
++      // compositor-morph: the view timeline (CSS) and the wrappers exist from load, so the first morph frame only flips
++      // the class
++      __cmSup && (document.documentElement.classList.add(`fw-cm`), __cmDom()),
+       __msTick());
+     window.__navMorphSet = __navMorphSet;
+     // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
+@@ -14645,7 +14877,10 @@
+     __rvSzIx = 16,
+     __rvSzInit = () => {
+       __rvSzQ = 0;
+-      if (__rvSz || !I || !I.isConnected || typeof ResizeObserver != `function`) return;
++      // compositor-morph: no probe where the CM morph runs (the reveal stays off there, see __rvW); the first template
++      // run can come before the nav effect adds html.fw-cm, this rAF comes after it
++      if (__rvSz || !I || !I.isConnected || typeof ResizeObserver != `function` || document.documentElement.classList.contains(`fw-cm`))
++        return;
+       ((__rvSz = document.createElement(`div`)), (__rvSz.className = `fw-rv-size`), __rvSz.setAttribute(`aria-hidden`, `true`), I.appendChild(__rvSz));
+       (__rvSzRO = new ResizeObserver(([e]) => {
+         let b = e && e.borderBoxSize && e.borderBoxSize[0];
+@@ -14713,6 +14948,13 @@
+     __rvW = (v) => {
+       if (v === __rvV) return;
+       __rvV = v;
++      // compositor-morph (PR-030): where the CM morph runs (html.fw-cm: touch phones with scroll-driven animations), it
++      // does the same job (the nav at its final size, today's box cut out, the parts moved by transforms); the reveal
++      // stays off there, and stays the path for phones without scroll-driven animations
++      if (document.documentElement.classList.contains(`fw-cm`)) {
++        __rvOn && __rvOff(v);
++        return;
++      }
+       __rvSz || __rvSzQ || !__rvMq.matches || (__rvSzQ = requestAnimationFrame(__rvSzInit));
+       let m = +v;
+       if (!(__rvMq.matches && m > 0.001 && m < 1)) {
+--- _app/immutable/assets/2.gBuqKVzi.css	2026-10-06 22:28:02
++++ <this worktree>/out/cm/v10try/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 22:51:50
+@@ -12422,6 +12422,120 @@
+   position: relative;
+   height: 100lvh;
+   pointer-events: none;
++}
++
++/* perf(compositor-morph, PROPOSAL; arch-compositor-morph). Touch phones in 7c mode with scroll-driven animations
++   (html.fw-cm, set by the nav effect), width <= 640 px, while the nav morphs (.is-morphing): the nav takes its final
++   size and place and draws nothing itself; four nested corner clippers (.fw-cm-c, each with a counter-transformed
++   child .fw-cm-u) cut today's box out of it, and every moving part follows the scroll through generated scroll-driven
++   @keyframes (style#fw-cm-kf, transform / translate / opacity / filter / backdrop-filter only) on the view timeline
++   --fwms of the extra screen. Outside that, the wrappers are display: contents and the nav is today's. */
++.fw-cm-c,
++.fw-cm-u {
++  display: contents;
++}
++.fw-cm-dk,
++.fw-cm-ms {
++  display: none;
++}
++html.fw-cm {
++  timeline-scope: --fwms;
++}
++html.fw-cm .fw-ms-end {
++  view-timeline: --fwms block;
++}
++/* the frame .is-morphing drops (JS __cmSet adds html.fw-cm-out for two frames): today's :not(.is-morphing) list
++   without its width and background transitions, which would animate the jump from the CM size back to the box */
++html.fw-cm.fw-cm-out .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
++  transition:
++    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
++    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 0.32s;
++}
++@media (width<=640px) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm > .fw-cm-ms {
++    display: block;
++    position: absolute;
++    left: 0;
++    top: 0;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    visibility: hidden;
++    pointer-events: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing {
++    top: 12px;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    border-radius: 0;
++    background: none;
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++    overflow: visible;
++    pointer-events: none;
++    will-change: auto;
++    transition: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-c {
++    display: block;
++    position: absolute;
++    width: 2000px;
++    height: 2000px;
++    overflow: hidden;
++    border-radius: 32px;
++    pointer-events: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-u {
++    display: block;
++    position: absolute;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    pointer-events: none;
++  }
++  /* u3 carries today's light glass (background + backdrop blur, the backdrop root of the nested language-switch blur,
++     P8); the dark colour is .fw-cm-dk at opacity m over it (= today's color-mix, F-039) */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing [data-fw-cm="u3"] {
++    pointer-events: auto;
++    background: #ffffff1a;
++    -webkit-backdrop-filter: blur(20px);
++    backdrop-filter: blur(20px);
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c0"], [data-fw-cm="u0"]) {
++    left: 0;
++    top: 0;
++    transform-origin: 0 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c1"], [data-fw-cm="u1"]) {
++    right: 0;
++    top: 0;
++    transform-origin: 100% 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c2"], [data-fw-cm="u2"]) {
++    left: 0;
++    bottom: 0;
++    transform-origin: 0 100%;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c3"], [data-fw-cm="u3"]) {
++    right: 0;
++    bottom: 0;
++    transform-origin: 100% 100%;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-dk {
++    display: block;
++    position: absolute;
++    inset: 0;
++    background: #131922;
++    opacity: 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
++    left: 0;
++    transform-origin: 0 50%;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-panel,
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-backdrop,
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-veil {
++    transform-origin: 0 0;
++  }
+ }
+ 
+ /* perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1). Phones (<= 640 px), only while the morph
