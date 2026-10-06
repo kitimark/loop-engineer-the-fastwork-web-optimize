@@ -13,7 +13,10 @@ the arm that passed this block, and (a) removes the forced read in Chrome.
 **Known cost (for v10's card):** first-open +11 ms (O1.f2 37.5 vs 26.5 ms, phone, P-156). One frame per first open,
 over 34 ms but under 50 ms; over the first three frames +3.5 ms (f123 65.5 vs 62). Cause UNRESOLVED (likely the first
 composite of P1's layers); a follow-up Timeline attribution run of O1 is queued, not blocking (P1c only if it shows a
-cheap pre-warm).
+cheap pre-warm). **Attribution from the block's own Timeline** (below, "O1 attribution"): the +11 ms is WebKit's
+`Composite` record in the f2 frame (A 22.45 vs C 11.95 ms, every run separated); C pays the same composite one frame
+later (f3: C 10.85 vs A 1.85 ms), so f2 + f3 composite is equal (median C 24.7, A 24.05 ms). A moves the first open's
+layer commit into one frame; it adds none. OBSERVED (our capture, maxCallStackDepth 1).
 
 The v10 candidate "A = P1 + (a)" (lead ruling 2026-10-06 09:35Z; P1b (b) parked). Measured in Chrome:
 - values, trace counts, states and pixels, and one clean headed timing hold;
@@ -426,10 +429,30 @@ detached (`nohup`, I-221).
 
 **Reading.** Chrome put A's switch-on frame at C's level (the forced 198-element restyle gone, Gates above). On the
 phone, A's first open f2 stays 11 ms over C, the same as P1 alone in P-153 (+10). So the WebKit cost of P1's first
-frame is not the layout read: likely the first composite of the new layers (layer creation, backing store, first
-paint of the clip), which (a) does not touch (cause UNRESOLVED; the decisive check is a Timeline attribution run of
-the O1 frame, layer and paint records, which this block did not have). The cost is one frame per page load, and A
-already gives it back in f3 (f123 +3.5 ms). Everything after the first open is better or equal in A.
+frame is not the layout read. The cost is one frame per page load, and A gives it back in f3 (f123 +3.5 ms).
+Everything after the first open is better or equal in A.
+
+**O1 attribution** (`node fixes/end-morph-p1/phone/o1-attr.mjs out/p156/runs`, from the block's own counted-run Timeline
+captures, `Timeline.start` maxCallStackDepth 1, so record types, not functions; JSON out/p156/o1-attr.json). Records
+overlapping each gap, ms clipped to the gap, medians over 4 runs per arm:
+
+| record | f2 C | f2 A | f3 C | f3 A |
+|---|---|---|---|---|
+| gap dt | 26.5 | 37.5 | 19 | 11.5 |
+| `Composite` | 11.95 | **22.45** | 10.85 | 1.85 |
+| FunctionCall + FireAnimationFrame (script) | 18.25 | 19.35 | 6.65 | 6.55 |
+| RecalculateStyles + Layout | 5.5 | 6.05 | 2.55 | 2.3 |
+| Paint | 0.8 (7 records) | 0.95 (12) | 0.75 (10) | 0.1 (1) |
+
+Per run, f2 / f3 `Composite` ms: C 11.1/9.5, 12.8/12.2, 16.9/9.4, 10.5/13.9; A 22.4/1.6, 22.5/1.6, 25.1/3.7, 21.6/2.1.
+- The whole +11 ms of A's f2 is WebKit's `Composite` record (+10.5 ms median, the runs fully separated). Script,
+  style, layout and paint are equal within 1 ms.
+- C pays a composite of the same size one frame later (f3); f2 + f3 composite is equal (median C 24.7, A 24.05 ms).
+  So A does not add compositing work at the first open: it does the first open's layer commit in one frame where C
+  spreads it over two. OBSERVED, in our setup (one capture setting; what `Composite` contains is WebKit's layer flush,
+  not split further at this depth).
+- For P1c: a pre-warm could only move this commit into an approach frame, which is what (b) did (its arming frame).
+  With f2 + f3 equal and every frame under 50 ms, there is no cheap win; P1c is not proposed.
 
 **Kit changes after block 1** (lead, from map-p156-gaps' trace and I-222/I-224; `p156-block.sh`, its own commit). Block 1
 ran on the old kit; **its timings do not compare with a block run on the new kit**:
