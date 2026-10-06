@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// P-153 reader (frozen before data; card: fixes/end-morph-p1/README.md "P-153", rev 1.1). Phone no-worse check of end-morph
+// P-153 reader (frozen before data; card: fixes/end-morph-p1/README.md "P-153", rev 1.2). Phone no-worse check of end-morph
 // P1 (PR-012 rev 1's composited clip reveal by fix-morph-gpu, ported onto v9-final + F1 + U2):
 //   C (v9-final + F1 + U2, JS a6426953727a, CSS e1359ab9994a) vs V (C + P1, JS 4da641f828bb, CSS a81b9af7b2c9).
 // REV 1.1: a copy of fix-end-morph's P-152 rev 1.1 reader (fixes/end-morph-f12/phone/p152-read.mjs adf4e7a27122 at
 // ac229f7f; the decision rule, the permutation test on the mean difference, the part-2 end-gate void, near bands, EC1
 // slot and its self-test cases unchanged) with the P-153 arms, FIRST OPEN (below; the named risk) and the lead's late
 // P-152 delta (part 2 counts only after "HOLD HA VALID", or a standalone end gate after an HA stop).
+// REV 1.2: P-152 rev 1.3's hold validity (fix-end-morph, p152-read.mjs 11ab8b9496b0 at e3c1a254: holdStatus, its
+// self-test cases and its read lines, P-152 -> P-153), replacing rev 1.1's part-2 rule (part2Gate).
 // A pure reader: no device, no measurement.
 //   node fixes/end-morph-p1/phone/p153-read.mjs <folder> [--json out.json]      (folder: out/p153/runs)
 //   node fixes/end-morph-p1/phone/p153-read.mjs --selftest
@@ -39,11 +41,13 @@
 //   NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE (named, with (a) and/or (b)); a FAIL goes to the
 //   lead (block 2, judged by itself with the same rule, never pooled; or no landing). INSUFFICIENT: an arm has < 3
 //   valid runs. VOID: a sentinel failed or is missing.
-//   END GATE OF PART 2 (lead N3, with the lead's late P-152 delta): part 2's end gate runs only in its last hold HA
-//   (after the attribution runs). Part 2's counted runs (EC2, EC3, EV3, EV4, EC4 and every re-run <run>r) count only
-//   when hold-HA.log (next to the runs folder) has "HOLD HA VALID", or, after an HA that stopped before its end gate
-//   ("HOLD HA VOID" for another reason), endgate-HA.log (p153-block.sh ENDGATE, run right after) has "ENDGATE PASS".
-//   Otherwise they are void: they leave the read (listed as INVALID "part 2 end gate").
+//   HOLD VALIDITY (rev 1.2 = P-152 rev 1.3, lead ruling 2026-10-06 after P-152's block 1 stopped at H3's end gate):
+//   every hold runs a start and an end thermal gate. A counted run or a sentinel counts only when the hold that ran it
+//   (its "RUN <item> arm" line in out/p153/hold-<H>.log, next to the runs folder; the current log, not a .prev) ended
+//   "HOLD <H> VALID"; otherwise it is INVALID "hold <H> VOID: <why>" (an end-gate FAIL voids only that hold's runs; the
+//   block stops). A run in no hold log does not count. A missing or voided sentinel makes the result VOID. This replaces
+//   rev 1.1's part-2 rule (N3 and the late P-152 delta: part2Gate, endgate-HA.log), which rested on HA being part 2's
+//   only end gate.
 //   Twins (>30/>38 use the >34 bound, >46/>54 the >50 bound): a twin whose WORSE-or-not differs from its main
 //   threshold marks the result "threshold-sensitive" (reported; PASS/FAIL unchanged).
 //   A FAIL whose lowest V run at a failing threshold opens its hold (EV1 or EV3) is labelled "position-confounded"
@@ -71,7 +75,7 @@
 //   Per arm: median and range of O1.f1, f2, f12, f123, and of the per-run median f2 of the full repeat opens.
 //   "FIRST-OPEN RISK SEEN" when median V O1.f2 - median C O1.f2 > 2 ms (rev 2's bound); the label goes to the lead
 //   with the result, the NO-WORSE outcome stays as decided.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync as fs_readdir } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -138,13 +142,16 @@ export function firstOpenSummary(perC, perV) {
   out.label = out.f2.risk ? 'FIRST-OPEN RISK SEEN' : (out.f2.diff == null ? 'FIRST-OPEN NOT READ (no open in an arm)' : 'first open within +2 ms');
   return out;
 }
-/** Part 2's end gate (lead N3 and the late P-152 delta): null when part 2 counts, else the reason. */
-export function part2Gate(haText, egText) {
-  if (haText == null) return 'part 2 end gate: no hold-HA.log';
-  if (/^HOLD HA VALID/m.test(haText)) return null;
-  if (/^HOLD HA VOID end gate/m.test(haText)) return 'part 2 end gate: HA end gate failed';
-  if (/^HOLD HA VOID/m.test(haText)) return egText != null && /^ENDGATE PASS/m.test(egText) ? null : 'part 2 end gate: HA stopped before its end gate and no standalone ENDGATE PASS';
-  return 'part 2 end gate: hold-HA.log has no final HOLD HA line';
+/** Rev 1.2 (P-152 rev 1.3): which hold ran each item, and whether that hold ended VALID. logs = { H: text of hold-<H>.log }.
+ *  Returns { item: { hold, valid, why } } from each log's RUN lines and its last HOLD line. */
+export function holdStatus(logs) {
+  const out = {};
+  for (const [h, text] of Object.entries(logs)) {
+    const last = (text.match(new RegExp(`^HOLD ${h} (VALID|VOID|DRY).*$`, 'gm')) || []).pop() || '';
+    const valid = /^HOLD \S+ VALID/.test(last);
+    for (const m of text.matchAll(/^RUN (\S+) arm/gm)) out[m[1]] = { hold: h, valid, why: valid ? null : `hold ${h} ${last ? last.replace(/^HOLD \S+ /, '') : 'did not end (no HOLD line)'}` };
+  }
+  return out;
 }
 export const P_MAX = 0.05;
 /** Exact one-sided permutation p for "V higher than C" on the mean difference; ties count against V.
@@ -264,13 +271,21 @@ function selftest() {
   ok(firstOpenSummary([RO(34), RO(35), RO(36), RO(33)], [RO(36), RO(35), RO(37), RO(34)]).label, 'first open within +2 ms', 'f2 +1.5 ms is within the bound');
   ok(firstOpenSummary([RO(34), RO(35), RO(36)], [{ o1: null, repeatFullF2Median: null }]).label, 'FIRST-OPEN NOT READ (no open in an arm)', 'no open in V');
   ok(firstOpenSummary([{ o1: { f1: 16, f2: 30, f12: 46, f123: 60 } }, { o1: { f1: 16, f2: 30, f12: 46, f123: 60 } }], [{ o1: { f1: 30, f2: 30, f12: 60, f123: 74 } }, { o1: { f1: 30, f2: 30, f12: 60, f123: 74 } }]).label, 'first open within +2 ms', 'the label ignores f1 (+14 ms) and reads f2');
-  // part 2 end gate (lead N3 + late delta)
-  ok(part2Gate('HOLD HA VALID 420 s', null), null, 'HA VALID: part 2 counts');
-  ok(part2Gate('HOLD HA VOID end gate exit 8', 'ENDGATE PASS'), 'part 2 end gate: HA end gate failed', 'HA end gate failed: void, a later standalone gate does not rescue it');
-  ok(part2Gate('HOLD HA VOID time: AV1 would start', 'ENDGATE PASS 2026'), null, 'HA stopped early, standalone end gate PASS: part 2 counts');
-  ok(part2Gate('HOLD HA VOID time: AV1 would start', null), 'part 2 end gate: HA stopped before its end gate and no standalone ENDGATE PASS', 'HA stopped early, no standalone gate: void');
-  ok(part2Gate(null, null), 'part 2 end gate: no hold-HA.log', 'no HA log: void');
-  ok(part2Gate('HOLD HA DRY ok', null), 'part 2 end gate: hold-HA.log has no final HOLD HA line', 'a dry log does not count');
+  // rev 1.2 (P-152 rev 1.3's cases): per-hold validity
+  { const hs = holdStatus({
+      H2: 'HOLD H2 (P-153) start\nGATE p153-H2-start -> PASS\nRUN S0 arm C exit 0\nRUN EC1 arm C exit 0\nGATE p153-H2-end -> PASS\nHOLD H2 VALID 330 s\n',
+      H3: 'HOLD H3 (P-153) start\nRUN EV1 arm V exit 0\nRUN EV2 arm V exit 0\nGATE p153-H3-end -> FAIL ceiling (Critical)\nHOLD H3 VOID end gate exit 3\n',
+      H4: 'HOLD H4 (P-153) start\nRUN EC2 arm C exit 0\nHOLD H4 VOID time: EC3 would start at 400 s\n',
+      H5: 'HOLD H5 (P-153) start\nRUN EV3 arm V exit 0\nRUN EV4 arm V exit 0\n' });
+    ok(hs.EC1.valid && hs.S0.valid, true, 'rev 1.2: runs of a VALID hold count');
+    ok(hs.EV1.valid || hs.EV2.valid, false, 'rev 1.2: an end-gate FAIL voids that hold\'s runs');
+    ok(hs.EV2.why, 'hold H3 VOID end gate exit 3', 'rev 1.2: the reason names the hold and its last line');
+    ok(hs.EC2.valid, false, 'rev 1.2: a run in a hold that stopped early (time guard) does not count');
+    ok(hs.EV3.why, 'hold H5 did not end (no HOLD line)', 'rev 1.2: a hold with no HOLD line does not count');
+    ok(hs.EC4, undefined, 'rev 1.2: a run in no hold log is unknown (the read voids it)'); }
+  ok(holdStatus({ H4: 'RUN EC2 arm C exit 0\nHOLD H4 VOID time: EC3\n' }).EC2.valid, false, 'rev 1.2: the time-guard try of a hold is void');
+  ok(holdStatus({ H4: 'RUN EC2 arm C exit 0\nRUN EC3 arm C exit 0\nHOLD H4 VALID 500 s\n' }).EC3.valid, true, 'rev 1.2: the whole re-run of that hold (the current log) counts');
+  ok(holdStatus({ HA: 'RUN AC1 arm C exit 0\nRUN AV1 arm V exit 0\nHOLD HA VOID end gate exit 3\n' }).AV1.valid, false, 'rev 1.2: an HA end-gate FAIL voids only HA (attribution), not part 2');
   console.log(`SELFTEST ok (${n} checks)`);
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -283,20 +298,20 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const PLAN = { S0: 'H2/1', EC1: 'H2/2', EV1: 'H3/1', EV2: 'H3/2', EC2: 'H4/1', EC3: 'H4/2', EV3: 'H5/1', EV4: 'H5/2', EC4: 'H6/1', S1: 'H7+/last' };
   const t0 = (g) => (g?.meta?.date ? Date.parse(g.meta.date) : null);
   const starts = [];
-  // lead N3: part 2's end gate sits in HA only; a missing HA log or a failed HA end gate voids part 2's counted runs
-  const haLog = join(dirname(dir.replace(/\/+$/, '')), 'hold-HA.log');
-  const haText = existsSync(haLog) ? readFileSync(haLog, 'utf8') : null;
-  const egLog = join(dirname(dir.replace(/\/+$/, '')), 'endgate-HA.log');
-  const part2Void = part2Gate(haText, existsSync(egLog) ? readFileSync(egLog, 'utf8') : null);
-  const PART1 = ['EC1', 'EV1', 'EV2'];
-  out.part2 = part2Void || 'end gate ok (HA)';
-  for (const s of ['S0', 'S1']) { const g = load(`g-${s}.json`); const r = g ? readRun(g, null, 'S') : null; out.sentinels[s] = r ? { fps: r.fps, slowShare: r.slowShare, sentinel: r.sentinel } : { sentinel: 'FAIL (no record)' }; if (g) starts.push([s, t0(g)]); }
+  // rev 1.2 (P-152 rev 1.3): each run counts only when its own hold ended VALID
+  const base = dirname(dir.replace(/\/+$/, ''));
+  const logs = {};
+  for (const f of existsSync(base) ? fs_readdir(base) : []) { const m = f.match(/^hold-(H[0-9A]+)\.log$/); if (m) logs[m[1]] = readFileSync(join(base, f), 'utf8'); }
+  const hs = holdStatus(logs);
+  const holdWhy = (item) => (!hs[item] ? 'in no hold log' : hs[item].valid ? null : hs[item].why);
+  out.holds = Object.fromEntries(Object.keys(logs).sort().map((h) => [h, (logs[h].match(new RegExp(`^HOLD ${h} (VALID|VOID|DRY).*$`, 'gm')) || ['no HOLD line']).pop()]));
+  for (const s of ['S0', 'S1']) { const g = load(`g-${s}.json`); const hw = g ? holdWhy(s) : null; const r = g && !hw ? readRun(g, null, 'S') : null; out.sentinels[s] = r ? { fps: r.fps, slowShare: r.slowShare, sentinel: r.sentinel } : { sentinel: hw ? `FAIL (${hw})` : 'FAIL (no record)' }; if (g) starts.push([s, t0(g)]); }
   for (const arm of ['C', 'V']) for (let k = 1; k <= 4; k++) {
     const base = `E${arm}${k}`; let used = null;
     for (const name of [base, `${base}r`]) {
       const g = load(`g-${name}.json`), tl = load(`tl-${name}.json`);
       if (!g) continue;
-      if (part2Void && !PART1.includes(name)) { out.invalid[name] = [part2Void]; continue; }
+      { const hw = holdWhy(name); if (hw) { out.invalid[name] = [hw]; continue; } }
       const r = readRun(g, tl, 'E');
       if (r.why.length) { out.invalid[name] = r.why; continue; }
       used = name; const w = endZone(r), at = afterTouchend(g, r), f = firstOpen(g);
@@ -315,7 +330,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log(`P-153 read: sentinels ${JSON.stringify(out.sentinels)}`);
   for (const [n, r] of Object.entries(out.runs)) console.log(`  ${n} (${r.arm}) ${r.hold} start ${r.start} gap ${r.gapS ?? '-'} s batt ${r.battC ?? '-'} C | end zone n ${r.n} >30 ${r.s[30]} >34 ${r.s[34]} >38 ${r.s[38]} | >46 ${r.s[46]} >50 ${r.s[50]} >54 ${r.s[54]} | near bands (30,38] ${r.s[30] - r.s[38]} (46,54] ${r.s[46] - r.s[54]} | after touchend n ${r.afterTouchend.n} >34 ${r.afterTouchend.s[34]} | first open after load f1 ${r.firstOpen.o1?.f1 ?? '-'} f2 ${r.firstOpen.o1?.f2 ?? '-'} f12 ${r.firstOpen.o1?.f12 ?? '-'} f123 ${r.firstOpen.o1?.f123 ?? '-'} ms; opens ${r.firstOpen.opens} (full repeats ${r.firstOpen.repeatFull.length}, f2 median ${r.firstOpen.repeatFullF2Median ?? '-'}; other ${r.firstOpen.repeatOther})`);
   for (const [n, w] of Object.entries(out.invalid)) console.log(`  INVALID ${n}: ${w.join('; ')}`);
-  console.log(`PART 2 ${out.part2}`);
+  console.log(`HOLDS ${JSON.stringify(out.holds)}`);
   console.log(`DECISION ${out.result.result}${out.result.confounded ? ' [position-confounded]' : ''}${out.result.sensitive ? ' [threshold-sensitive]' : ''} ${out.result.basis || ''} ${out.result.diff ? 'median V-C ' + JSON.stringify(out.result.diff) : ''}${out.result.p ? ' p ' + JSON.stringify(out.result.p) : ''}`);
   if (out.result.boundOnly?.length) console.log(`  median bound exceeded with p > 0.05 (not WORSE in rev 1.1; reported): ${out.result.boundOnly.join(', ')}`);
   // N7 (OBSERVED in P-137: EC1, right after S0 in H2, was C's maximum at both thresholds): does it repeat?
