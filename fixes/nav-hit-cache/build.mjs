@@ -95,6 +95,15 @@ export const BASES = {
     dir: join(SNAP, 'v9f-647c9ef2b1e2'), pin: ['647c9ef2b1e2', 'e1359ab9994a'], hook: 'u2',
     patch: join(HERE, 'patch-on-v9f-f12.diff'), expect: { V: ['a6426953727a', 'e1359ab9994a'] }, pre: { V: 'nhcv9ff12', VA: 'nhcv9ff12a' },
   },
+  // v10 (int-v8 for fix-nav-morph's tool, lead 2026-10-06: U2 parity on the rev 7d engine): C = main's v9-final with rev 7d
+  // (baseline + fixes/morph-scroll-v9try/patch.diff = 1b2eecc66011) + P1 (fixes/end-morph-p1-v9f/p1-delta.diff, the byte
+  // copy of fix-end-morph-p1's delta d310e4d2ba0c) = 291f70523bd6, built once from the baseline; V = C + the same F1 + U2
+  // delta = v10 (int-v8's fixes/v10/build.sh, f5068db34a32)
+  v10u2: {
+    dir: join(SNAP, 'v10c-291f70523bd6'), pin: ['291f70523bd6', 'a81b9af7b2c9'], hook: 'u2',
+    from: [join(WT, 'fixes/morph-scroll-v9try/patch.diff'), join(WT, 'fixes/end-morph-p1-v9f/p1-delta.diff')],
+    patch: join(HERE, 'patch-on-v9f-f12.diff'), expect: { V: ['f5068db34a32', 'a81b9af7b2c9'] }, pre: { V: 'nhcv10', VA: 'nhcv10a' },
+  },
 };
 // a `from` entry is a path, or {rev, path, sha}: that file at that commit (git show), checked against its pinned hash and
 // cached under out/nav-hit-cache/from/
