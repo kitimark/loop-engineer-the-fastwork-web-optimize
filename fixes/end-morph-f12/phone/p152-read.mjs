@@ -34,15 +34,12 @@
 //   NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE (named, with (a) and/or (b)); a FAIL goes to the
 //   lead (block 2, judged by itself with the same rule, never pooled; or no landing). INSUFFICIENT: an arm has < 3
 //   valid runs. VOID: a sentinel failed or is missing.
-//   END GATE OF PART 2 (lead N3; rev 1.2: addendum D1, lead 2026-10-06): part 2's end gate runs only in its last hold
-//   HA (after the attribution runs). The counted runs of part 2 (EC2, EC3, EV3, EV4, EC4 and every re-run <run>r) count
-//   only when hold-HA.log (next to the runs folder) ends "HOLD HA VALID", or HA stopped before its end gate ran (exit
-//   4, 5 or 7) and end-gate-after-HA.log (p152-endgate.sh, same folder) ends "ENDGATE PASS". Otherwise they are void:
-//   they leave the read (listed as INVALID "part 2 end gate: <why>"). Rule: part2Status().
-//   Twins (>30/>38 use the >34 bound, >46/>54 the >50 bound): a twin whose WORSE-or-not differs from its main
-//   threshold marks the result "threshold-sensitive" (reported; PASS/FAIL unchanged).
-//   A FAIL whose lowest V run at a failing threshold opens its hold (EV1 or EV3) is labelled "position-confounded"
-//   (P-150 N3; the outcome is unchanged).
+//   HOLD VALIDITY (rev 1.3, lead ruling 2026-10-06 after block 1 stopped at H3's end gate): every hold runs a start
+//   and an end thermal gate. A counted run or a sentinel counts only when the hold that ran it (its "RUN <item> arm"
+//   line in out/p152/hold-<H>.log, next to the runs folder; the current log, not a .prev) ended "HOLD <H> VALID";
+//   otherwise it is INVALID "hold <H> VOID: <why>" (an end-gate FAIL voids only that hold's runs; the block stops). A
+//   run in no hold log does not count. A missing or voided sentinel makes the result VOID. This replaces rev 1.1's
+//   part-2 rule (N3) and rev 1.2's addendum D1 (part2Status), which rested on HA being part 2's only end gate.
 // ATTRIBUTION (AC1, AV1 only; decides nothing): Timeline Paint records (any depth) that start inside a moving frame's gap
 //   (t - dt, t], split by the frame's morph value m = (scrollY - (maxY - innerHeight)) / innerHeight: m >= 0.55 (the
 //   range where F1 hides #platform) and 0 <= m < 0.55. Per arm: frames, Paint records, Paint records per frame.
@@ -51,7 +48,7 @@
 //   sentinel run, battery °C at its phone hold's start (meta.profile.start.battC), the near-band counts
 //   (30, 38] = s30 - s38 and (46, 54] = s46 - s54. EC1 SLOT (N7, descriptive): whether EC1 (H2, right after S0) is again
 //   C's maximum at >34 and >50, as it was in P-137 (OBSERVED there; P-137's C was v9-final + 7d, here it is 7c).
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync as fs_readdir } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -96,16 +93,16 @@ export function permP(c, x) {
   pick(0, []);
   return { p: ge / tot, ge, tot };
 }
-/** Addendum D1: null when part 2's counted runs count, else the reason they are void. haText = hold-HA.log or null,
- *  gateText = end-gate-after-HA.log or null. */
-export function part2Status(haText, gateText) {
-  if (haText == null) return 'part 2 end gate: no hold-HA.log';
-  const last = (haText.match(/^HOLD HA (VALID|VOID|DRY).*$/gm) || []).pop() || '';
-  if (/^HOLD HA VALID/.test(last)) return null;
-  if (/^HOLD HA VOID end gate/.test(last)) return 'part 2 end gate: HA end gate failed';
-  const g = gateText ? (gateText.match(/^ENDGATE (PASS|FAIL).*$/gm) || []).pop() : null;
-  if (g === 'ENDGATE PASS') return null;
-  return `part 2 end gate: HA stopped early (${last || 'no HOLD line'}) and ${g ? 'the standalone end gate failed' : 'no standalone end gate passed'}`;
+/** Rev 1.3: which hold ran each item, and whether that hold ended VALID. logs = { H: text of hold-<H>.log }.
+ *  Returns { item: { hold, valid, why } } from each log's RUN lines and its last HOLD line. */
+export function holdStatus(logs) {
+  const out = {};
+  for (const [h, text] of Object.entries(logs)) {
+    const last = (text.match(new RegExp(`^HOLD ${h} (VALID|VOID|DRY).*$`, 'gm')) || []).pop() || '';
+    const valid = /^HOLD \S+ VALID/.test(last);
+    for (const m of text.matchAll(/^RUN (\S+) arm/gm)) out[m[1]] = { hold: h, valid, why: valid ? null : `hold ${h} ${last ? last.replace(/^HOLD \S+ /, '') : 'did not end (no HOLD line)'}` };
+  }
+  return out;
 }
 export function decideNoWorse(c, x, names = null) {
   const nC = med(c.map((m) => m.n)), nX = med(x.map((m) => m.n));
@@ -185,15 +182,20 @@ function selftest() {
   const r = decideNoWorse(Ct, [tw(24, 11), tw(24, 10), tw(25, 11), tw(23, 10)]);
   ok(r.result, 'NO-WORSE PASS', 'twin case main pass');
   ok(r.sensitive, true, 'twin >30 worse while >34 is not: threshold-sensitive');
-  // addendum D1 (rev 1.2): every path of part 2's end gate
-  ok(part2Status('HOLD HA (P-152) start\nHOLD HA VALID 410 s\n', null), null, 'D1: HA VALID counts part 2');
-  ok(part2Status(null, 'ENDGATE PASS\n'), 'part 2 end gate: no hold-HA.log', 'D1: no hold-HA.log voids part 2, a gate log or not');
-  ok(part2Status('HOLD HA VOID end gate exit 3\n', 'ENDGATE PASS\n'), 'part 2 end gate: HA end gate failed', 'D1: HA own end gate failed voids part 2');
-  ok(part2Status('HOLD HA VOID served hash changed before AV1\n', null)?.startsWith('part 2 end gate: HA stopped early'), true, 'D1: HA exit 4 without a standalone gate voids part 2');
-  ok(part2Status('HOLD HA VOID served hash changed before AV1\n', '== x\nENDGATE PASS\n'), null, 'D1: HA exit 4 with a passing standalone gate counts part 2');
-  ok(part2Status('HOLD HA VOID wda check exit 1 (no run)\n', 'ENDGATE FAIL exit 3\n')?.includes('standalone end gate failed'), true, 'D1: HA exit 5 with a failing standalone gate voids part 2');
-  ok(part2Status('HOLD HA VOID time: AV1 would start\nHOLD HA VOID time: AV1 would start\n', 'ENDGATE PASS\n'), null, 'D1: HA time guard twice (exit 7) with a passing standalone gate counts part 2');
-  ok(part2Status('HOLD HA VOID time: AC1 would start\nHOLD HA VALID 300 s\n', null), null, 'D1: the last HOLD line decides (a re-run HA that ended VALID counts)');
+  // rev 1.3: per-hold validity
+  { const hs = holdStatus({
+      H2: 'HOLD H2 (P-152) start\nGATE p152-H2-start -> PASS\nRUN S0 arm C exit 0\nRUN EC1 arm C exit 0\nGATE p152-H2-end -> PASS\nHOLD H2 VALID 330 s\n',
+      H3: 'HOLD H3 (P-152) start\nRUN EV1 arm V exit 0\nRUN EV2 arm V exit 0\nGATE p152-H3-end -> FAIL ceiling (Critical)\nHOLD H3 VOID end gate exit 3\n',
+      H4: 'HOLD H4 (P-152) start\nRUN EC2 arm C exit 0\nHOLD H4 VOID time: EC3 would start at 400 s\n',
+      H5: 'HOLD H5 (P-152) start\nRUN EV3 arm V exit 0\nRUN EV4 arm V exit 0\n' });
+    ok(hs.EC1.valid && hs.S0.valid, true, 'rev 1.3: runs of a VALID hold count');
+    ok(hs.EV1.valid || hs.EV2.valid, false, 'rev 1.3: an end-gate FAIL voids that hold\'s runs');
+    ok(hs.EV2.why, 'hold H3 VOID end gate exit 3', 'rev 1.3: the reason names the hold and its last line');
+    ok(hs.EC2.valid, false, 'rev 1.3: a run in a hold that stopped early (time guard) does not count');
+    ok(hs.EV3.why, 'hold H5 did not end (no HOLD line)', 'rev 1.3: a hold with no HOLD line does not count');
+    ok(hs.EC4, undefined, 'rev 1.3: a run in no hold log is unknown (the read voids it)'); }
+  ok(holdStatus({ H4: 'RUN EC2 arm C exit 0\nHOLD H4 VOID time: EC3\n' }).EC2.valid, false, 'rev 1.3: the time-guard try of a hold is void');
+  ok(holdStatus({ H4: 'RUN EC2 arm C exit 0\nRUN EC3 arm C exit 0\nHOLD H4 VALID 500 s\n' }).EC3.valid, true, 'rev 1.3: the whole re-run of that hold (the current log) counts');
   // metric: end zone filters on band
   ok(endZone({ rows: [{ band: 'lastScreen', dt: 40 }, { band: 'middle', dt: 60 }, { band: 'lastScreen', dt: 16 }] }).s[34], 1, 'end zone counts lastScreen only');
   ok(endZone({ rows: [{ band: 'lastScreen', dt: 40 }, { band: 'hero', dt: 60 }] }).n, 1, 'end zone n');
@@ -215,19 +217,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const t0 = (g) => (g?.meta?.date ? Date.parse(g.meta.date) : null);
   const starts = [];
   // lead N3: part 2's end gate sits in HA only; a missing HA log or a failed HA end gate voids part 2's counted runs
-  const haLog = join(dirname(dir.replace(/\/+$/, '')), 'hold-HA.log');
-  const haText = existsSync(haLog) ? readFileSync(haLog, 'utf8') : null;
-  const gateLog = join(dirname(dir.replace(/\/+$/, '')), 'end-gate-after-HA.log');
-  const part2Void = part2Status(haText, existsSync(gateLog) ? readFileSync(gateLog, 'utf8') : null);
-  const PART1 = ['EC1', 'EV1', 'EV2'];
-  out.part2 = part2Void || 'end gate ok (HA)';
-  for (const s of ['S0', 'S1']) { const g = load(`g-${s}.json`); const r = g ? readRun(g, null, 'S') : null; out.sentinels[s] = r ? { fps: r.fps, slowShare: r.slowShare, sentinel: r.sentinel } : { sentinel: 'FAIL (no record)' }; if (g) starts.push([s, t0(g)]); }
+  const base = dirname(dir.replace(/\/+$/, ''));
+  const logs = {};
+  for (const f of existsSync(base) ? fs_readdir(base) : []) { const m = f.match(/^hold-(H[0-9A]+)\.log$/); if (m) logs[m[1]] = readFileSync(join(base, f), 'utf8'); }
+  const hs = holdStatus(logs);
+  const holdWhy = (item) => (!hs[item] ? 'in no hold log' : hs[item].valid ? null : hs[item].why);
+  out.holds = Object.fromEntries(Object.keys(logs).sort().map((h) => [h, (logs[h].match(new RegExp(`^HOLD ${h} (VALID|VOID|DRY).*$`, 'gm')) || ['no HOLD line']).pop()]));
+  for (const s of ['S0', 'S1']) { const g = load(`g-${s}.json`); const hw = g ? holdWhy(s) : null; const r = g && !hw ? readRun(g, null, 'S') : null; out.sentinels[s] = r ? { fps: r.fps, slowShare: r.slowShare, sentinel: r.sentinel } : { sentinel: hw ? `FAIL (${hw})` : 'FAIL (no record)' }; if (g) starts.push([s, t0(g)]); }
   for (const arm of ['C', 'V']) for (let k = 1; k <= 4; k++) {
     const base = `E${arm}${k}`; let used = null;
     for (const name of [base, `${base}r`]) {
       const g = load(`g-${name}.json`), tl = load(`tl-${name}.json`);
       if (!g) continue;
-      if (part2Void && !PART1.includes(name)) { out.invalid[name] = [part2Void]; continue; }
+      { const hw = holdWhy(name); if (hw) { out.invalid[name] = [hw]; continue; } }
       const r = readRun(g, tl, 'E');
       if (r.why.length) { out.invalid[name] = r.why; continue; }
       used = name; const w = endZone(r), at = afterTouchend(g, r);
@@ -245,7 +247,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log(`P-152 read: sentinels ${JSON.stringify(out.sentinels)}`);
   for (const [n, r] of Object.entries(out.runs)) console.log(`  ${n} (${r.arm}) ${r.hold} start ${r.start} gap ${r.gapS ?? '-'} s batt ${r.battC ?? '-'} C | end zone n ${r.n} >30 ${r.s[30]} >34 ${r.s[34]} >38 ${r.s[38]} | >46 ${r.s[46]} >50 ${r.s[50]} >54 ${r.s[54]} | near bands (30,38] ${r.s[30] - r.s[38]} (46,54] ${r.s[46] - r.s[54]} | after touchend n ${r.afterTouchend.n} >34 ${r.afterTouchend.s[34]}`);
   for (const [n, w] of Object.entries(out.invalid)) console.log(`  INVALID ${n}: ${w.join('; ')}`);
-  console.log(`PART 2 ${out.part2}`);
+  console.log(`HOLDS ${JSON.stringify(out.holds)}`);
   console.log(`DECISION ${out.result.result}${out.result.confounded ? ' [position-confounded]' : ''}${out.result.sensitive ? ' [threshold-sensitive]' : ''} ${out.result.basis || ''} ${out.result.diff ? 'median V-C ' + JSON.stringify(out.result.diff) : ''}${out.result.p ? ' p ' + JSON.stringify(out.result.p) : ''}`);
   if (out.result.boundOnly?.length) console.log(`  median bound exceeded with p > 0.05 (not WORSE in rev 1.1; reported): ${out.result.boundOnly.join(', ')}`);
   // N7 (OBSERVED in P-137: EC1, right after S0 in H2, was C's maximum at both thresholds): does it repeat?
