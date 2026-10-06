@@ -201,6 +201,12 @@ phone.
 **Revisions.**
 - Rev 1: commit d705bdd6.
 - Rev 1.1 (2026-10-06): the pre-data read (ops-reader-P152) passed with notes N1-N7. The lead signed N1 and ruled on N2-N7. This revision applies them.
+- Rev 1.2 (fc7d5a90, 2026-10-06): addendum D1-D3, see below.
+- Rev 1.3 (2026-10-06): block 1 stopped at H3's end gate (Critical, 43.0 °C). The lead voided it as a whole and archived it as block 1 of 2. These heat rules apply to block 2, the last block (see "Rev 1.3: heat rules"):
+  - every hold runs a start and an end thermal gate;
+  - a logged cooling gap whenever a hold ends at 41.5 °C or above;
+  - at most two counted runs in one hold;
+  - block 2 starts only after the phone cools below 38 °C.
 - Labels:
   - This card is pre-data for P-152.
   - The prediction is informed by this build's Chrome and Simulator counts.
@@ -238,9 +244,9 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - At most 2 blocks. Block 2 runs only after a block-1 FAIL and the lead's go (N2):
   - Before block 2, `TICKET=P-152 sh fixes/end-morph-f12/phone/p152-block.sh ARCHIVE-BLOCK1` moves `out/p152/runs`, the hold logs, the WDA logs and `serve-check.log` to `out/p152/block1/`, then restarts the three servers (§5.1).
   - Block 2 is judged by itself with the same rule. It is never pooled with block 1.
-- Part 2's end gate (N3): part 2's end thermal gate runs only in HA, after the attribution runs. An HA end-gate failure (over 44 °C, or not Serious), or a missing `hold-HA.log`, voids part 2's counted runs: EC2, EC3, EV3, EV4, EC4 and every re-run. `p152-read.mjs` reads `hold-HA.log` and lists those runs as INVALID "part 2 end gate".
+- Part 2's end gate (N3; superseded by rev 1.3): rev 1.1-1.2 gated each phone hold only at its edges, so part 2's end gate ran only in HA, and an HA failure or a missing hold-HA.log voided part 2. Rev 1.3 gates every hold, and each counted run is judged by its own hold (below).
 
-| part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 runs at most) |
+| part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 runs at most, from rev 1.3 each with a start and an end thermal gate) |
 |---|---|
 | 1 | H1 WC WV, H2 S0 EC1, H3 EV1 EV2 |
 | 2 | H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7 TAIL (re-runs, then S1), HA AC1 AV1 |
@@ -291,7 +297,7 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - Reported, deciding nothing: thresholds whose median bound is exceeded while p > 0.05. Rev 1 would have failed these.
 - "Position-confounded" is added when the lowest V run at a failing threshold opens its hold (EV1, EV3). It is a label only and doesn't change the outcome.
 - EC1 slot (N7, descriptive): the read states whether EC1 is again C's maximum at >34 and >50. In P-137, EC1 (H2, right after S0) was C's maximum at both thresholds: 40 against 25-29, and 15 against 1-5. That is OBSERVED, and on another base (P-137's C was v9-final + 7d; here it is 7c). In the same slot here, EC1 would favour V.
-- The scorer's self-test (`node fixes/end-morph-f12/phone/p152-read.mjs --selftest`, 30 checks) covers:
+- The scorer's self-test (`node fixes/end-morph-f12/phone/p152-read.mjs --selftest`; 30 checks in rev 1.1, 38 from rev 1.2, the 8 rev 1.2 D1 checks replaced in rev 1.3 by 8 per-hold validity checks) covers:
   - each clause alone and both together, at both thresholds, including clause (b) with p <= 0.05 and the median bound alone with p > 0.05 (a pass);
   - the lead's three cases: an A/A of P-137's C runs against a relabeled copy (PASS), P-137 as recorded (PASS), and P-137 with its arms swapped, +21 / +3.5 (FAIL);
   - `permP` on P-150 rev 1.3's own cases (4 v 4 at 2/70; 3 v 3 at full separation and with a boundary tie), at 3 v 4, and with all values tied;
@@ -328,6 +334,27 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - So at 4 v 4 and this noise, a PASS does not rule out a regression of a few frames per run. It says no large one showed.
 - These numbers come from another build (7d), read OBSERVED.
 
+**Rev 1.3: heat rules (lead ruling after block 1 stopped, 2026-10-06 ~00:24Z).**
+- **Block 1 is VOID as a whole.** A failed gate voids every run since the last passing gate. The last passing gate was H1's start gate (H2 had no gates), so EC1, EV1 and EV2 are void. S0 passing doesn't rescue them: it is a frame-rate control, not a heat gate. Nothing was scored.
+- Block 1 was archived with `ARCHIVE-BLOCK1` into `out/p152/block1/`. It counts as 1 of the 2 blocks (D2), so block 2 is the last.
+- **Heat curve, OBSERVED (block 1, profile xcode-serious, driver G):**
+  - The battery went from 36.1 °C at H1's start gate (00:04Z) to 43.0 °C at H3's end gate (00:22Z): +6.9 °C in 18 min, over 2 warm-ups, 1 sentinel and 3 counted runs.
+  - The state read Critical with "induced Yes" (the Xcode Device Conditions setting is Serious). Whether real heat or Xcode raised it to Critical is UNRESOLVED.
+  - Cooling afterwards (phone idle, parked): 42.6 °C at 00:25Z, 42.1, 41.5, 40.8 at 00:28Z, about 0.6 °C per minute.
+- **(a) Gates on every hold.** Every hold runs a start and an end gate (`P152_GATE=both`). An end-gate FAIL voids only that hold's runs, and the block stops. `p152-read.mjs` judges each counted run and sentinel by the hold that ran it: it counts only when that hold's log ends "HOLD <H> VALID". This supersedes N3 and D1, and `p152-endgate.sh` is no longer used.
+- **(b) Cooling gap.** After each hold but the part's last: when that hold's end gate read the battery at 41.5 °C or above, the driver runs `wait.mjs phone-temp --below 40 --timeout 600`, logged in `out/p152/cooling.log`.
+  - Under xcode-serious this is a ceiling guard, not a heat-profile change. It is disclosed: the runs after a gap start cooler than those before it.
+  - A timeout is logged, and the next hold's start gate decides.
+- **(c) At most two counted runs per hold.** The driver refuses a plan that breaks this before anything runs. The plan already meets it.
+- **(d) Block 2 starts cool.**
+  - Part 1 runs with `P152_COOL_FIRST=38`: `wait.mjs phone-temp --below 38 --timeout 900` runs first, logged; a timeout stops the part (exit 6).
+  - Then H1's start gate must read Serious with induced Yes. If it reads Critical at 38 °C or below, the block stops (start gate FAIL), and the runner tells the lead: the Xcode condition may need a restart by the user, through a console step the lead posts.
+- I-214: every part restarts Safari with the timer page after its WDA restart (`iphone.mjs safari-restart`; exit 5 if it fails).
+- Block 2 commands, the runner's, in the background, after the servers are up (`ARCHIVE-BLOCK1` restarted them):
+  - `TICKET=P-152 P152_COOL_FIRST=38 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 --keep 120 -- sh fixes/end-morph-f12/phone/p152-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2`
+  - then `TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 -- sh fixes/end-morph-f12/phone/p152-block.sh H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`.
+- Time per hold: a gate takes about 30 s, so two gates plus two runs (budget 229 s each; real runs took about 130 s) fit one 600 s hold. The time guard still applies.
+
 **Addendum D1-D3, rev 1.2 (lead, 2026-10-06 ~23:58Z and ~00:00Z: "D1+D2 as proposed").** The rev 1.1 delta check (ops-reader-P152) passed with notes D1-D3.
 - Written before any part-1 or part-2 data: part 1's first try stopped at H1's start gate with no run (see "Block log" below).
 - Rev 1.2 changes:
@@ -353,16 +380,16 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - **D2, block 2 after a VOID.** A block-1 VOID (a sentinel fails) is archived with `ARCHIVE-BLOCK1`, like a FAIL, and counts as one of the 2 blocks.
 - **D3, the PIN line.** The first real PIN line must show `p152-read.mjs=adf4e7a27122`. The rev 1.1 dry run printed an older hash, because the reader changed after it; that is harmless.
 
-**Kit (pins, sha256/12, at the rev 1.2 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
+**Kit (pins, sha256/12, at the rev 1.3 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
 `2548d4588b0e`, read `005136ea3002`).** Rev 1.1 changes `p152-block.sh` (N2, N4, N6) and `p152-read.mjs` (N1, N3, N5, N7). It does not change `p152-hold.sh` or `p152-serve.sh`.
 
 | file | pin |
 |---|---|
-| `phone/p152-block.sh` | `d2d8e37c419d` |
+| `phone/p152-block.sh` | `4b8c70324a81` (rev 1.3; rev 1.1-1.2 `d2d8e37c419d`) |
 | `phone/p152-hold.sh` | `b5b38c853340` |
 | `phone/p152-serve.sh` | `2548d4588b0e` |
-| `phone/p152-read.mjs` | `597bd8bd9e30` (rev 1.2; rev 1.1 `adf4e7a27122`) |
-| `phone/p152-endgate.sh` | `04c156f84403` (new in rev 1.2) |
+| `phone/p152-read.mjs` | `11ab8b9496b0` (rev 1.3; rev 1.2 `597bd8bd9e30`, rev 1.1 `adf4e7a27122`) |
+| `phone/p152-endgate.sh` | `04c156f84403` (rev 1.2; not used from rev 1.3) |
 
 - Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e` and
   `research/serious-heat/p129-read.mjs` `06f74f5d19ca`.
@@ -400,6 +427,9 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - Cause: after the reconnect and the WDA restart, Safari's parked tab did not answer `Runtime.evaluate` (5 timeouts), and `open` ended BLOCKED instead of restarting Safari. Incident I-214.
 - Workaround: `iphone.mjs safari-restart --url <B>` succeeded at 00:01Z, in a short phone hold with no counted run.
 - No run, counted or not, came from the first try. Part 1 restarts from H1 in the same block; the old hold-H1 log is moved aside by the driver.
+
+- 2026-10-06 00:04-00:22Z, part 1 retry: H1 VALID (start gate PASS, 36.1 °C), H2 VALID (S0 PASS, fps 55.5; EC1 gates ok), H3: EV1 and EV2 gates ok, then the end gate FAILed the ceiling (Critical, 43.0 °C), so H3 is VOID and the block stopped. Safari was parked.
+- Lead ruling (~00:24Z): block 1 is VOID as a whole (no passing gate after H1's start). It was archived with `ARCHIVE-BLOCK1` at 00:25Z and is 1 of 2 blocks. Cooling to 38 °C started at 00:25Z, in its own phone hold, logged in `out/p152/cooling.log`.
 
 ## Pending
 

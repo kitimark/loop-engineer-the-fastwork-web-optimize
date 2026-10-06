@@ -14,8 +14,8 @@
 # block, each re-run once as <run>r, then S1. One re-run: H<n> "<r> S1"; two: H<n> "<r1> <r2>" and H<n+1> "S1"; none: "S1".
 # A hold that exits 7 (its time guard) is re-run whole once; any other non-zero exit stops the driver (exit = the hold's).
 # Logs: out/p152/hold-<H>.log (an earlier one moved aside). After each hold: doing iphone --between 1.
-# Thermal gates: only at this phone hold's edges, via P152_GATE: the first hold "start", the last "end" (a part with
-# one hold: "both"), every middle hold "none"; with two parts that is 4 gates in the block.
+# Thermal gates (rev 1.3): EVERY hold runs a start and an end gate (P152_GATE=both); an end-gate FAIL voids only that
+# hold's runs (p152-read.mjs) and the block stops. (Rev 1-1.2 gated only each phone hold's edges.)
 # P152_DRY=1: calls p152-hold.sh directly (its dry mode: pins and plan only, no lock, no phone).
 # Rev 1.1 (lead rulings on the pre-data read, 2026-10-06):
 #   N4: Safari is parked on EVERY exit of a part (an EXIT trap), a BLOCK STOP on a failed hold or gate included.
@@ -25,7 +25,16 @@
 #       out/p152/runs, the hold logs, the WDA logs and serve-check.log to out/p152/block1/ (refuses when it exists) and
 #       restarts the three servers; block 2 is read by itself from out/p152/runs (never pooled with block 1).
 #   N3: part 2's end gate runs only in HA (after the attribution runs); an HA end-gate failure (over 44 °C, or not
-#       Serious) voids part 2's counted runs (p152-read.mjs reads hold-HA.log).
+#       Serious) voids part 2's counted runs (p152-read.mjs reads hold-HA.log). Superseded by rev 1.3 (every hold gated).
+# Rev 1.3 (lead rulings after block 1 stopped at H3's end gate, Critical at 43.0 °C, 2026-10-06):
+#   (a) every hold gets a start and an end gate; an end-gate FAIL voids only that hold's runs; the block stops.
+#   (b) after each hold but the part's last, when that hold's end gate read the battery at >= 41.5 °C, a logged cooling
+#       gap: wait.mjs phone-temp --below 40 --timeout 600 (out/p152/cooling.log). Under xcode-serious it is a ceiling
+#       guard, not a heat-profile change. A cooling timeout is logged and the next hold's start gate decides.
+#   (c) no hold carries more than two counted runs (E[CV]n, E[CV]nr): the driver refuses such a plan before anything runs.
+#   (d) P152_COOL_FIRST=<°C> (block 2's part 1: 38): before anything else, wait.mjs phone-temp --below <°C> --timeout
+#       900, logged; a timeout stops the part (exit 6). The first hold's start gate then must read Serious, induced Yes.
+#   I-214's workaround at every part start, after the WDA restart: iphone.mjs safari-restart --url <B> (exit 5 if it fails).
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-152 ] || { echo "TICKET is not P-152: no run"; exit 2; }
 [ $# -gt 0 ] || { echo "usage: TICKET=P-152 sh fixes/end-morph-f12/phone/p152-block.sh H<n>:<item>,<item> ... [H<n>:TAIL] | ARCHIVE-BLOCK1"; exit 2; }
@@ -39,17 +48,37 @@ if [ "$1" = ARCHIVE-BLOCK1 ]; then
   sh $SS stop && sh $SS start || { echo "ARCHIVE done, but the servers did not restart: no block 2"; exit 4; }
   echo "ARCHIVED block 1 into $LG/block1; servers restarted"; exit 0
 fi
+# (c) at most two counted runs per hold, checked before anything runs
+for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^E[CV][1-4]r?$')
+  [ "$it" -gt 2 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it counted runs (rev 1.3: at most 2 per hold)"; exit 2; }; done
+coolwait() { # below timeout why
+  { echo "== $(date -u +%FT%TZ) $3: phone-temp --below $1 --timeout $2"
+    node tools/wait.mjs phone-temp --below "$1" --timeout "$2" --every 60 --owner "$R" --reason "P-152 $3"; c=$?
+    echo "COOL $3 exit $c"; } >> $LG/cooling.log 2>&1
+  tail -2 $LG/cooling.log | sed -n 's/^\(MET\|TIMEOUT\|UNAVAILABLE\)/\1/p;/^COOL/p'
+  return $(sed -n '$s/^COOL .* exit \([0-9]*\)$/\1/p' $LG/cooling.log)
+}
+PSTART=$(date -u +%FT%TZ) # gate records of this part only (the cooling-gap read)
 # N4: park Safari on every exit of a part (not in dry mode)
 [ "$P152_DRY" = 1 ] || trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap)"' EXIT
 # N6: the servers' check, logged, at every part start
 { echo "== $(date -u +%FT%TZ) part start: $*"; sh $SS check; } >> $LG/serve-check.log 2>&1 \
   || { echo "BLOCK STOP: p152-serve.sh check failed (see $LG/serve-check.log)"; exit 4; }
 echo "SERVE CHECK ok: $(tail -4 $LG/serve-check.log | grep -c ' ok$') of 3 servers"
+# (d) cooling before the part (block 2's part 1)
+if [ -n "$P152_COOL_FIRST" ] && [ "$P152_DRY" != 1 ]; then
+  coolwait "$P152_COOL_FIRST" 900 "cooling before the part" || { echo "BLOCK STOP: the phone did not cool below $P152_COOL_FIRST °C in 900 s"; exit 6; }
+fi
 # lead condition 6: a fresh WDA at the start of every part (not in dry mode)
 if [ "$P152_DRY" != 1 ]; then
   { node tools/iphone.mjs wda stop; node tools/iphone.mjs wda start --owner "$R"; node tools/iphone.mjs wda check; } > $LG/wda-restart-$(date +%s).log 2>&1 \
     || { echo "BLOCK STOP: wda stop/start/check failed (see $LG/wda-restart-*.log)"; exit 5; }
   echo "WDA restarted and READY"
+  # I-214 workaround (lead): a fresh Safari with the timer page before the first gate opens it
+  PB=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$LG/serve-B.json','utf8')).port)")
+  node tools/iphone.mjs safari-restart --owner "$R" --url "$(node tools/lan.mjs --url --port "$PB")" --timeout 60 > $LG/safari-restart-$(date +%s).log 2>&1 \
+    || { echo "BLOCK STOP: safari-restart failed (see $LG/safari-restart-*.log)"; exit 5; }
+  echo "SAFARI restarted"
 fi
 hold() { # H items...
   h=$1; shift
@@ -63,14 +92,21 @@ hold() { # H items...
   return $e
 }
 FIRST=1
-gmode() { # last(0|1) -> the hold's P152_GATE: gates only at this phone hold's edges
-  if [ $FIRST = 1 ] && [ $1 = 1 ]; then echo both; elif [ $FIRST = 1 ]; then echo start; elif [ $1 = 1 ]; then echo end; else echo none; fi; }
+gmode() { echo both; } # rev 1.3 (a): every hold runs a start and an end gate
 run1() { # last(0|1) H items...: one hold, a time-guard VOID (7) re-run whole once
-  GMODE=$(gmode $1); shift
+  LASTH=$1; GMODE=$(gmode $1); shift
   hold "$@"; e=$?
   [ $e -eq 7 ] && { echo "RETRY $1 (time guard)"; hold "$@"; e=$?; }
   [ $e -ne 0 ] && { echo "BLOCK STOP at $1 exit $e"; exit $e; }
   FIRST=0
+  # (b) a cooling gap when this hold's end gate read >= 41.5 °C (not after the part's last hold)
+  if [ "$LASTH" != 1 ] && [ "$P152_DRY" != 1 ]; then
+    bt=$(node -e "const L=require('fs').readFileSync('out/thermal-gate/gates.jsonl','utf8').trim().split('\\n').map(JSON.parse).filter(r=>r.label==='p152-$1-end'&&r.at>='$PSTART');const r=L.pop();console.log(r?(r.battEndC??r.battC):'')" 2>/dev/null)
+    echo "BATT after $1: ${bt:-unknown} C"
+    if [ -n "$bt" ] && node -e "process.exit(Number('$bt')>=41.5?0:1)"; then
+      coolwait 40 600 "cooling gap after $1 (end gate read $bt C)" || echo "COOLING GAP TIMEOUT after $1: the next start gate decides"
+    fi
+  fi
 }
 i=0
 for spec in "$@"; do
