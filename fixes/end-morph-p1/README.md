@@ -586,6 +586,12 @@ the rest as rev 1.2.
     VOID start gate (no run), BLOCK STOP exit 5. Safari was parked by the EXIT trap. `out/p153/runs` stays empty.
   - As signed, there was no retry. It is the same picture as P-152's 03:18Z attempt (Critical on a cool phone with
     induced Yes), this time after C-072's restart of the Xcode condition. The lead decides the next step.
+  - Lead ruling (03:45Z): **VOID before any run, not counted as a block.** The lead's read-only profile read showed the
+    Xcode condition active on Serious, with the phone itself at Critical above it at 36 °C: I-201's
+    "phone-above-condition" case (OBSERVED; the cause of the real Critical is unknown, perhaps the user's hand testing
+    plus charging). Remedy, run by the lead: C-073 (the user stops the condition), a read until the phone is below
+    Critical, a second step to start Serious and a profile read to check it. Part 1 then reruns once on the lead's
+    message.
 
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 
