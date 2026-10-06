@@ -298,9 +298,10 @@ Critical at the end gate):
   gate's own record in `out/thermal-gate/gates.jsonl`), a logged wait: `wait.mjs phone-temp --below 40 --timeout 600`
   (`out/p153/cooling.log`). A timeout is logged, and the next hold's start gate decides.
 - **At most two counted runs per hold:** the driver refuses such a plan before anything runs (the plan never has more).
-- **Block 2 after cooling to 38 °C:** its part 1 runs with `P153_COOL_FIRST=38` (`wait.mjs phone-temp --below 38
-  --timeout 900`, logged; a timeout stops the part, exit 6, and the lead decides). Its first start gate must read
-  Serious, induced Yes.
+- **Every block starts after cooling to 38 °C** (lead at signing: block 1 too, since P-153 follows P-152 on a warm
+  phone): each block's part 1 runs with `P153_COOL_FIRST=38` (`wait.mjs phone-temp --below 38 --timeout 900`,
+  logged; a timeout stops the part, exit 6, and the lead decides). Its first start gate must read Serious, induced
+  Yes.
 - **I-214:** every part restarts Safari with B's timer page (`iphone.mjs safari-restart`) after the WDA restart.
 - Kit: `p153-block.sh` is P-152 rev 1.3's driver (4b8c70324a81) with the names changed, and the block-1 archive also
   moves `out/p153/void`. `p153-read.mjs` takes P-152 rev 1.3's `holdStatus`, its self-test cases and its read lines.
@@ -313,6 +314,7 @@ Critical at the end gate):
   is v9-final + F1 + U2.
 - The first-open definition (f2, the repeat split, lvh) and its prediction are informed by the reader smoke test on
   P-137's records (below).
+- Pr2's p (0.25, rev 1.2) is informed by P-152's heat VOID (P-152 block 1, same script and profile).
 
 **Question.** Does P1 make the end-of-page menu morph worse on the iPhone? The morph is the scroll into and out of the
 end menu (open and close), with Safari toolbar steps, driven by a real touch gesture.
@@ -360,7 +362,7 @@ end menu (open and close), with Safari toolbar steps, driven by a real touch ges
   - `TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh ARCHIVE-BLOCK1` moves block 1 into `out/p153/block1/`:
     runs, hold logs, WDA logs, serve-check.log and void records. It then restarts the three servers.
   - It refuses when `block1/` exists, so there are at most 2 blocks. A VOID block 1 counts as one of them.
-  - Block 2 runs the same two parts. Its part 1 starts with `P153_COOL_FIRST=38` (rev 1.2). It is read from
+  - Block 2 runs the same two parts. Its part 1 starts with `P153_COOL_FIRST=38`, as block 1's does. It is read from
     `out/p153/runs` by itself, never pooled with block 1.
 
 | part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 fs runs at most) |
@@ -370,11 +372,10 @@ end menu (open and close), with Safari toolbar steps, driven by a real touch ges
 | S (only after a NO-WORSE PASS and the lead's go) | three blind swipe pairs, the runner's own phone hold |
 
 Runner commands (in the background, after `sh fixes/end-morph-p1/phone/p153-serve.sh start`):
-- `TICKET=P-153 node tools/lock.mjs run iphone --owner iphone-runner --block P-153 --max-seconds 3600 -- sh
-  fixes/end-morph-p1/phone/p153-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2`
-- the same with `H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`
-- block 2 only (after `ARCHIVE-BLOCK1` and the lead's word): part 1 as above with `P153_COOL_FIRST=38` in front of
-  `TICKET=P-153`
+- `P153_COOL_FIRST=38 TICKET=P-153 node tools/lock.mjs run iphone --owner iphone-runner --block P-153 --max-seconds
+  3600 -- sh fixes/end-morph-p1/phone/p153-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2` (part 1 of every block)
+- `TICKET=P-153 node tools/lock.mjs run iphone …` with `H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1` (part 2)
+- block 2 only after `ARCHIVE-BLOCK1` and the lead's word, the same two commands
 - part S (see below): `TICKET=P-153 P153_S_GO=lead node tools/lock.mjs run iphone --owner iphone-runner --max-seconds
   900 -- sh fixes/end-morph-p1/phone/p153-swipe.sh`
 - Before the read, VOID holds' records move to `out/p153/void/<H>/`.
