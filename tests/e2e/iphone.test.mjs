@@ -453,3 +453,34 @@ test('I-070 (C-024): scroll / record / run / gesture keep the Mac awake for thei
   }
   assert.equal(calls().length, runs.length, 'one assertion per run');
 });
+
+// I-218 (article clips): `record --touches` logs the finger into the record (touches, meta.touches) for gesture-from-record;
+// a record without it sends no touch logger and has no touches key.
+test('I-218: record --touches logs the finger\'s touches (clientX/Y, scrollY) into the record and prints TOUCHES; without it the record has none', async () => {
+  const phone = await fakePhone(['--page']);
+  node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env });
+  const out = join(tempDir('fw-iphone-out-'), 'rec.json');
+  const p = await startProc(process.execPath, [IPHONE, 'record', '--owner', 'me', '--seconds', '3', '--poll', '1', '--touches', '--out', out],
+    { env: phone.env, ready: (s) => /^RECORDING/m.test(s), timeout: 30000 });
+  procs.push(p);
+  const touch = async (q) => assert.equal((await request(`http://127.0.0.1:${phone.port}/__fake/touch?${q}`)).text, 'ok');
+  await touch('kind=start&x=220&y=600');
+  await sleep(50); await touch('kind=move&x=221&y=500&scroll=100');
+  await sleep(50); await touch('kind=end&x=222&y=420&scroll=180');
+  const x = await p.exited;
+  assert.equal(x.code, 0, p.stdout() + p.stderr());
+  assert.match(p.stdout(), new RegExp(`^TOUCHES 3 events \\(1 touchstarts\\): node tools/gesture-from-record\\.mjs ${out.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
+  const rec = JSON.parse(readFileSync(out, 'utf8'));
+  assert.deepEqual(rec.touches.map((e) => [e[1], e[2], e[5], e[6], e[8]]), [['s', 1, 0, 600, 220], ['m', 1, 100, 500, 221], ['e', 0, 180, 420, 222]]);
+  assert.deepEqual(rec.meta.touches.fields, ['t', 'kind', 'touches', 'cancelable', 'defaultPrevented', 'scrollY', 'clientY', 'timeStamp', 'clientX']);
+  assert.ok(rec.frames.length > 50);
+  // without --touches: no touch logger is sent, no touches in the record
+  const out2 = join(tempDir('fw-iphone-out-'), 'rec2.json');
+  const r = await nodeAsync(IPHONE, ['record', '--owner', 'me', '--seconds', '1', '--out', out2], { env: phone.env, timeout: 20000 });
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.stdout, /^TOUCHES/m);
+  const rec2 = JSON.parse(readFileSync(out2, 'utf8'));
+  assert.equal(rec2.touches, undefined);
+  assert.equal(rec2.meta.touches, undefined);
+  assert.equal(phone.events().filter((e) => e.evaluate && e.evaluate.includes('r.touches = []')).length, 1, 'the touch logger was sent once, by the --touches run');
+});

@@ -35,6 +35,10 @@
 // (`--profile serious|fair`) right after measureGuard, before Safari is touched (profileGate: one ~25 s xctrace read per
 // hold, cached; a misfit refuses with exit 8), put it into the record (res.meta.profile) and list the saved file for the
 // hold's end read (prof.saved). PROFILE below; scroll still matches 2226d51 and record its I-141 pin without these lines.
+// I-218 (2026-10-06, measurement-adjacent, capture runs only): `record --touches` also installs RECORD_TOUCHES_JS (passive
+// touch listeners on the same logger), passes `touches` to recordRun and notes the row layout in res.meta.touches and a
+// TOUCHES line. TOUCHES below; without those lines (and with the old recordRun call) record is its I-186 block, so a
+// record without --touches runs exactly as before.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -79,6 +83,10 @@ test('iphone.mjs: scroll, record, open, status, PROBE, summarize and requireLeas
     assert.equal(sha(b), PINS_83B7F7B[k], `${k}: only the intended lines changed since 2226d51`);
   }
   let rec = block(src, "  if (cmd === 'record') {", '  }');
+  for (const [now, then] of TOUCHES) {
+    assert.equal(rec.split(now).length, 2, `record has the I-218 line, once: ${now.trim().slice(0, 60)}`);
+    rec = rec.replace(now, then);
+  }
   for (const [now, then] of PROFILE.record) {
     assert.equal(rec.split(now).length, 2, `record has the I-186 line, once: ${now.trim().slice(0, 60)}`);
     rec = rec.replace(now, then);
@@ -105,6 +113,14 @@ const PROF_META = (indent) => `\n${indent}res.meta.profile = prof.record(); // I
 const PROF_SAVED = "\n    await prof.saved(out); // I-186: listed for the hold's end read";
 const PROFILE = { scroll: [[PROF_GATE, ''], [PROF_META('    '), ''], [PROF_SAVED, '']], record: [[PROF_GATE, ''], [PROF_META('      '), ''], [PROF_SAVED, '']] };
 const PINS_BEFORE_I186 = { record: '53258b1f26b31e01' }; // the I-141 pin
+/** I-218 [now, before]: record --touches */
+const TOUCHES = [
+  ["\n    const touches = flag('touches'); // I-218: also log the finger's touches (RECORD_TOUCHES_JS) for gesture-from-record.mjs", ''],
+  ["\n      if (touches) res.meta.touches = { fields: TOUCH_FIELDS, note: 'I-218 capture run: passive touch listeners in the page; never a compared run' };", ''],
+  ["\n    if (touches && (await c.evaluate(RECORD_TOUCHES_JS)) !== 'installed') throw new Error('record --touches: the touch logger did not install (no frame logger in the page)');", ''],
+  ['reconnect: (host) => openTab(host, { tries: 2 }), touches });', 'reconnect: (host) => openTab(host, { tries: 2 }) });'],
+  ["\n    if (touches) console.log(`TOUCHES ${(r.rec.touches || []).length} events (${(r.rec.touches || []).filter((e) => e[1] === 's').length} touchstarts): node tools/gesture-from-record.mjs ${out}`);", ''],
+];
 const CHANGES = {
   scroll: [...PROFILE.scroll, [LAN_SAFE_WRITE, WRITE_83B7F7B], [SAFARI_TAB, TAB_83B7F7B], [GUARD, ''], [MAC, ''], MARK, LEASE_URL],
   open: [OPEN_LAN, OPEN_PARKED],
@@ -121,7 +137,7 @@ const RECORD_PINS = { RECORD_JS: '8d5ee37294abb430', RECORD_STOP_JS: 'b24a0eac1e
 
 const PINS = {
   requireLease: '45455292d3543999', tabs: 'e1036825df1dad05', PROBE: '20046acb19de62ae', summarize: 'a27f9bffb6eb2a69',
-  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: '88173866305dfab8', record: '93dc03f9721d7b09', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-168: its holder check; I-141: record through lib/iphone-record.mjs; I-186: the thermal profile gate)
+  status: '43e304a76f1bf0c9', open: '805f788db018f5f6', scroll: '88173866305dfab8', record: '7d9937ef77b6008c', // CHANGES (I-060: leaseAndMark; I-073: lan placeholder; I-077: open after a park; I-123: requireLease's runner guard; I-168: its holder check; I-141: record through lib/iphone-record.mjs; I-186: the thermal profile gate; I-218: record --touches)
 };
 
 // tools/lib/sim-scroll.mjs (`sim.mjs scroll` / `record`, research/simulator/README.md §7) measures the Simulator with

@@ -22,6 +22,9 @@
 //        # logger still there?); logger there: it goes on (`recovered`); else it writes the frames so far with
 //        # `partial: true, reason` and prints `PARTIAL saved <file>: <reason>`, exit 6. MEASUREMENT CODE: the polls are
 //        # new in-page work (lib/iphone-record.mjs); --poll 0 reproduces the old sequence. FW_RECORD_READ_MS: read timeout.
+//        # I-218 [--touches]: also log the finger (touchstart/move/end: time, clientX/Y, scrollY) into the record's `touches`
+//        # (lib/iphone-record.mjs RECORD_TOUCHES_JS, passive listeners) for `node tools/gesture-from-record.mjs <record>`,
+//        # which turns them into a gesture script; capture runs only, never a compared run (in-page work: measurement-adjacent)
 //   node tools/iphone.mjs park --owner <topic>                    # Safari to about:blank: after every block (I-047)
 //   node tools/iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]   # battery log (I-075; no lease, no page):
 //        # one JSON line per idevicediagnostics read (BATTERY_KEYS only), every --every s for --seconds (lib/iphone-battery.mjs)
@@ -114,7 +117,7 @@ import { basename, extname } from 'node:path';
 import { REPO } from './lib/paths.mjs';
 import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE, lanSafeRecord, lanSafeText } from './lib/iphone-url.mjs';
 import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
-import { RECORD_JS, recordSummary, recordRun, parsePoll, EXIT_PARTIAL } from './lib/iphone-record.mjs';
+import { RECORD_JS, RECORD_TOUCHES_JS, TOUCH_FIELDS, recordSummary, recordRun, parsePoll, EXIT_PARTIAL } from './lib/iphone-record.mjs';
 import { exitOnHelp } from './lib/help.mjs';
 import { startGate, closeHold, currentHold, parseProfile, PROFILES, EXIT_PROFILE } from './lib/thermal-profile.mjs';
 
@@ -369,11 +372,13 @@ async function main() {
     const prof = await profileGate(owner); // I-186: the thermal profile at the hold's start (one read per hold; refuses, exit 8)
     const secs = Number(opt('seconds', 25));
     const pollSec = parsePoll(opt('poll')); // I-141: save as it goes (lib/iphone-record.mjs); 0 = the old single final read
+    const touches = flag('touches'); // I-218: also log the finger's touches (RECORD_TOUCHES_JS) for gesture-from-record.mjs
     const out = resolve(REPO, opt('out', join('out', 'iphone', `${owner}-${opt('label', 'finger')}-${Date.now()}.json`)));
     mkdirSync(dirname(out), { recursive: true });
     const save = async (res) => { // the record as the old code built it; atomic, so a reader never sees half a file
       res.summary = recordSummary(res);
       res.meta = { device: 'iPhone 15 Pro Max, iOS 26.6.1 Safari', owner, label: opt('label', 'finger'), seconds: secs, date: new Date().toISOString() };
+      if (touches) res.meta.touches = { fields: TOUCH_FIELDS, note: 'I-218 capture run: passive touch listeners in the page; never a compared run' };
       res.mac = phoneMacRecord(mac); // I-056: shared jobs and load1 on the Mac at start and end
       res.meta.profile = prof.record(); // I-186: profile, the hold's start read (the end read stamps end/drift)
       writeFileSync(`${out}.${process.pid}.tmp`, JSON.stringify(lanSafeRecord(res))); // no LAN address in the file (Hard rule 12)
@@ -381,13 +386,15 @@ async function main() {
     };
     const c = await openTab(() => true);
     await c.evaluate(RECORD_JS);
+    if (touches && (await c.evaluate(RECORD_TOUCHES_JS)) !== 'installed') throw new Error('record --touches: the touch logger did not install (no frame logger in the page)');
     const href = await c.evaluate('location.href');
     console.log(`RECORDING ${secs} s on ${href} - the human should scroll now (top to bottom, then push past the end)`);
     const readMs = Number(process.env.FW_RECORD_READ_MS || 15000);
-    const r = await recordRun({ c, seconds: secs, href, pollSec, readMs, save, sleep, listTabs: tabs, reconnect: (host) => openTab(host, { tries: 2 }) });
+    const r = await recordRun({ c, seconds: secs, href, pollSec, readMs, save, sleep, listTabs: tabs, reconnect: (host) => openTab(host, { tries: 2 }), touches });
     await save(r.rec);
     await prof.saved(out); // I-186: listed for the hold's end read
     console.log(JSON.stringify(r.rec.summary, null, 1));
+    if (touches) console.log(`TOUCHES ${(r.rec.touches || []).length} events (${(r.rec.touches || []).filter((e) => e[1] === 's').length} touchstarts): node tools/gesture-from-record.mjs ${out}`);
     if (r.partial) { exitCode = EXIT_PARTIAL; console.log(`PARTIAL saved ${out}: ${lanSafeText(r.reason)} (${r.rec.frames.length} frames; diag in the file; incident I-141)`); return; }
     console.log(`saved ${out}`);
     return;
@@ -413,6 +420,6 @@ async function main() {
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'profile') return profileCmd();
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(e?.exitCode || 1); }); // I-186: a profile misfit exits 8

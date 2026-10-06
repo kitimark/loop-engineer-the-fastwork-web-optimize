@@ -86,6 +86,8 @@ async function load(url) {
 // lists no tab meanwhile (a locked phone or Safari in the background). GET /__fake/navigate?url=U loads U in the tab as
 // a new document (the page model's window.__fr is gone) and destroys the old target: each open connection gets
 // Target.targetDestroyed and never an answer again (a new connection gets the new target), like a link the user tapped.
+// I-218: GET /__fake/touch?kind=start|move|end&x=X&y=Y[&scroll=S] dispatches one touch event into the page model (a human
+// finger for `record --touches`; scroll sets scrollY first).
 let stall = { until: 0, unlist: false };
 const conns = new Set();
 async function evaluate(expr) {
@@ -158,8 +160,8 @@ function newDocument() {
 }
 const markHooks = new Set(); // I-079: the recording connections' TimeStamp emitters
 const maxY = (w) => DOC_H - w.innerHeight;
-function dispatch(type, { touches, clientY }) {
-  const e = { type, cancelable: type !== 'touchcancel', defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY }], timeStamp: doc.win.performance.now() };
+function dispatch(type, { touches, clientY, clientX }) {
+  const e = { type, cancelable: type !== 'touchcancel', defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientY, ...(clientX === undefined ? {} : { clientX }) }], timeStamp: doc.win.performance.now() };
   const ls = doc.listeners.filter((l) => l.type === type);
   for (const l of [...ls.filter((x) => x.capture), ...ls.filter((x) => !x.capture)]) {
     e.preventDefault = l.passive ? () => {} : () => { if (e.cancelable) e.defaultPrevented = true; };
@@ -256,6 +258,14 @@ const server = http.createServer((req, res) => {
     const q = new URL(req.url, 'http://x').searchParams;
     stall = { until: Date.now() + Number(q.get('ms') || 0), unlist: q.get('unlist') === '1' };
     log({ stall: Number(q.get('ms') || 0), unlist: stall.unlist });
+    return res.end('ok');
+  }
+  if (req.url.startsWith('/__fake/touch?')) { // I-218: a human finger for `record --touches`: kind=start|move|end, x, y, scroll (scrollY after it)
+    const q = new URL(req.url, 'http://x').searchParams, kind = q.get('kind');
+    if (!PAGE || !doc) return res.end('no page');
+    if (q.get('scroll') !== null) doc.win.scrollY = Number(q.get('scroll'));
+    dispatch(kind === 'end' ? 'touchend' : kind === 'move' ? 'touchmove' : 'touchstart', { touches: kind === 'end' ? 0 : 1, clientY: Number(q.get('y')), clientX: Number(q.get('x') || 215) });
+    log({ fakeTouch: kind });
     return res.end('ok');
   }
   if (req.url.startsWith('/__fake/navigate?')) { // I-141
