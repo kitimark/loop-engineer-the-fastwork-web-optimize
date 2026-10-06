@@ -1,4 +1,55 @@
-# v10: main's v9-final (rev 7d) + P1 + P1b (a) + #platform pause + hit-skip + PR-027 nolift + I-219
+# v10: main's v9-final (rev 7d) + P1 + P1b (a) + #platform pause + hit-skip + PR-027 nolift + CM v1.2 (PR-030) + I-219
+
+## Build card, v10 + CM (built 2026-10-06 16:00Z; the user accepted PR-030 at 15:49Z, lead 15:50Z)
+
+```
+BUILD v10 + CM on base C = main's v9-final rev 7d (1b2eecc66011 / e1359ab9994a)
+  snapshot out/v10/snap-a33a6c7c1f2b-62743920fe1a (HASHES.txt sha256/12 dd33efddcece), arms:
+  C  1b2eecc66011 / e1359ab9994a   main's v9-final (rev 7d)
+  CI 30d41592a308 / e1359ab9994a   C + I-219
+  N  bd73d4223822 / 76ba9f971926   C + pause (c) + hit-skip + P1 + P1b (a)        (unchanged; CM is not part of N)
+  V  a33a6c7c1f2b / 62743920fe1a   N + nolift + CM + I-219 = v10
+deltas: as the first v10 (below), plus
+  CM          fixes/v10/cm-on-v10.diff  2f5bdf50aa97 (arch-compositor-morph's cm-on-v10.diff de73bc1a58d2, headers
+              normalised): CM v1.2 (fixes/compositor-morph/delta.diff 5e6b8dc98b33 @c7c19ae4) cut against v10's V, with
+              - no hit-test hunk: hit-skip's `!(__msOn && __msP > 0.2 && r > 0.2)` covers CM's `__cmLive` skip (__cmSup needs __msOn)
+              - P1's reveal and (a)'s size probe off under html.fw-cm (__rvW and __rvSzInit return early): one morph renderer;
+                fw-cm (CM supported) and P1's (width <= 640px) make CM-on and reveal-on exact complements
+              - v.earn without translateY: CM had brought back the 8 px Join lift that PR-027 nolift removes
+  order: after nolift, before I-219, in every route
+routes: R1 = R1b = R2 = R4 byte for byte (R3 n/a); V = arch's own v10try build byte for byte
+code parity: every step of R1 and CI changed exactly its delta's lines (9 steps, 0 differences); node --check on C, N, V, CI
+served hashes: every gate load records them (cm-px3 load.served): JS a33a6c7c1f2b, CSS 62743920fe1a
+pixel gate (step 1), against X2 = C + nolift + CM' (the accepted looks where CM renders: CM v1.2 with the same earn line,
+  fixes/v10/cm-x.diff 73c2e69ef7b7; e896730bd97c / b60087a524a7; P1 left out, it draws nothing under fw-cm), gate
+  fixes/v10/gates/cm-px3.mjs (cm-px2 copy; STATE adds fw-cm and the P1-node count; --nocm), 4 loads A V A2 V2:
+  Chrome screencast X2 vs V   18 stops consistent 0 (identical); fw-cm on, 0 P1 nodes at every stop of every load
+  Chrome --nocm old V vs V    18 stops identical; no fw-cm; P1's reveal renders (data-fw-rv at every mid stop): where CM
+                              is unsupported the new V is the old v10
+  Simulator X2 vs V           9 groups: every morph stop consistent 0; fw-cm on, 0 P1 nodes; the pre-zone "pre" stop is noisy
+                              in the Simulator (A/A up to 6.8 %), so it is a noisy stop, not a pass: one group 3065 css
+                              px2 (0.76 %, #platform title), its re-run 5 (noise, lead 16:27Z); g1a re-run for one load that crossed the 0.08 bucket early (V2), re-run clean
+Simulator counts (step 2, em-sim, paints / kpx / layouts; C and old V from the first v10):
+  phase        C                  old V              V (v10 + CM)
+  open         542 / 43878 / 182  177 / 11970 / 167  167 / 11983 / 133
+  close        502 / 42658 / 173  116 / 13001 / 156   86 / 11210 / 128
+  restOpen      46 /   758 /  35   49 /   761 /  38   34 /    34 /  34   (styles 72: every frame)
+  restClosed    65 /  1201 /  18   51 /   642 /   2   42 /   171 /   4
+  approach about equal (197 / 19930 / 100); layers at the open end 56 (old V 44: CM's wrappers)
+KNOWN COST / phone path: under CM (the iPhone path) P1 and (a) are off, so P-156's P1 numbers and its +11 ms first open do
+  not describe the new v10 on the iPhone. CM v1.1 had a first open of 79-82 ms per page load on the phone (P-157 EV1-4,
+  arch); the v10cm-nw block decides (driver G: fs WDA flicks; the M driver does not exercise CM). Third arm if arch says go:
+  Vc = V + c1 (keyframes at idle, fixes/v10/cm-c1.diff e7ec73c26c9c) = b8b194b7ff56 / 62743920fe1a, out/v10/snapc-b8b194b7ff56-62743920fe1a
+phone no-worse (step 3): pending (kit fixes/v10/phone, ticket v10cm-nw, folder out/v10cmnw)
+```
+
+The build: `fixes/v10/build.sh` with the first v10's settings plus `CM=fixes/v10/cm-on-v10.diff CM_SHA=2f5bdf50aa97
+PIN_V=a33a6c7c1f2b/62743920fe1a`, in a shared check hold.
+
+The first v10 (without CM, V 61257aa0969a / fb9f6aa28ad4) follows; its phone block (v10-nw, 15:47Z) stopped at H1's start
+gate with no run and was not repeated: the user accepted CM at 15:49Z.
+
+## The first v10: main's v9-final (rev 7d) + P1 + P1b (a) + #platform pause + hit-skip + PR-027 nolift + I-219
 
 ## Build card (built 2026-10-06 15:28Z on the lead's go, 15:00Z and 15:27Z)
 
