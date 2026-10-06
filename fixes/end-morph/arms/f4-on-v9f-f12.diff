@@ -1,0 +1,13 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 06:27:31
++++ b/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 08:05:22
+@@ -14162,7 +14162,9 @@
+         if (!e) return;
+         let t = QM(r);
+         // perf(end-morph F1): fully faded (opacity 0), #platform is hidden, so a toolbar step can't repaint its layers
+-        (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``), (e.style.visibility = t <= 0 ? `hidden` : ``));
++        // perf(end-morph F4): at fade 1 the CSS filter is blur(0px), which draws nothing but keeps #platform a filtered
++        // layer that WebKit repaints as the page scrolls (Simulator, OBSERVED); no filter there, the CSS one from fade < 1
++        (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``), (e.style.visibility = t <= 0 ? `hidden` : ``), (e.style.filter = t >= 1 ? `none` : ``));
+       },
+       C = () => w > 0.001 || r > 0.001,
+       // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past

@@ -139,7 +139,7 @@ and the Simulator; motion-only differences are proposals).
 | F1 + U2 | F1: hide #platform while it is fully faded (`visibility: hidden` when `--morph-fade` = 0, m >= 0.55). U2: fix-nav-morph's hit-test deferral | Chrome: rest open 122 -> 4 paints, step at m 1 85 -> 1, lift + settle 377 -> 157; 14-26 hit tests per open/close gone | T2 at m 0.95 in Chrome (19 css px², edge, max 40), lead-ACCEPTED provided the Simulator leg stays within T2 | built, `fixes/end-morph-f12/`; lands on v9-final (v9.2 NO-LAND); landing gates PASSED at T2 (lead-accepted); phone no-worse card P-152 written, waiting for its pre-data read |
 | F2 | read `scrollY` once per frame in the engine instead of in `__nsOnScroll` | none in Chrome (the forced style pass only moves) | T0 | DROPPED (lead, 2026-10-05) |
 | F3 | padPF: keep #platform's filter outsets constant with a transparent drop-shadow | none (Simulator S1: the approach repaint stays) | - | DROPPED |
-| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`arms/f4-on-f12.diff`, JS `839a5a24c0d4` on v9.2) | Simulator approach: #platform 80 -> 0 repaints, 201/199 -> 124 paints, 20.2 -> 4.2 Mpx (5 below) | T0 in Chrome (8 stops) and the Simulator (7 stops), OBSERVED | measured on v9.2; a separate less-work step after F1 + U2 lands (lead, 2026-10-05): port onto v9-final + F1 + U2, own T0/T2 gate and counts, crossing-frame check |
+| F4 | no filter on #platform while it is fully shown: inline `filter: none` at fade >= 1 in `S()`, on top of F1 + U2 (`arms/f4-on-f12.diff`, JS `839a5a24c0d4` on v9.2) | Simulator approach: #platform 80 -> 0 repaints, 201/199 -> 124 paints, 20.2 -> 4.2 Mpx (5 below) | T0 in Chrome (8 stops) and the Simulator (7 stops), OBSERVED | measured on v9.2; ported onto v9-final + F1 + U2 as code only (`arms/f4-on-v9f-f12.diff`, JS `2ff5084cd4eb`, not measured); a separate less-work step after F1 + U2 lands (lead, 2026-10-05): own T0/T2 gate and counts, crossing-frame check (5) |
 | V1 | snap the `--fw-ms-h` write in `__msRO` to device pixels (`fixes/end-morph-v1/`, JS `1d68bc9fb4fe`) | the toolbar-step repaint, if the fractional sticky offset is its trigger (2.4 row 5) | T0 expected | DROPPED (lead, 2026-10-05): no effect in the Simulator (step A, 5), and the case it targets can't be produced there |
 | P1 | morph-gpu rev 1 (composited reveal), ported onto 7d | Simulator: 12 -> 2 paints per frame on the M driver (morph-gpu) | T3 motion, PR-012 rev 1 ACCEPTED by the user | ported onto v9.2 here (`fixes/end-morph-p1/`, handover notes); the v9-final port and the card now belong to fix-end-morph-p1 (lead, 2026-10-05) |
 | P2 | close tail: no 0.7 s width/background transition after a scroll-driven close | ~40 frames of header layout + repaint per close | motion-only difference (residual <= the last step) -> proposal | proposal with Try-it |
@@ -228,3 +228,16 @@ and the Simulator; motion-only differences are proposals).
   - The rest phases vary between the two control runs as much as against F4 (rest closed 7 vs 98): they don't decide
     anything.
   - Next (lead, 2026-10-05): a separate less-work step after F1 + U2 lands, with its own T0/T2 gate and counts.
+- **F4 ported onto v9-final + F1 + U2. Code only, pre-staged 2026-10-06 while C-071 was open; nothing measured.**
+  - Base: P-152's V build (int-v8's snapshot `snap-a6426953727a`, JS `a6426953727a`, CSS `e1359ab9994a`).
+  - Change: the same one-line `S()` edit as on v9.2. The diff `arms/f4-on-f12.diff` applied cleanly (one hunk at line 14162, -1 / +3 lines), saved as `arms/f4-on-v9f-f12.diff`.
+  - Result: JS `2ff5084cd4eb`, CSS unchanged `e1359ab9994a`. `node --check` passes.
+  - The overlay (gitignored) is `fixes/end-morph-f4v9f/overlay/`: the V build's JS with F4 applied, plus V's CSS, served on top of the baseline the same way as P-152's V.
+  - Still to measure on this build, in order, each in its own hold:
+    1. Chrome pixels, F4 against F1 + U2 (`gates/em-px2.mjs`, 8 stops, 430x775, multi-pair A/A): T0 expected, T2 at most.
+    2. Simulator pixels (7 stops): T0 expected.
+    3. Simulator counts (`em-sim.mjs`, F1 + U2 / F4 / F1 + U2, at least 3 runs per arm, not 1): the approach repaint of #platform (80 → 0 on v9.2) and the open phase. On v9.2 the open phase showed +16-24 paints and +10 style recalcs, one run each; it is UNRESOLVED and may be the frame where the filter comes back at fade < 1.
+    4. A per-frame paint list around that crossing (fade 1 → < 1 and back), to find out whether the filter's return costs a repaint or a recomposite each time.
+    5. Chrome counts (`em-chrome.mjs`): no change expected; the less-work rule's cost card.
+    6. The phone no-worse check, a card of its own through the lead, after F1 + U2 lands. F4 removes WebKit work only, so the phone, not Chrome, is the place it can matter.
+  - Nothing of this touches the P-152 kit or its pins.
