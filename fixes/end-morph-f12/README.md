@@ -986,6 +986,54 @@ What this shows (OBSERVED in our setup, one run per arm):
 | served JS | `db7257e81859` |
 | served CSS | `192f62c106d1` |
 
+### 8. PR-029 rev 3: (a) on CM v1.2 (lead order 15:2xZ; posted 15:43Z)
+
+The user's rev 2 note (13:06Z) was: "Waiting for arch-compositor-morph done, they might get new breakthrough." CM v1.2 landed on main at c7c19ae4 and was posted as PR-030.
+
+**Branch.** `git rebase main` conflicted on fixes/end-morph-p1 (add/add), and `rebase -X ours` was refused by the permission check.
+- Lead option 3: a fresh branch `fix/end-morph-f12-r3` from c7c19ae4, made in this same worktree, because a second worktree was refused by the isolation hook.
+- Every commit of the old branch was cherry-picked except 140565f9, the one touching fixes/end-morph-p1. All 38 applied cleanly.
+- The old branch `worktree-agent-aa06ada9c80534d32` stays at 9f17a505.
+
+**Builds** (overlays gitignored; phone servers ran from snapshot copies in `out/fade/snap/cm` and `cma`):
+
+| arm | how built | served JS | served CSS |
+|---|---|---|---|
+| CM v1.2 | `fix.mjs apply pf-cm --from compositor-morph` (main's patch.diff); pins match | `b9d2eceae44a` | `2948d49e47c6` |
+| CM v1.2 + (a) | `patch -p4 -F0 < fade/a-pause-while-fading.diff`, no fuzz | `f1c1834e7d03` | `43d46a323a23` |
+
+- The delta from CM v1.2 is `fade/a-on-cm12.diff` (`1d42b877a6cb`).
+
+**Pixel gates** (`fixes/compositor-morph/gates/cm-px2.mjs`, PR-010 multi-pair, 430x775, 18 stops; output in `out/compositor-morph/px2-*-pf-cma-*`):
+- **Chrome** (`--capture screencast`): 0 css px² consistent at every stop.
+- **Simulator** (fw-sim, `sim.mjs session --functional`):
+  - At "pre", 83 css px² (0.02 %) in css box 64-368 × 112-192. (a) is inert there (fade 1, no attribute), so this is load noise. The A/A pair at that stop also differs by 10 %.
+  - From up0.5 to dn0.1, 13 css px² (0.003 %) in the nav logo box (css 80-112 × 16-48), which (a) never touches. This is the same Simulator noise as (c)'s 45 px².
+  - 0 at every other stop. Everything is far under T2 (0.5 %).
+
+**Phone check** (`phone/pfa-run.sh`, in its own hold, no block mark):
+- Conditions: Xcode-induced Serious, battery 31.8 → 33.1 °C, no cooling wait. Shared jobs ran on the Mac beside it (load1 about 20).
+- Each arm got 2 M runs (`__fwMorphDrive` hold 2000 × 3), in the order cm, cma, cma, cm. Then `phone/pfa-probe.mjs` ran per arm: a held synthetic touch, scrolled to m 0, 0.1, 0.3, 0.5 and 1 by the page-end formula.
+
+| M run | >50 | >34 | ±4 twins (>46 / >54 / >30 / >38) | moving >50 | max |
+|---|---|---|---|---|---|
+| cm 1 | 3 | 6 | 3 / 3 / 8 / 3 | 2 | 68 ms (m 1) |
+| cma 2 | 4 | 6 | 5 / 4 / 8 / 5 | 3 | 67 ms (m 1) |
+| cma 3 | 4 | 6 | 5 / 4 / 7 / 6 | 2 | 67 ms (m 1) |
+| cm 4 | 6 | 7 | 6 / 5 / 7 / 6 | 3 | 68 ms (m 1) |
+
+- The ranges overlap at every threshold, so this is no worse and no gain (OBSERVED, 2 runs per arm).
+- **Mechanism** (OBSERVED):
+  - At all 5 positions the fade, opacity and blur are identical in both arms, e.g. fade 0.393, blur 7.28 px at the probe's m 0.3.
+  - The probe's m runs ahead of the page's own (the phone's toolbar geometry), so its "m 0" already sits at fade 0.91.
+  - cma is paused at every position. Running animations under #platform go 4 → 0; all animations on the page go 30 → 26, which includes CM's scroll-driven ones, and at m 1 go 8 → 4.
+
+**Rev 3 answers.**
+- Rev 1's Serious fade bug was in (b). (a) draws the fade exactly as CM v1.2 does (the phone values above), so whatever the user sees in A's fade, B shows the same.
+- Rev 1's "try CM instead" and rev 2's "wait for CM" are both answered by building on PR-030.
+- Rev 3 says in plain words that it depends on the user accepting PR-030.
+- Try-it: A = `fixes/pf-cm/overlay`, B = `fixes/pf-cma/overlay`.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
