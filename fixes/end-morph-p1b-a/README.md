@@ -36,6 +36,8 @@ OBSERVED). This is cause 1 of P-153's FIRST-OPEN RISK SEEN (`fixes/end-morph-p1/
   A page that loads wide and becomes narrow gets the probe at the next `__rvW` call after that.
 - A ResizeObserver hands over its border box (rounded, like `offsetWidth`) and `--nav-bar-inset-x`. The switch-on uses
   these cached values. P1's read runs only if no observation came yet.
+- The observer reads `--nav-bar-inset-x` only when the probe's width changed (the value comes only from the
+  `(width <= 640px)` rule), so a height-only change reads no style. It writes nothing while the reveal is off.
 - When the size changes while the reveal is on, the observer callback re-applies the clip and the parts at the same m
   in that frame. On phones today only a rotation changes it: `--panel-h` is `calc(100vh - 24px)` (the `<= 640px` rule
   beats the `100dvh` one), and `100vh` does not follow the toolbar. That last point is the usual reading of Safari's `vh`
@@ -91,17 +93,17 @@ C / V / A:
 |---|---|---|---|
 | B1 = v9-final + U2 + i219 | C1 (control) | fe7c668d35e8 | e1359ab9994a |
 | | V1 = C1 + P1 | fbc3acdc87a3 | a81b9af7b2c9 |
-| | A1 = V1 + (a) | 09d1f5b62384 | cfb8b8c5b019 |
+| | A1 = V1 + (a) | f83aa54c2acc | cfb8b8c5b019 |
 | B0 = v9-final + i219 | C0 (control) | 387a2b38790b | e1359ab9994a |
 | | V0 = C0 + P1 | a145c7de6507 | a81b9af7b2c9 |
-| | A0 = V0 + (a) | 2dc48009297a | cfb8b8c5b019 |
+| | A0 = V0 + (a) | 888ed8eb2d15 | cfb8b8c5b019 |
 
 The hydration and rotation checks below ran on the previous A1, ed44af454a92. The current A1 differs from it only in two
 `aria-hidden` attributes on P1's dark and glass layers, which are created when the reveal turns on, long after hydration.
 The attributes were added after the accessibility diff (below).
 
-Delta files: `delta-js.diff` 18c7b0e1a3af (V -> A, 4 hunks), `delta-css.diff` d20484088a03. They apply with `-F 0` on
-both bases. The overlay here (on P-153's C, which has F1) is JS 2cb04208b57e, CSS cfb8b8c5b019.
+Delta files: `delta-js.diff` 27408c23ede4 (V -> A, 4 hunks), `delta-css.diff` d20484088a03. They apply with `-F 0` on
+both bases. The overlay here (on P-153's C, which has F1) is JS 901439d5222c, CSS cfb8b8c5b019.
 
 **Hydration** (fix-i219-hydrate's `probe/hydrate-probe.mjs cost --builds C,F,C,F --c out/p1b/snapi/C1 --f
 out/p1b/snapi/A1`; one shared probe hold; CPU 6x, 430x932; out/i219/cost-2026-10-06T09-32-04-572Z):
@@ -202,8 +204,8 @@ frame.
 **Arms** (served from the immutable copies in `out/p1b/snapi/`, HASHES.txt):
 - C = the base's control;
 - A = C + P1 + (a).
-- Base B1 (v9-final + U2 + i219: C1 fe7c668d35e8 vs A1 09d1f5b62384) if P-155 lands U2. Otherwise B0 (v9-final + i219:
-  C0 387a2b38790b vs A0 2dc48009297a).
+- Base B1 (v9-final + U2 + i219: C1 fe7c668d35e8 vs A1 f83aa54c2acc) if P-155 lands U2. Otherwise B0 (v9-final + i219:
+  C0 387a2b38790b vs A0 888ed8eb2d15).
 - CSS: C e1359ab9994a, A cfb8b8c5b019.
 - No V arm: P-153 already measured P1 against C on the same mechanism.
 
@@ -261,6 +263,23 @@ frame.
 - **Pr4, after a park (part B):** median CBp34 A - C <= +2 per run, and median Op.f2 A - C <= +2 ms. A holds nothing
   while parked: the reveal is off at m = 0 and m = 1, and the probe's observer is idle (`rotate.mjs`: no callback
   without a size change). So a park should change nothing.
+- **Probabilities** (the author's, before data):
+
+  | prediction | p | why |
+  |---|---|---|
+  | Pr1 | 0.55 | Chrome removes the whole +9 ms of V's switch-on frame. On WebKit, P-153's +10 ms may be partly layer creation or paint, which (a) does not touch. |
+  | Pr2 | 0.85 | A does in the end zone what V did, and V passed P-153 below C. |
+  | Pr3 | 0.85 | P1 already holds the layers during every close: CB34 V 5 vs C 11. |
+  | Pr4 | 0.75 | A holds nothing while parked. The risk is WebKit dropping backing stores after idle and paying for them on the next close more in A (bigger layers) than in C. |
+  | all four | 0.35 | not independent: Pr2 and Pr3 move together. |
+- **RO callback change** (lead, after fix-panel-height's dvh counts): the observer reads `--nav-bar-inset-x` only when
+  the probe's width changed. The value comes only from the `(width <= 640px)` rule (CSS 12094/12104), so a height-only
+  change reads no style; with a dvh panel that means every toolbar step. It writes nothing while the reveal is off;
+  while it is on, it re-applies as before. A small change on the same path: JS 901439d5222c, A1 f83aa54c2acc,
+  A0 888ed8eb2d15. Re-run on it:
+  - `rotate.mjs` (out/end-morph-p1/p1b/rotate-2026-10-06T10-03-45-445Z.json): the same states as above, 3 RO callbacks, 0 errors;
+  - `exact.mjs` (out/end-morph-p1/p1b/exact-2026-10-06T10-04-08-265Z.json): size equal at 775/815/932, and the clip is
+    exact after the height-only steps 775 -> 815 -> 932 -> 775 with the reveal on, using the cached inset.
 
 **Outcomes:**
 

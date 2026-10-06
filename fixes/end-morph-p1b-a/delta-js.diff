@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -14623,6 +14623,39 @@
+@@ -14623,6 +14623,41 @@
      __rvIx = 16,
      __rvDpr = 1,
      __rvF = 0,
@@ -24,9 +24,11 @@
 +      (__rvSzRO = new ResizeObserver(([e]) => {
 +        let b = e && e.borderBoxSize && e.borderBoxSize[0];
 +        if (!b) return;
-+        ((__rvSzW = Math.round(b.inlineSize)),
-+          (__rvSzH = Math.round(b.blockSize)),
-+          (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        let w = Math.round(b.inlineSize);
++        // --nav-bar-inset-x changes only with the width (the (width <= 640px) rule): a height-only change (a 100dvh
++        // panel at every toolbar step) reads no style here
++        w !== __rvSzW && (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16);
++        ((__rvSzW = w), (__rvSzH = Math.round(b.blockSize)));
 +        // the panel size changed while the reveal is on (today only a rotation: on phones --panel-h is 100vh based; a
 +        // 100dvh panel would also change with the toolbar): the clip and the parts follow at the same m in this frame
 +        // (an observation runs after layout, before paint). The probe's size does not depend on these writes.
@@ -40,7 +42,7 @@
      __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
      // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
      __rvFin = () => {
-@@ -14671,6 +14704,7 @@
+@@ -14671,6 +14706,7 @@
      __rvW = (v) => {
        if (v === __rvV) return;
        __rvV = v;
@@ -48,7 +50,7 @@
        let m = +v;
        if (!(__rvMq.matches && m > 0.001 && m < 1)) {
          __rvOn && __rvOff(v);
-@@ -14680,17 +14714,22 @@
+@@ -14680,17 +14716,22 @@
          __rvOn = !0;
          // switched on again before the second off step ran: finish it now (the reveal's CSS turns the blur off)
          __rvF && __rvFin();
@@ -76,7 +78,7 @@
          __rvDpr = window.devicePixelRatio || 1;
        }
        if (__rvP !== __mkP)
-@@ -14741,6 +14780,24 @@
+@@ -14741,6 +14782,24 @@
          for (let [e, o] of __rvE.k) __rvT(e, `translate`, `0px ${px(o * (h / s - Hf))}`);
        }
      };

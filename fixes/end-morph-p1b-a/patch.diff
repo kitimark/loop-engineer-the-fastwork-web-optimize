@@ -2200,7 +2200,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,12 +5438,29 @@
+@@ -4689,11 +5438,28 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
@@ -2216,7 +2216,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-       },
++      },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -2228,10 +2228,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-+      },
+       },
        i = new IntersectionObserver(
          ([e]) => {
-           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5492,15 @@
          ((O = null), z(E, null));
        },
@@ -3319,7 +3318,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,13 +14515,62 @@
+@@ -13095,10 +14515,59 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -3342,9 +3341,9 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          document.removeEventListener(`transitionrun`, __nsTrRun, !0),
 +          document.removeEventListener(`transitionend`, __nsTrEnd, !0),
 +          document.removeEventListener(`transitioncancel`, __nsTrEnd, !0));
-       }
-     );
-   });
++      }
++    );
++  });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -3377,13 +3376,10 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-+      }
-+    );
-+  });
-   var I = uN();
-   let L, te;
-   var B = e(I),
-@@ -13116,12 +14585,224 @@
+       }
+     );
+   });
+@@ -13116,12 +14585,226 @@
      },
    });
    var oe = V(ae, 2),
@@ -3447,9 +3443,11 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      (__rvSzRO = new ResizeObserver(([e]) => {
 +        let b = e && e.borderBoxSize && e.borderBoxSize[0];
 +        if (!b) return;
-+        ((__rvSzW = Math.round(b.inlineSize)),
-+          (__rvSzH = Math.round(b.blockSize)),
-+          (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        let w = Math.round(b.inlineSize);
++        // --nav-bar-inset-x changes only with the width (the (width <= 640px) rule): a height-only change (a 100dvh
++        // panel at every toolbar step) reads no style here
++        w !== __rvSzW && (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16);
++        ((__rvSzW = w), (__rvSzH = Math.round(b.blockSize)));
 +        // the panel size changed while the reveal is on (today only a rotation: on phones --panel-h is 100vh based; a
 +        // 100dvh panel would also change with the toolbar): the clip and the parts follow at the same m in this frame
 +        // (an observation runs after layout, before paint). The probe's size does not depend on these writes.
@@ -3610,7 +3608,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +14821,7 @@
+@@ -13140,7 +14823,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -3619,7 +3617,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +14838,16 @@
+@@ -13157,7 +14840,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -3637,7 +3635,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14883,8 @@
+@@ -13193,7 +14885,8 @@
          M(w),
          M(a),
          l(() => {
@@ -3647,7 +3645,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14901,7 @@
+@@ -13210,7 +14903,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -3656,7 +3654,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13229,9 +14920,13 @@
+@@ -13229,9 +14922,13 @@
            "is-locale-open": s(y),
            "is-scroll-hidden": s(v) && !s(E),
            "is-profile-sticky-hidden": s(v) && !s(E),

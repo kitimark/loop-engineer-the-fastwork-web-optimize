@@ -4,8 +4,8 @@
 # --latency 150, --vendors=local.
 #   B = the plain baseline (the thermal gate's timer page; no counted run)
 #   C = the landing base's control, A = C + P1 + P1b (a); the base is P156_BASE (required on the first start):
-#     1 = v9-final + U2 + i219:  C1 JS fe7c668d35e8 CSS e1359ab9994a,  A1 JS 09d1f5b62384 CSS cfb8b8c5b019
-#     0 = v9-final + i219:       C0 JS 387a2b38790b CSS e1359ab9994a,  A0 JS 2dc48009297a CSS cfb8b8c5b019
+#     1 = v9-final + U2 + i219:  C1 JS fe7c668d35e8 CSS e1359ab9994a,  A1 JS f83aa54c2acc CSS cfb8b8c5b019
+#     0 = v9-final + i219:       C0 JS 387a2b38790b CSS e1359ab9994a,  A0 JS 888ed8eb2d15 CSS cfb8b8c5b019
 # The snapshot: out/p1b/snapi/{C,A}<base> (fixes/end-morph-p1/p1b/snap.mjs, read-only), copied once into out/p156/snap
 # with the base recorded in out/p156/snap/BASE; every start and check verifies the four files against the pins below.
 # Usage: P156_BASE=1|0 sh fixes/end-morph-p1/phone/p156-serve.sh start   copy (first time), start B C A, check, print ports
@@ -34,8 +34,8 @@ fi
 BASE=$(cat $D/BASE)
 [ -z "$P156_BASE" ] || [ "$P156_BASE" = "$BASE" ] || { echo "P156_BASE=$P156_BASE but the copy in $D is base $BASE: refuse"; exit 3; }
 case $BASE in
-  1) PIN="C:fe7c668d35e8:e1359ab9994a A:09d1f5b62384:cfb8b8c5b019" ;;
-  0) PIN="C:387a2b38790b:e1359ab9994a A:2dc48009297a:cfb8b8c5b019" ;;
+  1) PIN="C:fe7c668d35e8:e1359ab9994a A:f83aa54c2acc:cfb8b8c5b019" ;;
+  0) PIN="C:387a2b38790b:e1359ab9994a A:888ed8eb2d15:cfb8b8c5b019" ;;
   *) echo "BASE file says '$BASE': refuse"; exit 3 ;;
 esac
 h() { shasum -a 256 "$1" | cut -c1-12; }

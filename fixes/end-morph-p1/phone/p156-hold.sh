@@ -5,7 +5,7 @@
 # aside, time guard, Mac sleep check) with: the arms C / A, a second program for part B (g-park30-v1), and no
 # attribution items.
 # Builds (out/p156/snap, served by fixes/end-morph-p1/phone/p156-serve.sh on plain http, --vendors=local --latency 150):
-#   C, A  the base in out/p156/snap/BASE (1: C1 fe7c668d35e8 / A1 09d1f5b62384; 0: C0 387a2b38790b / A0 2dc48009297a;
+#   C, A  the base in out/p156/snap/BASE (1: C1 fe7c668d35e8 / A1 f83aa54c2acc; 0: C0 387a2b38790b / A0 888ed8eb2d15;
 #         CSS C e1359ab9994a, A cfb8b8c5b019)                                    out/p156/serve-{C,A}.json
 #   B     the plain baseline (the thermal gate's timer page)                     out/p156/serve-B.json
 # Both arms' served JS and CSS are hashed before every item; a mismatch voids the hold (exit 4).
@@ -40,8 +40,8 @@ PK=fixes/end-morph-p1/phone/g-park30-v1.json; PROG_PK=6f9209453750
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 [ -e $SV/snap/BASE ] || { echo "HOLD $H VOID no snapshot copy (start p156-serve.sh first) (no run)"; exit 4; }
 case $(cat $SV/snap/BASE) in
-  1) C_JS=fe7c668d35e8; A_JS=09d1f5b62384 ;;
-  0) C_JS=387a2b38790b; A_JS=2dc48009297a ;;
+  1) C_JS=fe7c668d35e8; A_JS=f83aa54c2acc ;;
+  0) C_JS=387a2b38790b; A_JS=888ed8eb2d15 ;;
   *) echo "HOLD $H VOID unknown base (no run)"; exit 4 ;;
 esac
 C_CSS=e1359ab9994a; A_CSS=cfb8b8c5b019

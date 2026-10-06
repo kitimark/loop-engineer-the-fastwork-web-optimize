@@ -11,9 +11,9 @@
    "dir": "out/p153/snap/V"
   },
   "patched": {
-   "js": "2cb04208b57e",
+   "js": "901439d5222c",
    "css": "cfb8b8c5b019",
-   "delta": "fixes/end-morph-p1b-a/delta-js.diff 18c7b0e1a3af + delta-css.diff d20484088a03",
+   "delta": "fixes/end-morph-p1b-a/delta-js.diff 27408c23ede4 + delta-css.diff d20484088a03",
    "firstReviewBuildJs": "79a0bd83eb06"
   },
   "phoneArms": {
@@ -22,12 +22,12 @@
    "B1 (v9-final + U2 + i219)": {
     "C1": "fe7c668d35e8",
     "V1": "fbc3acdc87a3",
-    "A1": "09d1f5b62384"
+    "A1": "f83aa54c2acc"
    },
    "B0 (v9-final + i219)": {
     "C0": "387a2b38790b",
     "V0": "a145c7de6507",
-    "A0": "2dc48009297a"
+    "A0": "888ed8eb2d15"
    },
    "css": {
     "C": "e1359ab9994a",
@@ -285,8 +285,15 @@
    ],
    "tool": "fixes/end-morph-p1/p1b/idle-run.mjs (fixes/platform-idle/tools/idletriple.mjs), idle-who.mjs"
   },
-  "census250": "Chrome: pending a timing hold after P-155; phone: part A of the phone card"
+  "census250": "Chrome: pending a timing hold after P-155; phone: part A of the phone card",
+  "roWidthCheck": {
+   "verdict": "PASS",
+   "change": "RO callback reads --nav-bar-inset-x only when the probe width changed (value only from the (width <= 640px) rule); height-only changes (dvh toolbar steps) read no style; nothing written while the reveal is off",
+   "build": "JS 901439d5222c, A1 f83aa54c2acc, A0 888ed8eb2d15",
+   "rotate": "out/end-morph-p1/p1b/rotate-2026-10-06T10-03-45-445Z.json (same states, 3 RO callbacks, 0 errors)",
+   "exact": "out/end-morph-p1/p1b/exact-2026-10-06T10-04-08-265Z.json (size equal 775/815/932; clip exact after height-only steps with the reveal on)"
+  }
  },
- "phoneCard": "P-156 DRAFT in README.md (reserved by mgmt-clerk-1); reader fixes/end-morph-p1/phone/pA-read.mjs; G programs g-fastshort-v1 (8737f212c0ff) and g-park30-v1 (6f9209453750)",
+ "phoneCard": "P-156 DRAFT in README.md with probabilities (Pr1 0.55, Pr2 0.85, Pr3 0.85, Pr4 0.75, all 0.35); reader fixes/end-morph-p1/phone/pA-read.mjs; G programs g-fastshort-v1 (8737f212c0ff) and g-park30-v1 (6f9209453750)",
  "measurementCodeChanged": false
 }
