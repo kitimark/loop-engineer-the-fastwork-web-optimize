@@ -132,7 +132,7 @@ try {
         if (SET && S.m != null) for (let i = 0; i < 2; i++) await c.ev(`new Promise((r) => { window.__navMorphSet(${S.m}); requestAnimationFrame(() => requestAnimationFrame(() => r(1))); })`);
         await sleep(1300);
         let settled = null;
-        if (SETTLE) settled = JSON.parse(await c.ev(`new Promise((res) => { const t0 = performance.now(); const run = () => document.getAnimations().filter((a) => a instanceof CSSTransition && a.playState === 'running').length; const tick = () => { const n = run(); if (!n || performance.now() - t0 > ${SETTLE}) res(JSON.stringify({ waitedMs: Math.round(performance.now() - t0), left: n })); else setTimeout(tick, 100); }; tick(); })`));
+        if (SETTLE) settled = ((v) => (typeof v === `string` ? JSON.parse(v) : v))(await c.ev(`new Promise((res) => { const t0 = performance.now(); const run = () => document.getAnimations().filter((a) => a instanceof CSSTransition && a.playState === 'running').length; const tick = () => { const n = run(); if (!n || performance.now() - t0 > ${SETTLE}) res(JSON.stringify({ waitedMs: Math.round(performance.now() - t0), left: n })); else setTimeout(tick, 100); }; tick(); })`));
         const fr = JSON.parse(await c.ev(FREEZE)); await sleep(450);
         const state = JSON.parse(await c.ev(STATE));
         const f = join(OUT, `${arm}-${S.k}.png`); const ok = await c.shot(f);
