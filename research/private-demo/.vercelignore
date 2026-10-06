@@ -1,0 +1,6 @@
+# Upload only what the deployment needs: the static site, the password middleware and the headers config.
+# (hash-password.mjs, README.md, STRIPPED.txt and the local test outputs stay on this machine.)
+/*
+!/public
+!/middleware.ts
+!/vercel.json
