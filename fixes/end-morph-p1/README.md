@@ -334,6 +334,9 @@ end menu (open and close), with Safari toolbar steps, driven by a real touch ges
     (`TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh ENDGATE`), logged `ENDGATE PASS` in
     `out/p153/endgate-HA.log`.
   Otherwise the reader voids them. Part 1's runs (EC1, EV1, EV2) stay.
+  - Alignment note (lead, at signing; doc only): P-152 decides on the LAST `HOLD HA` line of `hold-HA.log`. P-153's
+    reader takes any `HOLD HA VALID` line. These are the same while HA is a single hold, which it is: the block driver
+    moves an earlier `hold-HA.log` aside (`.prev-<time>`) before HA runs again, so the file only ever holds one HA run.
 - **Block 2 (N2, only on the lead's word after a FAIL, an INSUFFICIENT or a VOID block 1):**
   - `TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh ARCHIVE-BLOCK1` moves block 1 into `out/p153/block1/`:
     runs, hold logs, WDA logs, serve-check.log, endgate-HA.log and void records. It then restarts the three servers.
@@ -516,6 +519,24 @@ perception-tests-touch-ab).**
   - part 2 is voided there, because P-137 has no hold-HA.log: the N3 rule works;
   - O1: f1 16-17 ms and f2 23-32 ms in both arms;
   - 13 opens per run, of which 0-1 are full repeats.
+
+## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
+
+Gate (b) failed T2, so P1 on v9-final goes back to the user as a revision of PR-012 (accepted rev 1 was P1 on
+best-build). Two options; the user's decision is the spec. P-153 runs only after it, and not at all if the user
+declines B.
+- **Option A** = v9-final + F1 + U2 (fix A only, today's look). Try-it B patch `tryit/a-v9f-f12.diff`
+  (JS a6426953727a / CSS e1359ab9994a, patch sha256/12 e93b9f136134).
+- **Option B** = A + P1. Try-it B patch `tryit/b-v9f-f12-p1.diff` (4da641f828bb / a81b9af7b2c9, patch sha256/12 7dc4cc60c946).
+- Both Try-it A pages = v9-final (`fixes/v9-best/patch.diff` on main).
+- `tryit/mk-tryit.mjs` writes both baseline-relative patches from the P-153 snapshot arms (`out/p153/snap/{C,V}`, pins
+  checked) and re-applies each one with the strict applier to the same bytes.
+- Shots: `em-p1-px.mjs --engine chrome --a out/p153/snap/C --v out/p153/snap/V --h 775 --label pr012r2 --ms
+  0.1,0.25,0.5,0.8,0.99,1 --down 0 --settle-transitions 3000` (shared lane, no timing). Option A against v9-final
+  (the 23:00Z run, same tool, same frozen clock): within the A/A at every stop except dn0, where v9-final's own
+  post-close label shift (357 css px, above) shows in the old run and not in the new one (OBSERVED, one run each).
+  `post` differs in both A/A pairs (a card under the nav mid fade, the load-phase class above).
+- Phone Try-it links are turned on only after P-152's block ends (no phone use by the user during a block).
 
 ## Risks, conflicts, follow-ups
 
