@@ -1,0 +1,94 @@
+--- fixes/end-morph-p1b-a/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 14:46:05
++++ fixes/end-morph-p1b-ab/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 15:25:45
+@@ -13861,7 +13861,8 @@
+   // own boxes except those that stay hit-testable under pointer-events:none on the nav because they set
+   // pointer-events:auto themselves (.start-selling-top-nav-actions, the expanded .start-selling-morph-panel).
+   function F() {
+-    let e = T.getBoundingClientRect(),
++    // P1b (b): while the reveal is on, the nav's own box is the full panel; the probe uses today's box (__rvRect)
++    let e = typeof __rvRect == `function` ? __rvRect(T.getBoundingClientRect()) : T.getBoundingClientRect(),
+       t = e.left + e.width / 2,
+       n = e.top + Math.min(e.height, 64) / 2;
+     for (let r of document.elementsFromPoint(t, n))
+@@ -13871,7 +13872,7 @@
+   // perf(nav-hit-cache): the viewport y of F()'s probe point (nav is fixed), measured with the offsets
+   function __navProbeY() {
+     if (!T) return 32;
+-    let e = T.getBoundingClientRect();
++    let e = typeof __rvRect == `function` ? __rvRect(T.getBoundingClientRect()) : T.getBoundingClientRect();
+     return e.top + Math.min(e.height, 64) / 2;
+   }
+   // perf(nav-hit-cache): the nav element. Inside the scroll effect below, `T` is the morph spring step (a local
+@@ -14316,6 +14317,8 @@
+               ((__msLift = 1), __msSettle())));
+         let t = __msEnd.offsetHeight,
+           e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
++        // P1b (b): arm the reveal from one end-track height above the end track (e >= -1), disarm above it
++        typeof __rvArm == `function` && __rvArm(e);
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+         // nav-hit-cache U2: also when _() deferred its test to here this frame and the value did not change. The test is
+@@ -14650,6 +14653,27 @@
+         }
+       }).observe(__rvSz);
+     },
++    // P1b (b), fix-end-morph-p1: arm the reveal ahead of the open. From one end-track height above the end track (the
++    // morph value before its clamp, e >= -1) the reveal is switched on at m = 0: the nav takes its panel size behind a clip
++    // that is today's pill, and the layers (glass, dark layer, the parts' will-change) are built and painted in that
++    // approach frame, not in the first frame of the open; they stay built across opens while the user stays there.
++    // Above that band (e < -1) it switches off as at the end of a morph. Phones (the reveal's media query) only.
++    __rvArmed = !1,
++    __rvArm = (e) => {
++      let a = __rvMq.matches && e >= -1;
++      if (a === __rvArmed) return;
++      __rvArmed = a;
++      let v = __rvV ?? 0;
++      a ? __rvOn || +v > 0.001 || ((__rvV = null), __rvW(v)) : __rvOn && +v <= 0.001 && __rvOff(v);
++    },
++    // P1b (b): today's nav box while the reveal is on (the nav's own box is the full panel): F() and the nav-hit-cache
++    // probe line test the same point as without the reveal
++    __rvRect = (e) => {
++      if (!__rvOn || !__rvWf) return e;
++      let m = +__rvV || 0,
++        n = 1 - m;
++      return { left: e.left + 4 * n, top: e.top + 4 * n, width: __rvWf - 8 * n, height: 52 + (__rvHf - 52) * m };
++    },
+     __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
+     // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
+     __rvFin = () => {
+@@ -14700,7 +14724,8 @@
+       __rvV = v;
+       __rvSz || __rvSzInit();
+       let m = +v;
+-      if (!(__rvMq.matches && m > 0.001 && m < 1)) {
++      // P1b (b): armed (within one end-track height above the end track, or in it), the reveal also stays on at m = 0
++      if (!(__rvMq.matches && m < 1 && (m > 0.001 || __rvArmed))) {
+         __rvOn && __rvOff(v);
+         return;
+       }
+@@ -14724,6 +14749,10 @@
+             (__rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
+         __rvDpr = window.devicePixelRatio || 1;
+       }
++      // P1b (b): on at m = 0 (armed, no .is-morphing), today's :not(.is-morphing) transition list would animate the
++      // nav's width from the pill to the panel; the reveal holds the nav's box still (P1's off step does the same).
++      // From m > 0 on (.is-morphing, whose list has no width) the nav's own list applies again.
++      m > 0 ? I.style.removeProperty(`transition-property`) : I.style.setProperty(`transition-property`, `background, opacity, transform, visibility`);
+       if (__rvP !== __mkP)
+         ((__rvP = __mkP),
+           (__rvE = __mkP && {
+@@ -14758,8 +14787,12 @@
+       __rvD.style.setProperty(`opacity`, String(m));
+       __rvG.style.setProperty(`--morph`, v);
+       B.style.setProperty(`translate`, `0px ${dp(dy)}`);
+-      re.style.setProperty(`left`, `0px`);
+-      re.style.setProperty(`translate`, `calc(${px(dx + __rvIx + (w / 2 - __rvIx) * m)} - ${50 * m}%) 0px`);
++      // P1b (b): at m = 0 (armed, no .is-morphing) the logo is not absolutely placed but in the bar's flex flow: only
++      // the bar's shift from today's pill to the full box (dx) is taken back
++      m > 0
++        ? (re.style.setProperty(`left`, `0px`),
++          re.style.setProperty(`translate`, `calc(${px(dx + __rvIx + (w / 2 - __rvIx) * m)} - ${50 * m}%) 0px`))
++        : (re.style.removeProperty(`left`), re.style.setProperty(`translate`, `${px(dx)} 0px`));
+       ie.style.setProperty(`translate`, `${dp(-dx)} -50%`);
+       if (__rvE) {
+         __rvE.p.style.setProperty(`transform-origin`, `${px(Wf / 2)} ${px(dy + h / 2)}`);

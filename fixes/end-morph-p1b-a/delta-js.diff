@@ -1,0 +1,60 @@
+--- out/p153/snap/V/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 06:41:28
++++ fixes/end-morph-p1b-a/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 14:46:05
+@@ -14623,6 +14623,33 @@
+     __rvIx = 16,
+     __rvDpr = 1,
+     __rvF = 0,
++    // P1b (a), fix-end-morph-p1: the nav's full (panel) size without a layout read in the frame that switches the
++    // reveal on. A hidden child of the nav (it inherits the nav's --panel-w / --panel-h, CSS .fw-rv-size) has exactly
++    // the size the nav takes under [data-fw-rv]; a ResizeObserver hands over its border box after layout, so no frame
++    // forces a layout for it (P1 read I.offsetWidth/offsetHeight there: a forced style + layout, then a second one
++    // after its own writes). Until the first observation the switch-on reads as before.
++    __rvSz = null,
++    __rvSzW = 0,
++    __rvSzH = 0,
++    __rvSzIx = 16,
++    __rvSzInit = () => {
++      if (__rvSz || !I || typeof ResizeObserver != `function`) return;
++      ((__rvSz = document.createElement(`div`)), (__rvSz.className = `fw-rv-size`), __rvSz.setAttribute(`aria-hidden`, `true`), I.appendChild(__rvSz));
++      new ResizeObserver(([e]) => {
++        let b = e && e.borderBoxSize && e.borderBoxSize[0];
++        if (!b) return;
++        ((__rvSzW = Math.round(b.inlineSize)),
++          (__rvSzH = Math.round(b.blockSize)),
++          (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        // the panel size changed while the reveal is on (a toolbar showing or hiding changes 100dvh, a rotation 100vw):
++        // the clip and the parts follow at the same m in this frame (an observation runs after layout, before paint)
++        if (__rvOn && (__rvSzW !== __rvWf || __rvSzH !== __rvHf || __rvSzIx !== __rvIx)) {
++          ((__rvWf = __rvSzW), (__rvHf = __rvSzH), (__rvIx = __rvSzIx));
++          let v = __rvV;
++          ((__rvV = null), __rvW(v));
++        }
++      }).observe(__rvSz);
++    },
+     __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
+     // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
+     __rvFin = () => {
+@@ -14671,6 +14698,7 @@
+     __rvW = (v) => {
+       if (v === __rvV) return;
+       __rvV = v;
++      __rvSz || __rvSzInit();
+       let m = +v;
+       if (!(__rvMq.matches && m > 0.001 && m < 1)) {
+         __rvOn && __rvOff(v);
+@@ -14688,9 +14716,12 @@
+           ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), I.parentNode.insertBefore(__rvG, I));
+         __rvG.setAttribute(`data-fw-rv`, ``);
+         I.setAttribute(`data-fw-rv`, ``);
+-        // one layout read per morph, in the frame that switches the reveal on (that frame lays the nav out anyway)
+-        ((__rvWf = I.offsetWidth), (__rvHf = I.offsetHeight));
+-        __rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16;
++        // P1b (a): the cached full size (no layout read here); P1's read only before the first observation
++        __rvSzW > 0
++          ? ((__rvWf = __rvSzW), (__rvHf = __rvSzH), (__rvIx = __rvSzIx))
++          : ((__rvWf = I.offsetWidth),
++            (__rvHf = I.offsetHeight),
++            (__rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
+         __rvDpr = window.devicePixelRatio || 1;
+       }
+       if (__rvP !== __mkP)

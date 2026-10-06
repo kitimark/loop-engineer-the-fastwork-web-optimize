@@ -1,0 +1,14 @@
+--- fixes/end-morph-p1b-a/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 14:39:11
++++ fixes/end-morph-p1b-ab/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 15:26:14
+@@ -12490,4 +12490,11 @@
+     transform-origin: 0 0;
+     will-change: transform;
+   }
++  /* P1b (b), fix-end-morph-p1: armed at m = 0 (no .is-morphing) the bar's text stays in the nav's own layer, painted
++     at today's sub-pixel place (own layers would snap it to whole device pixels); they become layers with the open */
++  .start-selling-top-nav[data-fw-rv]:not(.is-morphing) .start-selling-top-nav-bar,
++  .start-selling-top-nav[data-fw-rv]:not(.is-morphing) .start-selling-top-nav-logo,
++  .start-selling-top-nav[data-fw-rv]:not(.is-morphing) .start-selling-top-nav-actions {
++    will-change: auto;
++  }
+ }

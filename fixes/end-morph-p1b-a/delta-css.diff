@@ -1,0 +1,22 @@
+--- out/p153/snap/V/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 06:41:28
++++ fixes/end-morph-p1b-a/overlay/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 14:39:11
+@@ -12422,6 +12422,19 @@
+ .fw-rv-glass {
+   display: none;
+ }
++/* P1b (a), fix-end-morph-p1: a hidden child of the nav with the size the nav takes under [data-fw-rv] (it inherits
++   the nav's --panel-w / --panel-h); JS observes it, so the switch-on needs no layout read. It paints nothing, takes
++   no hit test and is out of the flow. */
++.fw-rv-size {
++  position: fixed;
++  top: 0;
++  left: 0;
++  box-sizing: border-box;
++  width: var(--panel-w);
++  height: var(--panel-h);
++  visibility: hidden;
++  pointer-events: none;
++}
+ @media (width<=640px) {
+   .start-selling-top-nav.svelte-1dcozpm[data-fw-rv] {
+     top: 12px;

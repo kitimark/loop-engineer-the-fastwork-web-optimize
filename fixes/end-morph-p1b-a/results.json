@@ -1,0 +1,18 @@
+{
+ "topic": "end-morph-p1b-a",
+ "owner": "fix-end-morph-p1",
+ "what": "P1b part (a) on V (C + P1): the reveal's panel size from a ResizeObserver on a hidden probe (.fw-rv-size) instead of a forced offsetWidth/offsetHeight read at switch-on; the observer also re-applies the clip when the size changes while the reveal is on. Look = P1's (same writes).",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "base": { "name": "V (P-153)", "js": "4da641f828bb", "css": "a81b9af7b2c9", "dir": "out/p153/snap/V" },
+  "patched": { "js": "79a0bd83eb06", "css": "cfb8b8c5b019", "delta": "fixes/end-morph-p1b-a/delta-js.diff + delta-css.diff" }
+ },
+ "gates": {
+  "exactSize": { "verdict": "PASS", "rows": [[775, [406, 751], [406, 751]], [815, [406, 791], [406, 791]], [932, [406, 908], [406, 908]]], "resizeWithRevealOn": "clip height within 0.0005 px after 775 -> 815 -> 932 -> 775 (V stale +17.03 / +38.74 px)", "file": "out/end-morph-p1/p1b/exact-2026-10-06T08-16-26-551Z.json" },
+  "switchOnAttribution": { "note": "headless trace counts, one cold load, not timing", "open1f1": { "A": { "spanMs": 31.15, "scriptMs": 20.93, "styleMs": 7.21, "styleEls": 205, "forcedInRvW": null }, "V": { "spanMs": 37.76, "scriptMs": 28.03, "styleMs": 11.08, "styleEls": 232, "forcedInRvW": "198 els 7.44 ms" }, "C": { "spanMs": 28.94, "scriptMs": 20.09, "styleMs": 8.82, "styleEls": 203 } }, "open2f1SpanMs": { "A": 25.98, "V": 33.23, "C": 24.9 } },
+  "frameCounts": { "verdict": "0 frames >34 / >50 in any arm (clean headed hold 09:01Z, 4 cycles)", "switchOnDtMs": { "A_openF2": [25.3, 17.0, 8.4, 16.8], "V_openF2": [25.9, 33.9, 24.8, 25.9], "C_openF2": [25.1, 17.2, 16.3, 16.4] }, "file": "out/end-morph-p1/p1b/frames-775-2026-10-06T09-01-22-507Z.json" },
+  "isOnDarkPerFrame": "equal to C in every frame (3 runs)"
+ },
+ "notInScope": ["Simulator gates", "phone card"],
+ "measurementCodeChanged": false
+}

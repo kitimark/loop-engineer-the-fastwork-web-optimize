@@ -1,0 +1,64 @@
+{
+ "topic": "end-morph-p1b-ab",
+ "owner": "fix-end-morph-p1",
+ "what": "P1b: P1 (PR-012 rev 1 reveal on v9-final + F1 + U2) with (a) the panel size from a ResizeObserver probe (no forced read at switch-on, re-apply on resize) and (b) the reveal armed at m = 0 from one end-track height above the end (layers built in the approach, kept across opens). Chrome counts, values, states and pixels; clean frame timing pending.",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "C": { "js": "a6426953727a", "css": "e1359ab9994a", "dir": "out/p153/snap/C" },
+  "V": { "js": "4da641f828bb", "css": "a81b9af7b2c9", "dir": "out/p153/snap/V" },
+  "A": { "js": "79a0bd83eb06", "css": "cfb8b8c5b019", "topic": "end-morph-p1b-a", "delta": "fixes/end-morph-p1b-a/delta-js.diff + delta-css.diff (V -> A)" },
+  "AB": { "js": "8d2cf961a6cd", "css": "78f569c3b983", "delta": "fixes/end-morph-p1b-ab/delta-js-on-a.diff + delta-css-on-a.diff (A -> AB)" },
+  "chrome": "430x775 DPR 3 mobile, touch held, hover none / pointer coarse; trace counts at CPU 6x headless; pixels headless; frame timing headed 6x (pending)",
+  "probes": ["fixes/end-morph-p1/p1b/exact.mjs", "fixes/end-morph-p1/p1b/first-open.mjs", "fixes/end-morph-p1/p1b/frames.mjs", "fixes/end-morph-p1/p1b/rects.mjs", "fixes/end-morph-p1/gates/em-p1-px.mjs"]
+ },
+ "gates": {
+  "exactSize": {
+   "verdict": "PASS",
+   "rows": [
+    { "vh": 775, "nav": [406, 751], "cached": [406, 751] },
+    { "vh": 815, "nav": [406, 791], "cached": [406, 791] },
+    { "vh": 932, "nav": [406, 908], "cached": [406, 908] }
+   ],
+   "resizeWithRevealOn": { "A": "clip height within 0.0005 px at 815 / 932 / 775", "AB": "same; armed m = 0 pill stays 52 px at every height", "V": "stale +17.03 px (815), +38.74 px (932)" },
+   "file": "out/end-morph-p1/p1b/exact-2026-10-06T08-16-26-551Z.json"
+  },
+  "switchOnAttribution": {
+   "note": "headless trace counts, one cold load per arm, not timing; C from 07:32Z, V/A/AB from 08:36Z (out/end-morph-p1/p1b/first-open-775-2026-10-06T08-36-46-382Z.json)",
+   "open1f1": {
+    "C": { "spanMs": 28.94, "scriptMs": 20.09, "styleMs": 8.82, "styleEls": 203, "forcedInRvW": null, "layoutDirty": 9, "paintMs": 4.45 },
+    "V": { "spanMs": 37.76, "scriptMs": 28.03, "styleMs": 11.08, "styleEls": 232, "forcedInRvW": "198 els 7.44 ms", "layoutDirty": 20, "paintMs": 6.41 },
+    "A": { "spanMs": 31.15, "scriptMs": 20.93, "styleMs": 7.21, "styleEls": 205, "forcedInRvW": null, "layoutDirty": 16, "paintMs": 5.76 },
+    "AB": { "spanMs": 26.09, "scriptMs": 19.46, "styleMs": 8.05, "styleEls": 205, "forcedInRvW": null, "layoutDirty": 10, "paintMs": 2.87 }
+   },
+   "open2f1SpanMs": { "C": 24.9, "V": 33.23, "A": 25.98, "AB": 26.02 },
+   "approachF1": {
+    "note": "the first approach frame; in this probe AB arms here, in the same frame where every arm re-measures the nav-hit cache",
+    "V": { "spanMs": 32.18, "styleMs": 7.83, "styleEls": 143, "paintMs": 8.1 },
+    "A": { "spanMs": 27.81, "styleMs": 8.43, "styleEls": 143, "paintMs": 6.57 },
+    "AB": { "spanMs": 40.51, "styleMs": 12.3, "styleEls": 157, "paintMs": 13.95 }
+   }
+  },
+  "frameCounts": {
+   "verdict": "PASS: 0 frames k>=5 (>34) and 0 k>=7 (>50) in every arm, band, approach, switch-on frame and open f1-f6; no new >34 frame in the approach",
+   "run": { "file": "out/end-morph-p1/p1b/frames-775-2026-10-06T09-01-22-507Z.json", "granted": "2026-10-06T09:01:22Z by the host gate (no timeout)", "load1": [3.78, 5.21], "headed": true, "cpu": 6, "viewport": "430x775 DPR 3", "loadsPerArm": 1, "cycles": 4, "approachFrames": 45, "bandFrames": 31 },
+   "bandMaxMs": { "C": [25.9, 25.8, 17.5, 17.6], "V": [25.3, 24.5, 25.3, 25.4], "A": [25.1, 17.0, 25.0, 17.5], "AB": [17.6, 25.4, 32.4, 17.5] },
+   "switchOnDtMs": { "C_openF2": [25.1, 17.2, 16.3, 16.4], "V_openF2": [25.9, 33.9, 24.8, 25.9], "A_openF2": [25.3, 17.0, 8.4, 16.8], "AB_armA15": [15.7, 25.1, 16.1, 15.8], "AB_openF2": [25.7, 17.7, 16.9, 16.4] },
+   "switchOnMedianMs": { "C": 16.8, "V": 25.9, "A": 16.9, "AB_arm": 16.0, "AB_open": 17.3 },
+   "note": "Chrome reproduces no >34 frame in any arm, so it cannot show the phone's f2 symptom; the ms medians (V one tick over C, A and AB at C's level) are 4 cycles of one load each: a direction, not a verdict. The 08:14Z headed run was granted after a host-gate timeout (~54 % CPU): its timing is tagged contaminated and not used."
+  },
+  "look": {
+   "approachVsC": { "verdict": "PASS (0 css px2 beyond A/A in the nav at every armed stop)", "stops": { "up-1.2": 102, "up-1": 0, "pre": 0, "up-0.5": 294, "up-0.1": 0, "up0": 0, "post": 0 }, "note": "the non-zero cells are platform-section content (A/A over8 2.0-2.7 %), not the nav", "dir": "out/end-morph-p1/px-chrome-p1b-ab2-approach-*" },
+   "morphVsV": { "verdict": "PASS (0 css px2 at every morph stop)", "stops": { "pre": 0, "up0": 0, "0.02": 0, "0.05": 0, "0.1": 0, "0.19": 0, "0.5": 0, "1": 0, "dn0.5": 0, "dn0": 0, "post": [68, 9] }, "dir": "out/end-morph-p1/px-chrome-p1b-ab-vsV-m1-*, -m2-*" },
+   "boxes": "logo, actions, earn button equal to C within 0.001 px at armed m = 0; no own layer on bar/logo/actions at m = 0 (out/end-morph-p1/p1b/rects-*)",
+   "isOnDarkPerFrame": "equal to C in every frame: 5 cycles x 134 frames (08:14Z run, pre-fix AB) and 2 cycles x 149 frames (08:49Z headless run, final AB) for V, A, AB"
+  },
+  "heatMemory": "expected/OBSERVED in Chrome only: armed AB keeps glass 333 k, backdrop 324 k, header 305 k, centre 159 k css px of layers (~10 M device px, ~40 MB at 4 B/px) while within one end-track height of the end; V holds them only during the morph; no extra per-frame paint seen in armed approach frames"
+ },
+ "fixesDuringBuild": [
+  "logo at armed m = 0 was 16 css px right (P1's absolute-position formula on a static flex item): now translate dx only at m = 0",
+  "bar/logo/actions as own layers at m = 0 drew the Join button 1 device px off (max level 236): no will-change at [data-fw-rv]:not(.is-morphing)",
+  "inline transition-property (no width) only at m <= 0; removed from m > 0 where .is-morphing's list applies"
+ ],
+ "notInScope": ["Simulator gates (after P-152)", "phone card for first-open f2"],
+ "measurementCodeChanged": false
+}
