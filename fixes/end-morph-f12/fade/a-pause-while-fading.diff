@@ -1,0 +1,35 @@
+--- out/p155/snap/C/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 16:11:49
++++ out/fade/snap/a/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 16:58:36
+@@ -14149,11 +14149,15 @@
+         z(p, n - t.t >= 0.72 * i);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
++      // [platform-fade a] from the first fade frame (fade < 1) every animation under #platform pauses (title sweeps,
++      // glints freeze while the section fades out; a visible change); written only on a crossing of fade 1
++      __pfP = !1,
+       S = () => {
+         let e = y();
+         if (!e) return;
+         let t = QM(r);
+         (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
++        t < 1 !== __pfP && ((__pfP = t < 1) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
+       },
+       C = () => w > 0.001 || r > 0.001,
+       // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
+--- out/p155/snap/C/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 16:11:49
++++ out/fade/snap/a/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 17:04:21
+@@ -5706,6 +5706,14 @@
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
++}
++/* [platform-fade a] fade < 1: pause #platform's infinite idle animations (the same list as option c; visible: they freeze while it fades); resume as
++   under the title sweep gate. Set by S() only on a crossing of fade 1. */
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized),
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized)::after,
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track, .start-selling-platform-secure-network-dash-glint svg),
++.start-selling-platform[data-fw-pf-paused] .start-selling-platform-agents-ask-field span.is-caret::after {
++  animation-play-state: paused !important;
+ }
+ .start-selling-platform > .start-selling-platform-shell {
+   flex-direction: column;

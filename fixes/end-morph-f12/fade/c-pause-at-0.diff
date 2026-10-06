@@ -1,0 +1,37 @@
+--- out/p155/snap/C/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 16:11:49
++++ out/fade/snap/c/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 16:57:48
+@@ -14149,11 +14149,15 @@
+         z(p, n - t.t >= 0.72 * i);
+       },
+       y = () => document.querySelector(`.start-selling-platform`),
++      // [platform-fade c] at fade 0 #platform is at opacity 0, but its IO-gated idle animations (title sweeps, glints)
++      // keep running: an attribute pauses every animation under it (CSS [data-fw-pf-paused]); written only on a crossing
++      __pfP = !1,
+       S = () => {
+         let e = y();
+         if (!e) return;
+         let t = QM(r);
+         (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
++        t === 0 !== __pfP && ((__pfP = t === 0) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
+       },
+       C = () => w > 0.001 || r > 0.001,
+       // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
+--- out/p155/snap/C/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 16:11:49
++++ out/fade/snap/c/_app/immutable/assets/2.gBuqKVzi.css	2026-10-06 17:03:34
+@@ -5706,6 +5706,16 @@
+   width: 100%;
+   padding: 0 56px 144px;
+   display: block;
++}
++/* [platform-fade c] fade 0 (opacity 0): pause #platform's infinite idle animations (the four sweeping titles and their
++   bands, the credential / currency / review marquees, the secure-network glints, the agents caret); they resume where
++   they stopped, as under the title sweep gate. Only these: pausing the finished one-shot entrances too made Chrome drop
++   18 of their layers and repaint on the way back (OBSERVED, card r1). Set by S() only on a crossing of fade 0. */
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized),
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized)::after,
++.start-selling-platform[data-fw-pf-paused] :is(.start-selling-platform-cred-track, .start-selling-platform-secure-currencies-track, .start-selling-platform-profile-reviews-track, .start-selling-platform-secure-network-dash-glint svg),
++.start-selling-platform[data-fw-pf-paused] .start-selling-platform-agents-ask-field span.is-caret::after {
++  animation-play-state: paused !important;
+ }
+ .start-selling-platform > .start-selling-platform-shell {
+   flex-direction: column;
