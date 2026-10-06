@@ -542,7 +542,14 @@ AC1 and AV1), not U2 (its range is clean, and it removes work).
   fully, so the layers are back before the fade-in. That is a new variant and needs its own cost card, pixels and
   phone check.
 
-## Split block (DRAFT ticket, for the lead to sign or drop with the F1+U2 ruling; written before any data)
+## Split block: P-155 (SIGNED by the lead 09:10Z as drafted in ed1ed7cf; written before any data)
+
+The lead's terms at signing:
+- The arms, the snapshot hashes, the CB34 / CB50 metric (confirmatory, never pooled with P-152), and P1 and P2 are exactly as written below.
+- The U arm uses P-152's no-worse rule against C at 3 v 3. A PASS there is enough to land U2 under the less-work rule, because U2 only removes work; the weaker power is disclosed. A FAIL means U2 does not land.
+- Block 1 of at most 2. Profile xcode-serious, rev 1.4 heat rules, Safari parked before every cooling wait.
+- Every part runs in the background with the 2 h limit and `--keep 120`.
+- No Instruments trace in this block. The pause-at-fade-0 variant gets a Chrome cost card after P-155; it decides nothing now.
 
 **Question:** is F1 or U2 behind V's extra slow frames on the way down at 0.2 <= m < 0.55 in P-152 block 2?
 The suspect is F1, which un-hides #platform as its fade-in starts. U2 is not suspected.
@@ -599,7 +606,26 @@ The holds:
 
 Over parts 2-4 the order is a rotated Latin square: each arm once in each position, and each arm opens one part. Timeline stays on in every counted run, and there are no separate attribution runs. The sentinels follow P-152's rule (control C). At most 2 blocks for this question.
 
-**Kit (not built yet):** p152's block, hold, serve and read scripts adapted to three arms (C, F, U on three servers plus B), with these pins and a reader self-test. I build it after the lead's go, then do a dry run and a pre-data read as with P-152.
+**Kit (built after the signature, before any data):** P-152's rev 1.4 + park scripts adapted to three arms.
+
+| file | sha256/12 | what changed against P-152 |
+|---|---|---|
+| `phone/p155-serve.sh` | `144a9315147b` | B, C, F and U servers; the snapshot copy is checked against `6a368e804fb0` and six pinned files |
+| `phone/p155-hold.sh` | `92987c1153fd` | items WC/WF/WU, S0/S1, E[CFU]1-3 and their re-runs; all three arms' served JS and CSS checked before every item; no attribution items |
+| `phone/p155-block.sh` | `a8f6bba6fe2c` | P-152's driver: one item per hold; Safari parked, cooling below 38 °C (900 s) and a WDA check before every hold; TAIL scans every hold log for E[CFU]n |
+| `phone/p155-read.mjs` | `100cdaca75de` | the decisions above; imports P-152's endZone, decideNoWorse and holdStatus from `p152-read.mjs` (`74ffb1031287`) |
+
+The reader's self-test passes (14 checks; P-152's reader still passes its 39). Cross-check: the reader's closing band on P-152's runs gives exactly the CB34 values above (C 6 / 3 / 5 / 7, V 23 / 21 / 21 / 14).
+
+Dry runs, 09:1xZ, with the P-155 servers up:
+- All five parts give HOLD DRY ok for every hold. Each arm's PLAN line names its own port, and the served JS checks C, F and U on every hold.
+- A two-item hold is refused (exit 2).
+- TAIL with fixture logs naming EU1 (H7) and EF2 (H8) ran H14 EU1r, H15 EF2r and H16 S1.
+- Dry logs and fixtures are in `out/p155/dry-pre/`. The pre-data read on the empty `out/p155/runs` gives VOID (no sentinel), with every run "no valid try".
+
+Commands (the runner's, Bash `run_in_background`, timeout 7200000):
+- `TICKET=P-155 node tools/lock.mjs run iphone --owner iphone-runner --block P-155 --max-seconds 3600 --keep 120 -- sh fixes/end-morph-f12/phone/p155-block.sh H1:WC H2:WF H3:WU H4:S0`
+- then `... H5:EC1 H6:EF1 H7:EU1`, `... H8:EF2 H9:EU2 H10:EC2`, `... H11:EU3 H12:EC3 H13:EF3`, `... H14:TAIL`.
 
 ### Plan: the higher-m F1 variant (not built)
 
