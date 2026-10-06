@@ -1177,3 +1177,62 @@ other pin is unchanged.
     `cost-b.mjs`.
 - **Unchanged.** Code and pins (`img/cost-b.mjs` ab1cd4046ee6, `img/sim-b.sh` 5aede15c5f9f). The counted records
   `out/end-bg/simb/K1-C.json` and `K2-B.json` are kept as they are and count.
+
+### Result P-150 cost card (rev 1.4 signed 00:53Z; read 2026-10-06; lead ruling on R1)
+
+**PASS on Chrome R1-R4; Simulator R1 INVALID (cache, disclosed).** Lead ruling: the Simulator half of R1 is logged
+INVALID (cache), not INSUFFICIENT, and there is no rev 1.5. The verdict stands on the signed rules that measured what
+they claim.
+
+Runs:
+- Chrome: 3 C + 3 B in the order C B B C C B, `out/end-bg/images/img-scroll-2026-10-05T22-11-38-888Z.json` (8c539d26c1c4).
+- Simulator, all exit 0, served pins checked in every session:
+
+  | run | arm | record sha256 (first 12) |
+  |---|---|---|
+  | K1 | C | `K1-C.json` df8820a4ebeb |
+  | K2 | B | `K2-B.json` 0109a4a7e66c |
+  | K3 | B | `K3-B.json` 92df570a28d5 |
+  | K4 | C | `K4-C.json` fa11177a96de |
+
+  The records are in `out/end-bg/simb/`.
+- `cost-b.mjs` (ab1cd4046ee6) output: `out/end-bg/cost-b.json` (b78de31594ff), `CARD PASS | R1 true R2 true R3 NO-WORSE R4 ok`.
+
+| measure (per run) | C | B |
+|---|---|---|
+| Chrome image bytes | 10,405,062 (all 3) | 4,450,918 (all 3) |
+| Chrome decAll | 167 / 170 / 170 | 130 / 136 / 136 |
+| Chrome pImg | 931 / 919 / 923 | 910 / 919 / 922 |
+| Chrome paint | 1365 / 1307 / 1320 | 1337 / 1311 / 1316 |
+| Chrome raster | 1012 / 1003 / 1015 | 1004 / 996 / 1005 |
+| Chrome image responses not 200 | 0 | 0 |
+| Simulator AVIF fetched / decoded ok | 3 / 3 | 29 / 29 (0 bad) |
+| Simulator broken `<img>` (by hand) | 0, 0 | 0, 0 |
+
+- **R1 Chrome:** full separation, 10.41 MB → 4.45 MB.
+- **R2:** decAll is fewer, with full separation.
+- **R3:** NO-WORSE. No WORSE field separates; pImg, paint and raster overlap.
+- **R4:** ok.
+  - Chrome: every response is 200.
+  - Simulator: 29/29 AVIF decoded in WebKit, and at least 1 AVIF was fetched.
+  - Broken `<img>`, by hand per rev 1.4 (`out/end-bg/r4-hand.mjs`, sha256 1824d4d327b8, kept in `out/`): the C runs agree
+    (0, 0), so the max is 0. B is 0 and 0, so ok. This is a cross-session comparison (OBSERVED).
+- **R1 Simulator: INVALID (cache).** OBSERVED in our setup:
+  - `cost-b` reads Simulator bytes from Resource Timing `encodedBodySize`: C 4,527,765 and B 0.
+  - The server logs show index.html loaded 3 times per run: `sim.mjs open`, then the gesture's loads. So the counted
+    load is served from Safari's cache or by revalidation. B has 0 of 63 entries with a size, and 13 entries have exactly
+    300 B transfer each. Only C's 17 large originals arrived with a body.
+  - The comparison is trivially true and is not evidence. Finding posted (pitfall).
+- **Supplement, post-hoc, not the signed rule and not evidence for the verdict:** image bytes the Simulator's server
+  sent (200 responses x file size, all loads of a run; file sizes, not wire bytes). Script `out/end-bg/sim-served-bytes.mjs`,
+  sha256 5f69018369fd, kept in `out/`.
+
+  | run | bytes sent | distinct images | distinct bytes |
+  |---|---|---|---|
+  | K1-C | 12,374,839 | 69 | 10,873,849 |
+  | K4-C | 12,362,740 | 68 | 10,861,750 |
+  | K2-B | 5,995,206 | 63 | 4,781,087 |
+  | K3-B | 5,995,206 | 63 | 4,781,087 |
+
+- **Still open:** the phone no-worse check (section 10.3), queued behind P-152 block 2, P-153 and P-145 block 2, on the
+  lead's word.
