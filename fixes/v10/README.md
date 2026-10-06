@@ -40,7 +40,18 @@ KNOWN COST / phone path: under CM (the iPhone path) P1 and (a) are off, so P-156
   not describe the new v10 on the iPhone. CM v1.1 had a first open of 79-82 ms per page load on the phone (P-157 EV1-4,
   arch); the v10cm-nw block decides (driver G: fs WDA flicks; the M driver does not exercise CM). Third arm if arch says go:
   Vc = V + c1 (keyframes at idle, fixes/v10/cm-c1.diff e7ec73c26c9c) = b8b194b7ff56 / 62743920fe1a, out/v10/snapc-b8b194b7ff56-62743920fe1a
-phone no-worse (step 3): pending (kit fixes/v10/phone, ticket v10cm-nw, folder out/v10cmnw)
+phone no-worse (step 3), v10cm-nw block 2026-10-06 16:57-17:42Z (kit fixes/v10/phone, folder out/v10cmnw; xcode-serious,
+  driver G = fs flicks, Timeline on; arms C / V / Vc as D): H1-H6 valid, S0 PASS (56.3 fps); H7 voided at Critical (end gate
+  42.2 C), one ceiling cool to 39.3 C, then H7's start gate read Critical again at 39.1 C (induced): stopped (lead: no second
+  cool). S1 missing, so nw-read's DECISION is VOID; the valid runs, n C 1, V 2, Vc 1:
+    arm  run   first open f2 (O1 f123)   end zone >34 / >50   CB34
+    C    EC1   29 ms (62)                27 / 5               0
+    V    EA1   75 ms (102), busy 46 ms   21 / 3               0
+    V    EA2   77 ms (103), busy 45 ms   18 / 3               0
+    Vc   ED1   46 ms (73),  busy 23 ms   23 / 2               0
+  early read only: CM's first open per page load costs ~46 ms more than C on V; c1 (Vc) halves the extra; the end zone has
+  fewer slow frames in V and Vc. Device incidents on the way: I-227 (WDA not authorized / restored tab / stale session after
+  the re-plug)
 ```
 
 The build: `fixes/v10/build.sh` with the first v10's settings plus `CM=fixes/v10/cm-on-v10.diff CM_SHA=2f5bdf50aa97
