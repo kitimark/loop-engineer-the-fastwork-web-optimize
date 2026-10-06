@@ -30,6 +30,12 @@
 //   Rev 1 had (b) without the permutation test; it failed a V = C resample of P-137's C runs 37-52 % of the time
 //   (ops-reader-P152 N1). False FAIL and power at 4 v 4 at P-137's noise: see the card's power note.
 //   Denominator guard 15 %: when median n differs between the arms by more than 15 % of C's, the rule runs on rates s/n.
+//   Twins (>30/>38 use the >34 bound, >46/>54 the >50 bound): a twin whose WORSE-or-not differs from its main
+//   threshold marks the result "threshold-sensitive" (reported; PASS/FAIL unchanged).
+//   A FAIL whose lowest V run at a failing threshold is EV1 or EV3 is labelled "position-confounded" (P-150 N3; the
+//   outcome is unchanged). Rev 1.4: every run now opens its own hold after cooling, so the label no longer marks a
+//   position difference between the arms; it is kept, descriptive, as signed.
+//   (These two paragraphs were dropped from this header by mistake in rev 1.3; the code applied both throughout.)
 //   Precedence: VOID > INSUFFICIENT > FAIL / NO-WORSE PASS.
 //   NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE (named, with (a) and/or (b)); a FAIL goes to the
 //   lead (block 2, judged by itself with the same rule, never pooled; or no landing). INSUFFICIENT: an arm has < 3
@@ -40,13 +46,15 @@
 //   otherwise it is INVALID "hold <H> VOID: <why>" (an end-gate FAIL voids only that hold's runs; the block stops). A
 //   run in no hold log does not count. A missing or voided sentinel makes the result VOID. This replaces rev 1.1's
 //   part-2 rule (N3) and rev 1.2's addendum D1 (part2Status), which rested on HA being part 2's only end gate.
+//   Rev 1.4 (lead, 2026-10-06, after P-153 block 1's end gate read Critical at 41.9 °C): one item per hold, each after
+//   cooling below 38 °C (p152-block.sh); the per-hold rule above is unchanged, hold names are now H1-H16.
 // ATTRIBUTION (AC1, AV1 only; decides nothing): Timeline Paint records (any depth) that start inside a moving frame's gap
 //   (t - dt, t], split by the frame's morph value m = (scrollY - (maxY - innerHeight)) / innerHeight: m >= 0.55 (the
 //   range where F1 hides #platform) and 0 <= m < 0.55. Per arm: frames, Paint records, Paint records per frame.
 //   The geometry (track = innerHeight) is OBSERVED in Chrome; on the phone it is an approximation.
 // PER RUN (descriptive): hold and position (the card's plan), start (meta.date), gap since the previous counted or
 //   sentinel run, battery °C at its phone hold's start (meta.profile.start.battC), the near-band counts
-//   (30, 38] = s30 - s38 and (46, 54] = s46 - s54. EC1 SLOT (N7, descriptive): whether EC1 (H2, right after S0) is again
+//   (30, 38] = s30 - s38 and (46, 54] = s46 - s54. EC1 SLOT (N7, descriptive): whether EC1 (rev 1.4: H4, the hold after S0's) is again
 //   C's maximum at >34 and >50, as it was in P-137 (OBSERVED there; P-137's C was v9-final + 7d, here it is 7c).
 import { readFileSync, writeFileSync, existsSync, readdirSync as fs_readdir } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -196,6 +204,8 @@ function selftest() {
     ok(hs.EC4, undefined, 'rev 1.3: a run in no hold log is unknown (the read voids it)'); }
   ok(holdStatus({ H4: 'RUN EC2 arm C exit 0\nHOLD H4 VOID time: EC3\n' }).EC2.valid, false, 'rev 1.3: the time-guard try of a hold is void');
   ok(holdStatus({ H4: 'RUN EC2 arm C exit 0\nRUN EC3 arm C exit 0\nHOLD H4 VALID 500 s\n' }).EC3.valid, true, 'rev 1.3: the whole re-run of that hold (the current log) counts');
+  { const hs = holdStatus({ H12: 'RUN EV2r arm V exit 0\nHOLD H12 VALID 300 s\n', H13: 'RUN EC3r arm C exit 0\nGATE p152-H13-end -> FAIL ceiling (Critical)\nHOLD H13 VOID end gate exit 3\n' });
+    ok(`${hs.EV2r.hold} ${hs.EV2r.valid} ${hs.EC3r.valid}`, 'H12 true false', 'rev 1.4: two-digit holds, one re-run per hold, judged each by its own end gate'); }
   // metric: end zone filters on band
   ok(endZone({ rows: [{ band: 'lastScreen', dt: 40 }, { band: 'middle', dt: 60 }, { band: 'lastScreen', dt: 16 }] }).s[34], 1, 'end zone counts lastScreen only');
   ok(endZone({ rows: [{ band: 'lastScreen', dt: 40 }, { band: 'hero', dt: 60 }] }).n, 1, 'end zone n');
@@ -213,7 +223,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dir = a[0], jsonOut = a.includes('--json') ? a[a.indexOf('--json') + 1] : null;
   const load = (f) => (existsSync(join(dir, f)) ? JSON.parse(readFileSync(join(dir, f), 'utf8')) : null);
   const out = { sentinels: {}, runs: {}, invalid: {}, attribution: {} }, per = { C: [], V: [] }, names = { C: [], V: [] };
-  const PLAN = { S0: 'H2/1', EC1: 'H2/2', EV1: 'H3/1', EV2: 'H3/2', EC2: 'H4/1', EC3: 'H4/2', EV3: 'H5/1', EV4: 'H5/2', EC4: 'H6/1', S1: 'H7+/last' };
+  const PLAN = { S0: 'H3', EC1: 'H4', EV1: 'H5', EV2: 'H6', EC2: 'H7', EC3: 'H8', EV3: 'H9', EV4: 'H10', EC4: 'H11', S1: 'H12-H14 (after the re-runs)' }; // rev 1.4 plan
   const t0 = (g) => (g?.meta?.date ? Date.parse(g.meta.date) : null);
   const starts = [];
   // lead N3: part 2's end gate sits in HA only; a missing HA log or a failed HA end gate voids part 2's counted runs
@@ -233,7 +243,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const r = readRun(g, tl, 'E');
       if (r.why.length) { out.invalid[name] = r.why; continue; }
       used = name; const w = endZone(r), at = afterTouchend(g, r);
-      out.runs[name] = { arm, ...w, afterTouchend: at, hold: PLAN[name] || 'H7+ (re-run)', start: g.meta?.date ?? null, battC: g.meta?.profile?.start?.battC ?? null };
+      out.runs[name] = { arm, ...w, afterTouchend: at, hold: PLAN[name] || 'H12-H13 (re-run)', start: g.meta?.date ?? null, battC: g.meta?.profile?.start?.battC ?? null };
       starts.push([name, t0(g)]); per[arm].push(w); names[arm].push(base); break;
     }
     if (!used) out.invalid[base] ||= ['no valid try'];

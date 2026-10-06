@@ -17,9 +17,11 @@
 # (`lock.mjs run iphone --block P-152 --max-seconds 3600`), each hold its own 600 s chrome-measure --no-timing run:
 #   TICKET=P-152 node tools/lock.mjs run chrome-measure --owner iphone-runner --no-timing --max-seconds 600 --doing "P-152 <H>" -- \
 #     caffeinate -i -s sh fixes/end-morph-f12/phone/p152-hold.sh <H> <items>
-# Plan (2 fs runs per 600 s hold, GESTURE_BUDGET_S about 229):
-#   part 1: H1 WC WV | H2 S0 EC1 | H3 EV1 EV2       part 2: H4 EC2 EC3 | H5 EV3 EV4 | H6 EC4 | H7 <re-runs, max 2> S1 | HA AC1 AV1
-#   (counted order C V V C C V V C, 4 v 4; sentinels on C; a gate at each phone hold's edges; attribution after S1)
+# Plan (rev 1.4: ONE item per 600 s hold, each after cooling below 38 °C (p152-block.sh); GESTURE_BUDGET_S about 229):
+#   part 1: H1 WC | H2 WV | H3 S0 | H4 EC1     part 2: H5 EV1 | H6 EV2 | H7 EC2     part 3: H8 EC3 | H9 EV3 | H10 EV4
+#   part 4: H11 EC4 | H12-H13 <re-runs, max 2, one per hold> | then S1 | H15 AC1 | H16 AV1
+#   (counted order C V V C C V V C, 4 v 4; sentinels on C; start and end gates on every hold; attribution after S1)
+#   (rev 1-1.3 plan: H1 WC WV | H2 S0 EC1 | H3 EV1 EV2 | H4 EC2 EC3 | H5 EV3 EV4 | H6 EC4 | H7 <re-runs> S1 | HA AC1 AV1)
 # Items:
 #   WC / WV        uncounted warm-up on C's / V's port: E procedure, Timeline off, --warmup     -> g-WC-<H>.json / g-WV-<H>.json
 #   S0 / S1        sentinel on C: E procedure, Timeline off                                       -> g-S0.json / g-S1.json

@@ -35,6 +35,17 @@
 #   (d) P152_COOL_FIRST=<°C> (block 2's part 1: 38): before anything else, wait.mjs phone-temp --below <°C> --timeout
 #       900, logged; a timeout stops the part (exit 6). The first hold's start gate then must read Serious, induced Yes.
 #   I-214's workaround at every part start, after the WDA restart: iphone.mjs safari-restart --url <B> (exit 5 if it fails).
+# Rev 1.4 (lead rulings after P-153 block 1 went VOID at 04:07Z, H2's end gate Critical at 41.9 °C from 39.3 °C, 2026-10-06):
+#   (e) before EVERY hold: wait.mjs phone-temp --below 38 --timeout 900 (out/p152/cooling.log); a timeout stops the part
+#       (exit 6). Right after the cooling: iphone.mjs wda check; if it is not READY, one WDA restart (stop/start/check) and
+#       a Safari restart (I-214); still not ready: the part stops (exit 5). Supersedes rev 1.3 (b) (the gap only after a
+#       hold at >= 41.5 °C) and (d) (P152_COOL_FIRST: cooling before the part only; the variable is now ignored).
+#   (f) ONE item per hold: at most 1 counted run per hold, and each warm-up (WC, WV), sentinel (S0, S1) and attribution
+#       run (AC1, AV1) in its own hold; the driver refuses any other plan before anything runs. TAIL: each re-run in its own
+#       hold, then S1 in the next (H<n> <r1>r, H<n+1> <r2>r, H<n+2> S1). The end-gate Critical rule (a) stays.
+#   The run order and the 4 v 4 balance stay (C V V C C V V C); only the holds split. Plan (4 phone holds):
+#     part 1: H1:WC H2:WV H3:S0 H4:EC1     part 2: H5:EV1 H6:EV2 H7:EC2     part 3: H8:EC3 H9:EV3 H10:EV4
+#     part 4: H11:EC4 H12:TAIL H15:AC1 H16:AV1   (TAIL takes H12-H14; the re-run scan reads every hold-H*.log of the block)
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-152 ] || { echo "TICKET is not P-152: no run"; exit 2; }
 [ $# -gt 0 ] || { echo "usage: TICKET=P-152 sh fixes/end-morph-f12/phone/p152-block.sh H<n>:<item>,<item> ... [H<n>:TAIL] | ARCHIVE-BLOCK1"; exit 2; }
@@ -48,9 +59,9 @@ if [ "$1" = ARCHIVE-BLOCK1 ]; then
   sh $SS stop && sh $SS start || { echo "ARCHIVE done, but the servers did not restart: no block 2"; exit 4; }
   echo "ARCHIVED block 1 into $LG/block1; servers restarted"; exit 0
 fi
-# (c) at most two counted runs per hold, checked before anything runs
-for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^E[CV][1-4]r?$')
-  [ "$it" -gt 2 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it counted runs (rev 1.3: at most 2 per hold)"; exit 2; }; done
+# (f) rev 1.4: one item per hold (TAIL expands to one item per hold), checked before anything runs
+for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -c .)
+  [ "$it" -gt 1 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it items (rev 1.4: one item per hold)"; exit 2; }; done
 coolwait() { # below timeout why
   { echo "== $(date -u +%FT%TZ) $3: phone-temp --below $1 --timeout $2"
     node tools/wait.mjs phone-temp --below "$1" --timeout "$2" --every 60 --owner "$R" --reason "P-152 $3"; c=$?
@@ -65,21 +76,25 @@ PSTART=$(date -u +%FT%TZ) # gate records of this part only (the cooling-gap read
 { echo "== $(date -u +%FT%TZ) part start: $*"; sh $SS check; } >> $LG/serve-check.log 2>&1 \
   || { echo "BLOCK STOP: p152-serve.sh check failed (see $LG/serve-check.log)"; exit 4; }
 echo "SERVE CHECK ok: $(tail -4 $LG/serve-check.log | grep -c ' ok$') of 3 servers"
-# (d) cooling before the part (block 2's part 1)
-if [ -n "$P152_COOL_FIRST" ] && [ "$P152_DRY" != 1 ]; then
-  coolwait "$P152_COOL_FIRST" 900 "cooling before the part" || { echo "BLOCK STOP: the phone did not cool below $P152_COOL_FIRST °C in 900 s"; exit 6; }
-fi
-# lead condition 6: a fresh WDA at the start of every part (not in dry mode)
-if [ "$P152_DRY" != 1 ]; then
+[ -n "$P152_COOL_FIRST" ] && echo "NOTE P152_COOL_FIRST is ignored since rev 1.4: every hold cools below 38 °C first"
+# lead condition 6 and I-214: a fresh WDA and a fresh Safari with the timer page (not in dry mode)
+wdarestart() {
   { node tools/iphone.mjs wda stop; node tools/iphone.mjs wda start --owner "$R"; node tools/iphone.mjs wda check; } > $LG/wda-restart-$(date +%s).log 2>&1 \
     || { echo "BLOCK STOP: wda stop/start/check failed (see $LG/wda-restart-*.log)"; exit 5; }
   echo "WDA restarted and READY"
-  # I-214 workaround (lead): a fresh Safari with the timer page before the first gate opens it
   PB=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$LG/serve-B.json','utf8')).port)")
   node tools/iphone.mjs safari-restart --owner "$R" --url "$(node tools/lan.mjs --url --port "$PB")" --timeout 60 > $LG/safari-restart-$(date +%s).log 2>&1 \
     || { echo "BLOCK STOP: safari-restart failed (see $LG/safari-restart-*.log)"; exit 5; }
   echo "SAFARI restarted"
-fi
+}
+[ "$P152_DRY" = 1 ] || wdarestart
+# (e) rev 1.4: before every hold, cooling below 38 °C, then the WDA check (one restart if it is not READY)
+prehold() { # H
+  [ "$P152_DRY" = 1 ] && { echo "PREHOLD $1 (dry: no cooling, no WDA check)"; return 0; }
+  coolwait 38 900 "cooling before $1" || { echo "BLOCK STOP: the phone did not cool below 38 °C in 900 s before $1"; exit 6; }
+  if node tools/iphone.mjs wda check > $LG/wda-check-$1-$(date +%s).log 2>&1; then echo "WDA READY before $1"
+  else echo "WDA not ready before $1: one restart"; wdarestart; fi
+}
 hold() { # H items...
   h=$1; shift
   [ -e $LG/hold-$h.log ] && mv $LG/hold-$h.log $LG/hold-$h.log.prev-$(date +%s)
@@ -93,34 +108,29 @@ hold() { # H items...
 }
 FIRST=1
 gmode() { echo both; } # rev 1.3 (a): every hold runs a start and an end gate
-run1() { # last(0|1) H items...: one hold, a time-guard VOID (7) re-run whole once
+run1() { # last(0|1) H items...: (e) cooling + WDA check, then one hold; a time-guard VOID (7) re-run whole once
   LASTH=$1; GMODE=$(gmode $1); shift
-  hold "$@"; e=$?
-  [ $e -eq 7 ] && { echo "RETRY $1 (time guard)"; hold "$@"; e=$?; }
+  prehold $1; hold "$@"; e=$?
+  [ $e -eq 7 ] && { echo "RETRY $1 (time guard)"; prehold $1; hold "$@"; e=$?; }
   [ $e -ne 0 ] && { echo "BLOCK STOP at $1 exit $e"; exit $e; }
   FIRST=0
-  # (b) a cooling gap when this hold's end gate read >= 41.5 °C (not after the part's last hold)
-  if [ "$LASTH" != 1 ] && [ "$P152_DRY" != 1 ]; then
-    bt=$(node -e "const L=require('fs').readFileSync('out/thermal-gate/gates.jsonl','utf8').trim().split('\\n').map(JSON.parse).filter(r=>r.label==='p152-$1-end'&&r.at>='$PSTART');const r=L.pop();console.log(r?(r.battEndC??r.battC):'')" 2>/dev/null)
-    echo "BATT after $1: ${bt:-unknown} C"
-    if [ -n "$bt" ] && node -e "process.exit(Number('$bt')>=41.5?0:1)"; then
-      coolwait 40 600 "cooling gap after $1 (end gate read $bt C)" || echo "COOLING GAP TIMEOUT after $1: the next start gate decides"
-    fi
-  fi
+  # rev 1.3 (b), the cooling gap after a hot hold, is superseded by (e): every hold now cools below 38 °C first
 }
 i=0
 for spec in "$@"; do
   i=$((i + 1)); LAST=0; [ $i -eq $# ] && LAST=1
   H=${spec%%:*}; items=$(echo "${spec#*:}" | tr ',' ' ')
   if [ "$items" = TAIL ]; then
-    RR=$(for f in $LG/hold-H2.log $LG/hold-H3.log $LG/hold-H4.log $LG/hold-H5.log $LG/hold-H6.log; do [ -e $f ] && sed -n 's/^RERUN-NEEDED \([^(]*\) (.*/\1/p' $f; done | tr ' ' '\n' | grep -E '^E[CV][1-4]$' | awk '!s[$0]++' )
+    # rev 1.4: every hold log of the block (one counted run per hold), in hold order; each re-run in its own hold
+    RR=$(ls $LG/hold-H*.log 2>/dev/null | sort -t H -k 2 -n | while read f; do sed -n 's/^RERUN-NEEDED \([^(]*\) (.*/\1/p' "$f"; done | tr ' ' '\n' | grep -E '^E[CV][1-4]$' | awk '!s[$0]++' )
     n=$(echo "$RR" | grep -c .)
     [ "$n" -gt 2 ] && echo "RERUN over the cap: $(echo $RR) need one; the first 2 are re-run (card: at most 2 per block), the rest stay invalid"
     R1=$(echo "$RR" | sed -n 1p); R2=$(echo "$RR" | sed -n 2p)
-    echo "TAIL re-runs: ${R1:-none}${R2:+ $R2} (as ${R1:+${R1}r}${R2:+ ${R2}r}), then S1"
-    if [ -z "$R1" ]; then run1 $LAST $H S1
-    elif [ -z "$R2" ]; then run1 $LAST $H ${R1}r S1
-    else run1 0 $H ${R1}r ${R2}r; N=H$(( ${H#H} + 1 )); run1 $LAST $N S1; fi
+    echo "TAIL re-runs: ${R1:-none}${R2:+ $R2} (as ${R1:+${R1}r}${R2:+ ${R2}r}), then S1, one item per hold"
+    N=${H#H}
+    [ -n "$R1" ] && { run1 0 H$N ${R1}r; N=$((N + 1)); }
+    [ -n "$R2" ] && { run1 0 H$N ${R2}r; N=$((N + 1)); }
+    run1 $LAST H$N S1
   else run1 $LAST $H $items; fi
 done
 echo "BLOCK PART DONE: $*"

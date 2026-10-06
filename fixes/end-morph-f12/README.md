@@ -207,6 +207,11 @@ phone.
   - a logged cooling gap whenever a hold ends at 41.5 °C or above;
   - at most two counted runs in one hold;
   - block 2 starts only after the phone cools below 38 °C.
+- Rev 1.4 (2026-10-06, after P-153 block 1 went VOID at 04:07Z: H2's end gate read Critical at 41.9 °C, from 39.3 °C, after S0 and EC1). The lead's new heat rules, mirrored from P-153 (see "Rev 1.4: one item per hold"):
+  - cool below 38 °C before EVERY hold, then the WDA check;
+  - at most 1 counted run per hold; warm-ups, sentinels and attribution runs each in their own hold;
+  - the end-gate Critical rule stays; the run order and the balance stay, only the holds split.
+  - Written before any block-2 data (block 2's 03:18Z attempt stopped before any run).
 - Labels:
   - This card is pre-data for P-152.
   - The prediction is informed by this build's Chrome and Simulator counts.
@@ -246,10 +251,14 @@ the end menu, with toolbar steps, driven by a real touch gesture.
   - Block 2 is judged by itself with the same rule. It is never pooled with block 1.
 - Part 2's end gate (N3; superseded by rev 1.3): rev 1.1-1.2 gated each phone hold only at its edges, so part 2's end gate ran only in HA, and an HA failure or a missing hold-HA.log voided part 2. Rev 1.3 gates every hold, and each counted run is judged by its own hold (below).
 
-| part | holds (each a 600 s chrome-measure `--no-timing` hold, 2 runs at most, from rev 1.3 each with a start and an end thermal gate) |
+| part | holds (rev 1.4: each a 600 s chrome-measure `--no-timing` hold with ONE item, after cooling below 38 °C, with a start and an end thermal gate) |
 |---|---|
-| 1 | H1 WC WV, H2 S0 EC1, H3 EV1 EV2 |
-| 2 | H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7 TAIL (re-runs, then S1), HA AC1 AV1 |
+| 1 | H1 WC, H2 WV, H3 S0, H4 EC1 |
+| 2 | H5 EV1, H6 EV2, H7 EC2 |
+| 3 | H8 EC3, H9 EV3, H10 EV4 |
+| 4 | H11 EC4, H12 TAIL (each re-run in its own hold, H12-H13, then S1 in the next), H15 AC1, H16 AV1 |
+
+Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H4 EC2 EC3, H5 EV3 EV4, H6 EC4, H7 TAIL, HA AC1 AV1.
 
 **Runner steps (lead condition 6).**
 - `p152-block.sh` starts every part with `iphone.mjs wda stop`, `wda start`, `wda check` (the I-212 lesson), and stops
@@ -362,6 +371,20 @@ the end menu, with toolbar steps, driven by a real touch gesture.
   - then `TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 -- sh fixes/end-morph-f12/phone/p152-block.sh H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`.
 - Time per hold: a gate takes about 30 s, so two gates plus two runs (budget 229 s each; real runs took about 130 s) fit one 600 s hold. The time guard still applies.
 
+**Rev 1.4: one item per hold (lead ruling after P-153 block 1 went VOID, 2026-10-06 ~04:10Z).**
+- Why: P-153's block 1 hit the same wall as P-152's block 1. Its H2 end gate read Critical at 41.9 °C after S0 and EC1, from 39.3 °C at H1 (OBSERVED, same phone, same profile). Two runs in one hold heat the phone past the ceiling.
+- **(e) Cooling before every hold.** `p152-block.sh` runs `wait.mjs phone-temp --below 38 --timeout 900` before each hold (logged in `out/p152/cooling.log`); a timeout stops the part (exit 6). Right after the cooling: `iphone.mjs wda check`; if WDA is not READY, one WDA restart (stop/start/check) and a Safari restart (I-214); still not ready: the part stops (exit 5), nothing used up. This supersedes rev 1.3 (b) (the gap only after a hold at 41.5 °C or above) and (d) (`P152_COOL_FIRST`, now ignored with a NOTE).
+- **(f) One item per hold.** At most 1 counted run per hold, and each warm-up, sentinel and attribution run in its own hold. The driver refuses any other plan before anything runs (tested: `H1:WC,WV` refused, exit 2). TAIL puts each re-run in its own hold, then S1 in the next; its re-run scan reads every `hold-H*.log` of the block in hold order.
+- Unchanged: the end-gate Critical rule (rev 1.3 (a): an end-gate FAIL voids that hold's runs and the block stops), the start gate (Serious, induced Yes), the run order C V V C C V V C, 4 v 4, the decision rule and the reader's per-hold validity (`holdStatus`; hold names now H1-H16, one new self-test check, 39 in all).
+- Disclosed: every run now starts below 38 °C after a cooling wait, so the runs are cooler and further apart than in P-137 or block 1. Both arms get the same treatment, in the same order.
+- The "position-confounded" label (P-150 N3, descriptive) still names EV1 or EV3; with one run per hold every run opens its own hold, so the label no longer marks a position difference. It is kept as signed; lead's call.
+- Time: each hold is cooling (0-15 min), a WDA check, two gates (about 30 s each) and one run (budget 229 s). Four phone holds of 3-4 holds each may pass 3600 s (OVERDUE, never killed).
+- Commands (the runner's, in the background, after `p152-serve.sh start`):
+  - `TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 --keep 120 -- sh fixes/end-morph-f12/phone/p152-block.sh H1:WC H2:WV H3:S0 H4:EC1`
+  - then `... p152-block.sh H5:EV1 H6:EV2 H7:EC2`, then `... H8:EC3 H9:EV3 H10:EV4`, then `... H11:EC4 H12:TAIL H15:AC1 H16:AV1`.
+- Dry runs (2026-10-06 ~04:20Z, servers up, `P152_DRY=1`): part 1 `H1:WC H2:WV H3:S0 H4:EC1`, every hold DRY ok; part 4 with fixture hold logs naming EV2 (H6) and EC3 (H9) as RERUN-NEEDED: TAIL ran H12 EV2r, H13 EC3r, H14 S1, then H15 AC1, H16 AV1, all DRY ok. Cooling and the WDA check are skipped in dry mode (PREHOLD lines). The dry logs, the fixtures and the 03:18Z attempt's H1 log were then moved to `out/p152/pre-block2-r14/`, so block 2 starts with no hold logs.
+- The reader header's two dropped paragraphs (twins, position-confounded; the rev 1.3 doc gap below) are back, with this revision's re-pin.
+
 **Addendum D1-D3, rev 1.2 (lead, 2026-10-06 ~23:58Z and ~00:00Z: "D1+D2 as proposed").** The rev 1.1 delta check (ops-reader-P152) passed with notes D1-D3.
 - Written before any part-1 or part-2 data: part 1's first try stopped at H1's start gate with no run (see "Block log" below).
 - Rev 1.2 changes:
@@ -387,21 +410,21 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - **D2, block 2 after a VOID.** A block-1 VOID (a sentinel fails) is archived with `ARCHIVE-BLOCK1`, like a FAIL, and counts as one of the 2 blocks.
 - **D3, the PIN line.** The first real PIN line must show `p152-read.mjs=adf4e7a27122`. The rev 1.1 dry run printed an older hash, because the reader changed after it; that is harmless.
 
-**Kit (pins, sha256/12, at the rev 1.3 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
-`2548d4588b0e`, read `005136ea3002`).** Rev 1.1 changes `p152-block.sh` (N2, N4, N6) and `p152-read.mjs` (N1, N3, N5, N7). It does not change `p152-hold.sh` or `p152-serve.sh`.
+**Kit (pins, sha256/12, at the rev 1.4 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
+`2548d4588b0e`, read `005136ea3002`).** Rev 1.1 changes `p152-block.sh` (N2, N4, N6) and `p152-read.mjs` (N1, N3, N5, N7). Rev 1.4 changes `p152-block.sh` ((e), (f)), `p152-read.mjs` (labels, header, one self-test check) and `p152-hold.sh` (header plan comment only).
 
 | file | pin |
 |---|---|
-| `phone/p152-block.sh` | `4b8c70324a81` (rev 1.3; rev 1.1-1.2 `d2d8e37c419d`) |
-| `phone/p152-hold.sh` | `b5b38c853340` |
+| `phone/p152-block.sh` | `7e98087e3988` (rev 1.4; rev 1.3 `4b8c70324a81`, rev 1.1-1.2 `d2d8e37c419d`) |
+| `phone/p152-hold.sh` | `e48dd4563c45` (rev 1.4, comment only; rev 1-1.3 `b5b38c853340`) |
 | `phone/p152-serve.sh` | `2548d4588b0e` |
-| `phone/p152-read.mjs` | `11ab8b9496b0` (rev 1.3; rev 1.2 `597bd8bd9e30`, rev 1.1 `adf4e7a27122`) |
+| `phone/p152-read.mjs` | `74ffb1031287` (rev 1.4; rev 1.3 `11ab8b9496b0`, rev 1.2 `597bd8bd9e30`, rev 1.1 `adf4e7a27122`) |
 | `phone/p152-endgate.sh` | `04c156f84403` (rev 1.2; not used from rev 1.3) |
 
 - Doc gap in `p152-read.mjs` rev 1.3 (`11ab8b9496b0`), found by fix-end-morph-p1 on 2026-10-06; comment only, no code effect.
   - The rev 1.3 edit also deleted the header's two comment lines on twins ("threshold-sensitive") and "position-confounded".
-  - The code still applies both rules exactly as this card's Decision section states.
-  - The reader stays as signed during block 2, because every hold's PIN line pins it. The two lines go back in after the block, as a comment-only change for the lead's delta check.
+  - The code applied both rules exactly as this card's Decision section states throughout.
+  - Restored in rev 1.4 (re-pinned anyway for the new heat rules).
 - Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e` and
   `research/serious-heat/p129-read.mjs` `06f74f5d19ca`.
 - The runner prints these pins and the other dependencies (fs script, thermal gate, pmcheck, the snapshot files) in
