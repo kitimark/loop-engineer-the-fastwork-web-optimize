@@ -1149,3 +1149,31 @@ other pin is unchanged.
 - **Re-pinned:** `phone/p150-read.mjs` 24b1ed51f58e → b5d113ef3760. Nothing else changed.
 - **Predictions.** They are left as registered (rev 1.1): this is a rule change before any phone data. Prediction 7's
   FAIL row now means "WORSE under rev 1.3".
+
+### P-150 addendum rev 1.4: the Simulator cost card runs one arm per session (lead ruling; text only)
+
+- **What happened (2026-10-05/06).** The cost card's sessions K1 (C then B) and K2 (B then C) each counted only their
+  first arm: K1-C and K2-B, both exit 0, served hashes ok.
+  - In each session the second gesture was refused by `sim.mjs`: an fs run needs about 145 s, and the 300 s shared slot
+    had 21 s and 108 s left.
+  - No record was written for those arms, so nothing is renamed or dropped.
+- **Rule from now on.** One arm per session, staying in the shared lane (no exclusive 420 s hold; it would block P-152
+  block 2's phone runs).
+  - K3 = B, then K4 = C. Over all sessions the order is C, B, B, C, giving 2 counted runs per arm.
+  - The commands are the card's, with one arm each:
+    - `sim-b.sh K3 B`
+    - `sim-b.sh K4 C`
+  - The card's re-run rule applies to K3 and K4 the same way: one re-run each, then INSUFFICIENT.
+  - Under I-160 a session started during a marked phone block prints DEFERRED and waits for a window. That is expected.
+- **R4's broken-image test, restated (by hand in the read).** No session holds both arms, so `cost-b.mjs`'s
+  same-session comparison finds no C run for any B run (K2-B included) and skips the broken-`<img>` test.
+  - That skip is not silent. The read compares each B run's broken-`<img>` count with the **maximum over all counted C
+    runs**, taken by hand from the records (`run.inject[0].value`, `imgs` entries with complete 1 and naturalWidth 0).
+    It is **WORSE if any B run exceeds that maximum**.
+  - This is a cross-session comparison (OBSERVED assumption, our setup: the Simulator's image loading does not vary
+    between sessions). If the counted C runs disagree with each other on broken-`<img>`, the comparison is INSUFFICIENT
+    and the lead is told.
+  - The rest of R4 (0 AVIF decode failures, at least 1 AVIF fetched, Chrome responses all 200) is unchanged and stays in
+    `cost-b.mjs`.
+- **Unchanged.** Code and pins (`img/cost-b.mjs` ab1cd4046ee6, `img/sim-b.sh` 5aede15c5f9f). The counted records
+  `out/end-bg/simb/K1-C.json` and `K2-B.json` are kept as they are and count.
