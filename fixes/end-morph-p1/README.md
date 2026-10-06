@@ -592,6 +592,25 @@ the rest as rev 1.2.
     plus charging). Remedy, run by the lead: C-073 (the user stops the condition), a read until the phone is below
     Critical, a second step to start Serious and a profile read to check it. Part 1 then reruns once on the lead's
     message.
+- 2026-10-06 03:54:42Z, part 1, third try, after the lead's restart of Serious (C-073, C-074; checked by a profile
+  read at 03:54Z): **block 1 stopped at H2's end gate on heat; the read is VOID.**
+  - The serve check was ok. Cooling: 35.59 °C, so no wait. WDA restarted READY, Safari restarted.
+
+    | hold | start gate | runs | end gate | hold |
+    |---|---|---|---|---|
+    | H1 | Serious, induced Yes, 35.6 °C, PASS | WC, WV (warm-ups, exit 0) | Serious, 39.1 °C, PASS | VALID 366 s |
+    | H2 | Serious, induced Yes, 39.3 °C, PASS | S0 (sentinel PASS, fps 55.2, slow 0.038), EC1 (run gates ok) | **Critical**, 41.7 → 41.9 °C, FAIL | VOID end gate |
+
+  - The cooling gap did not run after H1, because H1's end gate read 39.09 °C, under 41.5.
+  - BLOCK STOP exit 3. Safari was parked by the EXIT trap.
+  - Reader (rev 1.2, `out/p153/read-part1-stop.json`):
+    - S0 is FAIL ("hold H2 VOID end gate exit 3"), and S1 has no record;
+    - EC1 is INVALID for the same reason;
+    - DECISION VOID (a sentinel failed or is missing).
+  - Heat: the battery rose about 6.3 °C in 12 min, over 4 G runs, from 35.6 to 41.9 °C. P-152's block 1 climbed the same
+    way (36.1 → 43.0 °C in 18 min). Under induced Serious, Critical comes back above about 41.5-42 °C (OBSERVED, cause
+    unknown).
+  - The lead decides: block 2 (after `ARCHIVE-BLOCK1`, cooling to 38 °C first), or a change to the heat rules.
 
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 
