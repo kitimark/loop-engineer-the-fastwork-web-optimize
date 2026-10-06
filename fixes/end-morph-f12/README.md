@@ -350,6 +350,13 @@ the end menu, with toolbar steps, driven by a real touch gesture.
   - Part 1 runs with `P152_COOL_FIRST=38`: `wait.mjs phone-temp --below 38 --timeout 900` runs first, logged; a timeout stops the part (exit 6).
   - Then H1's start gate must read Serious with induced Yes. If it reads Critical at 38 °C or below, the block stops (start gate FAIL), and the runner tells the lead: the Xcode condition may need a restart by the user, through a console step the lead posts.
 - I-214: every part restarts Safari with the timer page after its WDA restart (`iphone.mjs safari-restart`; exit 5 if it fails).
+- **Auto-lock lesson (I-215, OBSERVED, cause unconfirmed).** On block 2's first part start, after about 10 min of idle cooling with Safari parked, WDA would not start: "Timed out while enabling automation mode" at 00:36Z, and again on one retry. The phone most likely auto-locked during the wait.
+  - Long cooling waits can let the phone lock, so the runner checks WDA right after any cooling wait. The kit already does this:
+    - after `P152_COOL_FIRST`, the part's WDA restart and check come next (exit 5 on failure, before any gate or run);
+    - after a mid-part cooling gap, the next hold runs `iphone.mjs wda check` before its start gate (hold VOID exit 5, no run).
+  - A failed check stops the part with nothing used up.
+  - Remedy (lead, console step C-071): the user unlocks the iPhone and sets Auto-Lock to Never for blocks.
+  - Block 2 was unused by both failures: no gate and no run happened.
 - Block 2 commands, the runner's, in the background, after the servers are up (`ARCHIVE-BLOCK1` restarted them):
   - `TICKET=P-152 P152_COOL_FIRST=38 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 --keep 120 -- sh fixes/end-morph-f12/phone/p152-block.sh H1:WC,WV H2:S0,EC1 H3:EV1,EV2`
   - then `TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 -- sh fixes/end-morph-f12/phone/p152-block.sh H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1`.
