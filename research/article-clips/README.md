@@ -10,7 +10,9 @@ our hand-written strokes. Every clip: left original, right v10, same robot input
 
 **Lead decisions (2026-10-06, after 3c875df5):** v10 is built on the landed v9-final base, JS 1b2eecc66011 (with 7d);
 the clips use normal room heat with the Xcode condition off (profile `fair`); the "hero carousel" question goes to the
-user in T-211 (posted by the lead), not in a phone step, so U1 is only the finger scroll.
+user in T-211 (posted by the lead), not in a phone step, so U1 is only the finger scroll. **Answered (T-211 #6, confirmed
+#7):** "hero carousel" meant the user carousel, the small profile photos in the community pill
+(`.start-selling-avatars.is-carousel`): a cropped clip, original and v10.
 
 ## 1. Tools: capture the finger, replay it with WDA
 
@@ -69,8 +71,10 @@ state, so each run's scroll curve is checked, not only the script hash.
   from the page's own log numbers; label strip "Real iPhone 15 Pro Max screen recording (Safari), heat: <profile>".
 - Crops by geometry, never by looking: the full-screen clips use the page box (y 119-826 pt of 932: no status bar, no
   Safari bar). Crop bands come from the phone's own geometry read (`rects.mjs`, items rA/rV) at the run's resting scroll.
-  - hero carousel: a band around the element the user names in step U1 (candidates: the hero card deck / orbit
-    cards, or the hero's accent word cycle); cut from the hero replay;
+  - user carousel (the pill's profile photos, `.start-selling-avatars.is-carousel`, 104x32 px, doc y ~2050, changes
+    about every 1.03 s; v8 kit, Simulator): a band around the pill, 6 s at rest. Cut from the people replay when it
+    comes to rest with the pill in view; otherwise one short robot item per arm (scroll to the pill, rest 6 s, no user
+    gesture needed), as the v8 clip d did;
   - Join waitlist button: the nav band (button box + 16 pt margin, inside the page box) cut twice, from the hero
     replay (top: fade at the first scroll) and from the end-morph replay (end: fade into the menu). No extra runs.
 - Files stay in gitignored `out/` of this worktree: `out/iphone-screen/` (raw .mov), `out/article-clips/` (runs,
@@ -141,7 +145,7 @@ User steps (console, each from inside the runner's phone hold, one open phone st
 | step | what the user does (plain words) | time |
 |---|---|---|
 | U0 | Turn on a Focus mode (Do Not Disturb) so no notification shows; set Auto-Lock to Never (I-215); in Xcode, stop the Thermal State condition (if we use normal heat); close other Safari tabs; then Done. | 3 min |
-| U1 hero | On the original page at the top, scroll the hero cards the way that shows the lag to you, about 10-15 s, then stop. Name the "hero carousel" you mean (choice list). | 2 min + 1 retry |
+| U1 hero | On the original page at the top, scroll the hero cards the way that shows the lag to you, about 10-15 s, then stop. | 2 min + 1 retry |
 | U2 people | Start just above "People still need people" and scroll through the title the way it lags for you, about 10 s. | 2 min |
 | U3 end | Scroll to the end of the page and open the end menu the way you usually do, then scroll back up a little, about 15 s. | 2 min |
 | U4 extra | (optional) Any other place that looks wrong to you, the same way. | 2 min |
