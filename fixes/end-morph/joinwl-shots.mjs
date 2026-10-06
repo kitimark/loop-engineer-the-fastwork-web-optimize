@@ -1,6 +1,6 @@
 // end-morph (fix-end-morph, user T-204 #10/#13): proposal screenshots of the nav's "Join waitlist" button mid-exit, Chrome.
 // Headless Chrome 430x775 DPR 3, mobile + touch. Per build (overlay dir): load, walk the page, park above the end zone,
-// pause CSS transitions/animations (CDP Animation.setPlaybackRate 0, so the button's delayed opacity fade has not
+// step the scroll per rAF to morph m and capture at once (inside the button.s 0.12 s opacity delay, so the fade has not
 // started, as in the real first frames of the morph), scroll to morph m (default 0.2: the frame where the original's
 // 8px rise and 10px blur are complete while it is still fully opaque), and capture the nav strip (css 0-96 px).
 // Writes out/joinwl/shots/<label>-m<m>.png and prints the button's rect and computed style at that frame.
@@ -39,11 +39,17 @@ for (const arm of ARMS) {
       await page.eval(`new Promise((res) => { let y = 0; const step = () => { y += 300; window.scrollTo({ top: y, behavior: 'instant' }); y < document.documentElement.scrollHeight ? setTimeout(step, 40) : setTimeout(res, 2500); }; step(); })`, { timeout: 90000 });
       const g = await page.eval(`(() => { const e = document.querySelector('.fw-ms-end'); const t = e ? e.offsetHeight : 0; const max = document.documentElement.scrollHeight - innerHeight; return { t, max, endStart: max - t }; })()`);
       await page.eval(`(window.scrollTo({ top: ${g.endStart - H}, behavior: 'instant' }), 1)`); await sleep(2500);
-      await page.send('Animation.enable'); await page.send('Animation.setPlaybackRate', { playbackRate: 0 });
-      await page.eval(`(window.scrollTo({ top: ${Math.round(g.endStart + m * g.t)}, behavior: 'instant' }), 1)`); await sleep(800);
+      // a held touch: without it the 7d settle (200 ms rest timer) scrolls a part-way morph back to m 0 or 1
+      await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 215, y: 400, id: 1 }] });
+      // real time, no paused animations (paused, the frozen nav painted nothing): one scrollTo per rAF from the end zone's
+      // start to morph m in 8 frames, then the capture at once, inside the button's 0.12 s opacity delay
+      const target = Math.round(g.endStart + m * g.t);
+      await page.eval(`new Promise((res) => { const a = ${g.endStart}, b = ${target}; let k = 0; const f = () => { k++; window.scrollTo({ top: Math.round(a + (b - a) * k / 8), behavior: 'instant' }); k < 8 ? requestAnimationFrame(f) : requestAnimationFrame(() => res(1)); }; requestAnimationFrame(f); })`);
+      // the clip is in document coordinates: the fixed nav strip sits at the scroll position
+      const shot = await page.send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: target, width: 430, height: 96, scale: 1 }, captureBeyondViewport: false });
       const r = await page.eval(READ);
-      const shot = await page.send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 430, height: 96, scale: 1 }, captureBeyondViewport: false });
       const f = join(OUT, `${arm.label}-m${m}.png`); writeFileSync(f, Buffer.from(shot.data, 'base64'));
+      await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       console.log(arm.label, 'm', m, JSON.stringify(r), f);
       await page.close?.().catch(() => {});
     }
