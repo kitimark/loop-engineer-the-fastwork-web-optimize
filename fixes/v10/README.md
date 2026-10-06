@@ -1,4 +1,51 @@
-# v10: main's v9-final (rev 7d) + F1+U2 + P1 + PR-027 nolift
+# v10: main's v9-final (rev 7d) + P1 + P1b (a) + #platform pause + hit-skip + PR-027 nolift + I-219
+
+## Build card (built 2026-10-06 15:28Z on the lead's go, 15:00Z and 15:27Z)
+
+```
+BUILD v10 on base C = main's v9-final rev 7d (1b2eecc66011 / e1359ab9994a)
+  snapshot out/v10/snap-61257aa0969a-fb9f6aa28ad4 (HASHES.txt sha256/12 4bf1c71059d2), arms:
+  C  1b2eecc66011 / e1359ab9994a   main's v9-final (rev 7d)
+  CI 30d41592a308 / e1359ab9994a   C + I-219
+  N  bd73d4223822 / 76ba9f971926   C + pause (c) + hit-skip + P1 + P1b (a)
+  V  61257aa0969a / fb9f6aa28ad4   N + nolift + I-219 = v10
+deltas (sha256/12 of the owner's bytes):
+  pause (c)   a3ac3885:fixes/end-morph-f12/fade/c-pause-at-0.diff   2c8f3cef03a9 (fix-end-morph)
+  hit-skip    main:fixes/hit-skip/delta.diff                         dee89e00eb7a (arch-compositor-morph, e6411f27)
+  P1          fixes/end-morph-p1-v9f/p1-delta.diff                   d310e4d2ba0c (fix-end-morph-p1)
+  P1b (a)     d52d14cd:fixes/end-morph-p1b-a/delta-{js,css}.diff     27408c23ede4 / d20484088a03 (fix-end-morph-p1)
+  nolift      fixes/v10/nolift-delta.diff                            074e4667190a (PR-027, the user's pick)
+  I-219       main:fixes/i219-hydrate/delta.diff                     947c88282561 (fix-i219-hydrate)
+served hashes (serve.mjs --overlay V, curl, 15:28Z): JS 61257aa0969a, CSS fb9f6aa28ad4, x-mirror-source: overlay
+routes: R1 = R1b = R2 = R4 byte for byte (R3 n/a: the nolift arm as tried carries F1+U2).
+  R4 rebuilds the build the phone measured in P-156: A0 = v9-final + I-219 + P1 + P1b (a), pinned 888ed8eb2d15 /
+  cfb8b8c5b019. Then + pause + rev 7d's diff + hit-skip + nolift = V.
+code parity: every step of R1 and CI changed exactly its delta's lines (8 steps, 0 differences); node --check on C, N, V, CI
+parity (pixels), per component, owners' gates:
+  pause      Chrome 0 px at 18 stops; Simulator within T2 (fix-end-morph)
+  hit-skip   Chrome max consistent 0.0057 % (level 19); Simulator no consistent difference (arch-compositor-morph)
+  nolift     only the earn button region, plus post-stop noise below the Simulator A/A floor (this README)
+  P1 + (a)   fix-end-morph-p1's gates (fixes/end-morph-p1b-a)
+  combined   not re-run on these arms yet
+a11y diff (token counts C -> V): aria-hidden JS 48 -> 52 (P1 + (a) hide P1's dark and glass decoration layers);
+  visibility JS 8 -> 10, CSS 26 -> 27 (the new decoration layers' own show/hide); inert 4 -> 4, tabindex 4 -> 4,
+  focus JS 16 -> 16 / CSS 24 -> 24 (unchanged)
+mechanism delta:
+  hit-skip   Simulator layouts HS < HSC in both pairs: 621 vs 656, 573 vs 610
+  pause      #platform's running animations 8 -> 4 (in #platform 4 -> 0); composite/frame 0.682 vs 0.683 ms; layers
+             44 / 117.0 MB in both (phone, m 1, fix-end-morph)
+  P1 + (a)   per P-156 (fix-end-morph-p1)
+KNOWN COST: first open +11 ms on the phone (O1.f2 37.5 vs 26.5 ms, P-156, A0 vs C0). The lead ruled P1 + (a) into v10 with it.
+idle triple, memory/layers: not measured on the combined arms (pause's layers as above; hit-skip layers 68 at m 0.5 and m 1 in both)
+prediction: none (less-work components; no timed claim for the combination)
+debug hooks: none added; __fwMorphDrive / __navMorphSet come with main's C (rev 7d), same counts in C and V
+pending: Simulator counts (fixes/v10/em-sim.mjs) on C / V
+```
+
+The build: `fixes/v10/build.sh` with `NAV=none PAUSE=… HS=… P1B=… I219=… PIN_A0=888ed8eb2d15/cfb8b8c5b019
+PIN_N=bd73d4223822/76ba9f971926 PIN_V=61257aa0969a/fb9f6aa28ad4`, in a shared check hold.
+
+The rest of this README is the history: the pre-stage (F1+U2 base) and its parity runs.
 
 int-v8. The lead accepted the plan and asked for a pre-stage on 2026-10-06. The user then picked PR-027 option
 "nolift", and the lead added it.
