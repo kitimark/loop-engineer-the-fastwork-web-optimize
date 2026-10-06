@@ -960,7 +960,31 @@ What this shows (OBSERVED in our setup, one run per arm):
 - The mechanism works on the phone: the attribute is set at fade 0 and the 4 #platform animations WebKit lists stop.
 - Composite time per frame at m 1 is the same within 0.001 ms, so on this phone the unseen animations cost no measurable compositing at rest.
 - The M counts are one run each and decide nothing.
-- The layer counts failed: `pfc-probe.mjs` called `DOM.enable`, which WebKit's inspector does not have. The probe is fixed (`LayerTree.enable` only). A probe-only rerun waits for the lead.
+- The first run's layer counts failed: `pfc-probe.mjs` called `DOM.enable`, which WebKit's inspector does not have. The probe is fixed (`LayerTree.enable` only).
+
+**Layer counts: probe-only rerun.**
+- Ordered by the lead at 15:06Z; ran 15:07-15:09Z with `phone/pfc-layers.sh`, the same ports, a 2 s Timeline, and the layer counts after it.
+
+| at m 1 | layers (document) | memory | #platform layers | #platform memory | Composite / frame (2 s) | Paint |
+|---|---|---|---|---|---|---|
+| C | 44 | 117.04 MB | 26 | 45.49 MB | 0.714 ms (123) | 62 / 10.85 ms |
+| c | 44 | 117.04 MB | 26 | 45.49 MB | 0.644 ms (122) | 53 / 9.07 ms |
+
+- (c) keeps every layer and its backing memory (OBSERVED): it pauses the animations and tears nothing down.
+- The 2 s Composite and Paint differences are one short sample each. The 6 s sample above had them equal.
+
+**Lead ruling (15:06Z).**
+- (c) stays in v10 as a less-work fix.
+- It is shown to work (running animations 8 → 4, in #platform 4 → 0), with no worse sign.
+- The M runs decide nothing.
+
+**Pins for int-v8's v10 card (unchanged since c825d3c3):**
+
+| | value |
+|---|---|
+| diff `fade/c-pause-at-0.diff` | `2c8f3cef03a9` |
+| served JS | `db7257e81859` |
+| served CSS | `192f62c106d1` |
 
 ## Pending
 
