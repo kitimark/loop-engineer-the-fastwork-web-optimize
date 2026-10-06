@@ -475,7 +475,15 @@ Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H
   - Cause (OBSERVED): a cool phone reading Critical with induced Yes points at the Xcode Device Condition. The lead posted C-072 (stop the condition, wait 2 min, start Thermal State Serious). Part 1 reruns when C-072 is done; its start gate must read Serious, and a second Critical stops the block with no retry.
 
 - 2026-10-06 07:07-08:49Z, **block 2 (rev 1.4 + park, block pin a60e0c9fe0a6), complete: 14 of 14 holds VALID.**
-  - Part 1 07:07-07:32Z (after C-079), part 2 07:33-07:53Z, part 3 07:54-08:14Z: H1-H10 VALID. Every gate read Serious with induced Yes, battery 34.89-38.59 °C, none Critical. Before every hold: Safari parked, cooling met at once, WDA ready.
+  - Part 1 07:07-07:32Z (after C-079), part 2 07:33-07:53Z, part 3 07:54-08:14Z: H1-H10 VALID. Every gate read Serious with induced Yes, battery 34.89-38.59 °C, none Critical. Before every hold: Safari parked, cooling below 38 °C met, WDA ready.
+  - Correction (lead, 09:05Z; an earlier version of this entry said "cooling met at once", which is wrong). Cooling
+    waits before each hold, from `out/p152/cooling.log`:
+
+    | hold | H1 | H2 | H3 | H4 | H5 | H6 | H7 | H8 | H9 | H10 | H11 | H12 | H15 | H16 |
+    |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    | wait (s) | 0 | 0 | 180 | 180 | 60 | 180 | 180 | 60 | 180 | 120 | 0 | 0 | 0 | 180 |
+
+    The phone reached 38.0 °C at the end of the H3 and H8 waits. The 900 s cap was never reached.
   - Part 4, first start 08:15Z: the part-start WDA restart failed (automation-mode timeout, BUILD INTERRUPTED), exit 5, before any hold or gate; nothing counted lost (incident I-220, lead). The log is `out/p152/block2-r15-part4-stop0815.log`.
   - Part 4 rerun 08:26-08:49Z (after the C-082 re-plug): H11 EC4, H12 S1 (TAIL: no re-runs), H15 AC1, H16 AV1 VALID. The phone went to the user (T-214) at 08:49:37Z with no keep.
   - EC4 ran after a 1052 s gap at 34.79 °C (the re-plug pause); the other counted runs had 362-507 s gaps at 36.89-37.69 °C.
@@ -485,6 +493,11 @@ Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H
   - Disclosed as signed: EV1 and EV3 are the "position-confounded" slot (the first V run of parts 2 and 3), and they carry the two largest V counts (76/24 and 58/14). The other two V runs (42/4, 40/10) are also above every C run at >34, and at or above C's median at >50, so the slot does not explain the whole gap (descriptive, decides nothing).
   - Attribution (decides nothing): paints per frame AC1 11.74 (m high) / 11.18 (low), AV1 11.71 / 11.11; the less-work saving seen in Chrome and the Simulator does not show as fewer paints here.
   - The phone no-worse check is not met as registered. The lead rules on the next step; this is block 2 of 2 for P-152.
+- **Lead ruling (09:05Z):** DECISION FAIL is confirmed by ops-reader-P152, whose own recount is equal at all 6 thresholds. The block is threshold-sensitive only on the twins' p values; the outcome is unchanged. F1+U2 does not land as measured and leaves the v10 plan.
+- **Context** (decides nothing; added at the lead's request). The reader notes the measured size is likely at the high end. The direction holds in every F1+U2 run in the closing band, 0.2 <= m < 0.55.
+  - **Attribution runs' end-zone totals.** These are the same gesture with Timeline on, after S1. They are reversed: AC1 (C) 50 / 15, AV1 (V) 37 / 9 (dt > 34 / dt > 50; n 1325 / 1422). In the closing band (CB34 / CB50) AC1 has 10 / 5 and AV1 13 / 1.
+  - **The same V JS in P-153.** P-153's C arm is this V's JS, `a6426953727a`. There its end zone read 30 / 28 / 32 / 44 at dt > 34, against 76 / 42 / 58 / 40 here (figures from ops-reader-P152, not recomputed here). That is another block on another day, so it is never pooled.
+  - **Starting temperatures.** V's counted runs started warmer: battery at the hold start was C 36.89 / 37.29 / 37.09 / 34.79 °C and V 37.5 / 37.59 / 37.29 / 37.69 °C. That is a median of +0.5 °C for V; without EC4's cool start after the re-plug, about +0.4 °C. All runs were under the same xcode-serious condition, and every gate read Serious.
 
 ### P-152: where V's extra slow frames are, and the suspected cause (after the read; exploratory, decides nothing)
 
