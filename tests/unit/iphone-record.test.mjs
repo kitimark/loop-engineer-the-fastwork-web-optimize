@@ -125,3 +125,73 @@ test('I-141: tabsForDiag names a proxy error without an address, and the poll ex
   assert.match(R.RECORD_POLL_JS(120), /r\.frames\.slice\(120, n\)/);
   assert.match(R.RECORD_POLL_JS('x'), /r\.frames\.slice\(0, n\)/, 'never anything but a number in the expression');
 });
+
+// ---- I-218: `record --touches` (article clips: the user's finger gesture, replayed by WDA) ----------------------------
+// A second in-page expression (RECORD_TOUCHES_JS) adds passive touch listeners to the record's own logger (window.__fr):
+// rows in gesture-rec.mjs's touch layout plus clientX. RECORD_JS / RECORD_STOP_JS stay pinned (iphone-unchanged); the
+// polls carry the new touches only when asked, so a record without --touches sends exactly what it sent before.
+import vm from 'node:vm';
+function touchWindow() {
+  let now = 1000;
+  const rafQ = [], listeners = [];
+  const win = { scrollY: 0, innerWidth: 430, innerHeight: 775, location: { href: 'http://10.1.2.3:5401/' }, performance: { now: () => now },
+    requestAnimationFrame: (cb) => { rafQ.push(cb); return rafQ.length; }, addEventListener: (type, fn, opts) => listeners.push({ type, fn, opts }), JSON, Math };
+  win.window = win;
+  const ctx = vm.createContext(win);
+  return {
+    win, listeners, run: (js) => vm.runInContext(js, ctx),
+    frame(dt = 16.7) { now += dt; rafQ.splice(0).forEach((cb) => cb(now)); },
+    dispatch(type, { touches = 1, x = 215, y = 500, ts } = {}) {
+      const e = { type, cancelable: true, defaultPrevented: false, touches: { length: touches }, changedTouches: [{ clientX: x, clientY: y }], ...(ts === undefined ? {} : { timeStamp: ts }) };
+      for (const l of listeners.filter((q) => q.type === type)) l.fn(e);
+    },
+  };
+}
+
+test('I-218: RECORD_TOUCHES_JS adds passive touch listeners to the record logger: gesture-rec rows + clientX; needs RECORD_JS first; idempotent; stops with the logger', () => {
+  const w = touchWindow();
+  assert.equal(w.run(R.RECORD_TOUCHES_JS), 'no logger', 'only on top of the record logger');
+  assert.equal(w.run(R.RECORD_JS), 'ok');
+  assert.equal(w.run(R.RECORD_TOUCHES_JS), 'installed');
+  assert.equal(w.run(R.RECORD_TOUCHES_JS), 'already installed');
+  assert.deepEqual(w.listeners.map((l) => [l.type, l.opts.passive, l.opts.capture]), [['touchstart', true, true], ['touchend', true, true], ['touchcancel', true, true], ['touchmove', true, false]], 'passive: never blocks scrolling');
+  w.frame();
+  w.dispatch('touchstart', { y: 600, x: 210.6, ts: 1016.7 });
+  w.win.scrollY = 12.4;
+  w.dispatch('touchmove', { y: 580.4, x: 211 });
+  w.dispatch('touchend', { touches: 0, y: 560, x: 212 });
+  assert.deepEqual(R.TOUCH_FIELDS, ['t', 'kind', 'touches', 'cancelable', 'defaultPrevented', 'scrollY', 'clientY', 'timeStamp', 'clientX']);
+  const r = JSON.parse(w.run(R.RECORD_STOP_JS));
+  assert.deepEqual(r.touches, [[1016.7, 's', 1, 1, 0, 0, 600, 1016.7, 211], [1016.7, 'm', 1, 1, 0, 12, 580, null, 211], [1016.7, 'e', 0, 1, 0, 12, 560, null, 212]]);
+  assert.equal(r.frames.length, 1, 'the frame log is the record\'s own, unchanged');
+  w.dispatch('touchstart');
+  assert.equal(r.touches.length, 3);
+  assert.equal(JSON.parse(w.run('JSON.stringify(window.__fr.touches)')).length, 3, 'after the stop read no more touches are logged');
+});
+
+test('I-218: recordRun({touches}) polls the new touches with the frames and saves them as it goes; the final read carries them; without it the polls are unchanged', async () => {
+  let t = 0;
+  const touches = [], frames = [];
+  const page = { stop: false };
+  const conn = { closed: null, close() { this.closed = { self: true }; }, evals: [],
+    async evaluate(expr) {
+      this.evals.push(expr);
+      frames.push([t, 100, t / 10, 775]); touches.push([t, 'm', 1, 1, 0, t / 10, 500 - t / 20, t, 215]);
+      if (expr === R.RECORD_STOP_JS) { page.stop = true; return JSON.stringify({ frames, touches, href: 'http://h.invalid/', vw: 430, vh0: 775, stop: true }); }
+      const m = expr.match(/r\.frames\.slice\((\d+), n\)/), k = expr.match(/r\.touches\.slice\((\d+), k\)/);
+      return JSON.stringify({ n: frames.length, href: 'http://h.invalid/', vw: 430, vh0: 775, f: frames.slice(Number(m[1])), ...(k ? { k: touches.length, tt: touches.slice(Number(k[1])) } : {}) });
+    } };
+  const saves = [];
+  const r = await R.recordRun({ c: conn, seconds: 12, href: 'http://h.invalid/', pollSec: 5, touches: true, save: async (x) => saves.push(JSON.parse(JSON.stringify(x))), sleep: async (ms) => { t += ms; }, now: () => t });
+  assert.equal(r.partial, false);
+  assert.deepEqual(saves.map((s) => s.touches.length), [1, 2], 'each partial save holds every touch so far');
+  assert.ok(conn.evals[0].includes('r.touches.slice(0, k)') && conn.evals[1].includes('r.touches.slice(1, k)'), 'each poll asks only for the touches since the last one');
+  assert.equal(r.rec.touches.length, 3, 'the final read is authoritative and carries the touches');
+  // without touches: exactly the old poll expression, and no touches key in the saves
+  const conn2 = { ...conn, evals: [] };
+  t = 0; frames.length = 0; touches.length = 0; saves.length = 0;
+  await R.recordRun({ c: conn2, seconds: 12, href: 'http://h.invalid/', pollSec: 5, save: async (x) => saves.push(x), sleep: async (ms) => { t += ms; }, now: () => t });
+  assert.deepEqual(conn2.evals.slice(0, 2), [R.RECORD_POLL_JS(0), R.RECORD_POLL_JS(1)]);
+  assert.ok(saves.every((s) => !('touches' in s)));
+  assert.match(R.RECORD_POLL_TOUCHES_JS('x', 'y'), /r\.frames\.slice\(0, n\).*r\.touches\.slice\(0, k\)/, 'never anything but a number in the expression');
+});

@@ -23,6 +23,14 @@
 //     and whether the logger is still there (DIAG_JS). Logger there (same document): the run goes on on the new
 //     connection (`recovered: true`). Not there, or no reconnect: the file is written `partial: true` with the reason
 //     and the frames streamed so far, and record prints `PARTIAL saved <file>: <reason>` and exits 6.
+// I-218 (article clips, T-211: the user's own finger gesture, replayed by WDA; measurement-adjacent): `record --touches`
+//   also evaluates RECORD_TOUCHES_JS right after RECORD_JS. It adds passive touch listeners (the gesture recorder's,
+//   tools/lib/gesture-rec.mjs: touchstart/end/cancel in the capture phase, touchmove in the bubble phase, all on window)
+//   that push rows into the SAME logger, window.__fr.touches, in gesture-rec's touch layout plus clientX (TOUCH_FIELDS),
+//   so the frames stay this logger's and the final read (RECORD_STOP_JS) returns the touches with them. The polls then
+//   use RECORD_POLL_TOUCHES_JS (the new frames and the new touches). Only for capture runs, whose curve is the target a
+//   replay is scored against, never for a compared run; without --touches nothing changes (RECORD_JS, RECORD_POLL_JS
+//   and RECORD_STOP_JS are sent as before). tools/gesture-from-record.mjs turns the touches into a gesture script.
 import { lanSafeUrl, lanSafeText } from './iphone-url.mjs';
 
 export const RECORD_JS = `(() => { const r = window.__fr = {frames: [], href: location.href, vw: innerWidth, vh0: innerHeight}; let last = performance.now();
@@ -39,6 +47,16 @@ export { recordSummary };
 
 /** The frames logged since frame `n0` (and the logger's header), or null when the page has no logger. */
 export const RECORD_POLL_JS = (n0) => `(() => { const r = window.__fr; if (!r) return null; const n = r.frames.length; return JSON.stringify({n, href: r.href, vw: r.vw, vh0: r.vh0, f: r.frames.slice(${Number(n0) | 0}, n)}); })()`;
+/** I-218: the touch rows of `record --touches` (gesture-rec.mjs's RECORDER_JS rows, plus clientX at the end). kind: s
+ *  touchstart, m touchmove, e touchend, c touchcancel; t = performance.now() in the handler, timeStamp = the event's own
+ *  (same clock; gesture-rec touchTime() picks it when sane); scrollY, clientX/Y rounded to CSS px. */
+export const TOUCH_FIELDS = Object.freeze(['t', 'kind', 'touches', 'cancelable', 'defaultPrevented', 'scrollY', 'clientY', 'timeStamp', 'clientX']);
+/** I-218: passive touch listeners on top of RECORD_JS's logger (window.__fr.touches); 'no logger' without it. */
+export const RECORD_TOUCHES_JS = `(() => { const r = window.__fr; if (!r) return 'no logger'; if (r.touches) return 'already installed'; const tt = r.touches = []; const R = (v) => Math.round(v * 10) / 10;
+      const on = (type, kind, capture) => addEventListener(type, (e) => { if (r.stop) return; const ct = e.changedTouches && e.changedTouches[0]; tt.push([R(performance.now()), kind, e.touches ? e.touches.length : 0, e.cancelable ? 1 : 0, e.defaultPrevented ? 1 : 0, Math.round(scrollY), ct ? Math.round(ct.clientY) : null, typeof e.timeStamp === 'number' ? R(e.timeStamp) : null, ct ? Math.round(ct.clientX) : null]); }, {passive: true, capture});
+      on('touchstart', 's', true); on('touchend', 'e', true); on('touchcancel', 'c', true); on('touchmove', 'm', false); return 'installed'; })()`;
+/** I-218: RECORD_POLL_JS plus the touches logged since touch `k0`. */
+export const RECORD_POLL_TOUCHES_JS = (n0, k0) => `(() => { const r = window.__fr; if (!r) return null; const n = r.frames.length, k = r.touches ? r.touches.length : 0; return JSON.stringify({n, href: r.href, vw: r.vw, vh0: r.vh0, f: r.frames.slice(${Number(n0) | 0}, n), k, tt: r.touches ? r.touches.slice(${Number(k0) | 0}, k) : []}); })()`;
 /** After a reconnect: where the tab is and whether this run's logger is still in it. */
 export const DIAG_JS = `(() => { const r = window.__fr; return JSON.stringify({href: location.href, visibilityState: document.visibilityState, readyState: document.readyState, logger: !!r, frames: r ? r.frames.length : null, loggerHref: r ? r.href : null}); })()`;
 
@@ -69,12 +87,13 @@ export function tabsForDiag(list, host) {
  * new frames and `save(rec)` them as partial; at `seconds` the final read (RECORD_STOP_JS). Returns {rec, partial,
  * reason}. `rec` is the record the old code built (frames, href, vw, vh0) plus stream / targetEvents / diag /
  * recovered / partial / reason; the caller adds summary, meta and mac and writes it. Injected for tests: reconnect(host)
- * -> a connection (openTab), listTabs() -> the proxy's /json, sleep, now.
+ * -> a connection (openTab), listTabs() -> the proxy's /json, sleep, now. `touches` (I-218): the caller installed
+ * RECORD_TOUCHES_JS too; the polls copy the new touches and every save holds them (rec.touches).
  */
-export async function recordRun({ c, seconds, href = null, pollSec = POLL_SEC, readMs = 15000, save = async () => {}, reconnect = null, listTabs = async () => null, sleep, now = Date.now }) {
+export async function recordRun({ c, seconds, href = null, pollSec = POLL_SEC, readMs = 15000, save = async () => {}, reconnect = null, listTabs = async () => null, sleep, now = Date.now, touches = false }) {
   const t0 = now(), deadline = t0 + seconds * 1000;
   const host = hostOf(href);
-  const acc = { frames: [], href, vw: null, vh0: null };
+  const acc = { frames: [], href, vw: null, vh0: null, ...(touches ? { touches: [] } : {}) };
   const stream = { pollSec, polls: 0, lastPollSec: null };
   const diag = [], targetEvents = [];
   let reconnected = false, recovered = false;
@@ -127,12 +146,13 @@ export async function recordRun({ c, seconds, href = null, pollSec = POLL_SEC, r
       if (left <= pollSec * 1000) break; // the last stretch ends in the final read, not a poll
       await sleep(pollSec * 1000);
       try {
-        const v = await c.evaluate(RECORD_POLL_JS(acc.frames.length), 'page', readMs);
+        const v = await c.evaluate(touches ? RECORD_POLL_TOUCHES_JS(acc.frames.length, acc.touches.length) : RECORD_POLL_JS(acc.frames.length), 'page', readMs);
         if (v === null || v === undefined) throw new Error('the page has no frame logger (window.__fr): it was reloaded or navigated');
         const p = JSON.parse(v);
         if (p.href !== acc.href && acc.href !== null) throw new Error(`the logger belongs to another page (${lanSafeUrl(p.href)})`);
         Object.assign(acc, { href: p.href, vw: p.vw, vh0: p.vh0 });
         acc.frames.push(...p.f);
+        if (touches) acc.touches.push(...(p.tt || []));
         stream.polls++;
         stream.lastPollSec = r1((now() - t0) / 1000);
         await save(build({ partial: true, reason: IN_PROGRESS }));
