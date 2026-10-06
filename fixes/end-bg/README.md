@@ -1236,3 +1236,39 @@ Runs:
 
 - **Still open:** the phone no-worse check (section 10.3), queued behind P-152 block 2, P-153 and P-145 block 2, on the
   lead's word.
+
+### P-150 cost card result addendum (ops-reader-P150r read: CONFIRMED with N1-N6; lead signature 01:1xZ; text only)
+
+The lead signed the result on a8397426 as "PASS on Chrome R1-R4; Simulator R1 INVALID (cache, disclosed)". The pins are
+unchanged.
+
+- **N6a, what "Chrome R1-R4" covers.** R4 includes its Simulator half:
+  - 29/29 AVIF decoded in WebKit, at least 1 AVIF fetched;
+  - broken `<img>` B 0, 0 against a C max of 0, by hand.
+  Only R1's Simulator half is INVALID.
+- **N6b, the N7 post-Chrome check (rev 1.1).** Right after the Chrome part, `rebuild-b.mjs --check` on the B snapshot printed
+  `CHECK MATCH 38/38`, and the C snapshot's JS hashed `1b2eecc66011` (`out/end-bg/cost-chrome.log`). Every Simulator
+  session's check also printed `CHECK MATCH 38/38` (`out/end-bg/simb/K1..K4-check.log`).
+- **N4, order (the lead's own times).**
+
+  | card rev | signed | first run after it queued |
+  |---|---|---|
+  | rev 1.1 | 22:06:36Z | Chrome part, 22:06:50Z |
+  | rev 1.4 | ~00:53:0xZ | K3, 00:53:25Z |
+
+- **N2 (accepted).** The cache account does not explain why C's 17 large wall originals still arrived with a body. C's
+  Simulator bytes cover 17 of 68 files, so the INVALID covers both arms. OBSERVED, cause unknown.
+- **N3, carried over.** At read time some `<img>` were not complete: C 17, B 26 in every Simulator run. The broken-`<img>`
+  test cannot see those. This goes into the P-150 phone block as an open question: does B leave more pictures unloaded
+  at a given scroll position (lazy wall), and is any visible one blank when it reaches the screen?
+- **N6c, predictions (section 10.4), item by item:**
+
+  | # | prediction | result | score |
+  |---|---|---|---|
+  | 1 | cost card PASS | PASS on Chrome R1-R4 | **hit, per the lead's post-data ruling (Chrome half of R1 only)**. Strict reading: insufficient (the signed card needs R1 whole) |
+  | 2 | Chrome bytes: N within ±10 % of 4.5 MB, C within ±10 % of 10.4 MB | N 4,450,918, C 10,405,062 (every run) | hit |
+  | 3 | Chrome load decodes: N median ≤ 20 | N 16 (every run), C 36 | hit |
+  | 4 | R3 NO-WORSE | NO-WORSE | hit |
+  | 5 | Simulator: every fetched AVIF decodes | 29/29 in K2 and K3, 0 failures | hit |
+  | 6 | Simulator bytes separate | R1 Simulator half INVALID (cache) | insufficient |
+  | 7-9 | phone | not run | pending |
