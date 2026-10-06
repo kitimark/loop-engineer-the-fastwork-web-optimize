@@ -9,7 +9,7 @@
 # Usage (worktree root, in the background):
 #   sh fixes/v10/px-split.sh <chrome|sim> <A dir> <V dir> <label> [--identical] [g1 g2 g3 g4]
 # Logs out/v10/<engine>-px-<label>-<g>.log; MAXS (default 180) caps each hold.
-# Simulator with MAXS <= 120 (lead 2026-10-06 10:47Z): a 120 s session fits about two of the four ~20 s loads after boot,
+# Simulator (since 2026-10-06 12:20Z at any MAXS; ONESESSION=1 for the old single session): a 120 s session fits about two of the four ~20 s loads after boot,
 # quiet wait and cleanup, so each group runs in sessions of its missing loads (em-px --arms/--out, saved after every
 # load) until all four are in, at most 6 sessions; fixes/v10/pxmissing.mjs names the missing ones.
 cd "$(dirname "$0")/../.." || exit 2
@@ -31,7 +31,7 @@ for G in $GRPS; do
     *) echo "group $G?"; exit 2 ;;
   esac
   L=out/v10/$ENG-px-$LAB-$G.log
-  if [ $ENG = sim ] && [ "$MAXS" -le 120 ]; then
+  if [ $ENG = sim ] && [ -z "$ONESESSION" ]; then
     OUTD=out/v10/px-sim-sim-$LAB-$G-$(date -u +%Y-%m-%dT%H-%M-%SZ); : > $L; n=0
     while M=$(node fixes/v10/pxmissing.mjs $OUTD) && [ -n "$M" ] && [ $n -lt 6 ]; do
       n=$((n + 1)); echo "session $n: arms $M" >> $L
@@ -49,5 +49,6 @@ for G in $GRPS; do
   fi
   echo "$ENG px-$LAB-$G EXIT $?" | tee -a $L
   J=$(sed -n 's/^wrote \(.*px\.json\)$/\1/p' $L | tail -1)
-  [ -n "$J" ] && node fixes/v10/nlregion.mjs "$J" $ID | tee -a $L
+  TOPA=""; [ $ENG = sim ] && TOPA="--top 59"  # Simulator shots: the page starts 59 css px down (simtop.mjs)
+  [ -n "$J" ] && node fixes/v10/nlregion.mjs "$J" $ID $TOPA | tee -a $L
 done
