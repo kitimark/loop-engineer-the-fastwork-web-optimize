@@ -103,7 +103,30 @@ First open of the page load (`cm-sim.mjs --cold --stack 6`, one load each):
 - X2 is built only as a slot; its own gates and the user's PR-031 decision come first.
 - Scenarios not run on v11: finger, toolbar resize, reload while covered, desktop.
 
-## Device check (Task 1, C vs Vc blind swipe)
+## Blind swipe test, C vs v11 (lead 18:1xZ: v11 instead of Vc)
 
-Pending: see the lead's report (the swipe runner `fixes/v10/phone/v10-swipe.sh`, int-v8's, stopped at its fresh WDA
-start, 17:52Z: XCTest "Timed out while enabling automation mode"; nothing was posted; re-run after the user's unlock).
+`fixes/v11/phone/v11-swipe.sh` is a credited copy of int-v8's `fixes/v10/phone/v10-swipe.sh` with only the arms changed
+(C and V11 from the v11 snapshot, served by `fixes/v11/phone/v11-serve.sh`). It keeps the design: AB/BA pairs plus a
+C/C catch pair, forced choice, each side recorded, a fresh WDA session and a 60 s settle first. Every step's meta carries
+both pins. The first try (C vs Vc, int-v8's script, 17:52Z) stopped at the WDA start (XCTest "Timed out while enabling
+automation mode") before anything was posted. Result: pending.
+
+## Phone block v11-nw (pre-staged, dry run only; runs on the lead's go after the swipe test)
+
+Kit: `fixes/v11/phone/nw11-{serve,hold,block}.sh` and `nw11-read.mjs`, credited copies of int-v8's v10cm-nw kit
+(`fixes/v10/phone/nw-*`, itself fix-end-morph-p1's P-156 kit).
+
+| | |
+|---|---|
+| question | v11 is no worse than C on the phone (less-work landing rule: V13 and H1c) |
+| arms | C 1b2eecc66011 / e1359ab9994a; A = v11 9b4a829d15a0 / 62743920fe1a (from the v11 snapshot, HASHES 1704db6c4af6); B the plain baseline (thermal gate page) |
+| driver | G: fs flicks (`fixes/morph-scroll/g-fastshort-v1.json`, compiled hash 8737f212c0ff), Timeline on in every counted run |
+| profile | xcode-serious; ceiling 44 C / Critical at each hold's start and end gate |
+| order | WC, WA (uncounted warm-ups), S0 (sentinel on C, Timeline off), counted EC1 EA1 EA2 EC2 EC3 EA3 EA4 EC4 (+ EC5), one counted run per 600 s chrome-measure `--no-timing` hold, TAIL (at most 2 re-runs), S1 on C in its own hold |
+| part start | a fresh WDA session (stop, start, check), a 60 s settle (I-225), Safari parked and exactly one tab (I-227); a failure stops before any hold and goes to the lead for the user step; `NW_PREFLIGHT=<cmd>` swaps in ts-i227's preflight tool when it lands |
+| cooling | none between holds; a hold VOID at a thermal gate: park, cool to <= 39.5 C (600 s at most), re-run the hold once; a second gate VOID or no cooling: BLOCK STOP |
+| read | `node fixes/v11/phone/nw11-read.mjs out/v11nw/runs --base v11` (the P-156 A-card reader rev 2 with base v11 and runs 1-5; predictions unchanged: first open, end zone no-worse, CB34) |
+
+Dry run (`NW_DRY=1`, own folder, servers checked): all 13 holds DRY ok in three parts (H1-H6, H7-H11, H12 + TAIL ending in
+S1), served hashes ok, fs and park30 programs at their pins (budget 229 s / 327 s), a two-counted-run hold refused, reader
+selftest 40 checks ok, base check ok on the dry logs.
