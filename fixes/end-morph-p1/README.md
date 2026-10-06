@@ -576,6 +576,16 @@ the rest as rev 1.2.
   - Cause: the iPhone was off USB (`iphone.mjs status`: no device; WebKit proxy :9222 refused), incident I-216.
     The user was trying PR-012 by hand at the time.
   - Next: part 1 reruns once with the same command when a battery read works again.
+- 2026-10-06 03:41:51Z, part 1, second try (phone back on USB at ~03:41Z; I-216 resolved): **stopped at H1's start gate,
+  no run.**
+  - The serve check was ok for 3 of 3 servers. Cooling: 36.19 °C, at or below 38, so no wait. WDA restarted READY,
+    Safari restarted.
+  - H1 (03:42:33Z): the PIN line matched the signed pins (block 78062de712d3, hold ba0e405b6782, read d28c6a20a931,
+    serve fbd214f54de0), and the served hashes and the compiled program were ok.
+  - H1's start gate: state **Critical**, induced Yes, battery 36.29 → 36.39 °C → FAIL ceiling (Critical). HOLD H1
+    VOID start gate (no run), BLOCK STOP exit 5. Safari was parked by the EXIT trap. `out/p153/runs` stays empty.
+  - As signed, there was no retry. It is the same picture as P-152's 03:18Z attempt (Critical on a cool phone with
+    induced Yes), this time after C-072's restart of the Xcode condition. The lead decides the next step.
 
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 
