@@ -1105,24 +1105,23 @@
    var Se = V(xe, 2),
      Ce = e(Se),
      we = e(Ce),
-@@ -4689,11 +5438,28 @@
+@@ -4689,12 +5438,29 @@
    ne(() => {
      let e = window.requestAnimationFrame(ce),
        t = window.matchMedia(o),
--      n = () => {
--        F &&= (window.clearInterval(F), 0);
 +      // [rest-script] le returns at once while (max-width: 860px) matches (notes hidden), so the 3 s interval is
 +      // armed only on wider viewports. fwOn/fwT0 keep the original interval's life and phase: it is "on" from the
 +      // first IO entry until n(), and on a switch to the wide layout the timer resumes on the same 3 s grid.
 +      fwOn = !1,
 +      fwT0 = 0,
-+      n = () => {
+       n = () => {
+-        F &&= (window.clearInterval(F), 0);
 +        ((fwOn = !1), (F &&= (window.clearInterval(F), 0)));
        },
        r = () => {
 -        F ||= window.setInterval(le, 3e3);
 +        fwOn || ((fwOn = !0), (fwT0 = performance.now()), t.matches || (F ||= window.setInterval(le, 3e3)));
-+      },
+       },
 +      fwMq = () => {
 +        t.matches
 +          ? (F &&= (window.clearInterval(F), 0))
@@ -1134,9 +1133,10 @@
 +              },
 +              3e3 - ((performance.now() - fwT0) % 3e3),
 +            ));
-       },
++      },
        i = new IntersectionObserver(
          ([e]) => {
+           ((A = !!(e?.isIntersecting && e.intersectionRatio >= 0.12)), A ? r() : (n(), z(T, [], !0)));
 @@ -4726,10 +5492,15 @@
          ((O = null), z(E, null));
        },
@@ -1507,13 +1507,15 @@
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13157,12 @@
+@@ -12271,10 +13155,14 @@
+             k(d, `x1`, n === `right` ? 200 : -200),
+             k(d, `x2`, n === `right` ? 320 : -80),
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
-               "is-active": s(v),
-             })),
-+            (P = U(G, 1, `start-selling-platform-secure-network-dash-glint`, null, P, {
 +              "is-active": s(v),
 +            })),
++            (P = U(G, 1, `start-selling-platform-secure-network-dash-glint`, null, P, {
+               "is-active": s(v),
+             })),
              k(g, `stroke`, `url(#secure-network-dash-${n})`));
          }),
 +        r.appendChild(G),
@@ -1596,7 +1598,7 @@
 +    for (let r of document.elementsFromPoint(t, n))
 +      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
 +    return j(null);
-   }
++  }
 +  // perf(nav-hit-cache): the viewport y of F()'s probe point (nav is fixed), measured with the offsets
 +  function __navProbeY() {
 +    if (!T) return 32;
@@ -1701,7 +1703,7 @@
 +    }
 +    let o = { duration: d, easing: `linear` };
 +    __ewA = { e0, e1, d, a: [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)].filter(Boolean) };
-+  }
+   }
    function ee() {
 -    let e = document.querySelector(`.start-selling-profile-sticky`);
 +    let e = __navEl(`.start-selling-profile-sticky`);
@@ -2211,7 +2213,7 @@
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,10 +14514,59 @@
+@@ -13095,13 +14514,62 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -2234,9 +2236,9 @@
 +          document.removeEventListener(`transitionrun`, __nsTrRun, !0),
 +          document.removeEventListener(`transitionend`, __nsTrEnd, !0),
 +          document.removeEventListener(`transitioncancel`, __nsTrEnd, !0));
-+      }
-+    );
-+  });
+       }
+     );
+   });
 +  // perf(morph-panel-lazy-mount): mounting the morph panel (image columns, second countdown, CTAs) cost a
 +  // 40-75 ms task at 6x inside the scroll frame where #platform enters the 200% zone (IO callback above).
 +  // Mount it once the page is idle after load instead; it stays invisible (opacity from --morph, clipped by the
@@ -2269,10 +2271,13 @@
 +          window.removeEventListener(`scroll`, i),
 +          e && window.cancelIdleCallback(e),
 +          window.clearTimeout(t));
-       }
-     );
-   });
-@@ -13118,10 +14586,225 @@
++      }
++    );
++  });
+   var I = uN();
+   let L, te;
+   var B = e(I),
+@@ -13118,10 +14586,229 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -2337,9 +2342,11 @@
 +      (__rvSzRO = new ResizeObserver(([e]) => {
 +        let b = e && e.borderBoxSize && e.borderBoxSize[0];
 +        if (!b) return;
-+        ((__rvSzW = Math.round(b.inlineSize)),
-+          (__rvSzH = Math.round(b.blockSize)),
-+          (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        let w = Math.round(b.inlineSize);
++        // --nav-bar-inset-x changes only with the width (the (width <= 640px) rule): a height-only change (a 100dvh
++        // panel at every toolbar step) reads no style here
++        w !== __rvSzW && (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16);
++        ((__rvSzW = w), (__rvSzH = Math.round(b.blockSize)));
 +        // the panel size changed while the reveal is on (today only a rotation: on phones --panel-h is 100vh based; a
 +        // 100dvh panel would also change with the toolbar): the clip and the parts follow at the same m in this frame
 +        // (an observation runs after layout, before paint). The probe's size does not depend on these writes.
@@ -2408,12 +2415,14 @@
 +        __rvOn = !0;
 +        // switched on again before the second off step ran: finish it now (the reveal's CSS turns the blur off)
 +        __rvF && __rvFin();
++        // P1b (a), fix-end-morph-p1: the two decoration layers are aria-hidden (the a11y diff against C showed them as
++        // two unnamed "generic" nodes while the reveal is on)
 +        __rvD ||
-+          ((__rvD = document.createElement(`div`)), (__rvD.className = `fw-rv-dark`), I.insertBefore(__rvD, B));
++          ((__rvD = document.createElement(`div`)), (__rvD.className = `fw-rv-dark`), __rvD.setAttribute(`aria-hidden`, `true`), I.insertBefore(__rvD, B));
 +        // the backdrop blur moves to a sibling sized exactly like today's nav (same CSS formulas from --morph): blurred
 +        // inside the full-size nav it would also sample the page beyond today's box (a light glow at the pill's edges)
 +        __rvG ||
-+          ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), I.parentNode.insertBefore(__rvG, I));
++          ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), __rvG.setAttribute(`aria-hidden`, `true`), I.parentNode.insertBefore(__rvG, I));
 +        __rvG.setAttribute(`data-fw-rv`, ``);
 +        I.setAttribute(`data-fw-rv`, ``);
 +        // P1b (a): the cached full size (no layout read here); P1's read only before the first observation
@@ -2498,7 +2507,7 @@
        (_(
          u,
          21,
-@@ -13140,7 +14823,7 @@
+@@ -13140,7 +14827,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -2507,7 +2516,7 @@
                }),
                  f(e, n));
              },
-@@ -13157,7 +14840,16 @@
+@@ -13157,7 +14844,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -2525,7 +2534,7 @@
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +14885,8 @@
+@@ -13193,7 +14889,8 @@
          M(w),
          M(a),
          l(() => {
@@ -2535,7 +2544,7 @@
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +14903,7 @@
+@@ -13210,7 +14907,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -2544,7 +2553,7 @@
    }),
      M(I),
      P(
-@@ -13229,9 +14922,13 @@
+@@ -13229,9 +14926,13 @@
            "is-locale-open": s(y),
            "is-scroll-hidden": s(v) && !s(E),
            "is-profile-sticky-hidden": s(v) && !s(E),

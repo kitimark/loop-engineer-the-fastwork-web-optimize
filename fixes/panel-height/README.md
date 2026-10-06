@@ -3,13 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and the `delta-*.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** draft. Both options built; Chrome counts and pixels done; Simulator run AD1 done (overflow with the toolbar
-shown, T2 shots, the per-frame dvh check, mid-page counts); the collapsed-toolbar state, S, and dvh's cost with the panel
-open while the toolbar moves wait for the next Simulator slot (after P-155 part 2). Then a proposal with
+**Status:** measured (counts, geometry, pixels; no timing). Both options built; Chrome and Simulator (AD1, ASD2) done.
+Next: the proposal with Try-it (the user picks svh or dvh), then int-v8 builds it into v10. Then a proposal with
 Try-it for the user (look change: memory "proposal-try-it-required").
 **Stage:** F (build + counts). User report T-204 #20; the user wants it in v10 (T-204 #22).
 **Device class / gate:** phone-only look (iOS Safari's toolbar; Chrome's emulation has no small/large viewport).
-**Driver(s) behind the claims:** Chrome viewport-height steps (counts), Simulator WDA strokes (pending). No timing.
+**Driver(s) behind the claims:** Chrome viewport-height steps (counts), Simulator WDA finger strokes (G, counts). No timing.
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only, two declarations (below). No JS.
 
 ## Why it overflows
@@ -43,20 +42,21 @@ Try-it for the user (look change: memory "proposal-try-it-required").
 | svh | `--panel-h: calc(100svh - 24px)` | same | `delta-svh.diff` 0d7142505704 | 75c30c18d971 |
 | dvh | `--panel-h: calc(100dvh - 24px)` | same | `delta-dvh.diff` 030ff98f6239 | 0546615f27ea |
 
-- Base A = fix-end-morph-p1's A1 snapshot (v9-final + F1/U2 + I-219 + P1 + P1b (a)), JS ed44af454a92, CSS cfb8b8c5b019
-  (copied to `out/ph/A`). A1's JS later became 09d1f5b62384 (aria-hidden only, CSS unchanged): the deltas are CSS-only
-  and apply unchanged. Each delta is 2 hunks with 3 lines of context; both hunks also exist without P1 except the glass one.
+- Base A = fix-end-morph-p1's A1 snapshot (v9-final + F1/U2 + I-219 + P1 + P1b (a)), CSS cfb8b8c5b019,
+  copied to `out/ph/A`: JS ed44af454a92 for Chrome and AD1, then f83aa54c2acc for ASD2 and the Try-it patches (P1's
+  aria-hidden, and P1b's RO callback reading no style on a height-only change; CSS unchanged throughout). The deltas
+  are CSS-only and apply unchanged. Each delta is 2 hunks with 3 lines of context; both hunks also exist without P1 except the glass one.
 - Both places change together: otherwise P1's glass (the blurred box under the nav while it morphs) and the nav would
   disagree on the height. `.fw-rv-size` inherits, so it follows by itself.
 - svh: the panel always fits the small viewport (toolbar shown); with the toolbar collapsed it leaves ~40 px more gap
-  at the bottom (52 instead of 12, from the units; to be measured). Its height never changes.
+  at the bottom (52 instead of 12, measured). Its height never changes.
 - dvh: always 12 px from the visible bottom; its height follows the toolbar while it moves.
 - Unchanged: desktop and tablets (rule is <= 640 px only; the tablet rule `min(820px, calc(100vh - 40px))` is not part
   of this report), Chrome (all units equal there, below), reduced motion (the same rule; 7c's mode does not matter).
 - Builds: `node fixes/panel-height/build.mjs` (writes out/ph/{S,D} and the deltas, checks one match per site).
   Try-it patches (baseline-relative, strict re-apply exact): `node fixes/panel-height/mk-tryit.mjs` ->
-  `fixes/panel-height-base/patch.diff` (A, 755a4fdf76fe), `fixes/panel-height-svh/patch.diff` (d284c4a28ec3),
-  `fixes/panel-height-dvh/patch.diff` (bbf308cb2009). `patch.diff` here = the dvh one (the lead's lean) until the user
+  `fixes/panel-height-base/patch.diff` (A, b0f72b7d5cb9), `fixes/panel-height-svh/patch.diff` (fc59fae6e20a),
+  `fixes/panel-height-dvh/patch.diff` (c141b2c414bd), all on A1 JS f83aa54c2acc. `patch.diff` here = the dvh one (the lead's lean) until the user
   picks.
 
 ## Chrome (counts and pixels; no timing)
@@ -101,33 +101,35 @@ rAFs (`ph-chrome.mjs`). D = the panel follows each step (what dvh does on iOS); 
   ResizeObserver, through finger strokes that collapse and show the toolbar: distinct heights and RO callbacks per
   transition.
 
-## Simulator (fw-sim 15 Pro Max, iOS 26.5, Safari 26.5; run AD1 2026-10-06 09:53Z, functional shared slot)
+## Simulator (fw-sim 15 Pro Max, iOS 26.5, Safari 26.5; runs AD1 09:53Z and ASD2 10:09Z, functional shared slots)
 
-`ph-sim.mjs` per arm: the open end state with the toolbar shown (scripted scroll to the end), geometry + two frozen
-shots; WDA strokes; WebKit Timeline counts per stroke; the per-frame unit probe. Raw: `out/ph/sim-AD1-*/` (gitignored).
+`ph-sim.mjs` per arm: the open end state with the toolbar shown (scripted scroll to the end) and collapsed (finger
+strokes into the end from above the morph zone; at the page's maximum a stroke cannot scroll and Safari keeps its
+toolbar, AD1), geometry and two frozen shots each; WebKit Timeline counts per finger stroke; the per-frame unit probe
+(AD1). ASD2 used fix-end-morph-p1's newer A1 (JS f83aa54c2acc, its RO callback reads no style on a height-only change;
+CSS unchanged). Raw: `out/ph/sim-AD1-*/`, `out/ph/sim-ASD2-*/` (gitignored).
 
-**Overflow at the open end state, toolbar shown** (innerHeight 775 = visualViewport height):
+**Where the open panel ends, per toolbar state** (positive = past the visible bottom; the panel's top is 12 px):
 
-| arm | 100vh | 100svh | 100lvh | 100dvh | nav top | nav bottom | past the visible bottom |
-|---|---|---|---|---|---|---|---|
-| A (vh, today) | 814.98 | 775 | 814.98 | 775 | 12 | 802.98 | **+27.98 px** (overflows) |
-| D (dvh) | 814.98 | 775 | 814.98 | 775 | 12 | 763 | -12 (12 px gap, like the top) |
-| S (svh) | - | - | - | - | - | 763 expected (svh = 775) | not run yet |
+| arm | toolbar shown (visible height 775) | toolbar collapsed (visible height 815) |
+|---|---|---|
+| A, today (vh = 814.98) | **28 px past the bottom** (nav bottom 802.98) | 12 px gap (802.98) |
+| svh (775) | 12 px gap (763) | **52 px gap** (763) |
+| dvh (follows the toolbar) | 12 px gap (763) | 12 px gap (802.98) |
 
-- vh = lvh = 814.98 with the toolbar shown: the Simulator agrees with the WebKit source (vh = large viewport).
+- vh = lvh = 814.98 in both states, svh = 775, dvh = innerHeight (775 / 814.98): the Simulator agrees with the source.
 - Shots (`A-shown-1.png`, `D-shown-1.png`): in A the panel's rounded bottom corners and the footer's "Privacy Policy"
-  line sit under Safari's bottom toolbar; in D the whole panel is visible with a 12 px margin, as at the top.
+  line sit under Safari's bottom toolbar; with dvh or svh the whole panel shows with a 12 px margin, as at the top.
 
-**Toolbar collapsed: not reached in AD1.** At the page's maximum scroll a finger stroke cannot scroll, and Safari kept
-its toolbar (innerHeight stayed 775 through every stroke at the end). `ph-sim.mjs` now reaches the end by finger
-strokes from above the morph zone, so the toolbar collapses on the way (next run, after the lead's go).
-
-**T2 pixels, toolbar shown, D vs A** (`px3.mjs --top 59 --files`: the Simulator shot starts with the 59 css px status
-bar, skipped; A/A = two shots of A 0.7 s apart, frozen clock): 0 device px over 8 levels in A/A; D differs from A beyond
-A/A in 65,407 css px, all inside the box x 12-418, page y 12-775 (screenshot y 71-834): exactly the panel's box up to the
-visible bottom. Nothing outside the panel box changes. Inside it, everything placed from the panel height moves: the
-centre block (title, countdown, buttons) up ~20 px (h/2), the footer up 40 px, the photo-wall columns (their offset is a %
-of the panel height). That is the look change the user decides on.
+**T2 pixels** (`px3.mjs --top 59 --files`: the Simulator shot starts with the 59 css px status bar, skipped; A/A = a
+second shot of the same arm 0.7 s later, frozen clock):
+- Toolbar shown, dvh or svh vs A: 65,412 / 65,427 css px differ, all inside the box x 12-418, page y 12-775: the panel's
+  own box up to the visible bottom; nothing outside it. Inside, everything placed from the panel height moves: the centre
+  block (title, countdown, buttons) up ~20 px (h/2), the footer up 40 px, the photo-wall columns (their offset is a % of
+  the panel height). That is the look change the user decides on.
+- Toolbar collapsed, dvh vs A: **identical** (the second shots compare at 0 device px; the first pair's 790 css px are
+  the countdown's digit row, which also differs A vs A, 658 css px). svh vs A: 76,151 css px, all inside the panel box
+  (the 40 px shorter panel).
 
 **dvh follows every toolbar frame: CONFIRMED** (WebKit source above + the decisive check, mid-page, 4 transitions,
 probes 100dvh/svh/lvh/vh at position:fixed, rect read per rAF + ResizeObserver):
@@ -147,20 +149,40 @@ toolbar-moving frames each), A vs D: layouts 26/35/30/26 vs 31/26/24/35, style r
 67/92/88/84 vs 76/84/76/89 (the same within stroke-to-stroke spread); ResizeObserver callbacks 0 vs 7/11/9/10 (P1b's
 `.fw-rv-size` probe, one per toolbar-moving frame; no write).
 
-**Open or morphing panel while the toolbar moves:** not measured yet (AD1's end strokes did not move the toolbar, see
-above); this is where dvh relayouts and repaints the panel per toolbar frame. Next Simulator run (A, S, D) after P-155
-part 2.
+**Panel open or morphing while the toolbar moves** (ASD2, one stroke pair per cycle, 2 cycles per arm at the end;
+`tbframes.mjs`: each rendering frame is matched to the logger's rAF in it, "toolbar-moving" = innerHeight changed since
+the previous rAF):
+- The toolbar only moves while the page scrolls, and at the end every scroll pixel moves the morph: so the toolbar never
+  moves with the panel fully open (0 such frames in every arm); it moves only in morphing frames, the end zone's
+  heaviest frames (P1's reveal is on).
+- Per toolbar-moving morphing frame:
+
+| arm | frames (n) | layouts | style recalcs | paints | paint area (kpx) | RO callbacks |
+|---|---|---|---|---|---|---|
+| A (vh) | 16 | 5.00 | 4.13 | 9.75 | 466 | 0 |
+| svh | 17 | 5.12 | 3.94 | 11.59 | 540 | 0 |
+| dvh | 4 | 5.00 | 4.75 | 13.25 | 808 | 2.00 |
+
+- Reading (OBSERVED, small n for dvh: 4 frames, the strokes' end positions differed per arm because 7d's settle snapped
+  A and svh closed and dvh open): dvh adds no layout pass per toolbar frame in WebKit (5 in every arm), but about one
+  more panel-sized repaint (+~340 kpx, the panel is 406x751-791 css px = 305-321 kpx) and two RO callbacks (P1b's
+  probe and the glass re-apply) per frame. A second session (A, D, 5 cycles) was queued and withdrawn when P-155 part 2
+  restarted; it runs in a gap if the lead wants a larger n.
+- Frames with the toolbar still and the panel open (191 dvh, 92 A, 125 svh): 0.29-0.52 layouts, 0.5-1.1 paints per
+  frame in every arm: no standing cost.
 
 ## Risks, conflicts, follow-ups
 
 - Look change (the open panel's bottom edge moves up 40 px with the toolbar shown; with svh also when collapsed):
   a proposal with Try-it, not a T2 claim.
-- dvh: the panel relayouts on every toolbar frame while open or morphing (counts above); P1b's probe adds one RO
-  callback per toolbar frame anywhere on the page (fix-end-morph-p1 can skip its work while the reveal is off if the
-  Simulator shows the callback as non-trivial).
+- dvh: in WebKit the panel takes a new height in every toolbar frame; that frame is always a morphing frame at the end
+  (about one more panel-sized repaint and 2 RO callbacks per frame, no extra layout pass; small n). Mid-page P1b's
+  probe adds one RO callback per toolbar frame (no write, no style read since A1 f83aa54c2acc).
+- svh: no extra work at all, but a 52 px gap under the open panel whenever the toolbar is collapsed, which at the end of
+  the page is the usual state after scrolling down.
 - Integration: int-v8's `fixes/v10/build.sh` slot `PANELH=<delta> PANELH_SHA=<sha12>` (after P1b, before nolift).
   int-v8 (dry run): both deltas from aa507a8e apply strictly on every v10 base (nav F1+U2 / U2-only / none; P1b (a) /
   (a)+(b) / none; I-219 on top), CSS 0546615f27ea (dvh) / 75c30c18d971 (svh) reproduce, code parity 0, no JS change.
 - Tablets (641-1200 px touch) keep `min(820px, calc(100vh - 40px))`; on an iPad in landscape the same overflow may
   occur. Not in this topic's scope; noted for the lead.
-- Scripts here: `build.mjs`, `mk-tryit.mjs`, `ph-chrome.mjs`, `ph-sim.mjs`, `px3.mjs`, `mk-results.mjs`.
+- Scripts here: `build.mjs`, `mk-tryit.mjs`, `ph-chrome.mjs`, `ph-sim.mjs`, `px3.mjs`, `tbframes.mjs`, `mk-results.mjs`.

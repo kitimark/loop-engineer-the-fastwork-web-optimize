@@ -14,7 +14,7 @@ import { FILES, sha, parseDiff, applyHunks, udiff } from '../best-build/build.mj
 const WT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 const BASE = resolveTree('site-pretty');
-const PIN = { A: ['ed44af454a92', 'cfb8b8c5b019'], S: ['ed44af454a92', '75c30c18d971'], D: ['ed44af454a92', '0546615f27ea'] };
+const PIN = { A: ['f83aa54c2acc', 'cfb8b8c5b019'], S: ['f83aa54c2acc', '75c30c18d971'], D: ['f83aa54c2acc', '0546615f27ea'] };
 const tmp = join(WT, 'out/ph/tryit-tmp'); mkdirSync(tmp, { recursive: true });
 const base = Object.fromEntries(FILES.map((f) => [f, readFileSync(join(BASE, f), 'utf8')]));
 for (const [arm, topic] of [['A', 'panel-height-base'], ['S', 'panel-height-svh'], ['D', 'panel-height-dvh']]) {

@@ -3,7 +3,7 @@
  "kind": "counts, geometry and pixels only (no timing; memory defer-timing-focus-call-tree)",
  "base": {
   "name": "A = v9-final + F1/U2 + I-219 + P1 + P1b (a), fix-end-morph-p1 snapshot A1",
-  "js": "ed44af454a92",
+  "js": "ed44af454a92 (Chrome, AD1), f83aa54c2acc (ASD2, Try-it)",
   "css": "cfb8b8c5b019"
  },
  "options": {
@@ -1660,6 +1660,1680 @@
      "probe": null
     }
    ]
+  },
+  {
+   "file": "out/ph/sim-ASD2-2026-10-06T10-09-26-800Z/ph.json",
+   "label": "ASD2",
+   "startedAt": "2026-10-06T10:09:26.801Z",
+   "arms": [
+    {
+     "arm": "A",
+     "served": {
+      "js": "f83aa54c2acc",
+      "css": "cfb8b8c5b019"
+     },
+     "safari": "26.5",
+     "error": null,
+     "geo": {
+      "shown": {
+       "y": 6075,
+       "max": 6075,
+       "endStart": 5260,
+       "t": 815,
+       "ih": 775,
+       "vvH": 775,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 775
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100vh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "overflow": 27.98,
+       "gapTop": 12,
+       "gapBottom": -27.98,
+       "footer": {
+        "top": 714.98,
+        "bottom": 802.98,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "glass": null
+      },
+      "shownAfterShots": {
+       "y": 6075,
+       "max": 6075,
+       "endStart": 5260,
+       "t": 815,
+       "ih": 775,
+       "vvH": 775,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 775
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100vh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "overflow": 27.98,
+       "gapTop": 12,
+       "gapBottom": -27.98,
+       "footer": {
+        "top": 714.98,
+        "bottom": 802.98,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "glass": null
+      },
+      "collapsed": {
+       "y": 6035,
+       "max": 6035,
+       "endStart": 5220,
+       "t": 815,
+       "ih": 815,
+       "vvH": 815,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 814.98
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100vh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "overflow": -12.02,
+       "gapTop": 12,
+       "gapBottom": 12.02,
+       "footer": {
+        "top": 714.98,
+        "bottom": 802.98,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "glass": {
+        "top": 0,
+        "bottom": 0,
+        "h": 0,
+        "w": 0
+       }
+      },
+      "collapsedAfterShots": {
+       "y": 6035,
+       "max": 6035,
+       "endStart": 5220,
+       "t": 815,
+       "ih": 815,
+       "vvH": 815,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 814.98
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100vh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "overflow": -12.02,
+       "gapTop": 12,
+       "gapBottom": 12.02,
+       "footer": {
+        "top": 714.98,
+        "bottom": 802.98,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "glass": {
+        "top": 0,
+        "bottom": 0,
+        "h": 0,
+        "w": 0
+       }
+      }
+     },
+     "phases": {
+      "endShow1": {
+       "tl": {
+        "frames": 202,
+        "layouts": 120,
+        "styles": 287,
+        "paints": 308,
+        "kpx": 7402,
+        "framesWithLayout": 70,
+        "framesWithStyle": 202,
+        "framesWithPaint": 92,
+        "observer": {
+         "MutationObserver": 2,
+         "IntersectionObserver": 5,
+         "ResizeObserver": 1
+        },
+        "script": {
+         "FireAnimationFrame": 393,
+         "FunctionCall": 535,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "TimerFire": 8,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 54,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 44,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3,
+         "EventDispatch:transitionrun": 4,
+         "EventDispatch:transitionend": 4
+        },
+        "bigPaints": {
+         "390x313": 2,
+         "390x312": 11,
+         "405x767": 1,
+         "405x387": 1,
+         "405x748": 1,
+         "403x386": 1,
+         "402x672": 1,
+         "403x385": 1,
+         "401x629": 1,
+         "430x512": 3,
+         "430x345": 1,
+         "430x513": 2,
+         "390x283": 1,
+         "354x373": 1,
+         "382x372": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 204,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 9,
+        "ihDistinct": 10,
+        "yFrom": 6035,
+        "yTo": 5260,
+        "mFrom": "1",
+        "mTo": "0",
+        "morphingFrames": 36,
+        "rvFrames": 36,
+        "navRO": 1,
+        "navHeights": [
+         52
+        ]
+       }
+      },
+      "endHide1": {
+       "tl": {
+        "frames": 206,
+        "layouts": 127,
+        "styles": 293,
+        "paints": 242,
+        "kpx": 12330,
+        "framesWithLayout": 75,
+        "framesWithStyle": 206,
+        "framesWithPaint": 74,
+        "observer": {
+         "MutationObserver": 3,
+         "ResizeObserver": 1,
+         "IntersectionObserver": 7
+        },
+        "script": {
+         "FireAnimationFrame": 288,
+         "FunctionCall": 405,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "TimerFire": 8,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 50,
+         "EventDispatch:transitionrun": 6,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:resize": 6,
+         "EventDispatch:scroll": 28,
+         "EventDispatch:transitionend": 6,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "430x512": 2,
+         "430x513": 11,
+         "430x345": 10,
+         "390x373": 1,
+         "390x312": 8,
+         "392x375": 1,
+         "394x376": 1,
+         "394x414": 2,
+         "398x380": 1,
+         "390x283": 1,
+         "404x386": 1,
+         "403x696": 1,
+         "390x313": 2,
+         "406x791": 5,
+         "215x512": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 207,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 8,
+        "ihDistinct": 9,
+        "yFrom": 5260,
+        "yTo": 6035,
+        "mFrom": "0",
+        "mTo": "1",
+        "morphingFrames": 34,
+        "rvFrames": 34,
+        "navRO": 1,
+        "navHeights": [
+         790.98
+        ]
+       }
+      },
+      "endShow2": {
+       "tl": {
+        "frames": 224,
+        "layouts": 151,
+        "styles": 356,
+        "paints": 220,
+        "kpx": 8119,
+        "framesWithLayout": 111,
+        "framesWithStyle": 224,
+        "framesWithPaint": 108,
+        "observer": {
+         "MutationObserver": 2,
+         "IntersectionObserver": 1
+        },
+        "script": {
+         "FireAnimationFrame": 359,
+         "FunctionCall": 466,
+         "TimerFire": 11,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 50,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 26,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3
+        },
+        "bigPaints": {
+         "390x313": 3,
+         "390x312": 11,
+         "406x784": 1,
+         "405x387": 1,
+         "405x748": 1,
+         "402x385": 1,
+         "401x624": 1,
+         "403x386": 1,
+         "402x672": 1,
+         "406x791": 5,
+         "215x512": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 227,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 5,
+        "ihDistinct": 7,
+        "yFrom": 6035,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 33,
+        "rvFrames": 33,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "endHide2": {
+       "tl": {
+        "frames": 227,
+        "layouts": 107,
+        "styles": 330,
+        "paints": 177,
+        "kpx": 3486,
+        "framesWithLayout": 97,
+        "framesWithStyle": 227,
+        "framesWithPaint": 119,
+        "observer": {
+         "MutationObserver": 1,
+         "ResizeObserver": 1,
+         "IntersectionObserver": 11
+        },
+        "script": {
+         "FireAnimationFrame": 510,
+         "FunctionCall": 761,
+         "TimerFire": 8,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:transitionrun": 16,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 60,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 110,
+         "EventDispatch:transitionend": 16,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "406x791": 5,
+         "430x512": 3,
+         "512x513": 1,
+         "402x857": 1,
+         "390x372": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 232,
+        "ihMin": 775,
+        "ihMax": 775,
+        "toolbarMoving": 0,
+        "ihDistinct": 1,
+        "yFrom": 6075,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "midHide1": {
+       "tl": {
+        "frames": 204,
+        "layouts": 31,
+        "styles": 57,
+        "paints": 78,
+        "kpx": 2707,
+        "framesWithLayout": 22,
+        "framesWithStyle": 46,
+        "framesWithPaint": 22,
+        "observer": {
+         "IntersectionObserver": 4
+        },
+        "script": {
+         "FireAnimationFrame": 231,
+         "FunctionCall": 295,
+         "TimerFire": 12,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 30,
+         "EventDispatch:touchmove": 26,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 6,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3
+        },
+        "bigPaints": {
+         "430x775": 4,
+         "430x512": 2
+        }
+       },
+       "topObservers": {
+        "IntersectionObserver": 3
+       },
+       "log": {
+        "frames": 208,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 6,
+        "ihDistinct": 8,
+        "yFrom": 2400,
+        "yTo": 2690,
+        "mFrom": "0",
+        "mTo": "0",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "midShow1": {
+       "tl": {
+        "frames": 187,
+        "layouts": 33,
+        "styles": 47,
+        "paints": 88,
+        "kpx": 2538,
+        "framesWithLayout": 21,
+        "framesWithStyle": 37,
+        "framesWithPaint": 21,
+        "observer": {
+         "IntersectionObserver": 4
+        },
+        "script": {
+         "FireAnimationFrame": 203,
+         "FunctionCall": 273,
+         "TimerFire": 15,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 30,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:resize": 6,
+         "EventDispatch:scroll": 4
+        },
+        "bigPaints": {
+         "430x775": 5
+        }
+       },
+       "topObservers": {
+        "IntersectionObserver": 1
+       },
+       "log": {
+        "frames": 195,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 9,
+        "ihDistinct": 11,
+        "yFrom": 2690,
+        "yTo": 2560,
+        "mFrom": "0",
+        "mTo": "0",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      }
+     },
+     "probe": null
+    },
+    {
+     "arm": "S",
+     "served": {
+      "js": "f83aa54c2acc",
+      "css": "75c30c18d971"
+     },
+     "safari": "26.5",
+     "error": null,
+     "geo": {
+      "shown": {
+       "y": 6075,
+       "max": 6075,
+       "endStart": 5260,
+       "t": 815,
+       "ih": 775,
+       "vvH": 775,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 775
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100svh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "overflow": -12,
+       "gapTop": 12,
+       "gapBottom": 12,
+       "footer": {
+        "top": 675,
+        "bottom": 763,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "glass": null
+      },
+      "shownAfterShots": {
+       "y": 6075,
+       "max": 6075,
+       "endStart": 5260,
+       "t": 815,
+       "ih": 775,
+       "vvH": 775,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 775
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100svh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "overflow": -12,
+       "gapTop": 12,
+       "gapBottom": 12,
+       "footer": {
+        "top": 675,
+        "bottom": 763,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "glass": null
+      },
+      "collapsed": {
+       "y": 6035,
+       "max": 6035,
+       "endStart": 5220,
+       "t": 815,
+       "ih": 815,
+       "vvH": 815,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 814.98
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100svh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "overflow": -52,
+       "gapTop": 12,
+       "gapBottom": 52,
+       "footer": {
+        "top": 675,
+        "bottom": 763,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "glass": {
+        "top": 0,
+        "bottom": 0,
+        "h": 0,
+        "w": 0
+       }
+      },
+      "collapsedAfterShots": {
+       "y": 6035,
+       "max": 6035,
+       "endStart": 5220,
+       "t": 815,
+       "ih": 815,
+       "vvH": 815,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 814.98
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100svh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "overflow": -52,
+       "gapTop": 12,
+       "gapBottom": 52,
+       "footer": {
+        "top": 675,
+        "bottom": 763,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "glass": {
+        "top": 0,
+        "bottom": 0,
+        "h": 0,
+        "w": 0
+       }
+      }
+     },
+     "phases": {
+      "endShow1": {
+       "tl": {
+        "frames": 205,
+        "layouts": 139,
+        "styles": 312,
+        "paints": 376,
+        "kpx": 9519,
+        "framesWithLayout": 88,
+        "framesWithStyle": 205,
+        "framesWithPaint": 118,
+        "observer": {
+         "MutationObserver": 2,
+         "IntersectionObserver": 5,
+         "ResizeObserver": 1
+        },
+        "script": {
+         "FireAnimationFrame": 447,
+         "FunctionCall": 596,
+         "TimerFire": 10,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 52,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 48,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3,
+         "EventDispatch:transitionrun": 4,
+         "EventDispatch:transitionend": 4
+        },
+        "bigPaints": {
+         "390x313": 2,
+         "390x312": 16,
+         "405x733": 1,
+         "401x598": 1,
+         "403x385": 1,
+         "430x512": 2,
+         "398x519": 1,
+         "401x383": 1,
+         "396x447": 1,
+         "399x381": 1,
+         "430x513": 3,
+         "390x283": 1,
+         "430x345": 2,
+         "390x266": 1,
+         "394x376": 2,
+         "392x375": 1,
+         "391x374": 1,
+         "382x372": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 212,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 10,
+        "ihDistinct": 11,
+        "yFrom": 6035,
+        "yTo": 5260,
+        "mFrom": "1",
+        "mTo": "0",
+        "morphingFrames": 38,
+        "rvFrames": 38,
+        "navRO": 1,
+        "navHeights": [
+         52
+        ]
+       }
+      },
+      "endHide1": {
+       "tl": {
+        "frames": 186,
+        "layouts": 132,
+        "styles": 280,
+        "paints": 249,
+        "kpx": 10858,
+        "framesWithLayout": 78,
+        "framesWithStyle": 186,
+        "framesWithPaint": 88,
+        "observer": {
+         "MutationObserver": 3,
+         "ResizeObserver": 1,
+         "IntersectionObserver": 9
+        },
+        "script": {
+         "FireAnimationFrame": 295,
+         "FunctionCall": 402,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "TimerFire": 8,
+         "EventDispatch:transitionrun": 6,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 52,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:resize": 9,
+         "EventDispatch:scroll": 18,
+         "EventDispatch:transitionend": 6,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "390x373": 1,
+         "430x513": 7,
+         "430x345": 6,
+         "392x374": 1,
+         "390x312": 9,
+         "392x349": 1,
+         "397x379": 1,
+         "394x389": 2,
+         "398x380": 2,
+         "390x283": 1,
+         "402x624": 1,
+         "403x385": 1,
+         "406x751": 5,
+         "390x313": 2,
+         "215x512": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 187,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 5,
+        "ihDistinct": 7,
+        "yFrom": 5260,
+        "yTo": 6035,
+        "mFrom": "0",
+        "mTo": "1",
+        "morphingFrames": 29,
+        "rvFrames": 29,
+        "navRO": 1,
+        "navHeights": [
+         751
+        ]
+       }
+      },
+      "endShow2": {
+       "tl": {
+        "frames": 197,
+        "layouts": 137,
+        "styles": 316,
+        "paints": 212,
+        "kpx": 9340,
+        "framesWithLayout": 94,
+        "framesWithStyle": 197,
+        "framesWithPaint": 86,
+        "observer": {
+         "MutationObserver": 2,
+         "IntersectionObserver": 1
+        },
+        "script": {
+         "FireAnimationFrame": 327,
+         "FunctionCall": 466,
+         "TimerFire": 7,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 30,
+         "EventDispatch:touchmove": 50,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 52,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3
+        },
+        "bigPaints": {
+         "406x748": 1,
+         "390x313": 3,
+         "390x312": 14,
+         "401x604": 1,
+         "403x385": 2,
+         "401x612": 1,
+         "403x666": 1,
+         "404x386": 1,
+         "406x746": 1,
+         "406x388": 1,
+         "406x751": 5,
+         "215x512": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 202,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 14,
+        "ihDistinct": 12,
+        "yFrom": 6035,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 44,
+        "rvFrames": 44,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "endHide2": {
+       "tl": {
+        "frames": 241,
+        "layouts": 101,
+        "styles": 344,
+        "paints": 108,
+        "kpx": 409,
+        "framesWithLayout": 100,
+        "framesWithStyle": 241,
+        "framesWithPaint": 101,
+        "observer": {},
+        "script": {
+         "FireAnimationFrame": 433,
+         "FunctionCall": 626,
+         "TimerFire": 10,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 50,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 92,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "406x751": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 246,
+        "ihMin": 775,
+        "ihMax": 775,
+        "toolbarMoving": 0,
+        "ihDistinct": 1,
+        "yFrom": 6075,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "midHide1": {
+       "tl": {
+        "frames": 201,
+        "layouts": 30,
+        "styles": 46,
+        "paints": 72,
+        "kpx": 2643,
+        "framesWithLayout": 20,
+        "framesWithStyle": 37,
+        "framesWithPaint": 21,
+        "observer": {
+         "PerformanceObserver": 1,
+         "IntersectionObserver": 2
+        },
+        "script": {
+         "FireAnimationFrame": 224,
+         "FunctionCall": 290,
+         "TimerFire": 12,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 30,
+         "EventDispatch:touchmove": 26,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 8,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3
+        },
+        "bigPaints": {
+         "430x775": 4,
+         "430x512": 2
+        }
+       },
+       "topObservers": {
+        "IntersectionObserver": 5
+       },
+       "log": {
+        "frames": 206,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 7,
+        "ihDistinct": 9,
+        "yFrom": 2400,
+        "yTo": 2684,
+        "mFrom": "0",
+        "mTo": "0",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "midShow1": {
+       "tl": {
+        "frames": 177,
+        "layouts": 30,
+        "styles": 38,
+        "paints": 72,
+        "kpx": 2048,
+        "framesWithLayout": 18,
+        "framesWithStyle": 31,
+        "framesWithPaint": 18,
+        "observer": {
+         "IntersectionObserver": 3
+        },
+        "script": {
+         "TimerFire": 16,
+         "FunctionCall": 273,
+         "FireAnimationFrame": 196,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 28,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 6,
+         "EventDispatch:resize": 9,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "430x775": 4
+        }
+       },
+       "topObservers": {
+        "IntersectionObserver": 3
+       },
+       "log": {
+        "frames": 189,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 12,
+        "ihDistinct": 12,
+        "yFrom": 2684,
+        "yTo": 2554,
+        "mFrom": "0",
+        "mTo": "0",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      }
+     },
+     "probe": null
+    },
+    {
+     "arm": "D",
+     "served": {
+      "js": "f83aa54c2acc",
+      "css": "0546615f27ea"
+     },
+     "safari": "26.5",
+     "error": null,
+     "geo": {
+      "shown": {
+       "y": 6075,
+       "max": 6075,
+       "endStart": 5260,
+       "t": 815,
+       "ih": 775,
+       "vvH": 775,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 775
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100dvh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "overflow": -12,
+       "gapTop": 12,
+       "gapBottom": 12,
+       "footer": {
+        "top": 675,
+        "bottom": 763,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "glass": null
+      },
+      "shownAfterShots": {
+       "y": 6075,
+       "max": 6075,
+       "endStart": 5260,
+       "t": 815,
+       "ih": 775,
+       "vvH": 775,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 775
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100dvh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "overflow": -12,
+       "gapTop": 12,
+       "gapBottom": 12,
+       "footer": {
+        "top": 675,
+        "bottom": 763,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 763,
+        "h": 751,
+        "w": 406
+       },
+       "glass": null
+      },
+      "collapsed": {
+       "y": 6035,
+       "max": 6035,
+       "endStart": 5220,
+       "t": 815,
+       "ih": 815,
+       "vvH": 815,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 814.98
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100dvh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "overflow": -12.02,
+       "gapTop": 12,
+       "gapBottom": 12.02,
+       "footer": {
+        "top": 714.98,
+        "bottom": 802.98,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "glass": {
+        "top": 0,
+        "bottom": 0,
+        "h": 0,
+        "w": 0
+       }
+      },
+      "collapsedAfterShots": {
+       "y": 6035,
+       "max": 6035,
+       "endStart": 5220,
+       "t": 815,
+       "ih": 815,
+       "vvH": 815,
+       "vvTop": 0,
+       "units": {
+        "vh": 814.98,
+        "svh": 775,
+        "lvh": 814.98,
+        "dvh": 814.98
+       },
+       "m": "1",
+       "rv": false,
+       "panelH": "calc(100dvh - 24px)",
+       "nav": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "overflow": -12.02,
+       "gapTop": 12,
+       "gapBottom": 12.02,
+       "footer": {
+        "top": 714.98,
+        "bottom": 802.98,
+        "h": 88,
+        "w": 406
+       },
+       "panel": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "probe": {
+        "top": 12,
+        "bottom": 802.98,
+        "h": 790.98,
+        "w": 406
+       },
+       "glass": {
+        "top": 0,
+        "bottom": 0,
+        "h": 0,
+        "w": 0
+       }
+      }
+     },
+     "phases": {
+      "endShow1": {
+       "tl": {
+        "frames": 194,
+        "layouts": 143,
+        "styles": 323,
+        "paints": 297,
+        "kpx": 11780,
+        "framesWithLayout": 93,
+        "framesWithStyle": 194,
+        "framesWithPaint": 95,
+        "observer": {
+         "ResizeObserver": 16,
+         "MutationObserver": 2,
+         "IntersectionObserver": 1
+        },
+        "script": {
+         "FireAnimationFrame": 470,
+         "FunctionCall": 613,
+         "TimerFire": 10,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 56,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 38,
+         "EventDispatch:touchend": 2,
+         "EventDispatch:resize": 3
+        },
+        "bigPaints": {
+         "390x312": 13,
+         "390x313": 3,
+         "406x779": 1,
+         "404x736": 1,
+         "405x387": 1,
+         "402x653": 1,
+         "403x386": 2,
+         "402x642": 1,
+         "401x595": 1,
+         "402x385": 2,
+         "401x593": 1,
+         "400x584": 2,
+         "402x384": 1,
+         "400x583": 1,
+         "401x612": 1,
+         "403x385": 1,
+         "404x681": 1,
+         "404x386": 1,
+         "406x739": 1,
+         "406x388": 1,
+         "406x751": 5,
+         "215x512": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 198,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 6,
+        "ihDistinct": 7,
+        "yFrom": 6035,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 34,
+        "rvFrames": 34,
+        "navRO": 8,
+        "navHeights": [
+         786.33,
+         770.66,
+         758,
+         753.66,
+         752,
+         751.66,
+         751.33,
+         751
+        ]
+       }
+      },
+      "endHide1": {
+       "tl": {
+        "frames": 217,
+        "layouts": 124,
+        "styles": 324,
+        "paints": 134,
+        "kpx": 6585,
+        "framesWithLayout": 103,
+        "framesWithStyle": 217,
+        "framesWithPaint": 106,
+        "observer": {},
+        "script": {
+         "FireAnimationFrame": 427,
+         "FunctionCall": 642,
+         "TimerFire": 8,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 56,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 106,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "406x751": 21
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 219,
+        "ihMin": 775,
+        "ihMax": 775,
+        "toolbarMoving": 0,
+        "ihDistinct": 1,
+        "yFrom": 6075,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "endShow2": {
+       "tl": {
+        "frames": 210,
+        "layouts": 120,
+        "styles": 330,
+        "paints": 118,
+        "kpx": 4487,
+        "framesWithLayout": 105,
+        "framesWithStyle": 210,
+        "framesWithPaint": 86,
+        "observer": {
+         "MutationObserver": 2
+        },
+        "script": {
+         "FireAnimationFrame": 367,
+         "FunctionCall": 543,
+         "TimerFire": 9,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 56,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 74,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "390x313": 2,
+         "406x745": 1,
+         "390x312": 2,
+         "404x681": 1,
+         "404x387": 1,
+         "403x654": 1,
+         "404x386": 1,
+         "406x751": 5,
+         "215x512": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 216,
+        "ihMin": 775,
+        "ihMax": 775,
+        "toolbarMoving": 0,
+        "ihDistinct": 1,
+        "yFrom": 6075,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 50,
+        "rvFrames": 50,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "endHide2": {
+       "tl": {
+        "frames": 211,
+        "layouts": 128,
+        "styles": 316,
+        "paints": 144,
+        "kpx": 9256,
+        "framesWithLayout": 100,
+        "framesWithStyle": 211,
+        "framesWithPaint": 102,
+        "observer": {
+         "MutationObserver": 1,
+         "ResizeObserver": 1,
+         "IntersectionObserver": 11
+        },
+        "script": {
+         "FireAnimationFrame": 443,
+         "FunctionCall": 679,
+         "TimerFire": 6,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 60,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 112,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "406x751": 25,
+         "430x512": 3,
+         "390x372": 1,
+         "402x857": 1,
+         "512x513": 1
+        }
+       },
+       "topObservers": {},
+       "log": {
+        "frames": 217,
+        "ihMin": 775,
+        "ihMax": 775,
+        "toolbarMoving": 0,
+        "ihDistinct": 1,
+        "yFrom": 6075,
+        "yTo": 6075,
+        "mFrom": "1",
+        "mTo": "1",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "midHide1": {
+       "tl": {
+        "frames": 193,
+        "layouts": 27,
+        "styles": 43,
+        "paints": 72,
+        "kpx": 2106,
+        "framesWithLayout": 19,
+        "framesWithStyle": 36,
+        "framesWithPaint": 22,
+        "observer": {
+         "ResizeObserver": 3,
+         "IntersectionObserver": 3
+        },
+        "script": {
+         "FireAnimationFrame": 214,
+         "FunctionCall": 279,
+         "TimerFire": 10,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 24,
+         "EventDispatch:touchmove": 22,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 8,
+         "EventDispatch:resize": 6,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "430x775": 3,
+         "430x512": 1
+        }
+       },
+       "topObservers": {
+        "ResizeObserver": 6,
+        "IntersectionObserver": 5
+       },
+       "log": {
+        "frames": 202,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 7,
+        "ihDistinct": 9,
+        "yFrom": 2400,
+        "yTo": 2690,
+        "mFrom": "0",
+        "mTo": "0",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      },
+      "midShow1": {
+       "tl": {
+        "frames": 178,
+        "layouts": 23,
+        "styles": 32,
+        "paints": 72,
+        "kpx": 1721,
+        "framesWithLayout": 18,
+        "framesWithStyle": 29,
+        "framesWithPaint": 18,
+        "observer": {
+         "ResizeObserver": 3,
+         "IntersectionObserver": 2
+        },
+        "script": {
+         "FireAnimationFrame": 192,
+         "FunctionCall": 264,
+         "TimerFire": 14,
+         "EventDispatch:pointerdown": 4,
+         "EventDispatch:touchstart": 4,
+         "EventDispatch:pointermove": 36,
+         "EventDispatch:touchmove": 24,
+         "EventDispatch:pointercancel": 2,
+         "EventDispatch:scroll": 6,
+         "EventDispatch:resize": 6,
+         "EventDispatch:touchend": 2
+        },
+        "bigPaints": {
+         "430x775": 3
+        }
+       },
+       "topObservers": {
+        "ResizeObserver": 10,
+        "IntersectionObserver": 3
+       },
+       "log": {
+        "frames": 189,
+        "ihMin": 775,
+        "ihMax": 815,
+        "toolbarMoving": 12,
+        "ihDistinct": 12,
+        "yFrom": 2690,
+        "yTo": 2560,
+        "mFrom": "0",
+        "mTo": "0",
+        "morphingFrames": 0,
+        "rvFrames": 0,
+        "navRO": 0,
+        "navHeights": []
+       }
+      }
+     },
+     "probe": null
+    }
+   ]
   }
- ]
+ ],
+ "toolbarFrames": {
+  "tool": "fixes/panel-height/tbframes.mjs (per rendering frame, matched to the logger rAF; ASD2 end phases)",
+  "lines": [
+   "A toolbar-moving morphing  frames  16 | per frame: layouts 5.00 (frames with layout 15) styles 4.13 paints 9.75 kpx 466 RO 0.00",
+   "A toolbar-still closed     frames  28 | per frame: layouts 0.18 (frames with layout 4) styles 1.04 paints 0.79 kpx 4 RO 0.00",
+   "A toolbar-still morphing   frames  35 | per frame: layouts 1.09 (frames with layout 24) styles 1.83 paints 1.97 kpx 86 RO 0.03",
+   "A toolbar-still open       frames  92 | per frame: layouts 0.52 (frames with layout 47) styles 1.52 paints 1.08 kpx 29 RO 0.00",
+   "S toolbar-moving morphing  frames  17 | per frame: layouts 5.12 (frames with layout 16) styles 3.94 paints 11.59 kpx 540 RO 0.00",
+   "S toolbar-still closed     frames  34 | per frame: layouts 0.03 (frames with layout 1) styles 1.00 paints 0.29 kpx 1 RO 0.00",
+   "S toolbar-still morphing   frames  43 | per frame: layouts 1.33 (frames with layout 31) styles 2.00 paints 2.28 kpx 103 RO 0.02",
+   "S toolbar-still open       frames 125 | per frame: layouts 0.38 (frames with layout 47) styles 1.38 paints 0.52 kpx 15 RO 0.00",
+   "D toolbar-moving morphing  frames   4 | per frame: layouts 5.00 (frames with layout 4) styles 4.75 paints 13.25 kpx 808 RO 2.00",
+   "D toolbar-still morphing   frames  20 | per frame: layouts 1.30 (frames with layout 15) styles 2.25 paints 2.20 kpx 122 RO 0.20",
+   "D toolbar-still open       frames 191 | per frame: layouts 0.29 (frames with layout 48) styles 1.27 paints 0.54 kpx 30 RO 0.01"
+  ]
+ },
+ "simulatorPixels": {
+  "tool": "fixes/panel-height/px3.mjs --top 59 --files (ASD2 shots; A/A = second shot of A)",
+  "lines": [
+   "D-vs-A-shown A~V >8: 588704 dev px | A~A2 >8: 0 | A~V beyond A/A: 588704 dev px = 65412 css px (max 238) box css [12,71]-[418,834]",
+   "S-vs-A-shown A~V >8: 588845 dev px | A~A2 >8: 0 | A~V beyond A/A: 588845 dev px = 65427 css px (max 238) box css [12,71]-[418,834]",
+   "D-vs-A-collapsed A~V >8: 10675 dev px | A~A2 >8: 5925 | A~V beyond A/A: 7107 dev px = 790 css px (max 224) box css [73,456]-[375,492]",
+   "S-vs-A-collapsed A~V >8: 688717 dev px | A~A2 >8: 5925 | A~V beyond A/A: 685357 dev px = 76151 css px (max 238) box css [12,71]-[418,862]",
+   "D-vs-A-collapsed-shot2 A~V >8: 0 dev px | A~A2 >8: 5925 | A~V beyond A/A: 0 dev px = 0 css px (max 0) ",
+   "A-vs-A-collapsed A~V >8: 5925 dev px | A~A2 >8: 0 | A~V beyond A/A: 5925 dev px = 658 css px (max 224) box css [73,462]-[375,484]"
+  ]
+ }
 }

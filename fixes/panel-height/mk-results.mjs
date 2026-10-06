@@ -12,7 +12,7 @@ const J = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const out = {
   topic: 'panel-height',
   kind: 'counts, geometry and pixels only (no timing; memory defer-timing-focus-call-tree)',
-  base: { name: 'A = v9-final + F1/U2 + I-219 + P1 + P1b (a), fix-end-morph-p1 snapshot A1', js: 'ed44af454a92', css: 'cfb8b8c5b019' },
+  base: { name: 'A = v9-final + F1/U2 + I-219 + P1 + P1b (a), fix-end-morph-p1 snapshot A1', js: 'ed44af454a92 (Chrome, AD1), f83aa54c2acc (ASD2, Try-it)', css: 'cfb8b8c5b019' },
   options: {
     svh: { delta: 'fixes/panel-height/delta-svh.diff', deltaSha: '0d7142505704', css: '75c30c18d971', tryit: 'fixes/panel-height-svh/patch.diff' },
     dvh: { delta: 'fixes/panel-height/delta-dvh.diff', deltaSha: '030ff98f6239', css: '0546615f27ea', tryit: 'fixes/panel-height-dvh/patch.diff' },
@@ -35,6 +35,10 @@ if (ch) {
 }
 const px = arg('--px');
 if (px && existsSync(px)) out.chromePixels = { tool: 'fixes/end-morph-p1/gates/em-p1-px.mjs (A, V, A2 loads; the V2 load was cut at the 120 s cap) scored by fixes/panel-height/px3.mjs', viewport: '430x775 DPR 3', pair: 'A vs D', lines: readFileSync(px, 'utf8').trim().split('\n') };
+const tb = arg('--tb');
+if (tb && existsSync(tb)) out.toolbarFrames = { tool: 'fixes/panel-height/tbframes.mjs (per rendering frame, matched to the logger rAF; ASD2 end phases)', lines: readFileSync(tb, 'utf8').trim().split('\n') };
+const simT2 = arg('--simpx');
+if (simT2 && existsSync(simT2)) out.simulatorPixels = { tool: 'fixes/panel-height/px3.mjs --top 59 --files (ASD2 shots; A/A = second shot of A)', lines: readFileSync(simT2, 'utf8').trim().split('\n') };
 const sim = arg('--sim');
 if (sim) out.simulator = sim.split(',').map((f) => { const r = J(f); return { file: f.replace(WT + '/', ''), label: r.label, startedAt: r.startedAt, arms: r.arms.map((a) => ({ arm: a.arm, served: a.served, safari: a.ua, error: a.error || null, geo: a.geo, phases: Object.fromEntries(Object.entries(a.phases || {}).map(([k, p]) => [k, { tl: p.tl, topObservers: p.topObservers, log: p.log }])), probe: a.probe ? Object.fromEntries(Object.entries(a.probe.windows).map(([k, w]) => [k, { frames: w.frames, ih: w.ih, dvh: w.dvh, svh: w.svh, lvh: w.lvh, vh: w.vh, roCallbacks: w.roCallbacks, roDvh: w.roDvh, dvhEqualsIh: w.dvhEqualsIh }])) : null })) }; });
 writeFileSync(join(WT, 'fixes/panel-height/results.json'), JSON.stringify(out, null, 1) + '\n');
