@@ -285,7 +285,41 @@
    ],
    "tool": "fixes/end-morph-p1/p1b/idle-run.mjs (fixes/platform-idle/tools/idletriple.mjs), idle-who.mjs"
   },
-  "census250": "Chrome: pending a timing hold after P-155; phone: part A of the phone card",
+  "census250": {
+   "chrome": {
+    "base": "B0 (C0 387a2b38790b vs A0 888ed8eb2d15)",
+    "window": "2026-10-06T11:44:54Z-11:51:04Z",
+    "dir": "out/end-morph-p1/p1b/census-20261006T114458Z",
+    "runs": {
+     "C": 2,
+     "A": 2
+    },
+    "settings": "mobile 430x932 DPR3, CPU 6x, idle 6, https latency 150, vendors local",
+    "contaminated": "4 of 4 runs (lock granted by gate timeout; other CPU 33-42 %)",
+    "medians": {
+     "C": {
+      "fps": 90.9,
+      "gt34": 7,
+      "gt50": 4,
+      "forcedMs": 24,
+      "morphGt50": 0
+     },
+     "A": {
+      "fps": 89.5,
+      "gt34": 6,
+      "gt50": 5,
+      "forcedMs": 2,
+      "morphGt50": 0
+     }
+    },
+    "binsWorseInA": [
+     "500-750 (k>=7 0.5 vs 1.5; hero area, P1/(a) inactive)"
+    ],
+    "morphTrack6250": "k>=5 1/1, k>=7 1/1",
+    "reading": "descriptive, contaminated; nothing points at A; decides nothing"
+   },
+   "phone": "P-156 part A (pA-read census)"
+  },
   "roWidthCheck": {
    "verdict": "PASS",
    "change": "RO callback reads --nav-bar-inset-x only when the probe width changed (value only from the (width <= 640px) rule); height-only changes (dvh toolbar steps) read no style; nothing written while the reveal is off",
@@ -417,9 +451,18 @@
     "out/p1b/dry-pre-base0.log"
    ],
    "result": "both bases, 17 holds DRY ok",
-   "final": "after rebase onto 2d6d7327"
+   "final": {
+    "head": "f8967b1c (signed d366186a rebased as ec6dcc32 onto 5803d436, plus census-run.sh CENSUS_BASE)",
+    "at": "2026-10-06T11:31Z",
+    "result": "both bases, 17 holds DRY ok; pins unchanged",
+    "logs": [
+     "out/p1b/dry-r-base0.log",
+     "out/p1b/dry-r-base1.log"
+    ]
+   }
   },
-  "smoke": "P-153 block 2 records (V as A): FAIL Pr1 f2 +10 > +4; Pr2 PASS; Pr3 holds"
+  "smoke": "P-153 block 2 records (V as A): FAIL Pr1 f2 +10 > +4; Pr2 PASS; Pr3 holds",
+  "base": "B0 (lead base ruling 11:33Z from P-155 signed result)"
  },
  "measurementCodeChanged": false
 }

@@ -379,11 +379,22 @@ for part B's run gates and the pilot; it imports P-153's
   17 holds `DRY ok`; pins, compiled programs (fs 8737f212c0ff budget 229 s, park30 6f9209453750 budget 327 s) and
   served hashes match (base 1: C fe7c668d35e8 / A f83aa54c2acc; base 0: C 387a2b38790b / A 888ed8eb2d15); the reader's
   base check passes with the right `--base` and voids with the other (out/p1b/dry-pre-base1.log, dry-pre-base0.log).
-  The final dry run follows after the rebase onto main with 2d6d7327 (`wda ensure`).
+  **Final dry run** (lead conditions of the signature, 10:40Z): after the rebase onto main with I-220's fix (5803d436,
+  `wda ensure`), head f8967b1c (the signed d366186a rebased as ec6dcc32, plus census-run.sh's CENSUS_BASE), 11:31Z:
+  both bases, all 17 holds `DRY ok`; programs fs 8737f212c0ff (229 s) and park30 6f9209453750 (327 s); served hashes
+  equal the pins of each base; script pins unchanged (pA-read a01dd89e3333, hold 8bddb5dbbdef, block 7425f1d8ef8e,
+  serve cd09f2818ca2); the reader voids a read under the other base (out/p1b/dry-r-base0.log, dry-r-base1.log).
+  **Base: B0** (lead base ruling 11:33Z from P-155's signed result: U2 does not land, F1 stays out); `--base 0`.
 - Reader smoke test on real data (decides nothing): P-153 block 2's records with V renamed A read FAIL Pr1, f2 A - C
   +10 ms > +4 (f123 +0.5 ms), Pr2 NO-WORSE PASS (not threshold-sensitive), Pr3 holds (CB34 -6): the +4 ms bound still
   catches P-153's first-open risk (out/p1b/smoke).
-- The 250 px census, Chrome side: `fixes/end-morph-p1/p1b/census-run.sh` (C1 vs A1, verify.mjs --frame-log, 6x), one
-  timing hold of 300 s or less. It runs after P-155 (the lead allows no timing hold during the phone block). The phone
-  side comes from P-156 part A (pA-read.mjs).
+- The 250 px census, Chrome side, ran 11:44:54-11:51:04Z on B0 (`CENSUS_BASE=0 fixes/end-morph-p1/p1b/census-run.sh 2`:
+  C0 vs A0, verify.mjs --frame-log, mobile 430x932, CPU 6x, idle 6, 2 runs per arm; out/end-morph-p1/p1b/census-20261006T114458Z).
+  **Descriptive only and contaminated:** the lock was granted by the gate timeout (host never quiet; the user's own
+  browser and system load, load1 4-10, other CPU 33-42 %), all 4 runs flagged; the hold ran 370 s, past its 300 s cap
+  (warned, not killed). Medians C / A: fps 90.9 / 89.5, >34 ms 7 / 6, >50 ms 4 / 5, forced 24 / 2 ms, morph >50 0 / 0,
+  0 404s and 0 errors. Bins (k>=5 / k>=7 per run, medians): one bin flagged, 500-750 px (k>=7 0.5 vs 1.5, median tick 2.5
+  vs 3), in the hero area where neither P1 nor (a) does anything (the reveal is off, the probe idle); every other bin
+  equal or lower in A, the morph track (6250-6500) 1/1 and 1/1. Reading: nothing points at A; 2 contaminated runs per
+  arm decide nothing. A quiet re-run is worth one later gap. The phone side comes from P-156 part A (pA-read.mjs).
 - The observer-only rotation path (a size change with m unchanged) is not isolated (see Install and rotation).
