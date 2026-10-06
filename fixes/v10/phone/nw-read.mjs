@@ -308,6 +308,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(bad ? 1 : 0);
   }
   const dir = a[0], jsonOut = a.includes('--json') ? a[a.indexOf('--json') + 1] : null;
+  // --arm D (v10, int-v8): read the third arm D (Vc) in A's place against C (items ED<n> / BD<n>); default A
+  const AX = a.includes('--arm') ? a[a.indexOf('--arm') + 1] : 'A';
+  if (AX !== 'A' && AX !== 'D') { console.log('--arm A|D'); process.exit(2); }
   const baseArg = a.includes('--base') ? a[a.indexOf('--base') + 1] : null;
   if (baseArg !== '1' && baseArg !== '0' && baseArg !== 'v10') { console.log(`--base 1|0 is required (the base written into the ledger before H1)\n${usage}`); process.exit(2); }
   const load = (f) => (existsSync(join(dir, f)) ? JSON.parse(readFileSync(join(dir, f), 'utf8')) : null);
@@ -324,13 +327,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const ht = (h) => `heat ${h.start ? `${h.start.battC ?? '-'} C ${h.start.state ?? ''}` : '-'} -> ${h.end ? `${h.end.battC ?? '-'} C ${h.end.state ?? ''}` : '-'}`;
   const wk = (w) => (w ? `dt ${w.dt} busy ${w.busy ?? '-'} busyRF ${w.busyRF ?? '-'} ${w.cls ?? '-'}` : '-');
   for (const arm of ['C', 'A']) for (let k = 1; k <= 4; k++) {
-    const t = take(`E${arm}${k}`); if (!t) continue;
+    const t = take(`E${arm === 'A' ? AX : arm}${k}`); if (!t) continue;
     const ez = endZone(t.r), fo = { ...firstOpen(t.g), nm: t.nm }, cb = closingBand(t.g.run.segments[0], t.r.rows), cs = census(t.g, t.r);
     out.runs[t.nm] = { part: 'A', arm, endZone: ez, firstOpen: fo.o1, o1f2Work: o1Work(fo.o1, t.r.rows), cb34: cb.s34, cb50: cb.s50, cbWork: cb.work, start: t.g.meta?.date ?? null, heat: heat(t.g) };
     L[`fo${arm}`].push(fo); L[`ez${arm}`].push(ez); L[`cb${arm}`].push(cb.s34); L[`cs${arm}`].push(cs);
   }
   for (const arm of ['C', 'A']) for (let k = 1; k <= 2; k++) {
-    const t = take(`B${arm}${k}`); if (!t) continue;
+    const t = take(`B${arm === 'A' ? AX : arm}${k}`); if (!t) continue;
     const pm = { ...parkMetrics(t.g, t.r), nm: t.nm };
     out.runs[t.nm] = { part: 'B', arm, ...pm, start: t.g.meta?.date ?? null, heat: heat(t.g) };
     L[`pb${arm}`].push(pm);

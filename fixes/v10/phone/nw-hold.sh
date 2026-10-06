@@ -51,24 +51,28 @@ JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 [ "$(cat $SV/snap/BASE)" = v10 ] || { echo "HOLD $H VOID unknown base (no run)"; exit 4; }
 C_JS=1b2eecc66011; A_JS=a33a6c7c1f2b
 C_CSS=e1359ab9994a; A_CSS=62743920fe1a
+# optional third arm D = Vc (nw-serve.sh NW_VC): pinned by snap/DPIN, items WD / ED<n> / BD<n>
+D_JS=""; D_CSS=""; [ -e $SV/snap/DPIN ] && { D_JS=$(cut -d: -f1 $SV/snap/DPIN); D_CSS=$(cut -d: -f2 $SV/snap/DPIN); }
 GM=${NW_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "NW_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/v10/phone/nw-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs; RD=fixes/end-morph-p1/phone/pA-read.mjs
 mkdir -p $O
-for I in "$@"; do case $I in PC|WC|WA|S0|S1|E[CA][1-4]|E[CA][1-4]r|B[CA][12]|B[CA][12]r) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
+for I in "$@"; do case $I in PC|WC|WA|S0|S1|E[CA][1-4]|E[CA][1-4]r|B[CA][12]|B[CA][12]r) ;;
+  WD|ED[1-4]|ED[1-4]r|BD[12]|BD[12]r) [ -n "$D_JS" ] || { echo "HOLD $H VOID item $I needs arm D (no snap/DPIN) (no run)"; exit 4; } ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)"; }
+PD=""; [ -n "$D_JS" ] && { PD=$(port D) || { echo "HOLD $H VOID no server state for D (no run)"; exit 4; }; }
 PC=$(port C) && PA=$(port A) && PB=$(port B) || { echo "HOLD $H VOID no server state in $SV (start fixes/v10/phone/nw-serve.sh first) (no run)"; exit 4; }
 served() { curl -s "http://127.0.0.1:$1/$2" | shasum -a 256 | cut -c1-12; }
-hashok() { [ "$(served $PC $JS)" = $C_JS ] && [ "$(served $PC $CSS)" = $C_CSS ] && [ "$(served $PA $JS)" = $A_JS ] && [ "$(served $PA $CSS)" = $A_CSS ]; }
+hashok() { [ "$(served $PC $JS)" = $C_JS ] && [ "$(served $PC $CSS)" = $C_CSS ] && [ "$(served $PA $JS)" = $A_JS ] && [ "$(served $PA $CSS)" = $A_CSS ] && { [ -z "$D_JS" ] || { [ "$(served $PD $JS)" = $D_JS ] && [ "$(served $PD $CSS)" = $D_CSS ]; }; }; }
 pins() { for f in "$@"; do printf ' %s=%s' "$f" "$(shasum -a 256 "$f" | cut -c1-12)"; done; }
 T0=$(date +%s)
 echo "HOLD $H (v10cm-nw) start $(date -u +%FT%TZ) items $* gates $GM base $(cat $SV/snap/BASE)"
 echo "PIN $H v10cm-nw profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF fixes/v10/phone/nw-block.sh fixes/v10/phone/nw-serve.sh $RD fixes/end-morph-p1/phone/p153-read.mjs \
   $GATES research/serious-heat/p129-read.mjs $FS $PK research/phone-thermal-gate/thermal-gate.mjs fixes/rest-script/tools/pmcheck.mjs \
-  $SV/snap/C/$JS $SV/snap/C/$CSS $SV/snap/A/$JS $SV/snap/A/$CSS)"
+  $SV/snap/C/$JS $SV/snap/C/$CSS $SV/snap/A/$JS $SV/snap/A/$CSS ${D_JS:+$SV/snap/D/$JS $SV/snap/D/$CSS})"
 hashok || { echo "HOLD $H VOID served hashes C JS $(served $PC $JS) CSS $(served $PC $CSS), A JS $(served $PA $JS) CSS $(served $PA $CSS); pinned C $C_JS/$C_CSS A $A_JS/$A_CSS (no run)"; exit 4; }
-echo "SERVED C JS $C_JS CSS $C_CSS ok, A JS $A_JS CSS $A_CSS ok"
+echo "SERVED C JS $C_JS CSS $C_CSS ok, A JS $A_JS CSS $A_CSS ok${D_JS:+, D JS $D_JS CSS $D_CSS ok}"
 prog() { # file pin -> prints the budget, or fails
   b=$(node tools/iphone.mjs gesture $1 --owner "$R" --timeline $O/dry-tl.json --dry-run 2>&1)
   h=$(echo "$b" | sed -n 's/^GESTURE_HASH \(.\{12\}\).*/\1/p'); s=$(echo "$b" | sed -n 's/^GESTURE_BUDGET_S \([0-9]*\).*/\1/p')
@@ -78,7 +82,7 @@ sE=$(prog $FS $PROG_FS) || { echo "HOLD $H VOID compiled program fs (pinned $PRO
 sB=$(prog $PK $PROG_PK) || { echo "HOLD $H VOID compiled program park30 (pinned $PROG_PK) (no run)"; exit 4; }
 echo "PROG fs $PROG_FS ok budget $sE s, park30 $PROG_PK ok budget $sB s"
 late() { [ $(( $(date +%s) - T0 + $1 + 30 )) -gt 600 ]; }
-arm() { case $1 in WA|EA*|BA*) echo A ;; *) echo C ;; esac; }
+arm() { case $1 in WA|EA*|BA*) echo A ;; WD|ED*|BD*) echo D ;; *) echo C ;; esac; }
 if [ "$NW_DRY" = 1 ]; then
   for I in "$@"; do case $I in W*) echo "PLAN $I warm-up on $(arm $I) fs Timeline-off --warmup g-$I-$H.json" ;; S*) echo "PLAN $I sentinel on C fs Timeline-off g-$I.json" ;;
     PC) echo "PLAN PC pilot (uncounted) on C park30 Timeline-on g-PC.json tl-PC.json, gates G1-G7" ;;
@@ -87,7 +91,7 @@ if [ "$NW_DRY" = 1 ]; then
 fi
 node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
-BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --port "$PC") && AU=$(node tools/lan.mjs --url --port "$PA") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
+BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --port "$PC") && AU=$(node tools/lan.mjs --url --port "$PA") && { [ -z "$PD" ] || DU=$(node tools/lan.mjs --url --port "$PD"); } || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
 gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "v10cmnw-$H-$1" --expect serious --max-c 44 --accept-induced --url "$BU"; }
 case $GM in start|both) gate start; g=$?
   [ $g -ne 0 ] && { echo "HOLD $H VOID start gate exit $g (no run)"; exit 5; } ;; *) echo "GATE start skipped (NW_GATE=$GM)" ;; esac
@@ -102,7 +106,7 @@ for I in "$@"; do
     S[01]) F=g-$I; EX=""; TL="" ;;
     E*|B*|PC) F=g-$I; EX=""; TL="--timeline $O/tl-$I.json" ;;
   esac
-  [ "$(arm $I)" = A ] && U=$AU || U=$CU
+  case $(arm $I) in A) U=$AU ;; D) U=$DU ;; *) U=$CU ;; esac
   for f in "$O/$F.json" "$O/tl-$I.json"; do
     [ -e "$f" ] && { mv "$f" "$f.prev-$H-$(date +%s)" || { echo "HOLD $H VOID cannot move aside $f"; exit 4; }; echo "MOVED $(basename "$f") aside (an earlier hold's file)"; }
   done

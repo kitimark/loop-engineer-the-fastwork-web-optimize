@@ -39,7 +39,7 @@ cd "$(dirname "$0")/../../.." || exit 2
 [ $# -gt 0 ] || { echo "usage: TICKET=v10cm-nw sh fixes/v10/phone/nw-block.sh H<n>:<item>[,<item>] ... [H<n>:TAIL]"; exit 2; }
 R=${RUNNER:-iphone-runner}; LG=${NW_DIR:-out/v10cmnw}; export NW_DIR=$LG; HS=fixes/v10/phone/nw-hold.sh; SS=fixes/v10/phone/nw-serve.sh
 mkdir -p $LG
-for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^[EB][CA][1-4]r?$')
+for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -cE '^[EB][CAD][1-4]r?$')
   [ "$it" -gt 1 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it counted runs (at most 1 per hold)"; exit 2; }; done
 coolwait() { # below timeout why
   { echo "== $(date -u +%FT%TZ) $3: phone-temp --below $1 --timeout $2"
@@ -129,7 +129,7 @@ run1() { # H items...: one hold, a time-guard VOID (7) re-run whole once
 for spec in "$@"; do
   H=${spec%%:*}; items=$(echo "${spec#*:}" | tr ',' ' ')
   if [ "$items" = TAIL ]; then
-    RR=$(for f in $LG/hold-H*.log; do [ -e "$f" ] && sed -n 's/^RERUN-NEEDED \([^(]*\) (.*/\1/p' "$f"; done | tr ' ' '\n' | grep -E '^[EB][CA][1-4]$' | awk '!s[$0]++' )
+    RR=$(for f in $LG/hold-H*.log; do [ -e "$f" ] && sed -n 's/^RERUN-NEEDED \([^(]*\) (.*/\1/p' "$f"; done | tr ' ' '\n' | grep -E '^[EB][CAD][1-4]$' | awk '!s[$0]++' )
     n=$(echo "$RR" | grep -c .)
     [ "$n" -gt 2 ] && echo "RERUN over the cap: $(echo $RR) need one; the first 2 are re-run (card: at most 2 per block), the rest stay invalid"
     R1=$(echo "$RR" | sed -n 1p); R2=$(echo "$RR" | sed -n 2p)
