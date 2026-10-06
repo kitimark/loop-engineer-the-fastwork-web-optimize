@@ -34,6 +34,9 @@ const ENGINE = arg('--engine', 'chrome');
 const DIR = { A: resolve(WT, arg('--a', 'fixes/end-morph/overlay')), V: resolve(WT, arg('--v', '')) };
 if (!arg('--v')) throw new Error('--v <overlay dir>');
 const H = Number(arg('--h', '775'));
+// (end-morph-p1, review fix) --settle-transitions N: before each shot, wait until no CSS transition runs (poll 100 ms,
+// at most N ms); FREEZE leaves transitions running, so a card mid-transition showed up in the 932 post stop.
+const SETTLE = Number(arg('--settle-transitions', '0'));
 const REDUCED = argv.includes('--reduced'); // (end-morph-p1) Chrome only: emulate prefers-reduced-motion: reduce
 const LABEL = arg('--label', basename(DIR.V.replace(/\/overlay$/, '')));
 const UP = arg('--ms', '0.02,0.05,0.1,0.15,0.19,0.25,0.4,0.5,0.54,0.6,0.8,0.95,0.99,1').split(',').map(Number);
@@ -128,11 +131,13 @@ try {
         await c.ev(`(scrollTo({ top: ${y}, behavior: 'instant' }), 1)`);
         if (SET && S.m != null) for (let i = 0; i < 2; i++) await c.ev(`new Promise((r) => { window.__navMorphSet(${S.m}); requestAnimationFrame(() => requestAnimationFrame(() => r(1))); })`);
         await sleep(1300);
+        let settled = null;
+        if (SETTLE) settled = JSON.parse(await c.ev(`new Promise((res) => { const t0 = performance.now(); const run = () => document.getAnimations().filter((a) => a instanceof CSSTransition && a.playState === 'running').length; const tick = () => { const n = run(); if (!n || performance.now() - t0 > ${SETTLE}) res(JSON.stringify({ waitedMs: Math.round(performance.now() - t0), left: n })); else setTimeout(tick, 100); }; tick(); })`));
         const fr = JSON.parse(await c.ev(FREEZE)); await sleep(450);
         const state = JSON.parse(await c.ev(STATE));
         const f = join(OUT, `${arm}-${S.k}.png`); const ok = await c.shot(f);
         const hits = JSON.parse(await c.ev(HITS));
-        (shots[S.k] ||= {})[arm] = { file: f, hits }; load.stops.push({ k: S.k, m: S.m, y, state, frozen: fr, ok });
+        (shots[S.k] ||= {})[arm] = { file: f, hits }; load.stops.push({ k: S.k, m: S.m, y, state, frozen: fr, ok, ...(settled && { settled }) });
       }
       load.errors = JSON.parse(await c.ev('JSON.stringify(window.__pxErr || [])'));
     } catch (e) { load.void = 'error: ' + String(e.stack || e); console.log(arm, 'error', load.void); }

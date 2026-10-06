@@ -1,6 +1,6 @@
 #!/bin/sh
-# P-153 block driver (card: fixes/end-morph-p1/README.md "P-153"), a copy of fix-end-morph's P-152 driver
-# (fixes/end-morph-f12/phone/p152-block.sh 3a2d0a7716c7 at d705bdd6; only the names changed), itself fix-end-bg's P-137 driver (fixes/end-bg/phone/
+# P-153 block driver (card: fixes/end-morph-p1/README.md "P-153", rev 1.1), a copy of fix-end-morph's P-152 rev 1.1 driver
+# (fixes/end-morph-f12/phone/p152-block.sh d2d8e37c419d at ac229f7f; names changed, plus ENDGATE below), itself fix-end-bg's P-137 driver (fixes/end-bg/phone/
 # p137-block.sh at 24041a92, from P-129's p129-block.sh) with the P-153 names, a WDA restart at the start of every part
 # (lead condition 6, the I-212 lesson) and Safari parked at its end. Runs inside ONE phone
 # hold with the block mark and starts the block's 600 s chrome-measure --no-timing holds in order, each holding at most
@@ -18,11 +18,44 @@
 # Thermal gates: only at this phone hold's edges, via P153_GATE: the first hold "start", the last "end" (a part with
 # one hold: "both"), every middle hold "none"; with two parts that is 4 gates in the block.
 # P153_DRY=1: calls p153-hold.sh directly (its dry mode: pins and plan only, no lock, no phone).
+# Rev 1.1 (lead rulings on the pre-data read, 2026-10-06):
+#   N4: Safari is parked on EVERY exit of a part (an EXIT trap), a BLOCK STOP on a failed hold or gate included.
+#   N6: every part starts with p153-serve.sh check, appended to out/p153/serve-check.log (B, C and V served hashes);
+#       a failed check stops the part before anything runs (exit 4).
+#   N2: before block 2 (only after a block-1 FAIL and the lead's go): TICKET=P-153 sh p153-block.sh ARCHIVE-BLOCK1 moves
+#       out/p153/runs, the hold logs, the WDA logs and serve-check.log to out/p153/block1/ (refuses when it exists) and
+#       restarts the three servers; block 2 is read by itself from out/p153/runs (never pooled with block 1).
+#   N3: part 2's end gate runs only in HA (after the attribution runs); an HA end-gate failure (over 44 °C, or not
+#       Serious) voids part 2's counted runs (p153-read.mjs reads hold-HA.log).
+#   Late P-152 delta (lead, 2026-10-06): part 2 counts only when hold-HA.log ends "HOLD HA VALID", or when HA stopped
+#       before its end gate (another VOID) and a standalone end gate runs right after it, inside the same phone hold:
+#       TICKET=P-153 sh p153-block.sh ENDGATE  -> out/p153/endgate-HA.log, last line "ENDGATE PASS" or "ENDGATE FAIL exit N".
+#       A VOID block 1 is archived the same way (ARCHIVE-BLOCK1) and counts as one of the 2 blocks.
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-153 ] || { echo "TICKET is not P-153: no run"; exit 2; }
-[ $# -gt 0 ] || { echo "usage: TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh H<n>:<item>,<item> ... [H<n>:TAIL]"; exit 2; }
-R=${RUNNER:-iphone-runner}; LG=out/p153; HS=fixes/end-morph-p1/phone/p153-hold.sh
+[ $# -gt 0 ] || { echo "usage: TICKET=P-153 sh fixes/end-morph-p1/phone/p153-block.sh H<n>:<item>,<item> ... [H<n>:TAIL] | ARCHIVE-BLOCK1 | ENDGATE"; exit 2; }
+R=${RUNNER:-iphone-runner}; LG=out/p153; HS=fixes/end-morph-p1/phone/p153-hold.sh; SS=fixes/end-morph-p1/phone/p153-serve.sh
 mkdir -p $LG
+if [ "$1" = ARCHIVE-BLOCK1 ]; then
+  [ -e $LG/block1 ] && { echo "ARCHIVE refused: $LG/block1 exists"; exit 2; }
+  mkdir -p $LG/block1 || exit 2
+  [ -d $LG/runs ] && mv $LG/runs $LG/block1/
+  for f in $LG/hold-* $LG/wda-restart-* $LG/serve-check.log $LG/endgate-HA.log $LG/void; do [ -e "$f" ] && mv "$f" $LG/block1/; done
+  sh $SS stop && sh $SS start || { echo "ARCHIVE done, but the servers did not restart: no block 2"; exit 4; }
+  echo "ARCHIVED block 1 into $LG/block1; servers restarted"; exit 0
+fi
+if [ "$1" = ENDGATE ]; then
+  PB=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$LG/serve-B.json','utf8')).port)") && BU=$(node tools/lan.mjs --url --port "$PB") || { echo "ENDGATE FAIL no B server" | tee $LG/endgate-HA.log; exit 4; }
+  { echo "== $(date -u +%FT%TZ) standalone end gate after HA"; node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label p153-HA-endgate --expect serious --max-c 44 --accept-induced --url "$BU"; g=$?
+    [ $g -eq 0 ] && echo "ENDGATE PASS" || echo "ENDGATE FAIL exit $g"; } > $LG/endgate-HA.log 2>&1
+  tail -1 $LG/endgate-HA.log; grep -q "^ENDGATE PASS" $LG/endgate-HA.log; exit $?
+fi
+# N4: park Safari on every exit of a part (not in dry mode)
+[ "$P153_DRY" = 1 ] || trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap)"' EXIT
+# N6: the servers' check, logged, at every part start
+{ echo "== $(date -u +%FT%TZ) part start: $*"; sh $SS check; } >> $LG/serve-check.log 2>&1 \
+  || { echo "BLOCK STOP: p153-serve.sh check failed (see $LG/serve-check.log)"; exit 4; }
+echo "SERVE CHECK ok: $(tail -4 $LG/serve-check.log | grep -c ' ok$') of 3 servers"
 # lead condition 6: a fresh WDA at the start of every part (not in dry mode)
 if [ "$P153_DRY" != 1 ]; then
   { node tools/iphone.mjs wda stop; node tools/iphone.mjs wda start --owner "$R"; node tools/iphone.mjs wda check; } > $LG/wda-restart-$(date +%s).log 2>&1 \
@@ -65,5 +98,4 @@ for spec in "$@"; do
     else run1 0 $H ${R1}r ${R2}r; N=H$(( ${H#H} + 1 )); run1 $LAST $N S1; fi
   else run1 $LAST $H $items; fi
 done
-[ "$P153_DRY" = 1 ] || node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
-echo "BLOCK PART DONE: $* (Safari parked)"
+echo "BLOCK PART DONE: $*"

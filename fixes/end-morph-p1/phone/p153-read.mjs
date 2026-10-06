@@ -1,18 +1,21 @@
 #!/usr/bin/env node
-// P-153 reader (frozen before data; card: fixes/end-morph-p1/README.md "P-153"). Phone no-worse check of end-morph P1
-// (PR-012 rev 1's composited clip reveal by fix-morph-gpu, ported onto v9-final + F1 + U2):
+// P-153 reader (frozen before data; card: fixes/end-morph-p1/README.md "P-153", rev 1.1). Phone no-worse check of end-morph
+// P1 (PR-012 rev 1's composited clip reveal by fix-morph-gpu, ported onto v9-final + F1 + U2):
 //   C (v9-final + F1 + U2, JS a6426953727a, CSS e1359ab9994a) vs V (C + P1, JS 4da641f828bb, CSS a81b9af7b2c9).
+// REV 1.1: a copy of fix-end-morph's P-152 rev 1.1 reader (fixes/end-morph-f12/phone/p152-read.mjs adf4e7a27122 at
+// ac229f7f; the decision rule, the permutation test on the mean difference, the part-2 end-gate void, near bands, EC1
+// slot and its self-test cases unchanged) with the P-153 arms, FIRST OPEN (below; the named risk) and the lead's late
+// P-152 delta (part 2 counts only after "HOLD HA VALID", or a standalone end gate after an HA stop).
 // A pure reader: no device, no measurement.
 //   node fixes/end-morph-p1/phone/p153-read.mjs <folder> [--json out.json]      (folder: out/p153/runs)
 //   node fixes/end-morph-p1/phone/p153-read.mjs --selftest
-// A copy of fix-end-morph's P-152 reader (fixes/end-morph-f12/phone/p152-read.mjs 005136ea3002 at d705bdd6) with the
-// P-153 arms, plus FIRST OPEN (below), the named risk; the decision rule and the end-zone metric are P-152's unchanged.
-// P-152's reader was built from fix-end-bg's P-150 reader (fixes/end-bg/phone/p150-read.mjs at 24041a92: decideNoWorse, the rule of P-150
+// Built from fix-end-bg's P-150 reader (fixes/end-bg/phone/p150-read.mjs at 24041a92: decideNoWorse, the rule of P-150
 // rev 1.1) and P-137's (p137-read.mjs: verdict, the after-touchend metric), with the metric moved to the end zone.
-// RUNS: counted EC1-EC4 (C) and EV1-EV4 (V), g-<run>.json + tl-<run>.json; a re-run <run>r replaces its run when the
-//   first try is INVALID (the first valid try counts). Sentinels S0, S1 (Timeline off, g- only). Attribution AC1, AV1
+// RUNS: counted EC1-EC4 (C) and EV1-EV4 (V), g-<run>.json + tl-<run>.json; a re-run <run>r replaces its run only when
+//   the first try is INVALID by readRun (the first valid try counts): a first try flagged by the runner only for a
+//   non-zero gesture exit, but valid by readRun, still counts and its re-run is ignored. Sentinels S0, S1 (Timeline off, g- only). Attribution AC1, AV1
 //   (after S1; read below, decide nothing). Records of a VOID hold are moved to out/p153/void/<H>/ by the runner before
-//   the read and never count (P-145 N1's rule). Paths: out/p153/void/<H>/.
+//   the read and never count (P-145 N1's rule).
 // PER RUN: the SIGNED P-129 reader rev 1.1 (research/serious-heat/p129-read.mjs readRun, role E) for the run gates G1-G6
 //   and the moving-frame rows (dt, band, toolbar step).
 // METRIC (the end zone): the run's moving frames (scrollY differs from the previous frame) in the reader's lastScreen
@@ -20,37 +23,54 @@
 //   innerHeight of the scroll (Chrome: endStart 5189 = max 5964 - 775, OBSERVED), so this band is the morph zone
 //   (m >= 0) and the screen before it. n = their number, s(th) = those with dt > th, th 30, 34, 38, 46, 50, 54.
 //   P-137's metric (lastScreen frames whose last touch event is a touchend) is reported, decides nothing.
-// DECISION (lead, 2026-10-06: "NO-WORSE as in P-152 (whatever bound I sign there after its read, take the same)";
-//   P-152's registered rule is P-150 rev 1.1's, written here; if the lead signs another bound for P-152 after its read,
-//   BOUND below changes in an addendum commit BEFORE any P-153 data, with a new pin; V against C, at least 3 valid runs
-//   per arm, both sentinels PASS).
-//   At >34 and at >50 separately, WORSE when EITHER
+// DECISION (card rev 1.1, lead-signed N1 of the pre-data read, 2026-10-06; V against C, at least 3 valid runs per arm,
+//   both sentinels PASS). At >34 and at >50 separately, WORSE when EITHER
 //   (a) full separation: min(V) > max(C); OR
-//   (b) the median bound: median(V) - median(C) > +2 at >34, > +1 at >50 (counts; on the rates basis 2 / median n(C)
-//       and 1 / median n(C)).
+//   (b) the median bound AND the permutation test: median(V) - median(C) > +2 at >34, > +1 at >50 (counts; on the
+//       rates basis 2 / median n(C) and 1 / median n(C)) AND an exact one-sided permutation p <= 0.05 on the MEAN
+//       difference (lead, 2026-10-06, for consistency with P-150 rev 1.3; permP copied from fix-end-bg's
+//       p150-read.mjs at 753366c1): p = the share of all C(nC + nV, nV) relabelings of the valid runs into the arms'
+//       sizes whose mean(V') - mean(C') is >= the observed one (the observed labelling included; ties count against V,
+//       i.e. in the numerator). At 4 v 4 the observed split must be among the top 3 of 70.
+//   Rev 1 had (b) without the permutation test; it failed a V = C resample of P-137's C runs 37-52 % of the time
+//   (ops-reader-P152 N1). False FAIL and power at 4 v 4 at P-137's noise: see the card's power note.
 //   Denominator guard 15 %: when median n differs between the arms by more than 15 % of C's, the rule runs on rates s/n.
+//   Precedence: VOID > INSUFFICIENT > FAIL / NO-WORSE PASS.
 //   NO-WORSE PASS: neither >34 nor >50 is WORSE. FAIL: either is WORSE (named, with (a) and/or (b)); a FAIL goes to the
-//   lead (block 2 or no landing). INSUFFICIENT: an arm has < 3 valid runs. VOID: a sentinel failed or is missing.
+//   lead (block 2, judged by itself with the same rule, never pooled; or no landing). INSUFFICIENT: an arm has < 3
+//   valid runs. VOID: a sentinel failed or is missing.
+//   END GATE OF PART 2 (lead N3, with the lead's late P-152 delta): part 2's end gate runs only in its last hold HA
+//   (after the attribution runs). Part 2's counted runs (EC2, EC3, EV3, EV4, EC4 and every re-run <run>r) count only
+//   when hold-HA.log (next to the runs folder) has "HOLD HA VALID", or, after an HA that stopped before its end gate
+//   ("HOLD HA VOID" for another reason), endgate-HA.log (p153-block.sh ENDGATE, run right after) has "ENDGATE PASS".
+//   Otherwise they are void: they leave the read (listed as INVALID "part 2 end gate").
 //   Twins (>30/>38 use the >34 bound, >46/>54 the >50 bound): a twin whose WORSE-or-not differs from its main
 //   threshold marks the result "threshold-sensitive" (reported; PASS/FAIL unchanged).
 //   A FAIL whose lowest V run at a failing threshold opens its hold (EV1 or EV3) is labelled "position-confounded"
 //   (P-150 N3; the outcome is unchanged).
-// FIRST OPEN (the named risk; reported per run, decides nothing in the rule above): PR-012 rev 1 on best-build paid a
-//   longer first frame when the menu opens (phone P-092, M driver: repeat opens +7 ms; the first open per page load V 41
-//   vs C 34.5 ms, n 4, ranges overlapping; rev 2 P-098: first open +6.5 ms, WORSE by its bound V <= C + 2 ms;
-//   fixes/morph-gpu/README.md). Here, per counted run: the opens are the frames whose morph value
-//   m = (scrollY - (maxY - innerHeight)) / innerHeight is > 0 while the previous frame's was <= 0 (m from the frame's
-//   own innerHeight and docH; the track = innerHeight is OBSERVED in Chrome, an approximation on the phone).
-//   O1 = the first open after load: f1 = its frame's dt, f12 = f1 + the next frame's dt, f123 = + the one after.
-//   Repeat opens: their f1 values and median. Per arm: median and range of O1.f1, O1.f12, O1.f123 and of the per-run
-//   repeat-open f1 medians. Label "FIRST-OPEN RISK SEEN" when median V O1.f1 - median C O1.f1 > 2 ms (rev 2's bound),
-//   also reported at f12 and f123; the label goes to the lead with the result, the NO-WORSE outcome stays as decided.
 // ATTRIBUTION (AC1, AV1 only; decides nothing): Timeline Paint records (any depth) that start inside a moving frame's gap
 //   (t - dt, t], split by the frame's morph value m = (scrollY - (maxY - innerHeight)) / innerHeight: m >= 0.55 (the
 //   range where F1 hides #platform) and 0 <= m < 0.55. Per arm: frames, Paint records, Paint records per frame.
 //   The geometry (track = innerHeight) is OBSERVED in Chrome; on the phone it is an approximation.
 // PER RUN (descriptive): hold and position (the card's plan), start (meta.date), gap since the previous counted or
-//   sentinel run, battery °C at its phone hold's start (meta.profile.start.battC).
+//   sentinel run, battery °C at its phone hold's start (meta.profile.start.battC), the near-band counts
+//   (30, 38] = s30 - s38 and (46, 54] = s46 - s54. EC1 SLOT (N7, descriptive): whether EC1 (H2, right after S0) is again
+//   C's maximum at >34 and >50, as it was in P-137 (OBSERVED there; P-137's C was v9-final + 7d, here C is
+//   v9-final + F1 + U2).
+// FIRST OPEN (the named risk; reported per run, decides nothing in the rule above; rev 1.1 after ops-reader-P153 N1-N3):
+//   PR-012 rev 1 on best-build paid a longer first frame when the menu opens (phone P-092, M driver: repeat opens after a
+//   full close +7 ms, V 62 vs C 55; the first open per page load V 41 vs C 34.5 ms, n 4, ranges overlapping; rev 2
+//   P-098: first open +6.5 ms, WORSE by its bound V <= C + 2 ms; fixes/morph-gpu/README.md at 6f824153).
+//   m per frame = (scrollY - (docH - innerHeight - lvh)) / lvh, the page's own formula (C JS 14318, track 100lvh, C CSS
+//   12413), with the run's largest innerHeight standing in for lvh (disclosed: exact only when that equals lvh).
+//   Opens: frames with m > 0 after a frame with m <= 0. Per open: f1 = the dt of that frame (the gap BEFORE it), f2 = the
+//   next dt (the gap in which the page's switch-on for that scrollY renders; P-092's first-frame number), f12, f123.
+//   O1 = the first open after load. Repeat opens are split: "full" = after the previous open reached m >= 0.99 (a full
+//   open and close, P-092's repeat opens) with no innerHeight change at the open frame; the rest (mostly toolbar steps
+//   moving innerHeight across m = 0; 12 of 13 per run in P-137's records) are counted, not compared.
+//   Per arm: median and range of O1.f1, f2, f12, f123, and of the per-run median f2 of the full repeat opens.
+//   "FIRST-OPEN RISK SEEN" when median V O1.f2 - median C O1.f2 > 2 ms (rev 2's bound); the label goes to the lead
+//   with the result, the NO-WORSE outcome stays as decided.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -77,42 +97,72 @@ export function afterTouchend(g, r) {
 }
 /** separation verdict (P-137's `verdict`, WORSE branch used here). */
 export function separated(c, v) { return c.length >= 3 && v.length >= 3 && Math.min(...v) > Math.max(...c); }
-// P-152's registered bound (P-150 rev 1.1). Changed only by a pre-data addendum when the lead signs another for P-152.
 export const BOUND = { 30: 2, 34: 2, 38: 2, 46: 1, 50: 1, 54: 1 };
+export const FIRST_IN_HOLD = ['EV1', 'EV3'];
 export const FIRST_OPEN_BOUND_MS = 2;
-/** Opens of one run: frames whose m > 0 while the previous frame's m <= 0 (FIRST OPEN above). */
+/** Opens of one run (FIRST OPEN above). */
 export function opens(g) {
   const seg = g.run.segments[0], fr = seg.frames, docH = seg.docH1 ?? seg.docH ?? 0;
-  const mOf = (f) => { const ih = f[3], maxY = docH - ih; return (f[2] - (maxY - ih)) / ih; };
-  const out = [];
-  for (let i = 1; i < fr.length; i++) if (mOf(fr[i]) > 0 && mOf(fr[i - 1]) <= 0) {
-    const d = (k) => (fr[i + k] ? fr[i + k][1] : null);
-    const f1 = d(0), f2 = d(1), f3 = d(2);
-    out.push({ i, t: fr[i][0], f1, f12: f2 == null ? null : f1 + f2, f123: f2 == null || f3 == null ? null : f1 + f2 + f3 });
+  const lvh = Math.max(...fr.map((f) => f[3]));
+  const mOf = (f) => (f[2] - (docH - f[3] - lvh)) / lvh;
+  const out = []; let peak = -Infinity, seen = false;
+  for (let i = 1; i < fr.length; i++) {
+    if (mOf(fr[i]) > 0 && mOf(fr[i - 1]) <= 0) {
+      const d = (k) => (fr[i + k] ? fr[i + k][1] : null);
+      const f1 = d(0), f2 = d(1), f3 = d(2);
+      out.push({ i, t: fr[i][0], f1, f2, f12: f2 == null ? null : f1 + f2, f123: f2 == null || f3 == null ? null : f1 + f2 + f3,
+        ihStep: fr[i][3] !== fr[i - 1][3], afterFullClose: seen && peak >= 0.99 });
+      peak = -Infinity; seen = true;
+    }
+    if (seen) peak = Math.max(peak, mOf(fr[i]));
   }
   return out;
 }
-/** Per-run first-open record: O1 and the repeat opens' f1 values. */
+/** Per-run first-open record: O1, the full repeat opens' f2 values, the number of other opens. */
 export function firstOpen(g) {
   const o = opens(g);
-  if (!o.length) return { opens: 0, o1: null, repeatF1: [], repeatF1Median: null };
-  const rep = o.slice(1).map((x) => x.f1);
-  return { opens: o.length, o1: o[0], repeatF1: rep, repeatF1Median: med(rep) };
+  if (!o.length) return { opens: 0, o1: null, repeatFull: [], repeatFullF2Median: null, repeatOther: 0 };
+  const full = o.slice(1).filter((x) => x.afterFullClose && !x.ihStep).map((x) => x.f2).filter((x) => x != null);
+  return { opens: o.length, o1: o[0], repeatFull: full, repeatFullF2Median: med(full), repeatOther: o.length - 1 - full.length };
 }
-/** Arm summary of the first open and the risk label (decides nothing). */
+/** Arm summary of the first open and the risk label on f2 (decides nothing). */
 export function firstOpenSummary(perC, perV) {
   const st = (a) => { const v = a.filter((x) => x != null); return v.length ? { median: med(v), min: Math.min(...v), max: Math.max(...v), n: v.length } : null; };
   const out = {};
-  for (const k of ['f1', 'f12', 'f123']) {
+  for (const k of ['f1', 'f2', 'f12', 'f123']) {
     const c = st(perC.map((r) => r.o1?.[k] ?? null)), v = st(perV.map((r) => r.o1?.[k] ?? null));
     const diff = c && v ? v.median - c.median : null;
     out[k] = { C: c, V: v, diff, risk: diff != null && diff > FIRST_OPEN_BOUND_MS + 1e-12 };
   }
-  out.repeatF1 = { C: st(perC.map((r) => r.repeatF1Median)), V: st(perV.map((r) => r.repeatF1Median)) };
-  out.label = out.f1.risk ? 'FIRST-OPEN RISK SEEN' : (out.f1.diff == null ? 'FIRST-OPEN NOT READ (no open in an arm)' : 'first open within +2 ms');
+  out.repeatFullF2 = { C: st(perC.map((r) => r.repeatFullF2Median)), V: st(perV.map((r) => r.repeatFullF2Median)) };
+  out.label = out.f2.risk ? 'FIRST-OPEN RISK SEEN' : (out.f2.diff == null ? 'FIRST-OPEN NOT READ (no open in an arm)' : 'first open within +2 ms');
   return out;
 }
-export const FIRST_IN_HOLD = ['EV1', 'EV3'];
+/** Part 2's end gate (lead N3 and the late P-152 delta): null when part 2 counts, else the reason. */
+export function part2Gate(haText, egText) {
+  if (haText == null) return 'part 2 end gate: no hold-HA.log';
+  if (/^HOLD HA VALID/m.test(haText)) return null;
+  if (/^HOLD HA VOID end gate/m.test(haText)) return 'part 2 end gate: HA end gate failed';
+  if (/^HOLD HA VOID/m.test(haText)) return egText != null && /^ENDGATE PASS/m.test(egText) ? null : 'part 2 end gate: HA stopped before its end gate and no standalone ENDGATE PASS';
+  return 'part 2 end gate: hold-HA.log has no final HOLD HA line';
+}
+export const P_MAX = 0.05;
+/** Exact one-sided permutation p for "V higher than C" on the mean difference; ties count against V.
+ *  Copied from fix-end-bg's fixes/end-bg/phone/p150-read.mjs at 753366c1 (P-150 rev 1.3), arm name N -> V only. */
+export function permP(c, x) {
+  const all = [...c, ...x], n = all.length, k = x.length, mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+  const obs = mean(x) - mean(c), eps = 1e-9;
+  let tot = 0, ge = 0;
+  const pick = (start, chosen) => {
+    if (chosen.length === k) {
+      const inX = new Set(chosen), xs = chosen.map((i) => all[i]), cs = all.filter((_, i) => !inX.has(i));
+      tot++; if (mean(xs) - mean(cs) >= obs - eps) ge++; return;
+    }
+    for (let i = start; i <= n - (k - chosen.length); i++) pick(i + 1, [...chosen, i]);
+  };
+  pick(0, []);
+  return { p: ge / tot, ge, tot };
+}
 export function decideNoWorse(c, x, names = null) {
   const nC = med(c.map((m) => m.n)), nX = med(x.map((m) => m.n));
   const basisRates = c.length && x.length && nC ? Math.abs(nX - nC) > 0.15 * nC : false;
@@ -121,14 +171,19 @@ export function decideNoWorse(c, x, names = null) {
   const val = (m, th) => (basisRates ? (m.n ? m.s[th] / m.n : 0) : m.s[th]);
   const bound = (th) => (basisRates ? BOUND[th] / nC : BOUND[th]);
   const diff = Object.fromEntries(TH.map((th) => [th, med(x.map((m) => val(m, th))) - med(c.map((m) => val(m, th)))]));
+  const perm = Object.fromEntries(TH.map((th) => [th, permP(c.map((m) => val(m, th)), x.map((m) => val(m, th)))]));
+  const fmtP = (th) => `p ${perm[th].ge}/${perm[th].tot}`;
   const why = (th) => [separated(c.map((m) => val(m, th)), x.map((m) => val(m, th))) ? 'separated' : null,
-    diff[th] > bound(th) + 1e-12 ? `median +${+diff[th].toFixed(4)} > +${+bound(th).toFixed(4)}` : null].filter(Boolean);
+    diff[th] > bound(th) + 1e-12 && perm[th].p <= P_MAX + 1e-12 ? `median +${+diff[th].toFixed(4)} > +${+bound(th).toFixed(4)}, ${fmtP(th)}` : null].filter(Boolean);
   const isW = (th) => why(th).length > 0;
   const worse = [34, 50].filter(isW);
   const sensitive = isW(30) !== isW(34) || isW(38) !== isW(34) || isW(46) !== isW(50) || isW(54) !== isW(50);
   let confounded = false;
   if (worse.length && names) for (const th of worse) { const vs = x.map((m) => val(m, th)), lo = Math.min(...vs); if (FIRST_IN_HOLD.includes(names[vs.indexOf(lo)])) confounded = true; }
-  return { result: worse.length ? `FAIL (WORSE at ${worse.map((t) => `>${t} [${why(t).join(', ')}]`).join('; ')})` : 'NO-WORSE PASS', sensitive, confounded, basis, diff };
+  // reported, decides nothing: thresholds whose median bound is exceeded while p > 0.05 (rev 1 would have failed them)
+  const boundOnly = TH.filter((th) => diff[th] > bound(th) + 1e-12 && perm[th].p > P_MAX + 1e-12).map((th) => `>${th} ${fmtP(th)}`);
+  const p = Object.fromEntries(TH.map((th) => [th, `${perm[th].ge}/${perm[th].tot}`]));
+  return { result: worse.length ? `FAIL (WORSE at ${worse.map((t) => `>${t} [${why(t).join(', ')}]`).join('; ')})` : 'NO-WORSE PASS', sensitive, confounded, basis, diff, p, boundOnly };
 }
 /** Attribution: Paint records per moving frame by morph range (AC1 / AV1). */
 export function attribution(g, tl) {
@@ -152,10 +207,27 @@ function selftest() {
   const C = [mk(20), mk(22), mk(19), mk(21)];
   ok(decideNoWorse(C, [mk(21), mk(20), mk(23), mk(19)]).result, 'NO-WORSE PASS', 'overlap, median +0.5');
   ok(decideNoWorse(C, [mk(10), mk(9), mk(11), mk(12)]).result, 'NO-WORSE PASS', 'better is a pass');
-  ok(decideNoWorse(C, [mk(23), mk(18), mk(25), mk(24)]).result, 'FAIL (WORSE at >34 [median +3 > +2])', 'clause (b) alone at >34');
+  const bo = decideNoWorse(C, [mk(23), mk(18), mk(25), mk(24)]);
+  ok(bo.result, 'NO-WORSE PASS', 'rev 1.1: median bound alone (+3 > +2) passes because p > 0.05');
+  ok(bo.boundOnly.some((x) => x.startsWith('>34 p ')), true, 'rev 1.1: the bound-only threshold is reported with its p');
+  ok(decideNoWorse([mk(20), mk(21), mk(19), mk(22)], [mk(22), mk(26), mk(27), mk(28)]).result, 'FAIL (WORSE at >34 [median +6 > +2, p 2/70])', 'clause (b) alone at >34: bound and p <= 0.05, not separated (22 = 22)');
   ok(decideNoWorse([mk(20), mk(21), mk(22), mk(21)], [mk(23), mk(23), mk(23), mk(23)]).result, 'FAIL (WORSE at >34 [separated])', 'clause (a) alone: separated, median +2 within the bound');
-  ok(decideNoWorse(C, [mk(30), mk(28), mk(31), mk(29)]).result, 'FAIL (WORSE at >34 [separated, median +9 > +2])', 'both clauses at >34');
-  ok(decideNoWorse(C, [mk(20, 4), mk(21, 5), mk(19, 1), mk(21, 4)]).result, 'FAIL (WORSE at >50 [median +2 > +1])', 'clause (b) at >50');
+  ok(decideNoWorse(C, [mk(30), mk(28), mk(31), mk(29)]).result, 'FAIL (WORSE at >34 [separated, median +9 > +2, p 1/70])', 'both clauses at >34');
+  ok(decideNoWorse(C, [mk(20, 4), mk(21, 5), mk(19, 1), mk(21, 4)]).result, 'NO-WORSE PASS', 'rev 1.1: median bound alone at >50 (+2 > +1, p 5/70) passes');
+  ok(decideNoWorse([mk(20, 1), mk(21, 2), mk(19, 1), mk(21, 2)], [mk(20, 2), mk(21, 4), mk(19, 5), mk(21, 4)]).result, 'FAIL (WORSE at >50 [median +2.5 > +1, p 3/70])', 'clause (b) at >50: bound and p 3/70, not separated');
+  // P-137's records (fix-end-bg's block, read by this reader): C = v9-final + 7d, V = + fix; end zone per run
+  const R = (n, a, b, c, d, e, f) => ({ n, s: { 30: a, 34: b, 38: c, 46: d, 50: e, 54: f } });
+  const p137C = [R(1394, 55, 40, 31, 16, 15, 12), R(1428, 36, 26, 14, 5, 1, 0), R(1438, 37, 25, 16, 8, 5, 2), R(1431, 46, 29, 18, 5, 3, 2)];
+  const p137V = [R(1492, 13, 4, 1, 0, 0, 0), R(1496, 12, 6, 4, 1, 1, 1), R(1490, 12, 7, 1, 0, 0, 0), R(1489, 15, 9, 3, 1, 1, 0)];
+  ok(decideNoWorse(p137C, [p137C[2], p137C[0], p137C[3], p137C[1]]).result, 'NO-WORSE PASS', 'A/A: P-137 C against a relabeled copy of itself passes');
+  ok(decideNoWorse(p137C, p137V).result, 'NO-WORSE PASS', 'P-137 as recorded passes');
+  ok(decideNoWorse(p137V, p137C).result, 'FAIL (WORSE at >34 [separated, median +21 > +2, p 1/70]; >50 [median +3.5 > +1, p 3/70])', 'P-137 arms swapped (+21 / +3.5) fails');
+  ok(JSON.stringify(permP([10, 11, 12, 21], [20, 22, 23, 30])), JSON.stringify({ p: 2 / 70, ge: 2, tot: 70 }), 'permP 4 v 4: 2 of 70 relabelings (P-150 rev 1.3 case)');
+  ok(permP([1, 2, 3, 4], [11, 12, 13, 14]).ge, 1, 'permP 4 v 4: full separation is 1 of 70');
+  ok(permP([1, 2, 3], [11, 12, 13, 14]).p, 1 / 35, 'permP 3 v 4: full separation is 1 of 35 (clause (b) can fire)');
+  ok(permP([1, 2, 3], [4, 5, 6]).p, 0.05, 'permP 3 v 3: full separation is the only p <= 0.05');
+  ok(permP([1, 2, 4], [4, 5, 6]).p > 0.05, true, 'permP 3 v 3: a tie at the boundary gives p > 0.05 (ties against V)');
+  ok(permP([5, 5, 5], [5, 5, 5]).ge, 20, 'permP: all ties, every relabeling counts (p 1)');
   ok(decideNoWorse(C, [mk(20, 3), mk(21, 3), mk(19, 3), mk(21, 3)]).result, 'FAIL (WORSE at >50 [separated])', 'clause (a) at >50, median +1 within bound');
   ok(decideNoWorse(C, [mk(21), mk(20), mk(23)]).result, 'NO-WORSE PASS', '3 valid runs are enough');
   ok(decideNoWorse(C, [mk(21), mk(20)]).result, 'INSUFFICIENT', 'under 3 valid V runs');
@@ -177,16 +249,28 @@ function selftest() {
   const tl = { offsetMs: 0, recs: [{ type: 'Paint', startTime: 0.010 }, { type: 'Paint', startTime: 0.020 }, { type: 'Paint', startTime: 0.040 }, { type: 'Paint', startTime: 0.060 }] };
   const a = attribution(g, tl);
   ok(`${a.lo.frames}/${a.lo.paints} ${a.hi.frames}/${a.hi.paints}`, '1/1 2/2', 'attribution split at m 0.55 (still frame skipped)');
-  // first open: ih 800, docH 6800 -> zone starts at y 5200 (m 0); opens at i 2 (5300) and i 6 (5250), a close between
-  const go = { run: { segments: [{ docH: 6800, frames: [[0, 16, 5000, 800], [16, 16, 5200, 800], [56, 40, 5300, 800], [76, 20, 5500, 800], [92, 16, 5600, 800], [108, 16, 5100, 800], [150, 42, 5250, 800], [170, 20, 5400, 800]] }] } };
-  const fo = firstOpen(go);
-  ok(`${fo.opens} ${fo.o1.i} ${fo.o1.f1} ${fo.o1.f12} ${fo.o1.f123}`, '2 2 40 60 76', 'first open: m 0 is not open, O1 at the first m > 0 frame, f12 and f123 sums');
-  ok(`${fo.repeatF1.join(",")} ${fo.repeatF1Median} ${opens(go)[1].f123}`, '42 42 null', 'repeat open f1; f123 null at the run end');
+  // P-153: first open (ih = lvh 800, docH 6800 -> m 0 at y 5200, m 1 at 6000). Opens at i 2 (5300) and i 7 (5250)
+  // after a full open (6000 at i 4) and close (5100 at i 5..6); i 9 opens on a toolbar step (ih 800 -> 760).
+  const go = { run: { segments: [{ docH: 6800, frames: [[0, 16, 5000, 800], [16, 16, 5200, 800], [56, 40, 5300, 800], [76, 20, 5500, 800],
+    [92, 16, 6000, 800], [108, 16, 5100, 800], [124, 16, 5100, 800], [166, 42, 5250, 800], [190, 24, 5220, 760], [206, 16, 5220, 800], [222, 16, 5300, 800]] }] } };
+  const fo = firstOpen(go), oo = opens(go);
+  ok(`${fo.opens} ${fo.o1.i} ${fo.o1.f1} ${fo.o1.f2} ${fo.o1.f12} ${fo.o1.f123}`, '3 2 40 20 60 76', 'first open: m 0 is not open; O1 at the first m > 0 frame; f1, f2, f12, f123');
+  ok(`${oo[1].i} ${oo[1].afterFullClose} ${oo[1].ihStep} ${oo[1].f2}`, '7 true false 24', 'repeat open after a full open and close');
+  ok(`${oo[2].i} ${oo[2].ihStep} ${oo[2].afterFullClose}`, '9 true false', 'an open on a toolbar step (innerHeight change; m from the run lvh 800)');
+  ok(`${fo.repeatFull.join(',')} ${fo.repeatOther} ${oo[2].f123}`, '24 1 null', 'repeat split: 1 full (f2 24), 1 other; f123 null at the run end');
   ok(firstOpen({ run: { segments: [{ docH: 6800, frames: [[0, 16, 1000, 800], [16, 16, 2000, 800]] }] } }).o1, null, 'no open in a run');
-  const R = (f1) => ({ o1: { f1, f12: f1 + 20, f123: f1 + 36 }, repeatF1Median: f1 + 10 });
-  ok(firstOpenSummary([R(34), R(35), R(36), R(33)], [R(41), R(40), R(49), R(38)]).label, 'FIRST-OPEN RISK SEEN', 'first-open risk at median +5 ms');
-  ok(firstOpenSummary([R(34), R(35), R(36), R(33)], [R(36), R(35), R(37), R(34)]).label, 'first open within +2 ms', 'first open +1.5 ms is within the bound');
-  ok(firstOpenSummary([R(34), R(35), R(36)], [{ o1: null, repeatF1Median: null }]).label, 'FIRST-OPEN NOT READ (no open in an arm)', 'no open in V');
+  const RO = (f2) => ({ o1: { f1: 16, f2, f12: 16 + f2, f123: 36 + f2 }, repeatFullF2Median: f2 + 10 });
+  ok(firstOpenSummary([RO(34), RO(35), RO(36), RO(33)], [RO(41), RO(40), RO(49), RO(38)]).label, 'FIRST-OPEN RISK SEEN', 'risk label on f2 at median +5 ms');
+  ok(firstOpenSummary([RO(34), RO(35), RO(36), RO(33)], [RO(36), RO(35), RO(37), RO(34)]).label, 'first open within +2 ms', 'f2 +1.5 ms is within the bound');
+  ok(firstOpenSummary([RO(34), RO(35), RO(36)], [{ o1: null, repeatFullF2Median: null }]).label, 'FIRST-OPEN NOT READ (no open in an arm)', 'no open in V');
+  ok(firstOpenSummary([{ o1: { f1: 16, f2: 30, f12: 46, f123: 60 } }, { o1: { f1: 16, f2: 30, f12: 46, f123: 60 } }], [{ o1: { f1: 30, f2: 30, f12: 60, f123: 74 } }, { o1: { f1: 30, f2: 30, f12: 60, f123: 74 } }]).label, 'first open within +2 ms', 'the label ignores f1 (+14 ms) and reads f2');
+  // part 2 end gate (lead N3 + late delta)
+  ok(part2Gate('HOLD HA VALID 420 s', null), null, 'HA VALID: part 2 counts');
+  ok(part2Gate('HOLD HA VOID end gate exit 8', 'ENDGATE PASS'), 'part 2 end gate: HA end gate failed', 'HA end gate failed: void, a later standalone gate does not rescue it');
+  ok(part2Gate('HOLD HA VOID time: AV1 would start', 'ENDGATE PASS 2026'), null, 'HA stopped early, standalone end gate PASS: part 2 counts');
+  ok(part2Gate('HOLD HA VOID time: AV1 would start', null), 'part 2 end gate: HA stopped before its end gate and no standalone ENDGATE PASS', 'HA stopped early, no standalone gate: void');
+  ok(part2Gate(null, null), 'part 2 end gate: no hold-HA.log', 'no HA log: void');
+  ok(part2Gate('HOLD HA DRY ok', null), 'part 2 end gate: hold-HA.log has no final HOLD HA line', 'a dry log does not count');
   console.log(`SELFTEST ok (${n} checks)`);
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -199,12 +283,20 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const PLAN = { S0: 'H2/1', EC1: 'H2/2', EV1: 'H3/1', EV2: 'H3/2', EC2: 'H4/1', EC3: 'H4/2', EV3: 'H5/1', EV4: 'H5/2', EC4: 'H6/1', S1: 'H7+/last' };
   const t0 = (g) => (g?.meta?.date ? Date.parse(g.meta.date) : null);
   const starts = [];
+  // lead N3: part 2's end gate sits in HA only; a missing HA log or a failed HA end gate voids part 2's counted runs
+  const haLog = join(dirname(dir.replace(/\/+$/, '')), 'hold-HA.log');
+  const haText = existsSync(haLog) ? readFileSync(haLog, 'utf8') : null;
+  const egLog = join(dirname(dir.replace(/\/+$/, '')), 'endgate-HA.log');
+  const part2Void = part2Gate(haText, existsSync(egLog) ? readFileSync(egLog, 'utf8') : null);
+  const PART1 = ['EC1', 'EV1', 'EV2'];
+  out.part2 = part2Void || 'end gate ok (HA)';
   for (const s of ['S0', 'S1']) { const g = load(`g-${s}.json`); const r = g ? readRun(g, null, 'S') : null; out.sentinels[s] = r ? { fps: r.fps, slowShare: r.slowShare, sentinel: r.sentinel } : { sentinel: 'FAIL (no record)' }; if (g) starts.push([s, t0(g)]); }
   for (const arm of ['C', 'V']) for (let k = 1; k <= 4; k++) {
     const base = `E${arm}${k}`; let used = null;
     for (const name of [base, `${base}r`]) {
       const g = load(`g-${name}.json`), tl = load(`tl-${name}.json`);
       if (!g) continue;
+      if (part2Void && !PART1.includes(name)) { out.invalid[name] = [part2Void]; continue; }
       const r = readRun(g, tl, 'E');
       if (r.why.length) { out.invalid[name] = r.why; continue; }
       used = name; const w = endZone(r), at = afterTouchend(g, r), f = firstOpen(g);
@@ -221,11 +313,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   out.firstOpen = firstOpenSummary(fo.C, fo.V);
   out.medians = Object.fromEntries(['C', 'V'].map((x) => [x, Object.fromEntries(TH.map((th) => [`dt>${th}`, med(per[x].map((m) => m.s[th]))]))]));
   console.log(`P-153 read: sentinels ${JSON.stringify(out.sentinels)}`);
-  for (const [n, r] of Object.entries(out.runs)) console.log(`  ${n} (${r.arm}) ${r.hold} start ${r.start} gap ${r.gapS ?? '-'} s batt ${r.battC ?? '-'} C | end zone n ${r.n} >30 ${r.s[30]} >34 ${r.s[34]} >38 ${r.s[38]} | >46 ${r.s[46]} >50 ${r.s[50]} >54 ${r.s[54]} | after touchend n ${r.afterTouchend.n} >34 ${r.afterTouchend.s[34]} | first open after load f1 ${r.firstOpen.o1?.f1 ?? '-'} f12 ${r.firstOpen.o1?.f12 ?? '-'} f123 ${r.firstOpen.o1?.f123 ?? '-'} ms, opens ${r.firstOpen.opens}, repeat f1 median ${r.firstOpen.repeatF1Median ?? '-'}`);
+  for (const [n, r] of Object.entries(out.runs)) console.log(`  ${n} (${r.arm}) ${r.hold} start ${r.start} gap ${r.gapS ?? '-'} s batt ${r.battC ?? '-'} C | end zone n ${r.n} >30 ${r.s[30]} >34 ${r.s[34]} >38 ${r.s[38]} | >46 ${r.s[46]} >50 ${r.s[50]} >54 ${r.s[54]} | near bands (30,38] ${r.s[30] - r.s[38]} (46,54] ${r.s[46] - r.s[54]} | after touchend n ${r.afterTouchend.n} >34 ${r.afterTouchend.s[34]} | first open after load f1 ${r.firstOpen.o1?.f1 ?? '-'} f2 ${r.firstOpen.o1?.f2 ?? '-'} f12 ${r.firstOpen.o1?.f12 ?? '-'} f123 ${r.firstOpen.o1?.f123 ?? '-'} ms; opens ${r.firstOpen.opens} (full repeats ${r.firstOpen.repeatFull.length}, f2 median ${r.firstOpen.repeatFullF2Median ?? '-'}; other ${r.firstOpen.repeatOther})`);
   for (const [n, w] of Object.entries(out.invalid)) console.log(`  INVALID ${n}: ${w.join('; ')}`);
-  console.log(`DECISION ${out.result.result}${out.result.confounded ? ' [position-confounded]' : ''}${out.result.sensitive ? ' [threshold-sensitive]' : ''} ${out.result.basis || ''} ${out.result.diff ? 'median V-C ' + JSON.stringify(out.result.diff) : ''}`);
+  console.log(`PART 2 ${out.part2}`);
+  console.log(`DECISION ${out.result.result}${out.result.confounded ? ' [position-confounded]' : ''}${out.result.sensitive ? ' [threshold-sensitive]' : ''} ${out.result.basis || ''} ${out.result.diff ? 'median V-C ' + JSON.stringify(out.result.diff) : ''}${out.result.p ? ' p ' + JSON.stringify(out.result.p) : ''}`);
+  if (out.result.boundOnly?.length) console.log(`  median bound exceeded with p > 0.05 (not WORSE in rev 1.1; reported): ${out.result.boundOnly.join(', ')}`);
+  // N7 (OBSERVED in P-137: EC1, right after S0 in H2, was C's maximum at both thresholds): does it repeat?
+  const ec1 = out.runs.EC1, cs = Object.values(out.runs).filter((r) => r.arm === 'C');
+  if (ec1 && cs.length > 1) for (const th of [34, 50]) console.log(`EC1 SLOT >${th}: EC1 ${ec1.s[th]}, C runs ${cs.map((r) => r.s[th]).join('/')}; EC1 is C's maximum: ${ec1.s[th] >= Math.max(...cs.map((r) => r.s[th])) ? 'yes' : 'no'} (descriptive)`);
   { const F = out.firstOpen, d = (k) => `${k} C ${F[k].C ? `${F[k].C.median} (${F[k].C.min}-${F[k].C.max})` : '-'} V ${F[k].V ? `${F[k].V.median} (${F[k].V.min}-${F[k].V.max})` : '-'} diff ${F[k].diff ?? '-'}`;
-    console.log(`FIRST OPEN (named risk; decides nothing) ${F.label}: ${d('f1')} | ${d('f12')} | ${d('f123')} | repeat-open f1 medians C ${F.repeatF1.C?.median ?? '-'} V ${F.repeatF1.V?.median ?? '-'} ms`); }
+    console.log(`FIRST OPEN (named risk; decides nothing) ${F.label}: ${d('f2')} | ${d('f1')} | ${d('f12')} | ${d('f123')} | full repeat opens f2 medians C ${F.repeatFullF2.C?.median ?? '-'} V ${F.repeatFullF2.V?.median ?? '-'} ms`); }
   console.log(`ATTRIBUTION (decides nothing) ${JSON.stringify(out.attribution)}`);
   console.log('NOTE first-in-hold (disclosed): EV1, EC2, EV3 and EC4 open their holds (V twice, C twice)');
   if (jsonOut) writeFileSync(jsonOut, JSON.stringify(out, null, 1));
