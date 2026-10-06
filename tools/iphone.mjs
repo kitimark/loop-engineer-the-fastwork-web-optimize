@@ -29,7 +29,7 @@
 //   node tools/iphone.mjs battery [--every 30] [--seconds N] [--out f.jsonl]   # battery log (I-075; no lease, no page):
 //        # one JSON line per idevicediagnostics read (BATTERY_KEYS only), every --every s for --seconds (lib/iphone-battery.mjs)
 //   node tools/lock.mjs release iphone --owner <topic>
-//   I-123: every command that needs the lease (open, scroll, record, gesture, run, park, safari-restart, wda build|start)
+//   I-123: every command that needs the lease (open, scroll, record, gesture, run, park, safari-restart, wda build|start|ensure)
 //   also refuses (exit 1, "WAIT: the user's step C-… by <agent> … is on the iPhone") while another owner's console step
 //   is on the phone (begun, not answered, skipped or cancelled): wait for it (console.mjs wait <id> --until answered).
 //   --ignore-step C-NNN passes one named step (only one its owner really left behind).
@@ -38,6 +38,9 @@
 // finger-simulation.md; NEW MEASUREMENT CODE, gesture numbers compare only with the same script hash):
 //   node tools/iphone.mjs wda status | check | build --owner <topic> | start --owner <topic> | stop   # tools/lib/wda-runner.mjs
 //        # wda check: exit 0 WDA READY / 3 WDA NOT READY, no lease; block runners run it before the start gate (I-112)
+//   node tools/iphone.mjs wda ensure --owner <topic> [--timeout 120] [--forward-wait S] [--usb-wait 20] [--retry-wait 10] [--no-retry]
+//        # I-220, for a part start: keeps a READY WDA, else restarts what is down (iproxy only when the runner is up),
+//        # one retry on XCTest's automation-mode timeout; exit 0 WDA READY / 3 WDA NOT READY / 4 WDA REPLUG NEEDED
 //        # gesture --dry-run prints GESTURE_BUDGET_S: plan that per G run (whole run, not only the strokes; I-112)
 //   node tools/iphone.mjs gesture tools/gestures/finger-protocol-v1.json --owner <topic> [--label l]
 //        [--variant asPerformed|slow] [--param k=v]... [--inject <logger.mjs> | --morph-log <morph-log.mjs>]
@@ -104,7 +107,8 @@
 //        # 8 misfit (+ the step); inside your hold it is the hold's start read, so the first run reads nothing more.
 //        # Before a finger test (record) run it first, so a misfit never meets the user's Start.
 //   node tools/iphone.mjs profile --owner <topic> --end                      # the hold's end read now; exit 8 on drift
-// Exit codes: 0 ok, 1 error or WAIT, 2 refused in a shared slot, 3 WDA NOT READY (wda check), 6 PARTIAL (record),
+// Exit codes: 0 ok, 1 error or WAIT, 2 refused in a shared slot, 3 WDA NOT READY (wda check|ensure), 4 WDA REPLUG NEEDED
+// (wda ensure: re-plug the cable, then re-run), 6 PARTIAL (record),
 // 8 PROFILE (the phone's thermal state does not fit --profile).
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
@@ -409,8 +413,8 @@ async function main() {
   }
   if (cmd === 'gesture') return (await import('./lib/gesture-run.mjs')).gestureCmd({ argv, arg, opt, flag, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'wda') {
-    const c = await (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, requireLease });
-    if (arg === 'check' && c) { await clearMark(); process.exit(c); } // I-112: 3 = WDA NOT READY (other subcommands keep exit 0)
+    const c = await (await import('./lib/wda-runner.mjs')).wdaCmd({ sub: arg, opt, flag, requireLease });
+    if ((arg === 'check' || arg === 'ensure') && c) { await clearMark(); process.exit(c); } // I-112: 3 = WDA NOT READY; I-220: ensure 4 = WDA REPLUG NEEDED
     return c;
   }
   if (cmd === 'safari-restart') {
@@ -420,6 +424,6 @@ async function main() {
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'profile') return profileCmd();
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(e?.exitCode || 1); }); // I-186: a profile misfit exits 8

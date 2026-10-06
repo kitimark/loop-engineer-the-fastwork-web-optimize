@@ -116,3 +116,38 @@ test('I-112: runBudgetMs plans the whole G run; ownHoldLeftMs reads this process
   assert.equal(ownHoldLeftMs({ holder: null, stale: null }, 'chrome-measure:aaaaaaaaaaaa', now), null, 'free');
   assert.equal(ownHoldLeftMs({ holder: holder({ expiresAt: new Date(now + 40000).toISOString() }), stale: null }, 'chrome-measure:aaaaaaaaaaaa', now), 40000, 'a lease: its expiry');
 });
+
+// I-220 (P-152/P-153/P-155, 2026-10-06): kits restarted WDA at every part start; 6 of 22 starts that day failed with
+// XCTest "Timed out while enabling automation mode" (60 s after "Running tests..."), later ones with the runner up but iproxy
+// finding no USB device. Every start, good or failed, also prints "Supported platforms for the buildables in the
+// current scheme is empty" and "Using the first of multiple matching destinations": noise, never a failure signature.
+const NOISE = '2026-10-06 16:47:51.308 xcodebuild[1:2] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.\n--- xcodebuild: WARNING: Using the first of multiple matching destinations:\n';
+test('I-220: classifyStart reads a start\'s runner.log and iproxy.log segments (automation timeout, no USB device, forward, launch)', async () => {
+  const { classifyStart } = await import('../../tools/lib/wda-runner.mjs');
+  const RUN = '2026-10-06 16:48:00.409247+0700 WebDriverAgentRunner-Runner[23050:3494038] [Default] Running tests...\n';
+  const AUTO = '2026-10-06 16:49:00.499953+0700 WebDriverAgentRunner-Runner[23050:3494038] [Default] Failed to initialize for UI testing: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1000 "Timed out while enabling automation mode." UserInfo={}\n** BUILD INTERRUPTED **\n';
+  const UP = '2026-10-06 16:53:17.212647+0700 WebDriverAgentRunner-Runner[23291:3498345] ServerURLHere->http://10.0.0.9:8100<-ServerURLHere\n';
+  const REFUSED = 'waiting for connection\nNew connection for 8100->8100, fd = 5\nRequesting connection to USB device handle 121 (serial: X), port 8100\nError connecting to device: Connection refused\n';
+  const NODEV = 'New connection for 8100->8100, fd = 5\nwaiting for connection\nNo connected/matching device found, disconnecting client.\n';
+  assert.equal(classifyStart({ runner: NOISE + RUN + AUTO, iproxy: REFUSED.repeat(3) }), 'automation-timeout');
+  assert.equal(classifyStart({ runner: NOISE + RUN + UP, iproxy: NODEV.repeat(5) }), 'no-usb', 'the 09:53Z start: runner up, usbmux has no device');
+  assert.equal(classifyStart({ runner: NOISE + RUN + UP, iproxy: REFUSED + NODEV }), 'no-usb', 'the last device line decides: it went away');
+  assert.equal(classifyStart({ runner: NOISE + RUN + UP, iproxy: NODEV + REFUSED }), 'forward', 'the device came back: not a re-plug case');
+  assert.equal(classifyStart({ runner: NOISE + RUN + UP, iproxy: 'Creating listening port 8100 for device port 8100\n' }), 'forward');
+  assert.equal(classifyStart({ runner: NOISE.repeat(4) + RUN, iproxy: REFUSED }), 'launch', '"Supported platforms ... empty" alone is no failure signature');
+  assert.equal(classifyStart({}), 'launch');
+});
+
+test('I-220: forwardWaitSec waits longer for the USB forward on a loaded Mac; parseUsbList counts usbmux USB devices', async () => {
+  const { forwardWaitSec, parseUsbList, EXIT_REPLUG, scrubAddr } = await import('../../tools/lib/wda-runner.mjs');
+  assert.equal(scrubAddr('ServerURLHere->http://10.0.0.9:8100<-ServerURLHere at 127.0.0.1:8100'), 'ServerURLHere->http://<addr>:8100<-ServerURLHere at 127.0.0.1:8100', 'the phone\'s LAN address never printed');
+  assert.equal(EXIT_REPLUG, 4);
+  assert.equal(forwardWaitSec({ load1: 3, cpus: 12 }), 30);
+  assert.equal(forwardWaitSec({ load1: 12, cpus: 12 }), 30);
+  assert.equal(forwardWaitSec({ load1: 95, cpus: 12 }), 60, 'the 09:53Z host (load1 70-95): twice as long');
+  assert.equal(forwardWaitSec({ base: 5, load1: 95, cpus: 12 }), 10);
+  assert.ok(forwardWaitSec() >= 30, 'reads this host by default');
+  assert.deepEqual(parseUsbList('00008130-0011223344556677\n', '00008130-0011223344556677'), { count: 1, listed: true });
+  assert.deepEqual(parseUsbList('', '00008130-0011223344556677'), { count: 0, listed: false });
+  assert.deepEqual(parseUsbList(' 00008110-00AABBCCDDEEFF00 \n\n', '00008130-0011223344556677'), { count: 1, listed: false });
+});
