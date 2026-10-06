@@ -32,7 +32,7 @@ fi
 mkdir -p $S
 SRC=out/v10/snap-a33a6c7c1f2b-62743920fe1a
 if [ ! -e $D/BASE ]; then
-  [ "$(shasum -a 256 $SRC/HASHES.txt | cut -c1-12)" = 4bf1c71059d2 ] && (cd $SRC && shasum -a 256 -c --quiet HASHES.txt) || { echo "no v10 snapshot at $SRC (HASHES 4bf1c71059d2): refuse"; exit 3; }
+  [ "$(shasum -a 256 $SRC/HASHES.txt | cut -c1-12)" = dd33efddcece ] && (cd $SRC && shasum -a 256 -c --quiet HASHES.txt) || { echo "no v10 snapshot at $SRC (HASHES dd33efddcece): refuse"; exit 3; }
   mkdir -p $D && cp -R "$SRC/C" $D/C && cp -R "$SRC/V" $D/A && echo v10 > $D/BASE && chmod -R a-w $D/C $D/A $D/BASE
   echo "copied v10 C and V (as A) into $D"
 fi
