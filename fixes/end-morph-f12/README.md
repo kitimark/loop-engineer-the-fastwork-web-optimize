@@ -328,7 +328,31 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - So at 4 v 4 and this noise, a PASS does not rule out a regression of a few frames per run. It says no large one showed.
 - These numbers come from another build (7d), read OBSERVED.
 
-**Kit (pins, sha256/12, at the rev 1.1 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
+**Addendum D1-D3, rev 1.2 (lead, 2026-10-06 ~23:58Z and ~00:00Z: "D1+D2 as proposed").** The rev 1.1 delta check (ops-reader-P152) passed with notes D1-D3.
+- Written before any part-1 or part-2 data: part 1's first try stopped at H1's start gate with no run (see "Block log" below).
+- Rev 1.2 changes:
+  - `p152-read.mjs` now applies D1 itself (`part2Status`, 8 new self-test checks).
+  - A new `p152-endgate.sh` runs the standalone end gate.
+  - The part-2 command runs `p152-endgate.sh` after `p152-block.sh` in the same phone hold.
+  - `p152-block.sh`, `p152-hold.sh` and `p152-serve.sh` are unchanged.
+- **D1, part 2's end gate.** Part 2's counted runs (EC2, EC3, EV3, EV4, EC4 and every re-run) count only when one of these holds:
+  - `out/p152/hold-HA.log` ends with "HOLD HA VALID"; or
+  - HA stopped before its end gate ran, and a standalone end gate then ran and passed. The cases are exit 4 (served hash or open failed), exit 5 (WDA) and exit 7 (the time guard twice).
+  - The standalone gate runs right after the stop, in the same phone hold, and is logged to `out/p152/end-gate-after-HA.log`: `node research/phone-thermal-gate/thermal-gate.mjs --owner iphone-runner --label p152-HA-end-standalone --expect serious --max-c 44 --accept-induced --url <B's LAN URL from tools/lan.mjs>`.
+  - Otherwise part 2 is VOID.
+  - Rev 1.2's reader applies this rule (`part2Status`): the last "HOLD HA" line decides, and the standalone gate's last "ENDGATE PASS|FAIL" line.
+  - Part-2 command (rev 1.2):
+
+    ```
+    TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 -- \
+      sh -c 'sh fixes/end-morph-f12/phone/p152-block.sh H4:EC2,EC3 H5:EV3,EV4 H6:EC4 H7:TAIL HA:AC1,AV1; e=$?; sh fixes/end-morph-f12/phone/p152-endgate.sh; exit $e'
+    ```
+
+    `p152-endgate.sh` does nothing when HA ended VALID, when HA's own end gate ran, or when `hold-HA.log` is missing.
+- **D2, block 2 after a VOID.** A block-1 VOID (a sentinel fails) is archived with `ARCHIVE-BLOCK1`, like a FAIL, and counts as one of the 2 blocks.
+- **D3, the PIN line.** The first real PIN line must show `p152-read.mjs=adf4e7a27122`. The rev 1.1 dry run printed an older hash, because the reader changed after it; that is harmless.
+
+**Kit (pins, sha256/12, at the rev 1.2 commit; rev 1 pins: block `3a2d0a7716c7`, hold `b5b38c853340`, serve
 `2548d4588b0e`, read `005136ea3002`).** Rev 1.1 changes `p152-block.sh` (N2, N4, N6) and `p152-read.mjs` (N1, N3, N5, N7). It does not change `p152-hold.sh` or `p152-serve.sh`.
 
 | file | pin |
@@ -336,7 +360,8 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 | `phone/p152-block.sh` | `d2d8e37c419d` |
 | `phone/p152-hold.sh` | `b5b38c853340` |
 | `phone/p152-serve.sh` | `2548d4588b0e` |
-| `phone/p152-read.mjs` | `adf4e7a27122` |
+| `phone/p152-read.mjs` | `597bd8bd9e30` (rev 1.2; rev 1.1 `adf4e7a27122`) |
+| `phone/p152-endgate.sh` | `04c156f84403` (new in rev 1.2) |
 
 - Dependencies, signed and unchanged: `research/serious-heat/phone/p129-gates.mjs` `a06847c64a2e` and
   `research/serious-heat/p129-read.mjs` `06f74f5d19ca`.
@@ -364,6 +389,16 @@ the end menu, with toolbar steps, driven by a real touch gesture.
 - Reader smoke test (rev 1): on P-137's own records (fix-end-bg's out/p137/runs: a different question, used only to test
   parsing), the reader read all 8 counted runs and both sentinels, and the attribution read gave plausible splits
   (EC1: 719 frames at m >= 0.55, 675 below).
+
+## P-152 block log
+
+- 2026-10-05 23:55Z, part 1, first try:
+  - The serve check was ok and WDA restarted READY.
+  - H1's PIN line showed block `d2d8e37c419d` and read `adf4e7a27122` (D3 met for rev 1.1).
+  - H1's start gate read state Serious, induced Yes, battery 35.3 °C. Its timer part then failed: `iphone.mjs open` exit 1, so the gate exited 1, the hold was VOID with no run, BLOCK STOP exit 5, and Safari was parked by the EXIT trap.
+- Cause: after the reconnect and the WDA restart, Safari's parked tab did not answer `Runtime.evaluate` (5 timeouts), and `open` ended BLOCKED instead of restarting Safari. Incident I-214.
+- Workaround: `iphone.mjs safari-restart --url <B>` succeeded at 00:01Z, in a short phone hold with no counted run.
+- No run, counted or not, came from the first try. Part 1 restarts from H1 in the same block; the old hold-H1 log is moved aside by the driver.
 
 ## Pending
 
