@@ -1,0 +1,254 @@
+{
+ "topic": "panel-height",
+ "kind": "counts, geometry and pixels only (no timing; memory defer-timing-focus-call-tree)",
+ "base": {
+  "name": "A = v9-final + F1/U2 + I-219 + P1 + P1b (a), fix-end-morph-p1 snapshot A1",
+  "js": "ed44af454a92",
+  "css": "cfb8b8c5b019"
+ },
+ "options": {
+  "svh": {
+   "delta": "fixes/panel-height/delta-svh.diff",
+   "deltaSha": "0d7142505704",
+   "css": "75c30c18d971",
+   "tryit": "fixes/panel-height-svh/patch.diff"
+  },
+  "dvh": {
+   "delta": "fixes/panel-height/delta-dvh.diff",
+   "deltaSha": "030ff98f6239",
+   "css": "0546615f27ea",
+   "tryit": "fixes/panel-height-dvh/patch.diff"
+  }
+ },
+ "baselineSnapshot": "b1789284481295-4ad4a84a",
+ "measurementCodeChanged": false,
+ "chrome": {
+  "tool": "fixes/panel-height/ph-chrome.mjs",
+  "steps": "16 viewport-height steps per phase, 775 -> 815 -> 775 (8 each way), one per 2 rAFs",
+  "units": {
+   "vh": 775,
+   "svh": 775,
+   "lvh": 775,
+   "dvh": 775
+  },
+  "unitsAt815": {
+   "vh": 815,
+   "svh": 815,
+   "lvh": 815,
+   "dvh": 815
+  },
+  "note": "Chrome emulation resolves vh = svh = lvh = dvh = the viewport, so A, S and D behave alike in Chrome; D models dvh on iOS (panel follows each step), Dfix (panel pinned to 815 - 24 px) models vh/svh on iOS",
+  "load1": {
+   "D": [
+    4.3251953125,
+    6.888671875
+   ],
+   "Dfix": [
+    3.705078125,
+    5.45458984375
+   ]
+  },
+  "D": {
+   "end": {
+    "mStart": "1",
+    "mEnd": "0.9483870967741935",
+    "layouts": 88,
+    "dirtyObjects": 447,
+    "styleRecalcs": 88,
+    "elementsRestyled": 782,
+    "paints": 149,
+    "roCallbacks": 48,
+    "roByTarget": {
+     "fw-ms": 32,
+     "fw-rv-size": 16
+    },
+    "navStyleWrites": 24,
+    "clipChanges": 24,
+    "navHeights": [
+     756,
+     761,
+     766,
+     771,
+     776,
+     781,
+     786,
+     791,
+     751
+    ]
+   },
+   "endPin": {
+    "mStart": "1",
+    "mEnd": "1",
+    "layouts": 80,
+    "dirtyObjects": 416,
+    "styleRecalcs": 67,
+    "elementsRestyled": 535,
+    "paints": 69,
+    "roCallbacks": 48,
+    "roByTarget": {
+     "fw-ms": 32,
+     "fw-rv-size": 16
+    },
+    "navStyleWrites": 0,
+    "clipChanges": 0,
+    "navHeights": [
+     756,
+     761,
+     766,
+     771,
+     776,
+     781,
+     786,
+     791,
+     751
+    ]
+   },
+   "morph": {
+    "mStart": "0.5006451612903225",
+    "mEnd": "0.5006451612903225",
+    "layouts": 97,
+    "dirtyObjects": 467,
+    "styleRecalcs": 100,
+    "elementsRestyled": 1219,
+    "paints": 298,
+    "roCallbacks": 48,
+    "roByTarget": {
+     "fw-ms": 32,
+     "fw-rv-size": 16
+    },
+    "navStyleWrites": 48,
+    "clipChanges": 48,
+    "navHeights": [
+     756,
+     761,
+     766,
+     771,
+     776,
+     781,
+     786,
+     791,
+     751
+    ]
+   },
+   "mid": {
+    "mStart": "0",
+    "mEnd": "0",
+    "layouts": 49,
+    "dirtyObjects": 413,
+    "styleRecalcs": 64,
+    "elementsRestyled": 1606,
+    "paints": 100,
+    "roCallbacks": 80,
+    "roByTarget": {
+     "fw-ms": 32,
+     "start-selling": 16,
+     "?": 16,
+     "pain-canvas": 16,
+     "fw-rv-size": 16
+    },
+    "navStyleWrites": 0,
+    "clipChanges": 0,
+    "navHeights": [
+     52
+    ]
+   }
+  },
+  "Dfix": {
+   "end": {
+    "mStart": "1",
+    "mEnd": "0.9483870967741935",
+    "layouts": 72,
+    "dirtyObjects": 312,
+    "styleRecalcs": 84,
+    "elementsRestyled": 725,
+    "paints": 108,
+    "roCallbacks": 32,
+    "roByTarget": {
+     "fw-ms": 32
+    },
+    "navStyleWrites": 16,
+    "clipChanges": 16,
+    "navHeights": [
+     791
+    ]
+   },
+   "endPin": {
+    "mStart": "1",
+    "mEnd": "1",
+    "layouts": 64,
+    "dirtyObjects": 288,
+    "styleRecalcs": 68,
+    "elementsRestyled": 530,
+    "paints": 68,
+    "roCallbacks": 32,
+    "roByTarget": {
+     "fw-ms": 32
+    },
+    "navStyleWrites": 0,
+    "clipChanges": 0,
+    "navHeights": [
+     791
+    ]
+   },
+   "morph": {
+    "mStart": "0.5006451612903225",
+    "mEnd": "0.5006451612903225",
+    "layouts": 80,
+    "dirtyObjects": 320,
+    "styleRecalcs": 83,
+    "elementsRestyled": 1025,
+    "paints": 200,
+    "roCallbacks": 32,
+    "roByTarget": {
+     "fw-ms": 32
+    },
+    "navStyleWrites": 32,
+    "clipChanges": 32,
+    "navHeights": [
+     791
+    ]
+   },
+   "mid": {
+    "mStart": "0",
+    "mEnd": "0",
+    "layouts": 49,
+    "dirtyObjects": 381,
+    "styleRecalcs": 64,
+    "elementsRestyled": 1597,
+    "paints": 91,
+    "roCallbacks": 64,
+    "roByTarget": {
+     "fw-ms": 32,
+     "start-selling": 16,
+     "?": 16,
+     "pain-canvas": 16
+    },
+    "navStyleWrites": 0,
+    "clipChanges": 0,
+    "navHeights": [
+     52
+    ]
+   }
+  },
+  "raw": [
+   "chrome-c-D-2026-10-06T09-43-23-685Z.json",
+   "chrome-c-Dfix-2026-10-06T09-47-49-220Z.json"
+  ]
+ },
+ "chromePixels": {
+  "tool": "fixes/end-morph-p1/gates/em-p1-px.mjs (A, V, A2 loads; the V2 load was cut at the 120 s cap) scored by fixes/panel-height/px3.mjs",
+  "viewport": "430x775 DPR 3",
+  "pair": "A vs D",
+  "lines": [
+   "dn0      A~V >8: 8 dev px | A~A2 >8: 0 | A~V beyond A/A: 8 dev px = 1 css px (max 14) box css [165,74]-[337,502]",
+   "post     A~V >8: 0 dev px | A~A2 >8: 32694 | A~V beyond A/A: 0 dev px = 0 css px (max 0) ",
+   "pre      A~V >8: 4 dev px | A~A2 >8: 0 | A~V beyond A/A: 4 dev px = 0 css px (max 14) box css [165,407]-[262,474]",
+   "up0.1    A~V >8: 0 dev px | A~A2 >8: 0 | A~V beyond A/A: 0 dev px = 0 css px (max 0) ",
+   "up0.5    A~V >8: 0 dev px | A~A2 >8: 0 | A~V beyond A/A: 0 dev px = 0 css px (max 0) ",
+   "up0.99   A~V >8: 0 dev px | A~A2 >8: 0 | A~V beyond A/A: 0 dev px = 0 css px (max 0) ",
+   "up0      A~V >8: 0 dev px | A~A2 >8: 8 | A~V beyond A/A: 0 dev px = 0 css px (max 0) ",
+   "up1      A~V >8: 202 dev px | A~A2 >8: 202 | A~V beyond A/A: 0 dev px = 0 css px (max 0)"
+  ]
+ },
+ "simulator": null
+}
