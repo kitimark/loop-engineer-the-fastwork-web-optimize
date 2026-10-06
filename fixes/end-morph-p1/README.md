@@ -735,6 +735,67 @@ the rest as rev 1.2. Rev 1.2 pins (block 1 ran on them): block `78062de712d3`, h
     is **void, no counted run lost**. H1 (WC) stays valid; the partial g-WV-H2 is moved aside and never read. Part 1
     resumes with H2:WV H3:S0 H4:EC1 H5:EV1 (H2 rerun whole), from the commit with the new pin; every part runs as a
     background job with the 2 h limit, and a part that could pass 2 h is split.
+  - Part 1 resumed (05:27Z, commit 52642af6, block pin fb184e21613e): every hold VALID, every gate Serious (induced)
+    PASS; cooling waits with Safari parked 180-361 s. H2 WV 221 s (end 38.09 °C); H3 S0 sentinel PASS (fps 54.6,
+    slow 0.039), 223 s (38.69); H4 EC1 run gates ok, 221 s (38.79); H5 EV1 run gates ok, 220 s (38.59). EXIT 0 at
+    06:04:51Z.
+- Part 2 (06:05:46Z, inside the keep): H6 EV2 232 s (end 38.89 °C), H7 EC2 230 s (38.69), H8 EC3 228 s (38.5), H9 EV3
+  230 s (38.29), all VALID with run gates ok; cooling 180-301 s. EXIT 0 at 06:39:41Z.
+- Part 3 (about 06:40Z): H10 EV4 231 s (end 38.5 °C), H11 EC4 226 s (38.39), both VALID with run gates ok; TAIL: no
+  re-run, H12 S1 sentinel PASS (fps 56.2, slow 0.029), 220 s (38.19). Cooling 120-240 s. EXIT 0 at 07:01:33Z.
+- Part 4 (07:01:43Z): HA AC1, AV1 (attribution; decides nothing) **did not run**: the part-start WDA restart failed at
+  07:03Z ("Timed out while enabling automation mode", the I-215/I-217 symptom, phone most likely locked; OBSERVED, cause
+  unknown). BLOCK STOP exit 5 before any gate or run, Safari parked. The phone was released at 07:04Z on the lead's
+  order (P-152 next); no attribution runs exist for block 2. The f2 attribution goes to Chrome and Simulator call
+  trees (lead, 07:05Z).
+- **Lead ruling (07:05Z):** the card stands as signed. NO-WORSE PASS is accepted; FIRST-OPEN RISK SEEN means P1 does not
+  land as is. No part S for now. Next: a P1b cost card (the same look, with the switch-on work moved off the open's
+  first frame), sent to the lead before any phone time.
+
+## P-153 block 2: result (read by `phone/p153-read.mjs` rev 1.3, 09a930910631; `phone/p153-read-block2.json`, a copy of `out/p153/read-block2.json`)
+
+**Decision: NO-WORSE PASS, with "FIRST-OPEN RISK SEEN".** Every hold VALID (H1-H12), both sentinels PASS, 8 of 8 counted
+runs valid, no re-run. Every counted run started after cooling below 38 °C, at 37.5-37.8 °C, in its own hold. Profile
+xcode-serious; driver G (fs script, E procedure). Counts basis (median n C 1457.5, V 1470.5).
+
+| end zone | C runs (EC1-EC4) | V runs (EV1-EV4) | median V - C | permutation p, V worse (70/70 = p 1) |
+|---|---|---|---|---|
+| dt > 30 | 37, 41, 40, 56 | 32, 33, 32, 31 | -8.5 | 70/70 |
+| dt > 34 | 30, 28, 32, 44 | 21, 20, 20, 20 | -11 | 70/70 |
+| dt > 38 | 17, 18, 19, 34 | 14, 10, 10, 12 | -7.5 | 70/70 |
+| dt > 46 | 4, 5, 1, 12 | 2, 3, 0, 0 | -3.5 | 68/70 |
+| dt > 50 | 2, 3, 1, 9 | 0, 1, 0, 0 | -2.5 | 70/70 |
+| dt > 54 | 0, 2, 0, 7 | 0, 0, 0, 0 | -1 | 70/70 |
+
+- V has fewer slow end-zone frames at every threshold. At >34 the arms separate in V's favour (max V 21 < min C 28).
+  No threshold is WORSE, and the result is not threshold-sensitive. The rule tests only "worse"; this block was not
+  designed as a gain test, so the improvement is reported, not claimed (memory less-work-landing-rule: no phone gain is
+  claimed).
+- After touchend (P-137's metric, reported): >34 C 18, 16, 18, 19 vs V 7, 6, 8, 7.
+- EC4 is C's high run (44 at >34, 9 at >50). Without it, C at >34 is still 28-32. EC1 slot (N7): EC1 is not C's
+  maximum at >34 or >50.
+- **The named risk, first open after load (decides nothing in the rule; it goes to the lead):**
+
+  | ms | C | V | V - C |
+  |---|---|---|---|
+  | f1 (gap before the first m > 0 frame) | 17 (17-17) | 16.5 (16-18) | -0.5 |
+  | **f2** (the frame where the switch-on renders) | **31 (27-34)** | **41 (38-42)** | **+10**, ranges apart |
+  | f12 | 48 (44-51) | 58 (54-59) | +10 |
+  | f123 | 69 (61-71) | 69.5 (65-72) | +0.5 |
+
+  The bound is V <= C + 2 ms, so the reader prints FIRST-OPEN RISK SEEN. The extra time sits in the open's first
+  rendered frame and is paid back in the next one (f123 equal). It matches the cost PR-012 rev 1 paid on best-build
+  (P-092, P-098: +6.5 ms). All 13 opens per run are counted; only EC4 has full repeat opens (2, f2 median 14.5 ms), so
+  the repeat-open split has no V data.
+- **Predictions:** Pr1 (NO-WORSE PASS, p 0.85): came true. Pr2 (VOID or INSUFFICIENT, p 0.25): did not happen. Pr3 (no
+  FIRST-OPEN RISK SEEN, p 0.6): **falsified**. Pr4 (part S): not run.
+- **What it means, by the card:** "A FAIL, or the risk label, means P1 does not land as is. The next step would be moving
+  the switch-on work off the open's first frame (rev 2's idea, which did not help on best-build) or a setup at page
+  load." Part S (blind swipe) needs a NO-WORSE PASS (met) and the lead's go; it has not run. The landing decision is
+  the lead's.
+- Disclosures: the block ran under P-153 rev 1.3 plus the lead's 05:14Z ruling (Safari parked before every cooling
+  wait, block pin fb184e21613e from H2 on; H1 ran on e8b6e70be8ee, whose only difference is that park line). Earlier
+  void attempts (04:25Z WDA, 04:42Z Critical start gate, 05:24Z killed H2 warm-up) used no counted run.
 
 ## PR-012 rev 2 (the user's decision, lead's order 2026-10-06)
 

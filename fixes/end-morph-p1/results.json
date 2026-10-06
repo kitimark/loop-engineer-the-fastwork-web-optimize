@@ -531,7 +531,8 @@
   "ticket": "P-153",
   "rev": "1.3",
   "pins": {
-   "block": "e8b6e70be8ee",
+   "block": "fb184e21613e",
+   "blockH1": "e8b6e70be8ee (H1 only; differs by the Safari park before cooling, lead ruling 05:14Z)",
    "hold": "27ab0bf57adb",
    "serve": "fbd214f54de0",
    "read": "09a930910631",
@@ -542,7 +543,25 @@
   "mirrors": "P-152 rev 1.3 (e3c1a254): gates on every hold, per-hold validity, cooling gap at >= 41.5 C, <= 2 counted runs per hold, block 2 after cooling to 38 C, Safari restart per part (I-214)",
   "rev13": "lead ruling after block 1 went VOID on heat (= P-152 rev 1.4): cool below 38 C before every hold (600 s, one more 600 s, else block VOID), at most 1 counted run per hold, warm-ups and S0 and S1 in their own holds, end-gate rule unchanged, order C V V C C V V C unchanged; reason OBSERVED, cause unknown: under induced Serious Critical returns near 41.5-42 C after about 2 G runs from 39 C",
   "block1": "VOID (heat: H2 end gate Critical 41.9 C), counts as block 1, archived unscored in out/p153/block1/",
-  "block2Holds": "part 1 H1 WC, H2 WV, H3 S0, H4 EC1, H5 EV1; part 2 H6 EV2, H7 EC2, H8 EC3, H9 EV3; part 3 H10 EV4, H11 EC4, H12 TAIL (one re-run per hold, then S1); part 4 HA AC1 AV1"
+  "block2Holds": "part 1 H1 WC, H2 WV, H3 S0, H4 EC1, H5 EV1; part 2 H6 EV2, H7 EC2, H8 EC3, H9 EV3; part 3 H10 EV4, H11 EC4, H12 TAIL (one re-run per hold, then S1); part 4 HA AC1 AV1",
+  "block2Result": {
+   "read": "fixes/end-morph-p1/phone/p153-read.mjs rev 1.3 (09a930910631) on out/p153/runs, 2026-10-06 ~07:02Z; full read in fixes/end-morph-p1/phone/p153-read-block2.json", "attribution": "HA did not run (WDA automation-mode timeout at part start, 07:03Z); phone released 07:04Z", "leadRuling": "07:05Z: card stands; NO-WORSE PASS accepted; first-open risk: P1 does not land as is; no part S for now; next a P1b cost card",
+   "decision": "NO-WORSE PASS",
+   "firstOpenRisk": "FIRST-OPEN RISK SEEN: first open after load f2 C 31 (27-34) ms vs V 41 (38-42) ms, +10 ms over the +2 ms bound; f123 C 69 vs V 69.5 (paid back by the third frame)",
+   "holds": "H1-H12 all VALID, every gate Serious (induced) PASS; sentinels S0 fps 54.6 PASS, S1 fps 56.2 PASS; 8 of 8 counted runs valid, no re-run",
+   "endZone": {
+    "basis": "counts (median n C 1457.5, V 1470.5)",
+    "C": { "gt30": [37, 41, 40, 56], "gt34": [30, 28, 32, 44], "gt38": [17, 18, 19, 34], "gt46": [4, 5, 1, 12], "gt50": [2, 3, 1, 9], "gt54": [0, 2, 0, 7] },
+    "V": { "gt30": [32, 33, 32, 31], "gt34": [21, 20, 20, 20], "gt38": [14, 10, 10, 12], "gt46": [2, 3, 0, 0], "gt50": [0, 1, 0, 0], "gt54": [0, 0, 0, 0] },
+    "medianVminusC": { "30": -8.5, "34": -11, "38": -7.5, "46": -3.5, "50": -2.5, "54": -1 },
+    "permutationP": "70/70 at every threshold but >46 (68/70): V not worse",
+    "thresholdSensitive": false
+   },
+   "afterTouchendGt34": { "C": [18, 16, 18, 19], "V": [7, 6, 8, 7] },
+   "predictions": "Pr1 NO-WORSE PASS (p 0.85) came true; Pr2 VOID/INSUFFICIENT (p 0.25) did not happen; Pr3 no first-open risk (p 0.6) falsified; Pr4 part S not run",
+   "voidAttempts": "04:25Z WDA (I-217), 04:42Z Critical start gate, 05:24Z H2 warm-up killed by the 30-min background limit: no counted run used",
+   "landing": "by the card, the first-open risk label means P1 does not land as is; part S and landing are the lead's decision"
+  }
  },
  "measurementCodeChanged": false
 }
