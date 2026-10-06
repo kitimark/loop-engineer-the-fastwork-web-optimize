@@ -938,6 +938,30 @@ The lead added: trace (b) from existing data, fix it or drop it, keep (a), and s
 - Rev 2 of `proposal-fade.json` is a single solution, posted 12:59Z.
 - Try-it A is v9-final, B is v9-final + (a); both phone pages stay up.
 
+### 7. (c) on the phone: mechanism proof (T-204 #35; no ticket, no card, decides nothing)
+
+The run was ordered by the lead at 14:58Z and ran 15:00-15:04Z under Xcode Serious.
+- Command: `lock.mjs run iphone --owner fix-end-morph --max-seconds 600 -- sh phone/pfc-run.sh`. No block mark, no cooling wait.
+- Arms: C = v9-final (JS `647c9ef2b1e2`) and c (JS `db7257e81859`). Both ran plain http over the LAN.
+- Each arm got one M run (`__fwMorphDrive`, hold 2000 ms × 3 cycles, std probe), then `pfc-probe.mjs` at m 1: state, then a 6 s WebKit Timeline.
+- int-v8's and CM's shared jobs ran on the Mac beside the M runs (load1 101 and 43), so this was not a quiet Mac. Output is in `out/fade/pfc/`.
+
+| at m 1 | paused | running animations (in #platform) | Composite / RenderingFrame | Paint |
+|---|---|---|---|---|
+| C | no | 8 (4) | 0.682 ms (364 frames) | 167 / 31.78 ms |
+| c | yes | 4 (0) | 0.683 ms (362 frames) | 165 / 30.67 ms |
+
+| M run | frames | >50 | >34 | ±4 twins (>46 / >54 / >30 / >38) | max |
+|---|---|---|---|---|---|
+| C | 785 | 1 | 8 | 2 / 1 / 8 / 6 | 59 ms (y 6075, m 1) |
+| c | 787 | 0 | 9 | 0 / 0 / 10 / 3 | 45 ms |
+
+What this shows (OBSERVED in our setup, one run per arm):
+- The mechanism works on the phone: the attribute is set at fade 0 and the 4 #platform animations WebKit lists stop.
+- Composite time per frame at m 1 is the same within 0.001 ms, so on this phone the unseen animations cost no measurable compositing at rest.
+- The M counts are one run each and decide nothing.
+- The layer counts failed: `pfc-probe.mjs` called `DOM.enable`, which WebKit's inspector does not have. The probe is fixed (`LayerTree.enable` only). A probe-only rerun waits for the lead.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).

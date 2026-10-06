@@ -42,7 +42,7 @@ try {
     paintPerFrameMs: rf ? Math.round(((agg.Paint && agg.Paint.ms) || 0) / rf * 1000) / 1000 : null };
   res.after = JSON.parse(await c.evaluate(STATE));
   try {
-    await c.send('DOM.enable', {}); await c.send('LayerTree.enable', {});
+    await c.send('LayerTree.enable', {}); // WebKit's inspector has no DOM.enable (it failed on the phone, 15:0xZ)
     const { root } = await c.send('DOM.getDocument', {});
     const all = await c.send('LayerTree.layersForNode', { nodeId: root.nodeId });
     const { nodeId: pid } = await c.send('DOM.querySelector', { nodeId: root.nodeId, selector: '#platform' });
