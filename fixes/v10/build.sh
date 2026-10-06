@@ -36,7 +36,9 @@
 #          applied right after P1b and before nolift in every route (part of N), counted in code parity
 #   PAUSE="<d>" PAUSE_SHA="<sha12>"   fix-end-morph's option (c), #platform's infinite animations paused at fade 0: applied
 #          right after the nav base and before P1 in every route (R1b: after its nav step; R3: on the nolift arm)
-#   N = C + F1+U2 [+ pause] + P1 [+ P1b] [+ panel-h]; V = N + nolift [+ I-219]. Routes with the options:
+#   CLOCK="<d>" CLOCK_SHA="<sha12>"   arch-compositor-morph's panel-clock-layer (CSS, iOS-only @supports rule): applied after
+#          P1, P1b and panel-h, before nolift, in every route (part of N)
+#   N = C + F1+U2 [+ pause] + P1 [+ P1b] [+ panel-h] [+ clock]; V = N + nolift [+ I-219]. Routes with the options:
 #   R1  C + F1+U2 + P1 [+ P1b] + nolift [+ I-219]
 #   R1b C + nolift + P1 + F1+U2 [+ P1b] [+ I-219]   (P1b after F1+U2 here too: the draft (b) part edits next to F1+U2's
 #                                                  U2 code, context lines from it, so it does not commute ahead of F1+U2)
@@ -80,8 +82,9 @@ fi
 if [ -n "$I219" ]; then get "$I219" $T/i219.diff "$I219_SHA" "I-219"; I219L=$T/i219.diff; fi
 PHL=""; [ -n "$PANELH" ] && { get "$PANELH" $T/panelh.diff "$PANELH_SHA" "panel height (T-204 #22)"; PHL=$T/panelh.diff; }
 # P1BL from here on = P1b then the panel-height delta: the slot after P1b and before nolift in every route
-P1BL="$P1BL $PHL"; P1BL=${P1BL# }; [ "$P1BL" = " " ] && P1BL=""
-PBN="${P1B:+ + P1b}${PHL:+ + panel-h}"
+CKL=""; [ -n "$CLOCK" ] && { get "$CLOCK" $T/clock.diff "$CLOCK_SHA" "panel clock layer (arch-compositor-morph)"; CKL=$T/clock.diff; }
+P1BL="$P1BL $PHL $CKL"; P1BL=$(echo $P1BL)
+PBN="${P1B:+ + P1b}${PHL:+ + panel-h}${CKL:+ + clock}"
 PSL=""; [ -n "$PAUSE" ] && { get "$PAUSE" $T/pause.diff "$PAUSE_SHA" "#platform pause (fix-end-morph option c)"; PSL=$T/pause.diff; }
 PSN="${PSL:+ + pause}"
 NAVL=$F12; NAVN="F1+U2"; ALT=
