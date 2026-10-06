@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // v10 code parity (int-v8): the changed lines of C -> V must be exactly the union of the stacked deltas' changed lines.
 // Per file, the multiset of removed lines and the multiset of added lines of `diff -U0 C V` are compared with the
-// multisets of the deltas' own -/+ lines (context ignored, so line offsets don't matter). 0 differences = parity.
+// multisets of the deltas' own -/+ lines (context ignored, so line offsets don't matter; a stacked delta's removal of a
+// line an earlier delta added cancels it, e.g. P1b on P1). 0 differences = parity.
 //   node fixes/v10/codeparity.mjs <C dir> <V dir> <delta.diff> [<delta.diff> ...]
 // exit 0 parity, 1 differences, 2 usage
 import { spawnSync } from 'node:child_process';
@@ -12,19 +13,23 @@ const [cDir, vDir, ...deltas] = process.argv.slice(2);
 if (!cDir || !vDir || !deltas.length) { console.error('usage: codeparity.mjs <C dir> <V dir> <delta.diff>...'); process.exit(2); }
 
 // unified diff text -> { file: { '-': Map(line -> n), '+': Map(line -> n) } }
-function changed(text, into = {}) {
+// stack: the diffs are applied in order, so a line one delta removes that an earlier delta added cancels that add
+// (P1b on top of P1); otherwise (the single C -> V diff) every -/+ line counts as written.
+function changed(text, into = {}, stack = false) {
   let file = null;
   for (const l of text.split('\n')) {
     if (l.startsWith('+++ ')) { file = l.slice(4).split('\t')[0].replace(/^b\//, ''); into[file] ||= { '-': new Map(), '+': new Map() }; continue; }
     if (l.startsWith('--- ') || l.startsWith('@@') || !file) continue;
     const k = l[0];
     if (k !== '-' && k !== '+') continue;
-    const m = into[file][k]; m.set(l.slice(1), (m.get(l.slice(1)) || 0) + 1);
+    const line = l.slice(1), added = into[file]['+'];
+    if (stack && k === '-' && added.get(line) > 0) { if (added.get(line) === 1) added.delete(line); else added.set(line, added.get(line) - 1); continue; }
+    const m = into[file][k]; m.set(line, (m.get(line) || 0) + 1);
   }
   return into;
 }
 const want = {};
-for (const d of deltas) changed(readFileSync(d, 'utf8'), want);
+for (const d of deltas) changed(readFileSync(d, 'utf8'), want, true);
 let bad = 0;
 const files = Object.keys(want).sort();
 for (const f of files) {
