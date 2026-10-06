@@ -4,7 +4,10 @@
 > Fastwork). `patch.diff` and the `delta-*.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
 **Status:** measured (counts, geometry, pixels; no timing). Both options built; Chrome and Simulator (AD1, ASD2) done.
-Next: the proposal with Try-it (the user picks svh or dvh), then int-v8 builds it into v10. Then a proposal with
+Proposal **PR-028** posted 2026-10-06 ~10:20Z (options dvh, recommended, and svh; Mac Try-it verified: A serves JS
+f83aa54c2acc / CSS cfb8b8c5b019, B dvh CSS 0546615f27ea, B svh CSS 75c30c18d971; phone Try-it pages not started yet).
+The console's "B does not carry all of A's changes (JS 1 line)" warning is a false positive: both served JS files are
+f83aa54c2acc. After the user's pick, int-v8 builds it into v10. Then a proposal with
 Try-it for the user (look change: memory "proposal-try-it-required").
 **Stage:** F (build + counts). User report T-204 #20; the user wants it in v10 (T-204 #22).
 **Device class / gate:** phone-only look (iOS Safari's toolbar; Chrome's emulation has no small/large viewport).
