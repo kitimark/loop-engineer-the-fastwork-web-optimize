@@ -379,6 +379,10 @@ Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H
 - Disclosed: every run now starts below 38 °C after a cooling wait, so the runs are cooler and further apart than in P-137 or block 1. Both arms get the same treatment, in the same order.
 - The "position-confounded" label (P-150 N3, descriptive) stays as signed (lead ruling at the rev 1.4 signature). Disclosed: with one run per hold it marks only the EV1/EV3 slot (the first V run of parts 2 and 3), not a position inside a hold.
 - Signed by the lead at ~04:2xZ, 2026-10-06 (b6914cda): the kit diff matches the ruling; tools, tests, .claude and site unchanged against main; pins on disk equal the commit; SELFTEST ok (39), re-run by the lead; out/p152/runs empty. The single 900 s cooling timeout is accepted. No kit change to align with P-153's diff unless a defect is found (any change needs a new delta check).
+- Rev 1.4 kit change after the signature (lead ruling 2026-10-06, from P-153 block 2's lessons, before any block-2 data):
+  - `prehold()` parks Safari (`iphone.mjs park --owner "$R"`) before every cooling wait, the same line as P-153's kit 52642af6. In P-153 a hold's end gate left B's timer page open and the phone warmed 39.0 → 40.2 °C in a 600 s wait; parked, it cooled in 3-6 min. Each hold opens its own page in its start gate, so no counted run changes. A failed park is logged and the wait goes on.
+  - Block pin 7e98087e3988 → a60e0c9fe0a6; hold, read and serve unchanged. Dry part 1 DRY ok for every hold (logs in `out/p152/pre-block2-r15/`); SELFTEST ok (39); out/p152 has no hold logs and runs/ is empty.
+  - Each part starts with Bash `run_in_background` and `timeout: 7200000` (2 h). The 30-min default killed P-153 part 1 at 1800 s.
 - Time: each hold is cooling (0-15 min), a WDA check, two gates (about 30 s each) and one run (budget 229 s). Four phone holds of 3-4 holds each may pass 3600 s (OVERDUE, never killed).
 - Commands (the runner's, in the background, after `p152-serve.sh start`):
   - `TICKET=P-152 node tools/lock.mjs run iphone --owner iphone-runner --block P-152 --max-seconds 3600 --keep 120 -- sh fixes/end-morph-f12/phone/p152-block.sh H1:WC H2:WV H3:S0 H4:EC1`
@@ -416,7 +420,7 @@ Rev 1-1.3 plan, for the record: part 1 H1 WC WV, H2 S0 EC1, H3 EV1 EV2; part 2 H
 
 | file | pin |
 |---|---|
-| `phone/p152-block.sh` | `7e98087e3988` (rev 1.4; rev 1.3 `4b8c70324a81`, rev 1.1-1.2 `d2d8e37c419d`) |
+| `phone/p152-block.sh` | `a60e0c9fe0a6` (rev 1.4 + park before cooling; rev 1.4 as signed `7e98087e3988`; rev 1.3 `4b8c70324a81`, rev 1.1-1.2 `d2d8e37c419d`) |
 | `phone/p152-hold.sh` | `e48dd4563c45` (rev 1.4, comment only; rev 1-1.3 `b5b38c853340`) |
 | `phone/p152-serve.sh` | `2548d4588b0e` |
 | `phone/p152-read.mjs` | `74ffb1031287` (rev 1.4; rev 1.3 `11ab8b9496b0`, rev 1.2 `597bd8bd9e30`, rev 1.1 `adf4e7a27122`) |

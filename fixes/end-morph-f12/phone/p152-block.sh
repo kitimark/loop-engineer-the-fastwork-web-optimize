@@ -43,6 +43,8 @@
 #   (f) ONE item per hold: at most 1 counted run per hold, and each warm-up (WC, WV), sentinel (S0, S1) and attribution
 #       run (AC1, AV1) in its own hold; the driver refuses any other plan before anything runs. TAIL: each re-run in its own
 #       hold, then S1 in the next (H<n> <r1>r, H<n+1> <r2>r, H<n+2> S1). The end-gate Critical rule (a) stays.
+#   Lead ruling before block 2 (P-153 block 2 lesson, 2026-10-06): Safari is parked (iphone.mjs park) before every
+#       cooling wait; in P-153 a hold's end gate left B's timer page open and the phone warmed 39.0 -> 40.2 °C in 600 s.
 #   The run order and the 4 v 4 balance stay (C V V C C V V C); only the holds split. Plan (4 phone holds):
 #     part 1: H1:WC H2:WV H3:S0 H4:EC1     part 2: H5:EV1 H6:EV2 H7:EC2     part 3: H8:EC3 H9:EV3 H10:EV4
 #     part 4: H11:EC4 H12:TAIL H15:AC1 H16:AV1   (TAIL takes H12-H14; the re-run scan reads every hold-H*.log of the block)
@@ -90,7 +92,9 @@ wdarestart() {
 [ "$P152_DRY" = 1 ] || wdarestart
 # (e) rev 1.4: before every hold, cooling below 38 °C, then the WDA check (one restart if it is not READY)
 prehold() { # H
-  [ "$P152_DRY" = 1 ] && { echo "PREHOLD $1 (dry: no cooling, no WDA check)"; return 0; }
+  [ "$P152_DRY" = 1 ] && { echo "PREHOLD $1 (dry: no park, no cooling, no WDA check)"; return 0; }
+  # lead ruling before block 2 (P-153 block 2 lesson): Safari parked during every cooling wait
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1 && echo "PARKED Safari before cooling for $1" || echo "PARK before $1 failed (the wait goes on)"
   coolwait 38 900 "cooling before $1" || { echo "BLOCK STOP: the phone did not cool below 38 °C in 900 s before $1"; exit 6; }
   if node tools/iphone.mjs wda check > $LG/wda-check-$1-$(date +%s).log 2>&1; then echo "WDA READY before $1"
   else echo "WDA not ready before $1: one restart"; wdarestart; fi
