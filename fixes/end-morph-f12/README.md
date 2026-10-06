@@ -902,6 +902,42 @@ The user's idea (T-215, on T-204 #34): stop every animation that cannot be seen,
 
   So (c) removes every unseen animation at m 1. It adds no JS callback, write or layer; the rest is the visible panel clock.
 
+### 6. PR-029 rev 2 (user changes-requested 11:46Z; lead order 12:15Z)
+
+The user asked for three things.
+- Point 1: (b) "has bug of background fade-out sometime when it on Serious profile".
+- Point 2: try arch-compositor-morph's (CM) change instead.
+- Point 3: CM is the top priority.
+
+The lead added: trace (b) from existing data, fix it or drop it, keep (a), and say how (a) relates to CM.
+
+**Trace of (b).** The cause is UNRESOLVED.
+- **Phone data on (b): none.** P-155's arms were C, F and U, so no phone run ever loaded (b). The user's Try-it session left no frame log.
+- **Toolbar emulation.** Chrome headless, 430 px wide, DPR 3, touch, no throttle, counts and geometry only. The probe is `cover-geo.mjs` in the scratchpad; the output is `out/fade/cover-geo.json`, not committed. It ran in one 106 s shared probe job, 12:55-12:57Z.
+  - Arms: v9-final and (b).
+  - The page was held mid-morph with a synthetic touchstart at m 0.1, 0.3, 0.5 and 0.6.
+  - The viewport height went 932, 852, 932, 852, a stand-in for the Safari toolbar.
+- **What the probe found (OBSERVED):**
+  - At all 16 (b) rows the cover box ran from y 0 to innerHeight: it covered the viewport exactly.
+  - The cover's opacity was exactly 1 − `--morph-fade`.
+  - `--morph-fade` was the same value as v9-final's at every row.
+  - The section stayed at opacity 1 with no filter.
+  - A height change mid-morph moves m and the fade in one step, for both arms alike. For example, 932 to 852 moved m from 0.1 to 0.203 and the fade from 0.82 to 0.63.
+- **What the probe cannot show.** Chrome's emulation sets lvh = dvh = innerHeight. The Safari case, where lvh and dvh differ while the toolbar moves, and any WebKit layer behaviour (for example the opacity-0 cover's backing store) remain untested.
+- **The decisive check.** A G or F run of (b) at Xcode Serious with Timeline, looking at the frames around the toolbar transitions. P-155's G runs show 25 transitions of 244-334 ms per run (775↔815). It was not run, because (b) is dropped.
+
+**Decision in rev 2.** (b) is dropped instead of guessing a fix; (a) stays as the only option.
+- Rev 2 recommends (a) only after CM, with one short phone no-worse check on top of CM. Declining is fine too: (c) still pauses the shimmers at fade 0.
+
+**(a) and CM.**
+- CM v1.1's delta against v9-final (`fixes/compositor-morph/delta.diff` in arch-compositor-morph's worktree) has no hunk in S() (JS 14151-14157) and no rule for `.start-selling-platform` or `--morph-fade`.
+- `patch --dry-run` of `fade/a-pause-while-fading.diff` on CM v1.1's overlay applies cleanly, with no offset or fuzz. CM's overlay hashes are JS 887b4cde06eb and CSS 2948d49e47c6.
+- So (a), and (c) likewise, stack on CM.
+
+**What was posted.**
+- Rev 2 of `proposal-fade.json` is a single solution, posted 12:59Z.
+- Try-it A is v9-final, B is v9-final + (a); both phone pages stay up.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
