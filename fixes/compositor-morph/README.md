@@ -376,3 +376,40 @@ The m 1 cell depends on how the page gets there (Chrome only):
 forced Layout / RecalculateStyles records counted per phase by their script frames, `forcedBy`), per-frame forced
 counts (`fLayouts`, `fStyles`: nested in a script record), the first three frames per phase in the log, the running
 animations after each rest phase, and the keyframes' size before the timed phases.
+
+### V13 on v10 + c1 (less-work candidate; `v13-on-c1.diff`, JS a769bb169c4a)
+
+Read sites forced inside script (Simulator, `cm-sim.mjs --stack 6`, open / close phase of 40 frames, v10 + c1):
+
+| site (V JS line) | what | forced per phase |
+|---|---|---|
+| `n` 13329-13330 (#platform shrink, scroll engine callback) | `c.getBoundingClientRect()` every frame; on phones only `a > 0.04` (is-platform-shrinking) is used | 38-39 L, 11-23 S |
+| `__msTick` 14307 | `window.scrollY`, `offsetHeight`, `scrollHeight` (V13 removes them) | 31 L |
+| `F` 13864/13867 (nav hit test) | `getBoundingClientRect` + `elementsFromPoint` (hit-skip covers m > 0.2) | 8-12 L, 7-10 S |
+| `a` 3301 (approach only) | card geometry | 17 L |
+| no JS frame | style recalcs started by the engine | 39 S |
+
+V13 (y from the nav's scroll listener, `__nsY`; geometry cached, cleared by `__msRO` and an innerHeight change): forced
+layouts open 94 -> 61, close 85 -> 52; total layouts 139 -> 135, 121 -> 117 (one session each: the layout moves to `n`'s
+read rather than going away). Pixels, Chrome screencast, 4 loads, 8 stops (pre .. down 0): consistent 0 everywhere (T0).
+The next read to remove is `n` (on phones a boolean crossing, which an observer could give).
+
+### Rest at m 1 restyles every frame: CM's scroll-driven animations
+
+- Simulator rest probe (`--rest-pause`): pausing the 4 running time-based animations (3 panel marquees, the hero
+  orbit) leaves 72 style recalcs in 72 frames; the invalidations carry no script stack.
+- WebKit (main b4363b9b3694, Source/WebCore/animation/ScrollTimeline.cpp `documentWillUpdateAnimationsAndSendEvents`,
+  ~line 291): a scroll timeline whose source is connected asks for an animation update on every rendering update,
+  scrolled or not. Code lead + OBSERVED: with the pf candidate below (one scroll-driven animation on #platform for the
+  whole page) rest at m 0 went from 3 to 96 style recalcs in 96 frames.
+- Cost on the phone (P-157 G runs, Timeline durations, frames resting at m 1): style 0.72 ms per frame with CM vs
+  0.15 ms with C (2005-2025 frames per run). Small against a 16.7 ms frame; a remedy (static values and no animations
+  while resting at 1) would cost an open-like frame on every leave from 1. Not pursued now.
+
+### Candidate 2 (#platform's fade on the scroll timeline, `out/cm/v10pf`): does not pay as built
+
+Keyframes `fw-cm-pf` on `--fwms` (blur 12 px x m / 0.55, opacity min(1 - m / 0.55, 0.9999)), S() skips the
+`--morph-fade` write where CM runs. Pixels T0 at 10 stops (Chrome screencast). Simulator: style recalcs open 89 -> 77,
+close 68 -> 54, but #platform is still repainted (44 -> 48 paints in the open: the filter animation is not composited
+there) and rest at m 0 goes from 3 to 96 style recalcs and 1 to 48 paints (the scroll timeline above). A variant that
+attaches the animation only while the morph is live would keep the ~12 saved recalcs per open and no paint gain. Parked.

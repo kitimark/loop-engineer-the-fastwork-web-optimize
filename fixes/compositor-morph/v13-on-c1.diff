@@ -1,0 +1,50 @@
+--- v10c1/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 23:21:36
++++ v10c13/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-06 23:31:40
+@@ -14302,9 +14302,11 @@
+               __msSettle(),
+               (__msFl = 0)));
+       },
+-      __msTick = () => {
++      __msTick = (yIn) => {
+         if (!__msEnd) return;
+-        let y = window.scrollY,
++        // V13 (less work): on the scroll-engine path (L) the y comes from the nav's scroll listener (__nsY, read
++        // there already); a scrollY read here laid out whenever scrollY != 0 (WebKit LocalDOMWindow::scrollY)
++        let y = yIn === void 0 ? window.scrollY : yIn,
+           now = performance.now();
+         (y !== __msY &&
+           (__msY >= 0 &&
+@@ -14321,8 +14323,14 @@
+               __msVk &&
+               (__msLift > 1 || Math.abs(__msV) < 0.5) &&
+               ((__msLift = 1), __msSettle())));
+-        let t = __msEnd.offsetHeight,
+-          e = t > 0 ? (y - (document.documentElement.scrollHeight - window.innerHeight - t)) / t : 0;
++        // V13: the geometry is cached on the scroll-engine path, cleared by __msRO and by an innerHeight change
++        // (innerHeight reads no layout in the main frame)
++        let __g = __msTick.g,
++          __ih = window.innerHeight;
++        (yIn === void 0 || !__g || __g[2] !== __ih) &&
++          (__g = __msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, __ih]);
++        let t = __g[0],
++          e = t > 0 ? (y - (__g[1] - __ih - t)) / t : 0;
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+         ((e = e > 0 ? (e < 1 ? e : 1) : 0),
+@@ -14688,7 +14696,7 @@
+       __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+       __pinY = () => Math.min(window.scrollY, __pinMax()),
+       L = () => {
+-        if ((_(), __msOn)) return void __msTick();
++        if ((_(), __msOn)) return void __msTick(__nsY);
+         if (!C()) return;
+         let e = window.scrollY,
+           t = __pinMax();
+@@ -14733,6 +14741,7 @@
+       // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
+       // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
+       (__msRO = new ResizeObserver(() => {
++        __msTick.g = null;
+         let e = R.getBoundingClientRect().height,
+           t = document.documentElement.scrollHeight - __msEnd.offsetHeight - (__msEnd.getBoundingClientRect().top + window.scrollY);
+         R.style.setProperty(`--fw-ms-h`, `${e + (t > 0 && t < 1 ? t : 0)}px`);

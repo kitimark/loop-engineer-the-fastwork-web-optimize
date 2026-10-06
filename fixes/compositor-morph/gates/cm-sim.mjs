@@ -31,6 +31,10 @@ const COLD = process.argv.includes('--cold');
 // --stack N: Timeline call stacks N deep (default 1, as TIMELINE_START); forced Layout / style records then name their
 // script frames (function@line:col of the served file), counted per phase as forcedBy
 const STACK = Number(arg('--stack', '1'));
+// --rest-pause a,b|c,...: after restOpen, one more 1.2 s rest phase per group with the running animations whose name
+// contains any of the group's parts (| separated) paused, then resumed (which animation restyles at rest)
+const REST_PAUSE = (arg('--rest-pause', '') || '').split(',').filter(Boolean);
+const PAUSE = (parts, on) => `(() => { const ps = ${JSON.stringify(parts)}; let n = 0; for (const a of document.getAnimations()) { const nm = a.animationName || a.id || ''; if (ps.some((p) => nm.includes(p)) && (${on} ? a.playState === 'running' : a.__fwRP)) { ${on} ? (a.pause(), a.__fwRP = 1) : (a.play(), a.__fwRP = 0); n++; } } return n; })()`;
 // running animations at a rest phase (target, name, timeline kind, play state), read after the phase window
 const ANIMS = `(() => document.getAnimations().filter((a) => a.playState === 'running').map((a) => { const e = a.effect && a.effect.target; const k = e ? (e.nodeName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.replace(/svelte-\\w+/g, '').trim().split(/\\s+/).slice(0, 2).join('.') : '')) : '?'; return k + ' ' + (a.animationName || a.id || a.constructor.name) + ' ' + (a.timeline ? a.timeline.constructor.name : 'none'); }))()`;
 const OUT = join(WT, 'out/compositor-morph'); mkdirSync(OUT, { recursive: true });
@@ -48,7 +52,7 @@ const RUN = (ys) => `(() => { const ys = ${JSON.stringify(ys)}; let k = 0; const
   window.__emDone = 0; requestAnimationFrame(f); return performance.now(); })()`;
 
 function phaseStats(recs, a, b) {
-  const frames = []; const script = {}; const forcedBy = {};
+  const frames = []; const script = {}; const forcedBy = {}; const invalidatedBy = {};
   for (const r of recs) {
     if (r.type !== 'RenderingFrame') continue;
     const t = r.startTime * 1000; if (t < a || t >= b) continue;
@@ -57,6 +61,8 @@ function phaseStats(recs, a, b) {
     const walk = (x, inJs) => {
       if (x.type === 'Paint') { o.paints++; if (x.data?.clip) { const q = box(x.data.clip); o.kpx += (q.w * q.h) / 1e3; o.rects.push(q); } }
       if (inJs && (x.type === 'Layout' || x.type === 'RecalculateStyles')) { const cf = (x.stackTrace?.callFrames || x.data?.stackTrace?.callFrames || []).filter((q) => q.url && q.url !== '[native code]').slice(0, 3).map((q) => `${q.functionName || '(anon)'}@${q.lineNumber}:${q.columnNumber}`).join('<') || '(no js frame)'; const k = `${x.type === 'Layout' ? 'L' : 'S'} ${cf}`; forcedBy[k] = (forcedBy[k] || 0) + 1; }
+      // who invalidated style or layout (the record carries the stack of the script that did it, with --stack > 1)
+      if (x.type === 'ScheduleStyleRecalculation' || x.type === 'InvalidateLayout') { const cf = (x.stackTrace?.callFrames || x.data?.stackTrace?.callFrames || []).filter((q) => q.url && q.url !== '[native code]').slice(0, 3).map((q) => `${q.functionName || '(anon)'}@${q.lineNumber}:${q.columnNumber}`).join('<') || '(no js frame)'; const k = `${x.type === 'InvalidateLayout' ? 'L' : 'S'} ${cf}`; invalidatedBy[k] = (invalidatedBy[k] || 0) + 1; }
       if (x.type === 'Layout') (o.layouts++, inJs && o.fLayouts++);
       else if (x.type === 'RecalculateStyles') (o.styles++, inJs && o.fStyles++);
       else if (x.type === 'Composite') o.composite++;
@@ -66,6 +72,9 @@ function phaseStats(recs, a, b) {
     };
     walk(r, false); o.kpx = Math.round(o.kpx); frames.push(o);
   }
+  // invalidations outside rendering frames (timers, events between frames)
+  const inv = (x) => { if (x.type === 'ScheduleStyleRecalculation' || x.type === 'InvalidateLayout') { const cf = (x.stackTrace?.callFrames || x.data?.stackTrace?.callFrames || []).filter((q) => q.url && q.url !== '[native code]').slice(0, 3).map((q) => `${q.functionName || '(anon)'}@${q.lineNumber}:${q.columnNumber}`).join('<') || '(no js frame)'; const k = `out-of-frame ${x.type === 'InvalidateLayout' ? 'L' : 'S'} ${cf}`; invalidatedBy[k] = (invalidatedBy[k] || 0) + 1; } for (const ch of x.children || []) inv(ch); };
+  for (const r of recs) { if (r.type === 'RenderingFrame') continue; const t = r.startTime * 1000; if (t >= a && t < b) inv(r); }
   // rects: the biggest 6 per frame, keyed by size, counted over the phase
   const rectKinds = {};
   for (const f of frames) { for (const q of f.rects) { const k = `${q.w}x${q.h}@${q.x},${q.y}`; rectKinds[k] = (rectKinds[k] || 0) + 1; } delete f.rects; }
@@ -74,7 +83,7 @@ function phaseStats(recs, a, b) {
   return { nFrames: frames.length, paints: sum('paints'), kpx: sum('kpx'), layouts: sum('layouts'), styles: sum('styles'), composite: sum('composite'), fLayouts: sum('fLayouts'), fStyles: sum('fStyles'),
     framesWithLayout: frames.filter((f) => f.layouts > 0).length, framesWithPaint: frames.filter((f) => f.paints > 0).length,
     median: { paints: med('paints'), kpx: med('kpx'), layouts: med('layouts'), styles: med('styles') },
-    topRects: Object.fromEntries(Object.entries(rectKinds).sort((x, y) => y[1] - x[1]).slice(0, 14)), script: Object.fromEntries(Object.entries(script).sort((x, y) => y[1] - x[1]).slice(0, 14)), forcedBy: Object.fromEntries(Object.entries(forcedBy).sort((x, y) => y[1] - x[1]).slice(0, 12)), frames };
+    topRects: Object.fromEntries(Object.entries(rectKinds).sort((x, y) => y[1] - x[1]).slice(0, 14)), script: Object.fromEntries(Object.entries(script).sort((x, y) => y[1] - x[1]).slice(0, 14)), forcedBy: Object.fromEntries(Object.entries(forcedBy).sort((x, y) => y[1] - x[1]).slice(0, 12)), invalidatedBy: Object.fromEntries(Object.entries(invalidatedBy).sort((x, y) => y[1] - x[1]).slice(0, 12)), frames };
 }
 
 const res = { tool: 'fixes/compositor-morph/gates/cm-sim.mjs (from fix-end-morph em-sim.mjs)', label: LABEL, cold: COLD, stack: STACK, startedAt: new Date().toISOString(), steps: N, arms: [] };
@@ -159,6 +168,13 @@ for (const [i, arm] of ARMS.entries()) {
     await phase('approach', lin(endStart - ih, endStart, 30));
     await phase('open', lin(endStart, max, N));
     await phase('restOpen', null, 1200);
+    for (const grp of REST_PAUSE) {
+      const parts = grp.split('|');
+      const n = await c.evaluate(PAUSE(parts, true));
+      await phase(`restOpen-p:${grp}`, null, 1200);
+      run.phases[`restOpen-p:${grp}`].paused = n;
+      await c.evaluate(PAUSE(parts, false));
+    }
     await phase('close', lin(max, endStart, N));
     await phase('restClosed', null, 1600);
     await c.send('Timeline.stop').catch(() => {});
@@ -173,6 +189,7 @@ for (const [i, arm] of ARMS.entries()) {
       console.log(run.arm, name.padEnd(11), 'p', ph.geo.p, 'hdrH', ph.geo.hdrH, '| frames', s.nFrames, 'paints', s.paints, 'kpx', s.kpx, 'layouts', s.layouts, `(${s.framesWithLayout} fr)`, 'styles', s.styles, 'forced L/S', `${s.fLayouts}/${s.fStyles}`,
         '| f0-2', s.frames.slice(0, 3).map((f) => `p${f.paints}/${f.kpx}k L${f.layouts}(${f.fLayouts}) S${f.styles}(${f.fStyles})`).join(' '),
         '| layers', ph.layers.nBefore, '->', ph.layers.nAfter, JSON.stringify(ph.layers.painted.slice(0, 8).map((x) => `${x.layer}${x.isNew ? '*' : ''}:${x.d} ${x.w}x${x.h}`)));
+      if (STACK > 1 && name.startsWith('rest')) console.log(run.arm, name.padEnd(11), 'invalidated by', JSON.stringify(s.invalidatedBy));
       if (STACK > 1 && Object.keys(s.forcedBy).length) console.log(run.arm, name.padEnd(11), 'forced by', JSON.stringify(s.forcedBy));
       if (ph.anims) console.log(run.arm, name.padEnd(11), 'running animations', ph.anims.length, JSON.stringify(ph.anims.slice(0, 12)));
     }
