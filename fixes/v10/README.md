@@ -85,6 +85,29 @@ The build refuses when:
 - the snapshot holds extra files;
 - the snapshot already exists.
 
+### The v10 rebuild: three outcomes of P-156 (dry-checked, nothing built)
+
+The lead's v10 (11:33Z, 11:48Z, 11:50Z): main's v9-final rev 7d + #platform pause (fix-end-morph option c) + P1 [+ P1b
+(a)] + nolift + I-219, NAV=none. F1, U2, CLOCK and PANELH are out. P-156 judges C + P1 + P1b (a) as a pair against C,
+so v10 may ship without P1. The build waits for the lead's go after P-156.
+
+Common slots: `NAV=none PAUSE=a3ac3885:fixes/end-morph-f12/fade/c-pause-at-0.diff PAUSE_SHA=2c8f3cef03a9
+I219=main:fixes/i219-hydrate/delta.diff I219_SHA=947c88282561`.
+
+| outcome | extra slots | N (JS / CSS) | V (JS / CSS) |
+|---|---|---|---|
+| no P1 | `P1=none` | c9d89ba3b931 / 192f62c106d1 | 68312162e859 / 9b82a98515ba |
+| P1 + P1b (a) | `P1B="d52d14cd:…/delta-js.diff d52d14cd:…/delta-css.diff" P1B_SHA="27408c23ede4 d20484088a03"` | 83b68de5a21f / 76ba9f971926 | 2dd7cbc09de2 / fb9f6aa28ad4 |
+| P1 alone (only if ruled separately) | none | 84c661d972c8 / 736911f655f2 | 8e05aa13c61d / 1b344025dadd |
+
+- In all three: R1 = R1b = R2 byte for byte, and code parity is 0 in every step. R3 is skipped (the nolift arm as tried
+  carries F1+U2 and P1). CI = C + I-219 = 30d41592a308 / e1359ab9994a.
+- `P1=none`: R1b's "C + nolift + P1" pin and R2's measured-build pin become printed hashes. `P1=none` with `P1B` refuses
+  (P1b sits on P1), and so does any other `P1` value.
+- PAUSE per base. On v9-final 647c9ef2b1e2 (P-155's C, where fix-end-morph served it) it gives JS db7257e81859, CSS
+  192f62c106d1. The no-P1 route's R2 reproduces exactly that step. On rev 7d's C 1b2eecc66011 it gives JS c9d89ba3b931,
+  with the same CSS. The changed lines are the same 6 on both bases, at the same line numbers.
+
 ## Overlap with rev 7d
 
 Line numbers are v9-final's, from `diff -U0`.

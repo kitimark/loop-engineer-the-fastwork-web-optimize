@@ -38,6 +38,9 @@
 #          right after the nav base and before P1 in every route (R1b: after its nav step; R3: on the nolift arm)
 #   CLOCK="<d>" CLOCK_SHA="<sha12>"   arch-compositor-morph's panel-clock-layer (CSS, iOS-only @supports rule): applied after
 #          P1, P1b and panel-h, before nolift, in every route (part of N)
+#   P1=none   v10 without P1 (lead 11:50Z: P-156 judges C + P1 + P1b (a) as a pair; if it fails, v10 ships without P1):
+#          no P1 step in any route (P1B is refused with it: P1b sits on P1); R1b's "C + nolift + P1" pin and R2's measured
+#          pin become printed hashes, and R3 is skipped (the nolift arm as tried carries P1). Any other P1 value refuses.
 #   N = C + F1+U2 [+ pause] + P1 [+ P1b] [+ panel-h] [+ clock]; V = N + nolift [+ I-219]. Routes with the options:
 #   R1  C + F1+U2 + P1 [+ P1b] + nolift [+ I-219]
 #   R1b C + nolift + P1 + F1+U2 [+ P1b] [+ I-219]   (P1b after F1+U2 here too: the draft (b) part edits next to F1+U2's
@@ -47,6 +50,7 @@
 cd "$(dirname "$0")/../.." || exit 2
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 REV7D=fixes/morph-scroll-v9try/patch.diff; V9F=fixes/v9-best/patch.diff
+P1ARG=${P1:-}  # the caller's P1 (only "none"), read before the name is reused for the delta path
 F12=fixes/nav-hit-cache/patch-on-v9f-f12.diff; P1=fixes/end-morph-p1-v9f/p1-delta.diff; NL=fixes/v10/nolift-delta.diff
 node tools/baseline.mjs status > /dev/null || { echo "baseline is not the pinned snapshot: refuse"; exit 3; }
 BASE=$(node --input-type=module -e "import { resolveTree } from './tools/lib/paths.mjs'; console.log(resolveTree('site-pretty'))") || exit 3
@@ -94,6 +98,12 @@ if [ -n "$NAV" ]; then
   if [ "$NAV" = none ]; then NAVL=""; NAVN="no F1+U2"
   else get "$NAV" $T/nav.diff "$NAV_SHA" "nav delta (in place of F1+U2)"; NAVL=$T/nav.diff; NAVN=${NAV_NAME:-nav delta}; fi
 fi
+P1L=$P1; P1N=" + P1"
+if [ -n "$P1ARG" ]; then
+  [ "$P1ARG" = none ] || { echo "P1=$P1ARG: only P1=none is known: refuse"; exit 3; }
+  [ -z "$P1B" ] || { echo "P1=none with P1B: P1b sits on P1: refuse"; exit 3; }
+  P1L=""; P1N=" + no P1"; ALT=1
+fi
 apl() { d=$1; shift; for x in "$@"; do ap $d $x; done; }
 N_JS12=f5068db34a32; N_CSS12=a81b9af7b2c9; V_JS12=f5068db34a32; V_CSS12=a4ed5432f2f7; CI_JS12=; CI_CSS12=
 [ -n "$P1BL$ALT$PSL" ] && { N_JS12=${PIN_N%/*}; N_CSS12=${PIN_N#*/}; [ -n "$PIN_N" ] || N_JS12= N_CSS12=; }
@@ -118,17 +128,17 @@ aps() { d=$1; shift; for x in "$@"; do rm -rf $T/prev; tree $T/prev $d; ap $d $x
   PARN=$((PARN + 1)); done; }
 git show 9f9f703f:fixes/joinwl-nolift/patch.diff > $T/nolift-arm.diff || exit 3
 [ "$(h $T/nolift-arm.diff)" = bec7169bd7cc ] || { echo "joinwl-nolift/patch.diff @9f9f703f is not bec7169bd7cc: refuse"; exit 3; }
-echo "R1: C + $NAVN$PSN + P1$PBN + nolift${I219L:+ + I-219}"
+echo "R1: C + $NAVN$PSN$P1N$PBN + nolift${I219L:+ + I-219}"
 tree $T/c $BASE; ap $T/c $REV7D; pin $T/c 1b2eecc66011 e1359ab9994a "C (baseline + rev 7d build)"
 tree $T/r1 $T/c; aps $T/r1 $NAVL
 if [ -z "$ALT" ]; then pin $T/r1 738bc075f7f8 e1359ab9994a "C + F1+U2"; elif [ -n "$NAVL" ]; then stage $T/r1 "C + $NAVN"; fi
 [ -n "$PSL" ] && { aps $T/r1 $PSL; stage $T/r1 "C + $NAVN + pause"; }
-aps $T/r1 $P1
+aps $T/r1 $P1L
 if [ -n "$P1BL" ]; then
-  if [ -z "$ALT$PSL" ]; then pin $T/r1 f5068db34a32 a81b9af7b2c9 "C + F1+U2 + P1"; else stage $T/r1 "C + $NAVN$PSN + P1"; fi
+  if [ -z "$ALT$PSL" ]; then pin $T/r1 f5068db34a32 a81b9af7b2c9 "C + F1+U2 + P1"; else stage $T/r1 "C + $NAVN$PSN$P1N"; fi
   aps $T/r1 $P1BL
 fi
-stage $T/r1 "N = C + $NAVN$PSN + P1$PBN" $N_JS12 $N_CSS12
+stage $T/r1 "N = C + $NAVN$PSN$P1N$PBN" $N_JS12 $N_CSS12
 tree $T/n $T/r1
 aps $T/r1 $NL
 if [ -n "$I219L" ]; then
@@ -136,11 +146,11 @@ if [ -n "$I219L" ]; then
   aps $T/r1 $I219L
 fi
 stage $T/r1 "V = N + nolift${I219L:+ + I-219}" $V_JS12 $V_CSS12
-echo "R1b: C + nolift + P1 + $NAVN$PSN$PBN${I219L:+ + I-219}"
+echo "R1b: C + nolift$P1N + $NAVN$PSN$PBN${I219L:+ + I-219}"
 tree $T/r1b $T/c; ap $T/r1b $NL; pin $T/r1b 1b2eecc66011 edc20be46534 "C + nolift"
-ap $T/r1b $P1; pin $T/r1b 291f70523bd6 a4ed5432f2f7 "C + nolift + P1"
-apl $T/r1b $NAVL $PSL
-[ -n "$P1BL" ] && { stage $T/r1b "C + nolift + P1 + $NAVN"; apl $T/r1b $P1BL; }
+[ -n "$P1L" ] && { ap $T/r1b $P1L; pin $T/r1b 291f70523bd6 a4ed5432f2f7 "C + nolift + P1"; }
+apl $T/r1b $NAVL $PSL; [ -z "$P1L" ] && stage $T/r1b "C + nolift$P1N + $NAVN$PSN"
+[ -n "$P1BL" ] && { stage $T/r1b "C + nolift$P1N + $NAVN"; apl $T/r1b $P1BL; }
 [ -n "$I219L" ] && { stage $T/r1b "...$PBN"; ap $T/r1b $I219L; }
 stage $T/r1b "V (other order)" $V_JS12 $V_CSS12
 echo "R2 / R3: rev 7d's diff on the measured build$PBN + nolift${I219L:+ + I-219}, and on the nolift arm the user tried"
@@ -150,14 +160,14 @@ diff -u --label a/$JS --label b/$JS $T/v9/$JS $T/c/$JS > $T/rev7d.diff; [ $? -eq
 echo "  rev 7d diff (v9-final -> C): $(h $T/rev7d.diff), $(grep -c '^@@' $T/rev7d.diff) hunks"
 tree $T/r2 $T/v9; apl $T/r2 $NAVL; [ -z "$ALT" ] && pin $T/r2 a6426953727a e1359ab9994a "v9-final + F1+U2"
 apl $T/r2 $PSL
-ap $T/r2 $P1
-if [ -z "$ALT$PSL" ]; then pin $T/r2 4da641f828bb a81b9af7b2c9 "v9-final + F1+U2 + P1 (measured)"; else stage $T/r2 "v9-final + $NAVN + P1"; fi
+[ -n "$P1L" ] && ap $T/r2 $P1L
+if [ -z "$ALT$PSL" ]; then pin $T/r2 4da641f828bb a81b9af7b2c9 "v9-final + F1+U2 + P1 (measured)"; else stage $T/r2 "v9-final + $NAVN$PSN$P1N"; fi
 [ -n "$P1BL" ] && { apl $T/r2 $P1BL; stage $T/r2 "measured$PBN"; }
 ap $T/r2 $T/rev7d.diff; stage $T/r2 "measured$PBN + rev 7d (= N)" $N_JS12 $N_CSS12
 ap $T/r2 $NL; [ -n "$I219L" ] && ap $T/r2 $I219L
 stage $T/r2 "measured$PBN + rev 7d + nolift${I219L:+ + I-219}" $V_JS12 $V_CSS12
 ROUTES="r1b r2 r3"
-if [ -n "$ALT" ]; then ROUTES="r1b r2"; echo "  R3 skipped: the nolift arm as tried carries F1+U2"; else
+if [ -n "$ALT" ]; then ROUTES="r1b r2"; echo "  R3 skipped: the nolift arm as tried carries F1+U2 and P1"; else
 tree $T/r3 $BASE; ap $T/r3 $T/nolift-arm.diff; pin $T/r3 4da641f828bb a4ed5432f2f7 "nolift arm as tried (Try-it option B)"
 apl $T/r3 $PSL
 [ -n "$P1BL" ] && apl $T/r3 $P1BL
