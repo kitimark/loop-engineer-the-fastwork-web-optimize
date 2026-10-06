@@ -67,7 +67,8 @@ TAB=$(printf '\t')
 get() { # get <spec> <out> <sha12> <what>: fetch, check the hash of the owner's bytes, normalise the headers
   if [ -f "$1" ]; then cp "$1" $2.raw || exit 3; else git show "$1" > $2.raw 2> /dev/null || { echo "$4 $1: not a file or <commit>:<path>: refuse"; exit 3; }; fi
   [ "$(h $2.raw)" = "$3" ] || { echo "$4 $1 is $(h $2.raw), given $3: refuse"; exit 3; }
-  sed -E -e "s#^--- [^$TAB]*(_app/immutable/[^$TAB]*).*#--- a/\1#" -e "s#^\+\+\+ [^$TAB]*(_app/immutable/[^$TAB]*).*#+++ b/\1#" $2.raw > $2 || exit 3
+  # the path ends at the first blank or tab (a header may carry a date after a tab, or a note like " (v9-final)")
+  sed -E -e "s#^--- [^$TAB]*(_app/immutable/[^[:space:]]*).*#--- a/\1#" -e "s#^\+\+\+ [^$TAB]*(_app/immutable/[^[:space:]]*).*#+++ b/\1#" $2.raw > $2 || exit 3
   echo "  $4 $1: $3 ok, $(grep -c '^@@' $2) hunks"
 }
 P1BL=""; I219L=""
