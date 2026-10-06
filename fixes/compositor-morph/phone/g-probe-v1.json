@@ -1,0 +1,78 @@
+{
+ "name": "cm-probe-v1",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "compositor-morph attribution (arch-compositor-morph): on the probe page out/cm/probe (?v=none|sda|raf; a fixed box moved by a scroll-driven translate / opacity, by rAF JS, or not at all) finger drags down through the whole page and back, so Safari scrolls on its own thread: does the scroll-driven box cost main-thread style / layout per frame? Compare runs of the same script hash only.",
+ "params": {
+  "x": 215
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "pause",
+   "ms": 3000
+  },
+  {
+   "type": "mark",
+   "name": "down"
+  },
+  {
+   "type": "repeat",
+   "times": 10,
+   "until": "atEnd",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "mark",
+   "name": "up"
+  },
+  {
+   "type": "repeat",
+   "times": 6,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  }
+ ]
+}
