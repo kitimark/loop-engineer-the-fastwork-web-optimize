@@ -464,5 +464,524 @@
   "smoke": "P-153 block 2 records (V as A): FAIL Pr1 f2 +10 > +4; Pr2 PASS; Pr3 holds",
   "base": "B0 (lead base ruling 11:33Z from P-155 signed result)"
  },
- "measurementCodeChanged": false
+ "measurementCodeChanged": false,
+ "phoneRead": {
+  "ticket": "P-156",
+  "block": 1,
+  "base": "B0",
+  "window": "2026-10-06T13:05:53Z-14:57:52Z",
+  "reader": "pA-read.mjs rev 2 a01dd89e3333 --base 0",
+  "result": "FAIL Pr1",
+  "Pr1": "FAILS (f2 A - C 11 ms > +4, f123 A - C 3.5 ms)",
+  "Pr2": "holds (NO-WORSE PASS, not threshold-sensitive)",
+  "Pr3": "holds (CB34 A - C -1.5)",
+  "Pr4": "holds (CBp34 A - C 0, Op.f2 A - C 4 ms)",
+  "firstOpen": {
+   "f1": {
+    "C": {
+     "median": 16.5,
+     "min": 16,
+     "max": 17,
+     "n": 4
+    },
+    "A": {
+     "median": 17,
+     "min": 16,
+     "max": 19,
+     "n": 4
+    },
+    "diff": 0.5
+   },
+   "f2": {
+    "C": {
+     "median": 26.5,
+     "min": 23,
+     "max": 30,
+     "n": 4
+    },
+    "A": {
+     "median": 37.5,
+     "min": 35,
+     "max": 39,
+     "n": 4
+    },
+    "diff": 11
+   },
+   "f12": {
+    "C": {
+     "median": 43,
+     "min": 39,
+     "max": 47,
+     "n": 4
+    },
+    "A": {
+     "median": 54,
+     "min": 52,
+     "max": 58,
+     "n": 4
+    },
+    "diff": 11
+   },
+   "f123": {
+    "C": {
+     "median": 62,
+     "min": 59,
+     "max": 65,
+     "n": 4
+    },
+    "A": {
+     "median": 65.5,
+     "min": 65,
+     "max": 68,
+     "n": 4
+    },
+    "diff": 3.5
+   }
+  },
+  "endZone": {
+   "diff": {
+    "30": -12,
+    "34": -7,
+    "38": -9,
+    "46": -3,
+    "50": -2,
+    "54": -2
+   },
+   "p": {
+    "30": "70/70",
+    "34": "70/70",
+    "38": "70/70",
+    "46": "70/70",
+    "50": "70/70",
+    "54": "70/70"
+   },
+   "sensitive": false
+  },
+  "cb34": {
+   "C": [
+    0,
+    4,
+    1,
+    2
+   ],
+   "A": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "CB50": {
+    "C": [
+     0,
+     1,
+     0,
+     1
+    ],
+    "A": [
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "sentinels": {
+   "S0": {
+    "fps": 56.5,
+    "slowShare": 0.023,
+    "sentinel": "PASS"
+   },
+   "S1": {
+    "fps": 55.7,
+    "slowShare": 0.028,
+    "sentinel": "PASS"
+   }
+  },
+  "holds": "H0-H18 all VALID",
+  "censusWorseBins": [
+   "500-750",
+   "1000-1250",
+   "5000-5250",
+   "5250-5500"
+  ],
+  "gap": "USB drop 13:35Z after H4 (I-222); re-plug 13:37:00Z (C-087); extra uncounted warm-ups H5 WC, H6 WA; holds renumbered H7-H18 (lead ruling option a)",
+  "runs": {
+   "EC1": {
+    "part": "A",
+    "arm": "C",
+    "cb34": 0,
+    "cb50": 0,
+    "start": "2026-10-06T13:28:37.907Z",
+    "heat": {
+     "start": {
+      "battC": 37.09,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38.09,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1742,
+     "t": 32373,
+     "f1": 16,
+     "f2": 26,
+     "f12": 42,
+     "f123": 59,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1451,
+     "s": {
+      "30": 27,
+      "34": 20,
+      "38": 15,
+      "46": 3,
+      "50": 1,
+      "54": 1
+     }
+    }
+   },
+   "EC2": {
+    "part": "A",
+    "arm": "C",
+    "cb34": 4,
+    "cb50": 1,
+    "start": "2026-10-06T14:00:02.911Z",
+    "heat": {
+     "start": {
+      "battC": 37.5,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38.39,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1748,
+     "t": 32488,
+     "f1": 17,
+     "f2": 27,
+     "f12": 44,
+     "f123": 65,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1405,
+     "s": {
+      "30": 55,
+      "34": 37,
+      "38": 25,
+      "46": 9,
+      "50": 8,
+      "54": 7
+     }
+    }
+   },
+   "EC3": {
+    "part": "A",
+    "arm": "C",
+    "cb34": 1,
+    "cb50": 0,
+    "start": "2026-10-06T14:07:12.453Z",
+    "heat": {
+     "start": {
+      "battC": 37.19,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38.19,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1757,
+     "t": 32488,
+     "f1": 17,
+     "f2": 30,
+     "f12": 47,
+     "f123": 64,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1454,
+     "s": {
+      "30": 30,
+      "34": 18,
+      "38": 12,
+      "46": 2,
+      "50": 1,
+      "54": 0
+     }
+    }
+   },
+   "EC4": {
+    "part": "A",
+    "arm": "C",
+    "cb34": 2,
+    "cb50": 1,
+    "start": "2026-10-06T14:25:34.990Z",
+    "heat": {
+     "start": {
+      "battC": 37.29,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38.19,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1755,
+     "t": 32466,
+     "f1": 16,
+     "f2": 23,
+     "f12": 39,
+     "f123": 60,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1442,
+     "s": {
+      "30": 34,
+      "34": 22,
+      "38": 15,
+      "46": 4,
+      "50": 3,
+      "54": 3
+     }
+    }
+   },
+   "EA1": {
+    "part": "A",
+    "arm": "A",
+    "cb34": 0,
+    "cb50": 0,
+    "start": "2026-10-06T13:49:16.815Z",
+    "heat": {
+     "start": {
+      "battC": 37.09,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1765,
+     "t": 32655,
+     "f1": 16,
+     "f2": 38,
+     "f12": 54,
+     "f123": 66,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1479,
+     "s": {
+      "30": 19,
+      "34": 13,
+      "38": 5,
+      "46": 0,
+      "50": 0,
+      "54": 0
+     }
+    }
+   },
+   "EA2": {
+    "part": "A",
+    "arm": "A",
+    "cb34": 0,
+    "cb50": 0,
+    "start": "2026-10-06T13:54:05.231Z",
+    "heat": {
+     "start": {
+      "battC": 37.79,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38.29,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1754,
+     "t": 32429,
+     "f1": 17,
+     "f2": 37,
+     "f12": 54,
+     "f123": 65,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1474,
+     "s": {
+      "30": 20,
+      "34": 15,
+      "38": 6,
+      "46": 0,
+      "50": 0,
+      "54": 0
+     }
+    }
+   },
+   "EA3": {
+    "part": "A",
+    "arm": "A",
+    "cb34": 0,
+    "cb50": 0,
+    "start": "2026-10-06T14:13:11.677Z",
+    "heat": {
+     "start": {
+      "battC": 37.59,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 38.19,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1753,
+     "t": 32439,
+     "f1": 19,
+     "f2": 39,
+     "f12": 58,
+     "f123": 68,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1483,
+     "s": {
+      "30": 26,
+      "34": 17,
+      "38": 9,
+      "46": 1,
+      "50": 0,
+      "54": 0
+     }
+    }
+   },
+   "EA4": {
+    "part": "A",
+    "arm": "A",
+    "cb34": 0,
+    "cb50": 0,
+    "start": "2026-10-06T14:20:41.964Z",
+    "heat": {
+     "start": {
+      "battC": 36.69,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 37.5,
+      "state": "Serious"
+     }
+    },
+    "o1": {
+     "i": 1740,
+     "t": 32422,
+     "f1": 17,
+     "f2": 35,
+     "f12": 52,
+     "f123": 65,
+     "ihStep": false,
+     "afterFullClose": false
+    },
+    "endZone": {
+     "n": 1487,
+     "s": {
+      "30": 20,
+      "34": 12,
+      "38": 6,
+      "46": 1,
+      "50": 0,
+      "54": 0
+     }
+    }
+   },
+   "BC1": {
+    "part": "B",
+    "arm": "C",
+    "cbp34": 0,
+    "cbp50": 0,
+    "opf2": 40,
+    "start": "2026-10-06T14:31:36.663Z",
+    "heat": {
+     "start": {
+      "battC": 37.39,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 37.69,
+      "state": "Serious"
+     }
+    }
+   },
+   "BC2": {
+    "part": "B",
+    "arm": "C",
+    "cbp34": 0,
+    "cbp50": 0,
+    "opf2": 41,
+    "start": "2026-10-06T14:49:01.045Z",
+    "heat": {
+     "start": {
+      "battC": 36.59,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 37,
+      "state": "Serious"
+     }
+    }
+   },
+   "BA1": {
+    "part": "B",
+    "arm": "A",
+    "cbp34": 0,
+    "cbp50": 0,
+    "opf2": 45,
+    "start": "2026-10-06T14:36:20.568Z",
+    "heat": {
+     "start": {
+      "battC": 37.5,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 37.59,
+      "state": "Serious"
+     }
+    }
+   },
+   "BA2": {
+    "part": "B",
+    "arm": "A",
+    "cbp34": 0,
+    "cbp50": 0,
+    "opf2": 44,
+    "start": "2026-10-06T14:42:32.505Z",
+    "heat": {
+     "start": {
+      "battC": 36.79,
+      "state": "Serious"
+     },
+     "end": {
+      "battC": 37.09,
+      "state": "Serious"
+     }
+    }
+   }
+  }
+ }
 }

@@ -3,7 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and the `delta-*.diff` files contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** the v10 candidate "A = P1 + (a)" (lead ruling 2026-10-06 09:35Z; P1b (b) parked). Measured in Chrome:
+**Status:** P-156 block 1 read (B0): **FAIL Pr1** (first-open f2 A - C +11 ms > +4), Pr2-Pr4 hold; the lead decides
+between P1 alone and reviving (b) (section "P-156 read"). The v10 candidate "A = P1 + (a)" (lead ruling 2026-10-06
+09:35Z; P1b (b) parked). Measured in Chrome:
 - values, trace counts, states and pixels, and one clean headed timing hold;
 - after the rework: hydration on the i219-fixed base, install, rotation, teardown.
 
@@ -371,6 +373,53 @@ for part B's run gates and the pilot; it imports P-153's
 - a back/forward-cache restore;
 - desktop Safari and iPad widths over 640 px (no reveal there);
 - Low Power Mode (dropped by the user).
+
+## P-156 read, block 1 (B0; 2026-10-06 13:05-14:58Z)
+
+**Result: FAIL Pr1; Pr2, Pr3 and Pr4 hold.** Outcome row "Pr1 fails, others hold": WebKit's first-frame cost of P1 is
+not the forced read that (a) removes. P1's end-zone and closing-band gain stands. The lead decides between P1 alone and
+reviving (b).
+
+Reader: `node fixes/end-morph-p1/phone/pA-read.mjs out/p156/runs --base 0` (rev 2, a01dd89e3333; JSON out/p156/read-block1.json).
+Base check ok over 19 hold logs (H0-H18). Sentinels S0 PASS (fps 56.5, slow 0.023) and S1 PASS (fps 55.7, slow 0.028).
+Every hold VALID (219-250 s), every start and end gate PASS at Serious (Xcode-induced), battery 36.6-38.4 °C. No run
+failed a run gate; no re-run (TAIL: none).
+
+**Gap in the block (lead ruling, option (a)).** The iPhone dropped off USB at 13:35Z, after H4 (EC1) and before H5
+(incident I-222: `idevice_id -l` empty, WDA unreachable; the cooling wait read UNAVAILABLE and the kit printed a cooling
+VOID). H0-H4 stayed VALID (a lost device is not a VOID case). The user re-plugged at 13:37:00Z (console step C-087); I
+checked `idevice_id -l` = 1 and `wda check` READY. Then two extra uncounted warm-ups, H5 WC and H6 WA (Safari and WDA
+were cold), and the rest renumbered: H7 EA1, H8 EA2, H9 EC2, H10 EC3, H11 EA3, H12 EA4, H13 EC4, H14 BC1, H15 BA1,
+H16 BA2, H17 BC2, H18 S1. Arm order unchanged (part A C A A C C A A C, part B C A A C). Parts after the drop ran
+detached (`nohup`, I-221).
+
+| prediction | bound | C | A | A - C | reading |
+|---|---|---|---|---|---|
+| Pr1 first open O1.f2 (ms) | <= +4 | 26.5 (23-30) | 37.5 (35-39) | **+11** | FAILS, runs fully separated |
+| Pr2 end zone (>34 / >50 per run) | P-153 rule | 20, 37, 18, 22 / 1, 8, 1, 3 | 13, 15, 17, 12 / 0, 0, 0, 0 | median -7 / -2 | NO-WORSE PASS, not threshold-sensitive |
+| Pr3 CB34 (part A) | <= +3 | 0, 4, 1, 2 (median 1.5) | 0, 0, 0, 0 | -1.5 | holds |
+| Pr4 CBp34 after a park | <= +2 | 0, 0 | 0, 0 | 0 | holds |
+| Pr4 Op.f2 after a park (ms) | <= +4 | 40, 41 | 45, 44 | +4 | holds, exactly at the bound |
+
+- **First open, the frames around it** (medians, ms): f1 C 16.5 / A 17; f2 26.5 / 37.5; f3 C 17-21 / A 10-13;
+  f123 62 / 65.5 (+3.5). A's first open puts its extra work into f2, and its f3 is shorter: over three frames A is
+  +3.5 ms. P-153's V had the same shape (f2 +10, f123 +0.5).
+- **Work of the O1.f2 frame** (descriptive, Timeline): A 35-39 ms frames have busy 10.1-12.1 ms, busyRF 14.4-16.5 ms,
+  class MIXED. C's f2 frames (23-30 ms) are under the reader's 30 ms work threshold, so they carry no work numbers. The
+  extra in A is main-thread work plus rendering, not a pure compositor wait (OBSERVED, in our setup).
+- **Closing band:** A had no CB34 frame in any part-A run (C 7 over four runs) and none after a park in part B.
+- **Census, phone side** (descriptive, decides nothing alone): flagged bins 500-750 (+1.5 >34), 1000-1250 (+1 >50),
+  5000-5250 (+1 >34), 5250-5500 (+2 >34). The first two are the hero area, where neither P1 nor (a) does anything; the
+  last two are above the end track (m < 0, reveal off). The end track itself (6250-6500 area, the end zone) is better in
+  A (Pr2).
+- **Pilot H0** (uncounted, C): all three parks still; CBp 0; Op.f2 40 ms; it matches BC1/BC2.
+
+**Reading.** Chrome put A's switch-on frame at C's level (the forced 198-element restyle gone, Gates above). On the
+phone, A's first open f2 stays 11 ms over C, the same as P1 alone in P-153 (+10). So the WebKit cost of P1's first
+frame is not the layout read: likely the first composite of the new layers (layer creation, backing store, first
+paint of the clip), which (a) does not touch (cause UNRESOLVED; the decisive check is a Timeline attribution run of
+the O1 frame, layer and paint records, which this block did not have). The cost is one frame per page load, and A
+already gives it back in f3 (f123 +3.5 ms). Everything after the first open is better or equal in A.
 
 ## Not done
 
