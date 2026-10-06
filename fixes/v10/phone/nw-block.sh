@@ -102,6 +102,9 @@ if [ "$NW_DRY" != 1 ]; then
     echo "SAFARI restarted (WDA was restarted)" ;;
   *) echo "SAFARI kept (WDA kept)" ;;
   esac
+  # v10 (lead 15:46Z, I-225: a false Critical at the start gate right after a WDA or Safari restart): wait 60 s after
+  # any restart before the first hold's start gate (a settle wait, not a cooling wait)
+  case $last in *restarted*|*started*) echo "SETTLE 60 s after the WDA/Safari restart (I-225)"; sleep 60 ;; esac
 else
   echo "WDA ensure (dry: not run)"
 fi
