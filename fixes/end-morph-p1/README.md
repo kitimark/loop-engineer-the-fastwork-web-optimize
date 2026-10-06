@@ -303,6 +303,19 @@ Critical at the end gate):
   logged; a timeout stops the part, exit 6, and the lead decides). Its first start gate must read Serious, induced
   Yes.
 - **I-214:** every part restarts Safari with B's timer page (`iphone.mjs safari-restart`) after the WDA restart.
+- **Auto-lock lesson (I-215, OBSERVED, cause unconfirmed; mirrored from P-152's card, 55df6894, doc only).** In P-152's
+  block 2, WDA would not start after about 10 min of idle cooling with Safari parked ("Timed out while enabling
+  automation mode"); the phone most likely auto-locked. So WDA is checked right after any cooling wait. The kit
+  already does this, with no code change:
+  - after `P153_COOL_FIRST` (`p153-block.sh` line 72), the part's WDA stop/start/check runs next (lines 76-77, exit 5
+    before any gate or run), then the Safari restart (line 81);
+  - after a mid-part cooling gap (line 109), the next hold runs `iphone.mjs wda check` before its start gate
+    (`p153-hold.sh` line 79; the gate at line 83; hold VOID exit 5, no run).
+  - A failed check stops the part with nothing used up. Remedy (lead, console step C-071): the user unlocked the iPhone
+    and set Auto-Lock to Never for blocks.
+- **Xcode condition (P-152, 03:18Z):** a cool phone whose start gate read Critical with induced Yes points at the Xcode
+  Device Condition (lead step C-072: stop it, wait 2 min, start Thermal State Serious). P-153 starts only after C-072;
+  if its first start gate reads Critical, the block stops with no retry and the lead is told.
 - Kit: `p153-block.sh` is P-152 rev 1.3's driver (4b8c70324a81) with the names changed, and the block-1 archive also
   moves `out/p153/void`. `p153-read.mjs` takes P-152 rev 1.3's `holdStatus`, its self-test cases and its read lines.
   `p153-hold.sh`, `p153-serve.sh` and `p153-swipe.sh` are unchanged (P-152 rev 1.3 did not change its hold either).
