@@ -285,3 +285,30 @@ and the Simulator; motion-only differences are proposals).
   - Options after F1 + U2 lands: (a) F4 as a look-change proposal with Try-it pages (the Simulator shows the card 1.3
     px shorter at its bottom edge and slightly sharper); (c) the variant above, which likely gives up most of the
     approach saving. Steps 4-6 of the list above wait for that decision.
+
+## 6. User issue T-204 #10: the nav's "Join waitlist" moves up as it hides at the end of the page (2026-10-06)
+
+- Cause, CONFIRMED by the code (baseline CSS 11477-11495): on `.start-selling-top-nav-btn.is-earn`,
+  `--earn-out = clamp(0, morph / 0.2, 1)` drives `transform: translateY(earn-out * -8px)` and
+  `filter: blur(earn-out * 10px)` with no transition, while `opacity` has a 0.32 s transition after a 0.12 s delay.
+  So in the first 20 % of the morph the button rises 8 px and blurs at full opacity, then fades. The whole nav also
+  rises 4 px over the morph (`top: calc(16px + (12px - 16px) * var(--morph))`, CSS 11571, width <= 640px).
+- Its other exits don't move: the hide into the hero pill at the top (CSS 11500-11508; earn-out is 0 there) is a 0.2 s
+  fade plus the width closing; the reveal is the mask sweep and sheen.
+- In every build, so Fastwork's design, not ours. OBSERVED per frame (`joinwl-chrome.mjs`, Chrome 430x775 DPR 3;
+  `joinwl-sim.mjs`, Simulator Safari 26.5), the button's rise while visible (opacity > 0.01). Own translateY is -8 in
+  every build. The baseline's morph starts only on a wheel or touchmove at the bottom (JS 13049-13058), so the probes
+  dispatch one wheel there.
+
+  | build | JS / CSS sha12 | Chrome | Simulator |
+  |---|---|---|---|
+  | baseline | 4606120cf392 / 27776f3d4138 | -10.0 px | -11.0 px |
+  | v9-final (P-152 C) | 647c9ef2b1e2 / e1359ab9994a | -11.7 px | -10.0 px |
+  | F1 + U2 (P-152 V) | a6426953727a / e1359ab9994a | -11.7 px | not run |
+  | option B (P-153 V) | 4da641f828bb / a81b9af7b2c9 | -11.7 px | -11.3 px |
+  | option B + `arms/joinwl-nolift.css` | | -3.7 px (the nav's rise) | -3.0 px |
+  | option B + `arms/joinwl-fadeonly.css` | | -3.7 px | not run |
+
+- Fix candidates, look changes, so proposals with Try-it pages (not silent fixes): "nolift" (`transform: none`, keeps
+  the blur and fade; the button moves only with the nav, like the logo) and "fadeonly" (also `filter: none`, like the
+  hide into the hero pill). Removing the nav's own 4 px is out of scope: it is the whole pill-to-panel morph.
