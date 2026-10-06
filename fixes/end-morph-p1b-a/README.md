@@ -421,9 +421,23 @@ paint of the clip), which (a) does not touch (cause UNRESOLVED; the decisive che
 the O1 frame, layer and paint records, which this block did not have). The cost is one frame per page load, and A
 already gives it back in f3 (f123 +3.5 ms). Everything after the first open is better or equal in A.
 
+**Kit changes after block 1** (lead, from map-p156-gaps' trace and I-222/I-224; `p156-block.sh`, its own commit). Block 1
+ran on the old kit; **its timings do not compare with a block run on the new kit**:
+- Cooling wait OFF by default (`P156_COOL=1` restores it). Block 1 waited `phone-temp --below 38` before every hold
+  (13 of 107 min); under xcode-serious the rule is no cooling wait, the sentinel decides validity. The 44 °C / Critical
+  ceiling stays in each hold's start and end gate.
+- No park between holds when cooling is off, so the next hold's chrome-measure `lock run` is queued as soon as the
+  previous hold ends (block 1 lost 13.7 min to shared jobs that slipped into the park/cooling window, I-224).
+  `p156-hold.sh` still parks Safari after every run.
+- Device lost: `idevice_id -l` is checked before every hold, and a phone-temp UNAVAILABLE in a cooling wait is a lost
+  device too: a re-plug console step, then BLOCK STOP DEVICE LOST (exit 5), not a cooling VOID (block 1 printed
+  "did not cool" for the 13:35Z drop).
+
 ## Not done
 
-- P-156 (reserved by mgmt-clerk-1, PREDICTIONS row on main) needs the lead's signature and the pre-data ops-reader.
+- P-156 block 1 is read (above: FAIL Pr1). Open: the lead's decision (P1 alone or reviving (b)); the cause of A's f2
+  on WebKit is UNRESOLVED (one Timeline attribution run of the O1 frame would decide it); a quiet Chrome census re-run.
+- History of the card (signature 10:40Z on d366186a, rebased as ec6dcc32; dry runs; census) below.
 - `P156_DRY=1` (preview, before the rebase onto I-220's fix): both bases, every part (H0 pilot, H1-H16 with TAIL), all
   17 holds `DRY ok`; pins, compiled programs (fs 8737f212c0ff budget 229 s, park30 6f9209453750 budget 327 s) and
   served hashes match (base 1: C fe7c668d35e8 / A f83aa54c2acc; base 0: C 387a2b38790b / A 888ed8eb2d15); the reader's

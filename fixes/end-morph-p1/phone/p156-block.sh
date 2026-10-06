@@ -17,9 +17,17 @@
 # (part A counted C A A C C A A C; part B C A A C; sentinels on C: S0 before the counted runs, S1 last in its own hold)
 # H<n>:TAIL = the counted runs named in RERUN-NEEDED lines of out/p156/hold-H*.log, at most 2 per block, each re-run once
 # as <run>r in its own hold, then S1 in the next hold.
-# Cooling (P-153 rev 1.3, profile xcode-serious): before EVERY hold wait.mjs phone-temp --below 38 --timeout 600 (logged in
-# out/p156/cooling.log); not MET: one more 600 s wait; still not: BLOCK STOP, VOID, not scored (exit 6). An end gate at
-# Critical or over 44 °C voids that hold's run and stops the block (p156-hold.sh exit 3).
+# Cooling (kit change after P-156 block 1, lead 2026-10-06, map-p156-gaps: the wait cost 13 of 107 min): OFF by default,
+# as the xcode-serious rule says (no cooling wait; the sentinel decides validity; memory phone-checks-start-warm).
+# P156_COOL=1 restores block 1's behaviour: Safari parked, then before EVERY hold wait.mjs phone-temp --below 38
+# --timeout 600 (logged in out/p156/cooling.log); not MET: one more 600 s wait; still not: BLOCK STOP, VOID (exit 6).
+# The ceiling stays in both modes: each hold's start and end gate (--max-c 44, Critical) voids that hold and stops the
+# block (p156-hold.sh exit 3/5). With cooling off nothing runs between holds, so the next hold's chrome-measure
+# `lock run` is queued right after the previous one ends (no park in between; p156-hold.sh parks Safari after every
+# run): shared jobs no longer slip into a park/cooling window (I-224).
+# Device lost (I-222): before every hold `idevice_id -l` must list the phone, and a phone-temp UNAVAILABLE during a
+# cooling wait means the same: a re-plug console step is posted and waited on, then BLOCK STOP DEVICE LOST (exit 5); the
+# block resumes from that hold with one uncounted warm-up per arm first (the lead's ruling after block 1).
 # P156_DRY=1: calls p156-hold.sh directly (its dry mode: pins and plan only, no lock, no phone, no cooling wait).
 cd "$(dirname "$0")/../../.." || exit 2
 [ "$TICKET" = P-156 ] || { echo "TICKET is not P-156: no run"; exit 2; }
@@ -35,11 +43,20 @@ coolwait() { # below timeout why
   tail -3 $LG/cooling.log | grep -E '^(MET|TIMEOUT|UNAVAILABLE|COOL)'
   return $(sed -n '$s/^COOL .* exit \([0-9]*\)$/\1/p' $LG/cooling.log)
 }
+devlost() { # H why
+  echo "DEVICE LOST before $1: $2"
+  replug "device lost before $1: $2"
+  echo "BLOCK STOP DEVICE LOST before $1 (re-plugged; holds so far stand; resume from $1 with WC and WA warm-ups first)"; exit 5
+}
 cool() { # H
   [ "$P156_DRY" = 1 ] && { echo "COOL $1 (dry: no wait)"; return 0; }
+  [ "$(idevice_id -l 2>/dev/null | grep -c .)" -ge 1 ] || devlost "$1" "idevice_id -l lists no device"
+  [ "${P156_COOL:-0}" = 1 ] || { echo "COOL $1 off (P156_COOL unset: no cooling wait; the gates keep the 44 °C / Critical ceiling)"; return 0; }
   node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1 && echo "PARKED Safari before cooling for $1" || echo "PARK before $1 failed (the wait goes on)"
   coolwait 38 600 "cooling before $1" && return 0
+  tail -3 $LG/cooling.log | grep -q '^UNAVAILABLE' && devlost "$1" "phone-temp UNAVAILABLE"
   coolwait 38 600 "cooling before $1, second wait" && return 0
+  tail -3 $LG/cooling.log | grep -q '^UNAVAILABLE' && devlost "$1" "phone-temp UNAVAILABLE"
   echo "BLOCK STOP VOID: the phone did not cool below 38 °C in 2 x 600 s before $1 (block VOID, not scored)"; exit 6
 }
 [ "$P156_DRY" = 1 ] || trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap)"' EXIT
