@@ -525,9 +525,11 @@ perception-tests-touch-ab).**
 Gate (b) failed T2, so P1 on v9-final goes back to the user as a revision of PR-012 (accepted rev 1 was P1 on
 best-build). Two options; the user's decision is the spec. P-153 runs only after it, and not at all if the user
 declines B.
-- **Option A** = v9-final + F1 + U2 (fix A only, today's look). Try-it B patch `tryit/a-v9f-f12.diff`
+- **Option A** = v9-final + F1 + U2 (fix A only, today's look). Try-it B patch `fixes/end-morph-p1-a/patch.diff`
   (JS a6426953727a / CSS e1359ab9994a, patch sha256/12 e93b9f136134).
-- **Option B** = A + P1. Try-it B patch `tryit/b-v9f-f12-p1.diff` (4da641f828bb / a81b9af7b2c9, patch sha256/12 7dc4cc60c946).
+- **Option B** = A + P1. Try-it B patch `fixes/end-morph-p1-b/patch.diff` (4da641f828bb / a81b9af7b2c9, patch
+  sha256/12 7dc4cc60c946). The console takes Try-it patches only as `fixes/<topic>/patch.diff`, hence the two
+  directories; they hold nothing else.
 - Both Try-it A pages = v9-final (`fixes/v9-best/patch.diff` on main).
 - `tryit/mk-tryit.mjs` writes both baseline-relative patches from the P-153 snapshot arms (`out/p153/snap/{C,V}`, pins
   checked) and re-applies each one with the strict applier to the same bytes.
