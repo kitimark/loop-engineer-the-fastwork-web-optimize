@@ -158,8 +158,36 @@ headless 430x932, non-ignored nodes as role and name, countdown digits masked; o
 - Under the reveal (m 0.5), A had two more nodes, both `generic` with no name: P1's `.fw-rv-dark` and `.fw-rv-glass`,
   shown while `[data-fw-rv]` is set. The probe does not appear (aria-hidden, visibility hidden). Focusable lists are
   equal in every state.
-- Both layers now get `aria-hidden="true"` when they are created (JS 2cb04208b57e; A1 09d1f5b62384). The re-run on
-  that build is below.
+- Both layers now get `aria-hidden="true"` when they are created (JS 2cb04208b57e; A1 09d1f5b62384). Re-run on that
+  build (out/end-morph-p1/p1b/a11y-2026-10-06T09-48-57-494Z.json): A's tree and focusable list equal C's in all four states, same
+  nodes and same order.
+
+**Idle triple** (protocol v2 §3.5; `fixes/end-morph-p1/p1b/idle-run.mjs`, which runs fix-platform-idle's
+`idletriple.mjs`: headless, CPU 1x, 430x932, 5 s windows, one load per arm and round, two rounds, each arm in its own
+60 s shared hold; per second; out/end-morph-p1/p1b/idletriple-*.json):
+
+| spot | arm | callbacks | rAF | timers | observers | events | writes (style) | nodes |
+|---|---|---|---|---|---|---|---|---|
+| top (y 0) | C r1 / r2 | 6.6 / 6.6 | 1 / 1 | 4 / 4 | 1.6 / 1.6 | 4.6 / 5.4 | 16.8 / 16.8 (13.4) | 2.4 / 2.4 |
+| | A r1 / r2 | 6.8 / 6.8 | 1.2 / 1.2 | 4 / 4 | 1.6 / 1.6 | 4.6 / 6 | 19 / 19.2 (15.6) | 2.4 / 2.4 |
+| mid (y 2620, parked after a scroll) | C | 2 / 2 | 0 | 2 / 2 | 0 | 22.2 / 22.2 | 7 / 7 | 0 |
+| | A | 2 / 1.8 | 0 | 2 / 1.8 | 0 | 27 / 25.8 | 7 / 5.8 | 0 |
+| end (bottom, m = 1) | C | 40.2 / 27 | 39.2 / 26 | 1 / 1 | 0 | 1 / 1 | 76.6 / 39 | 0 |
+| | A | 27 / 27 | 26 / 26 | 1 / 1 | 0 | 1 / 1 | 39 / 39 | 0 |
+
+- Observers: equal everywhere. The probe's ResizeObserver adds no callback at rest.
+- Top, A +2.2 style writes/s and +0.2 rAF/s. `idle-who.mjs` (same windows, writes grouped by element;
+  out/end-morph-p1/p1b/idle-who-2026-10-06T09-51-53-467Z.json) puts all of it on the countdown's roll:
+  - `.cell` transform writes C 55 vs A 66, and the roll's rAF (JS 4305, cd-roll-ca) 5 vs 6;
+  - that is 11 cell writes per roll in both arms, i.e. one more seconds tick inside A's window;
+  - `.script-accent`'s per-second class flip is 5 vs 6 as well.
+
+  Neither P1 nor (a) touches the countdown. The difference is the window's phase against the clock's seconds
+  (OBSERVED; A drew the extra tick in all three windows, so the phase may follow the load time, cause unknown).
+- Mid, events +3.6-4.8/s: CSS animation events of the photo carousel (`.st5-*`, img). They split both ways (C has
+  more `animationcancel`, A more `animationend`), so this is carousel phase, not new work. Writes are equal or lower.
+- End: equal in round 2. C's round 1 (40 / 76.6) is the outlier.
+- **Reading: no idle cost from A**, with the stated reasons above for the two top/mid differences.
 
 ## Phone card P-156 (DRAFT for the lead's signature; reserved by mgmt-clerk-1; runs after P-155; predictions fixed before any data)
 
@@ -183,21 +211,25 @@ frame.
 - driver G, profile xcode-serious;
 - rev 1.4 hold rules, as P-153 block 2: one counted run per hold, Safari parked, the cooling or thermal gate before
   every hold, start and end gates, a hold at Critical or over 44 °C is void;
-- the runner's P-153 scripts copied with the new arm names (`p153-block.sh`, `p153-hold.sh`, `p153-serve.sh`,
-  `p153-read.mjs`).
+- the runner's scripts: `fixes/end-morph-p1/phone/p156-serve.sh`, `p156-hold.sh` and `p156-block.sh`, copies of
+  P-153's with the arms C / A and part B. `P156_BASE=1|0` picks the base at the first server start; the served hashes
+  are pinned per base. `P156_DRY=1` checks the pins and the plan with no phone.
 - **Part A** (first open, end zone, closing band): `fixes/morph-scroll/g-fastshort-v1.json`, P-153's program
   (GESTURE_HASH 8737f212c0ff, budget 229 s).
-  - Order: warm-ups WC, WA, then the sentinel S0 on C;
-  - counted C A A C C A A C (4 v 4);
-  - then TAIL and S1.
 - **Part B** (after a 30 s park near the end): `fixes/end-morph-p1/phone/g-park30-v1.json` (new; GESTURE_HASH
-  edbc97a8b181, dry-run budget 436 s).
+  6f9209453750, dry-run budget 327 s, so it fits one 600 s hold).
   - Approach to the end (menu open), 30 s with no touch, a 120 px / 60 ms close fling.
   - Back to the end track's top (menu closed), 30 s with no touch, a 120 px / 60 ms open fling.
-  - Twice per run.
-  - Counted order C A A C (2 v 2) after part A's S1, one run per hold.
+  - At the end again, 30 s with no touch, a close fling.
+  - So each run has two closes and one open after a park.
+- Holds, one counted run each:
+  - part 1: H1 WC, H2 WA, H3 S0, H4 EC1, H5 EA1;
+  - part 2: H6 EA2, H7 EC2, H8 EC3, H9 EA3;
+  - part 3: H10 EA4, H11 EC4, H12 BC1, H13 BA1;
+  - part 4: H14 BA2, H15 BC2, H16 TAIL (at most 2 re-runs), then S1.
+  - Part A is C A A C C A A C (4 v 4); part B is C A A C (2 v 2); the sentinels run on C.
 
-**Metrics** (reader: `fixes/end-morph-p1/phone/pA-read.mjs`, written before data, `--selftest` 15 checks; it imports P-153's
+**Metrics** (reader: `fixes/end-morph-p1/phone/pA-read.mjs`, written before data, `--selftest` 18 checks, `--gates` for part B's run gates; it imports P-153's
 `p153-read.mjs` for the shared rules and copies P-155's closing band, which is not on main):
 - **O1.f1, O1.f2, O1.f3 and f123** (their sum): the first open after load, P-153's definition (f1 = the gap before the
   first frame with m > 0, f2 and f3 the next two gaps).
@@ -253,6 +285,8 @@ frame.
 ## Not done
 
 - P-156 (reserved by mgmt-clerk-1, PREDICTIONS row on main) needs the lead's signature and the pre-data ops-reader.
-- The runner's block scripts (copies of P-153's with the arms C/A and part B) are not written yet.
-- Protocol items in progress: accessibility tree diff, idle triple (shared probe holds of 60 s or less while P-155
-  runs), and the 250 px census. The Chrome census needs a timing hold, after P-155.
+- The block scripts are written and syntax-checked (`sh -n`); `P156_DRY=1` needs the servers, so it runs once the base is known.
+- The 250 px census, Chrome side: `fixes/end-morph-p1/p1b/census-run.sh` (C1 vs A1, verify.mjs --frame-log, 6x), one
+  timing hold of 300 s or less. It runs after P-155 (the lead allows no timing hold during the phone block). The phone
+  side comes from P-156 part A (pA-read.mjs).
+- The observer-only rotation path (a size change with m unchanged) is not isolated (see Install and rotation).

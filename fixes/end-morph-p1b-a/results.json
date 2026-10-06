@@ -4,22 +4,289 @@
  "what": "A = P1 + P1b (a), the v10 candidate (lead ruling 2026-10-06 09:35Z; (b) parked). The reveal's panel size comes from a ResizeObserver on a hidden probe (.fw-rv-size) instead of a forced offsetWidth/offsetHeight read at switch-on. The observer re-applies the clip when the size changes while the reveal is on. Rework after review-p1b: phones only (__rvMq), the probe is added one frame after the nav's first template run (after hydration), and an onMount cleanup removes the probe, its observer, queued frames and P1's glass on destroy. Look = P1's (same writes).",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
-  "base": { "name": "V (P-153)", "js": "4da641f828bb", "css": "a81b9af7b2c9", "dir": "out/p153/snap/V" },
-  "patched": { "js": "2cb04208b57e", "css": "cfb8b8c5b019", "delta": "fixes/end-morph-p1b-a/delta-js.diff 18c7b0e1a3af + delta-css.diff d20484088a03", "firstReviewBuildJs": "79a0bd83eb06" },
-  "phoneArms": { "dir": "out/p1b/snapi", "builder": "fixes/end-morph-p1/p1b/snap.mjs", "B1 (v9-final + U2 + i219)": { "C1": "fe7c668d35e8", "V1": "fbc3acdc87a3", "A1": "09d1f5b62384" }, "B0 (v9-final + i219)": { "C0": "387a2b38790b", "V0": "a145c7de6507", "A0": "2dc48009297a" }, "css": { "C": "e1359ab9994a", "V": "a81b9af7b2c9", "A": "cfb8b8c5b019" } }
+  "base": {
+   "name": "V (P-153)",
+   "js": "4da641f828bb",
+   "css": "a81b9af7b2c9",
+   "dir": "out/p153/snap/V"
+  },
+  "patched": {
+   "js": "2cb04208b57e",
+   "css": "cfb8b8c5b019",
+   "delta": "fixes/end-morph-p1b-a/delta-js.diff 18c7b0e1a3af + delta-css.diff d20484088a03",
+   "firstReviewBuildJs": "79a0bd83eb06"
+  },
+  "phoneArms": {
+   "dir": "out/p1b/snapi",
+   "builder": "fixes/end-morph-p1/p1b/snap.mjs",
+   "B1 (v9-final + U2 + i219)": {
+    "C1": "fe7c668d35e8",
+    "V1": "fbc3acdc87a3",
+    "A1": "09d1f5b62384"
+   },
+   "B0 (v9-final + i219)": {
+    "C0": "387a2b38790b",
+    "V0": "a145c7de6507",
+    "A0": "2dc48009297a"
+   },
+   "css": {
+    "C": "e1359ab9994a",
+    "V": "a81b9af7b2c9",
+    "A": "cfb8b8c5b019"
+   }
+  }
  },
  "gates": {
-  "exactSize": { "build": "79a0bd83eb06", "verdict": "PASS", "rows": [[775, [406, 751], [406, 751]], [815, [406, 791], [406, 791]], [932, [406, 908], [406, 908]]], "resizeWithRevealOn": "clip height within 0.0005 px after 775 -> 815 -> 932 -> 775 (V stale +17.03 / +38.74 px)", "file": "out/end-morph-p1/p1b/exact-2026-10-06T08-16-26-551Z.json" },
-  "switchOnAttribution": { "build": "79a0bd83eb06", "note": "headless trace counts, one cold load, not timing", "open1f1": { "A": { "spanMs": 31.15, "scriptMs": 20.93, "styleMs": 7.21, "styleEls": 205, "forcedInRvW": null }, "V": { "spanMs": 37.76, "scriptMs": 28.03, "styleMs": 11.08, "styleEls": 232, "forcedInRvW": "198 els 7.44 ms" }, "C": { "spanMs": 28.94, "scriptMs": 20.09, "styleMs": 8.82, "styleEls": 203 } }, "open2f1SpanMs": { "A": 25.98, "V": 33.23, "C": 24.9 } },
-  "frameCounts": { "build": "79a0bd83eb06", "verdict": "0 frames >34 / >50 in any arm (clean headed hold 09:01Z, 4 cycles); a direction, not a verdict (one load per arm)", "switchOnDtMs": { "A_openF2": [25.3, 17.0, 8.4, 16.8], "V_openF2": [25.9, 33.9, 24.8, 25.9], "C_openF2": [25.1, 17.2, 16.3, 16.4] }, "file": "out/end-morph-p1/p1b/frames-775-2026-10-06T09-01-22-507Z.json" },
-  "isOnDarkPerFrame": { "build": "79a0bd83eb06", "verdict": "0 frames differ from C in every cycle of every run", "runs": { "08:14:53Z (headed, hold contaminated: timing unused, class states only)": "5 cycles x 137 frames, 0 differing", "08:49:35Z (headless)": "2 cycles x 152 frames, 0 differing", "09:01:22Z (headed, clean)": "4 cycles x 152 frames, 0 differing" } },
-  "hydration": { "build": "A1 ed44af454a92 (previous A1; the current 09d1f5b62384 only adds aria-hidden to the dark and glass layers created at reveal time) vs C1 fe7c668d35e8", "verdict": "PASS", "failedToHydrate": { "C1": [0, 0], "A1": [0, 0] }, "ssrSurvivors": { "C1": "992/1517 (x2)", "A1": "992/1518 (x2; +1 = the probe)" }, "headerSameNode": { "C1": true, "A1": true }, "tool": "fixes/i219-hydrate/probe/hydrate-probe.mjs cost --builds C,F,C,F", "file": "out/i219/cost-2026-10-06T09-32-04-572Z/probe.json" },
-  "installAndRotation": { "build": "A1 ed44af454a92 (previous A1, see hydration)", "verdict": "PASS", "desktop1280": "no probe, no observer, no glass", "phone430": "one probe, nav's direct child, aria-hidden, one observer", "rotation": "portrait m 0.5 (reveal on, clip exact, probe = nav 406x908) -> landscape 932x430 (attribute off on nav and glass, no reveal inline style left) -> portrait (same) -> m 0.5 again (on, exact); 3 RO callbacks in total; 0 window errors, 0 exceptions, 0 console errors", "caveat": "the rotation also moved m (re-layout), so the switch-off came through __rvW; the observer-only path (size change with m unchanged) was not isolated", "file": "out/end-morph-p1/p1b/rotate-2026-10-06T09-36-56-887Z.json" },
-  "teardown": { "verdict": "CONFIRMED by reading (no probe can unmount the header without unloading: one route \"/\": [2])", "basis": "ne = BSBv9QXB.js Ra (Svelte onMount, 3430-3438; onDestroy za 3439-3441 is Ra(() => () => fn)); https://svelte.dev/docs/svelte/lifecycle-hooks#onMount" },
-  "a11yDiff": "pending (shared probe hold, fixes/end-morph-p1/p1b/a11y.mjs)",
-  "idleTriple": "pending (shared probe holds, fixes/end-morph-p1/p1b/idle-run.mjs)",
+  "exactSize": {
+   "build": "79a0bd83eb06",
+   "verdict": "PASS",
+   "rows": [
+    [
+     775,
+     [
+      406,
+      751
+     ],
+     [
+      406,
+      751
+     ]
+    ],
+    [
+     815,
+     [
+      406,
+      791
+     ],
+     [
+      406,
+      791
+     ]
+    ],
+    [
+     932,
+     [
+      406,
+      908
+     ],
+     [
+      406,
+      908
+     ]
+    ]
+   ],
+   "resizeWithRevealOn": "clip height within 0.0005 px after 775 -> 815 -> 932 -> 775 (V stale +17.03 / +38.74 px)",
+   "file": "out/end-morph-p1/p1b/exact-2026-10-06T08-16-26-551Z.json"
+  },
+  "switchOnAttribution": {
+   "build": "79a0bd83eb06",
+   "note": "headless trace counts, one cold load, not timing",
+   "open1f1": {
+    "A": {
+     "spanMs": 31.15,
+     "scriptMs": 20.93,
+     "styleMs": 7.21,
+     "styleEls": 205,
+     "forcedInRvW": null
+    },
+    "V": {
+     "spanMs": 37.76,
+     "scriptMs": 28.03,
+     "styleMs": 11.08,
+     "styleEls": 232,
+     "forcedInRvW": "198 els 7.44 ms"
+    },
+    "C": {
+     "spanMs": 28.94,
+     "scriptMs": 20.09,
+     "styleMs": 8.82,
+     "styleEls": 203
+    }
+   },
+   "open2f1SpanMs": {
+    "A": 25.98,
+    "V": 33.23,
+    "C": 24.9
+   }
+  },
+  "frameCounts": {
+   "build": "79a0bd83eb06",
+   "verdict": "0 frames >34 / >50 in any arm (clean headed hold 09:01Z, 4 cycles); a direction, not a verdict (one load per arm)",
+   "switchOnDtMs": {
+    "A_openF2": [
+     25.3,
+     17,
+     8.4,
+     16.8
+    ],
+    "V_openF2": [
+     25.9,
+     33.9,
+     24.8,
+     25.9
+    ],
+    "C_openF2": [
+     25.1,
+     17.2,
+     16.3,
+     16.4
+    ]
+   },
+   "file": "out/end-morph-p1/p1b/frames-775-2026-10-06T09-01-22-507Z.json"
+  },
+  "isOnDarkPerFrame": {
+   "build": "79a0bd83eb06",
+   "verdict": "0 frames differ from C in every cycle of every run",
+   "runs": {
+    "08:14:53Z (headed, hold contaminated: timing unused, class states only)": "5 cycles x 137 frames, 0 differing",
+    "08:49:35Z (headless)": "2 cycles x 152 frames, 0 differing",
+    "09:01:22Z (headed, clean)": "4 cycles x 152 frames, 0 differing"
+   }
+  },
+  "hydration": {
+   "build": "A1 ed44af454a92 (previous A1; the current 09d1f5b62384 only adds aria-hidden to the dark and glass layers created at reveal time) vs C1 fe7c668d35e8",
+   "verdict": "PASS",
+   "failedToHydrate": {
+    "C1": [
+     0,
+     0
+    ],
+    "A1": [
+     0,
+     0
+    ]
+   },
+   "ssrSurvivors": {
+    "C1": "992/1517 (x2)",
+    "A1": "992/1518 (x2; +1 = the probe)"
+   },
+   "headerSameNode": {
+    "C1": true,
+    "A1": true
+   },
+   "tool": "fixes/i219-hydrate/probe/hydrate-probe.mjs cost --builds C,F,C,F",
+   "file": "out/i219/cost-2026-10-06T09-32-04-572Z/probe.json"
+  },
+  "installAndRotation": {
+   "build": "A1 ed44af454a92 (previous A1, see hydration)",
+   "verdict": "PASS",
+   "desktop1280": "no probe, no observer, no glass",
+   "phone430": "one probe, nav's direct child, aria-hidden, one observer",
+   "rotation": "portrait m 0.5 (reveal on, clip exact, probe = nav 406x908) -> landscape 932x430 (attribute off on nav and glass, no reveal inline style left) -> portrait (same) -> m 0.5 again (on, exact); 3 RO callbacks in total; 0 window errors, 0 exceptions, 0 console errors",
+   "caveat": "the rotation also moved m (re-layout), so the switch-off came through __rvW; the observer-only path (size change with m unchanged) was not isolated",
+   "file": "out/end-morph-p1/p1b/rotate-2026-10-06T09-36-56-887Z.json"
+  },
+  "teardown": {
+   "verdict": "CONFIRMED by reading (no probe can unmount the header without unloading: one route \"/\": [2])",
+   "basis": "ne = BSBv9QXB.js Ra (Svelte onMount, 3430-3438; onDestroy za 3439-3441 is Ra(() => () => fn)); https://svelte.dev/docs/svelte/lifecycle-hooks#onMount"
+  },
+  "a11yDiff": {
+   "verdict": "PASS after the fix",
+   "first": {
+    "build": "A1 ed44af454a92",
+    "result": "equal to C at top, m=1, m=0; at m 0.5 two extra unnamed generic nodes (P1 .fw-rv-dark/.fw-rv-glass); probe absent",
+    "file": "out/end-morph-p1/p1b/a11y-2026-10-06T09-43-05-858Z.json"
+   },
+   "fix": "aria-hidden=true on P1 dark/glass at creation (JS 2cb04208b57e, A1 09d1f5b62384)",
+   "rerun": {
+    "build": "A1 09d1f5b62384",
+    "result": "tree and focusable list equal to C in all 4 states",
+    "file": "out/end-morph-p1/p1b/a11y-2026-10-06T09-48-57-494Z.json"
+   },
+   "tool": "fixes/end-morph-p1/p1b/a11y.mjs"
+  },
+  "idleTriple": {
+   "verdict": "no idle cost from A (stated reasons for top/mid differences)",
+   "perSec": {
+    "top": {
+     "C": {
+      "writes": [
+       16.8,
+       16.8
+      ],
+      "raf": [
+       1,
+       1
+      ],
+      "obs": [
+       1.6,
+       1.6
+      ]
+     },
+     "A": {
+      "writes": [
+       19,
+       19.2
+      ],
+      "raf": [
+       1.2,
+       1.2
+      ],
+      "obs": [
+       1.6,
+       1.6
+      ]
+     }
+    },
+    "mid": {
+     "C": {
+      "events": [
+       22.2,
+       22.2
+      ],
+      "writes": [
+       7,
+       7
+      ]
+     },
+     "A": {
+      "events": [
+       27,
+       25.8
+      ],
+      "writes": [
+       7,
+       5.8
+      ]
+     }
+    },
+    "end": {
+     "C": {
+      "callbacks": [
+       40.2,
+       27
+      ],
+      "writes": [
+       76.6,
+       39
+      ]
+     },
+     "A": {
+      "callbacks": [
+       27,
+       27
+      ],
+      "writes": [
+       39,
+       39
+      ]
+     }
+    }
+   },
+   "reasons": {
+    "top": "countdown roll (cd-roll-ca, JS 4305): .cell transform writes C 55 vs A 66 = 5 vs 6 rolls at 11 writes each; one more seconds tick in the window (phase, OBSERVED); idle-who-2026-10-06T09-51-53-467Z.json",
+    "mid": "photo carousel animation events split both ways (C more animationcancel, A more animationend): phase"
+   },
+   "files": [
+    "out/end-morph-p1/p1b/idletriple-2026-10-06T09-47-31-039Z.json",
+    "idletriple-2026-10-06T09-48-04-569Z.json",
+    "idletriple-2026-10-06T09-49-25-570Z.json",
+    "idletriple-2026-10-06T09-49-58-412Z.json"
+   ],
+   "tool": "fixes/end-morph-p1/p1b/idle-run.mjs (fixes/platform-idle/tools/idletriple.mjs), idle-who.mjs"
+  },
   "census250": "Chrome: pending a timing hold after P-155; phone: part A of the phone card"
  },
- "phoneCard": "DRAFT in README.md, no P-id yet",
+ "phoneCard": "P-156 DRAFT in README.md (reserved by mgmt-clerk-1); reader fixes/end-morph-p1/phone/pA-read.mjs; G programs g-fastshort-v1 (8737f212c0ff) and g-park30-v1 (6f9209453750)",
  "measurementCodeChanged": false
 }

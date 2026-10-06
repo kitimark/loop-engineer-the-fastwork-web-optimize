@@ -37,6 +37,17 @@ const { readRun } = await import(pathToFileURL(join(root, 'research', 'serious-h
 const { endZone, decideNoWorse, holdStatus, opens, firstOpen, firstOpenSummary, TH } = await import(pathToFileURL(join(here, 'p153-read.mjs')).href);
 const med = (a) => { const s = a.filter((x) => x != null).sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[n >> 1] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 export const BOUNDS = { f2: 2, cb34: 3, cbp34: 2, opf2: 2 };
+/** g-park30-v1's compiled program hash (gesture --dry-run GESTURE_HASH). */
+export const PARK_HASH = '6f9209453750';
+/** P-129's run gates (role E); part B runs carry g-park30-v1, so its G6 (the fs hash) is replaced by the park30 hash. */
+export function gateRun(g, tl, part) {
+  const r = readRun(g, tl, 'E');
+  if (part === 'B') {
+    r.why = r.why.filter((w) => !w.startsWith('G6'));
+    if (!String(g?.program?.hash || '').startsWith(PARK_HASH)) r.why.push(`G6 script hash ${String(g?.program?.hash || 'none').slice(0, 12)} is not park30 ${PARK_HASH}`);
+  }
+  return r;
+}
 export const BIN = 250, TICK = 1000 / 120;
 
 /** P-155's morph value (copied): frames are [t, dt, scrollY, innerHeight]. */
@@ -135,6 +146,11 @@ function selftest() {
   ok(decide({ ...base, foA: [fo(32), fo(31), fo(32), fo(30)], ezA: [ez(18), ez(19), ez(20), ez(17)], cbA: [4, 5, 7, 5], pbA: [pb(6, 31), pb(7, 30)] }).result, 'FAIL Pr4', 'CBp34 +4 after a park fails Pr4');
   ok(decide({ ...base, foA: [fo(32), fo(31), fo(32), fo(30)], ezA: [ez(18), ez(19), ez(20), ez(17)], cbA: [4, 5, 7, 5], pbA: [pb(1, 31)] }).result, 'INCOMPLETE (Pr4 not read)', 'one valid part-B run in A: Pr4 not read');
   ok(decide({ ...base, foA: [fo(32), fo(31)], ezA: [ez(18), ez(19)], cbA: [4, 5], pbA: [pb(1, 31), pb(2, 30)] }).result, 'INCOMPLETE (Pr1, Pr2, Pr3 not read)', 'two valid part-A runs in A: Pr1-Pr3 not read');
+  // gates: part B swaps G6's program hash
+  const gp = (h) => ({ program: { hash: h }, run: { segments: [{ frames: [] }] } });
+  ok(gateRun(gp('6f9209453750aa'), null, 'B').why.some((w) => w.startsWith('G6')), false, 'part B: the park30 hash passes G6');
+  ok(gateRun(gp('8737f212c0ffaa'), null, 'B').why.some((w) => w.startsWith('G6') && w.includes('park30')), true, 'part B: the fs hash fails G6');
+  ok(gateRun(gp('6f9209453750aa'), null, 'E').why.some((w) => w.startsWith('G6')), true, 'part A: the park30 hash fails G6 (fs pinned)');
   ok(decide({ ...base, sentOk: false }).result, 'VOID (a sentinel failed or is missing)', 'sentinel VOID first');
   ok(decide({ ...base, foA: [fo(33), fo(33), fo(33), fo(33)], ezA: [ez(18), ez(19), ez(20), ez(17)], cbA: [4, 5, 7, 5], pbA: [pb(1, 31), pb(2, 30)] }).Pr1, 'holds (f2 A - C 2 ms)', 'f2 +2 ms exactly holds');
   console.log(`SELFTEST ok (${n} checks)`);
@@ -142,7 +158,19 @@ function selftest() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const a = process.argv.slice(2);
   if (a[0] === '--selftest') { selftest(); process.exit(0); }
-  if (!a[0] || a[0] === '--help' || a[0] === '-h') { console.log('usage: node fixes/end-morph-p1/phone/pA-read.mjs <folder> [--json out.json] | --selftest'); process.exit(a[0] ? 0 : 2); }
+  if (!a[0] || a[0] === '--help' || a[0] === '-h') { console.log('usage: node fixes/end-morph-p1/phone/pA-read.mjs <folder> [--json out.json] | --gates <folder> <run>... | --selftest'); process.exit(a[0] ? 0 : 2); }
+  // the runner's per-run gate check for part B runs (B<arm><n>[r]): gate lines only, no numbers (p129-gates.mjs's format)
+  if (a[0] === '--gates') {
+    const [dir, ...runs] = a.slice(1); let bad = 0;
+    const ld = (f) => (existsSync(join(dir, f)) ? JSON.parse(readFileSync(join(dir, f), 'utf8')) : null);
+    for (const run of runs) {
+      const g = ld(`g-${run}.json`);
+      if (!g) { console.log(`GATES ${run} E INVALID no record g-${run}.json`); bad++; continue; }
+      const r = gateRun(g, ld(`tl-${run}.json`), run[0] === 'B' ? 'B' : 'E');
+      if (r.why.length) { bad++; console.log(`GATES ${run} E INVALID ${r.why.join('; ')}`); } else console.log(`GATES ${run} E ok idle ${r.idle}`);
+    }
+    process.exit(bad ? 1 : 0);
+  }
   const dir = a[0], jsonOut = a.includes('--json') ? a[a.indexOf('--json') + 1] : null;
   const load = (f) => (existsSync(join(dir, f)) ? JSON.parse(readFileSync(join(dir, f), 'utf8')) : null);
   const base = dirname(dir.replace(/\/+$/, '')), logs = {};
@@ -151,7 +179,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const out = { sentinels: {}, runs: {}, invalid: {}, holds: Object.fromEntries(Object.keys(logs).sort().map((h) => [h, (logs[h].match(new RegExp(`^HOLD ${h} (VALID|VOID|DRY).*$`, 'gm')) || ['no HOLD line']).pop()])) };
   for (const s of ['S0', 'S1']) { const g = load(`g-${s}.json`); const hw = g ? holdWhy(s) : null; const r = g && !hw ? readRun(g, null, 'S') : null; out.sentinels[s] = r ? { fps: r.fps, slowShare: r.slowShare, sentinel: r.sentinel } : { sentinel: hw ? `FAIL (${hw})` : 'FAIL (no record)' }; }
   const L = { foC: [], foA: [], ezC: [], ezA: [], cbC: [], cbA: [], pbC: [], pbA: [], csC: [], csA: [] };
-  const take = (name) => { for (const nm of [name, `${name}r`]) { const g = load(`g-${nm}.json`), tl = load(`tl-${nm}.json`); if (!g) continue; const hw = holdWhy(nm); if (hw) { out.invalid[nm] = [hw]; continue; } const r = readRun(g, tl, 'E'); if (r.why.length) { out.invalid[nm] = r.why; continue; } return { nm, g, r }; } out.invalid[name] ||= ['no valid try']; return null; };
+  const take = (name) => { for (const nm of [name, `${name}r`]) { const g = load(`g-${nm}.json`), tl = load(`tl-${nm}.json`); if (!g) continue; const hw = holdWhy(nm); if (hw) { out.invalid[nm] = [hw]; continue; } const r = gateRun(g, tl, nm[0] === 'B' ? 'B' : 'E'); if (r.why.length) { out.invalid[nm] = r.why; continue; } return { nm, g, r }; } out.invalid[name] ||= ['no valid try']; return null; };
   for (const arm of ['C', 'A']) for (let k = 1; k <= 4; k++) {
     const t = take(`E${arm}${k}`); if (!t) continue;
     const ez = endZone(t.r), fo = firstOpen(t.g), cb = closingBand(t.g.run.segments[0], t.r.rows), cs = census(t.g, t.r);
