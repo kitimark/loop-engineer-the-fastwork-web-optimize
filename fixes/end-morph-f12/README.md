@@ -1070,6 +1070,17 @@ The user's rev 3 note was "Do later after v10 best build land". v14 became the b
 - **Pins:** `phone/pfa14-run.sh` `d2e10cba6c86`, `phone/pfa-probe.mjs` `98eb75aff529`, `fade/a-on-v14.diff` `4d6019dc6f8e`.
 - **After the block:** `iphone.mjs park` (the trap does it), release, and the reads go to the lead.
 
+**P-162 addendum 1 (lead, 12:0xZ on 2026-10-07; written before any counted P-162 data).**
+- **Why:** the first start at 11:57Z stopped at the first warm-up's start gate. The phone read Nominal (battery 34.6 °C) because no Xcode condition was set. Nothing ran and nothing counted; the auto-posted step C-107 was cancelled by the lead. The user's standing rule (T-228 #15) is no manual Xcode thermal steps.
+- **Profile:** "tool-serious" instead of xcode-serious.
+  - Inside the hold the kit parks Safari, then runs `node tools/iphone.mjs rearm --owner fix-end-morph --settle 120`. rearm clears the condition, probes for a plain read, and starts the detached `thermal.mjs set serious`, which holds Serious. This is the same as fixes/compositor-morph's kits, c181d248.
+  - `FW_PHONE_CONDITION=tool` makes every gate read the condition as ours.
+  - A rearm exit other than 0 stops the block (exit 10) before any run.
+  - The exit trap runs `thermal.mjs clear`, then parks Safari.
+- **Hold:** `--max-seconds 1800` instead of 900, because the rearm settles 120 s and may wait up to its 600 s cap. The command is otherwise unchanged (`--block P-162`).
+- **Unchanged:** arms, runs, order, reads and the probe.
+- **Pin:** `phone/pfa14-run.sh` is now `dceed8fe0506` (was `d2e10cba6c86`). The restart begins from the first warm-up.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
