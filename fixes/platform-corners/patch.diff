@@ -1,0 +1,19 @@
+# fastwork mirror fix: platform-corners
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply platform-corners
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11768,3 +11768,10 @@
+     scroll-behavior: auto;
+   }
+ }
++/* [platform-corners] Safari (WebKit bug 312584, a regression since 303819@main, fixed in 313267@main) lets a child with
++   filter: blur() paint past an ancestor's rounded overflow clip: the blurred background picture of the "discovered"
++   row's stage showed as a grey square in all four corners. Clip the picture itself to the stage's 5% radius (clip-path
++   applies after the filter); where the engine already clips it, this changes nothing. */
++.start-selling-platform-stage-bg {
++  clip-path: inset(0 round 5%);
++}

@@ -1,0 +1,315 @@
+{
+ "topic": "platform-corners",
+ "kind": "visual bug fix (WebKit rendering bug in the original page); no timing measured",
+ "userThread": "T-240",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "builds": {
+   "v0": "baseline (site-pretty)",
+   "v14": "fixes/compositor-morph/v14/v14.diff (HASHES checked by rebuild.sh)",
+   "g0.0": "fixes/g0-revert/patch.diff (HASHES checked by rebuild.sh)",
+   "g0.0b": "fixes/g0-revert/patch.diff at main 45a2d3ee (PR-034 rev 2, best build), HASHES checked by rebuild.sh"
+  },
+  "simulator": "fw-sim iPhone 15 Pro Max, iOS 26.5 (23F77), 430x775 at 3x; fw-ipad iPad Pro 13 M5, 1032 wide at 2x",
+  "chrome": "headless Chrome 154, 430x775 DPR3 mobile, 768x1024 DPR2, 1280x800 DPR1",
+  "lane": "shared chrome-measure lane (probe / simulator weight), no timing",
+  "measurementCodeChanged": false
+ },
+ "cause": {
+  "status": "CONFIRMED",
+  "summary": "The discovered row's stage picture (img.start-selling-platform-stage-bg, filter blur(16px), opacity .5) is clipped by the stage's box but not by its 5% rounded corner in WebKit, so its blurred edge shows as a grey square outside the curve in all four corners.",
+  "reference": "WebKit bug 312584 'REGRESSION (303819@main): Child with filter:blur() ignores border radius overflow clipping', fixed in 313267@main (commit b8414eccb3, 2026-05-14); first try 312531@main (34213f695a) reverted",
+  "variants_v0_simulator_card2_offPx": {
+   "asIs": 1598,
+   "bgFilterNone": 0,
+   "bgDisplayNone": 0,
+   "stageIsolationIsolate": 1598,
+   "artboardWillChangeAuto": 1598,
+   "visualHidden": 1598
+  }
+ },
+ "presence": {
+  "metric": "pixels inside the stage box and outside its 5% elliptical curve (by more than 1 css px) whose colour is more than 12 away from the card navy rgb(19,25,34); 1598 such pixels per stage at 430x775 3x",
+  "simulator430": {
+   "v0": {
+    "card1": 0,
+    "card2": 1598,
+    "card3": 0,
+    "card4": 0,
+    "card2Max": 42
+   },
+   "v14": {
+    "card1": 0,
+    "card2": 1598,
+    "card3": 0,
+    "card4": 670,
+    "card2Max": 42,
+    "note": "card4 at that scroll position is covered by v14's end-of-page waitlist layer, not a corner leak"
+   },
+   "g0.0": {
+    "card1": 0,
+    "card2": 1598,
+    "card3": 0,
+    "card4": 0,
+    "card2Max": 42
+   },
+   "g0.0b": {
+    "card2": 1598,
+    "card2Max": 42
+   }
+  },
+  "chrome430": {
+   "v0": "0 on all cards",
+   "v14": "0 on cards 1-3 (card 4 covered by the end-of-page layer)",
+   "g0.0": "0 on all cards"
+  },
+  "simulatorIpad1032": {
+   "v14": 0,
+   "g0.0": 0
+  }
+ },
+ "fix": {
+  "rule": ".start-selling-platform-stage-bg { clip-path: inset(0 round 5%); }",
+  "patch": "fixes/platform-corners/patch.diff (baseline-relative)",
+  "onG00b": "fixes/platform-corners/on-g00b.diff (g0.0b + the rule, baseline-relative; Try-it B, A = fixes/g0-revert/patch.diff)"
+ },
+ "gates": {
+  "simulatorIphone430": {
+   "v14": {
+    "cornersOffBefore": 1598,
+    "cornersOffAfter": 0,
+    "AvsA2": 0,
+    "AvsB": {
+     "interior": 0,
+     "outsideCurve": 2413,
+     "edgeRing": 1228,
+     "max": 53
+    },
+    "servedFixCornersOff": 0
+   },
+   "g0.0": {
+    "cornersOffBefore": 1531,
+    "cornersOffAfter": 0,
+    "AvsA2": 0,
+    "AvsB": {
+     "interior": 0,
+     "outsideCurve": 2118,
+     "edgeRing": 262,
+     "topEdgeRowInMargin": 2446,
+     "max": 45
+    },
+    "servedFixCornersOff": 0
+   },
+   "g0.0b": {
+    "cornersOffBefore": 1598,
+    "cornersOffAfter": 0,
+    "servedFixCornersOff": 0,
+    "AvsA2": 0,
+    "AvsB": {
+     "interior": 0,
+     "outsideCurve": 2422,
+     "edgeRing": 1234,
+     "topEdgeRowInMargin": 1170,
+     "max": 45
+    }
+   }
+  },
+  "simulatorIpad1032": {
+   "v14": {
+    "cornersOffBefore": 0,
+    "cornersOffAfter": 0,
+    "AvsA2": 0,
+    "AvsB": {
+     "interior": 0,
+     "outsideCurve": 156,
+     "edgeRing": 142,
+     "margin": 908,
+     "max": 13
+    }
+   },
+   "g0.0": {
+    "cornersOffBefore": 0,
+    "cornersOffAfter": 0,
+    "AvsA2": 0,
+    "AvsB": {
+     "interior": 0,
+     "outsideCurve": 159,
+     "edgeRing": 1046,
+     "max": 13
+    }
+   },
+   "g0.0b": {
+    "cornersOffBefore": 0,
+    "cornersOffAfter": 0,
+    "AvsA2": {
+     "interior": 324,
+     "max": 1
+    },
+    "AvsB": {
+     "interior": 324,
+     "interiorMax": 1,
+     "outsideCurve": 159,
+     "edgeRing": 1072,
+     "max": 13
+    },
+    "note": "the 324 interior px at 1 level are in A~A2 too (caret)"
+   }
+  },
+  "simulatorCensusCard2": {
+   "v14": {
+    "layersBase": 78,
+    "layersFix": 78,
+    "mbBase": 164.58,
+    "mbFix": 164.58
+   },
+   "g0.0": {
+    "layersBase": 68,
+    "layersFix": 68,
+    "mbBase": 155.05,
+    "mbFix": 155.05
+   },
+   "g0.0b": {
+    "layersBase": 68,
+    "layersFix": 68,
+    "mbBase": 155.05,
+    "mbFix": 155.05
+   }
+  },
+  "simulatorRest3sCard2": {
+   "v14": {
+    "base": {
+     "frames": 180,
+     "paint": 76,
+     "style": 231,
+     "layout": 85,
+     "composite": 181
+    },
+    "fix": {
+     "frames": 180,
+     "paint": 69,
+     "style": 228,
+     "layout": 81,
+     "composite": 180
+    }
+   },
+   "g0.0": {
+    "base": {
+     "frames": 157,
+     "paint": 69,
+     "style": 137,
+     "layout": 98,
+     "composite": 156
+    },
+    "fix": {
+     "frames": 155,
+     "paint": 63,
+     "style": 135,
+     "layout": 98,
+     "composite": 155
+    }
+   },
+   "note": "counts only; the card's typing animation runs in both windows",
+   "g0.0b": {
+    "base": {
+     "frames": 153,
+     "paint": 74,
+     "style": 130,
+     "layout": 100,
+     "composite": 153
+    },
+    "fix": {
+     "frames": 154,
+     "paint": 64,
+     "style": 132,
+     "layout": 99,
+     "composite": 154
+    }
+   }
+  },
+  "chrome": {
+   "method": "control rule clip-path: inset(0) (same repaint, no rounded corner) vs the fix, same load",
+   "w430": {
+    "v14": {
+     "card2": {
+      "interior": 0,
+      "curveEdge": 265,
+      "max": 13
+     },
+     "otherCards": "same as control~control noise"
+    },
+    "g0.0": {
+     "card2": {
+      "interior": 0,
+      "curveEdge": 265,
+      "max": 13
+     },
+     "otherCards": "same as control~control noise"
+    }
+   },
+   "simulatorIpadMini": "not run: Safari never launched on the new iPad mini Simulator (joined incident I-208)",
+   "w768": {
+    "v14": {
+     "card2": {
+      "interior": 0,
+      "curveEdge": 155,
+      "max": 8
+     },
+     "otherCards": "<= 2 levels, same as control~control noise"
+    },
+    "g0.0": {
+     "card2": {
+      "interior": 0,
+      "curveEdge": 156,
+      "max": 8
+     }
+    }
+   },
+   "w1280": {
+    "v14": {
+     "card2": {
+      "interior": 0,
+      "curveEdge": 142,
+      "max": 10
+     },
+     "otherCards": "0 (card 4: 24 px at 1 level)"
+    },
+    "g0.0": {
+     "card2": {
+      "interior": 0,
+      "curveEdge": 142,
+      "max": 10
+     }
+    }
+   },
+   "cornersOff": "0 before and after at 768; 4 edge px in every state at 1280 (metric tolerance at 1x)",
+   "layers": "equal with and without the rule at every card and width",
+   "g0.0b": {
+    "w430": {
+     "card2": {
+      "outsideCurve": 114,
+      "curveMax": 13,
+      "interiorMax": 3,
+      "note": "interior 56697 px at <=3 levels: the same count appears between two identical control shots in the v14 430 run (Chrome repaint noise)"
+     }
+    },
+    "w768": {
+     "card2": {
+      "outsideCurve": 75,
+      "curveMax": 8,
+      "interior": "1613 px max 3, identical to control~control"
+     }
+    },
+    "w1280": {
+     "card2": {
+      "outsideCurve": 70,
+      "curveMax": 10,
+      "interiorMax": 3
+     }
+    },
+    "cornersOff": "0 at 430 and 768 before and after; 4 edge px at 1280 in every state",
+    "layers": "equal A/B at every card and width"
+   }
+  }
+ },
+ "verdict": "Card 2's corners go from 1598 grey pixels to 0 in Safari (Simulator) on v14, g0.0 and g0.0b; nothing inside any card changes (Simulator T0; Chrome within its own repaint noise); no new layer or per-frame work; Chrome corners unchanged, its antialiased curve edge moves by at most 8-13 levels."
+}
