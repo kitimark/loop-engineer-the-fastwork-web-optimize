@@ -1,0 +1,54 @@
+# fastwork mirror fix: join-fade
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# rebuild the overlay with: node tools/fix.mjs apply join-fade
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css 27776f3d4138b19a36de24af304abefce02feec53dcf83c52c155085c9e82f5c
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11766,5 +11766,45 @@
+ @media (prefers-reduced-motion: reduce) {
+   html {
+     scroll-behavior: auto;
++  }
++}
++/* [join-fade] (user T-242) the Join waitlist button's fade at the end of the page, three defects of the original:
++   1. its blur (filter, base rule) is cut by the button's box, not by its rounded shape: Safari shows a square block of
++      blur off the pill's end (over the language switch), Chrome a sliver in the corners. Clip the button itself to its
++      own pill shape while the menu morphs and the button can still show (until .is-expanded, m 0.92; clip-path applies
++      after the filter); at rest, open or closed, and under reduced motion (no blur there) nothing changes.
++   2. the gap before it follows --morph with no transition while .is-morphing, so it is gone ~50 ms into the 680 ms
++      tween (m 0.2) while the button still shows for 0.44 s more: the language switch touches the fading button. The
++      gap now flips once, at m 0.2 (--jf-gone 0 -> 1 below, the moment the button starts to leave), and that one change
++      is timed from the side it lands on: closing waits until the button's opacity is 0 (0.12 s + 0.32 s) and then
++      takes the button's last 0.24 s of width; reopening (m back under 0.2) starts at once over 0.4 s, the time the
++      original took over the tween's tail, so the gap is back before the button fades in again. m 0 and m >= 0.2 give
++      the original's values (8px / 4px, 0). Reduced motion keeps the original (the morph jumps there). */
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling-top-nav.is-morphing.svelte-1dcozpm:not(.is-hero-pill, .is-expanded) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    clip-path: inset(0 round 999px);
++  }
++}
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++    --jf-gone: clamp(0, calc((var(--morph) / 0.2 - 1) * 1000000 + 1), 1);
++    gap: calc((1 - var(--jf-gone)) * 8px);
++    transition: gap calc(0.4s - var(--jf-gone) * 0.16s) cubic-bezier(0.33, 0, 0.2, 1) calc(var(--jf-gone) * 0.44s);
+   }
+ }
++/* 3. Safari never ran the pill's padding transition (`transition: padding-inline`, g0.0 rule above): WebKit expands that
++      logical shorthand to padding-inline-start/end and matches them against the physical padding-left/right that
++      change, so no transition starts and the pill snaps to its label's width at m 0.2 (the language switch jumps).
++      The same 0.68 s on the physical longhands; Chrome already ran exactly this. */
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++    transition:
++      padding-left 0.68s cubic-bezier(0.33, 0, 0.2, 1),
++      padding-right 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  }
++}
++@media (prefers-reduced-motion: no-preference) and (width<=640px) {
++  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++    gap: calc((1 - var(--jf-gone)) * 4px);
++  }
++}

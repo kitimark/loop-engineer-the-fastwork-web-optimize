@@ -1,0 +1,425 @@
+{
+ "topic": "join-fade",
+ "kind": "visual bug fix of the original page (Join waitlist fade at the end of the page); no timing measured",
+ "userThread": "T-242",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "builds": {
+   "v0": "baseline (site-pretty)",
+   "v14": "fixes/compositor-morph/v14/v14.diff (HASHES checked)",
+   "g0.0c": "fixes/platform-corners-g00b/patch.diff: JS 5c39f7a96e41 / CSS c65da97ba01f",
+   "g0.0c+fix (rev 2)": "fixes/join-fade-g00c/patch.diff: JS 5c39f7a96e41 / CSS 32a2bf7c17b0 (the committed fix)",
+   "control": "g0.0c + one rule that matches nothing (out/g0/jfnull)",
+   "rev 1": "CSS 866a9b4c6849: the same rules with the clip un-gated (also under reduced motion and while .is-expanded); ran the Chrome held stops at 430x815/768/1280, the 1280 end and top phases, the layer census"
+  },
+  "simulator": "fw-sim iPhone 15 Pro Max, iOS 26.5, 430x775 at 3x",
+  "chrome": "headless Chrome, 430x775 / 430x815 DPR3 mobile, 768x1024 DPR2, 1280x800 DPR1",
+  "harness": "Chrome: fixes/g0-revert/gates/g0px.mjs (end/top phases) + out/jf/jfpx.mjs (Join held stops t1:ct, close stops); Simulator: out/jf/jfsim.mjs (held stops, reference = same stop with the Join hidden by a stylesheet from load; slowed running fade at playbackRate 0.02)",
+  "lane": "shared chrome-measure lane, probe / simulator weight; no timing",
+  "measurementCodeChanged": false,
+  "measurementCodeNote": "no measurement code changed; probes are one-off scripts in the gitignored out/jf/ (jfpx.mjs, jfsim.mjs) plus fixes/g0-revert/gates/g0px.mjs unchanged"
+ },
+ "causes": {
+  "corners": {
+   "status": "OBSERVED (Simulator); WebKit mechanism UNRESOLVED",
+   "css": {
+    "v0": "11486 filter, 11530-11540 mask",
+    "g00c": "11868 filter, 11990-12000 mask"
+   },
+   "summary": "blurred Join (filter blur 10px, opacity still 1 for 0.12 s) paints a dark rectangle off the pill left end over the language button in Safari; Chrome a corner sliver",
+   "variants_g00c_sim_80_0": {
+    "asIs": "1645 px over the language button (max 32)",
+    "filterNone": 0,
+    "clipPathRound": 0,
+    "maskNone": "spill left and right, still cut at top/bottom"
+   }
+  },
+  "gap": {
+   "status": "CONFIRMED by the CSS",
+   "css": {
+    "v0": "11440, 11444, 11451-11453, 11584-11586",
+    "g00c": "11833-11835, 11926-11945"
+   },
+   "summary": "gap = (1 - clamp(m/0.2)) * 8px (4px <=640) with transition none while .is-morphing: 0 at m 0.2 (~49 ms) while the Join is visible until ~0.49 s"
+  },
+  "safariPadding": {
+   "status": "OBSERVED + WebKit source (4d3c1638849c Source/WebCore/style/Styleable.cpp 529-535, 567-570); bug tracker not searched",
+   "summary": "transition: padding-inline never starts in WebKit; pill 110 -> 78 px at once"
+  }
+ },
+ "sim": {
+  "g00c_vs_fix_heldStops": [
+   {
+    "arm": "g00c",
+    "stop": "closed-rest",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2202,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 5,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "g00c",
+    "stop": "join-24-40",
+    "op": "1",
+    "joinW": 94.03,
+    "gap": 1.95,
+    "cornerOff": 0,
+    "cornerPx": 2209,
+    "cornerMax": 8,
+    "halo": 672,
+    "haloMax": 76,
+    "overLang": 1364,
+    "overLangMax": 46,
+    "langSame": true
+   },
+   {
+    "arm": "g00c",
+    "stop": "join-80-0",
+    "op": "1",
+    "joinW": 78.41,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2285,
+    "cornerMax": 5,
+    "halo": 0,
+    "haloMax": 2,
+    "overLang": 1645,
+    "overLangMax": 32,
+    "langSame": true
+   },
+   {
+    "arm": "g00c",
+    "stop": "join-400-280",
+    "op": "0.208743",
+    "joinW": 49.86,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2166,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 0,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "g00c",
+    "stop": "join-400-340",
+    "op": "0.065765",
+    "joinW": 31.72,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 1683,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 0,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "g00c",
+    "stop": "join-80-200",
+    "op": "0.684862",
+    "joinW": 78.41,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2285,
+    "cornerMax": 4,
+    "halo": 0,
+    "haloMax": 2,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "g00c",
+    "stop": "closed",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2202,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 5,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "closed-rest",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2202,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 5,
+    "overLang": 0,
+    "overLangMax": 1,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "join-24-40",
+    "op": "1",
+    "joinW": 110.19,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2166,
+    "cornerMax": 0,
+    "halo": 20,
+    "haloMax": 72,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "join-80-0",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2285,
+    "cornerMax": 1,
+    "halo": 0,
+    "haloMax": 2,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "join-400-280",
+    "op": "0.208743",
+    "joinW": 49.86,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2166,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 0,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "join-400-340",
+    "op": "0.065765",
+    "joinW": 31.72,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 1683,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 0,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "join-80-200",
+    "op": "0.684862",
+    "joinW": 86.81,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2267,
+    "cornerMax": 1,
+    "halo": 0,
+    "haloMax": 2,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "fix",
+    "stop": "closed",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2202,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 5,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   }
+  ],
+  "v0_heldStops": [
+   {
+    "arm": "v0",
+    "stop": "closed-rest",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2202,
+    "cornerMax": 0,
+    "halo": 730,
+    "haloMax": 198,
+    "overLang": 0,
+    "overLangMax": 1,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "join-24-40",
+    "op": "1",
+    "joinW": 94.03,
+    "gap": 1.95,
+    "cornerOff": 62,
+    "cornerPx": 2218,
+    "cornerMax": 79,
+    "halo": 3879,
+    "haloMax": 77,
+    "overLang": 1403,
+    "overLangMax": 52,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "join-80-0",
+    "op": "1",
+    "joinW": 78.41,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2285,
+    "cornerMax": 6,
+    "halo": 5708,
+    "haloMax": 47,
+    "overLang": 1497,
+    "overLangMax": 36,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "join-80-120",
+    "op": "1",
+    "joinW": 78.41,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2285,
+    "cornerMax": 5,
+    "halo": 0,
+    "haloMax": 2,
+    "overLang": 0,
+    "overLangMax": 1,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "join-80-200",
+    "op": "0.684862",
+    "joinW": 78.41,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2285,
+    "cornerMax": 3,
+    "halo": 0,
+    "haloMax": 2,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "join-80-300",
+    "op": "0.147682",
+    "joinW": 43.03,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 2295,
+    "cornerMax": 2,
+    "halo": 0,
+    "haloMax": 1,
+    "overLang": 0,
+    "overLangMax": 1,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "join-80-440",
+    "op": "0",
+    "joinW": 13.28,
+    "gap": 0,
+    "cornerOff": 0,
+    "cornerPx": 251,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 0,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   },
+   {
+    "arm": "v0",
+    "stop": "closed",
+    "op": "1",
+    "joinW": 110.41,
+    "gap": 4,
+    "cornerOff": 0,
+    "cornerPx": 2202,
+    "cornerMax": 0,
+    "halo": 0,
+    "haloMax": 5,
+    "overLang": 0,
+    "overLangMax": 0,
+    "langSame": true
+   }
+  ]
+ },
+ "fix": {
+  "file": "/_app/immutable/assets/2.gBuqKVzi.css (one 40-line block appended)",
+  "parts": [
+   "clip-path: inset(0 round 999px) on the Join while .is-morphing:not(.is-hero-pill, .is-expanded), reduced motion off only",
+   "gap held at 4px/8px until the Join has faded (step var --jf-gone, transition delay 0.44 s and 0.24 s on closing, 0.4 s at once on reopening), reduced motion off only",
+   "earn-box padding transition on padding-left/padding-right 0.68 s instead of padding-inline (WebKit), reduced motion off only"
+  ],
+  "patches": {
+   "standalone": "fixes/join-fade/patch.diff (baseline-relative)",
+   "onG00c": "fixes/join-fade-g00c/patch.diff (g0.0c + block, Try-it B)"
+  }
+ },
+ "gates": {
+  "simulatorHeldStops_rev2": "out/jf/s8: dark px over EN g0.0c 1364 (24-40) / 1645 (80-0) -> 0; outside box 672 -> 20; gap 1.95/0/0/0/0 -> 4 at every stop; pill 78.4 -> 110.4 at 80-0; is-expanded stops 400-280/400-340 0 in both",
+  "chromeHeldStops": {
+   "430x775": "gap 1.95,0,0,0,0 -> 4; corners off 41,59,55,37,0 (max 65) -> 0 (rev 1; rev 2 fix arm identical, out/jf/r6-430.log; that run's g0.0c arm failed to reach the end state and is discarded)",
+   "430x815": "gap -> 4; corners 41,58,39 -> 0 (rev 1)",
+   "768x1024": "gap -> 8; corners 10,18,10 -> 0 (rev 1)",
+   "1280x800": "gap -> 8; corners 0 both (rev 1)",
+   "closing430": "close-680-120 / -300 gap 1.0/3.0 -> 1.77/3.83 (opens before the Join fades in)"
+  },
+  "parity_rev2": {
+   "end430": "by design at open-40, close-320/360, rev-close-280 (Join and gap, max 101-115); elsewhere nav max 1-4 (<= 3 k px) or 0; one intermittent whole-nav frame (open-done 153 k px max 19)",
+   "aa430_rev2": "fix vs itself: the same max 1-4 nav differences at the same stops with the same counts (open-200 2881 px both), intermittent frame at open-360 (150 k, max 11)",
+   "control": "g0.0c + a rule matching nothing: same max-1/2 class at the same stops",
+   "reduce430": "no rule applies: nav 565 px max 1 at open stops, platform cycler in closed states, the intermittent frame at 7 stops: noise by construction",
+   "end768": "open ~11 k px max 3-4, close-400..600 max 30-50 (gap timing, by design), platform cycler",
+   "end1280_rev1": "T0 apart from the Join stops",
+   "top_rev1": "nav 0 at 430 and 1280; 1280 y3655 558 px known harness load noise",
+   "layers_rev1": "Chrome LayerTree at the Join stops: 76/79 in both builds, same sets and area"
+  },
+  "notRun": [
+   "iPhone (unplugged; no timing asked)",
+   "finger test",
+   "430x932",
+   "Join clip on top of fix-g0-box v3-W (not landed; re-check when it lands)"
+  ]
+ },
+ "verdict": "fixed: Safari wash 1645 px -> 0, Chrome corners up to 59 px -> 0, gap kept (4 px / 8 px) until the Join has faded, Safari padding animates; everything else within this harness's noise (A/A and control show the same differences); look change, so the user decides (proposal)"
+}
