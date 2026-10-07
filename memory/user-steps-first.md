@@ -4,7 +4,7 @@ description: "a posted user step takes the phone next; no cooling or Mac-quiet g
 type: feedback
 audience: every agent
 since: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-07
 ---
 
 **Rule.** A console step the user is waiting on (swipe pair, finger test) takes the phone next, ahead of every
@@ -20,5 +20,8 @@ be kept waiting. The user's time is the scarcest resource.
 - Check the posting agent acts at once (messages arrive only between tool rounds).
 - The runner acks every change on the step with a plain one-line `--message` (doing what, ETA), so the user can
   follow on the step page (user request, T-017).
+- A phone slot given to the user (a `user` lease for a hand try-out) ends as soon as the user decides the thing it was
+  for or presses Done: the lead (or the owner) releases it then, never waits for a separate "done with the phone"
+  reply (user T-233, 2026-10-07: the user had decided PR-032, yet the Progress page still showed them on the phone).
 
 Related: [user-tasks-via-console](user-tasks-via-console.md), [console-step-wait-yourself](console-step-wait-yourself.md), [perception-tests-touch-ab](perception-tests-touch-ab.md).
