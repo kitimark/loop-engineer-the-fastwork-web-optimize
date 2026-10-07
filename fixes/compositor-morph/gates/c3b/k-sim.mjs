@@ -1,0 +1,154 @@
+// c3b-K Simulator gates (arch-compositor-morph): what pre-building the CM layers near the end costs and saves, on
+// WebKit (iOS Simulator Safari). Counts and Simulator ms (rank only), no timing verdicts. Per arm (one page load per pass):
+//   pass O (opens): the page brought to endStart - 250 (m ~ -0.3) without passing the end zone, at rest 1.5 s (K: pre
+//     turns on), then 3 open/close WDA finger strokes; per open the frame that opens (a MutationObserver marks fw-open0
+//     when the nav has .is-morphing without .fw-cm-pre, i.e. x > 0, in v13 and K2) and the 2 frames after it:
+//     Composite, style and layout in the rendering step and forced in script, Paint.
+//   pass A (approach + rest): from m -1.5 at rest, scripted per-frame scrolls (rAF scrollTo): U1 -1.5 -> -0.05 (60 frames,
+//     no rest so K's pre is off), rest R1 1.2 s (K: pre on), D1 -0.05 -> -0.9 (50), R2 1.2 s, U2 -0.9 -> -0.05 (50),
+//     R3 1.2 s, D2 -0.05 -> -1.5 (60; K: pre off at -1.25), R4 1.2 s. Per segment: frames, Composite / style / layout /
+//     paint (n, ms), forced style/layout in script, max frame span. Then rests of 3 s at m -0.5, 0 and 1 (F-321: layouts
+//     per second at rest; m 1 is the open end screen).
+//   pass L (layers, Timeline off): LayerTree.layersForNode(document) at m -1.5 (L0), at rest at m -0.5 after 1.5 s (L1;
+//     K: pre on), held open at m 1 with a synthetic touch (L2), back at m -0.5 (L3); count and memory, and the layers new
+//     at L1 against L0 (class, size, MB).
+//   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner arch-compositor-morph -- \
+//     node tools/sim.mjs session --functional --owner arch-compositor-morph -- sh -c 'node tools/sim.mjs wda start && node fixes/compositor-morph/gates/c3b/k-sim.mjs V13=out/cm/snap160/V [--pass OAL]'
+import { spawn, execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const HERE = dirname(fileURLToPath(import.meta.url)); const WT = join(HERE, '../../../..');
+const { openTab, sleep } = await import(join(WT, 'tools/lib/wip.mjs'));
+const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
+const wda = await import(join(WT, 'tools/lib/wda.mjs')); const simlib = await import(join(WT, 'tools/lib/sim.mjs'));
+const argv = process.argv.slice(2);
+const arms = argv.filter((a) => a.includes('='));
+const PASS = (argv.includes('--pass') ? argv[argv.indexOf('--pass') + 1] : 'OAL').split('');
+const S = PASS.includes('O') ? await wda.createSession({ base: `http://127.0.0.1:${simlib.ports().wda}`, simulator: true }) : null;
+const stroke = (y0, y1, ms) => ({ actions: [{ type: 'pointer', id: 'f1', parameters: { pointerType: 'touch' }, actions: [
+  { type: 'pointerMove', duration: 0, x: 215, y: y0 }, { type: 'pointerDown', button: 0 }, { type: 'pause', duration: 30 },
+  { type: 'pointerMove', duration: ms, x: 215, y: y1 }, { type: 'pointerUp', button: 0 }] }] });
+const OUT = join(WT, 'out/cm/ksim'); mkdirSync(OUT, { recursive: true });
+const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
+const MARK = `(() => { const h = document.querySelector('header.start-selling-top-nav'); if (!h || window.__o0) return 0; let open = false;
+  window.__o0 = new MutationObserver(() => { const now = h.classList.contains('is-morphing') && !h.classList.contains('fw-cm-pre'); if (now && !open) performance.mark('fw-open0'); if (!now && open) performance.mark('fw-close0'); open = now; });
+  window.__o0.observe(h, { attributes: true, attributeFilter: ['class'] }); return 1; })()`;
+const isJs = (t) => /^(FunctionCall|EventDispatch|TimerFire|FireAnimationFrame|ObserverCallback|EvaluateScript)$/.test(t);
+const ms = (x) => (((x.endTime ?? x.startTime) - x.startTime) * 1000);
+const marks = (r) => { const out = []; const st = [r]; while (st.length) { const x = st.pop(); if (x.type === 'TimeStamp' && x.data?.message) out.push(x.data.message); st.push(...(x.children || [])); } return out; };
+function cost(r, o) {
+  o.frames++; o.span = Math.max(o.span, ms(r)); o.spanSum += ms(r);
+  const walk = (x, js) => {
+    const d = ms(x);
+    if (x.type === 'Composite') { o.Composite += d; o.nComposite++; }
+    if (x.type === 'Paint') { o.Paint += d; o.nPaint++; }
+    if (x.type === 'Layout') { if (js) { o.LayoutJ += d; o.nLayoutJ++; } else { o.Layout += d; o.nLayout++; } }
+    if (x.type === 'RecalculateStyles') { if (js) { o.StyleJ += d; o.nStyleJ++; } else { o.StyleR += d; o.nStyleR++; } }
+    if (isJs(x.type) && !js) o.Script += d;
+    for (const ch of x.children || []) walk(ch, js || isJs(x.type));
+  };
+  walk(r, false);
+}
+const zero = () => ({ frames: 0, span: 0, spanSum: 0, Composite: 0, nComposite: 0, Layout: 0, nLayout: 0, StyleR: 0, nStyleR: 0, StyleJ: 0, nStyleJ: 0, LayoutJ: 0, nLayoutJ: 0, Paint: 0, nPaint: 0, Script: 0 });
+const fmt = (o) => `frames ${o.frames} max ${o.span.toFixed(1)} | Composite ${o.nComposite} ${o.Composite.toFixed(1)} | Style ${o.nStyleR} ${o.StyleR.toFixed(1)} forced ${o.nStyleJ} ${o.StyleJ.toFixed(1)} | Layout ${o.nLayout} ${o.Layout.toFixed(1)} forced ${o.nLayoutJ} ${o.LayoutJ.toFixed(1)} | Paint ${o.nPaint} ${o.Paint.toFixed(1)} | script ${o.Script.toFixed(1)}`;
+const GEO = `(() => { const e = document.querySelector('.fw-ms-end'); const t = e ? e.offsetHeight : innerHeight; const max = document.documentElement.scrollHeight - innerHeight; return { t, max, ih: innerHeight, endStart: max - t, cm: document.documentElement.classList.contains('fw-cm') }; })()`;
+const NAV = `(() => { const h = document.querySelector('header.start-selling-top-nav'); return h.className.replace(/svelte-\\w+/g, '').trim().split(/\\s+/).filter((k) => /morphing|pre|expanded/.test(k)).join(' ') || '-'; })()`;
+async function approach(c, stop) { // bring the page to y = stop in 400 px steps from the top
+  await c.evaluate(`(window.__ap = 0, (() => { let y = 0; const stop = ${stop}; const step = () => { y = Math.min(y + 400, stop); window.scrollTo({ top: y, behavior: 'instant' }); y < stop ? setTimeout(step, 60) : setTimeout(() => (window.__ap = 1), 2000); }; step(); })(), 1)`);
+  for (let i = 0; i < 100 && !(await c.evaluate('window.__ap')); i++) await sleep(200);
+}
+async function tl(c, fn) {
+  const recs = []; const h = (m) => { if (m.method === 'Timeline.eventRecorded') recs.push(m.params.record); }; c.on(h);
+  for (const [k, prm] of [['Page.disable', {}], ['Page.enable', {}], ['Timeline.enable', {}], ['Timeline.setInstruments', { instruments: ['Timeline'] }], ['Timeline.start', { maxCallStackDepth: 12 }]]) await c.send(k, prm);
+  await fn();
+  await sleep(600); await c.send('Timeline.stop').catch(() => {}); await sleep(1000);
+  return recs.sort((x, y) => x.startTime - y.startTime);
+}
+const res = { tool: 'fixes/compositor-morph/gates/c3b/k-sim.mjs', arms: {} };
+try {
+  for (const a of arms) {
+    const [label, dir] = [a.slice(0, a.indexOf('=')), resolve(WT, a.slice(a.indexOf('=') + 1))];
+    const st = join(OUT, `serve-${label}-${process.pid}.json`); rmSync(st, { force: true });
+    const p = spawn(process.execPath, [join(WT, 'tools/serve.mjs'), '--root', resolveTree('site-pretty'), '--overlay', dir, '--port', '0', '--quiet', '--no-cache', '--state', st, '--vendors=local', '--no-http-twin'], { stdio: ['ignore', 'ignore', 'inherit'] });
+    let c = null; const row = { dir };
+    try {
+      let s = null; for (let i = 0; i < 300 && !s; i++) { if (existsSync(st)) try { s = JSON.parse(readFileSync(st, 'utf8')); } catch {} if (!s) await sleep(100); }
+      if (!s) throw new Error('server did not start');
+      await sleep(500);
+      const load = async () => {
+        execFileSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'open', `http://localhost:${s.port}/?r=${Date.now()}`], { stdio: ['ignore', 'ignore', 'inherit'] });
+        await sleep(1500);
+        if (c) { try { c.close(); } catch {} }
+        c = await openTab(`localhost:${s.port}`);
+        for (let i = 0; i < 40 && (await c.evaluate('document.readyState')) !== 'complete'; i++) await sleep(500);
+        await sleep(2500);
+        const g0 = await c.evaluate(GEO);
+        await approach(c, g0.endStart - 2 * g0.t);
+        return c.evaluate(GEO);
+      };
+      if (PASS.includes('O')) {
+        const g = await load();
+        await c.evaluate(`(window.scrollTo({ top: ${g.endStart - 250}, behavior: 'instant' }), 1)`); await sleep(1500);
+        row.navO = await c.evaluate(NAV); await c.evaluate(MARK);
+        const recs = await tl(c, async () => { for (let k = 0; k < 3; k++) { await S.actions(stroke(650, 300, 500)); await sleep(900); await S.actions(stroke(300, 650, 500)); await sleep(1100); } });
+        const frames = recs.filter((r) => r.type === 'RenderingFrame');
+        row.opens = []; frames.forEach((r, i) => { if (marks(r).includes('fw-open0')) row.opens.push([0, 1, 2].map((d) => { const o = zero(); frames[i + d] && cost(frames[i + d], o); return o; })); });
+        const all = zero(); frames.forEach((r) => cost(r, all)); row.oAll = all;
+        console.log(`${label} O: cm ${g.cm}, nav at rest before the strokes: ${row.navO}, ${frames.length} frames, ${row.opens.length} opens`);
+        row.opens.forEach((o, i) => o.forEach((f, d) => console.log(`  open ${i + 1} f${d + 1}: ${fmt(f)}`)));
+        console.log(`  all frames: ${fmt(all)}`);
+        writeFileSync(join(OUT, `tlO-${label}-${STAMP}.json`), JSON.stringify(recs));
+      }
+      if (PASS.includes('A')) {
+        const g = await load();
+        const Y = (m) => Math.round(g.endStart + m * g.t);
+        await c.evaluate(`(window.scrollTo({ top: ${Y(-1.5)}, behavior: 'instant' }), 1)`); await sleep(1500);
+        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000]];
+        const js = JSON.stringify(plan.map((x) => (x.length === 4 ? [x[0], Y(x[1]), Y(x[2]), x[3]] : x)));
+        row.navA = [];
+        const recs = await tl(c, async () => {
+          await c.evaluate(`(window.__aDone = 0, window.__aNav = [], (async () => { const nav = () => document.querySelector('header.start-selling-top-nav').className.replace(/svelte-\\w+/g, '').trim().split(/\\s+/).filter((k) => /morphing|pre|expanded/.test(k)).join(' ') || '-';
+            const raf = () => new Promise((r) => requestAnimationFrame(r)); const wait = (t) => new Promise((r) => setTimeout(r, t));
+            for (const s of ${js}) { await raf(); performance.mark('seg:' + s[0]); if (s.length === 4) { for (let i = 1; i <= s[3]; i++) { window.scrollTo({ top: Math.round(s[1] + (s[2] - s[1]) * i / s[3]), behavior: 'instant' }); await raf(); } } else await wait(s[1]); window.__aNav.push(s[0] + ' ' + nav()); }
+            await raf(); performance.mark('seg:end'); window.__aDone = 1; })(), 1)`);
+          for (let i = 0; i < 200 && !(await c.evaluate('window.__aDone')); i++) await sleep(250);
+          row.navA = await c.evaluate('window.__aNav');
+        });
+        const seg = {}; let cur = 'pre';
+        for (const r of recs) { const mk = marks(r).filter((x) => x.startsWith('seg:')); if (mk.length) cur = mk[mk.length - 1].slice(4); if (r.type === 'RenderingFrame') cost(r, (seg[cur] ||= zero())); }
+        row.seg = seg;
+        console.log(`${label} A: nav after each segment: ${row.navA.join(' | ')}`);
+        for (const [k, o] of Object.entries(seg)) if (k !== 'pre' && k !== 'end' && !k.startsWith('J')) console.log(`  ${k.padEnd(5)} ${fmt(o)}${k.startsWith('S') ? `  | layouts/s ${(o.nLayout / 3).toFixed(1)} styles/s ${(o.nStyleR / 3).toFixed(1)}` : ''}`);
+        writeFileSync(join(OUT, `tlA-${label}-${STAMP}.json`), JSON.stringify(recs));
+      }
+      if (PASS.includes('L')) {
+        const g = await load();
+        const Y = (m) => Math.round(g.endStart + m * g.t);
+        await c.send('LayerTree.enable').catch(() => {});
+        const doc = await c.send('DOM.getDocument', {}); const docId = doc.root.nodeId;
+        const layers = async () => (await c.send('LayerTree.layersForNode', { nodeId: docId })).layers || [];
+        const at = async (y, ms2) => { await c.evaluate(`(window.scrollTo({ top: ${y}, behavior: 'instant' }), 1)`); await sleep(ms2); return { nav: await c.evaluate(NAV), ls: await layers() }; };
+        const L0 = await at(Y(-1.5), 1500), L1 = await at(Y(-0.5), 1500);
+        await c.evaluate(`(() => { const ev = new Event('touchstart'); const t = [{ clientX: 215, clientY: 400, identifier: 1 }]; Object.defineProperty(ev, 'touches', { value: t }); Object.defineProperty(ev, 'changedTouches', { value: t }); window.dispatchEvent(ev); return 1; })()`);
+        const L2 = await at(Y(1), 1500);
+        await c.evaluate(`(() => { const ev = new Event('touchend'); Object.defineProperty(ev, 'touches', { value: [] }); Object.defineProperty(ev, 'changedTouches', { value: [{ clientX: 215, clientY: 400, identifier: 1 }] }); window.dispatchEvent(ev); return 1; })()`);
+        const L3 = await at(Y(-0.5), 1500);
+        const sum = (x) => ({ nav: x.nav, n: x.ls.length, mb: +(x.ls.reduce((a2, l) => a2 + (l.memory || 0), 0) / 1e6).toFixed(2) });
+        row.layers = [L0, L1, L2, L3].map(sum);
+        const k0 = new Set(L0.ls.map((l) => l.layerId));
+        row.newAtL1 = [];
+        for (const l of L1.ls.filter((l) => !k0.has(l.layerId))) {
+          let cls = '';
+          try { if (l.nodeId) { const o = await c.send('DOM.resolveNode', { nodeId: l.nodeId }); const v = await c.send('Runtime.callFunctionOn', { objectId: o.object.objectId, functionDeclaration: 'function () { return this.nodeType === 1 ? (this.tagName.toLowerCase() + "." + String(this.className && this.className.baseVal !== undefined ? this.className.baseVal : this.className).trim().split(/\\s+/).slice(0, 2).join(".") + (this.dataset && this.dataset.fwCm ? "[" + this.dataset.fwCm + "]" : "")) : this.nodeName; }', returnByValue: true }); cls = v.result?.value ?? ''; } } catch {}
+          row.newAtL1.push(`${cls}${l.pseudoElement ? '::' + l.pseudoElement : ''} ${Math.round(l.bounds?.width ?? 0)}x${Math.round(l.bounds?.height ?? 0)} ${((l.memory || 0) / 1e6).toFixed(2)} MB`);
+        }
+        console.log(`${label} L: ${row.layers.map((x, i) => `L${i} ${x.nav} ${x.n} layers ${x.mb} MB`).join(' | ')}`);
+        for (const d of row.newAtL1) console.log(`  new at L1 (rest at m -0.5): ${d}`);
+      }
+    } catch (e) { row.error = String(e.stack || e); console.log(label, 'error', String(e.message || e)); }
+    finally { try { c?.close(); } catch {} p.kill(); rmSync(st, { force: true }); }
+    res.arms[label] = row;
+  }
+} finally { try { S && (await S.close()); } catch {} }
+const f = join(OUT, `ksim-${STAMP}.json`); writeFileSync(f, JSON.stringify(res, null, 1)); console.log('WROTE', f);

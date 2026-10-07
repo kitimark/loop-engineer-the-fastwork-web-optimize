@@ -993,3 +993,57 @@ A first try of #2 dropped the section's scroll-engine registration with the per-
   - Each display:contents -> block cycle is a full build (finding F-324).
 - Not the cause: the keyframes are not generated again on the first open (Simulator, text unchanged). The first-open-only DOM work (render culling on `.commission` / `.pain`, the panel's aria-hidden, the Join button's tabindex) is the same in C (`out/cm/o1-mut.mjs`).
 - Next: c3b-K builds the CM layers near the end at a still moment, so the open frame builds nothing (lead's go 08:4xZ, with the gates: look, approach scroll, fewer clippers, hit-test and behaviour, memory, rest layouts).
+
+## c3b-K: pre-build the CM layers near the end (2 h box, 08:50-09:40Z): FAILS, not a fix
+
+Idea (lead's go 08:4xZ): while the morph is still closed and the page rests within one end screen above the end (m in
+(-1, 0]), turn the CM structure on early ("pre": `.is-morphing` plus `.fw-cm-pre`, `__cmPreSet` from the 200 ms rest
+timer, off below m -1.25), so the open frame builds no layers. Builds (all on the frozen c3b-a, gitignored):
+c3bk1 (pre = plain `.is-morphing`), c3bk2 (+ `.fw-cm-pre` rules, the glass in a pill-sized `u3::before`), c3bk3
+(u3 kept as backdrop root with `blur(0px)`), c3bk4 (the glass on the bar; `c3b-k4-on-c3b-a.diff`, sha 180ca694165b,
+CSS f8488b770361), c3bk5 (K-min: K4 plus `animation: none` under pre on every part that draws, so only the corner
+clippers and boxes animate early; CSS 4fafb83f1e72). Gate tools: `gates/c3b/pre-look.mjs` (PR-010 multi-pair pixels and
+tap targets, no touch held), `slide.mjs`, `k-sim.mjs` (Simulator open frames, approach scroll, rest, layers),
+`k-gates.sh look-chrome|look-sim|sim-cost`.
+
+| gate | result |
+|---|---|
+| 1 look, Chrome 775 (A/A 0-0.02 %) | c3bk1 0.4-2.9 %, max 236 (u3's panel-sized backdrop: the card below the pill bleeds in, square bottom corners). c3bk2 0.3-0.9 %, max 144-215. c3bk3 4-4.6 % (the glass vanished: a backdrop root sees only its own content). c3bk4 0.27-0.91 %, max 144-215. c3bk5 0.30-0.87 %, max 144-215. Every K build is over T2 (0.5 %, edge 128) at most stops between m -0.75 and 0 |
+| 1 look, Simulator (815 viewport) | c3bk2 0.02-0.6 %; c3bk3 1.1-3.8 %; c3bk4 0.05-0.36 %, max 134-142 on edges at m -0.75 / -0.25 and 232 at -0.5 (fill clusters stay <= 59). Closest, still over the edge limit |
+| 4a taps (fixed points of the closed pill, the receiving element) | c3bk1: taps on the Join button fell through (CSS 11935 gives it pointer-events only outside `.is-morphing`). From c3bk2 on: 0 of 12 differ at every stop, Chrome and Simulator (two Simulator points differ by 1 px of the panel's hidden CTA, same receiving element) |
+| 4b slide | `is-scroll-hidden` never turns on between m -1.3 and 0 in either build (8 px scan, Chrome 775); the pre rule slides by the pill height anyway. 97 sampled frames identical |
+| 4c rules that change meaning under pre | 11162/12047 (reduced-motion filter/transition none), 11734/12040 (closed transitions), 11811 (logo absolute; needed), 11832 (actions transition none), 11919/11931/12534 (language switch transform, 0 at m 0), 11935 (Join pointer-events). Covered by `.fw-cm-pre` rules in c3bk2+ |
+| 2 open frames, Simulator (`k-sim.mjs` pass O, ms rank only) | first open f1 Composite: v13 61.3, c3bk4 62.2 (unchanged). Later opens f1: v13 52.2 / 50.6, c3bk4 22.6 / 25.7 |
+| 2 approach scroll and rest, Simulator | scroll segments with pre on: Composite about equal (D1 209 vs 218, U2 234 vs 246 ms), script and forced style up (D1 133 vs 81 ms script, forced style 51 vs 18). At rest with pre on, rendering-step style about doubles (R2 70 vs 24 ms, S-0.5 182 vs 100 ms over 3 s): the pre-built scroll-driven animations are restyled every rendering update |
+| 5 memory | c3bk4 at rest at m -0.5 with pre on: 78 layers, 141.4 MB vs v13 66 layers, 130.7 MB (+12 layers, +10.7 MB: the clippers and boxes draw nothing; the panel's veil 11.6 MB, centre 5.7 MB, column tracks 3 x 2.6 MB already exist in v13 once opened). Pre stays on whenever a visit rests within one screen of the end, until it scrolls 1.25 screens up |
+| 3 fewer clippers | not cheap: each corner needs its own anchor because width, height and radius change independently with m; one element could cut all four only with an animated clip-path, which WebKit does not run on the compositor (the pre-CM design wrote it inline every frame) |
+
+Verdict: K fails. The pre state does not look like the closed pill in Chrome (T2 exceeded in every variant, K-min
+included), and in the Simulator it does not remove the first open's composite (the D1 target, 62 vs 61 ms), while
+it adds style work at rest and 10.7 MB. Later opens do halve their open-frame composite. Not worth a proposal for D1.
+
+F-321 (rest layouts, v13 today, with or without K; Simulator `k-sim.mjs` pass A): 26.7 layouts/s at rest at m -0.5,
+3.0 at m 0, 24.7 at m 1. At m 1 every rest layout's root is a CM corner clipper (the Timeline root quad is 1250 x 1250
+= 2000 px x k at m 1), so the work is inside the open panel; at m -0.5 the root is the whole viewport (the platform
+section's own animations, not CM; the nav is closed there).
+
+## c3b-a phone card: c3b-a vs C, first open and each open from closed (pre-data; ticket number from the lead, P-161 proposed)
+
+Written before any data; its commit time is the pre-data time. Everything not named here is as in the P-160 card.
+
+| item | value |
+|---|---|
+| question | does c3b-a (v13 + #2 platform observer, #5 --morph copies at m 0, #6 rest timer near the end, the re-measure timer kept out of moving frames) stay no worse than C on the first open after load and on every open from closed, under the finger; and does it cut v13's first-open style pass? |
+| arms | C = v9-final rev 7d, JS 1b2eecc66011 / CSS e1359ab9994a (the same file as P-158/159/160). V = c3b-a, JS 4175a56193ab / CSS 9c1067cff473 (out/cm/c3ba, `c3b-a-on-v13.diff`, landed da69ea0c) |
+| snapshot | out/cm/snap161 (C and P copied from out/cm/snap160, V from out/cm/c3ba, read-only), HASHES a36f8565979f, checked by the kit before every hold |
+| kit | `fixes/compositor-morph/phone-c3ba/`: a copy of `phone-c3/` with the pins above (state out/cmp161); reader `p161-read.mjs` (P-160's rules unchanged; selftest 8 checks ok); attribution `open0-attr.mjs`, `o1-attr.mjs` |
+| driver, profile, order, heat, link loss | as P-160: G fast-short (8737f212c0ff), Timeline on in every counted run, tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`), H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4, H11:TAIL with the end sentinel |
+| command | `CM_TICKET=<ticket> CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-compositor-morph --block <ticket> --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-c3ba/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` (servers first: `sh fixes/compositor-morph/phone-c3ba/cm-serve.sh start`), as a Bash background job with a 7200000 ms timeout |
+| metrics and decision | P-160's, unchanged. D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median of per-run open-0 median dt, V - C <= +4 ms. D3 at T in {34, 30, 38}. PASS / FAIL / OPEN as in P-160 |
+| descriptive | `o1-attr.mjs`: O1's open frame per rendering frame, RecalculateStyles and Composite, V against C and against P-160's v13 (Composite +3.7 ms, style +1.8 ms over C) |
+
+**Prediction (frozen).** D2 and D3 PASS, as in P-160 (c3b-a changes nothing in the open frame's layer build). D1
+**FAIL** again, by about +7 to +10 ms (P-160: +11): the layer build that makes O1's Composite cost is untouched (K, which
+targeted it, failed). The share c3b-a can take is the style part: O1's RecalculateStyles from v13's +1.8 ms over C
+toward 0 (#2 drops the per-frame forced style pass of `n()`, Simulator 394 passes / 1091 ms per session -> 0; #5 drops
+six inline `--morph` writes per frame). Overall call: **FAIL by D1 alone**, about 70 %.
