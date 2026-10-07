@@ -710,3 +710,145 @@ Proposal items; none may be changed silently:
   - The alternative: card the phone block now and put G and L to the user as Try-it items in parallel.
 - **Tools:** `s0-sim.mjs` (census, rest, top of the page) and `s1-look.mjs` (look). Data: `out/s0/runs/` and `out/s1/`
   in this worktree (gitignored).
+
+## 8. S1b: G and L fixed (D1b), opens after a close against v14, and the phone card draft (2026-10-07 12:42-13:30Z)
+
+The lead's go for (a) was: fix G and L in the Simulator only; put the bar mechanism behind one flag; gate G and L with
+the bar both on and off; when the look is within T2 in Chrome and the Simulator (with A/A), commit and send the phone
+card draft (D1 vs v14, tool-serious, C V V C).
+
+**Verdict.**
+- **The look is within T2 in both engines with the bar flag on v14.** With the bar on `held`, only item B remains: the
+  bar row is held, which is PR-033's decision.
+- **Gates 1-3 still pass.**
+- **Opens after a close match v14** (k-sim pass O, 12 opens per arm). D1b's frame 1 is cheaper. The f2 cost seen in two
+  early sessions did not repeat. It was session noise, not a cost the design moves into f2 (see the table).
+- **The card draft is below. The phone arm is D1b with `__cmBarMode = v14`,** so the block measures D1's layers, not
+  the bar choice.
+
+### Causes and fixes
+
+- **G, part 1: the bar items were backdrop roots** (CONFIRMED).
+  - S1's kept-tree CSS gave the bar, logo and actions `will-change: transform, opacity, filter`.
+  - In WebKit, will-change with opacity or filter makes an element a backdrop root: WebKit main 86d0164f83,
+    `Source/WebCore/style/values/will-change/StyleWillChange.cpp` 183-193 (`canBeBackdropRoot`), used at
+    `Source/WebCore/rendering/RenderLayer.cpp` 672-683.
+  - So the language button's own blur saw only the actions box behind it, and drew darker than today's.
+  - Fix: `will-change: transform` only, on those three.
+- **G, part 2: u3's blur sampled outside the pill.**
+  - The closed pill's glass was u3's backdrop blur. u3 is panel-sized under the four clippers.
+  - The backdrop rect comes from the element's own box and radius (§3 engine facts), so the blur sampled the page
+    outside the pill.
+  - Fix: while kept and closed, the glass is on the bar, as in v14's pre state (c3b-K2): `#ffffff1a`, `blur(20px)`,
+    radius 32. u3's backdrop is `none !important` there (it beats `__cmClear`'s inline value).
+- **L: the logo was drawn alone in a layer at a fractional y.**
+  - A Chrome rect probe with a GestureEvent stub (`out/s1/rect.mjs`) shows the logo's box identical to v14's in every
+    arm: 32, 30.375, 91.5 x 23.25 at the top, mid page and -0.5.
+  - So the difference was not position. With its own layer (will-change) at y 30.375 the logo was drawn up to
+    150-212 levels off at its edges. The likely mechanism is how a separate layer is placed on device pixels, which
+    stays UNRESOLVED.
+  - Fix: `will-change: auto` on the logo while kept and closed. It gets its layer at the open with its animation, as on
+    v14. That makes it one of the two waived per-open layers again.
+- **The bar flag:** `__cmBarMode` in the JS, with three values:
+  - `held` (PR-033 option B);
+  - `v14` (A: today's 4 px rise);
+  - `late` (C: held to m 0.6, then the rise; keyframe grid [0, 0.6, 1]).
+
+Builds (`out/s0/`, gitignored; `s1b-d1b.diff` against c3b-a, sha256/12 c83b5fa8237a):
+
+| arm | bar mode | JS | CSS |
+|---|---|---|---|
+| D1b | held | 2346001b1ed8 | 2ab0464e540a |
+| D1b-a | v14 | 30ff7c0d1ad5 | 2ab0464e540a |
+
+### Look against v14 (s1-look.mjs, multi-pair A/A; consistent px beyond A/A)
+
+| stop | Sim, bar held (D1b) | Sim, bar v14 (D1b-a) | Chrome 775 / 815, bar held | Chrome 775 / 815, bar v14 |
+|---|---|---|---|---|
+| top, mid, -0.5 | 0 | 0 | 0 | 0 |
+| -1 | 0.30 %, max 25 (A/A noise 1.7 %) | 0.30 %, max 25 (A/A 2.1 %) | 0 | 0 |
+| 0 | 0.04 %, max 57 | 0.04 %, max 57 | 0 | 0 |
+| 0.25 / 0.5 / 1 | 0.18 / 0.28 / 0.39 %, max 136-226 (item B) | 0 | 0.22-0.64 %, max 118-226 (item B) | 0 |
+| 0d / -0.5d | 0.30 / 0.32 %, max 25 / 26, flat | 0.30 / 0.32 %, max 25 / 26, flat | 0 | 0 (775 0d: 0.017 %) |
+
+- Every stop with the bar on v14 is within T2:
+  - fill ≤ 57 ≤ 64;
+  - ≤ 0.32 % ≤ 0.5 %;
+  - ≤ 1,276 css px2 ≤ 2,000;
+  - no edge item.
+- The 0d / -0.5d fill difference (max 25-26) is the kept pill's glass after a close, against v14's own glass after a
+  close.
+- Taps: 0 differences at every stop with m ≤ 0 in both engines.
+- G is gone: mid and -0.5 were 0.60 % and 0.71 % in S1, and are now 0. L is gone: top was a logo edge at max 150-212,
+  and is now 0.
+
+### Gates 1-3 on D1b (Simulator, `s0-sim.mjs`, 3 valid sessions)
+
+Session 1's D1b arm did not open: its strokes stopped at m -0.3, and S0 had 30 frames per 3 s. Its numbers are void.
+Sessions 2-4 are valid.
+
+| | D1b | c3b-a (sessions 1-4) |
+|---|---|---|
+| layers new at each open (4 per run) | 2, 2, 2, 2 in all 3 runs: the logo (92x24, 0.14 MB) and the language-switch wrap (74x37), both waived | 26 every open |
+| held open / closed: layers, MB | 55 / 95.7-97.3; 66 / 113.1 | 55 / 95.7-97.3; 54-56 / 102.7 |
+| rest m -0.5 style per 3 s | 94, 85, 81 | 77, 96, 85, 75 (limit 1.3 x 96 = 125) |
+| rest m 0 style per 3 s | 18, 18, 18 | 18 x 4 |
+| top scroll: frames / paints / layouts (forced) | 28 / 220 / 36 (66); 30 / 260 / 39 (72); 26 / 203 / 37 (59) | 27 / 266 / 36 (68); 29 / 291 / 37 (71); 27 / 241 / 32 (64) |
+
+- The glass moving from the bar to u3 at the open built no new layer in the census.
+- D1b's top-of-page paints are at or below c3b-a's range. Every other count is inside it.
+
+### Rest, measured the same way as arch-compositor-morph (its k-sim.mjs at ef5c631a, `--pass A --rest0`, one session)
+
+Style recalcs in the rendering step per 3 s:
+
+| segment | v14 | D1b |
+|---|---|---|
+| S-0.5a (m -0.5 after an open) | 202 | 99 |
+| S-0.5z (3.5-6.5 s later) | 230 | 117 |
+| S0 (first reach of m 0) | 42 | 33 |
+| S0b (m 0 after a close) | 177 | 10 |
+| S0c | 180 | not recorded: the 300 s cap ended the session |
+
+D1b has no scroll animation in effect at rest: its generated keyframe rules are scoped to `.is-morphing`. That fits
+F-330 (WebKit ticks every in-effect scroll animation on each rendering update): v14's pre state keeps 8 of them in
+effect, D1b none. OBSERVED; the mechanism is F-330's.
+
+### Opens after a close (k-sim pass O; Simulator composite ms per open, frames f1-f3; rank only, F-084)
+
+| arm | opens | f1 median | f2 median (max; opens > 20 ms) | f3 median | f1-f3 sum median | paints median |
+|---|---|---|---|---|---|---|
+| v14 | 12 (4 sessions, both orders) | 31.9 | 4.4 (35.8; 4) | 21.5 | 58.3 | 34 |
+| D1b-a (bar v14, the phone arm) | 12 (same sessions) | 25.5 | 2.9 (39.1; 4) | 23.3 | 53.0 | 27 |
+| D1b (bar held) | 9 (3 sessions) | 25.1 | 14.7 (67.7; 3) | 8.6 | 55.8 | 33 |
+| D1 (S1) / D1b without the logo fix | 3 / 3 (1 session) | 20.9 / 23.5 | 2.6 / 3.1 | 6.5 / 1.1 | 27.9 / 27.2 | 19 / 19 |
+
+- On the phone arm D1b-a, every median is equal to or below v14's, and D1b-a has the same count of f2 > 20 ms opens.
+- The 58-68 ms f2 frames came from D1b's first two sessions only. In the three-way session (D1, D1b, D1b without the
+  logo fix) they did not repeat, so neither suspect (the glass move, the logo layer) explains them. Simulator session
+  noise; the phone block's open-0 read decides.
+
+### Phone card draft (for the lead to sign; written before any phone data)
+
+Built on P-161's card (fixes/compositor-morph/README.md, "P-161"). Everything not named here is as there.
+
+| item | value |
+|---|---|
+| ticket | P-NNN (from the lead) |
+| question | Does D1b open no worse than v14 under the finger? D1b keeps CM's layer tree built in WebKit and draws the closed pill through it with no scroll animation at rest. The opens checked: the first open after load, and every open from closed. |
+| arms | C = v14 (c3b-a + K6), JS d23ee885d54f / CSS 4fafb83f1e72 (`out/s0/k6`, a copy of P-161's V). V = D1b with `__cmBarMode = v14`, JS 30ff7c0d1ad5 / CSS 2ab0464e540a (`out/s0/d1b-a`; `s1b-d1b.diff` with the flag line set to v14). The bar motion is the same as v14's in both arms, so the block measures D1's layers, not the PR-033 bar choice. |
+| snapshot | `out/fe/snap2` (C from out/s0/k6, V from out/s0/d1b-a, read-only), HASHES 7c9ade106f49, checked by the kit before every hold |
+| kit | `research/end-of-page-fresh/phone/`: fe-serve.sh, fe-block.sh and fe-hold.sh are copies of `fixes/compositor-morph/phone-c3bk6/` with these pins and no probe page. fe-run.sh runs the block. Dry run 13:2xZ: 3 of 3 servers serve the pinned hashes; H1, H3 and TAIL DRY ok; programs fs 8737f212c0ff and pr 7ff27a2413c8 ok. Reader: `fixes/compositor-morph/phone-c3bk6/p161-read.mjs` (selftest 8 checks ok) on `out/fep1/runs`. |
+| P-161/P-162 lessons in the kit | (1) tool-serious through `iphone.mjs rearm`, with `FW_PHONE_CONDITION=tool`; no Xcode step is ever posted (user T-228 #15). (2) Safari is parked before every rearm (c181d248). (3) `thermal.mjs clear` runs in fe-run.sh after `lock.mjs run iphone` returns, not in an exit trap (b161bece). (4) New in fe-block.sh: a locked phone (preflight AUTH, exit 10, at the part start or after a failed hold) posts ONE console step, "unlock the iPhone", from inside the hold, waits for its Done (up to 3600 s), restarts WDA and Safari, then re-runs the hold once instead of exiting. (5) The hold is marked `--block <ticket>`. |
+| driver, profile, order | As P-161: G fast-short (8737f212c0ff), Timeline on in every counted run, tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`). H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 (C V V C C V V C), then H11:TAIL with the end sentinel. Link loss as P-161. |
+| command | `sh research/end-of-page-fresh/phone/fe-run.sh P-NNN` as a Bash background job (timeout 7200000 ms). It starts the servers, runs `CM_TICKET=P-NNN CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-end-fresh --block P-NNN --max-seconds 3600 --keep 120 -- sh research/end-of-page-fresh/phone/fe-block.sh H1:WC … H11:TAIL`, then `thermal.mjs clear`, then stops the servers. |
+| metrics and decision | P-160/P-161's, unchanged, with C = v14. D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median over runs of the per-run open-0 median dt, V - C <= +4 ms. D3: open-0 share at T in {34, 30, 38}. PASS / FAIL / OPEN as in P-160. |
+| descriptive (no verdict) | The per-run count of finger-down frames > 50 and > 34, with their twins, per arm. |
+
+**Prediction (frozen with this commit).**
+- **D1: PASS, about 60 %.** Both arms reach the first open with their layers already built: v14 through pre in the
+  approach pauses, D1b since warm-up. The risk is v14's pre landing in a pause, which makes its O1 cheaper.
+- **D2: PASS, about 60 %.** In the Simulator, pass O open-0 cost is at or below v14's, and f1 is lower. Simulator
+  composite ms have not predicted phone frame time well before (M6), so this is uncertain.
+- **D3: PASS, about 55 %.**
+- **Overall: PASS, about 45 %.** OPEN, threshold-sensitive, is the most likely other outcome.
