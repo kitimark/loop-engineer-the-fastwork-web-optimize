@@ -112,6 +112,27 @@ test('--port auto skips a port another process listens on at 127.0.0.1 or 0.0.0.
   } finally { for (const h of holders) h?.close(); }
 });
 
+test('--port 0 never keeps a port another process listens on at ::1 (I-237: localhost reached a leaked fixture, bench fakes read 0 ms)', async () => {
+  // macOS hands out ephemeral ports in sequence (net.inet.tcp.randomize_ports 0), and its port-0 search skips only a
+  // port taken in the same address family: 0.0.0.0:0 got a port a leaked fake-coredevice held on [::1] only, and
+  // https://localhost:p/ (::1 first) reached that process. Hold [::1] on the next ports the OS will hand out.
+  const ephemeral = (p) => 49152 + ((p - 49152 + 16384) % 16384);
+  for (const https of [false, true]) {
+    const next = await new Promise((done) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => done(p + 1)); }); });
+    const holders = (await Promise.all(Array.from({ length: 40 }, (_, i) => holdPort(ephemeral(next + i), '::1')))).filter(Boolean);
+    const held = new Set(holders.map((h) => h.address().port));
+    try {
+      assert.ok(held.size >= 30, `held ${held.size} of the next 40 ports on ::1`);
+      const s = await serve(['--port', '0', '--quiet', ...(https ? ['--https'] : [])]);
+      assert.ok(!held.has(s.port), `${s.port}: a port another process listens on at ::1 (held ${[...held][0]}..${[...held].at(-1)})`);
+      const r = await request(s.url + '__mirror/info');
+      assert.equal(r.status, 200, 'localhost reaches this mirror server (the holders answer 418)');
+      assert.equal(JSON.parse(r.text).root, fx.site);
+      await s.stop();
+    } finally { for (const h of holders) h.close(); }
+  }
+});
+
 test('fixed --port N listens on exactly N; an occupied fixed port fails loudly instead of moving', async () => {
   const p = await freePort();
   const s = await serve(['--port', String(p), '--quiet']);

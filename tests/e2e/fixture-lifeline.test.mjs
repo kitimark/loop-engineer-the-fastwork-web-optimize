@@ -103,3 +103,28 @@ setInterval(() => {}, 1 << 30);
     assert.deepEqual(await allGone(pids, 5000), [], 'every fixture, also the SIGTERM-ignoring helper, ended within 5 s');
   } finally { killAll(pids); }
 });
+
+test('I-237: a long-lived fixture started by hand (no test lifeline) ends with the process that started it, not days later', async () => {
+  // two fake-coredevice servers an agent had started by hand ran on for 2 days with ppid 1, holding [::1] ports that
+  // serve.mjs --port 0 then got from the OS: the bench fakes' https://localhost:<port>/ reached them (read 0 ms)
+  const dir = tempDir('fw-lifeline-hand-');
+  // a shell-like starter, with none of the test variables (as by hand): starts the fixture in the background (detached,
+  // like `node … serve &`), waits until it listens, prints its pid and exits
+  writeFileSync(join(dir, 'starter.mjs'), `
+import { spawn } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+const env = { ...process.env };
+for (const k of ['FW_TEST_LIFELINE', 'FW_TEST_FIXTURES', 'NODE_TEST_CONTEXT']) delete env[k];
+const c = spawn(process.execPath, [${JSON.stringify(FX('fake-coredevice.mjs'))}, 'serve'], { detached: true, stdio: 'ignore', env });
+c.unref();
+for (let i = 0; i < 400 && !existsSync(env.FAKE_CD_PORTS); i++) await new Promise((r) => setTimeout(r, 25));
+console.log(JSON.parse(readFileSync(env.FAKE_CD_PORTS, 'utf8')).pid);
+`);
+  const env = { FAKE_CD_PORTS: join(dir, 'ports.json'), FAKE_CD_STATE: join(dir, 'device.json'), FAKE_CD_LOG: join(dir, 'device.log') };
+  const r = await nodeAsync(join(dir, 'starter.mjs'), [], { env, timeout: 30000 });
+  const pid = Number(r.stdout.trim());
+  try {
+    assert.ok(pid > 1, r.out);
+    assert.deepEqual(await allGone([pid], 5000), [], 'the hand-started fixture ended within 5 s of its starter');
+  } finally { killAll([pid]); }
+});

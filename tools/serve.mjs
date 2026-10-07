@@ -231,7 +231,7 @@ else { console.error(`--port must be a number, 0, auto or fresh (got ${PORT_OPT}
 // https request got plain http, EPROTO). Port choice only: nothing served changes.
 // The LAN addresses too (the iPhone reaches the server by one): a listener on 192.168.x.y:p shadows it there.
 const PROBE_HOSTS = probeHosts();
-const busyOn = (port) => portBusy(port, PROBE_HOSTS); // lib/port-probe.mjs (moved there, T-106)
+const busyOn = (port, hosts = PROBE_HOSTS) => portBusy(port, hosts); // lib/port-probe.mjs (moved there, T-106)
 async function tryListen(i) {
   const port = candidates[i];
   const busy = port ? await busyOn(port) : null;
@@ -246,9 +246,23 @@ async function tryListen(i) {
     console.error(e.code === 'EADDRINUSE' ? `port ${port} is already in use (another mirror server?). Use --port auto or --port 0.` : e.message);
     process.exit(1);
   };
-  const onOk = () => { server.off('error', onErr); onListening(); };
+  const onOk = () => { server.off('error', onErr); if (port) onListening(); else keepOsPort(i); };
   server.once('error', onErr);
   server.once('listening', onOk);
   server.listen(port, HOST);
+}
+// I-237: --port 0 lets the OS pick, and macOS's port-0 search skips only a port taken in the same address family (its
+// ports come in sequence): an IPv4 wildcard listen got a port a leaked process held on [::1] only, and localhost (::1
+// first) reached that process. Keep the OS's port only when nothing listens on it at any other local address (the rule
+// above); else close and ask again. Port choice only: nothing served changes.
+const OS_PORT_TRIES = 100;
+let osPortTries = 0;
+async function keepOsPort(i) {
+  const p = server.address().port;
+  const busy = await busyOn(p, PROBE_HOSTS.filter((h) => h !== HOST && !(HOST === '::' && h === '0.0.0.0'))); // not our own listener
+  if (!busy) return onListening();
+  console.error(`port ${p} from the OS is in use at ${busy}:${p} too (localhost may reach that process): asking for another (I-237)`);
+  if (++osPortTries >= OS_PORT_TRIES) { console.error(`--port 0: ${OS_PORT_TRIES} ports from the OS in a row are in use at another local address. Use --port auto.`); process.exit(1); }
+  server.close(() => tryListen(i));
 }
 tryListen(0);

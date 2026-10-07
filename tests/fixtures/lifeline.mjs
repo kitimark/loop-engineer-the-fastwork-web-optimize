@@ -7,15 +7,18 @@
 //   $FW_TEST_FIXTURES  a registry dir: this fixture writes <dir>/<pid>.json while it runs, so the test kills it
 //                      (helpers.killFixtures: per test in afterEach, and for all at the test process's exit).
 // Import it for its side effect (`import './lifeline.mjs'`), or `node --import <its file URL>` for an inline helper.
-// Without those variables (a fixture run by hand) it does nothing; nor inside a test file's own process
-// ($NODE_TEST_CONTEXT, which cleanEnv drops for children), where a unit test imports a fixture module in-process.
+// Without $FW_TEST_LIFELINE (a fixture run by hand) the lifeline is the process that started it (I-237: two fake
+// coredevice servers an agent started by hand ran on for 2 days with ppid 1, holding [::1] ports that serve.mjs --port 0
+// then got, so localhost reached them); started by hand from a process that is already gone (ppid 1), it has none.
+// Nothing at all inside a test file's own process ($NODE_TEST_CONTEXT, which cleanEnv drops for children), where a
+// unit test imports a fixture module in-process.
 import { writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KEY = Symbol.for('fw.test.lifeline');
 if (!globalThis[KEY] && !process.env.NODE_TEST_CONTEXT) {
   globalThis[KEY] = true;
-  const owner = Number(process.env.FW_TEST_LIFELINE);
+  const owner = process.env.FW_TEST_LIFELINE ? Number(process.env.FW_TEST_LIFELINE) : process.ppid;
   const dir = process.env.FW_TEST_FIXTURES;
   if (dir) {
     const f = join(dir, `${process.pid}.json`);
