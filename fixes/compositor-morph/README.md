@@ -486,3 +486,86 @@ block runs `iphone.mjs rearm --owner arch-compositor-morph --settle 120` (it cle
 starts its detached `set serious`, settles, reads the profile; exit 0 cleared or not needed, 8 still Critical or misfit,
 13 timeout: the block stops and reports). `FW_PHONE_CONDITION=tool` for the whole part, so no gate posts an Xcode step;
 the exit trap runs `thermal.mjs clear` at the part's end. Profile, question, arms, reader and decision rules unchanged.
+
+**Restart (2026-10-07, lead ruling (a); before any counted data).** The first start (03:06Z) found Xcode's condition
+still on: `iphone.mjs rearm` read a fitting Serious phone and returned `REARM NOT-NEEDED` without setting ours. The
+block was stopped before H1 ran (warm-ups discarded, no runs). `thermal.mjs clear` (exit trap) printed NONE while
+`thermal.mjs status` still showed the condition ACTIVE (OBSERVED, in our setup), so a detached `thermal.mjs set serious`
+inside the phone hold (03:09:40Z) took the condition over (HOLDER `thermal.mjs set`, owner arch-compositor-morph).
+The block was restarted from H1 at 03:10Z; its rearm read a fitting phone (NOT-NEEDED) and set nothing, and H1's start gate read
+Serious, induced, battery 36.3 C, PASS. Every hold of the restarted block therefore ran under the tool-held condition
+(profile tool-serious in every PIN line). The tool's REARM and GATE texts say "induced by Xcode" / `xcode-serious`
+whoever holds the condition (fixed labels, `tools/lib/thermal-profile.mjs:56,70`); the holder record is the evidence.
+Follow-up for ts-i225 (sent to the lead): under `FW_PHONE_CONDITION=tool` rearm should refuse NOT-NEEDED for an
+induced condition that has no holder of ours.
+
+## P-158 results (iPhone 15 Pro Max, G driver, tool-serious, Timeline on; 2026-10-07 03:10-03:54Z)
+
+- Holds H1-H9 VALID (warm-ups WC, WV; counted EC1-EC3, EV1-EV4), every start and end gate PASS. H10 (EC4) VOID: its
+  end gate read Critical at battery 42.0 C (start 41.7 C), real heat after ~45 min of back-to-back gestures (36.4 ->
+  42 C), not I-225's cool-phone Critical. The block stopped there: TAIL did not run. The exit trap cleared the
+  condition and parked Safari.
+- Caveats (lead ruling 2026-10-07 ~04:00Z): **end sentinel not run (heat ceiling at H10)**: a gap, not a failure; every
+  per-hold gate passed, so H1-H9 stand and nothing is voided. H10/EC4 stays VOID, no top-up, no more phone time on
+  P-158. Nothing lands on this verdict (v11 already waits on c2 for its first open).
+- Reader: `p158-read.mjs out/cmp11/runs --runs EC1,EC2,EC3,EV1,EV2,EV3,EV4` (3 C vs 4 V, the >= 3 rule holds).
+
+| finger-down crossing frames, share | C (EC1-3) | V = v11 (EV1-4) |
+|---|---|---|
+| > 50 ms | 0, 0, 0 | 0, 0.0135, 0, 0 |
+| > 46 ms | 0, 0, 0 | 0, 0.0135, 0.0133, 0 |
+| > 54 ms | 0, 0, 0 | 0, 0.0135, 0, 0 |
+| > 34 ms (descriptive) | 0.016, 0.026, 0 | 0.065, 0.095, 0.067, 0.092 |
+
+- VERDICT (finger-down, decides): 50 le, 46 open, 54 le: **decision (c)**, as predicted ((a) or (c), not (b)).
+  Pooled and momentum (decide nothing): 46 worse, 50 open, 54 open. DRIVER: none (momentum ratio 1.01, flings 1.5).
+- Descriptive, OBSERVED (n 3 / 4): at > 34 ms every V run is above every C run on the finger-down crossing frames
+  (about 5-7 frames per run in the 34-50 ms band vs 0-2). v11's flip frames under the finger are slower than C's but
+  rarely over 50 ms; the same direction as int-v11's first-open finding (rAF script + style on the flip frames).
+- The > 34 ms band goes into the c2 card as a secondary, descriptive check (lead): v11+c2's finger-down 34-50 ms
+  crossing share vs C, with the table above as the before (OBSERVED, n 3 / 4).
+
+## The Join button at m 0.2 (issue loop T-228, PR-032)
+
+- What happens there (v11 JS 14035-14072, CSS 11961-12045): `.is-earn-hidden` turns on at m >= 0.2 and off only at
+  m <= 0 (hysteresis). On the flip, nav-earn rev 3 (PR-021 rev 3, T-158) plays the original's 0.68 s
+  cubic-bezier(0.33, 0, 0.2, 1) geometry as Web Animations (button translate, pill clip-path, language-switch
+  translate) and the button's CSS opacity transition runs (0.32 s after 0.12 s; 0.2 s into the hero pill at the top).
+  Under CM the button's blur (0 -> 10 px over m 0..0.2) and EN's 4 px nudge follow the scroll (`v.earn`, `v.lang`).
+- PR-032 rev 1/2 (`fade-on-v11.diff`): opacity and EN's slide on the scroll timeline (finger-driven, like v0's CSS).
+  Rev 2's premise "the pill vanishes in one step" was **wrong**: it came from resting shots 900 ms apart, not frames.
+  The user asked for no finger-driven fade (changes requested 03:13Z: a state-started fade like the top of the page).
+- **Rev 3** (`fade3-on-v11.diff`, JS bc6215f5f8e0 / CSS 97b0d77fe66e, on v11): nothing on the button follows the
+  finger. Under CM at phone widths: no `earn` / `lang` keys; on the flip the button fades opacity and blur (0 <-> 10 px)
+  on its CSS transitions (0.32 s after 0.12 s, the button's appear transition), the pill keeps its shape and place
+  (no clip-path, no button translate), EN slides by the button's width + the 4 px gap on nav-earn's 0.68 s timer
+  (`__ewGo`, translate only). `will-change: opacity, filter` keeps the button on its own layer. Hysteresis unchanged.
+  Reduced motion: no transitions, no blur (as before).
+- WebKit acceleration (CONFIRMED): Source/WebCore/css/CSSProperties.json at 0a254e20987b marks opacity (7590), filter
+  (10836), transform (12787), translate (12935) "animation-wrapper-acceleration": "always"; clip-path (4318) has none.
+  KeyframeEffectStack.cpp allowsAcceleration (215-283) runs the stack accelerated unless an effect prevents it, and an
+  effect with no accelerated property does not (KeyframeEffect.cpp preventsAcceleration 2052-2053).
+- Frame check (`gates/fadeframes.mjs`: Chrome 430x815 DPR 3, per-rAF computed values + every screencast frame;
+  `gates/simfade.mjs`: Simulator, per-rAF values; arms A = v11, B = rev 3, plus C in Chrome): the opacity change runs
+  +133 -> +433 ms after the crossing in every arm (timed in v11 too); v11's blur jumps to 10 px at the flip and follows
+  the scroll below 0.2 (7.5 px at m 0.15), B's blur moves with the opacity; EN 0 -> 110 px (v11), 0 -> 114 px (B). A
+  0.22 / 0.18 wiggle (120 ms steps) never shows the button again in any arm. 0 reversals in every phase and arm for
+  opacity, blur, EN and (Chrome) the region's luminance (tolerance 0.5): no frame lighter or darker than the fade curve.
+  C's one-off Simulator flash (simstep, 01:2xZ) did not show in Chrome's frames.
+- Counts, 3 runs per arm (A1 / A2 = the A/A pair):
+
+| | v11 (A1 / A2 / A3) | rev 3 (B1 / B2 / B3) |
+|---|---|---|
+| Chrome, styled elements per frame, open / close | 43 43 43 / 32 32 32 | 36 35 42 / 29 29 29 |
+| Chrome, paints per frame, open / close (median) | 3 3 3 / 3 3 3 | 3 3 5 / 3 3 3 |
+| Chrome, layout per frame | 0 | 0 |
+| Simulator, paints open | 193 / 190 / 175 | 137 / 142 / 122 |
+| Simulator, layouts open | 137 / 138 / 139 | 128 / 140 / 132 |
+| Simulator, paints close | 86 / 86 / 87 | 92 / 111 / 82 |
+| Simulator, layouts close | 114 / 114 / 117 | 114 / 121 / 122 |
+| Simulator, Join button paints open / close | 17 17 24 / 14 11 8 | <= 5 (not in the top 8 painted layers) / 2 2 2 |
+
+- Reading: Simulator open paints are lower in B (ranges apart; A/A 193 vs 190): the button repaints far less during
+  the open (v11's scroll-driven blur repaints it, 17-24 per open). Close paints and layouts overlap: within noise.
+  Chrome: same layout (0) and paints; B3's open (5 paints, 8 rAF) is one outlier. Host load was high during the
+  Simulator runs (load1 up to 105). OBSERVED, counts only, no timing.

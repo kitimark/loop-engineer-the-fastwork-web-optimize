@@ -1,0 +1,72 @@
+diff --git a/out/cm/v11arms/V11/_app/immutable/assets/2.gBuqKVzi.css b/out/cm/v11fade/_app/immutable/assets/2.gBuqKVzi.css
+index 43adda65..34011903 100644
+--- a/out/cm/v11arms/V11/_app/immutable/assets/2.gBuqKVzi.css
++++ b/out/cm/v11fade/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12615,3 +12615,15 @@ html.fw-cm.fw-cm-out .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
+     will-change: transform;
+   }
+ }
++/* fade (issue loop T-228, after PR-021 rev 3): at the end of the page under CM the Join button and the language switch
++   follow the scroll through the generated keyframes (opacity, translate); the hidden state's static translate and clip
++   and the button's opacity transition stay off while the nav morphs, so the 0.2 flip shows nothing of its own */
++@media (width<=640px) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    translate: none;
++    transition: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++    clip-path: none;
++  }
++}
+diff --git a/out/cm/v11arms/V11/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/v11fade/_app/immutable/nodes/2.DyWL8TcE.js
+index 401dc4c3..67064721 100644
+--- a/out/cm/v11arms/V11/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/v11fade/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14055,6 +14055,9 @@ function dN(n, r) {
+       wr = __ewWrap(),
+       W = __ewW;
+     if (first || !W || d < 1 || !oe.animate || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches) return;
++    // fade: at the end of the page under CM (html.fw-cm, phone widths) the scroll-driven keyframes draw the button and
++    // the language switch at every m, so no timed animation at the 0.2 / 0 flips (script animations would sit on top)
++    if (!pill && !was && document.documentElement.classList.contains(`fw-cm`) && window.matchMedia(`(width <= 640px)`).matches) return;
+     let gap = pill || was,
+       kb = [],
+       kx = [],
+@@ -14521,8 +14524,14 @@ function dN(n, r) {
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
+         v.act = { transform: `translateX(${px(-dx)})` };
+         // joinwl-nolift (PR-027, user T-204 #10/#13): no 8 px rise, as in today's CSS with nolift
+-        v.earn = { filter: `blur(${px(10 * e)})` };
+-        v.lang = { transform: `translateX(${px(4 * e)})` };
++        // fade (issue loop T-228, after PR-021 rev 3): the Join button follows the scroll like the original's CSS did
++        // (opacity 1 - m / 0.2), and the language switch slides by the width the original's button had given up at m
++        // (min(W - 2 P e, M (1 - e)), the rev 3 formula with e = m / 0.2 held, no 0.68 s timer); the pill keeps its shape
++        // (no clip-path per frame). The class flip at 0.2 and its timed animation no longer show (__ewGo, CSS below).
++        let ew = G.EW || 0,
++          ewW = Math.max(0, Math.min(ew - 2 * (G.EP ?? 24) * e, (G.EM ?? 176) * (1 - e)));
++        v.earn = { filter: `blur(${px(10 * e)})`, opacity: `${q(1 - e)}` };
++        v.lang = { transform: `translateX(${px(4 * e)})`, translate: `${px(ew - ewW)} 0px` };
+         v.panel = {
+           opacity: `${q(o)}`,
+           filter: `blur(${px(12 * (1 - o))})`,
+@@ -14563,8 +14572,10 @@ function dN(n, r) {
+           ? [...lin(0, mk, 16), ...lin(mk, 1, 72)]
+           : /^c\d$/.test(key)
+             ? [0, mk, 1]
+-            : key === `earn` || key === `lang`
++            : key === `earn`
+               ? [0, 0.2, 1]
++              : key === `lang`
++                ? [...lin(0, 0.2, 20), 1]
+               : key === `panel`
+                 ? [0, 0.08, 0.8, 1]
+                 : key === `logo`
+@@ -14576,6 +14587,8 @@ function dN(n, r) {
+       __cmGen = () => {
+         let G = __cmG;
+         if (!G || !G.W || G.L == null) return;
++        // fade: the Join button's sizes from nav-earn's ResizeObserver (__ewMeasure), no read here
++        ((G.EW = __ewW), (G.EP = __ewP), (G.EM = __ewM));
+         let sc = `html.fw-cm .start-selling-top-nav.is-morphing`,
+           v0 = __cmVals(0, G),
+           out = ``;

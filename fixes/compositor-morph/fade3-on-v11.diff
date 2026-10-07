@@ -1,0 +1,84 @@
+diff --git a/out/cm/v11arms/V11/_app/immutable/assets/2.gBuqKVzi.css b/out/cm/v11fade3/_app/immutable/assets/2.gBuqKVzi.css
+index 43adda65..94a971d9 100644
+--- a/out/cm/v11arms/V11/_app/immutable/assets/2.gBuqKVzi.css
++++ b/out/cm/v11fade3/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12615,3 +12615,37 @@ html.fw-cm.fw-cm-out .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
+     will-change: transform;
+   }
+ }
++/* timed fade (PR-032 rev 3, user 03:13Z): at the end of the page under CM (html.fw-cm, phone widths) the Join button
++   leaves and comes back on a timer started by its state flip (.is-earn-hidden: on at m 0.2, off at m 0), never with the
++   finger: opacity and blur on the button's own transitions (0.32 s cubic-bezier(0.33, 0, 0.2, 1) after 0.12 s, the
++   button's appear transition at the top of the page), the pill keeps its shape and place, and the language switch
++   slides by the button's width and the 4 px gap on nav-earn's 0.68 s timer (JS __ewGo). Opacity, filter and translate
++   only (compositor). The button stays on its own layer (will-change), so no layer is made when a fade starts. */
++@media (width<=640px) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    will-change: opacity, filter;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    translate: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++    clip-path: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) > .start-selling-language-switch-wrap {
++    translate: calc(var(--earn-w, 0px) + 4px) 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-top-nav-actions:where(.svelte-1dcozpm) > .start-selling-language-switch-wrap {
++    transform: none;
++  }
++}
++@media (width<=640px) and (prefers-reduced-motion: no-preference) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    filter: blur(0px);
++    transition:
++      opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
++      filter 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    filter: blur(10px);
++  }
++}
+diff --git a/out/cm/v11arms/V11/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/v11fade3/_app/immutable/nodes/2.DyWL8TcE.js
+index 401dc4c3..8f58f53e 100644
+--- a/out/cm/v11arms/V11/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/v11fade3/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14055,7 +14055,12 @@ function dN(n, r) {
+       wr = __ewWrap(),
+       W = __ewW;
+     if (first || !W || d < 1 || !oe.animate || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches) return;
+-    let gap = pill || was,
++    // timed fade (PR-032 rev 3, user 03:13Z): at the end of the page under CM (html.fw-cm, phone widths) the button
++    // keeps its pill shape and place and fades on its CSS opacity / filter transitions (compositor); only the language
++    // switch moves here, by the button's width and the 4 px gap on the same 0.68 s timer (translate, compositor). No
++    // clip-path animation there: WebKit runs clip-path on the main thread (CSSProperties.json lists no acceleration).
++    let cmEnd = !pill && !was && document.documentElement.classList.contains(`fw-cm`) && window.matchMedia(`(width <= 640px)`).matches,
++      gap = pill || was || cmEnd,
+       kb = [],
+       kx = [],
+       kw = [];
+@@ -14065,10 +14070,10 @@ function dN(n, r) {
+         X = (W - w) / 2;
+       (kb.push({ translate: `${X}px 0` }),
+         kx.push({ clipPath: `inset(0px ${X}px round 999px)` }),
+-        kw.push({ translate: `${W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
++        kw.push({ translate: `${cmEnd ? (W + __ewG) * (1 - e) : W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
+     }
+     let o = { duration: d, easing: `linear` };
+-    __ewA = { e0, e1, d, a: [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)].filter(Boolean) };
++    __ewA = { e0, e1, d, a: (cmEnd ? [wr && wr.animate(kw, o)] : [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)]).filter(Boolean) };
+   }
+   function ee() {
+     let e = __navEl(`.start-selling-profile-sticky`);
+@@ -14521,8 +14526,8 @@ function dN(n, r) {
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
+         v.act = { transform: `translateX(${px(-dx)})` };
+         // joinwl-nolift (PR-027, user T-204 #10/#13): no 8 px rise, as in today's CSS with nolift
+-        v.earn = { filter: `blur(${px(10 * e)})` };
+-        v.lang = { transform: `translateX(${px(4 * e)})` };
++        // timed fade (PR-032 rev 3): no `earn` / `lang` keys; nothing on the Join button or the language switch follows
++        // the scroll. Their blur, opacity and slide run on a timer from the state flips at m 0.2 / 0 (CSS, __ewGo).
+         v.panel = {
+           opacity: `${q(o)}`,
+           filter: `blur(${px(12 * (1 - o))})`,
