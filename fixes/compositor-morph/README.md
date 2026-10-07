@@ -569,3 +569,102 @@ induced condition that has no holder of ours.
   the open (v11's scroll-driven blur repaints it, 17-24 per open). Close paints and layouts overlap: within noise.
   Chrome: same layout (0) and paints; B3's open (5 paints, 8 rAF) is one outlier. Host load was high during the
   Simulator runs (load1 up to 105). OBSERVED, counts only, no timing.
+
+## c2 on v11: each open from closed (lead 04:1xZ; int-v11's brief; `c2-on-v11.diff`)
+
+Build `out/cm/c2` = v11 (JS 9b4a829d15a0 / CSS 62743920fe1a) + c2: JS 59b07dadb99c, CSS unchanged. Two parts:
+
+- **(ii) No forced hit test in the open frame on the CM path.** v11's tick re-tests the nav backdrop after every write
+  that brings m to <= 0.2: `queueMicrotask(() => z(g, F()))` (JS 14434). On the open from closed that microtask runs
+  right after `__cmSet`'s class and keyframe writes, so `F()`'s `getBoundingClientRect` forces the style (206 elements)
+  and the layout (421 dirty) of the new morph state inside the tick. c2 calls `__cmReTest()` there instead (CM path
+  only; the non-CM path keeps the microtask). It sets `__nsForce` at once and runs the same `z(g, F())` in the next
+  frame's rAF, at most one pending (`__cmRT`), guarded by `__navNode()?.isConnected` and cancelled in the teardown.
+- **(i) Memo for `__cmGen`.** `__cmPrep` calls `__cmGen()` on every open from closed. c2 keys the grid (`W|H|L|ix|cols`)
+  and returns early when the key is unchanged, so an open from closed no longer rebuilds the ~39 KB keyframe text.
+
+### Gates (no timing verdicts)
+
+- **Class parity, Chrome** (`out/cm/c2trace.mjs`, 430x815, touch held, a one-frame m sequence across 0 / 0.08 / 0.2 with
+  wiggles, 237 frames): v11 vs c2 0 frame-class differences (is-on-dark, is-morphing, is-earn-hidden, is-expanded,
+  is-hero-pill); v11 vs v11 0. is-on-dark was 1 in every frame in both arms, which is why the coverage check below exists.
+- **First open, Chrome** (int-v11's `fixes/v11/first-open.mjs --cold`, 430x775, 6x):
+
+| open frame 1 | v11 | c2 |
+|---|---|---|
+| open1 frame span | 118.45 ms | 51.39 ms |
+| open1 FunctionCall | 97.4 ms | 12.5 ms |
+| open1 forced style | 206 elements, 21.85 ms (F < microtask 14435) | 7 elements, 1.56 ms (__nsOnScroll) |
+| open1 layout | 421 dirty, forced by F | 421 dirty, in the rendering step (not forced) |
+| open2 frame span | 115.4 ms | 48.5 ms |
+
+  The deferred test lands in the next frame (forced style 12 elements, about 1.2 ms).
+- **Simulator** (`cm-sim.mjs --cold --stack 6`, iOS 26.5, 3 runs per arm interleaved, one session each; counts only;
+  sim background mean 6-78 % of a core, load1 up to 66):
+
+| per phase | v11 (A1 / A2 / A3) | c2 (B1 / B2 / B3) |
+|---|---|---|
+| open, forced style | 64 / 63 / 60 | 48 / 58 / 42 |
+| open, forced layout | 57 / 57 / 57 | 55 / 59 / 62 |
+| open, first frame forced layout | 4 / 4 / 4 | 2 / 2 / 2 (B3: the second frame) |
+| open, paints | 178 / 171 / 160 | 160 / 184 / 189 |
+| open, layouts | 126 / 130 / 128 | 129 / 135 / 135 |
+| close, forced style / layout | 65 / 49 / 69 ; 52 / 62 / 50 | 47 / 61 / 59 ; 58 / 47 / 50 |
+| approach, paints | 165 / 208 / 212 | 205 / 208 / 168 |
+
+  Forced style in the open is lower (ranges apart): F's forced style left the tick (`S F@13961 < microtask 14434`,
+  6-8 per open in v11, 0 in c2). F's layouts now sit in the rAF test (`L F < rAF 14467`, 15-16 per open, against 13 F
+  layouts in v11): same work, moved to the start of the next frame. Everything else within the A spread. OBSERVED,
+  counts only.
+- **Coverage of the one-frame-late re-test** (lead's caveat; `out/cm/c2cover.mjs` + `c2cover-read.mjs`, Chrome
+  430x775 and 430x815, shared lane, arms v11 and c2). c2 changes when the nav colour is decided after an m <= 0.2 write:
+  the next frame instead of the same one. The probe replicates `F()` exactly (probe point, nav skip rule, dark lists, JS
+  13929-13967) and walks every scroll position where the re-test can fire, 4 px steps from endStart - 2 ih to endStart
+  + 0.2 t, down from closed and up from m 0.6 (panel back from open), settling two rAFs at each:
+
+| | 775 | 815 |
+|---|---|---|
+| F() from the flip to endStart + 0.2 t | 1 at every position, both walks, both arms | 1 at every position, both walks, both arms |
+| the only flip (commission-card -> platform-card) | 1146 px above endStart (1.48 ih) | 1106 px above endStart (1.36 ih) |
+| v11 vs c2, same-y positions / F differs | 854 / 0 | 898 / 0 |
+| F() != the is-on-dark class | 0 | 0 |
+
+  The probe point always hits page content, never the morph panel, so an m write can't change the answer; only y can.
+  A re-test fires only for m <= 0.2 writes: inside [endStart, endStart + 0.2 t], plus the one frame that leaves the zone
+  upward. Reaching the flip from there in one frame takes a step of more than 1100 px; the largest per-frame step in
+  every P-158 G run is 298 px (EV2, an 86 ms frame). Flips far above are caught by `_()`'s edge test (`__nsCross`),
+  unchanged. So the shown colour is constant wherever the deferral applies (OBSERVED in Chrome's layout of the frozen
+  snapshot; the lead accepted it 04:4xZ as closing the caveat; no screencast compare needed).
+
+## P-159 card: v11+c2 vs C, first open and each open from closed (pre-data)
+
+Ticket P-159, the lead's word 2026-10-07 04:4xZ (less-work landing rule: cost counts plus a short phone no-worse check).
+Written before any P-159 data; the commit time of this section is the pre-data time.
+
+| item | value |
+|---|---|
+| question | is v11+c2 no worse than C on the first open after load and on every open from closed, under the finger? |
+| arms | C = v9-final rev 7d, JS 1b2eecc66011 / CSS e1359ab9994a (the same file as P-158's C); V = v11+c2, JS 59b07dadb99c / CSS 62743920fe1a. Snapshot out/cm/snap159 (C and P copied from out/cm/snap11, V from out/cm/c2), HASHES a853ddc82ce5, checked before every hold |
+| driver | G fast-short, `fixes/morph-scroll/g-fastshort-v1.json`, compiled program 8737f212c0ff (the program behind v11-nw's Pr1 and P-158's open-from-closed line-up); Timeline on in every counted run |
+| profile | tool-serious: `CM_THERMAL=serious`, `iphone.mjs rearm` at the part's start owns the condition (I-225, I-233, I-234 on main bd6d70fa), `thermal.mjs clear` in the exit trap; `CM_COOL=0`; start and end gate per hold (`--expect serious --accept-induced --max-c 44`) |
+| kit | `fixes/compositor-morph/phone-c2/` (cm-serve.sh, cm-hold.sh, cm-block.sh: copies of `phone-v11/` with the pins above; p159-read.mjs) |
+| order | H1:WC H2:WV (uncounted warm-ups, one per arm's port) H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 (C V V C C V V C) H11:TAIL (at most 2 re-runs, then the end sentinel S1 on C) |
+| heat | P-158 reached Critical after about 45 min of back-to-back gestures. A hold that reads Critical stops the block (after the kit's one re-arm at a start gate); then the block is read with what it has if each arm has >= 3 valid counted runs, no top-up. Park Safari after the block |
+| command | `CM_TICKET=P-159 CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-compositor-morph --block P-159 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-c2/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` |
+| reader | `node fixes/compositor-morph/phone-c2/p159-read.mjs out/cmp159/runs` (selftest 8 checks); a run counts only when its hold log ends VALID |
+| metrics | O1.f2 = p153-read's firstOpen (the first open after load, f2 as nw11-read's Pr1). Open-0 frames = finger-down moving frames whose m ((y - (docH - 2 ih)) / ih) goes from <= 0 to > 0: per run n, median dt, share > 34 with twins > 30 / > 38 (> 50 descriptive) |
+| decision | D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median of per-run open-0 median dt, V - C <= +4 ms. D3: per T in {34, 30, 38}: "le" when V's median open-0 share <= C's, "worse" when every V run > every C run (>= 3 valid runs per arm), else "open". **PASS**: D1 and D2 within +4 ms and D3 "le" at all three. **FAIL**: D1 or D2 over +4 ms, or D3 "worse" at all three. Anything else: **OPEN** (threshold-sensitive or insufficient), reported; no second block without the lead's OK |
+| descriptive | P-158's finger-down crossing frames: the 34-50 ms band share (> 34 minus > 50) per run, against C here and against P-158 (C 0-0.026, v11 0.065-0.092) as the before; the success check for c2 is that it falls toward C's with no new frames over 50 ms |
+
+Reader check on P-158's runs (C vs v11, before c2; the same program): D1 C 25 (25-25) vs v11 45.5 (43-48), +20.5;
+D2 C 20 (18.5-20) vs v11 38 (29-40), +18; D3 worse at 34, 30 and 38 (C 0.11 vs v11 0.61 at > 34): DECISION FAIL. The
+reader reproduces v11-nw's Pr1 failure and int-v11's line-up (C 20 vs v11 38 ms).
+
+**Prediction (frozen).** PASS. Basis: c2 removes F's forced style and layout from the open frame (Chrome open1 118 -> 51
+ms, FunctionCall 97 -> 12 ms; Simulator first open frame forced layouts 4 -> 2, open forced style 60-64 -> 42-58). On the
+phone the open-0 FunctionCall was 20.7 ms in v11 vs 2.1 in C, with 15.7 ms of it layout (P-158 line-up); c2 moves that
+layout into the rendering step of the same frame (dirty work done once, not forced twice) and the test itself into the next
+frame's rAF, where the layout is clean. I expect O1.f2 and the open-0 median within 4 ms of C's, and the open-0 > 34 share
+at or below C's at all three thresholds. Risk: the next frame now carries one F() (a clean layout read and a hit test,
+about 1-2 ms in Chrome at 6x); if WebKit dirties the layout again before that rAF, the cost moves to f3 rather than
+disappearing (visible in O1's f123, descriptive).

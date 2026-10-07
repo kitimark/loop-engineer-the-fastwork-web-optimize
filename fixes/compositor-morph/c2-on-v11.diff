@@ -1,0 +1,62 @@
+--- out/cm/v11arms/V11/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-07 07:40:05
++++ out/cm/c2/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-07 11:27:49
+@@ -14431,7 +14431,10 @@
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+         ((e = e > 0 ? (e < 1 ? e : 1) : 0),
+-          e !== __msP && ((__msP = e), __cmOn() ? __cmSet(e) : (__cmLive && __cmClear(), __navMorphSet(e)), e <= 0.2 && queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0)))));
++          e !== __msP &&
++            ((__msP = e),
++            __cmOn() ? __cmSet(e) : (__cmLive && __cmClear(), __navMorphSet(e)),
++            e <= 0.2 && (__cmOn() ? __cmReTest() : queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0))))));
+       },
+       // perf(compositor-morph, PROPOSAL; arch-compositor-morph): touch phones (7c mode) with scroll-driven animations and
+       // width <= 640 px. The nav's morph is drawn by scroll-driven CSS animations of transform / opacity / filter /
+@@ -14450,12 +14453,27 @@
+       __cmSup =
+         __msOn && !!window.CSS?.supports?.(`(timeline-scope: --a) and (animation-range: cover 0% cover 100lvh)`),
+       __cmOn = () => __cmSup && __cmMq.matches,
++      // c2 (ii): on the CM path the nav's re-test after a write that brings m to <= 0.2 runs at the start of the next
++      // frame (rAF, layout clean), not in a microtask of this tick: there F()'s getBoundingClientRect + elementsFromPoint
++      // forced the style and layout of the nav that just flipped .is-morphing inside the script (P-158 line-up: about
++      // 14 ms of the open-from-closed frame on the phone; Chrome 421 dirty layout objects vs C's 9). The rendering
++      // still lays the nav out once in this frame; the next frame's test reads that clean layout. __nsForce makes the
++      // nav-state pass (_) test again too, whichever runs first.
++      __cmRT = 0,
++      __cmReTest = () => {
++        ((__nsForce = !0),
++          __cmRT ||
++            (__cmRT = requestAnimationFrame(() => {
++              ((__cmRT = 0), __navNode()?.isConnected && (z(g, (__nsG = F()), !0), (__nsForce = !0)));
++            })));
++      },
+       __cmKv = ``,
+       __cmLive = !1,
+       __cmD = null,
+       __cmG = null,
+       __cmSt = null,
+       __cmCss = ``,
++      __cmGk = ``,
+       // the last bucket (t >= 1): the morph's end is a resting place (the 7d settle stops there), so x and --morph must be
+       // exactly today's 1 there, not the value at which t crossed qM (a still frame at m 1 differed by ~2 % otherwise)
+       __cmK = (t) =>
+@@ -14576,6 +14594,11 @@
+       __cmGen = () => {
+         let G = __cmG;
+         if (!G || !G.W || G.L == null) return;
++        // c2 (i): the keyframes depend only on these inputs; __cmPrep calls this on every open from closed, and the
++        // whole ~39 KB text used to be rebuilt before it was compared with the last one
++        let gk = `${G.W}|${G.H}|${G.L}|${G.ix}|${(G.cols || []).join(`,`)}`;
++        if (gk === __cmGk) return;
++        __cmGk = gk;
+         let sc = `html.fw-cm .start-selling-top-nav.is-morphing`,
+           v0 = __cmVals(0, G),
+           out = ``;
+@@ -14897,6 +14920,7 @@
+           te?.disconnect(),
+           __msRO?.disconnect(),
+           __cmWarmEnd(),
++          __cmRT && (cancelAnimationFrame(__cmRT), (__cmRT = 0)),
+           __msEnd?.remove(),
+           window.clearTimeout(__msTO),
+           [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
