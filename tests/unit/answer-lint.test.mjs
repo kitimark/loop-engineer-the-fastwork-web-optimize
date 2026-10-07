@@ -126,10 +126,24 @@ test('(e) a table without its |---| line under the header is refused (I-232: the
   assert.deepEqual(rules(lintText(['```', '| a | b |', '| 1 | 2 |', '```', END].join('\n'))), []);
   // two tables split by a blank line: each checked on its own
   assert.deepEqual(rules(lintText(['| a | b |', '|---|---|', '| 1 | 2 |', '', '| c | d |', '| 3 | 4 |', END].join('\n'))), ['e:table-separator']);
-  // a separator with fewer than 3 dashes is not one by the rule: refused, with the fix in the hint
-  const loose = lintText(['| a | b |', '|-|-|', '| 1 | 2 |', END].join('\n'));
-  assert.deepEqual(rules(loose), ['e:table-separator']);
-  assert.match(loose.errors[0].hint, /replace line 2 with: "\| --- \| --- \|"/);
+  // the renderer takes 1+ dashes per cell, so the lint does too (lead, I-232 follow-up): nothing that renders is refused
+  for (const sep of ['|-|-|', '| - | :-: |', '|:-|-:|']) {
+    assert.deepEqual(rules(lintText(['| a | b |', sep, '| 1 | 2 |', END].join('\n'))), [], sep);
+  }
+  // a separator whose column count differs from the header's: the renderer shows raw pipes too, refused
+  const short = lintText(['| a | b | c |', '|---|---|', '| 1 | 2 | 3 |', END].join('\n'));
+  assert.deepEqual(rules(short), ['e:table-separator']);
+  assert.equal(short.errors[0].line, 1);
+  assert.match(short.errors[0].msg, /separator line 2 has 2 columns, the header 3/);
+  assert.match(short.errors[0].hint, /replace line 2 with: "\| --- \| --- \| --- \|"/);
+  const long = lintText(['| a | b |', '|-|-|-|', END].join('\n'));
+  assert.deepEqual(rules(long), ['e:table-separator']);
+  assert.match(long.errors[0].hint, /replace line 2 with: "\| --- \| --- \|"/);
+  // wrong separator count and ragged rows: no ready line, even out the columns first
+  const both = lintText(['| a | b |', '|---|', '| 1 | 2 | 3 |', END].join('\n'));
+  assert.deepEqual(rules(both), ['e:table-separator']);
+  assert.doesNotMatch(both.errors[0].hint, /replace line/);
+  assert.match(both.errors[0].hint, /2, 3 columns/);
   // column counts differ: no ready line offered, the hint says to even them out (escaped \| is no column)
   const ragged = lintText(['| a | b |', '| 1 | 2 | 3 |', END].join('\n'));
   assert.deepEqual(rules(ragged), ['e:table-separator']);
