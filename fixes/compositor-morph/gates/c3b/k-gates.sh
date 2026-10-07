@@ -52,5 +52,14 @@ case "$1" in
     $LK --weight simulator --doing "c3b-K8 Simulator: long-rest opens 2" -- $S "node tools/sim.mjs wda start && node $G/k-sim.mjs A=$A K8=$K --pass P" > $L/k8-p2.log 2>&1
     $LK --weight simulator --doing "c3b-K8 Simulator: long-rest opens 3" -- $S "node tools/sim.mjs wda start && node $G/k-sim.mjs K8=$K A=$A --pass P" > $L/k8-p3.log 2>&1
     echo "EXIT $?" ;;
+  navy)
+    # c3b-d (a): the closed bar's items near the end, C vs $K (default the landed c3b-a + K6), Chrome 430x775/815,
+    # 375x775, 640x775, then the Simulator
+    K=${K:-out/cm/c3bk6}
+    for WH in 430x775 430x815 375x775 640x775; do
+      $LK --weight probe --doing "c3b-d: bar items near the end, Chrome $WH" -- node $G/navy.mjs --engine chrome --w ${WH%x*} --h ${WH#*x} C=out/cm/snap160/C V=$K > $L/navy-chrome-$WH.log 2>&1
+    done
+    $LK --weight simulator --doing "c3b-d: bar items near the end, Simulator" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/navy.mjs --engine sim C=out/cm/snap160/C V=$K > $L/navy-sim.log 2>&1
+    echo "EXIT $?" ;;
   *) echo "usage: k-gates.sh look-chrome 775|815 | look-sim | sim-cost | sim-runs | sim-k8 | sim-k8p"; exit 2 ;;
 esac
