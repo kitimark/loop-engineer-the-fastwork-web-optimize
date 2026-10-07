@@ -4,7 +4,7 @@
 // on `ab` must not leave servers, verify.mjs or the browser running, nor the lock held.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, chmodSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeTempRepo, node, nodeAsync, startProc, tempDir, TESTS, SLOW_EXIT, signalTwiceDuringExit, sleep, sha256 } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
@@ -19,6 +19,16 @@ async function chromeStarted(f) {
   throw new Error('fake Chrome did not start');
 }
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+// I-236: after a SIGTERM, fix.mjs signals its children and exits at once; verify.mjs then exits through its 'exit'
+// handler, killTree() (tools/lib/cdp.mjs), which reads the tree with one synchronous `ps -A` (timeout 3000 ms) before it
+// SIGKILLs Chrome. Beside other agents' real Chromes under load that ps alone outran the old fixed 3 s poll. Wait as
+// long as the tool's own bound (that ps timeout) plus a margin for exit and signal delivery; return as soon as all are gone.
+const KILLTREE_PS_TIMEOUT_MS = 3000, TEARDOWN_MARGIN_MS = 3000;
+async function survivorsAfterTeardown(pids) {
+  const left = () => Object.entries(pids).filter(([, pid]) => alive(pid)).map(([k]) => k);
+  for (const t = Date.now() + KILLTREE_PS_TIMEOUT_MS + TEARDOWN_MARGIN_MS; left().length && Date.now() < t;) await sleep(50);
+  return left();
+}
 
 before(() => {
   repo = makeTempRepo({ worktree: 'ab-wt' });
@@ -218,9 +228,7 @@ test('SIGTERM on ab: no server, verify.mjs or browser left running, lock release
   const serverPids = ['serve-base.json', 'serve-fix.json'].map((f) => JSON.parse(readFileSync(join(repo.wt, 'out', 'ab', 'fast-nav', stamp, f), 'utf8')).pid);
   await p.stop('SIGTERM');
   const pids = { verify: verifyPid, chrome: chromePid, base: serverPids[0], fix: serverPids[1] };
-  const left = () => Object.entries(pids).filter(([, pid]) => alive(pid)).map(([k]) => k);
-  for (let i = 0; i < 60 && left().length; i++) await sleep(50);
-  const survivors = left();
+  const survivors = await survivorsAfterTeardown(pids);
   for (const pid of Object.values(pids)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
   assert.deepEqual(survivors, [], `still running after SIGTERM: ${survivors.join(', ')}`);
   assert.equal(existsSync(lockFile), false, 'lock released');
@@ -236,10 +244,32 @@ test('two SIGTERMs on ab, the second during its exit: ab still exits via its han
   const serverPids = ['serve-base.json', 'serve-fix.json'].map((f) => JSON.parse(readFileSync(join(repo.wt, 'out', 'ab', 'fast-nav', stamp, f), 'utf8')).pid);
   assert.deepEqual(await signalTwiceDuringExit(p.proc, env.SLOW_EXIT_DIR), { code: 130, signal: null }, 'fix.mjs exited via its handler, not killed by the second SIGTERM');
   const pids = { verify: verifyPid, chrome: chromePid, base: serverPids[0], fix: serverPids[1] };
-  const left = () => Object.entries(pids).filter(([, pid]) => alive(pid)).map(([k]) => k);
-  for (let i = 0; i < 60 && left().length; i++) await sleep(50);
-  const survivors = left();
+  const survivors = await survivorsAfterTeardown(pids);
   for (const pid of Object.values(pids)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
   assert.deepEqual(survivors, [], `still running after SIGTERM: ${survivors.join(', ')}`);
+  assert.equal(existsSync(lockFile), false, 'lock released');
+});
+
+test('SIGTERM on ab while `ps` hangs (I-236, the loaded host): verify\'s killTree times its ps out and still kills Chrome; all gone within the teardown bound', async () => {
+  // a `ps` first on PATH that hangs once the test arms it (only for the teardown: the run itself reads ps normally),
+  // so killTree's ps runs into its 3000 ms timeout: the slowest teardown the tool allows
+  const bin = tempDir('fw-slowps-'), mark = join(bin, 'armed');
+  writeFileSync(join(bin, 'ps'), `#!/bin/sh\nif [ -f "${mark}" ]; then exec sleep 30; fi\nexec /bin/ps "$@"\n`);
+  chmodSync(join(bin, 'ps'), 0o755);
+  const env = { CHROME: FAKE, PATH: `${bin}:${process.env.PATH}`, FW_STATE_DIR: join(repo.root, 'state-kill3'), FAKE_CHROME_LOG: join(repo.root, 'kill3.jsonl'), FAKE_CHROME_HANG_AT: 'Emulation.setCPUThrottlingRate' };
+  const p = await startProc(process.execPath, [join(repo.wt, 'tools', 'fix.mjs'), 'ab', 'fast-nav', '--runs', '1', '--no-screens'], { cwd: repo.wt, env, ready: (s) => /\[mobile run 1\/1\]/.test(s), timeout: 30000 });
+  const chromePid = (await chromeStarted(env.FAKE_CHROME_LOG)).pid;
+  const lockFile = join(env.FW_STATE_DIR, 'locks', 'chrome-measure.json');
+  const verifyPid = JSON.parse(readFileSync(lockFile, 'utf8')).pid;
+  writeFileSync(mark, '1');
+  const t0 = Date.now();
+  await p.stop('SIGTERM');
+  const pids = { verify: verifyPid, chrome: chromePid };
+  const survivors = await survivorsAfterTeardown(pids);
+  const ms = Date.now() - t0;
+  for (const pid of Object.values(pids)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+  rmSync(mark, { force: true });
+  assert.deepEqual(survivors, [], `still running ${ms} ms after SIGTERM with a hanging ps: ${survivors.join(', ')}`);
+  assert.ok(ms >= KILLTREE_PS_TIMEOUT_MS - 500, `the teardown really waited on the hanging ps (${ms} ms)`);
   assert.equal(existsSync(lockFile), false, 'lock released');
 });
