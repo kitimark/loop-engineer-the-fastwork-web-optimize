@@ -413,3 +413,29 @@ Keyframes `fw-cm-pf` on `--fwms` (blur 12 px x m / 0.55, opacity min(1 - m / 0.5
 close 68 -> 54, but #platform is still repainted (44 -> 48 paints in the open: the filter animation is not composited
 there) and rest at m 0 goes from 3 to 96 style recalcs and 1 to 48 paints (the scroll timeline above). A variant that
 attaches the animation only while the morph is live would keep the ~12 saved recalcs per open and no paint gain. Parked.
+
+## P-158 card: v11 vs C, slow frames on CM threshold crossings in a fast short swipe (pre-data)
+
+Ticket P-158, signed by the lead 2026-10-07 00:5xZ (issue loop on v11, user report 2 "fast-swipe lag"). Written
+before any P-158 data; the commit time of this section is the pre-data time.
+
+| item | value |
+|---|---|
+| question | in a fast short swipe (G, `fixes/morph-scroll/g-fastshort-v1.json`, compiled program 8737f212c0ff), does v11 have more slow frames than C on the frames that cross a CM threshold? |
+| arms | C = v9-final rev 7d as in int-v11's snap, JS 1b2eecc66011 / CSS e1359ab9994a; V = v11 (Vc + V13 + H1c), JS 9b4a829d15a0 / CSS 62743920fe1a. Snapshot out/cm/snap11 (copy of int-v11's arms), HASHES 4b9448f985b1, checked before every hold |
+| profile | xcode-serious; `CM_COOL=0` (no cooling wait); the end sentinel S1 decides validity |
+| kit | `fixes/compositor-morph/phone-v11/` (cm-serve.sh, cm-hold.sh, cm-block.sh: copies of `phone/` with the pins above) |
+| order | H1:WC H2:WV (uncounted warm-ups, one per arm's port) H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 (C V V C C V V C, Timeline on) H11:TAIL (at most 2 RERUN-NEEDED runs once each, then S1) |
+| command | `CM_TICKET=P-158 CM_COOL=0 node tools/lock.mjs run iphone --owner arch-compositor-morph --block P-158 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-v11/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` |
+| pre-data check | Simulator start state per arm (`sim.mjs gesture … --count-only`, shared lane, weight simulator): start m, order of opens/closes, settle ys, moving frames; `p158-read.mjs --start-state`. Arms must agree on start m and event order |
+| reader | `node fixes/compositor-morph/phone-v11/p158-read.mjs out/cmp11/runs` (selftest: `--selftest`, 6 checks) |
+| metric | per counted run, segment 0: moving frames whose (m_prev, m] crosses 0, 0.08, 0.2, 0.35, 0.4, 0.55, 0.92 or 1 (m = (y - (docH - 2 ih)) / ih); share with dt > 50 ms, twins > 46 / > 54 (> 34 with > 30 / > 38 and the non-crossing frames are descriptive) |
+| decision | per T in {50, 46, 54}: "le" when V's median share <= C's; "worse" when every V run > every C run (>= 3 valid runs per arm); else "open". (a) le at all three: the lag is the gesture, start the cheaper-flip fix for a later build. (b) worse at all three: the lead re-rules v11X; v11-nw stays the landing gate. (c) anything else: threshold-sensitive / insufficient; reported, no second block without the lead's OK |
+
+**Prediction (frozen).** (a) or (c), not (b). Basis: the same reader on P-157's runs (C vs CM v1.1, same gesture,
+same profile) gives crossing n 186-194 per run, > 50 shares C 0.0155-0.0323 vs V 0-0.0212, > 46 C 0.0207-0.0376 vs
+V 0.0156-0.0313, > 54 C 0.0106-0.0269 vs V 0-0.0156: VERDICT 50 open (V median 0.0207 vs C 0.0184), 46 le, 54 le,
+decision (c). v11's parts (CM, V13: no forced read in the morph tick) only remove main-thread work on those
+frames, so I expect V's medians at or below C's at 46 and 54, and the > 50 column to sit within one frame
+(1/190 = 0.0053) of C's. One slow frame per run moves a share by 0.005, so (c) through a single-frame tie at 50 is as
+likely as (a).
