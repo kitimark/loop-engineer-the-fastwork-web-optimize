@@ -1267,3 +1267,46 @@ open).
   (-1, 0] with their Paint/Composite records, and O1's f1+f2 paints and Composite.
 - On P-160's runs it shows two pauses in range before O1, each about 1.4 s, at m -0.85 and m -0.23. So K6's
   200 ms rest timer has time to turn pre on.
+
+## P-161 results: C vs c3b-a + K6 (iPhone 15 Pro Max, G fast-short, tool-serious, Timeline on; 2026-10-07 10:32-11:4xZ): PASS
+
+Holds:
+- H1-H9 were valid. H10 (EC4) was void: the phone read Critical, 41.8 °C, at its end gate.
+- After cooling, EC4 was re-run as H12 (valid). The end sentinel H13 passed (fps 54.9, slow share 0.037).
+- The first EC4 file stays aside (`.prev-*`), not counted.
+- Starts 1-3 stopped before any run:
+  - start 1: rearm timeout, Safari warmed the phone on the B page; fixed in c181d248;
+  - starts 2-3: no page target, the phone was locked; user step C-106.
+- One more rearm stop came from a no-timing hold on the Mac.
+
+Reader: `p161-read.mjs out/cmp163/runs`.
+
+| metric | C | V (c3b-a + K6) | rule | result |
+|---|---|---|---|---|
+| D1 O1.f2 median (range) | 28.5 ms (24-35) | 26.5 ms (23-31) | V - C <= +4 | -2: PASS |
+| D2 open-0 median dt, median of runs | 17 ms (14.5-20) | 16 ms (16-20) | V - C <= +4 | -1: PASS |
+| D3 open-0 share > 34 / > 30 / > 38 ms | 0.10 / 0.14 / 0.095 | 0 / 0 / 0 | V <= C at each T | PASS at all three (not threshold-sensitive) |
+| finger-down crossing, 34-50 band (descriptive) | 0.013 (0-0.026) | 0 (0-0) | | |
+
+**DECISION: PASS.** The prediction (D1 PASS about 55 %, overall about 50 %) held. P-160's +11 ms D1 gap is now -2 ms.
+
+User decision (T-228 #30, 10:5xZ, before the data): if P-161 had failed only by D1 (the first-open frame), v13a + K6
+would have become the new best anyway, because a few frames of 34-50 ms are acceptable to the user. It passed, so
+that rule was not needed. Either way **c3b-a + K6 lands on the user's decision.**
+
+Descriptive (no verdict):
+- **Pre was on at O1 in every V run** (`pre-o1.mjs`, OBSERVED from Timeline counts; per run in out/cmp163/pre-o1.json).
+  - The approach pause at m -0.85 (about 1.4 s) has 65-71 Paint records in V against 54-57 in C, i.e. the pre build at rest.
+  - V's O1 f1+f2 paints are 6-7 against C's 7-10.
+  - V's O1 Composite is 5.4-9.0 ms against C's 11.2-18.8 ms.
+- **O1 per rendering frame** (`o1-attr.mjs`, medians over 4 runs per arm):
+  - f2 Composite: V 5.6 ms vs C 14.3 ms (P-160's v13: about 20 ms).
+  - f2 RecalculateStyles: V 8.9 ms vs C 3.85 ms (+5.1).
+  - f3 Composite: V 2.6 vs C 10.45 ms.
+  - The open frame's composite cost is gone; a style cost of about 5 ms remains.
+- Rest style at m -0.5 on the phone: not measured (the driver does not rest there; see the card).
+- Known costs, accepted by the lead for this landing:
+  - rest-only style work near the end while pre is on (Simulator 2-2.5x c3b-a);
+  - +10.6 MB of layers while the page rests within one screen of the end.
+- Still UNRESOLVED (after P-161): later opens from the post-close rest at m 0 rebuild the layers even with pre on
+  (Simulator trace). On the phone, D2's open-0 frames are no worse than C.
