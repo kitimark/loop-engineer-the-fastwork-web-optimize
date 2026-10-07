@@ -1,6 +1,6 @@
 {
   "schema": "fw-proposal/1",
-  "title": "End of page, Safari: the menu bar's colour and corners drawn by the GPU (about 11 MB less while the menu is open); a 1-pixel edge differs mid-motion",
+  "title": "End of page, Safari: menu bar colour and corners drawn by the GPU, ~11 MB less while open; 1-px edge differs in motion",
   "area": "end",
   "topic": "g0-box",
   "problem": "At the end of the page the menu bar grows into the full-screen menu in 0.68 s.\n- In Safari, the bar's own background (its colour and rounded corners) is a picture that is drawn again on every frame of that growth.\n- While the menu is open, Safari keeps that picture at full-screen size: about 11 MB of graphics memory.\n- This applies only to phones (up to 640 px wide) in Safari; Chrome is not changed.",
