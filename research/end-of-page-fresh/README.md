@@ -448,6 +448,9 @@ take D2 through the same gates (its S0 is the same experiment with P1's persiste
 
 ## 6. S0 result (2026-10-07 11:39-12:00Z; Simulator only, counts only)
 
+> **Correction (S1, §7):** the A0/A0b CSS below was broken: the corner-clipper rules were dropped, and the kept pill had
+> no glass. The A0/A0b rows are replaced by §7's D1 rows. The BA (c3b-a) and K6 (v14) rows stand.
+
 The lead's go was "S0 with the pass/fail rules as written, at least 3 runs per arm". The lead later added: report v14
 too, because any D1 build must now beat v14 (c3b-a + K6, the current best), not C.
 
@@ -557,3 +560,153 @@ my variants):
   - Then S2-S6 as in §4, with v14 as the arm to beat.
 - **If S1 still shows the two bar-item layers** after they leave the frame, their cause is the next question (a
   census per CSS rule), not a reason for D2.
+
+## 7. S1 result: D1 on c3b-a (2026-10-07 12:05-12:40Z; Simulator and Chrome only, counts and frozen frames, no phone)
+
+**First, a correction to §6: the A0 and A0b CSS of S0 was broken.**
+- **The clipper rules were dropped.** When I duplicated the CM structure selectors for `html.fw-cm-keep`, the four
+  corner-clipper rules (`:is([data-fw-cm="cN"], [data-fw-cm="uN"])`) were split into invalid selectors. An invalid
+  selector drops the whole selector list, so the `.is-morphing` versions went too. In A0/A0b the clippers had no place
+  and no transform origin, also while morphing.
+- **The kept pill drew no glass.** u3's glass rule had no kept twin.
+- **How it showed:** in S1's first Chrome look run the nav was invisible at rest, and taps went to the page.
+- **What it voids:** §6's A0/A0b numbers describe a broken build: 26 → 2 per open, the rest counts, and "about 17 MB
+  less", which was really the missing glass.
+- **What stands:** S1's D1 below re-measures all three on a corrected build and replaces §6's A0 rows. §6's BA
+  (c3b-a) and K6 (v14) rows stand.
+
+**Verdict.** Gates 1, 2, 3 and 5 PASS. Gate 4 (look) shows three items over T2. By the lead's rule each one becomes a
+proposal item with Try-it, not a silent change. One of them, the bar hold, is the same item as arch-compositor-morph's
+c3b-d option B.
+
+| gate | rule (lead) | D1 result | pass |
+|---|---|---|---|
+| 1 layers per open | 0 per open, first and later, 3 runs (logo and language-switch wrap waived) | **1** on every open of every run (4 opens x 3 runs): the language-switch wrap only. c3b-a: 26 | PASS (the waived item) |
+| 2 rest style | m -0.5 and m 0 within 1.3 x c3b-a's spread; v14 is the arm to beat | m -0.5: 105, 85, 88 (c3b-a 61-89 over 6 runs, limit 116); m 0: 18, 18, 18 (c3b-a 18 x 6). v14: 203-205 and 179-181 | PASS; v14 does 2.3x more at m -0.5 and 10x more at m 0 |
+| 3 top of the page | within c3b-a's spread, 3 runs per arm | every count inside c3b-a's spread (table below) | PASS |
+| 4 look | T2 against v14 at m -1..1, at 775 and 815, Chrome + Simulator A/A | Chrome: m ≤ 0 is 0 px at both heights (top, mid, far, -1 .. 0, 0d, -0.5d); m > 0 differs only by the bar hold. Simulator: the bar hold, plus two items on the kept closed pill (below) | 3 items over T2, each a proposal item |
+| 5 bar row still m 0 → 1 | the bar row holds still | tap centres of the logo and buttons: y 42 at every stop from m 0 to 1 (v14: 42 → 38), in Chrome and the Simulator | PASS |
+
+### Build
+
+`out/s0/d1`: JS 0b1999106111, CSS c65e6d527803. The diff against c3b-a (JS 4175a56193ab / CSS 9c1067cff473) is
+`s1-d1.diff`.
+- **The tree stays built once warm, in WebKit only.** As in A0, `__cmKeepOn` runs from `__cmWarm` and `__cmPrep`, and
+  `__cmClear` writes `__cmVals(0)` inline. It is now gated on `'GestureEvent' in window`.
+- **Why Chrome is left out.** In Chrome the kept closed pill drew square right corners. c3b-a and v14 show the same
+  square top-right corner at m 0.1 and 0.25 in Chrome (OBSERVED, Chrome, deterministic in the A/A pair), and
+  arch-compositor-morph is checking it. Chrome keeps c3b-a's teardown, which is why Chrome's m ≤ 0 is 0 px.
+- **The bar hold** is c3b-d option 1 (arch-compositor-morph): `v.bar = { translate: 0px 4px }`, and the actions keep
+  their x slide. The bar stays inside u3. Its "own still layer" is done by holding its key constant, not by moving it
+  out of the frame; that is enough for gates 1 and 5.
+- **The CSS keep twins are fixed:** the four clipper rules and u3's glass.
+- **The logo is `position: absolute` while kept and not morphing,** as under `.is-morphing`. Without that it sat 16 px
+  right of today's place: the logo key's x was added to its flow position.
+- **The language-switch wrap** gets `transform: translateX(0px)` while kept at rest. That did not remove its layer
+  (gate 1).
+
+### Gate 1: layers created per open (Simulator, `s0-sim.mjs`, 3 sessions, order alternating; all OBSERVED)
+
+| arm | new layers at each open | which | held open: layers / MB | closed: layers / MB |
+|---|---|---|---|---|
+| D1 | 1, 1, 1, 1 in all 3 runs | the language-switch wrap (74x37, 0 MB), every time | 55 / 95.7-97.3 | 67 / 112.5 |
+| BA c3b-a | 26, 26, 26, 26 in all 3 runs | c0-c3, u0-u3, … (F-324) | 55 / 95.7-97.3 | 54-56 / 102.7 |
+| K6 v14 (§6) | 3, then 5, 5, 5 | dk, logo, wrap; later also the panel centre and footer (7 MB) | 55 / 95.7-97.3 | 60-62 / 106.2 |
+
+- **The one layer left is the language-switch wrap.** The logo is now kept.
+- **Its `translateX(0px)` at rest did not keep it.** That REFUTES "a transform switch at the flip makes it". Its cause
+  is UNRESOLVED.
+  - The next suspect is the timed Join fade (PR-032). It moves the wrap with a `translate` transition at the m 0.2 flip,
+    and a running transition gets its own layer for as long as it runs.
+  - Decisive check: the same census with the timed fade's transition off.
+- **The census sees it as made at each open and never as gone,** while the closed count stays at 67. Most likely it is
+  made per transition and dropped by a later commit, which the census does not show as a "gone". UNRESOLVED.
+- **Cost of keeping:** 11-13 more layers and +9.8 MB at rest against c3b-a, and +6.3 MB against v14. The glass and the
+  clippers stay built, and none of them draws anything new at rest (gate 2). OBSERVED; these are Simulator estimates
+  from `LayerTree` sizes, not phone memory numbers.
+
+### Gate 2: rest near the end (style recalcs per 3 s; layouts; forced 0 in every arm)
+
+| arm | m -0.5 style | m -0.5 layouts | m 0 style | m 0 layouts |
+|---|---|---|---|---|
+| D1 | 105, 85, 88 | 66, 64, 66 | 18, 18, 18 | 8, 8, 8 |
+| BA c3b-a (S1 runs) | 89, 61, 75 | 66, 51, 66 | 18, 18, 18 | 8, 8, 7 |
+| BA c3b-a (§6 runs) | 81, 80, 87 | 51, 58, 66 | 18, 18, 18 | 8, 8, 7 |
+| K6 v14 (§6) | 205, 203, 205 | 66, 51, 66 | 181, 179, 181 | 8, 8, 7 |
+
+- **At m -0.5** D1's max is 105, against a limit of 1.3 x 89 = 116. Its median is 88, against c3b-a's 80.5 (1.09x).
+- **At m 0** D1 is identical to c3b-a.
+- The m 0 rests come after a close. arch-compositor-morph's S0b/S0c take the same path and match (v14 177/181 there).
+
+### Gate 3: top of the page with the tree kept (after the 4 cycles; Simulator)
+
+| arm | 2 s rest at y 600: style / layouts / paints | 60-step scroll y 600 → 3000: frames / paints / layouts (forced) / style (forced) / composite ms |
+|---|---|---|
+| D1 | 79 / 26 / 108; 77 / 26 / 109; 81 / 28 / 111 | 25 / 203 / 31 (61) / 9 (32) / 605; 28 / 216 / 36 (64) / 7 (32) / 611; 29 / 264 / 38 (68) / 13 (34) / 699 |
+| BA c3b-a | 81 / 32 / 117; 80 / 44 / 126; 78 / 33 / 116 | 27 / 270 / 35 (68) / 9 (32) / 660; 27 / 235 / 36 (66) / 13 (32) / 662; 30 / 268 / 37 (69) / 7 (36) / 656 |
+
+- Every D1 count is inside c3b-a's spread, §6's c3b-a runs included (paints 237-275, layouts 33-40). Composite ms is
+  a rank only (F-084).
+- These counts still cannot see the Core Animation cost of the kept nested rounded clips at the top of the page. That
+  stays for the phone block, as §6 said.
+
+### Gate 4: look against v14 (frozen frames, PR-010 multi-pair A/A, `s1-look.mjs`)
+
+`s1-look.mjs` is a copy of arch-compositor-morph's `pre-look.mjs` with two more stops: `top` (y 0) and `mid` (half way
+to the end zone). D1 keeps the tree for the whole page, so the closed nav away from the end zone is part of its look.
+Stops at m ≤ 0 have no held touch; stops at m > 0 are held (`--touch`).
+
+Chrome (430 wide, DPR 3, screencast frames), consistent px beyond A/A:
+
+| stop | 775 | 815 |
+|---|---|---|
+| top, mid, far, -1, -0.75, -0.5, -0.25, 0, 0d, -0.5d | 0 | 0 |
+| 0.1 | 0.31 %, max 145 | 0.29 %, max 146 |
+| 0.25 | 0.29 %, max 135 | 0.22 %, max 118 |
+| 0.5 / 0.5d | 0.45 %, max 136 | 0.38 %, max 178 |
+| 0.75 | **0.64 %**, max 188 | 0.45 %, max 216 |
+| 1 | **0.53 %**, max 226 | **0.50 %**, max 225 |
+
+Simulator (iPhone 15 Pro Max, device pixels), consistent px beyond A/A:
+
+| stop | share, max | where | reading |
+|---|---|---|---|
+| top | 0.058 %, max 212; logo cluster 192 css px2, max 150 | the logo | **item L**: an edge over 128 |
+| mid | **0.60 %**, max 150; 2,227 css px2 at max 20 inside the pill | the pill glass and the logo | **item G** (over 0.5 % and over 2,000 px) and L |
+| -1 | 0.57 %, but A/A noise 1.2 % and V/V 3.7 % | the profile cards under the pill | noise-dominated (load phase) |
+| -0.5 | **0.71 %**, max 50, flat share 0.94 | the left half of the pill glass | **item G** |
+| 0 | 0.18 %, max 57 | the pill glass | within T2 |
+| 0.25 / 0.5 / 1 | 0.65 % / 0.72 % / 0.51 %, max 136 / 179 / 226 | the bar row | **item B**: the bar hold |
+| 0d | 0.44 %, max 39 | the pill glass | within T2 |
+| -0.5d | **0.80 %**, max 30 | the pill glass | **item G** |
+
+Taps: 0 differences at every m ≤ 0 stop in both engines. At m > 0 only the bar row's own y differs: 42 against v14's
+41 to 38.
+
+Proposal items; none may be changed silently:
+- **B, the bar hold:** from m 0 to 1 the bar row is up to 4 px lower than v14's. This is the same item as c3b-d option
+  B in arch-compositor-morph's proposal (A v14 / B held / C late), and D1 takes the user's pick.
+- **G, the kept pill's glass (Simulator only):** a fill difference of 20-57 levels over 0.6-0.8 % of the screen,
+  inside the closed pill, while the tree is kept.
+  - Cause UNRESOLVED. Suspect: the backdrop blur runs on the card-size u3 (406x791) under the four clippers, so it
+    samples the page outside the pill, where v14's pill blurs only its own box. See §3 engine facts: the backdrop rect
+    comes from border-radius, not from the clip.
+  - Decisive check: a Simulator look stop with u3's blur moved at rest onto a pill-size child.
+- **L, the logo at the top and mid page (Simulator only):** an edge difference of 150-212 over 192 css px2, at the
+  logo, while the tree is kept.
+  - Cause UNRESOLVED; most likely a sub-pixel position, the logo key's translate against today's left inset.
+  - Decisive check: the logo's `getBoundingClientRect` in both arms.
+
+### What it means
+
+- **D1 does what it is for, in the Simulator:**
+  - 1 layer per open instead of 26;
+  - rest work equal to c3b-a, and 2-10x below v14;
+  - no extra work at the top of the page;
+  - a still bar row.
+- **Before a phone block D1 vs v14,** G and L should be fixed or shown to the user. They change the look of the closed
+  pill in WebKit, page-wide. A phone block on that build would measure a look the user has not seen.
+  - My proposal: one more S1 step for G and L (Simulator only, about 45 min).
+  - The alternative: card the phone block now and put G and L to the user as Try-it items in parallel.
+- **Tools:** `s0-sim.mjs` (census, rest, top of the page) and `s1-look.mjs` (look). Data: `out/s0/runs/` and `out/s1/`
+  in this worktree (gitignored).

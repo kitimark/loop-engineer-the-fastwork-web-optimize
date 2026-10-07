@@ -1,0 +1,162 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14702,7 +14702,8 @@
+         // __cmSet writes it inline instead, today's value 20px x (1 - m)
+         v.glass = { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` };
+         v.dk = { opacity: `${q(m)}` };
+-        v.bar = { translate: `0px ${px(dy)}` };
++        // S1 D1 (arch-end-fresh), = c3b-d option 1 "held" (arch-compositor-morph, JS 9a4c3975cdb8): the bar row keeps its m 0 y
++        v.bar = { translate: `0px 4px` };
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
+         v.act = { transform: `translateX(${px(-dx)})` };
+         // joinwl-nolift (PR-027, user T-204 #10/#13): no 8 px rise, as in today's CSS with nolift
+@@ -14832,13 +14833,22 @@
+           V = __cmVals(t, G);
+         for (let [k, p] of Object.entries(V)) if (E[k]) for (let [a, b] of Object.entries(p)) E[k].style.setProperty(a, b);
+         __cmLive = !0;
++        __cmKeepOn();
+       },
+       __cmClear = () => {
+         if (!__cmG) return void (__cmLive = !1);
+         let E = __cmEls(),
+           V = __cmVals(0, __cmG);
+-        for (let [k, p] of Object.entries(V)) if (E[k]) for (let a of Object.keys(p)) E[k].style.removeProperty(a);
++        let keep = document.documentElement.classList.contains(`fw-cm-keep`);
++        for (let [k, p] of Object.entries(V)) if (E[k]) for (let [a, b] of Object.entries(p)) keep ? E[k].style.setProperty(a, b) : E[k].style.removeProperty(a);
+         __cmLive = !1;
++      },
++      // S0 A0 (arch-end-fresh): the tree stays built from now on; the closed pill is drawn by it with static m 0 values
++      __cmKeepOn = () => {
++        // S1 D1: WebKit only (Chrome keeps c3b-a's teardown: in Chrome the kept closed pill drew square right corners)
++        if (!(`GestureEvent` in window) || document.documentElement.classList.contains(`fw-cm-keep`) || !__cmG || !__cmG.W || __cmG.L == null) return;
++        document.documentElement.classList.add(`fw-cm-keep`);
++        __cmLive || __cmClear();
+       },
+       // (c1) the geometry the keyframes need (logo width, bar inset, the panel's column offsets) and the keyframes
+       // themselves, read and generated once the page has been still for 300 ms after load (the panel mounts at idle
+@@ -14874,7 +14884,7 @@
+         (G.L == null && lg && (G.L = lg.offsetWidth),
+           G.ix == null && br && (G.ix = parseFloat(getComputedStyle(br).getPropertyValue(`--nav-bar-inset-x`)) || 16));
+         G.cols = [...cols].map((e) => (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100);
+-        (__cmGen(), __cmWarmEnd());
++        (__cmGen(), __cmWarmEnd(), __cmKeepOn());
+       },
+       // __navMorphSet's writes, but the Svelte state x (classes, inert, aria, tabindex, --morph) only when a threshold
+       // is crossed; r / w / a / i (C(), S(), the settle) keep the exact value
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12361,7 +12361,8 @@
+     visibility: hidden;
+     pointer-events: none;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm {
+     top: 12px;
+     width: var(--panel-w);
+     height: var(--panel-h);
+@@ -12374,7 +12375,8 @@
+     will-change: auto;
+     transition: none;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-c {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-c,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .fw-cm-c {
+     display: block;
+     position: absolute;
+     width: 2000px;
+@@ -12383,57 +12385,83 @@
+     border-radius: 32px;
+     pointer-events: none;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-u {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-u,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .fw-cm-u {
+     display: block;
+     position: absolute;
+     width: var(--panel-w);
+     height: var(--panel-h);
+     pointer-events: none;
+   }
+-  /* u3 carries today's light glass (background + backdrop blur, the backdrop root of the nested language-switch blur,
+-     P8); the dark colour is .fw-cm-dk at opacity m over it (= today's color-mix, F-039) */
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing [data-fw-cm="u3"] {
++  /* u3 carries today's light glass (background + backdrop blur,
++  the backdrop root of the nested language-switch blur,
++  P8); the dark colour is .fw-cm-dk at opacity m over it (= today's color-mix,
++  F-039) */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing [data-fw-cm="u3"],
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm [data-fw-cm="u3"] {
+     pointer-events: auto;
+     background: #ffffff1a;
+     -webkit-backdrop-filter: blur(20px);
+     backdrop-filter: blur(20px);
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c0"], [data-fw-cm="u0"]) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c0"], [data-fw-cm="u0"]),
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm :is([data-fw-cm="c0"], [data-fw-cm="u0"]) {
+     left: 0;
+     top: 0;
+     transform-origin: 0 0;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c1"], [data-fw-cm="u1"]) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c1"], [data-fw-cm="u1"]),
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm :is([data-fw-cm="c1"], [data-fw-cm="u1"]) {
+     right: 0;
+     top: 0;
+     transform-origin: 100% 0;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c2"], [data-fw-cm="u2"]) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c2"], [data-fw-cm="u2"]),
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm :is([data-fw-cm="c2"], [data-fw-cm="u2"]) {
+     left: 0;
+     bottom: 0;
+     transform-origin: 0 100%;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c3"], [data-fw-cm="u3"]) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c3"], [data-fw-cm="u3"]),
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm :is([data-fw-cm="c3"], [data-fw-cm="u3"]) {
+     right: 0;
+     bottom: 0;
+     transform-origin: 100% 100%;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-dk {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-dk,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .fw-cm-dk {
+     display: block;
+     position: absolute;
+     inset: 0;
+     background: #131922;
+     opacity: 0;
+   }
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-top-nav-logo:where(.svelte-1dcozpm),
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+     left: 0;
+     transform-origin: 0 50%;
+   }
++  /* S1 D1: while kept but not morphing, the bar items take the box today's .is-morphing rules give them (CSS 11812:
++     the logo absolute, its x from the logo key; 11931: the language switch's transform at m 0), so nothing in the bar
++     re-lays out or changes its transform list when .is-morphing comes and goes */
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
++    position: absolute;
++  }
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) .start-selling-top-nav-actions:where(.svelte-1dcozpm) > .start-selling-language-switch-wrap {
++    transform: translateX(0px);
++  }
+   html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-panel,
+   html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-backdrop,
+-  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-veil {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-veil,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .start-selling-morph-panel,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .start-selling-morph-backdrop,
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm .start-selling-morph-veil {
+     transform-origin: 0 0;
+   }
++  /* S0 A0 (arch-end-fresh): keep every animated CM part composited while the tree is kept, so no layer is made or
++     dropped when the scroll-driven animations attach (is-morphing) or detach */
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm :is(.fw-cm-c, .fw-cm-u) { will-change: transform; }
++  html.fw-cm.fw-cm-keep .start-selling-top-nav.svelte-1dcozpm :is(.fw-cm-dk, .start-selling-morph-panel, .start-selling-morph-backdrop, .start-selling-morph-veil, .start-selling-morph-center, .start-selling-morph-footer, .start-selling-morph-col, .start-selling-top-nav-bar, .start-selling-top-nav-logo, .start-selling-top-nav-actions) { will-change: transform, opacity, filter; }
+ }
+ 
+ /* perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1). Phones (<= 640 px), only while the morph
