@@ -1,0 +1,37 @@
+{
+ "topic": "g0-gpu-g00",
+ "build": "g0.1a ported onto g0.0 (f75c1707): the menu card's opacity/blur/zoom as Web Animations, Svelte state by bucket (incl. m 0.08), per-frame --morph on __mkW's targets except the card; #platform on g0.0's S()",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "base": "g0.0 f75c1707",
+  "patchRelativeTo": "g0.0 (a/ = g0.0's _app/immutable/nodes/2.DyWL8TcE.js)",
+  "served": { "g0.0": { "js": "5c39f7a96e41", "css": "95f0eff3c57f" }, "g0.1a-on-g0.0": { "js": "b97c83ef9edd", "css": "95f0eff3c57f" } },
+  "tools": "fixes/g0-gpu/gates (seek.mjs, counts-chrome.mjs, counts-sim.mjs) as committed in 9f2e6f6e; shared lane, one hold per arm; no timing A/B, no phone",
+  "measurementCodeChanged": false
+ },
+ "verdict": "parity gates pass (state 0 mismatches everywhere; Chrome T2 max 59, <= 42 css px2 consistent; Simulator T0 below the status bar) but NO GAIN on g0.0: restyled elements equal (R4a/R4b already scope them), Chrome Paint calls +10-20 %, Simulator paints +4-5 %. Not part of the g0 build (lead ruling). The remaining per-frame cost is the box re-layout (M3).",
+ "gates": {
+  "seek": [
+   { "engine": "chrome", "viewport": "430x775", "stops": 148, "stateMismatch": 0, "worstAVmax": 54, "stopsWithConsistentPx": 3, "maxConsistentCssPx2": 4 },
+   { "engine": "chrome", "viewport": "430x815", "stops": 148, "stateMismatch": 0, "worstAVmax": 59, "stopsWithConsistentPx": 7, "maxConsistentCssPx2": 42 },
+   { "engine": "chrome", "viewport": "430x775", "reducedMotion": true, "stops": 111, "stateMismatch": 0, "worstAVmax": 51, "stopsWithConsistentPx": 11, "maxConsistentCssPx2": 22 },
+   { "engine": "simulator", "stops": 148, "stateMismatch": 0, "stopsWithConsistentPxBelowStatusBar": 0 }
+  ],
+  "countsChrome": {
+   "restyledElements": { "open": { "g0.0": [1307, 1407], "g0.1a": [1313, 1316] }, "close": { "g0.0": [1357, 1357], "g0.1a": [1342, 1357] } },
+   "paintCalls": { "open": { "g0.0": [285, 315], "g0.1a": [338, 339] }, "close": { "g0.0": [379, 380], "g0.1a": [409, 422] } },
+   "layouts": { "open": { "g0.0": [44, 46], "g0.1a": [44, 44] }, "close": 66 }
+  },
+  "countsSimulator": {
+   "open": { "g0.0": { "style": 147, "layout": 102, "paint": 819, "paintMpx": 67.6 }, "g0.1a": { "style": 148, "layout": 102, "paint": 855, "paintMpx": 70.8 } },
+   "close": { "g0.0": { "style": 185, "layout": 134, "paint": 938, "paintMpx": 47.2 }, "g0.1a": { "style": 187, "layout": 138, "paint": 984, "paintMpx": 49.8 } },
+   "newLayersClosedRest": { "g0.0": 0, "g0.1a": 1 },
+   "memoryMB": { "openRest": [109.3, 109.3], "closedRest": [93.1, 93.1] }
+  },
+  "rest": { "g0AnimationsAtRest": 0, "runningAnimationsAtRest": "identical to g0.0", "restFramesNote": "main-frame counts at rest vary per load in g0.0 itself (31 vs 91 in one segment); OBSERVED, cause unknown" }
+ },
+ "notes": [
+  "One Simulator load per arm for counts: descriptive only (F-084).",
+  "g0.1b on g0.0 (#platform on WAAPI with a keyframe at the 0.9999 clamp) not taken: WebKit layer rebuild per tween (F-337)."
+ ]
+}
