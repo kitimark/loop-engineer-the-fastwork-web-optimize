@@ -115,9 +115,23 @@
 //        # 8 misfit (+ the step); inside your hold it is the hold's start read, so the first run reads nothing more.
 //        # Before a finger test (record) run it first, so a misfit never meets the user's Start.
 //   node tools/iphone.mjs profile --owner <topic> --end                      # the hold's end read now; exit 8 on drift
+// I-225 (user T-228 #15: no manual Xcode steps): who sets the condition: --condition xcode (default: the tester in Xcode;
+// a fixable misfit posts the console step above) or tool (tools/thermal.mjs, I-199): no user step; a serious misfit adds
+// the line `REARM the thermal tool fixes it (no user step): node tools/iphone.mjs rearm --owner <you> ...`, a fair one
+// `CLEAR ... node tools/thermal.mjs clear`. --condition on `profile`; $FW_PHONE_CONDITION=tool sets it for every gate of a
+// process (run, scroll, record, gesture). Never mix the two in one block: thermal.mjs set replaces Xcode's condition and
+// its clear leaves none (I-199 stage 3).
+//   node tools/iphone.mjs rearm --owner <topic> [--settle 120] [--max-wait 600]   # in your phone hold (tools/lib/thermal-rearm.mjs)
+//        # the probed re-arm with the tool: one read (a phone that fits: REARM NOT-NEEDED, exit 0, nothing touched);
+//        # thermal.mjs clear; the plain state (Nominal or Fair, induced No) read at most once a minute for up to
+//        # --max-wait s (REARM PROBE n lines; none: REARM TIMEOUT, exit 13, nothing set); only then thermal.mjs set serious,
+//        # detached: it HOLDS the condition after rearm exits (the block runner ends it: node tools/thermal.mjs clear);
+//        # settle --settle s (its own, whatever a preflight settled); the profile read (the hold's start read):
+//        # REARM CLEARED exit 0, REARM STILL-CRITICAL (Critical) or REARM MISFIT exit 8; REARM ERROR exit 1. No user step.
 // Exit codes: 0 ok, 1 error or WAIT, 2 refused in a shared slot, 3 WDA NOT READY (wda check|ensure), 4 WDA REPLUG NEEDED
 // (wda ensure: re-plug the cable, then re-run), 6 PARTIAL (record),
-// 8 PROFILE (the phone's thermal state does not fit --profile), preflight (I-227): 3 WDA, 4 REPLUG, 10 AUTH, 11 TABS, 12 PROXY.
+// 8 PROFILE (the phone's thermal state does not fit --profile), preflight (I-227): 3 WDA, 4 REPLUG, 10 AUTH, 11 TABS, 12 PROXY,
+// rearm (I-225): 0 cleared / not needed, 8 still Critical (or another misfit), 13 timeout (no clear read), 1 error, 2 usage.
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
@@ -131,7 +145,7 @@ import { mirrorInfo, iphoneTarget, LANDED_JS, landedProblem, CERT_WARNING_TITLE,
 import { resolveLanUrl, tryResolveLanUrl } from './lib/lan.mjs';
 import { RECORD_JS, RECORD_TOUCHES_JS, TOUCH_FIELDS, recordSummary, recordRun, parsePoll, EXIT_PARTIAL } from './lib/iphone-record.mjs';
 import { exitOnHelp } from './lib/help.mjs';
-import { startGate, closeHold, currentHold, parseProfile, PROFILES, EXIT_PROFILE } from './lib/thermal-profile.mjs';
+import { startGate, closeHold, currentHold, parseProfile, parseCondition, PROFILES, EXIT_PROFILE } from './lib/thermal-profile.mjs';
 
 exitOnHelp(import.meta.url, { unless: (a) => a[0] === 'run' }); // I-152 N10: --help prints the header above and exits before anything runs
 let exitCode = 0; // I-141: record exits 6 PARTIAL when it saved only part of a run
@@ -139,7 +153,7 @@ let exitCode = 0; // I-141: record exits 6 PARTIAL when it saved only part of a 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
-const VALUED = ['--ignore-step', '--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every', '--poll', '--profile'];
+const VALUED = ['--ignore-step', '--owner', '--out', '--label', '--seconds', '--variant', '--param', '--morph-log', '--inject', '--timeline', '--ref', '--team', '--udid', '--bundle-id', '--timeout', '--url', '--via', '--doing', '--every', '--poll', '--profile', '--condition', '--settle', '--max-wait'];
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const PORT = Number(process.env.FW_IPHONE_PORT || 9222);
 const DEVICE_PORT = Number(process.env.FW_IPHONE_DEVICE_PORT || 9221);
@@ -197,7 +211,7 @@ function measureGuard(owner) {
 async function profileGate(owner, profile = opt('profile')) {
   const name = parseProfile(profile);
   if (process.env.FW_SIM_SESSION) return { record: () => ({ name, gate: PROFILES[name].gate, skipped: 'simulator session' }), saved: async () => {} };
-  return startGate({ profile: name, owner, hold: currentHold() });
+  return startGate({ profile: name, owner, hold: currentHold(), condition: parseCondition(undefined) }); // I-225: $FW_PHONE_CONDITION
 }
 
 async function tabs() {
@@ -281,6 +295,7 @@ async function openParked(url, target, info) {
  *  hold's first run reads nothing more; a misfit posts the tester's step and exits 8. --end: the end read of your hold
  *  now (closeHold): every run record of the hold gets profile.end / profileDrift; exit 8 on drift. */
 async function profileCmd() {
+  const condition = parseCondition(opt('condition')); // I-225: xcode (default, a user step) | tool (no step, points to rearm)
   const owner = requireLease(); // the read is a phone access (Hard rule 9): your lease, like a run
   measureGuard(owner); // and, like a run, never beside someone else's normal chrome-measure hold (I-056)
   const hold = currentHold(); // your lock.mjs run hold, else your lease
@@ -290,7 +305,22 @@ async function profileCmd() {
     if (s.some((x) => x.drift)) exitCode = EXIT_PROFILE;
     return;
   }
-  await startGate({ profile: parseProfile(opt('profile')), owner, hold, force: true });
+  await startGate({ profile: parseProfile(opt('profile')), owner, hold, force: true, condition });
+}
+
+/** `iphone.mjs rearm --owner <o> [--settle S] [--max-wait S]` (I-225): the probed re-arm of the serious profile with
+ *  thermal.mjs (lib/thermal-rearm.mjs): clear, plain reads once a minute until Nominal/Fair, set serious (left running),
+ *  settle, the profile read. Exit 0 cleared or not needed, 8 still Critical / misfit, 13 timeout, 1 error, 2 usage. */
+async function rearmCmd() {
+  const usage = (m) => Object.assign(new Error(`usage: ${m} (node tools/iphone.mjs rearm --owner <you> [--settle 120] [--max-wait 600]; I-225)`), { exitCode: 2 });
+  if (opt('profile') !== undefined && opt('profile') !== 'serious') throw usage(`rearm re-arms the serious profile only (got --profile ${opt('profile')}); for fair: node tools/thermal.mjs clear`);
+  const sec = (n, d) => { const v = opt(n); if (v === undefined) return d; const x = Number(v); if (!(Number.isFinite(x) && x >= 0 && x <= 3600)) throw usage(`--${n} takes seconds 0-3600 (got ${v})`); return x; };
+  const settle = sec('settle', 120), maxWait = sec('max-wait', 600);
+  const owner = requireLease(); // the reads and the condition are phone access (Hard rule 9): your phone hold
+  measureGuard(owner); // like profile: never beside someone else's normal chrome-measure hold (I-056)
+  const R = await import('./lib/thermal-rearm.mjs');
+  const r = await R.rearm({ owner, hold: currentHold(), settleMs: settle * 1000, maxWaitMs: maxWait * 1000, probeEveryMs: Number(process.env.FW_REARM_PROBE_MS) || R.PROBE_EVERY_MS });
+  exitCode = r.code;
 }
 
 async function main() {
@@ -436,6 +466,7 @@ async function main() {
   }
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'profile') return profileCmd();
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | preflight --owner <topic> [--settle 60] | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  if (cmd === 'rearm') return rearmCmd();
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | preflight --owner <topic> [--settle 60] | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | profile --owner <topic> [--profile serious|fair] [--condition xcode|tool] [--end] | rearm --owner <topic> [--settle 120] [--max-wait 600] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(e?.exitCode || 1); }); // I-186: a profile misfit exits 8

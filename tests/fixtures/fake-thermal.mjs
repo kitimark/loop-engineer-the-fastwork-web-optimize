@@ -10,7 +10,9 @@
 // under a Serious condition). $FAKE_THERMAL_ROWS (default 1) is the number of intervals (Current row, + Induced row when induced;
 // repeated cells use xctrace's ref="n" form);
 // $FAKE_THERMAL_RECORD_EXIT makes record fail. Each call appends {cmd} to $FAKE_THERMAL_LOG.
-import { appendFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+// I-225: $FAKE_THERMAL_SEQ, a file of such lines, one per read: each `record` moves to the next line (counter in
+// <file>.n; the last line repeats), and that read's export and battery calls use it (overrides FAKE_THERMAL_FILE).
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -48,6 +50,16 @@ function main() {
     [state, induced] = [f[0] || state, f[1] || induced];
     if (f[2]) batt = f[2];
     if (f[3]) condition = f[3];
+  }
+  if (env.FAKE_THERMAL_SEQ && existsSync(env.FAKE_THERMAL_SEQ)) {
+    const lines = readFileSync(env.FAKE_THERMAL_SEQ, 'utf8').split('\n').map((l) => l.trim()).filter(Boolean);
+    const cnt = `${env.FAKE_THERMAL_SEQ}.n`;
+    let n = existsSync(cnt) ? Number(readFileSync(cnt, 'utf8')) : -1;
+    if (args[0] === 'record') writeFileSync(cnt, String(++n));
+    const f = (lines[Math.min(Math.max(n, 0), lines.length - 1)] || '').split(/\s+/);
+    [state, induced] = [f[0] || state, f[1] || induced];
+    if (f[2]) batt = f[2];
+    condition = f[3] || undefined;
   }
   if (args[0] === 'record') {
     if (env.FAKE_THERMAL_RECORD_EXIT) process.exit(Number(env.FAKE_THERMAL_RECORD_EXIT));
