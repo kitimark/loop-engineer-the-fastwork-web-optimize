@@ -1,5 +1,5 @@
 // logo-close: the logo's x per 120 Hz frame from logo-path.mjs output, A (red) and B (blue), as a PNG with two panels:
-// left the open's first 120 ms, right the close's last 200 ms (t 500..700). Grey grid every 10 px of x and 20 ms of t.
+// left the open's first 120 ms (ONLY=a or ONLY=b: one arm on the same axes), right the close's last 200 ms (t 500..700). Grey grid every 10 px of x and 20 ms of t.
 //   node fixes/logo-close/probe/plot.mjs out/logo-close/path/path-430x775.json dir:g00c dir:lcfix out/logo-close/plot-430.png
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -21,7 +21,7 @@ panels.forEach((p, k) => {
   for (let x = Math.ceil(xMin / 10) * 10; x <= xMax; x += 10) line(ox, sy(x), ox + PW, sy(x), [225, 225, 225], 1);
   for (let t = p.t0; t <= p.t1; t += 20) line(sx(t), oy, sx(t), oy + PH, [225, 225, 225], 1);
   line(ox, oy, ox, oy + PH, [120, 120, 120], 1); line(ox, oy + PH, ox + PW, oy + PH, [120, 120, 120], 1);
-  for (const [a, c] of [[armA, [220, 40, 40]], [armB, [30, 90, 230]]]) {
+  for (const [a, c] of [[armA, [220, 40, 40]], [armB, [30, 90, 230]]].filter(([a]) => !process.env.ONLY || (process.env.ONLY === 'a' ? a === armA : a === armB))) {
     const F = r.runs[a][p.ph].filter((f) => f.frame && f.t >= p.t0 - 1e-6 && f.t <= p.t1 + 1e-6);
     for (let i = 1; i < F.length; i++) line(sx(F[i - 1].t), sy(F[i - 1].x), sx(F[i].t), sy(F[i].x), c, 1);
     for (const f of F) px(sx(f.t), sy(f.x), c, 3);
