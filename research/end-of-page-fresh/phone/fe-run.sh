@@ -13,7 +13,7 @@ sh research/end-of-page-fresh/phone/fe-serve.sh start || { echo "BLOCK STOP: ser
 CM_TICKET=$T CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-end-fresh --block "$T" --max-seconds 3600 --keep 120 -- \
   sh research/end-of-page-fresh/phone/fe-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL
 rc=$?
-node tools/thermal.mjs clear > $LG/thermal-clear-$(date +%s).log 2>&1; cr=$?
+node tools/thermal.mjs clear --owner arch-end-fresh > $LG/thermal-clear-$(date +%s).log 2>&1; cr=$?
 echo "hold ended (exit $rc); thermal condition cleared after the hold (exit $cr)"
 sh research/end-of-page-fresh/phone/fe-serve.sh stop
 exit $rc
