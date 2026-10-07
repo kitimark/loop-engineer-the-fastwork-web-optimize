@@ -834,14 +834,14 @@ Built on P-161's card (fixes/compositor-morph/README.md, "P-161"). Everything no
 
 | item | value |
 |---|---|
-| ticket | P-NNN (from the lead) |
+| ticket | P-163 (signed by the lead 2026-10-07, with the pre-data dry run and the frozen decisions below) |
 | question | Does D1b open no worse than v14 under the finger? D1b keeps CM's layer tree built in WebKit and draws the closed pill through it with no scroll animation at rest. The opens checked: the first open after load, and every open from closed. |
 | arms | C = v14 (c3b-a + K6), JS d23ee885d54f / CSS 4fafb83f1e72 (`out/s0/k6`, a copy of P-161's V). V = D1b with `__cmBarMode = v14`, JS 30ff7c0d1ad5 / CSS 2ab0464e540a (`out/s0/d1b-a`; `s1b-d1b.diff` with the flag line set to v14). The bar motion is the same as v14's in both arms, so the block measures D1's layers, not the PR-033 bar choice. |
 | snapshot | `out/fe/snap2` (C from out/s0/k6, V from out/s0/d1b-a, read-only), HASHES 7c9ade106f49, checked by the kit before every hold |
 | kit | `research/end-of-page-fresh/phone/`: fe-serve.sh, fe-block.sh and fe-hold.sh are copies of `fixes/compositor-morph/phone-c3bk6/` with these pins and no probe page. fe-run.sh runs the block. Dry run 13:2xZ: 3 of 3 servers serve the pinned hashes; H1, H3 and TAIL DRY ok; programs fs 8737f212c0ff and pr 7ff27a2413c8 ok. Reader: `fixes/compositor-morph/phone-c3bk6/p161-read.mjs` (selftest 8 checks ok) on `out/fep1/runs`. |
 | P-161/P-162 lessons in the kit | (1) tool-serious through `iphone.mjs rearm`, with `FW_PHONE_CONDITION=tool`; no Xcode step is ever posted (user T-228 #15). (2) Safari is parked before every rearm (c181d248). (3) `thermal.mjs clear` runs in fe-run.sh after `lock.mjs run iphone` returns, not in an exit trap (b161bece). (4) New in fe-block.sh: a locked phone (preflight AUTH, exit 10, at the part start or after a failed hold) posts ONE console step, "unlock the iPhone", from inside the hold, waits for its Done (up to 3600 s), restarts WDA and Safari, then re-runs the hold once instead of exiting. (5) The hold is marked `--block <ticket>`. |
 | driver, profile, order | As P-161: G fast-short (8737f212c0ff), Timeline on in every counted run, tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`). H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 (C V V C C V V C), then H11:TAIL with the end sentinel. Link loss as P-161. |
-| command | `sh research/end-of-page-fresh/phone/fe-run.sh P-NNN` as a Bash background job (timeout 7200000 ms). It starts the servers, runs `CM_TICKET=P-NNN CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-end-fresh --block P-NNN --max-seconds 3600 --keep 120 -- sh research/end-of-page-fresh/phone/fe-block.sh H1:WC … H11:TAIL`, then `thermal.mjs clear`, then stops the servers. |
+| command | `sh research/end-of-page-fresh/phone/fe-run.sh P-163` as a Bash background job (timeout 7200000 ms). It starts the servers, runs `CM_TICKET=P-163 CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-end-fresh --block P-163 --max-seconds 3600 --keep 120 -- sh research/end-of-page-fresh/phone/fe-block.sh H1:WC … H11:TAIL`, then `thermal.mjs clear`, then stops the servers. |
 | metrics and decision | P-160/P-161's, unchanged, with C = v14. D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median over runs of the per-run open-0 median dt, V - C <= +4 ms. D3: open-0 share at T in {34, 30, 38}. PASS / FAIL / OPEN as in P-160. |
 | descriptive (no verdict) | The per-run count of finger-down frames > 50 and > 34, with their twins, per arm. |
 
@@ -852,3 +852,34 @@ Built on P-161's card (fixes/compositor-morph/README.md, "P-161"). Everything no
   composite ms have not predicted phone frame time well before (M6), so this is uncertain.
 - **D3: PASS, about 55 %.**
 - **Overall: PASS, about 45 %.** OPEN, threshold-sensitive, is the most likely other outcome.
+
+**Decisions (frozen by the lead at signing, 2026-10-07, before any P-163 data).**
+- **PASS:** D1b with bar mode v14 becomes the best-build candidate v15. The lead updates BEST_BUILDS and T-228. The
+  PR-033 bar choice then goes onto v15, not v14.
+- **FAIL by D1 alone (O1.f2), with D2 and D3 passing:** by the user's T-228 #30 ruling it may still become best. The
+  lead decides from the later-open numbers.
+- **FAIL on D2 or D3:** v14 stays best. What fails and why is written down here; the design stays research.
+- **OPEN (threshold-sensitive):** at most one more block for this question (the sequential rule). The lead decides
+  whether it is worth it.
+
+**Pre-data check: Simulator dry run per arm with the G program itself (2026-10-07 13:36-13:41Z, before any P-163
+data).** One functional Simulator session per arm (shared lane, weight simulator), each arm served from the block's
+own snapshot by `fe-serve.sh start` (served hashes C d23ee885d54f / 4fafb83f1e72, V 30ff7c0d1ad5 / 2ab0464e540a, ok),
+`sim.mjs gesture fixes/morph-scroll/g-fastshort-v1.json --count-only` (program 8737f212c0ff, 35 strokes). Read with
+`node research/end-of-page-fresh/phone/fe-start.mjs <C> <V>` (records `out/sim/arch-end-fresh-gesture-p163-{C,V}-*.json`,
+gitignored). Counts only; no timing.
+
+| | C (v14) | V (D1b, bar v14) |
+|---|---|---|
+| start of the first E stroke | y 6035, the page bottom (m 1 at ih 815, 0.948 at ih 775) | same |
+| stroke (tween) order | 11 approach drags, then s2 … s30 (24 strokes: drags 520 up / 450 down, flings 60/120/200 px) | identical |
+| settle ys (start y of strokes 2-35) | 510 1020 … 5100, then 6035 / 5221 / 6035 / 5260, then 6035 / 5220 / 6035 / 5260 ×5 | identical, except stroke 13 at 5220 (C 5221) |
+| moving frames, total | 1873 | 1911 (+2.0 %) |
+| moving frames per E stroke | 19 of 24 strokes within ±4 of V; 5 or 6 apart on three others, except the first two 450 px down drags (s4 102, s9 108) | s4 120, s9 118 |
+| momentum flings (summary) | 1 | 2 |
+| toolbar transitions | 25 | 25 |
+
+Verdict: **START-STATE MATCH** (same program, geometry, stroke and mark order; every settle y within 2 px; moving frames
+within 10 %). The arms start in the same state and play the same path, so no stop. The fling count differs by one
+(1 vs 2; P-158's Simulator check showed 2 vs 5 on another pair). Simulator momentum is not the phone's, and the block's
+decision rules (D1-D3) don't use flings, so this is noted, not acted on.
