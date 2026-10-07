@@ -1047,3 +1047,174 @@ Written before any data; its commit time is the pre-data time. Everything not na
 targeted it, failed). The share c3b-a can take is the style part: O1's RecalculateStyles from v13's +1.8 ms over C
 toward 0 (#2 drops the per-frame forced style pass of `n()`, Simulator 394 passes / 1091 ms per session -> 0; #5 drops
 six inline `--morph` writes per frame). Overall call: **FAIL by D1 alone**, about 70 %.
+
+## O1: what the first open pays for, and K on WebKit only (lead 09:0xZ-09:5xZ; Simulator only, no phone)
+
+### What O1 pays for
+
+- **"Once per page load" is REFUTED for v13 / K.** The 62 ms first open of c3bk4 (table above) was one run. Repeats
+  of the same build gave 23.3 and 22.1 ms. P-160 on the phone (OBSERVED) shows the same: v13's open frame composites
+  about 20 ms on O1 and on later opens alike. It is C whose first open costs extra (17 vs about 8 ms).
+- **O1's D1 gap is v13's per-open layer build.** Every v13 open creates 11 composited layers and every close drops
+  them (Simulator census, OBSERVED). WebKit keeps no layer pool, so each open builds them again (F-324, CONFIRMED in
+  WebKit source; main 616ee3ad and 8f0a69f19a28). On O1 C pays only its own first paint, so v13's build shows there.
+  On later opens C pays its 13 ms re-measure, which hides it.
+- **Tests (a) to (c) from the brief.** `o1-frames.mjs` reads the open frames of the k-sim Timelines.
+  - (a) first paint and decode: open 1 has no record type that the later opens lack, and every open paints the same
+    20 rects with the same sizes (c3b-a, Simulator, OBSERVED; e.g. Paint 20x 1.3 / 1.5 / 1.2 ms, Composite 44.5 /
+    40.3 / 41.3 ms). WebKit decodes images under 500 KB synchronously at their first paint (RenderBoxModelObject.cpp
+    306-368, CONFIRMED). WebKit's Timeline has no decode record of its own (EventType enum, Source/JavaScriptCore/inspector/protocol/Timeline.json
+    lines 11-38 at 8f0a69f19a28, CONFIRMED), so a decode would show only as a longer
+    Paint, and open 1's Paint is not longer.
+  - (b) first backdrop use: the backdrop layer is made lazily with the filter (GraphicsLayerCA.cpp 2734-2814,
+    CONFIRMED) on every open, not only the first.
+  - (c) first keyframes and fonts: not regenerated on the first open (unchanged text, see "First open (D1)").
+  - So nothing in O1 is first-only on v13. What remains is the build that happens on every open.
+- **Source points that bear on F-324** (helper, WebKit 8f0a69f19a28, CONFIRMED):
+  - A layer with no visible content gets no backing store only while `!mayHaveNonZeroOpacity`
+    (RenderLayerBacking::containsPaintedContent 3880-3890). An opacity keyframe effect defeats that check
+    (Styleable.cpp 224-238), so CM's animated wrappers get backing stores.
+  - IOSurfacePool reuses a surface only at the exact same size (IOSurfacePool.cpp 81-90, takeSurface 120-165).
+    Surfaces whose size changes with m are not reused across opens.
+  - RemoteLayerBackingStore paints lazily (RemoteLayerBackingStore.mm 235-243, 333-401). The paint lands in the
+    first frame that shows the layer, which is the open frame unless the layer exists earlier.
+- **F-321 / c3b-c is parked** (lead). The rest layouts at m 1 stay as described under c3b-K.
+
+### The fix candidate: K on WebKit only (c3bk6), and K8 (pre ends after 3 s of rest)
+
+**Gate.**
+- Today the page turns CM on with `__cmSup`, i.e. `__msOn` (no reduced motion, `(hover: none) and (pointer: coarse)`,
+  smallest screen side <= 600) and `CSS.supports('(timeline-scope: --a) and (animation-range: cover 0% cover 100lvh)')`.
+  That is every touch phone with scroll-driven animations, Android Chrome included. So it cannot select WebKit.
+- c3bk6 adds the page's own WebKit feature test, `'GestureEvent' in window`. The page already uses it for heCss and
+  cites MDN browser-compat-data api/GestureEvent.json there. It is a feature test, not a UA string.
+- `GestureEvent` is a WebKit-only interface:
+  - iOS Safari has it, and so does Chrome on iOS, which runs on WebKit.
+  - Android Chrome and desktop Chrome do not.
+  - Desktop browsers also fail `__msOn` (hover and a fine pointer), so pre never turns on there.
+- Status: CONFIRMED by BCD for the interface. That Chrome on iOS gets pre follows from its WebKit engine; it is not
+  checked on a device.
+
+**Builds** (frozen, gitignored):
+
+| build | what it is | JS | CSS |
+|---|---|---|---|
+| c3bk6 | c3bk5 (K4 plus no animations under pre on the parts that draw) + the WebKit gate | d23ee885d54f | 4fafb83f1e72 |
+| c3bk8 | c3bk6 + pre ends after 3 s of rest and comes back on the next scroll toward the end | 237563792c42 | 4fafb83f1e72 |
+
+K8 detail:
+- Pre ends after 3 s with no scroll frame, no touch and the morph closed (`__cmPreEnd`), with the same hold as any pre
+  end.
+- It comes back in the first scroll frame that moves toward the end with m in (-1, 0] (`__cmPreRe`). It also comes back
+  at the next rest in range, as in K6.
+
+### Gates (Simulator and Chrome; counts, pixels and Simulator ms as a rank only; no timing verdicts)
+
+Tools: `gates/c3b/pre-look.mjs`, `k-sim.mjs` (new pass P: opens after 4.5 s rests; new segments S-0.5a / S-0.5z;
+`--trace`: where each stroke starts and rests), `o1-frames.mjs`, `k-gates.sh sim-runs|sim-k8|sim-k8p`. Logs are in
+out/cm/c3bk-gates/.
+
+**1. Chrome look against c3b-a.**
+- In Chrome, pre never turns on (the `pre` column is false at every stop).
+- K8, 775: consistent 0 at every stop, 12 of 12 taps equal everywhere.
+- K6, 775: consistent at most 6 css px² (0.0174 %, max 34, at m 0). 815: 0.
+- Both are 0 or inside T2, as expected by construction.
+
+**2. Simulator look, K6 against c3b-a** (innerHeight 775 only; the Simulator shows 815 only after a finger stroke,
+and pre-look holds no touch).
+- At m -0.5, -0.1, 0 and -1.1d: consistent 0.32-0.34 %, max 26-59, all in one fill cluster at the pill's lower left
+  (css 16-48 x 64-128). This is the glass's blur on the bar instead of on u3. It is inside T2 (fill 64, 0.5 %).
+  Simulator A/A at those stops: 0.04-0.07 %.
+- -0.5d: consistent 0.336 %, max 173. The edge pixels are in the page's agents-ask list, a one-device-px content
+  shift; that stop is noisy (A/A 1.19 %, V/V 2.66 %).
+- -1: 0.033 %, max 194, in the same list (A/A 1.87 %, V/V 4.7 %). At -1 pre is off in both arms, so this content
+  noise is not pre's.
+- Taps: 12 of 12 equal at every stop.
+- Verdict: **T2 pass at 775**, with -1 and -0.5d flagged for page-content noise that also shows without pre. 815
+  untested in the Simulator.
+- K8 has the same pre CSS, and pre stays on between pre-look's stops (1.75 s each, under the 3 s end), so its pre
+  states are K6's. Its "pre ended" state is the closed state, checked at -1.5d (0.0009 %, max 28).
+
+**3. Rest cost** (rendering-step style ms per 3 s, styles/s, layouts/s; one Simulator session, K8, K6 and c3b-a back to back):
+
+| segment | K8 | K6 | c3b-a |
+|---|---|---|---|
+| R2 (1.2 s rest at m -0.9, pre on) | 67.9 ms | 56.6 | 20.3 |
+| S-0.5 (0-3 s at m -0.5, pre on) | 184.2 ms, 57.0/s, 27.3/s | 178.8, 59.0, 28.3 | 74.3, 37.0, 21.0 |
+| S0 (0-3 s at m 0) | 50.3, 14.7, 3.7 (pre ends inside) | 43.9, 14.0, 3.3 | 26.4, 11.3, 3.0 |
+| S-0.5a (0-3 s at m -0.5 after a close) | 157.0, 66.3, 23.7 | 133.7, 67.0, 22.7 | 57.1, 29.3, 18.3 |
+| S-0.5z (3.5-6.5 s, same rest) | **73.5, 42.3, 30.7 (pre ended)** | 144.7, 76.3, 30.0 | 43.8, 32.0, 24.7 |
+
+- The earlier session's K6 vs c3b-a at S-0.5: 156 vs 93 ms.
+- While pre is on, rest style is 2-2.5x c3b-a. K6 keeps paying that for as long as the page rests near the end. K8
+  pays it for 3 s per rest, then drops to about +30 ms per 3 s over c3b-a (one session).
+- **What the rest cost is not.** c3bk7 (K6 plus `animation-play-state: paused` on the clippers and boxes under pre;
+  specificity 0,6,1 over the keyframe rules' 0,4,1) changes nothing: S-0.5 155.6, S-0.5a 140.4, S-0.5z 147.4 ms. So
+  the extra style is not the scroll-driven animations ticking (REFUTES the guess in the c3b-K table above). It comes
+  with the bigger styled tree under `.is-morphing` (OBSERVED, cause otherwise unknown).
+
+**4. Memory** (layers census at rest at m -0.5, pre on):
+- K6: 74 layers, 141.25 MB, against c3b-a's 66 layers, 130.7 MB (+10.6 MB).
+- K8: the same while pre is on. After the 3 s end, its DOM state is the closed state, whose layers a close drops (the
+  census above). Not measured separately.
+
+**5. Open frame f1 Composite** (Simulator ms, rank only; "first" is the first open after load, "later" the opens after
+a close):
+
+| pass | build | run 1 first / later | run 2 | run 3 |
+|---|---|---|---|---|
+| O (1.5 s rest) | K6 | 27.4 / 70.4, 33.8 | 26.1 / 36.7, 34.7 | 26.2 / 39.8, 34.0 |
+| O | K8 | 27.3 / 42.1, 35.4 | 37.6 / 34.1, 38.0 | 11.6 / 34.7, 35.6 |
+| O | c3b-a | 39.4 / 37.1, 36.8 | 44.5 / 40.3, 41.3 | 43.9 / 43.0, 41.1 |
+| O | C | 42.4 / 37.4, 38.2 | 40.0 / 39.0, 38.1 | 41.2 / 37.0, 36.1 |
+| P (4.5 s rests) | K8 | 27.1 / 48.1, 36.9 | 31.7 / 53.1, 41.3 | 28.2 / 58.0, 62.7 |
+| P | c3b-a | 46.3 / 55.4, 41.1 | 52.1 / 42.6, 45.7 | 53.2 / 45.0, 56.8 |
+| P (trace run) | K8 / K6 | 24.5 / 86.7, 39.2 | 9.8 / 54.4, 38.6 (K6) | |
+
+- **The first open drops** from about 40-53 ms to 10-38 ms (median 27) in K6 and K8 alike. Its paints drop from 19-20
+  to 7-16. This is the D1 cost.
+- **K8 after a long rest.** Pre comes back in the first scroll frame of the stroke (the trace shows on at m -0.26).
+  That frame then carries the build: Composite 23.0 / 23.1 / 31.1 ms, frame span 50-61 ms. So after a rest over 3 s,
+  K8 moves the build from the open frame into the first moving frame toward the end; it does not remove it. After a
+  shorter rest it behaves like K6.
+- **Later opens gain nothing in either K** (20 paints, Composite like c3b-a).
+  - The trace shows why they differ: every close settles at m 0 exactly, and the next stroke starts there.
+  - In K6, pre is on at m 0 (on 1.2 s after the close), yet the open from m 0 rebuilds anyway (OBSERVED, cause
+    UNRESOLVED; the decisive check is a layer census at rest at m 0 with pre on, against m -0.3).
+  - K8's re-arm cannot help there: the first scroll frame is already at m > 0.
+  - Earlier note: the "later opens cut about 5 ms" in the K6 runs is within these spreads. It is withdrawn.
+
+### Verdict and card
+
+- K on WebKit only passes the look (Chrome 0 by construction, Simulator T2 at 775). It cuts the first open's build,
+  which is the D1 cost, from about 40-53 to about 27 ms in the Simulator.
+- It does nothing for later opens. While pre is on, rest style is 2-2.5x and memory is +10.6 MB.
+- K8 bounds that rest cost to 3 s per rest. The price: an open after a longer rest pays the build one frame earlier,
+  in its first scroll frame, instead of in the open frame.
+- **I propose c3b-a + K8 for the card** below. K6 is the alternative if the lead prefers no build in any moving frame
+  over the bounded rest cost.
+
+## c3b-K8 phone card: c3b-a + K8 vs C, first open and each open from closed (pre-data; ticket number from the lead)
+
+Written before any data; its commit time is the pre-data time. Everything not named here is as in the c3b-a card above
+(itself P-160's).
+
+| item | value |
+|---|---|
+| question | does pre-building CM's layers at rest near the end (K8, WebKit only) bring c3b-a's first open after load within D1 of C, and stay no worse than C on every open from closed, under the finger? |
+| arms | C = v9-final rev 7d, JS 1b2eecc66011 / CSS e1359ab9994a (as P-158/159/160/161). V = c3b-a + K8, JS 237563792c42 / CSS 4fafb83f1e72 (out/cm/c3bk8; `c3b-k8-on-c3b-a.diff`, sha 12db8c45dea6) |
+| snapshot | out/cm/snap162 (C and P from out/cm/snap160, V from out/cm/c3bk8, read-only), HASHES 6bee1e1d19a8, checked by the kit before every hold |
+| kit | `fixes/compositor-morph/phone-c3bk/`: a copy of `phone-c3ba/` with the pins above (state out/cmp162). Dry run: serve check ok (3 of 3 servers serve the pinned hashes), H1 DRY ok, programs fs 8737f212c0ff / pr 7ff27a2413c8 ok. Reader `p161-read.mjs` unchanged (selftest 8 checks ok) |
+| driver, profile, order, heat, link loss | as P-160/P-161: G fast-short, Timeline on in every counted run, tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`), H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4, H11:TAIL with the end sentinel |
+| command | `CM_TICKET=<ticket> CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-compositor-morph --block <ticket> --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-c3bk/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` (servers first: `sh fixes/compositor-morph/phone-c3bk/cm-serve.sh start`), as a Bash background job with a 7200000 ms timeout |
+| metrics and decision | P-160's, unchanged. D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median of per-run open-0 median dt, V - C <= +4 ms. D3 at T in {34, 30, 38}. PASS / FAIL / OPEN as in P-160 |
+| descriptive | `o1-attr.mjs`: O1's open frame per rendering frame (RecalculateStyles, Composite), V against C and against P-160's v13. Also: was pre on when O1's stroke began (the frame where `.fw-cm-pre` drops), and, if the run rested over 3 s before O1, the first scroll frame's Composite |
+
+**Prediction (frozen).**
+- **D1: PASS, about 60 %.** In the Simulator the first open's Composite falls about 15-25 ms below c3b-a and
+  below C (median 27 vs about 40-53). P-160/161's D1 gap was +11 ms.
+- The risk: if the G driver rests over 3 s before O1, the build moves into the stroke's first scroll frame. That frame
+  can count in D3's window but not in O1.f2.
+- **D2: PASS.** Later opens start from m 0 after a close and rebuild as in c3b-a.
+- **D3: PASS**, as in P-160, unless the moved build frame crosses T.
+- **Overall: PASS, about 55 %.**

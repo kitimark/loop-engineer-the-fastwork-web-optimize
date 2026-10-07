@@ -9,6 +9,10 @@
 //     R3 1.2 s, D2 -0.05 -> -1.5 (60; K: pre off at -1.25), R4 1.2 s. Per segment: frames, Composite / style / layout /
 //     paint (n, ms), forced style/layout in script, max frame span. Then rests of 3 s at m -0.5, 0 and 1 (F-321: layouts
 //     per second at rest; m 1 is the open end screen).
+//   pass P (opens after long rests, K8): as O, but at rest 4.5 s before the first open and after each close (K8 ends
+//     pre after 3 s of rest and turns it on again in the first scroll frame toward the end); per open as O, plus the
+//     frame in which pre came on (fw-pre1) when that was during the strokes.
+//   pass A also ends with J-0.5b (m 1 -> -0.5) and two rests at m -0.5: S-0.5a (0-3 s) and S-0.5z (3.5-6.5 s; K8: pre ended).
 //   pass L (layers, Timeline off): LayerTree.layersForNode(document) at m -1.5 (L0), at rest at m -0.5 after 1.5 s (L1;
 //     K: pre on), held open at m 1 with a synthetic touch (L2), back at m -0.5 (L3); count and memory, and the layers new
 //     at L1 against L0 (class, size, MB).
@@ -25,14 +29,15 @@ const wda = await import(join(WT, 'tools/lib/wda.mjs')); const simlib = await im
 const argv = process.argv.slice(2);
 const arms = argv.filter((a) => a.includes('='));
 const PASS = (argv.includes('--pass') ? argv[argv.indexOf('--pass') + 1] : 'OAL').split('');
-const S = PASS.includes('O') ? await wda.createSession({ base: `http://127.0.0.1:${simlib.ports().wda}`, simulator: true }) : null;
+const S = PASS.includes('O') || PASS.includes('P') ? await wda.createSession({ base: `http://127.0.0.1:${simlib.ports().wda}`, simulator: true }) : null;
 const stroke = (y0, y1, ms) => ({ actions: [{ type: 'pointer', id: 'f1', parameters: { pointerType: 'touch' }, actions: [
   { type: 'pointerMove', duration: 0, x: 215, y: y0 }, { type: 'pointerDown', button: 0 }, { type: 'pause', duration: 30 },
   { type: 'pointerMove', duration: ms, x: 215, y: y1 }, { type: 'pointerUp', button: 0 }] }] });
 const OUT = join(WT, 'out/cm/ksim'); mkdirSync(OUT, { recursive: true });
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 const MARK = `(() => { const h = document.querySelector('header.start-selling-top-nav'); if (!h || window.__o0) return 0; let open = false;
-  window.__o0 = new MutationObserver(() => { const now = h.classList.contains('is-morphing') && !h.classList.contains('fw-cm-pre'); if (now && !open) performance.mark('fw-open0'); if (!now && open) performance.mark('fw-close0'); open = now; });
+  let pre = h.classList.contains('fw-cm-pre');
+  window.__o0 = new MutationObserver(() => { const now = h.classList.contains('is-morphing') && !h.classList.contains('fw-cm-pre'); if (now && !open) performance.mark('fw-open0'); if (!now && open) performance.mark('fw-close0'); open = now; const p2 = h.classList.contains('fw-cm-pre'); if (p2 && !pre) performance.mark('fw-pre1'); pre = p2; });
   window.__o0.observe(h, { attributes: true, attributeFilter: ['class'] }); return 1; })()`;
 const isJs = (t) => /^(FunctionCall|EventDispatch|TimerFire|FireAnimationFrame|ObserverCallback|EvaluateScript)$/.test(t);
 const ms = (x) => (((x.endTime ?? x.startTime) - x.startTime) * 1000);
@@ -87,24 +92,42 @@ try {
         await approach(c, g0.endStart - 2 * g0.t);
         return c.evaluate(GEO);
       };
-      if (PASS.includes('O')) {
+      for (const P of ['O', 'P'].filter((x) => PASS.includes(x))) {
+        const r0 = P === 'O' ? 1500 : 4500, r1 = P === 'O' ? 1100 : 4500;
         const g = await load();
-        await c.evaluate(`(window.scrollTo({ top: ${g.endStart - 250}, behavior: 'instant' }), 1)`); await sleep(1500);
-        row.navO = await c.evaluate(NAV); await c.evaluate(MARK);
-        const recs = await tl(c, async () => { for (let k = 0; k < 3; k++) { await S.actions(stroke(650, 300, 500)); await sleep(900); await S.actions(stroke(300, 650, 500)); await sleep(1100); } });
+        await c.evaluate(`(window.scrollTo({ top: ${g.endStart - 250}, behavior: 'instant' }), 1)`); await sleep(r0);
+        const navR = await c.evaluate(NAV); await c.evaluate(MARK);
+        // --trace: an rAF logger (scrollY, end-screen geometry, the nav's pre / morphing classes) to see where each
+        // stroke starts and where the page rests after each close (m = (y - endStart) / t with the live geometry)
+        if (argv.includes('--trace')) await c.evaluate(`(window.__tr = [], (() => { const h = document.querySelector('header.start-selling-top-nav'); const e = document.querySelector('.fw-ms-end'); const f = () => { const t = e.offsetHeight, max = document.documentElement.scrollHeight - innerHeight; window.__tr.push([Math.round(performance.now()), Math.round(scrollY), +((scrollY - (max - t)) / t).toFixed(3), +h.classList.contains('fw-cm-pre'), +h.classList.contains('is-morphing'), innerHeight]); requestAnimationFrame(f); }; requestAnimationFrame(f); })(), 1)`);
+        const stk = [];
+        const recs = await tl(c, async () => { for (let k = 0; k < 3; k++) { stk.push(['open', await c.evaluate('Math.round(performance.now())')]); await S.actions(stroke(650, 300, 500)); await sleep(900); stk.push(['close', await c.evaluate('Math.round(performance.now())')]); await S.actions(stroke(300, 650, 500)); await sleep(r1); } });
+        if (argv.includes('--trace')) {
+          const tr = await c.evaluate('JSON.stringify(window.__tr)').then(JSON.parse);
+          const at = (t) => tr.filter((x) => x[0] <= t).pop() || tr[0];
+          for (let i = 0; i < stk.length; i++) {
+            const [kind, t] = stk[i], tEnd = stk[i + 1]?.[1] ?? tr[tr.length - 1][0];
+            const seg = tr.filter((x) => x[0] >= t && x[0] < tEnd); const mins = seg.reduce((a, x) => Math.min(a, x[2]), 9), maxs = seg.reduce((a, x) => Math.max(a, x[2]), -9);
+            const s0 = at(t), s1 = seg[seg.length - 1] || s0;
+            const flips = []; for (let j = 1; j < seg.length; j++) if (seg[j][3] !== seg[j - 1][3]) flips.push(`${seg[j][3] ? 'on' : 'off'}@+${seg[j][0] - t}ms m ${seg[j][2]}`);
+            console.log(`  trace ${kind} ${Math.floor(i / 2) + 1}: start m ${s0[2]} pre ${s0[3]} ih ${s0[5]} | m range ${mins}..${maxs} | end m ${s1[2]} pre ${s1[3]} | pre flips ${flips.join(', ') || '-'}`);
+          }
+        }
         const frames = recs.filter((r) => r.type === 'RenderingFrame');
-        row.opens = []; frames.forEach((r, i) => { if (marks(r).includes('fw-open0')) row.opens.push([0, 1, 2].map((d) => { const o = zero(); frames[i + d] && cost(frames[i + d], o); return o; })); });
-        const all = zero(); frames.forEach((r) => cost(r, all)); row.oAll = all;
-        console.log(`${label} O: cm ${g.cm}, nav at rest before the strokes: ${row.navO}, ${frames.length} frames, ${row.opens.length} opens`);
-        row.opens.forEach((o, i) => o.forEach((f, d) => console.log(`  open ${i + 1} f${d + 1}: ${fmt(f)}`)));
+        const opens = [], pre1 = []; frames.forEach((r, i) => { const m = marks(r); if (m.includes('fw-open0')) opens.push([0, 1, 2].map((d) => { const o = zero(); frames[i + d] && cost(frames[i + d], o); return o; })); if (m.includes('fw-pre1')) { const o = zero(); cost(r, o); pre1.push(o); } });
+        const all = zero(); frames.forEach((r) => cost(r, all));
+        row[`nav${P}`] = navR; row[P === 'O' ? 'opens' : 'opensP'] = opens; row[`pre1${P}`] = pre1; row[P === 'O' ? 'oAll' : 'pAll'] = all;
+        console.log(`${label} ${P}: cm ${g.cm}, rest ${r0} / ${r1} ms, nav at rest before the strokes: ${navR}, ${frames.length} frames, ${opens.length} opens, ${pre1.length} pre-on frames during the strokes`);
+        opens.forEach((o, i) => o.forEach((f, d) => console.log(`  open ${i + 1} f${d + 1}: ${fmt(f)}`)));
+        pre1.forEach((f, i) => console.log(`  pre-on ${i + 1}: ${fmt(f)}`));
         console.log(`  all frames: ${fmt(all)}`);
-        writeFileSync(join(OUT, `tlO-${label}-${STAMP}.json`), JSON.stringify(recs));
+        writeFileSync(join(OUT, `tl${P}-${label}-${STAMP}.json`), JSON.stringify(recs));
       }
       if (PASS.includes('A')) {
         const g = await load();
         const Y = (m) => Math.round(g.endStart + m * g.t);
         await c.evaluate(`(window.scrollTo({ top: ${Y(-1.5)}, behavior: 'instant' }), 1)`); await sleep(1500);
-        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000]];
+        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000], ['J-0.5b', 1, -0.5, 1], ['S-0.5a', 3000], ['W', 500], ['S-0.5z', 3000]];
         const js = JSON.stringify(plan.map((x) => (x.length === 4 ? [x[0], Y(x[1]), Y(x[2]), x[3]] : x)));
         row.navA = [];
         const recs = await tl(c, async () => {
