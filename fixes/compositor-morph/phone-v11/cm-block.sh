@@ -40,6 +40,40 @@ wdarestart() { # I-220 (5803d436): wda ensure keeps a READY WDA, else restarts w
   echo "SAFARI restarted"
 }
 [ "$CM_DRY" = 1 ] || wdarestart
+# CM_THERMAL=serious (P-158 pre-data amendment, lead, user T-228 #15; profile tool-serious, never pooled with xcode-serious):
+# the condition is held by `thermal.mjs set serious` in the background for the whole part (I-199 stage 3), never by
+# Xcode; then `iphone.mjs preflight --settle 120`. A start gate that reads Critical (I-225): thermalrearm (kill the set,
+# `thermal.mjs clear`, a plain read once a minute until Nominal/Fair, at most 10, set serious again, settle 120 s) and
+# the hold runs once more. No user step.
+TP=""
+thermalset() {
+  TL=$LG/thermal-$(date +%s).log
+  node tools/thermal.mjs set serious > $TL 2>&1 & TP=$!
+  node tools/wait.mjs file $TL --match '^SET' --pid $TP --timeout 180 --owner "$R" --reason "$CM_TICKET thermal condition serious" > /dev/null 2>&1 \
+    || { echo "BLOCK STOP: thermal.mjs set serious gave no SET (see $TL)"; exit 8; }
+  echo "THERMAL $(grep -m1 '^SET' $TL)"
+  PL=$LG/preflight-$(date +%s).log
+  node tools/iphone.mjs preflight --owner "$R" --settle 120 > $PL 2>&1; pe=$?
+  [ $pe -eq 0 ] || { echo "BLOCK STOP: preflight exit $pe ($(tail -1 $PL)): message the lead"; exit 9; }
+  echo "PREFLIGHT ok (settle 120 s)"
+}
+thermalrearm() {
+  [ -n "$TP" ] && { kill $TP 2>/dev/null; wait $TP 2>/dev/null; TP=""; }
+  node tools/thermal.mjs clear >> $LG/thermal-rearm.log 2>&1
+  echo "REARM $(date -u +%FT%TZ): cleared; plain reads until Nominal/Fair" | tee -a $LG/thermal-rearm.log
+  k=0; while [ $k -lt 10 ]; do
+    node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "cm-rearm-$k" --expect fair --no-timer >> $LG/thermal-rearm.log 2>&1 && break
+    k=$((k + 1)); sleep 50
+  done
+  [ $k -lt 10 ] || { echo "BLOCK STOP: no Nominal/Fair read in 10 reads after clear (I-225): message the lead"; exit 10; }
+  echo "REARM plain read $(grep '^GATE' $LG/thermal-rearm.log | tail -1)"
+  thermalset
+}
+if [ "$CM_THERMAL" = serious ] && [ "$CM_DRY" != 1 ]; then
+  export CM_PROFILE=tool-serious
+  trap '[ -n "$TP" ] && kill $TP 2>/dev/null; node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "thermal condition released, Safari parked (exit trap)"' EXIT
+  thermalset
+fi
 prehold() {
   [ "$CM_DRY" = 1 ] && { echo "PREHOLD $1 (dry: no park, no cooling, no WDA check)"; return 0; }
   node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1 && echo "PARKED Safari before $1" || echo "PARK before $1 failed (the hold goes on)"
@@ -61,6 +95,10 @@ hold() {
 run1() {
   prehold $1; hold "$@"; e=$?
   [ $e -eq 7 ] && { echo "RETRY $1 (time guard)"; prehold $1; hold "$@"; e=$?; }
+  # a start gate that read Critical (thermal-gate exit 3 -> hold VOID exit 5) under the tool-held condition: re-arm, once
+  if [ $e -eq 5 ] && [ "$CM_THERMAL" = serious ] && grep -q 'VOID start gate exit 3' $LG/hold-$1.log; then
+    echo "CRITICAL at $1's start gate: I-225 re-arm"; thermalrearm; prehold $1; hold "$@"; e=$?
+  fi
   [ $e -ne 0 ] && { echo "BLOCK STOP at $1 exit $e"; exit $e; }
 }
 for spec in "$@"; do

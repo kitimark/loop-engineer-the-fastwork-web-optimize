@@ -462,3 +462,19 @@ crossing frames per run; finger-down > 50 shares are 0 in 7 of 8 runs (EV3 0.013
 50 le, 46 open, 54 le, decision (c). For P-158 I expect the same picture: finger-down slow frames at or near 0 in both
 arms, so the decision is (a) or a single-frame (c), not (b); the slow crossing frames sit in momentum, where v11 is not
 above C; no driver difference on the phone (G is the same program on both arms).
+
+**Pre-data amendment 2 (2026-10-07, lead, user T-228 #15: no manual Xcode steps; no P-158 data exists yet).** P-158
+runs under the **tool-held** thermal condition, profile **`tool-serious`** (never pooled with xcode-serious):
+- `cm-block.sh` with `CM_THERMAL=serious`: inside the phone hold, `node tools/thermal.mjs set serious` runs in the
+  background for the whole part (I-199 stage 3), the part waits for its `SET` line, then `iphone.mjs preflight --settle
+  120`; the exit trap kills the set (the condition ends with its connection) and parks Safari. Xcode's condition is never
+  touched. The hold logs' PIN line names the profile (`CM_PROFILE=tool-serious`).
+- The start gate stays `thermal-gate.mjs --expect serious --accept-induced --max-c 44` (the instrument's "induced"
+  covers the tool's condition too). A start gate that reads **Critical** on a cool phone (I-225): the part re-arms by
+  itself, no user step: kill the set, `thermal.mjs clear`, a plain read (`--expect fair --no-timer`) once a minute until
+  Nominal/Fair (at most 10), set serious again, settle 120 s, and the hold runs once more (`iphone.mjs rearm` replaces
+  this when ts-i225 lands).
+- Block command: `CM_TICKET=P-158 CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner
+  arch-compositor-morph --block P-158 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-v11/cm-block.sh
+  H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL`.
+- Question, arms, order, reader, decision rules and prediction are unchanged.

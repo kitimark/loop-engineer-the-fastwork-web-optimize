@@ -42,7 +42,7 @@ hashok() { [ "$(served $PC $JS)" = $C_JS ] && [ "$(served $PV $JS)" = $V_JS ] &&
 pins() { for f in "$@"; do printf ' %s=%s' "$f" "$(shasum -a 256 "$f" | cut -c1-12)"; done; }
 T0=$(date +%s)
 echo "HOLD $H ($CM_TICKET) start $(date -u +%FT%TZ) items $* gates $GM"
-echo "PIN $H $CM_TICKET profile xcode-serious checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
+echo "PIN $H $CM_TICKET profile ${CM_PROFILE:-xcode-serious} checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF fixes/compositor-morph/phone-v11/cm-block.sh fixes/compositor-morph/phone-v11/cm-serve.sh fixes/compositor-morph/phone/cm-read.mjs \
   $GATES research/serious-heat/p129-read.mjs $FS $PR research/phone-thermal-gate/thermal-gate.mjs \
   fixes/rest-script/tools/pmcheck.mjs out/cm/snap11/C/$JS out/cm/snap11/V/$JS out/cm/snap11/C/$CSS out/cm/snap11/V/$CSS)"
