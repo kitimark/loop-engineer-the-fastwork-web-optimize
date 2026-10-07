@@ -1,0 +1,80 @@
+{
+  "schema": "fw-proposal/1",
+  "title": "End of page, Safari: the menu bar's colour and corners drawn by the GPU (about 11 MB less while the menu is open); a 1-pixel edge differs mid-motion",
+  "area": "end",
+  "topic": "g0-box",
+  "problem": "At the end of the page the menu bar grows into the full-screen menu in 0.68 s.\n- In Safari, the bar's own background (its colour and rounded corners) is a picture that is drawn again on every frame of that growth.\n- While the menu is open, Safari keeps that picture at full-screen size: about 11 MB of graphics memory.\n- This applies only to phones (up to 640 px wide) in Safari; Chrome is not changed.",
+  "idea": "In Safari only, the bar no longer draws its own background:\n1. Its colour comes from two flat colour layers that the GPU blends: the light glass colour, and the dark colour fading in as the menu opens. Together they give exactly today's colour mix.\n2. Its rounded corner comes from a clip shape on the bar, so changing the corner size draws nothing.\nThe bar's size, its blur and the menu inside are today's, unchanged.\nWith reduced motion (no animation), Safari shows today's bar exactly.",
+  "looksSame": "Close, but not pixel-identical; that is why this is a proposal.\n- Checked: still frames every 20 ms through an open, a close and two reversals, 144 per build, iOS Simulator (Safari's engine), each loaded twice.\n- Colours: largest difference 31 of 255 (a look-alike may differ by 64).\n- The bar's outline: up to 218 of 255 at 6 of the 144 frames, mid-motion only (allowed 128). At rest, identical.\n- Chrome: identical (the change does not run there).\n- Reduced motion: identical at every frame (the change steps aside).",
+  "visualDiff": [
+    "Visible only mid-motion on the bar's 1 px edge.\n- While the bar grows or shrinks, the 1-pixel line along its rounded corners and sides is smoothed a little differently.\n- At most that pixel is lighter or darker where the dark bar meets the light page.",
+    "Everything else is the same: colours, blur, the menu's text and pictures, and the bar at rest."
+  ],
+  "gain": [
+    {
+      "what": "Extra memory while the menu is open",
+      "before": "16 to 18 MB",
+      "after": "5 to 7 MB",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator, Safari's layer list, 2 sessions (build order swapped), 2 opens each.\n- Memory with the menu open minus memory closed, in the same build.\n- The 11 MB is the bar's own picture at full-screen size (406 x 791 points at 3x), which the GPU no longer keeps."
+    },
+    {
+      "what": "Redraw area per open (3 opens)",
+      "before": "49.6 / 65.8 Mpx",
+      "after": "47.0 / 55.5 Mpx",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "Same 2 Simulator sessions; Mpx = millions of screen pixels redrawn.\n- 5 % and 16 % lower.\n- What is left is the menu's own content, which still redraws as the bar grows."
+    },
+    {
+      "what": "Redraw area per close (3 closes)",
+      "before": "38.2 / 44.8 Mpx",
+      "after": "42.2 / 42.0 Mpx",
+      "better": "same",
+      "tag": "OBSERVED",
+      "how": "Same sessions: 10 % higher in one, 6 % lower in the other. Mixed, so no claim."
+    },
+    {
+      "what": "Bar redraws after a close (at rest)",
+      "before": "86",
+      "after": "0",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "Same sessions, the 1.5 s after the close: today the bar's colour fade redraws the bar picture each frame; with the change it is a GPU fade."
+    },
+    {
+      "what": "Top of page scroll: bar redraws",
+      "before": "65",
+      "after": "0",
+      "better": "better",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator, a scripted 110-frame scroll from the top.\n- Total redraw area 40.5 to 35.8 Mpx.\n- Layer memory at top, middle and end: within 1 MB (two small colour layers added)."
+    },
+    {
+      "what": "Smoothness on the iPhone",
+      "before": "not measured",
+      "after": "not measured",
+      "better": "same",
+      "tag": "UNRESOLVED",
+      "how": "Not measured yet; a phone timing test follows only if you accept.\n- The numbers above count work, not frame times, so this proposal does not claim it is smoother."
+    }
+  ],
+  "risk": "Low to medium: about 20 lines of script and 50 of CSS on today's best build (g0.0c).\n- Safari only, by Safari's own feature test (the same one used before in this study); Chrome and Firefox get today's page.\n- Two decorative layers are added inside the bar, hidden from screen readers.\n- The clip shape would cut anything drawn outside the bar. Nothing is today; the Join-button and logo fixes in progress were checked and stack with it.\n- With the language menu open, the bar keeps today's corner (no clip), so the dropdown can show.\n- Not tested on the real iPhone, not timed.",
+  "compare": {
+    "a": {
+      "label": "Today's best build (g0.0c)"
+    },
+    "b": {
+      "label": "g0.0c + GPU bar colour and corners (Safari only)"
+    },
+    "view": "side",
+    "shots": []
+  },
+  "live": {
+    "patch": "fixes/v3w-g00c/patch.diff",
+    "a": {
+      "patch": "fixes/platform-corners-g00b/patch.diff"
+    }
+  }
+}

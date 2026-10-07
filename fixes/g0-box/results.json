@@ -1,6 +1,6 @@
 {
  "topic": "g0-box",
- "build": "M3-B v3-W on g0.0c: v3 (nav colour as two composited solid fills, corner as clip-path inset(0 round 32-12m px), v0 box and card untouched) applied in WebKit only (html.fw-bx when `GestureEvent` in window), phones <= 640 px; the dark fill takes v0's background transition outside .is-morphing (reduced-motion fix)",
+ "build": "M3-B v3-W on g0.0c, final: v3 (nav colour as two composited solid fills, corner as clip-path inset(0 round 32-12m px), v0 box and card untouched) in WebKit only (html.fw-bx when `GestureEvent` in window), phones <= 640 px; the dark fill takes v0's 0.7 s background transition outside .is-morphing; under prefers-reduced-motion v3-W steps aside (v0's nav exactly)",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
   "base": "g0.0c = g0.0b + fixes/platform-corners-g00b/patch.diff (main fbf96d8c, BEST_BUILDS 12750358)",
@@ -12,18 +12,26 @@
    },
    "v3-W": {
     "js": "7f7d83162ef6",
-    "css": "2c9deee5b885"
+    "css": "f9b2f894dedf"
    },
    "v3-W pre-RM-fix": {
     "js": "7f7d83162ef6",
     "css": "70df8114a809"
+   },
+   "v3-W RM-transition (superseded)": {
+    "js": "7f7d83162ef6",
+    "css": "2c9deee5b885"
    }
   },
   "tools": "fixes/g0-box/gates (seek.mjs, run4.sh: one --shared hold per arm, four loads; t2.mjs: PR-010 consistent rule, status bar rows < 56 css px left out, flat/edge split = 3x3 luma range <= 16 / > 16 in A or V); no timing A/B, no phone",
   "measurementCodeChanged": false,
-  "patchDiff": "v3-W relative to g0.0c; applies cleanly to a fresh g0.0c copy"
+  "patchDiff": "v3-W relative to g0.0c; applies cleanly to a fresh g0.0c copy",
+  "tryIt": {
+   "a": "fixes/platform-corners-g00b/patch.diff (g0.0c)",
+   "b": "fixes/v3w-g00c/patch.diff (g0.0c + v3-W, baseline-relative; rebuilt byte-identical from a fresh baseline copy)"
+  }
  },
- "verdict": "v3-W STOPPED at gate 1: Chrome T0 (v3-W off, 148 stops within A/A); Simulator full seek (144 stops) fails T2 on the edge level only: nav outline anti-aliasing max 218 > 128 at open@240/260/340/440 and rev2@0/60; flat max 31 <= 64, area <= 0.18 %, biggest cluster 678 css px2, state equal. The earlier \"v3 Simulator within T2 (max 117)\" rested on a 20-stop seek and is withdrawn. Reduced-motion close bug found and fixed (dark fill now takes v0's background transition).",
+ "verdict": "T3 look-alike PROPOSAL (lead decision after 043143d2): WebKit misses T2 only on the nav outline anti-aliasing mid-motion (edge max 218 > 128 at 6 of 144 stops; flat max 31; rests identical); Chrome T0 by construction (148 stops within A/A); Reduce Motion T0 (v3-W steps aside). Gain (Simulator, 2 sessions, counts only): opening adds ~11 MB less layer memory (open minus closed 16.2-17.9 -> 5.4-7.1 MB; the nav backing store at panel size, 11.6 MB); redraw area per open -5 % / -16 %, per close +10 % / -6 % (mixed); bar repaints after a close 86-88 -> 0, top scroll 65 -> 0 (area -12 %); layers per open equal; top/mid/end memory within 1 MB. Not timed, not on the phone.",
  "gates": {
   "seek": [
    {
@@ -331,6 +339,122 @@
    {
     "engine": "sim fw-ipad",
     "result": "not finished (session boot hit the 300 s hold cap); not re-run after the stop"
+   },
+   {
+    "engine": "sim fw-sim",
+    "build": "final (CSS f9b2f894dedf)",
+    "loads": "A V A2 V2 (two holds per half)",
+    "stops": 144,
+    "stateMismatch": 0,
+    "t2": {
+     "dir": "/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afabe5bf71361298f/out/g0box/seekW3-sim",
+     "dpr": 3,
+     "topCss": 56,
+     "limits": {
+      "flat": 64,
+      "edge": 128,
+      "pct": 0.5,
+      "cluster": 2000
+     },
+     "stops": 144,
+     "fails": 6,
+     "worst": {
+      "flat": 31,
+      "edge": 218,
+      "pct": 0.1799,
+      "cluster": 678
+     }
+    },
+    "failing": [
+     {
+      "stop": "open-240",
+      "edgeMax": 164,
+      "edgeAt": [
+       36,
+       663
+      ],
+      "cssPx2": 565,
+      "pct": 0.1501
+     },
+     {
+      "stop": "open-260",
+      "edgeMax": 161,
+      "edgeAt": [
+       32,
+       688
+      ],
+      "cssPx2": 51,
+      "pct": 0.0137
+     },
+     {
+      "stop": "open-340",
+      "edgeMax": 182,
+      "edgeAt": [
+       30,
+       770
+      ],
+      "cssPx2": 509,
+      "pct": 0.1352
+     },
+     {
+      "stop": "open-440",
+      "edgeMax": 218,
+      "edgeAt": [
+       24,
+       828
+      ],
+      "cssPx2": 553,
+      "pct": 0.1469
+     },
+     {
+      "stop": "rev2-000",
+      "edgeMax": 217,
+      "edgeAt": [
+       84,
+       833
+      ],
+      "cssPx2": 678,
+      "pct": 0.1799
+     },
+     {
+      "stop": "rev2-060",
+      "edgeMax": 164,
+      "edgeAt": [
+       36,
+       662
+      ],
+      "cssPx2": 565,
+      "pct": 0.15
+     }
+    ],
+    "result": "T2 edge level only (same 6 stops as the pre-fix run); T3",
+    "out": "out/g0box/seekW3-sim.t2"
+   },
+   {
+    "engine": "sim fw-sim, Reduce Motion on",
+    "build": "final (v3-W steps aside under RM)",
+    "stops": 24,
+    "t2": {
+     "dir": "/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afabe5bf71361298f/out/g0box/seekW3-simrm",
+     "dpr": 3,
+     "topCss": 56,
+     "limits": {
+      "flat": 64,
+      "edge": 128,
+      "pct": 0.5,
+      "cluster": 2000
+     },
+     "stops": 24,
+     "fails": 0,
+     "worst": {
+      "flat": 0,
+      "edge": 0,
+      "pct": 0,
+      "cluster": 0
+     }
+    },
+    "result": "T0: 0 consistent px at every stop, state equal",
+    "out": "out/g0box/seekW3-simrm"
    }
   ],
   "rescoreOfV3": {
@@ -338,7 +462,127 @@
    "stops": 20,
    "result": "PASS on its 20 stops (edge max 117), identical to the same stops of the 144-stop v3-W run: v3 = v3-W in WebKit, deterministic; the 10-step seek missed the worse stops"
   },
-  "notRun": "gates 2-3 on g0.0c (paints per open/close, nav root repaint, layers per open, memory top/mid/end, top-scroll counts), iPad width, phone card (kit drafted in fixes/g0-box/phone/, pinned to the pre-RM-fix CSS, not signed, not run)"
+  "gain": {
+   "tool": "fixes/g0-box/gates/counts-sim.mjs (2 sessions, arm order swapped) + top-sim.mjs; Simulator, counts only, one load per arm per session",
+   "files": [
+    "out/g0box/counts/counts-sim-2026-10-07T19-56-04-875Z.json",
+    "out/g0box/counts/counts-sim-2026-10-07T20-00-19-719Z.json",
+    "out/g0box/counts/top-sim-2026-10-07T20-04-41-371Z.json"
+   ],
+   "memoryAddedByOpenMB": {
+    "g0.0c": [
+     [
+      16.3,
+      17.9
+     ],
+     [
+      16.2,
+      17.9
+     ]
+    ],
+    "v3-W": [
+     [
+      5.4,
+      7
+     ],
+     [
+      5.5,
+      7.1
+     ]
+    ],
+    "note": "open minus closed in the same arm (open, open2); the nav backing store at 406x791 css x DPR 3 = 11.6 MB"
+   },
+   "memoryOpenAbsMB": {
+    "g0.0c": [
+     117.3,
+     109.3
+    ],
+    "v3-W": [
+     113.6,
+     97.8
+    ]
+   },
+   "memoryClosedAbsMB": {
+    "g0.0c": [
+     101,
+     93.1
+    ],
+    "v3-W": [
+     108.2,
+     92.3
+    ],
+    "note": "run 1 V started 7.2 MB higher at L0 with the same 52 layers"
+   },
+   "paintMpx3Opens": {
+    "g0.0c": [
+     49.58,
+     65.77
+    ],
+    "v3-W": [
+     47.02,
+     55.47
+    ]
+   },
+   "paintMpx3Closes": {
+    "g0.0c": [
+     38.22,
+     44.78
+    ],
+    "v3-W": [
+     42.21,
+     42.04
+    ]
+   },
+   "navFullBoxRect406x791Per3Opens": {
+    "g0.0c": [
+     26,
+     29
+    ],
+    "v3-W": [
+     11,
+     14
+    ]
+   },
+   "navPillRepaintAfterClose398x52": {
+    "g0.0c": [
+     86,
+     88
+    ],
+    "v3-W": [
+     0,
+     0
+    ]
+   },
+   "layersNewPerOpen": "equal (the Join only); run 1 V first open also the language-switch wrap (0 MB)",
+   "topScroll": {
+    "g0.0c": {
+     "paints": 659,
+     "mpx": 40.48,
+     "bar398x52": 65
+    },
+    "v3-W": {
+     "paints": 498,
+     "mpx": 35.79,
+     "bar398x52": 0
+    }
+   },
+   "censusTopMidEndMB": {
+    "g0.0c": [
+     52.2,
+     101.1,
+     93.1
+    ],
+    "v3-W": [
+     51.7,
+     100.4,
+     92.3
+    ],
+    "note": "+2 layers (the fills, 0.00 MB)"
+   },
+   "leadRule": "end-open memory >= 10 MB as open minus closed (lead): passes both runs; no new layers per open; top not worse -> T3 proposal"
+  },
+  "stacking": "v3-W + fix-join-fade block + fix-logo-close delta apply on g0.0c in either order, same bytes; all three: CSS e434bb66fa5c, JS 7f7d83162ef6",
+  "phoneKit": "fixes/g0-box/phone/, pinned C g0.0c 5c39f7a96e41/c65da97ba01f, V 7f7d83162ef6/f9b2f894dedf, snapshot out/g0box/snap2 HASHES 2bbab5666091; dry run ok (out/g0box/kitdry2.log); not signed, not run (only if the user accepts)"
  },
  "v3": {
   "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
@@ -568,6 +812,8 @@
   "Per-frame layout of the nav box stays (v0's width/height/top; bar, centre block and footer laid out each frame); only the nav root's paint goes.",
   "v1 (card held at page position 12,12) shifted Chrome text by round(frac(navX)*3) device px; v2 restores v0's card origin; v1's four-load Chrome run is invalid (overlay edited mid-run).",
   "No measurement code changed.",
-  "v3 measured on g0.0 before the rebase onto g0.0b; the Join change in g0.0b is outside the nav box."
+  "v3 measured on g0.0 before the rebase onto g0.0b; the Join change in g0.0b is outside the nav box.",
+  "The top-sim V load may have read the overlay just before or after the reduced-motion CSS edit; that edit only touches prefers-reduced-motion: reduce rules, which do not apply in that run.",
+  "New scripts: fixes/g0-box/gates/crops.mjs (proposal crops, no browser)."
  ]
 }

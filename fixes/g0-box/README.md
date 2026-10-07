@@ -3,20 +3,20 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured, **stopped at gate 1 a third time (v3-W, 2026-10-08)**.
-- v3-W = v3 in WebKit only. Chrome is T0 against g0.0c, as designed.
-- The full Simulator seek (144 stops, 20 ms steps, four loads) shows that **v3 is not within T2 in WebKit either.**
-  The fills are within T2 (flat max 31 ≤ 64). But the nav's outline anti-aliasing reaches **218 levels**, against
-  T2's edge limit of 128, at 4 of 144 stops: open@240, 260, 340 and 440, and rev2@0/60. Two more stops sit at
-  exactly 128.
-- The earlier "Simulator within T2, max 117" (e3857c4f) came from a 10-step seek (20 stops). Re-scored with the same
-  tool, those 20 stops give the same numbers again (max 117 at open@420); the denser seek finds the worse stops in
-  between. **That 117 claim was under-sampled, and I withdraw it.**
-- Reduce Motion showed a real v3-W bug: the colour fade on a reduced-motion close. It is fixed in this patch. One
-  stop still misses T2 (close@40: the EN switch's blurred backdrop is lighter mid-fade, flat max 70, 0.61 %); see
-  "v3-W" below.
-- Per the standing rule ("if v3 misses T2 as well, stop and report"), I stopped before gates 2-3, memory and the
-  phone card. Nothing is posted.
+**Status:** measured; **a T3 look-alike proposal** (lead's decision after 043143d2). It is not a T2 fix.
+- v3-W = v3 in WebKit only. Chrome is T0 against g0.0c by construction, checked with a 148-stop seek.
+- WebKit misses T2 only on the nav's outline anti-aliasing, mid-motion: up to **218 levels** against T2's edge limit
+  of 128, at 6 of 144 stops. Fills are within T2 (flat max 31 ≤ 64). Rests are identical.
+- **Gain (Simulator, 2 sessions; "Gain" below):**
+  - about **11 MB less layer memory while the menu is open** (open minus closed: 16-18 MB → 5-7 MB);
+  - redraw area per open 5-16 % lower, per close mixed (+10 % / -6 %);
+  - after a close and during a top-of-page scroll, 0 bar repaints (86 and 65 today).
+  - Not timed, not on the phone.
+- Reduce Motion: v3-W steps aside, and the page is T0 against g0.0c (24 stops, 0 consistent px).
+- The earlier "Simulator within T2, max 117" (e3857c4f) came from a 10-step seek (20 stops). **I withdraw it.** The
+  same 20 stops re-scored give the same numbers; the denser seek finds the worse stops in between.
+- It stacks with fix-join-fade's block and fix-logo-close's delta in either order (dry runs).
+- Try-it build: `fixes/v3w-g00c/patch.diff` (baseline-relative, B); A = `fixes/platform-corners-g00b/patch.diff`.
 
 **Stage:** F (build), step M3-B of `research/gpu-original/README.md`, on g0.0c (the best build since PR-035).
 
@@ -24,7 +24,8 @@
 `out/g0box/g00c`: JS 5c39f7a96e41, CSS c65da97ba01f. Baseline snapshot b1789284481295-4ad4a84a.
 
 **patch.diff = v3-W**, relative to g0.0c (`a/` = g0.0c's files), made with `diff -u`; it applies cleanly to a fresh
-g0.0c copy. Served v3-W: JS 7f7d83162ef6, CSS 2c9deee5b885 (with the reduced-motion fix; 70df8114a809 before it).
+g0.0c copy. Final v3-W: JS 7f7d83162ef6, CSS f9b2f894dedf (the reduced-motion step-aside). Earlier CSS:
+2c9deee5b885 (the dark fill's RM transition, superseded) and 70df8114a809 (before any RM fix).
 - v3 (both engines) relative to g0.0 is in this branch's history (e3857c4f); v2 is in 7da9b47e.
 
 **Files touched (v3-W):**
@@ -50,7 +51,9 @@ cluster against T2 (flat ≤ 64, edge ≤ 128, ≤ 0.5 %, cluster ≤ 2000 CSS p
 | Simulator (fw-sim), full seek | v3-W before the RM fix (the fix changes nothing outside a reduced-motion close; see below) | 144 | **FAILS T2 on the edge level.** Flat max 31 (≤ 64, everywhere). Edge max 218 at open@440; failing stops: open@240 (164), open@260 (161), open@340 (182), open@440 (218), rev2@0 (217), rev2@60 (164). Area ≤ 0.18 %, biggest cluster 678 CSS px² (both within T2). State equal everywhere. |
 | Simulator, Reduce Motion on (open/close, 10 steps) | before the fix | 20 | **FAIL, real bug:** close@0 and close@100: the nav shows the light fill while g0.0c is still dark (16133 CSS px², max 219). |
 | Simulator, Reduce Motion on (open/close, 0-360 by 40, 500, 700) | with the fix | 24 | **Fixed except one stop.** close@0: 58 CSS px², max 48 (was 16133 / 219); close@80 and later ≤ 19 px², max ≤ 28; opens ≤ 20 px² (the box corner, max 69). Still **FAIL at close@40**: 2310 CSS px² (0.61 %), flat max 70, all on the EN language switch (x 208-304, y 80-128). In V it is lighter than in g0.0c in the middle of the colour fade, while the nav fill around it matches (crop `out/g0box/rm40.png`; A/A crop `rm40aa.png` is black). The switch has its own `backdrop-filter: blur(12px)` over a translucent background (CSS 11490-11521), so it samples the nav's colour. In V that colour is the dark fill's opacity transition, not the painted background. Cause OBSERVED in our setup, unknown. |
-| iPad width (over 640 px; v3-W does not apply) | — | — | not finished: the iPad session timed out at the 300 s hold cap during boot; not re-run after the stop |
+| Simulator, Reduce Motion on (same steps) | final: v3-W steps aside under reduced motion (CSS f9b2f894dedf) | 24 | **T0**: 0 consistent px at every stop, state equal (`out/g0box/seekW3-simrm`) |
+| Simulator, full seek | final (CSS f9b2f894dedf) | 144 | Same as the pre-fix run at every stop: state equal (148 stops), flat max 31, edge max 218 at the same 6 stops, area ≤ 0.18 %, biggest cluster 678 CSS px² (`out/g0box/seekW3-sim.t2`). Proposal crops from this run: `fixes/g0-box/gates/crops.mjs` → `out/g0box/crops/`. |
+| iPad width (over 640 px; v3-W does not apply) | — | — | not run: the iPad session timed out at the 300 s hold cap during boot. The CSS is under `(width<=640px)`, so a wider page gets no v3-W rule, but the JS still adds `html.fw-bx` and the two hidden fills (`display: none`). |
 
 **The edge difference.** It is the same thing that failed Chrome for v3: a 1-device-pixel line along the nav's
 rounded corners and side edges, where the dark box meets the light page (crops: `out/g0box/o440c.png` A | V | diff;
@@ -63,32 +66,80 @@ deterministic: the 20 stops shared with e3857c4f's run give identical numbers.
 `.is-morphing`. v0's nav then runs its background transition (`:not(.is-morphing)`: 0.32 s
 `cubic-bezier(0.16, 1, 0.3, 1)` under reduced motion, CSS 12061-12068; 0.7 s otherwise, 11735-11742; 0.7 s for the
 ready hero pill at 601-640 px, 11777-11784), so the colour fades dark to light. v3-W's dark fill followed `--morph`
-at once. The fix gives the dark fill's opacity the same transition (duration, easing, conditions). Fill opacity over
-the constant light fill is a premultiplied crossfade; whether WebKit interpolates the `color-mix` background
-transition in the same space is not checked in source (UNRESOLVED; the RM seek above is the decisive local check).
+at once.
+- First fix (CSS 2c9deee5b885): the dark fill's opacity takes the same transition. That fixed close@0, but left
+  close@40 at T2 fail (the EN switch, row above).
+- Final fix (CSS f9b2f894dedf): under `(width<=640px) and (prefers-reduced-motion: reduce)` v3-W steps aside. The nav
+  gets back v0's own `color-mix` background and `border-radius`, with no clip-path, and the fills are
+  `display: none`. Under reduced motion g0 opens and closes without a tween (JS 14156 returns before the tween), so
+  there is no per-frame paint to save, and the page is v0's by construction (T0 in the re-seek).
+- The 0.7 s fill transition outside `.is-morphing` stays for the normal case. v0 runs that background transition at
+  rest after a close (the 398x52 pill repaints 86 times in "Gain"); in V the fill fades on the compositor instead.
 
-**Not run, because of the stop rule:** gates 2-3 on g0.0c (paints per open and close, the nav root repaint,
-layers per open, memory top/mid/end, top-scroll counts), the iPad width, and the phone card. The gain against g0.0c
-is therefore not measured. The v2 counts below remain the only counts on this line, and v2 also changed the card.
+## Gain against g0.0c (Simulator, counts only; lead's step 1)
 
-**Phone kit, drafted before the stop, not signed and not run:** `fixes/g0-box/phone/` (copies of the P-163 kit:
-`g0b-serve.sh`, `g0b-hold.sh`, `g0b-block.sh`, `g0b-run.sh`), with the P-161/P-163 lessons (tool-serious via
-`iphone.mjs rearm`, Safari parked before the rearm, `thermal.mjs clear` after the hold, the get-ready step on
-preflight AUTH, `--block`). It also has `g0b-read.mjs`: p161-read's decision code, with opens taken from touch rows,
-because g0 opens are a time tween on a held page and never a scroll crossing (selftest 7 checks ok). It is pinned to
-C = g0.0c (5c39f7a96e41 / c65da97ba01f) and V = the pre-fix v3-W CSS 70df8114a809 (snapshot `out/g0box/snap1`, HASHES
-57f89d8efa17; dry run: 3 of 3 servers ok, H1-H4/H11 DRY ok, programs ok). Before any use, re-snap with the current
-V CSS and confirm that the reader finds touch rows in a real G record.
+`fixes/g0-box/gates/counts-sim.mjs A=out/g0box/g00c V=fixes/g0-box/overlay`, two sessions with the arm order swapped
+(`out/g0box/counts/counts-sim-2026-10-07T19-56-04-875Z.json`, `…T20-00-19-719Z.json`). Each session runs per arm:
+3 opens and 3 closes in a real-time Timeline pass (segments open and close, 900 ms each, summed over the 3), and a
+census pass (layers and MB at L0, mid-open, open, mid-close, closed, twice). Per-rect splits:
+`out/g0box/navrects.mjs`. The top of the page: `top-sim.mjs` (`out/g0box/counts/top-sim-2026-10-07T20-04-41-371Z.json`;
+its V load may have read the overlay just before or after the reduced-motion edit, which only touches
+`prefers-reduced-motion: reduce` rules and doesn't apply in that run). All OBSERVED, Simulator, one load per arm per
+session; Simulator ms are not judged.
 
-### Options for the lead (none taken)
+| what | g0.0c (run 1 / run 2) | v3-W (run 1 / run 2) | change |
+|---|---|---|---|
+| layer memory added by opening (open − closed, same arm; open and open2) | +16.3, +17.9 / +16.2, +17.9 MB | +5.4, +7.0 / +5.5, +7.1 MB | **about −11 MB** both runs |
+| layer memory, absolute, open | 117.3 / 109.3 MB | 113.6 / 97.8 MB | −3.7 / −11.5 MB |
+| layer memory, closed | 101.0 / 93.1 MB | 108.2 / 92.3 MB | +7.2 / −0.8 MB (run 1's V started 7.2 MB higher at L0, same 52 layers) |
+| redraw area, 3 opens | 49.58 / 65.77 Mpx | 47.02 / 55.47 Mpx | −5 % / −16 % |
+| redraw area, 3 closes | 38.22 / 44.78 Mpx | 42.21 / 42.04 Mpx | +10 % / −6 % (mixed) |
+| redraw area per frame, opens / closes | 0.54, 0.60 / 0.35, 0.36 | 0.45, 0.48 / 0.32, 0.32 | −17..−20 % / −7..−11 % |
+| bar-wide rects (w ≥ 380 CSS px) per 3 opens | 35.1 / 46.1 Mcss px | 28.0 / 33.3 Mcss px | −20 % / −28 % |
+| the 406x791 (full box) rect, 3 opens | 26 / 29 | 11 / 14 | the nav root's own repaint mostly gone |
+| bar pill repaint (398x52) at rest after the close | 86 / 88 | 0 / 0 | the v0 colour fade now runs on the compositor |
+| layers new per open (vs L0) | Join only | Join only (run 1: + the language-switch wrap, 0 MB, first open only) | equal |
+| top scroll (110 frames): paints, area | 659, 40.48 Mpx | 498, 35.79 Mpx | −24 % paints, −12 % area; the 398x52 bar repaint 65 → 0 |
+| layer memory top / mid / end | 52.2 / 101.1 / 93.1 MB | 51.7 / 100.4 / 92.3 MB | within 1 MB; +2 layers (the fills, 0.00 MB each) |
 
-- (a) Take v3-W to the user as a look-alike proposal: a 1-device-pixel outline difference on the box's rounded
-  corners mid-tween only. Rests and fills are within T2, and Chrome is unchanged.
-- (b) Keep `border-radius` on the nav with no background and no clip-path (fills only, `border-radius: inherit`).
-  The outline would be v0's mechanism. But WebKit counts a border-radius as a box decoration
-  (`RenderLayerBacking.cpp` 3440-3447, 3657-3686), so the nav keeps a backing store that repaints when the radius
-  changes. Not measured.
-- (c) Drop M3-B, and keep g0.0c's nav.
+- **Where the 11 MB goes.** It is the nav's own backing store at panel size: 406 × 791 CSS px × 9 (DPR 3) × 4 bytes =
+  11.6 MB. The census lists the same 52 layers in both arms, so in V the nav keeps a layer but no backing store
+  (OBSERVED; the census reports layer MB per node).
+- **What still repaints per frame** in V: v0's card at the box size (406x388, 406x88, 430x513 …). M3-B v3 keeps the card
+  untouched, by the lead's option 3, so that work stays; it is what limits the paint-area gain.
+- **Decision rule (lead):** end-open memory ≥ 10 MB, measured as open minus closed (the lead's reading), passes in
+  both runs. No new layers per open, and top counts are not worse. → T3 proposal with Try-it.
+
+## Stacking with the other nav fixes
+
+On g0.0c, v3-W (fixes/g0-box/patch.diff) plus fix-join-fade's block (their `out/jf/block.css`, g0.0c + block = CSS
+32a2bf7c17b0) and fix-logo-close's `delta.diff` (one declaration at g0.0c CSS 12038-12045): each pair applies in
+either order with the same bytes, and all three together give CSS e434bb66fa5c, JS 7f7d83162ef6
+(`out/g0box/stack-jf.sh`, `stack-lc.sh`). Couplings: v3-W's nav clip-path is an ancestor of join-fade's Join clip (no
+paint outside the nav) and of the logo (stays inside the box).
+
+## Phone kit (draft, for after the user's decision; not signed, not run)
+
+`fixes/g0-box/phone/`: copies of the P-163 kit (`g0b-serve.sh`, `g0b-hold.sh`, `g0b-block.sh`, `g0b-run.sh`).
+- It carries the P-161/P-163 lessons: tool-serious via `iphone.mjs rearm`, Safari parked before the rearm,
+  `thermal.mjs clear` after the hold, the get-ready step on preflight AUTH, and `--block`.
+- `g0b-read.mjs` reuses p161-read's decision code, with opens taken from touch rows: g0 opens are a time tween on a
+  held page, never a scroll crossing (selftest 7 checks ok).
+- Pins: C = g0.0c (JS 5c39f7a96e41 / CSS c65da97ba01f), V = final v3-W (JS 7f7d83162ef6 / CSS f9b2f894dedf); snapshot
+  `out/g0box/snap2`, HASHES 2bbab5666091 (re-snapped after the reduced-motion fix). Dry run 2026-10-08 (`out/g0box/kitdry2.log`): servers up, H1-H4 and H11 DRY ok, programs fs 8737f212c0ff (budget 229 s) and pr 7ff27a2413c8 ok, exit 0.
+- Still to check before any block: that the reader finds touch rows in a real G record.
+- Card (for the lead to sign): v3-W against g0.0c, driver G fast-short (8737f212c0ff), tool-serious, C V V C order,
+  H1:WC H2:WV EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 H11:TAIL. Decision D1-D3 as P-163: D1 O1.f2 V−C ≤ +4 ms, D2 open
+  median dt V−C ≤ +4 ms, D3 share > 34 / 30 / 38 ms. Command: `sh fixes/g0-box/phone/g0b-run.sh <ticket>`.
+- Per the lead, a phone timing test follows only if the user accepts the proposal.
+
+### Options considered after the stop (the lead chose (a))
+
+- (a) A T3 look-alike proposal: the outline differs mid-motion only. **Taken.**
+- (b) Keep `border-radius` on the nav with no background and no clip-path (fills only). The outline would use v0's
+  mechanism, but WebKit counts a border-radius as a box decoration (`RenderLayerBacking.cpp` 3440-3447, 3657-3686), so
+  the nav would keep a backing store, and with it the 11 MB. Not built.
+- (c) Drop M3-B.
 
 ## v3 (lead's option 3, e3857c4f): fills + clip only, v0's card untouched
 

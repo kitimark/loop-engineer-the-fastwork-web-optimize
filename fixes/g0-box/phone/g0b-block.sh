@@ -2,8 +2,8 @@
 # g0-box phone kit (card: fixes/g0-box/README.md "Phone card draft"): the block driver inside ONE phone hold. A copy of fix-g0-box's P-163 kit
 # (research/end-of-page-fresh/phone/, credit: fix-g0-box, arch-compositor-morph, fix-end-morph) with these pins:
 #   C = g0.0c (g0.0b + platform corners, BEST_BUILDS e1291f8d)   JS 5c39f7a96e41  CSS c65da97ba01f
-#   V = g0.0c + v3-W (fixes/g0-box/patch.diff)                     JS 7f7d83162ef6  CSS 70df8114a809
-# snapshot out/g0box/snap1 (C from out/g0box/g00c, V from out/g0box/w-apply, read-only), logs out/g0bp, owner fix-g0-box.
+#   V = g0.0c + v3-W (fixes/g0-box/patch.diff)                     JS 7f7d83162ef6  CSS f9b2f894dedf
+# snapshot out/g0box/snap2 (C from out/g0box/g00c, V from out/g0box/g00c-apply, read-only), logs out/g0bp, owner fix-g0-box.
 # The P-161..P-163 lessons are kept unchanged (tool-serious via iphone.mjs rearm, Safari parked before the rearm, thermal
 # clear after the hold, the get-ready step on preflight AUTH or "Failed to initialize for UI testing", the --block mark).
 # Original header of the copied file:
