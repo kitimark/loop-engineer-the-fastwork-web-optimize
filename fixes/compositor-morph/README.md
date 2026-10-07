@@ -478,3 +478,11 @@ runs under the **tool-held** thermal condition, profile **`tool-serious`** (neve
   arch-compositor-morph --block P-158 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-v11/cm-block.sh
   H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL`.
 - Question, arms, order, reader, decision rules and prediction are unchanged.
+
+**Pre-data amendment 3 (2026-10-07, lead; mechanics only, no P-158 data yet).** The re-arm uses `iphone.mjs rearm`
+(I-225, 9c644179), and it is the **only owner of the condition**: the block no longer starts a `thermal.mjs set` of its
+own. At the part's start (after `iphone.mjs preflight`) and once more when a hold's start gate reads Critical, the
+block runs `iphone.mjs rearm --owner arch-compositor-morph --settle 120` (it clears, waits for a plain Nominal/Fair read,
+starts its detached `set serious`, settles, reads the profile; exit 0 cleared or not needed, 8 still Critical or misfit,
+13 timeout: the block stops and reports). `FW_PHONE_CONDITION=tool` for the whole part, so no gate posts an Xcode step;
+the exit trap runs `thermal.mjs clear` at the part's end. Profile, question, arms, reader and decision rules unchanged.
