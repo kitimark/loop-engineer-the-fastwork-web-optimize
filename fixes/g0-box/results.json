@@ -1,64 +1,406 @@
 {
  "topic": "g0-box",
- "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
+ "build": "M3-B v3-W on g0.0c: v3 (nav colour as two composited solid fills, corner as clip-path inset(0 round 32-12m px), v0 box and card untouched) applied in WebKit only (html.fw-bx when `GestureEvent` in window), phones <= 640 px; the dark fill takes v0's background transition outside .is-morphing (reduced-motion fix)",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
-  "base": "g0.0 f75c1707",
-  "patchRelativeTo": "g0.0 (a/ = sh fixes/g0-revert/rebuild.sh output: JS 5c39f7a96e41, CSS 95f0eff3c57f)",
+  "base": "g0.0c = g0.0b + fixes/platform-corners-g00b/patch.diff (main fbf96d8c, BEST_BUILDS 12750358)",
+  "patchRelativeTo": "g0.0c (a/ = out/g0box/g00c: JS 5c39f7a96e41, CSS c65da97ba01f)",
   "served": {
-   "g0.0": {
+   "g0.0c": {
     "js": "5c39f7a96e41",
-    "css": "95f0eff3c57f"
+    "css": "c65da97ba01f"
    },
-   "m3b-v3": {
-    "js": "1fa6cfc78f56",
-    "css": "6663cef214fb"
+   "v3-W": {
+    "js": "7f7d83162ef6",
+    "css": "2c9deee5b885"
    },
-   "m3b-v2": {
-    "js": "64d112c141e7",
-    "css": "973fb22bb4be"
+   "v3-W pre-RM-fix": {
+    "js": "7f7d83162ef6",
+    "css": "70df8114a809"
    }
   },
-  "tools": "fixes/g0-box/gates (copies of fixes/g0-gpu/gates + avscan.mjs, top-sim.mjs); shared lane, one hold per arm; no timing A/B, no phone",
+  "tools": "fixes/g0-box/gates (seek.mjs, run4.sh: one --shared hold per arm, four loads; t2.mjs: PR-010 consistent rule, status bar rows < 56 css px left out, flat/edge split = 3x3 luma range <= 16 / > 16 in A or V); no timing A/B, no phone",
   "measurementCodeChanged": false,
-  "patchDiff": "v3, relative to g0.0; applies cleanly to g0.0b (45a2d3ee, CSS a2351bd219ae) -> CSS e12dd33118e6"
+  "patchDiff": "v3-W relative to g0.0c; applies cleanly to a fresh g0.0c copy"
  },
- "verdict": "v3 STOPPED at gate 1: Simulator within T2 (outline edges only, max 117, 553 css px2 / 0.14 %; status-bar cluster excluded), Chrome misses T2 on the nav outline anti-aliasing only (max 226 > edge 128, 866 css px2 / 0.26 %); card interior identical, state equal everywhere. v2 (card laid out once) also stopped at gate 1 (text phase, both engines).",
+ "verdict": "v3-W STOPPED at gate 1: Chrome T0 (v3-W off, 148 stops within A/A); Simulator full seek (144 stops) fails T2 on the edge level only: nav outline anti-aliasing max 218 > 128 at open@240/260/340/440 and rev2@0/60; flat max 31 <= 64, area <= 0.18 %, biggest cluster 678 css px2, state equal. The earlier \"v3 Simulator within T2 (max 117)\" rested on a 20-stop seek and is withdrawn. Reduced-motion close bug found and fixed (dark fill now takes v0's background transition).",
  "gates": {
   "seek": [
    {
     "engine": "chrome",
     "viewport": "430x775",
+    "build": "pre-RM-fix",
     "loads": "A V A2 V2",
-    "stops": 22,
+    "stops": 148,
     "stateMismatch": 0,
-    "worstClusterMax": 226,
-    "worstConsistentCssPx2": 866,
-    "worstConsistentPct": 0.26,
-    "where": "nav outline (edges, round corners)",
-    "t2": false,
-    "out": "out/g0box/seek-v3-c775.score"
+    "result": "T0 within A/A: consistent pixels at 3 stops, max 8 css px2, level 53 (A/A max 59), countdown/cycler area x 224-320 y 480-592",
+    "out": "out/g0box/seekW-c775.score"
    },
    {
-    "engine": "simulator",
+    "engine": "sim fw-sim",
+    "build": "pre-RM-fix",
     "loads": "A V A2 V2",
-    "stops": 22,
+    "stops": 144,
     "stateMismatch": 0,
-    "worstClusterMaxBelowStatusBar": 117,
-    "worstConsistentCssPx2": 553,
-    "worstConsistentPct": 0.14,
-    "flatShare": "0.02-0.03",
-    "where": "nav outline (edges, corners); 18 px2 status-bar cluster (max 255) at every stop excluded",
-    "t2": true,
-    "out": "out/g0box/seek-v3-sim.score"
+    "t2": {
+     "dir": "/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afabe5bf71361298f/out/g0box/seekW-sim",
+     "dpr": 3,
+     "topCss": 56,
+     "limits": {
+      "flat": 64,
+      "edge": 128,
+      "pct": 0.5,
+      "cluster": 2000
+     },
+     "stops": 144,
+     "fails": 6,
+     "worst": {
+      "flat": 31,
+      "edge": 218,
+      "pct": 0.1799,
+      "cluster": 678
+     }
+    },
+    "failing": [
+     {
+      "stop": "open-240",
+      "edgeMax": 164,
+      "edgeAt": [
+       36,
+       663
+      ],
+      "cssPx2": 565,
+      "pct": 0.1501
+     },
+     {
+      "stop": "open-260",
+      "edgeMax": 161,
+      "edgeAt": [
+       32,
+       688
+      ],
+      "cssPx2": 51,
+      "pct": 0.0137
+     },
+     {
+      "stop": "open-340",
+      "edgeMax": 182,
+      "edgeAt": [
+       30,
+       770
+      ],
+      "cssPx2": 509,
+      "pct": 0.1352
+     },
+     {
+      "stop": "open-440",
+      "edgeMax": 218,
+      "edgeAt": [
+       24,
+       828
+      ],
+      "cssPx2": 553,
+      "pct": 0.1469
+     },
+     {
+      "stop": "rev2-000",
+      "edgeMax": 217,
+      "edgeAt": [
+       84,
+       833
+      ],
+      "cssPx2": 678,
+      "pct": 0.1799
+     },
+     {
+      "stop": "rev2-060",
+      "edgeMax": 164,
+      "edgeAt": [
+       36,
+       662
+      ],
+      "cssPx2": 565,
+      "pct": 0.15
+     }
+    ],
+    "result": "FAIL T2 (edge level)",
+    "out": "out/g0box/seekW-sim.t2"
+   },
+   {
+    "engine": "sim fw-sim, Reduce Motion on",
+    "build": "pre-RM-fix",
+    "stops": 20,
+    "result": "FAIL: close@0 16133 css px2 max 219, close@100 16052 max 44 (light fill while g0.0c still fades dark->light)",
+    "out": "out/g0box/seekW-simrm"
+   },
+   {
+    "engine": "sim fw-sim, Reduce Motion on",
+    "build": "v3-W (RM fix)",
+    "stops": 24,
+    "t2": {
+     "dir": "/Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afabe5bf71361298f/out/g0box/seekW2-simrm",
+     "dpr": 3,
+     "topCss": 56,
+     "limits": {
+      "flat": 64,
+      "edge": 128,
+      "pct": 0.5,
+      "cluster": 2000
+     },
+     "stops": 24,
+     "fails": 1,
+     "worst": {
+      "flat": 70,
+      "edge": 70,
+      "pct": 0.6132,
+      "cluster": 2275
+     }
+    },
+    "rows": [
+     {
+      "stop": "close-000",
+      "pass": true,
+      "cssPx2": 58,
+      "flatMax": 11,
+      "edgeMax": 48
+     },
+     {
+      "stop": "close-040",
+      "pass": false,
+      "cssPx2": 2310,
+      "flatMax": 70,
+      "edgeMax": 70
+     },
+     {
+      "stop": "close-080",
+      "pass": true,
+      "cssPx2": 19,
+      "flatMax": 0,
+      "edgeMax": 22
+     },
+     {
+      "stop": "close-120",
+      "pass": true,
+      "cssPx2": 13,
+      "flatMax": 0,
+      "edgeMax": 25
+     },
+     {
+      "stop": "close-160",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-200",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-240",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-280",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-320",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-360",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-500",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "close-700",
+      "pass": true,
+      "cssPx2": 12,
+      "flatMax": 0,
+      "edgeMax": 28
+     },
+     {
+      "stop": "open-000",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-040",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-080",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-120",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-160",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-200",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-240",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-280",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-320",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-360",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-500",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     },
+     {
+      "stop": "open-700",
+      "pass": true,
+      "cssPx2": 20,
+      "flatMax": 0,
+      "edgeMax": 69
+     }
+    ],
+    "out": "out/g0box/seekW2-simrm"
+   },
+   {
+    "engine": "sim fw-ipad",
+    "result": "not finished (session boot hit the 300 s hold cap); not re-run after the stop"
    }
   ],
-  "seekNotRun": [
-   "chrome 430x815",
-   "widths 768 and 1280",
-   "prefers-reduced-motion"
-  ],
-  "gates23NotRun": "v3: stop rule"
+  "rescoreOfV3": {
+   "out": "out/g0box/seek-v3-sim.t2",
+   "stops": 20,
+   "result": "PASS on its 20 stops (edge max 117), identical to the same stops of the 144-stop v3-W run: v3 = v3-W in WebKit, deterministic; the 10-step seek missed the worse stops"
+  },
+  "notRun": "gates 2-3 on g0.0c (paints per open/close, nav root repaint, layers per open, memory top/mid/end, top-scroll counts), iPad width, phone card (kit drafted in fixes/g0-box/phone/, pinned to the pre-RM-fix CSS, not signed, not run)"
+ },
+ "v3": {
+  "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
+  "config": {
+   "baselineSnapshot": "b1789284481295-4ad4a84a",
+   "base": "g0.0 f75c1707",
+   "patchRelativeTo": "g0.0 (a/ = sh fixes/g0-revert/rebuild.sh output: JS 5c39f7a96e41, CSS 95f0eff3c57f)",
+   "served": {
+    "g0.0": {
+     "js": "5c39f7a96e41",
+     "css": "95f0eff3c57f"
+    },
+    "m3b-v3": {
+     "js": "1fa6cfc78f56",
+     "css": "6663cef214fb"
+    },
+    "m3b-v2": {
+     "js": "64d112c141e7",
+     "css": "973fb22bb4be"
+    }
+   },
+   "tools": "fixes/g0-box/gates (copies of fixes/g0-gpu/gates + avscan.mjs, top-sim.mjs); shared lane, one hold per arm; no timing A/B, no phone",
+   "measurementCodeChanged": false,
+   "patchDiff": "v3, relative to g0.0; applies cleanly to g0.0b (45a2d3ee, CSS a2351bd219ae) -> CSS e12dd33118e6"
+  },
+  "verdict": "v3 STOPPED at gate 1: Simulator within T2 (outline edges only, max 117, 553 css px2 / 0.14 %; status-bar cluster excluded), Chrome misses T2 on the nav outline anti-aliasing only (max 226 > edge 128, 866 css px2 / 0.26 %); card interior identical, state equal everywhere. v2 (card laid out once) also stopped at gate 1 (text phase, both engines).",
+  "gates": {
+   "seek": [
+    {
+     "engine": "chrome",
+     "viewport": "430x775",
+     "loads": "A V A2 V2",
+     "stops": 22,
+     "stateMismatch": 0,
+     "worstClusterMax": 226,
+     "worstConsistentCssPx2": 866,
+     "worstConsistentPct": 0.26,
+     "where": "nav outline (edges, round corners)",
+     "t2": false,
+     "out": "out/g0box/seek-v3-c775.score"
+    },
+    {
+     "engine": "simulator",
+     "loads": "A V A2 V2",
+     "stops": 22,
+     "stateMismatch": 0,
+     "worstClusterMaxBelowStatusBar": 117,
+     "worstConsistentCssPx2": 553,
+     "worstConsistentPct": 0.14,
+     "flatShare": "0.02-0.03",
+     "where": "nav outline (edges, corners); 18 px2 status-bar cluster (max 255) at every stop excluded",
+     "t2": true,
+     "out": "out/g0box/seek-v3-sim.score"
+    }
+   ],
+   "seekNotRun": [
+    "chrome 430x815",
+    "widths 768 and 1280",
+    "prefers-reduced-motion"
+   ],
+   "gates23NotRun": "v3: stop rule"
+  }
  },
  "v2": {
   "build": "gpu-original M3-B v2 on g0.0: nav colour as two composited solid fills, corner as clip-path inset(0 round r), menu card laid out once at the open size from v0's box origin (backdrop centred by transform, quarter-size veil scaled, centre/footer by layout); phones <= 640 px",
@@ -221,6 +563,8 @@
   "commit": "7da9b47e"
  },
  "notes": [
+  "No tool changed. New gate script fixes/g0-box/gates/t2.mjs (scorer only, no browser).",
+  "Every Chrome and Simulator step ran in the shared lane (--shared --weight probe|simulator --max-seconds 300 --owner fix-g0-box).",
   "Per-frame layout of the nav box stays (v0's width/height/top; bar, centre block and footer laid out each frame); only the nav root's paint goes.",
   "v1 (card held at page position 12,12) shifted Chrome text by round(frac(navX)*3) device px; v2 restores v0's card origin; v1's four-load Chrome run is invalid (overlay edited mid-run).",
   "No measurement code changed.",

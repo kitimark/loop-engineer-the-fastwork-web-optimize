@@ -3,31 +3,97 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured, **stopped at gate 1 twice**.
-- v2 (the card laid out once) misses T2 in both engines.
-- v3 (the lead's option 3: v0's card kept, only the nav's two fills and the clip-path corner) is within T2 in the
-  Simulator. It misses T2 in Chrome on one thing only: the nav's outline anti-aliasing, max 226 levels against
-  T2's edge limit of 128.
-- Per the lead I stopped and am reporting both; neither is in the g0 build.
+**Status:** measured, **stopped at gate 1 a third time (v3-W, 2026-10-08)**.
+- v3-W = v3 in WebKit only. Chrome is T0 against g0.0c, as designed.
+- The full Simulator seek (144 stops, 20 ms steps, four loads) shows that **v3 is not within T2 in WebKit either.**
+  The fills are within T2 (flat max 31 ≤ 64). But the nav's outline anti-aliasing reaches **218 levels**, against
+  T2's edge limit of 128, at 4 of 144 stops: open@240, 260, 340 and 440, and rev2@0/60. Two more stops sit at
+  exactly 128.
+- The earlier "Simulator within T2, max 117" (e3857c4f) came from a 10-step seek (20 stops). Re-scored with the same
+  tool, those 20 stops give the same numbers again (max 117 at open@420); the denser seek finds the worse stops in
+  between. **That 117 claim was under-sampled, and I withdraw it.**
+- Reduce Motion showed a real v3-W bug: the colour fade on a reduced-motion close. It is fixed in this patch. One
+  stop still misses T2 (close@40: the EN switch's blurred backdrop is lighter mid-fade, flat max 70, 0.61 %); see
+  "v3-W" below.
+- Per the standing rule ("if v3 misses T2 as well, stop and report"), I stopped before gates 2-3, memory and the
+  phone card. Nothing is posted.
 
-**Stage:** F (build), step M3-B of `research/gpu-original/README.md`, on top of g0.0.
+**Stage:** F (build), step M3-B of `research/gpu-original/README.md`, on g0.0c (the best build since PR-035).
 
-**Base:** g0.0 = f75c1707 (`fixes/g0-revert/`), rebuilt with `sh fixes/g0-revert/rebuild.sh out/g0box/g00`: JS
-5c39f7a96e41, CSS 95f0eff3c57f. Baseline snapshot b1789284481295-4ad4a84a.
+**Base:** g0.0c = g0.0b + `fixes/platform-corners-g00b/patch.diff` (main fbf96d8c, BEST_BUILDS e1291f8d), built in
+`out/g0box/g00c`: JS 5c39f7a96e41, CSS c65da97ba01f. Baseline snapshot b1789284481295-4ad4a84a.
 
-**patch.diff = v3**, relative to g0.0 (`a/` = g0.0's files), made with `diff -u` against the rebuild.
-- Served v3: JS 1fa6cfc78f56, CSS 6663cef214fb.
-- The patch also applies cleanly to g0.0b (45a2d3ee, CSS a2351bd219ae): checked with `patch --dry-run` on a fresh
-  `rebuild.sh` output; g0.0b + v3 gives CSS e12dd33118e6.
-- v2 was JS 64d112c141e7, CSS 973fb22bb4be. Its diff is in this branch's history (7da9b47e, `fixes/g0-box/patch.diff`).
+**patch.diff = v3-W**, relative to g0.0c (`a/` = g0.0c's files), made with `diff -u`; it applies cleanly to a fresh
+g0.0c copy. Served v3-W: JS 7f7d83162ef6, CSS 2c9deee5b885 (with the reduced-motion fix; 70df8114a809 before it).
+- v3 (both engines) relative to g0.0 is in this branch's history (e3857c4f); v2 is in 7da9b47e.
 
-**Files touched (v3):**
-- `/_app/immutable/nodes/2.DyWL8TcE.js`: the nav component near `__mkW` (g0.0 pretty lines 14583-14590), +13 lines.
-  It creates the two fills and adds the dark fill to `__mkW`'s `--morph` targets.
-- `/_app/immutable/assets/2.gBuqKVzi.css`: one appended block (`@media (width<=640px)`), +39 lines.
-- Phones up to 640 px only; the desktop CSS is untouched.
+**Files touched (v3-W):**
+- `/_app/immutable/nodes/2.DyWL8TcE.js`: the nav component near `__mkW` (pretty lines 14586-14606), +19 lines.
+  When `'GestureEvent' in window` (WebKit only; MDN browser-compat-data `api/GestureEvent.json`; the same test as
+  heCss and K6), it adds `html.fw-bx`, creates the two fills, and adds the dark fill to `__mkW`'s `--morph` targets.
+- `/_app/immutable/assets/2.gBuqKVzi.css`: one block after line 12331, before the platform-corners rule, all under
+  `html.fw-bx` and `(width<=640px)`.
+- Elsewhere (Chrome, Firefox, widths over 640 px) nothing is created and no rule applies.
 
-## v3 (lead's option 3): fills + clip only, v0's card untouched
+## v3-W (lead's decision after e3857c4f): v3 in WebKit only, on g0.0c
+
+All runs were Simulator or Chrome seeks in the shared lane (`fixes/g0-box/gates/run4.sh`: one `--shared` hold per
+arm, four loads A V A2 V2, A = g0.0c, V = the overlay). New scorer: `fixes/g0-box/gates/t2.mjs`. It applies the PR-010
+consistent rule (over 8 levels in all four cross pairs, while neither A/A pair is over 8 there) and leaves out the
+Simulator's status bar (rows above 56 CSS px). It splits each consistent pixel into **edge** (the 3x3 luma range around
+it is over 16 levels in A or in V) or **flat** (everything else), and reports both maxima, the area and the biggest
+cluster against T2 (flat ≤ 64, edge ≤ 128, ≤ 0.5 %, cluster ≤ 2000 CSS px²).
+
+| gate | build | stops | result |
+|---|---|---|---|
+| Chrome 430x775, full seek (open, close, rev1, rev2; 0-700 ms by 20) | v3-W before the RM fix | 148 | **T0 within A/A**: state equal at every stop; consistent pixels at 3 stops only, max 8 CSS px², level 53 (A/A max 59), in the countdown/cycler area (x 224-320, y 480-592), not the nav. The RM fix is CSS under `html.fw-bx`, so Chrome is unaffected. |
+| Simulator (fw-sim), full seek | v3-W before the RM fix (the fix changes nothing outside a reduced-motion close; see below) | 144 | **FAILS T2 on the edge level.** Flat max 31 (≤ 64, everywhere). Edge max 218 at open@440; failing stops: open@240 (164), open@260 (161), open@340 (182), open@440 (218), rev2@0 (217), rev2@60 (164). Area ≤ 0.18 %, biggest cluster 678 CSS px² (both within T2). State equal everywhere. |
+| Simulator, Reduce Motion on (open/close, 10 steps) | before the fix | 20 | **FAIL, real bug:** close@0 and close@100: the nav shows the light fill while g0.0c is still dark (16133 CSS px², max 219). |
+| Simulator, Reduce Motion on (open/close, 0-360 by 40, 500, 700) | with the fix | 24 | **Fixed except one stop.** close@0: 58 CSS px², max 48 (was 16133 / 219); close@80 and later ≤ 19 px², max ≤ 28; opens ≤ 20 px² (the box corner, max 69). Still **FAIL at close@40**: 2310 CSS px² (0.61 %), flat max 70, all on the EN language switch (x 208-304, y 80-128). In V it is lighter than in g0.0c in the middle of the colour fade, while the nav fill around it matches (crop `out/g0box/rm40.png`; A/A crop `rm40aa.png` is black). The switch has its own `backdrop-filter: blur(12px)` over a translucent background (CSS 11490-11521), so it samples the nav's colour. In V that colour is the dark fill's opacity transition, not the painted background. Cause OBSERVED in our setup, unknown. |
+| iPad width (over 640 px; v3-W does not apply) | — | — | not finished: the iPad session timed out at the 300 s hold cap during boot; not re-run after the stop |
+
+**The edge difference.** It is the same thing that failed Chrome for v3: a 1-device-pixel line along the nav's
+rounded corners and side edges, where the dark box meets the light page (crops: `out/g0box/o440c.png` A | V | diff;
+the A/A crop `o440aa.png` is black). WebKit anti-aliases the `clip-path: inset(round)` mask differently from v0's
+border-radius background plus rounded overflow clip, while the box is mid-tween at fractional device positions
+(OBSERVED in our setup, cause unknown). Between the 10-step stops the Simulator's difference is up to 218. It is
+deterministic: the 20 stops shared with e3857c4f's run give identical numbers.
+
+**The Reduce Motion bug and its fix.** Under reduced motion the close snaps `--morph` to 0 while the nav is not
+`.is-morphing`. v0's nav then runs its background transition (`:not(.is-morphing)`: 0.32 s
+`cubic-bezier(0.16, 1, 0.3, 1)` under reduced motion, CSS 12061-12068; 0.7 s otherwise, 11735-11742; 0.7 s for the
+ready hero pill at 601-640 px, 11777-11784), so the colour fades dark to light. v3-W's dark fill followed `--morph`
+at once. The fix gives the dark fill's opacity the same transition (duration, easing, conditions). Fill opacity over
+the constant light fill is a premultiplied crossfade; whether WebKit interpolates the `color-mix` background
+transition in the same space is not checked in source (UNRESOLVED; the RM seek above is the decisive local check).
+
+**Not run, because of the stop rule:** gates 2-3 on g0.0c (paints per open and close, the nav root repaint,
+layers per open, memory top/mid/end, top-scroll counts), the iPad width, and the phone card. The gain against g0.0c
+is therefore not measured. The v2 counts below remain the only counts on this line, and v2 also changed the card.
+
+**Phone kit, drafted before the stop, not signed and not run:** `fixes/g0-box/phone/` (copies of the P-163 kit:
+`g0b-serve.sh`, `g0b-hold.sh`, `g0b-block.sh`, `g0b-run.sh`), with the P-161/P-163 lessons (tool-serious via
+`iphone.mjs rearm`, Safari parked before the rearm, `thermal.mjs clear` after the hold, the get-ready step on
+preflight AUTH, `--block`). It also has `g0b-read.mjs`: p161-read's decision code, with opens taken from touch rows,
+because g0 opens are a time tween on a held page and never a scroll crossing (selftest 7 checks ok). It is pinned to
+C = g0.0c (5c39f7a96e41 / c65da97ba01f) and V = the pre-fix v3-W CSS 70df8114a809 (snapshot `out/g0box/snap1`, HASHES
+57f89d8efa17; dry run: 3 of 3 servers ok, H1-H4/H11 DRY ok, programs ok). Before any use, re-snap with the current
+V CSS and confirm that the reader finds touch rows in a real G record.
+
+### Options for the lead (none taken)
+
+- (a) Take v3-W to the user as a look-alike proposal: a 1-device-pixel outline difference on the box's rounded
+  corners mid-tween only. Rests and fills are within T2, and Chrome is unchanged.
+- (b) Keep `border-radius` on the nav with no background and no clip-path (fills only, `border-radius: inherit`).
+  The outline would be v0's mechanism. But WebKit counts a border-radius as a box decoration
+  (`RenderLayerBacking.cpp` 3440-3447, 3657-3686), so the nav keeps a backing store that repaints when the radius
+  changes. Not measured.
+- (c) Drop M3-B, and keep g0.0c's nav.
+
+## v3 (lead's option 3, e3857c4f): fills + clip only, v0's card untouched
+
+**Correction (2026-10-08):** the "Simulator passes" below rests on a 10-step seek. The 144-stop seek in "v3-W" finds
+edge levels up to 218 in WebKit too.
 
 v3 keeps v0's box and card exactly as they are. It only removes the nav's own paint:
 - the background becomes two composited solid fills (light `#ffffff1a`, dark `#131922` at opacity m);
@@ -61,7 +127,7 @@ Gate 1 used the same seek against g0.0, four loads per engine (`out/g0box/seek-v
 - **Not run, because of the stop rule:** Chrome 430x815, widths 768/1280, reduced motion, and gates 2-3 for v3.
   The v2 counts below show what the fills and the clip alone save only in part: v2 also changed the card.
 
-### Options for the lead (none taken)
+### v3's options (e3857c4f; the lead took (a), which became v3-W)
 
 - (a) **Scope the clip to WebKit**, where v3 is within T2, and let Chrome keep v0's border-radius. Chrome would then
   be T0 by construction and lose its share of the gain. This needs an engine test in CSS or JS, which this study has
@@ -208,7 +274,8 @@ scored beyond the A/A pair. Scenes were open and close at steps 0, 100, 200, 300
 ## Notes
 
 - **Measurement code:** I changed no tool. The gate scripts in `fixes/g0-box/gates/` are copies of fix-g0-gpu's,
-  plus `avscan.mjs` (a two-arm scan, diagnostic only) and `top-sim.mjs`. Everything ran in the shared lane
+  plus `avscan.mjs` (a two-arm scan, diagnostic only), `top-sim.mjs` and `t2.mjs` (the T2 report with the flat and
+  edge maxima split; no browser). Everything ran in the shared lane
   (`--shared --weight probe|simulator`), one hold per arm.
 - **v1 run:** the v1 Chrome four-load run (`out/g0box/seek-v1-c775`) is invalid as a gate. I edited the overlay
   while it ran, so V2 saw another build. It is cited only for the v1 shift diagnosis.

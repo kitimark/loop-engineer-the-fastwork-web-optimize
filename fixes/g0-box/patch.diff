@@ -1,6 +1,6 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -14583,8 +14583,20 @@
+@@ -14583,8 +14583,27 @@
      __mkW = (v) => {
        if (v === __mkV) return;
        __mkV = v;
@@ -11,9 +11,16 @@
 +  // (size, top, backdrop blur, card at the box size per frame); only the nav's own paint goes: its colour is two
 +  // composited solid fills (light #ffffff1a, dark #131922 at opacity --morph, which composites to exactly v0's
 +  // color-mix) and its rounded corner is a clip-path inset(0 round r) (a shape mask, no repaint). Built once here.
-+  var __bxLt = document.createElement(`div`),
-+    __bxDk = document.createElement(`div`);
-+  ((__bxLt.className = `fw-bx-fill fw-bx-light`),
++  // v3-W: WebKit only, by the page's own feature test (`GestureEvent` is WebKit-only: MDN browser-compat-data
++  // api/GestureEvent.json; the same gate as heCss and K6). Elsewhere nothing is created and the CSS (scoped to
++  // html.fw-bx) does not apply: Chrome keeps v0's nav exactly (its clip-path edge anti-aliasing differs from v0's
++  // border-radius by up to 226 levels mid-tween; WebKit's stays within T2).
++  var __bxOn = `GestureEvent` in window,
++    __bxLt = __bxOn ? document.createElement(`div`) : null,
++    __bxDk = __bxOn ? document.createElement(`div`) : null;
++  __bxOn &&
++    (document.documentElement.classList.add(`fw-bx`),
++    (__bxLt.className = `fw-bx-fill fw-bx-light`),
 +    (__bxDk.className = `fw-bx-fill fw-bx-dark`),
 +    __bxLt.setAttribute(`aria-hidden`, `true`),
 +    __bxDk.setAttribute(`aria-hidden`, `true`),
@@ -24,29 +31,31 @@
        var a = lN(),
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -12328,3 +12328,42 @@
+@@ -12328,7 +12328,63 @@
+ .start-selling-future.is-visible.is-future-shrinking
    .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
    animation: fw-c-shell-hold 0.95s linear;
- }
++}
 +/* g0-box v3 (gpu-original M3-B, option 3; phones <= 640 px). The nav keeps v0's box per frame (top, width, height,
 +   backdrop blur) and its menu card is untouched, but the nav paints nothing itself: its colour is two composited solid
 +   fills (light #ffffff1a, dark #131922 at opacity --morph: source-over of the two is v0's premultiplied color-mix
 +   exactly), its rounded corner is clip-path inset(0 round r) (a shape mask on the composited layer: a radius change
-+   repaints nothing). */
++   repaints nothing). v3-W: WebKit only, under html.fw-bx (set by the JS when `GestureEvent` in window); elsewhere
++   the nav stays v0's. */
 +.fw-bx-fill {
 +  display: none;
 +}
 +@media (width<=640px) {
-+  .start-selling-top-nav.svelte-1dcozpm {
++  html.fw-bx .start-selling-top-nav.svelte-1dcozpm {
 +    background: none;
 +    border-radius: 0;
 +    clip-path: inset(0 round calc(32px - 12px * var(--morph)));
 +  }
-+  .start-selling-top-nav.is-locale-open.svelte-1dcozpm {
++  html.fw-bx .start-selling-top-nav.is-locale-open.svelte-1dcozpm {
 +    clip-path: none;
 +    border-radius: calc(32px - 12px * var(--morph));
 +  }
-+  .start-selling-top-nav > .fw-bx-fill {
++  html.fw-bx .start-selling-top-nav > .fw-bx-fill {
 +    display: block;
 +    position: absolute;
 +    inset: 0;
@@ -54,16 +63,35 @@
 +    pointer-events: none;
 +    will-change: transform;
 +  }
-+  .start-selling-top-nav.is-locale-open > .fw-bx-fill {
++  html.fw-bx .start-selling-top-nav.is-locale-open > .fw-bx-fill {
 +    border-radius: inherit;
 +  }
-+  .start-selling-top-nav > .fw-bx-light {
++  html.fw-bx .start-selling-top-nav > .fw-bx-light {
 +    background: #ffffff1a;
 +  }
-+  .start-selling-top-nav > .fw-bx-dark {
++  html.fw-bx .start-selling-top-nav > .fw-bx-dark {
 +    --morph: inherit;
 +    background: #131922;
 +    opacity: var(--morph);
 +    will-change: opacity;
 +  }
++  /* v0's nav background transitions whenever --morph changes outside .is-morphing (0.7 s; 0.32 s under reduced
++     motion, where the close snaps --morph to 0 and the colour fades dark -> light; 0.7 s for the ready hero pill at
++     601-640 px): the dark fill's opacity takes the same transition, same duration, easing and conditions. */
++  html.fw-bx .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) > .fw-bx-dark {
++    transition: opacity 0.7s cubic-bezier(0.33, 0, 0.2, 1);
++  }
+ }
++@media (width<=640px) and (prefers-reduced-motion: reduce) {
++  html.fw-bx .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) > .fw-bx-dark {
++    transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
++  }
 +}
++@media (600px<width<=640px) {
++  html.fw-bx .start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm > .fw-bx-dark {
++    transition: opacity 0.7s cubic-bezier(0.33, 0, 0.2, 1);
++  }
++}
+ /* [platform-corners] Safari (WebKit bug 312584, a regression since 303819@main, fixed in 313267@main) lets a child with
+    filter: blur() paint past an ancestor's rounded overflow clip: the blurred background picture of the "discovered"
+    row's stage showed as a grey square in all four corners. Clip the picture itself to the stage's 5% radius (clip-path

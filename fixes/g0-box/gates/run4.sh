@@ -1,9 +1,9 @@
 #!/bin/sh
-# g0-box: run the seek harness, one shared-lane hold per arm (A = g0.0b by default, V = the g0-box overlay; SIMDEV=<device>, SIMRM=on for the Simulator), then score.
+# g0-box: run the seek harness, one shared-lane hold per arm (A = g0.0c by default, V = the g0-box overlay; SIMDEV=<device>, SIMRM=on for the Simulator), then score.
 #   sh fixes/g0-box/gates/run4.sh <outdir> [harness args...]     (engine chrome; sim: ENGINE=sim)
 cd "$(dirname "$0")/../../.." || exit 2
 O=$1; shift
-A=${A:-out/g0box/g00b}; V=${V:-fixes/g0-box/overlay}
+A=${A:-out/g0box/g00c}; V=${V:-fixes/g0-box/overlay}
 for arm in ${ARMS:-A V A2 V2}; do
   if [ "${ENGINE:-chrome}" = sim ]; then
     node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-g0-box --doing "g0-box seek $arm (Simulator pixels)" -- \
