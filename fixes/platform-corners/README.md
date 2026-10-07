@@ -69,7 +69,7 @@ Which layer (Simulator, v0, card 2, CSS injected in the same load):
 
 The picture is clipped to the stage's own shape (same box, same 5% radii; `clip-path` applies after the filter),
 so it can no longer show outside the curve. Where the engine already clips it (Chrome, the iPad layout) it is the
-same clip twice. `on-g00b.diff` is g0.0b (the best build since PR-034) + this rule, baseline-relative, for the proposal's Try-it page B
+same clip twice. `../platform-corners-g00b/patch.diff` is g0.0b (the best build since PR-034) + this rule, baseline-relative, for the proposal's Try-it page B
 (A = `fixes/g0-revert/patch.diff`, g0.0b). On v14 and g0.0 the same rule applies unchanged (appended at the end of the CSS).
 The other candidate, `display: none` on that one picture (it is covered anyway), also gives 0; not chosen, because it
 removes content instead of restoring the intended clip.

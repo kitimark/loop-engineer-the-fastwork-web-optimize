@@ -71,7 +71,7 @@
  "fix": {
   "rule": ".start-selling-platform-stage-bg { clip-path: inset(0 round 5%); }",
   "patch": "fixes/platform-corners/patch.diff (baseline-relative)",
-  "onG00b": "fixes/platform-corners/on-g00b.diff (g0.0b + the rule, baseline-relative; Try-it B, A = fixes/g0-revert/patch.diff)"
+  "onG00b": "fixes/platform-corners-g00b/patch.diff (g0.0b + the rule, baseline-relative; Try-it B, A = fixes/g0-revert/patch.diff)"
  },
  "gates": {
   "simulatorIphone430": {
