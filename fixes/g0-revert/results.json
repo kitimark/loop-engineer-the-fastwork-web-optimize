@@ -1,11 +1,11 @@
 {
  "topic": "g0-revert",
- "build": "g0.0 = v14 with the original (v0) end of page",
+ "build": "g0.0b = g0.0 (v14 with the original v0 end of page, f75c1707) without the Join's 8 px rise at the end (PR-027 rev 5 nolift; PR-034 rev 2)",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
   "pins": {
    "js": "5c39f7a96e41e5785d029629ea86337f48b887a76eaab8b3d5cb226d6c4adad8",
-   "css": "95f0eff3c57f3a65fc601d6fe209df2408149937709d4696c9ff0c92316a8c13"
+   "css": "a2351bd219aeef3c9997f8df0d29aa82b12296a2e5dadb065e2030f87047fd13"
   },
   "v14": {
    "js": "d23ee885d54f",
@@ -15,9 +15,18 @@
    "js": "4606120cf392",
    "css": "27776f3d4138"
   },
-  "tools": "gates in fixes/g0-revert/gates (g0px.mjs Chrome, g0sim.mjs Simulator, g0count.mjs Simulator Timeline counts); shared lane, no timing"
+  "tools": "gates in fixes/g0-revert/gates (g0px.mjs Chrome, g0sim.mjs Simulator, g0count.mjs Simulator Timeline counts); shared lane, no timing",
+  "pinsG00": {
+   "js": "5c39f7a96e41e5785d029629ea86337f48b887a76eaab8b3d5cb226d6c4adad8",
+   "css": "95f0eff3c57f3a65fc601d6fe209df2408149937709d4696c9ff0c92316a8c13"
+  },
+  "v0nl": {
+   "css": "e1e6f26e2fc8",
+   "what": "baseline CSS without line 11488 (the Join's translateY(--earn-out * -8px)): nolift on the original structure, the Join reference"
+  },
+  "toolsB": "g0px.mjs / g0sim.mjs join phase (Join mid-fade: clock jumped to t1, nav CSS transitions held at ct), rise.mjs, summary.mjs SIMPREFIX/GATESKEY; gates-b in out/g0/gates-b and out/g0/simb-*; shared lane, no timing"
  },
- "verdict": "gates pass: end of page vs v0 within T2 at 430x775/815, 768, 1280 (max 54 levels, <=38 px over 8) and in the Simulator (max 2, 0 px); state parity 0 mismatches; above the end within the v14 A/A envelope in Chrome; Simulator differs only by the reverted sticky #platform; no errors or hydration messages; no timing A/B by design",
+ "verdict": "g0.0b gates pass: the Join's own rise while visible 8.00 px -> 0.00 px (Chrome 4 widths, Simulator); Join mid-fade stops vs v0nl (nolift reference) max 1-3 levels, 0 px over 8, at the A/A floor (1-2); end of page vs g0.0 differs only in the nav rect where the Join returns during the close (max 29-140, the removed lift) plus single-load #platform phase; vs v0nl within T2 as g0.0 vs v0 (max 54, <=444 px over 8); above the end the nav rect is T0 vs g0.0 and v14, the rest inside the v14 A/A envelope; reduced motion max 2 (nav max 1) vs v0nl; state parity 0 mismatches; no errors or hydration messages; no timing A/B by design",
  "notes": [
   "No measurement code changed (verify.mjs, lib/cdp.mjs, fix.mjs ab untouched); no timing A/B run.",
   "Gates: fixes/g0-revert/gates/{g0px,g0sim,g0count,summary}.mjs, all in the shared lane (probe / simulator weight).",
@@ -26,7 +35,12 @@
   "R4a/R4b registered --morph/--morph-fade + min(fade,0.9999): mid-tween differences vs v0 up to 54 levels / 38 px (OBSERVED; out/g0/g00-d removes most); kept per lead ruling (c), within T2.",
   "fade state: unset --morph-fade computes to the registered initial value 1, treated equal to \"1\".",
   "Console: only 404s for four .avif files missing from the mirror, identical in v0, v14 and g0.0; no hydrat messages.",
-  "Date.now frozen at run start + 1 h (whole second), shared by the arms of a run; countdown regions masked (F-338)."
+  "Date.now frozen at run start + 1 h (whole second), shared by the arms of a run; countdown regions masked (F-338).",
+  "g0.0b (PR-034 rev 2): one CSS declaration removed from the end Join rule (transform: translateY(calc(var(--earn-out) * -8px))); JS unchanged (5c39f7a96e41).",
+  "Join reference v0nl: baseline with only that line removed; the user accepted that look in PR-027 rev 5 (nolift: the rise goes, the blur and fade stay).",
+  "Settled seek stops never show the Join while visible (opacity 0 at every open stop with m >= 0.2), so the join phase holds the nav's CSS transitions at fixed currentTime values instead.",
+  "gatesB.counts is null: Simulator counts not re-run for g0.0b (JS identical; one CSS declaration fewer).",
+  "No measurement code changed (verify.mjs, lib/cdp.mjs, fix.mjs ab untouched); the gate scripts under fixes/g0-revert/gates gained a join phase."
  ],
  "gates": {
   "chrome": [
@@ -2059,5 +2073,3781 @@
     ]
    }
   ]
- }
+ },
+ "gatesB": {
+  "chrome": [
+   {
+    "run": "end",
+    "viewport": "1280x800",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 33,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 9,
+    "maxShade": 169,
+    "maxShadeUnmasked": 54,
+    "maxOver8Unmasked": 1,
+    "maxOver8Pct": 0.0001,
+    "maskedDiffMax": 22504,
+    "navMax": 1950,
+    "platformUnmaskedMax": 1777,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "open-640",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "1280x800",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 0,
+    "maxShade": 169,
+    "maxShadeUnmasked": 54,
+    "maxOver8Unmasked": 1558,
+    "maxOver8Pct": 0.1521,
+    "maskedDiffMax": 22504,
+    "navMax": 3642,
+    "platformUnmaskedMax": 1813,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "open-640",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "1280x800",
+    "phase": "end",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 13,
+    "t0UnmaskedStops": 13,
+    "maxShade": 44,
+    "maxShadeUnmasked": 44,
+    "maxOver8Unmasked": 1558,
+    "maxOver8Pct": 0.1521,
+    "maskedDiffMax": 1877,
+    "navMax": 3599,
+    "platformUnmaskedMax": 158,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "close-480",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "430x775",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 33,
+    "t0Stops": 4,
+    "t0UnmaskedStops": 10,
+    "maxShade": 229,
+    "maxShadeUnmasked": 49,
+    "maxOver8Unmasked": 207,
+    "maxOver8Pct": 0.0069,
+    "maskedDiffMax": 77358,
+    "navMax": 150370,
+    "platformUnmaskedMax": 52399,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "open-480",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "430x775",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 5,
+    "maxShade": 228,
+    "maxShadeUnmasked": 49,
+    "maxOver8Unmasked": 2396,
+    "maxOver8Pct": 0.0799,
+    "maskedDiffMax": 58243,
+    "navMax": 152187,
+    "platformUnmaskedMax": 36400,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "open-480",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "430x775",
+    "phase": "end",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 5,
+    "t0UnmaskedStops": 14,
+    "maxShade": 224,
+    "maxShadeUnmasked": 29,
+    "maxOver8Unmasked": 2396,
+    "maxOver8Pct": 0.0799,
+    "maskedDiffMax": 68410,
+    "navMax": 6457,
+    "platformUnmaskedMax": 52405,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "close-320",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "430x815",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 33,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 7,
+    "maxShade": 231,
+    "maxShadeUnmasked": 39,
+    "maxOver8Unmasked": 38,
+    "maxOver8Pct": 0.0012,
+    "maskedDiffMax": 63028,
+    "navMax": 8728,
+    "platformUnmaskedMax": 33334,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "rev-close-40",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "430x815",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 5,
+    "maxShade": 231,
+    "maxShadeUnmasked": 39,
+    "maxOver8Unmasked": 2452,
+    "maxOver8Pct": 0.0777,
+    "maskedDiffMax": 79750,
+    "navMax": 8728,
+    "platformUnmaskedMax": 33334,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "rev-close-40",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "430x815",
+    "phase": "end",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 21,
+    "t0UnmaskedStops": 29,
+    "maxShade": 134,
+    "maxShadeUnmasked": 30,
+    "maxOver8Unmasked": 2452,
+    "maxOver8Pct": 0.0777,
+    "maskedDiffMax": 32297,
+    "navMax": 7425,
+    "platformUnmaskedMax": 4,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "close-320",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "768x1024",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 33,
+    "t0Stops": 4,
+    "t0UnmaskedStops": 14,
+    "maxShade": 221,
+    "maxShadeUnmasked": 9,
+    "maxOver8Unmasked": 444,
+    "maxOver8Pct": 0.0141,
+    "maskedDiffMax": 84288,
+    "navMax": 68237,
+    "platformUnmaskedMax": 9749,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "open-80",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 24,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 24,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 24,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "768x1024",
+    "phase": "end",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 3,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 36905,
+    "maxOver8Pct": 1.1732,
+    "maskedDiffMax": 84301,
+    "navMax": 68302,
+    "platformUnmaskedMax": 69598,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "rev-close-680",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 24,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 24,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 24,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "end",
+    "viewport": "768x1024",
+    "phase": "end",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 33,
+    "t0Stops": 5,
+    "t0UnmaskedStops": 5,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 36905,
+    "maxOver8Pct": 1.1732,
+    "maskedDiffMax": 62558,
+    "navMax": 24930,
+    "platformUnmaskedMax": 69598,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "rev-close-680",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 24,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 24,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 24,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 1,
+    "maxShade": 59,
+    "maxShadeUnmasked": 59,
+    "maxOver8Unmasked": 3574,
+    "maxOver8Pct": 0.349,
+    "maskedDiffMax": 2072,
+    "navMax": 7122,
+    "platformUnmaskedMax": 104,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-80-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 59,
+    "maxShadeUnmasked": 59,
+    "maxOver8Unmasked": 3574,
+    "maxOver8Pct": 0.349,
+    "maskedDiffMax": 7910,
+    "navMax": 7124,
+    "platformUnmaskedMax": 641,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-80-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 2,
+    "maxShade": 2,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 7926,
+    "navMax": 33,
+    "platformUnmaskedMax": 537,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 2,
+    "t0UnmaskedStops": 2,
+    "maxShade": 59,
+    "maxShadeUnmasked": 59,
+    "maxOver8Unmasked": 3574,
+    "maxOver8Pct": 0.349,
+    "maskedDiffMax": 2072,
+    "navMax": 7122,
+    "platformUnmaskedMax": 104,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-80-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 2,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 7910,
+    "navMax": 35,
+    "platformUnmaskedMax": 537,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 59,
+    "maxShadeUnmasked": 59,
+    "maxOver8Unmasked": 3574,
+    "maxOver8Pct": 0.349,
+    "maskedDiffMax": 7926,
+    "navMax": 7128,
+    "platformUnmaskedMax": 641,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-80-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 5,
+    "t0UnmaskedStops": 5,
+    "maxShade": 1,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 0,
+    "navMax": 0,
+    "platformUnmaskedMax": 3,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 1,
+    "maxShade": 59,
+    "maxShadeUnmasked": 59,
+    "maxOver8Unmasked": 3574,
+    "maxOver8Pct": 0.349,
+    "maskedDiffMax": 2344,
+    "navMax": 7126,
+    "platformUnmaskedMax": 104,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-80-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 2,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 7910,
+    "navMax": 35,
+    "platformUnmaskedMax": 537,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "1280x800",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:g00-a~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 2,
+    "maxShade": 59,
+    "maxShadeUnmasked": 59,
+    "maxOver8Unmasked": 3574,
+    "maxOver8Pct": 0.349,
+    "maskedDiffMax": 7926,
+    "navMax": 7128,
+    "platformUnmaskedMax": 641,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "join-80-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 1,
+    "maxShade": 142,
+    "maxShadeUnmasked": 140,
+    "maxOver8Unmasked": 21207,
+    "maxOver8Pct": 0.7071,
+    "maskedDiffMax": 34306,
+    "navMax": 31517,
+    "platformUnmaskedMax": 4,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 204,
+    "maxShadeUnmasked": 140,
+    "maxOver8Unmasked": 21207,
+    "maxOver8Pct": 0.7071,
+    "maskedDiffMax": 60683,
+    "navMax": 31617,
+    "platformUnmaskedMax": 16754,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 204,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 50772,
+    "navMax": 476,
+    "platformUnmaskedMax": 16754,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 1,
+    "maxShade": 199,
+    "maxShadeUnmasked": 140,
+    "maxOver8Unmasked": 21207,
+    "maxOver8Pct": 0.7071,
+    "maskedDiffMax": 34675,
+    "navMax": 31518,
+    "platformUnmaskedMax": 3,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 2,
+    "maxShade": 212,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 57801,
+    "navMax": 286,
+    "platformUnmaskedMax": 16754,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 2,
+    "maxShade": 212,
+    "maxShadeUnmasked": 140,
+    "maxOver8Unmasked": 21207,
+    "maxOver8Pct": 0.7071,
+    "maskedDiffMax": 66583,
+    "navMax": 31341,
+    "platformUnmaskedMax": 16754,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 3,
+    "t0UnmaskedStops": 4,
+    "maxShade": 141,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 12838,
+    "navMax": 17,
+    "platformUnmaskedMax": 3,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 2,
+    "t0UnmaskedStops": 2,
+    "maxShade": 142,
+    "maxShadeUnmasked": 140,
+    "maxOver8Unmasked": 21207,
+    "maxOver8Pct": 0.7071,
+    "maskedDiffMax": 34304,
+    "navMax": 31241,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 204,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 55635,
+    "navMax": 269,
+    "platformUnmaskedMax": 16754,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x775",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:g00-a~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 204,
+    "maxShadeUnmasked": 140,
+    "maxOver8Unmasked": 21207,
+    "maxOver8Pct": 0.7071,
+    "maskedDiffMax": 64025,
+    "navMax": 31340,
+    "platformUnmaskedMax": 16754,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 1,
+    "maxShade": 177,
+    "maxShadeUnmasked": 143,
+    "maxOver8Unmasked": 29883,
+    "maxOver8Pct": 0.9474,
+    "maskedDiffMax": 34204,
+    "navMax": 41216,
+    "platformUnmaskedMax": 12,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 231,
+    "maxShadeUnmasked": 143,
+    "maxOver8Unmasked": 29883,
+    "maxOver8Pct": 0.9474,
+    "maskedDiffMax": 67428,
+    "navMax": 41487,
+    "platformUnmaskedMax": 17196,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 231,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 67428,
+    "navMax": 1201,
+    "platformUnmaskedMax": 17196,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 1,
+    "maxShade": 177,
+    "maxShadeUnmasked": 143,
+    "maxOver8Unmasked": 29883,
+    "maxOver8Pct": 0.9474,
+    "maskedDiffMax": 34204,
+    "navMax": 41216,
+    "platformUnmaskedMax": 12,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 212,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 67994,
+    "navMax": 730,
+    "platformUnmaskedMax": 17201,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 212,
+    "maxShadeUnmasked": 143,
+    "maxOver8Unmasked": 29883,
+    "maxOver8Pct": 0.9474,
+    "maskedDiffMax": 67994,
+    "navMax": 41494,
+    "platformUnmaskedMax": 17201,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 6,
+    "t0UnmaskedStops": 6,
+    "maxShade": 1,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 6111,
+    "navMax": 344,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-80-120",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 2,
+    "t0UnmaskedStops": 2,
+    "maxShade": 143,
+    "maxShadeUnmasked": 143,
+    "maxOver8Unmasked": 29883,
+    "maxOver8Pct": 0.9474,
+    "maskedDiffMax": 32508,
+    "navMax": 41209,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 212,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 68398,
+    "navMax": 898,
+    "platformUnmaskedMax": 17201,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "430x815",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:g00-a~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 212,
+    "maxShadeUnmasked": 143,
+    "maxOver8Unmasked": 29883,
+    "maxOver8Pct": 0.9474,
+    "maskedDiffMax": 68398,
+    "navMax": 41494,
+    "platformUnmaskedMax": 17201,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 0,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 17559,
+    "maxOver8Pct": 0.5582,
+    "maskedDiffMax": 40284,
+    "navMax": 52373,
+    "platformUnmaskedMax": 6179,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "closed",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 0,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 17559,
+    "maxOver8Pct": 0.5582,
+    "maskedDiffMax": 55260,
+    "navMax": 56945,
+    "platformUnmaskedMax": 15894,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "closed",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 0,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 5630,
+    "maxOver8Pct": 0.179,
+    "maskedDiffMax": 55273,
+    "navMax": 33789,
+    "platformUnmaskedMax": 15894,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "closed",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "v0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 17559,
+    "maxOver8Pct": 0.5582,
+    "maskedDiffMax": 34466,
+    "navMax": 54912,
+    "platformUnmaskedMax": 6179,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "closed",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 209,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 25369,
+    "navMax": 7329,
+    "platformUnmaskedMax": 15888,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 2,
+    "maxShade": 209,
+    "maxShadeUnmasked": 153,
+    "maxOver8Unmasked": 17559,
+    "maxOver8Pct": 0.5582,
+    "maskedDiffMax": 24297,
+    "navMax": 28550,
+    "platformUnmaskedMax": 15888,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:v0nl~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 1,
+    "t0UnmaskedStops": 4,
+    "maxShade": 94,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 23511,
+    "navMax": 4376,
+    "platformUnmaskedMax": 24,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 153,
+    "maxShadeUnmasked": 153,
+    "maxOver8Unmasked": 17559,
+    "maxOver8Pct": 0.5582,
+    "maskedDiffMax": 20161,
+    "navMax": 29418,
+    "platformUnmaskedMax": 214,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "g0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 229,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 26872,
+    "navMax": 4167,
+    "platformUnmaskedMax": 15894,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "join",
+    "viewport": "768x1024",
+    "phase": "join",
+    "reduce": false,
+    "pair": "dir:g00-a~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 1,
+    "maxShade": 229,
+    "maxShadeUnmasked": 153,
+    "maxOver8Unmasked": 17559,
+    "maxOver8Pct": 0.5582,
+    "maskedDiffMax": 28700,
+    "navMax": 28550,
+    "platformUnmaskedMax": 15894,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "join-24-40",
+    "logs": [
+     {
+      "name": "v0",
+      "n": 10,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 6,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:v0nl#2",
+      "n": 6,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "reduce",
+    "viewport": "1280x800",
+    "phase": "end",
+    "reduce": true,
+    "pair": "dir:v0nl~g0",
+    "stops": 21,
+    "t0Stops": 15,
+    "t0UnmaskedStops": 15,
+    "maxShade": 113,
+    "maxShadeUnmasked": 8,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 689,
+    "navMax": 8310,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5224/5224",
+    "stateKeys": [],
+    "worst": "open-0",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "reduce",
+    "viewport": "1280x800",
+    "phase": "end",
+    "reduce": true,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 21,
+    "t0Stops": 15,
+    "t0UnmaskedStops": 16,
+    "maxShade": 113,
+    "maxShadeUnmasked": 8,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 689,
+    "navMax": 6027,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5224/5224",
+    "stateKeys": [],
+    "worst": "open-0",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "reduce",
+    "viewport": "1280x800",
+    "phase": "end",
+    "reduce": true,
+    "pair": "g0~dir:g00-a",
+    "stops": 21,
+    "t0Stops": 15,
+    "t0UnmaskedStops": 15,
+    "maxShade": 1,
+    "maxShadeUnmasked": 1,
+    "maxOver8Unmasked": 0,
+    "maxOver8Pct": 0,
+    "maskedDiffMax": 0,
+    "navMax": 2283,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5224/5224",
+    "stateKeys": [],
+    "worst": "open-0",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "reduce",
+    "viewport": "430x775",
+    "phase": "end",
+    "reduce": true,
+    "pair": "dir:v0nl~g0",
+    "stops": 21,
+    "t0Stops": 0,
+    "t0UnmaskedStops": 13,
+    "maxShade": 51,
+    "maxShadeUnmasked": 51,
+    "maxOver8Unmasked": 52,
+    "maxOver8Pct": 0.0017,
+    "maskedDiffMax": 78451,
+    "navMax": 2512,
+    "platformUnmaskedMax": 49671,
+    "stateMismatch": 0,
+    "maxScroll": "5187/5187",
+    "stateKeys": [],
+    "worst": "close-680",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "reduce",
+    "viewport": "430x775",
+    "phase": "end",
+    "reduce": true,
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 21,
+    "t0Stops": 13,
+    "t0UnmaskedStops": 13,
+    "maxShade": 51,
+    "maxShadeUnmasked": 51,
+    "maxOver8Unmasked": 202,
+    "maxOver8Pct": 0.0067,
+    "maskedDiffMax": 73740,
+    "navMax": 153473,
+    "platformUnmaskedMax": 49670,
+    "stateMismatch": 0,
+    "maxScroll": "5187/5187",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "reduce",
+    "viewport": "430x775",
+    "phase": "end",
+    "reduce": true,
+    "pair": "g0~dir:g00-a",
+    "stops": 21,
+    "t0Stops": 5,
+    "t0UnmaskedStops": 17,
+    "maxShade": 51,
+    "maxShadeUnmasked": 51,
+    "maxOver8Unmasked": 202,
+    "maxOver8Pct": 0.0067,
+    "maskedDiffMax": 78784,
+    "navMax": 151666,
+    "platformUnmaskedMax": 49671,
+    "stateMismatch": 0,
+    "maxScroll": "5187/5187",
+    "stateKeys": [],
+    "worst": "closed-rest",
+    "logs": [
+     {
+      "name": "dir:v0nl",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "1280x800",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~g0",
+    "stops": 20,
+    "t0Stops": 7,
+    "t0UnmaskedStops": 7,
+    "maxShade": 249,
+    "maxShadeUnmasked": 249,
+    "maxOver8Unmasked": 176764,
+    "maxOver8Pct": 17.2621,
+    "maskedDiffMax": 8712,
+    "navMax": 0,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "y3655",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "1280x800",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 6,
+    "t0UnmaskedStops": 6,
+    "maxShade": 249,
+    "maxShadeUnmasked": 249,
+    "maxOver8Unmasked": 164453,
+    "maxOver8Pct": 16.0599,
+    "maskedDiffMax": 8898,
+    "navMax": 558,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "y3655",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "1280x800",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~v14#2",
+    "stops": 20,
+    "t0Stops": 7,
+    "t0UnmaskedStops": 7,
+    "maxShade": 249,
+    "maxShadeUnmasked": 249,
+    "maxOver8Unmasked": 119058,
+    "maxOver8Pct": 11.6268,
+    "maskedDiffMax": 8221,
+    "navMax": 0,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "y3655",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "1280x800",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 12,
+    "t0UnmaskedStops": 12,
+    "maxShade": 237,
+    "maxShadeUnmasked": 237,
+    "maxOver8Unmasked": 116257,
+    "maxOver8Pct": 11.3532,
+    "maskedDiffMax": 8876,
+    "navMax": 558,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "y3987",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "1280x800",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~v14#2",
+    "stops": 20,
+    "t0Stops": 11,
+    "t0UnmaskedStops": 11,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 171141,
+    "maxOver8Pct": 16.713,
+    "maskedDiffMax": 8869,
+    "navMax": 0,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "y3655",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "1280x800",
+    "phase": "top",
+    "reduce": false,
+    "pair": "dir:g00-a~v14#2",
+    "stops": 20,
+    "t0Stops": 10,
+    "t0UnmaskedStops": 10,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 163386,
+    "maxOver8Pct": 15.9557,
+    "maskedDiffMax": 8898,
+    "navMax": 558,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "7794/7794",
+    "stateKeys": [],
+    "worst": "y3655",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x775",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~g0",
+    "stops": 20,
+    "t0Stops": 9,
+    "t0UnmaskedStops": 10,
+    "maxShade": 254,
+    "maxShadeUnmasked": 254,
+    "maxOver8Unmasked": 23034,
+    "maxOver8Pct": 0.768,
+    "maskedDiffMax": 128842,
+    "navMax": 0,
+    "platformUnmaskedMax": 2,
+    "stateMismatch": 0,
+    "maxScroll": "5964/5189",
+    "stateKeys": [],
+    "worst": "y1289",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x775",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 12,
+    "t0UnmaskedStops": 13,
+    "maxShade": 253,
+    "maxShadeUnmasked": 253,
+    "maxOver8Unmasked": 23034,
+    "maxOver8Pct": 0.768,
+    "maskedDiffMax": 85853,
+    "navMax": 0,
+    "platformUnmaskedMax": 2,
+    "stateMismatch": 0,
+    "maxScroll": "5964/5189",
+    "stateKeys": [],
+    "worst": "y1504",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x775",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~v14#2",
+    "stops": 20,
+    "t0Stops": 11,
+    "t0UnmaskedStops": 12,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 31921,
+    "maxOver8Pct": 1.0643,
+    "maskedDiffMax": 81645,
+    "navMax": 0,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5964/5964",
+    "stateKeys": [],
+    "worst": "y1719",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x775",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 11,
+    "t0UnmaskedStops": 12,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 23055,
+    "maxOver8Pct": 0.7687,
+    "maskedDiffMax": 128842,
+    "navMax": 0,
+    "platformUnmaskedMax": 0,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5189",
+    "stateKeys": [],
+    "worst": "y1289",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x775",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~v14#2",
+    "stops": 20,
+    "t0Stops": 9,
+    "t0UnmaskedStops": 10,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 32148,
+    "maxOver8Pct": 1.0719,
+    "maskedDiffMax": 128842,
+    "navMax": 0,
+    "platformUnmaskedMax": 2,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5964",
+    "stateKeys": [],
+    "worst": "y1504",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x775",
+    "phase": "top",
+    "reduce": false,
+    "pair": "dir:g00-a~v14#2",
+    "stops": 20,
+    "t0Stops": 10,
+    "t0UnmaskedStops": 11,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 31921,
+    "maxOver8Pct": 1.0643,
+    "maskedDiffMax": 87329,
+    "navMax": 0,
+    "platformUnmaskedMax": 2,
+    "stateMismatch": 0,
+    "maxScroll": "5189/5964",
+    "stateKeys": [],
+    "worst": "y1504",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x815",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~g0",
+    "stops": 20,
+    "t0Stops": 8,
+    "t0UnmaskedStops": 9,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 177359,
+    "maxOver8Pct": 5.6232,
+    "maskedDiffMax": 52148,
+    "navMax": 0,
+    "platformUnmaskedMax": 203231,
+    "stateMismatch": 0,
+    "maxScroll": "6044/5229",
+    "stateKeys": [],
+    "worst": "y1534",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x815",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 4,
+    "t0UnmaskedStops": 4,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 198858,
+    "maxOver8Pct": 6.3048,
+    "maskedDiffMax": 82392,
+    "navMax": 0,
+    "platformUnmaskedMax": 269396,
+    "stateMismatch": 0,
+    "maxScroll": "6044/5229",
+    "stateKeys": [],
+    "worst": "y1753",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x815",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~v14#2",
+    "stops": 20,
+    "t0Stops": 9,
+    "t0UnmaskedStops": 10,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 179656,
+    "maxOver8Pct": 5.696,
+    "maskedDiffMax": 89338,
+    "navMax": 0,
+    "platformUnmaskedMax": 203450,
+    "stateMismatch": 0,
+    "maxScroll": "6044/6044",
+    "stateKeys": [],
+    "worst": "y1315",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x815",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 3,
+    "t0UnmaskedStops": 3,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 143735,
+    "maxOver8Pct": 4.5572,
+    "maskedDiffMax": 82392,
+    "navMax": 0,
+    "platformUnmaskedMax": 269396,
+    "stateMismatch": 0,
+    "maxScroll": "5229/5229",
+    "stateKeys": [],
+    "worst": "y1315",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x815",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~v14#2",
+    "stops": 20,
+    "t0Stops": 7,
+    "t0UnmaskedStops": 8,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 143735,
+    "maxOver8Pct": 4.5572,
+    "maskedDiffMax": 89338,
+    "navMax": 0,
+    "platformUnmaskedMax": 58305,
+    "stateMismatch": 0,
+    "maxScroll": "5229/6044",
+    "stateKeys": [],
+    "worst": "y1534",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "430x815",
+    "phase": "top",
+    "reduce": false,
+    "pair": "dir:g00-a~v14#2",
+    "stops": 20,
+    "t0Stops": 4,
+    "t0UnmaskedStops": 4,
+    "maxShade": 255,
+    "maxShadeUnmasked": 254,
+    "maxOver8Unmasked": 69345,
+    "maxOver8Pct": 2.1986,
+    "maskedDiffMax": 90574,
+    "navMax": 0,
+    "platformUnmaskedMax": 269396,
+    "stateMismatch": 0,
+    "maxScroll": "5229/6044",
+    "stateKeys": [],
+    "worst": "y1753",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "768x1024",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~g0",
+    "stops": 20,
+    "t0Stops": 7,
+    "t0UnmaskedStops": 7,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 88751,
+    "maxOver8Pct": 2.8213,
+    "maskedDiffMax": 1144,
+    "navMax": 0,
+    "platformUnmaskedMax": 106984,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "y2276",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "768x1024",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 5,
+    "t0UnmaskedStops": 5,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 92350,
+    "maxOver8Pct": 2.9357,
+    "maskedDiffMax": 4719,
+    "navMax": 0,
+    "platformUnmaskedMax": 107019,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "y2023",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "768x1024",
+    "phase": "top",
+    "reduce": false,
+    "pair": "v14~v14#2",
+    "stops": 20,
+    "t0Stops": 6,
+    "t0UnmaskedStops": 6,
+    "maxShade": 255,
+    "maxShadeUnmasked": 255,
+    "maxOver8Unmasked": 47477,
+    "maxOver8Pct": 1.5093,
+    "maskedDiffMax": 1067,
+    "navMax": 0,
+    "platformUnmaskedMax": 106506,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "y2276",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "768x1024",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~dir:g00-a",
+    "stops": 20,
+    "t0Stops": 5,
+    "t0UnmaskedStops": 5,
+    "maxShade": 253,
+    "maxShadeUnmasked": 253,
+    "maxOver8Unmasked": 36114,
+    "maxOver8Pct": 1.148,
+    "maskedDiffMax": 4754,
+    "navMax": 0,
+    "platformUnmaskedMax": 3508,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "y2276",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "768x1024",
+    "phase": "top",
+    "reduce": false,
+    "pair": "g0~v14#2",
+    "stops": 20,
+    "t0Stops": 8,
+    "t0UnmaskedStops": 9,
+    "maxShade": 244,
+    "maxShadeUnmasked": 244,
+    "maxOver8Unmasked": 34172,
+    "maxOver8Pct": 1.0863,
+    "maskedDiffMax": 1024,
+    "navMax": 0,
+    "platformUnmaskedMax": 107510,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "y2023",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   },
+   {
+    "run": "top",
+    "viewport": "768x1024",
+    "phase": "top",
+    "reduce": false,
+    "pair": "dir:g00-a~v14#2",
+    "stops": 20,
+    "t0Stops": 3,
+    "t0UnmaskedStops": 3,
+    "maxShade": 253,
+    "maxShadeUnmasked": 253,
+    "maxOver8Unmasked": 38798,
+    "maxOver8Pct": 1.2334,
+    "maskedDiffMax": 4717,
+    "navMax": 0,
+    "platformUnmaskedMax": 107545,
+    "stateMismatch": 0,
+    "maxScroll": "5337/5337",
+    "stateKeys": [],
+    "worst": "y2276",
+    "logs": [
+     {
+      "name": "v14",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "g0",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "dir:g00-a",
+      "n": 0,
+      "hydrate": 0
+     },
+     {
+      "name": "v14#2",
+      "n": 0,
+      "hydrate": 0
+     }
+    ]
+   }
+  ],
+  "sim": [
+   {
+    "run": "simb-end",
+    "phase": "end",
+    "pair": "dir:v0nl~g0",
+    "stops": 14,
+    "t0Stops": 0,
+    "maxShade": 233,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-end",
+    "phase": "end",
+    "pair": "dir:v0nl~dir:g00-a",
+    "stops": 14,
+    "t0Stops": 0,
+    "maxShade": 233,
+    "maxShadeUnmasked": 16,
+    "maxOver8Unmasked": 1360,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-end",
+    "phase": "end",
+    "pair": "g0~dir:g00-a",
+    "stops": 14,
+    "t0Stops": 2,
+    "maxShade": 127,
+    "maxShadeUnmasked": 16,
+    "maxOver8Unmasked": 1360,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join",
+    "phase": "join",
+    "pair": "v0~dir:v0nl",
+    "stops": 7,
+    "t0Stops": 0,
+    "maxShade": 204,
+    "maxShadeUnmasked": 90,
+    "maxOver8Unmasked": 14686,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join",
+    "phase": "join",
+    "pair": "v0~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "maxShade": 204,
+    "maxShadeUnmasked": 90,
+    "maxOver8Unmasked": 14678,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join",
+    "phase": "join",
+    "pair": "v0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "maxShade": 205,
+    "maxShadeUnmasked": 90,
+    "maxOver8Unmasked": 14686,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join",
+    "phase": "join",
+    "pair": "dir:v0nl~g0",
+    "stops": 7,
+    "t0Stops": 0,
+    "maxShade": 61,
+    "maxShadeUnmasked": 3,
+    "maxOver8Unmasked": 0,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join",
+    "phase": "join",
+    "pair": "dir:v0nl~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 1,
+    "maxShade": 21,
+    "maxShadeUnmasked": 2,
+    "maxOver8Unmasked": 0,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join",
+    "phase": "join",
+    "pair": "g0~dir:v0nl#2",
+    "stops": 7,
+    "t0Stops": 0,
+    "maxShade": 61,
+    "maxShadeUnmasked": 3,
+    "maxOver8Unmasked": 0,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-join2",
+    "phase": "join",
+    "pair": "g0~dir:g00-a",
+    "stops": 7,
+    "t0Stops": 0,
+    "maxShade": 140,
+    "maxShadeUnmasked": 89,
+    "maxOver8Unmasked": 14646,
+    "stateKeys": [],
+    "errors": []
+   },
+   {
+    "run": "simb-top",
+    "phase": "top",
+    "pair": "v14~g0",
+    "stops": 8,
+    "t0Stops": 1,
+    "maxShade": 232,
+    "maxShadeUnmasked": 232,
+    "maxOver8Unmasked": 26876,
+    "stateKeys": [],
+    "errors": []
+   }
+  ],
+  "counts": null
+ },
+ "verdictG00": "gates pass: end of page vs v0 within T2 at 430x775/815, 768, 1280 (max 54 levels, <=38 px over 8) and in the Simulator (max 2, 0 px); state parity 0 mismatches; above the end within the v14 A/A envelope in Chrome; Simulator differs only by the reverted sticky #platform; no errors or hydration messages; no timing A/B by design"
 }

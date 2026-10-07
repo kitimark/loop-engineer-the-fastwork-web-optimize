@@ -1,16 +1,121 @@
-# Fix: g0-revert (g0.0 = v14 with the original end-of-page)
+# Fix: g0-revert (g0.0 = v14 with the original end-of-page; g0.0b = g0.0 with the Join's 8 px rise removed)
 
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured: the pixel, state and count gates pass; no timing A/B, by design
+**Status:** g0.0 landed (f75c1707). g0.0b (PR-034 rev 2) measured: the pixel and state gates pass (section "g0.0b"); no timing A/B, by design
 **Stage:** F (build) for step 0 of `research/gpu-original/README.md` §4 (signed design b7117d64)
 **Device class / gate:** look and behaviour revert; gates are pixels (Chrome + Simulator), state parity, counts
 **Driver(s) behind the claims:** Chrome seek harness (wheel gesture, stubbed clock), Simulator seek harness, Simulator Timeline counts
 **Prediction:** none (step 0 is the reference build for g0.1; it is not meant to be faster)
-**Topic:** user T-228 #60/#62: roll back only the end-of-page scroll behaviour to v0, keep v14 above the end
+**Topic:** user T-228 #60/#62: roll back only the end-of-page scroll behaviour to v0, keep v14 above the end;
+PR-034 rev 1 decision (changes requested, option g0): add the Join waitlist fix (no lift while it fades), = g0.0b
 **Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (nav component, pretty lines ~14040-15580 of v14),
 `/_app/immutable/assets/2.gBuqKVzi.css` (nav end rules ~11867-12040, appended end blocks ~12306-12594 of v14)
+
+## g0.0b (PR-034 rev 2): the Join without the lift
+
+The user's PR-034 rev 1 decision (changes requested, option g0) asked to apply the Join waitlist fix: the button lifted
+up while it faded out as the end-of-page menu appeared. That is PR-027 rev 5 "nolift", which the user accepted
+earlier (T-204 #10/#13): the 8 px rise goes, the blur and the fade stay (lead, 2026-10-07).
+
+**Change.** One CSS declaration fewer than g0.0: the end rule
+`.start-selling-top-nav:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn` no longer sets
+`transform: translateY(calc(var(--earn-out) * -8px))` (v0's line 11488). The JS is g0.0's, byte for byte.
+
+**Mechanism** (CSS 11477-11495 of the baseline). v0 drives `transform` and `filter` from `--earn-out = clamp(0, m/0.2, 1)`
+with no transition, while `opacity` transitions over 0.32 s after a 0.12 s delay. So as the menu starts to open
+(m reaches 0.2 after ~49 ms of the 680 ms tween) the button jumps 8 px up and blurs while it is still fully opaque, and
+only then fades; on the close it comes back from 8 px up. Without the transform it blurs and fades in place.
+
+**Reference.** v0nl = the baseline with only that line removed (`out/g0/v0nl`, CSS e1e6f26e2fc8): nolift's look on
+the original structure. g0.0b's Join must equal v0nl's; the rest of the end must equal g0.0's.
+
+**Join mid-fade stops** (`g0px.mjs join` / `g0sim.mjs join`, new). The seek stops of gate 1 are settled states: the
+Join is already transparent at every open stop, so they never show the lift. The join phase opens from the closed rest
+with the clock jumped to t1 in one frame, then holds the nav's CSS transitions at `currentTime` ct: `24:40` (m 0.10,
+`--earn-out` 0.51, inside the 0.12 s opacity delay), `80:40`, `80:120` (m 0.31, `--earn-out` 1; before and at the end
+of the delay), `80:200`, `80:300` (fading). Arms: v0, v0nl, g0.0b, g0.0, v0nl again (A/A).
+
+The button's own rise while visible (opacity > 0.01; `rise.mjs`: the button's top against the closed rest, minus the
+nav bar's own move):
+
+| | v0 | g0.0 | v0nl | g0.0b |
+|---|---|---|---|---|
+| Chrome 430x775 / 430x815 | 8.00 px | 8.00 px | 0.00 | 0.00 |
+| Chrome 768x1024 / 1280x800 | 8.00 | 8.00 | 0.00 | 0.00 |
+| Simulator | 8.00 | 8.00 | 0.00 | 0.00 |
+
+The nav bar itself moves 1.27 px up at 430 (-1.25 px at 768/1280) at the same stop in every arm; that is v0's bar,
+not the button (PR-027 measured 3.7 px for the same reason).
+
+Pixels at the Join stops (unmasked, all 7 stops: closed rest, the 5 mid-fade stops, closed):
+
+| | g0.0b vs v0nl: max level, px > 8 | v0nl A/A: max, px > 8 | g0.0 vs g0.0b (the lift): max, px > 8 (share) |
+|---|---|---|---|
+| 430x775 | 1, 0 | 1, 0 | 140, 21207 (0.71 %) |
+| 430x815 | 2, 0 | 1, 0 | 143, 29883 (0.95 %) |
+| 768x1024 | 2, 0 | 1, 0 | 153, 17559 (0.56 %) |
+| 1280x800 | 1, 0 | 1, 0 | 59, 3574 (0.35 %) |
+| Simulator | 3, 0 (max 4 inside the masks) | 2, 0 | 89, 14646 (0.41 %); at `join-24-40` the button sits inside the panel countdown's 40 pt mask (masked max 140) |
+
+So the Join region is T2 against nolift's accepted look (max 1-3 levels, 0 px over 8, at the A/A floor of 1-2), and
+the lift is the only thing g0.0b changes there. State parity (classes, m, fade, panel, gap, Join width and x) 0
+mismatches; the Join's computed transform is `none` in v0nl and g0.0b at every stop.
+
+**End of the page against g0.0** (gate 1's 33 seek stops, arms v0nl, g0.0b, g0.0; `out/g0/gates-b/end`):
+
+| width | g0.0b vs g0.0: max, px > 8 (where) | g0.0b vs v0nl: max, px > 8 | g0.0 vs v0 (gate 1, for reference) |
+|---|---|---|---|
+| 430x775 | 29, 2396 (close-320, nav) | 49, 207 (0.007 %) | 49, 22 |
+| 430x815 | 30, 2452 (close-320, nav) | 39, 38 | 39, 38 |
+| 768x1024 | 140, 449 (close-560, nav) | 9, 444 (0.014 %) | 4, 0 |
+| 1280x800 | 44, 1558 (close-400/480, nav) | 54, 1 | 54, 1 |
+| Simulator | 16, 1360 | 2, 0 | 2, 0 |
+
+- Every g0.0b-vs-g0.0 difference over 2 levels sits in the nav's rect at the close and reversal stops where
+  `--earn-out` falls below 1 again (m < 0.2, the last ~280 ms of the close): the Join comes back without the lift.
+  That is the exempted "Join region during the fade". Outside the nav, g0.0b and g0.0 differ by at most 1-2 levels,
+  except two loads: 768 `rev-close-680` (#platform, 69598 px, max 255, from the g0.0 load: the agents-ask cycler on
+  real `setTimeout`, as in gate 1's 768 A/A) and 430x775 `closed-rest` (#platform, 52k px, max 14, from the g0.0b
+  load: v14's kept PR-009 idle look, gate 1).
+- Against v0nl, g0.0b keeps exactly g0.0's distance to v0 (the kept v14 parts, section "R4a/R4b"): 768's 444 px over 8
+  are at `open-80` in the nav glass (max 9).
+- State parity 0 mismatches at every stop and width; page height equals v0's.
+
+**Above the end and reduced motion.** The only change is a declaration of the end rule, and above the end that rule computes `translateY(0)` (`--earn-out`
+0), so the expectation is no pixel change there. Re-run of gate 2 with arms v14, g0.0b, g0.0, v14 (20 y stops a width,
+`out/g0/gates-b/top`):
+
+| width | nav rect: g0.0b vs g0.0 / vs v14 | g0.0b vs g0.0: max px > 8 (outside the nav) | v14 A/A: max px > 8 |
+|---|---|---|---|
+| 430x775 | T0 / T0 at all 20 stops | 23055 (y1289) | 31921 |
+| 430x815 | T0 / T0 | 143735 (y3506, #platform glints) | 179656 |
+| 768x1024 | T0 / T0 | 36114 (y4298, agents-ask cycler) | 47477 |
+| 1280x800 | T0 at 19 stops; y3655 558 px from the g0.0 load (v14 vs g0.0b there: 0) / T0 | 116257 (y3987) | 119058 |
+
+All the rest sits outside the nav, in the content that moves on real time (hero people, `#platform` glints and
+cycler, lazily decoded photos) and stays inside the v14 A/A envelope per width; per stop, some stops exceed their own
+A/A stop in both directions (g0.0 vs v14 does the same, gate 2). Class parity of the nav 0 mismatches. The Join's
+box above the end is v14's (gate 2 for g0.0).
+
+Reduced motion (arms v0nl, g0.0b, g0.0; 21 stops): the morph jumps as in v0.
+- 430x775: g0.0b vs v0nl max 2 levels at every stop but `close-680` (#platform, 49671 px, max 51, 52 px over 8:
+  v14's kept PR-009 idle look, which g0.0's load shows at `close-0`); the nav rect differs by max 1 level.
+- 1280x800: g0.0b vs v0nl max 8, 0 px over 8; g0.0b vs g0.0 max 1.
+- No transition on the Join under reduced motion (as v0): the button changes in one step, with or without the lift.
+
+**Errors.** No exception and no `hydrat` message in any load (Chrome and Simulator); the only console lines are the
+baseline's four missing `.avif` files, as in gate 3.
+
+**Shots for PR-034 rev 2** (`out/g0/pr/`, not committed): `c-g00-join.png` / `c-g0b-join.png` (Chrome 430x775,
+`join-24-40`, the nav's right half) and `s-g00-join.png` / `s-g0b-join.png` (Simulator, same stop). Closed, mid and open
+shots of rev 1 stay: at those stops g0.0b equals g0.0 within 1 level outside the masks (the Join is either at rest or
+transparent there).
+
+Pins: JS 5c39f7a96e41 (unchanged), CSS a2351bd219ae (`HASHES`). Tool changes: `gates/g0px.mjs` and `gates/g0sim.mjs`
+gain the `join` phase (the Join's top, transform and filter in the state); `gates/rise.mjs` (new);
+`gates/summary.mjs` takes `SIMPREFIX`/`GATESKEY` and a `navMax` column. No measurement code changed.
 
 ## What g0.0 is
 
@@ -67,7 +172,8 @@ under `.start-selling-top-nav:not(.is-hero-pill)`:
 
 - actions gap `(1 - clamp(0, --morph / 0.2, 1)) * 8px` (4 px at ≤640);
 - button `max-width: (1 - --earn-out) * 11rem` (9.5rem at ≤640), `opacity: 1 - --earn-out`,
-  `translateY(--earn-out * -8px)`, v0's transitions (max-width 0.68 s, opacity 0.32 s after 0.12 s);
+  `translateY(--earn-out * -8px)` (g0.0 only; g0.0b drops it, below), v0's transitions (max-width 0.68 s, opacity
+  0.32 s after 0.12 s);
 - the earn box's `padding-inline: (1 - --earn-out) * 24px` (16 px at ≤640), 0.68 s;
 - `prefers-reduced-motion`: no transition on these (as v0).
 
@@ -192,7 +298,8 @@ node tools/serve.mjs --root site-pretty --overlay <out dir> --port auto --vendor
 ```
 
 - JS `_app/immutable/nodes/2.DyWL8TcE.js` 5c39f7a96e41 (sha256 5c39f7a96e41e5785d029629ea86337f48b887a76eaab8b3d5cb226d6c4adad8)
-- CSS `_app/immutable/assets/2.gBuqKVzi.css` 95f0eff3c57f (sha256 95f0eff3c57f3a65fc601d6fe209df2408149937709d4696c9ff0c92316a8c13)
+- CSS `_app/immutable/assets/2.gBuqKVzi.css` g0.0b a2351bd219ae (sha256 a2351bd219aeef3c9997f8df0d29aa82b12296a2e5dadb065e2030f87047fd13);
+  g0.0 (f75c1707) was 95f0eff3c57f (sha256 95f0eff3c57f3a65fc601d6fe209df2408149937709d4696c9ff0c92316a8c13)
 - baseline snapshot b1789284481295-4ad4a84a; v14 compared at d23ee885d54f / 4fafb83f1e72 (`fixes/compositor-morph/v14/rebuild.sh`).
 
 No measurement code changed (`verify.mjs`, `lib/cdp.mjs`, `fix.mjs ab` untouched); no timing A/B was run (step 0 is

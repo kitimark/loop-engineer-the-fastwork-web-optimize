@@ -208,12 +208,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .hero-track.svelte-1p2vpne {
    background: #fff;
    height: 200vh;
-@@ -2122,6 +2227,136 @@
-     top: 83.3333%;
-     left: auto;
+@@ -2124,6 +2229,136 @@
      right: -45px;
-+  }
-+}
+   }
+ }
 +/* hero-exit-scroll-timeline: the hero exit (--exit-opacity / --exit-scatter, written per frame by JS
 +   in the baseline) as CSS scroll-driven animations on the `--hero-exit` view timeline of .hero-track.
 +   Range `contain 0% contain 100%` = the JS formula p = clamp(-top, 0, h - innerHeight) / (h - innerHeight).
@@ -342,9 +340,11 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +        animation-play-state: paused !important;
 +      }
 +    }
-   }
- }
++  }
++}
  @media (prefers-reduced-motion: reduce) {
+   .hero-track.svelte-1p2vpne {
+     height: auto;
 @@ -2385,6 +2620,10 @@
    display: flex;
    position: relative;
@@ -436,11 +436,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  .start-selling-future-people-o.is-standalone {
    align-self: center;
    margin-inline-start: 0.28em;
-@@ -2884,21 +3171,62 @@
- }
+@@ -2885,20 +3172,61 @@
  .start-selling-avatars.is-carousel img.is-enter {
    animation: 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards avatars-pop;
-+}
+ }
 +/* layout-animations: the leaving avatar keeps its 32px box; instead of shrinking width/flex-basis/
 +   margin-right (layout every frame), it is cropped with clip-path and the followers slide left by its
 +   advance (32px - 8px overlap) with the same easing, via the independent translate property */
@@ -468,7 +467,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +}
 +.start-selling-avatars.is-carousel.is-sliding img.st5-lead {
 +  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-exit;
- }
++}
 +.start-selling-avatars.is-carousel.is-sliding img.st5-lead ~ img {
 +  animation: 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards avatars-shift;
 +}
@@ -580,11 +579,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
      opacity: 1;
      transform: translateY(0) scale(1);
    }
-@@ -6811,6 +7163,93 @@
- .start-selling-platform-secure-network-dash-highlight.is-active {
+@@ -6812,6 +7164,93 @@
    opacity: 1;
    transition: opacity 0.2s;
-+}
+ }
 +/* [platform-idle G1] the glint was an SMIL <animate> of the stroke gradient's x1/x2 (main-thread style + paint
 +   every frame). Now the same gradient (120 user units, same stops) slides as a compositor transform under a
 +   fixed clip of the same shape. The old 94x3.2 svg box is 94x3.1875 in layout (LayoutUnit), so its viewBox
@@ -671,9 +669,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  to {
 +    transform: translateX(-199.03515625px);
 +  }
- }
++}
  .start-selling-platform-secure-network-face {
    box-sizing: border-box;
+   object-fit: cover;
 @@ -7186,7 +7625,8 @@
      transform: translate(-50%, -50%);
      animation: none !important;
@@ -947,7 +946,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    opacity: 1;
    pointer-events: auto;
    flex: none;
-@@ -11477,32 +11859,109 @@
+@@ -11477,32 +11859,110 @@
  .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
    --earn-out: clamp(0, calc(var(--morph) / 0.2), 1);
    --nav-earn-mask: linear-gradient(90deg, #000 0 46%, transparent 58%);
@@ -963,9 +962,14 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  opacity: 1;
    filter: blur(calc(var(--earn-out) * 10px));
    pointer-events: none;
+-  transform: translateY(calc(var(--earn-out) * -8px));
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
+-    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
 +  transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
-+  position: relative;
-+  overflow: hidden;
+   position: relative;
+   overflow: hidden;
 +}
 +/* nav-earn rev 3 (PR-021 rev 3, T-158): the Join waitlist button keeps its full width in the layout at all times, and
 +   so does the 8px gap before it. Its original look (the dark pill growing from the right edge over 0.68 s with the
@@ -1003,7 +1007,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
 +  > .start-selling-language-switch-wrap {
 +  translate: calc(var(--earn-w, 0px) + 8px) 0;
-+}
+ }
 +@media (width<=640px) {
 +  .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
 +    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
@@ -1015,25 +1019,22 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +   above stay), the Join button and the gap before it are the original's again, drawn from --morph on PR-021's
 +   structure: the gap closes with the morph (8px -> 0 over m 0..0.2, no transition while .is-morphing, as the
 +   original's), the button's max-width and the pill box's padding shrink on the original's restarted 0.68 s
-+   transitions, the opacity on its 0.32 s after 0.12 s, and the blur (base rule) and the 8px rise follow --earn-out
-+   directly. The button's width is min(box, max-width) as the original's was min(label + padding, max-width); the
++   transitions, the opacity on its 0.32 s after 0.12 s, and the blur (base rule) follows --earn-out directly (g0.0b: no
++   8px rise, PR-027 nolift). The button's width is min(box, max-width) as the original's was min(label + padding, max-width); the
 +   label stays centred and the box's dark pill is cut by the button's rounded overflow clip. At m 0 every value is the
-+   rule's above (8px, 11rem, 24px, opacity 1, a 0px rise), so the top of the page is unchanged. */
++   rule's above (8px, 11rem, 24px, opacity 1), so the top of the page is unchanged. */
 +.start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
 +  gap: calc((1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
 +}
 +.start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
 +  max-width: calc((1 - var(--earn-out)) * 11rem);
 +  opacity: calc(1 - var(--earn-out));
-   transform: translateY(calc(var(--earn-out) * -8px));
-   transition:
-     max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
--    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
--    padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
--  position: relative;
--  overflow: hidden;
++  /* g0.0b (PR-034 rev 2; the user's accepted PR-027 rev 5 "nolift", T-204 #10/#13): no 8px rise at the end of the
++     page (the original's translateY(earn-out * -8px) is left out); the blur (base rule) and the fade stay */
++  transition:
++    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
 +    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
- }
++}
 +.start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
 +  padding-inline: calc((1 - var(--earn-out)) * 24px);
 +  transition: padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
@@ -1069,7 +1070,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    -webkit-mask-image: none;
    mask-image: none;
  }
-@@ -11582,7 +12041,7 @@
+@@ -11582,7 +12042,7 @@
      transform-origin: 50%;
    }
    .start-selling-top-nav-actions.svelte-1dcozpm {
@@ -1078,7 +1079,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
    }
    .start-selling-top-nav-btn.svelte-1dcozpm {
      height: 36px;
-@@ -11592,9 +12051,11 @@
+@@ -11592,9 +12052,11 @@
      line-height: 20px;
    }
    .start-selling-top-nav-btn.is-earn.svelte-1dcozpm {
@@ -1092,7 +1093,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
  }
  @media (prefers-reduced-motion: reduce) {
    .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
-@@ -11751,11 +12212,74 @@
+@@ -11751,10 +12213,73 @@
  html[dir="rtl"] .start-selling :where(h1, h2, h3, h4, p, li, button, a, span) {
    unicode-bidi: plaintext;
  }
@@ -1138,7 +1139,7 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling [data-start-selling-scene="paused"] .sb-button .spinner,
 +.start-selling [data-start-selling-scene="paused"] .sb-dialog {
    animation-play-state: paused !important;
- }
++}
 +/* [scroll-engine /10b] layer budget: a layer only while the scene is active (gate at +-1 vh) AND the
 +   element is inside its +-0.5 vh window; both edges are off screen, and /09's no-re-skip keeps the gate
 +   from flapping, so the flips happen away from the viewport.
@@ -1165,11 +1166,10 @@ diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuq
 +.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img,
 +.start-selling [data-fw-wc="0"] {
 +  will-change: auto !important;
-+}
+ }
  .start-selling [data-start-selling-render="deferred"] {
    contain-intrinsic-block-size: auto var(--start-selling-intrinsic-block-size, 100vh);
-   content-visibility: auto;
-@@ -11768,3 +12292,39 @@
+@@ -11768,3 +12293,39 @@
      scroll-behavior: auto;
    }
  }

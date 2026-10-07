@@ -20,13 +20,15 @@ const { png, sideBySide } = await import(join(WT, 'fixes/best-build/gates/lib.mj
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 
 const [phase, outdir, ...armNames] = process.argv.slice(2);
-if (!['end', 'top'].includes(phase) || !outdir || armNames.length < 2) { console.error('usage: g0sim.mjs end|top <outdir> <arm> <arm> [...]'); process.exit(1); }
+if (!['end', 'top', 'join'].includes(phase) || !outdir || armNames.length < 2) { console.error('usage: g0sim.mjs end|top|join <outdir> <arm> <arm> [...]'); process.exit(1); }
 const SETTLE = Number(process.env.SETTLE || 1100);
 const BASE = resolveTree('site-pretty');
 const JS = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const sha12 = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const G0DIR = join(WT, 'out/g0', process.env.G0DIR || 'g00-a');
 const DIRS = { v0: null, v14: join(WT, 'out/g0/v14'), g0: G0DIR };
+// reference or diagnostic arms: any out/g0/<dir> named as dir:<name> (e.g. dir:v0nl, the original with only PR-027's nolift line)
+for (const a of process.argv.slice(4)) if (a.startsWith('dir:')) DIRS[a] = join(WT, 'out/g0', a.slice(4));
 const pin = (a) => [sha12(readFileSync(join(DIRS[a] || BASE, JS))), sha12(readFileSync(join(DIRS[a] || BASE, CSS)))];
 const tag = `sim-${phase}`;
 const OUT = join(outdir, tag); mkdirSync(OUT, { recursive: true });
@@ -41,9 +43,17 @@ const STATE = `JSON.stringify((() => { const n = document.querySelector('header.
   return { y: Math.round(scrollY), max: document.documentElement.scrollHeight - innerHeight, vh: innerHeight, m: n.style.getPropertyValue('--morph'), cls: n.className.replace(/svelte-\\S+/g, '').replace(/\\s+/g, ' ').trim(),
     fade: p ? p.style.getPropertyValue('--morph-fade') : null, join: b ? Math.round(b.getBoundingClientRect().width * 100) / 100 + ' ' + getComputedStyle(b).opacity : null,
     endEls: document.querySelectorAll('.fw-ms-end, [data-fw-cm], .fw-rv-glass').length, iw: innerWidth,
+    jy: b ? Math.round(b.getBoundingClientRect().top * 100) / 100 : null, navt: Math.round(n.getBoundingClientRect().top * 100) / 100,
+    jop: b ? getComputedStyle(b).opacity : null, jtf: b ? getComputedStyle(b).transform : null, jf: b ? getComputedStyle(b).filter : null,
     plat: p ? Math.round(p.getBoundingClientRect().top * 100) / 100 + ' ' + getComputedStyle(p).position : null,
     mask: [...document.querySelectorAll('.waitlist-closing-countdown, .start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized, .start-selling-platform-secure-network-dash')]
       .map((e) => e.getBoundingClientRect()).filter((q) => q.width && q.bottom > 0 && q.top < innerHeight).map((q) => [q.left, q.top, q.right, q.bottom].map((v) => Math.round(v))) }; })())`;
+// join phase (g0.0b): the nav's CSS transitions held at currentTime ct (see g0px.mjs)
+// (WebKit's Runtime.evaluate does not await promises, tools/lib/wip.mjs: real-time sleeps stand in for 2 rAFs)
+const JPAUSE = (ct) => `(() => { const n = document.querySelector('header.start-selling-top-nav'), out = [];
+  for (const a of document.getAnimations()) { try { const t = a.effect && a.effect.target; if (a instanceof CSSTransition && t && n && n.contains(t)) { a.pause(); a.currentTime = ${ct}; out.push(a.transitionProperty); } } catch (e) {} }
+  return out.sort().join(' '); })()`;
+const JPLAY = `(() => { const n = document.querySelector('header.start-selling-top-nav'); for (const a of document.getAnimations()) { try { const t = a.effect && a.effect.target; if (a instanceof CSSTransition && t && n && n.contains(t) && a.playState === 'paused') a.play(); } catch (e) {} } return 1; })()`;
 const wheel = (dy) => `(() => { const e = new WheelEvent('wheel', { deltaY: ${dy}, bubbles: true, cancelable: true }); document.body.dispatchEvent(e); return e.defaultPrevented; })()`;
 const res = { tool: 'fixes/g0-revert/gates/g0sim.mjs', phase, settleMs: SETTLE, runs: [], diffs: [] };
 const save = () => writeFileSync(join(OUT, 'g0sim.json'), JSON.stringify(res, null, 1));
@@ -95,6 +105,23 @@ for (const [i, arm] of armNames.entries()) {
         continue;
       }
       await shoot('closed-rest');
+      if (phase === 'join') {
+        const PLAN = (process.env.JOIN_PLAN || '24:40,80:40,80:120,80:200,80:300').split(',').map((x) => x.split(':').map(Number));
+        run.held = {};
+        for (const [k, [t1, ct]] of PLAN.entries()) {
+          const Fk = 1e7 + k * 1e6;
+          await c.evaluate(`(window.__g0clk.set(${Fk}), 1)`); await c.evaluate(wheel(120)); await sleep(150);
+          await c.evaluate(`(window.__g0clk.set(${Fk + t1}), 1)`); await sleep(150);
+          run.held[`join-${t1}-${ct}`] = await c.evaluate(JPAUSE(ct)); await sleep(150);
+          await shoot(`join-${t1}-${ct}`);
+          await c.evaluate(JPLAY);
+          await c.evaluate(`(window.__g0clk.set(${Fk + 1000}), 1)`); await sleep(SETTLE);
+          await c.evaluate(`(window.__g0clk.set(${Fk + 5e5}), 1)`); await c.evaluate(wheel(-120)); await sleep(150);
+          await c.evaluate(`(window.__g0clk.set(${Fk + 5e5 + 1000}), 1)`); await sleep(SETTLE);
+        }
+        await shoot('closed');
+        continue;
+      }
       const step = async (stop, t) => { await c.evaluate(`(window.__g0clk.set(${t}), 1)`); await sleep(SETTLE); await shoot(stop); };
       const F = 1e7; await c.evaluate(`(window.__g0clk.set(${F}), 1)`); run.openPrevented = await c.evaluate(wheel(120));
       for (const t of [40, 80, 120, 200, 300, 440, 680]) await step(`open-${t}`, F + t);

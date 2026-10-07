@@ -17,7 +17,10 @@
 //        #platform's inline --morph-fade / pointer-events.
 //  top : frozen frames at y stops from the top to #platform (POS, default 20 stops, walked down in one load), plus the
 //        nav's classes and the Join button's computed box at each stop.
-//  Both: console errors, exceptions, 'hydrat' messages per load; REDUCE=1 emulates prefers-reduced-motion: reduce.
+//  join: (g0.0b, PR-034 rev 2) the Join button mid-fade: closed rest, then per JOIN_PLAN item t1:ct (default
+//        24:40,80:40,80:120,80:200,80:300) the open gesture with the clock jumped to t1 and the nav's CSS transitions
+//        held at ct ms; each stop records the held transition properties. Then 'closed'.
+//  All: console errors, exceptions, 'hydrat' messages per load; REDUCE=1 emulates prefers-reduced-motion: reduce.
 // Diffs: every stop, every arm pair: pixels with any channel difference (T0 = 0), max channel diff, bbox (css px),
 // inside the nav's rect, inside #platform's rect, elsewhere. Output <outdir>/<phase>-<W>[-reduce].json + PNGs of
 // differing stops (A | B | diff x20).
@@ -33,7 +36,7 @@ const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
 
 const [phase, outdir, ...armNames] = process.argv.slice(2);
 // arm names: v0, v14, g0, or dir:<out/g0 subdir> (a diagnostic build)
-if (!['end', 'top'].includes(phase) || !outdir || armNames.length < 2) { console.error('usage: g0px.mjs end|top <outdir> <arm> <arm> [...]'); process.exit(1); }
+if (!['end', 'top', 'join'].includes(phase) || !outdir || armNames.length < 2) { console.error('usage: g0px.mjs end|top|join <outdir> <arm> <arm> [...]'); process.exit(1); }
 const W = process.env.W || '430x775';
 const [VW, VH] = W.split('x').map(Number);
 const REDUCE = process.env.REDUCE === '1';
@@ -76,7 +79,7 @@ const STATE = `(() => { const n = document.querySelector('header.start-selling-t
     nav: r ? { l: r.left, t: r.top, r: r.right, b: r.bottom } : null, plat: pr ? { l: pr.left, t: pr.top, r: pr.right, b: pr.bottom } : null,
     fade: p ? p.style.getPropertyValue('--morph-fade') : null, pe: p ? p.style.pointerEvents : null, pfPaused: p ? p.hasAttribute('data-fw-pf-paused') : null,
     panel: pn ? { aria: pn.getAttribute('aria-hidden'), scene: pn.getAttribute('data-start-selling-scene'), inert: pn.inert } : null,
-    join: bs ? { w: br.width, x: br.left, op: bs.opacity, f: bs.filter, tf: bs.transform, mw: bs.maxWidth } : null,
+    join: bs ? { w: br.width, x: br.left, y: br.top, op: bs.opacity, f: bs.filter, tf: bs.transform, mw: bs.maxWidth } : null,
     gap: a ? getComputedStyle(a).columnGap : null, html: document.documentElement.className, dpr: devicePixelRatio,
     endEls: document.querySelectorAll('.fw-ms-end, [data-fw-cm], .fw-rv-glass, .fw-rv-dark').length,
     // kept-v14 areas outside g0.0's scope, for the masked counts: the countdowns (v14's countdown look) and #platform's
@@ -84,9 +87,15 @@ const STATE = `(() => { const n = document.querySelector('header.start-selling-t
     mask: [...document.querySelectorAll('.waitlist-closing-countdown, .start-selling-platform-row-title-doc, .start-selling-platform-row-title-earn, .start-selling-platform-row-title-secure, .start-selling-platform-row-title-organized, .start-selling-platform-secure-network-dash')]
       .map((e) => e.getBoundingClientRect()).filter((q) => q.width && q.bottom > 0 && q.top < innerHeight).map((q) => ({ l: q.left - 30, t: q.top - 30, r: q.right + 30, b: q.bottom + 30 })) }; })()`;
 const FREEZE = `(async () => { window.__g0paused = [];
-  for (const a of document.getAnimations()) { try { if (a.playState === 'running') { a.pause(); window.__g0paused.push(a); } if (a.playState === 'paused') a.currentTime = 1000; } catch (e) {} }
+  for (const a of document.getAnimations()) { try { if (a.__g0keep) continue; if (a.playState === 'running') { a.pause(); window.__g0paused.push(a); } if (a.playState === 'paused') a.currentTime = 1000; } catch (e) {} }
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); return true; })()`;
 const UNFREEZE = `(() => { for (const a of window.__g0paused || []) { try { a.play(); } catch (e) {} } window.__g0paused = []; return true; })()`;
+// join phase: the nav's CSS transitions (the Join's opacity / max-width / padding, the actions gap) held at currentTime ct
+const RAF2 = `new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(1))))`;
+const JPAUSE = (ct) => `(async () => { const n = document.querySelector('header.start-selling-top-nav'), out = [];
+  for (const a of document.getAnimations()) { try { const t = a.effect && a.effect.target; if (a instanceof CSSTransition && t && n && n.contains(t)) { a.pause(); a.currentTime = ${ct}; a.__g0keep = 1; out.push(a.transitionProperty); } } catch (e) {} }
+  await ${RAF2}; return out.sort().join(' '); })()`;
+const JPLAY = `(() => { for (const a of document.getAnimations()) { if (a.__g0keep) { a.__g0keep = 0; try { a.play(); } catch (e) {} } } return 1; })()`;
 const walk = (y) => `(async () => { for (let i = 0; i < 120 && Math.abs(scrollY - ${y}) > 1; i++) { const d = ${y} - scrollY; window.scrollBy(0, Math.sign(d) * Math.min(300, Math.abs(d)));
   await new Promise((r) => setTimeout(r, 90)); if (innerHeight + scrollY >= document.documentElement.scrollHeight - 1 && d > 0) break; } return Math.round(scrollY); })()`;
 const wheel = (dy) => `(() => { const e = new WheelEvent('wheel', { deltaY: ${dy}, bubbles: true, cancelable: true, clientX: ${VW / 2}, clientY: ${VH / 2} }); (document.elementFromPoint(${VW / 2}, ${VH / 2}) || document.body).dispatchEvent(e); return e.defaultPrevented; })()`;
@@ -156,6 +165,25 @@ try {
         await shoot('open-done');
       } else {
       await shoot('closed-rest');
+      if (phase === 'join') {
+        // Join mid-fade: open from rest with the clock jumped to t1 in one frame (the tween's value at t1), then the nav's
+        // CSS transitions held at ct ms (inside or after the opacity's 0.12 s delay) while the rest is frozen as usual.
+        // The original moves the button up 8 px with --earn-out at once (no transition) while its opacity waits; nolift
+        // leaves the transform out. Then open-done, close, closed before the next plan item.
+        const PLAN = (process.env.JOIN_PLAN || '24:40,80:40,80:120,80:200,80:300').split(',').map((x) => x.split(':').map(Number));
+        for (const [k, [t1, ct]] of PLAN.entries()) {
+          const Fk = 1e7 + k * 1e6;
+          await page.eval(`window.__g0clk.set(${Fk})`); await page.eval(wheel(120)); await page.eval(RAF2);
+          await page.eval(`window.__g0clk.set(${Fk + t1})`); await page.eval(RAF2);
+          const held = await page.eval(JPAUSE(ct));
+          await shoot(`join-${t1}-${ct}`); res.stops[name].at(-1).held = held;
+          await page.eval(JPLAY);
+          await page.eval(`window.__g0clk.set(${Fk + 1000})`); await sleep(SETTLE);
+          await page.eval(`window.__g0clk.set(${Fk + 5e5})`); await page.eval(wheel(-120)); await page.eval(RAF2);
+          await page.eval(`window.__g0clk.set(${Fk + 5e5 + 1000})`); await sleep(SETTLE);
+        }
+        await shoot('closed');
+      } else {
       const F = 1e7, step = async (stop, t) => { await page.eval(`window.__g0clk.set(${t})`); await sleep(SETTLE); await shoot(stop); };
       // open
       await page.eval(`window.__g0clk.set(${F})`);
@@ -181,6 +209,7 @@ try {
       await page.eval(wheel(-120));
       for (let t = 40; t <= 680; t += 80) await step(`rev-close-${t}`, H2 + 300 + t);
       await step('rev-closed', H2 + 300 + 1000);
+      }
       }
     }
     const plog = await page.eval('window.__g0log || []');
