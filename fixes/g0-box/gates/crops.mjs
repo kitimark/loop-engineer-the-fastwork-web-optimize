@@ -1,6 +1,6 @@
 // g0-box: zoomed crops of the N worst T2 stops of a seek outdir (after t2.mjs wrote <outdir>/t2.json), for the proposal.
 //   node fixes/g0-box/gates/crops.mjs <outdir> <dest dir> [--n 6] [--size 32] [--zoom 4] [--dpr 3]
-// Per stop (worst edge max first): <stop>-a.png = A's crop, <stop>-b.png = B's crop | the per-pixel difference (x1:
+// Per stop (worst edge max first): <stop>-a.png = A crop | the per-pixel difference, <stop>-b.png = B crop | the same difference (same size, for a slider) (x1:
 // white = the largest difference), both nearest-neighbour zoomed. The crop is size x size CSS px around the stop's
 // worst edge pixel, clamped to the frame. Prints one line per stop. No browser.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -33,7 +33,7 @@ for (const r of worst) {
   const x0 = Math.max(0, Math.min(A.w - W, Math.round((r.edgeAt[0] - S / 2) * dpr))), y0 = Math.max(0, Math.min(A.h - H, Math.round((r.edgeAt[1] - S / 2) * dpr)));
   const px = (P) => (x, y) => { const i = ((y0 + y) * P.w + x0 + x) * 4; return [P.px[i], P.px[i + 1], P.px[i + 2]]; };
   const dp = (x, y) => { const v = d[(y0 + y) * A.w + x0 + x]; return [v, v, v]; };
-  write(join(dest, `${r.stop}-a.png`), [px(A)], W, H);
+  write(join(dest, `${r.stop}-a.png`), [px(A), dp], W, H);
   write(join(dest, `${r.stop}-b.png`), [px(V), dp], W, H);
   console.log(`${r.stop} edge max ${r.edgeMax} at css ${r.edgeAt} | crop css ${Math.round(x0 / dpr)},${Math.round(y0 / dpr)} ${S}x${S} x${Z} | ${r.cssPx2} css px2 (${r.pct} %)`);
 }
