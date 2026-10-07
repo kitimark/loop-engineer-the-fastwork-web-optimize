@@ -48,6 +48,9 @@ wdarestart() { # I-220 (5803d436): wda ensure keeps a READY WDA, else restarts w
 # clear` ends the condition. FW_PHONE_CONDITION=tool: the iphone.mjs gates post no Xcode step. Xcode is never touched.
 thermalrearm() {
   RL=$LG/rearm-$(date +%s).log
+  # P-161 10:2xZ: wdarestart leaves Safari on B (the thermal gate's timer page, whose countdown and hero animations run
+  # forever); the phone warmed 39.4 -> 39.8 C on it through a 10 min rearm. Park first, so the rearm waits on a still phone
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
   node tools/iphone.mjs rearm --owner "$R" --settle 120 > $RL 2>&1; re=$?
   echo "$(grep -E '^REARM (CLEARED|NOT-NEEDED|STILL-CRITICAL|MISFIT|TIMEOUT|ERROR)' $RL | tail -1) (exit $re)"
   [ $re -eq 0 ] || { echo "BLOCK STOP: iphone.mjs rearm exit $re (8 still Critical or misfit, 13 timeout; see $RL): message the lead"; exit 10; }

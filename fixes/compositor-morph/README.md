@@ -1255,3 +1255,15 @@ open).
 - **D2: PASS.** Later opens start from m 0 after a close and rebuild as in c3b-a.
 - **D3: PASS**, as in P-160.
 - **Overall: PASS, about 50 %.**
+
+**P-161 start 1 (10:09-10:21Z): stopped before any run (rearm exit 13), no data.**
+- The rearm read real Serious at 39.4 → 39.8 °C for 10 min.
+- Cause on our side: `wdarestart` leaves Safari on B, the thermal gate's timer page, whose countdown and hero
+  animations run forever, and the rearm ran without a park.
+- Battery during the rearm: not charging (held at 80 %), -11 mA.
+- Kit fix: `thermalrearm` parks Safari before `iphone.mjs rearm`, in every compositor-morph kit that has it (phone-c2,
+  phone-v11, phone-c3, phone-c3ba, phone-c3bk, phone-c3bk6). The card's rules are unchanged.
+- Added descriptive reader `phone-c3bk6/pre-o1.mjs`: was pre on at O1. Per run it lists the approach pauses in m
+  (-1, 0] with their Paint/Composite records, and O1's f1+f2 paints and Composite.
+- On P-160's runs it shows two pauses in range before O1, each about 1.4 s, at m -0.85 and m -0.23. So K6's
+  200 ms rest timer has time to turn pre on.
