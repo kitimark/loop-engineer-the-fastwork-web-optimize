@@ -174,7 +174,20 @@ test('I-063 keeper: a timing holder of chrome-measure shuts fw-sim down at once;
   await sleep(800);
   assert.equal(device().state, 'Booted', 'a short job is no timing hold');
   assert.equal(node(LOCK, ['release', 'chrome-measure', '--owner', 'npm'], { env }).code, 0);
-  assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'ab'], { env }).code, 0);
+  // I-243: a timing lease passes the host gate, so "ab" is first QUEUED (a gate record, "not measured yet") and holds only
+  // after its 10 s window; the keeper shuts fw-sim down for a timing waiter too (I-063), so polling in that window logged
+  // '"ab" waits for a timing hold' (seen under load in npm test). Here the gate window takes 1.5 s of real time (a slow
+  // host stub), far more than the keeper's 150 ms poll, so the race would always happen. The sync point: the keeper is
+  // paused (SIGSTOP) until "ab" holds, so its next poll sees the holder (the waiter case: tests/unit/sim.test.mjs timingDemand).
+  const slowHost = join(dir, 'slow-host.mjs');
+  writeFileSync(slowHost, `export * from ${JSON.stringify(join(TESTS, 'fixtures', 'fake-host.mjs'))};\nimport { sleep as fakeSleep } from ${JSON.stringify(join(TESTS, 'fixtures', 'fake-host.mjs'))};\nexport const sleep = async (ms) => { await new Promise((r) => setTimeout(r, 1500)); return fakeSleep(ms); };\n`);
+  const k = keeper();
+  assert.ok(k && alive(k.pid), 'the keeper runs');
+  process.kill(k.pid, 'SIGSTOP');
+  try {
+    assert.equal(node(LOCK, ['acquire', 'chrome-measure', '--owner', 'ab'], { env: { ...env, FW_TEST_HOST: slowHost } }).code, 0);
+    assert.equal(device().state, 'Booted', 'nothing shut fw-sim down while the keeper was paused');
+  } finally { process.kill(k.pid, 'SIGCONT'); }
   await until(() => device().state === 'Shutdown', 10000, 'the shutdown for the timing hold');
   await until(() => !keeper() && !warm(), 5000, 'the records to go');
   assert.match(readFileSync(join(simDir(), 'keeper.log'), 'utf8'), /SIM_WARM_SHUTDOWN \(chrome-measure is held by "ab" \(a timing hold\); by keeper\)/);
