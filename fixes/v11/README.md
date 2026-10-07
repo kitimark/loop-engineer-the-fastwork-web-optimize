@@ -208,3 +208,41 @@ maxCallStackDepth 1, so record types, not functions; runs 1-4 per arm; medians, 
   keyframes in place before the open in Vc and V11 alike (Gates, "First open").
 - The decisive checks (Chrome call tree and Simulator) and the proposed delta go to the lead first. No new phone block
   runs without the lead's OK. **Status:** v11 does not become the best build on this result (lead, 03:0xZ).
+
+### First open in Chrome: call tree, C vs V11 (lead OK 03:1xZ; attribution only)
+
+`node fixes/v11/first-open.mjs --cold --arm <A>=out/v11/snap-9b4a829d15a0-62743920fe1a/<A>`: a credited copy of
+fix-end-morph-p1's `fixes/end-morph-p1/p1b/first-open.mjs`, which adds the c1 check (`#fw-cm-kf` before open1) and prints
+the per-frame self samples and FunctionCall owners. Each arm ran in one shared probe job (CPU 6x, 430x775, the open is the
+first morph after load). The Vc arm did not run: it was left in the queue to protect P-158 and comes after it. ms are at
+6x, main thread; no verdict is drawn from them.
+
+- c1 ran before the open: V11's `#fw-cm-kf` held 39119 chars before open1.
+- The heavy frame is open1 frame 1 (the phone's O1.f2):
+
+| open1 frame 1 | C | V11 |
+|---|---|---|
+| span | 30.0 | 92.6 |
+| FireAnimationFrame / FunctionCall | 19.5 / 21.0 | 72.7 / 75.0 |
+| FunctionCall `iE` (JS 2706, the scroll engine's rAF: runs the registered callbacks, the morph tick among them) | 3.6 | 44.3 |
+| FunctionCall: the tick's queued microtask (JS 14435 in V11, 14321 in C; it calls the nav hit test F()) | 13.0 | 25.3 |
+| forced style in F() (`getBoundingClientRect`, JS 13962) | 196 els, 7.0 | 206 els, 15.4 |
+| forced layout in F() | 9/1011 dirty, 1.5 | 421/1021 dirty, 5.2 |
+| Paint | 4.5 | 34.9 |
+
+- F() and its forced style and layout run in the tick's microtask, a FunctionCall of its own, so they are not inside
+  `iE`.
+- Inside `iE` (the tick, `__cmSet`, `__cmPrep`) the self samples name the keyframe and value builders: `q` 14504,
+  `__cmVals` 14490, the anonymous functions at 14513/14535/14585, `px`, `lin`, about 6.9 ms together. C has none of
+  them. `__cmPrep` calls `__cmGen()` on every open from closed, and `__cmGen` rebuilds the whole text before it compares
+  it with `__cmCss`.
+- The rest of `iE`'s 44.3 ms is not attributed. The saved data are the top-12 self samples per frame (their sum is far
+  below the FunctionCall time at 6x), no inclusive tree, and `iE` has no forced style or layout record of its own. A
+  re-run that saves the frame's inclusive tree names it (after P-158).
+- Chrome pays this on every open from closed: V11's open2 frame 1 is 83.9 ms (Paint 27.5, style 17.7, layout 421 dirty),
+  against C's 24.1. On the phone the only repeat full open after a full close (EA2) took 21 ms (C 13-22). So Safari's
+  extra looks first-only (OBSERVED, n 1). The Simulator call-stack run checks that after P-158.
+- c2 brief to arch-compositor-morph (lead 03:4xZ):
+  - (i) memoize `__cmGen` on its inputs, so `__cmPrep` skips the rebuild after c1;
+  - (ii) keep F()'s read out of the open's first frame on the CM path;
+  - (iii) a c1 extension for the first-only part, which waits on the Simulator run.
