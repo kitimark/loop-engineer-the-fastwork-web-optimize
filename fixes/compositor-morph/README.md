@@ -439,3 +439,8 @@ decision (c). v11's parts (CM, V13: no forced read in the morph tick) only remov
 frames, so I expect V's medians at or below C's at 46 and 54, and the > 50 column to sit within one frame
 (1/190 = 0.0053) of C's. One slow frame per run moves a share by 0.005, so (c) through a single-frame tie at 50 is as
 likely as (a).
+
+Context added after the pre-data time (2026-10-07, lead FYI from the user's thread T-228 #11; changes neither the
+question nor the decision rules): the user swiped v11 "really hard" as a stress test, so the user's own gestures
+differed between the two builds. This supports the reading that the reported fast-swipe difference came from the
+gesture, not the build; P-158 tests it with the identical G gesture on both arms.
