@@ -13,7 +13,7 @@
 //              [{pid, ppid, command, pct}]}), each with CPU time pct % of one core since t0, comm a full path like the
 //              real one's (the tools take its basename).
 // Every call appends {tool, argv} to $FAKE_SIMTOOLS_LOG. All ids are made up.
-import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, existsSync, renameSync } from 'node:fs';
 
 const [tool, ...a] = process.argv.slice(2);
 if (process.env.FAKE_SIMTOOLS_LOG) appendFileSync(process.env.FAKE_SIMTOOLS_LOG, JSON.stringify({ tool, argv: a }) + '\n');
@@ -41,7 +41,8 @@ if (tool === 'lsof') {
     if (ms) {
       const st = JSON.parse(readFileSync(process.env.FAKE_SIMCTL_STATE, 'utf8'));
       for (const d of st.devices) if (d.state === 'Booted') Object.assign(d, { state: 'Shutting Down', safari: false, settleAt: Date.now() + Number(ms), settleTo: 'Shutdown' });
-      writeFileSync(process.env.FAKE_SIMCTL_STATE, JSON.stringify(st, null, 1));
+      const tmp = `${process.env.FAKE_SIMCTL_STATE}.${process.pid}.tmp`; // I-238: replaced whole, like fake-simctl's save
+      writeFileSync(tmp, JSON.stringify(st, null, 1)); renameSync(tmp, process.env.FAKE_SIMCTL_STATE);
     }
   }
 } else if (tool === 'ps') {

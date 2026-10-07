@@ -146,6 +146,26 @@ test('I-063 keeper: shuts fw-sim down at its idle timeout; FW_SIM_IDLE_SEC=0 kee
   assert.ok(!warm() && !keeper(), 'nothing kept');
 });
 
+test('I-238: the fakes replace the simctl state file whole (rename), so a poller never reads it half-written', () => {
+  // the keeper test above polls device() every 50 ms while the detached keeper's `simctl shutdown` saves the state:
+  // an in-place write (truncate, then write) was read empty once under load ("Unexpected end of JSON input")
+  const udid = setup();
+  const ino = () => statSync(env.FAKE_SIMCTL_STATE).ino;
+  for (const [what, cmd, args, extra] of [
+    ['simctl boot', env.FW_SIMCTL, ['boot', udid], {}],
+    ['simctl shutdown', env.FW_SIMCTL, ['shutdown', udid], {}],
+    ['osascript quit (FAKE_SIMAPP_QUIT_SHUTDOWN_MS)', env.FW_OSASCRIPT, ['-e', 'quit app "Simulator"'], { FAKE_SIMAPP_QUIT_SHUTDOWN_MS: '50' }],
+  ]) {
+    if (what.startsWith('osascript')) devSet({ state: 'Booted' });
+    const before = ino();
+    const r = run(cmd, args, { env: { ...env, ...extra } });
+    assert.equal(r.code, 0, `${what}: ${r.out}`);
+    assert.notEqual(ino(), before, `${what} rewrote the state file in place`);
+    assert.ok(device().udid === udid, `${what}: the state is whole`);
+  }
+  assert.equal(device().state, 'Shutting Down', 'the quit path saved its change');
+});
+
 test('I-063 keeper: a timing holder of chrome-measure shuts fw-sim down at once; a short job does not', async () => {
   setup();
   const r = await fn();

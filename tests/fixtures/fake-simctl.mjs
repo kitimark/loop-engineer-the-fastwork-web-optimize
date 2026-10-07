@@ -11,15 +11,24 @@
 // I-100: `spawn <udid> defaults read|write|delete` keeps the device's defaults in the state file (devices[].defaults);
 // a device with `defaultsFail: true` refuses them.
 // All ids are made up.
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, renameSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const a = process.argv.slice(2);
 const F = process.env.FAKE_SIMCTL_STATE;
 if (process.env.FAKE_SIMCTL_LOG) appendFileSync(process.env.FAKE_SIMCTL_LOG, JSON.stringify(a) + '\n');
-const st = JSON.parse(readFileSync(F, 'utf8'));
-const save = () => writeFileSync(F, JSON.stringify(st, null, 1));
+// I-238: the state file is shared with pollers (tests, a detached keeper's simctl calls): it is replaced whole (temp file +
+// rename), never rewritten in place, where a reader once caught it empty. A test that writes it in place (devSet) can
+// still be caught mid-write by this read: read again (bounded) instead of failing the simctl call.
+const readState = () => {
+  for (let n = 0; ; n++) {
+    try { return JSON.parse(readFileSync(F, 'utf8')); } catch (e) { if (n >= 50 || !(e instanceof SyntaxError)) throw e; }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+  }
+};
+const st = readState();
+const save = () => { const tmp = `${F}.${process.pid}.tmp`; writeFileSync(tmp, JSON.stringify(st, null, 1)); renameSync(tmp, F); };
 const TRANSITIONAL = ['Creating', 'Booting', 'Shutting Down'];
 let settled = false;
 for (const d of st.devices) if (d.settleAt && Date.now() >= d.settleAt) { d.state = d.settleTo; delete d.settleAt; delete d.settleTo; settled = true; }
