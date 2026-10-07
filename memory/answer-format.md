@@ -17,6 +17,7 @@ step instructions:
 5. **Numbers** go in a small table or list, saying which is better: "62 ms vs 55 ms (7 ms slower)". Console
    threads render markdown pipe tables, "- " bullets and **bold** since I-129 (a4f43dda, 2026-10-04, user T-091),
    so a table is fine there too. Keep a table to a few rows and columns, and put the "which is better" line under it.
+   A table needs the `|---|---|` separator row right under its header, or the console prints raw pipes (user T-230).
 6. **Times** in UTC with a Z, until the user names a time zone (asked in T-080 #3, not answered yet).
 7. **At most about 10 lines.** If more is needed, use short headings and put the details on the progress page
    or in the README, with a pointer.
@@ -29,4 +30,5 @@ answer is still hard to read, change the format in that thread and tell the lead
 [[user-tasks-via-console]].
 
 **History.** 2026-10-04 06:41Z rule set (T-080 #1-#4). 2026-10-04 10:0xZ tables render in console threads (I-129,
-a4f43dda, user T-091); rule 5's plain-list interim removed.
+a4f43dda, user T-091); rule 5's plain-list interim removed. 2026-10-07 02:16Z the user saw many lead tables print as raw
+text (no separator row, T-230); the separator is now required and the format lint refuses a table without it (ts-table-lint).
