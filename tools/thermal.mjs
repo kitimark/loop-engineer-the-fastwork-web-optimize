@@ -40,7 +40,7 @@ import { readJson } from './lib/store.mjs';
 import { status as lockStatus, phoneHolder } from './lib/lock.mjs';
 import { connectService } from './lib/rsd.mjs';
 import { DtxConnection } from './lib/dtx.mjs';
-import { ConditionInducer, SERVICE, activeOf, resolveProfile, ENABLE_TIMEOUT_MS } from './lib/condition-inducer.mjs';
+import { ConditionInducer, SERVICE, activeOf, resolveProfile, ENABLE_TIMEOUT_MS, holdUntilEnd } from './lib/condition-inducer.mjs';
 import { redact } from './lib/redact.mjs';
 import { holderFile, liveHolder } from './lib/thermal-holder.mjs'; // I-233: shared with the phone's thermal reads
 
@@ -140,12 +140,7 @@ async function main() {
     const until = holdSec ? new Date(since.getTime() + holdSec * 1000) : null;
     mkdirSync(join(sharedStateDir(), 'thermal'), { recursive: true });
     writeFileSync(holderFile(), JSON.stringify({ pid: process.pid, owner, ...want, since: since.toISOString(), until: until?.toISOString() ?? null }));
-    say(`SET ${want.group} ${want.profile} (holding${until ? ` until ${until.toISOString()}` : ''}; SIGINT/SIGTERM or node tools/thermal.mjs clear ends it)`);
-    const end = await new Promise((resolve) => {
-      const timer = holdSec ? setTimeout(() => resolve({ why: `${holdSec} s elapsed` }), holdSec * 1000) : null;
-      for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => { if (timer) clearTimeout(timer); resolve({ why: sig }); });
-      s.conn.once('close', (e) => { if (timer) clearTimeout(timer); resolve({ lost: e }); });
-    });
+    const end = await holdUntilEnd({ holdSec, conn: s.conn, announce: () => say(`SET ${want.group} ${want.profile} (holding${until ? ` until ${until.toISOString()}` : ''}; SIGINT/SIGTERM or node tools/thermal.mjs clear ends it)`) });
     dropHolder();
     if (end.lost) { say(`LOST ${redact(end.lost.message)}: the connection that set ${want.profile} closed, so the device ends the condition`); return 3; }
     try {

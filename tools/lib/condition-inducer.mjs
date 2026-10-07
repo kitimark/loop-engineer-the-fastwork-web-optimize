@@ -80,3 +80,19 @@ export class ConditionInducer {
     throw new Error(`disableActiveCondition: unexpected reply ${JSON.stringify(r)?.slice(0, 200)}`);
   }
 }
+
+/**
+ * `thermal.mjs set`'s hold: print the SET line (announce), then wait for its end: a signal (SIGINT/SIGTERM/SIGHUP ->
+ * {why: sig}), the hold elapsing ({why: "<n> s elapsed"}) or the connection closing ({lost: err}).
+ * The handlers go in BEFORE announce() (I-234): the SET write reaches a reader at once, and a SIGTERM sent on reading it
+ * that arrived before the handlers existed got Node's default action (killed, exit null, the condition left on).
+ */
+export function holdUntilEnd({ holdSec = 0, conn = null, announce = () => {} } = {}) {
+  const end = new Promise((resolve) => {
+    const timer = holdSec ? setTimeout(() => resolve({ why: `${holdSec} s elapsed` }), holdSec * 1000) : null;
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => { if (timer) clearTimeout(timer); resolve({ why: sig }); });
+    conn?.once('close', (e) => { if (timer) clearTimeout(timer); resolve({ lost: e }); });
+  });
+  announce();
+  return end;
+}
