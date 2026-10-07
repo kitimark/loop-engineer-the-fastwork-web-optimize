@@ -445,3 +445,115 @@ take D2 through the same gates (its S0 is the same experiment with P1's persiste
   `AnimationEffect.cpp`, `DocumentTimeline.cpp`, `WebAnimation.cpp`; `safari-7624.5.1.11-branch`: `KeyframeEffect.cpp`.
 - Code map (helpers map-end-fresh and map-end-history, read-only): v0 tween JS 12688-12694, trigger 12975-13077, nav
   CSS 11320-11361 and 11565-11584; C nav `top` CSS 12101, morph-scroll JS 14173-14470.
+
+## 6. S0 result (2026-10-07 11:39-12:00Z; Simulator only, counts only)
+
+The lead's go was "S0 with the pass/fail rules as written, at least 3 runs per arm". The lead later added: report v14
+too, because any D1 build must now beat v14 (c3b-a + K6, the current best), not C.
+
+**Verdict.**
+- **(a) layers created per open: FAIL as written, by 2 small layers.** The kept tree cut the layers made on every open
+  from 26 to 2, in every open of every run. The 2 left are the logo and the language-switch wrap: bar items, which D1
+  takes out of the frame anyway (R5).
+- **(b) rest at m 0 and m -0.5: PASS.** The kept tree rests like c3b-a. v14 restyles every frame at rest near the end.
+- **(c) top of the page: PASS.** Within c3b-a's spread.
+- **Next step (my call; the lead rules on the strict (a)): build D1 (S1), not D2.** S1's first check is that the bar
+  items, in their own still layer, make 0 layers per open.
+
+### Arms and run plan
+
+Frozen copies in this worktree's `out/s0/` (gitignored, read-only copies of arch-compositor-morph's frozen builds plus
+my variants):
+
+| arm | what | JS / CSS sha256/12 |
+|---|---|---|
+| BA = c3b-a | `out/cm/c3ba` copy | 4175a56193ab / 9c1067cff473 |
+| A0 | c3b-a, but the CM tree is kept built once warm (`__cmWarm`) or first prepped. `html.fw-cm-keep` applies the `.is-morphing` structure rules; at rest the closed pill is drawn by the frame with static m 0 values inline (`__cmClear` writes `__cmVals(0)` instead of removing them); `will-change` on every animated part. The scroll-driven animations still attach only under `.is-morphing`, so none is attached at rest | e24afb108b63 / dc27f7137cd9 |
+| A0b | A0 + the logo kept `position: absolute`, and the language-switch wrap kept at `translateX(0px)` with `will-change: transform` at rest (an attempt at A0's 2 left-over layers) | e24afb108b63 / 52a9bdacd550 |
+| K6 = v14 | `out/cm/c3bk6` copy | d23ee885d54f / 4fafb83f1e72 |
+
+- Tool: `research/end-of-page-fresh/s0-sim.mjs` (WDA finger strokes, `LayerTree.layersForNode` census, Timeline
+  segments).
+- Six Simulator sessions in the shared lane (weight simulator, 300 s cap), arm order alternating:
+  - BA/A0 sessions 1-3;
+  - A0b/K6 sessions k1-k3.
+- Per arm and load: 4 open/close strokes from m -0.3. Then rests of 3 s at m -0.5 and at m 0, a 2 s rest at y 600
+  (top of the page), and 60 rAF scroll steps from y 600 to 3000.
+- Host: load1 max 84-162 in sessions 1-3, 13-25 in k1-k3 (I-082). Simulator ms are a rank only (F-084); none decides
+  anything here.
+- A0 and A0b are cost experiments, not look-checked builds. At rest the nav is drawn through the frame with m 0 values,
+  page-wide.
+
+### (a) Layers created per open (all OBSERVED, Simulator, in our setup)
+
+| arm | layers new at each open (4 opens per run) | runs | which (resolved by node) |
+|---|---|---|---|
+| BA c3b-a | 26, 26, 26, 26 | 3 / 3 | c0-c3, u0-u3, dk, bar, logo, actions, language switch and its wrap, Join and its box, panel parts … (the per-open build, F-324) |
+| A0 | 2, 2, 2, 2 | 3 / 3 | the logo (93x24, 0.14 MB) and the language-switch wrap (74x37, 0 MB) |
+| A0b | 2, 2, 2, 2 | 3 / 3 | the same two |
+| K6 v14 | 3 on the first open, then 5, 5, 5 | 3 / 3 | first: dk, logo, language-switch wrap; later opens add the panel centre (406x389, 5.68 MB) and the footer (406x89, 1.29 MB) |
+
+- The tree that stays built removes 24 of the 26 layer builds per open. This holds on every open, not only the
+  first.
+- A0b's two changes did not keep the logo and the language-switch wrap built. So "the position switch and the
+  transform none → some cause them" is REFUTED for these two layers. The cause is UNRESOLVED.
+  - The decisive check is a census with the bar items moved out of the frame, as D1 does (S1).
+  - Note: in A0 the logo is inside u3 and has `will-change` too.
+- **v14's later-open rebuild, attributed.** On every open after a close, v14 builds the panel centre and footer again:
+  two painted layers, 7 MB. The CM README left this UNRESOLVED at lines 1180-1184; it is now OBSERVED here.
+- Layers and memory in the census (layer count / estimated MB):
+
+| arm | held open | closed |
+|---|---|---|
+| BA | 55 / 95.7-97.3 | 54-56 / 102.7 |
+| A0 | 53 / 78.8 | 61-63 / 85.8 |
+| K6 | 55 / 95.7-97.3 | 60-62 / 106.2 |
+
+- So the kept tree holds 7 more layers at rest, which draw nothing, but about 17 MB less memory than c3b-a in both
+  states. That is OBSERVED, cause unknown, and needs checking in S6 before anyone relies on it.
+
+### (b) Rest near the end (rendering-step style recalcs and layouts per 3 s rest; forced 0 in every arm)
+
+| arm | m -0.5: style recalcs | m -0.5: layouts | m 0: style recalcs | m 0: layouts |
+|---|---|---|---|---|
+| BA c3b-a | 81, 80, 87 | 51, 58, 66 | 18, 18, 18 | 8, 8, 7 |
+| A0 | 96, 86, 79 | 66, 66, 66 | 18, 17, 18 | 8, 8, 8 |
+| A0b | 70, 93, 86 | 51, 66, 66 | 18, 18, 18 | 7, 8, 8 |
+| K6 v14 | **205, 203, 205** | 66, 51, 66 | **181, 179, 181** | 8, 8, 7 |
+
+- **The rule:** the arm's max must be ≤ 1.3 x BA's max, which is 113 at m -0.5 and 23 at m 0.
+- **A0 passes:** max 96 and 18. Its median is 86 against BA's 81 (1.06x). Its layouts at m -0.5 sit at BA's max.
+- **v14 fails the same rule clearly:** about 2.5x at m -0.5 and 10x at m 0. That is a style recalc on every rendering
+  frame while resting with the pre state on, as the CM README found (2-2.5x, lines 1140-1154).
+- **The kept tree itself does not restyle at rest.** That answers README §5's open question "K6's rest style with the
+  pre state on": its cost comes from the pre state's attached animations or classes, not from the tree existing.
+  OBSERVED; the exact rule is still UNRESOLVED.
+
+### (c) Top of the page with the tree built (after the 4 cycles)
+
+| arm | 2 s rest at y 600: style recalcs / layouts / paints | 60-step scroll y 600 → 3000: paints / layouts (forced) / style recalcs (forced) |
+|---|---|---|
+| BA c3b-a | 92 / 66 / 141; 102 / 63 / 151; 79 / 27 / 110 | 237 / 33 (59) / 9 (29); 275 / 40 (69) / 12 (37) |
+| A0 | 92 / 67 / 135; 74 / 28 / 87; 94 / 67 / 132 | 223 / 37 (71) / 13 (35); 210 / 39 (67) / 12 (34) |
+| A0b | 74 / 26 / 86; 77 / 28 / 91; 74 / 28 / 86 | 237 / 47 (77) / 17 (39); 202 / 41 (72) / 12 (35); 156 / 32 (58) / 8 (30) |
+| K6 v14 | 80 / 26 / 109; 75 / 27 / 107; 80 / 37 / 125 | 304 / 37 (77) / 11 (35); 285 / 38 (72) / 13 (32); 272 / 32 (59) / 10 (30) |
+
+- **A0 lies inside BA's spread** on every count, and the kept tree costs no visible extra work while scrolling the top
+  of the page. OBSERVED, Simulator.
+- The scroll segment has 2 runs for BA and A0: the second arm of sessions 1 and 2 recorded no segment, a fault of the
+  tool, fixed for k1-k3.
+- The Core Animation side (GPU composite of the nested rounded clips) is still not visible to these counts. It stays
+  UNRESOLVED until the phone block's descriptive Composite at the top of the page (README §5).
+
+### What it means for D1
+
+- **The main hypothesis holds.** The per-open layer build is the cost of tearing the tree down. Keeping it removes 24
+  of 26 builds per open, and it costs neither rest work nor work at the top of the page in the Simulator.
+- **Against v14** the kept tree does better on both of v14's known costs:
+  - v14 still builds 3-5 layers per open, and 7 MB of painted panel layers on every later open;
+  - v14 restyles every frame at rest near the end.
+- **Next (proposed): S1, the D1 build on c3b-a,** with the bar as its own still layer outside the frame.
+  - Its first gate is this census with a target of 0 per open, the logo and language-switch wrap included.
+  - Then S2-S6 as in §4, with v14 as the arm to beat.
+- **If S1 still shows the two bar-item layers** after they leave the frame, their cause is the next question (a
+  census per CSS rule), not a reason for D2.
