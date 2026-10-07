@@ -4,7 +4,7 @@ The one list of best-build versions (user T-228 #3, 2026-10-07). The lead update
 candidate, a landing, a version replaced or dropped. Times are UTC unless marked +0700. `fixes/PROGRESS.json`'s
 `best` flag is stale from v9 on (it still marks v8); read the current best from this file.
 
-**Current best on main: v14 = v13a + K6** (JS d23ee885d54f / CSS 4fafb83f1e72), best since 2026-10-07 11:40Z (iPhone P-161 PASS, e8ad1d8b). v14 = v12 + c3 + c3b-a + K6; each step is a row below, the diffs are in fixes/compositor-morph/. The previous best, v9-final rev 7d (JS 1b2eecc66011 / CSS e1359ab9994a), was the "C" arm of every test up to P-161.
+**Current best on main: v14 = v13a + K6** (JS d23ee885d54f / CSS 4fafb83f1e72), best since 2026-10-07 11:40Z (iPhone P-161 PASS, e8ad1d8b). v14 = v12 + c3 + c3b-a + K6; each step is a row below, the diffs are in fixes/compositor-morph/; rebuild it from main with `sh fixes/compositor-morph/v14/rebuild.sh <dir>` (checks HASHES). The previous best, v9-final rev 7d (JS 1b2eecc66011 / CSS e1359ab9994a), was the "C" arm of every test up to P-161.
 
 | Version | Status | Best since (commit) | JS / CSS | Added over the previous one | How it was checked |
 |---|---|---|---|---|---|
