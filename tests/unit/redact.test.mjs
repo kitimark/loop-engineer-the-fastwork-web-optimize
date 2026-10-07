@@ -4,7 +4,10 @@
 // All ids here are made up.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { redact } from '../../tools/lib/redact.mjs';
+import * as R from '../../tools/lib/redact.mjs';
+import { withWdaConfig } from '../helpers.mjs';
+
+const { redact } = R;
 
 const KNOWN = { team: 'ABCDE12345', udid: '00008130-0011223344556677', bundleId: 'fw.wda.abcde12345.WebDriverAgentRunner', deviceName: 'Kitchen Phone 7' };
 const SECRETS = [/ABCDE12345/i, /0011223344556677/, /00008130-/, /Kitchen Phone/, /Test Person/, /example\.com/, /00AABBCCDDEEFF00/, /1A2B3C4D-1111/, /0123456789abcdef0123/];
@@ -108,4 +111,14 @@ test('redact: an all-caps owner name counts again, build tokens stay; a known "<
   const known = { deviceName: "Kanya's iPhone" };
   assert.equal(redact("on kanya's iphone today, then kanya’s mac and KANYA'S IPAD", known), 'on <device-name> today, then <device-name> and <device-name>');
   assert.equal(redact("kanya's iphone", {}), "kanya's iphone", 'without the known name a lower-case owner reads as prose');
+});
+
+test('knownDevice: the wda config\'s deviceName and udid (not the team), cached per path and mtime; no file or a bad one: {} (I-228 review)', async () => {
+  assert.equal(typeof R.knownDevice, 'function', 'redact.mjs exports the shared config reader');
+  await withWdaConfig(null, () => assert.deepEqual(R.knownDevice(), {}));
+  await withWdaConfig('{not json', () => assert.deepEqual(R.knownDevice(), {}));
+  await withWdaConfig({ deviceName: "Kanya's iPhone", udid: '00008130-0011223344556677', team: 'ABCDE12345' }, () => {
+    assert.deepEqual(R.knownDevice(), { deviceName: "Kanya's iPhone", udid: '00008130-0011223344556677' });
+    assert.equal(R.knownDevice(), R.knownDevice(), 'cached: the same object until the file changes');
+  });
 });

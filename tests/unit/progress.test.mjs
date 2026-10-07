@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { tempDir, REPO } from '../helpers.mjs';
+import { tempDir, REPO, withWdaConfig } from '../helpers.mjs';
 
 const P = await import('../../tools/lib/progress.mjs');
 const L = await import('../../tools/lib/lock.mjs');
@@ -108,6 +108,13 @@ test('sanitize scrubs URLs, addresses, hosts, e-mails, ids and home paths; keeps
   assert.equal(P.sanitize('I-037 iPhone tools pick a web view; P-029 47-58 -> 0-1 at 16:21:39Z'), 'I-037 iPhone tools pick a web view; P-029 47-58 -> 0-1 at 16:21:39Z');
   assert.equal(P.sanitize('x'.repeat(50), 10).length, 10);
   assert.equal(P.sanitize(undefined), '');
+});
+
+test('sanitize (status board, progress page, notifications) uses the wda config\'s known name and udid: "<owner>\'s iphone" in lower case goes too (I-228 review)', async () => {
+  const text = "run on kanya's iphone, udid 000081300011223344556677; v11's iPhone check";
+  await withWdaConfig(null, () => assert.equal(P.sanitize(text), text, 'no config: patterns only'));
+  await withWdaConfig({ deviceName: "Kanya's iPhone", udid: '00008130-0011223344556677' }, () =>
+    assert.equal(P.sanitize(text), "run on <device-name>, udid <udid>; v11's iPhone check"));
 });
 
 test('parseLedger: the "in?" cell per row, bold stripped, empty while no result', () => {

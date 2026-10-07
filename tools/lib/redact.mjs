@@ -13,7 +13,30 @@
 //   signing identity ("Apple Development: <name> (<team>)"), a labelled ECID / UniqueChipID or serial number,
 //   and an unlabelled 11-12 character serial number.
 
+import { readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
+
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The phone's known name and udid from the WDA runner config ($FW_WDA_HOME or ~/.cache/fw-wda/config.json, the file
+ * wda-runner.mjs readConfig uses), for scrubbers that have no config of their own (console threads, status board,
+ * progress page, proposals): redact(text, knownDevice()) then catches the real name in any letter case, as the
+ * iPhone tools do (I-228 review). Read once, cached per path and mtime; no file or a bad one: {} (patterns only).
+ */
+let knownCache = { key: null, value: {} };
+export function knownDevice() {
+  const file = join(process.env.FW_WDA_HOME || join(homedir(), '.cache', 'fw-wda'), 'config.json');
+  let key;
+  try { key = `${file}\u0000${statSync(file).mtimeMs}`; } catch { return {}; }
+  if (knownCache.key !== key) {
+    let value = {};
+    try { const c = JSON.parse(readFileSync(file, 'utf8')); value = { deviceName: c?.deviceName, udid: c?.udid }; } catch { /* unreadable: patterns only */ }
+    knownCache = { key, value };
+  }
+  return knownCache.value;
+}
 
 // a person's name word: "Mark", "Anna-Lena", "O'Brien", all caps of 2+ letters ("MARK"), or a caseless script
 // ("ส้มโอ"); not a digit-bearing token (v11, H1c, V13, P1), a single letter (C, B) or V plus one letter (Vc, VC),

@@ -5,7 +5,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tempDir } from '../helpers.mjs';
+import { tempDir, withWdaConfig } from '../helpers.mjs';
 import { writePng, writeMp4, pngBytes } from '../fixtures/fake-media.mjs';
 import { ARTIFACT_OK, ARTIFACT_BAD } from './artifact-cases.mjs';
 
@@ -60,6 +60,13 @@ test('scrubText: LAN addresses, other URLs, e-mail, home paths and ids go; local
   // closing punctuation after a scrubbed URL stays; the address does not
   assert.equal(P.scrubText(`Keep it (seen on ${LAN}).`).text, 'Keep it (seen on <link>).');
   assert.equal(P.scrubText('see https://192.168.77.12:5612/a?b=1, then').text, 'see <link>, then');
+});
+
+test('scrubText uses the wda config\'s known name and udid: "<owner>\'s iphone" in lower case goes and is reported (I-228 review)', async () => {
+  const text = "Tried on kanya's iphone (000081300011223344556677); v11's iPhone check next";
+  await withWdaConfig(null, () => assert.deepEqual(P.scrubText(text), { text, found: [] }, 'no config: patterns only'));
+  await withWdaConfig({ deviceName: "Kanya's iPhone", udid: '00008130-0011223344556677' }, () =>
+    assert.deepEqual(P.scrubText(text), { text: "Tried on <device-name> (<udid>); v11's iPhone check next", found: ['account or device id'] }));
 });
 
 test('I-191 scrubText: a claude.ai artifact link is kept as written (sentence punctuation after it is not part of it); look-alikes scrubbed whole', () => {

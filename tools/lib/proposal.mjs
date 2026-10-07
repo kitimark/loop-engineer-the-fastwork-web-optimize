@@ -73,7 +73,7 @@ import { consoleDir, recipients } from './console.mjs';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { sanitize, PERSONAL } from './progress.mjs';
-import { redact } from './redact.mjs';
+import { redact, knownDevice } from './redact.mjs';
 import { keepArtifactLinks } from './artifact-link.mjs';
 import { resolveLivePatch, storeLivePatch, storedLivePatch, patchBase, liveNotCovered, notCoveredWarning, LIVE_PATCH, LIVE_OVERLAY, BLOB, resolveLiveOverlay, storeLiveOverlay, liveOverlayDir } from './live.mjs';
 import { patchHeader } from './bench-overlay.mjs';
@@ -135,9 +135,12 @@ export function scrubText(s) {
   // Other URLs become <link> here, keeping closing punctuation that follows them ("(seen on http://…/)" keeps
   // its ")"); sanitize's own url shape would swallow it. What is kept is punctuation only, never address text.
   t = t.replace(/\b[a-z][a-z0-9+.-]*:\/\/\S+/gi, (m) => '<link>' + (m.match(/[)\]}>.,;:!?'"]+$/) || [''])[0]);
+  // the wda config's name and udid (I-228 review): sanitize replaces them, so note them before it does
+  const known = knownDevice();
+  const knownHit = redact(t, known) !== redact(t);
   t = sanitize(t, Number.MAX_SAFE_INTEGER);
-  const r = redact(t);
-  if (r !== t) found.push('account or device id');
+  const r = redact(t, known);
+  if (r !== t || knownHit) found.push('account or device id');
   t = r.replace(/\u0001(\d+)\u0002/g, (_, i) => keep[Number(i)] ?? '');
   return { text: t, found };
 }

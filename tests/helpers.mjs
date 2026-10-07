@@ -60,6 +60,15 @@ export function tempDir(prefix = 'fw-test-') {
   return d;
 }
 export function removeTemp(d) { try { rmSync(d, { recursive: true, force: true }); } catch {} tempDirs.delete(d); }
+/** Run fn with $FW_WDA_HOME at a fresh temp dir whose config.json holds `config` (fixture values only, never the real
+ *  device's; a string is written as is, null writes none), then restore $FW_WDA_HOME (I-228 review: redact's known values). */
+export async function withWdaConfig(config, fn) {
+  const was = process.env.FW_WDA_HOME;
+  const dir = tempDir('fw-wdahome-');
+  if (config != null) writeFileSync(join(dir, 'config.json'), typeof config === 'string' ? config : JSON.stringify(config));
+  process.env.FW_WDA_HOME = dir;
+  try { return await fn(dir); } finally { if (was === undefined) delete process.env.FW_WDA_HOME; else process.env.FW_WDA_HOME = was; }
+}
 // ---- long-lived fixtures (I-072) -------------------------------------------------------------------
 // The tools start some fixtures detached (fake xcodebuild runner, fake iproxy, fake iwdp and its Safari tab): own
 // process group, ppid 1 once the tool exits, so neither `children` above nor a lane's tree kill reaches them. Each

@@ -81,7 +81,7 @@ import { readFileSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { REPO } from './paths.mjs';
-import { redact } from './redact.mjs';
+import { redact, knownDevice } from './redact.mjs';
 import { resolveLanUrl, isLanPlaceholder } from './lan.mjs';
 
 export const SCHEMA = 'fw-progress/1';
@@ -141,7 +141,7 @@ export function sanitize(s, max = 300) {
   if (s == null) return '';
   let t = String(s);
   for (const [name, re] of PERSONAL) t = t.replace(re, name === 'home path' ? '~' : name === 'url' ? '<link>' : `<${name}>`);
-  t = redact(t);
+  t = redact(t, knownDevice()); // the wda config's name and udid too, in any letter case (I-228 review)
   return t.length > max ? t.slice(0, max - 1) + '…' : t;
 }
 
