@@ -898,3 +898,63 @@ with one 5/5 -> 1/5). #1 drops the next-frame re-test (F forced style 64 -> 0).
 D1 is the risk. In the Simulator the first open after load still paid the re-measure (86 ms vs 61-64 for the later
 opens), and P-159's D1 was +9 ms. My overall call is **PASS**, at about 55 %. The likeliest miss is **FAIL by D1 alone**,
 with D2 and D3 passing. If that happens, the first open's own re-measure is c3b's next target.
+
+## P-160 results (iPhone 15 Pro Max, G fast-short, tool-serious, Timeline on; 2026-10-07 07:3x-08:15Z)
+
+**DECISION FAIL, by D1 alone** (`node fixes/compositor-morph/phone-c3/p160-read.mjs out/cmp160/runs`). The prediction
+named this as the likeliest miss. D2 and D3 pass, and they are better than C.
+
+Holds:
+- The part's rearm read `REARM CLEARED`: Serious, induced by our thermal.mjs, battery 32.6 C.
+- H1-H10 are VALID: warm-ups WC and WV, and every counted run (EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4). There was no link
+  loss and no re-run.
+- The end sentinel S1 PASSED (55.4 fps, slow 0.029). H11's end gate then read Critical at 41.5 C, so hold H11 is VOID.
+  This is the same as P-158 H10 and P-159 H11. It does not touch the counted runs: each ended VALID in its own hold.
+- The exit trap cleared the condition and parked Safari. No `thermal.mjs set` process survives (checked after the block).
+- The gate lines print `profile xcode-serious`, the gate's own label, as in P-159's holds; the condition was tool-held.
+
+| check | C median (range) | v13 median (range) | v13 - C | verdict |
+|---|---|---|---|---|
+| D1 O1.f2 ms | 27 (25-31) | 38 (37-40) | +11 | over +4 |
+| D2 open-0 median dt ms | 19.25 (18-21) | 9.5 (9-16) | -9.75 | within |
+| D3 open-0 share > 34 | 0.045 | 0 | | le |
+| D3 twin > 30 | 0.19 | 0 | | le |
+| D3 twin > 38 | 0 | 0 | | le |
+| open-0 > 50 | 0 | 0 | | |
+| P-158 finger-down 34-50 band (descriptive) | 0.0065 (0-0.013) | 0 (0-0) | | |
+
+Against v12 (P-159; same program and profile, another block; descriptive only, never pooled):
+
+| | v12 (P-159) | v13 (P-160) |
+|---|---|---|
+| O1.f2 ms | 38.5 (38-42) | 38 (37-40) |
+| open-0 median dt ms | 35.5 (34-36) | 9.5 (9-16) |
+| open-0 share > 34 | 0.59 | 0 |
+| open-0 Layout inside a FunctionCall ms (all frames) | 13.0 | 0 |
+
+- c3 did what it was built for. The Layout forced inside `iE` on each open from closed is gone (13.0 -> 0 ms), and the
+  open-0 frames are now shorter than C's (10 vs 19 ms).
+- The first open after load did not move (38.5 -> 38 ms), so its cost is not the re-measure.
+
+**Where O1.f2 goes** (`phone-c3/o1-attr.mjs`, a copy of fix-end-morph's `o1-attr.mjs` with arm V; the f2 gap, medians
+over 4 runs per arm):
+
+| f2 gap | C | v13 | v13 - C |
+|---|---|---|---|
+| dt ms | 27 (25-31) | 38 (37-40) | +11 |
+| RenderingFrame | 26.9 | 37.9 | +11 |
+| Composite | 13.5 | 20.0 | +6.6 |
+| RecalculateStyles (n) | 2.95 (1) | 6.1 (2) | +3.1 |
+| FunctionCall | 9.65 | 4.35 | -5.3 |
+| Layout | 2.9 | 2.7 | |
+
+- The first open's extra time is in the rendering step: compositing +6.6 ms and one more style pass +3.1 ms. Script is
+  cheaper than C's.
+- Likely reason, OBSERVED in our setup, cause unknown: the first commit of CM's layer tree after load (the corner
+  clippers c0-c3 / u0-u3, u3's backdrop layer, `.fw-cm-dk`), which later opens reuse.
+- Next check: a Simulator layer and composite count on the first open against the second.
+
+**Glass write cost (descriptive):**
+- Open-0 RecalculateStyles: C 1.8, v13 4.1 ms; inside a FunctionCall: C 1.0, v13 2.6 ms (`n()`'s forced pass after the
+  inline blur write).
+- That is +2.3 ms, a bit over my +2 ms expectation. No verdict rides on it; c3b #2 targets it.
