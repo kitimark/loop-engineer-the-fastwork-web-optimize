@@ -15,7 +15,7 @@ const state = tempDir('usblink-unit-');
 process.env.FW_STATE_DIR = state; // audit lines and the console store of these tests go here
 process.env.FW_WDA_HOME = join(state, 'wda'); // no WDA config: never the Mac's real phone udid (knownDevice)
 const L = await import('../../tools/lib/usblink.mjs');
-const { parseIoreg, ioUsbIphone, ioUsbLinkCause, muxPhone, proxyDevices, sample, evaluate, sampleFacts, isOurProxy, replugStepPass, LINK_EXIT, LINK_STATES, proxyConfigArg, proxyPorts, auditFile, parseLsofListen, isLoopback, listenAddrs, buildBindShim, SHIM_SOURCE } = L;
+const { parseIoreg, ioUsbIphone, ioUsbLinkCause, muxPhone, proxyDevices, sample, evaluate, sampleFacts, isOurProxy, replugStepPass, LINK_EXIT, LINK_STATES, proxyConfigArg, proxyPorts, auditFile, parseLsofListen, isLoopback, listenAddrs, buildBindShim, SHIM_SOURCE, attachChange } = L;
 
 // ---- I-241: the proxy on loopback only -------------------------------------------------------------------------------
 // ios_webkit_debug_proxy binds INADDR_ANY with no option to change it (src/socket_manager.c sm_listen, v1.9.2 278bf487),
@@ -281,4 +281,15 @@ test('replugStepPass: one step after 60 s of loss, none while ours is open, canc
   assert.equal(r.error, 'store busy');
   const audit = readFileSync(auditFile(), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   assert.deepEqual(audit.map((a) => a.event), ['replug-step', 'replug-step-closed', 'replug-step', 'replug-step']);
+});
+
+test('I-242 attachChange: a new usbmux attach number between two samples that both list the phone is a re-attach; a seen drop resets it', () => {
+  const on = (id) => ({ at: at(0), iousb: IO, mux: { count: 1, listed: true, id }, proxy: { count: 1 } });
+  assert.deepEqual(attachChange(null, on(135)), { attach: 135, reattach: null }, 'the first sample: nothing to compare');
+  assert.deepEqual(attachChange(135, on(135)), { attach: 135, reattach: null });
+  assert.deepEqual(attachChange(135, on(136)), { attach: 136, reattach: { from: 135, to: 136 } }, 'the 2026-10-07 #135 -> #136 between two ok polls');
+  assert.deepEqual(attachChange(135, { at: at(0), iousb: IO, mux: OFF, proxy: null }), { attach: null, reattach: null }, 'a drop the watch saw (usb-lost, unplugged)');
+  assert.deepEqual(attachChange(null, on(137)), { attach: 137, reattach: null }, 'the attach after a seen drop is no surprise');
+  assert.deepEqual(attachChange(135, { at: at(0), iousb: IO, mux: null, proxy: null }), { attach: 135, reattach: null }, 'no usbmux list: no verdict, keep the last number');
+  assert.deepEqual(attachChange(135, on(136)).reattach, { from: 135, to: 136 }, 'after a no-list sample the change still counts');
 });

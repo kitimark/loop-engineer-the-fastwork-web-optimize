@@ -20,6 +20,9 @@
 //        # > out/usblink-watch.log 2>&1 &). One line per change of state (`<time>Z USBLINK <state>: …`), each change
 //        # also one JSON line in <state dir>/usblink/audit.log with the IOUSB configuration, speed code and usbmux attach
 //        # number (the evidence for the next drop), and the current state in <state dir>/usblink/state.json.
+//        # A re-plug between two polls (usbmux attach #135 -> #136, no off-USB sample seen, I-242) changes no state: it is
+//        # one `REATTACH: usbmux attach #135 -> #136 between polls (no unplugged state seen); link <state>` line and one
+//        # `reattach` audit line with the same numbers; no re-plug step.
 //        # --repair (needs --by): on proxy-stale, restart the proxy that `usblink.mjs proxy start` started (at most once
 //        #   per 120 s, 3 tries per episode); never another proxy (a hand-started one, a Simulator proxy `-s unix:`):
 //        #   that is one `REPAIR SKIPPED` line per episode.
@@ -37,7 +40,7 @@
 //        # refused with nothing killed. show: the record, whether it is still ours, and where it listens now. Each action
 //        # is audited. exit 0 done, 1 refused or failed, 2 usage.
 // Ports: $FW_IPHONE_DEVICE_PORT (9221, the device list) and $FW_IPHONE_PORT (9222, the first tab port), as iphone.mjs.
-import { LINK_EXIT, LINK_DEFAULTS, sample, evaluate, sampleFacts, readLinkState, writeLinkState, audit, startProxy, stopProxy, restartProxy, readProxyRecord, isOurProxy, replugStepPass, proxyPorts, listenAddrs, isLoopback } from './lib/usblink.mjs';
+import { LINK_EXIT, LINK_DEFAULTS, sample, evaluate, sampleFacts, attachChange, readLinkState, writeLinkState, audit, startProxy, stopProxy, restartProxy, readProxyRecord, isOurProxy, replugStepPass, proxyPorts, listenAddrs, isLoopback } from './lib/usblink.mjs';
 import { pidAlive } from './lib/wait.mjs';
 import { runMain } from './lib/exit.mjs';
 import { exitOnHelp } from './lib/help.mjs';
@@ -102,7 +105,7 @@ async function watch() {
   log(`WATCH usblink every ${every} s (proxy-stale after ${staleAfterMs / 1000} s)${repair ? `; repair: restart our proxy as ${by}` : ''}${postStep ? `; re-plug step after ${stepAfterSec} s, posted by ${by}` : ''}`);
   const startedAt = new Date().toISOString();
   let st = { state: null, since: null, emptySince: null, step: old?.step ?? null, stepClosedAt: old?.stepClosedAt ?? null };
-  let repairs = 0, lastRepair = 0, skipped = false;
+  let repairs = 0, lastRepair = 0, skipped = false, attach = null;
   let stop = false, wake = null;
   for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stop = true; if (wake) wake(); });
   const end = seconds === null ? Infinity : Date.now() + seconds * 1000;
@@ -111,6 +114,12 @@ async function watch() {
     try {
       s = await sample();
       e = evaluate(s, st, { staleAfterMs, list });
+      const ac = attachChange(attach, s); // I-242: a re-plug between two polls leaves no state change
+      attach = ac.attach;
+      if (ac.reattach) {
+        log(`REATTACH: usbmux attach #${ac.reattach.from} -> #${ac.reattach.to} between polls (no unplugged state seen); link ${e.state}`);
+        audit({ event: 'reattach', attachFrom: ac.reattach.from, attachTo: ac.reattach.to, state: e.state, ...sampleFacts(s) });
+      }
       if (e.state !== st.state) {
         log(`USBLINK ${e.state}: ${e.line}`);
         audit({ event: 'state', from: st.state, to: e.state, ...sampleFacts(s) });

@@ -153,6 +153,19 @@ export const sampleFacts = (s) => ({
   proxy: s.proxy ? (s.proxy.refused ? { refused: s.proxy.code } : s.proxy.error ? { error: s.proxy.error } : { count: s.proxy.count }) : null,
 });
 
+/**
+ * I-242: a re-attach the watch did not see. `last`: the usbmux attach number of the last sample that listed the phone
+ * (null after a sample that showed it off usbmux: that drop was seen). -> {attach (the next `last`), reattach: {from, to}
+ * | null}: a new number while the phone was listed at both samples means it was unplugged and back between two polls.
+ * A sample without a usbmux list (unknown) keeps `last`.
+ */
+export function attachChange(last, s) {
+  const m = s?.mux;
+  if (!m) return { attach: last ?? null, reattach: null };
+  if (!m.listed) return { attach: null, reattach: null };
+  return { attach: m.id, reattach: last != null && m.id !== last ? { from: last, to: m.id } : null };
+}
+
 // ---- shared state: <state dir>/usblink/ ------------------------------------------------------------------------------
 
 export const linkDir = () => join(sharedStateDir(), 'usblink');

@@ -226,6 +226,35 @@ test('watch --post-step: usb-lost past --step-after posts ONE re-plug action ste
   noIds(r.out + JSON.stringify(s), 'post-step');
 });
 
+test('I-242 watch: a re-attach between two polls (attach #135 -> #136, both ok) is one REATTACH line and one audit line; no step, no state line', async () => {
+  mux.set([{ id: 135, udid: UDID }]);
+  proxyList([PHONE]);
+  assert.equal((await run('proxy', 'start', '--by', 'lead')).code, 0);
+  const w = nodeAsync(USBLINK, ['watch', '--every', '1', '--post-step', '--step-after', '0', '--by', 'lead', '--seconds', '4'], { env, timeout: 30000 });
+  const stateOf = () => { try { return JSON.parse(readFileSync(join(dir, 'state', 'usblink', 'state.json'), 'utf8')); } catch { return null; } };
+  for (let i = 0; i < 100 && stateOf()?.state !== 'ok'; i++) await sleep(100);
+  assert.equal(stateOf()?.state, 'ok', 'the first poll saw the link ok');
+  mux.set([{ id: 136, udid: UDID }]); // unplugged and back within one poll: the watch never sees the drop
+  const r = await w;
+  assert.equal(r.code, 0, r.out);
+  const lines = r.stdout.trim().split('\n');
+  for (const l of lines) assert.match(l, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ /, 'every line carries the time');
+  const body = lines.map((l) => l.replace(/^\S+ /, ''));
+  assert.deepEqual(body.filter((l) => l.startsWith('REATTACH')), ['REATTACH: usbmux attach #135 -> #136 between polls (no unplugged state seen); link ok'], r.stdout);
+  assert.equal(body.filter((l) => l.startsWith('USBLINK')).length, 1, 'the state stayed ok: one state line');
+  assert.doesNotMatch(r.stdout, /POSTED|CLOSED|STEP ERROR/, 'the link is ok: no re-plug step');
+  const ev = audit().filter((a) => a.event === 'reattach');
+  assert.equal(ev.length, 1, JSON.stringify(audit()));
+  assert.equal(ev[0].attachFrom, 135);
+  assert.equal(ev[0].attachTo, 136);
+  assert.equal(ev[0].state, 'ok');
+  assert.deepEqual(ev[0].iousb, { count: 1, config: 6, speed: 2 }, 'the drop numbers, as the state lines carry');
+  assert.deepEqual(ev[0].mux, { usb: 1, listed: true, attach: 136 });
+  assert.deepEqual(ev[0].proxy, { count: 1 });
+  assert.equal(audit().filter((a) => a.event === 'state').length, 1);
+  noIds(r.out + JSON.stringify(audit()), 'reattach');
+});
+
 // ---- I-241: the proxy on loopback only ------------------------------------------------------------------------------
 // ios_webkit_debug_proxy binds INADDR_ANY (src/socket_manager.c sm_listen, v1.9.2) and has no option against it. The
 // shim tools/lib/bind-localhost.c, loaded with DYLD_INSERT_LIBRARIES, turns 0.0.0.0 / :: into 127.0.0.1 / ::1. Proven
