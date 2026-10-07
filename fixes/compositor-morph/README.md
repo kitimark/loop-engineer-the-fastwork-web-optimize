@@ -668,3 +668,40 @@ frame's rAF, where the layout is clean. I expect O1.f2 and the open-0 median wit
 at or below C's at all three thresholds. Risk: the next frame now carries one F() (a clean layout read and a hit test,
 about 1-2 ms in Chrome at 6x); if WebKit dirties the layout again before that rAF, the cost moves to f3 rather than
 disappearing (visible in O1's f123, descriptive).
+
+**Pre-data amendment (2026-10-07 04:5xZ, lead: the user accepted PR-031 X2 and PR-032 rev 3; no P-159 data exists
+yet).** V becomes the build that would land, so one block covers it:
+- V = **v12** = v11 + X2 + c2 + PR-032 rev 3, JS 807ea24c4bf5 / CSS a9a47b10326a, built by
+  `fixes/compositor-morph/v12-build.sh` (deltas pinned: X2 `fixes/people-gpu/patch.diff` 24c2a1625316, c2
+  `c2-on-v11.diff` 9e5d6780c85c, rev 3 `fade3-on-v11.diff` 21a4199bd6fc; patch -F 0; routes V11+X2+c2+rev3 and
+  V11+c2+rev3+X2 give the same bytes; V11+X2 = int-v11's V11X pin 71ad4f9b82ac / 592d1f2a8af4; node --check ok).
+- Snapshot out/cm/snap159b (C and P from out/cm/snap11, V from out/cm/v12), HASHES 48736dab87cf; the kit's pins
+  (cm-serve.sh, cm-hold.sh) name it. C, driver, profile, order, heat rule, command, reader and decision rule D1-D3 are
+  unchanged.
+- Stack check against v11+c2 before the phone (see "v12 stack check" below): no new forced style or layout from stacking.
+- Prediction unchanged (PASS). X2 (the People title slide) and rev 3 (the Join button's timed exit) remove work in
+  their own areas; rev 3 removes the earn/lang keys from the CM keyframes and the button's scroll-driven blur, so the
+  open frame does at most the same work as v11+c2's.
+
+### v12 stack check (against v11+c2; 04:45-04:50Z, shared lane, counts only)
+
+- Chrome class parity (`gates/c2trace.mjs`, 430x815, 237 frames): v11+c2 vs v12 0 frame-class differences.
+- Chrome first open (`fixes/v11/first-open.mjs --cold`, 430x775, 6x, one run per arm): the same structure. Open1 frame 1:
+  v11+c2 51.4 ms vs v12 55.5 ms (Paint 28.7 vs 38.2 ms, one run). Both have forced style of 7 elements from
+  `__nsOnScroll` only, and 421 dirty in the rendering step. Open2 frame 1: 51.1 vs 52.5 ms. The keyframe text before
+  the open is 39119 vs 38183 chars (rev 3 drops the earn/lang keys).
+- Simulator (`cm-sim.mjs --cold --stack 6`, 2 runs per arm interleaved):
+
+| per phase | v11+c2 (A1 / A2) | v12 (B1 / B2) |
+|---|---|---|
+| open, forced layout / style | 63 / 57 ; 60 / 56 | 57 / 57 ; 60 / 57 |
+| open, first open frame forced layout | 3 / 2 | 2 / 2 |
+| open, paints | 201 / 182 | 128 / 145 |
+| open, layouts | 139 / 137 | 127 / 134 |
+| close, forced layout / style | 57 / 42 ; 60 / 41 | 62 / 42 ; 64 / 41 |
+| rest closed, paints / styles | 46 / 26 ; 56 / 31 | 3 / 13 ; 3 / 13 |
+
+- Reading: no new forced style or layout from stacking. F's stacks are the same (rAF re-test, 6-8 + 6-8 per open).
+  The open paints and the rest-closed tail are lower in v12: rev 3's button no longer repaints for its blur, as in the
+  PR-032 counts. The close's forced layouts are 2-7 higher, inside the earlier v11 / c2 spread (47-62). Chrome's
+  open1 Paint +9.5 ms is one run; Paint is not forced work. OBSERVED, counts only, no timing.

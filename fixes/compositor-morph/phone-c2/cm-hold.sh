@@ -2,9 +2,9 @@
 # compositor-morph phone runner (card: fixes/compositor-morph/README.md "Phone card"): one hold of the block. A copy of
 # fix-end-morph's fixes/end-morph-f12/phone/p155-hold.sh (credit: fix-end-morph; P-152 rev 1.4 lineage) with two arms
 # (C, V), the probe page's attribution items, and the ticket id in $CM_TICKET.
-# Builds (immutable snapshot out/cm/snap159, served by fixes/compositor-morph/phone-c2/cm-serve.sh, plain http, --latency 150):
+# Builds (immutable snapshot out/cm/snap159b, served by fixes/compositor-morph/phone-c2/cm-serve.sh, plain http, --latency 150):
 #   C  v9-final rev 7d (int-v11)    JS 1b2eecc66011  CSS e1359ab9994a   out/cmp159/serve-C.json
-#   V  v11+c2 (v11 + c2)            JS 59b07dadb99c  CSS 62743920fe1a   out/cmp159/serve-V.json
+#   V  v12 (v11+X2+c2+rev3)         JS 807ea24c4bf5  CSS a9a47b10326a   out/cmp159/serve-V.json
 #   B  the plain baseline (the thermal gate's timer page)               out/cmp159/serve-B.json
 #   P  the probe page (out/cm/probe; ?v=none|sda|raf)                    out/cmp159/serve-P.json
 # Script fs = fixes/morph-scroll/g-fastshort-v1.json (the E procedure of P-152/P-155, compiled program 8737f212c0ff);
@@ -29,7 +29,7 @@ O=out/cmp159/runs; SV=out/cmp159
 FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
 PR=fixes/compositor-morph/phone/g-probe-v1.json; PROG_PR=${CM_PROG_PR:-7ff27a2413c8}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
-C_JS=1b2eecc66011; V_JS=59b07dadb99c; C_CSS=e1359ab9994a; V_CSS=62743920fe1a
+C_JS=1b2eecc66011; V_JS=807ea24c4bf5; C_CSS=e1359ab9994a; V_CSS=a9a47b10326a
 GM=${CM_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "CM_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/compositor-morph/phone-c2/cm-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs
@@ -45,7 +45,7 @@ echo "HOLD $H ($CM_TICKET) start $(date -u +%FT%TZ) items $* gates $GM"
 echo "PIN $H $CM_TICKET profile ${CM_PROFILE:-xcode-serious} checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF fixes/compositor-morph/phone-c2/cm-block.sh fixes/compositor-morph/phone-c2/cm-serve.sh fixes/compositor-morph/phone/cm-read.mjs \
   $GATES research/serious-heat/p129-read.mjs $FS $PR research/phone-thermal-gate/thermal-gate.mjs \
-  fixes/rest-script/tools/pmcheck.mjs out/cm/snap159/C/$JS out/cm/snap159/V/$JS out/cm/snap159/C/$CSS out/cm/snap159/V/$CSS)"
+  fixes/rest-script/tools/pmcheck.mjs out/cm/snap159b/C/$JS out/cm/snap159b/V/$JS out/cm/snap159b/C/$CSS out/cm/snap159b/V/$CSS)"
 hashok || { echo "HOLD $H VOID served hashes C $(served $PC $JS)/$(served $PC $CSS) V $(served $PV $JS)/$(served $PV $CSS); pinned C $C_JS/$C_CSS V $V_JS/$V_CSS (no run)"; exit 4; }
 echo "SERVED C $C_JS/$C_CSS ok, V $V_JS/$V_CSS ok"
 budget() { # script pinned-hash -> prints the budget; exit 4 on a hash mismatch

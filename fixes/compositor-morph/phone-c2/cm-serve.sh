@@ -1,25 +1,25 @@
 #!/bin/sh
-# P-159 pair (C = v9-final rev 7d, the same file as P-158's out/cm/snap11/C; V = v11+c2, out/cm/c2): copy of
+# P-159 pair (C = v9-final rev 7d, the same file as P-158's out/cm/snap11/C; V = v12 = v11 + X2 + c2 + PR-032 rev 3, out/cm/v12): copy of
 # fixes/compositor-morph/phone-v11/cm-serve.sh (itself a copy of fixes/compositor-morph/phone/cm-serve.sh).
 # compositor-morph phone servers (card: fixes/compositor-morph/README.md "Phone card"). A copy of fix-end-morph's
 # fixes/end-morph-f12/phone/p155-serve.sh (credit: fix-end-morph) with two arms. Plain http (I-003), OS-assigned ports,
 # --latency 150, --vendors=local.
 #   B = the plain baseline (the thermal gate's timer page; no counted run)
 #   C = v9-final rev 7d (int-v11)                 JS 1b2eecc66011  CSS e1359ab9994a
-#   V = v11+c2 (v11 + c2)                         JS 59b07dadb99c  CSS 62743920fe1a (pinned below)
+#   V = v12 (v11 + X2 + c2 + PR-032 rev 3)        JS 807ea24c4bf5  CSS a9a47b10326a (pinned below)
 #   P = the probe page out/cm/probe (attribution runs only, after the end sentinel; served from the snapshot too)
-# The snapshot: out/cm/snap159 (C and P copied from out/cm/snap11, V from out/cm/c2, then read-only; HASHES.txt pinned below), checked before every start and check.
+# The snapshot: out/cm/snap159b (C and P copied from out/cm/snap11, V from out/cm/v12, then read-only; HASHES.txt pinned below), checked before every start and check.
 # Usage: sh fixes/compositor-morph/phone-c2/cm-serve.sh snap|start|check|stop
 # State: out/cmp159/serve-{B,C,V,P}.json (ports), .pid, .log. Phone URLs only via tools/lan.mjs; never copy the LAN address
 # into a committed file (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
-S=out/cmp159; D=out/cm/snap159
+S=out/cmp159; D=out/cm/snap159b
 OWNER=${FW_AGENT:-arch-compositor-morph}
 JS=_app/immutable/nodes/2.DyWL8TcE.js
 CSS=_app/immutable/assets/2.gBuqKVzi.css
 C_JS=1b2eecc66011; C_CSS=e1359ab9994a
-V_JS=59b07dadb99c; V_CSS=62743920fe1a
-HASHES_PIN=${CM_HASHES_PIN:-a853ddc82ce5}
+V_JS=807ea24c4bf5; V_CSS=a9a47b10326a
+HASHES_PIN=${CM_HASHES_PIN:-48736dab87cf}
 case "$1" in snap|start|check|stop) ;; *) echo "usage: sh fixes/compositor-morph/phone-c2/cm-serve.sh snap|start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then
   for A in B C V P; do [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null; rm -f $S/serve-$A.pid; done
@@ -28,7 +28,7 @@ fi
 if [ "$1" = snap ]; then
   [ -e $D/HASHES.txt ] && { echo "snapshot exists at $D (read-only): refuse to rebuild"; exit 3; }
   mkdir -p $D/C/_app/immutable/nodes $D/C/_app/immutable/assets $D/V/_app/immutable/nodes $D/V/_app/immutable/assets $D/P
-  cp out/cm/snap11/C/$JS $D/C/$JS && cp out/cm/snap11/C/$CSS $D/C/$CSS && cp out/cm/c2/$JS $D/V/$JS && cp out/cm/c2/$CSS $D/V/$CSS || exit 3
+  cp out/cm/snap11/C/$JS $D/C/$JS && cp out/cm/snap11/C/$CSS $D/C/$CSS && cp out/cm/v12/$JS $D/V/$JS && cp out/cm/v12/$CSS $D/V/$CSS || exit 3
   cp out/cm/snap11/P/index.html out/cm/snap11/P/probe.js $D/P/ || exit 3
   (cd $D && find C V P -type f | sort | xargs shasum -a 256 > HASHES.txt)
   chmod -R a-w $D/C $D/V $D/P $D/HASHES.txt
