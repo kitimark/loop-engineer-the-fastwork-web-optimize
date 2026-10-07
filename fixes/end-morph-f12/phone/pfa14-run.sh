@@ -8,12 +8,15 @@
 # node tools/lock.mjs run iphone --owner fix-end-morph --max-seconds 1800 [--block <ticket>] -- sh fixes/end-morph-f12/phone/pfa14-run.sh <C port> <V port>
 # Addendum 1 (lead 12:0xZ, user rule T-228 #15: no manual Xcode thermal steps): profile tool-serious. Inside the hold:
 # park Safari, `iphone.mjs rearm` (clears, probes, then holds Serious via thermal.mjs, as fixes/compositor-morph's kits,
-# c181d248), every gate reads the condition as ours (FW_PHONE_CONDITION=tool); the exit trap clears it and parks Safari.
+# c181d248), every gate reads the condition as ours (FW_PHONE_CONDITION=tool); the exit trap parks Safari. Start it with
+# pfa14-block.sh, which clears the condition after the hold ends (P-162 ran with the clear in the trap: profileDrift).
 cd "$(dirname "$0")/../../.." || exit 2
 O=out/fade/pfa14; mkdir -p $O
 [ -n "$1" ] && [ -n "$2" ] || { echo "usage: sh fixes/end-morph-f12/phone/pfa14-run.sh <C port> <V port>"; exit 2; }
 export FW_PHONE_CONDITION=tool
-trap 'node tools/thermal.mjs clear > $O/thermal-clear-$(date +%s).log 2>&1; node tools/iphone.mjs park --owner fix-end-morph > /dev/null 2>&1; echo "thermal condition cleared, Safari parked (exit trap)"' EXIT
+# Kit fix (lead, after P-162): no thermal clear inside the hold. A clear here ran before lock.mjs's end-of-hold
+# condition read and set profileDrift on every record; pfa14-block.sh clears right after `lock.mjs run iphone` returns.
+trap 'node tools/iphone.mjs park --owner fix-end-morph > /dev/null 2>&1; echo "Safari parked (exit trap); thermal clear follows in pfa14-block.sh after the hold"' EXIT
 node tools/iphone.mjs park --owner fix-end-morph > /dev/null 2>&1
 RL=$O/rearm-$(date +%s).log
 node tools/iphone.mjs rearm --owner fix-end-morph --settle 120 > $RL 2>&1; re=$?

@@ -1,28 +1,31 @@
 {
   "schema": "fw-proposal/1",
-  "title": "End of the page: freeze the fading section's shimmer, on top of the GPU-morph build (rev 3)",
+  "title": "End of the page: freeze the fading section's shimmer, on today's best build v14 (rev 4)",
   "area": "end",
   "topic": "end-morph-f12",
   "thread": "T-204",
-  "problem": "Rev 3 is built on the GPU-morph build (PR-030), as you asked. It only makes sense if you accept PR-030.\n\nYour notes, point by point:\n\n1. Rev 1: \"(b) has a bug: the background fades out sometimes at Serious.\"\n- (b) is gone. (a) does not touch how the section fades: blur and transparency are exactly the GPU-morph build's.\n- iPhone check at Serious: the fade measured the same at all 5 positions in both builds. Slow frames were no worse (table below).\n- So whatever you see in A's fade, B shows the same. Please look at the fade in Try-it on the phone.\n\n2. Rev 1: \"try the arch-compositor-morph experiment instead.\" Done: it is PR-030, and this revision sits on top of it.\n\n3. Rev 2: \"Waiting for arch-compositor-morph done.\" It is done (PR-030). (a) applies to it without a single edit.\n\nBackground:\n- At the end of the page the big end panel grows over the last section (the four feature rows).\n- Over the first 55 % of that growth the section fades out: blurrier and more transparent, until it is invisible.\n- Meanwhile 4 endless shimmers keep running in it (iPhone count): colour sweeps over the row titles and glints.\n- Pausing them once the section is fully invisible needs no decision: it is already in the next build.",
-  "idea": "(a) freezes the section's shimmers from the first moment of the fade.\n- They stop where they are when the fade starts.\n- The blur and the fade stay exactly as in the GPU-morph build.\n- Scroll back up and they continue from where they stopped.\n\nIn Try-it, A is the GPU-morph build (PR-030) and B is the GPU-morph build plus (a).",
+  "problem": "Rev 4 is built on today's best build, v14, as you asked: \"Do later after the best build lands.\"\n\nYour notes, point by point:\n\n1. Rev 1: \"(b) has a bug: the background fades out sometimes at Serious.\"\n- (b) is gone. (a) does not touch how the section fades: blur and transparency are exactly v14's.\n- iPhone check at Serious: the fade, blur and transparency read the same in A and B at 4 positions during the fade.\n- Smoothness: about the same. One or two more slower-than-34 ms frames in some runs. Frames over 50 ms: 3 per run in B, 2 in A, within what 4 runs can tell apart, and none longer (longest 55-56 ms in B, 57-58 ms in A).\n- This is your look-and-feel call.\n\n2. Rev 1: \"try the arch-compositor-morph experiment instead.\" Its work is now part of v14, and (a) sits on top of it.\n\n3. Rev 2: \"Waiting for arch-compositor-morph done.\" Done: its menu-card work is in v14.\n\n4. Rev 3: \"Do later after the best build lands.\" v14 became the best build today (iPhone check P-161 passed), so rev 4 starts from it.\n\nBackground:\n- At the end of the page the big end panel grows over the last section (the four feature rows).\n- Over the first 55 % of that growth the section fades out: blurrier and more transparent, until it is invisible.\n- v14 already pauses the section's 4 endless shimmers once it is fully invisible.\n- (a) pauses them from the first moment of the fade instead. It is a one-line change.",
+  "idea": "(a) freezes the section's shimmers from the first moment of the fade.\n- They stop where they are when the fade starts.\n- The blur and the fade stay exactly as in v14.\n- Scroll back up and they continue from where they stopped.\n\nIn Try-it, A is v14 and B is v14 plus (a).",
   "looksSame": "The blur, the fade, the panel and every colour are unchanged.\n- Only the shimmers stop moving while the section fades.\n- Most of that time the section is already blurred and half transparent.",
   "visualDiff": [
     "Still frames in Chrome: no difference, 0 px² at all 18 positions.\n- Phone size (430x775), through the whole end morph, compared like for like.\n- Your pixel rule (PR-010) allows at most 0.5 % of the screen.",
-    "Still frames in the iPhone Simulator: at most 83 px² (0.02 % of the screen), far under the 0.5 % limit.\n- 83 px² before the morph starts, where (a) does nothing yet: Simulator noise.\n- 13 px² in the nav logo, which (a) never touches, the same Simulator noise as before.",
+    "Still frames in the iPhone Simulator: at most 99 px² (0.025 % of the screen).\n- All of it in the nav logo, which (a) never touches; it is also there where (a) does nothing: Simulator noise.",
     "The change is in motion only: the shimmers stop moving during the fade. A still-frame check can't see that, so please judge it in Try-it."
   ],
   "gain": [
-    { "what": "Shimmers running while it fades (iPhone)", "before": "4", "after": "0", "better": "better", "tag": "OBSERVED", "how": "iPhone 15 Pro Max at Serious, counted at 5 positions of the fade, one check per build. Not a timing test." },
-    { "what": "Slow frames over 50 ms in 2 morph runs (iPhone)", "before": "3 and 6", "after": "4 and 4", "better": "same", "tag": "OBSERVED", "how": "iPhone at Serious, scripted open and close of the end panel, 3 cycles per run, order A B B A. Too few runs to call a gain." },
-    { "what": "Slow frames over 34 ms in the same runs", "before": "6 and 7", "after": "6 and 6", "better": "same", "tag": "OBSERVED", "how": "Same runs." }
+    { "what": "Shimmers running while it fades (iPhone)", "before": "4", "after": "0", "better": "better", "tag": "OBSERVED",
+      "how": "iPhone 15 Pro Max at Serious, counted at 4 positions during the fade, one check per build. Not a timing test." },
+    { "what": "Slow frames over 50 ms in 2 morph runs (iPhone)", "before": "2 and 2", "after": "3 and 3", "better": "same", "tag": "OBSERVED",
+      "how": "iPhone at Serious, scripted open and close of the end panel, 3 cycles per run, order A B B A.\n- One more per run is within what 4 runs can tell apart.\n- Longest frame 57-58 ms in A, 55-56 ms in B." },
+    { "what": "Slow frames over 34 ms in the same runs", "before": "6 and 6", "after": "8 and 5", "better": "same", "tag": "OBSERVED",
+      "how": "Same runs. At the edge of the check: counted from 30 ms, B has one more than allowed (12 vs 11)." }
   ],
-  "risk": "The gain is small and unproven in time: the iPhone frames are the same within run-to-run variation.\n- It depends on PR-030: if you decline PR-030, decline this too.\n- The frozen shimmer is a visible change, small and only during the fade.",
+  "risk": "The gain is small: it saves animation work during the fade, not a visible stutter.\n- The frozen shimmer is a visible change, small and only during the fade.",
   "compare": {
-    "a": { "label": "GPU-morph build (PR-030)" },
-    "b": { "label": "GPU-morph build + (a)" },
+    "a": { "label": "v14 (today's best build)" },
+    "b": { "label": "v14 + (a)" },
     "view": "side",
-    "shots": [{ "caption": "Fade half done (430x775), still frame: identical. The change is motion only (shimmers stop).", "a": "../../out/compositor-morph/px2-chrome-pf-cma-2026-10-06T15-33-58-834Z/A-up0.25.png", "b": "../../out/compositor-morph/px2-chrome-pf-cma-2026-10-06T15-33-58-834Z/V-up0.25.png" }]
+    "shots": [{ "caption": "Fade half done (430x775), still frame: identical. The change is motion only (shimmers stop).", "a": "../../out/compositor-morph/px2-chrome-pf-v14a-2026-10-07T11-46-55-058Z/A-up0.25.png", "b": "../../out/compositor-morph/px2-chrome-pf-v14a-2026-10-07T11-46-55-058Z/V-up0.25.png" }]
   },
-  "live": { "overlay": "fixes/pf-cma/overlay", "a": { "overlay": "fixes/pf-cm/overlay" } }
+  "live": { "overlay": "fixes/pf-v14a/overlay", "a": { "overlay": "fixes/pf-v14/overlay" } }
 }

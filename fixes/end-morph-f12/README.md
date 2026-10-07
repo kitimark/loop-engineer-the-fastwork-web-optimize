@@ -1081,6 +1081,57 @@ The user's rev 3 note was "Do later after v10 best build land". v14 became the b
 - **Unchanged:** arms, runs, order, reads and the probe.
 - **Pin:** `phone/pfa14-run.sh` is now `dceed8fe0506` (was `d2e10cba6c86`). The restart begins from the first warm-up.
 
+### 10. P-162 result and the gates (read against the card in section 9 and addendum 1)
+
+**Gates** (cm-px2, 18 stops, 430x775; the output is in `out/compositor-morph/px2-*-pf-v14a-*`):
+
+| gate | consistent px² beyond A/A | where | verdict |
+|---|---|---|---|
+| Chrome, `--capture screencast` | 0 at every stop | none | PASS |
+| Simulator (fw-sim) | max 99 css px² (0.025 %) | nav logo box (css 48-112 × 16-48), which (a) never touches | PASS (under T2) |
+
+In the Simulator the 99 px² in the logo box is also present at dn0, where (a) is inert, so it is Simulator noise; it was 2 px² at pre.
+
+**P-162 block.**
+- 2026-10-07, 12:1x-12:3xZ, `--block P-162`, kit `dceed8fe0506`, exit 0.
+- `REARM CLEARED`: Serious induced by thermal.mjs, battery 35.8 °C; 36.6 °C at the end.
+- Shared jobs ran beside the block (arch-compositor-morph w1, ts-usb-attach w2), load1 6-8.
+- The first start at 11:57Z was void before any run (section 9 addendum).
+
+| run | arm | >50 | >34 | twins >46 / >54 / >30 / >38 | moving >50 | max |
+|---|---|---|---|---|---|---|
+| w | C (warm-up) | 2 | 6 | 2 / 2 / 11 / 5 | 2 | 56 ms |
+| w | V (warm-up) | 2 | 6 | 2 / 2 / 8 / 4 | 2 | 57 ms |
+| 1 | C | 2 | 6 | 2 / 2 / 9 / 6 | 2 | 58 ms |
+| 2 | V | 3 | 8 | 3 / 2 / 12 / 6 | 3 | 55 ms |
+| 3 | V | 3 | 5 | 3 / 1 / 9 / 4 | 3 | 56 ms |
+| 4 | C | 2 | 6 | 2 / 2 / 7 / 5 | 2 | 57 ms |
+
+- **Mechanism read: PASS** (OBSERVED).
+  - At the 4 probed positions with fade < 1 (fade 0.911, 0.739, 0.393, 0.047), V has `paused` = true and 0 animations running under #platform.
+  - C has `paused` = false and 4 there.
+  - Fade, opacity and blur are identical between the arms at every position, e.g. blur 7.28 px at fade 0.393.
+  - At m 1 both arms are paused, C by v14's (c). All animations on the page: C 27 vs V 23 during the fade, 3 vs 3 at m 1.
+- **No-worse read: PASS at >50, >34 and moving >50.**
+  - V's worse run vs C's worse run + 2: >50 3 ≤ 4; >34 8 ≤ 8 (at the bound); moving >50 3 ≤ 4.
+  - Twins: >46 3 ≤ 4, >54 2 ≤ 4, >38 6 ≤ 8. **>30 fails: 12 > 11.**
+  - So the >34 verdict is **threshold-sensitive**; >50 holds in both of its twins.
+  - The longest frame is at m 1 in both arms: C 57-58 ms, V 55-56 ms.
+- **Profile record.**
+  - All 4 counted records carry `profileDrift: true`.
+  - The kit's exit trap runs `thermal.mjs clear` before `lock.mjs run`'s end-of-hold read. So that read saw "induced No, condition none" while the phone itself still read Serious (36.6 °C).
+  - The drift flag comes from that order, not from a change during the runs (OBSERVED). This was reported to the lead.
+  - **The lead accepted this as explained** (2026-10-07): profileDrift on all 4 records comes from the trap order, OBSERVED; the records stand.
+- **Kit fix for future blocks** (lead's order): the clear no longer runs inside the hold.
+  - `phone/pfa14-run.sh`'s exit trap only parks Safari now.
+  - New wrapper `phone/pfa14-block.sh <ticket> <C port> <V port>` runs `lock.mjs run iphone --block <ticket> --max-seconds 1800 -- sh phone/pfa14-run.sh …`, then `thermal.mjs clear` right after the hold returns, and exits with the hold's code.
+  - P-162 itself ran with the old kit (`dceed8fe0506`); its numbers are unchanged by this.
+- **Lead's ruling on P-162** (2026-10-07):
+  - Mechanism PASS. No-worse PASS at >50 (both twins) and at moving >50.
+  - >34 sits at the bound and is threshold-sensitive (twin >30 fails by 1). With 4 counted runs a 1-3 frame gap is within what the block can resolve, so it does not block the proposal.
+  - Rev 4 says it plainly to the user: "about the same: one or two more slower-than-34 ms frames in some runs, no more frames over 50 ms". It is the user's look-and-feel call.
+  - Raw >50 counts are C 2, 2 and V 3, 3 (one more per run, and the same max band, 55-58 ms); the proposal shows these counts as they are and calls them within this block's run-to-run spread.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).
