@@ -56,10 +56,23 @@ case "$1" in
     # c3b-d (a): the closed bar's items near the end, C vs $K (default the landed c3b-a + K6), Chrome 430x775/815,
     # 375x775, 640x775, then the Simulator
     K=${K:-out/cm/c3bk6}
-    for WH in 430x775 430x815 375x775 640x775; do
+    for WH in 430x775 430x815 375x775; do
       $LK --weight probe --doing "c3b-d: bar items near the end, Chrome $WH" -- node $G/navy.mjs --engine chrome --w ${WH%x*} --h ${WH#*x} C=out/cm/snap160/C V=$K > $L/navy-chrome-$WH.log 2>&1
     done
     $LK --weight simulator --doing "c3b-d: bar items near the end, Simulator" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/navy.mjs --engine sim C=out/cm/snap160/C V=$K > $L/navy-sim.log 2>&1
+    echo "EXIT $?" ;;
+  c3bd)
+    # c3b-d (a) options against v14 (A=out/cm/snap163/V): rects (navy) and the T2 look over the open (pre-look, touch
+    # held), Chrome 775 and the Simulator; K=out/cm/c3bd1|c3bd2
+    # CA, not A: line 9 already set A to v13 (snap160/V), so ${A:-...} kept v13 (first c3bd run, 12:0xZ, compared v13)
+    A=${CA:-out/cm/snap163/V}; MS=${MS:-0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1}
+    $LK --weight probe --doing "c3b-d: bar rects, $(basename $K)" -- node $G/navy.mjs --engine chrome --w 430 --h 775 A=$A V=$K > $L/c3bd-navy-$(basename $K).log 2>&1
+    D=out/cm/prelook-$(basename $K)-chrome775
+    $LK --weight probe --doing "c3b-d look, Chrome 775, A V" -- node $G/pre-look.mjs --engine chrome --touch --ms $MS --a $A --v $K --h 775 --outdir $D --arms A,V > $L/c3bd-look-$(basename $K)-chrome-1.log 2>&1
+    $LK --weight probe --doing "c3b-d look, Chrome 775, A2 V2" -- node $G/pre-look.mjs --engine chrome --touch --ms $MS --a $A --v $K --h 775 --outdir $D --arms A2,V2 > $L/c3bd-look-$(basename $K)-chrome-2.log 2>&1
+    D=out/cm/prelook-$(basename $K)-sim
+    $LK --weight simulator --doing "c3b-d look, Simulator, A V" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A,V > $L/c3bd-look-$(basename $K)-sim-1.log 2>&1
+    $LK --weight simulator --doing "c3b-d look, Simulator, A2 V2" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A2,V2 > $L/c3bd-look-$(basename $K)-sim-2.log 2>&1
     echo "EXIT $?" ;;
   *) echo "usage: k-gates.sh look-chrome 775|815 | look-sim | sim-cost | sim-runs | sim-k8 | sim-k8p"; exit 2 ;;
 esac

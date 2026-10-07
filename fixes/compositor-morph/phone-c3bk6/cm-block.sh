@@ -5,6 +5,7 @@
 # one item each (cm-hold.sh). Start the servers first: sh fixes/compositor-morph/phone-c3bk6/cm-serve.sh start.
 #   CM_TICKET=P-NNN node tools/lock.mjs run iphone --owner <runner> --block P-NNN --max-seconds 3600 --keep 120 -- \
 #     sh fixes/compositor-morph/phone-c3bk6/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL
+#   CM_THERMAL=serious: run `node tools/thermal.mjs clear` right after that command returns (any exit code)
 #   then (attribution, uncounted, after the end sentinel): ... H<n>:AN H<n+1>:AS H<n+2>:AR
 # Rules as P-155: every part starts with cm-serve.sh check, `wda ensure` (I-220) and a Safari restart (I-214); Safari parked on
 # every exit; before every hold: park, phone-temp --below 38 --timeout 900 (xcode-serious profile: the cooling wait is the
@@ -51,8 +52,8 @@ wdarestart() { # I-220 (5803d436): wda ensure keeps a READY WDA, else restarts w
 # xcode-serious). ONE owner of the condition: `iphone.mjs rearm` (I-225, 9c644179). It reads the phone, clears, waits
 # for a plain Nominal/Fair read, then starts its own detached `thermal.mjs set serious` (which holds the condition after
 # rearm exits) and settles 120 s; this script never starts a set of its own. It runs once at the part's start and once
-# more when a hold's start gate reads Critical (that hold then runs once more). At the part's end (exit trap) `thermal.mjs
-# clear` ends the condition. FW_PHONE_CONDITION=tool: the iphone.mjs gates post no Xcode step. Xcode is never touched.
+# more when a hold's start gate reads Critical (that hold then runs once more). The runner ends the condition with
+# `node tools/thermal.mjs clear` right after `lock.mjs run iphone` returns (not in this script's exit trap). FW_PHONE_CONDITION=tool: the iphone.mjs gates post no Xcode step. Xcode is never touched.
 thermalrearm() {
   RL=$LG/rearm-$(date +%s).log
   # P-161 10:2xZ: wdarestart leaves Safari on B (the thermal gate's timer page, whose countdown and hero animations run
@@ -64,7 +65,9 @@ thermalrearm() {
 }
 if [ "$CM_THERMAL" = serious ] && [ "$CM_DRY" != 1 ]; then
   export CM_PROFILE=tool-serious FW_PHONE_CONDITION=tool
-  trap 'node tools/thermal.mjs clear > $LG/thermal-clear-$(date +%s).log 2>&1; node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "thermal condition cleared, Safari parked (exit trap)"' EXIT
+  # lead 2026-10-07 (after P-161): no `thermal.mjs clear` in the exit trap any more; the runner clears right after
+  # `lock.mjs run iphone` returns (see the header), so the condition's end is outside the hold and its records
+  trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap); now run: node tools/thermal.mjs clear"' EXIT
   PL=$LG/preflight-$(date +%s).log
   node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?
   [ $pe -eq 0 ] || { echo "BLOCK STOP: preflight exit $pe ($(tail -1 $PL)): message the lead"; exit 9; }

@@ -1,5 +1,5 @@
-// c3b-d (a) (arch-compositor-morph): do the closed bar's items move near the end before the menu opens? At rest at
-// m -1.2 .. 0.1 (0.05 steps; 700 ms rest each, so K's pre is on in (-1, 0]), the viewport rect (top, left, height; 2
+// c3b-d (a) (arch-compositor-morph): do the closed bar's items move near the end before the menu opens? At m -0.3 .. 1.0
+// (0.05 steps, 700 ms each, a held synthetic touch so the settle does not snap; --no-touch: at rest), the viewport rect (top, left, height; 2
 // decimals, CSS px) of the bar, the logo, the language switch and the Join button (.is-earn), plus the nav's state.
 // Prints per element the y at each stop and its drift from the first stop. Counts / geometry only, no timing, no pixels.
 //   Chrome:    node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner arch-compositor-morph -- \
@@ -17,12 +17,14 @@ const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] :
 const ENGINE = arg('--engine', 'chrome'), W = Number(arg('--w', '430')), H = Number(arg('--h', '775'));
 const arms = argv.filter((a) => /^[A-Za-z]\w*=/.test(a)).map((a) => [a.slice(0, a.indexOf('=')), resolve(WT, a.slice(a.indexOf('=') + 1))]);
 const MS = arg('--ms', '').split(',').filter(Boolean).map(Number);
-const STOPS = MS.length ? MS : Array.from({ length: 27 }, (_, i) => +(-1.2 + i * 0.05).toFixed(2));
+const STOPS = MS.length ? MS : Array.from({ length: 27 }, (_, i) => +(-0.3 + i * 0.05).toFixed(2));
+// a held synthetic touch keeps the 7d settle from snapping m to 0 or 1 at rest (as pre-look --touch, cm-px2)
+const TOUCH = `(() => { const ev = new Event('touchstart'); const t = [{ clientX: 215, clientY: 400, identifier: 1 }]; Object.defineProperty(ev, 'touches', { value: t }); Object.defineProperty(ev, 'changedTouches', { value: t }); window.dispatchEvent(ev); return 1; })()`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const OUT = join(WT, 'out/cm/navy'); mkdirSync(OUT, { recursive: true });
 const GEO = `JSON.stringify((() => { const e = document.querySelector('.fw-ms-end'); const t = e ? e.offsetHeight : 0; const max = document.documentElement.scrollHeight - innerHeight; return { t, max, ih: innerHeight, iw: innerWidth, endStart: max - t }; })())`;
 const EL = { bar: '.start-selling-top-nav-bar', logo: '.start-selling-top-nav-logo', lang: '.start-selling-top-nav-actions > .start-selling-language-switch-wrap', join: '.start-selling-top-nav-btn.is-earn' };
-const READ = `JSON.stringify((() => { const h = document.querySelector('header.start-selling-top-nav'); const o = { pre: h.classList.contains('fw-cm-pre'), morphing: h.classList.contains('is-morphing'), hidden: h.classList.contains('is-scroll-hidden'), m: h.style.getPropertyValue('--morph') || getComputedStyle(h).getPropertyValue('--morph') };
+const READ = `JSON.stringify((() => { const h = document.querySelector('header.start-selling-top-nav'); const o = { mv: 0, pre: h.classList.contains('fw-cm-pre'), morphing: h.classList.contains('is-morphing'), hidden: h.classList.contains('is-scroll-hidden'), morph: h.style.getPropertyValue('--morph') || getComputedStyle(h).getPropertyValue('--morph') };
   for (const [k, s] of Object.entries(${JSON.stringify(EL)})) { const e = h.querySelector(s); if (!e) { o[k] = null; continue; } const r = e.getBoundingClientRect(); o[k] = [+r.top.toFixed(2), +r.left.toFixed(2), +r.height.toFixed(2), +r.width.toFixed(2)]; } return o; })())`;
 let chrome = null, cdp = null, sim = null;
 if (ENGINE === 'sim') sim = await import(join(WT, 'tools/lib/sim.mjs'));
@@ -62,10 +64,13 @@ try {
       let g = JSON.parse(await c.ev(GEO)); if (!g.t) throw new Error('no .fw-ms-end');
       await c.ev(`(scrollTo({ top: ${g.endStart - 2 * g.t}, behavior: 'instant' }), 1)`); await sleep(1500);
       g = JSON.parse(await c.ev(GEO)); row.geo = g;
+      // rest once at the first stop without a touch (K's pre turns on in the 200 ms rest timer, which a held touch skips)
+      await c.ev(`(scrollTo({ top: ${Math.round(g.endStart + STOPS[0] * g.t)}, behavior: 'instant' }), 1)`); await sleep(900);
+      if (!argv.includes('--no-touch')) await c.ev(TOUCH);
       for (const m of STOPS) {
         const y = Math.round(g.endStart + m * g.t);
         await c.ev(`(scrollTo({ top: ${y}, behavior: 'instant' }), 1)`); await sleep(700);
-        row.stops.push({ m, y, ...JSON.parse(await c.ev(READ)) });
+        row.stops.push({ ...JSON.parse(await c.ev(READ)), m, y });
       }
     } catch (e) { row.error = String(e.stack || e); console.log(label, 'error', String(e.message || e)); }
     finally { try { c && (await c.close()); } catch {} p.kill(); rmSync(st, { force: true }); }
@@ -78,7 +83,7 @@ try {
       const moved = row.stops.filter((x, i) => d[i] && Math.abs(d[i]) >= 0.1).map((x) => x.m);
       console.log(`  ${k.padEnd(4)} y0 ${s0[k][0]} | dy ${row.stops.map((x, i) => `${x.m}:${d[i]}`).join(' ')} | moves from m ${moved.length ? moved[0] : '-'}`);
     }
-    console.log(`  state ${row.stops.map((x) => `${x.m}:${x.pre ? 'P' : x.morphing ? 'M' : '-'}${x.hidden ? 'h' : ''}`).join(' ')}`);
+    console.log(`  state ${row.stops.map((x) => `${x.m}:${x.pre ? 'P' : x.morphing ? 'M' : '-'}${x.hidden ? 'h' : ''}(${String(x.morph).trim().slice(0, 5)})`).join(' ')}`);
   }
 } finally { try { cdp && cdp.close(); chrome && (await chrome.close()); } catch {} }
 const f = join(OUT, `navy-${ENGINE}-${W}x${H}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`); writeFileSync(f, JSON.stringify(res, null, 1)); console.log('WROTE', f);

@@ -12,6 +12,9 @@
 //   pass P (opens after long rests, K8): as O, but at rest 4.5 s before the first open and after each close (K8 ends
 //     pre after 3 s of rest and turns it on again in the first scroll frame toward the end); per open as O, plus the
 //     frame in which pre came on (fw-pre1) when that was during the strokes.
+//   --rest0 (pass A): then m 1 for 3 s, back to m 0 (a close) and rests there: S0b (0-3 s), S0c (4.5-7.5 s).
+//   --pausecm (with --rest0; c3b-e's decisive check): then the CM wrapper animations ([data-fw-cm]) paused, S0p (3 s),
+//     played again, S0r (3 s): if S0p's styles drop to 0 and S0r's come back, CM's running animations are the restyle.
 //   pass A also ends with J-0.5b (m 1 -> -0.5) and two rests at m -0.5: S-0.5a (0-3 s) and S-0.5z (3.5-6.5 s; K8: pre ended).
 //   pass L (layers, Timeline off): LayerTree.layersForNode(document) at m -1.5 (L0), at rest at m -0.5 after 1.5 s (L1;
 //     K: pre on), held open at m 1 with a synthetic touch (L2), back at m -0.5 (L3); count and memory, and the layers new
@@ -127,21 +130,25 @@ try {
         const g = await load();
         const Y = (m) => Math.round(g.endStart + m * g.t);
         await c.evaluate(`(window.scrollTo({ top: ${Y(-1.5)}, behavior: 'instant' }), 1)`); await sleep(1500);
-        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000], ['J-0.5b', 1, -0.5, 1], ['S-0.5a', 3000], ['W', 500], ['S-0.5z', 3000]];
+        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000], ['J-0.5b', 1, -0.5, 1], ['S-0.5a', 3000], ['W', 500], ['S-0.5z', 3000]].concat(argv.includes('--rest0') ? [['J1b', -0.5, 1, 1], ['S1b', 3000], ['J0b', 1, 0, 1], ['S0b', 3000], ['W2', 1500], ['S0c', 3000]].concat(argv.includes('--pausecm') ? [['PZ', 'pause'], ['S0p', 3000], ['PR', 'play'], ['S0r', 3000]] : []) : []);
         const js = JSON.stringify(plan.map((x) => (x.length === 4 ? [x[0], Y(x[1]), Y(x[2]), x[3]] : x)));
         row.navA = [];
         const recs = await tl(c, async () => {
           await c.evaluate(`(window.__aDone = 0, window.__aNav = [], (async () => { const nav = () => document.querySelector('header.start-selling-top-nav').className.replace(/svelte-\\w+/g, '').trim().split(/\\s+/).filter((k) => /morphing|pre|expanded/.test(k)).join(' ') || '-';
             const raf = () => new Promise((r) => requestAnimationFrame(r)); const wait = (t) => new Promise((r) => setTimeout(r, t));
-            for (const s of ${js}) { await raf(); performance.mark('seg:' + s[0]); if (s.length === 4) { for (let i = 1; i <= s[3]; i++) { window.scrollTo({ top: Math.round(s[1] + (s[2] - s[1]) * i / s[3]), behavior: 'instant' }); await raf(); } } else await wait(s[1]); window.__aNav.push(s[0] + ' ' + nav()); }
+            for (const s of ${js}) { await raf(); performance.mark('seg:' + s[0]); if (s.length === 4) { for (let i = 1; i <= s[3]; i++) { window.scrollTo({ top: Math.round(s[1] + (s[2] - s[1]) * i / s[3]), behavior: 'instant' }); await raf(); } } else if (typeof s[1] === 'string') { for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; if (t && t.dataset && t.dataset.fwCm) a[s[1]](); } } else await wait(s[1]); window.__aNav.push(s[0] + ' ' + nav()); }
             await raf(); performance.mark('seg:end'); window.__aDone = 1; })(), 1)`);
           for (let i = 0; i < 200 && !(await c.evaluate('window.__aDone')); i++) await sleep(250);
           row.navA = await c.evaluate('window.__aNav');
+          // --rest0: what is still running at the end (rest at m 0 after a close): every animation that is not idle or
+          // finished, with its target, name, play state, timeline kind and current time
+          if (argv.includes('--rest0')) row.anims = await c.evaluate(`JSON.stringify(document.getAnimations().filter((a) => a.playState === 'running' || a.playState === 'paused').map((a) => { const t = a.effect && a.effect.target; const lab = t ? (t.tagName || '').toLowerCase() + '.' + String(typeof t.className === 'string' ? t.className : '').replace(/svelte-\\w+/g, '').trim().split(/\\s+/).slice(0, 3).join('.') + (t.dataset && t.dataset.fwCm ? '[' + t.dataset.fwCm + ']' : '') : '-'; return [lab, a.animationName || a.transitionProperty || a.constructor.name, a.playState, a.timeline && a.timeline !== document.timeline ? 'scroll' : 'doc', Math.round(Number(a.currentTime && a.currentTime.value !== undefined ? a.currentTime.value : a.currentTime) || 0)]; }))`).then(JSON.parse);
         });
         const seg = {}; let cur = 'pre';
         for (const r of recs) { const mk = marks(r).filter((x) => x.startsWith('seg:')); if (mk.length) cur = mk[mk.length - 1].slice(4); if (r.type === 'RenderingFrame') cost(r, (seg[cur] ||= zero())); }
         row.seg = seg;
         console.log(`${label} A: nav after each segment: ${row.navA.join(' | ')}`);
+        if (row.anims) { console.log(`  running at the end (${row.anims.length}):`); for (const x of row.anims) console.log(`    ${x.join(' | ')}`); }
         for (const [k, o] of Object.entries(seg)) if (k !== 'pre' && k !== 'end' && !k.startsWith('J')) console.log(`  ${k.padEnd(5)} ${fmt(o)}${k.startsWith('S') ? `  | layouts/s ${(o.nLayout / 3).toFixed(1)} styles/s ${(o.nStyleR / 3).toFixed(1)}` : ''}`);
         writeFileSync(join(OUT, `tlA-${label}-${STAMP}.json`), JSON.stringify(recs));
       }
