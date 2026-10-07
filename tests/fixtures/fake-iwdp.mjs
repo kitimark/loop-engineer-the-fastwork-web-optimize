@@ -35,7 +35,8 @@ if (listPort) serve(listPort, () => devices.map(({ port, ...d }) => d));
 for (const d of devices) {
   // $FAKE_IWDP_TAB=webkit: tests/fixtures/fake-webkit-proxy.mjs instead (its page model + fake WDA, for sim.mjs gesture)
   const tabJs = process.env.FAKE_IWDP_TAB === 'webkit' ? 'fake-webkit-proxy.mjs' : 'fake-run-proxy.mjs';
-  if (d.deviceId === 'SIMULATOR') kids.push(spawn(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), tabJs), `--port=${d.port}`, ...String(process.env.FAKE_IWDP_TAB_ARGS || '').split(' ').filter(Boolean)], { stdio: 'ignore' }));
+  // the tab server's stderr goes to this proxy's log (sim.mjs keeps it): a bind failure (EADDRINUSE) shows there
+  if (d.deviceId === 'SIMULATOR') kids.push(spawn(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), tabJs), `--port=${d.port}`, ...String(process.env.FAKE_IWDP_TAB_ARGS || '').split(' ').filter(Boolean)], { stdio: ['ignore', 'ignore', 'inherit'] }));
   else serve(d.port, () => []);
 }
 const bye = () => { for (const k of kids) { try { k.kill('SIGKILL'); } catch {} } process.exit(0); };

@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS, sleep, killFixtures, LIFELINE, cleanEnv } from '../helpers.mjs';
+import { tempDir, node, nodeAsync, tool, freeStablePorts, startProc, TESTS, sleep, killFixtures, LIFELINE, cleanEnv } from '../helpers.mjs';
 import { deviceOf } from '../../tools/lib/stats.mjs';
 
 const SIM = tool('sim.mjs'), LOCK = tool('lock.mjs');
@@ -34,6 +34,7 @@ function wrapper(name, script, pre = []) {
 }
 beforeEach(async () => {
   dir = tempDir('fw-sim-');
+  const stable = await freeStablePorts(3);
   writeFileSync(join(dir, 'simctl.json'), JSON.stringify({ runtimes: [RUNTIME], devices: [] }));
   const xcb = join(dir, 'bin', 'xcodebuild');
   wrapper('x', FX('fake-sim-tools.mjs'));
@@ -46,7 +47,8 @@ beforeEach(async () => {
     FW_OPEN: wrapper('open', FX('fake-sim-tools.mjs'), ['open']), FW_OSASCRIPT: wrapper('osascript', FX('fake-sim-tools.mjs'), ['osascript']), FW_XCODEBUILD: xcb,
     FAKE_SIMCTL_STATE: join(dir, 'simctl.json'), FAKE_SIMCTL_LOG: join(dir, 'simctl.jsonl'), FAKE_IWDP_LOG: join(dir, 'iwdp.jsonl'), FAKE_SIMTOOLS_LOG: join(dir, 'tools.jsonl'),
     FAKE_MACAPP_STATE: join(dir, 'app'), FAKE_IDEVICE_IDS: PHONE, FAKE_IWDP_PHONES: PHONE,
-    FW_SIM_DEVICE_PORT: String(await freePort()), FW_SIM_PORT: String(await freePort()), FW_SIM_WDA_PORT: String(await freePort()),
+    // the fakes bind these seconds later: below the ephemeral range, so no outgoing connection holds them by then
+    ...Object.fromEntries(['FW_SIM_DEVICE_PORT', 'FW_SIM_PORT', 'FW_SIM_WDA_PORT'].map((k, i) => [k, String(stable[i])])),
     FW_SIM_IDLE_SEC: '0', // I-063: these tests cover the cold path (shutdown at the end); the warm device: tests/e2e/sim-warm.test.mjs
   };
 });
@@ -157,13 +159,19 @@ test('I-082 session: before <cmd> it waits (bounded) for the Simulator\'s backgr
   writeFileSync(table, JSON.stringify({ t0: Date.now() - 1000, rows: rows(100) }));
   let r = await inHold(cmd, { e });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, /SIM_QUIET NOT settled after [3-6] s \(limit 60 % of a core, max 5 s\): sim background 1[0-6]\d % of a core \(SleepWidgetExtension \d+ %, searchd \d+ %\), page \d+ %, render 0 %, log [3-5]\d %/, 'busy: waited at most FW_SIM_SETTLE_SEC, then ran the command anyway');
+  // the bounded wait is checked on the session's own record, not on wall-clock seconds: with max 5 s and 3 s windows it
+  // takes exactly one window (a second would end past the max), plus a ps reading before and after it, which took
+  // 4 s under load 109 ("after 7 s"; the old [3-6] s range failed on that ps time, not on the wait)
+  assert.match(r.stdout, /SIM_QUIET NOT settled after \d+ s \(limit 60 % of a core, max 5 s\): sim background 1[0-6]\d % of a core \(SleepWidgetExtension \d+ %, searchd \d+ %\), page \d+ %, render 0 %, log [3-5]\d %/, 'busy: waited at most FW_SIM_SETTLE_SEC, then ran the command anyway');
   assert.ok(r.stdout.indexOf('SIM_QUIET') < r.stdout.indexOf('SIM_READY'), 'the settle comes before the command');
   assert.match(r.stdout, /SIM_BACKGROUND \d+ windows of 0\.4 s: sim background mean 1[0-6]\d %, max 1\d\d % of a core; \d+ window\(s\) above 60 %; busiest over the command: SleepWidgetExtension \d+ %, searchd \d+ %; means: page \d+ %, render 0 %, log [3-5]\d %/);
   let c = JSON.parse(readFileSync(out, 'utf8'));
   const bgFile = join(simDir(), 'background.jsonl');
   assert.equal(c.log, bgFile, '<cmd> gets FW_SIM_BACKGROUND_LOG');
   assert.equal(c.session.background.settle.settled, false);
+  assert.equal(c.session.background.settle.windows.length, 1, 'one 3 s window within max 5 s, no second one');
+  assert.ok(c.session.background.settle.waitedSec >= 3, `waited a full window (${c.session.background.settle.waitedSec} s)`);
+  assert.match(r.stdout, new RegExp(`SIM_QUIET NOT settled after ${c.session.background.settle.waitedSec} s `), 'the line reports the recorded wait');
   assert.equal(c.session.background.settle.last.top[0].command, 'SleepWidgetExtension');
   assert.equal(statSync(bgFile).mode & 0o777, 0o600);
   let recs = lines(bgFile);
@@ -179,10 +187,12 @@ test('I-082 session: before <cmd> it waits (bounded) for the Simulator\'s backgr
   writeFileSync(table, JSON.stringify({ t0: Date.now() - 1000, rows: rows(0) }));
   r = await inHold(cmd, { e });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, /SIM_QUIET settled after [3-4] s \(limit 60 % of a core, max 5 s\): sim background [2-4]\d % of a core \(searchd \d+ %/);
+  assert.match(r.stdout, /SIM_QUIET settled after \d+ s \(limit 60 % of a core, max 5 s\): sim background [2-4]\d % of a core \(searchd \d+ %/);
   c = JSON.parse(readFileSync(out, 'utf8'));
   assert.equal(c.session.background.settle.settled, true);
   assert.equal(c.session.background.settle.windows.length, 1);
+  assert.ok(c.session.background.settle.waitedSec >= 3, `waited one full window (${c.session.background.settle.waitedSec} s)`);
+  assert.match(r.stdout, new RegExp(`SIM_QUIET settled after ${c.session.background.settle.waitedSec} s `), 'the line reports the recorded wait');
   recs = lines(bgFile);
   assert.ok(recs.some((x) => x.session === c.session.id && x.kind === 'summary'), 'appended, the first session\'s lines kept');
   assert.ok(recs.some((x) => x.session === id));

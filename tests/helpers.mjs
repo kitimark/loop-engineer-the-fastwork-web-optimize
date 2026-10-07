@@ -238,6 +238,25 @@ export function freePort() {
   });
 }
 
+/**
+ * `n` distinct free ports BELOW the ephemeral range (macOS 49152-65535), for ports a fake binds much later (seconds
+ * after this returns). freePort()'s port comes from the ephemeral range, where any outgoing connection of the suite may
+ * take it as its local port in between; the later bind then fails with EADDRINUSE (sim.test's "scroll inside a
+ * session": the fake tab server died and the proxy wait ran its 20 s). Random in [from, to), each checked by a bind;
+ * the range holds none of 5173, the worktree serve range 5200-5999 or the phone's 9221/9222/8100.
+ */
+export async function freeStablePorts(n = 1, { from = 20000, to = 32000 } = {}) {
+  const out = [];
+  for (let i = 0; out.length < n; i++) {
+    if (i >= 50 * n) throw new Error(`no ${n} free port(s) in ${from}-${to} after ${i} tries`);
+    const p = from + Math.floor(Math.random() * (to - from));
+    if (out.includes(p)) continue;
+    const ok = await new Promise((res) => { const s = net.createServer(); s.once('error', () => res(false)); s.listen(p, '0.0.0.0', () => s.close(() => res(true))); });
+    if (ok) out.push(p);
+  }
+  return out;
+}
+
 /** Minimal HTTP(S) client: returns {status, headers, body(Buffer, decoded), raw(Buffer), ms}. */
 export function request(url, { method = 'GET', headers = {}, body, decode = true } = {}) {
   return new Promise((res, rej) => {

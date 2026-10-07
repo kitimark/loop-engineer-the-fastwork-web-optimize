@@ -34,8 +34,12 @@ test('iphone.mjs battery: one read without --seconds; every --every s for --seco
   assert.deepEqual(lines.map((l) => [l.i, l.CurrentCapacity]), [[0, 79], [1, 78], [2, 77]], '3 reads: at 0, 1 and 2 s');
   assert.deepEqual(r.stdout.trim().split('\n').map((l) => JSON.parse(l)), lines, 'the same lines on stdout');
   assert.ok(ms >= 2000, `took ${ms} ms`);
+  // I-230: `t` is stamped when a read has finished (spawn + read), so t2 - t0 is 2 s plus the difference of two read
+  // latencies: 1791 ms when the first spawn was slow under load. The reads are scheduled at start + k s and the start
+  // is after t0 here, so each read ends at least k s after t0, whatever the latency; the spread stays under 4 s.
+  lines.forEach((l, k) => assert.ok(Date.parse(l.t) - t0 >= k * 1000, `read ${k} ended ${Date.parse(l.t) - t0} ms after the start, before its ${k} s slot`));
   const dt = Date.parse(lines[2].t) - Date.parse(lines[0].t);
-  assert.ok(dt >= 1800 && dt < 4000, `reads 2 s apart in all (${dt} ms)`);
+  assert.ok(dt < 4000, `reads 2 s apart in all (${dt} ms)`);
   assert.match(r.stderr, new RegExp(`^BATTERY 3 read\\(s\\), 3 ok, 0 failed; appended to ${out.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`, 'm'));
   assert.equal(calls(env), 4);
   const st = JSON.parse(node(LOCK, ['status', 'iphone', '--json'], { env }).stdout)[0];

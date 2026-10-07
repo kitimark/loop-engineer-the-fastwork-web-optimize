@@ -162,11 +162,16 @@ test('deadline: a reader overrunning --max-seconds is hard-killed (exit 124) bef
   const r = await run;
   assert.equal(r.code, 124, r.out);
   assert.equal(alive(pid), false, 'the SIGTERM-ignoring command is dead');
-  assert.ok(Date.now() < deadline, `run ended ${Date.now() - deadline} ms after the reader's deadline`);
-  assert.equal(holder(), null, 'the reader left and closed the group');
-  // I-056 (d): the kill is auditable: the reader's holds.log line carries exit 124
+  // I-229: the deadline bounds the tool's own work (SIGTERM, the 3 s grace, SIGKILL, the wait until the tree is gone),
+  // so it is checked on the tool's clock: the holds.log line is written after all of it, just before the release. The
+  // run's exit and this test noticing it come after that and took 0.6 s under load 54; they only have to beat the
+  // group's expiresAt (10 s later), the bound that keeps old lock code from clearing a live group.
   const l = holdsLog();
   assert.equal(l.length, 1);
+  assert.ok(Date.parse(l[0].at) < deadline, `the kill and the tree-gone wait ended ${Date.parse(l[0].at) - deadline} ms after the reader's deadline`);
+  assert.ok(Date.now() < expiresAt, `run ended ${Date.now() - expiresAt} ms after the group's expiresAt`);
+  assert.equal(holder(), null, 'the reader left and closed the group');
+  // I-056 (d): the kill is auditable: the reader's holds.log line carries exit 124
   assert.deepEqual([l[0].owner, l[0].mode, l[0].weight, l[0].maxSec, l[0].code, l[0].killed], ['stuck', 'shared', 1, 2, 124, 'max-seconds']);
   assert.ok(l[0].durationSec >= 2 && l[0].durationSec < 10, `duration ${l[0].durationSec} s`);
 });
