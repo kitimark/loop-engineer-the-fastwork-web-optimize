@@ -1,0 +1,13 @@
+diff --git a/out/cm/v12/_app/immutable/assets/2.gBuqKVzi.css b/out/cm/glassB/_app/immutable/assets/2.gBuqKVzi.css
+index 7634c56f..8660f733 100644
+--- a/out/cm/v12/_app/immutable/assets/2.gBuqKVzi.css
++++ b/out/cm/glassB/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12501,7 +12501,7 @@ html.fw-cm.fw-cm-out .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
+     position: absolute;
+     width: 2000px;
+     height: 2000px;
+-    overflow: hidden;
++    overflow: visible;
+     border-radius: 32px;
+     pointer-events: none;
+   }

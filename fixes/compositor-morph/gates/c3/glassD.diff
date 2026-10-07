@@ -1,0 +1,54 @@
+diff --git a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/glassD/_app/immutable/nodes/2.DyWL8TcE.js
+index b30f4bdb..d83960f0 100644
+--- a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/glassD/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14559,6 +14559,7 @@ function dN(n, r) {
+       __cmKv = ``,
+       __cmLive = !1,
+       __cmD = null,
++      __cmGb = ``,
+       __cmG = null,
+       __cmSt = null,
+       __cmCss = ``,
+@@ -14622,7 +14623,7 @@ function dN(n, r) {
+           v[`u${i}`] = { transform: `scale(${+(1 / k).toFixed(6)}) translate(${px(-x)}, ${px(-y)})` };
+         });
+         // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8)
+-        Object.assign(v.u3, { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` });
++        v.glass = { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` };
+         v.dk = { opacity: `${q(m)}` };
+         v.bar = { translate: `0px ${px(dy)}` };
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
+@@ -14692,6 +14693,8 @@ function dN(n, r) {
+           v0 = __cmVals(0, G),
+           out = ``;
+         for (let key of Object.keys(v0)) {
++          // glassD: the glass blur is written inline per m change (__cmSet), never scroll-animated
++          if (key === `glass`) continue;
+           let fr = [...new Set(__cmGrid(key, G).map((x) => +x.toFixed(6)))].sort((a, b) => a - b),
+             body = fr
+               .map((m) => {
+@@ -14723,6 +14726,7 @@ function dN(n, r) {
+           let e = D.u[3].querySelector(s);
+           e && (o[k] = e);
+         }
++        o.glass = D.u[3];
+         D.u[3].querySelectorAll(`.start-selling-morph-col`).forEach((e, j) => (o[`col${j}`] = e));
+         return o;
+       },
+@@ -14805,9 +14809,14 @@ function dN(n, r) {
+           t <= 0 &&
+             was[0] === `1` &&
+             (document.documentElement.classList.add(`fw-cm-out`),
+-            requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
++            requestAnimationFrame(() => requestAnimationFrame(() => window.__cmOutHold || document.documentElement.classList.remove(`fw-cm-out`))));
+           ((__cmKv = k), t > 0 ? (was[0] === `1` && __cmLive) || __cmPrep(t) : __cmClear(), z(x, t, !0));
+         }
++        // glassD: today's glass blur, 20px x (1 - m), on u3 inline (one property write when m changes)
++        if (__cmLive && __cmD && t > 0) {
++          let gb = `blur(${+(20 * (1 - t)).toFixed(4)}px)`;
++          gb !== __cmGb && ((__cmGb = gb), __cmD.u[3].style.setProperty(`backdrop-filter`, gb), __cmD.u[3].style.setProperty(`-webkit-backdrop-filter`, gb));
++        } else __cmGb = ``;
+         (S(), C() || I());
+       },
+       // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel

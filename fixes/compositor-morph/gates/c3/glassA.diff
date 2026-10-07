@@ -1,0 +1,13 @@
+diff --git a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/glassA/_app/immutable/nodes/2.DyWL8TcE.js
+index b30f4bdb..72bd9a9c 100644
+--- a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/glassA/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14622,7 +14622,7 @@ function dN(n, r) {
+           v[`u${i}`] = { transform: `scale(${+(1 / k).toFixed(6)}) translate(${px(-x)}, ${px(-y)})` };
+         });
+         // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8)
+-        Object.assign(v.u3, { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` });
++        // glassA experiment: no backdrop-filter in the keyframes (u3 keeps the static CSS blur(20px))
+         v.dk = { opacity: `${q(m)}` };
+         v.bar = { translate: `0px ${px(dy)}` };
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };

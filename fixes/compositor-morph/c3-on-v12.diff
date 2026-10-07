@@ -1,0 +1,342 @@
+diff --git a/out/cm/v12/_app/immutable/assets/2.gBuqKVzi.css b/out/cm/c3/_app/immutable/assets/2.gBuqKVzi.css
+index 7634c56f..306eebcb 100644
+--- a/out/cm/v12/_app/immutable/assets/2.gBuqKVzi.css
++++ b/out/cm/c3/_app/immutable/assets/2.gBuqKVzi.css
+@@ -1622,8 +1622,6 @@
+ .start-selling-top-nav-logo,
+ .start-selling-top-nav-actions,
+ .start-selling-top-nav-btn.is-earn,
+-.start-selling-morph,
+-.start-selling-morph-pill,
+ .start-selling-morph-panel {
+   --morph: inherit;
+ }
+@@ -10880,52 +10878,6 @@ dd.svelte-19hdikk {
+     transform: scale(1);
+   }
+ }
+-.start-selling-morph {
+-  --morph: 0;
+-  --pill-w: min(489px, calc(100vw - 32px));
+-  --pill-h: 46px;
+-  --panel-w: min(1398px, calc(100vw - 40px));
+-  --panel-h: min(820px, calc(100vh - 40px));
+-  background: color-mix(in srgb, #fff calc((1 - var(--morph)) * 100%), #131922 calc(var(--morph) * 100%));
+-  border: 1px solid
+-    color-mix(in srgb, #e4e8eff7 calc((1 - var(--morph)) * 100%), transparent calc(var(--morph) * 100%));
+-  border-radius: calc(24px - 4px * var(--morph));
+-  bottom: calc(16px + (20px - 16px) * var(--morph));
+-  box-shadow: 0 2px 4px rgba(0, 0, 0, calc(0.08 * (1 - var(--morph))));
+-  box-sizing: border-box;
+-  filter: blur(10px);
+-  height: calc(var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph));
+-  opacity: 0;
+-  pointer-events: none;
+-  visibility: hidden;
+-  will-change: width, height, border-radius;
+-  width: calc(var(--pill-w) + (var(--panel-w) - var(--pill-w)) * var(--morph));
+-  z-index: 30;
+-  transition:
+-    opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+-    filter 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+-    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+-    visibility 0s linear 0.42s;
+-  position: fixed;
+-  left: 50%;
+-  overflow: hidden;
+-  transform: translate(-50%, 16px);
+-}
+-.start-selling-morph.is-active {
+-  filter: blur();
+-  opacity: 1;
+-  pointer-events: auto;
+-  visibility: visible;
+-  transition:
+-    opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+-    filter 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+-    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+-    visibility linear;
+-  transform: translate(-50%);
+-}
+-.start-selling-morph.is-expanded {
+-  border-color: #0000;
+-}
+ .start-selling-sr-only {
+   clip: rect(0 0 0 0);
+   white-space: nowrap;
+@@ -10937,53 +10889,6 @@ dd.svelte-19hdikk {
+   position: absolute;
+   overflow: hidden;
+ }
+-.start-selling-morph-pill {
+-  --pill-out: clamp(0, calc(var(--morph) / 0.45), 1);
+-  box-sizing: border-box;
+-  color: #2b313b;
+-  filter: blur(calc(var(--pill-out) * 18px));
+-  font-family: var(--font-family-body);
+-  opacity: calc((1 - var(--pill-out)) * (1 - var(--pill-out)));
+-  pointer-events: none;
+-  transform: translateY(calc(var(--pill-out) * -14px));
+-  white-space: nowrap;
+-  z-index: 2;
+-  justify-content: center;
+-  align-items: center;
+-  gap: 20px;
+-  padding: 4px;
+-  font-size: 14px;
+-  font-weight: 400;
+-  line-height: 20px;
+-  display: flex;
+-  position: absolute;
+-  inset: 0;
+-}
+-.start-selling-morph.is-active:not(.is-expanded) .start-selling-morph-pill {
+-  pointer-events: auto;
+-}
+-.start-selling-morph-pill a,
+-.start-selling-morph-pill button {
+-  appearance: none;
+-  box-sizing: border-box;
+-  color: #fff;
+-  cursor: pointer;
+-  background: #131922;
+-  border: 0;
+-  border-radius: 999px;
+-  flex: none;
+-  justify-content: center;
+-  align-items: center;
+-  height: 36px;
+-  min-height: 36px;
+-  padding: 8px 16px;
+-  font-family: inherit;
+-  font-size: 14px;
+-  font-weight: 500;
+-  line-height: 24px;
+-  text-decoration: none;
+-  display: inline-flex;
+-}
+ .start-selling-morph-panel {
+   color: #fff;
+   filter: blur(calc((1 - clamp(0, calc((var(--morph) - 0.08) / 0.72), 1)) * 12px));
+@@ -11254,8 +11159,6 @@ dd.svelte-19hdikk {
+   display: block;
+ }
+ @media (prefers-reduced-motion: reduce) {
+-  .start-selling-morph,
+-  .start-selling-morph-pill,
+   .start-selling-morph-panel,
+   .start-selling-top-nav.is-morphing,
+   .start-selling-top-nav-btn.is-earn {
+@@ -11365,30 +11268,6 @@ dd.svelte-19hdikk {
+     font-size: 20px;
+     line-height: 1.2;
+   }
+-  .start-selling-morph {
+-    --pill-w: min(100vw - 24px, 420px);
+-    --pill-h: 46px;
+-    --panel-w: calc(100vw - 24px);
+-    --panel-h: calc(100vh - 24px);
+-    bottom: calc(16px + (12px - 16px) * var(--morph));
+-  }
+-  .start-selling-morph-pill {
+-    gap: 10px;
+-    padding: 4px;
+-    font-size: 12px;
+-    line-height: 16px;
+-  }
+-  .start-selling-morph-pill .start-selling-avatars {
+-    display: none;
+-  }
+-  .start-selling-morph-pill a,
+-  .start-selling-morph-pill button {
+-    flex-shrink: 0;
+-    height: 32px;
+-    min-height: 32px;
+-    padding: 6px 14px;
+-    font-size: 13px;
+-  }
+   .start-selling-morph-center {
+     justify-content: center;
+     gap: 28px;
+@@ -11516,8 +11395,7 @@ dd.svelte-19hdikk {
+   .start-selling-platform-row-title-maintain:before {
+     content: none;
+   }
+-  .start-selling-top-nav,
+-  .start-selling-morph {
++  .start-selling-top-nav {
+     --panel-h: calc(100dvh - 40px);
+     --panel-w: calc(100vw - 40px);
+   }
+diff --git a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/c3/_app/immutable/nodes/2.DyWL8TcE.js
+index b30f4bdb..cc6e9044 100644
+--- a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/c3/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14236,7 +14236,33 @@ function dN(n, r) {
+         __nsY = window.scrollY;
+       },
+       __nsOnResize = () => {
+-        ((__nsVh = window.innerHeight), (__nsY = window.scrollY), (__nsGeo = null));
++        ((__nsVh = window.innerHeight), (__nsY = window.scrollY));
++        // c3 (compositor-morph): Safari's toolbar moving resizes the viewport while the finger is down. Dropping the
++        // geometry here made the next scroll-engine frame re-measure every theme section (getBoundingClientRect)
++        // right after the viewport change, a synchronous whole-page layout of 13-15 ms inside iE on the iPhone (P-159
++        // open-0 frames). Near and in the end zone (touch phones, the CM path) the edges, the end spacer (100lvh) and
++        // the page height do not change with the toolbar, and the nav's answer is constant there (coverage proof):
++        // keep both geometries and re-measure once, 300 ms after the toolbar's last step (it slides through ~30
++        // innerHeights per move, one resize each), outside any frame's script. Elsewhere, as before.
++        __nsGeo && __msOn && __nsEndNear() ? __nsDefer() : (__nsGeo = null);
++      },
++      __nsLate = 0,
++      __nsSt = 0,
++      // near the end zone: from one viewport above its start (inside the span where the answer is constant)
++      __nsNear = (y) => {
++        let g = __msTick.g;
++        return !!g && y >= g[1] - g[2] - g[0] - g[2];
++      },
++      __nsEndNear = () => __nsNear(__nsY),
++      // scroll position of the last real hit test: an answer is kept only if it was taken near the end zone
++      __nsTy = -1e9,
++      __nsDefer = () => {
++        ((__nsLate = 1),
++          clearTimeout(__nsSt),
++          (__nsSt = setTimeout(() => {
++            ((__nsSt = 0), (__nsLate = 0), __nsMeasure());
++            __msEnd && (__msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, window.innerHeight]);
++          }, 300)));
+       },
+       __nsInvalidate = () => {
+         __nsGeo = null;
+@@ -14323,12 +14349,18 @@ function dN(n, r) {
+         // (is-on-dark = g || m > 0.2), and its elementsFromPoint forced a layout in about half the morph frames
+         // (compositor-morph, P-157 Simulator stacks). Skip it there. __msTick re-tests (queueMicrotask) after any
+         // write that brings m to <= 0.2, so the shown answer is the same; r > 0.2 too, in case the spring moved m.
++        // c3: no hit test while the geometry waits for its deferred re-measure (its rect read would force the layout)
++        // c3 (#1): on the CM path the answer is also kept for 0 < m <= 0.2. From the end zone's top to m 0.2 the probe
++        // hits the sticky #platform at every position, at both viewport heights (coverage proof), so c2's next-frame
++        // re-test (__cmReTest) and the C()-forced test here only repeated the same answer, twice per frame.
+         let __h =
++          !(__nsLate && __nsEndNear() && __nsNear(__nsTy)) &&
+           !(__msOn && __msP > 0.2 && r > 0.2) &&
++          !(__msP > 0 && __cmOn() && __nsNear(__nsTy)) &&
+           (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0);
+         (__nsTail > 0 && __nsTail--,
+           // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
+-          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
++          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1), (__nsTy = n)),
+           (__nsPy = r),
+           z(g, __nsG, !0));
+         let t = __nsGeo.track;
+@@ -14343,11 +14375,17 @@ function dN(n, r) {
+       // [platform-fade c] at fade 0 #platform is at opacity 0, but its IO-gated idle animations (title sweeps, glints)
+       // keep running: an attribute pauses every animation under it (CSS [data-fw-pf-paused]); written only on a crossing
+       __pfP = !1,
++      // c3 (#3): the node is kept (one querySelector per call before), and each inline value is written only when it
++      // differs from the one in the style attribute (no write while m stays past the fade, e.g. every frame above 0.55)
++      __pfE = null,
+       S = () => {
+-        let e = y();
++        let e = __pfE && __pfE.isConnected ? __pfE : (__pfE = y());
+         if (!e) return;
+-        let t = QM(r);
+-        (e.style.setProperty(`--morph-fade`, String(t)), (e.style.pointerEvents = t < 0.05 ? `none` : ``));
++        let t = QM(r),
++          s = String(t),
++          pe = t < 0.05 ? `none` : ``;
++        (e.style.getPropertyValue(`--morph-fade`) !== s && e.style.setProperty(`--morph-fade`, s),
++          e.style.pointerEvents !== pe && (e.style.pointerEvents = pe));
+         t === 0 !== __pfP && ((__pfP = t === 0) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
+       },
+       C = () => w > 0.001 || r > 0.001,
+@@ -14513,8 +14551,13 @@ function dN(n, r) {
+         // (innerHeight reads no layout in the main frame)
+         let __g = __msTick.g,
+           __ih = window.innerHeight;
+-        (yIn === void 0 || !__g || __g[2] !== __ih) &&
+-          (__g = __msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, __ih]);
++        // c3: a toolbar move (only innerHeight changed) while the nav's re-measure is deferred keeps the spacer height
++        // (100lvh) and the page height: they do not change with the toolbar (Simulator check); the deferred re-measure
++        // (300 ms after the toolbar's last step) reads them again
++        yIn !== void 0 && __g && __g[2] !== __ih && __nsLate
++          ? (__g = __msTick.g = [__g[0], __g[1], __ih])
++          : (yIn === void 0 || !__g || __g[2] !== __ih) &&
++            (__g = __msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, __ih]);
+         let t = __g[0],
+           e = t > 0 ? (y - (__g[1] - __ih - t)) / t : 0;
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+@@ -14523,7 +14566,7 @@ function dN(n, r) {
+           e !== __msP &&
+             ((__msP = e),
+             __cmOn() ? __cmSet(e) : (__cmLive && __cmClear(), __navMorphSet(e)),
+-            e <= 0.2 && (__cmOn() ? __cmReTest() : queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0))))));
++            e <= 0.2 && (__cmOn() ? e > 0 || __cmReTest() : queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0))))));
+       },
+       // perf(compositor-morph, PROPOSAL; arch-compositor-morph): touch phones (7c mode) with scroll-driven animations and
+       // width <= 640 px. The nav's morph is drawn by scroll-driven CSS animations of transform / opacity / filter /
+@@ -14559,6 +14602,8 @@ function dN(n, r) {
+       __cmKv = ``,
+       __cmLive = !1,
+       __cmD = null,
++      __cmGb = ``,
++      __cmE = null,
+       __cmG = null,
+       __cmSt = null,
+       __cmCss = ``,
+@@ -14621,8 +14666,11 @@ function dN(n, r) {
+           v[`c${i}`] = { transform: `translate(${px(x)}, ${px(y)}) scale(${q(k)})` };
+           v[`u${i}`] = { transform: `scale(${+(1 / k).toFixed(6)}) translate(${px(-x)}, ${px(-y)})` };
+         });
+-        // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8)
+-        Object.assign(v.u3, { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` });
++        // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8).
++        // c3: its blur is never scroll-animated: Safari (iOS 26.5 Simulator) drew no glass while a scroll-driven animation
++        // ran backdrop-filter on u3, also when the animation started a frame after the backdrop existed (out/cm glassA/C/D);
++        // __cmSet writes it inline instead, today's value 20px x (1 - m)
++        v.glass = { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` };
+         v.dk = { opacity: `${q(m)}` };
+         v.bar = { translate: `0px ${px(dy)}` };
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
+@@ -14692,6 +14740,7 @@ function dN(n, r) {
+           v0 = __cmVals(0, G),
+           out = ``;
+         for (let key of Object.keys(v0)) {
++          if (key === `glass`) continue;
+           let fr = [...new Set(__cmGrid(key, G).map((x) => +x.toFixed(6)))].sort((a, b) => a - b),
+             body = fr
+               .map((m) => {
+@@ -14713,10 +14762,13 @@ function dN(n, r) {
+         __cmSt.textContent = out;
+       },
+       // the parts that exist now (the panel mounts lazily), by key
++      // c3 (#4): kept per __cmD once the panel has mounted (every open and close re-queried ~13 nodes); re-queried when
++      // any kept node left the document
+       __cmEls = () => {
+         let D = __cmD,
+           o = {};
+         if (!D) return o;
++        if (__cmE && __cmE.D === D && Object.values(__cmE.o).every((e) => e.isConnected)) return __cmE.o;
+         D.c.forEach((e, i) => (o[`c${i}`] = e));
+         D.u.forEach((e, i) => (o[`u${i}`] = e));
+         for (let [k, s] of Object.entries(__cmSel)) {
+@@ -14724,6 +14776,8 @@ function dN(n, r) {
+           e && (o[k] = e);
+         }
+         D.u[3].querySelectorAll(`.start-selling-morph-col`).forEach((e, j) => (o[`col${j}`] = e));
++        o.glass = D.u[3];
++        __cmE = o.panel ? { D, o } : null;
+         return o;
+       },
+       // going live (the frame the nav starts morphing): DOM, geometry, keyframes, and inline values for this frame
+@@ -14808,6 +14862,12 @@ function dN(n, r) {
+             requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
+           ((__cmKv = k), t > 0 ? (was[0] === `1` && __cmLive) || __cmPrep(t) : __cmClear(), z(x, t, !0));
+         }
++        // c3: the glass blur, today's 20px x (1 - m), inline on u3 (one property pair, only when the value changes)
++        if (__cmLive && __cmD && t > 0) {
++          let gb = `blur(${+(20 * (1 - t)).toFixed(4)}px)`;
++          gb !== __cmGb &&
++            ((__cmGb = gb), __cmD.u[3].style.setProperty(`backdrop-filter`, gb), __cmD.u[3].style.setProperty(`-webkit-backdrop-filter`, gb));
++        } else __cmGb = ``;
+         (S(), C() || I());
+       },
+       // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel

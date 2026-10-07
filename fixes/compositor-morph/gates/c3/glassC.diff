@@ -1,0 +1,66 @@
+diff --git a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/glassC/_app/immutable/nodes/2.DyWL8TcE.js
+index b30f4bdb..7cd9e15b 100644
+--- a/out/cm/v12/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/glassC/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14622,7 +14622,7 @@ function dN(n, r) {
+           v[`u${i}`] = { transform: `scale(${+(1 / k).toFixed(6)}) translate(${px(-x)}, ${px(-y)})` };
+         });
+         // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8)
+-        Object.assign(v.u3, { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` });
++        v.glass = { "backdrop-filter": `blur(${px(20 * n)})`, "-webkit-backdrop-filter": `blur(${px(20 * n)})` };
+         v.dk = { opacity: `${q(m)}` };
+         v.bar = { translate: `0px ${px(dy)}` };
+         v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
+@@ -14650,6 +14650,7 @@ function dN(n, r) {
+         act: `.start-selling-top-nav-actions`,
+         earn: `.start-selling-top-nav-btn.is-earn`,
+         lang: `.start-selling-top-nav-actions > .start-selling-language-switch-wrap`,
++        glass: `[data-fw-cm="u3"]`,
+         panel: `.start-selling-morph-panel`,
+         bd: `.start-selling-morph-backdrop`,
+         veil: `.start-selling-morph-veil`,
+@@ -14701,7 +14702,10 @@ function dN(n, r) {
+                   .join(`;`)}}`;
+               })
+               .join(``);
+-          out += `@keyframes fw-cm-${key}{${body}}${sc} ${__cmQ(key)}{animation:fw-cm-${key} linear both;animation-timeline:--fwms;animation-range:cover 0% cover 100lvh}`;
++          out +=
++            key === `glass`
++              ? `@keyframes fw-cm-glass{${body}}html.fw-cm.fw-cm-bd .start-selling-top-nav.is-morphing ${__cmQ(key)}{animation:fw-cm-u3 linear both,fw-cm-glass linear both;animation-timeline:--fwms,--fwms;animation-range:cover 0% cover 100lvh,cover 0% cover 100lvh}`
++              : `@keyframes fw-cm-${key}{${body}}${sc} ${__cmQ(key)}{animation:fw-cm-${key} linear both;animation-timeline:--fwms;animation-range:cover 0% cover 100lvh}`;
+           /*the Join button keeps today's one-shot unmask (CSS 12065) in its list, so the same animation runs on (matched by
+             name) instead of restarting when .is-morphing comes and goes*/
+           key === `earn` &&
+@@ -14723,6 +14727,7 @@ function dN(n, r) {
+           let e = D.u[3].querySelector(s);
+           e && (o[k] = e);
+         }
++        o.glass = D.u[3];
+         D.u[3].querySelectorAll(`.start-selling-morph-col`).forEach((e, j) => (o[`col${j}`] = e));
+         return o;
+       },
+@@ -14748,12 +14753,15 @@ function dN(n, r) {
+           V = __cmVals(t, G);
+         for (let [k, p] of Object.entries(V)) if (E[k]) for (let [a, b] of Object.entries(p)) E[k].style.setProperty(a, b);
+         __cmLive = !0;
++        // glassC: the glass blur's scroll animation attaches one frame later (html.fw-cm-bd), once u3 has its backdrop layer
++        requestAnimationFrame(() => __cmLive && !window.__cmBdHold && document.documentElement.classList.add(`fw-cm-bd`));
+       },
+       __cmClear = () => {
+         if (!__cmG) return void (__cmLive = !1);
+         let E = __cmEls(),
+           V = __cmVals(0, __cmG);
+         for (let [k, p] of Object.entries(V)) if (E[k]) for (let a of Object.keys(p)) E[k].style.removeProperty(a);
++        document.documentElement.classList.remove(`fw-cm-bd`);
+         __cmLive = !1;
+       },
+       // (c1) the geometry the keyframes need (logo width, bar inset, the panel's column offsets) and the keyframes
+@@ -14805,7 +14813,7 @@ function dN(n, r) {
+           t <= 0 &&
+             was[0] === `1` &&
+             (document.documentElement.classList.add(`fw-cm-out`),
+-            requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
++            requestAnimationFrame(() => requestAnimationFrame(() => window.__cmOutHold || document.documentElement.classList.remove(`fw-cm-out`))));
+           ((__cmKv = k), t > 0 ? (was[0] === `1` && __cmLive) || __cmPrep(t) : __cmClear(), z(x, t, !0));
+         }
+         (S(), C() || I());

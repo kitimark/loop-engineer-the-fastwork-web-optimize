@@ -774,3 +774,97 @@ frame, clipped; medians):
     c2 sets `__nsForce` at once.
   - `__msTick`'s geometry re-read when innerHeight changes under the finger (the toolbar).
   - `__cmPrep`'s reads on the open from closed.
+
+**Both facts, side by side (lead 05:5xZ; neither explains the other away).** On the user's own gesture (console step
+C-103, `out/cm/blink`, logger only), v12 had 72 frames over 50 ms in 28.8 s and C had 48 in 53.8 s. Yet the user
+wrote that with that swipe C felt laggier than v12. The target stays the re-open stalls (62-204 ms in that log).
+
+## The open-0 cause (Simulator, stacks; 06:0xZ)
+
+`out/cm/open0-sim.mjs` (WDA finger strokes, Timeline depth 12, open-0 frames marked by a MutationObserver):
+- In every open-0 frame of both arms the forced layout is `R < __nsMeasure < _ < L < iE`: 22-23 ms (C), 23-30 ms (v12).
+- Cause: Safari's toolbar slides while the finger is down. Each step fires `resize`, and `__nsOnResize` nulls the
+  nav cache's geometry, so the next `iE` pass re-measures every theme section with getBoundingClientRect: a
+  synchronous whole-page layout. OBSERVED (Simulator stacks; phone correlation in P-159's open-0 attribution).
+- `out/cm/tbar-sim.mjs`: across 13 toolbar moves (innerHeight 775 to 815) scrollHeight, `.fw-ms-end` (100lvh) and every
+  theme-section edge stayed equal. OBSERVED.
+- Keyframe rebuilds per toolbar move: 0 in 13 moves (`out/cm/kfregen-sim.mjs`). That hypothesis is REFUTED.
+- Finding F-322 (technique, nav-hit-cache): the page-wide version for the nav-hit-cache owner. Not built here.
+
+## The blink: v12's glass disappears while the morph is on (06:1xZ)
+
+- What blinks: the moment `.is-morphing` turns on (m 0.004), v12's nav loses its frosted glass. The pill turns almost
+  see-through (logo, EN and Join stay), and the glass comes back at m 0. Under a finger near m 0 the switch flips every
+  0.1-0.4 s (C-103 log), so the glass flickers. C keeps the glass at every m.
+- Evidence: Simulator screenshots, `gates/c3/simswitch.mjs`. Corner boxes vs m 0, at m 0.004: v12 32/20/28/21,
+  C 3/10/6/10. Nav pill band vs C at m 0.004, Join button excluded: v12 20.6 % of px over 24 levels (6.9 % over 64).
+  Chrome shows only square glass corners there (F-309, Chrome-only), which is why the earlier Chrome checks did
+  not catch it. At m 1 the dark `.fw-cm-dk` covers the missing blur.
+- Cause: u3's `backdrop-filter` is animated by the scroll-driven keyframes (blur 20px x (1 - m)). CONFIRMED by decisive
+  Simulator variants (`gates/c3/glass*.diff`):
+
+| variant | change against v12 | glass at m 0.004 |
+|---|---|---|
+| glassA | no backdrop-filter in the keyframes (static CSS blur 20px) | back |
+| glassB | corner clippers `overflow: visible` | still missing |
+| glassC | the backdrop-filter animation attaches one frame after `.is-morphing` (backdrop layer already made) | there in the first frame, gone once the animation attaches |
+| glassD | no backdrop-filter in the keyframes; `__cmSet` writes today's value inline when m changes | back, every step |
+
+- Engine mechanism: UNRESOLVED. `CSSProperties.json` marks backdrop-filter `"animation-wrapper-acceleration": "always"`.
+  `GraphicsLayerCA.cpp` (WebKit main 8367a12e) lines 4401-4403: `animatedLayer(WebkitBackdropFilter)` falls back to
+  the primary layer when no backdrop layer exists ("FIXME ... bug 145322"). glassC REFUTES the simple form of that
+  lead (the glass also vanishes when the animation starts after the backdrop layer exists).
+- glassD against C, nav pill band (Join excluded; the Join button differs by design, PR-032 rev 3's timed fade):
+  0.36 % of px over 24 levels and 0.04 % over 64 at m 0.004 (the same in the switch frame itself, held still by
+  test hooks); 0.22 % / 0.03 % at m 0.016; 0.14 % / 0.02 % at m 0.03. Back at rest it is 0.59 %, but that is the page's
+  animated connector dashes under the nav (crop `out/cm/pill-GDm0r.png`), as in C's own repeat (0.31-0.55 %).
+  Within the PR-010 wide numbers (fill 64, 0.5 %).
+
+## c3 on v12 (`c3-on-v12.diff`; JS 1e6daf11957a, CSS 9c1067cff473; plan approved by the lead 06:2xZ)
+
+Contents:
+- **R (toolbar):** near the end zone on the CM path, a `resize` keeps the nav cache's geometry and `__msTick`'s end
+  geometry (only innerHeight is updated), skips the nav hit test while the geometry is late, and re-measures once,
+  300 ms after the toolbar's last step, in a timer. Elsewhere, as before.
+  - rev 1 re-measured in rAF + timeout after every resize and cleared `__msTick.g`. The toolbar steps through
+    ~30 innerHeights per move, so the next resize failed the end-zone test and re-measured in `iE` anyway (open-0
+    still 5/5).
+  - rev 3: an answer is kept only when the last real hit test was taken near the end zone (`__nsTy`). rev 2 kept a
+    colour taken far up the page after a jump: 6 frames with the wrong nav colour in the stale proof.
+- **Glass:** glassD (above).
+- **#1:** on the CM path the nav answer is kept for 0 < m <= 0.2 (with rev 3's near condition). The next-frame
+  re-test (`__cmReTest`) now runs only on the return to m 0. Coverage: c2cover walked endStart - 2 ih to
+  endStart + 0.2 t at 775 and 815. In the end zone the probe hits only `div.start-selling-platform-secure.is-network`
+  (62-70 positions), never a nav-owned box. Audit note confirmed: inside `_()` the local `r` shadows the morph
+  value, so its `r > 0.2` gate is always true.
+- **#3:** `S()` keeps the `#platform` node and writes `--morph-fade` / pointer-events only when they differ from the
+  inline values.
+- **#4:** `__cmEls()` is cached per `__cmD` once the panel has mounted.
+- **#7:** dead CSS of the old spring morph removed (`.start-selling-morph`, `.is-active`, `.is-expanded`, the `-pill`
+  rules, and those names in three selector lists). No element in the snapshot's JS or HTML has these classes. Two
+  lists that still name them (12252, 10904) were left alone.
+- **Not taken:** #2. `n()`'s per-frame `getBoundingClientRect` reads `.start-selling-platform-card`, and `#platform` is
+  `position: sticky` with a dvh-based top under `html.fw-ms` (CSS 12437), so a cached offset would be wrong. #5 and #6
+  go to c3b with a look check; #8 is probe-only.
+
+### Gates (no timing verdicts; shared lane; `gates/c3/c3-gates3.sh`, `c3-gates4.sh`)
+
+| check | v12 | c3 |
+|---|---|---|
+| Chrome class parity, 237 frames (c2trace; A/A v12-v12: 0) | | 0 differences |
+| Chrome coverage 775 / 815 (c2cover): F() flips, F != class | 1 flip, 0 | 1 flip (same y), 0 |
+| Simulator stale proof (`gates/c3/stale-sim.mjs`, 622 frames, innerHeight 775-815 in 31 values): nav colour, is-morphing, m written vs fresh | | 0 / 0 / 0 mismatches (220 frames within 400 ms of a toolbar step, 214 with m > 0; max m diff 1e-5) |
+| open-0 frames with the forced re-measure in `iE` (open0-sim, 5 opens) | 5 (107.8 ms) | 1 (21.6 ms) |
+| open-0 frame span, Simulator ms (ranks only) | 82-89 | 86 (the first), then 61-64 |
+| re-measures forced in `iE`, whole session | 24 (507 ms) | 1 (22 ms) |
+| re-measures in the 300 ms timer (off-frame) | 0 | 18 (389 ms) |
+| `__cmReTest` / `_` F() forced style | 54 + 10 (165 ms) | 0 |
+| `#platform` `n()` forced style, whole session | 311 (610 ms) | 414 (1062 ms) |
+| glass vs C (above) | 20.6 % | 0.36 % (Join excluded) |
+
+- **Cost of the glass fix:** the inline blur write dirties u3's style each morph frame. `#platform`'s `n()` rAF then
+  reads `getBoundingClientRect` and pays a forced style pass: +450 ms (Simulator) over the session, about +1 ms per
+  forced pass. #2 (`n()` without a per-frame rect read) would remove it in both builds. That is c3b's first candidate.
+- cm-sim (rAF-stepped, no toolbar; rev 1, 3 runs per arm): open forced layouts 53-55 vs 59-66; styles 92-105 vs 69-82
+  (the glass write); close about equal.
+- Phone: none yet; only on the lead's word.
