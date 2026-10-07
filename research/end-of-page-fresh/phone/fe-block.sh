@@ -54,11 +54,14 @@ wdarestart() { # I-220 (5803d436): wda ensure keeps a READY WDA, else restarts w
 # rearm exits) and settles 120 s; this script never starts a set of its own. It runs once at the part's start and once
 # more when a hold's start gate reads Critical (that hold then runs once more). The runner ends the condition with
 # `node tools/thermal.mjs clear` right after `lock.mjs run iphone` returns (not in this script's exit trap). FW_PHONE_CONDITION=tool: the iphone.mjs gates post no Xcode step. Xcode is never touched.
+# lead 2026-10-07 (after P-163's first start, I-244): preflight exit 3 (WDA) whose log says "Failed to initialize for UI
+# testing" usually means a locked phone or a missing automation setting: handled like AUTH (exit 10), one step, re-run.
+needsready() { [ "$1" -eq 10 ] || { [ "$1" -eq 3 ] && grep -q 'Failed to initialize for UI testing' "$2"; }; }
 unlockstep() { # why: Safari lost its page target or WDA its session because the phone locked: post ONE user step
   # (from inside this phone hold; one phone step at a time) and wait for its Done instead of exiting (lead lesson 4)
   US=$(node tools/console.mjs post --by "$R" --kind action --phone --no-record --no-gate --topic end-of-page-fresh \
-    --title "$CM_TICKET: unlock the iPhone" \
-    --instructions "The iPhone is locked, so the test cannot reach Safari. Unlock it, leave Safari open, then press Done." 2>&1)
+    --title "$CM_TICKET: get the iPhone ready for the test" \
+    --instructions "Unlock the iPhone and close any message on screen. In Settings > Developer, check that Enable UI Automation is on. Leave Safari open, then press Done." 2>&1)
   uid=$(echo "$US" | sed -n 's/^POSTED \(C-[0-9]*\).*/\1/p')
   [ -n "$uid" ] || { echo "BLOCK STOP: unlock step not posted ($US)"; exit 9; }
   echo "UNLOCK step $uid posted ($1)"
@@ -83,7 +86,7 @@ if [ "$CM_THERMAL" = serious ] && [ "$CM_DRY" != 1 ]; then
   PL=$LG/preflight-$(date +%s).log
   node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?
   # end-of-page-fresh (lead, P-161/P-162 lesson 4): a locked phone (preflight AUTH, exit 10) waits on a user unlock step
-  if [ $pe -eq 10 ]; then unlockstep "preflight AUTH: $(tail -1 $PL | cut -c1-120)"; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?; fi
+  if needsready $pe $PL; then unlockstep "preflight exit $pe: $(tail -1 $PL | cut -c1-120)"; PL=$PL.2; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?; fi
   [ $pe -eq 0 ] || { echo "BLOCK STOP: preflight exit $pe ($(tail -1 $PL)): message the lead"; exit 9; }
   echo "PREFLIGHT ok"
   thermalrearm
@@ -145,8 +148,8 @@ run1() {
   if [ $e -ne 0 ] && [ "$CM_DRY" != 1 ] && ! linkok; then
     relink "in $1 (exit $e)"; echo "RE-RUN $1 after the re-plug"; prehold $1; hold "$@"; e=$?; fi
   if [ $e -ne 0 ] && [ "$CM_DRY" != 1 ]; then
-    node tools/iphone.mjs preflight --owner "$R" > $LG/preflight-$1-$(date +%s).log 2>&1
-    if [ $? -eq 10 ]; then unlockstep "in $1 (exit $e)"; wdarestart; echo "RE-RUN $1 after the unlock"; prehold $1; hold "$@"; e=$?; fi
+    PF=$LG/preflight-$1-$(date +%s).log; node tools/iphone.mjs preflight --owner "$R" > $PF 2>&1; pf=$?
+    if needsready $pf $PF; then unlockstep "in $1 (exit $e)"; wdarestart; echo "RE-RUN $1 after the unlock"; prehold $1; hold "$@"; e=$?; fi
   fi
   [ $e -ne 0 ] && { echo "BLOCK STOP at $1 exit $e"; exit $e; }
 }
