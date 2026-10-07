@@ -1034,6 +1034,42 @@ The user's rev 2 note (13:06Z) was: "Waiting for arch-compositor-morph done, the
 - Rev 3 says in plain words that it depends on the user accepting PR-030.
 - Try-it: A = `fixes/pf-cm/overlay`, B = `fixes/pf-cma/overlay`.
 
+### 9. PR-029 rev 4 on v14: build and the P-162 card (written before any P-162 data)
+
+The user's rev 3 note was "Do later after v10 best build land". v14 became the best build at 11:40Z on 2026-10-07 (P-161 PASS), and the lead ordered rev 4 on v14.
+
+**Build.**
+- v14 already holds (c): the pause attribute and `__pfP` at JS 14405-14419 (c3's cached S()), and the pause CSS at 5732-5735.
+- So (a) on v14 changes one line in S(): `t === 0` becomes `t < 1`, plus a comment. The diff is `fade/a-on-v14.diff` (`4d6019dc6f8e`).
+- The v14 overlay is copied read-only from P-161's frozen snapshot V (`agent-a69d59b114a666097/out/cm/snap163/V/`, two files, lead option 1). Its hashes were checked, and it is byte-identical to what the :5318 v14 server serves.
+- arch-compositor-morph (c3b-d) and arch-end-fresh (S0/D1) were told the lines first; both confirmed there is no conflict.
+
+| arm | overlay (gitignored) | JS | CSS |
+|---|---|---|---|
+| C = v14 | `fixes/pf-v14/overlay`, snapshot copy `out/fade/snap/v14` | `d23ee885d54f` | `4fafb83f1e72` |
+| V = v14 + (a) | `fixes/pf-v14a/overlay`, snapshot copy `out/fade/snap/v14a` | `edd0f8897172` | `4fafb83f1e72` |
+
+**P-162 card** (approved by the lead as ticket P-162; registered before any P-162 data)
+- **Question:** on v14, does (a) pause #platform's shimmers through the whole fade (mechanism), and is the end morph no worse?
+- **Arms:** C and V as in the table above. Plain http on the LAN, served from the snapshot copies.
+- **Profile:** xcode-serious; no cooling wait; no heat pre-warm.
+- **Hold:** `node tools/lock.mjs run iphone --owner fix-end-morph --block P-162 --max-seconds 900 -- sh fixes/end-morph-f12/phone/pfa14-run.sh <C port> <V port>`.
+- **Gates first:** the phone is taken only after the Chrome screencast gate and the Simulator gate pass. The user goes first if they ask for the phone.
+- **Driver and runs:**
+  - M (`__fwMorphDrive`, hold 2000 ms × 3 cycles, std probe).
+  - One uncounted warm-up run per arm (`--warmup`), C then V.
+  - 4 counted runs in the order C V V C.
+  - Then `phone/pfa-probe.mjs` per arm (C, V) at m 0, 0.1, 0.3, 0.5 and 1. This counts only; there is no timing.
+- **Safari:** the kit has no thermal rearm or other wait between runs. Each run opens its page directly, and the exit trap parks Safari on every exit path (the kit-fix c181d248 rule).
+- **Mechanism read:**
+  - PASS if V has `paused` = true and #platform running animations = 0 at every probed position with fade < 1, while C has 4 there.
+  - Fade, opacity and blur must also be identical between C and V at each position.
+- **No-worse read:**
+  - PASS if V's worse counted run is ≤ C's worse counted run + 2 at each of >50, >34 and morph-moving >50 (phone ms thresholds).
+  - The ±4 ms twins (>46/>54, >30/>38) are reported. A verdict that differs between a threshold and its twin is "threshold-sensitive".
+- **Pins:** `phone/pfa14-run.sh` `d2e10cba6c86`, `phone/pfa-probe.mjs` `98eb75aff529`, `fade/a-on-v14.diff` `4d6019dc6f8e`.
+- **After the block:** `iphone.mjs park` (the trap does it), release, and the reads go to the lead.
+
 ## Pending
 
 - Done: the v9.2 Simulator pixel rerun before the zone and the step A rerun (both in `fixes/end-morph/README.md` section 5).

@@ -1,0 +1,12 @@
+--- fixes/pf-v14/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-07 18:46:22
++++ fixes/pf-v14a/overlay/_app/immutable/nodes/2.DyWL8TcE.js	2026-10-07 18:46:37
+@@ -14416,7 +14416,8 @@
+           pe = t < 0.05 ? `none` : ``;
+         (e.style.getPropertyValue(`--morph-fade`) !== s && e.style.setProperty(`--morph-fade`, s),
+           e.style.pointerEvents !== pe && (e.style.pointerEvents = pe));
+-        t === 0 !== __pfP && ((__pfP = t === 0) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
++        // [platform-fade a] (PR-029 rev 4) pause from the first moment of the fade (fade < 1), not only at fade 0
++        t < 1 !== __pfP && ((__pfP = t < 1) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
+       },
+       C = () => w > 0.001 || r > 0.001,
+       // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
