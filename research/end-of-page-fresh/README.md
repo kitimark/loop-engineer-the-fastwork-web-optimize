@@ -1,0 +1,447 @@
+# End-of-page morph: an independent review and a design from zero
+
+> Personal, educational study of a local mirror of https://fastwork.com/ (not affiliated with Fastwork). This doc
+> names class names and line numbers of the frozen baseline and of local builds; keep it on local branches, never push.
+
+**Owner:** arch-end-fresh (independent architecture review). The user asked for it in console thread T-228 #33
+(2026-10-07 11:08Z); the lead spawned it. **Stage:** R/D (research and design). **Docs only:** no Chrome, Simulator or
+phone run. Every number below comes from the cited README, card or finding. Claims about engines carry status words
+(OBSERVED, CONFIRMED with a source path and line, REFUTED, UNRESOLVED). WebKit source was read with `gh` at main
+`05dbfe1a59f6` and, where it matters for the phone, at `safari-7624.5.1.11-branch`.
+
+Names used here:
+- **v0** = the baseline page.
+- **C** = v9-final rev 7d, the current best (JS 1b2eecc66011 / CSS e1359ab9994a).
+- **CM** = compositor-morph (PR-030). **v13 / v13a** = C plus CM and its fixes c1-c3 / c3b-a.
+- **P1** = PR-012 rev 1's clip-path reveal on v9-final (`fixes/end-morph-p1/`).
+- **K / K6 / K8** = the CM pre-build variants.
+- **m** = the morph value (0 = closed pill, 1 = open card).
+- **D1** = the phone gate "first open after load, frame f2, V <= C + 4 ms".
+- JS / CSS = `/_app/immutable/nodes/2.DyWL8TcE.js` / `/_app/immutable/assets/2.gBuqKVzi.css`.
+
+## In plain words
+
+- **The work was not wasted.** Every design so far removed most of the morph's paint. P1 even made the end zone
+  smoother than C on the phone. CM made each open from closed faster than C once c3 landed.
+- **One mistake keeps coming back.** Each design builds or resizes composited layers at the moment the card starts
+  to open, and WebKit has no layer pool. So the cost lands in the open frame, and the first-open gate failed six
+  times in a row.
+- **The fix space is narrow and clear.** Build the card's layers once, in a still frame, and keep them built. After
+  that, change nothing but transform and opacity, and never show or hide the structure again.
+- **The user's two new complaints are about geometry, not speed.** The bar's items rise 4 px, and the corners "move a
+  bit". v0 packed these small moves into a 0.68 s tween; morph-scroll stretched them over a whole screen of finger
+  travel, where they can be seen. A from-zero design keeps the bar's items in a layer of their own that does not move.
+- **Recommended:** design D1, the always-built card. CM's transform-only shape, built once at load idle and never torn
+  down. The bar is a still layer of its own. The glass is not animated. No scroll timeline is attached at rest.
+- **Main risk:** the always-built layers cost something on every scroll frame of the whole page. That is UNRESOLVED.
+  A one-hour Simulator experiment (step S0) decides it before any build.
+
+## 1. Mistakes, ranked by what they cost
+
+Blunt, but every item names its evidence. Several were reasonable calls at the time; the ranking is by cost, not blame.
+
+### M1. The same failure six times: layers created when the morph switches on
+
+Each design changes which composited layers exist, or how big they are, in the frame where m leaves 0.
+
+| design | what switches on at the open | phone result on the first open |
+|---|---|---|
+| morph-gpu rev 1 (PR-012) | `data-fw-rv`: the nav jumps to its final size, a clip-path mask layer appears, dark and glass divs | P-092: "first frame of an open is longer", kept out of the best build (`fixes/morph-gpu/README.md` 626-632) |
+| morph-gpu rev 2 | divs and probe made early, but the switch to the panel-sized nav and the mask still at the open | P-098: O1.f1 +6.5 ms, WORSE; "the cost sits in starting the reveal itself" (morph-gpu 787-846) |
+| P1 (PR-012 rev 1 on v9-final) | same switch as rev 1 | P-153: f2 +10 ms, "FIRST-OPEN RISK SEEN" (`fixes/end-morph-p1/README.md` 755-798) |
+| P1 + (a) | same | P-156: Pr1 FAIL, f2 +11 ms; F-316 says it is Composite moved one frame earlier |
+| CM v12 | the `display: contents` wrappers become boxes: 11 new layers on every open | P-159: D1 +9 ms (`fixes/compositor-morph/README.md` 736-741) |
+| CM v13 (after c3) | same | P-160: D1 +11 ms, while D2 and D3 beat C (README 916-937) |
+
+- The cause was named only on 2026-10-07, by the layer census and F-324. Every v13 open creates 11 layers, every close
+  drops them, and WebKit keeps no layer pool (CONFIRMED in source, README 986-994).
+- The K pre-build attacked the symptom: it switches the same structure on earlier, near the end. It inherited the
+  switch's problems. The pre state does not look like the closed pill in Chrome. Rest style is 2-2.5x. It adds
+  10.6 MB. In K6 the opens after a close still rebuild (README 997-1229).
+- **Cost:** six phone blocks whose verdict was decided by this one effect. Add the c3b-K box (2 h), the K6/K8 builds and
+  cards, and the P-161 set-up. A design rule ("no layer may be created or resized in the open frame; a Simulator
+  census must show 0 per open") after P-092 would have stopped it on day one.
+
+### M2. The simpler design with the better phone data was replaced by the more complex one
+
+- **P1 on v9-final (P-153 block 2, G, Serious)** was better than C at every threshold in the end zone, and the arms did
+  not overlap.
+  - Frames over 34 ms per run: C 28-44, P1 20-21. Over 50 ms: C 1-9, P1 0-1.
+  - After touchend, over 34 ms: C 16-19, P1 6-8.
+  - Its one failure was the first open (M1); the f123 sum was equal (end-morph-p1 755-798).
+- **CM v1.1 (P-157)** cut Paint to 0.28x, but showed no frame-time separation. Its over-34 share was V 0.014-0.015
+  against C 0.015-0.024, inside the noise (compositor-morph 194-213, post hoc).
+- These are different blocks and are never pooled. Still, nothing on record showed that CM bought more on the phone
+  than P1 did.
+- CM then replaced P1 on phones in v10 (README 332-342). Its complexity brought a run of new defects:
+  - the end bucket that never reached m 1 (235-239);
+  - the after-close transitions and the Join replay (118-129);
+  - a 79-82 ms first-open frame (350-354);
+  - rest restyle at m 1 (397-407);
+  - the nolift regression through the earn keyframes (340-341);
+  - the glass blink (794-822).
+- **Cost:** about one day, and every CM card since P-157. The "GPU story" (playbook, F-317) became the frame for the
+  area before the phone had shown that it paid more than the main-thread clip.
+
+### M3. A one-frame gate decided the area
+
+- D1 is a single frame per run (O1.f2), n = 4 per arm, bound +4 ms.
+- It failed P1 and CM even though:
+  - P1's f123 sum was equal to C's (paid back the next frame, F-316);
+  - neither arm had a frame over 50 ms;
+  - P1 cut the end zone's slow frames by a third.
+- The bound was the right alarm for M1, but it was used as a veto on otherwise better builds instead of as a cue to
+  fix the switch-on.
+- **Cost:** P1 never landed (end-morph-p1 790-793). The work moved on to CM and K.
+
+### M4. A 0.68 s tween was mapped onto one screen of scroll without asking which parts should follow the finger
+
+v0's morph is one 680 ms ease-out-cubic tween, `ZM` / `YM` at JS 12688-12694. morph-scroll (PR-018) maps m linearly
+onto the last screen of scroll. Every sub-motion of the tween now plays at finger speed over about 775 px:
+- Nav `top: calc(16px + (12px - 16px) * var(--morph))` (CSS 11570; C 12101). It moves the bar's items 4 px up. This is
+  the user's T-228 complaint.
+- The insets (width 398 → 406 px) and the radius `calc(32px - 12px * m)` (CSS 11339). At m 0 the CSS overlap rule
+  clamps the radius to h/2 = 26 px. It then jumps to 31.8 px by m 0.0166, about 13 px of finger travel, and shrinks to
+  20 px over the rest of the screen. A likely source of the "corners move a bit" report: UNRESOLVED. The decisive
+  check is a per-frame corner trace of the user's own gesture, or asking which corners.
+- The 0.68 s ease-out did about 70 % of each move in the first 0.23 s (1 - (1 - 1/3)^3 = 0.70), so these small moves
+  were hard to see. Over a slow finger they can be seen.
+- **Cost:** two user complaints, and three days in which every design copied v0's geometry exactly while the motion
+  that carried it had changed.
+
+### M5. Bundled arms and moving targets
+
+- v11 = Vc + V13 + H1c. v12 = v11 + X2 + c2 + PR-032 rev 3.
+- P-159's V was switched from v11+c2 to v12 by a pre-data amendment (README 672-684).
+- When P-159 failed (open-0 +17 ms), the cause turned out to be an interaction found after the fact: CM plus the nav
+  cache re-measuring on each toolbar `resize` (782-793).
+- **Cost:** one FAIL block whose cause no single delta could explain, and a late diagnosis (c3).
+
+### M6. Predictions from counts to phone frame time were wrong in the same direction
+
+| prediction | result | where |
+|---|---|---|
+| P-157 P1: Layout ~0 per morph frame | 1.00-1.04: MISS | README 175, 202 |
+| P-159: PASS | FAIL | 663-669, 711 |
+| P-160: PASS, about 55 % | FAIL by D1 | 899, 904 |
+| c2: the open frame's layout came from `F()` | REFUTED by P-159's attribution | 765-767 |
+| "first open is once per load" | REFUTED | 1055-1060 |
+
+- Chrome and Simulator counts do not see layer build or Composite cost. The playbook knows this (pitfall 14), but the
+  cards kept predicting PASS from them.
+- **Cost:** the phone blocks were used as discovery tools rather than confirmations.
+
+### M7. Chrome-first look gates missed WebKit-only defects, and one reached the user
+
+- The stale clip at m 1 (morph-gpu 205-252) and the CM glass blink were caught only in the Simulator. The blink was
+  caught only after the user's own swipe (C-103, README 794-805).
+- Chrome capture artefacts consumed rounds: F-314 (RGBA vs RGB), F-315 (captureScreenshot corners).
+- **Cost:** a visible regression shipped in a candidate, and two rounds of gate tooling.
+
+### M8. Fixed, then broken, then fixed again
+
+- st6-rb2 registered `--morph` with `inherits: false`, and the nav's children went stale on WebKit.
+  - morph-inherit fixed it with six inline `--morph` writes per frame (`__mkW`, morph-inherit 60-72).
+  - c3b-a #5 removed those writes again (README 968-969).
+  - P-079's attribution had been taken on the broken morph (nav-morph 18-35).
+- The glass blur:
+  - v0 animates it per frame; CM put it on the scroll timeline, which caused the blink.
+  - c3 wrote it inline per frame (glassD), which brought back a per-frame script write and a forced style pass of
+    +2.3 ms (README 957-960).
+  - c3b-a #2 removed the reader that paid for that pass.
+- The closed panel's `visibility: hidden` rule was added and then dropped again (v9 12-16, F-268).
+- Nolift (PR-027) was undone by CM's earn keyframes and restored by hand (README 340-341).
+- **Cost:** each round was small; together, about half a day of builds and gates.
+
+### M9. Phone time spent on overhead
+
+- Every recent block ended at the heat ceiling after about 45 min: P-158 H10, P-159 H11, P-160 H11.
+- A runner was killed by the 30-min background cap (I-240).
+- P-161's first start was void because Safari was left on the timer page (F-325).
+- Counted from the ledger, 19 blocks with data touched this area: 5 passed or held, 6 failed, 5 were insufficient
+  or open, 2 were attribution-only and 1 was mixed.
+- **Cost:** a phone hour per question, with about a quarter of the blocks decisive in the intended direction.
+
+**What went right**, to be fair:
+- source first: threaded scroll-driven animations, no layer pool, and `scrollY` forcing layout are all CONFIRMED;
+- registered predictions and frozen kits;
+- call-stack attribution found the toolbar re-measure (c3): open-0 frames went from 35.5 to 9.5 ms, better than C's
+  19.25;
+- the after-close rest probe caught two behaviour bugs before the phone.
+
+## 2. What the evidence says the problem is
+
+1. **The paint was the old problem, and it is solved.** CM and P1 both cut the morph's per-frame paint to about a
+   quarter or less (P-157 Paint 0.28x; morph-gpu Simulator 12.3 → 2.3 paints per frame).
+2. **The open frame is the current problem.** Any change in which layers exist, or how big they are, lands there,
+   because WebKit builds layers lazily and keeps no pool. The backing store is painted in the first frame that shows
+   the layer (README 1073-1080, F-324).
+3. **The finger-following motion exposes v0's small sub-motions.** The user now judges geometry (4 px rise, corners),
+   not lag.
+4. **Rest work near the end has two sources, and only one is the morph's** (F-321):
+   - at m 1, about 25 layouts per second rooted in the open panel: the panel countdown's rAF spring, which repaints the
+     veil about 26 times per second (F-310);
+   - at m -0.5, the platform section's own animations;
+   - plus, in CM, a style pass per frame from the attached scroll timelines (F-319, 0.72 ms per frame on the phone,
+     README 405).
+
+## 3. From zero
+
+### Ground rules that every design below keeps
+
+- **R1. Build once, in a still frame.** Every composited layer the morph needs exists before the first approach. It is
+  made at load idle, after hydration (F-307), and stays for the visit: no `display` toggle, no attribute switch that
+  changes compositing, and no clip or mask that appears or disappears.
+- **R2. After that, only transform and opacity** (plus a static filter) change while moving or opening.
+- **R3. One timing source per frame.** Either everything the user sees follows the threaded scroll timeline, or
+  everything follows the main thread. Mixing them lets a clip edge and the content it clips drift a frame apart
+  under load.
+- **R4. Rest is free.** No scroll timeline stays attached while the page rests (F-319), and no script runs at rest.
+- **R5. The bar's items are still.** The logo, language button and Join live in their own fixed layer, outside the
+  growing card. Their y never changes. The logo's horizontal move to the centre and Join's timed fade (PR-032 rev 3)
+  stay, because they are part of the look. The card's top edge still moves 16 → 12 px, as in v0.
+  - R5 is a deliberate change from v0 at m 1: the logo ends 4 px lower than v0's. It answers the user's request, so it
+    goes to the user as a proposal item. The pixel gate scores the bar band separately.
+
+### Engine facts the designs rely on
+
+| fact | status | source |
+|---|---|---|
+| Qualifying scroll-driven transform / opacity / filter / backdrop-filter animations run threaded on iOS 26 | CONFIRMED | CM step 1: `UnifiedWebPreferences.yaml` 8316-8329, `PlatformEnableCocoa.h` 934-936 (7624 branch) |
+| Every rendering update restyles each element with an attached scroll-driven animation, scrolling or not | CONFIRMED (source); OBSERVED on the phone | `ScrollTimeline.cpp` ~291, `KeyframeEffect.cpp` 2081-2088; P-157 row A |
+| A completely accelerated, running **time-based** animation does not tick the main thread per frame: the timeline schedules its next tick at the effect's end | CONFIRMED | `KeyframeEffect.cpp` `ticksContinuouslyWhileActive` 2738-2761 (main 05dbfe1a) and 2667-2688 (safari-7624.5.1.11-branch); `AnimationEffect.cpp` 385-402; `DocumentTimeline.cpp` 351-410 |
+| WebKit keeps no layer pool; each layer appear / disappear is a full build / teardown | CONFIRMED | F-324; `RenderLayer.cpp` 5865-5890 (main 616ee3ad) |
+| An element with opacity 0 and no opacity animation has no backing store; `will-change: opacity` keeps one | CONFIRMED | `Styleable.cpp` 224-238, `RenderLayerBacking.cpp` 3880-3890 (main 05dbfe1a) |
+| A box whose only decoration is a background colour is composited as a solid-colour layer, with no backing store | CONFIRMED (source; not probed here) | `RenderLayerBacking.cpp` `isSimpleContainerCompositingLayer` 3732-3765, `updateDirectlyCompositedBackgroundColor` 3515-3543 |
+| A uniform rounded clip on a composited layer is a Core Animation `cornerRadius` with masksToBounds, not a mask layer | CONFIRMED | `GraphicsLayerCA.cpp` `updateClippingStrategy` 3287-3309 (main 05dbfe1a) |
+| A clip-path change on a layer that composites its clip is RecompositeLayer (new mask path), not a repaint or a layout | CONFIRMED | `RenderElement.cpp` 341-346; `RenderLayerBacking.cpp` `updateMaskingLayer` 3238-3270, `updateMaskingLayerGeometry` 2041-2076 |
+| clip-path does not shape a backdrop-filter: the backdrop rect comes from border-radius (or the legacy `clip`) only | CONFIRMED (source reading) | `RenderLayerBacking.cpp` `updateBackdropFiltersGeometry` 923-958 |
+| clip-path / mask animations are main-thread in WebKit | CONFIRMED | F-269, `CSSProperties.json` (no accelerated wrapper for clip-path) |
+| A scroll-driven backdrop-filter animation drops the glass when it attaches | OBSERVED (Simulator, 4 variants); mechanism UNRESOLVED | README 794-822 |
+| Core Animation draws time-based CA animations at up to 80-120 Hz | CONFIRMED in source, UNRESOLVED on our phone | F-212 |
+| A card-size backdrop clipped down by ancestors costs the GPU the same as a pill-size one | UNRESOLVED (Core Animation is closed source) | decisive check: S0 below, then the phone's page-wide Composite |
+
+### D1. The always-built card (threaded): RECOMMENDED
+
+**Mechanism.** WebKit touch phones only (the existing `__msOn` gate plus `'GestureEvent' in window`, as K6). Every
+other device keeps C.
+
+- Layers, all made once at load idle with `will-change: transform` (no opacity animation on the frame layers, so they
+  get no backing store):
+  - **Frame:** CM's four corner clippers `c0..c3`, each with its counter-scaled box `u0..u3`. This is the minimum for a
+    rounded box whose width, height and radius change independently by transforms alone: each clipper is a large
+    rounded square scaled by k = r/32 at one corner (README 1019; CA `cornerRadius`, no mask layer). At m <= 0 they
+    sit at the pill's geometry and draw the closed pill **at every scroll position**, so there is never a second
+    rendering of the closed state to swap to. That swap is what broke K's look (README 1011).
+  - **Inside u3:**
+    - `D`: a solid #131922 box, opacity m. It is a solid-colour layer (no backing store) and equals v0's
+      `color-mix` exactly (F-039).
+    - `Gc`: the card glass: white 10 %, static `backdrop-filter: blur(20px)`, never animated.
+    - `P`: the panel parts (backdrop, veil, centre, footer, columns). They are at their final layout, positioned by
+      transforms on the scroll timeline (CM's linear and grid keyframes), with `will-change: opacity, transform`, so
+      their backing stores are painted once at idle, not in the open frame.
+  - **Pill glass `Gp`:** today's pill-size nav glass, outside the frame. It shows only at m <= 0, and Gc only at
+    m > 0. They swap by opacity, 1 ↔ 0 and 0 ↔ 0.9999 (F-225: never exactly 1). The swap is one keyframe step on the
+    scroll timeline at m = 0+, so no script and no layer build is involved.
+    - Far from the end only Gp draws, so the page-wide blur cost is today's.
+    - Pixel risk: the blur at the pill's bottom edge differs between a pill-size and a card-size backdrop. K6 measured
+      this in the Simulator as 0.32-0.34 %, max 26-59, inside T2 (README 1124-1133).
+  - **Bar `B`:** the logo, language switch and Join. A fixed layer above the frame. It never changes y (R5). The logo's
+    x-centring is a scroll-timeline translate (1 element). The language switch's 4 px slide and Join's timed fade stay
+    as in v13a.
+- **Glass blur 20(1-m) without an animated backdrop-filter.** v0 shrinks the glass blur as the card darkens. D1 keeps
+  Gc's blur static at 20 px. The dark layer D covers it in proportion to m.
+  - The pixel error is about (1 - m) x |blur20(B) - blur20(1-m)(B)| over the backdrop B. That backdrop is `#platform`,
+    already blurring by 12 m / 0.55 px and fading, so the error is expected to be small.
+  - UNRESOLVED. Decided by the pixel gate (S5) at m 0.004-0.6. The fallback is c3's glassD: one inline write on one
+    element per frame (main-thread style only).
+- **Timelines attach only while needed (R4).**
+  - The scroll-driven `animation-name`s apply under `html.fw-cm-live`.
+  - That class turns on at `touchstart` (passive, already listened to by `__msTouchEv`) or when an
+    IntersectionObserver on the runway reports the end zone within one screen. Both happen before or far from a
+    moving morph frame, and the keyframes' values at m <= 0 equal the closed CSS, so attaching changes no pixel.
+    F-162's pending first frame is covered by CM's inline first-frame values, as today.
+  - The class turns off when the 7d settle has come to rest at m 0 or m 1 for 300 ms. Static CSS then holds the two
+    rest states (`html.fw-cm-open` for m 1).
+- **Panel clock** (not the morph's, but it is the end panel's rest cost): its rAF spring becomes one Web Animation per
+  second-tick (the cd-roll-ca technique, F-154). With that, 25-26 layouts or repaints per second at m 1 become about
+  one style pass per second. This is a separate item for its owner (the panel-clock-layer attempt was a layer, not a CA
+  roll).
+
+**Predicted cost.**
+
+| | main thread | compositor |
+|---|---|---|
+| moving frame | style for the elements with attached timelines: 4 clippers, 4 boxes, D, the Gp/Gc swap, about 6 panel parts and the logo, about 18 (CM: ~15 in Chrome). 0 layout and 0 paint from the morph (P-157 row A: no layout from the timeline itself) | transform and opacity updates of about 18 layers |
+| open frame | the class flips CM already makes; 0 layers created, 0 backing stores painted (target, gated in S3) | the same as a moving frame |
+| rest at m 0 or m 1 | 0 from the morph (timelines detached); panel clock about 1 per second after its fix | static |
+| page-wide (top of the page) | 0 | about 11 always-composited layers that draw nothing (frame, D at opacity 0, Gc at opacity 0), plus Gp as today |
+| memory | | about C's: frame layers and D have no backing store; P's stores already exist in C after its lazy mount (`b` at the platform IntersectionObserver, JS 13209-13211), here made at idle instead |
+
+**Risks.**
+1. The page-wide composite of the always-built frame: four nested `masksToBounds` and `cornerRadius` layers, fixed over
+   the scrolling page. Core Animation may render rounded clips with sublayers in an offscreen pass every frame.
+   UNRESOLVED. S0 counts it in the Simulator; the phone block reports Composite at the top of the page as a
+   descriptive item.
+   - Mitigation: an `opacity: 0` ancestor over the frame while the page is more than three screens from the end.
+     Whether Core Animation skips a hidden subtree is UNRESOLVED. Opacity on a group does not drop backing stores
+     when `will-change: opacity` is set (Styleable.cpp 233-234).
+2. K's rest-style surprise. With the pre state on, K6 restyled 2-2.5x at rest, even with the timelines paused, "with
+   the bigger styled tree under `.is-morphing`" (README 1151-1154, OBSERVED, cause unknown). If an always-built tree
+   restyles at rest by itself, R4 fails page-wide. S0 tests exactly this, with the timelines detached.
+3. The still-glass look (above), with glassD as the fallback.
+4. R5 is a look change at m 1 (the bar's 4 px). It is a user decision, offered with Try-it.
+
+**How it differs from CM and K.**
+- CM switches its wrappers between `display: contents` and boxes on every open and close. D1 never does.
+- K turns the same switch on earlier. D1 has no switch at all, so there is no "pre state".
+- D1 adds three things CM and K lack: the bar as a still layer, the static glass, and no timelines at rest.
+- It keeps CM's real asset: the transform-only rounded box, which is threaded and follows the finger even when the
+  main thread is late under heat.
+
+### D2. The always-built clip card (main thread, P1 made persistent)
+
+**Mechanism.**
+- One fixed card at its final size (406 x 751 at 12, 12 for 430 x 775), composited from load idle.
+- Its visible box is `clip-path: inset(t r b l round R)`, kept on the element at all times, so the mask layer exists
+  from the start. At m 0 the inset is the pill.
+- Panel parts and the logo are positioned by transforms written in the same rendering update as the clip (R3: all on
+  the main thread). They come from `__msTick`, which already runs per scroll frame, or from one registered
+  `inherits: false` property per part.
+- The glass cannot use the clip-path (the backdrop rect comes from border-radius only, source above). So the glass is
+  a sibling empty box whose width, height and border-radius follow v0's formulas (as P1's `.fw-rv-glass`). That is
+  one small out-of-flow layout per frame, and a backdrop-rect update with no repaint (no painted content: a solid
+  colour at most).
+- The bar is a still layer, as D1.
+
+**Predicted cost.**
+- Per frame: style of about 8 elements, one layout of one fixed box, one RecompositeLayer for the clip path.
+  0 paint (CONFIRMED mechanism, see the table).
+- Open frame: nothing created, because the mask and the layers already exist.
+- Rest: 0.
+- Phone evidence for the per-frame part already exists: P1 cut the end zone's slow frames by a third (P-153).
+
+**Risks.**
+- **Stale clip at m 1.** The reveal stays cut to the last clip box after the clip changes stop. It was OBSERVED in the
+  Simulator, the cause is UNRESOLVED, and it is unchecked on the device (morph-gpu 205-252). The workaround toggled
+  the nav's backdrop-filter, which would be a per-arrival switch.
+- **Page-wide offscreen pass.** A CAShapeLayer mask on a final-size fixed layer likely costs an offscreen pass per
+  composited frame for the whole visit. UNRESOLVED.
+- **Main-thread timing.** Like C, the card follows the finger only as well as the main thread keeps up. Under heat it
+  lags, where D1 would not.
+- P1 at rest on m 1 was not pixel-exact in Chrome (130k px, morph-gpu 241-245): this needs re-checking for a
+  persistent clip.
+
+**How it differs from CM and K.** One mask instead of eight clipper layers, no keyframe grids, exact v0 formulas for the
+shape. Unlike P1, nothing switches on or off.
+
+### D3. v0's 0.68 s tween, played by Core Animation (a proposal)
+
+**Mechanism.**
+- D1's always-built layers, but no scroll timeline.
+- The open is triggered when the runway is entered, through an IntersectionObserver sentinel on `.fw-ms-end`
+  (passive; no scroll-jack, no pin, no non-passive listener).
+- One `element.animate()` group plays v0's exact curve:
+  - ease-out cubic = `cubic-bezier(1/3, 1, 2/3, 1)` (F-038);
+  - keyframes laid out in time for the non-linear parts (F-216's one-cubic-per-piece method);
+  - 680 ms.
+- Close: the same group reversed from its current time (reading `currentTime` forces no style).
+- The 7d settle stays for the page itself.
+
+**Predicted cost.**
+- Per frame: **0 main-thread work** (CONFIRMED: an accelerated time-based effect does not tick continuously, see the
+  table). Core Animation draws it at up to 120 Hz.
+- Open: one style pass and one commit. Rest: 0.
+- This is the floor for any design.
+
+**Risks.**
+- **It does not follow the finger.** The user chose finger-following twice: PR-018 rev 7 (2026-10-04) and PR-023
+  rev 5. So it is a proposal, and likely to be rejected as the whole morph.
+- **Mid-tween reversals** under a fast swipe need a rule for where the reverse starts.
+
+**Use it anyway for:**
+- the cost floor in the Chrome and Simulator count gates (an arm that shows what "nothing on the main thread" reads
+  as);
+- the mechanism for the small sub-motions if the user prefers them snapped. For example, the top edge's 4 px, the
+  insets and the corner radius could play as a 0.68 s Core Animation tween at the open threshold while the height
+  follows the finger. That is a motion change, so it would be a Try-it option, not a fix.
+
+### D4. Canvas or image sequence: rejected
+
+- Memory: one 3x frame of the open card is 1218 x 2253 device px x 4 bytes = 11 MB decoded. A 60-frame scrub is about
+  660 MB, and a video would decode on every scrub step.
+- The card shows live content that no pre-rendered frame can hold:
+  - the blurred `#platform` and end screen behind the glass;
+  - the panel countdown;
+  - the column marquee.
+- So it cannot be pixel-identical at every frame (memory illusion-must-be-pixel-identical), and a canvas would paint on
+  the main thread every frame.
+- Not pursued.
+
+### Comparison
+
+| | D1 always-built card | D2 always-built clip | D3 Core Animation tween | CM (v13a) | K6 |
+|---|---|---|---|---|---|
+| follows the finger | yes, threaded | yes, main thread | no | yes, threaded | yes, threaded |
+| layers created per open | 0 (target) | 0 (target) | 0 | 11 | 0 on the first open after a pre-on rest; 11 on later opens (README 1180-1184) |
+| main-thread work per moving frame | style about 18 | style about 8 + 1 tiny layout + recomposite | 0 | style about 15-40 + glass write | as CM |
+| rest at m 0 / m 1 | 0 / 0 (+ clock) | 0 / 0 (+ clock) | 0 / 0 | style per frame / style per frame (F-319) | 2-2.5x near the end |
+| bar items still | yes | yes | yes | no (4 px rise) | no |
+| glass | static, cross-fade (glassD fallback) | sibling box | static | inline write per frame | as CM |
+| phone evidence for the moving part | CM's (P-157, P-160 D2/D3) | P1's (P-153) | none | P-157, P-160 | none (P-161 pending) |
+| main unknown | page-wide cost of the always-built frame; rest style of the tree | stale clip; page-wide mask | the user's taste | | |
+
+## 4. Recommendation and prototype plan
+
+**Recommend D1.** It keeps what the phone has shown to work: CM's threaded, transform-only shape (P-160: open-0 frames
+9.5 vs 19.25 ms) and P1's evidence that removing the paint makes the end zone smoother. It removes the one effect that
+decided six blocks (M1), and it answers the user's bar complaint by construction. D2 is the fallback if S0 shows that
+the clipper frame costs too much page-wide. D3 is the cost-floor arm and a possible Try-it option.
+
+**The main risk:** the always-built frame's cost on every frame of the whole page (Core Animation's nested rounded
+clips, and whether the tree restyles at rest by itself, as K's pre state did). The first step tests exactly that,
+before any build.
+
+Gates in the project's order (playbook §3). Counts and looks only until the phone; no timing verdicts (memory
+defer-timing-focus-call-tree). Times are agent hours.
+
+| step | what | pass | time |
+|---|---|---|---|
+| S0 decisive, before building | On the frozen c3b-a build (`out/cm/c3ba`, read-only copy), variant A0: after the first open, CM's wrappers stay boxes after the close (no `display: contents` back); timelines detached at rest. Simulator (shared lane, weight simulator, `k-sim.mjs` passes O and A, `o1-sim.mjs` census): (a) layers created on opens 2+; (b) rest style and layouts per second at m 0 and m -0.5 with the tree built, against c3b-a; (c) a scroll segment at the top of the page with the tree built and hidden, against c3b-a (paints, Composite rank) | (a) 0; (b) within 1.3x c3b-a's A/A; (c) within the A/A spread | 1-1.5 h |
+| S1 build | D1 on c3b-a: tree at load idle; bar layer outside the frame; Gp/Gc swap; attach/detach rule; glass static | `node --check`; class parity (`c2trace.mjs`) 0 differences | 3-4 h |
+| S2 Chrome counts | `cm-chrome.mjs` open/close 40 steps; layer census | layout 0 per moving frame; paint ≤ CM's; style ≤ CM's + 3 elements | 0.5 h |
+| S3 Simulator counts | `cm-sim.mjs --cold --stack 6`; `o1-sim.mjs` census on the first and the later opens | layers created per open 0 on every open; open-frame paints ≤ 2; no forced layout in the open frame | 1 h |
+| S4 rest probe | `k-sim.mjs` pass A segments at the top, at m -0.5, 0 and 1; rest after the close (CM's 500 ms windows) | per-second style and layouts ≤ C's + A/A; nothing repaints after the close | 1 h |
+| S5 pixel look | `pre-look.mjs` / `cm-px2.mjs --capture screencast`, Chrome and Simulator, 775 and 815, A/A floors, stops pre .. 1 .. down 0. Bar band scored apart (R5 is a declared change) | T2 outside the bar band; the bar band = only R5's 4 px | 1.5 h |
+| S6 layers and memory | census at the top, m -0.5, 0, 0.5 and 1 | no layer created between stops; memory ≤ C + 3 MB | 0.5 h |
+| S7 phone block | P-160's rules (D1-D3), G fast-short, tool-serious, C vs D1; descriptive: Composite per frame at the top of the page, rest style at m 1 | PASS by P-160's rules | 1.5 h with heat |
+| then | Try-it for the user: D1 against C, plus the R5 bar and, as a second option, D3's snapped sub-motions | the user's pick | |
+
+Total: about 10-12 agent hours and one phone block. S0's kill rule: if (a) is not 0, or (b) or (c) fail, stop D1 and
+take D2 through the same gates (its S0 is the same experiment with P1's persistent clip).
+
+## 5. Claims to verify before they are used as facts
+
+- **Core Animation offscreen passes for nested `masksToBounds` + `cornerRadius` with sublayers, and for a CAShapeLayer
+  mask.** UNRESOLVED (closed source). Decisive: S0 (c) and the phone block's descriptive Composite.
+- **Whether a hidden (`opacity: 0`) Core Animation subtree is skipped at composite.** UNRESOLVED. Decisive: S0 (c) with
+  and without the hidden ancestor.
+- **The cause of K6's rest style with the pre state on.** OBSERVED, cause unknown (README 1151-1154). Decisive: S0 (b).
+- **The static-glass cross-fade error.** UNRESOLVED. Decisive: S5 at m 0.004-0.6.
+- **That the "corners move" report is v0's geometry at finger speed** (radius kink at m 0.0166, 4 px insets).
+  UNRESOLVED. Decisive: a per-frame corner trace of the user's gesture, or one question to the user.
+- **Backing stores of `will-change: opacity` layers at opacity 0 are painted at idle, not in the first visible frame.**
+  The source shows they exist (Styleable.cpp 233-234); when they are painted is UNRESOLVED. Decisive: S3's open-frame
+  paint count.
+
+## Sources
+
+- `fixes/compositor-morph/README.md` (CM, P-157 to P-161, c1-c3b, K), `fixes/end-morph-p1/README.md` (P1, P-153),
+  `fixes/morph-gpu/README.md` (PR-012, P-092, P-098, stale clip), `fixes/morph-scroll/README.md`, `fixes/v9-best/README.md`,
+  `fixes/BEST_BUILDS.md`, `research/architecture/gpu-compositor-playbook.md`.
+- Findings F-036, F-038, F-039, F-062, F-162, F-212, F-216, F-225, F-269, F-307, F-309, F-310, F-316, F-319, F-321, F-324.
+- WebKit, read with `gh` (read-only): main `05dbfe1a59f63860bce30ddff7113da859fd2636`: `GraphicsLayerCA.cpp`,
+  `RenderLayerBacking.cpp`, `RenderElement.cpp`, `StyleDifference.cpp`, `Styleable.cpp`, `KeyframeEffect.cpp`,
+  `AnimationEffect.cpp`, `DocumentTimeline.cpp`, `WebAnimation.cpp`; `safari-7624.5.1.11-branch`: `KeyframeEffect.cpp`.
+- Code map (helpers map-end-fresh and map-end-history, read-only): v0 tween JS 12688-12694, trigger 12975-13077, nav
+  CSS 11320-11361 and 11565-11584; C nav `top` CSS 12101, morph-scroll JS 14173-14470.
