@@ -24,6 +24,10 @@
 //                       - in a table row: the row has at least 2 plain words besides the ids;
 //                       - the same id was explained earlier in the text, or the user wrote it in this thread (`known`).
 //                     Ids inside a URL are not checked. A plain word: 3+ letters, not an id.
+//   (e) table-separator 2+ consecutive lines that start and end with "|" (outside a ``` block) whose second line is no
+//                     separator row ("|" plus cells of :?-{3,}:?, e.g. |---|:--:|): the console's renderer (I-129) shows
+//                     such a table as raw pipes (I-232, user T-230). The hint offers the exact separator line when every
+//                     row has the same number of cells; the text itself is never rewritten.
 // Warnings (printed, the text still posts): a first line over 160 characters; a paragraph (or one list item) of more
 // than 3 sentences.
 // Gain rows (proposal post|revise only, user T-126: PR-018's "What it saves" table packed the claim, the numbers, the
@@ -50,7 +54,7 @@ export const RULE_SUMMARY = [
   '  1. Answer first: the first line is the answer or the decision.',
   '  2. Short bullets, one idea each; no long paragraphs.',
   '  3. Plain words: explain every code in a few words, e.g. "the heat check (P-094)".',
-  '  4. Numbers in a small table or list, saying which is better.',
+  '  4. Numbers in a small table or list, saying which is better; a table needs its |---| line under the header.',
   `  5. About 10 lines (refused over ${LIMITS.maxLines}); no line over ${LIMITS.maxLineChars} characters.`,
   '  6. Last line: "What you need to do: …" (or "What you need to do: nothing.").',
 ];
@@ -70,6 +74,17 @@ const LIST_ITEM_RE = /^\s*(?:[-*•]|\d+[.)])\s+/;
 const TABLE_RE = /^\s*\|/;
 const TABLE_SEP_RE = /^\s*\|?[\s:|-]*-{3,}[\s:|-]*\|?\s*$/;
 const FENCE_RE = /^\s*```/;
+// (e) the separator row a table needs under its header (I-232): "|" plus cells of :?-{3,}:? ("|---|:--:|---:|")
+const PIPE_SEP_RE = /^\|(?:\s*:?-{3,}:?\s*\|)+$/;
+const LOOSE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/; // the renderer's MD_SEP: any dashes
+
+/** The cells of a |…| row, as the console's renderer splits them (I-129 mdCells: outer pipes off, \| is no column). */
+function pipeCells(line) {
+  let s = line.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|') && !s.endsWith('\\|')) s = s.slice(0, -1);
+  return s.replace(/\\\|/g, '').split('|');
+}
 
 /** Every internal id in `s` (strings, in order; duplicates kept). */
 export function idsIn(s) {
@@ -190,6 +205,28 @@ export function lintText(text, { kind = 'answer', known = [], label = '' } = {})
     if (len > max) errors.push({ code: 'long-line', rule: 'c', line: r.n, msg, hint: 'split it into short bullets, one idea each' });
     else if (len > LIMITS.maxLineChars) warnings.push({ code: 'long-line', line: r.n, msg: `${len} characters (over ${LIMITS.maxLineChars})`, hint: 'split it into short bullets, one idea each' });
   }
+  // (e) a table's separator line (I-232): 2+ consecutive |…| lines whose second line is no |---| row
+  let run = [];
+  const endRun = () => {
+    if (run.length >= 2 && !PIPE_SEP_RE.test(run[1].text.trim())) {
+      const head = run[0];
+      const loose = LOOSE_SEP_RE.test(run[1].text); // "|-|-|": a separator meant, too few dashes
+      const counts = (loose ? [run[0], ...run.slice(2)] : run).map((r) => pipeCells(r.text).length);
+      const n = counts[0];
+      const line = `|${' --- |'.repeat(n)}`;
+      const hint = counts.every((c) => c === n)
+        ? (loose ? `replace line ${run[1].n} with: "${line}"` : `insert this line after line ${head.n}: "${line}"`)
+        : `add a separator line under the header, one --- per column (e.g. "| --- | --- |"); the rows have ${[...new Set(counts)].sort((a, b) => a - b).join(', ')} columns: give every row the same number first`;
+      errors.push({ code: 'table-separator', rule: 'e', line: head.n, msg: `a table (lines ${head.n}-${run.at(-1).n}) has no |---| line under its header row, so the console shows it as raw text`, hint });
+    }
+    run = [];
+  };
+  for (const r of rows) {
+    const t = r.text.trim();
+    if (!r.fence && t.length >= 2 && t.startsWith('|') && t.endsWith('|')) run.push(r);
+    else endRun();
+  }
+  endRun();
   // (d) internal ids
   // an id explained anywhere in the text (the first mention, or a table further down) is fine everywhere
   const explained = new Set(known.map(String));

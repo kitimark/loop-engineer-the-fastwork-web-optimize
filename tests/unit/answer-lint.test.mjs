@@ -104,6 +104,45 @@ test('(d) an id explained anywhere in the text, or known to the user in this thr
   assert.deepEqual(ids(lintText(`Decide PR-017 when ready.\n${END}`)), ['PR-017']);
 });
 
+test('(e) a table without its |---| line under the header is refused (I-232: the console shows it as raw pipes)', () => {
+  // the reply shape the user saw many times (T-230): a header row, then data rows, no separator
+  const bare = lintText(['The check passed.', '| check | state |', '| widths | done |', '| touch | done |', END].join('\n'));
+  assert.deepEqual(rules(bare), ['e:table-separator']);
+  const e = bare.errors[0];
+  assert.equal(e.line, 2, 'reported at the header row');
+  assert.match(e.hint, /insert this line after line 2: "\| --- \| --- \|"/, 'consistent columns: the hint offers the separator');
+  // the hint only offers it: the text itself is not rewritten
+  assert.equal(lintText(['| a | b |', '| 1 | 2 |', END].join('\n')).errors[0].code, 'table-separator');
+  // with the separator (any alignment form) it passes
+  for (const sep of ['|---|---|', '| --- | --- |', '|:---|---:|', '| :---: | --- |', '|----|-------|']) {
+    assert.deepEqual(rules(lintText(['The check passed.', '| check | state |', sep, '| widths | done |', END].join('\n'))), [], sep);
+  }
+  // a header with only the separator (no data rows) passes
+  assert.deepEqual(rules(lintText(['| check | state |', '|---|---|', END].join('\n'))), []);
+  // a single | line, pipes inside prose, a line that only starts with |, a code block: not a table, pass
+  assert.deepEqual(rules(lintText(['| just one row |', END].join('\n'))), []);
+  assert.deepEqual(rules(lintText(['Run a | b to pipe it, then c | d.', 'Either x | y or z.', END].join('\n'))), []);
+  assert.deepEqual(rules(lintText(['| starts with a pipe', '| and again', END].join('\n'))), []);
+  assert.deepEqual(rules(lintText(['```', '| a | b |', '| 1 | 2 |', '```', END].join('\n'))), []);
+  // two tables split by a blank line: each checked on its own
+  assert.deepEqual(rules(lintText(['| a | b |', '|---|---|', '| 1 | 2 |', '', '| c | d |', '| 3 | 4 |', END].join('\n'))), ['e:table-separator']);
+  // a separator with fewer than 3 dashes is not one by the rule: refused, with the fix in the hint
+  const loose = lintText(['| a | b |', '|-|-|', '| 1 | 2 |', END].join('\n'));
+  assert.deepEqual(rules(loose), ['e:table-separator']);
+  assert.match(loose.errors[0].hint, /replace line 2 with: "\| --- \| --- \|"/);
+  // column counts differ: no ready line offered, the hint says to even them out (escaped \| is no column)
+  const ragged = lintText(['| a | b |', '| 1 | 2 | 3 |', END].join('\n'));
+  assert.deepEqual(rules(ragged), ['e:table-separator']);
+  assert.doesNotMatch(ragged.errors[0].hint, /insert this line/);
+  assert.match(ragged.errors[0].hint, /2, 3 columns/);
+  assert.match(lintText(['| a \\| b | c |', '| 1 | 2 |', END].join('\n')).errors[0].hint, /insert this line after line 1: "\| --- \| --- \|"/);
+  // kind field (proposal text, step text) and lintFields label it with the field
+  assert.deepEqual(rules(lintText('| a | b |\n| 1 | 2 |', { kind: 'field' })), ['e:table-separator']);
+  const f = lintFields([{ path: 'idea', text: '| a | b |\n| 1 | 2 |' }]);
+  assert.equal(f.errors[0].where, 'idea line 1');
+  assert.match(gate(bare, { where: 'thread reply T-230', disabled: false }).err[0], /FORMAT error \(e\) table-separator, line 2: .*Fix: insert this line after line 2: "\| --- \| --- \|"/);
+});
+
 test('ids: plain numbers, words and dates are not ids; URLs are skipped', () => {
   assert.deepEqual(idsIn('62 ms vs 55 ms on 2026-10-04 at 13:42Z, build b9c7d1eb, decade 1234567, http://x.test/T-123'), ['b9c7d1eb']);
   assert.deepEqual(idsIn('T-034 and PR-015 and I-146, P-094, F-071, C-045'), ['T-034', 'PR-015', 'I-146', 'P-094', 'F-071', 'C-045']);
