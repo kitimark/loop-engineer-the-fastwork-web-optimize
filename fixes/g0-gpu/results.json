@@ -1,0 +1,47 @@
+{
+ "topic": "g0-gpu",
+ "build": "g0.1a on v0: the end-of-page menu card's opacity/blur/zoom as Web Animations on time (exact per-segment cubic-beziers of 1-(1-t)^3), Svelte state by bucket; #platform stays on v0's per-frame S()",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "served": { "v0": { "js": "4606120cf392", "css": "27776f3d4138" }, "g0.1a": { "js": "9efdf1d01de5", "css": "27776f3d4138" } },
+  "tools": "gates in fixes/g0-gpu/gates (seek.mjs Chrome + Simulator seek harness, counts-chrome.mjs Chrome trace counts, counts-sim.mjs Simulator Timeline + LayerTree census); shared lane (probe / simulator), one hold per arm; no timing A/B, no phone, by design",
+  "measurementCodeChanged": false
+ },
+ "verdict": "gates pass: state parity 0 mismatches at every stop (Chrome 775/815/reduced motion, Simulator); pixels T0 in the Simulator (no consistent pixel below the status bar), T2 in Chrome (max 59 levels, <= 202 css px2 = 0.06 %, the card's right-edge device-px column and anti-aliasing); Chrome restyled elements per tween -30 % open / -17 % close, first frames unchanged (K8); no animation and no extra layer at rest",
+ "gates": {
+  "seek": [
+   { "engine": "chrome", "viewport": "430x775", "stops": 148, "stateMismatch": 0, "worstAVmax": 59, "stopsWithConsistentPx": 12, "maxConsistentCssPx2": 176, "where": "card right edge column (max 24 levels), text AA 13-22" },
+   { "engine": "chrome", "viewport": "430x815", "stops": 148, "stateMismatch": 0, "worstAVmax": 59, "stopsWithConsistentPx": 8, "maxConsistentCssPx2": 202, "where": "card right edge column (max 23), one isolated device px at 59 (open@440)" },
+   { "engine": "chrome", "viewport": "430x775", "reducedMotion": true, "scenarios": "open,close,rev1", "stops": 111, "stateMismatch": 0, "worstAVmax": 51, "stopsWithConsistentPx": 6, "maxConsistentCssPx2": 22 },
+   { "engine": "simulator", "device": "iPhone 15 Pro Max", "stops": 148, "stateMismatch": 0, "stopsWithConsistentPxBelowStatusBar": 0, "note": "status-bar clock digit (css 96-112 x 16-48) differs between loads; excluded" }
+  ],
+  "countsChrome": {
+   "viewport": "430x775 DPR 3, headless, no throttle, 900 ms per tween, 2 loads per arm",
+   "restyledElements": { "open": { "v0": [5877, 6137], "g0.1a": [4098, 4108], "g0.1b": [2397, 2437] }, "close": { "v0": [11223, 11233], "g0.1a": [9109, 9439], "g0.1b": [2560, 2560] } },
+   "paintCalls": { "open": { "v0": [562, 563], "g0.1a": [522, 522], "g0.1b": [537, 541] }, "close": { "v0": [485, 502], "g0.1a": [449, 465], "g0.1b": [464, 464] } },
+   "layouts": { "open": 45, "close": 54, "allArms": true },
+   "firstFrameOpenRestyled": { "v0": 399, "g0.1a": 399, "g0.1b": 196 },
+   "firstFrameClosePrepaintPaint": { "v0": [1, 7], "g0.1a": [1, 8], "g0.1b": [27, 32] }
+  },
+  "countsSimulator": {
+   "perFramePaints": "tween frames 2-3 paint ~96-101 rects in every arm (card content: ~80 countdown faces and the card columns, repainted by the box's per-frame layout), unchanged",
+   "firstFrame": "1 style, 1 layout, 4-5 paints in every arm (K8: nothing moved into the first frame)",
+   "layersNewVsL0Closed": { "v0": 0, "g0.1a": 1, "g0.1b": 2, "g0.1b+willChange": 1 },
+   "newLayerNotes": "g0.1a: the card's own 384x50 0-byte container layer, kept; g0.1b: + #platform 430x1880 13.25 MB with a new id per tween (OBSERVED)",
+   "memoryOpenRestMB": { "v0": 108.9, "g0.1a": 108.9, "g0.1b": [107.3, 108.9], "g0.1b+willChange": 122.2 },
+   "closedRest": "30 layers / 89.1 MB in every arm"
+  },
+  "rest": {
+   "g0AnimationsAtRest": 0,
+   "runningAnimationsAtRest": "identical sets in v0 and g0.1a (4 #platform idle animations at m 0, 3 menu column tracks at m 1)",
+   "chromeRestRestyledPer1500ms": { "v0": [1248, 1598], "g0.1a": [1248, 1642] }
+  },
+  "reducedMotion": "v0's jump branch unchanged, no animation; seek above"
+ },
+ "notes": [
+  "No measurement code under tools/ changed. Gate scripts live in fixes/g0-gpu/gates/.",
+  "Seek harness: Date.now frozen at a fixed future instant (2026-11-01T00:00:00.5Z) after one uncaptured warm-up open (F-338); the state check compares --morph to 1e-9 (last-digit differences from absolute virtual time).",
+  "g0.1b (#platform blur-fade on WAAPI too) not taken: WebKit rebuilds #platform's 13.25 MB composited layer per tween (OBSERVED, F-337); will-change stops it but keeps 13 MB while open and makes a backdrop root (F-331).",
+  "Simulator per-frame counts are real-time and descriptive (F-084)."
+ ]
+}
