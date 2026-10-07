@@ -35,7 +35,9 @@
 // I-225 (user T-228 #15): in tool mode (startGate condition 'tool': `iphone.mjs profile --condition tool`, or
 // $FW_PHONE_CONDITION=tool) the condition is ours (tools/thermal.mjs, I-199): a misfit posts no step; a serious one adds
 // the line `REARM … node tools/iphone.mjs rearm --owner <o>` (the probed re-arm, lib/thermal-rearm.mjs), a fair one
-// `CLEAR … node tools/thermal.mjs clear` (toolHint).
+// `CLEAR … node tools/thermal.mjs clear` (toolHint). I-233: a read under a condition carries `holder` (holderName:
+// 'thermal.mjs' while our live set holds that level, else 'Xcode'); the words name it (stateWords, refusalText); in tool
+// mode a passing Serious read whose holder is not thermal.mjs refuses (reason condition-not-ours, gate code 0).
 import { execFile } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -43,6 +45,7 @@ import { tmpdir } from 'node:os';
 import { sharedStateDir } from './paths.mjs';
 import { withGuard, parseHeld, status as lockStatus } from './lock.mjs';
 import { writeJson, readJson } from './store.mjs';
+import { liveHolder } from './thermal-holder.mjs';
 
 /** iphone.mjs exit code: the phone's thermal state does not fit the run's profile at the hold's start (or at its end
  *  for `iphone.mjs profile --end`). Distinct from 1 (error / WAIT), 2 (refused in a shared slot), 3 (wda check), 6 (PARTIAL). */
@@ -95,7 +98,7 @@ export function parseCondition(v, env = process.env) {
   if (x === 'xcode' || x === 'tool') return x;
   throw new Error(`--condition must be xcode (default: the tester's Xcode, a console step) or tool (thermal.mjs, I-199: no step, iphone.mjs rearm); got ${x === true || x === '' ? 'nothing' : `"${x}"`} (I-225)`);
 }
-const REARM_REASONS = new Set(['phone-above-condition', 'condition-critical', 'condition-wrong', 'condition-missing']);
+const REARM_REASONS = new Set(['phone-above-condition', 'condition-critical', 'condition-wrong', 'condition-missing', 'condition-not-ours']);
 /** I-225: the tool-mode line after a refusal (what the agent runs itself, no user step), or null. Pure. */
 export function toolHint(profile, t, owner) {
   if (profile === 'serious' && REARM_REASONS.has(t.reason)) return `REARM the thermal tool fixes it (no user step): node tools/iphone.mjs rearm --owner ${owner} (inside your phone hold: thermal.mjs clear, plain reads once a minute until Nominal/Fair, set serious, settle 120 s, the profile read; I-225)`;
@@ -194,10 +197,10 @@ const nodeOr = (bin, args) => (/\.m?js$/.test(bin) ? [process.execPath, [bin, ..
  * One thermal read of the phone: {at, ms, state, induced, battC, rows, error}. Never throws; `error` names what failed
  * (exit codes only: xctrace's stderr may name the device). `exec` (tests) replaces the process runner.
  */
-export async function readThermal({ env = process.env, udid, timeLimitSec = 10, exec = execAsync, now = Date.now } = {}) {
+export async function readThermal({ env = process.env, udid, timeLimitSec = 10, exec = execAsync, now = Date.now, holder = () => liveHolder() } = {}) {
   const t0 = now();
   const at = new Date(t0).toISOString();
-  const done = (x) => ({ at, ms: now() - t0, state: null, induced: null, condition: null, battC: null, rows: 0, error: null, ...x });
+  const done = (x) => ({ at, ms: now() - t0, state: null, induced: null, condition: null, battC: null, rows: 0, error: null, holder: null, ...x });
   let id = udid ?? env.FW_THERMAL_UDID;
   if (!id) { try { id = (await import('./wda-runner.mjs')).readConfig().udid; } catch {} }
   if (!id) return done({ error: 'no device: the WDA runner config has no udid (node tools/iphone.mjs wda status)' });
@@ -218,7 +221,17 @@ export async function readThermal({ env = process.env, udid, timeLimitSec = 10, 
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
   out.battC = await readBatteryC({ env, exec });
+  if (out.induced === 'Yes') out.holder = holderName(holder(), out.condition);
   return done(out);
+}
+
+/** I-233: who holds an induced condition: 'thermal.mjs' when our live `set` (lib/thermal-holder.mjs) holds a profile of the
+ *  condition's level (ThermalSerious for Serious; a set of another level was replaced by someone), else 'Xcode' (another
+ *  client: in our setup, Xcode's Device Conditions). Pure. */
+export function holderName(h, condition) {
+  if (!h) return 'Xcode';
+  if (condition && h.profile && !String(h.profile).toLowerCase().includes(String(condition).toLowerCase())) return 'Xcode';
+  return 'thermal.mjs';
 }
 
 /** Battery temperature (C) from idevicediagnostics' AppleSmartBattery, or null. */
@@ -251,7 +264,7 @@ export function currentHold({ env = process.env, cm, ip } = {}) {
   return null;
 }
 
-const slim = (read, v) => ({ at: read.at, state: read.state, induced: read.induced, condition: read.condition ?? null, battC: read.battC, code: v.code, why: v.why || null, ...(read.error ? { error: read.error } : {}) });
+const slim = (read, v) => ({ at: read.at, state: read.state, induced: read.induced, condition: read.condition ?? null, ...(read.holder ? { holder: read.holder } : {}), battC: read.battC, code: v.code, why: v.why || null, ...(read.error ? { error: read.error } : {}) });
 
 /** The run record's meta.profile for a ledger (or a hold-less read): {name, gate, hold, start, end, drift}. */
 export function profileRecord(lg, { cached = false } = {}) {
@@ -275,7 +288,7 @@ export class ProfileRefusal extends Error {
 
 /** What the phone shows, in words: "Nominal", "Serious (induced by Xcode)", "Serious (real heat, not induced)", and
  *  (I-201) "Critical (Xcode condition Serious)" when the phone's own state is not the condition's level. */
-export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? (r.condition && r.condition !== r.state ? ` (Xcode condition ${r.condition})` : ' (induced by Xcode)') : r.state === 'Serious' && r.induced === 'No' ? ' (real heat, not induced)' : ''}` : 'unknown');
+export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? (r.condition && r.condition !== r.state ? ` (${r.holder || 'Xcode'} condition ${r.condition})` : ` (induced by ${r.holder || 'Xcode'})`) : r.state === 'Serious' && r.induced === 'No' ? ' (real heat, not induced)' : ''}` : 'unknown');
 
 /**
  * Plain-words refusal for a start read: {line, fix: 'set-serious' | 'stop-condition' | null, reason}. `fix` names the
@@ -298,15 +311,21 @@ export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? 
  *   condition-missing      serious: no Xcode condition (too cool, code 2, or real-heat Serious, code 7); step
  *   condition-on           fair: an Xcode condition is on (code 4); step (stop it)
  *   too-hot                fair: real-heat Serious (code 5); cool down, no step
+ *   condition-not-ours     serious, tool mode (I-233): the read passes (code 0) but the condition's holder is not our
+ *                          thermal.mjs set (Xcode left on); take it over with rearm, no step
  *   other                  anything else (the gate's own why)
+ * `condition` 'tool' (I-233): the head wants "Serious, induced by thermal.mjs" and the actions name the thermal tool (the
+ * REARM / CLEAR line startGate adds), never Xcode's menus; the condition is named by its holder (read.holder) in both modes.
  * Pure.
  */
-export function refusalText(profile, read, v, { maxC = MAX_C } = {}) {
+export function refusalText(profile, read, v, { maxC = MAX_C, condition = 'xcode' } = {}) {
   const p = PROFILES[profile];
+  const tool = condition === 'tool'; // I-233: the thermal tool sets the condition: name it, no Xcode actions
+  const H = read?.holder || 'Xcode'; // who holds the condition the phone reads (readThermal holderName)
   const batt = typeof read?.battC === 'number' ? `, battery ${read.battC} C` : '';
-  const head = `REFUSED profile ${profile} (${p.want}): phone is ${stateWords(read)}${batt}`;
-  const setSerious = `set ${XCODE_PATH} > Serious > Start (leave it on), then run again`;
-  const stop = `stop it: ${XCODE_PATH} > Stop (leave it off), then run again`;
+  const head = `REFUSED profile ${profile} (${tool && profile === 'serious' ? 'Serious, induced by thermal.mjs' : p.want}): phone is ${stateWords(read)}${batt}`;
+  const setSerious = tool ? 'set ours with the thermal tool (the REARM line below)' : `set ${XCODE_PATH} > Serious > Start (leave it on), then run again`;
+  const stop = tool ? 'end it with the thermal tool (the CLEAR line below)' : `stop it: ${XCODE_PATH} > Stop (leave it off), then run again`;
   const cool = 'let the phone cool: node tools/wait.mjs phone-temp --below auto, then run again';
   const cond = read?.condition ?? null;
   let fix = null, what, reason = 'other';
@@ -315,13 +334,15 @@ export function refusalText(profile, read, v, { maxC = MAX_C } = {}) {
     if (profile === 'serious' && cond === 'Serious') {
       reason = 'phone-above-condition';
       if (typeof read.battC === 'number' && read.battC < COOL_C) fix = 'restart-condition';
-      what = `the phone itself reads Critical above the Xcode condition Serious; if the battery is cool (< ${COOL_C} °C), stop the Xcode condition, wait until a re-read shows below Critical (about 2 min), then start Serious again; otherwise wait for it to cool; re-read with node tools/iphone.mjs profile --owner <you>`;
+      what = tool ? `the phone itself reads Critical above the ${H} condition Serious; re-arm with the thermal tool (the REARM line below: clear, plain reads until Nominal/Fair, set serious, settle)`
+        : `the phone itself reads Critical above the ${H} condition Serious; if the battery is cool (< ${COOL_C} °C), stop the ${H} condition, wait until a re-read shows below Critical (about 2 min), then start Serious again; otherwise wait for it to cool; re-read with node tools/iphone.mjs profile --owner <you>`;
     }
-    else if ((cond ?? 'Critical') === 'Critical') { reason = 'condition-critical'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = `the Xcode condition is Critical, above the ceiling; ${profile === 'serious' ? setSerious : stop}`; }
-    else { reason = 'condition-wrong'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = profile === 'serious' ? `the Xcode condition is ${cond}, not Serious, and the phone is Critical, above the ceiling; ${setSerious}` : `an Xcode condition (${cond}) is on and the phone is Critical, above the ceiling; ${stop}`; }
+    else if ((cond ?? 'Critical') === 'Critical') { reason = 'condition-critical'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = `the ${H} condition is Critical, above the ceiling; ${profile === 'serious' ? setSerious : stop}`; }
+    else { reason = 'condition-wrong'; fix = profile === 'serious' ? 'set-serious' : 'stop-condition'; what = profile === 'serious' ? `the ${H} condition is ${cond}, not Serious, and the phone is Critical, above the ceiling; ${setSerious}` : `an ${H} condition (${cond}) is on and the phone is Critical, above the ceiling; ${stop}`; }
   }
   else if (v.code === 3) { reason = 'ceiling'; what = `at the ceiling (Critical or battery >= ${maxC} C); ${cool}`; }
-  else if (profile === 'serious' && (v.code === 2 || v.code === 7)) { reason = 'condition-missing'; fix = 'set-serious'; what = setSerious; }
+  else if (profile === 'serious' && (v.code === 2 || v.code === 7)) { reason = 'condition-missing'; fix = 'set-serious'; what = tool ? `no condition on: ${setSerious}` : setSerious; }
+  else if (v.code === 0 && tool && profile === 'serious') { reason = 'condition-not-ours'; what = `the Serious condition is held by ${H}, not by our thermal.mjs set: take it over with the thermal tool (the REARM line below)`; } // I-233
   else if (profile === 'fair' && v.code === 4) { reason = 'condition-on'; fix = 'stop-condition'; what = stop; }
   else if (profile === 'fair' && v.code === 5) { reason = 'too-hot'; what = `too hot for the fair profile; ${cool}`; }
   else what = v.why || `gate code ${v.code}`;
@@ -407,8 +428,10 @@ export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read =
   if (old && !force && old.start?.code === 0 && !old.end) return handle(old, { cached: true });
   const r = await read();
   const v = profileVerdict(profile, r);
-  if (v.code !== 0) {
-    const t = refusalText(profile, r, v);
+  // I-233: in tool mode the Serious condition must be ours (P-158 03:07Z ran a tool-serious block on Xcode's condition)
+  const notOurs = condition === 'tool' && profile === 'serious' && v.code === 0 && r.holder !== 'thermal.mjs';
+  if (v.code !== 0 || notOurs) {
+    const t = refusalText(profile, r, v, { condition });
     let msg = t.line;
     if (condition === 'tool') { const h = toolHint(profile, t, owner); if (h) msg += `\n${h}`; } // I-225: no Xcode step
     else if (t.fix && postStep) {

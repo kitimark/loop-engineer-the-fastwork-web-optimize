@@ -20,17 +20,20 @@
 //                            the condition by itself.
 //                            Use it in the background: `node tools/thermal.mjs set serious > <log> &`, then
 //                            `node tools/wait.mjs file <log> --match '^SET' --pid $!`, measure, `kill $!`.
-//   clear                    stops our running `set` (SIGTERM), then disableActiveCondition on a new connection:
-//                            CLEARED, or NONE when nothing was active (a condition Xcode holds may be cleared too)
+//   clear                    stops our running `set` (SIGTERM), then disableActiveCondition on a new connection and a
+//                            re-read of the list: CLEARED, or NONE when nothing is active. I-233: a condition another
+//                            client holds (Xcode) survived disableActiveCondition (the device answered an error, OBSERVED
+//                            10-07); clear then prints `ACTIVE <group> <profile> held by another client …`, takes it
+//                            over (enables the same profile on its own connection, which replaces it) and disables that:
+//                            CLEARED … (taken over …), or still ACTIVE: exit 4
 // Options: --owner <you> (outside `lock.mjs run iphone`), --timeout S (per call; set's enable waits up to 120 s).
 // Exit: 0 ok; 1 error or refusal (no phone hold, no tunnel, RSD refused, device error); 2 usage; 3 set lost its
-// connection while holding (the condition ended early). The tunnel address, ports and device ids are never printed,
+// connection while holding (the condition ended early); 4 clear left a condition another client holds ACTIVE (I-233). The tunnel address, ports and device ids are never printed,
 // logged or stored (messages say <tunnel>); errors are redacted.
 // Seams (tests): $FW_NETSTAT + $FW_THERMAL_LOOPBACK=1 (tests/fixtures/fake-coredevice.mjs), $FW_STATE_DIR (holder
 // file thermal/holder.json).
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { exitOnHelp } from './lib/help.mjs';
 import { sharedStateDir } from './lib/paths.mjs';
 import { readJson } from './lib/store.mjs';
@@ -39,6 +42,7 @@ import { connectService } from './lib/rsd.mjs';
 import { DtxConnection } from './lib/dtx.mjs';
 import { ConditionInducer, SERVICE, activeOf, resolveProfile, ENABLE_TIMEOUT_MS } from './lib/condition-inducer.mjs';
 import { redact } from './lib/redact.mjs';
+import { holderFile, liveHolder } from './lib/thermal-holder.mjs'; // I-233: shared with the phone's thermal reads
 
 exitOnHelp(import.meta.url);
 
@@ -48,22 +52,12 @@ const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.star
 const flag = (n) => argv.includes(`--${n}`);
 const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
 const env = process.env;
-const holderFile = () => join(sharedStateDir(), 'thermal', 'holder.json');
 const dropHolder = () => { if (readJson(holderFile())?.pid === process.pid) rmSync(holderFile(), { force: true }); };
 
 class Usage extends Error {}
 const say = (s) => process.stdout.write(`${s}\n`);
 const num = (n, v) => { const x = Number(v); if (!Number.isFinite(x) || x <= 0) throw new Usage(`--${n} must be a positive number of seconds (got ${v})`); return x; };
 const callMs = () => (opt('timeout') !== undefined ? num('timeout', opt('timeout')) * 1000 : 30000);
-
-/** our running `set` (holder file whose pid is alive and is a thermal.mjs), or null */
-function liveHolder() {
-  const h = readJson(holderFile());
-  if (!h?.pid) return null;
-  try { process.kill(h.pid, 0); } catch { return null; }
-  try { if (!/thermal\.mjs/.test(execFileSync('ps', ['-o', 'args=', '-p', String(h.pid)]).toString())) return null; } catch { return null; }
-  return h;
-}
 
 const DTSERVICEHUB = 'com.apple.instruments.dtservicehub';
 
@@ -120,8 +114,21 @@ async function main() {
     }
     if (cmd === 'clear') {
       const r = await ci.disable({ timeoutMs: callMs() });
-      say(r === 'cleared' ? 'CLEARED the active condition' : 'NONE no active condition');
-      return 0;
+      // I-233: disableActiveCondition answered an NSError (NONE) while status showed Xcode's condition ACTIVE (10-07 03:09Z,
+      // OBSERVED): the device seems to disable only a condition this connection set. So re-read the list: still active =
+      // held by another client; take it over (enable the same profile on our connection: a set replaces the other client's
+      // condition, I-199 stage 3) and disable ours (ending ours leaves none, stage 3), then check again.
+      const still = activeOf(await ci.list({ timeoutMs: callMs() }));
+      if (!still) { say(r === 'cleared' ? 'CLEARED the active condition' : 'NONE no active condition'); return 0; }
+      say(`ACTIVE ${still.group} ${still.profile} held by another client (e.g. Xcode): disableActiveCondition ${r === 'cleared' ? 'answered true' : `answered an error (${redact(ci.noneWhy || 'no text')})`} and it is still on; taking it over to end it (I-233)`);
+      try {
+        await ci.enable(still, { timeoutMs: opt('timeout') !== undefined ? callMs() : ENABLE_TIMEOUT_MS });
+        await ci.disable({ timeoutMs: callMs() });
+      } catch (e) { say(`TAKEOVER-FAILED ${redact(e.message)}`); }
+      const left = activeOf(await ci.list({ timeoutMs: callMs() }));
+      if (!left) { say(`CLEARED ${still.group} ${still.profile} (taken over from another client, then disabled)`); return 0; }
+      say(`ACTIVE ${left.group} ${left.profile} held by another client: clear could not end it; stop it where it was started (Xcode > Devices and Simulators > Device Conditions > Stop)`);
+      return 4;
     }
     // set
     const groups = await ci.list({ timeoutMs: callMs() });

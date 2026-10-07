@@ -120,9 +120,12 @@
 // the line `REARM the thermal tool fixes it (no user step): node tools/iphone.mjs rearm --owner <you> ...`, a fair one
 // `CLEAR ... node tools/thermal.mjs clear`. --condition on `profile`; $FW_PHONE_CONDITION=tool sets it for every gate of a
 // process (run, scroll, record, gesture). Never mix the two in one block: thermal.mjs set replaces Xcode's condition and
-// its clear leaves none (I-199 stage 3).
+// its clear leaves none (I-199 stage 3). I-233: a read under a condition names its holder (`induced by thermal.mjs` when
+// our live `thermal.mjs set` holds it, holder file; else `induced by Xcode`), and in tool mode a Serious read whose
+// condition is not ours refuses too (reason condition-not-ours, code 0, the REARM line).
 //   node tools/iphone.mjs rearm --owner <topic> [--settle 120] [--max-wait 600]   # in your phone hold (tools/lib/thermal-rearm.mjs)
-//        # the probed re-arm with the tool: one read (a phone that fits: REARM NOT-NEEDED, exit 0, nothing touched);
+//        # the probed re-arm with the tool: one read (a phone that fits under OUR condition: REARM NOT-NEEDED, exit 0,
+//        # nothing touched; under another client's, e.g. Xcode's: REARM TAKEOVER, then set, settle and read, I-233);
 //        # thermal.mjs clear; the plain state (Nominal or Fair, induced No) read at most once a minute for up to
 //        # --max-wait s (REARM PROBE n lines; none: REARM TIMEOUT, exit 13, nothing set); only then thermal.mjs set serious,
 //        # detached: it HOLDS the condition after rearm exits (the block runner ends it: node tools/thermal.mjs clear);

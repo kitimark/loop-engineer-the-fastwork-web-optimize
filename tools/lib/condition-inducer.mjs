@@ -66,13 +66,17 @@ export class ConditionInducer {
     const r = await this.conn.call(this.code, 'enableConditionWithIdentifier:profileIdentifier:', [{ type: AUX.OBJECT, value: group }, { type: AUX.OBJECT, value: profile }], { timeoutMs });
     if (r !== true) throw new Error(`enable ${group}/${profile} refused: ${isNSError(r) ? errorText(r) : JSON.stringify(r)}`);
   }
-  /** 'cleared' (a condition was on), or 'none' (the device answered with an NSError: nothing active). */
+  /** 'cleared' (a condition was on), or 'none' (the device answered with an NSError). I-233: an NSError does NOT prove that
+   *  nothing is active: on our phone it came while `list` showed Xcode's condition ACTIVE (10-07 03:09Z, OBSERVED; the
+   *  service seems to disable only a condition this connection set); the error's text is kept in `this.noneWhy`, and
+   *  callers re-read `list` to tell "none" from "held by another client" (thermal.mjs clear). */
   async disable({ timeoutMs = 30000 } = {}) {
     await this.open();
     let r;
-    try { r = await this.conn.call(this.code, 'disableActiveCondition', [], { timeoutMs }); } catch (e) { if (e.nserror) return 'none'; throw e; }
+    this.noneWhy = null;
+    try { r = await this.conn.call(this.code, 'disableActiveCondition', [], { timeoutMs }); } catch (e) { if (e.nserror) { this.noneWhy = e.message; return 'none'; } throw e; }
     if (r === true) return 'cleared';
-    if (isNSError(r)) return 'none';
+    if (isNSError(r)) { this.noneWhy = errorText(r); return 'none'; }
     throw new Error(`disableActiveCondition: unexpected reply ${JSON.stringify(r)?.slice(0, 200)}`);
   }
 }

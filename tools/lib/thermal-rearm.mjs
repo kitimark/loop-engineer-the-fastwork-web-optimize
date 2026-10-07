@@ -3,7 +3,10 @@
 // I-201) stayed Critical after two blind stop+start re-arms (C-095, C-097); on 10-07 a stop, plain reads (Critical 0 min,
 // Serious 1 min, Nominal 2 min at 34 C) and only then a new Serious start cleared it (C-098/C-099; OBSERVED, one episode,
 // cause unknown: the real state lags after a real ceiling and outranks the induced condition). `iphone.mjs rearm` runs it:
-//   0. one read (the serious profile); a phone that already fits is left alone (NOT-NEEDED, exit 0)
+//   0. one read (the serious profile); a phone that already fits under OUR condition (a live thermal.mjs set, holder
+//      file, lib/thermal-holder.mjs) is left alone (NOT-NEEDED, exit 0). I-233: one that fits under another client's
+//      condition (Xcode left on; P-158 03:07Z) is taken over: TAKEOVER, then steps 3-4 (set replaces it, I-199 stage
+//      3), no clear and no probe; it ends CLEARED (outcome took-over) like the full sequence
 //   1. `thermal.mjs clear` (stops our running `set`, disables the active condition, Xcode's included)
 //   2. the plain state (the fair profile's verdict: Nominal or Fair, induced No) at most once a minute, from the clear on,
 //      for up to 10 min (--max-wait); no clear read: TIMEOUT, exit 13, nothing set
@@ -67,7 +70,7 @@ export async function thermalSet({ owner, env = process.env, waitMs = SET_WAIT_M
 }
 
 /**
- * The re-arm sequence (header). Returns {outcome: not-needed|cleared|still-critical|misfit|timeout|error, code, reads,
+ * The re-arm sequence (header). Returns {outcome: not-needed|took-over|cleared|still-critical|misfit|timeout|error, code, reads,
  * set}. Seams: read, clear, set, sleep, now (tests: fake phone and clock). Never posts a console step.
  */
 export async function rearm({ owner, hold = null, read = () => readThermal(), clear = () => thermalClear({ owner }), set = () => thermalSet({ owner }),
@@ -81,32 +84,38 @@ export async function rearm({ owner, hold = null, read = () => readThermal(), cl
   reads.push(r0);
   const v0 = profileVerdict('serious', r0);
   if (v0.code === 1) return done('error', 1, `REARM ERROR: could not read the thermal state (${v0.why}); nothing cleared or set`);
-  if (v0.code === 0) {
+  // I-233: Serious under a condition that is not ours (Xcode left on; P-158 03:07Z) is no NOT-NEEDED in a tool block:
+  // take it over (set replaces it, I-199 stage 3); the phone already reads Serious, so no clear and no probe
+  const takeover = v0.code === 0 && r0.holder !== 'thermal.mjs';
+  if (v0.code === 0 && !takeover) {
     await gate(r0);
-    return done('not-needed', 0, `REARM NOT-NEEDED: phone is ${words(r0)} fits the serious profile; nothing cleared or set`);
+    return done('not-needed', 0, `REARM NOT-NEEDED: phone is ${words(r0)} fits the serious profile and the condition is ours; nothing cleared or set`);
   }
-  const t = refusalText('serious', r0, v0);
-  log(`REARM start: phone is ${words(r0)} (gate ${v0.profile} code ${v0.code}, reason ${t.reason}); clearing the condition, then reading the plain state once a minute for up to ${Math.round(maxWaitMs / 60000)} min (I-225)`);
+  if (takeover) log(`REARM TAKEOVER: phone is ${words(r0)}, but the condition is not ours (no live thermal.mjs set holds it); setting ours (thermal.mjs set replaces it, I-199 stage 3) (I-233)`);
+  else {
+    const t = refusalText('serious', r0, v0);
+    log(`REARM start: phone is ${words(r0)} (gate ${v0.profile} code ${v0.code}, reason ${t.reason}); clearing the condition, then reading the plain state once a minute for up to ${Math.round(maxWaitMs / 60000)} min (I-225)`);
 
-  try { log(`REARM CLEAR ${(await clear()).line}`); } catch (e) { return done('error', 1, `REARM ERROR: thermal.mjs clear failed: ${e.message}; nothing set`); }
+    try { log(`REARM CLEAR ${(await clear()).line}`); } catch (e) { return done('error', 1, `REARM ERROR: thermal.mjs clear failed: ${e.message}; nothing set`); }
 
-  const t0 = now();
-  let last = null;
-  for (let k = 0; ; k++) {
-    const start = now();
-    const r = await read();
-    reads.push(r);
-    last = r;
-    const v = profileVerdict('fair', r);
-    const n = Math.round((start - t0) / 60000);
-    if (v.code === 0) { log(`REARM PROBE ${k + 1} (${n} min after the clear): phone is ${words(r)}: clear (Nominal or Fair, no condition)`); break; }
-    const why = v.code === 4 ? 'a condition is still on after the clear: induced by Xcode' : v.why;
-    log(`REARM PROBE ${k + 1} (${n} min after the clear): phone is ${words(r)}: not clear yet (${why})`);
-    const next = t0 + (k + 1) * probeEveryMs;
-    if (next - t0 > maxWaitMs) {
-      return done('timeout', EXIT_REARM_TIMEOUT, `REARM TIMEOUT: the phone did not read Nominal or Fair with no condition within ${Math.round(maxWaitMs / 60000)} min of the clear (last: ${words(last)}); nothing set, no condition on; let it cool (node tools/wait.mjs phone-temp --below auto), then run rearm again`);
+    const t0 = now();
+    let last = null;
+    for (let k = 0; ; k++) {
+      const start = now();
+      const r = await read();
+      reads.push(r);
+      last = r;
+      const v = profileVerdict('fair', r);
+      const n = Math.round((start - t0) / 60000);
+      if (v.code === 0) { log(`REARM PROBE ${k + 1} (${n} min after the clear): phone is ${words(r)}: clear (Nominal or Fair, no condition)`); break; }
+      const why = v.code === 4 ? `a condition is still on after the clear, held by ${r.holder || 'another client'}` : v.why;
+      log(`REARM PROBE ${k + 1} (${n} min after the clear): phone is ${words(r)}: not clear yet (${why})`);
+      const next = t0 + (k + 1) * probeEveryMs;
+      if (next - t0 > maxWaitMs) {
+        return done('timeout', EXIT_REARM_TIMEOUT, `REARM TIMEOUT: the phone did not read Nominal or Fair with no condition within ${Math.round(maxWaitMs / 60000)} min of the clear (last: ${words(last)}); nothing set, no condition on; let it cool (node tools/wait.mjs phone-temp --below auto), then run rearm again`);
+      }
+      await sleep(Math.max(0, next - now()));
     }
-    await sleep(Math.max(0, next - now()));
   }
 
   let s;
@@ -119,7 +128,7 @@ export async function rearm({ owner, hold = null, read = () => readThermal(), cl
   reads.push(r);
   try {
     await gate(r);
-    return done('cleared', 0, `REARM CLEARED: phone is ${words(r)}; the condition stays set by thermal.mjs (pid ${s.pid})`, { set: s });
+    return done(takeover ? 'took-over' : 'cleared', 0, `REARM CLEARED: phone is ${words(r)}; the condition stays set by thermal.mjs (pid ${s.pid})`, { set: s });
   } catch (e) {
     if (!(e instanceof ProfileRefusal)) throw e;
     const line = e.message.split('\n')[0];

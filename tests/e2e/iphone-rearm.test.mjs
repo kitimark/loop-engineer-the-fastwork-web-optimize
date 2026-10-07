@@ -53,7 +53,7 @@ test('I-225 rearm: Xcode\'s Serious on, the phone Critical above it: clear, plai
   assert.match(r.stdout, /^REARM CLEAR CLEARED the active condition$/m);
   assert.match(r.stdout, /^REARM PROBE 3 \(0 min after the clear\): phone is Nominal, battery 34\.19 C: clear/m);
   assert.match(r.stdout, /^REARM SET SET ThermalCondition ThermalSerious .*\(thermal\.mjs set pid (\d+), log .*set-user-rearm-test\.log; it holds the condition until node tools\/thermal\.mjs clear --owner user-rearm-test\)$/m);
-  assert.match(r.stdout, /^REARM CLEARED: phone is Serious \(induced by Xcode\), battery 34\.2 C; the condition stays set by thermal\.mjs \(pid \d+\) \(exit 0\)$/m);
+  assert.match(r.stdout, /^REARM CLEARED: phone is Serious \(induced by thermal\.mjs\), battery 34\.2 C; the condition stays set by thermal\.mjs \(pid \d+\) \(exit 0\)$/m); // I-233: the holder named
   assert.equal(reads(), 5);
   // the condition is ours now and held after rearm exited
   assert.deepEqual(active() && [active().group, active().profile], ['ThermalCondition', 'ThermalSerious']);
@@ -116,4 +116,29 @@ test('I-225 profile --condition tool (or FW_PHONE_CONDITION=tool): the misfit re
   r = node(IPHONE, ['profile', '--owner', OWNER], { env, timeout: 30000 });
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, /^STEP C-\d+ posted on the user console/m);
+});
+
+test('I-233 tool mode with Xcode\'s Serious left on (P-158 03:07Z): profile --condition tool refuses (condition-not-ours), rearm takes it over (no NOT-NEEDED) and the condition is ours after; the Xcode mode still passes it', async () => {
+  await device({ FAKE_CD_FOREIGN_DISABLE: 'nserror' });
+  writeFileSync(env.FAKE_CD_STATE, JSON.stringify({ active: { group: 'ThermalCondition', profile: 'ThermalSerious', conn: 'xcode' } }));
+  writeFileSync(env.FAKE_THERMAL_SEQ, 'Serious Yes 34 Serious\n');
+  holdPhone();
+  let r = node(IPHONE, ['profile', '--owner', OWNER], { env, timeout: 30000 });
+  assert.equal(r.code, 0, `the Xcode mode accepts Xcode's condition: ${r.out}`);
+  assert.match(r.stdout, /^PROFILE serious ok .*phone is Serious \(induced by Xcode\)/m);
+  r = node(IPHONE, ['profile', '--owner', OWNER, '--condition', 'tool'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /^REFUSED profile serious \(Serious, induced by thermal\.mjs\): phone is Serious \(induced by Xcode\), battery 34 C; the Serious condition is held by Xcode, not by our thermal\.mjs set: .*\(gate xcode-serious code 0, reason condition-not-ours, I-186\)$/m);
+  assert.match(r.stderr, /^REARM the thermal tool fixes it/m);
+  r = await rearm();
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.stdout, /NOT-NEEDED/);
+  assert.match(r.stdout, /^REARM TAKEOVER: phone is Serious \(induced by Xcode\), battery 34 C, but the condition is not ours/m);
+  assert.match(r.stdout, /^REARM CLEARED: phone is Serious \(induced by thermal\.mjs\), battery 34 C/m);
+  assert.notEqual(active()?.conn, 'xcode');
+  assert.equal(active()?.profile, 'ThermalSerious');
+  // now ours: the tool-mode gate passes and names the holder
+  r = node(IPHONE, ['profile', '--owner', OWNER, '--condition', 'tool'], { env, timeout: 30000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /phone is Serious \(induced by thermal\.mjs\)/);
 });

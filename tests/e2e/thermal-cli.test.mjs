@@ -216,3 +216,29 @@ test('I-199: tunnel and RSD refusals stop with a plain message (exit 1) and neve
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /no capabilities from the device within 2 s/);
 });
+
+test('I-233: a condition another client holds survives disableActiveCondition (the device answers "nothing active"): clear says ACTIVE held by another client, takes it over and ends it; if that fails too, exit 4 and still ACTIVE', async () => {
+  const ports = await device({ FAKE_CD_FOREIGN_DISABLE: 'nserror' });
+  holdPhone();
+  const { writeFileSync } = await import('node:fs');
+  const xcodeOn = () => writeFileSync(env.FAKE_CD_STATE, JSON.stringify({ active: { group: 'ThermalCondition', profile: 'ThermalSerious', conn: 'xcode' } }));
+  xcodeOn();
+  let r = await nodeAsync(THERMAL, ['clear', '--owner', OWNER], { env });
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.stdout, /^NONE/m, 'never NONE while the list shows it ACTIVE (P-158 03:09Z)');
+  assert.match(r.stdout, /^ACTIVE ThermalCondition ThermalSerious held by another client \(e\.g\. Xcode\): disableActiveCondition answered an error \(.*No active condition.*\) and it is still on; taking it over to end it \(I-233\)$/m);
+  assert.match(r.stdout, /^CLEARED ThermalCondition ThermalSerious \(taken over from another client, then disabled\)$/m);
+  assert.equal(active(), null);
+  const sel = events().filter((e) => e.ev === 'call' && /^(enable|disable|available)/.test(e.selector)).map((e) => e.selector);
+  assert.deepEqual(sel, ['disableActiveCondition', 'availableConditionInducers', 'enableConditionWithIdentifier:profileIdentifier:', 'disableActiveCondition', 'availableConditionInducers'], 'disable, re-read, take over, disable, re-read');
+  clean(r.out, ports);
+  // the takeover's enable is refused too: still ACTIVE, exit 4, the line says where to stop it
+  await dev.stop();
+  await device({ FAKE_CD_ENABLE_ERROR: '1' });
+  xcodeOn();
+  r = await nodeAsync(THERMAL, ['clear', '--owner', OWNER], { env });
+  assert.equal(r.code, 4, r.out);
+  assert.match(r.stdout, /^TAKEOVER-FAILED /m);
+  assert.match(r.stdout, /^ACTIVE ThermalCondition ThermalSerious held by another client: clear could not end it; stop it where it was started \(Xcode > Devices and Simulators > Device Conditions > Stop\)$/m);
+  assert.equal(active()?.conn, 'xcode');
+});

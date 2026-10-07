@@ -16,7 +16,8 @@
 // $FAKE_CD_KEEP_ON_CLOSE=1. Faults: $FAKE_CD_RSD_REJECT=1 (RSD answers with GOAWAY and closes), $FAKE_CD_NO_HUB=1 (the
 // catalogue lacks DTServiceHub), $FAKE_CD_NO_CAPS=1 (the hub never answers the handshake), $FAKE_CD_ENABLE_ERROR=1
 // (enable -> NSError reply), $FAKE_CD_DROP_MS=N (the hub closes a connection N ms after it enabled a condition),
-// $FAKE_CD_DISABLE_HANG=1.
+// $FAKE_CD_DISABLE_HANG=1, $FAKE_CD_FOREIGN_DISABLE=nserror (I-233: a disable from a connection that did not set the
+// active condition gets the "No active condition" NSError and leaves it on).
 import { createServer } from 'node:net';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { DtxDecoder, encodeMessage, TYPE, AUX, HEADER, PAYLOAD_HEADER } from '../../tools/lib/dtx.mjs';
@@ -74,7 +75,10 @@ function serveHub(sock, connId) {
       } else if (channels.get(h.channel) === SERVICE && sel === 'disableActiveCondition') {
         if (env.FAKE_CD_DISABLE_HANG === '1') continue;
         const s = readState();
-        if (s.active) { writeState({ active: null }); reply(h, { value: true }); } else reply(h, { value: nsError(2, 'No active condition') });
+        // I-233: like our phone on 10-07 03:09Z (OBSERVED), $FAKE_CD_FOREIGN_DISABLE=nserror answers a disable from a
+        // connection that did not set the active condition (Xcode's) with the "nothing active" NSError and leaves it on
+        if (s.active && env.FAKE_CD_FOREIGN_DISABLE === 'nserror' && s.active.conn !== connId) reply(h, { value: nsError(2, 'No active condition') });
+        else if (s.active) { writeState({ active: null }); reply(h, { value: true }); } else reply(h, { value: nsError(2, 'No active condition') });
       } else if (h.expectsReply) reply(h, { type: TYPE.ERROR, value: nsError(99, `unknown selector ${sel}`) });
     }
   });
