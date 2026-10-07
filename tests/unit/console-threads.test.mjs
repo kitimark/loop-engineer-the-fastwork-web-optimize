@@ -7,14 +7,35 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
-import { readFileSync, existsSync, writeFileSync, readdirSync, truncateSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, readdirSync, truncateSync, utimesSync } from 'node:fs';
 import { tempDir, TOOLS } from '../helpers.mjs';
 import { checkMarkdown } from './md-cases.mjs';
 import { ARTIFACT_OK, ARTIFACT_BAD } from './artifact-cases.mjs';
 
 const T = await import('../../tools/lib/console-threads.mjs');
 let state;
-beforeEach(() => { state = tempDir('fw-threads-'); process.env.FW_STATE_DIR = state; });
+// $FW_WDA_HOME: no runner config unless a test writes one (fixture names only, never the real device's)
+beforeEach(() => { state = tempDir('fw-threads-'); process.env.FW_STATE_DIR = state; process.env.FW_WDA_HOME = state; });
+
+test('agent text is scrubbed with the wda config\'s known device name and udid, in any letter case; no config, no error (I-228 review)', async () => {
+  const text = "Check kanya's iphone, udid 000081300011223344556677"; // the known udid without its dash: no id shape
+  assert.equal(T.scrubAgentText(text).text, text, 'no wda config: only the patterns run, quietly');
+  const wda = tempDir('fw-wdahome-');
+  process.env.FW_WDA_HOME = wda;
+  writeFileSync(join(wda, 'config.json'), JSON.stringify({ deviceName: "Kanya's iPhone", udid: '00008130-0011223344556677' }));
+  const s = T.scrubAgentText(text);
+  assert.equal(s.text, 'Check <device-name>, udid <udid>');
+  assert.deepEqual(s.scrubbed, ['device id']);
+  // a thread reply carrying the known name in lower case is stored scrubbed; a version token's iPhone stays
+  const n = await T.createThread({ by: 'lead', title: 'Phone', text: 'first' });
+  await T.replyAgent(n.thread.id, { by: 'lead', text: "- Next: v11's iPhone no-worse check on kanya's iphone (00008130-0011223344556677)" });
+  assert.equal(T.getThread(n.thread.id).messages[1].text, "- Next: v11's iPhone no-worse check on <device-name> (<device id>)");
+  // the config is cached, and read again when it changes: a free-form name the user chose, replaced as written
+  writeFileSync(join(wda, 'config.json'), JSON.stringify({ deviceName: 'Kitchen Phone 7' }));
+  const later = new Date(Date.now() + 5000);
+  utimesSync(join(wda, 'config.json'), later, later);
+  assert.equal(T.scrubAgentText('Kitchen Phone 7 is warm').text, '<device-name> is warm');
+});
 
 const userThread = (title = 'Why is the hero janky?', text = 'On the phone the hero stutters.\nSee 192.168.77.12 please') =>
   T.createThread({ title, text, fromPage: true }).then((r) => r.thread);

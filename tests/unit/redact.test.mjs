@@ -94,3 +94,18 @@ test('redact: "<Name>\'s iPhone" is a device name, a build or version token\'s i
   // xcodebuild's destination list keeps its own "name:" rule
   assert.equal(redact('{ platform:iOS, id:x, name:Test Person’s iPhone }'), '{ platform:iOS, id:x, name:<device> }');
 });
+
+test('redact: an all-caps owner name counts again, build tokens stay; a known "<Owner>\'s iPhone" name is caught in any letter case (I-228 review)', () => {
+  // the pattern layer: an all-caps name of 2+ letters with no digits, and the device word in any letter case
+  for (const [s, want] of [
+    ["MARK'S IPHONE is warm", '<device-name> is warm'],
+    ['TEST PERSON’S IPHONE is busy', '<device-name> is busy'],
+    ["on Mark's iphone today", 'on <device-name> today'],
+  ]) assert.equal(redact(s), want, s);
+  for (const s of ["V13'S IPHONE run", "P1'S IPHONE part", "H1C'S IPHONE check", "VC'S IPHONE run", "C'S IPHONE run", "v11's iPhone no-worse check"]) assert.equal(redact(s), s, s);
+  // the known layer (wda config): an "<Owner>'s iPhone" name is unambiguous, so it is replaced in any letter case and
+  // on any of the owner's devices; a free-form name stays case-sensitive (above: "kitchen phone 7" in prose stays)
+  const known = { deviceName: "Kanya's iPhone" };
+  assert.equal(redact("on kanya's iphone today, then kanya’s mac and KANYA'S IPAD", known), 'on <device-name> today, then <device-name> and <device-name>');
+  assert.equal(redact("kanya's iphone", {}), "kanya's iphone", 'without the known name a lower-case owner reads as prose');
+});

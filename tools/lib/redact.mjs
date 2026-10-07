@@ -5,8 +5,8 @@
 // xcodebuild needs them, and they are read there, not printed.
 //
 // Two layers: the values we know (config.json: team, UDID, runner bundle id matched case-insensitively, also
-// the team inside a lower-cased bundle id; the device name case-sensitively, and not at all when it is a
-// generic model name like "iPhone") and shapes that are ids whatever their value, as xcodebuild and WDA print them:
+// the team inside a lower-cased bundle id; the device name case-sensitively, an "<Owner>'s iPhone" name's owner
+// possessive in any case, and not at all when it is a generic model name like "iPhone") and shapes that are ids whatever their value, as xcodebuild and WDA print them:
 //   UDID (00008130-001234567890ABCD; 40-hex legacy), CoreDevice/any UUID, a *.WebDriverAgentRunner bundle id,
 //   a 10-character team id (upper-case letters and digits, both present), "name:<device>" in xcodebuild
 //   destination lists, "<Someone>'s iPhone/iPad", an e-mail address (Apple Account), the person's name in a
@@ -15,9 +15,13 @@
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// a person's name word: "Mark", "Anna-Lena", "O'Brien", or a caseless script ("ส้มโอ"); not a digit-bearing token
-// (v11, H1c, V13), a single letter (C, B) or V plus one letter (Vc), the study's build names (I-228)
-const NAME_WORD = "(?:(?:\\p{Lu}['’])?(?!V\\p{Ll}['’]s )\\p{Lu}\\p{Ll}[\\p{L}\\p{M}-]*|\\p{Lo}[\\p{Lo}\\p{M}]*)";
+// a person's name word: "Mark", "Anna-Lena", "O'Brien", all caps of 2+ letters ("MARK"), or a caseless script
+// ("ส้มโอ"); not a digit-bearing token (v11, H1c, V13, P1), a single letter (C, B) or V plus one letter (Vc, VC),
+// the study's build names (I-228)
+const NAME_WORD = "(?:(?!V\\p{L}['’][sS] )(?:\\p{Lu}['’])?(?:\\p{Lu}\\p{Ll}[\\p{L}\\p{M}-]*|\\p{Lu}[\\p{Lu}\\p{M}-]+)|\\p{Lo}[\\p{Lo}\\p{M}]*)";
+// the device word after the possessive, in any letter case ("iPhone", "IPHONE", "iphone")
+const DEVICE_WORD = '(?:[iI][pP](?:[hH][oO][nN][eE]|[aA][dD]|[oO][dD])|[mM][aA][cC](?:[bB][oO][oO][kK])?)';
+const OWNER_DEVICE = /^(.+?)['’]s (?:iPhone|iPad|iPod|MacBook|Mac)\b/;
 
 export const PATTERNS = [
   // labelled hardware ids (ideviceinfo, xcodebuild/devicectl dumps): ECID / UniqueChipID, serial number (review-gesture-2)
@@ -33,7 +37,7 @@ export const PATTERNS = [
   // "<Name>'s iPhone" (I-228, I-139): one or two name words, each capitalised (a cased script) or caseless (Thai);
   // a build or version token (v11, C, Vc, H1c, P1) or lower-case prose ("phone test's Mac") is no name, and only
   // the name is replaced: the words after "iPhone" stay
-  [new RegExp(`(?<![\\p{L}\\p{N}_.'’-])(?:${NAME_WORD} )?${NAME_WORD}['’]s (?:iPhone|iPad|iPod|MacBook|Mac)\\b`, 'gu'), '<device-name>'],
+  [new RegExp(`(?<![\\p{L}\\p{N}_.'’-])(?:${NAME_WORD} )?${NAME_WORD}['’][sS] ${DEVICE_WORD}\\b`, 'gu'), '<device-name>'],
   [/\b(?=[A-Z0-9]{10}\b)(?=[A-Z0-9]*[0-9])(?=[A-Z0-9]*[A-Z])[A-Z0-9]{10}\b/g, '<team>'],
   // an unlabelled Apple serial number (11-12 upper-case letters and digits, both present)
   [/\b(?=[A-Z0-9]{11,12}\b)(?=[A-Z0-9]*[0-9])(?=[A-Z0-9]*[A-Z])[A-Z0-9]{11,12}\b/g, '<serial>'],
@@ -53,6 +57,10 @@ export function redact(text, known = {}) {
   // ids: case-insensitively (a lower-cased team inside a bundle id); the device name, free text the user chose:
   // case-sensitively and only when it is not a generic model name (review-gesture-2)
   const name = known.deviceName && !GENERIC_DEVICE_NAME.test(String(known.deviceName).trim()) ? known.deviceName : null;
+  // an "<Owner>'s iPhone" name is unambiguous: that owner's possessive before any device word, in any letter case
+  // ("kanya's iphone", "KANYA'S MAC"; I-228 review)
+  const owner = name && OWNER_DEVICE.exec(String(name).trim())?.[1];
+  if (owner && owner.length >= 2) s = s.replace(new RegExp(`(?<![\\p{L}\\p{N}_])${esc(owner)}['’]s (?:iPhone|iPad|iPod|MacBook|Mac)\\b`, 'giu'), '<device-name>');
   const pairs = [[known.bundleId, '<runner-bundle-id>', 'gi'], [name, '<device-name>', 'g'], [known.udid, '<udid>', 'gi'], [known.team, '<team>', 'gi']];
   for (const [v, ph, fl] of pairs) if (v && String(v).length >= 4) s = s.replace(new RegExp(esc(v), fl), ph);
   if (known.udid) s = s.replace(new RegExp(esc(String(known.udid).replace(/-/g, '')), 'gi'), '<udid>');

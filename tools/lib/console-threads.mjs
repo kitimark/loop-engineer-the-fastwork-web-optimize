@@ -42,8 +42,9 @@
 //   with the same topic or a close title (finding.mjs titleSimilar) is returned as {similar, why}, nothing stored.
 // Who writes (lead decision 2026-10-02): the lead starts threads (`thread new`, optionally --to <agent>) and may
 // always reply; other agents reply only in threads assigned to them ("ask the lead to assign you").
-import { mkdirSync, copyFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdirSync, copyFileSync, writeFileSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
+import { homedir } from 'node:os';
 import { withGuard } from './lock.mjs';
 import { writeJson, readJson, readAll, nextId, idParser, iso } from './store.mjs';
 import { consoleDir, recipients } from './console.mjs';
@@ -127,6 +128,24 @@ export function lanLinks(text, resolve = () => lanAddress()) {
 }
 
 /**
+ * The phone's known name and udid from the WDA runner config ($FW_WDA_HOME or ~/.cache/fw-wda/config.json, the same
+ * file wda-runner.mjs readConfig uses), so redact() catches the real name in any letter case, as the iPhone tools do
+ * (I-228 review). Read once and cached per path and mtime; no file or a bad one: {} (the patterns still run).
+ */
+let knownCache = { key: null, value: {} };
+function knownDevice() {
+  const file = join(process.env.FW_WDA_HOME || join(homedir(), '.cache', 'fw-wda'), 'config.json');
+  let key;
+  try { key = `${file}\u0000${statSync(file).mtimeMs}`; } catch { return {}; }
+  if (knownCache.key !== key) {
+    let value = {};
+    try { const c = JSON.parse(readFileSync(file, 'utf8')); value = { deviceName: c?.deviceName, udid: c?.udid }; } catch { /* unreadable: patterns only */ }
+    knownCache = { key, value };
+  }
+  return knownCache.value;
+}
+
+/**
  * Agent text made safe to store and show: URLs (except localhost ones, http://lan:<port>/ phone links, I-119, and
  * claude.ai artifact links, I-191), IP
  * addresses, .local/.lan hosts, e-mails, device ids and home paths replaced (progress.mjs sanitize, which also runs
@@ -155,7 +174,7 @@ export function scrubAgentText(s) {
     if (n !== t) scrubbed.add(name);
     t = n;
   }
-  const r = redact(t);
+  const r = redact(t, knownDevice());
   if (r !== t) scrubbed.add('device id');
   t = r.replace(/\u0000(\d+)\u0000/g, (_, i) => kept[Number(i)]);
   return { text: t, scrubbed: [...scrubbed] };
