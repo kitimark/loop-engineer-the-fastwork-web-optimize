@@ -4,6 +4,7 @@ description: "the lead finds why the iPhone is idle before the user asks: check 
 type: feedback
 audience: lead
 since: 2026-10-04
+updated: 2026-10-07
 ---
 
 **Rule (user, T-149 #3, 2026-10-04 18:35Z: "Why didn't you find this incident before? I'd expect you could find
@@ -22,3 +23,6 @@ still running after the lease was the holder's, I-165) sat in plain `ps` output.
   from the 3rd one, review them together (cause, minutes lost) and fix the commonest cause (tool, queue order,
   hand-over steps).
 Related: [[user-steps-first]], [[one-phone-step-at-a-time]], [[trace-before-asking]].
+- When you sign a phone ticket or give a "go" that has a precondition (a Simulator dry run, cooling, a pending build),
+  set the owner's row in the same step: `status.mjs set <id> --by lead --phone-next <ticket> --phone-needs "<what>"`.
+  An unmarked row whose next step names the phone raises a false idle alarm (10-07: T-236, T-237).
