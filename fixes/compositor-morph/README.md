@@ -705,3 +705,72 @@ yet).** V becomes the build that would land, so one block covers it:
   The open paints and the rest-closed tail are lower in v12: rev 3's button no longer repaints for its blur, as in the
   PR-032 counts. The close's forced layouts are 2-7 higher, inside the earlier v11 / c2 spread (47-62). Chrome's
   open1 Paint +9.5 ms is one run; Paint is not forced work. OBSERVED, counts only, no timing.
+
+## P-159 results (iPhone 15 Pro Max, G fast-short, tool-serious, Timeline on; 2026-10-07 04:52-05:46Z)
+
+**DECISION FAIL** (`node fixes/compositor-morph/phone-c2/p159-read.mjs out/cmp159/runs`). Prediction (PASS) missed.
+
+Holds:
+- The part's rearm cleared and set our condition (`REARM CLEARED`, holder thermal.mjs, battery 36.8 C).
+- H1-H10 are VALID: warm-ups WC and WV, and every counted run EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4. Every start and
+  end gate read Serious, induced. The battery rose from 36.8 to 41.7 C.
+- **Runner stop (I-240):** the first runner was killed at 05:21Z by Claude Code's 30-min background limit. It was
+  mid-gesture in H7, after H7's start gate passed. That H7 has no VALID line, so its EC3 was not counted. The exit
+  trap did not run; our `thermal.mjs set` (pid 38363) kept the condition.
+- The block resumed from H7 at 05:23Z with the same command and a 2 h timeout (lead OK). There were no extra warm-ups:
+  the gap was about 2 min and the phone was warm. The resumed part's rearm read NOT-NEEDED (the condition was ours).
+- The end sentinel S1 PASSED (55.6 fps, slow 0.028), but H11's end gate read Critical at 42.1 C, so hold H11 is VOID.
+  This is the same as P-158's H10. The counted runs are not affected: their own holds ended VALID.
+- The exit trap then cleared the condition and parked Safari. No `thermal.mjs set` process survives (checked after
+  the block).
+
+| per run | EC1 | EC2 | EC3 | EC4 | EV1 | EV2 | EV3 | EV4 |
+|---|---|---|---|---|---|---|---|---|
+| O1 f2 / f123 ms | 29 / 61 | 23 / 61 | 30 / 63 | 30 / 65 | 39 / 68 | 42 / 70 | 38 / 68 | 38 / 66 |
+| open-0 frames n | 10 | 10 | 11 | 12 | 10 | 11 | 11 | 11 |
+| open-0 median dt ms | 18 | 17 | 19 | 23.5 | 34 | 35 | 36 | 36 |
+| open-0 > 34 / > 30 / > 38 | 0 / 0.2 / 0 | 0.1 / 0.1 / 0.1 | 0.09 / 0.18 / 0 | 0.25 / 0.42 / 0 | 0.4 / 0.6 / 0.2 | 0.55 / 0.55 / 0.18 | 0.64 / 0.64 / 0.09 | 0.64 / 0.73 / 0.18 |
+| open-0 > 50 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| P-158 finger-down 34-50 band | 0 | 0.013 | 0.013 | 0.039 | 0.053 | 0.079 | 0.092 | 0.092 |
+
+| check | C median (range) | v12 median (range) | v12 - C | verdict |
+|---|---|---|---|---|
+| D1 O1.f2 | 29.5 (23-30) | 38.5 (38-42) | +9 | over +4 |
+| D2 open-0 median dt | 18.5 (17-23.5) | 35.5 (34-36) | +17 | over +4 |
+| D3 open-0 share > 34 / > 30 / > 38 | 0.095 / 0.19 / 0 | 0.59 / 0.62 / 0.18 | | worse / worse / open |
+
+- Against v11 (P-158, same program and profile, another block; descriptive only, never pooled):
+  - O1.f2: v11 45.5 (43-48), v12 38.5 (38-42), so about 7 ms better.
+  - Open-0 median dt: v11 38 (29-40), v12 35.5 (34-36), about the same.
+  - Open-0 > 34 share: v11 0.61, v12 0.59, the same.
+  - The 34-50 band: v11 0.065-0.092, v12 0.053-0.092, the same.
+  - In short: the first open got cheaper; each open from closed did not.
+- No frame over 50 ms in any open-0 frame of either arm.
+
+**Where the open-0 time goes** (`phone-c2/open0-attr.mjs`, the block's own Timeline; records overlapping each open-0
+frame, clipped; medians):
+
+| | C all (n 43) | v12 all (n 43) | C > 34 (n 5) | v12 > 34 (n 24) |
+|---|---|---|---|---|
+| frame dt | 19 | 35 | 36 | 37 |
+| FunctionCall | 2.1 | 14.2 | 16.8 | 14.7 |
+| Layout inside a FunctionCall | 0.4 | 13.0 | 14.3 | 13.5 |
+| RecalculateStyles | 2.1 | 4.5 | 2.9 | 4.8 |
+| Composite | 7.3 | 13.5 | 15.6 | 16.4 |
+
+- The Layout that makes the frame slow is still synchronous, inside script. In every slow open-0 frame of both arms
+  it sits in the FunctionCall at scriptLine 2705, which is `iE`, the scroll engine's rAF loop that runs the
+  registered callbacks.
+  - v12: 33 frames, mean 15.4 ms. C: 14 frames, mean 19.8 ms.
+- c2 removed the script around it: FunctionCall went from 20.7 ms (v11, P-158) to 14.2 ms, while Layout inside stayed
+  about 13-16 ms. So the `F()` microtask was not the read that forces this layout on WebKit; another read in an `iE`
+  callback is.
+- C pays the same layout on 5 of 43 opens; v12 pays it on 24.
+- Chrome showed no forced layout in c2's open frame (the 421-object layout ran in the rendering step), so this read
+  is WebKit-only or finger-only. OBSERVED, in our setup, cause unknown.
+- Candidates, to be checked with per-frame forced-layout stacks on the open frame (the Simulator's cm-sim gives stacks
+  per phase only):
+  - `_()`'s own hit test when `__nsForce` or an edge crossing is set in the same `iE` pass after the CM write.
+    c2 sets `__nsForce` at once.
+  - `__msTick`'s geometry re-read when innerHeight changes under the finger (the toolbar).
+  - `__cmPrep`'s reads on the open from closed.
