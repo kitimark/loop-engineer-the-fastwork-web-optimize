@@ -1,0 +1,63 @@
+{
+ "topic": "logo-close",
+ "kind": "motion fix on g0.0c (the original page's own snap); no timing measured, by design",
+ "userThread": "T-245",
+ "config": {
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "builds": {
+   "v0": "baseline (site-pretty) JS 4606120cf392 / CSS 27776f3d4138",
+   "v14": "fixes/cm-v14/patch.diff: JS d23ee885d54f / CSS 4fafb83f1e72",
+   "g0.0c": "fixes/platform-corners-g00b/patch.diff: JS 5c39f7a96e41 / CSS c65da97ba01f",
+   "g0.0c + logo-close": "fixes/logo-close-g00c/patch.diff: JS 5c39f7a96e41 / CSS 2a4ab9ec9acc (= g0.0c + delta.diff)"
+  },
+  "chrome": "headless Chrome via tools/lib/cdp.mjs, 430x775 and 430x815 DPR3 mobile+touch, 768x1024 DPR2, 1280x800 DPR1; settable clock (performance.now, rAF timestamp), Date frozen",
+  "simulator": "fw-sim iPhone 15 Pro Max, iOS 26.5, 430x775 at 3x, functional sim.mjs session",
+  "lane": "shared chrome-measure lane, weight probe / simulator; no timing",
+  "tools": "fixes/logo-close/probe/*.mjs (new), fixes/g0-revert/gates/g0px.mjs, g0sim.mjs, g0count.mjs (unchanged); no measurement code changed"
+ },
+ "verdict": "The logo's one-frame snap at the end of the close (and the start of the open) at width <= 640 goes: close flip jump -15.36 px -> -0.13 px, the 120 Hz flip frame -15.38 -> -0.15 px against 0.07-0.09 px for its neighbours (Chrome 430x775/815 and Simulator alike); v0 = g0.0c (the original has the snap); 768/1280 and reduced motion unchanged; outside the logo's band T0 up to the load-to-load floor; Simulator counts within g0.0c's run-to-run range",
+ "cause": {
+  "what": "scale .75 with transform-origin 0 at rest, transform-origin 50% while .is-morphing (m > 0.001); the class flip moves the scaled logo by 0.125 x its width",
+  "where": "g0.0c CSS 12037-12043 (v0 11577-11583); JS .is-morphing = m > 0.001 at g0.0c 14048 (v0 12947)",
+  "status": "CONFIRMED: CSS Transforms 2 'current transformation matrix' (scale applied around transform-origin), https://drafts.csswg.org/css-transforms-2/#ctm; Chrome and WebKit agree to 0.01 px",
+  "history": "v14 had the fix (nav-earn rev 1, fixes/nav-earn/README.md 218-229); g0.0 reverted it with v14's end CSS (research/gpu-original/README.md 2.1)"
+ },
+ "path": {
+  "chrome-430x775": {
+   "v0": { "closeFlipJump": -15.36, "closeFlipFrameDx": -15.38, "closeNeighbourMaxAbsDx": 0.08, "openFlipJump": 15.37, "openFirstFrameDx": 19.53, "openNeighbourMaxAbsDx": 4.2 },
+   "v14": { "note": "morph-scroll, stepped through the spacer", "openFlipJump": 0.33, "closeMaxAbsStep": 0.36 },
+   "g0.0c": { "closeFlipJump": -15.36, "closeFlipFrameDx": -15.38, "closeNeighbourMaxAbsDx": 0.08, "openFlipJump": 15.37, "openFirstFrameDx": 19.53, "openNeighbourMaxAbsDx": 4.2 },
+   "fix": { "closeFlipJump": -0.13, "closeFlipFrameDx": -0.15, "closeNeighbourMaxAbsDx": 0.09, "openFlipJump": 0.14, "openFirstFrameDx": 4.84, "openNeighbourMaxAbsDx": 4.74 }
+  },
+  "chrome-430x815": "same values as 430x775 for v0, g0.0c and the fix",
+  "chrome-768x1024": { "allArms": { "closeFlipJump": -0.27, "closeFlipFrameDx": -0.32, "openFlipJump": 0.29 } },
+  "chrome-1280x800": { "allArms": { "closeFlipJump": -0.39, "closeFlipFrameDx": -0.45, "openFlipJump": 0.31 } },
+  "chrome-430x775-reduce": "g0.0c and fix identical: the logo jumps 32.00 <-> 169.25 px with the morph, no in-between frames",
+  "simulator-430x775": {
+   "v0": { "closeFlipJump": -15.36, "closeFlipFrameDx": -15.38, "openFlipJump": 15.37, "openFirstFrameDx": 19.51 },
+   "v14": { "openFlipJump": 0.63, "closeMaxAbsStep": 0.69 },
+   "g0.0c": { "closeFlipJump": -15.36, "closeFlipFrameDx": -15.38, "openFlipJump": 15.37, "openFirstFrameDx": 19.51 },
+   "fix": { "closeFlipJump": -0.13, "closeFlipFrameDx": -0.15, "openFlipJump": 0.14, "openFirstFrameDx": 4.81 }
+  }
+ },
+ "pixels": {
+  "method": "g0px.mjs / g0sim.mjs end phase (33-51 stops), split by probe/outside-logo.mjs into the logo's band (css y 25-56, x 0-300) and the rest, kept-v14 masks left out",
+  "chrome-430x775": "outside the band: max 1-3 levels at panel stops (same pattern as the A/A g0.0c vs g0.0c); load-phase noise at 3 stops (closed-rest #platform max 14, open-520 / open-done panel picture max 19-140) that moved to other stops in a repeat run with B loaded first; every stop at the A/A floor in at least one run",
+  "chrome-430x815": "outside the band T0 at every stop but 2 px max 1 (rest) and rev-close-520 max 6 (#platform glints)",
+  "chrome-768x1024": "rule does not apply (<= 640 block): an A/A by construction; panel max 1-4, #platform cycler up to 251 (F-336), nav noise max 21-61 at 3 stops",
+  "chrome-1280x800": "rule does not apply: panel max 1-6",
+  "chrome-430x775-reduce": "2483 px max 1 at every stop (load)",
+  "simulator-430x775": "outside the band max 1 at every stop; inside: the new path at in-between stops, equal at m 0 and 1"
+ },
+ "counts": {
+  "method": "g0count.mjs, Simulator Timeline, real clock, per rendering frame, runs A B A",
+  "open": { "g0.0c-1": [0.89, 0.63, 4.91], "fix": [0.81, 0.52, 4.42], "g0.0c-2": [1.21, 0.94, 5.0], "fields": "style, layout, paint per frame" },
+  "close": { "g0.0c-1": [1.34, 1.02, 6.02], "fix": [1.4, 1.02, 5.71], "g0.0c-2": [1.42, 1.02, 5.58] },
+  "restOpen": { "g0.0c-1": 0.44, "fix": 0.43, "g0.0c-2": 0.45 },
+  "restClosed": "0 / 0 / 0 in all runs"
+ },
+ "notes": [
+  "No timing measured (user rule: defer timing). No phone run: the iPhone was unplugged; the Simulator stands in for WebKit's geometry.",
+  "No measurement code changed."
+ ]
+}

@@ -1,0 +1,14 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12038,8 +12038,10 @@
+     transform-origin: 0;
+     scale: 0.75;
+   }
++  /* logo-close (T-245; nav-earn rev 1's rule, which g0.0 reverted with the end CSS): the origin follows the morph, 0 at
++     m 0 as at rest, 50% at m 1 as before, so the scaled logo no longer snaps ~15 px when .is-morphing comes and goes */
+   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+-    transform-origin: 50%;
++    transform-origin: calc(50% * var(--morph));
+   }
+   .start-selling-top-nav-actions.svelte-1dcozpm {
+     gap: 4px;
