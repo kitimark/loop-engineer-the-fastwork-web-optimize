@@ -1310,3 +1310,13 @@ Descriptive (no verdict):
   - +10.6 MB of layers while the page rests within one screen of the end.
 - Still UNRESOLVED (after P-161): later opens from the post-close rest at m 0 rebuild the layers even with pre on
   (Simulator trace). On the phone, D2's open-0 frames are no worse than C.
+
+## v14 from main (the best build since P-161)
+
+`fixes/compositor-morph/v14/` rebuilds v14 (v13a + K6; JS d23ee885d54f, CSS 4fafb83f1e72) from main alone:
+- `v14.diff` is a baseline-relative patch of the two files against site-pretty (`patch -p1`).
+- `HASHES` holds the full sha256 of both files.
+- `sh fixes/compositor-morph/v14/rebuild.sh [<dir>]` copies the baseline's two files into `<dir>` (default
+  out/cm/v14-rebuild), applies the patch, checks HASHES and makes the copy read-only. Serve it with `--overlay <dir>`.
+
+Checked 11:4xZ: the rebuild matches snap163/V byte for byte (both hashes OK).
