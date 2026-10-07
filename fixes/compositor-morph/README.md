@@ -958,3 +958,38 @@ over 4 runs per arm):
 - Open-0 RecalculateStyles: C 1.8, v13 4.1 ms; inside a FunctionCall: C 1.0, v13 2.6 ms (`n()`'s forced pass after the
   inline blur write).
 - That is +2.3 ms, a bit over my +2 ms expectation. No verdict rides on it; c3b #2 targets it.
+
+## c3b-a on v13 (`c3b-a-on-v13.diff`; JS 4175a56193ab, CSS unchanged 9c1067cff473; lead go 08:2xZ)
+
+Four "does less work" items on v13. Each one leaves the page's look and behaviour unchanged, and each has its own gate.
+
+| item | what changes | why it is the same |
+|---|---|---|
+| #2 | `#platform`'s `n()`: where `shrinkOffMq` matches (phones), an IntersectionObserver (root reaching far up, bottom margin -17 %, threshold 1) sets `is-platform-shrinking`. The per-frame `getBoundingClientRect` read goes. The scroll-engine registration stays, because it also drives the section's render deferral; with the observer on, its per-frame callback does nothing | On phones `n()` only uses `a > 0.04`, i.e. card bottom < 0.83 innerHeight. Under fw-ms the card is sticky with its bottom at the viewport bottom (774.6 at innerHeight 775), so the class is constantly off in both builds. The per-frame read computed a constant and forced a style pass after the nav's inline blur write |
+| #5 | `__mkW`: where CM runs (fw-cm, width <= 640, not reduced motion), the six inline `--morph` copies are written only at m 0. A pending value is written if CM stops applying | Under CM the consumers of those copies are overridden (the CM rules and the threshold classes). The one remaining reader, the Join button's base `filter: blur(var(--earn-out) * 10px)`, is overridden under CM except with reduced motion, so reduced motion keeps the writes |
+| #6 | `__msTick`: the 200 ms rest timer and the lift check only within one viewport of the end screen (last frame's geometry) | Further up, the settle acts at e > -0.1 only, so it decided nothing there. Removed: one clearTimeout + setTimeout per scroll frame page-wide, and the timer's geometry read 200 ms after every stop |
+| timer | c3's 300 ms deferred re-measure waits 150 ms more while a finger is down or the page moved in the last 150 ms, near the end screen only | The Simulator caught it once inside an open frame (25 ms forced layout in a TimerFire). Away from the end no open can come next, so it runs as before |
+
+Gates (`gates/c3b/c3b-a-gates.sh chrome|snap|sim`; v13 = out/cm/snap160/V against the frozen out/cm/c3ba, every gate re-run on the frozen build 08:45-08:53Z with the same results; counts and looks only):
+
+| gate | result |
+|---|---|
+| Nav computed style, every element of the nav (233), 17 held m values from -1.2 to 1 and back (`settle-css.mjs`, `settle-read.mjs`), Chrome 775 / 815 / 775 reduced motion, Simulator | Only the unused custom property `--earn-out` on the Join button and its box differs (no computed property that draws changes), plus a 0.001 px translate rounding that the A/A also shows. Reduced motion: 0 differences. Time-driven animations (countdown cells, the panel's column marquee) are set aside, as the A/A shows they move with the clock |
+| `is-platform-shrinking` against the old rule, read fresh, every 40 px over the whole page plus 1 px around each change (`pf-io.mjs`): Chrome 775 / 815, Simulator | 0 mismatches. The class and the rule are off everywhere on phones |
+| Settle behaviour (`settle-snap.mjs`, Chrome 775): where 10 releases from m -0.05 to 0.95 come to rest; 200 ms timers armed in 60 frames far from the end and 60 near it | Rests identical. Timers far 59 -> 0, near 59 = 59 |
+| Deferred re-measure (`timer-open.mjs`, Simulator, 8 open/close stroke pairs; two runs, the second on the frozen build) | v13: 18 / 17 fires, 0 / 0 in an open frame, 5 / 7 in a frame with touchmove/scroll. c3b-a: 11 / 12 fires, 0 / 0 and 0 / 0. (The one fire inside an open frame was seen in an earlier Simulator session, not in these two: the check is the 0 in moving frames, since an open only comes in a moving frame) |
+| Forced work by stack (`open0-sim.mjs`, Simulator, whole session, ms rank only) | `n()` forced style 394 (1091 ms) -> 0, its forced layout 151 -> 0. The pass moves to the next reader, `__msTick`'s geometry read, 14 (20 ms) -> 50 (145 ms), and `__msSettle` 4 -> 28 (24 ms). Total forced style about 1125 -> 177 ms |
+
+A first try of #2 dropped the section's scroll-engine registration with the per-frame read. That also took `#platform` out of the render deferral. The parity gate caught it (`--start-selling-intrinsic-block-size` missing); fixed as above.
+
+### First open (D1): the cost is the open frame's layer build
+
+- Phone (P-160 Timeline, per rendering frame): v13's open frame composites about 20 ms on every open (O1 20.7, a later open 19.8). C's open frame is 17 ms on O1 and about 8 ms on later opens. v13's later opens still beat C (f2 28 vs 32 ms), because C pays its 13 ms re-measure there; O1 has no toolbar step, so v13's composite shows. (The earlier "+6.6 ms Composite" came from clipping records to the frame gaps; per rendering frame O1 is +3.7 ms Composite and +1.8 ms style.)
+- Simulator layer census with a held touch (`out/cm/o1-sim.mjs`, OBSERVED): every v13 open creates 11 composited layers and every close drops them (the 4 corner clippers, the 4 inner boxes, the dark overlay, the logo, the language switch). C creates 1.
+- WebKit source (main 616ee3ad, CONFIRMED): there is no layer pool.
+  - RenderLayer.cpp 5865-5890 (`ensureBacking` / `clearBacking`); RenderLayerBacking.cpp 329-338 and 670-700; GraphicsLayerCA.cpp 441.
+  - The backdrop layer is created and destroyed with the filter at GraphicsLayerCA.cpp 2752-2784.
+  - RemoteLayerTreeContext.mm 113-122 registers new layers, and 204-222 builds the transaction with backing stores for layers that draw.
+  - Each display:contents -> block cycle is a full build (finding F-324).
+- Not the cause: the keyframes are not generated again on the first open (Simulator, text unchanged). The first-open-only DOM work (render culling on `.commission` / `.pain`, the panel's aria-hidden, the Join button's tabindex) is the same in C (`out/cm/o1-mut.mjs`).
+- Next: c3b-K builds the CM layers near the end at a still moment, so the open frame builds nothing (lead's go 08:4xZ, with the gates: look, approach scroll, fewer clippers, hit-test and behaviour, memory, rest layouts).

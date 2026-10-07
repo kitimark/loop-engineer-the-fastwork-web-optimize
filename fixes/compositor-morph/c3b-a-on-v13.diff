@@ -1,0 +1,97 @@
+diff --git a/out/cm/c3/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/c3ba/_app/immutable/nodes/2.DyWL8TcE.js
+index cc6e9044..3b13d242 100644
+--- a/out/cm/c3/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/c3ba/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -13519,11 +13519,33 @@ function GM(n, r) {
+       r = () => {
+         e ||= requestAnimationFrame(n);
+       };
++    // c3b #2: where shrinkOffMq matches only d = (a > 0.04) is used, i.e. the card's bottom above 0.83 innerHeight
++    // (0.85 ih - 0.04 x 0.5 ih). An IntersectionObserver gives that without a per-frame getBoundingClientRect (which
++    // forced a style pass after the nav's inline blur write): the root reaches far up and ends 17 % above the
++    // viewport's bottom, so the card is wholly inside it (ratio 1) exactly when its bottom is at or above that line.
++    // Elsewhere, and without IntersectionObserver, the per-frame read as before. The scroll-engine registration stays
++    // in both cases (it also drives the section's render deferral, deferRendering / element: o); with the observer on,
++    // its per-frame callback does nothing.
++    let io = null,
++      mode = () => {
++        if (shrinkOffMq.matches && window.IntersectionObserver) {
++          e && (cancelAnimationFrame(e), (e = 0));
++          io ||
++            ((io = new IntersectionObserver(
++              (t) => {
++                for (let n of t) z(d, n.intersectionRatio >= 1);
++              },
++              { rootMargin: `100000px 0px -17% 0px`, threshold: [1] },
++            )),
++            io.observe(c));
++        } else (io && (io.disconnect(), (io = null)), r());
++      };
+     n();
+-    let i = dE(r, { deferRendering: !0, element: o });
+-    shrinkOffMq.addEventListener(`change`, r);
++    let i = dE(() => io || r(), { deferRendering: !0, element: o });
++    mode();
++    shrinkOffMq.addEventListener(`change`, mode);
+     return () => {
+-      (e && cancelAnimationFrame(e), i(), shrinkOffMq.removeEventListener(`change`, r));
++      (e && cancelAnimationFrame(e), i(), io && io.disconnect(), shrinkOffMq.removeEventListener(`change`, mode));
+     };
+   });
+   var h = WM();
+@@ -14256,13 +14278,17 @@ function dN(n, r) {
+       __nsEndNear = () => __nsNear(__nsY),
+       // scroll position of the last real hit test: an answer is kept only if it was taken near the end zone
+       __nsTy = -1e9,
+-      __nsDefer = () => {
++      // c3b-a: the re-measure (a whole-page layout) never runs while the page moves near the end screen, where an open
++      // can be the next frame (Simulator: it once fired inside an open frame, 25 ms of forced layout). While a finger is
++      // down or the page moved in the last 150 ms there, it waits 150 ms more; away from the end it runs as before.
++      __nsDefer = (ms = 300) => {
+         ((__nsLate = 1),
+           clearTimeout(__nsSt),
+           (__nsSt = setTimeout(() => {
++            if (__nsEndNear() && (__msTouch || performance.now() - __msT < 150)) return void ((__nsSt = 0), __nsDefer(150));
+             ((__nsSt = 0), (__nsLate = 0), __nsMeasure());
+             __msEnd && (__msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, window.innerHeight]);
+-          }, 300)));
++          }, ms)));
+       },
+       __nsInvalidate = () => {
+         __nsGeo = null;
+@@ -14541,7 +14567,11 @@ function dN(n, r) {
+               : ((__msV = 0), (__msVk = 0)))),
+           (__msY = y),
+           (__msT = now)),
++          // c3b #6: the rest timer and the lift check only within one viewport of the end screen (the last frame's
++          // geometry; none yet: as before). Further up the settle decides nothing (it acts only at e > -0.1), so the
++          // per-frame clearTimeout + setTimeout and the timer's geometry read 200 ms after every stop are skipped there
+           __msTouch ||
++            (__msTick.g && y < __msTick.g[1] - __msTick.g[2] - __msTick.g[0] - __msTick.g[2]) ||
+             (__msArm(),
+             __msLift &&
+               __msVk &&
+@@ -15156,11 +15186,23 @@ function dN(n, r) {
+   // Chrome resolves the same values either way.
+   var __mkP = null,
+     __mkV = null,
++    // c3b #5: where the CM morph runs (html.fw-cm, width <= 640 px) the CM rules draw these six from the view timeline
++    // and the threshold classes, not from --morph, so their inline copy is written only at m 0 (the value the rules
++    // read once CM lets go). A later m is kept and written if CM stops applying (a width change) while it is pending.
++    // Not under prefers-reduced-motion: reduce, where the CM Join-button rules (filter, transition) are off and its base
++    // rule still blurs by --earn-out = --morph / 0.2.
++    __mkCm = window.matchMedia(`(width <= 640px)`),
++    __mkRm = window.matchMedia(`(prefers-reduced-motion: reduce)`),
++    __mkPend = null,
++    __mkOff = (v) => v !== `0` && __mkCm.matches && !__mkRm.matches && document.documentElement.classList.contains(`fw-cm`),
+     __mkW = (v) => {
++      if (__mkOff(v)) return void (__mkPend = v);
++      __mkPend = null;
+       if (v === __mkV) return;
+       __mkV = v;
+       for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
+     };
++  for (let q of [__mkCm, __mkRm]) q.addEventListener(`change`, () => __mkPend !== null && __mkW(__mkPend));
+   // perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1): on phones (<= 640 px), while the morph
+   // moves (0.001 < m < 1), the nav keeps its final size and place (data-fw-rv in the CSS) and the box today's nav
+   // has at m (top 16 -> 12 px, width pill -> panel, height 52 px -> panel, radius 32 -> 20 px) is cut out of it by
