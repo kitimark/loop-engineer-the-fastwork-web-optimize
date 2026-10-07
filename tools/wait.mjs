@@ -31,8 +31,11 @@
 //        # after --timeout (default 600 = the 10 min cap: go on, the sentinel decides); UNAVAILABLE exit 1 when
 //        # no reading comes (no device, no libimobiledevice) or 3 reads in a row fail. I-223: after a failed read it
 //        # asks usbmux (`idevice_id -l`, the WDA config's phone) at once and for --usb-wait s (default 20, 0-120): still
-//        # not listed -> UNAVAILABLE at once, "…: the iPhone is not on USB for usbmux (…); re-plug the cable (phone
-//        # unlocked)"; listed again -> one more read. --below auto (I-047): the
+//        # not listed -> LINK-LOST at once (I-222: exit 5, not UNAVAILABLE: a lost USB link is no cooling failure; the
+//        # runner pauses, waits for the re-plug, `node tools/usblink.mjs status` exit 0, one warm-up per arm, goes on),
+//        # "LINK-LOST phone-temp: usb-lost|unplugged|not-on-usbmux: …: the iPhone is not on USB for usbmux (…); re-plug
+//        # the cable (phone unlocked)" (usb-lost: the Mac's USB bus still has the iPhone, tools/lib/usblink.mjs);
+//        # listed again -> one more read. --below auto (I-047): the
 //        # battery temperature (end of run) of the last passing heat sentinel today minus 0.5 °C, 38 when there
 //        # is none; sentinels are the run records with meta.sentinel.pass true (`iphone.mjs run`) in --runs-dir
 //        # (default out/iphone of this checkout; comma-separated for several); one stderr line names the source.
@@ -54,6 +57,7 @@
 //   TIMEOUT <what> after N s: <last state>        exit 3   (nothing changed for you: wait again or look)
 //   NEVER <what>: <reason> (after N s)            exit 4   (e.g. the --pid process exited without the line)
 //   UNAVAILABLE phone-temp: <reason> (after N s)  exit 1   (no battery reading)
+//   LINK-LOST phone-temp: <link>: <reason> (after N s)  exit 5   (I-222: the iPhone left usbmux; re-plug, then go on)
 //   usage errors                                  exit 1
 import { resolve, join, relative, isAbsolute } from 'node:path';
 import { pollUntil, parseSec, EXIT, fileCondition, serveCondition, urlCondition, pidsCondition, gitCondition, timeCondition, phoneTempCondition, parseBelowC, autoBelowC, fmtC, PHONE_TEMP } from './lib/wait.mjs';
@@ -63,6 +67,7 @@ import { exitOnHelp } from './lib/help.mjs';
 
 exitOnHelp(import.meta.url); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
+const EXIT_LINK_LOST = 5; // phone-temp only (I-222): the iPhone left usbmux, see the header
 const VALUED = ['--match', '--pid', '--timeout', '--status', '--ref', '--contains', '--path', '--grep', '--for', '--below', '--every', '--runs-dir', '--driver', '--owner', '--as', '--reason', '--usb-wait'];
 const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
 const flag = (n) => argv.includes(`--${n}`);
@@ -141,7 +146,8 @@ async function build() {
     const usbWait = opt('usb-wait') !== undefined ? parseSec(opt('usb-wait')) : PHONE_TEMP.usbWaitSec;
     if (!(usbWait >= 0 && usbWait <= 120)) throw new Error(`--usb-wait must be a number of seconds from 0 to 120, got ${opt('usb-wait')}`);
     const { usbList } = await import('./lib/wda-runner.mjs'); // I-223: a failed read asks usbmux (idevice_id -l) for the phone
-    const usbOpts = { usb: () => usbList(), usbWaitMs: usbWait * 1000 };
+    const { ioUsbLinkCause } = await import('./lib/usblink.mjs'); // I-222: off usbmux -> usb-lost (IOUSB still has it) or unplugged
+    const usbOpts = { usb: () => usbList(), usbWaitMs: usbWait * 1000, link: () => ioUsbLinkCause() };
     if (belowC === 'auto') {
       const { REPO } = await import('./lib/paths.mjs');
       const dirs = opt('runs-dir') !== undefined ? String(opt('runs-dir')).split(',').filter(Boolean).map((d) => resolve(d)) : [join(REPO, 'out', 'iphone')];
@@ -177,6 +183,8 @@ async function main() {
   const r = await pollUntil(w.check, { timeoutSec, holdSec, onChange, ...(w.minMs && { minMs: w.minMs }), ...(w.maxMs && { maxMs: w.maxMs }) });
   if (cool) await cool.end();
   if (r.result === 'met') { console.log(`MET ${w.what}: ${r.detail ?? r.state}${holdSec ? ` (held ${holdSec} s)` : ''} (after ${r.waitedSec} s)`); return EXIT.met; }
+  // I-222: the phone left usbmux mid-wait: a lost USB link, not a cooling failure (LINK-LOST, exit 5)
+  if (r.result === 'never' && r.link) { console.log(`LINK-LOST ${w.what}: ${r.link}: ${r.never} (after ${r.waitedSec} s)`); return EXIT_LINK_LOST; }
   if (r.result === 'never') { console.log(`${w.never?.word ?? 'NEVER'} ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return w.never?.exit ?? EXIT.never; }
   console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`);
   return EXIT.timeout;

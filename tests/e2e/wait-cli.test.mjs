@@ -119,11 +119,21 @@ test('wait phone-temp: MET at once when cool, TIMEOUT with the last reading, UNA
   assert.equal(u.code, 1, u.out);
   assert.equal(u.stdout, 'UNAVAILABLE phone-temp: battery temperature unavailable (idevicediagnostics: ENOENT) (after 0 s)\n', 'on usbmux: as before');
 
-  // I-223: the phone is not on usbmux -> UNAVAILABLE (exit 1, as before) after --usb-wait, naming the re-plug; no ids
+  // I-223: the phone is not on usbmux after --usb-wait, naming the re-plug; no ids. I-222 (intended change): that is a
+  // lost USB link, not a cooling failure: LINK-LOST exit 5 (was UNAVAILABLE exit 1), with the link state from IOUSB
+  // ($FW_IOREG: off in tests -> not-on-usbmux; the fake bus with the iPhone -> usb-lost, the 2026-10-07 drop shape)
   const n = node(WAIT, ['phone-temp', '--below', '38', '--usb-wait', '1'], { env: { ...env, FW_WDA_HOME: withCfg, FW_IDEVICE_ID: '/usr/bin/true', FW_IDEVICEDIAGNOSTICS: '/usr/bin/false' } });
-  assert.equal(n.code, 1, n.out);
-  assert.match(n.stdout, /^UNAVAILABLE phone-temp: battery temperature unavailable \(idevicediagnostics exit 1\): the iPhone is not on USB for usbmux \(idevice_id -l lists 0 devices, not this one, for 1 s\); re-plug the cable \(phone unlocked\) \(after [12] s\)\n$/);
+  assert.equal(n.code, 5, n.out);
+  assert.match(n.stdout, /^LINK-LOST phone-temp: not-on-usbmux: battery temperature unavailable \(idevicediagnostics exit 1\): the iPhone is not on USB for usbmux \(idevice_id -l lists 0 devices, not this one, for 1 s\); re-plug the cable \(phone unlocked\) \(after [12] s\)\n$/);
   assert.doesNotMatch(n.out, /00008130/, 'no device ids');
+  const ioFile = join(state, 'ioreg-mode');
+  for (const [mode, link] of [['iphone', 'usb-lost'], ['none', 'unplugged'], ['fail', 'not-on-usbmux']]) {
+    writeFileSync(ioFile, mode);
+    const l = node(WAIT, ['phone-temp', '--below', '38', '--usb-wait', '0'], { env: { ...env, FW_WDA_HOME: withCfg, FW_IDEVICE_ID: '/usr/bin/true', FW_IDEVICEDIAGNOSTICS: '/usr/bin/false', FW_IOREG: join(TESTS, 'fixtures', 'fake-ioreg.mjs'), FAKE_IOREG_FILE: ioFile } });
+    assert.equal(l.code, 5, `${mode}: ${l.out}`);
+    assert.match(l.stdout, new RegExp(`^LINK-LOST phone-temp: ${link}: battery temperature unavailable .*re-plug the cable \\(phone unlocked\\) \\(after \\d+ s\\)\\n$`), mode);
+    assert.doesNotMatch(l.out, /00008130|FAKESERIAL/, 'no device ids or serials');
+  }
   const bad = node(WAIT, ['phone-temp', '--below', '38', '--usb-wait', '999'], { env: { ...env, ...iddEnv } });
   assert.equal(bad.code, 1, bad.out);
   assert.match(bad.stderr, /--usb-wait must be a number of seconds from 0 to 120/);

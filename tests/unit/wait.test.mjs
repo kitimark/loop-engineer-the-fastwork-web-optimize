@@ -388,6 +388,31 @@ test('I-223 phoneTempCondition: a failed read with the iPhone off usbmux ends at
   assert.equal(PHONE_TEMP.usbWaitSec, 20, 'default --usb-wait: the same 20 s as wda ensure (I-220)');
 });
 
+// I-222: a phone off usbmux mid-block is a lost USB link, not a cooling failure: the never result names the link state
+// (`link`), which pollUntil passes on and wait.mjs prints as LINK-LOST (exit 5) instead of UNAVAILABLE (exit 1).
+// link() is usblink's IOUSB read: 'usb-lost' (the Mac's USB bus still has the iPhone), 'unplugged' (no iPhone on it),
+// null (ioreg not readable: 'not-on-usbmux').
+test('I-222 phoneTempCondition: off usbmux -> never with link usb-lost / unplugged / not-on-usbmux; pollUntil passes link on', async () => {
+  for (const [link, want] of [[() => 'usb-lost', 'usb-lost'], [() => 'unplugged', 'unplugged'], [() => null, 'not-on-usbmux'], [undefined, 'not-on-usbmux']]) {
+    const c = clock();
+    const r = await coolPoll(phoneTempCondition(38, { read: fakeBattery([38.4, 'idevicediagnostics exit 1']).read, now: c.now, usb: fakeUsb([false]).usb, usbWaitMs: 4000, usbPollMs: 2000, sleep: c.sleep, ...(link && { link }) }), c);
+    assert.equal(r.result, 'never', want);
+    assert.equal(r.link, want);
+    assert.match(r.never, /not on USB for usbmux .*re-plug the cable \(phone unlocked\)$/, want);
+  }
+  // the other never results carry no link: no first reading with the phone on usbmux, 3 failed reads in a row
+  for (const [seq, usb] of [[['idevicediagnostics: ENOENT'], fakeUsb([true]).usb], [[39, 'gone', 'gone', 'gone'], null]]) {
+    const c = clock();
+    const r = await coolPoll(phoneTempCondition(38, { read: fakeBattery(seq).read, now: c.now, usb, sleep: c.sleep, link: () => 'usb-lost' }), c);
+    assert.equal(r.result, 'never');
+    assert.equal(r.link, undefined, String(seq));
+  }
+  // a throwing link() is no verdict
+  const c = clock();
+  const r = await coolPoll(phoneTempCondition(38, { read: fakeBattery(['x']).read, now: c.now, usb: fakeUsb([false]).usb, usbWaitMs: 0, sleep: c.sleep, link: () => { throw new Error('ioreg'); } }), c);
+  assert.equal(r.link, 'not-on-usbmux');
+});
+
 // ---- phone-temp --below auto (incident I-047): the last passing heat sentinel today minus 0.5 degC, 38 if none -------
 
 /** A run record in `dir` like `iphone.mjs run` writes (meta first, a frame list), file time = its run time. */

@@ -38,7 +38,7 @@ export async function pollUntil(check, { timeoutSec = 3600, holdSec = 0, minMs =
     checks++;
     try { r = await check(); } catch (e) { r = { met: false, state: `check failed: ${e.message || e}` }; }
     if (r.state !== last) { last = r.state; if (onChange) onChange(r.state, waited()); }
-    if (r.never) return { result: 'never', state: r.state, never: r.never, waitedSec: waited(), checks };
+    if (r.never) return { result: 'never', state: r.state, never: r.never, ...(r.link && { link: r.link }), waitedSec: waited(), checks };
     if (r.met) {
       metSince ??= now();
       if (now() - metSince >= holdSec * 1000) return { result: 'met', state: r.state, detail: r.detail, waitedSec: waited(), checks };
@@ -283,9 +283,12 @@ export function autoBelowC(dirs, { driver = null, ...opts } = {}) {
  * usbmuxList, `idevice_id -l`). After a failed read it is asked at once and every `usbPollMs` for `usbWaitMs`: still not
  * listed -> never at once, naming the cause and the re-plug (no more 3 reads at 60 s); listed again (a re-enumeration)
  * -> the read is retried once. Listed all along, or no answer: the rule above.
+ * I-222: that "not on USB" never is a lost USB link, not a cooling failure: it carries `link`, the link state from
+ * `link()` (optional; tools/lib/usblink.mjs ioUsbLinkCause: 'usb-lost' when the Mac's USB bus still lists the iPhone,
+ * 'unplugged' when it does not) or 'not-on-usbmux' (no link(), or no answer from it). wait.mjs prints it as LINK-LOST.
  */
 export function phoneTempCondition(belowC, { read, now = Date.now, minGapMs = PHONE_TEMP.minEverySec * 1000, maxFailed = PHONE_TEMP.maxFailedReads,
-  usb = null, usbWaitMs = PHONE_TEMP.usbWaitSec * 1000, usbPollMs = PHONE_TEMP.usbPollSec * 1000, sleep = sleepMs } = {}) {
+  usb = null, usbWaitMs = PHONE_TEMP.usbWaitSec * 1000, usbPollMs = PHONE_TEMP.usbPollSec * 1000, sleep = sleepMs, link = null } = {}) {
   let n = 0, okReads = 0, failed = 0, lastAt = null, last = null;
   const limit = fmtC(belowC);
   const readOnce = () => { try { return read(); } catch (e) { return { error: e.message || String(e) }; } };
@@ -302,7 +305,9 @@ export function phoneTempCondition(belowC, { read, now = Date.now, minGapMs = PH
       while (u && !u.listed && now() < end) { await sleep(usbPollMs); waited = true; u = usb(); }
       if (u && !u.listed) {
         const why = b?.error || 'no Temperature in the battery reading';
-        last = { met: false, state: `read ${n}: failed (${why}; not on USB)`, never: `battery temperature unavailable (${why}): the iPhone is not on USB for usbmux (idevice_id -l lists ${u.count} device${u.count === 1 ? '' : 's'}, not this one, for ${Math.round(usbWaitMs / 1000)} s); re-plug the cable (phone unlocked)` };
+        let cause = null;
+        try { cause = link ? link() : null; } catch { cause = null; }
+        last = { met: false, state: `read ${n}: failed (${why}; not on USB)`, never: `battery temperature unavailable (${why}): the iPhone is not on USB for usbmux (idevice_id -l lists ${u.count} device${u.count === 1 ? '' : 's'}, not this one, for ${Math.round(usbWaitMs / 1000)} s); re-plug the cable (phone unlocked)`, link: cause || 'not-on-usbmux' };
         return last;
       }
       if (u?.listed && waited) { b = readOnce(); t = tempOf(b); } // back on usbmux after a wait: read once more

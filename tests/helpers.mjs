@@ -126,7 +126,7 @@ export const FAKE_THERMAL = join(TESTS, 'fixtures', 'fake-thermal.mjs');
 /** A clean env for tool subprocesses: no inherited mirror/lock/port overrides unless given. */
 export function cleanEnv(extra = {}) {
   const env = { ...process.env };
-  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'FW_LOCK_SHARED', 'FW_LOCK_SHARED_JOIN_LOAD', 'FW_LOCK_SHARED_JOIN_BUSY', 'FW_LOCK_LOAD1', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING', 'FW_BASELINE_UPDATE', 'FW_BASELINE_ALLOW_MODIFIED', 'FW_WDA_URL', 'FW_WDA_HOME', 'FW_XCODEBUILD', 'FW_IPROXY', 'FW_IDEVICE_ID', 'FW_IDEVICEINFO', 'FW_SECURITY', 'FW_SIMCTL', 'FW_IWDP', 'FW_LSOF', 'FW_OPEN', 'FW_OSASCRIPT', 'FW_IOSCAP_ROOT', 'FW_IOSCAP_OPEN', 'FW_SWIFTC', 'FW_CODESIGN', 'FW_LAN_ADDRESS', 'FW_LAN_IFACES', 'FW_PS', 'FW_IDLE_NOW', 'FW_RUN_PROFILES', 'FW_PHONE_CONDITION', 'FW_REARM_PROBE_MS']) delete env[k]; // FW_RUN_PROFILES: npm test in a shared lane (I-106)
+  for (const k of ['FW_MIRROR_HOME', 'FW_STATE_DIR', 'FW_BASE', 'FW_ALLOW_MAIN', 'FW_LOCK_OWNER', 'FW_LOCK_HELD', 'FW_LOCK_SHARED', 'FW_LOCK_SHARED_JOIN_LOAD', 'FW_LOCK_SHARED_JOIN_BUSY', 'FW_LOCK_LOAD1', 'PORT', 'CHROME', 'FW_IPHONE_PORT', 'FW_IPHONE_DEVICE_PORT', 'NODE_TEST_CONTEXT', 'FW_PRECOMMIT_TEST_CMD', 'FW_GATE_MAX_LOAD1', 'FW_GATE_MAX_BUSY', 'FW_GATE_MAX_WAIT', 'FW_TOOLING', 'FW_BASELINE_UPDATE', 'FW_BASELINE_ALLOW_MODIFIED', 'FW_WDA_URL', 'FW_WDA_HOME', 'FW_XCODEBUILD', 'FW_IPROXY', 'FW_IDEVICE_ID', 'FW_IDEVICEINFO', 'FW_SECURITY', 'FW_SIMCTL', 'FW_IWDP', 'FW_IWDP_PHONE', 'FW_LSOF', 'FW_OPEN', 'FW_OSASCRIPT', 'FW_IOSCAP_ROOT', 'FW_IOSCAP_OPEN', 'FW_SWIFTC', 'FW_CODESIGN', 'FW_LAN_ADDRESS', 'FW_LAN_IFACES', 'FW_PS', 'FW_IDLE_NOW', 'FW_RUN_PROFILES', 'FW_PHONE_CONDITION', 'FW_REARM_PROBE_MS']) delete env[k]; // FW_RUN_PROFILES: npm test in a shared lane (I-106)
   for (const k of Object.keys(env)) if (/^FW_SIM_/.test(k)) delete env[k]; // FW_SIM_SESSION, FW_SIM_PORT, FW_SIM_UDID, ... (a test run from inside a sim session)
   for (const k of Object.keys(env)) if (/^FAKE_HOST_/.test(k)) delete env[k];
   env.FW_TEST_HOST = FAKE_HOST;
@@ -137,6 +137,7 @@ export function cleanEnv(extra = {}) {
   env.FW_PROPOSAL_PHONE = 'off'; // I-143: proposal post/revise/publish/live start no Try-it host unless a test asks ('on')
   env.FW_TRANSCRIPTS_DIR = 'off'; // I-152: never the machine's Claude Code transcripts; a test passes its fixture dir
   env.FW_USBMUXD_SOCKET = 'off'; // I-227: a WDA runner start never asks the Mac's usbmuxd; a test passes its fake's socket
+  env.FW_IOREG = 'off'; // I-222: no tool reads the Mac's real USB bus (usblink, phone-temp); a test passes tests/fixtures/fake-ioreg.mjs
   delete env.FW_NO_CAFFEINATE; // I-070: a test that passes the fake gets it, whatever the caller's shell says
   // I-186: a phone run's thermal-profile read never reaches the real phone, xctrace or libimobiledevice: the fake reads
   // Serious, induced by Xcode (the default profile passes), battery 33.5 C; a test passes FAKE_THERMAL_* or its own fake
