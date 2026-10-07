@@ -8,10 +8,14 @@
 # State: out/v11phone/serve-{C,V11}.json (ports), .pid, .log. Phone URLs only via tools/lan.mjs or http://lan:<port>/;
 # never copy the LAN address into a committed file (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
-S=out/v11phone; D=out/v11/snap-9b4a829d15a0-62743920fe1a
+# SWIPE_B=V11 (default) or V11X (v11 + X2, PR-031 accepted 2026-10-07 00:09Z; snapshot ...-x from build.sh X2=on)
+B=${SWIPE_B:-V11}
+S=out/v11phone; D=out/v11/snap-9b4a829d15a0-62743920fe1a; HX=1704db6c4af6; BP=9b4a829d15a0:62743920fe1a
+[ "$B" = V11X ] && { D=$D-x; HX=; BP=71ad4f9b82ac:592d1f2a8af4; }
+case $B in V11|V11X) ;; *) echo "SWIPE_B is V11 or V11X: refuse"; exit 2 ;; esac
 OWNER=${FW_AGENT:-int-v11}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
-PIN="C:1b2eecc66011:e1359ab9994a V11:9b4a829d15a0:62743920fe1a"; ARMS="C V11"
+PIN="C:1b2eecc66011:e1359ab9994a $B:$BP"; ARMS="C $B"
 case "$1" in start|check|stop) ;; *) echo "usage: sh fixes/v11/phone/v11-serve.sh start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then
   for A in $ARMS; do [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null; rm -f $S/serve-$A.pid; done
@@ -19,7 +23,7 @@ if [ "$1" = stop ]; then
 fi
 mkdir -p $S
 h() { shasum -a 256 "$1" | cut -c1-12; }
-[ "$(h $D/HASHES.txt)" = 1704db6c4af6 ] && (cd $D && shasum -a 256 -c --quiet HASHES.txt) || { echo "no v11 snapshot at $D (HASHES 1704db6c4af6): refuse"; exit 3; }
+{ [ -z "$HX" ] || [ "$(h $D/HASHES.txt)" = $HX ]; } && (cd $D && shasum -a 256 -c --quiet HASHES.txt) || { echo "no v11 snapshot at $D (HASHES ${HX:-self-check}): refuse"; exit 3; }
 for p in $PIN; do a=${p%%:*}; r=${p#*:}; j=${r%%:*}; c=${r#*:}
   [ "$(h $D/$a/$JS)" = $j ] && [ "$(h $D/$a/$CSS)" = $c ] || { echo "SNAPSHOT $a is not $j/$c: refuse"; exit 3; }; done
 if [ "$1" = start ]; then
