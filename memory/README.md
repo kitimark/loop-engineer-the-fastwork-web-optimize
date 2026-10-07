@@ -35,4 +35,5 @@ Lead:
 - [Console server detached](console-server-detached.md): run `console.mjs serve` with nohup; check `console.mjs url` each check-in
 - [Usage meter every 30 min](usage-meter-every-30-min.md): re-create the 30-min cron each session; data stays local
 - [Idle alarms are a pattern](idle-alarms-are-a-pattern.md): phone held and unused 2 min, read the holder's processes; from the 3rd idle alarm a day, review them together
+- [Best builds list](best-builds-list.md): `fixes/BEST_BUILDS.md` lists best-build versions newest first; update it and post in T-228 at every build change (user T-228 #3)
 - [Lead delegates areas, measures](lead-delegates-areas-measures.md): a recurring problem area gets an owner agent (cause, long-term fix, delegation); the lead measures it against an exit target and parks the owner when tools carry it
