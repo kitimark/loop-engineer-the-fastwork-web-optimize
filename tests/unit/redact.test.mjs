@@ -64,3 +64,33 @@ test('redact leaves the tools\' own output alone: paths, URLs, hashes, ids of th
   assert.equal(redact(undefined), undefined);
   assert.equal(redact(42), 42);
 });
+
+test('redact: "<Name>\'s iPhone" is a device name, a build or version token\'s iPhone or prose is not, and nothing after it is eaten (I-228, I-139)', () => {
+  // the reported sentence: "v11's iPhone no-worse check" became "<device-name>-worse check"
+  const keep = [
+    "- Next: v11's iPhone no-worse check",
+    'the iPhone runs the block',
+    "v10's iPhone check",
+    "C's iPhone run",
+    "Vc's iPhone run and V13's iPhone run",
+    "H1c's iPhone check, P1's iPhone part, B's iPad and v9.2's Mac",
+    "the user's iPhone and the lead's Mac",
+    // I-139: ordinary prose before "'s Mac" lost "phone test's Mac hold" and the words after it
+    "after the phone test's Mac hold ends, Phone test's Mac hold too",
+    "the Simulator run's iPhone screen and today's Mac load",
+  ];
+  for (const s of keep) assert.equal(redact(s), s, s);
+  // a real owner's device name is still replaced, and only the name: the words after it stay
+  const scrub = [
+    ["Mark's iPhone no-worse check", '<device-name> no-worse check'],
+    ['Test Person’s iPhone is busy', '<device-name> is busy'],
+    ["Next: Somchai's iPad runs it", 'Next: <device-name> runs it'],
+    ["on Anna-Lena's MacBook Pro today", 'on <device-name> Pro today'],
+    ["O'Brien's iPhone 15 was locked", '<device-name> 15 was locked'],
+    ["ส้มโอ's iPhone check", '<device-name> check'],
+    ["phone: Mark's iPhone\nnext line", 'phone: <device-name>\nnext line'],
+  ];
+  for (const [s, want] of scrub) assert.equal(redact(s), want, s);
+  // xcodebuild's destination list keeps its own "name:" rule
+  assert.equal(redact('{ platform:iOS, id:x, name:Test Person’s iPhone }'), '{ platform:iOS, id:x, name:<device> }');
+});

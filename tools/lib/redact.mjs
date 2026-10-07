@@ -15,6 +15,10 @@
 
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// a person's name word: "Mark", "Anna-Lena", "O'Brien", or a caseless script ("ส้มโอ"); not a digit-bearing token
+// (v11, H1c, V13), a single letter (C, B) or V plus one letter (Vc), the study's build names (I-228)
+const NAME_WORD = "(?:(?:\\p{Lu}['’])?(?!V\\p{Ll}['’]s )\\p{Lu}\\p{Ll}[\\p{L}\\p{M}-]*|\\p{Lo}[\\p{Lo}\\p{M}]*)";
+
 export const PATTERNS = [
   // labelled hardware ids (ideviceinfo, xcodebuild/devicectl dumps): ECID / UniqueChipID, serial number (review-gesture-2)
   [/\b(ECID|UniqueChipID|ChipID|ecid)(["']?\s*[:=]\s*["']?)(0x)?[0-9A-Fa-f]{6,20}\b/g, '$1$2<ecid>'],
@@ -26,7 +30,10 @@ export const PATTERNS = [
   [/\b[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\b/g, '<uuid>'],
   [/\b[0-9a-fA-F]{40}\b/g, '<udid>'],
   [/\bname:[^,}\n]*[^,}\n ]/g, 'name:<device>'],
-  [/\b[\p{L}\p{N}_.-]+(?:[ ][\p{L}\p{N}_.-]+)?['’]s (iPhone|iPad|iPod|Mac|MacBook)\b[\p{L}\p{N} ]*/gu, '<device-name>'],
+  // "<Name>'s iPhone" (I-228, I-139): one or two name words, each capitalised (a cased script) or caseless (Thai);
+  // a build or version token (v11, C, Vc, H1c, P1) or lower-case prose ("phone test's Mac") is no name, and only
+  // the name is replaced: the words after "iPhone" stay
+  [new RegExp(`(?<![\\p{L}\\p{N}_.'’-])(?:${NAME_WORD} )?${NAME_WORD}['’]s (?:iPhone|iPad|iPod|MacBook|Mac)\\b`, 'gu'), '<device-name>'],
   [/\b(?=[A-Z0-9]{10}\b)(?=[A-Z0-9]*[0-9])(?=[A-Z0-9]*[A-Z])[A-Z0-9]{10}\b/g, '<team>'],
   // an unlabelled Apple serial number (11-12 upper-case letters and digits, both present)
   [/\b(?=[A-Z0-9]{11,12}\b)(?=[A-Z0-9]*[0-9])(?=[A-Z0-9]*[A-Z])[A-Z0-9]{11,12}\b/g, '<serial>'],
