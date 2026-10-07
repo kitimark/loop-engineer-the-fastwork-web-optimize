@@ -24,7 +24,7 @@
 `out/g0box/g00c`: JS 5c39f7a96e41, CSS c65da97ba01f. Baseline snapshot b1789284481295-4ad4a84a.
 
 **patch.diff = v3-W**, relative to g0.0c (`a/` = g0.0c's files), made with `diff -u`; it applies cleanly to a fresh
-g0.0c copy. Final v3-W: JS 7f7d83162ef6, CSS f9b2f894dedf (the reduced-motion step-aside). Earlier CSS:
+g0.0c copy. Final v3-W: JS 30fd80ccbb3f, CSS f9b2f894dedf (the reduced-motion step-aside). JS 30fd80ccbb3f differs from the measured 7f7d83162ef6 only in a comment (the stale "WebKit stays within T2" now reads T3, PR-038); every run in this README used 7f7d83162ef6. Earlier CSS:
 2c9deee5b885 (the dark fill's RM transition, superseded) and 70df8114a809 (before any RM fix).
 - v3 (both engines) relative to g0.0 is in this branch's history (e3857c4f); v2 is in 7da9b47e.
 
@@ -114,7 +114,7 @@ session; Simulator ms are not judged.
 
 On g0.0c, v3-W (fixes/g0-box/patch.diff) plus fix-join-fade's block (their `out/jf/block.css`, g0.0c + block = CSS
 32a2bf7c17b0) and fix-logo-close's `delta.diff` (one declaration at g0.0c CSS 12038-12045): each pair applies in
-either order with the same bytes, and all three together give CSS e434bb66fa5c, JS 7f7d83162ef6
+either order with the same bytes, and all three together give CSS e434bb66fa5c, JS 7f7d83162ef6 (before the comment fix)
 (`out/g0box/stack-jf.sh`, `stack-lc.sh`). Couplings: v3-W's nav clip-path is an ancestor of join-fade's Join clip (no
 paint outside the nav) and of the logo (stays inside the box).
 
@@ -125,8 +125,8 @@ paint outside the nav) and of the logo (stays inside the box).
   `thermal.mjs clear` after the hold, the get-ready step on preflight AUTH, and `--block`.
 - `g0b-read.mjs` reuses p161-read's decision code, with opens taken from touch rows: g0 opens are a time tween on a
   held page, never a scroll crossing (selftest 7 checks ok).
-- Pins: C = g0.0c (JS 5c39f7a96e41 / CSS c65da97ba01f), V = final v3-W (JS 7f7d83162ef6 / CSS f9b2f894dedf); snapshot
-  `out/g0box/snap2`, HASHES 2bbab5666091 (re-snapped after the reduced-motion fix). Dry run 2026-10-08 (`out/g0box/kitdry2.log`): servers up, H1-H4 and H11 DRY ok, programs fs 8737f212c0ff (budget 229 s) and pr 7ff27a2413c8 ok, exit 0.
+- Pins: C = g0.0c (JS 5c39f7a96e41 / CSS c65da97ba01f), V = final v3-W (JS 30fd80ccbb3f / CSS f9b2f894dedf); snapshot
+  `out/g0box/snap3`, HASHES 6710a7e52104 (re-snapped after the reduced-motion fix and the comment fix). Dry run 2026-10-08 (`out/g0box/kitdry3.log`): servers up, H1-H4 and H11 DRY ok, programs fs 8737f212c0ff (budget 229 s) and pr 7ff27a2413c8 ok, exit 0.
 - Still to check before any block: that the reader finds touch rows in a real G record.
 - Card (for the lead to sign): v3-W against g0.0c, driver G fast-short (8737f212c0ff), tool-serious, C V V C order,
   H1:WC H2:WV EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 H11:TAIL. Decision D1-D3 as P-163: D1 O1.f2 V−C ≤ +4 ms, D2 open

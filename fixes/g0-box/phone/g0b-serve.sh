@@ -2,15 +2,15 @@
 # g0-box phone kit (card: fixes/g0-box/README.md "Phone card draft"): the servers (B baseline timer page, C, V). A copy of fix-g0-box's P-163 kit
 # (research/end-of-page-fresh/phone/, credit: fix-g0-box, arch-compositor-morph, fix-end-morph) with these pins:
 #   C = g0.0c (g0.0b + platform corners, BEST_BUILDS e1291f8d)   JS 5c39f7a96e41  CSS c65da97ba01f
-#   V = g0.0c + v3-W (fixes/g0-box/patch.diff)                     JS 7f7d83162ef6  CSS f9b2f894dedf
-# snapshot out/g0box/snap2 (C from out/g0box/g00c, V from out/g0box/g00c-apply, read-only), logs out/g0bp, owner fix-g0-box.
+#   V = g0.0c + v3-W (fixes/g0-box/patch.diff)                     JS 30fd80ccbb3f  CSS f9b2f894dedf
+# snapshot out/g0box/snap3 (C from out/g0box/g00c, V from out/g0box/g00c-apply, read-only), logs out/g0bp, owner fix-g0-box.
 # The P-161..P-163 lessons are kept unchanged (tool-serious via iphone.mjs rearm, Safari parked before the rearm, thermal
 # clear after the hold, the get-ready step on preflight AUTH or "Failed to initialize for UI testing", the --block mark).
 # Original header of the copied file:
 # end-of-page-fresh phone pair (card: research/end-of-page-fresh/README.md §8): C = v14 (c3b-a + K6, the current best,
 # BEST_BUILDS 349ea688; out/s0/k6 = P-161's V) against V = D1b with __cmBarMode = v14 (c3b-a with the CM tree kept built
 # in WebKit; out/s0/d1b-a = s1b-d1b.diff with the one flag line set to v14, lead: the block measures D1's layers, not
-# the PR-033 bar choice). Snapshot out/g0box/snap2. A copy of arch-compositor-morph's fixes/compositor-morph/phone-c3bk6/cm-serve.sh (credit:
+# the PR-033 bar choice). Snapshot out/g0box/snap3. A copy of arch-compositor-morph's fixes/compositor-morph/phone-c3bk6/cm-serve.sh (credit:
 # arch-compositor-morph, fix-end-morph) without the probe page P (no attribution runs in this block). Original header:
 # compositor-morph phone servers (card: fixes/compositor-morph/README.md "Phone card"). A copy of fix-end-morph's
 # fixes/end-morph-f12/phone/p155-serve.sh (credit: fix-end-morph) with two arms. Plain http (I-003), OS-assigned ports,
@@ -24,13 +24,13 @@
 # State: out/g0bp/serve-{B,C,V,P}.json (ports), .pid, .log. Phone URLs only via tools/lan.mjs; never copy the LAN address
 # into a committed file (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
-S=out/g0bp; D=out/g0box/snap2
+S=out/g0bp; D=out/g0box/snap3
 OWNER=${FW_AGENT:-fix-g0-box}
 JS=_app/immutable/nodes/2.DyWL8TcE.js
 CSS=_app/immutable/assets/2.gBuqKVzi.css
 C_JS=5c39f7a96e41; C_CSS=c65da97ba01f
-V_JS=7f7d83162ef6; V_CSS=f9b2f894dedf
-HASHES_PIN=${CM_HASHES_PIN:-2bbab5666091}
+V_JS=30fd80ccbb3f; V_CSS=f9b2f894dedf
+HASHES_PIN=${CM_HASHES_PIN:-6710a7e52104}
 case "$1" in snap|start|check|stop) ;; *) echo "usage: sh fixes/g0-box/phone/g0b-serve.sh snap|start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then
   for A in B C V; do [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null; rm -f $S/serve-$A.pid; done

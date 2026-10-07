@@ -7,8 +7,8 @@
 (site-pretty, snapshot b1789284481295-4ad4a84a). It exists only so the proposal's Try-it page B can be g0.0c + v3-W
 (the console takes a baseline-relative `patch.diff`); A is `fixes/platform-corners-g00b/patch.diff`.
 
-- Files: CSS f9b2f894dedf, JS 7f7d83162ef6 (g0.0c: c65da97ba01f / 5c39f7a96e41). Rebuilt from a fresh baseline copy
-  with `patch -p1` and compared byte for byte with the measured build (`out/g0box/g00c-apply`).
+- Files: CSS f9b2f894dedf, JS 30fd80ccbb3f (g0.0c: c65da97ba01f / 5c39f7a96e41). Rebuilt from a fresh baseline copy
+  with `patch -p1` and compared byte for byte with `out/g0box/g00c-apply`. The measured JS was 7f7d83162ef6, which differs only in one comment.
 - The fix itself, its mechanism, gates and numbers: `fixes/g0-box/` (`patch.diff` there is the same change relative
   to g0.0c).
 - Stacks with fix-join-fade's block and fix-logo-close's delta in either order (dry runs, 2026-10-08).

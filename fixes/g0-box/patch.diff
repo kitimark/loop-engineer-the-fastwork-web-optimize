@@ -13,8 +13,8 @@
 +  // color-mix) and its rounded corner is a clip-path inset(0 round r) (a shape mask, no repaint). Built once here.
 +  // v3-W: WebKit only, by the page's own feature test (`GestureEvent` is WebKit-only: MDN browser-compat-data
 +  // api/GestureEvent.json; the same gate as heCss and K6). Elsewhere nothing is created and the CSS (scoped to
-+  // html.fw-bx) does not apply: Chrome keeps v0's nav exactly (its clip-path edge anti-aliasing differs from v0's
-+  // border-radius by up to 226 levels mid-tween; WebKit's stays within T2).
++  // html.fw-bx) does not apply: Chrome keeps v0's nav exactly. The clip-path edge is anti-aliased differently from v0's
++  // border-radius mid-tween (Chrome up to 226 levels; WebKit up to 218 at 6 of 144 stops: a T3 look-alike, PR-038).
 +  var __bxOn = `GestureEvent` in window,
 +    __bxLt = __bxOn ? document.createElement(`div`) : null,
 +    __bxDk = __bxOn ? document.createElement(`div`) : null;

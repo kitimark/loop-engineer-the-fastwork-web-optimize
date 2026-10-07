@@ -11,8 +11,9 @@
     "css": "c65da97ba01f"
    },
    "v3-W": {
-    "js": "7f7d83162ef6",
-    "css": "f9b2f894dedf"
+    "js": "30fd80ccbb3f",
+    "css": "f9b2f894dedf",
+    "note": "JS differs from the measured 7f7d83162ef6 only in a comment"
    },
    "v3-W pre-RM-fix": {
     "js": "7f7d83162ef6",
@@ -21,6 +22,10 @@
    "v3-W RM-transition (superseded)": {
     "js": "7f7d83162ef6",
     "css": "2c9deee5b885"
+   },
+   "v3-W measured": {
+    "js": "7f7d83162ef6",
+    "css": "f9b2f894dedf"
    }
   },
   "tools": "fixes/g0-box/gates (seek.mjs, run4.sh: one --shared hold per arm, four loads; t2.mjs: PR-010 consistent rule, status bar rows < 56 css px left out, flat/edge split = 3x3 luma range <= 16 / > 16 in A or V); no timing A/B, no phone",
@@ -582,7 +587,7 @@
    "leadRule": "end-open memory >= 10 MB as open minus closed (lead): passes both runs; no new layers per open; top not worse -> T3 proposal"
   },
   "stacking": "v3-W + fix-join-fade block + fix-logo-close delta apply on g0.0c in either order, same bytes; all three: CSS e434bb66fa5c, JS 7f7d83162ef6",
-  "phoneKit": "fixes/g0-box/phone/, pinned C g0.0c 5c39f7a96e41/c65da97ba01f, V 7f7d83162ef6/f9b2f894dedf, snapshot out/g0box/snap2 HASHES 2bbab5666091; dry run ok (out/g0box/kitdry2.log); not signed, not run (only if the user accepts)"
+  "phoneKit": "fixes/g0-box/phone/, pinned C g0.0c 5c39f7a96e41/c65da97ba01f, V 30fd80ccbb3f/f9b2f894dedf, snapshot out/g0box/snap3 HASHES 6710a7e52104; dry run ok (out/g0box/kitdry3.log); not signed, not run (only if the user accepts)"
  },
  "v3": {
   "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
