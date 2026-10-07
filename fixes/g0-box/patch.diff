@@ -1,41 +1,18 @@
 --- a/_app/immutable/nodes/2.DyWL8TcE.js
 +++ b/_app/immutable/nodes/2.DyWL8TcE.js
-@@ -14583,13 +14583,60 @@
+@@ -14583,8 +14583,20 @@
      __mkW = (v) => {
        if (v === __mkV) return;
        __mkV = v;
 -      for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
-+      for (let t of [B, re, ie, oe, __mkP, __ewWrap(), __bxDk, __bxBd, __bxCt, __bxFt]) t && t.style.setProperty(`--morph`, v);
-+      __bxVeil();
++      for (let t of [B, re, ie, oe, __mkP, __ewWrap(), __bxDk]) t && t.style.setProperty(`--morph`, v);
      };
-+  // g0-box (gpu-original M3-B, phones <= 640 px): the nav's box is still v0's (size, top, backdrop blur per frame), but it
-+  // paints nothing itself: its colour is two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph,
-+  // which composites to exactly v0's color-mix), its rounded corner is a clip-path inset(0 round r) (a shape mask, no
-+  // repaint), and the menu card is laid out once at the open size from v0's box origin (the nav's clip cuts the
-+  // overhang): the backdrop columns keep their width (no repaint; the backdrop is centred by a transform), the veil is
-+  // scaled to v0's box by a transform, the card's zoom is a transform about v0's box centre, and only the centre
-+  // block, the footer and the bar keep v0's per-frame layout. Built once (the fills here, the card's parts when the card mounts at idle); nothing appears at the open.
++  // g0-box v3 (gpu-original M3-B, option 3; phones <= 640 px): the nav's box and its menu card stay exactly v0's
++  // (size, top, backdrop blur, card at the box size per frame); only the nav's own paint goes: its colour is two
++  // composited solid fills (light #ffffff1a, dark #131922 at opacity --morph, which composites to exactly v0's
++  // color-mix) and its rounded corner is a clip-path inset(0 round r) (a shape mask, no repaint). Built once here.
 +  var __bxLt = document.createElement(`div`),
-+    __bxDk = document.createElement(`div`),
-+    __bxBd = null,
-+    __bxVl = null,
-+    __bxCt = null,
-+    __bxFt = null,
-+    __bxFw = 0,
-+    __bxFh = 0,
-+    __bxRO = null,
-+    __bxVeil = () => {
-+      // the veil (radial-gradient(123% 74%) over the card's box) is drawn once at a quarter of the open size (Fw/4 x
-+      // Fh/4, CSS) and mapped onto v0's box at m by scale(W / (Fw/4), H / (Fh/4)) from its top left (the card's origin
-+      // is v0's box origin). Phone geometry (CSS <= 640): W = Fw - 8 (1 - m), H = 52 + (Fh - 52) m. The CSS reads
-+      // these only at <= 640 px.
-+      if (!__bxVl || !__bxFw || !__bxFh || __mkV === null) return;
-+      let m = +__mkV,
-+        w = __bxFw - 8 * (1 - m),
-+        h = 52 + (__bxFh - 52) * m;
-+      (__bxVl.style.setProperty(`--fw-bx-sx`, String((4 * w) / __bxFw)),
-+        __bxVl.style.setProperty(`--fw-bx-sy`, String((4 * h) / __bxFh)));
-+    };
++    __bxDk = document.createElement(`div`);
 +  ((__bxLt.className = `fw-bx-fill fw-bx-light`),
 +    (__bxDk.className = `fw-bx-fill fw-bx-dark`),
 +    __bxLt.setAttribute(`aria-hidden`, `true`),
@@ -45,41 +22,20 @@
    var W = V(B, 2),
      ue = (n) => {
        var a = lN(),
-         u = e(a);
-       ((__mkP = a), __mkV !== null && a.style.setProperty(`--morph`, __mkV));
-+      // g0-box: the card's parts that follow v0's box (backdrop top/height, veil transform, centre, footer)
-+      // (plain DOM walk, not the hydration helper: the card is mounted on the client, these are its template elements)
-+      ((__bxBd = u),
-+        (__bxVl = u.nextElementSibling),
-+        (__bxCt = __bxVl.nextElementSibling),
-+        (__bxFt = __bxCt.nextElementSibling));
-+      for (let t of [__bxBd, __bxCt, __bxFt]) __mkV !== null && t.style.setProperty(`--morph`, __mkV);
-+      ((__bxRO = new ResizeObserver((es) => {
-+        let r = es[es.length - 1].contentRect;
-+        ((__bxFw = r.width), (__bxFh = r.height), __bxVeil());
-+      })),
-+        __bxRO.observe(a));
-       (_(
-         u,
-         21,
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -12327,4 +12327,93 @@
- .start-selling-future.is-visible.is-future-shrinking
+@@ -12328,3 +12328,42 @@
    .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
    animation: fw-c-shell-hold 0.95s linear;
-+}
-+/* g0-box (gpu-original M3-B, phones <= 640 px). The nav keeps v0's box per frame (top, width, height, backdrop blur), but
-+   paints nothing itself: its colour is two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph:
-+   source-over of the two is v0's premultiplied color-mix exactly), its rounded corner is clip-path inset(0 round r)
-+   (a shape mask on the composited layer: a radius change repaints nothing), and the menu card is laid out once at the
-+   open size from v0's box origin (the clip cuts the overhang). Per frame only these follow v0's box: the backdrop's
-+   height (the columns keep their width and their translateY(--col-offset) of the box height) and its centring (a
-+   transform), the veil by a transform (scale to v0's box, JS --fw-bx-sx/sy), the card's zoom origin (v0's box centre),
-+   and the centre block and the footer by layout. W and H are v0's formulas for the nav's width and height. */
+ }
++/* g0-box v3 (gpu-original M3-B, option 3; phones <= 640 px). The nav keeps v0's box per frame (top, width, height,
++   backdrop blur) and its menu card is untouched, but the nav paints nothing itself: its colour is two composited solid
++   fills (light #ffffff1a, dark #131922 at opacity --morph: source-over of the two is v0's premultiplied color-mix
++   exactly), its rounded corner is clip-path inset(0 round r) (a shape mask on the composited layer: a radius change
++   repaints nothing). */
 +.fw-bx-fill {
 +  display: none;
- }
++}
 +@media (width<=640px) {
 +  .start-selling-top-nav.svelte-1dcozpm {
 +    background: none;
@@ -109,52 +65,5 @@
 +    background: #131922;
 +    opacity: var(--morph);
 +    will-change: opacity;
-+  }
-+  /* v2: the card's origin is v0's (the nav's top left corner, left/top 0), so every part keeps v0's position relative to
-+     its composited layer and the same sub-pixel phase (v1 held the card at the page's (12, 12): Chrome then placed text up
-+     to 2 device px and WebKit drew glyphs with another phase than v0 mid-tween). Only its size is the open size; the
-+     nav's clip-path cuts the overhang. */
-+  .start-selling-top-nav .start-selling-morph-panel {
-+    inset: auto;
-+    left: 0;
-+    top: 0;
-+    width: var(--panel-w);
-+    height: var(--panel-h);
-+    transform-origin: calc((var(--hero-pill-w) + (var(--pill-w) - var(--hero-pill-w)) * var(--nav-expand) + (var(--panel-w) - var(--pill-w)) * var(--morph)) / 2) calc((var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph)) / 2);
-+  }
-+  .start-selling-top-nav .start-selling-morph-backdrop {
-+    inset: auto;
-+    left: -3%;
-+    width: 106%;
-+    top: 0;
-+    height: calc(var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph));
-+    /* centred on v0's box by a transform, not by layout: a layout move by a fraction of a device pixel repaints every
-+       composited layer below it (RenderLayerBacking.cpp 1938-1939, setContentsNeedDisplay on a sub-pixel offset change) */
-+    transform: translateX(calc((var(--hero-pill-w) + (var(--pill-w) - var(--hero-pill-w)) * var(--nav-expand) + (var(--panel-w) - var(--pill-w)) * var(--morph) - var(--panel-w)) / 2));
-+  }
-+  .start-selling-top-nav .start-selling-morph-col {
-+    will-change: transform;
-+  }
-+  /* the veil is drawn at a quarter of the open size (a 0.7 MB backing, as v0's pill-sized one at rest, not 11.6 MB) and
-+     scaled onto v0's box (JS --fw-bx-sx/sy): its radial gradient is defined in % of its box, so the map is exact, and the
-+     bilinear upscale of a smooth gradient differs by about a level at most */
-+  .start-selling-top-nav .start-selling-morph-veil {
-+    inset: auto;
-+    left: 0;
-+    top: 0;
-+    width: calc(var(--panel-w) / 4);
-+    height: calc(var(--panel-h) / 4);
-+    transform-origin: 0 0;
-+    transform: scale(var(--fw-bx-sx, 4), var(--fw-bx-sy, 4));
-+  }
-+  .start-selling-top-nav .start-selling-morph-center {
-+    left: calc((var(--hero-pill-w) + (var(--pill-w) - var(--hero-pill-w)) * var(--nav-expand) + (var(--panel-w) - var(--pill-w)) * var(--morph)) / 2);
-+    top: calc((var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph)) / 2);
-+    width: calc(var(--hero-pill-w) + (var(--pill-w) - var(--hero-pill-w)) * var(--nav-expand) + (var(--panel-w) - var(--pill-w)) * var(--morph));
-+  }
-+  .start-selling-top-nav .start-selling-morph-footer {
-+    left: 0;
-+    right: calc(var(--panel-w) - (var(--hero-pill-w) + (var(--pill-w) - var(--hero-pill-w)) * var(--nav-expand) + (var(--panel-w) - var(--pill-w)) * var(--morph)));
-+    bottom: calc(var(--panel-h) - (var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph)));
 +  }
 +}

@@ -1,43 +1,229 @@
 {
  "topic": "g0-box",
- "build": "gpu-original M3-B v2 on g0.0: nav colour as two composited solid fills, corner as clip-path inset(0 round r), menu card laid out once at the open size from v0's box origin (backdrop centred by transform, quarter-size veil scaled, centre/footer by layout); phones <= 640 px",
+ "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
  "config": {
   "baselineSnapshot": "b1789284481295-4ad4a84a",
   "base": "g0.0 f75c1707",
   "patchRelativeTo": "g0.0 (a/ = sh fixes/g0-revert/rebuild.sh output: JS 5c39f7a96e41, CSS 95f0eff3c57f)",
-  "served": { "g0.0": { "js": "5c39f7a96e41", "css": "95f0eff3c57f" }, "m3b-v2": { "js": "64d112c141e7", "css": "973fb22bb4be" } },
+  "served": {
+   "g0.0": {
+    "js": "5c39f7a96e41",
+    "css": "95f0eff3c57f"
+   },
+   "m3b-v3": {
+    "js": "1fa6cfc78f56",
+    "css": "6663cef214fb"
+   },
+   "m3b-v2": {
+    "js": "64d112c141e7",
+    "css": "973fb22bb4be"
+   }
+  },
   "tools": "fixes/g0-box/gates (copies of fixes/g0-gpu/gates + avscan.mjs, top-sim.mjs); shared lane, one hold per arm; no timing A/B, no phone",
-  "measurementCodeChanged": false
+  "measurementCodeChanged": false,
+  "patchDiff": "v3, relative to g0.0; applies cleanly to g0.0b (45a2d3ee, CSS a2351bd219ae) -> CSS e12dd33118e6"
  },
- "verdict": "STOPPED at gate 1: misses T2 in Chrome and the Simulator (sub-pixel text phase mid-tween: Chrome up to 3251 css px2 / 0.98 % consistent beyond A/A, max 226; Simulator up to 2305 css px2 / 0.69 %, max 226 on glyphs). Gates 2-3 pass: 0 layers built per open, nav root repaint gone (Simulator paint area open -47 %, close -26 %), memory at rest equal at top/mid/end (-0.4 to -0.6 MB) and -22 MB with the menu open; per-frame box layout stays (claim would be 'no box repaint', not 'no layout').",
+ "verdict": "v3 STOPPED at gate 1: Simulator within T2 (outline edges only, max 117, 553 css px2 / 0.14 %; status-bar cluster excluded), Chrome misses T2 on the nav outline anti-aliasing only (max 226 > edge 128, 866 css px2 / 0.26 %); card interior identical, state equal everywhere. v2 (card laid out once) also stopped at gate 1 (text phase, both engines).",
  "gates": {
   "seek": [
-   { "engine": "chrome", "viewport": "430x775", "loads": "A V A2 V2", "stops": 22, "stateMismatch": "none except backdrop/col rects (fixed width by design)", "worstMax": 226, "worstConsistentCssPx2": 3251, "worstConsistentPct": 0.98, "worstStop": "open@200", "t2": false, "out": "out/g0box/seek-v2o-c775.score" },
-   { "engine": "simulator", "loads": "A V A2 V2", "stops": 22, "stateMismatch": "none except backdrop/col rects", "worstMax": 226, "worstConsistentCssPx2": 2305, "worstConsistentPct": 0.69, "worstStop": "open@360", "t2": false, "out": "out/g0box/seek-v2o-sim.score" }
+   {
+    "engine": "chrome",
+    "viewport": "430x775",
+    "loads": "A V A2 V2",
+    "stops": 22,
+    "stateMismatch": 0,
+    "worstClusterMax": 226,
+    "worstConsistentCssPx2": 866,
+    "worstConsistentPct": 0.26,
+    "where": "nav outline (edges, round corners)",
+    "t2": false,
+    "out": "out/g0box/seek-v3-c775.score"
+   },
+   {
+    "engine": "simulator",
+    "loads": "A V A2 V2",
+    "stops": 22,
+    "stateMismatch": 0,
+    "worstClusterMaxBelowStatusBar": 117,
+    "worstConsistentCssPx2": 553,
+    "worstConsistentPct": 0.14,
+    "flatShare": "0.02-0.03",
+    "where": "nav outline (edges, corners); 18 px2 status-bar cluster (max 255) at every stop excluded",
+    "t2": true,
+    "out": "out/g0box/seek-v3-sim.score"
+   }
   ],
-  "seekNotRun": ["chrome 430x815", "widths 768 and 1280", "prefers-reduced-motion"],
-  "countsSimulator": {
-   "open": { "g0.0": { "style": 159, "layout": 109, "paint": 928, "paintMpx": 78.85 }, "m3b": { "style": 189, "layout": 120, "paint": 767, "paintMpx": 42.1 } },
-   "close": { "g0.0": { "style": 192, "layout": 144, "paint": 1048, "paintMpx": 53.73 }, "m3b": { "style": 194, "layout": 143, "paint": 798, "paintMpx": 39.65 } },
-   "restOpen": { "g0.0": { "paint": 134, "paintMpx": 2.26 }, "m3b": { "paint": 130, "paintMpx": 2.24 } },
-   "restClosed": { "g0.0": { "paint": 243, "paintMpx": 3.77 }, "m3b": { "paint": 152, "paintMpx": 1.97 } },
-   "layersBuiltPerOpenClose": { "g0.0": "Join button animation layer only (0.21 MB)", "m3b": "Join button animation layer only (0.21 MB)" },
-   "loads": 1,
-   "out": "out/g0box/counts/counts-sim-2026-10-07T18-30-21-146Z.json"
+  "seekNotRun": [
+   "chrome 430x815",
+   "widths 768 and 1280",
+   "prefers-reduced-motion"
+  ],
+  "gates23NotRun": "v3: stop rule"
+ },
+ "v2": {
+  "build": "gpu-original M3-B v2 on g0.0: nav colour as two composited solid fills, corner as clip-path inset(0 round r), menu card laid out once at the open size from v0's box origin (backdrop centred by transform, quarter-size veil scaled, centre/footer by layout); phones <= 640 px",
+  "verdict": "STOPPED at gate 1: misses T2 in Chrome and the Simulator (sub-pixel text phase mid-tween: Chrome up to 3251 css px2 / 0.98 % consistent beyond A/A, max 226; Simulator up to 2305 css px2 / 0.69 %, max 226 on glyphs). Gates 2-3 pass: 0 layers built per open, nav root repaint gone (Simulator paint area open -47 %, close -26 %), memory at rest equal at top/mid/end (-0.4 to -0.6 MB) and -22 MB with the menu open; per-frame box layout stays (claim would be 'no box repaint', not 'no layout').",
+  "served": {
+   "js": "64d112c141e7",
+   "css": "973fb22bb4be"
   },
-  "memoryLayersAtRest": {
-   "top": { "g0.0": [163, 52.4], "m3b": [161, 52.0] },
-   "mid": { "g0.0": [53, 101.1], "m3b": [55, 100.5] },
-   "endClosed": { "g0.0": [54, 93.1], "m3b": [56, 92.5] },
-   "endOpen": { "g0.0": [54, 109.3], "m3b": [56, 86.9] },
-   "units": "[layers, MB]",
-   "out": "out/g0box/counts/top-sim-2026-10-07T18-31-42-603Z.json"
+  "gates": {
+   "seek": [
+    {
+     "engine": "chrome",
+     "viewport": "430x775",
+     "loads": "A V A2 V2",
+     "stops": 22,
+     "stateMismatch": "none except backdrop/col rects (fixed width by design)",
+     "worstMax": 226,
+     "worstConsistentCssPx2": 3251,
+     "worstConsistentPct": 0.98,
+     "worstStop": "open@200",
+     "t2": false,
+     "out": "out/g0box/seek-v2o-c775.score"
+    },
+    {
+     "engine": "simulator",
+     "loads": "A V A2 V2",
+     "stops": 22,
+     "stateMismatch": "none except backdrop/col rects",
+     "worstMax": 226,
+     "worstConsistentCssPx2": 2305,
+     "worstConsistentPct": 0.69,
+     "worstStop": "open@360",
+     "t2": false,
+     "out": "out/g0box/seek-v2o-sim.score"
+    }
+   ],
+   "seekNotRun": [
+    "chrome 430x815",
+    "widths 768 and 1280",
+    "prefers-reduced-motion"
+   ],
+   "countsSimulator": {
+    "open": {
+     "g0.0": {
+      "style": 159,
+      "layout": 109,
+      "paint": 928,
+      "paintMpx": 78.85
+     },
+     "m3b": {
+      "style": 189,
+      "layout": 120,
+      "paint": 767,
+      "paintMpx": 42.1
+     }
+    },
+    "close": {
+     "g0.0": {
+      "style": 192,
+      "layout": 144,
+      "paint": 1048,
+      "paintMpx": 53.73
+     },
+     "m3b": {
+      "style": 194,
+      "layout": 143,
+      "paint": 798,
+      "paintMpx": 39.65
+     }
+    },
+    "restOpen": {
+     "g0.0": {
+      "paint": 134,
+      "paintMpx": 2.26
+     },
+     "m3b": {
+      "paint": 130,
+      "paintMpx": 2.24
+     }
+    },
+    "restClosed": {
+     "g0.0": {
+      "paint": 243,
+      "paintMpx": 3.77
+     },
+     "m3b": {
+      "paint": 152,
+      "paintMpx": 1.97
+     }
+    },
+    "layersBuiltPerOpenClose": {
+     "g0.0": "Join button animation layer only (0.21 MB)",
+     "m3b": "Join button animation layer only (0.21 MB)"
+    },
+    "loads": 1,
+    "out": "out/g0box/counts/counts-sim-2026-10-07T18-30-21-146Z.json"
+   },
+   "memoryLayersAtRest": {
+    "top": {
+     "g0.0": [
+      163,
+      52.4
+     ],
+     "m3b": [
+      161,
+      52
+     ]
+    },
+    "mid": {
+     "g0.0": [
+      53,
+      101.1
+     ],
+     "m3b": [
+      55,
+      100.5
+     ]
+    },
+    "endClosed": {
+     "g0.0": [
+      54,
+      93.1
+     ],
+     "m3b": [
+      56,
+      92.5
+     ]
+    },
+    "endOpen": {
+     "g0.0": [
+      54,
+      109.3
+     ],
+     "m3b": [
+      56,
+      86.9
+     ]
+    },
+    "units": "[layers, MB]",
+    "out": "out/g0box/counts/top-sim-2026-10-07T18-31-42-603Z.json"
+   },
+   "topScrollSimulator": {
+    "g0.0": {
+     "frames": 54,
+     "style": 77,
+     "layout": 201,
+     "paint": 401,
+     "paintMpx": 28.27
+    },
+    "m3b": {
+     "frames": 57,
+     "style": 80,
+     "layout": 204,
+     "paint": 372,
+     "paintMpx": 26.34
+    },
+    "loads": 1
+   }
   },
-  "topScrollSimulator": { "g0.0": { "frames": 54, "style": 77, "layout": 201, "paint": 401, "paintMpx": 28.27 }, "m3b": { "frames": 57, "style": 80, "layout": 204, "paint": 372, "paintMpx": 26.34 }, "loads": 1 }
+  "commit": "7da9b47e"
  },
  "notes": [
   "Per-frame layout of the nav box stays (v0's width/height/top; bar, centre block and footer laid out each frame); only the nav root's paint goes.",
   "v1 (card held at page position 12,12) shifted Chrome text by round(frac(navX)*3) device px; v2 restores v0's card origin; v1's four-load Chrome run is invalid (overlay edited mid-run).",
-  "No measurement code changed."
+  "No measurement code changed.",
+  "v3 measured on g0.0 before the rebase onto g0.0b; the Join change in g0.0b is outside the nav box."
  ]
 }
