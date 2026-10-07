@@ -1320,3 +1320,112 @@ Descriptive (no verdict):
   out/cm/v14-rebuild), applies the patch, checks HASHES and makes the copy read-only. Serve it with `--overlay <dir>`.
 
 Checked 11:4xZ: the rebuild matches snap163/V byte for byte (both hashes OK).
+
+## c3b-d (a): the bar's logo and buttons rise near the end (lead go 10:5xZ; proposal PR-033)
+
+The user saw the logo, the language button and the Join button move near the end on v14.
+- **Rects** (`gates/c3b/navy.mjs`, Chrome 430x775 / 430x815 / 375x775 and the Simulator, held touch, 27 stops m -0.3..1;
+  logs `out/cm/c3bk-gates/c3bd-navy-*.log`, OBSERVED): nothing moves before m 0. From m 0 to 1, bar, logo, language button
+  and Join rise 4 px, linear in m, in v14 and in C (C's Join 12 px, before PR-027's nolift). In v14 the cause is CM's bar
+  key, `v.bar = translate 0 4(1 - m)` (JS 14738), which mirrors today's CSS `top: calc(16px + (12px - 16px) * var(--morph))`.
+- **Two options on v14** (one line each in `__cmVals`; baseline-relative Try-it patches `fixes/cm-c3bd-hold/patch.diff`,
+  `fixes/cm-c3bd-late/patch.diff`, A = `fixes/cm-v14/patch.diff`; copies in `c3bd/`):
+  - hold (JS 9a4c3975cdb8): `v.bar = translate 0 4px`, the row stays at the closed pill's y through the open, so it ends
+    4 px lower than today (map-nav-shift's caveat);
+  - late (JS a6326c216613): held to m 0.6, then 4(1 - m)/0.4, with a bar keyframe grid [0, 0.6, 1]; m 1 is today's.
+- **Rects of the options** (Chrome 775): hold within 0.03 px of y 16 at every stop; late within 0.03 px to m 0.6, then -4 px
+  by m 1.
+- **T2 against v14** (`k-gates.sh c3bd`, pre-look --touch, m 0..1, consistent px2 beyond A/A; logs `c3bd-look-*`):
+
+| option | Chrome 775 | Simulator | m 1 |
+|---|---|---|---|
+| hold | 0.23-0.54 %, max 226 | 0.16-0.39 %, max 255 | 0.53 % / 0.39 % |
+| late | 0.23-0.45 %, max 215 | 0.16-0.28 %, max 255 | 0 / 0 |
+
+  Both are over T2 (edges over 128; hold over 0.5 % at m 0.9-1 in Chrome): a proposal, PR-033 (keep / hold / late, hold
+  recommended), Try-it checked by the served hashes (A d23ee885d54f, hold 9a4c3975cdb8, late a6326c216613, CSS 4fafb83f1e72).
+  Taps: the row's buttons are hit 1-4 px lower in hold (the same buttons). UNRESOLVED and said in the proposal: Safari's
+  toolbar collapse during a finger drag changes the viewport height mid-drag and may be part of what the user saw.
+- Note: the first c3bd run (12:0xZ) compared v13, not v14, as A (`k-gates.sh` line 9 had set A; the part now reads CA);
+  its logs are in `out/cm/c3bk-gates/c3bd-v13/` and are not used. The pre-look stops 0.7-0.9 print m 0.6 in the state
+  line (the --morph inline value is not rewritten under CM between thresholds); the shots follow the scroll.
+
+## c3b-e: no pre at m 0 after a close (tried and rejected, lead 13:0xZ)
+
+The finding (arch-end-fresh's S0 figure, confirmed): at rest at m 0 after a close, v14 restyles on every rendering
+frame; c3b-a does not (Simulator, `k-sim.mjs --pass A --rest0`, rendering-step RecalculateStyles per 3 s):
+
+| rest | v14 | c3b-e | c3b-a |
+|---|---|---|---|
+| m 0, first reach (S0) | 40 | 42 | 33 |
+| m 0 after a close, 0-3 s (S0b) | 177 | 22 | 17 |
+| same, 4.5-7.5 s (S0c) | 181 | 0 | 0 |
+
+- All three tick 178-181 frames per 3 s there: #platform's shimmers (pi-glint-left/right, pi-sweep-band on Secure and
+  Organized) are running and on screen at m 0 (fade QM(0) = 1, JS 13798), which is the original's look (F-328 ack).
+- REFUTED: the 8 CM wrapper animations as the cause. Paused at S0c (`--pausecm`), v14 stays at 181. The restyle comes with
+  the pre state; which rule is OBSERVED, cause unknown (additive probe `--probes`: nav transitions off, nav animations
+  paused, all animations paused).
+- c3b-e (`fixes/cm-c3be/patch.diff`, JS d4512f5c4f21): `__cmShut` set by any open; at rest with e > -0.02 after an open the
+  rest timer drops pre and does not set it. Rest: as c3b-a (table). But the opens after a close (pass O, two runs, arm
+  order swapped, n = 4 opens per arm, f1-f3 summed; Simulator ms as a rank only; logs `c3be-opens.log`, `c3be-opens2.log`):
+
+| per open after a close | v14 | c3b-e |
+|---|---|---|
+| paints, f1-f3 | 25 / 41 / 27 / 34 | 53 / 40 / 55 / 28 |
+| composite ms, f1-f3 | 56 / 104 / 45 / 52 | 141 / 92 / 107 / 57 |
+
+  f1 alike; f2/f3 rebuild in 3 of 4 c3b-e opens against 1 of 4 in v14. So pre kept at m 0 does help the next open past
+  f1 (F-324's "rebuilds anyway" holds for f1 only, OBSERVED). c3b-e moves rest work into the open (the K8 lesson):
+  rejected. The first open is unchanged. Next: find the restyling rule and fix it with pre kept.
+- The first c3be gate run measured c3bk1 (`k-gates.sh` line 9 had set K; the part now reads CK); its logs are in
+  `out/cm/c3bk-gates/c3be-wrong/`. The c3be look check with a held touch never had pre on in either arm (the state line
+  reads pre false at every stop; why, not traced), so it says nothing; not repeated after the rejection.
+
+### The rest restyle under pre: cause and outcome (13:0x-13:2xZ)
+
+- **Probe** (`k-sim.mjs --rest0 --probes` / `--probes2`, v14, m 0 after a close, changes add up, 3 s each; logs
+  `rest0-probes3.log`, `rest0-probes4.log`): styles per 3 s 181 as is; 181 with nav transitions off; 181 with nav
+  animations paused; 181 with all animations paused; 181 with all SVG SMIL paused; **1 with the 8 CM scroll animations
+  cancelled** (frames stay ~180: #platform's shimmers and its SMIL dash keep rendering).
+- **Cause**, confirmed in WebKit main source 4d3c163884, Safari 26.5 build unchecked (F-330):
+  `ScrollTimeline::documentWillUpdateAnimationsAndSendEvents` returns Yes on every rendering update while the scroller is
+  connected (ScrollTimeline.cpp 291-297); `AnimationTimelinesController` ticks every relevant animation of it
+  (AnimationTimelinesController.cpp 138-177); `WebAnimation::tick` calls `KeyframeEffect::animationDidTick`
+  (WebAnimation.cpp 1582-1605), which calls `invalidate()` without a condition (KeyframeEffect.cpp 2127-2129). A paused
+  animation in effect stays relevant, so any frame caused by something else restyles it.
+- **Outcome (lead 13:1xZ): option 1, a known cost of K6.** About 0.15 ms of style per frame (Simulator, 25-34 ms per
+  3 s), paint 0, composite unchanged, and only while something else animates on screen (at m 0: #platform's shimmers,
+  the original's visible look). Dropped: cancel at rest and re-create on the next scroll frame (the cancel frame itself
+  repainted 21 layers, 26 ms paint, 49 ms composite; re-creating in the first scroll frame is the K8 pattern).
+  Option 3 (make the animations not relevant at rest) does not work while they stay attached: an effect in its before
+  phase with a positive playback rate is "current" and so relevant (WebAnimation.cpp 1732-1757, the spec's relevance
+  rule), and at m 0 the CM animations are in their active phase anyway. A design without CM animations at rest (the
+  tree kept with inline m 0 values and the keyframes scoped to `.is-morphing`, arch-end-fresh's D1) avoids it; its pass O
+  against v14 decides whether that costs the open.
+
+## c3b-d (b): the corner wobble (#30)
+
+- **Still frames** (`k-gates.sh corner`, Simulator, held touch, m 0-0.3 in 0.02 steps, v14 against C (the build before
+  CM), two loads each; reader `gates/c3b/corner-read.py`): top edge, left edge and both top arcs sit within about 1
+  device px of the formula in both builds and step in whole device pixels the same way; the loads are identical (A/A 0).
+  Wobble score (mean |2nd difference| of the residual): left 0.50 v14 / 1.04 C, top-left arc 1.29 / 1.17, top-right
+  arc 1.51 / 4.05 (C's Join button is in the way). v14 differs from C by 1-2.4 % at m 0.02-0.18: the Join button's timed
+  fade (PR-032) and the glass tint (PR-030), both accepted.
+- **In motion** (`gates/c3b/corner-shots.mjs`, Simulator, slow WDA finger drag about 11 s, back-to-back `simctl io
+  screenshot` frames matched to the rAF scroll log; frames at m 0.015-0.3 whose capture window spans at most 0.02 in m,
+  33-40 per stroke; v14 4 strokes incl. a 3-stroke A/A, C 2): v14's top edge stays in a 1 device px band, both arcs in a
+  1-2 px band with 0-2 jumps over 1.5 px per stroke, the same as C (C's top-right arc again masked by its Join button);
+  the left edge shows 2 jumps per stroke in every run of both builds (the reader catching page content). The video form
+  (`corner-motion.mjs`, `simctl io recordVideo`) is not usable: frame export from a recording is refused by the repo
+  guard (I-062, T-018/T-019); its videos were deleted unread.
+- **Verdict:** no wobble in the sampled frames, still or in motion (OBSERVED, Simulator); a single-frame desync between
+  the corners and the page that no sample hit is not excluded. No device-pixel rounding change (the lead's rule: only
+  if the frames show it).
+- **Chrome only (parked, UNRESOLVED):** headless Chrome 430x775 draws v14's (and v13's) top-right card corner square at
+  m 0.02-0.3 (the light glass past the round corner; it fades from view by m ~0.5 as the glass clears); C and the
+  Simulator are round. Chromium source (clone baf9e3b02, read by a helper): Blink and cc are built to clip a
+  backdrop-filter by an ancestor's rounded clip (backdrop effect hoisted to the synthetic effect plus a mask layer,
+  `property_tree_manager.cc` 1020-1035, 1093-1099, 1170-1178; `PaintLayer::BackdropFilterBounds` uses only the element's
+  own radius, `paint_layer.cc` 2101-2107); with a scale between the clip and the filter the fast rounded-corner path is
+  off (`property_tree_manager.cc` 1004). Nothing there says it fails; settling it needs viz or a layer dump (not done).

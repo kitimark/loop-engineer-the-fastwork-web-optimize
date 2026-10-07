@@ -74,5 +74,23 @@ case "$1" in
     $LK --weight simulator --doing "c3b-d look, Simulator, A V" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A,V > $L/c3bd-look-$(basename $K)-sim-1.log 2>&1
     $LK --weight simulator --doing "c3b-d look, Simulator, A2 V2" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A2,V2 > $L/c3bd-look-$(basename $K)-sim-2.log 2>&1
     echo "EXIT $?" ;;
+  c3be)
+    # c3b-e (no pre at m 0 after a close) against v14: opens (pass O: the first open with pre, opens after closes) and the
+    # Simulator look at m 0 after a close (0c, 0c2: v14 keeps pre there, c3b-e is closed without it); Chrome has no pre
+    # (WebKit-only gate), so its look is v14's by construction
+    # CK, not K: line 9 already set K (c3bk1), as with A in c3bd (12:4xZ: the first c3be opens run measured c3bk1)
+    A=${CA:-out/cm/snap163/V}; K=${CK:-out/cm/c3be}
+    $LK --weight simulator --doing "c3b-e: opens, v14 and the fix" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- sh -c "node tools/sim.mjs wda start && node $G/k-sim.mjs V14=$A C3BE=$K --pass O" > $L/c3be-opens.log 2>&1
+    D=out/cm/prelook-c3be-sim; MS=${MS:--0.5,0,1,0c,1b,0c2}
+    $LK --weight simulator --doing "c3b-e look, Simulator, A V" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A,V > $L/c3be-look-sim-1.log 2>&1
+    $LK --weight simulator --doing "c3b-e look, Simulator, A2 V2" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A2,V2 > $L/c3be-look-sim-2.log 2>&1
+    echo "EXIT $?" ;;
+  corner)
+    # c3b-d (b): the card's corners and edges over the first 30 % of the open, v14 (A) against C (V: the build before CM,
+    # today's own nav geometry), Simulator device pixels, held touch, 0.02 steps; read by corner-read.py
+    A=${CA:-out/cm/snap163/V}; K=${CK:-out/cm/snap163/C}; D=out/cm/corner-sim; MS=${MS:-0,0.02,0.04,0.06,0.08,0.1,0.12,0.14,0.16,0.18,0.2,0.22,0.24,0.26,0.28,0.3}
+    $LK --weight simulator --doing "corner check, Simulator, A V" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A,V > $L/corner-sim-1.log 2>&1
+    $LK --weight simulator --doing "corner check, Simulator, A2 V2" -- node tools/sim.mjs session --functional --owner arch-compositor-morph -- node $G/pre-look.mjs --engine sim --touch --ms $MS --a $A --v $K --outdir $D --arms A2,V2 > $L/corner-sim-2.log 2>&1
+    echo "EXIT $?" ;;
   *) echo "usage: k-gates.sh look-chrome 775|815 | look-sim | sim-cost | sim-runs | sim-k8 | sim-k8p"; exit 2 ;;
 esac

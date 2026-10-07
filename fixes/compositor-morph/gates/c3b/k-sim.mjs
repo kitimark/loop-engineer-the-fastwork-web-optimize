@@ -15,6 +15,7 @@
 //   --rest0 (pass A): then m 1 for 3 s, back to m 0 (a close) and rests there: S0b (0-3 s), S0c (4.5-7.5 s).
 //   --pausecm (with --rest0; c3b-e's decisive check): then the CM wrapper animations ([data-fw-cm]) paused, S0p (3 s),
 //     played again, S0r (3 s): if S0p's styles drop to 0 and S0r's come back, CM's running animations are the restyle.
+//   --probes (with --rest0): then, adding up: no transitions in the nav, nav animations paused, all animations paused (3 s each).
 //   pass A also ends with J-0.5b (m 1 -> -0.5) and two rests at m -0.5: S-0.5a (0-3 s) and S-0.5z (3.5-6.5 s; K8: pre ended).
 //   pass L (layers, Timeline off): LayerTree.layersForNode(document) at m -1.5 (L0), at rest at m -0.5 after 1.5 s (L1;
 //     K: pre on), held open at m 1 with a synthetic touch (L2), back at m -0.5 (L3); count and memory, and the layers new
@@ -73,6 +74,19 @@ async function tl(c, fn) {
   await sleep(600); await c.send('Timeline.stop').catch(() => {}); await sleep(1000);
   return recs.sort((x, y) => x.startTime - y.startTime);
 }
+// --probes (with --rest0; inlined into the page script as ACT: the page's CSP refuses eval): which part of the pre state restyles at rest (v14 S0c: 181 per 3 s, c3b-a 0). Each probe is a
+// change made at rest, then 3 s measured; the changes add up (each keeps the ones before)
+const PROBES = argv.includes('--probes2') ? [
+  // second round: nothing in getAnimations() or SMIL (all paused) stops v14's per-frame restyle at S0c (probes3)
+  ['XC', 'js', `(() => { for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; if (t && t.dataset && t.dataset.fwCm) a.cancel(); } })()`], ['S-cmcancel', 3000],
+  ['XR', 'js', `(() => { const h = document.querySelector('header.start-selling-top-nav'); h.classList.remove('fw-cm-pre', 'is-morphing'); })()`], ['S-noclass', 3000],
+] : [
+  ['XT', 'js', `(() => { const st = document.createElement('style'); st.textContent = 'header.start-selling-top-nav, header.start-selling-top-nav * { transition: none !important; }'; document.head.append(st); })()`], ['S-notrans', 3000],
+  ['XN', 'js', `(() => { for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; if (t && t.closest && t.closest('header.start-selling-top-nav')) a.pause(); } })()`], ['S-navanim', 3000],
+  ['XA', 'js', `(() => { for (const a of document.getAnimations()) a.pause(); })()`], ['S-allanim', 3000],
+  // SMIL is not in getAnimations(): #platform's secure-network dash (<animate> x1/x2, JS 13232) keeps ticking
+  ['XS', 'js', `(() => { for (const s of document.querySelectorAll('svg')) { try { s.pauseAnimations(); } catch {} } })()`], ['S-smil', 3000],
+];
 const res = { tool: 'fixes/compositor-morph/gates/c3b/k-sim.mjs', arms: {} };
 try {
   for (const a of arms) {
@@ -130,13 +144,14 @@ try {
         const g = await load();
         const Y = (m) => Math.round(g.endStart + m * g.t);
         await c.evaluate(`(window.scrollTo({ top: ${Y(-1.5)}, behavior: 'instant' }), 1)`); await sleep(1500);
-        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000], ['J-0.5b', 1, -0.5, 1], ['S-0.5a', 3000], ['W', 500], ['S-0.5z', 3000]].concat(argv.includes('--rest0') ? [['J1b', -0.5, 1, 1], ['S1b', 3000], ['J0b', 1, 0, 1], ['S0b', 3000], ['W2', 1500], ['S0c', 3000]].concat(argv.includes('--pausecm') ? [['PZ', 'pause'], ['S0p', 3000], ['PR', 'play'], ['S0r', 3000]] : []) : []);
-        const js = JSON.stringify(plan.map((x) => (x.length === 4 ? [x[0], Y(x[1]), Y(x[2]), x[3]] : x)));
+        const plan = [['U1', -1.5, -0.05, 60], ['R1', 1200], ['D1', -0.05, -0.9, 50], ['R2', 1200], ['U2', -0.9, -0.05, 50], ['R3', 1200], ['D2', -0.05, -1.5, 60], ['R4', 1200], ['J-0.5', -1.5, -0.5, 1], ['S-0.5', 3000], ['J0', -0.5, 0, 1], ['S0', 3000], ['J1', 0, 1, 1], ['S1', 3000], ['J-0.5b', 1, -0.5, 1], ['S-0.5a', 3000], ['W', 500], ['S-0.5z', 3000]].concat(argv.includes('--rest0') ? [['J1b', -0.5, 1, 1], ['S1b', 3000], ['J0b', 1, 0, 1], ['S0b', 3000], ['W2', 1500], ['S0c', 3000]].concat(argv.includes('--pausecm') ? [['PZ', 'pause'], ['S0p', 3000], ['PR', 'play'], ['S0r', 3000]] : []).concat(argv.includes('--probes') || argv.includes('--probes2') ? PROBES : []) : []);
+        const js = JSON.stringify(plan.map((x) => (x.length === 4 ? [x[0], Y(x[1]), Y(x[2]), x[3]] : x[1] === 'js' ? [x[0], 'js'] : x)));
         row.navA = [];
         const recs = await tl(c, async () => {
           await c.evaluate(`(window.__aDone = 0, window.__aNav = [], (async () => { const nav = () => document.querySelector('header.start-selling-top-nav').className.replace(/svelte-\\w+/g, '').trim().split(/\\s+/).filter((k) => /morphing|pre|expanded/.test(k)).join(' ') || '-';
             const raf = () => new Promise((r) => requestAnimationFrame(r)); const wait = (t) => new Promise((r) => setTimeout(r, t));
-            for (const s of ${js}) { await raf(); performance.mark('seg:' + s[0]); if (s.length === 4) { for (let i = 1; i <= s[3]; i++) { window.scrollTo({ top: Math.round(s[1] + (s[2] - s[1]) * i / s[3]), behavior: 'instant' }); await raf(); } } else if (typeof s[1] === 'string') { for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; if (t && t.dataset && t.dataset.fwCm) a[s[1]](); } } else await wait(s[1]); window.__aNav.push(s[0] + ' ' + nav()); }
+            const ACT = { ${PROBES.filter((x) => x[1] === 'js').map((x) => `${x[0]}: () => ${x[2]}`).join(', ')} };
+            for (const s of ${js}) { await raf(); performance.mark('seg:' + s[0]); if (s.length === 4) { for (let i = 1; i <= s[3]; i++) { window.scrollTo({ top: Math.round(s[1] + (s[2] - s[1]) * i / s[3]), behavior: 'instant' }); await raf(); } } else if (s[1] === 'js') { ACT[s[0]](); } else if (typeof s[1] === 'string') { for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; if (t && t.dataset && t.dataset.fwCm) a[s[1]](); } } else await wait(s[1]); window.__aNav.push(s[0] + ' ' + nav()); }
             await raf(); performance.mark('seg:end'); window.__aDone = 1; })(), 1)`);
           for (let i = 0; i < 200 && !(await c.evaluate('window.__aDone')); i++) await sleep(250);
           row.navA = await c.evaluate('window.__aNav');
