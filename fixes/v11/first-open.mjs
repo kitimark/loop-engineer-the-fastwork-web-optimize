@@ -1,7 +1,8 @@
 // v11 first-open attribution (int-v11, lead OK 2026-10-07 03:1xZ): a credited copy of fix-end-morph-p1's
 // fixes/end-morph-p1/p1b/first-open.mjs. Changes: output under out/v11/first-open/; before open1 and after it, whether c1's
 // keyframes are in place (#fw-cm-kf text length, html.fw-cm); per open1/open2 frame the top CPU-profile self functions and
-// the FunctionCall owners are printed. ATTRIBUTION ONLY (where the first open's script goes), no verdict from Chrome ms.
+// the FunctionCall owners are printed; per window also the inclusive sampled time per function (every function on the
+// sampled stack, 0.1 ms per 100 us sample) and the sample count. ATTRIBUTION ONLY (where the first open's script goes), no verdict from Chrome ms.
 //   node tools/lock.mjs run chrome-measure --shared --weight probe --max-seconds 300 --owner int-v11 -- \
 //     node fixes/v11/first-open.mjs --cold --arm C=out/v11/snap-9b4a829d15a0-62743920fe1a/C --arm V11=out/v11/snap-9b4a829d15a0-62743920fe1a/V11
 // Original header:
@@ -64,7 +65,7 @@ const fnKey = (d) => d ? `${d.functionName || '(anon)'}:${(d.lineNumber ?? -1) +
 const ms = (us) => Math.round(us / 10) / 100;
 
 function windowStats(evs, mainTid, prof) {
-  const w = { ms: {}, n: {}, styleEls: 0, dirty: 0, total: 0, paintBy: {}, fn: {}, forced: [], raster: 0, rasterMs: 0, selfMs: {} };
+  const w = { ms: {}, n: {}, styleEls: 0, dirty: 0, total: 0, paintBy: {}, fn: {}, forced: [], raster: 0, rasterMs: 0, selfMs: {}, inclMs: {}, samples: 0 };
   for (const e of evs) {
     if (e.name === 'RasterTask' && isDur(e)) { w.raster++; w.rasterMs += (e.dur || 0) / 1000; continue; }
     if (e.tid !== mainTid || !isDur(e)) continue;
@@ -79,10 +80,10 @@ function windowStats(evs, mainTid, prof) {
   // CPU profile self samples inside the window (timestamps in us, same clock as the trace)
   if (prof && evs.length) {
     const t0 = evs[0].ts, t1 = evs[evs.length - 1].ts;
-    for (const [ts, key] of prof) if (ts >= t0 && ts < t1) w.selfMs[key] = (w.selfMs[key] || 0) + 0.1;
+    for (const [ts, key, stk] of prof) if (ts >= t0 && ts < t1) { w.samples++; w.selfMs[key] = (w.selfMs[key] || 0) + 0.1; for (const k of new Set(stk)) w.inclMs[k] = (w.inclMs[k] || 0) + 0.1; }
   }
   const r2 = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => [k, Math.round(v * 100) / 100]));
-  w.ms = r2(w.ms); w.fn = r2(w.fn); w.selfMs = r2(w.selfMs); w.rasterMs = Math.round(w.rasterMs * 100) / 100;
+  w.ms = r2(w.ms); w.fn = r2(w.fn); w.selfMs = r2(w.selfMs); w.inclMs = Object.fromEntries(Object.entries(w.inclMs).sort((a, b) => b[1] - a[1]).slice(0, 30).map(([k, v]) => [k, Math.round(v * 100) / 100])); w.rasterMs = Math.round(w.rasterMs * 100) / 100;
   for (const p of Object.values(w.paintBy)) { p.kpx = Math.round(p.kpx); p.ms = Math.round(p.ms * 100) / 100; }
   return w;
 }
@@ -137,8 +138,8 @@ for (const arm of ARMS) {
     await page.send('Tracing.end'); await done; offT();
     if (CPU > 1) await page.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     // sample timeline: [ts, function:line] for self samples
-    const nodes = new Map(prof.nodes.map((n) => [n.id, n])); const smp = []; let t = prof.startTime;
-    for (let i = 0; i < prof.samples.length; i++) { t += prof.timeDeltas[i]; const c = nodes.get(prof.samples[i]).callFrame; smp.push([t, `${c.functionName || '(' + (c.url ? 'anon' : 'native') + ')'}:${c.lineNumber + 1}`]); }
+    const nodes = new Map(prof.nodes.map((n) => [n.id, n])); const par = new Map(); for (const n of prof.nodes) for (const c of n.children || []) par.set(c, n.id); const nm = (c) => `${c.functionName || '(' + (c.url ? 'anon' : 'native') + ')'}:${c.lineNumber + 1}`; const smp = []; let t = prof.startTime;
+    for (let i = 0; i < prof.samples.length; i++) { t += prof.timeDeltas[i]; const c = nodes.get(prof.samples[i]).callFrame; const stk = []; for (let id = prof.samples[i]; id != null; id = par.get(id)) stk.push(nm(nodes.get(id).callFrame)); smp.push([t, nm(c), stk]); }
     const fa = ev.find((e) => e.name === 'FireAnimationFrame'); const mainTid = fa ? fa.tid : null;
     const aw = windows(ev, 'approach', mainTid, smp), o1 = windows(ev, 'open1', mainTid, smp), o2 = windows(ev, 'open2', mainTid, smp);
     r.approachFirst = aw.slice(0, 3); r.approachLast = aw.slice(-3); r.open1 = o1.slice(0, K); r.open2 = o2.slice(0, K);
@@ -150,7 +151,7 @@ for (const arm of ARMS) {
         r.nodeNames[k] = `${node.localName || node.nodeName}${o.id ? '#' + o.id : ''}${o.class ? '.' + o.class.split(/\s+/).filter((x) => !/^svelte-/.test(x)).slice(0, 3).join('.') : ''}`; } catch { r.nodeNames[k] = '?'; } }
     for (const [ph, ws] of [['approach0-2', r.approachFirst], ['approach-3', r.approachLast], ['open1', r.open1], ['open2', r.open2]])
       ws.forEach((w, i) => { console.log(arm.name, ph, i, 'span', w.spanMs, 'ms', JSON.stringify(w.ms), 'els', w.styleEls, 'dirty', w.dirty, 'raster', w.raster, w.forced.length ? 'FORCED ' + w.forced.join(' | ') : '');
-        if (ph.startsWith('open')) console.log('   self', JSON.stringify(w.selfMs), '\n   fn', JSON.stringify(w.fn)); });
+        if (ph.startsWith('open')) console.log('   self', JSON.stringify(w.selfMs), '\n   fn', JSON.stringify(w.fn), '\n   incl (samples ' + w.samples + ')', JSON.stringify(w.inclMs)); });
     await page.close();
   } finally { cdp.close(); await chrome.close(); srv.proc.kill(); }
 }

@@ -236,13 +236,88 @@ first morph after load). The Vc arm did not run: it was left in the queue to pro
   `__cmVals` 14490, the anonymous functions at 14513/14535/14585, `px`, `lin`, about 6.9 ms together. C has none of
   them. `__cmPrep` calls `__cmGen()` on every open from closed, and `__cmGen` rebuilds the whole text before it compares
   it with `__cmCss`.
-- The rest of `iE`'s 44.3 ms is not attributed. The saved data are the top-12 self samples per frame (their sum is far
-  below the FunctionCall time at 6x), no inclusive tree, and `iE` has no forced style or layout record of its own. A
-  re-run that saves the frame's inclusive tree names it (after P-158).
+- The rest of `iE`'s 44.3 ms was not attributed in this first run, which saved only the top-12 self samples per frame.
+  The re-run below saves the inclusive tree.
 - Chrome pays this on every open from closed: V11's open2 frame 1 is 83.9 ms (Paint 27.5, style 17.7, layout 421 dirty),
-  against C's 24.1. On the phone the only repeat full open after a full close (EA2) took 21 ms (C 13-22). So Safari's
-  extra looks first-only (OBSERVED, n 1). The Simulator call-stack run checks that after P-158.
-- c2 brief to arch-compositor-morph (lead 03:4xZ):
-  - (i) memoize `__cmGen` on its inputs, so `__cmPrep` skips the rebuild after c1;
-  - (ii) keep F()'s read out of the open's first frame on the CM path;
-  - (iii) a c1 extension for the first-only part, which waits on the Simulator run.
+  against C's 24.1. *Corrected below:* the phone pays it on every open from closed too (P-158 line-up). The "first-only
+  on Safari" reading rested on one run (EA2) and is withdrawn.
+
+**Re-run with the inclusive tree** (04:0xZ, after P-158; `fixes/v11/first-open.mjs` now also prints each function's
+inclusive sampled time). Logs: out/v11/first-open/incl-{C,Vc,V11}.log. Caveat: CPU 6x on a loaded host (V11's frame was 186
+ms here against 92.6 ms before) and the profiler samples far less than the FunctionCall time at 6x, so read only the
+shares. Sampled ms in open1 frame 1:
+
+| inclusive (sampled) | C | Vc | V11 |
+|---|---|---|---|
+| samples in the frame | 4.8 | 32.7 | 21.2 |
+| `iE` (engine rAF: the tick) | 0.6 | 10.3 | 4.5 |
+| `__cmPrep` | - | 9.1 | 4.1 |
+| `__cmGen` (of which `__cmVals`) | - | 8.2 (6.6) | 3.2 (2.4) |
+| F() hit test (microtask) | 1.2 | 8.8 | 5.5 |
+| forced style in F() | 196 els, 7.8 ms | 206 els, 25.4 ms | 206 els, 29.7 ms |
+| forced layout in F() (dirty / total) | 9 / 1011 | 421 / 1021 | 421 / 1755 |
+
+- `iE` is almost all `__cmPrep` → `__cmGen`; C's `iE` holds only `__navMorphSet`.
+- Vc and V11 have the same pattern: V13 and H1c are not involved.
+- c1 ran before the open in Vc and V11 (`#fw-cm-kf` 39119 chars).
+
+### Each open from closed is slower: the P-158 line-up (phone, descriptive)
+
+arch-compositor-morph's P-158 block (iPhone 15 Pro Max, G fast-short 8737f212c0ff, tool-held Serious, Timeline on; C =
+1b2eecc66011 / e1359ab9994a, v11 = 9b4a829d15a0 / 62743920fe1a; data in arch's worktree out/cmp11/runs, read only).
+Finger-down frames whose m crosses 0 opening (open from closed). Records overlapping each frame's gap, clipped, with nested
+records counted at every level; medians:
+
+| | C (3 runs, n 30) | v11 (4 runs, n 38) |
+|---|---|---|
+| frame dt | 20 (9-41) | 38 (16-56) |
+| frames > 34 ms | 3 | 23 |
+| FunctionCall | 2.1 | 20.7 |
+| Layout | 1.5 | 15.7 |
+| RecalculateStyles | 1.9 | 4.8 |
+| Composite | 9.8 | 14.0 |
+
+- v11's FunctionCall sits at scriptLine 2705 (`iE`). Layout and style are nested in it, so it is a forced layout inside the
+  tick's task; on Safari, F()'s microtask runs inside that same FunctionCall record.
+- Of v11's 24 slow (> 34 ms) finger-down crossing frames, 21 are open-0 crossings and 2 more cross 0 and 0.08 in one
+  frame. In C it is 2 of 3 open-0, plus 1 that crosses 0 and 0.08.
+- So **each open from closed is slower** in v11, by about 18 ms at the median, mostly a forced layout (about 14 ms). That
+  is the same mechanism as v11-nw's first-open Pr1 failure (O1.f2 +15.5) and P-158's 34-50 ms band under the finger
+  (OBSERVED, in our setup).
+- Per run, v11's open-0 frames alternate around 20 and 40 ms (EV4: 17, 40, 43, 19, 43, 44, 40, 38, 19, 45). arch checks why.
+
+**c2 (arch-compositor-morph, queued behind PR-032 rev 3; lead 04:1xZ):**
+- (ii) first: keep F()'s forced style and layout out of the open-from-closed frame on the CM path.
+- (i) the `__cmGen` memo rides along.
+- (iii), a first-only pre-warm, is dropped: the cost is per open.
+- Secondary descriptive check (pre-registered by the lead): v11+c2's finger-down 34-50 ms crossing share against C, with
+  P-158 as the before.
+
+Simulator, cold first open of C (`cm-sim.mjs --cold --stack 6`, 04:15Z; V11 and Vc from the gates above): the same
+forced-layout sources in both arms (the nav hit test F, and the read `n` that V13 moved). The counts can't weigh them;
+the phone line-up above does.
+
+### X2 on v11 (unfrozen settle; lead 03:1xZ "Chrome unfrozen settle, full stop list, compare V+X2, H1c interaction")
+
+`fixes/v11/x2-settle.mjs`: a credited copy of fix-people-gpu's `pg-px.mjs`. The O opens and closes in real play (scrollTo
+the title, then the out position) and is read at 300 / 600 / 920 / 1100 / 1500 / 2500 ms after each scroll, scored
+PR-010 multi-pair (A, V, A2, V2). Arms:
+- v11: V11 against V11X (the -x snapshot);
+- the owner's base: V against V+X2, rebuilt here at fix-people-gpu's pin 9e66ff0696b4 / 592d1f2a8af4 (`out/v11/vx2/mk.sh`).
+
+| | Chrome v11 | Chrome V | WebKit v11 | WebKit V |
+|---|---|---|---|---|
+| settled stops (rest-closed, open-u2500, close-u2500, rest-end): consistent css px² (max level) | 0 (1) | 0-4 (13) | 0 (1-10) | 0-7 (13) |
+| positions at the settled stops (O, "pe", "ple", vector; first A/V pair) | 0.00 px | 0.00 px | 0.00 px | 0.00 px |
+| close-u300 consistent | 138 (0.04 %, max 203) | 138 (0.04 %, max 203) | 0 | 384 (0.10 %, max 212) |
+| close-u920 / u1100 consistent | 0 | 0-4 | 600 (0.15 %, max 96) | 600 (0.15 %, max 96) |
+
+- X2 behaves the same on v11 as on its owner's base, in both engines. The close differences (the O box held 189 px wide
+  until the slide ends, about 0.9 s; in WebKit a 600 css px² patch near the bottom of the view at 0.92-1.1 s, gone by
+  1.5-2.5 s) are X2's own close, with identical numbers on both bases. They are motion-only and lie inside PR-031's
+  accepted look change, whose scope was the opening.
+- H1c does not touch X2: the O sits outside `.hero-track` at every stop (`oInHero false`), and the hero's paused-animation
+  count is the same in both arms at every stop.
+- WebKit stop times run late, because the Simulator screenshots are slow (e.g. u920 read at 921-1184 ms). So WebKit's
+  mid-motion stops compare across loads only roughly; the A/A and V/V columns in `out/v11/b-x2b.log` and `b-vx2b.log` carry
+  that jitter.
