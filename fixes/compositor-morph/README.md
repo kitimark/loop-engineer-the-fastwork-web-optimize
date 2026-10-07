@@ -444,3 +444,21 @@ Context added after the pre-data time (2026-10-07, lead FYI from the user's thre
 question nor the decision rules): the user swiped v11 "really hard" as a stress test, so the user's own gestures
 differed between the two builds. This supports the reading that the reported fast-swipe difference came from the
 gesture, not the build; P-158 tests it with the identical G gesture on both arms.
+
+**Pre-data amendment (2026-10-07, lead's condition on the accepted start-state check; no P-158 data exists yet).** The
+Simulator start-state check (count-only, one session per arm) matched starts, stroke order and settle ys, but momentum
+flings differed (C 2, v11 5). So:
+- The reader splits the crossing frames by finger state: **finger-down** (frame stamp between a touch start `s` and the
+  next end `e` or cancel `c` in `touches`) and **momentum** (after lift), and reports both plus the pooled number.
+- The (a)/(b)/(c) rule applies to the **finger-down** crossing frames first (`VERDICT` line); the pooled and momentum
+  verdicts are reported beside it and decide nothing.
+- **Driver difference:** when the arms' median momentum crossing-frame counts, or median fling counts
+  (`summary.momentum.flings`), differ by more than 2x, the result is reported as a driver difference, not a build result.
+- Reader: `p158-read.mjs` (selftest 8 checks: the split and the driver flag added).
+
+Prediction under the amendment (frozen with it): on P-157's runs the split gives about 75 finger-down and 115 momentum
+crossing frames per run; finger-down > 50 shares are 0 in 7 of 8 runs (EV3 0.0132, one frame), momentum > 50 shares C
+0.026-0.054 vs V 0-0.035, momentum ratio 1.02, flings ratio 1 (no driver difference). Finger-down VERDICT on P-157:
+50 le, 46 open, 54 le, decision (c). For P-158 I expect the same picture: finger-down slow frames at or near 0 in both
+arms, so the decision is (a) or a single-frame (c), not (b); the slow crossing frames sit in momentum, where v11 is not
+above C; no driver difference on the phone (G is the same program on both arms).

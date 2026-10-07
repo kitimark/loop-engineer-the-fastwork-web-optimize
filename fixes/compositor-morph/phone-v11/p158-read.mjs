@@ -13,6 +13,8 @@
 // Verdict (P-158 card, fixes/compositor-morph/README.md): per threshold T in {50, 46, 54}: "le" when the V median share
 // <= the C median share; "worse" when every V run's share > every C run's share (at least 3 valid runs per arm); else
 // "open". (a) le at all three; (b) worse at all three; (c) anything else (threshold-sensitive or insufficient).
+// Pre-data amendment: the decision uses the finger-down crossing frames (see downIntervals); pooled and momentum
+// verdicts are printed beside it; DRIVER flags a > 2x momentum difference between arms (a driver, not a build, result).
 // --start-state: the P-120-style pre-data check on two Simulator gesture records (sim.mjs gesture --count-only): start m,
 // the order of the opens and closes (m crossing 0 and 1), the settle ys (scrollY after each 300 ms of no move), moving frames.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -20,18 +22,36 @@ import { join } from 'node:path';
 export const TH = [0, 0.08, 0.2, 0.35, 0.4, 0.55, 0.92, 1];
 export const mAt = (seg, i) => { const r = seg.frames[i]; const docH = seg.docH1 ?? seg.docH ?? 0; return (r[2] - (docH - 2 * r[3])) / r[3]; };
 export const crosses = (a, b) => TH.some((t) => (a < t) !== (b < t));
+// Finger-down intervals from seg.touches rows [t, type, ...] (types s start, m move, e end, c cancel; same page clock as
+// frames): [t of s, t of the next e or c]. A frame is finger-down when its stamp t lies in one; else momentum (after lift).
+export function downIntervals(seg) {
+  const iv = []; let s = null;
+  for (const r of seg.touches ?? []) { if (r[1] === 's' && s === null) s = r[0]; else if ((r[1] === 'e' || r[1] === 'c') && s !== null) { iv.push([s, r[0]]); s = null; } }
+  if (s !== null) iv.push([s, Infinity]);
+  return iv;
+}
 export function runCounts(seg) {
-  const fr = seg.frames; const X = { n: 0 }, O = { n: 0 }; const ks = [50, 46, 54, 34, 30, 38];
-  for (const k of ks) { X['gt' + k] = 0; O['gt' + k] = 0; }
+  const fr = seg.frames; const ks = [50, 46, 54, 34, 30, 38]; const iv = downIntervals(seg);
+  const mk = () => { const B = { n: 0 }; for (const k of ks) B['gt' + k] = 0; return B; };
+  const X = mk(), XD = mk(), XM = mk(), O = mk();
+  const add = (B, dt) => { B.n++; for (const k of ks) if (dt > k) B['gt' + k]++; };
+  const isDown = (t) => iv.some(([a, b]) => t >= a && t <= b);
   for (let i = 1; i < fr.length; i++) {
     if (fr[i][2] === fr[i - 1][2]) continue;
     const a = mAt(seg, i - 1), b = mAt(seg, i), dt = fr[i][1];
-    const bin = crosses(a, b) ? X : (b > 0 && b < 1 ? O : null);
-    if (!bin) continue;
-    bin.n++; for (const k of ks) if (dt > k) bin['gt' + k]++;
+    if (crosses(a, b)) { add(X, dt); add(isDown(fr[i][0]) ? XD : XM, dt); } else if (b > 0 && b < 1) add(O, dt);
   }
   const share = (B) => Object.fromEntries(ks.map((k) => [k, B.n ? +(B['gt' + k] / B.n).toFixed(4) : null]));
-  return { crossing: { ...X, share: share(X) }, other: { ...O, share: share(O) } };
+  const w = (B) => ({ ...B, share: share(B) });
+  return { crossing: w(X), crossingDown: w(XD), crossingMomentum: w(XM), other: w(O) };
+}
+// P-158 amendment (pre-data, lead 2026-10-07): momentum differs by driver (Simulator flings 2 vs 5), so the decision uses
+// the finger-down crossing frames; pooled and momentum verdicts are reported beside it. Driver flag: the arms' median
+// momentum crossing-frame counts, or median fling counts (summary.momentum.flings), differ by more than 2x.
+export function driverFlag(cm, vm, cf, vf) {
+  const r = (x, y) => (x === null || y === null) ? null : Math.max(x, y) === 0 ? 1 : Math.min(x, y) === 0 ? Infinity : Math.max(x, y) / Math.min(x, y);
+  const mom = r(med(cm), med(vm)), fl = r(med(cf), med(vf));
+  return { momentumRatio: mom, flingRatio: fl, driverDifference: (mom !== null && mom > 2) || (fl !== null && fl > 2) };
 }
 const med = (a) => { const s = [...a].sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 export function verdict(c, v) { // c, v: arrays of crossing shares per run, by threshold key
@@ -65,6 +85,8 @@ function selftest() {
     ['other n', r.other.n === 1],
     ['verdict a', verdict([{ 50: 0.2, 46: 0.2, 54: 0.2 }, { 50: 0.2, 46: 0.2, 54: 0.2 }, { 50: 0.2, 46: 0.2, 54: 0.2 }], [{ 50: 0.1, 46: 0.1, 54: 0.1 }, { 50: 0.2, 46: 0.2, 54: 0.2 }, { 50: 0.3, 46: 0.3, 54: 0.3 }]).decision === 'a'],
     ['verdict b', verdict([{ 50: 0.1, 46: 0.1, 54: 0.1 }, { 50: 0.1, 46: 0.1, 54: 0.1 }, { 50: 0.1, 46: 0.1, 54: 0.1 }], [{ 50: 0.2, 46: 0.2, 54: 0.2 }, { 50: 0.2, 46: 0.2, 54: 0.2 }, { 50: 0.3, 46: 0.3, 54: 0.3 }]).decision === 'b'],
+    ['down/momentum split', (() => { const s2 = { ...seg, touches: [[10, 's'], [40, 'm'], [50, 'e']] }; const q = runCounts(s2); return q.crossingDown.n === 2 && q.crossingMomentum.n === 1 && q.crossingMomentum.gt50 === 1 && q.crossing.n === 3; })()],
+    ['driver flag', driverFlag([10, 10, 10], [25, 25, 25], [2, 2], [3, 3]).driverDifference === true && driverFlag([10, 12, 10], [15, 18, 16], [2, 2], [3, 3]).driverDifference === false],
     ['verdict c', verdict([{ 50: 0.1, 46: 0.2, 54: 0.1 }, { 50: 0.1, 46: 0.2, 54: 0.1 }, { 50: 0.1, 46: 0.2, 54: 0.1 }], [{ 50: 0.2, 46: 0.1, 54: 0.2 }, { 50: 0.2, 46: 0.1, 54: 0.2 }, { 50: 0.3, 46: 0.1, 54: 0.3 }]).decision === 'c'],
   ];
   const bad = ok.filter(([, v]) => !v);
@@ -81,11 +103,17 @@ else if (argv[0] === '--start-state') {
   const out = { runs: {} };
   for (const nm of names) {
     const f = join(dir, `g-${nm}.json`); if (!existsSync(f)) { console.log(nm, 'missing'); continue; }
-    const j = JSON.parse(readFileSync(f, 'utf8')); const r = runCounts(j.run.segments[0]); out.runs[nm] = r;
+    const j = JSON.parse(readFileSync(f, 'utf8')); const r = runCounts(j.run.segments[0]); r.flings = j.summary?.momentum?.flings ?? null; out.runs[nm] = r;
     const s = (B) => `n ${B.n} >50 ${B.share[50]} (>46 ${B.share[46]} >54 ${B.share[54]}) >34 ${B.share[34]} (>30 ${B.share[30]} >38 ${B.share[38]})`;
-    console.log(`${nm} crossing ${s(r.crossing)} | other ${s(r.other)}`);
+    console.log(`${nm} crossing ${s(r.crossing)} | down ${s(r.crossingDown)} | momentum ${s(r.crossingMomentum)} | other ${s(r.other)} | flings ${r.flings}`);
   }
-  const C = Object.entries(out.runs).filter(([k]) => /^EC/.test(k)).map(([, r]) => r.crossing.share), V = Object.entries(out.runs).filter(([k]) => /^EV/.test(k)).map(([, r]) => r.crossing.share);
-  out.verdict = verdict(C, V); console.log('VERDICT', JSON.stringify(out.verdict));
+  const arm = (re, f) => Object.entries(out.runs).filter(([k]) => re.test(k)).map(([, r]) => f(r));
+  const pick = (key) => [arm(/^EC/, (r) => r[key].share), arm(/^EV/, (r) => r[key].share)];
+  out.verdictDown = verdict(...pick('crossingDown')); out.verdictPooled = verdict(...pick('crossing')); out.verdictMomentum = verdict(...pick('crossingMomentum'));
+  out.driver = driverFlag(arm(/^EC/, (r) => r.crossingMomentum.n), arm(/^EV/, (r) => r.crossingMomentum.n), arm(/^EC/, (r) => r.flings).filter((x) => x !== null), arm(/^EV/, (r) => r.flings).filter((x) => x !== null));
+  out.verdict = out.verdictDown;
+  console.log('VERDICT (finger-down crossing frames; decides)', JSON.stringify(out.verdictDown));
+  console.log('pooled', JSON.stringify(out.verdictPooled), '| momentum', JSON.stringify(out.verdictMomentum));
+  console.log('DRIVER', JSON.stringify(out.driver), out.driver.driverDifference ? '-> momentum differs > 2x between arms: report as a driver difference, not a build result' : '');
   const ji = argv.indexOf('--json'); if (ji > 0) writeFileSync(argv[ji + 1], JSON.stringify(out, null, 1));
 } else console.log('usage: see header');
